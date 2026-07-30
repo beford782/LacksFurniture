@@ -9495,6 +9495,12 @@
       return (obj && obj.en) || '';
     }
 
+    // Active retailer display name (store-agnostic). Config-driven — never hardcode
+    // a retailer name in user-facing copy (see white-label rules in CLAUDE.md).
+    function storeName() {
+      return (STORE_CONFIG && STORE_CONFIG.storeName) || '';
+    }
+
     // Language-aware mattress field accessor
     function mField(m, field) {
       return currentLang === 'es' ? (m[field + '_es'] || m[field]) : m[field];
@@ -11497,7 +11503,7 @@
       html += '<div style="font-size:0.62rem; ' + muted + ' margin-top:0.2rem;">' + escapeHtml(promotionExpiryText(p)) + '</div>';
       if (p.sourceUrl) {
         html += '<div style="font-size:0.62rem; margin-top:0.15rem;"><a href="' + escapeHtml(p.sourceUrl) + '" target="_blank" rel="noopener" style="color:var(--color-gold-bright);">'
-          + (es ? 'Ver en el sitio de WG&R' : "View on WG&R's site") + '</a></div>';
+          + (es ? ('Ver en el sitio de ' + storeName()) : ('View on ' + storeName() + "'s site")) + '</a></div>';
       }
       html += '</div>';
       return html;
@@ -11521,7 +11527,7 @@
       }
       promos.forEach(function(p) { parts.push(promotionDetailBlockHtml(p)); });
       if (storewide.length) {
-        parts.push('<div style="font-size:0.62rem; letter-spacing:1px; text-transform:uppercase; color:rgba(248,246,241,0.5); margin-top:0.7rem;">' + (es ? 'Ofertas en toda la tienda WG&R' : 'WG&R store-wide offers') + '</div>');
+        parts.push('<div style="font-size:0.62rem; letter-spacing:1px; text-transform:uppercase; color:rgba(248,246,241,0.5); margin-top:0.7rem;">' + (es ? ('Ofertas en toda la tienda ' + storeName()) : (storeName() + ' store-wide offers')) + '</div>');
         storewide.forEach(function(p) { parts.push(promotionDetailBlockHtml(p)); });
       }
       return parts.join('');
@@ -11549,8 +11555,8 @@
         return;
       }
       cue.textContent = currentLang === 'es'
-        ? count + ' de estas opciones tienen ofertas actuales de WG&R.'
-        : count + ' of these matches have current WG&R offers.';
+        ? count + ' de estas opciones tienen ofertas actuales de ' + storeName() + '.'
+        : count + ' of these matches have current ' + storeName() + ' offers.';
       cue.setAttribute('data-label', currentLang === 'es' ? 'OFERTA' : 'OFFER');
       cue.classList.add('is-visible');
     }
@@ -11563,8 +11569,7 @@
       var feel = firmnessFeel(m.firmness);
       var priorities = buildMattressPriorities(m);
       var promotion = getMattressPromotion(m);
-      var storeName = (STORE_CONFIG && STORE_CONFIG.storeName) || '';
-      var stockText = es ? ('Disponible en ' + storeName) : ('In stock at ' + storeName);
+      var stockText = es ? ('Disponible en ' + storeName()) : ('In stock at ' + storeName());
 
       var img = m.imageUrl
         ? '<img class="noct-toppick-photo" src="' + escapeHtml(m.imageUrl) + '" alt="' + escapeHtml(m.name) + '">'
@@ -12064,11 +12069,11 @@
       // ----- Capture view -----
       setText('emailEyebrow', es ? 'No pierdas tus opciones' : "Don't lose your matches");
       setHtml('emailHeadline', es
-        ? 'Guarda tu <span class="accent">Resumen de Sueño</span> WG&R'
-        : 'Save your WG&R <span class="accent">Sleep Brief</span>');
+        ? 'Guarda tu <span class="accent">Resumen de Sueño</span> de ' + storeName()
+        : 'Save your ' + storeName() + ' <span class="accent">Sleep Brief</span>');
       setText('emailSubhead', es
-        ? 'Guardaremos tus opciones de colchón, tu Sistema de Sueño y tu Pase de Ahorro juntos para que un especialista de sueño de WG&R pueda continuar justo donde lo dejaste.'
-        : 'Keep your mattress matches, Sleep System picks, and Savings Pass together so a WG&R sleep specialist can pick up right where you left off.');
+        ? 'Guardaremos tus opciones de colchón, tu Sistema de Sueño y tu Pase de Ahorro juntos para que un especialista de sueño de ' + storeName() + ' pueda continuar justo donde lo dejaste.'
+        : 'Keep your mattress matches, Sleep System picks, and Savings Pass together so a ' + storeName() + ' sleep specialist can pick up right where you left off.');
       setText('emailPreviewLabel', es ? 'Lo que vas a guardar' : "What you'll save");
       setText('emailFormTitle', es ? '¿Dónde lo guardamos?' : 'Where should we save it?');
 
@@ -12117,7 +12122,7 @@
       setText('emailConfirmEyebrow', es ? 'Resumen de sueño listo' : 'Sleep Brief ready');
       setText('emailConfirmationTitle', es ? 'Tu Resumen de Sueño está listo' : 'Your Sleep Brief is ready');
       setText('emailConfirmationSubtitle', isDemoMode
-        ? (es ? 'Llévalo a un especialista de sueño de WG&R para continuar donde lo dejaste.' : 'Bring this to a WG&R sleep specialist to pick up where you left off.')
+        ? (es ? ('Llévalo a un especialista de sueño de ' + storeName() + ' para continuar donde lo dejaste.') : ('Bring this to a ' + storeName() + ' sleep specialist to pick up where you left off.'))
         : (es ? 'Revisa tu bandeja de entrada para ver tus resultados personalizados.' : 'Check your inbox for your personalized results.'));
 
       // Preview-mode honesty card (demo only). Uses the WG&R-approved
@@ -15480,12 +15485,12 @@
         // Scenario-aware kicker: a disclosed scenario (e.g. historical demo) must
         // never make a "current offer" claim — mirror the cue/disclosure logic.
         var drawerKicker = getScenarioDisclosure()
-          ? (esDrawer ? 'Ofertas de WG&R (Demostración histórica)' : 'WG&R Offers (Historical Demo)')
-          : (esDrawer ? 'Ofertas Actuales de WG&R' : 'Current WG&R Offers');
+          ? (esDrawer ? ('Ofertas de ' + storeName() + ' (Demostración histórica)') : (storeName() + ' Offers (Historical Demo)'))
+          : (esDrawer ? ('Ofertas Actuales de ' + storeName()) : ('Current ' + storeName() + ' Offers'));
         document.getElementById('drawerPromotionKicker').textContent = drawerKicker;
         document.getElementById('drawerPromotionHeadline').textContent = esDrawer
-          ? 'Detalles confirmados por tu especialista de WG&R'
-          : 'Details confirmed by your WG&R specialist';
+          ? ('Detalles confirmados por tu especialista de ' + storeName())
+          : ('Details confirmed by your ' + storeName() + ' specialist');
         document.getElementById('drawerPromotionDetail').innerHTML = promotionDrawerDetailHtml(m);
         promotionEl.classList.add('is-visible');
       } else if (promotionEl) {
