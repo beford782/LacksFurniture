@@ -7,15 +7,19 @@ and receive their results plus a discount code by email. Salespeople get a
 handoff screen showing the customer's saved picks.
 
 DreamFinder is a **white-label** product — each retailer gets its own repo and
-deployment. This repo is Lacks Furniture's instance (local demo, planned deploy:
+deployment. This repo is Lacks Furniture's instance, deployed as a preview at:
 
   https://beford782.github.io/LacksFurniture
+
+> **⚠️ PREVIEW DEPLOYMENT — not for production use.** No live email or lead
+> capture (`gasUrl` is intentionally blank), the discount offer is illustrative,
+> and the brand palette and Spanish copy are pending Lacks Furniture review.
 
 ## Repo orientation
 
 - `index.html` — the entire kiosk app (single-file SPA, no build step). Domain-locked to the configured GitHub Pages host.
 - `Code.gs` — Google Apps Script backend for email send + Sheet logging. Deployed separately via the Apps Script editor.
-- `data/store-config.json` — Bel-specific branding, copy, GAS endpoint, public asset root, languages, and discount config.
+- `data/store-config.json` — Lacks-specific branding, copy, GAS endpoint, public asset root, languages, and discount config. Generated from the build inputs in `incoming/` — edit those and re-run the converter rather than editing this file.
 - `data/mattresses.csv` — source-of-truth mattress lineup. Edit here.
 - `data/mattresses.json` — generated. **Never edit by hand.** Regenerate with `.\build-data.ps1` from the repo root.
 - `data/dict-en.json` / `data/dict-es.json` — generic UI strings, shared across all retailer deployments.
