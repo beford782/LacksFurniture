@@ -1,49 +1,77 @@
 [
   {
-    "id": "base-bedtech-relax",
+    "id": "base-bt2000",
     "name": {
-      "en": "BedTech Relax Lifestyle Base",
-      "es": "Base Ajustable BedTech Relax Lifestyle"
+      "en": "BedTech BT2000 Adjustable Base",
+      "es": "Base Ajustable BedTech BT2000"
     },
     "category": {
       "en": "Foundations & Support",
       "es": "Bases y Soportes"
     },
     "price": 899,
-    "image": "images/accessories/base-bedtech-relax.jpg",
+    "image": "images/accessories/base-bt2000.jpg",
     "description": {
-      "en": "Adjustable power base with head & foot articulation, wireless remote, and memory positions.",
-      "es": "Base eléctrica ajustable con elevación de cabeza y pies, control inalámbrico y posiciones de memoria."
+      "en": "Adjustable power base with head & foot articulation, wireless remote, and programmable memory positions.",
+      "es": "Base eléctrica ajustable con elevación de cabeza y pies, control inalámbrico y posiciones de memoria programables."
     },
     "subType": "adjustable",
     "matchTags": [
       "snoring",
       "reflux",
-      "back_pain",
-      "all_positions"
+      "back_pain"
     ],
     "matchScores": {
-      "back_pain": 4,
-      "snoring": 4,
-      "reflux": 4,
-      "premium": 3
+      "back_pain": 3,
+      "snoring": 3,
+      "reflux": 3,
+      "premium": 1
     }
   },
   {
-    "id": "base-tempur-ergo-smart",
+    "id": "base-bt3000",
     "name": {
-      "en": "TEMPUR-Ergo Smart 3.0 Base",
-      "es": "Base TEMPUR-Ergo Smart 3.0"
+      "en": "BedTech BT3000 Massage Base",
+      "es": "Base con Masaje BedTech BT3000"
     },
     "category": {
       "en": "Foundations & Support",
       "es": "Bases y Soportes"
     },
-    "price": 2099,
-    "image": "images/accessories/base-tempur-ergo-smart.jpg",
+    "price": 1099,
+    "image": "images/accessories/base-bt3000.jpg",
     "description": {
-      "en": "Smart adjustable base with app control, head & foot adjustment, and sleep tracking.",
-      "es": "Base inteligente ajustable con control por aplicación, elevación de cabeza y pies, y seguimiento del sueño."
+      "en": "Adjustable base with head & foot massage, 5 vibration modes, one-touch flat, and wireless remote with presets.",
+      "es": "Base ajustable con masaje de cabeza y pies, 5 modos de vibración, regreso plano de un toque y control inalámbrico con posiciones predeterminadas."
+    },
+    "subType": "adjustable",
+    "matchTags": [
+      "snoring",
+      "reflux",
+      "back_pain"
+    ],
+    "matchScores": {
+      "back_pain": 4,
+      "snoring": 3,
+      "reflux": 3,
+      "premium": 2
+    }
+  },
+  {
+    "id": "base-tempur-ergo",
+    "name": {
+      "en": "TEMPUR-Ergo 3.0 Power Base",
+      "es": "Base Eléctrica TEMPUR-Ergo 3.0"
+    },
+    "category": {
+      "en": "Foundations & Support",
+      "es": "Bases y Soportes"
+    },
+    "price": 1599,
+    "image": "images/accessories/base-tempur-ergo.jpg",
+    "description": {
+      "en": "Premium adjustable base with lumbar support and a virtually unlimited range of head & foot positions, including Zero Gravity.",
+      "es": "Base ajustable premium con soporte lumbar y un rango casi ilimitado de posiciones de cabeza y pies, incluida Gravedad Cero."
     },
     "subType": "adjustable",
     "matchTags": [
@@ -59,49 +87,20 @@
     }
   },
   {
-    "id": "base-purple-premium-plus",
+    "id": "foundation-princess",
     "name": {
-      "en": "Purple Premium Plus Smart Base",
-      "es": "Base Inteligente Purple Premium Plus"
+      "en": "Chattam & Wells Standard Foundation",
+      "es": "Base Estándar Chattam & Wells"
     },
     "category": {
       "en": "Foundations & Support",
       "es": "Bases y Soportes"
     },
-    "price": 1595,
-    "image": "images/accessories/base-purple-premium-plus.jpg",
+    "price": 499,
+    "image": "images/accessories/foundation-princess.jpg",
     "description": {
-      "en": "Smart adjustable base with app control and full head & foot articulation.",
-      "es": "Base inteligente ajustable con control por aplicación y articulación completa de cabeza y pies."
-    },
-    "subType": "adjustable",
-    "matchTags": [
-      "snoring",
-      "reflux",
-      "back_pain"
-    ],
-    "matchScores": {
-      "back_pain": 4,
-      "snoring": 4,
-      "reflux": 4,
-      "premium": 3
-    }
-  },
-  {
-    "id": "foundation-wgr-slate",
-    "name": {
-      "en": "WG&R Factory Direct Slate Foundation",
-      "es": "Base Slate de WG&R Factory Direct"
-    },
-    "category": {
-      "en": "Foundations & Support",
-      "es": "Bases y Soportes"
-    },
-    "price": 179,
-    "image": "images/accessories/foundation-wgr-slate.jpg",
-    "description": {
-      "en": "Sturdy standard-height foundation - solid platform support for any mattress.",
-      "es": "Base resistente de altura estándar con soporte de plataforma sólida para cualquier colchón."
+      "en": "9-inch wood foundation engineered to support your mattress edge to edge and extend its life.",
+      "es": "Base de madera de 9 pulgadas diseñada para soportar tu colchón de borde a borde y extender su vida útil."
     },
     "subType": "foundation",
     "matchTags": [
@@ -112,150 +111,106 @@
     }
   },
   {
-    "id": "foundation-wgr-slate-lowpro",
+    "id": "pillow-flow",
     "name": {
-      "en": "WG&R Slate Low-Profile Foundation",
-      "es": "Base Slate de Perfil Bajo de WG&R"
-    },
-    "category": {
-      "en": "Foundations & Support",
-      "es": "Bases y Soportes"
-    },
-    "price": 179,
-    "image": "images/accessories/foundation-wgr-slate-lowpro.jpg",
-    "description": {
-      "en": "Reduced-height foundation - ideal for taller mattresses or a low-profile look.",
-      "es": "Base de menor altura, ideal para colchones altos o para lograr una apariencia de perfil bajo."
-    },
-    "subType": "low_profile",
-    "matchTags": [
-      "all"
-    ],
-    "matchScores": {
-      "default": 2
-    }
-  },
-  {
-    "id": "bunkie-wgr",
-    "name": {
-      "en": "WG&R Factory Direct Bunkie Board",
-      "es": "Tabla Bunkie de WG&R Factory Direct"
-    },
-    "category": {
-      "en": "Foundations & Support",
-      "es": "Bases y Soportes"
-    },
-    "price": 59,
-    "image": "images/accessories/bunkie-wgr.jpg",
-    "description": {
-      "en": "Slim 2-inch support board for platform and bunk beds.",
-      "es": "Tabla delgada de soporte de 2 pulgadas para camas de plataforma y literas."
-    },
-    "subType": "bunkie",
-    "matchTags": [
-      "all"
-    ],
-    "matchScores": {
-      "default": 1
-    }
-  },
-  {
-    "id": "pillow-tempur-breeze-prolo",
-    "name": {
-      "en": "TEMPUR-Breeze ProLo 2.0 Pillow",
-      "es": "Almohada TEMPUR-Breeze ProLo 2.0"
+      "en": "Bedgear Flow 2.0 Performance Pillow",
+      "es": "Almohada Bedgear Flow 2.0 Performance"
     },
     "category": {
       "en": "Pillows",
       "es": "Almohadas"
     },
-    "price": 225,
-    "image": "images/accessories/pillow-tempur-breeze-prolo.jpg",
+    "price": 108,
+    "image": "images/accessories/pillow-flow.jpg",
     "description": {
-      "en": "Cooling low-profile TEMPUR pillow for back and stomach sleepers.",
-      "es": "Almohada TEMPUR fresca de perfil bajo para quienes duermen boca arriba o boca abajo."
+      "en": "Performance pillow with a soft t-shirt-like cover and airflow design for cooler, better-supported sleep.",
+      "es": "Almohada de alto rendimiento con funda suave tipo camiseta y diseño de ventilación para dormir más fresco y con mejor soporte."
     },
     "matchTags": [
       "cooling",
       "hot_sleeper",
-      "all"
+      "all",
+      "all_positions"
     ],
     "matchScores": {
       "cooling": 3,
       "hot": 3,
-      "position_back": 2,
-      "position_stomach": 1
+      "position_side": 1,
+      "position_back": 1
     }
   },
   {
-    "id": "pillow-tempur-proadjust",
+    "id": "pillow-gel-memory",
     "name": {
-      "en": "TEMPUR-Adapt ProAdjust Pillow",
-      "es": "Almohada TEMPUR-Adapt ProAdjust"
+      "en": "Gel Memory Foam Cool Pillow",
+      "es": "Almohada Fresca de Espuma con Gel"
     },
     "category": {
       "en": "Pillows",
       "es": "Almohadas"
     },
-    "price": 125,
-    "image": "images/accessories/pillow-tempur-proadjust.jpg",
+    "price": 99,
+    "image": "images/accessories/pillow-gel-memory.jpg",
     "description": {
-      "en": "Adjustable-fill TEMPUR pillow that customizes to any sleep position.",
-      "es": "Almohada TEMPUR de relleno ajustable que se adapta a cualquier posición para dormir."
+      "en": "Cool-gel memory foam that softens and adjusts to your neck, taking pressure off your spine without overheating.",
+      "es": "Espuma viscoelástica con gel fresco que se suaviza y se ajusta a tu cuello, quitando presión de la columna sin sobrecalentarte."
     },
     "matchTags": [
+      "cooling",
+      "hot_sleeper",
       "all",
       "all_positions"
     ],
     "matchScores": {
       "default": 2,
-      "position_side": 1,
-      "position_back": 1,
-      "position_stomach": 1
+      "cooling": 2,
+      "hot": 2,
+      "position_side": 1
     }
   },
   {
-    "id": "pillow-cooltech-graphite",
+    "id": "protector-dritec",
     "name": {
-      "en": "Healthy Sleep Cool-Tech Graphite Pillow",
-      "es": "Almohada Healthy Sleep Cool-Tech Graphite"
-    },
-    "category": {
-      "en": "Pillows",
-      "es": "Almohadas"
-    },
-    "price": 109,
-    "image": "images/accessories/pillow-cooltech-graphite.jpg",
-    "description": {
-      "en": "Graphite-infused cooling pillow that draws heat away all night.",
-      "es": "Almohada fresca con grafito que ayuda a disipar el calor durante toda la noche."
-    },
-    "matchTags": [
-      "cooling",
-      "hot_sleeper"
-    ],
-    "matchScores": {
-      "cooling": 4,
-      "hot": 4,
-      "position_side": 1,
-      "position_back": 2
-    }
-  },
-  {
-    "id": "protector-purple-waterproof",
-    "name": {
-      "en": "Purple Waterproof Protector",
-      "es": "Protector Impermeable Purple"
+      "en": "Bedgear Dri-Tec Mattress Protector",
+      "es": "Protector de Colchón Bedgear Dri-Tec"
     },
     "category": {
       "en": "Protectors",
       "es": "Protectores"
     },
-    "price": 119,
-    "image": "images/accessories/protector-purple-waterproof.jpg",
+    "price": 149,
+    "image": "images/accessories/protector-dritec.jpg",
     "description": {
-      "en": "Waterproof protector that guards your mattress while staying breathable.",
-      "es": "Protector impermeable y transpirable que ayuda a cuidar el colchón."
+      "en": "Moisture-wicking, breathable protection that keeps you dry and comfortable while guarding against spills.",
+      "es": "Protección transpirable que absorbe la humedad, te mantiene seco y cómodo y protege contra derrames."
+    },
+    "matchTags": [
+      "all",
+      "allergies",
+      "spills",
+      "everyday"
+    ],
+    "matchScores": {
+      "default": 1,
+      "hot": 1,
+      "allergies": 1
+    }
+  },
+  {
+    "id": "protector-iprotect",
+    "name": {
+      "en": "Bedgear iProtect Mattress Protector",
+      "es": "Protector de Colchón Bedgear iProtect"
+    },
+    "category": {
+      "en": "Protectors",
+      "es": "Protectores"
+    },
+    "price": 89,
+    "image": "images/accessories/protector-iprotect.jpg",
+    "description": {
+      "en": "Simple, breathable everyday protection against spills and dust — comfort without compromise.",
+      "es": "Protección diaria sencilla y transpirable contra derrames y polvo — confort sin compromisos."
     },
     "matchTags": [
       "all",
@@ -269,56 +224,59 @@
     }
   },
   {
-    "id": "protector-healthy-sleep-encasement",
+    "id": "protector-vertex",
     "name": {
-      "en": "Healthy Sleep Premium Encasement",
-      "es": "Funda Integral Healthy Sleep Premium"
-    },
-    "category": {
-      "en": "Protectors",
-      "es": "Protectores"
-    },
-    "price": 79,
-    "image": "images/accessories/protector-healthy-sleep-encasement.jpg",
-    "description": {
-      "en": "Full-zip encasement - allergen and dust-mite barrier on all six sides.",
-      "es": "Funda integral con cierre que crea una barrera contra alérgenos y ácaros en los seis lados."
-    },
-    "matchTags": [
-      "allergies",
-      "all",
-      "everyday"
-    ],
-    "matchScores": {
-      "default": 1,
-      "allergies": 3
-    }
-  },
-  {
-    "id": "protector-tempur-breeze",
-    "name": {
-      "en": "TEMPUR-Protect Breeze Protector",
-      "es": "Protector TEMPUR-Protect Breeze"
+      "en": "Bedgear Ver-Tex Cooling Protector",
+      "es": "Protector Refrescante Bedgear Ver-Tex"
     },
     "category": {
       "en": "Protectors",
       "es": "Protectores"
     },
     "price": 249,
-    "image": "images/accessories/protector-tempur-breeze.jpg",
+    "image": "images/accessories/protector-vertex.jpg",
     "description": {
-      "en": "Cooling protector that adds a breathable layer of protection.",
-      "es": "Protector fresco que agrega una capa transpirable de protección."
+      "en": "Instant-cooling top fabric for hot sleepers, with a Powerband fit that guards against spills without changing the feel.",
+      "es": "Tela superior de enfriamiento instantáneo para quienes duermen con calor, con ajuste Powerband que protege contra derrames sin cambiar la sensación."
     },
     "matchTags": [
       "cooling",
       "hot_sleeper",
-      "all",
+      "spills",
       "everyday"
     ],
     "matchScores": {
+      "default": 1,
       "cooling": 3,
-      "hot": 2
+      "hot": 3
+    }
+  },
+  {
+    "id": "protector-tempur",
+    "name": {
+      "en": "TEMPUR-Protect Mattress Protector",
+      "es": "Protector de Colchón TEMPUR-Protect"
+    },
+    "category": {
+      "en": "Protectors",
+      "es": "Protectores"
+    },
+    "price": 189,
+    "image": "images/accessories/protector-tempur.jpg",
+    "description": {
+      "en": "Cooling, moisture-wicking protector with SurfaceGuard technology and a 10-year warranty.",
+      "es": "Protector refrescante que absorbe la humedad, con tecnología SurfaceGuard y garantía de 10 años."
+    },
+    "matchTags": [
+      "all",
+      "allergies",
+      "spills",
+      "everyday"
+    ],
+    "matchScores": {
+      "default": 1,
+      "premium": 2,
+      "allergies": 1
     }
   }
 ]

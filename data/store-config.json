@@ -1,114 +1,86 @@
 {
-  "storeName": "WG&R Furniture",
-  "storeKey": "wgr",
+  "storeName": "Lacks Furniture",
+  "storeKey": "lacks",
   "languages": [
     "en",
     "es"
   ],
   "logo": {
-    "main": "WG&R",
+    "main": "Lacks",
     "sub": "furniture"
   },
   "colors": {
-    "storePrimary": "#B12D15",
-    "storePrimaryLight": "#C8402A",
-    "storePrimaryGlow": "rgba(177,45,21,0.15)",
-    "accent": "#B8935D"
+    "storePrimary": "#FABD0F",
+    "storePrimaryLight": "#FFD24D",
+    "storePrimaryGlow": "rgba(250,189,15,0.15)",
+    "accent": "#FF5C36"
   },
-  "gasUrl": "https://script.google.com/macros/s/AKfycbyMCorge2G7YVjktKDDWCrcFG8LKUsSy7okIDgE2fH2elaCcYv11mHEs_XLQ5HV2HU/exec",
-  "publicAssetRoot": "https://beford782.github.io/WGRFurniture/",
+  "gasUrl": "",
+  "publicAssetRoot": "https://beford782.github.io/LacksFurniture/",
   "allowedHosts": [
     "beford782.github.io"
   ],
   "brands": [
     {
+      "name": "Restonic",
+      "logo": ""
+    },
+    {
+      "name": "Chattam & Wells",
+      "logo": ""
+    },
+    {
+      "name": "Spring Air",
+      "logo": ""
+    },
+    {
       "name": "Tempur-Pedic",
       "logo": ""
     },
     {
-      "name": "Stearns & Foster",
-      "logo": ""
-    },
-    {
-      "name": "PranaSleep",
-      "logo": ""
-    },
-    {
-      "name": "Purple",
-      "logo": ""
-    },
-    {
-      "name": "Beautyrest",
-      "logo": ""
-    },
-    {
-      "name": "King Koil",
-      "logo": ""
-    },
-    {
-      "name": "Sealy",
-      "logo": ""
-    },
-    {
-      "name": "Casper",
-      "logo": ""
-    },
-    {
-      "name": "Astor Park",
-      "logo": ""
-    },
-    {
-      "name": "Nectar",
-      "logo": ""
-    },
-    {
-      "name": "DreamCloud",
-      "logo": ""
-    },
-    {
-      "name": "WG&R Factory Direct",
+      "name": "Genesis",
       "logo": ""
     }
   ],
   "rsaList": [],
   "text": {
-    "pageTitle": "DreamFinder - WG&R Furniture Sleep Quiz",
-    "metaDescription": "Take the WG&R Sleep Shop quiz and get personalized mattress recommendations.",
-    "ogTitle": "DreamFinder - WG&R Furniture",
-    "trustSignal": "Serving Northeast Wisconsin since 1946 — proudly employee-owned",
-    "heritage": "EMPLOYEE-OWNED · NORTHEAST WISCONSIN · SINCE 1946",
+    "pageTitle": "DreamFinder - Lacks Furniture Sleep Quiz",
+    "metaDescription": "Take the Lacks Furniture sleep quiz and get personalized mattress recommendations.",
+    "ogTitle": "DreamFinder - Lacks Furniture",
+    "trustSignal": "Family-owned since 1935 — 90 years of South Texas homes",
+    "heritage": "FAMILY-OWNED · SOUTH TEXAS · SINCE 1935",
     "emailPrivacy": "We'll only use your email to send your results.",
-    "privacyPolicyContact": "To access or remove your information, contact your local WG&R store.",
-    "inStockText": "In stock at WG&R",
-    "emailHeader": "WG&R Furniture x DreamFinder",
+    "privacyPolicyContact": "To access or remove your information, contact your local Lacks Furniture store.",
+    "inStockText": "In stock at Lacks",
+    "emailHeader": "Lacks Furniture x DreamFinder",
     "emailSubtext": "Your personalized mattress matches",
-    "locationLabel": "Northeast Wisconsin",
-    "privacyDraftNotice": "Draft policy — pending WG&R approval before live use.",
+    "locationLabel": "South Texas & the Rio Grande Valley",
+    "privacyDraftNotice": "Draft policy — pending Lacks Furniture approval before live use.",
     "privacyHeading": "Privacy",
     "privacyBody": "DreamFinder collects your name, email, and optional phone number to deliver your mattress recommendations and Savings Pass. Your information is only used for this purpose and is never sold or shared with third parties.",
     "disclaimerHeading": "Disclaimer",
-    "disclaimerBody": "DreamFinder is a product recommendation tool. Match percentages and Sleep Brief guidance are generated from your quiz answers and should be treated as starting points, not guarantees. This tool does not provide medical advice — consult a healthcare provider for medical sleep concerns. Discounts and product availability are subject to WG&R store terms.",
+    "disclaimerBody": "DreamFinder is a product recommendation tool. Match percentages and Sleep Brief guidance are generated from your quiz answers and should be treated as starting points, not guarantees. This tool does not provide medical advice — consult a healthcare provider for medical sleep concerns. Discounts and product availability are subject to Lacks Furniture store terms.",
     "ownershipBadge": "",
     "locationsLabel": "",
-    "locations": "Green Bay · Appleton · Oshkosh · Sheboygan · Manitowoc · Fond du Lac"
+    "locations": "McAllen · Pharr · Harlingen · Brownsville · Rio Grande City · Laredo · Alice · Corpus Christi"
   },
   "text_es": {
-    "pageTitle": "DreamFinder - Cuestionario del Sueño de WG&R Furniture",
-    "metaDescription": "Responde el cuestionario de WG&R Sleep Shop y recibe recomendaciones personalizadas de colchones.",
-    "ogTitle": "DreamFinder - WG&R Furniture",
-    "trustSignal": "Sirviendo a Northeast Wisconsin desde 1946 — con orgullo, propiedad de sus empleados",
-    "heritage": "PROPIEDAD DE SUS EMPLEADOS · NORTHEAST WISCONSIN · DESDE 1946",
+    "pageTitle": "DreamFinder - Cuestionario del Sueño de Lacks Furniture",
+    "metaDescription": "Responde el cuestionario del sueño de Lacks Furniture y recibe recomendaciones personalizadas de colchones.",
+    "ogTitle": "DreamFinder - Lacks Furniture",
+    "trustSignal": "Negocio familiar desde 1935 — 90 años en los hogares del sur de Texas",
+    "heritage": "NEGOCIO FAMILIAR · SUR DE TEXAS · DESDE 1935",
     "emailPrivacy": "Solo usaremos tu correo para enviarte tus resultados.",
-    "privacyPolicyContact": "Para acceder o eliminar tu información, comunícate con tu tienda WG&R local.",
-    "inStockText": "En stock en WG&R",
+    "privacyPolicyContact": "Para acceder o eliminar tu información, comunícate con tu tienda Lacks Furniture local.",
+    "inStockText": "En stock en Lacks",
     "emailHeader": "",
     "emailSubtext": "",
-    "locationLabel": "Northeast Wisconsin",
-    "privacyDraftNotice": "Política preliminar — pendiente de aprobación de WG&R antes de su uso.",
+    "locationLabel": "Sur de Texas y el Valle del Río Grande",
+    "privacyDraftNotice": "Política preliminar — pendiente de aprobación de Lacks Furniture antes de su uso.",
     "privacyHeading": "Privacidad",
     "privacyBody": "DreamFinder recopila tu nombre, correo electrónico y número de teléfono opcional para enviarte tus recomendaciones de colchón y tu Pase de Ahorro. Tu información se usa únicamente para este fin y nunca se vende ni se comparte con terceros.",
     "disclaimerHeading": "Aviso legal",
-    "disclaimerBody": "DreamFinder es una herramienta de recomendación de productos. Los porcentajes de compatibilidad y la guía del Resumen de Sueño se generan a partir de tus respuestas y deben tomarse como punto de partida, no como garantía. Esta herramienta no ofrece asesoramiento médico — consulta a un profesional de la salud para problemas médicos del sueño. Los descuentos y la disponibilidad de productos están sujetos a los términos de las tiendas WG&R."
+    "disclaimerBody": "DreamFinder es una herramienta de recomendación de productos. Los porcentajes de compatibilidad y la guía del Resumen de Sueño se generan a partir de tus respuestas y deben tomarse como punto de partida, no como garantía. Esta herramienta no ofrece asesoramiento médico — consulta a un profesional de la salud para problemas médicos del sueño. Los descuentos y la disponibilidad de productos están sujetos a los términos de las tiendas Lacks Furniture."
   },
   "discount": {
     "codePrefix": "DREAM",
@@ -125,647 +97,19 @@
       "es": "Una oferta de 30 días para llevar con tus recomendaciones"
     },
     "demoDeliveryNote": {
-      "en": "Live delivery can be connected after WG&R approves the experience.",
-      "es": "La entrega real se puede conectar después de que WG&R apruebe la experiencia."
+      "en": "Live delivery can be connected after Lacks approves the experience.",
+      "es": "La entrega real se puede conectar después de que Lacks apruebe la experiencia."
     },
     "terms": {
-      "en": "Valid on qualifying mattress selections. Cannot be combined with other offers. Final eligibility confirmed by your WG&R sleep specialist.",
-      "es": "Válido en selecciones de colchones que califiquen. No se puede combinar con otras ofertas. Elegibilidad final confirmada por tu especialista de sueño de WG&R."
-    }
-  },
-  "promotions": {
-    "activeScenario": "current",
-    "timeZone": "America/Chicago",
-    "scenarios": {
-      "current": {
-        "kind": "current",
-        "demoOnly": false,
-        "checkedAt": "2026-06-08",
-        "spanishStatus": "draft",
-        "spanishDraftNote": {
-          "en": "",
-          "es": "Traducción preliminar — confirma los detalles con tu especialista de WG&R."
-        },
-        "sourceNote": {
-          "en": "Offers reflect WG&R's official website and are confirmed by your WG&R sleep specialist.",
-          "es": "Las ofertas reflejan el sitio web oficial de WG&R y las confirma tu especialista de sueño de WG&R."
-        },
-        "items": [
-          {
-            "id": "wgr-tempurpedic-offer",
-            "verified": true,
-            "type": "offer",
-            "evidenceStatus": "wgr-current-page",
-            "eligibleBrands": [],
-            "eligibleMattressIds": [
-              "g1",
-              "g2",
-              "g3"
-            ],
-            "badge": {
-              "en": "Free Delivery + $300 Card",
-              "es": "Entrega gratis + tarjeta de $300"
-            },
-            "headline": {
-              "en": "Free Delivery + Free $300 Mastercard® Rewards Card to spend anywhere†",
-              "es": "Entrega gratis + tarjeta Mastercard® de $300 en recompensas para gastar donde quieras†"
-            },
-            "detail": {
-              "en": "Includes special financing. Shown on WG&R's Sleep Shop; confirmed by your WG&R sleep specialist. May not combine with the Savings Pass or other offers — ask your WG&R specialist.",
-              "es": "Incluye financiamiento especial. Mostrado en el Sleep Shop de WG&R; lo confirma tu especialista de sueño de WG&R. Puede no combinarse con el Pase de Ahorro ni con otras ofertas — pregunta a tu especialista de WG&R."
-            },
-            "disclosure": {
-              "en": "See WG&R for offer terms.",
-              "es": "Consulta los términos de la oferta en WG&R."
-            },
-            "expiration": "not shown",
-            "sourceUrl": "https://www.wgrfurniture.com/tempurpedic",
-            "checkedAt": "2026-06-08",
-            "savingsPassPolicy": "specialist_confirm"
-          },
-          {
-            "id": "wgr-sealy-offer",
-            "verified": true,
-            "type": "offer",
-            "evidenceStatus": "wgr-current-page",
-            "eligibleBrands": [],
-            "eligibleMattressIds": [
-              "s5",
-              "s6",
-              "b4"
-            ],
-            "badge": {
-              "en": "Free $200 Gift",
-              "es": "Regalo gratis de $200"
-            },
-            "headline": {
-              "en": "Free $200 Gift∞ to spend on accessories",
-              "es": "Regalo gratis de $200∞ para gastar en accesorios"
-            },
-            "detail": {
-              "en": "Shown on WG&R's Sleep Shop; confirmed by your WG&R sleep specialist. May not combine with the Savings Pass or other offers — ask your WG&R specialist.",
-              "es": "Mostrado en el Sleep Shop de WG&R; lo confirma tu especialista de sueño de WG&R. Puede no combinarse con el Pase de Ahorro ni con otras ofertas — pregunta a tu especialista de WG&R."
-            },
-            "disclosure": {
-              "en": "See WG&R for offer terms.",
-              "es": "Consulta los términos de la oferta en WG&R."
-            },
-            "expiration": "not shown",
-            "sourceUrl": "https://www.wgrfurniture.com/sealy",
-            "checkedAt": "2026-06-08",
-            "savingsPassPolicy": "specialist_confirm"
-          },
-          {
-            "id": "wgr-stearns-foster-offer",
-            "verified": true,
-            "type": "offer",
-            "evidenceStatus": "wgr-current-page",
-            "eligibleBrands": [],
-            "eligibleMattressIds": [
-              "g4",
-              "g5"
-            ],
-            "badge": {
-              "en": "Free Delivery + $300 Card",
-              "es": "Entrega gratis + tarjeta de $300"
-            },
-            "headline": {
-              "en": "FREE DELIVERY + FREE $300 Mastercard® Rewards Card to spend anywhere†",
-              "es": "ENTREGA GRATIS + tarjeta Mastercard® de $300 en recompensas para gastar donde quieras†"
-            },
-            "detail": {
-              "en": "Shown on WG&R's Sleep Shop; confirmed by your WG&R sleep specialist. May not combine with the Savings Pass or other offers — ask your WG&R specialist.",
-              "es": "Mostrado en el Sleep Shop de WG&R; lo confirma tu especialista de sueño de WG&R. Puede no combinarse con el Pase de Ahorro ni con otras ofertas — pregunta a tu especialista de WG&R."
-            },
-            "disclosure": {
-              "en": "See WG&R for offer terms.",
-              "es": "Consulta los términos de la oferta en WG&R."
-            },
-            "expiration": "not shown",
-            "sourceUrl": "https://www.wgrfurniture.com/stearns-foster",
-            "checkedAt": "2026-06-08",
-            "savingsPassPolicy": "specialist_confirm"
-          },
-          {
-            "id": "wgr-beautyrest-black-offer",
-            "verified": true,
-            "type": "offer",
-            "evidenceStatus": "wgr-current-page",
-            "eligibleBrands": [],
-            "eligibleMattressIds": [
-              "g8",
-              "s7"
-            ],
-            "badge": {
-              "en": "Free Adjustable Base",
-              "es": "Base ajustable gratis"
-            },
-            "headline": {
-              "en": "Free baselogic™ Silver adjustable base with purchase (up to a $599 value) — limited time only, ends 6/16",
-              "es": "Base ajustable baselogic™ Silver gratis con tu compra (hasta $599 de valor) — por tiempo limitado, termina el 6/16"
-            },
-            "detail": {
-              "en": "Free delivery included. Shown on WG&R's Sleep Shop; confirmed by your WG&R sleep specialist. May not combine with the Savings Pass or other offers — ask your WG&R specialist.",
-              "es": "Incluye entrega gratis. Mostrado en el Sleep Shop de WG&R; lo confirma tu especialista de sueño de WG&R. Puede no combinarse con el Pase de Ahorro ni con otras ofertas — pregunta a tu especialista de WG&R."
-            },
-            "disclosure": {
-              "en": "",
-              "es": ""
-            },
-            "endsAt": "2026-06-16T23:59:59-05:00",
-            "expiration": "June 16, 2026",
-            "sourceUrl": "https://www.wgrfurniture.com/beautyrest-black",
-            "checkedAt": "2026-06-08",
-            "savingsPassPolicy": "specialist_confirm"
-          },
-          {
-            "id": "wgr-purple-offer",
-            "verified": true,
-            "type": "offer",
-            "evidenceStatus": "wgr-current-page",
-            "eligibleBrands": [],
-            "eligibleMattressIds": [
-              "g7",
-              "s1",
-              "s2"
-            ],
-            "badge": {
-              "en": "Free Delivery + Gift",
-              "es": "Entrega gratis + regalo"
-            },
-            "headline": {
-              "en": "Free Delivery + Free Gift With Purchase, up to $300 value∞",
-              "es": "Entrega gratis + regalo gratis con tu compra, hasta $300 de valor∞"
-            },
-            "detail": {
-              "en": "Shown on WG&R's Sleep Shop; confirmed by your WG&R sleep specialist. May not combine with the Savings Pass or other offers — ask your WG&R specialist.",
-              "es": "Mostrado en el Sleep Shop de WG&R; lo confirma tu especialista de sueño de WG&R. Puede no combinarse con el Pase de Ahorro ni con otras ofertas — pregunta a tu especialista de WG&R."
-            },
-            "disclosure": {
-              "en": "See WG&R for offer terms.",
-              "es": "Consulta los términos de la oferta en WG&R."
-            },
-            "expiration": "not shown",
-            "sourceUrl": "https://www.wgrfurniture.com/purple",
-            "checkedAt": "2026-06-08",
-            "savingsPassPolicy": "specialist_confirm"
-          },
-          {
-            "id": "wgr-smartlife-offer",
-            "verified": true,
-            "type": "offer",
-            "evidenceStatus": "wgr-current-page",
-            "eligibleBrands": [],
-            "eligibleMattressIds": [
-              "g9"
-            ],
-            "badge": {
-              "en": "Free Delivery",
-              "es": "Entrega gratis"
-            },
-            "headline": {
-              "en": "Free Delivery",
-              "es": "Entrega gratis"
-            },
-            "detail": {
-              "en": "Shown on WG&R's Sleep Shop; confirmed by your WG&R sleep specialist.",
-              "es": "Mostrado en el Sleep Shop de WG&R; lo confirma tu especialista de sueño de WG&R."
-            },
-            "disclosure": {
-              "en": "",
-              "es": ""
-            },
-            "expiration": "not shown",
-            "sourceUrl": "https://www.wgrfurniture.com/search/mattresses/shop-by-brand/smartlife",
-            "checkedAt": "2026-06-08",
-            "savingsPassPolicy": "stackable"
-          },
-          {
-            "id": "wgr-nectar-offer",
-            "verified": true,
-            "type": "offer",
-            "evidenceStatus": "wgr-current-page",
-            "eligibleBrands": [],
-            "eligibleMattressIds": [
-              "s10",
-              "b1",
-              "b2"
-            ],
-            "badge": {
-              "en": "Free Delivery",
-              "es": "Entrega gratis"
-            },
-            "headline": {
-              "en": "Free Delivery",
-              "es": "Entrega gratis"
-            },
-            "detail": {
-              "en": "Shown on WG&R's Sleep Shop; confirmed by your WG&R sleep specialist.",
-              "es": "Mostrado en el Sleep Shop de WG&R; lo confirma tu especialista de sueño de WG&R."
-            },
-            "disclosure": {
-              "en": "",
-              "es": ""
-            },
-            "expiration": "not shown",
-            "sourceUrl": "https://www.wgrfurniture.com/search/mattresses/shop-by-brand/nectar",
-            "checkedAt": "2026-06-08",
-            "savingsPassPolicy": "stackable"
-          },
-          {
-            "id": "wgr-casper-offer",
-            "verified": true,
-            "type": "offer",
-            "evidenceStatus": "wgr-current-page",
-            "eligibleBrands": [],
-            "eligibleMattressIds": [
-              "s3",
-              "s4"
-            ],
-            "badge": {
-              "en": "Free Delivery",
-              "es": "Entrega gratis"
-            },
-            "headline": {
-              "en": "Free Delivery",
-              "es": "Entrega gratis"
-            },
-            "detail": {
-              "en": "Shown on WG&R's Sleep Shop; confirmed by your WG&R sleep specialist.",
-              "es": "Mostrado en el Sleep Shop de WG&R; lo confirma tu especialista de sueño de WG&R."
-            },
-            "disclosure": {
-              "en": "",
-              "es": ""
-            },
-            "expiration": "not shown",
-            "sourceUrl": "https://www.wgrfurniture.com/casper",
-            "checkedAt": "2026-06-08",
-            "savingsPassPolicy": "stackable"
-          },
-          {
-            "id": "wgr-dreamcloud-offer",
-            "verified": true,
-            "type": "offer",
-            "evidenceStatus": "wgr-current-page",
-            "eligibleBrands": [],
-            "eligibleMattressIds": [
-              "b3",
-              "b7"
-            ],
-            "badge": {
-              "en": "Free Delivery",
-              "es": "Entrega gratis"
-            },
-            "headline": {
-              "en": "Free Delivery",
-              "es": "Entrega gratis"
-            },
-            "detail": {
-              "en": "Shown on WG&R's Sleep Shop; confirmed by your WG&R sleep specialist.",
-              "es": "Mostrado en el Sleep Shop de WG&R; lo confirma tu especialista de sueño de WG&R."
-            },
-            "disclosure": {
-              "en": "",
-              "es": ""
-            },
-            "expiration": "not shown",
-            "sourceUrl": "https://www.wgrfurniture.com/search/mattresses/shop-by-brand/dreamcloud",
-            "checkedAt": "2026-06-08",
-            "savingsPassPolicy": "stackable"
-          },
-          {
-            "id": "wgr-astor-park-offer",
-            "verified": true,
-            "type": "offer",
-            "evidenceStatus": "wgr-current-page",
-            "eligibleBrands": [],
-            "eligibleMattressIds": [
-              "s8",
-              "s9"
-            ],
-            "badge": {
-              "en": "Save 20%",
-              "es": "Ahorra 20%"
-            },
-            "headline": {
-              "en": "Limited time only — Save 20% on mattresses",
-              "es": "Por tiempo limitado — Ahorra 20% en colchones"
-            },
-            "detail": {
-              "en": "Hand-crafted in Two Rivers. Shown on WG&R's Sleep Shop; confirmed by your WG&R sleep specialist. May not combine with the Savings Pass or other offers — ask your WG&R specialist.",
-              "es": "Hecho a mano en Two Rivers. Mostrado en el Sleep Shop de WG&R; lo confirma tu especialista de sueño de WG&R. Puede no combinarse con el Pase de Ahorro ni con otras ofertas — pregunta a tu especialista de WG&R."
-            },
-            "disclosure": {
-              "en": "",
-              "es": ""
-            },
-            "expiration": "not shown",
-            "sourceUrl": "https://www.wgrfurniture.com/search/mattresses/shop-by-brand/astor-park",
-            "checkedAt": "2026-06-08",
-            "savingsPassPolicy": "specialist_confirm"
-          },
-          {
-            "id": "wgr-factory-direct-offer",
-            "verified": true,
-            "type": "offer",
-            "evidenceStatus": "wgr-current-page",
-            "eligibleBrands": [],
-            "eligibleMattressIds": [
-              "b5"
-            ],
-            "badge": {
-              "en": "Save 20%",
-              "es": "Ahorra 20%"
-            },
-            "headline": {
-              "en": "Limited time only — Save 20% on mattresses^",
-              "es": "Por tiempo limitado — Ahorra 20% en colchones^"
-            },
-            "detail": {
-              "en": "Hand-crafted in Two Rivers. Shown on WG&R's Sleep Shop; confirmed by your WG&R sleep specialist. May not combine with the Savings Pass or other offers — ask your WG&R specialist.",
-              "es": "Hecho a mano en Two Rivers. Mostrado en el Sleep Shop de WG&R; lo confirma tu especialista de sueño de WG&R. Puede no combinarse con el Pase de Ahorro ni con otras ofertas — pregunta a tu especialista de WG&R."
-            },
-            "disclosure": {
-              "en": "See WG&R for offer terms.",
-              "es": "Consulta los términos de la oferta en WG&R."
-            },
-            "expiration": "not shown",
-            "sourceUrl": "https://www.wgrfurniture.com/factory-direct",
-            "checkedAt": "2026-06-08",
-            "savingsPassPolicy": "specialist_confirm"
-          }
-        ],
-        "storewide": [
-          {
-            "id": "wgr-financing",
-            "verified": true,
-            "type": "financing",
-            "badge": {
-              "en": "Financing Available",
-              "es": "Financiamiento disponible"
-            },
-            "headline": {
-              "en": "0% APR financing available (12, 36, or 60 months)",
-              "es": "Financiamiento con 0% APR disponible (12, 36 o 60 meses)"
-            },
-            "detail": {
-              "en": "Subject to credit approval. Not valid on power buys, floor samples, or clearance. Cannot combine with percentage-off discounts or gift-with-purchase. Ask your WG&R specialist.",
-              "es": "Sujeto a aprobación de crédito. No válido en power buys, muestras de piso ni liquidación. No se combina con descuentos de porcentaje ni regalo con compra. Pregunta a tu especialista de WG&R."
-            },
-            "disclosure": {
-              "en": "New accounts as of 7/31/2025: Purchase APR 34.99%, Penalty APR 39.99%, Minimum Interest Charge $2. Subject to credit approval.",
-              "es": "Cuentas nuevas desde el 31/7/2025: APR de compra 34.99%, APR de penalización 39.99%, cargo mínimo de interés $2. Sujeto a aprobación de crédito."
-            },
-            "expiration": "not shown",
-            "sourceUrl": "https://www.wgrfurniture.com/financing",
-            "checkedAt": "2026-06-08",
-            "savingsPassPolicy": "alternative"
-          },
-          {
-            "id": "wgr-125night-guarantee",
-            "verified": true,
-            "type": "guarantee",
-            "evidenceStatus": "wgr-current-page",
-            "badge": {
-              "en": "125-Night Guarantee",
-              "es": "Garantía de 125 noches"
-            },
-            "headline": {
-              "en": "125 sleep satisfaction guarantee",
-              "es": "Garantía de satisfacción de sueño de 125 noches"
-            },
-            "detail": {
-              "en": "Shown on WG&R's Sleep Shop; confirmed by your WG&R sleep specialist.",
-              "es": "Mostrado en el Sleep Shop de WG&R; lo confirma tu especialista de sueño de WG&R."
-            },
-            "disclosure": {
-              "en": "",
-              "es": ""
-            },
-            "expiration": "not shown",
-            "sourceUrl": "https://www.wgrfurniture.com/sleep-shop",
-            "checkedAt": "2026-06-08",
-            "savingsPassPolicy": "stackable"
-          },
-          {
-            "id": "wgr-delivery-49",
-            "verified": true,
-            "type": "service",
-            "badge": {
-              "en": "Delivery from $49",
-              "es": "Entrega desde $49"
-            },
-            "headline": {
-              "en": "Delivery starting at $49",
-              "es": "Entrega desde $49"
-            },
-            "detail": {
-              "en": "Starting prices reflect WG&R's standard delivery area. Exclusions apply (clearance, closeouts, floor samples, doorbusters, and select brands including Tempur-Pedic, Purple, and Casper). Ask your WG&R specialist.",
-              "es": "Los precios iniciales reflejan el área de entrega estándar de WG&R. Aplican exclusiones (liquidación, cierres, muestras de piso, ofertas especiales y ciertas marcas como Tempur-Pedic, Purple y Casper). Pregunta a tu especialista de WG&R."
-            },
-            "disclosure": {
-              "en": "",
-              "es": ""
-            },
-            "expiration": "not shown",
-            "sourceUrl": "https://www.wgrfurniture.com/current-promotions",
-            "checkedAt": "2026-06-08",
-            "savingsPassPolicy": "stackable"
-          },
-          {
-            "id": "wgr-more-offers",
-            "verified": true,
-            "type": "pointer",
-            "badge": {
-              "en": "More Current Offers",
-              "es": "Más ofertas actuales"
-            },
-            "headline": {
-              "en": "WG&R runs additional current offers (Power Buys, brand deals, clearance)",
-              "es": "WG&R tiene ofertas actuales adicionales (Power Buys, ofertas de marca, liquidación)"
-            },
-            "detail": {
-              "en": "Some offers appear only on WG&R's promotions pages. Ask your WG&R specialist for current details.",
-              "es": "Algunas ofertas solo aparecen en las páginas de promociones de WG&R. Pregunta a tu especialista de WG&R por los detalles actuales."
-            },
-            "disclosure": {
-              "en": "",
-              "es": ""
-            },
-            "expiration": "not shown",
-            "sourceUrl": "https://www.wgrfurniture.com/current-promotions",
-            "checkedAt": "2026-06-08",
-            "savingsPassPolicy": "specialist_confirm"
-          }
-        ]
-      },
-      "memorial-day-2026-demo": {
-        "kind": "historical-demo",
-        "period": {
-          "startsAt": "2026-05-05",
-          "endsAt": "2026-06-02",
-          "timeZone": "America/Chicago"
-        },
-        "disclosure": {
-          "en": "Historical Demo · Pre–Memorial Day 2026 — Offers shown are a reconstruction of promotions advertised during May 2026 and are not current offers.",
-          "es": "Demostración histórica · Antes del Día de los Caídos de 2026 — Las ofertas mostradas reconstruyen promociones anunciadas durante mayo de 2026 y no son ofertas actuales."
-        },
-        "disableEmailSubmission": true,
-        "spanishStatus": "draft",
-        "spanishDraftNote": {
-          "en": "",
-          "es": "Traducción preliminar — confirma los detalles con tu especialista de WG&R."
-        },
-        "evidenceStatus": "prior-research-observation",
-        "evidenceProvenance": {
-          "en": "Previously observed on a WG&R-indexed or WG&R product result, but not independently retrievable as of 2026-06-08.",
-          "es": "Observado anteriormente en un resultado indexado de WG&R o en una página de producto de WG&R, pero no recuperable de forma independiente al 2026-06-08."
-        },
-        "items": [
-          {
-            "id": "md2026-purple-rejuvenate",
-            "reconstructedHistorical": true,
-            "evidenceStatus": "prior-research-observation",
-            "evidenceProvenance": {
-              "en": "Previously observed on a WG&R-indexed or WG&R product result, but not independently retrievable as of 2026-06-08.",
-              "es": "Observado anteriormente en un resultado indexado de WG&R o en una página de producto de WG&R, pero no recuperable de forma independiente al 2026-06-08."
-            },
-            "eligibleMattressIds": [
-              "g7"
-            ],
-            "eligibleAccessoryIds": [],
-            "eligibleBrands": [],
-            "eligibleForStorewide20": false,
-            "badge": {
-              "en": "Reconstructed Historical Offer",
-              "es": "Oferta histórica reconstruida"
-            },
-            "headline": {
-              "en": "Previously observed $500 savings",
-              "es": "Ahorro de $500 observado anteriormente"
-            },
-            "detail": {
-              "en": "Reconstructed from prior research; not a current offer. Confirm with your WG&R sleep specialist.",
-              "es": "Reconstruido a partir de investigación previa; no es una oferta actual. Confírmalo con tu especialista de sueño de WG&R."
-            },
-            "disclosure": {
-              "en": "",
-              "es": ""
-            },
-            "expiration": "not shown",
-            "sourceUrl": "https://www.wgrfurniture.com/product/group/mattresses/shop-by-size/twin-xl/purp/purple-rejuvenate-twin-xl-mattress/3020940/3017912",
-            "savingsPassPolicy": "specialist_confirm"
-          },
-          {
-            "id": "md2026-purple-restore-firm",
-            "reconstructedHistorical": true,
-            "evidenceStatus": "prior-research-observation",
-            "evidenceProvenance": {
-              "en": "Previously observed on a WG&R-indexed or WG&R product result, but not independently retrievable as of 2026-06-08.",
-              "es": "Observado anteriormente en un resultado indexado de WG&R o en una página de producto de WG&R, pero no recuperable de forma independiente al 2026-06-08."
-            },
-            "eligibleMattressIds": [
-              "s2"
-            ],
-            "eligibleAccessoryIds": [],
-            "eligibleBrands": [],
-            "eligibleForStorewide20": false,
-            "badge": {
-              "en": "Reconstructed Historical Offer",
-              "es": "Oferta histórica reconstruida"
-            },
-            "headline": {
-              "en": "Previously observed $250 savings (Twin XL, as observed)",
-              "es": "Ahorro de $250 observado anteriormente (Twin XL, según lo observado)"
-            },
-            "detail": {
-              "en": "Reconstructed from prior research; not a current offer. Confirm with your WG&R sleep specialist.",
-              "es": "Reconstruido a partir de investigación previa; no es una oferta actual. Confírmalo con tu especialista de sueño de WG&R."
-            },
-            "disclosure": {
-              "en": "",
-              "es": ""
-            },
-            "expiration": "not shown",
-            "sourceUrl": "https://www.wgrfurniture.com/product/group/mattresses/shop-by-size/twin-xl/purp/purple-restore-firm-twin-xl-mattress/2954265/2916623",
-            "savingsPassPolicy": "specialist_confirm"
-          },
-          {
-            "id": "md2026-purple-mattress",
-            "reconstructedHistorical": true,
-            "evidenceStatus": "prior-research-observation",
-            "evidenceProvenance": {
-              "en": "Previously observed on a WG&R-indexed or WG&R product result, but not independently retrievable as of 2026-06-08.",
-              "es": "Observado anteriormente en un resultado indexado de WG&R o en una página de producto de WG&R, pero no recuperable de forma independiente al 2026-06-08."
-            },
-            "eligibleMattressIds": [
-              "s1"
-            ],
-            "eligibleAccessoryIds": [],
-            "eligibleBrands": [],
-            "eligibleForStorewide20": false,
-            "badge": {
-              "en": "Reconstructed Historical Offer",
-              "es": "Oferta histórica reconstruida"
-            },
-            "headline": {
-              "en": "Previously observed promotional pricing varying by size",
-              "es": "Precio promocional observado anteriormente, variable según el tamaño"
-            },
-            "detail": {
-              "en": "Reconstructed from prior research; not a current offer. Confirm with your WG&R sleep specialist.",
-              "es": "Reconstruido a partir de investigación previa; no es una oferta actual. Confírmalo con tu especialista de sueño de WG&R."
-            },
-            "disclosure": {
-              "en": "",
-              "es": ""
-            },
-            "expiration": "not shown",
-            "sourceUrl": "",
-            "savingsPassPolicy": "specialist_confirm"
-          }
-        ],
-        "storewide": [
-          {
-            "id": "md2026-storewide-20",
-            "reconstructedHistorical": true,
-            "evidenceStatus": "prior-research-observation",
-            "evidenceProvenance": {
-              "en": "Previously observed on a WG&R-indexed or WG&R product result, but not independently retrievable as of 2026-06-08.",
-              "es": "Observado anteriormente en un resultado indexado de WG&R o en una página de producto de WG&R, pero no recuperable de forma independiente al 2026-06-08."
-            },
-            "type": "reconstructed-storewide",
-            "eligibleForStorewide20": false,
-            "badge": {
-              "en": "Reconstructed Historical Event",
-              "es": "Evento histórico reconstruido"
-            },
-            "headline": {
-              "en": "Previously observed 20% off during Memorial Day sale (storewide)",
-              "es": "20% de descuento durante la venta del Día de los Caídos, observado anteriormente (en toda la tienda)"
-            },
-            "detail": {
-              "en": "Reconstructed from prior research; not a current offer. Applied to no individual product without WG&R product-specific evidence.",
-              "es": "Reconstruido a partir de investigación previa; no es una oferta actual. No se aplica a ningún producto individual sin evidencia específica de producto de WG&R."
-            },
-            "disclosure": {
-              "en": "Recorded exclusions: Tempur-Pedic, Purple, Casper, Nectar, DreamCloud, Stearns & Foster, select Sealy, Beautyrest Black Hybrid, Power Buys, clearance.",
-              "es": "Exclusiones registradas: Tempur-Pedic, Purple, Casper, Nectar, DreamCloud, Stearns & Foster, ciertos Sealy, Beautyrest Black Hybrid, Power Buys, liquidación."
-            },
-            "expiration": "not shown",
-            "sourceUrl": "https://www.wgrfurniture.com/current-promotions",
-            "savingsPassPolicy": "specialist_confirm"
-          }
-        ]
-      }
+      "en": "Valid on qualifying mattress selections. Cannot be combined with other offers. Final eligibility confirmed by your Lacks sleep specialist.",
+      "es": "Válido en selecciones de colchones que califiquen. No se puede combinar con otras ofertas. Elegibilidad final confirmada por tu especialista del sueño de Lacks."
     }
   },
   "voice": {
-    "eyebrow": "EMPLOYEE-OWNED · NORTHEAST WISCONSIN · SINCE 1946",
-    "headlineMain": "Northeast Wisconsin’s",
+    "eyebrow": "FAMILY-OWNED · SOUTH TEXAS · SINCE 1935",
+    "headlineMain": "South Texas'",
     "headlineAccent": "Sleep Shop.",
-    "subCopyBefore": "Answer a few questions, then review your mattress matches with a WG&R sleep specialist.",
+    "subCopyBefore": "Answer a few questions, then review your mattress matches with a Lacks sleep specialist.",
     "subCopyAccent": "",
     "subCopyAfter": "",
     "ctaPrimary": "Find My Sleep Match",
@@ -775,10 +119,10 @@
     "outcomeItems": "Sleep Brief · Mattress Matches · Sleep System Picks · Savings Pass"
   },
   "voice_es": {
-    "eyebrow": "PROPIEDAD DE SUS EMPLEADOS · NORTHEAST WISCONSIN · DESDE 1946",
-    "headlineMain": "Northeast Wisconsin,",
-    "headlineAccent": "tu tienda del descanso.",
-    "subCopyBefore": "Responde unas preguntas y revisa tus opciones de colchón con un especialista del descanso de WG&R.",
+    "eyebrow": "NEGOCIO FAMILIAR · SUR DE TEXAS · DESDE 1935",
+    "headlineMain": "La tienda del descanso",
+    "headlineAccent": "del sur de Texas.",
+    "subCopyBefore": "Responde unas preguntas y revisa tus opciones de colchón con un especialista del descanso de Lacks.",
     "subCopyAccent": "",
     "subCopyAfter": "",
     "ctaPrimary": "Encontrar Mi Opción Ideal",
@@ -789,10 +133,42 @@
   },
   "salesNotes": {
     "subBrands": {},
-    "brands": {}
+    "brands": {
+      "Restonic": {
+        "story": "Made locally in Texas and named a Consumers Digest Best Buy year after year, Restonic's Marvelous Middle builds 25% more support into the center third of every bed — where support matters most."
+      },
+      "Chattam & Wells": {
+        "story": "Chattam & Wells is hand-crafted luxury built by Restonic's finest craftspeople — Merino wool, cashmere, and graphite latex layered over precision coils for heirloom-quality sleep."
+      },
+      "Spring Air": {
+        "story": "Spring Air's patented Copper collection pairs NatuVerex copper fabric with copper-infused foams for a cooler, fresher, health-forward sleep experience."
+      },
+      "Tempur-Pedic": {
+        "story": "Developed from NASA-engineered pressure-relieving material, Tempur-Pedic is the benchmark for adaptive memory-foam comfort, cooling innovation, and zero motion transfer."
+      },
+      "Genesis": {
+        "story": "Genesis by Kingdom Mattress is engineered entirely in the USA by a 30-year family company — honest, durable comfort built for real family life."
+      }
+    }
   },
   "salesNotes_es": {
     "subBrands": {},
-    "brands": {}
+    "brands": {
+      "Restonic": {
+        "story": "Fabricado localmente en Texas y nombrado Best Buy por Consumers Digest año tras año, el Marvelous Middle de Restonic construye 25% más soporte en el tercio central de cada cama — donde el soporte más importa."
+      },
+      "Chattam & Wells": {
+        "story": "Chattam & Wells es lujo artesanal construido por los mejores artesanos de Restonic — lana Merino, cachemira y látex de grafito sobre resortes de precisión para un descanso de calidad heredable."
+      },
+      "Spring Air": {
+        "story": "La colección Copper patentada de Spring Air combina la tela de cobre NatuVerex con espumas infundidas de cobre para un descanso más fresco y saludable."
+      },
+      "Tempur-Pedic": {
+        "story": "Desarrollado a partir del material de alivio de presión diseñado por la NASA, Tempur-Pedic es el referente del confort adaptable, la innovación en frescura y la cero transferencia de movimiento."
+      },
+      "Genesis": {
+        "story": "Genesis de Kingdom Mattress está diseñado completamente en EE. UU. por una empresa familiar de 30 años — confort honesto y duradero hecho para la vida familiar real."
+      }
+    }
   }
 }

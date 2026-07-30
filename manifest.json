@@ -1,10 +1,10 @@
 {
-  "name": "DreamFinder - WG&R Furniture",
+  "name": "DreamFinder - Lacks Furniture",
   "short_name": "DreamFinder",
-  "description": "Personalized sleep consultation for WG&R Furniture",
-  "start_url": "/WGRFurniture/",
+  "description": "Personalized sleep consultation for Lacks Furniture",
+  "start_url": "/LacksFurniture/",
   "display": "standalone",
   "orientation": "landscape",
-  "background_color": "#0f1f33",
-  "theme_color": "#0f1f33"
+  "background_color": "#000000",
+  "theme_color": "#000000"
 }

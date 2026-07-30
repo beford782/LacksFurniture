@@ -22,14 +22,24 @@ specific retailer. Each store gets its own fully customized deployment.
 
 ---
 
-## This Repo — Bel Furniture Deployment
-Deployed at: https://beford782.github.io/DreamFinder
-Repo: https://github.com/beford782/DreamFinder
-Local path: `C:\Users\BlakeFord\Documents\GitHub\DreamFinder`
+## This Repo — Lacks Furniture Deployment
+Planned deploy: https://beford782.github.io/LacksFurniture (repo not yet pushed —
+local demo built 2026-07-30, pending Blake's sign-off; no git remote configured)
+Local path: `C:\Users\BlakeFord\Documents\GitHub\LacksFurniture`
+Forked from the WGR template (beford782/WGRFurniture) at commit b05e574.
 
-This is Bel Furniture's instance. Everything in `data/` is Bel-specific.
-Do not treat any Bel-specific content (mattress models, branding, discount codes,
-GAS endpoint) as a default or starting point for other retailers.
+This is Lacks Furniture's instance (South Texas / Rio Grande Valley, family-owned
+since 1935; EN+ES). Everything in `data/` is Lacks-specific and generated from the
+build inputs in `incoming/` (lacks_store_values.json, lacks_mattresses.json,
+lacks_accessories.json → build_lacks_workbook.py → Lacks_Store_Data.xlsx →
+tools/convert_store_data.py). Catalog provenance + rescrape technique:
+incoming/lacks_catalog_selection.json (lacks.com is AVB/Magento — browser-session
+API + linqcdn image pull via fetch_lacks_images.py; NOT the Blueport sitemap
+technique). gasUrl is intentionally blank (demo mode — no live email/leads).
+Locally-made +25 bonus: Restonic + Chattam & Wells = yes (made in Texas, per
+Blake 2026-07-30). Do not treat any Lacks-specific content as a default or
+starting point for other retailers. Elsewhere in this file, references to "Bel"
+are template heritage — read them as "this repo's retailer".
 
 ---
 

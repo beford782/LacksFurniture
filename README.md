@@ -1,15 +1,15 @@
-# DreamFinder — Bel Furniture
+# DreamFinder — Lacks Furniture
 
-Personalized mattress finder kiosk for Bel Furniture showrooms. A single-page
+Personalized mattress finder kiosk for Lacks Furniture showrooms (South Texas / Rio Grande Valley, EN+ES). A single-page
 tablet web app: customers take a 9–12 question sleep quiz, get personalized
 mattress recommendations across Gold/Silver/Bronze tiers, browse accessories,
 and receive their results plus a discount code by email. Salespeople get a
 handoff screen showing the customer's saved picks.
 
 DreamFinder is a **white-label** product — each retailer gets its own repo and
-deployment. This repo is Bel Furniture's instance, deployed at:
+deployment. This repo is Lacks Furniture's instance (local demo, planned deploy:
 
-  https://beford782.github.io/DreamFinder
+  https://beford782.github.io/LacksFurniture
 
 ## Repo orientation
 
