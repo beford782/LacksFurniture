@@ -120,6 +120,32 @@ def main():
           "publishedPaymentFactor" not in json.dumps(cfg))
     check("hidden attribute always wins in CSS ([hidden] reset present)",
           "[hidden] { display: none !important; }" in html)
+
+    print("Initial-DOM invariants (pre-config state — the state a slow or")
+    print("failed store-config request leaves on screen):")
+    # The static welcome markup IS the pre-config DOM; these checks would have
+    # caught the retired-promotion flash defect.
+    m_outcome = re.search(r'id="landingOutcomeItems">([^<]*)<', html)
+    check("static outcome list is promotion-neutral",
+          bool(m_outcome) and "Savings Pass" not in m_outcome.group(1)
+          and "Payment Choice" not in m_outcome.group(1),
+          m_outcome.group(1) if m_outcome else "id not found")
+    check("promotion tease hidden by default in static HTML",
+          'class="landing-discount-tease" hidden' in html)
+    m_label = re.search(r'id="landingDiscountLabel">([^<]*)<', html)
+    m_hint = re.search(r'id="landingDiscountHint">([^<]*)<', html)
+    check("static tease label and hint are empty",
+          bool(m_label) and not m_label.group(1).strip()
+          and bool(m_hint) and not m_hint.group(1).strip())
+    check("dreamCodeBox hidden by default in static HTML",
+          'id="dreamCodeBox" hidden' in html)
+    check("JS outcome fallback is promotion-neutral",
+          "Sleep System Picks · Savings Pass'" not in html
+          and "Pase de ahorro'" not in html)
+    check("no Savings Pass promise in static email subhead",
+          'id="emailSubhead">Keep your mattress matches and Sleep System picks together' in html)
+    check("runtime future-verifiedAt rejection present (clock-skew gate)",
+          "FINANCING_CLOCK_SKEW_MS" in html and "is in the future" in html)
     check("Code.gs hard-blocks send until CAN-SPAM approved",
           "RETAILER_APPROVAL_REQUIRED" in gs and "canspam_not_configured" in gs)
     check("Code.gs invents no retailer contact values",

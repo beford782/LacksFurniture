@@ -533,6 +533,27 @@ def _valid_iso_instant(s: str) -> bool:
     return d.tzinfo is not None
 
 
+# verifiedAt is an OBSERVATION timestamp, so a materially future instant can
+# only be a typo (e.g. year 2062) or clock error — and a future date would
+# otherwise defeat the max-age freshness rule for decades (age goes negative).
+# A small skew tolerance covers legitimate clock drift between the verifying
+# machine and this one. Mirrors FINANCING_CLOCK_SKEW_MS in index.html.
+FINANCING_CLOCK_SKEW_SECONDS = 5 * 60  # 5 minutes, deliberate
+
+
+def _materially_future(s: str) -> bool:
+    """True when s parses to a timezone-aware instant more than the allowed
+    clock skew ahead of now. Comparison is instant-based, never string-based."""
+    from datetime import datetime, timezone, timedelta
+    try:
+        d = datetime.fromisoformat(str(s))
+    except (ValueError, TypeError):
+        return False  # unparseable is reported by _valid_iso_instant instead
+    if d.tzinfo is None:
+        return False
+    return d > datetime.now(timezone.utc) + timedelta(seconds=FINANCING_CLOCK_SKEW_SECONDS)
+
+
 def _bilingual_ok(obj) -> bool:
     return isinstance(obj, dict) and bool(_s(obj.get("en"))) and bool(_s(obj.get("es")))
 
@@ -561,6 +582,10 @@ def validate_financing(config: dict, *, allowed_source_hosts=None) -> Validation
         if fin.get("verifiedAt") and not _valid_iso_instant(fin["verifiedAt"]):
             r.add_error(f"financing.verifiedAt {fin['verifiedAt']!r} must be ISO-8601 "
                         f"with a timezone offset")
+        if fin.get("verifiedAt") and _materially_future(fin["verifiedAt"]):
+            r.add_error(f"financing.verifiedAt {fin['verifiedAt']!r} is materially in "
+                        f"the future (beyond {FINANCING_CLOCK_SKEW_SECONDS}s clock skew) — "
+                        f"verification is an observation and cannot postdate now")
         mad = fin.get("maxAgeDays")
         if mad is not None and (not isinstance(mad, int) or not 1 <= mad <= 60):
             r.add_error("financing.maxAgeDays must be an integer between 1 and 60")
@@ -627,6 +652,10 @@ def validate_financing(config: dict, *, allowed_source_hosts=None) -> Validation
             if not _valid_iso_instant(plan.get("verifiedAt", "")):
                 r.add_error(f"{tag}: exact terms require a valid verifiedAt "
                             f"(ISO-8601 with offset)")
+            elif _materially_future(plan.get("verifiedAt", "")):
+                r.add_error(f"{tag}: verifiedAt {plan.get('verifiedAt')!r} is materially "
+                            f"in the future (beyond {FINANCING_CLOCK_SKEW_SECONDS}s clock "
+                            f"skew) — exact terms cannot be verified at a future instant")
             src = _s(plan.get("sourceUrl"))
             if not src:
                 r.add_error(f"{tag}: exact terms require sourceUrl")
@@ -1747,6 +1776,38 @@ def _self_test() -> int:
     fdis = _fmut(); fdis["enabled"] = False; del fdis["verifiedAt"]
     check("financing disabled -> light checks only, ok",
           validate_financing(_fc(fdis), allowed_source_hosts=_FHOSTS).ok)
+
+    # future-verifiedAt rejection (observation timestamps cannot postdate now;
+    # timestamps computed dynamically so the cases stay valid forever)
+    from datetime import datetime, timezone, timedelta
+
+    def _iso(delta_seconds):
+        return (datetime.now(timezone.utc) + timedelta(seconds=delta_seconds)) \
+            .isoformat(timespec="seconds")
+
+    ffut = _fmut(); ffut["verifiedAt"] = _iso(3600)  # 1h in the future
+    check("financing future top-level verifiedAt -> error",
+          any("materially in" in e and "future" in e for e in
+              validate_financing(_fc(ffut), allowed_source_hosts=_FHOSTS).errors))
+
+    ffar = _fmut(); ffar["verifiedAt"] = "2062-07-30T10:00:00-05:00"  # typo year
+    check("financing far-future (typo year) top-level verifiedAt -> error",
+          any("future" in e for e in
+              validate_financing(_fc(ffar), allowed_source_hosts=_FHOSTS).errors))
+
+    fplanfut = _fmut()
+    fplanfut["verifiedAt"] = _iso(-60)          # top-level fine (1 min ago)
+    fplanfut["maxAgeDays"] = 7
+    fplanfut["plans"][0]["verifiedAt"] = _iso(3600)  # plan 1h in the future
+    check("financing future plan verifiedAt -> error",
+          any("plans" in e and "future" in e for e in
+              validate_financing(_fc(fplanfut), allowed_source_hosts=_FHOSTS).errors))
+
+    fskew = _fmut()
+    fskew["verifiedAt"] = _iso(120)             # +2 min: inside 5-min skew
+    fskew["plans"][0]["verifiedAt"] = _iso(120)
+    check("financing verifiedAt within clock skew -> ok",
+          validate_financing(_fc(fskew), allowed_source_hosts=_FHOSTS).ok)
 
     print(f"\nSelf-test: {passed} passed, {failed} failed")
     return 0 if failed == 0 else 1
