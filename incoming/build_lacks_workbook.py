@@ -76,7 +76,7 @@ BRANDS = ["Restonic", "Chattam & Wells", "Spring Air", "Tempur-Pedic", "Genesis"
 M = _load("lacks_mattresses.json")
 
 # Live CSV column order (EN). Per-feature reason_* + price/quizTags stay blank
-# (matches the WGR live contract: only reason_default + topPick + differentiators).
+# (matches the template live contract: only reason_default + topPick + differentiators).
 MATT_EN_COLS = [
     "tier", "id", "name", "brand", "subBrand", "pitchKey", "archetype", "displayPriority",
     "firmnessScore", "firmnessLabel", "price", "quizTags", "displayBadges", "highlight",
@@ -163,6 +163,29 @@ def _apply_build_values(store):
 _apply_build_values(STORE)
 
 
+# ---- Promotions tab: financing envelope -------------------------------------
+# The Lacks Payment Choice financing block rides the canonical Promotions-tab
+# JSON channel as an envelope {"financing": {...}} (no classic promotions yet).
+# Canonical editable source: incoming/lacks_financing.json (the "financing" key;
+# its sibling "_meta" is documentation and is NOT shipped). Chunked to stay
+# under Excel's 32,767-char cell limit.
+_PROMO_CHUNK = 30000
+
+
+def promotions_rows():
+    src = _load("lacks_financing.json")
+    financing = json.loads(json.dumps(src["financing"]))  # deep copy
+    # V1 ships no payment-math inputs: the published Synchrony payment factor
+    # stays in the editable source (documentation of what Lacks publishes) but
+    # is stripped from the runtime config so no client code can multiply it.
+    for plan in financing.get("plans", []):
+        plan.pop("publishedPaymentFactor", None)
+    envelope = {"financing": financing}
+    payload = json.dumps(envelope, ensure_ascii=False, separators=(",", ":"))
+    return [{"Promotions JSON": payload[i:i + _PROMO_CHUNK]}
+            for i in range(0, len(payload), _PROMO_CHUNK)]
+
+
 # ---- write workbook ---------------------------------------------------------
 def write_sheet(wb, tab, rows):
     ws = wb.create_sheet(title=tab)
@@ -180,7 +203,7 @@ def main():
     write_sheet(wb, "Mattresses", [mattress_row(m) for m in M])
     write_sheet(wb, "Accessories", [accessory_row(a) for a in A])
     write_sheet(wb, "SalesNotes", [sales_row(s) for s in SALES])
-    write_sheet(wb, "Promotions", [])  # promotions deferred pending Blake's content decisions
+    write_sheet(wb, "Promotions", promotions_rows())
     wb.save(OUT)
     from collections import Counter
     c = Counter(m["tier"] for m in M)

@@ -12,8 +12,24 @@ deployment. This repo is Lacks Furniture's instance, deployed as a preview at:
   https://beford782.github.io/LacksFurniture
 
 > **⚠️ PREVIEW DEPLOYMENT — not for production use.** No live email or lead
-> capture (`gasUrl` is intentionally blank), the discount offer is illustrative,
-> and the brand palette and Spanish copy are pending Lacks Furniture review.
+> capture (`gasUrl` is intentionally blank), and the brand palette and Spanish
+> copy are pending Lacks Furniture review.
+
+## Lacks Payment Choice
+
+The Lacks experience replaces the illustrative Savings Pass with **Lacks
+Payment Choice** — a financing-visibility experience ("Better sleep. More ways
+to bring it home."). Sleep fit always comes first: financing never affects
+mattress scoring, tiers, or the Sleep Brief. The kiosk presents Lacks'
+published financing paths (Synchrony promotional financing, Lacks In-House
+Credit, lease-to-own, Build My Credit, and a separate optional
+Mexico-delivery program) with their conditions adjacent, calculates **no**
+monthly payments, and collects **no** financial data — live financing
+applications happen only on approved external Lacks/lender pages
+(lacks.com/financing), reached by link or the committed QR code. Exact
+rate/term claims are freshness-gated and fail closed to generic guidance when
+stale. Canonical editable source: `incoming/lacks_financing.json`; verification
+record: `docs/financing-verification-2026-07-30.md`.
 
 ## Repo orientation
 

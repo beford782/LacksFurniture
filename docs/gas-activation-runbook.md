@@ -1,4 +1,4 @@
-# WG&R lead-capture activation runbook (Apps Script + Sheet)
+# Lacks lead-capture activation runbook (Apps Script + Sheet)
 
 How to turn the **preview-mode** Save-your-Sleep-Brief flow into **live** lead
 capture. The app is built for **single-field activation**: the only repo change
@@ -16,7 +16,7 @@ Everything else in the UI already branches off that value.
 2. **Extensions → Apps Script** from that Sheet (container-bound, so
    `getActiveSpreadsheet()` resolves correctly).
 3. Paste the repo's `Code.gs`.
-4. Set `RESULT_EMAIL_BCC` (top of `Code.gs`) to WG&R's lead-intake inbox
+4. Set `RESULT_EMAIL_BCC` (top of `Code.gs`) to the retailer's (Lacks') lead-intake inbox
    (or `''` to disable BCC). Default today is the shared `dreamfinderleads@gmail.com`.
 5. **Deploy → New deployment → Web app**: *Execute as: Me*, *Who has access:
    Anyone*. Authorize the Gmail + Sheets scopes when prompted.
@@ -28,7 +28,7 @@ Everything else in the UI already branches off that value.
    - Sheet row appends with correct columns (incl. `lang`, `rsa`, matches, accessories).
    - Customer email arrives — correct EN/ES subject (now "Sleep Brief & Savings
      Pass" / "Resumen de Sueño y Pase de Ahorro"), body renders in Gmail/Outlook/iOS,
-     images load, DREAM code + Sleep Brief + matches present, no broken links.
+     images load, Sleep Brief + matches + Payment Choice section present (no DREAM code for Lacks: the Savings Pass is disabled), no broken links.
    - BCC inbox receives a copy.
    - Error paths: invalid email → friendly message; GAS unreachable → network error.
    - GAS execution log is shape-only (no raw PII).
@@ -45,16 +45,19 @@ Everything else in the UI already branches off that value.
 
 ## Phase E — Production handoff
 Document the live deployment (gasUrl, Sheet id, deployment id, BCC, scopes,
-unsubscribe process); hand WG&R Sheet access; final live QA; update the session
+unsubscribe process); hand the retailer (Lacks) Sheet access; final live QA; update the session
 handoff/memory.
 
 ---
 
-## Blocking items before real PII collection (need WG&R-provided content)
+## Blocking items before real PII collection (need Lacks-provided content)
 - **Privacy/consent:** real Privacy & Terms content for the in-app
   `privacyOverlay`, a value for `text.privacyPolicyContact`, and confirmed
   consent wording (EN/ES).
 - **CAN-SPAM for the sent email:** the email currently has **no functional
   unsubscribe** and **no physical mailing address**. Add both (or revise copy)
-  before sending real commercial email. WG&R must supply the postal address and
-  an unsubscribe destination/process.
+  before sending real commercial email. Lacks must supply and approve the postal
+  address, the unsubscribe destination/process, and a privacy contact.
+  `Code.gs` now HARD-BLOCKS all sending (`canspam_not_configured`) until the
+  three `RETAILER_APPROVAL_REQUIRED_*` sentinels are replaced with approved
+  values — do not invent them.

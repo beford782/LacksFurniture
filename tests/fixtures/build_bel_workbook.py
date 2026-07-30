@@ -98,6 +98,12 @@ def store_info_value(key: str, config: dict, manifest: dict) -> Any:
     (languages/allowedHosts) are joined; everything else is a dotted path read
     straight from store-config."""
     if key == "manifest.iconSource":
+        # Supply the icon source only when the committed bundle actually carries
+        # PWA icons — otherwise the round trip would generate an icons key the
+        # committed manifest doesn't have (e.g. Lacks: source PNG present but
+        # App Icon File intentionally blank).
+        if not manifest.get("icons"):
+            return ""
         src = REPO_ROOT / "images" / "logos" / _BEL_APP_ICON
         return _BEL_APP_ICON if src.is_file() else ""
     if key.startswith("manifest."):
@@ -218,7 +224,33 @@ def build_workbook(config: dict, manifest: dict,
     _write_sheet(wb, "SalesNotes",
                  [[r.get(k, "") for k in sn_keys] for r in sn_rows])
 
+    # Promotions — optional canonical-JSON tab, always present so the workbook
+    # matches the schema's tab order. Header-only when the committed config has
+    # neither promotions nor financing (Bel): an empty tab round-trips to "no
+    # promotions/financing keys" (converter build_promotions returns None,None
+    # on an empty payload). When either block exists, the envelope form
+    # {"promotions": ..., "financing": ...} is chunked one fragment per row so
+    # the golden round-trip regenerates an identical store-config.
+    _write_sheet(wb, "Promotions", promotions_rows(config))
+
     return wb
+
+
+_PROMO_CHUNK = 30000  # stay under Excel's 32,767-char cell limit
+
+
+def promotions_rows(config: dict) -> List[List[Any]]:
+    """Chunked Promotions-tab payload for the committed config ([] when none)."""
+    envelope = {}
+    if config.get("promotions"):
+        envelope["promotions"] = config["promotions"]
+    if config.get("financing"):
+        envelope["financing"] = config["financing"]
+    if not envelope:
+        return []
+    payload = json.dumps(envelope, ensure_ascii=False, separators=(",", ":"))
+    return [[payload[i:i + _PROMO_CHUNK]]
+            for i in range(0, len(payload), _PROMO_CHUNK)]
 
 
 # ── Round-trip self-check ────────────────────────────────────────────────────
@@ -285,6 +317,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         "Mattresses": len(mattresses),
         "Accessories": len(accessories),
         "SalesNotes": len(sales_notes_rows(config)),
+        "Promotions": len(promotions_rows(config)),
     }
 
     wb = build_workbook(config, manifest, mattresses, es_lookup, accessories)

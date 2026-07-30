@@ -68,7 +68,8 @@ STORE_INFO_LISTS = {"languages", "allowedHosts"}
 STORE_CONFIG_KEY_ORDER = [
     "storeName", "storeKey", "languages", "logo", "colors", "gasUrl",
     "publicAssetRoot", "allowedHosts", "brands", "rsaList", "text", "text_es",
-    "discount", "promotions", "voice", "voice_es", "salesNotes", "salesNotes_es",
+    "discount", "promotions", "financing", "voice", "voice_es",
+    "salesNotes", "salesNotes_es",
 ]
 
 # Per-accessory key order (committed Bel order) - readability only.
@@ -259,31 +260,45 @@ def build_store_config(wb):
     cfg["salesNotes"] = sn
     cfg["salesNotes_es"] = sn_es
 
-    # Optional promotions block (scenario-aware). Emitted only when the workbook
-    # carries a non-empty Promotions tab, so deployments without it (e.g. Bel) are
-    # unchanged.
-    promotions = build_promotions(wb)
+    # Optional promotions/financing payload. Emitted only when the workbook
+    # carries a non-empty Promotions tab, so deployments without it (e.g. Bel)
+    # are unchanged. The tab may carry either a legacy bare promotions block or
+    # an envelope {"promotions": ..., "financing": ...}.
+    promotions, financing = build_promotions(wb)
     if promotions:
         cfg["promotions"] = promotions
+    if financing:
+        cfg["financing"] = financing
 
     # Reorder top-level keys to the committed order (readability only).
     return {k: cfg[k] for k in STORE_CONFIG_KEY_ORDER if k in cfg}
 
 
 def build_promotions(wb):
-    """Reassemble the promotions block from the optional Promotions tab.
+    """Reassemble the promotions/financing payload from the optional Promotions tab.
 
-    The tab stores the canonical promotions JSON chunked one fragment per row
-    (column 'Promotions JSON'); fragments are concatenated in row order and
-    parsed. Returns the promotions dict, or None when the tab is absent/empty
-    (Bel and any deployment without promotions emit no key)."""
+    The tab stores canonical JSON chunked one fragment per row (column
+    'Promotions JSON'); fragments are concatenated in row order and parsed.
+    Two payload shapes are supported:
+      * envelope: an object whose top-level keys are a subset of
+        {"promotions", "financing"} — each part lands as its own
+        store-config key (Lacks Payment Choice uses this form);
+      * legacy: a bare promotions block (WGR-era) — becomes `promotions`.
+    Returns (promotions, financing); (None, None) when the tab is absent/empty
+    (Bel and any deployment without promotions emit neither key)."""
     if "Promotions" not in wb.sheetnames:
-        return None
+        return None, None
     _, rows = read_tab(wb, "Promotions")
     payload = "".join(_s(r.get("Promotions JSON")) for r in rows).strip()
     if not payload:
-        return None
-    return json.loads(payload)
+        return None, None
+    try:
+        parsed = json.loads(payload)
+    except ValueError as exc:
+        raise SystemExit(f"ERROR: Promotions tab payload is not valid JSON: {exc}")
+    if isinstance(parsed, dict) and parsed and set(parsed) <= {"promotions", "financing"}:
+        return parsed.get("promotions"), parsed.get("financing")
+    return parsed, None
 
 
 # -- manifest.json (S5) -------------------------------------------------------
@@ -666,9 +681,16 @@ def main(argv=None) -> int:
                         promo_cats.add(v)
             elif cat:
                 promo_cats.add(cat)
+        source_hosts = validation.load_source_hosts()
         report.merge(validation.validate_promotions(
             config, mattress_ids=promo_mids, accessory_ids=promo_aids,
-            accessory_categories=promo_cats))
+            accessory_categories=promo_cats,
+            allowed_source_hosts=source_hosts.get("promotionSourceHosts")))
+        # Financing (Lacks Payment Choice) validation — fail-closed rules for
+        # exact credit claims; no-op when the config carries no financing block.
+        report.merge(validation.validate_financing(
+            config,
+            allowed_source_hosts=source_hosts.get("financingSourceHosts")))
         print(report.summary())
         blocking = report.blocking(warnings_as_errors=args.warnings_as_errors)
         if args.validate_only:

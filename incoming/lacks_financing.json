@@ -1,109 +1,11 @@
 {
-  "storeName": "Lacks Furniture",
-  "storeKey": "lacks",
-  "languages": [
-    "en",
-    "es"
-  ],
-  "logo": {
-    "main": "Lacks",
-    "sub": "furniture"
-  },
-  "colors": {
-    "storePrimary": "#FABD0F",
-    "storePrimaryLight": "#FFD24D",
-    "storePrimaryGlow": "rgba(250,189,15,0.15)",
-    "accent": "#FF5C36"
-  },
-  "gasUrl": "",
-  "publicAssetRoot": "https://beford782.github.io/LacksFurniture/",
-  "allowedHosts": [
-    "beford782.github.io"
-  ],
-  "brands": [
-    {
-      "name": "Restonic",
-      "logo": ""
-    },
-    {
-      "name": "Chattam & Wells",
-      "logo": ""
-    },
-    {
-      "name": "Spring Air",
-      "logo": ""
-    },
-    {
-      "name": "Tempur-Pedic",
-      "logo": ""
-    },
-    {
-      "name": "Genesis",
-      "logo": ""
-    }
-  ],
-  "rsaList": [],
-  "text": {
-    "pageTitle": "DreamFinder - Lacks Furniture Sleep Quiz",
-    "metaDescription": "Take the Lacks Furniture sleep quiz and get personalized mattress recommendations.",
-    "ogTitle": "DreamFinder - Lacks Furniture",
-    "trustSignal": "Family-owned since 1935 — 90 years of South Texas homes",
-    "heritage": "FAMILY-OWNED · SOUTH TEXAS · SINCE 1935",
-    "emailPrivacy": "We'll only use your email to send your results.",
-    "privacyPolicyContact": "To access or remove your information, contact your local Lacks Furniture store.",
-    "inStockText": "In stock at Lacks",
-    "emailHeader": "Lacks Furniture x DreamFinder",
-    "emailSubtext": "Your personalized mattress matches",
-    "locationLabel": "South Texas & the Rio Grande Valley",
-    "privacyDraftNotice": "Draft policy — pending Lacks Furniture approval before live use.",
-    "privacyHeading": "Privacy",
-    "privacyBody": "DreamFinder collects your name, email, and optional phone number to deliver your mattress recommendations. Your information is only used for this purpose and is never sold. DreamFinder does not send your information to lenders. If you choose to open Lacks' financing or application pages, you continue on lacks.com — a separate secure site governed by its own privacy terms.",
-    "disclaimerHeading": "Disclaimer",
-    "disclaimerBody": "DreamFinder is a product recommendation tool. Match percentages and Sleep Brief guidance are generated from your quiz answers and should be treated as starting points, not guarantees. This tool does not provide medical advice — consult a healthcare provider for medical sleep concerns. Payment options, pricing, and product availability are subject to Lacks Furniture store terms and approval.",
-    "ownershipBadge": "",
-    "locationsLabel": "",
-    "locations": "McAllen · Pharr · Harlingen · Brownsville · Rio Grande City · Laredo · Alice · Corpus Christi"
-  },
-  "text_es": {
-    "pageTitle": "DreamFinder - Cuestionario del Sueño de Lacks Furniture",
-    "metaDescription": "Responde el cuestionario del sueño de Lacks Furniture y recibe recomendaciones personalizadas de colchones.",
-    "ogTitle": "DreamFinder - Lacks Furniture",
-    "trustSignal": "Negocio familiar desde 1935 — 90 años en los hogares del sur de Texas",
-    "heritage": "NEGOCIO FAMILIAR · SUR DE TEXAS · DESDE 1935",
-    "emailPrivacy": "Solo usaremos tu correo para enviarte tus resultados.",
-    "privacyPolicyContact": "Para acceder o eliminar tu información, comunícate con tu tienda Lacks Furniture local.",
-    "inStockText": "En stock en Lacks",
-    "emailHeader": "",
-    "emailSubtext": "",
-    "locationLabel": "Sur de Texas y el Valle del Río Grande",
-    "privacyDraftNotice": "Política preliminar — pendiente de aprobación de Lacks Furniture antes de su uso.",
-    "privacyHeading": "Privacidad",
-    "privacyBody": "DreamFinder recopila tu nombre, correo electrónico y número de teléfono opcional para enviarte tus recomendaciones de colchón. Tu información se usa únicamente para este fin y nunca se vende. DreamFinder no envía tu información a prestamistas. Si decides abrir las páginas de financiamiento o solicitud de Lacks, continúas en lacks.com — un sitio seguro aparte, regido por sus propios términos de privacidad.",
-    "disclaimerHeading": "Aviso legal",
-    "disclaimerBody": "DreamFinder es una herramienta de recomendación de productos. Los porcentajes de compatibilidad y la guía del Resumen de Sueño se generan a partir de tus respuestas y deben tomarse como punto de partida, no como garantía. Esta herramienta no ofrece asesoramiento médico — consulta a un profesional de la salud para problemas médicos del sueño. Las opciones de pago, los precios y la disponibilidad de productos están sujetos a los términos de las tiendas Lacks Furniture y a aprobación."
-  },
-  "discount": {
-    "codePrefix": "DREAM",
-    "codeDigits": 4,
-    "mode": "disabled",
-    "percentage": 5,
-    "validityDays": 30,
-    "scope": {
-      "en": "a qualifying DreamFinder mattress selection",
-      "es": "una selección de colchón DreamFinder que califique"
-    },
-    "landingHint": {
-      "en": "A 30-day offer to bring home with your matches",
-      "es": "Una oferta de 30 días para llevar con tus recomendaciones"
-    },
-    "demoDeliveryNote": {
-      "en": "Live delivery can be connected after Lacks approves the experience.",
-      "es": "La entrega real se puede conectar después de que Lacks apruebe la experiencia."
-    },
-    "terms": {
-      "en": "Valid on qualifying mattress selections. Cannot be combined with other offers. Final eligibility confirmed by your Lacks sleep specialist.",
-      "es": "Válido en selecciones de colchones que califiquen. No se puede combinar con otras ofertas. Elegibilidad final confirmada por tu especialista del sueño de Lacks."
-    }
+  "_meta": {
+    "editableSource": true,
+    "note": "Canonical Lacks Payment Choice financing source. Edit THIS file, then re-run build_lacks_workbook.py + tools/convert_store_data.py. All facts verified live on lacks.com in a real browser session — see docs/financing-verification-2026-07-30.md for verbatim source text and the discrepancy log. Spanish financing copy below is PENDING NATIVE/LEGAL REVIEW (esReviewStatus) but renders polished in the demo. NOTE: publishedPaymentFactor is retained HERE as source documentation but is STRIPPED from the shipped store-config by build_lacks_workbook.py (V1 ships no payment-math inputs).",
+    "discrepancies": [
+      "https://www.lacks.com/mexican-credit-application (published in Lacks' own FAQ) returned HTTP 404 on 2026-07-30 — stored below with verified:false and NOT rendered as a link; the Mexico card links to the verified FAQ instead.",
+      "An older Lacks blog called a 72-month option 'no money down'; the live financing page makes no such claim — omitted."
+    ]
   },
   "financing": {
     "enabled": true,
@@ -247,6 +149,7 @@
         "minimumPurchase": 500,
         "channel": "per-current-source",
         "calculationMode": "published-fixed-factor",
+        "publishedPaymentFactor": 0.018521,
         "paymentCalculationEnabled": false,
         "headline": {
           "en": "9.99% APR for 72 months",
@@ -371,71 +274,5 @@
         }
       }
     ]
-  },
-  "voice": {
-    "eyebrow": "FAMILY-OWNED · SOUTH TEXAS · SINCE 1935",
-    "headlineMain": "South Texas'",
-    "headlineAccent": "Sleep Shop.",
-    "subCopyBefore": "Answer a few questions, then review your mattress matches with a Lacks sleep specialist.",
-    "subCopyAccent": "",
-    "subCopyAfter": "",
-    "ctaPrimary": "Find My Sleep Match",
-    "timeEstimate": "About 2 minutes · No pressure",
-    "retailerSubline": "SLEEP SHOP",
-    "outcomeLabel": "Your consultation builds",
-    "outcomeItems": "Sleep Brief · Mattress Matches · Sleep System Picks · Payment Choices"
-  },
-  "voice_es": {
-    "eyebrow": "NEGOCIO FAMILIAR · SUR DE TEXAS · DESDE 1935",
-    "headlineMain": "La tienda del descanso",
-    "headlineAccent": "del sur de Texas.",
-    "subCopyBefore": "Responde unas preguntas y revisa tus opciones de colchón con un especialista del descanso de Lacks.",
-    "subCopyAccent": "",
-    "subCopyAfter": "",
-    "ctaPrimary": "Encontrar Mi Opción Ideal",
-    "timeEstimate": "Aproximadamente 2 minutos · Sin presión",
-    "retailerSubline": "TIENDA DEL DESCANSO",
-    "outcomeLabel": "Tu consulta crea",
-    "outcomeItems": "Resumen de Sueño · Opciones de Colchón · Sistema de Sueño · Opciones de Pago"
-  },
-  "salesNotes": {
-    "subBrands": {},
-    "brands": {
-      "Restonic": {
-        "story": "Made locally in Texas and named a Consumers Digest Best Buy year after year, Restonic's Marvelous Middle builds 25% more support into the center third of every bed — where support matters most."
-      },
-      "Chattam & Wells": {
-        "story": "Chattam & Wells is hand-crafted luxury built by Restonic's finest craftspeople — Merino wool, cashmere, and graphite latex layered over precision coils for heirloom-quality sleep."
-      },
-      "Spring Air": {
-        "story": "Spring Air's patented Copper collection pairs NatuVerex copper fabric with copper-infused foams for a cooler, fresher, health-forward sleep experience."
-      },
-      "Tempur-Pedic": {
-        "story": "Developed from NASA-engineered pressure-relieving material, Tempur-Pedic is the benchmark for adaptive memory-foam comfort, cooling innovation, and zero motion transfer."
-      },
-      "Genesis": {
-        "story": "Genesis by Kingdom Mattress is engineered entirely in the USA by a 30-year family company — honest, durable comfort built for real family life."
-      }
-    }
-  },
-  "salesNotes_es": {
-    "subBrands": {},
-    "brands": {
-      "Restonic": {
-        "story": "Fabricado localmente en Texas y nombrado Best Buy por Consumers Digest año tras año, el Marvelous Middle de Restonic construye 25% más soporte en el tercio central de cada cama — donde el soporte más importa."
-      },
-      "Chattam & Wells": {
-        "story": "Chattam & Wells es lujo artesanal construido por los mejores artesanos de Restonic — lana Merino, cachemira y látex de grafito sobre resortes de precisión para un descanso de calidad heredable."
-      },
-      "Spring Air": {
-        "story": "La colección Copper patentada de Spring Air combina la tela de cobre NatuVerex con espumas infundidas de cobre para un descanso más fresco y saludable."
-      },
-      "Tempur-Pedic": {
-        "story": "Desarrollado a partir del material de alivio de presión diseñado por la NASA, Tempur-Pedic es el referente del confort adaptable, la innovación en frescura y la cero transferencia de movimiento."
-      },
-      "Genesis": {
-        "story": "Genesis de Kingdom Mattress está diseñado completamente en EE. UU. por una empresa familiar de 30 años — confort honesto y duradero hecho para la vida familiar real."
-      }
-    }
   }
 }

@@ -12,9 +12,9 @@
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
 
   <!-- Open Graph / Social -->
-  <meta id="metaDescription" name="description" content="Find your perfect mattress with DreamFinder — a personalized sleep consultation with matches, Sleep System recommendations, and a 30-day Savings Pass.">
+  <meta id="metaDescription" name="description" content="Find your perfect mattress with DreamFinder — a personalized sleep consultation with matches and Sleep System recommendations.">
   <meta id="ogTitle" property="og:title" content="DreamFinder — Find Your Perfect Mattress">
-  <meta property="og:description" content="Take our sleep consultation and get personalized mattress recommendations with a 30-day Savings Pass.">
+  <meta id="ogDescription" property="og:description" content="Take our sleep consultation and get personalized mattress recommendations.">
   <meta property="og:type" content="website">
   <meta name="theme-color" content="#0f1f33">
   <meta name="mobile-web-app-capable" content="yes">
@@ -89,7 +89,7 @@
       --accent-bar-height: 3px;
     }
 
-    /* ===== WGR LANDING: HERITAGE CONCIERGE ===== */
+    /* ===== RETAILER LANDING: HERITAGE CONCIERGE ===== */
     body:has(#welcomeScreen.active) {
       --landing-bg: #F4EFE6;
       --landing-paper: #FBF7EF;
@@ -3013,7 +3013,7 @@
     }
 
     /* 5d: Brand panel — recessive section under picks, deduped by manufacturerBrand,
-       only emits entries for brands present in BRAND_NOTES (Bel-O-Pedic absent). */
+       only emits entries for brands present in BRAND_NOTES (a house brand absent). */
     .noct-handoff-brand-panel {
       margin-top: 32px;
       padding-top: 24px;
@@ -8860,6 +8860,227 @@
     /* ===== MOBILE PERFORMANCE ===== */
     /* (starfield/glow-moon/glow-brand are display:none globally now;
        splash-moon pulse animation removed globally) */
+
+    /* ===== PAYMENT CHOICE (financing) ===== */
+    /* Premium consultation styling: warm paper, editorial serif, restrained
+       small caps, fine rules. No urgency devices, no flashing numbers; all
+       disclosures ≥0.78rem at ≥4.5:1 contrast; tap targets ≥48px. */
+
+    /* The hidden attribute must always win: author display declarations (e.g.
+       .fin-sheet{display:flex}, .hf2-discount-btn{display:flex}) override the
+       UA's [hidden]{display:none} at cascade-origin level, which would leave
+       "hidden" overlays painted on screen. */
+    [hidden] { display: none !important; }
+    .fin-eyebrow {
+      display: block;
+      font-family: var(--font-sans);
+      font-size: 0.68rem;
+      letter-spacing: 2.2px;
+      text-transform: uppercase;
+      color: #6B6455;
+      margin-bottom: 0.55rem;
+    }
+    .fin-rule {
+      width: 44px; height: 2px;
+      background: var(--store-primary);
+      margin: 0 auto 1.1rem;
+    }
+    .fin-module {
+      max-width: 640px;
+      margin: 2.4rem auto 0.6rem;
+      padding: 1.9rem 1.6rem;
+      background: #FBF7EF;
+      border: 1px solid #DDD5C4;
+      border-radius: var(--radius);
+      text-align: center;
+    }
+    .fin-lead {
+      font-family: var(--font-serif);
+      font-size: 1.28rem;
+      line-height: 1.45;
+      color: #211E19;
+      margin: 0 0 0.7rem;
+    }
+    .fin-fit-first {
+      font-family: var(--font-sans);
+      font-size: 0.86rem;
+      color: #5E594E;
+      margin: 0 0 1.2rem;
+    }
+    .fin-actions {
+      display: flex; flex-wrap: wrap; gap: 0.7rem; justify-content: center;
+    }
+    .fin-btn {
+      font-family: var(--font-sans);
+      font-size: 0.92rem;
+      min-height: 48px;
+      padding: 0.7rem 1.5rem;
+      border-radius: var(--radius);
+      cursor: pointer;
+      touch-action: manipulation;
+      transition: background 0.15s ease, color 0.15s ease;
+    }
+    .fin-btn-primary {
+      background: #211E19; color: #F7F2E8; border: 1px solid #211E19;
+    }
+    .fin-btn-primary:hover { background: #38332A; }
+    .fin-btn-secondary {
+      background: transparent; color: #211E19; border: 1px solid #211E19;
+    }
+    .fin-btn-secondary:hover { background: rgba(33,30,25,0.06); }
+    .fin-btn-ghost {
+      background: transparent; color: #4E483C; border: 1px solid #C9C1AF;
+    }
+    .fin-btn:focus-visible {
+      outline: 3px solid var(--store-primary); outline-offset: 2px;
+    }
+
+    /* Sheet (modal dialog) */
+    .fin-sheet-backdrop {
+      position: fixed; inset: 0; z-index: 340;
+      background: rgba(20, 23, 28, 0.55);
+    }
+    .fin-sheet {
+      position: fixed; inset: 0; z-index: 341;
+      display: flex; align-items: flex-start; justify-content: center;
+      overflow-y: auto; -webkit-overflow-scrolling: touch;
+      padding: 3vh 14px 5vh;
+    }
+    body.fin-sheet-open { overflow: hidden; }
+    .fin-sheet-inner {
+      width: 100%; max-width: 760px;
+      background: #FBF7EF; color: #211E19;
+      border: 1px solid #D9D2C2; border-radius: var(--radius);
+      padding: 1.7rem 1.8rem 2rem;
+      animation: finSheetIn 0.28s ease;
+    }
+    @keyframes finSheetIn {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: none; }
+    }
+    .fin-sheet-head {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 0.4rem;
+    }
+    .fin-sheet-head .fin-eyebrow { margin-bottom: 0; }
+    .fin-sheet-close {
+      min-width: 48px; min-height: 48px;
+      background: transparent; border: 1px solid #C9C1AF; border-radius: var(--radius);
+      font-size: 1.05rem; color: #4E483C; cursor: pointer; touch-action: manipulation;
+    }
+    .fin-sheet-close:focus-visible { outline: 3px solid var(--store-primary); outline-offset: 2px; }
+    .fin-sheet-title {
+      font-family: var(--font-serif);
+      font-size: 1.75rem; line-height: 1.25; color: #17140F;
+      margin: 0.35rem 0 0.6rem;
+    }
+    .fin-sheet-title:focus-visible {
+      outline: 3px solid var(--store-primary); outline-offset: 3px;
+    }
+    .fin-sheet-body { font-size: 0.95rem; color: #3E3A31; margin: 0 0 0.4rem; }
+    .fin-sheet .fin-fit-first { text-align: left; margin-bottom: 1.3rem; }
+    .fin-cards { display: grid; gap: 1rem; }
+    .fin-card {
+      background: #FFFDF8;
+      border: 1px solid #DDD5C4; border-radius: var(--radius);
+      padding: 1.35rem 1.4rem;
+    }
+    .fin-card--mexico { border-style: dashed; }
+    .fin-card__icon {
+      width: 38px; height: 38px; margin-bottom: 0.7rem;
+      display: flex; align-items: center; justify-content: center;
+      border: 1px solid var(--store-primary); border-radius: 50%;
+      color: #7A5E00;
+    }
+    .fin-card__title {
+      font-family: var(--font-serif);
+      font-size: 1.18rem; color: #17140F; margin: 0 0 0.6rem;
+    }
+    .fin-offer { padding: 0.55rem 0; }
+    .fin-offer + .fin-offer { border-top: 1px solid #EBE4D4; }
+    .fin-offer__headline {
+      font-family: var(--font-serif);
+      font-size: 1.05rem; color: #211E19; margin: 0 0 0.35rem;
+    }
+    .fin-offer__detail { font-size: 0.88rem; color: #3E3A31; line-height: 1.55; margin: 0 0 0.4rem; }
+    .fin-offer__example { font-style: italic; }
+    .fin-offer__disclosure, .fin-disclosure {
+      font-size: 0.78rem; color: #5E594E; line-height: 1.6; margin: 0;
+    }
+    .fin-offer__prequal { font-size: 0.82rem; color: #4E483C; margin: 0.7rem 0 0; }
+    .fin-disclosure {
+      margin-top: 1.2rem; padding: 0.9rem 1rem;
+      background: #F3EDE0; border-left: 3px solid var(--store-primary);
+    }
+    .fin-sheet-footer {
+      margin-top: 1.3rem; display: flex; flex-direction: column; gap: 0.55rem;
+      align-items: flex-start;
+    }
+    .fin-official-link {
+      color: #211E19; font-size: 0.92rem; text-decoration: underline;
+      text-underline-offset: 3px; min-height: 44px; display: inline-flex; align-items: center;
+    }
+    .fin-official-link:focus-visible { outline: 3px solid var(--store-primary); outline-offset: 2px; }
+    .fin-external-note { font-size: 0.78rem; color: #5E594E; }
+
+    /* Drawer section */
+    .drawer-financing {
+      margin: 1.1rem 0 0.4rem; padding: 1.1rem 1.2rem;
+      background: rgba(251, 247, 239, 0.06);
+      border: 1px solid var(--color-border); border-radius: var(--radius);
+    }
+    .drawer-financing__body { font-size: 0.88rem; line-height: 1.55; margin: 0.4rem 0 0.9rem; }
+    .drawer-financing .fin-btn-secondary {
+      color: var(--color-text); border-color: var(--color-border);
+    }
+    .drawer-financing .fin-btn-ghost {
+      color: var(--color-text-muted); border-color: var(--color-border);
+    }
+
+    /* Sleep-system guidance block */
+    .sleep-system__financing {
+      margin-top: 1.1rem; padding-top: 1rem;
+      border-top: 1px solid #DDD5C4;
+    }
+    .sleep-system__financing p { font-size: 0.88rem; color: #3E3A31; margin: 0.4rem 0 0.8rem; }
+
+    /* Handoff module */
+    .fin-handoff { text-align: left; }
+    .fin-handoff__headline {
+      font-family: var(--font-serif);
+      font-size: 1.45rem; color: #17140F; margin: 0.3rem 0 0.8rem;
+    }
+    .fin-handoff__interest {
+      font-size: 0.88rem; color: #3E3A31; margin-bottom: 0.9rem;
+      padding: 0.65rem 0.9rem; background: #F3EDE0;
+      border-left: 3px solid var(--store-primary);
+    }
+    .fin-handoff__programs { display: flex; flex-wrap: wrap; gap: 0.45rem; margin-bottom: 1.1rem; }
+    .fin-chip {
+      font-size: 0.74rem; letter-spacing: 0.6px; text-transform: uppercase;
+      padding: 0.35rem 0.7rem; border: 1px solid #C9C1AF; border-radius: 999px;
+      color: #4E483C; background: #FFFDF8;
+    }
+    .fin-handoff__private {
+      display: flex; gap: 1.1rem; align-items: center;
+      padding: 1rem; margin-bottom: 1.1rem;
+      background: #FFFDF8; border: 1px solid #DDD5C4; border-radius: var(--radius);
+    }
+    .fin-qr {
+      flex: 0 0 auto; width: 132px; height: 132px;
+      background: #fff; border: 1px solid #DDD5C4; padding: 6px; border-radius: var(--radius);
+    }
+    .fin-handoff__private-copy p { font-size: 0.88rem; color: #3E3A31; margin: 0 0 0.45rem; }
+    .fin-handoff .fin-actions { justify-content: flex-start; }
+
+    @media (max-width: 640px) {
+      .fin-handoff__private { flex-direction: column; align-items: flex-start; }
+      .fin-sheet-inner { padding: 1.3rem 1.1rem 1.6rem; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .fin-sheet-inner { animation: none; }
+      .fin-btn { transition: none; }
+    }
   </style>
 </head>
 <body>
@@ -9048,12 +9269,31 @@
       <div class="results-supporting-heading" id="resultsSupportingHeading"></div>
       <div class="noct-supporting-row" id="supportingRow"></div>
 
+      <!-- Financing module (Payment Choice) — calm, after recommendations,
+           before the next-step CTAs. Rendered/hidden by renderResultsFinancing();
+           the hidden attribute keeps it out of the accessibility tree when the
+           financing experience is disabled. -->
+      <section class="fin-module" id="resultsFinancing" hidden aria-labelledby="resultsFinancingEyebrow">
+        <div class="fin-rule" aria-hidden="true"></div>
+        <span class="fin-eyebrow" id="resultsFinancingEyebrow"></span>
+        <p class="fin-lead" id="resultsFinancingLead"></p>
+        <p class="fin-fit-first" id="resultsFinancingFitFirst"></p>
+        <div class="fin-actions">
+          <button type="button" class="fin-btn fin-btn-primary" id="resultsFinancingExplore"
+                  onclick="window.openFinancingSheet('results')"
+                  ontouchend="event.preventDefault();window.openFinancingSheet('results');"></button>
+          <button type="button" class="fin-btn fin-btn-secondary" id="resultsFinancingAsk"
+                  onclick="window.requestFinancingFollowup('results')"
+                  ontouchend="event.preventDefault();window.requestFinancingFollowup('results');"></button>
+        </div>
+      </section>
+
       <div class="noct-results-footer">
         <div class="noct-results-footer-actions">
           <button class="noct-results-cta" id="buildSystemBtn" onclick="window.showAccessories()" ontouchend="event.preventDefault();window.showAccessories();">Build Your Sleep System →</button>
           <button class="noct-results-review-btn" id="reviewWithCustomerBtn" onclick="window.showSavedPicks()" ontouchend="event.preventDefault();window.showSavedPicks();">Review with customer →</button>
         </div>
-        <div class="noct-results-footer-hint" id="resultsFooterHint">Your 30-day Savings Pass applies to a qualifying mattress selection.</div>
+        <div class="noct-results-footer-hint" id="resultsFooterHint"></div>
       </div>
     </div>
 
@@ -9108,6 +9348,37 @@
     </div>
   </div>
 
+  <!-- FINANCING SHEET (Payment Choice) — accessible modal dialog.
+       Opened by openFinancingSheet(placement); content rendered from
+       STORE_CONFIG.financing by renderFinancingSheet(). Focus is moved in,
+       trapped, Escape closes, and focus returns to the invoking control. -->
+  <div class="fin-sheet-backdrop" id="financingSheetBackdrop" hidden
+       onclick="window.closeFinancingSheet()"></div>
+  <div class="fin-sheet" id="financingSheet" role="dialog" aria-modal="true"
+       aria-labelledby="financingSheetTitle" hidden>
+    <div class="fin-sheet-inner">
+      <div class="fin-sheet-head">
+        <span class="fin-eyebrow" id="financingSheetEyebrow"></span>
+        <button type="button" class="fin-sheet-close" id="financingSheetClose"
+                onclick="window.closeFinancingSheet()"
+                ontouchend="event.preventDefault();window.closeFinancingSheet();"></button>
+      </div>
+      <h2 class="fin-sheet-title" id="financingSheetTitle" tabindex="-1"></h2>
+      <p class="fin-sheet-body" id="financingSheetBody"></p>
+      <p class="fin-fit-first" id="financingSheetFitFirst"></p>
+      <div class="fin-cards" id="financingSheetCards"></div>
+      <div class="fin-disclosure" id="financingSheetDisclosure"></div>
+      <div class="fin-sheet-footer">
+        <a class="fin-official-link" id="financingSheetLink" href="#" target="_blank" rel="noopener noreferrer"
+           onclick="window.logFinancingLinkClick('sheet')"></a>
+        <span class="fin-external-note" id="financingSheetExternal"></span>
+        <button type="button" class="fin-btn fin-btn-secondary" id="financingSheetSpecialist"
+                onclick="window.requestFinancingFollowup('sheet')"
+                ontouchend="event.preventDefault();window.requestFinancingFollowup('sheet');"></button>
+      </div>
+    </div>
+  </div>
+
   <!-- MATTRESS DRAWER -->
   <div class="drawer-backdrop" id="drawerBackdrop" onclick="window.closeMattressDrawer()"></div>
   <div class="mattress-drawer" id="mattressDrawer">
@@ -9140,6 +9411,21 @@
         <div class="drawer-shortlist-fit" id="drawerShortlistFit"></div>
         <div class="drawer-section-label" id="drawerDifferentiatorsLabel">What makes this one different</div>
         <div class="drawer-differentiators" id="drawerDifferentiators"></div>
+        <!-- Ways to bring it home (Payment Choice) — sleep fit first,
+             payment second. Rendered by renderDrawerFinancing(); hidden keeps it
+             out of the accessibility tree when financing is disabled. -->
+        <div class="drawer-financing" id="drawerFinancing" hidden>
+          <div class="drawer-section-label" id="drawerFinancingLabel"></div>
+          <p class="drawer-financing__body" id="drawerFinancingBody"></p>
+          <div class="fin-actions">
+            <button type="button" class="fin-btn fin-btn-secondary" id="drawerFinancingExplore"
+                    onclick="window.openFinancingSheet('drawer')"
+                    ontouchend="event.preventDefault();window.openFinancingSheet('drawer');"></button>
+            <button type="button" class="fin-btn fin-btn-ghost" id="drawerFinancingMark"
+                    onclick="window.requestFinancingFollowup('drawer')"
+                    ontouchend="event.preventDefault();window.requestFinancingFollowup('drawer');"></button>
+          </div>
+        </div>
         <div class="drawer-promotion" id="drawerPromotion">
           <div class="drawer-promotion__kicker" id="drawerPromotionKicker"></div>
           <div class="drawer-promotion__headline" id="drawerPromotionHeadline"></div>
@@ -9245,10 +9531,39 @@
       <div id="hf2AccessoriesList"></div>
     </section>
 
+    <!-- Payment Choices handoff module (Payment Choice) — the strongest
+         financing surface, immediately before the final save/send action.
+         Rendered by renderHandoffFinancing(); hidden when financing disabled. -->
+    <section class="hf2-review-section fin-handoff" id="hf2Financing" hidden
+             aria-labelledby="hf2FinancingHeadline">
+      <span class="fin-eyebrow" id="hf2FinancingEyebrow"></span>
+      <h3 class="fin-handoff__headline" id="hf2FinancingHeadline"></h3>
+      <div class="fin-handoff__interest" id="hf2FinancingInterest"></div>
+      <div class="fin-handoff__programs" id="hf2FinancingPrograms"></div>
+      <div class="fin-handoff__private">
+        <img class="fin-qr" id="hf2FinancingQr" src="images/qr-financing.svg" width="132" height="132"
+             alt="QR code linking to the retailer's official financing page">
+        <div class="fin-handoff__private-copy">
+          <p id="hf2FinancingPrivate"></p>
+          <a class="fin-official-link" id="hf2FinancingLink" href="#" target="_blank" rel="noopener noreferrer"
+             onclick="window.logFinancingLinkClick('handoff')"></a>
+          <span class="fin-external-note" id="hf2FinancingExternal"></span>
+        </div>
+      </div>
+      <div class="fin-actions">
+        <button type="button" class="fin-btn fin-btn-secondary" id="hf2FinancingExplore"
+                onclick="window.openFinancingSheet('handoff')"
+                ontouchend="event.preventDefault();window.openFinancingSheet('handoff');"></button>
+        <button type="button" class="fin-btn fin-btn-primary" id="hf2FinancingSpecialist"
+                onclick="window.requestFinancingFollowup('handoff')"
+                ontouchend="event.preventDefault();window.requestFinancingFollowup('handoff');"></button>
+      </div>
+    </section>
+
     <section class="hf2-review-section hf2-review-finale">
       <div class="hf2-review-section__label" id="hf2PassLabel">Your consultation is ready to save</div>
-      <p class="hf2-review-section__hint" id="hf2PassHint">Review the plan together, then reveal the 30-day Savings Pass.</p>
-      <button class="hf2-discount-btn" id="hf2DiscountBtn" type="button">
+      <p class="hf2-review-section__hint" id="hf2PassHint"></p>
+      <button class="hf2-discount-btn" id="hf2DiscountBtn" type="button" hidden>
         <span>Savings Pass</span>
         <span>Reveal for customer →</span>
       </button>
@@ -9473,6 +9788,433 @@
       };
     }
 
+    // ===== PAYMENT CHOICE (financing) =====
+    // Sleep fit first, payment choice second: nothing in this section may
+    // influence scoring, ranking, tiers, or Sleep Brief content. All retailer
+    // financing copy/terms come from STORE_CONFIG.financing (config-driven);
+    // exact rate/term claims are gated fail-closed by financingTermsFresh().
+
+    function getFinancingConfig() {
+      return (STORE_CONFIG && STORE_CONFIG.financing) || null;
+    }
+
+    function financingEnabled() {
+      var f = getFinancingConfig();
+      return !!(f && f.enabled === true && Array.isArray(f.plans) && f.plans.length);
+    }
+
+    // The Savings Pass renders only when the discount block exists, is not
+    // mode:'disabled', AND financing (when enabled) explicitly declares a
+    // 'stackable' policy. Never imply financing + discount stacking.
+    function savingsPassEnabled() {
+      var d = STORE_CONFIG && STORE_CONFIG.discount;
+      if (!d || d.mode === 'disabled') return false;
+      var f = getFinancingConfig();
+      if (f && f.enabled === true && f.savingsPassPolicy !== 'stackable') return false;
+      return true;
+    }
+
+    function financingSourceAllowed(url) {
+      var f = getFinancingConfig();
+      var hosts = (f && f.allowedSourceHosts) || [];
+      if (!url || !hosts.length) return false;
+      try {
+        var h = new URL(url).hostname.toLowerCase();
+        return hosts.some(function(x) {
+          x = String(x).toLowerCase();
+          return h === x || h.slice(-(x.length + 1)) === '.' + x;
+        });
+      } catch (e) { return false; }
+    }
+
+    // Fail-closed freshness gate for EXACT rate/term claims. The generic
+    // Payment Choice value proposition renders whenever financingEnabled();
+    // numbers render only when every condition below holds. Credit terms can
+    // change without a published end date, so staleness hides them — this is
+    // deliberately NOT the promotions' fail-open expiration behavior.
+    function financingTermsFresh() {
+      var f = getFinancingConfig();
+      if (!f || f.enabled !== true) return false;
+      var ts = Date.parse(f.verifiedAt);
+      if (!isFinite(ts)) {
+        console.warn('[financing] verifiedAt missing/unparseable - exact terms hidden');
+        return false;
+      }
+      var maxDays = (typeof f.maxAgeDays === 'number' && f.maxAgeDays > 0) ? f.maxAgeDays : 0;
+      if (!maxDays) {
+        console.warn('[financing] maxAgeDays missing - exact terms hidden');
+        return false;
+      }
+      if (Date.now() - ts > maxDays * 86400000) {
+        console.warn('[financing] verified terms older than maxAgeDays - exact terms hidden');
+        return false;
+      }
+      if (!financingSourceAllowed(f.sourceUrl)) {
+        console.warn('[financing] sourceUrl not allowlisted - exact terms hidden');
+        return false;
+      }
+      return true;
+    }
+
+    function financingPlanFresh(p) {
+      if (!financingTermsFresh() || !p || p.verified !== true) return false;
+      var f = getFinancingConfig();
+      var ts = Date.parse(p.verifiedAt);
+      if (!isFinite(ts) || Date.now() - ts > f.maxAgeDays * 86400000) return false;
+      return financingSourceAllowed(p.sourceUrl);
+    }
+
+    // Financing copy accessor (config copy block, language-aware).
+    function FC(key) {
+      var f = getFinancingConfig();
+      return (f && f.copy && f.copy[key]) ? L(f.copy[key]) : '';
+    }
+
+    // Presentation-only interest state — never affects recommendations.
+    // Valid: 'undecided' | 'interested' | 'not_now'. Module state only (no
+    // localStorage) so it can never leak between customers; reset by startOver().
+    var financingInterest = 'undecided';
+    var _financeReturnFocus = null;
+    var _finModuleImpressionLogged = false;
+
+    function finLayoutClass() {
+      return window.innerWidth <= 1024 ? 'tablet' : 'desktop';
+    }
+
+    function finEventBase(placement) {
+      var f = getFinancingConfig() || {};
+      // Privacy-safe by construction: placement, language, layout class,
+      // offer version, interest state only. No PII, no quiz answers.
+      return { placement: placement, lang: currentLang, layout: finLayoutClass(),
+               offerVersion: f.offerVersion || null, interest: financingInterest };
+    }
+
+    function setFinancingInterest(state, placement) {
+      if (state !== 'undecided' && state !== 'interested' && state !== 'not_now') return;
+      financingInterest = state;
+      analytics.log('financing_interest_changed', finEventBase(placement));
+      renderHandoffFinancing();
+    }
+
+    window.requestFinancingFollowup = function(placement) {
+      setFinancingInterest('interested', placement);
+      analytics.log('financing_followup_requested', finEventBase(placement));
+      renderDrawerFinancingMark();
+      var ask = document.getElementById('resultsFinancingAsk');
+      if (ask) ask.textContent = financingInterest === 'interested'
+        ? (currentLang === 'es' ? 'Marcado para tu especialista ✓' : 'Marked for your specialist ✓')
+        : FC('resultsAsk');
+    };
+
+    // Handoff interest prompt: interested / not_now / back to undecided.
+    window.setFinancingInterestChoice = function(state) {
+      setFinancingInterest(state, 'handoff');
+      if (state === 'interested') {
+        analytics.log('financing_followup_requested', finEventBase('handoff'));
+      }
+      renderDrawerFinancingMark();
+    };
+
+    window.logFinancingLinkClick = function(placement) {
+      analytics.log('official_financing_link_click', finEventBase(placement));
+    };
+
+    window.logMexicoFinancingOpen = function() {
+      analytics.log('official_financing_link_click', finEventBase('mexico'));
+      analytics.log('mexico_financing_details_open', finEventBase('sheet'));
+    };
+
+    // ---- Financing sheet (accessible modal dialog) ----
+    var _finSheetKeydownBound = false;
+
+    window.openFinancingSheet = function(placement) {
+      if (!financingEnabled()) return;
+      var sheet = document.getElementById('financingSheet');
+      var backdrop = document.getElementById('financingSheetBackdrop');
+      if (!sheet || !backdrop) return;
+      _financeReturnFocus = document.activeElement;
+      renderFinancingSheet();
+      backdrop.hidden = false;
+      sheet.hidden = false;
+      document.body.classList.add('fin-sheet-open');
+      analytics.log('finance_details_open', finEventBase(placement));
+      var title = document.getElementById('financingSheetTitle');
+      if (title) title.focus();
+      if (!_finSheetKeydownBound) {
+        sheet.addEventListener('keydown', finSheetKeydown);
+        _finSheetKeydownBound = true;
+      }
+    };
+
+    window.closeFinancingSheet = function() {
+      var sheet = document.getElementById('financingSheet');
+      var backdrop = document.getElementById('financingSheetBackdrop');
+      if (!sheet || sheet.hidden) return;
+      sheet.hidden = true;
+      backdrop.hidden = true;
+      document.body.classList.remove('fin-sheet-open');
+      if (_financeReturnFocus && typeof _financeReturnFocus.focus === 'function') {
+        _financeReturnFocus.focus();
+      }
+      _financeReturnFocus = null;
+    };
+
+    function finSheetKeydown(e) {
+      if (e.key === 'Escape') { e.preventDefault(); window.closeFinancingSheet(); return; }
+      if (e.key !== 'Tab') return;
+      // Focus trap: cycle within the sheet.
+      var sheet = document.getElementById('financingSheet');
+      var focusables = sheet.querySelectorAll(
+        'button, [href], [tabindex="-1"]#financingSheetTitle');
+      var list = Array.prototype.filter.call(focusables, function(el) {
+        return el.offsetParent !== null;
+      });
+      if (!list.length) return;
+      var first = list[0], last = list[list.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault(); last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault(); first.focus();
+      }
+    }
+
+    function finEsc(s) { return escapeHtml(String(s == null ? '' : s)); }
+
+    function renderFinancingSheet() {
+      var f = getFinancingConfig();
+      if (!f) return;
+      var es = currentLang === 'es';
+      var fresh = financingTermsFresh();
+      document.getElementById('financingSheetEyebrow').textContent = FC('eyebrow');
+      document.getElementById('financingSheetTitle').textContent = FC('headline');
+      document.getElementById('financingSheetBody').textContent = FC('body');
+      document.getElementById('financingSheetFitFirst').textContent = FC('fitFirst');
+      var closeBtn = document.getElementById('financingSheetClose');
+      closeBtn.textContent = '✕';
+      closeBtn.setAttribute('aria-label', es ? 'Cerrar opciones de pago' : 'Close payment options');
+
+      var plans = f.plans || [];
+      var byId = {};
+      plans.forEach(function(p) { byId[p.id] = p; });
+      var cards = [];
+
+      // Card 1 — promotional financing (exact offers, freshness-gated). The
+      // lender name comes from config plan.provider — never hardcoded.
+      var syn = plans.filter(function(p) {
+        return p.kind === 'open-end-promotional-credit' && !p.separatePath;
+      });
+      var provider = (syn[0] && syn[0].provider) || '';
+      var synBody;
+      if (fresh && syn.length && syn.every(financingPlanFresh)) {
+        synBody = syn.map(function(p) {
+          return '<div class="fin-offer">'
+            + '<h4 class="fin-offer__headline">' + finEsc(L(p.headline)) + '</h4>'
+            + '<p class="fin-offer__detail">' + finEsc(L(p.detail)) + '</p>'
+            + '<p class="fin-offer__disclosure">' + finEsc(L(p.disclosure)) + '</p>'
+            + '</div>';
+        }).join('');
+      } else {
+        // Stale/fail-closed: no exact rates or terms; generic guidance + link.
+        synBody = '<p class="fin-offer__detail">' + finEsc(FC('staleNotice')) + '</p>';
+      }
+      if (syn.length) {
+        cards.push('<article class="fin-card"><div class="fin-card__icon" aria-hidden="true">'
+          + '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="2.5" y="4" width="15" height="13" rx="1.5"/><path d="M2.5 8h15M6.5 2.5v3M13.5 2.5v3"/></svg>'
+          + '</div><h3 class="fin-card__title">'
+          + finEsc(es ? ('Financiamiento promocional ' + provider) : (provider + ' promotional financing'))
+          + '</h3>' + synBody
+          + (FC('prequalNote') ? '<p class="fin-offer__prequal">' + finEsc(FC('prequalNote')) + '</p>' : '')
+          + '</article>');
+      }
+
+      // Card 2 — retailer in-house credit (headline/detail from config). The
+      // detail states a term range, so it is freshness-gated like the exact
+      // offers — a stale config must not keep asserting 6-36 months.
+      var ih = byId['lacks-in-house'];
+      if (ih) {
+        var ihFresh = fresh && financingPlanFresh(ih);
+        cards.push('<article class="fin-card"><div class="fin-card__icon" aria-hidden="true">'
+          + '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M3 9.5 10 3l7 6.5M5 8.5V17h10V8.5"/><path d="M8.5 17v-4.5h3V17"/></svg>'
+          + '</div><h3 class="fin-card__title">' + finEsc(L(ih.headline)) + '</h3>'
+          + (ihFresh
+              ? '<p class="fin-offer__detail">' + finEsc(L(ih.detail)) + '</p>'
+              : '<p class="fin-offer__detail">' + finEsc(FC('staleNotice')) + '</p>')
+          + (ih.disclosure ? '<p class="fin-offer__disclosure">' + finEsc(L(ih.disclosure)) + '</p>' : '')
+          + '</article>');
+      }
+
+      // Card 3 — More paths (availability only, never credit terms).
+      var lto = byId['lease-to-own'], bmc = byId['build-my-credit'];
+      var more = [lto, bmc].filter(Boolean).map(function(p) {
+        return '<div class="fin-offer"><h4 class="fin-offer__headline">' + finEsc(L(p.headline)) + '</h4>'
+          + '<p class="fin-offer__detail">' + finEsc(L(p.detail)) + '</p></div>';
+      }).join('');
+      if (more) {
+        cards.push('<article class="fin-card"><div class="fin-card__icon" aria-hidden="true">'
+          + '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M4 16V4M4 10c4 0 4-4 8-4h4M4 14c4 0 4 4 8 4h4"/><path d="M13.5 3.5 16 6l-2.5 2.5M13.5 15.5 16 18l-2.5-2.5" stroke-linejoin="round"/></svg>'
+          + '</div><h3 class="fin-card__title">' + (es ? 'Más caminos' : 'More paths') + '</h3>'
+          + more
+          + '<p class="fin-offer__disclosure">'
+          + (es ? 'Hay opciones adicionales disponibles. Los detalles del programa, costos, elegibilidad y términos de propiedad se confirman en tienda.'
+                : 'Additional options are available. Program details, costs, eligibility, and ownership terms are confirmed in store.')
+          + '</p></article>');
+      }
+
+      // Card 4 — Mexico delivery program. A separate, optional path shown to
+      // every customer in both languages, in fixed last position — NEVER
+      // selected, promoted, or reordered based on language.
+      var mx = byId['mexico-in-house'];
+      if (mx) {
+        var mxFresh = fresh && financingPlanFresh(mx);
+        var mxLink = f.mexicoInfoUrl || f.sourceUrl;
+        var mxHost = '';
+        try { mxHost = new URL(mxLink).hostname.replace(/^www\./, ''); } catch (e) {}
+        cards.push('<article class="fin-card fin-card--mexico"><div class="fin-card__icon" aria-hidden="true">'
+          + '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="10" cy="10" r="7.5"/><path d="M2.5 10h15M10 2.5c2.5 2.3 2.5 12.7 0 15c-2.5-2.3-2.5-12.7 0-15Z"/></svg>'
+          + '</div><h3 class="fin-card__title">' + finEsc(L(mx.headline)) + '</h3>'
+          + (mxFresh
+              ? '<p class="fin-offer__detail">' + finEsc(L(mx.detail)) + '</p>'
+                + (mx.representativeExample
+                    ? '<p class="fin-offer__detail fin-offer__example">' + finEsc(L(mx.representativeExample)) + '</p>' : '')
+              : '<p class="fin-offer__detail">' + finEsc(FC('staleNotice')) + '</p>')
+          + (mx.disclosure ? '<p class="fin-offer__disclosure">' + finEsc(L(mx.disclosure)) + '</p>' : '')
+          + '<a class="fin-official-link" href="' + finEsc(mxLink) + '" target="_blank" rel="noopener noreferrer" '
+          + 'onclick="window.logMexicoFinancingOpen()">'
+          + finEsc(es ? ('Detalles en ' + mxHost + ' (se abre en otro sitio)') : ('Details on ' + mxHost + ' (opens a separate site)'))
+          + '</a></article>');
+      }
+
+      document.getElementById('financingSheetCards').innerHTML = cards.join('');
+      document.getElementById('financingSheetDisclosure').textContent = FC('disclosureFooter');
+      var link = document.getElementById('financingSheetLink');
+      link.href = f.sourceUrl || '#';
+      link.textContent = es
+        ? 'Página oficial de financiamiento de ' + storeName()
+        : storeName() + "'s official financing page";
+      document.getElementById('financingSheetExternal').textContent = FC('externalNotice');
+      var spec = document.getElementById('financingSheetSpecialist');
+      spec.textContent = FC('ctaSecondary');
+    }
+
+    // ---- Per-surface renderers (also re-run on language switch) ----
+
+    function renderResultsFinancing() {
+      var mod = document.getElementById('resultsFinancing');
+      if (!mod) return;
+      if (!financingEnabled()) { mod.hidden = true; return; }
+      mod.hidden = false;
+      document.getElementById('resultsFinancingEyebrow').textContent = FC('eyebrow');
+      document.getElementById('resultsFinancingLead').textContent = FC('resultsLead');
+      document.getElementById('resultsFinancingFitFirst').textContent = FC('fitFirst');
+      document.getElementById('resultsFinancingExplore').textContent = FC('cta');
+      document.getElementById('resultsFinancingAsk').textContent =
+        financingInterest === 'interested'
+          ? (currentLang === 'es' ? 'Marcado para tu especialista ✓' : 'Marked for your specialist ✓')
+          : FC('resultsAsk');
+      if (!_finModuleImpressionLogged) {
+        _finModuleImpressionLogged = true;
+        analytics.log('finance_module_impression', finEventBase('results'));
+      }
+    }
+
+    function renderDrawerFinancingMark() {
+      var mark = document.getElementById('drawerFinancingMark');
+      if (mark) {
+        mark.textContent = financingInterest === 'interested'
+          ? FC('drawerMarked') + ' ✓' : FC('drawerMark');
+      }
+    }
+
+    function renderDrawerFinancing() {
+      var box = document.getElementById('drawerFinancing');
+      if (!box) return;
+      if (!financingEnabled()) { box.hidden = true; return; }
+      box.hidden = false;
+      document.getElementById('drawerFinancingLabel').textContent = FC('drawerTitle');
+      document.getElementById('drawerFinancingBody').textContent = FC('drawerBody');
+      document.getElementById('drawerFinancingExplore').textContent = FC('cta');
+      renderDrawerFinancingMark();
+    }
+
+    function renderHandoffFinancing() {
+      var mod = document.getElementById('hf2Financing');
+      if (!mod) return;
+      if (!financingEnabled()) { mod.hidden = true; return; }
+      var f = getFinancingConfig();
+      var es = currentLang === 'es';
+      mod.hidden = false;
+      document.getElementById('hf2FinancingEyebrow').textContent = FC('eyebrow');
+      document.getElementById('hf2FinancingHeadline').textContent = FC('handoffHeadline');
+      // Interest state: undecided renders the two-sided prompt (yes / not now)
+      // so the customer can decline as easily as accept; a made choice renders
+      // as a statement with a change link. Presentation-only — never alters
+      // recommendations.
+      var interestEl = document.getElementById('hf2FinancingInterest');
+      if (financingInterest === 'undecided') {
+        interestEl.innerHTML = '<p class="fin-interest-prompt">' + finEsc(FC('interestPrompt')) + '</p>'
+          + '<div class="fin-actions">'
+          + '<button type="button" class="fin-btn fin-btn-secondary" '
+          + 'onclick="window.setFinancingInterestChoice(\'interested\')" '
+          + 'ontouchend="event.preventDefault();window.setFinancingInterestChoice(\'interested\');">'
+          + finEsc(FC('interestYes')) + '</button>'
+          + '<button type="button" class="fin-btn fin-btn-ghost" '
+          + 'onclick="window.setFinancingInterestChoice(\'not_now\')" '
+          + 'ontouchend="event.preventDefault();window.setFinancingInterestChoice(\'not_now\');">'
+          + finEsc(FC('interestNotNow')) + '</button>'
+          + '</div>';
+      } else {
+        var stateLine = financingInterest === 'interested'
+          ? (es ? 'El cliente quiere revisar opciones de pago con un especialista.'
+                : 'Customer would like to review payment options with a specialist.')
+          : (es ? 'El cliente prefiere no revisar opciones de pago por ahora.'
+                : 'Customer prefers not to review payment options right now.');
+        interestEl.innerHTML = '<p class="fin-interest-prompt">' + finEsc(stateLine) + '</p>'
+          + '<button type="button" class="fin-btn fin-btn-ghost" '
+          + 'onclick="window.setFinancingInterestChoice(\'undecided\')" '
+          + 'ontouchend="event.preventDefault();window.setFinancingInterestChoice(\'undecided\');">'
+          + finEsc(es ? 'Cambiar' : 'Change') + '</button>';
+      }
+      // Neutral program-category chips only — never rate/term headlines here
+      // (rates belong solely to the freshness-gated sheet cards). Open-end
+      // promos get a generic category label (their headlines ARE rates); all
+      // other kinds use their own config headline, which is rate-free.
+      var seenKinds = {};
+      var chips = [];
+      (f.plans || []).forEach(function(p) {
+        if (p.separatePath || seenKinds[p.kind]) return;
+        seenKinds[p.kind] = true;
+        var label = p.kind === 'open-end-promotional-credit'
+          ? (es ? 'Financiamiento promocional' : 'Promotional financing')
+          : L(p.headline);
+        if (label) chips.push('<span class="fin-chip">' + finEsc(label) + '</span>');
+      });
+      document.getElementById('hf2FinancingPrograms').innerHTML = chips.join('');
+      document.getElementById('hf2FinancingPrivate').textContent = FC('handoffPrivate');
+      var link = document.getElementById('hf2FinancingLink');
+      link.href = f.sourceUrl || '#';
+      link.textContent = String(f.sourceUrl || '').replace(/^https?:\/\/(www\.)?/, '');
+      var qrImg = document.getElementById('hf2FinancingQr');
+      if (qrImg) {
+        qrImg.alt = (es
+          ? 'Código QR a la página oficial de financiamiento de '
+          : "QR code linking to the official financing page of ")
+          + storeName() + ' (' + link.textContent + ')';
+      }
+      document.getElementById('hf2FinancingExternal').textContent = FC('externalNotice');
+      document.getElementById('hf2FinancingExplore').textContent = FC('cta');
+      document.getElementById('hf2FinancingSpecialist').textContent = FC('ctaSecondary');
+    }
+
+    // Refresh every financing surface (called after language switches; each
+    // renderer is also called when its screen renders).
+    function renderAllFinancingSurfaces() {
+      renderResultsFinancing();
+      renderDrawerFinancing();
+      renderHandoffFinancing();
+      var sheet = document.getElementById('financingSheet');
+      if (sheet && !sheet.hidden) renderFinancingSheet();
+    }
+
     // ===== i18n INFRASTRUCTURE =====
     let currentLang = 'en';
     let DICT = {};
@@ -9592,6 +10334,10 @@
       if (resultsScreen && resultsScreen.classList.contains('active')) {
         _renderResults();
       }
+      // Financing (Payment Choice) surfaces carry config-driven bilingual copy
+      // — refresh whichever are visible, including the open sheet, so EN/ES
+      // switching updates financing text and accessible labels.
+      renderAllFinancingSurfaces();
       // The guided Sleep System and shared review are rendered dynamically,
       // so refresh their copy without resetting any selected products or trial state.
       var accessoriesScreen = document.getElementById('accessoriesScreen');
@@ -9662,7 +10408,7 @@
     }
 
     // 5d: Brand-heritage lookup, distinct from pitch content. Returns BRAND_NOTES
-    // entry keyed by manufacturer brand, or null. Bel-O-Pedic intentionally
+    // entry keyed by manufacturer brand, or null. a house brand intentionally
     // returns null (no entry — private label, recommended-last treatment per
     // docs/5d-content-spec.md). Renders complementary to pitch content in the
     // drawer's brand section, not as a fallback.
@@ -10029,6 +10775,8 @@
         document.title = textBlock.pageTitle || document.title;
         var metaDesc = document.getElementById('metaDescription');
         if (metaDesc && textBlock.metaDescription) metaDesc.setAttribute('content', textBlock.metaDescription);
+        var ogDesc = document.getElementById('ogDescription');
+        if (ogDesc && textBlock.metaDescription) ogDesc.setAttribute('content', textBlock.metaDescription);
         var ogTitle = document.getElementById('ogTitle');
         if (ogTitle && textBlock.ogTitle) ogTitle.setAttribute('content', textBlock.ogTitle);
         document.querySelectorAll('[data-store="email-privacy"]').forEach(function(el) {
@@ -10096,8 +10844,22 @@
       setText('landingTimeEstimate', voice.timeEstimate);
       setText('landingOutcomeLabel', voice.outcomeLabel || (es ? 'Tu consulta crea' : 'Your consultation builds'));
       setText('landingOutcomeItems', voice.outcomeItems || (es ? 'Resumen de sueño · Colchones recomendados · Sistema de descanso · Pase de ahorro' : 'Sleep Brief · Mattress Matches · Sleep System Picks · Savings Pass'));
-      setText('landingDiscountLabel', es ? 'Tu Pase de Ahorro de 30 Días' : 'Your 30-Day Savings Pass');
-      setText('landingDiscountHint', L(passConfig.landingHint));
+      // Landing tease: financing proof point (Payment Choice) replaces
+      // the Savings Pass tease when financing is enabled; the pass tease
+      // renders only when the pass itself is enabled; otherwise the row hides
+      // (hidden attribute keeps it out of the accessibility tree).
+      var teaseRow = document.querySelector('.landing-discount-tease');
+      if (financingEnabled()) {
+        if (teaseRow) teaseRow.hidden = false;
+        setText('landingDiscountLabel', FC('eyebrow'));
+        setText('landingDiscountHint', FC('welcomeTagline') + ' ' + FC('welcomeSupport'));
+      } else if (savingsPassEnabled()) {
+        if (teaseRow) teaseRow.hidden = false;
+        setText('landingDiscountLabel', es ? 'Tu Pase de Ahorro de 30 Días' : 'Your 30-Day Savings Pass');
+        setText('landingDiscountHint', L(passConfig.landingHint));
+      } else if (teaseRow) {
+        teaseRow.hidden = true;
+      }
       setText('landingHeritage', textBlock.heritage);
       setText('landingTrustBadge', textBlock.ownershipBadge);
 
@@ -10141,9 +10903,13 @@
         }
       }
 
-      // Code tiles: [prefix letters] — [digit placeholders]
+      // Code tiles: [prefix letters] — [digit placeholders]. Savings Pass only;
+      // emptied (not just hidden) when the pass is disabled so no DREAM
+      // lettering exists in the DOM or accessibility tree.
       var tiles = document.getElementById('landingCodeTiles');
-      if (tiles) {
+      if (tiles && !savingsPassEnabled()) {
+        tiles.innerHTML = '';
+      } else if (tiles) {
         var prefix = (discount.codePrefix || 'DREAM').toString();
         var digits = Math.max(0, parseInt(discount.codeDigits, 10) || 0);
         var html = '';
@@ -11323,9 +12089,19 @@
         : 'Start with the first option, then compare how the others feel. Your comfort decides what stays.';
       document.getElementById('buildSystemBtn').textContent = es ? 'Crea Tu Sistema de Sueño →' : 'Build Your Sleep System →';
       document.getElementById('reviewWithCustomerBtn').textContent = es ? 'Revisar con el cliente →' : 'Review with customer →';
-      document.getElementById('resultsFooterHint').textContent = es
-        ? 'Tu Pase de Ahorro de 30 días aplica a una selección de colchón que califique.'
-        : 'Your 30-day Savings Pass applies to a qualifying mattress selection.';
+      // Footer hint: fit-first financing line when financing is on, the
+      // Savings Pass line only when the pass is enabled, empty otherwise.
+      var footerHint = document.getElementById('resultsFooterHint');
+      if (financingEnabled()) {
+        footerHint.textContent = FC('fitFirst');
+      } else if (savingsPassEnabled()) {
+        footerHint.textContent = es
+          ? 'Tu Pase de Ahorro de 30 días aplica a una selección de colchón que califique.'
+          : 'Your 30-day Savings Pass applies to a qualifying mattress selection.';
+      } else {
+        footerHint.textContent = '';
+      }
+      renderResultsFinancing();
     }
 
     function renderResultsTrialFocus() {
@@ -11549,14 +12325,24 @@
         cue.classList.add('is-visible');
         return;
       }
-      if (!count) {
+      // Storewide-only offers (no product-specific promotions) must still be
+      // visible on results — previously `!count` hid the cue even when
+      // getStorewidePromotions() had active entries.
+      var storewide = getStorewidePromotions();
+      if (!count && !storewide.length) {
         cue.classList.remove('is-visible');
         cue.textContent = '';
         return;
       }
-      cue.textContent = currentLang === 'es'
-        ? count + ' de estas opciones tienen ofertas actuales de ' + storeName() + '.'
-        : count + ' of these matches have current ' + storeName() + ' offers.';
+      if (count) {
+        cue.textContent = currentLang === 'es'
+          ? count + ' de estas opciones tienen ofertas actuales de ' + storeName() + '.'
+          : count + ' of these matches have current ' + storeName() + ' offers.';
+      } else {
+        cue.textContent = currentLang === 'es'
+          ? 'Hay ofertas de ' + storeName() + ' en toda la tienda — pregunta a tu especialista.'
+          : storeName() + ' store-wide offers are available — ask your specialist.';
+      }
       cue.setAttribute('data-label', currentLang === 'es' ? 'OFERTA' : 'OFFER');
       cue.classList.add('is-visible');
     }
@@ -11814,6 +12600,7 @@
     // Premium pass reveal. RSA-tap-triggered on the review screen and populated
     // from the same configured presentation Pass used by the email preview.
     function playSavingsPassReveal() {
+      if (!savingsPassEnabled()) return;  // no reveal, no code, when disabled
       const overlay = document.getElementById('discountRevealOverlay');
       const cert    = document.getElementById('revealCert');
       const codeEl  = document.getElementById('revealCertCode');
@@ -12053,7 +12840,10 @@
     // explicit-render pattern used by results / profile / quiz.
     function renderEmailChrome() {
       var es = currentLang === 'es';
-      var pass = generateSavingsPass(analytics.sessionId);
+      // No pass object (and therefore no DREAM code) is ever computed when the
+      // Savings Pass is disabled; the consumers below live inside #dreamCodeBox,
+      // which stays hidden in that state.
+      var pass = savingsPassEnabled() ? generateSavingsPass(analytics.sessionId) : null;
       var _emailScenario = getActivePromotionScenario();
       var isDemoMode = !(STORE_CONFIG && STORE_CONFIG.gasUrl)
         || !!(_emailScenario && _emailScenario.disableEmailSubmission);
@@ -12071,9 +12861,13 @@
       setHtml('emailHeadline', es
         ? 'Guarda tu <span class="accent">Resumen de Sueño</span> de ' + storeName()
         : 'Save your ' + storeName() + ' <span class="accent">Sleep Brief</span>');
-      setText('emailSubhead', es
-        ? 'Guardaremos tus opciones de colchón, tu Sistema de Sueño y tu Pase de Ahorro juntos para que un especialista de sueño de ' + storeName() + ' pueda continuar justo donde lo dejaste.'
-        : 'Keep your mattress matches, Sleep System picks, and Savings Pass together so a ' + storeName() + ' sleep specialist can pick up right where you left off.');
+      setText('emailSubhead', savingsPassEnabled()
+        ? (es
+          ? 'Guardaremos tus opciones de colchón, tu Sistema de Sueño y tu Pase de Ahorro juntos para que un especialista de sueño de ' + storeName() + ' pueda continuar justo donde lo dejaste.'
+          : 'Keep your mattress matches, Sleep System picks, and Savings Pass together so a ' + storeName() + ' sleep specialist can pick up right where you left off.')
+        : (es
+          ? 'Guardaremos tus opciones de colchón y tu Sistema de Sueño juntos para que un especialista de sueño de ' + storeName() + ' pueda continuar justo donde lo dejaste.'
+          : 'Keep your mattress matches and Sleep System picks together so a ' + storeName() + ' sleep specialist can pick up right where you left off.'));
       setText('emailPreviewLabel', es ? 'Lo que vas a guardar' : "What you'll save");
       setText('emailFormTitle', es ? '¿Dónde lo guardamos?' : 'Where should we save it?');
 
@@ -12113,10 +12907,12 @@
         noteEl.style.display = isDemoMode ? '' : 'none';
       }
 
-      setText('dreamCodeLabel', es ? 'Tu Pase de Ahorro de 30 Días' : 'Your 30-Day Savings Pass');
-      setText('dreamCodeHintText', es
-        ? 'Válido en ' + pass.scope
-        : 'Valid on ' + pass.scope);
+      if (pass) {
+        setText('dreamCodeLabel', es ? 'Tu Pase de Ahorro de 30 Días' : 'Your 30-Day Savings Pass');
+        setText('dreamCodeHintText', es
+          ? 'Válido en ' + pass.scope
+          : 'Valid on ' + pass.scope);
+      }
 
       // ----- Confirmation view -----
       setText('emailConfirmEyebrow', es ? 'Resumen de sueño listo' : 'Sleep Brief ready');
@@ -12176,7 +12972,6 @@
       var savedMattresses = getSelectedMattressPlan();
       var selectedAccessories = getSelectedAccessoryPlan();
       var recCount = (analytics.allMatches || []).length;
-      var pass = generateSavingsPass(analytics.sessionId);
       var packet = [
         { present: true,
           title: _esE ? 'Resumen de Sueño' : 'Sleep Brief',
@@ -12193,11 +12988,21 @@
           detail: selectedAccessories.length
             ? (_esE ? (selectedAccessories.length + ' piezas · bases, almohadas y protectores para ti')
                     : (selectedAccessories.length + ' pieces · bases, pillows & protectors matched to you'))
-            : (_esE ? 'Explóralo con tu especialista en la tienda' : 'Explore with your specialist in store') },
-        { present: true,
-          title: _esE ? 'Pase de Ahorro' : 'Savings Pass',
-          detail: (_esE ? 'Tu oferta, válida hasta ' : 'Your offer, good through ') + pass.expirationLabel }
+            : (_esE ? 'Explóralo con tu especialista en la tienda' : 'Explore with your specialist in store') }
       ];
+      // Savings Pass row only when the pass is enabled; Payment Choice row
+      // (no rates, no approval language) when financing is enabled.
+      if (savingsPassEnabled()) {
+        var pass = generateSavingsPass(analytics.sessionId);
+        packet.push({ present: true,
+          title: _esE ? 'Pase de Ahorro' : 'Savings Pass',
+          detail: (_esE ? 'Tu oferta, válida hasta ' : 'Your offer, good through ') + pass.expirationLabel });
+      }
+      if (financingEnabled()) {
+        packet.push({ present: true,
+          title: FC('emailHeading'),
+          detail: FC('emailBody') });
+      }
 
       var summaryEl = document.getElementById('emailPreview');
       if (summaryEl) summaryEl.innerHTML = packet.map(function(r) {
@@ -12233,13 +13038,22 @@
       if (capView) capView.style.display = '';
       document.getElementById('emailConfirmation').classList.remove('visible');
 
-      // Show the same presentation Pass used in the specialist reveal.
-      var pass = generateSavingsPass(analytics.sessionId);
-      document.getElementById('dreamCodeValue').textContent = pass.code;
-      document.getElementById('dreamCodePct').textContent = _esE
-        ? pass.percentage + '% DE DESCUENTO · HASTA ' + pass.expirationLabel
-        : pass.percentage + '% OFF · GOOD THROUGH ' + pass.expirationLabel;
-      document.getElementById('dreamCodeBox').style.display = '';
+      // Show the same presentation Pass used in the specialist reveal — only
+      // when the Savings Pass is enabled; otherwise the code box stays hidden
+      // and out of the accessibility tree (no DREAM code exists this session).
+      var dcBox = document.getElementById('dreamCodeBox');
+      if (savingsPassEnabled()) {
+        var passShow = generateSavingsPass(analytics.sessionId);
+        document.getElementById('dreamCodeValue').textContent = passShow.code;
+        document.getElementById('dreamCodePct').textContent = _esE
+          ? passShow.percentage + '% DE DESCUENTO · HASTA ' + passShow.expirationLabel
+          : passShow.percentage + '% OFF · GOOD THROUGH ' + passShow.expirationLabel;
+        dcBox.style.display = '';
+        dcBox.hidden = false;
+      } else if (dcBox) {
+        dcBox.style.display = 'none';
+        dcBox.hidden = true;
+      }
 
       showScreen('emailScreen');
     };
@@ -12336,7 +13150,9 @@
       // optional; payload shape is stable whether the field is populated or not.
       const _storeKey = (STORE_CONFIG && STORE_CONFIG.storeKey) || 'unknown';
       const _rsa = localStorage.getItem('dreamfinder.' + _storeKey + '.deviceRsa') || '';
-      const savingsPass = generateSavingsPass(analytics.sessionId);
+      // Savings Pass fields ship only when the pass is enabled; a disabled
+      // pass sends no code, percentage, expiration, scope, or terms.
+      const savingsPass = savingsPassEnabled() ? generateSavingsPass(analytics.sessionId) : null;
 
       // Website-derived retailer offers for the email — union of promos applicable to
       // the emailed matches + store-wide notes, pre-localized to the email language.
@@ -12377,11 +13193,11 @@
         topMatch: emailTopPick ? emailTopPick.name : '',
         matchPct: emailTopPick ? emailTopPick.matchPct : '',
         meetsMatchThreshold: emailTopPick ? emailTopPick.meetsMatchThreshold : false,
-        discount: savingsPass.percentage,
-        dreamCode: savingsPass.code,
-        passExpiration: savingsPass.expirationLabel,
-        passScope: savingsPass.scope,
-        passTerms: savingsPass.terms,
+        discount: savingsPass ? savingsPass.percentage : 0,
+        dreamCode: savingsPass ? savingsPass.code : '',
+        passExpiration: savingsPass ? savingsPass.expirationLabel : '',
+        passScope: savingsPass ? savingsPass.scope : '',
+        passTerms: savingsPass ? savingsPass.terms : '',
         sessionId: analytics.sessionId,
         rsa: _rsa,
         lang: currentLang,
@@ -12390,7 +13206,31 @@
         emailPromotions: emailPromotions,
         promoSpanishDraft: promoSpanishDraft,
         promoScenario: (STORE_CONFIG.promotions && STORE_CONFIG.promotions.activeScenario) || '',
-        promoDisclosure: (function () { var d = getScenarioDisclosure(); return d ? L(d) : ''; })()
+        promoDisclosure: (function () { var d = getScenarioDisclosure(); return d ? L(d) : ''; })(),
+        // Email branding derives from store config so Code.gs never hardcodes
+        // a retailer wordmark or palette.
+        branding: {
+          logoMain: (STORE_CONFIG.logo && STORE_CONFIG.logo.main) || '',
+          logoSub: (STORE_CONFIG.logo && STORE_CONFIG.logo.sub) || '',
+          primary: (STORE_CONFIG.colors && STORE_CONFIG.colors.storePrimary) || '',
+          accent: (STORE_CONFIG.colors && STORE_CONFIG.colors.accent) || ''
+        },
+        // Payment Choice (financing) email content — program categories, the
+        // official URL, and the customer's interest state only. Never terms
+        // math, approval language, application data, or any sensitive field.
+        financing: financingEnabled() ? (function () {
+          var f = getFinancingConfig();
+          return {
+            heading: FC('emailHeading'),
+            body: FC('emailBody'),
+            url: f.sourceUrl || '',
+            offerVersion: f.offerVersion || '',
+            interest: financingInterest,
+            confirmNote: currentLang === 'es'
+              ? 'El precio final, la elegibilidad, los términos y la aprobación los confirma ' + storeName() + '.'
+              : 'Final pricing, eligibility, terms, and approval are confirmed by ' + storeName() + '.'
+          };
+        })() : null
       };
       
       // ── LIVE LEAD CAPTURE / EMAIL: single-field activation ──────────────────
@@ -13678,6 +14518,20 @@
       }
 
       var notices = sleepSystemGuidance(step.id, primary);
+      // Payment Choice guidance: fit first, then a specialist review of the
+      // complete plan. NEVER a subtotal, an accessory-only payment, or any
+      // "add $X to unlock" math — mattress prices are intentionally absent at
+      // runtime, so no displayed sum could represent the real transaction.
+      var financingBlock = financingEnabled()
+        ? '<div class="sleep-system__financing" id="sleepSystemFinancing">' +
+            '<div class="sleep-system__plan-eyebrow">' + escapeHtml(FC('eyebrow')) + '</div>' +
+            '<p>' + escapeHtml(FC('sleepSystemGuidance')) + '</p>' +
+            '<button type="button" class="fin-btn fin-btn-ghost" ' +
+              'onclick="window.openFinancingSheet(\'sleep-system\')" ' +
+              'ontouchend="event.preventDefault();window.openFinancingSheet(\'sleep-system\');">' +
+              escapeHtml(FC('cta')) + '</button>' +
+          '</div>'
+        : '';
       guidance.innerHTML =
         '<div class="sleep-system__plan-eyebrow">' + escapeHtml(step.id === 'pillow' || step.id === 'protection'
           ? sleepSystemText({ en: 'Specialist notes', es: 'Notas del especialista' })
@@ -13687,7 +14541,7 @@
           notices.map(function(notice) {
             return '<div class="sleep-system__notice"><span>&#10003;</span><span>' + escapeHtml(notice) + '</span></div>';
           }).join('') +
-        '</div>';
+        '</div>' + financingBlock;
     }
 
     function renderSleepSystemPlan() {
@@ -13749,9 +14603,12 @@
         sleepSystemPlanTitle: { en: 'Setup decisions', es: 'Decisiones de configuración' },
         sleepSystemPlanReview: { en: 'Review Sleep Plan', es: 'Revisar Plan de Sueño' },
         sleepSystemEmptyTitle: { en: 'Continue with your mattress plan', es: 'Continua con tu plan de colchón' },
-        sleepSystemEmptyCopy: {
+        sleepSystemEmptyCopy: savingsPassEnabled() ? {
           en: 'Accessory recommendations are unavailable right now. Your mattress matches and Savings Pass are still ready to review.',
           es: 'Las recomendaciones de accesorios no están disponibles ahora. Tus colchones y Pase de Ahorro siguen listos para revisar.'
+        } : {
+          en: 'Accessory recommendations are unavailable right now. Your mattress matches are still ready to review.',
+          es: 'Las recomendaciones de accesorios no están disponibles ahora. Tus colchones siguen listos para revisar.'
         },
         sleepSystemEmptyReview: { en: 'Review Sleep Plan', es: 'Revisar Plan de Sueño' }
       };
@@ -14176,9 +15033,13 @@
         hf2SystemLabel: es ? 'Sistema de Sueño seleccionado' : 'Selected Sleep System',
         hf2SystemHint: es ? 'Solo las piezas que ya se agregaron al plan.' : 'Only the pieces already added to the plan.',
         hf2PassLabel: es ? 'Tu consulta está lista para guardar' : 'Your consultation is ready to save',
-        hf2PassHint: es
-          ? 'Revisen el plan juntos y luego revela el Pase de Ahorro de 30 días.'
-          : 'Review the plan together, then reveal the 30-day Savings Pass.'
+        // Pass-reveal hint only when the Savings Pass is enabled; otherwise a
+        // neutral save prompt (financing has its own module above this one).
+        hf2PassHint: savingsPassEnabled()
+          ? (es ? 'Revisen el plan juntos y luego revela el Pase de Ahorro de 30 días.'
+                : 'Review the plan together, then reveal the 30-day Savings Pass.')
+          : (es ? 'Revisen el plan juntos y luego guárdalo para el cliente.'
+                : 'Review the plan together, then save it for the customer.')
       };
       Object.keys(reviewCopy).forEach(function(id) {
         var el = document.getElementById(id);
@@ -14397,7 +15258,7 @@
     // 5d: Brand-heritage prose renderer for the drawer's brand section.
     // Distinct from renderPitchHtml — heritage is complementary background,
     // not pitch coaching. Returns empty string when no BRAND_NOTES entry
-    // exists (Bel-O-Pedic case by design).
+    // exists (a house brand case by design).
     function renderBrandStory(m) {
       var content = getBrandContent(m);
       if (!content) return '';
@@ -14865,6 +15726,16 @@
     function renderHf2DiscountButton() {
       var btn = document.getElementById('hf2DiscountBtn');
       if (!btn) return;
+      // Savings Pass disabled (e.g. financing-first deployments): keep the
+      // reveal control hidden — the hidden attribute removes it from the
+      // accessibility tree — and never bind the reveal handler.
+      if (!savingsPassEnabled()) {
+        btn.hidden = true;
+        btn.disabled = true;
+        btn.onclick = null;
+        return;
+      }
+      btn.hidden = false;
       // Idempotency: preserve post-reveal state across screen revisits (e.g.,
       // RSA taps cart bar then returns to handoff). startOver clears the class.
       if (btn.classList.contains('hf2-discount-btn--revealed')) return;
@@ -14906,11 +15777,13 @@
     function renderHf2SendButton() {
       var btn = document.getElementById('hf2SendBtn');
       if (!btn) return;
-      var revealed = document.getElementById('hf2DiscountBtn')?.classList.contains('hf2-discount-btn--revealed');
+      var revealed = savingsPassEnabled()
+        && document.getElementById('hf2DiscountBtn')?.classList.contains('hf2-discount-btn--revealed');
       btn.textContent = revealed
         ? (currentLang === 'es' ? 'Enviar Pase y Selecciones' : 'Send Pass & Picks')
         : (currentLang === 'es' ? 'Enviar selecciones' : 'Send picks');
       btn.onclick = function() { showEmailCapture(); };
+      renderHandoffFinancing();
     }
 
     // ---- RSA strip + picker panel -------------------------------------------
@@ -15091,6 +15964,13 @@
 
       // Reset language to English
       if (currentLang !== 'en') switchLanguage('en');
+
+      // Reset financing state for the next customer: interest back to
+      // undecided, sheet closed, per-session impression flag cleared. Module
+      // state only — nothing financing-related persists in localStorage.
+      financingInterest = 'undecided';
+      _finModuleImpressionLogged = false;
+      window.closeFinancingSheet();
 
       // Reset cart
       window._accCart = {};
@@ -15476,6 +16356,9 @@
           + '<div class="drawer-differentiator-detail">' + escapeHtml(item.detail) + '</div>'
           + '</div>';
       }).join('');
+
+      // Ways to bring it home (Payment Choice) — after the fit content.
+      renderDrawerFinancing();
 
       var drawerPromos = getMattressPromotions(m);
       var drawerStorewide = getStorewidePromotions();

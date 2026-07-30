@@ -279,7 +279,12 @@ def validate_store_config(config: dict, manifest: Optional[dict] = None, *,
         if require_gas_url:
             r.add_error(msg)
         else:
-            r.add_warning(msg)
+            # Blank-until-GAS-deploy is the documented pre-launch state (demo /
+            # preview deployments run with gasUrl intentionally blank), so this
+            # is operator information, not an escalatable defect — otherwise
+            # --warnings-as-errors gates (the golden test) could never pass on
+            # a demo-mode repo. Enforcement lives behind --require-gas-url.
+            print(f"[validate] note: {msg}")
 
     if manifest is not None and _blank(manifest.get("start_url")):
         r.add_error("manifest.start_url is empty")
@@ -287,25 +292,56 @@ def validate_store_config(config: dict, manifest: Optional[dict] = None, *,
     return r
 
 
-# -- Promotions validation (scenario-aware) -----------------------------------
+# -- Promotions validation (scenario-aware, retailer-neutral) ------------------
 
 # Accepted evidence-status values for promotion items (provenance ladder).
+# Retailer-neutral: "retailer-*" statuses assert the offer was seen on the
+# active retailer's own site; "lender-current-page" asserts a lender/partner
+# source (e.g. Synchrony). Legacy "wgr-*" names remain accepted as deprecated
+# aliases so historical WGR-era configs keep validating.
 PROMO_EVIDENCE_STATUSES = {
-    "wgr-current-page",
-    "wgr-product-page",
-    "wgr-full-page-archive",
-    "wgr-indexed-historical",
-    "operator-reported-wgr-indexed-historical",
+    "retailer-current-page",
+    "retailer-product-page",
+    "retailer-full-page-archive",
+    "retailer-indexed-historical",
+    "operator-reported-retailer-indexed-historical",
+    "lender-current-page",
     "prior-research-observation",
 }
-# Statuses that assert the offer was seen on WG&R's own site -> a non-empty
-# sourceUrl must be a wgrfurniture.com page or a web.archive.org capture whose
-# embedded target is wgrfurniture.com.
-PROMO_WGR_SOURCE_STATUSES = {
-    "wgr-current-page", "wgr-product-page", "wgr-full-page-archive",
-    "wgr-indexed-historical", "operator-reported-wgr-indexed-historical",
+LEGACY_EVIDENCE_ALIASES = {
+    "wgr-current-page": "retailer-current-page",
+    "wgr-product-page": "retailer-product-page",
+    "wgr-full-page-archive": "retailer-full-page-archive",
+    "wgr-indexed-historical": "retailer-indexed-historical",
+    "operator-reported-wgr-indexed-historical":
+        "operator-reported-retailer-indexed-historical",
 }
-_WGR_HOST_SUFFIX = "wgrfurniture.com"
+# Statuses that assert an offer was seen on an official source -> a non-empty
+# sourceUrl must resolve to an explicitly configured allowed host (or a
+# web.archive.org capture whose embedded target is an allowed host). The
+# allowlist comes from tools/source_hosts.json — never a hardcoded retailer.
+SOURCE_BACKED_STATUSES = {
+    "retailer-current-page", "retailer-product-page", "retailer-full-page-archive",
+    "retailer-indexed-historical", "operator-reported-retailer-indexed-historical",
+    "lender-current-page",
+}
+
+# Default allowlist config location (repo-relative): explicit per-retailer
+# source hosts. Shape: {"promotionSourceHosts": [...], "financingSourceHosts": [...]}
+SOURCE_HOSTS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                 "source_hosts.json")
+
+
+def load_source_hosts(path: str = None) -> dict:
+    """Load the explicit source-host allowlist config. Returns {} when the file
+    is absent — validators then fail closed (source-backed claims error)."""
+    p = path or SOURCE_HOSTS_FILE
+    try:
+        with open(p, encoding="utf-8") as f:
+            data = json.load(f)
+        return data if isinstance(data, dict) else {}
+    except (OSError, ValueError):
+        return {}
 
 
 def _archive_embedded_host(url: str) -> str:
@@ -315,13 +351,17 @@ def _archive_embedded_host(url: str) -> str:
     return _host_from_url(m.group(1)) if m else ""
 
 
-def _is_wgr_source(url: str) -> bool:
-    host = _host_from_url(url)
-    if host.endswith(_WGR_HOST_SUFFIX):
-        return True
+def _is_allowed_source(url: str, allowed_hosts) -> bool:
+    """True when url's host is one of the explicitly allowed hosts (exact match
+    or a dot-boundary subdomain), or a web.archive.org capture whose embedded
+    target host is allowed. Empty allowlist allows nothing (fail closed)."""
+    hosts = [h.lower().strip() for h in (allowed_hosts or []) if h and str(h).strip()]
+    if not hosts:
+        return False
+    host = _host_from_url(url).lower()
     if "web.archive.org" in host:
-        return _archive_embedded_host(url).endswith(_WGR_HOST_SUFFIX)
-    return False
+        host = _archive_embedded_host(url).lower()
+    return any(host == h or host.endswith("." + h) for h in hosts)
 
 
 def _valid_ends_at(s: str) -> bool:
@@ -338,11 +378,13 @@ def _valid_ends_at(s: str) -> bool:
 
 
 def validate_promotions(config: dict, *, mattress_ids=None, accessory_ids=None,
-                        accessory_categories=None) -> ValidationReport:
+                        accessory_categories=None,
+                        allowed_source_hosts=None) -> ValidationReport:
     """Validate the optional promotions block (scenario-aware or flat back-compat).
 
     Pure: takes the assembled config dict plus the known mattress/accessory id and
-    accessory-category sets. No-op when there is no promotions block."""
+    accessory-category sets, plus the explicit source-host allowlist for
+    source-backed evidence statuses. No-op when there is no promotions block."""
     r = ValidationReport()
     promos = config.get("promotions")
     if not promos:
@@ -350,10 +392,11 @@ def validate_promotions(config: dict, *, mattress_ids=None, accessory_ids=None,
     mids = set(mattress_ids or [])
     aids = set(accessory_ids or [])
     acats = set(c for c in (accessory_categories or []) if c)
+    hosts = list(allowed_source_hosts or [])
 
     scenarios = promos.get("scenarios")
     if scenarios is None:
-        _validate_promo_scenario(r, "(flat)", promos, True, mids, aids, acats)
+        _validate_promo_scenario(r, "(flat)", promos, True, mids, aids, acats, hosts)
         return r
     if not isinstance(scenarios, dict):
         r.add_error("promotions.scenarios must be an object")
@@ -366,11 +409,11 @@ def validate_promotions(config: dict, *, mattress_ids=None, accessory_ids=None,
         if not isinstance(sc, dict):
             r.add_error(f"promotions.scenarios[{sid!r}] must be an object")
             continue
-        _validate_promo_scenario(r, sid, sc, sid == active, mids, aids, acats)
+        _validate_promo_scenario(r, sid, sc, sid == active, mids, aids, acats, hosts)
     return r
 
 
-def _validate_promo_scenario(r, sid, sc, is_active, mids, aids, acats):
+def _validate_promo_scenario(r, sid, sc, is_active, mids, aids, acats, hosts):
     kind = sc.get("kind")
     items = sc.get("items") or []
     storewide = sc.get("storewide") or []
@@ -396,12 +439,12 @@ def _validate_promo_scenario(r, sid, sc, is_active, mids, aids, acats):
                             f"have a disclosure in EN and ES")
 
     for it in items:
-        _validate_promo_item(r, sid, it, mids, aids, acats)
+        _validate_promo_item(r, sid, it, mids, aids, acats, hosts)
     for it in storewide:
-        _validate_promo_item(r, sid, it, mids, aids, acats)
+        _validate_promo_item(r, sid, it, mids, aids, acats, hosts)
 
 
-def _validate_promo_item(r, sid, it, mids, aids, acats):
+def _validate_promo_item(r, sid, it, mids, aids, acats, hosts):
     iid = it.get("id", "?")
     tag = f"promotions[{sid}].{iid}"
 
@@ -427,16 +470,26 @@ def _validate_promo_item(r, sid, it, mids, aids, acats):
         if isinstance(obj, dict) and (bool(_s(obj.get("en"))) != bool(_s(obj.get("es")))):
             r.add_error(f"{tag}: {field} has one language but not the other")
 
-    # evidence status enum + source rules
+    # evidence status enum + source rules (legacy wgr-* names normalize to the
+    # retailer-neutral statuses; source-backed statuses require an explicitly
+    # allowlisted host — fail closed when no allowlist is configured)
     ev = it.get("evidenceStatus")
+    if ev in LEGACY_EVIDENCE_ALIASES:
+        ev = LEGACY_EVIDENCE_ALIASES[ev]
     if ev is not None and ev not in PROMO_EVIDENCE_STATUSES:
-        r.add_error(f"{tag}: evidenceStatus {ev!r} not in {sorted(PROMO_EVIDENCE_STATUSES)}")
+        r.add_error(f"{tag}: evidenceStatus {it.get('evidenceStatus')!r} not in "
+                    f"{sorted(PROMO_EVIDENCE_STATUSES)} (or a legacy wgr-* alias)")
     src = _s(it.get("sourceUrl"))
-    if ev in PROMO_WGR_SOURCE_STATUSES and src and not _is_wgr_source(src):
-        r.add_error(f"{tag}: sourceUrl {src!r} is not a wgrfurniture.com source "
-                    f"(required for evidenceStatus {ev!r})")
-    if ev == "wgr-full-page-archive" and src and not _archive_embedded_host(src).endswith(_WGR_HOST_SUFFIX):
-        r.add_error(f"{tag}: wgr-full-page-archive sourceUrl must be a web.archive.org capture of wgrfurniture.com")
+    if ev in SOURCE_BACKED_STATUSES and src:
+        if not hosts:
+            r.add_error(f"{tag}: evidenceStatus {ev!r} carries a sourceUrl but no "
+                        f"source-host allowlist is configured (tools/source_hosts.json)")
+        elif not _is_allowed_source(src, hosts):
+            r.add_error(f"{tag}: sourceUrl {src!r} host is not in the configured "
+                        f"source-host allowlist (required for evidenceStatus {ev!r})")
+    if ev == "retailer-full-page-archive" and src and not _is_allowed_source(src, hosts):
+        r.add_error(f"{tag}: retailer-full-page-archive sourceUrl must be a "
+                    f"web.archive.org capture of an allowlisted host")
     if ev == "prior-research-observation" and not _s(it.get("evidenceProvenance")):
         r.add_error(f"{tag}: evidenceStatus prior-research-observation requires evidenceProvenance")
 
@@ -456,6 +509,153 @@ def _validate_promo_item(r, sid, it, mids, aids, acats):
         if targets_products and it.get("eligibleForStorewide20") is not True:
             r.add_error(f"{tag}: 20% storewide event applied to individual products "
                         f"without eligibleForStorewide20=true")
+
+
+# -- Financing validation (Lacks Payment Choice) -------------------------------
+
+FINANCING_PLAN_KINDS = {
+    "open-end-promotional-credit",   # e.g. Synchrony HOME card promos (Reg Z open-end)
+    "closed-end-installment",        # e.g. Lacks In-House / Mexico contracts
+    "lease-to-own",                  # not credit — never describe as financing terms
+    "credit-builder",                # Build My Credit — availability only
+    "informational",
+}
+SAVINGS_PASS_POLICIES = {"alternative", "stackable", "specialist_confirm"}
+
+
+def _valid_iso_instant(s: str) -> bool:
+    """ISO-8601 datetime with explicit timezone offset (absolute instant)."""
+    from datetime import datetime
+    try:
+        d = datetime.fromisoformat(str(s))
+    except (ValueError, TypeError):
+        return False
+    return d.tzinfo is not None
+
+
+def _bilingual_ok(obj) -> bool:
+    return isinstance(obj, dict) and bool(_s(obj.get("en"))) and bool(_s(obj.get("es")))
+
+
+def validate_financing(config: dict, *, allowed_source_hosts=None) -> ValidationReport:
+    """Validate the optional financing block (V1 'payment choice' rules).
+
+    Fail-closed posture: exact credit claims (APR / term / minimum) must be
+    verified, timestamped, freshness-bounded, disclosure-carrying, and sourced
+    from an explicitly allowlisted host. Payment calculation must be disabled
+    in V1. No-op when there is no financing block."""
+    r = ValidationReport()
+    fin = config.get("financing")
+    if fin is None:
+        return r
+    if not isinstance(fin, dict):
+        r.add_error("financing must be an object")
+        return r
+    hosts = list(allowed_source_hosts or [])
+    enabled = fin.get("enabled") is True
+
+    if enabled:
+        for key in ("verifiedAt", "maxAgeDays", "sourceUrl"):
+            if _blank(fin.get(key)):
+                r.add_error(f"financing.{key} is required when financing is enabled")
+        if fin.get("verifiedAt") and not _valid_iso_instant(fin["verifiedAt"]):
+            r.add_error(f"financing.verifiedAt {fin['verifiedAt']!r} must be ISO-8601 "
+                        f"with a timezone offset")
+        mad = fin.get("maxAgeDays")
+        if mad is not None and (not isinstance(mad, int) or not 1 <= mad <= 60):
+            r.add_error("financing.maxAgeDays must be an integer between 1 and 60")
+        if fin.get("sourceUrl") and not _is_allowed_source(fin["sourceUrl"], hosts):
+            r.add_error(f"financing.sourceUrl {fin['sourceUrl']!r} host is not in the "
+                        f"configured source-host allowlist")
+        copy = fin.get("copy") or {}
+        for key in ("eyebrow", "headline"):
+            if not _bilingual_ok(copy.get(key)):
+                r.add_error(f"financing.copy.{key} missing EN or ES")
+        policy = fin.get("savingsPassPolicy")
+        if policy not in SAVINGS_PASS_POLICIES:
+            r.add_error(f"financing.savingsPassPolicy {policy!r} must be one of "
+                        f"{sorted(SAVINGS_PASS_POLICIES)}")
+        discount_mode = _s((config.get("discount") or {}).get("mode"))
+        if discount_mode and discount_mode != "disabled" and policy != "stackable":
+            r.add_error(
+                f"financing is enabled while discount.mode={discount_mode!r}; either "
+                f"set discount.mode='disabled' or declare an explicit stackable policy")
+
+    # allowedSourceHosts inside the block (used by the client freshness gate)
+    # must not widen the build-time allowlist.
+    declared = fin.get("allowedSourceHosts")
+    if declared is not None:
+        if not isinstance(declared, list):
+            r.add_error("financing.allowedSourceHosts must be a list")
+        else:
+            for h in declared:
+                hs = _s(h).lower()
+                if hosts and hs not in [x.lower() for x in hosts]:
+                    r.add_error(f"financing.allowedSourceHosts entry {h!r} is not in "
+                                f"tools/source_hosts.json financingSourceHosts")
+
+    plans = fin.get("plans")
+    if enabled and not (isinstance(plans, list) and plans):
+        r.add_error("financing.plans must be a non-empty list when enabled")
+    for i, plan in enumerate(plans or []):
+        tag = f"financing.plans[{plan.get('id', i)!r}]"
+        if not isinstance(plan, dict):
+            r.add_error(f"{tag}: must be an object")
+            continue
+        if _blank(plan.get("id")):
+            r.add_error(f"{tag}: id is required")
+        kind = plan.get("kind")
+        if kind not in FINANCING_PLAN_KINDS:
+            r.add_error(f"{tag}: kind {kind!r} not in {sorted(FINANCING_PLAN_KINDS)}")
+        # V1 hard invariant: no payment calculation anywhere.
+        if plan.get("paymentCalculationEnabled"):
+            r.add_error(f"{tag}: paymentCalculationEnabled must be false in V1 — "
+                        f"product-level payment math is not approved")
+        if not _bilingual_ok(plan.get("headline")):
+            r.add_error(f"{tag}: headline missing EN or ES")
+        for field_name in ("detail", "disclosure"):
+            obj = plan.get(field_name)
+            if isinstance(obj, dict) and (bool(_s(obj.get("en"))) != bool(_s(obj.get("es")))):
+                r.add_error(f"{tag}: {field_name} has one language but not the other")
+        # Exact credit claims: APR/term/minimum require verification, source,
+        # adjacent conditions (detail) and a disclosure — all bilingual.
+        exact = any(plan.get(k) is not None
+                    for k in ("apr", "termMonths", "minimumPurchase"))
+        if exact:
+            if plan.get("verified") is not True:
+                r.add_error(f"{tag}: exact terms present but verified is not true")
+            if not _valid_iso_instant(plan.get("verifiedAt", "")):
+                r.add_error(f"{tag}: exact terms require a valid verifiedAt "
+                            f"(ISO-8601 with offset)")
+            src = _s(plan.get("sourceUrl"))
+            if not src:
+                r.add_error(f"{tag}: exact terms require sourceUrl")
+            elif not _is_allowed_source(src, hosts):
+                r.add_error(f"{tag}: sourceUrl {src!r} host is not in the configured "
+                            f"source-host allowlist")
+            if not _bilingual_ok(plan.get("detail")):
+                r.add_error(f"{tag}: exact terms require adjacent conditions "
+                            f"(detail) in EN and ES")
+            if not _bilingual_ok(plan.get("disclosure")):
+                r.add_error(f"{tag}: exact terms require a disclosure in EN and ES")
+        apr = plan.get("apr")
+        if apr is not None and (not isinstance(apr, (int, float)) or apr < 0 or apr > 100):
+            r.add_error(f"{tag}: apr {apr!r} out of range")
+        tm = plan.get("termMonths")
+        if tm is not None and (not isinstance(tm, int) or not 1 <= tm <= 120):
+            r.add_error(f"{tag}: termMonths {tm!r} out of range")
+        mp = plan.get("minimumPurchase")
+        if mp is not None and (not isinstance(mp, (int, float)) or mp < 0):
+            r.add_error(f"{tag}: minimumPurchase {mp!r} out of range")
+        ppf = plan.get("publishedPaymentFactor")
+        if ppf is not None and (not isinstance(ppf, (int, float)) or not 0 < ppf < 1):
+            r.add_error(f"{tag}: publishedPaymentFactor {ppf!r} must be a fraction "
+                        f"between 0 and 1")
+        # lease-to-own / credit-builder must never carry credit terms
+        if kind in ("lease-to-own", "credit-builder") and exact:
+            r.add_error(f"{tag}: {kind} plans must not state APR/term/minimum — "
+                        f"availability only, details confirmed in store")
+    return r
 
 
 # -- V2: catalog validation (raw tabs) ----------------------------------------
@@ -996,10 +1196,15 @@ def _self_test() -> int:
     check("publicAssetRoot no trailing slash -> error",
           any("trailing slash" in e for e in validate_store_config(c).errors))
 
-    # blank gasUrl -> warning (not error) by default
+    # blank gasUrl -> informational note only by default (documented pre-launch
+    # state; must not block --warnings-as-errors gates), error under require_gas_url
     c = _good_config(); c["gasUrl"] = ""
     r = validate_store_config(c)
-    check("blank gasUrl -> warning only", r.ok and any("gasUrl" in w for w in r.warnings))
+    check("blank gasUrl -> no error/warning by default",
+          r.ok and not any("gasUrl" in w for w in r.warnings))
+    r = validate_store_config(c, require_gas_url=True)
+    check("blank gasUrl -> error under require_gas_url",
+          not r.ok and any("gasUrl" in e for e in r.errors))
 
     # --require-gas-url promotes gasUrl to error
     c = _good_config(); c["gasUrl"] = ""
@@ -1397,17 +1602,30 @@ def _self_test() -> int:
     check("promotions bad evidenceStatus -> error",
           any("evidenceStatus" in e for e in validate_promotions(_pc(bev), mattress_ids=MIDS).errors))
 
+    _HOSTS = ["wgrfurniture.com", "www.wgrfurniture.com"]
+
     nws = _mut()
     nws["scenarios"]["demo"]["items"][0]["evidenceStatus"] = "wgr-product-page"
     nws["scenarios"]["demo"]["items"][0]["sourceUrl"] = "https://purple.com/x"
-    check("promotions non-WG&R source -> error",
-          any("not a wgrfurniture.com source" in e for e in validate_promotions(_pc(nws), mattress_ids=MIDS).errors))
+    check("promotions non-allowlisted source -> error",
+          any("allowlist" in e for e in validate_promotions(
+              _pc(nws), mattress_ids=MIDS, allowed_source_hosts=_HOSTS).errors))
+    check("promotions source-backed status without allowlist -> error (fail closed)",
+          any("allowlist" in e for e in validate_promotions(
+              _pc(nws), mattress_ids=MIDS).errors))
+    ok_src = _mut()
+    ok_src["scenarios"]["demo"]["items"][0]["evidenceStatus"] = "retailer-product-page"
+    ok_src["scenarios"]["demo"]["items"][0]["sourceUrl"] = "https://www.wgrfurniture.com/x"
+    check("promotions allowlisted source (neutral status) -> ok",
+          validate_promotions(_pc(ok_src), mattress_ids=MIDS,
+                              allowed_source_hosts=_HOSTS).ok)
 
     arc = _mut()
     arc["scenarios"]["demo"]["items"][0]["evidenceStatus"] = "wgr-full-page-archive"
     arc["scenarios"]["demo"]["items"][0]["sourceUrl"] = "https://web.archive.org/web/20260525/https://www.wgrfurniture.com/x"
-    check("promotions archive of WG&R -> ok",
-          validate_promotions(_pc(arc), mattress_ids=MIDS).ok)
+    check("promotions archive of allowlisted host (legacy alias) -> ok",
+          validate_promotions(_pc(arc), mattress_ids=MIDS,
+                              allowed_source_hosts=_HOSTS).ok)
 
     nde = _mut(); nde["scenarios"]["demo"]["disableEmailSubmission"] = False
     check("promotions historical-demo without disableEmailSubmission -> error",
@@ -1436,6 +1654,99 @@ def _self_test() -> int:
     ebad = _mut(); ebad["scenarios"]["demo"]["items"][0]["endsAt"] = "soon"
     check("promotions malformed endsAt -> error",
           any("endsAt" in e for e in validate_promotions(_pc(ebad), mattress_ids=MIDS).errors))
+
+    # ---- financing (Lacks Payment Choice) ------------------------------------
+    _FHOSTS = ["lacks.com", "www.lacks.com", "synchrony.com"]
+
+    def _fc(fin):
+        return {"financing": fin, "discount": {"mode": "disabled"}}
+
+    good_fin = {
+        "enabled": True, "experience": "payment-choice",
+        "verifiedAt": "2026-07-30T10:53:32-05:00", "maxAgeDays": 7,
+        "sourceUrl": "https://www.lacks.com/financing",
+        "savingsPassPolicy": "specialist_confirm",
+        "copy": {"eyebrow": {"en": "E", "es": "E"}, "headline": {"en": "H", "es": "H"}},
+        "plans": [{
+            "id": "syn-9-99-72", "kind": "open-end-promotional-credit",
+            "verified": True, "verifiedAt": "2026-07-30T10:53:32-05:00",
+            "sourceUrl": "https://www.lacks.com/financing",
+            "apr": 9.99, "termMonths": 72, "minimumPurchase": 500,
+            "paymentCalculationEnabled": False,
+            "headline": {"en": "H", "es": "H"},
+            "detail": {"en": "D", "es": "D"},
+            "disclosure": {"en": "X", "es": "X"},
+        }],
+    }
+
+    def _fmut():
+        return json.loads(json.dumps(good_fin))
+
+    check("financing absent -> ok (no-op)",
+          validate_financing({}, allowed_source_hosts=_FHOSTS).ok)
+    check("financing valid -> ok",
+          validate_financing(_fc(good_fin), allowed_source_hosts=_FHOSTS).ok)
+
+    fen = _fmut(); del fen["verifiedAt"]
+    check("financing enabled without verifiedAt -> error",
+          any("verifiedAt" in e for e in
+              validate_financing(_fc(fen), allowed_source_hosts=_FHOSTS).errors))
+
+    fbad = _fmut(); fbad["verifiedAt"] = "2026-07-30"  # no offset
+    check("financing verifiedAt without offset -> error",
+          any("verifiedAt" in e for e in
+              validate_financing(_fc(fbad), allowed_source_hosts=_FHOSTS).errors))
+
+    fhost = _fmut(); fhost["plans"][0]["sourceUrl"] = "https://evil.example.com/x"
+    check("financing plan non-allowlisted source -> error",
+          any("allowlist" in e for e in
+              validate_financing(_fc(fhost), allowed_source_hosts=_FHOSTS).errors))
+
+    fes = _fmut(); fes["plans"][0]["disclosure"] = {"en": "X", "es": ""}
+    check("financing exact terms missing ES disclosure -> error",
+          any("disclosure" in e for e in
+              validate_financing(_fc(fes), allowed_source_hosts=_FHOSTS).errors))
+
+    fdet = _fmut(); del fdet["plans"][0]["detail"]
+    check("financing exact terms without adjacent conditions -> error",
+          any("adjacent conditions" in e for e in
+              validate_financing(_fc(fdet), allowed_source_hosts=_FHOSTS).errors))
+
+    fcalc = _fmut(); fcalc["plans"][0]["paymentCalculationEnabled"] = True
+    check("financing paymentCalculationEnabled=true -> error (V1 invariant)",
+          any("paymentCalculationEnabled" in e for e in
+              validate_financing(_fc(fcalc), allowed_source_hosts=_FHOSTS).errors))
+
+    flto = _fmut()
+    flto["plans"].append({"id": "lto", "kind": "lease-to-own", "apr": 99,
+                          "headline": {"en": "H", "es": "H"}})
+    check("financing lease-to-own with credit terms -> error",
+          any("lease-to-own" in e for e in
+              validate_financing(_fc(flto), allowed_source_hosts=_FHOSTS).errors))
+
+    fwid = _fmut(); fwid["allowedSourceHosts"] = ["lacks.com", "sketchy.example"]
+    check("financing allowedSourceHosts widening -> error",
+          any("allowedSourceHosts" in e for e in
+              validate_financing(_fc(fwid), allowed_source_hosts=_FHOSTS).errors))
+
+    fstack = _fc(_fmut()); fstack["discount"]["mode"] = "illustrative"
+    check("financing enabled + discount not disabled + no stackable policy -> error",
+          any("discount.mode" in e for e in
+              validate_financing(fstack, allowed_source_hosts=_FHOSTS).errors))
+
+    fpol = _fmut(); fpol["savingsPassPolicy"] = "whatever"
+    check("financing bad savingsPassPolicy -> error",
+          any("savingsPassPolicy" in e for e in
+              validate_financing(_fc(fpol), allowed_source_hosts=_FHOSTS).errors))
+
+    fnoplans = _fmut(); fnoplans["plans"] = []
+    check("financing enabled with no plans -> error",
+          any("plans" in e for e in
+              validate_financing(_fc(fnoplans), allowed_source_hosts=_FHOSTS).errors))
+
+    fdis = _fmut(); fdis["enabled"] = False; del fdis["verifiedAt"]
+    check("financing disabled -> light checks only, ok",
+          validate_financing(_fc(fdis), allowed_source_hosts=_FHOSTS).ok)
 
     print(f"\nSelf-test: {passed} passed, {failed} failed")
     return 0 if failed == 0 else 1

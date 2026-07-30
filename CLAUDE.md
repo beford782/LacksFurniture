@@ -23,10 +23,23 @@ specific retailer. Each store gets its own fully customized deployment.
 ---
 
 ## This Repo — Lacks Furniture Deployment
-Planned deploy: https://beford782.github.io/LacksFurniture (repo not yet pushed —
-local demo built 2026-07-30, pending Blake's sign-off; no git remote configured)
+Deployed (PREVIEW, not production): https://beford782.github.io/LacksFurniture
+Repo: https://github.com/beford782/LacksFurniture (main = Pages branch)
 Local path: `C:\Users\BlakeFord\Documents\GitHub\LacksFurniture`
 Forked from the WGR template (beford782/WGRFurniture) at commit b05e574.
+
+**Lacks Payment Choice**: the primary promotional concept is a financing
+experience (not the illustrative Savings Pass, which is disabled via
+`discount.mode: "disabled"`). Canonical source: `incoming/lacks_financing.json`
+→ workbook Promotions tab (envelope form) → `store-config.financing`. Sleep fit
+first, payment choice second — financing NEVER affects scoring, tiers, or the
+Sleep Brief. Exact rate/term claims are freshness-gated fail-closed
+(`verifiedAt` + `maxAgeDays` + allowlisted `sourceUrl`; see
+`tools/source_hosts.json`). No product-level monthly payments are calculated or
+shown (V1 invariant, enforced by `validate_financing`). Live financing
+applications happen only on approved external Lacks/lender pages — the kiosk
+collects no financial data. Facts verified against live lacks.com pages:
+`docs/financing-verification-2026-07-30.md` (includes the discrepancy log).
 
 This is Lacks Furniture's instance (South Texas / Rio Grande Valley, family-owned
 since 1935; EN+ES). Everything in `data/` is Lacks-specific and generated from the
@@ -89,10 +102,9 @@ Do not copy `data/mattresses.csv` between retailer repos — each store has a
 completely different product lineup.
 
 **Deployments (separate repos):**
-- Bel Furniture — this repo (active)
+- Lacks Furniture — this repo (preview at beford782.github.io/LacksFurniture)
 - The Furniture Market — `beford782/TheFurnitureMarket` (active)
 - Star Furniture — separate repo (planned)
-- Lacks Furniture — separate repo (planned)
 
 ### New features must be config-driven
 Any feature that could vary by store (colors, copy, quiz questions, tier names,

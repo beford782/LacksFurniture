@@ -11,19 +11,27 @@ var RESULT_EMAIL_BCC = 'dreamfinderleads@gmail.com';
 var MAX_EMAIL_ACCESSORIES = 20;
 
 // \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
-// CAN-SPAM / privacy footer values \u2014 \u26a0\ufe0f DRAFT PLACEHOLDERS, NOT YET APPROVED.
-// WG&R MUST REVIEW & APPROVE every value below BEFORE live lead capture.
-// CAN-SPAM requires (a) a working unsubscribe mechanism, honored within 10
-// business days and kept live >=30 days, and (b) a valid physical postal
-// address in every commercial email. The values here are review drafts only.
-// These are WG&R-STYLE GUESSES, NOT confirmed \u2014 the inbox/domain may not exist
-// or route, and the postal address is incomplete. Do NOT enable gasUrl until
-// WG&R confirms all three AND the unsubscribe inbox is actively monitored.
-// Replace all three before going live.
+// CAN-SPAM / privacy footer values \u2014 \u26a0\ufe0f UNSET. The active retailer (Lacks
+// Furniture for this deployment) must supply and approve every value below
+// BEFORE live lead capture. CAN-SPAM requires (a) a working unsubscribe
+// mechanism, honored within 10 business days and kept live >=30 days, and
+// (b) a valid physical postal address in every commercial email. No values
+// are guessed or invented here: doPost() REFUSES to send any email while a
+// sentinel remains, so live capture is hard-blocked until real,
+// retailer-approved values replace all three AND the unsubscribe inbox is
+// actively monitored. (gasUrl in store-config.json must also stay blank
+// until then \u2014 it is blank in this deployment.)
 // \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
-var UNSUBSCRIBE_URL = 'mailto:unsubscribe@wgrfurniture.com?subject=Unsubscribe%20DreamFinder'; // \u26a0\ufe0f WG&R TO APPROVE (unverified placeholder)
-var POSTAL_ADDRESS  = 'WG&R Furniture (TEST DEPLOYMENT), PO Box 0000, Green Bay, WI 54301'; // \u26a0\ufe0f TEST PLACEHOLDER \u2014 WG&R TO APPROVE real address before live
-var PRIVACY_CONTACT = 'privacy@wgrfurniture.com'; // \u26a0\ufe0f WG&R TO APPROVE (unverified placeholder)
+var CANSPAM_SENTINEL = 'RETAILER_APPROVAL_REQUIRED';
+var UNSUBSCRIBE_URL = 'RETAILER_APPROVAL_REQUIRED_UNSUBSCRIBE_URL';
+var POSTAL_ADDRESS  = 'RETAILER_APPROVAL_REQUIRED_POSTAL_ADDRESS';
+var PRIVACY_CONTACT = 'RETAILER_APPROVAL_REQUIRED_PRIVACY_CONTACT';
+
+function _canSpamConfigured() {
+  return [UNSUBSCRIBE_URL, POSTAL_ADDRESS, PRIVACY_CONTACT].every(function(v) {
+    return v && v.indexOf(CANSPAM_SENTINEL) === -1;
+  });
+}
 
 // Helper: escape five HTML metacharacters; safe for attribute values and text content.
 function _escapeHtml(s) {
@@ -96,6 +104,15 @@ function doPost(e) {
         .setMimeType(ContentService.MimeType.JSON);
     }
 
+    // Hard block: no commercial email may leave this script until the
+    // retailer-approved CAN-SPAM values replace the sentinels above.
+    if (!_canSpamConfigured()) {
+      Logger.log('doPost rejected: canspam_not_configured (retailer approval required)');
+      return ContentService
+        .createTextOutput(JSON.stringify({ success: false, error: 'canspam_not_configured' }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
     // Bound client-controlled scalars defensively.
     var name = _safeText(data.name, 200);
     var phone = _safeText(data.phone, 40);
@@ -139,15 +156,38 @@ function doPost(e) {
       rsa
     ]);
 
+    // Branding, supplied by the client from STORE_CONFIG (logo wordmark +
+    // colors) so customer-visible email identity is config-driven, never
+    // hardcoded to any retailer. Neutral fallbacks when absent.
+    var branding = (data.branding && typeof data.branding === 'object') ? data.branding : {};
+    var safeBranding = {
+      logoMain: _safeText(branding.logoMain, 60),
+      logoSub: _safeText(branding.logoSub, 60),
+      primary: /^#[0-9a-fA-F]{3,8}$/.test(String(branding.primary || '')) ? String(branding.primary) : '',
+      accent: /^#[0-9a-fA-F]{3,8}$/.test(String(branding.accent || '')) ? String(branding.accent) : ''
+    };
+
+    // Payment Choice (financing) email content \u2014 categories, official URL,
+    // and interest state only. Never terms math, approval language, or any
+    // application/sensitive data.
+    var financing = (data.financing && typeof data.financing === 'object') ? {
+      heading: _safeText(data.financing.heading, 120),
+      body: _safeText(data.financing.body, 600),
+      url: (function(u) { return /^https:\/\//i.test(String(u || '')) ? String(u) : ''; })(data.financing.url),
+      confirmNote: _safeText(data.financing.confirmNote, 300),
+      interest: _safeText(data.financing.interest, 20)
+    } : null;
+
     // --- Send email with fallback ---
-    // Subject leads with the Sleep Brief (the consultation takeaway) and keeps
-    // the Savings Pass as a secondary draw, matching the in-app "Save your Sleep
-    // Brief" narrative. (Email-body section ORDER still shows the Savings Pass
-    // band before the Sleep Brief section; reordering is deferred to the Phase C
-    // test deploy where the rendered email can actually be verified.)
-    var subject = isEs
-      ? 'Tu Resumen de Sue\u00f1o y Pase de Ahorro de ' + storeName
-      : 'Your Sleep Brief & Savings Pass from ' + storeName;
+    // Subject leads with the Sleep Brief (the consultation takeaway); the
+    // Savings Pass appears only when a code was actually issued this session.
+    var subject = dreamCode
+      ? (isEs
+        ? 'Tu Resumen de Sue\u00f1o y Pase de Ahorro de ' + storeName
+        : 'Your Sleep Brief & Savings Pass from ' + storeName)
+      : (isEs
+        ? 'Tu Resumen de Sue\u00f1o de ' + storeName
+        : 'Your Sleep Brief from ' + storeName);
     var senderName = isEs
       ? 'Equipo de Descanso de ' + storeName
       : storeName + ' Sleep Team';
@@ -181,7 +221,7 @@ function doPost(e) {
           imageUrl: _safeImageUrl(a && a.imageUrl)
         };
       }),
-      // Website-derived WG&R promotions, pre-localized by the client to data.lang.
+      // Website-derived retailer promotions, pre-localized by the client to data.lang.
       promotions: _safeArray(data.emailPromotions).slice(0, 12).map(function(p) {
         return {
           badge: _safeText(p && p.badge, 80),
@@ -196,6 +236,8 @@ function doPost(e) {
           sourceUrl: _safeImageUrl(p && p.sourceUrl)
         };
       }),
+      branding: safeBranding,
+      financing: financing,
       promoSpanishDraft: _safeText(data.promoSpanishDraft, 200),
       // Scenario-level fields (pre-localized by the client). A non-empty
       // promoDisclosure marks a disclosed scenario (e.g. the historical demo):
@@ -233,13 +275,13 @@ function doPost(e) {
           + (p.expiration ? '\n  ' + p.expiration : '')
           + (p.sourceUrl ? '\n  ' + p.sourceUrl : '');
       }).join('\n');
-      // Scenario-aware plain-text promo header: a disclosed scenario (e.g. the
+      // Scenario-aware plain-text promo header: a disclosed scenario (e.g. a
       // historical demo) drops the "current offer" claim and prepends the
-      // disclosure line. Empty disclosure -> existing "Current WG&R Offers" header.
+      // disclosure line. Retailer name comes from the payload storeName.
       var plainPromoDisclosure = (safeData.promoDisclosure || '').toString();
       var plainPromoHeader = plainPromoDisclosure
-        ? (isEs ? 'Ofertas de WG&R' : 'WG&R Offers')
-        : (isEs ? 'Ofertas Actuales de WG&R' : 'Current WG&R Offers');
+        ? (isEs ? 'Ofertas de ' + storeName : storeName + ' Offers')
+        : (isEs ? 'Ofertas Actuales de ' + storeName : 'Current ' + storeName + ' Offers');
       var promoBlock = promoLines
         ? ('\n\n' + plainPromoHeader + ':\n'
             + (plainPromoDisclosure ? plainPromoDisclosure + '\n' : '')
@@ -250,16 +292,35 @@ function doPost(e) {
       var topMatchDetail = meetsMatchThreshold
         ? matchPct + (isEs ? '% compatibilidad' : '% match')
         : comparisonLabel;
-      var plainBody = isEs
-        ? ('Tu match de sue\u00f1o WG&R est\u00e1 listo.\n\n'
-          + (meetsMatchThreshold ? 'Tu mejor opci\u00f3n: ' : 'Opci\u00f3n para comparar: ') + topMatch + ' (' + topMatchDetail + ')\n'
-          + 'El mejor punto de partida en la tienda.\n'
-          + 'Resumen de sue\u00f1o: ' + sleepProfile + '\n'
-          + 'Tu pase de ahorro de 30 d\u00edas: ' + discount + '% DE DESCUENTO\n'
+      // Savings Pass lines only when a code was actually issued; Payment
+      // Choice lines only when the client sent a financing block (no terms
+      // math, no approval language \u2014 categories + official URL only).
+      var passBlockEs = dreamCode
+        ? ('Tu pase de ahorro de 30 d\u00edas: ' + discount + '% DE DESCUENTO\n'
           + 'C\u00f3digo del pase: ' + dreamCode + '\n\n'
           + 'V\u00e1lido en: ' + passScope + '\n'
           + 'V\u00e1lido hasta: ' + passExpiration + '\n'
-          + passTerms + '\n\n'
+          + passTerms + '\n\n')
+        : '';
+      var passBlockEn = dreamCode
+        ? ('Your 30-day Savings Pass: ' + discount + '% OFF\n'
+          + 'Savings pass code: ' + dreamCode + '\n\n'
+          + 'Valid on: ' + passScope + '\n'
+          + 'Good through: ' + passExpiration + '\n'
+          + passTerms + '\n\n')
+        : '';
+      var finBlock = financing
+        ? ('\n\n' + (financing.heading || (isEs ? 'Opciones de pago' : 'Payment options')) + ':\n'
+          + (financing.body ? financing.body + '\n' : '')
+          + (financing.confirmNote ? financing.confirmNote + '\n' : '')
+          + (financing.url ? financing.url : ''))
+        : '';
+      var plainBody = isEs
+        ? ('Tu match de sue\u00f1o de ' + storeName + ' est\u00e1 listo.\n\n'
+          + (meetsMatchThreshold ? 'Tu mejor opci\u00f3n: ' : 'Opci\u00f3n para comparar: ') + topMatch + ' (' + topMatchDetail + ')\n'
+          + 'El mejor punto de partida en la tienda.\n'
+          + 'Resumen de sue\u00f1o: ' + sleepProfile + '\n'
+          + passBlockEs
           + 'Muestra este correo a tu especialista de sue\u00f1o de ' + storeName + '.\n\n'
           + safeData.allMatches.map(function(m, i) {
               return (i+1) + '. ' + m.name + ' - ' + (m.meetsMatchThreshold
@@ -268,20 +329,17 @@ function doPost(e) {
             }).join('\n')
           + (accessoryLines ? '\n\nTu Sistema de Sue\u00f1o guardado:\n' + accessoryLines : '')
           + promoBlock
+          + finBlock
           + '\n\n----------\n'
           + 'Recibiste este correo porque guardaste tu Resumen de Sue\u00f1o en ' + storeName + '.\n'
           + POSTAL_ADDRESS + '\n'
           + 'Cancelar suscripci\u00f3n: ' + UNSUBSCRIBE_URL + '\n'
           + 'Privacidad y solicitudes de datos: ' + PRIVACY_CONTACT)
-        : ('Your WG&R sleep match is ready.\n\n'
+        : ('Your ' + storeName + ' sleep match is ready.\n\n'
           + (meetsMatchThreshold ? 'Your best match: ' : 'Option to compare: ') + topMatch + ' (' + topMatchDetail + ')\n'
           + 'Best place to start in-store.\n'
           + 'Sleep Brief: ' + sleepProfile + '\n'
-          + 'Your 30-day Savings Pass: ' + discount + '% OFF\n'
-          + 'Savings pass code: ' + dreamCode + '\n\n'
-          + 'Valid on: ' + passScope + '\n'
-          + 'Good through: ' + passExpiration + '\n'
-          + passTerms + '\n\n'
+          + passBlockEn
           + 'Show this email to your ' + storeName + ' sleep specialist.\n\n'
           + safeData.allMatches.map(function(m, i) {
               return (i+1) + '. ' + m.name + ' - ' + (m.meetsMatchThreshold
@@ -290,6 +348,7 @@ function doPost(e) {
             }).join('\n')
           + (accessoryLines ? '\n\nYour saved Sleep System:\n' + accessoryLines : '')
           + promoBlock
+          + finBlock
           + '\n\n----------\n'
           + 'You received this email because you saved your Sleep Brief at ' + storeName + '.\n'
           + POSTAL_ADDRESS + '\n'
@@ -336,9 +395,11 @@ function buildSimpleHtml(data, firstName, isEs, storeName) {
 
   var rsa = _escapeHtml((data.rsa || '').toString().trim());
 
-  // WG&R warm-paper palette \u2014 ported from index.html showroom theme
-  // (#F3EEE5 / #FFFDF8 / #2F271E ink + brass #9A7445) plus WG&R red from
-  // store-config.colors. Light surfaces, dark ink, brass + red accents.
+  // Warm-paper neutral palette (retailer-agnostic) with the retailer's own
+  // primary/accent colors layered in from the payload branding block (sourced
+  // from store-config.colors client-side). `red` retains its legacy key name
+  // but is now the retailer PRIMARY accent, brand-neutral brass by default.
+  var branding = (data.branding && typeof data.branding === 'object') ? data.branding : {};
   var c = {
     pageBg: '#E7DECF',
     bg: '#FBF7EF',
@@ -348,20 +409,24 @@ function buildSimpleHtml(data, firstName, isEs, storeName) {
     text: '#2F271E',
     textMuted: '#665D54',
     textSubtle: '#7A6E61',
-    accent: '#9A7445',
+    accent: branding.accent || '#9A7445',
     accentHover: '#7D5B34',
-    red: '#B12D15',
-    redLight: '#C8402A'
+    red: branding.primary || '#9A7445',
+    redLight: branding.primary || '#9A7445'
   };
+  var logoMain = _escapeHtml(branding.logoMain || storeName);
+  var logoSub = _escapeHtml(branding.logoSub || '');
 
   var serif = "Georgia, 'Times New Roman', serif";
   var sans = "-apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif";
 
-  // Localized strings (headline is impersonal / showroom-safe \u2014 no first name).
+  // Localized strings (headline is impersonal / showroom-safe \u2014 no first
+  // name; retailer identity comes from the payload storeName, never
+  // hardcoded).
   var L = isEs ? {
     eyebrow: 'TUS RESULTADOS',
-    headline: 'Tu match de sue\u00f1o WG&R est\u00e1 listo',
-    headlineAccent: 'match de sue\u00f1o WG&R',
+    headline: 'Tu match de sue\u00f1o de ' + storeName + ' est\u00e1 listo',
+    headlineAccent: 'match de sue\u00f1o de ' + storeName,
     bestLabel: 'TU MEJOR OPCI\u00d3N',
     bestStart: 'El mejor punto de partida en la tienda.',
     matchSuffix: 'compatibilidad',
@@ -375,15 +440,17 @@ function buildSimpleHtml(data, firstName, isEs, storeName) {
     accLabel: 'TU SISTEMA DE SUE\u00d1O GUARDADO',
     ctaMain: 'Lleva este correo a tu especialista de sue\u00f1o de ' + storeName + ' \u2014 tendr\u00e1n tus opciones listas.',
     helpedBy: rsa ? 'Atendido por ' + rsa + ' en ' + storeName : '',
-    ctaSaved: 'Tu Pase de Ahorro est\u00e1 guardado. T\u00f3mate tu tiempo.',
+    ctaSaved: dreamCode
+      ? 'Tu Pase de Ahorro est\u00e1 guardado. T\u00f3mate tu tiempo.'
+      : 'Tu plan est\u00e1 guardado. T\u00f3mate tu tiempo.',
     unsubWhy: 'Recibiste este correo porque guardaste tu Resumen de Sue\u00f1o en ' + storeName + '.',
     unsubAction: 'Cancelar suscripci\u00f3n',
     privacyLine: 'Privacidad y solicitudes de datos: ' + PRIVACY_CONTACT,
-    viewSite: 'Ver en el sitio de WG&amp;R'
+    viewSite: 'Ver en el sitio de ' + storeName
   } : {
     eyebrow: 'YOUR RESULTS',
-    headline: 'Your WG&R sleep match is ready',
-    headlineAccent: 'WG&R sleep match',
+    headline: 'Your ' + storeName + ' sleep match is ready',
+    headlineAccent: storeName + ' sleep match',
     bestLabel: 'YOUR BEST MATCH',
     bestStart: 'Best place to start in-store.',
     matchSuffix: 'match',
@@ -397,18 +464,21 @@ function buildSimpleHtml(data, firstName, isEs, storeName) {
     accLabel: 'YOUR SAVED SLEEP SYSTEM',
     ctaMain: 'Bring this email to your ' + storeName + ' sleep specialist \u2014 they\u2019ll have your picks ready.',
     helpedBy: rsa ? 'Helped by ' + rsa + ' at ' + storeName : '',
-    ctaSaved: 'Your Savings Pass is saved. Take your time.',
+    ctaSaved: dreamCode
+      ? 'Your Savings Pass is saved. Take your time.'
+      : 'Your plan is saved. Take your time.',
     unsubWhy: 'You received this email because you saved your Sleep Brief at ' + storeName + '.',
     unsubAction: 'Unsubscribe',
     privacyLine: 'Privacy & data requests: ' + PRIVACY_CONTACT,
-    viewSite: "View on WG&amp;R\u2019s site"
+    viewSite: 'View on ' + storeName + '\u2019s site'
   };
 
-  // Render the headline: escape the raw "WG&R" ampersand and italicize the brand
-  // phrase in brass. Static copy (not user input).
+  // Render the headline: escape any raw ampersand in the store name and
+  // italicize the brand phrase in brass. storeName was escaped above, so the
+  // remaining raw '&' handling covers the pre-escape fallback strings only.
   function headlineHtml() {
-    var h = L.headline.split('&').join('&amp;');
-    var a = L.headlineAccent.split('&').join('&amp;');
+    var h = L.headline.split('&amp;').join('&').split('&').join('&amp;');
+    var a = L.headlineAccent.split('&amp;').join('&').split('&').join('&amp;');
     return h.split(a).join('<em style="color:' + c.accent + ';font-style:italic;">' + a + '</em>');
   }
 
@@ -494,13 +564,14 @@ function buildSimpleHtml(data, firstName, isEs, storeName) {
       + '</td></tr>'
     : '';
 
-  // Website-derived WG&R offers - calmer than hero/brief (brass label + badges,
-  // smaller type) so it does not overpower the top match and Sleep Brief.
+  // Website-derived retailer offers - calmer than hero/brief (brass label +
+  // badges, smaller type) so it does not overpower the top match and Sleep
+  // Brief. Retailer name from the payload (already HTML-escaped above).
   var promos = Array.isArray(data.promotions) ? data.promotions : [];
   var promoDisclosure = (data.promoDisclosure || '').toString();
   var promoHeader = promoDisclosure
-    ? (isEs ? 'Ofertas de WG&amp;R' : 'WG&amp;R Offers')
-    : (isEs ? 'Ofertas Actuales de WG&amp;R' : 'Current WG&amp;R Offers');
+    ? (isEs ? 'Ofertas de ' + storeName : storeName + ' Offers')
+    : (isEs ? 'Ofertas Actuales de ' + storeName : 'Current ' + storeName + ' Offers');
   var promoSection = promos.length > 0
     ? '<tr><td style="padding:4px 32px 22px;">'
       + '<div style="font-family:' + sans + ';font-size:10px;letter-spacing:2.5px;color:' + c.accent + ';text-transform:uppercase;font-weight:600;margin-bottom:8px;">'
@@ -521,13 +592,26 @@ function buildSimpleHtml(data, firstName, isEs, storeName) {
       + '</td></tr>'
     : '';
 
+  // Payment Choice (financing) section — program categories, the official
+  // retailer URL, and the confirmation note only. No rates, no payments, no
+  // approval implication; the client never sends terms math in this block.
+  var fin = (data.financing && typeof data.financing === 'object') ? data.financing : null;
+  var finSection = fin
+    ? '<tr><td style="background:' + c.surfaceAlt + ';border-top:1px solid ' + c.border + ';border-bottom:1px solid ' + c.border + ';padding:24px 32px;">'
+      + '<div style="font-family:' + sans + ';font-size:10px;letter-spacing:3px;color:' + c.red + ';text-transform:uppercase;font-weight:700;margin-bottom:10px;">' + _escapeHtml(fin.heading || (isEs ? 'Opciones de pago' : 'Payment options')) + '</div>'
+      + (fin.body ? '<div style="font-family:' + sans + ';font-size:13px;color:' + c.text + ';line-height:1.55;margin-bottom:8px;">' + _escapeHtml(fin.body) + '</div>' : '')
+      + (fin.confirmNote ? '<div style="font-family:' + sans + ';font-size:11px;color:' + c.textMuted + ';line-height:1.5;margin-bottom:8px;">' + _escapeHtml(fin.confirmNote) + '</div>' : '')
+      + (fin.url ? '<div style="font-family:' + sans + ';font-size:12px;"><a href="' + _escapeHtml(fin.url) + '" style="color:' + c.accent + ';">' + _escapeHtml(fin.url.replace(/^https:\/\//i, '')) + '</a></div>' : '')
+      + '</td></tr>'
+    : '';
+
   return ''
     + '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">'
     + '<html xmlns="http://www.w3.org/1999/xhtml">'
     + '<head>'
     + '<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">'
     + '<meta name="viewport" content="width=device-width,initial-scale=1">'
-    + '<title>WG&amp;R Sleep Match</title>'
+    + '<title>' + storeName + ' Sleep Match</title>'
     + '<!--[if mso]><style>td,div,p,a {font-family: Georgia, "Times New Roman", serif !important;}</style><![endif]-->'
     + '</head>'
     + '<body style="margin:0;padding:0;background:' + c.pageBg + ';">'
@@ -538,8 +622,8 @@ function buildSimpleHtml(data, firstName, isEs, storeName) {
     + '<tr><td style="height:4px;background:' + c.red + ';font-size:0;line-height:0;">&nbsp;</td></tr>'
 
     + '<tr><td style="padding:30px 32px 24px;text-align:center;border-bottom:1px solid ' + c.border + ';">'
-    + '<div style="font-family:' + serif + ';font-size:30px;line-height:1;color:' + c.red + ';font-weight:700;letter-spacing:0.5px;">WG&amp;R'
-    + '<span style="font-family:' + sans + ';font-size:13px;letter-spacing:3px;color:' + c.textMuted + ';text-transform:lowercase;font-weight:400;"> furniture</span></div>'
+    + '<div style="font-family:' + serif + ';font-size:30px;line-height:1;color:' + c.text + ';font-weight:700;letter-spacing:0.5px;">' + logoMain
+    + (logoSub ? '<span style="font-family:' + sans + ';font-size:13px;letter-spacing:3px;color:' + c.textMuted + ';text-transform:lowercase;font-weight:400;"> ' + logoSub + '</span>' : '') + '</div>'
     + '<div style="font-family:' + sans + ';font-size:10px;letter-spacing:3px;color:' + c.accent + ';text-transform:uppercase;font-weight:600;margin:18px 0 10px;">' + L.eyebrow + '</div>'
     + '<div style="font-family:' + serif + ';font-size:26px;line-height:1.25;color:' + c.text + ';font-weight:normal;">' + headlineHtml() + '</div>'
     + '</td></tr>'
@@ -564,6 +648,8 @@ function buildSimpleHtml(data, firstName, isEs, storeName) {
         : '')
 
     + promoSection
+
+    + finSection
 
     + (secondaryRows
         ? '<tr><td style="padding:16px 32px 8px;">'

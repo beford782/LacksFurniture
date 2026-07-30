@@ -380,7 +380,8 @@ SALES_NOTES = Tab(
 # variable-shape scenario data does not decompose into flat columns without
 # present-vs-absent ambiguity that breaks exact round-trip, so it is stored as an
 # explicit STATIC payload (not a formula / live copy). Editable source is the
-# build input incoming/wgr_promotions.json. Deployments without this tab (e.g.
+# retailer's build input (e.g. incoming/lacks_financing.json for the Lacks
+# Payment Choice envelope). Deployments without this tab (e.g.
 # Bel) simply emit no `promotions` key — fully backward compatible.
 PROMOTIONS = Tab(
     name="Promotions",
