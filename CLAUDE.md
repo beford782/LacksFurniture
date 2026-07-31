@@ -112,10 +112,22 @@ email templates) must be driven by `store-config.json`, not hardcoded.
 If you find yourself writing a store name or brand color into the HTML, stop —
 it belongs in config.
 
-### Quiz questions are currently hardcoded — known limitation
-The 12 quiz questions and their answer options live in the HTML, not in config.
-This is a known gap. Do not add more hardcoded store-specific question logic.
-Flag any question customization requests as requiring a config migration first.
+### Quiz questions are config-driven (data/quiz.json)
+The 12 quiz questions live in `incoming/dreamfinder_quiz.json` → workbook
+Quiz tab (JSON envelope, same channel as the Promotions financing envelope)
+→ `data/quiz.json` (generated — never edit directly; rebuild via
+build_lacks_workbook.py + convert_store_data.py). The app fetches it at load
+alongside mattresses/store-config and fails hard without it.
+
+**Structure is an app-level contract**: question/option ids, types, order,
+and `scores` tags are consumed by name across the app (profile assignment,
+Sleep Brief, adjustable-base hero, narratives, email) and are pinned exactly
+by `validate_quiz` in `tools/validation.py`. Per-retailer variation is COPY
+ONLY (question/helpText/category/label/sublabel/copyVariants text, both
+languages). Adding/removing/renaming questions or options, or changing
+scores, requires an app-code review of the id consumers first — and scoring
+changes still require Blake's sign-off. Answer-aware copy is declarative
+(`copyVariants`, resolved by `resolveQuizCopy`) — no functions in config.
 
 ---
 
@@ -195,9 +207,11 @@ by default. Do not treat this as optional or Bel-specific.
 - **Retailer-specific text** lives in `store-config.json` under `text` (English)
   and `text_es` (Spanish) blocks. This includes trust signals, footer copy, email
   privacy text, social proof, and in-stock labels.
-- **Quiz questions, profile names, and label constants** use inline bilingual
-  objects `{en: "...", es: "..."}` directly in `index.html`. The `L(obj)` function
-  reads the active language from these objects.
+- **Quiz questions** carry inline bilingual objects `{en: "...", es: "..."}`
+  in `data/quiz.json` (canonical source `incoming/dreamfinder_quiz.json`).
+  **Profile names and label constants** still use inline bilingual objects
+  directly in `index.html`. The `L(obj)` function reads the active language
+  from these objects in both cases.
 - **Mattress product text** (badges, highlights, match reasons) is translated via
   `data/mattresses-es.csv`. The build script merges these into `mattresses.json`.
   If a retailer hasn't provided Spanish product translations, the app falls back
