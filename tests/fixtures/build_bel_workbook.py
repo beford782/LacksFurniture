@@ -190,7 +190,7 @@ def _write_sheet(wb, tab_name: str, data_rows: List[List[Any]]):
 
 def build_workbook(config: dict, manifest: dict,
                    mattresses: List[dict], es_lookup: Dict[str, dict],
-                   accessories: List[dict]):
+                   accessories: List[dict], quiz: Optional[dict] = None):
     wb = openpyxl.Workbook()
     wb.remove(wb.active)  # drop the default empty sheet; we create tabs in order
 
@@ -233,6 +233,13 @@ def build_workbook(config: dict, manifest: dict,
     # the golden round-trip regenerates an identical store-config.
     _write_sheet(wb, "Promotions", promotions_rows(config))
 
+    # Quiz — optional-payload canonical-JSON tab, same round-trip contract as
+    # Promotions: header-only when the repo has no committed data/quiz.json
+    # (converter build_quiz returns None on an empty payload), chunked envelope
+    # {"quiz": ...} otherwise so the golden round-trip regenerates an
+    # identical data/quiz.json.
+    _write_sheet(wb, "Quiz", quiz_rows(quiz))
+
     return wb
 
 
@@ -249,6 +256,16 @@ def promotions_rows(config: dict) -> List[List[Any]]:
     if not envelope:
         return []
     payload = json.dumps(envelope, ensure_ascii=False, separators=(",", ":"))
+    return [[payload[i:i + _PROMO_CHUNK]]
+            for i in range(0, len(payload), _PROMO_CHUNK)]
+
+
+def quiz_rows(quiz: Optional[dict]) -> List[List[Any]]:
+    """Chunked Quiz-tab payload for the committed quiz ([] when none)."""
+    if not quiz:
+        return []
+    payload = json.dumps({"quiz": quiz}, ensure_ascii=False,
+                         separators=(",", ":"))
     return [[payload[i:i + _PROMO_CHUNK]]
             for i in range(0, len(payload), _PROMO_CHUNK)]
 
@@ -311,6 +328,9 @@ def main(argv: Optional[List[str]] = None) -> int:
     es_rows = load_csv_rows("data/mattresses-es.csv")
     es_lookup = {(r.get("id") or "").strip(): r for r in es_rows}
 
+    quiz_path = REPO_ROOT / "data" / "quiz.json"
+    quiz = load_json("data/quiz.json") if quiz_path.exists() else None
+
     expected_counts = {
         "Store Info": 1,
         "Brands": len(config.get("brands") or []),
@@ -318,9 +338,11 @@ def main(argv: Optional[List[str]] = None) -> int:
         "Accessories": len(accessories),
         "SalesNotes": len(sales_notes_rows(config)),
         "Promotions": len(promotions_rows(config)),
+        "Quiz": len(quiz_rows(quiz)),
     }
 
-    wb = build_workbook(config, manifest, mattresses, es_lookup, accessories)
+    wb = build_workbook(config, manifest, mattresses, es_lookup, accessories,
+                        quiz)
     os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
     wb.save(out_path)
     print(f"Wrote workbook: {out_path}")

@@ -126,8 +126,14 @@ def compare_outputs(workspace: str) -> canonical.CompareResult:
     """S2 CSVs (mattresses) + S3 JSON (store-config, accessories) + S5 manifest."""
     result = canonical.CompareResult()
     data = Path(workspace) / "data"
+    # quiz.json joins the S3 compares only when committed (repos predating the
+    # quiz config migration have no data/quiz.json and emit none — comparing a
+    # file neither side has would be vacuous, and requiring it would break them).
+    json_compares = list(JSON_COMPARES)
+    if (REPO_ROOT / "data" / "quiz.json").exists():
+        json_compares.append("quiz.json")
     for phase, names, fn in (("S2", CSV_COMPARES, canonical.compare_csv_files),
-                             ("S3", JSON_COMPARES, canonical.compare_json_files)):
+                             ("S3", json_compares, canonical.compare_json_files)):
         for name in names:
             committed = REPO_ROOT / "data" / name
             generated = data / name

@@ -392,6 +392,26 @@ PROMOTIONS = Tab(
 )
 
 
+# ── Tab: Quiz ────────────────────────────────────────────────────────────────
+# OPTIONAL-payload tab (tab itself is always present, like Promotions). Carries
+# the quiz definition — 12 questions with bilingual copy, option scores, and
+# skip/hide conditions — as canonical JSON in an envelope {"quiz": ...},
+# chunked one fragment per row and concatenated by the converter (build_quiz)
+# into data/quiz.json. Same STATIC-payload rationale as Promotions: the nested
+# bilingual structure does not decompose into flat columns. Editable source is
+# the retailer's build input (incoming/dreamfinder_quiz.json). Question/option
+# ids, types, and scores are an app-level contract enforced by
+# tools/validation.py validate_quiz — copy may vary per retailer, structure
+# may not. An empty tab emits no data/quiz.json (pre-migration deployments).
+QUIZ = Tab(
+    name="Quiz",
+    note="Optional payload. Canonical quiz JSON, chunked -> data/quiz.json",
+    columns=(
+        col("Quiz JSON", "quizJson", note="one JSON fragment per row, concatenated in order"),
+    ),
+)
+
+
 # ── Registry + helpers ───────────────────────────────────────────────────────
 # Ordered tuple defines the canonical tab order in the generated workbook.
 
@@ -402,6 +422,7 @@ TABS: Tuple[Tab, ...] = (
     ACCESSORIES,
     SALES_NOTES,
     PROMOTIONS,
+    QUIZ,
 )
 
 _TABS_BY_NAME: Dict[str, Tab] = {t.name: t for t in TABS}

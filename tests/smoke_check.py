@@ -97,6 +97,21 @@ def main():
     check("shipped financing envelope deep-equals incoming (factor-stripped)",
           fin == src_fin)
 
+    print("Quiz config invariants:")
+    quiz = load_json("data/quiz.json")
+    src_quiz = load_json("incoming/dreamfinder_quiz.json")["quiz"]
+    questions = quiz.get("questions") or []
+    check("12 quiz questions shipped", len(questions) == 12,
+          f"got {len(questions)}")
+    check("shipped quiz deep-equals incoming source (rebuild after editing)",
+          quiz == src_quiz)
+    pd = next((q for q in questions if q.get("id") == "partner_disturbance"), None)
+    check("solo path intact: partner_disturbance skips on partner_sleep=solo",
+          bool(pd) and pd.get("skipIf") == {"question": "partner_sleep",
+                                            "answer": "solo"})
+    check("no dynamicCopy leaked into shipped quiz (functions can't ship)",
+          "dynamicCopy" not in json.dumps(quiz))
+
     print("Catalog invariants:")
     mj = load_json("data/mattresses.json")
     tiers = {t: len(mj.get(t) or []) for t in ("gold", "silver", "bronze")}

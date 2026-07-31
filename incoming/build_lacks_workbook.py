@@ -186,6 +186,19 @@ def promotions_rows():
             for i in range(0, len(payload), _PROMO_CHUNK)]
 
 
+# ---- Quiz tab: quiz envelope ------------------------------------------------
+# The quiz definition rides its own canonical-JSON tab as an envelope
+# {"quiz": {...}} -> data/quiz.json. Canonical editable source:
+# incoming/dreamfinder_quiz.json (the "quiz" key; "_meta" is documentation and
+# is NOT shipped). Same chunking as Promotions.
+def quiz_rows():
+    src = _load("dreamfinder_quiz.json")
+    envelope = {"quiz": src["quiz"]}
+    payload = json.dumps(envelope, ensure_ascii=False, separators=(",", ":"))
+    return [{"Quiz JSON": payload[i:i + _PROMO_CHUNK]}
+            for i in range(0, len(payload), _PROMO_CHUNK)]
+
+
 # ---- write workbook ---------------------------------------------------------
 def write_sheet(wb, tab, rows):
     ws = wb.create_sheet(title=tab)
@@ -204,6 +217,7 @@ def main():
     write_sheet(wb, "Accessories", [accessory_row(a) for a in A])
     write_sheet(wb, "SalesNotes", [sales_row(s) for s in SALES])
     write_sheet(wb, "Promotions", promotions_rows())
+    write_sheet(wb, "Quiz", quiz_rows())
     wb.save(OUT)
     from collections import Counter
     c = Counter(m["tier"] for m in M)

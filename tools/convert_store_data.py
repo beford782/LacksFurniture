@@ -301,6 +301,29 @@ def build_promotions(wb):
     return parsed, None
 
 
+def build_quiz(wb):
+    """Reassemble the quiz definition from the optional-payload Quiz tab.
+
+    Same canonical-JSON channel as Promotions: chunked fragments in column
+    'Quiz JSON', concatenated in row order, parsed as an envelope
+    {"quiz": {...}}. Returns the quiz dict, or None when the tab is absent or
+    empty (pre-migration deployments emit no data/quiz.json)."""
+    if "Quiz" not in wb.sheetnames:
+        return None
+    _, rows = read_tab(wb, "Quiz")
+    payload = "".join(_s(r.get("Quiz JSON")) for r in rows).strip()
+    if not payload:
+        return None
+    try:
+        parsed = json.loads(payload)
+    except ValueError as exc:
+        raise SystemExit(f"ERROR: Quiz tab payload is not valid JSON: {exc}")
+    if not (isinstance(parsed, dict) and set(parsed) == {"quiz"}):
+        raise SystemExit("ERROR: Quiz tab payload must be an envelope "
+                         "{\"quiz\": {...}}")
+    return parsed["quiz"]
+
+
 # -- manifest.json (S5) -------------------------------------------------------
 
 def build_manifest(wb):
@@ -579,6 +602,38 @@ def _self_test() -> int:
     check("G2 --skip-build-json with built is not blocking",
           build_json_blocking(skip_build_json=True, built=True) is False)
 
+    # Quiz tab reassembly (build_quiz): in-memory workbooks, no files.
+    print("convert_store_data.py self-test (Quiz tab reassembly):")
+
+    def _wb_with_quiz(rows):
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Quiz"
+        ws.append(["Quiz JSON"])
+        for r in rows:
+            ws.append([r])
+        return wb
+
+    check("build_quiz: workbook without Quiz tab -> None",
+          build_quiz(openpyxl.Workbook()) is None)
+    check("build_quiz: header-only Quiz tab -> None",
+          build_quiz(_wb_with_quiz([])) is None)
+    quiz_obj = {"questions": [{"id": "q1", "type": "single"}]}
+    payload = json.dumps({"quiz": quiz_obj}, separators=(",", ":"))
+    mid = len(payload) // 2
+    check("build_quiz: chunked envelope reassembles to the quiz object",
+          build_quiz(_wb_with_quiz([payload[:mid], payload[mid:]])) == quiz_obj)
+    try:
+        build_quiz(_wb_with_quiz(['{"notquiz": 1}']))
+        check("build_quiz: non-envelope payload -> SystemExit", False)
+    except SystemExit:
+        check("build_quiz: non-envelope payload -> SystemExit", True)
+    try:
+        build_quiz(_wb_with_quiz(["{broken"]))
+        check("build_quiz: invalid JSON -> SystemExit", False)
+    except SystemExit:
+        check("build_quiz: invalid JSON -> SystemExit", True)
+
     print(f"\nSelf-test: {passed} passed, {failed} failed")
     return 0 if failed == 0 else 1
 
@@ -644,6 +699,7 @@ def main(argv=None) -> int:
         config = build_store_config(wb)
         accessories = build_accessories(wb)
         manifest = build_manifest(wb)
+        quiz = build_quiz(wb)
         icon_source = read_manifest_icon_source(wb)
     finally:
         wb.close()
@@ -691,6 +747,9 @@ def main(argv=None) -> int:
         report.merge(validation.validate_financing(
             config,
             allowed_source_hosts=source_hosts.get("financingSourceHosts")))
+        # Quiz definition — structural contract (pinned ids/types/options) plus
+        # bilingual copy and score-tag checks; no-op when the tab is empty.
+        report.merge(validation.validate_quiz(quiz))
         print(report.summary())
         blocking = report.blocking(warnings_as_errors=args.warnings_as_errors)
         if args.validate_only:
@@ -731,6 +790,11 @@ def main(argv=None) -> int:
     acc_path = os.path.join(data_dir, "accessories.json")
     write_json(acc_path, accessories)
     print(f"  wrote {acc_path} ({len(accessories)} items)")
+
+    if quiz is not None:
+        quiz_path = os.path.join(data_dir, "quiz.json")
+        write_json(quiz_path, quiz)
+        print(f"  wrote {quiz_path} ({len(quiz.get('questions') or [])} questions)")
 
     # Image normalization (S4) - optional; products + brand logos + PWA icons. Runs
     # BEFORE the manifest write so manifest.icons is added only after the icon files

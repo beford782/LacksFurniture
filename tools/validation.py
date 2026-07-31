@@ -693,6 +693,187 @@ def validate_financing(config: dict, *, allowed_source_hosts=None) -> Validation
     return r
 
 
+# -- Quiz definition (data/quiz.json payload) ---------------------------------
+# The quiz structure is an app-level contract: ~15 code sites consume question
+# and option ids by name (profile assignment, Sleep Brief, adjustable-base
+# hero, results narratives, handoff labels, email packet), and option `scores`
+# keys must land in the mattress feature-tag vocabulary to affect ranking. So
+# V1 pins ids, types, order, and option ids exactly — retailers vary COPY
+# (question/helpText/category/label/sublabel/copyVariants text), never
+# structure. Loosening any part of this contract requires an app-code review
+# of the id consumers first.
+
+# (id, type, option ids in display order). None = slider (no options).
+QUIZ_CANONICAL = (
+    ("sleep_quality", "single", ("poor", "fair", "okay", "well")),
+    ("trigger", "single", ("pain", "worn_out", "moving", "upgrade", "browsing")),
+    ("mattress_size", "single",
+     ("twin", "twin_xl", "full", "queen", "king", "cal_king")),
+    ("partner_sleep", "single", ("solo", "partner", "family")),
+    ("partner_disturbance", "single",
+     ("yes_often", "sometimes", "rarely", "not_applicable")),
+    ("sleep_position", "single", ("side", "back", "stomach", "combo", "no_idea")),
+    ("body_type", "single", ("petite", "average", "athletic", "plus", "different")),
+    ("temperature", "single", ("hot", "comfortable", "cold", "opposite")),
+    ("firmness", "slider", None),
+    ("current_mattress_age", "single",
+     ("under_2", "three_seven", "eight_fifteen", "fifteen_plus", "not_sure")),
+    ("sleep_issues", "multiple",
+     ("back_pain", "hip_pain", "hot", "tossing", "stiff", "sagging",
+      "too_soft", "none")),
+    ("health_conditions", "multiple",
+     ("nerve_pain", "allergies", "snoring", "reflux", "extra_support",
+      "getting_older", "none")),
+)
+
+# Feature tags the scoring engine may award points for. Must stay a superset
+# of every option's scores keys; matches the app's quizTags vocabulary. An
+# unknown tag is an error (a typo'd tag silently awards nothing).
+QUIZ_SCORE_TAGS = frozenset((
+    "adjustable", "comfort", "cooling", "durability", "durable", "firm",
+    "hybrid", "hypoallergenic", "medium", "memory", "motionIsolation",
+    "plush", "pressureRelief", "quality", "responsive", "soft", "support",
+    "zoned",
+))
+
+# The scoring engine caps per-mattress-per-feature accumulation at 5
+# (FEATURE_CAP in index.html); a single-option award beyond the cap is
+# unreachable and therefore a config mistake.
+QUIZ_FEATURE_CAP = 5
+
+_QUIZ_QUESTION_KEYS = frozenset((
+    "id", "category", "question", "helpText", "type", "options", "skipIf",
+    "copyVariants", "min", "max", "defaultValue", "labels",
+))
+_QUIZ_OPTION_KEYS = frozenset(
+    ("id", "label", "icon", "sublabel", "scores", "hideIf"))
+
+
+def _quiz_condition_ok(r, tag, cond, earlier_options):
+    """Validate a {question, answer} condition against EARLIER questions only
+    (forward references could never fire: answers arrive in question order)."""
+    if not isinstance(cond, dict) or set(cond) != {"question", "answer"}:
+        r.add_error(f"{tag} must be an object {{question, answer}}")
+        return
+    qid = cond.get("question")
+    if qid not in earlier_options:
+        r.add_error(f"{tag} references {qid!r}, which is not an earlier question")
+        return
+    if cond.get("answer") not in earlier_options[qid]:
+        r.add_error(f"{tag} answer {cond.get('answer')!r} is not an option of "
+                    f"{qid!r}")
+
+
+def validate_quiz(quiz) -> ValidationReport:
+    """Validate the quiz payload (structure contract + copy + scores).
+
+    No-op when quiz is None (workbooks without a Quiz payload)."""
+    r = ValidationReport()
+    if quiz is None:
+        return r
+    if not isinstance(quiz, dict) or not isinstance(quiz.get("questions"), list):
+        r.add_error("quiz must be an object with a questions list")
+        return r
+    questions = quiz["questions"]
+
+    got = [(q.get("id"), q.get("type")) for q in questions
+           if isinstance(q, dict)]
+    want = [(qid, qtype) for qid, qtype, _ in QUIZ_CANONICAL]
+    if got != want:
+        r.add_error(f"quiz questions must match the canonical id/type sequence "
+                    f"exactly (structure is an app contract); got {got}, "
+                    f"expected {want}")
+        return r  # id-keyed checks below assume the canonical sequence
+
+    earlier_options = {}  # question id -> set of option ids, filled in order
+    for (qid, qtype, opt_ids), q in zip(QUIZ_CANONICAL, questions):
+        tag = f"quiz.{qid}"
+        unknown = set(q) - _QUIZ_QUESTION_KEYS
+        if unknown:
+            r.add_error(f"{tag}: unknown keys {sorted(unknown)}")
+        for key in ("category", "question", "helpText"):
+            if not _bilingual_ok(q.get(key)):
+                r.add_error(f"{tag}: {key} missing EN or ES")
+        if q.get("skipIf") is not None:
+            _quiz_condition_ok(r, f"{tag}.skipIf", q["skipIf"], earlier_options)
+
+        if qtype == "slider":
+            mn, mx, dv = q.get("min"), q.get("max"), q.get("defaultValue")
+            if not all(isinstance(v, int) for v in (mn, mx, dv)) \
+                    or not mn < mx or not mn <= dv <= mx:
+                r.add_error(f"{tag}: slider needs integer min < max with "
+                            f"defaultValue in range (got min={mn!r}, max={mx!r}, "
+                            f"defaultValue={dv!r})")
+            labels = q.get("labels")
+            if not (isinstance(labels, list) and len(labels) == 3
+                    and all(_bilingual_ok(x) for x in labels)):
+                r.add_error(f"{tag}: slider needs exactly 3 bilingual labels")
+            earlier_options[qid] = set()
+            continue
+
+        opts = q.get("options")
+        got_opts = tuple(o.get("id") for o in (opts or [])
+                         if isinstance(o, dict))
+        if got_opts != opt_ids:
+            r.add_error(f"{tag}: option ids must be exactly {list(opt_ids)} in "
+                        f"order (structure is an app contract); got "
+                        f"{list(got_opts)}")
+            earlier_options[qid] = set(opt_ids)
+            continue
+        for o in opts:
+            otag = f"{tag}.{o.get('id')}"
+            unknown = set(o) - _QUIZ_OPTION_KEYS
+            if unknown:
+                r.add_error(f"{otag}: unknown keys {sorted(unknown)}")
+            if not _bilingual_ok(o.get("label")):
+                r.add_error(f"{otag}: label missing EN or ES")
+            if o.get("sublabel") is not None and not _bilingual_ok(o["sublabel"]):
+                r.add_error(f"{otag}: sublabel missing EN or ES")
+            if _blank(o.get("icon")):
+                r.add_error(f"{otag}: icon is required")
+            scores = o.get("scores")
+            if not isinstance(scores, dict):
+                r.add_error(f"{otag}: scores must be an object (may be empty)")
+            else:
+                for feat, pts in scores.items():
+                    if feat not in QUIZ_SCORE_TAGS:
+                        r.add_error(f"{otag}: unknown score tag {feat!r} — a "
+                                    f"typo'd tag silently awards nothing")
+                    if not isinstance(pts, int) or not 1 <= pts <= QUIZ_FEATURE_CAP:
+                        r.add_error(f"{otag}: score {feat}={pts!r} must be an "
+                                    f"integer in 1..{QUIZ_FEATURE_CAP}")
+            if o.get("hideIf") is not None:
+                _quiz_condition_ok(r, f"{otag}.hideIf", o["hideIf"],
+                                   earlier_options)
+
+        for i, cv in enumerate(q.get("copyVariants") or []):
+            ctag = f"{tag}.copyVariants[{i}]"
+            if not isinstance(cv, dict) or "when" not in cv:
+                r.add_error(f"{ctag}: must be an object with a 'when' condition")
+                continue
+            when = cv["when"]
+            if not isinstance(when, dict) or set(when) != {"question", "answerIn"}:
+                r.add_error(f"{ctag}.when must be {{question, answerIn}}")
+            else:
+                wq = when.get("question")
+                if wq not in earlier_options:
+                    r.add_error(f"{ctag}.when references {wq!r}, which is not an "
+                                f"earlier question")
+                elif not (isinstance(when.get("answerIn"), list)
+                          and when["answerIn"]
+                          and set(when["answerIn"]) <= earlier_options[wq]):
+                    r.add_error(f"{ctag}.when.answerIn must be a non-empty "
+                                f"subset of {wq!r}'s option ids")
+            for key in set(cv) - {"when"}:
+                if key not in ("question", "helpText"):
+                    r.add_error(f"{ctag}: unknown key {key!r}")
+                elif not _bilingual_ok(cv[key]):
+                    r.add_error(f"{ctag}: {key} missing EN or ES")
+
+        earlier_options[qid] = set(opt_ids)
+    return r
+
+
 # -- V2: catalog validation (raw tabs) ----------------------------------------
 
 def validate_mattresses(raw_tabs, *, source_images=None, skip_images=False,
@@ -1823,6 +2004,101 @@ def _self_test() -> int:
     fskew["plans"][0]["verifiedAt"] = _iso(120)
     check("financing verifiedAt within clock skew -> ok",
           validate_financing(_fc(fskew), allowed_source_hosts=_FHOSTS).ok)
+
+    # ---- quiz definition (structure contract) --------------------------------
+    def _bl(s):
+        return {"en": s, "es": s + " (es)"}
+
+    def _gq():
+        """Canonical-shaped quiz that passes with zero errors/warnings."""
+        questions = []
+        for qid, qtype, opt_ids in QUIZ_CANONICAL:
+            q = {"id": qid, "category": _bl("Cat"), "question": _bl("Q?"),
+                 "helpText": _bl("Help"), "type": qtype}
+            if qtype == "slider":
+                q.update({"min": 1, "max": 10, "defaultValue": 5,
+                          "labels": [_bl("Soft"), _bl("Medium"), _bl("Firm")]})
+            else:
+                q["options"] = [
+                    {"id": oid, "label": _bl(oid), "icon": "check",
+                     "sublabel": _bl("sub"), "scores": {}}
+                    for oid in opt_ids]
+            questions.append(q)
+        return {"questions": questions}
+
+    def _q(quiz, qid):
+        return next(x for x in quiz["questions"] if x["id"] == qid)
+
+    check("quiz absent -> ok (no-op)", validate_quiz(None).ok)
+    check("quiz canonical shape -> ok", validate_quiz(_gq()).ok)
+    check("quiz non-object -> error", not validate_quiz(["x"]).ok)
+
+    qdel = _gq(); qdel["questions"].pop(0)
+    check("quiz missing question -> canonical-sequence error",
+          any("canonical id/type sequence" in e for e in
+              validate_quiz(qdel).errors))
+
+    qswap = _gq()
+    qswap["questions"][0], qswap["questions"][1] = \
+        qswap["questions"][1], qswap["questions"][0]
+    check("quiz reordered questions -> canonical-sequence error",
+          any("canonical id/type sequence" in e for e in
+              validate_quiz(qswap).errors))
+
+    qopt = _gq(); _q(qopt, "trigger")["options"][0]["id"] = "renamed"
+    check("quiz renamed option id -> error",
+          any("option ids must be exactly" in e for e in
+              validate_quiz(qopt).errors))
+
+    qtag = _gq(); _q(qtag, "sleep_position")["options"][0]["scores"] = {"plushh": 2}
+    check("quiz unknown score tag -> error (typo protection)",
+          any("unknown score tag" in e for e in validate_quiz(qtag).errors))
+
+    qpts = _gq(); _q(qpts, "sleep_position")["options"][0]["scores"] = {"plush": 9}
+    check("quiz score beyond FEATURE_CAP -> error",
+          any("1..5" in e for e in validate_quiz(qpts).errors))
+
+    qes = _gq(); _q(qes, "trigger")["options"][0]["label"] = {"en": "only-EN"}
+    check("quiz option label missing ES -> error",
+          any("label missing EN or ES" in e for e in validate_quiz(qes).errors))
+
+    qskip = _gq()
+    _q(qskip, "partner_disturbance")["skipIf"] = \
+        {"question": "partner_sleep", "answer": "solo"}
+    check("quiz valid skipIf (earlier question) -> ok", validate_quiz(qskip).ok)
+
+    qfwd = _gq()
+    _q(qfwd, "partner_sleep")["skipIf"] = \
+        {"question": "sleep_position", "answer": "side"}
+    check("quiz skipIf forward reference -> error",
+          any("not an earlier question" in e for e in validate_quiz(qfwd).errors))
+
+    qhide = _gq()
+    _q(qhide, "temperature")["options"][3]["hideIf"] = \
+        {"question": "partner_sleep", "answer": "nope"}
+    check("quiz hideIf unknown answer -> error",
+          any("is not an option of" in e for e in validate_quiz(qhide).errors))
+
+    qcv = _gq()
+    _q(qcv, "body_type")["copyVariants"] = [{
+        "when": {"question": "partner_sleep", "answerIn": ["partner", "family"]},
+        "question": _bl("Alt?"), "helpText": _bl("Alt help")}]
+    check("quiz valid copyVariants -> ok", validate_quiz(qcv).ok)
+
+    qcvbad = _gq()
+    _q(qcvbad, "body_type")["copyVariants"] = [{
+        "when": {"question": "partner_sleep", "answerIn": ["nope"]},
+        "question": _bl("Alt?")}]
+    check("quiz copyVariants bad answerIn -> error",
+          any("answerIn" in e for e in validate_quiz(qcvbad).errors))
+
+    qkey = _gq(); _q(qkey, "body_type")["dynamicCopy"] = "leftover"
+    check("quiz unknown question key (e.g. dynamicCopy) -> error",
+          any("unknown keys" in e for e in validate_quiz(qkey).errors))
+
+    qsl = _gq(); _q(qsl, "firmness")["defaultValue"] = 42
+    check("quiz slider defaultValue out of range -> error",
+          any("slider needs integer" in e for e in validate_quiz(qsl).errors))
 
     print(f"\nSelf-test: {passed} passed, {failed} failed")
     return 0 if failed == 0 else 1
