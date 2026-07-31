@@ -5,13 +5,29 @@
     "discrepancies": [
       "https://www.lacks.com/mexican-credit-application (published in Lacks' own FAQ) returned HTTP 404 on 2026-07-30 — stored below with verified:false and NOT rendered as a link; the Mexico card links to the verified FAQ instead.",
       "An older Lacks blog called a 72-month option 'no money down'; the live financing page makes no such claim — omitted."
+    ],
+    "verificationLog": [
+      {
+        "verifiedAt": "2026-07-31T16:43:00-05:00",
+        "recordedAt": "2026-07-31T21:44:09+00:00",
+        "attestation": "Real Chrome session (claude-in-chrome extension, Blake's browser): lacks.com/financing rendered fully — 9.99%/72/$500/one-receipt/discounts/interest-from-date/fixed-payments/1.8521% factor on page/34.99-39.99-$2 as of 07/31/2025/approval/alter-discontinue, 0%/48/in-store/$4200/down-payment+tax+delivery/equal-payments, In-House 6-36, LTO+BMC see-store-only, prequal language — all matched verbatim. lacks.com/faq rendered fully (no PerimeterX block this session) — Mexico program hasta 24 meses / 24% APR mismo que puede variar / $999-24-$52.82 example / dos identificaciones / 3 referencias / verificacion de ingresos / ID-type list — all matched verbatim; FAQ still frames program as 'clientes de Mexico' (DEC-19 flag stands).",
+        "plansConfirmed": [
+          "synchrony-9-99-72",
+          "synchrony-0-48",
+          "lacks-in-house",
+          "lease-to-own",
+          "build-my-credit",
+          "mexico-in-house"
+        ],
+        "plansSkipped": []
+      }
     ]
   },
   "financing": {
     "enabled": true,
     "experience": "payment-choice",
     "offerVersion": "2026-07-30a",
-    "verifiedAt": "2026-07-30T10:53:32-05:00",
+    "verifiedAt": "2026-07-31T16:43:00-05:00",
     "maxAgeDays": 7,
     "sourceUrl": "https://www.lacks.com/financing",
     "applicationUrl": "https://www.lacks.com/credit-application",
@@ -146,7 +162,7 @@
         "kind": "open-end-promotional-credit",
         "provider": "Synchrony",
         "verified": true,
-        "verifiedAt": "2026-07-30T10:53:32-05:00",
+        "verifiedAt": "2026-07-31T16:43:00-05:00",
         "sourceUrl": "https://www.lacks.com/financing",
         "apr": 9.99,
         "termMonths": 72,
@@ -173,7 +189,7 @@
         "kind": "open-end-promotional-credit",
         "provider": "Synchrony",
         "verified": true,
-        "verifiedAt": "2026-07-30T10:53:32-05:00",
+        "verifiedAt": "2026-07-31T16:43:00-05:00",
         "sourceUrl": "https://www.lacks.com/financing",
         "apr": 0,
         "termMonths": 48,
@@ -199,7 +215,7 @@
         "kind": "closed-end-installment",
         "provider": "Lacks",
         "verified": true,
-        "verifiedAt": "2026-07-30T10:53:32-05:00",
+        "verifiedAt": "2026-07-31T16:43:00-05:00",
         "sourceUrl": "https://www.lacks.com/financing",
         "paymentCalculationEnabled": false,
         "headline": {
@@ -220,7 +236,7 @@
         "kind": "lease-to-own",
         "provider": "Lacks",
         "verified": true,
-        "verifiedAt": "2026-07-30T10:53:32-05:00",
+        "verifiedAt": "2026-07-31T16:43:00-05:00",
         "sourceUrl": "https://www.lacks.com/financing",
         "paymentCalculationEnabled": false,
         "headline": {
@@ -237,7 +253,7 @@
         "kind": "credit-builder",
         "provider": "Lacks",
         "verified": true,
-        "verifiedAt": "2026-07-30T10:53:32-05:00",
+        "verifiedAt": "2026-07-31T16:43:00-05:00",
         "sourceUrl": "https://www.lacks.com/financing",
         "paymentCalculationEnabled": false,
         "headline": {
@@ -255,7 +271,7 @@
         "provider": "Lacks",
         "separatePath": true,
         "verified": true,
-        "verifiedAt": "2026-07-30T10:53:32-05:00",
+        "verifiedAt": "2026-07-31T16:43:00-05:00",
         "sourceUrl": "https://www.lacks.com/faq",
         "apr": 24,
         "termMonths": 24,
