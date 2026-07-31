@@ -10584,149 +10584,11 @@
     // ============================================================
 
     // ----- QUESTIONS -----
-    const QUESTIONS = [
-      {
-        id: 'sleep_quality', category: {en: 'Getting Started', es: 'Para Empezar'}, question: {en: "How well do you sleep right now?", es: "\u00bfQu\u00e9 tan bien duermes actualmente?"},
-        helpText: {en: "Be honest. It helps us solve the real problem, not guess.", es: "S\u00e9 honesto \u2014 podemos ayudarte de cualquier manera"}, type: 'single',
-        options: [
-          { id: 'poor', label: {en: 'Poorly', es: 'Mal'}, icon: 'stiff', sublabel: {en: 'Restless, waking often', es: 'Inquieto, despertando seguido'}, scores: {} },
-          { id: 'fair', label: {en: 'Not Great', es: 'No Muy Bien'}, icon: 'combo', sublabel: {en: 'Could be a lot better', es: 'Podr\u00eda ser mucho mejor'}, scores: {} },
-          { id: 'okay', label: {en: 'Okay', es: 'M\u00e1s o Menos'}, icon: 'smile', sublabel: {en: 'Mostly fine', es: 'Generalmente bien'}, scores: {} },
-          { id: 'well', label: {en: 'Pretty Well', es: 'Bastante Bien'}, icon: 'check', sublabel: {en: 'Usually rested', es: 'Generalmente descansado'}, scores: {} }
-        ]
-      },
-      {
-        id: 'trigger', category: {en: 'Getting Started', es: 'Para Empezar'}, question: {en: "What can we help you with today?", es: "\u00bfEn qu\u00e9 te podemos ayudar hoy?"},
-        helpText: {en: "No pressure \u2014 this just helps your specialist focus on what matters to you.", es: "Sin presi\u00f3n \u2014 esto ayuda a tu especialista a enfocarse en lo que te importa."}, type: 'single',
-        options: [
-          { id: 'pain', label: {en: 'Back or Body Pain', es: 'Dolor de Espalda o Cuerpo'}, icon: 'spine', sublabel: {en: 'Current mattress is hurting me', es: 'Mi colch\u00f3n actual me lastima'}, scores: {} },
-          { id: 'worn_out', label: {en: 'Old Mattress', es: 'Colch\u00f3n Viejo'}, icon: 'sagging', sublabel: {en: 'Time for an upgrade', es: 'Es hora de un cambio'}, scores: {} },
-          { id: 'moving', label: {en: 'Moving or New Space', es: 'Mudanza o Espacio Nuevo'}, icon: 'family', sublabel: {en: 'New home, new bed', es: 'Casa nueva, cama nueva'}, scores: {} },
-          { id: 'upgrade', label: {en: 'Just Upgrading', es: 'Mejorando'}, icon: 'cloud', sublabel: {en: 'Ready for something better', es: 'Listo para algo mejor'}, scores: {} },
-          { id: 'browsing', label: {en: 'Just Browsing', es: 'Solo Explorando'}, icon: 'smile', sublabel: {en: 'Getting ideas, no rush', es: 'Sin prisa, juntando ideas'}, scores: {} }
-        ]
-      },
-      {
-        id: 'mattress_size', category: {en: 'Getting Started', es: 'Para Empezar'}, question: {en: "What size mattress are you looking for?", es: "\u00bfQu\u00e9 tama\u00f1o de colch\u00f3n buscas?"},
-        helpText: {en: "So every mattress we show actually fits your space.", es: "Nos aseguraremos de que las recomendaciones se ajusten a tu espacio"}, type: 'single',
-        options: [
-          { id: 'twin', label: {en: 'Twin', es: 'Twin'}, icon: 'solo', sublabel: {en: 'Kids or tight spaces', es: 'Ni\u00f1os o espacios peque\u00f1os'}, scores: {} },
-          { id: 'twin_xl', label: {en: 'Twin XL', es: 'Twin XL'}, icon: 'solo', sublabel: {en: 'Extra length, single sleeper', es: 'Largo extra, una persona'}, scores: {} },
-          { id: 'full', label: {en: 'Full', es: 'Full'}, icon: 'solo', sublabel: {en: 'Solo or cozy pair', es: 'Solo o pareja c\u00f3moda'}, scores: {} },
-          { id: 'queen', label: {en: 'Queen', es: 'Queen'}, icon: 'partner', sublabel: {en: 'Most popular size', es: 'El tama\u00f1o m\u00e1s popular'}, scores: {} },
-          { id: 'king', label: {en: 'King', es: 'King'}, icon: 'family', sublabel: {en: 'Maximum space', es: 'Espacio m\u00e1ximo'}, scores: {} },
-          { id: 'cal_king', label: {en: 'Cal King', es: 'Cal King'}, icon: 'family', sublabel: {en: 'Extra length', es: 'Largo extra'}, scores: {} }
-        ]
-      },
-      {
-        id: 'partner_sleep', category: {en: "Who's With You", es: "Qui\u00e9n Est\u00e1 Contigo"}, question: {en: "Who's sharing the bed with you?", es: "\u00bfQui\u00e9n comparte la cama contigo?"},
-        helpText: {en: "Who shares your bed shapes which features matter most.", es: "Esto determina qu\u00e9 caracter\u00edsticas importan m\u00e1s"}, type: 'single',
-        options: [
-          { id: 'solo', label: {en: 'Solo Sleeper', es: 'Duermo Solo'}, icon: 'solo', sublabel: {en: 'Just me', es: 'Solo yo'}, scores: {} },
-          { id: 'partner', label: {en: 'With a Partner', es: 'Con Pareja'}, icon: 'partner', sublabel: {en: 'Sharing the bed', es: 'Compartimos la cama'}, scores: { motionIsolation: 2 } },
-          { id: 'family', label: {en: 'Family Bed', es: 'Cama Familiar'}, icon: 'family', sublabel: {en: 'Kids, pets, or both', es: 'Ni\u00f1os, mascotas, o ambos'}, scores: { durability: 2, motionIsolation: 1 } }
-        ]
-      },
-      {
-        id: 'partner_disturbance', category: {en: "Who's With You", es: "Qui\u00e9n Est\u00e1 Contigo"}, question: {en: "Does your partner's movement wake you up?", es: "\u00bfEl movimiento de tu pareja te despierta?"},
-        helpText: {en: "Motion isolation is one of the first upgrades you'll feel.", es: "El aislamiento de movimiento es una de las mayores mejoras en un colch\u00f3n nuevo"}, type: 'single',
-        skipIf: { question: 'partner_sleep', answer: 'solo' },
-        options: [
-          { id: 'yes_often', label: {en: 'Yes, Often', es: 'S\u00ed, Seguido'}, icon: 'motion', sublabel: {en: 'Every movement wakes me', es: 'Cada movimiento me despierta'}, scores: { motionIsolation: 4, hybrid: 3, memory: 2 } },
-          { id: 'sometimes', label: {en: 'Sometimes', es: 'A Veces'}, icon: 'combo', sublabel: {en: 'Bigger movements bother me', es: 'Los movimientos grandes me molestan'}, scores: { motionIsolation: 3, hybrid: 2 } },
-          { id: 'rarely', label: {en: 'Rarely', es: 'Rara Vez'}, icon: 'check', sublabel: {en: 'Light sleeper but mostly fine', es: 'Sue\u00f1o ligero pero generalmente bien'}, scores: { motionIsolation: 1 } },
-          { id: 'not_applicable', label: {en: "Doesn't Apply", es: "No Aplica"}, icon: 'solo', sublabel: {en: 'I sleep alone', es: 'Duermo solo'}, scores: {} }
-        ]
-      },
-      {
-        id: 'sleep_position', category: {en: 'About You', es: 'Sobre Ti'}, question: {en: "How do you usually sleep?", es: "\u00bfC\u00f3mo duermes normalmente?"},
-        helpText: {en: "Your sleep position is the biggest clue to the support you need.", es: "Piensa en c\u00f3mo terminas naturalmente"}, type: 'single',
-        options: [
-          { id: 'side', label: {en: 'Side Sleeper', es: 'De Lado'}, icon: 'side', sublabel: {en: 'Curled up', es: 'Acurrucado'}, scores: { plush: 2, pressureRelief: 2, soft: 1 } },
-          { id: 'back', label: {en: 'Back Sleeper', es: 'Boca Arriba'}, icon: 'back', sublabel: {en: 'Flat on back', es: 'Acostado de espalda'}, scores: { support: 2, medium: 2, zoned: 1 } },
-          { id: 'stomach', label: {en: 'Stomach Sleeper', es: 'Boca Abajo'}, icon: 'stomach', sublabel: {en: 'Face down', es: 'Boca abajo'}, scores: { firm: 2, support: 1 } },
-          { id: 'combo', label: {en: 'Combination', es: 'Combinaci\u00f3n'}, icon: 'combo', sublabel: {en: 'Move around', es: 'Me muevo mucho'}, scores: { medium: 2, responsive: 2 } },
-          { id: 'no_idea', label: {en: 'Not Sure', es: 'No Estoy Seguro'}, icon: 'question', sublabel: {en: 'I wake up in weird positions', es: 'Me despierto en posiciones raras'}, scores: { medium: 2, responsive: 2 } }
-        ]
-      },
-      {
-        id: 'body_type', category: {en: 'About You', es: 'Sobre Ti'}, question: {en: "What weight range should this mattress support?", es: "\u00bfQu\u00e9 rango de peso debe soportar este colch\u00f3n?"},
-        helpText: {en: "This helps us account for cushioning, support, and durability.", es: "Esto nos ayuda a considerar la amortiguaci\u00f3n, el soporte y la durabilidad."}, type: 'single',
-        // Answer-aware copy (resolved in renderQuestion via dynamicCopy): solo shoppers
-        // see the base wording above; couples / family beds get partner-framed wording
-        // so "whose weight?" is unambiguous. IDs, ranges, and scores are identical in
-        // both cases \u2014 only the prose changes. Firmness stays the separate preference Q.
-        dynamicCopy: function(a) {
-          var couple = a.partner_sleep === 'partner' || a.partner_sleep === 'family';
-          if (!couple) return null;
-          return {
-            question: {en: "What weight range should we match for the sleeper who needs more support?", es: "\u00bfPara qu\u00e9 rango de peso debemos ajustar, seg\u00fan quien necesite m\u00e1s soporte?"},
-            helpText: {en: "If you fall into different ranges, choose \u201cDifferent weight ranges.\u201d", es: "Si est\u00e1n en rangos diferentes, elige \u201cRangos de peso diferentes\u201d."}
-          };
-        },
-        options: [
-          { id: 'petite', label: {en: 'Under 130 lbs', es: 'Menos de 130 lbs'}, icon: 'cloud', sublabel: {en: 'Light support', es: 'Soporte ligero'}, scores: { plush: 2, soft: 1 } },
-          { id: 'average', label: {en: '130 to 200 lbs', es: '130 a 200 lbs'}, icon: 'weight', sublabel: {en: 'Standard support', es: 'Soporte est\u00e1ndar'}, scores: { medium: 2 } },
-          { id: 'athletic', label: {en: '200 to 230 lbs', es: '200 a 230 lbs'}, icon: 'support', sublabel: {en: 'Medium-firm support', es: 'Soporte medio-firme'}, scores: { support: 2, medium: 1, responsive: 1 } },
-          { id: 'plus', label: {en: 'Over 230 lbs', es: 'M\u00e1s de 230 lbs'}, icon: 'support', sublabel: {en: 'Maximum support', es: 'Soporte m\u00e1ximo'}, scores: { firm: 2, support: 3, hybrid: 2, durability: 2 } },
-          { id: 'different', label: {en: 'Different weight ranges', es: 'Rangos de peso diferentes'}, icon: 'partner', sublabel: {en: 'Sleepers fall into different ranges', es: 'Los durmientes est\u00e1n en rangos diferentes'}, scores: { medium: 2, support: 1, motionIsolation: 2 }, hideIf: { question: 'partner_sleep', answer: 'solo' } }
-        ]
-      },
-      {
-        id: 'temperature', category: {en: 'What You Like', es: 'Lo Que Te Gusta'}, question: {en: "How do you sleep temperature-wise?", es: "\u00bfC\u00f3mo duermes en cuanto a temperatura?"},
-        helpText: {en: "Sleeping hot or cold is an easy fix with the right materials.", es: "La regulaci\u00f3n de temperatura es clave para un sue\u00f1o profundo"}, type: 'single',
-        options: [
-          { id: 'hot', label: {en: 'I Sleep Hot', es: 'Duermo con Calor'}, icon: 'flame', sublabel: {en: 'Night sweats, kick off covers', es: 'Sudores nocturnos, quito las cobijas'}, scores: { cooling: 3, hybrid: 2 } },
-          { id: 'comfortable', label: {en: "I'm Comfortable", es: "Estoy C\u00f3modo"}, icon: 'smile', sublabel: {en: 'No temperature issues', es: 'Sin problemas de temperatura'}, scores: {} },
-          { id: 'cold', label: {en: 'I Sleep Cold', es: 'Duermo con Fr\u00edo'}, icon: 'snowflake', sublabel: {en: 'Need blankets to warm up', es: 'Necesito cobijas para calentarme'}, scores: { memory: 1, plush: 1 } },
-          { id: 'opposite', label: {en: "We're Opposite", es: "Somos Opuestos"}, icon: 'hotcold', sublabel: {en: 'One hot, one cold', es: 'Uno con calor, otro con fr\u00edo'}, scores: { cooling: 2, hybrid: 1 }, hideIf: { question: 'partner_sleep', answer: 'solo' } }
-        ]
-      },
-      {
-        id: 'firmness', category: {en: 'What You Like', es: 'Lo Que Te Gusta'}, question: {en: "What firmness level do you prefer?", es: "\u00bfQu\u00e9 nivel de firmeza prefieres?"},
-        helpText: {en: "No wrong answer here, just slide to what feels best.", es: "Desliza a tu comodidad ideal"}, type: 'slider',
-        min: 1, max: 10, defaultValue: 5,
-        labels: [{en: 'Soft \u2014 Sink right in', es: 'Suave \u2014 Hundirse'}, {en: 'Medium', es: 'Medio'}, {en: 'Firm \u2014 Solid support', es: 'Firme \u2014 Soporte s\u00f3lido'}]
-      },
-      {
-        id: 'current_mattress_age', category: {en: "What You're Solving", es: "Lo Que Buscas Resolver"}, question: {en: "How old is your current mattress?", es: "\u00bfCu\u00e1ntos a\u00f1os tiene tu colch\u00f3n actual?"},
-        helpText: {en: "Most mattresses lose their support after about 8 years.", es: "La mayor\u00eda de los colchones duran 7\u201310 a\u00f1os"}, type: 'single',
-        options: [
-          { id: 'under_2', label: {en: 'Less Than 2 Years', es: 'Menos de 2 A\u00f1os'}, icon: 'check', sublabel: {en: 'Pretty new', es: 'Bastante nuevo'}, scores: {} },
-          { id: 'three_seven', label: {en: '3 to 7 Years', es: '3 a 7 A\u00f1os'}, icon: 'combo', sublabel: {en: 'Middle of its life', es: 'A mitad de su vida'}, scores: {} },
-          { id: 'eight_fifteen', label: {en: '8 to 15 Years', es: '8 a 15 A\u00f1os'}, icon: 'aging', sublabel: {en: 'Past its prime', es: 'Ya pas\u00f3 su mejor momento'}, scores: {} },
-          { id: 'fifteen_plus', label: {en: 'Over 15 Years', es: 'M\u00e1s de 15 A\u00f1os'}, icon: 'sagging', sublabel: {en: 'Long overdue', es: 'Ya era hora'}, scores: {} },
-          { id: 'not_sure', label: {en: 'Not Sure', es: 'No Estoy Seguro'}, icon: 'question', sublabel: {en: "Can't remember", es: "No recuerdo"}, scores: {} }
-        ]
-      },
-      {
-        id: 'sleep_issues', category: {en: "What You're Solving", es: "Lo Que Buscas Resolver"}, question: {en: "Any issues with your current mattress?", es: "\u00bfAlg\u00fan problema con tu colch\u00f3n actual?"},
-        helpText: {en: "Tap anything you've noticed. Each one points us toward a fix.", es: "Toca las que apliquen"}, type: 'multiple',
-        options: [
-          { id: 'back_pain', label: {en: 'Back Pain', es: 'Dolor de Espalda'}, icon: 'spine', sublabel: {en: 'Lower or upper back', es: 'Espalda baja o alta'}, scores: { support: 3, zoned: 2, firm: 1 } },
-          { id: 'hip_pain', label: {en: 'Hip or Shoulder Pain', es: 'Dolor de Cadera u Hombro'}, icon: 'pressure', sublabel: {en: 'Pressure points', es: 'Puntos de presi\u00f3n'}, scores: { pressureRelief: 3, plush: 2 } },
-          { id: 'hot', label: {en: 'Sleeping Too Hot', es: 'Mucho Calor al Dormir'}, icon: 'flame', sublabel: {en: 'Night sweats, overheating', es: 'Sudores nocturnos, sobrecalentamiento'}, scores: { cooling: 3, hybrid: 2 } },
-          { id: 'tossing', label: {en: 'Tossing & Turning', es: 'Dando Vueltas'}, icon: 'combo', sublabel: {en: "Can't get comfortable", es: "No encuentro comodidad"}, scores: { comfort: 2, medium: 1 } },
-          { id: 'stiff', label: {en: 'Waking Up Stiff or Sore', es: 'Despertar R\u00edgido o Adolorido'}, icon: 'stiff', sublabel: {en: 'Morning aches', es: 'Dolores matutinos'}, scores: { pressureRelief: 2, comfort: 2 } },
-          { id: 'sagging', label: {en: 'Mattress Sagging', es: 'Colch\u00f3n Hundido'}, icon: 'sagging', sublabel: {en: 'Dips or indentations', es: 'Hundimientos'}, scores: { durability: 2, quality: 2 } },
-          { id: 'too_soft', label: {en: 'Mattress Too Soft', es: 'Colch\u00f3n Muy Suave'}, icon: 'couch', sublabel: {en: 'Sinking in too much', es: 'Me hundo demasiado'}, scores: { firm: 3, support: 2 } },
-          { id: 'none', label: {en: 'No Major Issues', es: 'Sin Problemas Grandes'}, icon: 'check', sublabel: {en: 'Just time for an upgrade', es: 'Solo es hora de un cambio'}, scores: { comfort: 1, quality: 1, durable: 1 } }
-        ]
-      },
-      {
-        id: 'health_conditions', category: {en: "What You're Solving", es: "Lo Que Buscas Resolver"}, question: {en: "Anything else going on that affects your sleep?", es: "\u00bfAlgo m\u00e1s que afecte tu sue\u00f1o?"},
-        helpText: {en: "Tap any that apply. A few of these change what we'd suggest.", es: "Toca las que apliquen"}, type: 'multiple',
-        options: [
-          { id: 'nerve_pain', label: {en: 'Nerve Pain or Tingling', es: 'Dolor Nervioso u Hormigueo'}, icon: 'lightning', sublabel: {en: 'Shooting pain, numbness', es: 'Dolor punzante, entumecimiento'}, scores: { support: 3, firm: 2, zoned: 2 } },
-          { id: 'allergies', label: {en: 'Allergies', es: 'Alergias'}, icon: 'sneeze', sublabel: {en: 'Dust, sneezing, stuffy', es: 'Polvo, estornudos, congesti\u00f3n'}, scores: { hypoallergenic: 3 } },
-          { id: 'snoring', label: {en: 'Snoring or Sleep Apnea', es: 'Ronquidos o Apnea del Sue\u00f1o'}, icon: 'snore', sublabel: {en: 'You or your partner', es: 'T\u00fa o tu pareja'}, scores: { adjustable: 3 } },
-          { id: 'reflux', label: {en: 'Acid Reflux / Heartburn', es: 'Reflujo \u00c1cido / Acidez'}, icon: 'flame', sublabel: {en: 'Burns when lying down', es: 'Arde al acostarse'}, scores: { adjustable: 3 } },
-          { id: 'extra_support', label: {en: 'Need Extra Support', es: 'Necesito Soporte Extra'}, icon: 'weight', sublabel: {en: 'Larger build or heavier weight', es: 'Complexi\u00f3n grande o peso mayor'}, scores: { support: 3, firm: 2, durable: 3 } },
-          { id: 'getting_older', label: {en: 'Changing Needs', es: 'Necesidades Cambiantes'}, icon: 'aging', sublabel: {en: 'Looking for gentler support', es: 'Buscando soporte m\u00e1s suave'}, scores: { support: 2, comfort: 2, pressureRelief: 1 } },
-          { id: 'none', label: {en: 'None of These', es: 'Ninguno de Estos'}, icon: 'check', sublabel: {en: "I'm good", es: "Estoy bien"}, scores: {} }
-        ]
-      }
-    ];
+    // Hydrated from data/quiz.json by loadAppData() (quiz config migration).
+    // Structure (ids/types/options/scores) is an app-level contract validated
+    // by tools/validation.py validate_quiz; answer-aware copy is declarative
+    // (copyVariants, resolved by resolveQuizCopy) - no functions in config.
+    let QUESTIONS = [];
 
     // ----- MATTRESS DATA & STORE CONFIG (loaded from external JSON) -----
     let MATTRESSES = { gold: [], silver: [], bronze: [] };
@@ -10758,14 +10620,22 @@
 
     (async function loadAppData() {
       try {
-        const [mattressRes, storeRes] = await Promise.all([
+        const [mattressRes, storeRes, quizRes] = await Promise.all([
           fetch('./data/mattresses.json', { cache: 'no-store' }),
-          fetch('./data/store-config.json', { cache: 'no-store' })
+          fetch('./data/store-config.json', { cache: 'no-store' }),
+          fetch('./data/quiz.json', { cache: 'no-store' })
         ]);
         if (!mattressRes.ok) throw new Error('mattresses.json HTTP ' + mattressRes.status);
         if (!storeRes.ok) throw new Error('store-config.json HTTP ' + storeRes.status);
+        if (!quizRes.ok) throw new Error('quiz.json HTTP ' + quizRes.status);
         MATTRESSES = await mattressRes.json();
         STORE_CONFIG = await storeRes.json();
+        // Quiz definition is core app data: fail hard (dataErrorOverlay), never
+        // start a quiz with no questions.
+        const quizData = await quizRes.json();
+        QUESTIONS = (quizData && Array.isArray(quizData.questions))
+          ? quizData.questions : [];
+        if (!QUESTIONS.length) throw new Error('quiz.json has no questions');
         // White-label: sales-floor pitch/brand prose lives in store-config
         // (salesNotes / salesNotes_es), not in this file. Hydrate the lookup
         // tables that getPitchContent / getBrandContent read. Defensive && chains
@@ -11084,9 +10954,11 @@
       console.log('startQuiz called');
       // Hard failure already detected during load — don't bother retrying.
       if (_dataLoadFailed) { showDataError(); return; }
-      // Guard: ensure mattress data finished loading before the quiz begins.
-      // On slow networks the fetch in loadAppData() may not have resolved.
-      if (!MATTRESSES || !MATTRESSES.gold || MATTRESSES.gold.length === 0) {
+      // Guard: ensure mattress + quiz data finished loading before the quiz
+      // begins. On slow networks the fetch in loadAppData() may not have
+      // resolved (both arrive in the same Promise.all).
+      if (!MATTRESSES || !MATTRESSES.gold || MATTRESSES.gold.length === 0
+          || QUESTIONS.length === 0) {
         _startQuizAttempts++;
         if (_startQuizAttempts > 25) {
           console.error('[DreamFinder] Mattress data never loaded after 25 attempts — showing error');
@@ -11122,6 +10994,22 @@
       return QUESTIONS.filter(qq =>
         !qq.skipIf || answers[qq.skipIf.question] !== qq.skipIf.answer
       );
+    }
+
+    // Answer-aware copy variants (declarative config; replaced the old
+    // dynamicCopy function, which could not ship in data/quiz.json). First
+    // variant whose `when` condition matches the current answers wins:
+    //   { when: {question, answerIn: [...]}, question?, helpText? }
+    function resolveQuizCopy(q) {
+      if (!Array.isArray(q.copyVariants)) return null;
+      for (const v of q.copyVariants) {
+        const w = v && v.when;
+        if (w && Array.isArray(w.answerIn)
+            && w.answerIn.includes(answers[w.question])) {
+          return v;
+        }
+      }
+      return null;
     }
 
     // Italic-brass emphasis word per question (Nocturnal v1). Keyed by question id.
@@ -11180,7 +11068,7 @@
       const eyebrow = (es ? 'Pregunta ' : 'Question ') + (stepIdx + 1) + ' · ' + (es ? 'de ' : 'of ') + total;
       // Answer-aware copy: a question may override its prompt/help based on prior
       // answers (e.g. body_type reframes for couples). Falls back to static copy.
-      const dynCopy = (typeof q.dynamicCopy === 'function') ? (q.dynamicCopy(answers) || {}) : {};
+      const dynCopy = resolveQuizCopy(q) || {};
       const qHelp = dynCopy.helpText || q.helpText;
       const headlineHtml = applyQuestionAccent(q.id, L(dynCopy.question || q.question), currentLang);
       const backLabel = es ? '← Atrás' : '← Back';

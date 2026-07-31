@@ -111,6 +111,20 @@ def main():
                                             "answer": "solo"})
     check("no dynamicCopy leaked into shipped quiz (functions can't ship)",
           "dynamicCopy" not in json.dumps(quiz))
+    # The app icon helper falls back to a default silently (s[name] || s.moon),
+    # so a typo'd icon id in config would ship undetected without this.
+    icons = {o.get("icon") for q in questions
+             for o in (q.get("options") or []) if o.get("icon")}
+    bad_icons = [i for i in sorted(icons)
+                 if not re.search(r"\b" + re.escape(i) + r": '<svg", html)]
+    check("every quiz option icon exists in the app icon map",
+          not bad_icons, f"missing: {bad_icons}")
+    check("QUESTIONS hydrated from data/quiz.json (no hardcoded literal)",
+          "let QUESTIONS = [];" in html
+          and "data/quiz.json" in html
+          and "const QUESTIONS = [" not in html)
+    check("quiz load failure fails hard (no-questions guard)",
+          "quiz.json has no questions" in html)
 
     print("Catalog invariants:")
     mj = load_json("data/mattresses.json")
