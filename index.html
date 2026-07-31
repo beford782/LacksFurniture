@@ -8978,6 +8978,12 @@
       outline: 3px solid var(--store-primary); outline-offset: 3px;
     }
     .fin-sheet-body { font-size: 0.95rem; color: #3E3A31; margin: 0 0 0.4rem; }
+    /* Screen-reader-only: visually hidden but present in the accessibility
+       tree (used by the financing sheet's stale-swap status region). */
+    .sr-only {
+      position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+    }
     .fin-sheet .fin-fit-first { text-align: left; margin-bottom: 1.3rem; }
     .fin-cards { display: grid; gap: 1rem; }
     .fin-card {
@@ -9370,6 +9376,11 @@
                 ontouchend="event.preventDefault();window.closeFinancingSheet();"></button>
       </div>
       <h2 class="fin-sheet-title" id="financingSheetTitle" tabindex="-1"></h2>
+      <!-- Announces the stale/fail-closed swap (generic guidance replacing
+           exact rates and terms) to screen readers. Populated only after the
+           sheet is visible — live regions inside hidden containers don't
+           reliably announce — and only when a card fell back to staleNotice. -->
+      <div class="sr-only" id="financingSheetStatus" role="status" aria-live="polite"></div>
       <p class="fin-sheet-body" id="financingSheetBody"></p>
       <p class="fin-fit-first" id="financingSheetFitFirst"></p>
       <div class="fin-cards" id="financingSheetCards"></div>
@@ -9904,6 +9915,9 @@
     var financingExplored = false;
     var _financeReturnFocus = null;
     var _finModuleImpressionLogged = false;
+    // True when the last renderFinancingSheet() swapped any card's exact
+    // terms for the generic staleNotice — drives the sheet's status region.
+    var _finSheetStale = false;
 
     // Email body for the save packet: "You explored…" only when the customer
     // opened the sheet or marked interest; otherwise the neutral availability
@@ -9977,6 +9991,10 @@
       analytics.log('finance_details_open', finEventBase(placement));
       var title = document.getElementById('financingSheetTitle');
       if (title) title.focus();
+      // Populate the status region only after the sheet is visible: live
+      // regions inside hidden containers don't reliably announce, and the
+      // delay lets the dialog's title announcement land first.
+      setTimeout(updateFinancingSheetStatus, 150);
       if (!_finSheetKeydownBound) {
         sheet.addEventListener('keydown', finSheetKeydown);
         _finSheetKeydownBound = true;
@@ -9989,6 +10007,10 @@
       if (!sheet || sheet.hidden) return;
       sheet.hidden = true;
       backdrop.hidden = true;
+      // Clear so the next open re-announces (a repeat of identical text is
+      // not a mutation and would stay silent).
+      var status = document.getElementById('financingSheetStatus');
+      if (status) status.textContent = '';
       document.body.classList.remove('fin-sheet-open');
       if (_financeReturnFocus && typeof _financeReturnFocus.focus === 'function') {
         _financeReturnFocus.focus();
@@ -10034,6 +10056,7 @@
       var byId = {};
       plans.forEach(function(p) { byId[p.id] = p; });
       var cards = [];
+      var anyStale = false;
 
       // Card 1 — promotional financing (exact offers, freshness-gated). The
       // lender name comes from config plan.provider — never hardcoded.
@@ -10053,6 +10076,7 @@
       } else {
         // Stale/fail-closed: no exact rates or terms; generic guidance + link.
         synBody = '<p class="fin-offer__detail">' + finEsc(FC('staleNotice')) + '</p>';
+        if (syn.length) anyStale = true;
       }
       if (syn.length) {
         cards.push('<article class="fin-card"><div class="fin-card__icon" aria-hidden="true">'
@@ -10070,6 +10094,7 @@
       var ih = byId['lacks-in-house'];
       if (ih) {
         var ihFresh = fresh && financingPlanFresh(ih);
+        if (!ihFresh) anyStale = true;
         cards.push('<article class="fin-card"><div class="fin-card__icon" aria-hidden="true">'
           + '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M3 9.5 10 3l7 6.5M5 8.5V17h10V8.5"/><path d="M8.5 17v-4.5h3V17"/></svg>'
           + '</div><h3 class="fin-card__title">' + finEsc(L(ih.headline)) + '</h3>'
@@ -10103,6 +10128,7 @@
       var mx = byId['mexico-in-house'];
       if (mx) {
         var mxFresh = fresh && financingPlanFresh(mx);
+        if (!mxFresh) anyStale = true;
         var mxLink = f.mexicoInfoUrl || f.sourceUrl;
         var mxHost = '';
         try { mxHost = new URL(mxLink).hostname.replace(/^www\./, ''); } catch (e) {}
@@ -10131,6 +10157,24 @@
       document.getElementById('financingSheetExternal').textContent = FC('externalNotice');
       var spec = document.getElementById('financingSheetSpecialist');
       spec.textContent = FC('ctaSecondary');
+      _finSheetStale = anyStale;
+      // Live-update the status region on re-renders of an already-open sheet
+      // (language switch); no-op while hidden — openFinancingSheet defers the
+      // first population until after the sheet is revealed.
+      updateFinancingSheetStatus();
+    }
+
+    // Sets the sheet's visually-hidden role="status" region so screen
+    // readers hear that generic guidance replaced exact rates and terms
+    // (the visual staleNotice swap is otherwise silent). Config-driven copy:
+    // staleAnnouncement, falling back to staleNotice for configs without it.
+    function updateFinancingSheetStatus() {
+      var region = document.getElementById('financingSheetStatus');
+      var sheet = document.getElementById('financingSheet');
+      if (!region || !sheet || sheet.hidden) return;
+      region.textContent = _finSheetStale
+        ? (FC('staleAnnouncement') || FC('staleNotice'))
+        : '';
     }
 
     // ---- Per-surface renderers (also re-run on language switch) ----

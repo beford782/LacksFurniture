@@ -127,6 +127,10 @@ def main():
     check("no product-level payment math in index.html",
           not re.search(r"(price\s*/\s*(48|72))|from \$\d+/month|as low as", html, re.I))
     check("stale financing fails closed (warn + hide)", "exact terms hidden" in html)
+    check("financing sheet announces the stale swap (sr-only status region)",
+          'id="financingSheetStatus" role="status"' in html)
+    check("stale announcement is config-driven with staleNotice fallback",
+          "FC('staleAnnouncement') || FC('staleNotice')" in html)
     check("no WG&R in index.html", not re.search(r"WG&R|WG&amp;R|wgrfurniture", html))
     check("no WG&R in Code.gs", not re.search(r"WG&R|WG&amp;R|wgrfurniture", gs))
     check("no hardcoded retailer name in index.html (white-label boundary)",

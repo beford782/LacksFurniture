@@ -131,6 +131,10 @@
         "en": "Current payment options are available from your Lacks specialist.",
         "es": "Tu especialista de Lacks tiene las opciones de pago actuales."
       },
+      "staleAnnouncement": {
+        "en": "Exact rates and terms are not shown right now. Your Lacks specialist can confirm current payment options in store.",
+        "es": "Las tasas y los plazos exactos no se muestran en este momento. Tu especialista de Lacks puede confirmar las opciones de pago actuales en tienda."
+      },
       "externalNotice": {
         "en": "Opens lacks.com — a separate secure site governed by its own privacy terms.",
         "es": "Abre lacks.com — un sitio seguro aparte, regido por sus propios términos de privacidad."
