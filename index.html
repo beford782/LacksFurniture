@@ -9898,8 +9898,20 @@
     // Valid: 'undecided' | 'interested' | 'not_now'. Module state only (no
     // localStorage) so it can never leak between customers; reset by startOver().
     var financingInterest = 'undecided';
+    // Whether this customer actually opened the Payment Choice sheet. Gates the
+    // email packet's "You explored…" wording (COPY-15): without it the email
+    // asserted exploration for customers who never opened any financing content.
+    var financingExplored = false;
     var _financeReturnFocus = null;
     var _finModuleImpressionLogged = false;
+
+    // Email body for the save packet: "You explored…" only when the customer
+    // opened the sheet or marked interest; otherwise the neutral availability
+    // body. Falls back to emailBody for configs without emailBodyAvailable.
+    function finEmailBody() {
+      var explored = financingExplored || financingInterest === 'interested';
+      return explored ? FC('emailBody') : (FC('emailBodyAvailable') || FC('emailBody'));
+    }
 
     function finLayoutClass() {
       return window.innerWidth <= 1024 ? 'tablet' : 'desktop';
@@ -9960,6 +9972,7 @@
       renderFinancingSheet();
       backdrop.hidden = false;
       sheet.hidden = false;
+      financingExplored = true;
       document.body.classList.add('fin-sheet-open');
       analytics.log('finance_details_open', finEventBase(placement));
       var title = document.getElementById('financingSheetTitle');
@@ -13027,7 +13040,7 @@
       if (financingEnabled()) {
         packet.push({ present: true,
           title: FC('emailHeading'),
-          detail: FC('emailBody') });
+          detail: finEmailBody() });
       }
 
       var summaryEl = document.getElementById('emailPreview');
@@ -13248,7 +13261,7 @@
           var f = getFinancingConfig();
           return {
             heading: FC('emailHeading'),
-            body: FC('emailBody'),
+            body: finEmailBody(),
             url: f.sourceUrl || '',
             offerVersion: f.offerVersion || '',
             interest: financingInterest,
@@ -15995,6 +16008,7 @@
       // undecided, sheet closed, per-session impression flag cleared. Module
       // state only — nothing financing-related persists in localStorage.
       financingInterest = 'undecided';
+      financingExplored = false;
       _finModuleImpressionLogged = false;
       window.closeFinancingSheet();
 
