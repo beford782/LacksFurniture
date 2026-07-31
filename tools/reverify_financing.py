@@ -202,8 +202,154 @@ def cmd_mark(data: dict, args) -> int:
     return 0
 
 
+# ---- Self-test --------------------------------------------------------------
+# Exercises the refusal paths and the stamping/audit-log semantics against
+# fabricated data (never the real incoming file). Run:
+#     python tools/reverify_financing.py --self-test
+
+def _fab_data(now):
+    """Minimal financing data: one base-source plan, one divergent-source
+    plan (F1), one plan with no verifiedAt key (F2)."""
+    base = (now - timedelta(days=2)).isoformat(timespec="seconds")
+    return {
+        "_meta": {},
+        "financing": {
+            "verifiedAt": base,
+            "maxAgeDays": 7,
+            "sourceUrl": "https://example.com/financing",
+            "plans": [
+                {"id": "main-plan", "verifiedAt": base, "apr": 9.99,
+                 "termMonths": 72, "minimumPurchase": 500,
+                 "sourceUrl": "https://example.com/financing"},
+                {"id": "faq-plan", "verifiedAt": base,
+                 "sourceUrl": "https://example.com/faq"},
+                {"id": "no-stamp-plan",
+                 "sourceUrl": "https://example.com/financing"},
+            ],
+        },
+    }
+
+
+def _ns(**kw):
+    d = dict(at=None, attest="self-test attestation", skip_plan=[],
+             also_confirm=[], dry_run=True, mark_verified=True)
+    d.update(kw)
+    return argparse.Namespace(**d)
+
+
+def self_test() -> int:
+    import contextlib
+    import tempfile
+    global SRC
+
+    passed = failed = 0
+
+    def check(label, ok, detail=""):
+        nonlocal passed, failed
+        if ok:
+            passed += 1
+            print(f"  [ok] {label}")
+        else:
+            failed += 1
+            print(f"  [FAIL] {label}" + (f" — {detail}" if detail else ""))
+
+    def refuses(label, fragment, fn):
+        try:
+            with contextlib.redirect_stdout(io.StringIO()):
+                fn()
+            check(label, False, "no SystemExit raised")
+        except SystemExit as e:
+            check(label, fragment in str(e), f"got: {e}")
+
+    def mark(data, args):
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            cmd_mark(data, args)
+        return buf.getvalue()
+
+    now = datetime.now(timezone.utc)
+    fresh = (now - timedelta(days=1)).isoformat(timespec="seconds")
+    base = _fab_data(now)["financing"]["verifiedAt"]
+
+    print("Refusal paths:")
+    refuses("timestamp without offset refused", "no timezone offset",
+            lambda: parse_iso("2026-07-31T12:00:00"))
+    refuses("future --at refused (beyond clock skew)", "in the future",
+            lambda: cmd_mark(_fab_data(now), _ns(
+                at=(now + timedelta(minutes=30)).isoformat(timespec="seconds"))))
+    refuses("--at not newer than existing stamp refused", "not newer",
+            lambda: cmd_mark(_fab_data(now), _ns(at=base,
+                                                 also_confirm=["faq-plan"])))
+    refuses("empty --attest refused", "--attest",
+            lambda: cmd_mark(_fab_data(now), _ns(at=fresh, attest="   ",
+                                                 also_confirm=["faq-plan"])))
+    refuses("unknown plan id refused", "not a configured",
+            lambda: cmd_mark(_fab_data(now), _ns(at=fresh,
+                                                 skip_plan=["nope"])))
+    refuses("same id in --skip-plan and --also-confirm refused", "pick one",
+            lambda: cmd_mark(_fab_data(now), _ns(at=fresh,
+                                                 skip_plan=["faq-plan"],
+                                                 also_confirm=["faq-plan"])))
+    refuses("divergent-source plan without explicit flag refused (F1)",
+            "faq-plan",
+            lambda: cmd_mark(_fab_data(now), _ns(at=fresh)))
+
+    print("Stamping semantics (dry run):")
+    d = _fab_data(now)
+    mark(d, _ns(at=fresh, also_confirm=["faq-plan"]))
+    entry = d["_meta"]["verificationLog"][-1]
+    plan = {p["id"]: p for p in d["financing"]["plans"]}
+    check("top-level verifiedAt stamped", d["financing"]["verifiedAt"] == fresh)
+    check("--also-confirm stamps the divergent plan",
+          plan["faq-plan"]["verifiedAt"] == fresh)
+    check("confirmed plans recorded in the audit entry",
+          entry["plansConfirmed"] == ["main-plan", "faq-plan"])
+    check("plan without verifiedAt key NOT stamped (F2)",
+          "verifiedAt" not in plan["no-stamp-plan"]
+          and entry.get("plansNotStamped") == ["no-stamp-plan"])
+    check("recordedAt present and distinct from verifiedAt (F3)",
+          bool(entry.get("recordedAt")) and entry["recordedAt"] != entry["verifiedAt"])
+    check("attestation recorded", entry["attestation"] == "self-test attestation")
+
+    d = _fab_data(now)
+    out = mark(d, _ns(at=fresh, skip_plan=["faq-plan"]))
+    plan = {p["id"]: p for p in d["financing"]["plans"]}
+    check("--skip-plan keeps the old stamp",
+          plan["faq-plan"]["verifiedAt"] == base)
+    check("skipped plans recorded in the audit entry",
+          d["_meta"]["verificationLog"][-1]["plansSkipped"] == ["faq-plan"])
+    check("skip reported as failing closed on its own", "SKIPPED" in out)
+
+    print("File writes:")
+    src_backup = SRC
+    tmp = tempfile.mkdtemp()
+    try:
+        SRC = os.path.join(tmp, "financing.json")
+        mark(_fab_data(now), _ns(at=fresh, also_confirm=["faq-plan"],
+                                 dry_run=True))
+        check("--dry-run writes nothing", not os.path.exists(SRC))
+        mark(_fab_data(now), _ns(at=fresh, also_confirm=["faq-plan"],
+                                 dry_run=False))
+        check("real run writes the file", os.path.exists(SRC))
+        if os.path.exists(SRC):
+            with io.open(SRC, encoding="utf-8") as f:
+                written = json.load(f)
+            check("written file carries the stamp and one audit entry",
+                  written["financing"]["verifiedAt"] == fresh
+                  and len(written["_meta"]["verificationLog"]) == 1)
+            os.remove(SRC)
+    finally:
+        SRC = src_backup
+        os.rmdir(tmp)
+
+    print(f"\nSelf-test: {passed} passed, {failed} failed")
+    return 1 if failed else 0
+
+
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    p.add_argument("--self-test", action="store_true",
+                   help="Run the built-in unit tests (no real files touched)")
     p.add_argument("--mark-verified", action="store_true",
                    help="Record a completed real-browser verification")
     p.add_argument("--at", help="ISO-8601 instant (with offset) of the real check")
@@ -218,6 +364,8 @@ def main(argv=None) -> int:
     p.add_argument("--dry-run", action="store_true",
                    help="Show what would be recorded without writing")
     args = p.parse_args(argv)
+    if args.self_test:
+        return self_test()
     data = load()
     if args.mark_verified:
         if not args.at:
