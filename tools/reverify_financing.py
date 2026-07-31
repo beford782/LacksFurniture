@@ -12,12 +12,20 @@ Makes the weekly exact-terms re-verification repeatable. Two modes:
   2. Stamp after a real check:
          python tools/reverify_financing.py --mark-verified --at <ISO-8601> \
              --attest "real Chrome session, all checks matched" \
-             [--skip-plan mexico-in-house] [--dry-run]
+             [--also-confirm mexico-in-house | --skip-plan mexico-in-house] \
+             [--dry-run]
      Updates financing.verifiedAt and each confirmed plan's verifiedAt in
      incoming/lacks_financing.json, appends an audit entry to
      _meta.verificationLog, and reminds you to rebuild the pipeline.
      Skipped plans keep their old stamp and fail closed independently once
      they age out (the app gates per plan under the top-level gate).
+
+     Plans citing a DIFFERENT official source than financing.sourceUrl
+     (today: mexico-in-house, sourced from the FAQ) are NEVER stamped
+     implicitly — one attestation cannot cover a page you did not check.
+     Each such plan must be explicitly listed: --also-confirm <id> if that
+     source was also verified in the same session, or --skip-plan <id> if
+     it was not (e.g. the FAQ is access-blocked again).
 
 This tool NEVER invents a verification: --mark-verified refuses to run
 without an explicit --at timestamp and a non-empty --attest note, refuses
@@ -90,7 +98,9 @@ def cmd_checklist(data: dict) -> int:
         print()
     print("After confirming, stamp with:")
     print("  python tools/reverify_financing.py --mark-verified --at <ISO> "
-          "--attest \"<how you verified>\" [--skip-plan <id>]")
+          "--attest \"<how you verified>\" [--also-confirm <id> | --skip-plan <id>]")
+    print("Plans on a different source than financing.sourceUrl (marked above by "
+          "their source line) REQUIRE --also-confirm or --skip-plan explicitly.")
     print("Then rebuild: python incoming/build_lacks_workbook.py && "
           "python tools/convert_store_data.py incoming/Lacks_Store_Data.xlsx "
           "--output-dir . --skip-image-normalization")
@@ -113,12 +123,38 @@ def cmd_mark(data: dict, args) -> int:
                          "session (who/how); it may not be empty")
 
     plan_ids = [p["id"] for p in fin.get("plans", [])]
-    for skip in args.skip_plan:
-        if skip not in plan_ids:
-            raise SystemExit(f"error: --skip-plan {skip!r} is not a configured "
-                             f"plan id (known: {', '.join(plan_ids)})")
+    for flag, ids in (("--skip-plan", args.skip_plan),
+                      ("--also-confirm", args.also_confirm)):
+        for pid in ids:
+            if pid not in plan_ids:
+                raise SystemExit(f"error: {flag} {pid!r} is not a configured "
+                                 f"plan id (known: {', '.join(plan_ids)})")
+    both = set(args.skip_plan) & set(args.also_confirm)
+    if both:
+        raise SystemExit(f"error: {', '.join(sorted(both))} passed as both "
+                         f"--skip-plan and --also-confirm — pick one")
 
-    stamped, skipped = [], []
+    # F1 guard: a plan citing a different official source than the top-level
+    # financing.sourceUrl is never stamped implicitly. The attestation covers
+    # the page(s) the human actually checked; a second source requires its own
+    # explicit acknowledgment (--also-confirm) or an explicit skip.
+    base_src = fin.get("sourceUrl")
+    divergent = [p for p in fin.get("plans", [])
+                 if p["id"] not in args.skip_plan
+                 and p["id"] not in args.also_confirm
+                 and p.get("sourceUrl") and p["sourceUrl"] != base_src]
+    if divergent:
+        lines = "\n".join(f"  {p['id']}: {p['sourceUrl']}" for p in divergent)
+        raise SystemExit(
+            "error: these plans cite a DIFFERENT official source than "
+            f"financing.sourceUrl ({base_src}):\n{lines}\n"
+            "One attestation cannot cover a source you did not check. If you "
+            "verified that source in the same real session, pass "
+            "--also-confirm <plan-id>; if you could not (e.g. access-blocked), "
+            "pass --skip-plan <plan-id> to leave its old stamp — it will fail "
+            "closed on its own schedule.")
+
+    stamped, skipped, unstamped = [], [], []
     fin["verifiedAt"] = args.at
     for plan in fin.get("plans", []):
         if plan["id"] in args.skip_plan:
@@ -126,15 +162,24 @@ def cmd_mark(data: dict, args) -> int:
             continue
         if plan.get("verifiedAt"):
             plan["verifiedAt"] = args.at
-        stamped.append(plan["id"])
+            stamped.append(plan["id"])
+        else:
+            # F2: never report a plan as confirmed when nothing was written.
+            unstamped.append(plan["id"])
 
     log = data["_meta"].setdefault("verificationLog", [])
-    log.append({
+    entry = {
         "verifiedAt": args.at,
+        # F3: when this recording was made, independent of the claimed
+        # observation instant — lets an auditor spot backdated recordings.
+        "recordedAt": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "attestation": args.attest.strip(),
         "plansConfirmed": stamped,
         "plansSkipped": skipped,
-    })
+    }
+    if unstamped:
+        entry["plansNotStamped"] = unstamped
+    log.append(entry)
 
     if args.dry_run:
         print("DRY RUN — no file written. Would record:")
@@ -147,6 +192,9 @@ def cmd_mark(data: dict, args) -> int:
     print(f"  plans stamped: {', '.join(stamped)}")
     if skipped:
         print(f"  plans SKIPPED (will fail closed on their own): {', '.join(skipped)}")
+    if unstamped:
+        print(f"  WARNING — plans with no verifiedAt key were NOT stamped and are "
+              f"NOT recorded as confirmed: {', '.join(unstamped)}")
     print(f"  attestation: {args.attest.strip()}")
     print("NEXT: rebuild the workbook + store-config, run the test suite, "
           "browser-verify, then commit — the stamp is not deployed until then.")
@@ -162,6 +210,10 @@ def main(argv=None) -> int:
     p.add_argument("--skip-plan", action="append", default=[], metavar="PLAN_ID",
                    help="Plan id that could NOT be re-verified this session "
                         "(keeps its old stamp; may repeat)")
+    p.add_argument("--also-confirm", action="append", default=[], metavar="PLAN_ID",
+                   help="Plan id whose DIFFERENT official source was also "
+                        "verified in the same session (required for any plan "
+                        "not sourced from financing.sourceUrl; may repeat)")
     p.add_argument("--dry-run", action="store_true",
                    help="Show what would be recorded without writing")
     args = p.parse_args(argv)

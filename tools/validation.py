@@ -596,6 +596,12 @@ def validate_financing(config: dict, *, allowed_source_hosts=None) -> Validation
         for key in ("eyebrow", "headline"):
             if not _bilingual_ok(copy.get(key)):
                 r.add_error(f"financing.copy.{key} missing EN or ES")
+        if copy.get("emailBody") and not copy.get("emailBodyAvailable"):
+            r.add_warning(
+                "financing.copy.emailBody present without emailBodyAvailable — "
+                "the email packet row will use 'explored' wording even for "
+                "customers who never opened Payment Choice content (COPY-15); "
+                "add the neutral availability variant")
         policy = fin.get("savingsPassPolicy")
         if policy not in SAVINGS_PASS_POLICIES:
             r.add_error(f"financing.savingsPassPolicy {policy!r} must be one of "
@@ -1735,6 +1741,15 @@ def _self_test() -> int:
     check("financing exact terms missing ES disclosure -> error",
           any("disclosure" in e for e in
               validate_financing(_fc(fes), allowed_source_hosts=_FHOSTS).errors))
+
+    fmail = _fmut(); fmail["copy"]["emailBody"] = {"en": "B", "es": "B"}
+    check("financing emailBody without emailBodyAvailable -> warning (COPY-15)",
+          any("emailBodyAvailable" in w for w in
+              validate_financing(_fc(fmail), allowed_source_hosts=_FHOSTS).warnings))
+    fmail["copy"]["emailBodyAvailable"] = {"en": "N", "es": "N"}
+    check("financing emailBody with emailBodyAvailable -> no warning",
+          not any("emailBodyAvailable" in w for w in
+              validate_financing(_fc(fmail), allowed_source_hosts=_FHOSTS).warnings))
 
     fdet = _fmut(); del fdet["plans"][0]["detail"]
     check("financing exact terms without adjacent conditions -> error",
