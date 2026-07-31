@@ -82,6 +82,21 @@ def main():
     check("no banned approval-implication phrases in financing copy",
           not any(b in json.dumps(fin).lower() for b in banned))
 
+    # Source-of-truth sync: the shipped financing envelope must equal the
+    # canonical incoming source modulo the deliberately stripped payment
+    # factor (the only transform build_lacks_workbook.py applies). Catches
+    # stamp-then-forget-to-rebuild divergence: tools/reverify_financing.py
+    # writes incoming/ only, so a stale data/store-config.json would
+    # otherwise deploy silently.
+    src_fin = json.loads(json.dumps(load_json("incoming/lacks_financing.json")["financing"]))
+    for p in src_fin.get("plans", []):
+        p.pop("publishedPaymentFactor", None)
+    check("shipped verifiedAt matches incoming source (rebuild after stamping)",
+          fin.get("verifiedAt") == src_fin.get("verifiedAt"),
+          f"shipped {fin.get('verifiedAt')!r} vs incoming {src_fin.get('verifiedAt')!r}")
+    check("shipped financing envelope deep-equals incoming (factor-stripped)",
+          fin == src_fin)
+
     print("Catalog invariants:")
     mj = load_json("data/mattresses.json")
     tiers = {t: len(mj.get(t) or []) for t in ("gold", "silver", "bronze")}

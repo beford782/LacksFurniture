@@ -197,7 +197,8 @@ def cmd_mark(data: dict, args) -> int:
               f"NOT recorded as confirmed: {', '.join(unstamped)}")
     print(f"  attestation: {args.attest.strip()}")
     print("NEXT: rebuild the workbook + store-config, run the test suite, "
-          "browser-verify, then commit — the stamp is not deployed until then.")
+          "browser-verify, then commit — the stamp is not deployed until then. "
+          "tests/smoke_check.py FAILS until the shipped config matches this file.")
     return 0
 
 
