@@ -37,6 +37,18 @@
       --store-primary-light: #C9A874;
       --store-primary-glow: rgba(184, 147, 93, 0.15);
 
+      /* Semantic a11y tokens — brand-neutral, NOT retailer-configurable.
+         Focus pair: dark outer ring + light inner halo, so one of the two
+         always reads >=3:1 against any adjacent surface regardless of the
+         configured palette. The on-store-* foregrounds are recomputed from
+         the configured colors in applyStoreConfig() (pickAccessibleForeground);
+         these safe defaults also keep the pre-config brass palette readable
+         (black on #B8935D = 7.4:1, on #C9A874 = 9.3:1). */
+      --focus-ring-inner: #FFFFFF;
+      --focus-ring-outer: #000000;
+      --on-store-primary: #000000;
+      --on-store-primary-light: #000000;
+
       /* Nocturnal Boutique — midnight + brass system */
       --color-bg: #14171C;
       --color-surface: #1A1E25;
@@ -8315,14 +8327,14 @@
       border-color: var(--store-primary);
       border-radius: 8px;
       background: var(--store-primary);
-      color: #FFFFFF;
+      color: var(--on-store-primary);
       font-family: var(--font-sans);
       font-weight: 750;
     }
     #resultsScreen .noct-results-cta:hover {
       border-color: var(--store-primary-light);
       background: var(--store-primary-light);
-      color: #FFFFFF;
+      color: var(--on-store-primary-light);
     }
     #resultsScreen .noct-results-review-btn {
       border-radius: 8px;
@@ -8931,8 +8943,29 @@
     .fin-btn-ghost {
       background: transparent; color: #4E483C; border: 1px solid #C9C1AF;
     }
-    .fin-btn:focus-visible {
-      outline: 3px solid var(--store-primary); outline-offset: 2px;
+    /* Semantic two-ring focus indicator (Cycle 1 pilot surfaces).
+       Geometry: a 5px light halo (box-shadow) under a 3px dark outline at
+       2px offset — the outline covers the halo's outer 3px, leaving a 2px
+       inner halo visible between the component and the dark ring. None of
+       these targets carries a resting box-shadow, so nothing is hidden. */
+    .fin-btn:focus-visible,
+    .fin-sheet-close:focus-visible,
+    .fin-sheet-title:focus-visible,
+    .fin-official-link:focus-visible,
+    #resultsScreen .noct-results-cta:focus-visible {
+      outline: 3px solid var(--focus-ring-outer);
+      outline-offset: 2px;
+      box-shadow: 0 0 0 5px var(--focus-ring-inner);
+    }
+    @media (forced-colors: active) {
+      .fin-btn:focus-visible,
+      .fin-sheet-close:focus-visible,
+      .fin-sheet-title:focus-visible,
+      .fin-official-link:focus-visible,
+      #resultsScreen .noct-results-cta:focus-visible {
+        outline-color: CanvasText;
+        box-shadow: none;
+      }
     }
 
     /* Sheet (modal dialog) */
@@ -8968,14 +9001,10 @@
       background: transparent; border: 1px solid #C9C1AF; border-radius: var(--radius);
       font-size: 1.05rem; color: #4E483C; cursor: pointer; touch-action: manipulation;
     }
-    .fin-sheet-close:focus-visible { outline: 3px solid var(--store-primary); outline-offset: 2px; }
     .fin-sheet-title {
       font-family: var(--font-serif);
       font-size: 1.75rem; line-height: 1.25; color: #17140F;
       margin: 0.35rem 0 0.6rem;
-    }
-    .fin-sheet-title:focus-visible {
-      outline: 3px solid var(--store-primary); outline-offset: 3px;
     }
     .fin-sheet-body { font-size: 0.95rem; color: #3E3A31; margin: 0 0 0.4rem; }
     /* Screen-reader-only: visually hidden but present in the accessibility
@@ -9026,7 +9055,6 @@
       color: #211E19; font-size: 0.92rem; text-decoration: underline;
       text-underline-offset: 3px; min-height: 44px; display: inline-flex; align-items: center;
     }
-    .fin-official-link:focus-visible { outline: 3px solid var(--store-primary); outline-offset: 2px; }
     .fin-external-note { font-size: 0.78rem; color: #5E594E; }
 
     /* Drawer section */
@@ -10699,6 +10727,27 @@
       return merged;
     }
 
+    // Pure WCAG foreground picker for configurable store-color backgrounds.
+    // Accepts #RGB or #RRGGBB; returns '#000000' or '#FFFFFF' — whichever
+    // contrasts more with the background. The winner is always >= 4.5:1
+    // because black and white are the candidate endpoints (worst case sits
+    // at mid luminance where both ratios are ~4.5). Returns null for any
+    // other input so callers skip the override and the CSS default stands.
+    function pickAccessibleForeground(hex) {
+      if (typeof hex !== 'string') return null;
+      var m = /^#(?:([0-9a-f]{3})|([0-9a-f]{6}))$/i.exec(hex.trim());
+      if (!m) return null;
+      var h = m[2] || m[1].split('').map(function(c) { return c + c; }).join('');
+      function lin(i) {
+        var c = parseInt(h.slice(i, i + 2), 16) / 255;
+        return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+      }
+      var L = 0.2126 * lin(0) + 0.7152 * lin(2) + 0.0722 * lin(4);
+      var vsWhite = 1.05 / (L + 0.05);
+      var vsBlack = (L + 0.05) / 0.05;
+      return vsBlack >= vsWhite ? '#000000' : '#FFFFFF';
+    }
+
     function applyStoreConfig() {
       if (!STORE_CONFIG.colors && !STORE_CONFIG.text && !STORE_CONFIG.logo && !STORE_CONFIG.brands) return;
       const root = document.documentElement;
@@ -10707,6 +10756,15 @@
         if (STORE_CONFIG.colors.storePrimaryLight) root.style.setProperty('--store-primary-light', STORE_CONFIG.colors.storePrimaryLight);
         if (STORE_CONFIG.colors.storePrimaryGlow) root.style.setProperty('--store-primary-glow', STORE_CONFIG.colors.storePrimaryGlow);
         if (STORE_CONFIG.colors.accent) root.style.setProperty('--color-accent', STORE_CONFIG.colors.accent);
+        // Computed foregrounds for the configurable CTA backgrounds. Normal
+        // and hover are paired INDEPENDENTLY — a foreground safe on
+        // storePrimary is not automatically safe on storePrimaryLight.
+        // When a color is absent or unsupported, the matching --on-* token
+        // keeps its safe :root default alongside the default background.
+        var onPrimary = pickAccessibleForeground(STORE_CONFIG.colors.storePrimary);
+        if (onPrimary) root.style.setProperty('--on-store-primary', onPrimary);
+        var onPrimaryLight = pickAccessibleForeground(STORE_CONFIG.colors.storePrimaryLight);
+        if (onPrimaryLight) root.style.setProperty('--on-store-primary-light', onPrimaryLight);
       }
 
       // Logo wordmark (language-independent)
