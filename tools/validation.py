@@ -632,6 +632,250 @@ FINANCING_PLAN_KINDS = {
 }
 SAVINGS_PASS_POLICIES = {"alternative", "stackable", "specialist_confirm"}
 
+# -- Exact-claim detection for UNGATED financing copy --------------------------
+# financing.exactPromotionsEnabled and financingTermsFresh()/financingPlanFresh()
+# gate the exact OFFER BODIES, but a large amount of financing text renders
+# outside those gates in every operating state: all of financing.copy, the
+# promotional card's provider name, and the non-promotional plans' headlines and
+# disclosures. Nothing stopped an editor from putting an APR, term, minimum, or
+# payment example into one of those strings, which would put an unverified,
+# never-freshness-checked exact claim in front of a customer while the policy
+# switch reads "off".
+#
+# WHAT THIS ACTUALLY ENFORCES — and what it does not.
+# This is a lexical deny-list over an enumerated vocabulary of value, unit,
+# count, cadence, down-payment and deferral markers, plus one structural rule
+# for the payment noun (below). It raises the cost of shipping an exact claim
+# in an ungated field and catches every construction we have adversarially
+# tested, but it CANNOT prove the absence of an exact claim in arbitrary prose:
+# a paraphrase that avoids the whole marker vocabulary still passes. Known
+# survivors from the adversarial set include "Take it home now and settle up
+# later", "Split the cost over time", "Zero upfront" and "Nada por adelantado".
+# Treat this as a high-confidence filter and a forcing function for review, not
+# as a proof. Human copy review (Gate B/C) remains the authority.
+#
+# Posture: CONSERVATIVE and MARKER-oriented. Some markers are rejected with no
+# numeric value attached at all — `duration-unit` rejects a bare "month(s)",
+# "meses", "week", "year"; `proportion` rejects a bare "half"/"mitad" — because
+# "twelve months" and "half at pickup" state exact terms without a digit and no
+# numeral list can be relied on to catch them. That bias is intentional: it
+# sends borderline wording to review rather than letting it ship. It does NOT
+# mean the copy contained an exact claim, only that it used a marker reserved
+# for gated fields. Generic vocabulary the approved copy relies on — "rates",
+# "terms", "plazos", "payment options", "opciones de pago" — carries no marker
+# and passes. Each signal is separately named so an error tells the editor
+# exactly what tripped and whether it is a real claim or a rewording job.
+#
+# Three false-positive traps the shipped copy proves are real:
+#   * "apr" is a substring of "aprobacion"/"aprobados"  -> \bAPR\b is word-bounded
+#   * "interes" is a substring of "interested"/"me interesa" -> only explicit
+#     zero-interest constructions match, never the bare stem
+#   * "payment"/"pago" appears in 28 approved ungated strings ("payment options",
+#     "Payment Choices", "opciones de pago", "forma de pago") -> the payment noun
+#     is handled structurally, not by a plain ban (see _bare_payment_noun)
+_EXACT_CLAIM_SIGNALS = (
+    ("numeral", re.compile(r"\d")),
+    ("percent", re.compile(r"%")),
+    ("currency", re.compile(r"[$€£]|\bUSD\b|\bMXN\b", re.I)),
+    ("apr", re.compile(r"\bAPR\b", re.I)),
+    ("zero-interest", re.compile(
+        r"\bno interest\b|\binterest[-\s]free\b|\bzero interest\b|\bdeferred interest\b"
+        r"|\bsin\s+inter[eé]s(?:es)?\b|\bcero\s+inter[eé]s(?:es)?\b", re.I)),
+    ("payment-cadence", re.compile(
+        r"\bper month\b|\ba month\b|\bmonthly payments?\b|\bequal payments?\b"
+        r"|\bal mes\b|\bpor mes\b|\bpagos?\s+mensual(?:es)?\b|\bmensualidades\b", re.I)),
+    # UNIT signals. An exact claim does not need digits — "twelve months",
+    # "doce meses", "nine percent" and "fifty dollars" are exact terms written
+    # with number words. Banning the UNIT catches those without enumerating
+    # every English and Spanish numeral (an enumeration would be endless and
+    # would still miss "a dozen"). Ungated copy may still discuss generic
+    # "rates", "terms", "plazos", "payment options" and "opciones de pago" —
+    # none of those is a unit.
+    ("duration-unit", re.compile(
+        r"\bmonths?\b|\bmonthly\b|\bweeks?\b|\bweekly\b|\byears?\b|\byearly\b|\bannual(?:ly)?\b"
+        r"|\bmes\b|\bmeses\b|\bmensual(?:es|mente)?\b|\bsemanas?\b|\bsemanal(?:es)?\b"
+        r"|\ba[ñn]os?\b|\banual(?:es|mente)?\b", re.I)),
+    ("percent-word", re.compile(r"\bpercent(?:age)?\b|\bpor\s+ciento\b|\bporcentaje\b", re.I)),
+    ("currency-unit", re.compile(r"\bdollars?\b|\bd[oó]lar(?:es)?\b|\bpesos?\b|\beuros?\b", re.I)),
+    ("installment-count", re.compile(
+        r"\binstallments?\b|\bmensualidades?\b|\bcuotas?\b|\babonos?\b", re.I)),
+    # Repetition counts ("Pay twelve times" / "Paga doce veces"). Neither word
+    # appears in any approved ungated string.
+    ("repetition-count", re.compile(r"\btimes\b|\bveces\b", re.I)),
+    # Down payment / minimum-at-purchase claims.
+    ("down-payment", re.compile(
+        r"\b(?:no|nothing|zero)\s+(?:money\s+)?down\b|\bmoney\s+down\b"
+        r"|\bdown\s+payment\b|\benganche\b|\bpago\s+inicial\b", re.I)),
+    # Deferral / "pay later" claims — time-sensitive by nature.
+    ("deferral", re.compile(
+        r"\bdefer(?:red|ral|s|ring)?\b|\bpay\s+later\b|\bno\s+payments?\s+until\b"
+        r"|\bsin\s+pagos?\s+hasta\b|\bpag(?:a|ue|ar)\s+(?:despu[eé]s|luego|m[aá]s\s+tarde)\b",
+        re.I)),
+    # Proportional split ("Half now and half at pickup"). Heuristic, but neither
+    # word appears in approved ungated copy and a fraction of the price in an
+    # ungated field is a payment example.
+    ("proportion", re.compile(r"\bhalf\b|\bmitad\b", re.I)),
+)
+
+# The payment noun needs a STRUCTURAL rule, not a ban: "payment"/"pago" occurs
+# in 28 approved ungated strings, always inside a neutral collocation naming the
+# CONCEPT ("payment options", "Payment Choices", "payment method", "opciones de
+# pago", "forma de pago").
+#
+# The contract is DEFAULT-DENY against a REVIEWED ALLOWLIST: the collocations
+# below are the wordings that have been reviewed and cleared for ungated
+# surfaces. A payment noun that survives their removal is rejected because it
+# falls OUTSIDE that allowlist and therefore needs review — NOT because the
+# prose has been shown to contain an exact claim. Benign-but-unreviewed
+# phrasings are rejected too, by design: "Payment information is available in
+# store.", "Ask your specialist about payment." and "Choose a payment program."
+# all fail, and they are false positives in the semantic sense. The remedy is to
+# reword to an allowlisted collocation, or to review the phrase and add it here.
+#
+# This is why banning "installments"/"cuotas" alone did not close the
+# payment-count class: ordinary "payments"/"pagos" carries it just as well.
+_NEUTRAL_PAYMENT_PHRASES = re.compile(
+    r"\bpayment\s+(?:options?|choices?|methods?)\b"
+    r"|\b(?:opciones?|formas?|m[eé]todos?|maneras?)\s+de\s+pago\b", re.I)
+_PAYMENT_NOUN = re.compile(r"\bpayments?\b|\bpagos?\b", re.I)
+
+
+def _bare_payment_noun(text: str) -> bool:
+    """True when a payment noun survives removal of the reviewed neutral
+    collocations — i.e. the wording falls outside the cleared allowlist and
+    needs review. True does NOT establish that the text states an actual
+    payment; benign phrasings outside the allowlist are rejected by design."""
+    return bool(_PAYMENT_NOUN.search(_NEUTRAL_PAYMENT_PHRASES.sub(" ", text or "")))
+
+# TEMPORARY — Commit F only; Commit G replaces this with reviewed semantics.
+#
+# renderFinancingSheet() does NOT select cards 2/3/4 by kind: it looks them up
+# by HARDCODED PLAN ID (byId['lacks-in-house'], byId['lease-to-own'],
+# byId['build-my-credit'], byId['mexico-in-house']). Classifying ungated fields
+# by `kind` alone therefore does not describe the renderer that exists: mutating
+# one of these plans' kind moved it out of the guard while the renderer kept
+# rendering it by id. Until those lookups are retired, the validator models the
+# real renderer — by id — and additionally pins each id to the kind/flag shape
+# the renderer assumes, so a role mutation is a schema error rather than a
+# silent reclassification.
+#
+# "ungated" lists the fields each card renders OUTSIDE its freshness gate:
+#   * in-house / Mexico: title (headline) + disclosure; their `detail` stays
+#     gated behind ihFresh / mxFresh.
+#   * lease-to-own / credit-builder: the "More paths" card is availability-only
+#     and never freshness-gated at all. (`disclosure` is listed defensively —
+#     the card renders a hardcoded disclosure today, so a per-plan one would be
+#     a new surface.)
+_RENDERER_ROLE_IDS = {
+    "lacks-in-house": {"kind": "closed-end-installment", "separatePath": False,
+                       "ungated": ("headline", "disclosure")},
+    "lease-to-own": {"kind": "lease-to-own", "separatePath": False,
+                     "ungated": ("headline", "detail", "disclosure")},
+    "build-my-credit": {"kind": "credit-builder", "separatePath": False,
+                        "ungated": ("headline", "detail", "disclosure")},
+    "mexico-in-house": {"kind": "closed-end-installment", "separatePath": True,
+                        "ungated": ("headline", "disclosure")},
+}
+
+
+def _exact_claim_signals(text) -> list:
+    """Names of exact-claim signals present in text ([] when clean). See the
+    block comment above for what this does and does not prove."""
+    s = "" if text is None else str(text)
+    names = [name for name, rx in _EXACT_CLAIM_SIGNALS if rx.search(s)]
+    if _bare_payment_noun(s):
+        names.append("payment-noun")
+    return names
+
+
+def _is_gated_offer_plan(plan: dict) -> bool:
+    """True for plans whose headline/detail/disclosure render ONLY inside the
+    exact-terms gate — i.e. the promotional card's membership test in
+    renderFinancingSheet(): kind is open-end-promotional-credit and the plan is
+    not a separate-path scenario.
+
+    A plan the renderer fetches by hardcoded id is NEVER gated here, whatever
+    its kind says: those cards render their titles outside the gate.
+
+    `separatePath` is a schema boolean, required to be one elsewhere in this
+    module, and that contract is what makes this test safe. Over the legal
+    domain {absent, false, true} Python's `is not True` and JavaScript's
+    `!p.separatePath` agree exactly.
+
+    SOME non-boolean shapes diverge across the two languages — the truthy ones
+    ("false", "true", 1, 1.0, [], {}), where JS drops the plan from the
+    promotional group while Python would call it gated. Others do NOT diverge:
+    null, "" and 0 are falsy in JS and are not True in Python, so both agree.
+    All non-booleans are rejected regardless, which is what reduces the domain
+    to the three values on which renderer and validator agree by construction —
+    the type contract, not a re-implementation of JS coercion, is the mechanism."""
+    if plan.get("id") in _RENDERER_ROLE_IDS:
+        return False
+    return (plan.get("kind") == "open-end-promotional-credit"
+            and plan.get("separatePath") is not True)
+
+
+def _ungated_plan_fields(plan: dict) -> tuple:
+    """Plan fields that reach a customer OUTSIDE the exact-terms gate, mirroring
+    renderFinancingSheet() and renderHandoffFinancing():
+
+      * provider  — always: the promotional card title renders it even on the
+                    stale/fail-closed path.
+      * headline  — every non-promotional plan: in-house and Mexico card titles
+                    and the evergreen entries render it ungated, and the handoff
+                    chips use it as the label for non-promotional kinds.
+      * disclosure— every non-promotional plan: it keeps rendering when the
+                    adjacent exact detail has been swapped for staleNotice.
+      * detail    — lease-to-own / credit-builder only: the "More paths" card is
+                    availability-only and is never freshness-gated.
+
+    Promotional detail/disclosure and Mexico's detail/representativeExample are
+    NOT listed: those render only inside the gate and keep their existing exact
+    validation."""
+    role = _RENDERER_ROLE_IDS.get(plan.get("id"))
+    if role:
+        # The renderer reaches this plan by id, so its ungated surfaces are
+        # fixed by the card that fetches it — not by whatever kind it declares.
+        return ("provider",) + role["ungated"]
+    fields = ["provider"]
+    if not _is_gated_offer_plan(plan):
+        fields += ["headline", "disclosure"]
+    if plan.get("kind") in ("lease-to-own", "credit-builder"):
+        fields.append("detail")
+    return tuple(fields)
+
+
+def _check_ungated_text(r, label: str, value) -> None:
+    """Error when an ungated financing string trips a guarded signal. A hit is
+    one of TWO things, and the error must not conflate them:
+
+      1. a likely exact/time-sensitive financing marker — a rate, a duration or
+         currency unit, a payment cadence, a count, a down payment, a deferral;
+      2. a payment-noun phrase outside the reviewed neutral allowlist, which is
+         rejected by default-deny even when the prose is benign.
+
+    So a hit means the wording is reserved for gated fields or has not been
+    reviewed for ungated use. It does NOT by itself prove the text states an
+    exact claim. Accepts a bilingual dict or a plain string."""
+    items = []
+    if isinstance(value, dict):
+        items = [(f"{label}.{lang}", value.get(lang)) for lang in ("en", "es")]
+    elif isinstance(value, str):
+        items = [(label, value)]
+    for tag, text in items:
+        if _blank(text):
+            continue
+        hit = _exact_claim_signals(text)
+        if hit:
+            r.add_error(
+                f"{tag} renders outside the exact-terms gate and uses reserved or "
+                f"unreviewed financing language ({', '.join(hit)}): "
+                f"{str(text)[:80]!r}. Either reword it using reviewed generic "
+                f"orientation language, or move genuine verified terms into a "
+                f"freshness-gated plan field. A signal marks wording reserved for "
+                f"gated fields or outside the reviewed neutral allowlist — it does "
+                f"not by itself establish that this text states an exact claim.")
+
 
 def _valid_iso_instant(s: str) -> bool:
     """ISO-8601 datetime with explicit timezone offset (absolute instant)."""
@@ -707,6 +951,14 @@ def validate_financing(config: dict, *, allowed_source_hosts=None) -> Validation
         for key in ("eyebrow", "headline"):
             if not _bilingual_ok(copy.get(key)):
                 r.add_error(f"financing.copy.{key} missing EN or ES")
+        # EVERY financing.copy string renders outside the exact-terms gate —
+        # results, drawer, sheet chrome, handoff, the live-region announcements
+        # and the email body all render whatever the policy switch says. Checking
+        # the whole block (rather than a listed subset) means a copy key added
+        # later is protected by default.
+        if isinstance(copy, dict):
+            for key in sorted(copy):
+                _check_ungated_text(r, f"financing.copy.{key}", copy.get(key))
         if copy.get("emailBody") and not copy.get("emailBodyAvailable"):
             r.add_warning(
                 "financing.copy.emailBody present without emailBodyAvailable — "
@@ -839,12 +1091,54 @@ def validate_financing(config: dict, *, allowed_source_hosts=None) -> Validation
         kind = plan.get("kind")
         if kind not in FINANCING_PLAN_KINDS:
             r.add_error(f"{tag}: kind {kind!r} not in {sorted(FINANCING_PLAN_KINDS)}")
+        # separatePath is a schema boolean. Some non-boolean shapes make the
+        # renderer and the validator disagree: the TRUTHY ones ("false",
+        # "true", 1, [], {}) are dropped from the promotional group by
+        # JavaScript's `!p.separatePath` while Python's `is not True` reads
+        # them as a gated promotional plan — so an exact claim could render
+        # outside the gate. Falsy non-booleans (null, "", 0) happen to agree,
+        # but are rejected too: constraining the value to {absent, false, true}
+        # is what makes the two agree by construction rather than by accident.
+        if "separatePath" in plan and not isinstance(plan.get("separatePath"), bool):
+            r.add_error(
+                f"{tag}: separatePath {plan.get('separatePath')!r} must be a JSON "
+                f"boolean (true/false). All non-boolean shapes are rejected so the "
+                f"schema-legal domain stays {{absent, false, true}} — the domain "
+                f"across which the renderer's `!p.separatePath` and this "
+                f"validator's `is not True` are guaranteed to agree. (Some "
+                f"illegal shapes happen to agree too; the truthy ones do not.)")
+        # TEMPORARY role contract (Commit F; Commit G replaces it): the renderer
+        # fetches these plans by hardcoded id and assumes a fixed kind/flag
+        # shape. Pinning it makes a role mutation a named schema error instead
+        # of a silent reclassification out of the ungated-copy guard.
+        _role = _RENDERER_ROLE_IDS.get(plan.get("id"))
+        if _role:
+            if kind != _role["kind"]:
+                r.add_error(
+                    f"{tag}: id is rendered by a hardcoded card that assumes kind "
+                    f"{_role['kind']!r}, but kind is {kind!r} — changing it does not "
+                    f"change what the renderer displays (see renderFinancingSheet); "
+                    f"retiring these id lookups is Commit G's work")
+            if bool(plan.get("separatePath", False)) is not _role["separatePath"]:
+                r.add_error(
+                    f"{tag}: id is rendered by a hardcoded card that assumes "
+                    f"separatePath={_role['separatePath']}, but got "
+                    f"{plan.get('separatePath', False)!r}")
         # V1 hard invariant: no payment calculation anywhere.
         if plan.get("paymentCalculationEnabled"):
             r.add_error(f"{tag}: paymentCalculationEnabled must be false in V1 — "
                         f"product-level payment math is not approved")
         if not _bilingual_ok(plan.get("headline")):
             r.add_error(f"{tag}: headline missing EN or ES")
+        # Plan strings that reach a customer outside the exact-terms gate must
+        # stay within reviewed generic orientation language. Applies in every
+        # operating state: turning exactPromotionsEnabled on cannot make an
+        # ungated surface an appropriate place for exact terms. A rejection
+        # here means the wording is reserved or unreviewed — not that an exact
+        # claim has been proven (see _check_ungated_text).
+        if enabled:
+            for _uf in _ungated_plan_fields(plan):
+                _check_ungated_text(r, f"{tag}.{_uf}", plan.get(_uf))
         for field_name in ("detail", "disclosure"):
             obj = plan.get(field_name)
             if isinstance(obj, dict) and (bool(_s(obj.get("en"))) != bool(_s(obj.get("es")))):
@@ -2462,6 +2756,407 @@ def _self_test() -> int:
     check("financing malformed verifiedAt still errors regardless of enablement",
           any("ISO-8601" in e for e in
               validate_financing(_fc(fmal_on), allowed_source_hosts=_FHOSTS).errors))
+
+    # ---- ungated-copy exact-claim guard (Commit F) --------------------------
+    # Fields rendered OUTSIDE financingTermsFresh()/financingPlanFresh() must
+    # never state an exact claim, in EITHER operating state.
+    _UNGATED_ERR = "renders outside the exact-terms gate"
+
+    def _fin_with(mutate, policy=False):
+        m = _fmut()
+        m["exactPromotionsEnabled"] = policy
+        if policy is True:
+            m["verifiedAt"] = _iso(-60)
+            for _p in m["plans"]:
+                if _p.get("verifiedAt"):
+                    _p["verifiedAt"] = _iso(-60)
+        mutate(m)
+        return validate_financing(_fc(m), allowed_source_hosts=_FHOSTS)
+
+    def _ungated_rejected(label, mutate, policy=False):
+        rep = _fin_with(mutate, policy)
+        return any(_UNGATED_ERR in e and label in e for e in rep.errors)
+
+    # Signal unit tests (detector behavior, independent of config plumbing)
+    for _lbl, _txt, _want in (
+            ("digits", "Get 0 percent for 48", True),
+            ("percent", "Save 0% today", True),
+            ("currency", "Only $52.82", True),
+            ("APR word", "Ask about our APR", True),
+            ("EN no-interest", "No interest if paid in full", True),
+            ("EN interest-free", "Interest-free for a while", True),
+            ("ES sin intereses", "Llevatelo sin intereses", True),
+            ("ES cero interes", "Cero interes por tiempo limitado", True),
+            ("EN per month", "Just ask per month", True),
+            ("ES pagos mensuales", "Pregunta por pagos mensuales", True),
+            ("ES al mes", "Desde al mes", True),
+            # boundary: approved copy and retailer/product names stay clean
+            ("Build My Credit", "Build My Credit", False),
+            ("in-house title", "Lacks In-House Credit", False),
+            ("lease-to-own title", "Lease-to-own", False),
+            ("ES lease title", "Arrendamiento con opcion a compra", False),
+            ("Mexico scenario", "Purchasing for delivery to Mexico?", False),
+            ("ES Mexico scenario", "¿Compras para entrega en México?", False),
+            ("provider Synchrony", "Synchrony", False),
+            ("EN stale guidance", "Exact rates and terms are not shown right now.", False),
+            ("ES stale guidance", "Las tasas y los plazos exactos no se muestran.", False),
+            ("ES aprobacion (not APR)", "sujetas a términos y aprobación", False),
+            ("EN interested (not interest-free)", "Yes, I'm interested", False),
+            ("ES me interesa", "Sí, me interesa", False),
+            ("EN external notice", "Opens lacks.com — a separate site governed by its own terms.", False),
+    ):
+        check(f"exact-claim signal: {_lbl} -> {'flagged' if _want else 'clean'}",
+              bool(_exact_claim_signals(_txt)) is _want)
+
+    # Generic financing.copy — every key, both languages, both policy states
+    for _policy in (False, True):
+        _st = "policy false" if _policy is False else "policy true"
+        check(f"ungated copy.body EN exact claim -> error ({_st})",
+              _ungated_rejected("financing.copy.body.en",
+                                lambda m: m["copy"].__setitem__(
+                                    "body", {"en": "Get 0% APR for 48 months", "es": "Generico"}),
+                                _policy))
+        check(f"ungated copy.body ES exact claim -> error ({_st})",
+              _ungated_rejected("financing.copy.body.es",
+                                lambda m: m["copy"].__setitem__(
+                                    "body", {"en": "Generic", "es": "0% APR por 48 meses"}),
+                                _policy))
+    check("ungated copy.emailBody exact claim -> error",
+          _ungated_rejected("financing.copy.emailBody.en",
+                            lambda m: m["copy"].__setitem__(
+                                "emailBody", {"en": "Pay $52.82 per month.", "es": "Generico"})))
+    check("ungated copy.staleNotice exact claim -> error",
+          _ungated_rejected("financing.copy.staleNotice.en",
+                            lambda m: m["copy"].__setitem__(
+                                "staleNotice", {"en": "Ask about 0% APR.", "es": "Generico"})))
+    check("a newly added copy key is guarded by default",
+          _ungated_rejected("financing.copy.someNewKey.en",
+                            lambda m: m["copy"].__setitem__(
+                                "someNewKey", {"en": "Only $999 down", "es": "Generico"})))
+
+    # provider is rendered in the promotional card title on the stale path
+    check("provider 'Synchrony' passes",
+          validate_financing(_fc(_fmut()), allowed_source_hosts=_FHOSTS).ok)
+    for _bad_provider in ("Synchrony 0% APR", "Synchrony 72-month financing"):
+        check(f"provider {_bad_provider!r} -> error",
+              _ungated_rejected("provider",
+                                lambda m, v=_bad_provider: m["plans"][0].__setitem__("provider", v)))
+
+    # Non-promotional headlines / disclosures / evergreen details
+    def _add_plan(m, **kw):
+        base = {"id": "extra", "kind": "closed-end-installment", "provider": "Lacks",
+                "verified": True, "verifiedAt": m["verifiedAt"],
+                "sourceUrl": "https://www.lacks.com/financing",
+                "headline": {"en": "In-House Credit", "es": "Credito Interno"},
+                "disclosure": {"en": "Confirmed in store.", "es": "Se confirma en tienda."}}
+        base.update(kw)
+        m["plans"].append(base)
+
+    check("non-promotional headline with a rate -> error",
+          _ungated_rejected("headline",
+                            lambda m: _add_plan(m, headline={"en": "6-36 month financing",
+                                                             "es": "Financiamiento de 6-36 meses"})))
+    check("scenario (separatePath) headline with a rate -> error",
+          _ungated_rejected("headline",
+                            lambda m: _add_plan(m, separatePath=True,
+                                                headline={"en": "24% APR for 24 months",
+                                                          "es": "24% APR por 24 meses"})))
+    check("ungated disclosure with a dated account rate -> error",
+          _ungated_rejected("disclosure",
+                            lambda m: _add_plan(m, disclosure={
+                                "en": "As of 07/31/2025 the purchase APR is 34.99%.",
+                                "es": "Al 07/31/2025 la APR es 34.99%."})))
+    check("lease-to-own detail with a payment -> error",
+          _ungated_rejected("detail",
+                            lambda m: _add_plan(m, id="lto2", kind="lease-to-own",
+                                                headline={"en": "Lease-to-own", "es": "Arrendamiento"},
+                                                detail={"en": "Own it for $99 per month.",
+                                                        "es": "Tuyo por $99 al mes."})))
+    check("credit-builder detail with zero-interest wording -> error",
+          _ungated_rejected("detail",
+                            lambda m: _add_plan(m, id="bmc2", kind="credit-builder",
+                                                headline={"en": "Build My Credit", "es": "Build My Credit"},
+                                                detail={"en": "No interest ever.",
+                                                        "es": "Sin intereses."})))
+    check("generic non-promotional plan (approved shape) passes",
+          _fin_with(lambda m: _add_plan(m, id="ok-plan")).ok)
+
+    # GATED content keeps its numbers — the guard must not reach inside the gate
+    check("promotional headline/detail/disclosure may state exact terms",
+          _fin_with(lambda m: None).ok)
+    check("promotional plan with exact headline+detail+disclosure still passes",
+          _fin_with(lambda m: m["plans"][0].update({
+              "headline": {"en": "9.99% APR for 72 months", "es": "9.99% APR por 72 meses"},
+              "detail": {"en": "On purchases of $500 or more. Fixed monthly payments required.",
+                         "es": "En compras de $500 o mas. Se requieren pagos mensuales fijos."},
+              "disclosure": {"en": "As of 07/31/2025 the purchase APR is 34.99%.",
+                             "es": "Al 07/31/2025 la APR de compra es 34.99%."}})).ok)
+    check("scenario plan's GATED detail + representativeExample may state exact terms",
+          _fin_with(lambda m: _add_plan(
+              m, id="mx2", separatePath=True, apr=24, termMonths=24,
+              headline={"en": "Purchasing for delivery to Mexico?",
+                        "es": "¿Compras para entrega en México?"},
+              detail={"en": "Up to 24 months at a maximum 24% APR.",
+                      "es": "Hasta 24 meses con un maximo de 24% APR."},
+              representativeExample={"en": "$999 for 24 months equals 24 payments of $52.82.",
+                                     "es": "$999 por 24 meses son 24 pagos de $52.82."})).ok)
+
+    # Disabled financing keeps the light-validation convention
+    fdis_copy = _fmut(); fdis_copy["enabled"] = False
+    del fdis_copy["verifiedAt"]
+    fdis_copy["copy"]["body"] = {"en": "Get 0% APR", "es": "0% APR"}
+    check("disabled financing: ungated-copy rule not applied (light validation)",
+          not any(_UNGATED_ERR in e for e in
+                  validate_financing(_fc(fdis_copy), allowed_source_hosts=_FHOSTS).errors))
+
+    # The new rule must not have displaced any existing structural check
+    check("existing structural validation still active alongside the guard",
+          any("paymentCalculationEnabled" in e for e in
+              _fin_with(lambda m: m["plans"][0].__setitem__(
+                  "paymentCalculationEnabled", True)).errors))
+
+    # ---- written-out (digit-free) exact claims (Commit F amend) -------------
+    # An exact claim does not need digits: unit words carry it just as well.
+    for _lbl, _txt in (
+            ("EN twelve months", "Choose twelve months for repayment."),
+            ("ES doce meses", "Elige doce meses para pagar."),
+            ("EN nine percent", "Only nine percent interest."),
+            ("ES nueve por ciento", "Solo nueve por ciento."),
+            ("EN fifty dollars", "Just fifty dollars down."),
+            ("ES cincuenta dolares", "Solo cincuenta dolares."),
+            ("ES cincuenta pesos", "Solo cincuenta pesos."),
+            ("EN twelve installments", "Pay in twelve installments."),
+            ("ES doce mensualidades", "Paga en doce mensualidades."),
+            ("EN weekly cadence", "Make one payment every week."),
+            ("EN two years", "Take up to two years to pay."),
+            ("ES pagos semanales", "Pagos semanales disponibles."),
+            ("EN annual rate", "Ask about our annual rate."),
+    ):
+        check(f"written-out exact claim rejected in ungated copy: {_lbl}",
+              _ungated_rejected("financing.copy.body.en",
+                                lambda m, t=_txt: m["copy"].__setitem__(
+                                    "body", {"en": t, "es": "Generico"})))
+    for _lbl, _ok in (
+            ("EN stale guidance", "Exact rates and terms are not shown right now."),
+            ("ES stale guidance", "Las tasas y los plazos exactos no se muestran."),
+            ("EN payment options", "Current payment options are available from your specialist."),
+            ("ES opciones de pago", "Tu especialista tiene las opciones de pago actuales."),
+            ("ES momento (not 'mes')", "pueden cambiar o terminar en cualquier momento"),
+    ):
+        check(f"generic phrasing still passes: {_lbl}",
+              not _exact_claim_signals(_ok))
+
+    # ---- ordinary-word payment counts (Commit F amend 2) --------------------
+    # Banning "installments"/"cuotas" did not close the payment-count class:
+    # ordinary "payments"/"pagos" carries it too, and cannot simply be banned
+    # because 28 approved ungated strings use it inside a neutral collocation.
+    # These assertions run the real validate_financing(), not the detector.
+    _PAY_BLOCK = (
+        ("EN payment count", "Make twelve payments."),
+        ("ES payment count", "Haz doce pagos."),
+        ("EN repay-in count", "Repay in twelve payments."),
+        ("EN single payment", "Only one payment required."),
+        ("ES single payment", "Un solo pago requerido."),
+        ("EN repetition count", "Pay twelve times."),
+        ("ES repetition count", "Paga doce veces."),
+        ("EN money down", "No money down."),
+        ("EN nothing down", "Nothing down."),
+        ("ES enganche", "Sin enganche."),
+        ("ES pago inicial", "Sin pago inicial."),
+        ("EN deferral", "No payments until next spring."),
+        ("ES deferral", "Sin pagos hasta la primavera."),
+        ("EN defer verb", "Defer your first payment."),
+        ("ES pay-later", "Llevatelo hoy y paga despues."),
+        ("EN proportion", "Half now and half at pickup."),
+        ("ES proportion", "Mitad ahora y mitad al recoger."),
+    )
+    for _policy in (False, True):
+        _st = "policy false" if _policy is False else "policy true"
+        for _lbl, _txt in _PAY_BLOCK:
+            check(f"ungated copy rejects {_lbl} ({_st})",
+                  _ungated_rejected("financing.copy.body.en",
+                                    lambda m, t=_txt: m["copy"].__setitem__(
+                                        "body", {"en": t, "es": "Generico"}),
+                                    _policy))
+    # ES side of a bilingual field, and an ID-driven ungated PLAN surface.
+    check("ungated copy rejects an ES payment count in the .es slot",
+          _ungated_rejected("financing.copy.body.es",
+                            lambda m: m["copy"].__setitem__(
+                                "body", {"en": "Generic", "es": "Haz doce pagos."})))
+    check("ID-driven plan headline rejects an ordinary-word payment count",
+          _ungated_rejected("headline",
+                            lambda m: _add_plan(
+                                m, id="lease-to-own", kind="lease-to-own",
+                                headline={"en": "Make twelve payments.",
+                                          "es": "Haz doce pagos."})))
+    check("ID-driven plan detail rejects a deferral claim",
+          _ungated_rejected("detail",
+                            lambda m: _add_plan(
+                                m, id="build-my-credit", kind="credit-builder",
+                                detail={"en": "No payments until next spring.",
+                                        "es": "Sin pagos hasta la primavera."})))
+    check("provider rejects an ordinary-word payment count",
+          _ungated_rejected("provider",
+                            lambda m: m["plans"][0].__setitem__(
+                                "provider", "Synchrony twelve payments")))
+    # FALSE-POSITIVE CONTROLS: the neutral payment concept must stay legal.
+    for _lbl, _ok in (
+            ("EN payment options", "Explore payment options"),
+            ("EN payment choices", "Your Sleep Plan. Your Payment Choices."),
+            ("EN payment method", "Your matches are based on sleep fit — never on payment method."),
+            ("EN brand 'Payment Choice'", "Lacks Payment Choice offers more than one way to bring it home."),
+            ("ES opciones de pago", "Explora opciones de pago"),
+            ("ES forma de pago", "Tus opciones se basan en tu descanso — nunca en la forma de pago."),
+            ("ES formas de pago", "Hay varias formas de pago disponibles."),
+            ("ES metodos de pago", "Consulta los metodos de pago."),
+            ("EN stale guidance", "Current payment options are available from your Lacks specialist."),
+            ("ES stale guidance", "Tu especialista de Lacks tiene las opciones de pago actuales."),
+    ):
+        check(f"neutral payment orientation still passes: {_lbl}",
+              not _exact_claim_signals(_ok))
+        check(f"neutral payment orientation validates clean: {_lbl}",
+              _fin_with(lambda m, t=_ok: m["copy"].__setitem__(
+                  "body", {"en": t, "es": t})).ok)
+    # HONESTY PINS (behavioural). These document the detector's real posture so
+    # a future edit cannot quietly restore a description that contradicts it.
+    check("posture: a BARE duration unit is rejected with no numeral attached",
+          _exact_claim_signals("Choose the right months") == ["duration-unit"])
+    check("posture: a BARE proportion word is rejected with no numeral attached",
+          "proportion" in _exact_claim_signals("Half of it is yours"))
+    for _lbl, _benign in (
+            ("Payment information is available in store.",
+             "Payment information is available in store."),
+            ("Ask your specialist about payment.", "Ask your specialist about payment."),
+            ("Choose a payment program.", "Choose a payment program."),
+    ):
+        check(f"posture: benign-but-unreviewed payment wording is rejected by "
+              f"default-deny ({_lbl})",
+              _exact_claim_signals(_benign) == ["payment-noun"])
+    check("posture: rejection means 'outside the reviewed allowlist', not "
+          "'contains an exact claim'",
+          _bare_payment_noun("Ask your specialist about payment.")
+          and not _bare_payment_noun("Ask your specialist about payment options."))
+    # AUTHORITATIVE: the real validate_financing() response for the documented
+    # benign case must be rejected AND must not misdiagnose the prose.
+    _benign_txt = "Payment information is available in store."
+    _benign_errs = [e for e in _fin_with(
+        lambda m: m["copy"].__setitem__("body", {"en": _benign_txt, "es": "Generico"})).errors
+        if "financing.copy.body.en" in e]
+    check("benign unreviewed wording is still REJECTED by validate_financing()",
+          len(_benign_errs) == 1)
+    check("its error names the reserved/unreviewed marker that fired",
+          any("payment-noun" in e for e in _benign_errs))
+    check("its error describes reserved-or-unreviewed language, not a proven claim",
+          any("reserved or unreviewed financing language" in e for e in _benign_errs))
+    check("its error does NOT assert the prose 'states an exact claim'",
+          not any("states an exact claim" in e and "does not by itself" not in e
+                  for e in _benign_errs))
+    check("its error offers both remedies (reword, or move to a gated field)",
+          any("reword it using reviewed generic orientation language" in e
+              and "freshness-gated plan field" in e for e in _benign_errs))
+    check("the stable error substring is preserved for downstream matchers",
+          all(_UNGATED_ERR in e for e in _benign_errs))
+    check("shipped configuration still passes the payment-noun rule unchanged",
+          all(not _exact_claim_signals(v.get(lang, ""))
+              for v in (json.loads(json.dumps(_fmut()))["copy"] or {}).values()
+              if isinstance(v, dict) for lang in ("en", "es")))
+
+    # ---- separatePath shape contract (Commit F amend) -----------------------
+    # Two SEPARATE concepts, deliberately not conflated:
+    #   (1) every present non-boolean is a schema error, whether or not it
+    #       diverges across languages;
+    #   (2) only the TRUTHY non-booleans actually demonstrate the JS/Python
+    #       predicate divergence. null, "" and 0 agree in both languages and
+    #       are rejected purely as schema violations.
+    _SEP_TRUTHY_DIVERGENT = (("string 'false'", "false"), ("string 'true'", "true"),
+                             ("int 1", 1), ("float 1.0", 1.0),
+                             ("array", []), ("object", {}))
+    _SEP_FALSY_AGREEING = (("null", None), ("empty string", ""), ("int 0", 0))
+    for _lbl, _bad in _SEP_TRUTHY_DIVERGENT + _SEP_FALSY_AGREEING:
+        check(f"separatePath {_lbl} -> schema error (non-boolean)",
+              any("separatePath" in e and "JSON boolean" in e for e in
+                  _fin_with(lambda m, v=_bad: m["plans"][0].__setitem__(
+                      "separatePath", v)).errors))
+    # (2) the divergence claim itself, asserted only where it is true.
+    def _py_gated(v):
+        """This module's predicate: `separatePath is not True`."""
+        return v is not True
+
+    def _js_in_syn(v):
+        """Models the renderer's `!p.separatePath`. NOTE: JavaScript truthiness
+        is not Python's — [] and {} are TRUTHY in JS but falsy under bool()."""
+        if v is None:
+            return True                       # !undefined / !null -> true
+        if isinstance(v, bool):
+            return not v
+        if isinstance(v, (int, float)):
+            return v == 0
+        if isinstance(v, str):
+            return len(v) == 0
+        return False                          # arrays/objects are truthy in JS
+    for _lbl, _v in _SEP_TRUTHY_DIVERGENT:
+        check(f"separatePath {_lbl} genuinely diverges (JS drops it, Python calls it gated)",
+              _js_in_syn(_v) is False and _py_gated(_v) is True)
+    for _lbl, _v in _SEP_FALSY_AGREEING:
+        check(f"separatePath {_lbl} does NOT diverge (both treat it as promotional)",
+              _js_in_syn(_v) is True and _py_gated(_v) is True)
+    for _lbl, _v in (("absent/null", None), ("false", False), ("true", True)):
+        check(f"legal domain {_lbl}: renderer and validator agree exactly",
+              _js_in_syn(_v) == _py_gated(_v))
+    check("separatePath absent remains valid",
+          _fin_with(lambda m: m["plans"][0].pop("separatePath", None)).ok)
+    check("separatePath boolean false remains valid",
+          _fin_with(lambda m: m["plans"][0].__setitem__("separatePath", False)).ok)
+    check("separatePath boolean true remains valid for the scenario role",
+          _fin_with(lambda m: _add_plan(
+              m, id="mexico-in-house", kind="closed-end-installment",
+              separatePath=True)).ok)
+
+    # ---- hardcoded renderer-role contract (Commit F amend; Commit G retires) -
+    # renderFinancingSheet() fetches these ids directly, so mutating their kind
+    # cannot move them out of the ungated-copy guard.
+    for _rid, _real_kind, _sep in (
+            ("lacks-in-house", "closed-end-installment", False),
+            ("lease-to-own", "lease-to-own", False),
+            ("build-my-credit", "credit-builder", False),
+            ("mexico-in-house", "closed-end-installment", True),
+    ):
+        check(f"role id {_rid!r} with its expected kind passes",
+              _fin_with(lambda m, i=_rid, k=_real_kind, s=_sep: _add_plan(
+                  m, id=i, kind=k, **({"separatePath": True} if s else {}))).ok)
+        check(f"role id {_rid!r} mutated to promotional kind -> named role error",
+              any("hardcoded card that assumes kind" in e and _rid in e for e in
+                  _fin_with(lambda m, i=_rid, s=_sep: _add_plan(
+                      m, id=i, kind="open-end-promotional-credit",
+                      **({"separatePath": True} if s else {}))).errors))
+        check(f"role id {_rid!r} keeps its ungated guard despite a kind mutation",
+              _ungated_rejected("headline",
+                                lambda m, i=_rid, s=_sep: _add_plan(
+                                    m, id=i, kind="open-end-promotional-credit",
+                                    headline={"en": "24% APR for 24 months",
+                                              "es": "24% APR por 24 meses"},
+                                    **({"separatePath": True} if s else {}))))
+    for _rid in ("lease-to-own", "build-my-credit"):
+        check(f"role id {_rid!r} detail stays guarded despite a kind mutation",
+              _ungated_rejected("detail",
+                                lambda m, i=_rid: _add_plan(
+                                    m, id=i, kind="open-end-promotional-credit",
+                                    detail={"en": "Pay for twelve months.",
+                                            "es": "Paga por doce meses."})))
+    check("role id with a wrong separatePath -> named role error",
+          any("assumes separatePath" in e for e in
+              _fin_with(lambda m: _add_plan(
+                  m, id="mexico-in-house", kind="closed-end-installment")).errors))
+    check("Codex repro A rejected (Mexico promo kind + separatePath 'false')",
+          not _fin_with(lambda m: _add_plan(
+              m, id="mexico-in-house", kind="open-end-promotional-credit",
+              separatePath="false",
+              headline={"en": "24% APR for 24 months", "es": "24% APR por 24 meses"})).ok)
+    check("Codex repro B rejected (lease-to-own promo kind + written-out terms)",
+          not _fin_with(lambda m: _add_plan(
+              m, id="lease-to-own", kind="open-end-promotional-credit",
+              headline={"en": "Twelve monthly payments", "es": "Doce pagos mensuales"},
+              detail={"en": "Pay for twelve months.", "es": "Paga por doce meses."})).ok)
 
     # ---- quiz definition (structure contract) --------------------------------
     def _bl(s):
