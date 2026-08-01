@@ -141,6 +141,15 @@ def main():
     qr_gen = load_text("incoming/generate_financing_qr.py")
     check("QR targets Lacks' official financing page",
           'TARGET = "https://www.lacks.com/financing"' in qr_gen)
+    # Cross-file drift pin: the generator's baked-in target must equal the
+    # shipped source URL, so the printed link and the QR cannot diverge.
+    # LIMITATION: this pins the GENERATOR SOURCE, not the committed SVG's
+    # encoded payload — a manual QR scan stays a pre-pilot check, and
+    # config-driven generation is Cycle 3.
+    qr_target = re.search(r'TARGET\s*=\s*"([^"]+)"', qr_gen)
+    check("QR generator target == shipped financing.sourceUrl",
+          bool(qr_target) and qr_target.group(1) == fin.get("sourceUrl"),
+          f"{qr_target.group(1) if qr_target else None} vs {fin.get('sourceUrl')}")
     missing_imgs = []
     for tier in ("gold", "silver", "bronze"):
         for m in mj.get(tier) or []:
@@ -166,6 +175,35 @@ def main():
           "Lacks" not in html)
     check("publishedPaymentFactor stripped from shipped config",
           "publishedPaymentFactor" not in json.dumps(cfg))
+    # The dead Mexico application URL is stored in config as documentation
+    # (verified:false) and must stay structurally unreachable: no runtime code
+    # reads the field or the URL, so no config edit alone can render it.
+    check("dead Mexico application URL unreferenced by runtime code",
+          "mexicoApplicationUrl" not in html and "mexican-credit-application" not in html)
+    check("dead Mexico application URL absent from Code.gs",
+          "mexicoApplicationUrl" not in gs and "mexican-credit-application" not in gs)
+    check("financing links fail closed through the safe-link helper",
+          "function setAllowedFinancingLink(" in html
+          and "financingSourceAllowed(f.sourceUrl) ? f.sourceUrl : ''" in html)
+    # Static financing anchors must ship INERT: no href attribute at all in
+    # the initial DOM, so a config that never loads (or fails URL validation)
+    # cannot leave a live or placeholder link. setAllowedFinancingLink()
+    # installs a real href only after the URL passes. This inspects the actual
+    # opening tags — an earlier version of this check only scanned JS
+    # assignments and so passed while href="#" sat in the markup.
+    for anchor_id in ("financingSheetLink", "hf2FinancingLink"):
+        tag = re.search(r"<a\b[^>]*\bid=\"%s\"[^>]*>" % anchor_id, html)
+        check(f"static anchor #{anchor_id} exists in the initial DOM", bool(tag))
+        if tag:
+            check(f"static anchor #{anchor_id} ships with NO href attribute",
+                  not re.search(r"\bhref\s*=", tag.group(0)), tag.group(0)[:110])
+            check(f"static anchor #{anchor_id} keeps target/rel hardening",
+                  'target="_blank"' in tag.group(0)
+                  and 'rel="noopener noreferrer"' in tag.group(0))
+    # Separately: runtime code must never assign a '#' placeholder either.
+    check("runtime code never assigns a '#' href to a financing anchor",
+          not re.search(r"(financingSheetLink|hf2FinancingLink)[^\n]*\.href\s*=\s*[^\n]*'#'", html)
+          and not re.search(r"\.href\s*=\s*[^;\n]*\|\|\s*'#'", html))
     check("hidden attribute always wins in CSS ([hidden] reset present)",
           "[hidden] { display: none !important; }" in html)
 

@@ -351,16 +351,126 @@ def _archive_embedded_host(url: str) -> str:
     return _host_from_url(m.group(1)) if m else ""
 
 
+def _split_safe_https(url: str):
+    """urlsplit the URL and return the parse ONLY when it is a safe absolute
+    https URL: scheme exactly https, hostname present, no username/password,
+    port absent or exactly 443. Returns None otherwise — including relative,
+    protocol-relative, http, javascript:/data:, credentialed, odd-port, and
+    malformed URLs."""
+    from urllib.parse import urlsplit
+    try:
+        parts = urlsplit(str(url).strip())
+    except ValueError:
+        return None
+    if parts.scheme != "https" or not parts.hostname:
+        return None
+    if parts.username is not None or parts.password is not None:
+        return None
+    try:
+        port = parts.port
+    except ValueError:
+        return None
+    if port not in (None, 443):
+        return None
+    return parts
+
+
+_PCT_RE = re.compile(r"%([0-9A-Fa-f]{2})")
+
+
+def _normalize_percent(s: str) -> str:
+    """RFC 3986 §6.2.2.1/§6.2.2.2 syntax-based normalization: percent-encoded
+    UNRESERVED characters (ALPHA / DIGIT / '-' '.' '_' '~') are equivalent to
+    their decoded form, and the hex digits of whatever stays encoded are
+    case-normalized. RESERVED separators (%2F, %3F, %23, ...) are deliberately
+    left encoded — decoding those would merge genuinely different paths."""
+    def sub(m):
+        ch = chr(int(m.group(1), 16))
+        if ch.isascii() and (ch.isalnum() or ch in "-._~"):
+            return ch
+        return "%" + m.group(1).upper()
+    return _PCT_RE.sub(sub, s)
+
+
+def _remove_dot_segments(path: str) -> str:
+    """RFC 3986 §5.2.4 dot-segment removal, matching how browsers resolve a
+    path before navigating. '..' pops the previous segment and clamps at the
+    root (it can never escape above it); '.' is dropped. Empty segments are
+    preserved ('//a' stays distinct from '/a'), matching WHATWG."""
+    if not path:
+        return ""
+    lead = "/" if path.startswith("/") else ""
+    segs = path.split("/")
+    if lead:
+        segs = segs[1:]
+    out = []
+    for seg in segs:
+        if seg == ".":
+            continue
+        if seg == "..":
+            if out:
+                out.pop()
+            continue
+        out.append(seg)
+    return lead + "/".join(out)
+
+
+def _url_identity(url: str) -> str:
+    """Normalized URL identity for anti-conflation comparisons — deliberately
+    aligned with how a BROWSER resolves a URL before navigating, because the
+    threat is a config edit that reuses a known-unverified target in a
+    syntactically different but navigationally identical form.
+
+    Normalizes: lowercased scheme and hostname; default port dropped;
+    backslashes treated as path separators (WHATWG does this for special
+    schemes); percent-encoded unreserved characters decoded (so %2e reads as
+    a dot and participates in dot-segment removal, exactly as browsers treat
+    it); dot segments removed; insignificant trailing slashes dropped. Query
+    and fragment are ignored — that is this policy's choice, since neither
+    changes which document the dead path serves.
+
+    Deliberately PRESERVED as significant: path case (paths are
+    case-sensitive per RFC 3986), reserved percent-encodings such as %2F, and
+    empty segments. Returns '' on malformed input so callers fail closed."""
+    from urllib.parse import urlsplit
+    try:
+        # urlsplit already strips ASCII tab/newline/CR like the URL spec does.
+        parts = urlsplit(str(url).strip())
+    except ValueError:
+        return ""
+    if not parts.scheme or not parts.hostname:
+        return ""
+    try:
+        port = parts.port
+    except ValueError:
+        return ""
+    scheme = parts.scheme.lower()
+    default = {"https": 443, "http": 80}.get(scheme)
+    portpart = "" if port in (None, default) else f":{port}"
+    path = (parts.path or "").replace("\\", "/")
+    path = _remove_dot_segments(_normalize_percent(path))
+    while path.endswith("/"):
+        path = path[:-1]
+    return f"{scheme}://{parts.hostname.lower()}{portpart}{path}"
+
+
 def _is_allowed_source(url: str, allowed_hosts) -> bool:
-    """True when url's host is one of the explicitly allowed hosts (exact match
-    or a dot-boundary subdomain), or a web.archive.org capture whose embedded
-    target host is allowed. Empty allowlist allows nothing (fail closed)."""
+    """True when url is a safe absolute https URL (no credentials, default
+    port — see _split_safe_https) whose host is one of the explicitly allowed
+    hosts (exact match or a dot-boundary subdomain), or a safe https
+    web.archive.org capture whose embedded target host is allowed. Empty
+    allowlist allows nothing (fail closed)."""
     hosts = [h.lower().strip() for h in (allowed_hosts or []) if h and str(h).strip()]
     if not hosts:
         return False
-    host = _host_from_url(url).lower()
-    if "web.archive.org" in host:
+    parts = _split_safe_https(url)
+    if parts is None:
+        return False
+    host = parts.hostname.lower()
+    if host == "web.archive.org" or host.endswith(".web.archive.org"):
         host = _archive_embedded_host(url).lower()
+        if not host:
+            return False
     return any(host == h or host.endswith("." + h) for h in hosts)
 
 
@@ -590,8 +700,9 @@ def validate_financing(config: dict, *, allowed_source_hosts=None) -> Validation
         if mad is not None and (not isinstance(mad, int) or not 1 <= mad <= 60):
             r.add_error("financing.maxAgeDays must be an integer between 1 and 60")
         if fin.get("sourceUrl") and not _is_allowed_source(fin["sourceUrl"], hosts):
-            r.add_error(f"financing.sourceUrl {fin['sourceUrl']!r} host is not in the "
-                        f"configured source-host allowlist")
+            r.add_error(f"financing.sourceUrl {fin['sourceUrl']!r} must be a safe https "
+                        f"URL on an allowlisted host (no credentials, default port) — "
+                        f"see tools/source_hosts.json financingSourceHosts")
         copy = fin.get("copy") or {}
         for key in ("eyebrow", "headline"):
             if not _bilingual_ok(copy.get(key)):
@@ -611,6 +722,68 @@ def validate_financing(config: dict, *, allowed_source_hosts=None) -> Validation
             r.add_error(
                 f"financing is enabled while discount.mode={discount_mode!r}; either "
                 f"set discount.mode='disabled' or declare an explicit stackable policy")
+        # Operational staleness warning — ONLY when exact promotions are
+        # explicitly operationally enabled (field lands in Commit E). An
+        # intentionally disabled/absent policy must not nag about a
+        # historical stamp aging out; malformed/future stamps keep their
+        # existing errors above regardless of enablement.
+        if (fin.get("exactPromotionsEnabled") is True
+                and fin.get("verifiedAt") and _valid_iso_instant(fin["verifiedAt"])
+                and not _materially_future(fin["verifiedAt"])
+                and isinstance(mad, int) and 1 <= mad <= 60):
+            from datetime import datetime, timezone, timedelta
+            _ts = datetime.fromisoformat(fin["verifiedAt"])
+            if datetime.now(timezone.utc) - _ts > timedelta(days=mad):
+                r.add_warning(
+                    f"financing.verifiedAt {fin['verifiedAt']!r} is older than "
+                    f"maxAgeDays={mad} while exactPromotionsEnabled is true — the "
+                    f"client will render the generic staleNotice; re-verify the "
+                    f"source or disable exact promotions")
+
+    # Customer-reachable / future-risk URL fields: validated whenever present
+    # (enabled or not) — every URL that could reach a customer must be a safe
+    # https URL on an allowlisted host.
+    for _key in ("applicationUrl", "mexicoInfoUrl"):
+        _val = fin.get(_key)
+        if _val is not None and not _blank(_val) and not _is_allowed_source(_val, hosts):
+            r.add_error(f"financing.{_key} {_val!r} must be a safe https URL on an "
+                        f"allowlisted host (no credentials, default port)")
+
+    mxa = fin.get("mexicoApplicationUrl")
+    if mxa is not None:
+        if not isinstance(mxa, dict):
+            r.add_error("financing.mexicoApplicationUrl must be an object")
+        else:
+            _mxu = mxa.get("url")
+            if _mxu is not None and not _blank(_mxu) and not _is_allowed_source(_mxu, hosts):
+                r.add_error(f"financing.mexicoApplicationUrl.url {_mxu!r} must be a safe "
+                            f"https URL on an allowlisted host")
+            _ver = mxa.get("verified")
+            if _ver is not None and not isinstance(_ver, bool):
+                r.add_error("financing.mexicoApplicationUrl.verified must be a boolean")
+            # Anti-conflation: an unverified application URL must not be
+            # reused as any customer-facing or evidence URL. An allowlisted
+            # host does not make a dead URL available — verified:false means
+            # exactly that. Identity is normalized (case, default port,
+            # trailing slash, query/fragment) so variants of the dead path
+            # still collide, while different paths on the same host do not.
+            if mxa.get("verified") is not True and not _blank(mxa.get("url")):
+                _dead = _url_identity(mxa.get("url"))
+                if _dead:
+                    _reuse = [("financing.sourceUrl", fin.get("sourceUrl")),
+                              ("financing.applicationUrl", fin.get("applicationUrl")),
+                              ("financing.mexicoInfoUrl", fin.get("mexicoInfoUrl"))]
+                    for _i, _plan in enumerate(fin.get("plans") or []):
+                        if isinstance(_plan, dict):
+                            _reuse.append(
+                                (f"financing.plans[{_plan.get('id', _i)!r}].sourceUrl",
+                                 _plan.get("sourceUrl")))
+                    for _label, _val in _reuse:
+                        if _val is not None and _url_identity(_val) == _dead:
+                            r.add_error(
+                                f"{_label} reuses the unverified mexicoApplicationUrl "
+                                f"target {mxa.get('url')!r} — that URL is not verified "
+                                f"available and must never become customer-visible")
 
     # allowedSourceHosts inside the block (used by the client freshness gate)
     # must not widen the build-time allowlist.
@@ -648,6 +821,14 @@ def validate_financing(config: dict, *, allowed_source_hosts=None) -> Validation
             obj = plan.get(field_name)
             if isinstance(obj, dict) and (bool(_s(obj.get("en"))) != bool(_s(obj.get("es")))):
                 r.add_error(f"{tag}: {field_name} has one language but not the other")
+        # EVERY present plan sourceUrl is an evidence/freshness input — the
+        # client feeds it to financingSourceAllowed() — so all of them must
+        # be safe allowlisted https URLs, not only exact-term plans'.
+        _src_any = plan.get("sourceUrl")
+        if _src_any is not None and not _blank(_src_any) \
+                and not _is_allowed_source(_src_any, hosts):
+            r.add_error(f"{tag}: sourceUrl {_src_any!r} must be a safe https URL on "
+                        f"an allowlisted host (no credentials, default port)")
         # Exact credit claims: APR/term/minimum require verification, source,
         # adjacent conditions (detail) and a disclosure — all bilingual.
         exact = any(plan.get(k) is not None
@@ -665,9 +846,8 @@ def validate_financing(config: dict, *, allowed_source_hosts=None) -> Validation
             src = _s(plan.get("sourceUrl"))
             if not src:
                 r.add_error(f"{tag}: exact terms require sourceUrl")
-            elif not _is_allowed_source(src, hosts):
-                r.add_error(f"{tag}: sourceUrl {src!r} host is not in the configured "
-                            f"source-host allowlist")
+            # (host/scheme safety of a present sourceUrl is enforced for
+            # every plan by the general check above)
             if not _bilingual_ok(plan.get("detail")):
                 r.add_error(f"{tag}: exact terms require adjacent conditions "
                             f"(detail) in EN and ES")
@@ -2004,6 +2184,195 @@ def _self_test() -> int:
     fskew["plans"][0]["verifiedAt"] = _iso(120)
     check("financing verifiedAt within clock skew -> ok",
           validate_financing(_fc(fskew), allowed_source_hosts=_FHOSTS).ok)
+
+    # ---- URL safety: scheme / credentials / port / host (Commit D) -----------
+    _DEAD_MX = "https://www.lacks.com/mexican-credit-application"
+
+    def _url_err(field, url):
+        m = _fmut()
+        m[field] = url
+        return any(f"financing.{field}" in e and "allowlisted host" in e for e in
+                   validate_financing(_fc(m), allowed_source_hosts=_FHOSTS).errors)
+
+    check("financing mexicoInfoUrl non-allowlisted host -> error",
+          _url_err("mexicoInfoUrl", "https://evil.example.com/faq"))
+    check("financing applicationUrl non-allowlisted host -> error",
+          _url_err("applicationUrl", "https://evil.example.com/apply"))
+    check("financing mexicoInfoUrl allowlisted https -> ok",
+          validate_financing(_fc(dict(_fmut(), mexicoInfoUrl="https://www.lacks.com/faq")),
+                             allowed_source_hosts=_FHOSTS).ok)
+
+    fnonexact = _fmut()
+    fnonexact["plans"].append({"id": "lto", "kind": "lease-to-own",
+                               "sourceUrl": "https://evil.example.com/lto",
+                               "headline": {"en": "H", "es": "H"}})
+    check("financing NON-exact plan sourceUrl non-allowlisted -> error",
+          any("lto" in e and "allowlisted host" in e for e in
+              validate_financing(_fc(fnonexact), allowed_source_hosts=_FHOSTS).errors))
+
+    for _label, _bad in (
+            ("http scheme", "http://www.lacks.com/financing"),
+            ("protocol-relative", "//www.lacks.com/financing"),
+            ("relative path", "/financing"),
+            ("javascript:", "javascript:alert(1)"),
+            ("data:", "data:text/html,hi"),
+            ("embedded credentials", "https://user@www.lacks.com/financing"),
+            ("credentials with password", "https://u:p@www.lacks.com/financing"),
+            ("non-default port", "https://www.lacks.com:8443/financing"),
+            ("lookalike suffix host", "https://www.lacks.com.evil.example/financing"),
+            ("lookalike prefix host", "https://wwwlacks.com/financing"),
+            ("malformed", "https://"),
+    ):
+        check(f"financing sourceUrl {_label} -> error", _url_err("sourceUrl", _bad))
+
+    check("financing sourceUrl explicit default port 443 -> ok",
+          validate_financing(_fc(dict(_fmut(), sourceUrl="https://www.lacks.com:443/financing")),
+                             allowed_source_hosts=_FHOSTS).ok)
+    check("_is_allowed_source: https archive capture of allowlisted host -> True",
+          _is_allowed_source("https://web.archive.org/web/20260525/https://www.lacks.com/x",
+                             _FHOSTS))
+    check("_is_allowed_source: http archive capture -> False (scheme)",
+          not _is_allowed_source("http://web.archive.org/web/20260525/https://www.lacks.com/x",
+                                 _FHOSTS))
+    check("_is_allowed_source: archive of NON-allowlisted target -> False",
+          not _is_allowed_source("https://web.archive.org/web/20260525/https://evil.example.com/x",
+                                 _FHOSTS))
+
+    # ---- mexicoApplicationUrl shape + anti-conflation (Commit D) -------------
+    fmxobj = _fmut(); fmxobj["mexicoApplicationUrl"] = "https://www.lacks.com/x"
+    check("financing mexicoApplicationUrl non-object -> error",
+          any("must be an object" in e for e in
+              validate_financing(_fc(fmxobj), allowed_source_hosts=_FHOSTS).errors))
+
+    fmxver = _fmut()
+    fmxver["mexicoApplicationUrl"] = {"url": _DEAD_MX, "verified": "false"}
+    check("financing mexicoApplicationUrl non-boolean verified -> error",
+          any("verified must be a boolean" in e for e in
+              validate_financing(_fc(fmxver), allowed_source_hosts=_FHOSTS).errors))
+
+    fmxok = _fmut()
+    fmxok["mexicoApplicationUrl"] = {"url": _DEAD_MX, "verified": False}
+    check("financing unverified mexicoApplicationUrl stored but unused -> ok "
+          "(allowlisted host does not imply availability)",
+          validate_financing(_fc(fmxok), allowed_source_hosts=_FHOSTS).ok)
+
+    # Variants a BROWSER normalizes onto the dead target must all collide.
+    # Truth table verified against real Chrome and Node (same URL spec).
+    _BS = chr(92)
+    for _label, _variant in (
+            ("exact", _DEAD_MX),
+            ("trailing slash", _DEAD_MX + "/"),
+            ("double trailing slash", _DEAD_MX + "//"),
+            ("query string", _DEAD_MX + "?lang=es"),
+            ("fragment", _DEAD_MX + "#form"),
+            ("host case", "https://WWW.LACKS.COM/mexican-credit-application"),
+            ("explicit default port", "https://www.lacks.com:443/mexican-credit-application"),
+            ("dot-dot segment", "https://www.lacks.com/x/../mexican-credit-application"),
+            ("single-dot segment", "https://www.lacks.com/./mexican-credit-application"),
+            ("nested dot-dot", "https://www.lacks.com/a/b/../../mexican-credit-application"),
+            ("dot-dot past root", "https://www.lacks.com/../mexican-credit-application"),
+            ("percent-encoded dot-dot", "https://www.lacks.com/x/%2e%2e/mexican-credit-application"),
+            ("percent-encoded dot-dot upper", "https://www.lacks.com/x/%2E%2E/mexican-credit-application"),
+            ("trailing dot segment", _DEAD_MX + "/."),
+            ("backslash separators",
+             "https://www.lacks.com/x" + _BS + ".." + _BS + "mexican-credit-application"),
+            ("embedded tab", "https://www.lacks.com/mexican-credit-app\tlication"),
+            ("percent-encoded unreserved", "https://www.lacks.com/%6dexican-credit-application"),
+    ):
+        fconf = _fmut()
+        fconf["mexicoApplicationUrl"] = {"url": _DEAD_MX, "verified": False}
+        fconf["mexicoInfoUrl"] = _variant
+        check(f"financing anti-conflation: dead URL reused as mexicoInfoUrl "
+              f"({_label}) -> error",
+              any("reuses the unverified mexicoApplicationUrl" in e for e in
+                  validate_financing(_fc(fconf), allowed_source_hosts=_FHOSTS).errors))
+
+    fplanconf = _fmut()
+    fplanconf["mexicoApplicationUrl"] = {"url": _DEAD_MX, "verified": False}
+    fplanconf["plans"][0]["sourceUrl"] = _DEAD_MX
+    check("financing anti-conflation: dead URL reused as a plan sourceUrl -> error",
+          any("reuses the unverified mexicoApplicationUrl" in e for e in
+              validate_financing(_fc(fplanconf), allowed_source_hosts=_FHOSTS).errors))
+
+    # Genuinely different paths must NEVER collide (no over-normalization).
+    for _label, _distinct in (
+            ("plain sibling path", "https://www.lacks.com/faq"),
+            ("dead name nested under another path",
+             "https://www.lacks.com/x/mexican-credit-application"),
+            ("dot-dot resolving to a different path",
+             "https://www.lacks.com/a/b/../mexican-credit-application"),
+            ("path case differs", "https://www.lacks.com/Mexican-Credit-Application"),
+            ("reserved %2F stays encoded (not a separator)",
+             "https://www.lacks.com/x%2F..%2Fmexican-credit-application"),
+            ("empty path segment", "https://www.lacks.com//mexican-credit-application"),
+    ):
+        fnocollide = _fmut()
+        fnocollide["mexicoApplicationUrl"] = {"url": _DEAD_MX, "verified": False}
+        fnocollide["mexicoInfoUrl"] = _distinct
+        check(f"financing anti-conflation: NO false collision ({_label})",
+              validate_financing(_fc(fnocollide), allowed_source_hosts=_FHOSTS).ok)
+
+    # Malformed stored/candidate URLs must fail closed without crashing.
+    for _label, _bad_pair in (
+            ("malformed stored URL", {"url": "not a url", "verified": False}),
+            ("empty stored URL", {"url": "", "verified": False}),
+            ("stored URL missing", {"verified": False}),
+    ):
+        fmalconf = _fmut()
+        fmalconf["mexicoApplicationUrl"] = _bad_pair
+        _rep = validate_financing(_fc(fmalconf), allowed_source_hosts=_FHOSTS)
+        check(f"financing anti-conflation: {_label} does not crash validation",
+              isinstance(_rep.errors, list))
+
+    check("_url_identity: malformed inputs return '' (fail closed)",
+          all(_url_identity(_x) == "" for _x in
+              ("", "not a url", "https://", "///", None, 42, "javascript:alert(1)")))
+
+    fverified = _fmut()
+    fverified["mexicoApplicationUrl"] = {"url": "https://www.lacks.com/faq", "verified": True}
+    fverified["mexicoInfoUrl"] = "https://www.lacks.com/faq"
+    check("financing anti-conflation applies only while verified is not true",
+          validate_financing(_fc(fverified), allowed_source_hosts=_FHOSTS).ok)
+
+    fnosrc = _fmut(); del fnosrc["plans"][0]["sourceUrl"]
+    check("financing exact terms still require sourceUrl",
+          any("exact terms require sourceUrl" in e for e in
+              validate_financing(_fc(fnosrc), allowed_source_hosts=_FHOSTS).errors))
+
+    # ---- staleness warning gated on operational enablement (Commit D) --------
+    # Deterministic past stamp — never becomes date-sensitive.
+    _OLD = "2020-01-01T00:00:00-05:00"
+    fstale_on = _fmut()
+    fstale_on["verifiedAt"] = _OLD
+    fstale_on["plans"][0]["verifiedAt"] = _OLD
+    fstale_on["exactPromotionsEnabled"] = True
+    check("financing expired verifiedAt + exactPromotionsEnabled true -> warning",
+          any("older than maxAgeDays" in w for w in
+              validate_financing(_fc(fstale_on), allowed_source_hosts=_FHOSTS).warnings))
+
+    for _label, _policy in (("absent", None), ("false", False)):
+        fstale_off = _fmut()
+        fstale_off["verifiedAt"] = _OLD
+        fstale_off["plans"][0]["verifiedAt"] = _OLD
+        if _policy is not None:
+            fstale_off["exactPromotionsEnabled"] = _policy
+        check(f"financing expired verifiedAt + exactPromotions {_label} -> NO warning",
+              not any("older than maxAgeDays" in w for w in
+                      validate_financing(_fc(fstale_off), allowed_source_hosts=_FHOSTS).warnings))
+
+    ffut_on = _fmut()
+    ffut_on["verifiedAt"] = _iso(3600)
+    ffut_on["exactPromotionsEnabled"] = True
+    check("financing future verifiedAt still errors regardless of enablement",
+          any("future" in e for e in
+              validate_financing(_fc(ffut_on), allowed_source_hosts=_FHOSTS).errors))
+
+    fmal_on = _fmut()
+    fmal_on["verifiedAt"] = "not-a-timestamp"
+    fmal_on["exactPromotionsEnabled"] = True
+    check("financing malformed verifiedAt still errors regardless of enablement",
+          any("ISO-8601" in e for e in
+              validate_financing(_fc(fmal_on), allowed_source_hosts=_FHOSTS).errors))
 
     # ---- quiz definition (structure contract) --------------------------------
     def _bl(s):

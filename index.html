@@ -9419,7 +9419,11 @@
       <div class="fin-cards" id="financingSheetCards"></div>
       <div class="fin-disclosure" id="financingSheetDisclosure"></div>
       <div class="fin-sheet-footer">
-        <a class="fin-official-link" id="financingSheetLink" href="#" target="_blank" rel="noopener noreferrer"
+        <!-- No href in static markup: the anchor starts inert and only
+             becomes a link after setAllowedFinancingLink() validates the
+             configured URL, so a config that never loads (or fails
+             validation) can never leave a live or placeholder link here. -->
+        <a class="fin-official-link" id="financingSheetLink" target="_blank" rel="noopener noreferrer"
            onclick="window.logFinancingLinkClick('sheet')"></a>
         <span class="fin-external-note" id="financingSheetExternal"></span>
         <button type="button" class="fin-btn fin-btn-secondary" id="financingSheetSpecialist"
@@ -9603,12 +9607,17 @@
         aria-live="polite"
         aria-atomic="true"></div>
       <div class="fin-handoff__programs" id="hf2FinancingPrograms"></div>
-      <div class="fin-handoff__private">
+      <!-- Phone-continuation block (QR + written destination + external note).
+           Hidden wholesale by renderHandoffFinancing() when financing.sourceUrl
+           is unsafe, so "scan to open" copy never survives without a trusted
+           destination. -->
+      <div class="fin-handoff__private" id="hf2FinancingContinuation">
         <img class="fin-qr" id="hf2FinancingQr" src="images/qr-financing.svg" width="132" height="132"
              alt="QR code linking to the retailer's official financing page">
         <div class="fin-handoff__private-copy">
           <p id="hf2FinancingPrivate"></p>
-          <a class="fin-official-link" id="hf2FinancingLink" href="#" target="_blank" rel="noopener noreferrer"
+          <!-- Starts inert — see the sheet link above. -->
+          <a class="fin-official-link" id="hf2FinancingLink" target="_blank" rel="noopener noreferrer"
              onclick="window.logFinancingLinkClick('handoff')"></a>
           <span class="fin-external-note" id="hf2FinancingExternal"></span>
         </div>
@@ -9877,17 +9886,56 @@
       return true;
     }
 
+    // Runtime URL gate — defense in depth (build validation in
+    // tools/validation.py is authoritative). A financing URL is usable only
+    // when it is an absolute https URL with a hostname, no embedded
+    // credentials, no non-default port, on an allowlisted host (exact or
+    // dot-boundary subdomain). Relative and malformed URLs throw in the URL
+    // constructor and fail closed here.
     function financingSourceAllowed(url) {
       var f = getFinancingConfig();
       var hosts = (f && f.allowedSourceHosts) || [];
       if (!url || !hosts.length) return false;
       try {
-        var h = new URL(url).hostname.toLowerCase();
+        var u = new URL(url);
+        if (u.protocol !== 'https:') return false;
+        if (!u.hostname) return false;
+        if (u.username || u.password) return false;
+        if (u.port) return false;   // '' for absent or the default 443
+        var h = u.hostname.toLowerCase();
         return hosts.some(function(x) {
           x = String(x).toLowerCase();
           return h === x || h.slice(-(x.length + 1)) === '.' + x;
         });
       } catch (e) { return false; }
+    }
+
+    // Safe rendering for the static financing anchors. The link renders ONLY
+    // when its URL passes financingSourceAllowed(); otherwise the anchor
+    // loses its href outright (never '#', never a stale href from a previous
+    // render), is emptied and hidden, and its adjacent external-site note is
+    // cleared and hidden too — the UI must never describe a link that is not
+    // there. target="_blank" / rel="noopener noreferrer" live in the static
+    // markup and are untouched. Returns whether the link rendered, so callers
+    // can fail closed around it.
+    function setAllowedFinancingLink(anchor, url, text, noteEl) {
+      var ok = !!anchor && financingSourceAllowed(url);
+      if (anchor) {
+        if (ok) {
+          anchor.href = url;
+          anchor.textContent = text;
+          anchor.hidden = false;
+        } else {
+          anchor.removeAttribute('href');
+          anchor.textContent = '';
+          anchor.hidden = true;
+        }
+      }
+      if (noteEl) {
+        noteEl.textContent = ok ? FC('externalNotice') : '';
+        noteEl.hidden = !ok;
+      }
+      return ok;
     }
 
     // Fail-closed freshness gate for EXACT rate/term claims. The generic
@@ -10272,9 +10320,23 @@
       if (mx) {
         var mxFresh = fresh && financingPlanFresh(mx);
         if (!mxFresh) anyStale = true;
-        var mxLink = f.mexicoInfoUrl || f.sourceUrl;
+        // Mexico link: the configured info URL when it is safe. The general
+        // source URL is a fallback ONLY when no Mexico URL is configured at
+        // all, and only if it independently passes. A configured-but-unsafe
+        // Mexico URL is never silently replaced — that would mask the bad
+        // configuration — the card simply renders as text with no anchor.
+        var mxLink = '';
+        var mxConfigured = String(f.mexicoInfoUrl || '').trim();
+        if (mxConfigured) {
+          if (financingSourceAllowed(mxConfigured)) mxLink = mxConfigured;
+        } else if (financingSourceAllowed(f.sourceUrl)) {
+          mxLink = f.sourceUrl;
+        }
         var mxHost = '';
-        try { mxHost = new URL(mxLink).hostname.replace(/^www\./, ''); } catch (e) {}
+        if (mxLink) {
+          try { mxHost = new URL(mxLink).hostname.replace(/^www\./, ''); } catch (e) { mxLink = ''; }
+          if (!mxHost) mxLink = '';   // never render a blank hostname label
+        }
         cards.push('<article class="fin-card fin-card--mexico"><div class="fin-card__icon" aria-hidden="true">'
           + '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="10" cy="10" r="7.5"/><path d="M2.5 10h15M10 2.5c2.5 2.3 2.5 12.7 0 15c-2.5-2.3-2.5-12.7 0-15Z"/></svg>'
           + '</div><h3 class="fin-card__title">' + finEsc(L(mx.headline)) + '</h3>'
@@ -10284,20 +10346,26 @@
                     ? '<p class="fin-offer__detail fin-offer__example">' + finEsc(L(mx.representativeExample)) + '</p>' : '')
               : '<p class="fin-offer__detail">' + finEsc(FC('staleNotice')) + '</p>')
           + (mx.disclosure ? '<p class="fin-offer__disclosure">' + finEsc(L(mx.disclosure)) + '</p>' : '')
-          + '<a class="fin-official-link" href="' + finEsc(mxLink) + '" target="_blank" rel="noopener noreferrer" '
-          + 'onclick="window.logMexicoFinancingOpen()">'
-          + finEsc(es ? ('Detalles en ' + mxHost + ' (se abre en otro sitio)') : ('Details on ' + mxHost + ' (opens a separate site)'))
-          + '</a></article>');
+          + (mxLink
+              ? '<a class="fin-official-link" href="' + finEsc(mxLink) + '" target="_blank" rel="noopener noreferrer" '
+                + 'onclick="window.logMexicoFinancingOpen()">'
+                + finEsc(es ? ('Detalles en ' + mxHost + ' (se abre en otro sitio)') : ('Details on ' + mxHost + ' (opens a separate site)'))
+                + '</a>'
+              : '')
+          + '</article>');
       }
 
       document.getElementById('financingSheetCards').innerHTML = cards.join('');
       document.getElementById('financingSheetDisclosure').textContent = FC('disclosureFooter');
-      var link = document.getElementById('financingSheetLink');
-      link.href = f.sourceUrl || '#';
-      link.textContent = es
-        ? 'Página oficial de financiamiento de ' + storeName()
-        : storeName() + "'s official financing page";
-      document.getElementById('financingSheetExternal').textContent = FC('externalNotice');
+      // Official-page link fails closed: an unsafe sourceUrl hides the link
+      // and its external-site note. The sheet itself, generic orientation,
+      // disclosures, and the specialist action all remain available.
+      setAllowedFinancingLink(
+        document.getElementById('financingSheetLink'),
+        f.sourceUrl,
+        es ? 'Página oficial de financiamiento de ' + storeName()
+           : storeName() + "'s official financing page",
+        document.getElementById('financingSheetExternal'));
       var spec = document.getElementById('financingSheetSpecialist');
       spec.textContent = FC('ctaSecondary');
       _finSheetStale = anyStale;
@@ -10417,18 +10485,26 @@
         if (label) chips.push('<span class="fin-chip">' + finEsc(label) + '</span>');
       });
       document.getElementById('hf2FinancingPrograms').innerHTML = chips.join('');
-      document.getElementById('hf2FinancingPrivate').textContent = FC('handoffPrivate');
-      var link = document.getElementById('hf2FinancingLink');
-      link.href = f.sourceUrl || '#';
-      link.textContent = String(f.sourceUrl || '').replace(/^https?:\/\/(www\.)?/, '');
+      // Phone continuation fails closed as a unit: an unsafe sourceUrl hides
+      // the whole block (QR, "scan to open" copy, written destination,
+      // external note) rather than leaving scan instructions pointing
+      // nowhere. Specialist controls and program categories stay available.
+      // Rendering is deterministic — a later valid render restores it.
+      var linkOk = setAllowedFinancingLink(
+        document.getElementById('hf2FinancingLink'),
+        f.sourceUrl,
+        String(f.sourceUrl || '').replace(/^https?:\/\/(www\.)?/, ''),
+        document.getElementById('hf2FinancingExternal'));
+      var contin = document.getElementById('hf2FinancingContinuation');
+      if (contin) contin.hidden = !linkOk;
+      document.getElementById('hf2FinancingPrivate').textContent = linkOk ? FC('handoffPrivate') : '';
       var qrImg = document.getElementById('hf2FinancingQr');
-      if (qrImg) {
+      if (qrImg && linkOk) {
         qrImg.alt = (es
           ? 'Código QR a la página oficial de financiamiento de '
           : "QR code linking to the official financing page of ")
-          + storeName() + ' (' + link.textContent + ')';
+          + storeName() + ' (' + document.getElementById('hf2FinancingLink').textContent + ')';
       }
-      document.getElementById('hf2FinancingExternal').textContent = FC('externalNotice');
       document.getElementById('hf2FinancingExplore').textContent = FC('cta');
       document.getElementById('hf2FinancingSpecialist').textContent = FC('ctaSecondary');
     }
@@ -13371,7 +13447,7 @@
           return {
             heading: FC('emailHeading'),
             body: finEmailBody(),
-            url: f.sourceUrl || '',
+            url: financingSourceAllowed(f.sourceUrl) ? f.sourceUrl : '',
             offerVersion: f.offerVersion || '',
             interest: financingInterest,
             confirmNote: currentLang === 'es'
