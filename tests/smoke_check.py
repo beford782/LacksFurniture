@@ -63,8 +63,15 @@ def main():
     check("lease-to-own / credit-builder carry no credit terms",
           all(not any(p.get(k) is not None for k in ("apr", "termMonths", "minimumPurchase"))
               for p in plans if p.get("kind") in ("lease-to-own", "credit-builder")))
-    mex = next((p for p in plans if p.get("id") == "mexico-in-house"), None)
-    check("mexico plan present, marked separatePath", bool(mex) and mex.get("separatePath") is True)
+    # Mexico is identified by its explicit presentation SCENARIO, never by plan
+    # id or a boolean flag: a retailer may rename every plan id freely.
+    mex = next((p for p in plans
+                if p.get("presentationScenario") == "mexico-delivery"), None)
+    check("mexico-delivery scenario plan present (identified semantically)", bool(mex))
+    check("exactly one mexico-delivery scenario plan",
+          sum(1 for p in plans if p.get("presentationScenario") == "mexico-delivery") == 1)
+    check("retired separatePath flag is absent from every shipped plan",
+          all("separatePath" not in p for p in plans))
     check("mexico dead application URL not used as plan/link sourceUrl",
           all("mexican-credit-application" not in str(p.get("sourceUrl") or "") for p in plans)
           and "mexican-credit-application" not in str(fin.get("mexicoInfoUrl") or ""))

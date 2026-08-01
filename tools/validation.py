@@ -747,35 +747,57 @@ def _bare_payment_noun(text: str) -> bool:
     payment; benign phrasings outside the allowlist are rejected by design."""
     return bool(_PAYMENT_NOUN.search(_NEUTRAL_PAYMENT_PHRASES.sub(" ", text or "")))
 
-# TEMPORARY — Commit F only; Commit G replaces this with reviewed semantics.
+# ===== Financing presentation taxonomy (mirrors index.html) ==================
+# Every plan maps to exactly ONE presentation group, decided by `kind` and the
+# explicit `presentationScenario` field and NOTHING else — never by plan id,
+# array position, language, provider, headline text, source URL, or the
+# presence of exact terms. A retailer may rename every plan id without changing
+# which card a plan lands in. index.html carries the identical partition in
+# finPlanGroup(); the taxonomy test pins the two in step.
 #
-# renderFinancingSheet() does NOT select cards 2/3/4 by kind: it looks them up
-# by HARDCODED PLAN ID (byId['lacks-in-house'], byId['lease-to-own'],
-# byId['build-my-credit'], byId['mexico-in-house']). Classifying ungated fields
-# by `kind` alone therefore does not describe the renderer that exists: mutating
-# one of these plans' kind moved it out of the guard while the renderer kept
-# rendering it by id. Until those lookups are retired, the validator models the
-# real renderer — by id — and additionally pins each id to the kind/flag shape
-# the renderer assumes, so a role mutation is a schema error rather than a
-# silent reclassification.
-#
-# "ungated" lists the fields each card renders OUTSIDE its freshness gate:
-#   * in-house / Mexico: title (headline) + disclosure; their `detail` stays
-#     gated behind ihFresh / mxFresh.
-#   * lease-to-own / credit-builder: the "More paths" card is availability-only
-#     and never freshness-gated at all. (`disclosure` is listed defensively —
-#     the card renders a hardcoded disclosure today, so a per-plan one would be
-#     a new surface.)
-_RENDERER_ROLE_IDS = {
-    "lacks-in-house": {"kind": "closed-end-installment", "separatePath": False,
-                       "ungated": ("headline", "disclosure")},
-    "lease-to-own": {"kind": "lease-to-own", "separatePath": False,
-                     "ungated": ("headline", "detail", "disclosure")},
-    "build-my-credit": {"kind": "credit-builder", "separatePath": False,
-                        "ungated": ("headline", "detail", "disclosure")},
-    "mexico-in-house": {"kind": "closed-end-installment", "separatePath": True,
-                        "ungated": ("headline", "disclosure")},
+# A plan that matches NO group is a validation error, never a silent drop: that
+# is what stops a newly-allowed kind from vanishing from the sheet.
+FINANCING_SCENARIOS = {"mexico-delivery"}
+
+# Scenario -> the financing kind its product semantics require.
+FINANCING_SCENARIO_KINDS = {"mexico-delivery": "closed-end-installment"}
+
+# Scenarios the renderer can present only once (it renders a single card).
+FINANCING_SINGLETON_SCENARIOS = {"mexico-delivery"}
+
+FINANCING_EVERGREEN_KINDS = {"lease-to-own", "credit-builder", "informational"}
+
+# Fields each group renders OUTSIDE its freshness gate (Commit F's guard):
+#   promotional   -> headline/detail/disclosure all sit inside the gate
+#   installment   -> title + disclosure ungated; `detail` gated
+#   evergreen     -> availability-only card, never freshness-gated
+#   scenario      -> title + disclosure ungated; detail/example gated
+_GROUP_UNGATED_FIELDS = {
+    "promotional": (),
+    "installment": ("headline", "disclosure"),
+    "evergreen": ("headline", "detail", "disclosure"),
+    "scenario": ("headline", "disclosure"),
 }
+
+
+def _plan_scenario(plan: dict) -> str:
+    v = plan.get("presentationScenario")
+    return v if isinstance(v, str) else ""
+
+
+def _plan_group(plan: dict) -> str:
+    """'promotional' | 'installment' | 'evergreen' | 'scenario' | '' (no match)."""
+    scenario = _plan_scenario(plan)
+    if scenario:
+        return "scenario" if scenario in FINANCING_SCENARIOS else ""
+    kind = plan.get("kind")
+    if kind == "open-end-promotional-credit":
+        return "promotional"
+    if kind == "closed-end-installment":
+        return "installment"
+    if kind in FINANCING_EVERGREEN_KINDS:
+        return "evergreen"
+    return ""
 
 
 def _exact_claim_signals(text) -> list:
@@ -790,59 +812,34 @@ def _exact_claim_signals(text) -> list:
 
 def _is_gated_offer_plan(plan: dict) -> bool:
     """True for plans whose headline/detail/disclosure render ONLY inside the
-    exact-terms gate — i.e. the promotional card's membership test in
-    renderFinancingSheet(): kind is open-end-promotional-credit and the plan is
-    not a separate-path scenario.
-
-    A plan the renderer fetches by hardcoded id is NEVER gated here, whatever
-    its kind says: those cards render their titles outside the gate.
-
-    `separatePath` is a schema boolean, required to be one elsewhere in this
-    module, and that contract is what makes this test safe. Over the legal
-    domain {absent, false, true} Python's `is not True` and JavaScript's
-    `!p.separatePath` agree exactly.
-
-    SOME non-boolean shapes diverge across the two languages — the truthy ones
-    ("false", "true", 1, 1.0, [], {}), where JS drops the plan from the
-    promotional group while Python would call it gated. Others do NOT diverge:
-    null, "" and 0 are falsy in JS and are not True in Python, so both agree.
-    All non-booleans are rejected regardless, which is what reduces the domain
-    to the three values on which renderer and validator agree by construction —
-    the type contract, not a re-implementation of JS coercion, is the mechanism."""
-    if plan.get("id") in _RENDERER_ROLE_IDS:
-        return False
-    return (plan.get("kind") == "open-end-promotional-credit"
-            and plan.get("separatePath") is not True)
+    exact-terms gate — i.e. the promotional group. Classification is semantic
+    (kind + presentationScenario); a plan id has no effect on it."""
+    return _plan_group(plan) == "promotional"
 
 
 def _ungated_plan_fields(plan: dict) -> tuple:
-    """Plan fields that reach a customer OUTSIDE the exact-terms gate, mirroring
-    renderFinancingSheet() and renderHandoffFinancing():
+    """Plan fields that reach a customer OUTSIDE the exact-terms gate, derived
+    from the plan's presentation group (see _plan_group) so that renaming a
+    plan id cannot move wording out of Commit F's guard.
 
       * provider  — always: the promotional card title renders it even on the
                     stale/fail-closed path.
-      * headline  — every non-promotional plan: in-house and Mexico card titles
-                    and the evergreen entries render it ungated, and the handoff
-                    chips use it as the label for non-promotional kinds.
-      * disclosure— every non-promotional plan: it keeps rendering when the
-                    adjacent exact detail has been swapped for staleNotice.
-      * detail    — lease-to-own / credit-builder only: the "More paths" card is
-                    availability-only and is never freshness-gated.
+      * headline / disclosure — every non-promotional group: the installment
+                    and scenario card titles, the evergreen entries and the
+                    handoff chips render them ungated, and a disclosure keeps
+                    rendering after its adjacent exact detail has been swapped
+                    for staleNotice.
+      * detail    — evergreen only: the "More paths" card is availability-only
+                    and is never freshness-gated.
 
-    Promotional detail/disclosure and Mexico's detail/representativeExample are
-    NOT listed: those render only inside the gate and keep their existing exact
-    validation."""
-    role = _RENDERER_ROLE_IDS.get(plan.get("id"))
-    if role:
-        # The renderer reaches this plan by id, so its ungated surfaces are
-        # fixed by the card that fetches it — not by whatever kind it declares.
-        return ("provider",) + role["ungated"]
-    fields = ["provider"]
-    if not _is_gated_offer_plan(plan):
-        fields += ["headline", "disclosure"]
-    if plan.get("kind") in ("lease-to-own", "credit-builder"):
-        fields.append("detail")
-    return tuple(fields)
+    Promotional detail/disclosure and the scenario card's detail /
+    representativeExample are NOT listed: those render only inside the gate and
+    keep their existing exact validation. An unclassified plan is treated as
+    fully ungated (maximally protective) — validation errors on it separately."""
+    group = _plan_group(plan)
+    return ("provider",) + _GROUP_UNGATED_FIELDS.get(
+        group, ("headline", "detail", "disclosure"))
+
 
 
 def _check_ungated_text(r, label: str, value) -> None:
@@ -1091,39 +1088,57 @@ def validate_financing(config: dict, *, allowed_source_hosts=None) -> Validation
         kind = plan.get("kind")
         if kind not in FINANCING_PLAN_KINDS:
             r.add_error(f"{tag}: kind {kind!r} not in {sorted(FINANCING_PLAN_KINDS)}")
-        # separatePath is a schema boolean. Some non-boolean shapes make the
-        # renderer and the validator disagree: the TRUTHY ones ("false",
-        # "true", 1, [], {}) are dropped from the promotional group by
-        # JavaScript's `!p.separatePath` while Python's `is not True` reads
-        # them as a gated promotional plan — so an exact claim could render
-        # outside the gate. Falsy non-booleans (null, "", 0) happen to agree,
-        # but are rejected too: constraining the value to {absent, false, true}
-        # is what makes the two agree by construction rather than by accident.
-        if "separatePath" in plan and not isinstance(plan.get("separatePath"), bool):
+        # provider is rendered in the promotional card title, so it must be a
+        # real, trimmed, non-blank string. Without this a number, boolean,
+        # object or blank string reached the title as
+        # "123 promotional financing" / "[object Object] promotional financing"
+        # / " promotional financing". The runtime degrades such a value to the
+        # generic label rather than coercing it, but the build must reject it.
+        if "provider" in plan:
+            _prov = plan.get("provider")
+            if not isinstance(_prov, str):
+                r.add_error(
+                    f"{tag}: provider {_prov!r} must be a string — it is rendered "
+                    f"in the promotional card title and must not be coerced")
+            elif not _prov.strip():
+                r.add_error(f"{tag}: provider must not be blank")
+            elif _prov != _prov.strip():
+                r.add_error(
+                    f"{tag}: provider {_prov!r} has leading/trailing whitespace — "
+                    f"store it trimmed so the rendered title is exact")
+        elif enabled:
+            r.add_error(f"{tag}: provider is required when financing is enabled")
+
+        # presentationScenario: the ONLY way a plan reaches a scenario card.
+        # Absent, or a recognised non-blank string. Every other shape is
+        # rejected so a scenario can never be inferred from an id, a kind, a
+        # provider, a language or an array position.
+        if "presentationScenario" in plan:
+            _sc = plan.get("presentationScenario")
+            if not isinstance(_sc, str) or not _sc.strip():
+                r.add_error(
+                    f"{tag}: presentationScenario {_sc!r} must be a non-blank string "
+                    f"naming a supported scenario ({sorted(FINANCING_SCENARIOS)}), "
+                    f"or be omitted entirely")
+            elif _sc not in FINANCING_SCENARIOS:
+                r.add_error(
+                    f"{tag}: presentationScenario {_sc!r} is not a supported scenario "
+                    f"{sorted(FINANCING_SCENARIOS)} — the renderer has no card for it, "
+                    f"so the plan would not be presented at all")
+            else:
+                _want_kind = FINANCING_SCENARIO_KINDS.get(_sc)
+                if _want_kind and kind != _want_kind:
+                    r.add_error(
+                        f"{tag}: presentationScenario {_sc!r} requires kind "
+                        f"{_want_kind!r} by its product semantics, but kind is {kind!r}")
+        # The legacy presentation flag is retired: two overlapping sources of
+        # truth for 'is this a separate path' is exactly how a plan ended up
+        # classified one way by validation and another way by the renderer.
+        if "separatePath" in plan:
             r.add_error(
-                f"{tag}: separatePath {plan.get('separatePath')!r} must be a JSON "
-                f"boolean (true/false). All non-boolean shapes are rejected so the "
-                f"schema-legal domain stays {{absent, false, true}} — the domain "
-                f"across which the renderer's `!p.separatePath` and this "
-                f"validator's `is not True` are guaranteed to agree. (Some "
-                f"illegal shapes happen to agree too; the truthy ones do not.)")
-        # TEMPORARY role contract (Commit F; Commit G replaces it): the renderer
-        # fetches these plans by hardcoded id and assumes a fixed kind/flag
-        # shape. Pinning it makes a role mutation a named schema error instead
-        # of a silent reclassification out of the ungated-copy guard.
-        _role = _RENDERER_ROLE_IDS.get(plan.get("id"))
-        if _role:
-            if kind != _role["kind"]:
-                r.add_error(
-                    f"{tag}: id is rendered by a hardcoded card that assumes kind "
-                    f"{_role['kind']!r}, but kind is {kind!r} — changing it does not "
-                    f"change what the renderer displays (see renderFinancingSheet); "
-                    f"retiring these id lookups is Commit G's work")
-            if bool(plan.get("separatePath", False)) is not _role["separatePath"]:
-                r.add_error(
-                    f"{tag}: id is rendered by a hardcoded card that assumes "
-                    f"separatePath={_role['separatePath']}, but got "
-                    f"{plan.get('separatePath', False)!r}")
+                f"{tag}: separatePath is retired — use "
+                f"presentationScenario (one of {sorted(FINANCING_SCENARIOS)}) so the "
+                f"renderer and this validator classify the plan the same way")
         # V1 hard invariant: no payment calculation anywhere.
         if plan.get("paymentCalculationEnabled"):
             r.add_error(f"{tag}: paymentCalculationEnabled must be false in V1 — "
@@ -1189,9 +1204,57 @@ def validate_financing(config: dict, *, allowed_source_hosts=None) -> Validation
             r.add_error(f"{tag}: publishedPaymentFactor {ppf!r} must be a fraction "
                         f"between 0 and 1")
         # lease-to-own / credit-builder must never carry credit terms
-        if kind in ("lease-to-own", "credit-builder") and exact:
+        # Evergreen kinds are the availability-only card ("More paths"): the
+        # renderer never freshness-gates them, so credit terms there would
+        # render outside the exact-terms gate permanently. One semantic set,
+        # not a scattered kind list.
+        if kind in FINANCING_EVERGREEN_KINDS and exact:
             r.add_error(f"{tag}: {kind} plans must not state APR/term/minimum — "
                         f"availability only, details confirmed in store")
+
+    # ---- collection-level taxonomy checks --------------------------------
+    # Plan ids are opaque to presentation now, but they must still be unique:
+    # the runtime builds lookup maps from them and a duplicate silently wins.
+    _seen_ids = {}
+    for i, plan in enumerate(plans or []):
+        if not isinstance(plan, dict):
+            continue
+        pid = _s(plan.get("id"))
+        if pid:
+            _seen_ids.setdefault(pid, []).append(i)
+    for pid, idxs in sorted(_seen_ids.items()):
+        if len(idxs) > 1:
+            r.add_error(f"financing.plans: duplicate plan id {pid!r} at positions "
+                        f"{idxs} — plan ids must be unique")
+
+    if enabled:
+        # TOTAL PARTITION: every plan must land in exactly one renderer group.
+        # A plan matching none would be silently absent from the sheet, which is
+        # precisely the failure mode the id lookups used to hide.
+        _scenario_counts = {}
+        for i, plan in enumerate(plans or []):
+            if not isinstance(plan, dict):
+                continue
+            tag = f"financing.plans[{plan.get('id', i)!r}]"
+            group = _plan_group(plan)
+            if not group:
+                r.add_error(
+                    f"{tag}: matches no renderer presentation group (kind={plan.get('kind')!r}, "
+                    f"presentationScenario={plan.get('presentationScenario')!r}) — it would "
+                    f"never be presented. Give it a supported kind, or a supported "
+                    f"presentationScenario, or define the missing group in both "
+                    f"tools/validation.py and index.html")
+            if group == "scenario":
+                _sc = _plan_scenario(plan)
+                _scenario_counts.setdefault(_sc, []).append(plan.get("id", i))
+        # Cardinality: the renderer draws a single card per singleton scenario,
+        # so two claimants would mean one is silently dropped.
+        for _sc, owners in sorted(_scenario_counts.items()):
+            if _sc in FINANCING_SINGLETON_SCENARIOS and len(owners) > 1:
+                r.add_error(
+                    f"financing.plans: {len(owners)} plans declare "
+                    f"presentationScenario={_sc!r} ({owners}) but the renderer presents "
+                    f"exactly one — the others would be dropped silently")
     return r
 
 
@@ -2388,6 +2451,7 @@ def _self_test() -> int:
         "copy": {"eyebrow": {"en": "E", "es": "E"}, "headline": {"en": "H", "es": "H"}},
         "plans": [{
             "id": "syn-9-99-72", "kind": "open-end-promotional-credit",
+            "provider": "Synchrony",
             "verified": True, "verifiedAt": "2026-07-30T10:53:32-05:00",
             "sourceUrl": "https://www.lacks.com/financing",
             "apr": 9.99, "termMonths": 72, "minimumPurchase": 500,
@@ -2856,9 +2920,9 @@ def _self_test() -> int:
           _ungated_rejected("headline",
                             lambda m: _add_plan(m, headline={"en": "6-36 month financing",
                                                              "es": "Financiamiento de 6-36 meses"})))
-    check("scenario (separatePath) headline with a rate -> error",
+    check("scenario headline with a rate -> error",
           _ungated_rejected("headline",
-                            lambda m: _add_plan(m, separatePath=True,
+                            lambda m: _add_plan(m, presentationScenario="mexico-delivery",
                                                 headline={"en": "24% APR for 24 months",
                                                           "es": "24% APR por 24 meses"})))
     check("ungated disclosure with a dated account rate -> error",
@@ -2893,7 +2957,7 @@ def _self_test() -> int:
                              "es": "Al 07/31/2025 la APR de compra es 34.99%."}})).ok)
     check("scenario plan's GATED detail + representativeExample may state exact terms",
           _fin_with(lambda m: _add_plan(
-              m, id="mx2", separatePath=True, apr=24, termMonths=24,
+              m, id="mx2", presentationScenario="mexico-delivery", apr=24, termMonths=24,
               headline={"en": "Purchasing for delivery to Mexico?",
                         "es": "¿Compras para entrega en México?"},
               detail={"en": "Up to 24 months at a maximum 24% APR.",
@@ -3061,102 +3125,132 @@ def _self_test() -> int:
               for v in (json.loads(json.dumps(_fmut()))["copy"] or {}).values()
               if isinstance(v, dict) for lang in ("en", "es")))
 
-    # ---- separatePath shape contract (Commit F amend) -----------------------
-    # Two SEPARATE concepts, deliberately not conflated:
-    #   (1) every present non-boolean is a schema error, whether or not it
-    #       diverges across languages;
-    #   (2) only the TRUTHY non-booleans actually demonstrate the JS/Python
-    #       predicate divergence. null, "" and 0 agree in both languages and
-    #       are rejected purely as schema violations.
-    _SEP_TRUTHY_DIVERGENT = (("string 'false'", "false"), ("string 'true'", "true"),
-                             ("int 1", 1), ("float 1.0", 1.0),
-                             ("array", []), ("object", {}))
-    _SEP_FALSY_AGREEING = (("null", None), ("empty string", ""), ("int 0", 0))
-    for _lbl, _bad in _SEP_TRUTHY_DIVERGENT + _SEP_FALSY_AGREEING:
-        check(f"separatePath {_lbl} -> schema error (non-boolean)",
-              any("separatePath" in e and "JSON boolean" in e for e in
-                  _fin_with(lambda m, v=_bad: m["plans"][0].__setitem__(
-                      "separatePath", v)).errors))
-    # (2) the divergence claim itself, asserted only where it is true.
-    def _py_gated(v):
-        """This module's predicate: `separatePath is not True`."""
-        return v is not True
-
-    def _js_in_syn(v):
-        """Models the renderer's `!p.separatePath`. NOTE: JavaScript truthiness
-        is not Python's — [] and {} are TRUTHY in JS but falsy under bool()."""
-        if v is None:
-            return True                       # !undefined / !null -> true
-        if isinstance(v, bool):
-            return not v
-        if isinstance(v, (int, float)):
-            return v == 0
-        if isinstance(v, str):
-            return len(v) == 0
-        return False                          # arrays/objects are truthy in JS
-    for _lbl, _v in _SEP_TRUTHY_DIVERGENT:
-        check(f"separatePath {_lbl} genuinely diverges (JS drops it, Python calls it gated)",
-              _js_in_syn(_v) is False and _py_gated(_v) is True)
-    for _lbl, _v in _SEP_FALSY_AGREEING:
-        check(f"separatePath {_lbl} does NOT diverge (both treat it as promotional)",
-              _js_in_syn(_v) is True and _py_gated(_v) is True)
-    for _lbl, _v in (("absent/null", None), ("false", False), ("true", True)):
-        check(f"legal domain {_lbl}: renderer and validator agree exactly",
-              _js_in_syn(_v) == _py_gated(_v))
-    check("separatePath absent remains valid",
-          _fin_with(lambda m: m["plans"][0].pop("separatePath", None)).ok)
-    check("separatePath boolean false remains valid",
-          _fin_with(lambda m: m["plans"][0].__setitem__("separatePath", False)).ok)
-    check("separatePath boolean true remains valid for the scenario role",
+    # ---- presentationScenario contract (Commit G) ---------------------------
+    check("presentationScenario absent is valid (ordinary plan)",
+          _fin_with(lambda m: _add_plan(m, id="ordinary")).ok)
+    check("presentationScenario 'mexico-delivery' with its required kind is valid",
           _fin_with(lambda m: _add_plan(
-              m, id="mexico-in-house", kind="closed-end-installment",
-              separatePath=True)).ok)
-
-    # ---- hardcoded renderer-role contract (Commit F amend; Commit G retires) -
-    # renderFinancingSheet() fetches these ids directly, so mutating their kind
-    # cannot move them out of the ungated-copy guard.
-    for _rid, _real_kind, _sep in (
-            ("lacks-in-house", "closed-end-installment", False),
-            ("lease-to-own", "lease-to-own", False),
-            ("build-my-credit", "credit-builder", False),
-            ("mexico-in-house", "closed-end-installment", True),
-    ):
-        check(f"role id {_rid!r} with its expected kind passes",
-              _fin_with(lambda m, i=_rid, k=_real_kind, s=_sep: _add_plan(
-                  m, id=i, kind=k, **({"separatePath": True} if s else {}))).ok)
-        check(f"role id {_rid!r} mutated to promotional kind -> named role error",
-              any("hardcoded card that assumes kind" in e and _rid in e for e in
-                  _fin_with(lambda m, i=_rid, s=_sep: _add_plan(
-                      m, id=i, kind="open-end-promotional-credit",
-                      **({"separatePath": True} if s else {}))).errors))
-        check(f"role id {_rid!r} keeps its ungated guard despite a kind mutation",
-              _ungated_rejected("headline",
-                                lambda m, i=_rid, s=_sep: _add_plan(
-                                    m, id=i, kind="open-end-promotional-credit",
-                                    headline={"en": "24% APR for 24 months",
-                                              "es": "24% APR por 24 meses"},
-                                    **({"separatePath": True} if s else {}))))
-    for _rid in ("lease-to-own", "build-my-credit"):
-        check(f"role id {_rid!r} detail stays guarded despite a kind mutation",
-              _ungated_rejected("detail",
-                                lambda m, i=_rid: _add_plan(
-                                    m, id=i, kind="open-end-promotional-credit",
-                                    detail={"en": "Pay for twelve months.",
-                                            "es": "Paga por doce meses."})))
-    check("role id with a wrong separatePath -> named role error",
-          any("assumes separatePath" in e for e in
+              m, id="mx-ok", kind="closed-end-installment",
+              presentationScenario="mexico-delivery")).ok)
+    for _lbl, _bad in (("null", None), ("true", True), ("false", False), ("int", 1),
+                       ("float", 1.0), ("array", []), ("object", {}),
+                       ("empty string", ""), ("blank string", "   ")):
+        check(f"presentationScenario {_lbl} -> error (must be a supported string)",
+              any("presentationScenario" in e for e in
+                  _fin_with(lambda m, v=_bad: _add_plan(
+                      m, id="bad-sc", presentationScenario=v)).errors))
+    check("presentationScenario unknown string -> error (renderer has no card)",
+          any("not a supported scenario" in e for e in
               _fin_with(lambda m: _add_plan(
-                  m, id="mexico-in-house", kind="closed-end-installment")).errors))
-    check("Codex repro A rejected (Mexico promo kind + separatePath 'false')",
-          not _fin_with(lambda m: _add_plan(
-              m, id="mexico-in-house", kind="open-end-promotional-credit",
-              separatePath="false",
-              headline={"en": "24% APR for 24 months", "es": "24% APR por 24 meses"})).ok)
-    check("Codex repro B rejected (lease-to-own promo kind + written-out terms)",
-          not _fin_with(lambda m: _add_plan(
-              m, id="lease-to-own", kind="open-end-promotional-credit",
-              headline={"en": "Twelve monthly payments", "es": "Doce pagos mensuales"},
-              detail={"en": "Pay for twelve months.", "es": "Paga por doce meses."})).ok)
+                  m, id="unknown-sc", presentationScenario="brazil-delivery")).errors))
+    check("mexico-delivery with an incompatible kind -> error",
+          any("requires kind" in e for e in
+              _fin_with(lambda m: _add_plan(
+                  m, id="mx-badkind", kind="lease-to-own",
+                  presentationScenario="mexico-delivery")).errors))
+    check("two mexico-delivery scenarios -> cardinality error",
+          any("exactly one" in e for e in
+              _fin_with(lambda m: [
+                  _add_plan(m, id="mx-a", presentationScenario="mexico-delivery"),
+                  _add_plan(m, id="mx-b", presentationScenario="mexico-delivery")]).errors))
+    for _lbl, _v in (("true", True), ("false", False)):
+        check(f"legacy separatePath {_lbl} is retired -> error",
+              any("separatePath is retired" in e for e in
+                  _fin_with(lambda m, v=_v: m["plans"][0].__setitem__("separatePath", v)).errors))
+
+    # ---- provider contract (Commit G amend) ---------------------------------
+    for _lbl, _bad, _frag in (
+            ("empty string", "", "must not be blank"),
+            ("blank string", "   ", "must not be blank"),
+            ("untrimmed", " Synchrony ", "leading/trailing whitespace"),
+            ("number", 123, "must be a string"),
+            ("boolean", True, "must be a string"),
+            ("null", None, "must be a string"),
+            ("bilingual object", {"en": "A", "es": "A"}, "must be a string"),
+            ("array", ["A"], "must be a string"),
+    ):
+        check(f"provider {_lbl} -> error ({_frag})",
+              any("provider" in e and _frag in e for e in
+                  _fin_with(lambda m, v=_bad: m["plans"][0].__setitem__("provider", v)).errors))
+    check("provider missing on an enabled plan -> error",
+          any("provider is required" in e for e in
+              _fin_with(lambda m: m["plans"][0].pop("provider", None)).errors))
+    for _ok_prov in ("Synchrony", "constructor", "toString", "__proto__", "valueOf"):
+        check(f"provider {_ok_prov!r} is a valid identity string",
+              _fin_with(lambda m, v=_ok_prov: m["plans"][0].__setitem__("provider", v)).ok)
+
+    # ---- evergreen (incl. informational) is availability-only ---------------
+    def _informational(m, **kw):
+        base = dict(id="info-1", kind="informational", provider="Lacks",
+                    headline={"en": "Learn about credit", "es": "Conoce el credito"},
+                    detail={"en": "Ask a specialist in store.",
+                            "es": "Consulta en tienda."})
+        base.update(kw)
+        _add_plan(m, **base)
+    check("generic informational availability copy passes",
+          _fin_with(_informational).ok)
+    for _field, _val in (("apr", 19.99), ("termMonths", 36), ("minimumPurchase", 750)):
+        check(f"informational plan carrying {_field} -> error (availability only)",
+              any("availability only" in e for e in
+                  _fin_with(lambda m, f=_field, v=_val: _informational(m, **{f: v})).errors))
+    check("every evergreen kind is availability-only in one semantic set",
+          FINANCING_EVERGREEN_KINDS == {"lease-to-own", "credit-builder", "informational"})
+
+    # ---- total partition + duplicate ids (Commit G) -------------------------
+    check("every shipped-shape plan classifies into exactly one group",
+          all(_plan_group(_p) for _p in _fmut()["plans"]))
+    for _kind, _group in (("open-end-promotional-credit", "promotional"),
+                          ("closed-end-installment", "installment"),
+                          ("lease-to-own", "evergreen"),
+                          ("credit-builder", "evergreen"),
+                          ("informational", "evergreen")):
+        check(f"kind {_kind!r} maps to group {_group!r}",
+              _plan_group({"kind": _kind}) == _group)
+    check("every allowed FINANCING_PLAN_KINDS value is classified (no silent drop)",
+          all(_plan_group({"kind": _k}) for _k in FINANCING_PLAN_KINDS))
+    check("scenario overrides kind for classification",
+          _plan_group({"kind": "closed-end-installment",
+                       "presentationScenario": "mexico-delivery"}) == "scenario")
+    check("unclassifiable plan -> validation error (never silently dropped)",
+          any("matches no renderer presentation group" in e for e in
+              _fin_with(lambda m: _add_plan(m, id="ghost", kind="informational",
+                                            presentationScenario="nope")).errors))
+    check("duplicate plan ids -> error",
+          any("duplicate plan id" in e for e in
+              _fin_with(lambda m: _add_plan(m, id=m["plans"][0]["id"])).errors))
+    check("unique plan ids -> no duplicate error",
+          not any("duplicate plan id" in e for e in
+                  _fin_with(lambda m: _add_plan(m, id="unique-one")).errors))
+
+    # ---- classification drives the ungated guard; plan ids do not -----------
+    check("promotional group: only provider is ungated",
+          _ungated_plan_fields({"kind": "open-end-promotional-credit"}) == ("provider",))
+    check("installment group: headline+disclosure ungated, detail gated",
+          _ungated_plan_fields({"kind": "closed-end-installment"})
+          == ("provider", "headline", "disclosure"))
+    check("evergreen group: headline+detail+disclosure ungated",
+          _ungated_plan_fields({"kind": "lease-to-own"})
+          == ("provider", "headline", "detail", "disclosure"))
+    check("scenario group: headline+disclosure ungated, detail/example gated",
+          _ungated_plan_fields({"kind": "closed-end-installment",
+                                "presentationScenario": "mexico-delivery"})
+          == ("provider", "headline", "disclosure"))
+    check("renaming a plan id does not change its classification",
+          _plan_group({"id": "anything-at-all", "kind": "closed-end-installment"})
+          == _plan_group({"id": "lacks-in-house", "kind": "closed-end-installment"}))
+    check("an evergreen plan re-declared promotional is GATED by both layers "
+          "(the old id-driven table let it render ungated)",
+          _plan_group({"id": "lease-to-own", "kind": "open-end-promotional-credit"})
+          == "promotional"
+          and _ungated_plan_fields({"id": "lease-to-own",
+                                    "kind": "open-end-promotional-credit"}) == ("provider",))
+    check("scenario plan headline stays guarded whatever its id",
+          _ungated_rejected("headline",
+                            lambda m: _add_plan(
+                                m, id="whatever-id",
+                                presentationScenario="mexico-delivery",
+                                headline={"en": "24% APR for 24 months",
+                                          "es": "24% APR por 24 meses"})))
 
     # ---- quiz definition (structure contract) --------------------------------
     def _bl(s):

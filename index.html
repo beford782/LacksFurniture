@@ -9875,6 +9875,92 @@
       return !!(f && f.enabled === true && Array.isArray(f.plans) && f.plans.length);
     }
 
+    // ===== Financing presentation taxonomy (config-driven) =====
+    // Every plan maps to exactly ONE presentation group, decided by `kind` and
+    // the explicit `presentationScenario` field and NOTHING else — never by
+    // plan id, array position, language, provider, headline text, source URL,
+    // or the presence of exact terms. A retailer may rename every plan id
+    // without changing which card a plan lands in.
+    //
+    // tools/validation.py mirrors this partition and refuses any plan that
+    // matches zero groups, so an unhandled kind fails the build rather than
+    // silently disappearing from the sheet.
+    var FIN_SCENARIO_MEXICO = 'mexico-delivery';
+    var FIN_EVERGREEN_KINDS = ['lease-to-own', 'credit-builder', 'informational'];
+
+    // presentationScenario is an ENUM controlling scenario-specific
+    // presentation, not user-facing prose, so it is compared EXACTLY. It is
+    // deliberately NOT trimmed: normalising "  mexico-delivery  " into the
+    // valid value would make the runtime accept a plan that build validation
+    // rejects, and the two partitions must agree outside valid input too.
+    //   null  = key ABSENT (classify the plan by its kind)
+    //   ''    = key PRESENT but not a string (fail closed)
+    //   other = the exact configured string
+    function finPlanScenario(p) {
+      if (!p || !Object.prototype.hasOwnProperty.call(p, 'presentationScenario')) return null;
+      var v = p.presentationScenario;
+      return typeof v === 'string' ? v : '';
+    }
+
+    // 'promotional' | 'installment' | 'evergreen' | 'scenario-mexico' | ''
+    // ('' means unclassified: the plan renders in NO card. Build validation
+    // rejects it, so this is the fail-closed runtime posture, not a silent drop
+    // — showing scenario-specific copy in a general card would be worse.)
+    function finPlanGroup(p) {
+      if (!p) return '';
+      var scenario = finPlanScenario(p);
+      if (scenario !== null) {
+        // A PRESENT scenario decides the group outright. A blank, unknown or
+        // non-string value must never fall back to an ordinary kind card.
+        return scenario === FIN_SCENARIO_MEXICO ? 'scenario-mexico' : '';
+      }
+      if (p.kind === 'open-end-promotional-credit') return 'promotional';
+      if (p.kind === 'closed-end-installment') return 'installment';
+      if (FIN_EVERGREEN_KINDS.indexOf(p.kind) >= 0) return 'evergreen';
+      return '';
+    }
+
+    // Trimmed provider identity, or '' when it is missing, blank or not a
+    // string. Deliberately NOT String()-coerced: a number, boolean or object
+    // must never become "123 promotional financing" or
+    // "[object Object] promotional financing".
+    function finSafeProvider(p) {
+      var v = p && p.provider;
+      return typeof v === 'string' ? v.trim() : '';
+    }
+
+    // Groups the enabled plans, preserving config order within each group.
+    function finGroupedPlans(plans) {
+      var out = { promotional: [], installment: [], evergreen: [], 'scenario-mexico': [] };
+      (plans || []).forEach(function(p) {
+        var g = finPlanGroup(p);
+        if (g && out[g]) out[g].push(p);
+      });
+      return out;
+    }
+
+    // Promotional offers are grouped BY PROVIDER so a card is never titled with
+    // one lender's name while listing another's. Provider order follows first
+    // appearance in config, so rendering stays deterministic.
+    // Prototype-safe: the index is a null-prototype object and membership is
+    // tested with hasOwnProperty, so a provider literally named "constructor",
+    // "toString", "valueOf" or "__proto__" groups normally. A plain {} would
+    // report those keys as already present (they are inherited from
+    // Object.prototype), hand back an inherited Function instead of an array
+    // index, and throw on `.plans.push`.
+    function finPromotionalByProvider(promoPlans) {
+      var groups = [], index = Object.create(null);
+      (promoPlans || []).forEach(function(p) {
+        var key = finSafeProvider(p);
+        if (!Object.prototype.hasOwnProperty.call(index, key)) {
+          index[key] = groups.length;
+          groups.push({ provider: key, plans: [] });
+        }
+        groups[index[key]].plans.push(p);
+      });
+      return groups;
+    }
+
     // The Savings Pass renders only when the discount block exists, is not
     // mode:'disabled', AND financing (when enabled) explicitly declares a
     // 'stackable' policy. Never imply financing + discount stacking.
@@ -10256,46 +10342,48 @@
       closeBtn.setAttribute('aria-label', es ? 'Cerrar opciones de pago' : 'Close payment options');
 
       var plans = f.plans || [];
-      var byId = {};
-      plans.forEach(function(p) { byId[p.id] = p; });
+      var groups = finGroupedPlans(plans);
       var cards = [];
       var anyStale = false;
 
-      // Card 1 — promotional financing (exact offers, freshness-gated). The
-      // lender name comes from config plan.provider — never hardcoded.
-      var syn = plans.filter(function(p) {
-        return p.kind === 'open-end-promotional-credit' && !p.separatePath;
-      });
-      var provider = (syn[0] && syn[0].provider) || '';
-      var synBody;
-      if (fresh && syn.length && syn.every(financingPlanFresh)) {
-        synBody = syn.map(function(p) {
-          return '<div class="fin-offer">'
-            + '<h4 class="fin-offer__headline">' + finEsc(L(p.headline)) + '</h4>'
-            + '<p class="fin-offer__detail">' + finEsc(L(p.detail)) + '</p>'
-            + '<p class="fin-offer__disclosure">' + finEsc(L(p.disclosure)) + '</p>'
-            + '</div>';
-        }).join('');
-      } else {
-        // Stale/fail-closed: no exact rates or terms; generic guidance + link.
-        synBody = '<p class="fin-offer__detail">' + finEsc(FC('staleNotice')) + '</p>';
-        if (syn.length) anyStale = true;
-      }
-      if (syn.length) {
+      // Card 1 — promotional financing (exact offers, freshness-gated), one
+      // card PER PROVIDER so a card is never titled with one lender's name
+      // while listing another's. Selection is kind-driven; the lender name
+      // comes from config plan.provider — never hardcoded, never positional.
+      finPromotionalByProvider(groups.promotional).forEach(function(grp) {
+        var provider = grp.provider;
+        var synBody;
+        if (fresh && grp.plans.length && grp.plans.every(financingPlanFresh)) {
+          synBody = grp.plans.map(function(p) {
+            return '<div class="fin-offer">'
+              + '<h4 class="fin-offer__headline">' + finEsc(L(p.headline)) + '</h4>'
+              + '<p class="fin-offer__detail">' + finEsc(L(p.detail)) + '</p>'
+              + '<p class="fin-offer__disclosure">' + finEsc(L(p.disclosure)) + '</p>'
+              + '</div>';
+          }).join('');
+        } else {
+          // Stale/fail-closed: no exact rates or terms; generic guidance + link.
+          synBody = '<p class="fin-offer__detail">' + finEsc(FC('staleNotice')) + '</p>';
+          anyStale = true;
+        }
         cards.push('<article class="fin-card"><div class="fin-card__icon" aria-hidden="true">'
           + '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="2.5" y="4" width="15" height="13" rx="1.5"/><path d="M2.5 8h15M6.5 2.5v3M13.5 2.5v3"/></svg>'
           + '</div><h3 class="fin-card__title">'
-          + finEsc(es ? ('Financiamiento promocional ' + provider) : (provider + ' promotional financing'))
+          // A missing/blank/non-string provider degrades to the generic label
+          // rather than rendering " promotional financing" or a coerced value.
+          + finEsc(provider
+              ? (es ? ('Financiamiento promocional ' + provider) : (provider + ' promotional financing'))
+              : (es ? 'Financiamiento promocional' : 'Promotional financing'))
           + '</h3>' + synBody
           + (FC('prequalNote') ? '<p class="fin-offer__prequal">' + finEsc(FC('prequalNote')) + '</p>' : '')
           + '</article>');
-      }
+      });
 
-      // Card 2 — retailer in-house credit (headline/detail from config). The
-      // detail states a term range, so it is freshness-gated like the exact
-      // offers — a stale config must not keep asserting 6-36 months.
-      var ih = byId['lacks-in-house'];
-      if (ih) {
+      // Card 2 — retailer in-house credit (closed-end installment, no
+      // scenario). Headline/detail from config. The detail states a term
+      // range, so it is freshness-gated like the exact offers — a stale
+      // config must not keep asserting a month range.
+      groups.installment.forEach(function(ih) {
         var ihFresh = fresh && financingPlanFresh(ih);
         if (!ihFresh) anyStale = true;
         cards.push('<article class="fin-card"><div class="fin-card__icon" aria-hidden="true">'
@@ -10306,11 +10394,11 @@
               : '<p class="fin-offer__detail">' + finEsc(FC('staleNotice')) + '</p>')
           + (ih.disclosure ? '<p class="fin-offer__disclosure">' + finEsc(L(ih.disclosure)) + '</p>' : '')
           + '</article>');
-      }
+      });
 
-      // Card 3 — More paths (availability only, never credit terms).
-      var lto = byId['lease-to-own'], bmc = byId['build-my-credit'];
-      var more = [lto, bmc].filter(Boolean).map(function(p) {
+      // Card 3 — More paths: evergreen alternatives (lease-to-own,
+      // credit-builder, informational), availability only, never credit terms.
+      var more = groups.evergreen.map(function(p) {
         return '<div class="fin-offer"><h4 class="fin-offer__headline">' + finEsc(L(p.headline)) + '</h4>'
           + '<p class="fin-offer__detail">' + finEsc(L(p.detail)) + '</p></div>';
       }).join('');
@@ -10325,10 +10413,14 @@
           + '</p></article>');
       }
 
-      // Card 4 — Mexico delivery program. A separate, optional path shown to
-      // every customer in both languages, in fixed last position — NEVER
-      // selected, promoted, or reordered based on language.
-      var mx = byId['mexico-in-house'];
+      // Card 4 — Mexico delivery scenario, selected ONLY by the explicit
+      // presentationScenario === 'mexico-delivery' semantic (never by plan id,
+      // provider, kind, or language). A separate, optional path shown to every
+      // customer in both languages, in fixed last position — NEVER selected,
+      // promoted, or reordered based on language. The globe icon, the
+      // fin-card--mexico dashed styling and the mexicoInfoUrl resolution all
+      // attach to this scenario. Validation permits at most one such plan.
+      var mx = groups['scenario-mexico'][0];
       if (mx) {
         var mxFresh = fresh && financingPlanFresh(mx);
         if (!mxFresh) anyStale = true;
@@ -10489,7 +10581,14 @@
       var seenKinds = {};
       var chips = [];
       (f.plans || []).forEach(function(p) {
-        if (p.separatePath || seenKinds[p.kind]) return;
+        // Only the three generic groups get chips. Scenario plans (e.g. the
+        // Mexico delivery path) and unclassified plans are excluded by their
+        // GROUP — never by a plan id, and never by a raw scenario truthiness
+        // test that a malformed value could slip past.
+        var chipGroup = finPlanGroup(p);
+        if (chipGroup !== 'promotional' && chipGroup !== 'installment'
+            && chipGroup !== 'evergreen') return;
+        if (seenKinds[p.kind]) return;
         seenKinds[p.kind] = true;
         var label = p.kind === 'open-end-promotional-credit'
           ? (es ? 'Financiamiento promocional' : 'Promotional financing')

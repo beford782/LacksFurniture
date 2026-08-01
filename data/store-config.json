@@ -367,7 +367,7 @@
         "id": "mexico-in-house",
         "kind": "closed-end-installment",
         "provider": "Lacks",
-        "separatePath": true,
+        "presentationScenario": "mexico-delivery",
         "verified": true,
         "verifiedAt": "2026-07-31T16:43:00-05:00",
         "sourceUrl": "https://www.lacks.com/faq",

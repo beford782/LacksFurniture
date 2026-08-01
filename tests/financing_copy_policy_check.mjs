@@ -21,6 +21,8 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const html = readFileSync(join(root, "index.html"), "utf8");
 const cfg = JSON.parse(readFileSync(join(root, "data", "store-config.json"), "utf8"));
 const py = readFileSync(join(root, "tools", "validation.py"), "utf8");
+// Python f-strings split messages across adjacent literals; normalise before matching.
+const pyFlat = py.replace(/["']\s*\n\s*f?["']/g, "").replace(/\s+/g, " ");
 
 let passed = 0, failed = 0;
 function check(label, cond) {
@@ -46,7 +48,7 @@ const sheet = blockFrom(html, fnIdx);
 check("renderFinancingSheet() body extracted", sheet.length > 1000);
 
 // --- the promotional (gated) block ---
-const gateIdx = sheet.indexOf("if (fresh && syn.length && syn.every(financingPlanFresh))");
+const gateIdx = sheet.indexOf("if (fresh && grp.plans.length && grp.plans.every(financingPlanFresh))");
 check("promotional exact-terms gate located", gateIdx > 0);
 const gated = blockFrom(sheet, gateIdx);
 check("gated block extracted", gated.length > 100);
@@ -64,8 +66,8 @@ for (const expr of ["L(ih.headline)", "L(mx.headline)", "L(ih.disclosure)", "L(m
   check(`${expr} renders OUTSIDE the exact-terms gate (validator guards it)`,
     ungated.includes(expr) && !gated.includes(expr));
 }
-check("provider renders outside the gate (promotional card title)",
-  /var provider = \(syn\[0\] && syn\[0\]\.provider\)/.test(sheet)
+check("provider renders outside the gate, from the provider GROUP not syn[0]",
+  /var provider = grp\.provider;/.test(sheet) && !/syn\[0\]/.test(sheet)
   && ungated.includes("provider") && !gated.includes("+ provider"));
 
 // --- per-plan freshness ternaries still gate the exact details ---
@@ -76,7 +78,7 @@ check("scenario detail + representativeExample are gated by mxFresh",
   && /mxFresh\s*\?[\s\S]{0,400}L\(mx\.representativeExample\)/.test(sheet));
 
 // --- evergreen card is genuinely ungated (validator guards its detail) ---
-const moreIdx = sheet.indexOf("var lto = byId['lease-to-own']");
+const moreIdx = sheet.indexOf("var more = groups.evergreen.map(");
 check("evergreen card located", moreIdx > 0);
 const evergreen = sheet.slice(moreIdx, sheet.indexOf("// Card 4", moreIdx));
 check("evergreen headline+detail render with no freshness gate",
@@ -85,18 +87,20 @@ check("evergreen headline+detail render with no freshness gate",
 
 // --- handoff chips use non-promotional headlines ungated ---
 const chipIdx = html.indexOf("var seenKinds = {};");
-const chips = html.slice(chipIdx, chipIdx + 700);
+const chips = html.slice(chipIdx, chipIdx + 1100);
 check("handoff chips label non-promotional plans from plan.headline",
-  chips.includes("L(p.headline)") && !/fresh/i.test(chips));
+  chips.includes("L(p.headline)") && !/Fresh/.test(chips));
+check("handoff chips exclude scenario AND unclassified plans by GROUP",
+  /var chipGroup = finPlanGroup\(p\);/.test(chips)
+  && /chipGroup !== 'promotional'/.test(chips) && /chipGroup !== 'evergreen'/.test(chips));
 
 // --- validator classification agrees with the renderer's membership test ---
-check("validator's gated-plan predicate mirrors the promotional card filter",
-  /kind"\) == "open-end-promotional-credit"[\s\S]{0,120}separatePath"\) is not True/.test(py)
-  && sheet.includes("p.kind === 'open-end-promotional-credit' && !p.separatePath"));
-check("validator guards provider, non-promotional headline/disclosure, evergreen detail",
-  /fields = \["provider"\]/.test(py)
-  && /fields \+= \["headline", "disclosure"\]/.test(py)
-  && /\("lease-to-own", "credit-builder"\)[\s\S]{0,80}append\("detail"\)/.test(py));
+check("validator's gated-plan predicate is the promotional GROUP",
+  /return _plan_group\(plan\) == "promotional"/.test(py)
+  && /if \(p\.kind === 'open-end-promotional-credit'\) return 'promotional';/.test(html));
+check("validator guards provider plus each group's ungated fields",
+  /return \("provider",\) \+ _GROUP_UNGATED_FIELDS\.get\(/.test(py)
+  && /"evergreen": \("headline", "detail", "disclosure"\)/.test(py));
 
 // --- every shipped copy key really is an ungated surface ---
 const copyKeys = Object.keys(cfg.financing.copy);
@@ -114,14 +118,33 @@ const SIGNALS = [
   /\bper month\b|\ba month\b|\bmonthly payments?\b|\bequal payments?\b|\bal mes\b|\bpor mes\b|\bpagos?\s+mensual(?:es)?\b|\bmensualidades\b/i,
 ];
 const dirty = (s) => SIGNALS.some(rx => rx.test(s || ""));
+
+// ONE semantic classifier for both shipped-data scanners — mirrors
+// validation.py's _plan_group/_GROUP_UNGATED_FIELDS so a future `informational`
+// plan gets identical evergreen coverage in each of them.
+const GROUP_UNGATED = { promotional: [], installment: ["headline", "disclosure"],
+  evergreen: ["headline", "detail", "disclosure"], scenario: ["headline", "disclosure"] };
+function planGroupOf(p) {
+  if (Object.prototype.hasOwnProperty.call(p, "presentationScenario")) {
+    const v = p.presentationScenario;
+    return (typeof v === "string" && v.trim() === "mexico-delivery") ? "scenario" : "";
+  }
+  if (p.kind === "open-end-promotional-credit") return "promotional";
+  if (p.kind === "closed-end-installment") return "installment";
+  if (["lease-to-own", "credit-builder", "informational"].includes(p.kind)) return "evergreen";
+  return "";
+}
+const ungatedFieldsFor = (p) =>
+  ["provider"].concat(GROUP_UNGATED[planGroupOf(p)] || ["headline", "detail", "disclosure"]);
+check("informational plans get evergreen ungated coverage in both scanners",
+  JSON.stringify(ungatedFieldsFor({ kind: "informational" }))
+  === JSON.stringify(ungatedFieldsFor({ kind: "lease-to-own" })));
 const offenders = [];
 for (const [k, v] of Object.entries(cfg.financing.copy)) {
   for (const lang of ["en", "es"]) if (dirty(v[lang])) offenders.push(`copy.${k}.${lang}`);
 }
 for (const p of cfg.financing.plans) {
-  const gatedPlan = p.kind === "open-end-promotional-credit" && p.separatePath !== true;
-  const fields = ["provider"].concat(gatedPlan ? [] : ["headline", "disclosure"])
-    .concat(["lease-to-own", "credit-builder"].includes(p.kind) ? ["detail"] : []);
+  const fields = ungatedFieldsFor(p);
   for (const f of fields) {
     const v = p[f];
     if (typeof v === "string") { if (dirty(v)) offenders.push(`${p.id}.${f}`); }
@@ -132,92 +155,59 @@ check(`shipped ungated financing copy trips no guarded signal (offenders: ${JSON
   offenders.length === 0);
 
 // ---------------------------------------------------------------------------
-// separatePath: BEHAVIOURAL equivalence, not source similarity.
-// The REAL predicate is extracted from index.html and executed over every
-// field shape; Python's classification is modelled from its documented rule
-// (`separatePath is not True`).
-//   * {absent,false,true} is the only SCHEMA-LEGAL domain, and the predicates
-//     agree throughout it — that is the guarantee the boolean contract buys.
-//   * Some ILLEGAL values (null, "", 0) also agree, accidentally. Agreement is
-//     therefore not exclusive to the legal domain, and claiming otherwise
-//     would be false.
-//   * The truthy non-booleans ("false","true",1,1.0,[],{}) are the dangerous
-//     divergent subset.
-//   * All non-booleans are rejected by schema regardless of whether they
-//     diverge.
+// Commit G: classification is SEMANTIC. The renderer groups plans by kind +
+// presentationScenario; validation mirrors the same partition. No plan id and
+// no legacy separatePath flag participates in either layer.
 // ---------------------------------------------------------------------------
-const predSrc = (sheet.match(/plans\.filter\(function\(p\)\s*\{\s*return ([^;]+);/) || [])[1];
-check("promotional filter predicate extracted from the renderer", !!predSrc);
-const inSyn = new Function("p", `return (${predSrc});`);
+for (const legacyId of ["lacks-in-house", "lease-to-own", "build-my-credit", "mexico-in-house"]) {
+  check(`renderer no longer selects by hardcoded id '${legacyId}'`,
+    !sheet.includes(`byId['${legacyId}']`) && !html.includes(`byId['${legacyId}']`));
+}
+check("renderer has no byId lookup in the financing sheet at all",
+  !sheet.includes("byId["));
+check("renderer no longer reads the retired separatePath flag",
+  !/p\.separatePath/.test(html) && !/separatePath/.test(sheet));
+check("_RENDERER_ROLE_IDS is gone from validation.py", !/_RENDERER_ROLE_IDS/.test(py));
+check("validation.py no longer has a separatePath boolean contract",
+  !/isinstance\(plan\.get\("separatePath"\), bool\)/.test(py));
+check("validation.py retires separatePath with a named error",
+  /separatePath is retired/.test(pyFlat));
 
-// Two SEPARATE concepts, deliberately not conflated:
-//   (1) every present non-boolean is a schema error;
-//   (2) only the TRUTHY non-booleans actually diverge. null, "" and 0 agree in
-//       both languages and are rejected purely as schema violations. Claiming
-//       "any other value is truthy in the browser" would be false.
-const LEGAL = [["absent", undefined], ["false", false], ["true", true]];
-const TRUTHY_DIVERGENT = [['"false"', "false"], ['"true"', "true"], ["1", 1],
-                          ["1.0", 1.0], ["[]", []], ["{}", {}]];
-const FALSY_AGREEING = [["null", null], ['""', ""], ["0", 0]];
-const pyGated = (v) => !(v === true);        // python: `separatePath is not True`
-const jsInSyn = (v) => {
-  const p = { kind: "open-end-promotional-credit" };
-  if (v !== undefined) p.separatePath = v;
-  return inSyn(p) === true;
-};
-for (const [label, v] of LEGAL) {
-  check(`legal shape ${label}: renderer and validator agree exactly`, jsInSyn(v) === pyGated(v));
+// The two layers must share one partition.
+check("validator exposes the semantic classifier",
+  /def _plan_group\(plan: dict\) -> str:/.test(py) && /FINANCING_SCENARIOS/.test(py));
+check("renderer exposes the matching classifier",
+  /function finPlanGroup\(p\)/.test(html) && /FIN_SCENARIO_MEXICO/.test(html));
+for (const [pyLit, jsLit, label] of [
+  ["open-end-promotional-credit", "open-end-promotional-credit", "promotional kind"],
+  ["closed-end-installment", "closed-end-installment", "installment kind"],
+  ["mexico-delivery", "mexico-delivery", "mexico scenario"],
+]) {
+  check(`both layers agree on the ${label} literal`,
+    py.includes(pyLit) && html.includes(jsLit));
 }
-for (const [label, v] of TRUTHY_DIVERGENT) {
-  check(`${label} genuinely diverges (JS drops it from the promo group, Python calls it gated)`,
-    jsInSyn(v) === false && pyGated(v) === true);
-}
-for (const [label, v] of FALSY_AGREEING) {
-  check(`${label} does NOT diverge — rejected as a schema violation, not a divergence`,
-    jsInSyn(v) === true && pyGated(v) === true);
-}
-check("validation.py requires separatePath to be a JSON boolean",
-  /"separatePath" in plan and not isinstance\(plan\.get\("separatePath"\), bool\)/.test(py)
-  && /must be a JSON \s*"?\s*\n?\s*f?"?boolean/.test(py.replace(/\s+/g, " ")));
+check("both layers treat the same kinds as evergreen",
+  /FINANCING_EVERGREEN_KINDS = \{"lease-to-own", "credit-builder", "informational"\}/.test(py)
+  && /FIN_EVERGREEN_KINDS = \['lease-to-own', 'credit-builder', 'informational'\]/.test(html));
+check("validator drives the ungated field set from the group, not an id",
+  /_GROUP_UNGATED_FIELDS/.test(py)
+  && /return \("provider",\) \+ _GROUP_UNGATED_FIELDS\.get\(/.test(py));
+check("validator's gated predicate is the promotional group",
+  /return _plan_group\(plan\) == "promotional"/.test(py));
 
-// ---------------------------------------------------------------------------
-// The four hardcoded id consumers, and the validator's temporary role table.
-// ---------------------------------------------------------------------------
-const ROLE_CARDS = {
-  "lacks-in-house": ["headline", "disclosure"],
-  "lease-to-own": ["headline", "detail", "disclosure"],
-  "build-my-credit": ["headline", "detail", "disclosure"],
-  "mexico-in-house": ["headline", "disclosure"],
-};
-for (const id of Object.keys(ROLE_CARDS)) {
-  check(`renderer still fetches '${id}' by hardcoded id`, sheet.includes(`byId['${id}']`));
-  check(`validator's temporary role table covers '${id}'`, new RegExp(`"${id}":\\s*\\{`).test(py));
-}
-// Anchored to the function body, so removing the id-driven branch fails here
-// even though the string `role = ` also occurs as a substring of `_role = `.
-const ungatedFnBody = (py.match(/def _ungated_plan_fields\(plan: dict\) -> tuple:[\s\S]*?\n    return tuple\(fields\)/) || [""])[0];
-check("_ungated_plan_fields body extracted", ungatedFnBody.length > 200);
-check("validator classifies role ids by id, not by mutated kind",
-  /_RENDERER_ROLE_IDS\.get\(plan\.get\("id"\)\)/.test(ungatedFnBody)
-  && /return \("provider",\) \+ role\["ungated"\]/.test(ungatedFnBody));
-check("role ids are excluded from the gated-offer predicate",
-  /if plan\.get\("id"\) in _RENDERER_ROLE_IDS:\s*\n\s*return False/.test(py));
-check("validator pins each role id's expected kind and separatePath",
-  /hardcoded card that assumes kind/.test(py) && /assumes separatePath/.test(py));
-
-// Each role card's ungated field set must match what the renderer displays
-// outside its freshness gate.
-check("in-house card: headline+disclosure ungated, detail gated",
+// Field exposure per group (Commit F's guard, now semantically derived).
+check("in-house/scenario detail stays freshness-gated in the renderer",
+  /ihFresh\s*\?[\s\S]{0,140}L\(ih\.detail\)/.test(sheet)
+  && /mxFresh\s*\?[\s\S]{0,220}L\(mx\.detail\)/.test(sheet));
+check("in-house/scenario headline+disclosure render outside the gate",
   ungated.includes("L(ih.headline)") && ungated.includes("L(ih.disclosure)")
-  && /ihFresh\s*\?[\s\S]{0,120}L\(ih\.detail\)/.test(sheet));
-check("Mexico card: headline+disclosure ungated, detail+example gated",
-  ungated.includes("L(mx.headline)") && ungated.includes("L(mx.disclosure)")
-  && /mxFresh\s*\?[\s\S]{0,400}L\(mx\.representativeExample\)/.test(sheet));
-check("evergreen card: headline+detail ungated (no freshness variable at all)",
-  evergreen.includes("L(p.headline)") && evergreen.includes("L(p.detail)")
-  && !/fresh/i.test(evergreen));
-check("promotional card: headline+detail+disclosure all inside the gate",
-  ["L(p.headline)", "L(p.detail)", "L(p.disclosure)"].every(e => gated.includes(e)));
+  && ungated.includes("L(mx.headline)") && ungated.includes("L(mx.disclosure)"));
+check("evergreen card renders from the evergreen group with no freshness gate",
+  /var more = groups\.evergreen\.map\(/.test(sheet));
+check("scenario card is selected only by the explicit scenario",
+  /var mx = groups\['scenario-mexico'\]\[0\];/.test(sheet));
+check("provider comes from the provider GROUP, not array position",
+  !/syn\[0\]/.test(sheet) && /finPromotionalByProvider\(groups\.promotional\)/.test(sheet));
 
 // ---------------------------------------------------------------------------
 // Written-out (digit-free) exact claims must be caught by the shared signals.
@@ -294,12 +284,13 @@ check("validation.py does not claim every non-allowlisted payment noun states an
 // Python f-strings split messages across adjacent literals, so normalise the
 // concatenation before searching — otherwise a claim written as
 // `"...the only values on " f"which..."` would slip past a naive regex.
-const pyFlat = py.replace(/["']\s*\n\s*f?["']/g, "").replace(/\s+/g, " ");
-check("validation.py does not claim every illegal separatePath shape diverges",
+check("validation.py no longer carries the retired separatePath rationale",
   !/any other value is truthy in the browser/.test(pyFlat)
   && !/the only values on which/.test(pyFlat)
-  && /Others do NOT diverge/.test(py)
-  && /Some illegal shapes happen to agree too/.test(pyFlat));
+  && !/Others do NOT diverge/.test(pyFlat)
+  && /separatePath is retired/.test(pyFlat));
+check("classification is documented as semantic, not id-driven",
+  /never by\s*#?\s*plan id/.test(pyFlat) || /plan id has no effect on it/.test(pyFlat));
 // The user-facing error must not misdiagnose a default-deny rejection as a
 // proven exact claim — the payment-noun signal fires on benign wording too.
 check("_check_ungated_text does not report every rejection as a proven exact claim",
@@ -330,7 +321,7 @@ for (const [k, v] of Object.entries(cfg.financing.copy)) {
   for (const lang of ["en", "es"]) if (unitDirty(v[lang])) shippedUnitOffenders.push(`copy.${k}.${lang}`);
 }
 for (const p of cfg.financing.plans) {
-  for (const f of (ROLE_CARDS[p.id] || []).concat(["provider"])) {
+  for (const f of ungatedFieldsFor(p)) {
     const v = p[f];
     if (typeof v === "string") { if (unitDirty(v)) shippedUnitOffenders.push(`${p.id}.${f}`); }
     else if (v) for (const lang of ["en", "es"]) if (unitDirty(v[lang])) shippedUnitOffenders.push(`${p.id}.${f}.${lang}`);
