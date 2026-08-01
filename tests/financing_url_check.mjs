@@ -144,11 +144,17 @@ check("exact-terms gate still consults the URL allowlist",
 check("dead Mexico application URL unreferenced by runtime code",
   !html.includes("mexicoApplicationUrl") && !html.includes("mexican-credit-application"));
 
-// --- QR drift pin (generator source only; SVG payload unproven — manual scan pre-pilot) ---
+// --- QR: authoritative payload coverage lives in tests/qr_payload_check.py ---
+// Node does not decode the SVG, so this file deliberately makes NO claim about
+// the encoded payload. It pins only that the generator is config-driven; the
+// committed image's payload is decoded and asserted by the Python check.
 const qrGen = readFileSync(join(root, "incoming", "generate_financing_qr.py"), "utf8");
-const qrTarget = (qrGen.match(/TARGET\s*=\s*"([^"]+)"/) || [])[1];
-check("QR generator TARGET equals shipped financing.sourceUrl",
-  qrTarget === cfg.financing.sourceUrl);
+check("QR generator carries no hardcoded financing target",
+  !qrGen.includes("https://www.lacks.com/financing"));
+check("QR generator reads the target from financing.sourceUrl",
+  qrGen.includes('fin.get("sourceUrl")'));
+check("QR payload proof is owned by tests/qr_payload_check.py",
+  qrGen.includes("def decode_svg("));
 
 console.log(`\nFinancing URL check: ${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

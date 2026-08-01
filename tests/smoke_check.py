@@ -11,6 +11,7 @@ import io
 import json
 import os
 import re
+import subprocess
 import sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -164,18 +165,25 @@ def main():
 
     print("Asset invariants:")
     check("financing QR committed", os.path.isfile(os.path.join(REPO, "images", "qr-financing.svg")))
+    # The QR target is no longer a literal in the generator: it is read from
+    # data/store-config.json financing.sourceUrl. The PAYLOAD of the committed
+    # SVG is proven by tests/qr_payload_check.py, which decodes the image
+    # itself; here we assert the config-driven contract and invoke the real
+    # checker rather than re-implementing it.
     qr_gen = load_text("incoming/generate_financing_qr.py")
-    check("QR targets Lacks' official financing page",
-          'TARGET = "https://www.lacks.com/financing"' in qr_gen)
-    # Cross-file drift pin: the generator's baked-in target must equal the
-    # shipped source URL, so the printed link and the QR cannot diverge.
-    # LIMITATION: this pins the GENERATOR SOURCE, not the committed SVG's
-    # encoded payload — a manual QR scan stays a pre-pilot check, and
-    # config-driven generation is Cycle 3.
-    qr_target = re.search(r'TARGET\s*=\s*"([^"]+)"', qr_gen)
-    check("QR generator target == shipped financing.sourceUrl",
-          bool(qr_target) and qr_target.group(1) == fin.get("sourceUrl"),
-          f"{qr_target.group(1) if qr_target else None} vs {fin.get('sourceUrl')}")
+    check("QR generator carries no hardcoded financing target",
+          "https://www.lacks.com/financing" not in qr_gen)
+    check("QR generator reads financing.sourceUrl from the shipped config",
+          'fin.get("sourceUrl")' in qr_gen and "store-config.json" in qr_gen)
+    check("QR generator reuses the repository financing allowlist",
+          "validation._is_allowed_source" in qr_gen)
+    check("QR generator refuses the unverified Mexico application target",
+          "mexicoApplicationUrl" in qr_gen and "_url_identity" in qr_gen)
+    _qr = subprocess.run([sys.executable,
+                          os.path.join(REPO, "incoming", "generate_financing_qr.py"),
+                          "--check"], capture_output=True, text=True)
+    check("committed QR encodes the shipped financing.sourceUrl (real --check)",
+          _qr.returncode == 0, (_qr.stderr or _qr.stdout)[:120])
     missing_imgs = []
     for tier in ("gold", "silver", "bronze"):
         for m in mj.get(tier) or []:
