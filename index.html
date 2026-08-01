@@ -9313,8 +9313,13 @@
            before the next-step CTAs. Rendered/hidden by renderResultsFinancing();
            the hidden attribute keeps it out of the accessibility tree when the
            financing experience is disabled. -->
-      <section class="fin-module" id="resultsFinancing" hidden aria-labelledby="resultsFinancingEyebrow">
+      <section class="fin-module" id="resultsFinancing" hidden aria-labelledby="resultsFinancingHeading">
         <div class="fin-rule" aria-hidden="true"></div>
+        <!-- Real (visually hidden) heading: gives the section a navigable
+             heading and a sentence-case accessible name instead of the
+             all-caps decorative eyebrow. Populated by renderResultsFinancing()
+             from financing.copy.headline in both languages. -->
+        <h2 class="sr-only" id="resultsFinancingHeading"></h2>
         <span class="fin-eyebrow" id="resultsFinancingEyebrow"></span>
         <p class="fin-lead" id="resultsFinancingLead"></p>
         <p class="fin-fit-first" id="resultsFinancingFitFirst"></p>
@@ -9582,8 +9587,21 @@
     <section class="hf2-review-section fin-handoff" id="hf2Financing" hidden
              aria-labelledby="hf2FinancingHeadline">
       <span class="fin-eyebrow" id="hf2FinancingEyebrow"></span>
-      <h3 class="fin-handoff__headline" id="hf2FinancingHeadline"></h3>
+      <!-- h2 (was h3): the hf2 screen's outline is h1 -> this module; there
+           is no intervening h2, so h3 skipped a level. Styling is class-based
+           (.fin-handoff__headline), so the tag change is visual-neutral. -->
+      <h2 class="fin-handoff__headline" id="hf2FinancingHeadline"></h2>
       <div class="fin-handoff__interest" id="hf2FinancingInterest"></div>
+      <!-- Module-scoped announcement region for the interest controls above.
+           Populated by announceFinInterest() on handoff transitions only;
+           cleared by startOver(). Mirrors the financing sheet's status
+           region pattern (2d79731). -->
+      <div
+        class="sr-only"
+        id="hf2FinancingStatus"
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"></div>
       <div class="fin-handoff__programs" id="hf2FinancingPrograms"></div>
       <div class="fin-handoff__private">
         <img class="fin-qr" id="hf2FinancingQr" src="images/qr-financing.svg" width="132" height="132"
@@ -9946,6 +9964,11 @@
     // True when the last renderFinancingSheet() swapped any card's exact
     // terms for the generic staleNotice — drives the sheet's status region.
     var _finSheetStale = false;
+    // Queued handoff-interest work (pending focus frame + announce timer),
+    // tracked so a second transition supersedes the first and so startOver()
+    // can cancel stale queued work before the next customer's session.
+    var _finInterestFocusFrame = null;
+    var _finInterestAnnounceTimer = null;
 
     // Email body for the save packet: "You explored…" only when the customer
     // opened the sheet or marked interest; otherwise the neutral availability
@@ -9982,15 +10005,107 @@
       if (ask) ask.textContent = financingInterest === 'interested'
         ? (currentLang === 'es' ? 'Marcado para tu especialista ✓' : 'Marked for your specialist ✓')
         : FC('resultsAsk');
+      // The persistent handoff specialist button lives OUTSIDE the rebuilt
+      // interest container, so it keeps focus naturally — no restoration
+      // here. It must still announce the marked state; other placements
+      // (results/drawer/sheet) stay silent — announcing through the hidden
+      // handoff region would be wrong, and announceFinInterest()'s own
+      // visibility guard backstops that.
+      if (placement === 'handoff') announceFinInterest('interested');
     };
 
+    // Pure mapping: which control receives focus after each handoff interest
+    // transition. Choosing yes/not-now leaves the Change button as the only
+    // control; clearing (undecided) restores the two-choice prompt, whose
+    // logical first control is Yes.
+    function finInterestFocusTarget(state) {
+      return state === 'undecided' ? 'hf2FinancingInterestYes' : 'hf2FinancingInterestChange';
+    }
+
+    // The handoff financing module is a valid focus destination only while
+    // the handoff screen is active and the module itself is visible. Explicit
+    // screen-state + hidden-ancestor checks — offsetParent is unreliable for
+    // this app's overlay/`:has()`-themed layouts, so it is not used here.
+    function finHandoffVisible() {
+      var screen = document.getElementById('hf2Screen');
+      var mod = document.getElementById('hf2Financing');
+      return !!(screen && screen.classList.contains('active')
+        && mod && !mod.hidden && !mod.closest('[hidden]'));
+    }
+
+    // Announce handoff interest state in the module-scoped status region
+    // (bilingual config keys shipped dark in Commit A). Identical messages
+    // CAN repeat — the persistent specialist button re-requests 'interested'
+    // — so each announcement clears the region and repopulates it in a short
+    // deferred callback: the clear+set pair is a guaranteed DOM mutation
+    // even for repeated text. FC(key) is resolved inside the callback so a
+    // language switch landing mid-defer announces current-language text; the
+    // callback re-checks visibility so a hidden handoff is never populated.
+    function announceFinInterest(state) {
+      var region = document.getElementById('hf2FinancingStatus');
+      if (!region || !finHandoffVisible()) return;
+      var key = state === 'interested' ? 'interestMarkedAnnounce'
+        : state === 'not_now' ? 'interestNotNowAnnounce'
+        : 'interestClearedAnnounce';
+      if (_finInterestAnnounceTimer !== null) clearTimeout(_finInterestAnnounceTimer);
+      region.textContent = '';
+      _finInterestAnnounceTimer = setTimeout(function() {
+        _finInterestAnnounceTimer = null;
+        if (!finHandoffVisible()) return;
+        var el = document.getElementById('hf2FinancingStatus');
+        if (el) el.textContent = FC(key) || '';
+      }, 50);
+    }
+
+    // Cancel any queued handoff-interest work (focus frame + announcement
+    // timer). startOver() calls this FIRST in its financing reset so no
+    // stale queued work from the prior customer can run after reset.
+    function cancelFinInterestPending() {
+      if (_finInterestFocusFrame !== null) {
+        cancelAnimationFrame(_finInterestFocusFrame);
+        _finInterestFocusFrame = null;
+      }
+      if (_finInterestAnnounceTimer !== null) {
+        clearTimeout(_finInterestAnnounceTimer);
+        _finInterestAnnounceTimer = null;
+      }
+    }
+
     // Handoff interest prompt: interested / not_now / back to undecided.
+    // Focus + announcement repair lives HERE, not in renderHandoffFinancing():
+    // this wrapper only ever fires from the handoff module's own controls, so
+    // it may safely restore focus into the rebuilt module. The renderer stays
+    // focus-neutral because it is also re-run from other screens (results
+    // marking, language switch), where pulling focus into the hidden handoff
+    // screen would be wrong.
     window.setFinancingInterestChoice = function(state) {
+      // Capture BEFORE the rerender — the activated control is detached by
+      // the innerHTML swap, so origin cannot be inferred afterwards.
+      var container = document.getElementById('hf2FinancingInterest');
+      var hadFocusInside = !!(container && document.activeElement
+        && container.contains(document.activeElement));
       setFinancingInterest(state, 'handoff');
       if (state === 'interested') {
         analytics.log('financing_followup_requested', finEventBase('handoff'));
       }
       renderDrawerFinancingMark();
+      announceFinInterest(state);
+      // Restore only when the destroyed control actually held focus (keyboard
+      // or VoiceOver activation). Plain touch taps often never focus the
+      // button — forcing focus there would be a surprise, so we don't.
+      if (hadFocusInside && finHandoffVisible()) {
+        var targetId = finInterestFocusTarget(state);
+        // A second transition supersedes any still-pending restoration.
+        if (_finInterestFocusFrame !== null) cancelAnimationFrame(_finInterestFocusFrame);
+        _finInterestFocusFrame = requestAnimationFrame(function() {
+          _finInterestFocusFrame = null;
+          var el = document.getElementById(targetId);
+          if (el && el.isConnected && !el.closest('[hidden]')
+              && finHandoffVisible() && typeof el.focus === 'function') {
+            el.focus();
+          }
+        });
+      }
     };
 
     window.logFinancingLinkClick = function(placement) {
@@ -10212,6 +10327,7 @@
       if (!mod) return;
       if (!financingEnabled()) { mod.hidden = true; return; }
       mod.hidden = false;
+      document.getElementById('resultsFinancingHeading').textContent = FC('headline');
       document.getElementById('resultsFinancingEyebrow').textContent = FC('eyebrow');
       document.getElementById('resultsFinancingLead').textContent = FC('resultsLead');
       document.getElementById('resultsFinancingFitFirst').textContent = FC('fitFirst');
@@ -10263,10 +10379,12 @@
         interestEl.innerHTML = '<p class="fin-interest-prompt">' + finEsc(FC('interestPrompt')) + '</p>'
           + '<div class="fin-actions">'
           + '<button type="button" class="fin-btn fin-btn-secondary" '
+          + 'id="hf2FinancingInterestYes" '
           + 'onclick="window.setFinancingInterestChoice(\'interested\')" '
           + 'ontouchend="event.preventDefault();window.setFinancingInterestChoice(\'interested\');">'
           + finEsc(FC('interestYes')) + '</button>'
           + '<button type="button" class="fin-btn fin-btn-ghost" '
+          + 'id="hf2FinancingInterestNotNow" '
           + 'onclick="window.setFinancingInterestChoice(\'not_now\')" '
           + 'ontouchend="event.preventDefault();window.setFinancingInterestChoice(\'not_now\');">'
           + finEsc(FC('interestNotNow')) + '</button>'
@@ -10279,6 +10397,7 @@
                 : 'Customer prefers not to review payment options right now.');
         interestEl.innerHTML = '<p class="fin-interest-prompt">' + finEsc(stateLine) + '</p>'
           + '<button type="button" class="fin-btn fin-btn-ghost" '
+          + 'id="hf2FinancingInterestChange" '
           + 'onclick="window.setFinancingInterestChoice(\'undecided\')" '
           + 'ontouchend="event.preventDefault();window.setFinancingInterestChoice(\'undecided\');">'
           + finEsc(es ? 'Cambiar' : 'Change') + '</button>';
@@ -15997,9 +16116,15 @@
       // Reset financing state for the next customer: interest back to
       // undecided, sheet closed, per-session impression flag cleared. Module
       // state only — nothing financing-related persists in localStorage.
+      // Cancel queued interest work FIRST — before any rerender or screen
+      // transition below could let stale queued focus/announcement work
+      // from the prior customer run against the fresh session.
+      cancelFinInterestPending();
       financingInterest = 'undecided';
       financingExplored = false;
       _finModuleImpressionLogged = false;
+      var finInterestStatus = document.getElementById('hf2FinancingStatus');
+      if (finInterestStatus) finInterestStatus.textContent = '';
       window.closeFinancingSheet();
 
       // Reset cart
