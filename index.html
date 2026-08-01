@@ -9966,6 +9966,18 @@
     function financingTermsFresh() {
       var f = getFinancingConfig();
       if (!f || f.enabled !== true) return false;
+      // Operational authorization, checked BEFORE any evidence work: exact
+      // rate/term claims may be shown only while the retailer has explicitly
+      // accepted the obligation to keep them current (weekly re-verification
+      // + emergency takedown). Strict === true, so absent / null / false /
+      // "true" / 1 / any object all fail closed. This is ADDITIONAL to every
+      // gate below — never a substitute — and refreshing verifiedAt cannot
+      // grant it. financing.enabled governs whether Payment Choice
+      // orientation exists at all; this governs only the exact claims.
+      if (f.exactPromotionsEnabled !== true) {
+        console.warn('[financing] exactPromotionsEnabled is not true - exact terms hidden');
+        return false;
+      }
       var ts = Date.parse(f.verifiedAt);
       if (!isFinite(ts)) {
         console.warn('[financing] verifiedAt missing/unparseable - exact terms hidden');

@@ -134,8 +134,13 @@ check("Mexico falls back to sourceUrl only when NO Mexico URL is configured",
 check("Mexico never renders a blank hostname label", /if \(!mxHost\) mxLink = '';/.test(html));
 check("email payload URL fails closed to empty string",
   html.includes("url: financingSourceAllowed(f.sourceUrl) ? f.sourceUrl : ''"));
+// Structural, not distance-based: assert the call lives INSIDE the gate's own
+// body. (An earlier proximity regex went false-negative the moment unrelated
+// lines were added to the function.)
+const termsFreshBody = (html.match(/function financingTermsFresh\(\)\s*\{[\s\S]*?\n    \}/) || [""])[0];
+check("exact-terms gate body was located", termsFreshBody.length > 0);
 check("exact-terms gate still consults the URL allowlist",
-  /financingTermsFresh[\s\S]{0,900}financingSourceAllowed\(f\.sourceUrl\)/.test(html));
+  termsFreshBody.includes("financingSourceAllowed(f.sourceUrl)"));
 check("dead Mexico application URL unreferenced by runtime code",
   !html.includes("mexicoApplicationUrl") && !html.includes("mexican-credit-application"));
 

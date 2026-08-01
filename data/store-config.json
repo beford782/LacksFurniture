@@ -120,6 +120,7 @@
       "note": "Published in Lacks' FAQ but returned 404 on 2026-07-30. Do not render as a link until it resolves; the Mexico card links to mexicoInfoUrl."
     },
     "savingsPassPolicy": "specialist_confirm",
+    "exactPromotionsEnabled": false,
     "esReviewStatus": "pending-native-legal-review",
     "allowedSourceHosts": [
       "lacks.com",

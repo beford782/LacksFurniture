@@ -2,6 +2,7 @@
   "_meta": {
     "editableSource": true,
     "note": "Canonical Lacks Payment Choice financing source. Edit THIS file, then re-run build_lacks_workbook.py + tools/convert_store_data.py. All facts verified live on lacks.com in a real browser session — see docs/financing-verification-2026-07-30.md for verbatim source text and the discrepancy log. Spanish financing copy below is PENDING NATIVE/LEGAL REVIEW (esReviewStatus) but renders polished in the demo. NOTE: publishedPaymentFactor is retained HERE as source documentation but is STRIPPED from the shipped store-config by build_lacks_workbook.py (V1 ships no payment-math inputs).",
+    "operatingState": "exactPromotionsEnabled is FALSE by deliberate operating decision, not because the verified facts below are stale or malformed — they are kept accurate and structurally validated so the switch can be flipped without re-authoring. Generic Payment Choice orientation is the normal customer experience until a named owner accepts the weekly re-verification and emergency-takedown obligations. Setting it to true is an explicit reviewed configuration change; re-verification (tools/reverify_financing.py) must never flip it, and refreshing verifiedAt is not authorization.",
     "discrepancies": [
       "https://www.lacks.com/mexican-credit-application (published in Lacks' own FAQ) returned HTTP 404 on 2026-07-30 — stored below with verified:false and NOT rendered as a link; the Mexico card links to the verified FAQ instead.",
       "An older Lacks blog called a 72-month option 'no money down'; the live financing page makes no such claim — omitted."
@@ -38,6 +39,7 @@
       "note": "Published in Lacks' FAQ but returned 404 on 2026-07-30. Do not render as a link until it resolves; the Mexico card links to mexicoInfoUrl."
     },
     "savingsPassPolicy": "specialist_confirm",
+    "exactPromotionsEnabled": false,
     "esReviewStatus": "pending-native-legal-review",
     "allowedSourceHosts": [
       "lacks.com",

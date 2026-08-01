@@ -717,6 +717,25 @@ def validate_financing(config: dict, *, allowed_source_hosts=None) -> Validation
         if policy not in SAVINGS_PASS_POLICIES:
             r.add_error(f"financing.savingsPassPolicy {policy!r} must be one of "
                         f"{sorted(SAVINGS_PASS_POLICIES)}")
+        # Operational authorization for EXACT rate/term claims. Required and
+        # explicitly boolean when financing is enabled: the retailer must
+        # state the operating decision rather than leave it inferred, and the
+        # client gate is strict === true, so a string "true" or a 1 here would
+        # silently hide exact terms while reading as enabled to a human.
+        # false is valid and is the expected initial state — it means "no
+        # owner has accepted the re-verification obligation yet", NOT that the
+        # verified facts are stale (those keep their full validation below).
+        if "exactPromotionsEnabled" not in fin:
+            r.add_error(
+                "financing.exactPromotionsEnabled is required when financing is "
+                "enabled — state the operating decision explicitly (false until a "
+                "named owner accepts weekly re-verification and emergency takedown)")
+        elif not isinstance(fin.get("exactPromotionsEnabled"), bool):
+            r.add_error(
+                f"financing.exactPromotionsEnabled "
+                f"{fin.get('exactPromotionsEnabled')!r} must be a JSON boolean "
+                f"(true/false), not a string or number — the client gate is a "
+                f"strict identity test and anything else fails closed")
         discount_mode = _s((config.get("discount") or {}).get("mode"))
         if discount_mode and discount_mode != "disabled" and policy != "stackable":
             r.add_error(
@@ -739,6 +758,15 @@ def validate_financing(config: dict, *, allowed_source_hosts=None) -> Validation
                     f"maxAgeDays={mad} while exactPromotionsEnabled is true — the "
                     f"client will render the generic staleNotice; re-verify the "
                     f"source or disable exact promotions")
+
+    # When financing is DISABLED the policy field is not required (a
+    # backward-compatible disabled block need not carry it), but a present
+    # value must still be a real boolean so it cannot rot into a string that
+    # would read as authorization to a human reviewer.
+    if not enabled and "exactPromotionsEnabled" in fin \
+            and not isinstance(fin.get("exactPromotionsEnabled"), bool):
+        r.add_error(f"financing.exactPromotionsEnabled "
+                    f"{fin.get('exactPromotionsEnabled')!r} must be a JSON boolean")
 
     # Customer-reachable / future-risk URL fields: validated whenever present
     # (enabled or not) — every URL that could reach a customer must be a safe
@@ -2062,6 +2090,7 @@ def _self_test() -> int:
         "verifiedAt": "2026-07-30T10:53:32-05:00", "maxAgeDays": 7,
         "sourceUrl": "https://www.lacks.com/financing",
         "savingsPassPolicy": "specialist_confirm",
+        "exactPromotionsEnabled": False,
         "copy": {"eyebrow": {"en": "E", "es": "E"}, "headline": {"en": "H", "es": "H"}},
         "plans": [{
             "id": "syn-9-99-72", "kind": "open-end-promotional-credit",
@@ -2350,15 +2379,75 @@ def _self_test() -> int:
           any("older than maxAgeDays" in w for w in
               validate_financing(_fc(fstale_on), allowed_source_hosts=_FHOSTS).warnings))
 
-    for _label, _policy in (("absent", None), ("false", False)):
+    for _label, _policy in (("absent", "__DEL__"), ("false", False),
+                            ("malformed string", "true")):
         fstale_off = _fmut()
         fstale_off["verifiedAt"] = _OLD
         fstale_off["plans"][0]["verifiedAt"] = _OLD
-        if _policy is not None:
+        if _policy == "__DEL__":
+            del fstale_off["exactPromotionsEnabled"]
+        else:
             fstale_off["exactPromotionsEnabled"] = _policy
+        _rep_off = validate_financing(_fc(fstale_off), allowed_source_hosts=_FHOSTS)
         check(f"financing expired verifiedAt + exactPromotions {_label} -> NO warning",
-              not any("older than maxAgeDays" in w for w in
-                      validate_financing(_fc(fstale_off), allowed_source_hosts=_FHOSTS).warnings))
+              not any("older than maxAgeDays" in w for w in _rep_off.warnings))
+        if _policy != False:  # noqa: E712 — absent/malformed are also schema errors
+            check(f"financing exactPromotions {_label} -> schema error",
+                  any("exactPromotionsEnabled" in e for e in _rep_off.errors))
+
+    # ---- exactPromotionsEnabled field-shape matrix (Commit E) ---------------
+    check("financing exactPromotionsEnabled false (shipped initial state) -> ok",
+          validate_financing(_fc(_fmut()), allowed_source_hosts=_FHOSTS).ok)
+
+    ftrue = _fmut(); ftrue["exactPromotionsEnabled"] = True
+    ftrue["verifiedAt"] = _iso(-60); ftrue["plans"][0]["verifiedAt"] = _iso(-60)
+    check("financing exactPromotionsEnabled true + fresh evidence -> ok",
+          validate_financing(_fc(ftrue), allowed_source_hosts=_FHOSTS).ok)
+
+    fmissing = _fmut(); del fmissing["exactPromotionsEnabled"]
+    check("financing exactPromotionsEnabled missing while enabled -> error",
+          any("exactPromotionsEnabled is required" in e for e in
+              validate_financing(_fc(fmissing), allowed_source_hosts=_FHOSTS).errors))
+
+    for _label, _bad in (("null", None), ("string 'true'", "true"),
+                         ("string 'false'", "false"), ("int 1", 1), ("int 0", 0),
+                         ("float", 1.0), ("empty string", ""),
+                         ("object", {"enabled": True}), ("array", [True])):
+        fshape = _fmut(); fshape["exactPromotionsEnabled"] = _bad
+        check(f"financing exactPromotionsEnabled {_label} -> error",
+              any("exactPromotionsEnabled" in e for e in
+                  validate_financing(_fc(fshape), allowed_source_hosts=_FHOSTS).errors))
+
+    fdis_ok = _fmut(); fdis_ok["enabled"] = False
+    del fdis_ok["verifiedAt"]; del fdis_ok["exactPromotionsEnabled"]
+    check("financing disabled without the policy field -> ok (not required)",
+          validate_financing(_fc(fdis_ok), allowed_source_hosts=_FHOSTS).ok)
+
+    fdis_bad = _fmut(); fdis_bad["enabled"] = False
+    del fdis_bad["verifiedAt"]; fdis_bad["exactPromotionsEnabled"] = "true"
+    check("financing disabled with a non-boolean policy field -> error",
+          any("exactPromotionsEnabled" in e for e in
+              validate_financing(_fc(fdis_bad), allowed_source_hosts=_FHOSTS).errors))
+
+    # Exact plan data keeps its full validation while the switch is false —
+    # the source must not be allowed to rot structurally just because
+    # presentation is disabled.
+    for _label, _mutate, _expect in (
+            ("unverified exact plan", lambda d: d["plans"][0].__setitem__("verified", False), "verified"),
+            ("missing plan disclosure", lambda d: d["plans"][0].pop("disclosure"), "disclosure"),
+            ("non-allowlisted plan source",
+             lambda d: d["plans"][0].__setitem__("sourceUrl", "https://evil.example.com/x"), "allowlisted"),
+            ("payment calculation enabled",
+             lambda d: d["plans"][0].__setitem__("paymentCalculationEnabled", True), "paymentCalculationEnabled"),
+            ("future plan stamp",
+             lambda d: d["plans"][0].__setitem__("verifiedAt", _iso(3600)), "future"),
+    ):
+        frot = _fmut()          # exactPromotionsEnabled is False here
+        _mutate(frot)
+        check(f"financing exact-plan validation still applies while policy is false "
+              f"({_label})",
+              any(_expect in e for e in
+                  validate_financing(_fc(frot), allowed_source_hosts=_FHOSTS).errors))
 
     ffut_on = _fmut()
     ffut_on["verifiedAt"] = _iso(3600)

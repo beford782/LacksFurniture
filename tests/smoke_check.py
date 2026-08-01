@@ -97,6 +97,25 @@ def main():
     check("shipped financing envelope deep-equals incoming (factor-stripped)",
           fin == src_fin)
 
+    # Operating state: exact rate/term claims are OFF until a named owner
+    # accepts weekly re-verification + emergency takedown. false here is a
+    # deliberate policy decision, not a symptom of stale evidence — the
+    # verified facts above keep their full validation either way.
+    check("canonical source carries exactPromotionsEnabled: false",
+          src_fin.get("exactPromotionsEnabled") is False,
+          repr(src_fin.get("exactPromotionsEnabled")))
+    check("shipped config carries exactPromotionsEnabled: false",
+          fin.get("exactPromotionsEnabled") is False,
+          repr(fin.get("exactPromotionsEnabled")))
+    check("policy field survives the pipeline as a real JSON boolean",
+          isinstance(fin.get("exactPromotionsEnabled"), bool))
+    check("runtime gate tests the policy with strict !== true",
+          "f.exactPromotionsEnabled !== true" in html)
+    check("exactly one runtime property read of the policy (no scattered copies)",
+          html.count(".exactPromotionsEnabled") == 1)
+    check("runtime never assigns or defaults the policy",
+          not re.search(r"exactPromotionsEnabled\s*=[^=]", html))
+
     print("Quiz config invariants:")
     quiz = load_json("data/quiz.json")
     src_quiz = load_json("incoming/dreamfinder_quiz.json")["quiz"]
