@@ -3466,6 +3466,17 @@ def _self_test() -> int:
             return True
         return False
 
+    def _hl_msg(fn):
+        """The HeadlineError text a call produces ('' when it does not raise)."""
+        try:
+            fn()
+        except _FH.HeadlineError as exc:
+            return str(exc)
+        return ""
+
+    def _hl_len(fn):
+        return len(_hl_msg(fn))
+
     # Template pins — these ARE the customer-visible strings.
     check("generated headline: the shipped 9.99 / 72 promotion",
           _FH.promotional_headline(9.99, 72)
@@ -3667,6 +3678,43 @@ def _self_test() -> int:
           _hl_raises(lambda: _FH.format_rate(_Hostile())))
     check("apr_in_domain survives an object whose __repr__ raises",
           _FH.apr_in_domain(_Hostile()) is False)
+    # WRAPPED errors must be bounded too. headline_for_plan() and
+    # insert_generated_headline() add an author-supplied id (and, for the
+    # authored-headline refusal, the rejected headline itself) to a message
+    # that is already bounded — and both used a bare !r, so a 100,000-character
+    # id produced a 100,059-character diagnostic. The claim that "every
+    # rejection site routes through short_repr" was true of the raising sites
+    # and false of the wrapping ones.
+    _LONG_ID = "x" * 100000
+    _BOUND = 400
+    check("headline_for_plan bounds a huge plan id in its wrapped error",
+          _hl_len(lambda: _FH.headline_for_plan(
+              {"id": _LONG_ID, "apr": None, "termMonths": 72})) < _BOUND)
+    check("insert_generated_headline bounds a huge plan id",
+          _hl_len(lambda: _FH.insert_generated_headline(
+              {"id": _LONG_ID, "kind": _FH.PROMOTIONAL_KIND, "apr": 0,
+               "termMonths": 48, "headline": {"en": "a", "es": "b"}})) < _BOUND)
+    check("insert_generated_headline bounds a huge authored headline",
+          _hl_len(lambda: _FH.insert_generated_headline(
+              {"id": "p", "kind": _FH.PROMOTIONAL_KIND, "apr": 0,
+               "termMonths": 48,
+               "headline": {"en": "y" * 100000, "es": "z"}})) < _BOUND)
+    check("wrapped errors survive a huge INTEGER id (int->str digit limit)",
+          _hl_len(lambda: _FH.headline_for_plan(
+              {"id": 10 ** 100000, "apr": None, "termMonths": 72})) < _BOUND)
+    check("a bounded wrapped error still names the plan and the cause",
+          all(s in _hl_msg(lambda: _FH.headline_for_plan(
+              {"id": "syn-9-99-72", "apr": None, "termMonths": 72}))
+              for s in ("syn-9-99-72", "apr is required")))
+    # Structural pin, so a NEW raise cannot reintroduce the same class: no
+    # author-supplied value may be interpolated with a bare !r anywhere in the
+    # helper. (`value!r` on an already-screened float is fine and is excluded
+    # by name; `plan.get(...)!r` never is.)
+    _FH_SRC = open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                "financing_headline.py"), encoding="utf-8").read()
+    check("no bare !r on a plan-supplied value remains in financing_headline",
+          not re.search(r"\{plan\.get\([^)]*\)!r\}", _FH_SRC))
+
     check("short_repr leaves ordinary values fully readable",
           _FH.short_repr(9.99) == "9.99" and _FH.short_repr(72) == "72"
           and _FH.short_repr(None) == "None")

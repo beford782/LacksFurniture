@@ -327,7 +327,11 @@ def headline_for_plan(plan) -> dict:
     try:
         return promotional_headline(plan.get("apr"), plan.get("termMonths"))
     except HeadlineError as exc:
-        raise HeadlineError(f"plan {plan.get('id')!r}: {exc}") from exc
+        # short_repr, not bare !r: the plan id is author-supplied and a long
+        # one would otherwise BECOME the diagnostic. The inner message is
+        # already bounded — every raise in this module goes through
+        # short_repr — so wrapping only has to bound the id it adds.
+        raise HeadlineError(f"plan {short_repr(plan.get('id'))}: {exc}") from exc
 
 
 def insert_generated_headline(plan) -> dict:
@@ -342,9 +346,12 @@ def insert_generated_headline(plan) -> dict:
     Raises HeadlineError if the plan already carries an authored headline —
     authored prose must never override or sit beside the generated value."""
     if "headline" in plan:
+        # Both interpolations are author-supplied and both go through
+        # short_repr: the id and the rejected headline are each capable of
+        # being megabytes of JSON, and a refusal must stay readable.
         raise HeadlineError(
-            f"plan {plan.get('id')!r} is a promotional plan and carries a "
-            f"hand-authored headline {plan.get('headline')!r}. Promotional "
+            f"plan {short_repr(plan.get('id'))} is a promotional plan and carries a "
+            f"hand-authored headline {short_repr(plan.get('headline'), 120)}. Promotional "
             f"headlines are GENERATED from apr/termMonths — delete the authored "
             f"headline from the canonical source. (Non-promotional plans keep "
             f"their authored headlines.)")
