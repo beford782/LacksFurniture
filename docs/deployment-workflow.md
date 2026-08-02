@@ -23,6 +23,24 @@ pushed to `main`. GitHub Pages checks such as `build` and `deploy` occur after
 the merge; they verify deployment and are not substitutes for the pre-merge
 CI requirement.
 
+## One-time workstation migration
+
+The legacy `git ship` alias is stored in each user's global Git configuration,
+not in this repository. Remove it on every existing development machine:
+
+```powershell
+git config --global --unset-all alias.ship
+```
+
+Verify that it is gone; this command should print nothing:
+
+```powershell
+git config --global --get-all alias.ship
+```
+
+The repository hook blocks the alias today, but removing the global command
+eliminates the obsolete force-push footgun instead of relying on that fallback.
+
 ## Start a change
 
 ```powershell

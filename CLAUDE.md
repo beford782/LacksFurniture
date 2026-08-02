@@ -183,7 +183,8 @@ once:
 git config core.hooksPath tools/hooks
 ```
 Without this, the hook files exist but never fire. Current hooks:
-- `pre-push` — refuses any non-fast-forward push to `main` (stale-local-main guard).
+- `pre-push` — refuses every direct push to `main`; push a feature branch and
+  merge it through a pull request (see `docs/deployment-workflow.md`).
 - `pre-commit` — when a mattress CSV is staged, re-runs `build-data.ps1` and
   refuses the commit if `data/mattresses.json` is out of sync. Enforces the
   "never commit CSV without regenerated JSON" rule above. Escape hatch:
