@@ -35,6 +35,7 @@ from typing import Dict, List, Optional, Tuple
 # Shared schema lives alongside this file in tools/.
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import workbook_schema as schema  # noqa: E402
+import financing_headline as fin_headline  # noqa: E402
 
 
 SUPPORTED_LANGUAGES = (["en"], ["en", "es"])
@@ -1145,6 +1146,53 @@ def validate_financing(config: dict, *, allowed_source_hosts=None) -> Validation
                         f"product-level payment math is not approved")
         if not _bilingual_ok(plan.get("headline")):
             r.add_error(f"{tag}: headline missing EN or ES")
+        # PROMOTIONAL HEADLINES ARE DERIVED, NOT AUTHORED.
+        # apr and termMonths are authoritative; tools/financing_headline.py owns
+        # the single EN/ES template that restates them, and the workbook builder
+        # generates the shipped string from it. So what shipped must equal what
+        # those fields produce — string for string, both languages.
+        #
+        # Bilingual PRESENCE was the only rule before, and presence is not
+        # agreement: a hand-edited "4.99% APR for 12 months" shipped happily over
+        # apr=9.99 / termMonths=72. Nor is numeric coincidence enough — prose that
+        # merely mentions 9.99 and 72 ("Ask about 9.99 and 72.") is still not the
+        # approved sentence, so the test is exact equality rather than a
+        # substring or number-extraction match.
+        #
+        # Non-promotional plans are untouched here: their headlines are authored
+        # orientation/scenario language and keep the bilingual + ungated-language
+        # rules above (which is what stops a rate appearing in THEIR titles).
+        if _plan_group(plan) == "promotional":
+            try:
+                want_headline = fin_headline.headline_for_plan(plan)
+            except fin_headline.HeadlineError as exc:
+                r.add_error(
+                    f"{tag}: promotional plan cannot generate its headline — {exc}. "
+                    f"apr and termMonths are the authoritative source of the "
+                    f"customer-visible headline, so both must be present and "
+                    f"valid on a promotional plan")
+            else:
+                got_headline = plan.get("headline")
+                if isinstance(got_headline, dict):
+                    for lang in fin_headline.LANGS:
+                        if got_headline.get(lang) != want_headline[lang]:
+                            r.add_error(
+                                f"{tag}: headline.{lang} "
+                                f"{fin_headline.short_repr(got_headline.get(lang), 80)} "
+                                f"does not equal the value generated from apr="
+                                f"{fin_headline.short_repr(plan.get('apr'))} / termMonths="
+                                f"{fin_headline.short_repr(plan.get('termMonths'))}, which is "
+                                f"{want_headline[lang]!r}. Promotional headlines are "
+                                f"generated at build time — edit apr/termMonths in the "
+                                f"canonical source and rebuild; never hand-edit the "
+                                f"shipped prose")
+                    extra_langs = sorted(set(got_headline) - set(fin_headline.LANGS))
+                    if extra_langs:
+                        r.add_error(
+                            f"{tag}: headline carries unexpected keys {extra_langs} — a "
+                            f"generated promotional headline has exactly "
+                            f"{list(fin_headline.LANGS)}, so these were hand-added")
+                # a non-dict headline is already reported by the bilingual check
         # Plan strings that reach a customer outside the exact-terms gate must
         # stay within reviewed generic orientation language. Applies in every
         # operating state: turning exactPromotionsEnabled on cannot make an
@@ -1190,12 +1238,24 @@ def validate_financing(config: dict, *, allowed_source_hosts=None) -> Validation
                             f"(detail) in EN and ES")
             if not _bilingual_ok(plan.get("disclosure")):
                 r.add_error(f"{tag}: exact terms require a disclosure in EN and ES")
+        # Supported numeric range. The bounds and the type rules live in
+        # tools/financing_headline.py (APR_MIN/APR_MAX, TERM_MIN/TERM_MAX and
+        # the two domain predicates) so the range this validator accepts and
+        # the range the headline generator will format are one authority
+        # rather than two copies that can drift. The predicates are TOTAL:
+        # they answer for any object, including a JSON integer too large to
+        # become a C double, which previously escaped this function as an
+        # uncaught OverflowError before either check could run.
         apr = plan.get("apr")
-        if apr is not None and (not isinstance(apr, (int, float)) or apr < 0 or apr > 100):
-            r.add_error(f"{tag}: apr {apr!r} out of range")
+        if apr is not None and not fin_headline.apr_in_domain(apr):
+            r.add_error(f"{tag}: apr {fin_headline.short_repr(apr)} out of range "
+                        f"({fin_headline.APR_MIN}-{fin_headline.APR_MAX} inclusive, "
+                        f"finite, not a boolean)")
         tm = plan.get("termMonths")
-        if tm is not None and (not isinstance(tm, int) or not 1 <= tm <= 120):
-            r.add_error(f"{tag}: termMonths {tm!r} out of range")
+        if tm is not None and not fin_headline.term_in_domain(tm):
+            r.add_error(f"{tag}: termMonths {fin_headline.short_repr(tm)} out of range "
+                        f"(whole months {fin_headline.TERM_MIN}-"
+                        f"{fin_headline.TERM_MAX} inclusive)")
         mp = plan.get("minimumPurchase")
         if mp is not None and (not isinstance(mp, (int, float)) or mp < 0):
             r.add_error(f"{tag}: minimumPurchase {mp!r} out of range")
@@ -2456,7 +2516,12 @@ def _self_test() -> int:
             "sourceUrl": "https://www.lacks.com/financing",
             "apr": 9.99, "termMonths": 72, "minimumPurchase": 500,
             "paymentCalculationEnabled": False,
-            "headline": {"en": "H", "es": "H"},
+            # Promotional headlines are generated from apr/termMonths, so the
+            # fixture carries the LITERAL generated strings rather than calling
+            # the generator: a template change has to break these cases loudly
+            # instead of moving in lockstep with them.
+            "headline": {"en": "9.99% APR for 72 months",
+                         "es": "9.99% APR por 72 meses"},
             "detail": {"en": "D", "es": "D"},
             "disclosure": {"en": "X", "es": "X"},
         }],
@@ -2964,6 +3029,382 @@ def _self_test() -> int:
                       "es": "Hasta 24 meses con un maximo de 24% APR."},
               representativeExample={"en": "$999 for 24 months equals 24 payments of $52.82.",
                                      "es": "$999 por 24 meses son 24 pagos de $52.82."})).ok)
+
+    # ---- generated promotional headlines (Commit I) -------------------------
+    # apr/termMonths are AUTHORITATIVE; the promotional headline is derived from
+    # them by tools/financing_headline.py and pinned here by exact equality.
+    # Before this rule, bilingual presence was the only headline check and a
+    # hand-edited "4.99% APR for 12 months" shipped unchallenged over apr=9.99 /
+    # termMonths=72 — customer-visible prose contradicting the verified facts.
+    _FH = fin_headline
+
+    def _hl_raises(fn):
+        try:
+            fn()
+        except _FH.HeadlineError:
+            return True
+        return False
+
+    # Template pins — these ARE the customer-visible strings.
+    check("generated headline: the shipped 9.99 / 72 promotion",
+          _FH.promotional_headline(9.99, 72)
+          == {"en": "9.99% APR for 72 months", "es": "9.99% APR por 72 meses"})
+    check("generated headline: the shipped 0 / 48 promotion",
+          _FH.promotional_headline(0, 48)
+          == {"en": "0% APR for 48 months", "es": "0% APR por 48 meses"})
+    check("generated headline: termMonths 1 is singular in BOTH languages",
+          _FH.promotional_headline(0, 1)
+          == {"en": "0% APR for 1 month", "es": "0% APR por 1 mes"})
+    check("generated headline: termMonths 2 is plural in both languages",
+          _FH.promotional_headline(0, 2)
+          == {"en": "0% APR for 2 months", "es": "0% APR por 2 meses"})
+    check("generated headline: 'APR' stays 'APR' in Spanish (shipped terminology)",
+          "APR" in _FH.promotional_headline(9.99, 72)["es"])
+    check("generated headline: rate and term only — never minimum or provider",
+          all(x not in _FH.promotional_headline(9.99, 72)["en"]
+              for x in ("$", "500", "Synchrony", "minimum")))
+    # Formatting policy: print exactly what JSON carried, invent no precision.
+    for _val, _want in ((0, "0"), (0.0, "0"), (9.99, "9.99"), (12.5, "12.5"),
+                        (24, "24"), (48.0, "48"), (1.005, "1.005"), (100, "100")):
+        check(f"APR formatting pinned: {_val!r} -> {_want!r}",
+              _FH.format_rate(_val) == _want)
+    for _lbl, _bad in (("missing", None), ("boolean True", True),
+                       ("boolean False", False), ("string", "9.99"),
+                       ("NaN", float("nan")), ("+inf", float("inf")),
+                       ("-inf", float("-inf")), ("negative", -1), ("object", {})):
+        check(f"APR {_lbl} rejected by the generator",
+              _hl_raises(lambda v=_bad: _FH.format_rate(v)))
+    for _lbl, _bad in (("missing", None), ("boolean", True), ("float 48.0", 48.0),
+                       ("string '72'", "72"), ("zero", 0), ("negative", -6)):
+        check(f"termMonths {_lbl} rejected by the generator",
+              _hl_raises(lambda v=_bad: _FH.format_term(v)))
+
+    # The predicate the BUILDER generates by and the group the VALIDATOR gates
+    # on must name the same set of plans, or a plan could end up generated but
+    # ungated (or gated but authored). Pinned across every kind/scenario shape,
+    # including the malformed ones validation separately rejects.
+    for _kind in sorted(FINANCING_PLAN_KINDS):
+        for _sc in ("<absent>", "mexico-delivery", "not-a-scenario", "", "   ",
+                    1, None, True, []):
+            _pp = {"kind": _kind}
+            if _sc != "<absent>":
+                _pp["presentationScenario"] = _sc
+            check(f"generation predicate == _plan_group promotional "
+                  f"({_kind}, scenario={_sc!r})",
+                  _FH.is_promotional_presentation(_pp)
+                  == (_plan_group(_pp) == "promotional"))
+
+    # Builder-side contract: authored prose may never override or coexist with
+    # the generated value, and placement is deterministic so the shipped
+    # artifact stays diff-clean.
+    check("insert_generated_headline REFUSES an authored promotional headline",
+          _hl_raises(lambda: _FH.insert_generated_headline(
+              {"id": "p", "kind": _FH.PROMOTIONAL_KIND, "apr": 0, "termMonths": 48,
+               "headline": {"en": "x", "es": "y"}})))
+    check("insert_generated_headline places the headline immediately before detail",
+          list(_FH.insert_generated_headline(
+              {"id": "p", "kind": _FH.PROMOTIONAL_KIND, "apr": 0, "termMonths": 48,
+               "detail": {"en": "d", "es": "d"},
+               "disclosure": {"en": "x", "es": "x"}}))
+          == ["id", "kind", "apr", "termMonths", "headline", "detail", "disclosure"])
+    _apply_src = {"plans": [
+        {"id": "promo", "kind": _FH.PROMOTIONAL_KIND, "apr": 0, "termMonths": 48,
+         "detail": {"en": "d", "es": "d"}},
+        {"id": "inh", "kind": "closed-end-installment",
+         "headline": {"en": "In-House", "es": "Interno"}},
+        {"id": "mx", "kind": "closed-end-installment",
+         "presentationScenario": "mexico-delivery", "apr": 24, "termMonths": 24,
+         "headline": {"en": "Delivery to Mexico?", "es": "Entrega en Mexico?"}},
+    ]}
+    _FH.apply_to_financing(_apply_src)
+    check("apply_to_financing generates for the promotional plan ONLY",
+          _apply_src["plans"][0]["headline"] == {"en": "0% APR for 48 months",
+                                                 "es": "0% APR por 48 meses"}
+          and _apply_src["plans"][1]["headline"] == {"en": "In-House", "es": "Interno"}
+          and _apply_src["plans"][2]["headline"] == {"en": "Delivery to Mexico?",
+                                                     "es": "Entrega en Mexico?"})
+
+    # Validator side: what shipped must equal what the fields generate.
+    check("shipped-shape promotional plan passes the generated-headline rule",
+          _fin_with(lambda m: None).ok)
+    _HL_DRIFT = "does not equal the value generated"
+    for _lbl, _drift in (
+            ("wrong rate", {"en": "4.99% APR for 72 months",
+                            "es": "4.99% APR por 72 meses"}),
+            ("wrong term", {"en": "9.99% APR for 60 months",
+                            "es": "9.99% APR por 60 meses"}),
+            ("right numbers, different sentence", {"en": "Ask about 9.99 and 72.",
+                                                   "es": "Pregunta por 9.99 y 72."}),
+            ("EN drifted, ES correct", {"en": "9.99% APR for 12 months",
+                                        "es": "9.99% APR por 72 meses"}),
+            ("ES drifted, EN correct", {"en": "9.99% APR for 72 months",
+                                        "es": "9.99% APR por 12 meses"}),
+            ("trailing whitespace", {"en": "9.99% APR for 72 months ",
+                                     "es": "9.99% APR por 72 meses"}),
+            ("invented trailing zero", {"en": "9.990% APR for 72 months",
+                                        "es": "9.990% APR por 72 meses"}),
+            ("APR translated in ES", {"en": "9.99% APR for 72 months",
+                                      "es": "9.99% TAE por 72 meses"}),
+            ("minimum smuggled in", {"en": "9.99% APR for 72 months on $500+",
+                                     "es": "9.99% APR por 72 meses desde $500"}),
+    ):
+        check(f"drifted promotional headline rejected: {_lbl}",
+              any(_HL_DRIFT in e for e in _fin_with(
+                  lambda m, h=_drift: m["plans"][0].__setitem__("headline", h)).errors))
+    # NON-VACUITY: the rejection above comes from the NEW equality rule, not
+    # from the pre-existing bilingual-presence rule (which these all satisfy).
+    check("a bilingual-but-drifted headline is not caught by the bilingual rule",
+          not any("headline missing EN or ES" in e for e in _fin_with(
+              lambda m: m["plans"][0].__setitem__(
+                  "headline", {"en": "4.99% APR for 12 months",
+                               "es": "4.99% APR por 12 meses"})).errors))
+    check("changing apr WITHOUT regenerating the headline -> error",
+          any(_HL_DRIFT in e for e in
+              _fin_with(lambda m: m["plans"][0].__setitem__("apr", 4.99)).errors))
+    check("changing termMonths WITHOUT regenerating the headline -> error",
+          any(_HL_DRIFT in e for e in
+              _fin_with(lambda m: m["plans"][0].__setitem__("termMonths", 36)).errors))
+    check("the error names both languages independently",
+          all(any(f"headline.{_lang}" in e for e in _fin_with(
+              lambda m: m["plans"][0].__setitem__(
+                  "headline", {"en": "wrong one", "es": "otro"})).errors)
+              for _lang in ("en", "es")))
+    check("hand-added extra language key on a promotional headline -> error",
+          any("unexpected keys" in e for e in _fin_with(
+              lambda m: m["plans"][0]["headline"].__setitem__("fr", "x")).errors))
+    _HL_NOGEN = "cannot generate its headline"
+    for _missing in ("apr", "termMonths"):
+        check(f"promotional plan missing {_missing} -> error",
+              any(_HL_NOGEN in e for e in
+                  _fin_with(lambda m, k=_missing: m["plans"][0].pop(k)).errors))
+    for _lbl, _bad in (("boolean apr", True), ("string apr", "9.99"),
+                       ("null apr", None), ("non-finite apr", float("inf"))):
+        check(f"promotional plan with {_lbl} -> error",
+              any(_HL_NOGEN in e for e in
+                  _fin_with(lambda m, v=_bad: m["plans"][0].__setitem__("apr", v)).errors))
+    for _lbl, _bad in (("boolean termMonths", True), ("float termMonths", 72.0),
+                       ("null termMonths", None)):
+        check(f"promotional plan with {_lbl} -> error",
+              any(_HL_NOGEN in e for e in _fin_with(
+                  lambda m, v=_bad: m["plans"][0].__setitem__("termMonths", v)).errors))
+    # A boolean apr used to slip past the range check entirely (bool is a
+    # subclass of int, and True is neither < 0 nor > 100). Both layers reject
+    # it now that the range check IS the helper's domain predicate.
+    check("boolean apr is rejected by the generation rule",
+          any(_HL_NOGEN in e for e in
+              _fin_with(lambda m: m["plans"][0].__setitem__("apr", True)).errors))
+    check("boolean apr is ALSO rejected by the range check (former gap closed)",
+          any("out of range" in e for e in
+              _fin_with(lambda m: m["plans"][0].__setitem__("apr", True)).errors))
+
+    # ---- numeric domain is TOTAL and single-authority (Commit I amend) ------
+    # A JSON integer can be arbitrarily large. math.isfinite(10**400) and
+    # float(10**400) BOTH raise OverflowError, so asking either of an int let an
+    # uncaught OverflowError escape validate_financing: no ValidationReport, no
+    # named error, and the builder's HeadlineError -> SystemExit contract
+    # bypassed with a raw traceback. The helper now answers for every object
+    # JSON can supply, and every rejection is a HeadlineError.
+    _HUGE = 10 ** 400
+    check("apr_in_domain is TOTAL: huge positive integer -> False, no raise",
+          _FH.apr_in_domain(_HUGE) is False)
+    check("apr_in_domain is TOTAL: huge negative integer -> False, no raise",
+          _FH.apr_in_domain(-_HUGE) is False)
+    check("term_in_domain is TOTAL: huge integer -> False, no raise",
+          _FH.term_in_domain(_HUGE) is False)
+    for _lbl, _v in (("huge positive int", _HUGE), ("huge negative int", -_HUGE)):
+        check(f"format_rate({_lbl}) raises HeadlineError, not OverflowError",
+              _hl_raises(lambda v=_v: _FH.format_rate(v)))
+    check("format_term(huge int) raises HeadlineError, not OverflowError",
+          _hl_raises(lambda: _FH.format_term(_HUGE)))
+    check("a rejected 400-digit APR does not BECOME the error message",
+          len(_FH.short_repr(_HUGE)) < 80)
+    # short_repr sits INSIDE the rejection path, so it must be total too.
+    # repr(10**100000) raises ValueError under CPython's int->str digit limit
+    # (sys.get_int_max_str_digits), which would have escaped format_rate as a
+    # non-HeadlineError from within the code that formats the refusal.
+    _VAST = 10 ** 100000
+    check("short_repr describes a vast integer instead of rendering it",
+          _FH.short_repr(_VAST) == f"<{_VAST.bit_length()}-bit integer>")
+    check("format_rate(10**100000) raises HeadlineError, not ValueError",
+          _hl_raises(lambda: _FH.format_rate(_VAST)))
+    check("format_term(10**100000) raises HeadlineError, not ValueError",
+          _hl_raises(lambda: _FH.format_term(_VAST)))
+    check("apr_in_domain(10**100000) answers without raising",
+          _FH.apr_in_domain(_VAST) is False)
+
+    class _Hostile:
+        def __repr__(self):
+            raise RuntimeError("repr exploded")
+
+    class _HostileFloat(float):
+        def __repr__(self):
+            raise RuntimeError("repr exploded")
+
+    check("short_repr survives an object whose __repr__ raises",
+          _FH.short_repr(_Hostile()) == "<unprintable _Hostile>")
+    check("format_rate survives an object whose __repr__ raises",
+          _hl_raises(lambda: _FH.format_rate(_Hostile())))
+    check("apr_in_domain survives an object whose __repr__ raises",
+          _FH.apr_in_domain(_Hostile()) is False)
+    check("short_repr leaves ordinary values fully readable",
+          _FH.short_repr(9.99) == "9.99" and _FH.short_repr(72) == "72"
+          and _FH.short_repr(None) == "None")
+
+    check("format_rate survives a value whose __repr__ raises, at EVERY "
+          "rejection site (the refusal text must not be what crashes)",
+          all(_hl_raises(lambda v=_v: _FH.format_rate(v))
+              for _v in (_Hostile(), _HostileFloat("nan"), _HostileFloat(1e-05))))
+
+    # Subclasses of int/float are refused OUTRIGHT rather than trusted, because
+    # a subclass can lie about its own value: __float__ can return inf from an
+    # instance that passes a finiteness test ("inf% APR for 48 months"), __int__
+    # can format a different number than the one range-checked, and __ge__ /
+    # __repr__ can raise from inside the check or inside the refusal. json.loads
+    # never produces one, so refusing them costs nothing and removes the whole
+    # class. Every case below WOULD have been a wrong answer or a leaked
+    # exception under isinstance-based typing.
+    class _LyingFloat(float):
+        def __float__(self):
+            return float("inf")
+
+    class _LyingInt(int):
+        def __int__(self):
+            return 999
+
+    class _BadCmpInt(int):
+        def __ge__(self, other):
+            raise RuntimeError("__ge__ exploded")
+
+    class _HostileBitLength(int):
+        def bit_length(self):
+            raise RuntimeError("bit_length exploded")
+
+    for _lbl, _v in (("float subclass lying via __float__", _LyingFloat(9.99)),
+                     ("int subclass lying via __int__", _LyingInt(9)),
+                     ("int subclass with exploding __ge__", _BadCmpInt(50)),
+                     ("int subclass with exploding bit_length",
+                      _HostileBitLength(10 ** 400))):
+        check(f"apr_in_domain refuses a {_lbl} without raising",
+              _FH.apr_in_domain(_v) is False)
+        check(f"format_rate refuses a {_lbl} with HeadlineError",
+              _hl_raises(lambda v=_v: _FH.format_rate(v)))
+    for _lbl, _v in (("int subclass lying via __int__", _LyingInt(48)),
+                     ("int subclass with exploding __ge__", _BadCmpInt(72))):
+        check(f"term_in_domain refuses a {_lbl} without raising",
+              _FH.term_in_domain(_v) is False)
+        check(f"format_term refuses a {_lbl} with HeadlineError",
+              _hl_raises(lambda v=_v: _FH.format_term(v)))
+    check("no subclass can reach the templates: a lying float never prints 'inf'",
+          _hl_raises(lambda: _FH.promotional_headline(_LyingFloat(9.99), 48)))
+    check("exact ints and floats are still accepted (the shipped shapes)",
+          _FH.format_rate(9.99) == "9.99" and _FH.format_rate(0) == "0"
+          and _FH.format_term(72) == "72")
+
+    # Boundaries, inclusive on both ends.
+    for _v in (0, 0.0, 100, 100.0, 9.99, 24, 0.01):
+        check(f"APR {_v!r} is in domain", _FH.apr_in_domain(_v))
+    for _v in (-1, -0.001, 101, 100.001, _HUGE, -_HUGE, True, False, None,
+               "9.99", float("nan"), float("inf"), float("-inf"), [], {}):
+        check(f"APR {_FH.short_repr(_v)} is OUT of domain",
+              not _FH.apr_in_domain(_v))
+    check("APR boundary 0 formats", _FH.format_rate(0) == "0")
+    check("APR boundary 100 formats", _FH.format_rate(100) == "100")
+    for _v in (1, 2, 72, 120):
+        check(f"termMonths {_v} is in domain", _FH.term_in_domain(_v))
+    for _v in (0, -1, 121, _HUGE, -_HUGE, True, False, None, 48.0, "72", [], {}):
+        check(f"termMonths {_FH.short_repr(_v)} is OUT of domain",
+              not _FH.term_in_domain(_v))
+    check("termMonths boundary 1 formats singular",
+          _FH.promotional_headline(0, 1) == {"en": "0% APR for 1 month",
+                                             "es": "0% APR por 1 mes"})
+    check("termMonths boundary 120 formats plural",
+          _FH.promotional_headline(0, 120) == {"en": "0% APR for 120 months",
+                                               "es": "0% APR por 120 meses"})
+
+    # DOMAIN and PRESENTATION stay separate concerns: 1e-05 is a legitimate APR
+    # this repository declines to PRINT, so it fails generation, not range.
+    check("exponent-form fractional APR still refused by the formatter",
+          _hl_raises(lambda: _FH.format_rate(1e-05)))
+    check("1e-05 is in domain (it is a real rate, merely unpresentable)",
+          _FH.apr_in_domain(1e-05))
+    check("in-domain-but-unpresentable APR -> generation error, NOT range error",
+          any(_HL_NOGEN in e for e in _fin_with(
+              lambda m: m["plans"][0].__setitem__("apr", 1e-05)).errors)
+          and not any("out of range" in e for e in _fin_with(
+              lambda m: m["plans"][0].__setitem__("apr", 1e-05)).errors))
+
+    # validate_financing must RETURN a verdict for the value that used to
+    # crash it — that is the whole fail-closed guarantee.
+    _huge_rep = _fin_with(lambda m: m["plans"][0].__setitem__("apr", _HUGE))
+    check("validate_financing RETURNS a report for a huge integer apr",
+          isinstance(_huge_rep, ValidationReport))
+    check("that report names the generation failure",
+          any(_HL_NOGEN in e for e in _huge_rep.errors))
+    check("that report ALSO names the range violation",
+          any("out of range" in e for e in _huge_rep.errors))
+    check("no error text embeds the 400-digit value",
+          all(len(e) < 400 for e in _huge_rep.errors))
+
+    # ONE authority for the range: validate_financing's check IS the helper's
+    # domain predicate, so the accepted range and the formattable range cannot
+    # drift. Proven by verdict-for-verdict agreement, not by reading the code.
+    check("the bounds live in the helper (APR)",
+          (fin_headline.APR_MIN, fin_headline.APR_MAX) == (0, 100))
+    check("the bounds live in the helper (term)",
+          (fin_headline.TERM_MIN, fin_headline.TERM_MAX) == (1, 120))
+    # The predicate must name the FIELD. "out of range" alone is shared
+    # verbatim by minimumPurchase's error, so a bare substring test would let
+    # another field's rejection stand in for the one under test.
+    def _ranged(rep, field):
+        return any("out of range" in e and f"{field} " in e for e in rep.errors)
+
+    check("the field-specific predicate does not accept a sibling's error",
+          not _ranged(_fin_with(lambda m: m["plans"][0].__setitem__(
+              "minimumPurchase", -1)), "apr")
+          and _ranged(_fin_with(lambda m: m["plans"][0].__setitem__(
+              "minimumPurchase", -1)), "minimumPurchase"))
+    for _v in (0, 100, 9.99, 24, -1, 101, _HUGE, -_HUGE, True, False,
+               float("nan"), float("inf"), "9.99", None):
+        _rep = _fin_with(lambda m, x=_v: m["plans"][0].__setitem__("apr", x))
+        check(f"validator range verdict == helper domain, apr {_FH.short_repr(_v)}",
+              _ranged(_rep, "apr")
+              == (_v is not None and not _FH.apr_in_domain(_v)))
+    for _v in (1, 120, 72, 0, 121, _HUGE, -_HUGE, True, 48.0, "72", None):
+        _rep = _fin_with(lambda m, x=_v: m["plans"][0].__setitem__("termMonths", x))
+        check(f"validator range verdict == helper domain, termMonths "
+              f"{_FH.short_repr(_v)}",
+              _ranged(_rep, "termMonths")
+              == (_v is not None and not _FH.term_in_domain(_v)))
+
+    # Fields that must NOT influence the headline.
+    check("minimumPurchase changes do not affect the generated headline",
+          _fin_with(lambda m: m["plans"][0].__setitem__("minimumPurchase", 999)).ok)
+    check("provider changes do not affect the generated headline",
+          _fin_with(lambda m: m["plans"][0].__setitem__("provider", "Another Bank")).ok)
+
+    # Authored headlines elsewhere are untouched by the rule.
+    check("non-promotional (installment) headline stays authored",
+          _fin_with(lambda m: _add_plan(m, id="inhouse-ok")).ok)
+    check("evergreen headline stays authored",
+          _fin_with(lambda m: _add_plan(m, id="lto3", kind="lease-to-own",
+                                        headline={"en": "Lease-to-own",
+                                                  "es": "Arrendamiento"})).ok)
+    check("scenario plan carrying apr/termMonths KEEPS its authored headline",
+          _fin_with(lambda m: _add_plan(
+              m, id="mx3", presentationScenario="mexico-delivery", apr=24, termMonths=24,
+              headline={"en": "Purchasing for delivery to Mexico?",
+                        "es": "¿Compras para entrega en México?"},
+              detail={"en": "Up to 24 months at a maximum 24% APR.",
+                      "es": "Hasta 24 meses con un maximo de 24% APR."})).ok)
+    check("a scenario plan is NOT required to match the generated template",
+          not any(_HL_DRIFT in e or _HL_NOGEN in e for e in _fin_with(
+              lambda m: _add_plan(
+                  m, id="mx4", presentationScenario="mexico-delivery",
+                  apr=24, termMonths=24,
+                  headline={"en": "Purchasing for delivery to Mexico?",
+                            "es": "¿Compras para entrega en México?"},
+                  detail={"en": "Up to 24 months at a maximum 24% APR.",
+                          "es": "Hasta 24 meses con un maximo de 24% APR."})).errors))
 
     # Disabled financing keeps the light-validation convention
     fdis_copy = _fmut(); fdis_copy["enabled"] = False

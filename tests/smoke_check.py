@@ -15,6 +15,8 @@ import subprocess
 import sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(REPO, "tools"))
+import financing_headline as fin_headline  # noqa: E402
 
 passed = failed = 0
 
@@ -91,19 +93,63 @@ def main():
           not any(b in json.dumps(fin).lower() for b in banned))
 
     # Source-of-truth sync: the shipped financing envelope must equal the
-    # canonical incoming source modulo the deliberately stripped payment
-    # factor (the only transform build_lacks_workbook.py applies). Catches
+    # canonical incoming source after EXACTLY the two transforms
+    # build_lacks_workbook.py applies, and nothing else:
+    #   1. publishedPaymentFactor is stripped (V1 ships no payment-math inputs);
+    #   2. promotional headlines are GENERATED from apr/termMonths.
+    # Both are reproduced here from the same code the builder runs, so this
+    # stays a real deep equality — no field is deleted from both sides to make
+    # it pass, and no subset comparison is substituted for it. Catches
     # stamp-then-forget-to-rebuild divergence: tools/reverify_financing.py
     # writes incoming/ only, so a stale data/store-config.json would
     # otherwise deploy silently.
     src_fin = json.loads(json.dumps(load_json("incoming/lacks_financing.json")["financing"]))
     for p in src_fin.get("plans", []):
         p.pop("publishedPaymentFactor", None)
+    fin_headline.apply_to_financing(src_fin)
     check("shipped verifiedAt matches incoming source (rebuild after stamping)",
           fin.get("verifiedAt") == src_fin.get("verifiedAt"),
           f"shipped {fin.get('verifiedAt')!r} vs incoming {src_fin.get('verifiedAt')!r}")
-    check("shipped financing envelope deep-equals incoming (factor-stripped)",
+    check("shipped financing envelope deep-equals incoming "
+          "(factor-stripped + headlines generated)",
           fin == src_fin)
+
+    # Generated promotional headlines. apr/termMonths are authoritative; the
+    # customer-visible prose is derived from them by tools/financing_headline.py
+    # at build time. Three distinct obligations, asserted separately so a
+    # failure names which one broke.
+    canon_plans = load_json("incoming/lacks_financing.json")["financing"]["plans"]
+    promo_canon = [p for p in canon_plans
+                   if fin_headline.is_promotional_presentation(p)]
+    promo_ship = [p for p in plans if fin_headline.is_promotional_presentation(p)]
+    check("2 promotional plans, identified semantically (kind + no scenario)",
+          len(promo_canon) == 2 and len(promo_ship) == 2,
+          f"canonical {len(promo_canon)}, shipped {len(promo_ship)}")
+    check("canonical source authors NO promotional headline (build-input contract)",
+          all("headline" not in p for p in promo_canon),
+          str([p.get("id") for p in promo_canon if "headline" in p]))
+    check("every shipped promotional headline equals the value generated from "
+          "its own apr/termMonths",
+          all(p.get("headline") == fin_headline.headline_for_plan(p)
+              for p in promo_ship))
+    # Byte-exact pin of the approved customer-visible output. Generation was a
+    # provenance change, not a copy change: these two strings shipped before it
+    # and must ship identically after.
+    check("shipped promotional headlines are exactly the approved strings",
+          [p.get("headline") for p in promo_ship] == [
+              {"en": "9.99% APR for 72 months", "es": "9.99% APR por 72 meses"},
+              {"en": "0% APR for 48 months", "es": "0% APR por 48 meses"}])
+    # The other four headlines are deliberately AUTHORED orientation/scenario
+    # language and must keep coming from the canonical source by hand.
+    check("every non-promotional plan keeps an authored canonical headline",
+          all("headline" in p for p in canon_plans
+              if not fin_headline.is_promotional_presentation(p)))
+    check("Mexico scenario headline stays authored, rate-free and unchanged "
+          "(it carries apr/termMonths but is NOT generated)",
+          (mex or {}).get("headline") == {
+              "en": "Purchasing for delivery to Mexico?",
+              "es": "¿Compras para entrega en México?"}
+          and mex.get("apr") == 24 and mex.get("termMonths") == 24)
 
     # Operating state: exact rate/term claims are OFF until a named owner
     # accepts weekly re-verification + emergency takedown. false here is a
