@@ -204,16 +204,44 @@ console.log("The per-feature cap caps:");
     }));
 }
 
-// --- 4. Golden pins on the shipped catalogue --------------------------------
-// A silent retune (weights, cap, penalty) changes these numbers.
+// --- 4. GOLDEN PINS: fixed expected winners, scores and qualified counts ----
+// An earlier version of this section asserted only that a winner existed and
+// that the qualified set was non-empty and no larger than the catalogue —
+// which is true of almost any scoring function, and pinned nothing. These are
+// real pins: the exact top-5 (id, score) ordering, the winning score, and the
+// size of the ">= 60% of top" qualified set, captured from the shipped
+// catalogue and quiz.
+//
+// They are INTENTIONALLY brittle. CLAUDE.md requires Blake's sign-off before
+// scoring weights or logic change, and the golden bundle already pins
+// data/mattresses.json, so a diff here means either a deliberate retune or an
+// unreviewed one — both worth stopping for. Regenerate only alongside an
+// approved scoring or catalogue change, never to make a red build green.
+const GOLDEN = {
+  "side sleeper, hot, back pain": {
+    top5: [["s6", 80], ["s7", 78], ["g7", 75], ["s3", 75], ["s9", 75]], qualified: 19
+  },
+  "solo, firm, no issues": {
+    top5: [["b6", 80], ["s10", 80], ["s2", 80], ["g8", 79], ["g1", 71]], qualified: 15
+  },
+  "plus body, plush, reflux": {
+    top5: [["g2", 77], ["g6", 77], ["s3", 72], ["s7", 72], ["b1", 68]], qualified: 11
+  }
+};
 console.log("Golden pins on the shipped catalogue:");
 for (const [name, answers] of Object.entries(ANSWER_SETS)) {
   const { scores } = engine(answers, "en", "undecided", false);
+  // Ranking is id-tiebroken so the pin is deterministic across engines.
   const ranked = Object.entries(scores).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
-  const top = ranked[0];
-  const qualified = ranked.filter(([, v]) => v >= top[1] * 0.6);
-  check(`${name}: deterministic winner and a stable qualified set`,
-    top[1] > 0 && qualified.length > 0 && qualified.length <= ranked.length);
+  const want = GOLDEN[name];
+  check(`${name}: top-5 ids and scores match the pin`,
+    JSON.stringify(ranked.slice(0, 5)) === JSON.stringify(want.top5),
+    `got ${JSON.stringify(ranked.slice(0, 5))}`);
+  check(`${name}: winning score is exactly ${want.top5[0][1]}`,
+    ranked[0][1] === want.top5[0][1], `got ${ranked[0][1]}`);
+  const qualified = ranked.filter(([, v]) => v >= ranked[0][1] * 0.6);
+  check(`${name}: qualified set (>=60% of top) is exactly ${want.qualified}`,
+    qualified.length === want.qualified, `got ${qualified.length}`);
   // EN and ES must rank identically — language must not reorder results.
   const es = engine(answers, "es", "undecided", false).scores;
   check(`${name}: EN and ES produce identical scores`,
