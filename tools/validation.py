@@ -527,6 +527,70 @@ def _is_allowed_source(url: str, allowed_hosts) -> bool:
     return any(host == h or host.endswith("." + h) for h in hosts)
 
 
+def _runtime_financing_host_allowed(url, declared_hosts) -> bool:
+    """EXACT mirror of index.html's financingSourceAllowed() (index.html:9981).
+
+    The build and the browser police financing URLs against DIFFERENT lists:
+    the build uses tools/source_hosts.json financingSourceHosts, the browser
+    uses the shipped financing.allowedSourceHosts. A URL the build accepts is
+    therefore not automatically one the browser will render, and when the
+    browser refuses it the failure is SILENT — the anchor loses its href, the
+    QR continuation and email URL disappear, and financingTermsFresh() goes
+    false so exact terms stay hidden even when they are authorized. Nothing
+    reports it. validate_financing uses this mirror to demand that the two
+    boundaries agree before the bundle can ship.
+
+    Deliberately reproduces the JS semantics rather than improving on them,
+    because agreement is the property under test:
+      * entries are lowercased but NOT trimmed (JS: String(x).toLowerCase()),
+        so a padded "  lacks.com  " really does fail in the browser and must
+        be reported here rather than silently tolerated;
+      * a non-default port is refused, and an EXPLICIT :443 is accepted —
+        the JS reads `if (u.port) return false`, and the URL parser normalises
+        the default port away, so `u.port` is '' for both "absent" and
+        ":443". python's urlsplit does NOT normalise, so mirroring the JS
+        means comparing against 443 rather than testing truthiness;
+      * matching is exact host or dot-boundary suffix;
+      * there is NO web.archive.org branch in the browser — see
+        _is_allowed_source, which has one for PROMOTIONS EVIDENCE URLs. An
+        archive capture is a legitimate evidence source and an illegitimate
+        customer destination, and validate_financing enforces that split."""
+    from urllib.parse import urlsplit
+    hosts = declared_hosts if isinstance(declared_hosts, list) else []
+    if not url or not hosts:
+        return False
+    try:
+        parts = urlsplit(_safe_str(url))
+        if parts.scheme != "https" or not parts.hostname:
+            return False
+        if parts.username or parts.password:
+            return False
+        if parts.port is not None and parts.port != 443:
+            return False
+    except ValueError:
+        return False
+    host = parts.hostname.lower()
+    for entry in hosts:
+        if not isinstance(entry, str):
+            continue
+        x = entry.lower()                   # NO .strip() — mirrors the JS
+        if host == x or host[-(len(x) + 1):] == "." + x:
+            return True
+    return False
+
+
+def _is_archive_capture(url) -> bool:
+    """True for a web.archive.org capture URL. Legitimate as promotions
+    EVIDENCE (see _is_allowed_source), never as a customer destination: the
+    browser's financingSourceAllowed() has no archive branch, so such a URL
+    would validate at build time and render as nothing."""
+    parts = _split_safe_https(url)
+    if parts is None:
+        return False
+    host = (parts.hostname or "").lower()
+    return host == "web.archive.org" or host.endswith(".web.archive.org")
+
+
 def _valid_ends_at(s: str) -> bool:
     """A promotion `endsAt` must be an ISO-8601 datetime carrying an explicit
     timezone offset, so it is an absolute instant the client can compare without
@@ -1241,8 +1305,15 @@ def validate_financing(config: dict, *, allowed_source_hosts=None) -> Validation
                                 f"target {fin_headline.short_repr(mxa.get('url'))} — that URL is not verified "
                                 f"available and must never become customer-visible")
 
-    # allowedSourceHosts inside the block (used by the client freshness gate)
-    # must not widen the build-time allowlist.
+    # financing.allowedSourceHosts is the BROWSER's allowlist. It must not
+    # widen the build-time list (below), and — new — it must be SUFFICIENT:
+    # every customer-reachable URL this validator accepts has to survive the
+    # browser's own predicate too. Checking only for widening let an absent,
+    # empty, padded or wrong-subset list pass the build while the runtime
+    # refused every financing URL, hiding the links, the QR continuation, the
+    # email URL and (via financingTermsFresh) the exact terms — with no error
+    # anywhere. A build that ships a silently dead surface is worse than one
+    # that refuses to build.
     declared = fin.get("allowedSourceHosts")
     if declared is not None:
         if not isinstance(declared, list):
@@ -1256,11 +1327,73 @@ def validate_financing(config: dict, *, allowed_source_hosts=None) -> Validation
                                 f"host string, got {_type_name(h)} "
                                 f"({fin_headline.short_repr(h)})")
                     continue
+                if not h.strip():
+                    r.add_error(f"financing.allowedSourceHosts[{_hi}] is blank — "
+                                f"a blank entry matches no host and is never useful")
+                    continue
+                # The browser lowercases entries but does NOT trim them, so a
+                # padded entry silently matches nothing there. Store it trimmed.
+                if h != h.strip():
+                    r.add_error(
+                        f"financing.allowedSourceHosts[{_hi}] "
+                        f"{fin_headline.short_repr(h)} has leading/trailing "
+                        f"whitespace — index.html's financingSourceAllowed() "
+                        f"lowercases entries but does not trim them, so this "
+                        f"entry matches nothing in the browser; store it trimmed")
                 hs = h.strip().lower()
                 if hosts and hs not in [_s(x).lower() for x in hosts]:
                     r.add_error(f"financing.allowedSourceHosts entry "
                                 f"{fin_headline.short_repr(h)} is not in "
                                 f"tools/source_hosts.json financingSourceHosts")
+
+    if enabled:
+        if declared is None:
+            r.add_error(
+                "financing.allowedSourceHosts is required when financing is "
+                "enabled — it is the allowlist the BROWSER uses, and without it "
+                "index.html's financingSourceAllowed() refuses every URL, "
+                "silently hiding the financing links, the QR continuation, the "
+                "email URL and the exact terms")
+        elif isinstance(declared, list) and not declared:
+            r.add_error(
+                "financing.allowedSourceHosts is empty — the browser allows no "
+                "host at all, so every customer-reachable financing URL is "
+                "silently refused at runtime")
+        # RUNTIME PARITY. Every customer-reachable financing URL that this
+        # validator accepts must also pass the browser's predicate against the
+        # SHIPPED allowlist. applicationUrl is included even though nothing
+        # renders it today: it is validated here as customer-reachable, so it
+        # must work the moment it is wired up.
+        _reachable = [("financing.sourceUrl", fin.get("sourceUrl")),
+                      ("financing.applicationUrl", fin.get("applicationUrl")),
+                      ("financing.mexicoInfoUrl", fin.get("mexicoInfoUrl"))]
+        for _i, _plan in enumerate(plan_list):
+            if isinstance(_plan, dict) and _plan.get("sourceUrl") is not None:
+                _reachable.append((f"{_plan_tag(_plan, _i)}.sourceUrl",
+                                   _plan.get("sourceUrl")))
+        for _label, _url in _reachable:
+            if _url is None or _blank(_url):
+                continue
+            if _is_archive_capture(_url):
+                r.add_error(
+                    f"{_label} {fin_headline.short_repr(_url)} is a "
+                    f"web.archive.org capture. Archive captures are valid "
+                    f"promotions EVIDENCE but never customer destinations: "
+                    f"index.html's financingSourceAllowed() has no archive "
+                    f"branch, so this URL passes the build and renders as "
+                    f"nothing. Point the customer-facing field at the live page")
+                continue
+            if not _is_allowed_source(_url, hosts):
+                continue        # already reported by that field's own rule
+            if not _runtime_financing_host_allowed(_url, declared):
+                r.add_error(
+                    f"{_label} {fin_headline.short_repr(_url)} passes build "
+                    f"validation but is REFUSED by index.html's "
+                    f"financingSourceAllowed() against the shipped "
+                    f"financing.allowedSourceHosts "
+                    f"{fin_headline.short_repr(declared)} — the browser would "
+                    f"silently drop this link. Add its host to "
+                    f"financing.allowedSourceHosts")
 
     if enabled and not (isinstance(plans_raw, list) and plans_raw):
         r.add_error("financing.plans must be a non-empty list when enabled")
@@ -2722,6 +2855,10 @@ def _self_test() -> int:
         "sourceUrl": "https://www.lacks.com/financing",
         "savingsPassPolicy": "specialist_confirm",
         "exactPromotionsEnabled": False,
+        # The BROWSER's allowlist. Required (and required to be sufficient for
+        # every customer-reachable URL) whenever financing is enabled, so the
+        # baseline fixture carries it exactly as a shipped config must.
+        "allowedSourceHosts": ["lacks.com", "www.lacks.com"],
         "copy": {"eyebrow": {"en": "E", "es": "E"}, "headline": {"en": "H", "es": "H"}},
         "plans": [{
             "id": "syn-9-99-72", "kind": "open-end-promotional-credit",
@@ -3243,6 +3380,76 @@ def _self_test() -> int:
                       "es": "Hasta 24 meses con un maximo de 24% APR."},
               representativeExample={"en": "$999 for 24 months equals 24 payments of $52.82.",
                                      "es": "$999 por 24 meses son 24 pagos de $52.82."})).ok)
+
+    # ---- allowedSourceHosts must be SUFFICIENT, not merely non-widening ----
+    # The build and the browser police financing URLs against different lists.
+    # Checking only for widening let an absent/empty/padded/wrong-subset list
+    # ship a bundle whose every financing link, QR continuation, email URL and
+    # exact-terms gate was dead at runtime, with no error anywhere.
+    _PARITY = "financingSourceAllowed"
+
+    def _ash(value, drop=False):
+        def mutate(m):
+            if drop:
+                m.pop("allowedSourceHosts", None)
+            else:
+                m["allowedSourceHosts"] = value
+        return mutate
+
+    check("allowedSourceHosts MISSING while enabled -> error",
+          any("allowedSourceHosts is required" in e
+              for e in _fin_with(_ash(None, drop=True)).errors))
+    check("allowedSourceHosts EMPTY while enabled -> error",
+          any("allowedSourceHosts is empty" in e
+              for e in _fin_with(_ash([])).errors))
+    check("allowedSourceHosts PADDED entry -> error (browser does not trim)",
+          any("does not trim" in e
+              for e in _fin_with(_ash(["  www.lacks.com  "])).errors))
+    check("allowedSourceHosts BLANK entry -> error",
+          any("is blank" in e for e in _fin_with(_ash(["www.lacks.com", "   "])).errors))
+    check("allowedSourceHosts WRONG SUBSET -> runtime-parity error",
+          any(_PARITY in e for e in _fin_with(_ash(["synchrony.com"])).errors))
+    check("wrong subset names the field the browser would drop",
+          any(_PARITY in e and "financing.sourceUrl" in e
+              for e in _fin_with(_ash(["synchrony.com"])).errors))
+    check("sufficient allowlist -> no parity error",
+          not any(_PARITY in e
+                  for e in _fin_with(_ash(["lacks.com", "www.lacks.com"])).errors))
+    check("apex-only allowlist still covers the www subdomain (dot-boundary)",
+          not any(_PARITY in e for e in _fin_with(_ash(["lacks.com"])).errors))
+    # Archive captures: legitimate promotions EVIDENCE, never a customer link.
+    _ARCHIVE = "https://web.archive.org/web/20260525/https://www.lacks.com/financing"
+    check("archive capture as customer-reachable sourceUrl -> error",
+          any("web.archive.org capture" in e for e in
+              _fin_with(lambda m: m.__setitem__("sourceUrl", _ARCHIVE)).errors))
+    check("archive capture as a PLAN sourceUrl -> error",
+          any("web.archive.org capture" in e for e in
+              _fin_with(lambda m: m["plans"][0].__setitem__("sourceUrl", _ARCHIVE)).errors))
+    check("archive capture stays valid for PROMOTIONS evidence (unchanged)",
+          _is_allowed_source(_ARCHIVE, _FHOSTS))
+    check("the runtime mirror rejects an archive capture (no archive branch)",
+          not _runtime_financing_host_allowed(_ARCHIVE, ["lacks.com", "www.lacks.com"]))
+    # The mirror must agree with the JS on the cases that actually differ.
+    check("runtime mirror: explicit :443 accepted (URL normalises it away)",
+          _runtime_financing_host_allowed("https://www.lacks.com:443/x", ["www.lacks.com"]))
+    check("runtime mirror: non-default port refused",
+          not _runtime_financing_host_allowed("https://www.lacks.com:8443/x", ["www.lacks.com"]))
+    check("runtime mirror: padded entry matches nothing (as in the browser)",
+          not _runtime_financing_host_allowed("https://www.lacks.com/x", ["  www.lacks.com  "]))
+    check("runtime mirror: dot-boundary suffix, not bare suffix",
+          _runtime_financing_host_allowed("https://www.lacks.com/x", ["lacks.com"])
+          and not _runtime_financing_host_allowed("https://evil-lacks.com/x", ["lacks.com"]))
+    check("runtime mirror: http refused",
+          not _runtime_financing_host_allowed("http://www.lacks.com/x", ["www.lacks.com"]))
+    check("runtime mirror: credentials refused",
+          not _runtime_financing_host_allowed("https://u:p@www.lacks.com/x", ["www.lacks.com"]))
+    check("runtime mirror is total over JSON shapes",
+          all(_runtime_financing_host_allowed(u, h) in (True, False)
+              for u in (None, "", 7, [], {}, "x", "https://www.lacks.com/x")
+              for h in (None, [], "x", 7, {}, ["www.lacks.com"], [None, 7])))
+    check("allowedSourceHosts not required when financing is DISABLED",
+          validate_financing(_fc(dict(_fmut(), enabled=False)),
+                             allowed_source_hosts=_FHOSTS).ok)
 
     # ---- generated promotional headlines (Commit I) -------------------------
     # apr/termMonths are AUTHORITATIVE; the promotional headline is derived from

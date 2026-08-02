@@ -10203,6 +10203,26 @@
       }, 50);
     }
 
+    // Drop the handoff interest announcement without announcing anything.
+    // The region keeps whatever was last announced, so after a language switch
+    // it held the PREVIOUS language's sentence — an EN sentence sitting in an
+    // ES interface until the next state change. Emptying an aria-live region
+    // is a removal, not an addition, so assistive technology queues no
+    // utterance for it: the stale text goes away silently, which is exactly
+    // what a language switch should do. Any queued announcement is cancelled
+    // first, so an utterance composed in the old language cannot land after
+    // the switch. Deliberately NOT applied to #financingSheetStatus: that
+    // region is re-announced in the new language on purpose by
+    // updateFinancingSheetStatus() when the sheet is open.
+    function clearFinInterestAnnouncement() {
+      if (_finInterestAnnounceTimer !== null) {
+        clearTimeout(_finInterestAnnounceTimer);
+        _finInterestAnnounceTimer = null;
+      }
+      var region = document.getElementById('hf2FinancingStatus');
+      if (region) region.textContent = '';
+    }
+
     // Cancel any queued handoff-interest work (focus frame + announcement
     // timer). startOver() calls this FIRST in its financing reset so no
     // stale queued work from the prior customer can run after reset.
@@ -10751,7 +10771,11 @@
       }
       // Financing (Payment Choice) surfaces carry config-driven bilingual copy
       // — refresh whichever are visible, including the open sheet, so EN/ES
-      // switching updates financing text and accessible labels.
+      // switching updates financing text and accessible labels. The handoff
+      // interest announcement is dropped first: it is the one financing string
+      // no renderer rewrites, so it would otherwise sit in the previous
+      // language. Clearing announces nothing (see clearFinInterestAnnouncement).
+      clearFinInterestAnnouncement();
       renderAllFinancingSurfaces();
       // The guided Sleep System and shared review are rendered dynamically,
       // so refresh their copy without resetting any selected products or trial state.

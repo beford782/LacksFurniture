@@ -221,6 +221,105 @@ check("results sr-only h2 present and unique",
 check("renderResultsFinancing populates the heading from FC('headline')",
   /resultsFinancingHeading'\)\.textContent = FC\('headline'\)/.test(html));
 
+// --- language-switch residue: BEHAVIOURAL, not a grep -----------------------
+// The handoff status region is the one financing string no renderer rewrites,
+// so after a language switch it used to hold the PREVIOUS language's sentence.
+// This executes the real announceFinInterest() and clearFinInterestAnnouncement()
+// against a stub DOM and asserts the residue is gone — and, just as important,
+// that clearing does not itself queue an announcement.
+{
+  const grab = (re, name) => {
+    const m = html.match(re);
+    check(`${name} extracted for behavioural test`, !!m);
+    return m ? m[0] : "";
+  };
+  const srcAnnounce = grab(
+    /function announceFinInterest\(state\)\s*\{[\s\S]*?\n    \}/, "announceFinInterest()");
+  const srcClear = grab(
+    /function clearFinInterestAnnouncement\(\)\s*\{[\s\S]*?\n    \}/,
+    "clearFinInterestAnnouncement()");
+
+  // Stub only what these two functions touch. `writes` records every
+  // assignment to the region so we can tell "cleared" from "re-announced".
+  const harness = new Function(`
+    var writes = [];
+    var _finInterestAnnounceTimer = null;
+    var _lang = 'en';
+    var _visible = true;
+    var region = {
+      _t: '',
+      get textContent() { return this._t; },
+      set textContent(v) { this._t = v; writes.push(v); }
+    };
+    var timers = [];
+    function setTimeout(fn) { timers.push(fn); return timers.length; }
+    function clearTimeout(id) { if (id) timers[id - 1] = null; }
+    function document_getElementById() { return region; }
+    var document = { getElementById: document_getElementById };
+    function finHandoffVisible() { return _visible; }
+    function FC(key) {
+      var en = { interestMarkedAnnounce: 'Marked for your specialist.',
+                 interestNotNowAnnounce: 'Not right now selected.',
+                 interestClearedAnnounce: 'Selection cleared.' };
+      var es = { interestMarkedAnnounce: 'Marcado para tu especialista.',
+                 interestNotNowAnnounce: 'Ahora no.',
+                 interestClearedAnnounce: 'Seleccion borrada.' };
+      return (_lang === 'es' ? es : en)[key] || '';
+    }
+    ${srcAnnounce}
+    ${srcClear}
+    return {
+      announce: announceFinInterest,
+      clear: clearFinInterestAnnouncement,
+      flush: function () { timers.forEach(function (f) { if (f) f(); }); timers = []; },
+      setLang: function (l) { _lang = l; },
+      text: function () { return region.textContent; },
+      writes: function () { return writes.slice(); },
+      pendingTimers: function () { return timers.filter(Boolean).length; }
+    };`)();
+
+  harness.announce('interested');
+  harness.flush();
+  const beforeSwitch = harness.text();
+  check("announcement lands in the region (EN)",
+    beforeSwitch === 'Marked for your specialist.');
+
+  // The language switch: clear, then the renderers run in the new language.
+  const writesBefore = harness.writes().length;
+  harness.setLang('es');
+  harness.clear();
+  const afterClear = harness.text();
+  const newWrites = harness.writes().slice(writesBefore);
+
+  check("prior-language text is REMOVED by the language switch", afterClear === '');
+  check("clearing writes only the empty string (announces nothing)",
+    newWrites.length === 1 && newWrites[0] === '');
+  check("no stale announcement is left queued after the switch",
+    harness.pendingTimers() === 0);
+  harness.flush();
+  check("nothing re-announces after the switch flushes", harness.text() === '');
+
+  // A queued-but-unflushed announcement must not survive into the new language.
+  harness.announce('not_now');
+  harness.setLang('es');
+  harness.clear();
+  harness.flush();
+  check("an in-flight announcement cannot land in the new language",
+    harness.text() === '');
+
+  // The mechanism the fix must not break: repeats still re-announce.
+  harness.announce('interested'); harness.flush();
+  const first = harness.text();
+  harness.announce('interested'); harness.flush();
+  check("repeat announcement still re-announces the same message (ES)",
+    first.length > 0 && harness.text() === first);
+}
+check("switchLanguage clears the handoff announcement before re-rendering",
+  /clearFinInterestAnnouncement\(\);\s*\n\s*renderAllFinancingSurfaces\(\);/.test(html));
+check("the sheet's own status region is NOT cleared by the language switch",
+  !/clearFinancingSheetStatus/.test(html)
+  && /region\.textContent = _finSheetStale/.test(html));
+
 // --- exclusions ---
 check("no aria-pressed introduced anywhere", count(/aria-pressed/g) === 0);
 check("stale 'messages always differ' comment removed", !html.includes("always differ"));
