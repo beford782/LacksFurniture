@@ -373,29 +373,39 @@ from the start to avoid the email rendering gap.
 
 ## Deployment
 
+The repository uses a pull-request deployment workflow. GitHub Pages still
+publishes from `main`; merging an approved PR to `main` triggers the deployment.
+
 ```
-git add .
-git commit -m "description"
-git push origin main --force
+git fetch origin
+git switch main
+git pull --ff-only origin main
+git switch -c <owner>/<short-description>
+# edit, test, commit
+git push -u origin HEAD
+# open a PR targeting main, wait for Full suite (18 checks), then merge
 ```
 
-Force push is intentional — always used for this repo.
-GitHub Pages updates within 1–2 minutes after push.
+Do not push directly to `main`, and do not use `--force` or the legacy
+`git ship` alias. The versioned pre-push hook rejects direct pushes to `main`;
+server-side branch protection is the authoritative control. See
+`docs/deployment-workflow.md` for the exact protection settings, recovery
+procedure, and post-merge Pages verification.
 
 ### IMPORTANT: Claude Code on the Web creates feature branches automatically
 If this session is running in Claude Code on the web (claude.ai/code),
-pushes default to a `claude/<name>-<id>` branch — NOT to main.
-GitHub Pages only deploys from main, so those pushes do not go live.
+pushes default to a `claude/<name>-<id>` branch. That is the correct place for
+the change, but pushing the branch alone does not deploy it.
 
 **At the start of every session and before any commit/push, Claude MUST:**
 1. Check the current branch with `git branch --show-current`
-2. If the branch is anything other than `main`, warn Blake clearly that
-   pushes on this branch will NOT deploy, and offer to either:
-   - Push to main directly: `git push origin HEAD:main --force`, or
-   - Use the `git ship` alias (already configured locally) which does the same
+2. Confirm the branch is not `main`; create a feature branch if necessary.
+3. Push only the feature branch and open or update its pull request.
+4. Report the PR and CI state separately from the deployment state.
 
-Never assume a push to a `claude/*` branch is a successful deployment.
-Always confirm main was updated before reporting that a change is live.
+Never describe a branch push as a deployment. A change is live only after its
+PR is merged and the Pages `build` and `deploy` checks succeed on the resulting
+`main` commit.
 
 ---
 
