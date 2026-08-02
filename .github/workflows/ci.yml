@@ -1,0 +1,285 @@
+# DreamFinder / Lacks Payment Choice — full verification suite.
+#
+# Every check in this repository is invoked by hand as `python <path>` or
+# `node <path>`; there is no runner, no package.json and no Makefile. That made
+# the suites advisory: nothing stopped a red change from merging, and the value
+# of the financing safety work depends entirely on the suites actually running.
+# This workflow is that enforcement, and nothing more — it builds no artifact,
+# publishes nothing, and needs no write access.
+#
+# DETERMINISM. Python and Node are pinned to exact versions and the three
+# third-party packages are pinned too (qrcode via the repository's own
+# incoming/requirements-qr.txt, which exists so the QR suite runs with zero
+# optional skips). pwsh is required, not optional: tests/golden/run_golden.py
+# --strict treats a missing PowerShell as a FAILURE, because without it the
+# mattresses.json comparison is silently skipped. The pinned ubuntu-24.04 image
+# ships pwsh preinstalled; the job asserts that rather than assuming it.
+#
+# ARTIFACT SAFETY. Several suites regenerate the bundle to compare it against
+# what is committed, so a bug that rewrites a tracked file would otherwise pass
+# unnoticed. The job records a hash manifest of every protected artifact before
+# the suites run, re-checks it after, and finishes on `git status --porcelain`
+# being empty.
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Least privilege: the suites only read the tree.
+permissions:
+  contents: read
+
+# Superseded PR runs are pointless work and are cancelled. Every OTHER run gets
+# a group of its own.
+#
+# `cancel-in-progress: false` is NOT sufficient to protect main. It preserves
+# the RUNNING job, but GitHub keeps at most one PENDING run per group: queue a
+# third commit while one run is active and one is pending, and the pending run
+# is cancelled and replaced. The middle commit on main would then get no CI
+# result at all — precisely the guarantee this workflow exists to provide.
+#
+# So pull requests share a group keyed on the PR number (new push supersedes the
+# old run for that PR), while push-to-main and workflow_dispatch use a group
+# containing github.run_id, which is unique per run. A unique group cannot
+# collide, so no main run can ever cancel or replace another.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  verify:
+    name: Full suite (18 checks)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out the tree
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          # Full history: the whitespace check below diffs the committed change
+          # against a base commit, which a shallow clone would not contain.
+          fetch-depth: 0
+
+      - name: Resolve the concurrency group and the diff range
+        id: ctx
+        run: |
+          set -euo pipefail
+          # Echoed so the group is visible in the log and can be compared
+          # between runs — two main/dispatch runs must never share one.
+          echo "concurrency group: ci-${{ github.workflow }}-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}"
+
+          # The revision range for `git diff --check`. Bare `git diff --check`
+          # compares the WORKING TREE against the index, which is empty right
+          # after checkout — it would pass on any committed change, however
+          # broken. Each trigger gets a real range instead.
+          case "${{ github.event_name }}" in
+            pull_request)
+              BASE='${{ github.event.pull_request.base.sha }}'
+              ;;
+            push)
+              BASE='${{ github.event.before }}'
+              # A new branch, or a force-push whose old tip is gone, yields
+              # all-zeros or an unreachable SHA; fall back to the first parent.
+              if [ -z "$BASE" ] \
+                 || [ "$BASE" = "0000000000000000000000000000000000000000" ] \
+                 || ! git cat-file -e "${BASE}^{commit}" 2>/dev/null; then
+                BASE=''
+              fi
+              ;;
+            *)
+              BASE=''   # workflow_dispatch: no event range exists
+              ;;
+          esac
+          # Safe explicit fallback: the single commit at HEAD. Guarded for a
+          # root commit, which has no parent.
+          if [ -z "$BASE" ]; then
+            if git rev-parse -q --verify HEAD^ >/dev/null 2>&1; then
+              BASE="$(git rev-parse HEAD^)"
+            else
+              BASE="$(git hash-object -t tree /dev/null)"   # empty tree
+            fi
+          fi
+          echo "diff base: $BASE"
+          echo "diff head: $(git rev-parse HEAD)"
+          echo "base=$BASE" >> "$GITHUB_OUTPUT"
+
+      - name: Pin Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Pin Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.18.1'
+
+      - name: Install pinned Python dependencies
+        run: |
+          python -m pip install --upgrade pip==24.3.1
+          # openpyxl: workbook build/read. Pillow: image normalisation in the
+          # converter and the golden image compare. qrcode: pinned by the repo's
+          # own requirements file so the QR suite reports 0 skipped.
+          python -m pip install 'openpyxl==3.1.5' 'Pillow==11.0.0'
+          python -m pip install -r incoming/requirements-qr.txt
+
+      - name: Record the toolchain and prove pwsh is present
+        run: |
+          set -euo pipefail
+          python --version
+          node --version
+          python -c "import openpyxl, PIL, qrcode; print('openpyxl', openpyxl.__version__, '| Pillow', PIL.__version__)"
+          # golden --strict FAILS on a missing PowerShell rather than skipping,
+          # so a runner image without it must break loudly here, not silently
+          # downgrade the mattresses.json comparison.
+          command -v pwsh >/dev/null || { echo "::error::pwsh not found - golden --strict cannot run"; exit 1; }
+          pwsh --version
+
+      - name: Record protected-artifact hashes
+        run: |
+          set -euo pipefail
+          # Application behaviour, customer-visible data, generated bundle,
+          # build inputs, the QR asset and the mail backend. No suite may
+          # modify any of these; several regenerate copies to compare.
+          cat > /tmp/protected.txt <<'EOF'
+          index.html
+          Code.gs
+          manifest.json
+          data/store-config.json
+          data/quiz.json
+          data/mattresses.json
+          data/mattresses.csv
+          data/mattresses-es.csv
+          data/accessories.json
+          data/allowed-hosts.js
+          data/dict-en.json
+          data/dict-es.json
+          images/qr-financing.svg
+          incoming/lacks_financing.json
+          incoming/lacks_mattresses.json
+          incoming/lacks_accessories.json
+          incoming/lacks_store_values.json
+          incoming/dreamfinder_quiz.json
+          incoming/Lacks_Store_Data.xlsx
+          tools/source_hosts.json
+          EOF
+          sha256sum $(cat /tmp/protected.txt) | tee /tmp/protected.sha256
+
+      # ---- Python suites ----------------------------------------------------
+      - name: validation self-test
+        run: python tools/validation.py --self-test
+
+      - name: financing totality
+        run: python tests/financing_totality_check.py
+
+      - name: smoke
+        run: python tests/smoke_check.py
+
+      - name: canonical self-test
+        run: python tests/golden/canonical.py --self-test
+
+      - name: converter self-test
+        run: python tools/convert_store_data.py --self-test
+
+      - name: reverify self-test
+        run: python tools/reverify_financing.py --self-test
+
+      - name: workbook validation
+        run: >
+          python tools/validate_workbook.py incoming/Lacks_Store_Data.xlsx
+          --source-images incoming/images --warnings-as-errors
+
+      - name: strict golden bundle
+        run: python tests/golden/run_golden.py --strict
+
+      - name: QR payload suite
+        run: python tests/qr_payload_check.py
+
+      - name: QR committed-asset check
+        run: python incoming/generate_financing_qr.py --check
+
+      # ---- Node suites ------------------------------------------------------
+      - name: financing renderer
+        run: node tests/financing_render_check.mjs
+
+      - name: scoring isolation
+        run: node tests/scoring_isolation_check.mjs
+
+      - name: handoff interest
+        run: node tests/handoff_interest_check.mjs
+
+      - name: financing copy policy
+        run: node tests/financing_copy_policy_check.mjs
+
+      - name: financing taxonomy
+        run: node tests/financing_taxonomy_check.mjs
+
+      - name: financing URL
+        run: node tests/financing_url_check.mjs
+
+      - name: exact-promotions policy
+        run: node tests/exact_promotions_policy_check.mjs
+
+      - name: email gating
+        run: node tests/email_gating_check.mjs
+
+      - name: contrast
+        run: node tests/contrast_check.mjs
+
+      # ---- Tree hygiene -----------------------------------------------------
+      - name: git diff --check (whitespace and conflict markers)
+        run: |
+          set -euo pipefail
+          # Ranged, so this actually inspects the COMMITTED change. Bare
+          # `git diff --check` looks at the working tree against the index and
+          # is vacuous immediately after checkout.
+          echo "checking ${{ steps.ctx.outputs.base }}..HEAD"
+          git diff --check "${{ steps.ctx.outputs.base }}" HEAD
+
+      - name: Protected artifacts are byte-identical
+        run: |
+          set -euo pipefail
+          sha256sum -c /tmp/protected.sha256
+
+      - name: Working tree is clean
+        run: |
+          set -euo pipefail
+          # A suite that rewrote a tracked file, or left a stray artifact
+          # behind, fails here even if every assertion above passed.
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "::error::the suite modified the working tree"
+            git status --porcelain
+            git --no-pager diff --stat
+            exit 1
+          fi
+          echo "working tree clean"
+
+      # ---- Operating-state invariants ---------------------------------------
+      # These are policy, not code: exact financing terms stay gated off, the
+      # kiosk sends nothing live, and the illustrative Savings Pass stays
+      # disabled. A PR that flips any of them should have to say so out loud.
+      - name: Shipped operating state unchanged
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import io, json, sys
+          cfg = json.load(io.open("data/store-config.json", encoding="utf-8"))
+          fin = cfg.get("financing") or {}
+          checks = {
+              "financing.exactPromotionsEnabled is false":
+                  fin.get("exactPromotionsEnabled") is False,
+              "gasUrl is blank (no live email/lead sends)":
+                  not (cfg.get("gasUrl") or "").strip(),
+              "discount.mode is disabled":
+                  (cfg.get("discount") or {}).get("mode") == "disabled",
+          }
+          bad = [k for k, ok in checks.items() if not ok]
+          for k, ok in checks.items():
+              print(("  [ok] " if ok else "  [FAIL] ") + k)
+          if bad:
+              print("::error::operating-state invariant changed: " + "; ".join(bad))
+              sys.exit(1)
+          PY
