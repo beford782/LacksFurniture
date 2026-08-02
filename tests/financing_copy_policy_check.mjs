@@ -175,7 +175,9 @@ check("validation.py retires separatePath with a named error",
 
 // The two layers must share one partition.
 check("validator exposes the semantic classifier",
-  /def _plan_group\(plan: dict\) -> str:/.test(py) && /FINANCING_SCENARIOS/.test(py));
+  // The parameter annotation is deliberately NOT pinned: _plan_group is total
+  // over any JSON value (Commit J), so `plan: dict` would be a false contract.
+  /def _plan_group\(plan[^)]*\) -> str:/.test(py) && /FINANCING_SCENARIOS/.test(py));
 check("renderer exposes the matching classifier",
   /function finPlanGroup\(p\)/.test(html) && /FIN_SCENARIO_MEXICO/.test(html));
 for (const [pyLit, jsLit, label] of [

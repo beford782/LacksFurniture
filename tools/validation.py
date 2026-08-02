@@ -89,8 +89,53 @@ class ValidationReport:
 
 # -- Helpers ------------------------------------------------------------------
 
+# Author-supplied JSON reaches these helpers, and str() is not total over it:
+# CPython refuses int->str beyond sys.get_int_max_str_digits() (4300 digits by
+# default) and raises ValueError, which a validator must never do. Strings pass
+# through verbatim so validation still inspects real content; every other type
+# is converted defensively and length-capped, because a converted non-string
+# only ever feeds a blank/equality test or a diagnostic.
+_NONSTR_TEXT_CAP = 120
+
+
+def _safe_str(v) -> str:
+    """str(v) that cannot raise and cannot be unbounded. Strings are returned
+    unchanged; other types are described rather than rendered when they cannot
+    be printed cheaply."""
+    if isinstance(v, str):
+        return v
+    try:
+        if isinstance(v, int) and not isinstance(v, bool) and v.bit_length() > 128:
+            return f"<{v.bit_length()}-bit integer>"
+        text = str(v)
+    except Exception:                       # noqa: BLE001 - hostile __str__
+        try:
+            return f"<unprintable {type(v).__name__}>"
+        except Exception:                   # noqa: BLE001 - hostile metaclass
+            return "<unprintable value>"
+    if len(text) > _NONSTR_TEXT_CAP:
+        return text[:_NONSTR_TEXT_CAP] + f"...({len(text)} chars)"
+    return text
+
+
+_JSON_TYPE_NAMES = {type(None): "null", bool: "boolean", int: "number",
+                    float: "number", str: "string", list: "array", dict: "object"}
+
+
+def _type_name(v) -> str:
+    """The JSON type name of a value, for error text an author can act on —
+    they wrote JSON, so 'array' is more use to them than 'list'."""
+    return _JSON_TYPE_NAMES.get(type(v), type(v).__name__)
+
+
+# Single numeric-sanity authority for every financing number (see Commit I):
+# exact int/float, not a boolean, not NaN and not ±Infinity. Each field adds
+# only its own range on top.
+_finite_number = fin_headline.finite_number
+
+
 def _blank(v) -> bool:
-    return v is None or str(v).strip() == ""
+    return v is None or _safe_str(v).strip() == ""
 
 
 def _is_hex(v) -> bool:
@@ -103,14 +148,14 @@ def _is_slug(v) -> bool:
 
 def _host_from_url(url: str) -> str:
     """Extract the host from an https URL (no scheme, no path). '' if unparseable."""
-    s = str(url).strip()
+    s = _safe_str(url).strip()
     if "://" in s:
         s = s.split("://", 1)[1]
     return s.split("/", 1)[0]
 
 
 def _s(v) -> str:
-    return "" if v is None else str(v).strip()
+    return "" if v is None else _safe_str(v).strip()
 
 
 # Live accessory categories (the real enum the app/template use - NOT a generic
@@ -461,7 +506,14 @@ def _is_allowed_source(url: str, allowed_hosts) -> bool:
     hosts (exact match or a dot-boundary subdomain), or a safe https
     web.archive.org capture whose embedded target host is allowed. Empty
     allowlist allows nothing (fail closed)."""
-    hosts = [h.lower().strip() for h in (allowed_hosts or []) if h and str(h).strip()]
+    # The allowlist is itself author-editable JSON (tools/source_hosts.json),
+    # so it is type-guarded here too and fails CLOSED: a malformed allowlist,
+    # or one whose entries are not host strings, allows nothing rather than
+    # raising. `h.lower()` on a non-string entry used to be an AttributeError.
+    if not isinstance(allowed_hosts, (list, tuple, set, frozenset)):
+        return False
+    hosts = [h.strip().lower() for h in allowed_hosts
+             if isinstance(h, str) and h.strip()]
     if not hosts:
         return False
     parts = _split_safe_https(url)
@@ -781,17 +833,33 @@ _GROUP_UNGATED_FIELDS = {
 }
 
 
-def _plan_scenario(plan: dict) -> str:
+def _plan_scenario(plan) -> str:
+    """TOTAL over any JSON value: a non-object plan, or a non-string scenario,
+    reads as no declared scenario. The malformed value is reported separately
+    by validate_financing; classification must not raise on it."""
+    if not isinstance(plan, dict):
+        return ""
     v = plan.get("presentationScenario")
     return v if isinstance(v, str) else ""
 
 
-def _plan_group(plan: dict) -> str:
-    """'promotional' | 'installment' | 'evergreen' | 'scenario' | '' (no match)."""
+def _plan_group(plan) -> str:
+    """'promotional' | 'installment' | 'evergreen' | 'scenario' | '' (no match).
+
+    TOTAL over any JSON value. `kind` is screened with isinstance(str) BEFORE
+    the set-membership tests below, because `x in <set>` HASHES x and a JSON
+    array or object as `kind` therefore raised TypeError — a malformed kind now
+    yields the unclassified '' that validate_financing reports as an error.
+    Classification of valid plans is unchanged: a non-string kind was already
+    unclassified whenever it happened to be hashable."""
+    if not isinstance(plan, dict):
+        return ""
     scenario = _plan_scenario(plan)
     if scenario:
         return "scenario" if scenario in FINANCING_SCENARIOS else ""
     kind = plan.get("kind")
+    if not isinstance(kind, str):
+        return ""
     if kind == "open-end-promotional-credit":
         return "promotional"
     if kind == "closed-end-installment":
@@ -804,21 +872,21 @@ def _plan_group(plan: dict) -> str:
 def _exact_claim_signals(text) -> list:
     """Names of exact-claim signals present in text ([] when clean). See the
     block comment above for what this does and does not prove."""
-    s = "" if text is None else str(text)
+    s = "" if text is None else _safe_str(text)
     names = [name for name, rx in _EXACT_CLAIM_SIGNALS if rx.search(s)]
     if _bare_payment_noun(s):
         names.append("payment-noun")
     return names
 
 
-def _is_gated_offer_plan(plan: dict) -> bool:
+def _is_gated_offer_plan(plan) -> bool:
     """True for plans whose headline/detail/disclosure render ONLY inside the
     exact-terms gate — i.e. the promotional group. Classification is semantic
     (kind + presentationScenario); a plan id has no effect on it."""
     return _plan_group(plan) == "promotional"
 
 
-def _ungated_plan_fields(plan: dict) -> tuple:
+def _ungated_plan_fields(plan) -> tuple:
     """Plan fields that reach a customer OUTSIDE the exact-terms gate, derived
     from the plan's presentation group (see _plan_group) so that renaming a
     plan id cannot move wording out of Commit F's guard.
@@ -868,7 +936,7 @@ def _check_ungated_text(r, label: str, value) -> None:
             r.add_error(
                 f"{tag} renders outside the exact-terms gate and uses reserved or "
                 f"unreviewed financing language ({', '.join(hit)}): "
-                f"{str(text)[:80]!r}. Either reword it using reviewed generic "
+                f"{fin_headline.short_repr(text, 80)}. Either reword it using reviewed generic "
                 f"orientation language, or move genuine verified terms into a "
                 f"freshness-gated plan field. A signal marks wording reserved for "
                 f"gated fields or outside the reviewed neutral allowlist — it does "
@@ -907,7 +975,16 @@ def _materially_future(s: str) -> bool:
 
 
 def _bilingual_ok(obj) -> bool:
-    return isinstance(obj, dict) and bool(_s(obj.get("en"))) and bool(_s(obj.get("es")))
+    """A bilingual leaf is an object carrying non-blank EN and ES TEXT.
+
+    The language values must be real strings. They were previously coerced
+    through _s(), so a JSON number, boolean, array or object passed the check
+    and then reached the customer through L() as '7' or '[object Object]' —
+    customer-visible copy silently invented from a malformed field."""
+    if not isinstance(obj, dict):
+        return False
+    return all(isinstance(obj.get(lang), str) and obj[lang].strip()
+               for lang in ("en", "es"))
 
 
 def validate_financing(config: dict, *, allowed_source_hosts=None) -> ValidationReport:
@@ -916,39 +993,126 @@ def validate_financing(config: dict, *, allowed_source_hosts=None) -> Validation
     Fail-closed posture: exact credit claims (APR / term / minimum) must be
     verified, timestamped, freshness-bounded, disclosure-carrying, and sourced
     from an explicitly allowlisted host. Payment calculation must be disabled
-    in V1. No-op when there is no financing block."""
+    in V1. No-op when there is no financing block.
+
+    TOTAL over JSON: for any value python's json.loads can produce — at the top
+    level or anywhere inside the financing subtree — this returns a
+    ValidationReport with bounded, named errors. It never raises and never
+    mutates its argument. Malformed author input is a VERDICT, not a crash:
+    the converter has to be able to refuse a bad workbook and say why, and a
+    traceback is neither a refusal an operator can act on nor something the
+    build can distinguish from a validator defect. Every structure is therefore
+    type-guarded at the point it is consumed rather than rescued by `x or {}`,
+    which only covers FALSY wrong types and leaves every truthy one to crash."""
     r = ValidationReport()
+    if not isinstance(config, dict):
+        r.add_error(f"config must be an object, got "
+                    f"{_type_name(config)} ({fin_headline.short_repr(config)})")
+        return r
     fin = config.get("financing")
     if fin is None:
         return r
     if not isinstance(fin, dict):
-        r.add_error("financing must be an object")
+        r.add_error(f"financing must be an object, got {_type_name(fin)} "
+                    f"({fin_headline.short_repr(fin)})")
         return r
-    hosts = list(allowed_source_hosts or [])
+    # The allowlist argument is JSON too — load_source_hosts() reads it from
+    # the editable tools/source_hosts.json — so it gets the same treatment as
+    # the config: guarded, reported, and failing CLOSED. `list(x or [])` raised
+    # TypeError on a number or boolean, and a list carrying a non-string entry
+    # raised AttributeError downstream in _is_allowed_source.
+    if allowed_source_hosts is None:
+        hosts = []
+    elif isinstance(allowed_source_hosts, (list, tuple, set, frozenset)):
+        entries = list(allowed_source_hosts)
+        hosts = [h for h in entries if isinstance(h, str)]
+        if len(hosts) != len(entries):
+            r.add_error(f"allowed_source_hosts contains "
+                        f"{len(entries) - len(hosts)} non-string entr"
+                        f"{'y' if len(entries) - len(hosts) == 1 else 'ies'} — "
+                        f"see tools/source_hosts.json financingSourceHosts; "
+                        f"they are ignored, so those hosts allow nothing")
+    else:
+        r.add_error(f"allowed_source_hosts must be a list of host strings, got "
+                    f"{_type_name(allowed_source_hosts)} "
+                    f"({fin_headline.short_repr(allowed_source_hosts)}) — "
+                    f"treating the allowlist as empty, which allows no host")
+        hosts = []
     enabled = fin.get("enabled") is True
+
+    # `plans` is iterated in FOUR places. Normalise it ONCE, here, so no loop
+    # can iterate a non-list: `for x in (fin.get("plans") or [])` walked the
+    # CHARACTERS of plans="bad" and raised on a plain int. A malformed value is
+    # reported once and then treated as an empty list, so every later rule
+    # still runs and the operator gets the whole verdict in one pass instead of
+    # one error per attempt. The shipped list is used as-is, never copied back:
+    # this function must not mutate its argument.
+    plans_raw = fin.get("plans")
+    if plans_raw is None:
+        plan_list = []
+    elif isinstance(plans_raw, list):
+        plan_list = plans_raw
+    else:
+        r.add_error(f"financing.plans must be an array of plan objects, got "
+                    f"{_type_name(plans_raw)} "
+                    f"({fin_headline.short_repr(plans_raw)})")
+        plan_list = []
+
+    def _plan_tag(plan, index):
+        """Bounded diagnostic label. Falls back to the array INDEX when the id
+        is absent or is not usable text, so a 5,000-digit integer id cannot
+        blow up (or become) the error message."""
+        pid = plan.get("id") if isinstance(plan, dict) else None
+        if isinstance(pid, str) and pid.strip():
+            return f"financing.plans[{fin_headline.short_repr(pid)}]"
+        return f"financing.plans[{index}]"
 
     if enabled:
         for key in ("verifiedAt", "maxAgeDays", "sourceUrl"):
             if _blank(fin.get(key)):
                 r.add_error(f"financing.{key} is required when financing is enabled")
         if fin.get("verifiedAt") and not _valid_iso_instant(fin["verifiedAt"]):
-            r.add_error(f"financing.verifiedAt {fin['verifiedAt']!r} must be ISO-8601 "
+            r.add_error(f"financing.verifiedAt {fin_headline.short_repr(fin.get('verifiedAt'))} must be ISO-8601 "
                         f"with a timezone offset")
         if fin.get("verifiedAt") and _materially_future(fin["verifiedAt"]):
-            r.add_error(f"financing.verifiedAt {fin['verifiedAt']!r} is materially in "
+            r.add_error(f"financing.verifiedAt {fin_headline.short_repr(fin.get('verifiedAt'))} is materially in "
                         f"the future (beyond {FINANCING_CLOCK_SKEW_SECONDS}s clock skew) — "
                         f"verification is an observation and cannot postdate now")
         mad = fin.get("maxAgeDays")
-        if mad is not None and (not isinstance(mad, int) or not 1 <= mad <= 60):
-            r.add_error("financing.maxAgeDays must be an integer between 1 and 60")
+        # `type(mad) is int`, not isinstance: bool is an int subclass, so
+        # maxAgeDays=true read as 1 and passed the 1..60 range silently.
+        if mad is not None and (type(mad) is not int or not 1 <= mad <= 60):
+            r.add_error(f"financing.maxAgeDays {fin_headline.short_repr(mad)} must be "
+                        f"an integer between 1 and 60 (not a boolean)")
         if fin.get("sourceUrl") and not _is_allowed_source(fin["sourceUrl"], hosts):
-            r.add_error(f"financing.sourceUrl {fin['sourceUrl']!r} must be a safe https "
+            r.add_error(f"financing.sourceUrl {fin_headline.short_repr(fin.get('sourceUrl'))} must be a safe https "
                         f"URL on an allowlisted host (no credentials, default port) — "
                         f"see tools/source_hosts.json financingSourceHosts")
-        copy = fin.get("copy") or {}
+        # `fin.get("copy") or {}` was NOT a type guard: it rescues only falsy
+        # wrong types, so copy="bad" reached copy.get() and raised.
+        copy = fin.get("copy")
+        if copy is None:
+            copy = {}
+        elif not isinstance(copy, dict):
+            r.add_error(f"financing.copy must be an object, got {_type_name(copy)} "
+                        f"({fin_headline.short_repr(copy)})")
+            copy = {}
         for key in ("eyebrow", "headline"):
             if not _bilingual_ok(copy.get(key)):
                 r.add_error(f"financing.copy.{key} missing EN or ES")
+        # Every copy value is customer-visible text rendered through L(): a
+        # bilingual object, or a plain string for single-language copy. A
+        # number, boolean, array or foreign object is neither, and used to pass
+        # unexamined — L() would render '7' or '[object Object]' to a shopper.
+        for key in sorted(copy) if isinstance(copy, dict) else []:
+            val = copy.get(key)
+            if isinstance(val, str) or _bilingual_ok(val):
+                continue
+            r.add_error(
+                f"financing.copy.{key} must be a bilingual object with EN and ES "
+                f"text (or a plain string), got {_type_name(val)} "
+                f"({fin_headline.short_repr(val)}) — it renders to the customer "
+                f"exactly as stored")
         # EVERY financing.copy string renders outside the exact-terms gate —
         # results, drawer, sheet chrome, handoff, the live-region announcements
         # and the email body all render whatever the policy switch says. Checking
@@ -963,9 +1127,12 @@ def validate_financing(config: dict, *, allowed_source_hosts=None) -> Validation
                 "the email packet row will use 'explored' wording even for "
                 "customers who never opened Payment Choice content (COPY-15); "
                 "add the neutral availability variant")
+        # isinstance(str) FIRST: `x not in <set>` hashes x, so a JSON array or
+        # object here raised TypeError before the error could be reported.
         policy = fin.get("savingsPassPolicy")
-        if policy not in SAVINGS_PASS_POLICIES:
-            r.add_error(f"financing.savingsPassPolicy {policy!r} must be one of "
+        if not isinstance(policy, str) or policy not in SAVINGS_PASS_POLICIES:
+            r.add_error(f"financing.savingsPassPolicy "
+                        f"{fin_headline.short_repr(policy)} must be one of "
                         f"{sorted(SAVINGS_PASS_POLICIES)}")
         # Operational authorization for EXACT rate/term claims. Required and
         # explicitly boolean when financing is enabled: the retailer must
@@ -983,13 +1150,25 @@ def validate_financing(config: dict, *, allowed_source_hosts=None) -> Validation
         elif not isinstance(fin.get("exactPromotionsEnabled"), bool):
             r.add_error(
                 f"financing.exactPromotionsEnabled "
-                f"{fin.get('exactPromotionsEnabled')!r} must be a JSON boolean "
+                f"{fin_headline.short_repr(fin.get('exactPromotionsEnabled'))} must be a JSON boolean "
                 f"(true/false), not a string or number — the client gate is a "
                 f"strict identity test and anything else fails closed")
-        discount_mode = _s((config.get("discount") or {}).get("mode"))
+        # Same non-guard as copy: `(config.get("discount") or {})` rescues only
+        # falsy wrong types. financing reads discount.mode to police the
+        # savings-pass interaction, so it must guard the shape it reads and say
+        # so under its own name rather than crash on another block's typo.
+        discount = config.get("discount")
+        if discount is None or discount == {}:
+            discount = {}
+        elif not isinstance(discount, dict):
+            r.add_error(f"discount must be an object for financing to check the "
+                        f"savings-pass interaction, got {_type_name(discount)} "
+                        f"({fin_headline.short_repr(discount)})")
+            discount = {}
+        discount_mode = _s(discount.get("mode"))
         if discount_mode and discount_mode != "disabled" and policy != "stackable":
             r.add_error(
-                f"financing is enabled while discount.mode={discount_mode!r}; either "
+                f"financing is enabled while discount.mode={fin_headline.short_repr(discount_mode)}; either "
                 f"set discount.mode='disabled' or declare an explicit stackable policy")
         # Operational staleness warning — ONLY when exact promotions are
         # explicitly operationally enabled (field lands in Commit E). An
@@ -1004,7 +1183,7 @@ def validate_financing(config: dict, *, allowed_source_hosts=None) -> Validation
             _ts = datetime.fromisoformat(fin["verifiedAt"])
             if datetime.now(timezone.utc) - _ts > timedelta(days=mad):
                 r.add_warning(
-                    f"financing.verifiedAt {fin['verifiedAt']!r} is older than "
+                    f"financing.verifiedAt {fin_headline.short_repr(fin.get('verifiedAt'))} is older than "
                     f"maxAgeDays={mad} while exactPromotionsEnabled is true — the "
                     f"client will render the generic staleNotice; re-verify the "
                     f"source or disable exact promotions")
@@ -1016,7 +1195,7 @@ def validate_financing(config: dict, *, allowed_source_hosts=None) -> Validation
     if not enabled and "exactPromotionsEnabled" in fin \
             and not isinstance(fin.get("exactPromotionsEnabled"), bool):
         r.add_error(f"financing.exactPromotionsEnabled "
-                    f"{fin.get('exactPromotionsEnabled')!r} must be a JSON boolean")
+                    f"{fin_headline.short_repr(fin.get('exactPromotionsEnabled'))} must be a JSON boolean")
 
     # Customer-reachable / future-risk URL fields: validated whenever present
     # (enabled or not) — every URL that could reach a customer must be a safe
@@ -1024,7 +1203,7 @@ def validate_financing(config: dict, *, allowed_source_hosts=None) -> Validation
     for _key in ("applicationUrl", "mexicoInfoUrl"):
         _val = fin.get(_key)
         if _val is not None and not _blank(_val) and not _is_allowed_source(_val, hosts):
-            r.add_error(f"financing.{_key} {_val!r} must be a safe https URL on an "
+            r.add_error(f"financing.{_key} {fin_headline.short_repr(_val)} must be a safe https URL on an "
                         f"allowlisted host (no credentials, default port)")
 
     mxa = fin.get("mexicoApplicationUrl")
@@ -1034,7 +1213,7 @@ def validate_financing(config: dict, *, allowed_source_hosts=None) -> Validation
         else:
             _mxu = mxa.get("url")
             if _mxu is not None and not _blank(_mxu) and not _is_allowed_source(_mxu, hosts):
-                r.add_error(f"financing.mexicoApplicationUrl.url {_mxu!r} must be a safe "
+                r.add_error(f"financing.mexicoApplicationUrl.url {fin_headline.short_repr(_mxu)} must be a safe "
                             f"https URL on an allowlisted host")
             _ver = mxa.get("verified")
             if _ver is not None and not isinstance(_ver, bool):
@@ -1051,16 +1230,15 @@ def validate_financing(config: dict, *, allowed_source_hosts=None) -> Validation
                     _reuse = [("financing.sourceUrl", fin.get("sourceUrl")),
                               ("financing.applicationUrl", fin.get("applicationUrl")),
                               ("financing.mexicoInfoUrl", fin.get("mexicoInfoUrl"))]
-                    for _i, _plan in enumerate(fin.get("plans") or []):
+                    for _i, _plan in enumerate(plan_list):
                         if isinstance(_plan, dict):
-                            _reuse.append(
-                                (f"financing.plans[{_plan.get('id', _i)!r}].sourceUrl",
-                                 _plan.get("sourceUrl")))
+                            _reuse.append((f"{_plan_tag(_plan, _i)}.sourceUrl",
+                                           _plan.get("sourceUrl")))
                     for _label, _val in _reuse:
                         if _val is not None and _url_identity(_val) == _dead:
                             r.add_error(
                                 f"{_label} reuses the unverified mexicoApplicationUrl "
-                                f"target {mxa.get('url')!r} — that URL is not verified "
+                                f"target {fin_headline.short_repr(mxa.get('url'))} — that URL is not verified "
                                 f"available and must never become customer-visible")
 
     # allowedSourceHosts inside the block (used by the client freshness gate)
@@ -1068,27 +1246,45 @@ def validate_financing(config: dict, *, allowed_source_hosts=None) -> Validation
     declared = fin.get("allowedSourceHosts")
     if declared is not None:
         if not isinstance(declared, list):
-            r.add_error("financing.allowedSourceHosts must be a list")
+            r.add_error(f"financing.allowedSourceHosts must be an array, got "
+                        f"{_type_name(declared)} "
+                        f"({fin_headline.short_repr(declared)})")
         else:
-            for h in declared:
-                hs = _s(h).lower()
-                if hosts and hs not in [x.lower() for x in hosts]:
-                    r.add_error(f"financing.allowedSourceHosts entry {h!r} is not in "
+            for _hi, h in enumerate(declared):
+                if not isinstance(h, str):
+                    r.add_error(f"financing.allowedSourceHosts[{_hi}] must be a "
+                                f"host string, got {_type_name(h)} "
+                                f"({fin_headline.short_repr(h)})")
+                    continue
+                hs = h.strip().lower()
+                if hosts and hs not in [_s(x).lower() for x in hosts]:
+                    r.add_error(f"financing.allowedSourceHosts entry "
+                                f"{fin_headline.short_repr(h)} is not in "
                                 f"tools/source_hosts.json financingSourceHosts")
 
-    plans = fin.get("plans")
-    if enabled and not (isinstance(plans, list) and plans):
+    if enabled and not (isinstance(plans_raw, list) and plans_raw):
         r.add_error("financing.plans must be a non-empty list when enabled")
-    for i, plan in enumerate(plans or []):
-        tag = f"financing.plans[{plan.get('id', i)!r}]"
+    for i, plan in enumerate(plan_list):
+        # The object guard comes FIRST. Building the diagnostic tag from
+        # plan.get('id') before it meant a non-object entry raised
+        # AttributeError, and the "must be an object" error below was
+        # unreachable for every value JSON can express.
         if not isinstance(plan, dict):
-            r.add_error(f"{tag}: must be an object")
+            r.add_error(f"financing.plans[{i}]: must be an object, got "
+                        f"{_type_name(plan)} ({fin_headline.short_repr(plan)})")
             continue
+        tag = _plan_tag(plan, i)
         if _blank(plan.get("id")):
             r.add_error(f"{tag}: id is required")
+        elif not isinstance(plan.get("id"), str):
+            r.add_error(f"{tag}: id {fin_headline.short_repr(plan.get('id'))} must be "
+                        f"a string — ids key the runtime's lookup maps")
+        # isinstance(str) FIRST: `kind not in <set>` hashes kind, so a JSON
+        # array or object here raised TypeError before this error could fire.
         kind = plan.get("kind")
-        if kind not in FINANCING_PLAN_KINDS:
-            r.add_error(f"{tag}: kind {kind!r} not in {sorted(FINANCING_PLAN_KINDS)}")
+        if not isinstance(kind, str) or kind not in FINANCING_PLAN_KINDS:
+            r.add_error(f"{tag}: kind {fin_headline.short_repr(kind)} not in "
+                        f"{sorted(FINANCING_PLAN_KINDS)}")
         # provider is rendered in the promotional card title, so it must be a
         # real, trimmed, non-blank string. Without this a number, boolean,
         # object or blank string reached the title as
@@ -1099,13 +1295,13 @@ def validate_financing(config: dict, *, allowed_source_hosts=None) -> Validation
             _prov = plan.get("provider")
             if not isinstance(_prov, str):
                 r.add_error(
-                    f"{tag}: provider {_prov!r} must be a string — it is rendered "
+                    f"{tag}: provider {fin_headline.short_repr(_prov)} must be a string — it is rendered "
                     f"in the promotional card title and must not be coerced")
             elif not _prov.strip():
                 r.add_error(f"{tag}: provider must not be blank")
             elif _prov != _prov.strip():
                 r.add_error(
-                    f"{tag}: provider {_prov!r} has leading/trailing whitespace — "
+                    f"{tag}: provider {fin_headline.short_repr(_prov)} has leading/trailing whitespace — "
                     f"store it trimmed so the rendered title is exact")
         elif enabled:
             r.add_error(f"{tag}: provider is required when financing is enabled")
@@ -1118,20 +1314,20 @@ def validate_financing(config: dict, *, allowed_source_hosts=None) -> Validation
             _sc = plan.get("presentationScenario")
             if not isinstance(_sc, str) or not _sc.strip():
                 r.add_error(
-                    f"{tag}: presentationScenario {_sc!r} must be a non-blank string "
+                    f"{tag}: presentationScenario {fin_headline.short_repr(_sc)} must be a non-blank string "
                     f"naming a supported scenario ({sorted(FINANCING_SCENARIOS)}), "
                     f"or be omitted entirely")
             elif _sc not in FINANCING_SCENARIOS:
                 r.add_error(
-                    f"{tag}: presentationScenario {_sc!r} is not a supported scenario "
+                    f"{tag}: presentationScenario {fin_headline.short_repr(_sc)} is not a supported scenario "
                     f"{sorted(FINANCING_SCENARIOS)} — the renderer has no card for it, "
                     f"so the plan would not be presented at all")
             else:
                 _want_kind = FINANCING_SCENARIO_KINDS.get(_sc)
                 if _want_kind and kind != _want_kind:
                     r.add_error(
-                        f"{tag}: presentationScenario {_sc!r} requires kind "
-                        f"{_want_kind!r} by its product semantics, but kind is {kind!r}")
+                        f"{tag}: presentationScenario {fin_headline.short_repr(_sc)} requires kind "
+                        f"{_want_kind!r} by its product semantics, but kind is {fin_headline.short_repr(kind)}")
         # The legacy presentation flag is retired: two overlapping sources of
         # truth for 'is this a separate path' is exactly how a plan ended up
         # classified one way by validation and another way by the renderer.
@@ -1212,7 +1408,7 @@ def validate_financing(config: dict, *, allowed_source_hosts=None) -> Validation
         _src_any = plan.get("sourceUrl")
         if _src_any is not None and not _blank(_src_any) \
                 and not _is_allowed_source(_src_any, hosts):
-            r.add_error(f"{tag}: sourceUrl {_src_any!r} must be a safe https URL on "
+            r.add_error(f"{tag}: sourceUrl {fin_headline.short_repr(_src_any)} must be a safe https URL on "
                         f"an allowlisted host (no credentials, default port)")
         # Exact credit claims: APR/term/minimum require verification, source,
         # adjacent conditions (detail) and a disclosure — all bilingual.
@@ -1225,7 +1421,7 @@ def validate_financing(config: dict, *, allowed_source_hosts=None) -> Validation
                 r.add_error(f"{tag}: exact terms require a valid verifiedAt "
                             f"(ISO-8601 with offset)")
             elif _materially_future(plan.get("verifiedAt", "")):
-                r.add_error(f"{tag}: verifiedAt {plan.get('verifiedAt')!r} is materially "
+                r.add_error(f"{tag}: verifiedAt {fin_headline.short_repr(plan.get('verifiedAt'))} is materially "
                             f"in the future (beyond {FINANCING_CLOCK_SKEW_SECONDS}s clock "
                             f"skew) — exact terms cannot be verified at a future instant")
             src = _s(plan.get("sourceUrl"))
@@ -1256,19 +1452,33 @@ def validate_financing(config: dict, *, allowed_source_hosts=None) -> Validation
             r.add_error(f"{tag}: termMonths {fin_headline.short_repr(tm)} out of range "
                         f"(whole months {fin_headline.TERM_MIN}-"
                         f"{fin_headline.TERM_MAX} inclusive)")
+        # minimumPurchase is a customer-facing currency fact, so it must be a
+        # real finite JSON number. `isinstance(mp, (int, float)) or mp < 0`
+        # accepted true (bool is an int subclass, and True < 0 is False) and
+        # accepted NaN/±inf (every comparison with NaN is False). NaN and
+        # Infinity matter beyond tidiness: json.dumps writes them as the bare
+        # tokens NaN / Infinity, which are NOT JSON, so such a value in
+        # data/store-config.json yields a config the browser's JSON.parse
+        # refuses — the app would fail to load at all. No upper bound is
+        # imposed: a business maximum is Blake's call, not this validator's.
         mp = plan.get("minimumPurchase")
-        if mp is not None and (not isinstance(mp, (int, float)) or mp < 0):
-            r.add_error(f"{tag}: minimumPurchase {mp!r} out of range")
+        if mp is not None and not _finite_number(mp):
+            r.add_error(f"{tag}: minimumPurchase {fin_headline.short_repr(mp)} must be "
+                        f"a finite number (not a boolean, NaN or Infinity)")
+        elif mp is not None and mp < 0:
+            r.add_error(f"{tag}: minimumPurchase {fin_headline.short_repr(mp)} "
+                        f"out of range (must not be negative)")
         ppf = plan.get("publishedPaymentFactor")
-        if ppf is not None and (not isinstance(ppf, (int, float)) or not 0 < ppf < 1):
-            r.add_error(f"{tag}: publishedPaymentFactor {ppf!r} must be a fraction "
-                        f"between 0 and 1")
+        if ppf is not None and (not _finite_number(ppf) or not 0 < ppf < 1):
+            r.add_error(f"{tag}: publishedPaymentFactor "
+                        f"{fin_headline.short_repr(ppf)} must be a finite fraction "
+                        f"between 0 and 1 (not a boolean, NaN or Infinity)")
         # lease-to-own / credit-builder must never carry credit terms
         # Evergreen kinds are the availability-only card ("More paths"): the
         # renderer never freshness-gates them, so credit terms there would
         # render outside the exact-terms gate permanently. One semantic set,
         # not a scattered kind list.
-        if kind in FINANCING_EVERGREEN_KINDS and exact:
+        if isinstance(kind, str) and kind in FINANCING_EVERGREEN_KINDS and exact:
             r.add_error(f"{tag}: {kind} plans must not state APR/term/minimum — "
                         f"availability only, details confirmed in store")
 
@@ -1276,7 +1486,7 @@ def validate_financing(config: dict, *, allowed_source_hosts=None) -> Validation
     # Plan ids are opaque to presentation now, but they must still be unique:
     # the runtime builds lookup maps from them and a duplicate silently wins.
     _seen_ids = {}
-    for i, plan in enumerate(plans or []):
+    for i, plan in enumerate(plan_list):
         if not isinstance(plan, dict):
             continue
         pid = _s(plan.get("id"))
@@ -1284,7 +1494,7 @@ def validate_financing(config: dict, *, allowed_source_hosts=None) -> Validation
             _seen_ids.setdefault(pid, []).append(i)
     for pid, idxs in sorted(_seen_ids.items()):
         if len(idxs) > 1:
-            r.add_error(f"financing.plans: duplicate plan id {pid!r} at positions "
+            r.add_error(f"financing.plans: duplicate plan id {fin_headline.short_repr(pid)} at positions "
                         f"{idxs} — plan ids must be unique")
 
     if enabled:
@@ -1292,28 +1502,32 @@ def validate_financing(config: dict, *, allowed_source_hosts=None) -> Validation
         # A plan matching none would be silently absent from the sheet, which is
         # precisely the failure mode the id lookups used to hide.
         _scenario_counts = {}
-        for i, plan in enumerate(plans or []):
+        for i, plan in enumerate(plan_list):
             if not isinstance(plan, dict):
                 continue
-            tag = f"financing.plans[{plan.get('id', i)!r}]"
+            tag = _plan_tag(plan, i)
             group = _plan_group(plan)
             if not group:
                 r.add_error(
-                    f"{tag}: matches no renderer presentation group (kind={plan.get('kind')!r}, "
-                    f"presentationScenario={plan.get('presentationScenario')!r}) — it would "
-                    f"never be presented. Give it a supported kind, or a supported "
+                    f"{tag}: matches no renderer presentation group "
+                    f"(kind={fin_headline.short_repr(plan.get('kind'))}, "
+                    f"presentationScenario="
+                    f"{fin_headline.short_repr(plan.get('presentationScenario'))}) — it "
+                    f"would never be presented. Give it a supported kind, or a supported "
                     f"presentationScenario, or define the missing group in both "
                     f"tools/validation.py and index.html")
             if group == "scenario":
                 _sc = _plan_scenario(plan)
-                _scenario_counts.setdefault(_sc, []).append(plan.get("id", i))
+                _pid = plan.get("id")
+                _scenario_counts.setdefault(_sc, []).append(
+                    _pid if isinstance(_pid, str) else i)
         # Cardinality: the renderer draws a single card per singleton scenario,
         # so two claimants would mean one is silently dropped.
         for _sc, owners in sorted(_scenario_counts.items()):
             if _sc in FINANCING_SINGLETON_SCENARIOS and len(owners) > 1:
                 r.add_error(
                     f"financing.plans: {len(owners)} plans declare "
-                    f"presentationScenario={_sc!r} ({owners}) but the renderer presents "
+                    f"presentationScenario={fin_headline.short_repr(_sc)} ({owners}) but the renderer presents "
                     f"exactly one — the others would be dropped silently")
     return r
 
