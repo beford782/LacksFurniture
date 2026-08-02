@@ -12,7 +12,7 @@
 # incoming/requirements-qr.txt, which exists so the QR suite runs with zero
 # optional skips). pwsh is required, not optional: tests/golden/run_golden.py
 # --strict treats a missing PowerShell as a FAILURE, because without it the
-# mattresses.json comparison is silently skipped. GitHub's ubuntu-latest image
+# mattresses.json comparison is silently skipped. The pinned ubuntu-24.04 image
 # ships pwsh preinstalled; the job asserts that rather than assuming it.
 #
 # ARTIFACT SAFETY. Several suites regenerate the bundle to compare it against
@@ -33,10 +33,21 @@ on:
 permissions:
   contents: read
 
-# A superseded run on the same ref is pointless work — cancel it. Runs on main
-# are NOT cancelled: main is the deployed line and every commit's result matters.
+# Superseded PR runs are pointless work and are cancelled. Every OTHER run gets
+# a group of its own.
+#
+# `cancel-in-progress: false` is NOT sufficient to protect main. It preserves
+# the RUNNING job, but GitHub keeps at most one PENDING run per group: queue a
+# third commit while one run is active and one is pending, and the pending run
+# is cancelled and replaced. The middle commit on main would then get no CI
+# result at all — precisely the guarantee this workflow exists to provide.
+#
+# So pull requests share a group keyed on the PR number (new push supersedes the
+# old run for that PR), while push-to-main and workflow_dispatch use a group
+# containing github.run_id, which is unique per run. A unique group cannot
+# collide, so no main run can ever cancel or replace another.
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
@@ -49,6 +60,52 @@ jobs:
         uses: actions/checkout@v4
         with:
           persist-credentials: false
+          # Full history: the whitespace check below diffs the committed change
+          # against a base commit, which a shallow clone would not contain.
+          fetch-depth: 0
+
+      - name: Resolve the concurrency group and the diff range
+        id: ctx
+        run: |
+          set -euo pipefail
+          # Echoed so the group is visible in the log and can be compared
+          # between runs — two main/dispatch runs must never share one.
+          echo "concurrency group: ci-${{ github.workflow }}-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}"
+
+          # The revision range for `git diff --check`. Bare `git diff --check`
+          # compares the WORKING TREE against the index, which is empty right
+          # after checkout — it would pass on any committed change, however
+          # broken. Each trigger gets a real range instead.
+          case "${{ github.event_name }}" in
+            pull_request)
+              BASE='${{ github.event.pull_request.base.sha }}'
+              ;;
+            push)
+              BASE='${{ github.event.before }}'
+              # A new branch, or a force-push whose old tip is gone, yields
+              # all-zeros or an unreachable SHA; fall back to the first parent.
+              if [ -z "$BASE" ] \
+                 || [ "$BASE" = "0000000000000000000000000000000000000000" ] \
+                 || ! git cat-file -e "${BASE}^{commit}" 2>/dev/null; then
+                BASE=''
+              fi
+              ;;
+            *)
+              BASE=''   # workflow_dispatch: no event range exists
+              ;;
+          esac
+          # Safe explicit fallback: the single commit at HEAD. Guarded for a
+          # root commit, which has no parent.
+          if [ -z "$BASE" ]; then
+            if git rev-parse -q --verify HEAD^ >/dev/null 2>&1; then
+              BASE="$(git rev-parse HEAD^)"
+            else
+              BASE="$(git hash-object -t tree /dev/null)"   # empty tree
+            fi
+          fi
+          echo "diff base: $BASE"
+          echo "diff head: $(git rev-parse HEAD)"
+          echo "base=$BASE" >> "$GITHUB_OUTPUT"
 
       - name: Pin Python
         uses: actions/setup-python@v5
@@ -174,7 +231,13 @@ jobs:
 
       # ---- Tree hygiene -----------------------------------------------------
       - name: git diff --check (whitespace and conflict markers)
-        run: git diff --check
+        run: |
+          set -euo pipefail
+          # Ranged, so this actually inspects the COMMITTED change. Bare
+          # `git diff --check` looks at the working tree against the index and
+          # is vacuous immediately after checkout.
+          echo "checking ${{ steps.ctx.outputs.base }}..HEAD"
+          git diff --check "${{ steps.ctx.outputs.base }}" HEAD
 
       - name: Protected artifacts are byte-identical
         run: |
