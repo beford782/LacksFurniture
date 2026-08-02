@@ -11,9 +11,12 @@ import io
 import json
 import os
 import re
+import subprocess
 import sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(REPO, "tools"))
+import financing_headline as fin_headline  # noqa: E402
 
 passed = failed = 0
 
@@ -63,8 +66,15 @@ def main():
     check("lease-to-own / credit-builder carry no credit terms",
           all(not any(p.get(k) is not None for k in ("apr", "termMonths", "minimumPurchase"))
               for p in plans if p.get("kind") in ("lease-to-own", "credit-builder")))
-    mex = next((p for p in plans if p.get("id") == "mexico-in-house"), None)
-    check("mexico plan present, marked separatePath", bool(mex) and mex.get("separatePath") is True)
+    # Mexico is identified by its explicit presentation SCENARIO, never by plan
+    # id or a boolean flag: a retailer may rename every plan id freely.
+    mex = next((p for p in plans
+                if p.get("presentationScenario") == "mexico-delivery"), None)
+    check("mexico-delivery scenario plan present (identified semantically)", bool(mex))
+    check("exactly one mexico-delivery scenario plan",
+          sum(1 for p in plans if p.get("presentationScenario") == "mexico-delivery") == 1)
+    check("retired separatePath flag is absent from every shipped plan",
+          all("separatePath" not in p for p in plans))
     check("mexico dead application URL not used as plan/link sourceUrl",
           all("mexican-credit-application" not in str(p.get("sourceUrl") or "") for p in plans)
           and "mexican-credit-application" not in str(fin.get("mexicoInfoUrl") or ""))
@@ -83,19 +93,82 @@ def main():
           not any(b in json.dumps(fin).lower() for b in banned))
 
     # Source-of-truth sync: the shipped financing envelope must equal the
-    # canonical incoming source modulo the deliberately stripped payment
-    # factor (the only transform build_lacks_workbook.py applies). Catches
+    # canonical incoming source after EXACTLY the two transforms
+    # build_lacks_workbook.py applies, and nothing else:
+    #   1. publishedPaymentFactor is stripped (V1 ships no payment-math inputs);
+    #   2. promotional headlines are GENERATED from apr/termMonths.
+    # Both are reproduced here from the same code the builder runs, so this
+    # stays a real deep equality — no field is deleted from both sides to make
+    # it pass, and no subset comparison is substituted for it. Catches
     # stamp-then-forget-to-rebuild divergence: tools/reverify_financing.py
     # writes incoming/ only, so a stale data/store-config.json would
     # otherwise deploy silently.
     src_fin = json.loads(json.dumps(load_json("incoming/lacks_financing.json")["financing"]))
     for p in src_fin.get("plans", []):
         p.pop("publishedPaymentFactor", None)
+    fin_headline.apply_to_financing(src_fin)
     check("shipped verifiedAt matches incoming source (rebuild after stamping)",
           fin.get("verifiedAt") == src_fin.get("verifiedAt"),
           f"shipped {fin.get('verifiedAt')!r} vs incoming {src_fin.get('verifiedAt')!r}")
-    check("shipped financing envelope deep-equals incoming (factor-stripped)",
+    check("shipped financing envelope deep-equals incoming "
+          "(factor-stripped + headlines generated)",
           fin == src_fin)
+
+    # Generated promotional headlines. apr/termMonths are authoritative; the
+    # customer-visible prose is derived from them by tools/financing_headline.py
+    # at build time. Three distinct obligations, asserted separately so a
+    # failure names which one broke.
+    canon_plans = load_json("incoming/lacks_financing.json")["financing"]["plans"]
+    promo_canon = [p for p in canon_plans
+                   if fin_headline.is_promotional_presentation(p)]
+    promo_ship = [p for p in plans if fin_headline.is_promotional_presentation(p)]
+    check("2 promotional plans, identified semantically (kind + no scenario)",
+          len(promo_canon) == 2 and len(promo_ship) == 2,
+          f"canonical {len(promo_canon)}, shipped {len(promo_ship)}")
+    check("canonical source authors NO promotional headline (build-input contract)",
+          all("headline" not in p for p in promo_canon),
+          str([p.get("id") for p in promo_canon if "headline" in p]))
+    check("every shipped promotional headline equals the value generated from "
+          "its own apr/termMonths",
+          all(p.get("headline") == fin_headline.headline_for_plan(p)
+              for p in promo_ship))
+    # Byte-exact pin of the approved customer-visible output. Generation was a
+    # provenance change, not a copy change: these two strings shipped before it
+    # and must ship identically after.
+    check("shipped promotional headlines are exactly the approved strings",
+          [p.get("headline") for p in promo_ship] == [
+              {"en": "9.99% APR for 72 months", "es": "9.99% APR por 72 meses"},
+              {"en": "0% APR for 48 months", "es": "0% APR por 48 meses"}])
+    # The other four headlines are deliberately AUTHORED orientation/scenario
+    # language and must keep coming from the canonical source by hand.
+    check("every non-promotional plan keeps an authored canonical headline",
+          all("headline" in p for p in canon_plans
+              if not fin_headline.is_promotional_presentation(p)))
+    check("Mexico scenario headline stays authored, rate-free and unchanged "
+          "(it carries apr/termMonths but is NOT generated)",
+          (mex or {}).get("headline") == {
+              "en": "Purchasing for delivery to Mexico?",
+              "es": "¿Compras para entrega en México?"}
+          and mex.get("apr") == 24 and mex.get("termMonths") == 24)
+
+    # Operating state: exact rate/term claims are OFF until a named owner
+    # accepts weekly re-verification + emergency takedown. false here is a
+    # deliberate policy decision, not a symptom of stale evidence — the
+    # verified facts above keep their full validation either way.
+    check("canonical source carries exactPromotionsEnabled: false",
+          src_fin.get("exactPromotionsEnabled") is False,
+          repr(src_fin.get("exactPromotionsEnabled")))
+    check("shipped config carries exactPromotionsEnabled: false",
+          fin.get("exactPromotionsEnabled") is False,
+          repr(fin.get("exactPromotionsEnabled")))
+    check("policy field survives the pipeline as a real JSON boolean",
+          isinstance(fin.get("exactPromotionsEnabled"), bool))
+    check("runtime gate tests the policy with strict !== true",
+          "f.exactPromotionsEnabled !== true" in html)
+    check("exactly one runtime property read of the policy (no scattered copies)",
+          html.count(".exactPromotionsEnabled") == 1)
+    check("runtime never assigns or defaults the policy",
+          not re.search(r"exactPromotionsEnabled\s*=[^=]", html))
 
     print("Quiz config invariants:")
     quiz = load_json("data/quiz.json")
@@ -138,9 +211,25 @@ def main():
 
     print("Asset invariants:")
     check("financing QR committed", os.path.isfile(os.path.join(REPO, "images", "qr-financing.svg")))
+    # The QR target is no longer a literal in the generator: it is read from
+    # data/store-config.json financing.sourceUrl. The PAYLOAD of the committed
+    # SVG is proven by tests/qr_payload_check.py, which decodes the image
+    # itself; here we assert the config-driven contract and invoke the real
+    # checker rather than re-implementing it.
     qr_gen = load_text("incoming/generate_financing_qr.py")
-    check("QR targets Lacks' official financing page",
-          'TARGET = "https://www.lacks.com/financing"' in qr_gen)
+    check("QR generator carries no hardcoded financing target",
+          "https://www.lacks.com/financing" not in qr_gen)
+    check("QR generator reads financing.sourceUrl from the shipped config",
+          'fin.get("sourceUrl")' in qr_gen and "store-config.json" in qr_gen)
+    check("QR generator reuses the repository financing allowlist",
+          "validation._is_allowed_source" in qr_gen)
+    check("QR generator refuses the unverified Mexico application target",
+          "mexicoApplicationUrl" in qr_gen and "_url_identity" in qr_gen)
+    _qr = subprocess.run([sys.executable,
+                          os.path.join(REPO, "incoming", "generate_financing_qr.py"),
+                          "--check"], capture_output=True, text=True)
+    check("committed QR encodes the shipped financing.sourceUrl (real --check)",
+          _qr.returncode == 0, (_qr.stderr or _qr.stdout)[:120])
     missing_imgs = []
     for tier in ("gold", "silver", "bronze"):
         for m in mj.get(tier) or []:
@@ -166,6 +255,35 @@ def main():
           "Lacks" not in html)
     check("publishedPaymentFactor stripped from shipped config",
           "publishedPaymentFactor" not in json.dumps(cfg))
+    # The dead Mexico application URL is stored in config as documentation
+    # (verified:false) and must stay structurally unreachable: no runtime code
+    # reads the field or the URL, so no config edit alone can render it.
+    check("dead Mexico application URL unreferenced by runtime code",
+          "mexicoApplicationUrl" not in html and "mexican-credit-application" not in html)
+    check("dead Mexico application URL absent from Code.gs",
+          "mexicoApplicationUrl" not in gs and "mexican-credit-application" not in gs)
+    check("financing links fail closed through the safe-link helper",
+          "function setAllowedFinancingLink(" in html
+          and "financingSourceAllowed(f.sourceUrl) ? f.sourceUrl : ''" in html)
+    # Static financing anchors must ship INERT: no href attribute at all in
+    # the initial DOM, so a config that never loads (or fails URL validation)
+    # cannot leave a live or placeholder link. setAllowedFinancingLink()
+    # installs a real href only after the URL passes. This inspects the actual
+    # opening tags — an earlier version of this check only scanned JS
+    # assignments and so passed while href="#" sat in the markup.
+    for anchor_id in ("financingSheetLink", "hf2FinancingLink"):
+        tag = re.search(r"<a\b[^>]*\bid=\"%s\"[^>]*>" % anchor_id, html)
+        check(f"static anchor #{anchor_id} exists in the initial DOM", bool(tag))
+        if tag:
+            check(f"static anchor #{anchor_id} ships with NO href attribute",
+                  not re.search(r"\bhref\s*=", tag.group(0)), tag.group(0)[:110])
+            check(f"static anchor #{anchor_id} keeps target/rel hardening",
+                  'target="_blank"' in tag.group(0)
+                  and 'rel="noopener noreferrer"' in tag.group(0))
+    # Separately: runtime code must never assign a '#' placeholder either.
+    check("runtime code never assigns a '#' href to a financing anchor",
+          not re.search(r"(financingSheetLink|hf2FinancingLink)[^\n]*\.href\s*=\s*[^\n]*'#'", html)
+          and not re.search(r"\.href\s*=\s*[^;\n]*\|\|\s*'#'", html))
     check("hidden attribute always wins in CSS ([hidden] reset present)",
           "[hidden] { display: none !important; }" in html)
 

@@ -216,6 +216,10 @@ def _fab_data(now):
         "financing": {
             "verifiedAt": base,
             "maxAgeDays": 7,
+            # Operating-state policy. This tool must NEVER read or write it:
+            # re-verifying evidence is not authorization to publish exact
+            # terms. The self-test below pins that it survives every path.
+            "exactPromotionsEnabled": False,
             "sourceUrl": "https://example.com/financing",
             "plans": [
                 {"id": "main-plan", "verifiedAt": base, "apr": 9.99,
@@ -310,6 +314,8 @@ def self_test() -> int:
     check("recordedAt present and distinct from verifiedAt (F3)",
           bool(entry.get("recordedAt")) and entry["recordedAt"] != entry["verifiedAt"])
     check("attestation recorded", entry["attestation"] == "self-test attestation")
+    check("exactPromotionsEnabled unchanged by top-level stamping + --also-confirm",
+          d["financing"]["exactPromotionsEnabled"] is False)
 
     d = _fab_data(now)
     out = mark(d, _ns(at=fresh, skip_plan=["faq-plan"]))
@@ -319,6 +325,22 @@ def self_test() -> int:
     check("skipped plans recorded in the audit entry",
           d["_meta"]["verificationLog"][-1]["plansSkipped"] == ["faq-plan"])
     check("skip reported as failing closed on its own", "SKIPPED" in out)
+    check("exactPromotionsEnabled unchanged by --skip-plan runs",
+          d["financing"]["exactPromotionsEnabled"] is False)
+
+    # A re-verification run must never grant authorization: even a config that
+    # already has the switch ON is left exactly as found (the tool neither
+    # enables nor disables it), and no CLI flag exists to toggle it.
+    d_on = _fab_data(now)
+    d_on["financing"]["exactPromotionsEnabled"] = True
+    mark(d_on, _ns(at=fresh, also_confirm=["faq-plan"]))
+    check("exactPromotionsEnabled=true is also left untouched",
+          d_on["financing"]["exactPromotionsEnabled"] is True)
+    import inspect
+    check("cmd_mark never reads or writes the policy field",
+          "exactPromotionsEnabled" not in inspect.getsource(cmd_mark))
+    check("no CLI option can toggle the exact-promotions policy",
+          "exactPromotionsEnabled" not in inspect.getsource(main))
 
     print("File writes:")
     src_backup = SRC
@@ -337,6 +359,8 @@ def self_test() -> int:
             check("written file carries the stamp and one audit entry",
                   written["financing"]["verifiedAt"] == fresh
                   and len(written["_meta"]["verificationLog"]) == 1)
+            check("written file preserves exactPromotionsEnabled unchanged",
+                  written["financing"]["exactPromotionsEnabled"] is False)
             os.remove(SRC)
     finally:
         SRC = src_backup

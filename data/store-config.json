@@ -57,7 +57,7 @@
     "locationLabel": "South Texas & the Rio Grande Valley",
     "privacyDraftNotice": "Draft policy — pending Lacks Furniture approval before live use.",
     "privacyHeading": "Privacy",
-    "privacyBody": "DreamFinder collects your name, email, and optional phone number to deliver your mattress recommendations. Your information is only used for this purpose and is never sold. DreamFinder does not send your information to lenders. If you choose to open Lacks' financing or application pages, you continue on lacks.com — a separate secure site governed by its own privacy terms.",
+    "privacyBody": "DreamFinder collects your name, email, and optional phone number to deliver your mattress recommendations. Your information is only used for this purpose and is never sold. DreamFinder does not send your information to lenders. If you choose to open Lacks' financing or application pages, you continue on lacks.com — a separate site governed by its own terms and privacy policy.",
     "disclaimerHeading": "Disclaimer",
     "disclaimerBody": "DreamFinder is a product recommendation tool. Match percentages and Sleep Brief guidance are generated from your quiz answers and should be treated as starting points, not guarantees. This tool does not provide medical advice — consult a healthcare provider for medical sleep concerns. Payment options, pricing, and product availability are subject to Lacks Furniture store terms and approval.",
     "ownershipBadge": "",
@@ -78,7 +78,7 @@
     "locationLabel": "Sur de Texas y el Valle del Río Grande",
     "privacyDraftNotice": "Política preliminar — pendiente de aprobación de Lacks Furniture antes de su uso.",
     "privacyHeading": "Privacidad",
-    "privacyBody": "DreamFinder recopila tu nombre, correo electrónico y número de teléfono opcional para enviarte tus recomendaciones de colchón. Tu información se usa únicamente para este fin y nunca se vende. DreamFinder no envía tu información a prestamistas. Si decides abrir las páginas de financiamiento o solicitud de Lacks, continúas en lacks.com — un sitio seguro aparte, regido por sus propios términos de privacidad.",
+    "privacyBody": "DreamFinder recopila tu nombre, correo electrónico y número de teléfono opcional para enviarte tus recomendaciones de colchón. Tu información se usa únicamente para este fin y nunca se vende. DreamFinder no envía tu información a prestamistas. Si decides abrir las páginas de financiamiento o solicitud de Lacks, continúas en lacks.com — un sitio aparte, regido por sus propios términos y política de privacidad.",
     "disclaimerHeading": "Aviso legal",
     "disclaimerBody": "DreamFinder es una herramienta de recomendación de productos. Los porcentajes de compatibilidad y la guía del Resumen de Sueño se generan a partir de tus respuestas y deben tomarse como punto de partida, no como garantía. Esta herramienta no ofrece asesoramiento médico — consulta a un profesional de la salud para problemas médicos del sueño. Las opciones de pago, los precios y la disponibilidad de productos están sujetos a los términos de las tiendas Lacks Furniture y a aprobación."
   },
@@ -120,6 +120,7 @@
       "note": "Published in Lacks' FAQ but returned 404 on 2026-07-30. Do not render as a link until it resolves; the Mexico card links to mexicoInfoUrl."
     },
     "savingsPassPolicy": "specialist_confirm",
+    "exactPromotionsEnabled": false,
     "esReviewStatus": "pending-native-legal-review",
     "allowedSourceHosts": [
       "lacks.com",
@@ -194,8 +195,8 @@
         "es": "Tu Plan de Sueño. Tus Opciones de Pago."
       },
       "handoffPrivate": {
-        "en": "Continue privately on your phone — scan to open Lacks' official financing page.",
-        "es": "Continúa en privado desde tu teléfono — escanea para abrir la página oficial de financiamiento de Lacks."
+        "en": "Continue on your phone — scan to open Lacks' official financing page.",
+        "es": "Continúa desde tu teléfono — escanea para abrir la página oficial de financiamiento de Lacks."
       },
       "interestPrompt": {
         "en": "Would you like to review flexible payment options with your Lacks specialist?",
@@ -209,6 +210,18 @@
         "en": "Not right now",
         "es": "Ahora no"
       },
+      "interestMarkedAnnounce": {
+        "en": "Marked for your specialist. Nothing is submitted and no application is started.",
+        "es": "Marcado para tu especialista. No se envía nada y no se inicia ninguna solicitud."
+      },
+      "interestNotNowAnnounce": {
+        "en": "Not right now selected. You can change this choice.",
+        "es": "Se seleccionó 'Ahora no'. Puedes cambiar esta opción."
+      },
+      "interestClearedAnnounce": {
+        "en": "Selection cleared. Choose again when you're ready.",
+        "es": "Se borró la selección. Elige de nuevo cuando quieras."
+      },
       "staleNotice": {
         "en": "Current payment options are available from your Lacks specialist.",
         "es": "Tu especialista de Lacks tiene las opciones de pago actuales."
@@ -218,8 +231,8 @@
         "es": "Las tasas y los plazos exactos no se muestran en este momento. Tu especialista de Lacks puede confirmar las opciones de pago actuales en tienda."
       },
       "externalNotice": {
-        "en": "Opens lacks.com — a separate secure site governed by its own privacy terms.",
-        "es": "Abre lacks.com — un sitio seguro aparte, regido por sus propios términos de privacidad."
+        "en": "Opens lacks.com — a separate site governed by its own terms and privacy policy.",
+        "es": "Abre lacks.com — un sitio aparte, regido por sus propios términos y política de privacidad."
       },
       "emailHeading": {
         "en": "Payment options",
@@ -329,8 +342,8 @@
           "es": "Arrendamiento con opción a compra"
         },
         "detail": {
-          "en": "An available path if past credit has been difficult. Lease-to-own is not conventional financing. Program details, costs, eligibility, and ownership terms are confirmed in store.",
-          "es": "Una opción disponible si el crédito ha sido difícil en el pasado. El arrendamiento con opción a compra no es financiamiento convencional. Los detalles del programa, costos, elegibilidad y términos de propiedad se confirman en tienda."
+          "en": "Lease-to-own is available. Program details, costs, eligibility, and ownership terms are confirmed in store.",
+          "es": "El arrendamiento con opción a compra está disponible. Los detalles del programa, costos, elegibilidad y términos de propiedad se confirman en tienda."
         }
       },
       {
@@ -354,7 +367,7 @@
         "id": "mexico-in-house",
         "kind": "closed-end-installment",
         "provider": "Lacks",
-        "separatePath": true,
+        "presentationScenario": "mexico-delivery",
         "verified": true,
         "verifiedAt": "2026-07-31T16:43:00-05:00",
         "sourceUrl": "https://www.lacks.com/faq",
@@ -374,8 +387,8 @@
           "es": "Ejemplo publicado por Lacks: $999 financiados durante 24 meses con 24% APR tendrán 24 pagos mensuales de $52.82."
         },
         "disclosure": {
-          "en": "Details and application on Lacks' official pages. This program is offered to any customer purchasing for delivery to Mexico and is never suggested based on language.",
-          "es": "Detalles y solicitud en las páginas oficiales de Lacks. Este programa se ofrece a cualquier cliente que compre para entrega en México y nunca se sugiere por el idioma."
+          "en": "For purchases intended for delivery to Mexico, ask a Lacks specialist to confirm current details and requirements.",
+          "es": "Para compras destinadas a entrega en México, consulta con un especialista de Lacks para confirmar los detalles y requisitos actuales."
         }
       }
     ]

@@ -31,6 +31,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(HERE)
 sys.path.insert(0, os.path.join(REPO, "tools"))
 import workbook_schema as schema  # noqa: E402
+import financing_headline as fin_headline  # noqa: E402
 import openpyxl  # noqa: E402
 
 OUT = os.path.join(HERE, "Lacks_Store_Data.xlsx")
@@ -180,6 +181,18 @@ def promotions_rows():
     # is stripped from the runtime config so no client code can multiply it.
     for plan in financing.get("plans", []):
         plan.pop("publishedPaymentFactor", None)
+    # Promotional headlines are DERIVED, never authored: apr + termMonths are
+    # authoritative and tools/financing_headline.py owns the one EN/ES template
+    # that restates them. This is the second (and last) transform between the
+    # canonical source and the shipped envelope; tests/smoke_check.py applies
+    # exactly these two and then demands deep equality, so a canonical edit that
+    # is never rebuilt cannot ship silently. Failure is fatal by design — an
+    # authored headline on a promotional plan, or a plan that cannot state its
+    # own terms, must stop the build rather than reach a customer.
+    try:
+        fin_headline.apply_to_financing(financing)
+    except fin_headline.HeadlineError as exc:
+        raise SystemExit(f"build_lacks_workbook: {exc}")
     envelope = {"financing": financing}
     payload = json.dumps(envelope, ensure_ascii=False, separators=(",", ":"))
     return [{"Promotions JSON": payload[i:i + _PROMO_CHUNK]}

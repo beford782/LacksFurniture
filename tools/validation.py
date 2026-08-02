@@ -35,6 +35,7 @@ from typing import Dict, List, Optional, Tuple
 # Shared schema lives alongside this file in tools/.
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import workbook_schema as schema  # noqa: E402
+import financing_headline as fin_headline  # noqa: E402
 
 
 SUPPORTED_LANGUAGES = (["en"], ["en", "es"])
@@ -88,8 +89,53 @@ class ValidationReport:
 
 # -- Helpers ------------------------------------------------------------------
 
+# Author-supplied JSON reaches these helpers, and str() is not total over it:
+# CPython refuses int->str beyond sys.get_int_max_str_digits() (4300 digits by
+# default) and raises ValueError, which a validator must never do. Strings pass
+# through verbatim so validation still inspects real content; every other type
+# is converted defensively and length-capped, because a converted non-string
+# only ever feeds a blank/equality test or a diagnostic.
+_NONSTR_TEXT_CAP = 120
+
+
+def _safe_str(v) -> str:
+    """str(v) that cannot raise and cannot be unbounded. Strings are returned
+    unchanged; other types are described rather than rendered when they cannot
+    be printed cheaply."""
+    if isinstance(v, str):
+        return v
+    try:
+        if isinstance(v, int) and not isinstance(v, bool) and v.bit_length() > 128:
+            return f"<{v.bit_length()}-bit integer>"
+        text = str(v)
+    except Exception:                       # noqa: BLE001 - hostile __str__
+        try:
+            return f"<unprintable {type(v).__name__}>"
+        except Exception:                   # noqa: BLE001 - hostile metaclass
+            return "<unprintable value>"
+    if len(text) > _NONSTR_TEXT_CAP:
+        return text[:_NONSTR_TEXT_CAP] + f"...({len(text)} chars)"
+    return text
+
+
+_JSON_TYPE_NAMES = {type(None): "null", bool: "boolean", int: "number",
+                    float: "number", str: "string", list: "array", dict: "object"}
+
+
+def _type_name(v) -> str:
+    """The JSON type name of a value, for error text an author can act on —
+    they wrote JSON, so 'array' is more use to them than 'list'."""
+    return _JSON_TYPE_NAMES.get(type(v), type(v).__name__)
+
+
+# Single numeric-sanity authority for every financing number (see Commit I):
+# exact int/float, not a boolean, not NaN and not ±Infinity. Each field adds
+# only its own range on top.
+_finite_number = fin_headline.finite_number
+
+
 def _blank(v) -> bool:
-    return v is None or str(v).strip() == ""
+    return v is None or _safe_str(v).strip() == ""
 
 
 def _is_hex(v) -> bool:
@@ -102,14 +148,14 @@ def _is_slug(v) -> bool:
 
 def _host_from_url(url: str) -> str:
     """Extract the host from an https URL (no scheme, no path). '' if unparseable."""
-    s = str(url).strip()
+    s = _safe_str(url).strip()
     if "://" in s:
         s = s.split("://", 1)[1]
     return s.split("/", 1)[0]
 
 
 def _s(v) -> str:
-    return "" if v is None else str(v).strip()
+    return "" if v is None else _safe_str(v).strip()
 
 
 # Live accessory categories (the real enum the app/template use - NOT a generic
@@ -351,17 +397,198 @@ def _archive_embedded_host(url: str) -> str:
     return _host_from_url(m.group(1)) if m else ""
 
 
+def _split_safe_https(url: str):
+    """urlsplit the URL and return the parse ONLY when it is a safe absolute
+    https URL: scheme exactly https, hostname present, no username/password,
+    port absent or exactly 443. Returns None otherwise — including relative,
+    protocol-relative, http, javascript:/data:, credentialed, odd-port, and
+    malformed URLs."""
+    from urllib.parse import urlsplit
+    try:
+        parts = urlsplit(str(url).strip())
+    except ValueError:
+        return None
+    if parts.scheme != "https" or not parts.hostname:
+        return None
+    if parts.username is not None or parts.password is not None:
+        return None
+    try:
+        port = parts.port
+    except ValueError:
+        return None
+    if port not in (None, 443):
+        return None
+    return parts
+
+
+_PCT_RE = re.compile(r"%([0-9A-Fa-f]{2})")
+
+
+def _normalize_percent(s: str) -> str:
+    """RFC 3986 §6.2.2.1/§6.2.2.2 syntax-based normalization: percent-encoded
+    UNRESERVED characters (ALPHA / DIGIT / '-' '.' '_' '~') are equivalent to
+    their decoded form, and the hex digits of whatever stays encoded are
+    case-normalized. RESERVED separators (%2F, %3F, %23, ...) are deliberately
+    left encoded — decoding those would merge genuinely different paths."""
+    def sub(m):
+        ch = chr(int(m.group(1), 16))
+        if ch.isascii() and (ch.isalnum() or ch in "-._~"):
+            return ch
+        return "%" + m.group(1).upper()
+    return _PCT_RE.sub(sub, s)
+
+
+def _remove_dot_segments(path: str) -> str:
+    """RFC 3986 §5.2.4 dot-segment removal, matching how browsers resolve a
+    path before navigating. '..' pops the previous segment and clamps at the
+    root (it can never escape above it); '.' is dropped. Empty segments are
+    preserved ('//a' stays distinct from '/a'), matching WHATWG."""
+    if not path:
+        return ""
+    lead = "/" if path.startswith("/") else ""
+    segs = path.split("/")
+    if lead:
+        segs = segs[1:]
+    out = []
+    for seg in segs:
+        if seg == ".":
+            continue
+        if seg == "..":
+            if out:
+                out.pop()
+            continue
+        out.append(seg)
+    return lead + "/".join(out)
+
+
+def _url_identity(url: str) -> str:
+    """Normalized URL identity for anti-conflation comparisons — deliberately
+    aligned with how a BROWSER resolves a URL before navigating, because the
+    threat is a config edit that reuses a known-unverified target in a
+    syntactically different but navigationally identical form.
+
+    Normalizes: lowercased scheme and hostname; default port dropped;
+    backslashes treated as path separators (WHATWG does this for special
+    schemes); percent-encoded unreserved characters decoded (so %2e reads as
+    a dot and participates in dot-segment removal, exactly as browsers treat
+    it); dot segments removed; insignificant trailing slashes dropped. Query
+    and fragment are ignored — that is this policy's choice, since neither
+    changes which document the dead path serves.
+
+    Deliberately PRESERVED as significant: path case (paths are
+    case-sensitive per RFC 3986), reserved percent-encodings such as %2F, and
+    empty segments. Returns '' on malformed input so callers fail closed."""
+    from urllib.parse import urlsplit
+    try:
+        # urlsplit already strips ASCII tab/newline/CR like the URL spec does.
+        parts = urlsplit(str(url).strip())
+    except ValueError:
+        return ""
+    if not parts.scheme or not parts.hostname:
+        return ""
+    try:
+        port = parts.port
+    except ValueError:
+        return ""
+    scheme = parts.scheme.lower()
+    default = {"https": 443, "http": 80}.get(scheme)
+    portpart = "" if port in (None, default) else f":{port}"
+    path = (parts.path or "").replace("\\", "/")
+    path = _remove_dot_segments(_normalize_percent(path))
+    while path.endswith("/"):
+        path = path[:-1]
+    return f"{scheme}://{parts.hostname.lower()}{portpart}{path}"
+
+
 def _is_allowed_source(url: str, allowed_hosts) -> bool:
-    """True when url's host is one of the explicitly allowed hosts (exact match
-    or a dot-boundary subdomain), or a web.archive.org capture whose embedded
-    target host is allowed. Empty allowlist allows nothing (fail closed)."""
-    hosts = [h.lower().strip() for h in (allowed_hosts or []) if h and str(h).strip()]
+    """True when url is a safe absolute https URL (no credentials, default
+    port — see _split_safe_https) whose host is one of the explicitly allowed
+    hosts (exact match or a dot-boundary subdomain), or a safe https
+    web.archive.org capture whose embedded target host is allowed. Empty
+    allowlist allows nothing (fail closed)."""
+    # The allowlist is itself author-editable JSON (tools/source_hosts.json),
+    # so it is type-guarded here too and fails CLOSED: a malformed allowlist,
+    # or one whose entries are not host strings, allows nothing rather than
+    # raising. `h.lower()` on a non-string entry used to be an AttributeError.
+    if not isinstance(allowed_hosts, (list, tuple, set, frozenset)):
+        return False
+    hosts = [h.strip().lower() for h in allowed_hosts
+             if isinstance(h, str) and h.strip()]
     if not hosts:
         return False
-    host = _host_from_url(url).lower()
-    if "web.archive.org" in host:
+    parts = _split_safe_https(url)
+    if parts is None:
+        return False
+    host = parts.hostname.lower()
+    if host == "web.archive.org" or host.endswith(".web.archive.org"):
         host = _archive_embedded_host(url).lower()
+        if not host:
+            return False
     return any(host == h or host.endswith("." + h) for h in hosts)
+
+
+def _runtime_financing_host_allowed(url, declared_hosts) -> bool:
+    """EXACT mirror of index.html's financingSourceAllowed() (index.html:9981).
+
+    The build and the browser police financing URLs against DIFFERENT lists:
+    the build uses tools/source_hosts.json financingSourceHosts, the browser
+    uses the shipped financing.allowedSourceHosts. A URL the build accepts is
+    therefore not automatically one the browser will render, and when the
+    browser refuses it the failure is SILENT — the anchor loses its href, the
+    QR continuation and email URL disappear, and financingTermsFresh() goes
+    false so exact terms stay hidden even when they are authorized. Nothing
+    reports it. validate_financing uses this mirror to demand that the two
+    boundaries agree before the bundle can ship.
+
+    Deliberately reproduces the JS semantics rather than improving on them,
+    because agreement is the property under test:
+      * entries are lowercased but NOT trimmed (JS: String(x).toLowerCase()),
+        so a padded "  lacks.com  " really does fail in the browser and must
+        be reported here rather than silently tolerated;
+      * a non-default port is refused, and an EXPLICIT :443 is accepted —
+        the JS reads `if (u.port) return false`, and the URL parser normalises
+        the default port away, so `u.port` is '' for both "absent" and
+        ":443". python's urlsplit does NOT normalise, so mirroring the JS
+        means comparing against 443 rather than testing truthiness;
+      * matching is exact host or dot-boundary suffix;
+      * there is NO web.archive.org branch in the browser — see
+        _is_allowed_source, which has one for PROMOTIONS EVIDENCE URLs. An
+        archive capture is a legitimate evidence source and an illegitimate
+        customer destination, and validate_financing enforces that split."""
+    from urllib.parse import urlsplit
+    hosts = declared_hosts if isinstance(declared_hosts, list) else []
+    if not url or not hosts:
+        return False
+    try:
+        parts = urlsplit(_safe_str(url))
+        if parts.scheme != "https" or not parts.hostname:
+            return False
+        if parts.username or parts.password:
+            return False
+        if parts.port is not None and parts.port != 443:
+            return False
+    except ValueError:
+        return False
+    host = parts.hostname.lower()
+    for entry in hosts:
+        if not isinstance(entry, str):
+            continue
+        x = entry.lower()                   # NO .strip() — mirrors the JS
+        if host == x or host[-(len(x) + 1):] == "." + x:
+            return True
+    return False
+
+
+def _is_archive_capture(url) -> bool:
+    """True for a web.archive.org capture URL. Legitimate as promotions
+    EVIDENCE (see _is_allowed_source), never as a customer destination: the
+    browser's financingSourceAllowed() has no archive branch, so such a URL
+    would validate at build time and render as nothing."""
+    parts = _split_safe_https(url)
+    if parts is None:
+        return False
+    host = (parts.hostname or "").lower()
+    return host == "web.archive.org" or host.endswith(".web.archive.org")
 
 
 def _valid_ends_at(s: str) -> bool:
@@ -522,6 +749,263 @@ FINANCING_PLAN_KINDS = {
 }
 SAVINGS_PASS_POLICIES = {"alternative", "stackable", "specialist_confirm"}
 
+# -- Exact-claim detection for UNGATED financing copy --------------------------
+# financing.exactPromotionsEnabled and financingTermsFresh()/financingPlanFresh()
+# gate the exact OFFER BODIES, but a large amount of financing text renders
+# outside those gates in every operating state: all of financing.copy, the
+# promotional card's provider name, and the non-promotional plans' headlines and
+# disclosures. Nothing stopped an editor from putting an APR, term, minimum, or
+# payment example into one of those strings, which would put an unverified,
+# never-freshness-checked exact claim in front of a customer while the policy
+# switch reads "off".
+#
+# WHAT THIS ACTUALLY ENFORCES — and what it does not.
+# This is a lexical deny-list over an enumerated vocabulary of value, unit,
+# count, cadence, down-payment and deferral markers, plus one structural rule
+# for the payment noun (below). It raises the cost of shipping an exact claim
+# in an ungated field and catches every construction we have adversarially
+# tested, but it CANNOT prove the absence of an exact claim in arbitrary prose:
+# a paraphrase that avoids the whole marker vocabulary still passes. Known
+# survivors from the adversarial set include "Take it home now and settle up
+# later", "Split the cost over time", "Zero upfront" and "Nada por adelantado".
+# Treat this as a high-confidence filter and a forcing function for review, not
+# as a proof. Human copy review (Gate B/C) remains the authority.
+#
+# Posture: CONSERVATIVE and MARKER-oriented. Some markers are rejected with no
+# numeric value attached at all — `duration-unit` rejects a bare "month(s)",
+# "meses", "week", "year"; `proportion` rejects a bare "half"/"mitad" — because
+# "twelve months" and "half at pickup" state exact terms without a digit and no
+# numeral list can be relied on to catch them. That bias is intentional: it
+# sends borderline wording to review rather than letting it ship. It does NOT
+# mean the copy contained an exact claim, only that it used a marker reserved
+# for gated fields. Generic vocabulary the approved copy relies on — "rates",
+# "terms", "plazos", "payment options", "opciones de pago" — carries no marker
+# and passes. Each signal is separately named so an error tells the editor
+# exactly what tripped and whether it is a real claim or a rewording job.
+#
+# Three false-positive traps the shipped copy proves are real:
+#   * "apr" is a substring of "aprobacion"/"aprobados"  -> \bAPR\b is word-bounded
+#   * "interes" is a substring of "interested"/"me interesa" -> only explicit
+#     zero-interest constructions match, never the bare stem
+#   * "payment"/"pago" appears in 28 approved ungated strings ("payment options",
+#     "Payment Choices", "opciones de pago", "forma de pago") -> the payment noun
+#     is handled structurally, not by a plain ban (see _bare_payment_noun)
+_EXACT_CLAIM_SIGNALS = (
+    ("numeral", re.compile(r"\d")),
+    ("percent", re.compile(r"%")),
+    ("currency", re.compile(r"[$€£]|\bUSD\b|\bMXN\b", re.I)),
+    ("apr", re.compile(r"\bAPR\b", re.I)),
+    ("zero-interest", re.compile(
+        r"\bno interest\b|\binterest[-\s]free\b|\bzero interest\b|\bdeferred interest\b"
+        r"|\bsin\s+inter[eé]s(?:es)?\b|\bcero\s+inter[eé]s(?:es)?\b", re.I)),
+    ("payment-cadence", re.compile(
+        r"\bper month\b|\ba month\b|\bmonthly payments?\b|\bequal payments?\b"
+        r"|\bal mes\b|\bpor mes\b|\bpagos?\s+mensual(?:es)?\b|\bmensualidades\b", re.I)),
+    # UNIT signals. An exact claim does not need digits — "twelve months",
+    # "doce meses", "nine percent" and "fifty dollars" are exact terms written
+    # with number words. Banning the UNIT catches those without enumerating
+    # every English and Spanish numeral (an enumeration would be endless and
+    # would still miss "a dozen"). Ungated copy may still discuss generic
+    # "rates", "terms", "plazos", "payment options" and "opciones de pago" —
+    # none of those is a unit.
+    ("duration-unit", re.compile(
+        r"\bmonths?\b|\bmonthly\b|\bweeks?\b|\bweekly\b|\byears?\b|\byearly\b|\bannual(?:ly)?\b"
+        r"|\bmes\b|\bmeses\b|\bmensual(?:es|mente)?\b|\bsemanas?\b|\bsemanal(?:es)?\b"
+        r"|\ba[ñn]os?\b|\banual(?:es|mente)?\b", re.I)),
+    ("percent-word", re.compile(r"\bpercent(?:age)?\b|\bpor\s+ciento\b|\bporcentaje\b", re.I)),
+    ("currency-unit", re.compile(r"\bdollars?\b|\bd[oó]lar(?:es)?\b|\bpesos?\b|\beuros?\b", re.I)),
+    ("installment-count", re.compile(
+        r"\binstallments?\b|\bmensualidades?\b|\bcuotas?\b|\babonos?\b", re.I)),
+    # Repetition counts ("Pay twelve times" / "Paga doce veces"). Neither word
+    # appears in any approved ungated string.
+    ("repetition-count", re.compile(r"\btimes\b|\bveces\b", re.I)),
+    # Down payment / minimum-at-purchase claims.
+    ("down-payment", re.compile(
+        r"\b(?:no|nothing|zero)\s+(?:money\s+)?down\b|\bmoney\s+down\b"
+        r"|\bdown\s+payment\b|\benganche\b|\bpago\s+inicial\b", re.I)),
+    # Deferral / "pay later" claims — time-sensitive by nature.
+    ("deferral", re.compile(
+        r"\bdefer(?:red|ral|s|ring)?\b|\bpay\s+later\b|\bno\s+payments?\s+until\b"
+        r"|\bsin\s+pagos?\s+hasta\b|\bpag(?:a|ue|ar)\s+(?:despu[eé]s|luego|m[aá]s\s+tarde)\b",
+        re.I)),
+    # Proportional split ("Half now and half at pickup"). Heuristic, but neither
+    # word appears in approved ungated copy and a fraction of the price in an
+    # ungated field is a payment example.
+    ("proportion", re.compile(r"\bhalf\b|\bmitad\b", re.I)),
+)
+
+# The payment noun needs a STRUCTURAL rule, not a ban: "payment"/"pago" occurs
+# in 28 approved ungated strings, always inside a neutral collocation naming the
+# CONCEPT ("payment options", "Payment Choices", "payment method", "opciones de
+# pago", "forma de pago").
+#
+# The contract is DEFAULT-DENY against a REVIEWED ALLOWLIST: the collocations
+# below are the wordings that have been reviewed and cleared for ungated
+# surfaces. A payment noun that survives their removal is rejected because it
+# falls OUTSIDE that allowlist and therefore needs review — NOT because the
+# prose has been shown to contain an exact claim. Benign-but-unreviewed
+# phrasings are rejected too, by design: "Payment information is available in
+# store.", "Ask your specialist about payment." and "Choose a payment program."
+# all fail, and they are false positives in the semantic sense. The remedy is to
+# reword to an allowlisted collocation, or to review the phrase and add it here.
+#
+# This is why banning "installments"/"cuotas" alone did not close the
+# payment-count class: ordinary "payments"/"pagos" carries it just as well.
+_NEUTRAL_PAYMENT_PHRASES = re.compile(
+    r"\bpayment\s+(?:options?|choices?|methods?)\b"
+    r"|\b(?:opciones?|formas?|m[eé]todos?|maneras?)\s+de\s+pago\b", re.I)
+_PAYMENT_NOUN = re.compile(r"\bpayments?\b|\bpagos?\b", re.I)
+
+
+def _bare_payment_noun(text: str) -> bool:
+    """True when a payment noun survives removal of the reviewed neutral
+    collocations — i.e. the wording falls outside the cleared allowlist and
+    needs review. True does NOT establish that the text states an actual
+    payment; benign phrasings outside the allowlist are rejected by design."""
+    return bool(_PAYMENT_NOUN.search(_NEUTRAL_PAYMENT_PHRASES.sub(" ", text or "")))
+
+# ===== Financing presentation taxonomy (mirrors index.html) ==================
+# Every plan maps to exactly ONE presentation group, decided by `kind` and the
+# explicit `presentationScenario` field and NOTHING else — never by plan id,
+# array position, language, provider, headline text, source URL, or the
+# presence of exact terms. A retailer may rename every plan id without changing
+# which card a plan lands in. index.html carries the identical partition in
+# finPlanGroup(); the taxonomy test pins the two in step.
+#
+# A plan that matches NO group is a validation error, never a silent drop: that
+# is what stops a newly-allowed kind from vanishing from the sheet.
+FINANCING_SCENARIOS = {"mexico-delivery"}
+
+# Scenario -> the financing kind its product semantics require.
+FINANCING_SCENARIO_KINDS = {"mexico-delivery": "closed-end-installment"}
+
+# Scenarios the renderer can present only once (it renders a single card).
+FINANCING_SINGLETON_SCENARIOS = {"mexico-delivery"}
+
+FINANCING_EVERGREEN_KINDS = {"lease-to-own", "credit-builder", "informational"}
+
+# Fields each group renders OUTSIDE its freshness gate (Commit F's guard):
+#   promotional   -> headline/detail/disclosure all sit inside the gate
+#   installment   -> title + disclosure ungated; `detail` gated
+#   evergreen     -> availability-only card, never freshness-gated
+#   scenario      -> title + disclosure ungated; detail/example gated
+_GROUP_UNGATED_FIELDS = {
+    "promotional": (),
+    "installment": ("headline", "disclosure"),
+    "evergreen": ("headline", "detail", "disclosure"),
+    "scenario": ("headline", "disclosure"),
+}
+
+
+def _plan_scenario(plan) -> str:
+    """TOTAL over any JSON value: a non-object plan, or a non-string scenario,
+    reads as no declared scenario. The malformed value is reported separately
+    by validate_financing; classification must not raise on it."""
+    if not isinstance(plan, dict):
+        return ""
+    v = plan.get("presentationScenario")
+    return v if isinstance(v, str) else ""
+
+
+def _plan_group(plan) -> str:
+    """'promotional' | 'installment' | 'evergreen' | 'scenario' | '' (no match).
+
+    TOTAL over any JSON value. `kind` is screened with isinstance(str) BEFORE
+    the set-membership tests below, because `x in <set>` HASHES x and a JSON
+    array or object as `kind` therefore raised TypeError — a malformed kind now
+    yields the unclassified '' that validate_financing reports as an error.
+    Classification of valid plans is unchanged: a non-string kind was already
+    unclassified whenever it happened to be hashable."""
+    if not isinstance(plan, dict):
+        return ""
+    scenario = _plan_scenario(plan)
+    if scenario:
+        return "scenario" if scenario in FINANCING_SCENARIOS else ""
+    kind = plan.get("kind")
+    if not isinstance(kind, str):
+        return ""
+    if kind == "open-end-promotional-credit":
+        return "promotional"
+    if kind == "closed-end-installment":
+        return "installment"
+    if kind in FINANCING_EVERGREEN_KINDS:
+        return "evergreen"
+    return ""
+
+
+def _exact_claim_signals(text) -> list:
+    """Names of exact-claim signals present in text ([] when clean). See the
+    block comment above for what this does and does not prove."""
+    s = "" if text is None else _safe_str(text)
+    names = [name for name, rx in _EXACT_CLAIM_SIGNALS if rx.search(s)]
+    if _bare_payment_noun(s):
+        names.append("payment-noun")
+    return names
+
+
+def _is_gated_offer_plan(plan) -> bool:
+    """True for plans whose headline/detail/disclosure render ONLY inside the
+    exact-terms gate — i.e. the promotional group. Classification is semantic
+    (kind + presentationScenario); a plan id has no effect on it."""
+    return _plan_group(plan) == "promotional"
+
+
+def _ungated_plan_fields(plan) -> tuple:
+    """Plan fields that reach a customer OUTSIDE the exact-terms gate, derived
+    from the plan's presentation group (see _plan_group) so that renaming a
+    plan id cannot move wording out of Commit F's guard.
+
+      * provider  — always: the promotional card title renders it even on the
+                    stale/fail-closed path.
+      * headline / disclosure — every non-promotional group: the installment
+                    and scenario card titles, the evergreen entries and the
+                    handoff chips render them ungated, and a disclosure keeps
+                    rendering after its adjacent exact detail has been swapped
+                    for staleNotice.
+      * detail    — evergreen only: the "More paths" card is availability-only
+                    and is never freshness-gated.
+
+    Promotional detail/disclosure and the scenario card's detail /
+    representativeExample are NOT listed: those render only inside the gate and
+    keep their existing exact validation. An unclassified plan is treated as
+    fully ungated (maximally protective) — validation errors on it separately."""
+    group = _plan_group(plan)
+    return ("provider",) + _GROUP_UNGATED_FIELDS.get(
+        group, ("headline", "detail", "disclosure"))
+
+
+
+def _check_ungated_text(r, label: str, value) -> None:
+    """Error when an ungated financing string trips a guarded signal. A hit is
+    one of TWO things, and the error must not conflate them:
+
+      1. a likely exact/time-sensitive financing marker — a rate, a duration or
+         currency unit, a payment cadence, a count, a down payment, a deferral;
+      2. a payment-noun phrase outside the reviewed neutral allowlist, which is
+         rejected by default-deny even when the prose is benign.
+
+    So a hit means the wording is reserved for gated fields or has not been
+    reviewed for ungated use. It does NOT by itself prove the text states an
+    exact claim. Accepts a bilingual dict or a plain string."""
+    items = []
+    if isinstance(value, dict):
+        items = [(f"{label}.{lang}", value.get(lang)) for lang in ("en", "es")]
+    elif isinstance(value, str):
+        items = [(label, value)]
+    for tag, text in items:
+        if _blank(text):
+            continue
+        hit = _exact_claim_signals(text)
+        if hit:
+            r.add_error(
+                f"{tag} renders outside the exact-terms gate and uses reserved or "
+                f"unreviewed financing language ({', '.join(hit)}): "
+                f"{fin_headline.short_repr(text, 80)}. Either reword it using reviewed generic "
+                f"orientation language, or move genuine verified terms into a "
+                f"freshness-gated plan field. A signal marks wording reserved for "
+                f"gated fields or outside the reviewed neutral allowlist — it does "
+                f"not by itself establish that this text states an exact claim.")
+
 
 def _valid_iso_instant(s: str) -> bool:
     """ISO-8601 datetime with explicit timezone offset (absolute instant)."""
@@ -555,7 +1039,16 @@ def _materially_future(s: str) -> bool:
 
 
 def _bilingual_ok(obj) -> bool:
-    return isinstance(obj, dict) and bool(_s(obj.get("en"))) and bool(_s(obj.get("es")))
+    """A bilingual leaf is an object carrying non-blank EN and ES TEXT.
+
+    The language values must be real strings. They were previously coerced
+    through _s(), so a JSON number, boolean, array or object passed the check
+    and then reached the customer through L() as '7' or '[object Object]' —
+    customer-visible copy silently invented from a malformed field."""
+    if not isinstance(obj, dict):
+        return False
+    return all(isinstance(obj.get(lang), str) and obj[lang].strip()
+               for lang in ("en", "es"))
 
 
 def validate_financing(config: dict, *, allowed_source_hosts=None) -> ValidationReport:
@@ -564,90 +1057,492 @@ def validate_financing(config: dict, *, allowed_source_hosts=None) -> Validation
     Fail-closed posture: exact credit claims (APR / term / minimum) must be
     verified, timestamped, freshness-bounded, disclosure-carrying, and sourced
     from an explicitly allowlisted host. Payment calculation must be disabled
-    in V1. No-op when there is no financing block."""
+    in V1. No-op when there is no financing block.
+
+    TOTAL over JSON: for any value python's json.loads can produce — at the top
+    level or anywhere inside the financing subtree — this returns a
+    ValidationReport with bounded, named errors. It never raises and never
+    mutates its argument. Malformed author input is a VERDICT, not a crash:
+    the converter has to be able to refuse a bad workbook and say why, and a
+    traceback is neither a refusal an operator can act on nor something the
+    build can distinguish from a validator defect. Every structure is therefore
+    type-guarded at the point it is consumed rather than rescued by `x or {}`,
+    which only covers FALSY wrong types and leaves every truthy one to crash."""
     r = ValidationReport()
+    if not isinstance(config, dict):
+        r.add_error(f"config must be an object, got "
+                    f"{_type_name(config)} ({fin_headline.short_repr(config)})")
+        return r
     fin = config.get("financing")
     if fin is None:
         return r
     if not isinstance(fin, dict):
-        r.add_error("financing must be an object")
+        r.add_error(f"financing must be an object, got {_type_name(fin)} "
+                    f"({fin_headline.short_repr(fin)})")
         return r
-    hosts = list(allowed_source_hosts or [])
+    # The allowlist argument is JSON too — load_source_hosts() reads it from
+    # the editable tools/source_hosts.json — so it gets the same treatment as
+    # the config: guarded, reported, and failing CLOSED. `list(x or [])` raised
+    # TypeError on a number or boolean, and a list carrying a non-string entry
+    # raised AttributeError downstream in _is_allowed_source.
+    if allowed_source_hosts is None:
+        hosts = []
+    elif isinstance(allowed_source_hosts, (list, tuple, set, frozenset)):
+        entries = list(allowed_source_hosts)
+        hosts = [h for h in entries if isinstance(h, str)]
+        if len(hosts) != len(entries):
+            r.add_error(f"allowed_source_hosts contains "
+                        f"{len(entries) - len(hosts)} non-string entr"
+                        f"{'y' if len(entries) - len(hosts) == 1 else 'ies'} — "
+                        f"see tools/source_hosts.json financingSourceHosts; "
+                        f"they are ignored, so those hosts allow nothing")
+    else:
+        r.add_error(f"allowed_source_hosts must be a list of host strings, got "
+                    f"{_type_name(allowed_source_hosts)} "
+                    f"({fin_headline.short_repr(allowed_source_hosts)}) — "
+                    f"treating the allowlist as empty, which allows no host")
+        hosts = []
     enabled = fin.get("enabled") is True
+
+    # `plans` is iterated in FOUR places. Normalise it ONCE, here, so no loop
+    # can iterate a non-list: `for x in (fin.get("plans") or [])` walked the
+    # CHARACTERS of plans="bad" and raised on a plain int. A malformed value is
+    # reported once and then treated as an empty list, so every later rule
+    # still runs and the operator gets the whole verdict in one pass instead of
+    # one error per attempt. The shipped list is used as-is, never copied back:
+    # this function must not mutate its argument.
+    plans_raw = fin.get("plans")
+    if plans_raw is None:
+        plan_list = []
+    elif isinstance(plans_raw, list):
+        plan_list = plans_raw
+    else:
+        r.add_error(f"financing.plans must be an array of plan objects, got "
+                    f"{_type_name(plans_raw)} "
+                    f"({fin_headline.short_repr(plans_raw)})")
+        plan_list = []
+
+    def _plan_tag(plan, index):
+        """Bounded diagnostic label. Falls back to the array INDEX when the id
+        is absent or is not usable text, so a 5,000-digit integer id cannot
+        blow up (or become) the error message."""
+        pid = plan.get("id") if isinstance(plan, dict) else None
+        if isinstance(pid, str) and pid.strip():
+            return f"financing.plans[{fin_headline.short_repr(pid)}]"
+        return f"financing.plans[{index}]"
 
     if enabled:
         for key in ("verifiedAt", "maxAgeDays", "sourceUrl"):
             if _blank(fin.get(key)):
                 r.add_error(f"financing.{key} is required when financing is enabled")
         if fin.get("verifiedAt") and not _valid_iso_instant(fin["verifiedAt"]):
-            r.add_error(f"financing.verifiedAt {fin['verifiedAt']!r} must be ISO-8601 "
+            r.add_error(f"financing.verifiedAt {fin_headline.short_repr(fin.get('verifiedAt'))} must be ISO-8601 "
                         f"with a timezone offset")
         if fin.get("verifiedAt") and _materially_future(fin["verifiedAt"]):
-            r.add_error(f"financing.verifiedAt {fin['verifiedAt']!r} is materially in "
+            r.add_error(f"financing.verifiedAt {fin_headline.short_repr(fin.get('verifiedAt'))} is materially in "
                         f"the future (beyond {FINANCING_CLOCK_SKEW_SECONDS}s clock skew) — "
                         f"verification is an observation and cannot postdate now")
         mad = fin.get("maxAgeDays")
-        if mad is not None and (not isinstance(mad, int) or not 1 <= mad <= 60):
-            r.add_error("financing.maxAgeDays must be an integer between 1 and 60")
+        # `type(mad) is int`, not isinstance: bool is an int subclass, so
+        # maxAgeDays=true read as 1 and passed the 1..60 range silently.
+        if mad is not None and (type(mad) is not int or not 1 <= mad <= 60):
+            r.add_error(f"financing.maxAgeDays {fin_headline.short_repr(mad)} must be "
+                        f"an integer between 1 and 60 (not a boolean)")
         if fin.get("sourceUrl") and not _is_allowed_source(fin["sourceUrl"], hosts):
-            r.add_error(f"financing.sourceUrl {fin['sourceUrl']!r} host is not in the "
-                        f"configured source-host allowlist")
-        copy = fin.get("copy") or {}
+            r.add_error(f"financing.sourceUrl {fin_headline.short_repr(fin.get('sourceUrl'))} must be a safe https "
+                        f"URL on an allowlisted host (no credentials, default port) — "
+                        f"see tools/source_hosts.json financingSourceHosts")
+        # `fin.get("copy") or {}` was NOT a type guard: it rescues only falsy
+        # wrong types, so copy="bad" reached copy.get() and raised.
+        copy = fin.get("copy")
+        if copy is None:
+            copy = {}
+        elif not isinstance(copy, dict):
+            r.add_error(f"financing.copy must be an object, got {_type_name(copy)} "
+                        f"({fin_headline.short_repr(copy)})")
+            copy = {}
         for key in ("eyebrow", "headline"):
             if not _bilingual_ok(copy.get(key)):
                 r.add_error(f"financing.copy.{key} missing EN or ES")
+        # Every copy value is customer-visible text rendered through L(): a
+        # bilingual object, or a plain string for single-language copy. A
+        # number, boolean, array or foreign object is neither, and used to pass
+        # unexamined — L() would render '7' or '[object Object]' to a shopper.
+        for key in sorted(copy) if isinstance(copy, dict) else []:
+            val = copy.get(key)
+            if isinstance(val, str) or _bilingual_ok(val):
+                continue
+            r.add_error(
+                f"financing.copy.{key} must be a bilingual object with EN and ES "
+                f"text (or a plain string), got {_type_name(val)} "
+                f"({fin_headline.short_repr(val)}) — it renders to the customer "
+                f"exactly as stored")
+        # EVERY financing.copy string renders outside the exact-terms gate —
+        # results, drawer, sheet chrome, handoff, the live-region announcements
+        # and the email body all render whatever the policy switch says. Checking
+        # the whole block (rather than a listed subset) means a copy key added
+        # later is protected by default.
+        if isinstance(copy, dict):
+            for key in sorted(copy):
+                _check_ungated_text(r, f"financing.copy.{key}", copy.get(key))
         if copy.get("emailBody") and not copy.get("emailBodyAvailable"):
             r.add_warning(
                 "financing.copy.emailBody present without emailBodyAvailable — "
                 "the email packet row will use 'explored' wording even for "
                 "customers who never opened Payment Choice content (COPY-15); "
                 "add the neutral availability variant")
+        # isinstance(str) FIRST: `x not in <set>` hashes x, so a JSON array or
+        # object here raised TypeError before the error could be reported.
         policy = fin.get("savingsPassPolicy")
-        if policy not in SAVINGS_PASS_POLICIES:
-            r.add_error(f"financing.savingsPassPolicy {policy!r} must be one of "
+        if not isinstance(policy, str) or policy not in SAVINGS_PASS_POLICIES:
+            r.add_error(f"financing.savingsPassPolicy "
+                        f"{fin_headline.short_repr(policy)} must be one of "
                         f"{sorted(SAVINGS_PASS_POLICIES)}")
-        discount_mode = _s((config.get("discount") or {}).get("mode"))
+        # Operational authorization for EXACT rate/term claims. Required and
+        # explicitly boolean when financing is enabled: the retailer must
+        # state the operating decision rather than leave it inferred, and the
+        # client gate is strict === true, so a string "true" or a 1 here would
+        # silently hide exact terms while reading as enabled to a human.
+        # false is valid and is the expected initial state — it means "no
+        # owner has accepted the re-verification obligation yet", NOT that the
+        # verified facts are stale (those keep their full validation below).
+        if "exactPromotionsEnabled" not in fin:
+            r.add_error(
+                "financing.exactPromotionsEnabled is required when financing is "
+                "enabled — state the operating decision explicitly (false until a "
+                "named owner accepts weekly re-verification and emergency takedown)")
+        elif not isinstance(fin.get("exactPromotionsEnabled"), bool):
+            r.add_error(
+                f"financing.exactPromotionsEnabled "
+                f"{fin_headline.short_repr(fin.get('exactPromotionsEnabled'))} must be a JSON boolean "
+                f"(true/false), not a string or number — the client gate is a "
+                f"strict identity test and anything else fails closed")
+        # Same non-guard as copy: `(config.get("discount") or {})` rescues only
+        # falsy wrong types. financing reads discount.mode to police the
+        # savings-pass interaction, so it must guard the shape it reads and say
+        # so under its own name rather than crash on another block's typo.
+        discount = config.get("discount")
+        if discount is None or discount == {}:
+            discount = {}
+        elif not isinstance(discount, dict):
+            r.add_error(f"discount must be an object for financing to check the "
+                        f"savings-pass interaction, got {_type_name(discount)} "
+                        f"({fin_headline.short_repr(discount)})")
+            discount = {}
+        discount_mode = _s(discount.get("mode"))
         if discount_mode and discount_mode != "disabled" and policy != "stackable":
             r.add_error(
-                f"financing is enabled while discount.mode={discount_mode!r}; either "
+                f"financing is enabled while discount.mode={fin_headline.short_repr(discount_mode)}; either "
                 f"set discount.mode='disabled' or declare an explicit stackable policy")
+        # Operational staleness warning — ONLY when exact promotions are
+        # explicitly operationally enabled (field lands in Commit E). An
+        # intentionally disabled/absent policy must not nag about a
+        # historical stamp aging out; malformed/future stamps keep their
+        # existing errors above regardless of enablement.
+        if (fin.get("exactPromotionsEnabled") is True
+                and fin.get("verifiedAt") and _valid_iso_instant(fin["verifiedAt"])
+                and not _materially_future(fin["verifiedAt"])
+                and isinstance(mad, int) and 1 <= mad <= 60):
+            from datetime import datetime, timezone, timedelta
+            _ts = datetime.fromisoformat(fin["verifiedAt"])
+            if datetime.now(timezone.utc) - _ts > timedelta(days=mad):
+                r.add_warning(
+                    f"financing.verifiedAt {fin_headline.short_repr(fin.get('verifiedAt'))} is older than "
+                    f"maxAgeDays={mad} while exactPromotionsEnabled is true — the "
+                    f"client will render the generic staleNotice; re-verify the "
+                    f"source or disable exact promotions")
 
-    # allowedSourceHosts inside the block (used by the client freshness gate)
-    # must not widen the build-time allowlist.
+    # When financing is DISABLED the policy field is not required (a
+    # backward-compatible disabled block need not carry it), but a present
+    # value must still be a real boolean so it cannot rot into a string that
+    # would read as authorization to a human reviewer.
+    if not enabled and "exactPromotionsEnabled" in fin \
+            and not isinstance(fin.get("exactPromotionsEnabled"), bool):
+        r.add_error(f"financing.exactPromotionsEnabled "
+                    f"{fin_headline.short_repr(fin.get('exactPromotionsEnabled'))} must be a JSON boolean")
+
+    # Customer-reachable / future-risk URL fields: validated whenever present
+    # (enabled or not) — every URL that could reach a customer must be a safe
+    # https URL on an allowlisted host.
+    for _key in ("applicationUrl", "mexicoInfoUrl"):
+        _val = fin.get(_key)
+        if _val is not None and not _blank(_val) and not _is_allowed_source(_val, hosts):
+            r.add_error(f"financing.{_key} {fin_headline.short_repr(_val)} must be a safe https URL on an "
+                        f"allowlisted host (no credentials, default port)")
+
+    mxa = fin.get("mexicoApplicationUrl")
+    if mxa is not None:
+        if not isinstance(mxa, dict):
+            r.add_error("financing.mexicoApplicationUrl must be an object")
+        else:
+            _mxu = mxa.get("url")
+            if _mxu is not None and not _blank(_mxu) and not _is_allowed_source(_mxu, hosts):
+                r.add_error(f"financing.mexicoApplicationUrl.url {fin_headline.short_repr(_mxu)} must be a safe "
+                            f"https URL on an allowlisted host")
+            _ver = mxa.get("verified")
+            if _ver is not None and not isinstance(_ver, bool):
+                r.add_error("financing.mexicoApplicationUrl.verified must be a boolean")
+            # Anti-conflation: an unverified application URL must not be
+            # reused as any customer-facing or evidence URL. An allowlisted
+            # host does not make a dead URL available — verified:false means
+            # exactly that. Identity is normalized (case, default port,
+            # trailing slash, query/fragment) so variants of the dead path
+            # still collide, while different paths on the same host do not.
+            if mxa.get("verified") is not True and not _blank(mxa.get("url")):
+                _dead = _url_identity(mxa.get("url"))
+                if _dead:
+                    _reuse = [("financing.sourceUrl", fin.get("sourceUrl")),
+                              ("financing.applicationUrl", fin.get("applicationUrl")),
+                              ("financing.mexicoInfoUrl", fin.get("mexicoInfoUrl"))]
+                    for _i, _plan in enumerate(plan_list):
+                        if isinstance(_plan, dict):
+                            _reuse.append((f"{_plan_tag(_plan, _i)}.sourceUrl",
+                                           _plan.get("sourceUrl")))
+                    for _label, _val in _reuse:
+                        if _val is not None and _url_identity(_val) == _dead:
+                            r.add_error(
+                                f"{_label} reuses the unverified mexicoApplicationUrl "
+                                f"target {fin_headline.short_repr(mxa.get('url'))} — that URL is not verified "
+                                f"available and must never become customer-visible")
+
+    # financing.allowedSourceHosts is the BROWSER's allowlist. It must not
+    # widen the build-time list (below), and — new — it must be SUFFICIENT:
+    # every customer-reachable URL this validator accepts has to survive the
+    # browser's own predicate too. Checking only for widening let an absent,
+    # empty, padded or wrong-subset list pass the build while the runtime
+    # refused every financing URL, hiding the links, the QR continuation, the
+    # email URL and (via financingTermsFresh) the exact terms — with no error
+    # anywhere. A build that ships a silently dead surface is worse than one
+    # that refuses to build.
     declared = fin.get("allowedSourceHosts")
     if declared is not None:
         if not isinstance(declared, list):
-            r.add_error("financing.allowedSourceHosts must be a list")
+            r.add_error(f"financing.allowedSourceHosts must be an array, got "
+                        f"{_type_name(declared)} "
+                        f"({fin_headline.short_repr(declared)})")
         else:
-            for h in declared:
-                hs = _s(h).lower()
-                if hosts and hs not in [x.lower() for x in hosts]:
-                    r.add_error(f"financing.allowedSourceHosts entry {h!r} is not in "
+            for _hi, h in enumerate(declared):
+                if not isinstance(h, str):
+                    r.add_error(f"financing.allowedSourceHosts[{_hi}] must be a "
+                                f"host string, got {_type_name(h)} "
+                                f"({fin_headline.short_repr(h)})")
+                    continue
+                if not h.strip():
+                    r.add_error(f"financing.allowedSourceHosts[{_hi}] is blank — "
+                                f"a blank entry matches no host and is never useful")
+                    continue
+                # The browser lowercases entries but does NOT trim them, so a
+                # padded entry silently matches nothing there. Store it trimmed.
+                if h != h.strip():
+                    r.add_error(
+                        f"financing.allowedSourceHosts[{_hi}] "
+                        f"{fin_headline.short_repr(h)} has leading/trailing "
+                        f"whitespace — index.html's financingSourceAllowed() "
+                        f"lowercases entries but does not trim them, so this "
+                        f"entry matches nothing in the browser; store it trimmed")
+                hs = h.strip().lower()
+                if hosts and hs not in [_s(x).lower() for x in hosts]:
+                    r.add_error(f"financing.allowedSourceHosts entry "
+                                f"{fin_headline.short_repr(h)} is not in "
                                 f"tools/source_hosts.json financingSourceHosts")
 
-    plans = fin.get("plans")
-    if enabled and not (isinstance(plans, list) and plans):
+    if enabled:
+        if declared is None:
+            r.add_error(
+                "financing.allowedSourceHosts is required when financing is "
+                "enabled — it is the allowlist the BROWSER uses, and without it "
+                "index.html's financingSourceAllowed() refuses every URL, "
+                "silently hiding the financing links, the QR continuation, the "
+                "email URL and the exact terms")
+        elif isinstance(declared, list) and not declared:
+            r.add_error(
+                "financing.allowedSourceHosts is empty — the browser allows no "
+                "host at all, so every customer-reachable financing URL is "
+                "silently refused at runtime")
+        # RUNTIME PARITY. Every customer-reachable financing URL that this
+        # validator accepts must also pass the browser's predicate against the
+        # SHIPPED allowlist. applicationUrl is included even though nothing
+        # renders it today: it is validated here as customer-reachable, so it
+        # must work the moment it is wired up.
+        _reachable = [("financing.sourceUrl", fin.get("sourceUrl")),
+                      ("financing.applicationUrl", fin.get("applicationUrl")),
+                      ("financing.mexicoInfoUrl", fin.get("mexicoInfoUrl"))]
+        for _i, _plan in enumerate(plan_list):
+            if isinstance(_plan, dict) and _plan.get("sourceUrl") is not None:
+                _reachable.append((f"{_plan_tag(_plan, _i)}.sourceUrl",
+                                   _plan.get("sourceUrl")))
+        for _label, _url in _reachable:
+            if _url is None or _blank(_url):
+                continue
+            if _is_archive_capture(_url):
+                r.add_error(
+                    f"{_label} {fin_headline.short_repr(_url)} is a "
+                    f"web.archive.org capture. Archive captures are valid "
+                    f"promotions EVIDENCE but never customer destinations: "
+                    f"index.html's financingSourceAllowed() has no archive "
+                    f"branch, so this URL passes the build and renders as "
+                    f"nothing. Point the customer-facing field at the live page")
+                continue
+            if not _is_allowed_source(_url, hosts):
+                continue        # already reported by that field's own rule
+            if not _runtime_financing_host_allowed(_url, declared):
+                r.add_error(
+                    f"{_label} {fin_headline.short_repr(_url)} passes build "
+                    f"validation but is REFUSED by index.html's "
+                    f"financingSourceAllowed() against the shipped "
+                    f"financing.allowedSourceHosts "
+                    f"{fin_headline.short_repr(declared)} — the browser would "
+                    f"silently drop this link. Add its host to "
+                    f"financing.allowedSourceHosts")
+
+    if enabled and not (isinstance(plans_raw, list) and plans_raw):
         r.add_error("financing.plans must be a non-empty list when enabled")
-    for i, plan in enumerate(plans or []):
-        tag = f"financing.plans[{plan.get('id', i)!r}]"
+    for i, plan in enumerate(plan_list):
+        # The object guard comes FIRST. Building the diagnostic tag from
+        # plan.get('id') before it meant a non-object entry raised
+        # AttributeError, and the "must be an object" error below was
+        # unreachable for every value JSON can express.
         if not isinstance(plan, dict):
-            r.add_error(f"{tag}: must be an object")
+            r.add_error(f"financing.plans[{i}]: must be an object, got "
+                        f"{_type_name(plan)} ({fin_headline.short_repr(plan)})")
             continue
+        tag = _plan_tag(plan, i)
         if _blank(plan.get("id")):
             r.add_error(f"{tag}: id is required")
+        elif not isinstance(plan.get("id"), str):
+            r.add_error(f"{tag}: id {fin_headline.short_repr(plan.get('id'))} must be "
+                        f"a string — ids key the runtime's lookup maps")
+        # isinstance(str) FIRST: `kind not in <set>` hashes kind, so a JSON
+        # array or object here raised TypeError before this error could fire.
         kind = plan.get("kind")
-        if kind not in FINANCING_PLAN_KINDS:
-            r.add_error(f"{tag}: kind {kind!r} not in {sorted(FINANCING_PLAN_KINDS)}")
+        if not isinstance(kind, str) or kind not in FINANCING_PLAN_KINDS:
+            r.add_error(f"{tag}: kind {fin_headline.short_repr(kind)} not in "
+                        f"{sorted(FINANCING_PLAN_KINDS)}")
+        # provider is rendered in the promotional card title, so it must be a
+        # real, trimmed, non-blank string. Without this a number, boolean,
+        # object or blank string reached the title as
+        # "123 promotional financing" / "[object Object] promotional financing"
+        # / " promotional financing". The runtime degrades such a value to the
+        # generic label rather than coercing it, but the build must reject it.
+        if "provider" in plan:
+            _prov = plan.get("provider")
+            if not isinstance(_prov, str):
+                r.add_error(
+                    f"{tag}: provider {fin_headline.short_repr(_prov)} must be a string — it is rendered "
+                    f"in the promotional card title and must not be coerced")
+            elif not _prov.strip():
+                r.add_error(f"{tag}: provider must not be blank")
+            elif _prov != _prov.strip():
+                r.add_error(
+                    f"{tag}: provider {fin_headline.short_repr(_prov)} has leading/trailing whitespace — "
+                    f"store it trimmed so the rendered title is exact")
+        elif enabled:
+            r.add_error(f"{tag}: provider is required when financing is enabled")
+
+        # presentationScenario: the ONLY way a plan reaches a scenario card.
+        # Absent, or a recognised non-blank string. Every other shape is
+        # rejected so a scenario can never be inferred from an id, a kind, a
+        # provider, a language or an array position.
+        if "presentationScenario" in plan:
+            _sc = plan.get("presentationScenario")
+            if not isinstance(_sc, str) or not _sc.strip():
+                r.add_error(
+                    f"{tag}: presentationScenario {fin_headline.short_repr(_sc)} must be a non-blank string "
+                    f"naming a supported scenario ({sorted(FINANCING_SCENARIOS)}), "
+                    f"or be omitted entirely")
+            elif _sc not in FINANCING_SCENARIOS:
+                r.add_error(
+                    f"{tag}: presentationScenario {fin_headline.short_repr(_sc)} is not a supported scenario "
+                    f"{sorted(FINANCING_SCENARIOS)} — the renderer has no card for it, "
+                    f"so the plan would not be presented at all")
+            else:
+                _want_kind = FINANCING_SCENARIO_KINDS.get(_sc)
+                if _want_kind and kind != _want_kind:
+                    r.add_error(
+                        f"{tag}: presentationScenario {fin_headline.short_repr(_sc)} requires kind "
+                        f"{_want_kind!r} by its product semantics, but kind is {fin_headline.short_repr(kind)}")
+        # The legacy presentation flag is retired: two overlapping sources of
+        # truth for 'is this a separate path' is exactly how a plan ended up
+        # classified one way by validation and another way by the renderer.
+        if "separatePath" in plan:
+            r.add_error(
+                f"{tag}: separatePath is retired — use "
+                f"presentationScenario (one of {sorted(FINANCING_SCENARIOS)}) so the "
+                f"renderer and this validator classify the plan the same way")
         # V1 hard invariant: no payment calculation anywhere.
         if plan.get("paymentCalculationEnabled"):
             r.add_error(f"{tag}: paymentCalculationEnabled must be false in V1 — "
                         f"product-level payment math is not approved")
         if not _bilingual_ok(plan.get("headline")):
             r.add_error(f"{tag}: headline missing EN or ES")
+        # PROMOTIONAL HEADLINES ARE DERIVED, NOT AUTHORED.
+        # apr and termMonths are authoritative; tools/financing_headline.py owns
+        # the single EN/ES template that restates them, and the workbook builder
+        # generates the shipped string from it. So what shipped must equal what
+        # those fields produce — string for string, both languages.
+        #
+        # Bilingual PRESENCE was the only rule before, and presence is not
+        # agreement: a hand-edited "4.99% APR for 12 months" shipped happily over
+        # apr=9.99 / termMonths=72. Nor is numeric coincidence enough — prose that
+        # merely mentions 9.99 and 72 ("Ask about 9.99 and 72.") is still not the
+        # approved sentence, so the test is exact equality rather than a
+        # substring or number-extraction match.
+        #
+        # Non-promotional plans are untouched here: their headlines are authored
+        # orientation/scenario language and keep the bilingual + ungated-language
+        # rules above (which is what stops a rate appearing in THEIR titles).
+        if _plan_group(plan) == "promotional":
+            try:
+                want_headline = fin_headline.headline_for_plan(plan)
+            except fin_headline.HeadlineError as exc:
+                r.add_error(
+                    f"{tag}: promotional plan cannot generate its headline — {exc}. "
+                    f"apr and termMonths are the authoritative source of the "
+                    f"customer-visible headline, so both must be present and "
+                    f"valid on a promotional plan")
+            else:
+                got_headline = plan.get("headline")
+                if isinstance(got_headline, dict):
+                    for lang in fin_headline.LANGS:
+                        if got_headline.get(lang) != want_headline[lang]:
+                            r.add_error(
+                                f"{tag}: headline.{lang} "
+                                f"{fin_headline.short_repr(got_headline.get(lang), 80)} "
+                                f"does not equal the value generated from apr="
+                                f"{fin_headline.short_repr(plan.get('apr'))} / termMonths="
+                                f"{fin_headline.short_repr(plan.get('termMonths'))}, which is "
+                                f"{want_headline[lang]!r}. Promotional headlines are "
+                                f"generated at build time — edit apr/termMonths in the "
+                                f"canonical source and rebuild; never hand-edit the "
+                                f"shipped prose")
+                    extra_langs = sorted(set(got_headline) - set(fin_headline.LANGS))
+                    if extra_langs:
+                        r.add_error(
+                            f"{tag}: headline carries unexpected keys {extra_langs} — a "
+                            f"generated promotional headline has exactly "
+                            f"{list(fin_headline.LANGS)}, so these were hand-added")
+                # a non-dict headline is already reported by the bilingual check
+        # Plan strings that reach a customer outside the exact-terms gate must
+        # stay within reviewed generic orientation language. Applies in every
+        # operating state: turning exactPromotionsEnabled on cannot make an
+        # ungated surface an appropriate place for exact terms. A rejection
+        # here means the wording is reserved or unreviewed — not that an exact
+        # claim has been proven (see _check_ungated_text).
+        if enabled:
+            for _uf in _ungated_plan_fields(plan):
+                _check_ungated_text(r, f"{tag}.{_uf}", plan.get(_uf))
         for field_name in ("detail", "disclosure"):
             obj = plan.get(field_name)
             if isinstance(obj, dict) and (bool(_s(obj.get("en"))) != bool(_s(obj.get("es")))):
                 r.add_error(f"{tag}: {field_name} has one language but not the other")
+        # EVERY present plan sourceUrl is an evidence/freshness input — the
+        # client feeds it to financingSourceAllowed() — so all of them must
+        # be safe allowlisted https URLs, not only exact-term plans'.
+        _src_any = plan.get("sourceUrl")
+        if _src_any is not None and not _blank(_src_any) \
+                and not _is_allowed_source(_src_any, hosts):
+            r.add_error(f"{tag}: sourceUrl {fin_headline.short_repr(_src_any)} must be a safe https URL on "
+                        f"an allowlisted host (no credentials, default port)")
         # Exact credit claims: APR/term/minimum require verification, source,
         # adjacent conditions (detail) and a disclosure — all bilingual.
         exact = any(plan.get(k) is not None
@@ -659,37 +1554,114 @@ def validate_financing(config: dict, *, allowed_source_hosts=None) -> Validation
                 r.add_error(f"{tag}: exact terms require a valid verifiedAt "
                             f"(ISO-8601 with offset)")
             elif _materially_future(plan.get("verifiedAt", "")):
-                r.add_error(f"{tag}: verifiedAt {plan.get('verifiedAt')!r} is materially "
+                r.add_error(f"{tag}: verifiedAt {fin_headline.short_repr(plan.get('verifiedAt'))} is materially "
                             f"in the future (beyond {FINANCING_CLOCK_SKEW_SECONDS}s clock "
                             f"skew) — exact terms cannot be verified at a future instant")
             src = _s(plan.get("sourceUrl"))
             if not src:
                 r.add_error(f"{tag}: exact terms require sourceUrl")
-            elif not _is_allowed_source(src, hosts):
-                r.add_error(f"{tag}: sourceUrl {src!r} host is not in the configured "
-                            f"source-host allowlist")
+            # (host/scheme safety of a present sourceUrl is enforced for
+            # every plan by the general check above)
             if not _bilingual_ok(plan.get("detail")):
                 r.add_error(f"{tag}: exact terms require adjacent conditions "
                             f"(detail) in EN and ES")
             if not _bilingual_ok(plan.get("disclosure")):
                 r.add_error(f"{tag}: exact terms require a disclosure in EN and ES")
+        # Supported numeric range. The bounds and the type rules live in
+        # tools/financing_headline.py (APR_MIN/APR_MAX, TERM_MIN/TERM_MAX and
+        # the two domain predicates) so the range this validator accepts and
+        # the range the headline generator will format are one authority
+        # rather than two copies that can drift. The predicates are TOTAL:
+        # they answer for any object, including a JSON integer too large to
+        # become a C double, which previously escaped this function as an
+        # uncaught OverflowError before either check could run.
         apr = plan.get("apr")
-        if apr is not None and (not isinstance(apr, (int, float)) or apr < 0 or apr > 100):
-            r.add_error(f"{tag}: apr {apr!r} out of range")
+        if apr is not None and not fin_headline.apr_in_domain(apr):
+            r.add_error(f"{tag}: apr {fin_headline.short_repr(apr)} out of range "
+                        f"({fin_headline.APR_MIN}-{fin_headline.APR_MAX} inclusive, "
+                        f"finite, not a boolean)")
         tm = plan.get("termMonths")
-        if tm is not None and (not isinstance(tm, int) or not 1 <= tm <= 120):
-            r.add_error(f"{tag}: termMonths {tm!r} out of range")
+        if tm is not None and not fin_headline.term_in_domain(tm):
+            r.add_error(f"{tag}: termMonths {fin_headline.short_repr(tm)} out of range "
+                        f"(whole months {fin_headline.TERM_MIN}-"
+                        f"{fin_headline.TERM_MAX} inclusive)")
+        # minimumPurchase is a customer-facing currency fact, so it must be a
+        # real finite JSON number. `isinstance(mp, (int, float)) or mp < 0`
+        # accepted true (bool is an int subclass, and True < 0 is False) and
+        # accepted NaN/±inf (every comparison with NaN is False). NaN and
+        # Infinity matter beyond tidiness: json.dumps writes them as the bare
+        # tokens NaN / Infinity, which are NOT JSON, so such a value in
+        # data/store-config.json yields a config the browser's JSON.parse
+        # refuses — the app would fail to load at all. No upper bound is
+        # imposed: a business maximum is Blake's call, not this validator's.
         mp = plan.get("minimumPurchase")
-        if mp is not None and (not isinstance(mp, (int, float)) or mp < 0):
-            r.add_error(f"{tag}: minimumPurchase {mp!r} out of range")
+        if mp is not None and not _finite_number(mp):
+            r.add_error(f"{tag}: minimumPurchase {fin_headline.short_repr(mp)} must be "
+                        f"a finite number (not a boolean, NaN or Infinity)")
+        elif mp is not None and mp < 0:
+            r.add_error(f"{tag}: minimumPurchase {fin_headline.short_repr(mp)} "
+                        f"out of range (must not be negative)")
         ppf = plan.get("publishedPaymentFactor")
-        if ppf is not None and (not isinstance(ppf, (int, float)) or not 0 < ppf < 1):
-            r.add_error(f"{tag}: publishedPaymentFactor {ppf!r} must be a fraction "
-                        f"between 0 and 1")
+        if ppf is not None and (not _finite_number(ppf) or not 0 < ppf < 1):
+            r.add_error(f"{tag}: publishedPaymentFactor "
+                        f"{fin_headline.short_repr(ppf)} must be a finite fraction "
+                        f"between 0 and 1 (not a boolean, NaN or Infinity)")
         # lease-to-own / credit-builder must never carry credit terms
-        if kind in ("lease-to-own", "credit-builder") and exact:
+        # Evergreen kinds are the availability-only card ("More paths"): the
+        # renderer never freshness-gates them, so credit terms there would
+        # render outside the exact-terms gate permanently. One semantic set,
+        # not a scattered kind list.
+        if isinstance(kind, str) and kind in FINANCING_EVERGREEN_KINDS and exact:
             r.add_error(f"{tag}: {kind} plans must not state APR/term/minimum — "
                         f"availability only, details confirmed in store")
+
+    # ---- collection-level taxonomy checks --------------------------------
+    # Plan ids are opaque to presentation now, but they must still be unique:
+    # the runtime builds lookup maps from them and a duplicate silently wins.
+    _seen_ids = {}
+    for i, plan in enumerate(plan_list):
+        if not isinstance(plan, dict):
+            continue
+        pid = _s(plan.get("id"))
+        if pid:
+            _seen_ids.setdefault(pid, []).append(i)
+    for pid, idxs in sorted(_seen_ids.items()):
+        if len(idxs) > 1:
+            r.add_error(f"financing.plans: duplicate plan id {fin_headline.short_repr(pid)} at positions "
+                        f"{idxs} — plan ids must be unique")
+
+    if enabled:
+        # TOTAL PARTITION: every plan must land in exactly one renderer group.
+        # A plan matching none would be silently absent from the sheet, which is
+        # precisely the failure mode the id lookups used to hide.
+        _scenario_counts = {}
+        for i, plan in enumerate(plan_list):
+            if not isinstance(plan, dict):
+                continue
+            tag = _plan_tag(plan, i)
+            group = _plan_group(plan)
+            if not group:
+                r.add_error(
+                    f"{tag}: matches no renderer presentation group "
+                    f"(kind={fin_headline.short_repr(plan.get('kind'))}, "
+                    f"presentationScenario="
+                    f"{fin_headline.short_repr(plan.get('presentationScenario'))}) — it "
+                    f"would never be presented. Give it a supported kind, or a supported "
+                    f"presentationScenario, or define the missing group in both "
+                    f"tools/validation.py and index.html")
+            if group == "scenario":
+                _sc = _plan_scenario(plan)
+                _pid = plan.get("id")
+                _scenario_counts.setdefault(_sc, []).append(
+                    _pid if isinstance(_pid, str) else i)
+        # Cardinality: the renderer draws a single card per singleton scenario,
+        # so two claimants would mean one is silently dropped.
+        for _sc, owners in sorted(_scenario_counts.items()):
+            if _sc in FINANCING_SINGLETON_SCENARIOS and len(owners) > 1:
+                r.add_error(
+                    f"financing.plans: {len(owners)} plans declare "
+                    f"presentationScenario={fin_headline.short_repr(_sc)} ({owners}) but the renderer presents "
+                    f"exactly one — the others would be dropped silently")
     return r
 
 
@@ -1882,14 +2854,25 @@ def _self_test() -> int:
         "verifiedAt": "2026-07-30T10:53:32-05:00", "maxAgeDays": 7,
         "sourceUrl": "https://www.lacks.com/financing",
         "savingsPassPolicy": "specialist_confirm",
+        "exactPromotionsEnabled": False,
+        # The BROWSER's allowlist. Required (and required to be sufficient for
+        # every customer-reachable URL) whenever financing is enabled, so the
+        # baseline fixture carries it exactly as a shipped config must.
+        "allowedSourceHosts": ["lacks.com", "www.lacks.com"],
         "copy": {"eyebrow": {"en": "E", "es": "E"}, "headline": {"en": "H", "es": "H"}},
         "plans": [{
             "id": "syn-9-99-72", "kind": "open-end-promotional-credit",
+            "provider": "Synchrony",
             "verified": True, "verifiedAt": "2026-07-30T10:53:32-05:00",
             "sourceUrl": "https://www.lacks.com/financing",
             "apr": 9.99, "termMonths": 72, "minimumPurchase": 500,
             "paymentCalculationEnabled": False,
-            "headline": {"en": "H", "es": "H"},
+            # Promotional headlines are generated from apr/termMonths, so the
+            # fixture carries the LITERAL generated strings rather than calling
+            # the generator: a template change has to break these cases loudly
+            # instead of moving in lockstep with them.
+            "headline": {"en": "9.99% APR for 72 months",
+                         "es": "9.99% APR por 72 meses"},
             "detail": {"en": "D", "es": "D"},
             "disclosure": {"en": "X", "es": "X"},
         }],
@@ -2004,6 +2987,1180 @@ def _self_test() -> int:
     fskew["plans"][0]["verifiedAt"] = _iso(120)
     check("financing verifiedAt within clock skew -> ok",
           validate_financing(_fc(fskew), allowed_source_hosts=_FHOSTS).ok)
+
+    # ---- URL safety: scheme / credentials / port / host (Commit D) -----------
+    _DEAD_MX = "https://www.lacks.com/mexican-credit-application"
+
+    def _url_err(field, url):
+        m = _fmut()
+        m[field] = url
+        return any(f"financing.{field}" in e and "allowlisted host" in e for e in
+                   validate_financing(_fc(m), allowed_source_hosts=_FHOSTS).errors)
+
+    check("financing mexicoInfoUrl non-allowlisted host -> error",
+          _url_err("mexicoInfoUrl", "https://evil.example.com/faq"))
+    check("financing applicationUrl non-allowlisted host -> error",
+          _url_err("applicationUrl", "https://evil.example.com/apply"))
+    check("financing mexicoInfoUrl allowlisted https -> ok",
+          validate_financing(_fc(dict(_fmut(), mexicoInfoUrl="https://www.lacks.com/faq")),
+                             allowed_source_hosts=_FHOSTS).ok)
+
+    fnonexact = _fmut()
+    fnonexact["plans"].append({"id": "lto", "kind": "lease-to-own",
+                               "sourceUrl": "https://evil.example.com/lto",
+                               "headline": {"en": "H", "es": "H"}})
+    check("financing NON-exact plan sourceUrl non-allowlisted -> error",
+          any("lto" in e and "allowlisted host" in e for e in
+              validate_financing(_fc(fnonexact), allowed_source_hosts=_FHOSTS).errors))
+
+    for _label, _bad in (
+            ("http scheme", "http://www.lacks.com/financing"),
+            ("protocol-relative", "//www.lacks.com/financing"),
+            ("relative path", "/financing"),
+            ("javascript:", "javascript:alert(1)"),
+            ("data:", "data:text/html,hi"),
+            ("embedded credentials", "https://user@www.lacks.com/financing"),
+            ("credentials with password", "https://u:p@www.lacks.com/financing"),
+            ("non-default port", "https://www.lacks.com:8443/financing"),
+            ("lookalike suffix host", "https://www.lacks.com.evil.example/financing"),
+            ("lookalike prefix host", "https://wwwlacks.com/financing"),
+            ("malformed", "https://"),
+    ):
+        check(f"financing sourceUrl {_label} -> error", _url_err("sourceUrl", _bad))
+
+    check("financing sourceUrl explicit default port 443 -> ok",
+          validate_financing(_fc(dict(_fmut(), sourceUrl="https://www.lacks.com:443/financing")),
+                             allowed_source_hosts=_FHOSTS).ok)
+    check("_is_allowed_source: https archive capture of allowlisted host -> True",
+          _is_allowed_source("https://web.archive.org/web/20260525/https://www.lacks.com/x",
+                             _FHOSTS))
+    check("_is_allowed_source: http archive capture -> False (scheme)",
+          not _is_allowed_source("http://web.archive.org/web/20260525/https://www.lacks.com/x",
+                                 _FHOSTS))
+    check("_is_allowed_source: archive of NON-allowlisted target -> False",
+          not _is_allowed_source("https://web.archive.org/web/20260525/https://evil.example.com/x",
+                                 _FHOSTS))
+
+    # ---- mexicoApplicationUrl shape + anti-conflation (Commit D) -------------
+    fmxobj = _fmut(); fmxobj["mexicoApplicationUrl"] = "https://www.lacks.com/x"
+    check("financing mexicoApplicationUrl non-object -> error",
+          any("must be an object" in e for e in
+              validate_financing(_fc(fmxobj), allowed_source_hosts=_FHOSTS).errors))
+
+    fmxver = _fmut()
+    fmxver["mexicoApplicationUrl"] = {"url": _DEAD_MX, "verified": "false"}
+    check("financing mexicoApplicationUrl non-boolean verified -> error",
+          any("verified must be a boolean" in e for e in
+              validate_financing(_fc(fmxver), allowed_source_hosts=_FHOSTS).errors))
+
+    fmxok = _fmut()
+    fmxok["mexicoApplicationUrl"] = {"url": _DEAD_MX, "verified": False}
+    check("financing unverified mexicoApplicationUrl stored but unused -> ok "
+          "(allowlisted host does not imply availability)",
+          validate_financing(_fc(fmxok), allowed_source_hosts=_FHOSTS).ok)
+
+    # Variants a BROWSER normalizes onto the dead target must all collide.
+    # Truth table verified against real Chrome and Node (same URL spec).
+    _BS = chr(92)
+    for _label, _variant in (
+            ("exact", _DEAD_MX),
+            ("trailing slash", _DEAD_MX + "/"),
+            ("double trailing slash", _DEAD_MX + "//"),
+            ("query string", _DEAD_MX + "?lang=es"),
+            ("fragment", _DEAD_MX + "#form"),
+            ("host case", "https://WWW.LACKS.COM/mexican-credit-application"),
+            ("explicit default port", "https://www.lacks.com:443/mexican-credit-application"),
+            ("dot-dot segment", "https://www.lacks.com/x/../mexican-credit-application"),
+            ("single-dot segment", "https://www.lacks.com/./mexican-credit-application"),
+            ("nested dot-dot", "https://www.lacks.com/a/b/../../mexican-credit-application"),
+            ("dot-dot past root", "https://www.lacks.com/../mexican-credit-application"),
+            ("percent-encoded dot-dot", "https://www.lacks.com/x/%2e%2e/mexican-credit-application"),
+            ("percent-encoded dot-dot upper", "https://www.lacks.com/x/%2E%2E/mexican-credit-application"),
+            ("trailing dot segment", _DEAD_MX + "/."),
+            ("backslash separators",
+             "https://www.lacks.com/x" + _BS + ".." + _BS + "mexican-credit-application"),
+            ("embedded tab", "https://www.lacks.com/mexican-credit-app\tlication"),
+            ("percent-encoded unreserved", "https://www.lacks.com/%6dexican-credit-application"),
+    ):
+        fconf = _fmut()
+        fconf["mexicoApplicationUrl"] = {"url": _DEAD_MX, "verified": False}
+        fconf["mexicoInfoUrl"] = _variant
+        check(f"financing anti-conflation: dead URL reused as mexicoInfoUrl "
+              f"({_label}) -> error",
+              any("reuses the unverified mexicoApplicationUrl" in e for e in
+                  validate_financing(_fc(fconf), allowed_source_hosts=_FHOSTS).errors))
+
+    fplanconf = _fmut()
+    fplanconf["mexicoApplicationUrl"] = {"url": _DEAD_MX, "verified": False}
+    fplanconf["plans"][0]["sourceUrl"] = _DEAD_MX
+    check("financing anti-conflation: dead URL reused as a plan sourceUrl -> error",
+          any("reuses the unverified mexicoApplicationUrl" in e for e in
+              validate_financing(_fc(fplanconf), allowed_source_hosts=_FHOSTS).errors))
+
+    # Genuinely different paths must NEVER collide (no over-normalization).
+    for _label, _distinct in (
+            ("plain sibling path", "https://www.lacks.com/faq"),
+            ("dead name nested under another path",
+             "https://www.lacks.com/x/mexican-credit-application"),
+            ("dot-dot resolving to a different path",
+             "https://www.lacks.com/a/b/../mexican-credit-application"),
+            ("path case differs", "https://www.lacks.com/Mexican-Credit-Application"),
+            ("reserved %2F stays encoded (not a separator)",
+             "https://www.lacks.com/x%2F..%2Fmexican-credit-application"),
+            ("empty path segment", "https://www.lacks.com//mexican-credit-application"),
+    ):
+        fnocollide = _fmut()
+        fnocollide["mexicoApplicationUrl"] = {"url": _DEAD_MX, "verified": False}
+        fnocollide["mexicoInfoUrl"] = _distinct
+        check(f"financing anti-conflation: NO false collision ({_label})",
+              validate_financing(_fc(fnocollide), allowed_source_hosts=_FHOSTS).ok)
+
+    # Malformed stored/candidate URLs must fail closed without crashing.
+    for _label, _bad_pair in (
+            ("malformed stored URL", {"url": "not a url", "verified": False}),
+            ("empty stored URL", {"url": "", "verified": False}),
+            ("stored URL missing", {"verified": False}),
+    ):
+        fmalconf = _fmut()
+        fmalconf["mexicoApplicationUrl"] = _bad_pair
+        _rep = validate_financing(_fc(fmalconf), allowed_source_hosts=_FHOSTS)
+        check(f"financing anti-conflation: {_label} does not crash validation",
+              isinstance(_rep.errors, list))
+
+    check("_url_identity: malformed inputs return '' (fail closed)",
+          all(_url_identity(_x) == "" for _x in
+              ("", "not a url", "https://", "///", None, 42, "javascript:alert(1)")))
+
+    fverified = _fmut()
+    fverified["mexicoApplicationUrl"] = {"url": "https://www.lacks.com/faq", "verified": True}
+    fverified["mexicoInfoUrl"] = "https://www.lacks.com/faq"
+    check("financing anti-conflation applies only while verified is not true",
+          validate_financing(_fc(fverified), allowed_source_hosts=_FHOSTS).ok)
+
+    fnosrc = _fmut(); del fnosrc["plans"][0]["sourceUrl"]
+    check("financing exact terms still require sourceUrl",
+          any("exact terms require sourceUrl" in e for e in
+              validate_financing(_fc(fnosrc), allowed_source_hosts=_FHOSTS).errors))
+
+    # ---- staleness warning gated on operational enablement (Commit D) --------
+    # Deterministic past stamp — never becomes date-sensitive.
+    _OLD = "2020-01-01T00:00:00-05:00"
+    fstale_on = _fmut()
+    fstale_on["verifiedAt"] = _OLD
+    fstale_on["plans"][0]["verifiedAt"] = _OLD
+    fstale_on["exactPromotionsEnabled"] = True
+    check("financing expired verifiedAt + exactPromotionsEnabled true -> warning",
+          any("older than maxAgeDays" in w for w in
+              validate_financing(_fc(fstale_on), allowed_source_hosts=_FHOSTS).warnings))
+
+    for _label, _policy in (("absent", "__DEL__"), ("false", False),
+                            ("malformed string", "true")):
+        fstale_off = _fmut()
+        fstale_off["verifiedAt"] = _OLD
+        fstale_off["plans"][0]["verifiedAt"] = _OLD
+        if _policy == "__DEL__":
+            del fstale_off["exactPromotionsEnabled"]
+        else:
+            fstale_off["exactPromotionsEnabled"] = _policy
+        _rep_off = validate_financing(_fc(fstale_off), allowed_source_hosts=_FHOSTS)
+        check(f"financing expired verifiedAt + exactPromotions {_label} -> NO warning",
+              not any("older than maxAgeDays" in w for w in _rep_off.warnings))
+        if _policy != False:  # noqa: E712 — absent/malformed are also schema errors
+            check(f"financing exactPromotions {_label} -> schema error",
+                  any("exactPromotionsEnabled" in e for e in _rep_off.errors))
+
+    # ---- exactPromotionsEnabled field-shape matrix (Commit E) ---------------
+    check("financing exactPromotionsEnabled false (shipped initial state) -> ok",
+          validate_financing(_fc(_fmut()), allowed_source_hosts=_FHOSTS).ok)
+
+    ftrue = _fmut(); ftrue["exactPromotionsEnabled"] = True
+    ftrue["verifiedAt"] = _iso(-60); ftrue["plans"][0]["verifiedAt"] = _iso(-60)
+    check("financing exactPromotionsEnabled true + fresh evidence -> ok",
+          validate_financing(_fc(ftrue), allowed_source_hosts=_FHOSTS).ok)
+
+    fmissing = _fmut(); del fmissing["exactPromotionsEnabled"]
+    check("financing exactPromotionsEnabled missing while enabled -> error",
+          any("exactPromotionsEnabled is required" in e for e in
+              validate_financing(_fc(fmissing), allowed_source_hosts=_FHOSTS).errors))
+
+    for _label, _bad in (("null", None), ("string 'true'", "true"),
+                         ("string 'false'", "false"), ("int 1", 1), ("int 0", 0),
+                         ("float", 1.0), ("empty string", ""),
+                         ("object", {"enabled": True}), ("array", [True])):
+        fshape = _fmut(); fshape["exactPromotionsEnabled"] = _bad
+        check(f"financing exactPromotionsEnabled {_label} -> error",
+              any("exactPromotionsEnabled" in e for e in
+                  validate_financing(_fc(fshape), allowed_source_hosts=_FHOSTS).errors))
+
+    fdis_ok = _fmut(); fdis_ok["enabled"] = False
+    del fdis_ok["verifiedAt"]; del fdis_ok["exactPromotionsEnabled"]
+    check("financing disabled without the policy field -> ok (not required)",
+          validate_financing(_fc(fdis_ok), allowed_source_hosts=_FHOSTS).ok)
+
+    fdis_bad = _fmut(); fdis_bad["enabled"] = False
+    del fdis_bad["verifiedAt"]; fdis_bad["exactPromotionsEnabled"] = "true"
+    check("financing disabled with a non-boolean policy field -> error",
+          any("exactPromotionsEnabled" in e for e in
+              validate_financing(_fc(fdis_bad), allowed_source_hosts=_FHOSTS).errors))
+
+    # Exact plan data keeps its full validation while the switch is false —
+    # the source must not be allowed to rot structurally just because
+    # presentation is disabled.
+    for _label, _mutate, _expect in (
+            ("unverified exact plan", lambda d: d["plans"][0].__setitem__("verified", False), "verified"),
+            ("missing plan disclosure", lambda d: d["plans"][0].pop("disclosure"), "disclosure"),
+            ("non-allowlisted plan source",
+             lambda d: d["plans"][0].__setitem__("sourceUrl", "https://evil.example.com/x"), "allowlisted"),
+            ("payment calculation enabled",
+             lambda d: d["plans"][0].__setitem__("paymentCalculationEnabled", True), "paymentCalculationEnabled"),
+            ("future plan stamp",
+             lambda d: d["plans"][0].__setitem__("verifiedAt", _iso(3600)), "future"),
+    ):
+        frot = _fmut()          # exactPromotionsEnabled is False here
+        _mutate(frot)
+        check(f"financing exact-plan validation still applies while policy is false "
+              f"({_label})",
+              any(_expect in e for e in
+                  validate_financing(_fc(frot), allowed_source_hosts=_FHOSTS).errors))
+
+    ffut_on = _fmut()
+    ffut_on["verifiedAt"] = _iso(3600)
+    ffut_on["exactPromotionsEnabled"] = True
+    check("financing future verifiedAt still errors regardless of enablement",
+          any("future" in e for e in
+              validate_financing(_fc(ffut_on), allowed_source_hosts=_FHOSTS).errors))
+
+    fmal_on = _fmut()
+    fmal_on["verifiedAt"] = "not-a-timestamp"
+    fmal_on["exactPromotionsEnabled"] = True
+    check("financing malformed verifiedAt still errors regardless of enablement",
+          any("ISO-8601" in e for e in
+              validate_financing(_fc(fmal_on), allowed_source_hosts=_FHOSTS).errors))
+
+    # ---- ungated-copy exact-claim guard (Commit F) --------------------------
+    # Fields rendered OUTSIDE financingTermsFresh()/financingPlanFresh() must
+    # never state an exact claim, in EITHER operating state.
+    _UNGATED_ERR = "renders outside the exact-terms gate"
+
+    def _fin_with(mutate, policy=False):
+        m = _fmut()
+        m["exactPromotionsEnabled"] = policy
+        if policy is True:
+            m["verifiedAt"] = _iso(-60)
+            for _p in m["plans"]:
+                if _p.get("verifiedAt"):
+                    _p["verifiedAt"] = _iso(-60)
+        mutate(m)
+        return validate_financing(_fc(m), allowed_source_hosts=_FHOSTS)
+
+    def _ungated_rejected(label, mutate, policy=False):
+        rep = _fin_with(mutate, policy)
+        return any(_UNGATED_ERR in e and label in e for e in rep.errors)
+
+    # Signal unit tests (detector behavior, independent of config plumbing)
+    for _lbl, _txt, _want in (
+            ("digits", "Get 0 percent for 48", True),
+            ("percent", "Save 0% today", True),
+            ("currency", "Only $52.82", True),
+            ("APR word", "Ask about our APR", True),
+            ("EN no-interest", "No interest if paid in full", True),
+            ("EN interest-free", "Interest-free for a while", True),
+            ("ES sin intereses", "Llevatelo sin intereses", True),
+            ("ES cero interes", "Cero interes por tiempo limitado", True),
+            ("EN per month", "Just ask per month", True),
+            ("ES pagos mensuales", "Pregunta por pagos mensuales", True),
+            ("ES al mes", "Desde al mes", True),
+            # boundary: approved copy and retailer/product names stay clean
+            ("Build My Credit", "Build My Credit", False),
+            ("in-house title", "Lacks In-House Credit", False),
+            ("lease-to-own title", "Lease-to-own", False),
+            ("ES lease title", "Arrendamiento con opcion a compra", False),
+            ("Mexico scenario", "Purchasing for delivery to Mexico?", False),
+            ("ES Mexico scenario", "¿Compras para entrega en México?", False),
+            ("provider Synchrony", "Synchrony", False),
+            ("EN stale guidance", "Exact rates and terms are not shown right now.", False),
+            ("ES stale guidance", "Las tasas y los plazos exactos no se muestran.", False),
+            ("ES aprobacion (not APR)", "sujetas a términos y aprobación", False),
+            ("EN interested (not interest-free)", "Yes, I'm interested", False),
+            ("ES me interesa", "Sí, me interesa", False),
+            ("EN external notice", "Opens lacks.com — a separate site governed by its own terms.", False),
+    ):
+        check(f"exact-claim signal: {_lbl} -> {'flagged' if _want else 'clean'}",
+              bool(_exact_claim_signals(_txt)) is _want)
+
+    # Generic financing.copy — every key, both languages, both policy states
+    for _policy in (False, True):
+        _st = "policy false" if _policy is False else "policy true"
+        check(f"ungated copy.body EN exact claim -> error ({_st})",
+              _ungated_rejected("financing.copy.body.en",
+                                lambda m: m["copy"].__setitem__(
+                                    "body", {"en": "Get 0% APR for 48 months", "es": "Generico"}),
+                                _policy))
+        check(f"ungated copy.body ES exact claim -> error ({_st})",
+              _ungated_rejected("financing.copy.body.es",
+                                lambda m: m["copy"].__setitem__(
+                                    "body", {"en": "Generic", "es": "0% APR por 48 meses"}),
+                                _policy))
+    check("ungated copy.emailBody exact claim -> error",
+          _ungated_rejected("financing.copy.emailBody.en",
+                            lambda m: m["copy"].__setitem__(
+                                "emailBody", {"en": "Pay $52.82 per month.", "es": "Generico"})))
+    check("ungated copy.staleNotice exact claim -> error",
+          _ungated_rejected("financing.copy.staleNotice.en",
+                            lambda m: m["copy"].__setitem__(
+                                "staleNotice", {"en": "Ask about 0% APR.", "es": "Generico"})))
+    check("a newly added copy key is guarded by default",
+          _ungated_rejected("financing.copy.someNewKey.en",
+                            lambda m: m["copy"].__setitem__(
+                                "someNewKey", {"en": "Only $999 down", "es": "Generico"})))
+
+    # provider is rendered in the promotional card title on the stale path
+    check("provider 'Synchrony' passes",
+          validate_financing(_fc(_fmut()), allowed_source_hosts=_FHOSTS).ok)
+    for _bad_provider in ("Synchrony 0% APR", "Synchrony 72-month financing"):
+        check(f"provider {_bad_provider!r} -> error",
+              _ungated_rejected("provider",
+                                lambda m, v=_bad_provider: m["plans"][0].__setitem__("provider", v)))
+
+    # Non-promotional headlines / disclosures / evergreen details
+    def _add_plan(m, **kw):
+        base = {"id": "extra", "kind": "closed-end-installment", "provider": "Lacks",
+                "verified": True, "verifiedAt": m["verifiedAt"],
+                "sourceUrl": "https://www.lacks.com/financing",
+                "headline": {"en": "In-House Credit", "es": "Credito Interno"},
+                "disclosure": {"en": "Confirmed in store.", "es": "Se confirma en tienda."}}
+        base.update(kw)
+        m["plans"].append(base)
+
+    check("non-promotional headline with a rate -> error",
+          _ungated_rejected("headline",
+                            lambda m: _add_plan(m, headline={"en": "6-36 month financing",
+                                                             "es": "Financiamiento de 6-36 meses"})))
+    check("scenario headline with a rate -> error",
+          _ungated_rejected("headline",
+                            lambda m: _add_plan(m, presentationScenario="mexico-delivery",
+                                                headline={"en": "24% APR for 24 months",
+                                                          "es": "24% APR por 24 meses"})))
+    check("ungated disclosure with a dated account rate -> error",
+          _ungated_rejected("disclosure",
+                            lambda m: _add_plan(m, disclosure={
+                                "en": "As of 07/31/2025 the purchase APR is 34.99%.",
+                                "es": "Al 07/31/2025 la APR es 34.99%."})))
+    check("lease-to-own detail with a payment -> error",
+          _ungated_rejected("detail",
+                            lambda m: _add_plan(m, id="lto2", kind="lease-to-own",
+                                                headline={"en": "Lease-to-own", "es": "Arrendamiento"},
+                                                detail={"en": "Own it for $99 per month.",
+                                                        "es": "Tuyo por $99 al mes."})))
+    check("credit-builder detail with zero-interest wording -> error",
+          _ungated_rejected("detail",
+                            lambda m: _add_plan(m, id="bmc2", kind="credit-builder",
+                                                headline={"en": "Build My Credit", "es": "Build My Credit"},
+                                                detail={"en": "No interest ever.",
+                                                        "es": "Sin intereses."})))
+    check("generic non-promotional plan (approved shape) passes",
+          _fin_with(lambda m: _add_plan(m, id="ok-plan")).ok)
+
+    # GATED content keeps its numbers — the guard must not reach inside the gate
+    check("promotional headline/detail/disclosure may state exact terms",
+          _fin_with(lambda m: None).ok)
+    check("promotional plan with exact headline+detail+disclosure still passes",
+          _fin_with(lambda m: m["plans"][0].update({
+              "headline": {"en": "9.99% APR for 72 months", "es": "9.99% APR por 72 meses"},
+              "detail": {"en": "On purchases of $500 or more. Fixed monthly payments required.",
+                         "es": "En compras de $500 o mas. Se requieren pagos mensuales fijos."},
+              "disclosure": {"en": "As of 07/31/2025 the purchase APR is 34.99%.",
+                             "es": "Al 07/31/2025 la APR de compra es 34.99%."}})).ok)
+    check("scenario plan's GATED detail + representativeExample may state exact terms",
+          _fin_with(lambda m: _add_plan(
+              m, id="mx2", presentationScenario="mexico-delivery", apr=24, termMonths=24,
+              headline={"en": "Purchasing for delivery to Mexico?",
+                        "es": "¿Compras para entrega en México?"},
+              detail={"en": "Up to 24 months at a maximum 24% APR.",
+                      "es": "Hasta 24 meses con un maximo de 24% APR."},
+              representativeExample={"en": "$999 for 24 months equals 24 payments of $52.82.",
+                                     "es": "$999 por 24 meses son 24 pagos de $52.82."})).ok)
+
+    # ---- allowedSourceHosts must be SUFFICIENT, not merely non-widening ----
+    # The build and the browser police financing URLs against different lists.
+    # Checking only for widening let an absent/empty/padded/wrong-subset list
+    # ship a bundle whose every financing link, QR continuation, email URL and
+    # exact-terms gate was dead at runtime, with no error anywhere.
+    _PARITY = "financingSourceAllowed"
+
+    def _ash(value, drop=False):
+        def mutate(m):
+            if drop:
+                m.pop("allowedSourceHosts", None)
+            else:
+                m["allowedSourceHosts"] = value
+        return mutate
+
+    check("allowedSourceHosts MISSING while enabled -> error",
+          any("allowedSourceHosts is required" in e
+              for e in _fin_with(_ash(None, drop=True)).errors))
+    check("allowedSourceHosts EMPTY while enabled -> error",
+          any("allowedSourceHosts is empty" in e
+              for e in _fin_with(_ash([])).errors))
+    check("allowedSourceHosts PADDED entry -> error (browser does not trim)",
+          any("does not trim" in e
+              for e in _fin_with(_ash(["  www.lacks.com  "])).errors))
+    check("allowedSourceHosts BLANK entry -> error",
+          any("is blank" in e for e in _fin_with(_ash(["www.lacks.com", "   "])).errors))
+    check("allowedSourceHosts WRONG SUBSET -> runtime-parity error",
+          any(_PARITY in e for e in _fin_with(_ash(["synchrony.com"])).errors))
+    check("wrong subset names the field the browser would drop",
+          any(_PARITY in e and "financing.sourceUrl" in e
+              for e in _fin_with(_ash(["synchrony.com"])).errors))
+    check("sufficient allowlist -> no parity error",
+          not any(_PARITY in e
+                  for e in _fin_with(_ash(["lacks.com", "www.lacks.com"])).errors))
+    check("apex-only allowlist still covers the www subdomain (dot-boundary)",
+          not any(_PARITY in e for e in _fin_with(_ash(["lacks.com"])).errors))
+    # Archive captures: legitimate promotions EVIDENCE, never a customer link.
+    _ARCHIVE = "https://web.archive.org/web/20260525/https://www.lacks.com/financing"
+    check("archive capture as customer-reachable sourceUrl -> error",
+          any("web.archive.org capture" in e for e in
+              _fin_with(lambda m: m.__setitem__("sourceUrl", _ARCHIVE)).errors))
+    check("archive capture as a PLAN sourceUrl -> error",
+          any("web.archive.org capture" in e for e in
+              _fin_with(lambda m: m["plans"][0].__setitem__("sourceUrl", _ARCHIVE)).errors))
+    check("archive capture stays valid for PROMOTIONS evidence (unchanged)",
+          _is_allowed_source(_ARCHIVE, _FHOSTS))
+    check("the runtime mirror rejects an archive capture (no archive branch)",
+          not _runtime_financing_host_allowed(_ARCHIVE, ["lacks.com", "www.lacks.com"]))
+    # The mirror must agree with the JS on the cases that actually differ.
+    check("runtime mirror: explicit :443 accepted (URL normalises it away)",
+          _runtime_financing_host_allowed("https://www.lacks.com:443/x", ["www.lacks.com"]))
+    check("runtime mirror: non-default port refused",
+          not _runtime_financing_host_allowed("https://www.lacks.com:8443/x", ["www.lacks.com"]))
+    check("runtime mirror: padded entry matches nothing (as in the browser)",
+          not _runtime_financing_host_allowed("https://www.lacks.com/x", ["  www.lacks.com  "]))
+    check("runtime mirror: dot-boundary suffix, not bare suffix",
+          _runtime_financing_host_allowed("https://www.lacks.com/x", ["lacks.com"])
+          and not _runtime_financing_host_allowed("https://evil-lacks.com/x", ["lacks.com"]))
+    check("runtime mirror: http refused",
+          not _runtime_financing_host_allowed("http://www.lacks.com/x", ["www.lacks.com"]))
+    check("runtime mirror: credentials refused",
+          not _runtime_financing_host_allowed("https://u:p@www.lacks.com/x", ["www.lacks.com"]))
+    check("runtime mirror is total over JSON shapes",
+          all(_runtime_financing_host_allowed(u, h) in (True, False)
+              for u in (None, "", 7, [], {}, "x", "https://www.lacks.com/x")
+              for h in (None, [], "x", 7, {}, ["www.lacks.com"], [None, 7])))
+    check("allowedSourceHosts not required when financing is DISABLED",
+          validate_financing(_fc(dict(_fmut(), enabled=False)),
+                             allowed_source_hosts=_FHOSTS).ok)
+
+    # ---- generated promotional headlines (Commit I) -------------------------
+    # apr/termMonths are AUTHORITATIVE; the promotional headline is derived from
+    # them by tools/financing_headline.py and pinned here by exact equality.
+    # Before this rule, bilingual presence was the only headline check and a
+    # hand-edited "4.99% APR for 12 months" shipped unchallenged over apr=9.99 /
+    # termMonths=72 — customer-visible prose contradicting the verified facts.
+    _FH = fin_headline
+
+    def _hl_raises(fn):
+        try:
+            fn()
+        except _FH.HeadlineError:
+            return True
+        return False
+
+    def _hl_msg(fn):
+        """The HeadlineError text a call produces ('' when it does not raise)."""
+        try:
+            fn()
+        except _FH.HeadlineError as exc:
+            return str(exc)
+        return ""
+
+    def _hl_len(fn):
+        return len(_hl_msg(fn))
+
+    # Template pins — these ARE the customer-visible strings.
+    check("generated headline: the shipped 9.99 / 72 promotion",
+          _FH.promotional_headline(9.99, 72)
+          == {"en": "9.99% APR for 72 months", "es": "9.99% APR por 72 meses"})
+    check("generated headline: the shipped 0 / 48 promotion",
+          _FH.promotional_headline(0, 48)
+          == {"en": "0% APR for 48 months", "es": "0% APR por 48 meses"})
+    check("generated headline: termMonths 1 is singular in BOTH languages",
+          _FH.promotional_headline(0, 1)
+          == {"en": "0% APR for 1 month", "es": "0% APR por 1 mes"})
+    check("generated headline: termMonths 2 is plural in both languages",
+          _FH.promotional_headline(0, 2)
+          == {"en": "0% APR for 2 months", "es": "0% APR por 2 meses"})
+    check("generated headline: 'APR' stays 'APR' in Spanish (shipped terminology)",
+          "APR" in _FH.promotional_headline(9.99, 72)["es"])
+    check("generated headline: rate and term only — never minimum or provider",
+          all(x not in _FH.promotional_headline(9.99, 72)["en"]
+              for x in ("$", "500", "Synchrony", "minimum")))
+    # Formatting policy: print exactly what JSON carried, invent no precision.
+    for _val, _want in ((0, "0"), (0.0, "0"), (9.99, "9.99"), (12.5, "12.5"),
+                        (24, "24"), (48.0, "48"), (1.005, "1.005"), (100, "100")):
+        check(f"APR formatting pinned: {_val!r} -> {_want!r}",
+              _FH.format_rate(_val) == _want)
+    for _lbl, _bad in (("missing", None), ("boolean True", True),
+                       ("boolean False", False), ("string", "9.99"),
+                       ("NaN", float("nan")), ("+inf", float("inf")),
+                       ("-inf", float("-inf")), ("negative", -1), ("object", {})):
+        check(f"APR {_lbl} rejected by the generator",
+              _hl_raises(lambda v=_bad: _FH.format_rate(v)))
+    for _lbl, _bad in (("missing", None), ("boolean", True), ("float 48.0", 48.0),
+                       ("string '72'", "72"), ("zero", 0), ("negative", -6)):
+        check(f"termMonths {_lbl} rejected by the generator",
+              _hl_raises(lambda v=_bad: _FH.format_term(v)))
+
+    # The predicate the BUILDER generates by and the group the VALIDATOR gates
+    # on must name the same set of plans, or a plan could end up generated but
+    # ungated (or gated but authored). Pinned across every kind/scenario shape,
+    # including the malformed ones validation separately rejects.
+    for _kind in sorted(FINANCING_PLAN_KINDS):
+        for _sc in ("<absent>", "mexico-delivery", "not-a-scenario", "", "   ",
+                    1, None, True, []):
+            _pp = {"kind": _kind}
+            if _sc != "<absent>":
+                _pp["presentationScenario"] = _sc
+            check(f"generation predicate == _plan_group promotional "
+                  f"({_kind}, scenario={_sc!r})",
+                  _FH.is_promotional_presentation(_pp)
+                  == (_plan_group(_pp) == "promotional"))
+
+    # Builder-side contract: authored prose may never override or coexist with
+    # the generated value, and placement is deterministic so the shipped
+    # artifact stays diff-clean.
+    check("insert_generated_headline REFUSES an authored promotional headline",
+          _hl_raises(lambda: _FH.insert_generated_headline(
+              {"id": "p", "kind": _FH.PROMOTIONAL_KIND, "apr": 0, "termMonths": 48,
+               "headline": {"en": "x", "es": "y"}})))
+    check("insert_generated_headline places the headline immediately before detail",
+          list(_FH.insert_generated_headline(
+              {"id": "p", "kind": _FH.PROMOTIONAL_KIND, "apr": 0, "termMonths": 48,
+               "detail": {"en": "d", "es": "d"},
+               "disclosure": {"en": "x", "es": "x"}}))
+          == ["id", "kind", "apr", "termMonths", "headline", "detail", "disclosure"])
+    _apply_src = {"plans": [
+        {"id": "promo", "kind": _FH.PROMOTIONAL_KIND, "apr": 0, "termMonths": 48,
+         "detail": {"en": "d", "es": "d"}},
+        {"id": "inh", "kind": "closed-end-installment",
+         "headline": {"en": "In-House", "es": "Interno"}},
+        {"id": "mx", "kind": "closed-end-installment",
+         "presentationScenario": "mexico-delivery", "apr": 24, "termMonths": 24,
+         "headline": {"en": "Delivery to Mexico?", "es": "Entrega en Mexico?"}},
+    ]}
+    _FH.apply_to_financing(_apply_src)
+    check("apply_to_financing generates for the promotional plan ONLY",
+          _apply_src["plans"][0]["headline"] == {"en": "0% APR for 48 months",
+                                                 "es": "0% APR por 48 meses"}
+          and _apply_src["plans"][1]["headline"] == {"en": "In-House", "es": "Interno"}
+          and _apply_src["plans"][2]["headline"] == {"en": "Delivery to Mexico?",
+                                                     "es": "Entrega en Mexico?"})
+
+    # Validator side: what shipped must equal what the fields generate.
+    check("shipped-shape promotional plan passes the generated-headline rule",
+          _fin_with(lambda m: None).ok)
+    _HL_DRIFT = "does not equal the value generated"
+    for _lbl, _drift in (
+            ("wrong rate", {"en": "4.99% APR for 72 months",
+                            "es": "4.99% APR por 72 meses"}),
+            ("wrong term", {"en": "9.99% APR for 60 months",
+                            "es": "9.99% APR por 60 meses"}),
+            ("right numbers, different sentence", {"en": "Ask about 9.99 and 72.",
+                                                   "es": "Pregunta por 9.99 y 72."}),
+            ("EN drifted, ES correct", {"en": "9.99% APR for 12 months",
+                                        "es": "9.99% APR por 72 meses"}),
+            ("ES drifted, EN correct", {"en": "9.99% APR for 72 months",
+                                        "es": "9.99% APR por 12 meses"}),
+            ("trailing whitespace", {"en": "9.99% APR for 72 months ",
+                                     "es": "9.99% APR por 72 meses"}),
+            ("invented trailing zero", {"en": "9.990% APR for 72 months",
+                                        "es": "9.990% APR por 72 meses"}),
+            ("APR translated in ES", {"en": "9.99% APR for 72 months",
+                                      "es": "9.99% TAE por 72 meses"}),
+            ("minimum smuggled in", {"en": "9.99% APR for 72 months on $500+",
+                                     "es": "9.99% APR por 72 meses desde $500"}),
+    ):
+        check(f"drifted promotional headline rejected: {_lbl}",
+              any(_HL_DRIFT in e for e in _fin_with(
+                  lambda m, h=_drift: m["plans"][0].__setitem__("headline", h)).errors))
+    # NON-VACUITY: the rejection above comes from the NEW equality rule, not
+    # from the pre-existing bilingual-presence rule (which these all satisfy).
+    check("a bilingual-but-drifted headline is not caught by the bilingual rule",
+          not any("headline missing EN or ES" in e for e in _fin_with(
+              lambda m: m["plans"][0].__setitem__(
+                  "headline", {"en": "4.99% APR for 12 months",
+                               "es": "4.99% APR por 12 meses"})).errors))
+    check("changing apr WITHOUT regenerating the headline -> error",
+          any(_HL_DRIFT in e for e in
+              _fin_with(lambda m: m["plans"][0].__setitem__("apr", 4.99)).errors))
+    check("changing termMonths WITHOUT regenerating the headline -> error",
+          any(_HL_DRIFT in e for e in
+              _fin_with(lambda m: m["plans"][0].__setitem__("termMonths", 36)).errors))
+    check("the error names both languages independently",
+          all(any(f"headline.{_lang}" in e for e in _fin_with(
+              lambda m: m["plans"][0].__setitem__(
+                  "headline", {"en": "wrong one", "es": "otro"})).errors)
+              for _lang in ("en", "es")))
+    check("hand-added extra language key on a promotional headline -> error",
+          any("unexpected keys" in e for e in _fin_with(
+              lambda m: m["plans"][0]["headline"].__setitem__("fr", "x")).errors))
+    _HL_NOGEN = "cannot generate its headline"
+    for _missing in ("apr", "termMonths"):
+        check(f"promotional plan missing {_missing} -> error",
+              any(_HL_NOGEN in e for e in
+                  _fin_with(lambda m, k=_missing: m["plans"][0].pop(k)).errors))
+    for _lbl, _bad in (("boolean apr", True), ("string apr", "9.99"),
+                       ("null apr", None), ("non-finite apr", float("inf"))):
+        check(f"promotional plan with {_lbl} -> error",
+              any(_HL_NOGEN in e for e in
+                  _fin_with(lambda m, v=_bad: m["plans"][0].__setitem__("apr", v)).errors))
+    for _lbl, _bad in (("boolean termMonths", True), ("float termMonths", 72.0),
+                       ("null termMonths", None)):
+        check(f"promotional plan with {_lbl} -> error",
+              any(_HL_NOGEN in e for e in _fin_with(
+                  lambda m, v=_bad: m["plans"][0].__setitem__("termMonths", v)).errors))
+    # A boolean apr used to slip past the range check entirely (bool is a
+    # subclass of int, and True is neither < 0 nor > 100). Both layers reject
+    # it now that the range check IS the helper's domain predicate.
+    check("boolean apr is rejected by the generation rule",
+          any(_HL_NOGEN in e for e in
+              _fin_with(lambda m: m["plans"][0].__setitem__("apr", True)).errors))
+    check("boolean apr is ALSO rejected by the range check (former gap closed)",
+          any("out of range" in e for e in
+              _fin_with(lambda m: m["plans"][0].__setitem__("apr", True)).errors))
+
+    # ---- numeric domain is TOTAL and single-authority (Commit I amend) ------
+    # A JSON integer can be arbitrarily large. math.isfinite(10**400) and
+    # float(10**400) BOTH raise OverflowError, so asking either of an int let an
+    # uncaught OverflowError escape validate_financing: no ValidationReport, no
+    # named error, and the builder's HeadlineError -> SystemExit contract
+    # bypassed with a raw traceback. The helper now answers for every object
+    # JSON can supply, and every rejection is a HeadlineError.
+    _HUGE = 10 ** 400
+    check("apr_in_domain is TOTAL: huge positive integer -> False, no raise",
+          _FH.apr_in_domain(_HUGE) is False)
+    check("apr_in_domain is TOTAL: huge negative integer -> False, no raise",
+          _FH.apr_in_domain(-_HUGE) is False)
+    check("term_in_domain is TOTAL: huge integer -> False, no raise",
+          _FH.term_in_domain(_HUGE) is False)
+    for _lbl, _v in (("huge positive int", _HUGE), ("huge negative int", -_HUGE)):
+        check(f"format_rate({_lbl}) raises HeadlineError, not OverflowError",
+              _hl_raises(lambda v=_v: _FH.format_rate(v)))
+    check("format_term(huge int) raises HeadlineError, not OverflowError",
+          _hl_raises(lambda: _FH.format_term(_HUGE)))
+    check("a rejected 400-digit APR does not BECOME the error message",
+          len(_FH.short_repr(_HUGE)) < 80)
+    # short_repr sits INSIDE the rejection path, so it must be total too.
+    # repr(10**100000) raises ValueError under CPython's int->str digit limit
+    # (sys.get_int_max_str_digits), which would have escaped format_rate as a
+    # non-HeadlineError from within the code that formats the refusal.
+    _VAST = 10 ** 100000
+    check("short_repr describes a vast integer instead of rendering it",
+          _FH.short_repr(_VAST) == f"<{_VAST.bit_length()}-bit integer>")
+    check("format_rate(10**100000) raises HeadlineError, not ValueError",
+          _hl_raises(lambda: _FH.format_rate(_VAST)))
+    check("format_term(10**100000) raises HeadlineError, not ValueError",
+          _hl_raises(lambda: _FH.format_term(_VAST)))
+    check("apr_in_domain(10**100000) answers without raising",
+          _FH.apr_in_domain(_VAST) is False)
+
+    class _Hostile:
+        def __repr__(self):
+            raise RuntimeError("repr exploded")
+
+    class _HostileFloat(float):
+        def __repr__(self):
+            raise RuntimeError("repr exploded")
+
+    check("short_repr survives an object whose __repr__ raises",
+          _FH.short_repr(_Hostile()) == "<unprintable _Hostile>")
+    check("format_rate survives an object whose __repr__ raises",
+          _hl_raises(lambda: _FH.format_rate(_Hostile())))
+    check("apr_in_domain survives an object whose __repr__ raises",
+          _FH.apr_in_domain(_Hostile()) is False)
+    # WRAPPED errors must be bounded too. headline_for_plan() and
+    # insert_generated_headline() add an author-supplied id (and, for the
+    # authored-headline refusal, the rejected headline itself) to a message
+    # that is already bounded — and both used a bare !r, so a 100,000-character
+    # id produced a 100,059-character diagnostic. The claim that "every
+    # rejection site routes through short_repr" was true of the raising sites
+    # and false of the wrapping ones.
+    _LONG_ID = "x" * 100000
+    _BOUND = 400
+    check("headline_for_plan bounds a huge plan id in its wrapped error",
+          _hl_len(lambda: _FH.headline_for_plan(
+              {"id": _LONG_ID, "apr": None, "termMonths": 72})) < _BOUND)
+    check("insert_generated_headline bounds a huge plan id",
+          _hl_len(lambda: _FH.insert_generated_headline(
+              {"id": _LONG_ID, "kind": _FH.PROMOTIONAL_KIND, "apr": 0,
+               "termMonths": 48, "headline": {"en": "a", "es": "b"}})) < _BOUND)
+    check("insert_generated_headline bounds a huge authored headline",
+          _hl_len(lambda: _FH.insert_generated_headline(
+              {"id": "p", "kind": _FH.PROMOTIONAL_KIND, "apr": 0,
+               "termMonths": 48,
+               "headline": {"en": "y" * 100000, "es": "z"}})) < _BOUND)
+    check("wrapped errors survive a huge INTEGER id (int->str digit limit)",
+          _hl_len(lambda: _FH.headline_for_plan(
+              {"id": 10 ** 100000, "apr": None, "termMonths": 72})) < _BOUND)
+    check("a bounded wrapped error still names the plan and the cause",
+          all(s in _hl_msg(lambda: _FH.headline_for_plan(
+              {"id": "syn-9-99-72", "apr": None, "termMonths": 72}))
+              for s in ("syn-9-99-72", "apr is required")))
+    # Structural pin, so a NEW raise cannot reintroduce the same class: no
+    # author-supplied value may be interpolated with a bare !r anywhere in the
+    # helper. (`value!r` on an already-screened float is fine and is excluded
+    # by name; `plan.get(...)!r` never is.)
+    _FH_SRC = open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                "financing_headline.py"), encoding="utf-8").read()
+    check("no bare !r on a plan-supplied value remains in financing_headline",
+          not re.search(r"\{plan\.get\([^)]*\)!r\}", _FH_SRC))
+
+    check("short_repr leaves ordinary values fully readable",
+          _FH.short_repr(9.99) == "9.99" and _FH.short_repr(72) == "72"
+          and _FH.short_repr(None) == "None")
+
+    check("format_rate survives a value whose __repr__ raises, at EVERY "
+          "rejection site (the refusal text must not be what crashes)",
+          all(_hl_raises(lambda v=_v: _FH.format_rate(v))
+              for _v in (_Hostile(), _HostileFloat("nan"), _HostileFloat(1e-05))))
+
+    # Subclasses of int/float are refused OUTRIGHT rather than trusted, because
+    # a subclass can lie about its own value: __float__ can return inf from an
+    # instance that passes a finiteness test ("inf% APR for 48 months"), __int__
+    # can format a different number than the one range-checked, and __ge__ /
+    # __repr__ can raise from inside the check or inside the refusal. json.loads
+    # never produces one, so refusing them costs nothing and removes the whole
+    # class. Every case below WOULD have been a wrong answer or a leaked
+    # exception under isinstance-based typing.
+    class _LyingFloat(float):
+        def __float__(self):
+            return float("inf")
+
+    class _LyingInt(int):
+        def __int__(self):
+            return 999
+
+    class _BadCmpInt(int):
+        def __ge__(self, other):
+            raise RuntimeError("__ge__ exploded")
+
+    class _HostileBitLength(int):
+        def bit_length(self):
+            raise RuntimeError("bit_length exploded")
+
+    for _lbl, _v in (("float subclass lying via __float__", _LyingFloat(9.99)),
+                     ("int subclass lying via __int__", _LyingInt(9)),
+                     ("int subclass with exploding __ge__", _BadCmpInt(50)),
+                     ("int subclass with exploding bit_length",
+                      _HostileBitLength(10 ** 400))):
+        check(f"apr_in_domain refuses a {_lbl} without raising",
+              _FH.apr_in_domain(_v) is False)
+        check(f"format_rate refuses a {_lbl} with HeadlineError",
+              _hl_raises(lambda v=_v: _FH.format_rate(v)))
+    for _lbl, _v in (("int subclass lying via __int__", _LyingInt(48)),
+                     ("int subclass with exploding __ge__", _BadCmpInt(72))):
+        check(f"term_in_domain refuses a {_lbl} without raising",
+              _FH.term_in_domain(_v) is False)
+        check(f"format_term refuses a {_lbl} with HeadlineError",
+              _hl_raises(lambda v=_v: _FH.format_term(v)))
+    check("no subclass can reach the templates: a lying float never prints 'inf'",
+          _hl_raises(lambda: _FH.promotional_headline(_LyingFloat(9.99), 48)))
+    check("exact ints and floats are still accepted (the shipped shapes)",
+          _FH.format_rate(9.99) == "9.99" and _FH.format_rate(0) == "0"
+          and _FH.format_term(72) == "72")
+
+    # Boundaries, inclusive on both ends.
+    for _v in (0, 0.0, 100, 100.0, 9.99, 24, 0.01):
+        check(f"APR {_v!r} is in domain", _FH.apr_in_domain(_v))
+    for _v in (-1, -0.001, 101, 100.001, _HUGE, -_HUGE, True, False, None,
+               "9.99", float("nan"), float("inf"), float("-inf"), [], {}):
+        check(f"APR {_FH.short_repr(_v)} is OUT of domain",
+              not _FH.apr_in_domain(_v))
+    check("APR boundary 0 formats", _FH.format_rate(0) == "0")
+    check("APR boundary 100 formats", _FH.format_rate(100) == "100")
+    for _v in (1, 2, 72, 120):
+        check(f"termMonths {_v} is in domain", _FH.term_in_domain(_v))
+    for _v in (0, -1, 121, _HUGE, -_HUGE, True, False, None, 48.0, "72", [], {}):
+        check(f"termMonths {_FH.short_repr(_v)} is OUT of domain",
+              not _FH.term_in_domain(_v))
+    check("termMonths boundary 1 formats singular",
+          _FH.promotional_headline(0, 1) == {"en": "0% APR for 1 month",
+                                             "es": "0% APR por 1 mes"})
+    check("termMonths boundary 120 formats plural",
+          _FH.promotional_headline(0, 120) == {"en": "0% APR for 120 months",
+                                               "es": "0% APR por 120 meses"})
+
+    # DOMAIN and PRESENTATION stay separate concerns: 1e-05 is a legitimate APR
+    # this repository declines to PRINT, so it fails generation, not range.
+    check("exponent-form fractional APR still refused by the formatter",
+          _hl_raises(lambda: _FH.format_rate(1e-05)))
+    check("1e-05 is in domain (it is a real rate, merely unpresentable)",
+          _FH.apr_in_domain(1e-05))
+    check("in-domain-but-unpresentable APR -> generation error, NOT range error",
+          any(_HL_NOGEN in e for e in _fin_with(
+              lambda m: m["plans"][0].__setitem__("apr", 1e-05)).errors)
+          and not any("out of range" in e for e in _fin_with(
+              lambda m: m["plans"][0].__setitem__("apr", 1e-05)).errors))
+
+    # validate_financing must RETURN a verdict for the value that used to
+    # crash it — that is the whole fail-closed guarantee.
+    _huge_rep = _fin_with(lambda m: m["plans"][0].__setitem__("apr", _HUGE))
+    check("validate_financing RETURNS a report for a huge integer apr",
+          isinstance(_huge_rep, ValidationReport))
+    check("that report names the generation failure",
+          any(_HL_NOGEN in e for e in _huge_rep.errors))
+    check("that report ALSO names the range violation",
+          any("out of range" in e for e in _huge_rep.errors))
+    check("no error text embeds the 400-digit value",
+          all(len(e) < 400 for e in _huge_rep.errors))
+
+    # ONE authority for the range: validate_financing's check IS the helper's
+    # domain predicate, so the accepted range and the formattable range cannot
+    # drift. Proven by verdict-for-verdict agreement, not by reading the code.
+    check("the bounds live in the helper (APR)",
+          (fin_headline.APR_MIN, fin_headline.APR_MAX) == (0, 100))
+    check("the bounds live in the helper (term)",
+          (fin_headline.TERM_MIN, fin_headline.TERM_MAX) == (1, 120))
+    # The predicate must name the FIELD. "out of range" alone is shared
+    # verbatim by minimumPurchase's error, so a bare substring test would let
+    # another field's rejection stand in for the one under test.
+    def _ranged(rep, field):
+        return any("out of range" in e and f"{field} " in e for e in rep.errors)
+
+    check("the field-specific predicate does not accept a sibling's error",
+          not _ranged(_fin_with(lambda m: m["plans"][0].__setitem__(
+              "minimumPurchase", -1)), "apr")
+          and _ranged(_fin_with(lambda m: m["plans"][0].__setitem__(
+              "minimumPurchase", -1)), "minimumPurchase"))
+    for _v in (0, 100, 9.99, 24, -1, 101, _HUGE, -_HUGE, True, False,
+               float("nan"), float("inf"), "9.99", None):
+        _rep = _fin_with(lambda m, x=_v: m["plans"][0].__setitem__("apr", x))
+        check(f"validator range verdict == helper domain, apr {_FH.short_repr(_v)}",
+              _ranged(_rep, "apr")
+              == (_v is not None and not _FH.apr_in_domain(_v)))
+    for _v in (1, 120, 72, 0, 121, _HUGE, -_HUGE, True, 48.0, "72", None):
+        _rep = _fin_with(lambda m, x=_v: m["plans"][0].__setitem__("termMonths", x))
+        check(f"validator range verdict == helper domain, termMonths "
+              f"{_FH.short_repr(_v)}",
+              _ranged(_rep, "termMonths")
+              == (_v is not None and not _FH.term_in_domain(_v)))
+
+    # Fields that must NOT influence the headline.
+    check("minimumPurchase changes do not affect the generated headline",
+          _fin_with(lambda m: m["plans"][0].__setitem__("minimumPurchase", 999)).ok)
+    check("provider changes do not affect the generated headline",
+          _fin_with(lambda m: m["plans"][0].__setitem__("provider", "Another Bank")).ok)
+
+    # Authored headlines elsewhere are untouched by the rule.
+    check("non-promotional (installment) headline stays authored",
+          _fin_with(lambda m: _add_plan(m, id="inhouse-ok")).ok)
+    check("evergreen headline stays authored",
+          _fin_with(lambda m: _add_plan(m, id="lto3", kind="lease-to-own",
+                                        headline={"en": "Lease-to-own",
+                                                  "es": "Arrendamiento"})).ok)
+    check("scenario plan carrying apr/termMonths KEEPS its authored headline",
+          _fin_with(lambda m: _add_plan(
+              m, id="mx3", presentationScenario="mexico-delivery", apr=24, termMonths=24,
+              headline={"en": "Purchasing for delivery to Mexico?",
+                        "es": "¿Compras para entrega en México?"},
+              detail={"en": "Up to 24 months at a maximum 24% APR.",
+                      "es": "Hasta 24 meses con un maximo de 24% APR."})).ok)
+    check("a scenario plan is NOT required to match the generated template",
+          not any(_HL_DRIFT in e or _HL_NOGEN in e for e in _fin_with(
+              lambda m: _add_plan(
+                  m, id="mx4", presentationScenario="mexico-delivery",
+                  apr=24, termMonths=24,
+                  headline={"en": "Purchasing for delivery to Mexico?",
+                            "es": "¿Compras para entrega en México?"},
+                  detail={"en": "Up to 24 months at a maximum 24% APR.",
+                          "es": "Hasta 24 meses con un maximo de 24% APR."})).errors))
+
+    # Disabled financing keeps the light-validation convention
+    fdis_copy = _fmut(); fdis_copy["enabled"] = False
+    del fdis_copy["verifiedAt"]
+    fdis_copy["copy"]["body"] = {"en": "Get 0% APR", "es": "0% APR"}
+    check("disabled financing: ungated-copy rule not applied (light validation)",
+          not any(_UNGATED_ERR in e for e in
+                  validate_financing(_fc(fdis_copy), allowed_source_hosts=_FHOSTS).errors))
+
+    # The new rule must not have displaced any existing structural check
+    check("existing structural validation still active alongside the guard",
+          any("paymentCalculationEnabled" in e for e in
+              _fin_with(lambda m: m["plans"][0].__setitem__(
+                  "paymentCalculationEnabled", True)).errors))
+
+    # ---- written-out (digit-free) exact claims (Commit F amend) -------------
+    # An exact claim does not need digits: unit words carry it just as well.
+    for _lbl, _txt in (
+            ("EN twelve months", "Choose twelve months for repayment."),
+            ("ES doce meses", "Elige doce meses para pagar."),
+            ("EN nine percent", "Only nine percent interest."),
+            ("ES nueve por ciento", "Solo nueve por ciento."),
+            ("EN fifty dollars", "Just fifty dollars down."),
+            ("ES cincuenta dolares", "Solo cincuenta dolares."),
+            ("ES cincuenta pesos", "Solo cincuenta pesos."),
+            ("EN twelve installments", "Pay in twelve installments."),
+            ("ES doce mensualidades", "Paga en doce mensualidades."),
+            ("EN weekly cadence", "Make one payment every week."),
+            ("EN two years", "Take up to two years to pay."),
+            ("ES pagos semanales", "Pagos semanales disponibles."),
+            ("EN annual rate", "Ask about our annual rate."),
+    ):
+        check(f"written-out exact claim rejected in ungated copy: {_lbl}",
+              _ungated_rejected("financing.copy.body.en",
+                                lambda m, t=_txt: m["copy"].__setitem__(
+                                    "body", {"en": t, "es": "Generico"})))
+    for _lbl, _ok in (
+            ("EN stale guidance", "Exact rates and terms are not shown right now."),
+            ("ES stale guidance", "Las tasas y los plazos exactos no se muestran."),
+            ("EN payment options", "Current payment options are available from your specialist."),
+            ("ES opciones de pago", "Tu especialista tiene las opciones de pago actuales."),
+            ("ES momento (not 'mes')", "pueden cambiar o terminar en cualquier momento"),
+    ):
+        check(f"generic phrasing still passes: {_lbl}",
+              not _exact_claim_signals(_ok))
+
+    # ---- ordinary-word payment counts (Commit F amend 2) --------------------
+    # Banning "installments"/"cuotas" did not close the payment-count class:
+    # ordinary "payments"/"pagos" carries it too, and cannot simply be banned
+    # because 28 approved ungated strings use it inside a neutral collocation.
+    # These assertions run the real validate_financing(), not the detector.
+    _PAY_BLOCK = (
+        ("EN payment count", "Make twelve payments."),
+        ("ES payment count", "Haz doce pagos."),
+        ("EN repay-in count", "Repay in twelve payments."),
+        ("EN single payment", "Only one payment required."),
+        ("ES single payment", "Un solo pago requerido."),
+        ("EN repetition count", "Pay twelve times."),
+        ("ES repetition count", "Paga doce veces."),
+        ("EN money down", "No money down."),
+        ("EN nothing down", "Nothing down."),
+        ("ES enganche", "Sin enganche."),
+        ("ES pago inicial", "Sin pago inicial."),
+        ("EN deferral", "No payments until next spring."),
+        ("ES deferral", "Sin pagos hasta la primavera."),
+        ("EN defer verb", "Defer your first payment."),
+        ("ES pay-later", "Llevatelo hoy y paga despues."),
+        ("EN proportion", "Half now and half at pickup."),
+        ("ES proportion", "Mitad ahora y mitad al recoger."),
+    )
+    for _policy in (False, True):
+        _st = "policy false" if _policy is False else "policy true"
+        for _lbl, _txt in _PAY_BLOCK:
+            check(f"ungated copy rejects {_lbl} ({_st})",
+                  _ungated_rejected("financing.copy.body.en",
+                                    lambda m, t=_txt: m["copy"].__setitem__(
+                                        "body", {"en": t, "es": "Generico"}),
+                                    _policy))
+    # ES side of a bilingual field, and an ID-driven ungated PLAN surface.
+    check("ungated copy rejects an ES payment count in the .es slot",
+          _ungated_rejected("financing.copy.body.es",
+                            lambda m: m["copy"].__setitem__(
+                                "body", {"en": "Generic", "es": "Haz doce pagos."})))
+    check("ID-driven plan headline rejects an ordinary-word payment count",
+          _ungated_rejected("headline",
+                            lambda m: _add_plan(
+                                m, id="lease-to-own", kind="lease-to-own",
+                                headline={"en": "Make twelve payments.",
+                                          "es": "Haz doce pagos."})))
+    check("ID-driven plan detail rejects a deferral claim",
+          _ungated_rejected("detail",
+                            lambda m: _add_plan(
+                                m, id="build-my-credit", kind="credit-builder",
+                                detail={"en": "No payments until next spring.",
+                                        "es": "Sin pagos hasta la primavera."})))
+    check("provider rejects an ordinary-word payment count",
+          _ungated_rejected("provider",
+                            lambda m: m["plans"][0].__setitem__(
+                                "provider", "Synchrony twelve payments")))
+    # FALSE-POSITIVE CONTROLS: the neutral payment concept must stay legal.
+    for _lbl, _ok in (
+            ("EN payment options", "Explore payment options"),
+            ("EN payment choices", "Your Sleep Plan. Your Payment Choices."),
+            ("EN payment method", "Your matches are based on sleep fit — never on payment method."),
+            ("EN brand 'Payment Choice'", "Lacks Payment Choice offers more than one way to bring it home."),
+            ("ES opciones de pago", "Explora opciones de pago"),
+            ("ES forma de pago", "Tus opciones se basan en tu descanso — nunca en la forma de pago."),
+            ("ES formas de pago", "Hay varias formas de pago disponibles."),
+            ("ES metodos de pago", "Consulta los metodos de pago."),
+            ("EN stale guidance", "Current payment options are available from your Lacks specialist."),
+            ("ES stale guidance", "Tu especialista de Lacks tiene las opciones de pago actuales."),
+    ):
+        check(f"neutral payment orientation still passes: {_lbl}",
+              not _exact_claim_signals(_ok))
+        check(f"neutral payment orientation validates clean: {_lbl}",
+              _fin_with(lambda m, t=_ok: m["copy"].__setitem__(
+                  "body", {"en": t, "es": t})).ok)
+    # HONESTY PINS (behavioural). These document the detector's real posture so
+    # a future edit cannot quietly restore a description that contradicts it.
+    check("posture: a BARE duration unit is rejected with no numeral attached",
+          _exact_claim_signals("Choose the right months") == ["duration-unit"])
+    check("posture: a BARE proportion word is rejected with no numeral attached",
+          "proportion" in _exact_claim_signals("Half of it is yours"))
+    for _lbl, _benign in (
+            ("Payment information is available in store.",
+             "Payment information is available in store."),
+            ("Ask your specialist about payment.", "Ask your specialist about payment."),
+            ("Choose a payment program.", "Choose a payment program."),
+    ):
+        check(f"posture: benign-but-unreviewed payment wording is rejected by "
+              f"default-deny ({_lbl})",
+              _exact_claim_signals(_benign) == ["payment-noun"])
+    check("posture: rejection means 'outside the reviewed allowlist', not "
+          "'contains an exact claim'",
+          _bare_payment_noun("Ask your specialist about payment.")
+          and not _bare_payment_noun("Ask your specialist about payment options."))
+    # AUTHORITATIVE: the real validate_financing() response for the documented
+    # benign case must be rejected AND must not misdiagnose the prose.
+    _benign_txt = "Payment information is available in store."
+    _benign_errs = [e for e in _fin_with(
+        lambda m: m["copy"].__setitem__("body", {"en": _benign_txt, "es": "Generico"})).errors
+        if "financing.copy.body.en" in e]
+    check("benign unreviewed wording is still REJECTED by validate_financing()",
+          len(_benign_errs) == 1)
+    check("its error names the reserved/unreviewed marker that fired",
+          any("payment-noun" in e for e in _benign_errs))
+    check("its error describes reserved-or-unreviewed language, not a proven claim",
+          any("reserved or unreviewed financing language" in e for e in _benign_errs))
+    check("its error does NOT assert the prose 'states an exact claim'",
+          not any("states an exact claim" in e and "does not by itself" not in e
+                  for e in _benign_errs))
+    check("its error offers both remedies (reword, or move to a gated field)",
+          any("reword it using reviewed generic orientation language" in e
+              and "freshness-gated plan field" in e for e in _benign_errs))
+    check("the stable error substring is preserved for downstream matchers",
+          all(_UNGATED_ERR in e for e in _benign_errs))
+    check("shipped configuration still passes the payment-noun rule unchanged",
+          all(not _exact_claim_signals(v.get(lang, ""))
+              for v in (json.loads(json.dumps(_fmut()))["copy"] or {}).values()
+              if isinstance(v, dict) for lang in ("en", "es")))
+
+    # ---- presentationScenario contract (Commit G) ---------------------------
+    check("presentationScenario absent is valid (ordinary plan)",
+          _fin_with(lambda m: _add_plan(m, id="ordinary")).ok)
+    check("presentationScenario 'mexico-delivery' with its required kind is valid",
+          _fin_with(lambda m: _add_plan(
+              m, id="mx-ok", kind="closed-end-installment",
+              presentationScenario="mexico-delivery")).ok)
+    for _lbl, _bad in (("null", None), ("true", True), ("false", False), ("int", 1),
+                       ("float", 1.0), ("array", []), ("object", {}),
+                       ("empty string", ""), ("blank string", "   ")):
+        check(f"presentationScenario {_lbl} -> error (must be a supported string)",
+              any("presentationScenario" in e for e in
+                  _fin_with(lambda m, v=_bad: _add_plan(
+                      m, id="bad-sc", presentationScenario=v)).errors))
+    check("presentationScenario unknown string -> error (renderer has no card)",
+          any("not a supported scenario" in e for e in
+              _fin_with(lambda m: _add_plan(
+                  m, id="unknown-sc", presentationScenario="brazil-delivery")).errors))
+    check("mexico-delivery with an incompatible kind -> error",
+          any("requires kind" in e for e in
+              _fin_with(lambda m: _add_plan(
+                  m, id="mx-badkind", kind="lease-to-own",
+                  presentationScenario="mexico-delivery")).errors))
+    check("two mexico-delivery scenarios -> cardinality error",
+          any("exactly one" in e for e in
+              _fin_with(lambda m: [
+                  _add_plan(m, id="mx-a", presentationScenario="mexico-delivery"),
+                  _add_plan(m, id="mx-b", presentationScenario="mexico-delivery")]).errors))
+    for _lbl, _v in (("true", True), ("false", False)):
+        check(f"legacy separatePath {_lbl} is retired -> error",
+              any("separatePath is retired" in e for e in
+                  _fin_with(lambda m, v=_v: m["plans"][0].__setitem__("separatePath", v)).errors))
+
+    # ---- provider contract (Commit G amend) ---------------------------------
+    for _lbl, _bad, _frag in (
+            ("empty string", "", "must not be blank"),
+            ("blank string", "   ", "must not be blank"),
+            ("untrimmed", " Synchrony ", "leading/trailing whitespace"),
+            ("number", 123, "must be a string"),
+            ("boolean", True, "must be a string"),
+            ("null", None, "must be a string"),
+            ("bilingual object", {"en": "A", "es": "A"}, "must be a string"),
+            ("array", ["A"], "must be a string"),
+    ):
+        check(f"provider {_lbl} -> error ({_frag})",
+              any("provider" in e and _frag in e for e in
+                  _fin_with(lambda m, v=_bad: m["plans"][0].__setitem__("provider", v)).errors))
+    check("provider missing on an enabled plan -> error",
+          any("provider is required" in e for e in
+              _fin_with(lambda m: m["plans"][0].pop("provider", None)).errors))
+    for _ok_prov in ("Synchrony", "constructor", "toString", "__proto__", "valueOf"):
+        check(f"provider {_ok_prov!r} is a valid identity string",
+              _fin_with(lambda m, v=_ok_prov: m["plans"][0].__setitem__("provider", v)).ok)
+
+    # ---- evergreen (incl. informational) is availability-only ---------------
+    def _informational(m, **kw):
+        base = dict(id="info-1", kind="informational", provider="Lacks",
+                    headline={"en": "Learn about credit", "es": "Conoce el credito"},
+                    detail={"en": "Ask a specialist in store.",
+                            "es": "Consulta en tienda."})
+        base.update(kw)
+        _add_plan(m, **base)
+    check("generic informational availability copy passes",
+          _fin_with(_informational).ok)
+    for _field, _val in (("apr", 19.99), ("termMonths", 36), ("minimumPurchase", 750)):
+        check(f"informational plan carrying {_field} -> error (availability only)",
+              any("availability only" in e for e in
+                  _fin_with(lambda m, f=_field, v=_val: _informational(m, **{f: v})).errors))
+    check("every evergreen kind is availability-only in one semantic set",
+          FINANCING_EVERGREEN_KINDS == {"lease-to-own", "credit-builder", "informational"})
+
+    # ---- total partition + duplicate ids (Commit G) -------------------------
+    check("every shipped-shape plan classifies into exactly one group",
+          all(_plan_group(_p) for _p in _fmut()["plans"]))
+    for _kind, _group in (("open-end-promotional-credit", "promotional"),
+                          ("closed-end-installment", "installment"),
+                          ("lease-to-own", "evergreen"),
+                          ("credit-builder", "evergreen"),
+                          ("informational", "evergreen")):
+        check(f"kind {_kind!r} maps to group {_group!r}",
+              _plan_group({"kind": _kind}) == _group)
+    check("every allowed FINANCING_PLAN_KINDS value is classified (no silent drop)",
+          all(_plan_group({"kind": _k}) for _k in FINANCING_PLAN_KINDS))
+    check("scenario overrides kind for classification",
+          _plan_group({"kind": "closed-end-installment",
+                       "presentationScenario": "mexico-delivery"}) == "scenario")
+    check("unclassifiable plan -> validation error (never silently dropped)",
+          any("matches no renderer presentation group" in e for e in
+              _fin_with(lambda m: _add_plan(m, id="ghost", kind="informational",
+                                            presentationScenario="nope")).errors))
+    check("duplicate plan ids -> error",
+          any("duplicate plan id" in e for e in
+              _fin_with(lambda m: _add_plan(m, id=m["plans"][0]["id"])).errors))
+    check("unique plan ids -> no duplicate error",
+          not any("duplicate plan id" in e for e in
+                  _fin_with(lambda m: _add_plan(m, id="unique-one")).errors))
+
+    # ---- classification drives the ungated guard; plan ids do not -----------
+    check("promotional group: only provider is ungated",
+          _ungated_plan_fields({"kind": "open-end-promotional-credit"}) == ("provider",))
+    check("installment group: headline+disclosure ungated, detail gated",
+          _ungated_plan_fields({"kind": "closed-end-installment"})
+          == ("provider", "headline", "disclosure"))
+    check("evergreen group: headline+detail+disclosure ungated",
+          _ungated_plan_fields({"kind": "lease-to-own"})
+          == ("provider", "headline", "detail", "disclosure"))
+    check("scenario group: headline+disclosure ungated, detail/example gated",
+          _ungated_plan_fields({"kind": "closed-end-installment",
+                                "presentationScenario": "mexico-delivery"})
+          == ("provider", "headline", "disclosure"))
+    check("renaming a plan id does not change its classification",
+          _plan_group({"id": "anything-at-all", "kind": "closed-end-installment"})
+          == _plan_group({"id": "lacks-in-house", "kind": "closed-end-installment"}))
+    check("an evergreen plan re-declared promotional is GATED by both layers "
+          "(the old id-driven table let it render ungated)",
+          _plan_group({"id": "lease-to-own", "kind": "open-end-promotional-credit"})
+          == "promotional"
+          and _ungated_plan_fields({"id": "lease-to-own",
+                                    "kind": "open-end-promotional-credit"}) == ("provider",))
+    check("scenario plan headline stays guarded whatever its id",
+          _ungated_rejected("headline",
+                            lambda m: _add_plan(
+                                m, id="whatever-id",
+                                presentationScenario="mexico-delivery",
+                                headline={"en": "24% APR for 24 months",
+                                          "es": "24% APR por 24 meses"})))
 
     # ---- quiz definition (structure contract) --------------------------------
     def _bl(s):

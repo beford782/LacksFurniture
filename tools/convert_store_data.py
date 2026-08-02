@@ -267,7 +267,15 @@ def build_store_config(wb):
     promotions, financing = build_promotions(wb)
     if promotions:
         cfg["promotions"] = promotions
-    if financing:
+    # `if financing:` silently DROPPED a present-but-falsy envelope value —
+    # [], "", 0, false or {}. The key never reached store-config, so
+    # validate_financing saw no financing block at all, reported nothing, and
+    # the build happily published a bundle with Payment Choice missing
+    # entirely. A value that is PRESENT is carried through whatever its shape,
+    # so the validator gets to rule on it and the build fails loudly. An
+    # absent key (and an explicit null) still emits nothing, which is how
+    # deployments without financing stay unchanged.
+    if financing is not None:
         cfg["financing"] = financing
 
     # Reorder top-level keys to the committed order (readability only).
