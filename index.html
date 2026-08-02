@@ -8973,14 +8973,24 @@
       position: fixed; inset: 0; z-index: 340;
       background: rgba(20, 23, 28, 0.55);
     }
+    /* The sheet container spans the full viewport at a higher z-index than the
+       backdrop, so it used to swallow every tap in the dim margin and the
+       backdrop's own click-to-dismiss handler could never fire. On a showroom
+       iPad there is no Escape key, which left the X button as the only way out
+       — a customer tapping the dim area saw nothing happen and had no reason
+       to think the kiosk was still alive. The container is now transparent to
+       pointer events and the panel inside takes them back, so taps in the
+       margin reach the backdrop. Same pattern as .results-reveal-overlay. */
     .fin-sheet {
       position: fixed; inset: 0; z-index: 341;
+      pointer-events: none;
       display: flex; align-items: flex-start; justify-content: center;
       overflow-y: auto; -webkit-overflow-scrolling: touch;
       padding: 3vh 14px 5vh;
     }
     body.fin-sheet-open { overflow: hidden; }
     .fin-sheet-inner {
+      pointer-events: auto;   /* the panel itself stays interactive */
       width: 100%; max-width: 760px;
       background: #FBF7EF; color: #211E19;
       border: 1px solid #D9D2C2; border-radius: var(--radius);
@@ -10528,10 +10538,27 @@
         financingInterest === 'interested'
           ? (currentLang === 'es' ? 'Marcado para tu especialista ✓' : 'Marked for your specialist ✓')
           : FC('resultsAsk');
-      if (!_finModuleImpressionLogged) {
+      // An impression means the customer SAW the module, so it is logged only
+      // when the results screen is actually on screen. This renderer also runs
+      // from renderAllFinancingSurfaces() on a language switch, which happens
+      // on any screen — that unconditional path used to trip the one-shot flag
+      // from (say) the welcome screen, logging a phantom impression the
+      // customer never had AND permanently suppressing the real one when they
+      // later reached results. The funnel denominator was wrong in both
+      // directions, deterministically, for every bilingual session.
+      if (!_finModuleImpressionLogged && finResultsVisible()) {
         _finModuleImpressionLogged = true;
         analytics.log('finance_module_impression', finEventBase('results'));
       }
+    }
+
+    // True when the results screen is the active screen and the financing
+    // module is actually visible on it. Mirrors finHandoffVisible().
+    function finResultsVisible() {
+      var screen = document.getElementById('resultsScreen');
+      var mod = document.getElementById('resultsFinancing');
+      return !!(screen && screen.classList.contains('active')
+        && mod && !mod.hidden && !mod.closest('[hidden]'));
     }
 
     function renderDrawerFinancingMark() {
