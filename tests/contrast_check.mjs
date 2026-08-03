@@ -116,5 +116,117 @@ check(".fin-btn-primary keeps light-on-dark (#211E19 / #F7F2E8)",
 check(".fin-btn-primary does not use the on-store tokens",
   !!finPrimary && !finPrimary[0].includes("--on-store"));
 
+// ===================================================================
+// Gate 1A — global brand-colour contrast.
+//
+// The pilot above proved the FOREGROUND-ON-STORE-PRIMARY direction for a
+// handful of financing selectors. These assertions cover the two remaining
+// global directions and are deliberately store-agnostic: they are expressed
+// against whatever colours the shipped config carries, so a white-label
+// deployment with a different primary is held to the same floor.
+//
+//   D1  text/icons ON a store-primary fill must resolve through the computed
+//       --on-store-* tokens, never a hardcoded white.
+//   D2  store primary must not be used AS a foreground (text, meaningful icon,
+//       essential boundary) on the light surfaces every screen renders on.
+//       Fixing D1 does not fix D2 — they are independent failures.
+// ===================================================================
+
+const styleBlock = html.slice(html.indexOf("<style>") + 7, html.indexOf("</style>"));
+
+// Rule scanner shared by the assertions below.
+const cssRules = [];
+{
+  const re = /([^{}]+)\{([^{}]*)\}/g;
+  let r;
+  while ((r = re.exec(styleBlock))) {
+    const sel = r[1].trim();
+    if (sel.startsWith("@")) continue;
+    cssRules.push({ sel, body: r[2] });
+  }
+}
+const PRIMARY_REF = /var\(--store-primary(?!-glow|-light)\b|var\(--landing-red\b|var\(--consultation-red\b/;
+const HARDCODED_WHITE = /#fff(?:fff)?\b|#FFF(?:FFF)?\b|#FFFDF8\b|#FFF8ED\b|\bwhite\b/;
+const decls = (body) => body.split(";").map((d) => d.trim()).filter(Boolean);
+
+// --- the accent-ink token exists and is brand-neutral ---
+const inkMatch = styleBlock.match(/--accent-ink:\s*(#[0-9a-fA-F]{3,6})\s*;/);
+check("--accent-ink is declared with a literal colour in :root", !!inkMatch);
+const accentInk = inkMatch ? inkMatch[1] : "#FF0000";
+check("--accent-ink does not resolve to the retailer primary (must stay store-agnostic)",
+  !/--accent-ink:\s*var\(--store-primary/.test(styleBlock));
+
+// --- accent-ink clears 4.5:1 on every shipped light surface ---
+// These are the warm surfaces the app actually renders on (landing,
+// consultation and results/handoff paper). Normal-text floor, not large-text.
+for (const surface of ["#F4EFE6", "#F3EEE5", "#FBF7EF", "#FFFDF8"]) {
+  const rr = ratio(accentInk, surface);
+  check(`--accent-ink ${accentInk} on ${surface} >= 4.5:1 (got ${rr.toFixed(2)}:1)`, rr >= 4.5);
+}
+
+// --- D1: no hardcoded white foreground on a store-primary fill ---
+const whiteOnPrimary = cssRules.filter((r) => {
+  const d = decls(r.body);
+  const primaryFill = d.some((x) => /^background(-color)?\s*:/.test(x) && PRIMARY_REF.test(x));
+  const whiteFg = d.some((x) => /^color\s*:/.test(x) && HARDCODED_WHITE.test(x));
+  return primaryFill && whiteFg;
+});
+check(`no rule pairs a store-primary background with a hardcoded white foreground (found ${whiteOnPrimary.length})`,
+  whiteOnPrimary.length === 0);
+if (whiteOnPrimary.length) whiteOnPrimary.forEach((r) => console.log(`        ${r.sel.replace(/\s+/g, " ").slice(0, 100)}`));
+
+// --- D2: store primary is never a foreground colour ---
+const primaryAsText = cssRules.filter((r) =>
+  decls(r.body).some((x) => /^color\s*:/.test(x) && PRIMARY_REF.test(x)));
+check(`store primary is never used as a text colour (found ${primaryAsText.length})`,
+  primaryAsText.length === 0);
+if (primaryAsText.length) primaryAsText.forEach((r) => console.log(`        ${r.sel.replace(/\s+/g, " ").slice(0, 100)}`));
+
+// --- D2b: essential boundaries (state, selection, tabs, thumbs) ---
+// Decorative accent bands (border-left/-top on cards) may keep the brand
+// colour; a boundary that communicates STATE may not.
+const ESSENTIAL = /\.selected|\.is-selected|\.is-active|\.active|tier-tab|range-thumb|slider-thumb|quiz-option|reaction-row|lang-btn|step-num|chip/i;
+const primaryStateBorder = cssRules.filter((r) =>
+  ESSENTIAL.test(r.sel) &&
+  decls(r.body).some((x) => /^(border|outline)[a-z-]*\s*:/.test(x) && PRIMARY_REF.test(x)));
+check(`no state-communicating boundary resolves to the raw store primary (found ${primaryStateBorder.length})`,
+  primaryStateBorder.length === 0);
+if (primaryStateBorder.length) primaryStateBorder.forEach((r) => console.log(`        ${r.sel.replace(/\s+/g, " ").slice(0, 100)}`));
+
+// A state indicator can also be painted as a background on a pseudo-element
+// (the active tier-tab underline is 2px of `background`, not a border), which
+// the boundary check above would not see.
+const primaryStateFill = cssRules.filter((r) =>
+  ESSENTIAL.test(r.sel) && /::(after|before)/.test(r.sel) &&
+  decls(r.body).some((x) => /^background(-color)?\s*:/.test(x) && PRIMARY_REF.test(x)));
+check(`no state indicator painted as a pseudo-element fill uses the raw store primary (found ${primaryStateFill.length})`,
+  primaryStateFill.length === 0);
+if (primaryStateFill.length) primaryStateFill.forEach((r) => console.log(`        ${r.sel.replace(/\s+/g, " ").slice(0, 100)}`));
+
+// --- the shipped primary genuinely cannot carry text (proves D2 is required,
+//     and would flag a future retailer whose primary CAN, so the token stays
+//     justified rather than cargo-culted) ---
+{
+  const rr = ratio(cfg.colors.storePrimary, "#F3EEE5");
+  check(`shipped primary ${cfg.colors.storePrimary} on cream is below 4.5:1, so --accent-ink is required (got ${rr.toFixed(2)}:1)`,
+    rr < 4.5);
+}
+
+// --- controls filled with store primary keep a >=3:1 boundary ---
+// A filled control whose fill is ~1.5:1 against the page is not identifiable
+// as a control (WCAG 1.4.11); these keep an --accent-ink hairline instead.
+for (const sel of [".landing-cta-btn", ".noct-profile-cta", "#emailScreen .noct-email-send-btn"]) {
+  // A selector legitimately appears in several rules (a shared layout rule
+  // plus its own paint rule), so assert that SOME rule carries the boundary
+  // rather than inspecting whichever one happens to come first.
+  const rules = cssRules.filter((r) => r.sel.split(",").some((s) => s.trim() === sel));
+  check(`${sel} keeps an --accent-ink boundary`,
+    rules.length > 0 && rules.some((r) => /border[a-z-]*\s*:[^;]*var\(--accent-ink\)/.test(r.body)));
+}
+{
+  const rr = ratio(accentInk, "#F3EEE5");
+  check(`--accent-ink boundary on cream >= 3:1 non-text (got ${rr.toFixed(2)}:1)`, rr >= 3);
+}
+
 console.log(`\nContrast check: ${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

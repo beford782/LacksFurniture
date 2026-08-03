@@ -3,7 +3,12 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+  <!-- Zoom must stay available: showroom customers are frequently older and
+       reading small operational labels. maximum-scale / user-scalable are
+       deliberately absent (WCAG 2.2 SC 1.4.4). Accidental double-tap zoom is
+       already suppressed per-element by `touch-action: manipulation`, which is
+       the correct scoped control and does not block deliberate pinch zoom. -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>DreamFinder</title>
 
   <!-- Favicon: gold moon -->
@@ -48,6 +53,18 @@
       --focus-ring-outer: #000000;
       --on-store-primary: #000000;
       --on-store-primary-light: #000000;
+
+      /* Accessible foreground for accent-coloured TEXT, meaningful icons and
+         essential boundaries on the warm light surfaces every screen uses.
+         Brand-neutral and deliberately NOT retailer-configurable: a retailer's
+         primary is chosen for identity and cannot be assumed to carry text —
+         this deployment's configured primary measures ~1.5:1 on cream, far
+         below the 4.5:1 floor. --store-primary stays correct as a BACKGROUND (paired with
+         --on-store-primary), as a large decorative field, and as a
+         non-essential accent.
+         If a future screen renders on a dark surface, that scope must override
+         --accent-ink; every screen is light today (measured luminance ~0.86). */
+      --accent-ink: #2F271E;
 
       /* Nocturnal Boutique — midnight + brass system */
       --color-bg: #14171C;
@@ -141,7 +158,7 @@
       line-height: 1;
       letter-spacing: 0;
       text-transform: none;
-      color: var(--landing-red, var(--color-text));
+      color: var(--accent-ink);
     }
 
     .landing-retailer-subline {
@@ -175,8 +192,8 @@
     }
 
     .landing-lang-btn.active {
-      border-color: var(--landing-red, var(--color-accent));
-      color: var(--landing-red, var(--color-accent));
+      border-color: var(--accent-ink);
+      color: var(--accent-ink);
     }
 
     .landing-eyebrow {
@@ -210,7 +227,7 @@
 
     .landing-headline-accent {
       font-style: italic;
-      color: var(--landing-red, var(--color-accent));
+      color: var(--accent-ink);
       margin-bottom: 22px;
     }
 
@@ -238,9 +255,9 @@
 
     .landing-cta-btn {
       background: var(--landing-red, var(--store-primary));
-      color: #FFF8ED;
+      color: var(--on-store-primary);
       padding: 18px 42px;
-      border: 1px solid var(--landing-red, var(--store-primary));
+      border: 1px solid var(--accent-ink);
       font-family: var(--font-serif);
       font-size: 24px;
       font-weight: 700;
@@ -256,7 +273,7 @@
 
     .landing-cta-btn:hover {
       background: color-mix(in srgb, var(--landing-red, var(--store-primary)) 88%, #000);
-      color: #FFF8ED;
+      color: var(--on-store-primary);
     }
 
     .landing-cta-arrow {
@@ -285,7 +302,7 @@
       font-weight: 700;
       letter-spacing: 0.34em;
       text-transform: uppercase;
-      color: var(--landing-red, var(--color-accent));
+      color: var(--accent-ink);
     }
 
     .landing-outcome-items {
@@ -351,7 +368,7 @@
       font-weight: 600;
       letter-spacing: 0.32em;
       text-transform: uppercase;
-      color: var(--landing-red, var(--color-accent));
+      color: var(--accent-ink);
       text-align: left;
       min-width: 190px;
     }
@@ -1007,7 +1024,7 @@
 
     body:has(#questionScreen.active) .noct-quiz-headline .accent,
     body:has(#reviewScreen.active) .noct-quiz-headline .accent {
-      color: var(--consultation-red);
+      color: var(--accent-ink);
     }
 
     body:has(#questionScreen.active) .noct-quiz-help,
@@ -1019,7 +1036,7 @@
     }
 
     body:has(#questionScreen.active) .noct-quiz-multi-note {
-      color: var(--consultation-red);
+      color: var(--accent-ink);
       font-weight: 700;
     }
 
@@ -1055,8 +1072,8 @@
 
     body:has(#questionScreen.active) .noct-quiz-option.selected {
       background: var(--consultation-red);
-      border-color: var(--consultation-red);
-      color: #FFF8ED;
+      border-color: var(--accent-ink);
+      color: var(--on-store-primary);
     }
 
     body:has(#questionScreen.active) .noct-quiz-option.selected .opt-sub {
@@ -1065,7 +1082,7 @@
     }
 
     body:has(#questionScreen.active) .noct-slider-value {
-      color: var(--consultation-red);
+      color: var(--accent-ink);
     }
 
     body:has(#questionScreen.active) .noct-slider-feel,
@@ -1080,12 +1097,12 @@
 
     body:has(#questionScreen.active) .noct-slider-track::-webkit-slider-thumb {
       background: var(--consultation-red);
-      border-color: var(--consultation-red);
+      border-color: var(--accent-ink);
     }
 
     body:has(#questionScreen.active) .noct-slider-track::-moz-range-thumb {
       background: var(--consultation-red);
-      border-color: var(--consultation-red);
+      border-color: var(--accent-ink);
     }
 
     body:has(#questionScreen.active) .noct-quiz-nav,
@@ -1101,15 +1118,15 @@
 
     body:has(#questionScreen.active) .noct-quiz-back:hover,
     body:has(#reviewScreen.active) .noct-quiz-back:hover {
-      color: var(--consultation-red);
+      color: var(--accent-ink);
     }
 
     body:has(#questionScreen.active) .noct-quiz-next,
     body:has(#reviewScreen.active) .noct-quiz-next {
       min-width: 138px;
       background: var(--consultation-red);
-      border: 1px solid var(--consultation-red);
-      color: #FFF8ED;
+      border: 1px solid var(--accent-ink);
+      color: var(--on-store-primary);
       font-size: 19px;
       font-weight: 700;
       padding: 15px 28px;
@@ -1118,7 +1135,7 @@
     body:has(#questionScreen.active) .noct-quiz-next:hover:not(:disabled),
     body:has(#reviewScreen.active) .noct-quiz-next:hover:not(:disabled) {
       background: color-mix(in srgb, var(--consultation-red) 88%, #000);
-      color: #FFF8ED;
+      color: var(--on-store-primary);
     }
 
     body:has(#questionScreen.active) .noct-quiz-next:disabled {
@@ -1148,7 +1165,7 @@
     }
 
     body:has(#reviewScreen.active) .noct-review-category {
-      color: var(--consultation-red);
+      color: var(--accent-ink);
       font-size: 10px;
       font-weight: 700;
     }
@@ -1172,8 +1189,8 @@
     }
 
     body:has(#reviewScreen.active) .noct-review-edit:hover {
-      border-color: var(--consultation-red);
-      color: var(--consultation-red);
+      border-color: var(--accent-ink);
+      color: var(--accent-ink);
     }
 
     @media (max-width: 700px) {
@@ -1258,7 +1275,7 @@
 
     .noct-profile-eyebrow {
       margin-bottom: 16px;
-      color: var(--store-primary);
+      color: var(--accent-ink);
     }
 
     .noct-profile-name {
@@ -1358,7 +1375,7 @@
 
     .profile-launch__section-label {
       margin-bottom: 8px;
-      color: var(--store-primary);
+      color: var(--accent-ink);
     }
 
     .noct-profile-priorities-heading {
@@ -1424,7 +1441,7 @@
     }
 
     .noct-profile-priority-test strong {
-      color: var(--store-primary);
+      color: var(--accent-ink);
       font-size: 10px;
       letter-spacing: 0.12em;
       text-transform: uppercase;
@@ -1448,7 +1465,7 @@
     .noct-profile-priority-tag.tag-key {
       border-color: rgba(177, 45, 21, 0.28);
       background: rgba(177, 45, 21, 0.08);
-      color: var(--store-primary);
+      color: var(--accent-ink);
     }
 
     .noct-profile-priority-tag.tag-high {
@@ -1520,16 +1537,16 @@
     .noct-profile-cta {
       flex: 1;
       padding: 13px 20px;
-      border: 1px solid var(--store-primary);
+      border: 1px solid var(--accent-ink);
       background: var(--store-primary);
-      color: #FFFFFF;
+      color: var(--on-store-primary);
       font-size: 15px;
       font-weight: 800;
       transition: background 0.15s ease, border-color 0.15s ease;
     }
 
     .noct-profile-cta:hover {
-      border-color: var(--store-primary-light);
+      border-color: var(--accent-ink);
       background: var(--store-primary-light);
     }
 
@@ -1691,7 +1708,7 @@
     }
 
     .results-trial-focus__label {
-      color: var(--store-primary);
+      color: var(--accent-ink);
       font-size: 9px;
       font-weight: 850;
       letter-spacing: 0.16em;
@@ -1839,7 +1856,7 @@
       border-radius: 5px 0 0 5px;
       background: var(--store-primary);
       box-shadow: 0 3px 10px rgba(73, 31, 20, 0.2);
-      color: #FFFFFF;
+      color: var(--on-store-primary);
       font-family: var(--font-sans);
       font-size: 10px;
       font-weight: 800;
@@ -1850,7 +1867,7 @@
 
     .mattress-promo-summary {
       margin: -4px 0 18px;
-      color: var(--store-primary);
+      color: var(--accent-ink);
       font-family: var(--font-sans);
       font-size: 13px;
       font-weight: 700;
@@ -2037,7 +2054,7 @@
     .results-offer-cue.is-visible { display: flex; }
     .results-offer-cue::before {
       content: attr(data-label);
-      color: var(--store-primary);
+      color: var(--accent-ink);
       font-size: 9px;
       font-weight: 800;
       letter-spacing: 0.18em;
@@ -2624,7 +2641,7 @@
       font-weight: 750;
       letter-spacing: 0.22em;
       text-transform: uppercase;
-      color: var(--store-primary);
+      color: var(--accent-ink);
       margin-bottom: 16px;
     }
 
@@ -2633,7 +2650,7 @@
     .email-save-row:first-child { border-top: 0; padding-top: 2px; }
     .email-save-mark {
       flex-shrink: 0; width: 18px; margin-top: 2px;
-      color: var(--store-primary); font-size: 14px; line-height: 1.3; text-align: center;
+      color: var(--accent-ink); font-size: 14px; line-height: 1.3; text-align: center;
     }
     .email-save-row.is-empty .email-save-mark { color: var(--color-text-subtle); }
     .email-save-title { font-family: var(--font-serif); font-size: 17px; color: var(--color-text); line-height: 1.25; }
@@ -2643,16 +2660,16 @@
     #emailScreen .noct-email-form { margin-bottom: 18px; }
     #emailScreen .noct-email-send-btn {
       background: var(--store-primary);
-      color: #FFFFFF;
-      border: 1px solid var(--store-primary);
+      color: var(--on-store-primary);
+      border: 1px solid var(--accent-ink);
       border-radius: 8px;
       font-family: var(--font-sans);
       font-weight: 750;
       width: 100%;
       margin-bottom: 12px;
     }
-    #emailScreen .noct-email-send-btn:hover { background: var(--store-primary-light); border-color: var(--store-primary-light); color: #FFFFFF; }
-    #emailScreen .noct-email-send-btn.sent { background: var(--store-primary); color: #FFFFFF; }
+    #emailScreen .noct-email-send-btn:hover { background: var(--store-primary-light); border-color: var(--accent-ink); color: var(--on-store-primary-light); }
+    #emailScreen .noct-email-send-btn.sent { background: var(--store-primary); color: var(--on-store-primary); }
 
     .email-preview-note {
       font-family: var(--font-sans);
@@ -2677,7 +2694,7 @@
       box-shadow: 0 10px 28px rgba(55, 40, 28, 0.07);
       padding: clamp(28px, 4vw, 44px) clamp(24px, 4vw, 40px);
     }
-    #emailScreen .noct-email-confirmation .noct-email-eyebrow { margin-bottom: 10px; color: var(--store-primary); }
+    #emailScreen .noct-email-confirmation .noct-email-eyebrow { margin-bottom: 10px; color: var(--accent-ink); }
 
     .email-preview-card {
       border: 1px solid var(--color-border);
@@ -2690,7 +2707,7 @@
     }
     .email-preview-card-label {
       font-family: var(--font-sans); font-size: 10px; font-weight: 750;
-      letter-spacing: 0.22em; text-transform: uppercase; color: var(--store-primary);
+      letter-spacing: 0.22em; text-transform: uppercase; color: var(--accent-ink);
       margin-bottom: 6px;
     }
     .email-preview-card-line { font-family: var(--font-sans); font-size: 12.5px; color: var(--color-text-muted); line-height: 1.45; }
@@ -2698,14 +2715,14 @@
     /* Confirmation recap checklist */
     .email-recap { max-width: 360px; margin: 18px auto 0; text-align: left; display: grid; gap: 8px; }
     .email-recap-row { display: flex; gap: 10px; align-items: baseline; font-family: var(--font-sans); font-size: 13.5px; color: var(--color-text); }
-    .email-recap-mark { color: var(--store-primary); flex-shrink: 0; }
+    .email-recap-mark { color: var(--accent-ink); flex-shrink: 0; }
     .email-recap-row.is-empty, .email-recap-row.is-empty .email-recap-mark { color: var(--color-text-subtle); }
 
     /* Confirmation primary CTA (solid red, matches showroom) */
     .noct-email-cta-primary {
       background: var(--store-primary);
-      color: #FFFFFF;
-      border: 1px solid var(--store-primary);
+      color: var(--on-store-primary);
+      border: 1px solid var(--accent-ink);
       border-radius: 8px;
       font-family: var(--font-sans);
       font-weight: 750;
@@ -2718,7 +2735,7 @@
       max-width: 340px;
       margin: 22px auto 10px;
     }
-    .noct-email-cta-primary:hover { background: var(--store-primary-light); border-color: var(--store-primary-light); }
+    .noct-email-cta-primary:hover { background: var(--store-primary-light); border-color: var(--accent-ink); }
 
     @media (max-width: 760px) {
       .email-cap-grid { grid-template-columns: 1fr; gap: 0; }
@@ -3796,7 +3813,7 @@
     .store-logo .logo-main {
       font-weight: 800;
       font-size: 32px;
-      color: var(--store-primary);
+      color: var(--accent-ink);
       letter-spacing: -1.5px;
       text-transform: lowercase;
     }
@@ -3932,7 +3949,7 @@
       display: block;
       font-weight: 800;
       font-size: 5.5rem;
-      color: var(--store-primary);
+      color: var(--accent-ink);
       letter-spacing: -3px;
       text-transform: lowercase;
       line-height: 0.82;
@@ -4147,7 +4164,7 @@
     }
 
     .footer-left strong {
-      color: var(--store-primary);
+      color: var(--accent-ink);
       font-weight: 600;
     }
 
@@ -5270,7 +5287,7 @@
       font-weight: 600;
       letter-spacing: 0.32em;
       text-transform: uppercase;
-      color: var(--store-primary);
+      color: var(--accent-ink);
       text-align: left;
       opacity: 0;
     }
@@ -5352,7 +5369,7 @@
       font-family: var(--font-serif);
       font-style: italic;
       font-size: clamp(3rem, 7vw, 4.6rem);
-      color: var(--store-primary);
+      color: var(--accent-ink);
       line-height: 1;
     }
     .reveal-cert__pct-suffix {
@@ -5391,7 +5408,7 @@
       font-family: var(--font-sans);
       font-size: 0.92rem;
       font-weight: 700;
-      color: var(--store-primary);
+      color: var(--accent-ink);
       text-align: left;
     }
 
@@ -6486,7 +6503,7 @@
     .sleep-system__plan-eyebrow,
     .sleep-system__section-eyebrow,
     .sleep-system__card-eyebrow {
-      color: var(--store-primary);
+      color: var(--accent-ink);
       font: 750 10px/1.2 var(--font-sans);
       letter-spacing: 0.2em;
       text-transform: uppercase;
@@ -6526,7 +6543,7 @@
       padding: 10px 16px;
       border: 1px solid var(--store-primary);
       background: transparent;
-      color: var(--store-primary);
+      color: var(--accent-ink);
     }
     .sleep-system__anchor {
       display: grid;
@@ -6551,7 +6568,7 @@
     }
     .sleep-system__anchor-label {
       margin-bottom: 4px;
-      color: var(--store-primary);
+      color: var(--accent-ink);
       font: 750 9px/1.2 var(--font-sans);
       letter-spacing: 0.18em;
       text-transform: uppercase;
@@ -6594,7 +6611,7 @@
       touch-action: manipulation;
     }
     .sleep-system__step.is-active {
-      border-color: var(--store-primary);
+      border-color: var(--accent-ink);
       background: #FFFDF8;
       color: #2F271E;
       box-shadow: 0 5px 16px rgba(55,40,28,0.06);
@@ -6615,9 +6632,9 @@
       font: 600 14px/1 var(--font-serif);
     }
     .sleep-system__step.is-active .sleep-system__step-num {
-      border-color: var(--store-primary);
+      border-color: var(--accent-ink);
       background: var(--store-primary);
-      color: #FFFFFF;
+      color: var(--on-store-primary);
     }
     .sleep-system__step.is-complete .sleep-system__step-num {
       border-color: #63765D;
@@ -6749,9 +6766,9 @@
       touch-action: manipulation;
     }
     .sleep-system__action--primary {
-      border: 1px solid var(--store-primary);
+      border: 1px solid var(--accent-ink);
       background: var(--store-primary);
-      color: #FFFFFF;
+      color: var(--on-store-primary);
     }
     .sleep-system__action--selected {
       border: 1px solid #63765D;
@@ -6922,9 +6939,9 @@
       font: 500 9px/1.2 var(--font-sans);
     }
     .sleep-system__position.is-active {
-      border-color: var(--store-primary);
+      border-color: var(--accent-ink);
       background: color-mix(in srgb, var(--store-primary) 7%, #FFFDF8);
-      color: var(--store-primary);
+      color: var(--accent-ink);
     }
     .sleep-system__position-badge {
       float: right;
@@ -6983,9 +7000,9 @@
       font: 500 9px/1.35 var(--font-sans);
     }
     .sleep-system__support-choice.is-active {
-      border-color: var(--store-primary);
+      border-color: var(--accent-ink);
       background: color-mix(in srgb, var(--store-primary) 7%, #FFFDF8);
-      color: var(--store-primary);
+      color: var(--accent-ink);
     }
     .sleep-system__support-outcome {
       padding: 22px;
@@ -7118,9 +7135,9 @@
       font: 500 9px/1.35 var(--font-sans);
     }
     .sleep-system__protection-goal.is-active {
-      border-color: var(--store-primary);
+      border-color: var(--accent-ink);
       background: color-mix(in srgb, var(--store-primary) 7%, #FFFDF8);
-      color: var(--store-primary);
+      color: var(--accent-ink);
     }
     .sleep-system__goal-badge {
       float: right;
@@ -7264,9 +7281,9 @@
     .sleep-system__plan-review {
       width: 100%;
       padding: 10px 13px;
-      border: 1px solid var(--store-primary);
+      border: 1px solid var(--accent-ink);
       background: var(--store-primary);
-      color: #FFFFFF;
+      color: var(--on-store-primary);
     }
     .sleep-system__footer {
       display: flex;
@@ -7279,9 +7296,9 @@
     .sleep-system__footer-primary {
       margin-left: auto;
       padding: 10px 18px;
-      border: 1px solid var(--store-primary);
+      border: 1px solid var(--accent-ink);
       background: var(--store-primary);
-      color: #FFFFFF;
+      color: var(--on-store-primary);
     }
     .sleep-system__empty {
       max-width: 620px;
@@ -7312,9 +7329,9 @@
     }
     .sleep-system__empty button {
       padding: 10px 16px;
-      border: 1px solid var(--store-primary);
+      border: 1px solid var(--accent-ink);
       background: var(--store-primary);
-      color: #FFFFFF;
+      color: var(--on-store-primary);
     }
     .sleep-system [data-sleep-action].is-pressed {
       transform: scale(0.985);
@@ -7861,6 +7878,15 @@
       border-top: 3px solid var(--gold);
       z-index: 201;
       transform: translate(-50%, 100%);
+      /* visibility (not just transform) so the closed drawer leaves the
+         accessibility tree and cannot be reached by Tab.
+         Deliberately NOT transitioned: a transitioned discrete property only
+         lands on `hidden` if the transition actually completes, so an
+         interrupted or never-started transition would silently strand the
+         dialog in the accessibility tree — an a11y guarantee that fails open.
+         The slide-out is preserved instead by the .is-closing class, which JS
+         removes on a timer, so the end state is deterministic. */
+      visibility: hidden;
       transition: transform 0.38s cubic-bezier(0.32,0.72,0,1);
       max-height: min(720px, calc(100dvh - 24px));
       display: flex;
@@ -7868,7 +7894,10 @@
       box-shadow: 0 -12px 48px rgba(0,0,0,0.5);
       overflow: hidden;
     }
-    .mattress-drawer.drawer-open { transform:translate(-50%, 0); }
+    .mattress-drawer.drawer-open { transform: translate(-50%, 0); }
+    /* Rendered while open, and while the slide-out is still playing. */
+    .mattress-drawer.drawer-open,
+    .mattress-drawer.is-closing { visibility: visible; }
     .mattress-drawer.silver-drawer { border-top-color:var(--silver); }
     .mattress-drawer.bronze-drawer { border-top-color:var(--bronze); }
     .drawer-handle-bar { width:44px; height:4px; background:rgba(255,255,255,0.24); border-radius:2px; margin:10px auto 8px; flex-shrink:0; cursor:pointer; }
@@ -8024,14 +8053,14 @@
     }
     .drawer-promotion.is-visible { display: block; }
     .drawer-promotion__kicker {
-      color: var(--store-primary);
+      color: var(--accent-ink);
       font: 750 10px/1.2 var(--font-sans);
       letter-spacing: 0.2em;
       text-transform: uppercase;
     }
     .drawer-promotion__headline {
       margin-top: 0.45rem;
-      color: var(--store-primary);
+      color: var(--accent-ink);
       font: 750 clamp(23px,2.5vw,31px)/1.12 var(--font-serif);
     }
     .drawer-promotion__detail {
@@ -8078,9 +8107,9 @@
       touch-action: manipulation;
     }
     .drawer-system-prompt__primary {
-      border: 1px solid var(--store-primary);
+      border: 1px solid var(--accent-ink);
       background: var(--store-primary);
-      color: #fff;
+      color: var(--on-store-primary);
     }
     .drawer-system-prompt__secondary {
       border: 1px solid #B9A894;
@@ -8295,17 +8324,20 @@
     #resultsScreen .noct-tier-descriptor .tier-name,
     #hf2Screen .hf2-review-eyebrow,
     #hf2Screen .hf2-review-section__label {
-      color: var(--store-primary);
+      color: var(--accent-ink);
     }
     #resultsScreen .noct-results-headline .accent {
       color: #7D5B34;
     }
     #resultsScreen .noct-tier-tab.active {
-      color: var(--store-primary);
+      color: var(--accent-ink);
     }
     #resultsScreen .noct-tier-tab.active::after {
       height: 2px;
-      background: var(--store-primary);
+      /* The active-tab underline is a STATE indicator, so it needs 3:1 against
+         the surface (WCAG 1.4.11). The brand primary is ~1.5:1 on this cream
+         and cannot carry that job even though it is only 2px of paint. */
+      background: var(--accent-ink);
     }
     #resultsScreen .noct-toppick,
     #resultsScreen .noct-support-card,
@@ -8324,7 +8356,7 @@
       color: #FFFFFF;
     }
     #resultsScreen .noct-results-cta {
-      border-color: var(--store-primary);
+      border-color: var(--accent-ink);
       border-radius: 8px;
       background: var(--store-primary);
       color: var(--on-store-primary);
@@ -8332,7 +8364,7 @@
       font-weight: 750;
     }
     #resultsScreen .noct-results-cta:hover {
-      border-color: var(--store-primary-light);
+      border-color: var(--accent-ink);
       background: var(--store-primary-light);
       color: var(--on-store-primary-light);
     }
@@ -8359,7 +8391,7 @@
       --gold-glow: rgba(177,45,21,0.08);
       background: #FFFDF8;
       border-color: #D1C5B6;
-      border-top-color: var(--store-primary);
+      border-top-color: var(--accent-ink);
       box-shadow: 0 -12px 48px rgba(55,40,28,0.22);
     }
     body:has(#resultsScreen.active) .drawer-handle-bar {
@@ -8392,7 +8424,7 @@
     }
     body:has(#resultsScreen.active) .drawer-mattress-brand,
     body:has(#resultsScreen.active) .drawer-section-label {
-      color: var(--store-primary);
+      color: var(--accent-ink);
     }
     body:has(#resultsScreen.active) .drawer-mattress-name,
     body:has(#resultsScreen.active) .drawer-differentiator-title,
@@ -8412,7 +8444,7 @@
       background: #F6EFE4;
     }
     body:has(#resultsScreen.active) .drawer-shortlist-fit {
-      border-left-color: var(--store-primary);
+      border-left-color: var(--accent-ink);
       background: rgba(177,45,21,0.055);
     }
     body:has(#resultsScreen.active) .drawer-differentiator {
@@ -8429,9 +8461,9 @@
       background: #FFFDF8;
     }
     body:has(#resultsScreen.active) .drawer-reaction-row button.is-selected {
-      border-color: var(--store-primary);
+      border-color: var(--accent-ink);
       background: rgba(177,45,21,0.09);
-      color: var(--store-primary);
+      color: var(--accent-ink);
     }
     body:has(#resultsScreen.active) .drawer-pitch-toggle {
       border-color: rgba(154,116,69,0.5);
@@ -8439,7 +8471,7 @@
     }
     body:has(#resultsScreen.active) .drawer-btn-primary {
       background: var(--store-primary);
-      color: #FFFFFF;
+      color: var(--on-store-primary);
       box-shadow: 0 3px 0 color-mix(in srgb, var(--store-primary) 72%, #000000);
     }
     body:has(#resultsScreen.active) .drawer-btn-secondary {
@@ -8460,16 +8492,16 @@
     }
     #hf2Screen .hf2-step-num--filled {
       background: var(--store-primary);
-      color: #FFFFFF;
+      color: var(--on-store-primary);
     }
     #hf2Screen .hf2-step-num--outlined {
-      border-color: var(--store-primary);
-      color: var(--store-primary);
+      border-color: var(--accent-ink);
+      color: var(--accent-ink);
     }
     #hf2Screen .hf2-review-finale .hf2-send-btn {
-      border-color: var(--store-primary);
+      border-color: var(--accent-ink);
       background: var(--store-primary);
-      color: #FFFFFF;
+      color: var(--on-store-primary);
     }
 
     body:has(#resultsScreen.active) .compare-modal,
@@ -9445,7 +9477,13 @@
 
   <!-- MATTRESS DRAWER -->
   <div class="drawer-backdrop" id="drawerBackdrop" onclick="window.closeMattressDrawer()"></div>
-  <div class="mattress-drawer" id="mattressDrawer">
+  <!-- Modal dialog. Mirrors the financing sheet's lifecycle (role/aria-modal/
+       labelled title, focus entry, Tab trap, Escape, focus restore). The
+       drawer slides rather than display:none-ing, so it is kept out of the
+       accessibility tree by `visibility` + `inert` while closed rather than by
+       the `hidden` attribute, which would kill the transform transition. -->
+  <div class="mattress-drawer" id="mattressDrawer" role="dialog" aria-modal="true"
+       aria-labelledby="drawerName" inert>
     <div class="drawer-handle-bar" onclick="window.closeMattressDrawer()"></div>
     <div class="drawer-toolbar">
       <button class="drawer-back-to-results" onclick="window.closeMattressDrawer()"
@@ -9465,7 +9503,7 @@
           <div class="drawer-mattress-img" id="drawerImg"></div>
           <div class="drawer-mattress-info">
             <div class="drawer-mattress-brand" id="drawerBrand"></div>
-            <div class="drawer-mattress-name" id="drawerName"></div>
+            <div class="drawer-mattress-name" id="drawerName" tabindex="-1"></div>
             <div class="drawer-mattress-sub" id="drawerSub"></div>
           </div>
           <div class="drawer-match-badge" id="drawerMatch"></div>
@@ -16790,12 +16828,83 @@
       document.getElementById('drawerScroll').scrollTop = 0;
       document.getElementById('drawerBackdrop').classList.add('open');
       drawer.classList.add('drawer-open');
+
+      // ---- dialog lifecycle (mirrors openFinancingSheet) ----------------
+      // Remember the opener so focus can return to the exact card that was
+      // tapped; drawerNav() re-enters this function, so only capture the
+      // opener when the drawer was actually closed.
+      if (!_drawerWasOpen) {
+        _drawerReturnFocus = (document.activeElement && document.activeElement !== document.body)
+          ? document.activeElement : null;
+      }
+      _drawerWasOpen = true;
+      // Reopened mid-slide-out: cancel the pending hide so it cannot fire
+      // against a drawer that is open again.
+      if (_drawerCloseTimer) { clearTimeout(_drawerCloseTimer); _drawerCloseTimer = null; }
+      drawer.classList.remove('is-closing');
+      drawer.removeAttribute('inert');
+      // Background is inert while the dialog is modal, so screen-reader
+      // virtual cursors and Tab both stay inside the drawer.
+      var activeScreen = document.querySelector('.screen.active');
+      if (activeScreen) activeScreen.setAttribute('inert', '');
+      if (!_drawerKeydownBound) {
+        drawer.addEventListener('keydown', drawerKeydown);
+        _drawerKeydownBound = true;
+      }
+      // Move focus to the dialog's accessible name so the change is announced.
+      var title = document.getElementById('drawerName');
+      if (title && typeof title.focus === 'function') title.focus();
     };
 
     window.closeMattressDrawer = function() {
+      var drawer = document.getElementById('mattressDrawer');
       document.getElementById('drawerBackdrop').classList.remove('open');
-      document.getElementById('mattressDrawer').classList.remove('drawer-open');
+      drawer.classList.remove('drawer-open');
+      if (!_drawerWasOpen) return;
+      _drawerWasOpen = false;
+      // inert immediately (the a11y guarantee), stays rendered only long
+      // enough for the slide-out, then is hidden on a deterministic timer.
+      drawer.setAttribute('inert', '');
+      drawer.classList.add('is-closing');
+      if (_drawerCloseTimer) clearTimeout(_drawerCloseTimer);
+      _drawerCloseTimer = setTimeout(function() {
+        drawer.classList.remove('is-closing');
+        _drawerCloseTimer = null;
+      }, 400);
+      var activeScreen = document.querySelector('.screen.active');
+      if (activeScreen) activeScreen.removeAttribute('inert');
+      if (_drawerReturnFocus && typeof _drawerReturnFocus.focus === 'function'
+          && document.contains(_drawerReturnFocus)) {
+        _drawerReturnFocus.focus();
+      }
+      _drawerReturnFocus = null;
     };
+
+    var _drawerReturnFocus = null;
+    var _drawerWasOpen = false;
+    var _drawerKeydownBound = false;
+    var _drawerCloseTimer = null;
+
+    function drawerKeydown(e) {
+      if (e.key === 'Escape') { e.preventDefault(); window.closeMattressDrawer(); return; }
+      if (e.key !== 'Tab') return;
+      var drawer = document.getElementById('mattressDrawer');
+      var list = Array.prototype.filter.call(
+        drawer.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'),
+        function(el) { return el.offsetParent !== null && !el.disabled; });
+      if (!list.length) return;
+      var first = list[0], last = list[list.length - 1];
+      // The title holds focus on open and is not in the cycle, so the first
+      // Tab must land on the first control rather than escaping the dialog.
+      if (document.activeElement === document.getElementById('drawerName')) {
+        e.preventDefault();
+        (e.shiftKey ? last : first).focus();
+      } else if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault(); last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault(); first.focus();
+      }
+    }
 
     // Toggle pitch script visibility inside the drawer. Default-collapsed
     // (set on each drawer open) so the section reads as a compact header
