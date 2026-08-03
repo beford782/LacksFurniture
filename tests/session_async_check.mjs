@@ -428,16 +428,86 @@ section("error diagnostics carry no server- or exception-supplied text");
     check(`  ${c.name} — after the wipe: no sentinel in console`,
       ![SENTINEL_EMAIL, SENTINEL_NAME, SENTINEL_PHONE].some((s) => printed2.includes(s)));
   }
-  // An allowlisted server code is still useful signal.
+  // A classified server code is still useful signal (see the Code.gs
+  // cross-check below for the authoritative set).
   {
     const { out } = buildSendHarness({ gasUrl: "https://example.invalid/gas", fetch: deferredFetch });
     consoleLines.length = 0;
     out.run();
-    deferred.resolve({ ok: true, json: async () => ({ success: false, error: "quota" }) });
+    deferred.resolve({ ok: true, json: async () => ({ success: false, error: "send_failed" }) });
     await new Promise((r) => setTimeout(r, 0));
     await new Promise((r) => setTimeout(r, 0));
-    check("an allowlisted server failure code survives as signal",
-      JSON.stringify(consoleLines).includes("quota"));
+    check("a classified server failure code survives as signal",
+      JSON.stringify(consoleLines).includes("send_failed"));
+  }
+}
+
+section("error diagnostics: every code Code.gs emits is classified");
+{
+  // Cross-file drift guard. The first version of EMAIL_FAILURE_CODES was a
+  // guess at what a mail service might return and matched NONE of the codes
+  // this repo's own backend emits, so every real failure would have logged as
+  // 'unclassified' once gasUrl went live. Read Code.gs as the source of truth
+  // rather than restating the list here, so adding a code there without
+  // classifying it here fails.
+  const codeGs = readFileSync(join(root, "Code.gs"), "utf8");
+  const emitted = [...new Set(
+    (codeGs.match(/success:\s*false,\s*error:\s*'([a-z_]+)'/g) || [])
+      .map((m) => m.match(/error:\s*'([a-z_]+)'/)[1]))].sort();
+  check(`Code.gs emits a non-empty set of failure codes (${emitted.join(", ")})`,
+    emitted.length > 0);
+
+  const declared = (html.match(/var EMAIL_FAILURE_CODES = \[([\s\S]*?)\];/) || [, ""])[1];
+  const declaredCodes = (declared.match(/'([a-z_]+)'/g) || []).map((s) => s.replace(/'/g, ""));
+  const missing = emitted.filter((c) => !declaredCodes.includes(c));
+  check(`REGRESSION: every code Code.gs emits is classified${missing.length ? " — UNCLASSIFIED: " + missing.join(", ") : ""}`,
+    missing.length === 0);
+  const speculative = declaredCodes.filter((c) => !emitted.includes(c));
+  check(`the set contains no speculative codes the backend never sends${speculative.length ? " — EXTRA: " + speculative.join(", ") : ""}`,
+    speculative.length === 0);
+
+  // Behavioural: each real code must survive as signal, same-session, with no
+  // sentinel anywhere near it.
+  for (const code of emitted) {
+    const { out, els } = buildSendHarness({ gasUrl: "https://example.invalid/gas", fetch: deferredFetch });
+    consoleLines.length = 0;
+    out.run();
+    deferred.resolve({ ok: true, json: async () => ({ success: false, error: code }) });
+    await new Promise((r) => setTimeout(r, 0));
+    await new Promise((r) => setTimeout(r, 0));
+    const printed = JSON.stringify(consoleLines);
+    check(`  "${code}" is logged as itself, not as unclassified`,
+      printed.includes(code) && !printed.includes("unclassified"));
+    check(`  "${code}" still shows the customer a localized generic error`,
+      els.emailError.textContent.length > 0);
+    check(`  "${code}" leaks no contact sentinel`,
+      ![SENTINEL_EMAIL, SENTINEL_NAME, SENTINEL_PHONE].some((s) => printed.includes(s)));
+
+    // ...and after a wipe it must still mutate nothing and still not leak.
+    const b = buildSendHarness({ gasUrl: "https://example.invalid/gas", fetch: deferredFetch });
+    consoleLines.length = 0;
+    b.out.run();
+    b.out.wipe();
+    deferred.resolve({ ok: true, json: async () => ({ success: false, error: code }) });
+    await new Promise((r) => setTimeout(r, 0));
+    await new Promise((r) => setTimeout(r, 0));
+    check(`  "${code}" after the wipe: nothing mutated`, untouched(sendState(b.els)));
+  }
+
+  // The closed set is still closed: anything else is reduced, including a
+  // hostile string dressed up to look like one of ours.
+  for (const bogus of [SENTINEL_EMAIL, "invalid_email_" + SENTINEL_NAME,
+                       "send_failed for " + SENTINEL_PHONE, "quota", ""]) {
+    const { out } = buildSendHarness({ gasUrl: "https://example.invalid/gas", fetch: deferredFetch });
+    consoleLines.length = 0;
+    out.run();
+    deferred.resolve({ ok: true, json: async () => ({ success: false, error: bogus }) });
+    await new Promise((r) => setTimeout(r, 0));
+    await new Promise((r) => setTimeout(r, 0));
+    const printed = JSON.stringify(consoleLines);
+    check(`unrecognised server code ${JSON.stringify(bogus.slice(0, 28))} -> unclassified, no echo`,
+      printed.includes("unclassified")
+      && ![SENTINEL_EMAIL, SENTINEL_NAME, SENTINEL_PHONE].some((s) => printed.includes(s)));
   }
 }
 
@@ -657,6 +727,22 @@ section("diagnostic privacy: the preview payload log");
   check("...and the sleep profile with it", !printed.includes("The Back Saver"));
   check("a shape-only preview diagnostic remains", printed.includes("payload suppressed"));
   check("the shape carries counts, not contents", /"matches":2|matches.{0,4}2/.test(printed));
+}
+
+section("error diagnostics: classifying a code did not widen the event contract");
+{
+  // Guard against the obvious wrong fix: approving these tokens as diagnostic
+  // VALUES somewhere in the analytics contract instead of in the send-failure
+  // classifier. Unknown events must still keep only name + timestamp.
+  const printed = runLogged(() =>
+    A.log("some_future_event", { error: "invalid_email", reason: SENTINEL_EMAIL }));
+  check("an unknown event still keeps only its name and timestamp",
+    !printed.includes("invalid_email") && !printed.includes(SENTINEL_EMAIL));
+  const fieldsSrc = (html.match(/EVENT_FIELDS: \(function\(\) \{[\s\S]*?\n      \}\)\(\),/) || [""])[0];
+  check("no event declares an `error` field", !/\berror:\s*'/.test(fieldsSrc));
+  const enumsSrc = (html.match(/ENUMS: \{[\s\S]*?\n      \},/) || [""])[0];
+  check("the failure codes were not added to the analytics enums",
+    !/invalid_email|canspam_not_configured|send_failed/.test(enumsSrc));
 }
 
 section("diagnostic privacy: static sweep of the shipped source");

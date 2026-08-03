@@ -17438,8 +17438,25 @@
     // echoing anything the server, the network stack, or a malformed response
     // put in front of us. The customer-facing message stays localized and
     // generic and is chosen by the caller, not by these.
+    //
+    // This set is the codes Code.gs ACTUALLY emits, not a guess at what a mail
+    // service might return. The first version of this list was speculative
+    // (quota / auth / rate_limit / ...) and matched none of them, so every real
+    // failure would have logged as 'unclassified' the moment gasUrl went live.
+    //
+    // Each entry is a fixed literal chosen by our own backend and interpolates
+    // nothing — Code.gs keeps the underlying detail in its own Logger and
+    // returns only these tokens — so echoing one back cannot carry an address,
+    // an exception string or any user-entered value. Anything NOT in this set
+    // is still reduced to 'unclassified', which is what makes it safe to
+    // classify a server-supplied string at all.
+    //
+    // Kept in sync with Code.gs by tests/session_async_check.mjs, which reads
+    // Code.gs directly and fails if it emits a code this set does not cover.
     var EMAIL_FAILURE_CODES = [
-      'quota', 'auth', 'rate_limit', 'invalid_recipient', 'server_error', 'disabled'
+      'invalid_email',            // Code.gs: recipient failed _isValidEmail()
+      'canspam_not_configured',   // Code.gs: retailer CAN-SPAM values still sentinels
+      'send_failed'               // Code.gs: doPost catch-all; detail stays in its Logger
     ];
     function emailFailureCode(raw) {
       return (typeof raw === 'string' && EMAIL_FAILURE_CODES.indexOf(raw) !== -1)
