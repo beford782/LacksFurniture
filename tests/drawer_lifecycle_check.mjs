@@ -44,14 +44,29 @@ const keydownFn = grab(
   /function drawerKeydown\(e\) \{[\s\S]*?\n    \}/,
   "drawerKeydown()");
 
-// startOver must invoke the reset synchronously, immediately, without focus
-// restoration. Static, because startOver itself is far too large to execute.
-const startOver = html.match(/window\.startOver = function\(\) \{[\s\S]{0,1400}/);
-check("startOver() unwinds the drawer",
-  !!startOver && /closeMattressDrawer\(\{\s*immediate:\s*true,\s*restoreFocus:\s*false\s*\}\)/.test(startOver[0]));
-check("startOver() unwinds the drawer BEFORE the rest of the reset runs",
-  !!startOver &&
-  startOver[0].indexOf("closeMattressDrawer(") < startOver[0].indexOf("analytics.log('session_ended'"));
+// The session reset must unwind the drawer synchronously, immediately, and
+// without focus restoration. Static, because the reset itself is far too large
+// to execute here — tests/session_safety_check.mjs proves the same ordering
+// behaviourally by executing the real wipe.
+//
+// Gate 1B moved this body out of window.startOver() and into the single
+// authoritative resetSessionState(), which every destructive path (confirmed
+// restart, final timeout, startOver) now delegates to. The invariant is
+// unchanged; only the symbol that carries it moved, so the assertions follow
+// it and additionally pin that there is exactly ONE reset implementation.
+// index.html is CRLF, so the function terminator is matched as "\n<4 spaces>}"
+// with no trailing newline — the same shape closeMattressDrawer() uses above.
+const wipe = html.match(/function resetSessionState\(opts\) \{[\s\S]*?\n    \}/)
+  || html.match(/window\.startOver = function\(\) \{[\s\S]{0,1400}/);
+check("the authoritative session wipe was located", !!wipe);
+check("the session wipe unwinds the drawer",
+  !!wipe && /closeMattressDrawer\(\{\s*immediate:\s*true,\s*restoreFocus:\s*false\s*\}\)/.test(wipe[0]));
+check("the session wipe unwinds the drawer BEFORE the rest of the reset runs",
+  !!wipe &&
+  wipe[0].indexOf("closeMattressDrawer(") < wipe[0].indexOf("analytics.log('session_ended'"));
+check("window.startOver() is preserved and delegates to that one wipe",
+  /window\.startOver = function\(\) \{\s*return resetSessionState\(/.test(html)
+  && (html.match(/function resetSessionState\(/g) || []).length === 1);
 
 // ---------- DOM shim --------------------------------------------------------
 function makeEl(id, className) {

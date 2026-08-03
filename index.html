@@ -9165,6 +9165,257 @@
       .fin-sheet-inner { animation: none; }
       .fin-btn { transition: none; }
     }
+
+    /* ===== GATE 1B: PERSISTENT SESSION UTILITY BAR =======================
+       The header is display:none on every screen except handoff (the
+       body:has(...) rule near the top of this stylesheet), so language and
+       restart controls cannot live inside it and still be persistent. This
+       is a top-level fixed layer instead, hidden only on Welcome — which
+       keeps its own larger landing toggle.
+
+       It carries its own opaque surface on purpose: the screens underneath
+       alternate between light (welcome, sleep system, financing sheet) and
+       dark (quiz, results, handoff), so a transparent bar could not
+       guarantee contrast on both. Every pairing below is measured against
+       --color-surface, not against the screen. */
+    .session-utility {
+      position: fixed;
+      top: 8px;
+      right: 8px;
+      z-index: 150;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 6px;
+      max-width: calc(100vw - 16px);
+      padding: 5px;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+    }
+
+    @supports (top: env(safe-area-inset-top)) {
+      .session-utility {
+        top: calc(8px + env(safe-area-inset-top));
+        right: calc(8px + env(safe-area-inset-right));
+      }
+    }
+
+    .session-utility__group {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* 44px minimum in both axes — showroom tablets are used standing up,
+       one-handed, by customers who are mid-conversation. */
+    .session-utility__btn {
+      min-height: 44px;
+      min-width: 44px;
+      padding: 0 12px;
+      font-family: var(--font-sans);
+      font-size: 0.8125rem;
+      font-weight: 600;
+      line-height: 1.15;
+      white-space: nowrap;
+      color: var(--color-text);              /* 14.6:1 on --color-surface */
+      background: transparent;
+      border: 1px solid rgba(245, 239, 228, 0.38);
+      border-radius: 8px;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    /* Selected language is conveyed by aria-pressed FIRST; the inversion, the
+       border and the heavier weight are the visual echo of that state, not
+       the state itself. Colour alone never carries it.
+
+       Deliberately NOT --color-accent / --color-on-accent: `colors.accent` is
+       retailer-configurable (applyStoreConfig writes it) while its paired
+       foreground is a fixed literal, so that pair's contrast depends on a
+       value each deployment chooses for identity. --color-text on --color-bg
+       is brand-neutral and unconfigurable, so this inversion measures
+       14.6:1 in every deployment, not just this one. */
+    .session-utility__btn[aria-pressed="true"] {
+      background: var(--color-text);
+      border-color: var(--color-text);
+      color: var(--color-bg);
+      font-weight: 700;
+    }
+
+    .session-utility__sep {
+      align-self: stretch;
+      width: 1px;
+      margin: 4px 2px;
+      background: var(--color-border);
+    }
+
+    /* Restart is not a language choice and must never read as the third
+       option in the pair: separator, icon, filled well, heavier border. */
+    .session-utility__restart {
+      background: rgba(245, 239, 228, 0.07);
+      border-color: rgba(245, 239, 228, 0.55);
+    }
+
+    .session-utility__restart-icon {
+      margin-right: 5px;
+      font-weight: 700;
+    }
+
+    .session-utility__btn:focus-visible,
+    .safety-dialog__btn:focus-visible,
+    .safety-dialog__title:focus-visible {
+      outline: 3px solid var(--focus-ring-outer);
+      outline-offset: 2px;
+      box-shadow: 0 0 0 5px var(--focus-ring-inner);
+    }
+
+    @media (forced-colors: active) {
+      .session-utility__btn:focus-visible,
+      .safety-dialog__btn:focus-visible,
+      .safety-dialog__title:focus-visible {
+        outline-color: CanvasText;
+        box-shadow: none;
+      }
+      /* aria-pressed is exposed natively in forced-colors, but the fill is
+         not — keep a non-colour cue. */
+      .session-utility__btn[aria-pressed="true"] { border-width: 3px; }
+    }
+
+    /* 320px CSS px and 200%-zoom reflow: labels stay whole words and never
+       truncate; the bar wraps instead. */
+    @media (max-width: 400px) {
+      .session-utility { gap: 4px; padding: 4px; }
+      .session-utility__btn { padding: 0 9px; font-size: 0.75rem; }
+    }
+
+    /* ===== GATE 1B: SHARED RESTART / TIMEOUT SAFETY DIALOG ================
+       One primitive, two modes. Sits above every other customer layer
+       including #privacyOverlay (9999), because the timeout warning has to
+       be able to obscure a session no matter which layer is on top of it. */
+    .safety-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 10001;
+      background: rgba(5, 7, 10, 0.88);
+    }
+
+    .safety-dialog {
+      position: fixed;
+      inset: 0;
+      z-index: 10002;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .safety-dialog__panel {
+      width: min(460px, 100%);
+      max-height: calc(100vh - 32px);
+      max-height: calc(100dvh - 32px);
+      overflow-y: auto;
+      padding: 24px 22px;
+      text-align: left;
+      color: var(--color-text);
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: 14px;
+      box-shadow: 0 18px 48px rgba(0, 0, 0, 0.55);
+    }
+
+    /* overflow-wrap: at 320px with 200% text scaling a single Spanish word
+       ("comparando?") is wider than the panel's content box and would be
+       clipped rather than wrapped. Breaking inside the word is the only way
+       the title survives that combination. */
+    .safety-dialog__title {
+      margin: 0 0 10px;
+      font-family: var(--font-serif);
+      font-size: 1.35rem;
+      line-height: 1.25;
+      color: var(--color-text);
+      overflow-wrap: break-word;
+      hyphens: auto;
+    }
+
+    .safety-dialog__body {
+      margin: 0 0 18px;
+      font-family: var(--font-sans);
+      font-size: 0.95rem;
+      line-height: 1.5;
+      color: var(--color-text-muted);        /* 6.7:1 on --color-surface */
+      overflow-wrap: break-word;
+    }
+
+    /* Same reason: the action labels are full sentences in Spanish, and
+       nowrap here would push the button past the panel at 320px. */
+    .safety-dialog__btn {
+      overflow-wrap: break-word;
+    }
+
+    .safety-dialog__meter { margin: 0 0 18px; }
+
+    .safety-dialog__meter-track {
+      height: 8px;
+      overflow: hidden;
+      background: var(--color-surface-alt);
+      border-radius: 999px;
+    }
+
+    /* Brand-neutral for the same reason as the pressed language state: a
+       privacy countdown must stay legible whatever accent a retailer picks.
+       Cream on the track measures ~13:1, far above the 3:1 non-text floor.
+       Width is set from the real remaining time, never faked. */
+    .safety-dialog__meter-fill {
+      width: 100%;
+      height: 100%;
+      background: var(--color-text);
+    }
+
+    .safety-dialog__meter-text {
+      margin-top: 8px;
+      font-family: var(--font-sans);
+      font-size: 0.8rem;
+      color: var(--color-text-muted);
+    }
+
+    /* Column at every width: Spanish action labels are long enough that a
+       row would clip at 320px / 200% zoom. */
+    .safety-dialog__actions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .safety-dialog__btn {
+      min-height: 48px;
+      padding: 12px 16px;
+      font-family: var(--font-sans);
+      font-size: 0.95rem;
+      font-weight: 700;
+      line-height: 1.2;
+      border-radius: 10px;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    /* Primary action. Brand-neutral inversion, not the configurable accent —
+       "Keep this session" is the recovery path and has to stay readable in
+       every deployment. */
+    .safety-dialog__btn--keep {
+      color: var(--color-bg);
+      background: var(--color-text);
+      border: 1px solid var(--color-text);
+    }
+
+    .safety-dialog__btn--confirm {
+      color: var(--color-text);
+      background: transparent;
+      border: 1px solid rgba(245, 239, 228, 0.55);
+    }
   </style>
 </head>
 <body>
@@ -9209,8 +9460,29 @@
       </svg>
       <span id="locationText"></span>
     </div>
-    <button id="headerStartOverBtn" class="js-start-over" ontouchend="event.preventDefault();window.startOver();" style="display:none; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.2); color:var(--cream); font-family:inherit; font-size:0.75rem; font-weight:600; padding:0.4rem 0.9rem; border-radius:8px; cursor:pointer; touch-action:manipulation; letter-spacing:0.2px;" data-i18n="header.restart">↺ Restart Quiz</button>
   </header>
+
+  <!-- Persistent customer utility controls (Gate 1B).
+       Deliberately a sibling of <header>, not a child: the header is
+       display:none on every screen except handoff, so a control inside it
+       would not be persistent. Hidden on Welcome, which keeps the larger
+       landing toggle. showScreen() owns the hidden attribute. -->
+  <div class="session-utility" id="sessionUtility" hidden>
+    <div class="session-utility__group" role="group" id="sessionLangGroup" aria-label="Language">
+      <button type="button" class="session-utility__btn session-utility__lang" id="sessionLangEn"
+        data-lang="en" aria-pressed="true" data-i18n="session.lang_en"
+        onclick="switchLanguage('en')" ontouchend="event.preventDefault();switchLanguage('en');">English</button>
+      <button type="button" class="session-utility__btn session-utility__lang" id="sessionLangEs"
+        data-lang="es" aria-pressed="false" data-i18n="session.lang_es"
+        onclick="switchLanguage('es')" ontouchend="event.preventDefault();switchLanguage('es');">Español</button>
+    </div>
+    <div class="session-utility__sep" aria-hidden="true"></div>
+    <button type="button" class="session-utility__btn session-utility__restart js-start-over"
+      id="headerStartOverBtn"
+      ontouchend="event.preventDefault();window.requestStartOver();"><span
+      class="session-utility__restart-icon" aria-hidden="true">&#8634;</span><span
+      id="sessionRestartLabel" data-i18n="session.restart">Restart</span></button>
+  </div>
 
   <!-- Progress Bar -->
   <div class="progress-bar-container" id="progressBar">
@@ -9228,9 +9500,9 @@
           <div class="landing-retailer-name" id="landingRetailerName"></div>
           <div class="landing-retailer-subline" id="landingRetailerSubline"></div>
         </div>
-        <div class="landing-lang-toggle" id="landingLangToggle">
-          <button class="landing-lang-btn" data-lang="en" onclick="switchLanguage('en')" ontouchend="event.preventDefault();switchLanguage('en');">EN</button>
-          <button class="landing-lang-btn" data-lang="es" onclick="switchLanguage('es')" ontouchend="event.preventDefault();switchLanguage('es');">ES</button>
+        <div class="landing-lang-toggle" id="landingLangToggle" role="group" aria-label="Language">
+          <button type="button" class="landing-lang-btn" data-lang="en" aria-pressed="true" onclick="switchLanguage('en')" ontouchend="event.preventDefault();switchLanguage('en');">EN</button>
+          <button type="button" class="landing-lang-btn" data-lang="es" aria-pressed="false" onclick="switchLanguage('es')" ontouchend="event.preventDefault();switchLanguage('es');">ES</button>
         </div>
       </div>
 
@@ -9730,21 +10002,40 @@
           <div class="email-col-right">
             <div class="email-card email-form-card">
               <div class="email-card-label" id="emailFormTitle">Where should we save it?</div>
-              <div class="noct-email-form">
+              <!-- Public-device contact capture (Gate 1B).
+                   This is a shared showroom tablet: the given-name / email /
+                   tel autofill tokens that used to be here advertised one
+                   customer's details to the next. autocomplete="off" on both
+                   the form and every field, plus the password-manager opt-out
+                   attributes, is everything HTML can do here. It is NOT
+                   sufficient on its own — iOS/Safari ignores autocomplete="off"
+                   for contact autofill in several cases, so the mounted device
+                   must also have autofill disabled by device policy. See
+                   docs/kiosk-device-hardening.md. A real <form> (not a div) so
+                   the reset path can call form.reset() as well as clearing
+                   value and defaultValue explicitly. -->
+              <form class="noct-email-form" id="emailContactForm" autocomplete="off" novalidate
+                    onsubmit="event.preventDefault();return false;">
                 <div class="noct-email-form-group">
                   <label class="noct-email-label" for="emailNameInput" id="emailNameLabel">Your Name <span class="optional">(optional)</span></label>
-                  <input type="text" id="emailNameInput" class="noct-email-input" placeholder="First name" autocomplete="given-name" />
+                  <input type="text" id="emailNameInput" class="noct-email-input" placeholder="First name"
+                    autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false"
+                    data-lpignore="true" data-1p-ignore data-form-type="other" />
                 </div>
                 <div class="noct-email-form-group">
                   <label class="noct-email-label" for="emailInput" id="emailEmailLabel">Email Address <span class="required">*</span></label>
-                  <input type="email" id="emailInput" class="noct-email-input" placeholder="your@email.com" autocomplete="email" />
+                  <input type="email" id="emailInput" class="noct-email-input" placeholder="your@email.com"
+                    autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false"
+                    data-lpignore="true" data-1p-ignore data-form-type="other" />
                   <div class="noct-email-error" id="emailError"></div>
                 </div>
                 <div class="noct-email-form-group">
                   <label class="noct-email-label" for="emailPhoneInput" id="emailPhoneLabel">Phone <span class="optional">(optional)</span></label>
-                  <input type="tel" id="emailPhoneInput" class="noct-email-input" placeholder="(555) 555-5555" autocomplete="tel" />
+                  <input type="tel" id="emailPhoneInput" class="noct-email-input" placeholder="(555) 555-5555"
+                    autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false"
+                    data-lpignore="true" data-1p-ignore data-form-type="other" />
                 </div>
-              </div>
+              </form>
               <button class="noct-email-send-btn" id="emailSendBtn" onclick="sendResults()" ontouchend="event.preventDefault();sendResults();">Save My Sleep Brief &rarr;</button>
               <div class="email-preview-note" id="emailPreviewNote">Preview mode: live email delivery isn't connected yet.</div>
               <div class="noct-email-privacy" id="emailPrivacy">
@@ -9756,7 +10047,7 @@
           </div>
         </div>
 
-        <button class="noct-email-secondary js-start-over" id="emailStartOver" ontouchend="event.preventDefault();window.startOver();">&#8634; Start over</button>
+        <button type="button" class="noct-email-secondary js-start-over" id="emailStartOver" ontouchend="event.preventDefault();window.requestStartOver();">&#8634; Start over</button>
       </div>
 
       <!-- Confirmation view (persistent; shown after Save) -->
@@ -10358,8 +10649,10 @@
       if (title) title.focus();
       // Populate the status region only after the sheet is visible: live
       // regions inside hidden containers don't reliably announce, and the
-      // delay lets the dialog's title announcement land first.
-      setTimeout(updateFinancingSheetStatus, 150);
+      // delay lets the dialog's title announcement land first. Session-scoped
+      // so a reset in that window cannot announce the departing customer's
+      // financing status over the next customer's Welcome screen.
+      sessionTimeout(updateFinancingSheetStatus, 150);
       if (!_finSheetKeydownBound) {
         sheet.addEventListener('keydown', finSheetKeydown);
         _finSheetKeydownBound = true;
@@ -10756,23 +11049,35 @@
       return currentLang === 'es' ? (m[field + '_es'] || m[field]) : m[field];
     }
 
-    // Load a dictionary file
-    async function loadDictionary(lang) {
+    // Fetch a dictionary file and RETURN it. Deliberately does not assign to
+    // DICT: switchLanguage() has to be able to throw away the response of a
+    // superseded request, and it can only do that if the fetch has no side
+    // effect of its own. Returns null when nothing could be loaded, so the
+    // caller keeps whatever dictionary is already in place rather than
+    // dropping the interface to raw keys.
+    async function fetchDictionary(lang) {
       try {
         var res = await fetch('./data/dict-' + lang + '.json');
-        DICT = await res.json();
+        return await res.json();
       } catch (e) {
         console.warn('[DreamFinder] Could not load dictionary for ' + lang + ', falling back to en');
         if (lang !== 'en') {
           try {
             var fallback = await fetch('./data/dict-en.json');
-            DICT = await fallback.json();
+            return await fallback.json();
           } catch (e2) {
             console.error('[DreamFinder] Failed to load any dictionary:', e2);
-            DICT = {};
+            return null;
           }
         }
+        return null;
       }
+    }
+
+    // Load a dictionary file (initial boot path — no request to race with).
+    async function loadDictionary(lang) {
+      var dict = await fetchDictionary(lang);
+      if (dict) DICT = dict;
     }
 
     // Apply data-i18n attributes to all tagged elements
@@ -10811,13 +11116,80 @@
           ? 'Categorías del Sistema de Sueño'
           : 'Sleep system categories');
       }
+      // Persistent utility controls: accessible names that data-i18n cannot
+      // reach (they are attributes, not text nodes). Generic dictionary keys,
+      // never retailer config.
+      var langGroup = document.getElementById('sessionLangGroup');
+      if (langGroup) langGroup.setAttribute('aria-label', t('session.lang_group'));
+      var restartBtn = document.getElementById('headerStartOverBtn');
+      if (restartBtn) restartBtn.setAttribute('aria-label', t('session.restart_aria'));
+      var landingToggle = document.getElementById('landingLangToggle');
+      if (landingToggle) landingToggle.setAttribute('aria-label', t('session.lang_group'));
+      // The safety dialog's copy is owned by renderSafetyDialog(), which
+      // resolves the same dictionary — re-run it so an open dialog follows a
+      // dictionary reload that did not come through switchLanguage().
+      if (typeof renderSafetyDialog === 'function') renderSafetyDialog();
+    }
+
+    // ---- Race-safe language transaction (Gate 1B) -------------------------
+    // Every switch takes a monotonic token. The dictionary fetch is awaited,
+    // and on resume the token is compared against the newest one issued: an
+    // older response that arrives late is discarded instead of overwriting a
+    // newer selection. Without this, EN -> ES -> EN on a slow network could
+    // finish with the Spanish dictionary applied under an English document
+    // language, which is exactly the state assistive tech cannot recover from.
+    //
+    // currentLang, document.documentElement.lang and the pressed state of the
+    // controls are set SYNCHRONOUSLY, before the await, so the control never
+    // lags the tap and a superseded request cannot roll them backwards.
+    var _langRequestSeq = 0;
+
+    // Which of the two language controls the customer last activated. Used to
+    // put focus back on the equivalent control after a rerender detaches it.
+    var _langFocusHintId = null;
+
+    function requestedLangIsSupported(lang) {
+      // English is always available: it is the reset target every new-customer
+      // wipe returns to, so a config that omitted it must not be able to leave
+      // one customer's language in place for the next.
+      if (lang === 'en') return true;
+      var langs = (STORE_CONFIG && Array.isArray(STORE_CONFIG.languages) && STORE_CONFIG.languages.length)
+        ? STORE_CONFIG.languages
+        : ['en'];
+      return langs.indexOf(lang) !== -1;
+    }
+
+    // Pressed state on every language control, in both the landing toggle and
+    // the persistent utility bar. aria-pressed is the state; the styling only
+    // mirrors it.
+    function updateLanguageControls() {
+      var groups = document.querySelectorAll('.landing-lang-btn, .session-utility__lang');
+      Array.prototype.forEach.call(groups, function(btn) {
+        var isActive = btn.getAttribute('data-lang') === currentLang;
+        btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+        if (isActive) btn.classList.add('active');
+        else btn.classList.remove('active');
+      });
     }
 
     // Switch language: reload dictionary, update toggle UI, re-apply text
     async function switchLanguage(lang) {
+      // A language not offered by this retailer's config is never applied.
+      if (!requestedLangIsSupported(lang)) return false;
+
+      var token = ++_langRequestSeq;
+      var active = document.activeElement;
+      if (active && active.id) _langFocusHintId = active.id;
+
       currentLang = lang;
       document.documentElement.lang = lang;
-      await loadDictionary(lang);
+      updateLanguageControls();
+
+      var dict = await fetchDictionary(lang);
+      // A newer selection was made while this fetch was in flight. Drop it.
+      if (token !== _langRequestSeq) return false;
+      if (dict) DICT = dict;
+
       applyTranslations();
       // Re-apply store config text for current language (also re-renders the Nocturnal landing)
       applyStoreConfig();
@@ -10869,10 +11241,48 @@
           email: document.getElementById('emailInput').value,
           phone: document.getElementById('emailPhoneInput').value
         };
+        // showEmailCapture() rebuilds the capture view AND hides the
+        // confirmation. Remember whether the customer was looking at the
+        // confirmation so a language switch does not silently throw them
+        // back to the form they already submitted.
+        var confirmEl = document.getElementById('emailConfirmation');
+        var wasConfirmed = !!(confirmEl && confirmEl.classList.contains('visible'));
         showEmailCapture();
         document.getElementById('emailNameInput').value = emailValues.name;
         document.getElementById('emailInput').value = emailValues.email;
         document.getElementById('emailPhoneInput').value = emailValues.phone;
+        if (wasConfirmed) {
+          var capView = document.getElementById('emailCaptureView');
+          if (capView) capView.style.display = 'none';
+          if (confirmEl) confirmEl.classList.add('visible');
+        }
+      }
+      // The mattress drawer and the safety dialog are top-level layers, not
+      // screens, so no `.screen.active` branch above reaches them. Both carry
+      // customer-visible copy and both can be open across a language switch.
+      if (typeof window.rerenderOpenMattressDrawer === 'function') window.rerenderOpenMattressDrawer();
+      renderSafetyDialog();
+      updateLanguageControls();
+      restoreLanguageFocus();
+      return true;
+    }
+
+    // Put focus back where the customer left it. First choice is the element
+    // that had it (by id) if it survived the rerender; then the equivalent
+    // language control; then the heading of whatever layer is on top. Never
+    // BODY, and never something that was just detached.
+    function restoreLanguageFocus() {
+      var candidates = [];
+      if (_langFocusHintId) candidates.push(_langFocusHintId);
+      if (safetyDialogMode() !== null) candidates.push('sessionSafetyTitle');
+      candidates.push(currentLang === 'es' ? 'sessionLangEs' : 'sessionLangEn');
+      for (var i = 0; i < candidates.length; i++) {
+        var el = document.getElementById(candidates[i]);
+        if (el && typeof el.focus === 'function'
+            && (el.offsetParent !== null || el.id === 'sessionSafetyTitle')) {
+          el.focus();
+          return;
+        }
       }
     }
 
@@ -11108,13 +11518,15 @@
       var langs = (STORE_CONFIG && Array.isArray(STORE_CONFIG.languages))
         ? STORE_CONFIG.languages
         : ['en'];
+      var single = langs.length < 2;
       var toggle = document.getElementById('landingLangToggle');
-      if (!toggle) return;
-      if (langs.length < 2) {
-        toggle.style.display = 'none';
-      } else {
-        toggle.style.display = 'flex';
-      }
+      if (toggle) toggle.style.display = single ? 'none' : 'flex';
+      // The persistent utility bar follows the same rule. The Restart control
+      // stays regardless — it is not a language control.
+      var group = document.getElementById('sessionLangGroup');
+      if (group) group.style.display = single ? 'none' : 'flex';
+      var sep = document.querySelector('.session-utility__sep');
+      if (sep) sep.style.display = single ? 'none' : 'block';
     }
 
     function localizedConfigBlock(key) {
@@ -11339,14 +11751,8 @@
         tiles.innerHTML = html;
       }
 
-      // Active state on language toggle
-      document.querySelectorAll('.landing-lang-btn').forEach(function(btn) {
-        if (btn.getAttribute('data-lang') === currentLang) {
-          btn.classList.add('active');
-        } else {
-          btn.classList.remove('active');
-        }
-      });
+      // Active state on every language control (landing toggle + utility bar).
+      updateLanguageControls();
     }
 
     function renderStoreBrands() {
@@ -11388,12 +11794,14 @@
         document.getElementById('progressFill').style.width = '100%';
       }
       document.getElementById('progressBar').classList.toggle('visible', showProgress);
-      // Show/hide location vs Start Over in header
+      // Show/hide location in header
       const loc = document.querySelector('.header-location');
-      const startOverBtn = document.getElementById('headerStartOverBtn');
       const isWelcome = id === 'welcomeScreen';
       if (loc) loc.style.display = isWelcome ? 'flex' : 'none';
-      if (startOverBtn) startOverBtn.style.display = isWelcome ? 'none' : 'block';
+      // Persistent customer utility controls (language + restart) on every
+      // screen except Welcome, which keeps its own larger landing toggle.
+      const utility = document.getElementById('sessionUtility');
+      if (utility) utility.hidden = isWelcome;
       // Show picks badge only when there are picks and not on welcome
       if (!isWelcome) window._updatePicksBadge && window._updatePicksBadge();
       // Hide compare tray when leaving results screen
@@ -13082,9 +13490,11 @@
 
       // Hold long enough for the customer to read the pass, then return to the
       // review page where the persistent pass summary and send action remain.
-      setTimeout(function() {
+      // Session-scoped: a reset mid-hold must not fade a previous customer's
+      // pass in over the next customer.
+      sessionTimeout(function() {
         overlay.classList.add('fade-out');
-        setTimeout(function() {
+        sessionTimeout(function() {
           overlay.style.display = 'none';
           overlay.classList.add('hidden');
           cert.classList.remove('is-visible');
@@ -13147,18 +13557,20 @@
       elements.subtitle.textContent = stages[0][1];
       openConsultationReveal(elements, false);
 
-      var stageTwoTimer = setTimeout(function() {
+      // Session-scoped (see sessionTimeout): a reset during the staged reveal
+      // must not repaint the previous customer's Brief over a new session.
+      var stageTwoTimer = sessionTimeout(function() {
         elements.title.textContent = stages[1][0];
         elements.subtitle.textContent = stages[1][1];
       }, 450);
-      var stageThreeTimer = setTimeout(function() {
+      var stageThreeTimer = sessionTimeout(function() {
         elements.title.textContent = stages[2][0];
         elements.subtitle.textContent = stages[2][1];
       }, 900);
-      setTimeout(function() {
+      sessionTimeout(function() {
         elements.overlay.classList.remove('is-visible');
       }, 1260);
-      setTimeout(function() {
+      sessionTimeout(function() {
         clearTimeout(stageTwoTimer);
         clearTimeout(stageThreeTimer);
         closeConsultationReveal(elements);
@@ -13184,10 +13596,10 @@
       elements.title.textContent = es ? 'Abriendo tu comparacion' : 'Opening your showroom comparison';
       elements.subtitle.textContent = es ? 'Tus opciones de colchón están listas para comparar.' : 'Your mattress matches are ready to compare.';
       openConsultationReveal(elements, true);
-      setTimeout(function() {
+      sessionTimeout(function() {
         elements.overlay.classList.remove('is-visible');
       }, 300);
-      setTimeout(function() {
+      sessionTimeout(function() {
         closeConsultationReveal(elements);
         window._resultsRevealInFlight = false;
         var profileScreen = document.getElementById('profileScreen');
@@ -16388,126 +16800,697 @@
       setSleepSystemItem(id, !window._accCart[id]);
     };
 
-    window.startOver = function() {
-      // FIRST, synchronously: unwind the mattress dialog before anything else
-      // runs. The idle reset can fire while the drawer is open, and without
-      // this the drawer stayed open over Welcome, kept its focus trap, and
-      // left the Results screen inert for the rest of the tablet's life.
-      // Immediate (no slide-out over the next customer's Welcome screen) and
-      // no focus restoration (the opener belongs to the session being torn
-      // down). Idempotent, so it is safe when no drawer was ever opened.
-      if (typeof window.closeMattressDrawer === 'function') {
-        window.closeMattressDrawer({ immediate: true, restoreFocus: false });
-      }
+    // ==== GATE1B SESSION SAFETY :: BEGIN ====================================
+    // Session lifecycle: provisional timing policy, session-scoped timers, the
+    // shared restart/timeout safety dialog, the deadline-based idle controller
+    // and the ONE authoritative privacy wipe every path delegates to.
+    //
+    // tests/session_safety_check.mjs extracts everything between the BEGIN and
+    // END markers and EXECUTES it against a DOM shim and a fake clock, so this
+    // block deliberately references only a small, explicit set of bindings from
+    // the enclosing script scope (the harness declares each of them):
+    //
+    //   analytics, t, switchLanguage, showScreen, applyTranslations,
+    //   cancelFinInterestPending, clearFinInterestAnnouncement,
+    //   currentQuestion, answers, editingFromReview, _resultsState,
+    //   currentLang, financingInterest, financingExplored,
+    //   _finModuleImpressionLogged, _financeReturnFocus, _langFocusHintId
+    //
+    // Nothing in here reads or writes any browser persistence mechanism or a
+    // backend — the suite greps this block to prove it. The customer session is
+    // memory-only, by design: a wipe therefore has nothing left to erase.
 
-      try {
-        analytics.log('session_ended', analytics.getSummary());
-        console.log('[DreamFinder] Session Summary:', JSON.stringify(analytics.getSummary(), null, 2));
-      } catch(e) { console.warn('Analytics log failed:', e); }
-
-      // Reset language to English
-      if (currentLang !== 'en') switchLanguage('en');
-
-      // Reset financing state for the next customer: interest back to
-      // undecided, sheet closed, per-session impression flag cleared. Module
-      // state only — nothing financing-related persists in localStorage.
-      // Cancel queued interest work FIRST — before any rerender or screen
-      // transition below could let stale queued focus/announcement work
-      // from the prior customer run against the fresh session.
-      cancelFinInterestPending();
-      financingInterest = 'undecided';
-      financingExplored = false;
-      _finModuleImpressionLogged = false;
-      var finInterestStatus = document.getElementById('hf2FinancingStatus');
-      if (finInterestStatus) finInterestStatus.textContent = '';
-      window.closeFinancingSheet();
-
-      // Reset cart
-      window._accCart = {};
-      window._finalistAccessoryPromptShown = false;
-      window._sleepSystemState = {
-        activeStep: 'adjustability',
-        decisions: {},
-        demoPosition: '',
-        supportChoice: '',
-        pillowCandidateId: '',
-        pillowReaction: '',
-        pillowFeedback: '',
-        protectionGoal: ''
-      };
-      const bar = document.getElementById('accCartBar');
-      if (bar) {
-        bar.style.display = 'none';
-        bar.classList.remove('visible');
-      }
-
-      // Reset saved picks
-      window._savedPicks = [];
-      window._mattressReactions = {};
-      window._favoriteMattressId = '';
-      window._updatePicksBadge();
-
-      // Reset all state
-      currentQuestion = 0;
-      answers = {};
-      editingFromReview = false;
-      window._compareSelected = [];
-      if (window.closeCompareModal) window.closeCompareModal();
-      if (window.updateCompareTray) window.updateCompareTray();
-      analytics.sessionId = Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
-      analytics.startedAt = null;
-      analytics.completedAt = null;
-      analytics.answers = {};
-      analytics.resultsViewed = false;
-      analytics.tierViews = { gold: 0, silver: 0, bronze: 0 };
-      analytics.cardExpands = {};
-      analytics.accessoriesViewed = false;
-      analytics.topPick = null;
-      analytics.allMatches = [];
-      analytics.recommendedAccessories = [];
-      analytics.selectedAccessories = [];
-      analytics.profileName = null;
-      analytics.profileBrief = null;
-      analytics.profileBriefByLang = null;
-      analytics.trialFocus = [];
-      analytics.profileSubtitle = null;
-      analytics.profileSubtitleByLang = null;
-      document.getElementById('profileScreen').classList.remove('animate');
-      analytics.events = [];
-      
-      // Reset dream code box
-      const dcBox = document.getElementById('dreamCodeBox');
-      if (dcBox) dcBox.style.display = '';
-      const dcVal = document.getElementById('dreamCodeValue');
-      if (dcVal) dcVal.textContent = '';
-
-      // Clear hf2 discount button reveal state — next renderHf2DiscountButton
-      // call restores the pre-reveal copy with the new session's dreamCode.
-      const hf2DiscBtn = document.getElementById('hf2DiscountBtn');
-      if (hf2DiscBtn) hf2DiscBtn.classList.remove('hf2-discount-btn--revealed');
-
-      showScreen('welcomeScreen');
+    // ---- PROVISIONAL PREVIEW TIMING POLICY --------------------------------
+    // NOT research evidence. NOT validated, optimal or universal. These are
+    // preview defaults chosen against one observation: the main thing a
+    // customer does in a mattress showroom — lying on a mattress — produces no
+    // DOM event at all, so the previous 2-minute silent destructive reset
+    // could and did delete a live session while the product was being used
+    // exactly as intended. Real mounted-device mattress-trial testing is
+    // expected to change these numbers.
+    //
+    // Every timing value in the session lifecycle lives HERE. No literals
+    // anywhere else in the block.
+    var SESSION_POLICY = {
+      status: 'provisional-preview',
+      idleWarningMs: 5 * 60 * 1000,   // ordinary inactivity before the warning
+      graceMs: 5 * 60 * 1000,         // warning visible before the wipe
+      tickMs: 1000,                   // meter refresh (visual only, aria-hidden)
+      finalAnnounceMs: 60 * 1000      // one late spoken reminder, then silence
     };
 
-    // ===== Idle auto-reset (showroom tablet) =====
-    // Default 2 min on every screen; the shared review gets 5 min so an
-    // in-person customer conversation does not reset mid-review.
-    (function() {
-      const DEFAULT_IDLE = 120000;
-      const HANDOFF_IDLE = 300000;
-      let idleTimer;
-      let currentTimeout = DEFAULT_IDLE;
-      function resetIdleTimer() {
-        clearTimeout(idleTimer);
-        idleTimer = setTimeout(() => { window.startOver(); }, currentTimeout);
+    // Development/test-only timing injection. Gated on the loopback development
+    // hosts and nothing else: deliberately NOT a URL parameter and NOT any form
+    // of browser storage, so no production kiosk URL and no persisted value can
+    // shorten a customer's privacy timeout. Returns false when refused.
+    window.__dfSetSessionPolicy = function(overrides) {
+      var host = (window.location && window.location.hostname) || '';
+      if (host !== 'localhost' && host !== '127.0.0.1' && host !== '[::1]') return false;
+      if (!overrides || typeof overrides !== 'object') return false;
+      ['idleWarningMs', 'graceMs', 'tickMs', 'finalAnnounceMs'].forEach(function(k) {
+        if (typeof overrides[k] === 'number' && overrides[k] > 0) SESSION_POLICY[k] = overrides[k];
+      });
+      idleRestart();
+      return true;
+    };
+
+    // ---- Session-scoped timers --------------------------------------------
+    // Two guarantees: registered ids are cleared outright by the wipe, and any
+    // callback that survives anyway (a frame already queued, a timer the
+    // browser fired between clear and reschedule) sees a stale epoch and does
+    // nothing. A timer from the previous customer must never be able to mutate
+    // — or wipe — the next customer's session.
+    var _sessionEpoch = 1;
+    var _sessionTimers = [];
+
+    function sessionTimeout(fn, ms) {
+      var epoch = _sessionEpoch;
+      var id = setTimeout(function() {
+        var i = _sessionTimers.indexOf(id);
+        if (i !== -1) _sessionTimers.splice(i, 1);
+        if (epoch !== _sessionEpoch) return;
+        fn();
+      }, ms);
+      _sessionTimers.push(id);
+      return id;
+    }
+
+    function clearSessionTimers() {
+      _sessionTimers.forEach(function(id) { clearTimeout(id); });
+      _sessionTimers = [];
+      _sessionEpoch++;
+    }
+
+    // ---- Shared restart / timeout safety dialog ---------------------------
+    var SAFETY_MODES = {
+      restart: {
+        titleKey: 'safety.restart_title', bodyKey: 'safety.restart_body',
+        cancelKey: 'safety.restart_keep', confirmKey: 'safety.restart_confirm',
+        escapeCancels: true, meter: false
+      },
+      timeout: {
+        titleKey: 'safety.timeout_title', bodyKey: 'safety.timeout_body',
+        cancelKey: 'safety.timeout_continue', confirmKey: 'safety.timeout_confirm',
+        // Escape must NOT silently bypass the explicit extension decision:
+        // the whole point of the warning is that someone chose to continue.
+        escapeCancels: false, meter: true
       }
-      window._setIdleScreen = function(screenId) {
-        currentTimeout = (screenId === 'hf2Screen') ? HANDOFF_IDLE : DEFAULT_IDLE;
-        resetIdleTimer();
+    };
+
+    var _safetyMode = null;          // null | 'restart' | 'timeout'
+    var _safetyReturnFocus = null;
+    var _safetyInerted = [];
+    var _safetyKeydownBound = false;
+
+    function safetyDialogMode() { return _safetyMode; }
+
+    function setSafetyText(id, text) {
+      var el = document.getElementById(id);
+      if (el) el.textContent = text;
+    }
+
+    // Copy is re-resolved from the active dictionary every time, so a language
+    // switch while the dialog is open relocalises it in place.
+    function renderSafetyDialog() {
+      if (_safetyMode === null) return;
+      var cfg = SAFETY_MODES[_safetyMode];
+      setSafetyText('sessionSafetyTitle', t(cfg.titleKey));
+      setSafetyText('sessionSafetyBody', t(cfg.bodyKey));
+      setSafetyText('sessionSafetyCancel', t(cfg.cancelKey));
+      setSafetyText('sessionSafetyConfirm', t(cfg.confirmKey));
+      var root = document.getElementById('sessionSafetyDialog');
+      if (root) root.setAttribute('data-mode', _safetyMode);
+      var meter = document.getElementById('sessionSafetyMeter');
+      if (meter) meter.hidden = !cfg.meter;
+      if (cfg.meter) renderSafetyMeter(idleGraceRemaining());
+    }
+
+    // Honest remaining-time indicator: the width and the text both come from
+    // the real deadline. Never announced on every tick (see the aria-hidden
+    // note on the markup) — the one late reminder is emitted by idleReconcile.
+    function renderSafetyMeter(remainingMs) {
+      var total = SESSION_POLICY.graceMs || 1;
+      var pct = Math.max(0, Math.min(100, Math.round((remainingMs / total) * 100)));
+      var fill = document.getElementById('sessionSafetyMeterFill');
+      if (fill && fill.style) fill.style.width = pct + '%';
+      setSafetyText('sessionSafetyMeterText',
+        t('safety.timeout_remaining', { seconds: Math.max(0, Math.ceil(remainingMs / 1000)) }));
+    }
+
+    // Everything that is not the dialog becomes inert while it is open, so
+    // neither Tab nor a screen-reader virtual cursor can reach the session
+    // underneath. Only elements THIS function inerted are released again: an
+    // already-inert element (a closed drawer) is left exactly as it was.
+    function inertBackgroundForSafety(root, backdrop) {
+      _safetyInerted = [];
+      var kids = (document.body && document.body.children)
+        ? Array.prototype.slice.call(document.body.children) : [];
+      kids.forEach(function(el) {
+        if (el === root || el === backdrop) return;
+        if (!el.setAttribute || (el.hasAttribute && el.hasAttribute('inert'))) return;
+        el.setAttribute('inert', '');
+        _safetyInerted.push(el);
+      });
+    }
+
+    function releaseSafetyInert() {
+      _safetyInerted.forEach(function(el) { if (el.removeAttribute) el.removeAttribute('inert'); });
+      _safetyInerted = [];
+    }
+
+    function openSafetyDialog(mode) {
+      var cfg = SAFETY_MODES[mode];
+      if (!cfg) return false;
+      var root = document.getElementById('sessionSafetyDialog');
+      var backdrop = document.getElementById('sessionSafetyBackdrop');
+      if (!root || !backdrop) return false;
+
+      // Never stack. A timeout warning arriving over an abandoned restart
+      // confirmation REPLACES it in this same node: the stored return focus
+      // and the inert bookkeeping stay exactly one level deep, so Continue
+      // still restores the layer the customer was actually on.
+      if (_safetyMode === null) {
+        _safetyReturnFocus = (document.activeElement && document.activeElement !== document.body)
+          ? document.activeElement : null;
+        inertBackgroundForSafety(root, backdrop);
+      }
+      _safetyMode = mode;
+      renderSafetyDialog();
+
+      backdrop.hidden = false;
+      root.hidden = false;
+      root.removeAttribute('inert');
+      root.setAttribute('aria-hidden', 'false');
+      if (document.body && document.body.classList) document.body.classList.add('safety-dialog-open');
+      if (!_safetyKeydownBound && root.addEventListener) {
+        root.addEventListener('keydown', safetyKeydown);
+        _safetyKeydownBound = true;
+      }
+      var title = document.getElementById('sessionSafetyTitle');
+      if (title && typeof title.focus === 'function') title.focus();
+      return true;
+    }
+
+    // opts.restoreFocus — false when the session behind the dialog is being
+    //                     torn down and its focus target no longer means
+    //                     anything.
+    // Idempotent: closing a closed dialog does nothing.
+    function closeSafetyDialog(opts) {
+      opts = opts || {};
+      var root = document.getElementById('sessionSafetyDialog');
+      var backdrop = document.getElementById('sessionSafetyBackdrop');
+      if (!root || _safetyMode === null) return false;
+      _safetyMode = null;
+
+      root.hidden = true;
+      root.setAttribute('inert', '');
+      root.setAttribute('aria-hidden', 'true');
+      // Clear the mode marker too: a closed dialog still advertising
+      // data-mode="timeout" is a lie about the session's state, and any future
+      // rule keyed on it would apply to a dialog that is not there.
+      root.removeAttribute('data-mode');
+      if (backdrop) backdrop.hidden = true;
+      if (document.body && document.body.classList) document.body.classList.remove('safety-dialog-open');
+      releaseSafetyInert();
+
+      var live = document.getElementById('sessionSafetyLive');
+      if (live) live.textContent = '';
+      var fill = document.getElementById('sessionSafetyMeterFill');
+      if (fill && fill.style) fill.style.width = '100%';
+      setSafetyText('sessionSafetyMeterText', '');
+
+      var target = _safetyReturnFocus;
+      _safetyReturnFocus = null;
+      if (opts.restoreFocus !== false) {
+        if (target && typeof target.focus === 'function') {
+          target.focus();
+        } else {
+          // No prior focus to restore — the ordinary case for a timeout, which
+          // fires precisely because nobody was interacting. Returning focus to
+          // BODY would drop a keyboard or screen-reader user at the top of the
+          // document with no context for what just happened, so land on the
+          // screen they were actually on. tabindex="-1" makes it programmatic
+          // only: no new Tab stop is created.
+          focusActiveScreen();
+        }
+      }
+      return true;
+    }
+
+    function focusActiveScreen() {
+      var screen = document.querySelector('.screen.active');
+      if (!screen || typeof screen.focus !== 'function') return;
+      if (screen.getAttribute && screen.getAttribute('tabindex') === null) {
+        screen.setAttribute('tabindex', '-1');
+      }
+      screen.focus();
+    }
+
+    function safetyKeydown(e) {
+      if (_safetyMode === null) return;
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        if (SAFETY_MODES[_safetyMode].escapeCancels) window.safetyDialogCancel();
+        return;
+      }
+      if (e.key !== 'Tab') return;
+      var root = document.getElementById('sessionSafetyDialog');
+      if (!root) return;
+      var list = Array.prototype.filter.call(
+        root.querySelectorAll('button, [href], #sessionSafetyTitle'),
+        function(el) { return el.offsetParent !== null && !el.disabled; });
+      if (!list.length) return;
+      var first = list[0], last = list[list.length - 1];
+      if (!root.contains(document.activeElement)) { e.preventDefault(); first.focus(); return; }
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+
+    // Cancel / Continue. Restores the exact prior layer and focus, then — for
+    // the timeout warning — grants a FULL new activity window. Repeatable.
+    window.safetyDialogCancel = function() {
+      var mode = _safetyMode;
+      if (mode === null) return;
+      closeSafetyDialog();
+      if (mode === 'timeout') idleContinue();
+      else idleActivityForce();
+    };
+
+    // Confirmed "Start new customer" — same authoritative wipe as the final
+    // timeout. Focus is NOT restored: the target belongs to the session being
+    // destroyed.
+    window.safetyDialogConfirm = function() {
+      if (_safetyMode === null) return;
+      closeSafetyDialog({ restoreFocus: false });
+      resetSessionState({ reason: 'confirmed_new_customer' });
+    };
+
+    // Restart is destructive, so it asks first. The browser's native confirm
+    // dialog is deliberately not used: it is untranslatable, unstyleable, and
+    // on a kiosk it blocks the page until someone touches it.
+    window.requestStartOver = function() {
+      openSafetyDialog('restart');
+    };
+
+    // ---- Deadline-based idle controller -----------------------------------
+    // active  — ordinary use; activity pushes the warning deadline forward
+    // warning — dialog open; ONLY an explicit choice or the grace deadline moves
+    // wiping — the wipe is running; nothing may re-enter
+    //
+    // Absolute Date.now() deadlines, not decrementing counters: a tablet that
+    // sleeps, backgrounds, or is restored from bfcache stops receiving timer
+    // callbacks entirely, and a counter would silently under-count that time.
+    // Reconciling the real clock against the deadline is correct in every one
+    // of those cases.
+    var IDLE_ACTIVE = 'active', IDLE_WARNING = 'warning', IDLE_WIPING = 'wiping';
+    var _idleState = IDLE_ACTIVE;
+    var _idleDeadline = 0;
+    var _graceDeadline = 0;
+    var _idleTicker = null;
+    var _idleFinalAnnounced = false;
+
+    function idleGraceRemaining() {
+      return _idleState === IDLE_WARNING ? Math.max(0, _graceDeadline - Date.now()) : SESSION_POLICY.graceMs;
+    }
+
+    // Ordinary activity. Only meaningful while active: an incidental mousemove,
+    // scroll or background event while the warning is open must not silently
+    // extend or dismiss it, because "someone brushed the tablet" is not
+    // "someone chose to keep this session".
+    function idleActivity() {
+      if (_idleState !== IDLE_ACTIVE) return;
+      _idleDeadline = Date.now() + SESSION_POLICY.idleWarningMs;
+    }
+
+    // Explicit activity that also returns the controller to `active` — used by
+    // the restart dialog's Cancel, which is a deliberate act.
+    function idleActivityForce() {
+      _idleState = IDLE_ACTIVE;
+      _idleDeadline = Date.now() + SESSION_POLICY.idleWarningMs;
+    }
+
+    function idleOpenWarning() {
+      if (_idleState === IDLE_WIPING) return;
+      _idleState = IDLE_WARNING;
+      _idleFinalAnnounced = false;
+      _graceDeadline = Date.now() + SESSION_POLICY.graceMs;
+      openSafetyDialog('timeout');
+      renderSafetyMeter(SESSION_POLICY.graceMs);
+    }
+
+    // Continue this session — repeatable, and always a FULL new window.
+    function idleContinue() {
+      _idleState = IDLE_ACTIVE;
+      _idleFinalAnnounced = false;
+      _graceDeadline = 0;
+      _idleDeadline = Date.now() + SESSION_POLICY.idleWarningMs;
+    }
+
+    function idleWipe() {
+      if (_idleState === IDLE_WIPING) return;
+      _idleState = IDLE_WIPING;
+      closeSafetyDialog({ restoreFocus: false });
+      resetSessionState({ reason: 'idle_timeout' });
+    }
+
+    function idleReconcile() {
+      var now = Date.now();
+      if (_idleState === IDLE_ACTIVE) {
+        // Ordinary inactivity NEVER jumps straight to a wipe, including after
+        // a long sleep in which both deadlines would have passed: the customer
+        // still gets the warning and a full grace period to recover.
+        if (now >= _idleDeadline) idleOpenWarning();
+        return;
+      }
+      if (_idleState !== IDLE_WARNING) return;
+      var remaining = Math.max(0, _graceDeadline - now);
+      renderSafetyMeter(remaining);
+      if (remaining <= 0) { idleWipe(); return; }
+      // One late reminder rather than a per-second live region. Continuous
+      // countdown announcements bury the actual choice under noise.
+      if (!_idleFinalAnnounced && remaining <= SESSION_POLICY.finalAnnounceMs) {
+        _idleFinalAnnounced = true;
+        var live = document.getElementById('sessionSafetyLive');
+        if (live) {
+          live.textContent = t('safety.timeout_final_warning',
+            { seconds: Math.max(0, Math.ceil(remaining / 1000)) });
+        }
+      }
+    }
+
+    function idleRestart() {
+      if (_idleTicker !== null) { clearInterval(_idleTicker); _idleTicker = null; }
+      _idleState = IDLE_ACTIVE;
+      _idleFinalAnnounced = false;
+      _graceDeadline = 0;
+      _idleDeadline = Date.now() + SESSION_POLICY.idleWarningMs;
+      _idleTicker = setInterval(idleReconcile, SESSION_POLICY.tickMs);
+    }
+
+    // showScreen() still notifies the controller, but the duration no longer
+    // varies by screen: the old handoff-only 5-minute special case was an
+    // unreviewed destructive policy sitting next to a 2-minute one. One
+    // central provisional policy now covers every screen.
+    window._setIdleScreen = function() { idleActivity(); };
+
+    ['touchstart', 'pointerdown', 'mousemove', 'click', 'keydown', 'scroll'].forEach(function(evt) {
+      document.addEventListener(evt, idleActivity, { passive: true });
+    });
+    document.addEventListener('visibilitychange', function() {
+      if (!document.hidden) idleReconcile();
+    });
+    window.addEventListener('pageshow', function() { idleReconcile(); });
+    idleRestart();
+
+    // ---- THE AUTHORITATIVE SESSION WIPE ------------------------------------
+    // Declarative inventories, so what gets cleared is reviewable as data and
+    // the regression suite can seed a sentinel into every entry and prove it
+    // is gone. Adding a customer-data surface means adding it to a list here.
+
+    // Contact fields. Cleared three ways: form.reset(), value, and
+    // defaultValue — a value written into the `value` ATTRIBUTE survives
+    // form.reset() and would be restored under the next customer.
+    var SESSION_CONTACT_INPUT_IDS = ['emailNameInput', 'emailInput', 'emailPhoneInput'];
+
+    // Generated customer content. Every one of these is rebuilt by its own
+    // screen's render path before it can be seen again.
+    var SESSION_CONTENT_IDS = [
+      'questionContainer', 'reviewList',
+      'profileName', 'profilePriorities', 'profileJourneySteps', 'profileMetaStrip',
+      'profileSecondary', 'profileCta',
+      'resultsHeadline', 'tierTabs', 'tierDescriptor', 'topPickContainer',
+      'supportingRow', 'resultsTrialFocus',
+      'drawerName', 'drawerDifferentiators', 'drawerTryPrompts', 'drawerPromotionDetail',
+      'compareCols', 'compareTraySlots',
+      'hf2PicksList', 'hf2AccessoriesList', 'hf2BriefWho', 'hf2BriefContext',
+      'hf2BriefProfile', 'hf2SleepSystemSection',
+      'emailPreview', 'emailRecap', 'accessoriesGrid'
+    ];
+
+    // Short customer-derived strings, including every announcement region that
+    // would otherwise still be holding the previous customer's last utterance.
+    var SESSION_TEXT_IDS = [
+      'dreamCodeValue', 'dreamCodePct', 'emailError', 'drawerNavLabel', 'accStatus',
+      'hf2FinancingStatus', 'financingSheetStatus', 'sessionSafetyLive',
+      'resultsRevealTitle', 'resultsRevealSubtitle',
+      'revealCertCode', 'revealCertPctNum', 'revealCertScope', 'revealCertExpiry',
+      'revealCertTerms'
+    ];
+
+    // Layers that can be open, mid-animation, or merely still marked open when
+    // the wipe fires. `hiddenAttr`/`display` close them; the class lists strip
+    // the open/visible/active markers that would otherwise leave a prior
+    // customer's layer in the accessibility tree over the next Welcome screen.
+    var SESSION_LAYERS = [
+      { id: 'privacyOverlay', remove: ['visible'] },
+      { id: 'compareModal', remove: ['visible'], display: 'none' },
+      { id: 'compareTray', display: 'none' },
+      { id: 'discountRevealOverlay', remove: ['fade-out'], add: ['hidden'], display: 'none' },
+      { id: 'revealCert', remove: ['is-visible'] },
+      { id: 'resultsRevealOverlay', remove: ['is-visible', 'is-quick'], display: 'none',
+        attrs: { 'aria-hidden': 'true', 'aria-busy': 'false' } },
+      { id: 'accCartBar', remove: ['visible'], display: 'none' },
+      { id: 'savedPicksBtn', remove: ['noct-picks-pill--visible'] },
+      { id: 'drawerSystemPrompt', remove: ['is-visible'] },
+      { id: 'emailConfirmation', remove: ['visible'] },
+      { id: 'emailCaptureView', display: '' },
+      { id: 'hf2DiscountBtn', remove: ['hf2-discount-btn--revealed'] },
+      { id: 'hf2RsaPanel', remove: ['is-open'] },
+      { id: 'profileScreen', remove: ['animate'] },
+      { id: 'dreamCodeBox', hiddenAttr: true, display: 'none' },
+      { id: 'financingSheet', hiddenAttr: true },
+      { id: 'financingSheetBackdrop', hiddenAttr: true }
+    ];
+
+    function wipeLayer(spec) {
+      var el = document.getElementById(spec.id);
+      if (!el) return;
+      if (spec.remove && el.classList) spec.remove.forEach(function(c) { el.classList.remove(c); });
+      if (spec.add && el.classList) spec.add.forEach(function(c) { el.classList.add(c); });
+      if (spec.attrs && el.setAttribute) {
+        Object.keys(spec.attrs).forEach(function(k) { el.setAttribute(k, spec.attrs[k]); });
+      }
+      if (spec.hiddenAttr === true) el.hidden = true;
+      if (typeof spec.display === 'string' && el.style) el.style.display = spec.display;
+    }
+
+    // Counts only. The previous build printed the full session summary —
+    // including every raw quiz answer — to a console that anyone can open on a
+    // showroom tablet. Aggregates keep the operational signal without leaving
+    // the departing customer's answers on screen.
+    function sessionSafeSummary(reason) {
+      try {
+        return {
+          reason: reason || 'unspecified',
+          sessionId: analytics.sessionId,
+          durationSec: (analytics.completedAt && analytics.startedAt)
+            ? Math.round((analytics.completedAt - analytics.startedAt) / 1000) : null,
+          answeredCount: Object.keys(analytics.answers || {}).length,
+          resultsViewed: !!analytics.resultsViewed,
+          accessoriesViewed: !!analytics.accessoriesViewed,
+          savedPickCount: (window._savedPicks || []).length,
+          sleepSystemItemCount: Object.keys(window._accCart || {}).length,
+          eventCount: (analytics.events || []).length
+        };
+      } catch (e) { return { reason: reason || 'unspecified' }; }
+    }
+
+    var _wipeInProgress = false;
+
+    // The single privacy wipe. Every destructive path — confirmed restart,
+    // final timeout, the email confirmation's Start New Customer, and the
+    // legacy window.startOver() — goes through this and only this.
+    //
+    // Re-entrant safe: a double tap, or a grace deadline expiring in the same
+    // frame as a confirmed restart, must not interleave two resets.
+    //
+    // Order matters. Everything that is EXPOSED is secured synchronously
+    // first — layers, timers, queued focus — so no prior-customer surface can
+    // be seen or reached at any point during the reset. Only then does the
+    // asynchronous English re-render run.
+    function resetSessionState(opts) {
+      if (_wipeInProgress) return window.__dfSession.languageSettled;
+      _wipeInProgress = true;
+      var reason = (opts && opts.reason) || 'unspecified';
+
+      try {
+        // --- 1. synchronous: secure every exposed layer -------------------
+        // The drawer first and unconditionally, exactly as before: it is the
+        // one layer that used to survive a reset, keep its focus trap over
+        // Welcome, and strand #resultsScreen inert for the rest of the
+        // tablet's life. Immediate (no slide-out over the next customer) and
+        // no focus restoration (the opener is being torn down).
+        if (typeof window.closeMattressDrawer === 'function') {
+          window.closeMattressDrawer({ immediate: true, restoreFocus: false });
+        }
+        closeSafetyDialog({ restoreFocus: false });
+        // Null the financing sheet's stored opener BEFORE closing it, or the
+        // close path pulls focus back into the torn-down session.
+        _financeReturnFocus = null;
+        if (typeof window.closeFinancingSheet === 'function') window.closeFinancingSheet();
+        window._compareOrigin = '';
+        if (typeof window.closeCompareModal === 'function') window.closeCompareModal();
+        SESSION_LAYERS.forEach(wipeLayer);
+
+        // --- 2. cancel every outstanding timer / queued frame --------------
+        cancelFinInterestPending();
+        clearFinInterestAnnouncement();
+        clearSessionTimers();
+        window._profileRevealInFlight = false;
+        window._resultsRevealInFlight = false;
+
+        // --- 3. quiz + results state --------------------------------------
+        currentQuestion = 0;
+        answers = {};
+        editingFromReview = false;
+        _resultsState = null;
+
+        // --- 4. product / picks / sleep-system state ----------------------
+        window._savedPicks = [];
+        window._mattressReactions = {};
+        window._favoriteMattressId = '';
+        window._compareSelected = [];
+        window._accCart = {};
+        window._finalistAccessoryPromptShown = false;
+        window._drawerOrder = [];
+        window._drawerCurrentIndex = 0;
+        window._currentDrawerMattressId = '';
+        // Per-customer derived match reasons, keyed by mattress id. Rebuilt by
+        // _renderResults() for the next customer.
+        window._drawerData = {};
+        window._sleepSystemState = {
+          activeStep: 'adjustability',
+          decisions: {},
+          demoPosition: '',
+          supportChoice: '',
+          pillowCandidateId: '',
+          pillowReaction: '',
+          pillowFeedback: '',
+          protectionGoal: ''
+        };
+        if (typeof window.updateCompareTray === 'function') window.updateCompareTray();
+        if (typeof window._updatePicksBadge === 'function') window._updatePicksBadge();
+
+        // --- 5. financing interest state ----------------------------------
+        // Module state only, exactly as before: financing has never been
+        // written to any persistent store.
+        financingInterest = 'undecided';
+        financingExplored = false;
+        _finModuleImpressionLogged = false;
+
+        // --- 6. contact values, three ways --------------------------------
+        var contactForm = document.getElementById('emailContactForm');
+        if (contactForm && typeof contactForm.reset === 'function') contactForm.reset();
+        SESSION_CONTACT_INPUT_IDS.forEach(function(id) {
+          var el = document.getElementById(id);
+          if (!el) return;
+          el.value = '';
+          el.defaultValue = '';
+          if (el.removeAttribute) el.removeAttribute('value');
+        });
+
+        // --- 7. generated content + short strings -------------------------
+        SESSION_CONTENT_IDS.forEach(function(id) {
+          var el = document.getElementById(id);
+          if (el) el.innerHTML = '';
+        });
+        SESSION_TEXT_IDS.forEach(function(id) {
+          var el = document.getElementById(id);
+          if (el) el.textContent = '';
+        });
+        var sendBtn = document.getElementById('emailSendBtn');
+        if (sendBtn) {
+          if (sendBtn.classList) sendBtn.classList.remove('sending', 'sent');
+          if (sendBtn.style) sendBtn.style.display = '';
+          sendBtn.disabled = false;
+        }
+
+        // --- 8. analytics -------------------------------------------------
+        try {
+          analytics.log('session_ended', sessionSafeSummary(reason));
+        } catch (e) { console.warn('Analytics log failed:', e); }
+        analytics.startedAt = null;
+        analytics.completedAt = null;
+        analytics.answers = {};
+        analytics.resultsViewed = false;
+        analytics.tierViews = { gold: 0, silver: 0, bronze: 0 };
+        analytics.cardExpands = {};
+        analytics.accessoriesViewed = false;
+        analytics.topPick = null;
+        analytics.allMatches = [];
+        analytics.recommendedAccessories = [];
+        analytics.selectedAccessories = [];
+        analytics.profileName = null;
+        analytics.profileBrief = null;
+        analytics.profileBriefByLang = null;
+        analytics.trialFocus = [];
+        analytics.profileSubtitle = null;
+        analytics.profileSubtitleByLang = null;
+        analytics.events = [];
+        // Rotated LAST, once nothing from the previous session is still
+        // reachable through it.
+        analytics.sessionId = Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+
+        // --- 9. back to Welcome, focused, in English ----------------------
+        showScreen('welcomeScreen');
+        focusWelcomeEntry();
+        _langFocusHintId = null;
+        // switchLanguage() is asynchronous. The promise is published so the
+        // next customer's first interaction — and the regression suite — can
+        // wait for the fully-applied English state rather than assume it.
+        window.__dfSession.languageSettled = Promise.resolve(switchLanguage('en'))
+          .then(function() { focusWelcomeEntry(); return true; })
+          .catch(function() { return false; });
+
+        idleRestart();
+      } finally {
+        _wipeInProgress = false;
+      }
+      return window.__dfSession.languageSettled;
+    }
+
+    // Never BODY, never hidden content.
+    function focusWelcomeEntry() {
+      var start = document.getElementById('startBtn');
+      if (start && typeof start.focus === 'function') { start.focus(); return; }
+      var heading = document.getElementById('landingHeadlineMain');
+      if (heading && typeof heading.focus === 'function') heading.focus();
+    }
+
+    // Preserved for existing integrations and suites. Delegates — there is no
+    // second reset implementation to drift out of sync with.
+    window.startOver = function() {
+      return resetSessionState({ reason: 'start_over' });
+    };
+
+    // Test/inspection surface. Read-only state for the regression suite; the
+    // customer session itself never lives here.
+    window.__dfSession = window.__dfSession || {};
+    window.__dfSession.languageSettled = Promise.resolve(true);
+    window.__dfSession.policy = SESSION_POLICY;
+    window.__dfSession.reset = resetSessionState;
+    window.__dfSession.openSafety = openSafetyDialog;
+    window.__dfSession.closeSafety = closeSafetyDialog;
+    window.__dfSession.safetyKeydown = safetyKeydown;
+    window.__dfSession.renderSafety = renderSafetyDialog;
+    window.__dfSession.reconcile = idleReconcile;
+    window.__dfSession.activity = idleActivity;
+    window.__dfSession.restart = idleRestart;
+    window.__dfSession.sessionTimeout = sessionTimeout;
+    window.__dfSession.inspect = function() {
+      return {
+        state: _idleState,
+        mode: _safetyMode,
+        idleDeadline: _idleDeadline,
+        graceDeadline: _graceDeadline,
+        epoch: _sessionEpoch,
+        timers: _sessionTimers.length,
+        inerted: _safetyInerted.length,
+        finalAnnounced: _idleFinalAnnounced,
+        wiping: _wipeInProgress
       };
-      ['touchstart', 'mousemove', 'click', 'keydown', 'scroll'].forEach(evt => { document.addEventListener(evt, resetIdleTimer, { passive: true }); });
-      resetIdleTimer();
-    })();
+    };
+    // ==== GATE1B SESSION SAFETY :: END ======================================
 
 
 
@@ -16647,9 +17630,10 @@
         return;
       }
 
-      // Any "start over" / "restart" button
+      // Any "start over" / "restart" button. Destructive, so it asks first —
+      // the wipe itself only runs from the confirmation.
       var soBtn = e.target.closest('.js-start-over');
-      if (soBtn) { e.preventDefault(); window.startOver(); return; }
+      if (soBtn) { e.preventDefault(); window.requestStartOver(); return; }
 
       // Explicit details button — opens the drawer via the same helper as a card tap.
       var detailsBtn = e.target.closest('.noct-card-details');
@@ -16712,6 +17696,43 @@
     #privacyOverlay.visible { display:flex !important; }
   </style>
 
+  <!-- Shared restart / timeout safety dialog (Gate 1B).
+       ONE primitive with two modes, not two overlays: a timeout warning that
+       arrives over an abandoned restart confirmation reuses this same node,
+       so two dialogs can never stack and the focus/inert restore is always
+       exactly one level deep. Ships hidden + inert + aria-hidden so the
+       closed dialog is absent from both keyboard and accessibility
+       navigation. All copy is injected from the generic dictionaries by
+       renderSafetyDialog(); the English text below is only a no-JS
+       placeholder and is overwritten before the dialog is ever shown. -->
+  <div class="safety-backdrop" id="sessionSafetyBackdrop" hidden></div>
+  <div class="safety-dialog" id="sessionSafetyDialog" hidden inert aria-hidden="true"
+       role="alertdialog" aria-modal="true"
+       aria-labelledby="sessionSafetyTitle" aria-describedby="sessionSafetyBody">
+    <div class="safety-dialog__panel">
+      <h2 class="safety-dialog__title" id="sessionSafetyTitle" tabindex="-1">Start a new customer?</h2>
+      <p class="safety-dialog__body" id="sessionSafetyBody">This clears the current answers, mattress selections, and Sleep Plan.</p>
+      <!-- Honest remaining-time indicator. aria-hidden because it changes
+           every second: announcing that continuously would bury the actual
+           choice under live-region noise. The warning announces once when it
+           opens (role="alertdialog"), then once more near the end via
+           #sessionSafetyLive. -->
+      <div class="safety-dialog__meter" id="sessionSafetyMeter" hidden aria-hidden="true">
+        <div class="safety-dialog__meter-track">
+          <div class="safety-dialog__meter-fill" id="sessionSafetyMeterFill"></div>
+        </div>
+        <div class="safety-dialog__meter-text" id="sessionSafetyMeterText"></div>
+      </div>
+      <div class="safety-dialog__actions">
+        <button type="button" class="safety-dialog__btn safety-dialog__btn--keep" id="sessionSafetyCancel"
+          onclick="window.safetyDialogCancel()" ontouchend="event.preventDefault();window.safetyDialogCancel();">Keep this session</button>
+        <button type="button" class="safety-dialog__btn safety-dialog__btn--confirm" id="sessionSafetyConfirm"
+          onclick="window.safetyDialogConfirm()" ontouchend="event.preventDefault();window.safetyDialogConfirm();">Start new customer</button>
+      </div>
+      <div id="sessionSafetyLive" role="status" aria-live="polite" class="sr-only"></div>
+    </div>
+  </div>
+
   <!-- Data-load error overlay (kiosk staff-notify). Shown by showDataError() when
        core data/config fails to load or after startQuiz exhausts its retry cap.
        Inline bilingual copy is injected by showDataError() (no dict dependency). -->
@@ -16730,7 +17751,7 @@
     window._drawerOrder = []; // ordered list of mattress ids in current tier
     window._drawerCurrentIndex = 0;
 
-    window.openMattressDrawer = function(mattressId, orderList) {
+    window.openMattressDrawer = function(mattressId, orderList, opts) {
       var d = window._drawerData && window._drawerData[mattressId];
       if (!d) { console.warn('[Drawer] No data for', mattressId, window._drawerData); return; }
       var m = d.m;
@@ -16844,6 +17865,13 @@
         btn.classList.toggle('is-selected', (window._mattressReactions || {})[mattressId] === reaction);
       });
 
+      // opts.contentOnly — relocalise an ALREADY-OPEN drawer without touching
+      // the dialog lifecycle. A language switch must not re-run focus entry,
+      // re-capture the opener, or re-inert the background: the drawer is
+      // already open, and doing any of that would throw away the customer's
+      // focus position and corrupt the stored return-focus target.
+      if (opts && opts.contentOnly === true) return;
+
       document.getElementById('drawerScroll').scrollTop = 0;
       document.getElementById('drawerBackdrop').classList.add('open');
       drawer.classList.add('drawer-open');
@@ -16874,6 +17902,17 @@
         if (_drawerInertedScreen) _drawerInertedScreen.removeAttribute('inert');
         activeScreen.setAttribute('inert', '');
         _drawerInertedScreen = activeScreen;
+      }
+      // Gate 1B: the persistent utility bar is a SIBLING of the screens, so
+      // inerting the active screen no longer covers the whole background. A
+      // control left reachable outside an aria-modal dialog is exactly the
+      // containment gap this lifecycle exists to close. Tracked with a data
+      // marker rather than a module variable so the released set stays exact
+      // without widening the state the lifecycle carries.
+      var utilBar = document.getElementById('sessionUtility');
+      if (utilBar && !utilBar.hasAttribute('inert')) {
+        utilBar.setAttribute('inert', '');
+        utilBar.setAttribute('data-drawer-inerted', '');
       }
       if (!_drawerKeydownBound) {
         drawer.addEventListener('keydown', drawerKeydown);
@@ -16909,6 +17948,14 @@
       if (_drawerInertedScreen) {
         _drawerInertedScreen.removeAttribute('inert');
         _drawerInertedScreen = null;
+      }
+      // ...and the utility bar, but ONLY if this lifecycle is what inerted it.
+      // The safety dialog inerts it too; releasing something we did not take is
+      // how a background layer ends up interactive underneath a live modal.
+      var utilRelease = document.getElementById('sessionUtility');
+      if (utilRelease && utilRelease.hasAttribute('data-drawer-inerted')) {
+        utilRelease.removeAttribute('inert');
+        utilRelease.removeAttribute('data-drawer-inerted');
       }
 
       var wasOpen = _drawerWasOpen;
@@ -16979,6 +18026,26 @@
       btn.textContent = expanded
         ? (es ? 'Ocultar consejos' : 'Hide tips')
         : (es ? 'Ver consejos' : 'Show tips');
+    };
+
+    // Relocalise an open drawer in place (Gate 1B language switch). No-op when
+    // the drawer is closed.
+    //
+    // Openness is read from the `drawer-open` class, NOT from `inert`. Since
+    // Gate 1B, `inert` on the drawer means either "closed" OR "still open but
+    // backgrounded by the safety dialog". Keying on it made a language switch
+    // taken from an open timeout warning skip the drawer entirely — and
+    // Continue then restored a drawer still rendered in the previous language,
+    // which is exactly the stale-copy state the switch is supposed to prevent.
+    // `drawer-open` is set by the open path and cleared by every close path,
+    // so it cannot resurrect a dismissed dialog either.
+    window.rerenderOpenMattressDrawer = function() {
+      var drawer = document.getElementById('mattressDrawer');
+      if (!drawer || !drawer.classList.contains('drawer-open')) return false;
+      var id = window._currentDrawerMattressId;
+      if (!id || !(window._drawerData && window._drawerData[id])) return false;
+      window.openMattressDrawer(id, null, { contentOnly: true });
+      return true;
     };
 
     window.drawerNav = function(direction) {
