@@ -55,10 +55,57 @@ in the actual kiosk browser, in both English and Spanish.
 
 ### Managed deployment (MDM — Jamf, Intune, Apple Configurator)
 
-- [ ] Restriction payload: disable AutoFill (`allowSafariAutoFill = false`)
-- [ ] Restriction payload: disable password AutoFill and Keychain sync
+Two **separate** Restrictions-payload keys are needed. They cover different
+mechanisms, and neither implies the other.
+
+- [ ] Restrictions payload: `safariAllowAutoFill = false`
+      — turns off **Safari AutoFill** in its entirety: passwords, contact
+      information, and credit cards, and it stops Safari AutoFill drawing on
+      the Keychain. This is the key that covers the name / email / phone
+      fields on the Save-your-Sleep-Brief screen. Apple's summary of the
+      effect: *"Safari doesn't keep track of what users enter in web forms."*
+- [ ] Restrictions payload: `allowPasswordAutoFill = false`
+      — separately suppresses the **system password-AutoFill prompt**,
+      including prompts offered by third-party credential providers. Apple's
+      wording: *"Users can't use AutoFill Passwords, and no prompt is shown to
+      pick a saved password from iCloud Keychain or third-party password
+      managers."*
 - [ ] Web content filter limited to the kiosk origin
 - [ ] Single-app mode pinned to the kiosk browser
+
+**Supervision is required.** Apple lists both restrictions under *device
+management restrictions for supervised devices*: Safari AutoFill requires
+supervision from iOS 13 / iPadOS 13.1 onward, and Password AutoFill from
+iOS 12 / iPadOS 13.1. An unsupervised device cannot be restricted this way at
+all, which makes Automated Device Enrolment (or Apple Configurator) a
+prerequisite for this deployment, not an optional extra.
+
+**What is still left open.** `allowPasswordAutoFill = false` suppresses the
+*system prompt* from third-party credential providers — it does not remove or
+disable the password-manager app itself. Someone can still open that app
+directly and copy a value out of it by hand. Blocking direct access to such
+apps is a separate kiosk / device-policy responsibility (app removal, an
+allowlist, or single-app mode), and it is not covered by either restriction
+above.
+
+Sources (Apple primary documentation):
+
+- [Device management restrictions for iPhone and iPad](https://support.apple.com/guide/deployment/restrictions-for-iphone-and-ipad-dep0f7dd3d8/web)
+  — the Safari AutoFill and Password AutoFill effect wording and supervision/OS matrix quoted above.
+- [Device management restrictions for supervised Apple devices](https://support.apple.com/guide/deployment/restrictions-for-supervised-devices-dep6b5ae23e9/web)
+  — confirms both sit in the supervised-only set.
+- [Restrictions payload — Apple Developer Documentation](https://developer.apple.com/documentation/devicemanagement/restrictions)
+  — the authoritative list of payload key names.
+
+**Key-name caveat, stated honestly.** Apple's two support-guide pages give the
+*behaviour* and the supervision/OS matrix but not the payload key strings; the
+Developer Documentation page that carries the key strings renders its property
+table via JavaScript and could not be read non-interactively during this
+change. `safariAllowAutoFill` is the key this project now specifies (the
+previous `allowSafariAutoFill` was wrong — that spelling appears in no Apple
+source found). Confirm both key spellings against your MDM vendor's payload
+reference before shipping a profile; the behavioural requirements above are
+what matter and are quoted directly from Apple.
 
 ### Android / Chrome kiosk
 

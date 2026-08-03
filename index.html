@@ -11835,7 +11835,7 @@
           return;
         }
         console.warn('[DreamFinder] Mattress data not loaded yet — retrying in 400ms (attempt ' + _startQuizAttempts + '/25)');
-        setTimeout(window.startQuiz, 400);
+        sessionTimeout(window.startQuiz, 400);
         return;
       }
       _startQuizAttempts = 0;
@@ -12713,7 +12713,7 @@
       }
 
       showScreen('profileScreen');
-      requestAnimationFrame(function() {
+      sessionFrame(function() {
         var heading = document.getElementById('profileName');
         if (!heading) return;
         try {
@@ -12743,15 +12743,104 @@
       profileSubtitle: null,
       profileSubtitleByLang: null,
       events: [],
+      // DEFAULT-DENY diagnostics, per EVENT (Gate 1B amendment, round 2).
+      //
+      // This runs on a shared showroom tablet whose console anyone can open,
+      // and browser console history is not something the session wipe can
+      // retract - so nothing sensitive may be written there in the first
+      // place. Clearing the console afterwards is not a fix; it is a cosmetic
+      // that leaves the data in devtools' retained heap.
+      //
+      // The FIRST attempt at this was a global key allowlist, and it leaked:
+      // an approved key is not a licence to print an arbitrary string, so
+      // log('x', { reason: <customer value> }) sailed straight through. The
+      // contract is therefore per-event and value-validated:
+      //
+      //   * an event NOT in EVENT_FIELDS keeps only its name and timestamp;
+      //   * a field not listed for its own event is dropped;
+      //   * a listed field must ALSO satisfy its validator - a number, a
+      //     boolean, or a string drawn from a closed enum. No free strings.
+      //
+      // So a new event added tomorrow is silent by construction, and an
+      // existing event cannot be widened by passing a new value shape.
+      //
+      // Deliberately absent: name, email, phone, answers, mattressId, itemId,
+      // accessoryId, topPick, allMatches, reaction/feedback, goal/choice/
+      // position, the snoring/reflux/backPain health booleans (a boolean is
+      // still a raw quiz answer), financing `interest` (the customer's own
+      // stated position), and sessionId (an identifier that correlates a
+      // customer across the whole log with no consumer that needs it).
+      ENUMS: {
+        tier: ['gold', 'silver', 'bronze'],
+        lang: ['en', 'es'],
+        step: ['adjustability', 'support', 'pillow', 'protection'],
+        decisionStatus: ['already', 'confirm', 'demo', 'later', 'open', 'selected'],
+        placement: ['results', 'drawer', 'handoff', 'sheet', 'mexico', 'sleep-system'],
+        layout: ['tablet', 'desktop'],
+        endReason: ['start_over', 'confirmed_new_customer', 'idle_timeout',
+                    'results_viewed', 'unspecified']
+      },
+      EVENT_FIELDS: (function() {
+        var counts = { durationSec: 'num', answeredCount: 'num', savedPickCount: 'num',
+                       sleepSystemItemCount: 'num', eventCount: 'num',
+                       resultsViewed: 'bool', accessoriesViewed: 'bool',
+                       reason: 'endReason' };
+        var fin = { placement: 'placement', lang: 'lang', layout: 'layout' };
+        return {
+          quiz_started: {}, results_viewed: {}, email_capture_viewed: {},
+          email_previewed: {}, email_submitted: {},
+          adj_hero_continue_tapped: {}, adjustable_base_hero_shown: {},
+          finalist_sleep_system_prompt_shown: {},
+          finalist_sleep_system_prompt_dismissed: {},
+          finalist_sleep_system_prompt_opened: {},
+          adjustability_position_viewed: {}, support_setup_selected: {},
+          pillow_fit_recorded: {}, pillow_candidate_changed: {},
+          protection_goal_selected: {}, accessories_next_step: {},
+          session_summary: counts, session_ended: counts,
+          tier_view: { tier: 'tier' },
+          save_pick_toggle: { tier: 'tier', saved: 'bool' },
+          accessories_viewed: { itemsShown: 'num', entryStep: 'step' },
+          sleep_system_item_selected: { step: 'step' },
+          sleep_system_item_removed: { step: 'step' },
+          sleep_system_step_viewed: { step: 'step' },
+          sleep_system_decision_recorded: { step: 'step', status: 'decisionStatus' },
+          financing_interest_changed: fin, financing_followup_requested: fin,
+          official_financing_link_click: fin, mexico_financing_details_open: fin,
+          finance_details_open: fin, finance_module_impression: fin
+        };
+      })(),
+      redact: function(event, data) {
+        var fields = Object.prototype.hasOwnProperty.call(this.EVENT_FIELDS, event)
+          ? this.EVENT_FIELDS[event] : null;
+        var out = {};
+        var dropped = 0;
+        var enums = this.ENUMS;
+        if (data && typeof data === 'object') {
+          Object.keys(data).forEach(function(k) {
+            var rule = (fields && Object.prototype.hasOwnProperty.call(fields, k))
+              ? fields[k] : null;
+            if (rule) {
+              var v = data[k];
+              if (rule === 'num' && typeof v === 'number' && isFinite(v)) { out[k] = v; return; }
+              if (rule === 'bool' && typeof v === 'boolean') { out[k] = v; return; }
+              if (enums[rule] && typeof v === 'string' && enums[rule].indexOf(v) !== -1) {
+                out[k] = v; return;
+              }
+            }
+            dropped++;   // unknown event, unlisted field, or invalid value
+          });
+        }
+        // A count, never the keys: a key name can itself be customer-derived.
+        if (dropped) out._dropped = dropped;
+        return out;
+      },
       log: function(event, data) {
-        // Shallow-copy data and drop `events` to avoid circular refs when
-        // callers pass getSummary() (which contains this.events).
-        const safe = data ? { ...data } : {};
-        delete safe.events;
+        const safe = this.redact(event, data);
         const entry = { ts: Date.now(), event, ...safe };
         if (!this.events) this.events = [];
         this.events.push(entry);
-        console.log('[DreamFinder]', event, data || '');
+        // The redacted copy is what reaches the console, never `data`.
+        console.log('[DreamFinder]', event, safe);
       },
       getSummary: function() {
         return {
@@ -13482,8 +13571,8 @@
       }
       if (termsEl) termsEl.textContent = pass.terms;
 
-      requestAnimationFrame(function() {
-        requestAnimationFrame(function() {
+      sessionFrame(function() {
+        sessionFrame(function() {
           cert.classList.add('is-visible');
         });
       });
@@ -13516,8 +13605,8 @@
       elements.overlay.style.display = 'flex';
       elements.overlay.setAttribute('aria-hidden', 'false');
       elements.overlay.setAttribute('aria-busy', 'true');
-      requestAnimationFrame(function() {
-        requestAnimationFrame(function() {
+      sessionFrame(function() {
+        sessionFrame(function() {
           elements.overlay.classList.add('is-visible');
         });
       });
@@ -13674,8 +13763,11 @@
       // reveal button (see renderHf2DiscountButton). The Savings Pass stays
       // unrevealed until the RSA chooses to reveal it during the close.
 
-      // Log full analytics summary
-      analytics.log('session_summary', analytics.getSummary());
+      // Event name preserved; the payload is the same safe aggregate the
+      // session-end log uses. getSummary() still exists for any consumer that
+      // needs the full picture in memory, but it is no longer handed to a
+      // logger that prints and retains it.
+      analytics.log('session_summary', sessionSafeSummary('results_viewed'));
     }
 
     // ----- EMAIL RESULTS -----
@@ -14133,28 +14225,51 @@
           method: 'POST',
           body: JSON.stringify(payload)
         })
-        .then(function(res) {
-          if (!res.ok) throw new Error('HTTP ' + res.status);
+        // Every continuation is sessionBound: an in-flight send cannot be
+        // taken back, and by the time a wipe runs the promise may already be
+        // settled with its continuation queued. Success, server-declared
+        // failure, malformed response and rejection therefore each validate
+        // the epoch at callback time and no-op against a torn-down session.
+        .then(sessionBound(function(res) {
+          // Shaped so the classifier below can validate it, rather than a free
+          // string that would fall through as unclassified.
+          if (!res.ok) throw new Error('http_' + res.status);
           return res.json();
-        })
-        .then(function(data) {
+        }))
+        .then(sessionBound(function(data) {
           if (data && data.success) {
             showSuccess();
           } else {
-            var msg = (data && data.error) ? data.error : 'Email could not be sent.';
-            console.error('[DreamFinder] GAS returned failure:', msg);
+            // NEVER the server's own error string. It is outside our control
+            // and the request we just sent it contained the customer's name,
+            // email and phone — an endpoint that echoes any part of its input
+            // back would put them straight into the console. Only a value
+            // drawn from a closed set is logged.
+            console.error('[DreamFinder] send failed:', emailFailureCode(data && data.error));
             showError(currentLang === 'es' ? 'No pudimos enviar tu correo — por favor pide a tu especialista de sueño que lo reenvíe.' : 'We couldn\'t send your email — please ask your sales specialist to re-send it.');
           }
-        })
-        .catch(function(err) {
-          console.error('[DreamFinder] Email error:', err);
+        }))
+        .catch(sessionBound(function(err) {
+          // NEVER the Error object. A JSON parse failure embeds a fragment of
+          // the response body in .message, and a rejected request can carry
+          // the full request URL — neither is safe to print verbatim.
+          console.error('[DreamFinder] send failed:', transportFailureCode(err));
           showError(currentLang === 'es' ? 'Error de red. Por favor intenta de nuevo.' : 'Network error. Please try again.');
-        });
+        }));
       } else {
         // Presentation mode: demonstrate the completed email experience without
         // claiming that a live retailer email service is connected.
-        console.log('[DreamFinder] Email payload (simulated):', JSON.stringify(payload, null, 2));
-        setTimeout(showSuccess, 1200);
+        // The payload carries name, email, phone, the sleep profile and every
+        // match — printing it put a complete customer record in the console of
+        // a shared tablet, and preview mode is this deployment's ONLY path
+        // (gasUrl is blank). Shape only, never contents.
+        console.log('[DreamFinder] Email preview (payload suppressed):',
+          { fields: Object.keys(payload).length, matches: (payload.allMatches || []).length,
+            accessories: (payload.accessories || []).length, lang: payload.lang });
+        // Session-scoped: without this the completion callback fired ~1.2s
+        // later and rewrote the send button, capture view and confirmation
+        // over whatever session was on screen by then.
+        sessionTimeout(showSuccess, 1200);
       }
     };
 
@@ -14213,6 +14328,12 @@
       return accessoryData;
     }
 
+    // UNREACHABLE during a customer session (Gate 1B amendment, class C).
+    // Superseded by window.showAccessories -> renderSleepSystem(); this function
+    // has no call site anywhere in the app, which tests/session_async_check.mjs
+    // pins. Its raw staggered-reveal timers are therefore left exactly as they
+    // are: converting dead animation code would be churn, and reviving it would
+    // fail the no-call-site assertion before the timers could ever fire.
     window._legacyShowAccessories = function() {
       const position = answers.sleep_position || '';
       const temp = answers.temperature || '';
@@ -15850,14 +15971,14 @@
       _resultsState.activeTier = tier;
       _renderResults();
       showScreen('resultsScreen');
-      setTimeout(function() {
+      sessionTimeout(function() {
         var card = document.querySelector(
           '.noct-toppick[data-id="' + mattressId + '"], .noct-support-card[data-id="' + mattressId + '"]'
         );
         if (!card) return;
         card.scrollIntoView({ behavior: 'smooth', block: 'center' });
         card.classList.add('review-return-highlight');
-        setTimeout(function() { card.classList.remove('review-return-highlight'); }, 1400);
+        sessionTimeout(function() { card.classList.remove('review-return-highlight'); }, 1400);
       }, 80);
     };
 
@@ -16862,6 +16983,7 @@
     // — or wipe — the next customer's session.
     var _sessionEpoch = 1;
     var _sessionTimers = [];
+    var _sessionFrames = [];
 
     function sessionTimeout(fn, ms) {
       var epoch = _sessionEpoch;
@@ -16875,9 +16997,42 @@
       return id;
     }
 
+    // Same contract for animation frames. A queued frame survives a wipe that
+    // happens in the same task, so registration alone is not enough here
+    // either.
+    function sessionFrame(fn) {
+      var epoch = _sessionEpoch;
+      var id = requestAnimationFrame(function() {
+        var i = _sessionFrames.indexOf(id);
+        if (i !== -1) _sessionFrames.splice(i, 1);
+        if (epoch !== _sessionEpoch) return;
+        fn();
+      });
+      _sessionFrames.push(id);
+      return id;
+    }
+
+    // Callback-time validation for work that CANNOT be pre-registered: promise
+    // continuations. An in-flight fetch cannot be "cancelled" in any way that
+    // helps here — by the time the wipe runs the promise may already be
+    // settled and its continuation queued as a microtask, past the reach of
+    // any registry. Aborting the request is defence in depth at best; the
+    // continuation itself has to fail closed. Wrap it and it does.
+    function sessionBound(fn) {
+      var epoch = _sessionEpoch;
+      return function() {
+        if (epoch !== _sessionEpoch) return undefined;
+        return fn.apply(this, arguments);
+      };
+    }
+
     function clearSessionTimers() {
       _sessionTimers.forEach(function(id) { clearTimeout(id); });
       _sessionTimers = [];
+      _sessionFrames.forEach(function(id) { cancelAnimationFrame(id); });
+      _sessionFrames = [];
+      // Bumped LAST: every already-dispatched callback and every continuation
+      // closed over the old epoch is rejected from here on.
       _sessionEpoch++;
     }
 
@@ -17278,11 +17433,37 @@
     // including every raw quiz answer — to a console that anyone can open on a
     // showroom tablet. Aggregates keep the operational signal without leaving
     // the departing customer's answers on screen.
+    // ---- send-failure classification -------------------------------------
+    // Both of these exist so a diagnostic can say WHAT went wrong without
+    // echoing anything the server, the network stack, or a malformed response
+    // put in front of us. The customer-facing message stays localized and
+    // generic and is chosen by the caller, not by these.
+    var EMAIL_FAILURE_CODES = [
+      'quota', 'auth', 'rate_limit', 'invalid_recipient', 'server_error', 'disabled'
+    ];
+    function emailFailureCode(raw) {
+      return (typeof raw === 'string' && EMAIL_FAILURE_CODES.indexOf(raw) !== -1)
+        ? raw : 'unclassified';
+    }
+    function transportFailureCode(err) {
+      // Our own thrown shape, validated rather than trusted.
+      var msg = (err && typeof err.message === 'string') ? err.message : '';
+      if (/^http_\d{3}$/.test(msg)) return msg;
+      var name = (err && typeof err.name === 'string') ? err.name : '';
+      if (name === 'SyntaxError') return 'malformed_response';   // .message holds response text
+      if (name === 'TypeError') return 'network';                // fetch rejection
+      if (name === 'AbortError') return 'aborted';
+      return 'unclassified';
+    }
+
     function sessionSafeSummary(reason) {
       try {
         return {
           reason: reason || 'unspecified',
-          sessionId: analytics.sessionId,
+          // sessionId deliberately absent: it correlates every diagnostic line
+          // back to one customer's visit, and no consumer needs it — nothing
+          // reads analytics.events, it is not in the GAS payload, and Code.gs
+          // never sees it. Dropped here as well as in EVENT_FIELDS.
           durationSec: (analytics.completedAt && analytics.startedAt)
             ? Math.round((analytics.completedAt - analytics.startedAt) / 1000) : null,
           answeredCount: Object.keys(analytics.answers || {}).length,
@@ -17332,7 +17513,15 @@
         if (typeof window.closeCompareModal === 'function') window.closeCompareModal();
         SESSION_LAYERS.forEach(wipeLayer);
 
-        // --- 2. cancel every outstanding timer / queued frame --------------
+        // --- 2. retire SESSION-OWNED delayed work ---------------------------
+        // Precisely: everything scheduled through sessionTimeout()/
+        // sessionFrame(), plus the two financing timers cancelled by name
+        // below. NOT "every timer in the app" — the boot starfield frame, the
+        // idle controller's own ticker and the dead legacy accessories reveal
+        // are deliberately outside this set, classified and pinned by
+        // tests/session_async_check.mjs. Promise continuations cannot be
+        // cancelled at all once dispatched; they fail closed on the epoch
+        // instead (see sessionBound).
         cancelFinInterestPending();
         clearFinInterestAnnouncement();
         clearSessionTimers();
@@ -17438,9 +17627,11 @@
         // switchLanguage() is asynchronous. The promise is published so the
         // next customer's first interaction — and the regression suite — can
         // wait for the fully-applied English state rather than assume it.
+        // Bound to the epoch this wipe established, so back-to-back wipes
+        // cannot let the first one's late focus land inside the second's.
         window.__dfSession.languageSettled = Promise.resolve(switchLanguage('en'))
-          .then(function() { focusWelcomeEntry(); return true; })
-          .catch(function() { return false; });
+          .then(sessionBound(function() { focusWelcomeEntry(); return true; }))
+          .catch(sessionBound(function() { return false; }));
 
         idleRestart();
       } finally {
@@ -17753,7 +17944,10 @@
 
     window.openMattressDrawer = function(mattressId, orderList, opts) {
       var d = window._drawerData && window._drawerData[mattressId];
-      if (!d) { console.warn('[Drawer] No data for', mattressId, window._drawerData); return; }
+      // The id is the lookup key this diagnostic is about; the _drawerData map
+      // it used to dump alongside it holds every personalised match reason for
+      // the current customer, so that is gone.
+      if (!d) { console.warn('[Drawer] No data for', mattressId); return; }
       var m = d.m;
 
       // Update order if provided

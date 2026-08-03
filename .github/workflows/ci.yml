@@ -246,6 +246,15 @@ jobs:
       - name: session safety
         run: node tests/session_safety_check.mjs
 
+      # Gate 1B amendment. Executes the real send-completion path (preview
+      # timer + live fetch continuations) against a fake clock and deferred
+      # promises, and the real analytics.log() against sentinel contact values
+      # and quiz answers. Also owns the CLASSIFICATION of every raw
+      # setTimeout / setInterval / requestAnimationFrame in index.html, so new
+      # unclassified delayed work cannot enter the customer journey silently.
+      - name: session async + diagnostic privacy
+        run: node tests/session_async_check.mjs
+
       # ---- Tree hygiene -----------------------------------------------------
       - name: git diff --check (whitespace and conflict markers)
         run: |
