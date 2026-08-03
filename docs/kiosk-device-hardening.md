@@ -1,23 +1,29 @@
 # Kiosk device hardening — contact autofill and browser persistence
 
-**Status: BLOCKING for showroom use, and partially verified.** The
-application-level work in Gate 1B is complete and verified. Safari Contact
-AutoFill has now been identified and suppressed on the test iPad, but the full
-device-level checklist below is not complete and cannot be completed from the
+**Status: BLOCKING for showroom use. Application/session paths verified; device
+deployment not.** The application-level work in Gate 1B is complete and
+verified. On the test iPad, Safari Contact AutoFill was identified as the
+observed mechanism and suppressed, and every session-ending route the
+application owns was individually checked clean. What has **not** been done is
+the device deployment: no supervised MDM payload has been applied or proven, and
+several checklist controls remain unverified. That work cannot be done from the
 codebase.
 
-The gap is no longer theoretical. **On a real iPad, iOS offered an autofill
+The gap was never theoretical. **On a real iPad, iOS offered an autofill
 suggestion in the contact fields** on the deployed build, with every mitigation
 `index.html` can express already in place — see *Observed on hardware* below.
-That proves the markup is insufficient on this hardware. A follow-up test found
-that the observed suggestion disappeared when **Use Contact Info** was turned
-off, identifying Safari Contact AutoFill as the observed mechanism and proving
-that setting effective for this suggestion on this iPad. A separate
-fresh-session test offered none of the fake contact values entered in the prior
-test session. These results do not complete the remaining device checklist or
-prove every session-ending path; see *Observed on hardware* below.
+That proves the markup is insufficient on this hardware. A follow-up found the
+suggestion disappeared once **Use Contact Info** was turned off, identifying
+Safari Contact AutoFill as the observed mechanism and proving that setting
+effective for that suggestion on this iPad. Each session-ending route —
+Restart, timeout to expiry, validation error, saved confirmation, and
+background/wake — was then exercised individually, and each left a fresh session
+with empty fields offering none of the prior values.
 
-The prerequisite does not depend on settling that question. An unmanaged
+Those results verify the application/session boundary on this hardware. They do
+**not** complete the device checklist, and they do not prove either supervised
+Restrictions payload: the controls used were manual Settings toggles on an
+unsupervised device, which anyone reaching Settings can undo. An unmanaged
 autofill surface on a tablet handed between members of the public may expose
 personal information, so:
 
@@ -63,6 +69,13 @@ above being present — see *Observed on hardware*.
 
 Verification target: the deployed preview URL on the actual mounted hardware,
 in the actual kiosk browser, in both English and Spanish.
+
+**This checklist is per mounted showroom tablet and is deliberately still
+unticked**, including *Use Contact Info: OFF*. That setting was turned off on
+the **test** iPad during the 2026-08-03 runs recorded further down, which is how
+the mechanism was identified — but no showroom tablet has been configured, and a
+result on a test device does not tick a box for a device that does not exist
+yet. Tick these per device, at deployment time.
 
 ### iPad / iOS (Safari or Guided Access kiosk)
 
@@ -156,9 +169,12 @@ anyway.
 
 ### Follow-up verification on the same iPad
 
-Later on 2026-08-03, Blake performed two follow-up checks against the live site
-serving `main` at merge commit `6d0b816`. Its `index.html` was byte-identical to
-the previously tested `b373b98` application build:
+Later on 2026-08-03, Blake performed the follow-up checks against the live site
+serving `main`. **Provenance:** `index.html` is byte-identical at `b373b98`,
+`6d0b816` and `d9cdd3a` — SHA-256 `f0613dd1…`, 745,071 bytes — because the only
+changes between those commits were to this document. Every observation below
+therefore exercised the same application build, whichever of those commits was
+live at the time.
 
 1. **Mechanism and control.** After Settings → Safari → AutoFill → **Use Contact
    Info** was turned off and the kiosk was reloaded, tapping the Name field no
@@ -168,9 +184,34 @@ the previously tested `b373b98` application build:
 2. **Fresh-session carryover.** With **Use Contact Info** still off, Blake
    entered clearly fake name, email and phone values, ended the test session,
    began a fresh session, and tapped each contact field. None of the prior test
-   values was offered. The particular session-ending route used for this check
-   was not recorded, so the timeout, Restart, validation-error and
-   saved-confirmation routes remain separate checklist items below.
+   values was offered. The particular session-ending route used for this initial
+   check was not recorded — the routes below were then exercised individually.
+
+### Session-ending routes — each exercised individually
+
+Also on 2026-08-03, with **Use Contact Info** off, Blake ran each session-ending
+route separately. The pattern in every case: enter clearly fake name, email and
+phone values, end the session by that specific route, begin a fresh session,
+then tap each contact field.
+
+| Route | How the session was ended | Result on the fresh session |
+|---|---|---|
+| **Restart** | Restart selected and confirmed | fields empty; none of the prior values offered |
+| **Timeout to expiry** | idle until the warning appeared, then **no action taken** through the grace period, so the automatic reset ran | fields empty; none of the prior values offered |
+| **Validation error** | invalid email entered to trigger the validation state, then Restart confirmed | fields empty; **no stale validation error**; none of the prior values offered |
+| **Saved confirmation** | valid fake details carried through to the saved-confirmation screen, then Restart confirmed | fields empty; none of the prior values offered |
+| **Background / wake** | Safari backgrounded for longer than the full policy window, then reopened | reopening showed the **warning**, not a silent erase; Restart then selected; the subsequent session was clean and offered no prior values |
+
+The background/wake case is worth calling out separately: it confirms the
+deadline reconciliation behaves as designed — a tablet that sleeps past both
+deadlines still surfaces the warning rather than wiping silently, which is the
+recoverable behaviour Gate 1B was built for.
+
+**Predictive keyboard.** Settings → General → Keyboard → **Predictive** was off
+during these runs, and the final fresh-session check offered none of the
+distinctive prior values. That is the extent of the evidence: it was **not**
+separately observed whether the QuickType strip was visually absent, so the
+strip's own behaviour is recorded as unverified below.
 
 ### What this does and does not establish
 
@@ -179,14 +220,30 @@ Every attribute the page can carry was present, and iOS still offered a
 suggestion. Application markup alone does not suppress iOS autofill here.
 
 **Established by the follow-up.** The observed mechanism was Safari Contact
-AutoFill, and turning off **Use Contact Info** suppressed it on this iPad. No
-fake value from the prior test session was offered in the tested fresh-session
-path.
+AutoFill, and turning off **Use Contact Info** suppressed it on this iPad.
 
-**Not established — and important not to overstate.** One clean path does not
-prove that carryover is impossible through every session-ending route or every
-iOS suggestion mechanism. The remaining controls and paths below have not all
-been applied and verified.
+**Established by the per-route runs.** Every session-ending route the
+application itself owns — Restart, timeout to expiry, validation-error state,
+saved-confirmation state, and background/wake — was exercised individually on
+this iPad with **Use Contact Info** off, and in each case the fresh session
+started with empty fields and offered none of the prior values. Background/wake
+additionally showed the warning rather than a silent erase.
+
+**Not established — and important not to overstate.** This is verification of
+the *application/session paths* on *this iPad*, under *one* device
+configuration. It does not prove carryover is impossible under every condition:
+a different iOS version, a device signed into a personal Apple ID, a restored
+backup, a third-party keyboard or a password manager could each behave
+differently, and none of those was tested.
+
+Critically, **no supervised MDM payload was deployed or proven.** The controls
+exercised were manual Settings toggles on an unsupervised device. A Settings
+toggle is not equivalent to `safariAllowAutoFill` or `allowPasswordAutoFill`
+enforced through a Restrictions payload: the toggle can be changed by anyone who
+reaches Settings, which is exactly what supervision and single-app mode exist to
+prevent. Guided Access is likewise not a supervised MDM profile. Both payload
+keys, supervision via ADE or Apple Configurator, the clear-site-data routine and
+the remaining deployment controls stay unchecked.
 
 The operative conclusion, bounded to the evidence:
 
@@ -202,37 +259,61 @@ from a previous customer, the device owner, or the keyboard's prediction model.
 The checklist below therefore stands as a gate on showroom use, not as a
 recommendation.
 
-**Closed for the observed suggestion.** Safari Contact AutoFill was the
-responsible mechanism, and **Use Contact Info: OFF** was proven effective for
-it on this iPad.
+**Closed for the application/session paths on this iPad.** Safari Contact
+AutoFill was the responsible mechanism, **Use Contact Info: OFF** suppressed it,
+and every session-ending route the application owns was individually verified to
+leave a clean fresh session.
 
-**Still open for the full device boundary.** Password AutoFill, QuickType,
-kiosk/single-app enforcement and the other checklist controls have not all been
-applied and verified. The showroom-use gate therefore remains blocking.
+**Still open for the device boundary — the gate remains BLOCKING.** No
+supervised MDM payload was deployed or proven; neither `safariAllowAutoFill` nor
+`allowPasswordAutoFill` has been enforced through a Restrictions profile.
+Password AutoFill, the QuickType strip's own behaviour, credit-card AutoFill,
+Apple ID state, kiosk/single-app enforcement and the clear-site-data routine
+remain unverified. Showroom use stays blocked until those are completed.
 
 ## Real-device verification status
 
-Safari Contact AutoFill and one fresh-session carryover path are answered. The
-following are not, and none can be asserted by the automated suites, which run
-in Node against a DOM shim.
+The application/session paths are answered on this iPad. The device-deployment
+controls are not, and none of this can be asserted by the automated suites,
+which run in Node against a DOM shim.
+
+**Verified — application/session paths (2026-08-03, this iPad, Use Contact Info off):**
 
 - [x] Turn off **Use Contact Info**, reload, and confirm the originally observed
       suggestion stops on the test iPad
-- [x] With that setting off, enter fake name, email and phone values; end the
-      test session; begin a fresh session; confirm tapping each contact field
-      offers none of the prior test values (session-ending route not recorded)
-- [ ] Complete the remaining device checklist and confirm no suggestion appears
-      from Password AutoFill, QuickType or another source
-- [ ] Repeat the fresh-session carryover check specifically via session timeout
-      to expiry; confirm all three fields are empty afterwards and no prior test
-      value is offered
-- [ ] Repeat via Restart → confirm
-- [ ] Repeat from the validation-error state and from the saved-confirmation
-      state
-- [ ] Background the app for longer than the full policy window, reopen, and
-      confirm the reconciliation shows the warning (not a silent wipe)
-- [ ] Confirm the keyboard's predictive strip offers nothing from the previous
-      customer
+- [x] Enter fake name, email and phone values; end the session; begin a fresh
+      session; confirm none of the prior values is offered (initial check —
+      session-ending route not recorded)
+- [x] Repeat specifically via **session timeout to expiry** — warning appeared,
+      no action taken through the grace period, automatic reset ran; fresh
+      session had empty fields and offered none of the prior values
+- [x] Repeat via **Restart** → confirmed; fresh session clean
+- [x] Repeat from the **validation-error** state (invalid email, then Restart
+      confirmed) — fresh session had empty fields, no stale validation error,
+      and offered none of the prior values
+- [x] Repeat from the **saved-confirmation** state (valid fake details carried
+      to the confirmation screen, then Restart confirmed) — fresh session clean
+- [x] Background the app for longer than the full policy window, reopen, and
+      confirm the reconciliation shows the **warning** (not a silent wipe) —
+      confirmed; Restart then gave a clean session
+
+**Not verified — device deployment controls:**
+
+- [ ] Deploy and prove the supervised Restrictions payload `safariAllowAutoFill
+      = false` (a manual Settings toggle is **not** equivalent — see above)
+- [ ] Deploy and prove the supervised Restrictions payload
+      `allowPasswordAutoFill = false`
+- [ ] Supervise the device via Automated Device Enrolment or Apple Configurator
+      (prerequisite for both keys above)
+- [ ] Confirm the keyboard's predictive strip is itself absent / offers nothing
+      from the previous customer. Predictive was off during the runs above and
+      no prior value was offered, but the strip was not separately observed
+- [ ] Confirm no suggestion appears from Password AutoFill or another mechanism
+      once the payloads are in place
+- [ ] Credit Cards AutoFill off; no personal Apple ID / iCloud account signed in
+- [ ] Kiosk / single-app enforcement (Guided Access is **not** a supervised MDM
+      profile)
+- [ ] **Clear History and Website Data** as part of the opening routine
 
 ## Session timing policy — provisional
 
