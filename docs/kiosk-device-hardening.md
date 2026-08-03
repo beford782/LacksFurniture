@@ -1,11 +1,16 @@
 # Kiosk device hardening — contact autofill and browser persistence
 
-**Status: UNRESOLVED operational requirement.** The application-level work in
-Gate 1B is complete and verified. The device-level work below is not, and it
-cannot be done from the codebase. Until a mounted showroom tablet has been
-configured and verified against this checklist, one customer's contact details
-can still be offered to the next customer by the browser itself, regardless of
-what `index.html` does.
+**Status: CONFIRMED REQUIRED, and still unresolved.** The application-level work
+in Gate 1B is complete and verified. The device-level work below is not, and it
+cannot be done from the codebase.
+
+This is no longer a theoretical concern. **It has now been observed on a real
+iPad that iOS still offers autofill in the contact fields**, on the deployed
+build, with every mitigation `index.html` can express already in place — see
+*Observed on hardware* below. Until a mounted showroom tablet is configured and
+verified against this checklist, one customer's contact details can still be
+offered to the next customer by the browser itself, regardless of what
+`index.html` does.
 
 ## Why HTML is not enough
 
@@ -34,7 +39,9 @@ That is the whole of what HTML can express, and it is **not** a guarantee:
 
 Do not report the application change as "autofill is disabled". Report it as
 "the page no longer requests autofill"; the device policy below is what
-actually disables it.
+actually disables it. This distinction was confirmed on hardware on 2026-08-03
+— see *Observed on hardware* — where iOS offered suggestions despite every one
+of the attributes above being present.
 
 ## Device checklist — must be completed and verified per mounted tablet
 
@@ -114,12 +121,48 @@ what matter and are quoted directly from Apple.
 - [ ] No Google account signed in to the browser profile
 - [ ] Chrome device policy in kiosk / pinned-app mode
 
-## Real-device verification — NOT YET PERFORMED
+## Observed on hardware — autofill still appears
 
-The following must be observed on the mounted hardware before this is
-considered closed. None of it can be asserted by the automated suites, which
-run in Node against a DOM shim.
+**Date:** 2026-08-03. **Observer:** Blake, by hand on an iPad in Safari.
+**Build:** the deployed preview at `https://beford782.github.io/LacksFurniture/`,
+serving merge commit `b373b98` (Gate 1B), byte-verified identical to `main`.
 
+**Result: iOS offered autofill in the contact fields.**
+
+This is the expected outcome, and it is the point. At the time of the
+observation the page already carried everything HTML can express:
+`autocomplete="off"` on the form and on all three inputs, no `given-name` /
+`email` / `tel` tokens, `autocorrect="off"`, `spellcheck="false"`, and the
+`data-lpignore` / `data-1p-ignore` / `data-form-type="other"` password-manager
+opt-outs. iOS offered suggestions anyway.
+
+So the conclusion the rest of this document rests on is now evidence, not
+inference:
+
+> The application cannot switch autofill off. Only device policy can. A
+> showroom tablet running this kiosk **without** the restrictions below will
+> leak one customer's contact details to the next, and no change to
+> `index.html` will fix that.
+
+Treat the MDM / Settings checklist above as a hard prerequisite for putting
+this on a floor, not as a recommendation.
+
+Still to pin down: **which** mechanism produced the suggestions — Safari
+AutoFill drawing on the contact card (`safariAllowAutoFill`), the password
+AutoFill prompt (`allowPasswordAutoFill`), or the QuickType predictive strip
+(Settings → General → Keyboard → Predictive). All three are covered by the
+checklist, so the required actions do not change; identifying the mechanism
+only lets the checklist say which single setting is load-bearing on this
+hardware.
+
+## Remaining real-device verification — NOT YET PERFORMED
+
+The autofill question above is answered. The following are not, and none can
+be asserted by the automated suites, which run in Node against a DOM shim.
+
+- [ ] Re-run the autofill observation **after** applying the restrictions in the
+      checklist above, and confirm the suggestions stop. Until that is done, the
+      restrictions are believed-effective, not proven-effective, on this hardware
 - [ ] Enter a name, email and phone; trigger the session timeout to expiry;
       confirm all three fields are empty afterwards **and** that tapping into
       each field offers no suggestion from the previous entry
