@@ -12769,7 +12769,8 @@
       // position, the snoring/reflux/backPain health booleans (a boolean is
       // still a raw quiz answer), financing `interest` (the customer's own
       // stated position), and sessionId (an identifier that correlates a
-      // customer across the whole log with no consumer that needs it).
+      // customer across the whole log with no consumer that needs it — it is
+      // kept in memory only to seed generateSavingsPass()).
       ENUMS: {
         tier: ['gold', 'silver', 'bronze'],
         lang: ['en', 'es'],
@@ -14134,7 +14135,12 @@
         passExpiration: savingsPass ? savingsPass.expirationLabel : '',
         passScope: savingsPass ? savingsPass.scope : '',
         passTerms: savingsPass ? savingsPass.terms : '',
-        sessionId: analytics.sessionId,
+        // sessionId is NOT sent. Code.gs never read it, so it bought nothing,
+        // and shipping it attached a stable per-visit correlator to the one
+        // record that also carries the customer's name, email and phone. The
+        // identifier still exists in memory, where generateSavingsPass() needs
+        // it to derive the Pass code deterministically — the derived code
+        // travels as `dreamCode` above, the raw identifier does not.
         rsa: _rsa,
         lang: currentLang,
         allMatches: allMatches,
@@ -17177,18 +17183,44 @@
       var target = _safetyReturnFocus;
       _safetyReturnFocus = null;
       if (opts.restoreFocus !== false) {
-        if (target && typeof target.focus === 'function') {
+        if (isFocusRestorable(target)) {
           target.focus();
         } else {
-          // No prior focus to restore — the ordinary case for a timeout, which
-          // fires precisely because nobody was interacting. Returning focus to
-          // BODY would drop a keyboard or screen-reader user at the top of the
-          // document with no context for what just happened, so land on the
-          // screen they were actually on. tabindex="-1" makes it programmatic
-          // only: no new Tab stop is created.
+          // Either there was no prior focus — the ordinary case for a timeout,
+          // which fires precisely because nobody was interacting — or the
+          // opener stopped being reachable while the dialog was open. Returning
+          // focus to BODY would drop a keyboard or screen-reader user at the
+          // top of the document with no context for what just happened, so land
+          // on the screen they were actually on. tabindex="-1" makes it
+          // programmatic only: no new Tab stop is created.
           focusActiveScreen();
         }
       }
+      return true;
+    }
+
+    // A stored opener is only worth restoring if it is still THERE. Work that
+    // is legitimately allowed to finish during the customer's own session can
+    // detach or hide it while the dialog is open: the send-completion path
+    // hides #emailCaptureView, and that container holds the "Start over"
+    // button which is one of the controls that opens this dialog. Calling
+    // focus() on a hidden or detached element does nothing and silently leaves
+    // focus on BODY — the exact outcome the fallback exists to prevent — so the
+    // target is checked rather than trusted.
+    function isFocusRestorable(el) {
+      if (!el || typeof el.focus !== 'function') return false;
+      if (el.isConnected === false) return false;
+      if (document.contains && !document.contains(el)) return false;
+      if (el.hidden === true || el.disabled === true) return false;
+      // offsetParent is null for display:none. It is also null for a
+      // position:fixed element, so fall back to the box before giving up.
+      if (el.offsetParent === null) {
+        var rect = (typeof el.getBoundingClientRect === 'function')
+          ? el.getBoundingClientRect() : null;
+        if (!rect || (!rect.width && !rect.height)) return false;
+      }
+      // An ancestor hidden or inerted after the dialog opened.
+      if (typeof el.closest === 'function' && el.closest('[hidden], [inert]')) return false;
       return true;
     }
 
@@ -17478,9 +17510,12 @@
         return {
           reason: reason || 'unspecified',
           // sessionId deliberately absent: it correlates every diagnostic line
-          // back to one customer's visit, and no consumer needs it — nothing
-          // reads analytics.events, it is not in the GAS payload, and Code.gs
-          // never sees it. Dropped here as well as in EVENT_FIELDS.
+          // back to one customer's visit and nothing consumes it — nothing
+          // reads analytics.events, and Code.gs has no reference to it. It was
+          // also being shipped in the GAS payload until this was noticed; that
+          // has been removed too, so the identifier now stays in memory purely
+          // to seed generateSavingsPass(). Dropped here as well as in
+          // EVENT_FIELDS.
           durationSec: (analytics.completedAt && analytics.startedAt)
             ? Math.round((analytics.completedAt - analytics.startedAt) / 1000) : null,
           answeredCount: Object.keys(analytics.answers || {}).length,

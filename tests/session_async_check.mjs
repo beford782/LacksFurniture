@@ -29,6 +29,7 @@ import { fileURLToPath } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const html = readFileSync(join(root, "index.html"), "utf8");
+const kioskDoc = readFileSync(join(root, "docs", "kiosk-device-hardening.md"), "utf8");
 
 let passed = 0, failed = 0;
 function check(label, cond) {
@@ -695,6 +696,27 @@ section("diagnostic privacy: identifiers and customer state are not diagnostics"
   check("the reason code still survives", s.includes("idle_timeout"));
   check("sessionSafeSummary no longer builds a sessionId at all",
     !/function sessionSafeSummary[\s\S]{0,900}?sessionId: analytics\.sessionId/.test(html));
+
+  // REGRESSION: the identifier was also being SHIPPED. It rode in the GAS
+  // payload — the one record that already carries name, email and phone — as a
+  // stable per-visit correlator that Code.gs never read. Diagnostics and the
+  // outbound payload are two different surfaces; suppressing it in one while
+  // sending it in the other is not a privacy boundary.
+  const payloadSrc = (html.match(/const payload = \{[\s\S]*?\n      \};/) || [""])[0];
+  check("the GAS payload was located", payloadSrc.length > 0);
+  check("REGRESSION: sessionId is not sent in the GAS payload",
+    !/^\s*sessionId:/m.test(payloadSrc));
+  check("no payload field carries the raw session identifier",
+    !/analytics\.sessionId/.test(payloadSrc));
+  // ...and Code.gs genuinely has no use for it, which is why removing it is safe.
+  check("Code.gs makes no reference to sessionId",
+    !/sessionId/.test(readFileSync(join(root, "Code.gs"), "utf8")));
+  // The in-memory identifier must SURVIVE: the Savings Pass code is derived
+  // from it, and that derived code is what legitimately travels.
+  check("the in-memory session identifier is still used to seed the Savings Pass",
+    /generateSavingsPass\(analytics\.sessionId\)/.test(html));
+  check("the derived Pass code is still what travels in the payload",
+    /dreamCode: savingsPass \? savingsPass\.code : ''/.test(payloadSrc));
 }
 {
   // Reactions and selections are named in the requirement explicitly.
@@ -765,6 +787,30 @@ section("diagnostic privacy: static sweep of the shipped source");
   const codeOnly = html.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^[ \t]*\/\/.*$/gm, "");
   check("console.clear() is NOT used as a privacy mechanism",
     !/console\.clear\s*\(/.test(codeOnly));
+  // Storage: the CUSTOMER session must stay memory-only, but the app does
+  // legitimately persist staff/device state (the salesperson selection and
+  // roster). Assert the boundary rather than a blanket "nothing is stored",
+  // which the tree would contradict — and which the hardening doc used to say.
+  {
+    // A window after each call site, not a paren-balanced match: the key is
+    // built as 'dreamfinder.' + getHf2StoreKey() + '.deviceRsa', so anything
+    // stopping at the first ')' truncates before the part that identifies it.
+    const storageSites = [...codeOnly.matchAll(/localStorage\.\w+\(/g)]
+      .map((m) => codeOnly.slice(m.index, m.index + 140));
+    const offSpec = storageSites.filter((e) => !/deviceRsa|rsaList/.test(e));
+    check(`localStorage is used only for staff/device state (${storageSites.length} call sites)${offSpec.length ? " — UNEXPECTED: " + offSpec.map((e) => e.slice(0, 70)).join(" | ") : ""}`,
+      storageSites.length > 0 && offSpec.length === 0);
+    check("no customer field is persisted",
+      !storageSites.some((e) => /(email|phone|answers|picks|cart|reaction|firstName)/i.test(e)));
+    check("sessionStorage / IndexedDB / cookies are unused",
+      !/sessionStorage|indexedDB|document\.cookie/.test(codeOnly));
+    check("the hardening doc names the persisted keys rather than denying storage",
+      /deviceRsa/.test(kioskDoc) && /rsaList/.test(kioskDoc));
+    check("the hardening doc no longer claims nothing is written to localStorage",
+      !/writes nothing to `localStorage`/.test(kioskDoc));
+    check("the hardening doc still states the customer session is memory-only",
+      /No customer data is persisted/.test(kioskDoc));
+  }
   check("redaction is scoped per EVENT, not by a global key list",
     /EVENT_FIELDS:/.test(html) && !/SAFE_KEYS:/.test(html));
   check("an unlisted event yields no fields at all",

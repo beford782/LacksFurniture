@@ -157,10 +157,36 @@ or `[::1]`. It is deliberately **not** a URL parameter and **not** backed by any
 form of browser storage, so no production kiosk URL and no persisted value can
 shorten a customer's privacy timeout.
 
-## What the kiosk never stores
+## What the kiosk stores, and what it does not
 
-The customer session is memory-only. The app writes nothing to `localStorage`,
+**No customer data is persisted.** The customer session — quiz answers, saved
+mattresses, reactions, Sleep System decisions, financing interest, and the
+name / email / phone on the Save-your-Sleep-Brief screen — lives only in memory
+for the length of one visit. None of it is written to `localStorage`,
 `sessionStorage`, IndexedDB or cookies, and `gasUrl` is blank in this
-deployment, so no contact value leaves the device. A wipe therefore has nothing
-to erase beyond the DOM and in-memory state — which is exactly what makes the
-browser's own persistence, covered above, the remaining exposure.
+deployment, so no contact value leaves the device at all. A session wipe
+therefore has nothing to erase beyond the DOM and in-memory state.
+
+**Two things are persisted, and neither is customer data.** The app does use
+`localStorage`, for the salesperson selection this device remembers between
+customers:
+
+| Key | Contents | Why it survives a wipe |
+|---|---|---|
+| `dreamfinder.<store>.deviceRsa` | the salesperson currently selected on this tablet | it is a property of the *device*, not the customer; re-picking it for every customer would be the wrong behaviour |
+| `dreamfinder.<store>.rsaList` | the roster of salespeople added on this tablet | same — staff roster, maintained per device |
+
+Both are **staff/device state**, deliberately outside the session wipe, and are
+left exactly as they are by this work. They do hold employee names, so they are
+personal data in the ordinary sense even though they are not customer data:
+treat the tablet's browser profile as containing staff names, and clear site
+data when a device is reassigned or decommissioned.
+
+The distinction matters for the sections above: clearing site data as part of
+an opening routine also clears the salesperson selection, so staff will need to
+re-pick it. That is a deliberate trade-off to note in the opening checklist,
+not a defect.
+
+What remains the real exposure is the browser's own contact/password
+persistence, covered earlier — which the app cannot reach and device policy
+must disable.

@@ -617,6 +617,55 @@ check("Results is not left inert", !resultsScreen.hasAttribute("inert"));
 check("the drawer the customer had open is still open", drawer.classList.contains("drawer-open"));
 check("the financing sheet the customer had open is still open", sheet.hidden === false);
 check("focus is restored to the EXACT pre-warning element", doc.activeElement === drawerBtn);
+// An opener that stops being reachable while the dialog is open. Work that is
+// legitimately allowed to finish during the customer's OWN session can hide it
+// — the send-completion path sets #emailCaptureView to display:none, and that
+// container holds the "Start over" button which opens this very dialog.
+// focus() on a hidden or detached element does nothing and leaves focus on
+// BODY, so the target has to be checked, not trusted.
+{
+  const hiddenOpener = makeEl("emailStartOver");
+  const activeScreen = el("emailScreen");
+  activeScreen.classList.add("active");
+  el("resultsScreen").classList.remove("active");
+
+  // (a) still reachable -> exact restoration, unchanged behaviour
+  hiddenOpener.focus();
+  S.openSafety("restart");
+  win.safetyDialogCancel();
+  check("a reachable opener still receives exact focus", doc.activeElement === hiddenOpener);
+
+  // (b) hidden by same-session async completion while the dialog was open
+  hiddenOpener.focus();
+  S.openSafety("restart");
+  hiddenOpener.offsetParent = null;          // its container went display:none
+  win.safetyDialogCancel();
+  check("REGRESSION: a hidden opener does NOT receive focus", doc.activeElement !== hiddenOpener);
+  check("focus lands on a valid visible destination instead",
+    doc.activeElement === activeScreen);
+
+  // (c) detached from the document entirely
+  const detached = makeEl("detachedOpener");
+  detached.focus();
+  S.openSafety("restart");
+  detached.isConnected = false;
+  win.safetyDialogCancel();
+  check("REGRESSION: a detached opener does NOT receive focus", doc.activeElement !== detached);
+  check("focus again lands on the active screen", doc.activeElement === activeScreen);
+
+  // (d) hidden via the hidden attribute
+  const attrHidden = makeEl("attrHiddenOpener");
+  attrHidden.focus();
+  S.openSafety("restart");
+  attrHidden.hidden = true;
+  win.safetyDialogCancel();
+  check("REGRESSION: an opener with [hidden] does NOT receive focus", doc.activeElement !== attrHidden);
+  check("focus still lands on the active screen", doc.activeElement === activeScreen);
+
+  activeScreen.classList.remove("active");
+  el("resultsScreen").classList.add("active");
+}
+
 // The ordinary timeout case: nobody was interacting, so there IS no prior
 // focus. Falling back to BODY would drop a keyboard/AT user at the top of the
 // document with no context for the dialog that just closed.
