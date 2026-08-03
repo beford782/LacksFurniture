@@ -43,10 +43,17 @@ record: `docs/financing-verification-2026-07-30.md`.
 
 ## Day-to-day workflow
 
-1. Edit `data/mattresses.csv` (and optionally `data/mattresses-es.csv` for Spanish translations).
-2. Run `.\build-data.ps1` to regenerate `data/mattresses.json`.
-3. Commit both the CSV and the JSON together.
-4. Push to `main`. GitHub Pages picks up within 1–2 minutes.
+1. Create a feature branch from the latest `main`.
+2. Make the change and run the relevant local checks. If mattress CSV data
+   changed, run `.\build-data.ps1` and commit the regenerated JSON with it.
+3. Push the feature branch and open a pull request targeting `main`.
+4. Wait for the required `Full suite (18 checks)` status check to pass.
+5. Merge the pull request. GitHub Pages deploys the merged `main` branch
+   automatically; verify the Pages `build` and `deploy` checks afterward.
+
+Direct and force pushes to `main` are not part of the release workflow. See
+[`docs/deployment-workflow.md`](docs/deployment-workflow.md) for branch-protection
+settings, verification, and recovery guidance.
 
 For local development, serve the repo over HTTP — `python -m http.server 8000`
 or VS Code Live Server. `file://` is not supported (CORS + domain lock).
@@ -54,6 +61,7 @@ or VS Code Live Server. `file://` is not supported (CORS + domain lock).
 ## Deeper docs
 
 - **Project guide & development conventions** — see [`CLAUDE.md`](CLAUDE.md). Covers app architecture, scoring engine, white-label boundaries, iPad/touch rules, image format conventions, and what not to touch without checking first.
+- **Deployment and branch governance** — see [`docs/deployment-workflow.md`](docs/deployment-workflow.md). Covers the PR-only release path, required CI check, branch-protection settings, and post-merge Pages verification.
 - **New retailer onboarding** — see [`onboarding/Build_Runbook.md`](onboarding/Build_Runbook.md). A workbook → validated bundle pipeline: generate the blank template (`tools/create_template.py`), fill it, then `tools/convert_store_data.py` emits the data bundle (store-config, mattresses, accessories, manifest, normalized images, allowed-hosts). The retailer-facing template and the converter share one schema (`tools/workbook_schema.py`).
 
 ## Updating the Apps Script backend
