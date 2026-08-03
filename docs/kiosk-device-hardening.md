@@ -1,24 +1,30 @@
 # Kiosk device hardening — contact autofill and browser persistence
 
-**Status: BLOCKING for showroom use, and unresolved.** The application-level
-work in Gate 1B is complete and verified. The device-level work below is not,
-and it cannot be done from the codebase.
+**Status: BLOCKING for showroom use, and partially verified.** The
+application-level work in Gate 1B is complete and verified. Safari Contact
+AutoFill has now been identified and suppressed on the test iPad, but the full
+device-level checklist below is not complete and cannot be completed from the
+codebase.
 
 The gap is no longer theoretical. **On a real iPad, iOS offered an autofill
 suggestion in the contact fields** on the deployed build, with every mitigation
 `index.html` can express already in place — see *Observed on hardware* below.
-That proves the markup is insufficient on this hardware. It does **not** prove
-that a previous customer's entered value was offered to the next; the mechanism
-was not identified and that scenario remains untested.
+That proves the markup is insufficient on this hardware. A follow-up test found
+that the observed suggestion disappeared when **Use Contact Info** was turned
+off, identifying Safari Contact AutoFill as the observed mechanism and proving
+that setting effective for this suggestion on this iPad. A separate
+fresh-session test offered none of the fake contact values entered in the prior
+test session. These results do not complete the remaining device checklist or
+prove every session-ending path; see *Observed on hardware* below.
 
 The prerequisite does not depend on settling that question. An unmanaged
 autofill surface on a tablet handed between members of the public may expose
 personal information, so:
 
-> Application markup did not suppress iOS autofill suggestions on this
-> hardware. Because those suggestions may expose personal information on a
-> shared tablet, the kiosk must not be approved for showroom use until the
-> device-level restrictions are applied and verified.
+> Application markup did not suppress Safari Contact AutoFill on this hardware.
+> Turning off **Use Contact Info** suppressed the observed suggestion, but the
+> kiosk must not be approved for showroom use until the remaining device-level
+> restrictions are applied and verified.
 
 ## Why HTML is not enough
 
@@ -46,11 +52,12 @@ That is the whole of what HTML can express, and it is **not** a guarantee:
   navigation independently of page script.
 
 Do not report the application change as "autofill is disabled". Report it as
-"the page no longer requests autofill"; suppressing autofill is what the device
-policy below is intended to do, and that intent is not yet verified on this
-hardware. The insufficiency of the markup, however, is: on 2026-08-03 iOS
-offered a suggestion despite every one of the attributes above being present —
-see *Observed on hardware*.
+"the page no longer requests autofill". On this iPad, turning off **Use Contact
+Info** was verified to suppress the observed Safari Contact AutoFill
+suggestion. That result does not verify the other controls or mechanisms in the
+device policy below. The insufficiency of the markup is independently proven:
+on 2026-08-03 iOS offered a suggestion despite every one of the attributes
+above being present — see *Observed on hardware*.
 
 ## Device checklist — must be completed and verified per mounted tablet
 
@@ -130,7 +137,7 @@ what matter and are quoted directly from Apple.
 - [ ] No Google account signed in to the browser profile
 - [ ] Chrome device policy in kiosk / pinned-app mode
 
-## Observed on hardware — autofill still appears
+## Observed on hardware — Safari Contact AutoFill identified and suppressed
 
 **Date:** 2026-08-03. **Observer:** Blake, by hand on an iPad in Safari.
 **Build:** the deployed preview at `https://beford782.github.io/LacksFurniture/`,
@@ -138,7 +145,7 @@ serving merge commit `b373b98` (Gate 1B), byte-verified identical to `main`.
 
 **Result: iOS offered an autofill suggestion in the contact fields.** The
 content of the suggestion, and which iOS feature produced it, were not
-recorded.
+recorded during the initial observation.
 
 At the time of the observation the page already carried everything HTML can
 express: `autocomplete="off"` on the form and on all three inputs, no
@@ -147,25 +154,46 @@ express: `autocomplete="off"` on the form and on all three inputs, no
 `data-form-type="other"` password-manager opt-outs. iOS offered a suggestion
 anyway.
 
+### Follow-up verification on the same iPad
+
+Later on 2026-08-03, Blake performed two follow-up checks against the live site
+serving `main` at merge commit `6d0b816`. Its `index.html` was byte-identical to
+the previously tested `b373b98` application build:
+
+1. **Mechanism and control.** After Settings → Safari → AutoFill → **Use Contact
+   Info** was turned off and the kiosk was reloaded, tapping the Name field no
+   longer produced the observed suggestion. This identifies Safari Contact
+   AutoFill as the source of the original observation and proves this setting
+   effective for that suggestion on this iPad.
+2. **Fresh-session carryover.** With **Use Contact Info** still off, Blake
+   entered clearly fake name, email and phone values, ended the test session,
+   began a fresh session, and tapped each contact field. None of the prior test
+   values was offered. The particular session-ending route used for this check
+   was not recorded, so the timeout, Restart, validation-error and
+   saved-confirmation routes remain separate checklist items below.
+
 ### What this does and does not establish
 
 **Established.** The HTML-level mitigations were insufficient on this hardware.
 Every attribute the page can carry was present, and iOS still offered a
 suggestion. Application markup alone does not suppress iOS autofill here.
 
-**Not established — and important not to overstate.** The observation does
-**not** show that a previous customer's entered value was offered to the next
-one. The mechanism was not identified, and at least one candidate involves no
-prior-customer data at all: the suggestion may simply have been the device
-owner's own contact card. Customer-to-customer carryover is an untested
-scenario, not a demonstrated one.
+**Established by the follow-up.** The observed mechanism was Safari Contact
+AutoFill, and turning off **Use Contact Info** suppressed it on this iPad. No
+fake value from the prior test session was offered in the tested fresh-session
+path.
+
+**Not established — and important not to overstate.** One clean path does not
+prove that carryover is impossible through every session-ending route or every
+iOS suggestion mechanism. The remaining controls and paths below have not all
+been applied and verified.
 
 The operative conclusion, bounded to the evidence:
 
-> Application markup did not suppress iOS autofill suggestions on this
-> hardware. Because those suggestions may expose personal information on a
-> shared tablet, the kiosk must not be approved for showroom use until the
-> device-level restrictions are applied and verified.
+> Application markup did not suppress Safari Contact AutoFill on this hardware.
+> Turning off **Use Contact Info** suppressed the observed suggestion, but the
+> kiosk must not be approved for showroom use until the remaining device-level
+> restrictions are applied and verified.
 
 That is a hard prerequisite, and it does not depend on the carryover question
 being settled. An unmanaged autofill surface on a device handed between members
@@ -174,29 +202,30 @@ from a previous customer, the device owner, or the keyboard's prediction model.
 The checklist below therefore stands as a gate on showroom use, not as a
 recommendation.
 
-**Open — the responsible mechanism is unidentified.** The candidates are Safari
-AutoFill drawing on the contact card (`safariAllowAutoFill`), the password
-AutoFill prompt (`allowPasswordAutoFill`), or the QuickType predictive strip
-(Settings → General → Keyboard → Predictive). All three are covered by the
-checklist, so the required actions do not change; identifying the mechanism
-would only let the checklist say which single setting is load-bearing on this
-hardware.
+**Closed for the observed suggestion.** Safari Contact AutoFill was the
+responsible mechanism, and **Use Contact Info: OFF** was proven effective for
+it on this iPad.
 
-**Open — the restrictions are unproven.** Nobody has yet applied them and
-repeated this test. Until that is done they are believed-effective, not
-proven-effective, on this hardware.
+**Still open for the full device boundary.** Password AutoFill, QuickType,
+kiosk/single-app enforcement and the other checklist controls have not all been
+applied and verified. The showroom-use gate therefore remains blocking.
 
-## Remaining real-device verification — NOT YET PERFORMED
+## Real-device verification status
 
-The autofill question above is answered. The following are not, and none can
-be asserted by the automated suites, which run in Node against a DOM shim.
+Safari Contact AutoFill and one fresh-session carryover path are answered. The
+following are not, and none can be asserted by the automated suites, which run
+in Node against a DOM shim.
 
-- [ ] Re-run the autofill observation **after** applying the restrictions in the
-      checklist above, and confirm the suggestions stop. Until that is done, the
-      restrictions are believed-effective, not proven-effective, on this hardware
-- [ ] Enter a name, email and phone; trigger the session timeout to expiry;
-      confirm all three fields are empty afterwards **and** that tapping into
-      each field offers no suggestion from the previous entry
+- [x] Turn off **Use Contact Info**, reload, and confirm the originally observed
+      suggestion stops on the test iPad
+- [x] With that setting off, enter fake name, email and phone values; end the
+      test session; begin a fresh session; confirm tapping each contact field
+      offers none of the prior test values (session-ending route not recorded)
+- [ ] Complete the remaining device checklist and confirm no suggestion appears
+      from Password AutoFill, QuickType or another source
+- [ ] Repeat the fresh-session carryover check specifically via session timeout
+      to expiry; confirm all three fields are empty afterwards and no prior test
+      value is offered
 - [ ] Repeat via Restart → confirm
 - [ ] Repeat from the validation-error state and from the saved-confirmation
       state
