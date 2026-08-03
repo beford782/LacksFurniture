@@ -181,15 +181,35 @@ check("guard does not rely on offsetParent", !vis.includes("offsetParent"));
 const renderer = extract(/function renderHandoffFinancing\(\)\s*\{[\s\S]*?\n    \}/, "renderHandoffFinancing()");
 check("renderHandoffFinancing() contains no focus() call", !/\.focus\(/.test(renderer));
 
-// --- startOver: cancels pending work FIRST, then clears the region ---
-const startOverBlock = html.match(/window\.startOver = function[\s\S]{0,4000}/);
-check("startOver cancels pending interest work via cancelFinInterestPending()",
+// --- the session wipe: cancels pending work FIRST, then clears the region ---
+// Gate 1B moved the reset body out of window.startOver() into the single
+// authoritative resetSessionState(); startOver() now delegates to it. The
+// invariant is unchanged and is asserted against whichever of the two actually
+// carries the body, plus an explicit pin that there is only ONE implementation.
+const wipeBlock = html.match(/function resetSessionState\(opts\) \{[\s\S]{0,8000}/)
+  || html.match(/window\.startOver = function[\s\S]{0,4000}/);
+check("the authoritative session wipe was located", !!wipeBlock);
+check("window.startOver() delegates to it rather than duplicating the reset",
+  /window\.startOver = function\(\) \{\s*return resetSessionState\(/.test(html)
+  && (html.match(/function resetSessionState\(/g) || []).length === 1);
+const startOverBlock = wipeBlock;
+check("the wipe cancels pending interest work via cancelFinInterestPending()",
   !!startOverBlock && startOverBlock[0].includes("cancelFinInterestPending();"));
 check("cancellation precedes the financing state reset and region clear",
   !!startOverBlock && startOverBlock[0].indexOf("cancelFinInterestPending();") <
     startOverBlock[0].indexOf("financingInterest = 'undecided'"));
-check("startOver() clears the interest status region",
-  !!startOverBlock && /hf2FinancingStatus[\s\S]{0,200}textContent = ''/.test(startOverBlock[0]));
+// The region is now cleared through the wipe's declarative text inventory
+// rather than a bespoke line, so assert BOTH halves: the region is listed, and
+// the wipe empties every id in that list. (tests/session_safety_check.mjs
+// proves the emptying behaviourally, against a seeded sentinel.)
+{
+  const textInventory = (html.match(/var SESSION_TEXT_IDS = \[([\s\S]*?)\];/) || [, ""])[1];
+  check("the wipe's text inventory includes the interest status region",
+    /'hf2FinancingStatus'/.test(textInventory));
+  check("the wipe empties every id in that inventory",
+    !!startOverBlock
+    && /SESSION_TEXT_IDS\.forEach\(function\(id\) \{[\s\S]{0,160}textContent = '';/.test(startOverBlock[0]));
+}
 
 // --- stable, unique IDs on the generated controls ---
 for (const id of ["hf2FinancingInterestYes", "hf2FinancingInterestNotNow", "hf2FinancingInterestChange"]) {
@@ -321,7 +341,24 @@ check("the sheet's own status region is NOT cleared by the language switch",
   && /region\.textContent = _finSheetStale/.test(html));
 
 // --- exclusions ---
-check("no aria-pressed introduced anywhere", count(/aria-pressed/g) === 0);
+// This guarded the Commit C decision that the handoff financing-interest
+// controls are ACTIONS, not a toggle group: their state is announced through
+// #hf2FinancingStatus and the re-rendered prompt, never through aria-pressed.
+// It was written as a whole-file count because nothing else in the app used
+// aria-pressed at the time. Gate 1B introduces aria-pressed on the persistent
+// EN/ES language controls, where a pressed toggle IS the correct pattern, so
+// the exclusion is now scoped to the surface it was actually protecting rather
+// than deleted.
+{
+  const interestRenderer = extract(
+    /var interestEl = document\.getElementById\('hf2FinancingInterest'\);[\s\S]*?\n      \}/,
+    "handoff interest renderer");
+  check("no aria-pressed on the handoff financing-interest controls",
+    !/aria-pressed/.test(interestRenderer));
+  const pressedTags = html.match(/<[^>]*\baria-pressed\b[^>]*>/g) || [];
+  check(`every aria-pressed element in the markup is a language control (${pressedTags.length} found)`,
+    pressedTags.length > 0 && pressedTags.every((tag) => /data-lang="(?:en|es)"/.test(tag)));
+}
 check("stale 'messages always differ' comment removed", !html.includes("always differ"));
 
 console.log(`\nHandoff interest check: ${passed} passed, ${failed} failed`);

@@ -236,6 +236,25 @@ jobs:
       - name: drawer dialog lifecycle
         run: node tests/drawer_lifecycle_check.mjs
 
+      # Gate 1B. Executes the real extracted session module — timing policy,
+      # deadline-based idle controller, shared safety dialog and the single
+      # authoritative privacy wipe — against a DOM shim and a fake clock, plus
+      # the real switchLanguage() against an out-of-order dictionary fetch.
+      # Pins the recoverable timeout (the old build reset destructively after
+      # two silent minutes), confirmation-before-restart, and the wipe matrix
+      # that proves no prior customer's answers or contact values survive.
+      - name: session safety
+        run: node tests/session_safety_check.mjs
+
+      # Gate 1B amendment. Executes the real send-completion path (preview
+      # timer + live fetch continuations) against a fake clock and deferred
+      # promises, and the real analytics.log() against sentinel contact values
+      # and quiz answers. Also owns the CLASSIFICATION of every raw
+      # setTimeout / setInterval / requestAnimationFrame in index.html, so new
+      # unclassified delayed work cannot enter the customer journey silently.
+      - name: session async + diagnostic privacy
+        run: node tests/session_async_check.mjs
+
       # ---- Tree hygiene -----------------------------------------------------
       - name: git diff --check (whitespace and conflict markers)
         run: |

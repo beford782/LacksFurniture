@@ -220,7 +220,15 @@ by default. Do not treat this as optional or Bel-specific.
 - **Email** is sent in the customer's chosen language. The client builds the HTML
   email body in the active language and sends `lang: currentLang` in the GAS payload.
   `Code.gs` uses this for the subject line and server-side fallback.
-- **Session reset** (`startOver()`) always resets language to English.
+- **Language switching preserves the session.** Changing EN/ES mid-session keeps
+  the current screen, answers, saved mattresses, reactions, favorite/finalist
+  state, comparison state, Sleep System decisions, financing-interest state and
+  any in-progress contact values. It is a copy swap, not a reset.
+- **Only a new-customer wipe resets language to English.** The authoritative
+  wipe (`resetSessionState()`, which `window.startOver()` delegates to) runs on
+  a confirmed Restart, on final timeout, and from the email confirmation's
+  "Start New Customer". It returns the app to English so the next customer
+  never inherits the previous customer's language.
 
 ### Rules for new features
 - Any new user-facing string must be bilingual. Use `t('key')` for dict lookups
@@ -331,7 +339,18 @@ significant debugging to get right.
   Cart persists to handoff screen.
 - **Discount reveal**: Dramatic animation — DREAM + 3-digit code. 10rem gold glow font.
 - **Handoff screen**: Customer marks "I'm Interested" on mattresses/accessories. Salesperson sees saved picks.
-- **Idle timeout**: Inactivity triggers reset flow back to start screen. Uses `window.startOver()`.
+- **Idle timeout (Gate 1B)**: warning → explicit recovery or wipe. Ordinary
+  inactivity never resets destructively. After `SESSION_POLICY.idleWarningMs` a
+  modal safety dialog obscures the session ("Still comparing?"); the customer
+  can Continue (repeatable, grants a full new window) or Start new customer.
+  Only expiry of `SESSION_POLICY.graceMs` wipes. Absolute `Date.now()`
+  deadlines, reconciled on `visibilitychange` / `pageshow`, so an iPad waking
+  from sleep behaves correctly. Timing values are **provisional preview
+  defaults** and live only in `SESSION_POLICY` — see
+  `docs/kiosk-device-hardening.md`.
+- **Restart is destructive and confirms first**: the persistent Restart control
+  opens the same safety dialog in restart mode. `window.startOver()` is the
+  unconfirmed wipe and delegates to `resetSessionState()`.
 
 ---
 

@@ -3,8 +3,24 @@
   "lang.toggle_es": "ES",
 
   "header.tagline": "Consulta Personalizada de Sueño",
-  "header.restart": "↺ Reiniciar",
   "header.picks": "Favoritos",
+
+  "session.lang_group": "Idioma",
+  "session.lang_en": "English",
+  "session.lang_es": "Español",
+  "session.restart": "Reiniciar",
+  "session.restart_aria": "Reiniciar — empezar con otro cliente",
+
+  "safety.restart_title": "¿Empezar con otro cliente?",
+  "safety.restart_body": "Se borrarán las respuestas, los colchones elegidos y el Plan de Sueño de esta sesión.",
+  "safety.restart_keep": "Seguir en esta sesión",
+  "safety.restart_confirm": "Empezar con otro cliente",
+  "safety.timeout_title": "¿Sigues comparando?",
+  "safety.timeout_body": "Pausamos tu sesión para proteger tu privacidad.",
+  "safety.timeout_continue": "Seguir en esta sesión",
+  "safety.timeout_confirm": "Empezar con otro cliente",
+  "safety.timeout_remaining": "Quedan {seconds} segundos",
+  "safety.timeout_final_warning": "Esta sesión se borrará en unos {seconds} segundos.",
 
   "footer.powered": "Desarrollado por <strong>DreamFinder</strong>",
 

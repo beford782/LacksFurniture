@@ -68,10 +68,16 @@ check("email packet builders call finEmailBody() (not raw FC('emailBody'))",
   (html.match(/finEmailBody\(\)/g) || []).length >= 2);
 check("openFinancingSheet sets financingExplored = true",
   /sheet\.hidden = false;[\s\S]{0,200}financingExplored = true;/.test(html));
-const startOverDef = html.indexOf("window.startOver = function");
-check("startOver resets financingExplored to false",
-  startOverDef !== -1
-  && /financingExplored = false;/.test(html.slice(startOverDef, startOverDef + 2000)));
+// Gate 1B moved the reset body into the single authoritative
+// resetSessionState(); window.startOver() delegates to it. Same invariant,
+// asserted against whichever symbol carries the body.
+const wipeDef = html.indexOf("function resetSessionState(opts)") !== -1
+  ? html.indexOf("function resetSessionState(opts)")
+  : html.indexOf("window.startOver = function");
+check("the session wipe resets financingExplored to false",
+  wipeDef !== -1 && /financingExplored = false;/.test(html.slice(wipeDef, wipeDef + 8000)));
+check("window.startOver() still exists and delegates to that one wipe",
+  /window\.startOver = function\(\) \{\s*return resetSessionState\(/.test(html));
 
 function report() {
   console.log(`\nEmail gating check: ${passed} passed, ${failed} failed`);
