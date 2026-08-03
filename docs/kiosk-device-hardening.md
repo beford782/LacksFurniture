@@ -1,16 +1,24 @@
 # Kiosk device hardening — contact autofill and browser persistence
 
-**Status: CONFIRMED REQUIRED, and still unresolved.** The application-level work
-in Gate 1B is complete and verified. The device-level work below is not, and it
-cannot be done from the codebase.
+**Status: BLOCKING for showroom use, and unresolved.** The application-level
+work in Gate 1B is complete and verified. The device-level work below is not,
+and it cannot be done from the codebase.
 
-This is no longer a theoretical concern. **It has now been observed on a real
-iPad that iOS still offers autofill in the contact fields**, on the deployed
-build, with every mitigation `index.html` can express already in place — see
-*Observed on hardware* below. Until a mounted showroom tablet is configured and
-verified against this checklist, one customer's contact details can still be
-offered to the next customer by the browser itself, regardless of what
-`index.html` does.
+The gap is no longer theoretical. **On a real iPad, iOS offered an autofill
+suggestion in the contact fields** on the deployed build, with every mitigation
+`index.html` can express already in place — see *Observed on hardware* below.
+That proves the markup is insufficient on this hardware. It does **not** prove
+that a previous customer's entered value was offered to the next; the mechanism
+was not identified and that scenario remains untested.
+
+The prerequisite does not depend on settling that question. An unmanaged
+autofill surface on a tablet handed between members of the public may expose
+personal information, so:
+
+> Application markup did not suppress iOS autofill suggestions on this
+> hardware. Because those suggestions may expose personal information on a
+> shared tablet, the kiosk must not be approved for showroom use until the
+> device-level restrictions are applied and verified.
 
 ## Why HTML is not enough
 
@@ -38,10 +46,11 @@ That is the whole of what HTML can express, and it is **not** a guarantee:
   navigation independently of page script.
 
 Do not report the application change as "autofill is disabled". Report it as
-"the page no longer requests autofill"; the device policy below is what
-actually disables it. This distinction was confirmed on hardware on 2026-08-03
-— see *Observed on hardware* — where iOS offered suggestions despite every one
-of the attributes above being present.
+"the page no longer requests autofill"; suppressing autofill is what the device
+policy below is intended to do, and that intent is not yet verified on this
+hardware. The insufficiency of the markup, however, is: on 2026-08-03 iOS
+offered a suggestion despite every one of the attributes above being present —
+see *Observed on hardware*.
 
 ## Device checklist — must be completed and verified per mounted tablet
 
@@ -127,33 +136,55 @@ what matter and are quoted directly from Apple.
 **Build:** the deployed preview at `https://beford782.github.io/LacksFurniture/`,
 serving merge commit `b373b98` (Gate 1B), byte-verified identical to `main`.
 
-**Result: iOS offered autofill in the contact fields.**
+**Result: iOS offered an autofill suggestion in the contact fields.** The
+content of the suggestion, and which iOS feature produced it, were not
+recorded.
 
-This is the expected outcome, and it is the point. At the time of the
-observation the page already carried everything HTML can express:
-`autocomplete="off"` on the form and on all three inputs, no `given-name` /
-`email` / `tel` tokens, `autocorrect="off"`, `spellcheck="false"`, and the
-`data-lpignore` / `data-1p-ignore` / `data-form-type="other"` password-manager
-opt-outs. iOS offered suggestions anyway.
+At the time of the observation the page already carried everything HTML can
+express: `autocomplete="off"` on the form and on all three inputs, no
+`given-name` / `email` / `tel` tokens, `autocorrect="off"`,
+`spellcheck="false"`, and the `data-lpignore` / `data-1p-ignore` /
+`data-form-type="other"` password-manager opt-outs. iOS offered a suggestion
+anyway.
 
-So the conclusion the rest of this document rests on is now evidence, not
-inference:
+### What this does and does not establish
 
-> The application cannot switch autofill off. Only device policy can. A
-> showroom tablet running this kiosk **without** the restrictions below will
-> leak one customer's contact details to the next, and no change to
-> `index.html` will fix that.
+**Established.** The HTML-level mitigations were insufficient on this hardware.
+Every attribute the page can carry was present, and iOS still offered a
+suggestion. Application markup alone does not suppress iOS autofill here.
 
-Treat the MDM / Settings checklist above as a hard prerequisite for putting
-this on a floor, not as a recommendation.
+**Not established — and important not to overstate.** The observation does
+**not** show that a previous customer's entered value was offered to the next
+one. The mechanism was not identified, and at least one candidate involves no
+prior-customer data at all: the suggestion may simply have been the device
+owner's own contact card. Customer-to-customer carryover is an untested
+scenario, not a demonstrated one.
 
-Still to pin down: **which** mechanism produced the suggestions — Safari
+The operative conclusion, bounded to the evidence:
+
+> Application markup did not suppress iOS autofill suggestions on this
+> hardware. Because those suggestions may expose personal information on a
+> shared tablet, the kiosk must not be approved for showroom use until the
+> device-level restrictions are applied and verified.
+
+That is a hard prerequisite, and it does not depend on the carryover question
+being settled. An unmanaged autofill surface on a device handed between members
+of the public is an unacceptable privacy risk whether the value offered came
+from a previous customer, the device owner, or the keyboard's prediction model.
+The checklist below therefore stands as a gate on showroom use, not as a
+recommendation.
+
+**Open — the responsible mechanism is unidentified.** The candidates are Safari
 AutoFill drawing on the contact card (`safariAllowAutoFill`), the password
 AutoFill prompt (`allowPasswordAutoFill`), or the QuickType predictive strip
 (Settings → General → Keyboard → Predictive). All three are covered by the
 checklist, so the required actions do not change; identifying the mechanism
-only lets the checklist say which single setting is load-bearing on this
+would only let the checklist say which single setting is load-bearing on this
 hardware.
+
+**Open — the restrictions are unproven.** Nobody has yet applied them and
+repeated this test. Until that is done they are believed-effective, not
+proven-effective, on this hardware.
 
 ## Remaining real-device verification — NOT YET PERFORMED
 
