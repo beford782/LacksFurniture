@@ -229,6 +229,13 @@ jobs:
       - name: contrast
         run: node tests/contrast_check.mjs
 
+      # Executes the real extracted drawer lifecycle against a DOM shim (same
+      # extract-and-execute pattern as the financing renderer suite) rather
+      # than grepping for function names. Pins the idle-reset regression:
+      # a reset while the drawer was open used to strand #resultsScreen inert.
+      - name: drawer dialog lifecycle
+        run: node tests/drawer_lifecycle_check.mjs
+
       # ---- Tree hygiene -----------------------------------------------------
       - name: git diff --check (whitespace and conflict markers)
         run: |

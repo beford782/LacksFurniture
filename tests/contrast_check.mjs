@@ -116,5 +116,205 @@ check(".fin-btn-primary keeps light-on-dark (#211E19 / #F7F2E8)",
 check(".fin-btn-primary does not use the on-store tokens",
   !!finPrimary && !finPrimary[0].includes("--on-store"));
 
+// ===================================================================
+// Gate 1A — global brand-colour contrast.
+//
+// The pilot above proved the FOREGROUND-ON-STORE-PRIMARY direction for a
+// handful of financing selectors. These assertions cover the two remaining
+// global directions and are deliberately store-agnostic: they are expressed
+// against whatever colours the shipped config carries, so a white-label
+// deployment with a different primary is held to the same floor.
+//
+//   D1  text/icons ON a store-primary fill must resolve through the computed
+//       --on-store-* tokens, never a hardcoded white.
+//   D2  store primary must not be used AS a foreground (text, meaningful icon,
+//       essential boundary) on the light surfaces every screen renders on.
+//       Fixing D1 does not fix D2 — they are independent failures.
+// ===================================================================
+
+// Comments are stripped before any scanning: they are not CSS, and leaving
+// them in makes the scanners wrong in both directions — a comment can glue
+// itself onto the next selector, and prose describing a colour (e.g. the word
+// "white" in a rationale) can trip a value assertion.
+const styleBlock = html
+  .slice(html.indexOf("<style>") + 7, html.indexOf("</style>"))
+  .replace(/\/\*[\s\S]*?\*\//g, "");
+
+// Rule scanner shared by the assertions below.
+const cssRules = [];
+{
+  const re = /([^{}]+)\{([^{}]*)\}/g;
+  let r;
+  while ((r = re.exec(styleBlock))) {
+    const sel = r[1].trim();
+    if (sel.startsWith("@")) continue;
+    cssRules.push({ sel, body: r[2] });
+  }
+}
+const PRIMARY_REF = /var\(--store-primary(?!-glow|-light)\b|var\(--landing-red\b|var\(--consultation-red\b/;
+const HARDCODED_WHITE = /#fff(?:fff)?\b|#FFF(?:FFF)?\b|#FFFDF8\b|#FFF8ED\b|\bwhite\b/;
+const decls = (body) => body.split(";").map((d) => d.trim()).filter(Boolean);
+
+// --- the accent-ink token exists and is brand-neutral ---
+const inkMatch = styleBlock.match(/--accent-ink:\s*(#[0-9a-fA-F]{3,6})\s*;/);
+check("--accent-ink is declared with a literal colour in :root", !!inkMatch);
+const accentInk = inkMatch ? inkMatch[1] : "#FF0000";
+check("--accent-ink does not resolve to the retailer primary (must stay store-agnostic)",
+  !/--accent-ink:\s*var\(--store-primary/.test(styleBlock));
+
+// --- accent-ink clears 4.5:1 on every shipped light surface ---
+// These are the warm surfaces the app actually renders on (landing,
+// consultation and results/handoff paper). Normal-text floor, not large-text.
+for (const surface of ["#F4EFE6", "#F3EEE5", "#FBF7EF", "#FFFDF8"]) {
+  const rr = ratio(accentInk, surface);
+  check(`--accent-ink ${accentInk} on ${surface} >= 4.5:1 (got ${rr.toFixed(2)}:1)`, rr >= 4.5);
+}
+
+// --- D1: no hardcoded white foreground on a store-primary fill ---
+const whiteOnPrimary = cssRules.filter((r) => {
+  const d = decls(r.body);
+  const primaryFill = d.some((x) => /^background(-color)?\s*:/.test(x) && PRIMARY_REF.test(x));
+  const whiteFg = d.some((x) => /^color\s*:/.test(x) && HARDCODED_WHITE.test(x));
+  return primaryFill && whiteFg;
+});
+check(`no rule pairs a store-primary background with a hardcoded white foreground (found ${whiteOnPrimary.length})`,
+  whiteOnPrimary.length === 0);
+if (whiteOnPrimary.length) whiteOnPrimary.forEach((r) => console.log(`        ${r.sel.replace(/\s+/g, " ").slice(0, 100)}`));
+
+// --- D2: store primary is never a foreground colour ---
+const primaryAsText = cssRules.filter((r) =>
+  decls(r.body).some((x) => /^color\s*:/.test(x) && PRIMARY_REF.test(x)));
+check(`store primary is never used as a text colour (found ${primaryAsText.length})`,
+  primaryAsText.length === 0);
+if (primaryAsText.length) primaryAsText.forEach((r) => console.log(`        ${r.sel.replace(/\s+/g, " ").slice(0, 100)}`));
+
+// --- D2b: essential boundaries (state, selection, tabs, thumbs) ---
+// Decorative accent bands (border-left/-top on cards) may keep the brand
+// colour; a boundary that communicates STATE may not.
+const ESSENTIAL = /\.selected|\.is-selected|\.is-active|\.active|tier-tab|range-thumb|slider-thumb|quiz-option|reaction-row|lang-btn|step-num|chip/i;
+const primaryStateBorder = cssRules.filter((r) =>
+  ESSENTIAL.test(r.sel) &&
+  decls(r.body).some((x) => /^(border|outline)[a-z-]*\s*:/.test(x) && PRIMARY_REF.test(x)));
+check(`no state-communicating boundary resolves to the raw store primary (found ${primaryStateBorder.length})`,
+  primaryStateBorder.length === 0);
+if (primaryStateBorder.length) primaryStateBorder.forEach((r) => console.log(`        ${r.sel.replace(/\s+/g, " ").slice(0, 100)}`));
+
+// A state indicator can also be painted as a background on a pseudo-element
+// (the active tier-tab underline is 2px of `background`, not a border), which
+// the boundary check above would not see.
+const primaryStateFill = cssRules.filter((r) =>
+  ESSENTIAL.test(r.sel) && /::(after|before)/.test(r.sel) &&
+  decls(r.body).some((x) => /^background(-color)?\s*:/.test(x) && PRIMARY_REF.test(x)));
+check(`no state indicator painted as a pseudo-element fill uses the raw store primary (found ${primaryStateFill.length})`,
+  primaryStateFill.length === 0);
+if (primaryStateFill.length) primaryStateFill.forEach((r) => console.log(`        ${r.sel.replace(/\s+/g, " ").slice(0, 100)}`));
+
+// --- the shipped primary genuinely cannot carry text (proves D2 is required,
+//     and would flag a future retailer whose primary CAN, so the token stays
+//     justified rather than cargo-culted) ---
+{
+  const rr = ratio(cfg.colors.storePrimary, "#F3EEE5");
+  check(`shipped primary ${cfg.colors.storePrimary} on cream is below 4.5:1, so --accent-ink is required (got ${rr.toFixed(2)}:1)`,
+    rr < 4.5);
+}
+
+// --- controls filled with store primary keep a >=3:1 boundary ---
+// A filled control whose fill is ~1.5:1 against the page is not identifiable
+// as a control (WCAG 1.4.11); these keep an --accent-ink hairline instead.
+for (const sel of [".landing-cta-btn", ".noct-profile-cta", "#emailScreen .noct-email-send-btn"]) {
+  // A selector legitimately appears in several rules (a shared layout rule
+  // plus its own paint rule), so assert that SOME rule carries the boundary
+  // rather than inspecting whichever one happens to come first.
+  const rules = cssRules.filter((r) => r.sel.split(",").some((s) => s.trim() === sel));
+  check(`${sel} keeps an --accent-ink boundary`,
+    rules.length > 0 && rules.some((r) => /border[a-z-]*\s*:[^;]*var\(--accent-ink\)/.test(r.body)));
+}
+{
+  const rr = ratio(accentInk, "#F3EEE5");
+  check(`--accent-ink boundary on cream >= 3:1 non-text (got ${rr.toFixed(2)}:1)`, rr >= 3);
+}
+
+// ===================================================================
+// D3 — DESCENDANTS of a store-primary-filled control.
+//
+// The D1 scan above is same-rule: it only sees a white foreground declared in
+// the very rule that also declares the primary fill. A descendant rule such as
+// `... .noct-quiz-option.selected .opt-sub { color: #FFF8ED }` paints text on
+// that same fill from a different rule and slips straight past it. That is a
+// real defect this suite previously missed, so the scanner is widened here.
+// ===================================================================
+
+// Selectors whose rule declares a store-primary background.
+const primaryFilled = [];
+for (const r of cssRules) {
+  if (!decls(r.body).some((x) => /^background(-color)?\s*:/.test(x) && PRIMARY_REF.test(x))) continue;
+  for (const s of r.sel.split(",")) primaryFilled.push(s.trim());
+}
+const descendantWhite = [];
+for (const r of cssRules) {
+  const white = decls(r.body).find((x) => /^color\s*:/.test(x) && HARDCODED_WHITE.test(x));
+  if (!white) continue;
+  for (const s of r.sel.split(",").map((x) => x.trim())) {
+    // a descendant selector of a filled control: "<filled><combinator>..."
+    if (primaryFilled.some((f) => f && s !== f && s.startsWith(f) && /[\s>+~]/.test(s.charAt(f.length)))) {
+      descendantWhite.push({ sel: s, decl: white.trim() });
+      break;
+    }
+  }
+}
+check(`no descendant of a store-primary-filled control hardcodes a white foreground (found ${descendantWhite.length})`,
+  descendantWhite.length === 0);
+if (descendantWhite.length) descendantWhite.forEach((r) => console.log(`        ${r.sel.slice(0, 90)}  ->  ${r.decl}`));
+
+// --- targeted: the selected quiz option and its subtext -----------------
+function ruleFor(exact) {
+  return cssRules.filter((r) => r.sel.split(",").some((s) => s.trim() === exact));
+}
+{
+  const sel = "body:has(#questionScreen.active) .noct-quiz-option.selected";
+  const rules = ruleFor(sel);
+  check("selected quiz option main text uses the computed on-primary token",
+    rules.length > 0 && rules.some((r) => /color:\s*var\(--on-store-primary\)/.test(r.body)));
+
+  const subRules = ruleFor(sel + " .opt-sub");
+  check("selected quiz-option SUBTEXT uses the computed on-primary token",
+    subRules.length > 0 && subRules.some((r) => /color:\s*var\(--on-store-primary\)/.test(r.body)));
+  check("selected quiz-option subtext no longer hardcodes a near-white",
+    subRules.length > 0 && !subRules.some((r) => HARDCODED_WHITE.test(r.body)));
+
+  // Opacity is retained, so prove the COMPOSITED result, not the raw pair.
+  const opacity = (() => {
+    for (const r of subRules) {
+      const m = r.body.match(/opacity:\s*([\d.]+)/);
+      if (m) return parseFloat(m[1]);
+    }
+    return 1;
+  })();
+  const fill = cfg.colors.storePrimary;               // the actual selected fill
+  const fg = pick(fill) || "#000000";                 // what the app computes
+  const composite = (() => {
+    const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+    const [fr, fg_, fb] = hex(fg), [br, bg_, bb] = hex(fill);
+    const mix = (f, b) => Math.round(f * opacity + b * (1 - opacity));
+    return "#" + [mix(fr, br), mix(fg_, bg_), mix(fb, bb)]
+      .map((v) => v.toString(16).padStart(2, "0")).join("");
+  })();
+  const rr = ratio(composite, fill);
+  check(`selected subtext composited at opacity ${opacity} (${fg} over ${fill} = ${composite}) >= 4.5:1 (got ${rr.toFixed(2)}:1)`,
+    rr >= 4.5);
+}
+
+// --- targeted: the Sleep System "Review Sleep Plan" control boundary ----
+{
+  const rules = ruleFor(".sleep-system__review-top");
+  check(".sleep-system__review-top (a <button>) boundary uses --accent-ink",
+    rules.length > 0 && rules.some((r) => /border[a-z-]*\s*:[^;]*var\(--accent-ink\)/.test(r.body)));
+  check(".sleep-system__review-top no longer borders with the raw store primary",
+    rules.length > 0 && !rules.some((r) =>
+      decls(r.body).some((x) => /^border[a-z-]*\s*:/.test(x) && PRIMARY_REF.test(x))));
+  const rr = ratio(accentInk, "#F3EEE5");
+  check(`its boundary clears 3:1 on the Sleep System surface (got ${rr.toFixed(2)}:1)`, rr >= 3);
+}
+
 console.log(`\nContrast check: ${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

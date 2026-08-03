@@ -325,6 +325,75 @@ def main():
     ah = load_text("data/allowed-hosts.js")
     check("allowed-hosts still includes beford782.github.io", "beford782.github.io" in ah)
 
+    # ---- Gate 1A: zoom / reflow -------------------------------------------
+    # Customer-facing zoom must stay available (WCAG 2.2 SC 1.4.4). These
+    # directives were removed deliberately; they must not come back, and the
+    # usual reason for re-adding them (accidental double-tap zoom) is already
+    # handled per-element by touch-action: manipulation.
+    m_vp = re.search(r'<meta\s+name="viewport"[^>]*content="([^"]*)"', html)
+    check("viewport meta is present", bool(m_vp))
+    vp = (m_vp.group(1) if m_vp else "").replace(" ", "").lower()
+    check("viewport does not set maximum-scale", "maximum-scale" not in vp)
+    check("viewport does not disable user scaling", "user-scalable=no" not in vp)
+    check("viewport keeps width=device-width", "width=device-width" in vp)
+    check("viewport keeps initial-scale=1", "initial-scale=1" in vp)
+    check("no CSS or JS re-disables zoom via touch-action: none on body/html",
+          not re.search(r"(?:^|[^-\w])(?:body|html)\s*\{[^}]*touch-action:\s*none", html))
+    check("touch-action: manipulation still scopes double-tap suppression",
+          "touch-action: manipulation" in html)
+
+    # ---- Gate 1A: mattress drawer dialog lifecycle ------------------------
+    # The drawer slides via transform and is never display:none, so without an
+    # explicit lifecycle it stayed permanently in the accessibility tree and
+    # keyboard-reachable while closed.
+    m_drawer = re.search(r'<div class="mattress-drawer" id="mattressDrawer"([^>]*)>', html)
+    check("mattress drawer element found", bool(m_drawer))
+    attrs = m_drawer.group(1) if m_drawer else ""
+    check('drawer declares role="dialog"', 'role="dialog"' in attrs)
+    check('drawer declares aria-modal="true"', 'aria-modal="true"' in attrs)
+    check("drawer is labelled by the mattress name",
+          'aria-labelledby="drawerName"' in attrs)
+    check("drawer ships inert so the closed dialog leaves the a11y tree",
+          re.search(r"\binert\b", attrs) is not None)
+    check("drawer title is focusable for focus entry",
+          'id="drawerName" tabindex="-1"' in html)
+    check("closed drawer is hidden from assistive tech by visibility, not just transform",
+          re.search(r"\.mattress-drawer\s*\{[^}]*visibility:\s*hidden", html) is not None)
+    check("open (and still-closing) drawer is visible",
+          re.search(r"\.mattress-drawer\.drawer-open,\s*\.mattress-drawer\.is-closing\s*\{[^}]*visibility:\s*visible",
+                    html) is not None)
+    # The hide must not depend on a CSS transition completing: a discrete
+    # property that is transitioned only lands on `hidden` if the transition
+    # runs, so an interrupted one would strand the dialog in the a11y tree.
+    check("visibility is not transitioned (a11y end state must not depend on animation)",
+          re.search(r"\.mattress-drawer\s*\{[^}]*transition:[^;]*visibility", html) is None)
+    check("slide-out is retired on a deterministic timer",
+          "_drawerCloseTimer" in html and "is-closing" in html
+          and "clearTimeout(_drawerCloseTimer)" in html)
+    check("drawer keydown handler traps Tab and closes on Escape",
+          "function drawerKeydown" in html
+          and "'Escape'" in html.split("function drawerKeydown")[1][:600]
+          and "'Tab'" in html.split("function drawerKeydown")[1][:600])
+    check("drawer ships aria-hidden=true and toggles it on open",
+          'aria-hidden="true"' in attrs and "setAttribute('aria-hidden', 'false')" in html)
+    check("drawer toggles inert on open and close",
+          "drawer.removeAttribute('inert')" in html and "drawer.setAttribute('inert', '')" in html)
+    # Behaviour is covered by tests/drawer_lifecycle_check.mjs, which executes
+    # the real extracted lifecycle. What remains worth pinning statically is the
+    # shape of the bug that was fixed: close() must release the screen it
+    # recorded at open time. Re-introducing a lookup of "whatever screen is
+    # active now" is what stranded #resultsScreen inert after an idle reset.
+    m_close = re.search(r"window\.closeMattressDrawer = function\([^)]*\) \{.*?\n    \};",
+                        html, re.S)
+    check("closeMattressDrawer() found", bool(m_close))
+    close_src = m_close.group(0) if m_close else ""
+    check("close() releases the STORED background screen, not the active one",
+          "_drawerInertedScreen" in close_src
+          and ".screen.active" not in close_src)
+    check("startOver() unwinds the drawer immediately, without focus restore",
+          re.search(r"closeMattressDrawer\(\{\s*immediate:\s*true,\s*restoreFocus:\s*false\s*\}\)",
+                    html) is not None)
+
     print(f"\nSmoke check: {passed} passed, {failed} failed")
     return 1 if failed else 0
 
