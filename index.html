@@ -1077,7 +1077,11 @@
     }
 
     body:has(#questionScreen.active) .noct-quiz-option.selected .opt-sub {
-      color: #FFF8ED;
+      /* Descendant of a store-primary-filled control, so it needs the computed
+         on-primary foreground too — a near-white here measured ~1.5:1. The
+         0.82 opacity is retained and the COMPOSITED result is asserted in
+         tests/contrast_check.mjs, not assumed. */
+      color: var(--on-store-primary);
       opacity: 0.82;
     }
 
@@ -6541,7 +6545,11 @@
     .sleep-system__review-top {
       justify-self: end;
       padding: 10px 16px;
-      border: 1px solid var(--store-primary);
+      /* Interactive control (<button data-sleep-action="review-plan">) with a
+         transparent fill, so this border IS the control boundary and must
+         clear 3:1 against the Sleep System surface. The brand primary is
+         ~1.5:1 there. */
+      border: 1px solid var(--accent-ink);
       background: transparent;
       color: var(--accent-ink);
     }
@@ -9483,7 +9491,7 @@
        accessibility tree by `visibility` + `inert` while closed rather than by
        the `hidden` attribute, which would kill the transform transition. -->
   <div class="mattress-drawer" id="mattressDrawer" role="dialog" aria-modal="true"
-       aria-labelledby="drawerName" inert>
+       aria-labelledby="drawerName" inert aria-hidden="true">
     <div class="drawer-handle-bar" onclick="window.closeMattressDrawer()"></div>
     <div class="drawer-toolbar">
       <button class="drawer-back-to-results" onclick="window.closeMattressDrawer()"
@@ -16381,6 +16389,17 @@
     };
 
     window.startOver = function() {
+      // FIRST, synchronously: unwind the mattress dialog before anything else
+      // runs. The idle reset can fire while the drawer is open, and without
+      // this the drawer stayed open over Welcome, kept its focus trap, and
+      // left the Results screen inert for the rest of the tablet's life.
+      // Immediate (no slide-out over the next customer's Welcome screen) and
+      // no focus restoration (the opener belongs to the session being torn
+      // down). Idempotent, so it is safe when no drawer was ever opened.
+      if (typeof window.closeMattressDrawer === 'function') {
+        window.closeMattressDrawer({ immediate: true, restoreFocus: false });
+      }
+
       try {
         analytics.log('session_ended', analytics.getSummary());
         console.log('[DreamFinder] Session Summary:', JSON.stringify(analytics.getSummary(), null, 2));
@@ -16843,10 +16862,19 @@
       if (_drawerCloseTimer) { clearTimeout(_drawerCloseTimer); _drawerCloseTimer = null; }
       drawer.classList.remove('is-closing');
       drawer.removeAttribute('inert');
+      drawer.setAttribute('aria-hidden', 'false');
       // Background is inert while the dialog is modal, so screen-reader
-      // virtual cursors and Tab both stay inside the drawer.
+      // virtual cursors and Tab both stay inside the drawer. The exact element
+      // is remembered: close must release THIS screen, not whichever screen
+      // happens to be active later. An idle reset switches to Welcome while
+      // the drawer is open, and releasing "the active screen" then would strand
+      // Results inert forever.
       var activeScreen = document.querySelector('.screen.active');
-      if (activeScreen) activeScreen.setAttribute('inert', '');
+      if (activeScreen && activeScreen !== _drawerInertedScreen) {
+        if (_drawerInertedScreen) _drawerInertedScreen.removeAttribute('inert');
+        activeScreen.setAttribute('inert', '');
+        _drawerInertedScreen = activeScreen;
+      }
       if (!_drawerKeydownBound) {
         drawer.addEventListener('keydown', drawerKeydown);
         _drawerKeydownBound = true;
@@ -16856,34 +16884,66 @@
       if (title && typeof title.focus === 'function') title.focus();
     };
 
-    window.closeMattressDrawer = function() {
+    // opts.immediate    — skip the 400ms slide-out and hide now (session reset).
+    // opts.restoreFocus — false to leave focus alone (the opener belongs to a
+    //                     screen that is being torn down).
+    // Idempotent: safe to call when the drawer was never opened, which is what
+    // makes it usable as an unconditional reset.
+    window.closeMattressDrawer = function(opts) {
+      opts = opts || {};
+      var immediate = opts.immediate === true;
+      var restoreFocus = opts.restoreFocus !== false;
       var drawer = document.getElementById('mattressDrawer');
-      document.getElementById('drawerBackdrop').classList.remove('open');
+      var backdrop = document.getElementById('drawerBackdrop');
+      if (!drawer) return;
+
+      if (backdrop) backdrop.classList.remove('open');
       drawer.classList.remove('drawer-open');
-      if (!_drawerWasOpen) return;
-      _drawerWasOpen = false;
-      // inert immediately (the a11y guarantee), stays rendered only long
-      // enough for the slide-out, then is hidden on a deterministic timer.
+      // inert + aria-hidden immediately: the a11y guarantee must not wait for
+      // an animation, and must hold even on the reset path.
       drawer.setAttribute('inert', '');
-      drawer.classList.add('is-closing');
-      if (_drawerCloseTimer) clearTimeout(_drawerCloseTimer);
-      _drawerCloseTimer = setTimeout(function() {
-        drawer.classList.remove('is-closing');
-        _drawerCloseTimer = null;
-      }, 400);
-      var activeScreen = document.querySelector('.screen.active');
-      if (activeScreen) activeScreen.removeAttribute('inert');
-      if (_drawerReturnFocus && typeof _drawerReturnFocus.focus === 'function'
-          && document.contains(_drawerReturnFocus)) {
-        _drawerReturnFocus.focus();
+      drawer.setAttribute('aria-hidden', 'true');
+      if (_drawerCloseTimer) { clearTimeout(_drawerCloseTimer); _drawerCloseTimer = null; }
+
+      // Release the EXACT screen inerted at open time, whatever is active now.
+      if (_drawerInertedScreen) {
+        _drawerInertedScreen.removeAttribute('inert');
+        _drawerInertedScreen = null;
       }
+
+      var wasOpen = _drawerWasOpen;
+      _drawerWasOpen = false;
+      var opener = _drawerReturnFocus;
       _drawerReturnFocus = null;
+
+      if (immediate || !wasOpen) {
+        // Hide now — no stale mattress content lingering over the next screen.
+        drawer.classList.remove('is-closing');
+      } else {
+        drawer.classList.add('is-closing');
+        _drawerCloseTimer = setTimeout(function() {
+          drawer.classList.remove('is-closing');
+          _drawerCloseTimer = null;
+        }, 400);
+      }
+
+      if (restoreFocus && wasOpen && opener && typeof opener.focus === 'function'
+          && document.contains(opener)) {
+        opener.focus();
+      } else if (drawer.contains && drawer.contains(document.activeElement)
+                 && document.activeElement && typeof document.activeElement.blur === 'function') {
+        // Session reset: focus must not be stranded inside a dialog that is
+        // now inert and hidden. Blur back to the document rather than pulling
+        // focus into the Results card being torn down.
+        document.activeElement.blur();
+      }
     };
 
     var _drawerReturnFocus = null;
     var _drawerWasOpen = false;
     var _drawerKeydownBound = false;
     var _drawerCloseTimer = null;
+    var _drawerInertedScreen = null;
 
     function drawerKeydown(e) {
       if (e.key === 'Escape') { e.preventDefault(); window.closeMattressDrawer(); return; }

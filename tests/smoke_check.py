@@ -374,16 +374,25 @@ def main():
           "function drawerKeydown" in html
           and "'Escape'" in html.split("function drawerKeydown")[1][:600]
           and "'Tab'" in html.split("function drawerKeydown")[1][:600])
-    check("drawer open() moves focus to the dialog title",
-          re.search(r"getElementById\('drawerName'\);?\s*\n?\s*if \(title", html) is not None
-          or "if (title && typeof title.focus === 'function') title.focus();" in html)
-    check("drawer close() restores focus to the opener",
-          "_drawerReturnFocus" in html and "_drawerReturnFocus.focus()" in html)
+    check("drawer ships aria-hidden=true and toggles it on open",
+          'aria-hidden="true"' in attrs and "setAttribute('aria-hidden', 'false')" in html)
     check("drawer toggles inert on open and close",
           "drawer.removeAttribute('inert')" in html and "drawer.setAttribute('inert', '')" in html)
-    check("background screen is made inert while the drawer is modal",
-          "activeScreen.setAttribute('inert', '')" in html
-          and "activeScreen.removeAttribute('inert')" in html)
+    # Behaviour is covered by tests/drawer_lifecycle_check.mjs, which executes
+    # the real extracted lifecycle. What remains worth pinning statically is the
+    # shape of the bug that was fixed: close() must release the screen it
+    # recorded at open time. Re-introducing a lookup of "whatever screen is
+    # active now" is what stranded #resultsScreen inert after an idle reset.
+    m_close = re.search(r"window\.closeMattressDrawer = function\([^)]*\) \{.*?\n    \};",
+                        html, re.S)
+    check("closeMattressDrawer() found", bool(m_close))
+    close_src = m_close.group(0) if m_close else ""
+    check("close() releases the STORED background screen, not the active one",
+          "_drawerInertedScreen" in close_src
+          and ".screen.active" not in close_src)
+    check("startOver() unwinds the drawer immediately, without focus restore",
+          re.search(r"closeMattressDrawer\(\{\s*immediate:\s*true,\s*restoreFocus:\s*false\s*\}\)",
+                    html) is not None)
 
     print(f"\nSmoke check: {passed} passed, {failed} failed")
     return 1 if failed else 0

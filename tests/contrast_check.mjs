@@ -132,7 +132,13 @@ check(".fin-btn-primary does not use the on-store tokens",
 //       Fixing D1 does not fix D2 — they are independent failures.
 // ===================================================================
 
-const styleBlock = html.slice(html.indexOf("<style>") + 7, html.indexOf("</style>"));
+// Comments are stripped before any scanning: they are not CSS, and leaving
+// them in makes the scanners wrong in both directions — a comment can glue
+// itself onto the next selector, and prose describing a colour (e.g. the word
+// "white" in a rationale) can trip a value assertion.
+const styleBlock = html
+  .slice(html.indexOf("<style>") + 7, html.indexOf("</style>"))
+  .replace(/\/\*[\s\S]*?\*\//g, "");
 
 // Rule scanner shared by the assertions below.
 const cssRules = [];
@@ -226,6 +232,88 @@ for (const sel of [".landing-cta-btn", ".noct-profile-cta", "#emailScreen .noct-
 {
   const rr = ratio(accentInk, "#F3EEE5");
   check(`--accent-ink boundary on cream >= 3:1 non-text (got ${rr.toFixed(2)}:1)`, rr >= 3);
+}
+
+// ===================================================================
+// D3 — DESCENDANTS of a store-primary-filled control.
+//
+// The D1 scan above is same-rule: it only sees a white foreground declared in
+// the very rule that also declares the primary fill. A descendant rule such as
+// `... .noct-quiz-option.selected .opt-sub { color: #FFF8ED }` paints text on
+// that same fill from a different rule and slips straight past it. That is a
+// real defect this suite previously missed, so the scanner is widened here.
+// ===================================================================
+
+// Selectors whose rule declares a store-primary background.
+const primaryFilled = [];
+for (const r of cssRules) {
+  if (!decls(r.body).some((x) => /^background(-color)?\s*:/.test(x) && PRIMARY_REF.test(x))) continue;
+  for (const s of r.sel.split(",")) primaryFilled.push(s.trim());
+}
+const descendantWhite = [];
+for (const r of cssRules) {
+  const white = decls(r.body).find((x) => /^color\s*:/.test(x) && HARDCODED_WHITE.test(x));
+  if (!white) continue;
+  for (const s of r.sel.split(",").map((x) => x.trim())) {
+    // a descendant selector of a filled control: "<filled><combinator>..."
+    if (primaryFilled.some((f) => f && s !== f && s.startsWith(f) && /[\s>+~]/.test(s.charAt(f.length)))) {
+      descendantWhite.push({ sel: s, decl: white.trim() });
+      break;
+    }
+  }
+}
+check(`no descendant of a store-primary-filled control hardcodes a white foreground (found ${descendantWhite.length})`,
+  descendantWhite.length === 0);
+if (descendantWhite.length) descendantWhite.forEach((r) => console.log(`        ${r.sel.slice(0, 90)}  ->  ${r.decl}`));
+
+// --- targeted: the selected quiz option and its subtext -----------------
+function ruleFor(exact) {
+  return cssRules.filter((r) => r.sel.split(",").some((s) => s.trim() === exact));
+}
+{
+  const sel = "body:has(#questionScreen.active) .noct-quiz-option.selected";
+  const rules = ruleFor(sel);
+  check("selected quiz option main text uses the computed on-primary token",
+    rules.length > 0 && rules.some((r) => /color:\s*var\(--on-store-primary\)/.test(r.body)));
+
+  const subRules = ruleFor(sel + " .opt-sub");
+  check("selected quiz-option SUBTEXT uses the computed on-primary token",
+    subRules.length > 0 && subRules.some((r) => /color:\s*var\(--on-store-primary\)/.test(r.body)));
+  check("selected quiz-option subtext no longer hardcodes a near-white",
+    subRules.length > 0 && !subRules.some((r) => HARDCODED_WHITE.test(r.body)));
+
+  // Opacity is retained, so prove the COMPOSITED result, not the raw pair.
+  const opacity = (() => {
+    for (const r of subRules) {
+      const m = r.body.match(/opacity:\s*([\d.]+)/);
+      if (m) return parseFloat(m[1]);
+    }
+    return 1;
+  })();
+  const fill = cfg.colors.storePrimary;               // the actual selected fill
+  const fg = pick(fill) || "#000000";                 // what the app computes
+  const composite = (() => {
+    const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+    const [fr, fg_, fb] = hex(fg), [br, bg_, bb] = hex(fill);
+    const mix = (f, b) => Math.round(f * opacity + b * (1 - opacity));
+    return "#" + [mix(fr, br), mix(fg_, bg_), mix(fb, bb)]
+      .map((v) => v.toString(16).padStart(2, "0")).join("");
+  })();
+  const rr = ratio(composite, fill);
+  check(`selected subtext composited at opacity ${opacity} (${fg} over ${fill} = ${composite}) >= 4.5:1 (got ${rr.toFixed(2)}:1)`,
+    rr >= 4.5);
+}
+
+// --- targeted: the Sleep System "Review Sleep Plan" control boundary ----
+{
+  const rules = ruleFor(".sleep-system__review-top");
+  check(".sleep-system__review-top (a <button>) boundary uses --accent-ink",
+    rules.length > 0 && rules.some((r) => /border[a-z-]*\s*:[^;]*var\(--accent-ink\)/.test(r.body)));
+  check(".sleep-system__review-top no longer borders with the raw store primary",
+    rules.length > 0 && !rules.some((r) =>
+      decls(r.body).some((x) => /^border[a-z-]*\s*:/.test(x) && PRIMARY_REF.test(x))));
+  const rr = ratio(accentInk, "#F3EEE5");
+  check(`its boundary clears 3:1 on the Sleep System surface (got ${rr.toFixed(2)}:1)`, rr >= 3);
 }
 
 console.log(`\nContrast check: ${passed} passed, ${failed} failed`);
