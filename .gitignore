@@ -7,6 +7,7 @@ docs/*
 !docs/lacks-clone-plan-2026-07-30.md
 !docs/deployment-workflow.md
 !docs/kiosk-device-hardening.md
+!docs/rebuild-roadmap.md
 tools/strip-bg.py
 
 # Local scratch / design mockups (kept locally, never committed)
