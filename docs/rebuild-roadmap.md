@@ -6,7 +6,9 @@ not in detail.** This is the durable plan of record for the rebuild agreed on
 its status line here in the same commit.
 
 **Last updated:** 2026-08-04
-**Baseline:** `94eab0d` (origin/main — merge of PR #10, specialist agenda)
+**Baseline:** `5a9cd10` (origin/main — merge of PR #11, this roadmap's first
+commit). Findings in the evidence appendix were established against `94eab0d`,
+its parent, and re-checked against this baseline.
 **Scope:** the Lacks deployment. Anything here that is not store-specific should
 migrate back to the WGR template, but that migration is out of scope until
 Phase 1 lands.
@@ -77,7 +79,10 @@ should not have to merge around known defects.
 
 ### 0.1 — Agenda analytics/test drift ✅
 
-**Shipped 2026-08-04 (this branch).** Building the specialist agenda (`2b34e7a`)
+**Fixed in PR #11, merged to `main` as `5a9cd10` on 2026-08-04 and published by
+the Pages deploy for that commit; the guard was then hardened in PR #12 after
+review found it incomplete** — see the end of this item.
+Building the specialist agenda (`2b34e7a`)
 renamed two financing events at their call sites but left `EVENT_FIELDS`
 declaring the old pair:
 
@@ -104,23 +109,80 @@ Verified to fail on the defect before the fix was applied. `offerVersion`
 remains deliberately redacted on every financing event — that is an existing
 privacy decision pinned by test, not drift.
 
+**PR #12: the guard had to fail closed.** As merged in PR #11, the scanner
+recognised single-quoted event literals only, so
+`analytics.log("new_event", payload)` was found as a call but yielded no name —
+and because a newly added event has no stale `EVENT_FIELDS` entry either, both
+equality assertions still passed while `redact()` dropped the event's whole
+payload. The guard reproduced the very defect it existed to prevent. Measured,
+not assumed: against a tree carrying that call, the original scanner reported
+31 names and no problem, the corrected one reported
+`PAYLOAD DROPPED FOR: brand_new_event`.
+It now parses single-quoted, double-quoted and
+un-interpolated template literals, supports the conditional form, and treats
+**any** first argument it cannot statically enumerate — dynamic identifier,
+interpolated template, concatenation, call expression, unterminated literal — as
+a failure rather than a silent zero-name contribution. Nineteen executed
+mutations cover the failure modes in both directions.
+
 ### 0.2 — This roadmap ✅
 
-**Shipped 2026-08-04 (this branch).** The document you are reading.
+**Added in PR #11, merged to `main` as `5a9cd10` on 2026-08-04; corrected in
+PR #12.** The document you are reading.
 
 ### 0.3 — `showScreen()` moves focus and announces ⬜
 
-Screen transitions currently change content without moving focus or announcing
-the change, so assistive technology users are stranded on a control that no
-longer exists. `showScreen()` must move focus to the new screen's heading and
-announce the transition.
+`showScreen()` (`index.html:11859`) swaps the `.active` class, retranslates,
+toggles chrome and scrolls to top. It never moves focus and never announces, so
+an assistive-technology user is left on a control that no longer exists.
 
-**Constraint that makes this non-trivial:** the app already has a live region
-used by the handoff screen, and `928f2ca` deliberately kept the sheet's agenda
-toggles *out* of it. A screen-level announcer must not resurrect that coupling,
-and must not fire during a session wipe — `tests/session_async_check.mjs`
-already pins that no post-wipe async work may compose an utterance for the
-previous customer.
+**Do not specify "focus the screen heading."** The eight screens do not all have
+one, and one that does is empty until runtime:
+
+| Screen | Heading | Note |
+|---|---|---|
+| `welcomeScreen` | **none** | a `<main class="main screen active">` with landing copy, no `h1`–`h6` |
+| `questionScreen` | **none** | the question text is not marked up as a heading |
+| `reviewScreen` | `h2#reviewHeadline` | "Quick review" |
+| `profileScreen` | `h1#profileName` | **empty in the static HTML** — populated at runtime |
+| `resultsScreen` | `h1#resultsHeadline` | "Your strongest matches are ready" |
+| `hf2Screen` | `h1#hf2ReviewTitle` | "Review Your Sleep Plan" |
+| `emailScreen` | `h1#emailHeadline` | "Save your Sleep Brief" |
+| `accessoriesScreen` | `h1#sleepSystemTitle` | "Explore Your Sleep Setup" |
+
+So a universal heading rule is unimplementable on two screens and would invent
+headings purely to satisfy itself — while `profileScreen` shows why the rule
+must say *rendered*: the element exists and is empty until the profile is
+built, and focusing it would announce nothing.
+
+**Destination policy:**
+
+1. Prefer a meaningful *rendered* heading when the screen has one — rendered,
+   because several headings are populated at runtime and an empty element is
+   not a destination.
+2. Otherwise focus the active screen container. `focusActiveScreen()`
+   (`index.html:17302`) is already that primitive: it selects `.screen.active`,
+   adds `tabindex="-1"` when absent, and focuses. Reuse it rather than writing
+   a second one. The container needs an appropriate **bilingual accessible
+   name**, which is config-driven copy, not a hardcoded English string.
+
+**Refuse to move focus at all when:**
+
+- a safety dialog or the mattress drawer owns focus — the dialog runs its own
+  focus trap (`safetyKeydown`, `index.html:17311`) and stealing focus from it
+  would break the trap and the modal's containment;
+- the transition is a wipe/reset, where no announcement is appropriate and
+  announcing anything risks describing the previous customer's session;
+- the destination is `hidden` or `inert` — the existing visibility helper
+  already rejects an element inside `[hidden], [inert]`, and focusing an inert
+  target silently does nothing while the announcement still fires.
+
+**Deferred announcements must revalidate at callback time**, not at schedule
+time: both the session identity and the active language can change between the
+two. `928f2ca` deliberately kept the sheet's agenda toggles out of the handoff
+live region, and `tests/session_async_check.mjs` pins that no post-wipe async
+work may compose an utterance for the previous customer. A screen-level
+announcer must satisfy both without resurrecting that coupling.
 
 ### 0.4 — Recovery from the data-error overlay ⬜
 
@@ -142,10 +204,48 @@ listed in Phase 0 because it is a *move*, not a redesign.
 
 ### 0.6 — Replace medical-sounding handoff language ⬜
 
-Handoff copy must read as **implication, not diagnosis**. The quiz collects
-health conditions (snoring, reflux, back pain) and the app must never phrase
-its output as a clinical finding about the customer. This is a copy change in
-`store-config.json` `text` / `text_es`, not an app-code change.
+Handoff copy must read as **implication, not diagnosis**. The app must never
+present its output as a clinical finding about the customer.
+
+**Where the language actually comes from — verified, and not where an earlier
+draft of this document said.** The handoff Profile row is built at
+`index.html:16152` as `position · conditions · firmness · temperature`, and the
+condition strings are resolved by `answerLabelFor('health_conditions', id)` —
+i.e. they are the **quiz option labels themselves**, not store copy. The
+offending strings are therefore:
+
+| Option | Label | Sublabel |
+|---|---|---|
+| `snoring` | Snoring or Sleep Apnea | You or your partner |
+| `nerve_pain` | Nerve Pain or Tingling | Shooting pain, numbness |
+| `reflux` | Acid Reflux / Heartburn | Burns when lying down |
+
+Concatenated, a handoff reads *"Side Sleeper · Snoring or Sleep Apnea · Nerve
+Pain or Tingling · Medium 6/10"* — a clinical summary of a person, handed to a
+salesperson. "Sleep Apnea" is a diagnosis the kiosk is in no position to record.
+
+**Canonical source and pipeline.** These labels live in
+`incoming/dreamfinder_quiz.json` → workbook **Quiz** tab (JSON envelope) →
+`data/quiz.json`. `data/quiz.json` is **generated and must never be hand-edited**;
+neither may `data/store-config.json`, which is generated from
+`incoming/lacks_store_values.json` (flat dotted keys such as `text.trustSignal`
+/ `text_es.trustSignal`) → workbook **Store Info** tab → `data/store-config.json`.
+Change the canonical source, regenerate through `build_lacks_workbook.py` then
+`tools/convert_store_data.py`, and verify the generated artifacts with the
+strict golden bundle rather than inspecting them by eye.
+
+Label text is copy-only variation, which `validate_quiz` permits — it pins ids,
+types, option order and `scores`, not label strings. So this is a supported
+change.
+
+**But it is not only a relabel, and that is the design question this item has
+to answer.** These labels are what the *customer* taps during the quiz, where
+plain recognisable language ("Snoring or Sleep Apnea") is exactly what makes the
+option findable. Softening them for the handoff would degrade the quiz. If the
+handoff needs different phrasing from the quiz — implication rather than
+restatement — that is a **handoff-side presentation mapping**: app code plus new
+bilingual config keys, not an edit to the shared label. Decide which of the two
+this is before writing any copy.
 
 ### 0.7 — Preserve session, privacy and financing isolation ⬜
 
@@ -267,11 +367,24 @@ Ship the whole mechanism with nothing rendered:
 
 - verified **SKU/size prices**;
 - approved **plan calculation modes**;
-- **quote-only fallbacks** where a price is not verified;
 - **freshness, ownership and emergency-disable controls**, following the pattern
   financing already uses (`verifiedAt` + `maxAgeDays` + allowlisted `sourceUrl`,
   fail-closed);
 - **no customer-facing output yet.**
+
+**Two unavailability states, and they are not interchangeable.** Collapsing them
+is how a kiosk ends up implying it knows a price it does not have:
+
+| Condition | State | What is shown |
+|---|---|---|
+| The **product price** is missing, stale, or not approved | *price unavailable* | No numeric payment result of any kind. An explicit missing-price state — never a payment figure, never an estimate derived from a substitute price. |
+| The **plan** has no approved payment calculation model, but an approved product price exists | *quote-only plan* | The price may be shown per Phase 2.2; no calculated periodic payment is shown, because the formula is not approved — not because the price is unknown. |
+
+"Quote-only" is a property of a **financing plan**, never a fallback label for an
+unverified price. A quote-only plan with a good price and a plan with no usable
+price are different failures with different remedies, and a customer told
+"ask us for a quote" when the real problem is a stale price receives a false
+signal about what the store knows.
 
 The existing financing freshness gates are the model to copy, and
 `validate_financing` already enforces the V1 invariant that no product-level
@@ -359,7 +472,10 @@ from a desk.
 
 ## Sequence of record
 
-1. ✅ **Small analytics/roadmap closeout PR** — Phase 0.1 + 0.2.
+1. ✅ **Analytics/roadmap closeout** — Phase 0.1 + 0.2. PR #11 (merged as
+   `5a9cd10`) fixed the event drift and added this roadmap; PR #12 made the
+   event-set guard fail closed and corrected the roadmap's focus, data-source
+   and pricing-terminology entries.
 2. ⬜ **Finish the remaining Phase 0 defects** — 0.3 through 0.7.
 3. ⬜ **Execute the redesign** — text, Sleep Brief, cards, comparison
    (Phase 1). Start the catalog reason-content authoring (1.3 blocker) in
@@ -388,6 +504,17 @@ from the audit's measurements (word counts, which are cited as audit figures):
 | 8 | `motionIsolation` / `pressureRelief` never score — case mismatch against catalog | `index.html:12312` |
 | 9 | Six quiz tags match no catalog feature in any casing | `data/quiz.json` vs `data/mattresses.json` |
 | 10 | `maxScore` is per-tier, so match percentages are not comparable across tiers | `index.html:13795` |
+
+Added by PR #12, verified against `5a9cd10`:
+
+| # | Finding | Where |
+|---|---|---|
+| 11 | The guard as merged in PR #11 missed double-quoted event literals, so a new event escaped both equality checks — the defect the guard exists to prevent | `tests/session_async_check.mjs` |
+| 11a | Whitespace-tolerant call forms (`analytics.log (`, newline before the paren) escaped call-site *discovery* entirely — the same failure one step earlier, and it passed at 203/0 until fixed | `tests/session_async_check.mjs` |
+| 12 | Of 8 screens, `welcomeScreen` and `questionScreen` render **no** heading, and `profileScreen`'s `h1` is empty until runtime — so "focus the heading" is neither universal nor safe unqualified | `index.html:9506`, `9581`, `9602` |
+| 13 | `focusActiveScreen()` already provides the container-focus primitive (`.screen.active`, `tabindex="-1"`, focus) | `index.html:17302` |
+| 14 | `showScreen()` moves no focus and makes no announcement | `index.html:11859` |
+| 15 | Handoff condition strings are quiz option labels via `answerLabelFor`, not store copy — canonical source is `incoming/dreamfinder_quiz.json` | `index.html:16152` |
 
 Line references are to the tree as of this commit and will drift; the
 surrounding code excerpts are the durable anchor.
