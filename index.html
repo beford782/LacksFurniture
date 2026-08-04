@@ -9937,10 +9937,15 @@
            (.fin-handoff__headline), so the tag change is visual-neutral. -->
       <h2 class="fin-handoff__headline" id="hf2FinancingHeadline"></h2>
       <div class="fin-handoff__interest" id="hf2FinancingInterest"></div>
-      <!-- Module-scoped announcement region for the agenda controls above.
-           Populated by announceFinInterest() on handoff transitions only;
-           cleared by startOver(). Mirrors the financing sheet's status
-           region pattern (2d79731). -->
+      <!-- Module-scoped announcement region for the HANDOFF's own action
+           controls (Not right now / Change). Populated by
+           announceFinInterest(), whose only caller is
+           setFinancingInterestChoice(); cleared by the session wipe and by
+           a language switch. The sheet's agenda toggles deliberately do NOT
+           write here — they are aria-pressed toggles and announce
+           themselves, and a sheet opened from the handoff would otherwise
+           speak through a region behind the modal. Mirrors the financing
+           sheet's own status region pattern (2d79731). -->
       <div
         class="sr-only"
         id="hf2FinancingStatus"
@@ -10530,6 +10535,17 @@
       return finAgendaItems().filter(function(item) { return financingAgenda[item.key] === true; });
     }
 
+    // Sheet agenda control. This is a TOGGLE, not an action: it has two
+    // persistent states (marked / unmarked), it is independent of every
+    // other agenda control, and the customer and salesperson flip it back
+    // and forth during the conversation. aria-pressed is therefore the
+    // correct semantic, and it is what announces the change — the control
+    // must not also write to the handoff live region.
+    //
+    // Contrast with the handoff's "Not right now" / "Change" controls
+    // (renderHandoffFinancing): those are ACTIONS. Each performs a
+    // transition and is then replaced by its counterpart, so they carry no
+    // aria-pressed and DO announce through the handoff region.
     function finAgendaControl(item) {
       if (!item) return '';
       var marked = financingAgenda[item.key] === true;
@@ -10558,7 +10574,16 @@
           replacement.focus();
         }
       }
-      announceFinInterest(finAgendaSelected().length ? 'interested' : 'undecided');
+      // Deliberately NO announceFinInterest() here. These sheet controls are
+      // TOGGLES: each carries its own aria-pressed, so assistive technology
+      // reports the state change from the control the customer and
+      // salesperson just operated. Routing them through the HANDOFF live
+      // region was wrong three ways — a sheet opened FROM the handoff would
+      // speak through a region sitting behind the modal; unmarking one path
+      // while others remained marked still announced a generic "marked"; and
+      // it crossed the sheet/handoff boundary, so the region stopped
+      // describing the screen it belongs to. The handoff announcer now serves
+      // only the handoff's own action controls (setFinancingInterestChoice).
     };
 
     window.requestFinancingFollowup = function(placement) {
@@ -10581,10 +10606,13 @@
         && mod && !mod.hidden && !mod.closest('[hidden]'));
     }
 
-    // Announce handoff interest state in the module-scoped status region
-    // (bilingual config keys shipped dark in Commit A). Identical messages
-    // CAN repeat — the persistent specialist button re-requests 'interested'
-    // — so each announcement clears the region and repopulates it in a short
+    // Announce a HANDOFF action in the module-scoped status region.
+    // SOLE CALLER: setFinancingInterestChoice() — the handoff's own
+    // "Not right now" / "Change" action buttons. The sheet's agenda toggles
+    // are aria-pressed toggles and announce themselves; they must never
+    // reach this region (see toggleFinancingAgenda). Identical messages CAN
+    // repeat — the same action can be re-requested — so each announcement
+    // clears the region and repopulates it in a short
     // deferred callback: the clear+set pair is a guaranteed DOM mutation
     // even for repeated text. FC(key) is resolved inside the callback so a
     // language switch landing mid-defer announces current-language text; the
@@ -10592,6 +10620,12 @@
     function announceFinInterest(state) {
       var region = document.getElementById('hf2FinancingStatus');
       if (!region || !finHandoffVisible()) return;
+      // Only 'not_now' and 'undecided' reach here today —
+      // setFinancingInterestChoice() rejects everything else, and the sheet's
+      // agenda toggles announce themselves. The 'interested' arm is therefore
+      // currently unreachable; it is kept because the copy key still ships in
+      // store-config (pinned by tests/financing_copy_policy_check.mjs) and
+      // retiring the two together is a config regeneration, not a code edit.
       var key = state === 'interested' ? 'interestMarkedAnnounce'
         : state === 'not_now' ? 'interestNotNowAnnounce'
         : 'interestClearedAnnounce';
@@ -10983,6 +11017,10 @@
           + '<ul class="fin-agenda-list">'
           + selected.map(function(item) { return '<li>' + finEsc(item.label) + '</li>'; }).join('')
           + '</ul><p class="fin-agenda-consequence">' + finEsc(FC('agendaConsequence')) + '</p>';
+      // ACTION buttons, deliberately without aria-pressed: each performs a
+      // transition and is then replaced by its counterpart, rather than
+      // holding a state the customer toggles. They announce through
+      // announceFinInterest(); the sheet's agenda toggles do not.
       } else if (financingAgendaDismissed) {
         interestEl.innerHTML = '<p class="fin-interest-prompt">' + finEsc(FC('agendaDismissed')) + '</p>'
           + '<button type="button" class="fin-btn fin-btn-ghost" id="hf2FinancingInterestChange" '
