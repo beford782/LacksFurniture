@@ -72,11 +72,14 @@ Verification target: the deployed preview URL on the actual mounted hardware,
 in the actual kiosk browser, in both English and Spanish.
 
 **This checklist is per mounted showroom tablet and is deliberately still
-unticked**, including *Use Contact Info: OFF*. That setting was turned off on
-the **test** iPad during the 2026-08-03 runs recorded further down, which is how
-the mechanism was identified — but no showroom tablet has been configured, and a
-result on a test device does not tick a box for a device that does not exist
-yet. Tick these per device, at deployment time.
+unticked**, including *Use Contact Info: OFF* — which was turned off on the test
+iPad during the 2026-08-03 runs recorded further down, and is how the mechanism
+was identified.
+
+> This checklist remains unticked because the hardware tests did not establish
+> that the test iPad is the mounted showroom device or that every per-device
+> deployment control was configured and verified. Tick these items individually
+> on each deployed tablet after verification.
 
 ### iPad / iOS (Safari or Guided Access kiosk)
 
