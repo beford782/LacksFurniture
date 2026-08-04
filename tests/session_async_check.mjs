@@ -839,33 +839,213 @@ section("diagnostic contract: the logged event set and EVENT_FIELDS agree");
   //
   // EVENT_FIELDS is read off the executing object, not re-parsed out of the
   // source, so this compares against what actually ships.
-  const codeOnly = html.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^[ \t]*\/\/.*$/gm, "");
-  const CALL = "analytics.log(";
-  const logged = new Set();
-  for (let i = codeOnly.indexOf(CALL); i !== -1; i = codeOnly.indexOf(CALL, i + CALL.length)) {
-    // First argument only. Walk from the call's open paren to the top-level
-    // comma, or to its own closing paren for the no-payload form. Taking every
-    // literal in the whole call would swallow payload values; taking only the
-    // first would miss the ternary form the email send uses.
-    let depth = 1, j = i + CALL.length;
-    const start = j;
-    while (j < codeOnly.length && depth > 0) {
-      const c = codeOnly[j];
-      if (c === "(" || c === "[" || c === "{") depth++;
-      else if (c === ")" || c === "]" || c === "}") depth--;
-      else if (c === "," && depth === 1) break;
-      if (depth > 0) j++;
+  //
+  // THE GUARD MUST FAIL CLOSED, and the first version of it did not (caught in
+  // review of PR #11). It matched single-quoted literals only, so
+  //     analytics.log("new_event", payload)
+  // was found as a call but yielded no name. A newly added event has no stale
+  // EVENT_FIELDS entry to trip the reverse direction either, so BOTH equality
+  // assertions passed while redact() dropped the event's whole payload — the
+  // precise regression this section exists to prevent, reintroduced by the
+  // guard's own blind spot. A scanner that contributes nothing when it does not
+  // understand something is worse than no scanner: it reports success.
+  //
+  // So the rule is now inverted. Every discovered analytics.log() call MUST
+  // yield at least one statically enumerable name, and anything not understood
+  // — a dynamic identifier, an interpolated template, a concatenation, an
+  // unbalanced call — is a FAILURE rather than a silent zero-name contribution.
+  // Adding a genuinely dynamic event name is then a deliberate act that has to
+  // change this guard, which is the point.
+
+  // Literal-aware scan of one first-argument expression. String literals are
+  // atoms, so a comma or paren inside a literal cannot end the argument, and a
+  // literal in a later payload argument cannot be mistaken for an event name.
+  function tokenizeArg(src) {
+    const out = [];
+    let i = 0;
+    while (i < src.length) {
+      const c = src[i];
+      if (c === "'" || c === '"' || c === "`") {
+        let j = i + 1, v = "";
+        while (j < src.length) {
+          if (src[j] === "\\") { v += src[j + 1] ?? ""; j += 2; continue; }
+          if (src[j] === c) break;
+          // An interpolated template cannot be enumerated statically.
+          if (c === "`" && src[j] === "$" && src[j + 1] === "{") return null;
+          v += src[j]; j++;
+        }
+        if (j >= src.length) return null;          // unterminated literal
+        out.push({ t: "str", v });
+        i = j + 1;
+        continue;
+      }
+      // `?.` and `??` are not the conditional operator and must not split it.
+      if (c === "?" && (src[i + 1] === "." || src[i + 1] === "?")) {
+        out.push({ t: "other", v: c }); i += 2; continue;
+      }
+      if (c === "?" || c === ":") { out.push({ t: "op", v: c }); i++; continue; }
+      if (c === "(" || c === ")") { out.push({ t: "paren", v: c }); i++; continue; }
+      out.push({ t: "other", v: c }); i++;
     }
-    for (const m of codeOnly.slice(start, j).matchAll(/'([a-z0-9_]+)'/g)) logged.add(m[1]);
+    return out;
   }
-  const listed = new Set(Object.keys(A.EVENT_FIELDS));
+
+  // An event expression is either a single literal, or a conditional whose two
+  // branches are themselves event expressions. The CONDITION is ignored — it
+  // does not produce the name. Everything else yields null, i.e. a failure.
+  function namesFromTokens(tokens) {
+    let depth = 0, qIdx = -1;
+    for (let k = 0; k < tokens.length; k++) {
+      const t = tokens[k];
+      if (t.t === "paren") depth += t.v === "(" ? 1 : -1;
+      else if (t.t === "op" && t.v === "?" && depth === 0) { qIdx = k; break; }
+    }
+    if (qIdx === -1) {
+      const meaningful = tokens.filter((t) =>
+        t.t !== "paren" && !(t.t === "other" && /\s/.test(t.v)));
+      return (meaningful.length === 1 && meaningful[0].t === "str")
+        ? [meaningful[0].v] : null;
+    }
+    let nested = 0, colonIdx = -1, d = 0;
+    for (let k = qIdx + 1; k < tokens.length; k++) {
+      const t = tokens[k];
+      if (t.t === "paren") d += t.v === "(" ? 1 : -1;
+      else if (t.t === "op" && d === 0) {
+        if (t.v === "?") nested++;
+        else if (nested === 0) { colonIdx = k; break; }
+        else nested--;
+      }
+    }
+    if (colonIdx === -1) return null;
+    const a = namesFromTokens(tokens.slice(qIdx + 1, colonIdx));
+    const b = namesFromTokens(tokens.slice(colonIdx + 1));
+    return (a && b) ? a.concat(b) : null;
+  }
+
+  // Literal-aware extraction of the first argument of the call opening at idx.
+  function firstArg(src, idx) {
+    let depth = 1, i = idx;
+    while (i < src.length) {
+      const c = src[i];
+      if (c === "'" || c === '"' || c === "`") {
+        const q = c; i++;
+        while (i < src.length) {
+          if (src[i] === "\\") { i += 2; continue; }
+          if (src[i] === q) { i++; break; }
+          i++;
+        }
+        continue;
+      }
+      if (c === "(" || c === "[" || c === "{") { depth++; i++; continue; }
+      if (c === ")" || c === "]" || c === "}") {
+        depth--;
+        if (depth === 0) return src.slice(idx, i);
+        i++; continue;
+      }
+      if (c === "," && depth === 1) return src.slice(idx, i);
+      i++;
+    }
+    return null;                                    // unbalanced call
+  }
+
+  // The whole audit as a pure function, so the mutation battery below can run
+  // it over sources and contracts that are not this repository's.
+  function auditEventContract(source, listedNames) {
+    const code = source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^[ \t]*\/\/.*$/gm, "");
+    const CALL = "analytics.log(";
+    const names = new Set();
+    const unparsed = [];
+    for (let i = code.indexOf(CALL); i !== -1; i = code.indexOf(CALL, i + CALL.length)) {
+      const arg = firstArg(code, i + CALL.length);
+      const found = arg === null ? null : (() => {
+        const toks = tokenizeArg(arg);
+        return toks === null ? null : namesFromTokens(toks);
+      })();
+      if (!found || !found.length) {
+        unparsed.push((arg === null ? "<unbalanced>" : arg).trim().slice(0, 60));
+        continue;
+      }
+      for (const n of found) names.add(n);
+    }
+    const listed = new Set(listedNames);
+    return {
+      names,
+      unparsed,
+      unlisted: [...names].filter((e) => !listed.has(e)).sort(),
+      unlogged: [...listed].filter((e) => !names.has(e)).sort(),
+    };
+  }
+
+  const shipped = auditEventContract(html, Object.keys(A.EVENT_FIELDS));
+  const logged = shipped.names;
   check(`the sweep found the call sites (${logged.size} distinct event names)`, logged.size > 20);
-  const unlisted = [...logged].filter((e) => !listed.has(e)).sort();
-  const unlogged = [...listed].filter((e) => !logged.has(e)).sort();
-  check(`every logged event is declared in EVENT_FIELDS${unlisted.length ? " — PAYLOAD DROPPED FOR: " + unlisted.join(", ") : ""}`,
-    unlisted.length === 0);
-  check(`every EVENT_FIELDS entry is actually logged${unlogged.length ? " — DEAD ENTRIES: " + unlogged.join(", ") : ""}`,
-    unlogged.length === 0);
+  check(`every analytics.log() call yields a statically enumerable name${shipped.unparsed.length ? " — UNPARSED: " + shipped.unparsed.join(" | ") : ""}`,
+    shipped.unparsed.length === 0);
+  check(`every logged event is declared in EVENT_FIELDS${shipped.unlisted.length ? " — PAYLOAD DROPPED FOR: " + shipped.unlisted.join(", ") : ""}`,
+    shipped.unlisted.length === 0);
+  check(`every EVENT_FIELDS entry is actually logged${shipped.unlogged.length ? " — DEAD ENTRIES: " + shipped.unlogged.join(", ") : ""}`,
+    shipped.unlogged.length === 0);
+
+  // ---- non-vacuity: the guard must actually reject each failure mode -------
+  // Every mutation below reintroduces a way the contract can silently break.
+  // A guard that passes them all is decorative, so each is executed.
+  {
+    const LISTED = ["alpha", "beta"];
+    const m = (src, listedNames = LISTED) => auditEventContract(src, listedNames);
+
+    // The exact escape Codex found: double quotes, no stale entry to catch it.
+    const dq = m(`analytics.log('alpha', p); analytics.log("beta", p); analytics.log("new_event", p);`);
+    check("MUTATION: a double-quoted unlisted event is caught",
+      dq.unlisted.join(",") === "new_event" && dq.unparsed.length === 0);
+
+    check("double-quoted literals are recognised, not merely rejected",
+      m(`analytics.log("alpha", p); analytics.log("beta", p);`).unlisted.length === 0);
+
+    const tpl = m("analytics.log(`alpha`, p); analytics.log(`beta`, p);");
+    check("un-interpolated template literals are recognised",
+      tpl.unparsed.length === 0 && tpl.unlisted.length === 0 && tpl.unlogged.length === 0);
+
+    check("MUTATION: an interpolated template literal fails",
+      m("analytics.log(`evt_${i}`, p);").unparsed.length === 1);
+    check("MUTATION: a dynamic identifier first argument fails",
+      m("analytics.log(eventName, p);").unparsed.length === 1);
+    check("MUTATION: a concatenated first argument fails",
+      m("analytics.log('pre' + suffix, p);").unparsed.length === 1);
+    check("MUTATION: a function-call first argument fails",
+      m("analytics.log(nameFor(x), p);").unparsed.length === 1);
+    // A call whose first argument never terminates. (`log('alpha', p;` is NOT
+    // this case — its first argument is complete and correctly yields "alpha";
+    // unbalance after the event name cannot affect enumeration.)
+    check("MUTATION: a truncated call with no argument terminator fails",
+      m("analytics.log('alpha'").unparsed.length === 1);
+    check("MUTATION: an unterminated string literal fails",
+      m("analytics.log('alpha, p);").unparsed.length === 1);
+
+    check("the conditional form still enumerates BOTH branches",
+      m("analytics.log(flag ? 'alpha' : 'beta', p);").unlisted.length === 0);
+    check("a nested conditional enumerates every branch",
+      m("analytics.log(a ? 'alpha' : b ? 'beta' : 'gamma', p);").unlisted.join(",") === "gamma");
+    check("a conditional with a dynamic branch fails",
+      m("analytics.log(flag ? 'alpha' : other, p);").unparsed.length === 1);
+    check("optional chaining in the condition is not read as a conditional",
+      m("analytics.log(o?.flag ? 'alpha' : 'beta', p);").unparsed.length === 0);
+
+    check("a comma inside a literal does not truncate the argument",
+      m(`analytics.log('alpha', { s: 'x,y' });`).unlisted.length === 0);
+    check("a literal in the PAYLOAD is never mistaken for an event name",
+      m(`analytics.log('alpha', { note: 'beta_typo' });`).names.has("beta_typo") === false);
+
+    // Both directions of the set equality, mutated against the real source.
+    const dropped = Object.keys(A.EVENT_FIELDS).filter((e) => e !== "quiz_started");
+    check("MUTATION: removing an EVENT_FIELDS entry is caught",
+      auditEventContract(html, dropped).unlisted.join(",") === "quiz_started");
+    check("MUTATION: adding a stale EVENT_FIELDS entry is caught",
+      auditEventContract(html, Object.keys(A.EVENT_FIELDS).concat("retired_event"))
+        .unlogged.join(",") === "retired_event");
+    check("the unmutated shipped source and contract pass",
+      shipped.unparsed.length === 0 && shipped.unlisted.length === 0
+      && shipped.unlogged.length === 0);
+  }
   // The specific pair, so the regression reads by name in the log too.
   for (const ev of ["financing_agenda_changed", "financing_agenda_reviewed"]) {
     const printed = runLogged(() => A.log(ev, {
