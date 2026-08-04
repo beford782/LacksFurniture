@@ -3,27 +3,28 @@
 **Status: BLOCKING for showroom use. Application/session paths verified; device
 deployment not.** The application-level work in Gate 1B is complete and
 verified. On the test iPad, Safari Contact AutoFill was identified as the
-observed mechanism and suppressed, and every session-ending route the
-application owns was individually checked clean. What has **not** been done is
+observed mechanism and suppressed, and every identified customer-facing
+session-ending route was individually checked clean. What has **not** been done is
 the device deployment: no supervised MDM payload has been applied or proven, and
 several checklist controls remain unverified. That work cannot be done from the
 codebase.
 
-The gap was never theoretical. **On a real iPad, iOS offered an autofill
+The gap is no longer theoretical. **On a real iPad, iOS offered an autofill
 suggestion in the contact fields** on the deployed build, with every mitigation
 `index.html` can express already in place — see *Observed on hardware* below.
 That proves the markup is insufficient on this hardware. A follow-up found the
 suggestion disappeared once **Use Contact Info** was turned off, identifying
 Safari Contact AutoFill as the observed mechanism and proving that setting
-effective for that suggestion on this iPad. Each session-ending route —
-Restart, timeout to expiry, validation error, saved confirmation, and
-background/wake — was then exercised individually, and each left a fresh session
-with empty fields offering none of the prior values.
+effective for that suggestion on this iPad. Each identified customer-facing
+session-ending route — Restart, timeout to expiry, validation error, saved
+confirmation via Restart, saved confirmation via its dedicated **Start New
+Customer** control, and background/wake — was then exercised individually, and
+each left a fresh session with empty fields offering none of the prior values.
 
 Those results verify the application/session boundary on this hardware. They do
 **not** complete the device checklist, and they do not prove either supervised
-Restrictions payload: the controls used were manual Settings toggles on an
-unsupervised device, which anyone reaching Settings can undo. An unmanaged
+Restrictions payload: the controls used were changed through the Settings UI,
+and the device's supervision/enrolment state was never established. An unmanaged
 autofill surface on a tablet handed between members of the public may expose
 personal information, so:
 
@@ -199,8 +200,17 @@ then tap each contact field.
 | **Restart** | Restart selected and confirmed | fields empty; none of the prior values offered |
 | **Timeout to expiry** | idle until the warning appeared, then **no action taken** through the grace period, so the automatic reset ran | fields empty; none of the prior values offered |
 | **Validation error** | invalid email entered to trigger the validation state, then Restart confirmed | fields empty; **no stale validation error**; none of the prior values offered |
-| **Saved confirmation** | valid fake details carried through to the saved-confirmation screen, then Restart confirmed | fields empty; none of the prior values offered |
+| **Saved confirmation → global Restart** | valid fake details carried through to the saved-confirmation screen, then the global Restart control used and confirmed | fields empty; none of the prior values offered |
+| **Saved confirmation → Start New Customer** | valid fake details carried to the saved-confirmation screen, then its dedicated **Start New Customer** control tapped | fields empty; none of the prior values offered |
 | **Background / wake** | Safari backgrounded for longer than the full policy window, then reopened | reopening showed the **warning**, not a silent erase; Restart then selected; the subsequent session was clean and offered no prior values |
+
+The last two rows are deliberately separate results, because they are separate
+code paths. The global Restart control and the email screen's "Start over" both
+carry `js-start-over`, whose delegated handler calls `requestStartOver()` and
+routes through the safety confirmation dialog. The saved-confirmation screen's
+own **Start New Customer** button (`#emailConfirmStartOver`) instead calls
+`window.startOver()` directly, reaching `resetSessionState()` with no dialog in
+between. Verifying one says nothing about the other, so both were run.
 
 The background/wake case is worth calling out separately: it confirms the
 deadline reconciliation behaves as designed — a tablet that sleeps past both
@@ -222,12 +232,18 @@ suggestion. Application markup alone does not suppress iOS autofill here.
 **Established by the follow-up.** The observed mechanism was Safari Contact
 AutoFill, and turning off **Use Contact Info** suppressed it on this iPad.
 
-**Established by the per-route runs.** Every session-ending route the
-application itself owns — Restart, timeout to expiry, validation-error state,
-saved-confirmation state, and background/wake — was exercised individually on
-this iPad with **Use Contact Info** off, and in each case the fresh session
-started with empty fields and offered none of the prior values. Background/wake
-additionally showed the warning rather than a silent erase.
+**Established by the per-route runs.** Every identified customer-facing
+session-ending route — Restart, timeout to expiry, validation-error state,
+saved confirmation via the global Restart control, saved confirmation via its
+dedicated **Start New Customer** control, and background/wake — was exercised
+individually on this iPad with **Use Contact Info** off, and in each case the
+fresh session started with empty fields and offered none of the prior values.
+Background/wake additionally showed the warning rather than a silent erase.
+
+"Identified" is doing real work in that sentence: it means the routes known
+and enumerated at the time of testing, not a proof of exhaustiveness. The
+Start New Customer route was added precisely because review found it had been
+missed. A further audit could surface another entry point.
 
 **Not established — and important not to overstate.** This is verification of
 the *application/session paths* on *this iPad*, under *one* device
@@ -236,14 +252,19 @@ a different iOS version, a device signed into a personal Apple ID, a restored
 backup, a third-party keyboard or a password manager could each behave
 differently, and none of those was tested.
 
-Critically, **no supervised MDM payload was deployed or proven.** The controls
-exercised were manual Settings toggles on an unsupervised device. A Settings
-toggle is not equivalent to `safariAllowAutoFill` or `allowPasswordAutoFill`
-enforced through a Restrictions payload: the toggle can be changed by anyone who
-reaches Settings, which is exactly what supervision and single-app mode exist to
-prevent. Guided Access is likewise not a supervised MDM profile. Both payload
-keys, supervision via ADE or Apple Configurator, the clear-site-data routine and
-the remaining deployment controls stay unchecked.
+Critically, **no supervised Restrictions payload was applied or proven during
+these tests**, and **the device's supervision / enrolment state was not
+established** — whether this iPad is supervised through Automated Device
+Enrolment, Apple Configurator or an MDM is simply not known. The controls
+exercised were changed through the **Settings UI**.
+
+A Settings toggle does not prove either `safariAllowAutoFill` or
+`allowPasswordAutoFill`. Those are enforced through a Restrictions payload; a
+toggle can be changed by anyone who reaches Settings, which is what supervision
+and single-app mode exist to prevent. Guided Access is likewise not a supervised
+MDM profile. Both payload keys, supervision via ADE or Apple Configurator, the
+clear-site-data routine and the remaining deployment controls stay unchecked —
+and determining this device's supervision state is itself now an open item.
 
 The operative conclusion, bounded to the evidence:
 
@@ -261,8 +282,8 @@ recommendation.
 
 **Closed for the application/session paths on this iPad.** Safari Contact
 AutoFill was the responsible mechanism, **Use Contact Info: OFF** suppressed it,
-and every session-ending route the application owns was individually verified to
-leave a clean fresh session.
+and every identified customer-facing session-ending route was individually
+verified to leave a clean fresh session.
 
 **Still open for the device boundary — the gate remains BLOCKING.** No
 supervised MDM payload was deployed or proven; neither `safariAllowAutoFill` nor
@@ -291,8 +312,13 @@ which run in Node against a DOM shim.
 - [x] Repeat from the **validation-error** state (invalid email, then Restart
       confirmed) — fresh session had empty fields, no stale validation error,
       and offered none of the prior values
-- [x] Repeat from the **saved-confirmation** state (valid fake details carried
-      to the confirmation screen, then Restart confirmed) — fresh session clean
+- [x] Repeat from the **saved-confirmation** state via the global Restart
+      control (valid fake details carried to the confirmation screen, then
+      Restart confirmed) — fresh session clean
+- [x] Repeat from the **saved-confirmation** state via its dedicated **Start
+      New Customer** control (`#emailConfirmStartOver`, which calls
+      `window.startOver()` directly, bypassing the safety dialog) — fresh
+      session had empty fields and offered none of the prior values
 - [x] Background the app for longer than the full policy window, reopen, and
       confirm the reconciliation shows the **warning** (not a silent wipe) —
       confirmed; Restart then gave a clean session
@@ -303,8 +329,11 @@ which run in Node against a DOM shim.
       = false` (a manual Settings toggle is **not** equivalent — see above)
 - [ ] Deploy and prove the supervised Restrictions payload
       `allowPasswordAutoFill = false`
-- [ ] Supervise the device via Automated Device Enrolment or Apple Configurator
-      (prerequisite for both keys above)
+- [ ] Establish whether the test iPad is supervised at all. Its supervision /
+      enrolment state was never determined, so no conclusion about payload
+      enforceability can be drawn from these runs either way
+- [ ] Supervise the mounted device via Automated Device Enrolment or Apple
+      Configurator (prerequisite for both keys above)
 - [ ] Confirm the keyboard's predictive strip is itself absent / offers nothing
       from the previous customer. Predictive was off during the runs above and
       no prior value was offered, but the strip was not separately observed
