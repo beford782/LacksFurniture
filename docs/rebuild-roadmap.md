@@ -77,13 +77,12 @@ Small, verifiable work. No design input required. This phase closes out before
 Phase 1 design work begins, because Phase 1 will touch the same screens and
 should not have to merge around known defects.
 
-### 0.1 — Agenda analytics/test drift ✅ (guard hardened in follow-up)
+### 0.1 — Agenda analytics/test drift ✅
 
-**Implemented and verified in PR #11; merged to `main` as `5a9cd10` on
-2026-08-04 and published by the Pages deploy for that commit.** The guard
-shipped in that PR was then found incomplete in review and is corrected in the
-follow-up branch `claude/analytics-guard-fail-closed` — see the end of this
-item. Building the specialist agenda (`2b34e7a`)
+**Fixed in PR #11, merged to `main` as `5a9cd10` on 2026-08-04 and published by
+the Pages deploy for that commit; the guard was then hardened in PR #12 after
+review found it incomplete** — see the end of this item.
+Building the specialist agenda (`2b34e7a`)
 renamed two financing events at their call sites but left `EVENT_FIELDS`
 declaring the old pair:
 
@@ -110,12 +109,16 @@ Verified to fail on the defect before the fix was applied. `offerVersion`
 remains deliberately redacted on every financing event — that is an existing
 privacy decision pinned by test, not drift.
 
-**Follow-up: the guard had to fail closed.** As merged, the scanner recognised
-single-quoted event literals only, so `analytics.log("new_event", payload)` was
-found as a call but yielded no name — and because a newly added event has no
-stale `EVENT_FIELDS` entry either, both equality assertions still passed while
-`redact()` dropped the event's whole payload. The guard reproduced the very
-defect it existed to prevent. It now parses single-quoted, double-quoted and
+**PR #12: the guard had to fail closed.** As merged in PR #11, the scanner
+recognised single-quoted event literals only, so
+`analytics.log("new_event", payload)` was found as a call but yielded no name —
+and because a newly added event has no stale `EVENT_FIELDS` entry either, both
+equality assertions still passed while `redact()` dropped the event's whole
+payload. The guard reproduced the very defect it existed to prevent. Measured,
+not assumed: against a tree carrying that call, the original scanner reported
+31 names and no problem, the corrected one reported
+`PAYLOAD DROPPED FOR: brand_new_event`.
+It now parses single-quoted, double-quoted and
 un-interpolated template literals, supports the conditional form, and treats
 **any** first argument it cannot statically enumerate — dynamic identifier,
 interpolated template, concatenation, call expression, unterminated literal — as
@@ -124,8 +127,8 @@ mutations cover the failure modes in both directions.
 
 ### 0.2 — This roadmap ✅
 
-**Implemented and verified in PR #11; merged to `main` as `5a9cd10` on
-2026-08-04.** The document you are reading, corrected in the follow-up branch.
+**Added in PR #11, merged to `main` as `5a9cd10` on 2026-08-04; corrected in
+PR #12.** The document you are reading.
 
 ### 0.3 — `showScreen()` moves focus and announces ⬜
 
@@ -457,18 +460,18 @@ from a desk.
 
 ## Sequence of record
 
-1. ✅ **Small analytics/roadmap closeout PR** — Phase 0.1 + 0.2. Merged as
-   `5a9cd10` (PR #11).
-2. 🔨 **Harden the event-set guard and correct this roadmap** — follow-up to
-   PR #11, on `claude/analytics-guard-fail-closed`. Open for review, unmerged.
-3. ⬜ **Finish the remaining Phase 0 defects** — 0.3 through 0.7.
-4. ⬜ **Execute the redesign** — text, Sleep Brief, cards, comparison
+1. ✅ **Analytics/roadmap closeout** — Phase 0.1 + 0.2. PR #11 (merged as
+   `5a9cd10`) fixed the event drift and added this roadmap; PR #12 made the
+   event-set guard fail closed and corrected the roadmap's focus, data-source
+   and pricing-terminology entries.
+2. ⬜ **Finish the remaining Phase 0 defects** — 0.3 through 0.7.
+3. ⬜ **Execute the redesign** — text, Sleep Brief, cards, comparison
    (Phase 1). Start the catalog reason-content authoring (1.3 blocker) in
    parallel, since it gates the card work and is not an engineering task.
-5. ⬜ **Build the dark pricing/payment foundation** — Phase 2.1.
-6. 🔒 **Activate prices and payments** — Phase 2.2, after the business and legal
+4. ⬜ **Build the dark pricing/payment foundation** — Phase 2.1.
+5. 🔒 **Activate prices and payments** — Phase 2.2, after the business and legal
    gates.
-7. 🔒 **Consider scoring and tier structural changes last** — Phase 3.
+6. 🔒 **Consider scoring and tier structural changes last** — Phase 3.
 
 ---
 
@@ -490,11 +493,11 @@ from the audit's measurements (word counts, which are cited as audit figures):
 | 9 | Six quiz tags match no catalog feature in any casing | `data/quiz.json` vs `data/mattresses.json` |
 | 10 | `maxScore` is per-tier, so match percentages are not comparable across tiers | `index.html:13795` |
 
-Added in the follow-up branch, verified against `5a9cd10`:
+Added by PR #12, verified against `5a9cd10`:
 
 | # | Finding | Where |
 |---|---|---|
-| 11 | The merged guard missed double-quoted event literals, so a new event escaped both equality checks — the defect the guard exists to prevent | `tests/session_async_check.mjs` |
+| 11 | The guard as merged in PR #11 missed double-quoted event literals, so a new event escaped both equality checks — the defect the guard exists to prevent | `tests/session_async_check.mjs` |
 | 12 | There are 8 screens; `welcomeScreen` is a `<main>`, and `hf2Screen` renders **no** heading — so "focus the heading" is not universally implementable | `index.html:9506`, `9862` |
 | 13 | `focusActiveScreen()` already provides the container-focus primitive (`.screen.active`, `tabindex="-1"`, focus) | `index.html:17302` |
 | 14 | `showScreen()` moves no focus and makes no announcement | `index.html:11859` |
