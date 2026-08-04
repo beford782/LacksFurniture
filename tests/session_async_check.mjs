@@ -952,11 +952,20 @@ section("diagnostic contract: the logged event set and EVENT_FIELDS agree");
   // it over sources and contracts that are not this repository's.
   function auditEventContract(source, listedNames) {
     const code = source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^[ \t]*\/\/.*$/gm, "");
-    const CALL = "analytics.log(";
+    // DISCOVERY must be whitespace-aware, not a fixed substring. `analytics.log
+    // (` and a newline before the parenthesis are both valid JavaScript, and an
+    // exact "analytics.log(" search finds neither — so the call would be
+    // discovered at all, contribute no name, and (having no EVENT_FIELDS entry
+    // either) pass every assertion while redact() dropped its payload. That is
+    // the same failure as the double-quote gap, one step earlier in the
+    // pipeline: reported by Codex on PR #12 and reproduced at 203/0 before
+    // this was fixed. Parsing must fail closed at BOTH steps to mean anything.
+    const CALL_RE = /\banalytics\s*\.\s*log\s*\(/g;
     const names = new Set();
     const unparsed = [];
-    for (let i = code.indexOf(CALL); i !== -1; i = code.indexOf(CALL, i + CALL.length)) {
-      const arg = firstArg(code, i + CALL.length);
+    let call;
+    while ((call = CALL_RE.exec(code)) !== null) {
+      const arg = firstArg(code, call.index + call[0].length);
       const found = arg === null ? null : (() => {
         const toks = tokenizeArg(arg);
         return toks === null ? null : namesFromTokens(toks);
@@ -985,6 +994,15 @@ section("diagnostic contract: the logged event set and EVENT_FIELDS agree");
     shipped.unlisted.length === 0);
   check(`every EVENT_FIELDS entry is actually logged${shipped.unlogged.length ? " — DEAD ENTRIES: " + shipped.unlogged.join(", ") : ""}`,
     shipped.unlogged.length === 0);
+  // Discovery keys on the `analytics.log` call expression. Rebinding the method
+  // to another name would log events this sweep never sees, so the boundary is
+  // asserted rather than assumed — the honest limit of a non-parser guard.
+  {
+    const src = html.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^[ \t]*\/\/.*$/gm, "");
+    check("analytics.log is never aliased, so call-site discovery is complete",
+      !/(?:const|let|var)\s+\w+\s*=\s*analytics\s*\.\s*log\b/.test(src)
+      && !/\{[^{}]*\blog\b[^{}]*\}\s*=\s*analytics\b/.test(src));
+  }
 
   // ---- non-vacuity: the guard must actually reject each failure mode -------
   // Every mutation below reintroduces a way the contract can silently break.
@@ -1000,6 +1018,19 @@ section("diagnostic contract: the logged event set and EVENT_FIELDS agree");
 
     check("double-quoted literals are recognised, not merely rejected",
       m(`analytics.log("alpha", p); analytics.log("beta", p);`).unlisted.length === 0);
+
+    // DISCOVERY, not parsing: each of these is valid JavaScript that a fixed
+    // "analytics.log(" search never finds, so the call would contribute
+    // nothing and pass silently.
+    const spaced = m(`analytics.log('alpha', p); analytics.log ("new_event", p);`);
+    check("MUTATION: a space before the parenthesis is still discovered",
+      spaced.unlisted.join(",") === "new_event");
+    check("MUTATION: a newline before the parenthesis is still discovered",
+      m("analytics.log('alpha', p); analytics.log\n  ('new_event', p);").unlisted.join(",") === "new_event");
+    check("MUTATION: spacing around the dot is still discovered",
+      m("analytics.log('alpha', p); analytics . log('new_event', p);").unlisted.join(",") === "new_event");
+    check("a spaced call with a dynamic argument still fails as unparsed",
+      m("analytics.log ( eventName , p);").unparsed.length === 1);
 
     const tpl = m("analytics.log(`alpha`, p); analytics.log(`beta`, p);");
     check("un-interpolated template literals are recognised",

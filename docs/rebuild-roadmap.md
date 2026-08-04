@@ -137,11 +137,23 @@ toggles chrome and scrolls to top. It never moves focus and never announces, so
 an assistive-technology user is left on a control that no longer exists.
 
 **Do not specify "focus the screen heading."** The eight screens do not all have
-one. `welcomeScreen` is a `<main class="main screen active">`; `questionScreen`
-and `reviewScreen` lead with `h2`; `profileScreen`, `resultsScreen`,
-`emailScreen` and `accessoriesScreen` lead with `h1`; and **`hf2Screen` has no
-rendered heading at all**. A universal heading rule is unimplementable on at
-least one screen and would invent headings on others purely to satisfy it.
+one, and one that does is empty until runtime:
+
+| Screen | Heading | Note |
+|---|---|---|
+| `welcomeScreen` | **none** | a `<main class="main screen active">` with landing copy, no `h1`–`h6` |
+| `questionScreen` | **none** | the question text is not marked up as a heading |
+| `reviewScreen` | `h2#reviewHeadline` | "Quick review" |
+| `profileScreen` | `h1#profileName` | **empty in the static HTML** — populated at runtime |
+| `resultsScreen` | `h1#resultsHeadline` | "Your strongest matches are ready" |
+| `hf2Screen` | `h1#hf2ReviewTitle` | "Review Your Sleep Plan" |
+| `emailScreen` | `h1#emailHeadline` | "Save your Sleep Brief" |
+| `accessoriesScreen` | `h1#sleepSystemTitle` | "Explore Your Sleep Setup" |
+
+So a universal heading rule is unimplementable on two screens and would invent
+headings purely to satisfy itself — while `profileScreen` shows why the rule
+must say *rendered*: the element exists and is empty until the profile is
+built, and focusing it would announce nothing.
 
 **Destination policy:**
 
@@ -498,7 +510,8 @@ Added by PR #12, verified against `5a9cd10`:
 | # | Finding | Where |
 |---|---|---|
 | 11 | The guard as merged in PR #11 missed double-quoted event literals, so a new event escaped both equality checks — the defect the guard exists to prevent | `tests/session_async_check.mjs` |
-| 12 | There are 8 screens; `welcomeScreen` is a `<main>`, and `hf2Screen` renders **no** heading — so "focus the heading" is not universally implementable | `index.html:9506`, `9862` |
+| 11a | Whitespace-tolerant call forms (`analytics.log (`, newline before the paren) escaped call-site *discovery* entirely — the same failure one step earlier, and it passed at 203/0 until fixed | `tests/session_async_check.mjs` |
+| 12 | Of 8 screens, `welcomeScreen` and `questionScreen` render **no** heading, and `profileScreen`'s `h1` is empty until runtime — so "focus the heading" is neither universal nor safe unqualified | `index.html:9506`, `9581`, `9602` |
 | 13 | `focusActiveScreen()` already provides the container-focus primitive (`.screen.active`, `tabindex="-1"`, focus) | `index.html:17302` |
 | 14 | `showScreen()` moves no focus and makes no announcement | `index.html:11859` |
 | 15 | Handoff condition strings are quiz option labels via `answerLabelFor`, not store copy — canonical source is `incoming/dreamfinder_quiz.json` | `index.html:16152` |
