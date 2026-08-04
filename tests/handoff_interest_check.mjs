@@ -1,365 +1,79 @@
-// Handoff interest focus/announcement check — Commit C (Cycle 1) invariants,
-// including the amend-round fixes: bottom specialist announcement, repeatable
-// announcements (clear + deferred repopulate), and tracked/cancellable
-// pending work (focus frame + announce timer) reset by startOver().
-//
-// The REAL functions are regex-extracted from index.html and executed inside
-// a shared-scope factory with controlled setTimeout/clearTimeout/rAF stubs —
-// not reimplemented fakes. Static pins cover wiring that needs a live DOM.
-//
-// Run: node tests/handoff_interest_check.mjs
-
+// Financing specialist-agenda gate.
+// Pins the salesperson-led orientation model: semantic discussion items are
+// marked in the sheet and carried into handoff without becoming product
+// selections, scoring inputs, diagnostics, persisted data, or email payload.
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const html = readFileSync(join(root, "index.html"), "utf8");
+const cfg = JSON.parse(readFileSync(join(root, "data", "store-config.json"), "utf8"));
 
 let passed = 0, failed = 0;
 function check(label, cond) {
   if (cond) { passed++; console.log(`  [ok] ${label}`); }
   else { failed++; console.log(`  [FAIL] ${label}`); }
 }
-function count(re) { return (html.match(re) || []).length; }
-function extract(re, name) {
+function extract(re, label) {
   const m = html.match(re);
-  check(`${name} found`, !!m);
+  check(`${label} found`, !!m);
   return m ? m[0] : "";
 }
 
-// --- extract the real functions ---
-const mapSrc = extract(/function finInterestFocusTarget\(state\)\s*\{[\s\S]*?\n    \}/, "finInterestFocusTarget()");
-const annSrc = extract(/function announceFinInterest\(state\)\s*\{[\s\S]*?\n    \}/, "announceFinInterest()");
-const cancelSrc = extract(/function cancelFinInterestPending\(\)\s*\{[\s\S]*?\n    \}/, "cancelFinInterestPending()");
+const items = extract(/function finAgendaItems\(\)\s*\{[\s\S]*?\n    \}/, "finAgendaItems()");
+const control = extract(/function finAgendaControl\(item\)\s*\{[\s\S]*?\n    \}/, "finAgendaControl()");
+const toggle = extract(/window\.toggleFinancingAgenda = function\(key\)\s*\{[\s\S]*?\n    \};/, "toggleFinancingAgenda()");
+const handoff = extract(/function renderHandoffFinancing\(\)\s*\{[\s\S]*?\n    \}/, "renderHandoffFinancing()");
+const decline = extract(/window\.setFinancingInterestChoice = function\(state\)\s*\{[\s\S]*?\n    \};/, "handoff not-now control");
+const eventBase = extract(/function finEventBase\(placement\)\s*\{[\s\S]*?\n    \}/, "finEventBase()");
+const wipe = extract(/function resetSessionState\(opts\)\s*\{[\s\S]{0,9000}/, "resetSessionState()");
 
-// --- behavioral: focus target mapping (unchanged contract) ---
-const target = new Function(`${mapSrc}; return finInterestFocusTarget;`)();
-check("Yes (interested) -> Change", target("interested") === "hf2FinancingInterestChange");
-check("Not right now -> Change", target("not_now") === "hf2FinancingInterestChange");
-check("Change/clear (undecided) -> Yes", target("undecided") === "hf2FinancingInterestYes");
+// Model A: a single provider-level promotional category, individual evergreen
+// and installment paths, and a separate Mexico scenario. Never per-rate cards.
+check("promotions group by provider", items.includes("finPromotionalByProvider(groups.promotional)"));
+check("installment and evergreen paths remain individual", items.includes("groups.installment.concat(groups.evergreen)"));
+check("Mexico is selected by presentation scenario", items.includes("groups['scenario-mexico']"));
+check("agenda keys contain no rates or term values", !/apr|termMonths|purchaseMinimum/.test(items));
 
-// --- shared-scope harness: real announce + cancel with controlled timers ---
-function makeHarness() {
-  const h = {
-    region: { textContent: "initial" },
-    visible: true,
-    lang: "en",
-    timers: [],          // {cb, cleared}
-    frames: [],          // {cb, cancelled}
-    cancelledFrames: 0,
-  };
-  const FCmap = {
-    en: { interestMarkedAnnounce: "MARKED-EN", interestNotNowAnnounce: "NOTNOW-EN", interestClearedAnnounce: "CLEARED-EN" },
-    es: { interestMarkedAnnounce: "MARKED-ES", interestNotNowAnnounce: "NOTNOW-ES", interestClearedAnnounce: "CLEARED-ES" },
-  };
-  const env = {
-    document: { getElementById: (id) => (id === "hf2FinancingStatus" ? h.region : null) },
-    FC: (k) => FCmap[h.lang][k] || "",
-    finHandoffVisible: () => h.visible,
-    setTimeout: (cb) => { h.timers.push({ cb, cleared: false }); return h.timers.length - 1; },
-    clearTimeout: (id) => { if (h.timers[id]) h.timers[id].cleared = true; },
-    cancelAnimationFrame: () => { h.cancelledFrames++; },
-  };
-  const factory = new Function(
-    "document", "FC", "finHandoffVisible", "setTimeout", "clearTimeout", "cancelAnimationFrame",
-    `var _finInterestFocusFrame = null;
-     var _finInterestAnnounceTimer = null;
-     ${annSrc}
-     ${cancelSrc}
-     return {
-       announce: announceFinInterest,
-       cancel: cancelFinInterestPending,
-       getTimer: function() { return _finInterestAnnounceTimer; },
-       getFrame: function() { return _finInterestFocusFrame; },
-       setFrame: function(v) { _finInterestFocusFrame = v; },
-     };`);
-  h.api = factory(env.document, env.FC, env.finHandoffVisible, env.setTimeout, env.clearTimeout, env.cancelAnimationFrame);
-  h.flush = () => { h.timers.forEach(t => { if (!t.cleared && !t.done) { t.done = true; t.cb(); } }); };
-  h.pendingCount = () => h.timers.filter(t => !t.cleared && !t.done).length;
-  return h;
+// Toggle controls are explicit stateful buttons and work for touch presentation.
+check("sheet controls expose aria-pressed", control.includes("aria-pressed=\"") && control.includes("is-marked"));
+check("sheet controls preserve touch preventDefault", control.includes("ontouchend=\"event.preventDefault()"));
+check("only inventory keys can be toggled", toggle.includes("finAgendaItems().some"));
+check("unmark deletes the key instead of retaining false residue", toggle.includes("delete financingAgenda[key]"));
+check("marking clears the not-now state", toggle.includes("financingAgendaDismissed = false"));
+
+// Handoff is a salesperson-guided discussion agenda, not an application.
+check("handoff renders only selected agenda items", handoff.includes("var selected = finAgendaSelected()") && handoff.includes("fin-agenda-list"));
+check("handoff includes the consequence statement", handoff.includes("agendaConsequence"));
+check("handoff retains an equally available not-now route", handoff.includes("hf2FinancingInterestNotNow") && handoff.includes("agendaNotNow"));
+check("handoff can reopen the sheet to change the agenda", handoff.includes("agendaChange"));
+check("renderer never focuses a hidden handoff", !handoff.includes(".focus("));
+check("handoff not-now rerender restores focus to the replacement control",
+  decline.includes("hadFocusInside") && decline.includes("hf2FinancingInterestChange")
+  && decline.includes("hf2FinancingInterestNotNow") && decline.includes("target.focus()"));
+
+// The copy must describe a salesperson/customer conversation, not self-service.
+const copy = cfg.financing.copy;
+for (const lang of ["en", "es"]) {
+  check(`[${lang}] agenda prompt is bilingual`, typeof copy.agendaPrompt?.[lang] === "string" && copy.agendaPrompt[lang].length > 20);
+  check(`[${lang}] no-application consequence is bilingual`, typeof copy.agendaConsequence?.[lang] === "string" && copy.agendaConsequence[lang].length > 20);
 }
+check("English prompt explicitly says review together", /together/i.test(copy.agendaPrompt.en));
+check("English prompt names the customer as discussion owner", /customer/i.test(copy.agendaPrompt.en));
 
-// announce -> clear first, deferred repopulate, timer stored then nulled
-{
-  const h = makeHarness();
-  h.api.announce("interested");
-  check("announce clears the region synchronously", h.region.textContent === "");
-  check("announcement timer ID is stored", h.api.getTimer() !== null);
-  h.flush();
-  check("deferred callback populates the marked message", h.region.textContent === "MARKED-EN");
-  check("timer ID cleared after callback runs", h.api.getTimer() === null);
-}
+// Privacy and isolation: no choice telemetry, no transport, no persistence,
+// and the one authoritative session wipe clears both agenda structures.
+check("diagnostic base excludes financing interest and agenda fields", !/\b(interest|agenda|planId)\s*:/.test(eventBase));
+check("email payload does not transmit interest or agenda", !/financing:[\s\S]{0,700}(interest|agenda)/.test(html));
+check("agenda state is memory-only", !/(localStorage|sessionStorage|indexedDB)\.[^(]*\([^)]*financingAgenda/.test(html));
+check("session wipe clears the agenda map", wipe.includes("financingAgenda = {}"));
+check("session wipe clears the declined state", wipe.includes("financingAgendaDismissed = false"));
+check("legacy global financing-interest state is gone", !/var financingInterest\b/.test(html));
 
-// repeated identical message announces again (clear + repopulate both times)
-{
-  const h = makeHarness();
-  h.api.announce("interested"); h.flush();
-  const first = h.region.textContent;
-  h.api.announce("interested");
-  check("repeat: region cleared again before repopulating", h.region.textContent === "");
-  h.flush();
-  check("repeat: identical marked message re-announced", h.region.textContent === "MARKED-EN" && first === "MARKED-EN");
-}
+// Presentation-only means it cannot enter the scoring function.
+const score = extract(/function calculateScores\([^)]*\)\s*\{[\s\S]*?\n    \}/, "calculateScores()");
+check("agenda state is absent from score calculation", !/financingAgenda|finAgenda/.test(score));
 
-// second announcement cancels the previous pending timer
-{
-  const h = makeHarness();
-  h.api.announce("interested");
-  h.api.announce("not_now");
-  check("second announcement cancels the prior pending timer", h.timers[0].cleared === true && h.pendingCount() === 1);
-  h.flush();
-  check("only the newest message lands", h.region.textContent === "NOTNOW-EN");
-}
-
-// hidden/inactive handoff prevents population — both at call and at flush
-{
-  const h = makeHarness();
-  h.visible = false;
-  h.api.announce("interested");
-  check("hidden handoff: no timer scheduled, region untouched", h.api.getTimer() === null && h.region.textContent === "initial");
-  h.visible = true;
-  h.api.announce("interested");
-  h.visible = false; // handoff hides while deferred
-  h.flush();
-  check("handoff hidden mid-defer: callback declines to populate", h.region.textContent === "");
-}
-
-// language switch mid-defer announces current-language text (FC at flush time)
-{
-  const h = makeHarness();
-  h.api.announce("interested");
-  h.lang = "es";
-  h.flush();
-  check("FC(key) resolved at flush time (no stale-language capture)", h.region.textContent === "MARKED-ES");
-}
-
-// cancelFinInterestPending: cancels + nulls both pending IDs
-{
-  const h = makeHarness();
-  h.api.announce("interested");
-  h.api.setFrame(7);
-  h.api.cancel();
-  check("cancel clears pending announce timer + nulls ID", h.timers[0].cleared === true && h.api.getTimer() === null);
-  check("cancel cancels pending focus frame + nulls ID", h.cancelledFrames === 1 && h.api.getFrame() === null);
-  h.flush();
-  check("cancelled announcement never lands", h.region.textContent === "");
-}
-
-// --- wiring: capture-before-render + guarded, tracked restoration ---
-const wrap = extract(/window\.setFinancingInterestChoice = function\(state\)\s*\{[\s\S]*?\n    \};/, "setFinancingInterestChoice wrapper");
-const capturePos = wrap.indexOf("container.contains(document.activeElement)");
-const statePos = wrap.indexOf("setFinancingInterest(state, 'handoff')");
-check("activeElement containment captured before setFinancingInterest()", capturePos > -1 && statePos > capturePos);
-check("restoration gated on origin AND visibility before rAF",
-  /if \(hadFocusInside && finHandoffVisible\(\)\)\s*\{[\s\S]*?requestAnimationFrame/.test(wrap));
-check("new transition cancels a still-pending focus frame first",
-  /cancelAnimationFrame\(_finInterestFocusFrame\)[\s\S]*?_finInterestFocusFrame = requestAnimationFrame/.test(wrap));
-check("focus frame ID stored and nulled inside the callback",
-  /_finInterestFocusFrame = requestAnimationFrame\(function\(\)\s*\{\s*_finInterestFocusFrame = null;/.test(wrap));
-check("rAF re-queries by stable id and re-checks connected/hidden/visible",
-  /getElementById\(targetId\)/.test(wrap) && /isConnected/.test(wrap)
-  && /closest\('\[hidden\]'\)/.test(wrap) && (wrap.match(/finHandoffVisible\(\)/g) || []).length >= 2);
-check("wrapper announces via announceFinInterest(state)", wrap.includes("announceFinInterest(state)"));
-
-// --- bottom specialist action (requestFinancingFollowup) ---
-const follow = extract(/window\.requestFinancingFollowup = function\(placement\)\s*\{[\s\S]*?\n    \};/, "requestFinancingFollowup()");
-check("handoff placement announces the marked state via the scoped helper",
-  /if \(placement === 'handoff'\) announceFinInterest\('interested'\)/.test(follow));
-check("non-handoff placements never reach the handoff announcement (single guarded call site)",
-  (follow.match(/announceFinInterest\('/g) || []).length === 1);
-check("bottom specialist path schedules no focus work",
-  !follow.includes("requestAnimationFrame") && !/\.focus\(/.test(follow));
-
-// --- visibility guard implementation ---
-const vis = extract(/function finHandoffVisible\(\)\s*\{[\s\S]*?\n    \}/, "finHandoffVisible()");
-check("finHandoffVisible() checks screen .active + module hidden + hidden ancestors",
-  vis.includes("classList.contains('active')") && vis.includes("!mod.hidden") && vis.includes("closest('[hidden]')"));
-check("guard does not rely on offsetParent", !vis.includes("offsetParent"));
-
-// --- renderer stays focus-neutral ---
-const renderer = extract(/function renderHandoffFinancing\(\)\s*\{[\s\S]*?\n    \}/, "renderHandoffFinancing()");
-check("renderHandoffFinancing() contains no focus() call", !/\.focus\(/.test(renderer));
-
-// --- the session wipe: cancels pending work FIRST, then clears the region ---
-// Gate 1B moved the reset body out of window.startOver() into the single
-// authoritative resetSessionState(); startOver() now delegates to it. The
-// invariant is unchanged and is asserted against whichever of the two actually
-// carries the body, plus an explicit pin that there is only ONE implementation.
-const wipeBlock = html.match(/function resetSessionState\(opts\) \{[\s\S]{0,8000}/)
-  || html.match(/window\.startOver = function[\s\S]{0,4000}/);
-check("the authoritative session wipe was located", !!wipeBlock);
-check("window.startOver() delegates to it rather than duplicating the reset",
-  /window\.startOver = function\(\) \{\s*return resetSessionState\(/.test(html)
-  && (html.match(/function resetSessionState\(/g) || []).length === 1);
-const startOverBlock = wipeBlock;
-check("the wipe cancels pending interest work via cancelFinInterestPending()",
-  !!startOverBlock && startOverBlock[0].includes("cancelFinInterestPending();"));
-check("cancellation precedes the financing state reset and region clear",
-  !!startOverBlock && startOverBlock[0].indexOf("cancelFinInterestPending();") <
-    startOverBlock[0].indexOf("financingInterest = 'undecided'"));
-// The region is now cleared through the wipe's declarative text inventory
-// rather than a bespoke line, so assert BOTH halves: the region is listed, and
-// the wipe empties every id in that list. (tests/session_safety_check.mjs
-// proves the emptying behaviourally, against a seeded sentinel.)
-{
-  const textInventory = (html.match(/var SESSION_TEXT_IDS = \[([\s\S]*?)\];/) || [, ""])[1];
-  check("the wipe's text inventory includes the interest status region",
-    /'hf2FinancingStatus'/.test(textInventory));
-  check("the wipe empties every id in that inventory",
-    !!startOverBlock
-    && /SESSION_TEXT_IDS\.forEach\(function\(id\) \{[\s\S]{0,160}textContent = '';/.test(startOverBlock[0]));
-}
-
-// --- stable, unique IDs on the generated controls ---
-for (const id of ["hf2FinancingInterestYes", "hf2FinancingInterestNotNow", "hf2FinancingInterestChange"]) {
-  check(`id "${id}" present exactly once`, count(new RegExp(`id="${id}"`, "g")) === 1);
-}
-
-// --- touch wiring preserved exactly (source-escaped form) ---
-for (const state of ["interested", "not_now", "undecided"]) {
-  check(`${state} control keeps onclick + ontouchend preventDefault wiring`,
-    html.includes(`onclick="window.setFinancingInterestChoice(\\'${state}\\')" `)
-    && html.includes(`ontouchend="event.preventDefault();window.setFinancingInterestChoice(\\'${state}\\');"`));
-}
-check("no new addEventListener in wrapper/renderer/followup",
-  !wrap.includes("addEventListener") && !renderer.includes("addEventListener") && !follow.includes("addEventListener"));
-
-// --- live region markup ---
-check("module-scoped live region exact markup (sr-only/status/polite/atomic)",
-  /<div\s+class="sr-only"\s+id="hf2FinancingStatus"\s+role="status"\s+aria-live="polite"\s+aria-atomic="true"><\/div>/.test(html));
-check("live region is unique", count(/id="hf2FinancingStatus"/g) === 1);
-
-// --- headings ---
-check("hf2 financing headline is now an h2",
-  html.includes('<h2 class="fin-handoff__headline" id="hf2FinancingHeadline"></h2>')
-  && !html.includes('<h3 class="fin-handoff__headline"'));
-check("results financing section labelled by the new heading",
-  html.includes('id="resultsFinancing" hidden aria-labelledby="resultsFinancingHeading"'));
-check("results sr-only h2 present and unique",
-  count(/<h2 class="sr-only" id="resultsFinancingHeading"><\/h2>/g) === 1);
-check("renderResultsFinancing populates the heading from FC('headline')",
-  /resultsFinancingHeading'\)\.textContent = FC\('headline'\)/.test(html));
-
-// --- language-switch residue: BEHAVIOURAL, not a grep -----------------------
-// The handoff status region is the one financing string no renderer rewrites,
-// so after a language switch it used to hold the PREVIOUS language's sentence.
-// This executes the real announceFinInterest() and clearFinInterestAnnouncement()
-// against a stub DOM and asserts the residue is gone — and, just as important,
-// that clearing does not itself queue an announcement.
-{
-  const grab = (re, name) => {
-    const m = html.match(re);
-    check(`${name} extracted for behavioural test`, !!m);
-    return m ? m[0] : "";
-  };
-  const srcAnnounce = grab(
-    /function announceFinInterest\(state\)\s*\{[\s\S]*?\n    \}/, "announceFinInterest()");
-  const srcClear = grab(
-    /function clearFinInterestAnnouncement\(\)\s*\{[\s\S]*?\n    \}/,
-    "clearFinInterestAnnouncement()");
-
-  // Stub only what these two functions touch. `writes` records every
-  // assignment to the region so we can tell "cleared" from "re-announced".
-  const harness = new Function(`
-    var writes = [];
-    var _finInterestAnnounceTimer = null;
-    var _lang = 'en';
-    var _visible = true;
-    var region = {
-      _t: '',
-      get textContent() { return this._t; },
-      set textContent(v) { this._t = v; writes.push(v); }
-    };
-    var timers = [];
-    function setTimeout(fn) { timers.push(fn); return timers.length; }
-    function clearTimeout(id) { if (id) timers[id - 1] = null; }
-    function document_getElementById() { return region; }
-    var document = { getElementById: document_getElementById };
-    function finHandoffVisible() { return _visible; }
-    function FC(key) {
-      var en = { interestMarkedAnnounce: 'Marked for your specialist.',
-                 interestNotNowAnnounce: 'Not right now selected.',
-                 interestClearedAnnounce: 'Selection cleared.' };
-      var es = { interestMarkedAnnounce: 'Marcado para tu especialista.',
-                 interestNotNowAnnounce: 'Ahora no.',
-                 interestClearedAnnounce: 'Seleccion borrada.' };
-      return (_lang === 'es' ? es : en)[key] || '';
-    }
-    ${srcAnnounce}
-    ${srcClear}
-    return {
-      announce: announceFinInterest,
-      clear: clearFinInterestAnnouncement,
-      flush: function () { timers.forEach(function (f) { if (f) f(); }); timers = []; },
-      setLang: function (l) { _lang = l; },
-      text: function () { return region.textContent; },
-      writes: function () { return writes.slice(); },
-      pendingTimers: function () { return timers.filter(Boolean).length; }
-    };`)();
-
-  harness.announce('interested');
-  harness.flush();
-  const beforeSwitch = harness.text();
-  check("announcement lands in the region (EN)",
-    beforeSwitch === 'Marked for your specialist.');
-
-  // The language switch: clear, then the renderers run in the new language.
-  const writesBefore = harness.writes().length;
-  harness.setLang('es');
-  harness.clear();
-  const afterClear = harness.text();
-  const newWrites = harness.writes().slice(writesBefore);
-
-  check("prior-language text is REMOVED by the language switch", afterClear === '');
-  check("clearing writes only the empty string (announces nothing)",
-    newWrites.length === 1 && newWrites[0] === '');
-  check("no stale announcement is left queued after the switch",
-    harness.pendingTimers() === 0);
-  harness.flush();
-  check("nothing re-announces after the switch flushes", harness.text() === '');
-
-  // A queued-but-unflushed announcement must not survive into the new language.
-  harness.announce('not_now');
-  harness.setLang('es');
-  harness.clear();
-  harness.flush();
-  check("an in-flight announcement cannot land in the new language",
-    harness.text() === '');
-
-  // The mechanism the fix must not break: repeats still re-announce.
-  harness.announce('interested'); harness.flush();
-  const first = harness.text();
-  harness.announce('interested'); harness.flush();
-  check("repeat announcement still re-announces the same message (ES)",
-    first.length > 0 && harness.text() === first);
-}
-check("switchLanguage clears the handoff announcement before re-rendering",
-  /clearFinInterestAnnouncement\(\);\s*\n\s*renderAllFinancingSurfaces\(\);/.test(html));
-check("the sheet's own status region is NOT cleared by the language switch",
-  !/clearFinancingSheetStatus/.test(html)
-  && /region\.textContent = _finSheetStale/.test(html));
-
-// --- exclusions ---
-// This guarded the Commit C decision that the handoff financing-interest
-// controls are ACTIONS, not a toggle group: their state is announced through
-// #hf2FinancingStatus and the re-rendered prompt, never through aria-pressed.
-// It was written as a whole-file count because nothing else in the app used
-// aria-pressed at the time. Gate 1B introduces aria-pressed on the persistent
-// EN/ES language controls, where a pressed toggle IS the correct pattern, so
-// the exclusion is now scoped to the surface it was actually protecting rather
-// than deleted.
-{
-  const interestRenderer = extract(
-    /var interestEl = document\.getElementById\('hf2FinancingInterest'\);[\s\S]*?\n      \}/,
-    "handoff interest renderer");
-  check("no aria-pressed on the handoff financing-interest controls",
-    !/aria-pressed/.test(interestRenderer));
-  const pressedTags = html.match(/<[^>]*\baria-pressed\b[^>]*>/g) || [];
-  check(`every aria-pressed element in the markup is a language control (${pressedTags.length} found)`,
-    pressedTags.length > 0 && pressedTags.every((tag) => /data-lang="(?:en|es)"/.test(tag)));
-}
-check("stale 'messages always differ' comment removed", !html.includes("always differ"));
-
-console.log(`\nHandoff interest check: ${passed} passed, ${failed} failed`);
-process.exit(failed ? 1 : 0);
+console.log(`\nFinancing specialist agenda check: ${passed} passed, ${failed} failed`);
+if (failed) process.exit(1);

@@ -146,10 +146,6 @@
         "en": "Explore payment options",
         "es": "Explorar opciones de pago"
       },
-      "ctaSecondary": {
-        "en": "Review with a Lacks specialist",
-        "es": "Revisar con un especialista de Lacks"
-      },
       "welcomeTagline": {
         "en": "Flexible ways to bring better sleep home.",
         "es": "Formas flexibles de llevar mejor descanso a casa."
@@ -163,8 +159,8 @@
         "es": "Tu mejor opción de colchón puede tener más de una forma de llegar a casa."
       },
       "resultsAsk": {
-        "en": "Ask my specialist",
-        "es": "Preguntar a mi especialista"
+        "en": "Plan the conversation",
+        "es": "Planear la conversación"
       },
       "fitFirst": {
         "en": "Your matches are based on sleep fit — never on payment method.",
@@ -179,12 +175,8 @@
         "es": "Esta recomendación se basa en tu descanso. Cuando estés listo, Lacks ofrece más de una forma de llevarlo a casa."
       },
       "drawerMark": {
-        "en": "Discuss payment options",
-        "es": "Conversar opciones de pago"
-      },
-      "drawerMarked": {
-        "en": "Marked to discuss",
-        "es": "Marcado para conversar"
+        "en": "Plan the conversation",
+        "es": "Planear la conversación"
       },
       "sleepSystemGuidance": {
         "en": "Build the sleep setup that fits you first. Your Lacks specialist can then review current payment options for the complete plan.",
@@ -198,21 +190,45 @@
         "en": "Continue on your phone — scan to open Lacks' official financing page.",
         "es": "Continúa desde tu teléfono — escanea para abrir la página oficial de financiamiento de Lacks."
       },
-      "interestPrompt": {
-        "en": "Would you like to review flexible payment options with your Lacks specialist?",
-        "es": "¿Te gustaría revisar opciones de pago flexibles con un especialista de Lacks?"
+      "agendaPrompt": {
+        "en": "As you review these together, mark any options the customer wants to discuss.",
+        "es": "Mientras revisan estas opciones juntos, marca las opciones de pago que el cliente quiera conversar."
       },
-      "interestYes": {
-        "en": "Yes, I'm interested",
-        "es": "Sí, me interesa"
+      "agendaMark": {
+        "en": "Add to discussion",
+        "es": "Agregar a la conversación"
       },
-      "interestNotNow": {
+      "agendaMarked": {
+        "en": "Added to discussion",
+        "es": "Agregado a la conversación"
+      },
+      "agendaEmpty": {
+        "en": "No options are marked yet.",
+        "es": "Todavía no hay opciones de pago marcadas."
+      },
+      "agendaConsequence": {
+        "en": "Use this agenda to guide the conversation together. Nothing is submitted and no application is started.",
+        "es": "Usen esta agenda para guiar la conversación juntos. No se envía nada y no se inicia ninguna solicitud."
+      },
+      "agendaChange": {
+        "en": "Change discussion agenda",
+        "es": "Cambiar agenda de conversación"
+      },
+      "agendaNotNow": {
         "en": "Not right now",
         "es": "Ahora no"
       },
+      "agendaDismissed": {
+        "en": "No options marked for review right now.",
+        "es": "No hay opciones de pago marcadas para revisar por ahora."
+      },
+      "agendaDone": {
+        "en": "Done",
+        "es": "Listo"
+      },
       "interestMarkedAnnounce": {
-        "en": "Marked for your specialist. Nothing is submitted and no application is started.",
-        "es": "Marcado para tu especialista. No se envía nada y no se inicia ninguna solicitud."
+        "en": "Added to the discussion. Nothing is submitted and no application is started.",
+        "es": "Agregado a la conversación. No se envía nada y no se inicia ninguna solicitud."
       },
       "interestNotNowAnnounce": {
         "en": "Not right now selected. You can change this choice.",

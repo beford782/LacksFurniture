@@ -78,7 +78,7 @@ check("scenario detail + representativeExample are gated by mxFresh",
   && /mxFresh\s*\?[\s\S]{0,400}L\(mx\.representativeExample\)/.test(sheet));
 
 // --- evergreen card is genuinely ungated (validator guards its detail) ---
-const moreIdx = sheet.indexOf("var more = groups.evergreen.map(");
+const moreIdx = sheet.indexOf("groups.evergreen.forEach(function(p)");
 check("evergreen card located", moreIdx > 0);
 const evergreen = sheet.slice(moreIdx, sheet.indexOf("// Card 4", moreIdx));
 check("evergreen headline+detail render with no freshness gate",
@@ -204,8 +204,8 @@ check("in-house/scenario detail stays freshness-gated in the renderer",
 check("in-house/scenario headline+disclosure render outside the gate",
   ungated.includes("L(ih.headline)") && ungated.includes("L(ih.disclosure)")
   && ungated.includes("L(mx.headline)") && ungated.includes("L(mx.disclosure)"));
-check("evergreen card renders from the evergreen group with no freshness gate",
-  /var more = groups\.evergreen\.map\(/.test(sheet));
+check("evergreen cards render individually from the evergreen group with no freshness gate",
+  /groups\.evergreen\.forEach\(function\(p\)/.test(sheet));
 check("scenario card is selected only by the explicit scenario",
   /var mx = groups\['scenario-mexico'\]\[0\];/.test(sheet));
 check("provider comes from the provider GROUP, not array position",
