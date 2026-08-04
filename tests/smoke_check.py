@@ -316,10 +316,17 @@ def main():
           "RETAILER_APPROVAL_REQUIRED" in gs and "canspam_not_configured" in gs)
     check("Code.gs invents no retailer contact values",
           "unsubscribe@" not in gs and "privacy@" not in gs and "PO Box" not in gs)
+    # Substring presence only. This assertion named financing_interest_changed
+    # and financing_followup_requested until 2026-08-04, and stayed green after
+    # the agenda rename retired both — the names survived solely as dead
+    # EVENT_FIELDS entries, so the check was passing on the wreckage of what it
+    # meant to verify. The call-site/EVENT_FIELDS set equality that actually
+    # catches a rename lives in tests/session_async_check.mjs; this stays a
+    # cheap presence sweep and is deliberately not the guard.
     check("financing analytics events wired",
           all(e in html for e in ["finance_module_impression", "finance_details_open",
-                                  "official_financing_link_click", "financing_followup_requested",
-                                  "financing_interest_changed", "mexico_financing_details_open"]))
+                                  "official_financing_link_click", "financing_agenda_reviewed",
+                                  "financing_agenda_changed", "mexico_financing_details_open"]))
     check("no PII in financing analytics payload builder",
           "finEventBase" in html and not re.search(r"finEventBase[^}]*email", html))
     ah = load_text("data/allowed-hosts.js")

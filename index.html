@@ -12835,6 +12835,12 @@
       // So a new event added tomorrow is silent by construction, and an
       // existing event cannot be widened by passing a new value shape.
       //
+      // Silence cuts both ways: a call site renamed without its entry here
+      // keeps logging, drops its entire payload, and reports nothing amiss.
+      // That is exactly how the agenda rename lost placement/lang/layout.
+      // tests/session_async_check.mjs now holds this map and the call sites to
+      // set equality in both directions, so the names cannot drift apart again.
+      //
       // Deliberately absent: name, email, phone, answers, mattressId, itemId,
       // accessoryId, topPick, allMatches, reaction/feedback, goal/choice/
       // position, the snoring/reflux/backPain health booleans (a boolean is
@@ -12876,7 +12882,7 @@
           sleep_system_item_removed: { step: 'step' },
           sleep_system_step_viewed: { step: 'step' },
           sleep_system_decision_recorded: { step: 'step', status: 'decisionStatus' },
-          financing_interest_changed: fin, financing_followup_requested: fin,
+          financing_agenda_changed: fin, financing_agenda_reviewed: fin,
           official_financing_link_click: fin, mexico_financing_details_open: fin,
           finance_details_open: fin, finance_module_impression: fin
         };
