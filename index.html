@@ -9093,6 +9093,16 @@
       font-size: 0.78rem; color: #5E594E; line-height: 1.6; margin: 0;
     }
     .fin-offer__prequal { font-size: 0.82rem; color: #4E483C; margin: 0.7rem 0 0; }
+    .fin-agenda-toggle {
+      min-height: 48px; margin-top: 1rem; padding: 0.7rem 1rem;
+      border: 1px solid #8A6B00; border-radius: 999px;
+      background: transparent; color: #493900; font-weight: 700;
+      font-size: 0.86rem; text-align: left; cursor: pointer;
+    }
+    .fin-agenda-toggle.is-marked {
+      background: #F1E5B5; border-color: #493900;
+    }
+    .fin-agenda-toggle:focus-visible { outline: 3px solid #1F65A6; outline-offset: 3px; }
     .fin-disclosure {
       margin-top: 1.2rem; padding: 0.9rem 1rem;
       background: #F3EDE0; border-left: 3px solid var(--store-primary);
@@ -9130,6 +9140,9 @@
 
     /* Handoff module */
     .fin-handoff { text-align: left; }
+    .fin-agenda-list { margin: 0.75rem 0; padding-left: 1.25rem; }
+    .fin-agenda-list li { margin: 0.35rem 0; }
+    .fin-agenda-consequence { font-size: 0.84rem; color: #5E594E; line-height: 1.5; }
     .fin-handoff__headline {
       font-family: var(--font-serif);
       font-size: 1.45rem; color: #17140F; margin: 0.3rem 0 0.8rem;
@@ -9924,10 +9937,15 @@
            (.fin-handoff__headline), so the tag change is visual-neutral. -->
       <h2 class="fin-handoff__headline" id="hf2FinancingHeadline"></h2>
       <div class="fin-handoff__interest" id="hf2FinancingInterest"></div>
-      <!-- Module-scoped announcement region for the interest controls above.
-           Populated by announceFinInterest() on handoff transitions only;
-           cleared by startOver(). Mirrors the financing sheet's status
-           region pattern (2d79731). -->
+      <!-- Module-scoped announcement region for the HANDOFF's own action
+           controls (Not right now / Change). Populated by
+           announceFinInterest(), whose only caller is
+           setFinancingInterestChoice(); cleared by the session wipe and by
+           a language switch. The sheet's agenda toggles deliberately do NOT
+           write here — they are aria-pressed toggles and announce
+           themselves, and a sheet opened from the handoff would otherwise
+           speak through a region behind the modal. Mirrors the financing
+           sheet's own status region pattern (2d79731). -->
       <div
         class="sr-only"
         id="hf2FinancingStatus"
@@ -10444,10 +10462,11 @@
       return (f && f.copy && f.copy[key]) ? L(f.copy[key]) : '';
     }
 
-    // Presentation-only interest state — never affects recommendations.
-    // Valid: 'undecided' | 'interested' | 'not_now'. Module state only (no
-    // localStorage) so it can never leak between customers; reset by startOver().
-    var financingInterest = 'undecided';
+    // Presentation-only discussion agenda — never affects recommendations.
+    // Module state only (no storage), so it cannot leak between customers;
+    // reset by the single authoritative session wipe.
+    var financingAgenda = {};
+    var financingAgendaDismissed = false;
     // Whether this customer actually opened the Payment Choice sheet. Gates the
     // email packet's "You explored…" wording (COPY-15): without it the email
     // asserted exploration for customers who never opened any financing content.
@@ -10457,17 +10476,15 @@
     // True when the last renderFinancingSheet() swapped any card's exact
     // terms for the generic staleNotice — drives the sheet's status region.
     var _finSheetStale = false;
-    // Queued handoff-interest work (pending focus frame + announce timer),
-    // tracked so a second transition supersedes the first and so startOver()
-    // can cancel stale queued work before the next customer's session.
-    var _finInterestFocusFrame = null;
+    // Queued agenda announcement work, tracked so a second transition
+    // supersedes the first and the wipe can cancel stale work.
     var _finInterestAnnounceTimer = null;
 
     // Email body for the save packet: "You explored…" only when the customer
     // opened the sheet or marked interest; otherwise the neutral availability
     // body. Falls back to emailBody for configs without emailBodyAvailable.
     function finEmailBody() {
-      var explored = financingExplored || financingInterest === 'interested';
+      var explored = financingExplored || finAgendaSelected().length > 0;
       return explored ? FC('emailBody') : (FC('emailBodyAvailable') || FC('emailBody'));
     }
 
@@ -10477,43 +10494,106 @@
 
     function finEventBase(placement) {
       var f = getFinancingConfig() || {};
-      // Privacy-safe by construction: placement, language, layout class,
-      // offer version, interest state only. No PII, no quiz answers.
+      // Privacy-safe by construction: placement, language and layout only.
+      // Agenda choices, plan identifiers, PII and quiz answers are excluded.
       return { placement: placement, lang: currentLang, layout: finLayoutClass(),
-               offerVersion: f.offerVersion || null, interest: financingInterest };
+               offerVersion: f.offerVersion || null };
     }
 
-    function setFinancingInterest(state, placement) {
-      if (state !== 'undecided' && state !== 'interested' && state !== 'not_now') return;
-      financingInterest = state;
-      analytics.log('financing_interest_changed', finEventBase(placement));
-      renderHandoffFinancing();
+    function finAgendaKey(prefix, value) {
+      var slug = String(value || '').trim().toLowerCase()
+        .replace(/[^a-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '');
+      return prefix + ':' + slug;
     }
 
-    window.requestFinancingFollowup = function(placement) {
-      setFinancingInterest('interested', placement);
-      analytics.log('financing_followup_requested', finEventBase(placement));
-      renderDrawerFinancingMark();
-      var ask = document.getElementById('resultsFinancingAsk');
-      if (ask) ask.textContent = financingInterest === 'interested'
-        ? (currentLang === 'es' ? 'Marcado para tu especialista ✓' : 'Marked for your specialist ✓')
-        : FC('resultsAsk');
-      // The persistent handoff specialist button lives OUTSIDE the rebuilt
-      // interest container, so it keeps focus naturally — no restoration
-      // here. It must still announce the marked state; other placements
-      // (results/drawer/sheet) stay silent — announcing through the hidden
-      // handoff region would be wrong, and announceFinInterest()'s own
-      // visibility guard backstops that.
-      if (placement === 'handoff') announceFinInterest('interested');
+    // One agenda item per promotional provider, one per non-promotional path,
+    // and one for the Mexico-delivery scenario. Exact offer variants never
+    // become separate choices: this orients a conversation, not an application.
+    function finAgendaItems() {
+      var f = getFinancingConfig() || {};
+      var groups = finGroupedPlans(f.plans || []);
+      var items = [];
+      finPromotionalByProvider(groups.promotional).forEach(function(grp) {
+        var provider = String(grp.provider || '').trim();
+        items.push({
+          key: finAgendaKey('promotional', provider || 'general'),
+          label: provider
+            ? (currentLang === 'es' ? 'Financiamiento promocional ' + provider : provider + ' promotional financing')
+            : (currentLang === 'es' ? 'Financiamiento promocional' : 'Promotional financing')
+        });
+      });
+      groups.installment.concat(groups.evergreen).forEach(function(p) {
+        items.push({ key: finAgendaKey('plan', p.id), label: L(p.headline) });
+      });
+      (groups['scenario-mexico'] || []).forEach(function(p) {
+        items.push({ key: finAgendaKey('scenario', p.presentationScenario), label: L(p.headline) });
+      });
+      return items.filter(function(item) { return item.key && item.label; });
+    }
+
+    function finAgendaSelected() {
+      return finAgendaItems().filter(function(item) { return financingAgenda[item.key] === true; });
+    }
+
+    // Sheet agenda control. This is a TOGGLE, not an action: it has two
+    // persistent states (marked / unmarked), it is independent of every
+    // other agenda control, and the customer and salesperson flip it back
+    // and forth during the conversation. aria-pressed is therefore the
+    // correct semantic, and it is what announces the change — the control
+    // must not also write to the handoff live region.
+    //
+    // Contrast with the handoff's "Not right now" / "Change" controls
+    // (renderHandoffFinancing): those are ACTIONS. Each performs a
+    // transition and is then replaced by its counterpart, so they carry no
+    // aria-pressed and DO announce through the handoff region.
+    function finAgendaControl(item) {
+      if (!item) return '';
+      var marked = financingAgenda[item.key] === true;
+      return '<button type="button" class="fin-agenda-toggle' + (marked ? ' is-marked' : '') + '" '
+        + 'id="finAgenda-' + finEsc(item.key) + '" data-agenda-key="' + finEsc(item.key) + '" '
+        + 'aria-pressed="' + (marked ? 'true' : 'false') + '" '
+        + 'onclick="window.toggleFinancingAgenda(this.getAttribute(\'data-agenda-key\'))" '
+        + 'ontouchend="event.preventDefault();window.toggleFinancingAgenda(this.getAttribute(\'data-agenda-key\'));">'
+        + finEsc(marked ? FC('agendaMarked') : FC('agendaMark')) + '</button>';
+    }
+
+    window.toggleFinancingAgenda = function(key) {
+      var valid = finAgendaItems().some(function(item) { return item.key === key; });
+      if (!valid) return;
+      var origin = document.activeElement;
+      var restoreFocus = !!(origin && origin.getAttribute
+        && origin.getAttribute('data-agenda-key') === key);
+      financingAgenda[key] = financingAgenda[key] !== true;
+      if (!financingAgenda[key]) delete financingAgenda[key];
+      financingAgendaDismissed = false;
+      analytics.log('financing_agenda_changed', finEventBase('sheet'));
+      renderAllFinancingSurfaces();
+      if (restoreFocus) {
+        var replacement = document.getElementById('finAgenda-' + key);
+        if (replacement && replacement.isConnected && typeof replacement.focus === 'function') {
+          replacement.focus();
+        }
+      }
+      // Deliberately NO announceFinInterest() here. These sheet controls are
+      // TOGGLES: each carries its own aria-pressed, so assistive technology
+      // reports the state change from the control the customer and
+      // salesperson just operated. Routing them through the HANDOFF live
+      // region was wrong three ways — a sheet opened FROM the handoff would
+      // speak through a region sitting behind the modal; unmarking one path
+      // while others remained marked still announced a generic "marked"; and
+      // it crossed the sheet/handoff boundary, so the region stopped
+      // describing the screen it belongs to. The handoff announcer now serves
+      // only the handoff's own action controls (setFinancingInterestChoice).
     };
 
-    // Pure mapping: which control receives focus after each handoff interest
-    // transition. Choosing yes/not-now leaves the Change button as the only
-    // control; clearing (undecided) restores the two-choice prompt, whose
-    // logical first control is Yes.
-    function finInterestFocusTarget(state) {
-      return state === 'undecided' ? 'hf2FinancingInterestYes' : 'hf2FinancingInterestChange';
-    }
+    window.requestFinancingFollowup = function(placement) {
+      if (placement === 'sheet') {
+        analytics.log('financing_agenda_reviewed', finEventBase(placement));
+        window.closeFinancingSheet();
+        return;
+      }
+      window.openFinancingSheet(placement);
+    };
 
     // The handoff financing module is a valid focus destination only while
     // the handoff screen is active and the module itself is visible. Explicit
@@ -10526,10 +10606,13 @@
         && mod && !mod.hidden && !mod.closest('[hidden]'));
     }
 
-    // Announce handoff interest state in the module-scoped status region
-    // (bilingual config keys shipped dark in Commit A). Identical messages
-    // CAN repeat — the persistent specialist button re-requests 'interested'
-    // — so each announcement clears the region and repopulates it in a short
+    // Announce a HANDOFF action in the module-scoped status region.
+    // SOLE CALLER: setFinancingInterestChoice() — the handoff's own
+    // "Not right now" / "Change" action buttons. The sheet's agenda toggles
+    // are aria-pressed toggles and announce themselves; they must never
+    // reach this region (see toggleFinancingAgenda). Identical messages CAN
+    // repeat — the same action can be re-requested — so each announcement
+    // clears the region and repopulates it in a short
     // deferred callback: the clear+set pair is a guaranteed DOM mutation
     // even for repeated text. FC(key) is resolved inside the callback so a
     // language switch landing mid-defer announces current-language text; the
@@ -10537,8 +10620,10 @@
     function announceFinInterest(state) {
       var region = document.getElementById('hf2FinancingStatus');
       if (!region || !finHandoffVisible()) return;
-      var key = state === 'interested' ? 'interestMarkedAnnounce'
-        : state === 'not_now' ? 'interestNotNowAnnounce'
+      // Exactly the two states setFinancingInterestChoice() accepts. There is
+      // no 'interested' announcement: the sheet's agenda toggles carry their
+      // own aria-pressed and never reach this region.
+      var key = state === 'not_now' ? 'interestNotNowAnnounce'
         : 'interestClearedAnnounce';
       if (_finInterestAnnounceTimer !== null) clearTimeout(_finInterestAnnounceTimer);
       region.textContent = '';
@@ -10570,14 +10655,10 @@
       if (region) region.textContent = '';
     }
 
-    // Cancel any queued handoff-interest work (focus frame + announcement
-    // timer). startOver() calls this FIRST in its financing reset so no
+    // Cancel any queued handoff-agenda announcement work. The wipe calls this
+    // before clearing financing state so no
     // stale queued work from the prior customer can run after reset.
     function cancelFinInterestPending() {
-      if (_finInterestFocusFrame !== null) {
-        cancelAnimationFrame(_finInterestFocusFrame);
-        _finInterestFocusFrame = null;
-      }
       if (_finInterestAnnounceTimer !== null) {
         clearTimeout(_finInterestAnnounceTimer);
         _finInterestAnnounceTimer = null;
@@ -10592,33 +10673,20 @@
     // marking, language switch), where pulling focus into the hidden handoff
     // screen would be wrong.
     window.setFinancingInterestChoice = function(state) {
-      // Capture BEFORE the rerender — the activated control is detached by
-      // the innerHTML swap, so origin cannot be inferred afterwards.
+      if (state !== 'not_now' && state !== 'undecided') return;
       var container = document.getElementById('hf2FinancingInterest');
       var hadFocusInside = !!(container && document.activeElement
         && container.contains(document.activeElement));
-      setFinancingInterest(state, 'handoff');
-      if (state === 'interested') {
-        analytics.log('financing_followup_requested', finEventBase('handoff'));
-      }
-      renderDrawerFinancingMark();
-      announceFinInterest(state);
-      // Restore only when the destroyed control actually held focus (keyboard
-      // or VoiceOver activation). Plain touch taps often never focus the
-      // button — forcing focus there would be a surprise, so we don't.
+      financingAgendaDismissed = state === 'not_now';
+      if (state === 'not_now') financingAgenda = {};
+      analytics.log('financing_agenda_changed', finEventBase('handoff'));
+      renderAllFinancingSurfaces();
       if (hadFocusInside && finHandoffVisible()) {
-        var targetId = finInterestFocusTarget(state);
-        // A second transition supersedes any still-pending restoration.
-        if (_finInterestFocusFrame !== null) cancelAnimationFrame(_finInterestFocusFrame);
-        _finInterestFocusFrame = requestAnimationFrame(function() {
-          _finInterestFocusFrame = null;
-          var el = document.getElementById(targetId);
-          if (el && el.isConnected && !el.closest('[hidden]')
-              && finHandoffVisible() && typeof el.focus === 'function') {
-            el.focus();
-          }
-        });
+        var target = document.getElementById(state === 'not_now'
+          ? 'hf2FinancingInterestChange' : 'hf2FinancingInterestNotNow');
+        if (target && target.isConnected && typeof target.focus === 'function') target.focus();
       }
+      announceFinInterest(state);
     };
 
     window.logFinancingLinkClick = function(placement) {
@@ -10714,6 +10782,10 @@
       var groups = finGroupedPlans(plans);
       var cards = [];
       var anyStale = false;
+      var agendaItems = finAgendaItems();
+      function agendaFor(key) {
+        return agendaItems.filter(function(item) { return item.key === key; })[0] || null;
+      }
 
       // Card 1 — promotional financing (exact offers, freshness-gated), one
       // card PER PROVIDER so a card is never titled with one lender's name
@@ -10745,6 +10817,7 @@
               : (es ? 'Financiamiento promocional' : 'Promotional financing'))
           + '</h3>' + synBody
           + (FC('prequalNote') ? '<p class="fin-offer__prequal">' + finEsc(FC('prequalNote')) + '</p>' : '')
+          + finAgendaControl(agendaFor(finAgendaKey('promotional', provider || 'general')))
           + '</article>');
       });
 
@@ -10762,25 +10835,24 @@
               ? '<p class="fin-offer__detail">' + finEsc(L(ih.detail)) + '</p>'
               : '<p class="fin-offer__detail">' + finEsc(FC('staleNotice')) + '</p>')
           + (ih.disclosure ? '<p class="fin-offer__disclosure">' + finEsc(L(ih.disclosure)) + '</p>' : '')
+          + finAgendaControl(agendaFor(finAgendaKey('plan', ih.id)))
           + '</article>');
       });
 
-      // Card 3 — More paths: evergreen alternatives (lease-to-own,
-      // credit-builder, informational), availability only, never credit terms.
-      var more = groups.evergreen.map(function(p) {
-        return '<div class="fin-offer"><h4 class="fin-offer__headline">' + finEsc(L(p.headline)) + '</h4>'
-          + '<p class="fin-offer__detail">' + finEsc(L(p.detail)) + '</p></div>';
-      }).join('');
-      if (more) {
+      // Evergreen paths stay separate so each can become a precise specialist
+      // agenda item. They remain orientation-only and never show payment math.
+      groups.evergreen.forEach(function(p) {
         cards.push('<article class="fin-card"><div class="fin-card__icon" aria-hidden="true">'
           + '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M4 16V4M4 10c4 0 4-4 8-4h4M4 14c4 0 4 4 8 4h4"/><path d="M13.5 3.5 16 6l-2.5 2.5M13.5 15.5 16 18l-2.5-2.5" stroke-linejoin="round"/></svg>'
-          + '</div><h3 class="fin-card__title">' + (es ? 'Más caminos' : 'More paths') + '</h3>'
-          + more
+          + '</div><h3 class="fin-card__title">' + finEsc(L(p.headline)) + '</h3>'
+          + '<p class="fin-offer__detail">' + finEsc(L(p.detail)) + '</p>'
           + '<p class="fin-offer__disclosure">'
           + (es ? 'Hay opciones adicionales disponibles. Los detalles del programa, costos, elegibilidad y términos de propiedad se confirman en tienda.'
                 : 'Additional options are available. Program details, costs, eligibility, and ownership terms are confirmed in store.')
-          + '</p></article>');
-      }
+          + '</p>'
+          + finAgendaControl(agendaFor(finAgendaKey('plan', p.id)))
+          + '</article>');
+      });
 
       // Card 4 — Mexico delivery scenario, selected ONLY by the explicit
       // presentationScenario === 'mexico-delivery' semantic (never by plan id,
@@ -10825,6 +10897,7 @@
                 + finEsc(es ? ('Detalles en ' + mxHost + ' (se abre en otro sitio)') : ('Details on ' + mxHost + ' (opens a separate site)'))
                 + '</a>'
               : '')
+          + finAgendaControl(agendaFor(finAgendaKey('scenario', mx.presentationScenario)))
           + '</article>');
       }
 
@@ -10840,7 +10913,7 @@
            : storeName() + "'s official financing page",
         document.getElementById('financingSheetExternal'));
       var spec = document.getElementById('financingSheetSpecialist');
-      spec.textContent = FC('ctaSecondary');
+      spec.textContent = FC('agendaDone');
       _finSheetStale = anyStale;
       // Live-update the status region on re-renders of an already-open sheet
       // (language switch); no-op while hidden — openFinancingSheet defers the
@@ -10873,10 +10946,10 @@
       document.getElementById('resultsFinancingLead').textContent = FC('resultsLead');
       document.getElementById('resultsFinancingFitFirst').textContent = FC('fitFirst');
       document.getElementById('resultsFinancingExplore').textContent = FC('cta');
-      document.getElementById('resultsFinancingAsk').textContent =
-        financingInterest === 'interested'
-          ? (currentLang === 'es' ? 'Marcado para tu especialista ✓' : 'Marked for your specialist ✓')
-          : FC('resultsAsk');
+      var agendaCount = finAgendaSelected().length;
+      document.getElementById('resultsFinancingAsk').textContent = agendaCount
+        ? (currentLang === 'es' ? 'Revisar agenda (' + agendaCount + ')' : 'Review agenda (' + agendaCount + ')')
+        : FC('resultsAsk');
       // An impression means the customer SAW the module, so it is logged only
       // when the results screen is actually on screen. This renderer also runs
       // from renderAllFinancingSurfaces() on a language switch, which happens
@@ -10903,8 +10976,10 @@
     function renderDrawerFinancingMark() {
       var mark = document.getElementById('drawerFinancingMark');
       if (mark) {
-        mark.textContent = financingInterest === 'interested'
-          ? FC('drawerMarked') + ' ✓' : FC('drawerMark');
+        var count = finAgendaSelected().length;
+        mark.textContent = count
+          ? (currentLang === 'es' ? 'Revisar agenda (' + count + ')' : 'Review agenda (' + count + ')')
+          : FC('drawerMark');
       }
     }
 
@@ -10928,37 +11003,32 @@
       mod.hidden = false;
       document.getElementById('hf2FinancingEyebrow').textContent = FC('eyebrow');
       document.getElementById('hf2FinancingHeadline').textContent = FC('handoffHeadline');
-      // Interest state: undecided renders the two-sided prompt (yes / not now)
-      // so the customer can decline as easily as accept; a made choice renders
-      // as a statement with a change link. Presentation-only — never alters
-      // recommendations.
+      // The handoff shows only paths the customer marked in the orientation
+      // sheet. This is a conversation agenda, not a product choice or an
+      // application, and it never alters the mattress recommendations.
       var interestEl = document.getElementById('hf2FinancingInterest');
-      if (financingInterest === 'undecided') {
-        interestEl.innerHTML = '<p class="fin-interest-prompt">' + finEsc(FC('interestPrompt')) + '</p>'
-          + '<div class="fin-actions">'
-          + '<button type="button" class="fin-btn fin-btn-secondary" '
-          + 'id="hf2FinancingInterestYes" '
-          + 'onclick="window.setFinancingInterestChoice(\'interested\')" '
-          + 'ontouchend="event.preventDefault();window.setFinancingInterestChoice(\'interested\');">'
-          + finEsc(FC('interestYes')) + '</button>'
-          + '<button type="button" class="fin-btn fin-btn-ghost" '
-          + 'id="hf2FinancingInterestNotNow" '
-          + 'onclick="window.setFinancingInterestChoice(\'not_now\')" '
-          + 'ontouchend="event.preventDefault();window.setFinancingInterestChoice(\'not_now\');">'
-          + finEsc(FC('interestNotNow')) + '</button>'
-          + '</div>';
-      } else {
-        var stateLine = financingInterest === 'interested'
-          ? (es ? 'El cliente quiere revisar opciones de pago con un especialista.'
-                : 'Customer would like to review payment options with a specialist.')
-          : (es ? 'El cliente prefiere no revisar opciones de pago por ahora.'
-                : 'Customer prefers not to review payment options right now.');
-        interestEl.innerHTML = '<p class="fin-interest-prompt">' + finEsc(stateLine) + '</p>'
-          + '<button type="button" class="fin-btn fin-btn-ghost" '
-          + 'id="hf2FinancingInterestChange" '
+      var selected = finAgendaSelected();
+      if (selected.length) {
+        interestEl.innerHTML = '<p class="fin-interest-prompt">' + finEsc(FC('agendaPrompt')) + '</p>'
+          + '<ul class="fin-agenda-list">'
+          + selected.map(function(item) { return '<li>' + finEsc(item.label) + '</li>'; }).join('')
+          + '</ul><p class="fin-agenda-consequence">' + finEsc(FC('agendaConsequence')) + '</p>';
+      // ACTION buttons, deliberately without aria-pressed: each performs a
+      // transition and is then replaced by its counterpart, rather than
+      // holding a state the customer toggles. They announce through
+      // announceFinInterest(); the sheet's agenda toggles do not.
+      } else if (financingAgendaDismissed) {
+        interestEl.innerHTML = '<p class="fin-interest-prompt">' + finEsc(FC('agendaDismissed')) + '</p>'
+          + '<button type="button" class="fin-btn fin-btn-ghost" id="hf2FinancingInterestChange" '
           + 'onclick="window.setFinancingInterestChoice(\'undecided\')" '
           + 'ontouchend="event.preventDefault();window.setFinancingInterestChoice(\'undecided\');">'
-          + finEsc(es ? 'Cambiar' : 'Change') + '</button>';
+          + finEsc(currentLang === 'es' ? 'Cambiar' : 'Change') + '</button>';
+      } else {
+        interestEl.innerHTML = '<p class="fin-interest-prompt">' + finEsc(FC('agendaEmpty')) + '</p>'
+          + '<button type="button" class="fin-btn fin-btn-ghost" id="hf2FinancingInterestNotNow" '
+          + 'onclick="window.setFinancingInterestChoice(\'not_now\')" '
+          + 'ontouchend="event.preventDefault();window.setFinancingInterestChoice(\'not_now\');">'
+          + finEsc(FC('agendaNotNow')) + '</button>';
       }
       // Neutral program-category chips only — never rate/term headlines here
       // (rates belong solely to the freshness-gated sheet cards). Open-end
@@ -11003,7 +11073,8 @@
           + storeName() + ' (' + document.getElementById('hf2FinancingLink').textContent + ')';
       }
       document.getElementById('hf2FinancingExplore').textContent = FC('cta');
-      document.getElementById('hf2FinancingSpecialist').textContent = FC('ctaSecondary');
+      document.getElementById('hf2FinancingSpecialist').textContent = selected.length
+        ? FC('agendaChange') : FC('resultsAsk');
     }
 
     // Refresh every financing surface (called after language switches; each
@@ -14157,9 +14228,8 @@
           primary: (STORE_CONFIG.colors && STORE_CONFIG.colors.storePrimary) || '',
           accent: (STORE_CONFIG.colors && STORE_CONFIG.colors.accent) || ''
         },
-        // Payment Choice (financing) email content — program categories, the
-        // official URL, and the customer's interest state only. Never terms
-        // math, approval language, application data, or any sensitive field.
+        // Payment Choice email content stays category-level. The customer's
+        // agenda choices remain on the shared tablet and are not transmitted.
         financing: financingEnabled() ? (function () {
           var f = getFinancingConfig();
           return {
@@ -14167,7 +14237,6 @@
             body: finEmailBody(),
             url: financingSourceAllowed(f.sourceUrl) ? f.sourceUrl : '',
             offerVersion: f.offerVersion || '',
-            interest: financingInterest,
             confirmNote: currentLang === 'es'
               ? 'El precio final, la elegibilidad, los términos y la aprobación los confirma ' + storeName() + '.'
               : 'Final pricing, eligibility, terms, and approval are confirmed by ' + storeName() + '.'
@@ -16940,7 +17009,7 @@
     //   analytics, t, switchLanguage, showScreen, applyTranslations,
     //   cancelFinInterestPending, clearFinInterestAnnouncement,
     //   currentQuestion, answers, editingFromReview, _resultsState,
-    //   currentLang, financingInterest, financingExplored,
+    //   currentLang, financingAgenda, financingAgendaDismissed, financingExplored,
     //   _finModuleImpressionLogged, _financeReturnFocus, _langFocusHintId
     //
     // Nothing in here reads or writes any browser persistence mechanism or a
@@ -17612,10 +17681,11 @@
         if (typeof window.updateCompareTray === 'function') window.updateCompareTray();
         if (typeof window._updatePicksBadge === 'function') window._updatePicksBadge();
 
-        // --- 5. financing interest state ----------------------------------
+        // --- 5. financing discussion agenda -------------------------------
         // Module state only, exactly as before: financing has never been
         // written to any persistent store.
-        financingInterest = 'undecided';
+        financingAgenda = {};
+        financingAgendaDismissed = false;
         financingExplored = false;
         _finModuleImpressionLogged = false;
 

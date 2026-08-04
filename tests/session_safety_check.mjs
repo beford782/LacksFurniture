@@ -388,7 +388,8 @@ const harness = new Function(
   var editingFromReview = false;
   var _resultsState = null;
   var currentLang = 'en';
-  var financingInterest = 'undecided';
+  var financingAgenda = {};
+  var financingAgendaDismissed = false;
   var financingExplored = false;
   var _finModuleImpressionLogged = false;
   var _financeReturnFocus = null;
@@ -426,7 +427,8 @@ const harness = new Function(
     return {
       currentQuestion: currentQuestion, answers: answers,
       editingFromReview: editingFromReview, resultsState: _resultsState,
-      currentLang: currentLang, financingInterest: financingInterest,
+      currentLang: currentLang, financingAgenda: financingAgenda,
+      financingAgendaDismissed: financingAgendaDismissed,
       financingExplored: financingExplored,
       finImpression: _finModuleImpressionLogged,
       financeReturnFocus: _financeReturnFocus,
@@ -439,7 +441,8 @@ const harness = new Function(
     if ('editingFromReview' in state) editingFromReview = state.editingFromReview;
     if ('resultsState' in state) _resultsState = state.resultsState;
     if ('currentLang' in state) currentLang = state.currentLang;
-    if ('financingInterest' in state) financingInterest = state.financingInterest;
+    if ('financingAgenda' in state) financingAgenda = state.financingAgenda;
+    if ('financingAgendaDismissed' in state) financingAgendaDismissed = state.financingAgendaDismissed;
     if ('financingExplored' in state) financingExplored = state.financingExplored;
     if ('finImpression' in state) _finModuleImpressionLogged = state.finImpression;
     if ('financeReturnFocus' in state) _financeReturnFocus = state.financeReturnFocus;
@@ -866,7 +869,8 @@ outer.seed({
   editingFromReview: true,
   resultsState: { activeTier: "silver", matches: [SENTINEL] },
   currentLang: "es",
-  financingInterest: "interested",
+  financingAgenda: { "plan:lacks-in-house": true },
+  financingAgendaDismissed: true,
   financingExplored: true,
   finImpression: true,
   financeReturnFocus: el("someResultCard"),
@@ -1012,7 +1016,8 @@ check("currentQuestion reset", probe().currentQuestion === 0);
 check("answers cleared", Object.keys(probe().answers).length === 0);
 check("editingFromReview cleared", probe().editingFromReview === false);
 check("results cache cleared", probe().resultsState === null);
-check("financing interest back to undecided", probe().financingInterest === "undecided");
+check("financing agenda cleared", Object.keys(probe().financingAgenda).length === 0);
+check("financing agenda dismissal cleared", probe().financingAgendaDismissed === false);
 check("financing explored flag cleared", probe().financingExplored === false);
 check("financing impression flag cleared", probe().finImpression === false);
 
@@ -1343,9 +1348,10 @@ check("the session block never touches scoring",
   !/calculateScores|firmnessScore|locallyMade|scoreMattress/.test(SOURCE));
 check("the session block never reorders or re-tiers results",
   !/\.sort\(/.test(SOURCE) && !/activeTier\s*=/.test(SOURCE));
-check("financing interest is only ever reset, never used as an input",
-  /financingInterest = 'undecided';/.test(SOURCE)
-  && !/if \(financingInterest/.test(SOURCE));
+check("financing agenda is only reset inside the session module",
+  /financingAgenda = \{\};/.test(SOURCE)
+  && /financingAgendaDismissed = false;/.test(SOURCE)
+  && !/if \(financingAgenda/.test(SOURCE));
 check("no external analytics transport was introduced",
   !/fetch\(|XMLHttpRequest|navigator\.sendBeacon/.test(SOURCE));
 const switchSrc = (html.match(/async function switchLanguage[\s\S]*?\n    \}/) || [""])[0];

@@ -6,8 +6,8 @@
 // area has had significant prior tuning."
 //
 // Both statements lived only in prose. Nothing executed the scoring engine, so
-// a mutation making financing interest a scoring input:
-//     if (financingInterest === 'interested') { ...scores[m.id] += 40 }
+// a mutation making the financing agenda a scoring input:
+//     if (financingAgenda['plan:x']) { ...scores[m.id] += 40 }
 // survived every suite, as did 10x-ing the locally-made bonus — enough to
 // invert Gold/Silver/Bronze ordering and the "top 3 scoring >= 60% of top"
 // qualification rule.
@@ -40,16 +40,17 @@ const m = html.match(/function calculateScores\(\)\s*\{[\s\S]*?\n    \}/);
 if (!check("extracted calculateScores()", !!m)) process.exit(1);
 
 // The engine reads MATTRESSES, QUESTIONS, answers and currentLang from module
-// scope. Financing state (financingInterest / financingExplored) is deliberately
+// scope. Financing state (financingAgenda / financingExplored) is deliberately
 // declared here too: if the engine ever starts reading it, this harness will
 // happily supply it — and the equality assertions below will catch it.
 const engine = new Function("MATTRESSES", "QUESTIONS", `
   var answers = {}, currentLang = 'en';
-  var financingInterest = 'undecided', financingExplored = false;
+  var financingAgenda = {}, financingAgendaDismissed = false, financingExplored = false;
   ${m[0]}
-  return function (a, lang, finInterest, finExplored) {
+  return function (a, lang, finAgenda, finExplored) {
     answers = a; currentLang = lang;
-    financingInterest = finInterest; financingExplored = finExplored;
+    financingAgenda = finAgenda; financingAgendaDismissed = finAgenda === null;
+    financingExplored = finExplored;
     return calculateScores();
   };`)(MATTRESSES, QUIZ.questions);
 
@@ -79,25 +80,26 @@ const ANSWER_SETS = {
 
 // Every financing state the app can be in.
 const FIN_STATES = [
-  ["undecided", false], ["undecided", true],
-  ["interested", false], ["interested", true],
-  ["not_now", false], ["not_now", true]
+  [{}, false], [{}, true],
+  [{ "promotional:synchrony": true }, false],
+  [{ "plan:lacks-in-house": true, "plan:lease-to-own": true }, true],
+  [null, false], [null, true]
 ];
 
 // --- 1. Financing state cannot move a single point --------------------------
 console.log("Financing state does not affect scoring:");
 for (const [name, answers] of Object.entries(ANSWER_SETS)) {
   for (const lang of ["en", "es"]) {
-    const base = engine(answers, lang, "undecided", false);
+    const base = engine(answers, lang, {}, false);
     const baseJson = JSON.stringify(base.scores);
-    for (const [interest, explored] of FIN_STATES) {
-      const got = engine(answers, lang, interest, explored);
-      check(`[${lang}] ${name} - scores identical with interest=${interest}/explored=${explored}`,
+    for (const [agenda, explored] of FIN_STATES) {
+      const got = engine(answers, lang, agenda, explored);
+      check(`[${lang}] ${name} - scores identical across agenda state/explored=${explored}`,
         JSON.stringify(got.scores) === baseJson);
     }
     // Match reasons are the Sleep Brief's raw material; they must not move either.
     const reasonsJson = JSON.stringify(base.matchReasons);
-    const withInterest = engine(answers, lang, "interested", true);
+    const withInterest = engine(answers, lang, { "scenario:mexico-delivery": true }, true);
     check(`[${lang}] ${name} - match reasons identical too`,
       JSON.stringify(withInterest.matchReasons) === reasonsJson);
   }
@@ -105,7 +107,7 @@ for (const [name, answers] of Object.entries(ANSWER_SETS)) {
 
 // --- 2. The scoring engine never mentions financing at all ------------------
 console.log("The engine's source contains no financing identifier:");
-for (const id of ["financingInterest", "financingExplored", "getFinancingConfig",
+for (const id of ["financingAgenda", "financingAgendaDismissed", "financingExplored", "getFinancingConfig",
                   "financingTermsFresh", "exactPromotionsEnabled", "FC("]) {
   check(`calculateScores() does not reference ${id}`, !m[0].includes(id));
 }
@@ -117,7 +119,7 @@ console.log("Documented scoring weights hold:");
 const all = Object.values(MATTRESSES).flat();
 {
   // Isolate firmness by supplying ONLY the firmness answer.
-  const at = (v) => engine({ firmness: v }, "en", "undecided", false).scores;
+  const at = (v) => engine({ firmness: v }, "en", {}, false).scores;
   for (const target of [1, 5, 10]) {
     const s = at(target);
     for (const mm of all) {
@@ -165,8 +167,8 @@ console.log("The per-feature cap caps:");
   check("catalogue has models carrying cooling", carriers.length > 0, `${carriers.length}`);
   const CAP = 5;
   const ANS = { firmness: FIRM, temperature: "hot", sleep_issues: ["hot"] };
-  const base = engine({ firmness: FIRM }, "en", "undecided", false).scores;
-  const both = engine(ANS, "en", "undecided", false).scores;
+  const base = engine({ firmness: FIRM }, "en", {}, false).scores;
+  const both = engine(ANS, "en", {}, false).scores;
 
   // Expected feature contribution, computed analytically from the quiz data:
   // per feature, sum the awards from the supplied answers, then apply the cap.
@@ -230,7 +232,7 @@ const GOLDEN = {
 };
 console.log("Golden pins on the shipped catalogue:");
 for (const [name, answers] of Object.entries(ANSWER_SETS)) {
-  const { scores } = engine(answers, "en", "undecided", false);
+  const { scores } = engine(answers, "en", {}, false);
   // Ranking is id-tiebroken so the pin is deterministic across engines.
   const ranked = Object.entries(scores).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
   const want = GOLDEN[name];
@@ -243,7 +245,7 @@ for (const [name, answers] of Object.entries(ANSWER_SETS)) {
   check(`${name}: qualified set (>=60% of top) is exactly ${want.qualified}`,
     qualified.length === want.qualified, `got ${qualified.length}`);
   // EN and ES must rank identically — language must not reorder results.
-  const es = engine(answers, "es", "undecided", false).scores;
+  const es = engine(answers, "es", {}, false).scores;
   check(`${name}: EN and ES produce identical scores`,
     JSON.stringify(scores) === JSON.stringify(es));
 }

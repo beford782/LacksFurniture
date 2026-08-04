@@ -1,365 +1,356 @@
-// Handoff interest focus/announcement check — Commit C (Cycle 1) invariants,
-// including the amend-round fixes: bottom specialist announcement, repeatable
-// announcements (clear + deferred repopulate), and tracked/cancellable
-// pending work (focus frame + announce timer) reset by startOver().
-//
-// The REAL functions are regex-extracted from index.html and executed inside
-// a shared-scope factory with controlled setTimeout/clearTimeout/rAF stubs —
-// not reimplemented fakes. Static pins cover wiring that needs a live DOM.
-//
-// Run: node tests/handoff_interest_check.mjs
-
+// Financing specialist-agenda gate.
+// Pins the salesperson-led orientation model: semantic discussion items are
+// marked in the sheet and carried into handoff without becoming product
+// selections, scoring inputs, diagnostics, persisted data, or email payload.
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const html = readFileSync(join(root, "index.html"), "utf8");
+const cfg = JSON.parse(readFileSync(join(root, "data", "store-config.json"), "utf8"));
 
 let passed = 0, failed = 0;
 function check(label, cond) {
   if (cond) { passed++; console.log(`  [ok] ${label}`); }
   else { failed++; console.log(`  [FAIL] ${label}`); }
 }
-function count(re) { return (html.match(re) || []).length; }
-function extract(re, name) {
+function extract(re, label) {
   const m = html.match(re);
-  check(`${name} found`, !!m);
+  check(`${label} found`, !!m);
   return m ? m[0] : "";
 }
 
-// --- extract the real functions ---
-const mapSrc = extract(/function finInterestFocusTarget\(state\)\s*\{[\s\S]*?\n    \}/, "finInterestFocusTarget()");
+const items = extract(/function finAgendaItems\(\)\s*\{[\s\S]*?\n    \}/, "finAgendaItems()");
+const control = extract(/function finAgendaControl\(item\)\s*\{[\s\S]*?\n    \}/, "finAgendaControl()");
+const toggle = extract(/window\.toggleFinancingAgenda = function\(key\)\s*\{[\s\S]*?\n    \};/, "toggleFinancingAgenda()");
+const handoff = extract(/function renderHandoffFinancing\(\)\s*\{[\s\S]*?\n    \}/, "renderHandoffFinancing()");
+const decline = extract(/window\.setFinancingInterestChoice = function\(state\)\s*\{[\s\S]*?\n    \};/, "handoff not-now control");
+const eventBase = extract(/function finEventBase\(placement\)\s*\{[\s\S]*?\n    \}/, "finEventBase()");
+const wipe = extract(/function resetSessionState\(opts\)\s*\{[\s\S]{0,9000}/, "resetSessionState()");
+
+// Model A: a single provider-level promotional category, individual evergreen
+// and installment paths, and a separate Mexico scenario. Never per-rate cards.
+check("promotions group by provider", items.includes("finPromotionalByProvider(groups.promotional)"));
+check("installment and evergreen paths remain individual", items.includes("groups.installment.concat(groups.evergreen)"));
+check("Mexico is selected by presentation scenario", items.includes("groups['scenario-mexico']"));
+check("agenda keys contain no rates or term values", !/apr|termMonths|purchaseMinimum/.test(items));
+
+// Toggle controls are explicit stateful buttons and work for touch presentation.
+check("sheet controls expose aria-pressed", control.includes("aria-pressed=\"") && control.includes("is-marked"));
+check("sheet controls preserve touch preventDefault", control.includes("ontouchend=\"event.preventDefault()"));
+check("only inventory keys can be toggled", toggle.includes("finAgendaItems().some"));
+check("unmark deletes the key instead of retaining false residue", toggle.includes("delete financingAgenda[key]"));
+check("marking clears the not-now state", toggle.includes("financingAgendaDismissed = false"));
+
+// Handoff is a salesperson-guided discussion agenda, not an application.
+check("handoff renders only selected agenda items", handoff.includes("var selected = finAgendaSelected()") && handoff.includes("fin-agenda-list"));
+check("handoff includes the consequence statement", handoff.includes("agendaConsequence"));
+check("handoff retains an equally available not-now route", handoff.includes("hf2FinancingInterestNotNow") && handoff.includes("agendaNotNow"));
+check("handoff can reopen the sheet to change the agenda", handoff.includes("agendaChange"));
+check("renderer never focuses a hidden handoff", !handoff.includes(".focus("));
+check("handoff not-now rerender restores focus to the replacement control",
+  decline.includes("hadFocusInside") && decline.includes("hf2FinancingInterestChange")
+  && decline.includes("hf2FinancingInterestNotNow") && decline.includes("target.focus()"));
+
+// The copy must describe a salesperson/customer conversation, not self-service.
+const copy = cfg.financing.copy;
+for (const lang of ["en", "es"]) {
+  check(`[${lang}] agenda prompt is bilingual`, typeof copy.agendaPrompt?.[lang] === "string" && copy.agendaPrompt[lang].length > 20);
+  check(`[${lang}] no-application consequence is bilingual`, typeof copy.agendaConsequence?.[lang] === "string" && copy.agendaConsequence[lang].length > 20);
+}
+check("English prompt explicitly says review together", /together/i.test(copy.agendaPrompt.en));
+check("English prompt names the customer as discussion owner", /customer/i.test(copy.agendaPrompt.en));
+
+// Privacy and isolation: no choice telemetry, no transport, no persistence,
+// and the one authoritative session wipe clears both agenda structures.
+check("diagnostic base excludes financing interest and agenda fields", !/\b(interest|agenda|planId)\s*:/.test(eventBase));
+check("email payload does not transmit interest or agenda", !/financing:[\s\S]{0,700}(interest|agenda)/.test(html));
+check("agenda state is memory-only", !/(localStorage|sessionStorage|indexedDB)\.[^(]*\([^)]*financingAgenda/.test(html));
+check("session wipe clears the agenda map", wipe.includes("financingAgenda = {}"));
+check("session wipe clears the declined state", wipe.includes("financingAgendaDismissed = false"));
+check("legacy global financing-interest state is gone", !/var financingInterest\b/.test(html));
+
+// Presentation-only means it cannot enter the scoring function.
+const score = extract(/function calculateScores\([^)]*\)\s*\{[\s\S]*?\n    \}/, "calculateScores()");
+check("agenda state is absent from score calculation", !/financingAgenda|finAgenda/.test(score));
+
+// ===========================================================================
+// Behavioural announcement coverage.
+//
+// The agenda model changed which controls announce, not whether announcement
+// works. The handoff still owns one aria-live region, still driven by the real
+// announceFinInterest() / clearFinInterestAnnouncement() /
+// cancelFinInterestPending(). Those functions are regex-extracted from
+// index.html and EXECUTED here against a stub DOM and controlled timers — not
+// reimplemented. Static-only pins would not have caught the defects these
+// assertions cover (stale-language text landing after a switch, a queued
+// utterance surviving the session wipe, a hidden handoff being populated).
+//
+// Deliberately NOT restored: the old global financing-interest state machine
+// and the _finInterestFocusFrame / requestAnimationFrame focus-restoration
+// tests. Both describe mechanisms this change removed; the agenda's focus
+// restoration is synchronous and is asserted above.
+// ===========================================================================
+
 const annSrc = extract(/function announceFinInterest\(state\)\s*\{[\s\S]*?\n    \}/, "announceFinInterest()");
+const clearSrc = extract(/function clearFinInterestAnnouncement\(\)\s*\{[\s\S]*?\n    \}/, "clearFinInterestAnnouncement()");
 const cancelSrc = extract(/function cancelFinInterestPending\(\)\s*\{[\s\S]*?\n    \}/, "cancelFinInterestPending()");
 
-// --- behavioral: focus target mapping (unchanged contract) ---
-const target = new Function(`${mapSrc}; return finInterestFocusTarget;`)();
-check("Yes (interested) -> Change", target("interested") === "hf2FinancingInterestChange");
-check("Not right now -> Change", target("not_now") === "hf2FinancingInterestChange");
-check("Change/clear (undecided) -> Yes", target("undecided") === "hf2FinancingInterestYes");
+// Comments legitimately DISCUSS the retired state, so every source-level
+// assertion below reads the code with comments stripped.
+const stripComments = (s) =>
+  s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:"'\\])\/\/[^\n]*/g, "$1");
+const annCode = stripComments(annSrc);
 
-// --- shared-scope harness: real announce + cancel with controlled timers ---
-function makeHarness() {
-  const h = {
-    region: { textContent: "initial" },
-    visible: true,
-    lang: "en",
-    timers: [],          // {cb, cleared}
-    frames: [],          // {cb, cancelled}
-    cancelledFrames: 0,
-  };
+// 0. The announcer maps exactly the two states the handoff can produce. The
+//    third arm was unreachable once the sheet toggles stopped announcing, and
+//    its copy key ('interestMarkedAnnounce') has been retired with it.
+check("announceFinInterest() has no 'interested' mapping",
+  !/'interested'/.test(annCode) && !annCode.includes("interestMarkedAnnounce"));
+check("announceFinInterest() maps exactly the two reachable states",
+  /state === 'not_now' \? 'interestNotNowAnnounce'/.test(annCode)
+  && (annCode.match(/interestNotNowAnnounce|interestClearedAnnounce/g) || []).length === 2);
+check("setFinancingInterestChoice() still rejects every other state",
+  /if \(state !== 'not_now' && state !== 'undecided'\) return;/.test(decline));
+check("interestMarkedAnnounce is absent from the whole app source",
+  !html.includes("interestMarkedAnnounce"));
+
+// 1. The region the announcer writes to: exact markup, exactly one of it.
+check("handoff live region markup is exact (sr-only / status / polite / atomic)",
+  /<div\s+class="sr-only"\s+id="hf2FinancingStatus"\s+role="status"\s+aria-live="polite"\s+aria-atomic="true"><\/div>/.test(html));
+check("handoff live region is unique",
+  (html.match(/id="hf2FinancingStatus"/g) || []).length === 1);
+
+function makeAnnouncer() {
+  const h = { lang: "en", visible: true, writes: [], timers: [] };
   const FCmap = {
-    en: { interestMarkedAnnounce: "MARKED-EN", interestNotNowAnnounce: "NOTNOW-EN", interestClearedAnnounce: "CLEARED-EN" },
-    es: { interestMarkedAnnounce: "MARKED-ES", interestNotNowAnnounce: "NOTNOW-ES", interestClearedAnnounce: "CLEARED-ES" },
+    en: { interestNotNowAnnounce: "NOTNOW-EN", interestClearedAnnounce: "CLEARED-EN" },
+    es: { interestNotNowAnnounce: "NOTNOW-ES", interestClearedAnnounce: "CLEARED-ES" },
   };
-  const env = {
-    document: { getElementById: (id) => (id === "hf2FinancingStatus" ? h.region : null) },
-    FC: (k) => FCmap[h.lang][k] || "",
-    finHandoffVisible: () => h.visible,
-    setTimeout: (cb) => { h.timers.push({ cb, cleared: false }); return h.timers.length - 1; },
-    clearTimeout: (id) => { if (h.timers[id]) h.timers[id].cleared = true; },
-    cancelAnimationFrame: () => { h.cancelledFrames++; },
+  const region = {
+    _t: "initial",
+    get textContent() { return this._t; },
+    set textContent(v) { this._t = v; h.writes.push(v); },
   };
-  const factory = new Function(
-    "document", "FC", "finHandoffVisible", "setTimeout", "clearTimeout", "cancelAnimationFrame",
-    `var _finInterestFocusFrame = null;
-     var _finInterestAnnounceTimer = null;
+  h.api = new Function(
+    "document", "FC", "finHandoffVisible", "setTimeout", "clearTimeout",
+    `var _finInterestAnnounceTimer = null;
      ${annSrc}
+     ${clearSrc}
      ${cancelSrc}
      return {
        announce: announceFinInterest,
+       clear: clearFinInterestAnnouncement,
        cancel: cancelFinInterestPending,
-       getTimer: function() { return _finInterestAnnounceTimer; },
-       getFrame: function() { return _finInterestFocusFrame; },
-       setFrame: function(v) { _finInterestFocusFrame = v; },
-     };`);
-  h.api = factory(env.document, env.FC, env.finHandoffVisible, env.setTimeout, env.clearTimeout, env.cancelAnimationFrame);
-  h.flush = () => { h.timers.forEach(t => { if (!t.cleared && !t.done) { t.done = true; t.cb(); } }); };
-  h.pendingCount = () => h.timers.filter(t => !t.cleared && !t.done).length;
+       timer: function() { return _finInterestAnnounceTimer; }
+     };`)(
+    { getElementById: (id) => (id === "hf2FinancingStatus" ? region : null) },
+    (k) => FCmap[h.lang][k] || "",
+    () => h.visible,
+    (cb) => { h.timers.push({ cb, cleared: false, done: false }); return h.timers.length; },
+    (id) => { if (h.timers[id - 1]) h.timers[id - 1].cleared = true; });
+  h.text = () => region.textContent;
+  h.flush = () => h.timers.forEach((t) => { if (!t.cleared && !t.done) { t.done = true; t.cb(); } });
+  h.pending = () => h.timers.filter((t) => !t.cleared && !t.done).length;
   return h;
 }
 
-// announce -> clear first, deferred repopulate, timer stored then nulled
+// 2. Clear synchronously, repopulate in the deferred callback. The clear+set
+//    pair is what makes a repeated identical sentence a real DOM mutation.
 {
-  const h = makeHarness();
-  h.api.announce("interested");
-  check("announce clears the region synchronously", h.region.textContent === "");
-  check("announcement timer ID is stored", h.api.getTimer() !== null);
-  h.flush();
-  check("deferred callback populates the marked message", h.region.textContent === "MARKED-EN");
-  check("timer ID cleared after callback runs", h.api.getTimer() === null);
-}
-
-// repeated identical message announces again (clear + repopulate both times)
-{
-  const h = makeHarness();
-  h.api.announce("interested"); h.flush();
-  const first = h.region.textContent;
-  h.api.announce("interested");
-  check("repeat: region cleared again before repopulating", h.region.textContent === "");
-  h.flush();
-  check("repeat: identical marked message re-announced", h.region.textContent === "MARKED-EN" && first === "MARKED-EN");
-}
-
-// second announcement cancels the previous pending timer
-{
-  const h = makeHarness();
-  h.api.announce("interested");
+  const h = makeAnnouncer();
   h.api.announce("not_now");
-  check("second announcement cancels the prior pending timer", h.timers[0].cleared === true && h.pendingCount() === 1);
+  check("announcement clears the region synchronously", h.text() === "");
+  check("announcement timer id is retained while pending", h.api.timer() !== null);
   h.flush();
-  check("only the newest message lands", h.region.textContent === "NOTNOW-EN");
+  check("deferred callback populates the message", h.text() === "NOTNOW-EN");
+  check("timer id is released once the callback runs", h.api.timer() === null);
 }
 
-// hidden/inactive handoff prevents population — both at call and at flush
+// 3. Repeats. The same handoff action can be requested twice in a row.
 {
-  const h = makeHarness();
+  const h = makeAnnouncer();
+  h.api.announce("not_now"); h.flush();
+  const first = h.text();
+  h.api.announce("not_now");
+  check("repeat clears the region again before repopulating", h.text() === "");
+  h.flush();
+  check("repeat re-announces the identical message",
+    first === "NOTNOW-EN" && h.text() === "NOTNOW-EN");
+}
+
+// 4. Supersession: a newer announcement cancels the older pending one.
+{
+  const h = makeAnnouncer();
+  h.api.announce("not_now");
+  h.api.announce("undecided");
+  check("a newer announcement cancels the prior pending timer",
+    h.timers[0].cleared === true && h.pending() === 1);
+  h.flush();
+  check("only the newest message lands", h.text() === "CLEARED-EN");
+}
+
+// 5. A hidden or inactive handoff is never populated — checked at call time...
+{
+  const h = makeAnnouncer();
   h.visible = false;
-  h.api.announce("interested");
-  check("hidden handoff: no timer scheduled, region untouched", h.api.getTimer() === null && h.region.textContent === "initial");
-  h.visible = true;
-  h.api.announce("interested");
-  h.visible = false; // handoff hides while deferred
-  h.flush();
-  check("handoff hidden mid-defer: callback declines to populate", h.region.textContent === "");
+  h.api.announce("not_now");
+  check("hidden handoff: nothing scheduled and the region is untouched",
+    h.api.timer() === null && h.pending() === 0 && h.text() === "initial");
 }
 
-// language switch mid-defer announces current-language text (FC at flush time)
+// 6. ...and re-checked inside the callback, for a handoff that hides mid-defer.
 {
-  const h = makeHarness();
-  h.api.announce("interested");
+  const h = makeAnnouncer();
+  h.api.announce("not_now");
+  h.visible = false;
+  h.flush();
+  check("handoff hidden mid-defer: the callback declines to populate",
+    h.text() === "" && h.writes.filter((w) => w === "NOTNOW-EN").length === 0);
+}
+
+// 7. FC(key) is resolved inside the callback, so a language switch landing
+//    mid-defer speaks the current language rather than the captured one.
+{
+  const h = makeAnnouncer();
+  h.api.announce("not_now");
   h.lang = "es";
   h.flush();
-  check("FC(key) resolved at flush time (no stale-language capture)", h.region.textContent === "MARKED-ES");
+  check("message text is resolved at callback time, not at call time",
+    h.text() === "NOTNOW-ES");
 }
 
-// cancelFinInterestPending: cancels + nulls both pending IDs
+// 8. Language switch: drop the prior-language sentence, announce nothing new,
+//    and make sure an in-flight utterance cannot land in the new language.
 {
-  const h = makeHarness();
-  h.api.announce("interested");
-  h.api.setFrame(7);
-  h.api.cancel();
-  check("cancel clears pending announce timer + nulls ID", h.timers[0].cleared === true && h.api.getTimer() === null);
-  check("cancel cancels pending focus frame + nulls ID", h.cancelledFrames === 1 && h.api.getFrame() === null);
+  const h = makeAnnouncer();
+  h.api.announce("not_now"); h.flush();
+  check("prior-language sentence is present before the switch", h.text() === "NOTNOW-EN");
+  const before = h.writes.length;
+  h.lang = "es";
+  h.api.clear();
+  const newWrites = h.writes.slice(before);
+  check("the switch removes the prior-language sentence", h.text() === "");
+  check("clearing writes only the empty string (it announces nothing)",
+    newWrites.length === 1 && newWrites[0] === "");
+  check("no announcement is left queued after the switch", h.pending() === 0);
+
+  h.api.announce("undecided");
+  h.api.clear();
   h.flush();
-  check("cancelled announcement never lands", h.region.textContent === "");
+  check("an in-flight announcement cannot land after the switch", h.text() === "");
 }
-
-// --- wiring: capture-before-render + guarded, tracked restoration ---
-const wrap = extract(/window\.setFinancingInterestChoice = function\(state\)\s*\{[\s\S]*?\n    \};/, "setFinancingInterestChoice wrapper");
-const capturePos = wrap.indexOf("container.contains(document.activeElement)");
-const statePos = wrap.indexOf("setFinancingInterest(state, 'handoff')");
-check("activeElement containment captured before setFinancingInterest()", capturePos > -1 && statePos > capturePos);
-check("restoration gated on origin AND visibility before rAF",
-  /if \(hadFocusInside && finHandoffVisible\(\)\)\s*\{[\s\S]*?requestAnimationFrame/.test(wrap));
-check("new transition cancels a still-pending focus frame first",
-  /cancelAnimationFrame\(_finInterestFocusFrame\)[\s\S]*?_finInterestFocusFrame = requestAnimationFrame/.test(wrap));
-check("focus frame ID stored and nulled inside the callback",
-  /_finInterestFocusFrame = requestAnimationFrame\(function\(\)\s*\{\s*_finInterestFocusFrame = null;/.test(wrap));
-check("rAF re-queries by stable id and re-checks connected/hidden/visible",
-  /getElementById\(targetId\)/.test(wrap) && /isConnected/.test(wrap)
-  && /closest\('\[hidden\]'\)/.test(wrap) && (wrap.match(/finHandoffVisible\(\)/g) || []).length >= 2);
-check("wrapper announces via announceFinInterest(state)", wrap.includes("announceFinInterest(state)"));
-
-// --- bottom specialist action (requestFinancingFollowup) ---
-const follow = extract(/window\.requestFinancingFollowup = function\(placement\)\s*\{[\s\S]*?\n    \};/, "requestFinancingFollowup()");
-check("handoff placement announces the marked state via the scoped helper",
-  /if \(placement === 'handoff'\) announceFinInterest\('interested'\)/.test(follow));
-check("non-handoff placements never reach the handoff announcement (single guarded call site)",
-  (follow.match(/announceFinInterest\('/g) || []).length === 1);
-check("bottom specialist path schedules no focus work",
-  !follow.includes("requestAnimationFrame") && !/\.focus\(/.test(follow));
-
-// --- visibility guard implementation ---
-const vis = extract(/function finHandoffVisible\(\)\s*\{[\s\S]*?\n    \}/, "finHandoffVisible()");
-check("finHandoffVisible() checks screen .active + module hidden + hidden ancestors",
-  vis.includes("classList.contains('active')") && vis.includes("!mod.hidden") && vis.includes("closest('[hidden]')"));
-check("guard does not rely on offsetParent", !vis.includes("offsetParent"));
-
-// --- renderer stays focus-neutral ---
-const renderer = extract(/function renderHandoffFinancing\(\)\s*\{[\s\S]*?\n    \}/, "renderHandoffFinancing()");
-check("renderHandoffFinancing() contains no focus() call", !/\.focus\(/.test(renderer));
-
-// --- the session wipe: cancels pending work FIRST, then clears the region ---
-// Gate 1B moved the reset body out of window.startOver() into the single
-// authoritative resetSessionState(); startOver() now delegates to it. The
-// invariant is unchanged and is asserted against whichever of the two actually
-// carries the body, plus an explicit pin that there is only ONE implementation.
-const wipeBlock = html.match(/function resetSessionState\(opts\) \{[\s\S]{0,8000}/)
-  || html.match(/window\.startOver = function[\s\S]{0,4000}/);
-check("the authoritative session wipe was located", !!wipeBlock);
-check("window.startOver() delegates to it rather than duplicating the reset",
-  /window\.startOver = function\(\) \{\s*return resetSessionState\(/.test(html)
-  && (html.match(/function resetSessionState\(/g) || []).length === 1);
-const startOverBlock = wipeBlock;
-check("the wipe cancels pending interest work via cancelFinInterestPending()",
-  !!startOverBlock && startOverBlock[0].includes("cancelFinInterestPending();"));
-check("cancellation precedes the financing state reset and region clear",
-  !!startOverBlock && startOverBlock[0].indexOf("cancelFinInterestPending();") <
-    startOverBlock[0].indexOf("financingInterest = 'undecided'"));
-// The region is now cleared through the wipe's declarative text inventory
-// rather than a bespoke line, so assert BOTH halves: the region is listed, and
-// the wipe empties every id in that list. (tests/session_safety_check.mjs
-// proves the emptying behaviourally, against a seeded sentinel.)
-{
-  const textInventory = (html.match(/var SESSION_TEXT_IDS = \[([\s\S]*?)\];/) || [, ""])[1];
-  check("the wipe's text inventory includes the interest status region",
-    /'hf2FinancingStatus'/.test(textInventory));
-  check("the wipe empties every id in that inventory",
-    !!startOverBlock
-    && /SESSION_TEXT_IDS\.forEach\(function\(id\) \{[\s\S]{0,160}textContent = '';/.test(startOverBlock[0]));
-}
-
-// --- stable, unique IDs on the generated controls ---
-for (const id of ["hf2FinancingInterestYes", "hf2FinancingInterestNotNow", "hf2FinancingInterestChange"]) {
-  check(`id "${id}" present exactly once`, count(new RegExp(`id="${id}"`, "g")) === 1);
-}
-
-// --- touch wiring preserved exactly (source-escaped form) ---
-for (const state of ["interested", "not_now", "undecided"]) {
-  check(`${state} control keeps onclick + ontouchend preventDefault wiring`,
-    html.includes(`onclick="window.setFinancingInterestChoice(\\'${state}\\')" `)
-    && html.includes(`ontouchend="event.preventDefault();window.setFinancingInterestChoice(\\'${state}\\');"`));
-}
-check("no new addEventListener in wrapper/renderer/followup",
-  !wrap.includes("addEventListener") && !renderer.includes("addEventListener") && !follow.includes("addEventListener"));
-
-// --- live region markup ---
-check("module-scoped live region exact markup (sr-only/status/polite/atomic)",
-  /<div\s+class="sr-only"\s+id="hf2FinancingStatus"\s+role="status"\s+aria-live="polite"\s+aria-atomic="true"><\/div>/.test(html));
-check("live region is unique", count(/id="hf2FinancingStatus"/g) === 1);
-
-// --- headings ---
-check("hf2 financing headline is now an h2",
-  html.includes('<h2 class="fin-handoff__headline" id="hf2FinancingHeadline"></h2>')
-  && !html.includes('<h3 class="fin-handoff__headline"'));
-check("results financing section labelled by the new heading",
-  html.includes('id="resultsFinancing" hidden aria-labelledby="resultsFinancingHeading"'));
-check("results sr-only h2 present and unique",
-  count(/<h2 class="sr-only" id="resultsFinancingHeading"><\/h2>/g) === 1);
-check("renderResultsFinancing populates the heading from FC('headline')",
-  /resultsFinancingHeading'\)\.textContent = FC\('headline'\)/.test(html));
-
-// --- language-switch residue: BEHAVIOURAL, not a grep -----------------------
-// The handoff status region is the one financing string no renderer rewrites,
-// so after a language switch it used to hold the PREVIOUS language's sentence.
-// This executes the real announceFinInterest() and clearFinInterestAnnouncement()
-// against a stub DOM and asserts the residue is gone — and, just as important,
-// that clearing does not itself queue an announcement.
-{
-  const grab = (re, name) => {
-    const m = html.match(re);
-    check(`${name} extracted for behavioural test`, !!m);
-    return m ? m[0] : "";
-  };
-  const srcAnnounce = grab(
-    /function announceFinInterest\(state\)\s*\{[\s\S]*?\n    \}/, "announceFinInterest()");
-  const srcClear = grab(
-    /function clearFinInterestAnnouncement\(\)\s*\{[\s\S]*?\n    \}/,
-    "clearFinInterestAnnouncement()");
-
-  // Stub only what these two functions touch. `writes` records every
-  // assignment to the region so we can tell "cleared" from "re-announced".
-  const harness = new Function(`
-    var writes = [];
-    var _finInterestAnnounceTimer = null;
-    var _lang = 'en';
-    var _visible = true;
-    var region = {
-      _t: '',
-      get textContent() { return this._t; },
-      set textContent(v) { this._t = v; writes.push(v); }
-    };
-    var timers = [];
-    function setTimeout(fn) { timers.push(fn); return timers.length; }
-    function clearTimeout(id) { if (id) timers[id - 1] = null; }
-    function document_getElementById() { return region; }
-    var document = { getElementById: document_getElementById };
-    function finHandoffVisible() { return _visible; }
-    function FC(key) {
-      var en = { interestMarkedAnnounce: 'Marked for your specialist.',
-                 interestNotNowAnnounce: 'Not right now selected.',
-                 interestClearedAnnounce: 'Selection cleared.' };
-      var es = { interestMarkedAnnounce: 'Marcado para tu especialista.',
-                 interestNotNowAnnounce: 'Ahora no.',
-                 interestClearedAnnounce: 'Seleccion borrada.' };
-      return (_lang === 'es' ? es : en)[key] || '';
-    }
-    ${srcAnnounce}
-    ${srcClear}
-    return {
-      announce: announceFinInterest,
-      clear: clearFinInterestAnnouncement,
-      flush: function () { timers.forEach(function (f) { if (f) f(); }); timers = []; },
-      setLang: function (l) { _lang = l; },
-      text: function () { return region.textContent; },
-      writes: function () { return writes.slice(); },
-      pendingTimers: function () { return timers.filter(Boolean).length; }
-    };`)();
-
-  harness.announce('interested');
-  harness.flush();
-  const beforeSwitch = harness.text();
-  check("announcement lands in the region (EN)",
-    beforeSwitch === 'Marked for your specialist.');
-
-  // The language switch: clear, then the renderers run in the new language.
-  const writesBefore = harness.writes().length;
-  harness.setLang('es');
-  harness.clear();
-  const afterClear = harness.text();
-  const newWrites = harness.writes().slice(writesBefore);
-
-  check("prior-language text is REMOVED by the language switch", afterClear === '');
-  check("clearing writes only the empty string (announces nothing)",
-    newWrites.length === 1 && newWrites[0] === '');
-  check("no stale announcement is left queued after the switch",
-    harness.pendingTimers() === 0);
-  harness.flush();
-  check("nothing re-announces after the switch flushes", harness.text() === '');
-
-  // A queued-but-unflushed announcement must not survive into the new language.
-  harness.announce('not_now');
-  harness.setLang('es');
-  harness.clear();
-  harness.flush();
-  check("an in-flight announcement cannot land in the new language",
-    harness.text() === '');
-
-  // The mechanism the fix must not break: repeats still re-announce.
-  harness.announce('interested'); harness.flush();
-  const first = harness.text();
-  harness.announce('interested'); harness.flush();
-  check("repeat announcement still re-announces the same message (ES)",
-    first.length > 0 && harness.text() === first);
-}
-check("switchLanguage clears the handoff announcement before re-rendering",
+check("switchLanguage drops the announcement before re-rendering financing",
   /clearFinInterestAnnouncement\(\);\s*\n\s*renderAllFinancingSurfaces\(\);/.test(html));
-check("the sheet's own status region is NOT cleared by the language switch",
-  !/clearFinancingSheetStatus/.test(html)
-  && /region\.textContent = _finSheetStale/.test(html));
+check("the sheet status region is deliberately NOT dropped by the switch",
+  !/clearFinancingSheetStatus/.test(html) && /region\.textContent = _finSheetStale/.test(html));
 
-// --- exclusions ---
-// This guarded the Commit C decision that the handoff financing-interest
-// controls are ACTIONS, not a toggle group: their state is announced through
-// #hf2FinancingStatus and the re-rendered prompt, never through aria-pressed.
-// It was written as a whole-file count because nothing else in the app used
-// aria-pressed at the time. Gate 1B introduces aria-pressed on the persistent
-// EN/ES language controls, where a pressed toggle IS the correct pattern, so
-// the exclusion is now scoped to the surface it was actually protecting rather
-// than deleted.
+// 9. The session wipe cancels queued announcement work BEFORE it resets the
+//    agenda, so no utterance composed for the previous customer can run after
+//    the reset. Behavioural half first, then the ordering pin in the wipe.
 {
-  const interestRenderer = extract(
-    /var interestEl = document\.getElementById\('hf2FinancingInterest'\);[\s\S]*?\n      \}/,
-    "handoff interest renderer");
-  check("no aria-pressed on the handoff financing-interest controls",
-    !/aria-pressed/.test(interestRenderer));
-  const pressedTags = html.match(/<[^>]*\baria-pressed\b[^>]*>/g) || [];
-  check(`every aria-pressed element in the markup is a language control (${pressedTags.length} found)`,
-    pressedTags.length > 0 && pressedTags.every((tag) => /data-lang="(?:en|es)"/.test(tag)));
+  const h = makeAnnouncer();
+  h.api.announce("not_now");
+  h.api.cancel();
+  check("cancel clears the pending announcement and releases the id",
+    h.timers[0].cleared === true && h.api.timer() === null && h.pending() === 0);
+  h.flush();
+  check("a cancelled announcement never lands", h.text() === "");
 }
-check("stale 'messages always differ' comment removed", !html.includes("always differ"));
+{
+  const cancelAt = wipe.indexOf("cancelFinInterestPending();");
+  const agendaAt = wipe.indexOf("financingAgenda = {};");
+  check("the wipe cancels pending announcement work", cancelAt > -1);
+  check("the wipe drops the announcement region text",
+    wipe.indexOf("clearFinInterestAnnouncement();") > -1);
+  check("cancellation precedes the agenda reset",
+    cancelAt > -1 && agendaAt > -1 && cancelAt < agendaAt);
+}
 
-console.log(`\nHandoff interest check: ${passed} passed, ${failed} failed`);
-process.exit(failed ? 1 : 0);
+// 10. The wipe empties the status region itself, via the declarative text
+//     inventory. Assert both halves: the region is listed, and every listed id
+//     is emptied. (tests/session_safety_check.mjs proves the emptying
+//     behaviourally against a seeded sentinel.)
+{
+  const inventory = (html.match(/var SESSION_TEXT_IDS = \[([\s\S]*?)\];/) || [, ""])[1];
+  check("the wipe text inventory includes the handoff status region",
+    /'hf2FinancingStatus'/.test(inventory));
+  check("the wipe empties every id in that inventory",
+    /SESSION_TEXT_IDS\.forEach\(function\(id\) \{[\s\S]{0,160}textContent = '';/.test(wipe));
+}
+
+// 11. The boundary this change turns on: sheet agenda controls are TOGGLES and
+//     announce through their own aria-pressed, so they must never write to the
+//     handoff region. The handoff's own ACTION buttons still must. Both halves
+//     are executed against a spy announcer, not grepped.
+check("toggleFinancingAgenda contains no call to the handoff announcer (source)",
+  !/announceFinInterest\s*\(/.test(stripComments(toggle)));
+{
+  const spy = [];
+  const api = new Function(
+    "finAgendaItems", "document", "analytics", "finEventBase",
+    "renderAllFinancingSurfaces", "announceFinInterest", "window",
+    `var financingAgenda = {};
+     var financingAgendaDismissed = true;
+     ${toggle}
+     return {
+       run: window.toggleFinancingAgenda,
+       agenda: function() { return financingAgenda; },
+       dismissed: function() { return financingAgendaDismissed; }
+     };`)(
+    () => [{ key: "pathA" }, { key: "pathB" }],
+    { activeElement: null, getElementById: () => null },
+    { log: () => {} },
+    () => ({}),
+    () => {},
+    (state) => spy.push(state),
+    {});
+
+  api.run("pathA");
+  check("marking an agenda item records it", api.agenda().pathA === true);
+  check("marking an agenda item clears the not-now state", api.dismissed() === false);
+  check("marking does NOT announce through the handoff region", spy.length === 0);
+  api.run("pathA");
+  check("unmarking removes the key rather than storing false",
+    Object.prototype.hasOwnProperty.call(api.agenda(), "pathA") === false);
+  check("unmarking does NOT announce through the handoff region", spy.length === 0);
+  api.run("notAnAgendaKey");
+  check("an unknown key changes nothing and announces nothing",
+    Object.keys(api.agenda()).length === 0 && spy.length === 0);
+}
+{
+  const spy = [];
+  const api = new Function(
+    "document", "analytics", "finEventBase", "renderAllFinancingSurfaces",
+    "finHandoffVisible", "announceFinInterest", "window",
+    `var financingAgenda = { pathA: true };
+     var financingAgendaDismissed = false;
+     ${decline}
+     return {
+       run: window.setFinancingInterestChoice,
+       agenda: function() { return financingAgenda; },
+       dismissed: function() { return financingAgendaDismissed; }
+     };`)(
+    { activeElement: null, getElementById: () => null },
+    { log: () => {} },
+    () => ({}),
+    () => {},
+    () => true,
+    (state) => spy.push(state),
+    {});
+
+  api.run("not_now");
+  check("the handoff not-now ACTION does announce", spy.length === 1 && spy[0] === "not_now");
+  check("not-now clears the agenda and records the declined state",
+    Object.keys(api.agenda()).length === 0 && api.dismissed() === true);
+  api.run("undecided");
+  check("the handoff change ACTION announces the cleared message",
+    spy.length === 2 && spy[1] === "undecided");
+  check("change reopens the undecided state", api.dismissed() === false);
+  api.run("interested");
+  check("no other state reaches the handoff announcer", spy.length === 2);
+}
+
+console.log(`\nFinancing specialist agenda check: ${passed} passed, ${failed} failed`);
+if (failed) process.exit(1);

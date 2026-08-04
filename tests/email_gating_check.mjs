@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // COPY-15 regression test: the email packet's financing body must use the
 // "You explored…" wording ONLY when the customer actually opened Payment
-// Choice content (or marked interest); everyone else gets the neutral
+// Choice content (or added an agenda item); everyone else gets the neutral
 // availability variant. Executes the REAL finEmailBody() source extracted
 // from index.html against the REAL shipped config copy, plus static wiring
 // checks that keep the explored flag set/reset in the right places.
@@ -30,7 +30,7 @@ if (!m) { report(); }
 
 // Same contract as the app: FC(key) returns '' for missing copy keys.
 const finEmailBody = new Function(
-  "financingExplored", "financingInterest", "FC", m[1]);
+  "financingExplored", "finAgendaSelected", "FC", m[1]);
 
 const copy = (cfg.financing && cfg.financing.copy) || {};
 const fc = (lang, omit = []) => (key) =>
@@ -51,16 +51,16 @@ console.log("Behavior (real function, real copy):");
 for (const lang of ["en", "es"]) {
   const FC = fc(lang);
   check(`${lang}: never opened, undecided -> neutral body`,
-    finEmailBody(false, "undecided", FC) === copy.emailBodyAvailable[lang]);
+    finEmailBody(false, () => [], FC) === copy.emailBodyAvailable[lang]);
   check(`${lang}: opened the sheet -> explored body`,
-    finEmailBody(true, "undecided", FC) === copy.emailBody[lang]);
-  check(`${lang}: marked interested without opening -> explored body`,
-    finEmailBody(false, "interested", FC) === copy.emailBody[lang]);
-  check(`${lang}: marked not_now without opening -> neutral body`,
-    finEmailBody(false, "not_now", FC) === copy.emailBodyAvailable[lang]);
+    finEmailBody(true, () => [], FC) === copy.emailBody[lang]);
+  check(`${lang}: agenda item without opening -> explored body`,
+    finEmailBody(false, () => [{ key: "plan:test" }], FC) === copy.emailBody[lang]);
+  check(`${lang}: not-now without opening -> neutral body`,
+    finEmailBody(false, () => [], FC) === copy.emailBodyAvailable[lang]);
   const FCnoNeutral = fc(lang, ["emailBodyAvailable"]);
   check(`${lang}: config without emailBodyAvailable falls back to emailBody`,
-    finEmailBody(false, "undecided", FCnoNeutral) === copy.emailBody[lang]);
+    finEmailBody(false, () => [], FCnoNeutral) === copy.emailBody[lang]);
 }
 
 console.log("Wiring (static):");

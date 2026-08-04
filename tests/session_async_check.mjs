@@ -66,8 +66,6 @@ section("owned inventory: every raw setTimeout / setInterval / rAF is classified
 const RAW_ALLOWLIST = [
   { cls: "A", count: 1, match: "_finInterestAnnounceTimer = setTimeout(",
     why: "cancelled by name in cancelFinInterestPending() + clearFinInterestAnnouncement(), both called by the wipe" },
-  { cls: "A", count: 1, match: "_finInterestFocusFrame = requestAnimationFrame(",
-    why: "cancelled by name via cancelAnimationFrame in cancelFinInterestPending(), called by the wipe" },
   { cls: "A", count: 1, match: "_drawerCloseTimer = setTimeout(",
     why: "cleared by name in closeMattressDrawer(), which the wipe calls first with {immediate:true}" },
   { cls: "B", count: 1, match: "__STARFIELD_RAF__",

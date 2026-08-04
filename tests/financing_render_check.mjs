@@ -52,6 +52,10 @@ const SRC = [
   ["finPlanGroup", extract(fn("finPlanGroup"), "finPlanGroup")],
   ["finGroupedPlans", extract(fn("finGroupedPlans"), "finGroupedPlans")],
   ["finPromotionalByProvider", extract(fn("finPromotionalByProvider"), "finPromotionalByProvider")],
+  ["finAgendaKey", extract(fn("finAgendaKey"), "finAgendaKey")],
+  ["finAgendaItems", extract(fn("finAgendaItems"), "finAgendaItems")],
+  ["finAgendaSelected", extract(fn("finAgendaSelected"), "finAgendaSelected")],
+  ["finAgendaControl", extract(fn("finAgendaControl"), "finAgendaControl")],
   ["finSafeProvider", extract(fn("finSafeProvider"), "finSafeProvider")],
   ["financingSourceAllowed", extract(fn("financingSourceAllowed"), "financingSourceAllowed")],
   ["financingAgeOk", extract(fn("financingAgeOk"), "financingAgeOk")],
@@ -70,7 +74,7 @@ for (const [name, src] of SRC) check(`extracted ${name}()`, src.length > 0);
 // they depend on the dictionary loader and store identity, neither of which is
 // what this suite tests; they return the real shipped config strings.
 const harness = new Function("SRC_LIST", `
-  var __cfg = null, currentLang = 'en';
+  var __cfg = null, currentLang = 'en', financingAgenda = {};
   var console = { warn: function () {}, log: function () {} };
   var _finSheetStale = false;
   function getFinancingConfig() { return __cfg; }
@@ -191,6 +195,10 @@ for (const lang of ["en", "es"]) {
   }
   check(`[${lang}] generic guidance rendered instead`,
     /Current payment options are available|opciones de pago actuales/.test(dom));
+  check(`[${lang}] one agenda control per semantic path`,
+    (dom.match(/class="fin-agenda-toggle/g) || []).length === 5);
+  check(`[${lang}] lease-to-own and credit-building are separate cards`,
+    !/More paths|Más caminos/.test(dom));
 }
 
 // --- 2. GATE ON + FRESH: they DO render (proves the checks above can see) ---
