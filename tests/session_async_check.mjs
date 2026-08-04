@@ -817,6 +817,68 @@ section("diagnostic privacy: static sweep of the shipped source");
     /enums\[rule\] && typeof v === 'string' && enums\[rule\]\.indexOf\(v\) !== -1/.test(html));
 }
 
+section("diagnostic contract: the logged event set and EVENT_FIELDS agree");
+{
+  // The drift this pins, present on 94eab0d and reproducible by reverting the
+  // EVENT_FIELDS half: building the specialist agenda (2b34e7a) renamed the two
+  // financing events at their CALL SITES —
+  //     financing_interest_changed    -> financing_agenda_changed
+  //     financing_followup_requested  -> financing_agenda_reviewed
+  // — but left EVENT_FIELDS declaring the old pair. Neither half is wrong when
+  // read alone, so all eighteen suites stayed green, while redact() classified
+  // both live events as UNKNOWN and dropped every field from each:
+  //     A.log('financing_agenda_changed', finEventBase('sheet'))  ->  {_dropped: 4}
+  // Both agenda events were emitting a drop-count and nothing else. Placement,
+  // language and layout — the whole reason the events exist — never survived.
+  //
+  // Name-by-name assertions cannot prevent that recurring; a rename simply
+  // moves to a name nobody has written an assertion about yet. Only the SET
+  // equality holds, and both directions carry a distinct failure:
+  //   logged but unlisted -> the event silently loses its entire payload
+  //   listed but unlogged -> dead contract surface outliving the code it named
+  //
+  // EVENT_FIELDS is read off the executing object, not re-parsed out of the
+  // source, so this compares against what actually ships.
+  const codeOnly = html.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^[ \t]*\/\/.*$/gm, "");
+  const CALL = "analytics.log(";
+  const logged = new Set();
+  for (let i = codeOnly.indexOf(CALL); i !== -1; i = codeOnly.indexOf(CALL, i + CALL.length)) {
+    // First argument only. Walk from the call's open paren to the top-level
+    // comma, or to its own closing paren for the no-payload form. Taking every
+    // literal in the whole call would swallow payload values; taking only the
+    // first would miss the ternary form the email send uses.
+    let depth = 1, j = i + CALL.length;
+    const start = j;
+    while (j < codeOnly.length && depth > 0) {
+      const c = codeOnly[j];
+      if (c === "(" || c === "[" || c === "{") depth++;
+      else if (c === ")" || c === "]" || c === "}") depth--;
+      else if (c === "," && depth === 1) break;
+      if (depth > 0) j++;
+    }
+    for (const m of codeOnly.slice(start, j).matchAll(/'([a-z0-9_]+)'/g)) logged.add(m[1]);
+  }
+  const listed = new Set(Object.keys(A.EVENT_FIELDS));
+  check(`the sweep found the call sites (${logged.size} distinct event names)`, logged.size > 20);
+  const unlisted = [...logged].filter((e) => !listed.has(e)).sort();
+  const unlogged = [...listed].filter((e) => !logged.has(e)).sort();
+  check(`every logged event is declared in EVENT_FIELDS${unlisted.length ? " — PAYLOAD DROPPED FOR: " + unlisted.join(", ") : ""}`,
+    unlisted.length === 0);
+  check(`every EVENT_FIELDS entry is actually logged${unlogged.length ? " — DEAD ENTRIES: " + unlogged.join(", ") : ""}`,
+    unlogged.length === 0);
+  // The specific pair, so the regression reads by name in the log too.
+  for (const ev of ["financing_agenda_changed", "financing_agenda_reviewed"]) {
+    const printed = runLogged(() => A.log(ev, {
+      placement: "sheet", lang: "en", layout: "tablet", offerVersion: "2026-07",
+    }));
+    check(`${ev} retains its placement/lang/layout diagnostics`,
+      printed.includes("sheet") && printed.includes("tablet") && printed.includes('"en"'));
+    // offerVersion stays redacted here for the same reason it is everywhere
+    // else — being a declared event is not a licence to widen the field set.
+    check(`${ev} still redacts offerVersion`, !printed.includes("2026-07"));
+  }
+}
+
 } catch (err) {
   section("behavioural execution");
   check("the extracted async/privacy implementation executes end to end", false);
