@@ -10620,14 +10620,10 @@
     function announceFinInterest(state) {
       var region = document.getElementById('hf2FinancingStatus');
       if (!region || !finHandoffVisible()) return;
-      // Only 'not_now' and 'undecided' reach here today —
-      // setFinancingInterestChoice() rejects everything else, and the sheet's
-      // agenda toggles announce themselves. The 'interested' arm is therefore
-      // currently unreachable; it is kept because the copy key still ships in
-      // store-config (pinned by tests/financing_copy_policy_check.mjs) and
-      // retiring the two together is a config regeneration, not a code edit.
-      var key = state === 'interested' ? 'interestMarkedAnnounce'
-        : state === 'not_now' ? 'interestNotNowAnnounce'
+      // Exactly the two states setFinancingInterestChoice() accepts. There is
+      // no 'interested' announcement: the sheet's agenda toggles carry their
+      // own aria-pressed and never reach this region.
+      var key = state === 'not_now' ? 'interestNotNowAnnounce'
         : 'interestClearedAnnounce';
       if (_finInterestAnnounceTimer !== null) clearTimeout(_finInterestAnnounceTimer);
       region.textContent = '';

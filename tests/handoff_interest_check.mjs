@@ -97,6 +97,25 @@ const annSrc = extract(/function announceFinInterest\(state\)\s*\{[\s\S]*?\n    
 const clearSrc = extract(/function clearFinInterestAnnouncement\(\)\s*\{[\s\S]*?\n    \}/, "clearFinInterestAnnouncement()");
 const cancelSrc = extract(/function cancelFinInterestPending\(\)\s*\{[\s\S]*?\n    \}/, "cancelFinInterestPending()");
 
+// Comments legitimately DISCUSS the retired state, so every source-level
+// assertion below reads the code with comments stripped.
+const stripComments = (s) =>
+  s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:"'\\])\/\/[^\n]*/g, "$1");
+const annCode = stripComments(annSrc);
+
+// 0. The announcer maps exactly the two states the handoff can produce. The
+//    third arm was unreachable once the sheet toggles stopped announcing, and
+//    its copy key ('interestMarkedAnnounce') has been retired with it.
+check("announceFinInterest() has no 'interested' mapping",
+  !/'interested'/.test(annCode) && !annCode.includes("interestMarkedAnnounce"));
+check("announceFinInterest() maps exactly the two reachable states",
+  /state === 'not_now' \? 'interestNotNowAnnounce'/.test(annCode)
+  && (annCode.match(/interestNotNowAnnounce|interestClearedAnnounce/g) || []).length === 2);
+check("setFinancingInterestChoice() still rejects every other state",
+  /if \(state !== 'not_now' && state !== 'undecided'\) return;/.test(decline));
+check("interestMarkedAnnounce is absent from the whole app source",
+  !html.includes("interestMarkedAnnounce"));
+
 // 1. The region the announcer writes to: exact markup, exactly one of it.
 check("handoff live region markup is exact (sr-only / status / polite / atomic)",
   /<div\s+class="sr-only"\s+id="hf2FinancingStatus"\s+role="status"\s+aria-live="polite"\s+aria-atomic="true"><\/div>/.test(html));
@@ -106,8 +125,8 @@ check("handoff live region is unique",
 function makeAnnouncer() {
   const h = { lang: "en", visible: true, writes: [], timers: [] };
   const FCmap = {
-    en: { interestNotNowAnnounce: "NOTNOW-EN", interestClearedAnnounce: "CLEARED-EN", interestMarkedAnnounce: "MARKED-EN" },
-    es: { interestNotNowAnnounce: "NOTNOW-ES", interestClearedAnnounce: "CLEARED-ES", interestMarkedAnnounce: "MARKED-ES" },
+    en: { interestNotNowAnnounce: "NOTNOW-EN", interestClearedAnnounce: "CLEARED-EN" },
+    es: { interestNotNowAnnounce: "NOTNOW-ES", interestClearedAnnounce: "CLEARED-ES" },
   };
   const region = {
     _t: "initial",
@@ -265,8 +284,6 @@ check("the sheet status region is deliberately NOT dropped by the switch",
 //     announce through their own aria-pressed, so they must never write to the
 //     handoff region. The handoff's own ACTION buttons still must. Both halves
 //     are executed against a spy announcer, not grepped.
-const stripComments = (s) =>
-  s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:"'\\])\/\/[^\n]*/g, "$1");
 check("toggleFinancingAgenda contains no call to the handoff announcer (source)",
   !/announceFinInterest\s*\(/.test(stripComments(toggle)));
 {

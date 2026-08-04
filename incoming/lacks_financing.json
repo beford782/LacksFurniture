@@ -146,10 +146,6 @@
         "en": "Done",
         "es": "Listo"
       },
-      "interestMarkedAnnounce": {
-        "en": "Added to the discussion. Nothing is submitted and no application is started.",
-        "es": "Agregado a la conversación. No se envía nada y no se inicia ninguna solicitud."
-      },
       "interestNotNowAnnounce": {
         "en": "Not right now selected. You can change this choice.",
         "es": "Se seleccionó 'Ahora no'. Puedes cambiar esta opción."

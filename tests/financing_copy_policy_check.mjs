@@ -104,7 +104,12 @@ check("validator guards provider plus each group's ungated fields",
 
 // --- every shipped copy key really is an ungated surface ---
 const copyKeys = Object.keys(cfg.financing.copy);
-const announceKeys = ["interestMarkedAnnounce", "interestNotNowAnnounce", "interestClearedAnnounce"];
+// Announcement copy is read through a computed key inside announceFinInterest(),
+// not a literal FC('...'), so these are exempt from the literal-consumer scan.
+// The list is exactly the states setFinancingInterestChoice() accepts — a third
+// entry here would let an unreachable key ship unnoticed, which is what
+// interestMarkedAnnounce did.
+const announceKeys = ["interestNotNowAnnounce", "interestClearedAnnounce"];
 const missing = copyKeys.filter(k => !html.includes(`FC('${k}')`) && !announceKeys.includes(k));
 check(`every financing.copy key has a runtime consumer (unconsumed: ${JSON.stringify(missing)})`,
   missing.length === 0);
@@ -331,6 +336,28 @@ for (const p of cfg.financing.plans) {
 }
 check(`shipped ungated copy trips no unit marker (offenders: ${JSON.stringify(shippedUnitOffenders)})`,
   shippedUnitOffenders.length === 0);
+
+// --- the retired marked-announcement key is gone everywhere -----------------
+// announceFinInterest() lost its unreachable 'interested' arm; the copy key it
+// read must not survive in either the canonical financing source or the
+// generated store config, or a future edit could quietly wire it back up.
+{
+  const canonical = JSON.parse(
+    readFileSync(join(root, "incoming", "lacks_financing.json"), "utf8"));
+  const canonicalCopy = (canonical.copy || (canonical.financing || {}).copy || {});
+  check("canonical financing source has no interestMarkedAnnounce",
+    !Object.prototype.hasOwnProperty.call(canonicalCopy, "interestMarkedAnnounce"));
+  check("generated store config has no interestMarkedAnnounce",
+    !Object.prototype.hasOwnProperty.call(cfg.financing.copy, "interestMarkedAnnounce"));
+  check("canonical and generated announcement copy agree exactly",
+    JSON.stringify(Object.keys(canonicalCopy).filter((k) => k.endsWith("Announce")))
+    === JSON.stringify(Object.keys(cfg.financing.copy).filter((k) => k.endsWith("Announce"))));
+  check("the two reachable announcement keys are the only ones shipped",
+    JSON.stringify(Object.keys(cfg.financing.copy).filter((k) => k.endsWith("Announce")))
+    === JSON.stringify(["interestNotNowAnnounce", "interestClearedAnnounce"]));
+  check("interestMarkedAnnounce appears nowhere in the app source",
+    !html.includes("interestMarkedAnnounce"));
+}
 
 console.log(`\nFinancing copy policy check: ${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);
