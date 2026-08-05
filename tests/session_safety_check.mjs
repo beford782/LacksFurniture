@@ -982,6 +982,14 @@ el("dreamCodeBox").hidden = false;
 el("financingSheet").hidden = false;
 el("emailSendBtn").classList.add("sent");
 el("emailSendBtn").disabled = true;
+// Phase 0.4: the data-error overlay used to be ABSENT from the layer
+// inventory. A wipe left it stranded — visible and aria-hidden="false" — over
+// the fresh Welcome screen whose Start button focusWelcomeEntry() had just
+// focused underneath it. Seeded in the state a wipe landing mid-retry finds.
+el("dataErrorOverlay").classList.add("visible");
+el("dataErrorOverlay").setAttribute("aria-hidden", "false");
+el("dataErrorOverlay").setAttribute("aria-busy", "true");
+el("dataErrorOverlay").style.display = "flex";
 // an in-flight session timer and an open drawer over the email screen
 let ghostRan = false;
 outer.sessionTimeout(() => { ghostRan = true; }, 60);
@@ -1082,6 +1090,11 @@ check("financing sheet hidden", el("financingSheet").hidden === true);
 check("discount reveal state on the handoff button cleared",
   !el("hf2DiscountBtn").classList.contains("hf2-discount-btn--revealed"));
 check("profile animate class cleared", !el("profileScreen").classList.contains("animate"));
+check("data-error overlay closed, aria-hidden RESTORED, and no longer busy",
+  !el("dataErrorOverlay").classList.contains("visible")
+  && el("dataErrorOverlay").getAttribute("aria-hidden") === "true"
+  && el("dataErrorOverlay").getAttribute("aria-busy") === "false"
+  && el("dataErrorOverlay").style.display === "none");
 check("safety dialog closed, inert and aria-hidden",
   !dialogOpen()
   && el("sessionSafetyDialog").hasAttribute("inert")

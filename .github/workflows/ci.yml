@@ -255,6 +255,16 @@ jobs:
       - name: session async + diagnostic privacy
         run: node tests/session_async_check.mjs
 
+      # Phase 0.4. Executes the real extracted data loader, the recovery
+      # controls and the real session-epoch primitives against a DOM shim, a
+      # programmable fetch and a fake clock. Pins the regression that made the
+      # data-error overlay terminal — it contained no interactive element, and
+      # the only way out was a page reload this file forbids — plus the
+      # stale-completion rules that stop a late load speaking over a wiped
+      # session. Every safety property is mutated and must fail when removed.
+      - name: data-error recovery
+        run: node tests/data_error_recovery_check.mjs
+
       # ---- Tree hygiene -----------------------------------------------------
       - name: git diff --check (whitespace and conflict markers)
         run: |

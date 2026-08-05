@@ -6,7 +6,9 @@ not a grant of approval — see the open-decisions register.**
 **Last updated:** 2026-08-05
 **Baseline:** `88f1e89882b4da30f7de5da903cea6e66e644549` — GitHub `main`, the merge
 commit of PR #13. GitHub state is authoritative; a local checkout never is.
-**Next implementation item:** Phase 0.4.
+**Next implementation item:** Phase 0.4 — implemented on
+`claude/phase0.4-data-error-recovery`, in review, not merged. It stays ⏳ after
+merge (see 0.4).
 
 **Scope:** the Lacks deployment. Migrating store-agnostic work back to the WGR
 template is a real goal but has no owner, no phase and no schedule here; treat it
@@ -235,7 +237,25 @@ succeeded on that merge commit.
 **Known limitation carried forward:** question-to-question changes are not
 announced. See Phase 1.2.
 
-### 0.4 — Recovery from the data-error overlay ⬜ — NEXT
+### 0.4 — Recovery from the data-error overlay ⬜ — IN REVIEW
+
+**Implemented on `claude/phase0.4-data-error-recovery`; not merged, and not
+verified on hardware.** What the branch carries, against the requirements below:
+the loader is extracted from its IIFE into a named, re-invocable `loadAppData()`
+driven by a declarative `DATA_SOURCES` table (core vs independently non-fatal
+accessories preserved, per-resource so a retry re-fetches only what is missing);
+bilingual **Try again** and **Start over** controls on the overlay, the latter
+delegating to `window.startOver()` with no second wipe implementation; the
+failure flag and the poll counter cleared on recovery; `aria-hidden` restored;
+`dataErrorOverlay` added to `SESSION_LAYERS` and `dataErrorLive` to
+`SESSION_TEXT_IDS`; and load-generation plus session-epoch guards so a
+superseded or post-wipe completion updates state without raising a layer,
+announcing, or moving focus. Evidence: `tests/data_error_recovery_check.mjs`
+(new, executes the real extracted code, twelve mutations) and the wipe matrix in
+`tests/session_safety_check.mjs`.
+
+The status marker stays ⬜ until that PR merges, and becomes ⏳ — not ✅ — at
+that point, for the reason stated below.
 
 The overlay is terminal today. `showDataError()` sets `_dataLoadFailed`, writes one
 sentence, and shows a full-viewport layer that contains **no interactive element of

@@ -11236,6 +11236,14 @@
       // resolves the same dictionary — re-run it so an open dialog follows a
       // dictionary reload that did not come through switchLanguage().
       if (typeof renderSafetyDialog === 'function') renderSafetyDialog();
+      // The data-error overlay's copy is inline bilingual and owned by
+      // renderDataError(). Re-run it so a VISIBLE overlay follows a language
+      // change; guarded on visibility because painting an overlay that is not
+      // showing would put the next failure's words on screen before it happens.
+      if (typeof renderDataError === 'function' && typeof dataErrorVisible === 'function'
+          && dataErrorVisible()) {
+        renderDataError();
+      }
     }
 
     // ---- Race-safe language transaction (Gate 1B) -------------------------
@@ -11541,82 +11549,407 @@
     // ----- MATTRESS DATA & STORE CONFIG (loaded from external JSON) -----
     let MATTRESSES = { gold: [], silver: [], bronze: [] };
     let STORE_CONFIG = {};
-    // Set true when the core data/config fetch fails hard (bad HTTP or unparseable
-    // JSON). startQuiz reads this to fail fast instead of retrying forever.
+    // ==== PHASE 0.4 DATA LOAD + RECOVERY :: BEGIN ==========================
+    // The boot load and the staff recovery route are ONE code path. The loader
+    // used to be an IIFE, and that is what made the error overlay terminal:
+    // there was no way to run it again short of a full page reload, which
+    // Invariant 10 forbids and this file has never contained. It is now a named
+    // function, safely re-invocable, and the overlay's "Try again" calls it.
+
+    // Set true when core data/config fails hard: bad HTTP, unparseable JSON, or
+    // a payload the app cannot start on. startQuiz reads it to fail fast
+    // instead of retrying forever. It used to be write-once — set and never
+    // cleared — which is the other half of why the overlay was terminal. A
+    // successful recovery clears it now.
     let _dataLoadFailed = false;
 
-    // Kiosk staff-notify error surface. Inline bilingual copy (NOT dict keys) —
-    // the dictionary fetch can fail too, so the error must not depend on it.
-    // If the overlay markup hasn't been parsed yet (a fetch failing extremely
-    // early), defer once until DOMContentLoaded.
-    function showDataError() {
-      _dataLoadFailed = true;
-      var overlay = document.getElementById('dataErrorOverlay');
-      if (!overlay) {
-        document.addEventListener('DOMContentLoaded', showDataError, { once: true });
-        return;
+    // Per-resource and monotonic. A retry re-fetches only what is still
+    // missing, so one dataset failing never discards another that already
+    // succeeded and no retry can un-load good data. First success for a key
+    // wins: two loads racing on the same URL apply one payload, not two, in
+    // whichever order the responses land.
+    var _dataLoaded = { mattresses: false, storeConfig: false, quiz: false, accessories: false };
+
+    // Load generation. A slow boot load and a staff retry can be in flight at
+    // the same time; only the NEWEST decides what the overlay does. A
+    // superseded load still contributes whatever it managed to fetch —
+    // discarding a good payload helps nobody — but it never speaks.
+    var _dataLoadGeneration = 0;
+    var _dataLoadInFlight = false;
+    var _dataErrorDeferred = false;
+
+    // Bumped by showDataError(). startQuiz polls for slow data on a timer; a
+    // poll scheduled before the overlay appeared must not fire after a
+    // successful retry and start a quiz nobody asked for.
+    var _startQuizGeneration = 0;
+
+    // Declarative inventory: what the app loads, which failures are fatal, and
+    // how each payload is validated BEFORE it is applied. `core: true` trips the
+    // staff-notify overlay. Accessories stay independently non-fatal and degrade
+    // to an empty list exactly as before — preserving that distinction is why
+    // this is a table and not one Promise.all.
+    var DATA_SOURCES = [
+      {
+        key: 'mattresses', url: './data/mattresses.json', core: true,
+        apply: function(payload) {
+          // The same predicate startQuiz gates on, enforced HERE. A
+          // structurally valid file with no gold tier would otherwise count as
+          // a successful load: recovery would clear the overlay, hand back a
+          // Start button, and startQuiz would poll for ten seconds and put the
+          // same overlay back. Recovery has to mean the app can actually start.
+          if (!payload || !payload.gold || !payload.gold.length) {
+            throw new Error('mattresses.json has no gold tier');
+          }
+          MATTRESSES = payload;
+        }
+      },
+      {
+        key: 'storeConfig', url: './data/store-config.json', core: true,
+        apply: function(payload) {
+          STORE_CONFIG = payload || {};
+          // White-label: sales-floor pitch/brand prose lives in store-config
+          // (salesNotes / salesNotes_es), not in this file. Hydrate the lookup
+          // tables that getPitchContent / getBrandContent read. Defensive &&
+          // chains (no optional chaining) keep the house style; absent blocks
+          // stay {} so the renderers hide the pitch/brand sections cleanly.
+          SUBBRAND_NOTES    = (STORE_CONFIG.salesNotes && STORE_CONFIG.salesNotes.subBrands) || {};
+          BRAND_NOTES       = (STORE_CONFIG.salesNotes && STORE_CONFIG.salesNotes.brands) || {};
+          SUBBRAND_NOTES_ES = (STORE_CONFIG.salesNotes_es && STORE_CONFIG.salesNotes_es.subBrands) || {};
+          BRAND_NOTES_ES    = (STORE_CONFIG.salesNotes_es && STORE_CONFIG.salesNotes_es.brands) || {};
+        }
+      },
+      {
+        key: 'quiz', url: './data/quiz.json', core: true,
+        apply: function(payload) {
+          // Quiz definition is core app data: fail hard, never start a quiz
+          // with no questions.
+          var questions = (payload && Array.isArray(payload.questions)) ? payload.questions : [];
+          if (!questions.length) throw new Error('quiz.json has no questions');
+          QUESTIONS = questions;
+        }
+      },
+      {
+        key: 'accessories', url: './data/accessories.json', core: false,
+        apply: function(payload) {
+          if (!Array.isArray(payload)) throw new Error('accessories.json is not an array');
+          ACCESSORIES = payload;
+        }
       }
-      var textEl = document.getElementById('dataErrorText');
-      if (textEl) {
-        textEl.textContent = currentLang === 'es'
-          ? 'Tenemos problemas para cargar. Por favor avise a un miembro del equipo.'
-          : "We're having trouble loading. Please notify a team member.";
-      }
-      overlay.setAttribute('aria-hidden', 'false');
-      overlay.classList.add('visible');
+    ];
+
+    // Inline bilingual, deliberately NOT dictionary keys. The dictionary fetch
+    // is one of the things that can fail, and a recovery control nobody can
+    // read is not a recovery route.
+    var DATA_ERROR_COPY = {
+      title:       { en: 'We’re having trouble loading',
+                     es: 'Tenemos problemas para cargar' },
+      body:        { en: 'Please notify a team member. You can also try loading again.',
+                     es: 'Por favor avise a un miembro del equipo. También puede intentar cargar de nuevo.' },
+      retry:       { en: 'Try again', es: 'Intentar de nuevo' },
+      restart:     { en: 'Start over', es: 'Empezar de nuevo' },
+      retrying:    { en: 'Trying again…', es: 'Intentando de nuevo…' },
+      retryFailed: { en: 'Still having trouble. Please notify a team member.',
+                     es: 'Seguimos teniendo problemas. Por favor avise a un miembro del equipo.' }
+    };
+
+    function coreDataReady() {
+      return DATA_SOURCES.every(function(src) {
+        return !src.core || _dataLoaded[src.key];
+      });
     }
 
-    (async function loadAppData() {
-      try {
-        const [mattressRes, storeRes, quizRes] = await Promise.all([
-          fetch('./data/mattresses.json', { cache: 'no-store' }),
-          fetch('./data/store-config.json', { cache: 'no-store' }),
-          fetch('./data/quiz.json', { cache: 'no-store' })
-        ]);
-        if (!mattressRes.ok) throw new Error('mattresses.json HTTP ' + mattressRes.status);
-        if (!storeRes.ok) throw new Error('store-config.json HTTP ' + storeRes.status);
-        if (!quizRes.ok) throw new Error('quiz.json HTTP ' + quizRes.status);
-        MATTRESSES = await mattressRes.json();
-        STORE_CONFIG = await storeRes.json();
-        // Quiz definition is core app data: fail hard (dataErrorOverlay), never
-        // start a quiz with no questions.
-        const quizData = await quizRes.json();
-        QUESTIONS = (quizData && Array.isArray(quizData.questions))
-          ? quizData.questions : [];
-        if (!QUESTIONS.length) throw new Error('quiz.json has no questions');
-        // White-label: sales-floor pitch/brand prose lives in store-config
-        // (salesNotes / salesNotes_es), not in this file. Hydrate the lookup
-        // tables that getPitchContent / getBrandContent read. Defensive && chains
-        // (no optional chaining) keep the house style; absent blocks stay {} so
-        // the renderers hide the pitch/brand sections cleanly.
-        SUBBRAND_NOTES    = (STORE_CONFIG.salesNotes && STORE_CONFIG.salesNotes.subBrands) || {};
-        BRAND_NOTES       = (STORE_CONFIG.salesNotes && STORE_CONFIG.salesNotes.brands) || {};
-        SUBBRAND_NOTES_ES = (STORE_CONFIG.salesNotes_es && STORE_CONFIG.salesNotes_es.subBrands) || {};
-        BRAND_NOTES_ES    = (STORE_CONFIG.salesNotes_es && STORE_CONFIG.salesNotes_es.brands) || {};
-      } catch (e) {
-        console.error('Failed to load app data:', e);
-        showDataError();
+    function dataErrorVisible() {
+      var overlay = document.getElementById('dataErrorOverlay');
+      return !!(overlay && overlay.classList && overlay.classList.contains('visible'));
+    }
+
+    function setDataErrorText(id, text) {
+      var el = document.getElementById(id);
+      if (el) el.textContent = text;
+    }
+
+    // Retry OUTCOMES only. Focus is already inside the dialog when a retry
+    // resolves, so nothing else would speak; the body itself is never routed
+    // here, because that is what the focused dialog already announced.
+    function setDataErrorStatus(text) {
+      setDataErrorText('dataErrorLive', text);
+    }
+
+    // Re-resolved from the active language every time, so a language change
+    // while the overlay is up relocalises it in place — the same contract
+    // renderSafetyDialog() has, through the same applyTranslations() call.
+    function renderDataError() {
+      setDataErrorText('dataErrorTitle', L(DATA_ERROR_COPY.title));
+      setDataErrorText('dataErrorText', L(DATA_ERROR_COPY.body));
+      setDataErrorText('dataErrorRetryBtn', L(DATA_ERROR_COPY.retry));
+      setDataErrorText('dataErrorRestartBtn', L(DATA_ERROR_COPY.restart));
+    }
+
+    function focusDataError() {
+      var overlay = document.getElementById('dataErrorOverlay');
+      if (!overlay || typeof overlay.focus !== 'function') return;
+      try { overlay.focus({ preventScroll: true }); } catch (err) { overlay.focus(); }
+    }
+
+    function dataErrorOwnsFocus() {
+      var overlay = document.getElementById('dataErrorOverlay');
+      var active = document.activeElement;
+      if (!overlay || !active) return false;
+      if (active === overlay) return true;
+      return !!(typeof overlay.contains === 'function' && overlay.contains(active));
+    }
+
+    // Tab containment. aria-modal keeps a screen reader's virtual cursor inside
+    // the layer; it does nothing about the Tab key, and these two controls sit
+    // on top of a Welcome screen whose Start button is still in the tab order.
+    //
+    // The safety dialog solves this by marking everything else `inert`. This
+    // layer cannot: a wipe closes it DECLARATIVELY through SESSION_LAYERS,
+    // which sets attributes on this element and could never release inert marks
+    // left on others — an inert background would outlive the overlay and freeze
+    // the tablet. A cycle bound to the layer itself leaves no such residue.
+    //
+    // Bound to the DOCUMENT, not to the layer. A listener on the layer only
+    // fires while focus is already inside it, so the one case that actually
+    // needs repairing — focus that has escaped underneath the modal — would
+    // never reach it. Verified in a browser: a Tab dispatched on the Welcome
+    // Start button does not bubble through the overlay. Gated on
+    // dataErrorVisible(), so it is inert for the entire life of a healthy
+    // kiosk, and bound once.
+    //
+    // Escape deliberately does nothing. There is no cancel here: dismissing the
+    // overlay without recovering hands back a Welcome screen that is still
+    // broken, silently, which is the failure this whole item exists to remove.
+    var _dataErrorKeydownBound = false;
+    function dataErrorKeydown(e) {
+      if (!e || e.key !== 'Tab' || !dataErrorVisible()) return;
+      var overlay = document.getElementById('dataErrorOverlay');
+      var list = ['dataErrorRetryBtn', 'dataErrorRestartBtn']
+        .map(function(id) { return document.getElementById(id); })
+        .filter(function(el) { return el && typeof el.focus === 'function' && el.disabled !== true; });
+      if (!overlay || !list.length) return;
+      var first = list[0], last = list[list.length - 1];
+      var active = document.activeElement;
+      // The container is the initial destination — it announces the dialog but
+      // is not part of the cycle, so it hands off in whichever direction the
+      // key asked for.
+      if (active === overlay || !dataErrorOwnsFocus()) {
+        e.preventDefault();
+        (e.shiftKey ? last : first).focus();
+        return;
       }
-      // Accessories load independently and NON-fatally: a failure here must not
-      // block the quiz/results flow or trip the core dataErrorOverlay. The
-      // accessory render paths already tolerate an empty list, so we degrade to
-      // [] and carry on. Kept out of the Promise.all above so its failure can't
-      // reject the critical mattress/store-config load.
-      try {
-        const accRes = await fetch('./data/accessories.json', { cache: 'no-store' });
-        if (!accRes.ok) throw new Error('accessories.json HTTP ' + accRes.status);
-        const accData = await accRes.json();
-        if (!Array.isArray(accData)) throw new Error('accessories.json is not an array');
-        ACCESSORIES = accData;
-      } catch (e) {
-        console.warn('[DreamFinder] Could not load accessories — continuing with empty list:', e);
-        ACCESSORIES = [];
+      if (e.shiftKey && active === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && active === last) { e.preventDefault(); first.focus(); }
+    }
+
+    // Kiosk staff-notify error surface.
+    //
+    // opts.retryFailed — this call is the result of a retry that failed, so the
+    //                    overlay is already up and focus is already inside it.
+    //                    The outcome goes to the status region instead of
+    //                    re-announcing the dialog.
+    // opts.silent      — a wipe took ownership of the screen while the load
+    //                    that produced this failure was in flight. State is
+    //                    recorded, nothing is raised over the fresh session and
+    //                    nothing is announced into it (Invariant 9).
+    //
+    // If the overlay markup hasn't been parsed yet (a fetch failing extremely
+    // early), defer once until DOMContentLoaded.
+    function showDataError(opts) {
+      opts = opts || {};
+      _dataLoadFailed = true;
+      _startQuizGeneration++;
+      if (opts.silent) return;
+      var overlay = document.getElementById('dataErrorOverlay');
+      if (!overlay) {
+        // A named guard rather than passing showDataError itself: the listener
+        // now needs an argument-free wrapper, and two wrappers are two distinct
+        // functions that addEventListener would not deduplicate.
+        if (!_dataErrorDeferred) {
+          _dataErrorDeferred = true;
+          document.addEventListener('DOMContentLoaded', function() {
+            _dataErrorDeferred = false;
+            showDataError(opts);
+          }, { once: true });
+        }
+        return;
       }
-      await loadDictionary(currentLang);
-      applyStoreConfig();
-      applyLanguageConfig();
-      applyTranslations();
-    })();
+      var wasVisible = dataErrorVisible();
+      renderDataError();
+      overlay.setAttribute('aria-hidden', 'false');
+      overlay.setAttribute('aria-busy', 'false');
+      if (overlay.classList) overlay.classList.add('visible');
+      if (!_dataErrorKeydownBound && document.addEventListener) {
+        document.addEventListener('keydown', dataErrorKeydown);
+        _dataErrorKeydownBound = true;
+      }
+      if (!wasVisible) {
+        // ANNOUNCEMENT IS FOCUS (0.3). The layer is named by its own title and
+        // described by its own body, so focusing it speaks the failure exactly
+        // once. No live region carries the same words — that pairing is the
+        // double utterance 0.3 removed at the cause.
+        setDataErrorStatus('');
+        focusDataError();
+        return;
+      }
+      if (opts.retryFailed) {
+        setDataErrorStatus(L(DATA_ERROR_COPY.retryFailed));
+        // Focus normally never left the Try again button, so the status region
+        // is the whole announcement. If something did take it out of the
+        // dialog, repair it — to the control that gets used again, never BODY.
+        if (!dataErrorOwnsFocus()) {
+          var retryBtn = document.getElementById('dataErrorRetryBtn');
+          if (retryBtn && typeof retryBtn.focus === 'function') retryBtn.focus();
+          else focusDataError();
+        }
+      }
+    }
+
+    // Clear the overlay: out of sight AND back out of the accessibility tree.
+    // aria-hidden was set to "false" on show and never restored, so a hidden
+    // overlay stayed exposed to assistive tech.
+    function hideDataError() {
+      var overlay = document.getElementById('dataErrorOverlay');
+      if (!overlay) return false;
+      if (overlay.classList) overlay.classList.remove('visible');
+      overlay.setAttribute('aria-hidden', 'true');
+      overlay.setAttribute('aria-busy', 'false');
+      setDataErrorStatus('');
+      return true;
+    }
+
+    // The route out. Everything the terminal overlay never did.
+    // mayFocus is false when a wipe has taken ownership of the screen since
+    // this load began: the state still clears, but the wipe's own Welcome
+    // focus stands.
+    function recoverFromDataError(mayFocus) {
+      _dataLoadFailed = false;
+      _startQuizAttempts = 0;
+      var wasVisible = dataErrorVisible();
+      hideDataError();
+      // Focus only follows an overlay that was actually up. A boot load that
+      // never showed one must not yank focus off whatever is being touched.
+      if (wasVisible && mayFocus && typeof focusWelcomeEntry === 'function') focusWelcomeEntry();
+    }
+
+    async function fetchDataSource(src) {
+      var res = await fetch(src.url, { cache: 'no-store' });
+      if (!res.ok) throw new Error(src.url + ' HTTP ' + res.status);
+      return await res.json();
+    }
+
+    // Fetch, validate and apply ONE source, always RESOLVING with a verdict. A
+    // rejection here would take every sibling down with it, which is exactly
+    // the coupling the accessories fetch was moved out of Promise.all to avoid;
+    // expressed per-source, that property now holds for every resource.
+    function loadDataSource(src) {
+      return fetchDataSource(src).then(function(payload) {
+        // Another load already applied this key. Dropping the duplicate is what
+        // makes the result independent of which response landed first.
+        if (_dataLoaded[src.key]) return { src: src, ok: true, duplicate: true };
+        src.apply(payload);
+        _dataLoaded[src.key] = true;
+        return { src: src, ok: true };
+      }).catch(function(err) {
+        return { src: src, ok: false, error: err };
+      });
+    }
+
+    // The re-invocable loader. Resolves with 'ok' | 'recovered' | 'failed' |
+    // 'stale' so the caller — and the suite — can act on the real outcome.
+    async function loadAppData() {
+      var generation = ++_dataLoadGeneration;
+      _dataLoadInFlight = true;
+      try {
+        // One microtask before anything binds to session state. At boot this
+        // runs while the enclosing script is still executing and _sessionEpoch,
+        // declared far below, is still undefined; resuming after the script
+        // completes binds the real epoch instead of a stale one.
+        await null;
+        // True only while the session this load started in is still current.
+        // sessionBound() returns undefined once the epoch has moved, which is
+        // precisely "a wipe happened — you no longer own focus or speech". The
+        // typeof guard keeps this block executable inside an extraction
+        // harness that declares only a subset of these bindings.
+        var sessionUnchanged = (typeof sessionBound === 'function' && typeof _sessionEpoch === 'number')
+          ? sessionBound(function() { return true; })
+          : function() { return true; };
+        var results = await Promise.all(
+          DATA_SOURCES
+            .filter(function(src) { return !_dataLoaded[src.key]; })
+            .map(loadDataSource)
+        );
+        results.forEach(function(r) {
+          if (r.ok) return;
+          if (r.src.core) console.error('[DreamFinder] Failed to load ' + r.src.url + ':', r.error);
+          else console.warn('[DreamFinder] Could not load ' + r.src.url + ' — continuing with empty list:', r.error);
+        });
+        // The accessory render paths already tolerate an empty list.
+        if (!_dataLoaded.accessories) ACCESSORIES = [];
+        await loadDictionary(currentLang);
+        applyStoreConfig();
+        applyLanguageConfig();
+        applyTranslations();
+        return resolveDataLoadOutcome(generation, sessionUnchanged() === true);
+      } finally {
+        // Only the newest load releases the latch; a superseded one finishing
+        // late must not advertise the current one as finished.
+        if (generation === _dataLoadGeneration) _dataLoadInFlight = false;
+      }
+    }
+
+    // ONE place decides what the overlay does, so the boot path and the retry
+    // path cannot drift apart.
+    function resolveDataLoadOutcome(generation, sessionOwned) {
+      // Superseded. Not an error — whatever this load fetched is already
+      // applied — it simply does not get to speak for the app.
+      if (generation !== _dataLoadGeneration) return 'stale';
+      if (!coreDataReady()) {
+        showDataError({ retryFailed: dataErrorVisible(), silent: !sessionOwned });
+        return 'failed';
+      }
+      if (_dataLoadFailed) {
+        recoverFromDataError(sessionOwned);
+        return 'recovered';
+      }
+      return 'ok';
+    }
+
+    // Try again. Re-invokes the SAME loader: no second load path, and no full
+    // page reload (Invariant 10).
+    window.dataErrorRetry = function() {
+      // Repeated taps while a load is in flight are answered, not queued: this
+      // is a touchscreen and the button will be jabbed. Saying so beats a
+      // control that looks dead.
+      if (_dataLoadInFlight) {
+        setDataErrorStatus(L(DATA_ERROR_COPY.retrying));
+        return false;
+      }
+      var overlay = document.getElementById('dataErrorOverlay');
+      if (overlay) overlay.setAttribute('aria-busy', 'true');
+      setDataErrorStatus(L(DATA_ERROR_COPY.retrying));
+      return Promise.resolve(loadAppData()).catch(function(err) {
+        // Classified, not echoed: this rejection can carry a response body or
+        // an exception string, and the same rule the send path follows applies
+        // here. The customer-facing message stays the localized generic one.
+        console.error('[DreamFinder] Data retry failed:',
+          (typeof transportFailureCode === 'function') ? transportFailureCode(err) : 'unclassified');
+        showDataError({ retryFailed: true });
+        return 'failed';
+      });
+    };
+
+    // A route to a clean restart. Delegates to the ONE authoritative wipe:
+    // no second reset implementation, and window.startOver() is untouched. The
+    // wipe closes this overlay through SESSION_LAYERS and owns the move back to
+    // Welcome, so nothing here touches the overlay or focus.
+    window.dataErrorRestart = function() {
+      if (typeof window.startOver !== 'function') return undefined;
+      return window.startOver();
+    };
+
+    loadAppData();
+    // ==== PHASE 0.4 DATA LOAD + RECOVERY :: END ============================
 
     // Show/hide language toggle based on store-config.languages array.
     // If only one language is configured (or the field is missing), hide the toggle
@@ -11961,7 +12294,14 @@
           return;
         }
         console.warn('[DreamFinder] Mattress data not loaded yet — retrying in 400ms (attempt ' + _startQuizAttempts + '/25)');
-        sessionTimeout(window.startQuiz, 400);
+        // Bound to the poll generation showDataError() retires. Without this a
+        // poll queued before the overlay appeared could fire after a successful
+        // Try again and start a quiz nobody asked for.
+        var pollGeneration = _startQuizGeneration;
+        sessionTimeout(function() {
+          if (pollGeneration !== _startQuizGeneration) return;
+          window.startQuiz();
+        }, 400);
         return;
       }
       _startQuizAttempts = 0;
@@ -17677,7 +18017,7 @@
     // would otherwise still be holding the previous customer's last utterance.
     var SESSION_TEXT_IDS = [
       'dreamCodeValue', 'dreamCodePct', 'emailError', 'drawerNavLabel', 'accStatus',
-      'hf2FinancingStatus', 'financingSheetStatus', 'sessionSafetyLive',
+      'hf2FinancingStatus', 'financingSheetStatus', 'sessionSafetyLive', 'dataErrorLive',
       'resultsRevealTitle', 'resultsRevealSubtitle',
       'revealCertCode', 'revealCertPctNum', 'revealCertScope', 'revealCertExpiry',
       'revealCertTerms'
@@ -17688,6 +18028,15 @@
     // the open/visible/active markers that would otherwise leave a prior
     // customer's layer in the accessibility tree over the next Welcome screen.
     var SESSION_LAYERS = [
+      // Topmost layer in the file (z-index 10000), and the one that was absent
+      // here: a wipe left the data-error overlay stranded, aria-hidden="false",
+      // over a fresh Welcome screen whose Start button focusWelcomeEntry() had
+      // just focused underneath it. Closing it declaratively — rather than
+      // through a close function called earlier in the wipe — is deliberate:
+      // this list is the authoritative inventory, and a retry still in flight
+      // resolves against the session epoch rather than against the DOM.
+      { id: 'dataErrorOverlay', remove: ['visible'], display: 'none',
+        attrs: { 'aria-hidden': 'true', 'aria-busy': 'false' } },
       { id: 'privacyOverlay', remove: ['visible'] },
       { id: 'compareModal', remove: ['visible'], display: 'none' },
       { id: 'compareTray', display: 'none' },
@@ -18236,17 +18585,85 @@
     </div>
   </div>
 
-  <!-- Data-load error overlay (kiosk staff-notify). Shown by showDataError() when
-       core data/config fails to load or after startQuiz exhausts its retry cap.
-       Inline bilingual copy is injected by showDataError() (no dict dependency). -->
-  <div id="dataErrorOverlay" role="status" aria-live="polite" aria-hidden="true" style="display:none; position:fixed; inset:0; z-index:10000; background:rgba(0,0,0,0.85); align-items:center; justify-content:center; padding:1.5rem;">
-    <div style="background:#162b45; border:1px solid rgba(212,168,75,0.2); border-radius:16px; max-width:420px; width:100%; padding:2rem 1.75rem; text-align:center;">
-      <div id="dataErrorText" style="font-size:0.95rem; font-weight:600; color:var(--color-gold-bright); line-height:1.6;"></div>
+  <!-- Data-load error overlay (kiosk staff-notify). Shown by showDataError()
+       when core data/config fails to load or after startQuiz exhausts its retry
+       cap. Phase 0.4: no longer terminal — it carries an explicit Try again
+       (re-invokes loadAppData(), never a full page reload) and a Start over
+       that delegates to the one authoritative session wipe.
+
+       role="alertdialog" + aria-modal, NOT the role="status" aria-live it used
+       to carry: the layer is FOCUSED when it appears, and a live region on the
+       same node would speak the body a second time — the double utterance 0.3
+       removed at the cause. #dataErrorLive is for retry OUTCOMES only, which
+       change while focus is already inside the dialog and would otherwise be
+       silent.
+
+       No `inert` on the background: a wipe closes this layer declaratively
+       through SESSION_LAYERS, which sets attributes on this element and cannot
+       release inert marks left on other elements — an inert background would
+       outlive the overlay and freeze the whole app. aria-modal carries the
+       virtual cursor, and a document-level dataErrorKeydown() carries the Tab
+       key — inert unless this layer is visible.
+
+       Copy is inline bilingual, injected by renderDataError(): the dictionary
+       fetch is one of the things that can fail, and a recovery control nobody
+       can read is not a recovery route. -->
+  <div id="dataErrorOverlay" role="alertdialog" aria-modal="true" tabindex="-1"
+       aria-labelledby="dataErrorTitle" aria-describedby="dataErrorText"
+       aria-hidden="true" aria-busy="false"
+       style="display:none; position:fixed; inset:0; z-index:10000; background:rgba(0,0,0,0.85); align-items:center; justify-content:center; padding:1.5rem;">
+    <div class="data-error__panel">
+      <h2 class="data-error__title" id="dataErrorTitle"></h2>
+      <div id="dataErrorText" class="data-error__body"></div>
+      <div class="data-error__actions">
+        <button type="button" class="data-error__btn data-error__btn--retry" id="dataErrorRetryBtn"
+          onclick="window.dataErrorRetry()" ontouchend="event.preventDefault();window.dataErrorRetry();"></button>
+        <button type="button" class="data-error__btn data-error__btn--restart" id="dataErrorRestartBtn"
+          onclick="window.dataErrorRestart()" ontouchend="event.preventDefault();window.dataErrorRestart();"></button>
+      </div>
+      <div id="dataErrorLive" role="status" aria-live="polite" class="sr-only"></div>
     </div>
   </div>
   <style>
     #dataErrorOverlay { display:none !important; }
     #dataErrorOverlay.visible { display:flex !important; }
+    .data-error__panel {
+      background:#162b45; border:1px solid rgba(212,168,75,0.2); border-radius:16px;
+      max-width:420px; width:100%; padding:2rem 1.75rem; text-align:center;
+    }
+    /* Both text colours are var(--color-gold-bright) #d4a84b on the #162b45
+       panel: 6.4:1, and neither is the configurable store primary. */
+    .data-error__title {
+      font-family: var(--font-sans); font-size:1.05rem; font-weight:700;
+      color:var(--color-gold-bright); line-height:1.4; margin:0 0 0.6rem;
+    }
+    .data-error__body {
+      font-size:0.95rem; font-weight:600; color:var(--color-gold-bright); line-height:1.6;
+    }
+    .data-error__actions { display:flex; flex-direction:column; gap:10px; margin-top:1.35rem; }
+    /* 48px minimum target and touch-action: manipulation, same as every other
+       control in the file. Spanish labels are longer, so they wrap rather than
+       overflow the panel at 320px. */
+    .data-error__btn {
+      min-height:48px; padding:12px 16px;
+      font-family: var(--font-sans); font-size:0.95rem; font-weight:700; line-height:1.2;
+      border-radius:10px; border:1px solid transparent; cursor:pointer;
+      touch-action: manipulation; overflow-wrap:break-word;
+    }
+    /* #12233a on #d4a84b is 7.1:1. Brand-neutral, not --store-primary: the
+       recovery route has to stay readable in every deployment. */
+    .data-error__btn--retry { color:#12233a; background:var(--color-gold-bright); }
+    .data-error__btn--restart {
+      color:var(--color-gold-bright); background:transparent; border-color:rgba(212,168,75,0.55);
+    }
+    .data-error__btn:focus-visible {
+      outline: 3px solid var(--focus-ring-outer);
+      outline-offset: 2px;
+      box-shadow: 0 0 0 5px var(--focus-ring-inner);
+    }
+    @media (forced-colors: active) {
+      .data-error__btn:focus-visible { outline-color: CanvasText; box-shadow: none; }
+    }
   </style>
 
   <script>

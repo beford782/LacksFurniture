@@ -43,6 +43,79 @@ function grab(re, what) {
   return m ? m[0] : "";
 }
 
+// Several static sweeps below have to look at CODE rather than prose, and
+// comment removal has to be literal-aware for the same reason argument parsing
+// is — with higher stakes. index.html contains `u.replace(/^\.?\/*/, '')`: a
+// REGEX whose body holds the two characters `/*`. A plain
+// `/\/\*[\s\S]*?\*\//g` strip reads that as a comment opener and deletes
+// everything from it to the next `*/` ANYWHERE later in the file, taking most
+// of the analytics.log() and localStorage call sites with it. That is the
+// sweeps failing OPEN: an unlisted event, or a customer value written to
+// storage, inside the deleted span is discovered by nothing. The file happened
+// to contain no later `*/`, so the bug sat dormant until a stylesheet comment
+// was added below that line and supplied one.
+//
+// Misdetection here fails in the safe direction by construction: an ambiguous
+// `/` is consumed as a literal and EMITTED, never deleted, so the worst case is
+// a comment surviving into a scan, not code disappearing from one.
+function stripComments(source) {
+  // A `/` opens a regex only where a value may begin. `)` and `}` are
+  // deliberately absent: they are ambiguous, and reading them as division keeps
+  // the fallback on the emitting side.
+  const REGEX_OK_AFTER = /[({[,;:=!&|?+\-*%~^<>]/;
+  const REGEX_OK_KEYWORD = /(?:^|[^A-Za-z0-9_$])(?:return|typeof|instanceof|in|of|new|delete|void|case|do|else|yield|await)$/;
+  let out = "";
+  let i = 0;
+  let prev = "";        // last significant character emitted
+  let prevWord = "";    // ...and the identifier it belongs to, for keywords
+  while (i < source.length) {
+    const c = source[i];
+    const d = source[i + 1];
+    if (c === "/" && d === "/") {
+      while (i < source.length && source[i] !== "\n") i++;
+      continue;
+    }
+    if (c === "/" && d === "*") {
+      const end = source.indexOf("*/", i + 2);
+      i = end === -1 ? source.length : end + 2;
+      continue;
+    }
+    if (c === "'" || c === '"' || c === "`") {
+      let j = i + 1;
+      while (j < source.length) {
+        if (source[j] === "\\") { j += 2; continue; }
+        if (source[j] === c) { j++; break; }
+        j++;
+      }
+      out += source.slice(i, j);
+      prev = c; prevWord = ""; i = j;
+      continue;
+    }
+    if (c === "/" && (prev === "" || REGEX_OK_AFTER.test(prev) || REGEX_OK_KEYWORD.test(prevWord))) {
+      let j = i + 1, inClass = false;
+      while (j < source.length) {
+        const e = source[j];
+        if (e === "\\") { j += 2; continue; }
+        if (e === "\n") break;            // not a regex after all — emit as-is
+        if (e === "[") inClass = true;
+        else if (e === "]") inClass = false;
+        else if (e === "/" && !inClass) { j++; break; }
+        j++;
+      }
+      out += source.slice(i, j);
+      prev = "/"; prevWord = ""; i = j;
+      continue;
+    }
+    out += c;
+    if (!/\s/.test(c)) {
+      prev = c;
+      prevWord = /[A-Za-z0-9_$]/.test(c) ? prevWord + c : "";
+    }
+    i++;
+  }
+  return out;
+}
+
 const SENTINEL_EMAIL = "prior.customer@example.invalid";
 const SENTINEL_NAME = "PRIOR-CUSTOMER-NAME-x7";
 const SENTINEL_PHONE = "956-555-0199";
@@ -782,7 +855,7 @@ section("diagnostic privacy: static sweep of the shipped source");
     /analytics\.log\('session_summary', sessionSafeSummary\(/.test(html));
   // Comments stripped: the source explains WHY console.clear() is not a fix,
   // and that rationale must not read as a use of it.
-  const codeOnly = html.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^[ \t]*\/\/.*$/gm, "");
+  const codeOnly = stripComments(html);
   check("console.clear() is NOT used as a privacy mechanism",
     !/console\.clear\s*\(/.test(codeOnly));
   // Storage: the CUSTOMER session must stay memory-only, but the app does
@@ -951,7 +1024,7 @@ section("diagnostic contract: the logged event set and EVENT_FIELDS agree");
   // The whole audit as a pure function, so the mutation battery below can run
   // it over sources and contracts that are not this repository's.
   function auditEventContract(source, listedNames) {
-    const code = source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^[ \t]*\/\/.*$/gm, "");
+    const code = stripComments(source);
     // DISCOVERY must be whitespace-aware, not a fixed substring. `analytics.log
     // (` and a newline before the parenthesis are both valid JavaScript, and an
     // exact "analytics.log(" search finds neither — so the call would be
@@ -998,7 +1071,7 @@ section("diagnostic contract: the logged event set and EVENT_FIELDS agree");
   // to another name would log events this sweep never sees, so the boundary is
   // asserted rather than assumed — the honest limit of a non-parser guard.
   {
-    const src = html.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^[ \t]*\/\/.*$/gm, "");
+    const src = stripComments(html);
     check("analytics.log is never aliased, so call-site discovery is complete",
       !/(?:const|let|var)\s+\w+\s*=\s*analytics\s*\.\s*log\b/.test(src)
       && !/\{[^{}]*\blog\b[^{}]*\}\s*=\s*analytics\b/.test(src));
@@ -1031,6 +1104,22 @@ section("diagnostic contract: the logged event set and EVENT_FIELDS agree");
       m("analytics.log('alpha', p); analytics . log('new_event', p);").unlisted.join(",") === "new_event");
     check("a spaced call with a dynamic argument still fails as unparsed",
       m("analytics.log ( eventName , p);").unparsed.length === 1);
+
+    // Comment removal is part of DISCOVERY, so its own failure mode is a
+    // mutation too. The regex below is the exact literal index.html carries;
+    // read naively its `/*` opens a comment that runs to the next `*/`, and
+    // every call site in between vanishes from the sweep.
+    const regexHazard = m(
+      "analytics.log('alpha', p);\n"
+      + "var s = u.replace(/^\\.?\\/*/, '');\n"
+      + "analytics.log('new_event', p);\n"
+      + "/* a later block comment, e.g. one added in a stylesheet */\n");
+    check("MUTATION: a regex containing /* cannot swallow later call sites",
+      regexHazard.unlisted.join(",") === "new_event" && regexHazard.unparsed.length === 0);
+    check("real block comments are still removed",
+      m("analytics.log('alpha', p); /* analytics.log('new_event', p); */").unlisted.length === 0);
+    check("real line comments are still removed",
+      m("analytics.log('alpha', p);\n    // analytics.log('new_event', p);").unlisted.length === 0);
 
     const tpl = m("analytics.log(`alpha`, p); analytics.log(`beta`, p);");
     check("un-interpolated template literals are recognised",
