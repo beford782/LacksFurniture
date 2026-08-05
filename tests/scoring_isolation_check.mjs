@@ -108,7 +108,11 @@ for (const [name, answers] of Object.entries(ANSWER_SETS)) {
 // --- 2. The scoring engine never mentions financing at all ------------------
 console.log("The engine's source contains no financing identifier:");
 for (const id of ["financingAgenda", "financingAgendaDismissed", "financingExplored", "getFinancingConfig",
-                  "financingTermsFresh", "exactPromotionsEnabled", "FC("]) {
+                  "financingTermsFresh", "exactPromotionsEnabled", "FC(",
+                  // 0.5: consultation-priority state must never feed scoring —
+                  // the priorities shape consultation copy only, and the
+                  // engine may not so much as name their store.
+                  "trialFocus", "renderHf2Priorities"]) {
   check(`calculateScores() does not reference ${id}`, !m[0].includes(id));
 }
 
