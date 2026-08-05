@@ -419,7 +419,14 @@ function asRegex(find) {
 }
 
 let survivors = 0, notApplied = 0, caught = 0;
-const baseline = runSuites(WITH_SESSION);
+// The baseline runs EVERY suite the manifest can name, derived from the
+// manifest itself so a new entry's observer is baselined automatically. A
+// suite that is red before any mutation would otherwise mark every mutation
+// naming it as "caught" and the sweep could finish green while masking a
+// vacuous observer (Codex, PR #16).
+const ALL_OBSERVERS = [...new Set(
+  MUTATIONS.flatMap((m) => m[3] || DEFAULT_SUITES).concat(WITH_SESSION))];
+const baseline = runSuites(ALL_OBSERVERS);
 console.log(`baseline (unmutated): ${baseline.length ? "RED — " + baseline.join(",") : "green"}\n`);
 if (baseline.length) {
   console.log("::error:: the sweep cannot mean anything while the suites are red unmutated");
