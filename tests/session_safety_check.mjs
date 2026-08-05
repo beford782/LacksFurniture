@@ -1362,5 +1362,362 @@ check("switchLanguage does not replay the reveal animations",
 check("switchLanguage preserves in-progress contact values across the rerender",
   /var emailValues = \{[\s\S]{0,900}?getElementById\('emailNameInput'\)\.value = emailValues\.name/.test(html));
 
+// ===========================================================================
+// 8. GATE 2A :: SCREEN-TRANSITION FOCUS AND ANNOUNCEMENT
+// ===========================================================================
+// showScreen() now moves focus and, on screens with no rendered heading,
+// announces the destination. Everything below EXECUTES the real functions
+// extracted from index.html against a purpose-built DOM stub.
+//
+// A LOCAL stub rather than the shared makeEl(): the shared one's focus()
+// writes `doc.activeElement` against the MODULE-LEVEL document it closed over,
+// not the document owning the element. Every focus assertion written against
+// it would read `body` and pass for the wrong reason. The shared stub also has
+// no closest(), and isFocusRestorable() guards its [hidden],[inert] ancestor
+// test behind `typeof el.closest === 'function'` — so that branch would
+// silently never run and the inert case would be vacuous. Both are fixed here
+// without disturbing the 372 assertions above.
+section("Gate 2A: screen-transition focus and announcement");
+
+function g2aDom() {
+  const doc = { activeElement: null, byId: {} };
+  function el(id, tag) {
+    const e = {
+      id, tagName: (tag || 'div').toUpperCase(), parent: null, kids: [],
+      _cls: {}, _attr: {}, textContent: '', hidden: undefined, focusCount: 0,
+      classList: {
+        add(c) { e._cls[c] = true; }, remove(c) { delete e._cls[c]; },
+        contains(c) { return !!e._cls[c]; },
+        toggle(c, on) { if (on) e._cls[c] = true; else delete e._cls[c]; },
+      },
+      setAttribute(k, v) { e._attr[k] = String(v); },
+      getAttribute(k) { return Object.prototype.hasOwnProperty.call(e._attr, k) ? e._attr[k] : null; },
+      // Ancestor-aware, so isFocusRestorable's [hidden],[inert] rule is real.
+      closest(sel) {
+        const want = sel.replace(/[\[\]]/g, '').split(',').map((s) => s.trim());
+        for (let n = e; n; n = n.parent) {
+          for (const w of want) {
+            if (w === 'hidden' && n.hidden === true) return n;
+            if (n.getAttribute(w) !== null) return n;
+          }
+        }
+        return null;
+      },
+      // Writes to the document that OWNS this element.
+      focus() { e.focusCount++; doc.activeElement = e; },
+      style: {}, scrollTop: 0, offsetParent: {},
+    };
+    doc.byId[id] = e;
+    return e;
+  }
+  doc.getElementById = (id) => doc.byId[id] || (doc.byId[id] = el(id));
+  doc.querySelector = (sel) => {
+    if (sel === '.screen.active') return SCREENS.map((s) => doc.byId[s]).find((s) => s && s._cls.active) || null;
+    return doc.byId[sel.replace(/^[.#]/, '')] || null;
+  };
+  doc.querySelectorAll = (sel) => (sel === '.screen' ? SCREENS.map((s) => doc.getElementById(s)) : []);
+  doc.contains = () => true;
+  doc.el = el;
+  return doc;
+}
+const SCREENS = ['welcomeScreen', 'questionScreen', 'reviewScreen', 'profileScreen',
+  'resultsScreen', 'hf2Screen', 'emailScreen', 'accessoriesScreen'];
+const HEADINGS = {
+  profileScreen: 'profileName', resultsScreen: 'resultsHeadline',
+  hf2Screen: 'hf2ReviewTitle', emailScreen: 'emailHeadline',
+  accessoriesScreen: 'sleepSystemTitle',
+};
+
+function g2aGrab(re, what) {
+  const m = html.match(re);
+  check(`[Gate 2A] extracted ${what}`, !!m);
+  return m ? m[0] : "";
+}
+const g2aSrc = [
+  g2aGrab(/var SCREEN_HEADING_IDS = \{[\s\S]*?\n    \};/, "SCREEN_HEADING_IDS"),
+  g2aGrab(/var SCREEN_NAME_KEYS = \{[\s\S]*?\n    \};/, "SCREEN_NAME_KEYS"),
+  g2aGrab(/function isFocusRestorable\(el\) \{[\s\S]*?\n    \}/, "isFocusRestorable()"),
+  g2aGrab(/function focusActiveScreen\(\) \{[\s\S]*?\n    \}/, "focusActiveScreen()"),
+  g2aGrab(/function screenTransitionOwnedElsewhere\(\) \{[\s\S]*?\n    \}/, "screenTransitionOwnedElsewhere()"),
+  g2aGrab(/function focusScreenDestination\(id\) \{[\s\S]*?\n    \}/, "focusScreenDestination()"),
+  g2aGrab(/window\.showScreen = function\(id\) \{[\s\S]*?\n    \}/, "showScreen() for Gate 2A"),
+].join("\n");
+
+function g2a(opts) {
+  const o = opts || {};
+  const doc = g2aDom();
+  const pending = [];
+  let epoch = 1;
+  const out = {};
+  const win = { scrollTo() {}, _compareSelected: [], _setIdleScreen() {} };
+  new Function("document", "window", "DICT", "out", "pending", "state", `
+    "use strict";
+    var _wipeInProgress = state.wipe;
+    var _dataLoadFailed = state.dataFailed;
+    var _safetyMode = state.safetyMode;
+    var _screenAnnounceTimer = null;
+    function safetyDialogMode() { return _safetyMode; }
+    function t(k) { return DICT[k] || k; }
+    function applyTranslations() {}
+    function clearTimeout(id) { pending.forEach(function(p) { if (p.id === id) p.dead = true; }); }
+    function sessionTimeout(fn) {
+      var e = state.epoch();
+      var id = pending.length + 1;
+      pending.push({ id: id, dead: false, run: function() { if (e === state.epoch()) fn(); } });
+      return id;
+    }
+    ${g2aSrc}
+    out.showScreen = window.showScreen;
+  `)(doc, win, Object.assign({}, dictEn), out, pending,
+    { wipe: !!o.wipe, dataFailed: !!o.dataFailed, safetyMode: o.safetyMode || null,
+      epoch: () => epoch });
+
+  SCREENS.forEach((s) => { const e = doc.getElementById(s); e.classList.add('screen'); });
+  Object.keys(HEADINGS).forEach((s) => {
+    const h = doc.getElementById(HEADINGS[s]);
+    h.textContent = 'Rendered heading for ' + s;
+    h.parent = doc.getElementById(s);
+  });
+  doc.getElementById('screenAnnounce');
+  if (o.from) doc.getElementById(o.from).classList.add('active');
+  return {
+    doc, out, pending,
+    flush() { pending.filter((p) => !p.dead).forEach((p) => p.run()); },
+    bumpEpoch() { epoch++; },
+    region() { return doc.getElementById('screenAnnounce').textContent; },
+    active() { return doc.activeElement ? doc.activeElement.id : null; },
+  };
+}
+
+// -- F1: rendered headings are the destination ------------------------------
+for (const [screen, heading] of Object.entries(HEADINGS)) {
+  const h = g2a({ from: 'welcomeScreen' });
+  h.out.showScreen(screen);
+  check(`[Gate 2A] ${screen} focuses #${heading}`, h.active() === heading);
+  check(`[Gate 2A] ${screen} announces exactly once, via focus alone`,
+    h.pending.length === 0);
+}
+
+// -- F2: headingless screens focus the named container ----------------------
+// EXACTLY ONE utterance. The first implementation named the container so that
+// focusing it would announce, and then wrote the same name to a live region —
+// VoiceOver would say "Sleep quiz, region" and then "Sleep quiz". The name is
+// carried by the container itself; nothing else may speak it.
+for (const [screen, key] of [['welcomeScreen', 'screen.welcome'],
+  ['questionScreen', 'screen.question'], ['reviewScreen', 'screen.review']]) {
+  const h = g2a({ from: 'profileScreen' });
+  h.out.showScreen(screen);
+  check(`[Gate 2A] ${screen} focuses its container`, h.active() === screen);
+  check(`[Gate 2A] ${screen} container is programmatically focusable only`,
+    h.doc.getElementById(screen).getAttribute('tabindex') === '-1');
+  check(`[Gate 2A] ${screen} schedules no second utterance`, h.pending.length === 0);
+  check(`[Gate 2A] ${screen} is named from the dictionary, both languages`,
+    typeof dictEn[key] === 'string' && dictEn[key].length > 0
+    && typeof dictEs[key] === 'string' && dictEs[key].length > 0);
+}
+// The container's name must be announced by the container, which for a plain
+// div means it needs a role. #welcomeScreen is a <main> and needs none.
+check("[Gate 2A] the two headingless div containers carry role=region",
+  /id="questionScreen" role="region"/.test(html) && /id="reviewScreen" role="region"/.test(html));
+check("[Gate 2A] #welcomeScreen is a <main>, so its name announces without a role",
+  /<main class="main screen active" id="welcomeScreen"/.test(html));
+check("[Gate 2A] container names are applied as aria-label from the dictionary",
+  /var nameKey = SCREEN_NAME_KEYS\[screenId\];/.test(html)
+  && /var name = t\(nameKey\);/.test(html)
+  && /setAttribute\('aria-label', name\)/.test(html));
+
+// -- F3: the profile heading is focused EXACTLY once ------------------------
+{
+  const h = g2a({ from: 'welcomeScreen' });
+  h.out.showScreen('profileScreen');
+  h.flush();
+  check("[Gate 2A] #profileName is focused exactly once, not twice",
+    h.doc.getElementById('profileName').focusCount === 1);
+  check("[Gate 2A] the bespoke profile sessionFrame focus is gone from index.html",
+    !/showScreen\('profileScreen'\);\s*\n\s*sessionFrame\(/.test(html));
+}
+
+// -- F4: an empty heading is not a destination ------------------------------
+{
+  const h = g2a({ from: 'welcomeScreen' });
+  h.doc.getElementById('profileName').textContent = '   ';
+  h.out.showScreen('profileScreen');
+  check("[Gate 2A] an empty heading falls back to the container",
+    h.active() === 'profileScreen');
+  check("[Gate 2A] ...and the fallback schedules no deferred utterance either",
+    h.pending.length === 0);
+  // Focusing the fallback only announces anything if the fallback can BE
+  // named. A plain <div> has the implicit `generic` role, naming is
+  // prohibited there, and the aria-label would be discarded — leaving this
+  // path silently anonymous while every behavioural assertion still passed.
+  check("[Gate 2A] ...and the fallback container has a role that permits a name",
+    /<div class="screen" id="profileScreen" role="region">/.test(html));
+}
+
+// -- F4b: EVERY container that can be a focus destination is nameable -------
+// Not just the two headingless screens: each mapped screen falls back to its
+// own container whenever its heading is empty, so all eight need this.
+{
+  const NAMEABLE = {
+    welcomeScreen: /<main class="main screen active" id="welcomeScreen"/,
+    questionScreen: /id="questionScreen" role="region"/,
+    reviewScreen: /id="reviewScreen" role="region"/,
+    profileScreen: /id="profileScreen" role="region"/,
+    resultsScreen: /id="resultsScreen" role="region"/,
+    hf2Screen: /id="hf2Screen" role="region"/,
+    emailScreen: /id="emailScreen" role="region"/,
+    accessoriesScreen: /id="accessoriesScreen" role="region"/,
+  };
+  const namesSrc = (html.match(/var SCREEN_NAME_KEYS = \{[\s\S]*?\n    \};/) || [""])[0];
+  for (const [screen, re] of Object.entries(NAMEABLE)) {
+    check(`[Gate 2A] ${screen} carries a nameable role, so its aria-label is not discarded`,
+      re.test(html));
+    check(`[Gate 2A] ${screen} is named from the dictionary`,
+      new RegExp(`${screen}: 'screen\\.`).test(namesSrc));
+  }
+  // SET EQUALITY, both directions. The subset check above only proves every
+  // nameable container is named; on its own it would pass with a ninth entry
+  // added to SCREEN_NAME_KEYS, and applyTranslations() would then apply an
+  // aria-label to a container whose nameable role was never established —
+  // the exact defect this section exists to prevent, arriving from the other
+  // side. The keys are read out of the shipped object rather than restated.
+  const namedScreens = [...namesSrc.matchAll(/^\s*([A-Za-z0-9_]+):\s*'screen\./gm)]
+    .map((m) => m[1]).sort();
+  const nameableScreens = Object.keys(NAMEABLE).sort();
+  const unNameable = namedScreens.filter((s) => !nameableScreens.includes(s));
+  const unNamed = nameableScreens.filter((s) => !namedScreens.includes(s));
+  check(`[Gate 2A] every aria-labelled container has a nameable role${unNameable.length ? " — LABEL WOULD BE DISCARDED FOR: " + unNameable.join(", ") : ""}`,
+    unNameable.length === 0);
+  check(`[Gate 2A] every nameable container is actually named${unNamed.length ? " — UNNAMED: " + unNamed.join(", ") : ""}`,
+    unNamed.length === 0);
+  check(`[Gate 2A] the two sets are exactly equal (${namedScreens.length} screens)`,
+    namedScreens.length === nameableScreens.length
+    && namedScreens.every((s, i) => s === nameableScreens[i]));
+
+  // A missing dictionary entry must never become the spoken name. t() returns
+  // the KEY when the dictionary lacks it, so without a guard a failed fetch or
+  // a stale cached dictionary would label every container with its own
+  // identifier and assistive technology would announce "screen dot question".
+  const labelLoop = (html.match(/if \(typeof SCREEN_NAME_KEYS !== 'undefined'\) \{[\s\S]*?\n      \}/) || [""])[0];
+  check("[Gate 2A] the screen-label loop was located", labelLoop.length > 0);
+  check("[Gate 2A] a missing dictionary key is never written as the accessible name",
+    /name !== nameKey/.test(labelLoop));
+  check("[Gate 2A] ...and the stale label is removed rather than left behind",
+    /removeAttribute\('aria-label'\)/.test(labelLoop));
+  check("[Gate 2A] the guard matches the data-i18n loop's existing fail-closed shape",
+    /if \(val !== key\) \{/.test(html));
+}
+
+// -- F5/F6/F7 + A2: every refusal gate, focus AND speech ---------------------
+const REFUSALS = [
+  ["a safety dialog owns focus", { safetyMode: 'timeout' }, () => {}],
+  ["the wipe owns the transition", { wipe: true }, () => {}],
+  ["the data-error overlay is up", { dataFailed: true }, () => {}],
+  ["the drawer is open", {}, (h) => h.doc.getElementById('mattressDrawer').classList.add('drawer-open')],
+  ["the financing sheet is open", {}, (h) => { h.doc.getElementById('financingSheet').hidden = false; }],
+  ["the compare modal is open", {}, (h) => h.doc.getElementById('compareModal').classList.add('visible')],
+  ["the privacy overlay is open", {}, (h) => h.doc.getElementById('privacyOverlay').classList.add('visible')],
+  ["the destination is hidden", {}, (h) => { h.doc.getElementById('resultsScreen').hidden = true; }],
+  ["an ancestor is inert", {}, (h) => {
+    const outer = h.doc.el('inertWrap');
+    outer.setAttribute('inert', '');
+    h.doc.getElementById('resultsScreen').parent = outer;
+  }],
+];
+for (const [label, opts, mutate] of REFUSALS) {
+  const h = g2a(Object.assign({ from: 'welcomeScreen' }, opts));
+  mutate(h);
+  const before = h.active();
+  h.out.showScreen('resultsScreen');
+  h.flush();
+  check(`[Gate 2A] no focus move when ${label}`, h.active() === before);
+  check(`[Gate 2A] no announcement when ${label}`,
+    h.region() === '' && h.pending.length === 0);
+}
+
+// -- A3: a superseded transition cannot speak over its successor ------------
+// The defect this pins: a headingless transition scheduled "Welcome", a
+// heading transition to Results followed inside the deferral window, and the
+// second path returned early WITHOUT cancelling the first — so "Welcome" was
+// spoken over an active Results screen. The callback revalidated the session
+// and modal ownership but was never bound to the destination that scheduled
+// it. Announcing through focus removes the window entirely.
+{
+  const h = g2a({ from: 'profileScreen' });
+  h.out.showScreen('welcomeScreen');
+  h.out.showScreen('resultsScreen');
+  h.flush();
+  check("[Gate 2A] a superseded transition leaves nothing queued to speak",
+    h.pending.length === 0 && h.region() === '');
+  check("[Gate 2A] ...and focus is on the LAST destination, not the first",
+    h.active() === 'resultsHeadline');
+}
+
+// -- A4: a queued destination that goes away cannot speak -------------------
+{
+  for (const [label, mutate] of [
+    ["becoming inactive", (h) => { h.doc.getElementById('welcomeScreen').classList.remove('active'); }],
+    ["becoming hidden", (h) => { h.doc.getElementById('welcomeScreen').hidden = true; }],
+    ["becoming inert", (h) => { h.doc.getElementById('welcomeScreen').setAttribute('inert', ''); }],
+  ]) {
+    const h = g2a({ from: 'profileScreen' });
+    h.out.showScreen('welcomeScreen');
+    mutate(h);
+    h.flush();
+    check(`[Gate 2A] a destination ${label} after the transition never speaks`,
+      h.region() === '' && h.pending.length === 0);
+  }
+}
+
+// -- A4b: no deferred announcement machinery exists at all ------------------
+// The strongest form of "no stale utterance": there is nothing to go stale.
+{
+  const h = g2a({ from: 'profileScreen' });
+  h.out.showScreen('welcomeScreen');
+  h.bumpEpoch();
+  h.flush();
+  check("[Gate 2A] no session-scoped work is queued by a transition at all",
+    h.pending.length === 0);
+  check("[Gate 2A] no screen-transition live region ships",
+    !/id="screenAnnounce"/.test(html));
+  check("[Gate 2A] no screen announcer or its timer survives in source",
+    !/announceScreen\s*\(/.test(html) && !/_screenAnnounceTimer/.test(html));
+  check("[Gate 2A] the wipe and language switch have nothing extra to clear",
+    !/clearScreenAnnouncement/.test(html));
+}
+
+// -- A5: re-render vs transition -------------------------------------------
+{
+  const h = g2a({ from: 'resultsScreen' });
+  h.out.showScreen('resultsScreen');
+  h.flush();
+  check("[Gate 2A] a same-screen re-render moves no focus", h.active() === null);
+  check("[Gate 2A] ...and announces nothing", h.pending.length === 0);
+  check("[Gate 2A] ...but still does the rest of showScreen's work",
+    h.doc.getElementById('resultsScreen').classList.contains('active'));
+}
+
+// -- source-level contracts -------------------------------------------------
+check("[Gate 2A] showScreen keeps the signature the extraction regexes pin",
+  /window\.showScreen = function\(id\) \{/.test(html));
+// Bounded to the function body. An unbounded [\s\S]*? would run past it and
+// match a setTimeout anywhere later in the file, so the check would pass or
+// fail for reasons having nothing to do with this code path.
+check("[Gate 2A] the transition path adds no raw timer",
+  !/setTimeout|requestAnimationFrame|sessionTimeout|sessionFrame/
+    .test((html.match(/function focusScreenDestination\(id\) \{[\s\S]*?\n    \}/) || [""])[0]));
+check("[Gate 2A] no Payment Choice control reaches the transition focus path",
+  !/focusScreenDestination\(/.test((html.match(/window\.toggleFinancingAgenda = function[\s\S]*?\n    \};/) || [""])[0])
+  && !/focusScreenDestination\(/.test((html.match(/function setFinancingInterestChoice[\s\S]*?\n    \}/) || [""])[0]));
+check("[Gate 2A] the transition path never writes the handoff region",
+  !/hf2FinancingStatus/.test((html.match(/function focusScreenDestination[\s\S]*?\n    \}/) || [""])[0]));
+for (const k of ['screen.welcome', 'screen.question', 'screen.review', 'screen.profile',
+  'screen.results', 'screen.handoff', 'screen.email', 'screen.sleep_system']) {
+  check(`[Gate 2A] ${k} is bilingual and actually translated`,
+    typeof dictEn[k] === 'string' && dictEn[k].length > 0
+    && typeof dictEs[k] === 'string' && dictEs[k].length > 0
+    && dictEn[k] !== dictEs[k]);
+}
+
 console.log(`\nSession safety check: ${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

@@ -91,5 +91,14 @@
   "accessories.analyzing": "Aplicando tu Resumen de Sueño...",
   "accessories.send_results": "Envíame Mis Resultados",
   "accessories.start_over": "Empezar de Nuevo",
-  "accessories.tap_hint": "Toca una tarjeta para agregar o quitar"
+  "accessories.tap_hint": "Toca una tarjeta para agregar o quitar",
+
+  "screen.welcome": "Bienvenido",
+  "screen.question": "Cuestionario de sueño",
+  "screen.review": "Revisión rápida",
+  "screen.profile": "Tu resumen de sueño",
+  "screen.results": "Tus opciones",
+  "screen.handoff": "Tu plan de sueño",
+  "screen.email": "Guarda tus resultados",
+  "screen.sleep_system": "Tu sistema de sueño"
 }
