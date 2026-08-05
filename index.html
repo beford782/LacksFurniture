@@ -9918,10 +9918,14 @@
          re-decided in 1.6 as inherited design debt. Rendered by
          renderHf2Priorities(); the WHOLE section (label included) hides when no
          valid priority state exists - never an empty heading over a stale
-         list. -->
+         list. The ol's inline declarations exist because the global reset
+         zeroes list padding, which draws the decimal markers in the card's
+         gutter; they mirror the email body's own inline treatment of this same
+         content (Code.gs sets line-height and per-entry spacing inline) and
+         stay inline precisely so no rule outlives 1.6's re-decision. -->
     <section class="hf2-review-section" id="hf2PrioritiesSection" style="display:none">
       <div class="hf2-review-section__label" id="hf2PrioritiesLabel">What we will test together</div>
-      <ol id="hf2Priorities"></ol>
+      <ol id="hf2Priorities" style="margin-top:8px; padding-left:1.5em"></ol>
     </section>
 
     <section class="hf2-review-section">
@@ -16922,8 +16926,11 @@
         section.style.display = 'none';
         return;
       }
+      // Inline spacing, not a class: without it the reset collapses the three
+      // items into one six-line block. Mirrors the email body's inline
+      // treatment of the same content; 1.6 re-decides both.
       list.innerHTML = valid.map(function(item) {
-        return '<li>'
+        return '<li style="margin-bottom:8px; line-height:1.5">'
           + '<strong>' + escapeHtml(L(item)) + '</strong> — '
           + escapeHtml(item.why[currentLang] || item.why.en)
           + '<br><em>' + (es ? 'Pruébalo: ' : 'Try this: ') + '</em>'

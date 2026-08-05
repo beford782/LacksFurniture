@@ -229,7 +229,7 @@ function doPost(e) {
       // Trial priorities (0.5), pre-localized by the client to data.lang.
       // Untrusted like everything else here: array-coerced, capped, every
       // field bounded, and projected onto a fresh literal so ONLY these three
-      // keys can survive into the email — a score, rank, id or raw answer
+      // keys can survive into the email - a score, rank, id or raw answer
       // riding on an entry is dropped by construction. Entries without a name
       // are dropped; the section renders at whatever length remains, and an
       // empty result omits the section cleanly.
@@ -295,7 +295,7 @@ function doPost(e) {
         return (i + 1) + '. ' + _plainPriority(pr.name)
           + (pr.reason ? ' - ' + _plainPriority(pr.reason) : '')
           + (pr.test
-              ? '\n   ' + (isEs ? 'Pruébalo: ' : 'Try this: ') + _plainPriority(pr.test)
+              ? '\n   ' + (isEs ? 'Pru\u00e9balo: ' : 'Try this: ') + _plainPriority(pr.test)
               : '');
       }).join('\n');
       var promoLines = (safeData.promotions || []).map(function(p) {
@@ -465,6 +465,7 @@ function buildSimpleHtml(data, firstName, isEs, storeName) {
     matchSuffix: 'compatibilidad',
     comparisonOption: 'Opci\u00f3n adicional para comparar',
     briefLabel: 'TU RESUMEN DE SUE\u00d1O',
+    prioritiesLabel: 'LO QUE PROBAREMOS JUNTOS',
     savingsLabel: 'TU PASE DE AHORRO DE 30 D\u00cdAS',
     savingsHint: discount + '% DE DESCUENTO en ' + passScope,
     savingsExpiry: 'V\u00e1lido hasta ' + passExpiration,
@@ -489,6 +490,7 @@ function buildSimpleHtml(data, firstName, isEs, storeName) {
     matchSuffix: 'match',
     comparisonOption: 'Additional comparison option',
     briefLabel: 'YOUR SLEEP BRIEF',
+    prioritiesLabel: 'WHAT WE WILL TEST TOGETHER',
     savingsLabel: 'YOUR 30-DAY SAVINGS PASS',
     savingsHint: discount + '% OFF ' + passScope,
     savingsExpiry: 'Good through ' + passExpiration,
@@ -674,22 +676,22 @@ function buildSimpleHtml(data, firstName, isEs, storeName) {
     // on. Numbered divs rather than <ol> for email-client robustness (the
     // ordered-list-semantics requirement is the Consultation Summary's); the
     // number glyphs carry the engine's order visibly. Every payload-derived
-    // value is escaped AT the interpolation, matching the promotions block —
-    // never the escape-once-at-top discipline — and nothing payload-sourced
+    // value is escaped AT the interpolation, matching the promotions block -
+    // never the escape-once-at-top discipline - and nothing payload-sourced
     // enters a style attribute. Empty array: the whole block, label included,
     // is absent. Known 1.6 email debt: the brief line above is largely these
     // same names lowercased; recorded in the roadmap, not fixable additively.
     + ((data.priorities || []).length
         ? '<tr><td style="padding:0 32px 16px;">'
           + '<div style="font-family:' + sans + ';font-size:10px;letter-spacing:2.5px;color:' + c.accent + ';text-transform:uppercase;font-weight:600;margin-bottom:8px;">'
-          + (isEs ? 'Lo que probaremos juntos' : 'What we will test together') + '</div>'
+          + L.prioritiesLabel + '</div>'
           + data.priorities.map(function(pr, i) {
               return '<div style="font-family:' + sans + ';font-size:13px;color:' + c.text + ';line-height:1.5;margin-bottom:8px;">'
                 + '<strong>' + (i + 1) + '. ' + _escapeHtml(pr.name) + '</strong>'
                 + (pr.reason ? ' &mdash; ' + _escapeHtml(pr.reason) : '')
                 + (pr.test
                     ? '<br><span style="color:' + c.textMuted + ';">'
-                      + (isEs ? 'Pruébalo: ' : 'Try this: ') + _escapeHtml(pr.test) + '</span>'
+                      + (isEs ? 'Pru\u00e9balo: ' : 'Try this: ') + _escapeHtml(pr.test) + '</span>'
                     : '')
                 + '</div>';
             }).join('')

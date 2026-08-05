@@ -143,7 +143,7 @@ section("HTML email renders the priorities in order, localized");
   check("an email was actually sent", g.sent.length === 1);
   const htmlBody = g.sent[0].opts.htmlBody || "";
   check("the section header is present in English",
-    htmlBody.includes("What we will test together"));
+    htmlBody.includes("WHAT WE WILL TEST TOGETHER"));
   check("the three names render in order",
     inOrder(htmlBody, PRIORITIES_EN.map((p) => p.name)));
   check("each entry carries its reason", PRIORITIES_EN.every((p) => htmlBody.includes(p.reason)));
@@ -152,7 +152,7 @@ section("HTML email renders the priorities in order, localized");
   check("entries are numbered 1..3 in order", inOrder(htmlBody, ["1. ", "2. ", "3. "]));
   check("the section sits after the Sleep Brief line",
     htmlBody.indexOf("Sleep brief ·") !== -1
-    && htmlBody.indexOf("Sleep brief ·") < htmlBody.indexOf("What we will test together"));
+    && htmlBody.indexOf("Sleep brief ·") < htmlBody.indexOf("WHAT WE WILL TEST TOGETHER"));
 
   // safeData: allowlist projection, observed on the object the builder received.
   check("safeData carries the priorities", Array.isArray(seenSafe.priorities)
@@ -176,7 +176,7 @@ section("HTML email renders the priorities in order, localized");
   post(g.api, basePayload({ lang: "es", priorities: PRIORITIES_ES }));
   check("[es] an email was actually sent", g.sent.length === 1);
   const htmlBody = g.sent[0].opts.htmlBody || "";
-  check("[es] the section header is Spanish", htmlBody.includes("Lo que probaremos juntos"));
+  check("[es] the section header is Spanish", htmlBody.includes("LO QUE PROBAREMOS JUNTOS"));
   check("[es] names render in order", inOrder(htmlBody, PRIORITIES_ES.map((p) => p.name)));
   check("[es] the testing label is Spanish",
     htmlBody.includes("Pruébalo: ") && !htmlBody.includes("Try this: "));
@@ -233,7 +233,7 @@ for (const [label, bad] of [
   check(`priorities as ${label}: send still succeeds`, res.success === true);
   check(`priorities as ${label}: email sent, section cleanly absent — no header, no orphan label`,
     g.sent.length === 1
-    && !(g.sent[0].opts.htmlBody || "").includes("What we will test together"));
+    && !(g.sent[0].opts.htmlBody || "").includes("WHAT WE WILL TEST TOGETHER"));
 }
 {
   const g = buildGas();
@@ -252,7 +252,7 @@ for (const [label, bad] of [
   post(g.api, basePayload({ priorities: ["str", 7, null, []] }));
   check("non-object entries survive as skipped blanks, never a throw",
     g.sent.length === 1
-    && !(g.sent[0].opts.htmlBody || "").includes("What we will test together"));
+    && !(g.sent[0].opts.htmlBody || "").includes("WHAT WE WILL TEST TOGETHER"));
 }
 {
   const g = buildGas();

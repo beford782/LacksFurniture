@@ -331,8 +331,12 @@ mounted device.
 
 **Ships in the PR that carries this revision (branch
 `claude/phase0.5-priority-handoff`); ⏳ reads as "complete on this PR's merge" —
-its exit is entirely code-level, so no verification survives the merge the way
-0.4's hardware gate does. On merge this item is done and 0.6 is next.**
+its exit criteria are code-level and none carries a named post-merge
+verification the way 0.4's hardware gate does. On merge this item is done and
+0.6 is next.** That is a statement about the exit, not about the presentation:
+the new section's rendering was reviewed once, in a real browser, and its
+deliberately-unstyled look (bare list inside the section card, minimal inline
+spacing only) is part of the 1.6 debt below, not a settled design.
 
 **What shipped, so nobody re-derives it wrongly:**
 
@@ -391,7 +395,7 @@ entirely to 1.1.
 **This is not a file move.** The email currently carries none of this prose; the
 payload sends only the brief-summary string. Routing it there means new payload
 fields and Code.gs changes. The Results screen already renders a condensed
-derivative of the same three priority names, so a third surface must be designed
+derivative of the same priority names, so a third surface must be designed
 against the two that exist, not added blind.
 
 **Exit:** the computed priorities (one to three, at the engine's length) render on
