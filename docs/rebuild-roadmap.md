@@ -43,7 +43,7 @@ relies on, the removal ships in the same commit as its replacement.
 | ✅ | Shipped and verified on `main` |
 | 🔨 | In progress on a branch |
 | ⬜ | Approved to build, not started |
-| ◐ | Partly blocked — a named portion is gated; the rest may start |
+| ◐ | A named output may not ship or merge until its condition is met; listed Proceeds work continues |
 | 🔒 | Blocked — no part of this item may start |
 | ⏳ | Code merged on `main`; a named verification remains outstanding. Not closed, and not ✅ |
 | ❓ | Proposed only. Not approved. Do not implement. |
@@ -53,16 +53,17 @@ Moving anything **into or out of ◐, 🔒 or ❓ requires the named approver on
 item** — and that includes editing a ◐ item's Gated or Proceeds lists. Every ◐, 🔒
 and ❓ item states who decides and what unblocks it.
 
-**⏳ blocks calling an item done, not other work.** An item may sit at ⏳
-indefinitely and the sequence moves on around it. Moving ⏳ → ✅ requires the
-named verification, recorded on the item.
+**⏳ blocks calling an item done.** Moving ⏳ → ✅ requires the named
+verification, recorded on the item.
 
 **Where a mark goes.** Scope (whole item vs a portion) and stage (blocks starting
 vs blocks merging) are independent, and one mark cannot carry both.
 
 - **🔒 means no part of this item may start.** It goes on the item's heading.
-- **◐ means a named portion may not start and everything else may.** It goes on
-  the item's heading and is **invalid without both of these directly beneath it**:
+- **◐ gates a production output, not an activity.** The named output may not
+  ship or merge until its condition is met; everything in Proceeds continues,
+  including prototypes and branch implementation. It goes on the item's heading
+  and is **invalid without both of these directly beneath it**:
   - **Gated** — approver, unblock condition, and what may not be done, written as
     a **property of the output a reviewer can check in a diff**, not as an
     activity.
@@ -74,21 +75,23 @@ vs blocks merging) are independent, and one mark cannot carry both.
 - **A gate that applies to every item in a phase is recorded once**, in that
   phase's own gate block, and is not copied onto item headings. A mark carried by
   every heading distinguishes nothing.
-- **Exit gates never change a heading mark.** A dependency that permits work to
-  start but prevents it merging belongs in the phase's exit-gate block, and each
-  affected item's **Exit:** line names it.
+- **A phase-wide merge gate is recorded once, in that phase's gate block, and
+  nowhere else.** Item Exit lines do not repeat it.
 - **A gate a test enforces needs no heading mark**, provided the suite fails
   deterministically on the gated change and the failure names the gate. Name the
   test in the body — the guard is the notice.
 
-**Guards on ◐, so "it's only partial" cannot become a self-service unblock:**
-work under Proceeds may not encode an outcome of the gated decision, ship
-placeholder content standing in for it, or remove anything the gated decision
-might want to keep. If the unblocked portion turns out to require the gated
-decision, **the item reverts to 🔒 and goes back to the approver** — the
-implementer does not settle it mid-PR. A ◐ item's **Exit:** must state what it
-excludes, so it cannot be closed as done while its gated portion is quietly
-dropped.
+**Guards on ◐:** work under Proceeds may not encode an outcome of the gated
+decision, ship placeholder content standing in for it, or remove anything the
+gated decision might want to keep. If the unblocked portion turns out to require
+the gated decision, **the item reverts to 🔒 and goes back to the approver.** A ◐
+item's **Exit:** must state what it excludes.
+
+**An entry in the open-decisions register bars adopting or shipping that
+decision** — not prototypes, and not work listed under a Proceeds line.
+
+**Merging moves an item to ⏳ automatically** when a named verification on it
+remains outstanding.
 
 **"Approved to build" means:** the problem is agreed, the constraints are agreed,
 and implementation may begin. It does **not** approve a specific layout, wording,
@@ -268,11 +271,14 @@ applies to email (UI, payload, activation, verified delivery).
 and clean-restart routes are recorded as verified on the confirmed mounted
 showroom device in `docs/kiosk-device-hardening.md`. That document is marked
 blocking for showroom use and records that the tests never established the test
-iPad is the mounted device — so **this may not happen on this timeline**, and 0.4
-may sit at ⏳ indefinitely. That is the honest state and it blocks nothing: 0.5,
-0.6 and 0.7 proceed around it, and the "next implementation item" pointer moves on
-when the code merges. **Reporting 0.4 as done, shipped or complete on the strength
-of the merged PR is a misreport.**
+iPad is the mounted device — so **this may not happen on this timeline**.
+
+What ⏳ does and does not block, precisely: 0.5, 0.6 and 0.7 proceed while 0.4
+awaits verification, and prototypes and research continue wherever already
+allowed. But **Phase 0 cannot close and Phase 1 implementation cannot begin until
+that verification is recorded** — the phase sequence is not weakened by this mark.
+**Reporting 0.4 as done, shipped or complete on the strength of the merged PR is a
+misreport.**
 
 **Documentation obligation:** this adds a session-ending route.
 `docs/kiosk-device-hardening.md` records each such route as separately verified on
@@ -397,13 +403,14 @@ None of it changes what is recommended.
    Prohibited **for mattresses, accessories, heroes and priorities without
    distinction**: selecting by any predicate other than index — including a field
    carried on the element itself (`kind`, `matched`, `subType`,
-   `meetsMatchThreshold`, `tier`) and including any read of `answers`.
+   `meetsMatchThreshold`, `tier`).
 
-   **A Phase 1 surface does not read `answers`.** If a surface needs to know what
-   the customer said, it reads the engine's already-computed output that encodes
-   it. Reading `answers` to decide what to show is re-derivation *even when the
-   resulting choice happens to match what the engine would have chosen* — that is
-   what makes it hard to catch in review.
+   **Reading stored answers is permitted for one purpose: rendering that answer,
+   or its reviewed presentation mapping, verbatim.** The position, temperature,
+   sharing, feel and size signal badges are exactly this, and need no engine or
+   view-model refactor. Answers may not select, filter, substitute, reorder,
+   reweight or synthesise mattresses, accessories, heroes, priorities or any other
+   computed engine output.
 
    **Concretely:** the Sleep Brief hero is the first element of the computed
    priority list and nothing else — not "the highest-scoring need", not "the first
@@ -437,7 +444,7 @@ a merged diff before that:
 - the fixed bilingual heading "Your Sleep Brief" / "Tu Resumen de Sueño" is
   replaced by, or subordinated to, a need-derived hero;
 - the screen's section order or top-level composition differs from `main`;
-- a new icon vocabulary, or decorative photography, appears on this screen.
+- a new icon vocabulary appears on this screen.
 
 Prototypes and unmerged branches are not these outputs. The component set below is
 a proposal, not an approved layout.
@@ -706,15 +713,13 @@ The largest reading load in the app.
 - Make financing concrete through eventual verified price grounding, not by
   repeating vague financing copy everywhere.
 
-### 1.6 — Consultation Summary, Compare, and the remaining screens ◐
+### 1.6 — Consultation Summary, Compare, and the remaining screens ⬜
 
-**Gated** — approver Blake, unblocked by evidence from observed sessions: any
-change to the Review screen that reduces the number of answers shown, removes the
-ability to correct any single answer, or removes the screen.
-
-**Proceeds:** the Consultation Summary, Compare reactivation and discoverability,
-Welcome, the mattress drawer, the email, and any Review-screen change that
-preserves every answer and every correction path.
+**The Review screen stays complete and fully editable.** That is the approved
+default, not a pending question, and it does not hold this item open. Compressing
+or removing it is a separate locked decision (see the register) that only Blake
+may take, on observed-session evidence. Restyling that preserves every answer and
+every correction path needs no approval.
 
 Customer-facing terminology in this document is **Consultation Summary**. Internal
 handoff element ids may remain until a separately approved refactor. The analytics
@@ -750,10 +755,8 @@ only owner of 0.5's inherited design debt. Preserving "no change" as a legitimat
 outcome avoids forcing churn; requiring an approver's dated decision removes the
 path an implementer can walk alone.
 
-**Excluded until the gate lifts:** any change reducing the number of answers shown
-on the Review screen, removing the ability to correct any single answer, or
-removing the screen. Shipping the unblocked portion does not close this item while
-that question is open.
+Review compression or removal is out of scope here; leaving Review as it stands
+satisfies this item.
 
 **Compare — the gap is discoverability, not absence.** Four facts:
 
@@ -777,8 +780,8 @@ completion time.
 
 **Review screen.** A protected confirmation and correction step: where the
 salesperson confirms answers, a couple catches a misunderstanding, and a second
-participant corrects the first. Compression or removal is the gated portion of
-this item — see the Gated line on 1.6's heading.
+participant corrects the first. It stays as it is; compression or removal is a
+separate locked decision.
 
 **Mattress drawer.** Genuine product detail — firmness, match reasons, features.
 Duplicate financing reduced per 1.5. Eventually it may show a verified price and
@@ -821,11 +824,11 @@ These apply to every Phase 1 item.
 browser, its viewport width **and** height, both orientations, English and
 Spanish, glare and shared-viewing conditions, and touch.
 
-### Phase 1 exit gate — the device matrix 🔒
+### Phase 1 merge gate — the device matrix
 
-This gate stops no Phase 1 work **starting**. It stops every Phase 1 change
-**merging**. It is recorded here once, for the whole phase, rather than copied
-onto item headings — a mark every heading carries distinguishes nothing.
+A phase-wide **merge gate**, not an item status: it stops no Phase 1 work
+starting and every Phase 1 change merging. Recorded here only — item Exit lines do
+not repeat it, and it carries no heading mark.
 
 **Approver: Blake, unblocked by confirming the showroom hardware.** No committed
 source in this repository identifies the showroom device, its viewport or its
@@ -860,7 +863,17 @@ merchandising-calendar control, emergency disable, plan eligibility, approved
 calculation modes, payment frequency, disclosures, bilingual presentation data,
 deterministic validation, and fail-closed behaviour.
 
-**Exit:** assert that no price or payment string reaches the DOM in any state.
+**Exit:** DOM silence is necessary but not sufficient. Deterministic tests must
+prove the dark framework actually implements, with no customer-visible price or
+payment output in any state:
+
+- product / SKU / size identity;
+- approved source and ownership metadata;
+- freshness and cadence control, and emergency disable;
+- plan eligibility, calculation mode, and the plan's actual cadence;
+- the price-unavailable and quote-only states as **separate** outcomes;
+- a missing, stale or unapproved price producing **no numeric result**;
+- validation and fail-closed behaviour on every one of the above.
 
 **Two unavailability states, never conflated:**
 
@@ -1004,8 +1017,8 @@ approval; its presence is a bar on proceeding.
 |---|---|---|---|
 | Tier navigation presentation — adopting a replacement (Phase 1) | 🔒 | Blake | Blake's approval of a reviewed prototype — gated portion of 1.3 ◐; prototyping proceeds now; **not gated by 3.3** |
 | Auto-advance | 🔒 | Blake | Observed sessions |
-| Review-screen compression or removal | 🔒 | Blake | Observed sessions — gated portion of 1.6 ◐ |
-| Final Sleep Brief and card layouts | 🔒 | Blake | Blake's approval of a reviewed prototype — gated portions of 1.1 ◐ and 1.3 ◐. Merging is separately subject to the Phase 1 device-matrix **exit** gate |
+| Review-screen compression or removal | 🔒 | Blake | Observed sessions. Review otherwise stays as it is; this does not hold 1.6 open |
+| Final Sleep Brief layout | 🔒 | Blake | Blake's approval of a reviewed prototype — gated output of 1.1 ◐ |
 | The device matrix itself | 🔒 | Blake | Confirming the showroom hardware — Phase 1 **exit** gate, blocks merging not starting |
 | Phase 2.2 price/payment activation | 🔒 | Blake + business/legal | Written approval |
 | Scoring case-fold (3.1) | 🔒 | Blake | Approval + enumerated impact |
