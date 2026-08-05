@@ -266,128 +266,27 @@ function doPost(e) {
       promoDisclosure: _safeText(data.promoDisclosure, 400)
     };
 
+    // The complete localized plain-text body, built ONCE from safeData before
+    // any send. It is the text/plain MIME part of the normal HTML email \u2014 so a
+    // text-only or HTML-disabled client still receives the full results,
+    // priorities included \u2014 and, unchanged, the entire body of the catch's
+    // retry below. One construction, two uses: the paths cannot drift.
+    var plainBody = buildPlainBody(safeData, isEs, storeName);
+
     try {
       // Always build HTML server-side. Client previously sent data.htmlBody but
       // that path was deprecated in 5e \u2014 kiosk no longer ships pre-built HTML.
       var htmlBody = buildSimpleHtml(safeData, firstName, isEs, storeName);
-      var plainFallback = isEs
-        ? 'Por favor visualiza este correo en un cliente de correo HTML.'
-        : 'Please view in an HTML email client.';
 
       var mailOptions = {
         htmlBody: htmlBody,
         name: senderName
       };
       if (RESULT_EMAIL_BCC) mailOptions.bcc = RESULT_EMAIL_BCC;
-      GmailApp.sendEmail(email, subject, plainFallback, mailOptions);
+      GmailApp.sendEmail(email, subject, plainBody, mailOptions);
 
     } catch (emailErr) {
       Logger.log('HTML email failed, trying plain text: ' + emailErr.toString());
-      var accessoryLines = safeData.accessories.map(function(a, i) {
-        return (i + 1) + '. ' + a.name + (a.category ? ' - ' + a.category : '');
-      }).join('\n');
-      // Trial priorities (0.5), same order as the HTML body. Plain text needs
-      // no HTML escaping, but angle brackets are stripped so hostile markup in
-      // a field cannot arrive looking like markup in any client that renders
-      // text/plain leniently.
-      var _plainPriority = function(s) { return String(s || '').replace(/[<>]/g, ''); };
-      var priorityLines = (safeData.priorities || []).map(function(pr, i) {
-        return (i + 1) + '. ' + _plainPriority(pr.name)
-          + (pr.reason ? ' - ' + _plainPriority(pr.reason) : '')
-          + (pr.test
-              ? '\n   ' + (isEs ? 'Pru\u00e9balo: ' : 'Try this: ') + _plainPriority(pr.test)
-              : '');
-      }).join('\n');
-      var promoLines = (safeData.promotions || []).map(function(p) {
-        return '- ' + p.badge + ': ' + p.headline
-          + (p.detail ? '\n  ' + p.detail : '')
-          + (p.disclosure ? '\n  ' + p.disclosure : '')
-          + (p.provenance ? '\n  ' + p.provenance : '')
-          + (p.expiration ? '\n  ' + p.expiration : '')
-          + (p.sourceUrl ? '\n  ' + p.sourceUrl : '');
-      }).join('\n');
-      // Scenario-aware plain-text promo header: a disclosed scenario (e.g. a
-      // historical demo) drops the "current offer" claim and prepends the
-      // disclosure line. Retailer name comes from the payload storeName.
-      var plainPromoDisclosure = (safeData.promoDisclosure || '').toString();
-      var plainPromoHeader = plainPromoDisclosure
-        ? (isEs ? 'Ofertas de ' + storeName : storeName + ' Offers')
-        : (isEs ? 'Ofertas Actuales de ' + storeName : 'Current ' + storeName + ' Offers');
-      var promoBlock = promoLines
-        ? ('\n\n' + plainPromoHeader + ':\n'
-            + (plainPromoDisclosure ? plainPromoDisclosure + '\n' : '')
-            + (safeData.promoSpanishDraft && isEs ? safeData.promoSpanishDraft + '\n' : '')
-            + promoLines)
-        : '';
-      var comparisonLabel = isEs ? 'Opci\u00f3n adicional para comparar' : 'Additional comparison option';
-      var topMatchDetail = meetsMatchThreshold
-        ? matchPct + (isEs ? '% compatibilidad' : '% match')
-        : comparisonLabel;
-      // Savings Pass lines only when a code was actually issued; Payment
-      // Choice lines only when the client sent a financing block (no terms
-      // math, no approval language \u2014 categories + official URL only).
-      var passBlockEs = dreamCode
-        ? ('Tu pase de ahorro de 30 d\u00edas: ' + discount + '% DE DESCUENTO\n'
-          + 'C\u00f3digo del pase: ' + dreamCode + '\n\n'
-          + 'V\u00e1lido en: ' + passScope + '\n'
-          + 'V\u00e1lido hasta: ' + passExpiration + '\n'
-          + passTerms + '\n\n')
-        : '';
-      var passBlockEn = dreamCode
-        ? ('Your 30-day Savings Pass: ' + discount + '% OFF\n'
-          + 'Savings pass code: ' + dreamCode + '\n\n'
-          + 'Valid on: ' + passScope + '\n'
-          + 'Good through: ' + passExpiration + '\n'
-          + passTerms + '\n\n')
-        : '';
-      var finBlock = financing
-        ? ('\n\n' + (financing.heading || (isEs ? 'Opciones de pago' : 'Payment options')) + ':\n'
-          + (financing.body ? financing.body + '\n' : '')
-          + (financing.confirmNote ? financing.confirmNote + '\n' : '')
-          + (financing.url ? financing.url : ''))
-        : '';
-      var plainBody = isEs
-        ? ('Tu match de sue\u00f1o de ' + storeName + ' est\u00e1 listo.\n\n'
-          + (meetsMatchThreshold ? 'Tu mejor opci\u00f3n: ' : 'Opci\u00f3n para comparar: ') + topMatch + ' (' + topMatchDetail + ')\n'
-          + 'El mejor punto de partida en la tienda.\n'
-          + 'Resumen de sue\u00f1o: ' + sleepProfile + '\n'
-          + (priorityLines ? 'Lo que probaremos juntos:\n' + priorityLines + '\n' : '')
-          + passBlockEs
-          + 'Muestra este correo a tu especialista de sue\u00f1o de ' + storeName + '.\n\n'
-          + safeData.allMatches.map(function(m, i) {
-              return (i+1) + '. ' + m.name + ' - ' + (m.meetsMatchThreshold
-                ? m.matchPct + '% compatibilidad'
-                : comparisonLabel);
-            }).join('\n')
-          + (accessoryLines ? '\n\nTu Sistema de Sue\u00f1o guardado:\n' + accessoryLines : '')
-          + promoBlock
-          + finBlock
-          + '\n\n----------\n'
-          + 'Recibiste este correo porque guardaste tu Resumen de Sue\u00f1o en ' + storeName + '.\n'
-          + POSTAL_ADDRESS + '\n'
-          + 'Cancelar suscripci\u00f3n: ' + UNSUBSCRIBE_URL + '\n'
-          + 'Privacidad y solicitudes de datos: ' + PRIVACY_CONTACT)
-        : ('Your ' + storeName + ' sleep match is ready.\n\n'
-          + (meetsMatchThreshold ? 'Your best match: ' : 'Option to compare: ') + topMatch + ' (' + topMatchDetail + ')\n'
-          + 'Best place to start in-store.\n'
-          + 'Sleep Brief: ' + sleepProfile + '\n'
-          + (priorityLines ? 'What we will test together:\n' + priorityLines + '\n' : '')
-          + passBlockEn
-          + 'Show this email to your ' + storeName + ' sleep specialist.\n\n'
-          + safeData.allMatches.map(function(m, i) {
-              return (i+1) + '. ' + m.name + ' - ' + (m.meetsMatchThreshold
-                ? m.matchPct + '% match'
-                : comparisonLabel);
-            }).join('\n')
-          + (accessoryLines ? '\n\nYour saved Sleep System:\n' + accessoryLines : '')
-          + promoBlock
-          + finBlock
-          + '\n\n----------\n'
-          + 'You received this email because you saved your Sleep Brief at ' + storeName + '.\n'
-          + POSTAL_ADDRESS + '\n'
-          + 'Unsubscribe: ' + UNSUBSCRIBE_URL + '\n'
-          + 'Privacy & data requests: ' + PRIVACY_CONTACT);
-
       var fallbackOptions = {
         name: senderName
       };
@@ -406,6 +305,131 @@ function doPost(e) {
       .createTextOutput(JSON.stringify({ success: false, error: 'send_failed' }))
       .setMimeType(ContentService.MimeType.JSON);
   }
+}
+
+// The complete localized plain-text results body. `data` is doPost's
+// already-sanitized safeData (every scalar bounded, every array capped and
+// projected), so nothing here re-validates \u2014 but plain text still gets its own
+// hostile-input treatment: angle brackets are stripped from the priority lines
+// so hostile markup in a field cannot arrive looking like markup in any client
+// that renders text/plain leniently. Sent on BOTH doPost paths \u2014 the normal
+// send's text part and the catch retry's whole body \u2014 never rebuilt per path.
+function buildPlainBody(data, isEs, storeName) {
+  storeName = storeName || (isEs ? 'nuestra tienda' : 'our store');
+  var dreamCode = data.dreamCode || '';
+  var sleepProfile = data.sleepProfile || '';
+  var topMatch = data.topMatch || '';
+  var matchPct = data.matchPct || '';
+  var meetsMatchThreshold = data.meetsMatchThreshold === true;
+  var discount = data.discount || 5;
+  var passExpiration = data.passExpiration || '30 days from issue';
+  var passScope = data.passScope || 'a qualifying DreamFinder mattress selection';
+  var passTerms = data.passTerms
+    || 'Valid on qualifying mattress selections. Cannot be combined with other offers. Final eligibility confirmed by your sleep specialist.';
+  var financing = (data.financing && typeof data.financing === 'object') ? data.financing : null;
+  var allMatches = _safeArray(data.allMatches);
+
+  var accessoryLines = _safeArray(data.accessories).map(function(a, i) {
+    return (i + 1) + '. ' + a.name + (a.category ? ' - ' + a.category : '');
+  }).join('\n');
+  // Trial priorities (0.5), same order as the HTML body.
+  var _plainPriority = function(s) { return String(s || '').replace(/[<>]/g, ''); };
+  var priorityLines = _safeArray(data.priorities).map(function(pr, i) {
+    return (i + 1) + '. ' + _plainPriority(pr.name)
+      + (pr.reason ? ' - ' + _plainPriority(pr.reason) : '')
+      + (pr.test
+          ? '\n   ' + (isEs ? 'Pru\u00e9balo: ' : 'Try this: ') + _plainPriority(pr.test)
+          : '');
+  }).join('\n');
+  var promoLines = _safeArray(data.promotions).map(function(p) {
+    return '- ' + p.badge + ': ' + p.headline
+      + (p.detail ? '\n  ' + p.detail : '')
+      + (p.disclosure ? '\n  ' + p.disclosure : '')
+      + (p.provenance ? '\n  ' + p.provenance : '')
+      + (p.expiration ? '\n  ' + p.expiration : '')
+      + (p.sourceUrl ? '\n  ' + p.sourceUrl : '');
+  }).join('\n');
+  // Scenario-aware plain-text promo header: a disclosed scenario (e.g. a
+  // historical demo) drops the "current offer" claim and prepends the
+  // disclosure line. Retailer name comes from the payload storeName.
+  var plainPromoDisclosure = (data.promoDisclosure || '').toString();
+  var plainPromoHeader = plainPromoDisclosure
+    ? (isEs ? 'Ofertas de ' + storeName : storeName + ' Offers')
+    : (isEs ? 'Ofertas Actuales de ' + storeName : 'Current ' + storeName + ' Offers');
+  var promoBlock = promoLines
+    ? ('\n\n' + plainPromoHeader + ':\n'
+        + (plainPromoDisclosure ? plainPromoDisclosure + '\n' : '')
+        + (data.promoSpanishDraft && isEs ? data.promoSpanishDraft + '\n' : '')
+        + promoLines)
+    : '';
+  var comparisonLabel = isEs ? 'Opci\u00f3n adicional para comparar' : 'Additional comparison option';
+  var topMatchDetail = meetsMatchThreshold
+    ? matchPct + (isEs ? '% compatibilidad' : '% match')
+    : comparisonLabel;
+  // Savings Pass lines only when a code was actually issued; Payment
+  // Choice lines only when the client sent a financing block (no terms
+  // math, no approval language \u2014 categories + official URL only).
+  var passBlockEs = dreamCode
+    ? ('Tu pase de ahorro de 30 d\u00edas: ' + discount + '% DE DESCUENTO\n'
+      + 'C\u00f3digo del pase: ' + dreamCode + '\n\n'
+      + 'V\u00e1lido en: ' + passScope + '\n'
+      + 'V\u00e1lido hasta: ' + passExpiration + '\n'
+      + passTerms + '\n\n')
+    : '';
+  var passBlockEn = dreamCode
+    ? ('Your 30-day Savings Pass: ' + discount + '% OFF\n'
+      + 'Savings pass code: ' + dreamCode + '\n\n'
+      + 'Valid on: ' + passScope + '\n'
+      + 'Good through: ' + passExpiration + '\n'
+      + passTerms + '\n\n')
+    : '';
+  var finBlock = financing
+    ? ('\n\n' + (financing.heading || (isEs ? 'Opciones de pago' : 'Payment options')) + ':\n'
+      + (financing.body ? financing.body + '\n' : '')
+      + (financing.confirmNote ? financing.confirmNote + '\n' : '')
+      + (financing.url ? financing.url : ''))
+    : '';
+  return isEs
+    ? ('Tu match de sue\u00f1o de ' + storeName + ' est\u00e1 listo.\n\n'
+      + (meetsMatchThreshold ? 'Tu mejor opci\u00f3n: ' : 'Opci\u00f3n para comparar: ') + topMatch + ' (' + topMatchDetail + ')\n'
+      + 'El mejor punto de partida en la tienda.\n'
+      + 'Resumen de sue\u00f1o: ' + sleepProfile + '\n'
+      + (priorityLines ? 'Lo que probaremos juntos:\n' + priorityLines + '\n' : '')
+      + passBlockEs
+      + 'Muestra este correo a tu especialista de sue\u00f1o de ' + storeName + '.\n\n'
+      + allMatches.map(function(m, i) {
+          return (i+1) + '. ' + m.name + ' - ' + (m.meetsMatchThreshold
+            ? m.matchPct + '% compatibilidad'
+            : comparisonLabel);
+        }).join('\n')
+      + (accessoryLines ? '\n\nTu Sistema de Sue\u00f1o guardado:\n' + accessoryLines : '')
+      + promoBlock
+      + finBlock
+      + '\n\n----------\n'
+      + 'Recibiste este correo porque guardaste tu Resumen de Sue\u00f1o en ' + storeName + '.\n'
+      + POSTAL_ADDRESS + '\n'
+      + 'Cancelar suscripci\u00f3n: ' + UNSUBSCRIBE_URL + '\n'
+      + 'Privacidad y solicitudes de datos: ' + PRIVACY_CONTACT)
+    : ('Your ' + storeName + ' sleep match is ready.\n\n'
+      + (meetsMatchThreshold ? 'Your best match: ' : 'Option to compare: ') + topMatch + ' (' + topMatchDetail + ')\n'
+      + 'Best place to start in-store.\n'
+      + 'Sleep Brief: ' + sleepProfile + '\n'
+      + (priorityLines ? 'What we will test together:\n' + priorityLines + '\n' : '')
+      + passBlockEn
+      + 'Show this email to your ' + storeName + ' sleep specialist.\n\n'
+      + allMatches.map(function(m, i) {
+          return (i+1) + '. ' + m.name + ' - ' + (m.meetsMatchThreshold
+            ? m.matchPct + '% match'
+            : comparisonLabel);
+        }).join('\n')
+      + (accessoryLines ? '\n\nYour saved Sleep System:\n' + accessoryLines : '')
+      + promoBlock
+      + finBlock
+      + '\n\n----------\n'
+      + 'You received this email because you saved your Sleep Brief at ' + storeName + '.\n'
+      + POSTAL_ADDRESS + '\n'
+      + 'Unsubscribe: ' + UNSUBSCRIBE_URL + '\n'
+      + 'Privacy & data requests: ' + PRIVACY_CONTACT);
 }
 
 function buildSimpleHtml(data, firstName, isEs, storeName) {

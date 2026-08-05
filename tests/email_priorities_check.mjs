@@ -1,5 +1,6 @@
 // Phase 0.5 — the priorities field through Code.gs: intake, safeData
-// projection, HTML email, plain-text fallback, hostility.
+// projection, HTML email, the plain-text body on BOTH sends (the normal
+// email's text/plain part and the forced-HTML-failure fallback), hostility.
 //
 // This is the FIRST suite in the repo to EXECUTE Code.gs rather than grep it.
 // The file is plain ES5 (top-level vars + function declarations, no modules),
@@ -193,8 +194,47 @@ section("HTML email renders the priorities in order, localized");
 }
 
 // ===========================================================================
-// 2. PLAIN-TEXT FALLBACK — reached for real, ordered, tag-free
+// 2. THE PLAIN-TEXT BODY — carried by BOTH sends. P2 (Codex, PR #16): the
+// normal successful send used to ship a one-sentence "view in an HTML
+// client" stub as its text/plain part, so a text-only or HTML-disabled
+// client received no priorities — effectively no results — on the ordinary
+// path. The success-path assertions here are the behavioral pin that the
+// stub never returns; the fallback assertions then prove the catch still
+// works; the drift check proves the two sends share ONE body.
 // ===========================================================================
+section("the NORMAL successful send's text part is the full plain body");
+for (const [lang, prios, header, label] of [
+  ["en", PRIORITIES_EN, "What we will test together:", "Try this: "],
+  ["es", PRIORITIES_ES, "Lo que probaremos juntos:", "Pruébalo: "],
+]) {
+  const g = buildGas();
+  g.api.approveCanSpam();
+  const res = post(g.api, basePayload({ lang, priorities: prios }));
+  check(`[${lang}] send succeeded`, res.success === true);
+  check(`[${lang}] an email was actually sent`, g.sent.length === 1);
+  // SUCCESS-path witnesses, the mirror of the catch witnesses below: only
+  // the success path sends options carrying the htmlBody key, and the
+  // catch's log line must be absent.
+  check(`[${lang}] the SUCCESS path ran: options carry a non-empty htmlBody`,
+    "htmlBody" in g.sent[0].opts && (g.sent[0].opts.htmlBody || "").length > 0);
+  check(`[${lang}] ...and no HTML failure was logged`,
+    !g.log.some((l) => l.includes("HTML email failed")));
+  const body = g.sent[0].body;
+  check(`[${lang}] the text part is not the retired stub`,
+    body !== "Please view in an HTML email client."
+    && body !== "Por favor visualiza este correo en un cliente de correo HTML."
+    && body.length > 200);
+  check(`[${lang}] the text part carries the section header`, body.includes(header));
+  check(`[${lang}] names in order`, inOrder(body, prios.map((p) => p.name)));
+  check(`[${lang}] reasons and labeled testing prompts present`,
+    prios.every((p) => body.includes(p.reason))
+    && prios.every((p) => body.includes(p.test)) && body.includes(label));
+  check(`[${lang}] entries numbered 1..3 in order`, inOrder(body, ["1. ", "2. ", "3. "]));
+  check(`[${lang}] the CAN-SPAM footer rides the text part`,
+    body.includes("1 Test St, Test TX 78501")
+    && body.includes("https://example.test/unsubscribe"));
+}
+
 section("plain-text fallback carries the priorities in order");
 for (const [lang, prios, header, label] of [
   ["en", PRIORITIES_EN, "What we will test together:", "Try this: "],
@@ -225,15 +265,21 @@ for (const [lang, prios, header, label] of [
     && prios.every((p) => body.includes(p.test)) && body.includes(label));
   check(`[${lang}] same order as the HTML body would carry`, inOrder(body, ["1. ", "2. ", "3. "]));
 }
-{
-  // The success-path text part is the one-sentence stub — that is the shipped
-  // contract, stated rather than hidden: the full plain body exists on the
-  // FALLBACK path, which is what this repo means by "plain-text fallback".
-  const g = buildGas();
-  g.api.approveCanSpam();
-  post(g.api, basePayload());
-  check("the success path's text part remains the shipped stub",
-    g.sent[0].body === "Please view in an HTML email client.");
+// One construction, two uses: for the same payload, the success path's text
+// part and the catch's whole body must be the SAME string — the drift the
+// buildPlainBody extraction exists to prevent.
+for (const [lang, prios] of [["en", PRIORITIES_EN], ["es", PRIORITIES_ES]]) {
+  const ok = buildGas();
+  ok.api.approveCanSpam();
+  post(ok.api, basePayload({ lang, priorities: prios }));
+  const broken = buildGas();
+  broken.api.approveCanSpam();
+  broken.api.breakHtmlBuilder();
+  post(broken.api, basePayload({ lang, priorities: prios }));
+  check(`[${lang}] success text part === fallback body (no drift, and real)`,
+    ok.sent.length === 1 && broken.sent.length === 1
+    && ok.sent[0].body.length > 200
+    && ok.sent[0].body === broken.sent[0].body);
 }
 
 // ===========================================================================
@@ -252,7 +298,8 @@ for (const [label, bad] of [
   check(`priorities as ${label}: send still succeeds`, res.success === true);
   check(`priorities as ${label}: email sent, section cleanly absent — no header, no orphan label`,
     g.sent.length === 1
-    && !(g.sent[0].opts.htmlBody || "").includes("WHAT WE WILL TEST TOGETHER"));
+    && !(g.sent[0].opts.htmlBody || "").includes("WHAT WE WILL TEST TOGETHER")
+    && !g.sent[0].body.includes("What we will test together:"));
 }
 {
   const g = buildGas();
@@ -264,6 +311,8 @@ for (const [label, bad] of [
   check("a 100-entry array is capped at 3",
     htmlBody.includes("Priority 2") && !htmlBody.includes("Priority 3")
     && !htmlBody.includes("Priority 99"));
+  check("...in the text part too",
+    g.sent[0].body.includes("Priority 2") && !g.sent[0].body.includes("Priority 3"));
 }
 {
   const g = buildGas();
@@ -327,6 +376,34 @@ for (const field of ["name", "reason", "test"]) {
   check("the plain body still carries the priorities section", afterHeader.length > 0);
   check("angle brackets are stripped from the plain-text priority lines",
     !/[<>]/.test(prioritySlice) && prioritySlice.includes("Bold name"));
+}
+{
+  // ...and the SUCCESS path's text part gets the same treatment — it now
+  // carries the full plain body, so it needs its own hostile-markup pin.
+  const g = buildGas();
+  g.api.approveCanSpam();
+  post(g.api, basePayload({ priorities: [{
+    name: "<b>Bold name</b>", reason: "<script>x</script>", test: "ok" }] }));
+  check("the email sent via the normal HTML path", "htmlBody" in g.sent[0].opts);
+  const afterHeader = g.sent[0].body.split("What we will test together:")[1] || "";
+  const prioritySlice = afterHeader.split("\n\n")[0];
+  check("the success text part still carries the priorities section", afterHeader.length > 0);
+  check("angle brackets are stripped from the success text part's priority lines",
+    !/[<>]/.test(prioritySlice) && prioritySlice.includes("Bold name"));
+}
+{
+  // A hostile discount ([] coerces to '' through _safeText, dodging doPost's
+  // `|| 5`) must resolve to the same default in BOTH MIME parts. Before the
+  // shared-body fix the HTML part said "5% OFF" while the plain part said
+  // "% OFF" — buildPlainBody re-applies the builder-side default exactly as
+  // buildSimpleHtml always has, and this pins that agreement.
+  const g = buildGas();
+  g.api.approveCanSpam();
+  post(g.api, basePayload({ dreamCode: "DREAM123", discount: [] }));
+  check("hostile discount: text and HTML parts agree on the 5% default",
+    g.sent.length === 1
+    && g.sent[0].body.includes("Your 30-day Savings Pass: 5% OFF")
+    && g.sent[0].opts.htmlBody.includes("5% OFF"));
 }
 {
   const g = buildGas();

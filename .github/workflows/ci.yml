@@ -278,7 +278,8 @@ jobs:
 
       # Phase 0.5, server side. The first suite to EXECUTE Code.gs (whole-file
       # load, four recorder stubs): safeData projection, HTML email order and
-      # escaping, the plain-text fallback via a forced HTML failure, and the
+      # escaping, the full plain-text body on BOTH sends (the normal email's
+      # text/plain part and the forced-HTML-failure fallback), and the
       # hostility table. The CAN-SPAM refusal is asserted first so nothing here
       # can pass against an email that never existed.
       - name: email priorities (Code.gs)

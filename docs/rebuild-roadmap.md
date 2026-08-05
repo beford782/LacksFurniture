@@ -327,13 +327,17 @@ hardware, precisely because verifying one says nothing about another. 0.4's exit
 condition includes adding the new route to that table and re-verifying on the
 mounted device.
 
-### 0.5 — Route priorities content to the Consultation Summary and email ⏳
+### 0.5 — Route priorities content to the Consultation Summary and email ✅
 
 **Ships in the PR that carries this revision (branch
-`claude/phase0.5-priority-handoff`); ⏳ reads as "complete on this PR's merge" —
-its exit criteria are code-level and none carries a named post-merge
-verification the way 0.4's hardware gate does. On merge this item is done and
-0.6 is next.** That is a statement about the exit, not about the presentation:
+`claude/phase0.5-priority-handoff`). The ✅ records the intended main-state and
+becomes true only when this exact reviewed PR merges — which is also the only
+moment this revision becomes the durable plan, so the mark and its truth arrive
+together. 0.5's exit criteria are code-level, verified by the suites this PR
+ships; none carries a named post-merge verification the way 0.4's hardware gate
+does, so the merge-moves-to-⏳ rule does not apply and the item never passes
+through ⏳. On merge this item is done and 0.6 is next.** That is a statement
+about the exit, not about the presentation:
 the new section's rendering was reviewed once, in a real browser, and its
 deliberately-unstyled look (bare list inside the section card, minimal inline
 spacing only) is part of the 1.6 debt below, not a settled design.
@@ -364,8 +368,14 @@ spacing only) is part of the 1.6 debt below, not a settled design.
   time. Code.gs treats it as untrusted (array-coerced, capped, per-field
   `_safeText`, allowlist-projected into `safeData`, escaped at every HTML
   interpolation) and renders it in the HTML email after the Sleep Brief line
-  and in the plain-text fallback in the same order. The sheet row is untouched
-  — priorities are email content, not a lead-record column.
+  and in the full plain-text body, in the same order. That body is built once
+  (`buildPlainBody`) and sent on both paths — as the text/plain MIME part of
+  the normal HTML email, so a text-only or HTML-disabled client still receives
+  the complete results, and as the entire body of the send-failure retry. (The
+  success path originally shipped a one-sentence "view in an HTML client"
+  stub as its text part; Codex flagged it on PR #16 and this revision fixes
+  it.) The sheet row is untouched — priorities are email content, not a
+  lead-record column.
 - **Known, accepted near-duplication — recorded as 1.6 email debt:** the
   `sleepProfile` line is largely the lowercased priority names, and the new
   block repeats those names with their reason and testing text. Suppressing the

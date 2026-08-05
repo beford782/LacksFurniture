@@ -367,6 +367,37 @@ const MUTATIONS = [
     "return {\n          name: _safeText(p && p.name, 200),\n          reason: _safeText(p && p.reason, 400),\n          test: _safeText(p && p.test, 400)\n        };",
     "return Object.assign({}, p, { name: _safeText(p && p.name, 200) });",
     EMAIL_PRIORITIES, "Code.gs"],
+  // P2 (Codex, PR #16): the normal SUCCESSFUL send used to ship a one-sentence
+  // stub as its text/plain part, so a text-only client got no priorities on
+  // the ordinary path. The first two mutations touch NOTHING except the
+  // successful send's body argument — the HTML part and the whole fallback
+  // path stay intact — so only a success-path text-body assertion can catch
+  // them; a suite that only ever inspected the fallback would let them
+  // survive. The third proves the fallback observers still bite now that the
+  // catch reuses the shared body instead of building its own.
+  ["Code.gs: the successful send's text part reverts to the stub",
+    "GmailApp.sendEmail(email, subject, plainBody, mailOptions);",
+    "GmailApp.sendEmail(email, subject, isEs ? 'Por favor visualiza este correo en un cliente de correo HTML.' : 'Please view in an HTML email client.', mailOptions);",
+    EMAIL_PRIORITIES, "Code.gs"],
+  ["Code.gs: the successful send's text part is emptied",
+    "GmailApp.sendEmail(email, subject, plainBody, mailOptions);",
+    "GmailApp.sendEmail(email, subject, '', mailOptions);",
+    EMAIL_PRIORITIES, "Code.gs"],
+  ["Code.gs: the fallback stops reusing the shared plain body",
+    "GmailApp.sendEmail(email, subject, plainBody, fallbackOptions);",
+    "GmailApp.sendEmail(email, subject, 'Please view in an HTML email client.', fallbackOptions);",
+    EMAIL_PRIORITIES, "Code.gs"],
+  // Found by the adversarial review of the fix above: the three entries
+  // before this one are each caught by MANY assertions, so the suite's
+  // drift-equality check (success text part === fallback body) had no
+  // mutation that only IT could catch — delete that check and the sweep
+  // stayed green. This mutant keeps both bodies full-length and well-formed
+  // but not identical, so every content assertion passes and the equality
+  // is the sole observer.
+  ["Code.gs: the two sends' plain bodies drift apart",
+    "GmailApp.sendEmail(email, subject, plainBody, fallbackOptions);",
+    "GmailApp.sendEmail(email, subject, buildPlainBody(safeData, isEs, storeName + '.'), fallbackOptions);",
+    EMAIL_PRIORITIES, "Code.gs"],
 
   // --- the Sleep Brief pin ---------------------------------------------------
   ["the Sleep Brief render reads a widened field instead of the resolved one",
