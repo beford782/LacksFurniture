@@ -382,7 +382,12 @@ Requirements:
 unresolved.** Auto-advance is a separate journey decision — see 3.4 🔒. The
 announcement gap exists today with manual navigation.
 
-### 1.3 — Results and mattress cards ⬜ (component design ❓)
+### 1.3 — Results and mattress cards 🔒 (component design ❓)
+
+**Marked 🔒 because two blockers below gate its central bullets** — the missing
+per-feature reason content, and the tier-tab decision. The unblocked parts (card
+hierarchy, scannability, avoiding buyer-characterising labels, keeping sleep fit
+dominant) may be designed meanwhile, but the item does not start as a whole.
 
 - Rework the card hierarchy so a salesperson can present it at a glance.
 - Lead with **why this fits this customer**, not a wall of generic features.
@@ -496,7 +501,7 @@ template exists.
 
 ---
 
-## Accessibility and showroom acceptance criteria
+## Accessibility and showroom acceptance criteria — device matrix 🔒
 
 These apply to every Phase 1 item.
 
