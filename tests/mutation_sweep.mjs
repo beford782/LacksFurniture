@@ -196,6 +196,41 @@ const MUTATIONS = [
   ["the Spanish title becomes English",
     "es: 'Tenemos problemas para cargar' },", "es: 'We’re having trouble loading' },"],
 
+  // --- found by an independent vacuity audit of the suite itself ----------
+  ["Tab containment runs on every key, not just Tab",
+    "if (!e || e.key !== 'Tab' || !dataErrorVisible()) return;",
+    "if (!e || !dataErrorVisible()) return;"],
+  ["recovery moves focus even when no overlay was shown",
+    "if (!wasVisible || !mayFocus) return;", "if (!mayFocus) return;"],
+  ["the microtask hop before the session guard binds is removed",
+    "await null;", ";"],
+  ["a superseded load releases the current load's latch",
+    "if (generation === _dataLoadGeneration) _dataLoadInFlight = false;",
+    "_dataLoadInFlight = false;"],
+  ["accessories are applied without a shape check",
+    "if (!Array.isArray(payload)) throw new Error('accessories.json is not an array');",
+    "if (false) {}"],
+  ["the white-label lookup tables stop being hydrated",
+    "SUBBRAND_NOTES    = (STORE_CONFIG.salesNotes && STORE_CONFIG.salesNotes.subBrands) || {};",
+    "SUBBRAND_NOTES    = {};"],
+  // Targets the RECOVERY inside the catch, not the logging beside it. The
+  // first version of this entry disabled only the console.error and survived,
+  // correctly — a mutant that still shows the overlay has removed no safety
+  // property. Same mistake as the applier-flag entry above: aim at the line
+  // that carries the guarantee.
+  ["the boot catch is disabled while keeping its shape",
+    "      showDataError();\n    });", "      if (false) showDataError();\n    });"],
+  ["the layer is focused before it is made visible",
+    "if (overlay.classList) overlay.classList.add('visible');",
+    "if (overlay.classList) setTimeout(function() { overlay.classList.add('visible'); }, 0);"],
+  ["the accessibility contract moves off the root onto the inner panel",
+    '<div id="dataErrorOverlay" role="alertdialog" aria-modal="true" tabindex="-1"',
+    '<div id="dataErrorOverlay" data-role="alertdialog" data-modal="true"'],
+  ["the base display:none rule is deleted",
+    "#dataErrorOverlay { display:none !important; }", ""],
+  ["the sr-only rule the status region depends on is deleted",
+    "clip: rect(0 0 0 0);", "clip: auto;"],
+
   // --- the markup contract -------------------------------------------------
   ["the layer reverts to a live region",
     '<div id="dataErrorOverlay" role="alertdialog" aria-modal="true" tabindex="-1"',

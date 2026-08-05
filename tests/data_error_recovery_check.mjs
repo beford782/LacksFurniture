@@ -79,8 +79,13 @@ section("source contracts: the loader is re-invocable, and nothing reloads the p
 check("the loader is a NAMED function, not the old IIFE",
   /async function loadAppData\(\) \{/.test(DATA_BLOCK)
   && !/\(async function loadAppData\(\) \{/.test(html));
+// Tight enough that `if (false) showDataError();` cannot satisfy it — the
+// looser form matched, because [\s\S]*? happily spans a disabling condition.
 check("it is invoked at boot, and its rejection cannot go unhandled",
-  /\n    loadAppData\(\)\.catch\(function\(err\) \{[\s\S]*?showDataError\(\);/.test(DATA_BLOCK));
+  /\r?\n    loadAppData\(\)\.catch\(function\(err\) \{[^}]*?\r?\n      showDataError\(\);\r?\n    \}\);/
+    .test(DATA_BLOCK));
+check("the microtask hop the session guard depends on is still there",
+  /\r?\n        await null;/.test(DATA_BLOCK));
 check("there is exactly one loadAppData implementation",
   (html.match(/function loadAppData\(/g) || []).length === 1);
 check("no full page reload anywhere in the file, in code OR in prose",
@@ -119,14 +124,20 @@ section("source contracts: the overlay is a focusable dialog, not a live region"
 
 const overlayMarkup = grab(
   /<div id="dataErrorOverlay"[\s\S]*?\n  <\/div>/, "the overlay markup");
-check('the overlay root is role="alertdialog"', /role="alertdialog"/.test(overlayMarkup));
-check('the overlay root is aria-modal="true"', /aria-modal="true"/.test(overlayMarkup));
+// ANCHORED to the root's own tag. Unanchored, every one of these passes with
+// the attributes moved onto the inner panel — where overlay.focus() on a div
+// with no tabindex is a no-op, "announcement is focus" dies silently, and the
+// wipe ends up setting aria-hidden on an element that is not the dialog.
+const rootTag = (overlayMarkup.match(/<div id="dataErrorOverlay"[\s\S]*?>/) || [""])[0];
+check("the overlay ROOT tag was isolated", rootTag.length > 0);
+check('the overlay root is role="alertdialog"', /role="alertdialog"/.test(rootTag));
+check('the overlay root is aria-modal="true"', /aria-modal="true"/.test(rootTag));
 check('the overlay root is programmatically focusable (tabindex="-1")',
-  /tabindex="-1"/.test(overlayMarkup));
+  /tabindex="-1"/.test(rootTag));
 check("the overlay root is named and described by its own title and body",
-  /aria-labelledby="dataErrorTitle"/.test(overlayMarkup)
-  && /aria-describedby="dataErrorText"/.test(overlayMarkup));
-check("the overlay root starts aria-hidden", /aria-hidden="true"/.test(overlayMarkup));
+  /aria-labelledby="dataErrorTitle"/.test(rootTag)
+  && /aria-describedby="dataErrorText"/.test(rootTag));
+check("the overlay root starts aria-hidden", /aria-hidden="true"/.test(rootTag));
 check("the overlay root carries NO aria-live — announcement is focus (0.3)",
   !/id="dataErrorOverlay"[^>]*aria-live/.test(overlayMarkup)
   && !/id="dataErrorOverlay"[^>]*role="status"/.test(overlayMarkup));
@@ -381,6 +392,8 @@ function buildApp(opts) {
         goldId: (MATTRESSES.gold && MATTRESSES.gold[0] && MATTRESSES.gold[0].id) || '',
         storeName: STORE_CONFIG.storeName || '',
         dictKeys: Object.keys(DICT).length,
+        notes: [Object.keys(SUBBRAND_NOTES)[0], Object.keys(BRAND_NOTES)[0],
+                Object.keys(SUBBRAND_NOTES_ES)[0], Object.keys(BRAND_NOTES_ES)[0]].join('|'),
         dictInstalledFor: _dictInstalledFor,
         appliersApplied: _appliersApplied,
         startReady: appStartReady(),
@@ -408,7 +421,11 @@ function buildApp(opts) {
     };
     out.bumpEpoch = function() { clearSessionTimers(); };
     out.visible = function() { return dataErrorVisible(); };
-    out.keydown = function(e) { return dataErrorKeydown(e); };
+    // The function OBJECT, so a test can assert that what production
+    // registered is this and not some other handler. Deliberately not a
+    // caller: invoking it directly proves the function works and says nothing
+    // about whether anything ever wired it up.
+    out.keydownFn = function() { return dataErrorKeydown; };
     out.setSafetyMode = function(m) { _safetyMode = m; };
     out.activateScreen = function(id) {
       ['welcomeScreen', 'questionScreen'].forEach(function(s) {
@@ -521,8 +538,13 @@ section("core failure raises the overlay, announces once, and offers two routes"
   check("both controls carry English labels",
     s.retry === "Try again" && s.restart === "Start over");
   check("the title and body are populated", !!s.title && !!s.body);
-  check("the failure was logged without echoing the raw error object",
-    h.consoleLines.some((l) => l.includes("mattresses.json")));
+  // Named for what it actually checks. The load path logs the caught error
+  // alongside the URL, which is what the original IIFE did too and is our own
+  // thrown shape rather than a server string. The narrower rule — no
+  // console.error(..., err) where the value can carry a response body — is
+  // enforced on the send path by tests/session_async_check.mjs.
+  check("the failing source is named in the diagnostic",
+    h.consoleLines.some((l) => l.startsWith("error") && l.includes("mattresses.json")));
 }
 
 // ===========================================================================
@@ -627,8 +649,10 @@ section("partial failure: one dataset failing is not all of them");
   check("...and never sets the failure flag", p.dataLoadFailed === false);
   check("...and degrades to an empty list", Array.isArray(p.accessories) && p.accessories.length === 0);
   check("...while the core data is fully applied", p.gold === 1 && p.questions === 2);
-  check("a warning was logged, not an error",
+  check("a warning was logged for accessories",
     h.consoleLines.some((l) => l.startsWith("warn") && l.includes("accessories.json")));
+  check("...and NOT an error — the absence is the half that matters",
+    !h.consoleLines.some((l) => l.startsWith("error") && l.includes("accessories.json")));
 }
 {
   // 5b — accessories failing does not become fatal on a retry either.
@@ -808,8 +832,10 @@ section("a load that lands after a wipe updates state but never announces");
 
   h.out.wipeLayers();                 // the wipe closes the layer...
   h.out.bumpEpoch();                  // ...and rotates the session epoch
-  h.byId.startBtn.focus();            // the wipe's own focus, which must stand
-  h.doc.activeElement = h.byId.startBtn;
+  // DISTINGUISHABLE from what focusWelcomeEntry() would pick. Using #startBtn
+  // made this true whether the guard held or not — it is exactly the element
+  // the unguarded path focuses.
+  h.doc.activeElement = h.byId.questionScreen;
   const focusBefore = h.doc.activeElement.id;
 
   d.resolve({ ok: true, status: 200, json: async () => GOOD_MATTRESSES });
@@ -999,11 +1025,12 @@ section("the modal contains Tab, and Escape does not dismiss a broken kiosk");
   const overlay = h.byId.dataErrorOverlay;
   const retry = h.byId.dataErrorRetryBtn;
   const restart = h.byId.dataErrorRestartBtn;
-  const key = (k, shift) => {
-    let prevented = false;
-    h.out.keydown({ key: k, shiftKey: !!shift, preventDefault() { prevented = true; } });
-    return prevented;
-  };
+  // Every Tab assertion below goes through the listener production REGISTERED,
+  // by reference. Routing them through the function directly would leave all of
+  // them green against a kiosk whose trap is wired to nothing.
+  const key = (k, shift) => h.dispatchKey(k, shift);
+  check("the function registered on the document IS dataErrorKeydown",
+    h.doc.listeners.some((l) => l.evt === "keydown" && l.fn === h.out.keydownFn()));
   // On the DOCUMENT, not the layer: a listener on the layer only fires while
   // focus is already inside it, which is the one case that needs no repair.
   check("the keydown handler is bound to the document exactly once",
@@ -1134,6 +1161,68 @@ section("both languages, dictionary or no dictionary");
 }
 check("applyTranslations re-renders the overlay copy, but only while it is visible",
   /if \(typeof renderDataError === 'function'[\s\S]{0,160}dataErrorVisible\(\)\) \{\s*renderDataError\(\);/.test(html));
+
+section("recovery moves no focus when nothing was ever on screen");
+{
+  // Reachable through the silent post-wipe path and the unparsed-markup path:
+  // _dataLoadFailed is set without the overlay ever being shown. Recovering
+  // from there must not yank focus off whatever is being touched.
+  const plan = goodPlan({ "./data/quiz.json": httpError(500) });
+  const h = buildApp({ noOverlay: true, plan });
+  await settle();
+  check("precondition: failed, with no overlay ever shown",
+    h.out.probe().dataLoadFailed === true);
+  h.byId.questionScreen.focus();
+  const held = h.doc.activeElement;
+  plan["./data/quiz.json"] = okJson(GOOD_QUIZ);
+  await h.out.load();
+  await settle();
+  check("the recovery happened", h.out.probe().dataLoadFailed === false);
+  check("REGRESSION: and it moved no focus, because nothing was visible",
+    h.doc.activeElement === held);
+}
+
+section("a superseded load cannot release the current load's latch");
+{
+  const first = deferred();
+  const second = deferred();
+  const plan = goodPlan({ "./data/mattresses.json": () => first.promise });
+  const h = buildApp({ plan });
+  await settle(1);
+  plan["./data/mattresses.json"] = () => second.promise;
+  h.out.load();                               // a newer generation
+  await settle(1);
+  check("precondition: a load is in flight", h.out.probe().inFlight === true);
+  first.resolve({ ok: true, status: 200, json: async () => GOOD_MATTRESSES });
+  await settle();
+  check("REGRESSION: the older load finishing does not advertise the newer as done",
+    h.out.probe().inFlight === true);
+  second.resolve({ ok: true, status: 200, json: async () => GOOD_MATTRESSES });
+  await settle();
+  check("the newest load releases the latch", h.out.probe().inFlight === false);
+}
+
+section("accessories that are not an array");
+{
+  const h = buildApp({ plan: goodPlan({ "./data/accessories.json": okJson({ a: 1 }) }) });
+  await settle();
+  check("a non-array accessories payload degrades to an empty list",
+    h.out.probe().accessories.length === 0);
+  check("...without raising the overlay", !overlayState(h).visible
+    && h.out.probe().dataLoadFailed === false);
+}
+
+section("the white-label lookup tables are hydrated from store-config");
+{
+  const notes = { subBrands: { Copper: "note" }, brands: { Restonic: "note" } };
+  const h = buildApp({ plan: goodPlan({
+    "./data/store-config.json": okJson(Object.assign({}, GOOD_STORE,
+      { salesNotes: notes, salesNotes_es: notes })),
+  }) });
+  await settle();
+  check("subBrand and brand notes reach the lookup tables",
+    h.out.probe().notes === "Copper|Restonic|Copper|Restonic");
+}
 
 // ===========================================================================
 // 12. BOUNDED REQUESTS — a black-holed network must not make Retry terminal
@@ -1388,6 +1477,15 @@ section("Tab is dispatched through the registered listener, not the function");
     h.dispatchKey("Tab") && h.doc.activeElement === h.byId.dataErrorRetryBtn);
   check("Escape dispatched the same way still does nothing",
     !h.dispatchKey("Escape") && overlayState(h).visible);
+  // The key test itself. Without it the handler runs containment on EVERY
+  // keystroke, so any key pressed while focus is outside the layer is
+  // cancelled and focus is yanked to Try again. Checked from OUTSIDE: from
+  // inside the cycle no branch fires and the assertion would be free.
+  h.byId.startBtn.focus();
+  check("a non-Tab key from outside the layer is left completely alone",
+    !h.dispatchKey("a") && h.doc.activeElement === h.byId.startBtn);
+  check("...and so is Escape from outside",
+    !h.dispatchKey("Escape") && h.doc.activeElement === h.byId.startBtn);
 }
 {
   // The registration itself, mutated. Calling dataErrorKeydown() directly
@@ -1495,6 +1593,16 @@ section("the CSS that makes the layer visible at all");
   // it — so hiding must not depend on the inline write alone.
   check("hiding removes the class, not just the inline display",
     /overlay\.classList\.remove\('visible'\);/.test(DATA_BLOCK));
+  check("the .visible rule comes AFTER the base rule, so it wins on order too",
+    html.indexOf("#dataErrorOverlay.visible { display:flex !important; }")
+      > html.indexOf("#dataErrorOverlay { display:none !important; }"));
+  check(".sr-only is defined — the status region is invisible without it",
+    /\.sr-only \{[\s\S]{0,200}clip: rect\(0 0 0 0\)/.test(html));
+  // Ordering the shim cannot see: focus() on a display:none element is a no-op
+  // in a browser, so the class has to go on BEFORE the focus call or the
+  // dialog is never announced.
+  check("the layer is made visible BEFORE it is focused",
+    DATA_BLOCK.indexOf("classList.add('visible')") < DATA_BLOCK.indexOf("focusDataError();"));
 }
 // BOUNDARY, stated rather than implied: deleting the marked JS block makes this
 // suite exit 1 at extraction. That proves the BLOCK cannot vanish unnoticed. It
@@ -1714,8 +1822,7 @@ function mutateEvery(from, to, expected) {
     plan: goodPlan({ "./data/quiz.json": httpError(500) }),
   });
   await settle();
-  let prevented = false;
-  h.out.keydown({ key: "Tab", shiftKey: true, preventDefault() { prevented = true; } });
+  const prevented = h.dispatchKey("Tab", true);
   check("MUTATION: Tab escaping the modal from the container is caught",
     !prevented && h.doc.activeElement === h.byId.dataErrorOverlay);
 }
@@ -1750,8 +1857,7 @@ function mutateEvery(from, to, expected) {
   h.out.setSafetyMode("timeout");
   h.byId.dataErrorOverlay.setAttribute("inert", "");
   h.doc.activeElement = h.byId.landingHeadlineMain;
-  let prevented = false;
-  h.out.keydown({ key: "Tab", shiftKey: false, preventDefault() { prevented = true; } });
+  const prevented = h.dispatchKey("Tab");
   check("MUTATION: stealing Tab from the safety dialog is caught",
     prevented && h.doc.activeElement !== h.byId.landingHeadlineMain);
 }
