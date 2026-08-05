@@ -117,6 +117,16 @@ const inOrder = (hay, needles) => {
 };
 
 // ===========================================================================
+// -1. HARNESS PRECONDITIONS — a rename in Code.gs becomes a NAMED failure
+// here, instead of a bare ReferenceError sixty assertions in.
+// ===========================================================================
+section("Code.gs still declares what the harness rebinds");
+check("doPost, buildSimpleHtml and the CAN-SPAM constants exist by name",
+  /function doPost\(/.test(gs) && /function buildSimpleHtml\(/.test(gs)
+  && /var UNSUBSCRIBE_URL/.test(gs) && /var POSTAL_ADDRESS/.test(gs)
+  && /var PRIVACY_CONTACT/.test(gs));
+
+// ===========================================================================
 // 0. THE SHIPPED REFUSAL — asserted first, so nothing below is vacuous
 // ===========================================================================
 section("shipped state refuses to send (CAN-SPAM sentinels)");
@@ -196,8 +206,17 @@ for (const [lang, prios, header, label] of [
   const res = post(g.api, basePayload({ lang, priorities: prios }));
   check(`[${lang}] send still succeeded via the fallback`, res.success === true);
   check(`[${lang}] an email was actually sent`, g.sent.length === 1);
-  check(`[${lang}] fell back to plain text — no HTML part`,
-    !g.sent[0].opts.htmlBody && g.sent[0].body.length > 200);
+  // TWO path witnesses, not a description of the message. An audit built a
+  // success-path email that satisfied "no htmlBody and a long plain body"
+  // without the catch ever running. The catch is the only code that (a) sends
+  // options with NO htmlBody KEY at all — the success path always has the key
+  // — and (b) writes the 'HTML email failed' log line.
+  check(`[${lang}] the CATCH really ran: options carry no htmlBody key`,
+    !("htmlBody" in g.sent[0].opts));
+  check(`[${lang}] ...and the failure was logged by the catch`,
+    g.log.some((l) => l.includes("HTML email failed")));
+  check(`[${lang}] fell back to plain text with a real body`,
+    g.sent[0].body.length > 200);
   const body = g.sent[0].body;
   check(`[${lang}] the plain body carries the section header`, body.includes(header));
   check(`[${lang}] names in order`, inOrder(body, prios.map((p) => p.name)));
@@ -257,11 +276,17 @@ for (const [label, bad] of [
 {
   const g = buildGas();
   g.api.approveCanSpam();
+  let seenSafe = null;
+  g.setSafeDataSink((d) => { seenSafe = d; });
   const huge = "x".repeat(100000);
   post(g.api, basePayload({ priorities: [{ name: huge, reason: huge, test: huge }] }));
-  const htmlBody = g.sent[0].opts.htmlBody;
-  check("100KB fields are truncated (name 200, reason/test 400)",
-    g.sent.length === 1 && htmlBody.length < 30000);
+  check("an email was actually sent", g.sent.length === 1);
+  // The EXACT labeled bounds, asserted on the object the builder received —
+  // an audit showed the old "< 30000 chars total" passed with the bounds
+  // raised 25x.
+  check("name is truncated to exactly 200", seenSafe.priorities[0].name.length === 200);
+  check("reason is truncated to exactly 400", seenSafe.priorities[0].reason.length === 400);
+  check("test is truncated to exactly 400", seenSafe.priorities[0].test.length === 400);
 }
 {
   const g = buildGas();
@@ -297,7 +322,9 @@ for (const field of ["name", "reason", "test"]) {
   post(g.api, basePayload({ priorities: [{
     name: "<b>Bold name</b>", reason: "<script>x</script>", test: "ok" }] }));
   check("plain-text fell back for real", !g.sent[0].opts.htmlBody);
-  const prioritySlice = g.sent[0].body.split("What we will test together:")[1].split("\n\n")[0];
+  const afterHeader = g.sent[0].body.split("What we will test together:")[1] || "";
+  const prioritySlice = afterHeader.split("\n\n")[0];
+  check("the plain body still carries the priorities section", afterHeader.length > 0);
   check("angle brackets are stripped from the plain-text priority lines",
     !/[<>]/.test(prioritySlice) && prioritySlice.includes("Bold name"));
 }

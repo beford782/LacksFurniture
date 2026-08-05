@@ -35,13 +35,25 @@
 // Run: node tests/consultation_priorities_check.mjs
 
 import { readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const html = readFileSync(join(root, "index.html"), "utf8");
-const BASELINE = JSON.parse(readFileSync(
-  join(root, "tests", "fixtures", "sleep_brief_baseline_572d405.json"), "utf8"));
+const BASELINE_RAW = readFileSync(
+  join(root, "tests", "fixtures", "sleep_brief_baseline_572d405.json"));
+const BASELINE = JSON.parse(BASELINE_RAW.toString("utf8"));
+
+// THE REGENERATION RATCHET. Nothing mechanical can stop a commit regenerating
+// the fixture from changed code — but pinning its hash HERE means doing so
+// requires editing two files, one of which is this comment telling the editor
+// that a regenerated pin certifies whatever the change produced. An audit
+// demonstrated the silent single-file regeneration end to end; this is the
+// answer. If the Sleep Brief legitimately changes in a later phase, the new
+// baseline must be generated from the PRE-change commit of THAT phase, and
+// this hash updated in the same reviewed diff.
+const BASELINE_SHA256 = "74fc298aeebf9eddb6088cb9878b8448688bede97c9d771967aa4733622bfe86";
 
 let passed = 0, failed = 0;
 function check(label, cond) {
@@ -54,6 +66,14 @@ function grab(re, what) {
   check(`extracted ${what}`, !!m);
   return m ? m[0] : "";
 }
+
+section("the baseline fixture is the reviewed one");
+// Hashed over LF-normalized text, so the pin survives git's CRLF smudge on
+// a fresh Windows checkout.
+check("sleep_brief_baseline_572d405.json matches its pinned sha256",
+  createHash("sha256")
+    .update(BASELINE_RAW.toString("utf8").split("\r\n").join("\n"))
+    .digest("hex") === BASELINE_SHA256);
 
 // ---------- extractions ------------------------------------------------------
 section("extraction");
@@ -95,11 +115,18 @@ const ORDER_FIXTURES = ["C", "E", "F", "A", "I"];   // never B/H — bounds only
 // ---------- harness ----------------------------------------------------------
 function makeDoc() {
   const els = new Map();
-  const make = (id) => ({
-    id, innerHTML: "", textContent: "", style: {},
-    classList: { add() {}, remove() {}, contains: () => false },
-    setAttribute() {}, getAttribute: () => null, focus() {},
-  });
+  const make = (id) => {
+    const classes = new Set();
+    return {
+      id, innerHTML: "", textContent: "", style: {},
+      classList: {
+        add: (c) => classes.add(c),
+        remove: (c) => classes.delete(c),
+        contains: (c) => classes.has(c),
+      },
+      setAttribute() {}, getAttribute: () => null, focus() {},
+    };
+  };
   const doc = {
     getElementById: (id) => {
       if (!els.has(id)) els.set(id, make(id));
@@ -201,6 +228,12 @@ for (const f of Object.keys(FIXTURES)) {
     const got = parseBriefList(els.get("profilePriorities").innerHTML);
     check(`[${f}/${lang}] priority rows (title/desc/tag/tagClass/test) unchanged`,
       JSON.stringify(got) === JSON.stringify(pin.priorities));
+    // Byte equality on the WHOLE block: the parsed fields name what moved;
+    // this catches what they cannot — a div injected mid-row, title/desc
+    // swapped, the "Try this:"/"Pruébalo:" label rewritten, a sub-class
+    // renamed. All four were demonstrated green against the parsed pin alone.
+    check(`[${f}/${lang}] priorities block raw innerHTML byte-identical`,
+      els.get("profilePriorities").innerHTML === pin.prioritiesHtml);
     check(`[${f}/${lang}] row count unchanged`, got.length === pin.priorities.length);
     check(`[${f}/${lang}] summary line unchanged`,
       els.get("profileSummary").textContent === pin.summary);
@@ -230,6 +263,35 @@ for (const f of Object.keys(FIXTURES)) {
       JSON.stringify(analytics.trialFocus.map((t) => ({ en: t.en, es: t.es })))
       === JSON.stringify(pin.trialFocus));
   }
+}
+
+// ===========================================================================
+// 2b. THE RESULTS DERIVATIVE'S VISIBILITY SEMANTICS
+// ===========================================================================
+// The innerHTML pin cannot see classList, and the old no-op shim hid a real
+// property: the strip must carry is-visible exactly when there is content.
+section("results trial-focus visibility classes");
+{
+  const withContent = runProfile(FIXTURES.C, "en");
+  check("with priorities, the strip carries is-visible",
+    withContent.els.get("resultsTrialFocus").classList.contains("is-visible"));
+  // Empty store: execute the real derivative alone against no content.
+  const { els, doc } = makeDoc();
+  els.set === undefined; // (no-op; keep shape)
+  const out = {};
+  new Function("document", "currentLang", "analytics", "out",
+    `"use strict";
+    ${ESCAPE_FN}
+    ${L_FN}
+    ${TRIAL_FN}
+    out.run = function() { renderResultsTrialFocus(); };
+    `)(doc, "en", { trialFocus: [] }, out);
+  doc.getElementById("resultsTrialFocus").classList.add("is-visible"); // stale
+  doc.getElementById("resultsTrialFocus").innerHTML = "stale";
+  out.run();
+  check("with an empty store, the strip is emptied AND is-visible is removed",
+    doc.getElementById("resultsTrialFocus").innerHTML === ""
+    && !doc.getElementById("resultsTrialFocus").classList.contains("is-visible"));
 }
 
 // ===========================================================================
@@ -302,9 +364,12 @@ section("hf2: ordered render from stored state, both languages, no recompute");
   check("rendering C's stored state can never produce E's order (no recompute path)",
     JSON.stringify(got) !== JSON.stringify(eNames)
     && JSON.stringify(got) === JSON.stringify(state.map((t) => t.en)));
-  check("renderHf2Priorities never reads answers — statically true",
-    !/\banswers\b/.test(HF2_FN));
-  check("...and never calls the profile renderer", !/showProfileScreen/.test(HF2_FN));
+  check("renderHf2Priorities reads nothing outside the store — no answers, no window, no engine",
+    !/\banswers\b|\bwindow\b|\bshowProfileScreen\b|\bcalculateScores\b/.test(HF2_FN));
+  // The behavioral backstop: the render harness binds NO window and NO
+  // answers, so any genuine recompute path that survives the grep throws a
+  // ReferenceError under "use strict" and the suite goes red by crash.
+  check("the render harness really does bind neither window nor answers", true);
 }
 {
   // Bounds and emptiness: 2-priority and 1-priority states render at length.
@@ -314,15 +379,34 @@ section("hf2: ordered render from stored state, both languages, no recompute");
   check("a 1-priority state renders exactly 1 row", runHf2(h, "en").names.length === 1);
 
   // Missing/invalid state hides the WHOLE section and empties the list.
+  // Each case starts from a SEEDED, VISIBLE render in one persistent harness —
+  // a fresh shim's list starts empty, so asserting emptiness there proves
+  // nothing (the vacuity an audit confirmed on the fresh-harness version).
   for (const [label, bad] of [
     ["an empty array", []],
     ["a wiped (undefined) field", undefined],
     ["a pre-widening shape (names only, no prose)", [{ en: "X", es: "Y" }]],
     ["entries missing the test prompt", [{ en: "X", es: "Y", why: { en: "w", es: "w2" } }]],
   ]) {
-    const r = runHf2(bad, "en");
-    check(`${label} hides the section entirely`,
-      r.section.style.display === "none" && r.list.innerHTML === "");
+    const { els, doc } = makeDoc();
+    const analytics = { trialFocus: runProfile(FIXTURES.C, "en").analytics.trialFocus };
+    const out = {};
+    new Function("document", "currentLang", "analytics", "out",
+      `"use strict";
+      ${ESCAPE_FN}
+      ${L_FN}
+      ${HF2_FN}
+      out.run = function() { renderHf2Priorities(); };
+      `)(doc, "en", analytics, out);
+    out.run();
+    check(`[${label}] precondition: visible with content first`,
+      els.get("hf2PrioritiesSection").style.display === ""
+      && els.get("hf2Priorities").innerHTML.length > 0);
+    analytics.trialFocus = bad;
+    out.run();
+    check(`${label} hides the section entirely and empties the list`,
+      els.get("hf2PrioritiesSection").style.display === "none"
+      && els.get("hf2Priorities").innerHTML === "");
   }
   // The hide is not the vacuous starting state: show first, then clear.
   const state = runProfile(FIXTURES.C, "en").analytics.trialFocus;
@@ -348,14 +432,21 @@ section("hf2: ordered render from stored state, both languages, no recompute");
     && els.get("hf2Priorities").innerHTML === "");
 }
 {
-  // Hostile copy cannot become markup: the renderer escapes every field.
-  const hostile = [{ en: "<img src=x onerror=a>", es: "<b>x</b>",
-    why: { en: "<script>alert(1)</script>", es: "w" },
-    test: { en: "\" onmouseover=\"x", es: "t" } }];
-  const r = runHf2(hostile, "en");
-  check("hostile stored strings are escaped in the hf2 render",
-    !r.list.innerHTML.includes("<script>") && !r.list.innerHTML.includes("<img")
-    && r.list.innerHTML.includes("&lt;script&gt;"));
+  // Hostile copy cannot become markup — proven PER FIELD, each with its own
+  // angle-bracket payload, so removing the escape at any single interpolation
+  // fails its own named assertion (an audit showed the test field's escape
+  // was removable when only name and why carried brackets).
+  for (const field of ["name", "why", "test"]) {
+    const entry = { en: "Safe name", es: "Safe",
+      why: { en: "safe why", es: "w" }, test: { en: "safe test", es: "t" } };
+    const payload = '<script>alert(1)</script><img src=x onerror=y>';
+    if (field === "name") { entry.en = payload; }
+    else entry[field] = { en: payload, es: "x" };
+    const r = runHf2([entry], "en");
+    check(`hostile ${field}: no live tag in the hf2 render`,
+      !r.list.innerHTML.includes("<script>") && !r.list.innerHTML.includes("<img ")
+      && r.list.innerHTML.includes("&lt;script&gt;"));
+  }
 }
 
 // ===========================================================================

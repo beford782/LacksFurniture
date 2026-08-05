@@ -292,14 +292,21 @@ const MUTATIONS = [
   ["the hf2 render stops escaping",
     "+ '<strong>' + escapeHtml(L(item)) + '</strong>",
     "+ '<strong>' + L(item) + '</strong>", PRIORITIES],
-  ["the hf2 label loses its Spanish",
+  // STATIC-CONTRACT entry: caught by the copy-map pin, not by a render
+  // (the label is written by renderHf2's copy loop, which the suite does not
+  // execute). The email suite covers the ES label behaviorally.
+  ["the hf2 label loses its Spanish (static contract)",
     "hf2PrioritiesLabel: es ? 'Lo que probaremos juntos' : 'What we will test together',",
     "hf2PrioritiesLabel: 'What we will test together',", PRIORITIES],
 
   // --- the payload projection ----------------------------------------------
+  // Reversal INSIDE the projection body, so the suite's extraction still
+  // matches and the wrong order is OBSERVED — mutating the regex's literal
+  // prefix instead was caught only by the extraction failing, which the
+  // sweep's own rules call a boundary, not proof.
   ["the payload ships the stored order reversed",
-    "priorities: (Array.isArray(analytics.trialFocus) ? analytics.trialFocus : [])",
-    "priorities: (Array.isArray(analytics.trialFocus) ? analytics.trialFocus.slice().reverse() : [])",
+    ".slice(0, 3)\n          .map(function(item) {",
+    ".slice(0, 3).reverse()\n          .map(function(item) {",
     PRIORITIES],
   ["the payload cap is widened",
     ".slice(0, 3)\n          .map(function(item) {",
@@ -315,7 +322,9 @@ const MUTATIONS = [
   ["the hf2 list leaves the wipe's content inventory",
     "'hf2SleepSystemSection', 'hf2Priorities',",
     "'hf2SleepSystemSection',", PRIORITIES_WITH_SESSION],
-  ["the hf2 section leaves the session layers",
+  // STATIC-CONTRACT entry: the layer entry is belt-and-braces on top of the
+  // renderer's own hide (which IS behaviorally covered); its pin is static.
+  ["the hf2 section leaves the session layers (static contract)",
     "{ id: 'hf2PrioritiesSection', display: 'none' },", "", PRIORITIES],
   ["the wipe stops clearing the priority store",
     "analytics.trialFocus = [];", "analytics.trialFocus = analytics.trialFocus;",
