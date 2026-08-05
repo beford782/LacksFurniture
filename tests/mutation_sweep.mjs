@@ -164,11 +164,19 @@ const MUTATIONS = [
     "if (typeof focusWelcomeEntry === 'function') focusWelcomeEntry();"],
   ["recovery moves focus even when nothing was shown",
     "if (!wasVisible || !mayFocus) return;", "if (false) return;"],
-  // The one property the recovery suite cannot see: it lives in the Gate 1B
+  // The two properties the recovery suite cannot see: they live in the Gate 1B
   // dialog, which only the session suite executes.
+  //
+  // "Visible" is not grounds to outrank an opener that is INSIDE the visible
+  // layer. Remove the containment preference and a customer who was on Try
+  // again when the timeout warning opened gets the whole dialog re-announced
+  // and loses their place on Continue.
+  ["the layer root outranks even an opener inside the layer",
+    "if (openerInsideLayer && isFocusRestorable(target)) {", "if (false) {",
+    WITH_SESSION],
   ["the safety dialog restores focus behind a visible overlay",
-    "var errorLayer = document.getElementById('dataErrorOverlay');\n        if (errorLayer && errorLayer.classList && errorLayer.classList.contains('visible')",
-    "var errorLayer = document.getElementById('dataErrorOverlay');\n        if (false && errorLayer.classList && errorLayer.classList.contains('visible')",
+    "} else if (errorVisible && typeof errorLayer.focus === 'function') {",
+    "} else if (false && typeof errorLayer.focus === 'function') {",
     WITH_SESSION],
 
   // --- the session inventory ----------------------------------------------

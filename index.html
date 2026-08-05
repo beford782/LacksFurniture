@@ -17948,9 +17948,31 @@
         //
         // Guarded on restoreFocus, so the wipe path is untouched — during a
         // wipe this layer is one line from being torn down by SESSION_LAYERS.
+        //
+        // BUT "outranks" is about WHERE the stored opener is, not merely that
+        // the layer is visible. Two orderings share this branch:
+        //
+        //   the layer APPEARED while the dialog was open — the opener is some
+        //     control outside it, now covered, so the layer root takes focus
+        //     and announces the failure that was never announced;
+        //
+        //   the layer was ALREADY up and the customer was ON one of its two
+        //     controls when the dialog opened — the opener IS that control.
+        //     Sending focus to the root there re-announces the whole dialog
+        //     and throws away the exact position the customer was at, which is
+        //     the precise thing _safetyReturnFocus exists to preserve.
+        //
+        // So an opener inside the layer is restored exactly; only an opener
+        // outside it is outranked.
         var errorLayer = document.getElementById('dataErrorOverlay');
-        if (errorLayer && errorLayer.classList && errorLayer.classList.contains('visible')
-            && typeof errorLayer.focus === 'function') {
+        var errorVisible = !!(errorLayer && errorLayer.classList
+          && errorLayer.classList.contains('visible'));
+        var openerInsideLayer = errorVisible && !!target
+          && (target === errorLayer
+              || (typeof errorLayer.contains === 'function' && errorLayer.contains(target)));
+        if (openerInsideLayer && isFocusRestorable(target)) {
+          target.focus();
+        } else if (errorVisible && typeof errorLayer.focus === 'function') {
           try { errorLayer.focus({ preventScroll: true }); } catch (err) { errorLayer.focus(); }
         } else if (isFocusRestorable(target)) {
           target.focus();

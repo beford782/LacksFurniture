@@ -684,6 +684,11 @@ check("focus is restored to the EXACT pre-warning element", doc.activeElement ==
   const priorOpener = makeEl("layerOrderOpener");
   const activeScreen = el("resultsScreen");
   activeScreen.classList.add("active");
+  // The layer's own two controls, so "was the opener inside this layer" is a
+  // real containment question rather than one the shim answers by default.
+  const errRetry = el("dataErrorRetryBtn");
+  const errRestart = el("dataErrorRestartBtn");
+  errorLayer.descendants = [errRetry, errRestart];
 
   // (a) the ordering that was broken: overlay appears DURING the dialog
   priorOpener.focus();
@@ -710,7 +715,41 @@ check("focus is restored to the EXACT pre-warning element", doc.activeElement ==
     doc.activeElement === errorLayer && doc.activeElement !== activeScreen);
   priorOpener.offsetParent = {};
 
-  // (c) the ordering that already worked must keep working: the overlay is
+  // (c) THE PRE-EXISTING-OVERLAY ORDERING. The layer was already up and the
+  // customer was ON one of its controls when the dialog opened, so the stored
+  // opener IS that control. Focusing the root here would re-announce the whole
+  // dialog and discard the exact position — the thing _safetyReturnFocus
+  // exists to preserve. Being visible is not grounds to outrank an opener that
+  // lives inside the visible layer.
+  errorLayer.classList.add("visible");
+  errorLayer.setAttribute("aria-hidden", "false");
+  errRetry.focus();
+  check("precondition: the customer is on Try again, overlay already up",
+    doc.activeElement === errRetry && errorLayer.classList.contains("visible"));
+  S.openSafety("timeout");
+  win.safetyDialogCancel();
+  check("REGRESSION: the exact control is restored, not the dialog root",
+    doc.activeElement === errRetry);
+  check("...and the root is specifically NOT re-focused",
+    doc.activeElement !== errorLayer);
+
+  // The other control too, so this is not passing on one hard-coded element.
+  errRestart.focus();
+  S.openSafety("restart");
+  win.safetyDialogCancel();
+  check("Start over is restored exactly too", doc.activeElement === errRestart);
+
+  // An opener inside the layer that stopped being reachable still falls back
+  // to the layer root, never to something behind it.
+  errRetry.focus();
+  S.openSafety("restart");
+  errRetry.offsetParent = null;
+  win.safetyDialogCancel();
+  check("an unreachable opener INSIDE the layer routes to the layer root",
+    doc.activeElement === errorLayer);
+  errRetry.offsetParent = {};
+
+  // (d) the ordering that already worked must keep working: the overlay is
   // recovered and hidden while the dialog is open, so it is NOT the destination.
   errorLayer.classList.remove("visible");
   errorLayer.setAttribute("aria-hidden", "true");
