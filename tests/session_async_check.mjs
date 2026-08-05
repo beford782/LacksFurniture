@@ -55,14 +55,26 @@ function grab(re, what) {
 // to contain no later `*/`, so the bug sat dormant until a stylesheet comment
 // was added below that line and supplied one.
 //
-// Misdetection here fails in the safe direction by construction: an ambiguous
-// `/` is consumed as a literal and EMITTED, never deleted, so the worst case is
-// a comment surviving into a scan, not code disappearing from one.
-function stripComments(source) {
-  // A `/` opens a regex only where a value may begin. `)` and `}` are
-  // deliberately absent: they are ambiguous, and reading them as division keeps
-  // the fallback on the emitting side.
-  const REGEX_OK_AFTER = /[({[,;:=!&|?+\-*%~^<>]/;
+// Misdetection is not harmless by itself. A `/` wrongly read as a regex scans
+// to the next `/` on the line, and if that lands past a string's opening quote
+// the scanner is then OUTSIDE a string it is really inside — where a `//` or
+// `/*` in ordinary text becomes a comment opener and its branch deletes. The
+// two mitigations below bound that, and the caller-side assertion in the
+// "comment stripping" section proves no deletion ever swallowed a call site in
+// THIS file rather than assuming the heuristic is sound.
+function stripComments(source, deleted = []) {
+  // A `/` opens a regex only where a value may begin.
+  //
+  // `<` and `>` are deliberately NOT here, though they are legal regex-start
+  // contexts in principle. This function is run over an 18,000-line HTML file:
+  // with `<` included, every `</tag>` starts a regex scan that runs to the next
+  // `/` on the line, and one landing on an attribute's closing quote
+  // (`title="z/* q"`) desyncs the scanner and deletes from there. `a < /re/`
+  // does not occur in real code; `</div>` occurs on nearly every line.
+  //
+  // `)` and `}` are absent for the original reason: they are ambiguous, and
+  // reading them as division keeps the fallback on the emitting side.
+  const REGEX_OK_AFTER = /[({[,;:=!&|?+\-*%~^]/;
   const REGEX_OK_KEYWORD = /(?:^|[^A-Za-z0-9_$])(?:return|typeof|instanceof|in|of|new|delete|void|case|do|else|yield|await)$/;
   let out = "";
   let i = 0;
@@ -72,12 +84,20 @@ function stripComments(source) {
     const c = source[i];
     const d = source[i + 1];
     if (c === "/" && d === "/") {
+      const from = i;
       while (i < source.length && source[i] !== "\n") i++;
+      deleted.push(source.slice(from, i));
       continue;
     }
     if (c === "/" && d === "*") {
       const end = source.indexOf("*/", i + 2);
-      i = end === -1 ? source.length : end + 2;
+      // An unterminated opener is EMITTED, never deleted to end of file. If the
+      // scanner has desynced, "delete everything from here on" is the single
+      // most destructive thing it could do — and it is exactly the fail-open
+      // this function replaced, reached from the other direction.
+      if (end === -1) { out += source.slice(i); break; }
+      deleted.push(source.slice(i, end + 2));
+      i = end + 2;
       continue;
     }
     if (c === "'" || c === '"' || c === "`") {
@@ -1070,6 +1090,25 @@ section("diagnostic contract: the logged event set and EVENT_FIELDS agree");
   // Discovery keys on the `analytics.log` call expression. Rebinding the method
   // to another name would log events this sweep never sees, so the boundary is
   // asserted rather than assumed — the honest limit of a non-parser guard.
+  // The stripper is a heuristic, and a heuristic that DELETES is the one thing
+  // in this sweep that can hide a call site. Rather than trust it, look at what
+  // it actually removed from this file: no span it deleted may contain a call
+  // shape either sweep depends on. This holds whatever the scanner did or did
+  // not get right — a desync that swallowed real code would fail here even if
+  // every other assertion still passed.
+  {
+    const deleted = [];
+    stripComments(html, deleted);
+    const CALL_SHAPE = /analytics\s*\.\s*log\s*\(|localStorage\s*\.\s*\w+\s*\(/;
+    const swallowed = deleted.filter((span) => CALL_SHAPE.test(span));
+    check(`comment stripping never deleted a call site (${deleted.length} spans removed)${swallowed.length ? " — SWALLOWED: " + swallowed.map((s) => JSON.stringify(s.slice(0, 60))).join(" | ") : ""}`,
+      swallowed.length === 0);
+    // A deletion running to end of file is the signature of a desynced scanner,
+    // and it is what the unterminated-opener branch now refuses to do.
+    const longest = deleted.reduce((a, s) => Math.max(a, s.length), 0);
+    check(`no single deletion is anywhere near file-sized (largest ${longest} bytes of ${html.length})`,
+      longest < html.length / 50);
+  }
   {
     const src = stripComments(html);
     check("analytics.log is never aliased, so call-site discovery is complete",
@@ -1120,6 +1159,22 @@ section("diagnostic contract: the logged event set and EVENT_FIELDS agree");
       m("analytics.log('alpha', p); /* analytics.log('new_event', p); */").unlisted.length === 0);
     check("real line comments are still removed",
       m("analytics.log('alpha', p);\n    // analytics.log('new_event', p);").unlisted.length === 0);
+
+    // The two ways the scanner itself can go wrong, both reported against the
+    // first version of this function. Neither is exotic: the first is ordinary
+    // markup, and this runs over an HTML file.
+    const markup = m(
+      "analytics.log('alpha', p);\n"
+      + "var s = '<i>a</i> <a href=\"x/y\" title=\"z/* q\">t</a>';\n"
+      + "analytics.log('new_event', p);\n");
+    check("MUTATION: a closing HTML tag does not start a regex scan that eats the file",
+      markup.unlisted.join(",") === "new_event" && markup.unparsed.length === 0);
+    const unterminated = m(
+      "analytics.log('alpha', p);\n"
+      + "var q = a-- / b;   /* an opener with no closer\n"
+      + "analytics.log('new_event', p);\n");
+    check("MUTATION: an unterminated block opener is emitted, never deleted to EOF",
+      unterminated.unlisted.join(",") === "new_event");
 
     const tpl = m("analytics.log(`alpha`, p); analytics.log(`beta`, p);");
     check("un-interpolated template literals are recognised",

@@ -56,6 +56,7 @@ const EPOCH_BLOCK = grab(
   /var _sessionEpoch = 1;[\s\S]*?function clearSessionTimers\(\) \{[\s\S]*?\n    \}/,
   "the session-epoch primitives (sessionTimeout / sessionBound / clearSessionTimers)");
 const FOCUS_WELCOME = grab(/function focusWelcomeEntry\(\) \{[\s\S]*?\n    \}/, "focusWelcomeEntry()");
+const FOCUS_ACTIVE = grab(/function focusActiveScreen\(\) \{[\s\S]*?\n    \}/, "focusActiveScreen()");
 // Includes the poll counter's own declaration: the recovery path resets it, so
 // a suite that declared its own copy would prove nothing about the real one.
 const START_QUIZ = grab(
@@ -71,8 +72,8 @@ section("source contracts: the loader is re-invocable, and nothing reloads the p
 check("the loader is a NAMED function, not the old IIFE",
   /async function loadAppData\(\) \{/.test(DATA_BLOCK)
   && !/\(async function loadAppData\(\) \{/.test(html));
-check("it is invoked at boot from the same place",
-  /\n    loadAppData\(\);/.test(DATA_BLOCK));
+check("it is invoked at boot, and its rejection cannot go unhandled",
+  /\n    loadAppData\(\)\.catch\(function\(err\) \{[\s\S]*?showDataError\(\);/.test(DATA_BLOCK));
 check("there is exactly one loadAppData implementation",
   (html.match(/function loadAppData\(/g) || []).length === 1);
 check("no full page reload anywhere in the file, in code OR in prose",
@@ -86,6 +87,22 @@ check("clean restart contains no reset implementation of its own",
 check("window.startOver() still delegates to the ONE authoritative wipe",
   /window\.startOver = function\(\) \{\s*return resetSessionState\(/.test(html)
   && (html.match(/function resetSessionState\(/g) || []).length === 1);
+// The session guard binds `_sessionEpoch` after one microtask, which only
+// works because the boot call and the epoch's declaration share a script scope
+// — the epoch is initialised by the time the first `await` resumes. Split that
+// script block, or move the boot call, and the typeof fallback silently
+// substitutes "the session never changed" and the guard turns off with no test
+// failure, because a harness always declares both bindings. So the layout is
+// pinned rather than assumed.
+{
+  const blocks = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
+  const withBoot = blocks.filter((b) => /\n    loadAppData\(\)\.catch\(/.test(b));
+  check("the boot call lives in exactly one script block", withBoot.length === 1);
+  check("that block also declares _sessionEpoch and sessionBound, so the guard binds a real epoch",
+    withBoot.length === 1
+    && /var _sessionEpoch = 1;/.test(withBoot[0])
+    && /function sessionBound\(fn\)/.test(withBoot[0]));
+}
 check("the block schedules no raw delayed work of its own",
   !/\bsetTimeout\s*\(|\bsetInterval\s*\(|requestAnimationFrame\s*\(/.test(DATA_BLOCK));
 check("the block touches no scoring, financing or analytics state",
@@ -208,9 +225,13 @@ function buildApp(opts) {
 
   const ids = ["dataErrorOverlay", "dataErrorTitle", "dataErrorText", "dataErrorLive",
     "dataErrorRetryBtn", "dataErrorRestartBtn", "startBtn", "landingHeadlineMain",
-    "welcomeScreen", "questionScreen"];
+    "welcomeScreen", "questionScreen", "mattressDrawer"];
   const byId = {};
   ids.forEach((id) => { byId[id] = makeEl(id, doc); });
+  // Welcome is the active screen at boot, and #startBtn lives inside it —
+  // the containment focusWelcomeEntry()'s contract depends on.
+  byId.welcomeScreen.classList.add("active");
+  byId.welcomeScreen.descendants = [byId.startBtn, byId.landingHeadlineMain];
   byId.dataErrorOverlay.descendants = [byId.dataErrorTitle, byId.dataErrorText,
     byId.dataErrorLive, byId.dataErrorRetryBtn, byId.dataErrorRestartBtn];
   // The shipped markup's starting state, not a blank element: "aria-hidden was
@@ -223,6 +244,18 @@ function buildApp(opts) {
   doc.body = body;
   doc.getElementById = (id) => byId[id] || null;
   doc.querySelectorAll = () => [];
+  doc.querySelector = (sel) => (sel === ".screen.active"
+    ? [byId.welcomeScreen, byId.questionScreen].find((s) => s.classList.contains("active")) || null
+    : null);
+  // #startBtn is only focusable while its screen is active, which is what
+  // makes the "focus landed on BODY" failure observable here at all. The
+  // shared shim's unconditional focus() is exactly what hid it.
+  byId.startBtn.focus = function() {
+    if (byId.welcomeScreen.classList.contains("active")) doc.activeElement = byId.startBtn;
+  };
+  byId.landingHeadlineMain.focus = function() {
+    if (byId.welcomeScreen.classList.contains("active")) doc.activeElement = byId.landingHeadlineMain;
+  };
   doc.addEventListener = (evt, fn) => { doc.listeners.push({ evt, fn }); };
   doc.contains = () => true;
 
@@ -276,15 +309,20 @@ function buildApp(opts) {
       if (name === 'SyntaxError') return 'malformed_response';
       return 'unclassified';
     }
+    // The ownership predicate dataErrorKeydown() consults. Controllable, so a
+    // test can open the safety dialog over the overlay for real.
+    var _safetyMode = null;
+    function safetyDialogMode() { return _safetyMode; }
     ${L_FN}
     ${DICT_FNS}
     ${EPOCH_BLOCK}
     ${FOCUS_WELCOME}
+    ${FOCUS_ACTIVE}
     ${SESSION_LAYERS_SRC}
     ${SESSION_TEXT_IDS_SRC}
     ${WIPE_LAYER_SRC}
     ${source}
-    ${START_QUIZ}
+    ${opts.startQuizSource || START_QUIZ}
 
     out.probe = function() {
       return {
@@ -324,6 +362,14 @@ function buildApp(opts) {
     out.bumpEpoch = function() { clearSessionTimers(); };
     out.visible = function() { return dataErrorVisible(); };
     out.keydown = function(e) { return dataErrorKeydown(e); };
+    out.setSafetyMode = function(m) { _safetyMode = m; };
+    out.activateScreen = function(id) {
+      ['welcomeScreen', 'questionScreen'].forEach(function(s) {
+        document.getElementById(s).classList.remove('active');
+      });
+      document.getElementById(id).classList.add('active');
+    };
+    out.coreReady = function() { return coreDataReady(); };
   `;
 
   new Function("document", "window", "fetch", "console", "out", "setTimeout",
@@ -332,7 +378,8 @@ function buildApp(opts) {
     clock.setTimeout.bind(clock), clock.clearTimeout.bind(clock),
     () => 0, () => {});
 
-  return { out, doc, byId, win, fetchLog, consoleLines, clock, body };
+  return { out, doc, byId, win, fetchLog, consoleLines, clock, body,
+    startQuizSource: opts.startQuizSource || START_QUIZ };
 }
 
 // Drain microtasks AND the macrotask queue, so every await inside the loader
@@ -440,9 +487,11 @@ section("successful retry: state cleared, overlay closed, focus handed back");
   check("the status region is cleared", s.live === "");
   check("focus lands on the Welcome entry, never BODY", s.focus === "startBtn");
   check("the recovered payload is applied", p.gold === 1);
-  const retried = h.fetchLog.slice(before).filter((u) => u.indexOf("dict-") === -1);
+  const retried = h.fetchLog.slice(before);
   check(`the retry re-fetched ONLY the missing source (${retried.join(", ") || "none"})`,
     retried.join(",") === "./data/mattresses.json");
+  check("...and did not re-fetch a dictionary that had already loaded",
+    retried.every((u) => u.indexOf("dict-") === -1));
   check("the quiz can now start", (h.out.startQuiz(), h.out.screens.includes("questionScreen")));
 }
 
@@ -538,7 +587,7 @@ section("partial failure: one dataset failing is not all of them");
       : url === "./data/quiz.json" ? okJson(GOOD_QUIZ) : okJson(GOOD_STORE);
     await h.out.retry();
     await settle();
-    const retried = h.fetchLog.slice(before).filter((u) => u.indexOf("dict-") === -1);
+    const retried = h.fetchLog.slice(before);
     check(`the ${label} retry re-fetches only ${label}`, retried.join(",") === url);
     check(`${label} recovery closes the overlay`, !overlayState(h).visible);
   }
@@ -592,6 +641,13 @@ section("repeated taps are answered, not queued");
     overlayState(h).live === "Trying again…");
   check("the dialog is marked busy while the load runs",
     overlayState(h).ariaBusy === "true");
+  // aria-busy on an ancestor tells assistive tech to withhold live-region
+  // updates, and #dataErrorLive is inside the layer — so the "Trying again"
+  // write has to happen BEFORE the flag, or it is the one message this branch
+  // exists to deliver and the one most likely to be swallowed.
+  check("the status is written before aria-busy is raised, not after",
+    /setDataErrorStatus\(L\(DATA_ERROR_COPY\.retrying\)\);\s*[\r\n]+\s*if \(overlay\) overlay\.setAttribute\('aria-busy', 'true'\);/
+      .test(DATA_BLOCK));
 
   d.resolve({ ok: true, status: 200, json: async () => GOOD_MATTRESSES });
   const verdict = await first;
@@ -771,6 +827,56 @@ section("a poll queued before the overlay appeared cannot start a quiz after rec
 }
 
 // ===========================================================================
+// 8b. THE QUIZ NEVER STARTS ON PARTIAL CORE DATA, AND RECOVERY FOCUSES THE
+//     SCREEN THAT IS ACTUALLY ACTIVE
+// ===========================================================================
+section("partial core data cannot start a quiz, and recovery focuses what is active");
+{
+  // Per-source application publishes mattresses and quiz the moment they land.
+  // Under the old Promise.all they could not arrive without store-config, so
+  // "the quiz started while a core source was still in flight" was unreachable.
+  // It must stay unreachable.
+  const d = deferred();
+  const plan = goodPlan({ "./data/store-config.json": () => d.promise });
+  const h = buildApp({ plan });
+  await settle();
+  const p = h.out.probe();
+  check("precondition: mattresses and quiz landed, store-config has not",
+    p.loaded.mattresses && p.loaded.quiz && p.loaded.storeConfig === false);
+  check("precondition: the old guard alone would have let the quiz start",
+    p.gold > 0 && p.questions > 0);
+  h.out.startQuiz();
+  check("the quiz does NOT start while a core source is outstanding",
+    !h.out.screens.includes("questionScreen") && h.out.coreReady() === false);
+
+  d.resolve({ ok: true, status: 200, json: async () => GOOD_STORE });
+  await settle();
+  h.out.startQuiz();
+  check("...and starts as soon as every core source is in",
+    h.out.screens.includes("questionScreen") && h.out.coreReady() === true);
+}
+{
+  // Belt and braces on the same failure: if the overlay is ever raised over a
+  // screen other than Welcome, recovery must not hand focus to a Start button
+  // inside a display:none container — that lands on BODY, which is precisely
+  // what focusWelcomeEntry()'s own contract says it exists to prevent.
+  const plan = goodPlan({ "./data/quiz.json": httpError(500) });
+  const h = buildApp({ plan });
+  await settle();
+  h.out.activateScreen("questionScreen");
+  h.out.show();
+  check("precondition: the overlay is up over a non-Welcome screen",
+    overlayState(h).visible && !h.byId.welcomeScreen.classList.contains("active"));
+  plan["./data/quiz.json"] = okJson(GOOD_QUIZ);
+  await h.out.retry();
+  await settle();
+  check("recovery focuses the ACTIVE screen, never BODY",
+    h.doc.activeElement === h.byId.questionScreen);
+  check("...and the overlay is closed and out of the tree",
+    !overlayState(h).visible && overlayState(h).ariaHidden === "true");
+}
+
+// ===========================================================================
 // 9b. TAB CONTAINMENT
 // ===========================================================================
 section("the modal contains Tab, and Escape does not dismiss a broken kiosk");
@@ -816,6 +922,37 @@ section("the modal contains Tab, and Escape does not dismiss a broken kiosk");
   h.out.show({ retryFailed: true });
   check("a repeat show does not stack a second listener",
     h.doc.listeners.filter((l) => l.evt === "keydown").length === 1);
+
+  // OWNERSHIP. Being on the document means this handler sees Tabs that belong
+  // to a layer stacked ON TOP of this one, and this layer stays `visible`
+  // underneath. The reachable case: a broken kiosk idles for five minutes, the
+  // timeout warning opens, and openSafetyDialog() inerts every body child —
+  // this overlay among them. Cancelling the dialog's Tab and then focusing into
+  // an inert subtree kills Tab inside a dialog whose Escape deliberately does
+  // not cancel, locking a keyboard user out of Continue while the session wipes.
+  h.out.setSafetyMode("timeout");
+  h.byId.dataErrorOverlay.setAttribute("inert", "");
+  h.byId.startBtn.focus();
+  h.doc.activeElement = h.byId.landingHeadlineMain;   // stand-in for the dialog's title
+  const held = h.doc.activeElement;
+  check("Tab is left alone while the safety dialog owns the screen",
+    !key("Tab") && h.doc.activeElement === held);
+  check("...and Shift+Tab likewise", !key("Tab", true) && h.doc.activeElement === held);
+
+  h.byId.dataErrorOverlay.removeAttribute("inert");
+  check("the safety-dialog mode alone is enough to refuse",
+    !key("Tab") && h.doc.activeElement === held);
+  h.out.setSafetyMode(null);
+  h.byId.dataErrorOverlay.setAttribute("inert", "");
+  check("an inert overlay alone is enough to refuse",
+    !key("Tab") && h.doc.activeElement === held);
+  h.byId.dataErrorOverlay.removeAttribute("inert");
+  h.byId.mattressDrawer.classList.add("drawer-open");
+  check("an open drawer is enough to refuse",
+    !key("Tab") && h.doc.activeElement === held);
+  h.byId.mattressDrawer.classList.remove("drawer-open");
+  check("with every other layer gone, containment resumes",
+    key("Tab") && h.doc.activeElement === retry);
 
   h.out.wipeLayers();
   h.byId.startBtn.focus();
@@ -972,8 +1109,7 @@ function mutate(from, to) {
   const d = deferred();
   const plan = goodPlan({ "./data/quiz.json": httpError(500) });
   const h = buildApp({
-    source: mutate("        return resolveDataLoadOutcome(generation, sessionUnchanged() === true);",
-      "        return resolveDataLoadOutcome(generation, true);"),
+    source: mutate("        var owned = sessionUnchanged() === true;", "        var owned = true;"),
     plan,
   });
   await settle();
@@ -993,8 +1129,7 @@ function mutate(from, to) {
   const d = deferred();
   const plan = goodPlan({ "./data/mattresses.json": httpError(503) });
   const h = buildApp({
-    source: mutate("        return resolveDataLoadOutcome(generation, sessionUnchanged() === true);",
-      "        return resolveDataLoadOutcome(generation, true);"),
+    source: mutate("        var owned = sessionUnchanged() === true;", "        var owned = true;"),
     plan,
   });
   await settle();
@@ -1099,6 +1234,65 @@ function mutate(from, to) {
   await settle(1);
   check("MUTATION: a second tap opening a second load generation is caught",
     h.out.probe().generation > gen);
+}
+
+{
+  // M11 — the ownership refusals are removed, so the document-level handler
+  // cancels Tab for a dialog stacked on top of this layer.
+  const h = buildApp({
+    source: mutate("      if (overlay.hasAttribute && overlay.hasAttribute('inert')) return;\n      if (typeof safetyDialogMode === 'function' && safetyDialogMode() !== null) return;",
+      "      if (false) return;"),
+    plan: goodPlan({ "./data/quiz.json": httpError(500) }),
+  });
+  await settle();
+  h.out.setSafetyMode("timeout");
+  h.byId.dataErrorOverlay.setAttribute("inert", "");
+  h.doc.activeElement = h.byId.landingHeadlineMain;
+  let prevented = false;
+  h.out.keydown({ key: "Tab", shiftKey: false, preventDefault() { prevented = true; } });
+  check("MUTATION: stealing Tab from the safety dialog is caught",
+    prevented && h.doc.activeElement !== h.byId.landingHeadlineMain);
+}
+{
+  // M12 — recovery goes back to focusing Welcome unconditionally, so focus is
+  // left inside the layer it just hid (BODY, in a real browser).
+  const plan = goodPlan({ "./data/quiz.json": httpError(500) });
+  const h = buildApp({
+    source: mutate("      if (onWelcome && typeof focusWelcomeEntry === 'function') focusWelcomeEntry();\n      else if (typeof focusActiveScreen === 'function') focusActiveScreen();",
+      "      if (typeof focusWelcomeEntry === 'function') focusWelcomeEntry();"),
+    plan,
+  });
+  await settle();
+  h.out.activateScreen("questionScreen");
+  h.out.show();
+  h.byId.dataErrorRetryBtn.focus();
+  plan["./data/quiz.json"] = okJson(GOOD_QUIZ);
+  await h.out.retry();
+  await settle();
+  check("MUTATION: focusing a hidden Welcome from another screen is caught",
+    h.doc.activeElement !== h.byId.questionScreen);
+}
+{
+  // M13 — startQuiz drops the coreDataReady() guard, so the quiz starts with a
+  // core source still in flight.
+  const d = deferred();
+  const plan = goodPlan({ "./data/store-config.json": () => d.promise });
+  const h = buildApp({
+    source: DATA_BLOCK,
+    plan,
+    startQuizSource: START_QUIZ.replace("|| QUESTIONS.length === 0 || !coreDataReady()",
+      "|| QUESTIONS.length === 0"),
+  });
+  await settle();
+  // Anchored to the GUARD, not to the identifier: the comment above it names
+  // coreDataReady() too, so a bare /coreDataReady/ would match unmutated source
+  // and report a substitution that never happened.
+  check("  [setup] the startQuiz guard really was weakened",
+    /QUESTIONS\.length === 0 \|\| !coreDataReady\(\)/.test(START_QUIZ)
+    && !/QUESTIONS\.length === 0 \|\| !coreDataReady\(\)/.test(h.startQuizSource));
+  h.out.startQuiz();
+  check("MUTATION: starting a quiz on partial core data is caught",
+    h.out.screens.includes("questionScreen"));
 }
 
 // ===========================================================================

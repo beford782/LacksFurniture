@@ -11577,6 +11577,9 @@
     var _dataLoadGeneration = 0;
     var _dataLoadInFlight = false;
     var _dataErrorDeferred = false;
+    // Which language the dictionary in DICT actually came from, so a retry
+    // does not re-fetch a dictionary that already loaded.
+    var _dictLoadedFor = '';
 
     // Bumped by showDataError(). startQuiz polls for slow data on a timer; a
     // poll scheduled before the overlay appeared must not fire after a
@@ -11724,10 +11727,33 @@
     function dataErrorKeydown(e) {
       if (!e || e.key !== 'Tab' || !dataErrorVisible()) return;
       var overlay = document.getElementById('dataErrorOverlay');
+      if (!overlay) return;
+      // OWNERSHIP FIRST. Being on the document means this handler sees every
+      // Tab on the page, including Tabs that belong to a layer stacked ON TOP
+      // of this one — and this layer stays `visible` underneath it.
+      //
+      // The concrete case: a broken kiosk idles for five minutes, the timeout
+      // warning opens over the overlay, and openSafetyDialog() inerts every
+      // body child — this overlay among them, since it is one. Without these
+      // refusals the branches below would cancel the dialog's own Tab and then
+      // call focus() into an inert subtree, which does nothing. In `timeout`
+      // mode Escape deliberately does not cancel, so Tab dying there locks a
+      // keyboard or switch-access user out of Continue entirely and the
+      // session wipes under them. That is Invariant 9 — focus ownership is
+      // respected — and it is checked the same way screenTransitionOwnedElsewhere
+      // checks it, minus the _dataLoadFailed test, which is true by definition
+      // whenever this layer is up.
+      //
+      // The inert test leads because it is the general one: whatever inerted
+      // this layer owns the screen, whether or not it is a layer named here.
+      if (overlay.hasAttribute && overlay.hasAttribute('inert')) return;
+      if (typeof safetyDialogMode === 'function' && safetyDialogMode() !== null) return;
+      var drawer = document.getElementById('mattressDrawer');
+      if (drawer && drawer.classList && drawer.classList.contains('drawer-open')) return;
       var list = ['dataErrorRetryBtn', 'dataErrorRestartBtn']
         .map(function(id) { return document.getElementById(id); })
         .filter(function(el) { return el && typeof el.focus === 'function' && el.disabled !== true; });
-      if (!overlay || !list.length) return;
+      if (!list.length) return;
       var first = list[0], last = list[list.length - 1];
       var active = document.activeElement;
       // The container is the initial destination — it announces the dialog but
@@ -11829,7 +11855,19 @@
       hideDataError();
       // Focus only follows an overlay that was actually up. A boot load that
       // never showed one must not yank focus off whatever is being touched.
-      if (wasVisible && mayFocus && typeof focusWelcomeEntry === 'function') focusWelcomeEntry();
+      if (!wasVisible || !mayFocus) return;
+      // Hiding the layer blurs whatever inside it had focus, so something has
+      // to take it — and focusWelcomeEntry() is only correct when Welcome is
+      // the active screen. Its own contract is "never BODY, never hidden
+      // content", and #startBtn lives inside #welcomeScreen: with any other
+      // screen active that container is display:none, focus() is a no-op, and
+      // focus is left on BODY. That contract held while the wipe was the sole
+      // caller, because the wipe activates Welcome first. This call site has no
+      // such guarantee, so it asks which screen is actually active.
+      var welcome = document.getElementById('welcomeScreen');
+      var onWelcome = !!(welcome && welcome.classList && welcome.classList.contains('active'));
+      if (onWelcome && typeof focusWelcomeEntry === 'function') focusWelcomeEntry();
+      else if (typeof focusActiveScreen === 'function') focusActiveScreen();
     }
 
     async function fetchDataSource(src) {
@@ -11886,11 +11924,32 @@
         });
         // The accessory render paths already tolerate an empty list.
         if (!_dataLoaded.accessories) ACCESSORIES = [];
-        await loadDictionary(currentLang);
-        applyStoreConfig();
-        applyLanguageConfig();
-        applyTranslations();
-        return resolveDataLoadOutcome(generation, sessionUnchanged() === true);
+        var owned = sessionUnchanged() === true;
+        // On failure the staff-notify surface goes up BEFORE the dictionary
+        // fetch and the appliers below. On a dead network those are one or two
+        // more requests that have to time out, and the only thing on the screen
+        // must not wait behind them. Its copy is inline bilingual, so it owes
+        // the dictionary nothing.
+        var failed = !coreDataReady();
+        var verdict = failed ? resolveDataLoadOutcome(generation, owned) : null;
+        // The dictionary is re-fetched only while it is still missing — the
+        // same "only what did not load" rule the sources follow. A language
+        // switch has its own race-safe path and does not come through here.
+        if (_dictLoadedFor !== currentLang) {
+          await loadDictionary(currentLang);
+          if (DICT && Object.keys(DICT).length) _dictLoadedFor = currentLang;
+        }
+        try {
+          applyStoreConfig();
+          applyLanguageConfig();
+          applyTranslations();
+        } catch (err) {
+          // A throw here used to skip the verdict entirely, so a boot that got
+          // its data but could not render it showed nothing at all.
+          console.error('[DreamFinder] Post-load application failed:',
+            (typeof transportFailureCode === 'function') ? transportFailureCode(err) : 'unclassified');
+        }
+        return failed ? verdict : resolveDataLoadOutcome(generation, owned);
       } finally {
         // Only the newest load releases the latch; a superseded one finishing
         // late must not advertise the current one as finished.
@@ -11925,9 +11984,13 @@
         setDataErrorStatus(L(DATA_ERROR_COPY.retrying));
         return false;
       }
+      // Status FIRST, then aria-busy. #dataErrorLive is a descendant of the
+      // layer, and aria-busy="true" on an ancestor tells assistive tech to
+      // withhold live-region updates until it clears — so setting it first
+      // would silence the one message this branch exists to deliver.
       var overlay = document.getElementById('dataErrorOverlay');
-      if (overlay) overlay.setAttribute('aria-busy', 'true');
       setDataErrorStatus(L(DATA_ERROR_COPY.retrying));
+      if (overlay) overlay.setAttribute('aria-busy', 'true');
       return Promise.resolve(loadAppData()).catch(function(err) {
         // Classified, not echoed: this rejection can carry a response body or
         // an exception string, and the same rule the send path follows applies
@@ -11948,7 +12011,15 @@
       return window.startOver();
     };
 
-    loadAppData();
+    // Caught, not bare. Everything inside is already guarded, but an unhandled
+    // rejection here would be the one failure mode with NO staff-notify
+    // surface at all — a blank-looking kiosk and a message in a console nobody
+    // on a showroom floor is going to open.
+    loadAppData().catch(function(err) {
+      console.error('[DreamFinder] Initial data load failed unexpectedly:',
+        (typeof transportFailureCode === 'function') ? transportFailureCode(err) : 'unclassified');
+      showDataError();
+    });
     // ==== PHASE 0.4 DATA LOAD + RECOVERY :: END ============================
 
     // Show/hide language toggle based on store-config.languages array.
@@ -12282,11 +12353,17 @@
       console.log('startQuiz called');
       // Hard failure already detected during load — don't bother retrying.
       if (_dataLoadFailed) { showDataError(); return; }
-      // Guard: ensure mattress + quiz data finished loading before the quiz
-      // begins. On slow networks the fetch in loadAppData() may not have
-      // resolved (both arrive in the same Promise.all).
+      // Guard: ensure the CORE data finished loading before the quiz begins.
+      // coreDataReady() is the part that used to be implicit: the loader was
+      // one Promise.all that published mattresses, store-config and quiz
+      // together, so a started quiz could never have a core source still in
+      // flight. Phase 0.4 applies each source as it lands — that is what lets a
+      // retry re-fetch only what failed — which would otherwise make it
+      // possible to reach question five while store-config is outstanding, and
+      // then have applyStoreConfig() swap the branding underneath the customer
+      // when it finally arrives.
       if (!MATTRESSES || !MATTRESSES.gold || MATTRESSES.gold.length === 0
-          || QUESTIONS.length === 0) {
+          || QUESTIONS.length === 0 || !coreDataReady()) {
         _startQuizAttempts++;
         if (_startQuizAttempts > 25) {
           console.error('[DreamFinder] Mattress data never loaded after 25 attempts — showing error');
