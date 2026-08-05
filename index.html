@@ -9578,13 +9578,15 @@
   </main>
 
   <!-- SCREEN: Questions -->
-  <!-- role="region" so the aria-label applied in applyTranslations() is
-       announced reliably when Gate 2A focuses this container. Neither this
-       screen nor #reviewScreen has a heading rendered at transition time, so
-       the container is their focus destination and a bare div carrying only
-       aria-label is announced inconsistently — iOS VoiceOver is the primary
-       assistive technology on this hardware. #welcomeScreen needs no role: it
-       is a <main>, which announces its accessible name already. -->
+  <!-- EVERY screen container carries a nameable role, because every one of
+       them can become a focus destination: the two headingless screens always
+       are, and the five mapped screens fall back to their container whenever
+       the mapped heading is empty. A plain <div> has the implicit `generic`
+       role, which cannot be named — ARIA in HTML prohibits aria-label there
+       and assistive technology may drop it, which would make the fallback
+       silently anonymous. role="region" is the smallest role that permits the
+       bilingual name applied in applyTranslations(). #welcomeScreen is the one
+       exception and needs no role: it is a <main>, already nameable. -->
   <div class="question-screen screen" id="questionScreen" role="region">
     <div class="noct-quiz">
       <div id="questionContainer"></div>
@@ -9606,7 +9608,7 @@
   </div>
 
   <!-- SCREEN: Profile Summary -->
-  <div class="screen" id="profileScreen">
+  <div class="screen" id="profileScreen" role="region">
     <main class="noct-profile" aria-labelledby="profileName">
       <section class="profile-launch__identity" aria-labelledby="profileName">
         <div class="noct-profile-eyebrow" id="profileEyebrow">Here is what we heard</div>
@@ -9636,7 +9638,7 @@
   </div>
 
   <!-- SCREEN: Results -->
-  <div class="screen" id="resultsScreen">
+  <div class="screen" id="resultsScreen" role="region">
     <div class="noct-results">
       <div class="noct-results-eyebrow" id="resultsEyebrow">Your matches</div>
       <h1 class="noct-results-headline" id="resultsHeadline">Your <span class="accent">strongest matches</span> are ready</h1>
@@ -9866,7 +9868,7 @@
   <!-- SCREEN: Saved Picks (Salesperson View) -->
   <!-- SCREEN: Handoff v2 (the live RSA handoff screen). -->
   <!-- No .active class so it's invisible by default. Preview via showScreen('hf2Screen'). -->
-  <div class="screen" id="hf2Screen">
+  <div class="screen" id="hf2Screen" role="region">
 
     <div class="hf2-review-nav">
       <button class="hf2-back-btn" id="hf2BackToMatches" type="button"
@@ -9998,7 +10000,7 @@
   </div>
 
   <!-- SCREEN: Save Sleep Brief / lead capture -->
-  <div class="screen email-screen" id="emailScreen">
+  <div class="screen email-screen" id="emailScreen" role="region">
     <div class="noct-email">
 
       <!-- Capture view -->
@@ -10094,7 +10096,7 @@
   </div>
 
   <!-- SCREEN: Guided Sleep System workspace -->
-  <div class="screen sleep-system" id="accessoriesScreen">
+  <div class="screen sleep-system" id="accessoriesScreen" role="region">
     <div class="sleep-system__shell">
       <header class="sleep-system__header">
         <button class="sleep-system__back" id="sleepSystemBack" type="button" data-sleep-action="back-to-matches">&larr; Back to mattress matches</button>
@@ -11208,6 +11210,10 @@
       // name announces nothing. Named here rather than in the markup so both
       // languages come from the same dictionary, and refreshed on every
       // transition because showScreen() calls applyTranslations().
+      // Every id below carries a nameable role in the markup (role="region",
+      // or <main> for welcome). That is a precondition, not decoration: on a
+      // role-less <div> the implicit role is `generic`, naming is prohibited,
+      // and this aria-label would be discarded.
       if (typeof SCREEN_NAME_KEYS !== 'undefined') {
         Object.keys(SCREEN_NAME_KEYS).forEach(function(screenId) {
           var el = document.getElementById(screenId);

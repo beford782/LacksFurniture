@@ -1544,6 +1544,40 @@ check("[Gate 2A] container names are applied as aria-label from the dictionary",
     h.active() === 'profileScreen');
   check("[Gate 2A] ...and the fallback schedules no deferred utterance either",
     h.pending.length === 0);
+  // Focusing the fallback only announces anything if the fallback can BE
+  // named. A plain <div> has the implicit `generic` role, naming is
+  // prohibited there, and the aria-label would be discarded — leaving this
+  // path silently anonymous while every behavioural assertion still passed.
+  check("[Gate 2A] ...and the fallback container has a role that permits a name",
+    /<div class="screen" id="profileScreen" role="region">/.test(html));
+}
+
+// -- F4b: EVERY container that can be a focus destination is nameable -------
+// Not just the two headingless screens: each mapped screen falls back to its
+// own container whenever its heading is empty, so all eight need this.
+{
+  const NAMEABLE = {
+    welcomeScreen: /<main class="main screen active" id="welcomeScreen"/,
+    questionScreen: /id="questionScreen" role="region"/,
+    reviewScreen: /id="reviewScreen" role="region"/,
+    profileScreen: /id="profileScreen" role="region"/,
+    resultsScreen: /id="resultsScreen" role="region"/,
+    hf2Screen: /id="hf2Screen" role="region"/,
+    emailScreen: /id="emailScreen" role="region"/,
+    accessoriesScreen: /id="accessoriesScreen" role="region"/,
+  };
+  const namesSrc = (html.match(/var SCREEN_NAME_KEYS = \{[\s\S]*?\n    \};/) || [""])[0];
+  for (const [screen, re] of Object.entries(NAMEABLE)) {
+    check(`[Gate 2A] ${screen} carries a nameable role, so its aria-label is not discarded`,
+      re.test(html));
+    check(`[Gate 2A] ${screen} is named from the dictionary`,
+      new RegExp(`${screen}: 'screen\\.`).test(namesSrc));
+  }
+  // No aria-label may be applied to a container that cannot carry one.
+  const labelled = Object.keys(NAMEABLE);
+  check("[Gate 2A] every aria-labelled screen container is one of the nameable eight",
+    labelled.length === 8
+    && labelled.every((s) => new RegExp(`${s}: 'screen\\.`).test(namesSrc)));
 }
 
 // -- F5/F6/F7 + A2: every refusal gate, focus AND speech ---------------------
