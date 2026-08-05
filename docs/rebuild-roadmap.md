@@ -443,8 +443,7 @@ a merged diff before that:
 
 - the fixed bilingual heading "Your Sleep Brief" / "Tu Resumen de Sueño" is
   replaced by, or subordinated to, a need-derived hero;
-- the screen's section order or top-level composition differs from `main`;
-- a new icon vocabulary appears on this screen.
+- the screen's section order or top-level composition differs from `main`.
 
 Prototypes and unmerged branches are not these outputs. The component set below is
 a proposal, not an approved layout.
@@ -826,9 +825,16 @@ Spanish, glare and shared-viewing conditions, and touch.
 
 ### Phase 1 merge gate — the device matrix
 
-A phase-wide **merge gate**, not an item status: it stops no Phase 1 work
-starting and every Phase 1 change merging. Recorded here only — item Exit lines do
-not repeat it, and it carries no heading mark.
+A phase-wide **merge gate**, not an item status. Recorded here only — item Exit
+lines do not repeat it, and it carries no heading mark.
+
+It does not override the Phase 0 → Phase 1 sequence; the two apply in order:
+
+- **Before Phase 0 closes:** Phase 1 research and prototyping may proceed. Phase 1
+  implementation may not begin.
+- **After Phase 0 closes:** this gate independently permits Phase 1
+  implementation, and blocks merging until verification on the confirmed
+  hardware.
 
 **Approver: Blake, unblocked by confirming the showroom hardware.** No committed
 source in this repository identifies the showroom device, its viewport or its
@@ -1019,7 +1025,7 @@ approval; its presence is a bar on proceeding.
 | Auto-advance | 🔒 | Blake | Observed sessions |
 | Review-screen compression or removal | 🔒 | Blake | Observed sessions. Review otherwise stays as it is; this does not hold 1.6 open |
 | Final Sleep Brief layout | 🔒 | Blake | Blake's approval of a reviewed prototype — gated output of 1.1 ◐ |
-| The device matrix itself | 🔒 | Blake | Confirming the showroom hardware — Phase 1 **exit** gate, blocks merging not starting |
+| The device matrix itself | 🔒 | Blake | Confirming the showroom hardware — Phase 1 **merge** gate, blocks merging not starting |
 | Phase 2.2 price/payment activation | 🔒 | Blake + business/legal | Written approval |
 | Scoring case-fold (3.1) | 🔒 | Blake | Approval + enumerated impact |
 | Quiz-tag vocabulary gap (3.2) | 🔒 | Blake | Populate-or-retire decision |
