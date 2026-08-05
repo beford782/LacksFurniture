@@ -43,6 +43,99 @@ function grab(re, what) {
   return m ? m[0] : "";
 }
 
+// Several static sweeps below have to look at CODE rather than prose, and
+// comment removal has to be literal-aware for the same reason argument parsing
+// is — with higher stakes. index.html contains `u.replace(/^\.?\/*/, '')`: a
+// REGEX whose body holds the two characters `/*`. A plain
+// `/\/\*[\s\S]*?\*\//g` strip reads that as a comment opener and deletes
+// everything from it to the next `*/` ANYWHERE later in the file, taking most
+// of the analytics.log() and localStorage call sites with it. That is the
+// sweeps failing OPEN: an unlisted event, or a customer value written to
+// storage, inside the deleted span is discovered by nothing. The file happened
+// to contain no later `*/`, so the bug sat dormant until a stylesheet comment
+// was added below that line and supplied one.
+//
+// Misdetection is not harmless by itself. A `/` wrongly read as a regex scans
+// to the next `/` on the line, and if that lands past a string's opening quote
+// the scanner is then OUTSIDE a string it is really inside — where a `//` or
+// `/*` in ordinary text becomes a comment opener and its branch deletes. The
+// two mitigations below bound that, and the caller-side assertion in the
+// "comment stripping" section proves no deletion ever swallowed a call site in
+// THIS file rather than assuming the heuristic is sound.
+function stripComments(source, deleted = []) {
+  // A `/` opens a regex only where a value may begin.
+  //
+  // `<` and `>` are deliberately NOT here, though they are legal regex-start
+  // contexts in principle. This function is run over an 18,000-line HTML file:
+  // with `<` included, every `</tag>` starts a regex scan that runs to the next
+  // `/` on the line, and one landing on an attribute's closing quote
+  // (`title="z/* q"`) desyncs the scanner and deletes from there. `a < /re/`
+  // does not occur in real code; `</div>` occurs on nearly every line.
+  //
+  // `)` and `}` are absent for the original reason: they are ambiguous, and
+  // reading them as division keeps the fallback on the emitting side.
+  const REGEX_OK_AFTER = /[({[,;:=!&|?+\-*%~^]/;
+  const REGEX_OK_KEYWORD = /(?:^|[^A-Za-z0-9_$])(?:return|typeof|instanceof|in|of|new|delete|void|case|do|else|yield|await)$/;
+  let out = "";
+  let i = 0;
+  let prev = "";        // last significant character emitted
+  let prevWord = "";    // ...and the identifier it belongs to, for keywords
+  while (i < source.length) {
+    const c = source[i];
+    const d = source[i + 1];
+    if (c === "/" && d === "/") {
+      const from = i;
+      while (i < source.length && source[i] !== "\n") i++;
+      deleted.push(source.slice(from, i));
+      continue;
+    }
+    if (c === "/" && d === "*") {
+      const end = source.indexOf("*/", i + 2);
+      // An unterminated opener is EMITTED, never deleted to end of file. If the
+      // scanner has desynced, "delete everything from here on" is the single
+      // most destructive thing it could do — and it is exactly the fail-open
+      // this function replaced, reached from the other direction.
+      if (end === -1) { out += source.slice(i); break; }
+      deleted.push(source.slice(i, end + 2));
+      i = end + 2;
+      continue;
+    }
+    if (c === "'" || c === '"' || c === "`") {
+      let j = i + 1;
+      while (j < source.length) {
+        if (source[j] === "\\") { j += 2; continue; }
+        if (source[j] === c) { j++; break; }
+        j++;
+      }
+      out += source.slice(i, j);
+      prev = c; prevWord = ""; i = j;
+      continue;
+    }
+    if (c === "/" && (prev === "" || REGEX_OK_AFTER.test(prev) || REGEX_OK_KEYWORD.test(prevWord))) {
+      let j = i + 1, inClass = false;
+      while (j < source.length) {
+        const e = source[j];
+        if (e === "\\") { j += 2; continue; }
+        if (e === "\n") break;            // not a regex after all — emit as-is
+        if (e === "[") inClass = true;
+        else if (e === "]") inClass = false;
+        else if (e === "/" && !inClass) { j++; break; }
+        j++;
+      }
+      out += source.slice(i, j);
+      prev = "/"; prevWord = ""; i = j;
+      continue;
+    }
+    out += c;
+    if (!/\s/.test(c)) {
+      prev = c;
+      prevWord = /[A-Za-z0-9_$]/.test(c) ? prevWord + c : "";
+    }
+    i++;
+  }
+  return out;
+}
+
 const SENTINEL_EMAIL = "prior.customer@example.invalid";
 const SENTINEL_NAME = "PRIOR-CUSTOMER-NAME-x7";
 const SENTINEL_PHONE = "956-555-0199";
@@ -72,6 +165,8 @@ const RAW_ALLOWLIST = [
     why: "one-time boot decoration; runs before any session and mutates only the starfield" },
   { cls: "B", count: 1, match: "_idleTicker = setInterval(idleReconcile,",
     why: "the idle controller's own ticker; lifecycle infrastructure, cleared and re-armed by idleRestart()" },
+  { cls: "B", count: 1, match: "var dataDeadlineTimer = setTimeout(",
+    why: "the data/dictionary fetch deadline; cleared by name the moment the request settles, carries no session state, and is deliberately NOT a sessionTimeout — clearSessionTimers() would disarm it during a wipe and a black-holed request would strand the loader's in-flight latch again" },
   { cls: "B", count: 1, match: "var id = setTimeout(function() {",
     why: "the sessionTimeout() implementation itself" },
   { cls: "B", count: 1, match: "var id = requestAnimationFrame(function() {",
@@ -782,7 +877,7 @@ section("diagnostic privacy: static sweep of the shipped source");
     /analytics\.log\('session_summary', sessionSafeSummary\(/.test(html));
   // Comments stripped: the source explains WHY console.clear() is not a fix,
   // and that rationale must not read as a use of it.
-  const codeOnly = html.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^[ \t]*\/\/.*$/gm, "");
+  const codeOnly = stripComments(html);
   check("console.clear() is NOT used as a privacy mechanism",
     !/console\.clear\s*\(/.test(codeOnly));
   // Storage: the CUSTOMER session must stay memory-only, but the app does
@@ -951,7 +1046,7 @@ section("diagnostic contract: the logged event set and EVENT_FIELDS agree");
   // The whole audit as a pure function, so the mutation battery below can run
   // it over sources and contracts that are not this repository's.
   function auditEventContract(source, listedNames) {
-    const code = source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^[ \t]*\/\/.*$/gm, "");
+    const code = stripComments(source);
     // DISCOVERY must be whitespace-aware, not a fixed substring. `analytics.log
     // (` and a newline before the parenthesis are both valid JavaScript, and an
     // exact "analytics.log(" search finds neither — so the call would be
@@ -997,8 +1092,27 @@ section("diagnostic contract: the logged event set and EVENT_FIELDS agree");
   // Discovery keys on the `analytics.log` call expression. Rebinding the method
   // to another name would log events this sweep never sees, so the boundary is
   // asserted rather than assumed — the honest limit of a non-parser guard.
+  // The stripper is a heuristic, and a heuristic that DELETES is the one thing
+  // in this sweep that can hide a call site. Rather than trust it, look at what
+  // it actually removed from this file: no span it deleted may contain a call
+  // shape either sweep depends on. This holds whatever the scanner did or did
+  // not get right — a desync that swallowed real code would fail here even if
+  // every other assertion still passed.
   {
-    const src = html.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^[ \t]*\/\/.*$/gm, "");
+    const deleted = [];
+    stripComments(html, deleted);
+    const CALL_SHAPE = /analytics\s*\.\s*log\s*\(|localStorage\s*\.\s*\w+\s*\(/;
+    const swallowed = deleted.filter((span) => CALL_SHAPE.test(span));
+    check(`comment stripping never deleted a call site (${deleted.length} spans removed)${swallowed.length ? " — SWALLOWED: " + swallowed.map((s) => JSON.stringify(s.slice(0, 60))).join(" | ") : ""}`,
+      swallowed.length === 0);
+    // A deletion running to end of file is the signature of a desynced scanner,
+    // and it is what the unterminated-opener branch now refuses to do.
+    const longest = deleted.reduce((a, s) => Math.max(a, s.length), 0);
+    check(`no single deletion is anywhere near file-sized (largest ${longest} bytes of ${html.length})`,
+      longest < html.length / 50);
+  }
+  {
+    const src = stripComments(html);
     check("analytics.log is never aliased, so call-site discovery is complete",
       !/(?:const|let|var)\s+\w+\s*=\s*analytics\s*\.\s*log\b/.test(src)
       && !/\{[^{}]*\blog\b[^{}]*\}\s*=\s*analytics\b/.test(src));
@@ -1031,6 +1145,38 @@ section("diagnostic contract: the logged event set and EVENT_FIELDS agree");
       m("analytics.log('alpha', p); analytics . log('new_event', p);").unlisted.join(",") === "new_event");
     check("a spaced call with a dynamic argument still fails as unparsed",
       m("analytics.log ( eventName , p);").unparsed.length === 1);
+
+    // Comment removal is part of DISCOVERY, so its own failure mode is a
+    // mutation too. The regex below is the exact literal index.html carries;
+    // read naively its `/*` opens a comment that runs to the next `*/`, and
+    // every call site in between vanishes from the sweep.
+    const regexHazard = m(
+      "analytics.log('alpha', p);\n"
+      + "var s = u.replace(/^\\.?\\/*/, '');\n"
+      + "analytics.log('new_event', p);\n"
+      + "/* a later block comment, e.g. one added in a stylesheet */\n");
+    check("MUTATION: a regex containing /* cannot swallow later call sites",
+      regexHazard.unlisted.join(",") === "new_event" && regexHazard.unparsed.length === 0);
+    check("real block comments are still removed",
+      m("analytics.log('alpha', p); /* analytics.log('new_event', p); */").unlisted.length === 0);
+    check("real line comments are still removed",
+      m("analytics.log('alpha', p);\n    // analytics.log('new_event', p);").unlisted.length === 0);
+
+    // The two ways the scanner itself can go wrong, both reported against the
+    // first version of this function. Neither is exotic: the first is ordinary
+    // markup, and this runs over an HTML file.
+    const markup = m(
+      "analytics.log('alpha', p);\n"
+      + "var s = '<i>a</i> <a href=\"x/y\" title=\"z/* q\">t</a>';\n"
+      + "analytics.log('new_event', p);\n");
+    check("MUTATION: a closing HTML tag does not start a regex scan that eats the file",
+      markup.unlisted.join(",") === "new_event" && markup.unparsed.length === 0);
+    const unterminated = m(
+      "analytics.log('alpha', p);\n"
+      + "var q = a-- / b;   /* an opener with no closer\n"
+      + "analytics.log('new_event', p);\n");
+    check("MUTATION: an unterminated block opener is emitted, never deleted to EOF",
+      unterminated.unlisted.join(",") === "new_event");
 
     const tpl = m("analytics.log(`alpha`, p); analytics.log(`beta`, p);");
     check("un-interpolated template literals are recognised",

@@ -669,6 +669,100 @@ check("focus is restored to the EXACT pre-warning element", doc.activeElement ==
   el("resultsScreen").classList.add("active");
 }
 
+// A LAYER THAT APPEARED WHILE THE DIALOG WAS OPEN OUTRANKS THE STORED OPENER.
+//
+// The data-error overlay can be raised by a data load completing behind this
+// dialog. It is a body child, so inertBackgroundForSafety() has already marked
+// it inert — which is why its own focus call is a no-op and the failure is
+// never announced — and releaseSafetyInert() then makes it reachable again a
+// few lines before the restore. Restoring the opener captured BEFORE it existed
+// puts focus behind a visible alertdialog, and isFocusRestorable() cannot catch
+// that: it tests connectedness, hidden, disabled and a box, and nothing about
+// being covered by a modal.
+{
+  const errorLayer = el("dataErrorOverlay");
+  const priorOpener = makeEl("layerOrderOpener");
+  const activeScreen = el("resultsScreen");
+  activeScreen.classList.add("active");
+  // The layer's own two controls, so "was the opener inside this layer" is a
+  // real containment question rather than one the shim answers by default.
+  const errRetry = el("dataErrorRetryBtn");
+  const errRestart = el("dataErrorRestartBtn");
+  errorLayer.descendants = [errRetry, errRestart];
+
+  // (a) the ordering that was broken: overlay appears DURING the dialog
+  priorOpener.focus();
+  S.openSafety("restart");
+  check("the dialog inerted the data-error overlay as a body child",
+    errorLayer.hasAttribute("inert"));
+  errorLayer.classList.add("visible");        // a load failed behind the dialog
+  errorLayer.setAttribute("aria-hidden", "false");
+  win.safetyDialogCancel();
+  check("closing the dialog releases the overlay's inert mark",
+    !errorLayer.hasAttribute("inert"));
+  check("REGRESSION: focus goes to the visible alertdialog, not behind it",
+    doc.activeElement === errorLayer);
+  check("...and specifically NOT to the opener stored before it existed",
+    doc.activeElement !== priorOpener);
+
+  // (b) the same handoff from the fallback branch — an unreachable opener must
+  // not route round it into the active screen underneath the overlay.
+  priorOpener.focus();
+  S.openSafety("restart");
+  priorOpener.offsetParent = null;            // opener stopped being reachable
+  win.safetyDialogCancel();
+  check("the fallback branch hands off to the overlay too",
+    doc.activeElement === errorLayer && doc.activeElement !== activeScreen);
+  priorOpener.offsetParent = {};
+
+  // (c) THE PRE-EXISTING-OVERLAY ORDERING. The layer was already up and the
+  // customer was ON one of its controls when the dialog opened, so the stored
+  // opener IS that control. Focusing the root here would re-announce the whole
+  // dialog and discard the exact position — the thing _safetyReturnFocus
+  // exists to preserve. Being visible is not grounds to outrank an opener that
+  // lives inside the visible layer.
+  errorLayer.classList.add("visible");
+  errorLayer.setAttribute("aria-hidden", "false");
+  errRetry.focus();
+  check("precondition: the customer is on Try again, overlay already up",
+    doc.activeElement === errRetry && errorLayer.classList.contains("visible"));
+  S.openSafety("timeout");
+  win.safetyDialogCancel();
+  check("REGRESSION: the exact control is restored, not the dialog root",
+    doc.activeElement === errRetry);
+  check("...and the root is specifically NOT re-focused",
+    doc.activeElement !== errorLayer);
+
+  // The other control too, so this is not passing on one hard-coded element.
+  errRestart.focus();
+  S.openSafety("restart");
+  win.safetyDialogCancel();
+  check("Start over is restored exactly too", doc.activeElement === errRestart);
+
+  // An opener inside the layer that stopped being reachable still falls back
+  // to the layer root, never to something behind it.
+  errRetry.focus();
+  S.openSafety("restart");
+  errRetry.offsetParent = null;
+  win.safetyDialogCancel();
+  check("an unreachable opener INSIDE the layer routes to the layer root",
+    doc.activeElement === errorLayer);
+  errRetry.offsetParent = {};
+
+  // (d) the ordering that already worked must keep working: the overlay is
+  // recovered and hidden while the dialog is open, so it is NOT the destination.
+  errorLayer.classList.remove("visible");
+  errorLayer.setAttribute("aria-hidden", "true");
+  priorOpener.focus();
+  S.openSafety("restart");
+  win.safetyDialogCancel();
+  check("a hidden overlay is not a focus destination",
+    doc.activeElement === priorOpener);
+
+  activeScreen.classList.remove("active");
+  drawerBtn.focus();
+}
+
 // The ordinary timeout case: nobody was interacting, so there IS no prior
 // focus. Falling back to BODY would drop a keyboard/AT user at the top of the
 // document with no context for the dialog that just closed.
@@ -982,6 +1076,14 @@ el("dreamCodeBox").hidden = false;
 el("financingSheet").hidden = false;
 el("emailSendBtn").classList.add("sent");
 el("emailSendBtn").disabled = true;
+// Phase 0.4: the data-error overlay used to be ABSENT from the layer
+// inventory. A wipe left it stranded — visible and aria-hidden="false" — over
+// the fresh Welcome screen whose Start button focusWelcomeEntry() had just
+// focused underneath it. Seeded in the state a wipe landing mid-retry finds.
+el("dataErrorOverlay").classList.add("visible");
+el("dataErrorOverlay").setAttribute("aria-hidden", "false");
+el("dataErrorOverlay").setAttribute("aria-busy", "true");
+el("dataErrorOverlay").style.display = "flex";
 // an in-flight session timer and an open drawer over the email screen
 let ghostRan = false;
 outer.sessionTimeout(() => { ghostRan = true; }, 60);
@@ -1082,6 +1184,11 @@ check("financing sheet hidden", el("financingSheet").hidden === true);
 check("discount reveal state on the handoff button cleared",
   !el("hf2DiscountBtn").classList.contains("hf2-discount-btn--revealed"));
 check("profile animate class cleared", !el("profileScreen").classList.contains("animate"));
+check("data-error overlay closed, aria-hidden RESTORED, and no longer busy",
+  !el("dataErrorOverlay").classList.contains("visible")
+  && el("dataErrorOverlay").getAttribute("aria-hidden") === "true"
+  && el("dataErrorOverlay").getAttribute("aria-busy") === "false"
+  && el("dataErrorOverlay").style.display === "none");
 check("safety dialog closed, inert and aria-hidden",
   !dialogOpen()
   && el("sessionSafetyDialog").hasAttribute("inert")
@@ -1166,6 +1273,14 @@ function grabFn(re, what) {
   return m ? m[0] : "";
 }
 const langSrc = [
+  // The bounded-fetch helpers the dictionary now goes through. Extracted so
+  // this harness executes the REAL request path rather than a shape that no
+  // longer exists — without them fetchDictionary() throws a ReferenceError on
+  // its first line and every language assertion below passes or fails for
+  // reasons having nothing to do with the language transaction.
+  grabFn(/var DATA_DEADLINE_MS = \d+;/, "DATA_DEADLINE_MS"),
+  grabFn(/function dataDeadline\(work, label, controller\) \{[\s\S]*?\n    \}/, "dataDeadline()"),
+  grabFn(/function boundedJson\(url, label, init\) \{[\s\S]*?\n    \}/, "boundedJson()"),
   grabFn(/async function fetchDictionary\(lang\) \{[\s\S]*?\n    \}/, "fetchDictionary()"),
   grabFn(/function requestedLangIsSupported\(lang\) \{[\s\S]*?\n    \}/, "requestedLangIsSupported()"),
   grabFn(/function updateLanguageControls\(\) \{[\s\S]*?\n    \}/, "updateLanguageControls()"),
@@ -1205,6 +1320,10 @@ const lwin = { scrollTo() {}, _compareSelected: [], _setIdleScreen() {} };
 const lcalls = [];
 const langHarness = new Function(
   "document", "window", "fetch", "STORE_CONFIG_IN", "DICT_EN", "rec", "out",
+  // The fetch deadline schedules a timer. Driven by the fake clock so a
+  // deliberately unresolved request in the race below cannot hold a real
+  // 12-second timer open and stall the suite.
+  "setTimeout", "clearTimeout",
   `
   "use strict";
   var STORE_CONFIG = STORE_CONFIG_IN;
@@ -1240,7 +1359,8 @@ const langHarness = new Function(
 );
 const lout = {};
 langHarness(ldoc, lwin, fakeFetch, { languages: ["en", "es"] },
-  Object.assign({ __id: "EN" }, dictEn), (n) => lcalls.push(n), lout);
+  Object.assign({ __id: "EN" }, dictEn), (n) => lcalls.push(n), lout,
+  clock.setTimeout, clock.clearTimeout);
 
 // Quiz is mid-flight on the question screen, with contact values entered.
 ldoc.getElementById("questionScreen").classList.add("active");
@@ -1255,9 +1375,9 @@ check("the EN control is pressed immediately, before any fetch resolves",
   && langBtns[1].getAttribute("aria-pressed") === "false");
 
 // Resolve OUT OF ORDER: the newest first, then the stale Spanish response.
-pendingFetches[2].resolve({ json: async () => Object.assign({ __id: "EN" }, dictEn) });
-pendingFetches[0].resolve({ json: async () => Object.assign({ __id: "EN" }, dictEn) });
-pendingFetches[1].resolve({ json: async () => Object.assign({ __id: "ES" }, dictEs) });
+pendingFetches[2].resolve({ ok: true, status: 200, json: async () => Object.assign({ __id: "EN" }, dictEn) });
+pendingFetches[0].resolve({ ok: true, status: 200, json: async () => Object.assign({ __id: "EN" }, dictEn) });
+pendingFetches[1].resolve({ ok: true, status: 200, json: async () => Object.assign({ __id: "ES" }, dictEs) });
 await Promise.all([p1, p2, p3]);
 await settleAll();
 check("REGRESSION: a late Spanish response cannot win — dictionary is English",
@@ -1301,11 +1421,11 @@ check("a language the retailer does not offer is refused",
 check("the refusal did not change the current language", lout.lang() === "en");
 {
   const p = lout.switchLanguage("es");
-  pendingFetches[0].resolve({ json: async () => Object.assign({ __id: "ES" }, dictEs) });
+  pendingFetches[0].resolve({ ok: true, status: 200, json: async () => Object.assign({ __id: "ES" }, dictEs) });
   await p; await settleAll();
   check("a supported language IS applied", lout.dictKey() === "ES" && lout.lang() === "es");
   const pen = lout.switchLanguage("en");
-  pendingFetches[1].resolve({ json: async () => Object.assign({ __id: "EN" }, dictEn) });
+  pendingFetches[1].resolve({ ok: true, status: 200, json: async () => Object.assign({ __id: "EN" }, dictEn) });
   await pen; await settleAll();
   check("English is always available as the reset target",
     lout.dictKey() === "EN" && lout.lang() === "en");

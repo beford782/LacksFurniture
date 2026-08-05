@@ -4,9 +4,13 @@
 not a grant of approval — see the open-decisions register.**
 
 **Last updated:** 2026-08-05
-**Baseline:** `88f1e89882b4da30f7de5da903cea6e66e644549` — GitHub `main`, the merge
-commit of PR #13. GitHub state is authoritative; a local checkout never is.
-**Next implementation item:** Phase 0.4.
+**Baseline:** `7fa8390a233614fdde60eb77ee65bc732f2be794` — GitHub `main`, the merge
+commit of PR #14 (2026-08-05). GitHub state is authoritative; a local checkout
+never is.
+**Next implementation item:** Phase 0.5. Phase 0.4 is implemented on
+`claude/phase0.4-data-error-recovery` (PR #15); on merge it becomes ⏳, not ✅,
+because its hardware verification is outstanding — so it does not come back
+round as the next item.
 
 **Scope:** the Lacks deployment. Migrating store-agnostic work back to the WGR
 template is a real goal but has no owner, no phase and no schedule here; treat it
@@ -198,7 +202,7 @@ not restated here.
 ### 0.2 — This roadmap ✅
 
 Added in PR #11, corrected in PR #12, reconciled against the operating premise and
-shipped state in the PR that carries this revision.
+shipped state in PR #14 (merged `7fa8390`, 2026-08-05).
 
 ### 0.3 — `showScreen()` moves focus and announces ✅
 
@@ -235,7 +239,46 @@ succeeded on that merge commit.
 **Known limitation carried forward:** question-to-question changes are not
 announced. See Phase 1.2.
 
-### 0.4 — Recovery from the data-error overlay ⬜ — NEXT
+### 0.4 — Recovery from the data-error overlay ⏳
+
+**The ⏳ above is the post-merge mark, written in advance so this section does
+not go stale the hour PR #15 lands. Until it merges the item is 🔨 on
+`claude/phase0.4-data-error-recovery`.** ⏳ is correct the moment the code is on
+`main`, and it is where this item stops: the named verification it is waiting on
+is hardware, and that has not happened.
+
+What the branch carries, against the requirements below:
+the loader is extracted from its IIFE into a named, re-invocable `loadAppData()`
+driven by a declarative `DATA_SOURCES` table (core vs independently non-fatal
+accessories preserved, per-resource so a retry re-fetches only what is missing);
+bilingual **Try again** and **Start over** controls on the overlay, the latter
+delegating to `window.startOver()` with no second wipe implementation; the
+failure flag and the poll counter cleared on recovery; `aria-hidden` restored;
+`dataErrorOverlay` added to `SESSION_LAYERS` and `dataErrorLive` to
+`SESSION_TEXT_IDS`; and load-generation plus session-epoch guards so a
+superseded or post-wipe completion updates state without raising a layer,
+announcing, or moving focus. Evidence: `tests/data_error_recovery_check.mjs`
+(new, executes the real extracted code; every safety property named above is
+mutated and the suite must fail when it is removed) and the wipe matrix in
+`tests/session_safety_check.mjs`. The count is deliberately not stated here — it
+went stale twice inside three commits, and the property is what matters.
+
+Review rounds after the first implementation added the rest of what "the route
+is not recovery if it can be terminal" actually requires, and each came from a
+defect found rather than from the original plan: **bounded deadlines** on every
+data and dictionary request, because an unbounded fetch on a black-holed
+network left the in-flight latch stuck and Retry answering "still trying"
+forever; an **applier-aware verdict**, because fetching the data and being able
+to render it are different things and a throwing applier reported success;
+**mattress schema validation with a narrow assign**, because the scoring pass
+iterates every top-level key and the results pass slices all three tiers, both
+after the twelfth question and neither wrapped; **dictionary identity**, because
+a Spanish request that fell back to English recorded itself as Spanish and was
+never retried; and **modal ownership in both directions** — the overlay yields
+Tab to a layer above it, and a safety dialog closing over a visible overlay hands
+focus to the overlay instead of restoring an opener now behind it.
+
+The marker becomes ⏳ — not ✅ — on merge, for the reason stated below.
 
 The overlay is terminal today. `showDataError()` sets `_dataLoadFailed`, writes one
 sentence, and shows a full-viewport layer that contains **no interactive element of
@@ -372,9 +415,9 @@ Not a feature. The acceptance gate for Phase 0: session, privacy, accessibility,
 analytics-contract and financing-isolation protections remain intact.
 
 **Exit:** the full repository suite is green — scoring isolation, session async and
-privacy, session safety, financing totality, validation and quiz validation, the
-QR suite, workbook validation and the strict golden bundle — and `git diff --check`
-is clean.
+privacy, session safety, data-error recovery, financing totality, validation and
+quiz validation, the QR suite, workbook validation and the strict golden bundle —
+and `git diff --check` is clean.
 
 ---
 
@@ -1105,8 +1148,9 @@ document, not here.
    (`1aef27d`).
 2. ✅ **Screen-transition focus and announcement** — 0.3. PR #13, head `1574c53`,
    merged `88f1e89`.
-3. 🔨 **Roadmap reconciliation** — this revision.
-4. ⬜ **Remaining Phase 0** — 0.4, then 0.5, 0.6, 0.7.
+3. ✅ **Roadmap reconciliation** — 0.2. PR #14 (`7fa8390`).
+4. 🔨 **Remaining Phase 0** — 0.4 in review (PR #15; ⏳ on merge, hardware
+   verification outstanding), then 0.5, 0.6, 0.7.
 5. ⬜ **The visible redesign** — Phase 1. Start the catalog reason-content
    authoring (1.3's gated content) in parallel and early; it is not engineering
    work, and it gates **reason-led/personalised-card completion** — not the card
@@ -1136,7 +1180,7 @@ described behaviour is the durable anchor.
 | 8 | Consultation Summary condition strings are quiz option labels resolved at render time, which is why 0.6 needs a separate mapping rather than a relabel |
 | 9 | Of 8 screens, `welcomeScreen` and `questionScreen` render no heading, and the Sleep Brief heading is empty until runtime — the basis for 0.3's destination policy |
 | 10 | Question-to-question advance renders without a screen transition, so 0.3 does not announce it; the renderer also runs on every option tap and on language switch |
-| 11 | The data-error overlay contains no interactive element, the failure flag is never cleared, and the overlay is absent from the session-layer close list |
+| 11 | The data-error overlay was terminal *before* 0.4 — no interactive element, a failure flag never cleared, and absent from the session-layer close list. These are the findings 0.4 was written against, not current state |
 | 12 | Compare works from the Consultation Summary only; the card-level control is never rendered and its tray is unreachable |
 | 13 | Archetype nicknames are computed but never reach the DOM; the visible heading is a fixed bilingual string |
 | 14 | `incoming/lacks_catalog_selection.json` carries 26 Queen-only SKU/price/regular-price observations dated 2026-07-30, outside the production generation path |

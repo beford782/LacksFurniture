@@ -54,7 +54,9 @@ jobs:
   verify:
     name: Full suite (18 checks)
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    # Raised from 20 for the mutation sweep, which re-runs the suites once per
+    # manifest entry and takes ~7 minutes locally. The rest of the job is ~3.
+    timeout-minutes: 30
     steps:
       - name: Check out the tree
         uses: actions/checkout@v4
@@ -254,6 +256,24 @@ jobs:
       # unclassified delayed work cannot enter the customer journey silently.
       - name: session async + diagnostic privacy
         run: node tests/session_async_check.mjs
+
+      # Phase 0.4. Executes the real extracted data loader, the recovery
+      # controls and the real session-epoch primitives against a DOM shim, a
+      # programmable fetch and a fake clock. Pins the regression that made the
+      # data-error overlay terminal — it contained no interactive element, and
+      # the only way out was a page reload this file forbids — plus the
+      # stale-completion rules that stop a late load speaking over a wiped
+      # session. Every safety property is mutated and must fail when removed.
+      - name: data-error recovery
+        run: node tests/data_error_recovery_check.mjs
+
+      # One level up from the suites: for each safety property in the manifest,
+      # delete it from a COPY of the tree and require a suite to go red. A
+      # survivor is a property with no effective test, and a mutation that fails
+      # to apply is a stale manifest entry — both fail this step. Nothing is
+      # written inside the repository; the sandbox is a temp directory.
+      - name: mutation sweep (are the suites non-vacuous?)
+        run: node tests/mutation_sweep.mjs
 
       # ---- Tree hygiene -----------------------------------------------------
       - name: git diff --check (whitespace and conflict markers)
