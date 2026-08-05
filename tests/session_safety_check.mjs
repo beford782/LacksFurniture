@@ -1522,7 +1522,9 @@ check("[Gate 2A] the two headingless div containers carry role=region",
 check("[Gate 2A] #welcomeScreen is a <main>, so its name announces without a role",
   /<main class="main screen active" id="welcomeScreen"/.test(html));
 check("[Gate 2A] container names are applied as aria-label from the dictionary",
-  /SCREEN_NAME_KEYS\[screenId\]/.test(html) && /setAttribute\('aria-label', t\(SCREEN_NAME_KEYS/.test(html));
+  /var nameKey = SCREEN_NAME_KEYS\[screenId\];/.test(html)
+  && /var name = t\(nameKey\);/.test(html)
+  && /setAttribute\('aria-label', name\)/.test(html));
 
 // -- F3: the profile heading is focused EXACTLY once ------------------------
 {
@@ -1591,6 +1593,19 @@ check("[Gate 2A] container names are applied as aria-label from the dictionary",
   check(`[Gate 2A] the two sets are exactly equal (${namedScreens.length} screens)`,
     namedScreens.length === nameableScreens.length
     && namedScreens.every((s, i) => s === nameableScreens[i]));
+
+  // A missing dictionary entry must never become the spoken name. t() returns
+  // the KEY when the dictionary lacks it, so without a guard a failed fetch or
+  // a stale cached dictionary would label every container with its own
+  // identifier and assistive technology would announce "screen dot question".
+  const labelLoop = (html.match(/if \(typeof SCREEN_NAME_KEYS !== 'undefined'\) \{[\s\S]*?\n      \}/) || [""])[0];
+  check("[Gate 2A] the screen-label loop was located", labelLoop.length > 0);
+  check("[Gate 2A] a missing dictionary key is never written as the accessible name",
+    /name !== nameKey/.test(labelLoop));
+  check("[Gate 2A] ...and the stale label is removed rather than left behind",
+    /removeAttribute\('aria-label'\)/.test(labelLoop));
+  check("[Gate 2A] the guard matches the data-i18n loop's existing fail-closed shape",
+    /if \(val !== key\) \{/.test(html));
 }
 
 // -- F5/F6/F7 + A2: every refusal gate, focus AND speech ---------------------

@@ -11217,7 +11217,19 @@
       if (typeof SCREEN_NAME_KEYS !== 'undefined') {
         Object.keys(SCREEN_NAME_KEYS).forEach(function(screenId) {
           var el = document.getElementById(screenId);
-          if (el && el.setAttribute) el.setAttribute('aria-label', t(SCREEN_NAME_KEYS[screenId]));
+          if (!el || !el.setAttribute) return;
+          var nameKey = SCREEN_NAME_KEYS[screenId];
+          var name = t(nameKey);
+          // FAIL CLOSED on a missing key, exactly as the data-i18n loop above
+          // does. t() returns the KEY when the dictionary lacks it, so a failed
+          // fetch or a stale cached dictionary without the screen.* entries
+          // would otherwise label every container with its own identifier and
+          // a screen reader would announce "screen dot question". An unnamed
+          // region is a degraded announcement; a spoken internal identifier is
+          // a defect. The stale attribute is removed rather than left behind,
+          // so a name can never outlive the dictionary that justified it.
+          if (name !== nameKey) el.setAttribute('aria-label', name);
+          else if (el.removeAttribute) el.removeAttribute('aria-label');
         });
       }
       // The safety dialog's copy is owned by renderSafetyDialog(), which
