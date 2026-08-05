@@ -9909,6 +9909,21 @@
       </div>
     </section>
 
+    <!-- Trial priorities (0.5): the engine's 1-3 consultation priorities, in
+         engine order, above the finalists they explain. Existing section
+         pattern; the <ol> is deliberately BARE - native ordered-list semantics,
+         no class - because the only list classes in the app belong to the
+         Sleep Brief, which 1.1 is about to rewrite, and coupling this screen to
+         those would hand 1.1 a silent breakage. Provisional presentation,
+         re-decided in 1.6 as inherited design debt. Rendered by
+         renderHf2Priorities(); the WHOLE section (label included) hides when no
+         valid priority state exists - never an empty heading over a stale
+         list. -->
+    <section class="hf2-review-section" id="hf2PrioritiesSection" style="display:none">
+      <div class="hf2-review-section__label" id="hf2PrioritiesLabel">What we will test together</div>
+      <ol id="hf2Priorities"></ol>
+    </section>
+
     <section class="hf2-review-section">
       <div class="hf2-review-section__header">
         <div>
@@ -13206,6 +13221,16 @@
           kind: kind,
           nameEn: nameEn,
           nameEs: nameEs,
+          // The resolved fields below are what THIS render reads — untouched, so
+          // the Sleep Brief's output is unchanged by construction. The *En/*Es
+          // pairs alongside are 0.5's widening: the reason and testing prose
+          // used to exist bilingually only as arguments on this call's stack,
+          // resolved here and discarded, which is why nothing downstream could
+          // re-render them in the other language.
+          whyEn: whyEn,
+          whyEs: whyEs,
+          testEn: testEn,
+          testEs: testEs,
           name: es ? nameEs : nameEn,
           why: es ? whyEs : whyEn,
           test: es ? testEs : testEn
@@ -13404,8 +13429,22 @@
         en: 'Sleep brief · ' + briefFocusByLang.en,
         es: 'Resumen de sueño · ' + briefFocusByLang.es
       };
+      // Session-owned, bilingual, engine order (0.5). Each element KEEPS its
+      // {en, es} name pair — renderResultsTrialFocus() reads elements through
+      // L(item), and L() returns item[currentLang], so the Results derivative
+      // is zero lines changed — and gains the reason and testing prose the
+      // Consultation Summary and the results email render. Position is the
+      // order; there is deliberately no rank, score or kind field here, and
+      // nothing beyond these customer-facing strings ever leaves this object.
+      // Reassigned wholesale on every profile render (never appended), and
+      // reset to [] by the authoritative wipe.
       analytics.trialFocus = topPriorities.map(function(priority) {
-        return { en: priority.nameEn, es: priority.nameEs };
+        return {
+          en: priority.nameEn,
+          es: priority.nameEs,
+          why: { en: priority.whyEn, es: priority.whyEs },
+          test: { en: priority.testEn, es: priority.testEs }
+        };
       });
 
       var priorityLabel = function(kind) {
@@ -14894,6 +14933,21 @@
         lang: currentLang,
         allMatches: allMatches,
         accessories: accList,
+        // Trial priorities (0.5): at most three entries of exactly
+        // name/reason/test, pre-localized to this payload's lang — the same
+        // convention every other content field follows. Projected fresh from
+        // the stored bilingual state so nothing else can ride along: no score,
+        // no kind, no rank, no id, no raw answer. Position is the order.
+        priorities: (Array.isArray(analytics.trialFocus) ? analytics.trialFocus : [])
+          .slice(0, 3)
+          .map(function(item) {
+            return {
+              name: (item && (item[currentLang] || item.en)) || '',
+              reason: (item && item.why && (item.why[currentLang] || item.why.en)) || '',
+              test: (item && item.test && (item.test[currentLang] || item.test.en)) || ''
+            };
+          })
+          .filter(function(p) { return p.name; }),
         emailPromotions: emailPromotions,
         promoSpanishDraft: promoSpanishDraft,
         promoScenario: (STORE_CONFIG.promotions && STORE_CONFIG.promotions.activeScenario) || '',
@@ -16746,6 +16800,9 @@
           ? 'Un resumen rápido de lo que importa, lo que se sintió mejor y lo que debe quedar en la lista.'
           : 'A quick recap of what matters, what felt best, and what to keep on the shortlist.',
         hf2NeedsLabel: es ? 'Lo que queríamos resolver' : 'What we set out to solve',
+        // Reuses the Sleep Brief's approved heading pair verbatim — same
+        // content, same name, zero invented copy (0.5).
+        hf2PrioritiesLabel: es ? 'Lo que probaremos juntos' : 'What we will test together',
         hf2FinalistsLabel: es ? 'Tus finalistas' : 'Your finalists',
         hf2FinalistsHint: es ? 'Los finalistas guardados se envían; las sugerencias son opciones para comparar.' : 'Saved finalists are sent; suggestions remain comparison options.',
         hf2SystemLabel: es ? 'Sistema de Sueño seleccionado' : 'Selected Sleep System',
@@ -16768,6 +16825,7 @@
       var editSystemBtn = document.getElementById('hf2EditSystemBtn');
       if (editSystemBtn) editSystemBtn.textContent = es ? 'Editar Sistema de Sueño' : 'Edit Sleep System';
       renderHf2Brief();
+      renderHf2Priorities();
       renderHf2Picks();
       renderHf2Accessories();
       renderHf2DiscountButton();
@@ -16833,6 +16891,46 @@
       var profileParts = [position].concat(conditions, [firmness, temperature])
         .filter(function(p) { return p && p.length; });
       if (profile) profile.textContent = profileParts.join(' · ');
+    }
+
+    // ---- Trial priorities (0.5) ---------------------------------------------
+    // Renders the stored consultation priorities — the widened
+    // analytics.trialFocus — as a real ordered list, in the array's order,
+    // resolved to the ACTIVE language at render time. No recomputation happens
+    // here and none may: the profile renderer owns computation, this function
+    // owns display, and a language switch on this screen re-runs renderHf2()
+    // which lands back here reading the same stored array.
+    //
+    // An entry is valid only when it carries a resolvable name AND both prose
+    // pairs. If nothing valid is stored (fresh session, wiped session, or a
+    // pre-widening shape), the WHOLE section hides — the label must never sit
+    // over an empty or stale list.
+    function renderHf2Priorities() {
+      var section = document.getElementById('hf2PrioritiesSection');
+      var list = document.getElementById('hf2Priorities');
+      if (!section || !list) return;
+      var es = currentLang === 'es';
+      var stored = (typeof analytics !== 'undefined' && Array.isArray(analytics.trialFocus))
+        ? analytics.trialFocus : [];
+      var valid = stored.filter(function(item) {
+        return item && L(item)
+          && item.why && (item.why[currentLang] || item.why.en)
+          && item.test && (item.test[currentLang] || item.test.en);
+      });
+      if (!valid.length) {
+        list.innerHTML = '';
+        section.style.display = 'none';
+        return;
+      }
+      list.innerHTML = valid.map(function(item) {
+        return '<li>'
+          + '<strong>' + escapeHtml(L(item)) + '</strong> — '
+          + escapeHtml(item.why[currentLang] || item.why.en)
+          + '<br><em>' + (es ? 'Pruébalo: ' : 'Try this: ') + '</em>'
+          + escapeHtml(item.test[currentLang] || item.test.en)
+          + '</li>';
+      }).join('');
+      section.style.display = '';
     }
 
     // Resolve a human-readable label for a single quiz answer ID.
@@ -18332,7 +18430,7 @@
       'drawerName', 'drawerDifferentiators', 'drawerTryPrompts', 'drawerPromotionDetail',
       'compareCols', 'compareTraySlots',
       'hf2PicksList', 'hf2AccessoriesList', 'hf2BriefWho', 'hf2BriefContext',
-      'hf2BriefProfile', 'hf2SleepSystemSection',
+      'hf2BriefProfile', 'hf2SleepSystemSection', 'hf2Priorities',
       'emailPreview', 'emailRecap', 'accessoriesGrid'
     ];
 
@@ -18374,6 +18472,10 @@
       { id: 'emailCaptureView', display: '' },
       { id: 'hf2DiscountBtn', remove: ['hf2-discount-btn--revealed'] },
       { id: 'hf2RsaPanel', remove: ['is-open'] },
+      // 0.5: the trial-priorities section returns to hidden on wipe, so even a
+      // path that showed hf2 without re-rendering could not expose the prior
+      // customer's label over a cleared list.
+      { id: 'hf2PrioritiesSection', display: 'none' },
       { id: 'profileScreen', remove: ['animate'] },
       { id: 'dreamCodeBox', hiddenAttr: true, display: 'none' },
       { id: 'financingSheet', hiddenAttr: true },

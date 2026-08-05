@@ -4,13 +4,12 @@
 not a grant of approval — see the open-decisions register.**
 
 **Last updated:** 2026-08-05
-**Baseline:** `7fa8390a233614fdde60eb77ee65bc732f2be794` — GitHub `main`, the merge
-commit of PR #14 (2026-08-05). GitHub state is authoritative; a local checkout
+**Baseline:** `572d405238a16649dfe7e64288637ae6e5b4a1bc` — GitHub `main`, the merge
+commit of PR #15 (2026-08-05). GitHub state is authoritative; a local checkout
 never is.
-**Next implementation item:** Phase 0.5. Phase 0.4 is implemented on
-`claude/phase0.4-data-error-recovery` (PR #15); on merge it becomes ⏳, not ✅,
-because its hardware verification is outstanding — so it does not come back
-round as the next item.
+**Next implementation item:** Phase 0.6. Phase 0.5 ships in the PR that carries
+this revision; 0.4's code is merged and the item holds at ⏳ on its outstanding
+hardware verification, so it does not come back round as the next item.
 
 **Scope:** the Lacks deployment. Migrating store-agnostic work back to the WGR
 template is a real goal but has no owner, no phase and no schedule here; treat it
@@ -241,13 +240,14 @@ announced. See Phase 1.2.
 
 ### 0.4 — Recovery from the data-error overlay ⏳
 
-**The ⏳ above is the post-merge mark, written in advance so this section does
-not go stale the hour PR #15 lands. Until it merges the item is 🔨 on
-`claude/phase0.4-data-error-recovery`.** ⏳ is correct the moment the code is on
-`main`, and it is where this item stops: the named verification it is waiting on
-is hardware, and that has not happened.
+**Code merged: PR #15, merge commit `572d405` (2026-08-05). The item holds at ⏳
+— not ✅ — because its named verification is hardware, and that has not
+happened.** The retry and clean-restart routes are recorded as unverified on any
+device in `docs/kiosk-device-hardening.md`, whose checklist for them stands
+unchecked. Reporting 0.4 as done on the strength of the merged PR is a
+misreport.
 
-What the branch carries, against the requirements below:
+What the merged code carries, against the requirements below:
 the loader is extracted from its IIFE into a named, re-invocable `loadAppData()`
 driven by a declarative `DATA_SOURCES` table (core vs independently non-fatal
 accessories preserved, per-resource so a retry re-fetches only what is missing);
@@ -278,15 +278,13 @@ never retried; and **modal ownership in both directions** — the overlay yields
 Tab to a layer above it, and a safety dialog closing over a visible overlay hands
 focus to the overlay instead of restoring an opener now behind it.
 
-The marker becomes ⏳ — not ✅ — on merge, for the reason stated below.
-
-The overlay is terminal today. `showDataError()` sets `_dataLoadFailed`, writes one
-sentence, and shows a full-viewport layer that contains **no interactive element of
-any kind**. There is no route out: `startQuiz` short-circuits back to it on every
-tap, screen-transition focus is refused while `_dataLoadFailed` is set, and the
-failure surfaces on Welcome — where the persistent Restart control is deliberately
-hidden. With a salesperson and customer both looking at it, this is a dead tablet
-mid-conversation.
+The overlay was terminal before this item. `showDataError()` set `_dataLoadFailed`,
+wrote one sentence, and showed a full-viewport layer that contained **no interactive
+element of any kind**. There was no route out: `startQuiz` short-circuited back to
+it on every tap, screen-transition focus was refused while `_dataLoadFailed` was
+set, and the failure surfaced on Welcome — where the persistent Restart control is
+deliberately hidden. With a salesperson and customer both looking at it, this was a
+dead tablet mid-conversation.
 
 Requirements:
 
@@ -329,7 +327,53 @@ hardware, precisely because verifying one says nothing about another. 0.4's exit
 condition includes adding the new route to that table and re-verifying on the
 mounted device.
 
-### 0.5 — Route priorities content to the Consultation Summary and email ⬜
+### 0.5 — Route priorities content to the Consultation Summary and email ⏳
+
+**Ships in the PR that carries this revision (branch
+`claude/phase0.5-priority-handoff`); ⏳ reads as "complete on this PR's merge" —
+its exit is entirely code-level, so no verification survives the merge the way
+0.4's hardware gate does. On merge this item is done and 0.6 is next.**
+
+**What shipped, so nobody re-derives it wrongly:**
+
+- **The engine produces one to three priorities, not always three.** A solo
+  side sleeper with no issues and mid firmness yields exactly two. Both new
+  surfaces render the engine's count in the engine's order — never padded,
+  never synthesised. (The earlier "the three computed priorities" phrasing in
+  this section's exit was corrected to match 1.1's "1–3 priority cards", which
+  had it right.)
+- **The store is the widened `analytics.trialFocus`.** Each element keeps its
+  `{en, es}` name pair — so `renderResultsTrialFocus()` and its `L(item)` read
+  are zero lines changed — and gains `why: {en, es}` and `test: {en, es}`,
+  captured from the bilingual arguments `addPriority` already received and
+  discarded. No new session variable, no rank field, no score, no kind: the
+  wipe line and its post-wipe assertion were already in place.
+- **The Consultation Summary section** sits between "What we set out to solve"
+  and the finalists: the existing `hf2-review-section` pattern, a bare `<ol>`
+  with no class (native ordered-list semantics; reusing the Sleep Brief's
+  `.noct-profile-priority-*` classes would have coupled this screen to the
+  exact classes 1.1 replaces), hidden entirely — label and all — when no valid
+  priority state exists. Label reuses the approved "What we will test
+  together" / "Lo que probaremos juntos" pair.
+- **The email carries a bounded `priorities` field**: at most three entries of
+  exactly `name`/`reason`/`test`, pre-localized to the payload's `lang` at send
+  time. Code.gs treats it as untrusted (array-coerced, capped, per-field
+  `_safeText`, allowlist-projected into `safeData`, escaped at every HTML
+  interpolation) and renders it in the HTML email after the Sleep Brief line
+  and in the plain-text fallback in the same order. The sheet row is untouched
+  — priorities are email content, not a lead-record column.
+- **Known, accepted near-duplication — recorded as 1.6 email debt:** the
+  `sleepProfile` line is largely the lowercased priority names, and the new
+  block repeats those names with their reason and testing text. Suppressing the
+  brief line was rejected as non-additive; 1.6 owns the email surface and
+  re-decides this alongside the on-screen presentation. **Both the hf2 section
+  and the email block are 1.6 inherited debt.**
+- **Within-session staleness is a latent property, not new:** stored priorities
+  refresh only when `showProfileScreen()` re-runs, which today is guaranteed
+  before hf2 is reachable after any answer edit (the only forward path off
+  Review re-renders the profile). `analytics.profileBriefByLang` and the
+  pre-0.5 `trialFocus` had the same property. 1.6's navigation rework must not
+  open a Review → hf2 path without revisiting this.
 
 **Additive only. This item does not change the Sleep Brief.**
 
@@ -350,9 +394,9 @@ fields and Code.gs changes. The Results screen already renders a condensed
 derivative of the same three priority names, so a third surface must be designed
 against the two that exist, not added blind.
 
-**Exit:** the three computed priorities render on the Consultation Summary and in
-the results email, in the order the engine produces them, bilingual, with no
-change to the Sleep Brief.
+**Exit:** the computed priorities (one to three, at the engine's length) render on
+the Consultation Summary and in the results email, in the order the engine
+produces them, bilingual, with no change to the Sleep Brief.
 
 **Presentation constraint — a limit, not a licence.** The on-screen addition is
 **one** new section, using the existing section pattern and ordered-list
@@ -1149,8 +1193,9 @@ document, not here.
 2. ✅ **Screen-transition focus and announcement** — 0.3. PR #13, head `1574c53`,
    merged `88f1e89`.
 3. ✅ **Roadmap reconciliation** — 0.2. PR #14 (`7fa8390`).
-4. 🔨 **Remaining Phase 0** — 0.4 in review (PR #15; ⏳ on merge, hardware
-   verification outstanding), then 0.5, 0.6, 0.7.
+4. 🔨 **Remaining Phase 0** — 0.4 merged (PR #15, `572d405`; ⏳, hardware
+   verification outstanding), 0.5 in the PR carrying this revision, then 0.6,
+   0.7. Phase 0 cannot close while 0.4's hardware gate is open.
 5. ⬜ **The visible redesign** — Phase 1. Start the catalog reason-content
    authoring (1.3's gated content) in parallel and early; it is not engineering
    work, and it gates **reason-led/personalised-card completion** — not the card

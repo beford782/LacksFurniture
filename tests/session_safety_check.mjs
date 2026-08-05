@@ -1003,7 +1003,12 @@ A.allMatches = [{ id: "g1", name: SENTINEL }];
 A.recommendedAccessories = [SENTINEL];
 A.selectedAccessories = [SENTINEL];
 A.profileName = SENTINEL; A.profileBrief = SENTINEL;
-A.profileBriefByLang = { en: SENTINEL }; A.trialFocus = [SENTINEL];
+A.profileBriefByLang = { en: SENTINEL };
+// The 0.5 widened element shape: the wipe must clear the prose pairs along
+// with the names — one sentinel-bearing element in the real stored shape, so
+// the session_ended-diagnostic assertion covers the new fields for free.
+A.trialFocus = [{ en: SENTINEL, es: SENTINEL,
+  why: { en: SENTINEL, es: SENTINEL }, test: { en: SENTINEL, es: SENTINEL } }];
 A.profileSubtitle = SENTINEL; A.profileSubtitleByLang = { en: SENTINEL };
 A.events = [{ ev: "quiz_started" }, { ev: "results_viewed" }];
 
@@ -1033,7 +1038,7 @@ const REQUIRED_CONTENT_IDS = [
   "drawerName", "drawerDifferentiators", "drawerTryPrompts", "drawerPromotionDetail",
   "compareCols", "compareTraySlots",
   "hf2PicksList", "hf2AccessoriesList", "hf2BriefWho", "hf2BriefContext",
-  "hf2BriefProfile", "hf2SleepSystemSection",
+  "hf2BriefProfile", "hf2SleepSystemSection", "hf2Priorities",
   "emailPreview", "emailRecap", "accessoriesGrid",
 ];
 const REQUIRED_TEXT_IDS = [

@@ -36,6 +36,12 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 // and in the safe direction — and the fix is to widen that entry.
 const DEFAULT_SUITES = ["tests/data_error_recovery_check.mjs"];
 const WITH_SESSION = DEFAULT_SUITES.concat(["tests/session_safety_check.mjs"]);
+// Phase 0.5 observers. The consultation suite owns the compute/state/hf2/
+// payload properties; the email suite owns the Code.gs ones; wipe-inventory
+// properties need the session suite too.
+const PRIORITIES = ["tests/consultation_priorities_check.mjs"];
+const PRIORITIES_WITH_SESSION = PRIORITIES.concat(["tests/session_safety_check.mjs"]);
+const EMAIL_PRIORITIES = ["tests/email_priorities_check.mjs"];
 
 // ---------------------------------------------------------------------------
 // THE MANIFEST. [label, find, replace] — `find` may span lines; index.html is
@@ -249,6 +255,119 @@ const MUTATIONS = [
     'ontouchend="event.preventDefault();window.dataErrorRetry();"', ""],
   ["the rule that makes the layer visible is deleted",
     "#dataErrorOverlay.visible { display:flex !important; }", ""],
+
+  // ==== Phase 0.5 — consultation priorities ================================
+  // --- the engine's order, count and bilingual store -----------------------
+  ["the priority sort is reversed",
+    "priorities.sort(function(a, b) { return b.score - a.score; });",
+    "priorities.sort(function(a, b) { return a.score - b.score; });", PRIORITIES],
+  ["the priority sort is removed",
+    "priorities.sort(function(a, b) { return b.score - a.score; });", "", PRIORITIES],
+  ["the top-three bound is widened",
+    "var topPriorities = priorities.slice(0, 3);",
+    "var topPriorities = priorities.slice(0, 10);", PRIORITIES],
+  ["the Sleep Brief list renders reversed",
+    "prioritiesEl.innerHTML = topPriorities.map(function(p) {",
+    "prioritiesEl.innerHTML = topPriorities.slice().reverse().map(function(p) {", PRIORITIES],
+  ["the stored state loses its Spanish prose",
+    "why: { en: priority.whyEn, es: priority.whyEs },",
+    "why: { en: priority.whyEn, es: priority.whyEn },", PRIORITIES],
+  ["the stored state loses the testing prompts",
+    "test: { en: priority.testEn, es: priority.testEs }",
+    "test: { en: priority.testEn, es: '' }", PRIORITIES],
+
+  // --- the Consultation Summary render -------------------------------------
+  ["the hf2 render reverses the stored order",
+    "list.innerHTML = valid.map(function(item) {",
+    "list.innerHTML = valid.slice().reverse().map(function(item) {", PRIORITIES],
+  ["the hf2 section never hides on empty state",
+    "list.innerHTML = '';\n        section.style.display = 'none';\n        return;",
+    "list.innerHTML = '';\n        section.style.display = '';\n        return;", PRIORITIES],
+  ["the hf2 render drops the reason text",
+    "+ escapeHtml(item.why[currentLang] || item.why.en)",
+    "+ ''", PRIORITIES],
+  ["the hf2 render drops the testing prompt",
+    "+ escapeHtml(item.test[currentLang] || item.test.en)",
+    "+ ''", PRIORITIES],
+  ["the hf2 render stops escaping",
+    "+ '<strong>' + escapeHtml(L(item)) + '</strong>",
+    "+ '<strong>' + L(item) + '</strong>", PRIORITIES],
+  ["the hf2 label loses its Spanish",
+    "hf2PrioritiesLabel: es ? 'Lo que probaremos juntos' : 'What we will test together',",
+    "hf2PrioritiesLabel: 'What we will test together',", PRIORITIES],
+
+  // --- the payload projection ----------------------------------------------
+  ["the payload ships the stored order reversed",
+    "priorities: (Array.isArray(analytics.trialFocus) ? analytics.trialFocus : [])",
+    "priorities: (Array.isArray(analytics.trialFocus) ? analytics.trialFocus.slice().reverse() : [])",
+    PRIORITIES],
+  ["the payload cap is widened",
+    ".slice(0, 3)\n          .map(function(item) {",
+    ".slice(0, 10)\n          .map(function(item) {", PRIORITIES],
+  ["the payload grows an extra key",
+    "name: (item && (item[currentLang] || item.en)) || '',",
+    "name: (item && (item[currentLang] || item.en)) || '', raw: item,", PRIORITIES],
+  ["the payload stops pre-localizing the reason",
+    "reason: (item && item.why && (item.why[currentLang] || item.why.en)) || '',",
+    "reason: (item && item.why && item.why.en) || '',", PRIORITIES],
+
+  // --- the wipe inventories -------------------------------------------------
+  ["the hf2 list leaves the wipe's content inventory",
+    "'hf2SleepSystemSection', 'hf2Priorities',",
+    "'hf2SleepSystemSection',", PRIORITIES_WITH_SESSION],
+  ["the hf2 section leaves the session layers",
+    "{ id: 'hf2PrioritiesSection', display: 'none' },", "", PRIORITIES],
+  ["the wipe stops clearing the priority store",
+    "analytics.trialFocus = [];", "analytics.trialFocus = analytics.trialFocus;",
+    ["tests/session_safety_check.mjs"]],
+
+  // --- Code.gs ---------------------------------------------------------------
+  ["Code.gs: the priorities cap is removed",
+    "priorities: _safeArray(data.priorities).slice(0, MAX_EMAIL_PRIORITIES).map(function(p) {",
+    "priorities: _safeArray(data.priorities).map(function(p) {",
+    EMAIL_PRIORITIES, "Code.gs"],
+  ["Code.gs: the array coercion is bypassed",
+    "priorities: _safeArray(data.priorities).slice(0, MAX_EMAIL_PRIORITIES).map(function(p) {",
+    "priorities: (data.priorities || []).slice(0, MAX_EMAIL_PRIORITIES).map(function(p) {",
+    EMAIL_PRIORITIES, "Code.gs"],
+  ["Code.gs: the name bound is removed",
+    "name: _safeText(p && p.name, 200),",
+    "name: p && p.name,",
+    EMAIL_PRIORITIES, "Code.gs"],
+  ["Code.gs: the HTML section stops escaping the name",
+    "+ '<strong>' + (i + 1) + '. ' + _escapeHtml(pr.name) + '</strong>'",
+    "+ '<strong>' + (i + 1) + '. ' + pr.name + '</strong>'",
+    EMAIL_PRIORITIES, "Code.gs"],
+  ["Code.gs: the HTML section stops escaping the reason",
+    "+ (pr.reason ? ' &mdash; ' + _escapeHtml(pr.reason) : '')",
+    "+ (pr.reason ? ' &mdash; ' + pr.reason : '')",
+    EMAIL_PRIORITIES, "Code.gs"],
+  ["Code.gs: the EN plain-text branch drops the priorities (HTML-only rendering)",
+    "+ (priorityLines ? 'What we will test together:\\n' + priorityLines + '\\n' : '')",
+    "",
+    EMAIL_PRIORITIES, "Code.gs"],
+  ["Code.gs: the ES plain-text branch drops the priorities",
+    "+ (priorityLines ? 'Lo que probaremos juntos:\\n' + priorityLines + '\\n' : '')",
+    "",
+    EMAIL_PRIORITIES, "Code.gs"],
+  ["Code.gs: plain text stops stripping angle brackets",
+    "var _plainPriority = function(s) { return String(s || '').replace(/[<>]/g, ''); };",
+    "var _plainPriority = function(s) { return String(s || ''); };",
+    EMAIL_PRIORITIES, "Code.gs"],
+  ["Code.gs: the projection becomes a passthrough",
+    "return {\n          name: _safeText(p && p.name, 200),\n          reason: _safeText(p && p.reason, 400),\n          test: _safeText(p && p.test, 400)\n        };",
+    "return Object.assign({}, p, { name: _safeText(p && p.name, 200) });",
+    EMAIL_PRIORITIES, "Code.gs"],
+
+  // --- the Sleep Brief pin ---------------------------------------------------
+  ["the Sleep Brief render reads a widened field instead of the resolved one",
+    "+ '<div class=\"noct-profile-priority-desc\">' + escapeHtml(p.why) + '</div>'",
+    "+ '<div class=\"noct-profile-priority-desc\">' + escapeHtml(p.whyEn) + '</div>'",
+    PRIORITIES],
+  ["the brief summary stops resolving Spanish names",
+    "var name = lang === 'es' ? priority.nameEs : priority.nameEn;",
+    "var name = priority.nameEn;",
+    PRIORITIES],
 ];
 
 // ---------------------------------------------------------------------------
@@ -265,7 +384,14 @@ for (const d of ["tests", "data", "docs", "tools", "incoming"]) {
 }
 for (const f of ["index.html", "Code.gs"]) cpSync(join(root, f), join(sandbox, f));
 
+// Per-target pristine sources. Entries name their target with a fifth field;
+// index.html is the default. Every mutated target is restored before the next
+// entry runs, so one entry's mutation can never contaminate another's.
 const PRISTINE = readFileSync(join(sandbox, "index.html"), "utf8");
+const PRISTINE_BY_FILE = {
+  "index.html": PRISTINE,
+  "Code.gs": readFileSync(join(sandbox, "Code.gs"), "utf8"),
+};
 
 function runSuites(suites) {
   const red = [];
@@ -291,15 +417,18 @@ if (baseline.length) {
   process.exit(1);
 }
 
-for (const [label, find, replace, suites] of MUTATIONS) {
-  const mutated = PRISTINE.replace(asRegex(find), replace);
-  if (mutated === PRISTINE) {
+for (const [label, find, replace, suites, targetFile] of MUTATIONS) {
+  const target = targetFile || "index.html";
+  const clean = PRISTINE_BY_FILE[target];
+  const mutated = clean.replace(asRegex(find), replace);
+  if (mutated === clean) {
     console.log(`  [NOT APPLIED] ${label}`);
     notApplied++;
     continue;
   }
-  writeFileSync(join(sandbox, "index.html"), mutated);
+  writeFileSync(join(sandbox, target), mutated);
   const red = runSuites(suites || DEFAULT_SUITES);
+  writeFileSync(join(sandbox, target), clean);
   if (red.length === 0) {
     console.log(`  [SURVIVED]    ${label}`);
     survivors++;
@@ -308,7 +437,6 @@ for (const [label, find, replace, suites] of MUTATIONS) {
     caught++;
   }
 }
-writeFileSync(join(sandbox, "index.html"), PRISTINE);
 
 console.log(`\nMutation sweep: ${caught}/${MUTATIONS.length} caught, ${survivors} survived, ${notApplied} did not apply`);
 if (survivors) console.log("A SURVIVOR is a safety property with no effective test.");

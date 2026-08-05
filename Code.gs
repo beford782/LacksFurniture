@@ -10,6 +10,11 @@ var RESULT_EMAIL_BCC = 'dreamfinderleads@gmail.com';
 // more categories and should not silently lose items after the third.
 var MAX_EMAIL_ACCESSORIES = 20;
 
+// Defensive ceiling for the trial-priorities block (0.5). The engine produces
+// one to three; anything past the third is hostile or malformed input, never
+// legitimate content, so the cap is a hard bound rather than a display choice.
+var MAX_EMAIL_PRIORITIES = 3;
+
 // \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 // CAN-SPAM / privacy footer values \u2014 \u26a0\ufe0f UNSET. The active retailer (Lacks
 // Furniture for this deployment) must supply and approve every value below
@@ -221,6 +226,20 @@ function doPost(e) {
           imageUrl: _safeImageUrl(a && a.imageUrl)
         };
       }),
+      // Trial priorities (0.5), pre-localized by the client to data.lang.
+      // Untrusted like everything else here: array-coerced, capped, every
+      // field bounded, and projected onto a fresh literal so ONLY these three
+      // keys can survive into the email — a score, rank, id or raw answer
+      // riding on an entry is dropped by construction. Entries without a name
+      // are dropped; the section renders at whatever length remains, and an
+      // empty result omits the section cleanly.
+      priorities: _safeArray(data.priorities).slice(0, MAX_EMAIL_PRIORITIES).map(function(p) {
+        return {
+          name: _safeText(p && p.name, 200),
+          reason: _safeText(p && p.reason, 400),
+          test: _safeText(p && p.test, 400)
+        };
+      }).filter(function(p) { return p.name; }),
       // Website-derived retailer promotions, pre-localized by the client to data.lang.
       promotions: _safeArray(data.emailPromotions).slice(0, 12).map(function(p) {
         return {
@@ -266,6 +285,18 @@ function doPost(e) {
       Logger.log('HTML email failed, trying plain text: ' + emailErr.toString());
       var accessoryLines = safeData.accessories.map(function(a, i) {
         return (i + 1) + '. ' + a.name + (a.category ? ' - ' + a.category : '');
+      }).join('\n');
+      // Trial priorities (0.5), same order as the HTML body. Plain text needs
+      // no HTML escaping, but angle brackets are stripped so hostile markup in
+      // a field cannot arrive looking like markup in any client that renders
+      // text/plain leniently.
+      var _plainPriority = function(s) { return String(s || '').replace(/[<>]/g, ''); };
+      var priorityLines = (safeData.priorities || []).map(function(pr, i) {
+        return (i + 1) + '. ' + _plainPriority(pr.name)
+          + (pr.reason ? ' - ' + _plainPriority(pr.reason) : '')
+          + (pr.test
+              ? '\n   ' + (isEs ? 'Pruébalo: ' : 'Try this: ') + _plainPriority(pr.test)
+              : '');
       }).join('\n');
       var promoLines = (safeData.promotions || []).map(function(p) {
         return '- ' + p.badge + ': ' + p.headline
@@ -320,6 +351,7 @@ function doPost(e) {
           + (meetsMatchThreshold ? 'Tu mejor opci\u00f3n: ' : 'Opci\u00f3n para comparar: ') + topMatch + ' (' + topMatchDetail + ')\n'
           + 'El mejor punto de partida en la tienda.\n'
           + 'Resumen de sue\u00f1o: ' + sleepProfile + '\n'
+          + (priorityLines ? 'Lo que probaremos juntos:\n' + priorityLines + '\n' : '')
           + passBlockEs
           + 'Muestra este correo a tu especialista de sue\u00f1o de ' + storeName + '.\n\n'
           + safeData.allMatches.map(function(m, i) {
@@ -339,6 +371,7 @@ function doPost(e) {
           + (meetsMatchThreshold ? 'Your best match: ' : 'Option to compare: ') + topMatch + ' (' + topMatchDetail + ')\n'
           + 'Best place to start in-store.\n'
           + 'Sleep Brief: ' + sleepProfile + '\n'
+          + (priorityLines ? 'What we will test together:\n' + priorityLines + '\n' : '')
           + passBlockEn
           + 'Show this email to your ' + storeName + ' sleep specialist.\n\n'
           + safeData.allMatches.map(function(m, i) {
@@ -634,6 +667,32 @@ function buildSimpleHtml(data, firstName, isEs, storeName) {
         ? '<tr><td style="padding:8px 32px 16px;">'
           + '<div style="font-family:' + sans + ';font-size:10px;letter-spacing:2.5px;color:' + c.accent + ';text-transform:uppercase;font-weight:600;margin-bottom:8px;">' + L.briefLabel + '</div>'
           + '<div style="font-family:' + serif + ';font-size:17px;color:' + c.text + ';line-height:1.35;">' + sleepProfile + '</div>'
+          + '</td></tr>'
+        : '')
+
+    // Trial priorities (0.5), directly under the Sleep Brief line it expands
+    // on. Numbered divs rather than <ol> for email-client robustness (the
+    // ordered-list-semantics requirement is the Consultation Summary's); the
+    // number glyphs carry the engine's order visibly. Every payload-derived
+    // value is escaped AT the interpolation, matching the promotions block —
+    // never the escape-once-at-top discipline — and nothing payload-sourced
+    // enters a style attribute. Empty array: the whole block, label included,
+    // is absent. Known 1.6 email debt: the brief line above is largely these
+    // same names lowercased; recorded in the roadmap, not fixable additively.
+    + ((data.priorities || []).length
+        ? '<tr><td style="padding:0 32px 16px;">'
+          + '<div style="font-family:' + sans + ';font-size:10px;letter-spacing:2.5px;color:' + c.accent + ';text-transform:uppercase;font-weight:600;margin-bottom:8px;">'
+          + (isEs ? 'Lo que probaremos juntos' : 'What we will test together') + '</div>'
+          + data.priorities.map(function(pr, i) {
+              return '<div style="font-family:' + sans + ';font-size:13px;color:' + c.text + ';line-height:1.5;margin-bottom:8px;">'
+                + '<strong>' + (i + 1) + '. ' + _escapeHtml(pr.name) + '</strong>'
+                + (pr.reason ? ' &mdash; ' + _escapeHtml(pr.reason) : '')
+                + (pr.test
+                    ? '<br><span style="color:' + c.textMuted + ';">'
+                      + (isEs ? 'Pruébalo: ' : 'Try this: ') + _escapeHtml(pr.test) + '</span>'
+                    : '')
+                + '</div>';
+            }).join('')
           + '</td></tr>'
         : '')
 
