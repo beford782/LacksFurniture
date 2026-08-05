@@ -335,6 +335,7 @@ function buildApp(opts) {
         accessories: ACCESSORIES,
         questions: QUESTIONS.length,
         gold: (MATTRESSES.gold || []).length,
+        goldId: (MATTRESSES.gold && MATTRESSES.gold[0] && MATTRESSES.gold[0].id) || '',
         storeName: STORE_CONFIG.storeName || '',
         dictKeys: Object.keys(DICT).length,
         epoch: _sessionEpoch,
@@ -370,6 +371,7 @@ function buildApp(opts) {
       document.getElementById(id).classList.add('active');
     };
     out.coreReady = function() { return coreDataReady(); };
+    out.seedAccessories = function(v) { ACCESSORIES = v; _dataLoaded.accessories = false; };
   `;
 
   new Function("document", "window", "fetch", "console", "out", "setTimeout",
@@ -659,6 +661,42 @@ section("repeated taps are answered, not queued");
 // ===========================================================================
 // 7. STALE / OUT-OF-ORDER COMPLETION
 // ===========================================================================
+section("first success wins, whichever response lands last");
+{
+  // Two loads racing on the SAME url must apply ONE payload, and which one must
+  // not depend on arrival order. Distinguishable payloads, or "it was applied"
+  // is true either way and the guard could be deleted unnoticed.
+  const OLDER = { gold: [{ id: "older" }], silver: [], bronze: [] };
+  const NEWER = { gold: [{ id: "newer" }], silver: [], bronze: [] };
+  const d = deferred();
+  const plan = goodPlan({ "./data/mattresses.json": () => d.promise });
+  const h = buildApp({ plan });
+  await settle(1);
+  plan["./data/mattresses.json"] = okJson(NEWER);
+  await h.out.load();                       // the newer load lands first
+  await settle();
+  check("the load that landed first applied its payload",
+    h.out.probe().goldId === "newer" && h.out.probe().loaded.mattresses === true);
+  d.resolve({ ok: true, status: 200, json: async () => OLDER });
+  await settle();
+  check("the slower response landing afterwards does NOT overwrite it",
+    h.out.probe().goldId === "newer");
+}
+{
+  // A failed accessories load leaves an EMPTY list, never a stale one. Seeded
+  // first: ACCESSORIES starts as [] by declaration, so asserting emptiness
+  // after a failure proves nothing unless it held something to begin with.
+  const h = buildApp({ plan: goodPlan({ "./data/accessories.json": httpError(404) }) });
+  await settle();
+  h.out.seedAccessories([{ id: "stale-from-a-previous-load" }]);
+  check("precondition: the list is not empty", h.out.probe().accessories.length === 1);
+  await h.out.load();
+  await settle();
+  check("a failed accessories load degrades to an empty list, not a stale one",
+    h.out.probe().accessories.length === 0);
+  check("...and still does not raise the overlay", !overlayState(h).visible);
+}
+
 section("a superseded load contributes its data but never speaks");
 {
   const d = deferred();
