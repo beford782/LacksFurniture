@@ -43,14 +43,47 @@ relies on, the removal ships in the same commit as its replacement.
 | ✅ | Shipped and verified on `main` |
 | 🔨 | In progress on a branch |
 | ⬜ | Approved to build, not started |
-| 🔒 | Blocked — needs a decision, an approval, or evidence |
+| ◐ | Partly blocked — a named portion is gated; the rest may start |
+| 🔒 | Blocked — no part of this item may start |
 | ❓ | Proposed only. Not approved. Do not implement. |
 
 **Rules for these marks.** ⬜ → 🔨 → ✅ may be moved by whoever does the work.
-Moving anything **into or out of 🔒 or ❓ requires the named approver on that
-item.** Every 🔒 and ❓ item states who decides and what unblocks it. If a blocker
-applies to any part of an item, the item's own heading carries the mark — a
-blocker buried in the body is invisible to anyone scanning headings.
+Moving anything **into or out of ◐, 🔒 or ❓ requires the named approver on that
+item** — and that includes editing a ◐ item's Gated or Proceeds lists. Every ◐, 🔒
+and ❓ item states who decides and what unblocks it.
+
+**Where a mark goes.** Scope (whole item vs a portion) and stage (blocks starting
+vs blocks merging) are independent, and one mark cannot carry both.
+
+- **🔒 means no part of this item may start.** It goes on the item's heading.
+- **◐ means a named portion may not start and everything else may.** It goes on
+  the item's heading and is **invalid without both of these directly beneath it**:
+  - **Gated** — approver, unblock condition, and what may not be done, written as
+    a **property of the output a reviewer can check in a diff**, not as an
+    activity.
+  - **Proceeds:** what may be done now.
+
+  A ◐ item missing either list, or whose Gated line reads as an intention rather
+  than a checkable property, **is read as 🔒**. The default when a mark is sloppy
+  is more locked, not less.
+- **A gate that applies to every item in a phase is recorded once**, in that
+  phase's own gate block, and is not copied onto item headings. A mark carried by
+  every heading distinguishes nothing.
+- **Exit gates never change a heading mark.** A dependency that permits work to
+  start but prevents it merging belongs in the phase's exit-gate block, and each
+  affected item's **Exit:** line names it.
+- **A gate a test enforces needs no heading mark**, provided the suite fails
+  deterministically on the gated change and the failure names the gate. Name the
+  test in the body — the guard is the notice.
+
+**Guards on ◐, so "it's only partial" cannot become a self-service unblock:**
+work under Proceeds may not encode an outcome of the gated decision, ship
+placeholder content standing in for it, or remove anything the gated decision
+might want to keep. If the unblocked portion turns out to require the gated
+decision, **the item reverts to 🔒 and goes back to the approver** — the
+implementer does not settle it mid-PR. A ◐ item's **Exit:** must state what it
+excludes, so it cannot be closed as done while its gated portion is quietly
+dropped.
 
 **"Approved to build" means:** the problem is agreed, the constraints are agreed,
 and implementation may begin. It does **not** approve a specific layout, wording,
@@ -98,10 +131,17 @@ None of these are negotiable by a redesign.
 1. **Sleep fit is independent of financing.** Financing never affects scoring,
    ranking, tier assignment, the Sleep Brief, or match reasons. Pinned by
    `tests/scoring_isolation_check.mjs`.
-2. **Nothing in Phase 0 or Phase 1 changes what is recommended.** This is broader
-   than "scoring": it covers scoring, ranking, tier assignment, the firmness
-   scale, and **which mattress, accessory, hero or priority a given answer set
-   sees**. Any such change is Phase 3 and requires **Blake's sign-off**.
+2. **Nothing in Phase 0 or Phase 1 changes what the engine computes.** This is
+   broader than "scoring": it covers scoring and firmness computation, the
+   engine's computed mattress / accessory / priority selection, and ordering,
+   tier assignment, caps, filtering and ranking. Any change to what is computed
+   is Phase 3 and requires **Blake's sign-off**.
+
+   **Presentation may change which already-computed value is surfaced, and
+   where.** It may not change the value, the set it was drawn from, or that set's
+   order. Surfacing the engine's top-ranked priority as a hero is a presentation
+   change; re-deciding which priority ranks first is not. See Phase 1 constraint
+   2, which is where this is enforced.
 3. **The store-agnostic boundary.** `index.html` contains no retailer name,
    colour, product or code. A redesign is the most common way this rule gets
    broken — a hardcoded heading is still a hardcoded heading.
@@ -213,6 +253,15 @@ Requirements:
 - Handle partial failure — one dataset failing is not all of them.
 - Accessible status and focus behaviour, bilingual, consistent with 0.3.
 
+**Exit — two conditions, separately satisfied.** The *code* exit is the
+requirements above, green suites and a merged PR. The *hardware* exit is the
+route verified on the mounted showroom device. They are not the same, and the
+first does not imply the second — the same four-way distinction this document
+applies to email (UI, payload, activation, verified delivery). Note the hardware
+question is itself unresolved: `docs/kiosk-device-hardening.md` is marked blocking
+for showroom use and records that the tests never established the test iPad is the
+mounted device. 0.4 does not resolve that; it must not be reported as if it did.
+
 **Documentation obligation:** this adds a session-ending route.
 `docs/kiosk-device-hardening.md` records each such route as separately verified on
 hardware, precisely because verifying one says nothing about another. 0.4's exit
@@ -240,8 +289,24 @@ fields and Code.gs changes. The Results screen already renders a condensed
 derivative of the same three priority names, so a third surface must be designed
 against the two that exist, not added blind.
 
-**Exit:** priorities content appears on the Consultation Summary and in the email;
-a Sleep Brief diff is out of scope for this item.
+**Exit:** the three computed priorities render on the Consultation Summary and in
+the results email, in the order the engine produces them, bilingual, with no
+change to the Sleep Brief.
+
+**Presentation constraint — a limit, not a licence.** The on-screen addition is
+**one** new section, using the existing section pattern and ordered-list
+semantics, placed above the finalists it explains. **It introduces no new
+component class.** A diff that adds one has left additive content and entered
+redesign; it stops and waits for 1.6. This presentation is **provisional and is
+re-decided in 1.6**, where it is recorded as inherited design debt rather than a
+settled layout.
+
+**The real cost here is plumbing, not design.** The computed priorities are local
+to the profile render; the only thing that outlives them carries names without the
+reason or testing text. 0.5 must widen that or lift the data to session scope —
+work that is entirely independent of any presentation decision, which is why this
+item can proceed while 1.6 is still open. The email side is a new payload field
+plus a Code.gs block; with `gasUrl` blank this is capability work, not delivery.
 
 ### 0.6 — Implication, not diagnosis, on the Consultation Summary ⬜
 
@@ -275,6 +340,14 @@ Requirements:
 - Test that clinical-style quiz labels cannot leak into the Consultation Summary
   or the email.
 
+**Exit:** the Consultation Summary's who and profile rows, and their email
+equivalents, resolve implication copy keyed by option id rather than quiz option
+labels, in both languages; quiz option `id`, order, `type`, `scores` and
+customer-facing labels are unchanged; and a test proves clinical-style quiz labels
+cannot reach either surface. **This item changes no layout** — it substitutes
+content into the three existing summary rows — and therefore carries **no
+dependency on 1.6**.
+
 ### 0.7 — Prove the protections still hold ⬜
 
 Not a feature. The acceptance gate for Phase 0: session, privacy, accessibility,
@@ -298,10 +371,21 @@ None of it changes what is recommended.
    tier assignment, the firmness scale, and hero/accessory selection are all out
    of scope. There is no "unless approved" escape in this phase — such a change is
    Phase 3 and needs Blake.
-2. **Consume, never re-derive.** Where the design uses computed data, take it in
-   the order and at the cap the engine produces. Do not re-rank, re-cap,
-   re-weight, filter or re-derive it. Badges restate stored answers verbatim; no
-   inferred or re-bucketed values.
+2. **Consume, never re-derive.** A Phase 1 surface may read engine output, choose
+   which element of it to display, and style it. It must take that output **at the
+   index, in the order and at the cap the engine produced**. It must not re-sort
+   or re-rank; change or re-apply the cap; recompute or re-weight the score that
+   produced the order; filter, deduplicate or substitute elements; merge, split or
+   re-bucket them; synthesise an element when the engine produced none; or
+   condition the selection on anything other than position in the engine's own
+   list.
+
+   **Concretely for the Sleep Brief hero: it is the first element of the computed
+   priority list and nothing else** — not "the highest-scoring need", not "the
+   first one whose kind is `need`", not a substitute when the list looks thin.
+   Selecting by any predicate other than index is re-derivation, and the
+   `kind` field sitting right there makes that the natural wrong instinct.
+   Badges restate stored answers verbatim; no inferred or re-bucketed values.
 3. **New copy is bilingual and config-driven** (Invariants 4 and 5).
 4. **Accessibility acceptance criteria apply to every item** — see the section
    after 1.6.
@@ -313,7 +397,20 @@ alongside `tests/scoring_isolation_check.mjs`. This is what would make Invariant
 enforceable rather than aspirational. Building it is itself a proposal (❓) — it
 needs Blake's agreement on cost.
 
-### 1.1 — Sleep Brief ⬜ (component design ❓)
+### 1.1 — Sleep Brief ◐
+
+**Gated** — approver Blake, unblocked by prototypes reviewed at the recorded
+device matrix: adopting a final layout. The component set below is a proposal, and
+approving it needs prototypes the matrix gate does not yet permit anyone to
+verify.
+
+**Proceeds:** prototyping; the firmness dial rendering the existing computed value
+unchanged; and the priority cards **once 0.5 has shipped**, since the detail they
+displace needs somewhere to go first.
+
+*(This item was previously ⬜ while its final design was transitively blocked by
+the device matrix and carried an unmarked hard dependency on 0.5 in prose — a
+worse under-block than the one that prompted this correction.)*
 
 The central redesign. Reduce reading load and make the first five seconds useful
 to a salesperson presenting it aloud.
@@ -349,6 +446,12 @@ is currently **fully visible** on the Sleep Brief, labelled "Try this:" — movi
 behind disclosure is a real reduction in visible words, not a relocation of
 something already hidden.
 
+**Exit:** the redesigned Sleep Brief ships with the priorities swap atomic, the
+dial showing the engine's own value, and every accessibility criterion met.
+**Excluded until the gate lifts:** adopting a final layout. This item cannot be
+closed by shipping prototypes — if the layout is not approved against the recorded
+device matrix, the remainder is still open.
+
 ### 1.2 — Quiz ⬜
 
 - Review all 56 option icons for meaning **before** introducing any. Suppress
@@ -382,12 +485,18 @@ Requirements:
 unresolved.** Auto-advance is a separate journey decision — see 3.4 🔒. The
 announcement gap exists today with manual navigation.
 
-### 1.3 — Results and mattress cards 🔒 (component design ❓)
+### 1.3 — Results and mattress cards ◐ (component design ❓)
 
-**Marked 🔒 because two blockers below gate its central bullets** — the missing
-per-feature reason content, and the tier-tab decision. The unblocked parts (card
-hierarchy, scannability, avoiding buyer-characterising labels, keeping sleep fit
-dominant) may be designed meanwhile, but the item does not start as a whole.
+**Gated** — approver Blake, unblocked by populated catalog reason content: any
+card content that leads with a per-model "why this fits this customer" reason.
+Across all 26 models every per-feature reason column is empty; only the generic
+default is populated. **Placeholder, sample or generic-default text standing in
+for this content does not lift the gate.**
+
+**Proceeds:** card hierarchy, scannability of distinguishing features, removing
+buyer-characterising labels, keeping sleep fit visually dominant over financing,
+and restyling the tier tabs. Each must read correctly against **today's** content
+— that is, with only the generic default reason present.
 
 - Rework the card hierarchy so a salesperson can present it at a glance.
 - Lead with **why this fits this customer**, not a wall of generic features.
@@ -406,13 +515,50 @@ dominant) may be designed meanwhile, but the item does not start as a whole.
 > early because it gates the most valuable part of the redesign. Reasons must be
 > accurate, product-specific, bilingual, and safe for a salesperson to repeat.
 
-**Tier tabs: 🔒, and not a Phase 1 decision.** Approver: Blake, jointly with 3.2.
-Removing the tabs forces Results to choose a single ordering, but match
-percentages are **not comparable across tiers** because the maximum is computed
-per tier. A Phase 1 removal would either invent a cross-tier ranking — a Phase 3
-change — or display incomparable percentages side by side. Phase 1 may restyle the
-tabs; it may not remove them. Internal keys `gold` / `silver` / `bronze` remain
-the data contract regardless, and the `tier` analytics enum depends on them.
+**Tier navigation — a Phase 1 presentation question, still unresolved.** Approver:
+Blake. Prototyping proceeds; adopting a replacement does not.
+
+An earlier draft claimed removing the tab affordance forces Results into a single
+cross-tier ordering. **That was wrong**, and the correction matters because it was
+being used to defer a presentation decision into Phase 3. The per-tier data is
+built for all three tiers unconditionally, before any tab exists; the active tier
+is only a lookup key. A grouped, stacked or accordion presentation can therefore
+drop the tabs while preserving tiers, tier keys, within-tier order, per-tier
+percentages and the per-tier qualification threshold — no cross-tier ranking
+required, and no engine change.
+
+Two real constraints remain, and they are not the one that was claimed:
+
+- **The honesty hazard survives in a different form.** Tabs separate the three
+  per-tier normalisations in time. Stacking puts three near-100% leaders in one
+  viewport, where the percentages are still incomparable and adjacency invites
+  exactly the comparison the tabs discourage. That is a design-honesty constraint
+  on any stacked layout, and it is why this stays an unresolved Blake decision
+  rather than an implementer's choice.
+- **`tier_view` has exactly one call site — inside the tab switcher.** A layout
+  that removes tab switching removes the only place that event is logged, and the
+  event-name set-equality guard then fails with `DEAD ENTRIES: tier_view`. That is
+  genuinely enforced, and must be handled in the same change: retire the entry, or
+  emit an equivalent for section visibility. (Established by reading the call site
+  and the guard, not by running the mutation.)
+
+**What is Phase 3.3, not Phase 1:** a global maximum score, any mixed cross-tier
+ranking or single merged list, removing or merging a tier, changing which tier a
+model belongs to, and changing the qualification threshold, the result cap or the
+back-fill. A global maximum is the sharpest case — it changes every displayed
+percentage *and*, through the qualification threshold, **which models appear at
+all**. That is a recommendation change, which is why 3.3 decides first.
+
+**Internal keys `gold` / `silver` / `bronze` are not in scope for either.** The
+catalog is keyed by them, the `tier` analytics enum enumerates them, the session
+summary and the email carry them, and tests pin all of it.
+
+**Exit:** the card hierarchy is presentable at a glance, distinguishing features
+are scannable, no label characterises the buyer, and sleep fit reads as dominant
+over financing. **Excluded until the gate lifts:** any card that leads with a
+per-model "why this fits" reason. Shipping the unblocked portion does not close
+this item — the reason-led card is the point of the redesign, and it is recorded
+here as outstanding until the catalog content exists.
 
 ### 1.4 — Sleep System ⬜
 
@@ -440,26 +586,64 @@ The largest reading load in the app.
 - **Config-disable** duplicate financing content in the mattress drawer and the
   Sleep System. Prefer disabling to deletion: Phase 2 may want a per-product price
   anchor on the drawer, and retiring the placement values from the closed
-  analytics enum would then have to be undone. **Enum retirement is deferred**
-  until Phase 2.2 confirms those surfaces will never be used; the set-equality
-  guard polices both directions.
+  analytics enum would then have to be undone.
+
+  **Enum retirement is deferred**, and the reason is not the one an earlier draft
+  gave. Config-disabling a surface does not remove its call site, so retiring
+  those values would retire values the shipped source still passes — and **nothing
+  catches that**. Invariant 7's set-equality guard compares logged event *names*
+  against `EVENT_FIELDS` *keys*; it never inspects enum values, and both surfaces
+  log an event that stays logged from the results and handoff paths regardless. At
+  runtime an unlisted value is silently dropped with only an anonymous count —
+  the same drift 0.1 closed at the event-name level, still open at the value
+  level. Invariant 7 governs event and field sets and says nothing about value
+  sets; **that gap is the reason to defer, not a reason to proceed.**
+
+  Protection across the enum is uneven rather than uniform: two values are
+  load-bearing in behavioural assertions in `tests/session_async_check.mjs` and
+  would fail the suite if retired; the other four, including one of the two this
+  bullet contemplates retiring, are pinned by nothing. Retire only when Phase 2.2
+  confirms the surfaces are permanently unused **and** the call sites go in the
+  same change.
 - Keep financing orientation separate from sleep-fit scoring (Invariant 1).
 - Make financing concrete through eventual verified price grounding, not by
   repeating vague financing copy everywhere.
 
-### 1.6 — Consultation Summary, Compare, and the remaining screens ⬜
+### 1.6 — Consultation Summary, Compare, and the remaining screens ◐
+
+**Gated** — approver Blake, unblocked by evidence from observed sessions: any
+change to the Review screen that reduces the number of answers shown, removes the
+ability to correct any single answer, or removes the screen.
+
+**Proceeds:** the Consultation Summary, Compare reactivation and discoverability,
+Welcome, the mattress drawer, the email, and any Review-screen change that
+preserves every answer and every correction path.
 
 Customer-facing terminology in this document is **Consultation Summary**. Internal
-handoff element ids may remain until a separately approved refactor; the analytics
-`placement` value `handoff` is a data contract and does not change.
+handoff element ids may remain until a separately approved refactor. The analytics
+`placement` value `handoff` stays as-is by policy — note that unlike two other
+values in that enum it is not pinned by any test, so the constraint is a decision
+recorded here, not a guard that would catch a change.
 
 **Consultation Summary.** Because the salesperson is already present, this is not
 the moment a human enters the journey — it is where the conversation is concluded
 and continued. It should carry the customer's most important sleep needs, the
 finalists to compare, testing priorities, the selected Payment Choice discussion
-topics, next steps, and save/send options where operationally available. It
-receives new content from 0.5 and 0.6 and currently has no design direction of its
-own; it needs one before that content lands.
+topics, next steps, and save/send options where operationally available.
+
+It carries content added additively by 0.5 under an explicit no-new-component
+constraint, and content substituted in place by 0.6. **1.6 owns the design
+direction for this screen and must re-decide 0.5's provisional presentation** —
+that presentation ships as a deliberate constraint, not as an endorsed layout, and
+1.6 is not complete while it stands unreviewed. **Phase 0's exit does not depend
+on this design.**
+
+**Exit:** every surface above has durable direction recorded; Compare is
+discoverable from the Sleep Brief, results cards, the results action area and the
+Consultation Summary, with the existing working entry preserved; and 0.5's
+provisional priorities presentation has been **either endorsed as-is, with that
+endorsement recorded here, or replaced**. Leaving it unexamined does not satisfy
+this item.
 
 **Compare — the gap is discoverability, not absence.** Four facts:
 
@@ -483,8 +667,8 @@ completion time.
 
 **Review screen.** A protected confirmation and correction step: where the
 salesperson confirms answers, a couple catches a misunderstanding, and a second
-participant corrects the first. **Compression or removal is 🔒** — approver Blake,
-unblocked only by evidence from observed sessions.
+participant corrects the first. Compression or removal is the gated portion of
+this item — see the Gated line on 1.6's heading.
 
 **Mattress drawer.** Genuine product detail — firmness, match reasons, features.
 Duplicate financing reduced per 1.5. Eventually it may show a verified price and
@@ -501,7 +685,7 @@ template exists.
 
 ---
 
-## Accessibility and showroom acceptance criteria — device matrix 🔒
+## Accessibility and showroom acceptance criteria
 
 These apply to every Phase 1 item.
 
@@ -527,12 +711,29 @@ These apply to every Phase 1 item.
 browser, its viewport width **and** height, both orientations, English and
 Spanish, glare and shared-viewing conditions, and touch.
 
-> **🔒 Open dependency — the device matrix does not exist.** Approver: Blake.
-> No committed source in this repository identifies the showroom device, its
-> viewport, or its orientation. "Real iPad dimensions" is therefore not yet a
-> checkable acceptance criterion. **Do not invent dimensions**, and never write a
-> width without its paired height — portrait and landscape on the same device are
-> different designs. Confirm the hardware, then record the matrix here.
+### Phase 1 exit gate — the device matrix 🔒
+
+This gate stops no Phase 1 work **starting**. It stops every Phase 1 change
+**merging**. It is recorded here once, for the whole phase, rather than copied
+onto item headings — a mark every heading carries distinguishes nothing.
+
+**Approver: Blake, unblocked by confirming the showroom hardware.** No committed
+source in this repository identifies the showroom device, its viewport or its
+orientation, so "real iPad dimensions" is not yet a checkable acceptance
+criterion. **No Phase 1 change merges without verification on the confirmed
+hardware.**
+
+Prototyping and implementation proceed meanwhile under one restriction: **no new
+CSS breakpoint, and no change to an existing one, may be justified as matching the
+showroom device until the matrix is recorded here.** That is scoped deliberately.
+`index.html` already carries roughly 25 width-based media queries, including one
+explicitly bracketing tablet widths, so a flat "do not invent dimensions" reads as
+either already-violated or as a ban on responsive CSS — and would be ignored
+either way. The enforceable rule is about *new justification*, not about
+responsive design.
+
+Never write a width without its paired height: portrait and landscape on the same
+device are different designs.
 
 ---
 
@@ -613,11 +814,29 @@ for all of them: Blake.** None may be bundled into Phase 1.
 ### 3.1 — Scoring case-fold defect 🔒
 
 Two quiz tags never match the catalog because the comparison is case-sensitive and
-the catalog spellings are lowercase. Ten scoring rules across five questions
-currently award zero, including the strongest partner-disturbance answer and
-hip pain. Roughly half the catalog carries the pressure-relief tag, so fixing it
-will reorder results for exactly the side-sleeper and hip-pain population the tag
-exists to serve.
+the catalog spellings are lowercase. **Ten scoring rules across six questions**
+currently award zero — `partner_sleep`, `partner_disturbance`, `sleep_position`,
+`body_type`, `sleep_issues` and `health_conditions` — including the strongest
+partner-disturbance answer and hip pain.
+
+**The defect is in the generator, not the catalog and not the app.** The CSV
+authors these tags correctly in camelCase. The build script lowercases every tag
+and then restores capitals only after a hyphen, so a tag without one never
+recovers. The same script maps the per-feature reason columns *without*
+lowercasing, so the reasons map is keyed camelCase and already agrees with the
+quiz — the features array is the sole disagreement. The fix is a one-line
+generator change plus regeneration through the pipeline; `index.html` is not
+touched.
+
+**Bounded impact, for the evidence Blake needs.** A per-feature cap limits
+accumulation, so the maximum swing is +5 per tag and +10 combined, per model
+carrying the tag — not the naive sum of the dead rules. Pressure relief is carried
+by half the catalog and reorders broadly; motion isolation is carried by three
+models and reorders narrowly but sharply, since it holds the largest individual
+awards. Solo sleepers reach only the pressure-relief rules, because the
+partner-disturbance question and the differing-body-type option are both skipped
+for them — so the reordering concentrates on partnered sleepers and on the
+side-sleeper / hip-pain population the tags exist to serve.
 
 Unblocked by: Blake's explicit approval, on its own PR, with the changed top picks
 enumerated as evidence. **Not a drive-by fix.**
@@ -662,11 +881,12 @@ approval; its presence is a bar on proceeding.
 
 | Decision | Mark | Approver | Unblocked by |
 |---|---|---|---|
-| Tier-tab presentation or removal | 🔒 | Blake | 3.3 resolved first |
+| Tier navigation presentation (Phase 1) | 🔒 | Blake | A reviewed prototype; may be prototyped now |
+| Global maxScore / cross-tier ranking / tier removal (3.3) | 🔒 | Blake | Evidence; **3.3 decides before any tier-navigation change ships** |
 | Auto-advance | 🔒 | Blake | Observed sessions |
-| Review-screen compression or removal | 🔒 | Blake | Observed sessions |
-| Final Sleep Brief and card layouts | ❓ | Blake | Prototypes at the real device matrix |
-| The device matrix itself | 🔒 | Blake | Confirming the showroom hardware |
+| Review-screen compression or removal | 🔒 | Blake | Observed sessions — gated portion of 1.6 ◐ |
+| Final Sleep Brief and card layouts | 🔒 | Blake | Prototypes reviewed at the recorded device matrix — gated portion of 1.1 ◐ and 1.3 ◐ |
+| The device matrix itself | 🔒 | Blake | Confirming the showroom hardware — Phase 1 **exit** gate, blocks merging not starting |
 | Phase 2.2 price/payment activation | 🔒 | Blake + business/legal | Written approval |
 | Scoring case-fold (3.1) | 🔒 | Blake | Approval + enumerated impact |
 | Quiz-tag vocabulary gap (3.2) | 🔒 | Blake | Populate-or-retire decision |
@@ -676,8 +896,16 @@ approval; its presence is a bar on proceeding.
 | Phase 1 scoring-fixture exit gate | ❓ | Blake | Agreement on cost |
 | Dormant nickname-code cleanup | ❓ | Blake | Analytics review — see below |
 
-**Visible Gold/Silver/Bronze presentation may change in Phase 1. Internal tier
-keys do not, until separately approved structural work.**
+**Visible Gold/Silver/Bronze presentation may change in Phase 1** — including
+replacing the tab affordance with a grouped, stacked or accordion layout, which
+preserves tiers, within-tier order and per-tier percentages and needs no engine
+change. That change is still an unresolved Blake decision and 3.3 decides first,
+but it is a *presentation* decision, not a Phase 3 one.
+
+**Internal tier keys do not change**, and the structural questions — a global
+maximum, mixed cross-tier ranking, removing or merging a tier, or altering the
+qualification threshold, cap or back-fill — remain Phase 3.3, because each of them
+changes what is recommended.
 
 ---
 
