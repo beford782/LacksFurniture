@@ -1573,11 +1573,24 @@ check("[Gate 2A] container names are applied as aria-label from the dictionary",
     check(`[Gate 2A] ${screen} is named from the dictionary`,
       new RegExp(`${screen}: 'screen\\.`).test(namesSrc));
   }
-  // No aria-label may be applied to a container that cannot carry one.
-  const labelled = Object.keys(NAMEABLE);
-  check("[Gate 2A] every aria-labelled screen container is one of the nameable eight",
-    labelled.length === 8
-    && labelled.every((s) => new RegExp(`${s}: 'screen\\.`).test(namesSrc)));
+  // SET EQUALITY, both directions. The subset check above only proves every
+  // nameable container is named; on its own it would pass with a ninth entry
+  // added to SCREEN_NAME_KEYS, and applyTranslations() would then apply an
+  // aria-label to a container whose nameable role was never established —
+  // the exact defect this section exists to prevent, arriving from the other
+  // side. The keys are read out of the shipped object rather than restated.
+  const namedScreens = [...namesSrc.matchAll(/^\s*([A-Za-z0-9_]+):\s*'screen\./gm)]
+    .map((m) => m[1]).sort();
+  const nameableScreens = Object.keys(NAMEABLE).sort();
+  const unNameable = namedScreens.filter((s) => !nameableScreens.includes(s));
+  const unNamed = nameableScreens.filter((s) => !namedScreens.includes(s));
+  check(`[Gate 2A] every aria-labelled container has a nameable role${unNameable.length ? " — LABEL WOULD BE DISCARDED FOR: " + unNameable.join(", ") : ""}`,
+    unNameable.length === 0);
+  check(`[Gate 2A] every nameable container is actually named${unNamed.length ? " — UNNAMED: " + unNamed.join(", ") : ""}`,
+    unNamed.length === 0);
+  check(`[Gate 2A] the two sets are exactly equal (${namedScreens.length} screens)`,
+    namedScreens.length === nameableScreens.length
+    && namedScreens.every((s, i) => s === nameableScreens[i]));
 }
 
 // -- F5/F6/F7 + A2: every refusal gate, focus AND speech ---------------------
