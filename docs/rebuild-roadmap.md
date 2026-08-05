@@ -438,7 +438,7 @@ needs Blake's agreement on cost.
 ### 1.1 — Sleep Brief ◐
 
 **Gated** — approver Blake, unblocked by his approval of a reviewed prototype,
-recorded here with the date. Three output properties, none of which may appear in
+recorded here with the date. Two output properties, neither of which may appear in
 a merged diff before that:
 
 - the fixed bilingual heading "Your Sleep Brief" / "Tu Resumen de Sueño" is
