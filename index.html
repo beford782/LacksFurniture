@@ -9578,14 +9578,21 @@
   </main>
 
   <!-- SCREEN: Questions -->
-  <div class="question-screen screen" id="questionScreen">
+  <!-- role="region" so the aria-label applied in applyTranslations() is
+       announced reliably when Gate 2A focuses this container. Neither this
+       screen nor #reviewScreen has a heading rendered at transition time, so
+       the container is their focus destination and a bare div carrying only
+       aria-label is announced inconsistently — iOS VoiceOver is the primary
+       assistive technology on this hardware. #welcomeScreen needs no role: it
+       is a <main>, which announces its accessible name already. -->
+  <div class="question-screen screen" id="questionScreen" role="region">
     <div class="noct-quiz">
       <div id="questionContainer"></div>
     </div>
   </div>
 
   <!-- SCREEN: Review Answers (before profile reveal) -->
-  <div class="screen" id="reviewScreen">
+  <div class="screen" id="reviewScreen" role="region">
     <div class="noct-quiz">
       <div class="noct-quiz-eyebrow" id="reviewEyebrow">Almost there</div>
       <h2 class="noct-quiz-headline" id="reviewHeadline">Quick <span class="accent">review</span></h2>
@@ -11196,6 +11203,17 @@
       if (restartBtn) restartBtn.setAttribute('aria-label', t('session.restart_aria'));
       var landingToggle = document.getElementById('landingLangToggle');
       if (landingToggle) landingToggle.setAttribute('aria-label', t('session.lang_group'));
+      // Gate 2A: screen containers are focus destinations whenever the screen
+      // has no rendered heading, and a focused container with no accessible
+      // name announces nothing. Named here rather than in the markup so both
+      // languages come from the same dictionary, and refreshed on every
+      // transition because showScreen() calls applyTranslations().
+      if (typeof SCREEN_NAME_KEYS !== 'undefined') {
+        Object.keys(SCREEN_NAME_KEYS).forEach(function(screenId) {
+          var el = document.getElementById(screenId);
+          if (el && el.setAttribute) el.setAttribute('aria-label', t(SCREEN_NAME_KEYS[screenId]));
+        });
+      }
       // The safety dialog's copy is owned by renderSafetyDialog(), which
       // resolves the same dictionary — re-run it so an open dialog follows a
       // dictionary reload that did not come through switchLanguage().
@@ -11291,6 +11309,12 @@
       // interest announcement is dropped first: it is the one financing string
       // no renderer rewrites, so it would otherwise sit in the previous
       // language. Clearing announces nothing (see clearFinInterestAnnouncement).
+      // Same reasoning for the screen-transition region: no renderer owns it,
+      // so a queued or settled utterance would be left in the old language.
+      // Ordered ABOVE the financing drop deliberately — the two are both
+      // silent removals so their order is semantically free, and a test pins
+      // clearFinInterestAnnouncement() as adjacent to the re-render below.
+      clearScreenAnnouncement();
       clearFinInterestAnnouncement();
       renderAllFinancingSurfaces();
       // The guided Sleep System and shared review are rendered dynamically,
@@ -11857,6 +11881,14 @@
 
     // ----- SCREEN MANAGEMENT -----
     window.showScreen = function(id) {
+      // Gate 2A. Read the outgoing screen BEFORE .active is stripped: a call
+      // whose destination is already active is a RE-RENDER, not a transition.
+      // switchLanguage() does exactly that — it re-invokes showProfileScreen()
+      // and showEmailCapture() for the screen the customer is already on — and
+      // a re-render must not move focus (restoreLanguageFocus() owns it) or
+      // speak a transition that did not happen.
+      var previousScreen = document.querySelector('.screen.active');
+      var sameScreen = !!(previousScreen && previousScreen.id === id);
       document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
       if (typeof applyTranslations === 'function') applyTranslations();
       document.getElementById(id).classList.add('active');
@@ -11883,6 +11915,17 @@
       document.getElementById(id).scrollTop = 0;
       // Notify idle-timer of the new screen; module decides the duration.
       if (window._setIdleScreen) window._setIdleScreen(id);
+      // Gate 2A: move focus and announce, LAST so the destination is fully
+      // switched and scrolled first. Guarded on typeof because
+      // tests/session_safety_check.mjs extracts this function by regex and
+      // executes it in a sandbox that declares neither this helper nor its
+      // dependencies; an unguarded identifier would throw there under "use
+      // strict" and collapse the whole behavioural suite. Focus is moved
+      // SYNCHRONOUSLY on purpose: focusWelcomeEntry() and restoreLanguageFocus()
+      // both run after their showScreen() call and must stay authoritative.
+      if (!sameScreen && typeof focusScreenDestination === 'function') {
+        focusScreenDestination(id);
+      }
     }
 
     // ----- START QUIZ -----
@@ -12783,16 +12826,14 @@
         ctaBtn.textContent = es ? 'Comparar Mis Opciones →' : 'Compare My Matches →';
       }
 
+      // Gate 2A: the bespoke sessionFrame() focus that used to follow this
+      // call is gone. showScreen() now focuses #profileName itself, from the
+      // shared destination policy — #profileName is populated above, so it
+      // qualifies as a rendered heading. Keeping both would have focused and
+      // announced the same element twice, and the deferred one also fired
+      // after restoreLanguageFocus() on a language switch, yanking focus off
+      // the EN/ES control.
       showScreen('profileScreen');
-      sessionFrame(function() {
-        var heading = document.getElementById('profileName');
-        if (!heading) return;
-        try {
-          heading.focus({ preventScroll: true });
-        } catch (err) {
-          heading.focus();
-        }
-      });
     }
 
     // ----- SHOW RESULTS -----
@@ -17308,6 +17349,151 @@
       screen.focus();
     }
 
+    // =====================================================================
+    // GATE 2A :: SCREEN-TRANSITION FOCUS AND ANNOUNCEMENT
+    // =====================================================================
+    // showScreen() changed content without moving focus, so an assistive
+    // technology user was left on a control that no longer existed.
+    //
+    // DESTINATION POLICY. A heading is listed here only when it is populated,
+    // IN THE CURRENT LANGUAGE, before showScreen() runs for that screen —
+    // verified per call site rather than assumed:
+    //   profileScreen      #profileName      set at setProfileText(...) well
+    //                                        before showScreen (same pass)
+    //   resultsScreen      #resultsHeadline  _renderResults() runs first
+    //   hf2Screen          #hf2ReviewTitle   renderHf2() runs first
+    //   emailScreen        #emailHeadline    renderEmailChrome() runs first
+    //   accessoriesScreen  #sleepSystemTitle renderSleepSystem() runs first
+    //
+    // The other three are DELIBERATELY absent. welcomeScreen has no heading at
+    // all. questionScreen and reviewScreen call showScreen() and THEN render,
+    // so at focus time questionScreen still holds the PREVIOUS question's
+    // markup (or nothing, on Q1 and after a wipe) and reviewScreen holds the
+    // previous render — in Spanish, on a first visit, that is still the static
+    // English string. Focusing either would announce the wrong thing, so they
+    // fall back to the named container. No heading is invented to avoid this.
+    var SCREEN_HEADING_IDS = {
+      profileScreen: 'profileName',
+      resultsScreen: 'resultsHeadline',
+      hf2Screen: 'hf2ReviewTitle',
+      emailScreen: 'emailHeadline',
+      accessoriesScreen: 'sleepSystemTitle'
+    };
+
+    // Every screen has a name so a container focus is never anonymous, whether
+    // it is the policy destination or the fallback from an unrendered heading.
+    // Generic app furniture, so these are dictionary keys, never retailer
+    // config — same channel as the persistent utility controls' aria-labels.
+    var SCREEN_NAME_KEYS = {
+      welcomeScreen: 'screen.welcome',
+      questionScreen: 'screen.question',
+      reviewScreen: 'screen.review',
+      profileScreen: 'screen.profile',
+      resultsScreen: 'screen.results',
+      hf2Screen: 'screen.handoff',
+      emailScreen: 'screen.email',
+      accessoriesScreen: 'screen.sleep_system'
+    };
+
+    // Refusal gate. Every predicate answers one question: is some other layer
+    // already the owner of focus and speech right now? Evaluated BEFORE the
+    // move and AGAIN at announcement flush time, because a dialog can open in
+    // between. typeof guards throughout: this runs under "use strict" inside
+    // an extraction harness that declares only a subset of these bindings.
+    function screenTransitionOwnedElsewhere() {
+      // A wipe owns its own transition: resetSessionState() calls
+      // showScreen('welcomeScreen') and then focusWelcomeEntry(). Gating here
+      // is strictly stronger than cancelling afterwards, because nothing is
+      // ever scheduled for the departing customer in the first place.
+      if (typeof _wipeInProgress !== 'undefined' && _wipeInProgress) return true;
+      if (typeof safetyDialogMode === 'function' && safetyDialogMode() !== null) return true;
+      // The drawer lives in a separate <script>, so its internals are out of
+      // scope here. drawer-open is the blessed marker and inert is NOT: since
+      // Gate 1B, inert on the drawer also means "open but backgrounded by the
+      // safety dialog".
+      var drawer = document.getElementById('mattressDrawer');
+      if (drawer && drawer.classList && drawer.classList.contains('drawer-open')) return true;
+      // === false, never !hidden: an auto-vivified stub element reports
+      // undefined, which must not read as "the sheet is open".
+      var sheet = document.getElementById('financingSheet');
+      if (sheet && sheet.hidden === false) return true;
+      var compare = document.getElementById('compareModal');
+      if (compare && compare.classList && compare.classList.contains('visible')) return true;
+      var privacy = document.getElementById('privacyOverlay');
+      if (privacy && privacy.classList && privacy.classList.contains('visible')) return true;
+      if (typeof _dataLoadFailed !== 'undefined' && _dataLoadFailed) return true;
+      // The staged reveal overlays are role="status" and already speaking.
+      if (window._profileRevealInFlight || window._resultsRevealInFlight) return true;
+      return false;
+    }
+
+    // Announcement. Deferred, unlike the focus move, for the reasons the
+    // financing announcer already documents: a synchronous clear makes a
+    // repeated identical string a real mutation (so it is actually spoken),
+    // the copy is resolved INSIDE the callback so a language switch landing
+    // mid-defer speaks current-language text, and ownership is re-checked at
+    // flush time. sessionTimeout() — never a raw or window.-qualified timer —
+    // supplies cancellation at the wipe and the session-epoch guard.
+    var _screenAnnounceTimer = null;
+    function announceScreen(nameKey) {
+      var region = document.getElementById('screenAnnounce');
+      if (!region) return;
+      if (_screenAnnounceTimer !== null) {
+        clearTimeout(_screenAnnounceTimer);
+        _screenAnnounceTimer = null;
+      }
+      region.textContent = '';
+      _screenAnnounceTimer = sessionTimeout(function() {
+        _screenAnnounceTimer = null;
+        if (screenTransitionOwnedElsewhere()) return;
+        var el = document.getElementById('screenAnnounce');
+        if (el) el.textContent = (typeof t === 'function' ? t(nameKey) : '');
+      }, 100);
+    }
+
+    // Emptying an aria-live region is a removal, so assistive technology
+    // queues no utterance: the stale-language text goes away silently, which
+    // is exactly what a language switch should do.
+    function clearScreenAnnouncement() {
+      if (_screenAnnounceTimer !== null) {
+        clearTimeout(_screenAnnounceTimer);
+        _screenAnnounceTimer = null;
+      }
+      var el = document.getElementById('screenAnnounce');
+      if (el) el.textContent = '';
+    }
+
+    function focusScreenDestination(id) {
+      if (screenTransitionOwnedElsewhere()) return;
+      var screen = document.getElementById(id);
+      if (!screen || !isFocusRestorable(screen)) return;
+      var headingId = SCREEN_HEADING_IDS[id];
+      if (headingId) {
+        var heading = document.getElementById(headingId);
+        // "Rendered" is the contract, not merely "present". #profileName and
+        // #resultsHeadline are both blanked by the wipe, and focusing an empty
+        // heading announces nothing while still consuming the transition.
+        var text = (heading && typeof heading.textContent === 'string')
+          ? heading.textContent.trim() : '';
+        if (heading && text && isFocusRestorable(heading)) {
+          if (heading.getAttribute && heading.getAttribute('tabindex') === null) {
+            heading.setAttribute('tabindex', '-1');
+          }
+          try {
+            heading.focus({ preventScroll: true });
+          } catch (err) {
+            heading.focus();
+          }
+          // The heading text IS the announcement. Writing the live region too
+          // would be the same double utterance the agenda toggles had removed.
+          return;
+        }
+      }
+      focusActiveScreen();
+      var nameKey = SCREEN_NAME_KEYS[id];
+      if (nameKey) announceScreen(nameKey);
+    }
+
     function safetyKeydown(e) {
       if (_safetyMode === null) return;
       if (e.key === 'Escape') {
@@ -17494,6 +17680,7 @@
     var SESSION_TEXT_IDS = [
       'dreamCodeValue', 'dreamCodePct', 'emailError', 'drawerNavLabel', 'accStatus',
       'hf2FinancingStatus', 'financingSheetStatus', 'sessionSafetyLive',
+      'screenAnnounce',
       'resultsRevealTitle', 'resultsRevealSubtitle',
       'revealCertCode', 'revealCertPctNum', 'revealCertScope', 'revealCertExpiry',
       'revealCertTerms'
@@ -17651,6 +17838,7 @@
         // instead (see sessionBound).
         cancelFinInterestPending();
         clearFinInterestAnnouncement();
+        clearScreenAnnouncement();
         clearSessionTimers();
         window._profileRevealInFlight = false;
         window._resultsRevealInFlight = false;
@@ -18024,6 +18212,17 @@
        navigation. All copy is injected from the generic dictionaries by
        renderSafetyDialog(); the English text below is only a no-JS
        placeholder and is overwritten before the dialog is ever shown. -->
+  <!-- Screen-transition announcement region (Gate 2A). Body-level, outside
+       every screen and every dialog: a screen is display:none until it becomes
+       active, so a region living inside the destination would be revealed in
+       the same tick and announce unreliably. Written ONLY by announceScreen(),
+       and only when the destination has no rendered heading to focus — a
+       focused heading is its own announcement. Emptied by the session wipe via
+       SESSION_TEXT_IDS, and silently on a language switch. Deliberately not
+       #hf2FinancingStatus: that region belongs to the handoff surface, and
+       reusing it would re-cross the sheet/handoff boundary that was drawn
+       when the agenda toggles were removed from it. -->
+  <div id="screenAnnounce" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
   <div class="safety-backdrop" id="sessionSafetyBackdrop" hidden></div>
   <div class="safety-dialog" id="sessionSafetyDialog" hidden inert aria-hidden="true"
        role="alertdialog" aria-modal="true"

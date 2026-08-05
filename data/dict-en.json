@@ -91,5 +91,14 @@
   "accessories.analyzing": "Applying your Sleep Brief...",
   "accessories.send_results": "Send Me My Results",
   "accessories.start_over": "Start Over",
-  "accessories.tap_hint": "Tap a card to add or remove"
+  "accessories.tap_hint": "Tap a card to add or remove",
+
+  "screen.welcome": "Welcome",
+  "screen.question": "Sleep quiz",
+  "screen.review": "Quick review",
+  "screen.profile": "Your Sleep Brief",
+  "screen.results": "Your matches",
+  "screen.handoff": "Your sleep plan",
+  "screen.email": "Save your results",
+  "screen.sleep_system": "Your sleep system"
 }
