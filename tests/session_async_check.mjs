@@ -165,6 +165,8 @@ const RAW_ALLOWLIST = [
     why: "one-time boot decoration; runs before any session and mutates only the starfield" },
   { cls: "B", count: 1, match: "_idleTicker = setInterval(idleReconcile,",
     why: "the idle controller's own ticker; lifecycle infrastructure, cleared and re-armed by idleRestart()" },
+  { cls: "B", count: 1, match: "var dataDeadlineTimer = setTimeout(",
+    why: "the data/dictionary fetch deadline; cleared by name the moment the request settles, carries no session state, and is deliberately NOT a sessionTimeout — clearSessionTimers() would disarm it during a wipe and a black-holed request would strand the loader's in-flight latch again" },
   { cls: "B", count: 1, match: "var id = setTimeout(function() {",
     why: "the sessionTimeout() implementation itself" },
   { cls: "B", count: 1, match: "var id = requestAnimationFrame(function() {",

@@ -49,6 +49,13 @@ const DATA_BLOCK = grab(
   /\/\/ ==== PHASE 0\.4 DATA LOAD \+ RECOVERY :: BEGIN =+([\s\S]*?)\/\/ ==== PHASE 0\.4 DATA LOAD \+ RECOVERY :: END =+/,
   "the Phase 0.4 data-load + recovery block");
 const L_FN = grab(/function L\(obj\) \{[\s\S]*?\n    \}/, "L()");
+// The bounded-request layer. Extracted, not stubbed: the deadline IS the fix
+// for the terminal-retry defect, so a harness that faked it would prove
+// nothing about it.
+const DEADLINE_MS_SRC = grab(/var DATA_DEADLINE_MS = \d+;/, "DATA_DEADLINE_MS");
+const DEADLINE_FNS = grab(
+  /function dataDeadline\(work, label, controller\) \{[\s\S]*?\n    \}\s*\n[\s\S]*?function boundedJson\(url, label, init\) \{[\s\S]*?\n    \}/,
+  "dataDeadline() + boundedJson()");
 const DICT_FNS = grab(
   /async function fetchDictionary\(lang\) \{[\s\S]*?\n    \}\s*\n[\s\S]*?async function loadDictionary\(lang\) \{[\s\S]*?\n    \}/,
   "fetchDictionary() + loadDictionary()");
@@ -198,7 +205,14 @@ function deferred() {
   return { promise, resolve, reject };
 }
 
-const GOOD_MATTRESSES = { gold: [{ id: "g1" }], silver: [{ id: "s1" }], bronze: [] };
+// Shaped like the real file: three array tiers, every entry with a string id
+// and a numeric firmness, which is what the scoring and results passes
+// dereference without a guard.
+const GOOD_MATTRESSES = {
+  gold: [{ id: "g1", firmness: 5 }],
+  silver: [{ id: "s1", firmness: 7 }],
+  bronze: [],
+};
 const GOOD_QUIZ = { questions: [{ id: "q1" }, { id: "q2" }] };
 const GOOD_STORE = { storeName: "Test Store", languages: ["en", "es"] };
 const GOOD_ACC = [{ id: "a1" }];
@@ -223,11 +237,15 @@ function buildApp(opts) {
   const consoleLines = [];
   const doc = { activeElement: null, listeners: [] };
 
-  const ids = ["dataErrorOverlay", "dataErrorTitle", "dataErrorText", "dataErrorLive",
-    "dataErrorRetryBtn", "dataErrorRestartBtn", "startBtn", "landingHeadlineMain",
-    "welcomeScreen", "questionScreen", "mattressDrawer"];
+  // The overlay markup is parsed AFTER the loader's script block, so at boot
+  // getElementById really can return null for it. opts.noOverlay models that.
+  const overlayIds = ["dataErrorOverlay", "dataErrorTitle", "dataErrorText", "dataErrorLive",
+    "dataErrorRetryBtn", "dataErrorRestartBtn"];
+  const ids = overlayIds.concat(["startBtn", "landingHeadlineMain",
+    "welcomeScreen", "questionScreen", "mattressDrawer"]);
   const byId = {};
   ids.forEach((id) => { byId[id] = makeEl(id, doc); });
+  const detached = {};
   // Welcome is the active screen at boot, and #startBtn lives inside it —
   // the containment focusWelcomeEntry()'s contract depends on.
   byId.welcomeScreen.classList.add("active");
@@ -239,6 +257,11 @@ function buildApp(opts) {
   byId.dataErrorOverlay.setAttribute("aria-hidden", "true");
   byId.dataErrorOverlay.setAttribute("aria-busy", "false");
   byId.dataErrorOverlay.style.display = "none";
+  // Detached only AFTER wiring, so the element that is inserted later is the
+  // fully-formed one the page would have parsed.
+  if (opts.noOverlay) {
+    overlayIds.forEach((id) => { detached[id] = byId[id]; delete byId[id]; });
+  }
   const body = makeEl("body", doc);
   doc.activeElement = body;
   doc.body = body;
@@ -295,12 +318,29 @@ function buildApp(opts) {
     var SUBBRAND_NOTES = {}, BRAND_NOTES = {}, SUBBRAND_NOTES_ES = {}, BRAND_NOTES_ES = {};
     var DICT = {};
     var currentLang = ${JSON.stringify(opts.lang || "en")};
+    // The shared ordering token and the installed-language record. Real
+    // bindings, so the loader and a language switch contend for the same
+    // sequence exactly as they do in the page.
+    var _langRequestSeq = 0;
+    var _dictInstalledFor = '';
     var currentQuestion = 0, answers = {}, editingFromReview = false;
     var analytics = { startedAt: null, log: function() {} };
     var applyCalls = [];
-    function applyStoreConfig() { applyCalls.push('applyStoreConfig'); }
-    function applyLanguageConfig() { applyCalls.push('applyLanguageConfig'); }
-    function applyTranslations() { applyCalls.push('applyTranslations'); }
+    // Which applier, if any, throws — so "fetched the data" and "could render
+    // it" can be told apart.
+    var applyThrows = ${JSON.stringify(opts.throwIn || "")};
+    function applyStoreConfig() {
+      applyCalls.push('applyStoreConfig');
+      if (applyThrows === 'applyStoreConfig') throw new TypeError('applyStoreConfig blew up');
+    }
+    function applyLanguageConfig() {
+      applyCalls.push('applyLanguageConfig');
+      if (applyThrows === 'applyLanguageConfig') throw new TypeError('applyLanguageConfig blew up');
+    }
+    function applyTranslations() {
+      applyCalls.push('applyTranslations');
+      if (applyThrows === 'applyTranslations') throw new TypeError('applyTranslations blew up');
+    }
     function showScreen(id) { out.screens.push(id); }
     function renderQuestion() { out.rendered++; }
     function transportFailureCode(err) {
@@ -314,6 +354,8 @@ function buildApp(opts) {
     var _safetyMode = null;
     function safetyDialogMode() { return _safetyMode; }
     ${L_FN}
+    ${DEADLINE_MS_SRC}
+    ${DEADLINE_FNS}
     ${DICT_FNS}
     ${EPOCH_BLOCK}
     ${FOCUS_WELCOME}
@@ -335,9 +377,13 @@ function buildApp(opts) {
         accessories: ACCESSORIES,
         questions: QUESTIONS.length,
         gold: (MATTRESSES.gold || []).length,
+        mattressKeys: Object.keys(MATTRESSES).join(','),
         goldId: (MATTRESSES.gold && MATTRESSES.gold[0] && MATTRESSES.gold[0].id) || '',
         storeName: STORE_CONFIG.storeName || '',
         dictKeys: Object.keys(DICT).length,
+        dictInstalledFor: _dictInstalledFor,
+        appliersApplied: _appliersApplied,
+        startReady: appStartReady(),
         epoch: _sessionEpoch,
         applyCalls: applyCalls.slice(),
         lang: currentLang
@@ -371,6 +417,13 @@ function buildApp(opts) {
       document.getElementById(id).classList.add('active');
     };
     out.coreReady = function() { return coreDataReady(); };
+    out.startReady = function() { return appStartReady(); };
+    out.stopThrowing = function() { applyThrows = ''; };
+    out.throwIn = function(name) { applyThrows = name; };
+    // The synchronous half of a language switch: currentLang moves and the
+    // shared ordering token advances, exactly as switchLanguage() does before
+    // its own await.
+    out.beginLanguageSwitch = function(l) { currentLang = l; return ++_langRequestSeq; };
     out.seedAccessories = function(v) { ACCESSORIES = v; _dataLoaded.accessories = false; };
   `;
 
@@ -381,7 +434,26 @@ function buildApp(opts) {
     () => 0, () => {});
 
   return { out, doc, byId, win, fetchLog, consoleLines, clock, body,
-    startQuizSource: opts.startQuizSource || START_QUIZ };
+    startQuizSource: opts.startQuizSource || START_QUIZ,
+    // Inserts the markup that had not been parsed yet, then fires the recorded
+    // DOMContentLoaded listeners — the real deferral path, not a simulation.
+    insertOverlay() {
+      Object.keys(detached).forEach((id) => { byId[id] = detached[id]; });
+      doc.listeners.filter((l) => l.evt === "DOMContentLoaded")
+        .forEach((l) => l.fn({ type: "DOMContentLoaded" }));
+    },
+    domReadyListeners() {
+      return doc.listeners.filter((l) => l.evt === "DOMContentLoaded").length;
+    },
+    // Dispatches through the listeners production actually REGISTERED, by
+    // reference. Calling the handler directly proves the function works and
+    // says nothing about whether anything ever wired it up.
+    dispatchKey(key, shiftKey) {
+      let prevented = false;
+      const ev = { key, shiftKey: !!shiftKey, preventDefault() { prevented = true; } };
+      doc.listeners.filter((l) => l.evt === "keydown").forEach((l) => l.fn(ev));
+      return prevented;
+    } };
 }
 
 // Drain microtasks AND the macrotask queue, so every await inside the loader
@@ -666,8 +738,8 @@ section("first success wins, whichever response lands last");
   // Two loads racing on the SAME url must apply ONE payload, and which one must
   // not depend on arrival order. Distinguishable payloads, or "it was applied"
   // is true either way and the guard could be deleted unnoticed.
-  const OLDER = { gold: [{ id: "older" }], silver: [], bronze: [] };
-  const NEWER = { gold: [{ id: "newer" }], silver: [], bronze: [] };
+  const OLDER = { gold: [{ id: "older", firmness: 4 }], silver: [], bronze: [] };
+  const NEWER = { gold: [{ id: "newer", firmness: 6 }], silver: [], bronze: [] };
   const d = deferred();
   const plan = goodPlan({ "./data/mattresses.json": () => d.promise });
   const h = buildApp({ plan });
@@ -846,9 +918,12 @@ section("a poll queued before the overlay appeared cannot start a quiz after rec
   const plan = goodPlan({ "./data/mattresses.json": () => d.promise });
   const h = buildApp({ plan });
   await settle(1);
+  // Counted as a DELTA: the fetch deadline is on this same fake clock now, so
+  // an absolute pending-timer count would be measuring the wrong thing.
+  const timersBefore = h.clock.pending();
   h.out.startQuiz();                          // data not in yet -> schedules a poll
   check("precondition: a poll is pending and no quiz started",
-    h.clock.pending() === 1 && !h.out.screens.includes("questionScreen"));
+    h.clock.pending() === timersBefore + 1 && !h.out.screens.includes("questionScreen"));
 
   h.out.show();                               // the overlay appears (staff-notify)
   check("the overlay retired the poll generation", h.out.probe().quizGeneration > 0);
@@ -985,10 +1060,17 @@ section("the modal contains Tab, and Escape does not dismiss a broken kiosk");
   check("an inert overlay alone is enough to refuse",
     !key("Tab") && h.doc.activeElement === held);
   h.byId.dataErrorOverlay.removeAttribute("inert");
+  // The drawer is BELOW this layer (z-index 201 against 10000), so it must NOT
+  // take the key. An earlier version yielded to it, which disabled this trap
+  // while the drawer's own listener — bound to the drawer element — could not
+  // fire either: Tab then walked free across both layers' controls. The test is
+  // "is another layer ABOVE this one", not "does another layer exist".
   h.byId.mattressDrawer.classList.add("drawer-open");
-  check("an open drawer is enough to refuse",
-    !key("Tab") && h.doc.activeElement === held);
+  h.doc.activeElement = h.byId.startBtn;
+  check("an open drawer BELOW does not stop containment",
+    key("Tab") && h.doc.activeElement === retry);
   h.byId.mattressDrawer.classList.remove("drawer-open");
+  h.doc.activeElement = h.byId.startBtn;
   check("with every other layer gone, containment resumes",
     key("Tab") && h.doc.activeElement === retry);
 
@@ -1054,6 +1136,373 @@ check("applyTranslations re-renders the overlay copy, but only while it is visib
   /if \(typeof renderDataError === 'function'[\s\S]{0,160}dataErrorVisible\(\)\) \{\s*renderDataError\(\);/.test(html));
 
 // ===========================================================================
+// 12. BOUNDED REQUESTS — a black-holed network must not make Retry terminal
+// ===========================================================================
+section("a request that never settles times out, and Retry works again after it");
+{
+  // A socket the tablet is associated with but which has no upstream: fetch()
+  // never resolves and never rejects. Before the deadline this left the
+  // in-flight latch true forever and Try again answered "still trying" for the
+  // life of the tablet — the recovery route dead in its most likely failure.
+  const hang = () => new Promise(() => {});
+  const plan = goodPlan({ "./data/mattresses.json": hang });
+  const h = buildApp({ plan });
+  await settle();
+  check("the load is still in flight before the deadline", h.out.probe().inFlight === true);
+  check("nothing has been raised yet", !overlayState(h).visible);
+  const tapped = h.out.retry();
+  check("a tap while it hangs is answered, not queued", tapped === false);
+
+  h.clock.advance(13000);
+  await settle();
+  check("the deadline settles the load", h.out.probe().inFlight === false);
+  check("...as a failure, with the overlay up", overlayState(h).visible
+    && h.out.probe().dataLoadFailed === true);
+  check("...and the hung source is not marked loaded",
+    h.out.probe().loaded.mattresses === false);
+  check("the timeout is classified, not echoed",
+    h.consoleLines.some((l) => l.includes("mattresses.json")));
+
+  // The whole point: a FRESH attempt is now possible.
+  plan["./data/mattresses.json"] = okJson(GOOD_MATTRESSES);
+  const before = h.fetchLog.length;
+  const verdict = await h.out.retry();
+  await settle();
+  check("Retry issues a new request after the timeout",
+    h.fetchLog.length > before);
+  check("...and recovers", verdict === "recovered" && !overlayState(h).visible);
+  check("no delayed work is left behind", h.clock.pending() === 0);
+}
+{
+  // The dictionary legs are bounded too — both of them. A hung dict-es must
+  // fall back, and a hung dict-en must not hold the load open either.
+  const hang = () => new Promise(() => {});
+  const plan = goodPlan({ "./data/dict-es.json": hang, "./data/dict-en.json": hang });
+  const h = buildApp({ lang: "es", plan });
+  await settle();
+  check("the load has not settled while both dictionaries hang",
+    h.out.probe().inFlight === true);
+  h.clock.advance(13000);      // dict-es deadline -> falls back to dict-en
+  await settle();
+  h.clock.advance(13000);      // dict-en deadline -> gives up
+  await settle();
+  check("both dictionary legs time out and the load completes",
+    h.out.probe().inFlight === false);
+  check("core data still applied, so the app is usable", h.out.probe().gold === 1);
+  check("no dictionary was installed and none was mislabelled",
+    h.out.probe().dictKeys === 0 && h.out.probe().dictInstalledFor === "");
+  check("no delayed work is left behind", h.clock.pending() === 0);
+}
+{
+  // A wipe during a hung load must not resurrect anything when the deadline
+  // eventually fires.
+  const hang = () => new Promise(() => {});
+  const h = buildApp({ plan: goodPlan({ "./data/quiz.json": hang }) });
+  await settle();
+  h.out.wipeLayers();
+  h.out.bumpEpoch();
+  h.byId.startBtn.focus();
+  h.clock.advance(13000);
+  await settle();
+  check("the post-wipe timeout records the failure",
+    h.out.probe().dataLoadFailed === true);
+  // applyTranslations() re-renders an open safety dialog, and applyStoreConfig()
+  // rewrites the page chrome. Neither may run inside a session that a wipe has
+  // already handed to the next customer.
+  check("...and the appliers did NOT run into the new session",
+    h.out.probe().applyCalls.length === 0);
+  check("...raises no layer over the fresh session", !overlayState(h).visible);
+  check("...announces nothing into it", overlayState(h).live === "");
+  check("...and leaves the wipe's focus alone", h.doc.activeElement.id === "startBtn");
+}
+check("every data and dictionary request goes through the bounded helper",
+  !/\bawait fetch\(/.test(DATA_BLOCK)
+  && /function fetchDataSource\(src\) \{\s*[\r\n]+\s*return boundedJson\(/.test(DATA_BLOCK)
+  && (DICT_FNS.match(/boundedJson\(/g) || []).length === 2
+  && !/\bawait fetch\(/.test(DICT_FNS));
+check("the deadline timer is cleared the moment the work settles",
+  /clearTimeout\(dataDeadlineTimer\);/.test(DEADLINE_FNS));
+check("it is NOT a sessionTimeout, which a wipe would disarm",
+  !/sessionTimeout\(/.test(DEADLINE_FNS));
+
+// ===========================================================================
+// 13. THE APPLIERS — having the data is not the same as rendering it
+// ===========================================================================
+section("a throwing applier is a failed load, not a successful one");
+for (const applier of ["applyStoreConfig", "applyLanguageConfig", "applyTranslations"]) {
+  const h = buildApp({ plan: goodPlan(), throwIn: applier });
+  await settle();
+  const p = h.out.probe();
+  check(`[boot] ${applier} throwing raises the overlay`, overlayState(h).visible);
+  check(`[boot] ${applier} throwing sets the failure flag`, p.dataLoadFailed === true);
+  check(`[boot] the data itself is still marked loaded`, p.loaded.mattresses === true
+    && p.loaded.storeConfig === true && p.loaded.quiz === true);
+  check(`[boot] ${applier}: coreDataReady is true but startReady is not`,
+    h.out.coreReady() === true && h.out.startReady() === false);
+  check(`[boot] ${applier}: the quiz cannot start`,
+    (h.out.startQuiz(), !h.out.screens.includes("questionScreen")));
+  // The other two appliers still ran: one failure must not suppress them.
+  const ran = p.applyCalls;
+  check(`[boot] the other appliers still ran (${ran.join(",")})`, ran.length === 3);
+
+  // Retry re-runs the appliers WITHOUT re-fetching anything.
+  const before = h.fetchLog.length;
+  h.out.stopThrowing();
+  const verdict = await h.out.retry();
+  await settle();
+  check(`[retry] ${applier}: recovery without re-fetching`,
+    verdict === "recovered" && h.fetchLog.length === before);
+  check(`[retry] ${applier}: the overlay is closed and the app can start`,
+    !overlayState(h).visible && h.out.startReady() === true);
+}
+
+// ===========================================================================
+// 14. MATTRESS SCHEMA — the shapes that crash after the twelfth question
+// ===========================================================================
+section("a payload the results path cannot survive is not a successful load");
+{
+  const cases = [
+    ["no silver or bronze tier", { gold: [{ id: "g1", firmness: 5 }] }],
+    ["silver is null", { gold: [{ id: "g1", firmness: 5 }], silver: null, bronze: [] }],
+    ["bronze is an object", { gold: [{ id: "g1", firmness: 5 }], silver: [], bronze: {} }],
+    ["gold is a string", { gold: "x", silver: [], bronze: [] }],
+    ["gold is empty", { gold: [], silver: [], bronze: [] }],
+    ["an entry has no id", { gold: [{ firmness: 5 }], silver: [], bronze: [] }],
+    ["an entry has a non-numeric firmness",
+      { gold: [{ id: "g1", firmness: "medium" }], silver: [], bronze: [] }],
+    ["two entries share an id",
+      { gold: [{ id: "g1", firmness: 5 }], silver: [{ id: "g1", firmness: 7 }], bronze: [] }],
+    // Array-LIKE is not an array. This one survives an element-by-element
+    // check — its forEach does nothing — and dies at the .slice() in the
+    // results path, which is the one place with no error surface at all.
+    ["a tier is array-like but not an array",
+      { gold: [{ id: "g1", firmness: 5 }], silver: { forEach: function() {} }, bronze: [] }],
+    ["the payload is an array", [{ id: "g1" }]],
+    ["the payload is null", null],
+  ];
+  for (const [label, payload] of cases) {
+    const h = buildApp({ plan: goodPlan({ "./data/mattresses.json": okJson(payload) }) });
+    await settle();
+    check(`${label} -> recovery, not a booted app`,
+      overlayState(h).visible && h.out.probe().dataLoadFailed === true
+      && h.out.probe().loaded.mattresses === false);
+  }
+}
+{
+  // The one nobody would think to guard: a valid file with an EXTRA top-level
+  // key. The scoring pass iterates Object.entries(MATTRESSES), so an added
+  // generatedAt or schemaVersion would crash every customer at results.
+  const withExtra = {
+    gold: [{ id: "g1", firmness: 5 }], silver: [], bronze: [], schemaVersion: 2,
+  };
+  const h = buildApp({ plan: goodPlan({ "./data/mattresses.json": okJson(withExtra) }) });
+  await settle();
+  // Tolerated, not rejected — and harmless BECAUSE of the narrow assign. A
+  // strict reject would turn a purely additive pipeline change into a dead
+  // kiosk; copying the three tiers means the extra key simply never exists as
+  // far as the scoring loop is concerned.
+  check("an extra top-level key does not break the load",
+    !overlayState(h).visible && h.out.probe().loaded.mattresses === true);
+  check("REGRESSION: it cannot reach the scoring loop — MATTRESSES has exactly three keys",
+    h.out.probe().mattressKeys === "gold,silver,bronze");
+  check("the applier assigns the three tiers narrowly",
+    /MATTRESSES = \{ gold: payload\.gold, silver: payload\.silver, bronze: payload\.bronze \};/
+      .test(DATA_BLOCK));
+}
+{
+  // store-config is core too, and used to accept anything truthy-or-not.
+  for (const [label, payload] of [["null", null], ["an array", []], ["a string", "cfg"]]) {
+    const h = buildApp({ plan: goodPlan({ "./data/store-config.json": okJson(payload) }) });
+    await settle();
+    check(`store-config.json as ${label} -> recovery, not an unbranded kiosk`,
+      overlayState(h).visible && h.out.probe().loaded.storeConfig === false);
+  }
+}
+
+// ===========================================================================
+// 15. DICTIONARY IDENTITY AND ORDERING
+// ===========================================================================
+section("the dictionary records what was installed, not what was asked for");
+{
+  // A Spanish request that falls back to English must record ENGLISH, or the
+  // loader believes Spanish is loaded and never asks again.
+  const plan = goodPlan({ "./data/dict-es.json": httpError(404) });
+  const h = buildApp({ lang: "es", plan });
+  await settle();
+  check("the fallback installed a dictionary", h.out.probe().dictKeys > 0);
+  check("REGRESSION: it is recorded as English, not as the Spanish that was asked for",
+    h.out.probe().dictInstalledFor === "en");
+
+  // ...so a later attempt re-requests Spanish rather than believing it has it.
+  plan["./data/dict-es.json"] = okJson({ "session.restart": "Reiniciar" });
+  const before = h.fetchLog.length;
+  await h.out.load();
+  await settle();
+  const asked = h.fetchLog.slice(before);
+  check("a later load re-requests Spanish", asked.includes("./data/dict-es.json"));
+  check("and now records Spanish", h.out.probe().dictInstalledFor === "es");
+}
+{
+  // An empty body is not a dictionary: installing one drops every string in
+  // the app to its raw key.
+  const h = buildApp({ plan: goodPlan({ "./data/dict-en.json": okJson({}) }) });
+  await settle();
+  check("an empty dictionary body is refused", h.out.probe().dictKeys === 0);
+  check("...and records nothing as installed", h.out.probe().dictInstalledFor === "");
+}
+{
+  // A 404 page that happens to parse as JSON is not a dictionary either.
+  const h = buildApp({ plan: goodPlan({ "./data/dict-en.json": httpError(404) }) });
+  await settle();
+  check("a non-ok dictionary response is refused", h.out.probe().dictKeys === 0);
+}
+{
+  // The race the language token exists to prevent, which the loader used to
+  // route around: a boot dictionary landing AFTER the customer chose a
+  // language must not revert their choice.
+  const d = deferred();
+  const plan = goodPlan({ "./data/dict-en.json": () => d.promise });
+  const h = buildApp({ lang: "en", plan });
+  await settle(1);
+  h.out.beginLanguageSwitch("es");            // the customer taps ES
+  d.resolve({ ok: true, status: 200, json: async () => ({ "session.restart": "Restart" }) });
+  await settle();
+  check("REGRESSION: the superseded boot dictionary is not installed",
+    h.out.probe().dictKeys === 0 && h.out.probe().dictInstalledFor === "");
+  check("...and the customer's language stands", h.out.probe().lang === "es");
+}
+
+// ===========================================================================
+// 16. THE HANDLER PRODUCTION ACTUALLY REGISTERED
+// ===========================================================================
+section("Tab is dispatched through the registered listener, not the function");
+{
+  const h = buildApp({ plan: goodPlan({ "./data/quiz.json": httpError(500) }) });
+  await settle();
+  check("precondition: the overlay is up and focused",
+    overlayState(h).visible && h.doc.activeElement === h.byId.dataErrorOverlay);
+  check("Tab dispatched through the DOCUMENT listener is contained",
+    h.dispatchKey("Tab") && h.doc.activeElement === h.byId.dataErrorRetryBtn);
+  h.byId.startBtn.focus();
+  check("...and pulls escaped focus back in",
+    h.dispatchKey("Tab") && h.doc.activeElement === h.byId.dataErrorRetryBtn);
+  check("Escape dispatched the same way still does nothing",
+    !h.dispatchKey("Escape") && overlayState(h).visible);
+}
+{
+  // The registration itself, mutated. Calling dataErrorKeydown() directly
+  // would still pass here — which is exactly why that is not how this is
+  // tested.
+  const src = DATA_BLOCK.replace(
+    "document.addEventListener('keydown', dataErrorKeydown);",
+    "document.addEventListener('keydown', function() {});");
+  check("  [setup] the registration was replaced with a no-op", src !== DATA_BLOCK);
+  const h = buildApp({ source: src, plan: goodPlan({ "./data/quiz.json": httpError(500) }) });
+  await settle();
+  h.byId.startBtn.focus();
+  check("MUTATION: registering a handler that is not dataErrorKeydown is caught",
+    !h.dispatchKey("Tab") && h.doc.activeElement === h.byId.startBtn);
+}
+
+// ===========================================================================
+// 17. THE OVERLAY MARKUP HAS NOT BEEN PARSED YET
+// ===========================================================================
+section("a failure before the markup exists defers exactly once");
+{
+  // The loader's script block runs thousands of lines above the overlay's
+  // markup, so at boot getElementById really can return null.
+  const h = buildApp({ noOverlay: true, plan: goodPlan({ "./data/quiz.json": httpError(500) }) });
+  await settle();
+  check("the failure is recorded with no overlay to show it",
+    h.out.probe().dataLoadFailed === true);
+  check("exactly one DOMContentLoaded listener was armed", h.domReadyListeners() === 1);
+
+  h.insertOverlay();
+  const s = overlayState(h);
+  check("the overlay is shown once the markup arrives", s.visible);
+  check("...with its copy rendered", s.title === "We’re having trouble loading"
+    && s.retry === "Try again" && s.restart === "Start over");
+  check("...and focused, so the failure is announced",
+    h.doc.activeElement === h.byId.dataErrorOverlay);
+  check("...and no second listener was armed", h.domReadyListeners() === 1);
+  check("...and exactly one keydown listener is registered",
+    h.doc.listeners.filter((l) => l.evt === "keydown").length === 1);
+}
+{
+  // The recovery case: a retry succeeds BEFORE the markup parses. The armed
+  // listener must not then raise the overlay over a working app.
+  const plan = goodPlan({ "./data/quiz.json": httpError(500) });
+  const h = buildApp({ noOverlay: true, plan });
+  await settle();
+  check("precondition: failed, and a deferred show is armed",
+    h.out.probe().dataLoadFailed === true && h.domReadyListeners() === 1);
+  plan["./data/quiz.json"] = okJson(GOOD_QUIZ);
+  await h.out.load();
+  await settle();
+  check("the retry recovered while the markup was still unparsed",
+    h.out.probe().dataLoadFailed === false);
+
+  // The deferral must be RE-ARMABLE, and this has to be checked while the
+  // markup is STILL absent — once it exists, a failure shows the overlay
+  // directly and no deferral is involved. If the flag that guards arming were
+  // not cleared by the recovery, a genuinely later failure before the markup
+  // parses would arm nothing and never be shown at all.
+  // The second failure has to come from something that is NOT a re-fetch: the
+  // sources are all marked loaded now, so the loader correctly requests
+  // nothing. A throwing applier is the failure mode that remains available.
+  const armedAfterRecovery = h.domReadyListeners();
+  h.out.throwIn("applyStoreConfig");
+  await h.out.load();
+  await settle();
+  check("a later failure before the markup exists arms a FRESH deferred show",
+    h.out.probe().dataLoadFailed === true && h.domReadyListeners() === armedAfterRecovery + 1);
+
+  // Now the markup arrives. The spent listener from the recovered attempt must
+  // not fire a second overlay, and the fresh one must show the real failure.
+  h.insertOverlay();
+  check("the later failure is what reaches the screen", overlayState(h).visible);
+}
+{
+  // The recovered-before-parse case on its own: nothing is raised at all.
+  const plan = goodPlan({ "./data/quiz.json": httpError(500) });
+  const h = buildApp({ noOverlay: true, plan });
+  await settle();
+  plan["./data/quiz.json"] = okJson(GOOD_QUIZ);
+  await h.out.load();
+  await settle();
+  h.insertOverlay();
+  check("REGRESSION: the deferred show does not resurrect the overlay over a recovered app",
+    !overlayState(h).visible && h.out.probe().dataLoadFailed === false);
+}
+
+// ===========================================================================
+// 18. THE VISIBILITY CONTRACT
+// ===========================================================================
+section("the CSS that makes the layer visible at all");
+{
+  // Every behavioural assertion above turns on the `visible` class. If the rule
+  // that class drives were deleted, all of them would still pass and the
+  // overlay would never appear on a real screen.
+  check("the layer is display:none by default, with !important",
+    /#dataErrorOverlay \{ display:none !important; \}/.test(html));
+  check("the visible class is what shows it, also with !important",
+    /#dataErrorOverlay\.visible \{ display:flex !important; \}/.test(html));
+  check("the inline style agrees with the default",
+    /<div id="dataErrorOverlay"[\s\S]{0,400}style="display:none;/.test(html));
+  check("it is fixed, full-viewport and above every other layer",
+    /<div id="dataErrorOverlay"[\s\S]{0,400}position:fixed; inset:0; z-index:10000/.test(html));
+  // The wipe writes the inline display, and the stylesheet's !important beats
+  // it — so hiding must not depend on the inline write alone.
+  check("hiding removes the class, not just the inline display",
+    /overlay\.classList\.remove\('visible'\);/.test(DATA_BLOCK));
+}
+// BOUNDARY, stated rather than implied: deleting the marked JS block makes this
+// suite exit 1 at extraction. That proves the BLOCK cannot vanish unnoticed. It
+// does NOT cover deletion of the overlay markup or of the <style> rules — those
+// live outside the markers, and the assertions immediately above are what pin
+// them.
+
+// ===========================================================================
 // 11. MUTATION BATTERY — every safety property above, removed
 // ===========================================================================
 section("mutations: each assertion must fail when its safety property is removed");
@@ -1069,6 +1518,21 @@ function mutate(from, to) {
   const src = DATA_BLOCK.replace(re, to);
   check(`  [setup] mutation applied: ${from.replace(/\s+/g, " ").slice(0, 56)}…`,
     src !== DATA_BLOCK);
+  return src;
+}
+
+// Some properties are now defended in more than one place — a superseded load
+// is stopped by a gate in the loader AND by one in the verdict. Removing only
+// one leaves the property intact, which is the right outcome for the app and
+// the wrong one for a mutation: the mutant has to remove the whole defence, or
+// the assertion is measuring the survivor rather than the property.
+function mutateEvery(from, to, expected) {
+  const re = new RegExp(
+    from.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\r?\n/g, "\\r?\\n"), "g");
+  const hits = (DATA_BLOCK.match(re) || []).length;
+  const src = DATA_BLOCK.replace(re, to);
+  check(`  [setup] mutation applied at all ${expected} sites (found ${hits}): ${from.replace(/\s+/g, " ").slice(0, 44)}…`,
+    hits === expected && src !== DATA_BLOCK);
   return src;
 }
 
@@ -1093,7 +1557,7 @@ function mutate(from, to) {
   const d = deferred();
   const plan = goodPlan({ "./data/mattresses.json": () => d.promise });
   const h = buildApp({
-    source: mutate("      _startQuizAttempts = 0;\n      var wasVisible", "      var wasVisible"),
+    source: mutate("      _startQuizAttempts = 0;\n      // A deferred show", "      // A deferred show"),
     plan,
   });
   await settle(1);
@@ -1128,8 +1592,8 @@ function mutate(from, to) {
   const d = deferred();
   const plan = goodPlan({ "./data/mattresses.json": () => d.promise });
   const h = buildApp({
-    source: mutate("      if (generation !== _dataLoadGeneration) return 'stale';",
-      "      if (false) return 'stale';"),
+    source: mutateEvery("if (generation !== _dataLoadGeneration)",
+      "if (false)", 2),
     plan,
   });
   await settle(1);
@@ -1147,7 +1611,7 @@ function mutate(from, to) {
   const d = deferred();
   const plan = goodPlan({ "./data/quiz.json": httpError(500) });
   const h = buildApp({
-    source: mutate("        var owned = sessionUnchanged() === true;", "        var owned = true;"),
+    source: mutateEvery("sessionUnchanged() === true", "true", 2),
     plan,
   });
   await settle();
@@ -1167,7 +1631,7 @@ function mutate(from, to) {
   const d = deferred();
   const plan = goodPlan({ "./data/mattresses.json": httpError(503) });
   const h = buildApp({
-    source: mutate("        var owned = sessionUnchanged() === true;", "        var owned = true;"),
+    source: mutateEvery("sessionUnchanged() === true", "true", 2),
     plan,
   });
   await settle();
@@ -1202,8 +1666,8 @@ function mutate(from, to) {
 {
   // M7 — the usability precondition on mattresses.json is removed.
   const h = buildApp({
-    source: mutate("          if (!payload || !payload.gold || !payload.gold.length) {\n            throw new Error('mattresses.json has no gold tier');\n          }",
-      "          if (false) { throw new Error('mattresses.json has no gold tier'); }"),
+    source: mutate("          if (!payload.gold.length) throw new Error('mattresses.json has no gold tier');",
+      "          if (false) throw new Error('mattresses.json has no gold tier');"),
     plan: goodPlan({ "./data/mattresses.json": okJson({ gold: [], silver: [], bronze: [] }) }),
   });
   await settle();
@@ -1318,16 +1782,16 @@ function mutate(from, to) {
   const h = buildApp({
     source: DATA_BLOCK,
     plan,
-    startQuizSource: START_QUIZ.replace("|| QUESTIONS.length === 0 || !coreDataReady()",
+    startQuizSource: START_QUIZ.replace("|| QUESTIONS.length === 0 || !appStartReady()",
       "|| QUESTIONS.length === 0"),
   });
   await settle();
   // Anchored to the GUARD, not to the identifier: the comment above it names
-  // coreDataReady() too, so a bare /coreDataReady/ would match unmutated source
-  // and report a substitution that never happened.
+  // the predicate too, so a bare identifier match would report a substitution
+  // that never happened.
   check("  [setup] the startQuiz guard really was weakened",
-    /QUESTIONS\.length === 0 \|\| !coreDataReady\(\)/.test(START_QUIZ)
-    && !/QUESTIONS\.length === 0 \|\| !coreDataReady\(\)/.test(h.startQuizSource));
+    /QUESTIONS\.length === 0 \|\| !appStartReady\(\)/.test(START_QUIZ)
+    && !/QUESTIONS\.length === 0 \|\| !appStartReady\(\)/.test(h.startQuizSource));
   h.out.startQuiz();
   check("MUTATION: starting a quiz on partial core data is caught",
     h.out.screens.includes("questionScreen"));

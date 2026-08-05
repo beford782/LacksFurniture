@@ -11129,22 +11129,91 @@
       return currentLang === 'es' ? (m[field + '_es'] || m[field]) : m[field];
     }
 
-    // Fetch a dictionary file and RETURN it. Deliberately does not assign to
-    // DICT: switchLanguage() has to be able to throw away the response of a
-    // superseded request, and it can only do that if the fetch has no side
-    // effect of its own. Returns null when nothing could be loaded, so the
-    // caller keeps whatever dictionary is already in place rather than
-    // dropping the interface to raw keys.
+    // ---- Bounded network work ---------------------------------------------
+    // Every fetch in this file used to be unbounded, and on a kiosk that is not
+    // a theoretical gap: an access point the tablet is associated with but
+    // which has no upstream black-holes the socket, and neither fetch() nor
+    // res.json() ever settles. The data loader's in-flight latch then never
+    // releases, and its Try again control answers "still trying" forever — the
+    // recovery route, dead in the one failure it most needs to survive.
+    //
+    // The timer is RAW and cleared by name rather than scheduled through
+    // sessionTimeout(), deliberately. sessionTimeout() registers with
+    // clearSessionTimers(), which a wipe drains — so a customer tapping Start
+    // over during a black-holed fetch would DISARM the deadline and strand the
+    // latch again, the same defect re-entered through the wipe. This work is
+    // application lifecycle, not customer session state, so it is classified B
+    // in the owned inventory in tests/session_async_check.mjs, alongside the
+    // idle ticker.
+    //
+    // Shared by the dictionary and the data loader, so it sits above both.
+    var DATA_DEADLINE_MS = 12000;
+
+    // Settles `work` or rejects at the deadline, whichever comes first, and
+    // aborts the underlying request when it can. The rejection is shaped as an
+    // AbortError because transportFailureCode() already classifies that as
+    // 'aborted' — the classifier was written for this and had no producer.
+    function dataDeadline(work, label, controller) {
+      return new Promise(function(resolve, reject) {
+        var done = false;
+        var dataDeadlineTimer = setTimeout(function() {
+          if (done) return;
+          done = true;
+          if (controller && typeof controller.abort === 'function') {
+            try { controller.abort(); } catch (e) { /* already aborted */ }
+          }
+          var err = new Error((label || 'request') + ' exceeded ' + DATA_DEADLINE_MS + 'ms');
+          err.name = 'AbortError';
+          reject(err);
+        }, DATA_DEADLINE_MS);
+        function settle(fn) {
+          return function(value) {
+            if (done) return;
+            done = true;
+            clearTimeout(dataDeadlineTimer);
+            fn(value);
+          };
+        }
+        work.then(settle(resolve), settle(reject));
+      });
+    }
+
+    // One request, bounded end to end. The deadline covers the body as well as
+    // the headers: a response that starts and then stalls hangs res.json() just
+    // as completely as a socket that never answers.
+    function boundedJson(url, label, init) {
+      var controller = (typeof AbortController === 'function') ? new AbortController() : null;
+      var opts = init || {};
+      if (controller) opts.signal = controller.signal;
+      return dataDeadline(
+        Promise.resolve(fetch(url, opts)).then(function(res) {
+          if (!res || !res.ok) throw new Error(label + ' HTTP ' + ((res && res.status) || 'no response'));
+          return res.json();
+        }),
+        label, controller);
+    }
+
+    // Fetch a dictionary file and RETURN it, WITH the language it actually
+    // produced. Deliberately does not assign to DICT: switchLanguage() has to
+    // be able to throw away the response of a superseded request, and it can
+    // only do that if the fetch has no side effect of its own. Returns null
+    // when nothing could be loaded, so the caller keeps whatever dictionary is
+    // already in place rather than dropping the interface to raw keys.
+    //
+    // The reported language is the point. A Spanish request that falls back to
+    // English used to be indistinguishable from a Spanish request that
+    // succeeded, so the caller recorded "Spanish is loaded" over English text
+    // and never retried Spanish again.
     async function fetchDictionary(lang) {
       try {
-        var res = await fetch('./data/dict-' + lang + '.json');
-        return await res.json();
+        var body = await boundedJson('./data/dict-' + lang + '.json', 'dict-' + lang);
+        return { lang: lang, dict: body };
       } catch (e) {
         console.warn('[DreamFinder] Could not load dictionary for ' + lang + ', falling back to en');
         if (lang !== 'en') {
           try {
-            var fallback = await fetch('./data/dict-en.json');
-            return await fallback.json();
+            var fallbackBody = await boundedJson('./data/dict-en.json', 'dict-en');
+            return { lang: 'en', dict: fallbackBody };
           } catch (e2) {
             console.error('[DreamFinder] Failed to load any dictionary:', e2);
             return null;
@@ -11154,10 +11223,29 @@
       }
     }
 
-    // Load a dictionary file (initial boot path — no request to race with).
+    // The ONE place a dictionary is installed, and the one ordering authority.
+    // Takes a token from the same sequence switchLanguage() uses, so a boot
+    // response that lands after a customer has chosen a language is discarded
+    // instead of silently reverting their choice — the loader used to route
+    // around that mechanism by calling fetchDictionary() directly.
+    //
+    // Returns the language ACTUALLY installed, or '' when nothing was.
+    // typeof guards, the same idiom the rest of this file uses: these two
+    // functions are extracted and executed on their own by the suites, in a
+    // scope that declares only a subset of these bindings, and an unguarded
+    // identifier throws under "use strict" instead of failing an assertion.
     async function loadDictionary(lang) {
-      var dict = await fetchDictionary(lang);
-      if (dict) DICT = dict;
+      var sequenced = (typeof _langRequestSeq === 'number');
+      var token = sequenced ? ++_langRequestSeq : 0;
+      var loaded = await fetchDictionary(lang);
+      if (sequenced && token !== _langRequestSeq) return '';
+      // An empty body is not a dictionary. Installing one drops every string in
+      // the app to its raw key, and a 404 page that happens to parse, or a
+      // server returning {}, both arrive here looking truthy.
+      if (!loaded || !loaded.dict || !Object.keys(loaded.dict).length) return '';
+      DICT = loaded.dict;
+      if (typeof _dictInstalledFor !== 'undefined') _dictInstalledFor = loaded.lang;
+      return loaded.lang;
     }
 
     // Apply data-i18n attributes to all tagged elements
@@ -11259,6 +11347,13 @@
     // lags the tap and a superseded request cannot roll them backwards.
     var _langRequestSeq = 0;
 
+    // The language the dictionary in DICT ACTUALLY came from — set from the
+    // response, never re-read from currentLang after an await. currentLang is
+    // mutated synchronously by switchLanguage(), so a value read after the
+    // fetch resolves describes what the customer has since chosen, not what
+    // was installed.
+    var _dictInstalledFor = '';
+
     // Which of the two language controls the customer last activated. Used to
     // put focus back on the equivalent control after a rerender detaches it.
     var _langFocusHintId = null;
@@ -11300,10 +11395,20 @@
       document.documentElement.lang = lang;
       updateLanguageControls();
 
-      var dict = await fetchDictionary(lang);
+      var loaded = await fetchDictionary(lang);
       // A newer selection was made while this fetch was in flight. Drop it.
+      // The loader takes its tokens from this same sequence, so a boot
+      // dictionary landing after the customer chose a language can no longer
+      // revert that choice — it used to, by calling fetchDictionary directly.
       if (token !== _langRequestSeq) return false;
-      if (dict) DICT = dict;
+      // An empty body is not a dictionary; installing one drops every string
+      // to its raw key. The installed language is recorded, not the requested
+      // one: a Spanish request that fell back to English must not be able to
+      // masquerade as Spanish.
+      if (loaded && loaded.dict && Object.keys(loaded.dict).length) {
+        DICT = loaded.dict;
+        if (typeof _dictInstalledFor !== 'undefined') _dictInstalledFor = loaded.lang;
+      }
 
       applyTranslations();
       // Re-apply store config text for current language (also re-renders the Nocturnal landing)
@@ -11577,14 +11682,21 @@
     var _dataLoadGeneration = 0;
     var _dataLoadInFlight = false;
     var _dataErrorDeferred = false;
-    // Which language the dictionary in DICT actually came from, so a retry
-    // does not re-fetch a dictionary that already loaded.
-    var _dictLoadedFor = '';
 
     // Bumped by showDataError(). startQuiz polls for slow data on a timer; a
     // poll scheduled before the overlay appeared must not fire after a
     // successful retry and start a quiz nobody asked for.
     var _startQuizGeneration = 0;
+
+    // The three tier keys, in the order every consumer iterates them.
+    var TIERS = ['gold', 'silver', 'bronze'];
+
+    // Whether the post-load appliers completed. Fetching the data is not the
+    // same as being able to render it: all four sources can land and
+    // applyStoreConfig() can still throw, and that used to return 'ok' with no
+    // overlay and no failure flag — a kiosk that has its data and cannot show
+    // it, reporting success.
+    var _appliersApplied = false;
 
     // Declarative inventory: what the app loads, which failures are fatal, and
     // how each payload is validated BEFORE it is applied. `core: true` trips the
@@ -11595,21 +11707,65 @@
       {
         key: 'mattresses', url: './data/mattresses.json', core: true,
         apply: function(payload) {
-          // The same predicate startQuiz gates on, enforced HERE. A
-          // structurally valid file with no gold tier would otherwise count as
-          // a successful load: recovery would clear the overlay, hand back a
-          // Start button, and startQuiz would poll for ten seconds and put the
-          // same overlay back. Recovery has to mean the app can actually start.
-          if (!payload || !payload.gold || !payload.gold.length) {
-            throw new Error('mattresses.json has no gold tier');
+          // Validated against what the CONSUMERS actually require, not just
+          // what startQuiz checks. There are two unguarded dereference sites:
+          // the scoring pass does Object.entries(MATTRESSES).forEach(([tier,
+          // list]) => list.forEach(...)), which iterates EVERY top-level key,
+          // and the results pass does MATTRESSES[tier].slice() for each of the
+          // three tiers. Both run after the customer has answered all twelve
+          // questions, on the transition into results, where nothing is
+          // wrapped and no error surface exists at all — so a payload that is
+          // merely "truthy with a gold property" is not a successful load.
+          if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+            throw new Error('mattresses.json is not an object');
           }
-          MATTRESSES = payload;
+          TIERS.forEach(function(tier) {
+            if (!Array.isArray(payload[tier])) {
+              throw new Error('mattresses.json ' + tier + ' is not an array');
+            }
+          });
+          if (!payload.gold.length) throw new Error('mattresses.json has no gold tier');
+          TIERS.forEach(function(tier) {
+            payload[tier].forEach(function(m) {
+              // id keys the score map; a numeric firmness is differenced
+              // against the customer's answer, and a non-number turns the
+              // whole row into NaN silently.
+              if (!m || typeof m.id !== 'string' || !m.id) {
+                throw new Error('mattresses.json ' + tier + ' has an entry with no id');
+              }
+              if (typeof m.firmness !== 'number' || m.firmness !== m.firmness) {
+                throw new Error('mattresses.json ' + m.id + ' has no numeric firmness');
+              }
+            });
+          });
+          var ids = {};
+          TIERS.forEach(function(tier) {
+            payload[tier].forEach(function(m) {
+              // Duplicates do not throw anywhere — they silently merge two
+              // products into one score row.
+              if (ids[m.id]) throw new Error('mattresses.json has duplicate id ' + m.id);
+              ids[m.id] = true;
+            });
+          });
+          // Assigned NARROWLY, not wholesale. Object.entries() above iterates
+          // whatever keys the payload carries, so the day the build pipeline
+          // adds a generatedAt or a schemaVersion to this file, every customer
+          // would crash at results. Copying the three tiers means an extra key
+          // can never reach that loop even if the check above is loosened.
+          MATTRESSES = { gold: payload.gold, silver: payload.silver, bronze: payload.bronze };
         }
       },
       {
         key: 'storeConfig', url: './data/store-config.json', core: true,
         apply: function(payload) {
-          STORE_CONFIG = payload || {};
+          // A core source with no shape check accepted null, 0, "" and [] as a
+          // successful load, and the kiosk then booted with no store name, no
+          // language list and no allowlisted host — unbranded, and no overlay
+          // to say so.
+          if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+            throw new Error('store-config.json is not an object');
+          }
+          STORE_CONFIG = payload;
           // White-label: sales-floor pitch/brand prose lives in store-config
           // (salesNotes / salesNotes_es), not in this file. Hydrate the lookup
           // tables that getPitchContent / getBrandContent read. Defensive &&
@@ -11661,9 +11817,25 @@
       });
     }
 
+    // What "the app can start" actually means: the core data is in AND it has
+    // been applied to the page.
+    function appStartReady() {
+      return coreDataReady() && _appliersApplied;
+    }
+
     function dataErrorVisible() {
       var overlay = document.getElementById('dataErrorOverlay');
       return !!(overlay && overlay.classList && overlay.classList.contains('visible'));
+    }
+
+    // aria-busy is raised by the retry and cleared when the overlay is shown or
+    // hidden. A load that ends 'stale' reaches neither, and a layer left
+    // aria-busy tells assistive tech to withhold every later update to the
+    // status region inside it — silencing exactly the announcement the retry
+    // path exists to deliver.
+    function clearDataErrorBusy() {
+      var overlay = document.getElementById('dataErrorOverlay');
+      if (overlay) overlay.setAttribute('aria-busy', 'false');
     }
 
     function setDataErrorText(id, text) {
@@ -11746,10 +11918,16 @@
       //
       // The inert test leads because it is the general one: whatever inerted
       // this layer owns the screen, whether or not it is a layer named here.
+      //
+      // The test is ABOVE, not merely "another layer exists". An earlier
+      // version also yielded to an open drawer, which had the polarity exactly
+      // backwards: the drawer paints at z-index 201 and this layer at 10000, so
+      // with the overlay on top that refusal disabled this trap while the
+      // drawer's own listener — bound to the drawer element — could not fire
+      // either, and Tab walked free across both layers' controls. Only a layer
+      // that is genuinely above this one may take the key.
       if (overlay.hasAttribute && overlay.hasAttribute('inert')) return;
       if (typeof safetyDialogMode === 'function' && safetyDialogMode() !== null) return;
-      var drawer = document.getElementById('mattressDrawer');
-      if (drawer && drawer.classList && drawer.classList.contains('drawer-open')) return;
       var list = ['dataErrorRetryBtn', 'dataErrorRestartBtn']
         .map(function(id) { return document.getElementById(id); })
         .filter(function(el) { return el && typeof el.focus === 'function' && el.disabled !== true; });
@@ -11795,6 +11973,11 @@
           _dataErrorDeferred = true;
           document.addEventListener('DOMContentLoaded', function() {
             _dataErrorDeferred = false;
+            // The failure may have been recovered while this was queued — the
+            // markup is parsed late, and a retry can succeed before it lands.
+            // Without this check the listener raises the overlay over an app
+            // that is working, and nothing cancels a once-listener.
+            if (!_dataLoadFailed) return;
             showDataError(opts);
           }, { once: true });
         }
@@ -11851,6 +12034,10 @@
     function recoverFromDataError(mayFocus) {
       _dataLoadFailed = false;
       _startQuizAttempts = 0;
+      // A deferred show may still be armed from before the markup parsed. The
+      // listener itself re-checks the flag, and clearing this lets a genuinely
+      // later failure arm a fresh one.
+      _dataErrorDeferred = false;
       var wasVisible = dataErrorVisible();
       hideDataError();
       // Focus only follows an overlay that was actually up. A boot load that
@@ -11870,10 +12057,8 @@
       else if (typeof focusActiveScreen === 'function') focusActiveScreen();
     }
 
-    async function fetchDataSource(src) {
-      var res = await fetch(src.url, { cache: 'no-store' });
-      if (!res.ok) throw new Error(src.url + ' HTTP ' + res.status);
-      return await res.json();
+    function fetchDataSource(src) {
+      return boundedJson(src.url, src.url, { cache: 'no-store' });
     }
 
     // Fetch, validate and apply ONE source, always RESOLVING with a verdict. A
@@ -11924,30 +12109,43 @@
         });
         // The accessory render paths already tolerate an empty list.
         if (!_dataLoaded.accessories) ACCESSORIES = [];
-        var owned = sessionUnchanged() === true;
         // On failure the staff-notify surface goes up BEFORE the dictionary
         // fetch and the appliers below. On a dead network those are one or two
         // more requests that have to time out, and the only thing on the screen
         // must not wait behind them. Its copy is inline bilingual, so it owes
         // the dictionary nothing.
         var failed = !coreDataReady();
-        var verdict = failed ? resolveDataLoadOutcome(generation, owned) : null;
-        // The dictionary is re-fetched only while it is still missing — the
-        // same "only what did not load" rule the sources follow. A language
-        // switch has its own race-safe path and does not come through here.
-        if (_dictLoadedFor !== currentLang) {
-          await loadDictionary(currentLang);
-          if (DICT && Object.keys(DICT).length) _dictLoadedFor = currentLang;
-        }
-        try {
-          applyStoreConfig();
-          applyLanguageConfig();
-          applyTranslations();
-        } catch (err) {
-          // A throw here used to skip the verdict entirely, so a boot that got
-          // its data but could not render it showed nothing at all.
-          console.error('[DreamFinder] Post-load application failed:',
-            (typeof transportFailureCode === 'function') ? transportFailureCode(err) : 'unclassified');
+        var verdict = failed ? resolveDataLoadOutcome(generation, sessionUnchanged() === true) : null;
+        // Superseded loads stop HERE, before touching the page. The stale check
+        // inside resolveDataLoadOutcome guards only the overlay and the focus
+        // move; everything below mutates the DOM, and a load that a newer one
+        // has replaced must not re-install a dictionary or repaint the UI in a
+        // language the customer has since changed away from.
+        if (generation !== _dataLoadGeneration) { clearDataErrorBusy(); return 'stale'; }
+        // The dictionary is re-fetched only while the one that is INSTALLED is
+        // not the language being asked for — the same "only what did not load"
+        // rule the sources follow. A request that fell back to English records
+        // English, so Spanish keeps being retried until it really lands.
+        if (_dictInstalledFor !== currentLang) await loadDictionary(currentLang);
+        // Re-evaluated after the last await, not reused from before it: a wipe
+        // during the dictionary fetch means the next customer's session owns
+        // the page, and neither these DOM writes nor the verdict's focus move
+        // may land inside it.
+        var owned = sessionUnchanged() === true;
+        if (owned) {
+          // Each applier is isolated. Sharing one try meant a throw in the
+          // first suppressed the two that would have worked, leaving the page
+          // with untranslated markup on top of whatever else went wrong.
+          _appliersApplied = true;
+          [applyStoreConfig, applyLanguageConfig, applyTranslations].forEach(function(apply) {
+            try {
+              apply();
+            } catch (err) {
+              _appliersApplied = false;
+              console.error('[DreamFinder] Post-load application failed:',
+                (typeof transportFailureCode === 'function') ? transportFailureCode(err) : 'unclassified');
+            }
+          });
         }
         return failed ? verdict : resolveDataLoadOutcome(generation, owned);
       } finally {
@@ -11962,8 +12160,12 @@
     function resolveDataLoadOutcome(generation, sessionOwned) {
       // Superseded. Not an error — whatever this load fetched is already
       // applied — it simply does not get to speak for the app.
-      if (generation !== _dataLoadGeneration) return 'stale';
-      if (!coreDataReady()) {
+      if (generation !== _dataLoadGeneration) { clearDataErrorBusy(); return 'stale'; }
+      // appStartReady(), not coreDataReady(): having the data and having
+      // applied it are different things, and only the second one means the
+      // customer can start. A retry re-runs the appliers without re-fetching
+      // anything, because the per-source flags are already true.
+      if (!appStartReady()) {
         showDataError({ retryFailed: dataErrorVisible(), silent: !sessionOwned });
         return 'failed';
       }
@@ -12363,7 +12565,7 @@
       // then have applyStoreConfig() swap the branding underneath the customer
       // when it finally arrives.
       if (!MATTRESSES || !MATTRESSES.gold || MATTRESSES.gold.length === 0
-          || QUESTIONS.length === 0 || !coreDataReady()) {
+          || QUESTIONS.length === 0 || !appStartReady()) {
         _startQuizAttempts++;
         if (_startQuizAttempts > 25) {
           console.error('[DreamFinder] Mattress data never loaded after 25 attempts — showing error');
@@ -17728,7 +17930,29 @@
       var target = _safetyReturnFocus;
       _safetyReturnFocus = null;
       if (opts.restoreFocus !== false) {
-        if (isFocusRestorable(target)) {
+        // A LAYER THAT APPEARED WHILE THIS DIALOG WAS OPEN OUTRANKS THE OPENER.
+        // The data-error overlay can be raised by a load completing behind this
+        // dialog; it is a body child, so inertBackgroundForSafety() has already
+        // marked it inert, which is why its own focusDataError() was a no-op
+        // and the failure was never announced. releaseSafetyInert() runs a few
+        // lines above, so by here it is reachable again — and restoring the
+        // opener stored BEFORE it existed would put focus behind a visible
+        // alertdialog. isFocusRestorable() cannot catch that: it tests
+        // connectedness, hidden, disabled and a box, and nothing about being
+        // covered by a modal.
+        //
+        // Read through the DOM rather than calling dataErrorVisible(): this
+        // block is inside the Gate 1B markers and is executed on its own by
+        // tests/session_safety_check.mjs in a scope that does not declare that
+        // function, where a bare call is a strict-mode ReferenceError.
+        //
+        // Guarded on restoreFocus, so the wipe path is untouched — during a
+        // wipe this layer is one line from being torn down by SESSION_LAYERS.
+        var errorLayer = document.getElementById('dataErrorOverlay');
+        if (errorLayer && errorLayer.classList && errorLayer.classList.contains('visible')
+            && typeof errorLayer.focus === 'function') {
+          try { errorLayer.focus({ preventScroll: true }); } catch (err) { errorLayer.focus(); }
+        } else if (isFocusRestorable(target)) {
           target.focus();
         } else {
           // Either there was no prior focus — the ordinary case for a timeout,

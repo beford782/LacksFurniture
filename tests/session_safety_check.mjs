@@ -669,6 +669,61 @@ check("focus is restored to the EXACT pre-warning element", doc.activeElement ==
   el("resultsScreen").classList.add("active");
 }
 
+// A LAYER THAT APPEARED WHILE THE DIALOG WAS OPEN OUTRANKS THE STORED OPENER.
+//
+// The data-error overlay can be raised by a data load completing behind this
+// dialog. It is a body child, so inertBackgroundForSafety() has already marked
+// it inert — which is why its own focus call is a no-op and the failure is
+// never announced — and releaseSafetyInert() then makes it reachable again a
+// few lines before the restore. Restoring the opener captured BEFORE it existed
+// puts focus behind a visible alertdialog, and isFocusRestorable() cannot catch
+// that: it tests connectedness, hidden, disabled and a box, and nothing about
+// being covered by a modal.
+{
+  const errorLayer = el("dataErrorOverlay");
+  const priorOpener = makeEl("layerOrderOpener");
+  const activeScreen = el("resultsScreen");
+  activeScreen.classList.add("active");
+
+  // (a) the ordering that was broken: overlay appears DURING the dialog
+  priorOpener.focus();
+  S.openSafety("restart");
+  check("the dialog inerted the data-error overlay as a body child",
+    errorLayer.hasAttribute("inert"));
+  errorLayer.classList.add("visible");        // a load failed behind the dialog
+  errorLayer.setAttribute("aria-hidden", "false");
+  win.safetyDialogCancel();
+  check("closing the dialog releases the overlay's inert mark",
+    !errorLayer.hasAttribute("inert"));
+  check("REGRESSION: focus goes to the visible alertdialog, not behind it",
+    doc.activeElement === errorLayer);
+  check("...and specifically NOT to the opener stored before it existed",
+    doc.activeElement !== priorOpener);
+
+  // (b) the same handoff from the fallback branch — an unreachable opener must
+  // not route round it into the active screen underneath the overlay.
+  priorOpener.focus();
+  S.openSafety("restart");
+  priorOpener.offsetParent = null;            // opener stopped being reachable
+  win.safetyDialogCancel();
+  check("the fallback branch hands off to the overlay too",
+    doc.activeElement === errorLayer && doc.activeElement !== activeScreen);
+  priorOpener.offsetParent = {};
+
+  // (c) the ordering that already worked must keep working: the overlay is
+  // recovered and hidden while the dialog is open, so it is NOT the destination.
+  errorLayer.classList.remove("visible");
+  errorLayer.setAttribute("aria-hidden", "true");
+  priorOpener.focus();
+  S.openSafety("restart");
+  win.safetyDialogCancel();
+  check("a hidden overlay is not a focus destination",
+    doc.activeElement === priorOpener);
+
+  activeScreen.classList.remove("active");
+  drawerBtn.focus();
+}
+
 // The ordinary timeout case: nobody was interacting, so there IS no prior
 // focus. Falling back to BODY would drop a keyboard/AT user at the top of the
 // document with no context for the dialog that just closed.
@@ -1179,6 +1234,14 @@ function grabFn(re, what) {
   return m ? m[0] : "";
 }
 const langSrc = [
+  // The bounded-fetch helpers the dictionary now goes through. Extracted so
+  // this harness executes the REAL request path rather than a shape that no
+  // longer exists — without them fetchDictionary() throws a ReferenceError on
+  // its first line and every language assertion below passes or fails for
+  // reasons having nothing to do with the language transaction.
+  grabFn(/var DATA_DEADLINE_MS = \d+;/, "DATA_DEADLINE_MS"),
+  grabFn(/function dataDeadline\(work, label, controller\) \{[\s\S]*?\n    \}/, "dataDeadline()"),
+  grabFn(/function boundedJson\(url, label, init\) \{[\s\S]*?\n    \}/, "boundedJson()"),
   grabFn(/async function fetchDictionary\(lang\) \{[\s\S]*?\n    \}/, "fetchDictionary()"),
   grabFn(/function requestedLangIsSupported\(lang\) \{[\s\S]*?\n    \}/, "requestedLangIsSupported()"),
   grabFn(/function updateLanguageControls\(\) \{[\s\S]*?\n    \}/, "updateLanguageControls()"),
@@ -1218,6 +1281,10 @@ const lwin = { scrollTo() {}, _compareSelected: [], _setIdleScreen() {} };
 const lcalls = [];
 const langHarness = new Function(
   "document", "window", "fetch", "STORE_CONFIG_IN", "DICT_EN", "rec", "out",
+  // The fetch deadline schedules a timer. Driven by the fake clock so a
+  // deliberately unresolved request in the race below cannot hold a real
+  // 12-second timer open and stall the suite.
+  "setTimeout", "clearTimeout",
   `
   "use strict";
   var STORE_CONFIG = STORE_CONFIG_IN;
@@ -1253,7 +1320,8 @@ const langHarness = new Function(
 );
 const lout = {};
 langHarness(ldoc, lwin, fakeFetch, { languages: ["en", "es"] },
-  Object.assign({ __id: "EN" }, dictEn), (n) => lcalls.push(n), lout);
+  Object.assign({ __id: "EN" }, dictEn), (n) => lcalls.push(n), lout,
+  clock.setTimeout, clock.clearTimeout);
 
 // Quiz is mid-flight on the question screen, with contact values entered.
 ldoc.getElementById("questionScreen").classList.add("active");
@@ -1268,9 +1336,9 @@ check("the EN control is pressed immediately, before any fetch resolves",
   && langBtns[1].getAttribute("aria-pressed") === "false");
 
 // Resolve OUT OF ORDER: the newest first, then the stale Spanish response.
-pendingFetches[2].resolve({ json: async () => Object.assign({ __id: "EN" }, dictEn) });
-pendingFetches[0].resolve({ json: async () => Object.assign({ __id: "EN" }, dictEn) });
-pendingFetches[1].resolve({ json: async () => Object.assign({ __id: "ES" }, dictEs) });
+pendingFetches[2].resolve({ ok: true, status: 200, json: async () => Object.assign({ __id: "EN" }, dictEn) });
+pendingFetches[0].resolve({ ok: true, status: 200, json: async () => Object.assign({ __id: "EN" }, dictEn) });
+pendingFetches[1].resolve({ ok: true, status: 200, json: async () => Object.assign({ __id: "ES" }, dictEs) });
 await Promise.all([p1, p2, p3]);
 await settleAll();
 check("REGRESSION: a late Spanish response cannot win — dictionary is English",
@@ -1314,11 +1382,11 @@ check("a language the retailer does not offer is refused",
 check("the refusal did not change the current language", lout.lang() === "en");
 {
   const p = lout.switchLanguage("es");
-  pendingFetches[0].resolve({ json: async () => Object.assign({ __id: "ES" }, dictEs) });
+  pendingFetches[0].resolve({ ok: true, status: 200, json: async () => Object.assign({ __id: "ES" }, dictEs) });
   await p; await settleAll();
   check("a supported language IS applied", lout.dictKey() === "ES" && lout.lang() === "es");
   const pen = lout.switchLanguage("en");
-  pendingFetches[1].resolve({ json: async () => Object.assign({ __id: "EN" }, dictEn) });
+  pendingFetches[1].resolve({ ok: true, status: 200, json: async () => Object.assign({ __id: "EN" }, dictEn) });
   await pen; await settleAll();
   check("English is always available as the reset target",
     lout.dictKey() === "EN" && lout.lang() === "en");
