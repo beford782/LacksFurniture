@@ -1,0 +1,44 @@
+/* Shared review-bar styling only — the harness owns no product presentation.
+   Each variant directory owns its own look and must not edit this file. */
+
+.df-review-bar {
+  position: sticky;
+  top: 0;
+  z-index: 9999;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1.25rem;
+  padding: 0.5rem 1rem calc(0.5rem + env(safe-area-inset-top, 0px));
+  background: repeating-linear-gradient(-45deg, #fff8e1, #fff8e1 12px, #ffecb3 12px, #ffecb3 24px);
+  border-bottom: 2px dashed #b8860b;
+  font: 600 0.8rem/1.4 system-ui, sans-serif;
+  color: #5d4400;
+}
+
+.df-review-bar__note { margin: 0; flex-basis: 100%; }
+
+.df-review-bar__group { display: flex; align-items: center; gap: 0.4rem; }
+
+.df-review-bar__label { text-transform: uppercase; letter-spacing: 0.06em; font-size: 0.7rem; }
+
+.df-review-bar__btn {
+  display: inline-block;
+  min-width: 44px;
+  min-height: 32px;
+  padding: 0.3rem 0.7rem;
+  border: 1.5px solid #5d4400;
+  border-radius: 6px;
+  color: #5d4400;
+  text-decoration: none;
+  text-align: center;
+  touch-action: manipulation;
+}
+
+.df-review-bar__btn:focus-visible {
+  outline: 2px solid #1a1a1a;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px #ffffff;
+}
+
+.df-review-bar__btn.is-active { background: #5d4400; color: #fff8e1; }
