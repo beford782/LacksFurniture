@@ -332,6 +332,33 @@ section("missing / malformed / untranslated mappings omit the fragment");
     vm.context === "" && vm.who === "Queen" && vm.profile === "Firm 6/10");
 }
 {
+  // Whitespace-only mappings are TRUE omissions (Codex, PR #17 final
+  // review): the converter normalizes them away, and the resolver trims
+  // defensively — a "   " entry must not survive the non-empty filter and
+  // join as an orphan " · " fragment on any surface.
+  const wsEn = JSON.parse(JSON.stringify(CONFIG.salesNotes.consultationImplications));
+  wsEn.sleep_issues.back_pain = "   ";
+  wsEn.trigger.pain = "\t\n ";
+  const { els, out } = run(ANSWERS_A, "en", { implEn: wsEn });
+  out.render();
+  const vm = out.resolve();
+  const pay = out.payload();
+  check("[en] whitespace-only entries omit their fragments exactly",
+    vm.context === "aiming for a real change in nightly rest"
+    && vm.who === "Queen · prioritize temperature control");
+  check("[en] the DOM rows and payload carry the same omission — no orphan separators",
+    els.get("hf2BriefWho").textContent === vm.who
+    && pay.who === vm.who && pay.context === vm.context
+    && ![vm.context, vm.who, vm.profile].some((s) =>
+      /·\s*·/.test(s) || /^\s*·/.test(s) || /·\s*$/.test(s)));
+  const wsEs = JSON.parse(JSON.stringify(CONFIG.salesNotes_es.consultationImplications));
+  wsEs.sleep_issues.back_pain = "   ";
+  const vmEs = run(ANSWERS_A, "es", { implEs: wsEs }).out.resolve();
+  check("[es] a whitespace-only ES entry omits in Spanish mode — never EN copy",
+    vmEs.who === "Queen · priorizar el control de temperatura"
+    && !vmEs.who.includes("lower-back"));
+}
+{
   // answerLabelFor fails closed too: an unknown size renders nothing, not the id.
   const vm = run(Object.assign({}, ANSWERS_A, { mattress_size: "bogus_size" }), "en").out.resolve();
   check("an unresolvable size omits — the raw id never renders",
@@ -572,6 +599,30 @@ for (const [label, bad] of [["a string", "zzz"], ["a number", 7], ["null", null]
     res.success === true && g.sent.length === 1
     && !g.sent[0].body.includes("undefined")
     && !(g.sent[0].opts.htmlBody || "").includes("undefined"));
+}
+{
+  // Blank-only consultation FIELDS drop server-side too (Codex, PR #17
+  // final review) — on the normal path, the fallback path, the HTML part,
+  // and never in the sheet.
+  const g = buildGas();
+  g.api.approveCanSpam();
+  const broken = buildGas();
+  broken.api.approveCanSpam();
+  broken.api.breakHtmlBuilder();
+  for (const t of [g, broken]) {
+    post(t.api, gasPayload({ consultation: {
+      context: "   ", who: "\t\n ", profile: "prioritize real copy · Firm 6/10" } }));
+  }
+  check("blank-only fields drop on the normal path — no blank line under the brief",
+    g.sent[0].body.includes("Sleep Brief: The Balanced Sleeper\n"
+      + "prioritize real copy · Firm 6/10\n"));
+  check("...and the fallback path carries the same shared body",
+    broken.sent[0].body === g.sent[0].body);
+  check("...and the HTML part renders exactly one consultation line, no blank divs",
+    (g.sent[0].opts.htmlBody.match(/prioritize real copy/g) || []).length === 1
+    && !g.sent[0].opts.htmlBody.includes(">   <"));
+  check("...and the sheet row stays 9 cells with none of it",
+    g.rows[0].length === 9 && !g.rows[0].join("|").includes("prioritize real copy"));
 }
 {
   // Non-string SUB-fields (adversarial finding F5): a client bug shipping an

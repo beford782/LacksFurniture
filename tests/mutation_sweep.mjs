@@ -416,12 +416,19 @@ const MUTATIONS = [
   // ==== Phase 0.6 — consultation implications ==============================
   // --- the resolver's fail-closed contract ---------------------------------
   ["a missing implication falls back to the quiz label",
-    "return (typeof v === 'string') ? v : '';",
-    "return (typeof v === 'string' && v) ? v : answerLabelFor(questionId, optionId);",
+    "return (typeof v === 'string') ? v.trim() : '';",
+    "return (typeof v === 'string' && v.trim()) ? v.trim() : answerLabelFor(questionId, optionId);",
     CONSULT],
   ["a missing implication leaks the raw option id",
+    "return (typeof v === 'string') ? v.trim() : '';",
+    "return (typeof v === 'string') ? v.trim() : optionId;",
+    CONSULT],
+  // Codex (PR #17 final review): blank-only values must be true omissions on
+  // every layer. This mutant removes the CLIENT's trim so a whitespace entry
+  // survives the non-empty filter and joins as an orphan fragment.
+  ["a whitespace-only implication renders as a fragment",
+    "return (typeof v === 'string') ? v.trim() : '';",
     "return (typeof v === 'string') ? v : '';",
-    "return (typeof v === 'string') ? v : optionId;",
     CONSULT],
   ["the mapping is looked up by label text instead of id",
     "var v = q[optionId];",
@@ -487,15 +494,22 @@ const MUTATIONS = [
     "+ [].map(function(line) {",
     CONSULT, "Code.gs"],
   ["Code.gs: the consultation projection becomes a passthrough",
-    "consultation: (function(cs) {\n        var pick = function(v) { return typeof v === 'string' ? _safeText(v, 300) : ''; };\n        return {\n          context: pick(cs && cs.context),\n          who: pick(cs && cs.who),\n          profile: pick(cs && cs.profile)\n        };\n      })(data.consultation),",
+    "consultation: (function(cs) {\n        var pick = function(v) { var t = typeof v === 'string' ? v.trim() : ''; return t ? _safeText(t, 300) : ''; };\n        return {\n          context: pick(cs && cs.context),\n          who: pick(cs && cs.who),\n          profile: pick(cs && cs.profile)\n        };\n      })(data.consultation),",
     "consultation: (data.consultation && typeof data.consultation === 'object') ? data.consultation : {},",
     CONSULT, "Code.gs"],
   // Adversarial finding F6: these three properties each had exactly ONE
   // observing assertion and NO mutation of their own, so deleting the
   // assertion would have left them untested while the sweep stayed green.
   ["Code.gs: the consultation bound is widened 100x",
+    "var pick = function(v) { var t = typeof v === 'string' ? v.trim() : ''; return t ? _safeText(t, 300) : ''; };",
+    "var pick = function(v) { var t = typeof v === 'string' ? v.trim() : ''; return t ? _safeText(t, 30000) : ''; };",
+    CONSULT, "Code.gs"],
+  // Codex (PR #17 final review): the SERVER half of the blank-only rule -
+  // this mutant restores the pre-review pick that bounded without trimming,
+  // so "   " arrives truthy and renders an empty line in both MIME parts.
+  ["Code.gs: blank-only consultation fields render anyway",
+    "var pick = function(v) { var t = typeof v === 'string' ? v.trim() : ''; return t ? _safeText(t, 300) : ''; };",
     "var pick = function(v) { return typeof v === 'string' ? _safeText(v, 300) : ''; };",
-    "var pick = function(v) { return typeof v === 'string' ? _safeText(v, 30000) : ''; };",
     CONSULT, "Code.gs"],
   ["Code.gs: the HTML part stops escaping the consultation lines",
     ".map(function(s) { return _escapeHtml(s); })",

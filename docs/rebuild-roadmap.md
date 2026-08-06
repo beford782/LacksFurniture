@@ -10,8 +10,11 @@ never is.
 **Next implementation item:** none inside Phase 0 — 0.6 and 0.7 ship in the PR
 that carries this revision, and 0.4's code is merged and holds at ⏳ on its
 outstanding hardware verification (an evidence-recording task, not an
-implementation item). The next implementation phase is Phase 1, which starts
-only when Blake opens it.
+implementation item). **Phase 1 research and prototyping may proceed where its
+items' own Proceeds lists permit** (e.g. 1.3's catalog reason-content
+authoring), but **Phase 1 implementation cannot begin until BOTH conditions
+hold: the 0.4 mounted-device evidence closes Phase 0, AND Blake explicitly
+opens Phase 1.** Neither alone is sufficient.
 
 **Scope:** the Lacks deployment. Migrating store-agnostic work back to the WGR
 template is a real goal but has no owner, no phase and no schedule here; treat it
@@ -468,10 +471,23 @@ passes through ⏳.**
   `tests/consultation_summary_check.mjs` rebuilds the quiz labels as sentinel
   diagnosis strings in a sandbox and shows every output surface — summary
   rows, payload, HTML email, normal text part, fallback body, sheet row —
-  carries only implication copy. The mutation sweep gained fourteen 0.6
-  entries (label fallback, id leak, label-keyed lookup, ES-through-EN,
-  view-model drift on each side, hydration, both plain branches, the HTML
-  part, projection passthrough, sheet persistence).
+  carries only implication copy. **Every 0.6 safety property is
+  manifest-guarded in the mutation sweep** — resolver fail-closure (label
+  fallback, id leak, label-keyed lookup, cross-language resolution,
+  blank-only handling), hydration (blanking and language swapping), the
+  single view-model (drift on either consumer), both plain-text branches, the
+  HTML rendering (presence, escaping), the server projection (allowlist,
+  bound, trim), and sheet non-persistence — each entry proven to apply and to
+  turn its named observer red against a green baseline. The durable rule: a
+  new 0.6-surface property ships WITH a manifest entry, and the sweep (not a
+  count in this document) is the authority on coverage.
+- **The source lineage is an executable CI guarantee**, not a description:
+  `tests/lineage_check.py` rebuilds the workbook from the committed incoming
+  sources in temp space, compares it cell-semantically with the committed
+  xlsx, validates it warnings-as-errors, converts it, canonically compares
+  every generated artifact with the committed bundle, and proves its own
+  non-vacuity by mutating an implication string in a sandboxed source copy
+  and requiring both observers to turn red.
 - **Operator note:** the CI job name "Full suite (18 checks)" is pinned by the
   branch-protection required-check name and now undercounts (19 suites).
   Renaming job + protection rule together is Blake's action; the workflow

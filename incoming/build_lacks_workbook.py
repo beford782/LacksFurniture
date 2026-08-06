@@ -255,7 +255,17 @@ def write_sheet(wb, tab, rows):
         ws.append([r.get(h, "") for h in headers])
 
 
-def main():
+def main(argv=None):
+    # --out exists for VERIFICATION (the lineage check rebuilds the workbook
+    # into a temporary location and compares it against the committed one).
+    # The default is unchanged: a plain run still writes the committed path.
+    import argparse
+    parser = argparse.ArgumentParser(
+        description="Generate the Lacks Furniture onboarding workbook.")
+    parser.add_argument("--out", default=OUT,
+                        help="Output .xlsx path (default: %(default)s)")
+    args = parser.parse_args(argv)
+
     wb = openpyxl.Workbook()
     wb.remove(wb.active)
     write_sheet(wb, "Store Info", [STORE])
@@ -266,10 +276,10 @@ def main():
     write_sheet(wb, "SalesNotes", [sales_row(s) for s in SALES] + consult_rows)
     write_sheet(wb, "Promotions", promotions_rows())
     write_sheet(wb, "Quiz", quiz_rows())
-    wb.save(OUT)
+    wb.save(args.out)
     from collections import Counter
     c = Counter(m["tier"] for m in M)
-    print(f"Wrote {OUT}")
+    print(f"Wrote {args.out}")
     print(f"  Brands: {len(BRANDS)}  Mattresses: {len(M)}  Accessories: {len(A)}  "
           f"SalesNotes: {len(SALES)} (+{len(consult_rows)} consultation)")
     print(f"  tiers: gold={c['gold']} silver={c['silver']} bronze={c['bronze']}")

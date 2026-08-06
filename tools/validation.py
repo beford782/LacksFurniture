@@ -2143,7 +2143,11 @@ def _quiz_from_tabs(raw_tabs):
 
     Returns the quiz dict, or None when the tab is absent, empty, unparseable,
     or not the {"quiz": {...}} envelope — those states are the quiz channel's
-    own validators' to report; callers here only need the option inventory."""
+    own validators' to report; callers here only need the option inventory.
+    The INNER value must itself be an object: {"quiz": []} / {"quiz": "x"} /
+    {"quiz": null} all return None, so callers may .get() the result without
+    guarding — a malformed envelope becomes a controlled validation error
+    (consultation rows with no parseable quiz), never a traceback."""
     if "Quiz" not in raw_tabs:
         return None
     _, rows = raw_tabs["Quiz"]
@@ -2156,7 +2160,8 @@ def _quiz_from_tabs(raw_tabs):
         return None
     if not (isinstance(parsed, dict) and set(parsed) == {"quiz"}):
         return None
-    return parsed["quiz"]
+    inner = parsed["quiz"]
+    return inner if isinstance(inner, dict) else None
 
 
 def validate_sales_notes(raw_tabs, *, languages=None) -> ValidationReport:
@@ -2680,6 +2685,26 @@ def _self_test() -> int:
     t["SalesNotes"][1][0] = {"Type": "brand", "Key": "Acme", "Story": ""}
     check("brand salesNote missing Story -> error",
           any("Story is required" in e for e in validate_sales_notes(t).errors))
+
+    # Malformed INNER quiz envelope: {"quiz": <array|scalar|null>} must become
+    # a controlled "no parseable Quiz tab" error when consultation rows need
+    # it - never an AttributeError from .get() on a non-dict (Codex, PR #17).
+    def _consult_tabs(quiz_payload):
+        tc = _good_tabs()
+        tc["SalesNotes"][1].append({
+            "Type": "consultation", "Key": "sleep_quality.poor",
+            "Implication": "copy", "Implication (ES)": "copia"})
+        tc["Quiz"] = (tc["Quiz"][0], [{"Quiz JSON": quiz_payload}])
+        return tc
+    for label, inner in (("array", "[]"), ("string", "\"quiz\""), ("null", "null")):
+        rep = validate_sales_notes(_consult_tabs('{"quiz": %s}' % inner))
+        check(f"inner quiz envelope as {label} -> controlled error, no throw",
+              any("no parseable Quiz tab" in e for e in rep.errors))
+    rep = validate_sales_notes(_consult_tabs(
+        '{"quiz": {"questions": [{"id": "sleep_quality", '
+        '"options": [{"id": "poor"}]}]}}'))
+    check("inner quiz envelope as a real object -> completeness engages, 0 errors",
+          rep.ok)
 
     # missing mattress source image when source-images provided
     import tempfile

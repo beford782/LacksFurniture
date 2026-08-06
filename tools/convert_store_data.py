@@ -209,8 +209,12 @@ def build_sales_notes(wb):
             if dot <= 0 or dot == len(key) - 1:
                 continue  # malformed key; reported by validate_sales_notes
             qid, oid = key[:dot], key[dot + 1:]
-            sn["consultationImplications"].setdefault(qid, {})[oid] = _s(r.get("Implication"))
-            sn_es["consultationImplications"].setdefault(qid, {})[oid] = _s(r.get("Implication (ES)"))
+            # .strip(): a whitespace-only cell IS an intentional omission, so
+            # normalize it to the "" the runtime and validators treat as one -
+            # blank-only values must never reach the shipped config where they
+            # would render as an orphan fragment.
+            sn["consultationImplications"].setdefault(qid, {})[oid] = _s(r.get("Implication")).strip()
+            sn_es["consultationImplications"].setdefault(qid, {})[oid] = _s(r.get("Implication (ES)")).strip()
         elif typ == "subBrand":
             fmt = _s(r.get("Format")).strip()
             if fmt == "full":

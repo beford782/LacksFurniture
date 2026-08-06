@@ -16870,9 +16870,12 @@
       var q = map && map[questionId];
       if (!q || typeof q !== 'object') return '';
       var v = q[optionId];
-      // Fail closed: a missing, non-string or empty entry omits the fragment —
-      // NEVER the quiz label, NEVER an id, NEVER the other language's copy.
-      return (typeof v === 'string') ? v : '';
+      // Fail closed: a missing, non-string, empty or blank-only entry omits
+      // the fragment — NEVER the quiz label, NEVER an id, NEVER the other
+      // language's copy. The trim is defense in depth (the converter already
+      // normalizes): a whitespace value must not survive the non-empty filter
+      // and join as an orphan " · " fragment.
+      return (typeof v === 'string') ? v.trim() : '';
     }
 
     function resolveConsultationSummary() {

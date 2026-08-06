@@ -249,7 +249,7 @@ function doPost(e) {
       // render inside the existing Sleep Brief block in both MIME parts and
       // never reach the sheet row.
       consultation: (function(cs) {
-        var pick = function(v) { return typeof v === 'string' ? _safeText(v, 300) : ''; };
+        var pick = function(v) { var t = typeof v === 'string' ? v.trim() : ''; return t ? _safeText(t, 300) : ''; };
         return {
           context: pick(cs && cs.context),
           who: pick(cs && cs.who),

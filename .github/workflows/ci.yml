@@ -203,6 +203,17 @@ jobs:
       - name: strict golden bundle
         run: python tests/golden/run_golden.py --strict
 
+      # The canonical Lacks lineage as an executable guarantee: rebuilds the
+      # workbook from the committed incoming JSON sources into temp space,
+      # compares it cell-semantically with the committed xlsx, validates it
+      # warnings-as-errors, converts it and canonically compares every
+      # generated artifact with the committed bundle — then proves its own
+      # non-vacuity by mutating an implication string in a sandboxed source
+      # copy and requiring both observers to turn red. A source edit without
+      # a rebuild, or a hand edit to the workbook/bundle, fails here.
+      - name: canonical Lacks lineage (sources -> workbook -> bundle)
+        run: python tests/lineage_check.py
+
       - name: QR payload suite
         run: python tests/qr_payload_check.py
 
