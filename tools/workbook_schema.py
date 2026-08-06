@@ -350,25 +350,35 @@ ACCESSORIES = Tab(
 #   Type=subBrand, Format=full     -> requires Lead + Demo + Close
 #   Type=subBrand, Format=coaching -> requires RSA Note
 #   Type=brand                     -> requires Story
+#   Type=consultation              -> Key is "<questionId>.<optionId>"; the two
+#                                     Implication cells carry the Consultation
+#                                     Summary implication copy (0.6). Both cells
+#                                     empty is an INTENTIONAL omission (the
+#                                     fragment renders nothing); a MISSING row
+#                                     for a consumed option is a validation
+#                                     error — never a silent fallback to the
+#                                     quiz label.
 # (Validation of the per-format requirements lives in the converter/§5, not here.)
 
 SALES_NOTES = Tab(
     name="SalesNotes",
     note="One row per sub-brand/brand note -> store-config.json salesNotes / salesNotes_es",
     columns=(
-        col("Type", "type", required=True, note="subBrand|brand -> salesNotes.subBrands / .brands"),
-        col("Key", "key", required=True, note="sub-brand name (e.g. Copper) or brand name (e.g. Spring Air)"),
+        col("Type", "type", required=True, note="subBrand|brand|consultation -> salesNotes.subBrands / .brands / .consultationImplications"),
+        col("Key", "key", required=True, note="sub-brand name (e.g. Copper), brand name (e.g. Spring Air), or questionId.optionId"),
         col("Format", "format", note="full|coaching (subBrand rows only)"),
         col("Lead", "lead", note="full subBrand -> lead"),
         col("Demo", "demo", note="full subBrand -> demo"),
         col("Close", "close", note="full subBrand -> close"),
         col("RSA Note", "rsaNote", note="coaching subBrand -> rsaNote"),
         col("Story", "story", note="brand -> story"),
+        col("Implication", "implication", note="consultation -> salesNotes.consultationImplications[question][option]"),
         col("Lead (ES)", "lead_es", lang="es", note="-> salesNotes_es lead"),
         col("Demo (ES)", "demo_es", lang="es", note="-> salesNotes_es demo"),
         col("Close (ES)", "close_es", lang="es", note="-> salesNotes_es close"),
         col("RSA Note (ES)", "rsaNote_es", lang="es", note="-> salesNotes_es rsaNote"),
         col("Story (ES)", "story_es", lang="es", note="-> salesNotes_es story"),
+        col("Implication (ES)", "implication_es", lang="es", note="-> salesNotes_es consultationImplications"),
     ),
 )
 

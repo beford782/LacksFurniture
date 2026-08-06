@@ -4,12 +4,14 @@
 not a grant of approval — see the open-decisions register.**
 
 **Last updated:** 2026-08-05
-**Baseline:** `572d405238a16649dfe7e64288637ae6e5b4a1bc` — GitHub `main`, the merge
-commit of PR #15 (2026-08-05). GitHub state is authoritative; a local checkout
+**Baseline:** `42ff5f3a2158bc68219b1c87cb6356f146009fdc` — GitHub `main`, the merge
+commit of PR #16 (2026-08-05). GitHub state is authoritative; a local checkout
 never is.
-**Next implementation item:** Phase 0.6. Phase 0.5 ships in the PR that carries
-this revision; 0.4's code is merged and the item holds at ⏳ on its outstanding
-hardware verification, so it does not come back round as the next item.
+**Next implementation item:** none inside Phase 0 — 0.6 and 0.7 ship in the PR
+that carries this revision, and 0.4's code is merged and holds at ⏳ on its
+outstanding hardware verification (an evidence-recording task, not an
+implementation item). The next implementation phase is Phase 1, which starts
+only when Blake opens it.
 
 **Scope:** the Lacks deployment. Migrating store-agnostic work back to the WGR
 template is a real goal but has no owner, no phase and no schedule here; treat it
@@ -329,14 +331,10 @@ mounted device.
 
 ### 0.5 — Route priorities content to the Consultation Summary and email ✅
 
-**Ships in the PR that carries this revision (branch
-`claude/phase0.5-priority-handoff`). The ✅ records the intended main-state and
-becomes true only when this exact reviewed PR merges — which is also the only
-moment this revision becomes the durable plan, so the mark and its truth arrive
-together. 0.5's exit criteria are code-level, verified by the suites this PR
-ships; none carries a named post-merge verification the way 0.4's hardware gate
-does, so the merge-moves-to-⏳ rule does not apply and the item never passes
-through ⏳. On merge this item is done and 0.6 is next.** That is a statement
+**Shipped: PR #16, merge commit `42ff5f3` (2026-08-05), reviewed head
+`412095a`. 0.5's exit criteria are code-level and were verified by the suites
+that PR shipped; none carried a named post-merge verification the way 0.4's
+hardware gate does, so the item never passed through ⏳.** That is a statement
 about the exit, not about the presentation:
 the new section's rendering was reviewed once, in a real browser, and its
 deliberately-unstyled look (bare list inside the section card, minimal inline
@@ -427,7 +425,57 @@ work that is entirely independent of any presentation decision, which is why thi
 item can proceed while 1.6 is still open. The email side is a new payload field
 plus a Code.gs block; with `gasUrl` blank this is capability work, not delivery.
 
-### 0.6 — Implication, not diagnosis, on the Consultation Summary ⬜
+### 0.6 — Implication, not diagnosis, on the Consultation Summary ✅
+
+**Ships in the PR that carries this revision (branch
+`claude/phase0.6-implication-copy`). The ✅ records the intended main-state and
+becomes true only when this exact reviewed PR merges — the same convention 0.5
+used, and the same reasoning: the exit criteria are code-level, verified by the
+suites this PR ships, with no named post-merge verification, so the item never
+passes through ⏳.**
+
+**What shipped, so nobody re-derives it wrongly:**
+
+- **One mapping, one resolver, two consumers.** The bilingual implication copy
+  lives at `salesNotes.consultationImplications[questionId][optionId]` (and
+  `salesNotes_es.…`), authored in `incoming/lacks_store_values.json`, carried
+  as `Type=consultation` rows on the workbook's SalesNotes tab (new
+  `Implication` / `Implication (ES)` columns in `tools/workbook_schema.py`),
+  rebuilt by `build_lacks_workbook.py`, emitted by `convert_store_data.py`,
+  and validated end to end: completeness against the quiz's option inventory,
+  emptiness parity between languages, and unknown-key rejection
+  (`validate_sales_notes` + `validate_store_config`). The client hydrates the
+  two maps and `resolveConsultationSummary()` produces the three strings —
+  context, who, profile — consumed by BOTH the hf2 rows and the email payload,
+  so the surfaces cannot drift.
+- **Fail closed by omission.** A missing, malformed or untranslated entry
+  omits that fragment — never the clinical-style quiz label, never an option
+  or question id, never English copy in Spanish mode. `answerLabelFor` (now
+  used only for the neutral mattress-size identity) also fails closed to ''
+  instead of echoing the raw id. Intentional omissions (the "none" options,
+  comfortable temperature) are authored as empty-string entries so the
+  validator can tell them from holes.
+- **The email got real equivalents.** The roadmap previously claimed email
+  equivalents that did not exist — the payload sent only the brief-summary
+  string. The payload now carries an allowlisted `consultation` field of
+  exactly `{context, who, profile}` (pre-localized), bounded and projected in
+  Code.gs (300 chars each), rendered INSIDE the existing Sleep Brief block in
+  the HTML part and directly under the Sleep Brief line in the shared
+  text/plain body on both send paths. The sheet row is untouched. 0.5's
+  priorities content is untouched. gasUrl stays blank — capability, not
+  delivery.
+- **Non-leakage is proven behaviorally**, not by inspection:
+  `tests/consultation_summary_check.mjs` rebuilds the quiz labels as sentinel
+  diagnosis strings in a sandbox and shows every output surface — summary
+  rows, payload, HTML email, normal text part, fallback body, sheet row —
+  carries only implication copy. The mutation sweep gained fourteen 0.6
+  entries (label fallback, id leak, label-keyed lookup, ES-through-EN,
+  view-model drift on each side, hydration, both plain branches, the HTML
+  part, projection passthrough, sheet persistence).
+- **Operator note:** the CI job name "Full suite (18 checks)" is pinned by the
+  branch-protection required-check name and now undercounts (19 suites).
+  Renaming job + protection rule together is Blake's action; the workflow
+  carries the same note.
 
 **Approved route — decided, not open: add a separate bilingual consultation-summary
 presentation mapping. Do not relabel the shared quiz options.**
@@ -467,10 +515,24 @@ cannot reach either surface. **This item changes no layout** — it substitutes
 content into the three existing summary rows — and therefore carries **no
 dependency on 1.6**.
 
-### 0.7 — Prove the protections still hold ⬜
+### 0.7 — Prove the protections still hold ✅
 
 Not a feature. The acceptance gate for Phase 0: session, privacy, accessibility,
 analytics-contract and financing-isolation protections remain intact.
+
+**Ships in the PR that carries this revision, folded in with 0.6 (Codex
+approved the consolidation — it is only the acceptance proof, and running it
+against any earlier tree would prove the wrong state). Same mark convention:
+the ✅ becomes true only when this exact reviewed PR merges. The run this PR
+records: every named suite green at the PR head, the complete mutation sweep
+with zero survivors / zero stale / zero not-applied entries, strict golden and
+workbook validation green, ranged `git diff --check` clean, protected
+artifacts byte-identical across the test run, and a clean working tree — all
+re-executed by CI on the exact head.**
+
+**This does NOT close Phase 0.** 0.4 remains ⏳ until its mounted-showroom-device
+evidence is recorded in `docs/kiosk-device-hardening.md`; the phase closes when
+that lands, with no further implementation work.
 
 **Exit:** the full repository suite is green — scoring isolation, session async and
 privacy, session safety, data-error recovery, financing totality, validation and
@@ -1208,8 +1270,9 @@ document, not here.
    merged `88f1e89`.
 3. ✅ **Roadmap reconciliation** — 0.2. PR #14 (`7fa8390`).
 4. 🔨 **Remaining Phase 0** — 0.4 merged (PR #15, `572d405`; ⏳, hardware
-   verification outstanding), 0.5 in the PR carrying this revision, then 0.6,
-   0.7. Phase 0 cannot close while 0.4's hardware gate is open.
+   verification outstanding), 0.5 merged (PR #16, `42ff5f3`), 0.6 + 0.7 in the
+   PR carrying this revision. Phase 0 cannot close while 0.4's hardware gate is
+   open — the only remaining Phase 0 work is recording that evidence.
 5. ⬜ **The visible redesign** — Phase 1. Start the catalog reason-content
    authoring (1.3's gated content) in parallel and early; it is not engineering
    work, and it gates **reason-led/personalised-card completion** — not the card

@@ -240,6 +240,22 @@ function doPost(e) {
           test: _safeText(p && p.test, 400)
         };
       }).filter(function(p) { return p.name; }),
+      // Consultation Summary strings (0.6), pre-localized by the client to
+      // data.lang from the SAME resolver the kiosk screen renders. Projected
+      // onto a fresh three-key literal so nothing else can ride along, each
+      // bounded, and STRING-TYPED: unlike _safeText's usual String() coercion
+      // a non-string sub-field here is dropped, never coerced - a client bug
+      // shipping {} must not put "[object Object]" in a customer email. They
+      // render inside the existing Sleep Brief block in both MIME parts and
+      // never reach the sheet row.
+      consultation: (function(cs) {
+        var pick = function(v) { return typeof v === 'string' ? _safeText(v, 300) : ''; };
+        return {
+          context: pick(cs && cs.context),
+          who: pick(cs && cs.who),
+          profile: pick(cs && cs.profile)
+        };
+      })(data.consultation),
       // Website-derived retailer promotions, pre-localized by the client to data.lang.
       promotions: _safeArray(data.emailPromotions).slice(0, 12).map(function(p) {
         return {
@@ -334,6 +350,16 @@ function buildPlainBody(data, isEs, storeName) {
   }).join('\n');
   // Trial priorities (0.5), same order as the HTML body.
   var _plainPriority = function(s) { return String(s || '').replace(/[<>]/g, ''); };
+  // Consultation Summary lines (0.6) - the same three resolved strings the
+  // kiosk screen shows, directly under the Sleep Brief line in both language
+  // branches. Pre-localized by the client; angle brackets stripped like the
+  // priority lines so hostile markup cannot arrive looking like markup.
+  var consultation = (data.consultation && typeof data.consultation === 'object')
+    ? data.consultation : {};
+  var consultLines = [consultation.context, consultation.who, consultation.profile]
+    .map(function(s) { return _plainPriority(s); })
+    .filter(function(s) { return s; });
+  var consultBlock = consultLines.length ? consultLines.join('\n') + '\n' : '';
   var priorityLines = _safeArray(data.priorities).map(function(pr, i) {
     return (i + 1) + '. ' + _plainPriority(pr.name)
       + (pr.reason ? ' - ' + _plainPriority(pr.reason) : '')
@@ -394,6 +420,7 @@ function buildPlainBody(data, isEs, storeName) {
       + (meetsMatchThreshold ? 'Tu mejor opci\u00f3n: ' : 'Opci\u00f3n para comparar: ') + topMatch + ' (' + topMatchDetail + ')\n'
       + 'El mejor punto de partida en la tienda.\n'
       + 'Resumen de sue\u00f1o: ' + sleepProfile + '\n'
+      + consultBlock
       + (priorityLines ? 'Lo que probaremos juntos:\n' + priorityLines + '\n' : '')
       + passBlockEs
       + 'Muestra este correo a tu especialista de sue\u00f1o de ' + storeName + '.\n\n'
@@ -414,6 +441,7 @@ function buildPlainBody(data, isEs, storeName) {
       + (meetsMatchThreshold ? 'Your best match: ' : 'Option to compare: ') + topMatch + ' (' + topMatchDetail + ')\n'
       + 'Best place to start in-store.\n'
       + 'Sleep Brief: ' + sleepProfile + '\n'
+      + consultBlock
       + (priorityLines ? 'What we will test together:\n' + priorityLines + '\n' : '')
       + passBlockEn
       + 'Show this email to your ' + storeName + ' sleep specialist.\n\n'
@@ -449,6 +477,16 @@ function buildSimpleHtml(data, firstName, isEs, storeName) {
   var passTerms = _escapeHtml(data.passTerms
     || 'Valid on qualifying mattress selections. Cannot be combined with other offers. Final eligibility confirmed by your sleep specialist.');
   var sleepProfile = _escapeHtml(data.sleepProfile || '');
+
+  // Consultation Summary lines (0.6): the same three resolved strings the
+  // kiosk screen renders, shown INSIDE the existing Sleep Brief block - no
+  // new section, card or component - and escaped at this interpolation like
+  // every other payload-derived value.
+  var consultation = (data.consultation && typeof data.consultation === 'object')
+    ? data.consultation : {};
+  var consultLines = [consultation.context, consultation.who, consultation.profile]
+    .map(function(s) { return _escapeHtml(s); })
+    .filter(function(s) { return s; });
 
   var rsa = _escapeHtml((data.rsa || '').toString().trim());
 
@@ -689,10 +727,13 @@ function buildSimpleHtml(data, firstName, isEs, storeName) {
 
     + (heroCard ? '<tr><td style="padding:24px 32px 8px;">' + heroCard + '</td></tr>' : '')
 
-    + (sleepProfile
+    + ((sleepProfile || consultLines.length)
         ? '<tr><td style="padding:8px 32px 16px;">'
           + '<div style="font-family:' + sans + ';font-size:10px;letter-spacing:2.5px;color:' + c.accent + ';text-transform:uppercase;font-weight:600;margin-bottom:8px;">' + L.briefLabel + '</div>'
-          + '<div style="font-family:' + serif + ';font-size:17px;color:' + c.text + ';line-height:1.35;">' + sleepProfile + '</div>'
+          + (sleepProfile ? '<div style="font-family:' + serif + ';font-size:17px;color:' + c.text + ';line-height:1.35;">' + sleepProfile + '</div>' : '')
+          + consultLines.map(function(line) {
+              return '<div style="font-family:' + sans + ';font-size:12px;color:' + c.textMuted + ';line-height:1.5;margin-top:6px;">' + line + '</div>';
+            }).join('')
           + '</td></tr>'
         : '')
 

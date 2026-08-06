@@ -169,8 +169,16 @@ ACCESSORY_CATEGORIES = {"Foundations & Support", "Pillows", "Protectors"}
 ACCESSORY_IMAGE_PREFIX = "images/accessories/"
 SOURCE_IMAGE_EXTS = (".jpg", ".jpeg", ".png", ".webp")
 MATTRESS_TIERS = {"gold", "silver", "bronze"}
-SALESNOTE_TYPES = {"subBrand", "brand"}
+SALESNOTE_TYPES = {"subBrand", "brand", "consultation"}
 SALESNOTE_FORMATS = {"full", "coaching"}
+
+# Quiz questions whose answers the Consultation Summary resolves through
+# salesNotes.consultationImplications (0.6). MIRRORS index.html's
+# resolveConsultationSummary() — change the two together. mattress_size is
+# deliberately absent (the neutral size identity renders as its own label) and
+# firmness renders as the computed score; neither goes through this mapping.
+CONSULTATION_QUESTIONS = ("sleep_quality", "trigger", "sleep_issues",
+                          "sleep_position", "health_conditions", "temperature")
 
 
 def _source_stems(src_dir: str):
@@ -334,6 +342,60 @@ def validate_store_config(config: dict, manifest: Optional[dict] = None, *,
 
     if manifest is not None and _blank(manifest.get("start_url")):
         r.add_error("manifest.start_url is empty")
+
+    # Consultation implications (0.6): structural + cross-language checks on the
+    # EMITTED maps. Completeness against the quiz definition lives in
+    # validate_sales_notes, where the Quiz tab is in hand; here the contract is
+    # shape (dict of dict of strings), mirrored key sets, and emptiness parity —
+    # the runtime resolver never falls back across languages, so a key present
+    # in one language and absent (or lopsided-empty) in the other would make the
+    # two surfaces silently disagree.
+    def _impl_of(field):
+        block = config.get(field)
+        if not isinstance(block, dict):
+            return None
+        return block.get("consultationImplications")
+
+    impl_maps = {}
+    for field in ("salesNotes", "salesNotes_es"):
+        impl = _impl_of(field)
+        if impl is None:
+            continue  # pre-0.6 config: no consultation block at all
+        if not isinstance(impl, dict):
+            r.add_error(f"{field}.consultationImplications must be an object")
+            continue
+        shape_ok = True
+        for qid, opts in impl.items():
+            if not isinstance(opts, dict):
+                r.add_error(f"{field}.consultationImplications[{qid!r}] must be an object")
+                shape_ok = False
+                continue
+            for oid, v in opts.items():
+                if not isinstance(v, str):
+                    r.add_error(f"{field}.consultationImplications[{qid!r}][{oid!r}] "
+                                "must be a string")
+                    shape_ok = False
+        if shape_ok:
+            impl_maps[field] = impl
+    if len(impl_maps) == 1:
+        present = next(iter(impl_maps))
+        other = "salesNotes_es" if present == "salesNotes" else "salesNotes"
+        r.add_error(f"{present}.consultationImplications present but "
+                    f"{other}.consultationImplications is missing/invalid")
+    elif len(impl_maps) == 2:
+        keys_en = {(q, o) for q, opts in impl_maps["salesNotes"].items() for o in opts}
+        keys_es = {(q, o) for q, opts in impl_maps["salesNotes_es"].items() for o in opts}
+        if keys_en != keys_es:
+            diff = sorted(".".join(k) for k in keys_en.symmetric_difference(keys_es))
+            r.add_error("salesNotes/salesNotes_es consultationImplications key sets "
+                        f"differ: {diff}")
+        else:
+            for (q, o) in sorted(keys_en):
+                en_v = impl_maps["salesNotes"][q][o]
+                es_v = impl_maps["salesNotes_es"][q][o]
+                if (en_v.strip() == "") != (es_v.strip() == ""):
+                    r.add_error(f"consultationImplications[{q}][{o}]: EN and ES must be "
+                                "both filled or both empty (empty = intentional omission)")
 
     return r
 
@@ -2076,17 +2138,65 @@ def validate_app_icon(raw_tabs, *, source_images=None, skip_images=False) -> Val
     return r
 
 
+def _quiz_from_tabs(raw_tabs):
+    """Parse the Quiz tab's chunked JSON envelope out of raw_tabs.
+
+    Returns the quiz dict, or None when the tab is absent, empty, unparseable,
+    or not the {"quiz": {...}} envelope — those states are the quiz channel's
+    own validators' to report; callers here only need the option inventory."""
+    if "Quiz" not in raw_tabs:
+        return None
+    _, rows = raw_tabs["Quiz"]
+    payload = "".join(_s(r.get("Quiz JSON")) for r in rows).strip()
+    if not payload:
+        return None
+    try:
+        parsed = json.loads(payload)
+    except ValueError:
+        return None
+    if not (isinstance(parsed, dict) and set(parsed) == {"quiz"}):
+        return None
+    return parsed["quiz"]
+
+
 def validate_sales_notes(raw_tabs, *, languages=None) -> ValidationReport:
     r = ValidationReport()
     if "SalesNotes" not in raw_tabs:
         return r
-    _, rows = raw_tabs["SalesNotes"]
+    headers, rows = raw_tabs["SalesNotes"]
     brands = _brands_from(raw_tabs)
+    consult_seen = {}
+    consult_all_empty = True
     for i, row in enumerate(rows, start=1):
         typ, key = _s(row.get("Type")), _s(row.get("Key"))
         tag = key or f"row {i}"
         if typ and typ not in SALESNOTE_TYPES:
-            r.add_error(f"SalesNotes {tag}: Type {typ!r} not subBrand/brand")
+            r.add_error(f"SalesNotes {tag}: Type {typ!r} not subBrand/brand/consultation")
+        elif typ == "consultation":
+            dot = key.find(".")
+            if dot <= 0 or dot == len(key) - 1:
+                r.add_error(f"SalesNotes {tag}: consultation Key must be "
+                            "'<questionId>.<optionId>'")
+                continue
+            qid, oid = key[:dot], key[dot + 1:]
+            if qid not in CONSULTATION_QUESTIONS:
+                r.add_error(f"SalesNotes {tag}: {qid!r} is not a Consultation Summary "
+                            f"question {sorted(CONSULTATION_QUESTIONS)}")
+                continue
+            if (qid, oid) in consult_seen:
+                r.add_error(f"SalesNotes {tag}: duplicate consultation key")
+                continue
+            en, es = _s(row.get("Implication")).strip(), _s(row.get("Implication (ES)")).strip()
+            # Empty-empty is an INTENTIONAL omission (e.g. the "none" options).
+            # One language filled with the other blank would make the two
+            # surfaces disagree, and the runtime never falls back across
+            # languages — so a lopsided pair is an authoring error.
+            if (en == "") != (es == ""):
+                r.add_error(f"SalesNotes {tag}: Implication and Implication (ES) must be "
+                            "both filled or both empty (both empty = intentional omission)")
+            if en or es:
+                consult_all_empty = False
+            consult_seen[(qid, oid)] = True
         elif typ == "subBrand":
             fmt = _s(row.get("Format"))
             if fmt not in SALESNOTE_FORMATS:
@@ -2107,6 +2217,52 @@ def validate_sales_notes(raw_tabs, *, languages=None) -> ValidationReport:
         # pitchKey-mapped / aspirational keys that are not literal mattress
         # subBrands). ES sales-notes intentionally NOT validated (optional,
         # generated-later block).
+
+    # Consultation implications (0.6): completeness against the quiz definition.
+    # The runtime fails closed by OMITTING any unmapped fragment, so a hole here
+    # never leaks a label or an id — but it silently thins the Consultation
+    # Summary, which is exactly the state this check exists to catch at build
+    # time. Intentional omissions are rows with both Implication cells empty;
+    # a MISSING row is always an error.
+    quiz = _quiz_from_tabs(raw_tabs)
+    # A row with both cells blank is an intentional omission — but a MISSING
+    # COLUMN silently turns EVERY row into one at once (r.get() of an absent
+    # header is None -> ""), which is a deleted/renamed column in the
+    # human-editable workbook, never an authoring choice. Same for all rows
+    # arriving empty: no deployment authors nothing but omissions.
+    if consult_seen:
+        for h in ("Implication", "Implication (ES)"):
+            if h not in headers:
+                r.add_error(f"SalesNotes: consultation rows present but the {h!r} "
+                            "column is missing — every implication would silently "
+                            "read as an intentional omission")
+        if consult_all_empty and all(h in headers for h in ("Implication", "Implication (ES)")):
+            r.add_error("SalesNotes: every consultation implication is empty — the "
+                        "Consultation Summary would render no answer-derived copy; "
+                        "author the copy or remove the rows")
+    if consult_seen and quiz is None:
+        r.add_error("SalesNotes: consultation implication rows are present but the "
+                    "workbook has no parseable Quiz tab to validate them against")
+    elif quiz is not None:
+        quiz_options = {}
+        for q in (quiz.get("questions") or []):
+            if isinstance(q, dict) and q.get("id") in CONSULTATION_QUESTIONS:
+                quiz_options[q["id"]] = [o.get("id") for o in (q.get("options") or [])
+                                         if isinstance(o, dict) and o.get("id")]
+        if not consult_seen:
+            r.add_warning("SalesNotes: no consultation implication rows — the "
+                          "Consultation Summary renders no answer-derived copy (0.6)")
+        else:
+            for qid in CONSULTATION_QUESTIONS:
+                for oid in quiz_options.get(qid, []):
+                    if (qid, oid) not in consult_seen:
+                        r.add_error(f"SalesNotes: consultation implication missing for "
+                                    f"{qid}.{oid} (author a row with both Implication "
+                                    "cells empty to record an intentional omission)")
+            for (qid, oid) in consult_seen:
+                if oid not in (quiz_options.get(qid) or []):
+                    r.add_error(f"SalesNotes: consultation key {qid}.{oid} matches no "
+                                "quiz option id")
     return r
 
 

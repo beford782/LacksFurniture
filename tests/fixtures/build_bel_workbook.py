@@ -144,13 +144,18 @@ def accessory_value(key: str, acc: dict) -> Any:
 
 def sales_notes_rows(config: dict) -> List[Dict[str, Any]]:
     """Flatten salesNotes (+_es) into row dicts keyed by SalesNotes schema keys.
-    Order: all subBrands (config order) then all brands (config order)."""
+    Order: all subBrands (config order), all brands (config order), then all
+    consultation implications (0.6) in question order then option order, both
+    from the config — mirroring build_lacks_workbook's authored-JSON order so
+    the round trip is deterministic."""
     notes = config.get("salesNotes", {}) or {}
     notes_es = config.get("salesNotes_es", {}) or {}
     sub = notes.get("subBrands", {}) or {}
     sub_es = notes_es.get("subBrands", {}) or {}
     brands = notes.get("brands", {}) or {}
     brands_es = notes_es.get("brands", {}) or {}
+    impl = notes.get("consultationImplications", {}) or {}
+    impl_es = notes_es.get("consultationImplications", {}) or {}
 
     rows: List[Dict[str, Any]] = []
     for name, entry in sub.items():
@@ -174,6 +179,14 @@ def sales_notes_rows(config: dict) -> List[Dict[str, Any]]:
             "lead_es": "", "demo_es": "", "close_es": "", "rsaNote_es": "",
             "story_es": es.get("story", ""),
         })
+    for qid, options in impl.items():
+        for oid, en_text in (options or {}).items():
+            es_text = ((impl_es.get(qid) or {}).get(oid, ""))
+            rows.append({
+                "type": "consultation", "key": f"{qid}.{oid}",
+                "implication": en_text if isinstance(en_text, str) else "",
+                "implication_es": es_text if isinstance(es_text, str) else "",
+            })
     return rows
 
 

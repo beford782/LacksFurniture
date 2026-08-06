@@ -42,6 +42,10 @@ const WITH_SESSION = DEFAULT_SUITES.concat(["tests/session_safety_check.mjs"]);
 const PRIORITIES = ["tests/consultation_priorities_check.mjs"];
 const PRIORITIES_WITH_SESSION = PRIORITIES.concat(["tests/session_safety_check.mjs"]);
 const EMAIL_PRIORITIES = ["tests/email_priorities_check.mjs"];
+// Phase 0.6 observer: the consultation-summary suite owns the implication
+// resolver, the three hf2 rows, the payload consultation field, and the
+// Code.gs consultation rendering on both MIME parts.
+const CONSULT = ["tests/consultation_summary_check.mjs"];
 
 // ---------------------------------------------------------------------------
 // THE MANIFEST. [label, find, replace] — `find` may span lines; index.html is
@@ -408,6 +412,103 @@ const MUTATIONS = [
     "var name = lang === 'es' ? priority.nameEs : priority.nameEn;",
     "var name = priority.nameEn;",
     PRIORITIES],
+
+  // ==== Phase 0.6 — consultation implications ==============================
+  // --- the resolver's fail-closed contract ---------------------------------
+  ["a missing implication falls back to the quiz label",
+    "return (typeof v === 'string') ? v : '';",
+    "return (typeof v === 'string' && v) ? v : answerLabelFor(questionId, optionId);",
+    CONSULT],
+  ["a missing implication leaks the raw option id",
+    "return (typeof v === 'string') ? v : '';",
+    "return (typeof v === 'string') ? v : optionId;",
+    CONSULT],
+  ["the mapping is looked up by label text instead of id",
+    "var v = q[optionId];",
+    "var v = q[answerLabelFor(questionId, optionId)];",
+    CONSULT],
+  ["Spanish resolves through the English map",
+    "var map = currentLang === 'es' ? CONSULT_IMPLICATIONS_ES : CONSULT_IMPLICATIONS;",
+    "var map = CONSULT_IMPLICATIONS;",
+    CONSULT],
+  ["an unresolvable size label leaks the raw id again",
+    "if (!opt) return '';",
+    "if (!opt) return optionId;",
+    CONSULT],
+
+  // --- one view-model, two consumers ---------------------------------------
+  // Each side of the shared resolver mutated ALONE, so only a DOM===payload
+  // (or exact-content) assertion can notice — the other surface stays right.
+  ["the payload consultation drifts from the DOM rows",
+    "consultation: resolveConsultationSummary(),",
+    "consultation: (function(vm) { vm.who = vm.who + '.'; return vm; })(resolveConsultationSummary()),",
+    CONSULT],
+  ["the hf2 rows stop rendering the resolved strings",
+    "var vm = resolveConsultationSummary();",
+    "var vm = { context: '', who: '', profile: '' };",
+    CONSULT],
+
+  // --- the hydration ---------------------------------------------------------
+  // The suite extracts these lines by their ANCHOR (the BRAND_NOTES_ES line
+  // above them), tolerant of the right-hand side — so a blanked map is still
+  // executed and caught by the "maps populate" assertions, not by an
+  // extraction boundary.
+  ["the consultation maps stop being hydrated",
+    "CONSULT_IMPLICATIONS    = (STORE_CONFIG.salesNotes && STORE_CONFIG.salesNotes.consultationImplications) || {};",
+    "CONSULT_IMPLICATIONS    = {};",
+    CONSULT],
+  ["the Spanish consultation map stops being hydrated",
+    "CONSULT_IMPLICATIONS_ES = (STORE_CONFIG.salesNotes_es && STORE_CONFIG.salesNotes_es.consultationImplications) || {};",
+    "CONSULT_IMPLICATIONS_ES = {};",
+    CONSULT],
+  // Adversarial finding F3: blanking a map was caught, SWAPPING the two was
+  // not — both maps still count six questions while English kiosks render
+  // Spanish copy. Content-equality assertions in the suite own these.
+  ["the EN hydration reads the Spanish block",
+    "CONSULT_IMPLICATIONS    = (STORE_CONFIG.salesNotes && STORE_CONFIG.salesNotes.consultationImplications) || {};",
+    "CONSULT_IMPLICATIONS    = (STORE_CONFIG.salesNotes_es && STORE_CONFIG.salesNotes_es.consultationImplications) || {};",
+    CONSULT],
+  ["the ES hydration reads the English block",
+    "CONSULT_IMPLICATIONS_ES = (STORE_CONFIG.salesNotes_es && STORE_CONFIG.salesNotes_es.consultationImplications) || {};",
+    "CONSULT_IMPLICATIONS_ES = (STORE_CONFIG.salesNotes && STORE_CONFIG.salesNotes.consultationImplications) || {};",
+    CONSULT],
+
+  // --- Code.gs ---------------------------------------------------------------
+  ["Code.gs: the EN plain branch drops the consultation lines",
+    "+ 'Sleep Brief: ' + sleepProfile + '\\n'\n      + consultBlock",
+    "+ 'Sleep Brief: ' + sleepProfile + '\\n'",
+    CONSULT, "Code.gs"],
+  ["Code.gs: the ES plain branch drops the consultation lines",
+    "+ 'Resumen de sue\\u00f1o: ' + sleepProfile + '\\n'\n      + consultBlock",
+    "+ 'Resumen de sue\\u00f1o: ' + sleepProfile + '\\n'",
+    CONSULT, "Code.gs"],
+  ["Code.gs: the HTML part drops the consultation lines",
+    "+ consultLines.map(function(line) {",
+    "+ [].map(function(line) {",
+    CONSULT, "Code.gs"],
+  ["Code.gs: the consultation projection becomes a passthrough",
+    "consultation: (function(cs) {\n        var pick = function(v) { return typeof v === 'string' ? _safeText(v, 300) : ''; };\n        return {\n          context: pick(cs && cs.context),\n          who: pick(cs && cs.who),\n          profile: pick(cs && cs.profile)\n        };\n      })(data.consultation),",
+    "consultation: (data.consultation && typeof data.consultation === 'object') ? data.consultation : {},",
+    CONSULT, "Code.gs"],
+  // Adversarial finding F6: these three properties each had exactly ONE
+  // observing assertion and NO mutation of their own, so deleting the
+  // assertion would have left them untested while the sweep stayed green.
+  ["Code.gs: the consultation bound is widened 100x",
+    "var pick = function(v) { return typeof v === 'string' ? _safeText(v, 300) : ''; };",
+    "var pick = function(v) { return typeof v === 'string' ? _safeText(v, 30000) : ''; };",
+    CONSULT, "Code.gs"],
+  ["Code.gs: the HTML part stops escaping the consultation lines",
+    ".map(function(s) { return _escapeHtml(s); })",
+    ".map(function(s) { return String(s == null ? '' : s); })",
+    CONSULT, "Code.gs"],
+  ["Code.gs: the plain part stops stripping consultation angle brackets",
+    ".map(function(s) { return _plainPriority(s); })",
+    ".map(function(s) { return String(s || ''); })",
+    CONSULT, "Code.gs"],
+  ["Code.gs: the sheet row grows the consultation content",
+    "      rsa\n    ]);",
+    "      rsa,\n      JSON.stringify(data.consultation || '')\n    ]);",
+    CONSULT, "Code.gs"],
 ];
 
 // ---------------------------------------------------------------------------
