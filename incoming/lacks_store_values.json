@@ -68,5 +68,52 @@
   "voice.outcomeItems": "Sleep Brief · Mattress Matches · Sleep System Picks · Payment Choices",
   "voice_es.retailerSubline": "TIENDA DEL DESCANSO",
   "voice_es.outcomeLabel": "Tu consulta crea",
-  "voice_es.outcomeItems": "Resumen de Sueño · Opciones de Colchón · Sistema de Sueño · Opciones de Pago"
+  "voice_es.outcomeItems": "Resumen de Sueño · Opciones de Colchón · Sistema de Sueño · Opciones de Pago",
+  "salesNotes.consultationImplications": {
+    "sleep_quality": {
+      "poor": { "en": "aiming for a real change in nightly rest", "es": "buscando un cambio real en el descanso" },
+      "fair": { "en": "aiming to sleep noticeably better", "es": "buscando dormir notablemente mejor" },
+      "okay": { "en": "building on what already works", "es": "mejorando lo que ya funciona" },
+      "well": { "en": "protecting a setup that already works", "es": "cuidando un descanso que ya funciona" }
+    },
+    "trigger": {
+      "pain": { "en": "here to solve a comfort problem", "es": "aquí para resolver un problema de comodidad" },
+      "worn_out": { "en": "replacing an old mattress", "es": "reemplazando un colchón viejo" },
+      "moving": { "en": "furnishing a new space", "es": "amueblando un espacio nuevo" },
+      "upgrade": { "en": "ready for an upgrade", "es": "buscando una mejora" },
+      "browsing": { "en": "exploring options today", "es": "explorando opciones hoy" }
+    },
+    "sleep_issues": {
+      "back_pain": { "en": "test lower-back support carefully", "es": "probar con cuidado el soporte lumbar" },
+      "hip_pain": { "en": "focus on pressure relief at hips and shoulders", "es": "enfocarse en aliviar la presión en caderas y hombros" },
+      "hot": { "en": "prioritize temperature control", "es": "priorizar el control de temperatura" },
+      "tossing": { "en": "notice how easy it is to settle in", "es": "notar qué tan fácil es acomodarse" },
+      "stiff": { "en": "compare alignment and morning comfort", "es": "comparar la alineación y la comodidad al despertar" },
+      "sagging": { "en": "check for durable, consistent support", "es": "revisar que el soporte sea duradero y consistente" },
+      "too_soft": { "en": "try firmer, more supportive feels", "es": "probar sensaciones más firmes y con más soporte" },
+      "none": { "en": "", "es": "" }
+    },
+    "sleep_position": {
+      "side": { "en": "prioritize shoulder and hip cushioning", "es": "priorizar el acolchado de hombros y caderas" },
+      "back": { "en": "look for even lumbar support", "es": "buscar soporte lumbar uniforme" },
+      "stomach": { "en": "keep the midsection supported", "es": "mantener la zona media con soporte" },
+      "combo": { "en": "notice ease of movement between positions", "es": "notar la facilidad para cambiar de posición" },
+      "no_idea": { "en": "compare a few different feels to find a starting point", "es": "comparar varias sensaciones para encontrar un punto de partida" }
+    },
+    "health_conditions": {
+      "nerve_pain": { "en": "compare gentle, even pressure relief", "es": "comparar un alivio de presión suave y uniforme" },
+      "allergies": { "en": "ask about washable and protective covers", "es": "preguntar por fundas lavables y protectoras" },
+      "snoring": { "en": "test head-of-bed elevation on an adjustable base", "es": "probar la elevación de la cabecera en una base ajustable" },
+      "reflux": { "en": "notice how a raised upper body feels", "es": "notar cómo se siente el torso elevado" },
+      "extra_support": { "en": "prioritize reinforced, sturdy support", "es": "priorizar un soporte reforzado y resistente" },
+      "getting_older": { "en": "compare ease of getting in and out of bed", "es": "comparar la facilidad para acostarse y levantarse" },
+      "none": { "en": "", "es": "" }
+    },
+    "temperature": {
+      "hot": { "en": "compare cooling covers and airflow", "es": "comparar fundas frescas y ventilación" },
+      "comfortable": { "en": "", "es": "" },
+      "cold": { "en": "notice warmth and cozier surface feels", "es": "notar calidez y superficies más acogedoras" },
+      "opposite": { "en": "compare temperature balance for two sleepers", "es": "comparar el equilibrio de temperatura para dos personas" }
+    }
+  }
 }

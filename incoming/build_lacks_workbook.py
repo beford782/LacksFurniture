@@ -152,6 +152,40 @@ def sales_row(s):
     return dict(zip(SALES_COLS, s))
 
 
+# ---- Consultation implications (0.6) -> SalesNotes consultation rows --------
+# Bilingual Consultation Summary implication copy, keyed structurally by quiz
+# question id + option id (NEVER by label text, so a future relabel cannot
+# break it). Authored in lacks_store_values.json under
+# "salesNotes.consultationImplications"; one SalesNotes row per option with
+# Key "<questionId>.<optionId>". Both Implication cells empty = intentional
+# omission (e.g. the "none" options). A missing or empty source block stops
+# the build: the runtime fails closed by omitting fragments, so silently
+# building without this copy would blank the Consultation Summary rows.
+def consultation_sales_rows():
+    values = _load("lacks_store_values.json")
+    impl = values.get("salesNotes.consultationImplications")
+    if not isinstance(impl, dict) or not impl:
+        raise SystemExit("build_lacks_workbook: lacks_store_values.json is missing "
+                         "\"salesNotes.consultationImplications\" (required since 0.6)")
+    rows = []
+    for qid, options in impl.items():
+        if not isinstance(options, dict) or not options:
+            raise SystemExit(f"build_lacks_workbook: consultationImplications[{qid!r}] "
+                             "must be a non-empty object of option ids")
+        for oid, pair in options.items():
+            if not isinstance(pair, dict) or set(pair) != {"en", "es"} \
+               or not all(isinstance(pair[k], str) for k in ("en", "es")):
+                raise SystemExit(f"build_lacks_workbook: consultationImplications"
+                                 f"[{qid!r}][{oid!r}] must be {{\"en\": str, \"es\": str}}")
+            rows.append({
+                "Type": "consultation",
+                "Key": f"{qid}.{oid}",
+                "Implication": pair["en"],
+                "Implication (ES)": pair["es"],
+            })
+    return rows
+
+
 # ---- apply migrated build-input values onto Store Info ----------------------
 def _apply_build_values(store):
     values = _load("lacks_store_values.json")  # {dotted schema col.key: value}
@@ -221,21 +255,33 @@ def write_sheet(wb, tab, rows):
         ws.append([r.get(h, "") for h in headers])
 
 
-def main():
+def main(argv=None):
+    # --out exists for VERIFICATION (the lineage check rebuilds the workbook
+    # into a temporary location and compares it against the committed one).
+    # The default is unchanged: a plain run still writes the committed path.
+    import argparse
+    parser = argparse.ArgumentParser(
+        description="Generate the Lacks Furniture onboarding workbook.")
+    parser.add_argument("--out", default=OUT,
+                        help="Output .xlsx path (default: %(default)s)")
+    args = parser.parse_args(argv)
+
     wb = openpyxl.Workbook()
     wb.remove(wb.active)
     write_sheet(wb, "Store Info", [STORE])
     write_sheet(wb, "Brands", [{"Brand Name": b, "Logo File Name": ""} for b in BRANDS])
     write_sheet(wb, "Mattresses", [mattress_row(m) for m in M])
     write_sheet(wb, "Accessories", [accessory_row(a) for a in A])
-    write_sheet(wb, "SalesNotes", [sales_row(s) for s in SALES])
+    consult_rows = consultation_sales_rows()
+    write_sheet(wb, "SalesNotes", [sales_row(s) for s in SALES] + consult_rows)
     write_sheet(wb, "Promotions", promotions_rows())
     write_sheet(wb, "Quiz", quiz_rows())
-    wb.save(OUT)
+    wb.save(args.out)
     from collections import Counter
     c = Counter(m["tier"] for m in M)
-    print(f"Wrote {OUT}")
-    print(f"  Brands: {len(BRANDS)}  Mattresses: {len(M)}  Accessories: {len(A)}  SalesNotes: {len(SALES)}")
+    print(f"Wrote {args.out}")
+    print(f"  Brands: {len(BRANDS)}  Mattresses: {len(M)}  Accessories: {len(A)}  "
+          f"SalesNotes: {len(SALES)} (+{len(consult_rows)} consultation)")
     print(f"  tiers: gold={c['gold']} silver={c['silver']} bronze={c['bronze']}")
 
 

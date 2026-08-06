@@ -52,6 +52,12 @@ concurrency:
 
 jobs:
   verify:
+    # The display name is PINNED by branch protection (required status check
+    # "Full suite (18 checks)") — renaming it here without updating the
+    # protection rule in the same change would leave every PR waiting on a
+    # check that never reports. The suite actually runs 19 checks since Phase
+    # 0.6 added the consultation-summary suite; renaming name+protection
+    # together is an operator (Blake) action, tracked in the 0.6 PR notes.
     name: Full suite (18 checks)
     runs-on: ubuntu-24.04
     # Raised from 20 for the mutation sweep, which re-runs the suites once per
@@ -197,6 +203,17 @@ jobs:
       - name: strict golden bundle
         run: python tests/golden/run_golden.py --strict
 
+      # The canonical Lacks lineage as an executable guarantee: rebuilds the
+      # workbook from the committed incoming JSON sources into temp space,
+      # compares it cell-semantically with the committed xlsx, validates it
+      # warnings-as-errors, converts it and canonically compares every
+      # generated artifact with the committed bundle — then proves its own
+      # non-vacuity by mutating an implication string in a sandboxed source
+      # copy and requiring both observers to turn red. A source edit without
+      # a rebuild, or a hand edit to the workbook/bundle, fails here.
+      - name: canonical Lacks lineage (sources -> workbook -> bundle)
+        run: python tests/lineage_check.py
+
       - name: QR payload suite
         run: python tests/qr_payload_check.py
 
@@ -284,6 +301,16 @@ jobs:
       # can pass against an email that never existed.
       - name: email priorities (Code.gs)
         run: node tests/email_priorities_check.mjs
+
+      # Phase 0.6. Executes the real config hydration, the shared
+      # consultation-summary resolver, the hf2 row render, the payload
+      # projection and Code.gs on both send paths. Proves behaviorally (via
+      # sentinel quiz labels in a sandbox) that clinical-style labels and raw
+      # option/question ids can never reach the Consultation Summary, the
+      # payload, either MIME part, or the sheet row — and that a missing,
+      # malformed or untranslated implication fails closed by omission.
+      - name: consultation summary (implication mapping)
+        run: node tests/consultation_summary_check.mjs
 
       # One level up from the suites: for each safety property in the manifest,
       # delete it from a COPY of the tree and require a suite to go red. A

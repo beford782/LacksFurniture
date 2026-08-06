@@ -11550,6 +11550,13 @@
     let BRAND_NOTES = {};
     let SUBBRAND_NOTES_ES = {};
     let BRAND_NOTES_ES = {};
+    // Consultation Summary implication copy (0.6) — salesNotes
+    // .consultationImplications, keyed [questionId][optionId], one map per
+    // language. Resolution NEVER crosses languages and never falls back to a
+    // quiz label or an id: a missing/malformed/untranslated entry omits that
+    // fragment (see consultImplication()).
+    let CONSULT_IMPLICATIONS = {};
+    let CONSULT_IMPLICATIONS_ES = {};
 
     // 5d: Lookup helper for differentiation content. Cascade resolves the lookup
     // key as pitchKey → subBrand → null. Then a language fallback wraps it:
@@ -11794,6 +11801,8 @@
           BRAND_NOTES       = (STORE_CONFIG.salesNotes && STORE_CONFIG.salesNotes.brands) || {};
           SUBBRAND_NOTES_ES = (STORE_CONFIG.salesNotes_es && STORE_CONFIG.salesNotes_es.subBrands) || {};
           BRAND_NOTES_ES    = (STORE_CONFIG.salesNotes_es && STORE_CONFIG.salesNotes_es.brands) || {};
+          CONSULT_IMPLICATIONS    = (STORE_CONFIG.salesNotes && STORE_CONFIG.salesNotes.consultationImplications) || {};
+          CONSULT_IMPLICATIONS_ES = (STORE_CONFIG.salesNotes_es && STORE_CONFIG.salesNotes_es.consultationImplications) || {};
         }
       },
       {
@@ -14952,6 +14961,12 @@
             };
           })
           .filter(function(p) { return p.name; }),
+        // Consultation Summary (0.6): exactly the three strings the hf2
+        // screen renders, from the SAME resolver — pre-localized to this
+        // payload's lang. Implication copy, the neutral size identity and the
+        // computed firmness only: no raw answers, no option/question ids, no
+        // scores, no health-condition identifiers.
+        consultation: resolveConsultationSummary(),
         emailPromotions: emailPromotions,
         promoSpanishDraft: promoSpanishDraft,
         promoScenario: (STORE_CONFIG.promotions && STORE_CONFIG.promotions.activeScenario) || '',
@@ -16839,62 +16854,79 @@
     }
 
     // ---- Customer brief ------------------------------------------------------
-    // Consultation-context phrasing for the two opening warm-up questions
-    // (sleep_quality, trigger). Neither answer carries scoring weight (see
-    // QUESTIONS) — their only job is to give the RSA a one-line human read on
-    // the customer at handoff, e.g. "sleeps poorly · came in for pain relief".
-    // Bilingual, keyed by option id. Context only — no medical claims.
-    var HF2_SLEEP_QUALITY_PHRASE = {
-      poor: { en: 'sleeps poorly',      es: 'duerme mal' },
-      fair: { en: 'sleeping not great', es: 'no duerme muy bien' },
-      okay: { en: 'sleeping okay',      es: 'duerme más o menos' },
-      well: { en: 'sleeping well',      es: 'duerme bien' }
-    };
-    var HF2_TRIGGER_PHRASE = {
-      pain:     { en: 'came in for pain relief',   es: 'vino por dolor' },
-      worn_out: { en: 'replacing an old mattress', es: 'reemplazando un colchón viejo' },
-      moving:   { en: 'furnishing a new space',    es: 'amueblando un espacio nuevo' },
-      upgrade:  { en: 'ready for an upgrade',       es: 'buscando una mejora' },
-      browsing: { en: 'just browsing today',        es: 'solo explorando hoy' }
-    };
-    function hf2Phrase(map, optionId) {
-      var entry = optionId && map[optionId];
-      if (!entry) return '';
-      return entry[currentLang] || entry.en || '';
+    // The three Consultation Summary strings — context, who, profile — come
+    // from ONE shared view-model (resolveConsultationSummary), consumed by
+    // BOTH the on-screen rows and the email payload projection, so the two
+    // surfaces cannot drift. Option-derived copy resolves through the
+    // config-driven implication mapping (salesNotes.consultationImplications,
+    // keyed by question id + option id — never by label text): the summary
+    // says what an answer IMPLIES for mattress testing, never the
+    // clinical-style quiz label the customer tapped (0.6). The only direct
+    // presentation values are the neutral mattress-size identity and the
+    // computed firmness score — neither characterizes the customer.
+    function consultImplication(questionId, optionId) {
+      if (!questionId || !optionId) return '';
+      var map = currentLang === 'es' ? CONSULT_IMPLICATIONS_ES : CONSULT_IMPLICATIONS;
+      var q = map && map[questionId];
+      if (!q || typeof q !== 'object') return '';
+      var v = q[optionId];
+      // Fail closed: a missing, non-string, empty or blank-only entry omits
+      // the fragment — NEVER the quiz label, NEVER an id, NEVER the other
+      // language's copy. The trim is defense in depth (the converter already
+      // normalizes): a whitespace value must not survive the non-empty filter
+      // and join as an orphan " · " fragment.
+      return (typeof v === 'string') ? v.trim() : '';
     }
+
+    function resolveConsultationSummary() {
+      var nonEmpty = function(p) { return p && p.length; };
+      // Context row: the two non-scoring openers (sleep_quality, trigger).
+      var ctxParts = [
+        consultImplication('sleep_quality', answers.sleep_quality),
+        consultImplication('trigger', answers.trigger)
+      ].filter(nonEmpty);
+      // Who row: neutral mattress-size identity, then what each reported
+      // issue means for testing. Empty issues → just the size.
+      var size = answerLabelFor('mattress_size', answers.mattress_size);
+      var issues = (answers.sleep_issues || []).map(function(id) {
+        return consultImplication('sleep_issues', id);
+      });
+      var whoParts = [size].concat(issues).filter(nonEmpty);
+      // Profile row: position and conditions as testing implications, the
+      // computed firmness value, then the temperature implication.
+      var position = consultImplication('sleep_position', answers.sleep_position);
+      var conditions = (answers.health_conditions || []).map(function(id) {
+        return consultImplication('health_conditions', id);
+      });
+      // Guarded against null/'' as well as undefined: Number(null) and
+      // Number('') are 0, which would fabricate a "Plush 0/10" the customer
+      // never chose. Unset in any form omits the fragment.
+      var firmnessScore = Number(answers.firmness);
+      var firmness = (answers.firmness != null && answers.firmness !== ''
+          && Number.isFinite(firmnessScore))
+        ? firmnessFeel(firmnessScore) + ' ' + firmnessScore + '/10'
+        : '';
+      var temperature = consultImplication('temperature', answers.temperature);
+      var profileParts = [position].concat(conditions, [firmness, temperature])
+        .filter(nonEmpty);
+      return {
+        context: ctxParts.join(' · '),
+        who: whoParts.join(' · '),
+        profile: profileParts.join(' · ')
+      };
+    }
+
     function renderHf2Brief() {
       var context = document.getElementById('hf2BriefContext');
       var who = document.getElementById('hf2BriefWho');
       var profile = document.getElementById('hf2BriefProfile');
-      // Context row: sleep_quality · trigger (the two non-scoring openers).
-      var ctxParts = [
-        hf2Phrase(HF2_SLEEP_QUALITY_PHRASE, answers.sleep_quality),
-        hf2Phrase(HF2_TRIGGER_PHRASE, answers.trigger)
-      ].filter(function(p) { return p && p.length; });
+      var vm = resolveConsultationSummary();
       if (context) {
-        context.textContent = ctxParts.join(' · ');
-        context.style.display = ctxParts.length ? '' : 'none';
+        context.textContent = vm.context;
+        context.style.display = vm.context ? '' : 'none';
       }
-      // Who row: mattress size · sleep_issues (joined). Empty issues → just size.
-      var size = answerLabelFor('mattress_size', answers.mattress_size);
-      var issues = (answers.sleep_issues || []).map(function(id) {
-        return answerLabelFor('sleep_issues', id);
-      });
-      var whoParts = [size].concat(issues).filter(function(p) { return p && p.length; });
-      if (who) who.textContent = whoParts.join(' · ');
-      // Profile row: position · conditions · preferred feel · temperature.
-      var position = answerLabelFor('sleep_position', answers.sleep_position);
-      var conditions = (answers.health_conditions || []).map(function(id) {
-        return answerLabelFor('health_conditions', id);
-      });
-      var firmnessScore = Number(answers.firmness);
-      var firmness = Number.isFinite(firmnessScore)
-        ? firmnessFeel(firmnessScore) + ' ' + firmnessScore + '/10'
-        : '';
-      var temperature = answerLabelFor('temperature', answers.temperature);
-      var profileParts = [position].concat(conditions, [firmness, temperature])
-        .filter(function(p) { return p && p.length; });
-      if (profile) profile.textContent = profileParts.join(' · ');
+      if (who) who.textContent = vm.who;
+      if (profile) profile.textContent = vm.profile;
     }
 
     // ---- Trial priorities (0.5) ---------------------------------------------
@@ -16942,18 +16974,23 @@
 
     // Resolve a human-readable label for a single quiz answer ID.
     // QUESTIONS options have label as either a plain string or {en, es} object.
+    // The Consultation Summary uses this ONLY for the neutral mattress-size
+    // identity; every characterizing answer resolves through
+    // consultImplication() instead. Fails CLOSED (0.6): an unresolvable
+    // (question, option) yields '' — never the raw id, which is an internal
+    // name and must not reach a customer surface or the email payload.
     function answerLabelFor(questionId, optionId) {
       if (!optionId) return '';
-      if (typeof QUESTIONS === 'undefined') return optionId;
+      if (typeof QUESTIONS === 'undefined') return '';
       var q = QUESTIONS.find(function(qq) { return qq.id === questionId; });
-      if (!q || !q.options) return optionId;
+      if (!q || !q.options) return '';
       var opt = q.options.find(function(o) { return o.id === optionId; });
-      if (!opt) return optionId;
+      if (!opt) return '';
       if (typeof opt.label === 'string') return opt.label;
       if (opt.label && typeof opt.label === 'object') {
-        return opt.label[currentLang] || opt.label.en || optionId;
+        return opt.label[currentLang] || opt.label.en || '';
       }
-      return optionId;
+      return '';
     }
 
     // ---- Picks ---------------------------------------------------------------

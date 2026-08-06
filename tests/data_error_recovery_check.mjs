@@ -327,6 +327,7 @@ function buildApp(opts) {
     var QUESTIONS = [];
     var ACCESSORIES = [];
     var SUBBRAND_NOTES = {}, BRAND_NOTES = {}, SUBBRAND_NOTES_ES = {}, BRAND_NOTES_ES = {};
+    var CONSULT_IMPLICATIONS = {}, CONSULT_IMPLICATIONS_ES = {};
     var DICT = {};
     var currentLang = ${JSON.stringify(opts.lang || "en")};
     // The shared ordering token and the installed-language record. Real

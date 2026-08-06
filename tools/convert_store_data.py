@@ -186,16 +186,36 @@ def emit_mattress_csvs(headers, rows, data_dir):
 # -- store-config.json (S3) ---------------------------------------------------
 
 def build_sales_notes(wb):
-    """Build (salesNotes, salesNotes_es) from the SalesNotes tab."""
+    """Build (salesNotes, salesNotes_es) from the SalesNotes tab.
+
+    Type=consultation rows (0.6) carry the Consultation Summary implication
+    copy keyed "<questionId>.<optionId>". Unlike the subBrand/brand ES blocks
+    (dropped when blank), consultation entries are written into BOTH language
+    maps even when empty: an empty string is an intentional omission the
+    validator can distinguish from a missing row, and the runtime fails closed
+    on either. A key without a "." cannot name an option and is skipped here —
+    validate_sales_notes reports it, and the resulting missing option fails
+    the completeness check rather than shipping silently."""
     _, rows = read_tab(wb, "SalesNotes")
-    sn = {"subBrands": {}, "brands": {}}
-    sn_es = {"subBrands": {}, "brands": {}}
+    sn = {"subBrands": {}, "brands": {}, "consultationImplications": {}}
+    sn_es = {"subBrands": {}, "brands": {}, "consultationImplications": {}}
     for r in rows:
         typ = _s(r.get("Type")).strip()
         key = _s(r.get("Key")).strip()
         if not typ or not key:
             continue
-        if typ == "subBrand":
+        if typ == "consultation":
+            dot = key.find(".")
+            if dot <= 0 or dot == len(key) - 1:
+                continue  # malformed key; reported by validate_sales_notes
+            qid, oid = key[:dot], key[dot + 1:]
+            # .strip(): a whitespace-only cell IS an intentional omission, so
+            # normalize it to the "" the runtime and validators treat as one -
+            # blank-only values must never reach the shipped config where they
+            # would render as an orphan fragment.
+            sn["consultationImplications"].setdefault(qid, {})[oid] = _s(r.get("Implication")).strip()
+            sn_es["consultationImplications"].setdefault(qid, {})[oid] = _s(r.get("Implication (ES)")).strip()
+        elif typ == "subBrand":
             fmt = _s(r.get("Format")).strip()
             if fmt == "full":
                 sn["subBrands"][key] = {
