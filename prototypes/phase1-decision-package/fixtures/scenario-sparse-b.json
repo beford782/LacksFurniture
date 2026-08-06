@@ -1,0 +1,820 @@
+{
+ "meta": {
+  "scenario": "sparse-b",
+  "description": "Sparse: exactly 2 priorities (engine never pads to 3); solo back sleeper, firm preference, no issues.",
+  "answers": {
+   "sleep_quality": "well",
+   "trigger": "upgrade",
+   "mattress_size": "king",
+   "partner_sleep": "solo",
+   "sleep_position": "back",
+   "body_type": "athletic",
+   "temperature": "comfortable",
+   "firmness": 8,
+   "current_mattress_age": "under_2",
+   "sleep_issues": [
+    "none"
+   ],
+   "health_conditions": [
+    "none"
+   ]
+  },
+  "answerSetProvenance": "tests/scoring_isolation_check.mjs ANSWER_SETS (dense-a, sparse-b verbatim; dense-c = 'plus body, plush, reflux' whose profile-relevant answers match tests/consultation_priorities_check.mjs fixture C)",
+  "method": "Extract-and-execute from index.html at the worktree commit (see PROVENANCE.md): showProfileScreen()+renderResultsTrialFocus() against the recording DOM shim of tests/consultation_priorities_check.mjs; calculateScores()+qualifyRankedChoices()+window.showResults against data/mattresses.json + data/quiz.json. No scoring, ordering, cap or firmness value is reimplemented or edited."
+ },
+ "profile": {
+  "en": {
+   "dom": {
+    "profileEyebrow": {
+     "innerHTML": "",
+     "textContent": "Personalized from your answers"
+    },
+    "profileName": {
+     "innerHTML": "",
+     "textContent": "Your Sleep Brief"
+    },
+    "profileSubtitle": {
+     "innerHTML": "",
+     "textContent": "Back Sleeper"
+    },
+    "profileSummary": {
+     "innerHTML": "",
+     "textContent": "Your starting point: comfortable alignment and firm comfort."
+    },
+    "profileReflection": {
+     "innerHTML": "",
+     "textContent": "You are shopping for a King, sleep solo, sleep mostly on your back, and prefer a firm feel."
+    },
+    "profileMetaStrip": {
+     "innerHTML": "<div class=\"noct-profile-meta\"><dt class=\"noct-profile-meta-label\">Size</dt><dd class=\"noct-profile-meta-value\">King</dd></div><div class=\"noct-profile-meta\"><dt class=\"noct-profile-meta-label\">Feel</dt><dd class=\"noct-profile-meta-value\">Firm</dd></div><div class=\"noct-profile-meta\"><dt class=\"noct-profile-meta-label\">Temperature</dt><dd class=\"noct-profile-meta-value\">Comfortable temperature</dd></div>",
+     "textContent": ""
+    },
+    "profileReassurance": {
+     "innerHTML": "",
+     "textContent": "This brief guides where we start. Your comfort during the test decides what stays."
+    },
+    "profilePlanLabel": {
+     "innerHTML": "",
+     "textContent": "Your guided trial"
+    },
+    "profilePrioritiesHeading": {
+     "innerHTML": "",
+     "textContent": "What we will test together"
+    },
+    "profilePrioritiesIntro": {
+     "innerHTML": "",
+     "textContent": "Use these signals to compare each mattress instead of relying on first impressions alone."
+    },
+    "profilePriorities": {
+     "innerHTML": "<li class=\"noct-profile-priority-row\"><div class=\"noct-profile-priority-body\"><div class=\"noct-profile-priority-title\">Comfortable alignment</div><div class=\"noct-profile-priority-desc\">Your normal sleep position needs steady support without creating new pressure.</div></div><div class=\"noct-profile-priority-tag tag-key\">Must solve</div><div class=\"noct-profile-priority-test\"><strong>Try this: </strong>Lie in your usual position and notice whether your waist and lower back feel naturally supported.</div></li><li class=\"noct-profile-priority-row\"><div class=\"noct-profile-priority-body\"><div class=\"noct-profile-priority-title\">Firm, not rigid</div><div class=\"noct-profile-priority-desc\">You prefer a solid surface, but firmness should not create pressure.</div></div><div class=\"noct-profile-priority-tag tag-preference\">Feel preference</div><div class=\"noct-profile-priority-test\"><strong>Try this: </strong>Notice whether you feel supported everywhere or pushed at the shoulder, hip, or lower back.</div></li>",
+     "textContent": ""
+    },
+    "profileJourneyHeading": {
+     "innerHTML": "",
+     "textContent": "What happens next"
+    },
+    "profileJourneySteps": {
+     "innerHTML": "<div class=\"profile-launch__journey-step\" data-step=\"1\">Compare your matches</div><div class=\"profile-launch__journey-step\" data-step=\"2\">Record what feels best</div><div class=\"profile-launch__journey-step\" data-step=\"3\">Build around the finalist</div>",
+     "textContent": ""
+    },
+    "profileJourneyCopy": {
+     "innerHTML": "",
+     "textContent": "Then we will explore Adjustability, Support, Pillow, and Protection. Every choice is optional."
+    },
+    "profileSecondary": {
+     "innerHTML": "",
+     "textContent": "← Edit my answers"
+    },
+    "profileCta": {
+     "innerHTML": "",
+     "textContent": "Compare My Matches →"
+    }
+   },
+   "priorityRows": [
+    {
+     "title": "Comfortable alignment",
+     "desc": "Your normal sleep position needs steady support without creating new pressure.",
+     "tagClass": "tag-key",
+     "tag": "Must solve",
+     "test": "Lie in your usual position and notice whether your waist and lower back feel naturally supported."
+    },
+    {
+     "title": "Firm, not rigid",
+     "desc": "You prefer a solid surface, but firmness should not create pressure.",
+     "tagClass": "tag-preference",
+     "tag": "Feel preference",
+     "test": "Notice whether you feel supported everywhere or pushed at the shoulder, hip, or lower back."
+    }
+   ],
+   "priorityCount": 2,
+   "metaStrip": [
+    {
+     "label": "Size",
+     "value": "King"
+    },
+    {
+     "label": "Feel",
+     "value": "Firm"
+    },
+    {
+     "label": "Temperature",
+     "value": "Comfortable temperature"
+    }
+   ],
+   "resultsTrialFocus": "<span class=\"results-trial-focus__label\">Your trial focus</span><span>Comfortable alignment · Firm, not rigid</span>",
+   "trialFocus": [
+    {
+     "en": "Comfortable alignment",
+     "es": "Alineación cómoda",
+     "why": {
+      "en": "Your normal sleep position needs steady support without creating new pressure.",
+      "es": "Tu posición habitual necesita soporte estable sin crear nueva presión."
+     },
+     "test": {
+      "en": "Lie in your usual position and notice whether your waist and lower back feel naturally supported.",
+      "es": "Acuéstate en tu posición habitual y nota si tu cintura y espalda baja se sienten apoyadas naturalmente."
+     }
+    },
+    {
+     "en": "Firm, not rigid",
+     "es": "Firme, no rígido",
+     "why": {
+      "en": "You prefer a solid surface, but firmness should not create pressure.",
+      "es": "Prefieres una superficie sólida, pero la firmeza no debe crear presión."
+     },
+     "test": {
+      "en": "Notice whether you feel supported everywhere or pushed at the shoulder, hip, or lower back.",
+      "es": "Nota si te sientes apoyado por completo o presionado en hombro, cadera o espalda baja."
+     }
+    }
+   ],
+   "profileBrief": "Sleep brief · comfortable alignment and firm comfort",
+   "profileBriefByLang": {
+    "en": "Sleep brief · comfortable alignment and firm comfort",
+    "es": "Resumen de sueño · alineación cómoda y comodidad firme"
+   }
+  },
+  "es": {
+   "dom": {
+    "profileEyebrow": {
+     "innerHTML": "",
+     "textContent": "Personalizado con tus respuestas"
+    },
+    "profileName": {
+     "innerHTML": "",
+     "textContent": "Tu Resumen de Sueño"
+    },
+    "profileSubtitle": {
+     "innerHTML": "",
+     "textContent": "Boca Arriba"
+    },
+    "profileSummary": {
+     "innerHTML": "",
+     "textContent": "Tu punto de partida: alineación cómoda y comodidad firme."
+    },
+    "profileReflection": {
+     "innerHTML": "",
+     "textContent": "Buscas un colchón King, duermes solo, duermes principalmente boca arriba y prefieres una sensación firme."
+    },
+    "profileMetaStrip": {
+     "innerHTML": "<div class=\"noct-profile-meta\"><dt class=\"noct-profile-meta-label\">Tamaño</dt><dd class=\"noct-profile-meta-value\">King</dd></div><div class=\"noct-profile-meta\"><dt class=\"noct-profile-meta-label\">Sensación</dt><dd class=\"noct-profile-meta-value\">Firme</dd></div><div class=\"noct-profile-meta\"><dt class=\"noct-profile-meta-label\">Temperatura</dt><dd class=\"noct-profile-meta-value\">Temperatura cómoda</dd></div>",
+     "textContent": ""
+    },
+    "profileReassurance": {
+     "innerHTML": "",
+     "textContent": "Este resumen define por dónde empezamos. Tu comodidad durante la prueba decide qué se queda."
+    },
+    "profilePlanLabel": {
+     "innerHTML": "",
+     "textContent": "Tu prueba guiada"
+    },
+    "profilePrioritiesHeading": {
+     "innerHTML": "",
+     "textContent": "Lo que probaremos juntos"
+    },
+    "profilePrioritiesIntro": {
+     "innerHTML": "",
+     "textContent": "Usa estas señales para comparar cada colchón en lugar de depender solo de una primera impresión."
+    },
+    "profilePriorities": {
+     "innerHTML": "<li class=\"noct-profile-priority-row\"><div class=\"noct-profile-priority-body\"><div class=\"noct-profile-priority-title\">Alineación cómoda</div><div class=\"noct-profile-priority-desc\">Tu posición habitual necesita soporte estable sin crear nueva presión.</div></div><div class=\"noct-profile-priority-tag tag-key\">Debe resolver</div><div class=\"noct-profile-priority-test\"><strong>Pruébalo: </strong>Acuéstate en tu posición habitual y nota si tu cintura y espalda baja se sienten apoyadas naturalmente.</div></li><li class=\"noct-profile-priority-row\"><div class=\"noct-profile-priority-body\"><div class=\"noct-profile-priority-title\">Firme, no rígido</div><div class=\"noct-profile-priority-desc\">Prefieres una superficie sólida, pero la firmeza no debe crear presión.</div></div><div class=\"noct-profile-priority-tag tag-preference\">Preferencia</div><div class=\"noct-profile-priority-test\"><strong>Pruébalo: </strong>Nota si te sientes apoyado por completo o presionado en hombro, cadera o espalda baja.</div></li>",
+     "textContent": ""
+    },
+    "profileJourneyHeading": {
+     "innerHTML": "",
+     "textContent": "Lo que sigue"
+    },
+    "profileJourneySteps": {
+     "innerHTML": "<div class=\"profile-launch__journey-step\" data-step=\"1\">Comparar tus opciones</div><div class=\"profile-launch__journey-step\" data-step=\"2\">Registrar qué se siente mejor</div><div class=\"profile-launch__journey-step\" data-step=\"3\">Construir alrededor del finalista</div>",
+     "textContent": ""
+    },
+    "profileJourneyCopy": {
+     "innerHTML": "",
+     "textContent": "Después exploraremos Ajustabilidad, Soporte, Almohada y Protección. Cada elección es opcional."
+    },
+    "profileSecondary": {
+     "innerHTML": "",
+     "textContent": "← Editar mis respuestas"
+    },
+    "profileCta": {
+     "innerHTML": "",
+     "textContent": "Comparar Mis Opciones →"
+    }
+   },
+   "priorityRows": [
+    {
+     "title": "Alineación cómoda",
+     "desc": "Tu posición habitual necesita soporte estable sin crear nueva presión.",
+     "tagClass": "tag-key",
+     "tag": "Debe resolver",
+     "test": "Acuéstate en tu posición habitual y nota si tu cintura y espalda baja se sienten apoyadas naturalmente."
+    },
+    {
+     "title": "Firme, no rígido",
+     "desc": "Prefieres una superficie sólida, pero la firmeza no debe crear presión.",
+     "tagClass": "tag-preference",
+     "tag": "Preferencia",
+     "test": "Nota si te sientes apoyado por completo o presionado en hombro, cadera o espalda baja."
+    }
+   ],
+   "priorityCount": 2,
+   "metaStrip": [
+    {
+     "label": "Tamaño",
+     "value": "King"
+    },
+    {
+     "label": "Sensación",
+     "value": "Firme"
+    },
+    {
+     "label": "Temperatura",
+     "value": "Temperatura cómoda"
+    }
+   ],
+   "resultsTrialFocus": "<span class=\"results-trial-focus__label\">Enfoque de la prueba</span><span>Alineación cómoda · Firme, no rígido</span>",
+   "trialFocus": [
+    {
+     "en": "Comfortable alignment",
+     "es": "Alineación cómoda",
+     "why": {
+      "en": "Your normal sleep position needs steady support without creating new pressure.",
+      "es": "Tu posición habitual necesita soporte estable sin crear nueva presión."
+     },
+     "test": {
+      "en": "Lie in your usual position and notice whether your waist and lower back feel naturally supported.",
+      "es": "Acuéstate en tu posición habitual y nota si tu cintura y espalda baja se sienten apoyadas naturalmente."
+     }
+    },
+    {
+     "en": "Firm, not rigid",
+     "es": "Firme, no rígido",
+     "why": {
+      "en": "You prefer a solid surface, but firmness should not create pressure.",
+      "es": "Prefieres una superficie sólida, pero la firmeza no debe crear presión."
+     },
+     "test": {
+      "en": "Notice whether you feel supported everywhere or pushed at the shoulder, hip, or lower back.",
+      "es": "Nota si te sientes apoyado por completo o presionado en hombro, cadera o espalda baja."
+     }
+    }
+   ],
+   "profileBrief": "Resumen de sueño · alineación cómoda y comodidad firme",
+   "profileBriefByLang": {
+    "en": "Sleep brief · comfortable alignment and firm comfort",
+    "es": "Resumen de sueño · alineación cómoda y comodidad firme"
+   }
+  }
+ },
+ "firmness": {
+  "value": 8,
+  "firmnessFeel": {
+   "en": "Extra Firm",
+   "es": "Extra Firme"
+  },
+  "getFirmnessLabel": {
+   "en": "Medium Firm to Firm",
+   "es": "Medio Firme a Firme"
+  },
+  "note": "Three per-surface word maps coexist at this commit (brief meta strip inline buckets, firmnessFeel, getFirmnessLabel) and disagree at 4/6/8 — a prototype must reuse the destination surface's own vocabulary and always render the exact integer value."
+ },
+ "results": {
+  "tierData": {
+   "gold": [
+    {
+     "id": "g8",
+     "name": "Royal Reserve Extra Firm",
+     "brand": "Restonic",
+     "subBrand": "Royal Reserve",
+     "pitchKey": "",
+     "archetype": "Hand-made extra-firm luxury",
+     "firmness": 8,
+     "firmnessLabel": "Extra Firm",
+     "locallyMade": true,
+     "tags": [
+      "Hand-Made",
+      "Extra Firm",
+      "Natural Materials"
+     ],
+     "highlight": "Hand-made extra-firm — maximum support, luxury materials",
+     "tags_es": [
+      "Hecho a Mano",
+      "Extra Firme",
+      "Materiales Naturales"
+     ],
+     "highlight_es": "Extra firme hecho a mano — máximo soporte, materiales de lujo",
+     "imageUrl": "images/mattresses/royal reserve extra firm.jpg",
+     "topPickReason": {
+      "en": "Hand-made extra-firm support — the choice for back and stomach sleepers who want luxury.",
+      "es": "Soporte extra firme hecho a mano — la elección para quienes duermen boca arriba o boca abajo y quieren lujo."
+     },
+     "differentiators": [
+      {
+       "title": {
+        "en": "True extra-firm lift",
+        "es": "Verdadera elevación extra firme"
+       },
+       "detail": {
+        "en": "Holds you fully on top of the bed — the firmest luxury option in the store.",
+        "es": "Te mantiene completamente sobre la cama — la opción de lujo más firme de la tienda."
+       }
+      },
+      {
+       "title": {
+        "en": "Hand-made durability",
+        "es": "Durabilidad hecha a mano"
+       },
+       "detail": {
+        "en": "Natural materials and hand assembly keep the firm feel from softening early.",
+        "es": "Los materiales naturales y el ensamblaje a mano evitan que la firmeza se ablande antes de tiempo."
+       }
+      }
+     ],
+     "score": 79,
+     "pct": 100,
+     "meetsMatchThreshold": true
+    },
+    {
+     "id": "g1",
+     "name": "The Roma",
+     "brand": "Chattam & Wells",
+     "subBrand": "Roma",
+     "pitchKey": "",
+     "archetype": "Natural-fiber luxury firm",
+     "firmness": 7,
+     "firmnessLabel": "Firm",
+     "locallyMade": true,
+     "tags": [
+      "Luxury Natural Fibers",
+      "Firm",
+      "Euro-Top"
+     ],
+     "highlight": "Handcrafted firm luxury in Merino wool and cashmere",
+     "tags_es": [
+      "Fibras Naturales de Lujo",
+      "Firme",
+      "Euro-Top"
+     ],
+     "highlight_es": "Lujo firme artesanal en lana Merino y cachemira",
+     "imageUrl": "images/mattresses/the roma.jpg",
+     "topPickReason": {
+      "en": "Handcrafted natural-fiber luxury with firm, breathable coil-on-coil support.",
+      "es": "Lujo artesanal de fibras naturales con soporte firme de doble resorte que respira."
+     },
+     "differentiators": [
+      {
+       "title": {
+        "en": "Natural fiber comfort layers",
+        "es": "Capas de confort de fibras naturales"
+       },
+       "detail": {
+        "en": "Merino wool, camel hair, and cashmere breathe and temper heat in a way synthetic foams can't.",
+        "es": "La lana Merino, el pelo de camello y la cachemira respiran y regulan el calor como las espumas sintéticas no pueden."
+       }
+      },
+      {
+       "title": {
+        "en": "Coil-on-coil with graphite latex",
+        "es": "Doble resorte con látex de grafito"
+       },
+       "detail": {
+        "en": "Responsive lift and stability instead of the slow sink of memory foam.",
+        "es": "Elevación receptiva y estabilidad en lugar del hundimiento lento de la espuma viscoelástica."
+       }
+      }
+     ],
+     "score": 71,
+     "pct": 90,
+     "meetsMatchThreshold": true
+    },
+    {
+     "id": "g3",
+     "name": "The Palermo",
+     "brand": "Chattam & Wells",
+     "subBrand": "Palermo",
+     "pitchKey": "",
+     "archetype": "Hand-tufted firm pillowtop",
+     "firmness": 7,
+     "firmnessLabel": "Firm",
+     "locallyMade": true,
+     "tags": [
+      "4,294 Coils",
+      "Firm",
+      "Hand-Tufted"
+     ],
+     "highlight": "4,294 coils of hand-tufted firm support",
+     "tags_es": [
+      "4,294 Resortes",
+      "Firme",
+      "Copetudo a Mano"
+     ],
+     "highlight_es": "4,294 resortes de soporte firme copetudo a mano",
+     "imageUrl": "images/mattresses/the palermo.jpg",
+     "topPickReason": {
+      "en": "Massive 4,294-coil count with hand-tufted craftsmanship for firm, lasting alignment.",
+      "es": "Enorme cantidad de 4,294 resortes con artesanía copetuda a mano para una alineación firme y duradera."
+     },
+     "differentiators": [
+      {
+       "title": {
+        "en": "4,294-coil support system",
+        "es": "Sistema de 4,294 resortes"
+       },
+       "detail": {
+        "en": "Several times the coil count of a standard bed — finer, more contoured firm support.",
+        "es": "Varias veces los resortes de una cama estándar — soporte firme más fino y contorneado."
+       }
+      },
+      {
+       "title": {
+        "en": "Hand-tufted construction",
+        "es": "Construcción copetuda a mano"
+       },
+       "detail": {
+        "en": "Tufting locks the layers so the pillowtop can't shift or pocket over years of use.",
+        "es": "El copetudo fija las capas para que el pillowtop no se mueva ni se deforme con los años."
+       }
+      }
+     ],
+     "score": 70,
+     "pct": 89,
+     "meetsMatchThreshold": true
+    }
+   ],
+   "silver": [
+    {
+     "id": "s2",
+     "name": "Platinum Paige Extra Firm",
+     "brand": "Restonic",
+     "subBrand": "Platinum",
+     "pitchKey": "",
+     "archetype": "Luxury extra-firm hybrid",
+     "firmness": 8,
+     "firmnessLabel": "Extra Firm",
+     "locallyMade": true,
+     "tags": [
+      "Marvelous Middle",
+      "Extra Firm",
+      "Hybrid"
+     ],
+     "highlight": "Maximum support with luxury Paige comfort layers",
+     "tags_es": [
+      "Marvelous Middle",
+      "Extra Firme",
+      "Híbrido"
+     ],
+     "highlight_es": "Máximo soporte con capas de confort de lujo Paige",
+     "imageUrl": "images/mattresses/platinum paige extra firm.jpg",
+     "topPickReason": {
+      "en": "The firmest Platinum — extra-firm zoned support in a luxury build.",
+      "es": "El Platinum más firme — soporte extra firme zonificado en construcción de lujo."
+     },
+     "differentiators": [
+      {
+       "title": {
+        "en": "Extra-firm support core",
+        "es": "Núcleo de soporte extra firme"
+       },
+       "detail": {
+        "en": "Noticeably firmer than the Paige Firm — for sleepers who want no sink at all.",
+        "es": "Notablemente más firme que el Paige Firme — para quienes no quieren hundirse nada."
+       }
+      },
+      {
+       "title": {
+        "en": "Zoned center third",
+        "es": "Tercio central zonificado"
+       },
+       "detail": {
+        "en": "Marvelous Middle reinforcement keeps hips level in every position.",
+        "es": "El refuerzo Marvelous Middle mantiene las caderas niveladas en cualquier posición."
+       }
+      }
+     ],
+     "score": 80,
+     "pct": 100,
+     "meetsMatchThreshold": true
+    },
+    {
+     "id": "s10",
+     "name": "Kendall Extra Firm",
+     "brand": "Restonic",
+     "subBrand": "ComfortCare",
+     "pitchKey": "",
+     "archetype": "Zoned extra-firm hybrid",
+     "firmness": 8,
+     "firmnessLabel": "Extra Firm",
+     "locallyMade": true,
+     "tags": [
+      "Marvelous Middle",
+      "Extra Firm",
+      "Tight Top"
+     ],
+     "highlight": "Extra-firm zoned support at a working price",
+     "tags_es": [
+      "Marvelous Middle",
+      "Extra Firme",
+      "Tight Top"
+     ],
+     "highlight_es": "Soporte extra firme zonificado a un precio accesible",
+     "imageUrl": "images/mattresses/kendall extra firm.jpg",
+     "topPickReason": {
+      "en": "Serious extra-firm zoned support at the best price in its class.",
+      "es": "Soporte extra firme zonificado serio al mejor precio de su clase."
+     },
+     "differentiators": [
+      {
+       "title": {
+        "en": "Extra-firm tight top",
+        "es": "Tight top extra firme"
+       },
+       "detail": {
+        "en": "A flat, supportive surface with no plush give — for sleepers who want solid.",
+        "es": "Una superficie plana y de soporte sin suavidad — para quienes quieren algo sólido."
+       }
+      },
+      {
+       "title": {
+        "en": "Zoned center support",
+        "es": "Soporte central zonificado"
+       },
+       "detail": {
+        "en": "Thicker center coils protect the firm feel from early body impressions.",
+        "es": "Resortes centrales más gruesos protegen la firmeza de las marcas corporales tempranas."
+       }
+      }
+     ],
+     "score": 80,
+     "pct": 100,
+     "meetsMatchThreshold": true
+    },
+    {
+     "id": "s1",
+     "name": "Platinum Paige Firm",
+     "brand": "Restonic",
+     "subBrand": "Platinum",
+     "pitchKey": "",
+     "archetype": "Luxury firm box-top hybrid",
+     "firmness": 7,
+     "firmnessLabel": "Firm",
+     "locallyMade": true,
+     "tags": [
+      "Marvelous Middle",
+      "Firm",
+      "Box Top"
+     ],
+     "highlight": "Luxury 16-inch box top with firm zoned support",
+     "tags_es": [
+      "Marvelous Middle",
+      "Firme",
+      "Box Top"
+     ],
+     "highlight_es": "Box top de lujo de 16 pulgadas con soporte firme zonificado",
+     "imageUrl": "images/mattresses/platinum paige firm.jpg",
+     "topPickReason": {
+      "en": "Luxury box-top comfort with firm, zoned center-third support.",
+      "es": "Confort box-top de lujo con soporte firme zonificado en el centro."
+     },
+     "differentiators": [
+      {
+       "title": {
+        "en": "Marvelous Middle zoning",
+        "es": "Zonificación Marvelous Middle"
+       },
+       "detail": {
+        "en": "25% more support under hips and lower back, where most beds sag first.",
+        "es": "25% más soporte bajo caderas y espalda baja, donde la mayoría de las camas se hunden primero."
+       }
+      },
+      {
+       "title": {
+        "en": "Luxury box-top build",
+        "es": "Construcción box-top de lujo"
+       },
+       "detail": {
+        "en": "A tailored 16-inch profile with plush surface layers over a firm core.",
+        "es": "Un perfil de 16 pulgadas con capas superficiales suaves sobre un núcleo firme."
+       }
+      }
+     ],
+     "score": 70,
+     "pct": 88,
+     "meetsMatchThreshold": true
+    }
+   ],
+   "bronze": [
+    {
+     "id": "b6",
+     "name": "Angelina Extra Firm",
+     "brand": "Restonic",
+     "subBrand": "ComfortCare",
+     "pitchKey": "",
+     "archetype": "Zoned extra-firm value hybrid",
+     "firmness": 8,
+     "firmnessLabel": "Extra Firm",
+     "locallyMade": true,
+     "tags": [
+      "Marvelous Middle",
+      "Extra Firm",
+      "Hybrid"
+     ],
+     "highlight": "Extra-firm hybrid support at a value price",
+     "tags_es": [
+      "Marvelous Middle",
+      "Extra Firme",
+      "Híbrido"
+     ],
+     "highlight_es": "Soporte híbrido extra firme a precio de valor",
+     "imageUrl": "images/mattresses/angelina extra firm.jpg",
+     "topPickReason": {
+      "en": "The value path to real extra-firm zoned support.",
+      "es": "El camino de valor al verdadero soporte extra firme zonificado."
+     },
+     "differentiators": [
+      {
+       "title": {
+        "en": "Value extra-firm",
+        "es": "Extra firme de valor"
+       },
+       "detail": {
+        "en": "The firmest feel in the bronze tier — no plush give at all.",
+        "es": "La sensación más firme del nivel bronce — sin nada de suavidad."
+       }
+      },
+      {
+       "title": {
+        "en": "Zoned hybrid core",
+        "es": "Núcleo híbrido zonificado"
+       },
+       "detail": {
+        "en": "Center-third reinforcement most value firm beds skip.",
+        "es": "Refuerzo del tercio central que la mayoría de las camas firmes de valor omiten."
+       }
+      }
+     ],
+     "score": 80,
+     "pct": 100,
+     "meetsMatchThreshold": true
+    },
+    {
+     "id": "b2",
+     "name": "Giselle Firm",
+     "brand": "Restonic",
+     "subBrand": "Giselle",
+     "pitchKey": "",
+     "archetype": "Everyday firm support",
+     "firmness": 7,
+     "firmnessLabel": "Firm",
+     "locallyMade": true,
+     "tags": [
+      "Firm",
+      "12.5-Inch",
+      "Value"
+     ],
+     "highlight": "Straightforward firm support at an everyday price",
+     "tags_es": [
+      "Firme",
+      "12.5 Pulgadas",
+      "Valor"
+     ],
+     "highlight_es": "Soporte firme directo a un precio cotidiano",
+     "imageUrl": "images/mattresses/giselle firm.jpg",
+     "topPickReason": {
+      "en": "Dependable firm alignment at an everyday price.",
+      "es": "Alineación firme confiable a precio cotidiano."
+     },
+     "differentiators": [
+      {
+       "title": {
+        "en": "Straightforward firm feel",
+        "es": "Sensación firme directa"
+       },
+       "detail": {
+        "en": "Solid support without plush layers softening the surface.",
+        "es": "Soporte sólido sin capas suaves que ablanden la superficie."
+       }
+      },
+      {
+       "title": {
+        "en": "Everyday value",
+        "es": "Valor cotidiano"
+       },
+       "detail": {
+        "en": "The affordable path to a true firm mattress.",
+        "es": "El camino accesible a un colchón firme verdadero."
+       }
+      }
+     ],
+     "score": 69,
+     "pct": 86,
+     "meetsMatchThreshold": true
+    },
+    {
+     "id": "b7",
+     "name": "Gracie Medium",
+     "brand": "Restonic",
+     "subBrand": "Grace",
+     "pitchKey": "",
+     "archetype": "Everyday balanced innerspring",
+     "firmness": 5,
+     "firmnessLabel": "Medium",
+     "locallyMade": true,
+     "tags": [
+      "Innerspring",
+      "Medium",
+      "Best Value"
+     ],
+     "highlight": "Balanced medium comfort at the friendliest price",
+     "tags_es": [
+      "Resortes",
+      "Medio",
+      "Mejor Valor"
+     ],
+     "highlight_es": "Confort medio equilibrado al precio más amigable",
+     "imageUrl": "images/mattresses/gracie medium.jpg",
+     "topPickReason": {
+      "en": "Easy balanced comfort with zoned support — the smart starter pick.",
+      "es": "Confort equilibrado fácil con soporte zonificado — la elección inteligente para empezar."
+     },
+     "differentiators": [
+      {
+       "title": {
+        "en": "Responsive innerspring feel",
+        "es": "Sensación de resortes receptiva"
+       },
+       "detail": {
+        "en": "Classic coil bounce that's easy to move on — no stuck-in-foam feeling.",
+        "es": "Rebote clásico de resortes fácil para moverse — sin sensación de quedar atrapado en espuma."
+       }
+      },
+      {
+       "title": {
+        "en": "Friendliest price",
+        "es": "El precio más amigable"
+       },
+       "detail": {
+        "en": "The most affordable way into a zoned Restonic build.",
+        "es": "La forma más accesible de entrar a una construcción Restonic zonificada."
+       }
+      }
+     ],
+     "score": 54,
+     "pct": 68,
+     "meetsMatchThreshold": true
+    }
+   ]
+  },
+  "topPick": {
+   "name": "Royal Reserve Extra Firm",
+   "brand": "Restonic",
+   "tier": "gold",
+   "matchPct": 100,
+   "meetsMatchThreshold": true
+  },
+  "enEsParity": true,
+  "priceTierSymbols": {
+   "gold": "$$$",
+   "silver": "$$",
+   "bronze": "$"
+  },
+  "note": "tierData is the verbatim projection of _resultsState.tierData: per-tier order, qualification (>=60% of tier max), cap 3 and min-2 back-fill exactly as the engine produced them. pct/score are included for provenance and parity checking only — neither may be rendered on any screen."
+ },
+ "compareDemo": {
+  "savedOrder": [
+   {
+    "id": "g8",
+    "tier": "gold"
+   },
+   {
+    "id": "s2",
+    "tier": "silver"
+   }
+  ],
+  "autoPair": [
+   "g8",
+   "s2"
+  ],
+  "favourite": null,
+  "note": "Simulated saved-finalist state for the Compare discoverability demo. Pair = shipped auto-pair rule (favourite-first, then save order, first two). Prototype interactions against this state are prototype behavior, not production."
+ }
+}
