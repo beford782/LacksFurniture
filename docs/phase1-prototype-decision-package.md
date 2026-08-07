@@ -306,20 +306,75 @@ exercised on screen; the same applies to the empty-tier state.
 
 ## 6. Accessibility assessment
 
-*(TO FILL after the accessibility adversary; the build bar every variant was
-required to meet: real headings/landmarks, `<ol>` for ranked lists, real
-buttons, aria-expanded disclosures, aria-pressed toggles, bilingual
-accessible names, firmness spoken as "Medium, 4 of 10" / "Medio, 4 de 10",
-visible text on every badge, decorative glyphs hidden, visible dual-ring
-focus, ≥44 px targets, keyboard operation, no hover-only info, no duplicate
-announcement mechanism.)*
+**Post-fix state, adversarially tested.** What the accessibility adversary's
+sweeps confirmed across all four variants (4 variants × 3 scenarios × 2
+languages × 4 viewports): zero `outline:none` rules anywhere and every
+enabled control shows the dual-ring focus indicator under keyboard modality;
+every painted control is keyboard reachable and operable; every disclosure
+and toggle is a real `<button>` (aria-expanded and aria-pressed never
+co-occur); every `aria-controls` resolves; zero non-review-bar touch targets
+under 44×44 px; the `[hidden]` guard holds everywhere; heading order never
+skips a level; DOM order equals visual order; no hover-only information
+exists (zero `:hover` information rules, zero tooltips); no live regions or
+duplicate announcement mechanisms.
+
+What the adversary broke and the fix pass resolved (each verified by the
+lead in-browser after fixing): the Sleep Brief A sticky action bar occluded
+disclosure controls (dead taps) — eliminated; A's dialog had unreachable
+backdrop-dismiss, element-scoped Escape and a strandable opener-restore —
+now dialog-element dismiss, document-level Escape, explicit opener capture;
+the compare trays stranded focus on a hidden button and hit-blocked card
+buttons — focus now moves to a stable target and the content reserves the
+tray's measured height; identical accessible names ("Compare" ×9, "Try
+this:" ×3) — disambiguated with sr-only suffixes; the ranked `<ol>`s whose
+`list-style:none` strips list semantics on iOS VoiceOver now carry
+`role="list"`; the firmness graphic is aria-hidden everywhere with the
+bilingual sentence "Firmness: {word}, N of 10" / "Firmeza: {word}, N de 10"
+(per-model words consumed from the fixture, never re-derived); duplicate
+tier-word announcements and the raw "Plush 3/10" leak in compare are fixed;
+`document.title` localizes in all four variants.
+
+Two accessible-vocabulary facts are inherited production behavior, kept and
+flagged rather than fixed: the same integer can carry different words on
+different surfaces (the Brief's own vocabulary vs `firmnessFeel` — the
+documented three-map coexistence), and the Size badge value is EN-only in ES
+mode (production's `sizeLabels` has no ES side). **No claim of assistive-
+technology verification on real hardware is made — Phase 0.4 is open.**
 
 ## 7. Shared salesperson/customer assessment
 
-*(TO FILL after the shared-viewing adversary; evaluation frame from
-w2-assisted-sales: anchors not prose, one large assertion per view, stable
-spatial positions, operator heads-down time as the metric, customer-verifiable
-evidence — the customer's own answers — up front.)*
+Frame (w2-assisted-sales): the screen anchors a narrated conversation —
+anchors not prose, stable spatial positions, minimal operator heads-down
+time, the customer's own answers as verifiable evidence up front.
+
+**Sleep Briefs.** Both open with the customer's verifiable facts (badges
+from their stored answers) and 1–3 need anchors in engine order. The
+adversary measured A's disclosure design costing 3 taps to reach 44–49
+words of the operator's in-store test script (hidden from the customer
+unless the operator opens it) against B showing the same content with zero
+taps — the concrete A-vs-B narration tradeoff Blake is choosing on, now
+with the occlusion blocker fixed so the taps at least always work. One
+measured ES datum favors A: Spanish expansion pushes a priority row below
+the fold in B at 1112×834 where A shows zero fold flips.
+
+**Results.** The tabs variant keeps three model names + three firmness
+values on the first screen (photo ≈18–21 % of viewport height) at the cost
+of density — ~600 EN / ~700 ES visible words before the fix pass removed
+the chip and differentiator surfaces, with most card detail below 14 px;
+it reads more like a dossier than a talking-points surface, a recorded
+tradeoff of showing three cards at once. The accordion variant is the
+sparser narration surface (one tier, larger anchors) and its
+first-screen-carries-no-fit-information defect is fixed (photo capped:
+name and firmness above the fold in both orientations); its inherent
+property remains that the three tier descriptors — including
+"entry-level" — are permanently co-visible as a quality ladder. Both
+Results variants now scroll the switched-to tier's lead into view, so
+"tap Silver, see Silver's best" holds everywhere.
+
+Glance-distance type sizing against real showroom hardware remains
+**unassessable** until Phase 0.4 closes the device matrix; the adversary's
+arc-minute estimates against an assumed 264 ppi tablet are recorded in its
+report as a Phase 0.4 evidence item, not a design verdict.
 
 ## 8. Data-contract and scoring-isolation assessment
 
