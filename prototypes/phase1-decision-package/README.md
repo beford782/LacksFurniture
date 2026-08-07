@@ -25,6 +25,11 @@ for adoption.
 
 ## Viewing
 
+Windows note: a fresh clone needs `git config core.longpaths true` (the
+screenshot filenames exceed MAX_PATH in deep directories), and the
+verification scripts below run identically on LF and CRLF
+(`core.autocrlf=true`) checkouts.
+
 Serve the repo root over HTTP and open a variant:
 
 ```

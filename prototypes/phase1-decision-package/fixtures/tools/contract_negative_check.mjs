@@ -195,7 +195,7 @@ function applyTextMutation(sandbox, m) {
   const before = raw.split("\r\n").join("\n");
   const count = before.split(m.find).length - 1;
   if (count !== (m.occurrences || 1)) return { ok: false, count };
-  const after = before.split(m.find).join(" SPLIT ").replace(/ SPLIT /g, () => m.replace);
+  const after = before.split(m.find).join("\u0000SPLIT\u0000").replace(/\u0000SPLIT\u0000/g, () => m.replace);
   if (after === before) return { ok: false, count };
   writeFileSync(path, eol === "\r\n" ? after.split("\n").join("\r\n") : after);
   return { ok: true, count };
@@ -235,7 +235,7 @@ for (const m of MUTATIONS) {
       const hA = hashOf(fA), hB = hashOf(fB);
       applied = { ok: !!(hA && hB && hA !== hB) };
       if (applied.ok) {
-        prov = prov.replace(hA, " TMP ").replace(hB, hA).replace(" TMP ", hB);
+        prov = prov.replace(hA, "\u0000TMP\u0000").replace(hB, hA).replace("\u0000TMP\u0000", hB);
         writeFileSync(provPath, prov);
       }
     } else {
