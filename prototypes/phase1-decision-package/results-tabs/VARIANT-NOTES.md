@@ -1,5 +1,15 @@
 # Results — restyled tier tabs (variant `results-tabs`)
 
+> **STATUS: RECOMMENDED CANDIDATE (correction pass, 2026-08-07).** Following
+> the external (Codex) review, accessible tier tabs are the decision
+> package's recommended Results navigation direction, and this variant —
+> as corrected in the "External-review correction pass" section at the end
+> of this file — is the candidate Blake evaluates. The grouped accordion
+> (`results-grouped/`) is retained as rejected exploration. Sections §1–§10
+> below are the original build record plus the first fix pass; where the
+> correction pass changes or supersedes a claim, the correction section
+> governs.
+
 **PROTOTYPE ONLY — Phase 1 decision package. Not implementation, not approval;
 nothing here changes production behavior.** Renders entirely from the frozen
 fixtures (main = `78f949c`, see `../fixtures/PROVENANCE.md`) via the shared
@@ -476,3 +486,113 @@ kept, per package rule — corrected by appending, never rewritten).
 No new proposed pairs were introduced by this pass (the localized
 `document.title` strings are review chrome, not product copy, and cannot
 carry `data-proposed-copy`).
+
+---
+
+## External-review correction pass (2026-08-07)
+
+Applied by the lead from the Codex review of head `ad94e4e`. Same
+convention: originals above are kept; where a claim is changed or
+superseded, this section governs.
+
+### C1 — Tier descriptor subtitles no longer render (supersedes §2 flag, §3b rows, §9.2)
+
+The descriptor line ("Gold · premium materials" / "Silver · mid-range
+value" / "Bronze · entry-level" and the ES pairs) is removed from the
+render entirely. The roadmap **already decided** that buyer-characterising
+tier language must be removed — presenting "entry-level"/"básico" as a
+pending Blake copy decision was wrong; the removal is executed here, not
+re-asked. No replacement subtitle renders: any future subtitle must state
+neutral product/presentation facts and needs explicit approval first.
+Production's descriptor line is unchanged and remains flagged in the
+decision document. Superseded by this item: the §2 closing flag paragraph,
+§3b's three descriptor rows, §3c's "Proposed alternative: Bronze ·
+everyday value" row (and the T11/proposed-copy-delta references to it —
+both candidate replacement pairs, tabs' "everyday value" and grouped's
+"essential value", are retired in favor of no subtitle), and §9.2. The
+roadmap's own record: docs/rebuild-roadmap.md:750-751 places "Avoid labels
+such as 'entry-level' that characterise the buyer rather than the
+product" under its ungated **Proceeds** heading.
+
+### C2 — Page-local Compare terminology (supersedes §3b "Compare (Your) Finalists" rows)
+
+The compare section heading and its opener now read **"Compare selected
+mattresses" / "Comparar colchones seleccionados"** (PROPOSED pair). The
+production "finalists" vocabulary is deliberately not used on this page:
+what is selected here is page-local Results selection state, never
+persisted saved/finalist state, and calling it "finalists" misstated the
+state. "Saved finalists" remains reserved for the Consultation Summary's
+working production entry (its footnote on this page now also names the
+two-saved-products requirement). The dormant direct production Results
+Compare path stays dormant — nothing here activates it.
+
+### C3 — Opening Compare has a visible and focus consequence
+
+Activating either compare opener now scrolls the stable section heading to
+the top of the viewport and moves focus to it (`tabindex="-1"` heading;
+`scroll-margin-top` clears sticky chrome). Previously the panel could
+un-hide below the operator's scroll position with no navigation or focus
+movement — a tap that appeared inert. Deselection-driven auto-close leaves
+focus on the control the operator just pressed.
+
+### C4 — Details and Save actions restored (supersedes §2.12's omission)
+
+Every card now carries the production-verbatim Details and Save actions
+("View match details →" / "Ver detalles →", index.html:14123–14125;
+"Save for later" / "Guardar", index.html:13694–13697) so card density and
+action hierarchy are credible. They are **inert prototype controls**,
+identified as such three ways: `aria-describedby` → the visible card sim
+note ("Prototype: the Details and Save actions on the cards are simulated
+— no live app behind this screen."), a visible pulse on tap (a tap must
+not appear dead), and this record. No save-state is simulated — Save never
+toggles to "Saved ✓", because simulated saved products were exactly what
+the external review rejected.
+
+### C5 — Card hierarchy: one lead + two compact supports (supersedes §1 "equal-anatomy", §2.5, §2.6)
+
+The equal-anatomy grid is replaced: the within-tier lead card renders full
+width with full anatomy (photo beside body from ~700px, labelled product
+description, full fit rows at salesperson-readable type), and the two
+supporting entries render as compact comparison cards (shallower photo,
+fit-row **titles + tags only** — descs live behind Details, as in
+production's drawer; no product-story paragraph). The compact rendering is
+a presentation subset **by index** — nothing is re-ordered, re-selected or
+recomputed. This mirrors production's own top-pick-vs-supporting split and
+carries no cross-tier implication (one tier visible at a time). Fit-row
+title type is raised to talking-point size. The dossier-density tradeoff
+recorded in the decision document §7 is directly addressed by this change.
+
+### C6 — Copy-provenance classes separated; proposed marking made visible + audible
+
+`data-proposed-copy` now marks **only** proposed product copy, and every
+marked node carries a visible dotted underline (CSS on the attribute) plus
+an sr-only "(proposed copy — not production)" suffix; a page-foot legend
+explains the underline. Prototype apparatus (sim banners, the financing
+inert note, the card sim note, the production-constraint footnote, the
+legend) is reclassified `data-prototype-chrome` — the earlier pass
+conflated the two classes. The EN tray statics ("Clear", "Compare →") are
+production-verbatim and are no longer proposed-marked in EN; only their ES
+sides carry the marking. §3c's class definition is superseded accordingly.
+
+### C7 — Fourth fixture scenario
+
+The harness now also serves `boundary-one` — the disclosed SYNTHETIC
+one-priority boundary state (see `../fixtures/PROVENANCE.md`). For this
+Results variant it is a rendering-fidelity data point ONLY: its
+`cardPriorities`/`metaStrip` were produced with `sleep_position`
+undefined and are not representative of any reachable customer state.
+The contract runner's render==fixture assertions remain valid against
+it; no glanceability or content claim should cite it.
+
+### Verification
+
+These contracts are executed by
+`fixtures/tools/contract_check.mjs` (all four scenarios × EN/ES): tier
+membership/order, lead/support split, threshold-honest eyebrows, exact
+per-card firmness, verbatim Details/Save with sim identification, tab
+semantics and keyboard behavior, the full compare state machine
+(0/1/2/ready/open/deselect/Clear, non-Gold selection), the focus+scroll
+consequence, terminology ("finalists" only inside the chrome footnote),
+no-percentage/no-descriptor leakage, Payment Choice singular and
+stale-closed, and proposed-copy marking. See that script's header for what
+it does NOT prove (no layout engine, no device, no AT).

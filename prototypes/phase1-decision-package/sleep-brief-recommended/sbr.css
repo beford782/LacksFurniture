@@ -1,0 +1,456 @@
+/* Sleep Brief — RECOMMENDED CANDIDATE (A-derived). PROTOTYPE ONLY.
+   Owns only this variant's presentation; the shared harness owns the review
+   bar. Palette echoes the production Sleep Brief family (warm paper, dark
+   ink, rust accent) without importing production CSS — carried over from
+   Alternative A, whose composition this candidate derives from.
+
+   All breakpoints below are CONTENT-DRIVEN samples chosen where this
+   composition itself breaks (label wrap, column fit) — they are NOT showroom
+   hardware claims; the device matrix is unconfirmed (Phase 0.4 pending).
+
+   Two-tier reading model: customer-glanceable anchors (hero title, badges,
+   firmness word, priority titles, journey steps) are sized large and set at
+   7:1-class contrast; operator detail (test prompts, captions) stays at
+   conventional reading size. */
+
+/* The hidden attribute must win over any later display rule. Mirrors the
+   production guard at index.html:8925. */
+[hidden] { display: none !important; }
+
+:root {
+  --sbr-paper: #f7f2e9;
+  --sbr-card: #fffdf8;
+  --sbr-ink: #241e17;        /* ~13.9:1 on paper */
+  --sbr-muted: #4f463e;      /* production brief body tone; ~8.6:1 on card */
+  --sbr-line: #d9cec0;
+  --sbr-line-soft: #e3d9cd;
+  --sbr-accent: #8c2413;     /* rust family; 8:1+ with white */
+  --sbr-accent-soft: #f6e7e2;
+  --sbr-blue: #35506b;
+  --sbr-blue-soft: #e8eef2;
+  --sbr-badge-bg: #efe9dc;
+  --sbr-badge-line: #c9bea9;
+  --sbr-focus-outer: #14110d;
+  --sbr-focus-inner: #ffffff;
+  /* Safe OVER-estimate of the sticky action bar's tallest rendering (two
+     stacked buttons + wrapped caption at narrow widths / 200% text).
+     Content is padded clear of the bar by this much, so nothing can sit
+     under it. Smaller than Alternative A's 15rem because the bar carries
+     two buttons, not three. */
+  --sbr-actions-h: 12rem;
+  --sbr-serif: Georgia, "Times New Roman", serif;
+  --sbr-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--sbr-paper);
+  color: var(--sbr-ink);
+  font: 400 1rem/1.55 var(--sbr-sans);
+  /* wide content scrolls in its own container; the page never scrolls sideways */
+  overflow-x: hidden;
+}
+
+/* Visible focus: dual ring (dark outline + white inner ring), never removed. */
+button:focus-visible,
+a:focus-visible,
+[tabindex="-1"]:focus-visible {
+  outline: 3px solid var(--sbr-focus-outer);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px var(--sbr-focus-inner);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  margin: -1px; padding: 0; border: 0;
+  clip: rect(0 0 0 0); clip-path: inset(50%);
+  overflow: hidden; white-space: nowrap;
+}
+
+/* Proposed-copy marking: every data-proposed-copy node is visibly flagged
+   with a dotted underline (legend at the foot of the page explains it).
+   The paired sr-only "(proposed copy — not production)" suffix is added in
+   JS at each use site. */
+[data-proposed-copy] {
+  text-decoration: underline dotted 1.5px var(--sbr-blue);
+  text-underline-offset: 3px;
+}
+
+.sbr {
+  max-width: 1080px;              /* per-surface max-width, echoing production */
+  margin: 0 auto;
+  padding: clamp(1rem, 3vw, 2.25rem) clamp(1rem, 4vw, 2.5rem) 0;
+}
+
+/* ============================== Hero ============================== */
+
+.sbr-hero {
+  padding-bottom: clamp(1rem, 2.5vw, 1.75rem);
+  border-bottom: 1px solid var(--sbr-line);
+}
+
+.sbr-eyebrow {
+  margin: 0 0 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--sbr-muted);
+}
+
+.sbr-hero__title {
+  margin: 0;
+  font-family: var(--sbr-serif);
+  font-weight: 600;
+  /* customer-glanceable at 0.5-1 m: dominant type, tolerant of long ES titles */
+  font-size: clamp(2rem, 5.5vw, 3.4rem);
+  line-height: 1.08;
+  letter-spacing: -0.01em;
+  max-width: 22ch;                 /* keeps the measure readable when ES runs long */
+}
+
+.sbr-hero__lede {
+  margin: 0.6rem 0 0;
+  font-size: clamp(1.05rem, 2.2vw, 1.3rem);
+  line-height: 1.45;
+  color: var(--sbr-muted);
+  max-width: 52ch;
+}
+
+/* Signal badges: inert status tags with VISIBLE category labels.
+   Deliberately NOT pill-shaped and NOT shadowed so they cannot be mistaken
+   for the (rounded) buttons or the (uppercase pill) kind tags — nothing
+   about them affords tapping. */
+.sbr-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 1.1rem 0 0;
+  padding: 0;
+}
+
+.sbr-badge {
+  padding: 0.4rem 0.7rem 0.45rem;
+  background: var(--sbr-badge-bg);
+  border: 1px solid var(--sbr-badge-line);
+  border-radius: 6px;
+}
+
+.sbr-badge__label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--sbr-muted);          /* ~7.9:1 on the badge fill */
+}
+
+.sbr-badge__value {
+  margin: 0.1rem 0 0;
+  font-size: 1rem;                 /* larger than web-chip default: two-viewer distance */
+  font-weight: 600;
+  color: #33302b;                  /* ~9.6:1 on the badge fill */
+}
+
+/* Firmness strip */
+.sbr-firm { margin-top: 1rem; }
+
+.sbr-firm__visible {
+  display: flex;
+  flex-wrap: wrap;                 /* content-driven: wraps before it clips at ~320px */
+  align-items: center;
+  gap: 0.6rem 0.9rem;
+}
+
+.sbr-firm__label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--sbr-muted);
+}
+
+.sbr-firm__strip {
+  display: flex;
+  gap: 3px;
+}
+
+.sbr-firm__seg {
+  width: clamp(14px, 2.2vw, 22px);
+  height: 14px;
+  border: 1px solid #a4988a;       /* >=3:1 boundary against paper and fill */
+  border-radius: 2px;
+  background: #eee7d9;
+}
+
+.sbr-firm__seg.is-filled {
+  background: #3e3227;             /* luminance difference, not hue-only */
+  border-color: #3e3227;
+}
+
+.sbr-firm__value {
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+/* ============================== Columns ============================== */
+
+.sbr-columns {
+  display: grid;
+  /* minmax(0,1fr): a plain 1fr track's auto minimum lets nowrap content
+     blow the track out at 200% text. */
+  grid-template-columns: minmax(0, 1fr); /* stacked by default (portrait-first) */
+  gap: clamp(1.25rem, 3vw, 2.5rem);
+  /* bottom padding >= the sticky action bar's height so no content can
+     sit under it at any scroll position. */
+  padding: clamp(1.25rem, 3vw, 2rem) 0
+           calc(var(--sbr-actions-h) + env(safe-area-inset-bottom, 0px));
+}
+
+/* Content-driven sample: at ~920px of viewport the priority cards hold a
+   full test sentence beside the journey rail without squeezing; below that
+   the two sections stack (mirrors production's portrait stacking rule). */
+@media (min-width: 920px) {
+  .sbr-columns {
+    grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+    align-items: start;
+  }
+}
+
+.sbr-h2 {
+  margin: 0 0 0.35rem;
+  font-family: var(--sbr-serif);
+  font-weight: 600;
+  font-size: clamp(1.35rem, 3vw, 1.75rem);
+  line-height: 1.2;
+}
+
+.sbr-basis {
+  margin: 0 0 1rem;
+  font-size: 0.95rem;
+  color: var(--sbr-muted);
+}
+
+/* ============================== Priority cards ============================== */
+
+.sbr-priority-list {
+  list-style: none;                /* semantics preserved via <ol>; visible ordinal below */
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.9rem;
+}
+
+.sbr-priority {
+  background: var(--sbr-card);
+  border: 1px solid var(--sbr-line-soft);
+  border-radius: 12px;
+  padding: 1rem 1.1rem;
+}
+
+.sbr-priority__head {
+  display: flex;
+  flex-wrap: wrap;                 /* content-driven: pill drops under long ES titles */
+  align-items: baseline;
+  gap: 0.35rem 0.7rem;
+}
+
+.sbr-priority__ordinal {
+  font-family: var(--sbr-serif);
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--sbr-muted);
+  min-width: 1.2ch;
+}
+
+.sbr-priority__title {
+  margin: 0;
+  font-family: var(--sbr-serif);
+  font-weight: 600;
+  font-size: clamp(1.15rem, 2.4vw, 1.45rem);
+  line-height: 1.25;
+}
+
+/* Kind pills. Production defines tag-key and tag-high; tag-preference has NO
+   production CSS rule (known gap, flagged in VARIANT-NOTES) — all three
+   states are styled here. Sized up from production's 8px for shared viewing. */
+.sbr-tag {
+  align-self: center;
+  padding: 0.3rem 0.65rem;
+  border: 1px solid var(--sbr-badge-line);
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  /* no white-space:nowrap — pills wrap at narrow widths / 200% text
+     instead of blowing out the grid track. */
+  color: var(--sbr-muted);
+}
+
+.sbr-tag.tag-key {
+  border-color: rgba(140, 36, 19, 0.35);
+  background: var(--sbr-accent-soft);
+  color: var(--sbr-accent);
+}
+
+.sbr-tag.tag-high {
+  border-color: rgba(53, 80, 107, 0.35);
+  background: var(--sbr-blue-soft);
+  color: var(--sbr-blue);
+}
+
+.sbr-tag.tag-preference {
+  border-color: #b3a98e;
+  background: #efebdd;
+  color: #55503c;
+}
+
+.sbr-priority__desc {
+  margin: 0.5rem 0 0.6rem;
+  color: var(--sbr-muted);
+  max-width: 58ch;
+}
+
+/* Always-visible "Try this:" testing guidance (Alternative B's treatment):
+   typographically subordinated — smaller than the desc, boxed, consistent
+   last position in every row — but never hidden and never behind a tap. */
+.sbr-priority__test {
+  margin: 0.6rem 0 0;
+  padding: 0.7rem 0.9rem;
+  border-left: 3px solid var(--sbr-badge-line);
+  background: #fbf8f1;
+  border-radius: 0 8px 8px 0;
+  color: var(--sbr-muted);
+  font-size: 0.95rem;
+  max-width: 58ch;
+}
+
+.sbr-priority__test strong {
+  color: var(--sbr-ink);
+  letter-spacing: 0.02em;
+}
+
+.sbr-reassure {
+  margin: 1.1rem 0 0;
+  font-size: 0.95rem;
+  color: var(--sbr-muted);
+  max-width: 58ch;
+}
+
+/* ============================== Journey rail ============================== */
+
+.sbr-journey-list {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.6rem;
+  counter-reset: sbr-step;
+}
+
+.sbr-journey-list li {
+  counter-increment: sbr-step;
+  position: relative;
+  padding: 0.8rem 0.9rem 0.8rem 2.6rem;
+  background: #f3eee5;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 1.05rem;
+}
+
+.sbr-journey-list li::before {
+  content: counter(sbr-step);
+  position: absolute;
+  left: 0.8rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: var(--sbr-serif);
+  font-size: 1.15rem;
+  color: var(--sbr-muted);
+}
+
+.sbr-journey-copy {
+  margin: 0.9rem 0 0;
+  font-size: 0.95rem;
+  color: var(--sbr-muted);
+}
+
+/* ============================== Legend (prototype chrome) ============================== */
+
+.sbr-legend {
+  margin: 0;
+  padding: 0.6rem 0.8rem;
+  border: 1.5px dashed var(--sbr-blue);
+  border-radius: 8px;
+  background: var(--sbr-blue-soft);
+  color: var(--sbr-blue);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+/* ============================== Actions ============================== */
+
+.sbr-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  margin: 0 calc(-1 * clamp(1rem, 4vw, 2.5rem));
+  padding: 0.75rem clamp(1rem, 4vw, 2.5rem)
+           calc(0.75rem + env(safe-area-inset-bottom, 0px));
+  background: var(--sbr-paper);
+  border-top: 1px solid var(--sbr-line);
+}
+
+.sbr-actions__row {
+  display: flex;
+  flex-wrap: wrap;                 /* content-driven: labels stack near ~420px */
+  gap: 0.6rem;
+}
+
+.sbr-btn {
+  min-height: 48px;
+  padding: 0.6rem 1.2rem;
+  border-radius: 12px;
+  font: 700 1rem/1.2 var(--sbr-sans);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.sbr-btn--ghost {
+  background: var(--sbr-card);
+  border: 1.5px solid var(--sbr-muted);
+  color: var(--sbr-ink);
+}
+
+.sbr-btn--primary {
+  background: var(--sbr-accent);
+  border: 1.5px solid var(--sbr-accent);
+  color: #ffffff;
+  margin-left: auto;               /* DOM order = visual order preserved (row flows L->R) */
+}
+
+/* Proposed-copy underline on the primary CTA needs the inverse ink. */
+.sbr-btn--primary[data-proposed-copy] {
+  text-decoration-color: #ffffff;
+}
+
+@media (max-width: 419px) {
+  /* content-driven: below ~420px the two labels no longer share a row */
+  .sbr-actions__row { flex-direction: column; }
+  .sbr-btn--primary { margin-left: 0; }
+}
+
+.sbr-sim-caption {
+  margin: 0.5rem 0 0;
+  font-size: 0.8rem;
+  color: var(--sbr-muted);
+}
+
+.sbr-sim-caption.is-flash {
+  outline: 2px solid var(--sbr-accent);
+  outline-offset: 3px;
+  color: var(--sbr-accent);
+}

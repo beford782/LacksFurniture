@@ -276,12 +276,22 @@ function assertCaptureFloor(name, profile, tierProj) {
   }
 }
 
-// The three fixed answer sets. Provenance: dense-a and sparse-b are verbatim
+// The captured answer sets. Provenance: dense-a and sparse-b are verbatim
 // ANSWER_SETS entries from tests/scoring_isolation_check.mjs; dense-c is that
 // suite's "plus body, plush, reflux" set, whose profile-relevant answers match
 // tests/consultation_priorities_check.mjs fixture C (the tie-carrying,
 // sorted-set-differs-from-insertion-set design) except mattress_size
 // (full vs queen), which does not feed the priority engine.
+//
+// boundary-one (added in the 2026-08-07 correction pass) is a SYNTHETIC
+// answer vector: it omits sleep_position, which no completed quiz can do —
+// every reachable position value triggers a priority emission, so the
+// engine's one-priority floor is unreachable from real quiz input (the
+// reachable minimum is 2, exercised by sparse-b). The vector exists solely
+// to pin the length-1 rendering contract (hero + a single-row list) through
+// the REAL engine; it is disclosed as synthetic in its meta and in
+// PROVENANCE.md, and it is evidence about the rendering contract only —
+// never about any real customer state.
 export const SCENARIOS = {
   "dense-c": {
     description: "Dense: 3 priorities incl. a 90/90 tie resolved by stable-sort insertion order; plus-body plush sleeper with reflux in a family bed.",
@@ -313,12 +323,27 @@ export const SCENARIOS = {
       health_conditions: ["none"],
     },
   },
+  "boundary-one": {
+    description: "SYNTHETIC boundary: exactly 1 priority (the firmness-preference emission alone). The vector omits sleep_position — unreachable from a completed quiz (every position value emits a priority; reachable minimum is 2) — and exists solely to pin the length-1 rendering contract through the real engine.",
+    synthetic: true,
+    provenance:
+      "Authored for the 2026-08-07 correction pass; NOT from any shipped test suite and NOT producible by the quiz UI (sleep_position omitted). Executed through the real extracted engine like every other scenario; evidence about the length-1 rendering contract only.",
+    answers: {
+      sleep_quality: "well", trigger: "upgrade", mattress_size: "queen",
+      partner_sleep: "solo", body_type: "average",
+      temperature: "comfortable", firmness: 5,
+      current_mattress_age: "two_eight", sleep_issues: ["none"],
+      health_conditions: ["none"],
+    },
+  },
 };
 
 // Full capture for one scenario. Everything inside comes from executing the
-// real functions; the only authored content is the scenario description.
+// real functions; the authored content is the scenario description, the
+// answer vector itself (three pre-existing suite vectors + the synthetic
+// boundary-one vector) and the simulated savedOrder.
 export function captureScenario(name) {
-  const { description, answers } = SCENARIOS[name];
+  const { description, answers, synthetic, provenance } = SCENARIOS[name];
 
   const profile = { en: runProfile(answers, "en"), es: runProfile(answers, "es") };
 
@@ -351,7 +376,10 @@ export function captureScenario(name) {
       description,
       engineSourceCommit: engineCommit,
       answers,
-      answerSetProvenance:
+      // Per-scenario provenance override keeps the three original fixtures
+      // byte-identical while the synthetic boundary vector self-discloses.
+      ...(synthetic ? { syntheticAnswerVector: true } : {}),
+      answerSetProvenance: provenance ||
         "tests/scoring_isolation_check.mjs ANSWER_SETS (dense-a, sparse-b verbatim; dense-c = 'plus body, plush, reflux' whose profile-relevant answers match tests/consultation_priorities_check.mjs fixture C)",
       method:
         "Extract-and-execute from index.html at the worktree commit (see PROVENANCE.md): showProfileScreen()+renderResultsTrialFocus() against the recording DOM shim of tests/consultation_priorities_check.mjs; calculateScores()+qualifyRankedChoices()+window.showResults against data/mattresses.json + data/quiz.json. No scoring, ordering, cap or firmness value is reimplemented or edited.",

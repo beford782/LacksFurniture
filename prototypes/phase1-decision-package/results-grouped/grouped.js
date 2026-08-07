@@ -49,23 +49,14 @@
         silver: { en: "SILVER", es: "PLATA" },
         bronze: { en: "BRONZE", es: "BRONCE" }
       },
-      // index.html:13877-13883 (tier descriptor pairs, verbatim innerHTML incl.
-      // the tier-name span; "entry-level"/"básico" rendered as-shipped — the
-      // copy itself is Blake's separate decision, see VARIANT-NOTES).
-      tierDescHtml: {
-        gold: {
-          en: '<span class="tier-name">Gold</span> · premium materials',
-          es: '<span class="tier-name">Oro</span> · materiales premium'
-        },
-        silver: {
-          en: '<span class="tier-name">Silver</span> · mid-range value',
-          es: '<span class="tier-name">Plata</span> · gama media'
-        },
-        bronze: {
-          en: '<span class="tier-name">Bronze</span> · entry-level',
-          es: '<span class="tier-name">Bronce</span> · básico'
-        }
-      },
+      // Tier descriptor subtitles removed (correction pass, 2026-08-07):
+      // the roadmap already decided buyer-characterising tier language
+      // ("Bronze · entry-level" / "Bronce · básico") must go, and no
+      // replacement subtitle is rendered anywhere in the package — any
+      // subtitle copy needs explicit approval first. Production's
+      // descriptor line (index.html:13877-13883) is unchanged and flagged.
+      // NOTE this variant is retained as REJECTED EXPLORATION (see
+      // VARIANT-NOTES header); this edit only removes the flagged copy.
       // index.html:19201-19203 (drawer tier-name map; same pairs at 18880)
       tierName: {
         gold:   { en: "Gold",   es: "Oro" },
@@ -230,16 +221,9 @@
       btn.setAttribute("data-tier", tier);
 
       btn.appendChild(el("span", "rg-acc-label", L(STR.tierLabel[tier])));
-      var desc = el("span", "rg-acc-desc");
-      desc.innerHTML = STR.tierDescHtml[tier][lang]; // verbatim descriptor pair (13877-13883)
-      // Fix G8: without this, the header's accessible name read
-      // "GOLD Gold · premium materials" — the display label and the
-      // descriptor's tier-name span both carry the tier word. The
-      // descriptor's duplicate is aria-hidden (visible text unchanged) so
-      // the name carries the tier exactly once: "GOLD · premium materials".
-      var dupTierWord = desc.querySelector(".tier-name");
-      if (dupTierWord) dupTierWord.setAttribute("aria-hidden", "true");
-      btn.appendChild(desc);
+      // Descriptor subtitle no longer renders (correction pass — see the
+      // STR comment above). The header carries the tier label alone; the
+      // fix-G8 duplicate-tier-word handling went with the descriptor.
       var chev = el("span", "rg-acc-chevron", "▾");
       chev.setAttribute("aria-hidden", "true");
       btn.appendChild(chev);

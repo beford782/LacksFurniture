@@ -9,17 +9,19 @@ re-orders, filters, caps or synthesises engine output.
 
 ## Layout
 
-| path | owner | contents |
+| path | status | contents |
 |---|---|---|
-| `fixtures/` | fixture/provenance builder (lead) | frozen scenario JSONs, capture tooling, parity check — FROZEN; builders may not edit |
-| `shared/` | lead | fixture-loading harness + review-bar styling — builders may not edit |
-| `sleep-brief-a/` | builder A | Sleep Brief Alternative A (need-led hero) |
-| `sleep-brief-b/` | builder B | Sleep Brief Alternative B (conservative fixed heading) |
-| `results-tabs/` | builder C | Results — strongest restyle of the current Gold/Silver/Bronze tabs |
-| `results-grouped/` | builder D | Results — preserving grouped/accordion presentation |
+| `fixtures/` | frozen (lead-owned) | frozen scenario JSONs, capture tooling, parity check, prototype contract runner |
+| `shared/` | lead-owned | fixture-loading harness + review-bar styling |
+| `sleep-brief-recommended/` | **RECOMMENDED candidate** | A-derived Sleep Brief (need-led hero + always-visible testing guidance + labelled badges; no first-visit Compare) |
+| `results-tabs/` | **RECOMMENDED candidate** (as corrected) | accessible tier tabs; lead + compact-support cards; page-local "Compare selected mattresses" |
+| `sleep-brief-a/` | exploration record | Alternative A (need-led hero, disclosure-hidden testing detail) |
+| `sleep-brief-b/` | exploration record | Alternative B (conservative fixed heading, visible testing detail) |
+| `results-grouped/` | **rejected exploration** | single-open accordion (see its VARIANT-NOTES banner for the rejection ground) |
 
-Builder isolation: each variant directory has exactly one owner; no two
-builders edit the same file; fixtures and shared harness are read-only inputs.
+The A/B Sleep Briefs and the accordion are retained as the record of the
+exploration that produced the recommended candidates; they are not proposed
+for adoption.
 
 ## Viewing
 
@@ -27,10 +29,23 @@ Serve the repo root over HTTP and open a variant:
 
 ```
 python -m http.server 8000
-http://localhost:8000/prototypes/phase1-decision-package/sleep-brief-a/?scenario=dense-c&lang=en
+http://localhost:8000/prototypes/phase1-decision-package/sleep-brief-recommended/?scenario=dense-c&lang=en
 ```
 
-Query params: `scenario` = `dense-c` | `dense-a` | `sparse-b`; `lang` = `en` | `es`.
+Query params: `scenario` = `dense-c` | `dense-a` | `sparse-b` |
+`boundary-one` (a disclosed SYNTHETIC one-priority boundary state — see
+`fixtures/PROVENANCE.md`); `lang` = `en` | `es`.
+
+## Verification
+
+```
+node prototypes/phase1-decision-package/fixtures/tools/parity_check.mjs    # fixtures == fresh engine run + row-bound hashes + surface floors
+node prototypes/phase1-decision-package/fixtures/tools/contract_check.mjs  # recommended candidates honor the rendering contracts (DOM-stub execution)
+```
+
+Each script's header states exactly what it proves and does not prove.
+Neither is mounted-device, assistive-technology, or customer evidence, and
+neither runs in repository CI.
 
 ## Ground rules every variant obeys
 
@@ -41,10 +56,15 @@ Query params: `scenario` = `dense-c` | `dense-a` | `sparse-b`; `lang` = `en` | `
   match percentage never render.
 - Gold/Silver/Bronze identity, membership and within-tier order are the
   fixture's, verbatim; no cross-tier ranking or leader comparison implied.
-- All copy bilingual, taken verbatim from the production renderers (via the
-  fixtures) — no invented customer-specific reasons, no medical or
-  buyer-characterising phrasing, no decorative photography, existing icon
-  vocabulary only.
+- Copy provenance is explicit, in four classes: fixture-derived; verbatim
+  production EN/ES pairs (line-cited); PROPOSED product copy (marked
+  `data-proposed-copy` — in the recommended candidates also visibly
+  dotted-underlined and sr-suffixed); and prototype chrome
+  (`data-prototype-chrome`, never product copy). No invented
+  customer-specific reasons, no medical or buyer-characterising phrasing,
+  no decorative photography, existing icon vocabulary only. (The earlier
+  claim that ALL copy was "taken verbatim from the production renderers"
+  overstated — the proposed class exists and is marked.)
 - Sleep fit visually dominant; financing at most the existing secondary
   module in its stale-closed shipped state; zero financing on Sleep Brief and
   Compare surfaces.

@@ -24,13 +24,24 @@
   var params = new URLSearchParams(window.location.search);
   var scenario = params.get("scenario") || "dense-c";
   var lang = params.get("lang") === "es" ? "es" : "en";
-  var SCENARIOS = ["dense-c", "dense-a", "sparse-b"];
+  // boundary-one is the disclosed SYNTHETIC one-priority boundary state
+  // (see fixtures/PROVENANCE.md) — a rendering-contract probe, not a
+  // reachable customer state.
+  var SCENARIOS = ["dense-c", "dense-a", "sparse-b", "boundary-one"];
   if (SCENARIOS.indexOf(scenario) === -1) scenario = "dense-c";
 
   function L(obj) {
     if (obj == null) return "";
     if (typeof obj === "string") return obj;
     return obj[lang] != null ? obj[lang] : (obj.en != null ? obj.en : "");
+  }
+
+  function deepFreeze(obj) {
+    if (obj && typeof obj === "object" && !Object.isFrozen(obj)) {
+      Object.freeze(obj);
+      Object.keys(obj).forEach(function (k) { deepFreeze(obj[k]); });
+    }
+    return obj;
   }
 
   function link(newParams) {
@@ -106,6 +117,11 @@
         return r.json();
       })
       .then(function (fixture) {
+        // Correction pass: "frozen" is now ENFORCED, not asserted — the
+        // fixture object is deep-frozen before any variant sees it, so an
+        // in-place sort()/splice()/overwrite throws in strict mode instead
+        // of silently re-ordering engine output.
+        deepFreeze(fixture);
         document.documentElement.setAttribute("lang", lang);
         document.body.insertBefore(buildReviewBar(fixture), document.body.firstChild);
         loaded = { fixture: fixture, ctx: { scenario: scenario, lang: lang, L: L } };

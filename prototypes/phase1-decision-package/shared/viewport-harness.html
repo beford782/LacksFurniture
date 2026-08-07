@@ -45,7 +45,11 @@
   var wrap = document.getElementById('wrap');
   var iframe = document.createElement('iframe');
   iframe.width = w; iframe.height = h;
-  iframe.src = '../' + v + '/?scenario=' + s + '&lang=' + l;
+  // `st` forwards a review-state name to variants that support the
+  // review-state driver (results-tabs) so stateful screenshot cells are
+  // reproducible by URL.
+  var st = p.get('st');
+  iframe.src = '../' + v + '/?scenario=' + s + '&lang=' + l + (st ? '&state=' + encodeURIComponent(st) : '');
   iframe.title = v + ' at ' + w + '×' + h;
   wrap.appendChild(iframe);
 
@@ -59,6 +63,7 @@
     '<span><b>' + v + '</b></span>' +
     '<span>scenario <b>' + s + '</b></span>' +
     '<span>lang <b>' + l.toUpperCase() + '</b></span>' +
+    (st ? '<span>state <b>' + st + '</b></span>' : '') +
     '<span>viewport <b>' + w + '×' + h + '</b> (' + (w > h ? 'landscape' : 'portrait') + ')</span>' +
     '<span>display scale <b>' + scale.toFixed(2) + '×</b></span>' +
     '<span class="warn">illustrative review viewport — NOT the showroom device matrix</span>';

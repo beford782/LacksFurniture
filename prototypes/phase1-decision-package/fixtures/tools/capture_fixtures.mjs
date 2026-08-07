@@ -72,12 +72,31 @@ logic reimplemented anywhere):
   divergence), and a capture floor aborts the freeze if any load-bearing
   surface parses empty (priority rows, rendered headings, tier entries) —
   a silent extraction drift can no longer freeze an empty fixture.
-- **One authored input, disclosed:** \`compareDemo.savedOrder\` is simulated
-  saved-finalist state (tier leads in save order). Save history is customer
-  input — no engine execution can produce one — so this is the single place
-  the capture authors data rather than recording it. The compare PAIR is
-  then computed by executing the real extracted \`compareReviewFinalists()\`
-  (index.html:17398–17409) against that state.
+
+## Authored inputs (stated exactly — everything else is executed engine output)
+
+The captures author **inputs**, never outputs. There are three authored
+input classes, each disclosed:
+
+1. **Three pre-existing authored answer vectors** (\`dense-c\`, \`dense-a\`,
+   \`sparse-b\`) taken from the shipped test suites — see answer-set
+   provenance below.
+2. **One newly authored SYNTHETIC answer vector** (\`boundary-one\`): it
+   omits \`sleep_position\`, which no completed quiz can do — every
+   reachable position value triggers a priority emission, so the engine's
+   one-priority floor is unreachable from real quiz input (the reachable
+   minimum is 2, exercised by \`sparse-b\`). It exists solely to pin the
+   length-1 rendering contract through the real engine and is evidence
+   about that contract only, never about any real customer state. Its
+   fixture carries \`meta.syntheticAnswerVector: true\`.
+3. **Simulated saved-finalist state per scenario**
+   (\`compareDemo.savedOrder\`: tier leads in save order). Save history is
+   customer input — no engine execution can produce one. The compare PAIR
+   is then computed by executing the real extracted
+   \`compareReviewFinalists()\` (index.html:17398–17409) against that state.
+
+An earlier head of this package described item 3 as "the one authored
+input"; that undercounted — the answer vectors are authored inputs too.
 
 ## Answer-set provenance
 
@@ -87,10 +106,12 @@ logic reimplemented anywhere):
   profile-relevant answers match \`tests/consultation_priorities_check.mjs\`
   fixture C (3 priorities including a 90/90 stable-sort tie) except
   \`mattress_size\` (full vs queen), which does not feed the priority engine.
+- \`boundary-one\`: authored for the 2026-08-07 correction pass; NOT from
+  any shipped suite and NOT producible by the quiz UI (see above).
 
 ## Model coverage (computed at capture)
 
-The three fixed answer sets qualify **${renderedIds.size} of 26** catalog
+The ${Object.keys(SCENARIOS).length} captured answer sets qualify **${renderedIds.size} of 26** catalog
 models across all tiers and scenarios:
 ${[...renderedIds].sort().join(", ")}.
 Models never rendered by any fixture:
@@ -99,7 +120,11 @@ ${(() => {
   return all.filter((id) => !renderedIds.has(id)).join(", ") || "(none)";
 })()}.
 Consequence, recorded honestly: the flagged catalog claim strings on models
-outside this set (g4, g5, g9 among them) never render in any prototype —
+outside this set (${(() => {
+  const flagged = ["g4", "g5", "g9", "b5"];
+  const missing = flagged.filter((id) => !renderedIds.has(id));
+  return missing.length ? missing.join(", ") + " among the flagged four" : "none of the flagged four — all render somewhere";
+})()}) never render in any prototype —
 those flags come from direct catalog inspection, not from fixture rendering.
 Coverage follows from the engine's own qualification on the fixed answer
 sets; widening it would require additional captured answer sets, never a
@@ -117,6 +142,20 @@ change to qualification.
 - Fixture JSONs carry no timestamps; capture date lives only in this file so
   the JSONs stay byte-reproducible.
 
+## Hashing scope (stated exactly)
+
+The tables below hash: **every production source file the capture reads**
+(\`index.html\`, \`data/mattresses.json\`, \`data/quiz.json\`) and **each
+committed fixture output**. They do NOT hash the capture/parity tooling or
+the scenario definitions — those are ordinary reviewed source files in this
+branch, versioned by git like any other code. (\`Code.gs\` and the rest of
+\`data/\` are guarded by the byte-identity-with-origin/main abort, but are
+not read by the capture and are not hashed here.)
+
+\`parity_check.mjs\` verifies each hash against its **exact named table
+row** (file cell + hash cell in the same row) — a hash appearing elsewhere
+in this document does not satisfy the check.
+
 ## Input hashes (sha256 over LF-normalized text)
 
 | file | sha256 |
@@ -131,12 +170,62 @@ change to qualification.
 |---|---|
 ${written.map((w) => `| ${w.file} | \`${w.sha}\` |`).join("\n")}
 
+## Fixture schema (per scenario JSON)
+
+\`\`\`
+meta:        { scenario, description, engineSourceCommit, answers,
+               syntheticAnswerVector? (true only on boundary-one),
+               answerSetProvenance, method }
+profile:     { en, es } × {
+               dom: { <16 profile element ids>: { innerHTML, textContent } },
+               priorityRows: [ { title, desc, tagClass, tag, test } ]  (1-3, engine order),
+               priorityCount: number,
+               metaStrip: [ { label, value } ]  (fixed production order: Size, Feel, Temperature),
+               resultsTrialFocus: string (captured production HTML),
+               trialFocus: [ analytics trial-focus entries ],
+               profileBrief, profileBriefByLang }
+firmness:    { value: integer 1-10, firmnessFeel: {en,es},
+               getFirmnessLabel: {en,es}, note }
+results:     { tierData: { gold, silver, bronze: [ entry ] },
+               topPick, enEsParity, priceTierSymbols,
+               cardPriorities: { en, es: { <modelId>: [ { title, desc, tag, matched } ] }, note },
+               note }
+  entry:     { id, name, brand, subBrand, pitchKey, archetype, firmness,
+               firmnessLabel, locallyMade, tags, highlight, tags_es,
+               highlight_es, imageUrl, topPickReason, differentiators,
+               score, pct, meetsMatchThreshold, firmnessFeelWord: {en,es} }
+compareDemo: { savedOrder: [ { id, tier } ] (SIMULATED, disclosed),
+               autoPair: [ id, id ] (real compareReviewFinalists() output),
+               favourite: null, note }
+\`\`\`
+
+Arrays are arrays (never numeric-key objects); \`parity_check.mjs\`'s deep
+compare distinguishes the two.
+
 ## Verification
 
 \`node prototypes/phase1-decision-package/fixtures/tools/parity_check.mjs\`
 re-executes the capture in memory and fails on any byte difference from the
 frozen JSONs (priority order/count, firmness value, tier membership/order,
-DOM output). Run it against a clean checkout of the source commit above.
+DOM output), verifies every hash against its exact named table row above
+(and that each file has exactly one row), and floors these
+prototype-consumed surfaces: priority rows (title/desc/tag/test), all three
+tiers non-empty, metaStrip (3 labelled entries), resultsTrialFocus,
+cardPriorities (>=1 titled row per tier entry), per-entry
+firmness/firmnessFeelWord(en+es)/meetsMatchThreshold/differentiators/
+topPickReason, priceTierSymbols, and the compareDemo pair. Surfaces NOT
+individually floored (covered by whole-object parity only): the remaining
+profile dom ids, row tagClass, trialFocus/profileBrief analytics
+projections. Runtime immutability is separately enforced: the shared
+harness and the contract runner deep-freeze the fixture object before any
+variant sees it. Run parity against a clean checkout of the source commit
+above.
+
+\`node prototypes/phase1-decision-package/fixtures/tools/contract_check.mjs\`
+is the separate prototype contract runner: it executes the two recommended
+candidate prototypes against these fixtures in a DOM stub and asserts the
+rendering contracts (see the script header for exactly what it does and
+does not prove).
 `;
 
 writeFileSync(join(fixturesDir, "PROVENANCE.md"), provenance);

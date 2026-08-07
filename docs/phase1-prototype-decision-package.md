@@ -1,18 +1,37 @@
 # Phase 1 prototype decision package — Sleep Brief and Results
 
-**RESEARCH / PROTOTYPE ONLY.** This package exists so Blake (with Codex
-review) can decide the two gated Phase 1 presentation questions from actual
-bilingual screens instead of prose. It is **not** Phase 1 implementation and
-records **no** approval. Phase 0.4 remains ⏳, Phase 0 remains open, the
-showroom device matrix is unconfirmed, the production application is
-unchanged from `origin/main` = `78f949c`, and the per-model catalog reasons
-remain missing and were **not** invented.
+**RESEARCH / PROTOTYPE ONLY.** This package exists so Blake can decide the
+two gated Phase 1 presentation questions from actual bilingual screens
+instead of prose. It is **not** Phase 1 implementation and records **no**
+approval. Phase 0.4 remains ⏳, Phase 0 remains open, the showroom device
+matrix is unconfirmed, the production application is unchanged from
+`origin/main` = `78f949c`, and the per-model catalog reasons remain missing
+and were **not** invented.
+
+**Correction pass (2026-08-07).** After Codex's independent review of head
+`ad94e4e`, the package was corrected from a broad candidate-narrowing
+exploration into a clean decision package with two **recommended
+candidates**: an A-derived Sleep Brief (`sleep-brief-recommended/`) and the
+corrected tier-tabs Results (`results-tabs/`). Alternatives A/B and the
+grouped accordion are retained as exploration records (the accordion as
+**rejected** exploration). Nothing in this pass upgrades agent reviews,
+automated checks or screenshots into salesperson/customer observation —
+the human evaluation is prepared, not performed, in
+`docs/phase1-assisted-sales-evaluation-packet.md` (status: NOT RUN).
+
+DreamFinder's operating premise throughout: a **salesperson-operated
+presentation and consultation tool used with the customer present** — the
+salesperson is the primary operator and narrator; the interface must hold
+shared context, glanceability and conversational control. Sleep fit is
+primary; Payment Choice is secondary and isolated.
 
 Prototypes: `prototypes/phase1-decision-package/` (standalone; never
 imported, linked or executed by the production app). Frozen engine fixtures:
 `prototypes/phase1-decision-package/fixtures/` (captured by executing the
-real engine at `78f949c`; see `PROVENANCE.md` there). Companion document:
-`docs/phase1-catalog-reason-authoring-brief.md`.
+real engine at `78f949c`; see `PROVENANCE.md` there). Companion documents:
+`docs/phase1-catalog-reason-authoring-brief.md` (corrected),
+`docs/phase1-research-source-appendix.md` (new),
+`docs/phase1-assisted-sales-evaluation-packet.md` (new, NOT RUN).
 
 ---
 
@@ -49,7 +68,10 @@ screen renders a percentage** — they reach the customer only via the email.
 Top pick is always Gold #1 by product rule. Tier identity lives in five
 separate hardcoded bilingual name maps (tabs, descriptor, hf2 tag, compare
 modal, drawer). The Bronze descriptor reads "Bronze · entry-level" / "Bronce
-· básico" (buyer-characterising; flagged, unchanged). Cards show: photo,
+· básico" — buyer-characterising; the roadmap's ungated **Proceeds** list
+(docs/rebuild-roadmap.md:750-751) already records that such labels must be
+removed, so this is an executed decision pending in production, not an open
+question; production remains unchanged by this package. Cards show: photo,
 threshold-honest eyebrow, brand·subBrand, name, authored `topPickReason`
 (product copy), firmness "N/10" + `firmnessFeel` word, three
 template-generated per-mattress rows (`buildMattressPriorities`), stock line,
@@ -108,7 +130,58 @@ dead on main.
 Each variant's full, self-declared deviation list lives in its
 `VARIANT-NOTES.md`; this is the decision-relevant summary.
 
-### 2.1 Sleep Brief — Alternative A (need-led)
+### 2.0 The two recommended candidates (correction pass)
+
+**Sleep Brief — recommended candidate (`sleep-brief-recommended/`,
+A-derived).** Combines A's need-led hero (`h1` = `priorityRows[0]` strictly
+by index, production heading demoted to a continuity eyebrow), A's compact
+shared-view composition, A's exact 1–10 firmness presentation (10 discrete
+segments + the exact integer + the Brief's own captured word), A's exact
+engine-ordered 1–3 priority list, A's ≥920 px landscape structure and
+persistent sticky actions — with **B's always-visible "Try this:" testing
+guidance** (the captured implication-not-diagnosis copy, typographically
+subordinated, never behind a tap) and **visible category labels on the
+signal badges** (a `<dl>`; captured metaStrip labels for
+Temperature/Feel/Size, proposed labels for Position/Sharing). The
+first-visit screen carries **no Compare entry**: there are no saved
+finalists on a first visit, production's Sleep Brief has no Compare entry,
+and the working saved-finalist Compare belongs to the Consultation Summary
+— so the A/B compare demonstration (which needed simulated saved products)
+is removed rather than dressed up. Action hierarchy: primary = proposed
+"See My Matches →" (marked), secondary = the production Edit-answers entry
+verbatim. Proposed copy is marked three ways (attribute, visible dotted
+underline + legend, sr-only suffix); a strict resolver forbids
+cross-language fallback. No returning-session state is modeled on this
+screen.
+
+**Results — recommended candidate (`results-tabs/`, corrected).**
+Accessible tier tabs remain the navigation (full APG tabs contract). The
+correction pass: **no tier-descriptor subtitle renders** (the roadmap
+already decided buyer-characterising tier language — "Bronze ·
+entry-level" / "Bronce · básico" — must go; this is executed, not re-asked;
+any future subtitle needs explicit approval); the card hierarchy becomes
+**one full-anatomy within-tier lead + two compact supporting comparisons**
+(titles-and-tags talking points at salesperson-readable size; descs live
+behind Details, as in production's drawer); **production-verbatim Details
+and Save actions are restored** as clearly-identified inert prototype
+controls; Compare uses **page-local terminology** ("Compare selected
+mattresses" — never "finalists" for unsaved selections) and opening it
+**scrolls to and focuses** the stable section heading so the tap has a
+visible and focus consequence; Payment Choice stays one secondary
+stale-closed module (the second `fitFirst` line mirrors production's own
+footer hint — one module, two instances of that string, production-
+faithful). Qualified tier membership and within-tier order are consumed
+verbatim from fixtures under the engine's ≥60 % threshold/back-fill
+contract; the underlying catalog is 9 gold / 10 silver / 7 bronze while
+Results surfaces at most 3 per tier by the engine's cap (so "9/10/7"
+describes the catalog, never the Results screen); no score or percentage
+renders.
+
+Both candidates are executed against every fixture scenario × language by
+`fixtures/tools/contract_check.mjs` (§8). Sections 2.1–2.4 below are the
+exploration record that produced them.
+
+### 2.1 Sleep Brief — Alternative A (need-led) — exploration record
 
 - **The heading changes.** `h1` becomes the engine's **first priority, taken
   strictly by index** (dense-c → "Comfortable elevation"), with its one-line
@@ -134,7 +207,7 @@ Each variant's full, self-declared deviation list lives in its
 - Actions sit in a sticky bottom bar with safe-area padding; the journey rail
   becomes a real `<ol>`.
 
-### 2.2 Sleep Brief — Alternative B (conservative hierarchy)
+### 2.2 Sleep Brief — Alternative B (conservative hierarchy) — exploration record
 
 - **The heading does not change.** "Your Sleep Brief" / "Tu Resumen de Sueño"
   stays the `h1`; the engine's first priority (same index-0 selection)
@@ -142,9 +215,11 @@ Each variant's full, self-declared deviation list lives in its
   "Where we start" / "Por dónde empezamos" label, and still renders as item 1
   of the list — an echo, not a removal.
 - **Today's top-level section order is kept** (identity → what-we-test →
-  journey → actions); the same prose is condensed into the same five badges,
-  but each badge carries a visible category label (POSITION / TEMPERATURE /
-  SHARING / FEEL / SIZE — aligned across both Briefs in the fix pass).
+  journey → actions); the same prose is condensed into the same five
+  badges, and each badge carries a visible category label (POSITION /
+  TEMPERATURE / SHARING / FEEL / SIZE). Correction: the fix pass aligned
+  badge **order** across the two Briefs, not labels — visible labels
+  existed in B alone until the recommended candidate adopted them (§2.0).
 - **The testing detail stays fully visible**, subordinated typographically —
   B's deliberate, recorded contrast with A.
 - Same firmness treatment, same ordinal markers, same CTA resolution and
@@ -152,7 +227,7 @@ Each variant's full, self-declared deviation list lives in its
 - The `tag-preference` pill is rendered with the neutral base style, mirroring
   production's *missing* CSS rule rather than silently fixing it.
 
-### 2.3 Results — restyled tier tabs
+### 2.3 Results — restyled tier tabs — as originally built (see §2.0 for the corrected candidate)
 
 - Tabs remain the navigation. Contrast on unselected tabs is raised, targets
   are ≥44 px, and Spanish labels are checked against overflow (production's
@@ -169,19 +244,26 @@ Each variant's full, self-declared deviation list lives in its
 - The financing module is reproduced in its **shipped stale-closed state**
   (no rates anywhere), visually secondary, inert.
 - The empty-tier state is implemented as a real code path.
-- A proposed alternative Bronze descriptor — "Bronze · everyday value" /
-  "Bronce · valor cotidiano" — is **documented-only** (the fix pass removed
-  it from render; VARIANT-NOTES T11): the shipped "entry-level" / "básico"
-  pair renders alone, and the alternative is quoted here so the copy
-  decision is decidable from this document.
+- ~~A proposed alternative Bronze descriptor…~~ **Superseded by the
+  correction pass:** no tier-descriptor subtitle renders at all. The
+  roadmap had already decided that buyer-characterising tier language must
+  be removed, so the shipped "entry-level" / "básico" pair no longer
+  renders in any package variant and its removal is not presented as a new
+  Blake decision. Production's descriptor line is unchanged and flagged.
 
-### 2.4 Results — single-open accordion
+### 2.4 Results — single-open accordion — REJECTED exploration
 
-- **Tabs are replaced.** Three tier sections with permanently visible headers
-  (verbatim names and descriptors), Gold open by default — the engine's own
-  default — with W3C APG accordion semantics and no auto-scroll on expand.
+- **Tabs are replaced.** Three tier sections with headers permanently
+  present **in the DOM** (the original "permanently visible" claim is
+  corrected — with a tier panel open, the other headers routinely sit
+  outside the viewport; only the open header is sticky, so the standing
+  three-beat agenda this variant promised is not what it delivers, and
+  that shortfall is the concrete ground for rejecting it). Gold open by
+  default — the engine's own default — with W3C APG accordion semantics
+  and no auto-scroll on expand. (Descriptor subtitles removed in the
+  correction pass, as everywhere.)
 - **Only one tier's products are ever visible**, so the three tier leaders
-  never sit adjacent: this is the variant's honesty argument against the
+  never sit adjacent: this was the variant's honesty argument against the
   stacked-group alternative.
 - One card anatomy for lead and supporting cards (production's top-pick card
   is larger and richer); position plus the threshold-honest eyebrow carry the
@@ -228,41 +310,60 @@ All four, verified by the lead (§8):
 - **No production file, fixture or shared-harness file was modified by any
   builder**; no analytics event was added, renamed or simulated.
 
-## 4. Screenshots
+## 4. Screenshots — lean matched evidence set (correction pass)
 
-`docs/images/phase1-prototypes/` — 12 captures, named
-`<variant>__<scenario>__<lang>__<orientation>-<w>x<h>.jpg`, each stamped in
-the image with variant, scenario, language, viewport, display scale and the
-warning "illustrative review viewport — NOT the showroom device matrix".
+`docs/images/phase1-prototypes/` — named
+`<variant>__<scenario>__<lang>__<orientation>-<w>x<h>[__<state>].jpg`, each
+stamped in the image with variant, scenario, language, state (where
+applicable), viewport, display scale and the warning "illustrative review
+viewport — NOT the showroom device matrix". **These are prototype evidence,
+never hardware evidence.**
 
-| variant | dense-c EN portrait | dense-c ES landscape | sparse-b EN portrait |
-|---|---|---|---|
-| sleep-brief-a | ✅ 834×1112 | ✅ 1112×834 | ✅ 834×1112 |
-| sleep-brief-b | ✅ 834×1112 | ✅ 1112×834 | ✅ 834×1112 |
-| results-tabs | ✅ 834×1112 | ✅ 1112×834 | ✅ 834×1112 |
-| results-grouped | ✅ 834×1112 | ✅ 1112×834 | ✅ 834×1112 |
+The evidence matrix covers the two recommended candidates. Matched EN/ES
+cells use the **same fixture and same state** — a language difference is
+only ever shown language-vs-language, never confounded with an orientation
+or state change.
 
-Captured through `prototypes/phase1-decision-package/shared/viewport-harness.html`,
-which renders a variant inside an exactly-sized iframe so its media queries
-resolve at the target viewport; only the on-screen rendering is scaled, and
-the scale factor is stamped on every image. Reviewers can reproduce any cell —
-or any other size — by opening that harness with `v`, `s`, `l`, `w`, `h`
-parameters. Beyond these 12 images, the lead ran browser-executed checks
-across 48 variant × scenario × language × viewport combinations (overflow,
-heading order, priority order and count, per-card firmness parity, tier
-order and membership, percentage/score leakage, Spanish completeness,
-touch-target size). Those checks ran live against the served prototypes and
-are documented as a protocol, not retained as repo artifacts — the Wave 4
-adversarial review then independently re-swept the same properties at larger
-scale (including a 384-render overflow/zoom matrix and 200 %/400 % text
-zoom) and its results are what §8 reports. The 12 screenshots were
-re-captured after the post-adversarial fix pass (2026-08-07) and show the
-post-fix state; the four decision-relevant compositions are unchanged from
-the pre-fix captures. Two supplementary captures accompany the matrix: A
-with a "Try this:" disclosure expanded (the hidden side of the §5.1
-disagreement — the same text B shows always-visible), and an ES-portrait
-Results cell (the base matrix pairs ES with landscape only; any further
-language/orientation cell is reproducible via the harness parameters).
+**Sleep Brief candidate (`sleep-brief-recommended`), fixture `dense-c`
+except where noted:**
+
+| cell | file |
+|---|---|
+| dense EN portrait | `…__dense-c__en__portrait-834x1112.jpg` |
+| dense ES portrait (same fixture/state) | `…__dense-c__es__portrait-834x1112.jpg` |
+| dense EN landscape | `…__dense-c__en__landscape-1112x834.jpg` |
+| dense ES landscape (same fixture/state) | `…__dense-c__es__landscape-1112x834.jpg` |
+| one-priority boundary (SYNTHETIC fixture, disclosed) | `…__boundary-one__en__portrait-834x1112.jpg` |
+
+No returning-session Compare cell exists because no Compare state remains
+in the Sleep Brief proposal (§2.0).
+
+**Results candidate (`results-tabs`), fixture `dense-c`:**
+
+| cell | file |
+|---|---|
+| EN portrait, Gold, 0 selected (Details/Save visible) | `…__en__portrait-834x1112.jpg` |
+| ES portrait, same fixture and state | `…__es__portrait-834x1112.jpg` |
+| EN landscape | `…__en__landscape-1112x834.jpg` |
+| ES landscape, same fixture and state | `…__es__landscape-1112x834.jpg` |
+| Silver tier selected | `…__en__portrait-834x1112__silver.jpg` |
+| two products selected, tray visible | `…__en__portrait-834x1112__selected2.jpg` |
+| Compare surface open (focused heading visible) | `…__en__portrait-834x1112__compare-open.jpg` |
+
+Captured through `shared/viewport-harness.html` (exact-size iframe; only
+on-screen rendering is scaled; scale stamped). Stateful cells are driven by
+the results-tabs review-state driver (`?state=…` — prototype chrome that
+replays real interactions through the real handlers), so **every cell is
+reproducible by URL** with the harness `v`, `s`, `l`, `st`, `w`, `h`
+parameters.
+
+Historical exploration captures (sleep-brief-a incl. its disclosure-open
+supplementary, sleep-brief-b, results-grouped) are retained as the record
+of the pre-correction exploration state; the superseded pre-correction
+results-tabs captures were replaced by the matrix above. The Wave 4
+adversarial sweeps described in §8 ran against the pre-correction variants;
+the contract runner (§8) is the executable evidence for the corrected
+candidates.
 
 ## 5. Tradeoffs
 
@@ -278,37 +379,55 @@ language/orientation cell is reproducible via the harness parameters).
 | Gate exposure | **Triggers the 1.1 gate** (heading replaced) | **Also triggers it** (heading subordinated) — but less far |
 | Risk | The eyebrow may read as a subtitle; a "need" title can feel like a diagnosis if copy drifts | Less differentiated from today; the win is smaller |
 
-The sharpest disagreement in the whole research program is on A's disclosure.
-The roadmap proposes it; the external evidence
-(`w2-progressive-disclosure`) argues **against** it: by NN/g's own
-frequency criterion the "Try this:" prompt is primary, every-consultation
-content, GOV.UK guidance forbids hiding what the majority need, and Baymard
-measured 50–80 % of users overlooking collapsed content. On a shared display
-the tap cost lands on one person — hidden content is invisible to the
-customer unless the operator opens it, which is a training dependency, not a
-design guarantee. **A implements it anyway so Blake can judge both directions
-against real screens**; B is the visible-detail counterfactual. Note this is
-separable: A's composition could ship with the detail visible.
+The sharpest disagreement in the research program was on A's disclosure.
+The roadmap proposed it; the external evidence
+(`w2-progressive-disclosure`) argues **against** it: by NN/g's frequency
+criterion the "Try this:" prompt is primary, every-consultation content,
+and GOV.UK's guidance is verbatim "Do not use the details component to
+hide information that the majority of your users will need."
+**Correction:** an earlier head attributed a "50–80 % of users overlook
+collapsed content" measurement to Baymard; that figure could not be
+re-verified against any checkable Baymard publication and is withdrawn —
+what the checkable sources support is qualitative (participants
+"repeatedly observed to overlook" tab-hidden product-page content), a
+heuristic risk to test in the assisted-sales dry run, not a decided
+overlook rate (full context: `docs/phase1-research-source-appendix.md`).
+On a shared display the tap cost lands on one person — hidden content is
+invisible to the customer unless the operator opens it, a training
+dependency, not a design guarantee. A implemented the disclosure so both
+directions could be judged; **the recommended candidate resolves the
+disagreement in favor of B's always-visible treatment** on the strength of
+the qualitative guidance plus the shared-screen argument. A's
+disclosure-open supplementary capture remains as the record of the road
+not taken. Whether the operator/customer pair actually notices and uses
+the visible guidance is exactly what the dry run's capture item 4
+measures.
 
 ### 5.2 Results: restyled tabs vs single-open accordion
 
 | | **Restyled tabs** | **Single-open accordion** |
 |---|---|---|
 | Rank adjacency | None — one tier at a time | None — one tier at a time |
-| Other tiers' existence | A tab bar; research documents users overlooking tabbed content | Headers permanently visible as a standing tour agenda |
+| Other tiers' existence | A tab bar; research documents users overlooking tabbed content | Headers always in the DOM and reachable by scrolling — but NOT reliably co-visible (corrected claim; with a panel open the other headers routinely sit off-screen), so the "standing tour agenda" promise fails as built |
 | Accessibility cost | Full ARIA tabs contract (production's tabs are plain divs with none of it) | Cheapest correct pattern: button + `aria-expanded` |
 | Analytics cost | **None** — `tier_view` semantics unchanged | An intentional retire/replace change-set (§11) plus new behavioral coverage |
 | Gate exposure | Restyling tabs is explicitly **Proceeds** — no gate | **Triggers the 1.3 adoption gate** |
 | Glanceability (measured, pre-fix) | Image ≈18–21 % of viewport **height** at 834×1112/1112×834 (33 % at 1024×768, where firmness dipped just below the fold — the "both orientations" claim held only at the screenshot sizes); name above the fold at every size tested, net of the 88 px prototype review bar | Image ≈36 % portrait; landscape pre-fix: 63 % of raw viewport height at 1112×834, 65–72 % of usable viewport (height minus the 88 px review bar) across the landscape sizes tested — model name and firmness below the fold. **Fixed post-review by a content-driven photo height cap** (now ≈28 % with both above the fold), recorded in its VARIANT-NOTES |
 | Rework risk | Low | If Phase 3.3 later adopts a global maximum, this is restyled, not rebuilt |
 
-The measured glanceability gap is the accordion's main weakness and is a
-**fixable styling issue, not intrinsic to the pattern** — the image is the
-variant's own choice, not a consequence of accordions. It is reported here
-because it is exactly what a salesperson would hit first on a landscape
-mount. Stacked side-by-side groups were **excluded before building**: three
-adjacent tier leaders assert a global ranking the engine never computes
-(`w2-tier-navigation`), and the effect worsens in landscape.
+**Outcome (correction pass): accessible tier tabs are the recommended
+direction; the accordion is rejected exploration.** The rejection ground is
+concrete, not theoretical: the built accordion does not deliver the
+discoverability/shared-agenda benefit claimed for it — its headers are not
+reliably co-visible (above), so it pays the §11 analytics change-set and
+the 1.3 adoption gate for a benefit it does not achieve. The earlier
+glanceability gap was fixable styling; the co-visibility shortfall is what
+kills the claim. On stacked/grouped layouts generally: the earlier
+framing — that vertical adjacency *asserts* a global ranking and the
+pattern was therefore "excluded before building" — is corrected to a
+**layout risk, not a theorem**: adjacency *invites* a cross-tier ranking
+read the engine does not compute, which a future layout would have to
+manage; nothing makes such layouts logically invalid.
 
 Both Results variants share one honest limitation: with the shipped catalog
 every fixture entry meets the match threshold, so the "Additional comparison
@@ -352,6 +471,15 @@ documented three-map coexistence), and the Size badge value is EN-only in ES
 mode (production's `sizeLabels` has no ES side). **No claim of assistive-
 technology verification on real hardware is made — Phase 0.4 is open.**
 
+Correction-pass note: the drawer-grade **dialog lifecycle** this section
+describes was Alternative A's compare dialog. The recommended candidates
+carry **no dialog** — the Sleep Brief candidate has no Compare surface,
+and the Results candidate's compare is an inline panel whose opening
+scrolls to and focuses a stable heading. The dialog-lifecycle exhibit
+(the "before" contrast with production's modal) survives in the
+`sleep-brief-a/` exploration record (`sba.js:363-437`) for whenever the
+production modal is upgraded.
+
 ## 7. Shared salesperson/customer assessment
 
 Frame (w2-assisted-sales): the screen anchors a narrated conversation —
@@ -363,23 +491,27 @@ from their stored answers) and 1–3 need anchors in engine order. The
 adversary measured A's disclosure design costing 3 taps to reach 44–49
 words of the operator's in-store test script (hidden from the customer
 unless the operator opens it) against B showing the same content with zero
-taps — the concrete A-vs-B narration tradeoff Blake is choosing on, now
-with the occlusion blocker fixed so the taps at least always work. One
-measured ES datum favors A: Spanish expansion pushes a priority row below
-the fold in B at 1112×834 where A shows zero fold flips.
+taps — resolved in the recommended candidate by adopting B's zero-tap
+treatment inside A's composition (§2.0). The previously reported ES fold
+datum ("Spanish expansion pushes a priority row below the fold in B at
+1112×834 where A shows zero fold flips") is **historical**: it was
+measured on A and B as then built, and importing the always-visible
+guidance into A's landscape grid invalidates it for the candidate. The
+candidate's matched EN/ES landscape captures (§4) are the current
+evidence; no fold claim is restated without the assisted-sales dry run.
 
-**Results.** The tabs variant keeps three model names + three firmness
-values on the first screen (photo ≈18–21 % of viewport height) at the cost
-of density — ~600 EN / ~700 ES visible words before the fix pass removed
-the chip and differentiator surfaces, with most card detail below 14 px;
-it reads more like a dossier than a talking-points surface, a recorded
-tradeoff of showing three cards at once. The accordion variant is the
-sparser narration surface (one tier, larger anchors) and its
-first-screen-carries-no-fit-information defect is fixed (photo capped:
-name and firmness above the fold in both orientations); its inherent
-property remains that the three tier descriptors — including
-"entry-level" — are permanently co-visible as a quality ladder. Both
-Results variants now scroll the switched-to tier's lead into view, so
+**Results.** As originally built, the tabs variant kept three model names
++ three firmness values on the first screen at a dossier-like density
+(most card detail below 14 px) — the recorded tradeoff of showing three
+equal cards at once. **The corrected candidate addresses this directly**:
+one full-anatomy lead card with talking-point-size fit rows, two compact
+supporting cards (titles + tags only), and restored Details/Save actions
+(§2.0). The accordion exploration's first-screen defect was fixed (photo
+capped), but its claimed standing agenda — the three tier headers held
+co-visible — is not what it delivers (only the open header pins; the
+others routinely scroll off-screen), which with the descriptor removal
+also moots the earlier "quality ladder permanently co-visible" concern.
+Both Results variants scroll the switched-to tier's lead into view, so
 "tap Silver, see Silver's best" holds everywhere.
 
 Glance-distance type sizing against real showroom hardware remains
@@ -391,33 +523,68 @@ report as a Phase 0.4 evidence item, not a design verdict.
 
 The prototypes consume frozen fixtures captured by executing the real engine
 at `78f949c` — the same extract-and-execute patterns as the shipped suites.
-Provenance: `fixtures/PROVENANCE.md` (engine-source commit pinned inside
-every fixture; capture **and** parity abort if
-`index.html`/`data/`/`Code.gs` differ from `origin/main`; LF-normalized
-sha256 of every input and output, with parity verifying each fixture hash
-against the PROVENANCE table so a regeneration cannot silently re-bless
-changed output). `fixtures/tools/parity_check.mjs` re-executes the capture
-and byte-compares — 30/30 at final freeze — with capture floors that abort
-on any empty parse. The one authored input is disclosed: the compare demo's
-`savedOrder` is simulated saved-finalist state (customer input no capture
-can produce); the pair is computed by executing the real extracted
-`compareReviewFinalists()`.
+Provenance: `fixtures/PROVENANCE.md`. **Hashing scope, stated exactly
+(correction pass):** sha256 (LF-normalized) covers the **three engine
+inputs the capture reads** (`index.html`, `data/mattresses.json`,
+`data/quiz.json`) and **all four fixture outputs** — `Code.gs` and the
+wider `data/` tree are covered by the byte-identity-with-`origin/main`
+abort guard, not by a hash, and the tooling/scenario definitions are
+ordinary reviewed source in this branch. Parity verifies each hash against
+its **exact named PROVENANCE table row** (one row per file, enforced), so
+a regeneration cannot silently re-bless changed output. **Authored inputs,
+stated exactly (correction pass — an earlier head said "the one authored
+input", which undercounted):** (1) three pre-existing authored answer
+vectors from the shipped test suites; (2) one newly authored SYNTHETIC
+`boundary-one` vector — the one-priority state is unreachable from any
+completed quiz (independently confirmed by a 151,200-execution sampling of
+the real profile renderer: minimum reachable priority count is 2), so the
+vector omits `sleep_position`, is flagged `syntheticAnswerVector` in its
+fixture, and is evidence about the length-1 rendering contract only;
+(3) the simulated `compareDemo.savedOrder` per scenario (save history is
+customer input no capture can produce); the pair is computed by executing
+the real extracted `compareReviewFinalists()`. Everything else in the
+fixtures is executed engine output. Fixtures are deep-frozen at load by
+the shared harness and by the contract runner, so "frozen" is enforced,
+not asserted.
 
-**What the executable check does and does not cover — stated plainly.**
-`parity_check.mjs` proves the frozen fixtures equal a fresh engine run and
-match their reviewed hashes. It does **not** test the prototypes: a variant
-could re-order, filter or pad output and parity would stay green. Prototype
-fidelity was verified two independent ways instead: (1) lead-executed
-browser checks (rendered priority sequence/count vs fixture, per-card
-firmness parity, tier order/membership, percentage/score-leak scans,
-overflow sweeps) — protocol documented here, scripts not retained as repo
-artifacts; and (2) the Wave 4 adversarial review, whose independent sweeps
-(24 rendered combinations for priorities; 36 tier views; 384-render
-overflow/zoom matrix) **confirmed the core fidelity properties held in all
-four variants**: priority order and count exact, hero selection strictly by
-index, firmness integers exact everywhere, no sort/filter/re-bucket in any
-presentation path, no score/percentage/rank leakage, tier membership and
-order exact, and all claimed verbatim production pairs byte-identical.
+**What the executable checks do and do not cover — stated plainly.**
+
+`parity_check.mjs` (**99/99 at this head**) proves the frozen fixtures
+equal a fresh engine run, match their row-bound reviewed hashes, and clear
+per-surface floors (its deep compare distinguishes arrays from numeric-key
+objects). It does **not** test the prototypes.
+
+`contract_check.mjs` (**new this pass; 768/768 at this head**) closes
+exactly that gap for the two recommended candidates: it executes their
+scripts in a Node DOM stub against all four scenarios × both languages and
+asserts the rendering contracts — exact hero by index, priority order and
+count, exact firmness integers, badge labels/order/source, tier
+membership and order, threshold-honest eyebrow wiring, verbatim
+Details/Save with sim identification, tab semantics and keyboard behavior,
+the full compare state machine (0/1/2/ready/open/deselect/Clear, non-Gold),
+the scroll+focus consequence of opening Compare, page-local terminology,
+no score/percentage/descriptor leakage, no raw clinical identifiers,
+ES-render language integrity, and proposed-copy marking in both channels.
+**Scope honesty:** it runs with no layout engine — target-size and
+overflow checks are static CSS-text checks; scroll/focus are asserted as
+recorded calls, not pixels. It is **lead-executed only** (`node …`); it
+does **not** run in repository CI, and repository CI at this head contains
+no prototype step — CI results and prototype-runner results are always
+reported separately. It proves deterministic prototype contracts —
+never mounted-device usability, real assistive-technology behavior,
+customer comprehension, or production readiness.
+
+The pre-correction fidelity evidence remains as exploration history: the
+Wave 4 adversarial sweeps (24 rendered priority combinations; 36 tier
+views; 384-render overflow/zoom matrix) confirmed the core fidelity
+properties in all four original variants; the lead's browser-executed
+protocol from the first pass was documented but not retained as artifacts
+— which is precisely why the contract runner now exists as a committed,
+reproducible replacement.
+
+Review-protocol note: fixtures ship `score`/`pct` on every tier entry for
+parity purposes; nothing renders them, but they are visible in devtools —
+during a stakeholder screen-share, keep devtools closed.
 
 **What the adversaries broke — and what was done.** Ten adversaries filed
 four findings labelled blocker and ~25 confirmed majors. Every accepted finding was reproduced
@@ -435,13 +602,17 @@ focus-stranding and hit-blocking; made tier identity persistent while
 scrolling in the tabs variant; aligned the two Briefs' badge orders and ES
 labels; and corrected every VARIANT-NOTES claim the adversaries falsified.
 
-Known fixture limitations (recorded, not patched): every captured tier entry
-has `meetsMatchThreshold:true`, so the "Additional comparison option" state
-is implemented from the shipped copy pair but not exercisable from fixture
-data (after the fix pass, deliberately not demonstrated with fabricated
-data either); the empty-tier state likewise; no captured scenario exercises
-the back-fill path; and the fixtures qualify 17 of 26 catalog models (see
-PROVENANCE's computed coverage section).
+Known fixture limitations (recorded, not patched — and now quantified):
+the below-threshold, back-fill and empty-tier states are not merely
+uncaptured but **unexercisable from real data** — a 77,000-execution
+sampling of the real engine on the shipped catalog produced zero
+`meetsMatchThreshold:false` entries, tiers of always 2–3 entries, and no
+empty tier. Both copy branches remain implemented as real code paths,
+deliberately never demonstrated with fabricated data; the contract runner
+additionally guards that no fixture entry carries a fabricated `false`.
+The four fixtures qualify 18 of 26 catalog models (see PROVENANCE's
+computed coverage section). Truncation IS well exercised: the engine
+generates up to 8 priorities pre-slice for dense-c and renders exactly 3.
 
 **Adversarial findings recorded but NOT fixed (rejected or kept as
 tradeoffs, with reasons):**
@@ -450,9 +621,12 @@ tradeoffs, with reasons):**
   top-pick card is larger and richer than supporting cards; the prototypes
   mirror shipped behavior, with the photo cap reducing the disparity.
   VARIANT-NOTES corrected to stop claiming "equal anatomy".
-- *Three permanently visible tier descriptors form a quality/price ladder*
-  — kept as an inherent, explicitly-stated property of the accordion
-  premise, cross-referenced to the "entry-level" copy decision (Blake's).
+- *Three tier descriptors form a quality/price ladder* — **overtaken by
+  the correction pass**: descriptor subtitles no longer render anywhere in
+  the package (roadmap-decided removal of buyer-characterising tier
+  language — not a Blake decision to re-ask), and the "permanently
+  visible" premise itself was corrected (headers are in the DOM, not
+  reliably co-visible).
 - *Gold listed first structurally privileges Gold* — rejected as a defect:
   Gold-first is the engine's own default and the product rule.
 - *Font sizes vs an assumed 264 ppi tablet* — recorded as a Phase 0.4
@@ -486,11 +660,22 @@ honestly built today: all per-feature reason columns are empty and even the
 generic default renders nowhere. The prototypes therefore show only existing
 generic/product-describing behavior, visually separated from customer-fit
 template copy, and **no invented per-model reason appears anywhere**. The
-authoring package (`docs/phase1-catalog-reason-authoring-brief.md`) defines
-what Lacks must author (EN+ES, evidence, approver, verified date), the blank
-79-cell applicability matrix, and the proposed provenance workflow. Its one
-engineering prerequisite (the `MATT_ES_KEYS` extension, without which Spanish
-reasons silently drop) is flagged, not implemented. Four existing catalog
+authoring package (`docs/phase1-catalog-reason-authoring-brief.md`,
+corrected 2026-08-07) defines what Lacks must author (the expanded
+per-reason record: EN+ES, applicability state, evidence excerpt, claim
+class, scope, approvers, timestamps, retirement), the blank 79-cell
+applicability matrix, the Lane A / Lane B authoring split, and the
+proposed provenance workflow. Its governing rule is **fail-closed by
+omission**: a missing, stale, incomplete, invalid or unapproved
+per-feature reason renders **nothing**, in both languages — never
+`reason_default`, never English, never a label. Activation requires the
+brief's full ten-prerequisite list (the `MATT_ES_KEYS` extension is item
+1 of 10, not the whole list). One engine finding surfaced by the
+correction-pass verification is recorded for Phase 3, report-only: the
+`pressureRelief`/`motionIsolation` features-side casing break means the
+quiz options scoring those keys award **zero points today** — a live
+scoring defect, Blake-gated, never to be bundled into content or
+presentation work. Four existing catalog
 strings are flagged for claim review (g4 unqualified "10° cooler"; g9
 "recovery benefits"; g9 antimicrobial-adjacent copper copy; b5 "a proven
 pick for side sleepers", which renders on production cards today) —
@@ -517,59 +702,83 @@ named, enum-validated event with extract-and-execute behavioral coverage —
 never a reused `tier_view`. **None of this is implemented in this sprint;**
 the accordion prototype documents it and changes no analytics.
 
-## 12. Decisions requested from Blake
+## 12. Decision state (correction pass)
 
-Each is independently answerable; none is recorded as made.
+The section distinguishes what this package can already support from what
+still requires Blake or external evidence. **Nothing below is "approved
+because agents, screenshots, audits or automated checks prefer it"** —
+supportable means the package's own artifacts and executed checks back the
+direction; every approval remains Blake's.
 
-1. **Sleep Brief presentation (1.1 gate):** Alternative A (need-led hero),
-   Alternative B (conservative hierarchy), or revise. Sub-decisions if A:
-   accept the heading replacement and the disclosure of the testing detail
-   (noting the external evidence against hiding it); if B: accept typographic
-   subordination as the reading-load reduction.
-2. **Tier navigation (1.3 adoption gate):** keep/restyle the tabs (approve
-   the restyle direction), approve the single-open accordion direction (with
-   the §11 analytics change-set as an acknowledged implementation cost), or
-   revise. Stacked groups are recommended excluded (rank adjacency).
-3. **Catalog authoring:** approve the proposed content workflow (claim tiers,
-   bilingual parity gate, provenance record, curated V1) and **name the Lacks
-   merchandising owner** — the single blocking dependency; also: grandfather
-   or hot-fix the **four** flagged catalog strings (brief §4 items 1–4 —
-   b5's "proven pick for side sleepers" is the only one rendering on
-   production cards today and needs an explicit call); decide the
-   `MATT_ES_KEYS` prerequisite change; answer — or route to Lacks
-   merchandising — the seven merchandising questions in the brief.
-4. **Phase 1 scoring-fixture exit gate:** the roadmap (610–615) requires
-   agreement on cost before building its recommended frozen-fixture gate.
-   Estimated cost, from the tooling this package built: initial build is
-   small — the capture/parity mechanism here is the working model
-   (extract-and-execute + sha-pinned parity, on the order of the existing
-   `consultation_priorities_check` pattern). The **standing** cost is the
-   real question: the gate goes red on every legitimate catalog, quiz-copy
-   or engine change, and each re-green requires regenerating fixtures and
-   updating the reviewed hash pins in the same diff — a recurring review
-   burden that is the gate's entire point but also its price. Decide:
-   approve building it as scoped here, approve only a costed investigation,
-   defer, or reject.
+### 12.1 Already supportable from this package
 
-**Scope of a "direction" approval.** Approving a Sleep Brief or tier-
-navigation direction approves the **composition as screenshotted** —
-nothing more. The bundled demonstrations (compare revival with its cap of
-2, tray, simulated panels) and the per-variant open questions recorded in
-each VARIANT-NOTES (A §8, B §7, tabs §9, grouped §11 — e.g. compare surface
-shape, sticky vs in-flow action bar, collapsed-header option counts) return
-at implementation review and are **not** decided by a direction approval.
-Two of those questions are worth answering now if Blake has a view, as
-sub-decisions of 1 and 2 respectively: **(1a)** in Alternative A, keep or
-drop the "Your Sleep Brief" continuity eyebrow above the need-led hero;
-**(2a)** in the accordion, single-open only (adjacency hygiene) or permit a
-second open panel on request (reintroduces the stacked-group comparison on
-demand).
+- **Need-led Sleep Brief direction** — the A-derived candidate exists,
+  renders against all four fixtures in both languages, and its contracts
+  are executed (768/768).
+- **Visible, concise testing guidance** — the "Try this" copy renders
+  always-visible in the candidate; the disclosure alternative is retained
+  only as exploration record.
+- **Exact firmness and ordered-priority preservation** — enforced by the
+  contract runner and the deep-frozen fixtures.
+- **Accessible tabs as the preferred tier-navigation foundation** — the
+  corrected tabs candidate; the accordion is rejected exploration on the
+  concrete co-visibility shortfall.
+- **Removal of the buyer-characterising Bronze copy** — executed in every
+  package variant; already decided by the roadmap's ungated Proceeds list,
+  not re-asked.
+- **Product description separated from customer-fit reasons** — the
+  labelled product-story layer vs the fit rows, in the candidate.
+- **Personalized reasons fail closed by omission** — the authoring brief's
+  governing rule; no fallback to `reason_default`, English, labels or
+  another feature.
+- **Payment Choice stays secondary and isolated** — one stale-closed
+  module, after all fit content, zero financing on the Sleep Brief.
+
+### 12.2 Still requiring Blake or external evidence
+
+1. **Final visual approval of both candidates — after the assisted-sales
+   dry run.** The packet is frozen and empty
+   (`docs/phase1-assisted-sales-evaluation-packet.md`); Blake runs it with
+   one operator and one customer-role observer on one device. This is the
+   exact next step.
+2. **Final badge vocabulary and copy** — including the two proposed badge
+   category labels, the solo-ES register deviation, and every
+   `data-proposed-copy` string (note: "See My Matches →" is proposed, not
+   existing terminology — production's primary is the mislabeled
+   "Compare My Matches →").
+3. **Native Spanish approval** — all proposed ES strings and the financing
+   config's `pending-native-legal-review` status.
+4. **Catalog owner and approval workflow** — name the Lacks merchandising
+   owner (the single blocking dependency); approve the corrected brief's
+   record schema and Lane A first batch; grandfather-or-hot-fix the four
+   flagged catalog strings (b5 renders on production cards today); decide
+   the `MATT_ES_KEYS` change and the brief's seven merchandising
+   questions.
+5. **Device matrix** — no prototype viewport is a hardware claim.
+6. **Phase 0.4 closure** — remains ⏳; mounted-device evidence is not in
+   this package.
+7. **Phase 1 implementation authorization** — requires Phase 0 closure AND
+   Blake's explicit go; nothing here starts it.
+8. **Any Phase 3 scoring/schema change** — including the
+   `pressureRelief`/`motionIsolation` casing defect (a live scoring bug,
+   report-only here), Lane B reason columns, and the roadmap's
+   scoring-fixture exit gate (build / investigate / defer / reject — the
+   capture/parity mechanism here is the working cost model; the standing
+   cost is the recurring re-green review burden).
+9. **Production activation of customer-specific mattress reasons** — gated
+   on the brief's full ten activation prerequisites, all unmet today.
+
+**Scope of a "direction" approval.** Approving a candidate approves the
+**composition as screenshotted** — nothing more. Per-variant open
+questions in each VARIANT-NOTES (e.g. the "Your Sleep Brief" continuity
+eyebrow, sticky vs in-flow action bar, compare surface shape at
+implementation) return at implementation review.
 
 Secondary flags surfaced by research (each needs only an acknowledge/defer):
 the tu-vs-usted register decision for ES copy; the handoff-screen voice
-divergence (EN customer-voiced vs ES salesperson-voiced); the
-buyer-characterising Bronze descriptor; the audit-found CSS/dict/wipe
-defects in §1 (cleanup proposals, not part of this package's scope).
+divergence (EN customer-voiced vs ES salesperson-voiced); the audit-found
+CSS/dict/wipe defects in §1 (cleanup proposals, not part of this package's
+scope).
 
 ---
 
@@ -622,4 +831,54 @@ defects in §1 (cleanup proposals, not part of this package's scope).
 | W5 scope-and-gate referee | ✅ report | full diff classification vs allowed scope; gate-language sweep | ✅ | pass-with-edits: stale screenshot-provenance sentence + ledger fill, applied |
 | W5 decision-quality referee | ✅ report | §12 decidability per decision | ✅ | pass-with-edits: four-string count, §12.4 cost/counter-case, scope line, brief Q7, 2 supplementary captures — applied |
 
-**Conflicts and their resolutions.** The one material research conflict — the roadmap's proposed disclosure of the testing detail vs the external evidence against hiding primary content — was deliberately NOT resolved: both directions were built (A vs B) and the choice is Blake's decision 1. Cross-variant disagreements found by adversaries (rendered-vs-documented proposed Bronze copy; two ES words for the tray's Clear; fit-row heading present in one variant) were resolved toward the documented-only / production-faithful option in the fix pass. Rejected adversarial findings and kept-as-tradeoff items are recorded with reasons in §8.
+**Conflicts and their resolutions.** The one material research conflict — the roadmap's proposed disclosure of the testing detail vs the external evidence against hiding primary content — was left open through the A/B build and **resolved in the correction pass in favor of visible guidance** (the A-derived candidate adopts B's treatment; §5.1). Cross-variant disagreements found by adversaries (rendered-vs-documented proposed Bronze copy; two ES words for the tray's Clear; fit-row heading present in one variant) were resolved toward the documented-only / production-faithful option in the fix pass. Rejected adversarial findings and kept-as-tradeoff items are recorded with reasons in §8.
+
+### Correction pass (2026-08-07) — external review, findings and dispositions
+
+Codex reviewed head `ad94e4e` and required nine corrections; the lead ran
+four bounded inspection agents (Sleep Brief contract; Results/Compare;
+catalog governance; fixture/test-vacuity), implemented, and a final
+skeptical referee reviewed the completed head. Substantive findings and
+dispositions, compactly:
+
+- **Built the A-derived Sleep Brief candidate** (§2.0); first-visit Compare
+  removed (simulated saved products rejected); disclosure-vs-visible
+  resolved visible. Inspection addition: production's primary CTA pair is
+  the mislabeled "Compare My Matches →" — "See My Matches →" stays marked
+  proposed (Codex had described it as approved terminology; it is not).
+- **Adopted tabs, rejected the accordion** on the corrected co-visibility
+  ground; stacked-layout reasoning softened from theorem to layout risk;
+  Bronze descriptor removal executed everywhere (roadmap-decided).
+  Inspection additions: production dormant-Compare and Consultation
+  Summary line numbers recorded in §36–37 of the inspection report;
+  Details/Save were a genuine gap (never built), now restored inert.
+- **Compare repaired**: scroll+focus consequence, page-local terminology,
+  full state coverage; the tray's EN statics un-marked as proposed
+  (they are production-verbatim).
+- **Catalog brief rewritten**: fail-closed omission (three
+  fallback-to-default rules deleted), ten activation prerequisites,
+  expanded record schema, Lane A/B. Inspection corrections folded in: the
+  casing mechanism was stated backwards (catalog is camelCase; the build's
+  lowercase breaks the features side; reason keys already correct); the
+  break is a **live scoring defect** (report-only, Phase 3); the dead
+  styled `.drawer-feature-bullets` surface and `mField()`'s
+  English-fallback line are named as traps; `reason_default` cannot be
+  blanked (schema-required), so omission is a rendering rule.
+- **Evidence layer rebuilt**: row-bound hashes (one row per file),
+  array-aware deep compare, extended floors, deep-frozen fixtures,
+  documented fixture schema, the synthetic `boundary-one` vector
+  (unreachability independently confirmed by 151,200 samples), the
+  contract runner (768/768), honest hashing/authored-input claims.
+  Inspection additions: threshold/back-fill/empty-tier proven
+  unexercisable by 77,000 samples; a reachable 3/2/2 tier shape exists but
+  was not added (a fifth authored vector wasn't worth the provenance
+  cost — recorded as an option).
+- **Screenshots**: lean matched matrix for the candidates (§4), stateful
+  cells reproducible by URL; superseded tabs captures replaced;
+  exploration captures retained as history.
+- **Research claims**: source appendix added
+  (`docs/phase1-research-source-appendix.md`); the "50–80 %" figure
+  withdrawn (§5.1).
+- **Assisted-sales packet** frozen and empty
+  (`docs/phase1-assisted-sales-evaluation-packet.md`) — the dry run is
+  Blake's next step; nothing simulated it.

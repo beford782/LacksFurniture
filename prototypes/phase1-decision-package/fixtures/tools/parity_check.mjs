@@ -29,10 +29,19 @@ function check(label, cond, detail) {
 }
 
 // Points at the first differing path, so a red run says where, not just that.
+// Arrays and objects are DISTINCT: an array never equals a numeric-key
+// object, even with identical entries (correction pass — the earlier
+// key-union walk treated [1,2] and {0:1,1:2} as equal).
 function firstDiff(a, b, path = "$") {
   if (typeof a !== typeof b) return `${path} (type ${typeof a} vs ${typeof b})`;
+  if (Array.isArray(a) !== Array.isArray(b)) {
+    return `${path} (${Array.isArray(a) ? "array" : "object"} vs ${Array.isArray(b) ? "array" : "object"})`;
+  }
   if (a === null || b === null || typeof a !== "object") {
     return Object.is(a, b) ? null : `${path} (${JSON.stringify(a)} vs ${JSON.stringify(b)})`;
+  }
+  if (Array.isArray(a) && a.length !== b.length) {
+    return `${path} (array length ${a.length} vs ${b.length})`;
   }
   const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
   for (const k of keys) {
@@ -42,18 +51,38 @@ function firstDiff(a, b, path = "$") {
   return null;
 }
 
-// PROVENANCE gate: every frozen fixture file must match the sha256 recorded
-// in PROVENANCE.md, so a regeneration cannot silently re-bless changed
-// output — changing a fixture now requires changing the reviewed provenance
-// table in the same diff.
+// PROVENANCE gate: every hashed file must match the sha256 in its EXACT
+// named table row — `| <file> | \`<sha>\` |` — so a hash appearing anywhere
+// else in the document cannot satisfy the check (correction pass — the
+// earlier whole-file includes() accepted a hash in any position), and a
+// regeneration cannot silently re-bless changed output: changing a fixture
+// requires changing the reviewed provenance row in the same diff.
 const provenance = readFileSync(join(fixturesDir, "PROVENANCE.md"), "utf8");
+function escapeRe(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
+function rowBound(file, sha) {
+  return new RegExp(`^\\| ${escapeRe(file)} \\| \`${sha}\` \\|\\s*$`, "m").test(provenance);
+}
 for (const name of Object.keys(SCENARIOS)) {
   const file = `scenario-${name}.json`;
   const sha = createHash("sha256")
     .update(readFileSync(join(fixturesDir, file), "utf8").split("\r\n").join("\n"))
     .digest("hex");
-  check(`${file} sha256 matches the PROVENANCE.md table`, provenance.includes(sha),
-    `computed ${sha.slice(0, 16)}… not found in PROVENANCE.md`);
+  check(`${file} sha256 matches its exact PROVENANCE.md table row`, rowBound(file, sha),
+    `computed ${sha.slice(0, 16)}… has no matching | ${file} | row`);
+  // Exactly one table row per fixture file — a duplicated row (one right,
+  // one wrong) must not pass.
+  const rowCount = (provenance.match(new RegExp(`^\\| ${escapeRe(file)} \\| `, "gm")) || []).length;
+  check(`${file} has exactly one PROVENANCE table row`, rowCount === 1, `found ${rowCount}`);
+}
+// Input files the capture reads are row-bound too: PROVENANCE drift against
+// the actual inputs is a failure even though the byte-identity guard already
+// pins them to origin/main.
+for (const rel of ["index.html", "data/mattresses.json", "data/quiz.json"]) {
+  const sha = createHash("sha256")
+    .update(readFileSync(join(root, ...rel.split("/")), "utf8").split("\r\n").join("\n"))
+    .digest("hex");
+  check(`${rel} sha256 matches its exact PROVENANCE.md input row`, rowBound(rel, sha),
+    `computed ${sha.slice(0, 16)}… has no matching | ${rel} | row`);
 }
 
 for (const name of Object.keys(SCENARIOS)) {
@@ -68,11 +97,53 @@ for (const name of Object.keys(SCENARIOS)) {
   const fresh = captureScenario(name);
 
   // Floors on the FROZEN side too — a frozen fixture that parses empty must
-  // never pass, whatever the fresh capture does.
+  // never pass, whatever the fresh capture does. Correction pass: floors
+  // now cover EVERY prototype-consumed surface, not just priorities+gold.
   check(`frozen priority count is >= 1 (${frozen.profile.en.priorityCount})`,
     frozen.profile.en.priorityCount >= 1 && frozen.profile.es.priorityCount >= 1);
-  check(`frozen gold tier is non-empty (${frozen.results.tierData.gold.length})`,
-    frozen.results.tierData.gold.length >= 1);
+  for (const tier of ["gold", "silver", "bronze"]) {
+    check(`frozen ${tier} tier is non-empty (${frozen.results.tierData[tier].length})`,
+      frozen.results.tierData[tier].length >= 1);
+  }
+  for (const lang of ["en", "es"]) {
+    const p = frozen.profile[lang];
+    check(`[${lang}] metaStrip has 3 labelled entries`,
+      Array.isArray(p.metaStrip) && p.metaStrip.length === 3 &&
+      p.metaStrip.every((e) => e.label && e.value));
+    check(`[${lang}] resultsTrialFocus captured non-empty`,
+      typeof p.resultsTrialFocus === "string" && p.resultsTrialFocus.length > 0);
+    check(`[${lang}] every priority row carries title/desc/tag/test`,
+      p.priorityRows.every((r) => r.title && r.desc && r.tag && r.test));
+    let cardPrioOk = true;
+    for (const tier of ["gold", "silver", "bronze"]) {
+      for (const m of frozen.results.tierData[tier]) {
+        const rows = (frozen.results.cardPriorities[lang] || {})[m.id];
+        if (!Array.isArray(rows) || rows.length < 1 ||
+            !rows.every((r) => r.title && r.tag)) cardPrioOk = false;
+      }
+    }
+    check(`[${lang}] cardPriorities present (>=1 titled row) for every tier entry`, cardPrioOk);
+  }
+  let entryOk = true;
+  for (const tier of ["gold", "silver", "bronze"]) {
+    for (const m of frozen.results.tierData[tier]) {
+      if (typeof m.firmness !== "number" ||
+          !m.firmnessFeelWord || !m.firmnessFeelWord.en || !m.firmnessFeelWord.es ||
+          typeof m.meetsMatchThreshold !== "boolean" ||
+          !Array.isArray(m.differentiators) || m.differentiators.length < 1 ||
+          !m.topPickReason) entryOk = false;
+    }
+  }
+  check(`every tier entry carries firmness/feelWord(en+es)/threshold/differentiators/topPickReason`, entryOk);
+  check(`compareDemo pair resolves to 2 distinct saved entries`,
+    Array.isArray(frozen.compareDemo.autoPair) && frozen.compareDemo.autoPair.length === 2 &&
+    new Set(frozen.compareDemo.autoPair).size === 2 &&
+    frozen.compareDemo.autoPair.every((id) =>
+      frozen.compareDemo.savedOrder.some((s) => s.id === id)));
+  check(`priceTierSymbols carries all three tiers`,
+    ["gold", "silver", "bronze"].every((t) =>
+      typeof (frozen.results.priceTierSymbols || {})[t] === "string" &&
+      frozen.results.priceTierSymbols[t].length > 0));
 
   // Whole-object parity (the load-bearing assertion).
   const diff = firstDiff(frozen, fresh);

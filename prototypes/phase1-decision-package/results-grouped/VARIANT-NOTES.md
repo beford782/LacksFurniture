@@ -1,5 +1,19 @@
 # Results — grouped (single-open accordion) · VARIANT-NOTES
 
+> **STATUS: REJECTED EXPLORATION (correction pass, 2026-08-07).** The
+> decision package's recommended Results direction is the corrected
+> `results-tabs/` candidate. This variant is retained as the record of the
+> accordion exploration and is **not** proposed for adoption. The concrete
+> ground for rejection: the current implementation does not deliver the
+> discoverability/shared-agenda benefit claimed for it — with a tier panel
+> open, the other tier headers routinely sit outside the viewport (only the
+> *open* header is sticky), so "all tier choices stay visible" is not what
+> the DOM and screenshots actually show. This is an implementation shortfall
+> of the built variant, not a theorem about stacked/grouped layouts —
+> vertical adjacency is a layout *risk* to manage, not a logical
+> impossibility. In this same pass the buyer-characterising tier descriptor
+> copy was removed from the render (roadmap-decided; see §1 note below).
+
 **Variant:** `results-grouped` (builder D) · Phase 1 decision package · RESEARCH PROTOTYPE ONLY.
 Renders frozen fixtures captured from main = `78f949c` (`../fixtures/`, see PROVENANCE.md).
 Not implementation, not approval, changes nothing in production. All `index.html:N` cites
@@ -19,9 +33,14 @@ the engine never computes. The **preserving replacement demonstrated here is a s
 accordion** (W3C APG accordion pattern):
 
 - Three tier sections in the fixed production `TIERS` order (gold, silver, bronze —
-  index.html:11717-11718). Headers are **permanently visible** — the customer has standing
-  evidence that Silver and Bronze exist even when never opened (the passive trust signal
-  tabs cannot provide), and the salesperson gets a visible three-beat agenda to narrate.
+  index.html:11717-11718). Headers are **permanently present in the DOM** — but the
+  original "permanently visible" claim was corrected in the 2026-08-07 pass: with a tier
+  panel open, the other headers routinely scroll out of the viewport (only the open
+  header is sticky), so the standing three-beat agenda this bullet promised is **not**
+  what the built variant delivers. That shortfall is the concrete reason this variant is
+  rejected exploration. (Tier descriptor subtitles were also removed from the header
+  render in the same pass — roadmap-decided removal of buyer-characterising tier
+  language; headers now carry the tier label alone.)
 - **Exactly one section open at a time; Gold open by default** — the engine's own default
   (`_resultsState.activeTier: 'gold'`, index.html:14558). Tapping the open header is a
   no-op, mirroring the production same-tier early-return (index.html:14273).
@@ -74,8 +93,10 @@ financing module (secondary, downstream of all fit content) → footer fit-first
 ## 3. Deliberate deviations from current presentation
 
 1. **Accordion replaces the tier tab row + descriptor strip** — the variant's premise.
-   All three verbatim tier labels and descriptor pairs are permanently visible (production
-   shows only the active tier's descriptor).
+   All three verbatim tier labels are permanently present in the DOM (corrected claim —
+   see §1: they are not permanently co-visible in the viewport). Descriptor subtitles no
+   longer render at all (correction pass; production shows only the active tier's
+   descriptor and is unchanged).
 2. **One card anatomy for lead and supporting cards** (production's top-pick card is
    larger and richer than its supporting cards). Lead vs supporting differs only by
    position and the threshold-honest eyebrow pair; equal anatomy across tiers removes any
@@ -148,7 +169,7 @@ production markup, injected as-is).
 | 'Your `<span class="accent">`strongest matches`</span>` are ready' / 'Tus opciones `<span class="accent">`más compatibles`</span>` están listas' | index.html:13815-13817 |
 | "Start with the first option, then compare how the others feel. Your comfort decides what stays." / "Empieza con la primera opción y compara cómo se sienten las demás. Tu comodidad decide cuál permanece." | index.html:13818-13820 |
 | GOLD/SILVER/BRONZE / ORO/PLATA/BRONCE | index.html:13857-13859 |
-| "Gold · premium materials" · "Silver · mid-range value" · "Bronze · entry-level" / "Oro · materiales premium" · "Plata · gama media" · "Bronce · básico" (verbatim incl. `tier-name` span) | index.html:13877-13883 |
+| ~~Tier descriptor pairs~~ **removed from the render (correction pass, 2026-08-07)** — the roadmap already decided the buyer-characterising "Bronze · entry-level" / "Bronce · básico" copy must go; no subtitle renders in any package variant now. Production's line is unchanged and flagged. | index.html:13877-13883 |
 | "Best place to start" / "El mejor punto de partida" | index.html:14131-14133 |
 | "Additional comparison option" / "Opción adicional para comparar" | index.html:14083, 14159 |
 | "Matches your priorities" / "Coincide con tus prioridades" | index.html:14158 |
@@ -188,7 +209,7 @@ is honest for unmatched rows too (production shows FEATURE-tagged rows under it,
 | Select 2 mattresses to compare. | Selecciona 2 colchones para comparar. | Visible disabled-state explanation for the compare entry — new entries must disable/explain, never silently no-op (w1-compare-path §4.5). |
 | Prototype simulation — this panel stands in for the production compare view. The working production entry is the Consultation Summary's "Compare finalists" button; the card-level path shown here is dormant in production. | Simulación del prototipo — este panel representa la vista de comparación de producción. La entrada de producción que funciona es el botón "Comparar finalistas" del resumen de consulta; la ruta desde las tarjetas que se muestra aquí está inactiva en producción. | Labels the 2-up panel bilingually as a simulation and names the working production path. Review chrome, not product copy. |
 | Firmness: {word}, {n} of 10 | Firmeza: {word}, {n} de 10 | Brief-mandated accessible firmness phrasing (sr-only; the graphic is aria-hidden). "N of 10" avoids "slash" readings; word-first fronts the meaningful token (w2-firmness-viz F3). |
-| Bronze · essential value | Bronce · valor esencial | **Documented only — NOT rendered.** Alternative for the shipped "entry-level"/"básico" descriptor, which is buyer-characterising (w1-results-tier-contract T7). The prototype renders the shipped pair verbatim; the copy change is Blake's own decision and is not smuggled into this variant. |
+| Bronze · essential value | Bronce · valor esencial | **Documented only — NOT rendered, and superseded (correction pass):** the package treatment is now *no subtitle at all*; the shipped buyer-characterising pair no longer renders here either (roadmap-decided removal, not a new Blake decision). Any future subtitle must state neutral product/presentation facts and needs explicit approval. |
 
 ### Answer → badge mapping table
 
@@ -321,8 +342,10 @@ atomically** (w1-analytics-contract §2 and §8.1); this prototype implements no
 1. Single-open vs an allowed second open panel for a customer-requested cross-tier look —
    policy question; single-open protects adjacency hygiene, multi-open reintroduces it on
    demand (w2-tier-navigation unresolved #2).
-2. "Bronze · entry-level"/"Bronce · básico" descriptor copy — buyer-characterising; kept
-   verbatim here; alternative pair documented in §5(c), decision is Blake's alone.
+2. ~~"Bronze · entry-level"/"Bronce · básico" descriptor copy~~ — resolved in the
+   correction pass: the roadmap already decided buyer-characterising tier language must
+   be removed, so no descriptor subtitle renders in the package. Remaining open point is
+   only whether production later gets an approved neutral subtitle or none.
 3. Should the collapsed headers carry an option count (e.g. "3 options")? Omitted here to
    keep headers minimal; could aid the salesperson agenda but adds proposed copy.
 4. Compare entry semantics if this layout ships: keep the card-level pair path (activating
@@ -458,15 +481,14 @@ kept, per package rule — corrected by appending, never rewritten).
    "removes any size-as-rank reading" is withdrawn for *within-tier*
    position emphasis; the cross-tier claim (no size hierarchy between tier
    *leaders* — all three leads share one anatomy) still holds.
-2. **Three permanently-visible descriptors render the shipped quality/price
-   ladder copy family adjacently** ("premium materials" / "mid-range value"
-   / "entry-level" all on screen at once) — production shows one descriptor
-   at a time. This is an inherent property of the accordion premise
-   (permanently visible headers are the discoverability argument), and it
-   is a tradeoff for Blake to weigh alongside the "entry-level"/"básico"
-   copy decision (§5(c) alternative pair, open question §11.2): the
-   accordion makes that buyer-characterising pair *permanently* visible,
-   not just visible on the Bronze tab.
+2. **Three adjacent descriptors rendered the shipped quality/price ladder
+   copy family in one scan path** ("premium materials" / "mid-range value"
+   / "entry-level") — production shows one descriptor at a time. Resolved
+   in the 2026-08-07 correction pass by removing descriptor subtitles from
+   the render entirely (roadmap-decided removal of buyer-characterising
+   tier language). Note the original framing of this item also overstated
+   co-visibility: the headers are adjacent in the DOM but not reliably
+   co-visible in the viewport (see the §1 correction).
 3. **G9 documented** (see above): the presentation-side `slice(1, 3)` cap
    contradicted §2's own "never re-sorted, filtered, padded or re-bucketed"
    rule; removed.

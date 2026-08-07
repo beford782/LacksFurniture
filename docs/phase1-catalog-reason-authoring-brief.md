@@ -33,12 +33,25 @@ Two load-bearing engine facts frame everything below (verified at `78f949c`):
   and `default` is never a feature tag. The current card "reason"
   (`topPickReason`) and the drawer differentiators are authored **product**
   copy, never presented as customer-specific.
-- **Two of the eight reason keys are engine-dead regardless of content.** The
-  build script lowercases feature tags (`build-data.ps1`), while the quiz
-  emits `pressureRelief` / `motionIsolation` in camelCase — so those two
-  reason keys can never match a scored feature until the Phase 3.1 casing fix,
-  which is a Blake-gated scoring change and must NOT be bundled into content
-  or presentation work.
+- **Two of the eight reason keys are engine-dead regardless of content —
+  and the mechanism is the reverse of what an earlier draft said.** The
+  catalog stores `pressureRelief` / `motionIsolation` in camelCase
+  (matching the quiz's score keys exactly), but `build-data.ps1:42`
+  lowercases every feature tag and its kebab-to-camel restorer (:44-51)
+  cannot fire on hyphen-less tags — so `data/mattresses.json` carries
+  `pressurerelief`/`motionisolation` and the features guard at
+  `index.html:13014` never passes for them. The reason KEYS themselves are
+  already correct (`build-data.ps1:65-66` maps `reason_pressureRelief` →
+  `pressureRelief`, matching the quiz key): the break is entirely on the
+  features side, so a naive fix that lowercased the reason keys would break
+  the half that currently works. **This is also a live scoring defect, not
+  only a reason blocker**: the quiz options scoring `pressureRelief` (4
+  option-instances) and `motionIsolation` (6) award zero points today. A
+  data-only repair route exists (writing `pressure-relief`/`motion-isolation`
+  in `incoming/lacks_mattresses.json` lets the existing restorer re-camel
+  them with no code change) — but any repair alters scoring output and
+  remains the Blake-gated Phase 3.1 decision; it must NOT be bundled into
+  content or presentation work.
 
 ## 2. Verified catalog facts
 
@@ -165,10 +178,14 @@ cooler" — avoid) → medical/therapeutic claims (**prohibited**).
 
 "☐ applicable — EMPTY" marks cells where the model's **committed engine tags**
 suggest the reason key applies — a starting point for merchandising to
-confirm or strike, not a decision. "—" = tag not present. **No cell below may
-be filled by engineering, by AI, or by copying `reason_default`.** Reminder:
-the `reason_pressureRelief` and `reason_motionIsolation` columns are
-engine-dead until Phase 3.1 regardless of content.
+confirm or strike, not a decision. "—" = tag not present, **as document
+shorthand only**: in the authoring record itself every cell's state must be
+explicit (`approved` / `not_applicable` / `pending`), and `not_applicable`
+is a recorded decision with a decider — never an unexplained blank or dash.
+**No cell below may be filled by engineering, by AI, or by copying
+`reason_default`.** Reminder: the `reason_pressureRelief` and
+`reason_motionIsolation` columns are **Lane B** — engine-dead until Phase
+3.1 regardless of content (see §4 authoring lanes).
 
 | id | reason_cooling | reason_pressureRelief | reason_motionIsolation | reason_support | reason_plush | reason_medium | reason_firm | reason_durability |
 |---|---|---|---|---|---|---|---|---|
@@ -201,6 +218,40 @@ engine-dead until Phase 3.1 regardless of content.
 
 ## 4. Proposed authoring schema and workflow (PROPOSAL — not wired into the pipeline)
 
+**Fail-closed display rule (the governing rule of this brief, corrected
+2026-08-07 per external review):**
+
+> **A missing, stale, incomplete, invalid, or unapproved per-feature reason
+> causes the personalized reason to be OMITTED — in both languages.**
+
+There is **no fallback**. Not to `reason_default`, not to English, not to a
+label, identifier or feature name, not to another feature's reason.
+`reason_default` may never stand in for "why this mattress fits this
+customer": it is customer-agnostic product copy, and presenting it in a
+personalized slot would imply it was produced from the customer's answers —
+which is exactly the misrepresentation the 1.3 gate exists to prevent. (An
+earlier draft of this brief proposed falling back to the bilingual generic
+default; that rule is withdrawn everywhere it appeared.)
+
+If generic product copy is ever displayed at all, it must: occupy a
+**separately labeled, customer-agnostic product-description surface** (the
+prototypes' "Product description" layer is the demonstrated shape); never
+appear in a personalized fit/reason slot; never imply derivation from the
+customer's answers; and carry its **own** product/copy approval, separate
+from any reason approval.
+
+Two constraints make this a **rendering** rule, not a data rule:
+`reason_default` cannot simply be emptied to force omission — it is
+`required=True` in `tools/workbook_schema.py:263` and `tools/validation.py`
+asserts on a blank value — so the field stays populated (to feed the
+product-description surface) while the renderer omits it from any
+personalized slot. And one standing trap must be defused before any wiring:
+`index.html:8148-8175` styles a dead `.drawer-feature-bullets` surface whose
+comment says it surfaces `m.reasons*` — no JavaScript creates it, and an
+implementer following that comment would wire generic defaults into a
+reason-shaped surface. It may not be reused without a config-driven,
+separately-labeled decision (prerequisite 4).
+
 **Authoring surface.** All content enters through
 `incoming/lacks_mattresses.json` only. The chain
 `incoming → build_lacks_workbook.py → Lacks_Store_Data.xlsx →
@@ -210,27 +261,103 @@ build-data.ps1 → data/mattresses.json` is lineage-pinned
 artifact fails CI. English per-feature reasons flow through this chain today
 with **zero code changes**.
 
-**One engineering prerequisite (its own reviewed change, before any Spanish
-authoring):** `MATT_ES_KEYS` in `incoming/build_lacks_workbook.py:89-92` omits
-the eight ES reason keys, so Spanish per-feature reasons placed in the `es`
-block are **silently dropped** and no validator catches it. This one-line
-extension plus a lineage-green rebuild must land first.
+**Activation prerequisites — ALL of the following, each its own reviewed
+change, before any authored reason renders to a customer.** (An earlier
+draft named only the `MATT_ES_KEYS` fix; that alone is nowhere near
+sufficient.)
+
+1. **Exact key reachability**: every reason key resolves correctly against
+   the engine's feature tags (today `MATT_ES_KEYS` in
+   `incoming/build_lacks_workbook.py:89-92` omits the eight ES reason keys,
+   so Spanish per-feature reasons are silently dropped; and the
+   `pressureRelief`/`motionIsolation` features-side casing break makes
+   those two keys unreachable regardless of content — note the reason KEYS
+   are already correct, so the fix must target the features side only; see
+   §1). Downstream of `MATT_ES_KEYS` the chain is already built and
+   waiting: `tools/workbook_schema.py:272-281` declares all eight
+   `reason_* (ES)` workbook columns, `tools/convert_store_data.py:159-183`
+   derives ES CSV columns generically from the `" (ES)"` suffix,
+   `data/mattresses-es.csv` already carries all eight headers (empty), and
+   `build-data.ps1:163-167` merges them into `reasons_es` — which is why
+   the extension is genuinely one line.
+2. **A language-aware runtime consumer for `reasons_es`** — none exists at
+   `78f949c` (`reasons_es` has zero references in `index.html`).
+3. **Preservation of `matchReasons` (or its approved replacement) through
+   the presentation view model** — today the engine's `matchReasons` return
+   value is discarded at its only call site (`index.html:14505-14506`).
+4. **Config-driven rendering in the correct surface**: reasons render only
+   in the personalized-reason surface, never mixed into the
+   product-description layer, and the rendering is config/data-driven, not
+   hardcoded.
+5. **Validation of EN/ES pair completeness** per slot (a slot with one
+   language missing is invalid → omitted in both).
+6. **Behavioral tests proving both languages render** the approved content.
+7. **Omission tests** proving missing, stale, incomplete, invalid and
+   unapproved slots render **nothing** in the personalized surface — in
+   both languages.
+8. **Evidence and approval metadata present and validated** per the record
+   schema below (fail-closed on absence or staleness).
+9. **No-fallback verification**: explicit tests that no code path
+   substitutes labels, identifiers, English, another feature's reason, or
+   `reason_default` into a personalized slot. One concrete existing
+   carrier to prohibit by name: `mField()` at `index.html:11148` returns
+   `m[field]` (English) when the `_es` side is falsy — the natural
+   per-field pattern would silently serve English reasons to a Spanish
+   customer; reasons must not flow through that fallback.
+10. **Explicit confirmation that Phase 3-gated scoring keys remain
+    inactive**: activating content must not activate
+    `pressureRelief`/`motionIsolation` scoring, the Phase 3.1 casing fix, or
+    any schema addition — those stay Blake-gated scoring/schema decisions.
 
 **Proposed per-reason record** (mirrors the house provenance pattern already
 shipped for financing — `verifiedAt` + `maxAgeDays` + allowlisted
-`sourceUrl`, fail-closed):
+`sourceUrl`, fail-closed). Expanded 2026-08-07 per external review — each
+authored reason carries **all** of:
+
+| field | content |
+|---|---|
+| `productId` | stable product/model/SKU identifier (catalog `id`; ids are never reused) |
+| `reasonKey` | the exact feature/reason key (e.g. `cooling`) |
+| `en` | the English reason |
+| `es` | the Spanish reason (authored, never machine-translated) |
+| `applicability` | **`approved` / `not_applicable` / `pending`** — every cell state is explicit; "not applicable" is a recorded decision with the decider, never an unexplained blank or dash |
+| `evidence.sourceUrl` | Lacks or official-manufacturer URL/document (allowlisted hosts only) |
+| `evidence.excerpt` | short evidence excerpt or description of what the source states |
+| `claimClass` | the A–E claim-tier rating (per language — see the ladder below) |
+| `scope` | product/model/size scope the claim holds for |
+| `author` | who drafted it |
+| `businessApprover` | the named Lacks owner who signed it off |
+| `esReviewer` | the native Spanish reviewer |
+| `legalReviewer` | legal/compliance reviewer, **required** for Tier B claims and anything health-adjacent |
+| `approvalStatus` | draft / in-review / approved / rejected |
+| `approvedAt` / `esApprovedAt` | approval timestamps |
+| `reviewBy` / `maxAgeDays` | re-verification date or maximum age (fail-closed on expiry) |
+| `retired` / `retiredReason` | retirement status and reason (withdraw, don't delete) |
+| `notes` | free-form authoring notes |
 
 ```json
-"reasons": { "cooling": { "en": "…", "es": "…",
-  "evidence": { "source": "<Lacks or manufacturer document/URL>",
+"reasons": { "cooling": {
+  "productId": "g5", "reasonKey": "cooling",
+  "en": "…", "es": "…",
+  "applicability": "approved",
+  "evidence": { "sourceUrl": "<Lacks or manufacturer document/URL>",
+                "excerpt": "<what the source actually states>",
                 "sourceNote": "spec sheet / law tag / brand doc",
                 "verifiedAt": "YYYY-MM-DD", "maxAgeDays": 365 },
-  "approvedBy": "<named Lacks owner>", "esReviewedBy": "<native reviewer>" } }
+  "claimClass": { "en": "C", "es": "C" },
+  "scope": "all sizes",
+  "author": "<name>", "businessApprover": "<named Lacks owner>",
+  "esReviewer": "<native reviewer>", "legalReviewer": null,
+  "approvalStatus": "approved",
+  "approvedAt": "YYYY-MM-DD", "esApprovedAt": "YYYY-MM-DD",
+  "reviewBy": "YYYY-MM-DD",
+  "retired": false, "retiredReason": null, "notes": "" } }
 ```
 
 The exact envelope shape is a design question for the implementation phase;
-what is non-negotiable is the field set (both languages, evidence, approver,
-date) and fail-closed behavior on staleness.
+what is non-negotiable is the field set above and fail-closed behavior
+(omission, both languages) on any missing, stale, incomplete, invalid or
+unapproved field.
 
 **Validators to design (NOT implemented in this sprint):** per-column EN↔ES
 pairing; reason-key ⊆ model-features reachability; a copy-register lint
@@ -254,10 +381,14 @@ content-governance reports in the Phase 1 decision package):
   qualifiers must stand on their own in Spanish) — ES review is
   claim-equivalence review, not translation QA.
 - **Bilingual parity is a per-slot release gate:** an EN reason without a
-  reviewed ES equivalent ships in **neither** language; the slot falls back
-  to the bilingual generic default. Never EN-first-with-ES-backlog.
+  reviewed ES equivalent ships in **neither** language — the slot is
+  **omitted** (the fail-closed display rule above; the earlier
+  falls-back-to-default wording is withdrawn). Never
+  EN-first-with-ES-backlog.
 - **Curated V1 is legitimate:** 2–3 evidence-backed slots per model beats
-  chasing all 208 cells — empty slots already fail closed to the default.
+  chasing all 208 cells — empty slots fail closed **by omission**: the
+  personalized reason simply does not render, and no generic copy takes its
+  place in that slot.
 - **Cadence:** event-driven (catalog rescrape / lineup change triggers
   re-verification for affected models) with `maxAgeDays` ≈ 180–365 as the
   calendar backstop (exact value = merchandising question 7).
@@ -297,29 +428,51 @@ decision package.
 3. **Spanish reviewer** (native) authors/reviews ES with equal claim strength.
 4. **Approver** (the named Lacks owner) signs each reason; date recorded.
 5. **Retirement:** when a model leaves the lineup its reasons leave with it in
-   the same change; when construction changes, `verifiedAt` resets or the
-   reason fails closed.
+   the same change; when construction changes, the reason is **omitted in
+   both languages until re-verified and re-approved** (`verifiedAt` resets).
 6. **Salesperson test before approval:** read the sentence aloud with a
    customer imagined present; if it cannot be said comfortably, it does not
    ship.
 
-**Authoring priority recommendation:** start with low-frequency,
-genuinely distinguishing tags — `motionisolation` (3 models), `responsive`
-(3), `cooling` (6), then the feel trio (`plush`/`medium`/`firm`) — and treat
-`hybrid` (21) and `support` (19) as last: near-universal tags reproduce the
-template-duplication problem with authored words.
+**Authoring priorities — two lanes (corrected 2026-08-07; the earlier
+recommendation to start with `motionisolation`/`responsive` was wrong: one
+is engine-dead until Phase 3.1 and the other has no reason column at all).**
+
+**Lane A — actionable now (current-schema, engine-live keys):** `cooling`
+(6 models — the most differentiating live key), then the feel trio
+(`plush` / `medium` / `firm`), then `durability` and `support`. Within Lane
+A, still author the low-frequency, genuinely distinguishing cells first and
+treat near-universal tags (`support` 19) as last: near-universal tags
+reproduce the template-duplication problem with authored words.
+
+**Lane B — gated or schema-undecided (do NOT author as the first batch):**
+`motionIsolation` and `pressureRelief` (engine-dead until the Phase 3.1
+casing fix — a Blake-gated scoring change), and `responsive`, `hybrid`,
+`soft`, `zoned` plus the quiz-only tags (no reason column exists — a
+schema addition, engineering + Blake). Authoring Lane B before its
+scoring/schema decision produces content that cannot render, invites
+pressure to bundle gated engine changes into content work, and risks
+authoring against a vocabulary that the schema decision then changes.
+Lane B waits for its corresponding decision.
 
 ## 5. Questions requiring merchandising input
 
-1. Which applicable cells should be authored first? (Recommendation above.)
+1. Which Lane A cells should be authored first? (Lane recommendation in §4:
+   `cooling`, then the feel trio, low-frequency cells first.)
 2. Should `soft`, `zoned`, `hybrid`, `responsive` get reason columns at all
-   (schema addition — engineering + Blake), or is the existing 8-column set
-   the intended vocabulary?
+   (schema addition — engineering + Blake)? Until decided, these are
+   **Lane B** and are not authored.
 3. `reason_pressureRelief` / `reason_motionIsolation` are engine-dead until
-   Phase 3.1 — author now and hold, or defer those two columns?
-4. Should any of the three authored-but-invisible fields (`firmnessLabel`,
-   `displayBadges`, `reason_default`) ever render? Each is a standing trap
-   today.
+   Phase 3.1 — **Lane B**: they wait for the scoring decision rather than
+   being authored-and-held (see §4 for why author-and-hold is rejected).
+4. Should either authored-but-invisible field `firmnessLabel` or
+   `displayBadges` ever render? Each is a standing trap today. For
+   `reason_default` the question is narrower and pre-constrained: it may
+   **never** occupy a personalized fit/reason slot or appear under a
+   "matched to you" frame (the fail-closed rule, §4) — the only open
+   question is whether a separately labeled customer-agnostic
+   product-description surface should exist for it, and who approves that
+   surface's copy.
 5. **Who is the named Lacks owner/approver for reason content?** (Decision
    requested from Blake in the decision package.)
 6. Is the 2026-07-30 catalog scrape still representative of the floor lineup,

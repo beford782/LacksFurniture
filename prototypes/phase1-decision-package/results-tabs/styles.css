@@ -189,22 +189,26 @@ h1.results-headline .accent { font-style: italic; color: var(--accent); }
   background: var(--accent);
 }
 
-.tier-descriptor {
-  margin: 0 0 4px;
-  font-size: 0.95rem;
+/* .tier-descriptor removed (correction pass): no tier subtitle renders —
+   the roadmap already decided buyer-characterising tier language must be
+   removed, and any replacement subtitle needs explicit approval first.
+   .tier-descriptor-alt removed earlier (fix T11). */
+
+/* Card sim note (prototype chrome): identifies the inert Details/Save
+   actions on every card. */
+.card-sim-note {
+  margin: 6px 0 0;
+  font-size: 0.78rem;
   color: var(--ink-soft);
 }
-.tier-descriptor .tier-name { font-weight: 700; color: var(--ink); }
-
-/* .tier-descriptor-alt removed (fix T11): the proposed Bronze descriptor is
-   documented-only in VARIANT-NOTES — never rendered live beside the shipped
-   descriptor. */
 
 /* ---------- Cards ----------
-   Equal anatomy AND equal size for the tier lead and supporting cards:
-   lead emphasis is size-neutral (accent border + eyebrow only).
-   auto-fit grid is content-driven: cards go 1-up whenever less than
-   ~300px per column is available, up to 3-up on wide screens. */
+   Correction-pass hierarchy: ONE within-tier lead card (full width, full
+   anatomy) above TWO compact supporting comparison cards. The lead/support
+   distinction mirrors production's own top-pick-vs-supporting split; it
+   carries NO cross-tier ranking implication (one tier is visible at a
+   time). Grid is content-driven: supports go 1-up whenever less than
+   ~300px per column is available. */
 .card-grid {
   list-style: none;
   display: grid;
@@ -214,6 +218,7 @@ h1.results-headline .accent { font-style: italic; color: var(--accent); }
   padding: 0;
 }
 .card-grid > li { min-width: 0; }
+.card-grid > li:first-child { grid-column: 1 / -1; }
 
 .m-card {
   display: flex;
@@ -234,6 +239,25 @@ h1.results-headline .accent { font-style: italic; color: var(--accent); }
   display: block;
   background: #e6dfd0;
 }
+
+/* Lead card goes photo-beside-body once the row is wide enough for a
+   readable text measure next to a photo (content-driven sample). The photo
+   is height-capped so the first screen stays fit-information-first. */
+@media (min-width: 700px) {
+  .m-card.is-lead { flex-direction: row; }
+  .m-card.is-lead .m-card-photo {
+    width: 38%;
+    aspect-ratio: auto;
+    max-height: none;
+  }
+  .m-card.is-lead .m-card-body { flex: 1; }
+}
+
+/* Supporting cards: compact anatomy — shallower photo, tighter padding.
+   Full detail lives behind the (inert) Details action, as in production's
+   drawer. */
+.m-card.is-support .m-card-photo { aspect-ratio: 16 / 6; }
+.m-card.is-support .m-card-body { padding: 12px 14px 14px; gap: 8px; }
 
 .m-card-body {
   display: flex;
@@ -325,8 +349,14 @@ h1.results-headline .accent { font-style: italic; color: var(--accent); }
 }
 .customer-fit li { margin: 0 0 8px; }
 .customer-fit li:last-child { margin-bottom: 0; }
-.fit-title { font-weight: 700; font-size: 0.92rem; }
-.fit-desc { font-size: 0.85rem; color: var(--ink-soft); margin: 1px 0 3px; }
+/* Talking points sized for the operator narrating at arm's length
+   (correction pass: "larger, salesperson-readable talking points"). */
+.fit-title { font-weight: 700; font-size: 1.02rem; }
+.fit-desc { font-size: 0.88rem; color: var(--ink-soft); margin: 1px 0 3px; }
+/* Compact fit rows on supporting cards: titles + tags only (descs live
+   behind Details); the titles stay glance-readable. */
+.customer-fit.is-compact li { margin: 0 0 6px; }
+.customer-fit.is-compact .fit-title { display: inline-block; margin-right: 8px; }
 .fit-tag {
   display: inline-block;
   font-size: 0.66rem;
@@ -338,15 +368,51 @@ h1.results-headline .accent { font-style: italic; color: var(--accent); }
 .fit-tag.matched { background: var(--tag-bg); color: var(--tag-ink); }
 .fit-tag.unmatched { background: #e7e2d6; color: #4c4738; }
 
+/* Card action cluster (correction pass): inert Details + Save
+   (production-verbatim labels) beside the compare toggle. All >=48px
+   targets. */
+.card-actions {
+  margin-top: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.card-btn {
+  flex: 1 1 auto;
+  min-height: 48px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font: 700 0.85rem/1.2 system-ui, sans-serif;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.details-btn {
+  border: 1.5px solid var(--ink-soft);
+  background: var(--card);
+  color: var(--ink);
+}
+.save-btn {
+  border: 2px solid var(--accent);
+  background: var(--card);
+  color: var(--accent);
+}
+/* Inert-action feedback: a pressed simulated control pulses so the tap
+   never appears dead — the card sim note explains the inertness. */
+.sim-pulse {
+  outline: 3px dashed var(--accent);
+  outline-offset: 2px;
+}
+
 /* Card-level compare toggle (aria-pressed). >=48px target. */
 .compare-toggle {
-  margin-top: auto;
+  flex: 1 1 auto;
   min-height: 48px;
+  padding: 8px 12px;
   border: 2px solid var(--ink);
   border-radius: 6px;
   background: var(--card);
   color: var(--ink);
-  font: 700 0.9rem/1.2 system-ui, sans-serif;
+  font: 700 0.85rem/1.2 system-ui, sans-serif;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   cursor: pointer;
@@ -374,13 +440,15 @@ h1.results-headline .accent { font-style: italic; color: var(--accent); }
 
 /* ---------- Compare section ---------- */
 
-/* Visible section heading (fix T9) — mirrors results-grouped's visible
-   "Compare Your Finalists" heading. */
+/* Visible section heading (fix T9; correction-pass terminology "Compare
+   selected mattresses"). Focus target when Compare opens — scroll-margin
+   keeps it clear of any sticky chrome above. */
 .compare-heading {
   font-family: Georgia, "Times New Roman", serif;
   font-size: clamp(1.2rem, 2.4vw, 1.5rem);
   font-weight: 700;
   margin: 26px 0 0;
+  scroll-margin-top: calc(var(--tabs-sticky-top, 0px) + 8px);
 }
 
 .compare-actions {
@@ -552,6 +620,26 @@ h1.results-headline .accent { font-style: italic; color: var(--accent); }
   text-align: center;
   font-size: 0.85rem;
   color: var(--ink-soft);
+}
+
+/* Proposed-copy marking (correction pass): every data-proposed-copy node
+   carries a visible dotted underline; the page legend explains it. The
+   paired sr-only "(proposed copy — not production)" suffix is added in JS. */
+[data-proposed-copy] {
+  text-decoration: underline dotted 1.5px #35506b;
+  text-underline-offset: 3px;
+}
+
+/* Proposed-copy legend (prototype chrome). */
+.page-legend {
+  margin: 18px 0 0;
+  padding: 8px 12px;
+  border: 1.5px dashed #35506b;
+  border-radius: 6px;
+  background: #e8eef2;
+  color: #35506b;
+  font-size: 0.78rem;
+  font-weight: 600;
 }
 
 /* The demonstration-section styles are deleted (fix T1) with the section
