@@ -238,6 +238,50 @@ mirroring `tests/financing_copy_policy_check.mjs` (no medical vocabulary, no
 buyer-characterising phrasing, no superlative/comparative claims without
 evidence).
 
+**Refinements from the external research pass** (claim-safety and
+content-governance reports in the Phase 1 decision package):
+
+- **Claim tiers** (rate every authored reason, per language, in display
+  context): **A** verbatim construction facts from an allowlisted source ·
+  **B** manufacturer performance claims with their qualifier intact (e.g.
+  Tempur-Pedic's "up to 10° cooler" officially carries a vs.-their-own-model,
+  test-method qualifier) · **C** "designed to" mechanism mappings — the
+  intended voice for authored reasons · **D** outcome promises ("you'll sleep
+  cooler") — prohibited · **E** health/therapeutic claims — prohibited
+  (FTC substantiation doctrine covers implied claims; a reason under a
+  "matched to you" frame is a stronger implied claim than spec-sheet text).
+- **Spanish is tier-rated independently** (16 CFR 14.9: Spanish claims and
+  qualifiers must stand on their own in Spanish) — ES review is
+  claim-equivalence review, not translation QA.
+- **Bilingual parity is a per-slot release gate:** an EN reason without a
+  reviewed ES equivalent ships in **neither** language; the slot falls back
+  to the bilingual generic default. Never EN-first-with-ES-backlog.
+- **Curated V1 is legitimate:** 2–3 evidence-backed slots per model beats
+  chasing all 208 cells — empty slots already fail closed to the default.
+- **Cadence:** event-driven (catalog rescrape / lineup change triggers
+  re-verification for affected models) with `maxAgeDays` ≈ 180–365 as the
+  calendar backstop (exact value = merchandising question 7).
+- **Retirement:** withdraw, don't delete — status `retired` + date + reason;
+  build excludes it; the record stays for audit; ids are never reused.
+- **Allowlist candidates for product-fact sources:** lacks.com, restonic.com,
+  springair.com (incl. Chattam & Wells), tempurpedic.com/sealy.com, plus the
+  Genesis official site once identified — never aggregators or review sites.
+
+**Flagged existing catalog strings (review needed — NOT edited this sprint).**
+Lead-verified present in `data/mattresses.json`; each pre-dates this rubric:
+
+1. **g4 Tempur-LuxeBreeze 2.0 Soft** — "Feels up to 10° cooler" (highlight,
+   topPickReason, differentiator) ships **without** the manufacturer's
+   mandatory comparison qualifier (Tier B claim rendered unqualified).
+2. **g9 Copper Cushion Firm** — "recovery benefits" (topPickReason) has no
+   located support on springair.com (Tier D risk).
+3. **g9** — "naturally fresher" / "a cleaner, cooler sleep" copper phrasing
+   (differentiator, reason_default) is antimicrobial-adjacent (Tier B/E
+   boundary; needs manufacturer language verification).
+
+Whether these are grandfathered or hot-fixed is Blake's call, recorded in the
+decision package.
+
 **Workflow (roles and cadence):**
 
 1. **Author** (Lacks merchandising) drafts EN reason per confirmed applicable
