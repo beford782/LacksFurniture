@@ -241,11 +241,17 @@ which renders a variant inside an exactly-sized iframe so its media queries
 resolve at the target viewport; only the on-screen rendering is scaled, and
 the scale factor is stamped on every image. Reviewers can reproduce any cell —
 or any other size — by opening that harness with `v`, `s`, `l`, `w`, `h`
-parameters. Beyond these 12 images, the lead ran programmatic checks across
-**48 variant × scenario × language × viewport combinations** (adding 400×800
-and both dense scenarios) for overflow, heading order, priority order and
-count, per-card firmness parity, tier order and membership, percentage/score
-leakage, Spanish completeness and touch-target size.
+parameters. Beyond these 12 images, the lead ran browser-executed checks
+across 48 variant × scenario × language × viewport combinations (overflow,
+heading order, priority order and count, per-card firmness parity, tier
+order and membership, percentage/score leakage, Spanish completeness,
+touch-target size). Those checks ran live against the served prototypes and
+are documented as a protocol, not retained as repo artifacts — the Wave 4
+adversarial review then independently re-swept the same properties at larger
+scale (including a 384-render overflow/zoom matrix and 200 %/400 % text
+zoom) and its results are what §8 reports. The screenshots predate the
+post-adversarial fix pass for the card de-cluttering (chips/differentiators
+removed); the four decision-relevant compositions are unchanged.
 
 ## 5. Tradeoffs
 
@@ -282,7 +288,7 @@ separable: A's composition could ship with the detail visible.
 | Accessibility cost | Full ARIA tabs contract (production's tabs are plain divs with none of it) | Cheapest correct pattern: button + `aria-expanded` |
 | Analytics cost | **None** — `tier_view` semantics unchanged | An intentional retire/replace change-set (§11) plus new behavioral coverage |
 | Gate exposure | Restyling tabs is explicitly **Proceeds** — no gate | **Triggers the 1.3 adoption gate** |
-| Glanceability (measured) | Image ≈18–21 % of viewport; lead model name and firmness **above the fold** in both orientations | Image ≈36 % portrait / **63 % landscape**; in landscape the model name (y≈998) and firmness (y≈1050) fall **below** an 834 px fold |
+| Glanceability (measured, pre-fix) | Image ≈18–21 % of viewport **height** at 834×1112/1112×834 (33 % at 1024×768, where firmness dipped just below the fold — the "both orientations" claim held only at the screenshot sizes); name above the fold at every size tested | Image ≈36 % portrait / **63–65 % of viewport height in every landscape size tested**; model name and firmness below the fold — **fixed post-review by a content-driven photo height cap**, recorded in its VARIANT-NOTES |
 | Rework risk | Low | If Phase 3.3 later adopts a global maximum, this is restyled, not rebuilt |
 
 The measured glanceability gap is the accordion's main weakness and is a
@@ -319,23 +325,81 @@ evidence — the customer's own answers — up front.)*
 
 The prototypes consume frozen fixtures captured by executing the real engine
 at `78f949c` — the same extract-and-execute patterns as the shipped suites.
-Provenance: `fixtures/PROVENANCE.md` (engine-source commit pinned; capture
-aborts if `index.html`/`data/`/`Code.gs` differ from `origin/main`;
-LF-normalized sha256 of every input and output).
-`fixtures/tools/parity_check.mjs` re-executes the capture and byte-compares:
-21/21 at freeze (priority order/count, firmness integer, tier
-membership/order, rendered Sleep Brief DOM). EN/ES engine parity asserted at
-capture. Scenario provenance: the answer sets are verbatim reuses of the
-characterized fixture library in the shipped suites (dense-c carries the
-90/90 stable-sort tie whose sorted set differs from insertion order; sparse-b
-produces exactly two priorities). *(Adversarial verification results TO FILL
-after Wave 4: scoring-isolation, tier-honesty and test-vacuity adversaries.)*
+Provenance: `fixtures/PROVENANCE.md` (engine-source commit pinned inside
+every fixture; capture **and** parity abort if
+`index.html`/`data/`/`Code.gs` differ from `origin/main`; LF-normalized
+sha256 of every input and output, with parity verifying each fixture hash
+against the PROVENANCE table so a regeneration cannot silently re-bless
+changed output). `fixtures/tools/parity_check.mjs` re-executes the capture
+and byte-compares — 30/30 at final freeze — with capture floors that abort
+on any empty parse. The one authored input is disclosed: the compare demo's
+`savedOrder` is simulated saved-finalist state (customer input no capture
+can produce); the pair is computed by executing the real extracted
+`compareReviewFinalists()`.
+
+**What the executable check does and does not cover — stated plainly.**
+`parity_check.mjs` proves the frozen fixtures equal a fresh engine run and
+match their reviewed hashes. It does **not** test the prototypes: a variant
+could re-order, filter or pad output and parity would stay green. Prototype
+fidelity was verified two independent ways instead: (1) lead-executed
+browser checks (rendered priority sequence/count vs fixture, per-card
+firmness parity, tier order/membership, percentage/score-leak scans,
+overflow sweeps) — protocol documented here, scripts not retained as repo
+artifacts; and (2) the Wave 4 adversarial review, whose independent sweeps
+(24 rendered combinations for priorities; 36 tier views; 384-render
+overflow/zoom matrix) **confirmed the core fidelity properties held in all
+four variants**: priority order and count exact, hero selection strictly by
+index, firmness integers exact everywhere, no sort/filter/re-bucket in any
+presentation path, no score/percentage/rank leakage, tier membership and
+order exact, and all claimed verbatim production pairs byte-identical.
+
+**What the adversaries broke — and what was done.** Ten adversaries filed
+3 blockers and ~25 confirmed majors. Every accepted finding was reproduced
+by the lead before action. The fix pass (recorded per-variant in each
+`VARIANT-NOTES.md` "Lead integration pass" section) removed the one genuine
+synthesis of engine output (a results-tabs demonstration block that cloned
+the gold lead with a fabricated `meetsMatchThreshold:false` and rendered
+empty-tier copy for a populated tier); removed the two prototype-invented
+card surfaces that leaked unreviewed catalog copy (displayBadges chips,
+card-face differentiators — the latter carrying within-tier ranking and
+price claims); removed a false "From your answers" attribution over
+non-answer-derived rows; capped the accordion's landscape photo; fixed the
+sticky-bar occlusion blocker, dialog focus/Escape handling, tray
+focus-stranding and hit-blocking; made tier identity persistent while
+scrolling in the tabs variant; aligned the two Briefs' badge orders and ES
+labels; and corrected every VARIANT-NOTES claim the adversaries falsified.
 
 Known fixture limitations (recorded, not patched): every captured tier entry
 has `meetsMatchThreshold:true`, so the "Additional comparison option" state
 is implemented from the shipped copy pair but not exercisable from fixture
-data; the empty-tier state likewise (the shipped catalog fills all tiers);
-no captured scenario exercises the back-fill path.
+data (after the fix pass, deliberately not demonstrated with fabricated
+data either); the empty-tier state likewise; no captured scenario exercises
+the back-fill path; and the fixtures qualify 17 of 26 catalog models (see
+PROVENANCE's computed coverage section).
+
+**Adversarial findings recorded but NOT fixed (rejected or kept as
+tradeoffs, with reasons):**
+
+- *Lead-card emphasis reads as winner treatment* — kept: production's own
+  top-pick card is larger and richer than supporting cards; the prototypes
+  mirror shipped behavior, with the photo cap reducing the disparity.
+  VARIANT-NOTES corrected to stop claiming "equal anatomy".
+- *Three permanently visible tier descriptors form a quality/price ladder*
+  — kept as an inherent, explicitly-stated property of the accordion
+  premise, cross-referenced to the "entry-level" copy decision (Blake's).
+- *Gold listed first structurally privileges Gold* — rejected as a defect:
+  Gold-first is the engine's own default and the product rule.
+- *Font sizes vs an assumed 264 ppi tablet* — recorded as a Phase 0.4
+  evidence item; nothing can be sized to unconfirmed hardware.
+- *Inherited production copy issues* (EN/ES claim-strength differences in
+  `profileReassurance`/`fitFirst`/"INCLUIDO", clipped-Spanish kind pills,
+  EN-only size labels, mood shifts) — flagged for Blake, unchanged:
+  production copy is out of scope for this sprint.
+- *Viewport-harness iframe is ~15 px narrower than a real overlay-scrollbar
+  tablet* — documented; breakpoints verified not to flip.
+- *tabs variant's word count reads as a reading task* — partially addressed
+  by the card de-cluttering; the residual density is a recorded tradeoff of
+  the three-cards-at-once premise (§5.2).
 
 ## 9. Device-matrix limitation
 
@@ -360,10 +424,14 @@ authoring package (`docs/phase1-catalog-reason-authoring-brief.md`) defines
 what Lacks must author (EN+ES, evidence, approver, verified date), the blank
 79-cell applicability matrix, and the proposed provenance workflow. Its one
 engineering prerequisite (the `MATT_ES_KEYS` extension, without which Spanish
-reasons silently drop) is flagged, not implemented. Three existing catalog
+reasons silently drop) is flagged, not implemented. Four existing catalog
 strings are flagged for claim review (g4 unqualified "10° cooler"; g9
-"recovery benefits"; g9 antimicrobial-adjacent copper copy) — grandfather or
-hot-fix is Blake's call.
+"recovery benefits"; g9 antimicrobial-adjacent copper copy; b5 "a proven
+pick for side sleepers", which renders on production cards today) —
+grandfather or hot-fix is Blake's call. The fixtures qualify 17 of 26
+models, and g4/g5/g9 never render in any prototype — those flags rest on
+direct catalog inspection, not on-screen exposure (PROVENANCE records the
+computed coverage).
 
 ## 11. Analytics consequence of replacing tier tabs
 
@@ -445,11 +513,21 @@ defects in §1 (cleanup proposals, not part of this package's scope).
 | W2 consultation-handoff | ✅ report | peak-end, Gong, ISPA | ✅ | division-of-labor rule; conclusion restraint |
 | W3 fixture/provenance | ✅ (lead-executed) | parity 21/21; suites 69/69, 226/226 | ✅ | agents unavailable in session-limit window; Wave 4/5 verify independently |
 | W3 catalog-authoring package | ✅ (lead-executed) | programmatic 26-row inventory | ✅ | same replacement reason; verified against both catalog audits |
-| W3 sleep-brief-a builder | *(TO FILL)* | | | |
-| W3 sleep-brief-b builder | *(TO FILL)* | | | |
-| W3 results-tabs builder | *(TO FILL)* | | | |
-| W3 results-grouped builder | *(TO FILL)* | | | |
-| W4 adversaries (≥8) | *(TO FILL)* | | | |
+| W3 sleep-brief-a builder | ✅ variant + notes | need-led hero, disclosure, 5 badges | ✅ | composition delivered; 6 adversarial findings fixed in integration |
+| W3 sleep-brief-b builder | ✅ variant + notes | fixed heading, visible detail | ✅ | composition delivered; pair-rule and ES-label findings fixed |
+| W3 results-tabs builder | ✅ variant + notes (credit error killed only its return) | restyled tabs, compare revival | ✅ partially | demo block + promoted catalog surfaces removed in integration |
+| W3 results-grouped builder | ✅ variant + notes | single-open accordion, APG semantics | ✅ partially | landscape photo capped; equal-anatomy claim corrected |
+| W4 scoring-isolation adversary | ✅ report | fabricated-record demo block | ✅ | drove the demo-block removal + capture-pair execution |
+| W4 tier-honesty adversary | ✅ report | anatomy claim vs render; tier-anchor gaps | ✅ | sticky tabs, notes corrections; ladder tradeoff recorded |
+| W4 accessibility adversary | ✅ report | dead backdrop, Escape scope, tray focus | ✅ | all confirmed dialog/focus findings fixed |
+| W4 bilingual adversary | ✅ report | chip EN leakage, Compañía, Duermo Solo | ✅ | chips removed; labels aligned; production-copy flags recorded |
+| W4 shared-viewing adversary | ✅ report | sticky-bar occlusion blocker; word counts | ✅ | blocker fixed; density kept as recorded tradeoff |
+| W4 catalog-claims adversary | ✅ report | b5 Tier-D string; 17/26 coverage | ✅ | b5 flagged; coverage computed into PROVENANCE |
+| W4 compare-flow adversary | ✅ report | two-identical-columns panel; upstream no-op | ✅ | panel discriminates; disclosure added |
+| W4 financing-isolation adversary | ✅ report | staleNotice 7th string; inverted hierarchy | ✅ | module returned to six production strings; button de-emphasized |
+| W4 responsive adversary | ✅ report | ES 320 overlap; 200 % clipping; px-only type | ✅ | all confirmed reflow findings fixed; harness nit documented |
+| W4 test-vacuity adversary | ✅ report | parity never tests prototypes; capture floor | ✅ | floors + PROVENANCE gate added; §8 rewritten honestly |
+| W4 fix-builders (2, lead-directed) | ✅ | disjoint file sets | ✅ | applied the lead-triaged fix list; every change logged in VARIANT-NOTES |
 | W5 referees (≥3) | *(TO FILL)* | | | |
 
 *(Conflicts between agents and their resolutions, plus rejected findings,
