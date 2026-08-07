@@ -2,8 +2,8 @@
 
 **Engine source commit:** `78f949c60cb9d7192d51bd9b3b7155d39319f8df` (= origin/main; the capture aborts
 unless index.html, data/ and Code.gs in this worktree are byte-identical to it)
-**Worktree HEAD at capture:** `e733ee62dca109d755ef1d5677f1351d510beeb1`
-**Captured:** 2026-08-07T00:00:26.023Z
+**Worktree HEAD at capture:** `17d7fa43a217eddf192adaa1f2945657ccd53f72`
+**Captured:** 2026-08-07T15:08:28.451Z
 **Capture command:** `node prototypes/phase1-decision-package/fixtures/tools/capture_fixtures.mjs`
 
 ## Method
@@ -21,9 +21,19 @@ logic reimplemented anywhere):
   within-tier order, qualification, cap, back-fill, pct, meetsMatchThreshold)
   and `analytics.topPick`.
 - `firmnessFeel()`, `getFirmnessLabel()`, `priceTierSymbol()` extracted and
-  executed for the scenario firmness value in both languages.
+  executed for the scenario firmness value in both languages, and
+  `firmnessFeel()` additionally executed per tier entry so every per-model
+  display word is captured, never re-derived by a prototype.
 - EN/ES engine parity is asserted at capture time (capture aborts on
-  divergence).
+  divergence), and a capture floor aborts the freeze if any load-bearing
+  surface parses empty (priority rows, rendered headings, tier entries) —
+  a silent extraction drift can no longer freeze an empty fixture.
+- **One authored input, disclosed:** `compareDemo.savedOrder` is simulated
+  saved-finalist state (tier leads in save order). Save history is customer
+  input — no engine execution can produce one — so this is the single place
+  the capture authors data rather than recording it. The compare PAIR is
+  then computed by executing the real extracted `compareReviewFinalists()`
+  (index.html:17398–17409) against that state.
 
 ## Answer-set provenance
 
@@ -33,6 +43,20 @@ logic reimplemented anywhere):
   profile-relevant answers match `tests/consultation_priorities_check.mjs`
   fixture C (3 priorities including a 90/90 stable-sort tie) except
   `mattress_size` (full vs queen), which does not feed the priority engine.
+
+## Model coverage (computed at capture)
+
+The three fixed answer sets qualify **17 of 26** catalog
+models across all tiers and scenarios:
+b1, b2, b5, b6, b7, g1, g2, g3, g6, g7, g8, s1, s10, s2, s3, s6, s7.
+Models never rendered by any fixture:
+g4, g5, g9, s4, s5, s8, s9, b3, b4.
+Consequence, recorded honestly: the flagged catalog claim strings on models
+outside this set (g4, g5, g9 among them) never render in any prototype —
+those flags come from direct catalog inspection, not from fixture rendering.
+Coverage follows from the engine's own qualification on the fixed answer
+sets; widening it would require additional captured answer sets, never a
+change to qualification.
 
 ## Deliberate exclusions
 
@@ -58,9 +82,9 @@ logic reimplemented anywhere):
 
 | file | sha256 |
 |---|---|
-| scenario-dense-c.json | `3ee36ca1917566a4e158d610cdf8f8a1195662882a16ff4d66521e4ad2325b1b` |
-| scenario-dense-a.json | `98d0f8bac231bce6ac6b835603b6c92fff3837c72bf2430249578498c308cf41` |
-| scenario-sparse-b.json | `98d711995f9ed8228fa54660bd937c7ff774482d56fc0405810cdec4db3682cf` |
+| scenario-dense-c.json | `530e738895c070c5602f351a27db0ee80750ad1466bdb0ca6da1b64ac2d2d87e` |
+| scenario-dense-a.json | `a5088aab4ae6aea9729e935bff2d442f8ce2655275aba19ddbde834fb8751638` |
+| scenario-sparse-b.json | `1250fa9698edfa1fba6391bae0cfdc80153b891cb2ec08489b19bbf24c074f64` |
 
 ## Verification
 

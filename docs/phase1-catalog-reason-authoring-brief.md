@@ -278,6 +278,11 @@ Lead-verified present in `data/mattresses.json`; each pre-dates this rubric:
 3. **g9** — "naturally fresher" / "a cleaner, cooler sleep" copper phrasing
    (differentiator, reason_default) is antimicrobial-adjacent (Tier B/E
    boundary; needs manufacturer language verification).
+4. **b5 Angelina Plush** — "a proven pick for side sleepers" / "elección
+   comprobada para dormir de lado" (topPickReason) is an unqualified
+   efficacy/substantiation claim (Tier D under the ladder above) with no
+   evidence record — surfaced by the adversarial review pass; unlike flags
+   1–3, this string renders on production Results cards today.
 
 Whether these are grandfathered or hot-fixed is Blake's call, recorded in the
 decision package.

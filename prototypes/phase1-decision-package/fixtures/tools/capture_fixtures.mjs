@@ -14,23 +14,23 @@ import { writeFileSync, readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { execSync } from "node:child_process";
 import { join } from "node:path";
-import { root, SCENARIOS, captureScenario, lfSha256 } from "./capture_lib.mjs";
+import { root, SCENARIOS, captureScenario, lfSha256, MATTRESSES } from "./capture_lib.mjs";
+
+import { engineCommit } from "./capture_lib.mjs";
 
 const fixturesDir = join(root, "prototypes", "phase1-decision-package", "fixtures");
 const commit = execSync("git rev-parse HEAD", { cwd: root }).toString().trim();
-const engineCommit = execSync("git rev-parse origin/main", { cwd: root }).toString().trim();
-// The capture is only valid if the engine sources in this worktree are
-// byte-identical to origin/main — the prototype branch may add files but
-// must never touch production. Abort loudly otherwise.
-try {
-  execSync("git diff --quiet origin/main -- index.html data Code.gs", { cwd: root });
-} catch {
-  throw new Error("index.html/data/Code.gs differ from origin/main — refusing to capture fixtures from modified engine sources");
-}
+// The engine-source guard (abort unless index.html/data/Code.gs are
+// byte-identical to origin/main) lives in capture_lib and runs for capture
+// AND parity alike.
 
 const written = [];
+const renderedIds = new Set();
 for (const name of Object.keys(SCENARIOS)) {
   const fixture = captureScenario(name);
+  for (const tier of ["gold", "silver", "bronze"]) {
+    fixture.results.tierData[tier].forEach((m) => renderedIds.add(m.id));
+  }
   const path = join(fixturesDir, `scenario-${name}.json`);
   writeFileSync(path, JSON.stringify(fixture, null, 1) + "\n");
   const sha = createHash("sha256")
@@ -65,9 +65,19 @@ logic reimplemented anywhere):
   within-tier order, qualification, cap, back-fill, pct, meetsMatchThreshold)
   and \`analytics.topPick\`.
 - \`firmnessFeel()\`, \`getFirmnessLabel()\`, \`priceTierSymbol()\` extracted and
-  executed for the scenario firmness value in both languages.
+  executed for the scenario firmness value in both languages, and
+  \`firmnessFeel()\` additionally executed per tier entry so every per-model
+  display word is captured, never re-derived by a prototype.
 - EN/ES engine parity is asserted at capture time (capture aborts on
-  divergence).
+  divergence), and a capture floor aborts the freeze if any load-bearing
+  surface parses empty (priority rows, rendered headings, tier entries) —
+  a silent extraction drift can no longer freeze an empty fixture.
+- **One authored input, disclosed:** \`compareDemo.savedOrder\` is simulated
+  saved-finalist state (tier leads in save order). Save history is customer
+  input — no engine execution can produce one — so this is the single place
+  the capture authors data rather than recording it. The compare PAIR is
+  then computed by executing the real extracted \`compareReviewFinalists()\`
+  (index.html:17398–17409) against that state.
 
 ## Answer-set provenance
 
@@ -77,6 +87,23 @@ logic reimplemented anywhere):
   profile-relevant answers match \`tests/consultation_priorities_check.mjs\`
   fixture C (3 priorities including a 90/90 stable-sort tie) except
   \`mattress_size\` (full vs queen), which does not feed the priority engine.
+
+## Model coverage (computed at capture)
+
+The three fixed answer sets qualify **${renderedIds.size} of 26** catalog
+models across all tiers and scenarios:
+${[...renderedIds].sort().join(", ")}.
+Models never rendered by any fixture:
+${(() => {
+  const all = ["gold", "silver", "bronze"].flatMap((t) => MATTRESSES[t].map((m) => m.id));
+  return all.filter((id) => !renderedIds.has(id)).join(", ") || "(none)";
+})()}.
+Consequence, recorded honestly: the flagged catalog claim strings on models
+outside this set (g4, g5, g9 among them) never render in any prototype —
+those flags come from direct catalog inspection, not from fixture rendering.
+Coverage follows from the engine's own qualification on the fixed answer
+sets; widening it would require additional captured answer sets, never a
+change to qualification.
 
 ## Deliberate exclusions
 

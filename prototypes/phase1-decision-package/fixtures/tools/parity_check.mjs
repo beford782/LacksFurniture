@@ -4,15 +4,19 @@
 // Run: node prototypes/phase1-decision-package/fixtures/tools/parity_check.mjs
 // Exit 0 = every scenario byte-identical; exit 1 otherwise.
 //
-// This is NOT production acceptance. It proves exactly one thing: the
-// prototype package's fixtures preserve captured engine output (priority
-// order and count, firmness value, tier membership and within-tier order,
-// rendered Sleep Brief DOM) with no re-ranking, filtering, padding,
-// rescaling or synthesis. It intentionally re-runs the full capture rather
-// than spot-checking fields, so any drift — engine, renderer, catalog, quiz
-// or fixture edit — turns it red.
+// This is NOT production acceptance, and it does NOT test the prototypes.
+// It proves exactly one thing: the frozen fixture JSONs equal a fresh
+// execution of the real engine/renderers, and match the sha256 table in
+// PROVENANCE.md. NOT COVERED by this script (verified instead by
+// browser-executed checks and the Wave 4 adversarial review, recorded in
+// docs/phase1-prototype-decision-package.md §8): whether any PROTOTYPE
+// renders the fixture faithfully — a variant could re-order, filter or pad
+// output and this script would stay green. Capture and check also share the
+// extraction layer (capture_lib), so a shared parser drift is guarded by
+// the capture floor (which aborts on empty parses), not by this diff.
 
 import { readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { join } from "node:path";
 import { root, SCENARIOS, captureScenario } from "./capture_lib.mjs";
 
@@ -38,6 +42,20 @@ function firstDiff(a, b, path = "$") {
   return null;
 }
 
+// PROVENANCE gate: every frozen fixture file must match the sha256 recorded
+// in PROVENANCE.md, so a regeneration cannot silently re-bless changed
+// output — changing a fixture now requires changing the reviewed provenance
+// table in the same diff.
+const provenance = readFileSync(join(fixturesDir, "PROVENANCE.md"), "utf8");
+for (const name of Object.keys(SCENARIOS)) {
+  const file = `scenario-${name}.json`;
+  const sha = createHash("sha256")
+    .update(readFileSync(join(fixturesDir, file), "utf8").split("\r\n").join("\n"))
+    .digest("hex");
+  check(`${file} sha256 matches the PROVENANCE.md table`, provenance.includes(sha),
+    `computed ${sha.slice(0, 16)}… not found in PROVENANCE.md`);
+}
+
 for (const name of Object.keys(SCENARIOS)) {
   console.log(`\n-- scenario-${name} --`);
   let frozen;
@@ -48,6 +66,13 @@ for (const name of Object.keys(SCENARIOS)) {
     continue;
   }
   const fresh = captureScenario(name);
+
+  // Floors on the FROZEN side too — a frozen fixture that parses empty must
+  // never pass, whatever the fresh capture does.
+  check(`frozen priority count is >= 1 (${frozen.profile.en.priorityCount})`,
+    frozen.profile.en.priorityCount >= 1 && frozen.profile.es.priorityCount >= 1);
+  check(`frozen gold tier is non-empty (${frozen.results.tierData.gold.length})`,
+    frozen.results.tierData.gold.length >= 1);
 
   // Whole-object parity (the load-bearing assertion).
   const diff = firstDiff(frozen, fresh);

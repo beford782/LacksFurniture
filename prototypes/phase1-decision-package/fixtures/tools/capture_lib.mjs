@@ -12,10 +12,21 @@
 
 import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
+import { execSync } from "node:child_process";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 export const root = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..");
+
+// Engine-source guard, shared by capture AND parity: refuse to run against
+// modified engine sources, and record the engine commit inside every fixture
+// so no display surface has to hardcode it.
+export const engineCommit = execSync("git rev-parse origin/main", { cwd: root }).toString().trim();
+try {
+  execSync("git diff --quiet origin/main -- index.html data Code.gs", { cwd: root });
+} catch {
+  throw new Error("index.html/data/Code.gs differ from origin/main — refusing to run against modified engine sources");
+}
 
 const html = readFileSync(join(root, "index.html"), "utf8");
 export const MATTRESSES = JSON.parse(readFileSync(join(root, "data", "mattresses.json"), "utf8"));
@@ -43,6 +54,7 @@ const QUALIFY_FN = grab(/function qualifyRankedChoices\([\s\S]*?\n    \}/, "qual
 const RESULTS_FN = grab(/window\.showResults = function\(\) \{[\s\S]*?\r?\n    \}/, "window.showResults");
 const FEEL_FN = grab(/function firmnessFeel\([\s\S]*?\n    \}/, "firmnessFeel()");
 const MATTPRI_FN = grab(/function buildMattressPriorities\([\s\S]*?\n    \}/, "buildMattressPriorities()");
+const PAIR_FN = grab(/window\.compareReviewFinalists = function\(\) \{[\s\S]*?\n    \}/, "compareReviewFinalists()");
 const LABEL_FN = grab(/function getFirmnessLabel\([\s\S]*?\n    \}/, "getFirmnessLabel()");
 const SYMBOL_FN = grab(/function priceTierSymbol\([\s\S]*?\n    \}/, "priceTierSymbol()");
 
@@ -174,6 +186,28 @@ export function runCardPriorities(answers, lang, tierData) {
   return out;
 }
 
+// Executes the REAL shipped auto-pair rule (window.compareReviewFinalists,
+// index.html:17398-17409) against a simulated saved-finalist state. The saved
+// state itself is necessarily authored — save history is customer input, not
+// engine output, and no capture can produce one — but the pairing rule is
+// extracted and executed, never re-typed. openCompareModal is stubbed to a
+// recorder so the function's real _compareSelected write is what we capture.
+export function runAutoPair(savedOrder, favouriteId) {
+  const out = {};
+  new Function("window", "out",
+    `"use strict";
+    ${PAIR_FN}
+    out.run = function (saved, fav) {
+      window._savedPicks = saved;
+      window._favoriteMattressId = fav;
+      window._compareSelected = null;
+      window.openCompareModal = function () {};
+      window.compareReviewFinalists();
+      return window._compareSelected;
+    };`)({}, out);
+  return out.run(savedOrder.map((p) => ({ id: p.id })), favouriteId ?? undefined);
+}
+
 // Runs the two standalone firmness vocabulary functions for one value/language.
 export function firmnessWords(value, lang) {
   const out = {};
@@ -206,10 +240,40 @@ export function projectTierData(tierData) {
     proj[tier] = (tierData[tier] || []).map((m) => {
       const e = {};
       for (const f of TIER_ENTRY_FIELDS) if (m[f] !== undefined) e[f] = m[f];
+      // Per-model display word from the REAL firmnessFeel(), both languages,
+      // so no prototype ever re-derives a word map from its own thresholds.
+      e.firmnessFeelWord = {
+        en: firmnessWords(m.firmness, "en").feel,
+        es: firmnessWords(m.firmness, "es").feel,
+      };
       return e;
     });
   }
   return proj;
+}
+
+// CAPTURE FLOOR. A silent extraction/parse failure must never freeze an
+// empty fixture that parity then re-blesses green (adversarial finding:
+// parseBriefList returning [] on a regex drift would do exactly that).
+// Every load-bearing capture surface must be non-trivially populated.
+function assertCaptureFloor(name, profile, tierProj) {
+  for (const lang of ["en", "es"]) {
+    const p = profile[lang];
+    if (!p.priorityRows.length) throw new Error(name + "/" + lang + ": zero priority rows parsed — extraction drift, refusing to freeze");
+    if (p.priorityCount !== p.trialFocus.length) throw new Error(name + "/" + lang + ": parsed row count != trialFocus length");
+    for (const id of ["profileName", "profilePrioritiesHeading", "profileSecondary", "profileCta"]) {
+      if (!p.dom[id] || !p.dom[id].textContent) throw new Error(name + "/" + lang + ": empty rendered " + id);
+    }
+    for (const r of p.priorityRows) {
+      if (!r.title || !r.tag || !r.test) throw new Error(name + "/" + lang + ": priority row missing title/tag/test — parser drift");
+    }
+  }
+  if (!tierProj.gold.length) throw new Error(name + ": empty gold tier — engine/catalog extraction drift");
+  for (const tier of ["gold", "silver", "bronze"]) {
+    for (const m of tierProj[tier]) {
+      if (!m.id || !m.name || typeof m.firmness !== "number") throw new Error(name + "/" + tier + ": malformed tier entry");
+    }
+  }
 }
 
 // The three fixed answer sets. Provenance: dense-a and sparse-b are verbatim
@@ -279,10 +343,13 @@ export function captureScenario(name) {
   if (tierEn.silver[0]) savedOrder.push({ id: tierEn.silver[0].id, tier: "silver" });
   else if (tierEn.gold[1]) savedOrder.push({ id: tierEn.gold[1].id, tier: "gold" });
 
+  assertCaptureFloor(name, profile, tierEn);
+
   return {
     meta: {
       scenario: name,
       description,
+      engineSourceCommit: engineCommit,
       answers,
       answerSetProvenance:
         "tests/scoring_isolation_check.mjs ANSWER_SETS (dense-a, sparse-b verbatim; dense-c = 'plus body, plush, reflux' whose profile-relevant answers match tests/consultation_priorities_check.mjs fixture C)",
@@ -310,9 +377,9 @@ export function captureScenario(name) {
     },
     compareDemo: {
       savedOrder,
-      autoPair: savedOrder.slice(0, 2).map((p) => p.id),
+      autoPair: runAutoPair(savedOrder, null),
       favourite: null,
-      note: "Simulated saved-finalist state for the Compare discoverability demo. Pair = shipped auto-pair rule (favourite-first, then save order, first two). Prototype interactions against this state are prototype behavior, not production.",
+      note: "SIMULATED saved-finalist state for the Compare discoverability demo — save history is customer input, so savedOrder is authored (tier leads in save order) and disclosed as such. The PAIR is computed by executing the real extracted compareReviewFinalists() (index.html:17398-17409) against that state, never re-typed. Prototype interactions against this state are prototype behavior, not production.",
     },
   };
 }

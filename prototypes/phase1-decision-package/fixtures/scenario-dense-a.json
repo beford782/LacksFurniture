@@ -2,6 +2,7 @@
  "meta": {
   "scenario": "dense-a",
   "description": "Dense: 3 priorities, all kind 'need'; the classic hot side sleeper with back pain and a disturbed partner.",
+  "engineSourceCommit": "78f949c60cb9d7192d51bd9b3b7155d39319f8df",
   "answers": {
    "sleep_quality": "poor",
    "trigger": "pain",
@@ -392,7 +393,11 @@
      ],
      "score": 75,
      "pct": 100,
-     "meetsMatchThreshold": true
+     "meetsMatchThreshold": true,
+     "firmnessFeelWord": {
+      "en": "Medium",
+      "es": "Medio"
+     }
     },
     {
      "id": "g2",
@@ -445,7 +450,11 @@
      ],
      "score": 73,
      "pct": 97,
-     "meetsMatchThreshold": true
+     "meetsMatchThreshold": true,
+     "firmnessFeelWord": {
+      "en": "Plush",
+      "es": "Suave"
+     }
     },
     {
      "id": "g6",
@@ -498,7 +507,11 @@
      ],
      "score": 73,
      "pct": 97,
-     "meetsMatchThreshold": true
+     "meetsMatchThreshold": true,
+     "firmnessFeelWord": {
+      "en": "Plush",
+      "es": "Suave"
+     }
     }
    ],
    "silver": [
@@ -553,7 +566,11 @@
      ],
      "score": 80,
      "pct": 100,
-     "meetsMatchThreshold": true
+     "meetsMatchThreshold": true,
+     "firmnessFeelWord": {
+      "en": "Medium",
+      "es": "Medio"
+     }
     },
     {
      "id": "s7",
@@ -606,7 +623,11 @@
      ],
      "score": 78,
      "pct": 98,
-     "meetsMatchThreshold": true
+     "meetsMatchThreshold": true,
+     "firmnessFeelWord": {
+      "en": "Plush",
+      "es": "Suave"
+     }
     },
     {
      "id": "s3",
@@ -659,7 +680,11 @@
      ],
      "score": 75,
      "pct": 94,
-     "meetsMatchThreshold": true
+     "meetsMatchThreshold": true,
+     "firmnessFeelWord": {
+      "en": "Plush",
+      "es": "Suave"
+     }
     }
    ],
    "bronze": [
@@ -714,7 +739,11 @@
      ],
      "score": 72,
      "pct": 100,
-     "meetsMatchThreshold": true
+     "meetsMatchThreshold": true,
+     "firmnessFeelWord": {
+      "en": "Medium",
+      "es": "Medio"
+     }
     },
     {
      "id": "b5",
@@ -767,7 +796,11 @@
      ],
      "score": 70,
      "pct": 97,
-     "meetsMatchThreshold": true
+     "meetsMatchThreshold": true,
+     "firmnessFeelWord": {
+      "en": "Plush",
+      "es": "Suave"
+     }
     },
     {
      "id": "b1",
@@ -820,7 +853,11 @@
      ],
      "score": 68,
      "pct": 94,
-     "meetsMatchThreshold": true
+     "meetsMatchThreshold": true,
+     "firmnessFeelWord": {
+      "en": "Plush",
+      "es": "Suave"
+     }
     }
    ]
   },
@@ -1114,6 +1151,6 @@
    "s6"
   ],
   "favourite": null,
-  "note": "Simulated saved-finalist state for the Compare discoverability demo. Pair = shipped auto-pair rule (favourite-first, then save order, first two). Prototype interactions against this state are prototype behavior, not production."
+  "note": "SIMULATED saved-finalist state for the Compare discoverability demo — save history is customer input, so savedOrder is authored (tier leads in save order) and disclosed as such. The PAIR is computed by executing the real extracted compareReviewFinalists() (index.html:17398-17409) against that state, never re-typed. Prototype interactions against this state are prototype behavior, not production."
  }
 }

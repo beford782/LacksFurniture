@@ -49,10 +49,15 @@
 
     var note = document.createElement("p");
     note.className = "df-review-bar__note";
+    // The commit comes from the fixture itself (meta.engineSourceCommit,
+    // stamped by the capture) — never hardcoded here, so a recapture at a
+    // different engine commit is reflected on every screen automatically.
+    var commit = (fixture && fixture.meta && fixture.meta.engineSourceCommit
+      ? String(fixture.meta.engineSourceCommit).slice(0, 7) : "unknown");
     note.textContent = (lang === "es"
       ? "PROTOTIPO — no es producción. Datos congelados del commit "
       : "PROTOTYPE — not production. Frozen fixture data from commit ")
-      + "78f949c.";
+      + commit + ".";
     bar.appendChild(note);
 
     function group(labelText, items) {

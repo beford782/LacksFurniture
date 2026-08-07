@@ -2,6 +2,7 @@
  "meta": {
   "scenario": "sparse-b",
   "description": "Sparse: exactly 2 priorities (engine never pads to 3); solo back sleeper, firm preference, no issues.",
+  "engineSourceCommit": "78f949c60cb9d7192d51bd9b3b7155d39319f8df",
   "answers": {
    "sleep_quality": "well",
    "trigger": "upgrade",
@@ -352,7 +353,11 @@
      ],
      "score": 79,
      "pct": 100,
-     "meetsMatchThreshold": true
+     "meetsMatchThreshold": true,
+     "firmnessFeelWord": {
+      "en": "Extra Firm",
+      "es": "Extra Firme"
+     }
     },
     {
      "id": "g1",
@@ -405,7 +410,11 @@
      ],
      "score": 71,
      "pct": 90,
-     "meetsMatchThreshold": true
+     "meetsMatchThreshold": true,
+     "firmnessFeelWord": {
+      "en": "Firm",
+      "es": "Firme"
+     }
     },
     {
      "id": "g3",
@@ -458,7 +467,11 @@
      ],
      "score": 70,
      "pct": 89,
-     "meetsMatchThreshold": true
+     "meetsMatchThreshold": true,
+     "firmnessFeelWord": {
+      "en": "Firm",
+      "es": "Firme"
+     }
     }
    ],
    "silver": [
@@ -513,7 +526,11 @@
      ],
      "score": 80,
      "pct": 100,
-     "meetsMatchThreshold": true
+     "meetsMatchThreshold": true,
+     "firmnessFeelWord": {
+      "en": "Extra Firm",
+      "es": "Extra Firme"
+     }
     },
     {
      "id": "s10",
@@ -566,7 +583,11 @@
      ],
      "score": 80,
      "pct": 100,
-     "meetsMatchThreshold": true
+     "meetsMatchThreshold": true,
+     "firmnessFeelWord": {
+      "en": "Extra Firm",
+      "es": "Extra Firme"
+     }
     },
     {
      "id": "s1",
@@ -619,7 +640,11 @@
      ],
      "score": 70,
      "pct": 88,
-     "meetsMatchThreshold": true
+     "meetsMatchThreshold": true,
+     "firmnessFeelWord": {
+      "en": "Firm",
+      "es": "Firme"
+     }
     }
    ],
    "bronze": [
@@ -674,7 +699,11 @@
      ],
      "score": 80,
      "pct": 100,
-     "meetsMatchThreshold": true
+     "meetsMatchThreshold": true,
+     "firmnessFeelWord": {
+      "en": "Extra Firm",
+      "es": "Extra Firme"
+     }
     },
     {
      "id": "b2",
@@ -727,7 +756,11 @@
      ],
      "score": 69,
      "pct": 86,
-     "meetsMatchThreshold": true
+     "meetsMatchThreshold": true,
+     "firmnessFeelWord": {
+      "en": "Firm",
+      "es": "Firme"
+     }
     },
     {
      "id": "b7",
@@ -780,7 +813,11 @@
      ],
      "score": 54,
      "pct": 68,
-     "meetsMatchThreshold": true
+     "meetsMatchThreshold": true,
+     "firmnessFeelWord": {
+      "en": "Medium",
+      "es": "Medio"
+     }
     }
    ]
   },
@@ -1146,6 +1183,6 @@
    "s2"
   ],
   "favourite": null,
-  "note": "Simulated saved-finalist state for the Compare discoverability demo. Pair = shipped auto-pair rule (favourite-first, then save order, first two). Prototype interactions against this state are prototype behavior, not production."
+  "note": "SIMULATED saved-finalist state for the Compare discoverability demo — save history is customer input, so savedOrder is authored (tier leads in save order) and disclosed as such. The PAIR is computed by executing the real extracted compareReviewFinalists() (index.html:17398-17409) against that state, never re-typed. Prototype interactions against this state are prototype behavior, not production."
  }
 }

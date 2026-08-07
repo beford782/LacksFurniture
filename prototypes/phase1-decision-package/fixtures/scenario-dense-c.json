@@ -2,6 +2,7 @@
  "meta": {
   "scenario": "dense-c",
   "description": "Dense: 3 priorities incl. a 90/90 tie resolved by stable-sort insertion order; plus-body plush sleeper with reflux in a family bed.",
+  "engineSourceCommit": "78f949c60cb9d7192d51bd9b3b7155d39319f8df",
   "answers": {
    "sleep_quality": "fair",
    "trigger": "worn_out",
@@ -392,7 +393,11 @@
      ],
      "score": 77,
      "pct": 100,
-     "meetsMatchThreshold": true
+     "meetsMatchThreshold": true,
+     "firmnessFeelWord": {
+      "en": "Plush",
+      "es": "Suave"
+     }
     },
     {
      "id": "g6",
@@ -445,7 +450,11 @@
      ],
      "score": 77,
      "pct": 100,
-     "meetsMatchThreshold": true
+     "meetsMatchThreshold": true,
+     "firmnessFeelWord": {
+      "en": "Plush",
+      "es": "Suave"
+     }
     },
     {
      "id": "g7",
@@ -498,7 +507,11 @@
      ],
      "score": 59,
      "pct": 77,
-     "meetsMatchThreshold": true
+     "meetsMatchThreshold": true,
+     "firmnessFeelWord": {
+      "en": "Medium",
+      "es": "Medio"
+     }
     }
    ],
    "silver": [
@@ -553,7 +566,11 @@
      ],
      "score": 72,
      "pct": 100,
-     "meetsMatchThreshold": true
+     "meetsMatchThreshold": true,
+     "firmnessFeelWord": {
+      "en": "Plush",
+      "es": "Suave"
+     }
     },
     {
      "id": "s7",
@@ -606,7 +623,11 @@
      ],
      "score": 72,
      "pct": 100,
-     "meetsMatchThreshold": true
+     "meetsMatchThreshold": true,
+     "firmnessFeelWord": {
+      "en": "Plush",
+      "es": "Suave"
+     }
     },
     {
      "id": "s6",
@@ -659,7 +680,11 @@
      ],
      "score": 54,
      "pct": 75,
-     "meetsMatchThreshold": true
+     "meetsMatchThreshold": true,
+     "firmnessFeelWord": {
+      "en": "Medium",
+      "es": "Medio"
+     }
     }
    ],
    "bronze": [
@@ -714,7 +739,11 @@
      ],
      "score": 68,
      "pct": 100,
-     "meetsMatchThreshold": true
+     "meetsMatchThreshold": true,
+     "firmnessFeelWord": {
+      "en": "Plush",
+      "es": "Suave"
+     }
     },
     {
      "id": "b5",
@@ -767,7 +796,11 @@
      ],
      "score": 68,
      "pct": 100,
-     "meetsMatchThreshold": true
+     "meetsMatchThreshold": true,
+     "firmnessFeelWord": {
+      "en": "Plush",
+      "es": "Suave"
+     }
     },
     {
      "id": "b7",
@@ -820,7 +853,11 @@
      ],
      "score": 52,
      "pct": 76,
-     "meetsMatchThreshold": true
+     "meetsMatchThreshold": true,
+     "firmnessFeelWord": {
+      "en": "Medium",
+      "es": "Medio"
+     }
     }
    ]
   },
@@ -1174,6 +1211,6 @@
    "s3"
   ],
   "favourite": null,
-  "note": "Simulated saved-finalist state for the Compare discoverability demo. Pair = shipped auto-pair rule (favourite-first, then save order, first two). Prototype interactions against this state are prototype behavior, not production."
+  "note": "SIMULATED saved-finalist state for the Compare discoverability demo — save history is customer input, so savedOrder is authored (tier leads in save order) and disclosed as such. The PAIR is computed by executing the real extracted compareReviewFinalists() (index.html:17398-17409) against that state, never re-typed. Prototype interactions against this state are prototype behavior, not production."
  }
 }
