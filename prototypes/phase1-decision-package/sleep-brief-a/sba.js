@@ -21,7 +21,6 @@
   /* ---------- (b) Verbatim production pairs (source lines cited; see
      VARIANT-NOTES.md copy inventory for the full table) ---------- */
   var VERBATIM = {
-    eyebrow:      { en: "Your Sleep Brief",        es: "Tu Resumen de Sueño" },        // index.html:13170
     tryThis:      { en: "Try this:",               es: "Pruébalo:" },                  // index.html:13484 (trailing space trimmed)
     editAnswers:  { en: "← Edit my answers",       es: "← Editar mis respuestas" },    // index.html:13506
     compareEntry: { en: "Compare finalists",       es: "Comparar finalistas" },        // index.html:16843
@@ -37,17 +36,9 @@
     }
   };
 
-  /* Verbatim word map of firmnessFeel() — index.html:13676-13682. This is the
-     compare surface's own live vocabulary (the production compare modal shows
-     firmnessFeel(m.firmness) at 18878/18892); the map is copied, not
-     re-derived, and applied to the fixture's captured per-mattress integer. */
-  function firmFeelWord(n, lang) {
-    var es = lang === "es";
-    if (n <= 3) return es ? "Suave" : "Plush";
-    if (n <= 5) return es ? "Medio" : "Medium";
-    if (n <= 7) return es ? "Firme" : "Firm";
-    return es ? "Extra Firme" : "Extra Firm";
-  }
+  /* A7: per-model feel words are consumed from the fixture
+     (entry.firmnessFeelWord {en,es}, executed from the real firmnessFeel()
+     per model at capture time) — the local word-map copy is deleted. */
 
   /* ---------- (c) PROPOSED copy — every entry rendered with
      data-proposed-copy and listed in VARIANT-NOTES.md ---------- */
@@ -56,13 +47,15 @@
                   es: "En orden, según tus respuestas" },
     cta:        { en: "See My Matches →",
                   es: "Ver Mis Opciones →" },
-    simBanner:  { en: "PROTOTYPE SIMULATION — production selection logic unchanged",
-                  es: "SIMULACIÓN DE PROTOTIPO — la lógica de selección de producción no cambia" },
+    simBanner:  { en: "Prototype simulation — sample saved finalists, not this customer's saves.",
+                  es: "Simulación del prototipo — finalistas guardados de ejemplo, no los de este cliente." }, // A5: honest wording, shared verbatim with Alternative B
     simCaption: { en: "Prototype: these actions are simulated — no live app behind this screen.",
                   es: "Prototipo: estas acciones son simuladas — no hay una aplicación real detrás de esta pantalla." },
     srPosition: { en: "Position",     es: "Posición" },
     srSharing:  { en: "Bed sharing",  es: "Cama compartida" },
-    close:      { en: "Close",        es: "Cerrar" }
+    close:      { en: "Close",        es: "Cerrar" },
+    fixtureError: { en: "Fixture error — no priority rows captured.",          // A10 guard
+                    es: "Error de fixture — no hay filas de prioridades capturadas." }
   };
 
   /* Accessible firmness sentence — phrasing mandated by the roadmap/a11y
@@ -87,7 +80,10 @@
     combo:   { en: "Combination",     es: "Combinación" }
   };
   var SHARING_BADGE = {
-    solo:    { en: "Solo Sleeper",    es: "Duermo Solo" },
+    // A9: solo-ES is third person, matching the captured temperature register
+    // ("Duerme con calor"); deviates from quiz.json's option label and stays
+    // flagged for native review in VARIANT-NOTES §5.
+    solo:    { en: "Solo Sleeper",    es: "Duerme solo" },
     partner: { en: "With a Partner",  es: "Con Pareja" },
     family:  { en: "Family Bed",      es: "Cama Familiar" }
   };
@@ -113,10 +109,17 @@
       : "Sleep Brief A — prototype";
 
     /* ===== Hero: strictly priorityRows[0] BY INDEX ===== */
-    setText("sbaEyebrow", L(VERBATIM.eyebrow));
+    // A4: eyebrow = the fixture's own captured heading (dom.profileName),
+    // never a hardcoded pair.
+    setText("sbaEyebrow", prof.dom.profileName.textContent);
     if (rows[0]) {
       setText("sbaHeroTitle", rows[0].title);
       setText("sbaHeroLede", rows[0].desc);
+    } else {
+      // A10: the capture floor makes empty priorityRows unreachable, but the
+      // render must never be a silent blank hero — visible bilingual error.
+      setText("sbaHeroTitle", L(PROPOSED.fixtureError));
+      byId("sbaHeroTitle").setAttribute("data-proposed-copy", "");
     }
 
     renderBadges(fixture, prof, lang);
@@ -229,6 +232,9 @@
       btn.setAttribute("aria-expanded", "false");
       btn.setAttribute("aria-controls", panelId);
       btn.appendChild(el("span", null, L2(VERBATIM.tryThis, lang)));
+      // A6: unique accessible name per disclosure — sr-only priority title
+      // suffix (the three buttons otherwise all announce as "Try this:").
+      btn.appendChild(el("span", "sr-only", " " + row.title));
       var chev = el("span", "sba-chev", "▾");
       chev.setAttribute("aria-hidden", "true");
       btn.appendChild(chev);
@@ -313,10 +319,11 @@
 
       var dl = el("dl", null, null);
 
-      // Feel — compare surface vocabulary (firmnessFeel map, verbatim) + exact integer
+      // Feel — fixture-captured per-model word (executed from the real
+      // firmnessFeel() at capture; A7) + exact integer
       dl.appendChild(el("dt", null, L2(VERBATIM.statFeel, lang)));
       var feelDd = el("dd", null, null);
-      var word = firmFeelWord(entry.firmness, lang);
+      var word = L2(entry.firmnessFeelWord, lang);
       var feelSr = el("span", "sr-only", firmSrText(word, entry.firmness, lang));
       feelSr.setAttribute("data-proposed-copy", ""); // proposed phrasing template
       feelDd.appendChild(feelSr);
@@ -367,8 +374,17 @@
     var opener = null;
     var inerted = []; // exact elements we inerted, released verbatim on close
 
-    function openDialog() {
-      opener = document.activeElement;
+    // A3b: Escape is bound on document only while the dialog is open (and
+    // removed on close), so it works wherever focus happens to be.
+    function onDocKeydown(e) {
+      if (e.key === "Escape") { e.preventDefault(); closeDialog(); }
+    }
+
+    // A3c: the opener is captured from the activating event's currentTarget
+    // at open time — never document.activeElement — so focus restore works
+    // on the tap path and under double-click.
+    function openDialog(openerEl) {
+      opener = openerEl || null;
       inerted = [];
       Array.prototype.forEach.call(document.body.children, function (child) {
         if (child === dialog || child === backdrop) return;
@@ -377,10 +393,12 @@
       });
       backdrop.hidden = false;
       dialog.hidden = false;
+      document.addEventListener("keydown", onDocKeydown);
       title.focus();
     }
 
     function closeDialog() {
+      document.removeEventListener("keydown", onDocKeydown);
       dialog.hidden = true;
       backdrop.hidden = true;
       inerted.forEach(function (n) { n.inert = false; });
@@ -389,12 +407,19 @@
       opener = null;
     }
 
-    openBtn.addEventListener("click", openDialog);
+    openBtn.addEventListener("click", function (e) { openDialog(e.currentTarget); });
     closeBtn.addEventListener("click", closeDialog);
-    backdrop.addEventListener("click", closeDialog);
+
+    // A3a: outside-click dismissal lives on the dialog element itself — the
+    // full-viewport .sba-dialog covers the scrim, so a handler on the
+    // backdrop was unreachable dead code (deleted). Standard pattern: close
+    // only when the click target IS the dialog root (the area around the
+    // panel).
+    dialog.addEventListener("click", function (e) {
+      if (e.target === dialog) closeDialog();
+    });
 
     dialog.addEventListener("keydown", function (e) {
-      if (e.key === "Escape") { e.preventDefault(); closeDialog(); return; }
       if (e.key !== "Tab") return;
       // Trap: cycle among tabbable controls; the title (tabindex=-1) holds
       // initial focus but sits outside the cycle.

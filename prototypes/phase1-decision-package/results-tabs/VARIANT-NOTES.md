@@ -340,3 +340,139 @@ clamp instead — verified BRONCE fits at 320px).
 - **No live regions, no modal lifecycle, no location.reload, no external or
   CDN assets.**
 - **compareDemo fixture state not consumed** (documented in §5).
+
+---
+
+## Lead integration pass (post-adversarial-review fixes)
+
+Applied by the Results fix-builder from the lead-triaged adversarial review.
+The sections above are the original build record; where a fix changes or
+falsifies a claim made above, the correction is recorded here (originals are
+kept, per package rule — corrected by appending, never rewritten).
+
+### Changes applied
+
+- **T1 (MAJOR — fabricated record): demonstration section deleted.** The
+  "Non-exercisable states (demonstration)" section deep-cloned the real gold
+  lead with `meetsMatchThreshold` flipped to `false` — **synthesised engine
+  output**, exactly the class this package forbids — and rendered empty-tier
+  copy labelled for a tier that has matches. The section, its styles and its
+  proposed strings (demoHeading / demoNote / demoThreshold / demoEmpty) are
+  removed. The below-threshold and empty-tier copy pairs remain implemented
+  in the card/panel code paths, exercised only by data;
+  results-grouped's document-only approach is the package standard.
+  *Corrects §5's "demonstrated in the labelled section" rows and §2/§3c
+  demonstration-chrome references: there is no demonstration section.*
+- **T2: displayBadges chips removed** from the card face. They created a
+  customer-facing surface production doesn't have (badges render nowhere at
+  78f949c) and promoted catalog strings that leaked EN text, a mistranslation
+  and a price superlative past the copy audit. *Supersedes deviation §2.8;
+  open question §9.7 (should badges ship?) remains a Blake decision but this
+  prototype no longer pre-renders them.*
+- **T3: differentiators removed from the card face; compare panel
+  strengthened instead.** Authored drawer copy — including within-tier
+  ranking and price claims — does not belong on the fit-primary card
+  (*supersedes deviation §2.9*). The 2-up compare panel previously showed
+  only Tier + Feel, so two same-tier same-feel finalists produced identical
+  columns; it now adds the brand·subBrand line (already present) plus a
+  "What makes this one different" row from `differentiators[0]` title +
+  detail — the production compare modal's Difference row analog
+  (index.html:18897).
+- **T4: card photos now `alt=""`** — the model name is the adjacent `h3`;
+  `alt` = name double-announced. *Corrects §7 "Images: `alt` = model name".*
+- **T5: card fit-rows heading removed** ("From your answers" / "Según tus
+  respuestas" deleted from render and from the proposed-copy set). FEATURE
+  rows are **not** answer-derived, so the label was a false attribution;
+  production renders these rows with no heading — the KEY NEED / FEATURE
+  tags speak for themselves. *Corrects §2.7 and the §3c row for that pair
+  (the "Product description" layer label stays).*
+- **T6: tab row is `position: sticky`** with an opaque background and a
+  z-index above the cards — tier identity and tier switching stay reachable
+  at every scroll position of a long card list (content-driven, commented in
+  CSS). The top offset is the measured harness review-bar height (prototype
+  chrome only; production would be `top: 0`).
+- **T7: tier activation restores list top.** On tab activation, if the top
+  of the new tier's card grid sits above the sticky tab row, the window
+  scrolls so it lands just under the row — switching tiers from deep scroll
+  no longer lands mid-list. Compensating scroll for the content swap; no-op
+  when the grid top is already in view.
+- **T8: card firmness readout carries the visible feel word** from the
+  regenerated fixture's `entry.firmnessFeelWord[lang]` (executed from the
+  real production `firmnessFeel` per model at capture), next to the numeral,
+  with the package accessible template "Firmness: {word}, {n} of 10" /
+  "Firmeza: {word}, {n} de 10". No local word map exists (none did — the
+  word was previously omitted). *Resolves deviation §2.3 and open question
+  §9.1: the fixture now carries the per-model word, so no recomputation was
+  needed. The §3c sr-phrasing row's "feel word omitted" note is obsolete.*
+- **T9: "Compare Your Finalists" heading is now visible** (was sr-only;
+  results-grouped shows it visibly — package consistency), and the compare
+  panel's price-tier symbol is `aria-hidden` with the announced Tier value
+  the pure tier name. *Corrects §7's "compare sr-only" heading inventory
+  line.*
+- **T10: tray can no longer hit-block card Compare buttons** — while the
+  tray is visible the page reserves the tray's **measured** rendered height
+  as extra bottom padding (re-measured on resize). Tray ES "Limpiar" is
+  unified to **"Borrar"** (results-grouped's proposed pair) so the package
+  proposes one ES pair for the production EN-only "Clear" static. *Corrects
+  the §3c "Limpiar" row.*
+- **T11: `.tier-descriptor-alt` no longer renders.** The proposed Bronze
+  descriptor rendered live on the Bronze tab, stacking two commercial
+  framings; it is now documented-only (here and §3c), like results-grouped.
+  The shipped "Bronze · entry-level" / "Bronce · básico" pair still renders
+  verbatim; the copy decision remains Blake's (§9.2).
+- **T12 (financing):**
+  (a) the module's primary button is now **outlined**, not solid-filled —
+  production ranks it below the brand-filled footer CTAs this prototype
+  omits, so a fill would have made it the only filled action on the screen;
+  (b) the **second production fitFirst instance** is added after the module
+  — the results footer hint line (production renders `FC('fitFirst')` into
+  `#resultsFooterHint` when financing is on, index.html:13823-13834);
+  (c) **staleNotice removed from the module** — production renders exactly
+  six strings in `#resultsFinancing` and shows staleNotice only inside the
+  sheet, so the stale-closed state has **no visible marker on this surface,
+  matching production**. *Supersedes deviation §2.11 and removes the §3b
+  staleNotice row from the rendered set.*
+- **T13: `document.title` is localized per lang** (as both Sleep Briefs do).
+- **T14 (200% text):** the tab row **can** overflow at 200% text size on
+  narrow viewports — the CSS comment claiming it "can NEVER overflow" was
+  false. The row now wraps (`flex-wrap`; tabs floor at label max-content
+  width instead of clipping) and the comment is corrected. The headline
+  gets `overflow-wrap: anywhere` so the long ES accent word cannot force
+  horizontal overflow at narrow widths.
+
+### Corrections to falsified claims (T15)
+
+1. **Copy-policy scope (§3c closing assertion).** "No medical/diagnostic/
+   buyer-characterising words … does not appear in any proposed string" was
+   true only of the PROPOSED table — it silently exempted the catalog strings
+   this variant *promoted* into new customer-facing surfaces (displayBadges
+   chips and on-card differentiators), which carried an EN leak, a
+   mistranslation and a price superlative. With T2/T3 those surfaces are
+   removed, so the assertion now matches the rendered page; its scope is:
+   proposed strings audited, and no promoted catalog surfaces exist on the
+   card face anymore.
+2. **"Row can NEVER overflow" (§1 bullet 2, §8, and the former CSS
+   comment).** False at 200% browser text size on narrow viewports: rem-based
+   type doubles while the viewport doesn't, and nowrap labels clipped. The
+   row now wraps instead (T14); "verified BRONCE fits at 320px" holds only at
+   100% text size.
+3. **§5's demonstration-section rows** described flag-flipped fixture data as
+   a demonstration device; that was synthesised engine output and is deleted
+   (T1). The below-threshold and empty-tier states are now *documented-only*
+   here: both remain real code branches (`meetsMatchThreshold` false ⇒
+   "Additional comparison option" eyebrow; empty tier array ⇒ verbatim
+   empty-tier line), unreachable from the frozen fixtures.
+
+### Proposed-copy table delta
+
+| Change | EN | ES | Note |
+|---|---|---|---|
+| Updated | Firmness: {word}, {n} of 10 | Firmeza: {word}, {n} de 10 | sr-only firmness template now carries the fixture feel word (T8); replaces the word-omitted variant in §3c |
+| Updated | Clear → **Borrar** (ES half) | | was "Limpiar"; unified with results-grouped (T10) |
+| Removed | From your answers | Según tus respuestas | false attribution on non-answer-derived FEATURE rows (T5) |
+| Removed | Non-exercisable states chrome (4 strings) | | demonstration section deleted (T1) |
+| Removed from render | Proposed alternative: Bronze · everyday value | Alternativa propuesta: Bronce · valor cotidiano | documented-only now (T11); pair retained in §3c as decision input |
+
+No new proposed pairs were introduced by this pass (the localized
+`document.title` strings are review chrome, not product copy, and cannot
+carry `data-proposed-copy`).

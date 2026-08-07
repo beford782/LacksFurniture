@@ -90,6 +90,10 @@ h1.results-headline {
   line-height: 1.15;
   font-weight: 700;
   margin: 0 0 10px;
+  /* Fix T14: at 200% text size on a narrow viewport the long ES accent word
+     ("compatibles") can exceed the content box — permit an in-word wrap
+     rather than horizontal overflow. */
+  overflow-wrap: anywhere;
 }
 h1.results-headline .accent { font-style: italic; color: var(--accent); }
 
@@ -129,19 +133,32 @@ h1.results-headline .accent { font-style: italic; color: var(--accent); }
    Fixes over the shipped bar (index.html:1733-1756):
    - unselected tabs get full-contrast ink on a visible chip (NN/g:
      faded unselected tabs read as decoration);
-   - each tab is flex:1 with clamp()ed type + letter-spacing so the row
-     can NEVER overflow: at a 320px viewport each tab gets ~96px and the
-     longest label (BRONCE) fits with room to spare (content-driven);
+   - each tab is flex:1 with clamp()ed type + letter-spacing; the row CAN
+     still overflow at 200% text size on narrow viewports (the earlier
+     "can NEVER overflow" claim was false — fix T14), so the row is
+     allowed to wrap: each tab floors at its label's max-content width and
+     wraps to a second line instead of clipping (content-driven);
    - >=48px tall targets, touch-action: manipulation;
-   - full APG tab semantics live in the markup (script.js). */
+   - full APG tab semantics live in the markup (script.js).
+   Fix T6 (content-driven): the row is position:sticky so tier identity and
+   tier switching stay reachable at every scroll position of a long card
+   list. Opaque background + z-index keep scrolling cards from showing
+   through; the top offset is the measured harness review-bar height
+   (prototype chrome only — in production this would be top:0). */
 .tier-tabs {
   display: flex;
+  flex-wrap: wrap;              /* fix T14: wrap, never clip, at 200% text / narrow widths */
   gap: clamp(6px, 1.5vw, 14px);
   margin: 0 0 8px;
+  position: sticky;             /* fix T6 */
+  top: var(--tabs-sticky-top, 0px);
+  z-index: 10;                  /* above the (static) cards */
+  background: var(--paper);     /* opaque — cards must not show through */
+  padding: 6px 0;
 }
 .tier-tab {
   flex: 1 1 0;
-  min-width: 0;                 /* row can compress, labels clamp instead of wrapping */
+  min-width: max-content;       /* fix T14: label never clips — the row wraps instead */
   min-height: 48px;
   padding: 10px 4px 12px;
   border: 2px solid var(--ink-soft);
@@ -179,20 +196,9 @@ h1.results-headline .accent { font-style: italic; color: var(--accent); }
 }
 .tier-descriptor .tier-name { font-weight: 700; color: var(--ink); }
 
-.tier-descriptor-alt {
-  margin: 0 0 4px;
-  font-size: 0.8rem;
-  color: var(--ink-soft);
-  border: 1px dashed var(--line);
-  display: inline-block;
-  padding: 2px 8px;
-}
-.tier-descriptor-alt .alt-label {
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  font-size: 0.68rem;
-}
+/* .tier-descriptor-alt removed (fix T11): the proposed Bronze descriptor is
+   documented-only in VARIANT-NOTES — never rendered live beside the shipped
+   descriptor. */
 
 /* ---------- Cards ----------
    Equal anatomy AND equal size for the tier lead and supporting cards:
@@ -276,6 +282,11 @@ h1.results-headline .accent { font-style: italic; color: var(--accent); }
   border-radius: 2px;
 }
 .firm-seg.filled { background: var(--ink); border-color: var(--ink); }
+.firm-word {
+  font-size: 1.15rem;         /* customer-glanceable anchor (fix T8: visible feel word) */
+  font-weight: 700;
+  white-space: nowrap;
+}
 .firm-num {
   font-size: 1.15rem;         /* customer-glanceable anchor */
   font-weight: 700;
@@ -297,24 +308,10 @@ h1.results-headline .accent { font-style: italic; color: var(--accent); }
 .product-story { border-top: 1px solid var(--line); padding-top: 10px; }
 .product-story .reason { margin: 0 0 8px; font-size: 0.92rem; }
 
-.badge-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 8px; }
-.badge-chip {
-  font-size: 0.72rem;
-  font-weight: 600;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  padding: 2px 9px;
-  color: var(--ink-soft);
-  background: var(--paper);
-}
-
-.diff-label {
-  font-size: 0.8rem;
-  font-weight: 700;
-  margin: 6px 0 4px;
-}
-.diff-fact { margin: 0 0 6px; font-size: 0.85rem; color: var(--ink-soft); }
-.diff-fact .diff-title { font-weight: 700; color: var(--ink); display: block; }
+/* .badge-chips / .badge-chip removed (fix T2): displayBadges no longer
+   render — they created a customer-facing surface production doesn't have.
+   .diff-label / .diff-fact removed (fix T3): differentiators left the card
+   face; differentiators[0] now renders in the compare panel instead. */
 
 .customer-fit {
   background: var(--fit-bg);
@@ -377,8 +374,17 @@ h1.results-headline .accent { font-style: italic; color: var(--accent); }
 
 /* ---------- Compare section ---------- */
 
-.compare-actions {
+/* Visible section heading (fix T9) — mirrors results-grouped's visible
+   "Compare Your Finalists" heading. */
+.compare-heading {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.2rem, 2.4vw, 1.5rem);
+  font-weight: 700;
   margin: 26px 0 0;
+}
+
+.compare-actions {
+  margin: 10px 0 0; /* the visible section heading (fix T9) now carries the 26px section gap */
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--card);
@@ -441,6 +447,11 @@ h1.results-headline .accent { font-style: italic; color: var(--accent); }
 .compare-stat { display: flex; justify-content: space-between; gap: 10px; border-top: 1px solid var(--line); padding: 7px 0; font-size: 0.9rem; }
 .compare-stat .label { color: var(--ink-soft); }
 .compare-stat .value { font-weight: 700; text-align: right; }
+/* Differentiator row (fix T3): label above, running text below — a
+   sentence-length value must not right-align against a flex label. */
+.compare-stat.diff { display: block; }
+.compare-stat.diff .label { display: block; margin-bottom: 2px; }
+.compare-stat.diff .value { display: block; text-align: left; font-weight: 400; color: var(--ink); }
 
 .compare-footnote {
   margin: 12px 0 0;
@@ -513,14 +524,8 @@ h1.results-headline .accent { font-style: italic; color: var(--accent); }
   font-size: 1.05rem;
   margin: 0 0 10px;
 }
-.fin-stale {
-  font-size: 0.9rem;
-  margin: 0 0 10px;
-  padding: 8px 12px;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  background: var(--card);
-}
+/* .fin-stale removed (fix T12c): staleNotice no longer renders in the
+   module — production shows it only inside the financing sheet. */
 .fin-fit-first { font-size: 0.85rem; color: var(--ink-soft); margin: 0 0 14px; }
 .fin-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
 .fin-btn {
@@ -531,41 +536,26 @@ h1.results-headline .accent { font-style: italic; color: var(--accent); }
   font: 700 0.9rem/1.2 system-ui, sans-serif;
   touch-action: manipulation;
 }
-.fin-btn.primary { background: var(--fin-btn); color: var(--fin-paper); }
-.fin-btn.secondary { background: var(--fin-paper); color: var(--fin-btn); }
+/* Fix T12a: the financing primary is OUTLINED, never solid-filled — this
+   prototype omits the brand-filled footer CTAs production ranks above it,
+   so a fill here would make it the screen's only filled action. Hierarchy
+   inside the module: primary = full-strength border, secondary = hairline. */
+.fin-btn.primary { background: var(--fin-paper); color: var(--fin-btn); }
+.fin-btn.secondary { background: var(--fin-paper); color: var(--fin-btn); border-color: var(--line); }
 .fin-btn[disabled] { opacity: 0.6; cursor: not-allowed; }
 .fin-sim-note { font-size: 0.78rem; color: var(--ink-soft); margin: 12px 0 0; }
 
-/* ---------- Non-exercisable state demonstrations ---------- */
+/* Results footer hint (fix T12b): the second production fitFirst instance
+   (#resultsFooterHint, index.html:13823-13834). */
+.results-footer-hint {
+  margin: 18px 0 0;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
 
-.demo-section {
-  margin: 40px 0 0;
-  border: 2px dashed var(--ink-soft);
-  border-radius: 8px;
-  padding: 18px;
-}
-.demo-section h2 {
-  font-size: 1rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  margin: 0 0 6px;
-}
-.demo-note { font-size: 0.85rem; color: var(--ink-soft); margin: 0 0 16px; }
-.demo-block { margin: 0 0 20px; }
-.demo-block:last-child { margin-bottom: 0; }
-.demo-label {
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--tag-ink);
-  background: var(--tag-bg);
-  display: inline-block;
-  padding: 2px 10px;
-  border-radius: 3px;
-  margin: 0 0 10px;
-}
-.demo-block .card-grid { grid-template-columns: minmax(0, 420px); margin-top: 0; }
+/* The demonstration-section styles are deleted (fix T1) with the section
+   itself — non-exercisable states are documented in VARIANT-NOTES only. */
 
 /* Content-driven sample: below ~560px of viewport the tray wraps its
    actions under the slots; nothing here encodes a device. */

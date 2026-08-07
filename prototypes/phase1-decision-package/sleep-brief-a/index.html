@@ -13,6 +13,8 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
+<meta name="google" content="notranslate">
+<!-- notranslate: Chrome auto-translate mangled a Spanish review screenshot into pseudo-English; the review surface must never be machine-translated -->
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Sleep Brief A — prototype</title>
   <link rel="stylesheet" href="../shared/harness.css">
@@ -50,14 +52,16 @@
       <section class="sba-priorities" aria-labelledby="sbaPrioritiesHeading">
         <h2 class="sba-h2" id="sbaPrioritiesHeading"></h2>
         <p class="sba-basis" id="sbaBasis" data-proposed-copy=""></p>
-        <ol class="sba-priority-list" id="sbaPriorityList"></ol>
+        <!-- A8: role="list" restores list semantics under list-style:none -->
+        <ol class="sba-priority-list" id="sbaPriorityList" role="list"></ol>
         <p class="sba-reassure" id="sbaReassure"></p>
       </section>
 
       <!-- ===== Next-step rail: the three journey steps, verbatim ===== -->
       <section class="sba-journey" aria-labelledby="sbaJourneyHeading">
         <h2 class="sba-h2" id="sbaJourneyHeading"></h2>
-        <ol class="sba-journey-list" id="sbaJourneyList"></ol>
+        <!-- A8: role="list" restores list semantics under list-style:none -->
+        <ol class="sba-journey-list" id="sbaJourneyList" role="list"></ol>
         <p class="sba-journey-copy" id="sbaJourneyCopy"></p>
       </section>
 
@@ -68,7 +72,9 @@
       <div class="sba-actions__row">
         <button type="button" class="sba-btn sba-btn--ghost" id="sbaEditBtn"
                 aria-describedby="sbaSimCaption"></button>
-        <button type="button" class="sba-btn sba-btn--ghost" id="sbaCompareBtn"></button>
+        <!-- A5: the compare entry is also described by the simulation caption -->
+        <button type="button" class="sba-btn sba-btn--ghost" id="sbaCompareBtn"
+                aria-describedby="sbaSimCaption"></button>
         <button type="button" class="sba-btn sba-btn--primary" id="sbaCtaBtn"
                 aria-describedby="sbaSimCaption" data-proposed-copy=""></button>
       </div>

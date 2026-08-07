@@ -40,16 +40,9 @@
   var STAT_WHY = { en: "Why it is here", es: "Por qué está aquí" };
   var STAT_DIFF = { en: "Difference", es: "Diferencia" };
 
-  // index.html:13676-13682 — verbatim replication of the firmnessFeel() word
-  // map (the compare/drawer surfaces' own vocabulary). Replicated here only
-  // because per-model feel words are not captured in the fixture; thresholds
-  // and words are copied exactly, not adjusted. Flagged in VARIANT-NOTES.
-  function firmnessFeelWord(n, lang) {
-    if (n <= 3) return lang === "es" ? "Suave" : "Plush";
-    if (n <= 5) return lang === "es" ? "Medio" : "Medium";
-    if (n <= 7) return lang === "es" ? "Firme" : "Firm";
-    return lang === "es" ? "Extra Firme" : "Extra Firm";
-  }
+  // B8: per-model feel words are consumed from the fixture
+  // (entry.firmnessFeelWord {en,es}, executed from the real firmnessFeel()
+  // per model at capture time) — the local word-map replica is deleted.
 
   // data/quiz.json (sleep_position / partner_sleep option labels) — verbatim
   // production config strings, used under a PROPOSED presentation mapping
@@ -62,7 +55,10 @@
     no_idea: { en: "Not Sure", es: "No Estoy Seguro" }
   };
   var SHARING_LABELS = {
-    solo: { en: "Solo Sleeper", es: "Duermo Solo" },
+    // B2: solo-ES is third person ("Duerme solo"), matching the captured
+    // temperature register — deviates from quiz.json's option label and
+    // stays flagged for native review in VARIANT-NOTES §4.
+    solo: { en: "Solo Sleeper", es: "Duerme solo" },
     partner: { en: "With a Partner", es: "Con Pareja" },
     family: { en: "Family Bed", es: "Cama Familiar" }
   };
@@ -75,7 +71,7 @@
     leadLabel: { en: "Where we start", es: "Por dónde empezamos" },
     ctaSee: { en: "See My Matches →", es: "Ver Mis Opciones →" },
     positionDt: { en: "Position", es: "Posición" },
-    sharingDt: { en: "Sharing", es: "Compañía" },
+    sharingDt: { en: "Sharing", es: "Cama compartida" }, // B2: aligns with A; "Compañía" did not convey bed-sharing. Native review pending.
     firmnessSrPrefix: { en: "Firmness: ", es: "Firmeza: " },
     firmnessSrOf: { en: " of 10", es: " de 10" },
     simActions: {
@@ -85,6 +81,10 @@
     simCompare: {
       en: "Prototype simulation — sample saved finalists, not this customer's saves.",
       es: "Simulación del prototipo — finalistas guardados de ejemplo, no los de este cliente."
+    },
+    fixtureError: { // B7 guard
+      en: "Fixture error — no priority rows captured.",
+      es: "Error de fixture — no hay filas de prioridades capturadas."
     }
   };
 
@@ -137,7 +137,7 @@
     var L = ctx.L;
     var p = fixture.profile[lang];
     var dom = p.dom;
-    var rows = p.priorityRows; // engine order, by index — 1 to 3 rows.
+    var rows = p.priorityRows || []; // engine order, by index — 1 to 3 rows.
     var answers = fixture.meta.answers;
 
     document.title = lang === "es"
@@ -164,14 +164,24 @@
     var leadLabel = el("p", "sb-lead-label", PROPOSED.leadLabel[lang]);
     leadLabel.setAttribute("data-proposed-copy", "");
     lead.appendChild(leadLabel);
-    lead.appendChild(el("p", "sb-lead-title", rows[0].title));
-    lead.appendChild(el("p", "sb-lead-reason", rows[0].desc));
+    if (rows[0]) {
+      lead.appendChild(el("p", "sb-lead-title", rows[0].title));
+      lead.appendChild(el("p", "sb-lead-reason", rows[0].desc));
+    } else {
+      // B7: the capture floor makes empty priorityRows unreachable, but an
+      // empty-priorities fixture must render a visible bilingual error —
+      // never throw, never go silently blank.
+      var fixtureErr = el("p", "sb-lead-title", PROPOSED.fixtureError[lang]);
+      fixtureErr.setAttribute("data-proposed-copy", "");
+      lead.appendChild(fixtureErr);
+    }
     identity.appendChild(lead);
 
     // Five signal badges — inert status tags (never buttons, never links,
     // never health-adjacent). Rendered as a <dl>, echoing the production
-    // metaStrip semantics. Fixed invariant order:
-    // position -> feel -> temperature -> sharing -> size.
+    // metaStrip semantics. Fixed invariant order (B3 — Blake's spec order,
+    // the one Alternative A renders, so the two Briefs compare directly):
+    // position -> temperature -> sharing -> feel -> size.
     // metaStrip is consumed positionally: production emits Size(0), Feel(1),
     // Temperature(2) in fixed order (index.html:13213-13216).
     var meta = p.metaStrip;
@@ -192,6 +202,14 @@
     var posVal = POSITION_LABELS[answers.sleep_position];
     if (posVal) badges.appendChild(badge(PROPOSED.positionDt[lang], L(posVal), true));
 
+    // Temperature (verbatim metaStrip pair).
+    if (meta[2]) badges.appendChild(badge(meta[2].label, meta[2].value));
+
+    // Sharing (PROPOSED mapping of stored answer -> quiz.json-derived label;
+    // solo-ES register adjusted, see B2 note above).
+    var shareVal = SHARING_LABELS[answers.partner_sleep];
+    if (shareVal) badges.appendChild(badge(PROPOSED.sharingDt[lang], L(shareVal), true));
+
     // Feel — doubles as the firmness treatment. Word = the Brief's OWN
     // vocabulary (the captured metaStrip Feel value; inline buckets at
     // index.html:13199), number = the exact fixture integer.
@@ -200,13 +218,6 @@
       feelBadge.className += " sb-badge--firmness";
       badges.appendChild(feelBadge);
     }
-
-    // Temperature (verbatim metaStrip pair).
-    if (meta[2]) badges.appendChild(badge(meta[2].label, meta[2].value));
-
-    // Sharing (PROPOSED mapping of stored answer -> verbatim quiz.json label).
-    var shareVal = SHARING_LABELS[answers.partner_sleep];
-    if (shareVal) badges.appendChild(badge(PROPOSED.sharingDt[lang], L(shareVal), true));
 
     // Size (verbatim metaStrip pair).
     if (meta[0]) badges.appendChild(badge(meta[0].label, meta[0].value));
@@ -340,17 +351,21 @@
     actions.appendChild(simNote);
 
     /* --- Simulated 2-up compare panel (from compareDemo) ----------- */
-    var panel = el("div", "sb-compare-panel");
+    // B6: the compare panel is its own <section> whose verbatim title pair
+    // is a same-level h2, so the document outline no longer nests it under
+    // "What happens next".
+    var panel = el("section", "sb-compare-panel");
     panel.id = "sb-compare-panel";
+    panel.setAttribute("aria-labelledby", "sb-compare-h2");
     panel.hidden = true;
 
     var simCompare = el("p", "sb-sim-note", PROPOSED.simCompare[lang]);
     simCompare.setAttribute("data-proposed-copy", "");
     panel.appendChild(simCompare);
 
-    var h3 = el("h3", "sb-h3", COMPARE_TITLE[lang]);
-    h3.id = "sb-compare-h3";
-    panel.appendChild(h3);
+    var h2c = el("h2", "sb-h3", COMPARE_TITLE[lang]); // .sb-h3 class keeps the panel-title visual size
+    h2c.id = "sb-compare-h2";
+    panel.appendChild(h2c);
 
     function findEntry(pick) {
       var arr = fixture.results.tierData[pick.tier] || [];
@@ -360,11 +375,20 @@
       return null;
     }
 
-    // Pair = the shipped auto-pair rule as captured (favourite-first, then
-    // save order, first two) — consumed verbatim from compareDemo.savedOrder.
+    // B1: pair = compareDemo.autoPair, computed at capture time by EXECUTING
+    // the real extracted compareReviewFinalists() (index.html:17398-17409)
+    // against the simulated saved state — consumed verbatim, never re-derived
+    // here. (The previous savedOrder.slice(0, 2) local re-derivation, whose
+    // comment wrongly claimed "as captured", is deleted.) savedOrder is only
+    // consulted to resolve each paired id's tier.
+    var savedOrder = fixture.compareDemo.savedOrder || [];
+    var autoPair = fixture.compareDemo.autoPair || [];
     var cols = el("ul", "sb-compare-cols"); // unordered: the two finalists carry no rank
     cols.setAttribute("role", "list");
-    fixture.compareDemo.savedOrder.slice(0, 2).forEach(function (pick) {
+    autoPair.forEach(function (id) {
+      var pick = null;
+      savedOrder.forEach(function (s) { if (s.id === id) pick = s; });
+      if (!pick) return;
       var m = findEntry(pick);
       if (!m) return;
       var li = el("li", "sb-compare-col");
@@ -388,24 +412,27 @@
         return s;
       }
 
-      // Feel — word from the compare surface's own vocabulary
-      // (firmnessFeel, index.html:13676-13682) + the exact integer,
-      // same 10-segment treatment as the Brief's own firmness display.
+      // Feel — per-model word consumed from the fixture (firmnessFeelWord,
+      // executed from the real firmnessFeel() per model at capture; B8) +
+      // the exact integer, same 10-segment treatment as the Brief's own
+      // firmness display.
       li.appendChild(stat(STAT_FEEL[lang],
-        firmnessDisplay(firmnessFeelWord(m.firmness, lang), m.firmness, lang)));
+        firmnessDisplay(L(m.firmnessFeelWord), m.firmness, lang)));
 
       // Tier — tier NAME, never a percentage.
       li.appendChild(stat(STAT_TIER[lang], TIER_NAMES[lang][pick.tier] || pick.tier));
 
       // Why it is here — production formula: first captured card-priority
       // row (title — desc), by index, from cardPriorities[lang][id]
-      // (cf. index.html:18882-18884). Falls back to the bilingual
-      // topPickReason, mirroring hf2ReasonFor's preference, if no rows.
+      // (cf. index.html:18882-18884). B4: with no captured rows the stat is
+      // OMITTED (as Alternative A and results-grouped do) — the previous
+      // topPickReason fallback printed customer-agnostic copy under a
+      // customer-fit label and did not mirror production's tier-dependent
+      // hf2ReasonFor.
       var cardRows = (fixture.results.cardPriorities[lang] || {})[m.id] || [];
-      var why = cardRows.length
-        ? cardRows[0].title + " — " + cardRows[0].desc
-        : L(m.topPickReason);
-      li.appendChild(stat(STAT_WHY[lang], why));
+      if (cardRows.length) {
+        li.appendChild(stat(STAT_WHY[lang], cardRows[0].title + " — " + cardRows[0].desc));
+      }
 
       // Difference — production formula: first differentiator detail
       // (cf. index.html:18897), resolved bilingually.

@@ -147,12 +147,13 @@ sentences belong to the salesperson.
 | P1 | Where we start | Por dónde empezamos | Conversation-lead label; echoes the verbatim reassurance phrasing ("This brief guides where we start." / "Este resumen define por dónde empezamos.", index.html:13219–13221) |
 | P2 | See My Matches → | Ver Mis Opciones → | Honest navigation CTA replacing the 1.6 mislabel; ES mirrors production's "Comparar Mis Opciones →" with an honest verb |
 | P3 | Position | Posición | Badge category label for `sleep_position` |
-| P4 | Sharing | Compañía | Badge category label for `partner_sleep` — flagged for native-ES review |
+| P4 | Sharing | Cama compartida | Badge category label for `partner_sleep` — B2: aligned with Alternative A (was "Compañía", which does not convey bed-sharing); flagged for native-ES review |
 | P5 | Firmness: {word}, {n} of 10 | Firmeza: {word}, {n} de 10 | Spec-mandated accessible-name template (sr-only, adjacent to the aria-hidden graphic) |
 | P6 | Prototype: navigation buttons are simulated on this screen. | Prototipo: los botones de navegación están simulados en esta pantalla. | Always-visible actions caption so simulated buttons are never silent dead ends |
 | P7 | Prototype simulation — sample saved finalists, not this customer's saves. | Simulación del prototipo — finalistas guardados de ejemplo, no los de este cliente. | Bilingual simulation label inside the compare panel |
 | P8 | *(mapping)* `sleep_position` answer id → quiz.json option label rendered as a badge | idem | Proposed presentation mapping of a stored answer; strings verbatim (table §4) |
-| P9 | *(mapping)* `partner_sleep` answer id → quiz.json option label rendered as a badge | idem | Proposed presentation mapping of a stored answer; strings verbatim (table §4) |
+| P9 | *(mapping)* `partner_sleep` answer id → quiz.json option label rendered as a badge | idem | Proposed presentation mapping of a stored answer; strings verbatim except solo-ES (B2, table §4) |
+| P10 | Fixture error — no priority rows captured. | Error de fixture — no hay filas de prioridades capturadas. | B7 guard: visible bilingual error when the fixture carries no priority rows (unreachable under the capture floor; prototype-harness copy, never customer-facing) |
 
 ---
 
@@ -175,7 +176,7 @@ need-framed priority copy only (w2-signal-badges / Phase 0.6).
 | Position | `no_idea` | Not Sure | No Estoy Seguro | quiz.json verbatim (render vs omit = open question Q2) |
 | Feel | `firmness` (integer) | metaStrip Feel word + `n/10` + 10-segment strip | idem (ES word) | fixture (`metaStrip[1]`, `firmness.value`) |
 | Temperature | `temperature` | metaStrip value (e.g. Sleeps cold) | e.g. Duerme con frío | fixture verbatim |
-| Sharing | `partner_sleep: solo` | Solo Sleeper | Duermo Solo | quiz.json verbatim |
+| Sharing | `partner_sleep: solo` | Solo Sleeper | Duerme solo | B2: register-adjusted from quiz.json's "Duermo Solo" (third person, matching the captured temperature register); native review pending |
 | Sharing | `partner` | With a Partner | Con Pareja | quiz.json verbatim |
 | Sharing | `family` | Family Bed | Cama Familiar | quiz.json verbatim |
 | Size | `mattress_size` | metaStrip value (Twin/…/Cal King) | idem (proper nouns) | fixture verbatim |
@@ -283,3 +284,88 @@ need-framed priority copy only (w2-signal-badges / Phase 0.6).
   archetype nicknames, `displayPriority`, `--tier-*` vars, compare tray).
 - Breakpoints are content-driven samples only — no showroom-hardware claims
   (Phase 0.4 pending).
+
+---
+
+## Lead integration pass (post-adversarial-review fixes)
+
+Applied from the lead-triaged adversarial review. The original notes above
+are retained; where a fix falsifies an earlier claim, the correction is
+recorded here rather than silently rewritten. The only in-place edits made
+above are to the proposed-copy / mapping tables (§3c, §4), so no stale
+string can be copied out of them; each such edit is itemized below.
+
+### Changes applied
+
+- **B1.** The compare pair now consumes `fixture.compareDemo.autoPair` —
+  computed at capture time by *executing* the real extracted
+  `compareReviewFinalists()` (index.html:17398-17409) against the simulated
+  saved state — instead of re-deriving `savedOrder.slice(0, 2)` locally.
+  `savedOrder` is now only consulted to resolve each paired id's tier. The
+  §3a row "Compare pair … `compareDemo.savedOrder` (first two)" and §5.2's
+  "fed by `compareDemo.savedOrder`" description are superseded: fed by
+  `compareDemo.autoPair`.
+- **B2 (ES).** The Sharing badge label changed from "Compañía" to
+  "Cama compartida" (aligning with Alternative A — "Compañía" does not
+  convey bed-sharing), and the `solo` value to third-person "Duerme solo"
+  (matching the captured temperature register). §3c P4 and the §4 table are
+  updated in place; both strings remain flagged for native-ES review. Note
+  the solo-ES value now deviates from quiz.json's verbatim option label
+  ("Duermo Solo") — it is proposed copy, which corrects §3b's blanket
+  "quiz.json verbatim" for that one value; Q1 now applies to
+  "Cama compartida".
+- **B3.** The badge row is reordered to **position → temperature → sharing
+  → feel → size** — the order in Blake's spec, which Alternative A uses —
+  so the two Briefs are directly comparable. This supersedes the order
+  stated in D8, the §4 preamble, and Q5 (previously position → feel →
+  temperature → sharing → size). The Feel badge still carries the embedded
+  firmness module (Q7 unchanged); it now sits fourth.
+- **B4.** The compare "Why it is here" fallback printed the
+  customer-agnostic `topPickReason` under a customer-fit label for any
+  tier, and did not mirror production's tier-dependent `hf2ReasonFor`. The
+  stat is now OMITTED when `cardPriorities[lang][id]` has no captured rows,
+  as Alternative A and results-grouped do. §3a's "fallback `topPickReason`
+  via `L()`" row is superseded.
+- **B5 (reflow).** The ≥640px journey row could not compress (flex items'
+  `min-width: auto`); `.sb-journey-step` now sets `min-width: 0` so long ES
+  strings reflow instead of overflowing.
+- **B6 (outline).** The compare panel heading nested under "What happens
+  next" in the document outline. The panel is now its own `<section>`
+  (`aria-labelledby`) with the verbatim "Compare Your Finalists" /
+  "Compara Tus Finalistas" pair as a same-level `h2` (was an `h3` inside
+  the actions block). §6.1's heading inventory ("`h3` panel title") is
+  superseded; finalist names remain `h4` — one level below their new `h2`
+  section heading, an acceptable jump recorded here.
+- **B7.** Audited every ranked `<ol>` with `list-style: none` for
+  `role="list"`: both (`.sb-priorities`, `.sb-journey-steps`) already
+  carried it — no markup change needed. `rows[0]` access is now guarded: an
+  empty-priorities fixture renders a visible bilingual fixture-error line
+  ("Fixture error — no priority rows captured." / "Error de fixture — no
+  hay filas de prioridades capturadas.", added to §3c as P10) instead of
+  throwing. Unreachable under the capture floor; the render still must
+  never throw or go silently blank.
+- **B8.** Per-model compare Feel words now consume the regenerated
+  fixture's `entry.firmnessFeelWord[lang]` (executed from the real
+  `firmnessFeel()` per model at capture time); the local word-map replica
+  is deleted. This supersedes the §3b word-map row, and **resolves Q8** the
+  way that question requested: the fixtures were extended.
+
+### Corrections to falsified claims (B9)
+
+1. **Bilingual completeness.** The Size badge renders production's EN-only
+   `sizeLabels` values ("Full" / "Queen" / "King") in ES mode — an
+   inherited production gap (index.html:13197-13198), not
+   prototype-introduced. §4's Size row ("idem (proper nouns)") should be
+   read with that exception explicit: the rendered ES-mode values are the
+   production EN strings.
+2. **B1's previous code comment claimed "as captured" while re-deriving.**
+   Before this pass the code commented that the pair was "the shipped
+   auto-pair rule as captured … consumed verbatim from
+   compareDemo.savedOrder", but it actually re-derived
+   `savedOrder.slice(0, 2)` locally rather than consuming an executed-rule
+   output. Fixed by B1 (the fixture's `autoPair` is now the executed rule's
+   output and is consumed verbatim).
+3. **Open layout note — ES fold flip (adversary-measured datum).** At
+   1112×834, a priority row falls below the fold in ES but not in EN. Not
+   addressed in this pass; recorded as an open layout observation for the
+   decision package (relevant to the two-person glanceability claim).

@@ -86,8 +86,8 @@
       inStock: { en: "In stock", es: "Disponible" },
       // index.html:14259 (empty-tier state)
       emptyTier: { en: "No strong matches in this tier.", es: "No hay coincidencias fuertes en este nivel." },
-      // index.html:19213-19215 (drawer differentiators label)
-      diffLabel: { en: "What makes this one different", es: "Lo que hace diferente a este" },
+      // (diffLabel removed with the card-face differentiators block — fix G3;
+      // the compare panel's Difference row keeps its own verbatim label below)
       // index.html:18895 (compare-modal stat label, reused as the customer-fit
       // layer label — production renders priorities[0] under this exact label)
       whyHere: { en: "Why it is here", es: "Por qué está aquí" },
@@ -112,8 +112,12 @@
       finLead:     { en: "Your strongest mattress match may have more than one way to bring it home.", es: "Tu mejor opción de colchón puede tener más de una forma de llegar a casa." }, // copy.resultsLead
       finFitFirst: { en: "Your matches are based on sleep fit — never on payment method.", es: "Tus opciones se basan en tu descanso — nunca en la forma de pago." }, // copy.fitFirst
       finExplore:  { en: "Explore payment options", es: "Explorar opciones de pago" },               // copy.cta
-      finAsk:      { en: "Plan the conversation", es: "Planear la conversación" },                   // copy.resultsAsk
-      finStale:    { en: "Current payment options are available from your Lacks specialist.", es: "Tu especialista de Lacks tiene las opciones de pago actuales." } // copy.staleNotice
+      finAsk:      { en: "Plan the conversation", es: "Planear la conversación" }                    // copy.resultsAsk
+      // finStale removed (fix G12c): production renders exactly six strings in
+      // #resultsFinancing (index.html:10972-10980); staleNotice renders only
+      // inside the financing sheet (index.html:10825-10837), which this
+      // prototype does not build — so the stale-closed state has no visible
+      // marker on this surface, matching production.
     };
 
     /* ================= PROPOSED copy (category c) =================
@@ -136,19 +140,21 @@
       // "Firmness: Medium, 4 of 10" / "Firmeza: Medio, 4 de 10".
       firmnessSr: function (word, n) {
         return es ? "Firmeza: " + word + ", " + n + " de 10" : "Firmness: " + word + ", " + n + " of 10";
+      },
+      // Financing inert-interaction note (fix G12b) — the same bilingual
+      // sim-note the variant's other simulated sections carry; the disabled
+      // financing buttons were the one unlabelled dead end.
+      finSim: {
+        en: "Simulated — buttons are inactive in this prototype.",
+        es: "Simulado — los botones están inactivos en este prototipo."
       }
     };
 
-    // firmnessFeel — VERBATIM vocabulary reuse of the Results-surface word map,
-    // index.html:13676-13682. This is the destination surface's own bucketing,
-    // copied — NOT a new or unified bucketing (three per-surface maps disagree
-    // at 4/6/8 in production; that conflict is reported, not resolved, here).
-    function firmWord(score) {
-      if (score <= 3) return es ? "Suave" : "Plush";
-      if (score <= 5) return es ? "Medio" : "Medium";
-      if (score <= 7) return es ? "Firme" : "Firm";
-      return es ? "Extra Firme" : "Extra Firm";
-    }
+    // The local firmnessFeel word map is DELETED (fix G15 / fixture
+    // regeneration): every fixture tier entry now carries firmnessFeelWord
+    // {en,es}, executed from the real production firmnessFeel per model at
+    // capture time — consumed via L(m.firmnessFeelWord), never re-bucketed
+    // locally.
 
     /* ================= helpers ================= */
 
@@ -163,6 +169,11 @@
     var tierData = fixture.results.tierData;
     var cardPriorities = (fixture.results.cardPriorities && fixture.results.cardPriorities[lang]) || {};
     var priceTierSymbols = fixture.results.priceTierSymbols || {};
+
+    // Localized page title (fix G13; both Sleep Brief variants do the same).
+    document.title = lang === "es"
+      ? "Resultados — agrupados (acordeón de apertura única) · prototipo Fase 1"
+      : "Results — grouped (single-open accordion) · Phase 1 prototype";
 
     // id -> { m, tier } lookup across all tiers (fixture order preserved).
     var byId = {};
@@ -221,6 +232,13 @@
       btn.appendChild(el("span", "rg-acc-label", L(STR.tierLabel[tier])));
       var desc = el("span", "rg-acc-desc");
       desc.innerHTML = STR.tierDescHtml[tier][lang]; // verbatim descriptor pair (13877-13883)
+      // Fix G8: without this, the header's accessible name read
+      // "GOLD Gold · premium materials" — the display label and the
+      // descriptor's tier-name span both carry the tier word. The
+      // descriptor's duplicate is aria-hidden (visible text unchanged) so
+      // the name carries the tier exactly once: "GOLD · premium materials".
+      var dupTierWord = desc.querySelector(".tier-name");
+      if (dupTierWord) dupTierWord.setAttribute("aria-hidden", "true");
       btn.appendChild(desc);
       var chev = el("span", "rg-acc-chevron", "▾");
       chev.setAttribute("aria-hidden", "true");
@@ -247,6 +265,10 @@
     cmpSection.setAttribute("aria-labelledby", "rgCompareH");
     var cmpH = el("h2", "rg-compare-h", L(STR.compareTitle)); // verbatim modal title (18901-18902)
     cmpH.id = "rgCompareH";
+    // tabindex="-1": programmatic focus target for the tray-Clear focus move
+    // (fix G6a) when the compare entry below is real-disabled; never in the
+    // tab order.
+    cmpH.setAttribute("tabindex", "-1");
     cmpSection.appendChild(cmpH);
     cmpSection.appendChild(P(el("p", "rg-sim-note", L(PROPOSED.simNote))));
     var cmpHint = P(el("p", "rg-compare-hint", L(PROPOSED.selectTwo)));
@@ -291,7 +313,6 @@
     // production same-tier early-return (index.html:14273). Per APG, when the
     // pattern does not permit collapsing the open panel, its header button
     // carries aria-disabled="true" (not disabled — it stays focusable).
-    // NO auto-scroll on expand (NN/g disorientation; w2-tier-navigation).
     function setOpenTier(tier) {
       if (tier === openTier) return;
       openTier = tier;
@@ -302,6 +323,14 @@
         else accBtns[t].removeAttribute("aria-disabled");
         accPanels[t].hidden = !isOpen;
       });
+      // Fix G5: collapsing a tall panel above the clicked header would yank
+      // the header away and leave the viewport mid-list. This is a
+      // COMPENSATING scroll that keeps the pressed control on screen after
+      // the layout collapse — not the expand-time auto-scroll-jump the
+      // NN/g-cited guidance warns about. .rg-acc-h carries scroll-margin-top
+      // = var(--rg-sticky-top) so the header lands below the harness bar.
+      var h = accBtns[tier].closest(".rg-acc-h");
+      if (h && h.scrollIntoView) h.scrollIntoView({ block: "start" });
     }
     // Initialize states (gold open).
     TIERS.forEach(function (t) {
@@ -330,10 +359,15 @@
       lead.appendChild(buildCard(list[0], tier, true));
       panel.appendChild(lead);
 
-      var supports = list.slice(1, 3);
+      // Fix G9: slice(1), never slice(1, 3) — the engine already caps tiers;
+      // a presentation-side cap is exactly the forbidden class (it would
+      // silently drop an engine-qualified result if a capture ever carried
+      // more than three).
+      var supports = list.slice(1);
       if (supports.length) {
         panel.appendChild(el("p", "rg-more-label", L(STR.moreDirections)));
         var ul = el("ul", "rg-supports");
+        ul.setAttribute("role", "list"); // fix G14: list-style:none drops list semantics in Safari/VO
         supports.forEach(function (m) {
           var li = el("li");
           li.appendChild(buildCard(m, tier, false));
@@ -372,19 +406,16 @@
       body.appendChild(el("p", "rg-card-brand", m.brand + (m.subBrand ? " · " + m.subBrand : "")));
       body.appendChild(el("h3", "rg-card-name", m.name));
 
-      // Firmness: exact fixture integer; word from the Results surface's own
-      // vocabulary (firmnessFeel, verbatim); 10 discrete segments, N filled;
-      // graphic aria-hidden; sr text = brief-mandated phrasing.
-      body.appendChild(buildFirmness(m.firmness));
+      // Firmness: exact fixture integer; word from the fixture's per-model
+      // firmnessFeelWord (executed from the real production firmnessFeel at
+      // capture — fix G15); 10 discrete segments, N filled; graphic
+      // aria-hidden; sr text = brief-mandated phrasing.
+      body.appendChild(buildFirmness(m));
 
-      // Authored display badges — documented deviation (production never
-      // renders displayBadges). Inert status-tag chips; product-describing.
-      var tags = es ? (m.tags_es || m.tags) : m.tags;
-      if (tags && tags.length) {
-        var tagUl = el("ul", "rg-tags");
-        tags.forEach(function (t) { tagUl.appendChild(el("li", "rg-tag", t)); });
-        body.appendChild(tagUl);
-      }
+      // displayBadges chips removed (fix G2): they created a customer-facing
+      // surface production doesn't have (displayBadges render nowhere at
+      // 78f949c) and leaked EN strings, a mistranslation and a price
+      // superlative into it.
 
       // Product-story layer (authored, customer-agnostic) — labelled as such.
       body.appendChild(P(el("p", "rg-layer-label", L(PROPOSED.aboutModel))));
@@ -395,35 +426,36 @@
       // the rows are genuinely ordered; display position is the honest claim.
       var rows = (cardPriorities[m.id] || []).slice(0, 3);
       if (rows.length) {
-        body.appendChild(el("p", "rg-layer-label", L(STR.whyHere)));
+        // Lead fix (adversarial finding, cross-variant consistency with
+        // results-tabs): NO heading over the fit rows. Production renders
+        // these rows headerless on cards; "Why it is here" is production's
+        // single-row COMPARE-modal label, and using it as a card heading
+        // over rows that can be all-FEATURE (not answer-matched) overclaims
+        // customer-specific justification. The KEY NEED / FEATURE tags on
+        // each row carry the honest provenance.
         var ol = el("ol", "rg-fit-rows");
+        ol.setAttribute("role", "list"); // fix G14: list-style:none drops list semantics in Safari/VO
         rows.forEach(function (r, i) {
           var li = el("li", "rg-fit-row");
           var rank = el("span", "rg-fit-rank", String(i + 1));
           rank.setAttribute("aria-hidden", "true"); // <ol> already conveys position
           li.appendChild(rank);
           li.appendChild(el("span", "rg-fit-title", r.title));
-          li.appendChild(el("span", "rg-fit-tag", r.tag)); // fixture tag verbatim (KEY NEED / FEATURE / NECESIDAD CLAVE / INCLUIDO)
+          // Fix G4: FEATURE (unmatched) tags get a visually distinct, muted
+          // style keyed on the fixture's matched flag — KEY NEED and FEATURE
+          // must not read as the same claim strength.
+          li.appendChild(el("span",
+            "rg-fit-tag " + (r.matched ? "is-matched" : "is-feature"),
+            r.tag)); // fixture tag verbatim (KEY NEED / FEATURE / NECESIDAD CLAVE / INCLUIDO)
           li.appendChild(el("span", "rg-fit-desc", r.desc));
           ol.appendChild(li);
         });
         body.appendChild(ol);
       }
 
-      // Differentiators (authored product copy; drawer content in production —
-      // shown on-card here as a documented deviation).
-      if (m.differentiators && m.differentiators.length) {
-        body.appendChild(el("p", "rg-layer-label", L(STR.diffLabel)));
-        var diffs = el("div", "rg-diffs");
-        m.differentiators.forEach(function (d) {
-          var row = el("p", "rg-diff");
-          row.appendChild(el("strong", "rg-diff-title", L(d.title)));
-          row.appendChild(document.createTextNode(" — "));
-          row.appendChild(el("span", "rg-diff-detail", L(d.detail)));
-          diffs.appendChild(row);
-        });
-        body.appendChild(diffs);
-      }
+      // Differentiators removed from the card face (fix G3): authored drawer
+      // copy incl. within-tier ranking and price claims does not belong on
+      // the fit-primary card; the compare panel keeps its Difference row.
 
       // Footer: stock line + compare toggle (aria-pressed; the card-level
       // compare control is dormant in production — this is the
@@ -434,6 +466,9 @@
       cmp.type = "button";
       cmp.setAttribute("aria-pressed", "false");
       cmp.setAttribute("data-id", m.id);
+      // Fix G7: sr-only model-name suffix — nine buttons named just
+      // "Compare" are indistinguishable in an AT rotor list.
+      cmp.appendChild(el("span", "sr-only", " — " + m.name));
       cmp.addEventListener("click", function () { toggleCompare(m.id); });
       footer.appendChild(cmp);
       body.appendChild(footer);
@@ -441,8 +476,12 @@
       return card;
     }
 
-    function buildFirmness(n) {
-      var word = firmWord(n);
+    function buildFirmness(m) {
+      // Fix G15/fixture regeneration: feel word consumed from the fixture's
+      // firmnessFeelWord (executed from the real production firmnessFeel per
+      // model at capture) — no local word map.
+      var word = L(m.firmnessFeelWord);
+      var n = m.firmness;
       var wrap = el("div", "rg-firmness");
 
       var sr = el("span", "sr-only", PROPOSED.firmnessSr(word, n));
@@ -501,7 +540,18 @@
         tray.slots.appendChild(el("li", "rg-tray-slot", entry ? entry.m.name : id));
       });
       tray.go.disabled = count < 2; // mirrors production go.disabled (18856)
+      setTrayReserve();
     }
+
+    // Fix G6b/G6c: the bottom content reserve equals the tray's MEASURED
+    // rendered height — never the old fixed 140px guess — so a wrapped
+    // multi-line tray can neither cover the financing fit-first hint nor
+    // hit-block a card's Compare button. 0 while the tray is hidden.
+    function setTrayReserve() {
+      var h = tray.root.hidden ? 0 : tray.root.offsetHeight;
+      document.documentElement.style.setProperty("--rg-tray-reserve", h + "px");
+    }
+    window.addEventListener("resize", setTrayReserve);
 
     function setPanelOpen(open) {
       panelOpen = open && compareSel.length === 2;
@@ -551,7 +601,17 @@
         dl.appendChild(el("dt", null, label));
         dl.appendChild(el("dd", null, value));
       }
-      stat(L(STR.feel), firmWord(m.firmness) + " " + m.firmness + "/10"); // production value form (18892)
+      // Feel row (fix G15): the visible "{word} N/10" (production value form,
+      // 18892) is aria-hidden; the adjacent sr-only sentence carries the
+      // brief-mandated phrasing — raw "Plush 3/10" must never be announced.
+      // Word from the fixture's firmnessFeelWord, never a local map.
+      dl.appendChild(el("dt", null, L(STR.feel)));
+      var feelDd = el("dd");
+      var feelVisible = el("span", null, L(m.firmnessFeelWord) + " " + m.firmness + "/10");
+      feelVisible.setAttribute("aria-hidden", "true");
+      feelDd.appendChild(feelVisible);
+      feelDd.appendChild(el("span", "sr-only", PROPOSED.firmnessSr(L(m.firmnessFeelWord), m.firmness)));
+      dl.appendChild(feelDd);
       stat(L(STR.tier), L(STR.tierName[tier]));                           // tier NAME, never a percentage
       var rows = cardPriorities[m.id] || [];
       if (rows.length) stat(L(STR.whyHere), rows[0].title + " — " + rows[0].desc); // production formula (18882-18883)
@@ -593,11 +653,16 @@
       actions.appendChild(ask);
       sec.appendChild(actions);
 
-      // Shipped stale-closed state (exactPromotionsEnabled:false): no exact
-      // rates or terms render anywhere. In production this staleNotice renders
-      // inside the sheet's rate-bearing cards (index.html:10825-10837); it is
-      // surfaced inline here because the sheet is not built.
-      sec.appendChild(el("p", "rg-fin-stale", L(STR.finStale)));
+      // Fix G12b: the same bilingual sim-note the variant's other simulated
+      // sections carry — the disabled financing buttons were the one
+      // unlabelled dead end on the page.
+      sec.appendChild(P(el("p", "rg-sim-note", L(PROPOSED.finSim))));
+
+      // No staleNotice here (fix G12c): production renders exactly six
+      // strings in #resultsFinancing and shows staleNotice only inside the
+      // sheet — so the stale-closed state has no visible marker on this
+      // surface, matching production. (No exact rates or terms render
+      // anywhere either way.)
       return sec;
     }
 
@@ -613,6 +678,7 @@
       inner.appendChild(count);
 
       var slots = el("ul", "rg-tray-slots");
+      slots.setAttribute("role", "list"); // fix G14: list-style:none drops list semantics in Safari/VO
       inner.appendChild(slots);
 
       var actions = el("div", "rg-tray-actions");
@@ -622,6 +688,14 @@
         compareSel = [];
         setPanelOpen(false);
         updateCompareUI();
+        // Fix G6a: the tray — with the focused Clear button — just left the
+        // page (display:none); focus must land on a stable visible element,
+        // never be stranded on a hidden control (results-tabs guards this
+        // with its active tab). Target: the action-area compare entry; it is
+        // real-disabled at zero selections, so its labelled section heading
+        // (tabindex="-1", same action area) takes the focus in that state.
+        if (!cmpOpenBtn.disabled) cmpOpenBtn.focus();
+        else cmpH.focus();
       });
       var go = P(el("button", "rg-tray-btn", L(PROPOSED.trayGo)));
       go.type = "button";

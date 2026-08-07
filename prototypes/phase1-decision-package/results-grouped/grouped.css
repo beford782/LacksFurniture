@@ -49,7 +49,10 @@ html, body { margin: 0; padding: 0; }
 body {
   background: var(--rg-paper);
   color: var(--rg-ink);
-  font: 400 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  /* Fix G10: 1rem, not 16px — every font-size in this file is rem-based so
+     the browser's default-font-size setting scales the whole page (this was
+     the only variant that ignored it). px stays for borders and spacing. */
+  font: 400 1rem/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
   overflow-x: hidden; /* wide content scrolls in its own containers, never the body */
   min-height: 100vh;
   min-height: 100dvh;
@@ -90,12 +93,15 @@ button[disabled] { cursor: not-allowed; }
 .rg-main {
   max-width: 1080px; /* echoes the production Results surface max-width (1080) */
   margin: 0 auto;
-  padding: 24px clamp(16px, 4vw, 48px) 140px; /* bottom room for the fixed tray */
+  /* Fix G6b: the bottom reserve for the fixed tray is the tray's MEASURED
+     rendered height (JS sets --rg-tray-reserve; 0 while hidden) — the old
+     fixed 140px let a wrapped tray cover the financing fit-first hint. */
+  padding: 24px clamp(16px, 4vw, 48px) calc(24px + var(--rg-tray-reserve, 0px));
 }
 
 .rg-eyebrow {
   margin: 0 0 6px;
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -106,7 +112,7 @@ button[disabled] { cursor: not-allowed; }
   margin: 0 0 10px;
   font-family: Georgia, "Times New Roman", serif;
   font-weight: 400;
-  font-size: clamp(28px, 4.5vw, 44px);
+  font-size: clamp(1.75rem, 4.5vw, 2.75rem);
   line-height: 1.15;
   color: var(--rg-ink);
 }
@@ -115,7 +121,7 @@ button[disabled] { cursor: not-allowed; }
 .rg-subhead {
   margin: 0 0 18px;
   max-width: 62ch;
-  font-size: clamp(15px, 2vw, 17px);
+  font-size: clamp(0.9375rem, 2vw, 1.0625rem);
   color: var(--rg-ink-soft);
 }
 
@@ -130,10 +136,10 @@ button[disabled] { cursor: not-allowed; }
   border: 1px solid var(--rg-line);
   border-left: 4px solid var(--rg-accent-gold);
   background: var(--rg-card);
-  font-size: 15px;
+  font-size: 0.9375rem;
 }
 .rg-trial-focus .results-trial-focus__label {
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -162,6 +168,9 @@ button[disabled] { cursor: not-allowed; }
   position: sticky;
   top: var(--rg-sticky-top);
   z-index: 5;
+  /* Fix G5: scrollIntoView target margin — the compensating scroll after a
+     header toggle must land the header below the sticky harness bar. */
+  scroll-margin-top: var(--rg-sticky-top);
 }
 
 .rg-acc-btn {
@@ -188,7 +197,7 @@ button[disabled] { cursor: not-allowed; }
 
 /* Collapsed affordance: chevron + full-width row + border; never color alone. */
 .rg-acc-label {
-  font-size: clamp(18px, 2.6vw, 24px); /* customer-glanceable anchor */
+  font-size: clamp(1.125rem, 2.6vw, 1.5rem); /* customer-glanceable anchor */
   font-weight: 800;
   letter-spacing: 0.22em;
 }
@@ -196,14 +205,14 @@ button[disabled] { cursor: not-allowed; }
 .rg-acc-desc {
   flex: 1 1 auto;
   min-width: 0;
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--rg-muted);
 }
 .rg-acc-desc .tier-name { font-weight: 700; color: var(--rg-ink-soft); }
 
 .rg-acc-chevron {
   flex: 0 0 auto;
-  font-size: 18px;
+  font-size: 1.125rem;
   line-height: 1;
   color: var(--rg-muted);
   transition: transform 0.15s ease;
@@ -220,7 +229,7 @@ button[disabled] { cursor: not-allowed; }
   text-align: center;
   font-family: Georgia, serif;
   font-style: italic;
-  font-size: 17px;
+  font-size: 1.0625rem;
   color: var(--rg-muted);
 }
 
@@ -228,7 +237,7 @@ button[disabled] { cursor: not-allowed; }
 
 .rg-more-label {
   margin: 22px 0 12px;
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -258,6 +267,16 @@ button[disabled] { cursor: not-allowed; }
   display: block;
   width: 100%;
   aspect-ratio: 16 / 9;
+  /* Fix G1 (content-driven, not a device claim): cap the photo height so no
+     viewport's first screen is all photograph with zero fit information.
+     The wide lead card's 16:9 photo alone was ~500-550px tall at
+     1024-1112px content widths, pushing name + firmness below an 834px AND
+     a 768px fold. At 28vh: 834px-tall viewport -> ~234px photo, name ~743px
+     and firmness ~780px from the top (harness bar ~86 + chrome ~312 + panel
+     pad 18 + photo + body offsets); 768px-tall -> ~215px photo, name ~725px,
+     firmness ~762px — both land above both folds. object-fit: cover keeps
+     the crop honest. */
+  max-height: clamp(160px, 28vh, 320px);
   object-fit: cover;
   border-bottom: 1px solid var(--rg-line-soft);
 }
@@ -266,7 +285,7 @@ button[disabled] { cursor: not-allowed; }
 
 .rg-card-eyebrow {
   margin: 0 0 4px;
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -275,7 +294,7 @@ button[disabled] { cursor: not-allowed; }
 
 .rg-card-brand {
   margin: 0 0 2px;
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--rg-muted);
 }
 
@@ -283,7 +302,7 @@ button[disabled] { cursor: not-allowed; }
   margin: 0 0 10px;
   font-family: Georgia, serif;
   font-weight: 400;
-  font-size: clamp(20px, 2.6vw, 26px); /* customer-glanceable anchor */
+  font-size: clamp(1.25rem, 2.6vw, 1.625rem); /* customer-glanceable anchor */
   color: var(--rg-ink);
 }
 
@@ -299,11 +318,11 @@ button[disabled] { cursor: not-allowed; }
   gap: 10px;
 }
 .rg-firm-word {
-  font-size: 18px;
+  font-size: 1.125rem;
   font-weight: 700;
   color: var(--rg-ink); /* customer-glanceable anchor */
 }
-.rg-firm-num { font-size: 14px; color: var(--rg-ink-soft); }
+.rg-firm-num { font-size: 0.875rem; color: var(--rg-ink-soft); }
 .rg-firm-pips { display: inline-flex; gap: 3px; }
 .rg-firm-pip {
   width: 12px;
@@ -314,27 +333,12 @@ button[disabled] { cursor: not-allowed; }
 }
 .rg-firm-pip.is-filled { background: var(--rg-ink-soft); }
 
-/* Authored display badges — inert status-tag styling (light fill, dark text,
-   deliberately unlike any tappable control; w2-signal-badges pattern family). */
-.rg-tags {
-  list-style: none;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin: 0 0 14px;
-  padding: 0;
-}
-.rg-tag {
-  padding: 3px 10px;
-  border: 1px solid var(--rg-line);
-  background: var(--rg-paper);
-  font-size: 13px;
-  color: var(--rg-ink-soft);
-}
+/* .rg-tags / .rg-tag removed (fix G2): displayBadges no longer render —
+   they created a customer-facing surface production doesn't have. */
 
 .rg-layer-label {
   margin: 14px 0 6px;
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -343,7 +347,7 @@ button[disabled] { cursor: not-allowed; }
 
 .rg-reason {
   margin: 0;
-  font-size: 15px;
+  font-size: 0.9375rem;
   color: var(--rg-ink-soft);
 }
 
@@ -364,32 +368,46 @@ button[disabled] { cursor: not-allowed; }
 }
 .rg-fit-row:first-child { border-top: 0; }
 .rg-fit-rank {
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 700;
   color: var(--rg-muted);
   padding-top: 2px;
 }
-.rg-fit-title { font-size: 15px; font-weight: 600; color: var(--rg-ink); }
+.rg-fit-title { font-size: 0.9375rem; font-weight: 600; color: var(--rg-ink); }
 .rg-fit-desc {
   grid-column: 2 / 4;
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--rg-ink-soft);
 }
+/* Fix G11: no white-space:nowrap here — the nowrap ES chip ("NECESIDAD
+   CLAVE") collapsed the minmax(0,1fr) title track at 320px and painted over
+   it. The chip's auto grid track keeps it one line whenever it fits and
+   wraps it at narrow widths, so nothing paints over anything. */
 .rg-fit-tag {
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 700;
   letter-spacing: 0.1em;
   padding: 2px 8px;
   border: 1px solid var(--rg-line);
   background: var(--rg-paper);
   color: var(--rg-ink-soft);
-  white-space: nowrap;
+}
+/* Fix G4: FEATURE tags are visually distinct (muted) from KEY NEED — one
+   shared style made an unmatched product fact read at the same claim
+   strength as a matched customer need. Keyed on the fixture matched flag. */
+.rg-fit-tag.is-matched {
+  border-color: var(--rg-ink-soft);
+  color: var(--rg-ink);
+}
+.rg-fit-tag.is-feature {
+  border-color: var(--rg-line-soft);
+  background: transparent;
+  color: var(--rg-muted);
+  font-weight: 600;
 }
 
-.rg-diffs { margin: 0; }
-.rg-diff { margin: 0 0 8px; font-size: 14px; }
-.rg-diff-title { font-weight: 600; color: var(--rg-ink); }
-.rg-diff-detail { color: var(--rg-ink-soft); }
+/* .rg-diffs / .rg-diff removed (fix G3): differentiators left the card
+   face; the compare panel's Difference row remains. */
 
 .rg-card-footer {
   display: flex;
@@ -401,7 +419,7 @@ button[disabled] { cursor: not-allowed; }
   padding-top: 12px;
   border-top: 1px solid var(--rg-line-soft);
 }
-.rg-stock { font-size: 13px; color: var(--rg-muted); }
+.rg-stock { font-size: 0.8125rem; color: var(--rg-muted); }
 
 .rg-cmp-btn {
   min-height: 48px;
@@ -434,16 +452,16 @@ button[disabled] { cursor: not-allowed; }
   margin: 0 0 4px;
   font-family: Georgia, serif;
   font-weight: 400;
-  font-size: clamp(20px, 2.6vw, 26px);
+  font-size: clamp(1.25rem, 2.6vw, 1.625rem);
 }
 .rg-sim-note {
   margin: 0 0 12px;
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--rg-muted);
   border-left: 3px solid var(--rg-line);
   padding-left: 10px;
 }
-.rg-compare-hint { margin: 0 0 10px; font-size: 14px; color: var(--rg-ink-soft); }
+.rg-compare-hint { margin: 0 0 10px; font-size: 0.875rem; color: var(--rg-ink-soft); }
 
 .rg-compare-open {
   min-height: 48px;
@@ -483,19 +501,19 @@ button[disabled] { cursor: not-allowed; }
   margin-bottom: 10px;
   border: 1px solid var(--rg-line-soft);
 }
-.rg-compare-name { font-family: Georgia, serif; font-size: 20px; margin: 0; }
-.rg-price-tier { font-size: 14px; color: var(--rg-muted); }
-.rg-compare-brand { margin: 0 0 10px; font-size: 13px; color: var(--rg-muted); }
+.rg-compare-name { font-family: Georgia, serif; font-size: 1.25rem; margin: 0; }
+.rg-price-tier { font-size: 0.875rem; color: var(--rg-muted); }
+.rg-compare-brand { margin: 0 0 10px; font-size: 0.8125rem; color: var(--rg-muted); }
 .rg-compare-stats { margin: 0; }
 .rg-compare-stats dt {
   margin-top: 8px;
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--rg-muted);
 }
-.rg-compare-stats dd { margin: 2px 0 0; font-size: 15px; color: var(--rg-ink); }
+.rg-compare-stats dd { margin: 2px 0 0; font-size: 0.9375rem; color: var(--rg-ink); }
 
 /* ---------- Financing (secondary, downstream of all fit content) ---------- */
 
@@ -511,11 +529,13 @@ button[disabled] { cursor: not-allowed; }
   width: 44px;
   height: 3px;
   margin: 0 auto 14px;
-  background: var(--rg-accent-gold);
+  /* Fix G12a: neutral token — the Gold tier accent on the financing module
+     visually bound payment choice to the Gold tier. */
+  background: var(--rg-ink-soft);
 }
 .rg-fin-eyebrow {
   display: block;
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.2em;
   color: var(--rg-muted);
@@ -524,10 +544,10 @@ button[disabled] { cursor: not-allowed; }
 .rg-fin-lead {
   margin: 0 0 8px;
   font-family: Georgia, serif;
-  font-size: 17px;
+  font-size: 1.0625rem;
   color: var(--rg-ink);
 }
-.rg-fin-fitfirst { margin: 0 0 14px; font-size: 14px; color: var(--rg-ink-soft); }
+.rg-fin-fitfirst { margin: 0 0 14px; font-size: 0.875rem; color: var(--rg-ink-soft); }
 .rg-fin-actions {
   display: flex;
   flex-wrap: wrap;
@@ -544,12 +564,16 @@ button[disabled] { cursor: not-allowed; }
   font-weight: 600;
 }
 .rg-fin-btn[disabled] { color: var(--rg-muted); border-color: var(--rg-line); }
-.rg-fin-stale { margin: 0; font-size: 13px; color: var(--rg-ink-soft); }
+/* .rg-fin-stale removed (fix G12c): staleNotice no longer renders in the
+   module — production shows it only inside the financing sheet. */
+/* The financing sim-note (fix G12b) reuses .rg-sim-note; inside the
+   centered module it needs no left rule. */
+.rg-fin .rg-sim-note { border-left: 0; padding-left: 0; margin: 0; }
 
 .rg-footer-hint {
   margin: 0 0 24px;
   text-align: center;
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--rg-muted);
 }
 
@@ -571,7 +595,7 @@ button[disabled] { cursor: not-allowed; }
   flex-wrap: wrap;
   gap: 8px 16px;
 }
-.rg-tray-count { margin: 0; font-size: 14px; font-weight: 700; }
+.rg-tray-count { margin: 0; font-size: 0.875rem; font-weight: 700; }
 .rg-tray-slots {
   list-style: none;
   display: flex;
@@ -585,7 +609,7 @@ button[disabled] { cursor: not-allowed; }
 .rg-tray-slot {
   padding: 3px 10px;
   border: 1px solid var(--rg-paper);
-  font-size: 13px;
+  font-size: 0.8125rem;
 }
 .rg-tray-actions { display: flex; gap: 8px; }
 .rg-tray-btn {

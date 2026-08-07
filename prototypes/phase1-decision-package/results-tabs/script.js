@@ -81,18 +81,22 @@
     },
     cta: { en: "Explore payment options", es: "Explorar opciones de pago" },
     resultsAsk: { en: "Plan the conversation", es: "Planear la conversación" },
-    staleNotice: {
-      en: "Current payment options are available from your Lacks specialist.",
-      es: "Tu especialista de Lacks tiene las opciones de pago actuales.",
-    },
+    // staleNotice deliberately absent (fix T12c): production renders exactly
+    // six strings in #resultsFinancing (headline, eyebrow, resultsLead,
+    // fitFirst, cta, resultsAsk — index.html:10972-10980); staleNotice
+    // renders only inside the financing sheet (index.html:10825-10837),
+    // which this prototype does not build.
   };
 
   var P = {
     tiersHeading: { en: "Matches by tier", es: "Opciones por nivel" },
     productStory: { en: "Product description", es: "Descripción del producto" },
-    customerFit: { en: "From your answers", es: "Según tus respuestas" },
+    // customerFit heading removed (fix T5): FEATURE rows are not
+    // answer-derived, so "From your answers" was a false attribution;
+    // production renders these rows with no heading — the KEY NEED /
+    // FEATURE tags speak for themselves.
     compareToggle: { en: "Compare", es: "Comparar" },
-    trayClearEs: "Limpiar",
+    trayClearEs: "Borrar", // unified with results-grouped's proposed ES pair (fix T10)
     trayGoEs: "Comparar →",
     selectTwo: { en: "Select 2 mattresses to compare", es: "Selecciona 2 colchones para comparar" },
     simBanner: {
@@ -103,19 +107,17 @@
       en: "Simulated — buttons are inactive in this prototype.",
       es: "Simulado — los botones están inactivos en este prototipo.",
     },
-    altLabel: { en: "Proposed alternative", es: "Alternativa propuesta" },
-    altBronze: { en: "Bronze · everyday value", es: "Bronce · valor cotidiano" },
+    // altLabel/altBronze no longer rendered (fix T11): the proposed Bronze
+    // descriptor is documented-only in VARIANT-NOTES (the package standard),
+    // never stacked live beside the shipped descriptor.
     footnote: {
       en: "In production today, Compare opens from the Consultation Summary’s “Compare finalists” button.",
       es: "En producción hoy, Comparar se abre desde el botón “Comparar finalistas” del Resumen de Consulta.",
     },
-    demoHeading: { en: "Non-exercisable states (demonstration)", es: "Estados no alcanzables (demostración)" },
-    demoNote: {
-      en: "Not reachable from the frozen fixtures — shown here so the copy states can be reviewed.",
-      es: "No alcanzable desde los datos congelados — se muestra aquí para poder revisar los estados de texto.",
-    },
-    demoThreshold: { en: "Below-threshold copy state", es: "Estado de texto bajo el umbral" },
-    demoEmpty: { en: "Empty tier", es: "Nivel vacío" },
+    // Package accessible-firmness template (fix T8):
+    // "Firmness: {word}, {n} of 10" / "Firmeza: {word}, {n} de 10".
+    // The word is fixture data (entry.firmnessFeelWord, executed from the
+    // real production firmnessFeel per model) — no local word map exists.
     firmnessSrPre: { en: "Firmness: ", es: "Firmeza: " },
     firmnessSrPost: { en: " of 10", es: " de 10" },
   };
@@ -149,6 +151,11 @@
     var tierData = fixture.results.tierData;
     var cardPriorities = fixture.results.cardPriorities[lang] || {};
     var priceSymbols = fixture.results.priceTierSymbols || {};
+
+    // Localized page title (fix T13; both Sleep Brief variants do the same).
+    document.title = lang === "es"
+      ? "Resultados — pestañas de nivel reestilizadas (prototipo Fase 1)"
+      : "Results — restyled tier tabs (Phase 1 prototype)";
 
     var state = {
       tier: "gold",        // production default tier
@@ -201,9 +208,22 @@
 
     var descriptor = el("p", { "class": "tier-descriptor", id: "tierDescriptor" });
     tiersSection.appendChild(descriptor);
-    var descriptorAlt = el("p", { "class": "tier-descriptor-alt", hidden: "" });
-    proposed(descriptorAlt);
-    tiersSection.appendChild(descriptorAlt);
+    // The proposed Bronze descriptor alternative is documented-only in
+    // VARIANT-NOTES (fix T11) — rendering it live stacked two commercial
+    // framings on the Bronze tab; results-grouped's document-only approach
+    // is the package standard.
+
+    // The tab row is position:sticky (fix T6). The offset below the harness
+    // review bar is measured, never hardcoded — prototype chrome
+    // accommodation only; production has no review bar, so there top would
+    // be 0.
+    function setStickyOffset() {
+      var bar = document.querySelector(".df-review-bar");
+      document.documentElement.style.setProperty(
+        "--tabs-sticky-top", (bar ? bar.offsetHeight : 0) + "px");
+    }
+    setStickyOffset();
+    window.addEventListener("resize", setStickyOffset);
 
     var panel = el("div", {
       id: "tierPanel",
@@ -238,6 +258,15 @@
       panel.setAttribute("aria-labelledby", "tab-" + tier);
       renderDescriptor();
       renderPanel();
+      // Fix T7: switching tiers from a deep scroll position must not land
+      // mid-list — if the top of the new tier's card grid sits above the
+      // sticky tab row, scroll so it lands just under the row. This is a
+      // compensating scroll for the content swap under the pressed control,
+      // not a decorative auto-jump; when the grid top is already in view it
+      // is a no-op.
+      var stickyBottom = tablist.getBoundingClientRect().bottom;
+      var panelTop = panel.getBoundingClientRect().top;
+      if (panelTop < stickyBottom) window.scrollBy(0, panelTop - stickyBottom);
       // NO analytics here: production logs tier_view from its own switcher;
       // this prototype implements none.
     }
@@ -246,37 +275,42 @@
       descriptor.innerHTML = "";
       descriptor.appendChild(el("span", { "class": "tier-name", text: L(V.descriptorName[state.tier]) }));
       descriptor.appendChild(document.createTextNode(" · " + L(V.descriptorRest[state.tier])));
-      if (state.tier === "bronze") {
-        // Shipped copy stays verbatim above; the alternative below is a
-        // separate PROPOSED descriptor for Blake's copy decision.
-        descriptorAlt.hidden = false;
-        descriptorAlt.innerHTML = "";
-        descriptorAlt.appendChild(el("span", { "class": "alt-label", text: L(P.altLabel) + ": " }));
-        descriptorAlt.appendChild(document.createTextNode(L(P.altBronze)));
-      } else {
-        descriptorAlt.hidden = true;
-      }
+      // The shipped descriptor renders verbatim for every tier; the proposed
+      // Bronze alternative is documented-only in VARIANT-NOTES (fix T11).
     }
 
     /* ---------------- cards ---------------- */
 
-    function firmnessBlock(firmness) {
+    // Package accessible-firmness phrasing (fix T8): the feel word comes from
+    // the fixture's per-model firmnessFeelWord — executed from the real
+    // production firmnessFeel at capture time. No local word map exists.
+    function firmnessSrText(entry) {
+      return L(P.firmnessSrPre) + L(entry.firmnessFeelWord) + ", "
+        + entry.firmness + L(P.firmnessSrPost);
+    }
+
+    function firmnessBlock(entry) {
+      var firmness = entry.firmness;
       var strip = el("div", { "class": "firm-strip", "aria-hidden": "true" });
       for (var i = 1; i <= 10; i++) {
         strip.appendChild(el("span", { "class": "firm-seg" + (i <= firmness ? " filled" : "") }));
       }
       return el("div", { "class": "firm-row" }, [
         strip,
+        // Visible feel word next to the numeral (fix T8) — fixture data,
+        // aria-hidden with the sr-only sentence carrying the single
+        // announcement.
+        el("span", { "class": "firm-word", "aria-hidden": "true", text: L(entry.firmnessFeelWord) }),
         el("span", { "class": "firm-num", "aria-hidden": "true", text: firmness + "/10" }),
-        el("span", { "class": "sr-only", text: L(P.firmnessSrPre) + firmness + L(P.firmnessSrPost) }),
+        el("span", { "class": "sr-only", text: firmnessSrText(entry) }),
       ]);
     }
 
     // One card component for lead and supporting entries: equal anatomy,
     // equal size; lead emphasis is size-neutral (accent border + eyebrow).
     // The threshold copy branches are driven by entry.meetsMatchThreshold —
-    // the false branch is not exercisable from the frozen fixtures (all
-    // captured entries are true); see the labelled demonstration section.
+    // the false branch is a real code path exercised only by data (all
+    // frozen fixture entries are true; never synthesised — fix T1).
     function renderCard(entry, opts) {
       var isLead = !!opts.lead;
       var eyebrowText = entry.meetsMatchThreshold
@@ -290,30 +324,20 @@
         "class": "m-card-brand",
         text: entry.brand + (entry.subBrand ? " · " + entry.subBrand : ""),
       }));
-      body.appendChild(firmnessBlock(entry.firmness));
+      body.appendChild(firmnessBlock(entry));
 
       // PRODUCT-STORY layer: authored, customer-agnostic copy, labelled as
       // product description (provenance clarity).
+      // displayBadges chips removed (fix T2): they created a customer-facing
+      // surface production doesn't have and leaked EN strings, a
+      // mistranslation and a price superlative into it.
+      // Differentiators removed from the card face (fix T3): authored drawer
+      // copy incl. within-tier ranking and price claims does not belong on
+      // the fit-primary card — differentiators[0] now discriminates in the
+      // compare panel instead (the production modal's Difference row analog).
       var story = el("div", { "class": "product-story" });
       story.appendChild(proposed(el("p", { "class": "layer-label", text: L(P.productStory) })));
       story.appendChild(el("p", { "class": "reason", text: L(entry.topPickReason) }));
-      var tags = (lang === "es" && entry.tags_es && entry.tags_es.length) ? entry.tags_es : (entry.tags || []);
-      if (tags.length) {
-        // Authored display badges as inert product-fact chips — a documented
-        // deviation (they render nowhere at 78f949c).
-        var chips = el("div", { "class": "badge-chips" });
-        tags.forEach(function (t) { chips.appendChild(el("span", { "class": "badge-chip", text: t })); });
-        story.appendChild(chips);
-      }
-      if (entry.differentiators && entry.differentiators.length) {
-        story.appendChild(el("p", { "class": "diff-label", text: L(V.diffLabel) }));
-        entry.differentiators.forEach(function (d) {
-          var fact = el("p", { "class": "diff-fact" });
-          fact.appendChild(el("span", { "class": "diff-title", text: L(d.title) }));
-          fact.appendChild(document.createTextNode(L(d.detail)));
-          story.appendChild(fact);
-        });
-      }
       body.appendChild(story);
 
       // CUSTOMER-FIT layer: answer-aware template rows, verbatim fixture
@@ -334,11 +358,7 @@
       proposed(toggle);
       toggle.appendChild(document.createTextNode(L(P.compareToggle)));
       toggle.appendChild(el("span", { "class": "sr-only", text: " — " + entry.name }));
-      if (opts.demo) {
-        toggle.setAttribute("disabled", "");
-      } else {
-        toggle.addEventListener("click", function () { toggleCompare(entry.id); });
-      }
+      toggle.addEventListener("click", function () { toggleCompare(entry.id); });
       body.appendChild(toggle);
 
       var card = el("article", { "class": "m-card" + (isLead ? " is-lead" : ""), "data-id": entry.id });
@@ -346,7 +366,9 @@
         card.appendChild(el("img", {
           "class": "m-card-photo",
           src: "../../../" + entry.imageUrl,
-          alt: entry.name,
+          // Empty alt (fix T4): the model name is the adjacent h3 heading;
+          // alt = name double-announces.
+          alt: "",
         }));
       }
       card.appendChild(body);
@@ -354,8 +376,11 @@
     }
 
     function customerFitBlock(rows) {
+      // No heading on the fit rows (fix T5): FEATURE rows are not
+      // answer-derived, so a "From your answers" label was a false
+      // attribution; production renders these rows with no heading — the
+      // KEY NEED / FEATURE tags speak for themselves.
       var fit = el("div", { "class": "customer-fit" });
-      fit.appendChild(proposed(el("p", { "class": "layer-label", text: L(P.customerFit) })));
       var list = el("ol", {});
       rows.forEach(function (row) {
         var li = el("li", {});
@@ -370,9 +395,10 @@
 
     // Renders a tier's card list (fixture order; index 0 = tier lead) or the
     // verbatim empty-tier state. This is a REAL code path: it runs whenever a
-    // tier array is empty — the shipped catalog fills all tiers, so the state
-    // is demonstrated in the labelled section below.
-    function renderTierCards(container, list, tier, demo) {
+    // tier array is empty — the shipped catalog fills all tiers, so it is
+    // exercised only by data (fix T1: never demonstrated with synthesised
+    // engine output).
+    function renderTierCards(container, list, tier) {
       container.innerHTML = "";
       if (!list.length) {
         container.appendChild(el("p", { "class": "empty-tier", text: L(V.emptyTier) }));
@@ -380,20 +406,22 @@
       }
       var grid = el("ul", { "class": "card-grid", role: "list" });
       list.forEach(function (entry, i) {
-        grid.appendChild(el("li", {}, [renderCard(entry, { lead: i === 0, tier: tier, demo: demo })]));
+        grid.appendChild(el("li", {}, [renderCard(entry, { lead: i === 0, tier: tier })]));
       });
       container.appendChild(grid);
     }
 
     function renderPanel() {
-      renderTierCards(panel, tierData[state.tier] || [], state.tier, false);
+      renderTierCards(panel, tierData[state.tier] || [], state.tier);
       syncCompareUi(); // restore pressed/disabled state on re-rendered toggles
     }
 
     /* ---------------- compare (prototype simulation) ---------------- */
 
     var compareSection = el("section", { "aria-labelledby": "compareHeading" });
-    compareSection.appendChild(el("h2", { id: "compareHeading", "class": "sr-only", text: L(V.compareTitle) }));
+    // Visible heading (fix T9) — results-grouped shows the verbatim modal
+    // title visibly; an sr-only heading hid the section from sighted scan.
+    compareSection.appendChild(el("h2", { id: "compareHeading", "class": "compare-heading", text: L(V.compareTitle) }));
 
     var compareEntryBtn = el("button", {
       type: "button",
@@ -437,7 +465,6 @@
       // explain instead; see VARIANT-NOTES).
       var toggles = app.querySelectorAll(".compare-toggle");
       Array.prototype.forEach.call(toggles, function (btn) {
-        if (btn.closest(".demo-section")) return; // demo cards stay inert
         var pressed = state.selected.indexOf(btn.getAttribute("data-id")) > -1;
         btn.setAttribute("aria-pressed", pressed ? "true" : "false");
         if (!pressed && full) btn.setAttribute("disabled", "");
@@ -480,15 +507,37 @@
         var col = el("div", { "class": "compare-col" });
         col.appendChild(el("h3", { text: m.name }));
         col.appendChild(el("p", { "class": "c-brand", text: m.brand + (m.subBrand ? " · " + m.subBrand : "") }));
-        col.appendChild(stat(L(V.tierLabel), L(V.tierNames[found.tier]) + " " + (priceSymbols[found.tier] || "")));
-        // Visible "N/10" is aria-hidden; the sr-only sibling carries the
-        // accessible phrasing ("Firmness: N of 10" / "Firmeza: N de 10").
+        // Tier row (fix T9): the price-tier symbol is decorative and
+        // aria-hidden; the announced Tier value is the pure tier name.
+        var tierStat = el("p", { "class": "compare-stat" }, [
+          el("span", { "class": "label", text: L(V.tierLabel) }),
+          el("span", { "class": "value" }, [
+            document.createTextNode(L(V.tierNames[found.tier])),
+            priceSymbols[found.tier]
+              ? el("span", { "class": "price-tier", "aria-hidden": "true", text: " " + priceSymbols[found.tier] })
+              : null,
+          ]),
+        ]);
+        col.appendChild(tierStat);
+        // Visible "{word} N/10" is aria-hidden; the sr-only sibling carries
+        // the package template ("Firmness: {word}, N of 10" — fix T8).
         var feelStat = el("p", { "class": "compare-stat" }, [
           el("span", { "class": "label", text: L(V.feelLabel) }),
-          el("span", { "class": "value", "aria-hidden": "true", text: m.firmness + "/10" }),
-          el("span", { "class": "sr-only", text: L(P.firmnessSrPre) + m.firmness + L(P.firmnessSrPost) }),
+          el("span", { "class": "value", "aria-hidden": "true", text: L(m.firmnessFeelWord) + " " + m.firmness + "/10" }),
+          el("span", { "class": "sr-only", text: firmnessSrText(m) }),
         ]);
         col.appendChild(feelStat);
+        // Differentiator row (fix T3): differentiators[0] title + detail —
+        // the production compare modal's Difference row analog
+        // (index.html:18897) — so two same-tier, same-feel finalists can
+        // never render as identical columns.
+        var d0 = (m.differentiators && m.differentiators[0]) || null;
+        if (d0) {
+          col.appendChild(el("p", { "class": "compare-stat diff" }, [
+            el("span", { "class": "label", text: L(V.diffLabel) }),
+            el("span", { "class": "value", text: L(d0.title) + " — " + L(d0.detail) }),
+          ]));
+        }
         cols.appendChild(col);
       });
       comparePanel.appendChild(cols);
@@ -508,10 +557,14 @@
     finSection.appendChild(el("h2", { id: "finHeading", "class": "sr-only", text: L(FC.headline) }));
     finSection.appendChild(el("span", { "class": "fin-eyebrow", text: L(FC.eyebrow) }));
     finSection.appendChild(el("p", { "class": "fin-lead", text: L(FC.resultsLead) }));
-    // Shipped state is stale-closed (exactPromotionsEnabled:false): the
-    // generic staleNotice is the only rate-adjacent line that may render.
-    finSection.appendChild(el("p", { "class": "fin-stale", text: L(FC.staleNotice) }));
+    // No staleNotice here (fix T12c): production renders exactly six strings
+    // in #resultsFinancing and shows staleNotice only inside the sheet — so
+    // the stale-closed state has no visible marker on this surface, matching
+    // production.
     finSection.appendChild(el("p", { "class": "fin-fit-first", text: L(FC.fitFirst) }));
+    // Fix T12a: the module's primary button is OUTLINED (see styles.css) —
+    // production ranks it below the brand-filled footer CTAs this prototype
+    // omits, so a solid fill would make it the only filled action on screen.
     finSection.appendChild(el("div", { "class": "fin-actions" }, [
       el("button", { type: "button", "class": "fin-btn primary", disabled: "", text: L(FC.cta) }),
       el("button", { type: "button", "class": "fin-btn secondary", disabled: "", text: L(FC.resultsAsk) }),
@@ -519,36 +572,17 @@
     finSection.appendChild(proposed(el("p", { "class": "fin-sim-note", text: L(P.finSim) })));
     app.appendChild(finSection);
 
-    /* ---------------- non-exercisable state demonstrations ---------------- */
+    // Second production fitFirst instance (fix T12b): the results footer
+    // hint line — production renders FC('fitFirst') into #resultsFooterHint
+    // whenever financing is enabled (index.html:13823-13834).
+    app.appendChild(el("p", { "class": "results-footer-hint", text: L(FC.fitFirst) }));
 
-    var demo = el("section", { "class": "demo-section", "aria-labelledby": "demoHeading" });
-    demo.appendChild(proposed(el("h2", { id: "demoHeading", text: L(P.demoHeading) })));
-    demo.appendChild(proposed(el("p", { "class": "demo-note", text: L(P.demoNote) })));
-
-    // 1. Below-threshold copy state: same card code path, driven by a copy of
-    //    the active tier lead with meetsMatchThreshold flipped. All frozen
-    //    fixture entries are true, so this state cannot occur above.
-    var demoEntry = JSON.parse(JSON.stringify((tierData.gold || [])[0] || null));
-    if (demoEntry) {
-      demoEntry.meetsMatchThreshold = false;
-      var block1 = el("div", { "class": "demo-block" });
-      block1.appendChild(proposed(el("p", { "class": "demo-label", text: L(P.demoThreshold) })));
-      var holder1 = el("div", {});
-      renderTierCards(holder1, [demoEntry], "gold", true);
-      block1.appendChild(holder1);
-      demo.appendChild(block1);
-    }
-
-    // 2. Empty tier: the same real code path renderTierCards() takes when a
-    //    tier array is empty (loader requires only gold non-empty).
-    var block2 = el("div", { "class": "demo-block" });
-    block2.appendChild(proposed(el("p", { "class": "demo-label", text: L(P.demoEmpty) })));
-    var holder2 = el("div", {});
-    renderTierCards(holder2, [], "silver", true);
-    block2.appendChild(holder2);
-    demo.appendChild(block2);
-
-    app.appendChild(demo);
+    // The former "non-exercisable state demonstrations" section is deleted
+    // (fix T1): it deep-cloned a real fixture entry with meetsMatchThreshold
+    // flipped — synthesised engine output — and rendered empty-tier copy for
+    // a tier that has matches. Both copy states remain implemented in the
+    // card/panel code paths above, exercised only by data; the document-only
+    // approach (VARIANT-NOTES) is the package standard.
 
     /* ---------------- selection tray (last in DOM, sticky bottom) ---------------- */
 
@@ -585,8 +619,22 @@
     ]);
     app.appendChild(tray);
 
+    // Fix T10: while the tray is visible, the page content reserves the
+    // tray's MEASURED rendered height as extra bottom padding so the tray
+    // can never hit-block a card's Compare button (a wrapped multi-line tray
+    // is taller than any fixed guess).
+    function setTrayReserve() {
+      if (tray.hidden) {
+        app.style.paddingBottom = "";
+      } else {
+        app.style.paddingBottom =
+          "calc(clamp(14px, 4vw, 48px) + " + tray.offsetHeight + "px)";
+      }
+    }
+    window.addEventListener("resize", setTrayReserve);
+
     function renderTray() {
-      if (!state.selected.length) { tray.hidden = true; return; }
+      if (!state.selected.length) { tray.hidden = true; setTrayReserve(); return; }
       tray.hidden = false;
       trayCount.textContent = state.selected.length + L(V.trayCountOf2); // "N of 2 selected" / "N de 2 seleccionados" (index.html:18850)
       traySlots.innerHTML = "";
@@ -594,6 +642,7 @@
         var found = findEntry(id);
         traySlots.appendChild(el("span", { "class": "tray-slot", text: found ? found.entry.name : id }));
       });
+      setTrayReserve();
     }
 
     /* ---------------- initial render ---------------- */

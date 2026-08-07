@@ -295,6 +295,9 @@ button:focus-visible {
   display: flex;
   align-items: center;
   gap: 0.6rem;
+  /* B5: as a >=640px row flex item, allow compression below the flex-basis
+     auto minimum so long ES strings reflow instead of overflowing. */
+  min-width: 0;
 }
 .sb-journey-num {
   flex: none;

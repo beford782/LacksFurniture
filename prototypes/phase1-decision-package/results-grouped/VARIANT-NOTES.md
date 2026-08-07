@@ -338,3 +338,144 @@ atomically** (w1-analytics-contract §2 and §8.1); this prototype implements no
 8. Whether the supporting-card "In stock" pair should replace the lead card's
    storeName-interpolated string in production too (one string instead of two) — a copy
    decision, not assumed here.
+
+---
+
+## Lead integration pass (post-adversarial-review fixes)
+
+Applied by the Results fix-builder from the lead-triaged adversarial review.
+The sections above are the original build record; where a fix changes or
+falsifies a claim made above, the correction is recorded here (originals are
+kept, per package rule — corrected by appending, never rewritten).
+
+### Changes applied
+
+- **G1 (MAJOR — landscape photo): card photo height capped** —
+  `.rg-card-photo { max-height: clamp(160px, 28vh, 320px); }` with
+  `object-fit: cover` (content-driven, commented in CSS). Uncapped, the wide
+  lead card's 16:9 photo alone ran ~500-550px tall at 1024-1112px content
+  widths, so a landscape first screen was all photograph with zero fit
+  information. Fold check by geometry (harness bar ~86px + results chrome
+  ~312px + panel padding 18px above the photo; body padding + eyebrow +
+  brand ≈ 60px between photo and name; name ≈ 34px; firmness row ≈ 27px):
+  at 1112×834 the photo is ~234px → name bottom ≈ 743px, firmness bottom
+  ≈ 780px, above the 834px fold; at 1024×768 the photo is ~215px → name
+  ≈ 725px, firmness ≈ 762px, above the 768px fold. The originally suggested
+  36vh cap failed the 768px check under the same arithmetic (name ≈ 785px),
+  which is why the cap is 28vh.
+- **G2: displayBadges chips removed** from the card face — they created a
+  customer-facing surface production doesn't have (displayBadges render
+  nowhere at 78f949c) and leaked EN strings, a mistranslation and a price
+  superlative into it. *Supersedes deviation §3.4; the §5(a) fixture list's
+  `tags/tags_es` entry no longer has a render site.*
+- **G3: differentiators removed from the card face** — authored drawer copy
+  incl. within-tier ranking and price claims does not belong on the
+  fit-primary card. The compare panel keeps its existing Difference row
+  (differentiators[0] detail, verbatim label). *Supersedes deviation §3.3.*
+- **G4: FEATURE fit-tags are now visually distinct (muted) from KEY NEED**,
+  keyed on the fixture `matched` flag (`.is-matched` / `.is-feature`). One
+  shared style previously made an unmatched product fact read at the same
+  claim strength as a matched customer need.
+- **G5: compensating scroll after a header toggle.** Opening a tier below a
+  tall open panel collapses that panel and yanked the clicked header (and
+  the new content) off-viewport, leaving the user mid-list. The clicked
+  header now gets `scrollIntoView({block:'start'})` with
+  `scroll-margin-top: var(--rg-sticky-top)`. This keeps the *pressed
+  control* on screen after a layout collapse — it is not the expand-time
+  auto-scroll-jump the §1 "No auto-scroll on expand" bullet (NN/g) warns
+  about; that bullet is hereby narrowed to: no *decorative* scroll on
+  expand; a collapse-compensating scroll is required for orientation.
+- **G6 (tray):** (a) Clear now moves focus to the action-area compare entry
+  before the tray hides — focus was stranded on a `display:none` button
+  (results-tabs already guarded this). Implementation note: after Clear the
+  entry is real-`disabled` (zero selections), so the compare section heading
+  — same action area, `tabindex="-1"` — receives the focus in that state.
+  (b) The bottom content reserve is now the tray's **measured** rendered
+  height (CSS var set from `offsetHeight`, re-measured on resize), replacing
+  the fixed 140px a wrapped tray could exceed and cover the financing
+  fit-first hint. (c) The same measured reserve guarantees the tray never
+  hit-blocks a card's Compare button (mirrors results-tabs T10).
+- **G7: every card Compare button carries an sr-only model-name suffix**
+  (" — {name}") — nine identical "Compare" accessible names were
+  indistinguishable in an AT rotor.
+- **G8: accordion header accessible name carries the tier once.** It read
+  "GOLD Gold · premium materials" (display label + the descriptor's
+  tier-name span). The descriptor's duplicate word is now `aria-hidden`
+  (visible text unchanged, still the verbatim pair), so the name is
+  "GOLD · premium materials" / "ORO · materiales premium".
+- **G9: `list.slice(1, 3)` → `list.slice(1)`.** The engine already caps
+  tiers; a presentation-side cap is exactly the forbidden class — it would
+  silently drop an engine-qualified result if a capture ever carried more
+  than three. On the frozen fixtures (max 3 per tier) the rendered output is
+  identical. *Corrects §2's "list.slice(1, 3) = supporting (production
+  slice semantics)" line: the production slice at 14268 caps a list the
+  engine has already capped; reproducing the cap presentation-side was
+  re-capping, not fidelity.*
+- **G10: all font-size declarations converted px → rem** (÷16; px kept for
+  borders/spacing; the body base is 1rem). This was the only variant that
+  ignored the browser's default-font-size setting.
+- **G11 (ES 320px overlap): fit-tag chips may wrap at narrow widths** —
+  `white-space: nowrap` removed. The nowrap "NECESIDAD CLAVE" chip collapsed
+  the `minmax(0,1fr)` title track at 320px and painted over it; the title
+  track was already `minmax(0,1fr)`, so the chip wrap is the operative
+  change — nothing paints over anything now.
+- **G12 (financing):** (a) `.rg-fin-rule` repainted with a neutral token
+  (`--rg-ink-soft`) — the Gold tier accent visually bound payment choice to
+  the Gold tier; (b) the module now carries the same bilingual sim-note the
+  variant's other simulated sections carry ("Simulated — buttons are
+  inactive in this prototype." / "Simulado — los botones están inactivos en
+  este prototipo.", `data-proposed-copy`) — the disabled financing buttons
+  were the one unlabelled dead end; (c) **staleNotice removed from the
+  module** — production renders exactly six strings in `#resultsFinancing`
+  (index.html:10972-10980) and shows staleNotice only inside the sheet, so
+  the stale-closed state has **no visible marker on this surface, matching
+  production**. Both fitFirst instances (module + footer hint) remain.
+  *Supersedes deviation §3.10's staleNotice sentence and removes the §5(b)
+  staleNotice row from the rendered set.*
+- **G13: `document.title` localized per lang** (as both Sleep Briefs do).
+- **G14: `role="list"` added to every `<ol>`/`<ul>` styled
+  `list-style: none`** — the ranked fit rows `<ol>`, the supports `<ul>`,
+  and the tray slots `<ul>` (Safari/VoiceOver drops list semantics on
+  `list-style:none`).
+- **G15: compare-panel firmness no longer leaks "Plush 3/10" raw.** The
+  visible "{word} {n}/10" (production value form, 18892) is `aria-hidden`
+  with an adjacent sr-only "Firmness: {word}, {n} of 10" / "Firmeza: {word},
+  {n} de 10" sentence. The feel word everywhere now comes from the
+  regenerated fixture's `entry.firmnessFeelWord` (executed from the real
+  production `firmnessFeel` per model at capture); **the local word map is
+  deleted**. *Corrects §4: the vocabulary statement stands, but the words
+  are now fixture data, not a copied local bucketing.*
+
+### Corrections to falsified claims (G16)
+
+1. **"One card anatomy / equal anatomy" (§1, §3.2) was false as rendered.**
+   The lead card renders roughly 2× the linear size of a supporting card
+   with a much larger photo — that is not equal anatomy. The true claim is:
+   the lead card carries **production-mirroring top-pick emphasis**
+   (production's top-pick card IS larger and richer than its supporting
+   cards), the eyebrow stays threshold-honest, and G1 now caps the photo so
+   the emphasis never costs the first screen its fit information. §3.2's
+   "removes any size-as-rank reading" is withdrawn for *within-tier*
+   position emphasis; the cross-tier claim (no size hierarchy between tier
+   *leaders* — all three leads share one anatomy) still holds.
+2. **Three permanently-visible descriptors render the shipped quality/price
+   ladder copy family adjacently** ("premium materials" / "mid-range value"
+   / "entry-level" all on screen at once) — production shows one descriptor
+   at a time. This is an inherent property of the accordion premise
+   (permanently visible headers are the discoverability argument), and it
+   is a tradeoff for Blake to weigh alongside the "entry-level"/"básico"
+   copy decision (§5(c) alternative pair, open question §11.2): the
+   accordion makes that buyer-characterising pair *permanently* visible,
+   not just visible on the Bronze tab.
+3. **G9 documented** (see above): the presentation-side `slice(1, 3)` cap
+   contradicted §2's own "never re-sorted, filtered, padded or re-bucketed"
+   rule; removed.
+
+### Proposed-copy table delta
+
+| Change | EN | ES | Note |
+|---|---|---|---|
+| Added | Simulated — buttons are inactive in this prototype. | Simulado — los botones están inactivos en este prototipo. | financing inert-interaction note (G12b); same pair results-tabs uses, `data-proposed-copy` marked |
+
+No other proposed pairs changed. The localized `document.title` strings are
+review chrome, not product copy, and cannot carry `data-proposed-copy`.

@@ -34,6 +34,11 @@
   --sba-badge-line: #c9bea9;
   --sba-focus-outer: #14110d;
   --sba-focus-inner: #ffffff;
+  /* A1: safe OVER-estimate of the sticky action bar's tallest rendering
+     (three stacked buttons + wrapped caption at narrow widths / 200% text).
+     Content is padded clear of the bar by this much, so nothing can sit
+     under it. */
+  --sba-actions-h: 15rem;
   --sba-serif: Georgia, "Times New Roman", serif;
   --sba-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
@@ -174,9 +179,15 @@ a:focus-visible,
 
 .sba-columns {
   display: grid;
-  grid-template-columns: 1fr;      /* stacked by default (portrait-first) */
+  /* A2: minmax(0,1fr), exactly as the >=920px rule below — a plain 1fr
+     track's auto minimum let nowrap content blow the track out at 200%
+     text. */
+  grid-template-columns: minmax(0, 1fr); /* stacked by default (portrait-first) */
   gap: clamp(1.25rem, 3vw, 2.5rem);
-  padding: clamp(1.25rem, 3vw, 2rem) 0 1.5rem;
+  /* A1: bottom padding >= the sticky action bar's height so no content can
+     sit under the bar at any scroll position. */
+  padding: clamp(1.25rem, 3vw, 2rem) 0
+           calc(var(--sba-actions-h) + env(safe-area-inset-bottom, 0px));
 }
 
 /* Content-driven sample: at ~920px of viewport the priority cards hold a
@@ -255,7 +266,8 @@ a:focus-visible,
   font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  white-space: nowrap;
+  /* A2: no white-space:nowrap — pills wrap at narrow widths / 200% text
+     instead of blowing out the grid track. */
   color: var(--sba-muted);
 }
 
@@ -301,6 +313,9 @@ a:focus-visible,
   color: var(--sba-ink);
   cursor: pointer;
   touch-action: manipulation;
+  /* A1 belt-and-braces: any scroll-into-view (e.g. on focus) lands the
+     button clear of the sticky action bar. */
+  scroll-margin-bottom: calc(var(--sba-actions-h) + env(safe-area-inset-bottom, 0px));
 }
 
 .sba-disclose .sba-chev {
@@ -376,6 +391,7 @@ a:focus-visible,
 .sba-actions {
   position: sticky;
   bottom: 0;
+  z-index: 10;                     /* A1: explicit, and BELOW the dialog (40/50) */
   margin: 0 calc(-1 * clamp(1rem, 4vw, 2.5rem));
   padding: 0.75rem clamp(1rem, 4vw, 2.5rem)
            calc(0.75rem + env(safe-area-inset-bottom, 0px));

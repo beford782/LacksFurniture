@@ -159,12 +159,13 @@ Every rendered string is exactly one of the three categories below.
 |---|---|---|
 | In order, based on your answers | En orden, según tus respuestas | Basis-of-order disclosure near the priorities (w2-ranked-information F6; spec-required) |
 | See My Matches → | Ver Mis Opciones → | Honest navigation relabel of the mislabelled production CTA (keeps production's ES noun "Opciones") |
-| PROTOTYPE SIMULATION — production selection logic unchanged | SIMULACIÓN DE PROTOTIPO — la lógica de selección de producción no cambia | Mandatory label on the simulated compare panel |
+| Prototype simulation — sample saved finalists, not this customer's saves. | Simulación del prototipo — finalistas guardados de ejemplo, no los de este cliente. | Mandatory label on the simulated compare panel (A5: honest wording, shared verbatim with Alternative B; replaced the original "PROTOTYPE SIMULATION — production selection logic unchanged" pair) |
 | Prototype: these actions are simulated — no live app behind this screen. | Prototipo: estas acciones son simuladas — no hay una aplicación real detrás de esta pantalla. | Caption labelling Edit/CTA as simulated (aria-describedby on both buttons) |
 | Position | Posición | sr-only category prefix for the position badge (no captured label exists for it) |
 | Bed sharing | Cama compartida | sr-only category prefix for the sharing badge (same reason) |
 | Firmness: {word}, {n} of 10 | Firmeza: {word}, {n} de 10 | Accessible firmness sentence — phrasing mandated by the roadmap/a11y report; template listed here because it is not yet production copy |
 | Close | Cerrar | Compare dialog close button (production's close is a bare × with no accessible name — the defect, not a source) |
+| Fixture error — no priority rows captured. | Error de fixture — no hay filas de prioridades capturadas. | A10 guard: visible bilingual error when the fixture carries no priority rows (unreachable under the capture floor; prototype-harness copy, never customer-facing) |
 | Position/sharing badge values | (see §5 table) | PROPOSED presentation mappings; the strings themselves are verbatim `data/quiz.json` option labels (config-owned, reviewed customer-facing bilingual copy) |
 
 All PROPOSED ES strings should get native review before any production use
@@ -205,7 +206,7 @@ both badge `<li>`s carry `data-proposed-copy=""`.
 | position | `sleep_position: stomach` | Stomach Sleeper | Boca Abajo |
 | position | `sleep_position: combo` | Combination | Combinación |
 | position | `sleep_position: no_idea` | *(omitted)* | *(omitted)* |
-| sharing | `partner_sleep: solo` | Solo Sleeper | Duermo Solo |
+| sharing | `partner_sleep: solo` | Solo Sleeper | Duerme solo *(A9: third person, matching the captured temperature register "Duerme con calor"; was quiz.json's "Duermo Solo" — native review pending)* |
 | sharing | `partner_sleep: partner` | With a Partner | Con Pareja |
 | sharing | `partner_sleep: family` | Family Bed | Cama Familiar |
 
@@ -332,3 +333,101 @@ prototype behavior).
 - Fixture text was not edited, corrected, or re-cased — including inherited
   production quirks (EN proper-noun size values in ES, Title Case quiz
   labels), which are flagged above instead.
+
+---
+
+## Lead integration pass (post-adversarial-review fixes)
+
+Applied from the lead-triaged adversarial review. The original notes above
+are retained; where a fix falsifies an earlier claim, the correction is
+recorded here rather than silently rewritten. The only in-place edits made
+above are to the proposed-copy / mapping tables (§3c, §5), so no stale
+string can be copied out of them; each such edit is itemized below.
+
+### Changes applied
+
+- **A1 (BLOCKER — sticky bar occlusion).** `.sba-actions` painted over
+  content and could cover the "Try this:" disclosure buttons at some
+  viewports. Fixed in `sba.css`: the scrolling content container
+  (`.sba-columns`) now carries bottom padding of
+  `calc(var(--sba-actions-h) + env(safe-area-inset-bottom, 0px))`, where
+  `--sba-actions-h: 15rem` is a deliberate over-estimate of the bar's
+  tallest rendering (three stacked buttons + wrapped caption at 200% text),
+  so no content can sit under the bar; `.sba-actions` gets an explicit
+  `z-index: 10` — below the dialog backdrop (40) and dialog (50); and the
+  disclosure buttons get a matching `scroll-margin-bottom` as
+  belt-and-braces.
+- **A2 (200% text clipping).** The default stacked grid used a plain `1fr`
+  track (i.e. `minmax(auto, 1fr)`), so nowrap pills could blow the track out
+  at 200% text. `.sba-columns` now uses `minmax(0, 1fr)` exactly as the
+  ≥920px rule already did, and `.sba-tag` no longer sets
+  `white-space: nowrap` — pills wrap at narrow widths instead of
+  overflowing.
+- **A3 (dialog).** (a) The backdrop click handler was unreachable dead code
+  — the full-viewport `.sba-dialog` covers the scrim, so clicks could never
+  reach the backdrop. The dismiss handler now lives on the dialog element
+  itself, closing when `e.target` is the dialog root (the standard pattern);
+  the backdrop handler is deleted. (b) Escape is bound on `document` while
+  the dialog is open and removed on close, so it works wherever focus is.
+  (c) The opener is captured from the activating event's `currentTarget` at
+  open time — never `document.activeElement` — so focus restore works on
+  the tap path and under double-click.
+- **A4.** The eyebrow now consumes
+  `profile[lang].dom.profileName.textContent` from the fixture; the
+  hardcoded `VERBATIM.eyebrow` pair is deleted. The §3b row "Your Sleep
+  Brief / Tu Resumen de Sueño … (eyebrow)" should now be read as §3a
+  fixture data (`dom.profileName.textContent`).
+- **A5 (honesty).** The compare-panel banner now carries Alternative B's
+  honest wording pair ("Prototype simulation — sample saved finalists, not
+  this customer's saves." / "Simulación del prototipo — finalistas guardados
+  de ejemplo, no los de este cliente."); §3c updated in place, and §6's
+  quoted "PROTOTYPE SIMULATION — production selection logic unchanged"
+  banner string is superseded by the same change. The "Compare finalists"
+  button is now connected to the visible "these actions are simulated"
+  caption via `aria-describedby="sbaSimCaption"`.
+  **Production disclosure (mirrors B's Q3):** on the production Brief this
+  compare entry sits upstream of every save site — at first Brief render no
+  saved finalists exist — so a production implementation needs a
+  disabled/explained state for fewer than 2 finalists. Not demonstrable
+  from fixtures (all three carry exactly 2 simulated saves).
+- **A6.** The three disclosure buttons shared the accessible name "Try
+  this:"; each now appends an sr-only suffix carrying that priority's
+  title, so every disclosure's accessible name is unique.
+- **A7.** Compare-dialog per-model feel words now consume the regenerated
+  fixture's `entry.firmnessFeelWord[lang]` (executed from the real
+  `firmnessFeel()` per model at capture time); the local word-map copy is
+  deleted. The §3b word-map row and open question §8.6 are superseded: this
+  variant no longer contains any word map — the fixture carries the words.
+- **A8.** `role="list"` added to the ranked `<ol>`s (`.sba-priority-list`,
+  `.sba-journey-list`), which render with `list-style: none` — exactly what
+  this variant's own index.html comment prescribed for the badges.
+- **A9 (ES register).** The sharing badge mapping for `solo` is now the
+  third-person "Duerme solo" (matching the captured temperature register
+  "Duerme con calor"); it was "Duermo Solo". The §5 table is updated in
+  place; the string now deviates from quiz.json's option label and remains
+  flagged for native review.
+- **A10 (guard).** If the fixture's `priorityRows` is empty, the hero
+  renders a visible bilingual fixture-error line ("Fixture error — no
+  priority rows captured." / "Error de fixture — no hay filas de
+  prioridades capturadas.", added to §3c) instead of a silent blank hero.
+  The capture floor makes this unreachable; the render still must not be
+  silent.
+
+### Corrections to falsified claims (A11)
+
+1. **§7 "the smoke check asserts zero English leakage in ES mode" — false
+   as stated.** The Size badge renders production's EN-only `sizeLabels`
+   values ("Full" / "Queen" / "King") in ES mode — an inherited production
+   gap (index.html:13197-13198), not prototype-introduced. The claim should
+   read: zero English leakage in ES mode *except* the Size badge value,
+   which reproduces the production `sizeLabels` EN-only bypass. (§4's
+   framing that "there is no visible ES defect" understates this: the
+   rendered values are the production EN strings.)
+2. **§7 "backdrop click closes" — false before the A3 fix.** The backdrop
+   handler was unreachable dead code (the full-viewport dialog element
+   covered the scrim), so outside-click dismissal did not work at all.
+   It works only as of A3, and now lives on the dialog root, not the
+   backdrop.
+3. **The "Verified:" smoke checks are not repo artifacts.** They lived in
+   an ephemeral scratchpad and cannot be re-run from this repository; treat
+   that paragraph as narrative, not reproducible evidence.
