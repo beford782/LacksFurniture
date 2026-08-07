@@ -1,7 +1,9 @@
 # Frozen fixture provenance — Phase 1 decision-package prototypes
 
-**Source commit:** `78f949c60cb9d7192d51bd9b3b7155d39319f8df` (= origin/main at capture time; PR #17 merge)
-**Captured:** 2026-08-06T23:35:41.550Z
+**Engine source commit:** `78f949c60cb9d7192d51bd9b3b7155d39319f8df` (= origin/main; the capture aborts
+unless index.html, data/ and Code.gs in this worktree are byte-identical to it)
+**Worktree HEAD at capture:** `e733ee62dca109d755ef1d5677f1351d510beeb1`
+**Captured:** 2026-08-07T00:00:26.023Z
 **Capture command:** `node prototypes/phase1-decision-package/fixtures/tools/capture_fixtures.mjs`
 
 ## Method
@@ -56,9 +58,9 @@ logic reimplemented anywhere):
 
 | file | sha256 |
 |---|---|
-| scenario-dense-c.json | `58179b69e2e83b6392053911e40d477bb0944886c169bb60f1b9111f7a19d241` |
-| scenario-dense-a.json | `f2fa5c33e874cd81c1499e038535b79da2dc1c3b518794ef2489186b62d4dbda` |
-| scenario-sparse-b.json | `d7af9daf8db42d02c630a0f0ccc329cd4250696e887c2d95507aa03ffea1af4b` |
+| scenario-dense-c.json | `3ee36ca1917566a4e158d610cdf8f8a1195662882a16ff4d66521e4ad2325b1b` |
+| scenario-dense-a.json | `98d0f8bac231bce6ac6b835603b6c92fff3837c72bf2430249578498c308cf41` |
+| scenario-sparse-b.json | `98d711995f9ed8228fa54660bd937c7ff774482d56fc0405810cdec4db3682cf` |
 
 ## Verification
 

@@ -42,6 +42,7 @@ const CALC_FN = grab(/function calculateScores\(\)\s*\{[\s\S]*?\n    \}/, "calcu
 const QUALIFY_FN = grab(/function qualifyRankedChoices\([\s\S]*?\n    \}/, "qualifyRankedChoices()");
 const RESULTS_FN = grab(/window\.showResults = function\(\) \{[\s\S]*?\r?\n    \}/, "window.showResults");
 const FEEL_FN = grab(/function firmnessFeel\([\s\S]*?\n    \}/, "firmnessFeel()");
+const MATTPRI_FN = grab(/function buildMattressPriorities\([\s\S]*?\n    \}/, "buildMattressPriorities()");
 const LABEL_FN = grab(/function getFirmnessLabel\([\s\S]*?\n    \}/, "getFirmnessLabel()");
 const SYMBOL_FN = grab(/function priceTierSymbol\([\s\S]*?\n    \}/, "priceTierSymbol()");
 
@@ -152,6 +153,25 @@ export function runResults(answers, lang) {
     };
     `)(doc, win, JSON.parse(JSON.stringify(answers)), lang, MATTRESSES, QUIZ.questions, out);
   return out.run();
+}
+
+// Executes the real per-mattress card-row template (buildMattressPriorities)
+// for every surviving tier entry in one language. This is the answer-aware
+// template copy the current Results card renders (the card template shows the
+// first three rows); captured so prototype cards can stay faithful without
+// re-implementing the template.
+export function runCardPriorities(answers, lang, tierData) {
+  const out = {};
+  const fn = new Function("answers", "currentLang", "m",
+    `"use strict";
+    ${MATTPRI_FN}
+    return buildMattressPriorities(m);`);
+  for (const tier of ["gold", "silver", "bronze"]) {
+    for (const m of tierData[tier] || []) {
+      out[m.id] = fn(JSON.parse(JSON.stringify(answers)), lang, m);
+    }
+  }
+  return out;
 }
 
 // Runs the two standalone firmness vocabulary functions for one value/language.
@@ -281,6 +301,11 @@ export function captureScenario(name) {
       topPick: resEn.topPick,
       enEsParity: scoresEqual,
       priceTierSymbols: firmnessWords(firmnessValue, "en").symbols,
+      cardPriorities: {
+        en: runCardPriorities(answers, "en", resEn.state.tierData),
+        es: runCardPriorities(answers, "es", resEn.state.tierData),
+        note: "Verbatim output of buildMattressPriorities(m) per surviving model per language ({title, desc, tag, matched} rows). The production card template renders the first three rows; prototypes do the same by index and never re-derive or reorder them.",
+      },
       note: "tierData is the verbatim projection of _resultsState.tierData: per-tier order, qualification (>=60% of tier max), cap 3 and min-2 back-fill exactly as the engine produced them. pct/score are included for provenance and parity checking only — neither may be rendered on any screen.",
     },
     compareDemo: {

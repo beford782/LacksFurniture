@@ -797,6 +797,337 @@
    "silver": "$$",
    "bronze": "$"
   },
+  "cardPriorities": {
+   "en": {
+    "g8": [
+     {
+      "title": "Firm feel you chose",
+      "desc": "A steadier surface pushes back instead of letting you sink in.",
+      "tag": "KEY NEED",
+      "matched": true
+     },
+     {
+      "title": "Motion stays put",
+      "desc": "Pocketed coils help absorb movement instead of spreading it.",
+      "tag": "FEATURE",
+      "matched": false
+     },
+     {
+      "title": "Keeps you aligned",
+      "desc": "A firmer center helps reduce sagging through the night.",
+      "tag": "FEATURE",
+      "matched": false
+     }
+    ],
+    "g1": [
+     {
+      "title": "Firm feel you chose",
+      "desc": "A steadier surface pushes back instead of letting you sink in.",
+      "tag": "KEY NEED",
+      "matched": true
+     },
+     {
+      "title": "Motion stays put",
+      "desc": "Pocketed coils help absorb movement instead of spreading it.",
+      "tag": "FEATURE",
+      "matched": false
+     },
+     {
+      "title": "Keeps you aligned",
+      "desc": "A firmer center helps reduce sagging through the night.",
+      "tag": "FEATURE",
+      "matched": false
+     }
+    ],
+    "g3": [
+     {
+      "title": "Firm feel you chose",
+      "desc": "A steadier surface pushes back instead of letting you sink in.",
+      "tag": "KEY NEED",
+      "matched": true
+     },
+     {
+      "title": "Motion stays put",
+      "desc": "Pocketed coils help absorb movement instead of spreading it.",
+      "tag": "FEATURE",
+      "matched": false
+     },
+     {
+      "title": "Keeps you aligned",
+      "desc": "A firmer center helps reduce sagging through the night.",
+      "tag": "FEATURE",
+      "matched": false
+     }
+    ],
+    "s2": [
+     {
+      "title": "Firm feel you chose",
+      "desc": "A steadier surface pushes back instead of letting you sink in.",
+      "tag": "KEY NEED",
+      "matched": true
+     },
+     {
+      "title": "Motion stays put",
+      "desc": "Pocketed coils help absorb movement instead of spreading it.",
+      "tag": "FEATURE",
+      "matched": false
+     },
+     {
+      "title": "Keeps you aligned",
+      "desc": "A firmer center helps reduce sagging through the night.",
+      "tag": "FEATURE",
+      "matched": false
+     }
+    ],
+    "s10": [
+     {
+      "title": "Firm feel you chose",
+      "desc": "A steadier surface pushes back instead of letting you sink in.",
+      "tag": "KEY NEED",
+      "matched": true
+     },
+     {
+      "title": "Motion stays put",
+      "desc": "Pocketed coils help absorb movement instead of spreading it.",
+      "tag": "FEATURE",
+      "matched": false
+     },
+     {
+      "title": "Keeps you aligned",
+      "desc": "A firmer center helps reduce sagging through the night.",
+      "tag": "FEATURE",
+      "matched": false
+     }
+    ],
+    "s1": [
+     {
+      "title": "Firm feel you chose",
+      "desc": "A steadier surface pushes back instead of letting you sink in.",
+      "tag": "KEY NEED",
+      "matched": true
+     },
+     {
+      "title": "Motion stays put",
+      "desc": "Pocketed coils help absorb movement instead of spreading it.",
+      "tag": "FEATURE",
+      "matched": false
+     },
+     {
+      "title": "Keeps you aligned",
+      "desc": "A firmer center helps reduce sagging through the night.",
+      "tag": "FEATURE",
+      "matched": false
+     }
+    ],
+    "b6": [
+     {
+      "title": "Firm feel you chose",
+      "desc": "A steadier surface pushes back instead of letting you sink in.",
+      "tag": "KEY NEED",
+      "matched": true
+     },
+     {
+      "title": "Motion stays put",
+      "desc": "Pocketed coils help absorb movement instead of spreading it.",
+      "tag": "FEATURE",
+      "matched": false
+     },
+     {
+      "title": "Keeps you aligned",
+      "desc": "A firmer center helps reduce sagging through the night.",
+      "tag": "FEATURE",
+      "matched": false
+     }
+    ],
+    "b2": [
+     {
+      "title": "Firm feel you chose",
+      "desc": "A steadier surface pushes back instead of letting you sink in.",
+      "tag": "KEY NEED",
+      "matched": true
+     },
+     {
+      "title": "Keeps you aligned",
+      "desc": "A firmer center helps reduce sagging through the night.",
+      "tag": "FEATURE",
+      "matched": false
+     }
+    ],
+    "b7": [
+     {
+      "title": "Keeps you aligned",
+      "desc": "A firmer center helps reduce sagging through the night.",
+      "tag": "FEATURE",
+      "matched": false
+     }
+    ]
+   },
+   "es": {
+    "g8": [
+     {
+      "title": "Sensación firme que elegiste",
+      "desc": "Una superficie más estable empuja en vez de dejarte hundir.",
+      "tag": "NECESIDAD CLAVE",
+      "matched": true
+     },
+     {
+      "title": "El movimiento se queda",
+      "desc": "Resortes encapsulados ayudan a absorber el movimiento en vez de extenderlo.",
+      "tag": "INCLUIDO",
+      "matched": false
+     },
+     {
+      "title": "Ayuda a alinear el cuerpo",
+      "desc": "Un centro más firme ayuda a reducir el hundimiento durante la noche.",
+      "tag": "INCLUIDO",
+      "matched": false
+     }
+    ],
+    "g1": [
+     {
+      "title": "Sensación firme que elegiste",
+      "desc": "Una superficie más estable empuja en vez de dejarte hundir.",
+      "tag": "NECESIDAD CLAVE",
+      "matched": true
+     },
+     {
+      "title": "El movimiento se queda",
+      "desc": "Resortes encapsulados ayudan a absorber el movimiento en vez de extenderlo.",
+      "tag": "INCLUIDO",
+      "matched": false
+     },
+     {
+      "title": "Ayuda a alinear el cuerpo",
+      "desc": "Un centro más firme ayuda a reducir el hundimiento durante la noche.",
+      "tag": "INCLUIDO",
+      "matched": false
+     }
+    ],
+    "g3": [
+     {
+      "title": "Sensación firme que elegiste",
+      "desc": "Una superficie más estable empuja en vez de dejarte hundir.",
+      "tag": "NECESIDAD CLAVE",
+      "matched": true
+     },
+     {
+      "title": "El movimiento se queda",
+      "desc": "Resortes encapsulados ayudan a absorber el movimiento en vez de extenderlo.",
+      "tag": "INCLUIDO",
+      "matched": false
+     },
+     {
+      "title": "Ayuda a alinear el cuerpo",
+      "desc": "Un centro más firme ayuda a reducir el hundimiento durante la noche.",
+      "tag": "INCLUIDO",
+      "matched": false
+     }
+    ],
+    "s2": [
+     {
+      "title": "Sensación firme que elegiste",
+      "desc": "Una superficie más estable empuja en vez de dejarte hundir.",
+      "tag": "NECESIDAD CLAVE",
+      "matched": true
+     },
+     {
+      "title": "El movimiento se queda",
+      "desc": "Resortes encapsulados ayudan a absorber el movimiento en vez de extenderlo.",
+      "tag": "INCLUIDO",
+      "matched": false
+     },
+     {
+      "title": "Ayuda a alinear el cuerpo",
+      "desc": "Un centro más firme ayuda a reducir el hundimiento durante la noche.",
+      "tag": "INCLUIDO",
+      "matched": false
+     }
+    ],
+    "s10": [
+     {
+      "title": "Sensación firme que elegiste",
+      "desc": "Una superficie más estable empuja en vez de dejarte hundir.",
+      "tag": "NECESIDAD CLAVE",
+      "matched": true
+     },
+     {
+      "title": "El movimiento se queda",
+      "desc": "Resortes encapsulados ayudan a absorber el movimiento en vez de extenderlo.",
+      "tag": "INCLUIDO",
+      "matched": false
+     },
+     {
+      "title": "Ayuda a alinear el cuerpo",
+      "desc": "Un centro más firme ayuda a reducir el hundimiento durante la noche.",
+      "tag": "INCLUIDO",
+      "matched": false
+     }
+    ],
+    "s1": [
+     {
+      "title": "Sensación firme que elegiste",
+      "desc": "Una superficie más estable empuja en vez de dejarte hundir.",
+      "tag": "NECESIDAD CLAVE",
+      "matched": true
+     },
+     {
+      "title": "El movimiento se queda",
+      "desc": "Resortes encapsulados ayudan a absorber el movimiento en vez de extenderlo.",
+      "tag": "INCLUIDO",
+      "matched": false
+     },
+     {
+      "title": "Ayuda a alinear el cuerpo",
+      "desc": "Un centro más firme ayuda a reducir el hundimiento durante la noche.",
+      "tag": "INCLUIDO",
+      "matched": false
+     }
+    ],
+    "b6": [
+     {
+      "title": "Sensación firme que elegiste",
+      "desc": "Una superficie más estable empuja en vez de dejarte hundir.",
+      "tag": "NECESIDAD CLAVE",
+      "matched": true
+     },
+     {
+      "title": "El movimiento se queda",
+      "desc": "Resortes encapsulados ayudan a absorber el movimiento en vez de extenderlo.",
+      "tag": "INCLUIDO",
+      "matched": false
+     },
+     {
+      "title": "Ayuda a alinear el cuerpo",
+      "desc": "Un centro más firme ayuda a reducir el hundimiento durante la noche.",
+      "tag": "INCLUIDO",
+      "matched": false
+     }
+    ],
+    "b2": [
+     {
+      "title": "Sensación firme que elegiste",
+      "desc": "Una superficie más estable empuja en vez de dejarte hundir.",
+      "tag": "NECESIDAD CLAVE",
+      "matched": true
+     },
+     {
+      "title": "Ayuda a alinear el cuerpo",
+      "desc": "Un centro más firme ayuda a reducir el hundimiento durante la noche.",
+      "tag": "INCLUIDO",
+      "matched": false
+     }
+    ],
+    "b7": [
+     {
+      "title": "Ayuda a alinear el cuerpo",
+      "desc": "Un centro más firme ayuda a reducir el hundimiento durante la noche.",
+      "tag": "INCLUIDO",
+      "matched": false
+     }
+    ]
+   },
+   "note": "Verbatim output of buildMattressPriorities(m) per surviving model per language ({title, desc, tag, matched} rows). The production card template renders the first three rows; prototypes do the same by index and never re-derive or reorder them."
+  },
   "note": "tierData is the verbatim projection of _resultsState.tierData: per-tier order, qualification (>=60% of tier max), cap 3 and min-2 back-fill exactly as the engine produced them. pct/score are included for provenance and parity checking only — neither may be rendered on any screen."
  },
  "compareDemo": {

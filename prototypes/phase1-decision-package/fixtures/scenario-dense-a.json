@@ -837,6 +837,265 @@
    "silver": "$$",
    "bronze": "$"
   },
+  "cardPriorities": {
+   "en": {
+    "g7": [
+     {
+      "title": "Soft where you need it",
+      "desc": "Side sleepers need cushion around shoulders and hips.",
+      "tag": "KEY NEED",
+      "matched": true
+     },
+     {
+      "title": "Calmer shared sleep",
+      "desc": "Independent coils help keep movement from traveling across the bed.",
+      "tag": "KEY NEED",
+      "matched": true
+     },
+     {
+      "title": "Supports your lower back",
+      "desc": "A firmer center targets the lower back area you flagged.",
+      "tag": "KEY NEED",
+      "matched": true
+     }
+    ],
+    "g2": [
+     {
+      "title": "Soft where you need it",
+      "desc": "Side sleepers need cushion around shoulders and hips.",
+      "tag": "KEY NEED",
+      "matched": true
+     },
+     {
+      "title": "Calmer shared sleep",
+      "desc": "Independent coils help keep movement from traveling across the bed.",
+      "tag": "KEY NEED",
+      "matched": true
+     }
+    ],
+    "g6": [
+     {
+      "title": "Soft where you need it",
+      "desc": "Side sleepers need cushion around shoulders and hips.",
+      "tag": "KEY NEED",
+      "matched": true
+     },
+     {
+      "title": "Calmer shared sleep",
+      "desc": "Independent coils help keep movement from traveling across the bed.",
+      "tag": "KEY NEED",
+      "matched": true
+     }
+    ],
+    "s6": [
+     {
+      "title": "Helps you sleep cooler",
+      "desc": "Because heat was a concern, these layers help move warmth away.",
+      "tag": "KEY NEED",
+      "matched": true
+     },
+     {
+      "title": "Soft where you need it",
+      "desc": "Side sleepers need cushion around shoulders and hips.",
+      "tag": "KEY NEED",
+      "matched": true
+     },
+     {
+      "title": "Calmer shared sleep",
+      "desc": "Independent coils help keep movement from traveling across the bed.",
+      "tag": "KEY NEED",
+      "matched": true
+     }
+    ],
+    "s7": [
+     {
+      "title": "Helps you sleep cooler",
+      "desc": "Because heat was a concern, these layers help move warmth away.",
+      "tag": "KEY NEED",
+      "matched": true
+     },
+     {
+      "title": "Soft where you need it",
+      "desc": "Side sleepers need cushion around shoulders and hips.",
+      "tag": "KEY NEED",
+      "matched": true
+     },
+     {
+      "title": "Calmer shared sleep",
+      "desc": "Independent coils help keep movement from traveling across the bed.",
+      "tag": "KEY NEED",
+      "matched": true
+     }
+    ],
+    "s3": [
+     {
+      "title": "Soft where you need it",
+      "desc": "Side sleepers need cushion around shoulders and hips.",
+      "tag": "KEY NEED",
+      "matched": true
+     },
+     {
+      "title": "Calmer shared sleep",
+      "desc": "Independent coils help keep movement from traveling across the bed.",
+      "tag": "KEY NEED",
+      "matched": true
+     }
+    ],
+    "b7": [
+     {
+      "title": "Supports your lower back",
+      "desc": "A firmer center targets the lower back area you flagged.",
+      "tag": "KEY NEED",
+      "matched": true
+     }
+    ],
+    "b5": [
+     {
+      "title": "Soft where you need it",
+      "desc": "Side sleepers need cushion around shoulders and hips.",
+      "tag": "KEY NEED",
+      "matched": true
+     }
+    ],
+    "b1": [
+     {
+      "title": "Soft where you need it",
+      "desc": "Side sleepers need cushion around shoulders and hips.",
+      "tag": "KEY NEED",
+      "matched": true
+     }
+    ]
+   },
+   "es": {
+    "g7": [
+     {
+      "title": "Suave donde lo necesitas",
+      "desc": "Quienes duermen de lado necesitan apoyo suave en hombros y caderas.",
+      "tag": "NECESIDAD CLAVE",
+      "matched": true
+     },
+     {
+      "title": "Descanso compartido más tranquilo",
+      "desc": "Resortes independientes ayudan a que el movimiento no cruce la cama.",
+      "tag": "NECESIDAD CLAVE",
+      "matched": true
+     },
+     {
+      "title": "Apoya tu espalda baja",
+      "desc": "Un centro más firme apoya la zona de espalda baja que marcaste.",
+      "tag": "NECESIDAD CLAVE",
+      "matched": true
+     }
+    ],
+    "g2": [
+     {
+      "title": "Suave donde lo necesitas",
+      "desc": "Quienes duermen de lado necesitan apoyo suave en hombros y caderas.",
+      "tag": "NECESIDAD CLAVE",
+      "matched": true
+     },
+     {
+      "title": "Descanso compartido más tranquilo",
+      "desc": "Resortes independientes ayudan a que el movimiento no cruce la cama.",
+      "tag": "NECESIDAD CLAVE",
+      "matched": true
+     }
+    ],
+    "g6": [
+     {
+      "title": "Suave donde lo necesitas",
+      "desc": "Quienes duermen de lado necesitan apoyo suave en hombros y caderas.",
+      "tag": "NECESIDAD CLAVE",
+      "matched": true
+     },
+     {
+      "title": "Descanso compartido más tranquilo",
+      "desc": "Resortes independientes ayudan a que el movimiento no cruce la cama.",
+      "tag": "NECESIDAD CLAVE",
+      "matched": true
+     }
+    ],
+    "s6": [
+     {
+      "title": "Ayuda a dormir más fresco",
+      "desc": "Como el calor fue una preocupación, estas capas ayudan a alejarlo.",
+      "tag": "NECESIDAD CLAVE",
+      "matched": true
+     },
+     {
+      "title": "Suave donde lo necesitas",
+      "desc": "Quienes duermen de lado necesitan apoyo suave en hombros y caderas.",
+      "tag": "NECESIDAD CLAVE",
+      "matched": true
+     },
+     {
+      "title": "Descanso compartido más tranquilo",
+      "desc": "Resortes independientes ayudan a que el movimiento no cruce la cama.",
+      "tag": "NECESIDAD CLAVE",
+      "matched": true
+     }
+    ],
+    "s7": [
+     {
+      "title": "Ayuda a dormir más fresco",
+      "desc": "Como el calor fue una preocupación, estas capas ayudan a alejarlo.",
+      "tag": "NECESIDAD CLAVE",
+      "matched": true
+     },
+     {
+      "title": "Suave donde lo necesitas",
+      "desc": "Quienes duermen de lado necesitan apoyo suave en hombros y caderas.",
+      "tag": "NECESIDAD CLAVE",
+      "matched": true
+     },
+     {
+      "title": "Descanso compartido más tranquilo",
+      "desc": "Resortes independientes ayudan a que el movimiento no cruce la cama.",
+      "tag": "NECESIDAD CLAVE",
+      "matched": true
+     }
+    ],
+    "s3": [
+     {
+      "title": "Suave donde lo necesitas",
+      "desc": "Quienes duermen de lado necesitan apoyo suave en hombros y caderas.",
+      "tag": "NECESIDAD CLAVE",
+      "matched": true
+     },
+     {
+      "title": "Descanso compartido más tranquilo",
+      "desc": "Resortes independientes ayudan a que el movimiento no cruce la cama.",
+      "tag": "NECESIDAD CLAVE",
+      "matched": true
+     }
+    ],
+    "b7": [
+     {
+      "title": "Apoya tu espalda baja",
+      "desc": "Un centro más firme apoya la zona de espalda baja que marcaste.",
+      "tag": "NECESIDAD CLAVE",
+      "matched": true
+     }
+    ],
+    "b5": [
+     {
+      "title": "Suave donde lo necesitas",
+      "desc": "Quienes duermen de lado necesitan apoyo suave en hombros y caderas.",
+      "tag": "NECESIDAD CLAVE",
+      "matched": true
+     }
+    ],
+    "b1": [
+     {
+      "title": "Suave donde lo necesitas",
+      "desc": "Quienes duermen de lado necesitan apoyo suave en hombros y caderas.",
+      "tag": "NECESIDAD CLAVE",
+      "matched": true
+     }
+    ]
+   },
+   "note": "Verbatim output of buildMattressPriorities(m) per surviving model per language ({title, desc, tag, matched} rows). The production card template renders the first three rows; prototypes do the same by index and never re-derive or reorder them."
+  },
   "note": "tierData is the verbatim projection of _resultsState.tierData: per-tier order, qualification (>=60% of tier max), cap 3 and min-2 back-fill exactly as the engine produced them. pct/score are included for provenance and parity checking only — neither may be rendered on any screen."
  },
  "compareDemo": {

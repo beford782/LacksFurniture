@@ -18,6 +18,15 @@ import { root, SCENARIOS, captureScenario, lfSha256 } from "./capture_lib.mjs";
 
 const fixturesDir = join(root, "prototypes", "phase1-decision-package", "fixtures");
 const commit = execSync("git rev-parse HEAD", { cwd: root }).toString().trim();
+const engineCommit = execSync("git rev-parse origin/main", { cwd: root }).toString().trim();
+// The capture is only valid if the engine sources in this worktree are
+// byte-identical to origin/main — the prototype branch may add files but
+// must never touch production. Abort loudly otherwise.
+try {
+  execSync("git diff --quiet origin/main -- index.html data Code.gs", { cwd: root });
+} catch {
+  throw new Error("index.html/data/Code.gs differ from origin/main — refusing to capture fixtures from modified engine sources");
+}
 
 const written = [];
 for (const name of Object.keys(SCENARIOS)) {
@@ -35,7 +44,9 @@ for (const name of Object.keys(SCENARIOS)) {
 
 const provenance = `# Frozen fixture provenance — Phase 1 decision-package prototypes
 
-**Source commit:** \`${commit}\` (= origin/main at capture time; PR #17 merge)
+**Engine source commit:** \`${engineCommit}\` (= origin/main; the capture aborts
+unless index.html, data/ and Code.gs in this worktree are byte-identical to it)
+**Worktree HEAD at capture:** \`${commit}\`
 **Captured:** ${new Date().toISOString()}
 **Capture command:** \`node prototypes/phase1-decision-package/fixtures/tools/capture_fixtures.mjs\`
 
