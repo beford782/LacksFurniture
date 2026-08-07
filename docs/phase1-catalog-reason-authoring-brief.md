@@ -324,6 +324,10 @@ template-duplication problem with authored words.
    requested from Blake in the decision package.)
 6. Is the 2026-07-30 catalog scrape still representative of the floor lineup,
    or does evidence gathering start with a fresh walk?
+7. What `maxAgeDays` backstop should construction-claim provenance carry —
+   180 or 365 days? (Verification labor vs the risk of an uncaught spec
+   change shipping under the same model name; referenced by the cadence
+   bullet in §4.)
 
 ## 6. Explicitly not done here
 

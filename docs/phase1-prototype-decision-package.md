@@ -143,8 +143,8 @@ Each variant's full, self-declared deviation list lives in its
   of the list — an echo, not a removal.
 - **Today's top-level section order is kept** (identity → what-we-test →
   journey → actions); the same prose is condensed into the same five badges,
-  but each badge carries a visible category label (POSITION / FEEL /
-  TEMPERATURE / SHARING / SIZE).
+  but each badge carries a visible category label (POSITION / TEMPERATURE /
+  SHARING / FEEL / SIZE — aligned across both Briefs in the fix pass).
 - **The testing detail stays fully visible**, subordinated typographically —
   B's deliberate, recorded contrast with A.
 - Same firmness treatment, same ordinal markers, same CTA resolution and
@@ -157,9 +157,10 @@ Each variant's full, self-declared deviation list lives in its
 - Tabs remain the navigation. Contrast on unselected tabs is raised, targets
   are ≥44 px, and Spanish labels are checked against overflow (production's
   tab row can overflow below ~480 px).
-- Cards gain a **provenance split**: an "About this model" / "Product
-  description" product-story layer (authored `topPickReason`) visually
-  separated from the answer-aware customer-fit rows — production blurs these.
+- Cards gain a **provenance split**: a product-story layer (authored
+  `topPickReason`, labelled "Product description" in this variant;
+  the accordion variant labels it "About this model") visually separated
+  from the answer-aware customer-fit rows — production blurs these.
 - Firmness gains the 10-segment graphic alongside the existing numeral.
 - Compare is made **discoverable**: card-level toggle, a selection tray and an
   action-area entry — reviving the pattern that exists in production CSS and
@@ -168,8 +169,11 @@ Each variant's full, self-declared deviation list lives in its
 - The financing module is reproduced in its **shipped stale-closed state**
   (no rates anywhere), visually secondary, inert.
 - The empty-tier state is implemented as a real code path.
-- A proposed alternative Bronze descriptor is shown alongside the shipped
-  "entry-level" / "básico" copy, which is rendered as-shipped.
+- A proposed alternative Bronze descriptor — "Bronze · everyday value" /
+  "Bronce · valor cotidiano" — is **documented-only** (the fix pass removed
+  it from render; VARIANT-NOTES T11): the shipped "entry-level" / "básico"
+  pair renders alone, and the alternative is quoted here so the copy
+  decision is decidable from this document.
 
 ### 2.4 Results — single-open accordion
 
@@ -182,9 +186,11 @@ Each variant's full, self-declared deviation list lives in its
 - One card anatomy for lead and supporting cards (production's top-pick card
   is larger and richer); position plus the threshold-honest eyebrow carry the
   within-tier distinction.
-- Differentiators and authored display badges are surfaced on cards —
-  production renders differentiators only in the drawer and display badges
-  nowhere.
+- The builder originally surfaced differentiators and authored display
+  badges on cards; the adversarial fix pass **removed both** (they carried
+  unreviewed price/ranking claims and, for badges, a surface production
+  does not have) — differentiator detail now appears only inside the
+  compare panel, mirroring production's drawer/compare placement.
 - Same provenance split, firmness graphic, compare demo, inert financing
   module and real empty-tier path as the tabs variant.
 - Ships a **documented-only** `tier_view` retirement plan (§11); no analytics
@@ -249,9 +255,14 @@ touch-target size). Those checks ran live against the served prototypes and
 are documented as a protocol, not retained as repo artifacts — the Wave 4
 adversarial review then independently re-swept the same properties at larger
 scale (including a 384-render overflow/zoom matrix and 200 %/400 % text
-zoom) and its results are what §8 reports. The screenshots predate the
-post-adversarial fix pass for the card de-cluttering (chips/differentiators
-removed); the four decision-relevant compositions are unchanged.
+zoom) and its results are what §8 reports. The 12 screenshots were
+re-captured after the post-adversarial fix pass (2026-08-07) and show the
+post-fix state; the four decision-relevant compositions are unchanged from
+the pre-fix captures. Two supplementary captures accompany the matrix: A
+with a "Try this:" disclosure expanded (the hidden side of the §5.1
+disagreement — the same text B shows always-visible), and an ES-portrait
+Results cell (the base matrix pairs ES with landscape only; any further
+language/orientation cell is reproducible via the harness parameters).
 
 ## 5. Tradeoffs
 
@@ -288,7 +299,7 @@ separable: A's composition could ship with the detail visible.
 | Accessibility cost | Full ARIA tabs contract (production's tabs are plain divs with none of it) | Cheapest correct pattern: button + `aria-expanded` |
 | Analytics cost | **None** — `tier_view` semantics unchanged | An intentional retire/replace change-set (§11) plus new behavioral coverage |
 | Gate exposure | Restyling tabs is explicitly **Proceeds** — no gate | **Triggers the 1.3 adoption gate** |
-| Glanceability (measured, pre-fix) | Image ≈18–21 % of viewport **height** at 834×1112/1112×834 (33 % at 1024×768, where firmness dipped just below the fold — the "both orientations" claim held only at the screenshot sizes); name above the fold at every size tested | Image ≈36 % portrait / **63–65 % of viewport height in every landscape size tested**; model name and firmness below the fold — **fixed post-review by a content-driven photo height cap**, recorded in its VARIANT-NOTES |
+| Glanceability (measured, pre-fix) | Image ≈18–21 % of viewport **height** at 834×1112/1112×834 (33 % at 1024×768, where firmness dipped just below the fold — the "both orientations" claim held only at the screenshot sizes); name above the fold at every size tested, net of the 88 px prototype review bar | Image ≈36 % portrait; landscape pre-fix: 63 % of raw viewport height at 1112×834, 65–72 % of usable viewport (height minus the 88 px review bar) across the landscape sizes tested — model name and firmness below the fold. **Fixed post-review by a content-driven photo height cap** (now ≈28 % with both above the fold), recorded in its VARIANT-NOTES |
 | Rework risk | Low | If Phase 3.3 later adopts a global maximum, this is restyled, not rebuilt |
 
 The measured glanceability gap is the accordion's main weakness and is a
@@ -409,7 +420,7 @@ presentation path, no score/percentage/rank leakage, tier membership and
 order exact, and all claimed verbatim production pairs byte-identical.
 
 **What the adversaries broke — and what was done.** Ten adversaries filed
-3 blockers and ~25 confirmed majors. Every accepted finding was reproduced
+four findings labelled blocker and ~25 confirmed majors. Every accepted finding was reproduced
 by the lead before action. The fix pass (recorded per-variant in each
 `VARIANT-NOTES.md` "Lead integration pass" section) removed the one genuine
 synthesis of engine output (a results-tabs demonstration block that cloned
@@ -522,13 +533,37 @@ Each is independently answerable; none is recorded as made.
 3. **Catalog authoring:** approve the proposed content workflow (claim tiers,
    bilingual parity gate, provenance record, curated V1) and **name the Lacks
    merchandising owner** — the single blocking dependency; also: grandfather
-   or hot-fix the three flagged catalog strings; decide the `MATT_ES_KEYS`
-   prerequisite change; answer the six merchandising questions in the brief.
-4. **Phase 1 scoring-fixture exit gate:** approve investigation/
-   implementation cost of the roadmap's recommended frozen-fixture gate
-   (610–615) — the fixture tooling built for this package demonstrates
-   feasibility (extract-and-execute + sha-pinned parity) — or defer, or
-   reject.
+   or hot-fix the **four** flagged catalog strings (brief §4 items 1–4 —
+   b5's "proven pick for side sleepers" is the only one rendering on
+   production cards today and needs an explicit call); decide the
+   `MATT_ES_KEYS` prerequisite change; answer — or route to Lacks
+   merchandising — the seven merchandising questions in the brief.
+4. **Phase 1 scoring-fixture exit gate:** the roadmap (610–615) requires
+   agreement on cost before building its recommended frozen-fixture gate.
+   Estimated cost, from the tooling this package built: initial build is
+   small — the capture/parity mechanism here is the working model
+   (extract-and-execute + sha-pinned parity, on the order of the existing
+   `consultation_priorities_check` pattern). The **standing** cost is the
+   real question: the gate goes red on every legitimate catalog, quiz-copy
+   or engine change, and each re-green requires regenerating fixtures and
+   updating the reviewed hash pins in the same diff — a recurring review
+   burden that is the gate's entire point but also its price. Decide:
+   approve building it as scoped here, approve only a costed investigation,
+   defer, or reject.
+
+**Scope of a "direction" approval.** Approving a Sleep Brief or tier-
+navigation direction approves the **composition as screenshotted** —
+nothing more. The bundled demonstrations (compare revival with its cap of
+2, tray, simulated panels) and the per-variant open questions recorded in
+each VARIANT-NOTES (A §8, B §7, tabs §9, grouped §11 — e.g. compare surface
+shape, sticky vs in-flow action bar, collapsed-header option counts) return
+at implementation review and are **not** decided by a direction approval.
+Two of those questions are worth answering now if Blake has a view, as
+sub-decisions of 1 and 2 respectively: **(1a)** in Alternative A, keep or
+drop the "Your Sleep Brief" continuity eyebrow above the need-led hero;
+**(2a)** in the accordion, single-open only (adjacency hygiene) or permit a
+second open panel on request (reintroduces the stacked-group comparison on
+demand).
 
 Secondary flags surfaced by research (each needs only an acknowledge/defer):
 the tu-vs-usted register decision for ES copy; the handoff-screen voice
@@ -563,10 +598,10 @@ defects in §1 (cleanup proposals, not part of this package's scope).
 | W2 comparison-interface | ✅ report | Baymard compare research | ✅ | shipped pattern is correct; surface, don't rebuild |
 | W2 tablet-shared-viewing | ✅ report | WCAG 2.5.8/2.5.5, HIG, ADA | ✅ | two-tier reading model; 44 pt; contrast targets; no orientation lock |
 | W2 bilingual-presentation | ✅ report | W3C/IBM expansion, es-US retail | ✅ | Spanish-first QA; glossary freeze; tu/usted + handoff-voice flags |
-| W2 claim-safety | ✅ report | FTC 2022 guidance, Moonlight Slumber | ✅ | A–E tiers; three flagged catalog strings (lead-verified) |
+| W2 claim-safety | ✅ report | FTC 2022 guidance, Moonlight Slumber | ✅ | A–E tiers; 3 catalog flags, lead-verified (W4 added the 4th, b5) |
 | W2 content-governance | ✅ report | financing gate, GOV.UK lifecycle | ✅ | parity release gate; curated V1; named-owner dependency |
 | W2 consultation-handoff | ✅ report | peak-end, Gong, ISPA | ✅ | division-of-labor rule; conclusion restraint |
-| W3 fixture/provenance | ✅ (lead-executed) | parity 21/21; suites 69/69, 226/226 | ✅ | agents unavailable in session-limit window; Wave 4/5 verify independently |
+| W3 fixture/provenance | ✅ (lead-executed) | parity 21/21 at delivery; 30/30 at final freeze (fix-pass fixture extension) | ✅ | agents unavailable in session-limit window; Wave 4/5 verified independently |
 | W3 catalog-authoring package | ✅ (lead-executed) | programmatic 26-row inventory | ✅ | same replacement reason; verified against both catalog audits |
 | W3 sleep-brief-a builder | ✅ variant + notes | need-led hero, disclosure, 5 badges | ✅ | composition delivered; 6 adversarial findings fixed in integration |
 | W3 sleep-brief-b builder | ✅ variant + notes | fixed heading, visible detail | ✅ | composition delivered; pair-rule and ES-label findings fixed |
@@ -583,7 +618,8 @@ defects in §1 (cleanup proposals, not part of this package's scope).
 | W4 responsive adversary | ✅ report | ES 320 overlap; 200 % clipping; px-only type | ✅ | all confirmed reflow findings fixed; harness nit documented |
 | W4 test-vacuity adversary | ✅ report | parity never tests prototypes; capture floor | ✅ | floors + PROVENANCE gate added; §8 rewritten honestly |
 | W4 fix-builders (2, lead-directed) | ✅ | disjoint file sets | ✅ | applied the lead-triaged fix list; every change logged in VARIANT-NOTES |
-| W5 referees (≥3) | *(TO FILL)* | | | |
+| W5 evidence referee | ✅ report | re-ran parity + 2 suites; 16 verbatim pairs; 12 render claims | ✅ | pass-with-edits: 2 stale §2 bullets + precision fixes, all applied |
+| W5 scope-and-gate referee | ✅ report | full diff classification vs allowed scope; gate-language sweep | ✅ | pass-with-edits: stale screenshot-provenance sentence + ledger fill, applied |
+| W5 decision-quality referee | ✅ report | §12 decidability per decision | ✅ | pass-with-edits: four-string count, §12.4 cost/counter-case, scope line, brief Q7, 2 supplementary captures — applied |
 
-*(Conflicts between agents and their resolutions, plus rejected findings,
-are recorded in the delivery report and folded in here at package freeze.)*
+**Conflicts and their resolutions.** The one material research conflict — the roadmap's proposed disclosure of the testing detail vs the external evidence against hiding primary content — was deliberately NOT resolved: both directions were built (A vs B) and the choice is Blake's decision 1. Cross-variant disagreements found by adversaries (rendered-vs-documented proposed Bronze copy; two ES words for the tray's Clear; fit-row heading present in one variant) were resolved toward the documented-only / production-faithful option in the fix pass. Rejected adversarial findings and kept-as-tradeoff items are recorded with reasons in §8.
