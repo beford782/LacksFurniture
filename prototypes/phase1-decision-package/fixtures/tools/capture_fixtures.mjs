@@ -121,9 +121,11 @@ ${(() => {
 })()}.
 Consequence, recorded honestly: the flagged catalog claim strings on models
 outside this set (${(() => {
-  const flagged = ["g4", "g5", "g9", "b5"];
-  const missing = flagged.filter((id) => !renderedIds.has(id));
-  return missing.length ? missing.join(", ") + " among the flagged four" : "none of the flagged four — all render somewhere";
+  // The four flagged STRINGS (authoring brief §4) live on three models:
+  // g4, g9 (twice), b5. g5 carries no flag.
+  const flaggedModels = ["g4", "g9", "b5"];
+  const missing = flaggedModels.filter((id) => !renderedIds.has(id));
+  return missing.length ? missing.join(" and ") + " among the flagged four" : "none of the flagged four — all render somewhere";
 })()}) never render in any prototype —
 those flags come from direct catalog inspection, not from fixture rendering.
 Coverage follows from the engine's own qualification on the fixed answer

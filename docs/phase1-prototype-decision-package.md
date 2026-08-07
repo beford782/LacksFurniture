@@ -280,7 +280,18 @@ exploration record that produced them.
 
 ## 3. What each prototype deliberately preserves
 
-All four, verified by the lead (§8):
+All four original exploration variants (verified by the lead and the Wave 4
+sweeps, §8); the two recommended candidates additionally have every
+rendering-contract bullet below executed against them by the contract
+runner (§8) — excepting the accessibility bullet's visible-focus and
+target-size elements (static CSS-text checks only, no layout engine) and
+the final bullet (a git-diff property, verified by diff rather than by the
+runner). Two §2.0 exceptions to the sixth bullet: the candidates render
+neither the tier descriptors (removed package-wide) nor the compare-label
+pairs (no first-visit Compare exists); and that bullet's
+marked-proposed-copy clause is enforced visibly + audibly only in the
+candidates — in the exploration variants the marking is attribute-only
+(narrowed claim, README).
 
 - **Priorities at the engine's index, order and count.** sparse-b renders
   exactly two; dense-c preserves the 90/90 stable-sort tie order. Nothing is
@@ -356,6 +367,11 @@ the results-tabs review-state driver (`?state=…` — prototype chrome that
 replays real interactions through the real handlers), so **every cell is
 reproducible by URL** with the harness `v`, `s`, `l`, `st`, `w`, `h`
 parameters.
+
+The compare-open cell must be captured through the viewport harness;
+opening Compare scrolls the document, so a direct-URL headless screenshot
+at 834×1112 captures a blank frame (the page itself is fine — the harness
+scrolls an iframe, not the top-level document).
 
 Historical exploration captures (sleep-brief-a incl. its disclosure-open
 supplementary, sleep-brief-b, results-grouped) are retained as the record
@@ -679,9 +695,10 @@ presentation work. Four existing catalog
 strings are flagged for claim review (g4 unqualified "10° cooler"; g9
 "recovery benefits"; g9 antimicrobial-adjacent copper copy; b5 "a proven
 pick for side sleepers", which renders on production cards today) —
-grandfather or hot-fix is Blake's call. The fixtures qualify 17 of 26
-models, and g4/g5/g9 never render in any prototype — those flags rest on
-direct catalog inspection, not on-screen exposure (PROVENANCE records the
+grandfather or hot-fix is Blake's call. The fixtures qualify 18 of 26
+models, and the flagged g4 and g9 never render in any prototype — those
+two flags rest on direct catalog inspection, not on-screen exposure (b5,
+the fourth flagged string's model, does render; PROVENANCE records the
 computed coverage).
 
 ## 11. Analytics consequence of replacing tier tabs
