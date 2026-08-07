@@ -105,30 +105,198 @@ dead on main.
 
 ## 2. What each prototype changes
 
-*(TO FILL after Wave 3 builder delivery — per variant, from VARIANT-NOTES.)*
+Each variant's full, self-declared deviation list lives in its
+`VARIANT-NOTES.md`; this is the decision-relevant summary.
+
+### 2.1 Sleep Brief — Alternative A (need-led)
+
+- **The heading changes.** `h1` becomes the engine's **first priority, taken
+  strictly by index** (dense-c → "Comfortable elevation"), with its one-line
+  reason as the lede. The fixed pair "Your Sleep Brief" / "Tu Resumen de
+  Sueño" survives verbatim, demoted to a small continuity eyebrow. *This is
+  the gated 1.1 output made judgeable — not approved.*
+- **Prose is replaced by anchors.** The subtitle, summary, reflection,
+  priorities intro and plan label are not rendered; their facts move into
+  five inert signal badges. The reassurance line is kept verbatim.
+- **The testing detail moves behind an APG disclosure** ("Try this:" /
+  "Pruébalo:" as the trigger). Implemented per the roadmap proposal
+  *against* the external evidence — see §5.
+- **Firmness gains a graphic**: 10 discrete segments, the exact integer, the
+  Brief's own word, plus the accessible phrasing "Firmness: Medium, 4 of 10".
+  Production shows a word only, no number, no graphic.
+- **Ordinal markers** on the priority list plus a proposed basis-of-order
+  line, "In order, based on your answers" / "En orden, según tus respuestas".
+- **The CTA mislabel is resolved**: a proposed honest navigation label ("See
+  My Matches →" / "Ver Mis Opciones →") plus a separate, correctly-labelled
+  "Compare finalists" / "Comparar finalistas" entry (verbatim from the one
+  working production entry) opening a labelled, prototype-simulated 2-up
+  panel with drawer-grade dialog semantics.
+- Actions sit in a sticky bottom bar with safe-area padding; the journey rail
+  becomes a real `<ol>`.
+
+### 2.2 Sleep Brief — Alternative B (conservative hierarchy)
+
+- **The heading does not change.** "Your Sleep Brief" / "Tu Resumen de Sueño"
+  stays the `h1`; the engine's first priority (same index-0 selection)
+  appears *beneath* it as a subordinate conversation lead under a proposed
+  "Where we start" / "Por dónde empezamos" label, and still renders as item 1
+  of the list — an echo, not a removal.
+- **Today's top-level section order is kept** (identity → what-we-test →
+  journey → actions); the same prose is condensed into the same five badges,
+  but each badge carries a visible category label (POSITION / FEEL /
+  TEMPERATURE / SHARING / SIZE).
+- **The testing detail stays fully visible**, subordinated typographically —
+  B's deliberate, recorded contrast with A.
+- Same firmness treatment, same ordinal markers, same CTA resolution and
+  simulated compare entry as A.
+- The `tag-preference` pill is rendered with the neutral base style, mirroring
+  production's *missing* CSS rule rather than silently fixing it.
+
+### 2.3 Results — restyled tier tabs
+
+- Tabs remain the navigation. Contrast on unselected tabs is raised, targets
+  are ≥44 px, and Spanish labels are checked against overflow (production's
+  tab row can overflow below ~480 px).
+- Cards gain a **provenance split**: an "About this model" / "Product
+  description" product-story layer (authored `topPickReason`) visually
+  separated from the answer-aware customer-fit rows — production blurs these.
+- Firmness gains the 10-segment graphic alongside the existing numeral.
+- Compare is made **discoverable**: card-level toggle, a selection tray and an
+  action-area entry — reviving the pattern that exists in production CSS and
+  handlers but never renders — capped at 2, opening a labelled simulated 2-up
+  panel showing the tier **name** (never a percentage).
+- The financing module is reproduced in its **shipped stale-closed state**
+  (no rates anywhere), visually secondary, inert.
+- The empty-tier state is implemented as a real code path.
+- A proposed alternative Bronze descriptor is shown alongside the shipped
+  "entry-level" / "básico" copy, which is rendered as-shipped.
+
+### 2.4 Results — single-open accordion
+
+- **Tabs are replaced.** Three tier sections with permanently visible headers
+  (verbatim names and descriptors), Gold open by default — the engine's own
+  default — with W3C APG accordion semantics and no auto-scroll on expand.
+- **Only one tier's products are ever visible**, so the three tier leaders
+  never sit adjacent: this is the variant's honesty argument against the
+  stacked-group alternative.
+- One card anatomy for lead and supporting cards (production's top-pick card
+  is larger and richer); position plus the threshold-honest eyebrow carry the
+  within-tier distinction.
+- Differentiators and authored display badges are surfaced on cards —
+  production renders differentiators only in the drawer and display badges
+  nowhere.
+- Same provenance split, firmness graphic, compare demo, inert financing
+  module and real empty-tier path as the tabs variant.
+- Ships a **documented-only** `tier_view` retirement plan (§11); no analytics
+  are implemented.
 
 ## 3. What each prototype deliberately preserves
 
-*(TO FILL after Wave 3 builder delivery — per variant.)*
+All four, verified by the lead (§8):
+
+- **Priorities at the engine's index, order and count.** sparse-b renders
+  exactly two; dense-c preserves the 90/90 stable-sort tie order. Nothing is
+  padded, filtered, re-sorted, or selected by kind.
+- **The exact firmness integer** — on the Sleep Brief the customer's value, on
+  Results each model's own — rendered as N of 10 discrete segments plus the
+  numeral, with word labels taken from the destination surface's own live
+  vocabulary. No rescaling, rounding or new stops; the three production word
+  maps are not silently unified.
+- **Tier identity, membership and within-tier order** exactly as captured, in
+  the fixed Gold→Silver→Bronze order, with the internal keys untouched.
+- **No score, percentage, mattress rank number or winner treatment anywhere**,
+  and no cross-tier ranking implication.
+- **Threshold-honest copy** wired to `meetsMatchThreshold`, not to position.
+- **Verbatim production bilingual pairs** for the fixed heading, Edit Answers,
+  tier names and descriptors, kind pills, threshold copy and the working
+  compare label; every other string is either fixture data or explicitly
+  marked `data-proposed-copy`.
+- **No invented per-model reasons.** Authored product copy is labelled as
+  product description; no per-feature catalog reason is rendered (all are
+  empty).
+- **Zero financing on the Sleep Brief and inside compare**; on Results, one
+  secondary module in its shipped stale-closed state.
+- **Accessibility**: real headings and landmarks, `<ol>` for ranked lists,
+  real buttons, `aria-expanded` disclosures, bilingual accessible names,
+  aria-hidden graphics with adjacent text, visible focus, ≥44 px targets.
+- **No production file, fixture or shared-harness file was modified by any
+  builder**; no analytics event was added, renamed or simulated.
 
 ## 4. Screenshots
 
-*(TO FILL after the screenshot matrix: EN/ES × portrait/landscape ×
-dense/sparse per variant, under `docs/images/phase1-prototypes/`. Viewports
-are illustrative and content-driven — not the showroom device matrix.)*
+`docs/images/phase1-prototypes/` — 12 captures, named
+`<variant>__<scenario>__<lang>__<orientation>-<w>x<h>.jpg`, each stamped in
+the image with variant, scenario, language, viewport, display scale and the
+warning "illustrative review viewport — NOT the showroom device matrix".
+
+| variant | dense-c EN portrait | dense-c ES landscape | sparse-b EN portrait |
+|---|---|---|---|
+| sleep-brief-a | ✅ 834×1112 | ✅ 1112×834 | ✅ 834×1112 |
+| sleep-brief-b | ✅ 834×1112 | ✅ 1112×834 | ✅ 834×1112 |
+| results-tabs | ✅ 834×1112 | ✅ 1112×834 | ✅ 834×1112 |
+| results-grouped | ✅ 834×1112 | ✅ 1112×834 | ✅ 834×1112 |
+
+Captured through `prototypes/phase1-decision-package/shared/viewport-harness.html`,
+which renders a variant inside an exactly-sized iframe so its media queries
+resolve at the target viewport; only the on-screen rendering is scaled, and
+the scale factor is stamped on every image. Reviewers can reproduce any cell —
+or any other size — by opening that harness with `v`, `s`, `l`, `w`, `h`
+parameters. Beyond these 12 images, the lead ran programmatic checks across
+**48 variant × scenario × language × viewport combinations** (adding 400×800
+and both dense scenarios) for overflow, heading order, priority order and
+count, per-card firmness parity, tier order and membership, percentage/score
+leakage, Spanish completeness and touch-target size.
 
 ## 5. Tradeoffs
 
-*(TO FILL after Wave 3 + Wave 4; the research-backed axes are already fixed:
-need-led hero vs stable heading (recognition, salesperson repeatability);
-disclosure vs visible testing detail — external evidence argues the "Try
-this" prompt is primary every-consultation content (w2-progressive-disclosure)
-and Alternative A implements the roadmap-proposed disclosure anyway so the
-choice is judged on real screens; tabs (zero rank adjacency, known
-discoverability weakness) vs single-open accordion (headers as standing tour
-agenda, cheapest correct a11y, analytics retirement cost). Stacked
-side-by-side groups were excluded: three adjacent tier leaders assert a
-global ranking the engine never computes.)*
+### 5.1 Sleep Brief: A (need-led) vs B (conservative)
+
+| | **A — need-led** | **B — conservative** |
+|---|---|---|
+| First thing read aloud | The customer's actual top need ("Comfortable elevation") | The screen's name, then the need |
+| Recognition across visits | Weaker — the title changes per customer | Stronger — a stable, nameable screen |
+| Salesperson repeatability | Opening line differs every session | Same opening line every session |
+| Reading load | Lowest — most prose removed, testing detail hidden | Low — same prose removed, testing detail kept but subordinated |
+| Testing detail | Behind a disclosure (a tap, by one person, on a shared screen) | Always visible to both people |
+| Gate exposure | **Triggers the 1.1 gate** (heading replaced) | **Also triggers it** (heading subordinated) — but less far |
+| Risk | The eyebrow may read as a subtitle; a "need" title can feel like a diagnosis if copy drifts | Less differentiated from today; the win is smaller |
+
+The sharpest disagreement in the whole research program is on A's disclosure.
+The roadmap proposes it; the external evidence
+(`w2-progressive-disclosure`) argues **against** it: by NN/g's own
+frequency criterion the "Try this:" prompt is primary, every-consultation
+content, GOV.UK guidance forbids hiding what the majority need, and Baymard
+measured 50–80 % of users overlooking collapsed content. On a shared display
+the tap cost lands on one person — hidden content is invisible to the
+customer unless the operator opens it, which is a training dependency, not a
+design guarantee. **A implements it anyway so Blake can judge both directions
+against real screens**; B is the visible-detail counterfactual. Note this is
+separable: A's composition could ship with the detail visible.
+
+### 5.2 Results: restyled tabs vs single-open accordion
+
+| | **Restyled tabs** | **Single-open accordion** |
+|---|---|---|
+| Rank adjacency | None — one tier at a time | None — one tier at a time |
+| Other tiers' existence | A tab bar; research documents users overlooking tabbed content | Headers permanently visible as a standing tour agenda |
+| Accessibility cost | Full ARIA tabs contract (production's tabs are plain divs with none of it) | Cheapest correct pattern: button + `aria-expanded` |
+| Analytics cost | **None** — `tier_view` semantics unchanged | An intentional retire/replace change-set (§11) plus new behavioral coverage |
+| Gate exposure | Restyling tabs is explicitly **Proceeds** — no gate | **Triggers the 1.3 adoption gate** |
+| Glanceability (measured) | Image ≈18–21 % of viewport; lead model name and firmness **above the fold** in both orientations | Image ≈36 % portrait / **63 % landscape**; in landscape the model name (y≈998) and firmness (y≈1050) fall **below** an 834 px fold |
+| Rework risk | Low | If Phase 3.3 later adopts a global maximum, this is restyled, not rebuilt |
+
+The measured glanceability gap is the accordion's main weakness and is a
+**fixable styling issue, not intrinsic to the pattern** — the image is the
+variant's own choice, not a consequence of accordions. It is reported here
+because it is exactly what a salesperson would hit first on a landscape
+mount. Stacked side-by-side groups were **excluded before building**: three
+adjacent tier leaders assert a global ranking the engine never computes
+(`w2-tier-navigation`), and the effect worsens in landscape.
+
+Both Results variants share one honest limitation: with the shipped catalog
+every fixture entry meets the match threshold, so the "Additional comparison
+option" degradation is implemented from the shipped copy pair but never
+exercised on screen; the same applies to the empty-tier state.
 
 ## 6. Accessibility assessment
 
