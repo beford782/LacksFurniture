@@ -1,0 +1,103 @@
+<!doctype html>
+<!--
+  Sleep Brief — ALTERNATIVE A (need-led hero). PROTOTYPE ONLY.
+  Phase 1 decision-package research artifact. Renders frozen engine output
+  captured from main = 78f949c (see ../fixtures/PROVENANCE.md). Never imported,
+  linked or executed by the production application. Nothing here recomputes,
+  re-orders, filters, caps or synthesises engine output.
+
+  View over HTTP from the repo root, e.g.:
+    python -m http.server 8000
+    http://localhost:8000/prototypes/phase1-decision-package/sleep-brief-a/?scenario=dense-c&lang=en
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sleep Brief A — prototype</title>
+  <link rel="stylesheet" href="../shared/harness.css">
+  <link rel="stylesheet" href="sba.css">
+</head>
+<body>
+  <!-- The shared harness inserts the review bar (scenario/language switch)
+       before this element at load time. -->
+
+  <main class="sba" id="sbaMain" aria-labelledby="sbaHeroTitle">
+
+    <!-- ===== Need-led hero: priorities[0] BY INDEX becomes the headline ===== -->
+    <header class="sba-hero">
+      <p class="sba-eyebrow" id="sbaEyebrow"></p>
+      <h1 class="sba-hero__title" id="sbaHeroTitle"></h1>
+      <p class="sba-hero__lede" id="sbaHeroLede"></p>
+
+      <!-- Inert signal badges (GOV.UK-status-tag family). Fixed invariant
+           order: position, temperature, sharing, feel, size. Unanswered or
+           unmapped signals are omitted, never placeholdered. NEVER
+           health-adjacent answers. role="list" restores list semantics
+           removed by list-style:none in some AT. -->
+      <ul class="sba-badges" id="sbaBadges" role="list"></ul>
+
+      <!-- Firmness: 10 discrete segments, exact integer, word from the
+           Brief's own captured vocabulary (metaStrip "Feel" value). The
+           graphic + visible fragments are one aria-hidden block; the sr-only
+           sentence is the single accessible rendering. -->
+      <div class="sba-firm" id="sbaFirm"></div>
+    </header>
+
+    <div class="sba-columns">
+
+      <!-- ===== Priorities: 1-3 rows, engine order, <ol> semantics ===== -->
+      <section class="sba-priorities" aria-labelledby="sbaPrioritiesHeading">
+        <h2 class="sba-h2" id="sbaPrioritiesHeading"></h2>
+        <p class="sba-basis" id="sbaBasis" data-proposed-copy=""></p>
+        <ol class="sba-priority-list" id="sbaPriorityList"></ol>
+        <p class="sba-reassure" id="sbaReassure"></p>
+      </section>
+
+      <!-- ===== Next-step rail: the three journey steps, verbatim ===== -->
+      <section class="sba-journey" aria-labelledby="sbaJourneyHeading">
+        <h2 class="sba-h2" id="sbaJourneyHeading"></h2>
+        <ol class="sba-journey-list" id="sbaJourneyList"></ol>
+        <p class="sba-journey-copy" id="sbaJourneyCopy"></p>
+      </section>
+
+    </div>
+
+    <!-- ===== Actions (sticky). All navigation here is prototype-simulated. ===== -->
+    <div class="sba-actions">
+      <div class="sba-actions__row">
+        <button type="button" class="sba-btn sba-btn--ghost" id="sbaEditBtn"
+                aria-describedby="sbaSimCaption"></button>
+        <button type="button" class="sba-btn sba-btn--ghost" id="sbaCompareBtn"></button>
+        <button type="button" class="sba-btn sba-btn--primary" id="sbaCtaBtn"
+                aria-describedby="sbaSimCaption" data-proposed-copy=""></button>
+      </div>
+      <p class="sba-sim-caption" id="sbaSimCaption" data-proposed-copy=""></p>
+    </div>
+
+  </main>
+
+  <!-- ===== Prototype-simulated 2-up compare panel (opened by the
+       "Compare finalists" entry; fed by compareDemo.autoPair + tierData).
+       Implements the drawer-grade dialog lifecycle the production compare
+       modal lacks: role=dialog, labelled title focus, Tab trap with the
+       title outside the cycle, Escape, exact inert bookkeeping, opener
+       restore. Static prototype: no live regions. ===== -->
+  <div class="sba-dialog-backdrop" id="sbaDialogBackdrop" hidden></div>
+  <div class="sba-dialog" id="sbaCompareDialog" role="dialog" aria-modal="true"
+       aria-labelledby="sbaCompareTitle" hidden>
+    <div class="sba-dialog__panel">
+      <div class="sba-dialog__head">
+        <h2 class="sba-dialog__title" id="sbaCompareTitle" tabindex="-1"></h2>
+        <button type="button" class="sba-btn sba-btn--ghost sba-dialog__close"
+                id="sbaCompareClose" data-proposed-copy=""></button>
+      </div>
+      <p class="sba-sim-banner" id="sbaSimBanner" data-proposed-copy=""></p>
+      <div class="sba-compare-cols" id="sbaCompareCols"></div>
+    </div>
+  </div>
+
+  <script src="../shared/harness.js"></script>
+  <script src="sba.js"></script>
+</body>
+</html>

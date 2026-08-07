@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Results — restyled tier tabs (Phase 1 prototype)</title>
+  <!--
+    PROTOTYPE ONLY — Phase 1 decision package, variant "results-tabs".
+    Strongest possible restyle of the shipped Gold/Silver/Bronze tier tabs.
+    Renders entirely from the frozen fixture served by ../shared/harness.js
+    (captured from main = 78f949c). Never imported, linked or executed by the
+    production application. No analytics of any kind are implemented here:
+    the production tier_view event belongs to the production tier switcher.
+  -->
+  <link rel="stylesheet" href="../shared/harness.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main id="app">
+    <!-- Rendered by script.js from the frozen fixture. -->
+  </main>
+  <script src="../shared/harness.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
