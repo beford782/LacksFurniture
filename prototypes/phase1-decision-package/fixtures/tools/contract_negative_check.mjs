@@ -180,14 +180,24 @@ function makeSandbox() {
   return dir;
 }
 
+// EOL-portable mutation application (Codex re-review fix): a fresh
+// checkout under core.autocrlf=true materializes these files with CRLF,
+// which would make every exact multiline `find` (authored with LF-only
+// escapes) miss and report STALE. Matching therefore runs on
+// LF-normalized text, and the mutated result is written back in the
+// file's ORIGINAL line-ending style so the sandbox stays
+// self-consistent. Applied-exactly-once verification is preserved, on
+// the normalized text.
 function applyTextMutation(sandbox, m) {
   const path = join(sandbox, m.file);
-  const before = readFileSync(path, "utf8");
+  const raw = readFileSync(path, "utf8");
+  const eol = raw.includes("\r\n") ? "\r\n" : "\n";
+  const before = raw.split("\r\n").join("\n");
   const count = before.split(m.find).length - 1;
   if (count !== (m.occurrences || 1)) return { ok: false, count };
   const after = before.split(m.find).join(" SPLIT ").replace(/ SPLIT /g, () => m.replace);
   if (after === before) return { ok: false, count };
-  writeFileSync(path, after);
+  writeFileSync(path, eol === "\r\n" ? after.split("\n").join("\r\n") : after);
   return { ok: true, count };
 }
 

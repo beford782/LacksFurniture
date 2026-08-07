@@ -173,9 +173,10 @@ fixtures, code, composition and interaction, but no reviewer apparatus
 legends, no sim notes or footnotes, no sr marker suffixes), with one
 small "Prototype — not production" notice retained; the contract runner
 proves product state is identical across modes. **(4) State-accurate
-Compare language** — stable heading "Mattress comparison"; opener
-"Compare selected mattresses" ↔ "Close comparison" on BOTH routes while
-open. The packet's frozen URLs use evaluation mode.
+Compare language** — stable heading "Mattress comparison"; when closed,
+the section opener reads "Compare selected mattresses" while the tray
+keeps its production-verbatim "Compare →" (proposed ES "Comparar →");
+while open, BOTH controls read "Close comparison". The packet's frozen URLs use evaluation mode.
 
 **Results — recommended candidate (`results-tabs/`, corrected).**
 Accessible tier tabs remain the navigation (full APG tabs contract). The
