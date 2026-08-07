@@ -329,8 +329,33 @@ h1.results-headline .accent { font-style: italic; color: var(--accent); }
   margin: 0 0 6px;
 }
 
-.product-story { border-top: 1px solid var(--line); padding-top: 10px; }
-.product-story .reason { margin: 0 0 8px; font-size: 0.92rem; }
+/* .product-story removed (focused pass): topPickReason is not established
+   claim-safe customer-agnostic copy, so the candidate renders no
+   product-description layer. The reviewer-mode placeholder below marks the
+   region without stating any product fact. */
+.product-desc-placeholder {
+  border: 1.5px dashed var(--line);
+  border-radius: 6px;
+  padding: 8px 10px;
+  background: transparent;
+}
+.product-desc-placeholder p {
+  margin: 0;
+  font-size: 0.78rem;
+  font-style: italic;
+  color: var(--ink-soft);
+}
+
+/* Strict-language contract failure (prototype chrome): rendered when a
+   REQUIRED string is missing in the active language — loud by design. */
+.contract-failure {
+  border: 3px solid #8c1d18;
+  background: #fbe9e7;
+  color: #8c1d18;
+  font-weight: 700;
+  padding: 10px 12px;
+  margin: 12px 0;
+}
 
 /* .badge-chips / .badge-chip removed (fix T2): displayBadges no longer
    render — they created a customer-facing surface production doesn't have.
@@ -629,6 +654,11 @@ h1.results-headline .accent { font-style: italic; color: var(--accent); }
   text-decoration: underline dotted 1.5px #35506b;
   text-underline-offset: 3px;
 }
+
+/* Evaluation mode (html.df-eval, set by the shared harness): the dotted
+   marking is reviewer apparatus — suppressed so the dry run is not
+   annotation-biased. The attribute stays for provenance. */
+html.df-eval [data-proposed-copy] { text-decoration: none; }
 
 /* Proposed-copy legend (prototype chrome). */
 .page-legend {

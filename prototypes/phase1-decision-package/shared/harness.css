@@ -42,3 +42,13 @@
 }
 
 .df-review-bar__btn.is-active { background: #5d4400; color: #fff8e1; }
+
+/* Evaluation mode: the one retained notice is small and unobtrusive —
+   plain strip, no stripes, no controls. */
+.df-review-bar--eval {
+  background: #f3efe6;
+  border-bottom: 1px solid #b8ae99;
+  font-size: 0.7rem;
+  padding: 0.25rem 1rem;
+}
+.df-review-bar--eval .df-review-bar__note { flex-basis: auto; }

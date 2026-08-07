@@ -73,11 +73,16 @@ a:focus-visible,
 /* Proposed-copy marking: every data-proposed-copy node is visibly flagged
    with a dotted underline (legend at the foot of the page explains it).
    The paired sr-only "(proposed copy — not production)" suffix is added in
-   JS at each use site. */
+   JS at each use site. Both are REVIEWER-MODE apparatus: in evaluation
+   mode (html.df-eval, set by the shared harness) the underline is
+   suppressed so the dry run is not annotation-biased; the attribute stays
+   for provenance. */
 [data-proposed-copy] {
   text-decoration: underline dotted 1.5px var(--sbr-blue);
   text-underline-offset: 3px;
 }
+
+html.df-eval [data-proposed-copy] { text-decoration: none; }
 
 .sbr {
   max-width: 1080px;              /* per-surface max-width, echoing production */
@@ -378,6 +383,17 @@ a:focus-visible,
   color: var(--sbr-muted);
 }
 
+/* Strict-language contract failure (prototype chrome): rendered when a
+   REQUIRED string is missing in the active language — loud by design. */
+.contract-failure {
+  border: 3px solid #8c1d18;
+  background: #fbe9e7;
+  color: #8c1d18;
+  font-weight: 700;
+  padding: 10px 12px;
+  margin: 12px 0;
+}
+
 /* ============================== Legend (prototype chrome) ============================== */
 
 .sbr-legend {
@@ -453,4 +469,11 @@ a:focus-visible,
   outline: 2px solid var(--sbr-accent);
   outline-offset: 3px;
   color: var(--sbr-accent);
+}
+
+/* Mode-neutral tap feedback on the simulated actions (matches the Results
+   candidate's sim-pulse): a tap must never appear dead, in either mode. */
+.sbr-btn.sim-pulse {
+  outline: 3px dashed var(--sbr-accent);
+  outline-offset: 2px;
 }

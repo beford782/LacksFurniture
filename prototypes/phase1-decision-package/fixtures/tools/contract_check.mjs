@@ -24,9 +24,15 @@
 import { readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  stripTags, walk, queryAll, runVariant as runVariantStub,
+  loadFixture as loadFixtureFrom,
+} from "./stub_dom.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..");
-const pkg = join(root, "prototypes", "phase1-decision-package");
+// CONTRACT_PKG_DIR override lets the negative runner point this script at an
+// isolated mutated copy of the package without touching the worktree.
+const pkg = process.env.CONTRACT_PKG_DIR || join(root, "prototypes", "phase1-decision-package");
 const fixturesDir = join(pkg, "fixtures");
 
 const SCENARIO_NAMES = ["dense-c", "dense-a", "sparse-b", "boundary-one"];
@@ -39,184 +45,16 @@ function check(label, cond, detail) {
   else { failed++; failures.push(label + (detail ? " — " + detail : "")); console.log(`  [FAIL] ${label}${detail ? " — " + detail : ""}`); }
 }
 
-/* ================= minimal DOM stub (no layout engine) ================= */
+/* DOM stub + variant executor live in stub_dom.mjs (shared with the
+   negative runner). runVariant passes a STRICT ctx.L — no English
+   fallback — and ctx.mode; see stub_dom.mjs for the rationale. */
 
-class StubNode {
-  constructor(tag, doc) {
-    this.tagName = (tag || "").toUpperCase();
-    this._doc = doc;
-    this.children = [];
-    this.parentNode = null;
-    this._attrs = new Map();
-    this._classes = new Set();
-    this._text = "";
-    this._innerHTML = null;
-    this._listeners = new Map();
-    this.style = Object.assign(Object.create({ setProperty() {} }), {});
-    this.nodeType = 1;
-    this._focusCalls = 0;
-    this._scrollIntoViewCalls = 0;
-  }
-  get id() { return this._attrs.get("id") || ""; }
-  set id(v) { this._attrs.set("id", v); this._doc._register(this); }
-  get className() { return [...this._classes].join(" "); }
-  set className(v) { this._classes = new Set(String(v).split(/\s+/).filter(Boolean)); }
-  get classList() {
-    const self = this;
-    return {
-      add: (c) => self._classes.add(c),
-      remove: (c) => self._classes.delete(c),
-      contains: (c) => self._classes.has(c),
-    };
-  }
-  setAttribute(k, v) {
-    this._attrs.set(k, String(v));
-    if (k === "id") this._doc._register(this);
-    if (k === "class") this.className = v;
-  }
-  getAttribute(k) { return this._attrs.has(k) ? this._attrs.get(k) : null; }
-  removeAttribute(k) { this._attrs.delete(k); }
-  get hidden() { return this._attrs.has("hidden"); }
-  set hidden(v) { if (v) this._attrs.set("hidden", ""); else this._attrs.delete("hidden"); }
-  appendChild(n) {
-    if (n && typeof n === "object") { n.parentNode = this; this.children.push(n); }
-    return n;
-  }
-  get textContent() {
-    let t = this._text || "";
-    if (this._innerHTML) t += stripTags(this._innerHTML);
-    for (const c of this.children) t += c.nodeType === 3 ? c.textContent : c.textContent;
-    return t;
-  }
-  set textContent(v) { this._text = String(v); this.children = []; this._innerHTML = null; }
-  get innerHTML() { return this._innerHTML || ""; }
-  set innerHTML(v) {
-    this._innerHTML = String(v) || null;
-    this.children = []; this._text = "";
-  }
-  addEventListener(type, fn) {
-    if (!this._listeners.has(type)) this._listeners.set(type, []);
-    this._listeners.get(type).push(fn);
-  }
-  dispatch(type, eventProps) {
-    const e = Object.assign({ type, target: this, currentTarget: this, preventDefault() {} }, eventProps || {});
-    for (const fn of this._listeners.get(type) || []) fn(e);
-    return e;
-  }
-  focus() { this._focusCalls++; this._doc.activeElement = this; this._doc.focusLog.push(this); }
-  scrollIntoView() { this._scrollIntoViewCalls++; this._doc.scrollLog.push(this); }
-  getBoundingClientRect() { return { top: 0, bottom: 0, left: 0, right: 0, width: 0, height: 0 }; }
-  get offsetHeight() { return 0; }
-  querySelectorAll(sel) { return queryAll(this, sel); }
-  querySelector(sel) { return queryAll(this, sel)[0] || null; }
-  // template-element support: the journey rail parses captured production
-  // markup through template.content.querySelectorAll(".cls").
-  get content() {
-    const html = this._innerHTML || "";
-    return {
-      querySelectorAll(sel) {
-        const cls = sel.replace(/^\./, "");
-        const out = [];
-        const re = new RegExp(`<[a-z]+[^>]*class="[^"]*${cls}[^"]*"[^>]*>([\\s\\S]*?)<\\/`, "g");
-        let m;
-        while ((m = re.exec(html))) out.push({ textContent: stripTags(m[1]) });
-        return out;
-      },
-    };
-  }
-}
-
-function stripTags(html) { return String(html).replace(/<[^>]*>/g, ""); }
-
-function walk(node, fn) {
-  fn(node);
-  for (const c of node.children || []) if (c.nodeType === 1) walk(c, fn);
-}
-
-function queryAll(rootNode, sel) {
-  const out = [];
-  // supports ".class", "tag", "[attr]" and comma lists — enough for the variants
-  const alts = sel.split(",").map((s) => s.trim());
-  walk(rootNode, (n) => {
-    if (n === rootNode) return;
-    for (const a of alts) {
-      if (a.startsWith(".") && n._classes && n._classes.has(a.slice(1))) { out.push(n); return; }
-      if (a.startsWith("[") && n._attrs && n._attrs.has(a.slice(1, -1))) { out.push(n); return; }
-      if (/^[a-z][a-z0-9]*$/i.test(a) && n.tagName === a.toUpperCase()) { out.push(n); return; }
-    }
-  });
-  return out;
-}
-
-function makeDocument() {
-  const registry = new Map();
-  const doc = {
-    _register(n) { if (n.id) registry.set(n.id, n); },
-    activeElement: null,
-    focusLog: [],
-    scrollLog: [],
-    title: "",
-    documentElement: null,
-    body: null,
-    createElement(tag) { return new StubNode(tag, doc); },
-    createTextNode(text) { return { nodeType: 3, textContent: String(text) }; },
-    getElementById(id) {
-      if (!registry.has(id)) {
-        // auto-create (the variants' static skeleton elements): matches the
-        // capture harness's recording-shim approach.
-        const n = new StubNode("div", doc);
-        n.setAttribute("id", id);
-        registry.set(id, n);
-      }
-      return registry.get(id);
-    },
-    querySelector() { return null; },
-    querySelectorAll() { return []; },
-    addEventListener() {},
-    removeEventListener() {},
-  };
-  doc.documentElement = new StubNode("html", doc);
-  doc.body = new StubNode("body", doc);
-  return doc;
-}
-
-/* ============ execute a variant script against one fixture ============ */
-
-function deepFreeze(obj) {
-  if (obj && typeof obj === "object" && !Object.isFrozen(obj)) {
-    Object.freeze(obj);
-    Object.keys(obj).forEach((k) => deepFreeze(obj[k]));
-  }
-  return obj;
-}
-
-function runVariant(scriptPath, fixture, scenario, lang) {
-  const src = readFileSync(scriptPath, "utf8");
-  const doc = makeDocument();
-  const win = {
-    addEventListener() {}, removeEventListener() {},
-    scrollByCalls: [],
-    scrollBy(...a) { win.scrollByCalls.push(a); },
-    location: { search: "" },
-  };
-  const DF = { _cb: null, onReady(cb) { DF._cb = cb; } };
-  const L = (obj) => {
-    if (obj == null) return "";
-    if (typeof obj === "string") return obj;
-    return obj[lang] != null ? obj[lang] : (obj.en != null ? obj.en : "");
-  };
-  const noTimer = () => 0;
-  new Function("window", "document", "DF", "setTimeout", "clearTimeout", "URLSearchParams", src)(
-    win, doc, DF, noTimer, noTimer, URLSearchParams);
-  if (!DF._cb) throw new Error("variant registered no DF.onReady callback");
-  // Deep-frozen, matching the shared harness: an in-place mutation of engine
-  // output throws instead of silently re-ordering it.
-  DF._cb(deepFreeze(JSON.parse(JSON.stringify(fixture))), { scenario, lang, L });
-  return { doc, win };
+function runVariant(scriptPath, fixture, scenario, lang, opts) {
+  return runVariantStub(scriptPath, fixture, scenario, lang, opts);
 }
 
 function loadFixture(name) {
-  return JSON.parse(readFileSync(join(fixturesDir, `scenario-${name}.json`), "utf8"));
+  return loadFixtureFrom(fixturesDir, name);
 }
 
 function textOf(node) { return node.textContent; }
@@ -453,13 +291,22 @@ for (const scenario of SCENARIO_NAMES) {
                      : (lang === "es" ? "Coincide con tus prioridades" : "Matches your priorities"))
           : (lang === "es" ? "Opción adicional para comparar" : "Additional comparison option");
         check(`${label}/${tier}: ${entry.id} threshold-honest eyebrow`, eyebrow === expectedEyebrow, eyebrow);
-        // Lead: product story labelled; supports: none.
-        const story = card.querySelector(".product-story");
+        // NO product-description layer anywhere (focused pass): topPickReason
+        // is not established claim-safe copy and must not render in either
+        // language. The lead card carries the reviewer-mode-only chrome
+        // placeholder instead; nothing in evaluation mode.
+        check(`${label}/${tier}: ${entry.id} topPickReason does NOT render (either language)`,
+          !textOf(card).includes(entry.topPickReason.en) &&
+          !textOf(card).includes(entry.topPickReason.es));
+        check(`${label}/${tier}: no product-story block exists`,
+          !card.querySelector(".product-story"));
+        const placeholder = card.querySelector(".product-desc-placeholder");
         if (i === 0) {
-          check(`${label}/${tier}: lead carries labelled product description`,
-            story && textOf(story).includes(entry.topPickReason[lang] || entry.topPickReason.en || ""));
+          check(`${label}/${tier}: lead carries the reviewer-mode description placeholder (chrome)`,
+            placeholder && placeholder.getAttribute("data-prototype-chrome") !== null &&
+            /could occupy|podría ocupar/.test(textOf(placeholder)));
         } else {
-          check(`${label}/${tier}: support card has no product-story block`, !story);
+          check(`${label}/${tier}: support card has no description placeholder`, !placeholder);
           check(`${label}/${tier}: support fit rows are compact (no descs)`,
             queryAll(card, ".fit-desc").length === 0);
         }
@@ -498,9 +345,16 @@ for (const scenario of SCENARIO_NAMES) {
       });
       check(`${label}: "finalists" vocabulary only in the production-constraint footnote`,
         found === chromeFinalists, `${found} total vs ${chromeFinalists} in chrome`);
-      const headingWant = lang === "es" ? "Comparar colchones seleccionados" : "Compare selected mattresses";
-      check(`${label}: compare heading/entry use page-local selection terminology`,
-        textOf(doc.getElementById("compareHeading")).startsWith(headingWant));
+      // State-accurate compare language (focused pass): stable noun-phrase
+      // heading, action-verb opener — never duplicates of each other.
+      const headingWant = lang === "es" ? "Comparación de colchones" : "Mattress comparison";
+      const openWant = lang === "es" ? "Comparar colchones seleccionados" : "Compare selected mattresses";
+      const headingText = textOf(doc.getElementById("compareHeading"));
+      const entryText = textOf(queryAll(app, ".compare-entry")[0]);
+      check(`${label}: compare heading is the stable noun phrase`,
+        headingText.startsWith(headingWant), headingText);
+      check(`${label}: closed opener carries the action label, distinct from the heading`,
+        entryText.startsWith(openWant) && !entryText.startsWith(headingWant), entryText);
     }
 
     // Leakage: captured pct values must never render as percentages.
@@ -559,6 +413,11 @@ for (const scenario of SCENARIO_NAMES) {
     check(`${label}: cap 2 — third toggle disabled`,
       goldCards[2] ? toggleOf(goldCards[2]).getAttribute("disabled") !== null : true);
 
+    const trayGo = queryAll(tray, ".go")[0];
+    const closeWant = lang === "es" ? "Cerrar comparación" : "Close comparison";
+    const openWant2 = lang === "es" ? "Comparar colchones seleccionados" : "Compare selected mattresses";
+    const trayGoClosedWant = lang === "es" ? "Comparar →" : "Compare →";
+
     const scrollsBefore = heading._scrollIntoViewCalls, focusBefore = heading._focusCalls;
     entryBtn.dispatch("click");
     const comparePanelEl = doc.getElementById("comparePanel");
@@ -574,11 +433,23 @@ for (const scenario of SCENARIO_NAMES) {
     check(`${label}: compare panel shows tier NAME, never a percentage`,
       textOf(comparePanelEl).includes(lang === "es" ? "Oro" : "Gold") &&
       !/%/.test(textOf(comparePanelEl)));
+    // State-accurate open labels: BOTH routes read Close, never the opener
+    // label, while aria-expanded says true (focused pass).
+    check(`${label}: open state — both compare controls read "Close comparison"`,
+      textOf(entryBtn).startsWith(closeWant) && textOf(trayGo).startsWith(closeWant) &&
+      entryBtn.getAttribute("aria-expanded") === "true" &&
+      trayGo.getAttribute("aria-expanded") === "true");
 
-    // Deselection closes a stale panel.
+    // Deselection closes a stale panel; labels revert to the closed state.
     toggleOf(goldCards[1]).dispatch("click");
     check(`${label}: deselection — panel closes, tray back to 1 of 2`,
       comparePanelEl.hidden && textOf(tray).includes(lang === "es" ? "1 de 2" : "1 of 2"));
+    check(`${label}: closed state — labels revert (opener action, tray production static)`,
+      textOf(entryBtn).startsWith(openWant2) &&
+      textOf(trayGo).startsWith(trayGoClosedWant) &&
+      entryBtn.getAttribute("aria-expanded") === "false");
+    check(`${label}: EN closed tray label carries no proposed marking (production-verbatim)`,
+      lang === "es" || trayGo.getAttribute("data-proposed-copy") === null);
     // Clear empties and moves focus to the active tab.
     queryAll(tray, "button")[0].dispatch("click");
     check(`${label}: Clear — tray hidden, focus on active tier tab`,
@@ -599,6 +470,22 @@ for (const scenario of SCENARIO_NAMES) {
       entryBtn.getAttribute("disabled") === null &&
       textOf(tray).includes(tierData.silver[0].name));
 
+    // SECOND opening route: the sticky tray action must produce the same
+    // consequences as the section opener — panel visible with the silver
+    // pair, focus+scroll on the stable heading, Close labels on both routes.
+    const s2 = heading._scrollIntoViewCalls, f2 = heading._focusCalls;
+    trayGo.dispatch("click");
+    check(`${label}: tray route — panel opens with the silver pair`,
+      !comparePanelEl.hidden &&
+      textOf(comparePanelEl).includes(tierData.silver[0].name) &&
+      textOf(comparePanelEl).includes(tierData.silver[1].name));
+    check(`${label}: tray route — focus/scroll consequence and Close labels on both routes`,
+      heading._scrollIntoViewCalls === s2 + 1 && heading._focusCalls === f2 + 1 &&
+      textOf(entryBtn).startsWith(closeWant) && textOf(trayGo).startsWith(closeWant));
+    trayGo.dispatch("click");
+    check(`${label}: tray route — closes again, labels revert`,
+      comparePanelEl.hidden && textOf(trayGo).startsWith(trayGoClosedWant));
+
     // Language integrity (ES render).
     if (lang === "es") {
       const t = fullText();
@@ -618,6 +505,99 @@ for (const scenario of SCENARIO_NAMES) {
             !n.textContent.includes(marker)) ok = false;
       });
       check(`${label}: every proposed node carries the sr "(proposed copy)" suffix`, ok);
+    }
+  }
+}
+
+/* ============ evaluation mode: same product state, zero reviewer
+   apparatus (focused pass). The mode exists so the assisted-sales dry run
+   is not biased by annotation; these checks prove it removes ONLY
+   reviewer apparatus and does not change product-state output. ============ */
+
+console.log("\n=== evaluation mode ===");
+
+check("eval: shared harness sets the df-eval class and builds the minimal notice bar",
+  /classList\.add\("df-eval"\)/.test(readFileSync(join(pkg, "shared", "harness.js"), "utf8")) &&
+  /df-review-bar--eval/.test(readFileSync(join(pkg, "shared", "harness.js"), "utf8")));
+check("eval: both candidate stylesheets suppress the proposed-copy underline under html.df-eval",
+  /html\.df-eval \[data-proposed-copy\]\s*\{\s*text-decoration:\s*none/.test(SBR_CSS_TEXT()) &&
+  /html\.df-eval \[data-proposed-copy\]\s*\{\s*text-decoration:\s*none/.test(TABS_CSS));
+
+function SBR_CSS_TEXT() { return readFileSync(join(pkg, "sleep-brief-recommended", "sbr.css"), "utf8"); }
+
+for (const scenario of SCENARIO_NAMES) {
+  const fixture = loadFixture(scenario);
+  for (const lang of LANGS) {
+    const label = `eval ${scenario}/${lang}`;
+    const srMark = lang === "es" ? "(copia propuesta" : "(proposed copy";
+
+    // ---- Sleep Brief candidate ----
+    {
+      const rev = runVariant(SBR_JS, fixture, scenario, lang).doc;
+      const ev = runVariant(SBR_JS, fixture, scenario, lang, { mode: "evaluation" }).doc;
+      check(`${label} sbr: no sr proposed-copy suffix in evaluation output`,
+        !allText(ev).includes(srMark));
+      check(`${label} sbr: legend and sim caption hidden and empty in evaluation`,
+        ev.getElementById("sbrLegend").hidden && textOf(ev.getElementById("sbrLegend")) === "" &&
+        ev.getElementById("sbrSimCaption").hidden && textOf(ev.getElementById("sbrSimCaption")) === "");
+      // Product-state snapshot; the reviewer-only sr suffix is the ONE
+      // legitimate textual difference, stripped before comparing.
+      const fullSuffix = lang === "es"
+        ? " (copia propuesta — no de producción)" : " (proposed copy — not production)";
+      const strip = (d) => [
+        textOf(d.getElementById("sbrHeroTitle")), textOf(d.getElementById("sbrHeroLede")),
+        queryAll(d.getElementById("sbrPriorityList"), "h3").map(textOf).join("|"),
+        queryAll(d.getElementById("sbrFirm"), ".is-filled").length,
+        queryAll(d.getElementById("sbrBadges"), ".sbr-badge__value").map(textOf).join("|"),
+        textOf(d.getElementById("sbrEditBtn")),
+        textOf(d.getElementById("sbrCtaBtn")),
+        textOf(d.getElementById("sbrBasis")),
+      ].join("~").split(fullSuffix).join("");
+      check(`${label} sbr: product state identical across modes (apparatus removed only)`,
+        strip(rev) === strip(ev), "");
+      check(`${label} sbr: proposed-copy attributes retained in evaluation (provenance)`,
+        queryAll(ev.getElementById("sbrBadges"), "[data-proposed-copy]").length ===
+        queryAll(rev.getElementById("sbrBadges"), "[data-proposed-copy]").length);
+    }
+
+    // ---- Results tabs candidate ----
+    {
+      const rev = runVariant(TABS_JS, fixture, scenario, lang).doc;
+      const ev = runVariant(TABS_JS, fixture, scenario, lang, { mode: "evaluation" }).doc;
+      const revApp = rev.getElementById("app");
+      const evApp = ev.getElementById("app");
+      check(`${label} tabs: zero prototype-chrome elements in evaluation output`,
+        queryAll(evApp, "[data-prototype-chrome]").length === 0,
+        `${queryAll(evApp, "[data-prototype-chrome]").length} found`);
+      check(`${label} tabs: no sr proposed-copy suffix in evaluation output`,
+        !textOf(evApp).includes(srMark));
+      check(`${label} tabs: no description placeholder in evaluation (review-only)`,
+        queryAll(evApp, ".product-desc-placeholder").length === 0);
+      const cardState = (d) => {
+        const p = d.getElementById("tierPanel");
+        return [
+          queryAll(p, ".m-card").map((c) => c.getAttribute("data-id")).join("|"),
+          queryAll(p, ".fit-title").map(textOf).join("|"),
+          queryAll(p, ".filled").length,
+          queryAll(p, ".details-btn").length, queryAll(p, ".save-btn").length,
+          queryAll(p, ".compare-toggle").length,
+        ].join("~");
+      };
+      check(`${label} tabs: product state identical across modes (cards, fit rows, actions)`,
+        cardState(rev) === cardState(ev));
+      // Compare flow still fully works in evaluation mode, with the focus
+      // consequence and without the sim banner.
+      const cards = queryAll(ev.getElementById("tierPanel"), ".m-card");
+      queryAll(cards[0], ".compare-toggle")[0].dispatch("click");
+      queryAll(cards[1], ".compare-toggle")[0].dispatch("click");
+      const evEntry = queryAll(evApp, ".compare-entry")[0];
+      const evHeading = ev.getElementById("compareHeading");
+      const f0 = evHeading._focusCalls;
+      evEntry.dispatch("click");
+      check(`${label} tabs: evaluation compare-open works with focus consequence, no sim banner`,
+        !ev.getElementById("comparePanel").hidden &&
+        evHeading._focusCalls === f0 + 1 &&
+        queryAll(ev.getElementById("comparePanel"), ".sim-banner").length === 0);
     }
   }
 }

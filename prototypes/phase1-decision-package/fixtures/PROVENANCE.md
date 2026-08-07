@@ -2,8 +2,8 @@
 
 **Engine source commit:** `78f949c60cb9d7192d51bd9b3b7155d39319f8df` (= origin/main; the capture aborts
 unless index.html, data/ and Code.gs in this worktree are byte-identical to it)
-**Worktree HEAD at capture:** `f2bc38834b11095630dba09bcf8bb088a01a03c6`
-**Captured:** 2026-08-07T18:07:21.462Z
+**Worktree HEAD at capture:** `81b13788b4d366dede71dd8d0704a9c085ff36c3`
+**Captured:** 2026-08-07T18:48:49.616Z
 **Capture command:** `node prototypes/phase1-decision-package/fixtures/tools/capture_fixtures.mjs`
 
 ## Method
@@ -72,8 +72,10 @@ models across all tiers and scenarios:
 b1, b2, b5, b6, b7, g1, g2, g3, g6, g7, g8, s1, s10, s2, s3, s6, s7, s9.
 Models never rendered by any fixture:
 g4, g5, g9, s4, s5, s8, b3, b4.
-Consequence, recorded honestly: the flagged catalog claim strings on models
-outside this set (g4 and g9 among the flagged four) never render in any prototype —
+Consequence, recorded honestly: of the models carrying the four
+originally-flagged strings (initial audit examples — the systematic
+preliminary claim-risk inventory in the authoring brief appendix covers
+all 26 models), g4 and g9 never render in any prototype —
 those flags come from direct catalog inspection, not from fixture rendering.
 Coverage follows from the engine's own qualification on the fixed answer
 sets; widening it would require additional captured answer sets, never a

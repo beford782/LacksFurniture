@@ -154,6 +154,29 @@ underline + legend, sr-only suffix); a strict resolver forbids
 cross-language fallback. No returning-session state is modeled on this
 screen.
 
+**Focused final pass (2026-08-07, pre-dry-run) — applies to both
+candidates.** Four further corrections landed after Codex's follow-up
+review: **(1) strict language resolution** — the candidates no longer use
+the shared harness's en-fallback resolver anywhere; required bilingual
+copy fails loudly (a visible bilingual "PROTOTYPE CONTRACT FAILURE" naming
+the string) when the active language's value is missing, optional content
+omits, per-language fixture tables are presence-checked (a missing field
+can no longer render the literal "undefined"), and language-neutral
+scalars are the only shared values. **(2) topPickReason demoted** — the
+claim-risk inventory (§10) shows it is not claim-safe customer-agnostic
+copy, so the Results candidate renders **no product-description layer**
+in either mode (a reviewer-mode-only chrome placeholder marks the region;
+nothing may stand in for it, including reason_default). **(3) Evaluation
+mode** (`?mode=evaluation`) — the assisted-sales dry-run surface: same
+fixtures, code, composition and interaction, but no reviewer apparatus
+(no scenario/language controls, no dotted proposed-copy marking or
+legends, no sim notes or footnotes, no sr marker suffixes), with one
+small "Prototype — not production" notice retained; the contract runner
+proves product state is identical across modes. **(4) State-accurate
+Compare language** — stable heading "Mattress comparison"; opener
+"Compare selected mattresses" ↔ "Close comparison" on BOTH routes while
+open. The packet's frozen URLs use evaluation mode.
+
 **Results — recommended candidate (`results-tabs/`, corrected).**
 Accessible tier tabs remain the navigation (full APG tabs contract). The
 correction pass: **no tier-descriptor subtitle renders** (the roadmap
@@ -373,6 +396,22 @@ opening Compare scrolls the document, so a direct-URL headless screenshot
 at 834×1112 captures a blank frame (the page itself is fine — the harness
 scrolls an iframe, not the top-level document).
 
+**Evaluation-mode cells (focused pass)** — stamped "evaluation-mode
+prototype — not hardware evidence"; they verify the dry-run surface is
+clean of reviewer apparatus while the composition is unchanged:
+
+| cell | file |
+|---|---|
+| Sleep Brief, dense EN portrait, evaluation | `sleep-brief-recommended__dense-c__en__portrait-834x1112__eval.jpg` |
+| Sleep Brief, dense ES landscape, evaluation | `sleep-brief-recommended__dense-c__es__landscape-1112x834__eval.jpg` |
+| Results, dense EN portrait, evaluation | `results-tabs__dense-c__en__portrait-834x1112__eval.jpg` |
+| Results, dense ES portrait, evaluation | `results-tabs__dense-c__es__portrait-834x1112__eval.jpg` |
+| Results, compare open, evaluation | `results-tabs__dense-c__en__portrait-834x1112__compare-open__eval.jpg` |
+
+The seven reviewer-mode results-tabs cells above were re-captured in the
+focused pass (they now show the demoted product-description region and
+the state-accurate Compare labels).
+
 Historical exploration captures (sleep-brief-a incl. its disclosure-open
 supplementary, sleep-brief-b, results-grouped) are retained as the record
 of the pre-correction exploration state; the superseded pre-correction
@@ -570,8 +609,10 @@ equal a fresh engine run, match their row-bound reviewed hashes, and clear
 per-surface floors (its deep compare distinguishes arrays from numeric-key
 objects). It does **not** test the prototypes.
 
-`contract_check.mjs` (**new this pass; 768/768 at this head**) closes
-exactly that gap for the two recommended candidates: it executes their
+`contract_check.mjs` (**970/970 at this head**, extended in the focused
+pass with evaluation-mode parity checks, strict-language contracts and
+state-accurate Compare labels) closes exactly that gap for the two
+recommended candidates: it executes their
 scripts in a Node DOM stub against all four scenarios × both languages and
 asserts the rendering contracts — exact hero by index, priority order and
 count, exact firmness integers, badge labels/order/source, tier
@@ -590,13 +631,31 @@ reported separately. It proves deterministic prototype contracts —
 never mounted-device usability, real assistive-technology behavior,
 customer comprehension, or production readiness.
 
+`contract_negative_check.mjs` (**new in the focused pass; 25/25 caught, 0
+survived, 0 stale at this head**) is the RETAINED mutation evidence the
+earlier report only narrated: it gates on a green unmutated baseline,
+applies each mutation to an isolated temp copy (never the worktree),
+verifies the mutation applied exactly once, requires the named responsible
+observer to go red **on the intended property**, and reports
+caught/survived/stale separately, exiting nonzero on any non-caught row.
+Its strict-language cases additionally **demonstrate the closed vacuity**:
+with the Spanish side of a string removed, the corrected candidates fail
+loudly or omit, while the same mutation under the legacy en-fallback
+resolver is shown to render English (five demonstrations; the remaining
+per-language-table cases never had a fallback path, and say so).
+**Language-claim scope, stated exactly:** "no cross-language fallback" now
+covers bilingual objects (strict resolvers), per-language pre-resolved
+tables (presence checks + required fields), and the trial-focus strip
+(omit only when absent in both languages); language-neutral scalars
+(names, ids, numeric firmness) are legitimately shared.
+
 The pre-correction fidelity evidence remains as exploration history: the
 Wave 4 adversarial sweeps (24 rendered priority combinations; 36 tier
 views; 384-render overflow/zoom matrix) confirmed the core fidelity
 properties in all four original variants; the lead's browser-executed
 protocol from the first pass was documented but not retained as artifacts
-— which is precisely why the contract runner now exists as a committed,
-reproducible replacement.
+— which is precisely why the contract and negative runners now exist as
+committed, reproducible replacements.
 
 Review-protocol note: fixtures ship `score`/`pct` on every tier entry for
 parity purposes; nothing renders them, but they are visible in devtools —
@@ -691,14 +750,36 @@ correction-pass verification is recorded for Phase 3, report-only: the
 `pressureRelief`/`motionIsolation` features-side casing break means the
 quiz options scoring those keys award **zero points today** — a live
 scoring defect, Blake-gated, never to be bundled into content or
-presentation work. Four existing catalog
-strings are flagged for claim review (g4 unqualified "10° cooler"; g9
+presentation work. **Catalog claim risk (reframed in the focused pass):**
+the four strings flagged earlier (g4 unqualified "10° cooler"; g9
 "recovery benefits"; g9 antimicrobial-adjacent copper copy; b5 "a proven
-pick for side sleepers", which renders on production cards today) —
-grandfather or hot-fix is Blake's call. The fixtures qualify 18 of 26
-models, and the flagged g4 and g9 never render in any prototype — those
-two flags rest on direct catalog inspection, not on-screen exposure (b5,
-the fourth flagged string's model, does render; PROVENANCE records the
+pick for side sleepers") were **initial high-risk examples found during
+the prototype audit — not an exhaustive legal/content review** — and the
+earlier claim that only b5 renders in production was also false: **all
+four render on production surfaces today** (Results cards, drawer,
+compare "Difference" row). Codex's spot-check confirmed the undercount;
+the systematic read that followed found it off by an order of magnitude.
+The authoring brief now carries a **preliminary claim-risk inventory** of
+all 364 customer-visible strings in topPickReason, reason_default,
+highlight and the differentiators across all 26 models and both languages
+(brief appendix): **83 of 182 EN/ES pairs carry a claim a reviewer must
+rule on, 24 of them Tier D/E strings that render in production today**,
+plus internal contradictions (four mutually exclusive price-leadership
+claims; two colliding "firmest" claims) and five EN/ES claim divergences
+(the unit-less "10°" reads plausibly as Celsius in Spanish). The durable
+framing: the catalog predates the claim ladder, so NO string carries an
+evidence record, and the whole of topPickReason and the differentiators
+needs a claim-safety pass before Phase 1 promotes either field. It is a
+preliminary classification for the named owner and legal reviewer — not a
+legal approval. This is also why the
+corrected Results candidate renders **no product-description layer**:
+`topPickReason` is not established claim-safe customer-agnostic copy, no
+other catalog field is approved for that surface either, and inventing
+replacement copy is prohibited — the structural concept of a separately
+labeled product description stays open with **no approved source**. The
+fixtures qualify 18 of 26 models; of the four originally flagged strings'
+models, g4 and g9 never render in any prototype (those flags rest on
+direct catalog inspection; b5 does render — PROVENANCE records the
 computed coverage).
 
 ## 11. Analytics consequence of replacing tier tabs
@@ -766,11 +847,14 @@ direction; every approval remains Blake's.
 3. **Native Spanish approval** — all proposed ES strings and the financing
    config's `pending-native-legal-review` status.
 4. **Catalog owner and approval workflow** — name the Lacks merchandising
-   owner (the single blocking dependency); approve the corrected brief's
-   record schema and Lane A first batch; grandfather-or-hot-fix the four
-   flagged catalog strings (b5 renders on production cards today); decide
-   the `MATT_ES_KEYS` change and the brief's seven merchandising
-   questions.
+   owner (one necessary owner decision among the brief's ten activation
+   prerequisites — not the single blocker); approve the corrected brief's
+   record schema and Lane A first batch; route the **preliminary
+   claim-risk inventory** (brief appendix: 83 flagged pairs, 24 Tier-D/E
+   strings rendering in production today — the four earlier flags were
+   initial examples, not the set) to that owner and legal for
+   disposition; decide the `MATT_ES_KEYS` change and the brief's seven
+   merchandising questions.
 5. **Device matrix** — no prototype viewport is a hardware claim.
 6. **Phase 0.4 closure** — remains ⏳; mounted-device evidence is not in
    this package.
@@ -785,11 +869,35 @@ direction; every approval remains Blake's.
 9. **Production activation of customer-specific mattress reasons** — gated
    on the brief's full ten activation prerequisites, all unmet today.
 
-**Scope of a "direction" approval.** Approving a candidate approves the
-**composition as screenshotted** — nothing more. Per-variant open
-questions in each VARIANT-NOTES (e.g. the "Your Sleep Brief" continuity
-eyebrow, sticky vs in-flow action bar, compare surface shape at
-implementation) return at implementation review.
+**Scope of a "direction" approval — defined by property, not by
+screenshot (correction pass).** A direction approval approves the named
+structural properties below; everything not named remains open and
+returns at implementation review. (The earlier "composition as
+screenshotted" phrasing contradicted the reopened per-variant questions;
+it is withdrawn.)
+
+*A Sleep Brief direction approval covers:* the need-led hero
+(`priorityRows[0]` by index); visible badge category labels; the exact
+firmness word + integer presentation; the exact engine-ordered 1–3
+priorities; always-visible testing guidance; the sleep-fit-first action
+hierarchy (primary see-matches, secondary edit-answers); no first-visit
+Compare; and the shared-view landscape structure. *It does NOT
+automatically approve:* final CTA wording ("See My Matches →" is
+proposed copy); badge vocabulary; any Spanish wording; exact type scale;
+any hardware breakpoint; sticky-vs-in-flow action-bar behavior;
+production focus implementation; or analytics changes.
+
+*A Results direction approval covers:* persistent accessible tier tabs;
+exact tier membership and within-tier order as engine-produced;
+the lead/support visual hierarchy; visible Details, Save and page-local
+Compare selection; score/match-percentage suppression; and Payment
+Choice secondary and isolated. *It does NOT automatically approve:*
+`topPickReason` or `reason_default` as a product-description source (no
+catalog field is approved for that surface); any final catalog copy;
+activating the dormant direct production Results Compare path; any
+saved/finalist-state change; any scoring or tier change; the final
+compare surface shape (inline panel vs dialog at implementation);
+production analytics changes; or hardware breakpoints.
 
 Secondary flags surfaced by research (each needs only an acknowledge/defer):
 the tu-vs-usted register decision for ES copy; the handoff-screen voice

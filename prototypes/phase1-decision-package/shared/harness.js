@@ -24,6 +24,13 @@
   var params = new URLSearchParams(window.location.search);
   var scenario = params.get("scenario") || "dense-c";
   var lang = params.get("lang") === "es" ? "es" : "en";
+  // mode=evaluation strips reviewer apparatus (scenario/language controls,
+  // proposed-copy underlines and legends, sim notes and footnotes) so the
+  // assisted-sales dry run is not biased by annotation. Same fixtures, same
+  // candidate code, same composition/order/interaction; provenance
+  // attributes stay in the DOM. Reviewer mode is the default and keeps
+  // every provenance aid.
+  var mode = params.get("mode") === "evaluation" ? "evaluation" : "reviewer";
   // boundary-one is the disclosed SYNTHETIC one-priority boundary state
   // (see fixtures/PROVENANCE.md) — a rendering-contract probe, not a
   // reachable customer state.
@@ -48,6 +55,23 @@
     var p = new URLSearchParams(window.location.search);
     Object.keys(newParams).forEach(function (k) { p.set(k, newParams[k]); });
     return window.location.pathname + "?" + p.toString();
+  }
+
+  // Evaluation-mode bar: the one retained notice ("Prototype — not
+  // production"), nothing else. Keeps the .df-review-bar class so variants
+  // that measure the bar's height for sticky offsets keep working.
+  function buildEvalBar() {
+    var bar = document.createElement("div");
+    bar.className = "df-review-bar df-review-bar--eval";
+    bar.setAttribute("role", "region");
+    bar.setAttribute("aria-label", lang === "es"
+      ? "Aviso de prototipo" : "Prototype notice");
+    var note = document.createElement("p");
+    note.className = "df-review-bar__note";
+    note.textContent = lang === "es"
+      ? "PROTOTIPO — no es producción." : "PROTOTYPE — not production.";
+    bar.appendChild(note);
+    return bar;
   }
 
   function buildReviewBar(fixture) {
@@ -123,15 +147,24 @@
         // of silently re-ordering engine output.
         deepFreeze(fixture);
         document.documentElement.setAttribute("lang", lang);
-        document.body.insertBefore(buildReviewBar(fixture), document.body.firstChild);
-        loaded = { fixture: fixture, ctx: { scenario: scenario, lang: lang, L: L } };
+        if (mode === "evaluation") document.documentElement.classList.add("df-eval");
+        document.body.insertBefore(
+          mode === "evaluation" ? buildEvalBar() : buildReviewBar(fixture),
+          document.body.firstChild);
+        loaded = { fixture: fixture, ctx: { scenario: scenario, lang: lang, L: L, mode: mode } };
         readyCbs.forEach(function (cb) { cb(loaded.fixture, loaded.ctx); });
         readyCbs = [];
       })
       .catch(function (e) {
+        // A variant's strict-language CONTRACT FAILURE carries its own
+        // bilingual message and visible alert — do not append the
+        // serve-over-HTTP remediation to it (that advice would be wrong).
+        if (/CONTRACT FAILURE|FALLO DE CONTRATO/.test(String(e.message))) return;
         var err = document.createElement("p");
         err.setAttribute("role", "alert");
-        err.textContent = "Fixture load failed (" + e.message + "). Serve the repo root over HTTP, e.g.: python -m http.server 8000";
+        err.textContent = (lang === "es"
+          ? "No se pudieron cargar los datos del prototipo (" + e.message + "). Sirva la raíz del repositorio por HTTP, por ejemplo: python -m http.server 8000"
+          : "Fixture load failed (" + e.message + "). Serve the repo root over HTTP, e.g.: python -m http.server 8000");
         document.body.insertBefore(err, document.body.firstChild);
       });
   });

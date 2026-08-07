@@ -119,14 +119,16 @@ ${(() => {
   const all = ["gold", "silver", "bronze"].flatMap((t) => MATTRESSES[t].map((m) => m.id));
   return all.filter((id) => !renderedIds.has(id)).join(", ") || "(none)";
 })()}.
-Consequence, recorded honestly: the flagged catalog claim strings on models
-outside this set (${(() => {
-  // The four flagged STRINGS (authoring brief §4) live on three models:
-  // g4, g9 (twice), b5. g5 carries no flag.
+Consequence, recorded honestly: of the models carrying the four
+originally-flagged strings (initial audit examples — the systematic
+preliminary claim-risk inventory in the authoring brief appendix covers
+all 26 models), ${(() => {
+  // The four originally-flagged STRINGS live on three models: g4, g9
+  // (twice), b5. g5 carries no flag.
   const flaggedModels = ["g4", "g9", "b5"];
   const missing = flaggedModels.filter((id) => !renderedIds.has(id));
-  return missing.length ? missing.join(" and ") + " among the flagged four" : "none of the flagged four — all render somewhere";
-})()}) never render in any prototype —
+  return missing.length ? missing.join(" and ") + " never render in any prototype" : "all render somewhere";
+})()} —
 those flags come from direct catalog inspection, not from fixture rendering.
 Coverage follows from the engine's own qualification on the fixed answer
 sets; widening it would require additional captured answer sets, never a

@@ -163,6 +163,29 @@ defect remains flagged for Blake in the decision document.
 - `tag-preference` (no production CSS rule — known gap) is styled here, as
   in A.
 
+## 6b. Focused final pass (2026-08-07, pre-dry-run)
+
+- **Required-vs-optional language classes.** `LRq` joins `LX`: required
+  bilingual copy (the basis line, CTA, "Try this:" prompt, chrome strings,
+  the sr proposed-marker) now renders a loud bilingual
+  `PROTOTYPE CONTRACT FAILURE` naming the missing string and throws,
+  instead of silently omitting; optional content (position/sharing badges)
+  keeps omission semantics. No fallback of any kind, in any class.
+- **Evaluation mode** (`?mode=evaluation`, via the shared harness): for
+  the assisted-sales dry run. Same fixture, code, composition and
+  interaction; the legend and sim caption are hidden and empty, sr-only
+  "(proposed copy)" suffixes are not appended (clean accessible names),
+  and the dotted underline is CSS-suppressed under `html.df-eval`;
+  `data-proposed-copy` attributes stay for provenance. Reviewer mode (the
+  default) keeps every provenance aid.
+- **Mode-neutral tap feedback**: the simulated Edit/CTA buttons pulse on
+  tap in BOTH modes (matching the Results candidate) — in evaluation mode
+  the caption that used to flash is hidden, and without the pulse an
+  evaluation-mode tap appeared dead, which the dry run would have recorded
+  as a design defect (packet-inspector blocker).
+- `document.title` still says "(prototype)" in evaluation mode —
+  deliberate, consistent with the retained harness notice.
+
 ## 7. Open questions for Blake (return at implementation review)
 
 - Keep or drop the "Your Sleep Brief" continuity eyebrow above the need-led

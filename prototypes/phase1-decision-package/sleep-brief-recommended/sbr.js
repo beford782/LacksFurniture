@@ -90,11 +90,35 @@
     family:  { en: "Family Bed",      es: "Cama Familiar" }
   };
 
-  /* ---------- strict language resolver: NO fallback ---------- */
+  /* ---------- strict language resolution: NO fallback of any kind ----------
+     LX  = OPTIONAL bilingual content: missing value returns null and the
+           caller omits the element (DOM and accessible text alike).
+     LRq = REQUIRED bilingual copy: missing value is a CONTRACT FAILURE —
+           a visible labelled error renders and the script throws. Never
+           English, never a label or identifier.
+     Language-neutral scalars (names, ids, numeric firmness) bypass both. */
   function LX(obj, lang) {
     if (obj == null) return null;
     if (typeof obj === "string") return obj;
     return obj[lang] != null && obj[lang] !== "" ? obj[lang] : null;
+  }
+  function LRq(obj, lang, what) {
+    var v = LX(obj, lang);
+    if (v == null) failContract(lang, what || "unnamed required string");
+    return v;
+  }
+  function failContract(lang, what) {
+    var msg = (lang === "es"
+      ? "FALLO DE CONTRATO DEL PROTOTIPO — falta la cadena requerida en el idioma activo: "
+      : "PROTOTYPE CONTRACT FAILURE — required string missing in the active language: ") + what;
+    var host = byId("sbrMain") || document.body;
+    if (host) {
+      var p = el("p", "contract-failure", msg);
+      p.setAttribute("role", "alert");
+      p.setAttribute("data-prototype-chrome", "");
+      host.appendChild(p);
+    }
+    throw new Error(msg);
   }
 
   /* ---------- tiny DOM helpers (textContent only — no injected HTML) ---------- */
@@ -107,20 +131,27 @@
     return n;
   }
 
-  /* Proposed-copy marking: attribute (mechanical), dotted underline
-     (visible, via CSS on the attribute) and an sr-only suffix (screen
-     reader). Applied to EVERY proposed-copy use site on this screen. */
+  /* Proposed-copy marking: attribute (mechanical, both modes), dotted
+     underline (visible, via CSS gated to reviewer mode) and an sr-only
+     suffix (screen reader, reviewer mode only — the suffix is reviewer
+     apparatus inside the accessible name, so evaluation mode renders the
+     clean product accessible name; the attribute keeps provenance
+     machine-checkable in both modes). */
   var activeLang = "en";
+  var activeMode = "reviewer";
   function markProposed(node) {
     node.setAttribute("data-proposed-copy", "");
-    var suffix = LX(CHROME.srProposed, activeLang);
-    if (suffix) node.appendChild(el("span", "sr-only", suffix));
+    if (activeMode !== "evaluation") {
+      node.appendChild(el("span", "sr-only",
+        LRq(CHROME.srProposed, activeLang, "CHROME.srProposed")));
+    }
     return node;
   }
 
   DF.onReady(function (fixture, ctx) {
     var lang = ctx.lang;
     activeLang = lang;
+    activeMode = ctx.mode === "evaluation" ? "evaluation" : "reviewer";
     var prof = fixture.profile[lang];
     var rows = prof.priorityRows || [];
 
@@ -138,7 +169,7 @@
     } else {
       // The capture floor makes empty priorityRows unreachable, but the
       // render must never be a silent blank hero — visible bilingual error.
-      setText("sbrHeroTitle", LX(CHROME.fixtureError, lang) || CHROME.fixtureError.en);
+      setText("sbrHeroTitle", LRq(CHROME.fixtureError, lang, "CHROME.fixtureError"));
       byId("sbrHeroTitle").setAttribute("data-prototype-chrome", "");
     }
 
@@ -148,9 +179,8 @@
     /* ===== Priorities: engine order and count, <ol>, visible tests ===== */
     setText("sbrPrioritiesHeading", prof.dom.profilePrioritiesHeading.textContent);
     var basis = byId("sbrBasis");
-    var basisText = LX(PROPOSED.basis, lang);
-    if (basis && basisText != null) {
-      basis.textContent = basisText;
+    if (basis) {
+      basis.textContent = LRq(PROPOSED.basis, lang, "PROPOSED.basis");
       markProposed(basis);
     }
     renderPriorities(rows, lang);
@@ -161,18 +191,27 @@
     renderJourney(prof.dom.profileJourneySteps.innerHTML);
     setText("sbrJourneyCopy", prof.dom.profileJourneyCopy.textContent);
 
-    /* ===== Legend (prototype chrome) ===== */
-    setText("sbrLegend", LX(CHROME.legend, lang) || "");
+    /* ===== Legend (prototype chrome — reviewer mode only) ===== */
+    if (activeMode === "evaluation") {
+      byId("sbrLegend").hidden = true;
+    } else {
+      setText("sbrLegend", LRq(CHROME.legend, lang, "CHROME.legend"));
+    }
 
     /* ===== Actions (prototype-simulated; NO compare entry) ===== */
     setText("sbrEditBtn", prof.dom.profileSecondary.textContent); // fixture == verbatim index.html:13506
     var cta = byId("sbrCtaBtn");
-    var ctaText = LX(PROPOSED.cta, lang);
-    if (cta && ctaText != null) {
-      cta.textContent = ctaText;
+    if (cta) {
+      cta.textContent = LRq(PROPOSED.cta, lang, "PROPOSED.cta");
       markProposed(cta);
     }
-    setText("sbrSimCaption", LX(CHROME.simCaption, lang) || "");
+    if (activeMode === "evaluation") {
+      // The technical simulation note is reviewer apparatus; the retained
+      // "Prototype — not production" notice lives in the harness bar.
+      byId("sbrSimCaption").hidden = true;
+    } else {
+      setText("sbrSimCaption", LRq(CHROME.simCaption, lang, "CHROME.simCaption"));
+    }
     wireSimulatedActions();
   });
 
@@ -220,7 +259,8 @@
     if (typeof value !== "number" || !feelEntry) return; // omit if uncaptured
 
     var sr = el("span", "sr-only",
-      firmSrText(feelEntry.value, value, lang) + (LX(CHROME.srProposed, lang) || ""));
+      firmSrText(feelEntry.value, value, lang)
+      + (activeMode === "evaluation" ? "" : LRq(CHROME.srProposed, lang, "CHROME.srProposed")));
     sr.setAttribute("data-proposed-copy", ""); // phrasing template is proposed
     host.appendChild(sr);
 
@@ -260,8 +300,7 @@
       // Always-visible testing guidance: fixture row.test verbatim behind
       // the production-verbatim "Try this:" prompt. No disclosure, no tap.
       var test = el("p", "sbr-priority__test", null);
-      var prompt = LX(VERBATIM.tryThis, lang);
-      if (prompt != null) test.appendChild(el("strong", null, prompt + " "));
+      test.appendChild(el("strong", null, LRq(VERBATIM.tryThis, lang, "VERBATIM.tryThis") + " "));
       test.appendChild(document.createTextNode(row.test));
       li.appendChild(test);
 
@@ -283,13 +322,22 @@
     });
   }
 
-  /* ---------- Simulated Edit/CTA actions: flash the labelled caption ---------- */
+  /* ---------- Simulated Edit/CTA actions ----------
+     Mode-neutral tap feedback: the pressed button itself pulses in BOTH
+     modes (matching the Results candidate's simPulse), so an evaluation-
+     mode tap never appears dead — without it, S1's dry run would record a
+     no-visible-consequence tap as a design finding when it was apparatus
+     removal (packet-inspector blocker). The labelled caption additionally
+     flashes in reviewer mode, where it is visible. */
   var flashTimer = null;
   function wireSimulatedActions() {
     ["sbrEditBtn", "sbrCtaBtn"].forEach(function (id) {
       var btn = byId(id);
       if (!btn) return;
       btn.addEventListener("click", function () {
+        btn.classList.add("sim-pulse");
+        setTimeout(function () { btn.classList.remove("sim-pulse"); }, 900);
+        if (activeMode === "evaluation") return;
         var caption = byId("sbrSimCaption");
         if (!caption) return;
         caption.classList.add("is-flash");

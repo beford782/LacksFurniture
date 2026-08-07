@@ -34,18 +34,23 @@ http://localhost:8000/prototypes/phase1-decision-package/sleep-brief-recommended
 
 Query params: `scenario` = `dense-c` | `dense-a` | `sparse-b` |
 `boundary-one` (a disclosed SYNTHETIC one-priority boundary state — see
-`fixtures/PROVENANCE.md`); `lang` = `en` | `es`.
+`fixtures/PROVENANCE.md`); `lang` = `en` | `es`; `mode` = `evaluation`
+(recommended candidates only — strips reviewer apparatus for the
+assisted-sales dry run; reviewer mode is the default and keeps every
+provenance aid); `state` (results-tabs only — replays real interactions
+for reproducible screenshot cells).
 
 ## Verification
 
 ```
-node prototypes/phase1-decision-package/fixtures/tools/parity_check.mjs    # fixtures == fresh engine run + row-bound hashes + surface floors
-node prototypes/phase1-decision-package/fixtures/tools/contract_check.mjs  # recommended candidates honor the rendering contracts (DOM-stub execution)
+node prototypes/phase1-decision-package/fixtures/tools/parity_check.mjs            # fixtures == fresh engine run + row-bound hashes + surface floors
+node prototypes/phase1-decision-package/fixtures/tools/contract_check.mjs          # recommended candidates honor the rendering contracts (DOM-stub execution, both modes)
+node prototypes/phase1-decision-package/fixtures/tools/contract_negative_check.mjs # retained mutation evidence: every observer proven to catch its defect (isolated temp copies; never touches the worktree)
 ```
 
 Each script's header states exactly what it proves and does not prove.
-Neither is mounted-device, assistive-technology, or customer evidence, and
-neither runs in repository CI.
+None is mounted-device, assistive-technology, or customer evidence, and
+none runs in repository CI.
 
 ## Ground rules every variant obeys
 

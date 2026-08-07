@@ -94,16 +94,23 @@
 
   var P = {
     tiersHeading: { en: "Matches by tier", es: "Opciones por nivel" },
-    productStory: { en: "Product description", es: "Descripción del producto" },
-    // customerFit heading removed (fix T5): FEATURE rows are not
-    // answer-derived, so "From your answers" was a false attribution;
-    // production renders these rows with no heading — the KEY NEED /
-    // FEATURE tags speak for themselves.
+    // productStory label removed (focused pass): topPickReason is NOT
+    // established claim-safe customer-agnostic copy — the claim-risk
+    // inventory (authoring brief appendix) found unaudited superlatives,
+    // "proven" claims, segment targeting and price/exclusivity claims in
+    // it — so the candidate renders NO product-description layer. The
+    // structural concept of a separately labeled customer-agnostic
+    // description stays open; no existing catalog field is approved as its
+    // source. A reviewer-mode-only chrome placeholder marks the region.
     compareToggle: { en: "Compare", es: "Comparar" },
     // Correction pass: page-local selection vocabulary. These are PROPOSED
     // pairs; the production "finalists" vocabulary is deliberately not used
-    // for unsaved page-local selections.
-    compareHeading: { en: "Compare selected mattresses", es: "Comparar colchones seleccionados" },
+    // for unsaved page-local selections. Focused pass: the heading is a
+    // stable noun phrase; the opener/closer labels are state-accurate — an
+    // open panel's control says Close, never a duplicate of the heading.
+    compareHeading: { en: "Mattress comparison", es: "Comparación de colchones" },
+    compareOpen: { en: "Compare selected mattresses", es: "Comparar colchones seleccionados" },
+    compareClose: { en: "Close comparison", es: "Cerrar comparación" },
     trayClearEs: "Borrar", // unified with results-grouped's proposed ES pair (fix T10)
     trayGoEs: "Comparar →",
     selectTwo: { en: "Select 2 mattresses to compare", es: "Selecciona 2 colchones para comparar" },
@@ -140,6 +147,10 @@
       en: "Dotted-underlined text is proposed copy (not production). All other text is fixture-captured or verbatim production copy.",
       es: "El texto con subrayado punteado es copia propuesta (no de producción). Todo el resto del texto proviene del fixture o es copia textual de producción.",
     },
+    descPlaceholder: {
+      en: "Reviewer note: an approved customer-agnostic product description could occupy this region. No catalog field is approved as its source yet (topPickReason was demoted by the claim-risk inventory; reason_default is likewise unapproved), so the dry-run candidate renders nothing here.",
+      es: "Nota de revisión: una descripción de producto aprobada y ajena al cliente podría ocupar esta región. Ningún campo del catálogo está aprobado aún como su fuente (topPickReason fue retirado por el inventario de riesgo de afirmaciones; reason_default tampoco está aprobado), así que el candidato de evaluación no muestra nada aquí.",
+    },
     srProposed: { en: " (proposed copy — not production)", es: " (copia propuesta — no de producción)" },
   };
 
@@ -162,34 +173,81 @@
     return node;
   }
 
-  // Proposed-copy marking (correction pass): attribute (mechanical), dotted
-  // underline (visible, via CSS on the attribute) and an sr-only
-  // "(proposed copy — not production)" suffix (screen reader). A visible
-  // legend at the foot of the page explains the underline.
+  // Proposed-copy marking (correction pass): attribute (mechanical, both
+  // modes), dotted underline (visible, CSS-gated to reviewer mode) and an
+  // sr-only "(proposed copy — not production)" suffix (screen reader,
+  // reviewer mode only — the suffix is reviewer apparatus inside the
+  // accessible name; evaluation mode renders the clean product name while
+  // the attribute keeps provenance machine-checkable).
   var activeLang = "en";
+  var activeMode = "reviewer";
   function proposed(node) {
     node.setAttribute("data-proposed-copy", "");
-    var suffix = CHROME.srProposed[activeLang];
-    if (suffix) {
-      var s = document.createElement("span");
-      s.className = "sr-only";
-      s.textContent = suffix;
-      node.appendChild(s);
-    }
+    if (activeMode === "evaluation") return node;
+    var s = document.createElement("span");
+    s.className = "sr-only";
+    s.textContent = LReq(CHROME.srProposed, "CHROME.srProposed");
+    node.appendChild(s);
     return node;
   }
 
   // Prototype-chrome marking: review apparatus, never product copy.
   function chrome(node) { node.setAttribute("data-prototype-chrome", ""); return node; }
+  // Reviewer-mode gate for chrome elements: evaluation mode renders none of
+  // them (the retained "Prototype — not production" notice is the harness
+  // bar's).
+  function reviewerOnly() { return activeMode !== "evaluation"; }
+
+  /* Strict language resolution (focused pass) — NO cross-language fallback
+     of any kind. Three content classes:
+       - REQUIRED bilingual copy (LReq): a missing/empty active-language
+         value is a CONTRACT FAILURE — a visible, labelled error renders
+         and the script throws. Never English, never a label/identifier.
+       - OPTIONAL bilingual content (LOpt): a missing value returns null
+         and the caller omits the element entirely (DOM and accessible
+         text alike).
+       - Language-neutral scalars (model name, brand, id, numeric
+         firmness): consumed directly, never through these resolvers.
+     The shared harness L() keeps production's en-fallback semantics for
+     the exploration variants; this candidate does not use ctx.L. */
+  function LOpt(obj) {
+    if (obj == null) return null;
+    if (typeof obj === "string") return obj;
+    return obj[activeLang] != null && obj[activeLang] !== "" ? obj[activeLang] : null;
+  }
+  function LReq(obj, what) {
+    var v = LOpt(obj);
+    if (v == null) failContract(what || "unnamed required string");
+    return v;
+  }
+  function failContract(what) {
+    var msg = (activeLang === "es"
+      ? "FALLO DE CONTRATO DEL PROTOTIPO — falta la cadena requerida en el idioma activo: "
+      : "PROTOTYPE CONTRACT FAILURE — required string missing in the active language: ") + what;
+    var host = document.getElementById("app") || document.body;
+    if (host) {
+      var p = document.createElement("p");
+      p.className = "contract-failure";
+      p.setAttribute("role", "alert");
+      p.setAttribute("data-prototype-chrome", "");
+      p.textContent = msg;
+      host.appendChild(p);
+    }
+    throw new Error(msg);
+  }
 
   /* ------------------------------------------------------------------ */
 
   DF.onReady(function (fixture, ctx) {
-    var L = ctx.L;
     var lang = ctx.lang;
     activeLang = lang;
+    activeMode = ctx.mode === "evaluation" ? "evaluation" : "reviewer";
     var tierData = fixture.results.tierData;
-    var cardPriorities = fixture.results.cardPriorities[lang] || {};
+    // Per-language PRE-RESOLVED table: selected structurally, never through
+    // a resolver — so its absence must be a controlled failure, not a
+    // silent every-card omission (focused-pass gap fix).
+    var cardPriorities = fixture.results.cardPriorities[lang];
+    if (!cardPriorities) failContract("results.cardPriorities." + lang);
     var priceSymbols = fixture.results.priceTierSymbols || {};
 
     // Localized page title (fix T13; both Sleep Brief variants do the same).
@@ -207,16 +265,22 @@
 
     /* ---------------- results chrome (verbatim pairs) ---------------- */
 
-    app.appendChild(el("p", { "class": "results-eyebrow", text: L(V.eyebrow) }));
+    app.appendChild(el("p", { "class": "results-eyebrow", text: LReq(V.eyebrow, "V.eyebrow") }));
     var h1 = el("h1", { "class": "results-headline" });
-    h1.appendChild(document.createTextNode(L(V.headlinePre)));
-    h1.appendChild(el("span", { "class": "accent", text: L(V.headlineAccent) }));
-    h1.appendChild(document.createTextNode(L(V.headlinePost)));
+    h1.appendChild(document.createTextNode(LReq(V.headlinePre, "V.headlinePre")));
+    h1.appendChild(el("span", { "class": "accent", text: LReq(V.headlineAccent, "V.headlineAccent") }));
+    h1.appendChild(document.createTextNode(LReq(V.headlinePost, "V.headlinePost")));
     app.appendChild(h1);
-    app.appendChild(el("p", { "class": "results-subhead", text: L(V.subhead) }));
+    app.appendChild(el("p", { "class": "results-subhead", text: LReq(V.subhead, "V.subhead") }));
 
     // Trial-focus strip: captured production render, verbatim fixture HTML.
+    // Per-language capture: omit ONLY when absent in BOTH languages;
+    // present-in-EN but missing in the active language is a cross-language
+    // hole and must fail loudly, never silently drop the ES strip
+    // (focused-pass gap fix).
     var trialFocusHtml = fixture.profile[lang] && fixture.profile[lang].resultsTrialFocus;
+    var trialFocusEn = fixture.profile.en && fixture.profile.en.resultsTrialFocus;
+    if (!trialFocusHtml && trialFocusEn) failContract("profile." + lang + ".resultsTrialFocus");
     if (trialFocusHtml) {
       app.appendChild(el("div", { "class": "trial-focus", html: trialFocusHtml }));
     }
@@ -224,7 +288,7 @@
     /* ---------------- tier tabs (APG tabs pattern) ---------------- */
 
     var tiersSection = el("section", { "aria-labelledby": "tiersHeading" });
-    tiersSection.appendChild(proposed(el("h2", { id: "tiersHeading", "class": "sr-only", text: L(P.tiersHeading) })));
+    tiersSection.appendChild(proposed(el("h2", { id: "tiersHeading", "class": "sr-only", text: LReq(P.tiersHeading, "P.tiersHeading") })));
 
     var tablist = el("div", { role: "tablist", "class": "tier-tabs", "aria-labelledby": "tiersHeading" });
     var tabButtons = {};
@@ -237,7 +301,7 @@
         "aria-selected": tier === state.tier ? "true" : "false",
         "aria-controls": "tierPanel",
         tabindex: tier === state.tier ? "0" : "-1",
-        text: L(V.tabs[tier]),
+        text: LReq(V.tabs[tier], "V.tabs." + tier),
       });
       tab.addEventListener("click", function () { activateTier(tier); });
       tab.addEventListener("keydown", tablistKeydown);
@@ -251,10 +315,13 @@
     // safest prototype is no subtitle — see the V-table comment above.
     // Production's descriptor line is unchanged and flagged.
 
-    // Card sim note (prototype chrome): identifies the inert Details/Save
-    // card actions. Referenced by aria-describedby from every such button.
-    var cardSimNote = chrome(el("p", { id: "cardSimNote", "class": "card-sim-note", text: L(CHROME.cardSim) }));
-    tiersSection.appendChild(cardSimNote);
+    // Card sim note (prototype chrome, reviewer mode only): identifies the
+    // inert Details/Save card actions. Referenced by aria-describedby from
+    // every such button in reviewer mode.
+    if (reviewerOnly()) {
+      var cardSimNote = chrome(el("p", { id: "cardSimNote", "class": "card-sim-note", text: LReq(CHROME.cardSim, "CHROME.cardSim") }));
+      tiersSection.appendChild(cardSimNote);
+    }
 
     // The tab row is position:sticky (fix T6). The offset below the harness
     // review bar is measured, never hardcoded — prototype chrome
@@ -319,8 +386,8 @@
     // the fixture's per-model firmnessFeelWord — executed from the real
     // production firmnessFeel at capture time. No local word map exists.
     function firmnessSrText(entry) {
-      return L(P.firmnessSrPre) + L(entry.firmnessFeelWord) + ", "
-        + entry.firmness + L(P.firmnessSrPost);
+      return LReq(P.firmnessSrPre, "P.firmnessSrPre") + LReq(entry.firmnessFeelWord, "entry.firmnessFeelWord") + ", "
+        + entry.firmness + LReq(P.firmnessSrPost, "P.firmnessSrPost");
     }
 
     function firmnessBlock(entry) {
@@ -334,7 +401,7 @@
         // Visible feel word next to the numeral (fix T8) — fixture data,
         // aria-hidden with the sr-only sentence carrying the single
         // announcement.
-        el("span", { "class": "firm-word", "aria-hidden": "true", text: L(entry.firmnessFeelWord) }),
+        el("span", { "class": "firm-word", "aria-hidden": "true", text: LReq(entry.firmnessFeelWord, "entry.firmnessFeelWord") }),
         el("span", { "class": "firm-num", "aria-hidden": "true", text: firmness + "/10" }),
         el("span", { "class": "sr-only", text: firmnessSrText(entry) }),
       ]);
@@ -352,8 +419,8 @@
     function renderCard(entry, opts) {
       var isLead = !!opts.lead;
       var eyebrowText = entry.meetsMatchThreshold
-        ? (isLead ? L(V.leadEyebrow) : L(V.supportMatch))
-        : L(V.comparisonOption);
+        ? (isLead ? LReq(V.leadEyebrow, "V.leadEyebrow") : LReq(V.supportMatch, "V.supportMatch"))
+        : LReq(V.comparisonOption, "V.comparisonOption");
 
       var body = el("div", { "class": "m-card-body" });
       body.appendChild(el("p", { "class": "m-card-eyebrow", text: eyebrowText }));
@@ -364,17 +431,20 @@
       }));
       body.appendChild(firmnessBlock(entry));
 
-      if (isLead) {
-        // PRODUCT-STORY layer (lead card only): authored, customer-agnostic
-        // copy, labelled as product description (provenance clarity) —
-        // visually separated from the answer-aware customer-fit rows below.
-        // displayBadges chips removed (fix T2); differentiators removed from
-        // the card face (fix T3) — differentiators[0] discriminates in the
-        // compare panel instead.
-        var story = el("div", { "class": "product-story" });
-        story.appendChild(proposed(el("p", { "class": "layer-label", text: L(P.productStory) })));
-        story.appendChild(el("p", { "class": "reason", text: L(entry.topPickReason) }));
-        body.appendChild(story);
+      if (isLead && reviewerOnly()) {
+        // NO product-description layer renders in this candidate (focused
+        // pass): topPickReason is not established claim-safe
+        // customer-agnostic copy (see the claim-risk inventory in the
+        // authoring brief), reason_default is likewise unapproved, and no
+        // replacement copy may be invented. This REVIEWER-MODE-ONLY chrome
+        // placeholder marks where an approved description COULD sit; it
+        // never appears in evaluation mode and states no fact about the
+        // mattress. displayBadges chips removed earlier (fix T2);
+        // differentiators stay compare-panel-only (fix T3).
+        var ph = chrome(el("div", { "class": "product-desc-placeholder" }, [
+          el("p", { text: LReq(CHROME.descPlaceholder, "CHROME.descPlaceholder") }),
+        ]));
+        body.appendChild(ph);
       }
 
       // CUSTOMER-FIT layer: answer-aware template rows, verbatim fixture
@@ -394,8 +464,10 @@
       var detailsBtn = el("button", {
         type: "button",
         "class": "card-btn details-btn",
-        "aria-describedby": "cardSimNote",
-        text: L(V.detailsBtn),
+        // The sim-note description is reviewer apparatus; evaluation mode
+        // has no cardSimNote element to reference.
+        "aria-describedby": reviewerOnly() ? "cardSimNote" : null,
+        text: LReq(V.detailsBtn, "V.detailsBtn"),
       });
       detailsBtn.appendChild(el("span", { "class": "sr-only", text: " — " + entry.name }));
       detailsBtn.addEventListener("click", function () { simPulse(detailsBtn); });
@@ -404,8 +476,8 @@
       var saveBtn = el("button", {
         type: "button",
         "class": "card-btn save-btn",
-        "aria-describedby": "cardSimNote",
-        text: L(V.saveBtn),
+        "aria-describedby": reviewerOnly() ? "cardSimNote" : null,
+        text: LReq(V.saveBtn, "V.saveBtn"),
       });
       saveBtn.appendChild(el("span", { "class": "sr-only", text: " — " + entry.name }));
       saveBtn.addEventListener("click", function () { simPulse(saveBtn); });
@@ -418,7 +490,7 @@
         "data-id": entry.id,
         "data-tier": opts.tier || "",
       });
-      toggle.appendChild(document.createTextNode(L(P.compareToggle)));
+      toggle.appendChild(document.createTextNode(LReq(P.compareToggle, "P.compareToggle")));
       toggle.appendChild(el("span", { "class": "sr-only", text: " — " + entry.name }));
       proposed(toggle); // proposed pair; suffix appended after the visible label
       toggle.addEventListener("click", function () { toggleCompare(entry.id); });
@@ -457,11 +529,22 @@
       // KEY NEED / FEATURE tags speak for themselves.
       var fit = el("div", { "class": "customer-fit" + (full ? "" : " is-compact") });
       var list = el("ol", {});
-      rows.forEach(function (row) {
+      // Row fields are raw per-language scalars (no resolver): a missing
+      // field would otherwise render the literal string "undefined" —
+      // title/tag are required always, desc whenever the full row renders
+      // (focused-pass gap fix).
+      function reqField(row, field, i) {
+        var v = row[field];
+        if (typeof v !== "string" || v === "") {
+          failContract("cardPriorities." + activeLang + "[" + i + "]." + field);
+        }
+        return v;
+      }
+      rows.forEach(function (row, i) {
         var li = el("li", {});
-        li.appendChild(el("span", { "class": "fit-title", text: row.title }));
-        if (full) li.appendChild(el("p", { "class": "fit-desc", text: row.desc }));
-        li.appendChild(el("span", { "class": "fit-tag " + (row.matched ? "matched" : "unmatched"), text: row.tag }));
+        li.appendChild(el("span", { "class": "fit-title", text: reqField(row, "title", i) }));
+        if (full) li.appendChild(el("p", { "class": "fit-desc", text: reqField(row, "desc", i) }));
+        li.appendChild(el("span", { "class": "fit-tag " + (row.matched ? "matched" : "unmatched"), text: reqField(row, "tag", i) }));
         list.appendChild(li);
       });
       fit.appendChild(list);
@@ -476,7 +559,7 @@
     function renderTierCards(container, list, tier) {
       container.innerHTML = "";
       if (!list.length) {
-        container.appendChild(el("p", { "class": "empty-tier", text: L(V.emptyTier) }));
+        container.appendChild(el("p", { "class": "empty-tier", text: LReq(V.emptyTier, "V.emptyTier") }));
         return;
       }
       var grid = el("ul", { "class": "card-grid", role: "list" });
@@ -494,16 +577,19 @@
     /* ---------------- compare (prototype simulation) ---------------- */
 
     var compareSection = el("section", { "aria-labelledby": "compareHeading" });
-    // Visible heading (fix T9), with the correction-pass terminology:
-    // "Compare selected mattresses" — this section acts on page-local
-    // selection, never on saved finalists, so the production "finalists"
-    // vocabulary would misstate the state. PROPOSED pair. tabindex="-1" so
-    // opening Compare can move focus to this stable heading.
+    // Visible heading (fix T9). Focused pass: the heading is the STABLE
+    // noun phrase "Mattress comparison" — state-independent, the focus
+    // target when the panel opens — while the opener/closer buttons carry
+    // the state-accurate action labels ("Compare selected mattresses" /
+    // "Close comparison"), so heading and action never duplicate each
+    // other and an open panel's control never reads as an opener. All
+    // PROPOSED pairs; page-local selection vocabulary only — "finalists"
+    // stays reserved for the Consultation Summary's persisted state.
     var compareHeadingEl = proposed(el("h2", {
       id: "compareHeading",
       "class": "compare-heading",
       tabindex: "-1",
-      text: L(P.compareHeading),
+      text: LReq(P.compareHeading, "P.compareHeading"),
     }));
     compareSection.appendChild(compareHeadingEl);
 
@@ -513,17 +599,41 @@
       "aria-expanded": "false",
       "aria-controls": "comparePanel",
       disabled: "",
-      text: L(P.compareHeading),
     });
-    proposed(compareEntryBtn);
     compareEntryBtn.addEventListener("click", togglePanel);
-    var compareHint = proposed(el("p", { "class": "compare-hint", text: L(P.selectTwo) }));
+    var compareHint = proposed(el("p", { "class": "compare-hint", text: LReq(P.selectTwo, "P.selectTwo") }));
     compareSection.appendChild(el("div", { "class": "compare-actions" }, [compareEntryBtn, compareHint]));
 
     var comparePanel = el("div", { id: "comparePanel", "class": "compare-panel", hidden: "" });
     compareSection.appendChild(comparePanel);
-    compareSection.appendChild(chrome(el("p", { "class": "compare-footnote", text: L(CHROME.footnote) })));
+    if (reviewerOnly()) {
+      compareSection.appendChild(chrome(el("p", { "class": "compare-footnote", text: LReq(CHROME.footnote, "CHROME.footnote") })));
+    }
     app.appendChild(compareSection);
+
+    // State-accurate opener/closer labels on BOTH compare routes (section
+    // action + sticky tray). Rebuilds text + proposed marking on each state
+    // change; the tray Go button shows the production-verbatim EN static
+    // "Compare →" when closed (ES side proposed) and the proposed Close
+    // pair when open — the two routes can never contradict each other.
+    function setOpenerLabels() {
+      var open = state.panelOpen;
+      compareEntryBtn.textContent =
+        LReq(open ? P.compareClose : P.compareOpen, open ? "P.compareClose" : "P.compareOpen");
+      proposed(compareEntryBtn);
+      if (open) {
+        trayGoBtn.textContent = LReq(P.compareClose, "P.compareClose");
+        proposed(trayGoBtn);
+      } else {
+        trayGoBtn.textContent = activeLang === "es"
+          ? LReq({ es: P.trayGoEs }, "P.trayGoEs")
+          : LReq({ en: V.trayGoEn }, "V.trayGoEn");
+        if (activeLang === "es") proposed(trayGoBtn);
+        // The EN closed label is production-verbatim: a proposed-copy
+        // attribute left over from the open state must not survive onto it.
+        else trayGoBtn.removeAttribute("data-proposed-copy");
+      }
+    }
 
     function findEntry(id) {
       for (var t = 0; t < TIERS.length; t++) {
@@ -573,6 +683,7 @@
       state.panelOpen = !state.panelOpen;
       compareEntryBtn.setAttribute("aria-expanded", state.panelOpen ? "true" : "false");
       trayGoBtn.setAttribute("aria-expanded", state.panelOpen ? "true" : "false");
+      setOpenerLabels();
       if (state.panelOpen) {
         renderComparePanel();
         comparePanel.hidden = false;
@@ -584,12 +695,18 @@
         compareHeadingEl.focus({ preventScroll: true });
       } else {
         comparePanel.hidden = true;
+        // Closing via either opener keeps focus on the pressed control
+        // (nothing to restore); deselection-driven auto-close leaves focus
+        // on the card toggle the operator just pressed; Clear moves focus
+        // to the active tier tab (its own handler).
       }
     }
 
     function renderComparePanel() {
       comparePanel.innerHTML = "";
-      comparePanel.appendChild(chrome(el("p", { "class": "sim-banner", text: L(CHROME.simBanner) })));
+      if (reviewerOnly()) {
+        comparePanel.appendChild(chrome(el("p", { "class": "sim-banner", text: LReq(CHROME.simBanner, "CHROME.simBanner") })));
+      }
       var cols = el("div", { "class": "compare-cols" });
       state.selected.forEach(function (id) {
         var found = findEntry(id);
@@ -601,9 +718,9 @@
         // Tier row (fix T9): the price-tier symbol is decorative and
         // aria-hidden; the announced Tier value is the pure tier name.
         var tierStat = el("p", { "class": "compare-stat" }, [
-          el("span", { "class": "label", text: L(V.tierLabel) }),
+          el("span", { "class": "label", text: LReq(V.tierLabel, "V.tierLabel") }),
           el("span", { "class": "value" }, [
-            document.createTextNode(L(V.tierNames[found.tier])),
+            document.createTextNode(LReq(V.tierNames[found.tier], "V.tierNames." + found.tier)),
             priceSymbols[found.tier]
               ? el("span", { "class": "price-tier", "aria-hidden": "true", text: " " + priceSymbols[found.tier] })
               : null,
@@ -613,20 +730,24 @@
         // Visible "{word} N/10" is aria-hidden; the sr-only sibling carries
         // the package template ("Firmness: {word}, N of 10" — fix T8).
         var feelStat = el("p", { "class": "compare-stat" }, [
-          el("span", { "class": "label", text: L(V.feelLabel) }),
-          el("span", { "class": "value", "aria-hidden": "true", text: L(m.firmnessFeelWord) + " " + m.firmness + "/10" }),
+          el("span", { "class": "label", text: LReq(V.feelLabel, "V.feelLabel") }),
+          el("span", { "class": "value", "aria-hidden": "true", text: LReq(m.firmnessFeelWord, "firmnessFeelWord") + " " + m.firmness + "/10" }),
           el("span", { "class": "sr-only", text: firmnessSrText(m) }),
         ]);
         col.appendChild(feelStat);
         // Differentiator row (fix T3): differentiators[0] title + detail —
         // the production compare modal's Difference row analog
-        // (index.html:18897) — so two same-tier, same-feel finalists can
-        // never render as identical columns.
+        // (index.html:18897). OPTIONAL bilingual content (focused pass):
+        // if either half is missing in the active language the whole row is
+        // OMITTED — DOM and accessible text alike — never filled from
+        // English or from the other half.
         var d0 = (m.differentiators && m.differentiators[0]) || null;
-        if (d0) {
+        var dTitle = d0 ? LOpt(d0.title) : null;
+        var dDetail = d0 ? LOpt(d0.detail) : null;
+        if (dTitle != null && dDetail != null) {
           col.appendChild(el("p", { "class": "compare-stat diff" }, [
-            el("span", { "class": "label", text: L(V.diffLabel) }),
-            el("span", { "class": "value", text: L(d0.title) + " — " + L(d0.detail) }),
+            el("span", { "class": "label", text: LReq(V.diffLabel, "V.diffLabel") }),
+            el("span", { "class": "value", text: dTitle + " — " + dDetail }),
           ]));
         }
         cols.appendChild(col);
@@ -638,22 +759,24 @@
 
     var finSection = el("section", { "class": "fin-module", "aria-labelledby": "finHeading" });
     finSection.appendChild(el("div", { "class": "fin-rule", "aria-hidden": "true" }));
-    finSection.appendChild(el("h2", { id: "finHeading", "class": "sr-only", text: L(FC.headline) }));
-    finSection.appendChild(el("span", { "class": "fin-eyebrow", text: L(FC.eyebrow) }));
-    finSection.appendChild(el("p", { "class": "fin-lead", text: L(FC.resultsLead) }));
+    finSection.appendChild(el("h2", { id: "finHeading", "class": "sr-only", text: LReq(FC.headline, "FC.headline") }));
+    finSection.appendChild(el("span", { "class": "fin-eyebrow", text: LReq(FC.eyebrow, "FC.eyebrow") }));
+    finSection.appendChild(el("p", { "class": "fin-lead", text: LReq(FC.resultsLead, "FC.resultsLead") }));
     // No staleNotice here (fix T12c): production renders exactly six strings
     // in #resultsFinancing and shows staleNotice only inside the sheet — so
     // the stale-closed state has no visible marker on this surface, matching
     // production.
-    finSection.appendChild(el("p", { "class": "fin-fit-first", text: L(FC.fitFirst) }));
+    finSection.appendChild(el("p", { "class": "fin-fit-first", text: LReq(FC.fitFirst, "FC.fitFirst") }));
     // Fix T12a: the module's primary button is OUTLINED (see styles.css) —
     // production ranks it below the brand-filled footer CTAs this prototype
     // omits, so a solid fill would make it the only filled action on screen.
     finSection.appendChild(el("div", { "class": "fin-actions" }, [
-      el("button", { type: "button", "class": "fin-btn primary", disabled: "", text: L(FC.cta) }),
-      el("button", { type: "button", "class": "fin-btn secondary", disabled: "", text: L(FC.resultsAsk) }),
+      el("button", { type: "button", "class": "fin-btn primary", disabled: "", text: LReq(FC.cta, "FC.cta") }),
+      el("button", { type: "button", "class": "fin-btn secondary", disabled: "", text: LReq(FC.resultsAsk, "FC.resultsAsk") }),
     ]));
-    finSection.appendChild(chrome(el("p", { "class": "fin-sim-note", text: L(CHROME.finSim) })));
+    if (reviewerOnly()) {
+      finSection.appendChild(chrome(el("p", { "class": "fin-sim-note", text: LReq(CHROME.finSim, "CHROME.finSim") })));
+    }
     app.appendChild(finSection);
 
     // Second production fitFirst instance (fix T12b): the results footer
@@ -661,11 +784,13 @@
     // whenever financing is enabled (index.html:13823-13834). This is a
     // sleep-fit-primacy reassurance, not a second Payment Choice module —
     // the module above is the surface's single Payment Choice representation.
-    app.appendChild(el("p", { "class": "results-footer-hint", text: L(FC.fitFirst) }));
+    app.appendChild(el("p", { "class": "results-footer-hint", text: LReq(FC.fitFirst, "FC.fitFirst") }));
 
-    // Proposed-copy legend (prototype chrome) — explains the dotted
-    // underline marking used on every proposed string on this page.
-    app.appendChild(chrome(el("p", { "class": "page-legend", text: L(CHROME.legend) })));
+    // Proposed-copy legend (prototype chrome, reviewer mode only) —
+    // explains the dotted underline marking used on proposed strings.
+    if (reviewerOnly()) {
+      app.appendChild(chrome(el("p", { "class": "page-legend", text: LReq(CHROME.legend, "CHROME.legend") })));
+    }
 
     // The former "non-exercisable state demonstrations" section is deleted
     // (fix T1): it deep-cloned a real fixture entry with meetsMatchThreshold
@@ -682,7 +807,11 @@
     // Production tray statics are EN-only ("Clear" / "Compare →",
     // index.html:18984/18986); only the ES sides are PROPOSED — the EN
     // renders are production-verbatim and carry no proposed marking.
-    trayClearBtn.textContent = lang === "es" ? P.trayClearEs : V.trayClearEn;
+    // Strict resolution (focused pass): a missing ES side is a contract
+    // failure, never an English render.
+    trayClearBtn.textContent = lang === "es"
+      ? LReq({ es: P.trayClearEs }, "P.trayClearEs")
+      : LReq({ en: V.trayClearEn }, "V.trayClearEn");
     if (lang === "es") proposed(trayClearBtn);
     trayClearBtn.addEventListener("click", function () {
       state.selected = [];
@@ -699,8 +828,6 @@
       "aria-controls": "comparePanel",
       disabled: "",
     });
-    trayGoBtn.textContent = lang === "es" ? P.trayGoEs : V.trayGoEn;
-    if (lang === "es") proposed(trayGoBtn);
     trayGoBtn.addEventListener("click", togglePanel);
 
     var tray = el("div", { "class": "compare-tray", hidden: "" }, [
@@ -727,7 +854,7 @@
     function renderTray() {
       if (!state.selected.length) { tray.hidden = true; setTrayReserve(); return; }
       tray.hidden = false;
-      trayCount.textContent = state.selected.length + L(V.trayCountOf2); // "N of 2 selected" / "N de 2 seleccionados" (index.html:18850)
+      trayCount.textContent = state.selected.length + LReq(V.trayCountOf2, "V.trayCountOf2"); // "N of 2 selected" / "N de 2 seleccionados" (index.html:18850)
       traySlots.innerHTML = "";
       state.selected.forEach(function (id) {
         var found = findEntry(id);
@@ -738,6 +865,7 @@
 
     /* ---------------- initial render ---------------- */
 
+    setOpenerLabels();
     renderPanel();
 
     /* ---------------- review-state driver (PROTOTYPE CHROME) ----------------

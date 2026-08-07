@@ -47,9 +47,12 @@
   iframe.width = w; iframe.height = h;
   // `st` forwards a review-state name to variants that support the
   // review-state driver (results-tabs) so stateful screenshot cells are
-  // reproducible by URL.
+  // reproducible by URL. `m=evaluation` forwards evaluation mode.
   var st = p.get('st');
-  iframe.src = '../' + v + '/?scenario=' + s + '&lang=' + l + (st ? '&state=' + encodeURIComponent(st) : '');
+  var m = p.get('m') === 'evaluation' ? 'evaluation' : null;
+  iframe.src = '../' + v + '/?scenario=' + s + '&lang=' + l
+    + (st ? '&state=' + encodeURIComponent(st) : '')
+    + (m ? '&mode=' + m : '');
   iframe.title = v + ' at ' + w + '×' + h;
   wrap.appendChild(iframe);
 
@@ -64,9 +67,11 @@
     '<span>scenario <b>' + s + '</b></span>' +
     '<span>lang <b>' + l.toUpperCase() + '</b></span>' +
     (st ? '<span>state <b>' + st + '</b></span>' : '') +
+    (m ? '<span>mode <b>evaluation</b></span>' : '') +
     '<span>viewport <b>' + w + '×' + h + '</b> (' + (w > h ? 'landscape' : 'portrait') + ')</span>' +
     '<span>display scale <b>' + scale.toFixed(2) + '×</b></span>' +
-    '<span class="warn">illustrative review viewport — NOT the showroom device matrix</span>';
+    (m ? '<span class="warn">evaluation-mode prototype — not hardware evidence</span>'
+       : '<span class="warn">illustrative review viewport — NOT the showroom device matrix</span>');
 </script>
 </body>
 </html>

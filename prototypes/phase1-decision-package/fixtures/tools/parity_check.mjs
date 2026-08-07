@@ -20,7 +20,12 @@ import { createHash } from "node:crypto";
 import { join } from "node:path";
 import { root, SCENARIOS, captureScenario } from "./capture_lib.mjs";
 
-const fixturesDir = join(root, "prototypes", "phase1-decision-package", "fixtures");
+// PARITY_FIXTURES_DIR override lets the negative runner point this script
+// at an isolated mutated copy of the fixtures without touching the
+// worktree. Engine sources are always read from the real root (the
+// byte-identity guard still applies).
+const fixturesDir = process.env.PARITY_FIXTURES_DIR
+  || join(root, "prototypes", "phase1-decision-package", "fixtures");
 
 let passed = 0, failed = 0;
 function check(label, cond, detail) {

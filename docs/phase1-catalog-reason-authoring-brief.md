@@ -398,25 +398,38 @@ content-governance reports in the Phase 1 decision package):
   springair.com (incl. Chattam & Wells), tempurpedic.com/sealy.com, plus the
   Genesis official site once identified — never aggregators or review sites.
 
-**Flagged existing catalog strings (review needed — NOT edited this sprint).**
-Lead-verified present in `data/mattresses.json`; each pre-dates this rubric:
+**Existing catalog claim risk (reframed in the focused pass — NOT edited
+this sprint).** An earlier head presented "four flagged existing catalog
+strings" as the claim-review scope. That formulation was wrong twice over: those four
+(g4 unqualified "10° cooler"; g9 "recovery benefits"; g9
+antimicrobial-adjacent copper phrasing; b5 "a proven pick for side
+sleepers") were **initial high-risk examples found during the prototype
+audit — not an exhaustive legal/content review** — and the earlier claim
+that only b5 renders in production was also false: **all four render in
+production surfaces today** (g4 and g9 topPickReasons on Results cards; g4
+and g9 differentiator strings in the drawer and compare "Difference" row;
+b5 on Results cards). An external spot-check immediately found
+further unflagged material claims (g2 "The most luxurious plush in the
+store", g5 "Proven all-night cooling", g7 "the most versatile bed in the
+Reserve line", g8 segment targeting, s7 performance promise, s9 partner
+claims, s10 "best price in its class"-class value claims, among others).
 
-1. **g4 Tempur-LuxeBreeze 2.0 Soft** — "Feels up to 10° cooler" (highlight,
-   topPickReason, differentiator) ships **without** the manufacturer's
-   mandatory comparison qualifier (Tier B claim rendered unqualified).
-2. **g9 Copper Cushion Firm** — "recovery benefits" (topPickReason) has no
-   located support on springair.com (Tier D risk).
-3. **g9** — "naturally fresher" / "a cleaner, cooler sleep" copper phrasing
-   (differentiator, reason_default) is antimicrobial-adjacent (Tier B/E
-   boundary; needs manufacturer language verification).
-4. **b5 Angelina Plush** — "a proven pick for side sleepers" / "elección
-   comprobada para dormir de lado" (topPickReason) is an unqualified
-   efficacy/substantiation claim (Tier D under the ladder above) with no
-   evidence record — surfaced by the adversarial review pass; unlike flags
-   1–3, this string renders on production Results cards today.
+The **Appendix — preliminary claim-risk inventory** below therefore reads
+every customer-visible string in `topPickReason`, `reason_default`,
+`highlight`, and the differentiator titles/details, across all 26 models
+and both languages, and classifies each flagged string under the A–E
+ladder. It is a **preliminary risk inventory for the named owner and
+legal/compliance reviewer — not a legal approval and not a content edit**;
+regex screening generated candidates, but every string was read
+individually. Disposition of every row (grandfather, hot-fix, re-qualify,
+or retire) belongs to the named Lacks owner with legal review where the
+class requires it.
 
-Whether these are grandfathered or hot-fixed is Blake's call, recorded in the
-decision package.
+Direct consequence for the Phase 1 candidates: because `topPickReason` is
+not established claim-safe customer-agnostic copy, the corrected Results
+candidate renders **no product-description layer** — no catalog field is
+approved as that surface's source, and inventing replacement copy is
+prohibited.
 
 **Workflow (roles and cadence):**
 
@@ -490,3 +503,207 @@ Lane B waits for its corresponding decision.
 - Nothing was wired into the generation pipeline; no validator was
   implemented; `MATT_ES_KEYS` was not changed.
 - The 1.3 reason gate is not lifted, moved or reinterpreted by this document.
+
+
+---
+
+## Appendix — preliminary claim-risk inventory (focused pass, 2026-08-07)
+
+**PRELIMINARY RISK INVENTORY — NOT A LEGAL REVIEW, NOT A CONTENT EDIT.**
+Produced read-only from `data/mattresses.json` at `78f949c`. All **364
+strings (182 EN/ES pairs)** in `topPickReason` (52), `reason_default` (52),
+`highlight` (52), `differentiators[].title` (104) and
+`differentiators[].detail` (104) across all 26 models were extracted by
+script and **read individually** — regex screening generated candidates,
+but every string was inspected, including those without trigger words.
+Classification uses the A–E ladder in §4. Disposition of every row
+(grandfather, hot-fix, re-qualify, retire) belongs to the named Lacks owner
+with legal review where the class requires it.
+
+**Bottom line.** 83 of 182 pairs (45.6%) carry a claim a reviewer must rule
+on; **24 are Tier D/E and render in production today**. The four strings
+the package originally flagged are a subset of those 24, not the set. The
+durable framing (deliberately not a count, which any stricter reviewer
+would move): **the catalog was authored before the claim ladder existed,
+so NO string in it carries an evidence record, and the whole of
+`topPickReason` and the differentiators require a claim-safety pass before
+Phase 1 promotes either field to any new surface.** This is why the
+corrected Results candidate renders no product-description layer.
+
+### Verified render surfaces (corrections to earlier statements)
+
+- `topPickReason` renders **only** on production Results cards
+  (index.html:14085, :14164) — not on handoff or compare (both prefer
+  `priorities[0]`).
+- Differentiators render in the drawer (:19216) and — index 0 — in the
+  compare modal "Difference" row (:18897).
+- `highlight` renders **NOWHERE** in production (its only call sites are
+  fallbacks that never fire: `hf2ReasonFor` is guarded by
+  `buildMattressPriorities(m).length`, non-empty for all 26 models, and
+  the :17196 differentiator fallback never fires — all 26 have authored
+  differentiators). It joins `reason_default` in the
+  authored-but-invisible class.
+- **All four originally flagged strings render in production** (an earlier
+  head said only b5 did): g4/g9 topPickReasons on Results cards; g4/g9
+  differentiator strings in drawer + compare; b5 on Results cards.
+
+### Internal contradictions (provable from the catalog alone)
+
+1. Four mutually exclusive price/value-leadership claims: b4 "the best
+   value in the store", b7 "the friendliest price in the store", s10 "the
+   best price in its class", b6 "the most accessible price" — while
+   `price` is blank by design and the app never shows one.
+2. Two colliding "firmest" claims: g8 "the firmest luxury option in the
+   store" (firmness 8) vs s2 "The firmest Platinum" (also 8, also
+   luxury-positioned).
+3. One feature, two incompatible quantifications: Marvelous Middle is
+   "25% more support" (s1) and "25% thicker center coils" (s3, s4, s8,
+   s10, b5, b6); "25% more support" is in no measurable unit.
+4. The catalog disparages constructions it sells: s5 vs the b7 innerspring;
+   s4 vs the s10 tight-top.
+
+### Block A — Tier D/E, renders in production (24 rows)
+
+Legend — prod: R = Results cards · D = drawer · D+C = drawer + compare
+Difference row · — = renders nowhere. proto: Y = the pre-correction
+prototype promoted it (topPickReason on lead cards, or card-face
+differentiators before fix T3/G3); n/c = model outside the 18-model
+fixture coverage. ES sides are claim-equivalent unless listed under
+"Spanish divergences".
+
+| # | model · field | EN excerpt | class | why flagged | prod | proto | evidence/reviewer | status |
+|---|---|---|---|---|---|---|---|---|
+| A1 | g5 · topPickReason | "Proven all-night cooling…" | D | express substantiation word + unqualified duration promise (same defect class as the flagged b5, previously unflagged) | R | n/c | Tempur-Pedic + legal | prohibited_pending_evidence |
+| A2 | b5 · topPickReason | "…a proven pick for side sleepers." | D | original flag #4 | R | Y | legal | prohibited_pending_evidence |
+| A3 | g9 · topPickReason | "Copper cooling and recovery benefits…" | D/E | original flag #2; therapeutic-adjacent | R | n/c | Spring Air + legal | prohibited_pending_evidence |
+| A4 | g4 · topPickReason | "The coolest-sleeping soft mattress in the store — up to 10° cooler all night." | B→D | store-wide superlative AND the Tier B claim stripped of its qualifier and extended to "all night" (stronger than flag #1 recorded) | R | n/c | Tempur-Pedic + legal | prohibited_pending_evidence |
+| A5 | s9 · topPickReason | "…wrapped coils that keep partner movement on their side." | D | absolute motion-isolation promise | R | Y | Restonic + legal | prohibited_pending_evidence |
+| A6 | s10 · topPickReason | "…at the best price in its class." | D | price leadership, class undefined, no price shown in app | R | Y | merch + legal | prohibited_pending_evidence |
+| A7 | g8 · topPickReason | "…the choice for back and stomach sleepers who want luxury." | D | definite-article segment prescription | R | Y | merch + legal | review_required |
+| A8 | g2 · topPickReason | "The most luxurious plush in the store…" | D | store-wide subjective superlative | R | Y | merch | review_required |
+| A9 | g7 · topPickReason | "…the most versatile bed in the Reserve line." | D | line superlative, unsubstantiable as worded | R | Y | Restonic/merch | review_required |
+| A10 | s7 · topPickReason | "Soft, cooling pressure relief — plush without the heat." | D | efficacy claim + absolute thermal promise | R | Y | Restonic | review_required |
+| A11 | b1 · topPickReason | "Honest plush comfort for side sleepers…" | D | segment targeting on a lead card | R | Y | merch | review_required |
+| A12 | b5 · differentiators[0] | "Shoulder-and-hip relief" + "…target exactly where side sleepers ache." | E | pain claim + segment + absolute "exactly" — stronger than the b5 string the brief did flag, and previously unflagged | D+C | Y | legal | prohibited_pending_evidence |
+| A13 | s9 · differentiators[0].detail | "Each coil moves alone, so a restless partner doesn't wake you." | D | outcome promise about the customer's sleep | D+C | Y | Restonic + legal | prohibited_pending_evidence |
+| A14 | s2 · differentiators[1].detail | "…keeps hips level in every position." | D/E | absolute universal anatomical promise | D | Y | Restonic + legal | prohibited_pending_evidence |
+| A15 | s5 · differentiators[1].detail | "Keeps your spine aligned…" | E | spinal-alignment health claim | D | n/c | legal | prohibited_pending_evidence |
+| A16 | g8 · differentiators[0].detail | "…the firmest luxury option in the store." | D | store-wide superlative contradicted by the catalog itself (s2) | D+C | Y | merch | prohibited_pending_evidence |
+| A17 | g3 · differentiators[1].detail | "Tufting locks the layers so the pillowtop can't shift or pocket over years of use." | D | absolute negative durability promise; warranty-adjacent | D | Y | Chattam & Wells | prohibited_pending_evidence |
+| A18 | g9 · differentiators[0].detail | "…stay naturally fresher than standard foam." | B/E | original flag #3, antimicrobial-adjacent | D+C | n/c | Spring Air + legal | prohibited_pending_evidence |
+| A19 | g4 · differentiators[0].title | "Feels up to 10° cooler" | B | original flag #1, no qualifier; unit unstated (see Spanish divergences) | D | n/c | Tempur-Pedic | prohibited_pending_evidence |
+| A20 | g4 · differentiators[0].detail | "…you can feel the moment you lie down — made for hot sleepers." | D | outcome promise + segment | D+C | n/c | Tempur-Pedic | review_required |
+| A21 | g2 · differentiators[0].detail | "…for side sleepers who want cloud comfort without bottoming out." | D | segment + absolute performance | D+C | Y | merch | review_required |
+| A22 | s7 · differentiators[0].detail | "Gel-infused foam keeps the soft layers from trapping heat." | D | absolute thermal promise | D+C | Y | Restonic | review_required |
+| A23 | s7 · differentiators[1].detail | "Hybrid coils prevent the hammock feel of all-foam soft beds." | D | absolute + category disparagement | D | Y | Restonic | review_required |
+| A24 | s3 · differentiators[1].detail | "Individually wrapped coils isolate motion and firm up under your hips." | D | absolute "isolate" + anatomical | D | Y | Restonic | review_required |
+
+### Block B — Tier B/D: comparatives, durability, price, popularity (38 rows)
+
+| # | model · field | EN excerpt | class | why flagged | prod | proto | evidence/reviewer | status |
+|---|---|---|---|---|---|---|---|---|
+| B1 | g6 · reason_default | "…built by Restonic craftspeople to last a lifetime." | D | strongest lifespan promise in the catalog | — | n/c | Restonic + legal | prohibited_pending_evidence |
+| B2 | g3 · reason_default | "…engineered to hold for decades." | D | multi-decade lifespan promise | — | n/c | C&W | prohibited_pending_evidence |
+| B3 | g7 · differentiators[1].detail | "…built to outlast foam-only beds." | D | comparative durability vs a whole category | D | Y | Restonic | prohibited_pending_evidence |
+| B4 | s1 · reason_default | "Patented Marvelous Middle delivers 25% more support… where your body needs it most." | B/D | patent claim + quantified claim in no measurable unit + physiological assertion | — | n/c | Restonic + legal | prohibited_pending_evidence |
+| B5 | b4 · reason_default | "…the best value in the store." | D | store-wide value leadership; conflicts B6/B7/A6 | — | n/c | merch + legal | prohibited_pending_evidence |
+| B6 | b7 · reason_default | "…the friendliest price in the store." | D | store-wide price leadership; conflicts B5 | — | n/c | merch + legal | prohibited_pending_evidence |
+| B7 | b6 · reason_default | "…at the most accessible price." | D | price leadership; conflicts B5/B6 | — | Y | merch | review_required |
+| B8 | g7 · reason_default | "…luxury that works for almost every sleeper." | D | universal-suitability claim, in tension with the fit-quiz premise | — | n/c | merch | review_required |
+| B9 | g2 · reason_default | "…softness that never loses its support." | D | absolute durability | — | n/c | C&W | review_required |
+| B10 | g8 · differentiators[1].detail | "…keep the firm feel from softening early." | D | durability promise | D | Y | Restonic | review_required |
+| B11 | s10 · differentiators[1].detail | "…protect the firm feel from early body impressions." | D | body impressions = the standard warranty failure mode | D | Y | Restonic + legal | review_required |
+| B12 | b4 · differentiators[1] | "Best-value firm" + "The most affordable true firm hybrid in the lineup." | D | price superlative in both halves | D | n/c | merch | review_required |
+| B13 | b7 · differentiators[1] | "Friendliest price" + "The most affordable way into a zoned Restonic build." | D | price superlative in both halves | D | Y | merch | review_required |
+| B14 | b4 · highlight | "…at the best value" | D | value leadership | — | n/c | merch | review_required |
+| B15 | b7 · highlight | "…at the friendliest price" | D | price leadership | — | n/c | merch | review_required |
+| B16 | b1 · differentiators[1].detail | "Restonic quality without the Platinum price." | B/D | asserts quality parity with the retailer's own higher tier; undercuts the tier structure | D | Y | merch | review_required |
+| B17 | s10 · reason_default | "…maximum alignment without the luxury price tag." | B/D | same family as B16 | — | n/c | merch | review_required |
+| B18 | s6 · reason_default | "…in the feel most sleepers pick." | D | popularity claim, no data | — | n/c | merch | review_required |
+| B19 | s6 · differentiators[0] | "Crowd-pleasing medium" + "The feel most couples agree on…" | D | popularity claim, no data | D+C | Y | merch | review_required |
+| B20 | b5 · reason_default | "…relieve shoulder and hip pressure — a side-sleeper favorite…" | D/E | anatomical efficacy + popularity | — | n/c | Restonic + legal | review_required |
+| B21 | s1 · differentiators[0].detail | "25% more support under hips and lower back, where most beds sag first." | B/D | quantified claim + market-wide disparaging durability generalization | D+C | Y | Restonic | review_required |
+| B22 | s8 · differentiators[1].detail | "…holds hips level where beds break down first." | D | anatomical absolute + market disparagement | D | n/c | Restonic | review_required |
+| B23 | g6 · differentiators[0].detail | "…natural materials most factory beds skip." | B/D | market-wide generalization | D+C | Y | Restonic | review_required |
+| B24 | b6 · differentiators[1].detail | "Center-third reinforcement most value firm beds skip." | B/D | same family as B23 | D | Y | Restonic | review_required |
+| B25 | g1 · differentiators[0].detail | "Merino wool, camel hair, and cashmere breathe and temper heat in a way synthetic foams can't." | B/D | absolute category-superiority thermal claim; also names camel hair, which appears nowhere else in g1's copy | D+C | Y | C&W | review_required |
+| B26 | g2 · differentiators[1].detail | "…keep the plush layers cooler than dense foam pillow-tops." | B | comparative thermal claim, no test method | D | Y | C&W | review_required |
+| B27 | g5 · differentiators[0].detail | "Noticeably cooler on contact than standard TEMPUR models." | B | comparative vs the manufacturer's own line without the manufacturer's qualifier | D+C | n/c | Tempur-Pedic | review_required |
+| B28 | g3 · differentiators[0].detail | "Several times the coil count of a standard bed…" | B | quantified comparative, referent undefined | D+C | Y | C&W | review_required |
+| B29 | s5 · differentiators[0].detail | "Adds cooling comfort a plain firm innerspring doesn't have." | B/D | disparages a category the catalog sells (b7) | D+C | n/c | merch | review_required |
+| B30 | s4 · differentiators[0].detail | "…without the bare, hard feel of a tight-top firm." | B | disparages a construction the catalog sells (s10) | D+C | n/c | merch | review_required |
+| B31 | s3 · differentiators[0].detail | "…more depth than a standard plush." | B | referent undefined | D+C | Y | Restonic | review_required |
+| B32 | b4 · differentiators[0].detail | "…more responsive than foam value beds." | B | category comparative | D+C | n/c | Genesis | review_required |
+| B33 | b5 · differentiators[1].detail | "…a bigger usable sleep surface than value plush beds." | B | category comparative | D | Y | Restonic | review_required |
+| B34 | s6 · differentiators[1].detail | "…the memory-foam warmth common in medium beds." | B | category generalization | D | Y | Restonic | review_required |
+| B35 | g1 · differentiators[1].detail | "…instead of the slow sink of memory foam." | B | category disparagement | D | Y | C&W | review_required |
+| B36 | s9 · differentiators[1].detail | "…without the deep sink of memory-foam beds." | B | category disparagement | D | Y | Restonic | review_required |
+| B37 | s2 · differentiators[0].detail | "Noticeably firmer than the Paige Firm — for sleepers who want no sink at all." | B/D | the comparative is factual (8 vs 7) but "no sink at all" is absolute | D+C | Y | Restonic | review_required |
+| B38 | b7 · topPickReason | "…the smart starter pick." | C/D | buyer-characterising — the roadmap already struck "Bronze · entry-level" for exactly this | R | Y | merch | review_required |
+
+### Block C — apparently factual, needs a Class A source record (21 rows)
+
+| # | model · field | EN excerpt | class | why flagged | prod | proto | evidence/reviewer | status |
+|---|---|---|---|---|---|---|---|---|
+| C1 | g3 · highlight, topPickReason, diff[0] | "4,294 coils" ×3 | A | precise spec repeated in 3 fields; one source, three exposure points | R, D+C | Y | C&W spec sheet | apparently_factual_pending_owner_review |
+| C2 | s1,s3,s4,s8,s10,b5,b6 · multiple | "25% thicker center coils" / "25% more support" | A/B | 9 occurrences of one manufacturer figure stated two incompatible ways | R, D+C | Y | Restonic | review_required |
+| C3 | g2 · highlight | "16.5 inches of luxury" + "Our most indulgent plush" | A/D | dimensional spec + store-scoped superlative | — | n/c | C&W | review_required |
+| C4 | s1 · highlight, diff[1] | "16-inch box top" ×2 | A | dimensional spec | — | Y | Restonic | apparently_factual_pending_owner_review |
+| C5 | s3 · reason_default | "15-inch plush box top" | A | dimensional spec | — | n/c | Restonic | apparently_factual_pending_owner_review |
+| C6 | s3,s4,b5 · multiple | "3-inch edge encasement" ×4 | A | dimensional spec | D+C | Y | Restonic | apparently_factual_pending_owner_review |
+| C7 | b1,b2 · reason_default | "12.5-inch" ×2 | A | dimensional spec | — | n/c | Restonic | apparently_factual_pending_owner_review |
+| C8 | b3,b4 · reason_default, diff[1] | "Thirty years" / "30-year family company" ×3 | A | company-age claim | D | n/c | Genesis/Kingdom | apparently_factual_pending_owner_review |
+| C9 | b3 · highlight, reason_default | "engineered in the USA" / "engineered entirely in the USA" | A/B | origin claim — FTC Made-in-USA enforcement is strict; ES differs (below) | — | n/c | Genesis + legal | prohibited_pending_evidence |
+| C10 | b4 · reason_default | "engineered entirely in the USA" | A/B | same as C9 | — | n/c | Genesis + legal | prohibited_pending_evidence |
+| C11 | g6 · highlight | "Hand-made in Texas" | A/B | state-of-origin claim; ALSO load-bearing for the +25 locally-made scoring bonus, whose current basis is a verbal attribution (Blake, 2026-07-30), not a document | — | n/c | Restonic + legal | prohibited_pending_evidence |
+| C12 | g6 · topPickReason | "made regionally by Restonic" | A/B | softer origin claim, same evidence need | R | Y | Restonic | apparently_factual_pending_owner_review |
+| C13 | g9 · reason_default | "Patented NatuVerex copper fabric" | A/B | patent claim — false patent marking is its own liability | — | n/c | Spring Air + legal | prohibited_pending_evidence |
+| C14 | g4 · reason_default | "Tempur-Pedic's coolest mattress" | B | brand-line superlative, checkable | — | n/c | Tempur-Pedic | apparently_factual_pending_owner_review |
+| C15 | s2 · topPickReason | "The firmest Platinum" | B | factual within catalog but collides with A16 | R | Y | merch | apparently_factual_pending_owner_review |
+| C16 | g8 · reason_default | "The firmest bed in the Reserve line…" | B | factual within catalog; + segment tail | — | n/c | Restonic | apparently_factual_pending_owner_review |
+| C17 | b6 · differentiators[0].detail | "The firmest feel in the bronze tier — no plush give at all." | B/D | superlative factual (b6=8, bronze max); "no plush give at all" absolute | D+C | Y | merch | apparently_factual_pending_owner_review |
+| C18 | b1 · differentiators[0].detail | "Softer than the Gracie…" | B | factual (3 vs 5) but names a SKU the customer may not have on screen | D+C | Y | merch | apparently_factual_pending_owner_review |
+| C19 | g1 · topPickReason, reason_default | "firm, breathable… support" / "support that breathes and lasts" | C/D | thermal mechanism unqualified + durability | R | Y | C&W | review_required |
+| C20 | g5 · highlight, reason_default | "All-night cooling" / "true TEMPUR pressure relief" | B/D | duration promise + efficacy assertion | — | n/c | Tempur-Pedic | review_required |
+| C21 | s5,s9,s7,b5,b2,b1,s8 · reason_default/highlight | "pressure relief", "absorbs a partner's movement", "stays still all night", "keeps your spine aligned", "cushions shoulders and hips", "support your hips and lower back" | C/D/E | 8 efficacy/anatomical assertions in never-rendering fields — exactly the strings most likely to be lifted verbatim if reason_default ever gains a surface | — | n/c | Restonic + legal | review_required |
+
+### Spanish divergences (claim-equivalence review, not translation QA)
+
+1. **The "10°" claim carries no unit in either language** (g4 highlight,
+   topPickReason, diff[0].title). EN-US readers default to Fahrenheit; a
+   Spanish-speaking RGV customer plausibly reads "10° más fresco" as
+   Celsius — nearly double the manufacturer's claim. Under 16 CFR §14.9
+   the Spanish claim stands on its own, and as written it stands on its
+   own as a much larger claim.
+2. b3/b4: "engineered in the USA" → "diseñado en EE. UU." — *diseñado* =
+   "designed", a different origin claim.
+3. g9: "stay naturally fresher" → "se mantienen naturalmente más frescas" —
+   *fresco* reads primarily as *cooling* in ES, partly losing the
+   cleanliness implication; the two languages make different claims.
+4. g7: "works for almost every sleeper" → "funciona para casi todos" — ES
+   drops "sleeper", broadening to people generally.
+5. s10: "at a working price" → "a un precio accesible" — EN register word
+   vs ES mild affordability claim.
+
+No ES side is untranslated or machine-artifacted. Retained English brand/
+industry terms (euro-top, box top, Marvelous Middle, Breeze, Pure Cool)
+are appropriate; *cushion-firm* (g9, ×4) reads least naturally unglossed.
+
+### Inspected and deliberately not flagged (99 of 182 pairs)
+
+Representative sample, so this inventory is auditable as a full read
+rather than a trigger-word sweep: g1 highlight (material list, no
+promise); s1/s3/s5 topPickReasons and highlights (construction
+description only); s6 topPickReason ("The balanced pick" — positioning,
+not leadership); b2 "at an everyday price" (claims no rank); b3
+diff[0].detail (intra-catalog construction fact); g5 diff[1].detail
+("adds airflow and a touch of responsiveness" — the hedged Class C voice
+this brief recommends, and the best-written line in the catalog for that
+purpose); 46 of 52 differentiator titles are pure construction/feel nouns.
+
+### Status totals
+
+18 prohibited_pending_evidence · 53 review_required · 12
+apparently_factual_pending_owner_review = 83 flagged pairs. The dump can
+be regenerated any time from `data/mattresses.json` (the five fields
+above, 26 models, both languages).

@@ -596,3 +596,90 @@ consequence, terminology ("finalists" only inside the chrome footnote),
 no-percentage/no-descriptor leakage, Payment Choice singular and
 stale-closed, and proposed-copy marking. See that script's header for what
 it does NOT prove (no layout engine, no device, no AT).
+
+---
+
+## Focused final pass (2026-08-07, pre-dry-run)
+
+Same append-convention; this section governs where it changes anything
+above.
+
+### F1 — Strict language resolution replaces ctx.L (no fallback of any kind)
+
+The candidate no longer consumes the shared harness `L()` (whose
+en-fallback mirrors production for the exploration variants). Local
+resolvers enforce three content classes: **LReq** (required bilingual copy
+— a missing active-language value renders a loud, labelled
+`PROTOTYPE CONTRACT FAILURE` naming the string, and throws; never English,
+never a label), **LOpt** (optional bilingual content — missing value ⇒ the
+element is omitted, DOM and accessible text alike; used for the compare
+differentiator row), and language-neutral scalars (name, brand, id,
+numeric firmness) which bypass resolution. The fixture's per-language
+surfaces (cardPriorities, trial focus) are selected structurally and
+already cannot fall back. `contract_negative_check.mjs` proves seven
+ES-removal cases (five required-failure, two fixture-omission) and
+demonstrates that the legacy en-fallback resolver would have silently
+rendered English in five of them.
+
+### F2 — topPickReason no longer renders; no product-description layer (supersedes C5's "labelled product description")
+
+The claim-risk inventory (authoring brief appendix) found `topPickReason`
+carries unaudited superlatives, "proven" claims, segment targeting and
+price/exclusivity claims — it is not established claim-safe
+customer-agnostic copy, `reason_default` is likewise unapproved, and
+inventing replacement copy is prohibited. The candidate therefore renders
+**no product-description block in either mode**; a reviewer-mode-only
+`data-prototype-chrome` placeholder marks the region and states only that
+an approved description *could* occupy it. The structural concept of a
+separately labeled customer-agnostic description stays open with **no
+approved source**. The card keeps name, brand·subBrand, exact firmness,
+fixture fit rows, Details, Save and Compare.
+
+### F3 — Evaluation mode (`?mode=evaluation`)
+
+Reviewer mode (default) keeps every provenance aid. Evaluation mode — the
+assisted-sales dry run surface — uses the same fixtures, code, composition,
+order and interaction, but renders no chrome elements (card sim note,
+compare footnote, sim banner, financing sim note, legend), appends no
+sr-only "(proposed copy)" suffixes (clean accessible names), and the
+dotted underline is CSS-suppressed under `html.df-eval`; provenance
+attributes stay in the DOM. One small harness notice ("PROTOTYPE — not
+production.") remains. `contract_check.mjs`'s evaluation block proves the
+product state (card ids, fit rows, firmness, actions, compare flow with
+focus consequence) is identical across modes.
+
+### F4 — State-accurate Compare language (supersedes C2's heading/opener labels)
+
+The section heading is the stable noun phrase **"Mattress comparison" /
+"Comparación de colchones"** (still the focus target on open). The opener
+reads **"Compare selected mattresses" / "Comparar colchones seleccionados"**
+when closed and **"Close comparison" / "Cerrar comparación"** when open;
+the tray action mirrors it (closed: production-verbatim EN "Compare →" /
+proposed ES "Comparar →"; open: the Close pair) so the two routes can
+never contradict each other, and an open panel's control never reads as an
+opener. All proposed pairs; a stale proposed-copy attribute can no longer
+survive onto the verbatim EN tray label after an open/close cycle.
+
+### F5 — Review-state driver unchanged
+
+`?state=` still replays real interactions for reproducible screenshot
+cells and works in both modes. Deliberately NOT mode-gated: evaluation-
+mode screenshot cells (e.g. compare-open) need it, and the packet's
+frozen-URL + restart discipline is the control against mid-station state
+changes. `document.title` keeps "(prototype)" in evaluation mode,
+consistent with the retained harness notice.
+
+### F6 — Per-language-table gaps closed (bilingual-inspector findings)
+
+Three raw per-language reads that no resolver touched could previously
+mis-render without any observer noticing: a missing single field inside a
+`cardPriorities` row rendered the literal string "undefined"; a missing
+whole `cardPriorities[lang]` table silently dropped every fit row; and a
+trial-focus strip present in EN but missing in ES silently vanished. All
+three are now controlled contract failures (`reqField`, a table presence
+check, and an omit-only-if-absent-in-BOTH-languages rule), and
+`contract_negative_check.mjs` carries a case for each (25 mutations
+total). Design note, recorded not fixed: deselecting one of two selections
+closes the panel with no reopen shortcut — swapping a selection costs a
+close plus a manual re-open; the openers are state-honest about it, and
+the dry run's S2 items may surface it as a preference.
