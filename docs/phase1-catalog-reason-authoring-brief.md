@@ -520,8 +520,10 @@ Classification uses the A–E ladder in §4. Disposition of every row
 (grandfather, hot-fix, re-qualify, retire) belongs to the named Lacks owner
 with legal review where the class requires it.
 
-**Bottom line.** 83 of 182 pairs (45.6%) carry a claim a reviewer must rule
-on; **24 are Tier D/E and render in production today**. The four strings
+**Bottom line.** 83 inventory rows — some bundling several occurrences,
+together covering roughly 109 of the 182 EN/ES pairs — carry a claim a
+reviewer must rule on; **24 are Tier D/E and render in production
+today**. The four strings
 the package originally flagged are a subset of those 24, not the set. The
 durable framing (deliberately not a count, which any stricter reviewer
 would move): **the catalog was authored before the claim ladder existed,
@@ -689,7 +691,7 @@ No ES side is untranslated or machine-artifacted. Retained English brand/
 industry terms (euro-top, box top, Marvelous Middle, Breeze, Pure Cool)
 are appropriate; *cushion-firm* (g9, ×4) reads least naturally unglossed.
 
-### Inspected and deliberately not flagged (99 of 182 pairs)
+### Inspected and deliberately not flagged
 
 Representative sample, so this inventory is auditable as a full read
 rather than a trigger-word sweep: g1 highlight (material list, no
@@ -703,7 +705,7 @@ purpose); 46 of 52 differentiator titles are pure construction/feel nouns.
 
 ### Status totals
 
-18 prohibited_pending_evidence · 53 review_required · 12
-apparently_factual_pending_owner_review = 83 flagged pairs. The dump can
+24 prohibited_pending_evidence · 47 review_required · 12
+apparently_factual_pending_owner_review = 83 flagged rows. The dump can
 be regenerated any time from `data/mattresses.json` (the five fields
 above, 26 models, both languages).

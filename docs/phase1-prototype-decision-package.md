@@ -609,7 +609,7 @@ equal a fresh engine run, match their row-bound reviewed hashes, and clear
 per-surface floors (its deep compare distinguishes arrays from numeric-key
 objects). It does **not** test the prototypes.
 
-`contract_check.mjs` (**970/970 at this head**, extended in the focused
+`contract_check.mjs` (**994/994 at this head**, extended in the focused
 pass with evaluation-mode parity checks, strict-language contracts and
 state-accurate Compare labels) closes exactly that gap for the two
 recommended candidates: it executes their
@@ -646,7 +646,8 @@ per-language-table cases never had a fallback path, and say so).
 **Language-claim scope, stated exactly:** "no cross-language fallback" now
 covers bilingual objects (strict resolvers), per-language pre-resolved
 tables (presence checks + required fields), and the trial-focus strip
-(omit only when absent in both languages); language-neutral scalars
+(fails when the active language lacks a value the English side has;
+omits when absent in both); language-neutral scalars
 (names, ids, numeric firmness) are legitimately shared.
 
 The pre-correction fidelity evidence remains as exploration history: the
@@ -762,8 +763,9 @@ the systematic read that followed found it off by an order of magnitude.
 The authoring brief now carries a **preliminary claim-risk inventory** of
 all 364 customer-visible strings in topPickReason, reason_default,
 highlight and the differentiators across all 26 models and both languages
-(brief appendix): **83 of 182 EN/ES pairs carry a claim a reviewer must
-rule on, 24 of them Tier D/E strings that render in production today**,
+(brief appendix): **83 inventory rows — covering roughly 109 of the 182
+EN/ES pairs — carry a claim a reviewer must rule on, 24 of them Tier D/E
+strings that render in production today**,
 plus internal contradictions (four mutually exclusive price-leadership
 claims; two colliding "firmest" claims) and five EN/ES claim divergences
 (the unit-less "10°" reads plausibly as Celsius in Spanish). The durable
@@ -850,7 +852,8 @@ direction; every approval remains Blake's.
    owner (one necessary owner decision among the brief's ten activation
    prerequisites — not the single blocker); approve the corrected brief's
    record schema and Lane A first batch; route the **preliminary
-   claim-risk inventory** (brief appendix: 83 flagged pairs, 24 Tier-D/E
+   claim-risk inventory** (brief appendix: 83 flagged rows covering
+   ~109 of 182 pairs, 24 Tier-D/E
    strings rendering in production today — the four earlier flags were
    initial examples, not the set) to that owner and legal for
    disposition; decide the `MATT_ES_KEYS` change and the brief's seven

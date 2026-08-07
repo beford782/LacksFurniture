@@ -145,7 +145,7 @@ is **absent from that station by design** — never record a result there.
 
 | # | Question | S1 result | S2 result |
 |---|---|---|---|
-| L.1 | Is the state **consistent** between English and Spanish — same layout, same data, nothing appearing in English that appeared in Spanish's place (the Size value, e.g. "Queen", is a known production EN-only exception)? | ______ | ______ |
+| L.1 | Is the state **consistent** between English and Spanish — same layout, same data, nothing appearing in English that appeared in Spanish's place (the Size value, e.g. "Full" at the frozen dense-c scenario, is a known production EN-only exception)? | ______ | ______ |
 | L.2 | Does any Spanish wording make the operator or customer hesitate (candidate ES copy is drafted, not native-reviewed)? | ______ | ______ |
 
 ## 6. Debrief questions (ask verbally after both passes; record answers)
