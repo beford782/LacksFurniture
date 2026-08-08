@@ -8,6 +8,7 @@ docs/*
 !docs/deployment-workflow.md
 !docs/kiosk-device-hardening.md
 !docs/rebuild-roadmap.md
+!docs/dreamfinder-motion-investigation.md
 tools/strip-bg.py
 
 # Local scratch / design mockups (kept locally, never committed)

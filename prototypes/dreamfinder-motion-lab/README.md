@@ -1,0 +1,88 @@
+# DreamFinder Motion Laboratory — "Hand and Cloth"
+
+> **RESEARCH / PROTOTYPE ONLY — DO NOT MERGE.** This laboratory is not a Phase 1
+> implementation, is not approved for production, and is never imported or executed
+> by the production application. It exists so the owner can evaluate candidate
+> motion directions before any production design spike is approved.
+
+## What this is
+
+An isolated, self-contained motion laboratory for evaluating a mattress-specific
+animation language for DreamFinder's assisted-sales consultation. The salesperson
+is the primary operator and narrator; every scene here is judged by whether it
+makes that shared, glanceable conversation clearer — not by whether it decorates.
+
+The motion language under test is **"Hand and Cloth"**: every movement derives from
+physical mattress behavior (compression, rebound, textile tension, card placement,
+material settling) at the scale of a salesperson's hand. No particles, no glows,
+no orbiting dots, no cartoon bounce, no ambient loops.
+
+Full rationale, agent findings, decision matrix, and the recommendation live in
+`docs/dreamfinder-motion-investigation.md` at the repo root.
+
+## How to run
+
+Serve the **repo root** over HTTP (the lab references two production mattress
+photographs read-only via relative paths; `file://` will not load them):
+
+```
+python -m http.server 8000
+```
+
+Then open:
+
+```
+http://localhost:8000/prototypes/dreamfinder-motion-lab/
+```
+
+Useful URL parameters:
+
+| Parameter | Effect |
+|---|---|
+| `?selftest=1` | Runs the in-page smoke suite (loading, full-sequence completion, replay, rapid interruption, reduced-motion branch, console-error count) and renders a results table. Machine-readable result at `window.__MOTION_LAB_SELFTEST`. |
+| `?reducedmotion=1` | Forces the reduced-motion branch regardless of OS setting, for testing. |
+| `?es=1` | Starts with the Spanish label preview enabled (the lab is English-first; this exists to verify Spanish text expansion fits). |
+
+## Verification
+
+Static + state-machine checks (Node, zero dependencies, writes nothing):
+
+```
+node prototypes/dreamfinder-motion-lab/tools/motion_lab_check.mjs
+```
+
+This suite is deliberately **not** wired into repository CI, following the
+`prototypes/phase1-decision-package` precedent: prototype checks stay inside the
+prototype's scope.
+
+## What this lab must never do
+
+- No connection to production navigation, routes, or `index.html`.
+- No mutation of anything under `data/`, `incoming/`, or `tools/`.
+- No product **quantities** anywhere: no coil counts, no heights, no percentages,
+  no degrees, no patent/ISO/EPA/antimicrobial/therapeutic language. The governing
+  content rule is **materials and mechanism, never quantities** — see the claims
+  section of the investigation doc.
+- No revival of copy withdrawn by the Block A interim retirement (PR #22).
+- Construction layer scenes render **schematic geometry** with a visible honesty
+  chip. Materials named in "spec" mode come from manufacturer factory-build
+  specifications whose retail mapping is STRONG but not SKU-confirmed; the chip
+  says so on the surface itself, at rest, in both languages.
+- No infinite ambient animation. Every animation is finite, interruptible, and
+  explicitly replayable.
+
+## Contents
+
+```
+index.html            Lab shell: guided demo path, scene gallery, experimental wing
+motion-lab.css        Motion tokens + scene styles (frozen copies of production tokens)
+scene-runner.js       Interruptible/replayable scene state machine (idle→running→done)
+motion-lab.js         Scene implementations and wiring
+selftest.js           In-page smoke harness (?selftest=1)
+tools/motion_lab_check.mjs   Node static + state-machine checks (not in CI)
+evidence/             Captured screenshots referenced by the investigation doc
+```
+
+Design tokens are **frozen copies** captured from `index.html` and
+`data/store-config.json` at commit `c8e5a95`, so this prototype cannot drift when
+production branding changes and never needs to read production data files.

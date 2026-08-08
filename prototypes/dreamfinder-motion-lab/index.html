@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<!--
+  DreamFinder Motion Laboratory — "Hand and Cloth"
+  RESEARCH / PROTOTYPE ONLY — DO NOT MERGE.
+  Not a Phase 1 implementation, not approved for production, never imported
+  or executed by the production application. See README.md in this directory
+  and docs/dreamfinder-motion-investigation.md at the repo root.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <!-- Chrome auto-translate mangled Spanish review screenshots on the Phase 1
+       prototypes; keep it off here too (PR #18 convention). -->
+  <meta name="google" content="notranslate">
+  <title>DreamFinder Motion Lab — Hand and Cloth (PROTOTYPE)</title>
+  <link rel="stylesheet" href="motion-lab.css">
+</head>
+<body>
+
+<div class="ml-reviewbar" role="note" aria-label="Prototype status">
+  <strong>MOTION LAB — PROTOTYPE, NOT PRODUCTION</strong>
+  <span class="ml-rb-meta">Frozen tokens from commit c8e5a95 &middot; DO NOT MERGE &middot; owner design review only</span>
+  <span class="ml-rb-controls">
+    <button type="button" class="ml-toggle" id="mlLangToggle" aria-pressed="false" disabled>Vista previa en espa&ntilde;ol</button>
+    <button type="button" class="ml-toggle" id="mlReducedToggle" aria-pressed="false" disabled>Force reduced motion</button>
+  </span>
+</div>
+
+<div class="ml-wrap">
+
+  <header class="ml-header">
+    <p class="ml-eyebrow">DreamFinder &middot; motion laboratory</p>
+    <h1>Hand and Cloth</h1>
+    <p>A candidate motion language for the assisted-sales consultation. Every movement
+    derives from physical mattress behavior — card placement, textile tension,
+    compression and rebound — at the scale of a salesperson's hand. The salesperson
+    narrates; the screen never competes.</p>
+    <noscript><p><strong>JavaScript is off:</strong> every scene below renders its
+    finished state statically. The guided sequence and replays need JavaScript.</p></noscript>
+  </header>
+
+  <nav class="ml-nav" aria-label="Scenes">
+    <a href="#demo-path">Guided demo path</a>
+    <a href="#scene-firmness">Firmness surface</a>
+    <a href="#scene-arrival">Mattress arrival</a>
+    <a href="#scene-layers">Layer separation</a>
+    <a href="#scene-compare">Compare alignment</a>
+    <a href="#experimental">Experimental wing</a>
+  </nav>
+
+  <div id="mlSelftestOut"></div>
+
+  <!-- ==================== GUIDED DEMO PATH ==================== -->
+  <section class="ml-section" id="demo-path" aria-labelledby="demoPathH">
+    <h2 id="demoPathH">Guided demo path</h2>
+    <p class="ml-sub">One realistic consultation ending: the final three quiz answers
+    become tactile cards, gather into the Sleep Brief, and the Night Loom — the one
+    signature transition — resolves the brief into the recommendation. Tap answers to
+    move through it; every long moment can be skipped by tapping.</p>
+
+    <div class="ml-stage" id="mlStage">
+
+      <!-- Step 1: sleep position (copy from data/quiz.json, frozen at c8e5a95) -->
+      <div class="ml-step" id="mlStepQ1" data-step="q1">
+        <p class="ml-q-eyebrow" data-i18n="q-count-1">Question 10 of 12</p>
+        <h3 tabindex="-1" data-i18n="q1">How do you usually sleep?</h3>
+        <p class="ml-q-help ml-note" data-i18n="q-help">The salesperson reads the question aloud; the customer taps a card.</p>
+        <div class="ml-progress" aria-hidden="true"><span id="mlProgress" style="--ml-progress:0.75"></span></div>
+        <div class="ml-cards" role="group" aria-labelledby="mlStepQ1">
+          <button type="button" class="ml-card" data-answer="q1:side" aria-pressed="false" disabled>
+            <span class="ml-card-label" data-i18n="a-side">Side Sleeper</span>
+            <span class="ml-card-sub" data-i18n="a-side-sub">Curled up</span>
+          </button>
+          <button type="button" class="ml-card" data-answer="q1:back" aria-pressed="false" disabled>
+            <span class="ml-card-label" data-i18n="a-back">Back Sleeper</span>
+            <span class="ml-card-sub" data-i18n="a-back-sub">Flat on back</span>
+          </button>
+          <button type="button" class="ml-card" data-answer="q1:stomach" aria-pressed="false" disabled>
+            <span class="ml-card-label" data-i18n="a-stomach">Stomach Sleeper</span>
+            <span class="ml-card-sub" data-i18n="a-stomach-sub">Face down</span>
+          </button>
+          <button type="button" class="ml-card" data-answer="q1:combo" aria-pressed="false" disabled>
+            <span class="ml-card-label" data-i18n="a-combo">Combination</span>
+            <span class="ml-card-sub" data-i18n="a-combo-sub">Move around</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 2: temperature -->
+      <div class="ml-step" id="mlStepQ2" data-step="q2" hidden>
+        <p class="ml-q-eyebrow" data-i18n="q-count-2">Question 11 of 12</p>
+        <h3 tabindex="-1" data-i18n="q2">How do you sleep temperature-wise?</h3>
+        <p class="ml-q-help ml-note" data-i18n="q-help-2">Noted for the conversation — the brief records it, the products don't promise it.</p>
+        <div class="ml-progress" aria-hidden="true"><span style="--ml-progress:0.83"></span></div>
+        <div class="ml-cards" role="group" aria-labelledby="mlStepQ2">
+          <button type="button" class="ml-card" data-answer="q2:hot" aria-pressed="false" disabled>
+            <span class="ml-card-label" data-i18n="a-hot">I Sleep Hot</span>
+            <span class="ml-card-sub" data-i18n="a-hot-sub">Night sweats, kick off covers</span>
+          </button>
+          <button type="button" class="ml-card" data-answer="q2:comfortable" aria-pressed="false" disabled>
+            <span class="ml-card-label" data-i18n="a-comf">I'm Comfortable</span>
+            <span class="ml-card-sub" data-i18n="a-comf-sub">No temperature issues</span>
+          </button>
+          <button type="button" class="ml-card" data-answer="q2:cold" aria-pressed="false" disabled>
+            <span class="ml-card-label" data-i18n="a-cold">I Sleep Cold</span>
+            <span class="ml-card-sub" data-i18n="a-cold-sub">Need blankets to warm up</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 3: preferred feel (the production slider, rendered as cards
+           here so the card-table language can be evaluated on it) -->
+      <div class="ml-step" id="mlStepQ3" data-step="q3" hidden>
+        <p class="ml-q-eyebrow" data-i18n="q-count-3">Question 12 of 12</p>
+        <h3 tabindex="-1" data-i18n="q3">What firmness level do you prefer?</h3>
+        <p class="ml-q-help ml-note" data-i18n="q-help-3">Production uses a slider; the lab renders feel as cards to test the card language.</p>
+        <div class="ml-progress" aria-hidden="true"><span style="--ml-progress:0.92"></span></div>
+        <div class="ml-cards" role="group" aria-labelledby="mlStepQ3">
+          <button type="button" class="ml-card" data-answer="q3:plush" aria-pressed="false" disabled>
+            <span class="ml-card-label" data-i18n="a-plush">Plush</span>
+            <span class="ml-card-sub" data-i18n="a-plush-sub">Soft, cradling feel</span>
+          </button>
+          <button type="button" class="ml-card" data-answer="q3:medium" aria-pressed="false" disabled>
+            <span class="ml-card-label" data-i18n="a-medium">Medium</span>
+            <span class="ml-card-sub" data-i18n="a-medium-sub">Balanced feel</span>
+          </button>
+          <button type="button" class="ml-card" data-answer="q3:firm" aria-pressed="false" disabled>
+            <span class="ml-card-label" data-i18n="a-firm">Firm</span>
+            <span class="ml-card-sub" data-i18n="a-firm-sub">Solid, minimal sink</span>
+          </button>
+        </div>
+        <div class="ml-controls">
+          <button type="button" class="ml-btn" id="mlGatherBtn" disabled data-i18n="btn-gather">Gather the Sleep Brief</button>
+          <span class="ml-note" data-i18n="gather-note">The salesperson taps this while saying: &ldquo;So here's what you've told me.&rdquo;</span>
+        </div>
+      </div>
+
+      <!-- Step 4: the Sleep Brief (gather target). Statically filled so the
+           pre-JS state is complete; JS rewrites values from live answers. -->
+      <div class="ml-step" id="mlStepBrief" data-step="brief" hidden>
+        <div class="ml-brief is-shown" id="mlBrief">
+          <p class="ml-q-eyebrow" data-i18n="brief-eyebrow">Sleep Brief</p>
+          <h3 tabindex="-1" data-i18n="brief-h">What you told us</h3>
+          <ul>
+            <li class="ml-brief-enter" style="--d:0ms">
+              <span class="ml-brief-k" data-i18n="brief-k1">Position</span>
+              <span class="ml-brief-v" id="mlBriefV1" data-i18n="a-side">Side Sleeper</span>
+            </li>
+            <li class="ml-brief-enter" style="--d:70ms">
+              <span class="ml-brief-k" data-i18n="brief-k2">Temperature</span>
+              <span class="ml-brief-v" id="mlBriefV2" data-i18n="a-hot">I Sleep Hot</span>
+            </li>
+            <li class="ml-brief-enter" style="--d:140ms">
+              <span class="ml-brief-k" data-i18n="brief-k3">Preferred feel</span>
+              <span class="ml-brief-v" id="mlBriefV3" data-i18n="a-plush">Plush</span>
+            </li>
+          </ul>
+        </div>
+        <div class="ml-controls" style="justify-content:center">
+          <button type="button" class="ml-btn" id="mlRevealBtn" disabled data-i18n="btn-reveal">Reveal the recommendation</button>
+          <button type="button" class="ml-btn ml-btn--ghost" id="mlRegatherBtn" disabled data-i18n="btn-regather">Replay the gather</button>
+        </div>
+      </div>
+
+      <!-- Step 5: Night Loom + arrival + why-it-fits + construction handoff -->
+      <div class="ml-step" id="mlStepReveal" data-step="reveal" hidden>
+        <div class="ml-arrival is-done" id="mlArrival">
+          <div class="ml-hero-wrap">
+            <div class="ml-hero">
+              <span class="ml-tier-badge" data-i18n="badge-top">Top Match</span>
+              <h4 tabindex="-1" id="mlHeroName">Giselle Plush</h4>
+              <p class="ml-hero-brand">Restonic</p>
+              <div class="ml-hero-img">
+                <img id="mlHeroImg" src="../../images/mattresses/giselle%20plush.jpg" alt="Giselle Plush mattress, three-quarter studio view" width="1000" height="666">
+              </div>
+              <div class="ml-hero-shadow" aria-hidden="true"></div>
+            </div>
+            <ul class="ml-fit">
+              <li style="--i:0" data-i18n="fit-1">Plush feel — the firmness you chose in the quiz</li>
+              <li style="--i:1" data-i18n="fit-2">Side sleeper — your position points to a softer comfort profile</li>
+              <li style="--i:2" data-i18n="fit-3">Sleeping hot is noted on your brief for the showroom conversation</li>
+            </ul>
+          </div>
+        </div>
+        <div class="ml-controls" style="justify-content:center">
+          <button type="button" class="ml-btn" id="mlToLayersBtn" disabled data-i18n="btn-construction">Show the construction</button>
+          <button type="button" class="ml-btn ml-btn--ghost" id="mlReplayRevealBtn" disabled data-i18n="btn-replay-reveal">Replay reveal</button>
+          <button type="button" class="ml-btn ml-btn--ghost" id="mlRestartBtn" disabled data-i18n="btn-restart">Restart demo</button>
+        </div>
+      </div>
+
+      <!-- Night Loom overlay (decorative; skip button carries the semantics) -->
+      <div class="ml-loom" id="mlLoom" aria-hidden="true"></div>
+      <button type="button" class="ml-loom-skip" id="mlLoomSkip" hidden>Skip transition</button>
+    </div>
+
+    <div class="ml-controls">
+      <span class="ml-note">Night Loom cut:</span>
+      <div class="ml-radiogroup" role="radiogroup" aria-label="Night Loom duration variant">
+        <button type="button" class="ml-radio" role="radio" aria-checked="true" data-loomcut="2400" disabled>2400 ms (art cut)</button>
+        <button type="button" class="ml-radio" role="radio" aria-checked="false" data-loomcut="1400" disabled>1400 ms (floor cut)</button>
+      </div>
+      <span class="ml-note">Usability review recommends the shorter cut for production; both are here to compare.</span>
+    </div>
+  </section>
+
+  <!-- ==================== SCENE GALLERY ==================== -->
+  <section class="ml-section" id="scene-gallery" aria-label="Scene gallery">
+    <h2>Scene gallery</h2>
+    <p class="ml-sub">Each scene isolated and explicitly replayable, for evaluation one
+    behavior at a time.</p>
+
+    <!-- Firmness surface -->
+    <div class="ml-scene-card" id="scene-firmness">
+      <h3 tabindex="-1">Firmness surface</h3>
+      <p class="ml-sub" data-i18n="firm-sub">A quilted surface that compresses the way the chosen feel would.
+      It represents the customer's <em>selected</em> feel — never a measured product property.
+      Firm spreads wide and shallow; plush sinks deep and local. Tap the surface or pick a feel.</p>
+      <div class="ml-firmness-panel" id="mlFirmPanel">
+        <svg viewBox="0 0 320 150" id="mlFirmSvg" role="img" aria-label="Firmness demonstration surface: a quilted panel that compresses where pressed">
+          <rect x="4" y="12" width="312" height="126" rx="2" fill="none" stroke="rgba(104,84,60,0.4)"></rect>
+          <g id="mlFirmRows" stroke="rgba(104,84,60,0.55)" stroke-width="1.2" fill="none"></g>
+          <ellipse id="mlFirmContact" cx="160" cy="70" rx="0" ry="0" fill="rgba(47,39,30,0.10)"></ellipse>
+        </svg>
+        <p class="ml-firmness-caption" data-i18n="firm-caption">Your selected feel &mdash; demonstration only</p>
+      </div>
+      <div class="ml-controls">
+        <div class="ml-radiogroup" role="radiogroup" aria-label="Selected feel" id="mlFirmGroup">
+          <button type="button" class="ml-radio" role="radio" aria-checked="false" data-feel="soft" disabled data-i18n="feel-soft">Soft</button>
+          <button type="button" class="ml-radio" role="radio" aria-checked="true" data-feel="medium" disabled data-i18n="feel-medium">Medium</button>
+          <button type="button" class="ml-radio" role="radio" aria-checked="false" data-feel="firm" disabled data-i18n="feel-firm">Firm</button>
+        </div>
+        <span class="ml-note" data-i18n="firm-note">Press anywhere on the panel; rapid A/B taps retarget mid-flight.</span>
+      </div>
+      <div class="ml-static-firmness" id="mlFirmStatic" aria-hidden="false">
+        <figure><svg viewBox="0 0 200 100" data-staticfeel="soft"></svg><figcaption data-i18n="static-soft">Soft — deep, local sink</figcaption></figure>
+        <figure><svg viewBox="0 0 200 100" data-staticfeel="medium"></svg><figcaption data-i18n="static-medium">Medium — balanced sink</figcaption></figure>
+        <figure><svg viewBox="0 0 200 100" data-staticfeel="firm"></svg><figcaption data-i18n="static-firm">Firm — shallow, broad response</figcaption></figure>
+      </div>
+    </div>
+
+    <!-- Mattress arrival -->
+    <div class="ml-scene-card" id="scene-arrival">
+      <h3 tabindex="-1">Mattress arrival</h3>
+      <p class="ml-sub">The hero is lowered, contacts, and settles a beat after the hands
+      leave — shadow tightens as it descends. Name is readable before touchdown; match
+      reasons land one spoken sentence apart. Only the hero arrives; siblings would fade flat.</p>
+      <div class="ml-stage is-dark" style="height:auto;min-height:430px;padding:22px 0">
+        <div class="ml-arrival is-done" id="mlArrivalSolo">
+          <div class="ml-hero-wrap">
+            <div class="ml-hero">
+              <span class="ml-tier-badge" data-i18n="badge-top">Top Match</span>
+              <h4 tabindex="-1">Giselle Plush</h4>
+              <p class="ml-hero-brand">Restonic</p>
+              <div class="ml-hero-img">
+                <img src="../../images/mattresses/giselle%20plush.jpg" alt="Giselle Plush mattress, three-quarter studio view" width="1000" height="666">
+              </div>
+              <div class="ml-hero-shadow" aria-hidden="true"></div>
+            </div>
+            <ul class="ml-fit">
+              <li style="--i:0" data-i18n="fit-1">Plush feel — the firmness you chose in the quiz</li>
+              <li style="--i:1" data-i18n="fit-2">Side sleeper — your position points to a softer comfort profile</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="ml-controls">
+        <button type="button" class="ml-btn" id="mlArrivalReplay" disabled>Replay arrival</button>
+        <span class="ml-note">First paint only in production — never on tier-tab switches.</span>
+      </div>
+    </div>
+
+    <!-- Layer separation -->
+    <div class="ml-scene-card" id="scene-layers">
+      <h3 tabindex="-1">Construction layer separation</h3>
+      <p class="ml-sub">Everything separates <em>from the base</em>, which never moves.
+      Labels sit in a flow column with drawn leader rules — never pinned to layer
+      geometry, so Spanish expansion cannot collide with the diagram. On-demand only;
+      in production this would live in the mattress drawer and never auto-play.</p>
+      <div class="ml-controls" style="margin-top:0;margin-bottom:12px">
+        <div class="ml-radiogroup" role="radiogroup" aria-label="Model" id="mlLayerModelGroup">
+          <button type="button" class="ml-radio" role="radio" aria-checked="true" data-model="giselle" disabled>Giselle Plush</button>
+          <button type="button" class="ml-radio" role="radio" aria-checked="false" data-model="maria" disabled>Platinum Maria Plush</button>
+          <button type="button" class="ml-radio" role="radio" aria-checked="false" data-model="generic" disabled data-i18n="model-generic">Generic demonstration</button>
+        </div>
+        <button type="button" class="ml-btn" id="mlExplodeBtn" aria-pressed="false" disabled data-i18n="btn-explode">Separate the layers</button>
+      </div>
+
+      <div class="ml-layers-ui" id="mlLayersGiselle" data-model="giselle">
+        <div class="ml-layers-wrap">
+          <div class="ml-layerstack" aria-hidden="true">
+            <div class="ml-layer ml-layer--quilt" style="--i:0;--ri:2;--lift:2"></div>
+            <div class="ml-layer ml-layer--foam" style="--i:1;--ri:1;--lift:1"></div>
+            <div class="ml-layer ml-layer--coil" style="--i:2;--ri:0;--lift:0"></div>
+          </div>
+          <div class="ml-layers-labels">
+            <ol>
+              <li style="--i:0" data-i18n="lyr-quilt">Quilted cover</li>
+              <li style="--i:1" data-i18n="lyr-visco">Soft visco foam comfort layer</li>
+              <li style="--i:2" data-i18n="lyr-coil">Zoned pocketed coil support unit</li>
+            </ol>
+            <p class="ml-chip--dark ml-chip" data-i18n="chip-spec">Materials from the manufacturer's factory-build
+            specification (mapping strong, not SKU-confirmed). Geometry schematic &mdash; not to scale.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="ml-layers-ui" id="mlLayersMaria" data-model="maria" hidden>
+        <div class="ml-layers-wrap">
+          <div class="ml-layerstack" aria-hidden="true">
+            <div class="ml-layer ml-layer--quilt" style="--i:0;--ri:3;--lift:3"></div>
+            <div class="ml-layer ml-layer--gel" style="--i:1;--ri:2;--lift:2"></div>
+            <div class="ml-layer ml-layer--gel" style="--i:2;--ri:1;--lift:1"></div>
+            <div class="ml-layer ml-layer--coil" style="--i:3;--ri:0;--lift:0"></div>
+          </div>
+          <div class="ml-layers-labels">
+            <ol>
+              <li style="--i:0" data-i18n="lyr-wool">Wool-blend quilted box top</li>
+              <li style="--i:1" data-i18n="lyr-gel-u">Gel-infused visco foam &mdash; upper</li>
+              <li style="--i:2" data-i18n="lyr-gel-l">Gel-infused visco foam &mdash; lower</li>
+              <li style="--i:3" data-i18n="lyr-coil">Zoned pocketed coil support unit</li>
+            </ol>
+            <p class="ml-chip--dark ml-chip" data-i18n="chip-spec">Materials from the manufacturer's factory-build
+            specification (mapping strong, not SKU-confirmed). Geometry schematic &mdash; not to scale.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="ml-layers-ui" id="mlLayersGeneric" data-model="generic" hidden>
+        <div class="ml-layers-wrap">
+          <div class="ml-layerstack" aria-hidden="true">
+            <div class="ml-layer ml-layer--generic-a" style="--i:0;--ri:3;--lift:3"></div>
+            <div class="ml-layer ml-layer--generic-b" style="--i:1;--ri:2;--lift:2"></div>
+            <div class="ml-layer ml-layer--generic-c" style="--i:2;--ri:1;--lift:1"></div>
+            <div class="ml-layer ml-layer--base" style="--i:3;--ri:0;--lift:0"></div>
+          </div>
+          <div class="ml-layers-labels">
+            <ol>
+              <li style="--i:0" data-i18n="lyr-gen-comfort">Comfort layer</li>
+              <li style="--i:1" data-i18n="lyr-gen-transition">Transition layer</li>
+              <li style="--i:2" data-i18n="lyr-gen-core">Support core</li>
+              <li style="--i:3" data-i18n="lyr-gen-base">Base layer</li>
+            </ol>
+            <p class="ml-chip--dark ml-chip" data-i18n="chip-demo">Construction demonstration &mdash; a general
+            mattress build, not this model's specification.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Compare alignment -->
+    <div class="ml-scene-card" id="scene-compare">
+      <h3 tabindex="-1">Compare alignment</h3>
+      <p class="ml-sub">Both builds share a bottom baseline and one clock — layers
+      separate by index in exact sync; the shorter stack finishes early and holds.
+      Usability review's recommended production default is the <em>static aligned
+      state</em>; the synchronized build animation is the concept under evaluation.</p>
+      <div class="ml-compare" id="mlCompare">
+        <div class="ml-compare-col">
+          <h4>Giselle Plush</h4>
+          <span class="ml-note">Restonic</span>
+          <div class="ml-layerstack is-exploded" data-side="a" aria-hidden="true">
+            <div class="ml-layer ml-layer--quilt" style="--i:0;--ri:2;--lift:2"></div>
+            <div class="ml-layer ml-layer--foam" style="--i:1;--ri:1;--lift:1"></div>
+            <div class="ml-layer ml-layer--coil" style="--i:2;--ri:0;--lift:0"></div>
+          </div>
+        </div>
+        <div class="ml-compare-col">
+          <h4>Platinum Maria Plush</h4>
+          <span class="ml-note">Restonic</span>
+          <div class="ml-layerstack is-exploded" data-side="b" aria-hidden="true">
+            <div class="ml-layer ml-layer--quilt" style="--i:0;--ri:3;--lift:3"></div>
+            <div class="ml-layer ml-layer--gel" style="--i:1;--ri:2;--lift:2"></div>
+            <div class="ml-layer ml-layer--gel" style="--i:2;--ri:1;--lift:1"></div>
+            <div class="ml-layer ml-layer--coil" style="--i:3;--ri:0;--lift:0"></div>
+          </div>
+        </div>
+      </div>
+      <p class="ml-chip--dark ml-chip" data-i18n="chip-spec">Materials from the manufacturer's factory-build
+      specification (mapping strong, not SKU-confirmed). Geometry schematic &mdash; not to scale.</p>
+      <div class="ml-controls">
+        <button type="button" class="ml-btn" id="mlCompareReplay" disabled>Replay synchronized build</button>
+        <span class="ml-note">A gap where one build has fewer layers is information; a phantom layer would be a lie.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== EXPERIMENTAL WING ==================== -->
+  <section class="ml-section ml-exp" id="experimental" aria-labelledby="expH">
+    <h2 id="expH"><span class="ml-exp-flag">Experimental</span> &nbsp;Secondary concepts</h2>
+    <p class="ml-sub"><strong>Evaluation only — none of these is approved for production.</strong>
+    Each is framed so it cannot become an unsupported product-performance demonstration:
+    every visual represents the customer's stated concern, never a measured product result.</p>
+
+    <div class="ml-scene-card">
+      <h3 tabindex="-1">Partner-motion ripple</h3>
+      <p class="ml-sub" data-i18n="ripple-sub">One slow transverse deflection crossing the surface —
+      the thing the customer already fears, shown honestly. It illustrates the
+      <em>question</em>, not a product's isolation performance. In production it would
+      render only when the customer raised partner movement (solo sleepers skip that
+      question and must never see this).</p>
+      <div class="ml-firmness-panel" id="mlRipplePanel">
+        <svg viewBox="0 0 320 150" id="mlRippleSvg" role="img" aria-label="Partner motion demonstration surface">
+          <rect x="4" y="12" width="312" height="126" rx="2" fill="none" stroke="rgba(104,84,60,0.4)"></rect>
+          <g id="mlRippleRows" stroke="rgba(104,84,60,0.55)" stroke-width="1.2" fill="none"></g>
+        </svg>
+        <p class="ml-firmness-caption" data-i18n="ripple-caption">Your concern, illustrated &mdash; not a product measurement</p>
+      </div>
+      <div class="ml-controls">
+        <button type="button" class="ml-btn" id="mlRippleBtn" disabled data-i18n="btn-ripple">Show one movement</button>
+      </div>
+    </div>
+
+    <div class="ml-scene-card">
+      <h3 tabindex="-1">Cooling-material rendering</h3>
+      <p class="ml-sub">Cooling expressed as <em>fabric</em>, never as air: a tighter
+      weave and one raking-light sheen. No mist, no frost, no thermometers, no numbers.
+      Usability review recommends rejecting any ambient version of this concept outright.</p>
+      <div class="ml-cool-swatch" id="mlCoolSwatch">
+        <svg viewBox="0 0 420 120" role="img" aria-label="Textile swatch rendering">
+          <rect width="420" height="120" fill="#262A32"></rect>
+          <g stroke="#3A3E45" stroke-width="2">
+            <path d="M0 20 H420 M0 44 H420 M0 68 H420 M0 92 H420"></path>
+          </g>
+          <g class="ml-cool-tight" stroke="#4E5866" stroke-width="1">
+            <path d="M0 12 H420 M0 28 H420 M0 36 H420 M0 52 H420 M0 60 H420 M0 76 H420 M0 84 H420 M0 100 H420 M0 108 H420"></path>
+          </g>
+        </svg>
+        <div class="ml-cool-sheen" aria-hidden="true"></div>
+      </div>
+      <p class="ml-chip--dark ml-chip" data-i18n="chip-cool">Material rendering only &mdash; no temperature
+      performance is shown or implied.</p>
+      <div class="ml-controls">
+        <button type="button" class="ml-btn" id="mlCoolBtn" disabled data-i18n="btn-cool">Show cover material</button>
+      </div>
+    </div>
+
+    <div class="ml-scene-card">
+      <h3 tabindex="-1">Adjustable-base articulation</h3>
+      <p class="ml-sub">The product's literal function: head and foot sections pivot at
+      real hinge points with actuator pacing — slow start, steady travel, slow stop.
+      Frame, legs and labels never move. Plays once per preset; never loops. (The
+      production SMIL version loops for 8 s and cannot honor reduced motion — this is
+      the CSS-driven replacement candidate.)</p>
+      <div class="ml-basefig">
+        <svg viewBox="0 0 420 170" role="img" aria-label="Adjustable base demonstration: head and foot sections raise and lower">
+          <rect x="30" y="120" width="360" height="10" rx="2" fill="#3A3E45"></rect>
+          <rect x="52" y="130" width="10" height="26" fill="#3A3E45"></rect>
+          <rect x="358" y="130" width="10" height="26" fill="#3A3E45"></rect>
+          <g class="ml-base-head" id="mlBaseHead" style="transform-origin:185px 116px">
+            <rect x="40" y="102" width="145" height="16" rx="4" fill="#B8935D"></rect>
+          </g>
+          <rect x="185" y="102" width="60" height="16" rx="4" fill="#B8935D"></rect>
+          <g class="ml-base-foot" id="mlBaseFoot" style="transform-origin:245px 116px">
+            <rect x="245" y="102" width="135" height="16" rx="4" fill="#B8935D"></rect>
+          </g>
+        </svg>
+      </div>
+      <div class="ml-controls">
+        <div class="ml-radiogroup" role="radiogroup" aria-label="Base position" id="mlBaseGroup">
+          <button type="button" class="ml-radio" role="radio" aria-checked="true" data-pose="flat" disabled data-i18n="pose-flat">Flat</button>
+          <button type="button" class="ml-radio" role="radio" aria-checked="false" data-pose="head" disabled data-i18n="pose-head">Head raised</button>
+          <button type="button" class="ml-radio" role="radio" aria-checked="false" data-pose="both" disabled data-i18n="pose-both">Head + foot</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="ml-scene-card">
+      <h3 tabindex="-1">Priority mapping — &ldquo;where you said you feel it&rdquo;</h3>
+      <p class="ml-sub">No human silhouette, no anatomy, no efficacy: bands on the
+      mattress surface the customer just pressed, marked from their own answers. The
+      copy stays in the language of the customer's complaint, never diagnosis or relief.</p>
+      <div class="ml-basefig">
+        <svg viewBox="0 0 420 190" role="img" aria-label="Mattress surface with bands marking the areas the customer mentioned">
+          <rect x="30" y="20" width="360" height="150" rx="6" fill="#262A32" stroke="#3A3E45"></rect>
+          <rect class="ml-zone-band" id="mlZoneShoulders" x="30" y="40" width="360" height="34" fill="#B8935D"></rect>
+          <rect class="ml-zone-band" id="mlZoneBack" x="30" y="88" width="360" height="34" fill="#B8935D"></rect>
+          <rect class="ml-zone-band" id="mlZoneHips" x="30" y="132" width="360" height="30" fill="#B8935D"></rect>
+        </svg>
+      </div>
+      <div class="ml-controls">
+        <div class="ml-radiogroup" role="group" aria-label="Areas the customer mentioned" id="mlZoneGroup">
+          <button type="button" class="ml-radio" aria-pressed="false" data-zone="mlZoneShoulders" disabled data-i18n="zone-shoulders">Shoulders</button>
+          <button type="button" class="ml-radio" aria-pressed="false" data-zone="mlZoneBack" disabled data-i18n="zone-back">Lower back</button>
+          <button type="button" class="ml-radio" aria-pressed="false" data-zone="mlZoneHips" disabled data-i18n="zone-hips">Hips</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="ml-section">
+    <p class="ml-note">DreamFinder Motion Laboratory &mdash; prototype for owner design review.
+    Run instructions and scope rules: <code>prototypes/dreamfinder-motion-lab/README.md</code>.
+    Investigation, decision matrix and recommendation:
+    <code>docs/dreamfinder-motion-investigation.md</code>. Content rule throughout:
+    materials and mechanism, never quantities.</p>
+  </footer>
+
+</div>
+
+<div class="sr-only" aria-live="polite" id="mlLive"></div>
+
+<script src="scene-runner.js"></script>
+<script src="motion-lab.js"></script>
+<script src="selftest.js"></script>
+</body>
+</html>
