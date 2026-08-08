@@ -1948,6 +1948,47 @@ display‑label note); a "948‑Count 5‑Zone fabric‑wrapped coil system +
 foam encasement"; product IN STOCK; pricing unchanged since the
 2026‑07‑30 capture ($2,999 promo / $3,999.95 regular).
 
+**Spec‑sheet retrieval — 2026‑08‑08 (follow‑up to observation 3
+above).** The owner retrieved and inspected the PDP‑linked one‑page
+specification sheet
+(<https://linqcdn.avbportal.com/documents/221e81b9-c1f9-436d-b09b-3b968089d479.pdf>;
+SHA‑256
+`0D4B3E19320EF70DEDCE1001EF318987ED022D227B7285B2BCF0AE420230598F`;
+retained in owner records — a third‑party document, not committed to the
+repository). Findings:
+
+- It documents a **distinct 13.5‑inch Cushion Firm, Hybrid, Quilted
+  build**, converting §3.3's caution into documented fact: the 13.5″
+  Lacks unit and springair.com's published 16.5″ Copper Hybrid Cushion
+  Firm Eurotop are different builds, and published upstream claims must
+  **not** be transferred to SKU 2037053.
+- Bill of materials confirmed: NatuVerex copper cooling cover,
+  copper‑quilted memory foam, Hyper Gel foam, a 948‑count five‑zone
+  fabric‑wrapped coil system, foam encasement, and firm support foam —
+  matching the live PDP's layer list. As a manufacturer document linked
+  from the retailer's own PDP, this stands above the product‑feed floor
+  of the owner's material‑presence standard (§14.3.3) and
+  **substantially closes the g9 build/BOM question** (§10 "Copper SKU
+  identity": build documented; written identity confirmation still
+  requested).
+- Language present: "patented NatuVerex" and "healthier sleep
+  experience". Records **absent**: the Lacks SKU or model number on the
+  document itself, any revision number or effective date, any patent
+  number, test evidence, EPA/treated‑article status, ISO results, the
+  "8× faster" heat‑transfer comparison, and any support for the live
+  PDP's "scientifically proven copper benefits" line — which therefore
+  remains unsupported even by the document the same page links.
+- Provenance: the exact Lacks PDP links this PDF and identifies model
+  1602‑862‑MZ972SA50, giving strong SKU‑specific provenance despite the
+  document itself carrying no SKU.
+
+Consequence for A.3 (approved as drafted; text unchanged): the request
+still goes, with its center of gravity now on written SKU applicability,
+revision/effective date, approved claim language, patent substantiation,
+and regulatory/testing records rather than the bill of materials. The
+owner may reference the retrieved spec sheet when sending. No dealer,
+licensee, or manufacturer contact has occurred.
+
 ## Appendix A — DRAFT REQUESTS — APPROVED FOR SENDING 2026‑08‑08 (§14.4); NOT YET SENT
 
 Three send‑ready evidence requests, drafted for the owner's review. **None
