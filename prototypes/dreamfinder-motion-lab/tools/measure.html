@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<!-- Motion-lab layout measurement rig (PROTOTYPE TOOLING ONLY).
+     Iframes the lab at ?w=<px> and reports scrollWidth/clientWidth plus
+     per-scene overflow into the DOM, so headless dump-dom runs can verify
+     responsive fit without an interactive browser. Never linked from the
+     lab page; never part of any production surface. -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>motion-lab measure</title>
+</head>
+<body>
+<pre id="out">measuring…</pre>
+<iframe id="fr" style="border:0"></iframe>
+<script>
+(function () {
+  'use strict';
+  var q = new URLSearchParams(location.search);
+  var w = parseInt(q.get('w'), 10) || 390;
+  var extra = q.get('extra') || '';
+  var fr = document.getElementById('fr');
+  fr.style.width = w + 'px';
+  fr.style.height = '900px';
+  fr.src = '../index.html' + (extra ? ('?' + extra) : '');
+  fr.addEventListener('load', function () {
+    setTimeout(function () {
+      var d = fr.contentDocument;
+      var win = fr.contentWindow;
+      var scrollTo = q.get('scrollto');
+      if (scrollTo) {
+        var target = d.getElementById(scrollTo);
+        if (target) { target.scrollIntoView({ block: 'center' }); }
+      }
+      var lines = [];
+      lines.push('viewport=' + win.innerWidth);
+      lines.push('docScrollWidth=' + d.documentElement.scrollWidth);
+      lines.push('horizOverflow=' + (d.documentElement.scrollWidth > win.innerWidth));
+      var probes = ['mlStage', 'mlSharedBed', 'mlStepReveal', 'mlCompare'];
+      probes.forEach(function (id) {
+        var el = d.getElementById(id);
+        if (!el) { lines.push(id + '=absent'); return; }
+        var r = el.getBoundingClientRect();
+        lines.push(id + ' w=' + Math.round(r.width) + ' right=' + Math.round(r.right) +
+          ' overflow=' + (Math.round(r.right) > win.innerWidth + 1) +
+          ' nestedScroll=' + (el.scrollHeight > el.clientHeight + 2 && /auto|scroll/.test(win.getComputedStyle(el).overflowY)));
+      });
+      document.getElementById('out').textContent = 'MEASURE:' + lines.join(' | ');
+      document.title = 'measured';
+    }, 700);
+  });
+})();
+</script>
+</body>
+</html>

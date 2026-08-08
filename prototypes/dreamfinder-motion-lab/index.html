@@ -474,21 +474,32 @@
     every visual represents the customer's stated concern, never a measured product result.</p>
 
     <div class="ml-scene-card">
-      <h3 tabindex="-1">Partner-motion ripple</h3>
-      <p class="ml-sub" data-i18n="ripple-sub">One slow transverse deflection crossing the surface —
-      the thing the customer already fears, shown honestly. It illustrates the
-      <em>question</em>, not a product's isolation performance. In production it would
-      render only when the customer raised partner movement (solo sleepers skip that
-      question and must never see this).</p>
-      <div class="ml-firmness-panel" id="mlRipplePanel">
-        <svg viewBox="0 0 320 150" id="mlRippleSvg" role="img" aria-label="Partner motion demonstration surface">
-          <rect x="4" y="12" width="312" height="126" rx="2" fill="none" stroke="rgba(104,84,60,0.4)"></rect>
-          <g id="mlRippleRows" stroke="rgba(104,84,60,0.55)" stroke-width="1.2" fill="none"></g>
-        </svg>
-        <p class="ml-firmness-caption" data-i18n="ripple-caption">Your concern, illustrated &mdash; not a product measurement</p>
+      <h3 tabindex="-1">Shared-Bed Priority</h3>
+      <p class="ml-sub">The customer's shared-bed concern, <em>recorded</em> — never demonstrated.
+      Two quilted pillow panels settle side by side, the concern becomes a stitched fabric
+      label, and a hand-scale tuck files it into the Sleep Brief as a compact priority card.
+      In production this would render only when the customer raised partner movement; it does
+      not fabricate a second sleeper's answers, and the final card states a customer
+      priority — not mattress performance.</p>
+      <div class="ml-sharedbed is-done" id="mlSharedBed">
+        <div class="ml-sb-bed" aria-hidden="true">
+          <svg aria-hidden="true" focusable="false"><rect width="100%" height="100%" fill="url(#mlPatQuilt)"></rect></svg>
+        </div>
+        <div class="ml-sb-pillow ml-sb-pillow--l" aria-hidden="true"></div>
+        <div class="ml-sb-pillow ml-sb-pillow--r" aria-hidden="true"></div>
+        <div class="ml-sb-label" aria-hidden="true" data-i18n="sb-concern">Partner movement matters to you.</div>
+        <div class="ml-sb-card">
+          <span class="ml-sb-card-title" data-i18n="sb-title">Shared-bed priority</span>
+          <span class="ml-sb-card-line" data-i18n="sb-concern">Partner movement matters to you.</span>
+        </div>
+        <div class="ml-sb-brief">
+          <span class="ml-q-eyebrow" data-i18n="brief-eyebrow">Sleep Brief</span>
+        </div>
       </div>
+      <p class="ml-chip--dark ml-chip" data-i18n="sb-chip">Based on what you told us &mdash; not a product-performance test.</p>
       <div class="ml-controls">
-        <button type="button" class="ml-btn" id="mlRippleBtn" disabled data-i18n="btn-ripple">Show one movement</button>
+        <button type="button" class="ml-btn" id="mlSharedBedReplay" disabled data-i18n="btn-sb-replay">Replay priority tuck</button>
+        <span class="ml-note">Spanish strings here are a prototype-only preview; the native-Spanish review gate remains open.</span>
       </div>
     </div>
 

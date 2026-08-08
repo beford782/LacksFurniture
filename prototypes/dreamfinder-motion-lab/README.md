@@ -41,7 +41,10 @@ Useful URL parameters:
 |---|---|
 | `?selftest=1` | Runs the in-page smoke suite (loading, full-sequence completion, replay, rapid interruption, reduced-motion branch, console-error count) and renders a results table. Machine-readable result at `window.__MOTION_LAB_SELFTEST`. |
 | `?reducedmotion=1` | Forces the reduced-motion branch regardless of OS setting, for testing. |
+| `?fullmotion=1` | Forces the animated branch — headless Chrome defaults to `prefers-reduced-motion: reduce`, so harness runs there need this to exercise the animated pipeline. |
 | `?es=1` | Starts with the Spanish label preview enabled (the lab is English-first; this exists to verify Spanish text expansion fits). |
+| `?scene=arrival\|compare\|sharedbed` | Deep-links to one gallery scene and starts it on load — for owner review links and deterministic frame capture. |
+| `&freeze=<ms>` | With `?scene=`, pauses and seeks every animation to that timestamp — a still of the scene at that exact moment, for screenshots. |
 
 ## Verification
 

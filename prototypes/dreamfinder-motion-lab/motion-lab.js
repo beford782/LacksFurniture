@@ -9,13 +9,19 @@
 
   var params = new URLSearchParams(window.location.search);
   var urlForcedReduced = params.get('reducedmotion') === '1';
+  /* ?fullmotion=1 is the mirror seam: headless Chrome defaults to
+   * prefers-reduced-motion: reduce, so the harness needs a way to exercise
+   * the ANIMATED pipeline there too. Test affordance only. */
+  var urlForcedFull = params.get('fullmotion') === '1';
   var manualForcedReduced = false;
   var mql = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
 
   /* THE single reduced-motion seam. The runner branches on this in JS before
    * any animation is created; CSS token collapse is the visual backstop. */
   function prefersReducedMotion() {
-    return urlForcedReduced || manualForcedReduced || !!(mql && mql.matches);
+    if (manualForcedReduced || urlForcedReduced) { return true; }
+    if (urlForcedFull) { return false; }
+    return !!(mql && mql.matches);
   }
 
   function $(sel, root) { return (root || document).querySelector(sel); }
@@ -80,8 +86,12 @@
     'chip-spec': 'Materiales según la especificación de fábrica del fabricante (correspondencia sólida, no confirmada por SKU). Geometría esquemática — no a escala.',
     'chip-demo': 'Demostración de construcción — estructura general de un colchón, no las especificaciones de este modelo.',
     'chip-cool': 'Solo representación del material — no se muestra ni se implica rendimiento de temperatura.',
-    'btn-ripple': 'Mostrar un movimiento',
-    'ripple-caption': 'Tu preocupación, ilustrada — no una medición del producto',
+    /* Shared-Bed Priority — prototype-only preview strings; the
+     * native-Spanish review gate remains open */
+    'sb-title': 'Prioridad de cama compartida',
+    'sb-concern': 'El movimiento de tu pareja te importa.',
+    'sb-chip': 'Basado en lo que nos dijiste — no es una prueba de rendimiento del producto.',
+    'btn-sb-replay': 'Repetir el pliegue de prioridad',
     'btn-cool': 'Mostrar el material de la funda',
     'pose-flat': 'Plana', 'pose-head': 'Cabecera elevada', 'pose-both': 'Cabecera + pies',
     'zone-shoulders': 'Hombros', 'zone-back': 'Zona lumbar', 'zone-hips': 'Caderas'
@@ -775,7 +785,10 @@
     }
     function tick(now) {
       var p = feelParams(st.f);
-      var dt = Math.min(48, now - (st.last || now));
+      /* dt floor: browsers can deliver duplicate rAF timestamps (iOS Safari,
+       * virtual-time harnesses); dt=0 would stall the exponential settle and
+       * the loop would never reach rest */
+      var dt = Math.min(48, Math.max(8, now - (st.last || now)));
       st.last = now;
       var tau = (st.target > st.t ? p.pressIn : p.rebound) / 3;
       st.t += (st.target - st.t) * (1 - Math.exp(-dt / tau));
@@ -863,38 +876,33 @@
     });
   });
 
-  /* ================= experimental: partner-motion ripple ================= */
-  var rippleGrid = buildRows($('#mlRippleRows'), [30, 46, 62, 78, 94, 110, 126], 12, 308, 33);
-  renderRows(rippleGrid, function () { return 0; });
-  var ripple = { raf: 0, start: 0, timer: 0 };
-  function rippleDent(x, y, progress) {
-    var waveX = 40 + 240 * progress;
-    var amp = 13 * (1 - progress * 0.55);
-    var rowDist = Math.abs(y - 78) / 22;
-    return amp * Math.exp(-((x - waveX) * (x - waveX)) / (2 * 34 * 34)) * Math.exp(-rowDist * 0.35);
-  }
-  function rippleTick(now) {
-    var progress = Math.min(1, (now - ripple.start) / 950);
-    renderRows(rippleGrid, function (x, y) { return rippleDent(x, y, progress); });
-    if (progress < 1) { ripple.raf = window.requestAnimationFrame(rippleTick); }
-    else {
-      renderRows(rippleGrid, function () { return 0; });
-      ripple.raf = 0;
+  /* ================= experimental: shared-bed priority ================= */
+  /* The customer's recorded shared-bed concern becomes a stitched fabric
+   * label and tucks into the Sleep Brief as a priority card. Records a
+   * priority; demonstrates nothing about mattress performance. */
+  var sharedBedEl = $('#mlSharedBed');
+  var sharedBedScene = SceneRunner.createScene({
+    name: 'sharedbed',
+    duration: 1050,
+    reducedDuration: 0,
+    steps: [
+      { at: 0, run: function () {
+        sharedBedEl.classList.remove('is-idle', 'is-done');
+        void sharedBedEl.offsetWidth;
+        sharedBedEl.classList.add('is-running');
+      } }
+    ],
+    applyInitial: function () {
+      sharedBedEl.classList.remove('is-running', 'is-done');
+      sharedBedEl.classList.add('is-idle');
+    },
+    applyFinal: function () {
+      sharedBedEl.classList.remove('is-running', 'is-idle');
+      sharedBedEl.classList.add('is-done');
     }
-  }
-  $('#mlRippleBtn').addEventListener('click', function () {
-    if (prefersReducedMotion()) {
-      /* frozen mid-crossing snapshot instead of motion */
-      renderRows(rippleGrid, function (x, y) { return rippleDent(x, y, 0.5); });
-      window.clearTimeout(ripple.timer);
-      ripple.timer = window.setTimeout(function () {
-        renderRows(rippleGrid, function () { return 0; });
-      }, 900);
-      return;
-    }
-    if (ripple.raf) { window.cancelAnimationFrame(ripple.raf); }
-    ripple.start = window.performance.now();
-    ripple.raf = window.requestAnimationFrame(rippleTick);
+  }, env);
+  $('#mlSharedBedReplay').addEventListener('click', function () {
+    sharedBedScene.replay();
   });
 
   /* ================= experimental: cooling textile ================= */
@@ -960,16 +968,61 @@
   $('#mlGatherBtn').disabled = true; /* until the third answer exists */
   document.body.classList.add('js-ready');
   if (urlForcedReduced) { document.documentElement.classList.add('ml-force-reduced'); }
+  if (urlForcedFull) { document.documentElement.classList.add('ml-force-full'); }
   syncReducedUI();
   if (lang === 'es') { applyLang(); }
   showStep('q1', false);
   renderLayers();
 
+  /* ?scene=<name> deep-link: scroll to and start one runner scene on load —
+   * used for owner review links and for deterministic frame capture.
+   * &freeze=<ms> additionally pauses every animation and SEEKS it to that
+   * timestamp (runner timers cleared), leaving a still of the scene at that
+   * exact moment for screenshots. Capture affordance only. */
+  var deepLink = params.get('scene');
+  if (deepLink) {
+    window.setTimeout(function () {
+      try {
+      var sceneMap = { arrival: arrivalSolo, compare: compareScene, sharedbed: sharedBedScene };
+      var scn = sceneMap[deepLink];
+      if (!scn) { return; }
+      var freeze = parseInt(params.get('freeze'), 10);
+      if (!(freeze > 0)) {
+        /* review-link mode scrolls to the scene; capture mode must not —
+         * headless screenshots of a programmatically scrolled page render
+         * only the background */
+        var host = { arrival: '#scene-arrival', compare: '#scene-compare', sharedbed: '#mlSharedBed' }[deepLink];
+        var el = $(host);
+        if (el) { el.scrollIntoView({ block: 'center' }); }
+      }
+      if (scn.state !== 'idle') { scn.reset(); }
+      scn.start();
+      if (freeze > 0) {
+        document.documentElement.setAttribute('data-ml-freeze-armed', String(freeze));
+        /* double-nested macrotask: runs right after the scene's 0 ms step,
+         * still within the first milliseconds — the seek makes the WHEN
+         * irrelevant, only the ORDER matters */
+        window.setTimeout(function () { window.setTimeout(function () {
+          scn._clearTimers();
+          document.getAnimations().forEach(function (a) {
+            try { a.pause(); a.currentTime = freeze; } catch (e) {}
+          });
+          /* marker for capture tooling: confirms the still was taken */
+          document.documentElement.setAttribute('data-ml-frozen', String(freeze));
+        }, 0); }, 0);
+      }
+      } catch (e) {
+        /* surfaced for capture tooling — a silent deep-link failure would
+         * otherwise masquerade as a default-state screenshot */
+        document.documentElement.setAttribute('data-ml-deeplink-error', String(e && e.message || e));
+      }
+    }, 0);
+  }
+
   /* surface for the selftest harness — lab-internal, no production coupling */
   window.MotionLab = {
-    scenes: { gather: gatherScene, loom: loomScene, arrival: arrivalScene, arrivalSolo: arrivalSolo, compare: compareScene },
+    scenes: { gather: gatherScene, loom: loomScene, arrival: arrivalScene, arrivalSolo: arrivalSolo, compare: compareScene, sharedbed: sharedBedScene },
     firmness: firmness,
-    ripple: ripple,
     demo: { restart: restartDemo, answers: function () { return answers; }, startReveal: startReveal, skipReveal: skipReveal },
     setLoomCut: function (v) { loomCut = v; },
     getLoomCut: function () { return loomCut; },

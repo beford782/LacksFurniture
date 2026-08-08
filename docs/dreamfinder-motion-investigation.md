@@ -1,6 +1,6 @@
 # DreamFinder Motion Investigation — "Hand and Cloth"
 
-**Date:** 2026-08-08 (revision 2, Codex correction pass) · **Base commit:** `c8e5a95` (origin/main, PR #22 merge)
+**Date:** 2026-08-08 (revision 3, owner design ruling) · **Base commit:** `c8e5a95` (origin/main, PR #22 merge)
 **Branch:** `claude/dreamfinder-motion-lab` · **Status:** OWNER DESIGN REVIEW — nothing here is approved for production
 **Laboratory:** `prototypes/dreamfinder-motion-lab/` (isolated; never imported by the application)
 
@@ -13,6 +13,12 @@
 > mattress silhouette; adjustable-base articulation is promoted into the spike
 > group; and every statement about what the automation proves was tightened
 > (§8, §11). Prototype-only throughout — no production surface changed.
+>
+> **Revision 3** records the owner's design ruling after personally experiencing
+> the lab: the partner-motion ripple is **rejected** and fully removed from the
+> runnable lab, replaced by the experimental **Shared-Bed Priority** scene
+> (§10); everything else is design-approved at the classifications in §10 —
+> which authorizes neither merge nor production work.
 
 This investigation was produced by five parallel specialist reviews — repository/integration
 architecture, cinematic art direction, assisted-sales usability & accessibility, performance &
@@ -146,7 +152,7 @@ existing C13 conflict family).
 | Web Animations API | **Adopted for two scenes only** (gather, compare) | Needed where geometry is computed at runtime (FLIP clones) or where both sides must share one clock (`startTime` assignment); `finish()` vs `cancel()` is the skip/abandon distinction |
 | CSS transitions | **Adopted for two-way states** (layer explode/collapse, base articulation) | Natively retargetable mid-flight — interruption safety for free |
 | SVG + CSS (`stroke-dashoffset` draw, `clip-path` reveal) | **Adopted for the loom** | ≤24 animated paths (21 concurrent max); weft dash-gaps + paint-order give a real plain weave without filters |
-| JS rAF point-rewriting | **Adopted for firmness/ripple only** | The only honest way to draw a local dent; loop provably dies at rest |
+| JS rAF point-rewriting | **Adopted for the firmness surface only** (revision 3: the ripple, its other consumer, was rejected by the owner) | The only honest way to draw a local dent; loop provably dies at rest |
 | SMIL | **Rejected** | No cancel API, no completion signal, cannot honor `prefers-reduced-motion` — the production adjustable-base SVG (`index.html:15399-15444`) demonstrates the trap: an 8 s infinite loop no media query can stop |
 | Canvas 2D / WebGL | **Rejected for every concept** | No effect in this brief justifies the a11y opacity, battery cost, and new idiom |
 | Animation libraries (GSAP etc.) | **Rejected** | Nothing here exceeded browser-native capability; zero dependencies added |
@@ -230,9 +236,13 @@ copy review remains a human responsibility.
   language, superlatives, origin claims, or withdrawn claim families (Marvelous Middle,
   NatuVerex, Cool Gel) anywhere in lab copy — EN or ES. A mutation test confirmed the checker
   actually fails on injected violations (8/8 caught).
-- The firmness surface and ripple represent the **customer's selection/concern** and say so in
-  a persistent caption; the ripple illustrates the question, never an isolation performance,
-  and in production must never render for solo sleepers (their quiz skips the question).
+- The firmness surface represents the **customer's selection** and says so in a persistent
+  caption. The Shared-Bed Priority scene (revision 3, replacing the rejected ripple) goes
+  further: it *records* the customer's shared-bed concern as a stitched priority card and
+  demonstrates nothing — no motion transfer, no isolation, no absorption — with a chip at
+  rest reading "Based on what you told us — not a product-performance test." In production
+  either treatment must never render for solo sleepers (their quiz skips the question), and
+  no second sleeper profile is fabricated.
 - Layer scenes carry an honesty chip **inside the diagram's container, at rest, in both
   languages**: spec mode = "materials from the manufacturer's factory-build specification
   (mapping strong, not SKU-confirmed); geometry schematic — not to scale"; generic mode =
@@ -263,7 +273,7 @@ cost follow the build experience.
 | Synchronized compare (animated) | 2 | 4 | 3 | 1 | 2 | **4** | 2 | 3 |
 | Compare static alignment | 4 | 4 | 2 | 4 | 1 | 2* | 2 | 1 |
 | Base articulation | **5** | **5** | 3 | **5** | 1 | 1 | 1 | 2 |
-| Partner ripple (exp.) | 4 | 4 | 3 | 3 | 2 | 2 | 3 | 2 |
+| Shared-Bed Priority (exp., replaces rejected ripple) | 4 | 3 | 3 | 3 | 1 | 1 | 2 | 2 |
 | Cooling textile (exp.) | 2 | 3 | 2 | 2 | 2 | 1 | **4** | 2 |
 | Cooling ambient (evaluated, not built) | 1 | 1 | 2 | 1 | 4 | **5** | **5** | 3 |
 | Priority mapping (exp.) | 4 | 3 | 2 | 3 | 1 | 2 | 3 | 2 |
@@ -314,22 +324,54 @@ the same seam.
 
 **Conditional:**
 
-- **Mattress arrival** — contingent on owner clearance of the brand-provided transparent
-  product imagery (provenance §3; Dropbox availability is not a licensing determination) and
-  on keeping the no-nested-scroll responsive fit demonstrated at 1024×768.
-- **Night Loom (causal 1400 ms cut only)** — contingent on the owner confirming the rebuilt
-  causality communicates, per the kill-criterion record above. Once per consultation,
-  immediately skippable, config kill-switch, replacing `startResultsReveal` — never stacking
-  on it. The 2400 ms cut is expressly not a candidate.
+- **Mattress arrival (plinth-based)** — actual-device evaluation AND production-use
+  permission for the Giselle image are still required (provenance §3; Dropbox availability is
+  not a licensing determination). The no-nested-scroll responsive fit demonstrated at
+  1024×768 must be kept.
+- **Night Loom (causal 1400 ms cut only)** — actual showroom-iPad evaluation is still
+  required, in addition to the owner confirming the rebuilt causality communicates (per the
+  kill-criterion record above). Once per consultation, immediately skippable, config
+  kill-switch, replacing `startResultsReveal` — never stacking on it. The 2400 ms cut is
+  expressly not a candidate.
 
-**Remain experimental:** partner-motion ripple (needs solo-sleeper gating + framing review);
-priority mapping (needs copy review).
+**Remain experimental:** Shared-Bed Priority (new in revision 3 — see the owner-ruling
+record below); priority mapping (needs copy review).
 
-**Rejected:** ambient cooling atmosphere (continuous motion + implied thermal claim — fails
-on both axes); synchronized compare **as the production default** (ship the static
-bottom-baseline alignment; the synchronized build stays a lab demonstration); unsupported
-cutaway artwork (the Copper family in particular); any quantity-rendering animation; and
-Night Loom in any form that needs the 2400 ms cut to be understood.
+**Rejected:** the partner-motion ripple (owner ruling below); ambient cooling atmosphere
+(continuous motion + implied thermal claim — fails on both axes); synchronized compare **as
+the production default** (ship the static bottom-baseline alignment; the synchronized build
+stays a lab demonstration); unsupported cutaway artwork (the Copper family in particular);
+any quantity-rendering animation; and Night Loom in any form that needs the 2400 ms cut to
+be understood.
+
+### Owner ruling — partner-motion ripple REJECTED (revision 3)
+
+After personally experiencing the lab, the owner rejected the partner-motion ripple:
+
+- the transverse waveform appeared scientific/test-like rather than premium and tactile;
+- it risked implying measured motion-transfer or isolation performance;
+- it amplified a negative concern instead of producing a premium tactile experience.
+
+The ripple has been removed from the runnable lab entirely (markup, behavior, controls,
+strings). Its replacement, **Shared-Bed Priority**, is a design experiment in the
+Experimental wing — not production authorization: a restrained top-down cloth/quilt bed
+composition (schematic, non-SKU-specific) in which two quilted pillow panels settle side by
+side, the customer's actual recorded concern ("Partner movement matters to you.") becomes a
+stitched fabric label, and a ~1050 ms hand-scale tuck files it into the Sleep Brief as a
+compact priority card, with a chip at rest: "Based on what you told us — not a
+product-performance test." No wave, vibration, disturbance propagation, unmoving-partner
+side, or implied isolation/absorption/reduction appears anywhere in it, and no second
+sleeper profile is fabricated. Adversarial review before commit: an ordinary viewer sees a
+concern being *filed*, not a mattress *performing* — nothing moves that could be read as
+motion transfer. Spanish strings in the scene are a prototype-only preview; the
+native-Spanish review gate remains open.
+
+**Scope of the owner's approval.** The owner's "pretty great" verdict is design approval at
+exactly the classifications in this section — it is NOT authorization to merge PR #23, begin
+production implementation, activate motion in the app, resolve Phase 0.4, clear imagery
+rights, or bypass content/legal/Spanish gates. The next owner action is to experience the
+Shared-Bed Priority scene and approve it for a future production spike, request revision, or
+reject it.
 
 **Smallest reversible production slice** (proposed, NOT implemented): add the motion tokens +
 `prefers-reduced-motion` global baseline + the scene runner to `index.html` behind a
@@ -338,6 +380,45 @@ existing results-reveal seam — so flipping one config key A/Bs the entire dire
 reverting is deleting one flag. Every raw timer the runner adds must be registered in
 `tests/session_async_check.mjs`'s owned inventory, and reduced-motion must collapse the
 timeline (the §7.1 fix comes free).
+
+## 11a. Verification record (revision 3 — ripple removal + Shared-Bed Priority)
+
+Environment note: the workstation locked during this pass (LogonUI active — a locked
+session hides every page and throttles timers, which the harness detects and refuses),
+so the in-page suite ran in **headless Chrome under virtual time** in both motion modes.
+Headless Chrome defaults to `prefers-reduced-motion: reduce`; the lab gained a
+`?fullmotion=1` mirror seam so the animated pipeline is exercisable there too, plus
+`?scene=` / `&freeze=` deep-link capture affordances and `tools/measure.html` (an
+iframe measurement rig) — all prototype tooling only.
+
+- Node checker — **118/118 PASS** (ripple gone; Shared-Bed keyframes/transitions
+  audited under the same allowlist; byte budgets hold at 139.6 KB total / 49.2 KB
+  runtime JS).
+- Restricted-language lint mutation test — injected performance claims into the new
+  scene's EN and ES copy ("clinically proven isolation", percentage, patent): **3/3
+  caught**.
+- In-page suite, full-motion mode (`?selftest=1&fullmotion=1`) — **58/58 PASS** (three
+  consecutive final runs; one earlier run flaked on a single timing row under virtual
+  time). Covers the new scene end-to-end: completion at ~1050 ms, replay, skip@90 ms,
+  cancel@70 ms, 10× start spam, no leaked animations, CLS 0.0000, zero console
+  errors/warnings. The firmness rAF-at-rest check reports honestly as not-measurable
+  where the environment dispatches no rAF (verified interactively in revision 2).
+- In-page suite, reduced-default mode (`?selftest=1`) — **58/58 PASS**, including
+  **zero animations created** on the Shared-Bed reduced branch, which lands directly
+  on the same complete final state.
+- Layout, measured at true viewports via the rig: 390 / 736 / 1024 px —
+  `horizOverflow=false` at every width; the Shared-Bed container is 321 px wide at a
+  390 px viewport, has no scrollable overflow (no nested scrolling), and its full
+  final state (~640 px tall at 1024) fits a 1024×768 viewport.
+- `tools/validation.py --self-test` — **633/633 PASS**; `git diff --check` clean;
+  forbidden production paths byte-identical to base `c8e5a95` (verified by ranged
+  diff).
+- Evidence: `evidence/16–22` — pillows settling (16), the concern as a stitched
+  fabric label (17), the tuck transition (18), the completed card joined to the brief
+  (19), reduced-motion final state (20), Spanish preview (21), true-390 px reflow with
+  the measurement banner in-frame (22). Frames were captured with the deterministic
+  freeze-seek affordance; the adversarial-review verdict on the frames is recorded in
+  §10.
 
 ## 11. Verification record (revision 2)
 
