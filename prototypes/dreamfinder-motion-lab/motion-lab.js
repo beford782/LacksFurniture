@@ -91,7 +91,7 @@
     'sb-title': 'Prioridad de cama compartida',
     'sb-concern': 'El movimiento de tu pareja te importa.',
     'sb-chip': 'Basado en lo que nos dijiste — no es una prueba de rendimiento del producto.',
-    'btn-sb-replay': 'Repetir la costura de la etiqueta',
+    'btn-sb-replay': 'Repetir la marca tejida',
     'btn-cool': 'Mostrar el material de la funda',
     'pose-flat': 'Plana', 'pose-head': 'Cabecera elevada', 'pose-both': 'Cabecera + pies',
     'zone-shoulders': 'Hombros', 'zone-back': 'Zona lumbar', 'zone-hips': 'Caderas'
@@ -877,13 +877,13 @@
   });
 
   /* ================= experimental: shared-bed priority ================= */
-  /* The customer's recorded shared-bed concern lowers onto a drawn center
-   * seam and is stitched into the textile composition as a label. Records a
-   * priority; demonstrates nothing about mattress performance. */
+  /* Atelier Woven Mark: one fine seam draws across the coverlet and the
+   * customer's recorded concern resolves IN the textile as an embossed mark.
+   * Records a priority; demonstrates nothing about mattress performance. */
   var sharedBedEl = $('#mlSharedBed');
   var sharedBedScene = SceneRunner.createScene({
     name: 'sharedbed',
-    duration: 820,
+    duration: 780,
     reducedDuration: 0,
     steps: [
       { at: 0, run: function () {

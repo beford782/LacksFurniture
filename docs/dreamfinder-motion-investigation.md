@@ -28,6 +28,12 @@
 > can no longer push a within-budget file over by CRLF expansion (§11b). All
 > prior approvals, conditions, rejections, and governance restrictions are
 > unchanged.
+>
+> **Revision 5** is a premium-material pass on that same Experimental scene: the
+> owner found the stitched-label resolve understandable but short of the premium
+> bar, so the separate-label treatment is replaced by the **Atelier Woven Mark**
+> (§10) — wording integrated into the textile itself rather than a card placed
+> on it. Classifications and governance are unchanged.
 
 This investigation was produced by five parallel specialist reviews — repository/integration
 architecture, cinematic art direction, assisted-sales usability & accessibility, performance &
@@ -367,21 +373,27 @@ Experimental wing — not production authorization.
 
 **Revision 4 — the tuck/file metaphor is also rejected.** The owner ruled the first
 Shared-Bed treatment (label carried into a Sleep Brief panel as a filed card) too literal
-and fussy — more like filing a card into a folder than a premium mattress experience. The
-current replacement candidate is the **stitched-label resolve** (~820 ms): two quilted
-pillow panels settle side by side from opposite directions, a restrained thread draws a
-short center seam between them, the customer's actual recorded concern ("Partner movement
-matters to you.") gently lowers onto that seam, a stitched perimeter traces around it —
-weaving it into the textile composition — and the "Shared-bed priority" title resolves
-within the label. Both pillows stay visible in the final state; nothing folds, files,
-tucks, disappears into, or is pushed inside anything. The chip at rest reads "Based on
-what you told us — not a product-performance test." No wave, vibration, disturbance
-propagation, unmoving-partner side, or implied isolation/absorption/reduction appears
-anywhere in it, and no second sleeper profile is fabricated. Adversarial review before
-commit: an ordinary viewer sees a concern being *labeled and sewn into place*, not a
-mattress *performing* — nothing moves that could be read as motion transfer. Spanish
-strings in the scene are a prototype-only preview; the native-Spanish review gate remains
-open.
+and fussy — more like filing a card into a folder than a premium mattress experience. It
+was rebuilt as a stitched-label resolve (a bordered label lowered onto a dashed seam).
+
+**Revision 5 — premium-material pass: the Atelier Woven Mark.** The owner found the
+stitched-label resolve understandable but short of the premium visual bar; the
+separate-label treatment (a card-like panel placed on the bed) is replaced by wording
+**integrated into the textile surface** (~780 ms): two quilted pillow panels settle with
+quiet weight, one fine continuous warm-metallic seam draws once across the coverlet (no
+dashes), the quilting draws subtly inward around the message (a denser lattice, feathered),
+and the mark resolves on a single textile-tension settle — "Shared-bed priority" finished
+as a restrained embossed title, "Partner movement matters to you." as the primary readable
+line, and the honesty statement directly adjacent but visually quieter: "Based on what you
+told us — not a product-performance test." No rectangular borders, outlines, or
+interface-card styling anywhere; increased negative space, reduced contrast — a bespoke
+upholstery detail, not a dashboard component. Title and concern become readable together,
+not as separate UI steps. Both pillows stay visible; nothing folds, files, tucks, or
+disappears. No wave, vibration, disturbance propagation, unmoving-partner side, bounce,
+glow, particles, ambient loops, or implied isolation/absorption/reduction; no second
+sleeper profile is fabricated. Adversarial review before commit: an ordinary viewer sees a
+sewn atelier detail carrying recorded wording, not a mattress *performing*. Spanish
+strings remain a prototype-only preview; the native-Spanish review gate remains open.
 
 **Scope of the owner's approval.** The owner's "pretty great" verdict is design approval at
 exactly the classifications in this section — it is NOT authorization to merge PR #23, begin
@@ -397,6 +409,28 @@ existing results-reveal seam — so flipping one config key A/Bs the entire dire
 reverting is deleting one flag. Every raw timer the runner adds must be registered in
 `tests/session_async_check.mjs`'s owned inventory, and reduced-motion must collapse the
 timeline (the §7.1 fix comes free).
+
+## 11c. Verification record (revision 5 — Atelier Woven Mark)
+
+- Node checker — **119/119 PASS** (120 prior, −3 stitched-label keyframe audits, +2
+  woven-mark keyframe audits). Canonical bytes 144,365 total / 52,011 runtime JS — both
+  within the unchanged budgets; the CRLF-invariant measurement and its assertions are
+  preserved untouched.
+- Restricted-language lint mutation — **3/3 categories caught** on the scene copy
+  (unchanged customer strings; the lint re-run confirms coverage after the restyle).
+- In-page suite — **58/58 PASS full-motion** and **58/58 PASS reduced-default**
+  (headless Chrome under virtual time): the woven-mark scene runs a 780 ms timeline
+  (800 ms measured end-to-end with scheduling overhead), replays, skips at 90 ms,
+  cancels at 70 ms, survives 10× start spam, leaks nothing; reduced motion creates
+  **zero animations** and shows the identical final composition; zero infinite
+  animations; CLS 0.0000; zero console errors/warnings.
+- Layout at true 390 / 736 / 1024 viewports: `horizOverflow=false` everywhere, no
+  nested scrolling, final composition fits 1024×768.
+- `tools/validation.py --self-test` — **633/633 PASS**; `git diff --check` clean;
+  forbidden production paths byte-identical to base `c8e5a95`.
+- Evidence (current): `evidence/16–22` — pillows settling (16), the fine seam drawing
+  (17), the mark resolving with the quilting cinch (18), the final composition (19),
+  reduced-motion final (20), Spanish preview (21), true-390 px reflow (22).
 
 ## 11b. Verification record (revision 4 — stitched-label resolve + checker portability)
 
@@ -427,10 +461,8 @@ timeline (the §7.1 fix comes free).
   nested scrolling and its final composition fits a 1024×768 viewport.
 - `tools/validation.py --self-test` — **633/633 PASS**; `git diff --check` clean;
   forbidden production paths byte-identical to base `c8e5a95` (ranged diff).
-- Evidence (current): `evidence/16–23` — pillows settling (16), the drawn center seam
-  (17), the label landing on the seam (18), the perimeter stitch tracing (19), the
-  final composition with title/concern/chip hierarchy (20), reduced-motion final (21),
-  Spanish preview (22), true-390 px reflow with the measurement banner in-frame (23).
+- Evidence: revision 4's stitched-label captures were superseded and replaced in
+  revision 5 when that presentation was replaced — current evidence is listed in §11c.
 
 ## 11a. Verification record (revision 3 — ripple removal + Shared-Bed Priority)
 

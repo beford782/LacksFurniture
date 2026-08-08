@@ -887,13 +887,13 @@ button:disabled { cursor: not-allowed; opacity: 0.45; }
 .ml-cool-swatch.is-cool .ml-cool-tight { opacity: 1; }
 
 /* ============ experimental: shared-bed priority ============ */
-/* A restrained top-down bed composition in cloth/quilt geometry — never a
- * product cutaway. Two pillow panels settle, a short center seam is drawn
- * between them, and the customer's recorded concern lowers onto the seam as
- * a label whose stitched perimeter weaves it into the composition. No waves,
- * no disturbance propagation, no implied isolation/absorption — the only
- * motion is settling and stitching, and the finished label states a customer
- * priority. Active transition ~820 ms; runner-managed; replay explicit. */
+/* Atelier Woven Mark: a restrained top-down bed composition in cloth/quilt
+ * geometry — never a product cutaway, never an interface card. Two pillow
+ * panels settle with quiet weight, one fine continuous seam draws across the
+ * coverlet, the quilting draws subtly inward, and the customer's recorded
+ * concern resolves IN the textile with an embossed title. No waves, no
+ * disturbance propagation, no implied isolation/absorption — the finished
+ * mark states a customer priority. ~780 ms; runner-managed; replay explicit. */
 .ml-sharedbed {
   position: relative;
   max-width: 460px;
@@ -917,125 +917,110 @@ button:disabled { cursor: not-allowed; opacity: 0.45; }
   width: 33%;
   height: 52px;
   background: var(--consultation-paper);
-  border: 1px solid var(--consultation-rule);
-  border-radius: 10px;
+  border: 1px solid rgba(104, 84, 60, 0.22);
+  border-radius: 12px;
   box-shadow: var(--sh-flat);
-}
-.ml-sb-pillow::after {
-  content: '';
-  position: absolute;
-  inset: 5px;
-  border: 1px dashed rgba(104, 84, 60, 0.35);
-  border-radius: 6px;
 }
 .ml-sb-pillow--l { left: 11%; }
 .ml-sb-pillow--r { right: 11%; }
-/* the center seam: a short dashed thread drawn between the pillows */
+/* one fine continuous seam in warm metallic thread — no dashes, no glow */
 .ml-sb-seam {
   position: absolute;
-  left: 27%;
-  right: 27%;
-  top: 104px;
-  height: 0;
-  border-top: 2px dashed rgba(104, 84, 60, 0.55);
-  clip-path: inset(-2px 0 -2px 0);
+  left: 22%;
+  right: 22%;
+  top: 106px;
+  height: 2px;
+  background: linear-gradient(180deg, rgba(184, 147, 93, 0.85), rgba(251, 247, 239, 0.6));
+  clip-path: inset(0 0 0 0);
   pointer-events: none;
 }
-/* the label: the customer's recorded concern, lowered onto the seam and
- * stitched into the composition — it IS the final content, never hidden */
-.ml-sb-label {
+/* the quilting draws subtly inward around the mark (denser lattice, feathered
+ * by two nested low-opacity ellipses in the bed SVG) */
+.ml-sb-cinch { opacity: 0.28; }
+.ml-sb-cinch--outer { opacity: 0.2; }
+/* the woven mark: wording integrated into the textile — no card, no border,
+ * no panel. The title is finished as a restrained deboss (static shadows,
+ * never animated); the concern stays the primary readable line; the honesty
+ * statement sits directly adjacent, quieter. */
+.ml-sb-mark {
   position: absolute;
-  left: 50%;
-  top: 96px;
-  transform: translateX(-50%);
-  width: 230px;
-  background: var(--consultation-paper);
-  border: 1px solid var(--consultation-rule);
-  border-radius: var(--radius);
-  padding: 8px 12px 10px;
-  box-shadow: var(--sh-lift1);
+  left: 12%;
+  right: 12%;
+  top: 118px;
   text-align: center;
-  z-index: 2;
-}
-.ml-sb-label::before {
-  /* the traced perimeter stitch that weaves the label into the textile */
-  content: '';
-  position: absolute;
-  inset: 3px;
-  border: 1px dashed rgba(104, 84, 60, 0.5);
-  border-radius: 2px;
-  clip-path: inset(0 0 0 0);
   pointer-events: none;
 }
 .ml-sb-title {
   display: block;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.34em;
   text-transform: uppercase;
-  color: var(--consultation-muted);
-  margin-bottom: 2px;
+  color: rgba(104, 84, 60, 0.72);
+  text-shadow: 0 1px 0 rgba(255, 253, 247, 0.65), 0 -1px 0 rgba(80, 64, 42, 0.22);
+  margin-bottom: 5px;
 }
 .ml-sb-line {
   display: block;
   font-family: var(--font-serif);
-  font-size: 14px;
-  line-height: 1.3;
-  color: var(--consultation-ink);
+  font-size: 17px;
+  line-height: 1.35;
+  color: #453a2b;
+  margin-bottom: 7px;
+}
+.ml-sb-quiet {
+  display: block;
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  color: rgba(104, 84, 60, 0.62);
+  max-width: 34ch;
+  margin: 0 auto;
 }
 
-/* choreography (~820 ms): pillows settle from opposite directions; the seam
- * thread draws; the label lowers onto the seam with a small textile settle;
- * the perimeter stitch traces; the title resolves within the label */
+/* choreography (~780 ms): pillows settle with quiet weight; the fine seam
+ * draws once; the cinch and the whole mark resolve together on a single
+ * textile-tension settle — no separate UI steps */
 .ml-sharedbed.is-idle .ml-sb-pillow,
 .ml-sharedbed.is-idle .ml-sb-seam,
-.ml-sharedbed.is-idle .ml-sb-label { opacity: 0; }
+.ml-sharedbed.is-idle .ml-sb-cinch,
+.ml-sharedbed.is-idle .ml-sb-mark { opacity: 0; }
 .ml-sharedbed.is-running .ml-sb-pillow--l { animation: ml-sb-pillow-l 300ms var(--e-settle) both; }
 .ml-sharedbed.is-running .ml-sb-pillow--r { animation: ml-sb-pillow-r 300ms var(--e-settle) 40ms both; }
 @keyframes ml-sb-pillow-l {
-  from { opacity: 0; transform: translateX(-26px); }
-  70% { opacity: 1; transform: translateX(0) scaleY(0.985); }
+  from { opacity: 0; transform: translateX(-22px); }
+  70% { opacity: 1; transform: translateX(0) scaleY(0.988); }
   to { opacity: 1; transform: none; }
 }
 @keyframes ml-sb-pillow-r {
-  from { opacity: 0; transform: translateX(26px); }
-  70% { opacity: 1; transform: translateX(0) scaleY(0.985); }
+  from { opacity: 0; transform: translateX(22px); }
+  70% { opacity: 1; transform: translateX(0) scaleY(0.988); }
   to { opacity: 1; transform: none; }
 }
 .ml-sharedbed.is-running .ml-sb-seam {
-  animation: ml-sb-seam-draw 240ms var(--e-place) 180ms both;
+  animation: ml-sb-seam-draw 280ms var(--e-place) 240ms both;
 }
 @keyframes ml-sb-seam-draw {
-  from { opacity: 1; clip-path: inset(-2px 100% -2px 0); }
-  to { opacity: 1; clip-path: inset(-2px 0 -2px 0); }
+  from { opacity: 1; clip-path: inset(0 100% 0 0); }
+  to { opacity: 1; clip-path: inset(0 0 0 0); }
 }
-.ml-sharedbed.is-running .ml-sb-label {
-  animation: ml-sb-label-lower 300ms var(--e-settle) 320ms both;
-  transform-origin: center bottom;
+.ml-sharedbed.is-running .ml-sb-cinch--outer { animation: ml-sb-cinch-in 260ms var(--e-place) 400ms both; }
+.ml-sharedbed.is-running .ml-sb-cinch { animation: ml-sb-cinch-in 260ms var(--e-place) 440ms both; }
+@keyframes ml-sb-cinch-in {
+  from { opacity: 0; }
 }
-@keyframes ml-sb-label-lower {
-  from { opacity: 0; transform: translateX(-50%) translateY(-14px); }
-  80% { opacity: 1; transform: translateX(-50%) scaleY(0.985); }
-  to { opacity: 1; transform: translateX(-50%); }
+.ml-sharedbed.is-running .ml-sb-mark {
+  animation: ml-sb-mark-resolve 320ms var(--e-settle) 440ms both;
+  transform-origin: center center;
 }
-.ml-sharedbed.is-running .ml-sb-label::before {
-  animation: ml-sb-stitch 260ms var(--e-place) 480ms both;
-}
-@keyframes ml-sb-stitch {
-  from { clip-path: inset(0 100% 0 0); }
-  to { clip-path: inset(0 0 0 0); }
-}
-.ml-sharedbed.is-running .ml-sb-title {
-  animation: ml-sb-title-resolve 200ms var(--e-place) 620ms both;
-}
-@keyframes ml-sb-title-resolve {
-  from { opacity: 0; transform: translateY(4px); }
+@keyframes ml-sb-mark-resolve {
+  from { opacity: 0; transform: translateY(3px) scale(1.012); }
   to { opacity: 1; transform: none; }
 }
 .ml-sharedbed.is-done .ml-sb-pillow,
 .ml-sharedbed.is-done .ml-sb-seam,
-.ml-sharedbed.is-done .ml-sb-label,
-.ml-sharedbed.is-done .ml-sb-title { opacity: 1; }
+.ml-sharedbed.is-done .ml-sb-mark { opacity: 1; }
+.ml-sharedbed.is-done .ml-sb-cinch { opacity: 0.28; }
+.ml-sharedbed.is-done .ml-sb-cinch--outer { opacity: 0.2; }
 
 /* ============ selftest output ============ */
 .ml-selftest {

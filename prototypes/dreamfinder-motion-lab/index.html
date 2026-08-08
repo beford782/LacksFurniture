@@ -31,6 +31,15 @@
       <circle cx="36" cy="24" r="1.1" fill="rgba(118,99,68,0.5)"></circle>
       <circle cx="18" cy="12" r="1.1" fill="rgba(118,99,68,0.5)"></circle>
     </pattern>
+    <pattern id="mlPatQuiltTight" width="26" height="17" patternUnits="userSpaceOnUse">
+      <rect width="26" height="17" fill="#EAE2D0"></rect>
+      <path d="M0 0 L26 17 M26 0 L0 17" stroke="rgba(118,99,68,0.34)" stroke-width="1" fill="none"></path>
+      <circle cx="0" cy="0" r="0.9" fill="rgba(118,99,68,0.5)"></circle>
+      <circle cx="26" cy="0" r="0.9" fill="rgba(118,99,68,0.5)"></circle>
+      <circle cx="0" cy="17" r="0.9" fill="rgba(118,99,68,0.5)"></circle>
+      <circle cx="26" cy="17" r="0.9" fill="rgba(118,99,68,0.5)"></circle>
+      <circle cx="13" cy="8.5" r="0.9" fill="rgba(118,99,68,0.5)"></circle>
+    </pattern>
     <pattern id="mlPatFoam" width="26" height="16" patternUnits="userSpaceOnUse">
       <rect width="26" height="16" fill="#D9C79E"></rect>
       <path d="M0 8 Q6.5 5.4 13 8 T26 8" stroke="rgba(139,116,71,0.30)" stroke-width="1" fill="none"></path>
@@ -476,27 +485,31 @@
     <div class="ml-scene-card">
       <h3 tabindex="-1">Shared-Bed Priority</h3>
       <p class="ml-sub">The customer's shared-bed concern, <em>recorded</em> — never demonstrated.
-      Two quilted pillow panels settle side by side, a restrained thread draws a short
-      center seam between them, and the concern lowers onto that seam as a label whose
-      stitched perimeter weaves it into the textile composition. In production this would
-      render only when the customer raised partner movement; it does not fabricate a second
-      sleeper's answers, and the finished label states a customer priority — not mattress
-      performance.</p>
+      Two quilted pillow panels settle with quiet weight, one fine seam draws across the
+      coverlet, and the wording resolves <em>in</em> the textile — the quilting drawing
+      subtly inward around it, the title finished as a restrained embossed mark. An atelier
+      detail, not an interface card. In production this would render only when the customer
+      raised partner movement; it does not fabricate a second sleeper's answers, and the
+      woven mark states a customer priority — not mattress performance.</p>
       <div class="ml-sharedbed is-done" id="mlSharedBed">
         <div class="ml-sb-bed" aria-hidden="true">
-          <svg aria-hidden="true" focusable="false"><rect width="100%" height="100%" fill="url(#mlPatQuilt)"></rect></svg>
+          <svg aria-hidden="true" focusable="false">
+            <rect width="100%" height="100%" fill="url(#mlPatQuilt)"></rect>
+            <ellipse class="ml-sb-cinch ml-sb-cinch--outer" cx="50%" cy="64%" rx="42%" ry="34%" fill="url(#mlPatQuiltTight)"></ellipse>
+            <ellipse class="ml-sb-cinch ml-sb-cinch--inner" cx="50%" cy="64%" rx="30%" ry="24%" fill="url(#mlPatQuiltTight)"></ellipse>
+          </svg>
         </div>
         <div class="ml-sb-pillow ml-sb-pillow--l" aria-hidden="true"></div>
         <div class="ml-sb-pillow ml-sb-pillow--r" aria-hidden="true"></div>
         <div class="ml-sb-seam" aria-hidden="true"></div>
-        <div class="ml-sb-label">
+        <div class="ml-sb-mark">
           <span class="ml-sb-title" data-i18n="sb-title">Shared-bed priority</span>
           <span class="ml-sb-line" data-i18n="sb-concern">Partner movement matters to you.</span>
+          <span class="ml-sb-quiet" data-i18n="sb-chip">Based on what you told us &mdash; not a product-performance test.</span>
         </div>
       </div>
-      <p class="ml-chip--dark ml-chip" data-i18n="sb-chip">Based on what you told us &mdash; not a product-performance test.</p>
       <div class="ml-controls">
-        <button type="button" class="ml-btn" id="mlSharedBedReplay" disabled data-i18n="btn-sb-replay">Replay stitched resolve</button>
+        <button type="button" class="ml-btn" id="mlSharedBedReplay" disabled data-i18n="btn-sb-replay">Replay woven mark</button>
         <span class="ml-note">Spanish strings here are a prototype-only preview; the native-Spanish review gate remains open.</span>
       </div>
     </div>
