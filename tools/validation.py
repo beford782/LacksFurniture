@@ -2515,10 +2515,11 @@ def _self_test() -> int:
     check("Store Info multiple rows -> error",
           any("expected exactly 1 data row" in e for e in validate_structure(t).errors))
 
-    # missing schema-required value
-    t = _good_tabs(); h, rows = t["Mattresses"]; rows[0]["reason_default"] = ""
+    # missing schema-required value (reason_default became optional in the
+    # 2026-08-08 claim-governance retirement pass; 'features' is still required)
+    t = _good_tabs(); h, rows = t["Mattresses"]; rows[0]["features"] = ""
     check("missing required cell -> error",
-          any("reason_default" in e for e in validate_structure(t).errors))
+          any("features" in e for e in validate_structure(t).errors))
 
     # invalid hex color
     c = _good_config(); c["colors"]["storePrimary"] = "8B1A1A"

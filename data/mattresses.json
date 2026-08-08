@@ -88,13 +88,13 @@
                                   "Plush",
                                   "Euro-Top"
                               ],
-                     "highlight":  "Our most indulgent plush — wool, cashmere, and 16.5 inches of luxury",
+                     "highlight":  "",
                      "tags_es":  [
                                      "Fibras Naturales de Lujo",
                                      "Suave",
                                      "Euro-Top"
                                  ],
-                     "highlight_es":  "Nuestro suave más indulgente — lana, cachemira y 16.5 pulgadas de lujo",
+                     "highlight_es":  "",
                      "imageUrl":  "images/mattresses/the saint pierre.jpg",
                      "reasons":  {
                                      "default":  "A deep plush euro-top of wool and cashmere over layered coils — indulgent softness that never loses its support."
@@ -109,8 +109,8 @@
                                                                "es":  "Euro-top suave y profundo"
                                                            },
                                                  "detail":  {
-                                                                "en":  "A sink-in soft surface for side sleepers who want cloud comfort without bottoming out.",
-                                                                "es":  "Una superficie envolvente para quienes duermen de lado y quieren confort de nube sin hundirse hasta el fondo."
+                                                                "en":  "",
+                                                                "es":  ""
                                                             }
                                              },
                                              {
@@ -123,11 +123,7 @@
                                                                 "es":  "La lana y la cachemira mantienen las capas suaves más frescas que los pillow-tops de espuma densa."
                                                             }
                                              }
-                                         ],
-                     "topPickReason":  {
-                                           "en":  "The most luxurious plush in the store — natural fibers over layered coil support.",
-                                           "es":  "El suave más lujoso de la tienda — fibras naturales sobre capas de resortes."
-                                       }
+                                         ]
                  },
                  {
                      "id":  "g3",
@@ -183,8 +179,8 @@
                                                                "es":  "Construcción copetuda a mano"
                                                            },
                                                  "detail":  {
-                                                                "en":  "Tufting locks the layers so the pillowtop can\u0027t shift or pocket over years of use.",
-                                                                "es":  "El copetudo fija las capas para que el pillowtop no se mueva ni se deforme con los años."
+                                                                "en":  "",
+                                                                "es":  ""
                                                             }
                                              }
                                          ],
@@ -216,13 +212,13 @@
                                   "Soft",
                                   "Memory Foam"
                               ],
-                     "highlight":  "Feels up to 10° cooler, soft TEMPUR comfort",
+                     "highlight":  "",
                      "tags_es":  [
                                      "Frescura",
                                      "Suave",
                                      "Espuma Viscoelástica"
                                  ],
-                     "highlight_es":  "Se siente hasta 10° más fresco, confort TEMPUR suave",
+                     "highlight_es":  "",
                      "imageUrl":  "images/mattresses/tempur-luxebreeze 2.0 soft.jpg",
                      "reasons":  {
                                      "default":  "Tempur-Pedic\u0027s coolest mattress — Pure Cool Plus material pulls heat away while soft TEMPUR cradles every curve."
@@ -233,16 +229,6 @@
                      "differentiators":  [
                                              {
                                                  "title":  {
-                                                               "en":  "Feels up to 10° cooler",
-                                                               "es":  "Se siente hasta 10° más fresco"
-                                                           },
-                                                 "detail":  {
-                                                                "en":  "Phase-change cooling you can feel the moment you lie down — made for hot sleepers.",
-                                                                "es":  "Frescura de cambio de fase que se siente al momento de acostarte — hecho para quienes duermen con calor."
-                                                            }
-                                             },
-                                             {
-                                                 "title":  {
                                                                "en":  "Soft TEMPUR contour",
                                                                "es":  "Contorno TEMPUR suave"
                                                            },
@@ -251,11 +237,7 @@
                                                                 "es":  "Se acomoda lentamente alrededor de los puntos de presión en lugar de empujar como los resortes."
                                                             }
                                              }
-                                         ],
-                     "topPickReason":  {
-                                           "en":  "The coolest-sleeping soft mattress in the store — up to 10° cooler all night.",
-                                           "es":  "El colchón suave que duerme más fresco de la tienda — hasta 10° más fresco toda la noche."
-                                       }
+                                         ]
                  },
                  {
                      "id":  "g5",
@@ -280,13 +262,13 @@
                                   "Hybrid",
                                   "Medium"
                               ],
-                     "highlight":  "All-night cooling with TEMPUR comfort and coil support",
+                     "highlight":  "",
                      "tags_es":  [
                                      "Frescura",
                                      "Híbrido",
                                      "Medio"
                                  ],
-                     "highlight_es":  "Frescura toda la noche con confort TEMPUR y soporte de resortes",
+                     "highlight_es":  "",
                      "imageUrl":  "images/mattresses/tempur-probreeze 2.0 medium hybrid.jpg",
                      "reasons":  {
                                      "default":  "Cool-to-the-touch Breeze cover and Pure Cool material over a hybrid coil base — cooling plus true TEMPUR pressure relief."
@@ -315,11 +297,7 @@
                                                                 "es":  "Agrega ventilación y un toque de respuesta bajo la espuma viscoelástica."
                                                             }
                                              }
-                                         ],
-                     "topPickReason":  {
-                                           "en":  "Proven all-night cooling with adaptive TEMPUR contour and hybrid support.",
-                                           "es":  "Frescura comprobada toda la noche con contorno TEMPUR adaptable y soporte híbrido."
-                                       }
+                                         ]
                  },
                  {
                      "id":  "g6",
@@ -443,11 +421,7 @@
                                                                 "es":  "Hecho a mano con capas naturales transpirables que duran más que las camas de pura espuma."
                                                             }
                                              }
-                                         ],
-                     "topPickReason":  {
-                                           "en":  "Hand-made luxury in a true medium — the most versatile bed in the Reserve line.",
-                                           "es":  "Lujo hecho a mano en un medio verdadero — la cama más versátil de la línea Reserve."
-                                       }
+                                         ]
                  },
                  {
                      "id":  "g8",
@@ -492,8 +466,8 @@
                                                                "es":  "Verdadera elevación extra firme"
                                                            },
                                                  "detail":  {
-                                                                "en":  "Holds you fully on top of the bed — the firmest luxury option in the store.",
-                                                                "es":  "Te mantiene completamente sobre la cama — la opción de lujo más firme de la tienda."
+                                                                "en":  "",
+                                                                "es":  ""
                                                             }
                                              },
                                              {
@@ -506,11 +480,7 @@
                                                                 "es":  "Los materiales naturales y el ensamblaje a mano evitan que la firmeza se ablande antes de tiempo."
                                                             }
                                              }
-                                         ],
-                     "topPickReason":  {
-                                           "en":  "Hand-made extra-firm support — the choice for back and stomach sleepers who want luxury.",
-                                           "es":  "Soporte extra firme hecho a mano — la elección para quienes duermen boca arriba o boca abajo y quieren lujo."
-                                       }
+                                         ]
                  },
                  {
                      "id":  "g9",
@@ -556,8 +526,8 @@
                                                                "es":  "Superficie con infusión de cobre"
                                                            },
                                                  "detail":  {
-                                                                "en":  "Copper fabric and foams dissipate heat and stay naturally fresher than standard foam.",
-                                                                "es":  "La tela y las espumas de cobre disipan el calor y se mantienen naturalmente más frescas que la espuma estándar."
+                                                                "en":  "",
+                                                                "es":  ""
                                                             }
                                              },
                                              {
@@ -570,11 +540,7 @@
                                                                 "es":  "Soporta como un firme con un cojín delgado de confort — firme sin sentirse como tabla."
                                                             }
                                              }
-                                         ],
-                     "topPickReason":  {
-                                           "en":  "Copper cooling and recovery benefits with balanced cushion-firm hybrid support.",
-                                           "es":  "Frescura y recuperación del cobre con soporte híbrido cushion-firm equilibrado."
-                                       }
+                                         ]
                  }
              ],
     "silver":  [
@@ -695,8 +661,8 @@
                                                                  "es":  "Tercio central zonificado"
                                                              },
                                                    "detail":  {
-                                                                  "en":  "Marvelous Middle reinforcement keeps hips level in every position.",
-                                                                  "es":  "El refuerzo Marvelous Middle mantiene las caderas niveladas en cualquier posición."
+                                                                  "en":  "",
+                                                                  "es":  ""
                                                               }
                                                }
                                            ],
@@ -738,10 +704,10 @@
                        "highlight_es":  "Box top suave y profundo sobre resortes envueltos zonificados",
                        "imageUrl":  "images/mattresses/platinum maria plush.jpg",
                        "reasons":  {
-                                       "default":  "A 15-inch plush box top with 25% thicker center coils and 3-inch edge encasement — soft where you feel it, supported where you need it."
+
                                    },
                        "reasons_es":  {
-                                          "default":  "Un box top suave de 15 pulgadas con resortes centrales 25% más gruesos y encasado de borde de 3 pulgadas — suave donde lo sientes, con soporte donde lo necesitas."
+
                                       },
                        "differentiators":  [
                                                {
@@ -760,8 +726,8 @@
                                                                  "es":  "Resortes envueltos zonificados"
                                                              },
                                                    "detail":  {
-                                                                  "en":  "Individually wrapped coils isolate motion and firm up under your hips.",
-                                                                  "es":  "Resortes envueltos individualmente aíslan el movimiento y se refuerzan bajo las caderas."
+                                                                  "en":  "",
+                                                                  "es":  ""
                                                               }
                                                }
                                            ],
@@ -802,10 +768,10 @@
                        "highlight_es":  "Confort box-top firme con soporte de resortes zonificados",
                        "imageUrl":  "images/mattresses/platinum maria firm.jpg",
                        "reasons":  {
-                                       "default":  "Firm box-top support with 25% thicker center coils and full edge encasement — alignment-first comfort with a finished luxury feel."
+
                                    },
                        "reasons_es":  {
-                                          "default":  "Soporte box-top firme con resortes centrales 25% más gruesos y encasado completo de borde — confort que prioriza la alineación con acabado de lujo."
+
                                       },
                        "differentiators":  [
                                                {
@@ -888,8 +854,8 @@
                                                                  "es":  "Núcleo híbrido firme"
                                                              },
                                                    "detail":  {
-                                                                  "en":  "Keeps your spine aligned while the gel layer softens contact points.",
-                                                                  "es":  "Mantiene tu columna alineada mientras la capa de gel suaviza los puntos de contacto."
+                                                                  "en":  "",
+                                                                  "es":  ""
                                                               }
                                                }
                                            ],
@@ -904,7 +870,7 @@
                        "brand":  "Restonic",
                        "subBrand":  "Platinum",
                        "pitchKey":  "",
-                       "archetype":  "Cool-gel balanced hybrid",
+                       "archetype":  "",
                        "displayPriority":  1,
                        "firmness":  5,
                        "firmnessLabel":  "Medium",
@@ -917,23 +883,21 @@
                                         "support"
                                     ],
                        "tags":  [
-                                    "Cool Gel",
                                     "Medium",
                                     "Hybrid"
                                 ],
-                       "highlight":  "Balanced medium comfort with cool gel memory foam",
+                       "highlight":  "",
                        "tags_es":  [
-                                       "Gel Fresco",
                                        "Medio",
                                        "Híbrido"
                                    ],
-                       "highlight_es":  "Confort medio equilibrado con espuma de gel fresco",
+                       "highlight_es":  "",
                        "imageUrl":  "images/mattresses/platinum summit medium.jpg",
                        "reasons":  {
-                                       "default":  "Cool-gel memory foam on a balanced medium hybrid — pressure relief, cooling, and support in the feel most sleepers pick."
+
                                    },
                        "reasons_es":  {
-                                          "default":  "Espuma con gel fresco sobre un híbrido medio equilibrado — alivio de presión, frescura y soporte en la sensación que la mayoría elige."
+
                                       },
                        "differentiators":  [
                                                {
@@ -945,22 +909,8 @@
                                                                   "en":  "The feel most couples agree on — balanced give and support.",
                                                                   "es":  "La sensación en la que la mayoría de las parejas están de acuerdo — equilibrio entre suavidad y soporte."
                                                               }
-                                               },
-                                               {
-                                                   "title":  {
-                                                                 "en":  "Gel-cooled surface",
-                                                                 "es":  "Superficie enfriada por gel"
-                                                             },
-                                                   "detail":  {
-                                                                  "en":  "Cool gel tempers the memory-foam warmth common in medium beds.",
-                                                                  "es":  "El gel fresco compensa el calor de la espuma viscoelástica común en camas medias."
-                                                              }
                                                }
-                                           ],
-                       "topPickReason":  {
-                                             "en":  "The balanced pick — medium hybrid comfort with a cooling gel layer.",
-                                             "es":  "La elección equilibrada — confort híbrido medio con capa de gel refrescante."
-                                         }
+                                           ]
                    },
                    {
                        "id":  "s7",
@@ -968,7 +918,7 @@
                        "brand":  "Restonic",
                        "subBrand":  "Platinum",
                        "pitchKey":  "",
-                       "archetype":  "Cool-gel plush hybrid",
+                       "archetype":  "",
                        "displayPriority":  1,
                        "firmness":  3,
                        "firmnessLabel":  "Plush",
@@ -981,50 +931,34 @@
                                         "hybrid"
                                     ],
                        "tags":  [
-                                    "Cool Gel",
                                     "Plush",
                                     "Hybrid"
                                 ],
-                       "highlight":  "Plush gel-cooled comfort over hybrid support",
+                       "highlight":  "",
                        "tags_es":  [
-                                       "Gel Fresco",
                                        "Suave",
                                        "Híbrido"
                                    ],
-                       "highlight_es":  "Confort suave enfriado por gel sobre soporte híbrido",
+                       "highlight_es":  "",
                        "imageUrl":  "images/mattresses/platinum summit plush.jpg",
                        "reasons":  {
-                                       "default":  "Plush gel memory foam over hybrid coils — soft, cool pressure relief for side sleepers who sleep warm."
+
                                    },
                        "reasons_es":  {
-                                          "default":  "Espuma viscoelástica suave con gel sobre resortes híbridos — alivio de presión suave y fresco para quienes duermen de lado con calor."
+
                                       },
                        "differentiators":  [
-                                               {
-                                                   "title":  {
-                                                                 "en":  "Plush that stays cool",
-                                                                 "es":  "Suave que se mantiene fresco"
-                                                             },
-                                                   "detail":  {
-                                                                  "en":  "Gel-infused foam keeps the soft layers from trapping heat.",
-                                                                  "es":  "La espuma con gel evita que las capas suaves atrapen el calor."
-                                                              }
-                                               },
                                                {
                                                    "title":  {
                                                                  "en":  "Supported softness",
                                                                  "es":  "Suavidad con soporte"
                                                              },
                                                    "detail":  {
-                                                                  "en":  "Hybrid coils under the plush top prevent the hammock feel of all-foam soft beds.",
-                                                                  "es":  "Los resortes híbridos bajo la capa suave evitan la sensación de hamaca de las camas blandas de pura espuma."
+                                                                  "en":  "",
+                                                                  "es":  ""
                                                               }
                                                }
-                                           ],
-                       "topPickReason":  {
-                                             "en":  "Soft, cooling pressure relief — plush without the heat.",
-                                             "es":  "Alivio de presión suave y refrescante — suavidad sin el calor."
-                                         }
+                                           ]
                    },
                    {
                        "id":  "s8",
@@ -1048,19 +982,19 @@
                                     "Firm",
                                     "Euro Top"
                                 ],
-                       "highlight":  "Firm euro-top comfort with 25% thicker center coils",
+                       "highlight":  "",
                        "tags_es":  [
                                        "Marvelous Middle",
                                        "Firme",
                                        "Euro Top"
                                    ],
-                       "highlight_es":  "Confort euro-top firme con resortes centrales 25% más gruesos",
+                       "highlight_es":  "",
                        "imageUrl":  "images/mattresses/kendall firm euro top.jpg",
                        "reasons":  {
-                                       "default":  "25% thicker coils in the center third support your hips and lower back while the euro top softens the firm surface."
+
                                    },
                        "reasons_es":  {
-                                          "default":  "Resortes 25% más gruesos en el tercio central soportan caderas y espalda baja mientras el euro top suaviza la superficie firme."
+
                                       },
                        "differentiators":  [
                                                {
@@ -1133,8 +1067,8 @@
                                                                  "es":  "Aislamiento de movimiento con resortes envueltos"
                                                              },
                                                    "detail":  {
-                                                                  "en":  "Each coil moves alone, so a restless partner doesn\u0027t wake you.",
-                                                                  "es":  "Cada resorte se mueve solo, así una pareja inquieta no te despierta."
+                                                                  "en":  "",
+                                                                  "es":  ""
                                                               }
                                                },
                                                {
@@ -1147,11 +1081,7 @@
                                                                   "es":  "Las capas de espuma se contornean sin el hundimiento profundo de las camas viscoelásticas."
                                                               }
                                                }
-                                           ],
-                       "topPickReason":  {
-                                             "en":  "Balanced medium comfort with wrapped coils that keep partner movement on their side.",
-                                             "es":  "Confort medio equilibrado con resortes envueltos que mantienen el movimiento de tu pareja de su lado."
-                                         }
+                                           ]
                    },
                    {
                        "id":  "s10",
@@ -1185,10 +1115,10 @@
                        "highlight_es":  "Soporte extra firme zonificado a un precio accesible",
                        "imageUrl":  "images/mattresses/kendall extra firm.jpg",
                        "reasons":  {
-                                       "default":  "Extra-firm hybrid support with 25% thicker center coils — maximum alignment without the luxury price tag."
+
                                    },
                        "reasons_es":  {
-                                          "default":  "Soporte híbrido extra firme con resortes centrales 25% más gruesos — máxima alineación sin precio de lujo."
+
                                       },
                        "differentiators":  [
                                                {
@@ -1211,11 +1141,7 @@
                                                                   "es":  "Resortes centrales más gruesos protegen la firmeza de las marcas corporales tempranas."
                                                               }
                                                }
-                                           ],
-                       "topPickReason":  {
-                                             "en":  "Serious extra-firm zoned support at the best price in its class.",
-                                             "es":  "Soporte extra firme zonificado serio al mejor precio de su clase."
-                                         }
+                                           ]
                    }
                ],
     "bronze":  [
@@ -1275,11 +1201,7 @@
                                                                   "es":  "Calidad Restonic sin el precio Platinum."
                                                               }
                                                }
-                                           ],
-                       "topPickReason":  {
-                                             "en":  "Honest plush comfort for side sleepers at an everyday price.",
-                                             "es":  "Confort suave honesto para quienes duermen de lado a precio cotidiano."
-                                         }
+                                           ]
                    },
                    {
                        "id":  "b2",
@@ -1492,31 +1414,21 @@
                                     "Plush",
                                     "Side Sleeper"
                                 ],
-                       "highlight":  "Plush pressure relief with 25% thicker center coils",
+                       "highlight":  "",
                        "tags_es":  [
                                        "Marvelous Middle",
                                        "Suave",
                                        "Para Dormir de Lado"
                                    ],
-                       "highlight_es":  "Alivio de presión suave con resortes centrales 25% más gruesos",
+                       "highlight_es":  "",
                        "imageUrl":  "images/mattresses/angelina plush.jpg",
                        "reasons":  {
-                                       "default":  "25% thicker center coils relieve shoulder and hip pressure — a side-sleeper favorite with real edge support."
+
                                    },
                        "reasons_es":  {
-                                          "default":  "Resortes centrales 25% más gruesos alivian la presión de hombros y caderas — favorito de quienes duermen de lado con soporte de borde real."
+
                                       },
                        "differentiators":  [
-                                               {
-                                                   "title":  {
-                                                                 "en":  "Shoulder-and-hip relief",
-                                                                 "es":  "Alivio de hombros y caderas"
-                                                             },
-                                                   "detail":  {
-                                                                  "en":  "The plush surface and center zoning target exactly where side sleepers ache.",
-                                                                  "es":  "La superficie suave y la zonificación central atienden justo donde duele al dormir de lado."
-                                                              }
-                                               },
                                                {
                                                    "title":  {
                                                                  "en":  "3-inch edge encasement",
@@ -1527,11 +1439,7 @@
                                                                   "es":  "Rieles de espuma de alta densidad dan más superficie útil que las camas suaves de valor."
                                                               }
                                                }
-                                           ],
-                       "topPickReason":  {
-                                             "en":  "Zoned plush pressure relief — a proven pick for side sleepers.",
-                                             "es":  "Alivio de presión suave zonificado — elección comprobada para dormir de lado."
-                                         }
+                                           ]
                    },
                    {
                        "id":  "b6",
@@ -1564,10 +1472,10 @@
                        "highlight_es":  "Soporte híbrido extra firme a precio de valor",
                        "imageUrl":  "images/mattresses/angelina extra firm.jpg",
                        "reasons":  {
-                                       "default":  "An extra-firm hybrid with 25% thicker center coils — maximum support at the most accessible price."
+
                                    },
                        "reasons_es":  {
-                                          "default":  "Un híbrido extra firme con resortes centrales 25% más gruesos — máximo soporte al precio más accesible."
+
                                       },
                        "differentiators":  [
                                                {
