@@ -848,7 +848,10 @@ direction; every approval remains Blake's.
    existing terminology — production's primary is the mislabeled
    "Compare My Matches →").
 3. **Native Spanish approval** — all proposed ES strings and the financing
-   config's `pending-native-legal-review` status.
+   config's `pending-native-legal-review` status. (The paired Spanish
+   *usability* pass was deferred by owner decision for this prototype
+   cycle, 2026-08-07 — a separate matter from this still-open
+   claim-equivalence review gate.)
 4. **Catalog owner and approval workflow** — ~~name the Lacks
    merchandising owner~~ **DECIDED 2026-08-07: Blake Ford is the named
    content owner/approver** (the native-Spanish and legal/compliance

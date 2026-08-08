@@ -9,8 +9,9 @@ head `c73324e`. **Deviations from the frozen protocol, stated plainly:**
    **self-report by one expert**, not two-person observation; this run is
    an expert walkthrough, one grade weaker than the designed paired dry
    run.
-2. **English pass only** — the Spanish pass was skipped and remains an
-   open item (§5 L-section marked NOT RUN).
+2. **English pass only** — the paired Spanish pass was SKIPPED /
+   DEFERRED BY OWNER DECISION for this prototype cycle (§5 L-section);
+   no Spanish conclusion is drawn from this run.
 3. **Transcription method** — answers were given live by Blake in an
    interview and transcribed into this document by the session assistant.
    Every result below is Blake's stated observation; none originates from
@@ -106,8 +107,14 @@ to start and why → select two → open the comparison).
 
 ### Second-language pass
 
-**NOT RUN — skipped by decision during the session.** L.1/L.2 remain
-open, alongside native Spanish review.
+**SKIPPED — DEFERRED BY OWNER DECISION (Blake, 2026-08-07), for this
+prototype cycle.** Not completed, not passed, not failed. Nothing about
+Spanish behavior or copy is inferred from the English walkthrough. The
+paired Spanish usability pass leaves the immediate follow-up sequence;
+**native-Spanish claim-equivalence review remains an open
+release/activation gate** for any Spanish catalog reason content, and the
+candidates' bilingual contracts (strict resolvers, EN/ES parity
+enforcement, no English fallback) remain in force and verified.
 
 ## 6. Debrief answers
 
@@ -150,7 +157,7 @@ Unchanged from the frozen packet, now with the run's own deviations added:
 mounted-showroom-device behavior (Phase 0.4 remains ⏳), real
 assistive-technology behavior, representative-customer comprehension —
 **further weakened by the solo deviation: no second person observed
-anything today** — Spanish behavior and copy (pass not run; native review
-outstanding), catalog copy approval (the claim-risk inventory still awaits
+anything today** — Spanish behavior and copy (paired pass deferred by owner decision;
+native claim-equivalence review remains an open activation gate), catalog copy approval (the claim-risk inventory still awaits
 its owner), the fixed-heading comparison (speculation only), and
 production readiness. Do not cite this packet for any of those.
