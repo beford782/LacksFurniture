@@ -259,12 +259,17 @@ MATTRESSES = Tab(
         col("reason_medium", note="per-match reason"),
         col("reason_firm", note="per-match reason"),
         col("reason_durability", note="per-match reason"),
-        col("reason_default", required=True, note="main selling point shown to everyone"),
+        # reason_default and the differentiator pairs are optional as of the
+        # 2026-08-08 claim-governance retirement pass: a blank means the copy
+        # was deliberately withdrawn from rendering (the app omits empty
+        # fields and falls back to generated neutral text). Leave these
+        # blank only for withdrawn copy — new models should still fill them.
+        col("reason_default", note="main selling point shown to everyone; blank = withdrawn copy"),
         col("topPickReason", note="top-pick badge reason (EN)"),
-        col("differentiator1Title", required=True, note="model-specific trial distinction title"),
-        col("differentiator1Detail", required=True, note="plain-language felt or functional difference"),
-        col("differentiator2Title", required=True, note="second model-specific trial distinction title"),
-        col("differentiator2Detail", required=True, note="second plain-language felt or functional difference"),
+        col("differentiator1Title", note="model-specific trial distinction title; blank = withdrawn copy"),
+        col("differentiator1Detail", note="plain-language felt or functional difference; blank = withdrawn copy"),
+        col("differentiator2Title", note="second model-specific trial distinction title; blank = withdrawn copy"),
+        col("differentiator2Detail", note="second plain-language felt or functional difference; blank = withdrawn copy"),
 
         # Spanish — feed mattresses-es.csv (plain header given in note), keyed by `id`.
         col("displayBadges (ES)", "displayBadges_es", lang="es", note="-> mattresses-es.csv displayBadges"),
