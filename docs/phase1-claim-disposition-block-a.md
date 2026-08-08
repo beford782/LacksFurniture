@@ -22,8 +22,9 @@ legal/compliance review, never legal conclusions or advice.
 **Status update 2026‑08‑08 (later the same day):** the named owner ruled on
 this package in an interactive walkthrough session — all 24 dispositions
 ratified, with recorded owner decisions, standards, and two explicit
-overrides; the three Appendix A requests were approved for sending. See
-§14, which governs wherever it modifies a recommendation above. The
+overrides; the three Appendix A evidence questionnaires were approved, and
+the owner states that he is authorized to answer them himself. See §14,
+which governs wherever it modifies a recommendation above. The
 legal/compliance review remains outstanding and the reviewer role remains
 unfilled; execution of every rewrite stays gated exactly as before.
 
@@ -283,9 +284,9 @@ may publish line‑scoped "Handcrafted Reserve" copy — materially stronger
 than the brand‑wide tagline weighed here — but it could not be landed on any
 fetchable official page (two candidate URLs 404; the resolving Reserve
 collection page contains no handcrafted/hand‑made language), and a snippet
-is not admissible under the rubric. The licensee/dealer request (§10) should
-ask the question directly; a confirmed line‑level claim would reopen this
-decision.
+is not admissible under the rubric. The authorized owner response to the
+Appendix A question set should address the question directly; a confirmed
+line‑level claim would reopen this decision.
 
 **R2 — Mapping‑gap rows stay REWRITE, with execution blocked.** For
 A18, A19/A20, A22, A23 and A24 the exact SKU/generation mapping to a
@@ -350,8 +351,8 @@ URLs was added (§13) and every load‑bearing source re‑fetched — during
 which one further evidence correction surfaced: A21's "sinking into a
 cloud"/"stuck" sentences are a customer review on the Spring Air page, not
 manufacturer copy, and are no longer relied on (see A21); (10) three
-send‑ready dealer/licensee evidence requests were drafted for owner review
-(Appendix A — NOT SENT).
+dealer/licensee evidence question sets were drafted for owner review
+(Appendix A; later converted to authorized owner response by §14.4).
 
 ---
 
@@ -1572,15 +1573,16 @@ sheet closes A22/A23/A24 (§10).
 
 ## 8. Cross‑cutting findings
 
-**8.1 One dealer‑materials request per brand closes most open items.**
+**8.1 One supported brand‑level response closes most open items.**
 A Tempur‑Pedic dealer claim sheet resolves A1/A4/A19/A20 (the "2.0"
 generation question, the °F/°C unit, the PCM attribution). A Restonic
-licensee spec‑sheet request resolves A5/A13 (coil unit), A15 (zoned system),
+licensee spec‑sheet response resolves A5/A13 (coil unit), A15 (zoned system),
 A22/A23/A24 (Platinum bill of materials), and the "hand‑made" question on
 A7/A9. A Spring Air Copper spec/regulatory sheet closes A18's EPA question
-and the Copper build‑equivalence question. Recommendation: request once per
-brand, not per row. Send‑ready drafts of all three requests are in
-Appendix A — **NOT SENT; owner review required**.
+and the Copper build‑equivalence question. Recommendation: answer once per
+brand, not per row. The owner states that he is authorized to answer all
+three Appendix A evidence questionnaires; responses and supporting records
+remain pending (§14.4).
 
 **8.2 Exact upstream mapping is a risk dimension the inventory does not
 capture.** Five floor models require SKU/generation/build mapping
@@ -1899,14 +1901,20 @@ document's recommendations)
    require real substantiation. This relaxes the "contingent on spec
    confirmation" gates on kept construction facts (e.g. A22's gel layer,
    A24's wrapped coils) from *blocked* to *feed‑supported pending
-   confirmation*; the spec‑sheet requests stand unchanged.
+   confirmation*; the evidence questions and supporting‑record requirements
+   stand unchanged.
 
-### 14.4 Appendix A requests — approved for sending
+### 14.4 Appendix A evidence questionnaires — owner response authorized
 
-All three drafts (A.1 Tempur‑Pedic, A.2 Restonic Texas licensee, A.3
-Spring Air) are **approved as drafted, 2026‑08‑08**, after individual
-review. The owner sends them through his own channels; **none has been
-sent as of this recording** — send dates are to be recorded when known.
+All three question sets (A.1 Tempur‑Pedic, A.2 Restonic Texas licensee,
+A.3 Spring Air) are **approved, 2026‑08‑08**, after individual review. The
+owner states that he is authorized to answer them and will provide the
+written responses himself; they are not awaiting an external send. **No
+response has been recorded as of this update.** Each response must cite or
+attach the supporting record for every item treated as resolved. An
+unanswered item, or an answer without supporting evidence, remains open
+under §10. No manufacturer, licensee, or dealer contact is required by
+this workflow unless the owner later chooses to seek corroboration.
 
 ### 14.5 Unchanged gates
 
@@ -1969,8 +1977,8 @@ repository). Findings:
   from the retailer's own PDP, this stands above the product‑feed floor
   of the owner's material‑presence standard (§14.3.3) and
   **substantially closes the g9 build/BOM question** (§10 "Copper SKU
-  identity": build documented; written identity confirmation still
-  requested).
+  identity": build documented; written identity confirmation remains
+  required in the authorized owner response).
 - Language present: "patented NatuVerex" and "healthier sleep
   experience". Records **absent**: the Lacks SKU or model number on the
   document itself, any revision number or effective date, any patent
@@ -1982,24 +1990,25 @@ repository). Findings:
   1602‑862‑MZ972SA50, giving strong SKU‑specific provenance despite the
   document itself carrying no SKU.
 
-Consequence for A.3 (approved as drafted; text unchanged): the request
-still goes, with its center of gravity now on written SKU applicability,
-revision/effective date, approved claim language, patent substantiation,
-and regulatory/testing records rather than the bill of materials. The
-owner may reference the retrieved spec sheet when sending. No dealer,
-licensee, or manufacturer contact has occurred.
+Consequence for A.3: the owner will answer the question set in his stated
+authorized capacity, with its center of gravity now on written SKU
+applicability, revision/effective date, approved claim language, patent
+substantiation, and regulatory/testing records rather than the bill of
+materials. The retrieved specification sheet may be cited or attached to
+the response. No response has yet been recorded, and no dealer, licensee,
+or manufacturer contact has occurred.
 
-## Appendix A — DRAFT REQUESTS — APPROVED FOR SENDING 2026‑08‑08 (§14.4); NOT YET SENT
+## Appendix A — OWNER‑RESPONSE EVIDENCE QUESTIONNAIRES — AUTHORIZED 2026‑08‑08 (§14.4); RESPONSES PENDING
 
-Three send‑ready evidence requests, drafted for the owner's review. **None
-has been sent; no manufacturer, licensee, or dealer has been contacted.**
-Sending them, and to whom, is the owner's decision. Owner approval of all
-three as drafted was recorded 2026‑08‑08 (§14.4). Each request closes the
-records‑dependent items in §10 for its brand. Common instruction embedded
-in each: unsupported elements remain omitted from the kiosk until written
-evidence arrives.
+Three evidence question sets, approved after the owner's individual
+review. The owner states that he is authorized to answer them and will do
+so himself. **No response has been recorded as of this update; no
+manufacturer, licensee, or dealer has been contacted.** Each answer closes
+only the records‑dependent items supported by a cited or attached written
+record. Unsupported or unanswered elements remain open under §10 and
+omitted from the kiosk.
 
-### A.1 Draft request — Tempur‑Pedic dealer/brand representative
+### A.1 Evidence questionnaire — Tempur‑Pedic dealer/brand documentation
 
 > Subject: Claim‑substantiation documentation for two Tempur‑Pedic floor
 > models (Lacks Furniture DreamFinder kiosk)
@@ -2041,7 +2050,7 @@ evidence arrives.
 > to the exact units above as stocked. Until this arrives, unsupported
 > claim elements remain omitted from our kiosk.
 
-### A.2 Draft request — Restonic Texas licensee
+### A.2 Evidence questionnaire — Restonic Texas licensee documentation
 
 > Subject: Model‑level specification and claim documentation for Restonic
 > floor models (Lacks Furniture DreamFinder kiosk)
@@ -2102,7 +2111,7 @@ evidence arrives.
 > Until this documentation arrives, unsupported claim elements remain
 > omitted from our kiosk.
 
-### A.3 Draft request — Spring Air dealer/brand representative
+### A.3 Evidence questionnaire — Spring Air dealer/brand documentation
 
 > Subject: Specification and claim documentation for the Copper hybrid
 > floor model (Lacks Furniture DreamFinder kiosk)
