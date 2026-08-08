@@ -2092,6 +2092,38 @@ sent externally; nothing was merged; no file outside this document
 changed; no Dropbox content was modified, moved, shared, or committed to
 the repository.
 
+**Interim retirement pass — authorized and implemented 2026‑08‑08
+(PR #22; effective in production only upon that PR's merge and Pages
+deploy).** With the rewrite path gated on an authoring workflow and an
+unfilled legal‑reviewer role, the owner authorized a fail‑closed interim
+**withdrawal by omission** of ruled and evidence‑contradicted copy — a
+five‑question interactive review plus three in‑flight rulings during
+verification. Scope (84 strings, EN and ES together, empty‑string
+mechanism, no replacement copy authored): the 24 Block A strings; g4's
+`highlight` (executing §14.2.1 — g4's `reason_default` is kept, carrying
+the ruled unquantified substrate); five fallback‑audit catches so no
+dropped‑element copy surfaces into vacated render slots (g5/g2/s7
+highlights, s7's "Plush that stays cool" title, s7's "Cool‑gel plush
+hybrid" archetype); all s6/s7 spec‑contradicted gel display copy under
+§B.4 C4 (Cool Gel tags, s6 highlight/reason_default/archetype/
+topPickReason/differentiator 2, s7 reason_default — the last two found
+and owner‑approved during in‑browser verification; s5's spec‑supported
+Cool Gel is kept); and the five failed‑closed "25 % thicker center
+coils" carriers (b5 highlight, b5/b6/s3/s10 reason_default — §8.4
+executed early, fail‑closed, on B/C rows). One shared‑tooling change,
+owner‑approved: `tools/workbook_schema.py` makes the five content
+columns optional with a withdrawn‑copy note. Verified programmatically
+(84 strings absent from the generated JSON and CSVs; nine sentinel keeps
+intact; nine untouched models byte‑identical) and in‑browser across
+results, drawer, compare, handoff, and Spanish. Scoring inputs,
+`features`, quiz, and application code untouched; the engine‑coupled
+`cooling` feature on s7 still drives one hedged generated line (Phase‑3
+matter). **Anchor note:** §12's exact‑string verification is anchored to
+base `bdf56d0`; after PR #22 merges, the production catalog no longer
+contains the 24 strings — this document remains the string‑of‑record.
+Withdrawn copy returns only through the authoring workflow and the
+legal queue.
+
 ## Appendix A — OWNER‑RESPONSE EVIDENCE QUESTIONNAIRES — AUTHORIZED 2026‑08‑08 (§14.4); FIRST PARTIAL RESPONSES RECORDED 2026‑08‑08
 
 Three evidence question sets, approved after the owner's individual
