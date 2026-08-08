@@ -35,8 +35,11 @@ primary; Payment Choice is secondary and isolated.
 
 Prototypes: `prototypes/phase1-decision-package/` (standalone; never
 imported, linked or executed by the production app). Frozen engine fixtures:
-`prototypes/phase1-decision-package/fixtures/` (captured by executing the
-real engine at `78f949c`; see `PROVENANCE.md` there). Companion documents:
+`prototypes/phase1-decision-package/fixtures/` (captured/re-blessed from
+synchronized main `01b03b9`; the engine-derived payload is byte-equivalent
+to the earlier `78f949c` capture — the only fixture JSON change across the
+main synchronization was the embedded `engineSourceCommit` provenance
+pointer; `PROVENANCE.md` there is the authoritative record). Companion documents:
 `docs/phase1-catalog-reason-authoring-brief.md` (corrected),
 `docs/phase1-research-source-appendix.md` (new),
 `docs/phase1-assisted-sales-evaluation-packet.md` (RUN — WITH RECORDED DEVIATIONS, 2026-08-07).
@@ -585,8 +588,11 @@ report as a Phase 0.4 evidence item, not a design verdict.
 
 ## 8. Data-contract and scoring-isolation assessment
 
-The prototypes consume frozen fixtures captured by executing the real engine
-at `78f949c` — the same extract-and-execute patterns as the shipped suites.
+The prototypes consume frozen fixtures captured by executing the real
+engine — the same extract-and-execute patterns as the shipped suites —
+currently blessed at synchronized main `01b03b9` (engine-derived payload
+byte-equivalent to the original `78f949c` capture; only the embedded
+`engineSourceCommit` pointer changed across the synchronization).
 Provenance: `fixtures/PROVENANCE.md`. **Hashing scope, stated exactly
 (correction pass):** sha256 (LF-normalized) covers the **three engine
 inputs the capture reads** (`index.html`, `data/mattresses.json`,

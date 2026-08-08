@@ -3,8 +3,11 @@
 **RESEARCH / PROTOTYPE ONLY — not Phase 1 implementation, not approved for
 merge, never imported or executed by the production application.** Phase 0.4
 remains pending, Phase 0 remains open, and the showroom device matrix is
-unconfirmed. Everything here renders against frozen engine output captured
-from main = `78f949c` (see `fixtures/PROVENANCE.md`); nothing recomputes,
+unconfirmed. Everything here renders against frozen engine output
+captured/re-blessed from synchronized main = `01b03b9` — byte-equivalent
+to the earlier `78f949c` capture except the embedded `engineSourceCommit`
+pointer (see `fixtures/PROVENANCE.md`, the authoritative record); nothing
+recomputes,
 re-orders, filters, caps or synthesises engine output.
 
 ## Layout
