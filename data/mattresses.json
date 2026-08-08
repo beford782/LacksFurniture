@@ -768,10 +768,10 @@
                        "highlight_es":  "Confort box-top firme con soporte de resortes zonificados",
                        "imageUrl":  "images/mattresses/platinum maria firm.jpg",
                        "reasons":  {
-                                       "default":  "Firm box-top support with 25% thicker center coils and full edge encasement — alignment-first comfort with a finished luxury feel."
+
                                    },
                        "reasons_es":  {
-                                          "default":  "Soporte box-top firme con resortes centrales 25% más gruesos y encasado completo de borde — confort que prioriza la alineación con acabado de lujo."
+
                                       },
                        "differentiators":  [
                                                {
@@ -982,19 +982,19 @@
                                     "Firm",
                                     "Euro Top"
                                 ],
-                       "highlight":  "Firm euro-top comfort with 25% thicker center coils",
+                       "highlight":  "",
                        "tags_es":  [
                                        "Marvelous Middle",
                                        "Firme",
                                        "Euro Top"
                                    ],
-                       "highlight_es":  "Confort euro-top firme con resortes centrales 25% más gruesos",
+                       "highlight_es":  "",
                        "imageUrl":  "images/mattresses/kendall firm euro top.jpg",
                        "reasons":  {
-                                       "default":  "25% thicker coils in the center third support your hips and lower back while the euro top softens the firm surface."
+
                                    },
                        "reasons_es":  {
-                                          "default":  "Resortes 25% más gruesos en el tercio central soportan caderas y espalda baja mientras el euro top suaviza la superficie firme."
+
                                       },
                        "differentiators":  [
                                                {
