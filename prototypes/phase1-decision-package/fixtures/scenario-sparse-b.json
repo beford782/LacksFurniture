@@ -2,7 +2,7 @@
  "meta": {
   "scenario": "sparse-b",
   "description": "Sparse: exactly 2 priorities (engine never pads to 3); solo back sleeper, firm preference, no issues.",
-  "engineSourceCommit": "78f949c60cb9d7192d51bd9b3b7155d39319f8df",
+  "engineSourceCommit": "01b03b9284413969cce32a2d23c3d2e935579055",
   "answers": {
    "sleep_quality": "well",
    "trigger": "upgrade",

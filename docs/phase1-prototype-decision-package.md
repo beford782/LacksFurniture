@@ -5,7 +5,10 @@ two gated Phase 1 presentation questions from actual bilingual screens
 instead of prose. It is **not** Phase 1 implementation and records **no**
 approval. Phase 0.4 remains ⏳, Phase 0 remains open, the showroom device
 matrix is unconfirmed, the production application is unchanged from
-`origin/main` = `78f949c`, and the per-model catalog reasons remain missing
+current `origin/main` = `01b03b9` (the branch was synchronized with main
+after PR #19's store-location correction; the fixtures' engine inputs are
+byte-identical between `78f949c` and `01b03b9`, and the provenance was
+re-blessed accordingly), and the per-model catalog reasons remain missing
 and were **not** invented.
 
 **Correction pass (2026-08-07).** After Codex's independent review of head
@@ -16,8 +19,13 @@ corrected tier-tabs Results (`results-tabs/`). Alternatives A/B and the
 grouped accordion are retained as exploration records (the accordion as
 **rejected** exploration). Nothing in this pass upgrades agent reviews,
 automated checks or screenshots into salesperson/customer observation —
-the human evaluation is prepared, not performed, in
-`docs/phase1-assisted-sales-evaluation-packet.md` (status: NOT RUN).
+the human evaluation ran on 2026-08-07 and is recorded — with its
+deviations stated plainly (solo expert walkthrough, English only,
+interview-transcribed) — in
+`docs/phase1-assisted-sales-evaluation-packet.md` (status: RUN — WITH
+RECORDED DEVIATIONS). The paired Spanish usability pass was SKIPPED /
+DEFERRED BY OWNER DECISION for this prototype cycle and provides no
+Spanish usability or copy evidence.
 
 DreamFinder's operating premise throughout: a **salesperson-operated
 presentation and consultation tool used with the customer present** — the
@@ -31,7 +39,7 @@ imported, linked or executed by the production app). Frozen engine fixtures:
 real engine at `78f949c`; see `PROVENANCE.md` there). Companion documents:
 `docs/phase1-catalog-reason-authoring-brief.md` (corrected),
 `docs/phase1-research-source-appendix.md` (new),
-`docs/phase1-assisted-sales-evaluation-packet.md` (new, NOT RUN).
+`docs/phase1-assisted-sales-evaluation-packet.md` (RUN — WITH RECORDED DEVIATIONS, 2026-08-07).
 
 ---
 
@@ -837,11 +845,21 @@ direction; every approval remains Blake's.
 
 ### 12.2 Still requiring Blake or external evidence
 
-1. **Final visual approval of both candidates — after the assisted-sales
-   dry run.** The packet is frozen and empty
-   (`docs/phase1-assisted-sales-evaluation-packet.md`); Blake runs it with
-   one operator and one customer-role observer on one device. This is the
-   exact next step.
+1. **Final visual approval of both candidates.** The assisted-sales dry
+   run RAN on 2026-08-07 (solo expert walkthrough, English only —
+   deviations recorded in the packet). Blake's direction decisions from
+   it: **Sleep Brief direction confirmed** (with recorded revisions:
+   firmness readout reads as a score; CTA unclear — journey-launch
+   energy wanted; journey rail underuses landscape; Sharing badge value
+   questioned; minor sticky-bar crowding) and **Results structure
+   direction confirmed for continued iteration, presentation to revise**
+   (more graphics, less text density; compare-open context dilution;
+   Payment Choice visibility dial). These are direction decisions — not
+   design, catalog, production, customer-research, Spanish, device, or
+   implementation approvals. The paired Spanish usability pass was
+   SKIPPED / DEFERRED BY OWNER DECISION for this cycle. Final *visual*
+   approval still follows the presentation revisions at implementation
+   review.
 2. **Final badge vocabulary and copy** — including the two proposed badge
    category labels, the solo-ES register deviation, and every
    `data-proposed-copy` string (note: "See My Matches →" is proposed, not

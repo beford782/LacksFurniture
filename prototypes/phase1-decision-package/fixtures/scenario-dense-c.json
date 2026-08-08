@@ -2,7 +2,7 @@
  "meta": {
   "scenario": "dense-c",
   "description": "Dense: 3 priorities incl. a 90/90 tie resolved by stable-sort insertion order; plus-body plush sleeper with reflux in a family bed.",
-  "engineSourceCommit": "78f949c60cb9d7192d51bd9b3b7155d39319f8df",
+  "engineSourceCommit": "01b03b9284413969cce32a2d23c3d2e935579055",
   "answers": {
    "sleep_quality": "fair",
    "trigger": "worn_out",

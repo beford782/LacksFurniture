@@ -2,7 +2,7 @@
  "meta": {
   "scenario": "boundary-one",
   "description": "SYNTHETIC boundary: exactly 1 priority (the firmness-preference emission alone). The vector omits sleep_position — unreachable from a completed quiz (every position value emits a priority; reachable minimum is 2) — and exists solely to pin the length-1 rendering contract through the real engine.",
-  "engineSourceCommit": "78f949c60cb9d7192d51bd9b3b7155d39319f8df",
+  "engineSourceCommit": "01b03b9284413969cce32a2d23c3d2e935579055",
   "answers": {
    "sleep_quality": "well",
    "trigger": "upgrade",

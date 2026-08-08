@@ -1,9 +1,9 @@
 # Frozen fixture provenance — Phase 1 decision-package prototypes
 
-**Engine source commit:** `78f949c60cb9d7192d51bd9b3b7155d39319f8df` (= origin/main; the capture aborts
+**Engine source commit:** `01b03b9284413969cce32a2d23c3d2e935579055` (= origin/main; the capture aborts
 unless index.html, data/ and Code.gs in this worktree are byte-identical to it)
-**Worktree HEAD at capture:** `81b13788b4d366dede71dd8d0704a9c085ff36c3`
-**Captured:** 2026-08-07T18:48:49.616Z
+**Worktree HEAD at capture:** `2b37f3b2b36ca1ffc0b869ec3ab6ea0703b1060a`
+**Captured:** 2026-08-08T00:27:52.262Z
 **Capture command:** `node prototypes/phase1-decision-package/fixtures/tools/capture_fixtures.mjs`
 
 ## Method
@@ -119,10 +119,10 @@ in this document does not satisfy the check.
 
 | file | sha256 |
 |---|---|
-| scenario-dense-c.json | `530e738895c070c5602f351a27db0ee80750ad1466bdb0ca6da1b64ac2d2d87e` |
-| scenario-dense-a.json | `a5088aab4ae6aea9729e935bff2d442f8ce2655275aba19ddbde834fb8751638` |
-| scenario-sparse-b.json | `1250fa9698edfa1fba6391bae0cfdc80153b891cb2ec08489b19bbf24c074f64` |
-| scenario-boundary-one.json | `89317539f042ee23de5db914bd6a6f4af9557b2189616ecc3e5fb10f6276200e` |
+| scenario-dense-c.json | `11749d760dcb6c3915d8b4f0ed6784a6941c49af8ecf1543078e2a277ddea62e` |
+| scenario-dense-a.json | `215d578682d7b52a364fef257b8ce5cdae636a9706cb39976e3e6bbc596d9947` |
+| scenario-sparse-b.json | `09e53172929a0b579bcbba21f2f26a5d702f01be1d0d4bd41520c1bb15bf5f08` |
+| scenario-boundary-one.json | `d8607b163c97bd13e1d48cd6b150218f16ebf1b36a7d45f95127d16e7cb7de14` |
 
 ## Fixture schema (per scenario JSON)
 

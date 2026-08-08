@@ -2,7 +2,7 @@
  "meta": {
   "scenario": "dense-a",
   "description": "Dense: 3 priorities, all kind 'need'; the classic hot side sleeper with back pain and a disturbed partner.",
-  "engineSourceCommit": "78f949c60cb9d7192d51bd9b3b7155d39319f8df",
+  "engineSourceCommit": "01b03b9284413969cce32a2d23c3d2e935579055",
   "answers": {
    "sleep_quality": "poor",
    "trigger": "pain",

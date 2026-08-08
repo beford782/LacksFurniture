@@ -37,7 +37,7 @@ or any later real-customer validation.
 | Device | same physical device throughout | iPad (model not stated) |
 | Orientation / mount | fixed for the session | **held in hand, landscape** |
 | Fixture scenario | `dense-c` all stations | dense-c ✓ |
-| Language | one language per pass | EN (first pass; ES pass not run) |
+| Language | one language per pass | EN only (paired ES pass SKIPPED / DEFERRED BY OWNER DECISION for this cycle) |
 | Mode | evaluation | evaluation ✓ (verified: minimal notice only) |
 | Task | scripted per station (§3) | scripts read and followed ✓ |
 | Serving | repo over HTTP | static mirror pinned to `c73324e` (deviation 4) |
@@ -145,8 +145,8 @@ enforcement, no English fallback) remain in force and verified.
   that is important to sleep" — i.e., **substantive, evidence-backed
   product-difference and fit content. The catalog-content workflow (named
   owner, spec-card evidence, claim-safety pass; possibly AI-drafted,
-  always human-approved) is the critical path.** Structure approved;
-  substance is the blocker.
+  always human-approved) is the critical path.** Blake confirmed the
+  structure direction for continued iteration; substance is the blocker.
 - **Re-test on the real device once Phase 0.4 closes:** sticky-bar
   crowding in hand-held landscape; compare-open context feel; ("think you
   got it" to these nominations).
@@ -158,6 +158,8 @@ mounted-showroom-device behavior (Phase 0.4 remains ⏳), real
 assistive-technology behavior, representative-customer comprehension —
 **further weakened by the solo deviation: no second person observed
 anything today** — Spanish behavior and copy (paired pass deferred by owner decision;
-native claim-equivalence review remains an open activation gate), catalog copy approval (the claim-risk inventory still awaits
-its owner), the fixed-heading comparison (speculation only), and
+native claim-equivalence review remains an open activation gate), catalog copy approval (Blake Ford is the named content owner and
+business approver as of 2026-08-07; the inventory disposition is now his
+open task, and the native-Spanish reviewer and legal/compliance reviewer
+roles remain explicitly unfilled), the fixed-heading comparison (speculation only), and
 production readiness. Do not cite this packet for any of those.

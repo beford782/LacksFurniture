@@ -65,6 +65,8 @@ URL, context, direct claim, inference, limitations — before being cited.
 Generic e-commerce, government-service, disclosure, or regulatory research
 is not direct evidence of DreamFinder behavior. Nothing in this appendix
 demonstrates that a Lacks salesperson or customer will notice, understand,
-or prefer anything in the prototypes. That evidence can only come from the
-assisted-sales dry run (still NOT RUN) and, later, Phase 0.4 device
-evidence and any real-customer validation Blake commissions.
+or prefer anything in the prototypes. That evidence began with the
+assisted-sales dry run (RUN 2026-08-07 as a solo, English-only expert
+walkthrough — deviations recorded in the packet; direction decisions
+only) and still requires, later, Phase 0.4 device evidence and any
+real-customer validation Blake commissions.
