@@ -6,9 +6,13 @@
  * production data, so its appearance cannot drift and no protected
  * artifact is ever touched.
  *
- * Motion discipline (enforced by tools/motion_lab_check.mjs):
- *   - animate transform / opacity / clip-path only (letter-spacing sanctioned
- *     once, following the production revealCertCodeIn precedent)
+ * Motion discipline (linted by tools/motion_lab_check.mjs):
+ *   - performance-oriented animated-property ALLOWLIST: transform / opacity /
+ *     clip-path (letter-spacing sanctioned once, following the production
+ *     revealCertCodeIn precedent). The allowlist favors properties that
+ *     usually composite, but it is NOT a universal compositor guarantee —
+ *     clip-path, color changes and some SVG behavior may paint on iPad
+ *     Safari; final performance requires inspection on the actual device.
  *   - no transition: all, no infinite animation, no animated shadows/filters
  *   - reduced motion collapses the TIMELINE via the duration tokens below,
  *     not by stranding JS waits (the runner branches in JS first)
@@ -292,6 +296,19 @@ button:disabled { cursor: not-allowed; opacity: 0.45; }
   border: 1px solid var(--consultation-rule);
 }
 .ml-stage.is-dark { background: var(--color-bg); color: var(--color-text); border-color: var(--color-border); }
+/* the recommendation state leaves the fixed-height quiz viewport: the stage
+ * grows to fit and the PAGE scrolls — never a nested scrollbar inside it.
+ * min-height keeps the quiz-stage footprint as a floor so the transition
+ * cannot SHRINK the stage (layout-shift discipline); at showroom/tablet
+ * widths the two-column recommendation fits inside that footprint, so no
+ * growth (and no shift) occurs either — narrow widths reflow naturally. */
+.ml-stage.is-reveal {
+  height: auto;
+  min-height: clamp(430px, 62vh, 560px);
+  display: flex;
+  align-items: center;
+}
+.ml-stage.is-reveal .ml-step { position: static; overflow: visible; width: 100%; }
 .ml-step {
   position: absolute;
   inset: 0;
@@ -474,28 +491,77 @@ button:disabled { cursor: not-allowed; opacity: 0.45; }
   to { transform: scale(0.99); }
 }
 .ml-loom.is-weaving .ml-loom-upper {
-  animation: ml-part-up 450ms var(--e-lift) forwards;
+  animation: ml-part-up var(--part-dur, 450ms) var(--e-lift) forwards;
   animation-delay: var(--part-at, 1500ms);
 }
 .ml-loom.is-weaving .ml-loom-lower {
-  animation: ml-part-down 450ms var(--e-lift) forwards;
+  animation: ml-part-down var(--part-dur, 450ms) var(--e-lift) forwards;
   animation-delay: var(--part-at, 1500ms);
 }
 @keyframes ml-part-up { to { transform: translateY(-14%); opacity: 0.25; } }
 @keyframes ml-part-down { to { transform: translateY(14%); opacity: 0.25; } }
 
-/* done state: the stage itself is dark by now; threads resolve away and only
- * the two persistent edge rules remain as the results screen's vertical rules */
+/* the cloth: the woven threads resolve into a quilted cover swatch — the
+ * recognizably mattress-specific surface the brief becomes. Split into
+ * upper/lower halves inside the parting groups so the swatch itself parts. */
+.ml-loom .ml-cloth { opacity: 0; }
+.ml-loom.is-weaving .ml-cloth {
+  animation: ml-cloth-in var(--cloth-dur, 300ms) var(--e-place) forwards;
+  animation-delay: var(--cloth-at, 800ms);
+}
+@keyframes ml-cloth-in { to { opacity: 1; } }
+
+/* labeled ribbons: the customer's actual Sleep Brief values traveling from
+ * the brief into the weave (decorative flight — real values stay in the DOM) */
+.ml-ribbon {
+  position: absolute;
+  z-index: 7;
+  pointer-events: none;
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  padding: 0 12px;
+  border-radius: var(--radius);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: normal;
+  color: #14171C;
+}
+.ml-ribbon--temp { background: #7E9AAE; }
+.ml-ribbon--firm { background: #B8935D; }
+.ml-ribbon--pos { background: #FABD0F; color: #2F271E; }
+/* persistent thread labels at each weft's entry edge, so the bands stay
+ * attributable to the customer's answers throughout the weave */
+.ml-weft-tag {
+  position: absolute;
+  z-index: 6;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-text);
+  background: rgba(20, 23, 28, 0.78);
+  border: 1px solid var(--color-border);
+  border-left: 4px solid var(--tag-color, var(--color-accent));
+  padding: 3px 9px;
+  border-radius: var(--radius);
+  opacity: 0;
+  transition: opacity var(--m-quick) ease;
+  transition-delay: var(--d, 0ms);
+  max-width: 40%;
+}
+.ml-loom.is-weaving .ml-weft-tag { opacity: 1; }
+
+/* done state: the stage itself is dark by now; the loom is hidden entirely
+ * and the recommendation stands in flow */
 .ml-loom.is-done .ml-loom-veil { opacity: 0; transition: none; }
 .ml-loom.is-done .warp,
 .ml-loom.is-done .weft,
+.ml-loom.is-done .ml-cloth,
+.ml-loom.is-done .ml-weft-tag,
 .ml-loom.is-done .ml-loom-upper,
-.ml-loom.is-done .ml-loom-lower { opacity: 0; animation: none; }
-.ml-loom.is-done .warp.is-edge {
-  opacity: 0.12;
-  stroke-dashoffset: 0;
-  animation: none;
-}
+.ml-loom.is-done .ml-loom-lower { opacity: 0; animation: none; transition: none; }
 .ml-loom-skip {
   position: absolute;
   right: 14px;
@@ -512,24 +578,52 @@ button:disabled { cursor: not-allowed; opacity: 0.45; }
 }
 
 /* ============ mattress arrival ============ */
-.ml-hero-wrap {
-  position: relative;
-  display: flex;
-  flex-direction: column;
+/* Two-column recommendation: product on a tonal plinth at left, badge / name /
+ * why-it-fits / primary action at right. Everything visible at once — the
+ * whole state must fit 1024x768 with no nested scrolling. */
+.ml-reveal-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr);
+  gap: 18px 30px;
   align-items: center;
-  gap: 10px;
-  padding-top: 6px;
+  width: 100%;
+  max-width: 940px;
+  margin: 0 auto;
   perspective: 1600px;
 }
-.ml-hero {
-  width: min(400px, 84%);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  padding: 18px 20px 16px;
-  text-align: center;
+@media (max-width: 880px) {
+  .ml-reveal-grid { grid-template-columns: 1fr; gap: 14px; }
 }
-.ml-hero .ml-tier-badge {
+.ml-plinth {
+  position: relative;
+  border-radius: var(--radius);
+  border: 1px solid var(--color-border);
+  background: linear-gradient(180deg, #262A32 0%, #1A1E25 58%, #14171C 100%);
+  padding: 26px 20px 14px;
+  overflow: hidden;
+}
+.ml-plinth-floor {
+  position: absolute;
+  left: 7%;
+  right: 7%;
+  bottom: 30px;
+  height: 1px;
+  background: rgba(245, 239, 228, 0.09);
+}
+.ml-hero-img { position: relative; z-index: 1; }
+.ml-hero-img img { display: block; width: 100%; height: auto; }
+.ml-hero-shadow {
+  position: relative;
+  z-index: 0;
+  height: 16px;
+  margin: -8px auto 6px;
+  width: 82%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(0, 0, 0, 0.55), transparent);
+  opacity: 0.34;
+}
+.ml-hero-info { text-align: left; }
+.ml-hero-info .ml-tier-badge {
   display: inline-block;
   border: 1px solid var(--tier-gold);
   color: var(--tier-gold);
@@ -541,31 +635,28 @@ button:disabled { cursor: not-allowed; opacity: 0.45; }
   padding: 4px 10px;
   margin-bottom: 8px;
 }
-.ml-hero h4 {
+.ml-hero-info h4 {
   font-family: var(--font-serif);
   font-weight: 400;
-  font-size: 24px;
+  font-size: clamp(24px, 3vw, 30px);
   color: var(--color-text);
 }
-.ml-hero .ml-hero-brand { font-size: 12px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--color-text-muted); margin-bottom: 10px; }
-.ml-hero .ml-hero-img { position: relative; margin: 4px 0 2px; }
-.ml-hero .ml-hero-img img { display: block; width: 100%; border-radius: var(--radius); }
-.ml-hero .ml-hero-shadow {
-  height: 14px;
-  margin: 6px auto 0;
-  width: 78%;
-  border-radius: 50%;
-  background: radial-gradient(closest-side, rgba(0, 0, 0, 0.45), transparent);
-  opacity: 0.28;
+.ml-hero-info .ml-hero-brand {
+  font-size: 12px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  margin-bottom: 8px;
 }
-/* entrance: lower (settle ease) then a delayed sub-percent body settle */
-.ml-arrival.is-running .ml-hero {
+/* entrance: the mattress is lowered onto the plinth, contacts, settles; the
+ * plinth itself never moves */
+.ml-arrival.is-running .ml-hero-img {
   animation: ml-hero-lower 560ms var(--e-settle) both;
 }
 .ml-arrival.is-running .ml-hero-shadow {
   animation: ml-hero-shadow 560ms var(--e-settle) both;
 }
-.ml-arrival.is-running .ml-hero-img {
+.ml-arrival.is-running .ml-hero-img img {
   animation: ml-hero-settle 280ms var(--e-rebound-soft) 620ms both;
   transform-origin: center bottom;
 }
@@ -575,16 +666,17 @@ button:disabled { cursor: not-allowed; opacity: 0.45; }
   to { opacity: 1; transform: none; }
 }
 @keyframes ml-hero-shadow {
-  from { opacity: 0.16; transform: scaleX(1.28); }
-  to { opacity: 0.28; transform: scaleX(1); }
+  from { opacity: 0.18; transform: scaleX(1.26); }
+  to { opacity: 0.34; transform: scaleX(1); }
 }
 @keyframes ml-hero-settle {
   from { transform: none; }
   30% { transform: scaleY(0.988); }
   to { transform: none; }
 }
-.ml-arrival.is-running .ml-hero h4,
-.ml-arrival.is-running .ml-hero .ml-hero-brand {
+.ml-arrival.is-running .ml-hero-info .ml-tier-badge,
+.ml-arrival.is-running .ml-hero-info h4,
+.ml-arrival.is-running .ml-hero-info .ml-hero-brand {
   animation: ml-rise-in 300ms var(--e-place) 420ms both;
 }
 @keyframes ml-rise-in {
@@ -592,11 +684,11 @@ button:disabled { cursor: not-allowed; opacity: 0.45; }
   to { opacity: 1; transform: none; }
 }
 /* why-it-fits: after the settle trough, one spoken sentence apart */
-.ml-fit { list-style: none; width: min(400px, 84%); }
+.ml-fit { list-style: none; margin: 6px 0 4px; }
 .ml-fit li {
   display: flex;
   gap: 10px;
-  padding: 8px 2px;
+  padding: 7px 2px;
   border-top: 1px solid var(--color-border);
   font-size: 14px;
   color: var(--color-text);
@@ -606,10 +698,17 @@ button:disabled { cursor: not-allowed; opacity: 0.45; }
   animation: ml-rise-in 280ms var(--e-place) both;
   animation-delay: calc(700ms + var(--i, 0) * 70ms);
 }
-.ml-arrival.is-idle .ml-hero,
+.ml-arrival.is-idle .ml-hero-img,
+.ml-arrival.is-idle .ml-hero-info,
 .ml-arrival.is-idle .ml-fit,
 .ml-arrival.is-idle .ml-hero-shadow { opacity: 0; }
-.ml-arrival.is-done .ml-hero,
+.ml-arrival.is-done .ml-hero-img,
+.ml-arrival.is-done .ml-hero-img img,
+.ml-arrival.is-done .ml-hero-info,
+.ml-arrival.is-done .ml-hero-info .ml-tier-badge,
+.ml-arrival.is-done .ml-hero-info h4,
+.ml-arrival.is-done .ml-hero-info .ml-hero-brand,
+.ml-arrival.is-done .ml-fit,
 .ml-arrival.is-done .ml-fit li,
 .ml-arrival.is-done .ml-hero-shadow { opacity: 1; animation: none; transform: none; }
 
@@ -655,17 +754,22 @@ button:disabled { cursor: not-allowed; opacity: 0.45; }
   transition-timing-function: var(--e-settle);
   transition-delay: calc(var(--ri, 0) * 40ms);
 }
-.ml-layer--quilt { background: repeating-linear-gradient(90deg, #E9E2D2 0 26px, #DDD4C0 26px 28px); }
-.ml-layer--foam { background: #D9C79E; }
-.ml-layer--gel { background: #CBD4CF; }
-.ml-layer--coil {
-  height: 78px;
-  background: repeating-linear-gradient(90deg, #9AA3AD 0 3px, #737C86 3px 6px, #9AA3AD 6px 22px);
+/* layer faces are SVG textures (shared <defs> patterns in index.html) so the
+ * strata read as quilting, foam and pocketed coils — not as a bar chart.
+ * Equal schematic heights are kept deliberately: texture conveys material,
+ * never measured thickness (the honesty chip states this at rest). */
+.ml-layer { overflow: hidden; }
+.ml-layer > svg { display: block; width: 100%; height: 100%; }
+.ml-layer--coil { height: 78px; }
+/* a restrained mattress silhouette container: rounded top like a tape-edged
+ * cross-section, sitting on its border rather than floating */
+.ml-mattress-shell {
+  border: 1px solid var(--color-border);
+  border-radius: 16px 16px 5px 5px;
+  background: var(--color-surface-alt);
+  padding: 10px 10px 8px;
 }
-.ml-layer--base { background: #6B655B; }
-.ml-layer--generic-a { background: #C9CFD6; }
-.ml-layer--generic-b { background: #AEB6BF; }
-.ml-layer--generic-c { background: #8C949E; }
+.ml-mattress-shell .ml-layer:first-child { border-radius: 10px 10px 2px 2px; }
 .ml-layers-labels { flex: 1 1 240px; min-width: 220px; }
 .ml-layers-labels ol { list-style: none; }
 .ml-layers-labels li {

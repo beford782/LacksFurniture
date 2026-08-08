@@ -18,6 +18,65 @@
 </head>
 <body>
 
+<!-- shared material-texture patterns for the construction strata and the loom
+     cloth; referenced by fill="url(#...)" from the layer SVGs -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <pattern id="mlPatQuilt" width="36" height="24" patternUnits="userSpaceOnUse">
+      <rect width="36" height="24" fill="#EDE6D6"></rect>
+      <path d="M0 0 L36 24 M36 0 L0 24" stroke="rgba(118,99,68,0.30)" stroke-width="1" fill="none"></path>
+      <circle cx="0" cy="0" r="1.1" fill="rgba(118,99,68,0.5)"></circle>
+      <circle cx="36" cy="0" r="1.1" fill="rgba(118,99,68,0.5)"></circle>
+      <circle cx="0" cy="24" r="1.1" fill="rgba(118,99,68,0.5)"></circle>
+      <circle cx="36" cy="24" r="1.1" fill="rgba(118,99,68,0.5)"></circle>
+      <circle cx="18" cy="12" r="1.1" fill="rgba(118,99,68,0.5)"></circle>
+    </pattern>
+    <pattern id="mlPatFoam" width="26" height="16" patternUnits="userSpaceOnUse">
+      <rect width="26" height="16" fill="#D9C79E"></rect>
+      <path d="M0 8 Q6.5 5.4 13 8 T26 8" stroke="rgba(139,116,71,0.30)" stroke-width="1" fill="none"></path>
+      <circle cx="6" cy="13" r="0.9" fill="rgba(139,116,71,0.22)"></circle>
+      <circle cx="19" cy="3.5" r="0.9" fill="rgba(139,116,71,0.22)"></circle>
+    </pattern>
+    <pattern id="mlPatGel" width="26" height="16" patternUnits="userSpaceOnUse">
+      <rect width="26" height="16" fill="#CBD4CF"></rect>
+      <path d="M0 9 Q6.5 6.4 13 9 T26 9" stroke="rgba(84,110,102,0.30)" stroke-width="1" fill="none"></path>
+      <circle cx="5" cy="4" r="1.1" fill="rgba(84,110,102,0.35)"></circle>
+      <circle cx="17" cy="13" r="1.1" fill="rgba(84,110,102,0.35)"></circle>
+      <circle cx="23" cy="5" r="0.8" fill="rgba(84,110,102,0.28)"></circle>
+    </pattern>
+    <pattern id="mlPatCoil" width="34" height="78" patternUnits="userSpaceOnUse">
+      <rect width="34" height="78" fill="#79828E"></rect>
+      <rect x="2.5" y="4" width="29" height="70" rx="13" fill="#98A1AC" stroke="rgba(62,72,86,0.6)" stroke-width="1"></rect>
+      <path d="M9 16 L25 21 M25 21 L9 29 M9 29 L25 34 M25 34 L9 42 M9 42 L25 47 M25 47 L9 55 M9 55 L25 60"
+        stroke="rgba(52,62,76,0.65)" stroke-width="1.7" fill="none" stroke-linecap="round"></path>
+      <ellipse cx="17" cy="14" rx="8.5" ry="3" fill="none" stroke="rgba(52,62,76,0.7)" stroke-width="1.7"></ellipse>
+      <ellipse cx="17" cy="62" rx="8.5" ry="3" fill="none" stroke="rgba(52,62,76,0.7)" stroke-width="1.7"></ellipse>
+    </pattern>
+    <pattern id="mlPatGenA" width="24" height="14" patternUnits="userSpaceOnUse">
+      <rect width="24" height="14" fill="#C9CFD6"></rect>
+      <path d="M0 7 H24" stroke="rgba(90,100,112,0.28)" stroke-width="1" fill="none"></path>
+    </pattern>
+    <pattern id="mlPatGenB" width="24" height="14" patternUnits="userSpaceOnUse">
+      <rect width="24" height="14" fill="#AEB6BF"></rect>
+      <path d="M0 14 L14 0 M10 14 L24 0" stroke="rgba(78,88,100,0.30)" stroke-width="1" fill="none"></path>
+    </pattern>
+    <pattern id="mlPatGenC" width="24" height="14" patternUnits="userSpaceOnUse">
+      <rect width="24" height="14" fill="#8C949E"></rect>
+      <circle cx="6" cy="4" r="1" fill="rgba(56,66,78,0.4)"></circle>
+      <circle cx="18" cy="10" r="1" fill="rgba(56,66,78,0.4)"></circle>
+    </pattern>
+    <pattern id="mlPatBase" width="24" height="14" patternUnits="userSpaceOnUse">
+      <rect width="24" height="14" fill="#6B655B"></rect>
+      <path d="M0 14 L14 0" stroke="rgba(40,36,30,0.35)" stroke-width="1" fill="none"></path>
+    </pattern>
+    <pattern id="mlPatTick" width="16" height="16" patternUnits="userSpaceOnUse">
+      <rect width="16" height="16" fill="#20242B"></rect>
+      <path d="M0 0 L16 16 M16 0 L0 16" stroke="rgba(184,147,93,0.38)" stroke-width="1" fill="none"></path>
+      <circle cx="8" cy="8" r="0.9" fill="rgba(184,147,93,0.5)"></circle>
+    </pattern>
+  </defs>
+</svg>
+
 <div class="ml-reviewbar" role="note" aria-label="Prototype status">
   <strong>MOTION LAB — PROTOTYPE, NOT PRODUCTION</strong>
   <span class="ml-rb-meta">Frozen tokens from commit c8e5a95 &middot; DO NOT MERGE &middot; owner design review only</span>
@@ -55,9 +114,11 @@
   <section class="ml-section" id="demo-path" aria-labelledby="demoPathH">
     <h2 id="demoPathH">Guided demo path</h2>
     <p class="ml-sub">One realistic consultation ending: the final three quiz answers
-    become tactile cards, gather into the Sleep Brief, and the Night Loom — the one
-    signature transition — resolves the brief into the recommendation. Tap answers to
-    move through it; every long moment can be skipped by tapping.</p>
+    become tactile cards and gather into the Sleep Brief. In the Night Loom — the one
+    signature transition — the brief's three labeled values leave it as ribbons, cross
+    the loom as labeled threads, resolve into a quilted cover swatch, and the swatch
+    parts into the recommendation. Tap answers to move through it; every long moment
+    can be skipped by tapping.</p>
 
     <div class="ml-stage" id="mlStage">
 
@@ -163,30 +224,36 @@
         </div>
       </div>
 
-      <!-- Step 5: Night Loom + arrival + why-it-fits + construction handoff -->
+      <!-- Step 5: Night Loom + arrival + why-it-fits + construction handoff.
+           The full recommendation state — badge, name, brand, entire product
+           image, fit reasons, primary action — shows at once, no nested
+           scrolling (the stage grows via .is-reveal). -->
       <div class="ml-step" id="mlStepReveal" data-step="reveal" hidden>
         <div class="ml-arrival is-done" id="mlArrival">
-          <div class="ml-hero-wrap">
-            <div class="ml-hero">
+          <div class="ml-reveal-grid">
+            <div class="ml-plinth">
+              <div class="ml-hero-img">
+                <img id="mlHeroImg" src="assets/giselle-plush-smooth.png" alt="Giselle Plush mattress, isolated three-quarter view" width="920" height="433">
+              </div>
+              <div class="ml-hero-shadow" aria-hidden="true"></div>
+              <div class="ml-plinth-floor" aria-hidden="true"></div>
+            </div>
+            <div class="ml-hero-info">
               <span class="ml-tier-badge" data-i18n="badge-top">Top Match</span>
               <h4 tabindex="-1" id="mlHeroName">Giselle Plush</h4>
               <p class="ml-hero-brand">Restonic</p>
-              <div class="ml-hero-img">
-                <img id="mlHeroImg" src="../../images/mattresses/giselle%20plush.jpg" alt="Giselle Plush mattress, three-quarter studio view" width="1000" height="666">
+              <ul class="ml-fit">
+                <li style="--i:0" data-i18n="fit-1">Plush feel — the firmness you chose in the quiz</li>
+                <li style="--i:1" data-i18n="fit-2">Side sleeper — your position points to a softer comfort profile</li>
+                <li style="--i:2" data-i18n="fit-3">Sleeping hot is noted on your brief for the showroom conversation</li>
+              </ul>
+              <div class="ml-controls" style="margin-top:8px">
+                <button type="button" class="ml-btn" id="mlToLayersBtn" disabled data-i18n="btn-construction">Show the construction</button>
+                <button type="button" class="ml-btn ml-btn--ghost" id="mlReplayRevealBtn" disabled data-i18n="btn-replay-reveal">Replay reveal</button>
+                <button type="button" class="ml-btn ml-btn--ghost" id="mlRestartBtn" disabled data-i18n="btn-restart">Restart demo</button>
               </div>
-              <div class="ml-hero-shadow" aria-hidden="true"></div>
             </div>
-            <ul class="ml-fit">
-              <li style="--i:0" data-i18n="fit-1">Plush feel — the firmness you chose in the quiz</li>
-              <li style="--i:1" data-i18n="fit-2">Side sleeper — your position points to a softer comfort profile</li>
-              <li style="--i:2" data-i18n="fit-3">Sleeping hot is noted on your brief for the showroom conversation</li>
-            </ul>
           </div>
-        </div>
-        <div class="ml-controls" style="justify-content:center">
-          <button type="button" class="ml-btn" id="mlToLayersBtn" disabled data-i18n="btn-construction">Show the construction</button>
-          <button type="button" class="ml-btn ml-btn--ghost" id="mlReplayRevealBtn" disabled data-i18n="btn-replay-reveal">Replay reveal</button>
-          <button type="button" class="ml-btn ml-btn--ghost" id="mlRestartBtn" disabled data-i18n="btn-restart">Restart demo</button>
         </div>
       </div>
 
@@ -198,10 +265,10 @@
     <div class="ml-controls">
       <span class="ml-note">Night Loom cut:</span>
       <div class="ml-radiogroup" role="radiogroup" aria-label="Night Loom duration variant">
-        <button type="button" class="ml-radio" role="radio" aria-checked="true" data-loomcut="2400" disabled>2400 ms (art cut)</button>
-        <button type="button" class="ml-radio" role="radio" aria-checked="false" data-loomcut="1400" disabled>1400 ms (floor cut)</button>
+        <button type="button" class="ml-radio" role="radio" aria-checked="true" data-loomcut="1400" disabled>1400 ms (production candidate)</button>
+        <button type="button" class="ml-radio" role="radio" aria-checked="false" data-loomcut="2400" disabled>2400 ms (extended comparison cut)</button>
       </div>
-      <span class="ml-note">Usability review recommends the shorter cut for production; both are here to compare.</span>
+      <span class="ml-note">The 1400 ms cut is the only production candidate; the extended cut exists for side-by-side judgment only.</span>
     </div>
   </section>
 
@@ -246,22 +313,25 @@
       <p class="ml-sub">The hero is lowered, contacts, and settles a beat after the hands
       leave — shadow tightens as it descends. Name is readable before touchdown; match
       reasons land one spoken sentence apart. Only the hero arrives; siblings would fade flat.</p>
-      <div class="ml-stage is-dark" style="height:auto;min-height:430px;padding:22px 0">
+      <div class="ml-stage is-dark" style="height:auto;padding:24px 18px">
         <div class="ml-arrival is-done" id="mlArrivalSolo">
-          <div class="ml-hero-wrap">
-            <div class="ml-hero">
+          <div class="ml-reveal-grid">
+            <div class="ml-plinth">
+              <div class="ml-hero-img">
+                <img src="assets/giselle-plush-smooth.png" alt="Giselle Plush mattress, isolated three-quarter view" width="920" height="433">
+              </div>
+              <div class="ml-hero-shadow" aria-hidden="true"></div>
+              <div class="ml-plinth-floor" aria-hidden="true"></div>
+            </div>
+            <div class="ml-hero-info">
               <span class="ml-tier-badge" data-i18n="badge-top">Top Match</span>
               <h4 tabindex="-1">Giselle Plush</h4>
               <p class="ml-hero-brand">Restonic</p>
-              <div class="ml-hero-img">
-                <img src="../../images/mattresses/giselle%20plush.jpg" alt="Giselle Plush mattress, three-quarter studio view" width="1000" height="666">
-              </div>
-              <div class="ml-hero-shadow" aria-hidden="true"></div>
+              <ul class="ml-fit">
+                <li style="--i:0" data-i18n="fit-1">Plush feel — the firmness you chose in the quiz</li>
+                <li style="--i:1" data-i18n="fit-2">Side sleeper — your position points to a softer comfort profile</li>
+              </ul>
             </div>
-            <ul class="ml-fit">
-              <li style="--i:0" data-i18n="fit-1">Plush feel — the firmness you chose in the quiz</li>
-              <li style="--i:1" data-i18n="fit-2">Side sleeper — your position points to a softer comfort profile</li>
-            </ul>
           </div>
         </div>
       </div>
@@ -290,9 +360,11 @@
       <div class="ml-layers-ui" id="mlLayersGiselle" data-model="giselle">
         <div class="ml-layers-wrap">
           <div class="ml-layerstack" aria-hidden="true">
-            <div class="ml-layer ml-layer--quilt" style="--i:0;--ri:2;--lift:2"></div>
-            <div class="ml-layer ml-layer--foam" style="--i:1;--ri:1;--lift:1"></div>
-            <div class="ml-layer ml-layer--coil" style="--i:2;--ri:0;--lift:0"></div>
+            <div class="ml-mattress-shell">
+              <div class="ml-layer ml-layer--quilt" style="--i:0;--ri:2;--lift:2"><svg aria-hidden="true" focusable="false"><rect width="100%" height="100%" fill="url(#mlPatQuilt)"></rect></svg></div>
+              <div class="ml-layer ml-layer--foam" style="--i:1;--ri:1;--lift:1"><svg aria-hidden="true" focusable="false"><rect width="100%" height="100%" fill="url(#mlPatFoam)"></rect></svg></div>
+              <div class="ml-layer ml-layer--coil" style="--i:2;--ri:0;--lift:0"><svg aria-hidden="true" focusable="false"><rect width="100%" height="100%" fill="url(#mlPatCoil)"></rect></svg></div>
+            </div>
           </div>
           <div class="ml-layers-labels">
             <ol>
@@ -309,10 +381,12 @@
       <div class="ml-layers-ui" id="mlLayersMaria" data-model="maria" hidden>
         <div class="ml-layers-wrap">
           <div class="ml-layerstack" aria-hidden="true">
-            <div class="ml-layer ml-layer--quilt" style="--i:0;--ri:3;--lift:3"></div>
-            <div class="ml-layer ml-layer--gel" style="--i:1;--ri:2;--lift:2"></div>
-            <div class="ml-layer ml-layer--gel" style="--i:2;--ri:1;--lift:1"></div>
-            <div class="ml-layer ml-layer--coil" style="--i:3;--ri:0;--lift:0"></div>
+            <div class="ml-mattress-shell">
+              <div class="ml-layer ml-layer--quilt" style="--i:0;--ri:3;--lift:3"><svg aria-hidden="true" focusable="false"><rect width="100%" height="100%" fill="url(#mlPatQuilt)"></rect></svg></div>
+              <div class="ml-layer ml-layer--gel" style="--i:1;--ri:2;--lift:2"><svg aria-hidden="true" focusable="false"><rect width="100%" height="100%" fill="url(#mlPatGel)"></rect></svg></div>
+              <div class="ml-layer ml-layer--gel" style="--i:2;--ri:1;--lift:1"><svg aria-hidden="true" focusable="false"><rect width="100%" height="100%" fill="url(#mlPatGel)"></rect></svg></div>
+              <div class="ml-layer ml-layer--coil" style="--i:3;--ri:0;--lift:0"><svg aria-hidden="true" focusable="false"><rect width="100%" height="100%" fill="url(#mlPatCoil)"></rect></svg></div>
+            </div>
           </div>
           <div class="ml-layers-labels">
             <ol>
@@ -330,10 +404,12 @@
       <div class="ml-layers-ui" id="mlLayersGeneric" data-model="generic" hidden>
         <div class="ml-layers-wrap">
           <div class="ml-layerstack" aria-hidden="true">
-            <div class="ml-layer ml-layer--generic-a" style="--i:0;--ri:3;--lift:3"></div>
-            <div class="ml-layer ml-layer--generic-b" style="--i:1;--ri:2;--lift:2"></div>
-            <div class="ml-layer ml-layer--generic-c" style="--i:2;--ri:1;--lift:1"></div>
-            <div class="ml-layer ml-layer--base" style="--i:3;--ri:0;--lift:0"></div>
+            <div class="ml-mattress-shell">
+              <div class="ml-layer ml-layer--generic-a" style="--i:0;--ri:3;--lift:3"><svg aria-hidden="true" focusable="false"><rect width="100%" height="100%" fill="url(#mlPatGenA)"></rect></svg></div>
+              <div class="ml-layer ml-layer--generic-b" style="--i:1;--ri:2;--lift:2"><svg aria-hidden="true" focusable="false"><rect width="100%" height="100%" fill="url(#mlPatGenB)"></rect></svg></div>
+              <div class="ml-layer ml-layer--generic-c" style="--i:2;--ri:1;--lift:1"><svg aria-hidden="true" focusable="false"><rect width="100%" height="100%" fill="url(#mlPatGenC)"></rect></svg></div>
+              <div class="ml-layer ml-layer--base" style="--i:3;--ri:0;--lift:0"><svg aria-hidden="true" focusable="false"><rect width="100%" height="100%" fill="url(#mlPatBase)"></rect></svg></div>
+            </div>
           </div>
           <div class="ml-layers-labels">
             <ol>
@@ -361,19 +437,23 @@
           <h4>Giselle Plush</h4>
           <span class="ml-note">Restonic</span>
           <div class="ml-layerstack is-exploded" data-side="a" aria-hidden="true">
-            <div class="ml-layer ml-layer--quilt" style="--i:0;--ri:2;--lift:2"></div>
-            <div class="ml-layer ml-layer--foam" style="--i:1;--ri:1;--lift:1"></div>
-            <div class="ml-layer ml-layer--coil" style="--i:2;--ri:0;--lift:0"></div>
+            <div class="ml-mattress-shell">
+              <div class="ml-layer ml-layer--quilt" style="--i:0;--ri:2;--lift:2"><svg aria-hidden="true" focusable="false"><rect width="100%" height="100%" fill="url(#mlPatQuilt)"></rect></svg></div>
+              <div class="ml-layer ml-layer--foam" style="--i:1;--ri:1;--lift:1"><svg aria-hidden="true" focusable="false"><rect width="100%" height="100%" fill="url(#mlPatFoam)"></rect></svg></div>
+              <div class="ml-layer ml-layer--coil" style="--i:2;--ri:0;--lift:0"><svg aria-hidden="true" focusable="false"><rect width="100%" height="100%" fill="url(#mlPatCoil)"></rect></svg></div>
+            </div>
           </div>
         </div>
         <div class="ml-compare-col">
           <h4>Platinum Maria Plush</h4>
           <span class="ml-note">Restonic</span>
           <div class="ml-layerstack is-exploded" data-side="b" aria-hidden="true">
-            <div class="ml-layer ml-layer--quilt" style="--i:0;--ri:3;--lift:3"></div>
-            <div class="ml-layer ml-layer--gel" style="--i:1;--ri:2;--lift:2"></div>
-            <div class="ml-layer ml-layer--gel" style="--i:2;--ri:1;--lift:1"></div>
-            <div class="ml-layer ml-layer--coil" style="--i:3;--ri:0;--lift:0"></div>
+            <div class="ml-mattress-shell">
+              <div class="ml-layer ml-layer--quilt" style="--i:0;--ri:3;--lift:3"><svg aria-hidden="true" focusable="false"><rect width="100%" height="100%" fill="url(#mlPatQuilt)"></rect></svg></div>
+              <div class="ml-layer ml-layer--gel" style="--i:1;--ri:2;--lift:2"><svg aria-hidden="true" focusable="false"><rect width="100%" height="100%" fill="url(#mlPatGel)"></rect></svg></div>
+              <div class="ml-layer ml-layer--gel" style="--i:2;--ri:1;--lift:1"><svg aria-hidden="true" focusable="false"><rect width="100%" height="100%" fill="url(#mlPatGel)"></rect></svg></div>
+              <div class="ml-layer ml-layer--coil" style="--i:3;--ri:0;--lift:0"><svg aria-hidden="true" focusable="false"><rect width="100%" height="100%" fill="url(#mlPatCoil)"></rect></svg></div>
+            </div>
           </div>
         </div>
       </div>

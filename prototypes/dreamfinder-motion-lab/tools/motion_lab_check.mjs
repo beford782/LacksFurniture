@@ -2,21 +2,29 @@
 // PROTOTYPE ONLY — deliberately NOT wired into repository CI (PR #18 precedent:
 // prototype checks stay inside the prototype's scope).
 //
-// What this proves:
-//   1. The lab's CSS animates only compositor-safe properties (transform,
-//      opacity, clip-path, stroke-dashoffset, letter-spacing) — the property
-//      denylist that encodes the performance review's verdicts as a rule.
+// What this establishes — stated precisely, because automation must not
+// overstate itself:
+//   1. Allowlisted animated-property discipline: every keyframe/transition
+//      touches only a performance-oriented property allowlist (transform,
+//      opacity, clip-path, stroke-dashoffset, letter-spacing). The allowlist
+//      encodes the performance review's verdicts; it is NOT a universal
+//      compositor guarantee — clip-path, color changes and some SVG behavior
+//      may paint on iPad Safari.
 //   2. No `transition: all`, no infinite animation, no Canvas/WebGL/SMIL.
-//   3. Byte budgets hold (lab total <= 120 KB, runtime JS <= 45 KB).
+//   3. Byte budgets hold (lab total <= 150 KB, runtime JS <= 52 KB).
 //   4. The scene runner actually implements idle->running->done with working
 //      skip/reset/replay/watchdog/reduced-motion semantics — executed here
 //      against a fake clock and fake animations, not grepped for.
-//   5. No quantity-claim language anywhere in the lab (materials and
-//      mechanism, never quantities).
+//   5. Restricted product-language and quantity LINT: the specified restricted
+//      patterns (coil counts, heights, percentages, degrees, patent/cert/
+//      medical language, withdrawn claim families, superlatives, origin
+//      claims) are absent from lab copy. A lint over enumerated patterns is
+//      not a proof of complete claims safety — copy review stays human.
 //   6. No trailing whitespace (repo CI runs `git diff --check` over new files).
 //
-// What this cannot prove: frame rate, compositor smoothness, or anything about
-// the actual showroom tablet. Those need the mounted device and Web Inspector.
+// What this cannot establish: frame rate, compositor placement on any given
+// browser, perceived smoothness, or anything about the actual showroom
+// tablet. Final performance requires inspection on the actual device.
 //
 // Runs read-only. Writes nothing. Exit 0 = pass, 1 = fail.
 
@@ -47,13 +55,16 @@ const files = {
 
 // ---------------------------------------------------------------- budgets
 section('byte budgets');
+// raised from 120/45 KB in the correction pass: the causal Night Loom
+// (labeled ribbons + cloth) and textured construction strata added ~20 KB of
+// hand-reviewable markup/CSS/JS; documented in the investigation doc §7
 const totalBytes = Object.values(files).reduce((n, s) => n + Buffer.byteLength(s), 0);
 const runtimeJs = Buffer.byteLength(files.runner) + Buffer.byteLength(files.js);
-ok(`lab total ${totalBytes} bytes <= 120 KB`, totalBytes <= 120 * 1024);
-ok(`runtime JS ${runtimeJs} bytes <= 45 KB`, runtimeJs <= 45 * 1024);
+ok(`lab total ${totalBytes} bytes <= 150 KB`, totalBytes <= 150 * 1024);
+ok(`runtime JS ${runtimeJs} bytes <= 52 KB`, runtimeJs <= 52 * 1024);
 
 // ------------------------------------------------------- CSS property rules
-section('CSS animated-property discipline');
+section('allowlisted animated-property discipline (performance-oriented; not a universal compositor guarantee)');
 
 // audit CODE, not commentary — comments legitimately name banned things
 const stripCss = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '');
@@ -84,7 +95,7 @@ ok('found keyframes to audit', kfBlocks.length > 0, 'none found — extraction b
 for (const [name, body] of kfBlocks) {
   const props = [...body.matchAll(/([a-z-]+)\s*:/g)].map((m) => m[1]);
   const bad = props.filter((p) => !KEYFRAME_ALLOW.has(p));
-  ok(`@keyframes ${name} animates only compositor-safe properties`, bad.length === 0, bad.join(', '));
+  ok(`@keyframes ${name} animates only allowlisted properties`, bad.length === 0, bad.join(', '));
 }
 
 const TRANSITION_ALLOW = new Set([
@@ -97,7 +108,7 @@ for (const [decl, value] of transitions) {
   if (/^transition-(duration|delay|timing-function)/.test(decl)) { continue; }
   const propNames = value.split(',').map((seg) => seg.trim().split(/\s+/)[0]);
   const bad = propNames.filter((p) => !TRANSITION_ALLOW.has(p) && !p.startsWith('var('));
-  ok(`transition [${value.trim().slice(0, 48)}] uses only safe properties`, bad.length === 0, bad.join(', '));
+  ok(`transition [${value.trim().slice(0, 48)}] uses only allowlisted properties`, bad.length === 0, bad.join(', '));
   ok(`transition [${value.trim().slice(0, 48)}] is not 'all'`, !propNames.includes('all'));
 }
 
@@ -118,7 +129,7 @@ ok('no external network fetches', !/fetch\s*\(|XMLHttpRequest|WebSocket/.test(fi
 ok('lab never reads production data files', !/data\/(store-config|mattresses|quiz|dict)/.test(files.js + files.runner + files.selftest));
 
 // ------------------------------------------------------------ claims rules
-section('claims discipline — materials and mechanism, never quantities');
+section('restricted product-language and quantity lint — materials and mechanism, never quantities');
 const textOnly = files.html
   .replace(/<script[\s\S]*?<\/script>/g, '')
   .replace(/<style[\s\S]*?<\/style>/g, '')

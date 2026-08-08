@@ -1,8 +1,18 @@
 # DreamFinder Motion Investigation — "Hand and Cloth"
 
-**Date:** 2026-08-08 · **Base commit:** `c8e5a95` (origin/main, PR #22 merge)
+**Date:** 2026-08-08 (revision 2, Codex correction pass) · **Base commit:** `c8e5a95` (origin/main, PR #22 merge)
 **Branch:** `claude/dreamfinder-motion-lab` · **Status:** OWNER DESIGN REVIEW — nothing here is approved for production
 **Laboratory:** `prototypes/dreamfinder-motion-lab/` (isolated; never imported by the application)
+
+> **Revision 2** applies the independent Codex visual review: the Night Loom was
+> rebuilt to be causal (the brief's three labeled values visibly become labeled
+> threads, a quilted cover swatch, then the recommendation — evaluated against a
+> kill criterion, §10); the recommendation arrival now uses brand-provided
+> transparent product photography on a tonal plinth with no nested scrolling;
+> the construction strata are drawn as quilting/foam/pocketed-coil textures in a
+> mattress silhouette; adjustable-base articulation is promoted into the spike
+> group; and every statement about what the automation proves was tightened
+> (§8, §11). Prototype-only throughout — no production surface changed.
 
 This investigation was produced by five parallel specialist reviews — repository/integration
 architecture, cinematic art direction, assisted-sales usability & accessibility, performance &
@@ -60,7 +70,7 @@ the lab:
 | Topic | Resolution |
 |---|---|
 | Core language | Unanimous: card-table physicality fits the consultation surface (it is literally paper on a table, `index.html:947-1110`), and motion must survive salesperson narration. |
-| Night Loom duration | Art direction specced 2400 ms; usability requires ≤1500 ms and replace-not-stack on the existing 520 ms seam. **Lab ships both cuts behind a toggle** (2400 "art cut" / 1400 "floor cut") so the owner judges with eyes, not adjectives. Production recommendation: the floor cut, replacing `startResultsReveal`. |
+| Night Loom duration & causality | Art direction specced 2400 ms; usability requires ≤1500 ms; the Codex review found the original weave read as unlabeled abstract lines. **Rebuilt causal:** the brief's three actual values become labeled ribbons that visibly leave the brief, cross as labeled color-coded threads, resolve into a quilted cover swatch, and the swatch parts into the recommendation — all inside the 1400 ms cut, which is now the only production candidate (the 2400 ms cut remains solely for side-by-side judgment). Kill-criterion evaluation in §10. |
 | Firmness surface tech | Perf said "no CSS `d` morphing, try static cross-fades"; art direction required a genuinely local dent (transforms cannot produce one honestly). **Resolved: JS-driven point rewriting** (rAF only while pressing, loop provably dies at rest — selftest-asserted), which is neither CSS `d` animation nor a dishonest scale trick. |
 | Auto-press invitation | Art direction wanted one automatic press after 2 s idle; usability bans idle motion outright. **Resolved: no auto-press.** A preset tap performs one press-and-release; nothing moves untouched. |
 | Synchronized compare | Usability: harmful as choreography, valuable as synchronized *state*; art/perf: if animated, one shared clock. **Resolved: static bottom-baseline alignment is the recommended production treatment; the lab's synchronized build (WAAPI, single shared `startTime`) exists to let the owner see why it should stay a demo.** |
@@ -79,7 +89,8 @@ repo. Full sweep notes are in the PR body; the entries that matter for motion:
 | `/Blake Dropbox/Specs/ML269 CC Platinum H Giselle Plush Smooth Top.xls` | Tier-1 factory material specification | Brand-provided, licensee-authorized; **contains dealer cost — never render or publish** | PROTOTYPE-ONLY (evidence) |
 | `/Blake Dropbox/Rosy Ortiz 2026/Pricing/2025 Specs/*.xls` (~29 sheets, MI847 Maria among them) | Tier-1 specifications | Same | PROTOTYPE-ONLY (evidence) |
 | `/Blake Dropbox/Customers/Lacks/2025 Cards/Chattam/Roma Spec Card (2).pdf` | Information card, 5-layer sequence w/ thicknesses | Brand-provided | PROTOTYPE-ONLY (carries an unverified 6,908-coil count and a comfort-label conflict) |
-| `/Blake Dropbox/Customers/Lacks/Lacks Photography 2025/` (46 hi-res PNG) | Photography | **Brand-provided — cleanest licensing in the archive** | POTENTIALLY PRODUCTION-SAFE |
+| `/Blake Dropbox/Customers/Lacks/Lacks Photography 2025/` (46 hi-res PNG + a `Mattress Only` isolated-cut subfolder) | Photography | **Brand-provided — cleanest licensing in the archive** | POTENTIALLY PRODUCTION-SAFE |
+| `…/Lacks Photography 2025/Mattress Only/Giselle Plush Smooth-01.png` (6000×4000 RGBA, transparent, 16.1 MB, file_id `id:gLzry4ioE6AAAAAAAAApLg`) | Isolated product cut — **exact model match for the `b1` recommendation** | Brand-provided; committed to the lab only as a 920×433 / 92,633-byte optimized derivative (`assets/giselle-plush-smooth.png`; crop-to-alpha + resize + palette quantization). Dropbox untouched. Availability ≠ final production-licensing clearance | PROTOTYPE-ONLY derivative |
 | `<repo>/images/mattresses/*.jpg` (26) | Beauty shots | Scraped from `linqcdn.avbportal.com` (retailer's own PDP art) | POTENTIALLY PRODUCTION-SAFE on the retailer's own kiosk |
 | `/CSP/.../Copper by Spring Air CUTAWAY Sheets.pdf` (21 MB) | The **only true cutaway artwork found anywhere** | Brand-provided | **DO-NOT-USE** — the Copper claim family has zero located substantiation |
 | Everything under other retailers' folders (Bel, Ivan Smith, Furniture Market, …) | Cards/specs | Brand-provided, other deployments | **DO-NOT-USE** — white-label boundary |
@@ -166,11 +177,16 @@ The "Hand and Cloth" system (full spec embedded in the lab's CSS/JS):
 ## 7. Performance and accessibility risks
 
 **Provisional budgets** (unverifiable until the mounted device is identified — the Phase 0.4
-gap): lab ≤120 KB total (actual: ~119 KB with evidence README excluded, runtime JS 44.0 KB of
-45 KB); zero `longtask` entries during scenes; CLS exactly 0.00; ≤12 composited layers per
-scene; loom hard cap ~24 animated SVG paths; no image over 150 KB. **No frame-rate claim is
-made anywhere** — rAF timing is not compositor truth; only Safari Web Inspector on the actual
-tablet can settle smoothness.
+gap): lab ≤150 KB total text (actual 132.1 KB; raised from 120 KB in the correction pass — the
+causal loom and textured strata added ~17 KB of hand-reviewable code), runtime JS ≤52 KB
+(actual 49.4 KB); zero `longtask` entries during scenes; CLS exactly 0.00 (re-verified after
+the correction pass — the growing reveal stage keeps its quiz-footprint `min-height`, so the
+transition can neither shrink nor, at tablet widths, grow the stage); ≤12 composited layers
+per scene; loom hard cap ~24 animated SVG paths; no image over 150 KB (the one committed
+product derivative is 92.6 KB). The animated-property allowlist is **performance-oriented,
+not a universal compositor guarantee** — clip-path, color changes and some SVG behavior may
+paint on iPad Safari. **No frame-rate claim is made anywhere** — rAF timing is not compositor
+truth; final performance requires inspection on the actual showroom device.
 
 **Production defects found during investigation (main-track follow-ups, not fixed here):**
 
@@ -204,8 +220,11 @@ animations created**.
 
 ## 8. Claims and interpretation risks
 
-The governing rule, applied everywhere and machine-enforced by
+The governing rule, applied everywhere and machine-linted by
 `tools/motion_lab_check.mjs`: **animate materials and mechanism, never quantities.**
+Stated precisely: the checker is a *restricted product-language and quantity lint* — it
+proves the absence of the enumerated restricted patterns below, not complete claims safety;
+copy review remains a human responsibility.
 
 - No coil counts, heights, percentages, degrees, patent/ISO/EPA/antimicrobial/therapeutic
   language, superlatives, origin claims, or withdrawn claim families (Marvelous Middle,
@@ -237,44 +256,80 @@ cost follow the build experience.
 |---|---|---|---|---|---|---|---|---|
 | Card Table (select/advance) | 5 | 4 | 4 | 5 | 2 | 2 | 1 | 3 |
 | Sleep Brief gather | 5 | 3 | 4 | 4 | 2 | 2 | 1 | 3 |
-| Night Loom (floor cut, replacing 520 ms reveal) | 3 | 5 | **5** | 3 | 3 | 2 | 1 | 4 |
+| Night Loom (causal 1400 ms cut, replacing 520 ms reveal) | 4 | 5 | **5** | 3 | 3 | 2 | 1 | 4 |
 | Firmness surface | **5** | **5** | 4 | **5** | 2 | 2 | 2 | 3 |
-| Mattress arrival | 3 | 3 | 3 | 3 | 2 | 2 | 1 | 2 |
-| Layer reveal (drawer, on-demand) | **5** | **5** | 4 | **5** | 1 | 1 | 3 | 2 |
+| Mattress arrival (plinth + approved transparent imagery) | 4 | 4 | 4 | 4 | 2 | 2 | 1 | 2 |
+| Layer reveal (drawer, on-demand, textured strata) | **5** | **5** | 4 | **5** | 1 | 1 | 3 | 2 |
 | Synchronized compare (animated) | 2 | 4 | 3 | 1 | 2 | **4** | 2 | 3 |
 | Compare static alignment | 4 | 4 | 2 | 4 | 1 | 2* | 2 | 1 |
+| Base articulation | **5** | **5** | 3 | **5** | 1 | 1 | 1 | 2 |
 | Partner ripple (exp.) | 4 | 4 | 3 | 3 | 2 | 2 | 3 | 2 |
 | Cooling textile (exp.) | 2 | 3 | 2 | 2 | 2 | 1 | **4** | 2 |
 | Cooling ambient (evaluated, not built) | 1 | 1 | 2 | 1 | 4 | **5** | **5** | 3 |
-| Base articulation (exp.) | 5 | 5 | 3 | 4 | 1 | 1 | 1 | 2 |
 | Priority mapping (exp.) | 4 | 3 | 2 | 3 | 1 | 2 | 3 | 2 |
+
+Codex-review adjustments reflected above: Night Loom sales clarity 3→4 (the causal rebuild
+makes the transformation attributable — see the kill-criterion record in §10); mattress
+arrival 3→4 across the board (approved transparent imagery on a tonal plinth, no nested
+scrolling); layer reveal retains its scores with materially better legibility (textured
+strata); **base articulation moves out of the experimental tier entirely** — highly
+mattress/sleep-system specific, trivially narratable, lowest claims and a11y risk in the set,
+and the natural replacement for the production SMIL loop that cannot honor reduced motion.
 
 \* after the compare modal's missing dialog semantics are fixed — currently that surface is
 unusable for screen-reader users regardless of motion.
 
-## 10. Recommendation
+## 10. Recommendation (revision 2 — reconciled after the correction pass)
 
-**Proceed to a production design spike** (in this order):
+**Night Loom kill-criterion record.** The criterion: if the labeled Sleep Brief cannot
+visibly become a mattress-specific surface within the 1400 ms cut without feeling rushed or
+confusing, reject it regardless of invested work. Verdict after rebuilding and viewing the
+corrected cut at 1024×768 and tablet landscape: **passes.** The frozen intermediate frames
+(evidence 13 → 04 → 14) show the causal chain at every stage — the three labeled ribbons
+("I Sleep Hot" / "Side Sleeper" / "Plush") visibly leaving the actual brief, crossing the
+warp as color-coded threads with persistent edge labels, resolving into a quilted cover
+swatch carrying those same labeled bands, and the swatch parting into the recommendation.
+Nothing in the sequence is an unlabeled abstraction, and 1400 ms accommodates it without
+rush because the phases overlap. It therefore stays a candidate — but **conditional**, not
+approved: the owner must confirm the causality reads to *them* (and ideally to a salesperson)
+before any production spike; if it doesn't, the standing fallback is a 150 ms crossfade at
+the same seam.
 
-1. **Motion tokens + scene-runner infrastructure** — highest value, zero visual risk; also the
-   vehicle for fixing production defects §7.1–3.
+**Approve direction** (recommended production design spike, in order):
+
+1. **Motion tokens + interruptible scene-runner pattern** — highest value, zero visual risk;
+   also the vehicle for fixing production defects §7.1–3.
 2. **Firmness surface** — the strongest concept in the set: salesperson-driven, honest,
    teaches what words can't.
-3. **Layer reveal in the mattress drawer** (on-demand, never on drawer-open) — with the
-   three-state honesty chip; Giselle and Maria are ready today at STRONG.
+3. **On-demand construction reveal in the mattress drawer** (never on drawer-open) — textured
+   strata with the honesty chip; Giselle and Maria are ready today at STRONG.
 4. **Card Table select/advance + Sleep Brief gather** — with the non-blocking ≤300 ms
    per-answer rule.
-5. **Night Loom, floor cut (≤1500 ms), replacing `startResultsReveal`** — tap-anywhere-to-skip,
-   once per session, config kill-switch (`motion.signature`). The art cut is a showpiece; the
-   floor cut is the product.
+5. **Static bottom-aligned comparison** as the compare default (after the compare modal's
+   dialog semantics are fixed, §7.4).
+6. **Adjustable-base articulation** — promoted per the Codex review: mattress/sleep-system
+   specific, trivially narratable, lowest claims and a11y risk in the set, and it retires the
+   production SMIL loop that cannot honor reduced motion (§7.5). Prototype-only in this PR;
+   the production SMIL implementation is untouched.
 
-**Remain experimental:** partner ripple (needs solo-sleeper gating + framing review), base
-articulation (strong, but should ship together with retiring the SMIL loop), priority mapping
-(needs copy review), mattress arrival (nice, lowest priority — cut first if scope tightens).
+**Conditional:**
+
+- **Mattress arrival** — contingent on owner clearance of the brand-provided transparent
+  product imagery (provenance §3; Dropbox availability is not a licensing determination) and
+  on keeping the no-nested-scroll responsive fit demonstrated at 1024×768.
+- **Night Loom (causal 1400 ms cut only)** — contingent on the owner confirming the rebuilt
+  causality communicates, per the kill-criterion record above. Once per consultation,
+  immediately skippable, config kill-switch, replacing `startResultsReveal` — never stacking
+  on it. The 2400 ms cut is expressly not a candidate.
+
+**Remain experimental:** partner-motion ripple (needs solo-sleeper gating + framing review);
+priority mapping (needs copy review).
 
 **Rejected:** ambient cooling atmosphere (continuous motion + implied thermal claim — fails
-on both axes); synchronized compare **as animation** (ship the static bottom-baseline
-alignment instead); any use of Copper cutaway material; any quantity-rendering animation.
+on both axes); synchronized compare **as the production default** (ship the static
+bottom-baseline alignment; the synchronized build stays a lab demonstration); unsupported
+cutaway artwork (the Copper family in particular); any quantity-rendering animation; and
+Night Loom in any form that needs the 2400 ms cut to be understood.
 
 **Smallest reversible production slice** (proposed, NOT implemented): add the motion tokens +
 `prefers-reduced-motion` global baseline + the scene runner to `index.html` behind a
@@ -284,30 +339,38 @@ reverting is deleting one flag. Every raw timer the runner adds must be register
 `tests/session_async_check.mjs`'s owned inventory, and reduced-motion must collapse the
 timeline (the §7.1 fix comes free).
 
-## 11. Verification record
+## 11. Verification record (revision 2)
 
-- `node prototypes/dreamfinder-motion-lab/tools/motion_lab_check.mjs` — **107/107 PASS**
-  (property discipline, no infinite animation, tech bans, claims discipline EN+ES, byte
-  budgets, trailing whitespace, and the scene state machine executed against a fake clock:
-  completion, skip-finishes/reset-cancels, epoch orphaning, watchdog force-complete, reduced
-  branch creates zero animations). Checker verified non-vacuous by mutation: 8/8 injected
-  defects caught.
-- In-page smoke suite (`?selftest=1`, Chrome on this workstation) — **47/47 PASS**: loading,
-  full-sequence completion, replay, rapid interruption (skip at 90 ms, cancel at 70 ms,
-  10× start spam), reduced-motion branch (zero animations, same end state), no leaked
-  animations, zero infinite animations at rest, firmness rAF loop dies at rest, CLS sum 0.00,
-  zero console errors/warnings. Note: results are valid only with the page visible — a hidden
-  tab throttles timers and pauses rAF, and the harness now fails loudly in that case.
-- Visual walkthrough evidence: `prototypes/dreamfinder-motion-lab/evidence/01–12` (card
-  table EN/ES, register-rule selection, assembled brief, loom mid-weave, arrival +
-  why-it-fits, firmness soft press, exploded layers with chip, bottom-baseline compare,
-  experimental wing, reduced-motion end state, 390 px stress — no horizontal overflow:
-  scrollWidth 372 ≤ 387). A 13-frame GIF of the complete path was captured locally
-  (`motion-lab-demo-path.gif`, 1.66 MB, kept out of git per the no-large-binaries rule).
-- Layout verified at ~1180 px tablet landscape, 1024×768, ~738 px, and 390 px (iframe method;
-  Chrome's window minimum prevents a true 390 px window).
+- `node prototypes/dreamfinder-motion-lab/tools/motion_lab_check.mjs` — **112/112 PASS**:
+  allowlisted animated-property discipline (a performance-oriented allowlist, not a universal
+  compositor guarantee), no infinite animation, tech bans, the restricted product-language
+  and quantity lint EN+ES (a lint over enumerated patterns, not a proof of complete claims
+  safety), byte budgets, trailing whitespace, and the scene state machine executed against a
+  fake clock (completion, skip-finishes/reset-cancels, epoch orphaning, watchdog
+  force-complete, reduced branch creates zero animations). Lint verified non-vacuous by
+  mutation after the correction pass: **8/8 injected defects caught** (animated box-shadow +
+  width, `transition: all`, infinite animation, hyphenated coil count, patent language,
+  height number, percentage claim).
+- In-page smoke suite (`?selftest=1`, Chrome on this workstation, page visible) —
+  **47/47 PASS**: loading, full-sequence completion (causal loom → arrival chain), replay,
+  rapid interruption (skip at 90 ms, cancel at 70 ms, 10× start spam), reduced-motion branch
+  (zero animations created — the decorative transformation is bypassed entirely and lands on
+  the same recommendation state), no leaked animations, zero infinite animations at rest,
+  firmness rAF loop dies at rest, **CLS sum 0.0000**, zero console errors/warnings. The
+  harness fails loudly if the page is hidden (throttled timers/paused rAF invalidate runs).
+- **No nested scrolling, measured:** at 1024×768 the full recommendation state (badge, name,
+  brand, entire product image, three fit reasons, primary action) renders inside the stage
+  with `scrollHeight ≤ clientHeight` on both the step and the stage, and the stage fits the
+  viewport. At ~738 px and in a 390 px frame the page reflows with zero horizontal overflow
+  (scrollWidth 372 ≤ 387).
+- Visual evidence: `prototypes/dreamfinder-motion-lab/evidence/01–15` — obsolete pre-revision
+  captures were replaced, not left beside their contradictions. New in revision 2: loom
+  ribbons leaving the brief (13), labeled mid-weave (04), quilted cloth swatch (14), plinth
+  recommendation at 1024×768 (05), textured construction (07), textured bottom-baseline
+  compare (08), reduced-motion end state (11), Spanish recommendation (15).
 - What is **not** verified and cannot be from this workstation: frame pacing, compositor
-  smoothness, layer memory, and touch feel on the mounted showroom iPad. Provisional, per §7.
+  placement, layer memory, and touch feel on the mounted showroom iPad. Final performance
+  requires inspection on the actual device. Provisional, per §7.
 
 ## 12. How to run
 

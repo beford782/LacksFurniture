@@ -55,6 +55,21 @@ This suite is deliberately **not** wired into repository CI, following the
 `prototypes/phase1-decision-package` precedent: prototype checks stay inside the
 prototype's scope.
 
+**What the automation establishes — precisely.** The checker provides a
+*restricted product-language and quantity lint* (absence of enumerated
+restricted patterns — it is not a proof of complete claims safety; copy review
+stays human) and *allowlisted animated-property discipline* (a
+performance-oriented allowlist — not a universal compositor guarantee;
+clip-path, color changes and some SVG behavior may paint on iPad Safari). No
+frame-rate or universal compositor claim is made anywhere: final performance
+requires inspection on the actual showroom device.
+
+## Asset provenance
+
+| Prototype asset | Source | Status |
+|---|---|---|
+| `assets/giselle-plush-smooth.png` (920×433, 92,633 bytes, transparent) | `/Blake Dropbox/Customers/Lacks/Lacks Photography 2025/Mattress Only/Giselle Plush Smooth-01.png` (file_id `id:gLzry4ioE6AAAAAAAAApLg`, 16,131,294 bytes, 6000×4000 RGBA, modified 2026-02-23) | **Prototype-only derivative.** Brand-provided Lacks 2025 photography; exact model match for the `b1` Giselle Plush recommendation. Transformation: cropped to alpha bounding box +24 px, Lanczos-resized to 920 px, 255-color palette quantization, optimized PNG. Dropbox was read-only; nothing there was modified. Availability in Dropbox is **not** a final production-licensing determination — that clearance stays with the owner. |
+
 ## What this lab must never do
 
 - No connection to production navigation, routes, or `index.html`.
@@ -79,7 +94,8 @@ motion-lab.css        Motion tokens + scene styles (frozen copies of production 
 scene-runner.js       Interruptible/replayable scene state machine (idle→running→done)
 motion-lab.js         Scene implementations and wiring
 selftest.js           In-page smoke harness (?selftest=1)
-tools/motion_lab_check.mjs   Node static + state-machine checks (not in CI)
+assets/               Prototype-only product imagery (provenance above)
+tools/motion_lab_check.mjs   Node lint + state-machine checks (not in CI)
 evidence/             Captured screenshots referenced by the investigation doc
 ```
 

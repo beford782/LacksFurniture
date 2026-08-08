@@ -140,15 +140,36 @@
     return { select: select, radios: radios };
   }
 
-  /* ================= Night Loom ================= */
+  /* ================= Night Loom (causal cut) ================= */
+  /* The customer's three actual Sleep Brief values become LABELED ribbons that
+   * visibly leave the brief, cross the warp as labeled threads, resolve into a
+   * quilted cover swatch, and the swatch parts into the recommendation. The
+   * 1400 ms cut is the only production candidate; 2400 ms exists for
+   * side-by-side judgment. */
   var stage = $('#mlStage');
   var loomEl = $('#mlLoom');
   var loomSkipBtn = $('#mlLoomSkip');
   var LOOM_CUTS = {
-    2400: { shuttleStart: 380, shuttleStep: 170, tensionAt: 1270, partAt: 1500, veilAt: 900, total: 2400 },
-    1400: { shuttleStart: 300, shuttleStep: 110, tensionAt: 750, partAt: 950, veilAt: 550, total: 1400 }
+    1400: { ribbonDur: 380, ribbonStagger: 60, weaveStart: 260, warpStagger: 12, weftBase: 400, weftStep: 90, clothAt: 900, clothDur: 280, tensionAt: 880, partAt: 1080, partDur: 320, veilAt: 640, total: 1400 },
+    2400: { ribbonDur: 600, ribbonStagger: 90, weaveStart: 420, warpStagger: 18, weftBase: 700, weftStep: 170, clothAt: 1500, clothDur: 380, tensionAt: 1450, partAt: 1850, partDur: 450, veilAt: 1000, total: 2400 }
   };
-  var loomCut = 2400;
+  var loomCut = 1400;
+
+  /* weft rows: [brief answer key, y in viewBox, color, direction, ribbon class] */
+  var LOOM_THREADS = [
+    { q: 'q2', y: 140, color: '#7E9AAE', rtl: false, cls: 'ml-ribbon--temp' },
+    { q: 'q3', y: 300, color: '#B8935D', rtl: true, cls: 'ml-ribbon--firm' },
+    { q: 'q1', y: 420, color: 'rgba(250,189,15,0.7)', rtl: false, cls: 'ml-ribbon--pos' }
+  ];
+  var loomRibbons = [];
+  var loomTags = [];
+  function clearLoomExtras() {
+    loomRibbons.concat(loomTags).forEach(function (el) {
+      if (el.parentNode) { el.parentNode.removeChild(el); }
+    });
+    loomRibbons = [];
+    loomTags = [];
+  }
 
   function buildLoom() {
     var cut = LOOM_CUTS[loomCut];
@@ -166,19 +187,28 @@
     dashes.push(x1 - cursor);
     var dash = dashes.join(' ');
 
-    /* wefts: customer priorities only — temperature, firmness, position */
-    var wefts = [
-      { y: 140, color: '#7E9AAE', half: 'upper', rtl: false },  /* temperature   */
-      { y: 300, color: '#B8935D', half: 'lower', rtl: true },   /* firmness      */
-      { y: 420, color: 'rgba(250,189,15,0.7)', half: 'lower', rtl: false } /* position — the retailer thread, once */
-    ];
-
     function warpSeg(x, i, yA, yB) {
-      var edge = (i === 0 || i === warpsX.length - 1) ? ' is-edge' : '';
-      return '<path class="warp' + edge + '" d="M' + x + ' ' + yA + ' V' + yB + '"' +
+      return '<path class="warp" d="M' + x + ' ' + yA + ' V' + yB + '"' +
         ' stroke="rgba(184,147,93,0.6)" stroke-width="2" stroke-linecap="butt"' +
-        ' style="--len:' + (yB - yA) + ';--d:' + (i * 18) + 'ms"' +
+        ' style="--d:' + (i * cut.warpStagger) + 'ms"' +
         ' stroke-dasharray="' + (yB - yA) + '" stroke-dashoffset="' + (yB - yA) + '"></path>';
+    }
+    /* the cloth swatch halves: the threads become a quilted ticking surface,
+     * carrying the three labeled bands as woven stripes */
+    function clothHalf(name) {
+      var isUpper = name === 'upper';
+      var path = isUpper
+        ? 'M250 280 V120 Q250 96 274 96 H726 Q750 96 750 120 V280 Z'
+        : 'M250 280 H750 V440 Q750 464 726 464 H274 Q250 464 250 440 Z';
+      var stripes = '';
+      LOOM_THREADS.forEach(function (t) {
+        var inUpper = t.y < MID;
+        if (inUpper !== isUpper) { return; }
+        stripes += '<rect x="250" y="' + (t.y - 5) + '" width="500" height="10" fill="' + t.color + '" opacity="0.85"></rect>';
+      });
+      return '<g class="ml-cloth">' +
+        '<path d="' + path + '" fill="url(#mlPatTick)" stroke="rgba(184,147,93,0.45)" stroke-width="1.5"></path>' +
+        stripes + '</g>';
     }
     function half(name, yA, yB) {
       var behind = '', front = '';
@@ -187,15 +217,16 @@
         else { front += warpSeg(x, i, yA, yB); }
       });
       var weftMarkup = '';
-      wefts.forEach(function (w, wi) {
-        if (w.half !== name) { return; }
-        var delay = cut.shuttleStart + wi * cut.shuttleStep;
-        weftMarkup += '<path class="weft' + (w.rtl ? ' weft--rtl' : '') + '"' +
-          ' d="M' + x0 + ' ' + w.y + ' H' + x1 + '"' +
-          ' stroke="' + w.color + '" stroke-width="3" stroke-linecap="butt"' +
+      LOOM_THREADS.forEach(function (t, wi) {
+        var inUpper = t.y < MID;
+        if ((name === 'upper') !== inUpper) { return; }
+        var delay = (cut.weftBase - cut.weaveStart) + wi * cut.weftStep;
+        weftMarkup += '<path class="weft' + (t.rtl ? ' weft--rtl' : '') + '"' +
+          ' d="M' + x0 + ' ' + t.y + ' H' + x1 + '"' +
+          ' stroke="' + t.color + '" stroke-width="3" stroke-linecap="butt"' +
           ' stroke-dasharray="' + dash + '" style="--d:' + delay + 'ms"></path>';
       });
-      return '<g class="ml-loom-' + name + '">' + behind + weftMarkup + front + '</g>';
+      return '<g class="ml-loom-' + name + '">' + behind + weftMarkup + front + clothHalf(name) + '</g>';
     }
 
     loomEl.innerHTML =
@@ -203,8 +234,92 @@
       '<rect class="ml-loom-veil" x="0" y="0" width="' + W + '" height="' + H + '" fill="#14171C"></rect>' +
       '<g class="ml-loom-field">' + half('upper', 0, MID) + half('lower', MID, H) + '</g>' +
       '</svg>';
-    loomEl.style.setProperty('--tension-at', cut.tensionAt + 'ms');
-    loomEl.style.setProperty('--part-at', cut.partAt + 'ms');
+    loomEl.style.setProperty('--tension-at', (cut.tensionAt - cut.weaveStart) + 'ms');
+    loomEl.style.setProperty('--part-at', (cut.partAt - cut.weaveStart) + 'ms');
+    loomEl.style.setProperty('--part-dur', cut.partDur + 'ms');
+    loomEl.style.setProperty('--cloth-at', (cut.clothAt - cut.weaveStart) + 'ms');
+    loomEl.style.setProperty('--cloth-dur', cut.clothDur + 'ms');
+
+    /* persistent labels at each thread's entry edge (aria-hidden: the real
+     * values remain in the Sleep Brief's accessible DOM) */
+    var stageH = stage.clientHeight || 460;
+    var stageW = stage.clientWidth || 900;
+    LOOM_THREADS.forEach(function (t, wi) {
+      var tag = document.createElement('div');
+      tag.className = 'ml-weft-tag';
+      tag.setAttribute('aria-hidden', 'true');
+      tag.textContent = labelFor(answers[t.q] || defaultAnswer(t.q));
+      tag.style.setProperty('--tag-color', t.color);
+      tag.style.setProperty('--d', ((cut.weftBase - cut.weaveStart) + wi * cut.weftStep) + 'ms');
+      tag.style.top = (t.y / 560 * stageH - 12) + 'px';
+      if (t.rtl) { tag.style.right = '10px'; } else { tag.style.left = '10px'; }
+      loomEl.appendChild(tag);
+      loomTags.push(tag);
+    });
+  }
+
+  function defaultAnswer(q) {
+    return { q1: 'q1:side', q2: 'q2:hot', q3: 'q3:plush' }[q];
+  }
+
+  /* labeled ribbons: measured off the actual brief rows, flown to each
+   * thread's entry point, fading as the weft takes over */
+  function spawnRibbons(ctx) {
+    var cut = LOOM_CUTS[loomCut];
+    var stageRect = stage.getBoundingClientRect();
+    var rows = $$('#mlBrief li');
+    var stageH = stageRect.height;
+    var stageW = stageRect.width;
+    var rowFor = { q1: rows[0], q2: rows[1], q3: rows[2] };
+    LOOM_THREADS.forEach(function (t, i) {
+      var ribbon = document.createElement('div');
+      ribbon.className = 'ml-ribbon ' + t.cls;
+      ribbon.setAttribute('aria-hidden', 'true');
+      ribbon.textContent = labelFor(answers[t.q] || defaultAnswer(t.q));
+      var row = rowFor[t.q];
+      var sx = stageW * 0.5 - 70, sy = stageH * 0.3 + i * 44;
+      if (row && !steps.brief.hidden) {
+        var r = row.getBoundingClientRect();
+        sx = r.right - stageRect.left - 150;
+        sy = r.top - stageRect.top + (r.height - 30) / 2;
+      }
+      ribbon.style.left = sx + 'px';
+      ribbon.style.top = sy + 'px';
+      stage.appendChild(ribbon);
+      loomRibbons.push(ribbon);
+      var ty = t.y / 560 * stageH - 15;
+      var tx = t.rtl ? (stageW - 190) : 16;
+      ctx.animate(ribbon, [
+        { transform: 'translate(0,0)', opacity: 1, easing: 'cubic-bezier(0.32,0.06,0.20,1)' },
+        { transform: 'translate(' + (tx - sx) + 'px,' + (ty - sy) + 'px)', opacity: 1, offset: 0.78, easing: 'cubic-bezier(0.20,0.72,0.20,1)' },
+        { transform: 'translate(' + (tx - sx) + 'px,' + (ty - sy) + 'px)', opacity: 0 }
+      ], { duration: cut.ribbonDur + 160, delay: i * cut.ribbonStagger, fill: 'both' });
+    });
+  }
+
+  function makeLoomSteps() {
+    var cut = LOOM_CUTS[loomCut];
+    return [
+      { at: 0, run: function (ctx) {
+        clearLoomExtras();
+        buildLoom();
+        loomEl.hidden = false;
+        loomEl.classList.remove('is-done', 'is-weaving');
+        brief.classList.add('is-departing');
+        spawnRibbons(ctx);
+        loomSkipBtn.hidden = false;
+        loomSkipBtn.focus();
+      } },
+      { at: LOOM_CUTS[loomCut].weaveStart, run: function () {
+        /* force style flush so the weaving class starts animations cleanly */
+        void loomEl.offsetWidth;
+        loomEl.classList.add('is-weaving');
+      } },
+      { at: LOOM_CUTS[loomCut].veilAt, run: function () {
+        stage.classList.add('is-dark');
+        steps.brief.hidden = true;
+      } }
+    ];
   }
 
   var revealStep = $('#mlStepReveal');
@@ -212,40 +327,31 @@
     name: 'loom',
     duration: LOOM_CUTS[loomCut].total,
     reducedDuration: 300,
-    steps: [
-      { at: 0, run: function () {
-        buildLoom();
-        loomEl.hidden = false;
-        loomEl.classList.remove('is-done');
-        /* force style flush so the weaving class starts animations cleanly */
-        void loomEl.offsetWidth;
-        loomEl.classList.add('is-weaving');
-        loomSkipBtn.hidden = false;
-        loomSkipBtn.focus();
-      } }
-    ],
+    steps: makeLoomSteps(),
     reducedRun: function () {
-      loomEl.hidden = false;
-      loomEl.classList.add('is-done');
+      /* reduced motion bypasses the decorative transformation entirely and
+       * lands directly on the same recommendation state */
     },
     applyInitial: function () {
+      clearLoomExtras();
       loomEl.classList.remove('is-weaving', 'is-done');
       loomEl.hidden = true;
       loomSkipBtn.hidden = true;
+      brief.classList.remove('is-departing');
     },
     applyFinal: function () {
+      clearLoomExtras();
       loomEl.classList.remove('is-weaving');
       loomEl.classList.add('is-done');
-      loomEl.hidden = false;
+      loomEl.hidden = true;
       loomSkipBtn.hidden = true;
-      stage.classList.add('is-dark');
+      brief.classList.remove('is-departing');
+      stage.classList.add('is-dark', 'is-reveal');
       steps.q3.hidden = true; /* steps are exclusive even when scenes run out of demo order */
       steps.brief.hidden = true;
       revealStep.hidden = false;
     }
   }, env);
-  /* stage darkens behind the veil mid-weave */
-  var loomExtraTimer = null;
 
   /* ================= Mattress arrival (runner factory) ================= */
   function makeArrivalScene(name, rootEl) {
@@ -419,7 +525,8 @@
     ],
     applyInitial: function () {
       clearClones();
-      brief.classList.remove('is-shown');
+      brief.classList.remove('is-shown', 'is-departing');
+      stage.classList.remove('is-dark', 'is-reveal');
       steps.brief.hidden = true;
       steps.reveal.hidden = true; /* steps are exclusive even when scenes run out of demo order */
       steps.q3.hidden = false;
@@ -427,6 +534,8 @@
     applyFinal: function () {
       clearClones();
       fillBrief();
+      brief.classList.remove('is-departing');
+      stage.classList.remove('is-dark', 'is-reveal');
       steps.q3.hidden = true;
       steps.reveal.hidden = true;
       steps.brief.hidden = false;
@@ -448,22 +557,16 @@
   function startReveal() {
     demoGen++;
     loomWasSkipped = false;
-    steps.brief.hidden = true;
+    /* the brief stays VISIBLE while its ribbons depart — causality is the
+     * whole point; it hides only once the veil covers it (loom step) */
     /* decode the hero image while the loom weaves, so arrival never races it */
     var img = $('#mlHeroImg');
     if (img && img.decode) { img.decode().catch(function () {}); }
     if (arrivalScene.state !== 'idle') { arrivalScene.reset(); }
     if (loomScene.state !== 'idle') { loomScene.reset(); }
     loomScene.def.duration = LOOM_CUTS[loomCut].total;
+    loomScene.def.steps = makeLoomSteps();
     loomScene.start();
-    if (!prefersReducedMotion()) {
-      window.clearTimeout(loomExtraTimer);
-      var gen = demoGen;
-      loomExtraTimer = window.setTimeout(function () {
-        if (gen !== demoGen) { return; }
-        stage.classList.add('is-dark');
-      }, LOOM_CUTS[loomCut].veilAt);
-    }
   }
   loomScene.def.onState = function (state) {
     if (state === 'done') {
@@ -498,7 +601,8 @@
   loomEl.addEventListener('click', skipReveal);
   $('#mlReplayRevealBtn').addEventListener('click', function () {
     revealStep.hidden = true;
-    stage.classList.remove('is-dark');
+    stage.classList.remove('is-dark', 'is-reveal');
+    steps.brief.hidden = false; /* ribbons depart from the visible brief */
     if (arrivalScene.state !== 'idle') { arrivalScene.reset(); }
     if (loomScene.state !== 'idle') { loomScene.reset(); }
     startReveal();
@@ -512,7 +616,6 @@
   $('#mlRestartBtn').addEventListener('click', restartDemo);
   function restartDemo() {
     demoGen++;
-    window.clearTimeout(loomExtraTimer);
     if (loomScene.state !== 'idle') { loomScene.reset(); }
     if (arrivalScene.state !== 'idle') { arrivalScene.reset(); }
     if (gatherScene.state !== 'idle') { gatherScene.reset(); }
@@ -520,7 +623,7 @@
     $$('.ml-card[data-answer]').forEach(function (c) { c.setAttribute('aria-pressed', 'false'); });
     $$('.ml-cards').forEach(function (g) { g.classList.remove('has-selection'); });
     $('#mlGatherBtn').disabled = true;
-    stage.classList.remove('is-dark');
+    stage.classList.remove('is-dark', 'is-reveal');
     revealStep.hidden = true;
     showStep('q1', true);
   }
