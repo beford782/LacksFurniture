@@ -1,12 +1,13 @@
 # Block A claim disposition — 24 Tier‑D/E strings rendering in production
 
-**RECOMMENDATION PACKAGE — AWAITING OWNER DISPOSITION. Nothing in this
-document edits the catalog, the application, the prototypes, the fixtures, or
-any roadmap status.** Every disposition below is a recommendation to the named
-Lacks content owner and business approver (Blake Ford, named 2026‑08‑07). No
-recommendation takes effect until the owner rules on it, and rows flagged
-LEGAL‑REVIEW‑REQUIRED additionally await a legal/compliance reviewer, a role
-that is **explicitly unfilled**. This document is an input to the claim‑risk
+**RECOMMENDATION PACKAGE — OWNER RULED 2026‑08‑08 (§14); LEGAL REVIEW
+OUTSTANDING. Nothing in this document edits the catalog, the application,
+the prototypes, the fixtures, or any roadmap status.** Every disposition
+below was written as a recommendation to the named Lacks content owner and
+business approver (Blake Ford, named 2026‑08‑07); the owner ruled on the
+package 2026‑08‑08 — see §14, which governs where it modifies a
+recommendation. Rows flagged LEGAL‑REVIEW‑REQUIRED additionally await a
+legal/compliance reviewer, a role that is **explicitly unfilled**. This document is an input to the claim‑risk
 activation prerequisite recorded in the Phase 1 authoring brief — it does not
 close that prerequisite.
 
@@ -17,6 +18,14 @@ required targeted corrections, applied in this revision and itemized in §6
 and §12. Legal and regulatory observations throughout this document are
 issue‑spotting by non‑lawyers — potential risks identified for qualified
 legal/compliance review, never legal conclusions or advice.
+
+**Status update 2026‑08‑08 (later the same day):** the named owner ruled on
+this package in an interactive walkthrough session — all 24 dispositions
+ratified, with recorded owner decisions, standards, and two explicit
+overrides; the three Appendix A requests were approved for sending. See
+§14, which governs wherever it modifies a recommendation above. The
+legal/compliance review remains outstanding and the reviewer role remains
+unfilled; execution of every rewrite stays gated exactly as before.
 
 ---
 
@@ -1795,11 +1804,126 @@ for traceability, not reproductions of the pages.
 | R9 | Restonic | Scott Living Signature Mattress – Restonic (+ Drew & Jonathan sibling pages, agent‑reported) | <https://restonic.com/mattress/scott-living-signature> | 2026‑08‑08 | primary‑verified (Scott Living); agent‑reported (Drew & Jonathan) | A15 | used only as evidence **against** A15 (the 5‑zone Q5S™ spinal‑alignment claim belongs to other collections) |
 | L1 | Lacks (repository capture) | lacks.com REST API catalog capture | `incoming/lacks_catalog_selection.json` (repo path; `_meta.source`: "lacks.com /api/rest/categories/mattresses/products + mattress-accessories, scraped 2026-07-30 via browser session") | captured 2026‑07‑30 | repository record | all lacks‑side facts; §3.1 | dated snapshot; live lacks.com returned 403/429 to research fetches; prices are 2026‑07‑30 promotional finals |
 
-## Appendix A — DRAFT REQUESTS — NOT SENT; OWNER REVIEW REQUIRED
+## 14. Owner rulings — 2026‑08‑08
+
+Ruled by Blake Ford (Lacks content owner and business approver, named
+2026‑08‑07) in an interactive walkthrough session on 2026‑08‑08, group by
+group per the §9 coupling registry. Groups 1–2 were ruled on presentation;
+groups 3–8 were ruled after row‑level discussion of every row; A6 was ruled
+after a re‑read of its full dossier. Recorded by the session lead; the
+owner reviews this transcription on the PR. **These rulings settle the
+owner layer of the claim‑risk activation prerequisite only.** The 16
+LEGAL‑REVIEW‑REQUIRED rows and the 4 counsel‑recommended rows still await
+a qualified legal/compliance reviewer — a role that remains unfilled — and
+no rewrite executes until the authoring workflow produces copy under its
+own approvals. Nothing in this section edits catalog data or application
+code. Where this section modifies a recommendation elsewhere in the
+document (specifically §6 R1 and the §10 register entries named in
+§14.3), this section governs.
+
+### 14.1 Dispositions — all 24 rows ratified
+
+The owner ratifies all 24 REWRITE dispositions as documented in §7,
+including each row's drop/keep guidance, subject to the decisions,
+standards and overrides below.
+
+| Group | Rows | Ruling |
+|---|---|---|
+| 1 — g5/g4 Tempur cooling | A1, A4, A19, A20 | Ratified |
+| 2 — s9 motion promise | A5, A13 | Ratified, qualified register (§14.2.2) |
+| 3 — hand‑made / g8 | A7, A9, A16 | Ratified, with the §14.3.1 override |
+| 4 — Marvelous Middle / anatomical | A2, A12, A14, A15, A24 | Ratified, with the §14.3.2 override |
+| 5 — s7 Platinum Summit | A10, A22, A23 | Ratified |
+| 6 — g9 Copper | A3, A18 | Ratified |
+| 7 — Chattam & Wells | A8, A17, A21 | Ratified |
+| 8 — price / positioning | A6, A11 | Ratified; A11 with the re‑scope path (§14.2.5) |
+
+### 14.2 Owner decisions on questions the document reserved
+
+1. **g4 quantified cooling claim (A4, A19, A20; §8.3): the number drops.**
+   The owner chose path (b) of A19's rewrite guidance: no "10°" (or "5°",
+   for g5) figure renders anywhere; the unquantified fact (Tempur‑Pedic's
+   most cooling‑focused construction) is the authoring substrate. The same
+   decision governs g4's `highlight` and `reasons.default` when their
+   block is dispositioned. The number may return only if the cooling‑set
+   legal review and the Tempur‑Pedic dealer claim sheet (A.1) together
+   support a compliant presentation of the complete qualifier.
+2. **Motion‑transfer register (A5, A13; extends to A24): the qualified
+   form.** Future motion copy uses the "reduced motion transfer" register,
+   not Restonic's absolute "prevents" — for A24 additionally gated on the
+   licensee confirming the coil series (two gates).
+3. **"Reserve line" boundary (§8.7): deferred to licensee records.** No
+   line‑scoped claim renders until the Restonic licensee's model‑to‑line
+   mapping (A.2 Q1) arrives; the boundary is then settled on that record.
+4. **Price‑claim class definition (§8.5): profile class, kiosk scope.**
+   The comparison set for any price‑leadership claim is the set of beds
+   sharing the claiming bed's firmness/feature profile **within the kiosk
+   catalog**, disclosed as such (e.g. "in this guide"). Store‑wide price
+   wording stays blocked pending full‑assortment records and a dated
+   price census. This definition governs A6 now and the b4/b6/b7
+   `reason_default` rows (B5/B6/B7) when their block is dispositioned;
+   the five prerequisites in A6's rewrite guidance still apply to any
+   newly authored claim. Recorded consequence: under this definition the
+   extra‑firm‑zoned class price position belongs to b6, not s10.
+5. **A11 price element: re‑scope path allowed.** "Everyday price" drops as
+   written; the authoring workflow may draft below‑Platinum band
+   positioning (intra‑catalog true; not a leadership claim, so not
+   governed by §14.2.4).
+6. **Legal routing (§4.1): accepted as recommended.** The two‑category
+   structure stands (16 required + 4 counsel‑recommended); the cooling
+   set (A10, A18's heat half, A19, A20, A22) routes to review as a single
+   item so one house rule is set for thermal claims. Flagged rewrites do
+   not activate until a legal/compliance reviewer is appointed.
+
+### 14.3 Owner overrides and standards (explicit departures from the
+document's recommendations)
+
+1. **Hand‑made (A7, A9) — owner attestation carries it.** Overriding §6
+   R1's fail‑closed drop, the owner rules: *"Owner attests from direct
+   dealer/licensee knowledge that the g7 Reserve Mayfair and g8 Royal
+   Reserve builds are hand‑made; written licensee confirmation (A.2 Q6)
+   to follow and remains requested."* The element may survive rewrite
+   scoping on this attestation; §10's hand‑made entry is modified
+   accordingly (attestation now, written record still required and
+   requested). Both rows remain LEGAL‑REVIEW‑REQUIRED — the reviewer
+   sees this attestation note.
+2. **"Pressure relief" (A2, A12; extends to A10) — carried as‑is.**
+   Overriding the self‑sourcing concern, the phrase may carry in current
+   form; this also resolves A10's reviewer judgement call in favor of
+   carrying. A2, A12 and A10 remain legal‑flagged; the reviewer sees this
+   override.
+3. **Material‑presence standard (package‑wide).** For facts about what a
+   bed physically contains (materials, coil type), the lacks.com
+   capture/product feed is acceptable interim evidence pending the
+   licensee/dealer spec sheet; performance and outcome claims still
+   require real substantiation. This relaxes the "contingent on spec
+   confirmation" gates on kept construction facts (e.g. A22's gel layer,
+   A24's wrapped coils) from *blocked* to *feed‑supported pending
+   confirmation*; the spec‑sheet requests stand unchanged.
+
+### 14.4 Appendix A requests — approved for sending
+
+All three drafts (A.1 Tempur‑Pedic, A.2 Restonic Texas licensee, A.3
+Spring Air) are **approved as drafted, 2026‑08‑08**, after individual
+review. The owner sends them through his own channels; **none has been
+sent as of this recording** — send dates are to be recorded when known.
+
+### 14.5 Unchanged gates
+
+Phase 0.4 remains open; Phase 1 implementation remains unauthorized; the
+native‑Spanish review gate stands (§8.9); the legal/compliance reviewer
+role remains unfilled; the records‑dependent register (§10) stands except
+as modified by §14.3. Open item noted, not ruled: whether Lacks stocks
+all‑foam soft beds (bears on A23's context, not its disposition). The
+live lacks.com PDP check for SKU 2037053 (A3 open item) is scheduled
+immediately after this recording; its result will be appended here.
+
+## Appendix A — DRAFT REQUESTS — APPROVED FOR SENDING 2026‑08‑08 (§14.4); NOT YET SENT
 
 Three send‑ready evidence requests, drafted for the owner's review. **None
 has been sent; no manufacturer, licensee, or dealer has been contacted.**
-Sending them, and to whom, is the owner's decision. Each request closes the
+Sending them, and to whom, is the owner's decision. Owner approval of all
+three as drafted was recorded 2026‑08‑08 (§14.4). Each request closes the
 records‑dependent items in §10 for its brand. Common instruction embedded
 in each: unsupported elements remain omitted from the kiosk until written
 evidence arrives.
