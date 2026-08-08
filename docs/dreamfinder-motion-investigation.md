@@ -19,6 +19,15 @@
 > runnable lab, replaced by the experimental **Shared-Bed Priority** scene
 > (§10); everything else is design-approved at the classifications in §10 —
 > which authorizes neither merge nor production work.
+>
+> **Revision 4** applies a follow-up ruling on that replacement: the tuck/file
+> metaphor is **rejected** (too literal and fussy — filing a card, not a premium
+> mattress experience) and rebuilt as the **stitched-label resolve** (§10), still
+> Experimental. It also fixes a checker portability defect: byte budgets now
+> measure canonical LF source bytes, so a Windows `core.autocrlf=true` checkout
+> can no longer push a within-budget file over by CRLF expansion (§11b). All
+> prior approvals, conditions, rejections, and governance restrictions are
+> unchanged.
 
 This investigation was produced by five parallel specialist reviews — repository/integration
 architecture, cinematic art direction, assisted-sales usability & accessibility, performance &
@@ -354,17 +363,25 @@ After personally experiencing the lab, the owner rejected the partner-motion rip
 
 The ripple has been removed from the runnable lab entirely (markup, behavior, controls,
 strings). Its replacement, **Shared-Bed Priority**, is a design experiment in the
-Experimental wing — not production authorization: a restrained top-down cloth/quilt bed
-composition (schematic, non-SKU-specific) in which two quilted pillow panels settle side by
-side, the customer's actual recorded concern ("Partner movement matters to you.") becomes a
-stitched fabric label, and a ~1050 ms hand-scale tuck files it into the Sleep Brief as a
-compact priority card, with a chip at rest: "Based on what you told us — not a
-product-performance test." No wave, vibration, disturbance propagation, unmoving-partner
-side, or implied isolation/absorption/reduction appears anywhere in it, and no second
-sleeper profile is fabricated. Adversarial review before commit: an ordinary viewer sees a
-concern being *filed*, not a mattress *performing* — nothing moves that could be read as
-motion transfer. Spanish strings in the scene are a prototype-only preview; the
-native-Spanish review gate remains open.
+Experimental wing — not production authorization.
+
+**Revision 4 — the tuck/file metaphor is also rejected.** The owner ruled the first
+Shared-Bed treatment (label carried into a Sleep Brief panel as a filed card) too literal
+and fussy — more like filing a card into a folder than a premium mattress experience. The
+current replacement candidate is the **stitched-label resolve** (~820 ms): two quilted
+pillow panels settle side by side from opposite directions, a restrained thread draws a
+short center seam between them, the customer's actual recorded concern ("Partner movement
+matters to you.") gently lowers onto that seam, a stitched perimeter traces around it —
+weaving it into the textile composition — and the "Shared-bed priority" title resolves
+within the label. Both pillows stay visible in the final state; nothing folds, files,
+tucks, disappears into, or is pushed inside anything. The chip at rest reads "Based on
+what you told us — not a product-performance test." No wave, vibration, disturbance
+propagation, unmoving-partner side, or implied isolation/absorption/reduction appears
+anywhere in it, and no second sleeper profile is fabricated. Adversarial review before
+commit: an ordinary viewer sees a concern being *labeled and sewn into place*, not a
+mattress *performing* — nothing moves that could be read as motion transfer. Spanish
+strings in the scene are a prototype-only preview; the native-Spanish review gate remains
+open.
 
 **Scope of the owner's approval.** The owner's "pretty great" verdict is design approval at
 exactly the classifications in this section — it is NOT authorization to merge PR #23, begin
@@ -380,6 +397,40 @@ existing results-reveal seam — so flipping one config key A/Bs the entire dire
 reverting is deleting one flag. Every raw timer the runner adds must be registered in
 `tests/session_async_check.mjs`'s owned inventory, and reduced-motion must collapse the
 timeline (the §7.1 fix comes free).
+
+## 11b. Verification record (revision 4 — stitched-label resolve + checker portability)
+
+- **Checker portability defect, reproduced then fixed:** on the committed LF source the
+  runtime JS measured 52,005 bytes (within the 52 KB budget), but a Windows checkout with
+  `core.autocrlf=true` expands LF to CRLF on disk — 53,270 bytes, 22 over — making the
+  checker report 117/118 on an unchanged tree. Budgets now measure **canonical
+  repository-source bytes** (CRLF normalized to LF before counting; budgets unchanged).
+  Proven three ways: an in-checker assertion that identical content yields identical
+  budgets under LF and CRLF; a scratch copy of all six lab files force-expanded to CRLF
+  producing **byte-identical budget numbers and 120/120 PASS**; and a scratch copy with
+  ~6 KB of genuine added content **failing** the runtime budget (119/120) — the
+  normalization cannot hide a real overage. The trailing-whitespace scan also now splits
+  on `\r?\n` so a CRLF checkout cannot mask a space before a line end.
+- Node checker — **120/120 PASS** (118 prior, −3 tuck-era keyframe audits, +3
+  stitched-resolve keyframe audits, +2 budget-portability assertions). Canonical bytes:
+  143,563 total / 52,012 runtime JS, both within unchanged budgets.
+- Restricted-language lint mutation — performance claims injected into the new scene's
+  EN and ES copy (clinical, patent, degree-cooling): **3/3 categories caught**.
+- In-page suite — **58/58 PASS in full-motion mode** and **58/58 PASS in
+  reduced-default mode** (headless Chrome under virtual time). The stitched-resolve
+  scene completes at **840 ms** (target 700–850), replays, skips at 90 ms, cancels at
+  70 ms, survives 10× start spam, leaks no animations or elements; reduced motion
+  creates **zero animations** and lands on the same final composition; CLS 0.0000; zero
+  console errors/warnings; zero infinite animations.
+- Layout at true 390 / 736 / 1024 viewports via the measurement rig:
+  `horizOverflow=false` everywhere; the scene container (321 px wide at 390) has no
+  nested scrolling and its final composition fits a 1024×768 viewport.
+- `tools/validation.py --self-test` — **633/633 PASS**; `git diff --check` clean;
+  forbidden production paths byte-identical to base `c8e5a95` (ranged diff).
+- Evidence (current): `evidence/16–23` — pillows settling (16), the drawn center seam
+  (17), the label landing on the seam (18), the perimeter stitch tracing (19), the
+  final composition with title/concern/chip hierarchy (20), reduced-motion final (21),
+  Spanish preview (22), true-390 px reflow with the measurement banner in-frame (23).
 
 ## 11a. Verification record (revision 3 — ripple removal + Shared-Bed Priority)
 
@@ -413,12 +464,10 @@ iframe measurement rig) — all prototype tooling only.
 - `tools/validation.py --self-test` — **633/633 PASS**; `git diff --check` clean;
   forbidden production paths byte-identical to base `c8e5a95` (verified by ranged
   diff).
-- Evidence: `evidence/16–22` — pillows settling (16), the concern as a stitched
-  fabric label (17), the tuck transition (18), the completed card joined to the brief
-  (19), reduced-motion final state (20), Spanish preview (21), true-390 px reflow with
-  the measurement banner in-frame (22). Frames were captured with the deterministic
-  freeze-seek affordance; the adversarial-review verdict on the frames is recorded in
-  §10.
+- Evidence: revision 3's captures of the tuck treatment were superseded and replaced in
+  revision 4 when that metaphor was rejected — current evidence is listed in §11b.
+  Frames were captured with the deterministic freeze-seek affordance; the
+  adversarial-review verdicts are recorded in §10.
 
 ## 11. Verification record (revision 2)
 

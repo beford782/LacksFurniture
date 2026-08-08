@@ -888,11 +888,12 @@ button:disabled { cursor: not-allowed; opacity: 0.45; }
 
 /* ============ experimental: shared-bed priority ============ */
 /* A restrained top-down bed composition in cloth/quilt geometry — never a
- * product cutaway. The customer's recorded concern becomes a stitched fabric
- * label, then tucks into the Sleep Brief as a priority card. No waves, no
- * disturbance propagation, no implied isolation/absorption: the only motion
- * is settling, stitching and tucking, and the final card states a customer
- * priority. Active transition ~1050 ms; runner-managed; replay explicit. */
+ * product cutaway. Two pillow panels settle, a short center seam is drawn
+ * between them, and the customer's recorded concern lowers onto the seam as
+ * a label whose stitched perimeter weaves it into the composition. No waves,
+ * no disturbance propagation, no implied isolation/absorption — the only
+ * motion is settling and stitching, and the finished label states a customer
+ * priority. Active transition ~820 ms; runner-managed; replay explicit. */
 .ml-sharedbed {
   position: relative;
   max-width: 460px;
@@ -929,38 +930,35 @@ button:disabled { cursor: not-allowed; opacity: 0.45; }
 }
 .ml-sb-pillow--l { left: 11%; }
 .ml-sb-pillow--r { right: 11%; }
+/* the center seam: a short dashed thread drawn between the pillows */
+.ml-sb-seam {
+  position: absolute;
+  left: 27%;
+  right: 27%;
+  top: 104px;
+  height: 0;
+  border-top: 2px dashed rgba(104, 84, 60, 0.55);
+  clip-path: inset(-2px 0 -2px 0);
+  pointer-events: none;
+}
+/* the label: the customer's recorded concern, lowered onto the seam and
+ * stitched into the composition — it IS the final content, never hidden */
 .ml-sb-label {
   position: absolute;
   left: 50%;
-  top: 106px;
+  top: 96px;
   transform: translateX(-50%);
-  background: var(--consultation-paper);
-  border: 1px dashed rgba(104, 84, 60, 0.55);
-  border-radius: var(--radius);
-  padding: 7px 12px;
-  font-family: var(--font-serif);
-  font-size: 13px;
-  color: var(--consultation-ink);
-  pointer-events: none;
-}
-.ml-sb-card {
-  position: absolute;
-  right: 9%;
-  bottom: 40px;
-  width: 200px;
+  width: 230px;
   background: var(--consultation-paper);
   border: 1px solid var(--consultation-rule);
   border-radius: var(--radius);
-  /* deep bottom padding: the brief's overlap tucks over PADDING, never text —
-   * Spanish wraps one line deeper than English and must stay legible */
-  padding: 8px 12px 20px;
+  padding: 8px 12px 10px;
   box-shadow: var(--sh-lift1);
-  transform: rotate(-1.5deg);
+  text-align: center;
   z-index: 2;
 }
-.ml-sb-card::before {
-  /* the drawn stitch: a dashed seam that closes around the card as it is
-   * converted from loose label to filed priority */
+.ml-sb-label::before {
+  /* the traced perimeter stitch that weaves the label into the textile */
   content: '';
   position: absolute;
   inset: 3px;
@@ -969,7 +967,7 @@ button:disabled { cursor: not-allowed; opacity: 0.45; }
   clip-path: inset(0 0 0 0);
   pointer-events: none;
 }
-.ml-sb-card-title {
+.ml-sb-title {
   display: block;
   font-size: 10px;
   font-weight: 700;
@@ -978,43 +976,22 @@ button:disabled { cursor: not-allowed; opacity: 0.45; }
   color: var(--consultation-muted);
   margin-bottom: 2px;
 }
-.ml-sb-card-line {
+.ml-sb-line {
   display: block;
   font-family: var(--font-serif);
   font-size: 14px;
   line-height: 1.3;
   color: var(--consultation-ink);
 }
-.ml-sb-brief {
-  position: absolute;
-  right: 3%;
-  bottom: 4px;
-  width: 42%;
-  min-width: 150px;
-  height: 44px;
-  background: var(--consultation-paper);
-  border: 1px solid var(--consultation-rule);
-  border-radius: var(--radius);
-  box-shadow: var(--sh-lift2);
-  padding: 8px 12px;
-  z-index: 3;
-}
-.ml-sb-brief .ml-q-eyebrow {
-  color: var(--consultation-subtle);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.3em;
-  text-transform: uppercase;
-}
 
-/* choreography: pillows settle from opposite directions; the concern label
- * rises, then is carried by a hand-scale gesture into the card; the stitch
- * seam closes; the card rests tucked under the brief panel's edge */
+/* choreography (~820 ms): pillows settle from opposite directions; the seam
+ * thread draws; the label lowers onto the seam with a small textile settle;
+ * the perimeter stitch traces; the title resolves within the label */
 .ml-sharedbed.is-idle .ml-sb-pillow,
-.ml-sharedbed.is-idle .ml-sb-label,
-.ml-sharedbed.is-idle .ml-sb-card { opacity: 0; }
-.ml-sharedbed.is-running .ml-sb-pillow--l { animation: ml-sb-pillow-l 380ms var(--e-settle) both; }
-.ml-sharedbed.is-running .ml-sb-pillow--r { animation: ml-sb-pillow-r 380ms var(--e-settle) 50ms both; }
+.ml-sharedbed.is-idle .ml-sb-seam,
+.ml-sharedbed.is-idle .ml-sb-label { opacity: 0; }
+.ml-sharedbed.is-running .ml-sb-pillow--l { animation: ml-sb-pillow-l 300ms var(--e-settle) both; }
+.ml-sharedbed.is-running .ml-sb-pillow--r { animation: ml-sb-pillow-r 300ms var(--e-settle) 40ms both; }
 @keyframes ml-sb-pillow-l {
   from { opacity: 0; transform: translateX(-26px); }
   70% { opacity: 1; transform: translateX(0) scaleY(0.985); }
@@ -1025,33 +1002,40 @@ button:disabled { cursor: not-allowed; opacity: 0.45; }
   70% { opacity: 1; transform: translateX(0) scaleY(0.985); }
   to { opacity: 1; transform: none; }
 }
-.ml-sharedbed.is-running .ml-sb-label {
-  animation:
-    ml-sb-label-in 280ms var(--e-place) 320ms both,
-    ml-sb-label-away 240ms var(--e-lift) 640ms forwards;
+.ml-sharedbed.is-running .ml-sb-seam {
+  animation: ml-sb-seam-draw 240ms var(--e-place) 180ms both;
 }
-@keyframes ml-sb-label-in {
-  from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+@keyframes ml-sb-seam-draw {
+  from { opacity: 1; clip-path: inset(-2px 100% -2px 0); }
+  to { opacity: 1; clip-path: inset(-2px 0 -2px 0); }
+}
+.ml-sharedbed.is-running .ml-sb-label {
+  animation: ml-sb-label-lower 300ms var(--e-settle) 320ms both;
+  transform-origin: center bottom;
+}
+@keyframes ml-sb-label-lower {
+  from { opacity: 0; transform: translateX(-50%) translateY(-14px); }
+  80% { opacity: 1; transform: translateX(-50%) scaleY(0.985); }
   to { opacity: 1; transform: translateX(-50%); }
 }
-@keyframes ml-sb-label-away {
-  to { opacity: 0; transform: translateX(-50%) translate(54px, 56px) scale(0.62); }
-}
-.ml-sharedbed.is-running .ml-sb-card { animation: ml-sb-card-in 340ms var(--e-place) 680ms both; }
-@keyframes ml-sb-card-in {
-  from { opacity: 0; transform: rotate(-1.5deg) translate(-34px, -40px) scale(0.9); }
-  to { opacity: 1; transform: rotate(-1.5deg); }
-}
-.ml-sharedbed.is-running .ml-sb-card::before {
-  animation: ml-sb-stitch 260ms var(--e-place) 780ms both;
+.ml-sharedbed.is-running .ml-sb-label::before {
+  animation: ml-sb-stitch 260ms var(--e-place) 480ms both;
 }
 @keyframes ml-sb-stitch {
   from { clip-path: inset(0 100% 0 0); }
   to { clip-path: inset(0 0 0 0); }
 }
-.ml-sharedbed.is-done .ml-sb-pillow { opacity: 1; }
-.ml-sharedbed.is-done .ml-sb-label { opacity: 0; }
-.ml-sharedbed.is-done .ml-sb-card { opacity: 1; }
+.ml-sharedbed.is-running .ml-sb-title {
+  animation: ml-sb-title-resolve 200ms var(--e-place) 620ms both;
+}
+@keyframes ml-sb-title-resolve {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+.ml-sharedbed.is-done .ml-sb-pillow,
+.ml-sharedbed.is-done .ml-sb-seam,
+.ml-sharedbed.is-done .ml-sb-label,
+.ml-sharedbed.is-done .ml-sb-title { opacity: 1; }
 
 /* ============ selftest output ============ */
 .ml-selftest {

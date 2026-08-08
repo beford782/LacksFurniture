@@ -54,14 +54,29 @@ const files = {
 };
 
 // ---------------------------------------------------------------- budgets
-section('byte budgets');
+section('byte budgets (canonical repository-source bytes)');
 // raised from 120/45 KB in the correction pass: the causal Night Loom
 // (labeled ribbons + cloth) and textured construction strata added ~20 KB of
-// hand-reviewable markup/CSS/JS; documented in the investigation doc §7
-const totalBytes = Object.values(files).reduce((n, s) => n + Buffer.byteLength(s), 0);
-const runtimeJs = Buffer.byteLength(files.runner) + Buffer.byteLength(files.js);
+// hand-reviewable markup/CSS/JS; documented in the investigation doc §7.
+//
+// Budgets measure CANONICAL source bytes: a Windows checkout with
+// core.autocrlf=true expands every LF to CRLF on disk (one byte per line —
+// enough to push a near-budget file over), so CRLF is normalized to LF
+// before counting. The repository stores LF; the budget must not depend on
+// checkout line-ending policy.
+const canonBytes = (s) => Buffer.byteLength(s.replace(/\r\n/g, '\n'));
+const totalBytes = Object.values(files).reduce((n, s) => n + canonBytes(s), 0);
+const runtimeJs = canonBytes(files.runner) + canonBytes(files.js);
 ok(`lab total ${totalBytes} bytes <= 150 KB`, totalBytes <= 150 * 1024);
 ok(`runtime JS ${runtimeJs} bytes <= 52 KB`, runtimeJs <= 52 * 1024);
+// self-proof: identical content yields identical budgets under LF and CRLF,
+// while genuine added content still counts byte-for-byte (an overage cannot
+// hide behind the normalization)
+const probe = 'line one\nline two\nline three\n';
+ok('byte budget is line-ending invariant (LF == CRLF)',
+  canonBytes(probe) === canonBytes(probe.replace(/\n/g, '\r\n')));
+ok('byte budget still counts real content (overage detectable)',
+  canonBytes(probe + 'x'.repeat(10)) === canonBytes(probe) + 10);
 
 // ------------------------------------------------------- CSS property rules
 section('allowlisted animated-property discipline (performance-oriented; not a universal compositor guarantee)');
@@ -162,7 +177,8 @@ ok('experimental wing labeled not approved', /none of these is approved for prod
 // -------------------------------------------------------- hygiene
 section('tree hygiene (mirrors repo `git diff --check`)');
 for (const [name, content] of Object.entries(files)) {
-  const trailing = content.split('\n').findIndex((l) => /[ \t]+$/.test(l));
+  // split on \r?\n so a CRLF checkout cannot hide "space before line end"
+  const trailing = content.split(/\r?\n/).findIndex((l) => /[ \t]+$/.test(l));
   ok(`${name}: no trailing whitespace`, trailing === -1, trailing >= 0 ? `line ${trailing + 1}` : '');
 }
 

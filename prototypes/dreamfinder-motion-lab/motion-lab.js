@@ -91,7 +91,7 @@
     'sb-title': 'Prioridad de cama compartida',
     'sb-concern': 'El movimiento de tu pareja te importa.',
     'sb-chip': 'Basado en lo que nos dijiste — no es una prueba de rendimiento del producto.',
-    'btn-sb-replay': 'Repetir el pliegue de prioridad',
+    'btn-sb-replay': 'Repetir la costura de la etiqueta',
     'btn-cool': 'Mostrar el material de la funda',
     'pose-flat': 'Plana', 'pose-head': 'Cabecera elevada', 'pose-both': 'Cabecera + pies',
     'zone-shoulders': 'Hombros', 'zone-back': 'Zona lumbar', 'zone-hips': 'Caderas'
@@ -877,13 +877,13 @@
   });
 
   /* ================= experimental: shared-bed priority ================= */
-  /* The customer's recorded shared-bed concern becomes a stitched fabric
-   * label and tucks into the Sleep Brief as a priority card. Records a
+  /* The customer's recorded shared-bed concern lowers onto a drawn center
+   * seam and is stitched into the textile composition as a label. Records a
    * priority; demonstrates nothing about mattress performance. */
   var sharedBedEl = $('#mlSharedBed');
   var sharedBedScene = SceneRunner.createScene({
     name: 'sharedbed',
-    duration: 1050,
+    duration: 820,
     reducedDuration: 0,
     steps: [
       { at: 0, run: function () {
