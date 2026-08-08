@@ -28,6 +28,17 @@ which governs wherever it modifies a recommendation above. The
 legal/compliance review remains outstanding and the reviewer role remains
 unfilled; execution of every rewrite stays gated exactly as before.
 
+**Status update 2026‑08‑08 (third update — owner‑records reconciliation):**
+the owner's own records archive (Restonic Texas licensee / Silverline Sleep
+distributor Dropbox) was searched read‑only at the owner's direction and
+reconciled against Block A. Appendix B records the evidence crosswalk;
+Appendix A now carries first partial owner responses with per‑item record
+citations. Model‑level construction documentation improved materially — and
+the earlier "model‑level documentation gap" language is superseded where
+Appendix B says so — but **no disposition, count, owner ruling, or
+legal‑queue entry changed**, and no performance, testing, patent, or
+regulatory substantiation was found for any claim that lacked it.
+
 ---
 
 ## 1. Scope and provenance
@@ -152,6 +163,23 @@ on. They are findings in their own right.
    Until the named record confirms the mapping, claims published for the
    upstream line cannot be attached to the Lacks SKU — a risk dimension the
    inventory's A–E ladder does not currently capture (see §8.2).
+
+   **Update 2026‑08‑08 (owner‑records reconciliation — supersedes this
+   table's "mapping status" column where stated; Appendix B governs).**
+   The "model‑level specification gap" rows are no longer accurate as
+   written: STANDARD AUTHORIZED MATERIAL SPECIFICATION sheets from the
+   Texas licensee's records now document every Restonic program on the
+   Lacks price list at model level, including Platinum Summit (both
+   generations), Maria II (s7's and s3's builds — MI847 matches s3's
+   captured 15.25″ Box Top Plush exactly), Paige II, Kendall III,
+   Angelina II, Giselle, and the Reserve program. The remaining gaps are
+   **Lacks‑SKU binding** (no located record carries a Lacks retail SKU),
+   **generation selection** where two Lacks‑assigned generations exist
+   (Summit, §B.4 C3), and **claim substantiation** (unchanged). For g9,
+   the owner's records add a 2024 factory sheet for base code MZ972SA at
+   17″ with a different coil unit — confirming the §3.3 caution as a
+   documented build divergence rather than resolving it (§B.4 C9). No
+   Tempur‑Pedic record of any kind exists in the owner's records (A.1).
 
 ## 4. Outcome summary
 
@@ -288,6 +316,16 @@ is not admissible under the rubric. The authorized owner response to the
 Appendix A question set should address the question directly; a confirmed
 line‑level claim would reopen this decision.
 
+*Update 2026‑08‑08:* the owner's records partially address this. The
+licensee's Reserve customer cards prepared for the Lacks program carry
+"Hand Made Mattresses" and "Hand‑Tufted … throughout" language (card
+tier, §B.2 [IC‑RES]); the Reserve factory specification sheets state
+"Tufted" in their construction lines and use no hand‑made language; the
+searched records contain no Spring Air "Handcrafted Reserve" line copy.
+Tufting is not treated as proof of hand‑made construction. R1's outcome
+and the owner attestation recorded at §14.3.1 are unchanged; the written
+scope definition (A.2 Q6) remains open.
+
 **R2 — Mapping‑gap rows stay REWRITE, with execution blocked.** For
 A18, A19/A20, A22, A23 and A24 the exact SKU/generation mapping to a
 published upstream specification is unconfirmed (§3.3 table — the gap
@@ -302,6 +340,14 @@ current string is REWRITE; execution of any rewrite is blocked until the
 relevant dealer/spec sheet confirms the model's materials** (§10). A strict
 reader who prefers row‑level ESCALATE for A22/A23/A24 as a set loses nothing:
 under either label, no copy changes until the records arrive.
+
+*Update 2026‑08‑08:* the contemplated records have now partially arrived
+(Appendix B). The execution gate refines from "blocked pending records"
+to per‑element status: construction facts documented by an authorized
+specification may support rewrite execution (subject to the legal queue),
+while elements the specifications contradict or do not state — notably
+s7's gel premise (§B.4 C4) and every 25 % quantification (§B.4 C1) —
+remain out. The dispositions themselves are unchanged.
 
 **R3 — The brief's "firmest" contradiction is upgraded.** The inventory
 recorded the A16 "firmest luxury" collision as g8 vs s2. Verified against
@@ -1620,6 +1666,21 @@ resolves which applies to each SKU. Only b5's and s3's Block A rows are
 dispositioned here; the conflict resolution should ride whichever workflow
 touches the other five models.
 
+*Update 2026‑08‑08 (owner‑records reconciliation — the conflict is now
+fully mapped and remains unresolved):* the licensee's own records carry
+**both** formulations. The non‑Reserve Lacks customer cards (Kendall III,
+Angelina II, Summit II, Maria II, Paige II — §B.2) state "Marvelous
+Middle™: 25% Thicker Coils in the Center 1/3"; the Reserve customer cards
+state "zoned with 25% more support in the middle third" — the corporate
+wording. The **factory specification sheets state neither figure**: their
+unit lines read "736 MARSHALL COIL 14.5/15.5ga 3 zones" / "704 MARSHALL
+COIL 3 ZONES FE" with no percentage and no Marvelous Middle designation,
+and the Angelina II sheets show a "342 FE" unit with no zone notation at
+all (§B.4 C5). No measurement definition was found in any record. Both
+formulations continue to fail closed; the conflict's origin is now
+documented as intra‑licensee (card layer vs specification layer), not
+merely corporate‑vs‑capture.
+
 **8.5 The four price‑leadership claims must be ruled on together, under one
 class definition.** A6 (s10) plus reason_default rows B5 (b4), B6 (b7) and
 B7 (b6) — the brief's contradiction #1. All four use undefined comparison
@@ -1693,6 +1754,21 @@ authoring decision**, not a revival of this string, and requires a written
 comparison‑set definition, a dated full‑assortment price census, a
 validity/expiration rule, merchandising approval, and any legal/compliance
 review that qualified reviewers require (see A6).
+
+**Register status — 2026‑08‑08 owner‑records reconciliation (Appendix B):**
+
+| Register element | Status after reconciliation |
+|---|---|
+| "Hand‑made" (A7, A9) | Owner attestation stands (§14.3.1). Reserve customer cards carry "Hand Made" / "Hand‑Tufted" language (card tier); factory specs say "Tufted" only. Written scope definition still OPEN |
+| Tempur "2.0" identity; °F/°C; PCM (A1, A4, A19, A20) | OPEN — no Tempur‑Pedic record exists in the owner's records (A.1 search trail) |
+| Kendall coil‑unit spec (A5, A13) | Factory unit documented: 8″ 736 Marshall 14.5/15.5ga 3‑zone (MM713/MM513). Motion‑transfer test basis OPEN; corporate 800/1,000‑Series designation appears in no licensee record |
+| Summit zoned‑system question (A15) | Documented: 3‑zone 736 Marshall in both candidate generations' Firm builds, with a gel layer (MM244/MM284). The dossier's "not documented to have a zoned system" premise is superseded; the spinal‑alignment claim remains unsupported — a construction spec is not an outcome claim, and the documented system is 3‑zone, not the 5‑zone systems Restonic's alignment copy attaches to |
+| Platinum Summit/Maria BOMs (A22, A23, A24) | Documented per specs. s3/s4 Maria II: two gel‑infused visco layers + 736 Marshall 3‑zone. s7 Summit Plush: **no gel layer in either candidate generation's authorized spec — the A22 premise is contradicted, not confirmed** (§B.4 C4); A23's coil/hybrid premise is documented. Coil‑series corporate designation OPEN |
+| Mayfair "Medium" comfort variant (A9) | CLOSED — MU715 "RESERVE MAYFAIR II MEDIUM" authorized spec located |
+| Copper SKU identity (A3, A18) | The "50"‑suffix build remains documented only by the PDP‑linked 13.5″ sheet; the owner's 2024 MZ972SA factory sheet (17″, different unit) documents a distinct build and must not be transferred (§B.4 C9). EPA/treated‑article, ISO, patent, and "8×" records: NOT FOUND in the owner's records — OPEN |
+| Store‑wide rankings (A4, A16) | Unchanged — no assortment record was sought or located |
+| Patent status (A12, A14, A18) | OPEN — no patent number, application, or license record located anywhere in the owner's records; "patented" appears only as a bare marketing adjective |
+| Live lacks.com PDP | Closed for SKU 2037053 (§14.5); other SKUs' live pages unchecked |
 
 ## 11. What this document deliberately does not do
 
@@ -1857,6 +1933,14 @@ standards and overrides below.
 3. **"Reserve line" boundary (§8.7): deferred to licensee records.** No
    line‑scoped claim renders until the Restonic licensee's model‑to‑line
    mapping (A.2 Q1) arrives; the boundary is then settled on that record.
+   *Settled 2026‑08‑08 (owner ruling, per this ruling's own terms):* the
+   record arrived — the licensee's 2025 Reserve program ([PL‑2025],
+   [NL‑2025], and the four Reserve II specs, §B.2) comprises Mayfair II
+   Medium, Mayfair II ET Plush, Royal II Extra Firm, and Royal II Cushion
+   Firm. **The Reserve line includes Royal Reserve.** Under this boundary
+   g8's line‑scoped ranking ("The firmest bed in the Reserve line") is
+   intra‑catalog true (g6 = 3, g7 = 5, g8 = 8) and becomes scopable in
+   the authoring workflow, subject to the legal queue as before.
 4. **Price‑claim class definition (§8.5): profile class, kiosk scope.**
    The comparison set for any price‑leadership claim is the set of beds
    sharing the claiming bed's firmness/feature profile **within the kiosk
@@ -1909,8 +1993,10 @@ document's recommendations)
 All three question sets (A.1 Tempur‑Pedic, A.2 Restonic Texas licensee,
 A.3 Spring Air) are **approved, 2026‑08‑08**, after individual review. The
 owner states that he is authorized to answer them and will provide the
-written responses himself; they are not awaiting an external send. **No
-response has been recorded as of this update.** Each response must cite or
+written responses himself; they are not awaiting an external send. **First
+partial responses were recorded 2026‑08‑08 from the owner's records —
+per‑question status blocks follow each question set in Appendix A, with
+the supporting records in Appendix B.** Each response must cite or
 attach the supporting record for every item treated as resolved. An
 unanswered item, or an answer without supporting evidence, remains open
 under §10. No manufacturer, licensee, or dealer contact is required by
@@ -1995,18 +2081,29 @@ authorized capacity, with its center of gravity now on written SKU
 applicability, revision/effective date, approved claim language, patent
 substantiation, and regulatory/testing records rather than the bill of
 materials. The retrieved specification sheet may be cited or attached to
-the response. No response has yet been recorded, and no dealer, licensee,
-or manufacturer contact has occurred.
+the response. *(Superseded later the same day: the A.3 response status
+block in Appendix A now records the first partial response.)* No dealer,
+licensee, or manufacturer contact has occurred.
 
-## Appendix A — OWNER‑RESPONSE EVIDENCE QUESTIONNAIRES — AUTHORIZED 2026‑08‑08 (§14.4); RESPONSES PENDING
+**Owner‑records reconciliation (2026‑08‑08, third update):** the evidence
+crosswalk, record ledger, conflict register, and search negatives from
+the owner's Dropbox records are recorded in **Appendix B**. Nothing was
+sent externally; nothing was merged; no file outside this document
+changed; no Dropbox content was modified, moved, shared, or committed to
+the repository.
+
+## Appendix A — OWNER‑RESPONSE EVIDENCE QUESTIONNAIRES — AUTHORIZED 2026‑08‑08 (§14.4); FIRST PARTIAL RESPONSES RECORDED 2026‑08‑08
 
 Three evidence question sets, approved after the owner's individual
 review. The owner states that he is authorized to answer them and will do
-so himself. **No response has been recorded as of this update; no
-manufacturer, licensee, or dealer has been contacted.** Each answer closes
-only the records‑dependent items supported by a cited or attached written
-record. Unsupported or unanswered elements remain open under §10 and
-omitted from the kiosk.
+so himself. **First partial responses were recorded 2026‑08‑08 from the
+owner's records (status blocks below; supporting records in Appendix B);
+no manufacturer, licensee, or dealer has been contacted.** Each answer
+closes only the records‑dependent items supported by a cited or attached
+written record. An answer may be partial. Unsupported or unanswered
+elements remain open under §10 and omitted from the kiosk. Where a direct
+SKU binding is absent the recorded formula is: *strong model mapping;
+Lacks SKU binding not present in the located file.*
 
 ### A.1 Evidence questionnaire — Tempur‑Pedic dealer/brand documentation
 
@@ -2049,6 +2146,18 @@ omitted from the kiosk.
 > effective date, and written confirmation that the documentation applies
 > to the exact units above as stocked. Until this arrives, unsupported
 > claim elements remain omitted from our kiosk.
+
+**A.1 owner response status — 2026‑08‑08: OPEN IN FULL.** An account‑wide
+search of the owner's records located **no Tempur‑Pedic‑authored document
+of any kind** — no dealer claim sheet, specification, or advertising
+guideline. Queries run: "Tempur", "Tempurpedic", "Tempur‑Pedic",
+"ProBreeze", "LuxeBreeze", "Breeze 2.0", "SmartClimate", "Pure Cool",
+"dealer claim sheet", "advertising guidelines", "1302592", "1302546".
+Every hit was Spring Air sales material referring to Tempur‑Pedic as a
+competitor or an unrelated fuzzy match; the model‑specific and
+SKU‑specific queries returned zero. Questions 1–5 all remain open; every
+element they gate stays out; the gap is not filled from public marketing
+pages.
 
 ### A.2 Evidence questionnaire — Restonic Texas licensee documentation
 
@@ -2111,6 +2220,65 @@ omitted from the kiosk.
 > Until this documentation arrives, unsupported claim elements remain
 > omitted from our kiosk.
 
+**A.2 owner response status — 2026‑08‑08 (records in Appendix B; bracketed
+IDs are §B.2 ledger entries):**
+
+1. **Model‑to‑line mappings — ANSWERED at program level.** The dated Lacks
+   program price lists [PL‑2025], [PL‑2026] and the licensee
+   customer‑assignment ledger [NL‑2025] bind every Lacks Restonic program
+   to factory codes, corroborated by the authorized specs: Kendall III =
+   MM813/MM913/MM713/MM513; Summit II = MM274/MM294/MM284 (the current
+   Lacks "CC Platinum Hybrid" program — the original Summit
+   MM244/MM254/MM264 is *also* Lacks‑assigned ("Lack's R B Line"), so
+   floor‑stock generation is CONFLICTED, §B.4 C3); Paige II =
+   ML991/ML591; Maria II = MI847/MI947/MI547; Angelina II = MD473/MD273;
+   Giselle = ML269/ML239; Reserve program = Mayfair II MU715/MU815 +
+   Royal II MT210/MT510; Gracie II = MC458 (ledger and price list only —
+   no MC458 spec located; the located MC742 "Gracie 2.0" sheet belongs to
+   a different customer, §B.4 C6). The Reserve Mayfair "Medium Tight Top"
+   variant question is **closed**: MU715 "RESERVE MAYFAIR II MEDIUM" is
+   an authorized spec. Lacks SKU binding: strong model mapping; Lacks SKU
+   binding not present in any located file.
+2. **Coil‑unit series and Marvelous Middle — PARTIAL.** Factory units per
+   authorized spec: 8″ 736 Marshall 14.5/15.5ga 3‑zone (Kendall III, both
+   Summit generations, Maria II, Giselle); 8″ 704 Marshall 3‑zone FE
+   (Paige II, Reserve II); "342 FE" with no zone notation (Angelina II —
+   whose customer card describes a traditional 13‑gauge helical‑wire
+   unit, §B.4 C5). The corporate "800 Series"/"1,000 Series" designations
+   appear in **no** licensee record, and **no factory sheet uses the
+   Marvelous Middle designation** — both subparts remain open.
+3. **25 % formulation — OPEN, sharpened.** Factory sheets state neither
+   figure; "25 % thicker" traces to the licensee's non‑Reserve customer
+   cards; the Reserve cards use "25 % more support"; no measurement
+   definition exists in any record (§8.4 update; §B.4 C1). Both
+   formulations stay failed‑closed.
+4. **Bills of material — ANSWERED at specification tier.** Maria II: two
+   1″ gel‑infused visco layers over the 736 Marshall 3‑zone unit
+   [SP‑MI847], [SP‑MI947], [SP‑MI547]. Summit: gel exists **only** in the
+   Firm/Extra‑Firm builds ([SP‑MM244] 1.5″ Visco Gel; [SP‑MM284] 1.5″
+   Visco Gel) — **no gel layer in the Plush or Medium build of either
+   generation** ([SP‑MM264], [SP‑MM274], [SP‑MM254], [SP‑MM294]), which
+   contradicts A22's premise and the Summit II cards' own gel copy (§B.4
+   C4). Angelina II edge encasement: foam encasement on the spec; the
+   "3‑inch high‑density" figure is card‑tier only.
+5. **Motion‑transfer test basis — OPEN.** No test documentation located.
+6. **"Hand‑made" scope — PARTIAL/OPEN.** The Reserve customer cards
+   prepared for the Lacks program carry "Hand Made Mattresses" and
+   "Hand‑Tufted … throughout" [IC‑RES]; the factory specs state "Tufted"
+   with no hand‑made language and define no scope. The §14.3.1 owner
+   attestation stands exactly as recorded; the written scope definition
+   remains open. Spring Air "Handcrafted Reserve" line copy: not found.
+7. **Texas origin/assembly documentation — OPEN.** The located records do
+   not state assembly location per SKU; that the records are the Texas
+   licensee's own archive is context, not a written origin statement.
+8. **Marvelous Middle patent/attribution — OPEN.** No patent number,
+   application, license, or trademark‑guideline record located; cards use
+   "Marvelous Middle TM" with no registration reference.
+9. **Revisions/effective dates — ANSWERED for the located specs**
+   (origination and revision dates recorded per sheet in §B.2). Written
+   per‑SKU applicability confirmation: OPEN — no record binds a Lacks
+   retail SKU.
+
 ### A.3 Evidence questionnaire — Spring Air dealer/brand documentation
 
 > Subject: Specification and claim documentation for the Copper hybrid
@@ -2149,3 +2317,312 @@ omitted from the kiosk.
 >
 > Until this documentation arrives, unsupported claim elements remain
 > omitted from our kiosk.
+
+**A.3 owner response status — 2026‑08‑08 (records in Appendix B):**
+
+1. **Build/SKU equivalence — PARTIAL.** The owner's records document
+   builds *adjacent to* but not identical with the Lacks floor unit: the
+   2024 factory sheet for base code MZ972SA [SP‑MZ972] specifies a 17″
+   build on an "8″ 960 Combi Zone FE" unit, and the customer ledger
+   [NL‑2025] lists MZ972SA at 16″ assigned to a different customer
+   ("National"). The Lacks PDP model string (1602‑862‑**MZ972SA50**)
+   binds SKU 2037053 to a "50"‑suffix variant that appears in **no**
+   located licensee record; its only construction record remains the
+   PDP‑linked 13.5″ / 948‑count 5‑zone sheet (§14.5), which stays
+   controlling. The do‑not‑transfer rule is re‑confirmed as a documented
+   build divergence (§B.4 C9). Sibling context: MZ872SA (ET Plush, 17″
+   spec [SP‑MZ872]) *is* Lacks‑assigned in the ledger.
+2. **Copper BOM — PARTIAL.** Current build per the PDP‑linked sheet;
+   family materials (NatuVerex cover, copper visco, Hyper Gel, ELATE
+   copper foam) corroborated across the factory sheets and the Lacks
+   Copper cards; the 50‑variant's factory BOM remains open.
+3. **Approved cooling wording / "8×" comparative — OPEN.** No
+   approved‑wording record located; the "8× faster" figure appears in
+   **no** owner record at all.
+4. **NatuVerex trademark/patent — OPEN.** "Patented" appears only as a
+   bare adjective across marketing materials; no patent number,
+   application, or license record exists in the owner's records; the
+   spelling varies across records (NatuVerex / Natuverex / Natuvarex).
+5. **ISO / EPA / antimicrobial substantiation — OPEN.** No test report,
+   certificate, or registration located (queries in §B.5). The recurring
+   claim that an independent lab verified copper benefits "through 4
+   layers" appears in at least four marketing documents — never with a
+   lab name, method, date, or report. Licensee training materials assert
+   bacteria‑kill percentages, anti‑viral properties, and
+   inflammation/circulation/immune/insulin‑sensitivity effects with no
+   underlying records; recorded as issue‑spotting for qualified
+   legal/compliance review, not as legal conclusions (§B.4 O2, §B.5).
+   The only genuine third‑party certification located is a CertiPUR‑US
+   foam‑chemistry flyer, which does not concern copper.
+6. **Approved retailer language with confirmation — OPEN.**
+
+---
+
+## Appendix B — Owner‑records evidence crosswalk (Dropbox reconciliation, 2026‑08‑08)
+
+### B.1 Method and evidence rules
+
+Read‑only search and text extraction from the owner's records archive
+(Restonic Texas licensee / Silverline Sleep distributor Dropbox), at the
+owner's direction, 2026‑08‑08. No Dropbox content was modified, moved,
+renamed, shared, or deleted; no public links were created; no third‑party
+document is committed to this repository. Dealer cost figures present in
+the price lists are deliberately **not** reproduced here. Evidence
+hierarchy applied (owner's instruction): (1) current STANDARD AUTHORIZED
+MATERIAL SPECIFICATION; (2) dated Lacks program/price list and licensee
+customer‑assignment ledger; (3) Lacks/customer information card;
+(4) licensee/manufacturer sales or training material; (5) generic
+marketing. A specification establishes construction only, for the
+identified build. A card establishes that language was distributed or
+used — never the underlying scientific, patent, or regulatory
+substantiation. Mapping statuses: **CONFIRMED** (written record directly
+binds the Lacks SKU/model number to the factory build), **STRONG** (exact
+or uniquely corresponding name/program/height/comfort/construction match;
+Lacks SKU absent from the source), **PROVISIONAL** (likely
+sibling/renamed build, unresolved differences), **CONFLICTED** (records
+disagree on a material field), **UNRESOLVED** (insufficient evidence). No
+located licensee record contains a Lacks retail SKU, so no Restonic, C&W,
+or Copper mapping reaches CONFIRMED; the closest SKU‑side binding is
+retailer‑authored — g9's live PDP model string embedding MZ972SA50
+(§14.5).
+
+### B.2 Record ledger
+
+Bracketed IDs are cited throughout this document. All paths are exact
+Dropbox paths; dates are the documents' own origination/revision fields
+(o./r.) plus the Dropbox server‑modified timestamp (sm.).
+
+**Tier 1 — STANDARD AUTHORIZED MATERIAL SPECIFICATION sheets** (all under
+`/Blake Dropbox/Rosy Ortiz 2026/Pricing/2025 Specs/` unless noted;
+`/Blake Dropbox/Specs/` marked †, other roots given in full):
+
+| ID | File | Model (factory name) | o./r. | Height | Unit | Claim‑relevant layers |
+|---|---|---|---|---|---|---|
+| [SP‑MM713] | MM713 CC Hybrid Kendall III Medium.xls | CC Hybrid Kendall III Medium | o. 08/19/2025 | 15.5″ | 736 Marshall 14.5/15.5ga 3z, R‑2 enc. | 1″ Gel Infused Visco 4# |
+| [SP‑MM513] | MM513 CC Hybrid Kendall III Extra Firm.xls | CC Hybrid Kendall III Extra Firm | o. 08/19/2025 | 14.5″ | same | 1″ Gel Infused Visco 4# |
+| [SP‑MM913] | MM913 CC Hybrid Kendall III ET Firm.xls | CC Hybrid Kendall III Euro Top Firm | o. 08/19/2025 | 15″ | same | 1″ Gel Infused Visco 4# |
+| [SP‑MM813] | MM813 CC Hybrid Kendall III ET Plush.xls | CC Hybrid Kendall III Euro Top Plush | o. 08/19/2025 | 15.5″ | same | 1″ Gel Infused Visco 4# |
+| [SP‑MD473] | MD473 CC Angelina II Medium.xls | CC ANGELINA II MEDIUM | o. 08/19/2025 | 13.1″ | **342 FE** (no zone notation), foam encasement | all‑polyurethane layers; no visco/gel |
+| [SP‑MD273] | MD273 CC Angelina II Supreme Extra Firm.xls | CC ANGELINA II SUPREME EXTRA FIRM | o. 08/19/2025 | 12.5″ | 342 FE, foam encased | all‑polyurethane |
+| [SP‑MD472] | `/CSP/SILVERLINE SLEEP/SILVERLINE SLEEP SPECS/Restonic mattress specs/2022/MD472 CC Angelina Plush.xls` | CC ANGELINA PLUSH (prior gen.) | o. 05/12/22 | 12.1″ | 342 FE | all‑polyurethane |
+| [SP‑MM244] | † MM244 CC Platinum Hybrid Summit Firm^.xls | CC Platinum Hybrid Summit Firm^ | o. 05/29/23 | 13.8″ | 736 Marshall 3z | 1″ Hyper Soft Visco + **1.5″ Visco Gel** + 1″ Serene Soft |
+| [SP‑MM254] | † MM254 CC Platinum Hybrid Summit Medium^ .xls | CC Platinum Hybrid Summit Medium^ | o. 05/29/2023 | 13.8″ | 736 Marshall 3z | 2″ Hyper Soft Visco + 1.5″ Serene Soft — **no gel** |
+| [SP‑MM264] | † MM264 CC Platinum Hybrid Summit Plush^.xls | CC Platinum Hybrid Summit Plush^ | o. 05/29/23 | 13.8″ | 736 Marshall 3z | 2″ Hyper Soft Visco + 1.5″ Serene Soft — **no gel** |
+| [SP‑MM274] | MM274 CC Hybrid Summit II Lux Plush.xls | CC Hybrid Summit II Lux Plush | o. 08/19/2025, r. 08/28 + 09/19/2025 | 13.8″ | 736 Marshall 3z | 2″ Hyper Soft Visco + 1.5″ Serene Soft — **no gel** |
+| [SP‑MM284] | MM284 CC Hybrid Summit ll II Extra Firm.xls | CC Hybrid Summit II Extra Firm Smooth Top | o. 08/19/2025, r. 08/28 + 09/19/25 | 13.8″ | 736 Marshall 3z | **1.5″ Visco Gel** + 2×1″ Serene Firm |
+| [SP‑MM294] | MM294 CC Hybrid Summit II Cushion Medium.xls | CC Hybrid Summit II Cushion Medium Smooth Top | o. 08/19/2025, r. 08/28 + 09/19/2025 | 13.8″ | 736 Marshall 3z | 1″ Hyper Soft Visco + Serene Soft + Serene Firm — **no gel** |
+| [SP‑MI847] | MI847 CC Hybrid Maria II BT Plush.xls | CC Hybrid Maria II Box Top Plush | o. 08/20/2025 | **15.25″** | 736 Marshall 3z, R‑2 | 2×1″ Gel Infused Visco 4#; Wool/Silk/Poly quilt; Box Top; 15/15 |
+| [SP‑MI947] | MI947 CC Hybrid Maria II BT Firm.xls | CC Hybrid Maria II Box Top Firm | o. 08/21/25 | 15″ | 736 Marshall 3z | 2×1″ Gel Infused Visco 4# |
+| [SP‑MI547] | MI547 CC Hybrid Maria II Firm.xls | CC Hybrid Maria II Firm | o. 08/21/2025 | 15.5″ | 736 Marshall 3z | 2×1″ Gel Infused Visco 4# |
+| [SP‑ML991] | ML991 CC Hybrid Paige II Box Top Firm.xls | CC Hybrid Paige II Box Top Firm | o. 08/20/2025, r. 09/01 + 09/20/2025 | **16″** | 704 Marshall 3z FE | Latex 44 ILD, 2″ Elate Copper, 4K Coil, 1″ Copper quilt |
+| [SP‑ML591] | ML591 CC Hybrid Paige II Extra Firm.xls | CC Hybrid Paige II Extra Firm | o. 08/20/225 [sic], r. 09/01 + 09/20/2025 | 15.5″ | 704 Marshall 3z FE | Latex 44 ILD, Duraflex, 4K Coil, 1″ Copper quilt |
+| [SP‑MU715] | MU715 Reserve Mayfair II Medium (w carton).xls | RESERVE MAYFAIR II MEDIUM | o. 08/21/2025 | 15.3″ | 704 Marshall 3z FE | Wool quilt, 2×1″ Latex 44 ILD, Serene ×2, Nano Coil 19ga; **Tufted** |
+| [SP‑MU815] | MU815 Reserve Mayfair II ET Plush (w carton).xls | RESERVE MAYFAIR II ET PLUSH | o. 08/21/25 | 15.3″ | 704 Marshall 3z FE | Wool quilt, 2×1″ Latex 14 ILD, Serene ×2, Nano Coil; **Tufted** |
+| [SP‑MT210] | MT210 Reserve Royal II Extra Firm (w carton).xls | RESERVE ROYAL II EXTRA FIRM | o. 08/21/25 | 14.3″ | 704 Marshall 3z FE | Wool quilt, 1″ Latex 44 ILD, Nano Coil; **Tufted** |
+| [SP‑MT510] | MT510 Reserve Royal II Cushion Firm (w carton).xls | RESERVE ROYAL II CUSHION FIRM | o. 08/21/2025 | 14.3″ | 704 Marshall 3z FE | Wool quilt, 1″ Latex 44 ILD, Nano Coil; **Tufted** |
+| [SP‑MC742] | MC742 CM Gracie 2.0 Medium.xls | CM GRACIE 2.0 MEDIUM (customer: Household — not the Lacks Gracie) | o. 07/28/2025 | 11.1″ | 342 FE | all‑poly; 5/10 warranty |
+| [SP‑ML269] | ML269 CC Platinum H Giselle Plush Smooth Top.xls | CC Platinum Hybrid Giselle Plush Smooth Top | o. 08/19/2025 | **12.5″** | 736 Marshall 3z | 2″ Hyper Soft Visco |
+| [SP‑ML239] | ML239 CC Platinum  Hybrid Giselle Firm Smooth Top.xls (filename has a double space) | CC Platinum Hybrid Giselle Firm Smooth Top | o. 08/19/2025 | 12.5″ | 736 Marshall 3z | 1″ Hyper Soft Visco + 1″ Serene Firm |
+| [SP‑MZ674] | † MZ674SA C & W The Palermo PT.xls | C&W THE PALERMO PT | o. 11/22/24 | 15″ | 2.5″ 1900 18ga Micro Coil + 6″ 1008 14.75ga Quad Coil (Texas Pocket) | Merino/camel/cashmere, 1″ Pgel, Latex Graphite 44ILD, Nano Coil 19ga; **Tufted** (QN=20); 10/10 |
+| [SP‑MZ877] | † MZ877SA C & W The Saint Pierre ET.xls | C&W THE SAINT PIERRE ET | o. 11/22/24 | 17″ | 1900 Micro + 1008 Quad (Texas Pocket) | + 4K Micro Coil, Nano Coil, Latex 14 ILD ×2, cashmere blend; **Tufted**; 10/10 |
+| [SP‑MZ972] | † MZ972SA SA Copper Hybrid ET Cushion Firm Q.xls | SA Copper Hybrid ET Cushion Firm Quilted | o. 08/23/24, r. 08/29/24 | **17″** | 8″ 960 Combi Zone FE | 1.5″ Copper Visco quilt, 2″ ELATE Copper/Silver/Graphite, 2″ Hyper Gel Blue; 15/15 |
+| [SP‑MZ872] | MZ872SA SA Copper Hybrid ET Plush Q.XLS | SA Copper Hybrid ET Plush Quilted | o. 08/05/2025 | 17″ | 8″ 960 Combi Zone FE | 1.5″ Copper Visco quilt, 2″ Copper Visco, 2″ Hyper Gel Blue |
+| [SP‑MZ975] | MZ975SA SA Copper Hybrid ET Supreme Firm Q.xls | SA Copper Hybrid ET Supreme Firm Quilted | o. 03/29/25, r. 4/19/2025 ("Corrected build") + 07/25/2025 | 17″ | 8″ 960 Combi Zone FE | ELATE ×2, Copper Visco, Hyper Gel Blue. Workbook also holds three 04/22/24 "FR Testing" configuration tabs (16″ ET Plush, HO 1131 06 20 Cu2/Cu8P/Cu8PG) — flammability configuration records, not performance substantiation |
+
+**Tier 2 — Lacks program documents and licensee ledger:**
+
+| ID | File | Contents used |
+|---|---|---|
+| [PL‑2025] | `/Blake Dropbox/Pricelists/2025 Pricelists/PRICELIST 2025/LACK'S FURN. PRICELIST 2025.xlsx` (sm. 2026‑07‑13; internal notes 1/31/2025–09/12/2025, "NEW MODELS 08/22/2025") | Binds the Lacks programs to factory codes (Summit II, Kendall III, Paige II, Maria II, Angelina II, Giselle, Gracie II MC458, Reserve II, C&W MZ877SA/MZ874SA/MZ674SA, Copper MZ872SA/MZ972SA/MZ975SA; note "MODEL MZ870SA CHANGED TO MZ872SA 08/05/2025"). Dealer/cost list — cost figures not reproduced; **cannot substantiate any consumer‑facing price claim (A6)** |
+| [PL‑2026] | `/Blake Dropbox/Pricelists/2026 Pricelists/LACKS PROMO PRICELIST 2026.xls` (updated 01/13/2026; window 02/20–03/20/2026) | Same codes carried into 2026; places MD473 in the Angelina II **PLUSH** column; header reads "KENDALL II" over the Kendall III codes |
+| [NL‑2025] | `/Blake Dropbox/Rosy Ortiz 2026/Pricing/2025 Specs/names 2025.xlsx` (sm. 2026‑01‑09) | Licensee customer‑assignment ledger; "Lack's" appears as customer on 80 rows; assigns to Lacks all codes above **plus both Summit generations** (MM244/254/264 "Lack's R B Line"; MM274/284/294 "Lack's · 2025") and titles Summit II "CC Platinum Hybrid Summit II"; assigns MC458 "CM Gracie II Medium Pl" (11.5″) to Lack's while MC742 "Gracie 2.0" is "Household"; lists MZ972SA at 16″ assigned "National" and MZ975SA "Westco"; contains **no Lacks retail SKU numbers** |
+
+**Tier 3 — Lacks/customer information cards** (under
+`/Blake Dropbox/Customers/Lacks/2025 Cards/`; sm. 2025‑09‑16 – 2026‑03‑02):
+
+| ID | Files | Claim‑relevant contents |
+|---|---|---|
+| [IC‑KEN] | Restonic and Restonic Hybrid/KENDALL III {MEDIUM, EXTRA FIRM, EURO TOP FIRM, EURO TOP PLUSH} HYBRID INFO.pdf | "Marvelous Middle TM: 25% Thicker Coils in the Center 1/3 … Pressure Relief in the Shoulder and Hip Area"; "Zoned Individually‑Pocketed Power‑Packed Coils for Optimized No‑Motion, Pressure Relieving, Spinal Support"; queen coil count **884**; 3″ HD foam encasement; COOL GEL layer; all four cards state height 15.5″; 15‑yr non‑prorated |
+| [IC‑ANG] | …/ANGELINA II PLUSH INFO.pdf; …/ANGELINA II SUPREME EXTRA FIRM INFO.pdf | Same Marvelous Middle/25 % block, **but the unit is "Traditional 13 Gauge Power‑Packed Coils with Additional Helical Wires"** (queen **420**); "**NOT POWER BASE ADJUSTABLE**"; height 13″ |
+| [IC‑SUM] | …/SUMMIT II {PLUSH, MEDIUM, FIRM} INFO.pdf | "Full Layer of High Quality Memory Foam with COOL GEL"; "MARVELOUS MIDDLE: 25% Thicker Coils"; "Phase change cooling" cover; queen **884**; 13.8″; "Cooling Layers: 4" — the gel and phase‑change items are contradicted or unstated at spec tier (§B.4 C4) |
+| [IC‑MAR] | …/MARIA II {BOX TOP PLUSH, BOX TOP FIRM, EXTRA FIRM} HYBRID INFO.pdf | 25 % thicker block; 2× COOL GEL layers (consistent with specs); queen **884**; card height 15.5″ (vs spec 15.25″/15″) |
+| [IC‑PAI] | …/PAIGE II {BOX TOP FIRM, BOX TOP PLUSH, EXTRA FIRM} INFO.pdf | Talalay latex **with phase change**, memory foam with PHASE CHANGE, NZ wool/silk, 25 % thicker block, queen **884**, height 16″ (all variants, incl. EF whose spec says 15.5″) |
+| [IC‑RES] | …/{MAYFAIR II EURO TOP PLUSH, MAYFAIR II MEDIUM, ROYAL II MEDIUM, ROYAL II FIRM} INFO.docx (sm. 2026‑02‑02) | "**Hand Made Mattresses**" headline; "**Hand‑Tufted** Mattress … Hand tufted throughout for structural integrity while **reducing body impressions**"; "Individually‑Pocketed Zoned Coils … zoned with **25% more support in the middle third**"; "**Anti‑Bacterial** Cover" (Tencel); Nano Coils "Enhanced Circulation"; Talalay "30% more Pressure Relief"; queen coil count **2015**; heights "FIFTEEN"/"FOURTEEN INCHES" |
+| [IC‑GIS] | …/Giselle {Firm, Plush} Info.docx (sm. 2025‑12‑08) | "**884** 3‑Zone Encased Individually Pocketed Coils"; "BACK SUPPORTER: Thicker coils in the center 1/3, for support" (no percentage); "phase change" cover; "proven durability"; height 12.5″; body headers read "INSIDE THE GRACE FIRM/PLUSH" |
+| [IC‑COP] | Copper/{Copper ET Plush Info.docx, COPPER ET EXTRA FIRM QUILTED INFO.docx, Copper ET Plush Price.docx, Copper Cushion Firm Price.docx} | ET Plush info: 17″, "948‑Count 5‑Zone", "**SCIENTIFICALLY PROVEN COPPER BENEFITS TO WORK THROUGH 4 LAYERS OF FABRIC**" (the sentence on the live g9 PDP, §14.5), circulation/inflammation claims; EF info: 13.5″, 948; price cards: **13.5″**, per‑size "ZONED COILS" Twin 528 / Full 680 / **Queen 886** / King 960, 15‑yr non‑prorated, "anti‑inflammatory, anti‑viral and anti‑bacterial" |
+| [IC‑CW] | Chattam/{Palermo PTSpec Card (2).pdf, St Pierre Spec Card (2).pdf} (sm. 2025‑09‑30) | Palermo: "**Coils: 4,294**" — the kiosk catalog's exact figure — height 14″; 1386 NanoCoil, dual Quad (6″ + 2.5″ mini). St Pierre: "Coils: 8,294", height **16.5″** (the captured height), 4000‑count micro‑coil layer |
+
+**Tier 4/5 — training and marketing (claim provenance only; §B.5):**
+`/CSP/SILVERLINE SLEEP/SILVERLINE SLEEP TRAINING/` COPPER TALKING
+POINTS.docx, COPPER NATUVEREX BENEFITS.docx, COPPER PRESENTATION
+SHEET.docx, COPPER TRAINING/COPPER TRAINING.pptx, Copper by Spring Air
+info.docx, Copper Collection Step Guide 6.2.25.docx; `/Blake
+Dropbox/David Marable/Photography/Spring Air/Copper/` Copper Trifold.pdf,
+FCF Copper – Spring Air Talking Points 5.0.docx.
+
+### B.3 Model crosswalk
+
+Spec/card columns cite §B.2 ledger IDs (exact paths there). Heights are
+listed capture / card / spec / ledger; "—" = not stated in that source.
+No row reaches CONFIRMED (§B.1).
+
+| Lacks id | SKU | Captured name (abbrev.) | Factory code(s) | Spec | Card | Price‑list binding | Heights c/cd/sp/ld | Build signature vs capture | Mapping | Construction now supported (tier‑1 unless noted) | Still unsupported (performance/legal) | Conflicts |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| s1 | 1991909 | Platinum Paige 16″ Firm Box Top | ML991 | [SP‑ML991] | [IC‑PAI] | Paige II BT Firm [PL‑2025] | 16/16/16/16 | Box Top ✓ Firm ✓ | **STRONG** | 704 Marshall 3z FE; Talalay latex; Elate copper foam; 4K coil; NZ wool/silk (card) | phase‑change performance; 25 %; Marvelous Middle | — |
+| s2 | 2029844 | Platinum Paige II 16″ Extra Firm | ML591 | [SP‑ML591] | [IC‑PAI] | Paige II EF | 16/16/**15.5**/15.5 | TT EF ✓ | **STRONG/CONFLICTED‑height** | 704 Marshall 3z FE; latex; Duraflex; 4K coil | as s1; A14's anatomical claims | C7 |
+| s3 | 1990900 | Platinum Maria 15.25″ Plush Box Top | MI847 | [SP‑MI847] | [IC‑MAR] | Maria II BT Plush | **15.25**/15.5/**15.25**/15.3 | BT Plush ✓ exact height ✓ | **STRONG** | 736 Marshall 3z; 2× gel visco; Box Top; 15/15 | "under your hips" (A24); motion testing; 25 %; coil‑series branding | C1, C2 |
+| s4 | 1990893 | Maria Hybrid BT Firm | MI947 | [SP‑MI947] | [IC‑MAR] | Maria II BT Firm | —/15.5/15/15 | BT Firm ✓ | **STRONG** | 736 Marshall 3z; 2× gel visco | 25 % ("thicker" capture desc) | C1, C2 |
+| s5 | 1990906 | Platinum Summit 13.8″ Firm TT | MM244 or MM284 | [SP‑MM244], [SP‑MM284] | [IC‑SUM] | Summit program (both gens Lacks‑assigned) | 13.8/13.8/13.8/14 or 13.8 | Firm ✓; gel layer in **both** candidates ✓ | **STRONG family / CONFLICTED generation** | 3‑zone unit + 1.5″ Visco Gel (either generation) — A15 zoned premise corrected | spinal alignment (A15); 25 % | C3 |
+| s6 | 1990909 | Platinum Summit 13.8″ Medium TT | MM254 or MM294 | [SP‑MM254], [SP‑MM294] | [IC‑SUM] | same | 13.8/13.8/13.8/— | Medium ✓; **no gel in either candidate spec** vs capture "cool gel" | **STRONG family / CONFLICTED generation + gel** | 3‑zone unit; visco/Serene comfort layers | gel claim (capture + card, contradicted at spec tier) | C3, C4 |
+| s7 | 1990916 | Platinum Summit 13.8″ Plush TT | MM264 or MM274 | [SP‑MM264], [SP‑MM274] | [IC‑SUM] | same | 13.8/13.8/13.8/— | Plush ✓; **no gel in either candidate spec** | **STRONG family / CONFLICTED generation + gel** | 3‑zone 736 Marshall unit (A23's hybrid/coil premise ✓); Hyper Soft Visco + Serene | **A22's gel premise (contradicted); A10's gel/cooling element**; thermal promises | C3, **C4** |
+| s8 | 1991904 | Kendall 15.5″ Firm Euro Top | MM913 | [SP‑MM913] | [IC‑KEN] | Kendall III ET Firm | 15.5/15.5/**15**/15.5 | ET Firm ✓ | **STRONG/CONFLICTED‑height** | 736 Marshall 3z; 1″ gel visco; ET construction | 25 %; Marvelous Middle; 884 count | C2, C8 |
+| s9 | 1991879 | Kendall III Hybrid Luxury Medium | MM713 | [SP‑MM713] | [IC‑KEN] | Kendall III Medium | —/15.5/15.5/15.5 | Medium ✓ ("Luxury" absent from records) | **STRONG** | 736 Marshall 3z wrapped unit (A5/A13 coil construction ✓); 1″ gel visco | motion‑outcome promises; test basis | C2 |
+| s10 | 1989356 | Kendall 14.5″ Extra Firm TT | MM513 | [SP‑MM513] | [IC‑KEN] | Kendall III EF | 14.5/15.5/**14.5**/14.5 | EF TT ✓ exact spec height ✓ | **STRONG** | 736 Marshall 3z; extra‑firm build (A6 kept elements ✓) | price claim (A6, unchanged — [PL‑2025] is a cost list) | C2, C8 (card height) |
+| b1 | 2031219 | Giselle Plush (12.5″ profile) | ML269 | [SP‑ML269] | [IC‑GIS] | Giselle Plush | 12.5/12.5/12.5/12.5 | Plush Smooth Top ✓ all sources agree | **STRONG** | 736 Marshall 3z; 2″ Hyper Soft Visco; 12.5″ (A11 kept build ✓) | side‑sleeper/price elements (unchanged) | O5 (factory line is "CC Platinum Hybrid") |
+| b5 | 1991876 | Angelina Plush (ComfortCare Angelina II 13″) | MD473 | [SP‑MD473] | [IC‑ANG] | Angelina II **PLUSH slot** [PL‑2026] | 13/13/**13.1**/13.1 | **factory comfort name = MEDIUM** vs program/card/capture Plush | **STRONG/CONFLICTED‑naming** | 342 FE unit + foam encasement; TT; 15/15 | **zoning/wrapped‑coil framing (spec has no zone notation; card describes a traditional helical‑wire unit)**; 25 %; ache/pain claims | **C5**, C1 |
+| b6 | 1991866 | Angelina 13″ Extra Firm | MD273 | [SP‑MD273] | [IC‑ANG] | Angelina II Supreme EF | 13/13/**12.5**/12.5 | Supreme EF ✓ | **STRONG/CONFLICTED‑height** | 342 FE; foam encased; all‑poly firm build | same as b5; its "25% thicker center coils" reason_default | C5, C1 |
+| b7 | 2030258 | Gracie II Medium | **MC458** (ledger/price list); located spec MC742 is another customer's | — (no MC458 spec located) | — (no card) | CM Gracie II Medium [PL‑2025] | —/—/—/11.5 | — | **PROVISIONAL** | none at spec tier | its zoned/"thicker coils" copy; everything | **C6** |
+| g6 | 1992762 | Reserve Mayfair 15″ Plush Euro Top | MU815 | [SP‑MU815] | [IC‑RES] | Reserve program | 15/15/15.3/15.5 | ET Plush ✓ | **STRONG** | 704 Marshall 3z FE; tufted; wool/latex/nano naturals | "hand‑made" (attestation + card tier; spec silent); 25 % more support | C11 |
+| g7 | 1992759 | Reserve Mayfair 15″ Medium TT | MU715 | [SP‑MU715] | [IC‑RES] | Reserve program | 15/15/15.3/15.5 | Medium TT ✓ — the variant springair.com lacks, now spec‑documented | **STRONG** | as g6 (A9's natural‑materials keep ✓) | as g6 | C11 |
+| g8 | 1991959 | Royal Reserve 14″ Extra Firm TT | MT210 | [SP‑MT210] | [IC‑RES] | Reserve program (**Royal II inside the licensee's "2025 RESERVE PROGRAM"** — the record §14.2.3 deferred to) | 14/14/14.3/14.5 | EF TT ✓ | **STRONG** | 704 Marshall 3z FE; tufted; extra‑firm build (A7/A16 keeps ✓) | superlatives; "hand‑made" scope | C11, C12 |
+| g2 | (C&W) | The Saint Pierre | MZ877SA | [SP‑MZ877] | [IC‑CW] | C&W program | 16.5/**16.5**/17/17 | ET Super Plush ✓ | **STRONG** | micro+Quad+4K+nano coil stack; latex; cashmere/Merino/camel (A8/A21 substrate ✓ at spec tier) | "cloud comfort" (authoring choice); "bottoming out" | C13 |
+| g3 | (C&W) | The Palermo | MZ674SA | [SP‑MZ674] | [IC‑CW] | C&W program | —/14/15/15 | PT ✓; **Tufted on the authorized spec** (A17 mechanism ✓) | **STRONG** | tufted construction (QN=20 tufts); dual coil system; naturals | "can't shift or pocket" (unchanged — no source); durability promise | C13; catalog "4,294" = card figure [IC‑CW] |
+| g9 | 2037053 | Copper 13.5″ Cushion Firm Quilted | MZ972SA**50** (PDP); base MZ972SA | [SP‑MZ972] (17″, distinct build) + PDP‑linked 13.5″ sheet (§14.5) | [IC‑COP] | Copper program [PL‑2025] | 13.5/13.5/**17** (base‑code spec)/16 | 50‑variant absent from all licensee records | **PROVISIONAL/CONFLICTED** | current build per PDP‑linked sheet; family materials corroborated | recovery (dead); freshness comparative; "scientifically proven"; ISO/EPA/patent/8× (nothing located) | **C9**, C2, C10 |
+| g5 | 1302592 | Tempur‑Pro‑Breeze 2.0 Medium Hybrid | — | none | none | not on licensee lists (different brand) | — | — | **UNRESOLVED** | none from owner records | all A1 elements (A.1 open) | — |
+| g4 | 1302546 | Tempur‑Luxe Breeze 2.0 Soft | — | none | none | — | — | — | **UNRESOLVED** | none from owner records | all A4/A19/A20 elements (A.1 open) | — |
+
+### B.4 Conflict register and observations (preserved, not resolved)
+
+- **C1 — the 25 % formulation, three‑way.** Corporate restonic.com: "25%
+  more support in the center third." Licensee non‑Reserve Lacks cards:
+  "25% Thicker Coils in the Center 1/3." Licensee Reserve cards: "25%
+  more support in the middle third." Factory specs: **silent** — no
+  percentage, no Marvelous Middle designation, and for Angelina II no
+  zone notation at all. Capture: "thicker." No measurement definition
+  anywhere. Both formulations remain failed‑closed (§8.4).
+- **C2 — coil counts as separate source statements.** Cards state queen
+  884 (Kendall III, Summit II, Maria II, Paige II, Giselle); factory
+  sheets designate the units "736 MARSHALL" / "704 MARSHALL"; Reserve
+  cards state queen 2015; Copper price cards state queen 886 while the
+  Copper info cards and live PDP state 948 and the factory sheets say
+  "960 Combi Zone"; C&W cards state totals (4,294 / 8,294) that appear
+  on no factory sheet. Recorded verbatim; **no reconciliation is
+  attempted and none should be inferred.**
+- **C3 — Summit generation.** Both generations are Lacks‑assigned in
+  [NL‑2025] (original: "Lack's R B Line"; II: "Lack's · 2025"); the
+  current program is Summit II per [PL‑2025]/[PL‑2026]; the ledger titles
+  Summit II "CC Platinum Hybrid Summit II", so the captured "Platinum
+  Summit" floor names do not discriminate; both generations are 13.8″.
+  Floor‑stock generation for s5–s7: **CONFLICTED/unresolved.** The gel
+  findings are generation‑proof (C4).
+- **C4 — Summit gel, card vs spec.** The Summit II cards claim a full
+  COOL GEL memory‑foam layer on all three comfort variants; the
+  authorized specs contain gel **only** in Firm/EF builds and none in
+  Plush or Medium of either generation. Under the evidence hierarchy the
+  specification controls, and under §14.3.3's own terms ("acceptable
+  interim evidence **pending** the … spec sheet") the arrived specs
+  supersede the product feed: **s7's and s6's gel copy is unsupported
+  and spec‑contradicted; s5's is supported.** Bears directly on A22 and
+  A10; flagged to the owner rather than re‑dispositioned. *Owner ruling
+  2026‑08‑08:* A22 stays REWRITE with the contradiction recorded; its
+  RETIRE candidacy is expressly referred to the cooling‑set legal review
+  (R4, §9) for a qualified reviewer to weigh.
+- **C5 — Angelina II identity and unit.** Factory title "CC ANGELINA II
+  MEDIUM" (MD473) vs the Lacks program's PLUSH slot [PL‑2026], the card,
+  and the capture; heights 13.1″ (spec) vs 13″ (card/capture); b6 12.5″
+  (spec) vs 13″ (card/capture). The card describes "Traditional 13 Gauge
+  Power‑Packed Coils with Additional Helical Wires" (queen 420) — not an
+  individually‑wrapped unit — while still claiming Marvelous Middle
+  25 % thicker; the spec's "342 FE" line carries no zone notation. The
+  catalog's zoned/wrapped framing for b5/b6 therefore has **card‑tier
+  support only, partially contradicted by the card itself.** Bears on
+  A2/A12; flagged to the owner. *Owner ruling 2026‑08‑08:* recorded as
+  flagged; zoned/wrapped framing for b5/b6 is unavailable to the
+  authoring workflow pending the licensee's clarification of the 342 FE
+  unit.
+- **C6 — Gracie code conflict, narrowed not closed.** [NL‑2025] and
+  [PL‑2025] assign Lacks the MC458 "CM Gracie II Medium Pl" (11.5″);
+  the located spec [SP‑MC742] "CM Gracie 2.0 Medium" belongs to customer
+  "Household". No MC458 specification was located; b7's construction
+  claims remain factory‑undocumented.
+- **C7 — Paige II EF height.** Card and capture 16″; spec and ledger
+  15.5″ (ML991 BT Firm: all sources 16″).
+- **C8 — Kendall field variances.** s8: spec 15″ vs capture/card/ledger
+  15.5″. All four Kendall cards state 15.5″ while the specs vary
+  14.5″–15.5″. The PRICE templates under Kendall III filenames are
+  internally titled "KENDALL II", as is [PL‑2026].
+- **C9 — Copper base‑code reuse.** MZ972SA: 17″/960‑unit on the 2024
+  authorized spec; 16″ assigned "National" in [NL‑2025]; the Lacks floor
+  unit is 13.5″/948‑count 5‑zone per the PDP‑linked sheet, under model
+  string …MZ972SA**50**, a variant in **no** located licensee record.
+  MZ872SA (Lacks‑assigned ET Plush) is 15″ in the ledger vs 17″ on its
+  own 08/05/2025 spec. The historical sheet must not be treated as the
+  current build's BOM; the PDP‑linked sheet remains controlling.
+- **C10 — Copper warranty.** Factory sheets and Lacks price cards:
+  15‑year non‑prorated; the live Lacks PDP spec table: "10 Year"
+  (§14.5). Unresolved.
+- **C11 — Reserve heights.** Capture/card 14″/15″ vs specs 14.3″/15.3″
+  vs ledger 14.5″/15.5″.
+- **C12 — MT510 comfort naming.** Spec "RESERVE ROYAL II CUSHION FIRM"
+  vs [PL‑2025] "ROYAL II MEDIUM FIRM".
+- **C13 — C&W heights.** Palermo: card 14″ vs spec 15″. St Pierre: card
+  16.5″ (= capture) vs spec 17″.
+- **C14 — Maria comfort naming.** [NL‑2025] titles MI547 "Maria II
+  Extra Firm"; its spec says "Maria II Firm".
+- **O1 — capture derives from the card layer.** Across b5, b6, s2, s8,
+  s10's siblings, g2, g6–g8 and the C&W figures, the captured lacks.com
+  values match the customer cards where cards and specs disagree — the
+  kiosk/site copy appears sourced from cards, not specifications. This
+  identifies the provenance of most §8.4/§B.4 conflicts.
+- **O2 — "Scientifically proven" provenance.** The live g9 PDP sentence
+  (§14.5) appears verbatim on the Lacks Copper ET Plush card [IC‑COP].
+  Provenance found; substantiation found nowhere (§B.5).
+- **O3 — "NOT POWER BASE ADJUSTABLE" (Angelina II cards).** A
+  product‑compatibility fact relevant to the kiosk's adjustable‑base
+  flow; recorded for the owner, outside Block A scope.
+- **O4 — Reserve card language for counsel.** "Hand Made", "Hand‑Tufted
+  … reducing body impressions", "Anti‑Bacterial Cover", Nano Coils
+  "Enhanced Circulation", Talalay "30% more Pressure Relief" — licensee
+  card claims without located substantiation; issue‑spotting items for
+  the legal queue.
+- **O5 — Giselle line naming.** The factory line for b1 is "CC Platinum
+  Hybrid Giselle" while the catalog's adjacent copy positions b1 as
+  "Restonic quality without the Platinum price"; recorded as a naming
+  tension for the authoring workflow.
+
+### B.5 Search negatives and coverage caveats
+
+**Tempur‑Pedic:** no dealer or specification documentation exists in the
+owner's records (A.1 status block lists the twelve queries; every hit was
+Spring Air competitive material or a fuzzy match, including the
+"TEMPURATURE" typo in a Copper training document).
+
+**Copper substantiation:** no underlying record exists for any of the
+five claim families. Queries returning zero: "ISO 22196", "AATCC", "EPA
+registration", "treated article", "lab report", "laboratory report",
+"8x heat transfer", "thermal conductivity", "clinical study",
+"circulation study", "test report". Queries returning only marketing:
+"NatuVerex patent", "patent number", "patent", "independent laboratory",
+"antimicrobial test", "heat transfer test", "clinical trial",
+"inflammation", "four layer test", "copper test", plus supplementary
+variants. The recurring "independent lab … through 4 layers" assertion
+appears in at least four marketing documents with no lab name, method,
+date, or report; training materials additionally assert bacteria‑kill
+percentages (99.8 %/99 %), anti‑viral/anti‑fungal properties,
+immune‑system support, weight‑gain/insulin‑sensitivity correlations, and
+"skin‑safe dosage" — all without located substantiation (issue‑spotting
+for counsel; no legal conclusion made). The only genuine third‑party
+certification located is a CertiPUR‑US foam‑chemistry flyer, unrelated to
+copper claims. One internal inconsistency recorded: "30% copper content"
+vs "30% more copper" across training materials.
+
+**Coverage caveats (stated, not assumed away):** four files could not be
+read — Silverline Sleep Portfolio October 2024.pdf (8.98 MB) and Copper
+Booklet_Collections.pdf (9.1 MB) exceed the 5 MiB extraction limit;
+COPPER ET CUSHION FIRM QUILTED INFO.pdf (5.7 MB, the g9‑specific info
+card — its price card and family siblings were read) likewise; Copper
+Extra Firm Price.docx was blocked by the extraction tool's permission
+classifier. Six Royal II Cushion PNG images have no extractable text.
+The Restonic PRICE .docx cards are unfilled templates ($0000 /
+000‑000‑000) — they establish template structure only and contain no
+pricing or SKU data.
