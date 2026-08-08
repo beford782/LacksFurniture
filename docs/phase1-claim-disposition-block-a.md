@@ -1914,9 +1914,39 @@ Phase 0.4 remains open; Phase 1 implementation remains unauthorized; the
 native‑Spanish review gate stands (§8.9); the legal/compliance reviewer
 role remains unfilled; the records‑dependent register (§10) stands except
 as modified by §14.3. Open item noted, not ruled: whether Lacks stocks
-all‑foam soft beds (bears on A23's context, not its disposition). The
-live lacks.com PDP check for SKU 2037053 (A3 open item) is scheduled
-immediately after this recording; its result will be appended here.
+all‑foam soft beds (bears on A23's context, not its disposition).
+
+**Live PDP check for SKU 2037053 — completed 2026‑08‑08** (browser
+session, same day as the rulings; closes A3's open item and the §10
+"live PDP" line for this SKU). The live product page
+(<https://www.lacks.com/product/copper-by-springair-135-hybrid-euro-top-cushion-firm-quilted-queen-mattress-1602-862-mz972sa50-2037053>)
+makes **no recovery claim**: "recover"/"recovery" appears nowhere in the
+page source, and the full "At a Glance" description reads "…featuring a
+patented NatuVerex™ Copper Fabric paired with copper‑infused memory
+foams for a healthier sleep experience unlike any other." This confirms
+the capture's "health/recovery angle" note was an internal annotation
+only — the kiosk was the sole surface speaking a recovery claim, so the
+A3 rewrite fixes the exposure entirely. Three live‑page observations
+recorded for follow‑up (outside Block A scope):
+
+1. The live features list asserts "**Scientifically proven copper
+   benefits** to work through 4 layers of fabric" — an
+   express‑substantiation claim on the lacks.com retail surface, the
+   same claim family this document dispositions on A1/A2. Whether this
+   is approved Spring Air retail copy with substantiation behind it
+   should be added to the A.3 conversation.
+2. "**Patented NatuVerex™**" renders on the live page — the §10
+   patent‑status record now guards a live retail surface, not only
+   kiosk attribution wording.
+3. The PDP links a "**Specification Sheet.pdf**"
+   (linqcdn.avbportal.com) — a candidate record for the
+   build‑equivalence question in A.3 Q1; not retrieved this session.
+
+Also confirmed live: model 1602‑862‑MZ972SA50; 13.5″ height, hybrid
+Euro‑Top; spec‑table comfort level "Firm" (consistent with §8.6's
+display‑label note); a "948‑Count 5‑Zone fabric‑wrapped coil system +
+foam encasement"; product IN STOCK; pricing unchanged since the
+2026‑07‑30 capture ($2,999 promo / $3,999.95 regular).
 
 ## Appendix A — DRAFT REQUESTS — APPROVED FOR SENDING 2026‑08‑08 (§14.4); NOT YET SENT
 
