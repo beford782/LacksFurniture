@@ -614,6 +614,92 @@ alongside `tests/scoring_isolation_check.mjs`. This is what would make Invariant
 enforceable rather than aspirational. Building it is itself a proposal (❓) — it
 needs Blake's agreement on cost.
 
+### Phase 1 direction decisions — recorded 2026-08-07
+
+**Evidence source:** Draft PR #18 (research/prototype only, DO NOT MERGE),
+exact reviewed head `8e850c4`, Codex final narrow-review verdict PASS —
+https://github.com/beford782/LacksFurniture/pull/18. These are Blake's
+**direction confirmations for continued iteration**. They are not final
+visual approval, content approval, Spanish approval, legal/compliance
+approval, mounted-device evidence, production approval, or Phase 1
+implementation authorization; no ◐/🔒/❓ mark below moves on their account.
+
+**Evidence limitations, stated plainly.** The assisted-sales run behind
+these decisions was a **solo expert walkthrough** — Blake played both the
+operator and customer roles — in **English only**, assistant-transcribed
+from Blake's stated observations, on a **hand-held landscape iPad**,
+served from a temporary static mirror pinned to prototype commit
+`c73324e`. It is not paired observation, not customer research, not
+mounted-device evidence, and not Spanish evidence.
+
+**Sleep Brief (feeds 1.1).** Direction confirmed for continued iteration:
+need-led hero from `priorities[0]`, visible badge category labels, exact
+firmness word + integer, always-visible testing guidance, no first-visit
+Compare. Revision backlog before any final-layout approval:
+
+- the firmness presentation reads like a score rather than a feel;
+- the primary CTA does not clearly launch the next journey step;
+- the journey rail underuses landscape space;
+- the Sharing badge's value is questioned;
+- minor sticky-action crowding requires a mounted-device re-test.
+
+**Results (feeds 1.3's navigation question).** Structural direction
+confirmed for continued iteration: the tier tab affordance is retained
+and restyled (the accordion exploration is rejected), with lead +
+compact-support card hierarchy and page-local compare selection.
+Presentation requires revision:
+
+- increase useful imagery/graphics and reduce text-wall density;
+- make comparison feel like a distinct destination/context;
+- evaluate a drawer or similarly distinct comparison treatment;
+- reassess Payment Choice visibility while preserving the fit-first
+  hierarchy;
+- provide evidence-backed substance explaining why one mattress differs
+  from another and why that matters to sleep.
+
+**Catalog-substance gate.** Catalog substance is the critical path before
+Phase 1 implementation authorization. **Blake Ford is the named Lacks
+content owner and business approver as of 2026-08-07.** His next owner
+task is disposition of the **24 Tier-D/E claim-risk rows currently
+rendered in production** (the broader preliminary inventory flags 83
+rows; see PR #18's authoring-brief appendix). A spec-card → evidence
+record → AI draft → human approval workflow is a **proposal candidate
+only**; nothing from it is approved to render. Personalized catalog
+reasons remain absent and must continue to **fail closed by omission**
+(1.3's reason gate is unchanged).
+
+**Spanish decision.** The paired Spanish prototype usability pass is
+**SKIPPED / DEFERRED BY OWNER DECISION for this prototype cycle** — not
+completed, passed, failed, or validated, and no Spanish evidence is
+inferred from the English walkthrough. Native-Spanish claim-equivalence
+review remains required before any Spanish catalog reason content
+activates; the existing bilingual contracts, strict EN/ES parity, and
+no-English-fallback requirements are unchanged.
+
+**Gates that remain open.** 0.4 remains ⏳ pending mounted-showroom-device
+evidence, and Phase 0 remains open. Phase 1 implementation remains
+unauthorized and not started. Final visual approval remains open (an Open
+decisions register item). The native-Spanish claim-equivalence reviewer
+and the legal/compliance reviewer (where claim class requires one) remain
+unnamed. The claim-inventory disposition remains open. Catalog schema,
+scoring changes, and reason activation remain separately gated (Phase 3
+and 1.3 as written).
+
+**Recommended sequence from here** (no step below is complete unless
+already marked so elsewhere):
+
+1. Merge this roadmap-only governance update after review.
+2. Blake dispositions the 24 production-rendering Tier-D/E claim rows.
+3. Draft a small spec-card pipeline proposal, starting with the sibling
+   mattresses that caused confusion in the walkthrough.
+4. Name the native-Spanish and legal/compliance reviewers when activation
+   work approaches.
+5. Gather Phase 0.4 mounted-device evidence.
+6. Re-test sticky-bar crowding and comparison context on the mounted
+   device.
+7. Request explicit Phase 1 implementation authorization only after the
+   remaining gates close.
+
 ### 1.1 — Sleep Brief ◐
 
 **Gated** — approver Blake, unblocked by his approval of a reviewed prototype,
@@ -625,7 +711,8 @@ a merged diff before that:
 - the screen's section order or top-level composition differs from `main`.
 
 Prototypes and unmerged branches are not these outputs. The component set below is
-a proposal, not an approved layout.
+a proposal, not an approved layout. *(Direction decision recorded 2026-08-07 —
+see "Phase 1 direction decisions" above; the gate itself is unchanged.)*
 
 **Proceeds:** prototyping; the firmness dial rendering the existing computed value
 unchanged; and the priority cards **once 0.5 has shipped**, since the detail they
@@ -729,7 +816,9 @@ in a merged diff until its condition is met.
   generic-default text standing in for that content does not lift the gate** — a
   diff adding such a string *is* the gated output, not a step toward it.
 - **Adoption of a replacement tier navigation.** Approver: Blake; unblocked by his
-  approval of a reviewed prototype. Gated output: a merged diff in which the tier
+  approval of a reviewed prototype. *(Direction decision recorded 2026-08-07 —
+  tabs retained and restyled, accordion rejected; see "Phase 1 direction
+  decisions" above. A merged replacement would remain this gated output.)* Gated output: a merged diff in which the tier
   tab affordance is no longer the shipped Results navigation. Prototypes and
   unmerged branches are not this output. Any replacement must preserve tier
   identity and membership, the internal keys, within-tier ordering, per-tier
@@ -1200,10 +1289,10 @@ approval; its presence is a bar on proceeding.
 
 | Decision | Mark | Approver | Unblocked by |
 |---|---|---|---|
-| Tier navigation presentation — adopting a replacement (Phase 1) | 🔒 | Blake | Blake's approval of a reviewed prototype — gated portion of 1.3 ◐; prototyping proceeds now; **not gated by 3.3** |
+| Tier navigation presentation — adopting a replacement (Phase 1) | 🔒 | Blake | Blake's approval of a reviewed prototype — gated portion of 1.3 ◐; prototyping proceeds now; **not gated by 3.3**. *2026-08-07 direction decision: tabs retained/restyled, accordion rejected (PR #18 @ `8e850c4`) — no replacement is sought this cycle; the gate stays as written for any future replacement* |
 | Auto-advance | 🔒 | Blake | Observed sessions |
 | Review-screen compression or removal | 🔒 | Blake | Observed sessions. Review otherwise stays as it is; this does not hold 1.6 open |
-| Final Sleep Brief layout | 🔒 | Blake | Blake's approval of a reviewed prototype — gated output of 1.1 ◐ |
+| Final Sleep Brief layout | 🔒 | Blake | Blake's approval of a reviewed prototype — gated output of 1.1 ◐. *2026-08-07: direction confirmed for continued iteration (PR #18 @ `8e850c4`); final layout remains open pending the recorded revision backlog and mounted-device evidence* |
 | The device matrix itself | 🔒 | Blake | Confirming the showroom hardware — Phase 1 **merge** gate, blocks merging not starting |
 | Phase 2.2 price/payment activation | 🔒 | Blake + business/legal | Written approval |
 | Scoring case-fold (3.1) | 🔒 | Blake | Approval + enumerated impact |
