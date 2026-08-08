@@ -849,9 +849,10 @@ direction; every approval remains Blake's.
    "Compare My Matches →").
 3. **Native Spanish approval** — all proposed ES strings and the financing
    config's `pending-native-legal-review` status.
-4. **Catalog owner and approval workflow** — name the Lacks merchandising
-   owner (one necessary owner decision among the brief's ten activation
-   prerequisites — not the single blocker); approve the corrected brief's
+4. **Catalog owner and approval workflow** — ~~name the Lacks
+   merchandising owner~~ **DECIDED 2026-08-07: Blake Ford is the named
+   content owner/approver** (the native-Spanish and legal/compliance
+   reviewer roles remain unfilled); approve the corrected brief's
    record schema and Lane A first batch; route the **preliminary
    claim-risk inventory** (brief appendix: 83 flagged rows covering
    ~109 of 182 pairs, 24 Tier-D/E

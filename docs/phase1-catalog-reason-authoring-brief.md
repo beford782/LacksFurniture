@@ -486,8 +486,12 @@ Lane B waits for its corresponding decision.
    question is whether a separately labeled customer-agnostic
    product-description surface should exist for it, and who approves that
    surface's copy.
-5. **Who is the named Lacks owner/approver for reason content?** (Decision
-   requested from Blake in the decision package.)
+5. **Who is the named Lacks owner/approver for reason content?**
+   **ANSWERED (2026-08-07): Blake Ford is the named content owner and
+   business approver.** Two roles cannot collapse into the owner under
+   this brief's own rules and remain to be filled: the **native Spanish
+   reviewer** (claim-equivalence review) and the **legal/compliance
+   reviewer** where the claim class requires one.
 6. Is the 2026-07-30 catalog scrape still representative of the floor lineup,
    or does evidence gathering start with a fresh walk?
 7. What `maxAgeDays` backstop should construction-claim provenance carry —
