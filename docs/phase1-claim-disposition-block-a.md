@@ -11,7 +11,12 @@ activation prerequisite recorded in the Phase 1 authoring brief — it does not
 close that prerequisite.
 
 Prepared 2026‑08‑07 on branch `claude/tier-de-claim-disposition` from
-`main` = `bdf56d0`.
+`main` = `bdf56d0`. Revised 2026‑08‑08 per Codex's independent review of the
+first commit (`1e49dc9`): Codex confirmed all 24 REWRITE dispositions and
+required targeted corrections, applied in this revision and itemized in §6
+and §12. Legal and regulatory observations throughout this document are
+issue‑spotting by non‑lawyers — potential risks identified for qualified
+legal/compliance review, never legal conclusions or advice.
 
 ---
 
@@ -19,15 +24,25 @@ Prepared 2026‑08‑07 on branch `claude/tier-de-claim-disposition` from
 
 The 24 rows below are **Block A** of the 83‑row preliminary claim‑risk
 inventory in `docs/phase1-catalog-reason-authoring-brief.md` (appendix), as
-recorded on PR #18 at `8e850c4`: every Tier‑D/E string that **renders in the
-production application today**. Rows A1–A11 are `topPickReason` strings
-(Results cards); rows A12–A24 are `differentiators` strings (mattress drawer;
-those marked "compare" also render in the compare modal's Difference row).
+recorded on PR #18 at `8e850c4`. That inventory artifact lives on PR #18's
+reviewed commit and is **not present on `main`**; this PR does not import or
+merge the prototype/research package. The stable provenance link for the
+inventory used here is:
+<https://github.com/beford782/LacksFurniture/blob/8e850c43b96e99a008a3a6eb617a8c6c1ffee44e/docs/phase1-catalog-reason-authoring-brief.md>
 
-All 24 verbatim strings were re‑verified against `data/mattresses.json` at the
-base commit before research began; the row set matches the brief's appendix
-exactly, each row appears exactly once, and no row outside Block A is
-dispositioned here.
+Block A is every Tier‑D/E string that **renders in the production
+application today**. Rows A1–A11 are `topPickReason` strings (Results
+cards); rows A12–A24 are `differentiators` strings. The production rendering
+rule (verified against `index.html`, drawer renderer and compare renderer at
+`index.html:18897`): the mattress drawer renders **both** the title and the
+detail of every differentiator; the compare modal's Difference row renders
+**only** `differentiators[0].detail`. Rows marked "compare" in the table are
+those whose dispositioned string reaches that surface.
+
+All 24 quoted strings are extracted from `data/mattresses.json` at the base
+commit and verified programmatically for **exact code‑point equality**
+(24/24 — §12); the row set matches the brief's appendix exactly, each row
+appears exactly once, and no row outside Block A is dispositioned here.
 
 ### Method
 
@@ -56,7 +71,12 @@ One disposition per row:
   is authored here** — copy goes through the authoring workflow with its own
   approvals.
 - **RETIRE** — no supportable fact underneath, or the claim contradicts the
-  catalog itself and cannot be repaired by narrowing.
+  catalog itself and cannot be repaired by narrowing. RETIRE maps to the
+  authoring brief's retirement workflow (`retired` + `retiredReason`):
+  withdraw from rendering, don't delete — the record stays for audit with
+  date and reason, and ids are never reused. It is the repository‑aligned
+  equivalent of removing a claim from rendering while preserving its audit
+  record; no separate "REMOVE" state exists.
 - **ESCALATE** — conflicting evidence, or truth resolvable only from
   Lacks/manufacturer internal records, or anything the rubric cannot decide.
 
@@ -85,9 +105,9 @@ on. They are findings in their own right.
    `incoming/lacks_catalog_selection.json` (scraped 2026‑07‑30 via browser
    session) — a dated record of lacks.com content, **not a live
    re‑verification**. Prices cited from it are the 2026‑07‑30 promotional
-   finals; where a price comparison is load‑bearing (A6), the regular prices
-   preserve the same ordering, so the conclusion is robust to promotion
-   changes.
+   finals; where price arithmetic is cited (A6's per‑reading
+   illustrations), the regular prices preserve the same orderings, so those
+   illustrations are robust to promotion changes.
 2. **restonic.com publishes none of the Restonic models Lacks sells.**
    Restonic is a licensee cooperative; its site lists ComfortCare by "Level"
    (1–5), Signature, HealthRest, Grand Palais, Biltmore, Scott Living, and
@@ -99,20 +119,35 @@ on. They are findings in their own right.
    for every Restonic bed on the floor can only come from the Texas
    licensee's spec sheets. 21 of the catalog's 26 models are Restonic or
    Chattam & Wells, so this gap reaches far beyond Block A.
-3. **Several Lacks SKU names have no upstream referent at all.**
-   "Tempur‑LuxeBreeze **2.0**" / "Tempur‑ProBreeze **2.0**" (Tempur‑Pedic
-   publishes no "2.0"), "Copper Cushion Firm" (Spring Air's nearest is
-   "Copper Hybrid Cushion Firm Eurotop"), and "Platinum Summit
-   Plush"/"Platinum Maria Plush" (nowhere on restonic.com, and not in the
-   agents' lacks.com search results either) cannot be tied to any published
-   specification. Claims about these models rest on an unverified identity
-   mapping — a category of risk the inventory's A–E ladder does not currently
-   capture (see §8.2).
+3. **Several Lacks SKUs require exact upstream mapping confirmation before
+   published claims can be attached to them.** The gap differs by model —
+   for the Tempur‑Pedic units a current upstream product line clearly
+   exists and the open question is generation/SKU mapping; for the Spring
+   Air Copper unit a strong plausible upstream referent exists and the open
+   question is exact build equivalence; for the Restonic Platinum models no
+   model‑level page exists on restonic.com and the gap is model‑level
+   licensee documentation. "Not found on restonic.com" is a negative about
+   the corporate site only — Restonic is a licensee cooperative, and
+   licensee records may exist; it is not proof that no upstream or licensee
+   record exists anywhere. Mapping status:
+
+   | Lacks ID | Lacks SKU | Captured product name | Plausible upstream line/model | Mapping status | Unresolved question | Required record |
+   |---|---|---|---|---|---|---|
+   | g5 | 1302592 | Queen Tempur-Pro-Breeze 2.0 Medium Hybrid Mattress 10Yr Limited Warranty | TEMPUR‑ProBreeze® (current published line, [T1]) | line exists; generation mapping unconfirmed | does the Lacks "2.0" unit map to the current published construction and claims (incl. the 5° basis)? | Tempur‑Pedic dealer claim sheet |
+   | g4 | 1302546 | Queen Tempur-Luxe Breeze 2.0 2.0 Soft Mattress 10Yr Limited Warranty | TEMPUR‑LuxeBreeze® Soft (current published line, [T1]) | line exists; generation mapping unconfirmed | same, for the 10° basis; °F/°C unit; PCM attribution | Tempur‑Pedic dealer claim sheet |
+   | g9 | 2037053 | Copper by SpringAir 13.5" Hybrid Euro-Top Cushion Firm Quilted Queen Mattress | Copper Hybrid Cushion Firm Eurotop ([S1]) | strong plausible referent; build equivalence unconfirmed — [S1] lists a 16.5‑inch height vs the captured 13.5‑inch (top style "Quilted" matches) | exact build/SKU equivalence; whether each published material/regulatory claim applies to SKU 2037053 | Spring Air spec/regulatory sheet |
+   | s7 | 1990916 | Restonic Platinum Summit 13.8" Hybrid Plush Tight Top Queen Mattress | none found on restonic.com (licensee‑built line) | model‑level specification gap | bill of materials (gel layer; coil‑unit series) | Restonic Texas licensee records |
+   | s3 | 1990900 | Restonic Platinum Maria 15.25" Hybrid Plush Box Top Queen Mattress | none found on restonic.com (licensee‑built line) | model‑level specification gap | coil‑unit series; Marvelous Middle® applicability | Restonic Texas licensee records |
+
+   Until the named record confirms the mapping, claims published for the
+   upstream line cannot be attached to the Lacks SKU — a risk dimension the
+   inventory's A–E ladder does not currently capture (see §8.2).
 
 ## 4. Outcome summary
 
 **All 24 rows: REWRITE. 0 RETAIN, 0 RETIRE, 0 row‑level ESCALATE. 16 rows
-carry LEGAL‑REVIEW‑REQUIRED as filed.**
+carry LEGAL‑REVIEW‑REQUIRED under the rubric's enumerated triggers; 4
+further rows carry ADDITIONAL‑COUNSEL‑REVIEW‑RECOMMENDED (§4.1).**
 
 Not one string was substantiated as written; not one was empty underneath.
 Every row wraps a real construction or material fact in at least one
@@ -121,8 +156,12 @@ overreach, falling into five repeating shapes:
 1. An express‑substantiation word with nothing behind it ("proven" — A1, A2).
 2. A manufacturer's qualified number stripped of its mandatory qualifier
    (the Tempur "10°/5° cooler" family — A1, A4, A19).
-3. A store‑wide or class‑wide superlative the catalog itself refutes or
-   cannot define (A4, A6, A7, A8, A9, A16).
+3. A store‑ or class‑wide superlative that is undefined, unverifiable in
+   principle, or in tension with the catalog's own data (A4, A6, A7, A8,
+   A9, A16 — each row states which applies; A16's "firmest" is contradicted
+   by the catalog's four‑way firmness‑8 tie, while A6's price clause is
+   unsubstantiated because its comparison set is undefined, not
+   universally refuted — see A6).
 4. An outcome, efficacy or segment promise about the customer rather than a
    fact about the product (A2, A3, A5, A7, A10–A15, A17, A20–A24).
 5. An adverse factual assertion about a competing product category (A23).
@@ -141,13 +180,13 @@ register (§10) rather than by suspending the row.
 | A3 | g9 Copper Cushion Firm | topPickReason (Results) | D/E | REWRITE | **YES** | SKU identity; live PDP check |
 | A4 | g4 LuxeBreeze 2.0 Soft | topPickReason (Results) | B→D | REWRITE | **YES** | "2.0" SKU identity; store‑wide superlative (§10) |
 | A5 | s9 Kendall Luxury Medium | topPickReason (Results) | D | REWRITE | **YES** | coil‑unit spec |
-| A6 | s10 Kendall Extra Firm | topPickReason (Results) | D | REWRITE | no | — (price clause refuted) |
+| A6 | s10 Kendall Extra Firm | topPickReason (Results) | D | REWRITE | no¹ | current price clause dropped; a new price claim = new authoring decision (§10) |
 | A7 | g8 Royal Reserve Extra Firm | topPickReason (Results) | D | REWRITE | **YES** | "hand‑made" |
 | A8 | g2 The Saint Pierre | topPickReason (Results) | D | REWRITE | no | — |
 | A9 | g7 Reserve Mayfair Medium | topPickReason (Results) | D | REWRITE | **YES** | "hand‑made"; SKU comfort variant |
 | A10 | s7 Platinum Summit Plush | topPickReason (Results) | D | REWRITE | **YES** (see §6 R4) | SKU identity |
 | A11 | b1 Giselle Plush | topPickReason (Results) | D | REWRITE | no | — |
-| A12 | b5 Angelina Plush | differentiators[0] (drawer+compare) | E | REWRITE | **YES** | Marvelous Middle patent status |
+| A12 | b5 Angelina Plush | differentiators[0] (title: drawer; detail: drawer+compare) | E | REWRITE | **YES** | Marvelous Middle patent status |
 | A13 | s9 Kendall Luxury Medium | differentiators[0].detail (drawer+compare) | D | REWRITE | **YES** | coil‑unit spec |
 | A14 | s2 Platinum Paige Extra Firm | differentiators[1].detail (drawer) | D/E | REWRITE | **YES** | patent status |
 | A15 | s5 Platinum Summit Firm | differentiators[1].detail (drawer) | E | REWRITE | **YES** | zoned‑system spec |
@@ -161,8 +200,41 @@ register (§10) rather than by suspending the row.
 | A23 | s7 Platinum Summit Plush | differentiators[1].detail (drawer) | D | REWRITE | no¹ | SKU spec (hybrid unit) |
 | A24 | s3 Platinum Maria Plush | differentiators[1].detail (drawer) | D | REWRITE | **YES** | SKU spec (coil series) |
 
-¹ No flag under the rubric's enumerated triggers, but the researching agent
-recommended legal review on independent grounds — see the row block and §6 R4.
+¹ No flag under the rubric's enumerated triggers;
+ADDITIONAL‑COUNSEL‑REVIEW‑RECOMMENDED — see §4.1 and the row block.
+
+### 4.1 Legal/counsel review queue
+
+Two distinct categories, recalculated directly from the row dossiers. All
+entries are issue‑spotting by non‑lawyers: they identify potential risks
+requiring qualified legal/compliance review, and make no legal
+determinations.
+
+**LEGAL‑REVIEW‑REQUIRED (rubric's enumerated triggers) — 16 rows:**
+A1, A2, A3, A4, A5, A7, A9, A10, A12, A13, A14, A15, A18, A19, A20, A24.
+
+**ADDITIONAL‑COUNSEL‑REVIEW‑RECOMMENDED (outside the strict flag) — 4
+rows:**
+- **A6** — inherits the preliminary inventory's "merch + legal" routing;
+  unqualified price‑leadership claims are a recognized potential
+  advertising‑risk area. The rubric's enumerated triggers do not cover
+  price claims, which is why the flag is "no"; the inventory's routing is
+  honored through this category.
+- **A17** — potential warranty/advertising consistency concern (the
+  string's relationship to the manufacturer's published warranty terms).
+- **A22** — rides the cooling‑claims set review (R4).
+- **A23** — potential comparative‑advertising risk (adverse assertion about
+  a competing product category).
+
+**Total operational queue before counsel: 20 of 24 rows** (16 required + 4
+recommended; no row is counted in both categories). Overlap note: the
+cooling‑claims set (R4, §9) spans both categories — A10, A18, A19, A20 are
+required‑flag rows and A22 is a recommended row; routing the set as one
+item reviews all five together without double‑counting. Conditional
+mentions that are **not** counted in either category: A11 (its dossier
+notes a stricter reviewer *may* want the price element reviewed with the
+price‑leadership cluster) and A16 (reviewed alongside flagged A7 by the g8
+coupling rather than on its own ground).
 
 ## 5. How to read the row blocks
 
@@ -171,8 +243,10 @@ the verbatim string, its discrete claim elements, evidence with quotes and
 what each bears on, explicit negative results, the disposition with
 structural rewrite guidance (never replacement copy), the legal flag with its
 ground, confidence, and open items. Citations marked **[PV]** were
-independently re‑fetched and confirmed by the primary on 2026‑08‑07; §12
-lists the rest.
+independently re‑fetched and confirmed by the primary (2026‑08‑07, and
+re‑verified 2026‑08‑08 in the Codex correction pass); bracketed source IDs
+like [T1] or [R1] resolve to literal URLs in the evidence‑reference ledger
+(§13), which also lists the citations accepted on agent report alone.
 
 ## 6. Reconciliation decisions (primary's, documented)
 
@@ -204,10 +278,13 @@ is not admissible under the rubric. The licensee/dealer request (§10) should
 ask the question directly; a confirmed line‑level claim would reopen this
 decision.
 
-**R2 — Unverifiable‑SKU rows stay REWRITE, with execution blocked.** For
-A18, A19/A20, A22, A23 and A24 the model name has no upstream referent
-(§3.3), so even the *kept* construction facts rest on an unverified identity
-mapping. Group 3 recommended REWRITE because the wording defects are
+**R2 — Mapping‑gap rows stay REWRITE, with execution blocked.** For
+A18, A19/A20, A22, A23 and A24 the exact SKU/generation mapping to a
+published upstream specification is unconfirmed (§3.3 table — the gap
+ranges from generation mapping on the Tempur units, to build equivalence on
+the Copper unit, to model‑level licensee documentation on the Platinum
+models), so even the *kept* construction facts rest on an unresolved
+identity mapping. Group 3 recommended REWRITE because the wording defects are
 independently disqualifying — they would remain with a perfect spec sheet in
 hand — and flagged the identity gap as an ESCALATE‑class dependency. That
 standard is adopted for all such rows in all groups: **the disposition of the
@@ -238,6 +315,35 @@ five of its rows carry the legal flag; its own row blocks flag six (A9, A10,
 A12, A13, A14, A15). The row blocks are authoritative; totals in §4 use
 them.
 
+**Codex correction pass (2026‑08‑08).** Codex independently reviewed the
+first commit, confirmed all 24 REWRITE dispositions, and required targeted
+corrections, all applied in this revision. The prior conclusions they
+replace are historical only and no longer represent this document's
+position: (1) A6's price clause was previously called "refuted under every
+reading of class" — corrected to *unsubstantiated* (undefined comparison
+set, dynamic undated prices, no rendered price context), with the catalog
+arithmetic retained as illustrations, not universal refutation; (2) A17's
+warranty finding was previously called a direct contradiction — corrected
+to *unsupported/not established by the cited sources*, with the warranty
+undermining a broad no‑impressions reading without disproving the tufting
+mechanism; (3) the legal queue was split into required vs
+counsel‑recommended categories (§4.1) and neutral risk language replaced
+statutory characterizations; (4) "five models have no upstream referent"
+was corrected to the per‑model mapping‑status table (§3.3); (5) the "25%
+thicker center coils" finding was recast from a proven mis‑transcription to
+an unresolved source conflict pending licensee records (§8.4); (6) all 24
+quoted strings were restored to exact source code points (11 had been
+typography‑normalized with non‑breaking hyphens) and are now verified
+programmatically; (7) A12's surface was split precisely (title: drawer
+only; detail: drawer + compare); (8) RETIRE was mapped to the brief's
+retirement workflow (§2); (9) an evidence‑reference ledger with literal
+URLs was added (§13) and every load‑bearing source re‑fetched — during
+which one further evidence correction surfaced: A21's "sinking into a
+cloud"/"stuck" sentences are a customer review on the Spring Air page, not
+manufacturer copy, and are no longer relied on (see A21); (10) three
+send‑ready dealer/licensee evidence requests were drafted for owner review
+(Appendix A — NOT SENT).
+
 ---
 
 ## 7. Row dossiers
@@ -245,7 +351,7 @@ them.
 ### A1 — g5 · Tempur‑ProBreeze 2.0 Medium Hybrid (Tempur‑Pedic, Gold, firmness 5)
 
 **Field:** `topPickReason` — Results cards.
-**String:** "Proven all‑night cooling with adaptive TEMPUR contour and hybrid support."
+**String:** "Proven all-night cooling with adaptive TEMPUR contour and hybrid support."
 
 **Disposition: REWRITE · Legal flag: YES** (express substantiation:
 "proven") · Confidence: high.
@@ -256,7 +362,7 @@ performance; (2) "all‑night cooling" — unqualified duration promise;
 construction fact.
 
 **Evidence.**
-- tempurpedic.com Breeze collection page **[PV]**: "TEMPUR‑Breeze®
+- Tempur‑Pedic Breeze cooling page [T3] **[PV]**: "TEMPUR‑Breeze®
   mattresses utilize our proven cooling materials to create an all‑night
   cooling experience that lasts from the minute you lie down to the moment
   you wake up." — "proven" modifies the **materials**, not the cooling
@@ -264,9 +370,9 @@ construction fact.
   the second clause: Tempur asserts the all‑night duration **in its own
   voice, unqualified** — no qualified duration framing exists anywhere on
   the page. The page cites no study, test method, or third‑party validation
-  for "proven" **[PV]** (the sentence appears on the shop‑mattresses‑pillows
-  URL; the other Breeze URL does not use "proven"). The only quantified,
-  substantiated claim is the footnoted
+  for "proven" **[PV]** (the sentence appears on [T3]; the Breeze collection
+  pages [T1]/[T2] do not use "proven" — re‑verified 2026‑08‑08). The only
+  quantified, substantiated claim is the footnoted
   "ProBreeze® feels up to 5 degrees cooler based on the average heat index
   increase of TEMPUR‑ProBreeze® compared to TEMPUR‑ProAdapt® models measured
   over an 8‑hour period" **[PV]** — the catalog string carries none of that
@@ -311,17 +417,20 @@ medium overall.
 substantiation; (5) "for side sleepers" — segment prescription.
 
 **Evidence.**
-- restonic.com ComfortCare Level 1 **[PV]**: "800 Series Individually
+- restonic.com ComfortCare Level 1 [R1] **[PV]**: "800 Series Individually
   Wrapped Coil Unit featuring the exclusive Marvelous Middle® prevents
   motion transfer between partners. Delivers 25% more support in the center
   third of the mattress." Center‑third zoning is a real, manufacturer‑
-  documented feature — quantified as **25% more support**, not thicker coils.
+  documented feature — Restonic's published quantification is **25% more
+  support**; the capture's "25% thicker center coils" is a conflicting
+  formulation whose direction cannot be resolved without the licensee's
+  model‑level record (§8.4).
 - `data/mattresses.json` b5 + capture (sku 1991876): firmness 3 "Plush";
   features plush/soft/pressurerelief/zoned; badge "Marvelous Middle"; capture
   desc "25% thicker center coils for shoulder/hip pressure relief … popular
   with side sleepers" **[PV]** — note "popular with", a popularity
-  observation, not a fit prescription; and note the thickness phrasing
-  mismatch (§8.4).
+  observation, not a fit prescription; and note the unresolved
+  thickness‑vs‑support formulation conflict (§8.4).
 
 **Searched, not found.** No Angelina page on restonic.com; no manufacturer
 pressure‑relief or side‑sleeper claim tied to ComfortCare (the only
@@ -331,20 +440,22 @@ absence of side‑sleeper/pain language**]**.
 
 **Rewrite guidance.** Drop "proven" (bare express substantiation) and the
 side‑sleeper prescription. Keep: plush surface (firmness 3) and the zoned
-center‑third construction in the manufacturer's documented form. "Pressure
-relief" should be reviewed rather than carried as‑is: its only support is
-Lacks' own marketing copy — circular for substantiation purposes even though
-lacks.com is an admissible source class.
+center‑third construction — quantified only in whichever form the
+licensee's model‑level record confirms; do not attach either the "25% more
+support" or the "25% thicker" figure to this SKU without that confirmation
+(§8.4). "Pressure relief" should be reviewed rather than carried as‑is: its
+only support is Lacks' own marketing copy — circular for substantiation
+purposes even though lacks.com is an admissible source class.
 
 **Open items.** The "25% thicker center coils" ↔ "25% more support"
-transcription defect (also A12, §8.4).
+unresolved source conflict (also A12, §8.4).
 
 ---
 
 ### A3 — g9 · Copper Cushion Firm (Spring Air, Gold, firmness 6)
 
 **Field:** `topPickReason` — Results cards.
-**String:** "Copper cooling and recovery benefits with balanced cushion‑firm hybrid support."
+**String:** "Copper cooling and recovery benefits with balanced cushion-firm hybrid support."
 
 **Disposition: REWRITE · Legal flag: YES** (health/therapeutic outcome:
 "recovery"; antimicrobial‑adjacent context; Tier E element) · Confidence:
@@ -355,14 +466,15 @@ benefits" — physiological/therapeutic outcome; (3) "balanced cushion‑firm" �
 firmness; (4) "hybrid support" — construction.
 
 **Evidence.**
-- springair.com Copper Hybrid Cushion Firm Eurotop product page **[PV]**:
-  copper materials "pulling heat away from your body", cover "resists
-  microbial buildup", "Proudly crafted in the USA", hybrid. The word
-  "recovery" **does not appear** **[PV]**.
-- springair.com Copper collection: "Patented Natuverex™ Copper fabric paired
-  with copper‑infused memory foams for a cooler, healthier sleep experience";
-  no recovery claim.
-- springair.com copper‑benefits blog **[PV]**: the only recovery‑adjacent
+- springair.com Copper Hybrid Cushion Firm Eurotop product page [S1]
+  **[PV]**: copper materials "pulling heat away from your body", cover
+  "resists microbial buildup", "Proudly crafted in the USA", hybrid. The
+  word "recovery" **does not appear** **[PV]**.
+- springair.com Copper collection [S3] **[PV]**: "Patented Natuverex™ Copper
+  fabric paired with copper‑infused memory foams for a cooler, healthier
+  sleep experience"; no recovery claim ("recovery" absent from the whole
+  page, re‑verified 2026‑08‑08).
+- springair.com copper‑benefits blog [S2] **[PV]**: the only recovery‑adjacent
   line Spring Air publishes is expressly hedged — "Preliminary studies
   suggest copper ions may enhance local blood flow; larger peer‑reviewed
   trials are ongoing." Also: "Copper transfers heat up to 8× faster than
@@ -386,17 +498,18 @@ that trades a therapeutic claim for an antimicrobial one (see A18).
 
 **Open items.** Live lacks.com PDP for sku 2037053 should be checked by
 someone with a browser session — if the live page makes a recovery claim,
-Lacks is the speaker on two surfaces. "Copper Cushion Firm" has no upstream
-referent (§3.3). Display‑label note: the authored "cushion‑firm" renders to
-the customer as "Firm" (firmness‑6 bucket), so the string's own firmness word
-does not match the screen (§8.6).
+Lacks is the speaker on two surfaces. The upstream mapping to Spring Air's
+Copper Hybrid Cushion Firm Eurotop is plausible but unconfirmed at build
+level (§3.3 — [S1] lists 16.5″ vs the captured 13.5″). Display‑label note:
+the authored "cushion‑firm" renders to the customer as "Firm" (firmness‑6
+bucket), so the string's own firmness word does not match the screen (§8.6).
 
 ---
 
 ### A4 — g4 · Tempur‑LuxeBreeze 2.0 Soft (Tempur‑Pedic, Gold, firmness 2)
 
 **Field:** `topPickReason` — Results cards.
-**String:** "The coolest‑sleeping soft mattress in the store — up to 10° cooler all night."
+**String:** "The coolest-sleeping soft mattress in the store — up to 10° cooler all night."
 
 **Disposition: REWRITE · Legal flag: YES** (quantified performance claim
 severed from its mandated qualifier; inventory routes "Tempur‑Pedic +
@@ -408,14 +521,15 @@ comparator, and the measurement basis; (3) "all night" — duration; (4)
 "soft" — firmness descriptor.
 
 **Evidence.**
-- tempurpedic.com Breeze pages **[PV]**: the claim exists only as "Feels Up
-  to 10° Cooler" with the mandatory footnote: "LuxeBreeze® feels up to 10
-  degrees cooler based on the average heat index increase of
+- Tempur‑Pedic Breeze pages [T1]/[T2]/[T4] **[PV]**: the claim exists only
+  as "Feels Up to 10° Cooler" with the mandatory footnote: "LuxeBreeze®
+  feels up to 10 degrees cooler based on the average heat index increase of
   TEMPUR‑LuxeBreeze® compared to TEMPUR‑ProAdapt® models measured over an
   8‑hour period." A heat‑**index** average vs **Tempur's own ProAdapt**, over
   8 hours — not a thermometer reading, not vs the customer's bed, not a
-  continuous state. Tempur's own superlative is brand‑line scoped ("your
-  coolest night's sleep yet"), never cross‑brand.
+  continuous state. Tempur's own superlative is brand‑line scoped
+  ("Offering your coolest night's sleep yet…" — on the Breeze article
+  [T4]), never cross‑brand.
 - `data/mattresses.json` **[PV]**: exactly two models are soft‑end
   (firmness ≤ 3) with the cooling feature — g4 and s7 (cool‑gel memory foam,
   different manufacturer). The store‑wide superlative reduces to an untested
@@ -485,47 +599,58 @@ promises what the scoring ignored.
 ### A6 — s10 · Kendall Extra Firm (Restonic ComfortCare, Silver, firmness 8)
 
 **Field:** `topPickReason` — Results cards.
-**String:** "Serious extra‑firm zoned support at the best price in its class."
+**String:** "Serious extra-firm zoned support at the best price in its class."
 
-**Disposition: REWRITE · Legal flag: no** (no enumerated trigger; the
-inventory routes "merch + legal" and unqualified price‑leadership carries its
-own advertising exposure — recorded, not adjudicated here) · Confidence:
-high — **the only Block A row refuted by arithmetic rather than absence of
-evidence.**
+**Disposition: REWRITE · Legal flag: no¹** under the rubric's enumerated
+triggers, which do not cover price claims; **ADDITIONAL‑COUNSEL‑REVIEW‑
+RECOMMENDED** (§4.1) — the preliminary inventory routes this row "merch +
+legal", and unqualified price‑leadership claims are a recognized potential
+advertising‑risk area for qualified review · Confidence: high.
 
 **Elements:** (1) "extra‑firm"; (2) "zoned support"; (3) "the best price";
 (4) "in its class" — undefined comparison set.
 
-**Evidence.**
-- Capture + `data/mattresses.json` **[PV]**: firmness‑8 zoned models and
-  2026‑07‑30 prices — s2 $2,199 · s10 $1,299 · b6 $799. **b6 is the same
-  extra‑firm zoned hybrid profile (same "Marvelous Middle" badge, same
-  center‑coil desc) at $500 less.** Adding g8 ($3,099, not zoned) makes four
-  extra‑firm beds; s10 is second‑cheapest of the four — cheaper than s2 and
-  g8 but undercut by b6, so it is not best‑priced there either. Under the
-  only rescuing
-  reading ("class" = Silver tier), s10 at $1,299 **ties s8 and s9** — a
-  three‑way tie is not "the best price". Regular prices (s10 $1,699.95, b6
-  $1,049.95) preserve the ordering **[PV]**.
+**Evidence.** The price clause is **unsubstantiated as written**: its
+comparison set ("its class") is undefined in the rendered claim, its price
+basis is dynamic with no disclosed measurement date or validity period, and
+the app renders no price context a customer could evaluate. The catalog
+arithmetic below **illustrates why the claim cannot be accepted without a
+defined class** — the claim's truth value changes with the reading — not a
+universal refutation:
+- Capture + `data/mattresses.json` **[PV]** (2026‑07‑30 promotional prices;
+  regular prices preserve every ordering cited): under a cross‑tier
+  "extra‑firm zoned" reading, **b6 — the same extra‑firm zoned hybrid
+  profile (same "Marvelous Middle" badge, same center‑coil desc) — is $500
+  less than s10** ($799 vs $1,299; s2 $2,199; g8 $3,099, not zoned). Under
+  a whole‑Silver‑tier reading, s10 **ties s8 and s9** at the tier's lowest
+  promotional price ($1,299) — tied‑for‑lowest, not unique leadership,
+  though a tie does not by itself disprove "best price". Under a
+  Silver‑tier‑extra‑firm‑zoned reading, s10 **may be the lowest‑priced
+  qualifying model** (s2 at $2,199 is the only other candidate). No reading
+  is authoritative because none is disclosed.
 - Elements 1–2 substantiated (features firm/support/zoned/hybrid) **[PV]**.
 
-**Searched, not found.** No source can substantiate price leadership — it is
-an assortment fact, and Lacks' own assortment refutes it.
+**Searched, not found.** No manufacturer source can substantiate price
+leadership — it is an assortment fact; and because the claim's comparison
+set is undefined, no record could be checked against the claim as written.
 
-**Rewrite guidance.** Drop the entire price clause — the element on its own
-is RETIRE‑grade: contradicted by Lacks' own catalog under every reading of
-"class", and unfalsifiable on a kiosk that displays no prices. Keep:
-extra‑firm (8) zoned hybrid tight‑top support. **Must be ruled together with
-the other three price‑leadership claims** (reason_default rows B5 b4, B6 b7,
-B7 b6 — outside Block A): the four are mutually exclusive, and fixing them
-one at a time leaves survivors that contradict each other (§8.5).
+**Rewrite guidance.** Drop the current price clause — unsubstantiated for
+the reasons above. Keep: extra‑firm (8) zoned hybrid tight‑top support. A
+**newly authored** price claim could be considered only with: (i) a written
+comparison‑set definition; (ii) a dated full‑assortment price census;
+(iii) a validity/expiration rule; (iv) merchandising approval; and (v) any
+legal/compliance review that qualified reviewers require (§10). **Must be
+ruled together with the other three price‑leadership claims**
+(reason_default rows B5 b4, B6 b7, B7 b6 — outside Block A): all four use
+undefined comparison sets and, ruled independently, can contradict each
+other (§8.5).
 
 ---
 
 ### A7 — g8 · Royal Reserve Extra Firm (Restonic, Gold, firmness 8)
 
 **Field:** `topPickReason` — Results cards.
-**String:** "Hand‑made extra‑firm support — the choice for back and stomach sleepers who want luxury."
+**String:** "Hand-made extra-firm support — the choice for back and stomach sleepers who want luxury."
 
 **Disposition: REWRITE · Legal flag: YES** ("hand‑made" is a
 manufacturing‑provenance representation in the origin family, on a model
@@ -538,10 +663,10 @@ support"; (3) "the choice for back and stomach sleepers" — definite‑article
 segment prescription; (4) "who want luxury" — positioning.
 
 **Evidence.**
-- restonic.com **[PV]**: brand tagline "Handcrafted mattresses since 1938"
-  (brand‑wide, not SKU substantiation); /explore's **title** is "Handmade
-  Quality Mattresses" but its **body makes no handmade or manufacturing‑
-  method claim at all** **[PV]**.
+- restonic.com homepage [R5] **[PV]**: brand tagline "Handcrafted mattresses
+  since 1938" (brand‑wide, not SKU substantiation); /explore [R4]'s
+  **title** is "Handmade Quality Mattresses" but its **body makes no
+  handmade or manufacturing‑method claim at all** **[PV]**.
 - Capture g8 (sku 1991959) **[PV]**: "Hand‑made hybrid, natural materials,
   extra firm support" — Lacks' own assertion; element 2 solidly supported.
 - `data/mattresses.json` **[PV]**: the definite article is refuted
@@ -579,16 +704,17 @@ already substantiated.**
 subjective superlative; (2) "natural fibers"; (3) "layered coil support".
 
 **Evidence.**
-- springair.com St Pierre Super Plush Eurotop **[PV]**: "Cashmere, Merino
-  and Camel wool provide a natural approach…"; "NanoCoil® and micro coil
-  layer adapt to movement, paired with a dual‑layered Quad coil system for
-  resilient support. With over 8,000 coils…" — elements 2 and 3 fully and
-  precisely substantiated. The page uses "spa‑like luxury" as a product
+- springair.com St Pierre Super Plush Eurotop [S7] **[PV]**: "Cashmere,
+  Merino and Camel wool provide a natural approach…"; "NanoCoil® and micro
+  coil layer adapt to movement, paired with a dual‑layered Quad coil system
+  for resilient support. With over 8,000 coils…" — elements 2 and 3 fully
+  and precisely substantiated. The page uses "spa‑like luxury" as a product
   descriptor, never a model‑vs‑model ranking **[PV]**.
-- springair.com C&W collection: St Pierre is the line's highest‑priced model;
-  the collection is "the pinnacle of mattress artistry" — supports "top of
-  the Chattam & Wells line", a manufacturer‑line claim, never a store‑wide
-  one.
+- springair.com C&W collection [S9] **[PV]**: St Pierre is the line's
+  highest‑priced model ($7,499.99 MSRP vs Roma $6,499.99, Palermo
+  $5,099.99–$5,599.99, re‑verified 2026‑08‑08); the collection is "the
+  pinnacle of mattress artistry" — supports "top of the Chattam & Wells
+  line", a manufacturer‑line claim, never a store‑wide one.
 - Capture **[PV]**: g2 $5,999 is the priciest plush‑tagged model, but g4
   ($5,899, also plush‑tagged) sits $100 behind — even a price‑as‑luxury proxy
   is a near‑tie, and the app displays no prices.
@@ -612,7 +738,7 @@ descriptions).
 ### A9 — g7 · Reserve Mayfair Medium (Restonic, Gold, firmness 5)
 
 **Field:** `topPickReason` — Results cards.
-**String:** "Hand‑made luxury in a true medium — the most versatile bed in the Reserve line."
+**String:** "Hand-made luxury in a true medium — the most versatile bed in the Reserve line."
 
 **Disposition: REWRITE · Legal flag: YES** ("hand‑made"
 manufacturing‑provenance representation on a `locallyMade: true` model; see
@@ -623,12 +749,12 @@ firmness; (4) "the most versatile bed in the Reserve line" —
 definite‑article ranked superlative on an unmeasurable attribute.
 
 **Evidence.**
-- springair.com Reserve collection **[PV]**: the official Reserve line is
-  five models (Imperial Eurotop Ultra Plush, Mayfair Eurotop Plush, Royal
+- springair.com Reserve collection [S5] **[PV]**: the official Reserve line
+  is five models (Imperial Eurotop Ultra Plush, Mayfair Eurotop Plush, Royal
   Cushion Firm, Cathedral Plush, Cardinal Firm) — **no Medium exists in the
   manufacturer's line at all**, and the page states no ranking among its
   members **[PV]**.
-- springair.com Reserve Mayfair Eurotop Plush (nearest official SKU)
+- springair.com Reserve Mayfair Eurotop Plush (nearest official SKU) [S6]
   **[PV]**: Tencel cover, New Zealand wool, Talalay latex + Serene® foam,
   encased coils "zoned with 25% more support in the middle third", "Crafted
   in the USA" — natural materials substantiated; **no hand‑made or
@@ -669,9 +795,9 @@ relief"; (4) "plush without the heat" — absolute thermal promise (absence of
 heat retention).
 
 **Evidence.**
-- restonic.com ComfortCare Level 1 **[PV]** and /explore: "CoolComfort
-  Gel‑Infused Foam… Provides optimal surface cooling, cushioning and
-  conformability"; "Creates a cooling effect by gently moving heat away from
+- restonic.com ComfortCare Level 1 [R1] **[PV]** and /explore [R4]:
+  "CoolComfort Gel‑Infused Foam… Provides optimal surface cooling,
+  cushioning and conformability"; "Creates a cooling effect by gently moving heat away from
   your body for a temperature‑controlled micro‑climate"; TempaGel® "gel that
   dissipates heat instead of storing it". The manufacturer's register is
   strictly comparative/hedged — heat is *moved away* or *dissipated*, never
@@ -740,8 +866,11 @@ below‑Platinum price band. Keep: the plush 12.5‑inch build (firmness 3).
 
 ### A12 — b5 · Angelina Plush (Restonic ComfortCare, Bronze, firmness 3)
 
-**Field:** `differentiators[0]` — drawer + compare Difference row.
-**String:** "title: Shoulder‑and‑hip relief | detail: The plush surface and center zoning target exactly where side sleepers ache."
+**Field:** `differentiators[0]` (title + detail). The **title renders in
+the drawer only**; the **detail renders in the drawer and in the compare
+modal's Difference row** (compare renders only `.detail` —
+`index.html:18897`).
+**String:** title "Shoulder-and-hip relief" | detail "The plush surface and center zoning target exactly where side sleepers ache."
 
 **Disposition: REWRITE · Legal flag: YES** (Tier E: anatomical‑outcome title
 + express pain claim + segment prescription; patent‑adjacent use of the
@@ -753,12 +882,13 @@ exactly" — absolute precision; (4) "where side sleepers ache" — pain claim +
 segment prescription.
 
 **Evidence.**
-- restonic.com /explore **[PV]**: "Patented Marvelous Middle® technology
-  delivers 25% more support in the middle of the mattress, where you need it
-  most"; "Extra lumbar support in the center third." ComfortCare Level 1
-  **[PV]**: "…Delivers 25% more support in the center third of the
-  mattress." The zoning is real, named, and quantified — as **support**, not
-  coil thickness.
+- restonic.com /explore [R4] **[PV]**: "Patented Marvelous Middle®
+  technology delivers 25% more support in the middle of the mattress, where
+  you need it most"; "Extra lumbar support in the center third."
+  ComfortCare Level 1 [R1] **[PV]**: "…Delivers 25% more support in the
+  center third of the mattress." The zoning is real and named; Restonic's
+  published quantification is **support**, while the capture states **coil
+  thickness** — an unresolved source conflict (§8.4).
 - Capture b5 (sku 1991876) **[PV]**: "25% thicker center coils for
   shoulder/hip pressure relief; 3in HD foam edge encasement; popular with
   side sleepers" — strongest support in the row, but it says *pressure
@@ -776,13 +906,15 @@ anywhere**; the Level‑1 page has no occurrence of "spine", "alignment",
 support), the ache/pain framing including the title's bare "relief" promise
 (Restonic's register is "support" and "pressure relief", never pain), and the
 definite segment prescription. Keep: plush surface (firmness 3), the
-center‑zoned coil unit **in the manufacturer's quantification** — 25% more
-support in the center third, attributed to Restonic's patented Marvelous
-Middle® — and the 3‑inch HD foam edge encasement, noting the encasement is
-capture‑sourced only (Lacks' own copy — the same self‑sourcing caveat A2
-applies to "pressure relief"; confirm it on the licensee spec sheet). The
-same pass must correct the "25% thicker center coils" phrasing wherever it
-appears (§8.4).
+center‑zoned coil unit — quantified only per the licensee's model‑level
+confirmation (Restonic's published wording is "25% more support in the
+center third" [R4]/[R1]; the capture's "25% thicker center coils" is a
+conflicting formulation — attach neither figure to this SKU until the
+record resolves which applies, §8.4) — and the 3‑inch HD foam edge
+encasement, noting the encasement is capture‑sourced only (Lacks' own
+copy — the same self‑sourcing caveat A2 applies to "pressure relief";
+confirm it on the licensee spec sheet). The same review must resolve the
+thickness‑vs‑support conflict wherever the phrasing appears (§8.4).
 
 ---
 
@@ -801,13 +933,13 @@ on one surface after the other is fixed) · Confidence: high.
 promise.
 
 **Evidence.**
-- restonic.com ComfortCare Level 1 **[PV]** (same wording at Level 5 and
-  HealthRest Level 4): "…Individually Wrapped Coil Unit featuring the
-  exclusive Marvelous Middle® prevents motion transfer between partners" —
-  element 1 substantiated for the ComfortCare line; the manufacturer's motion
-  claim is itself absolute ("prevents") but is about **motion transfer**,
-  never a waking/sleep outcome.
-- springair.com Mayfair page **[PV]**: "reduced motion transfer" — the
+- restonic.com ComfortCare Level 1 [R1] **[PV]** (same wording at Level 5
+  [R3] and HealthRest Level 4 [R6]): "…Individually Wrapped Coil Unit
+  featuring the exclusive Marvelous Middle® prevents motion transfer
+  between partners" — element 1 substantiated for the ComfortCare line; the
+  manufacturer's motion claim is itself absolute ("prevents") but is about
+  **motion transfer**, never a waking/sleep outcome.
+- springair.com Mayfair page [S6] **[PV]**: "reduced motion transfer" — the
   qualified register available for the same mechanism.
 - Capture s9 **[PV]**: "motion‑isolating wrapped coils". Bearing against
   element 2: a customer review published on restonic.com's own FAQ disputes
@@ -840,11 +972,11 @@ high.
 scope.
 
 **Evidence.**
-- restonic.com /explore **[PV]**: "Patented Marvelous Middle® technology
-  delivers 25% more support in the middle of the mattress…"; "Extra lumbar
-  support in the center third" — the feature is real and the closest
-  supportable benefit is lumbar support in the center third, which is neither
-  hip‑leveling nor positional.
+- restonic.com /explore [R4] **[PV]**: "Patented Marvelous Middle®
+  technology delivers 25% more support in the middle of the mattress…";
+  "Extra lumbar support in the center third" — the feature is real and the
+  closest supportable benefit is lumbar support in the center third, which
+  is neither hip‑leveling nor positional.
 - Explicit negative **[PV]**: "spine", "alignment", "hips", "side sleeper"
   do not appear in official ComfortCare product copy.
 - Capture s2 (sku 2029844) **[PV]**: "Marvelous Middle; luxury hybrid extra
@@ -857,9 +989,11 @@ source (a pelvis‑sink description exists only on an excluded third‑party
 retailer blog, and was not relied on). No Platinum Paige page exists.
 
 **Rewrite guidance.** Drop "keeps hips level" and "in every position". Keep:
-the center‑third reinforcement in the manufacturer's own quantification
-("25% more support in the center third" / "extra lumbar support in the center
-third") with proper attribution to Restonic's patented Marvelous Middle®.
+the center‑third reinforcement itself, with proper attribution to Restonic's
+Marvelous Middle® — quantified only per the licensee's model‑level
+confirmation (Restonic's published wording is "25% more support in the
+center third" / "extra lumbar support in the center third" [R4]; do not
+attach a figure to this SKU without that confirmation, §8.4).
 
 **Open items.** Whether "Patented" corresponds to a live patent is a
 Restonic/Lacks record (§10) — the catalog string makes no patent assertion of
@@ -887,9 +1021,9 @@ contact points" — pressure relief.
   bears **against** the row: the claim is tied to systems this model is not
   documented to have.
 - Explicit negatives: "spine"/"alignment" absent from ComfortCare Level 1
-  **[PV]** and from HealthRest Level 4; restonic.com has no Platinum line at
-  all.
-- restonic.com gel materials (Level 1 **[PV]**, /explore): "CoolComfort
+  [R1] **[PV]** and from HealthRest Level 4 [R6]; restonic.com has no
+  Platinum line at all.
+- restonic.com gel materials (Level 1 [R1] **[PV]**, /explore [R4]): "CoolComfort
   Gel‑Infused Foam… cushioning and conformability"; TempaGel® "buffers
   sensitive pressure points and helps improve circulation" — hedged register
   supporting elements 2–3. Capture s5 (sku 1990906) **[PV]**: "Full layer
@@ -942,11 +1076,11 @@ category; (4) "in the store" — store‑wide scope.
   assortment's size. Nothing in the repository enumerates the store's full
   assortment, and live enumeration is blocked (§3.1) — so a store‑wide claim
   cannot be substantiated from the kiosk data.
-- springair.com Reserve collection **[PV]**: the official line has no Extra
-  Firm at all; the official Reserve Royal is **Cushion Firm**; no firmness
-  ranking or "sleep on top" language on the Reserve Royal page. Capture g8
-  **[PV]**: "Hand‑made hybrid, natural materials, extra firm support" —
-  extra‑firm positioning supported, no superlative.
+- springair.com Reserve collection [S5] **[PV]**: the official line has no
+  Extra Firm at all; the official Reserve Royal is **Cushion Firm**; no
+  firmness ranking or "sleep on top" language on the Reserve Royal page.
+  Capture g8 **[PV]**: "Hand‑made hybrid, natural materials, extra firm
+  support" — extra‑firm positioning supported, no superlative.
 - Supportable remnant **[PV]**: g8's own `reason_default` ("The firmest bed
   in the Reserve line") is intra‑catalog **true** iff Royal Reserve counts as
   Reserve (g6 = 3, g7 = 5, g8 = 8) — the boundary question, §8.7.
@@ -978,42 +1112,53 @@ access.
 **Field:** `differentiators[1].detail` — drawer only.
 **String:** "Tufting locks the layers so the pillowtop can't shift or pocket over years of use."
 
-**Disposition: REWRITE · Legal flag: no** per enumerated triggers (class D,
-no health/efficacy/antimicrobial/patent/origin element) — **with the agent's
-recommendation for legal review anyway**: the string makes a performance
-representation the manufacturer's own warranty expressly disclaims, which is
-warranty‑representation exposure at the point of sale · Confidence: high —
-the contradiction is documented, not inferred.
+**Disposition: REWRITE · Legal flag: no¹** per enumerated triggers (class D,
+no health/efficacy/antimicrobial/patent/origin element);
+**ADDITIONAL‑COUNSEL‑REVIEW‑RECOMMENDED** (§4.1) — the string's relationship
+to the manufacturer's published warranty terms presents a potential
+warranty/advertising consistency concern for qualified review, and a kiosk
+is a sales channel · Confidence: high on the unsupported‑overreach finding;
+the warranty tension is documented, though it is a consistency concern
+rather than a direct disproof of the tufting mechanism.
 
 **Elements:** (1) tufting locks the comfort layers; (2) "can't shift" —
 absolute negative; (3) "can't … pocket" — absolute negative about body
 impressions; (4) "over years of use" — unbounded durability promise.
 
 **Evidence.**
-- chattamandwells.com/craftsmanship **[PV]**: "the proven old traditional
-  technique of hand tufting lives on with two times the amount of tufts,
-  which gracefully compress every indulgent comfort layer to form a serene
-  sleeping surface" — element 1 substantiated (2× tuft density, compresses
-  and holds the layers). **No claim that tufting prevents shifting,
-  settling, pocketing or impressions; no durability timeline** **[PV]**.
-- chattamandwells.com/warranty **[PV]** — **directly contradicts elements
-  2–4**: impressions under 1‑1/2″ are "normal and represents the conforming
-  of the surface to the shape of the sleeper" (10‑Year, Non‑Prorated). The
-  manufacturer's own warranty tells the buyer impressions are expected and
-  not a defect; the catalog promises the opposite.
-- springair.com Palermo product page: cooling knit, Talalay latex, natural
-  wools, NanoCoils®, Quad coils, "Over 4,000 coils", 10‑year warranty — no
-  shift/pocket/impression language.
+- chattamandwells.com/craftsmanship [C2] **[PV]**: "The proven old
+  traditional technique of hand tufting lives on with two times the amount
+  of tufts, which gracefully compress every indulgent comfort layer to form
+  a serene sleeping surface" — element 1's construction fact substantiated
+  (2× tuft density; tufting compresses the comfort layers). **No claim that
+  tufting prevents shifting, settling, pocketing or impressions; no
+  durability timeline** **[PV]**.
+- chattamandwells.com/warranty [C1] **[PV]** — bears on elements 2–4
+  **without establishing them**: the warranty treats impressions under
+  1‑1/2″ as "normal and represents the conforming of the surface to the
+  shape of the sleeper" (10‑Year, Non‑Prorated), and separately lists "Tuft
+  Straps that have become dislodged into the mattress" as a covered defect.
+  It contains no statement about comfort layers shifting or "pocketing".
+  This **undermines any broad no‑impressions reading** of the catalog
+  string, but it does not equate normal impressions with layer shifting or
+  pocketing (no cited source defines "pocket"), does not establish that
+  normal impressions result from layer movement, and does not show the
+  tufting mechanism fails.
+- springair.com Palermo product page [S8] **[PV]**: cooling knit, Talalay
+  latex, natural wools, NanoCoils®, Quad coils, "Over 4,000 coils", 10‑year
+  warranty — no shift/pocket/impression language (re‑verified 2026‑08‑08).
 
 **Searched, not found.** No tufting‑prevents‑X claim or stated durability
 period on any of the three official pages; the only official tufting claim is
 the craftsmanship sentence above.
 
-**Rewrite guidance.** Drop elements 2–4 entirely — not merely unsupported but
-affirmatively contradicted by the manufacturer's published warranty. Keep:
-hand‑tufted build with twice the usual tuft count, compressing and holding
-the comfort layers — present‑tense construction description only, no
-future‑performance or non‑degradation promise.
+**Rewrite guidance.** Drop elements 2–4 entirely — absolute negatives and an
+unbounded durability promise that **no cited source establishes**; the
+warranty's normalization of sub‑1½″ impressions additionally cuts against
+any broad no‑impressions reading. Keep: hand‑tufted build with twice the
+usual tuft count, compressing the comfort layers — present‑tense
+construction description only, no future‑performance or non‑degradation
+promise.
 
 **Open items.** Coil‑count note for whoever owns g3's other differentiator:
 the catalog asserts a precise "4,294 coils"; Spring Air publishes only "Over
@@ -1041,19 +1186,22 @@ antimicrobial‑adjacent; (4) "than standard foam" — unqualified comparative o
 freshness; (5) "naturally" — inherent‑effect implication.
 
 **Evidence.**
-- springair.com Copper collection: "Patented Natuverex™ Copper fabric paired
-  with copper‑infused memory foams for a cooler, healthier sleep experience";
-  "resists microbial buildup"; "natural cleanliness of copper".
-- springair.com copper‑benefits blog **[PV]**: "Copper transfers heat up to
-  8× faster than conventional memory foam (Thermal Conductivity Handbook
-  2023)" — the **only** substantiated comparative vs conventional foam, and
-  it is about **heat transfer, not freshness**. "ISO 22196 tests show
-  copper‑infused surfaces **can** reduce **certain** bacteria by > 99 %
+- springair.com Copper collection [S3] **[PV]**: "Patented Natuverex™
+  Copper fabric paired with copper‑infused memory foams for a cooler,
+  healthier sleep experience"; "resists microbial buildup"; "natural
+  cleanliness of copper". (Upstream spelling is itself inconsistent —
+  "Natuverex™" in the collection tagline, "NatuVerex" in product
+  descriptions — a detail for the Spring Air request, Appendix A.)
+- springair.com copper‑benefits blog [S2] **[PV]**: "Copper transfers heat
+  up to 8× faster than conventional memory foam (Thermal Conductivity
+  Handbook 2023)" — the **only** substantiated comparative vs conventional
+  foam, and it is about **heat transfer, not freshness**. "ISO 22196 tests
+  show copper‑infused surfaces **can** reduce **certain** bacteria by > 99 %
   within two hours" — hedges the catalog dropped.
-- springair.com Copper Hybrid product pages **[PV]**: manufacturer's own
-  product‑level hedging — "**encourage** cooler and cleaner rest", "**assist
-  in** temperature regulation and odor control" — which the catalog's flat
-  "dissipate … and stay naturally fresher" removes.
+- springair.com Copper Hybrid product pages [S1]/[S4] **[PV]**:
+  manufacturer's own product‑level hedging — "**encourage** cooler and
+  cleaner rest", "**assist in** temperature regulation and odor control" —
+  which the catalog's flat "dissipate … and stay naturally fresher" removes.
 
 **Searched, not found.** A freshness comparison against standard/conventional
 foam: **nowhere on springair.com** — "fresher" as a comparative appears on no
@@ -1072,14 +1220,16 @@ foams aiding heat transfer; if a comparative is wanted, Spring Air's cited
 stated basis and must travel with that basis. The heat half travels to legal
 review with the cooling‑claims set (R4, §9).
 
-**Open items (for counsel).** (a) US antimicrobial claims on treated
-articles are EPA/FIFRA‑regulated; the treated‑article exemption permits
-claims about protecting the **article**, not the sleeper — "stay naturally
-fresher" sits at that boundary and g9's surrounding copy pushes it over
-("a cleaner sleep" in `reasons.default`, "recovery benefits" in A3).
-(b) `reasons.default` asserts "Patented NatuVerex" — patent status is a
-Spring Air corporate record (§10). (c) The SKU identity mapping is
-unverified (§3.3) — every claim on this model rests on it.
+**Open items (potential risks for qualified review — not legal
+conclusions).** (a) Antimicrobial claims on treated articles are a
+regulated area (EPA/FIFRA treated‑article rules); whether "stay naturally
+fresher" is permissible, in what form, and how the surrounding g9 copy
+("a cleaner sleep" in `reasons.default`, "recovery benefits" in A3) bears
+on it are questions for qualified legal/compliance review. (b)
+`reasons.default` asserts "Patented NatuVerex" — patent status is a Spring
+Air corporate record (§10). (c) The upstream mapping is plausible but
+unconfirmed at build level (§3.3 — [S1] lists 16.5″ vs the captured
+13.5″); each published claim's applicability to SKU 2037053 rests on it.
 
 ---
 
@@ -1093,9 +1243,9 @@ detail is A20.)
 
 **Disposition: REWRITE · Legal flag: YES** (quantified performance claim
 whose substantiation **exists** but depends on a disclosure the catalog
-stripped — the classic qualified‑claim failure, worse than an unsourced
-claim because the manufacturer's own practice establishes the qualifier as
-material) · Confidence: high.
+stripped — a potential qualified‑claim substantiation concern for qualified
+review; the manufacturer's own consistent disclosure practice indicates it
+treats the qualifier as material) · Confidence: high.
 
 **Elements:** (1) quantified "up to 10°"; (2) hedge "Feels … up to" —
 present and correctly reproduced; (3) comparison basis — **absent**; (4)
@@ -1103,12 +1253,14 @@ measurement basis and duration — **absent**; (5) unit of the figure —
 absent (and absent upstream too).
 
 **Evidence.**
-- tempurpedic.com (three pages, consistent) **[PV]**: the headline is always
-  "Feels Up to 10° Cooler" **with** the footnote: "LuxeBreeze® feels up to
-  10 degrees cooler based on the average heat index increase of
-  TEMPUR‑LuxeBreeze® compared to TEMPUR‑ProAdapt® models measured over an
-  8‑hour period." The manufacturer **never publishes the number bare**
-  **[PV]**. The footnote discloses: a heat‑**index** differential (not a
+- tempurpedic.com ([T1], [T2], [T4] — consistent **in substance** across
+  all three) **[PV]**: the headline is always "Feels Up to 10° Cooler"
+  **with** a footnote stating the basis; the quoted long form is [T2]/[T4]'s
+  wording — "LuxeBreeze® feels up to 10 degrees cooler based on the average
+  heat index increase of TEMPUR‑LuxeBreeze® compared to TEMPUR‑ProAdapt®
+  models measured over an 8‑hour period" — while [T1] carries an
+  abbreviated wording of the same basis. The manufacturer **never publishes
+  the number bare** **[PV]**. The footnote discloses: a heat‑**index** differential (not a
   temperature reading), vs **another Tempur‑Pedic model** (not the
   customer's bed or any absolute baseline), as an **average over 8 hours**
   (not a peak or continuous state). A showroom customer reading the bare
@@ -1143,7 +1295,7 @@ generation question and the °F/°C unit at once (§10).
 ### A20 — g4 · Tempur‑LuxeBreeze 2.0 Soft (Tempur‑Pedic, Gold, firmness 2)
 
 **Field:** `differentiators[0].detail` — drawer + compare Difference row.
-**String:** "Phase‑change cooling you can feel the moment you lie down — made for hot sleepers."
+**String:** "Phase-change cooling you can feel the moment you lie down — made for hot sleepers."
 
 **Disposition: REWRITE · Legal flag: YES** (performance/efficacy claim
 stated as guaranteed outcome; travels to review as one item with A19 —
@@ -1156,7 +1308,7 @@ customer ("you **can** feel"), not design intent; (4) "made for hot
 sleepers" — segment prescription.
 
 **Evidence.**
-- tempurpedic.com "all‑new TEMPUR‑Breeze" page **[PV]**: "Thanks to the
+- tempurpedic.com "all‑new TEMPUR‑Breeze" article [T4] **[PV]**: "Thanks to the
   heat‑absorbing fibers in our parented [sic — manufacturer's typo for
   'patented'] cool‑to‑the‑touch SmartClimate® Cover, you'll experience a
   cooling sensation from the moment you lie down." **The immediate
@@ -1168,11 +1320,11 @@ sleepers" — segment prescription.
   throughout the night" — the hot‑sleeper framing is permissive ("even the
   hottest … **can** stay cool"), never prescriptive, and consistently
   hedged ("is designed to"), which the catalog drops.
-- tempurpedic.com heat‑management page: "designed to draw heat away from the
-  body from the moment you lie down"; "designed to provide an immediate
-  cool‑to‑the‑touch feel" — design‑intent statements throughout; the
-  manufacturer never states the outcome as fact about what the customer will
-  feel.
+- tempurpedic.com heat‑management article [T5] **[PV]** (re‑verified
+  2026‑08‑08): "designed to draw heat away from the body from the moment
+  you lie down"; "designed to provide an immediate cool‑to‑the‑touch feel"
+  — design‑intent statements throughout; the manufacturer never states the
+  outcome as fact about what the customer will feel.
 
 **Searched, not found (reported explicitly).** The term "phase change
 material" appears on **none** of the fetched tempurpedic.com pages **[PV**
@@ -1200,28 +1352,35 @@ from the Tempur‑Pedic dealer claim sheet alongside A19's questions (§10).
 ### A21 — g2 · The Saint Pierre (Chattam & Wells, Gold, firmness 3)
 
 **Field:** `differentiators[0].detail` — drawer + compare Difference row.
-**String:** "A sink‑in soft surface for side sleepers who want cloud comfort without bottoming out."
+**String:** "A sink-in soft surface for side sleepers who want cloud comfort without bottoming out."
 
 **Disposition: REWRITE · Legal flag: no** (sleep *position* is a preference
 segment, not an anatomical outcome; class D, no enumerated trigger) ·
-Confidence: high — clean negatives on both defective elements, clean
-positives on both survivors.
+Confidence: high on the dropped elements (clean negatives on 3–4); element
+1's super‑plush surface is manufacturer‑supported, while element 2's cloud
+framing lost its only source in this revision's review reclassification.
 
 **Elements:** (1) soft, sink‑in surface; (2) "cloud comfort"; (3) "for side
 sleepers" — segment prescription; (4) "without bottoming out" — absolute
 performance promise.
 
 **Evidence.**
-- springair.com St Pierre page **[PV]**: "This mattress is incredibly
-  soft—like sinking into a cloud at the end of the day"; "It cradles the
-  body perfectly without that 'stuck' feeling you get from some softer
-  beds"; NanoCoil®/micro‑coil over dual‑layered Quad coil system, 8,000+
-  coils — elements 1–2 supported almost word for word. **Note on element 4:**
-  "without that 'stuck' feeling" is **not** the same claim as "without
-  bottoming out" — "stuck" is about the surface releasing you when you move;
-  "bottoming out" is about comfort layers fully compressing under load.
-  Reading one as support for the other would be a substitution, not a
-  citation.
+- springair.com St Pierre page [S7] **[PV]**: the **manufacturer's
+  description** supports element 1 (a soft, super‑plush surface) — "The
+  St. Pierre Super Plush Euro Top pairs cooling knit, natural wools,
+  Talalay latex, and 8,000+ coils for spa‑like luxury"; "indulgent comfort
+  with precision support" — plus the NanoCoil®/micro‑coil layer over a
+  dual‑layered Quad coil system. **Attribution correction (this
+  revision):** the page's "like sinking into a cloud" and "without that
+  'stuck' feeling" sentences sit in a **customer review** on the page
+  (re‑verified 2026‑08‑08), not in manufacturer copy — under the rubric
+  they are not substantiation and are no longer relied on, **which removes
+  element 2's ("cloud comfort") only source**.
+  **Note on element 4:** the review's "stuck" sentence would in any case be
+  a different claim from "without bottoming out" — "stuck" is about the
+  surface releasing you when you move; "bottoming out" is about comfort
+  layers fully compressing under load. Reading one as support for the other
+  would be a substitution, not a citation.
 - `data/mattresses.json` g2 **[PV]**: firmness 3 "Plush";
   plush/soft/pressurerelief features — consistent with 1–2; nothing supports
   3–4.
@@ -1232,37 +1391,39 @@ for the St Pierre on springair.com or chattamandwells.com **[PV]**; no
 
 **Rewrite guidance.** Drop the segment prescription (also a
 product‑coherence problem: it competes with the quiz's scoring) and the
-absolute "without bottoming out" (the manufacturer's nearest sentence is a
-different claim and must not be silently substituted). Keep: the super‑plush
-euro‑top of natural wools and Talalay latex over a multi‑layer coil system —
-the "sinking into a cloud" framing is available verbatim from Spring Air if
-the authoring workflow wants it. If a support counterweight is wanted, the
-citable fact is the 8,000+‑coil dual‑layered Quad system described as
-"resilient support", stated as construction.
+absolute "without bottoming out" (no manufacturer sentence supports it, and
+the review's "stuck" sentence is a different claim that must not be
+substituted). Keep: the super‑plush euro‑top of natural wools and Talalay
+latex over a multi‑layer coil system. Subjective sink‑in/cloud framing has
+**no manufacturer source** on this page — the cloud sentence is a customer
+review — so if such framing is wanted it is an authoring choice to be made
+in the authoring workflow, not a citation. If a support counterweight is
+wanted, the citable fact is the 8,000+‑coil dual‑layered Quad system
+described as "resilient support", stated as construction.
 
 ---
 
 ### A22 — s7 · Platinum Summit Plush (Restonic, Silver, firmness 3)
 
 **Field:** `differentiators[0].detail` — drawer + compare Difference row.
-**String:** "Gel‑infused foam keeps the soft layers from trapping heat."
+**String:** "Gel-infused foam keeps the soft layers from trapping heat."
 
-**Disposition: REWRITE · Legal flag: no** per enumerated triggers (thermal
-comfort, class D) — **with the agent's recommendation to review as one
-cooling‑claims set with A10, A18's heat half, A19 and A20** (adopted, R4) ·
-Confidence: medium (high that RETAIN is unavailable; medium because the
-model's materials cannot be confirmed).
+**Disposition: REWRITE · Legal flag: no¹** per enumerated triggers (thermal
+comfort, class D); **ADDITIONAL‑COUNSEL‑REVIEW‑RECOMMENDED** (§4.1) — rides
+the cooling‑claims set review with A10, A18's heat half, A19 and A20
+(adopted, R4) · Confidence: medium (high that RETAIN is unavailable; medium
+because the model's materials cannot be confirmed).
 
 **Elements:** (1) gel‑infused foam present; (2) the soft layers do not trap
 heat — thermal outcome; (3) "keeps … from" — absolute, unhedged; (4) scope:
 the whole soft‑layer system.
 
 **Evidence.**
-- restonic.com ComfortCare Level 5 (not independently re‑fetched; the same
-  technology block was primary‑verified on Level 1): TempaGel® — "gel that
+- restonic.com ComfortCare Level 5 [R3] **[PV]** (re‑fetched 2026‑08‑08;
+  confirmed verbatim): TempaGel® — "gel that
   dissipates heat instead of storing it";
   CoolComfort Gel‑Infused Foam — "optimal surface cooling"; "Triple Cooling
-  Technology Creates a cooling effect by gently moving heat away…". The
+  Technology creates a cooling effect by gently moving heat away…". The
   manufacturer's strongest language is about the **gel material**, published
   for the **ComfortCare line** — not about the finished soft‑layer system of
   a Platinum Summit model. Its blog framing is weaker still ("Gel adds
@@ -1294,15 +1455,16 @@ one Restonic Platinum dealer spec sheet closes A22, A23 and A24 together
 ### A23 — s7 · Platinum Summit Plush (Restonic, Silver, firmness 3)
 
 **Field:** `differentiators[1].detail` — drawer only.
-**String:** "Hybrid coils under the plush top prevent the hammock feel of all‑foam soft beds."
+**String:** "Hybrid coils under the plush top prevent the hammock feel of all-foam soft beds."
 
-**Disposition: REWRITE · Legal flag: no** per enumerated triggers — **with
-the agent's recommendation for legal review weighted higher than A17's**: an
-unsubstantiated adverse factual assertion about a competing product category
-is Lanham Act §43(a) false‑advertising territory, made on a sales‑floor
-kiosk, and it disparages a category Lacks itself very likely stocks ·
-Confidence: high on disposition and negatives; medium on the surviving fact
-(SKU reason).
+**Disposition: REWRITE · Legal flag: no¹** per enumerated triggers;
+**ADDITIONAL‑COUNSEL‑REVIEW‑RECOMMENDED** (§4.1), weighted higher than
+A17's by the researching agent: an unsubstantiated adverse factual
+assertion about a competing product category presents a **potential
+comparative‑advertising risk requiring qualified legal/compliance review**,
+it is made on a sales‑floor kiosk, and it disparages a category Lacks
+itself very likely stocks · Confidence: high on disposition and negatives;
+medium on the surviving fact (SKU reason).
 
 **Elements:** (1) coil unit beneath the plush layers; (2) "prevent" —
 absolute; (3) all‑foam soft beds have a "hammock feel" — adverse factual
@@ -1310,12 +1472,13 @@ assertion about a competing category; (4) implied superiority over that
 category.
 
 **Evidence.**
-- restonic.com hybrid explainer: "The springs provide the bounciness people
-  love about innerspring mattresses while memory foam absorbs excess
+- restonic.com hybrid explainer [R7]: "The springs provide the bounciness
+  people love about innerspring mattresses while memory foam absorbs excess
   motion" — the manufacturer frames the hybrid's benefit **additively** and
   never disparages all‑foam construction (which Restonic itself sells).
-- restonic.com ComfortCare Level 5: coil unit provides support and prevents
-  motion transfer; nothing about hammocking or all‑foam comparison.
+- restonic.com ComfortCare Level 5 [R3] **[PV]**: coil unit provides support
+  and prevents motion transfer; nothing about hammocking or all‑foam
+  comparison.
 - `data/mattresses.json` s7 **[PV]**: hybrid feature — element 1 internally
   consistent, subject to the SKU caveat.
 
@@ -1353,22 +1516,24 @@ absolute; (3) zoned behaviour ("firm up" in a region); (4) anatomical
 localisation — "under your hips".
 
 **Evidence.**
-- restonic.com ComfortCare Level 5 (not independently re‑fetched; the
-  Level 1 equivalent wording is primary‑verified): "1,000
-  Series Individually Wrapped Coil Unit featuring the exclusive Marvelous
-  Middle® prevents motion transfer between partners" — the unusual case
+- restonic.com ComfortCare Level 5 [R3] **[PV]** (re‑fetched 2026‑08‑08):
+  "1,000 Series Individually Wrapped Coil Unit featuring the Marvelous
+  Middle® prevents motion transfer between partners" (the page renders the
+  unit name both with and without "exclusive" — heading vs full
+  description; [R1]'s description form, quoted at A13, includes it) — the
+  unusual case
   where the manufacturer's wording is **stronger** than the catalog's
   ("prevents" vs "isolate"); the problem is **scope, not degree**: the claim
   belongs to the ComfortCare 800/1,000 Series units, not to this model.
-- Same source (the identical sentence is primary‑verified on Level 1):
-  "Delivers 25% more support in the center third of the mattress" — Restonic
-  locates the effect at a **mattress‑geometry
+- Same source [R3] **[PV]**: "Delivers 25% more support in the center third
+  of the mattress" — Restonic locates the effect at a **mattress‑geometry
   region** (center third) and quantifies it as **support**. The catalog
   relocates it to "under your hips" — converting a geometry spec into an
   anatomical claim — and s3's `reasons.default` separately renders it as
-  "25% thicker center coils", a mis‑transcription (§8.4) that undercuts
-  element 3 here: the catalog's own account of the zoning mechanism is
-  wrong.
+  "25% thicker center coils", a formulation in **unresolved conflict** with
+  Restonic's published wording (§8.4). Until the licensee record resolves
+  which formulation applies to this SKU, neither quantification can be
+  attached to it, which leaves element 3's mechanism unconfirmed.
 - `data/mattresses.json` s3 **[PV]**: zoned + motionisolation features,
   firmness 3 "Plush" — internally consistent.
 
@@ -1380,8 +1545,11 @@ sleeper's hips.
 
 **Rewrite guidance.** Drop "under your hips" — express the effect the way
 the manufacturer does, as center‑third mattress geometry. Requalify the
-zoning to what Restonic actually publishes (25% more support, not thicker
-coils). "Isolate motion" may survive in substance **contingent on spec
+zoning per the licensee's model‑level confirmation: Restonic's only
+published wording is "25% more support in the center third" [R3]/[R1], the
+capture's "thicker coils" formulation is in unresolved conflict with it
+(§8.4), and neither figure should be attached to this SKU without that
+record. "Isolate motion" may survive in substance **contingent on spec
 confirmation** of which coil series this SKU uses — and even then the
 qualified register is recommended over the manufacturer's absolute
 "prevents", since motion isolation varies with partner weight and movement.
@@ -1401,14 +1569,17 @@ generation question, the °F/°C unit, the PCM attribution). A Restonic
 licensee spec‑sheet request resolves A5/A13 (coil unit), A15 (zoned system),
 A22/A23/A24 (Platinum bill of materials), and the "hand‑made" question on
 A7/A9. A Spring Air Copper spec/regulatory sheet closes A18's EPA question
-and the Copper SKU identity. Recommendation: request once per brand, not
-per row.
+and the Copper build‑equivalence question. Recommendation: request once per
+brand, not per row. Send‑ready drafts of all three requests are in
+Appendix A — **NOT SENT; owner review required**.
 
-**8.2 Unverifiable‑SKU identity is a risk dimension the inventory does not
-capture.** Five floor models carry names with no upstream referent (§3.3).
-This is not a bad claim but a claim about a product whose identity cannot be
-tied to any published specification. Worth adding to the inventory as a
-dimension separate from claim class.
+**8.2 Exact upstream mapping is a risk dimension the inventory does not
+capture.** Five floor models require SKU/generation/build mapping
+confirmation before published upstream claims can be attached to them
+(§3.3 table — the gap ranges from generation mapping to build equivalence
+to model‑level licensee documentation). This is not a bad claim but a claim
+whose product identity is not yet tied to a confirmed specification. Worth
+adding to the inventory as a dimension separate from claim class.
 
 **8.3 The g4 cooling fix spans four fields, only two of which are Block A
 rows.** A4 (`topPickReason`) and A19/A20 (`differentiators[0]`) are
@@ -1418,24 +1589,33 @@ the same unqualified claim family and are **not** dispositioned here (out of
 Block A scope) — they are recorded for the owner so the model is fixed
 coherently, not field by field.
 
-**8.4 The "25% thicker center coils" phrasing is a catalog‑wide
-mis‑transcription.** Restonic publishes "25% **more support** in the center
-third" (verified on two official pages **[PV]**). The catalog renders it as
-"25% **thicker center coils**" on six models (s3, s4, s8, s10, b5, b6 —
-capture descs and/or `reasons.default`/highlight fields), and an adjacent
-seventh instance carries the same substitution without the number — b7's
-`reasons.default` says "Restonic's thicker center coils". Thickness and
-support are different quantities; no acceptable source states a thickness
-percentage (s1 alone renders the manufacturer's correct "25% more support"
-form). Only b5's and s3's Block A rows are dispositioned here; the phrasing
-correction should ride whichever workflow touches the other five.
+**8.4 The "25% thicker center coils" phrasing is an unresolved source
+conflict — a suspected transcription issue pending model‑level
+specifications.** Restonic's corporate site publishes "25% **more support**
+in the center third" ([R1], [R3], [R4] — the only currently published
+manufacturer wording, primary‑verified on three pages). The dated
+Lacks/licensee capture renders "25% **thicker center coils**" on six models
+(s3, s4, s8, s10, b5, b6 — capture descs and/or `reasons.default`/highlight
+fields), and an adjacent seventh instance carries the same substitution
+without the number — b7's `reasons.default` says "Restonic's thicker center
+coils" (s1 alone renders the "25% more support" form). Thickness and
+support are different quantities, so at most one formulation is correct
+**per SKU** — but the available evidence establishes the conflict, not the
+direction of the error: a generic corporate statement cannot prove that a
+specific Texas‑licensee build lacks physically thicker center coils, and
+the model‑level licensee specifications are missing. **Both formulations
+fail closed for quantified production copy** until the licensee record
+resolves which applies to each SKU. Only b5's and s3's Block A rows are
+dispositioned here; the conflict resolution should ride whichever workflow
+touches the other five models.
 
-**8.5 The four price‑leadership claims are mutually exclusive and must be
-ruled on together.** A6 (s10) plus reason_default rows B5 (b4), B6 (b7) and
-B7 (b6) — the brief's contradiction #1. A6's price clause is refuted
-arithmetically by the catalog itself; fixing the four one at a time leaves
-survivors that contradict each other. B5/B6/B7 are outside Block A and are
-not dispositioned here.
+**8.5 The four price‑leadership claims must be ruled on together, under one
+class definition.** A6 (s10) plus reason_default rows B5 (b4), B6 (b7) and
+B7 (b6) — the brief's contradiction #1. All four use undefined comparison
+sets ("its class", "in the store", etc.); A6's clause is unsubstantiated as
+written (see A6), and ruled independently under different implicit
+readings, the four can contradict each other. B5/B6/B7 are outside Block A
+and are not dispositioned here.
 
 **8.6 Two rows' firmness words disagree with the screen.** The customer
 sees the display label for the firmness bucket, so A3's "cushion‑firm"
@@ -1471,8 +1651,8 @@ review gate are unchanged by this document.
 | g8 | **A7 + A16** | Same model; prescription + superlative share the "Reserve line" and luxury‑positioning questions |
 | g4 cooling | **A4 + A19 + A20** (+ g4 `highlight`, `reasons.default` — out of scope, recorded §8.3) | One qualifier decision governs all |
 | Reserve boundary | **A9 + A16** (+ g8 `reason_default`, out of scope) | Neither rewrite scopes until the line's membership is settled (§8.7) |
-| Marvelous Middle quantification | **A12 + A24** (+ s4/s8/s10/b6 phrasing, out of scope, §8.4) | One correct manufacturer figure |
-| Price leadership | **A6** (+ B5/B6/B7, out of scope, §8.5) | Four mutually exclusive claims |
+| Marvelous Middle quantification | **A12 + A24** (+ s4/s8/s10/b6/b7 phrasing, out of scope, §8.4) | One unresolved thickness‑vs‑support conflict — resolve per licensee record |
+| Price leadership | **A6** (+ B5/B6/B7, out of scope, §8.5) | Four undefined comparison sets — one class definition must govern all |
 | Cooling‑claims legal set | **A10 + A18 (heat half) + A19 + A20 + A22** | One house rule on how absolute a thermal claim may be (R4) |
 | Platinum spec set | **A22 + A23 + A24** | One Restonic dealer spec sheet closes all three |
 
@@ -1492,13 +1672,16 @@ omission.
 | Patent status (Marvelous Middle®, Natuverex™) | A12, A14, A18 (record‑only) | Restonic / Spring Air corporate records — no catalog string asserts a patent directly today; the flag guards attribution wording |
 | Live lacks.com PDP content (post‑2026‑07‑30) | all lacks‑cited rows; specifically A3 | Browser‑session check of the live pages |
 
-Two dropped elements are deliberately **not** in this register because no
-record could bring them back: **A6's price clause** is refuted by the
-catalog itself under every reading of "class" (a future assortment change
-could ground a *different* claim, but nothing rehabilitates this one as
-written), and **A8's "most luxurious in the store"** is unresolvable by any
-record or test — "luxurious" has no measurable definition. Both are dropped
-outright, with no return path.
+**A8's "most luxurious in the store"** is deliberately not in this
+register: no record or test could resolve a subjective cross‑brand
+superlative — "luxurious" has no measurable definition — so the element is
+dropped outright with no return path. **A6's current price clause** is
+likewise dropped as written (undefined comparison set, dynamic undated
+prices, no rendered price context); a future price claim would be a **new
+authoring decision**, not a revival of this string, and requires a written
+comparison‑set definition, a dated full‑assortment price census, a
+validity/expiration rule, merchandising approval, and any legal/compliance
+review that qualified reviewers require (see A6).
 
 ## 11. What this document deliberately does not do
 
@@ -1517,52 +1700,248 @@ outright, with no return path.
 
 ## 12. Verification ledger
 
-**Independently re‑fetched and confirmed by the primary (2026‑08‑07),**
-marked **[PV]** in the rows: chattamandwells.com `/warranty` and
-`/craftsmanship`; tempurpedic.com Breeze collection pages (both URLs) and
-the "all‑new TEMPUR‑Breeze" article; restonic.com ComfortCare Level 1 and
-`/explore`; springair.com Reserve collection, Reserve Mayfair Eurotop Plush,
-Copper Hybrid Cushion Firm Eurotop, the copper‑benefits blog post, and the
-Chattam & Wells St Pierre page (fetched twice — positive facts, then
-negatives). Every quoted sentence relied on above was confirmed verbatim or
-near‑verbatim on the cited page.
+**Independently re‑fetched and confirmed by the primary,** marked **[PV]**
+in the rows: every source listed as primary‑verified in the
+evidence‑reference ledger (§13), first on 2026‑08‑07 and re‑fetched
+2026‑08‑08 during the Codex correction pass — all 25 external sources in
+the ledger (the 26th entry, [L1], is the repository capture; within [R9]
+only the Drew & Jonathan sibling pages remain agent‑reported), including
+every load‑bearing citation. Every quoted sentence
+relied on above was confirmed verbatim or near‑verbatim on the cited page.
+The 2026‑08‑08 re‑fetch surfaced one evidence correction (A21's
+"cloud"/"stuck" sentences are customer‑review content, not manufacturer
+copy — see A21 and §6) and one upstream detail (the Natuverex™/NatuVerex
+spelling inconsistency — see A18).
 
 **Verified directly against the repository at base `bdf56d0`:** all 24 row
-strings vs `data/mattresses.json`; the firmness‑8 four‑way tie; gold‑tier
+strings vs `data/mattresses.json` — **programmatic exact code‑point
+comparison, 24/24 exact, zero normalization differences** (A12 verified as
+its exact title and exact detail); the firmness‑8 four‑way tie; gold‑tier
 firmness spread; the soft‑end cooling pair (g4, s7); the full 26‑model price
-census and the A6 refutation (promo and regular prices); subBrand
+census and the A6 price illustrations (promo and regular prices); subBrand
 Reserve/Royal Reserve split; feature/tag sets for s2, s5, s7, s9, b5, g7,
-g8; and all quoted capture descriptions (g2, g4, g7, g8, g9, s2, s5, s7,
-s9, s10, b1, b5, b6) including the g9 "health/recovery angle" annotation.
+g8; all quoted capture descriptions (g2, g4, g7, g8, g9, s2, s5, s7,
+s9, s10, b1, b5, b6) including the g9 "health/recovery angle" annotation;
+and the production rendering rule (drawer renders title + detail; compare
+renders only `differentiators[0].detail` — `index.html:18897`).
 
 **Accepted on the researching agent's report (not independently
-re‑fetched):** restonic.com ComfortCare Level 4/Level 5, HealthRest Level 4,
-the hybrid‑mattress blog explainer, the FAQ page, and the Scott Living /
-Drew & Jonathan pages (A15's *against*‑evidence); springair.com C&W
-collection page, Palermo product page, and Copper collection page (its key
-sentences are corroborated verbatim by two primary‑verified pages);
-tempurpedic.com heat‑management article; the agents' negative lacks.com
-search results. None of these is the sole support for any disposition.
+re‑fetched):** only the agents' negative lacks.com **search results** (live
+fetches were blocked, §3.1) and the Drew & Jonathan page within [R9] (its
+Scott Living sibling was re‑fetched and confirms the same 5‑zone claim
+pattern). Every cited page in §13 was otherwise primary‑verified on
+2026‑08‑08. None of the agent‑reported items is the sole support for any
+disposition.
 
 **Research‑model coverage disclosure:** the three research agents and the
 primary ran on the same model family; this is convergent research, not
 independent‑model replication.
 
-**Adversarial review (pre‑commit, 2026‑08‑07).** The completed diff was
-adversarially reviewed by a reused research agent (read‑only) against the
-governing checklist: all seven items passed with **no blocking findings**.
-Five should‑fix corrections were applied in this revision before commit —
-a records‑register direction error (A6/A8 wrongly listed with a return
-path), A19's production surface and non‑verbatim string (title‑only, drawer
-only — verified against production `index.html:18897`), two register
-omissions (A5/A13 coil‑unit spec; A9's comfort‑variant question), an
-over‑ellipsized A1 quote that hid Tempur's own unqualified duration clause,
-and a mis‑attributed A16 capture citation — plus the reviewer's applicable
-notes (capture‑only caveat on A12's edge encasement; cooling‑set
-back‑references on A18/A19/A20; the b7 "thicker center coils" variant; A6
-price‑rank phrasing; narrowed Spanish handoff notes; clarified [PV]
-placement on Level‑5 quotes; the Spring Air "Handcrafted Reserve" open
-thread on R1). The reviewer independently re‑fetched eight load‑bearing
-citations and re‑verified the intra‑catalog assertions; all held. With the
-A19 correction, all 24 quoted strings are verbatim against
-`data/mattresses.json` at base.
+**First‑pass adversarial review (historical — pre‑commit `1e49dc9`,
+2026‑08‑07).** The first version of this document was adversarially
+reviewed by a reused research agent (read‑only): no blocking findings; five
+should‑fix corrections and applicable notes were applied before the first
+commit; the reviewer independently re‑fetched eight load‑bearing citations
+and re‑verified the intra‑catalog assertions, all of which held. (That
+review's closing statement that all 24 quoted strings were verbatim was
+itself later found imprecise: Codex's review of `1e49dc9` identified 11
+strings whose ASCII hyphens had been typography‑normalized to non‑breaking
+hyphens. This revision restored exact source code points, now verified
+programmatically — 24/24 exact.)
+
+**Codex correction pass (2026‑08‑08).** Codex independently reviewed
+`1e49dc9`, confirmed all 24 REWRITE dispositions, and required the ten
+corrections itemized in §6, all applied in this revision. As part of the
+pass, every primary‑verifiable cited URL was re‑fetched and confirmed
+(§13), the exact‑string comparison was made programmatic and reproducible,
+and the production surfaces were re‑verified against `index.html`. A final
+read‑only adversarial review of the corrected document preceded the
+correction commit.
+
+## 13. Evidence‑reference ledger
+
+Every external source cited in this document, with literal URLs. All URLs
+below were fetched and confirmed on 2026‑08‑08 (the Codex correction pass);
+"primary‑verified" means the primary fetched the page and confirmed the
+quoted propositions on it. Quotations throughout this document are excerpts
+for traceability, not reproductions of the pages.
+
+| ID | Organization | Page title | URL | Retrieved | Verification | Rows supported | Material limitation |
+|---|---|---|---|---|---|---|---|
+| T1 | Tempur‑Pedic | TEMPUR‑Breeze® \| Tempur‑Pedic | <https://www.tempurpedic.com/shop-mattresses/tempur-breeze/> | 2026‑08‑08 | primary‑verified | A4, A19, §3.3 | marketing page; both 10° and 5° claims carry the ++ footnote |
+| T2 | Tempur‑Pedic | TEMPUR‑Breeze® \| Tempur‑Pedic | <https://www.tempurpedic.com/shop-mattresses/breeze-collection/> | 2026‑08‑08 | primary‑verified | A4, A19 | does **not** contain "proven"; 10° footnote present |
+| T3 | Tempur‑Pedic | How TEMPUR‑Breeze® Cooling Works \| Tempur‑Pedic | <https://www.tempurpedic.com/shop-mattresses-pillows/breeze-collection/> | 2026‑08‑08 | primary‑verified | A1 | sole located instance of the "proven cooling materials" sentence |
+| T4 | Tempur‑Pedic | The All‑New TEMPUR‑Breeze® (article, 2023‑05‑24) | <https://www.tempurpedic.com/tempur-love/the-all-new-tempur-breeze/> | 2026‑08‑08 | primary‑verified | A4, A19, A20 | 2023 editorial article; may lag current product pages |
+| T5 | Tempur‑Pedic | How TEMPUR‑Breeze® Helps Manage Heat for a Cooler Night's Sleep | <https://www.tempurpedic.com/tempur-love/how-tempur-breeze-helps-manage-heat-for-a-cooler-nights-sleep/> | 2026‑08‑08 | primary‑verified | A20 | editorial article |
+| C1 | Chattam & Wells | 10‑Year Warranty Non‑Prorated | <https://www.chattamandwells.com/warranty> | 2026‑08‑08 | primary‑verified | A17 | warranty terms; defines neither "shift" nor "pocket" |
+| C2 | Chattam & Wells | Craftsmanship — Chattam & Wells | <https://www.chattamandwells.com/craftsmanship> | 2026‑08‑08 | primary‑verified | A17 | brand‑level craftsmanship page, not a SKU spec |
+| S1 | Spring Air | Copper Hybrid Cushion Firm Eurotop – Spring Air | <https://www.springair.com/products/copper-hybrid-cushion-firm-eurotop> | 2026‑08‑08 | primary‑verified | A3, A18, §3.3 | lists 16.5″ height vs the captured 13.5″ Lacks SKU |
+| S2 | Spring Air | Copper mattress benefits (blog) | <https://www.springair.com/blogs/news/copper-mattress-benefits-spring-air> | 2026‑08‑08 | primary‑verified | A3, A18 | blog; cites "Thermal Conductivity Handbook 2023" without a link |
+| S3 | Spring Air | Copper by Spring Air (collection) | <https://www.springair.com/collections/copper> | 2026‑08‑08 | primary‑verified | A3, A18 | 11 models, none named exactly "Copper Cushion Firm"; Natuverex™/NatuVerex spelling inconsistent on‑site |
+| S4 | Spring Air | Copper Hybrid Firm Eurotop – Spring Air | <https://www.springair.com/products/copper-hybrid-firm-eurotop> | 2026‑08‑08 | primary‑verified | A18 | sibling model (Firm, not Cushion Firm) |
+| S5 | Spring Air | Reserve by Spring Air (collection) | <https://www.springair.com/collections/reserve-by-spring-air> | 2026‑08‑08 | primary‑verified | A9, A16 | Spring Air‑badged line; the Lacks Reserve SKUs are Restonic‑badged |
+| S6 | Spring Air | Reserve Mayfair Eurotop Plush – Spring Air | <https://www.springair.com/products/reserve-mayfair-eurotop-plush> | 2026‑08‑08 | primary‑verified | A9, A13 | Eurotop Plush comfort — not the Lacks Medium Tight Top variant |
+| S7 | Spring Air | Chattam & Wells St Pierre Super Plush Eurotop | <https://www.springair.com/products/chattam-wells-st-pierre-super-plush-eurotop> | 2026‑08‑08 | primary‑verified | A8, A21 | the "cloud"/"stuck" sentences on this page are a customer review, not manufacturer copy |
+| S8 | Spring Air | Chattam & Wells Palermo Pillowtop | <https://www.springair.com/products/chattam-wells-palermo-pillowtop> | 2026‑08‑08 | primary‑verified | A17 | publishes "Over 4,000 coils" vs the catalog's precise 4,294 |
+| S9 | Spring Air | Chattam & Wells (collection) | <https://www.springair.com/collections/chattam-wells> | 2026‑08‑08 | primary‑verified | A8 | MSRPs are Spring Air DTC prices, not Lacks prices |
+| R1 | Restonic | ComfortCare® Level 1 – Restonic | <https://restonic.com/mattress/comfortcare-level-1> | 2026‑08‑08 | primary‑verified | A2, A5, A10, A12, A13, A14, A15, §8.4 | corporate Level‑line page; no Lacks model names exist on restonic.com |
+| R2 | Restonic | ComfortCare® Level 4 – Restonic | <https://restonic.com/mattress/comfortcare-level-4> | 2026‑08‑08 | primary‑verified | A5, A13 | 1,000 Series wording |
+| R3 | Restonic | ComfortCare® Level 5 – Restonic | <https://restonic.com/mattress/comfortcare-level-5> | 2026‑08‑08 | primary‑verified | A13, A22, A23, A24, §8.4 | corporate Level‑line page; no Lacks model names |
+| R4 | Restonic | Handmade Quality Mattresses \| Restonic (/explore) | <https://restonic.com/explore> | 2026‑08‑08 | primary‑verified | A7, A9, A12, A14, A15 | page **title** says "Handmade"; body makes no manufacturing‑method claim |
+| R5 | Restonic | Restonic Mattress \| Handcrafted mattresses since 1938 (homepage) | <https://restonic.com/> | 2026‑08‑08 | primary‑verified | A7, A9, §3.2 | brand‑level tagline only; lists four collections, none matching Lacks model names |
+| R6 | Restonic | HealthRest Level 4 – Restonic | <https://restonic.com/mattress/healthrest-level-4> | 2026‑08‑08 | primary‑verified | A13, A15 | Level‑line page; confirms R1/R3 wording pattern |
+| R7 | Restonic | Can a Hybrid Mattress Improve Your Sleep? – Restonic (blog) | <https://restonic.com/blog/hybrid-mattress> | 2026‑08‑08 | primary‑verified | A22, A23 | blog; "hammock" confirmed absent |
+| R8 | Restonic | FAQ About Restonic Mattresses \| Restonic | <https://restonic.com/faq> | 2026‑08‑08 | primary‑verified | A13 | the disputing quote is customer‑review content, cited only as bearing against an absolute promise — never as substantiation |
+| R9 | Restonic | Scott Living Signature Mattress – Restonic (+ Drew & Jonathan sibling pages, agent‑reported) | <https://restonic.com/mattress/scott-living-signature> | 2026‑08‑08 | primary‑verified (Scott Living); agent‑reported (Drew & Jonathan) | A15 | used only as evidence **against** A15 (the 5‑zone Q5S™ spinal‑alignment claim belongs to other collections) |
+| L1 | Lacks (repository capture) | lacks.com REST API catalog capture | `incoming/lacks_catalog_selection.json` (repo path; `_meta.source`: "lacks.com /api/rest/categories/mattresses/products + mattress-accessories, scraped 2026-07-30 via browser session") | captured 2026‑07‑30 | repository record | all lacks‑side facts; §3.1 | dated snapshot; live lacks.com returned 403/429 to research fetches; prices are 2026‑07‑30 promotional finals |
+
+## Appendix A — DRAFT REQUESTS — NOT SENT; OWNER REVIEW REQUIRED
+
+Three send‑ready evidence requests, drafted for the owner's review. **None
+has been sent; no manufacturer, licensee, or dealer has been contacted.**
+Sending them, and to whom, is the owner's decision. Each request closes the
+records‑dependent items in §10 for its brand. Common instruction embedded
+in each: unsupported elements remain omitted from the kiosk until written
+evidence arrives.
+
+### A.1 Draft request — Tempur‑Pedic dealer/brand representative
+
+> Subject: Claim‑substantiation documentation for two Tempur‑Pedic floor
+> models (Lacks Furniture DreamFinder kiosk)
+>
+> We are reviewing the product claims our showroom kiosk displays for two
+> Tempur‑Pedic units and need current dealer documentation before any
+> claim language is used:
+>
+> - **Lacks SKU 1302592** — captured name "Queen Tempur-Pro-Breeze 2.0
+>   Medium Hybrid Mattress 10Yr Limited Warranty" (our id g5); proposed
+>   mapping: TEMPUR‑ProBreeze® Medium Hybrid.
+> - **Lacks SKU 1302546** — captured name "Queen Tempur-Luxe Breeze 2.0
+>   2.0 Soft Mattress 10Yr Limited Warranty" (our id g4); proposed
+>   mapping: TEMPUR‑LuxeBreeze® Soft.
+>
+> Questions requiring written resolution:
+> 1. Do these "2.0"‑labeled units correspond to the current published
+>    TEMPUR‑ProBreeze®/TEMPUR‑LuxeBreeze® generation? If "2.0" denotes a
+>    different generation, exactly which published claims apply to each
+>    unit as built?
+> 2. In "Feels up to 10° cooler" / "Feels up to 5° cooler": what unit does
+>    the degree figure represent (°F, °C, or a heat‑index construct)?
+> 3. The complete mandatory comparison/measurement qualifier for each
+>    cooling claim (your sites publish: "…based on the average heat index
+>    increase of TEMPUR‑[Luxe/Pro]Breeze® compared to TEMPUR‑ProAdapt®
+>    models measured over an 8‑hour period") and the required presentation
+>    of that qualifier in retail use.
+> 4. Is Pure Cool®/Pure Cool® Plus a phase‑change material? Which
+>    component produces the immediate cool‑to‑the‑touch sensation — the
+>    SmartClimate® cover's heat‑absorbing fibers, a phase‑change layer, or
+>    both?
+> 5. Approved retailer claim language for these two units, with all
+>    mandatory qualifiers, and trademark‑attribution requirements
+>    (TEMPUR®, SmartClimate®, Pure Cool®).
+>
+> Requested documents: the current dealer claim sheet / retailer
+> advertising guidelines covering these SKUs, with document revision and
+> effective date, and written confirmation that the documentation applies
+> to the exact units above as stocked. Until this arrives, unsupported
+> claim elements remain omitted from our kiosk.
+
+### A.2 Draft request — Restonic Texas licensee
+
+> Subject: Model‑level specification and claim documentation for Restonic
+> floor models (Lacks Furniture DreamFinder kiosk)
+>
+> Restonic's corporate site documents technologies (Marvelous Middle®,
+> TempaGel®, CoolComfort, wrapped‑coil units) at the ComfortCare
+> "Level" line level, but none of the model names we stock. We need
+> model‑level licensee documentation for the following units before claim
+> language is used:
+>
+> | Lacks id | SKU | Captured product name |
+> |---|---|---|
+> | s9 | 1991879 | Restonic Kendall III Hybrid Luxury Medium Queen Mattress |
+> | s10 | 1989356 | Restonic ComfortCare Kendall 14.5" Hybrid Extra Firm Tight Top Queen Mattress |
+> | s8 | 1991904 | Restonic ComfortCare Kendall 15.5" Hybrid Firm Euro Top Queen Mattress |
+> | b5 | 1991876 | Restonic Angelina Plush Queen Mattress (ComfortCare Angelina II 13") |
+> | b6 | 1991866 | Restonic ComfortCare Angelina 13" Hybrid Extra Firm Queen Mattress |
+> | s5 | 1990906 | Restonic Platinum Summit 13.8" Hybrid Firm Tight Top Queen Mattress |
+> | s6 | 1990909 | Restonic Platinum Summit 13.8" Hybrid Medium Tight Top Queen Mattress |
+> | s7 | 1990916 | Restonic Platinum Summit 13.8" Hybrid Plush Tight Top Queen Mattress |
+> | s3 | 1990900 | Restonic Platinum Maria 15.25" Hybrid Plush Box Top Queen Mattress |
+> | s4 | 1990893 | Restonic Maria Hybrid BT Firm Queen Mattress |
+> | s1 | 1991909 | Restonic Platinum Paige 16" Hybrid Firm Box Top Queen Mattress |
+> | s2 | 2029844 | Restonic Platinum Paige II 16" Hybrid Extra Firm Queen Mattress |
+> | g6 | 1992762 | Restonic Reserve Mayfair 15" Hybrid Plush Euro Top Queen Mattress |
+> | g7 | 1992759 | Restonic Reserve Mayfair 15" Hybrid Medium Tight Top Queen Mattress |
+> | g8 | 1991959 | Restonic Royal Reserve 14" Hybrid Extra Firm Tight Top Queen Mattress |
+> | b7 | 2030258 | Restonic Gracie II Medium Queen Mattress |
+>
+> Questions requiring written resolution:
+> 1. Exact model‑to‑line mappings for each SKU (ComfortCare Level/series,
+>    Platinum, Reserve — including the Reserve Mayfair "Medium Tight Top"
+>    variant, which does not appear in the published Spring Air Reserve
+>    collection).
+> 2. The coil‑unit series in each SKU (800 Series, 1,000 Series, other),
+>    and whether each carries Marvelous Middle®.
+> 3. For the center‑third zoning: does "25% thicker center coils" (our
+>    2026‑07‑30 lacks.com capture) or "25% more support in the center
+>    third" (restonic.com) apply to each SKU — and what is the measurement
+>    definition behind whichever figure is correct?
+> 4. Bills of material: the gel comfort layer in the Platinum Summit
+>    models; the support/zoning system in the Platinum Summit Firm (our
+>    s5); full BOM for the Platinum Summit and Platinum Maria models;
+>    edge‑encasement spec for the Angelina models.
+> 5. Wrapped‑coil and motion‑transfer documentation, including any test
+>    basis behind "prevents motion transfer between partners".
+> 6. The meaning and SKU scope of "hand‑made"/"handcrafted" for the
+>    Reserve Mayfair and Royal Reserve builds — in writing, stating which
+>    processes it covers. Related: does Spring Air publish line‑level
+>    "Handcrafted Reserve" copy?
+> 7. Texas/licensee origin and assembly documentation for these SKUs
+>    (this also bears on our kiosk's locally‑made designation).
+> 8. Trademark/patent attribution requirements for Marvelous Middle®, and
+>    its patent status, for retail use.
+> 9. Current spec‑sheet revisions with effective dates, and written
+>    confirmation that each record applies to the exact SKU/build stocked.
+>
+> Until this documentation arrives, unsupported claim elements remain
+> omitted from our kiosk.
+
+### A.3 Draft request — Spring Air dealer/brand representative
+
+> Subject: Specification and claim documentation for the Copper hybrid
+> floor model (Lacks Furniture DreamFinder kiosk)
+>
+> We stock one Spring Air Copper unit and need documentation tying
+> published claims to the exact build:
+>
+> - **Lacks SKU 2037053** — captured name "Copper by SpringAir 13.5"
+>   Hybrid Euro-Top Cushion Firm Quilted Queen Mattress" (our id g9);
+>   proposed mapping: Copper Hybrid Cushion Firm Eurotop
+>   (springair.com/products/copper-hybrid-cushion-firm-eurotop).
+>
+> Questions requiring written resolution:
+> 1. Exact build/SKU equivalence: your published Copper Hybrid Cushion
+>    Firm Eurotop lists a 16.5‑inch height; our unit is captured at 13.5
+>    inches with a Quilted top. Is this the same model (different spec
+>    revision, regional build, or a different model)? Which published
+>    claims apply to SKU 2037053 as built?
+> 2. The copper cover and copper‑infused foam bill of materials for this
+>    SKU.
+> 3. Approved cooling wording for retail use — including whether the
+>    published "Copper transfers heat up to 8× faster than conventional
+>    memory foam" comparative may be used at retail, and with what basis
+>    statement.
+> 4. NatuVerex/Natuverex: the correct spelling, trademark status, and
+>    whether any patent representation is approved for retail use (your
+>    collection page states "Patented Natuverex™").
+> 5. Antimicrobial support: is the published ISO 22196 result
+>    finished‑product or material‑level? Does the copper treatment have an
+>    EPA registration or treated‑article status, if applicable — and what
+>    freshness/cleanliness claims, if any, are approved for retail use?
+> 6. Approved retailer claim language with all required qualifiers,
+>    document revision/effective date, and written confirmation that the
+>    documentation applies to SKU 2037053.
+>
+> Until this documentation arrives, unsupported claim elements remain
+> omitted from our kiosk.
