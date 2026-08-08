@@ -2098,8 +2098,12 @@ deploy).** With the rewrite path gated on an authoring workflow and an
 unfilled legal‑reviewer role, the owner authorized a fail‑closed interim
 **withdrawal by omission** of ruled and evidence‑contradicted copy — a
 five‑question interactive review plus three in‑flight rulings during
-verification. Scope (84 strings, EN and ES together, empty‑string
-mechanism, no replacement copy authored): the 24 Block A strings; g4's
+verification, and completed per Codex's independent review of the first
+implementation (2026‑08‑08). Scope — **94 withdrawn display entries: 90
+source/workbook fields blanked (EN and ES together) and four Cool Gel /
+Gel Fresco badge entries removed from four composite badge cells**
+(empty‑string mechanism, no replacement copy authored): the 24 Block A
+strings; g4's
 `highlight` (executing §14.2.1 — g4's `reason_default` is kept, carrying
 the ruled unquantified substrate); five fallback‑audit catches so no
 dropped‑element copy surfaces into vacated render slots (g5/g2/s7
@@ -2108,13 +2112,24 @@ hybrid" archetype); all s6/s7 spec‑contradicted gel display copy under
 §B.4 C4 (Cool Gel tags, s6 highlight/reason_default/archetype/
 topPickReason/differentiator 2, s7 reason_default — the last two found
 and owner‑approved during in‑browser verification; s5's spec‑supported
-Cool Gel is kept); and the five failed‑closed "25 % thicker center
-coils" carriers (b5 highlight, b5/b6/s3/s10 reason_default — §8.4
-executed early, fail‑closed, on B/C rows). One shared‑tooling change,
-owner‑approved: `tools/workbook_schema.py` makes the five content
-columns optional with a withdrawn‑copy note. Verified programmatically
-(84 strings absent from the generated JSON and CSVs; nine sentinel keeps
-intact; nine untouched models byte‑identical) and in‑browser across
+Cool Gel is kept); and the failed‑closed "25 % thicker center
+coils" carriers — b5 highlight and b5/b6/s3/s10 reason_default, **plus
+the six carriers Codex's review found surviving: s4 reason_default and
+s8 highlight and reason_default, each EN and ES** (§8.4 executed early,
+fail‑closed, on B/C rows; deliberately retained: s1's "25 % more
+support" material and unquantified "thicker" wording such as b7's).
+Shared‑tooling changes, owner‑approved: `tools/workbook_schema.py`
+makes the five content columns optional with a withdrawn‑copy note;
+`tools/validation.py`'s required‑cell self‑test re‑anchored to the
+still‑required `features` column; `tools/create_template.py`'s
+instructions corrected to say the content fields should normally be
+filled and may be blank only for an approved copy withdrawal. Verified
+programmatically (the exact quantitative formulations absent from the
+source JSON, the workbook, both CSVs, and the generated JSON; a
+semantic base‑vs‑head workbook comparison confirming 90 + 4 = 94
+withdrawn entries across 19 affected rows with the other 7 rows
+value‑identical and no formula, merge, or unrelated‑sheet changes;
+nine sentinel keeps intact) and in‑browser across
 results, drawer, compare, handoff, and Spanish. Scoring inputs,
 `features`, quiz, and application code untouched; the engine‑coupled
 `cooling` feature on s7 still drives one hedged generated line (Phase‑3
