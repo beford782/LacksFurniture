@@ -786,6 +786,15 @@
         --dfm-settle: 0.01ms;
         --dfm-place: 0.01ms;
       }
+      /* Defensive: the dfm-motion class is never ADDED under reduced motion,
+         but if the preference flips after load the DFM feedback must still
+         go quiet — the settle uses a literal 200 ms, so it is disabled here
+         explicitly rather than relying on the token collapse. */
+      body.dfm-motion .noct-quiz-option {
+        transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+      }
+      body.dfm-motion .noct-quiz-option:active { transform: none; }
+      body.dfm-motion .noct-quiz-option.selected { animation: none; }
     }
     /* Card Table selected-card feedback: a restrained press-in on tap and a
        small settle when the selection lands. Transform-only; the existing
@@ -827,8 +836,10 @@
       background: var(--landing-paper, #FBF7EF);
       border-radius: var(--radius);
       overflow: hidden;
-      transition: transform var(--dfm-place) var(--dfm-e-place),
-        opacity var(--dfm-settle) var(--dfm-e-settle);
+      /* the transition list is set inline per clone: the travel carries the
+         per-clone stagger delay, while the opacity exit is UNDELAYED and
+         short (180 ms) so every fade completes before the 700 ms teardown —
+         no clone may vanish on its final frame */
     }
 
     /* Slider */
@@ -14555,7 +14566,15 @@
     // falls through to the legacy staged reveal unchanged.
     window.dfmStartGather = function() {
       if (!dfmMotionActive()) return false;
-      if (dfmReducedMotion()) return false; // zero animations: legacy path
+      if (dfmReducedMotion()) {
+        // Reduced motion OWNS the transition when the preview is enabled:
+        // zero animations, zero clones, no legacy overlay, no 1500 ms wait —
+        // a direct synchronous advance to the same Sleep Brief destination
+        // (showProfileScreen moves focus exactly as it does today). Nothing
+        // is async here, so the in-flight flag is never needed.
+        window.showProfileScreen();
+        return true;
+      }
       var list = document.getElementById('reviewList');
       var layer = document.getElementById('dfmGatherLayer');
       if (!list || !layer || typeof visibleQuestions !== 'function') return false;
@@ -14591,7 +14610,13 @@
         clone.style.left = rect.left + 'px';
         clone.style.top = rect.top + 'px';
         clone.style.width = rect.width + 'px';
-        clone.style.transitionDelay = (i * 40) + 'ms';
+        // per-property timing: travel is staggered (i * 40 ms) and done by
+        // ~560 ms; the opacity exit is undelayed at 180 ms, so setting
+        // opacity at the 500 ms step completes every fade by 680 ms —
+        // inside the 700 ms teardown, with no delay left to strand it
+        clone.style.transition =
+          'transform var(--dfm-place) var(--dfm-e-place) ' + (i * 40) + 'ms, ' +
+          'opacity 180ms var(--dfm-e-settle) 0ms';
         layer.appendChild(clone);
         var dx = cx - (rect.left + rect.width / 2);
         var dy = cy - (rect.top + rect.height / 2) + i * 6;
@@ -14629,7 +14654,12 @@
       layer.addEventListener('click', skip);
       layer.addEventListener('touchend', skip);
     })();
-    if (dfmMotionActive()) document.body.classList.add('dfm-motion');
+    // The styling hook is withheld entirely when reduced motion is already
+    // active at load — the Card Table feedback never exists for those users.
+    // (A defensive CSS override also covers a preference change after load.)
+    if (dfmMotionActive() && !dfmReducedMotion()) {
+      document.body.classList.add('dfm-motion');
+    }
     // ===== DFM MOTION SPIKE (end) =====
 
     // Staged review→profile calculation. The copy describes work the app

@@ -81,6 +81,28 @@ ok('wipe registry covers the gather layer',
 ok('wipe clears gather clones', /dfmLayer\.innerHTML = ''/.test(html));
 ok('reveal branch is guarded and falls through',
   /if \(window\.dfmStartGather && window\.dfmStartGather\(\)\) return;/.test(html));
+// Codex finding 1: reduced motion must OWN the transition (direct advance),
+// never bounce enabled users into the legacy 1500 ms overlay
+ok('reduced-motion fast path advances directly (source)',
+  /dfmReducedMotion\(\)\)\s*\{[\s\S]{0,600}?window\.showProfileScreen\(\);\s*return true;/.test(spikeSrc));
+// Codex finding 2: the styling hook is withheld under reduced motion, and a
+// defensive CSS override kills the literal-duration settle if the preference
+// changes after load
+ok('dfm-motion body class withheld under reduced motion (source)',
+  /dfmMotionActive\(\) && !dfmReducedMotion\(\)/.test(spikeSrc));
+const reducedCss = (html.match(/@media \(prefers-reduced-motion: reduce\) \{[\s\S]*?\n    \}/g) || []).join('\n');
+ok('defensive CSS override: selected-card animation disabled under reduced motion',
+  /body\.dfm-motion \.noct-quiz-option\.selected \{ animation: none; \}/.test(reducedCss));
+ok('defensive CSS override: active-press transform disabled under reduced motion',
+  /body\.dfm-motion \.noct-quiz-option:active \{ transform: none; \}/.test(reducedCss));
+// Codex finding 3: the opacity exit must be short and UNDELAYED so every
+// fade completes inside the 700 ms teardown
+ok('clone opacity exit is 180 ms and undelayed (source)',
+  /opacity 180ms var\(--dfm-e-settle\) 0ms/.test(spikeSrc));
+ok('fade begins at the 500 ms step and teardown at 700 ms (source)',
+  /\}, 500\);/.test(spikeSrc) && /dfmFinishGather\(gen\); \}, 700\);/.test(spikeSrc));
+ok('clone CSS rule no longer carries a shared delayed transition',
+  !/\.dfm-clone \{[\s\S]*?transition: transform var\(--dfm-place\)[\s\S]*?opacity var\(--dfm-settle\)/.test(html));
 
 // --------------------------------------------------------------- harness
 function makeClock() {
@@ -264,11 +286,19 @@ section('enabled path: gather owns the transition, then the existing Sleep Brief
   ok('edit buttons stripped from clones',
     clones.every((c) => !c.querySelector('.noct-review-edit')));
   ok('clone styling class applied', clones.every((c) => c.className.includes('dfm-clone')));
+  ok('per-clone inline transitions: staggered travel, undelayed 180 ms fade',
+    clones.every((c, i) =>
+      (c.style.transition || '').includes('transform var(--dfm-place) var(--dfm-e-place) ' + (i * 40) + 'ms') &&
+      (c.style.transition || '').includes('opacity 180ms var(--dfm-e-settle) 0ms')));
   env.clock.advance(0);
   ok('travel transforms applied after paint frames',
     clones.every((c) => /translate\(.+\) scale\(0\.62\) rotate\(/.test(c.style.transform || '')));
-  env.clock.advance(699);
-  ok('no advance before 700 ms', env.calls.showProfile.length === 0);
+  env.clock.advance(500);
+  ok('opacity exit begins at 500 ms on every clone (fade completes by 680 ms)',
+    clones.every((c) => c.style.opacity === '0'));
+  env.clock.advance(199);
+  ok('no advance before 700 ms; clones still present through their fade',
+    env.calls.showProfile.length === 0 && env.els.dfmGatherLayer.children.length === 3);
   env.clock.advance(1);
   ok('advance into existing Sleep Brief at 700 ms', env.calls.showProfile.length === 1);
   ok('layer deactivated and emptied',
@@ -309,16 +339,38 @@ section('interruption, spam, and cleanup');
 }
 
 // -------------------------------------------------- reduced motion + intl
-section('reduced motion and language safety');
+section('reduced motion: enabled preview OWNS the transition — immediate, zero-animation');
 {
   const env = makeEnv({ hostname: 'localhost', search: '?motion=1', reduced: true });
+  ok('reduced motion: dfm-motion body class is never added',
+    !env.body.classList.contains('dfm-motion'));
   env.api.startProfileReveal();
-  ok('reduced motion: gather declines, legacy path runs', env.calls.overlayOpen === 1);
-  ok('reduced motion: zero clones/animations created',
+  ok('reduced motion: legacy staged overlay is NOT opened', env.calls.overlayOpen === 0);
+  ok('reduced motion: advance happens IMMEDIATELY at time zero',
+    env.calls.showProfile.length === 1 && env.calls.showProfile[0] === 0);
+  ok('reduced motion: zero clones, layer never activated',
     env.els.dfmGatherLayer.children.length === 0 &&
     !env.els.dfmGatherLayer.classList.contains('is-active'));
+  ok('reduced motion: no in-flight flag left behind',
+    env.sandbox.window._profileRevealInFlight !== true);
+  env.clock.advance(3000);
+  ok('reduced motion: no delayed second advance (single destination arrival)',
+    env.calls.showProfile.length === 1);
+}
+{
+  // flag OFF + reduced motion: existing production behavior, untouched
+  const env = makeEnv({ hostname: 'beford782.github.io', search: '', reduced: true });
+  ok('disabled + reduced: body class absent', !env.body.classList.contains('dfm-motion'));
+  env.api.startProfileReveal();
+  ok('disabled + reduced: legacy overlay path runs unchanged', env.calls.overlayOpen === 1);
   env.clock.advance(1500);
-  ok('reduced motion: reaches Sleep Brief via legacy timing', env.calls.showProfile.length === 1);
+  ok('disabled + reduced: legacy 1500 ms arrival preserved',
+    env.calls.showProfile.length === 1 && env.calls.showProfile[0] === 1500);
+}
+{
+  const env = makeEnv({ hostname: 'localhost', search: '?motion=1', reduced: false });
+  ok('non-reduced enabled preview DOES add the body class',
+    env.body.classList.contains('dfm-motion'));
 }
 {
   const env = makeEnv({ hostname: 'localhost', search: '?motion=1', lang: 'es' });
