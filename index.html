@@ -15036,7 +15036,14 @@
       var chip = es
         ? 'Demostración de construcción — estructura general de un colchón, no las especificaciones de este modelo.'
         : 'Construction demonstration — a general mattress build, not this model’s specification.';
-      return '<div class="dfm-cons" id="dfmConstructionPanel">' +
+      // The section heading reuses the chip's own opening words — no
+      // additional wording is introduced. The section is a SIBLING of the
+      // model-specific differentiators, never their child: the generic
+      // demonstration must not sit under "What makes this one different".
+      var heading = es ? 'Demostración de construcción' : 'Construction demonstration';
+      return '<div class="dfm-cons-section" id="dfmConstructionSection">' +
+        '<div class="drawer-section-label">' + heading + '</div>' +
+        '<div class="dfm-cons" id="dfmConstructionPanel">' +
         '<button type="button" class="dfm-cons-btn" id="dfmConsToggle" aria-pressed="false">' + openLabel + '</button>' +
         '<div class="dfm-cons-stage" aria-hidden="true">' +
           '<div class="dfm-cons-layer dfm-cons-layer--a"></div>' +
@@ -15048,14 +15055,20 @@
           labels.map(function(l) { return '<li>' + l + '</li>'; }).join('') +
         '</ol>' +
         '<p class="dfm-cons-chip">' + chip + '</p>' +
+        '</div>' +
         '</div>';
     };
     window.dfmConstructionRender = function() {
       var host = document.getElementById('drawerDifferentiators');
       if (!host) return false;
+      // Dedupe FIRST, before the gate: repeated renders, model changes and
+      // language changes must never stack panels — and a rollback flip
+      // mid-session clears a leftover panel on the next drawer render.
+      var existing = document.getElementById('dfmConstructionSection');
+      if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
       var markup = window.dfmConstructionMarkup();
       if (!markup) return false; // gate closed: legacy DOM byte-identical
-      host.insertAdjacentHTML('beforeend', markup);
+      host.insertAdjacentHTML('afterend', markup);
       var panel = document.getElementById('dfmConstructionPanel');
       var btn = document.getElementById('dfmConsToggle');
       if (!panel || !btn) return false;
@@ -19126,7 +19139,7 @@
       'profileSecondary', 'profileCta',
       'resultsHeadline', 'tierTabs', 'tierDescriptor', 'topPickContainer',
       'supportingRow', 'resultsTrialFocus',
-      'drawerName', 'drawerDifferentiators', 'drawerTryPrompts', 'drawerPromotionDetail',
+      'drawerName', 'drawerDifferentiators', 'dfmConstructionSection', 'drawerTryPrompts', 'drawerPromotionDetail',
       'compareCols', 'compareTraySlots',
       'hf2PicksList', 'hf2AccessoriesList', 'hf2BriefWho', 'hf2BriefContext',
       'hf2BriefProfile', 'hf2SleepSystemSection', 'hf2Priorities',

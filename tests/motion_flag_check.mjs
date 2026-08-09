@@ -892,8 +892,10 @@ section('base articulation: reduced motion, wipes, and missing elements');
 }
 
 // ================================================================ slice 4
-// Construction reveal — on-demand generic textured strata in the drawer.
-// Self-contained mini-harness, same pattern as slices 2 and 3.
+// Construction reveal — on-demand generic textured strata in the drawer,
+// rendered as a SEPARATE SIBLING SECTION after the model-specific
+// differentiators (the generic demonstration must never sit under "What
+// makes this one different"). Self-contained mini-harness.
 section('construction reveal: static guarantees');
 ok('markup and render live inside the spike fences',
   /window\.dfmConstructionMarkup = function/.test(spikeSrc) &&
@@ -903,6 +905,16 @@ ok('markup is gate-guarded (declines to empty when motion is inactive)',
 ok('drawer hook is guarded and single-sited',
   html.includes('if (window.dfmConstructionRender) window.dfmConstructionRender();') &&
   (html.match(/dfmConstructionRender/g) || []).length === 3);
+ok('the panel is inserted as a SIBLING after the differentiators, never inside them',
+  spikeSrc.includes("host.insertAdjacentHTML('afterend', markup);") &&
+  !spikeSrc.includes("insertAdjacentHTML('beforeend'"));
+ok('render dedupes BEFORE the gate — no duplicates, and rollback clears leftovers',
+  /var existing = document\.getElementById\('dfmConstructionSection'\);\s*if \(existing && existing\.parentNode\) existing\.parentNode\.removeChild\(existing\);\s*var markup = window\.dfmConstructionMarkup\(\);/.test(cssNorm));
+ok('the section carries a visible heading reusing the chip wording only',
+  spikeSrc.includes("es ? 'Demostración de construcción' : 'Construction demonstration'") &&
+  spikeSrc.includes('drawer-section-label'));
+ok('the section is in the authoritative session-wipe inventory',
+  /var SESSION_CONTENT_IDS = \[[\s\S]*?'dfmConstructionSection'[\s\S]*?\];/.test(cssNorm));
 ok('the scene has no JS animation machinery (no frames, no timers in its code)',
   (() => {
     const start = spikeSrc.indexOf('window.dfmConstructionMarkup');
@@ -923,7 +935,7 @@ ok('lab button labels preserved in both languages',
     .every((l) => spikeSrc.includes("'" + l + "'")));
 ok('new strings carry no quantities and no condition/performance language',
   ['Comfort layer', 'Transition layer', 'Support core', 'Base layer',
-   'Separate the layers', 'Reassemble the layers',
+   'Separate the layers', 'Reassemble the layers', 'Construction demonstration',
    'Construction demonstration — a general mattress build, not this model’s specification.']
     .every((t) => !/\d/.test(t) && !/coil count|inch|cm|percent|%|degree|patent|antimicrobial|snor|apnea|reflux|pain|circulat/i.test(t)));
 ok('the stack is fully generic — markup takes no mattress input and reads no product data',
@@ -949,21 +961,30 @@ ok('the stage reserves its exploded height (no layout shift) and is decorative',
 ok('the toggle is a 44 px touch target with touch-action: manipulation',
   /\.dfm-cons-btn \{\s*touch-action: manipulation;\s*min-height: 44px;/.test(cssNorm));
 
-// mini-harness: the host stub implements insertAdjacentHTML by registering
-// panel/button stubs when the markup carries their ids — the markup STRING
-// is asserted separately, the executed checks drive the real wiring
+// mini-harness: the drawer parent holds the differentiators host as a
+// child; insertAdjacentHTML('afterend') registers the section as a SIBLING
+// in the parent. The markup STRING is asserted separately; the executed
+// checks drive the real wiring and the real dedupe path.
 function makeConsEnv({ hostname, search, reduced = false, lang = 'en', withHost = true, flagOff = false }) {
   const clock = makeClock();
   const els = {};
   els.dfmGatherLayer = makeEl('dfmGatherLayer');
   const calls = { frames: 0, timers: 0, inserted: '' };
   if (withHost) {
+    const parent = makeEl('drawerScrollParent');
     const host = makeEl('drawerDifferentiators');
+    parent.appendChild(host);
     host.insertAdjacentHTML = (pos, htmlStr) => {
       calls.inserted = htmlStr;
+      if (pos !== 'afterend') throw new Error('expected sibling insertion, got ' + pos);
+      if (htmlStr.includes('id="dfmConstructionSection"')) {
+        els.dfmConstructionSection = makeEl('dfmConstructionSection');
+        els.dfmConstructionSection._markup = htmlStr;
+        parent.appendChild(els.dfmConstructionSection);
+      }
       if (htmlStr.includes('id="dfmConstructionPanel"')) {
         els.dfmConstructionPanel = makeEl('dfmConstructionPanel');
-        host.appendChild(els.dfmConstructionPanel);
+        els.dfmConstructionSection.appendChild(els.dfmConstructionPanel);
       }
       if (htmlStr.includes('id="dfmConsToggle"')) {
         els.dfmConsToggle = makeEl('dfmConsToggle');
@@ -972,11 +993,21 @@ function makeConsEnv({ hostname, search, reduced = false, lang = 'en', withHost 
       }
     };
     els.drawerDifferentiators = host;
+    els.drawerScrollParent = parent;
   }
   const bodyEl = makeEl('body');
   const pref = { reduced };
   const win = { location: { hostname, search }, matchMedia: () => ({ matches: pref.reduced }), innerWidth: 1024, innerHeight: 768 };
-  const doc = { body: bodyEl, getElementById: (id) => els[id] || null, createElementNS: (ns, tag) => makeEl(tag) };
+  const doc = {
+    body: bodyEl,
+    getElementById: (id) => {
+      // a removed section must stop resolving, like a real DOM
+      if (id === 'dfmConstructionSection' && els.dfmConstructionSection &&
+          !els.dfmConstructionSection.parentNode) return null;
+      return els[id] || null;
+    },
+    createElementNS: (ns, tag) => makeEl(tag)
+  };
   const src = (flagOff ? spikeSrcFlagOff : spikeSrc) +
     '\nreturn { consMarkup: window.dfmConstructionMarkup, consRender: window.dfmConstructionRender };';
   const fn = new Function('window', 'document', 'URLSearchParams', 'sessionTimeout',
@@ -987,30 +1018,63 @@ function makeConsEnv({ hostname, search, reduced = false, lang = 'en', withHost 
     (id) => clock.clearTimeout(id), lang);
   return { clock, els, calls, api, pref };
 }
+function consSections(env) {
+  return env.els.drawerScrollParent.children.filter((c) => c.id === 'dfmConstructionSection');
+}
 
-section('construction reveal: gate behavior');
+section('construction reveal: gate behavior and honest placement');
 {
   const active = makeConsEnv({ hostname: 'localhost', search: '?motion=1' });
   const m = active.api.consMarkup();
-  ok('active markup renders the panel, chip at rest, and EN labels',
-    m.includes('dfmConstructionPanel') && m.includes('dfm-cons-chip') &&
-    m.includes('Comfort layer') && m.includes('Separate the layers'));
+  ok('active markup renders the section, heading, chip at rest, and EN labels',
+    m.includes('dfmConstructionSection') && m.includes('Construction demonstration</div>') &&
+    m.includes('dfm-cons-chip') && m.includes('Comfort layer') && m.includes('Separate the layers'));
+  ok('render places the section as a sibling AFTER the differentiators, not inside',
+    active.api.consRender() === true &&
+    active.els.dfmConstructionSection.parentNode === active.els.drawerScrollParent &&
+    active.els.drawerDifferentiators.children.length === 0);
+  ok('the model-specific differentiators container stays byte-correct',
+    active.els.drawerDifferentiators.children.length === 0 &&
+    (active.els.drawerDifferentiators.innerHTML || '') === '');
   const es = makeConsEnv({ hostname: 'localhost', search: '?motion=1', lang: 'es' });
-  ok('Spanish session renders the lab ES strings',
+  ok('Spanish session renders the ES heading and lab ES strings',
+    es.api.consMarkup().includes('Demostración de construcción</div>') &&
     es.api.consMarkup().includes('Capa de confort') &&
-    es.api.consMarkup().includes('Separar las capas') &&
-    es.api.consMarkup().includes('Demostración de construcción'));
+    es.api.consMarkup().includes('Separar las capas'));
   const globalHost = makeConsEnv({ hostname: 'beford782.github.io', search: '' });
   ok('committed enabled state: public Pages hostname renders without ?motion=1',
-    globalHost.api.consMarkup().includes('dfmConstructionPanel'));
+    globalHost.api.consMarkup().includes('dfmConstructionSection'));
   const rollback = makeConsEnv({ hostname: 'beford782.github.io', search: '?motion=1', flagOff: true });
-  ok('ROLLBACK: markup declines and render leaves the drawer untouched',
+  ok('ROLLBACK: no section is added and the drawer stays legacy',
     rollback.api.consMarkup() === '' && rollback.api.consRender() === false &&
-    rollback.calls.inserted === '' &&
-    rollback.els.drawerDifferentiators.children.length === 0);
+    rollback.calls.inserted === '' && consSections(rollback).length === 0);
   const rollbackLocal = makeConsEnv({ hostname: 'localhost', search: '?motion=1', flagOff: true });
   ok('ROLLBACK: localhost + ?motion=1 still previews for owner review',
     rollbackLocal.api.consRender() === true);
+}
+
+section('construction reveal: dedupe across rerenders, models, and languages');
+{
+  const env = makeConsEnv({ hostname: 'localhost', search: '?motion=1' });
+  env.api.consRender();
+  env.api.consRender(); // model change re-render
+  env.api.consRender(); // another re-render
+  ok('exactly one section exists after repeated rerenders',
+    consSections(env).length === 1);
+  const es = makeConsEnv({ hostname: 'localhost', search: '?motion=1', lang: 'es' });
+  es.api.consRender();
+  es.api.consRender(); // language-change re-render path
+  ok('exactly one section exists after a language rerender, carrying ES markup',
+    consSections(es).length === 1 &&
+    es.els.dfmConstructionSection._markup.includes('Demostración de construcción'));
+  // wipe simulation: the section is emptied by the SESSION_CONTENT_IDS wipe
+  // (membership statically asserted above); the next drawer render dedupes
+  // the emptied shell and replaces it fresh
+  env.els.dfmConstructionSection.innerHTML = '';
+  env.api.consRender();
+  ok('after a wipe, the next render replaces the shell with exactly one fresh section',
+    consSections(env).length === 1 &&
+    !env.els.dfmConstructionPanel.classList.contains('is-open'));
 }
 
 section('construction reveal: on-demand toggle — zero animation machinery');
@@ -1040,12 +1104,9 @@ section('construction reveal: on-demand toggle — zero animation machinery');
   env.clock.advance(10000);
   ok('finite by construction: ZERO frames and ZERO timers ever scheduled',
     env.calls.frames === 0 && env.calls.timers === 0);
-  ok('re-render replaces the panel collapsed (fresh per drawer view)',
-    env.api.consRender() === true &&
-    !env.els.dfmConstructionPanel.classList.contains('is-open'));
 }
 
-section('construction reveal: reduced motion, rollback, missing elements');
+section('construction reveal: reduced motion, missing elements');
 {
   const reduced = makeConsEnv({ hostname: 'localhost', search: '?motion=1', reduced: true });
   ok('reduced render presents the COMPLETE static state immediately',
