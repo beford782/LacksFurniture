@@ -5,9 +5,12 @@
 // the real startProfileReveal from index.html and EXECUTES them against a DOM
 // stub, a controllable fake clock, and a fake location — proving BOTH paths:
 //
-//   disabled — the gate fails closed off-localhost, the legacy staged reveal
-//   runs byte-for-byte with identical 1500 ms timing, and zero motion state
-//   (layer class, clones, transforms) is ever created;
+//   disabled (ROLLBACK state, injected into the executed source now that the
+//   committed default is the owner-authorized enabled state) — the gate fails
+//   closed off-localhost, the legacy staged reveal runs byte-for-byte with
+//   identical 1500 ms timing, and zero motion state (layer class, clones,
+//   transforms) is ever created — proving the documented rollback
+//   (enabled: true -> false) restores legacy behavior exactly;
 //
 //   enabled — the gather takes ownership, clones the customer's ACTUAL review
 //   rows (preferring sleep_position/temperature/firmness), advances into the
@@ -62,9 +65,22 @@ const revealSrc = extractFunction('window.startProfileReveal = function()');
 ok('extraction: spike block found', spikeSrc.length > 500);
 ok('extraction: startProfileReveal found', !!revealSrc && revealSrc.includes('_profileRevealInFlight'));
 
+// The committed default is the owner-authorized ACTIVATION (2026-08-09,
+// preview scope). The rollback state is injected into the executed source so
+// the disabled path and its fail-closed gate stay fully covered.
+const flagLiterals = [...spikeSrc.matchAll(/enabled:\s*(true|false)\s*,/g)];
+const spikeSrcFlagOff = spikeSrc.replace(/enabled:\s*true\s*,/, 'enabled: false,');
+
 // ------------------------------------------------------- static guarantees
 section('static guarantees');
-ok('flag literal defaults to false', /enabled:\s*false/.test(spikeSrc));
+ok('flag literal is the authorized enabled state (owner activation, preview scope)',
+  /enabled:\s*true\s*,/.test(spikeSrc));
+ok('exactly one flag literal — a single production switch',
+  flagLiterals.length === 1);
+ok('rollback seam is real: injecting enabled: false changes the executed source',
+  spikeSrcFlagOff !== spikeSrc && /enabled:\s*false\s*,/.test(spikeSrcFlagOff));
+ok('fail-closed host gate structure intact for rollback',
+  /if \(!dfmLocalHost\(\)\) return false;/.test(spikeSrc));
 ok('no raw setTimeout in spike (session-scoped only)',
   !/[^n]setTimeout\s*\(/.test(spikeSrc.replace(/sessionTimeout\s*\(/g, 'SST(')));
 ok('no raw requestAnimationFrame in spike',
@@ -208,7 +224,7 @@ function makeEl(id) {
   return el;
 }
 
-function makeEnv({ hostname, search, reduced = false, lang = 'en' }) {
+function makeEnv({ hostname, search, reduced = false, lang = 'en', flagOff = false }) {
   const clock = makeClock();
   const els = {};
   for (const id of ['dfmGatherLayer', 'reviewList', 'reviewScreen',
@@ -257,7 +273,7 @@ function makeEnv({ hostname, search, reduced = false, lang = 'en' }) {
     closeConsultationReveal: () => { calls.overlayClose++; }
   };
   sandbox.window.dfmStartGather = undefined;
-  const src = spikeSrc + '\n' + revealSrc + '\nreturn { dfmMotionActive, dfmStartGather: window.dfmStartGather, dfmFinishGather, startProfileReveal: window.startProfileReveal };';
+  const src = (flagOff ? spikeSrcFlagOff : spikeSrc) + '\n' + revealSrc + '\nreturn { dfmMotionActive, dfmStartGather: window.dfmStartGather, dfmFinishGather, startProfileReveal: window.startProfileReveal };';
   const fn = new Function('window', 'document', 'URLSearchParams', 'sessionTimeout',
     'sessionFrame', 'clearTimeout', 'currentLang', 'visibleQuestions',
     'getConsultationRevealElements', 'openConsultationReveal', 'closeConsultationReveal', src);
@@ -268,24 +284,38 @@ function makeEnv({ hostname, search, reduced = false, lang = 'en' }) {
 }
 
 // --------------------------------------------------------------- gate tests
-section('feature gate: fails closed everywhere except explicit local preview');
+section('feature gate: GLOBAL under the authorized activation (every host, no parameter)');
 {
   const prod = makeEnv({ hostname: 'beford782.github.io', search: '?motion=1' });
-  ok('production host + ?motion=1 stays DISABLED', prod.api.dfmMotionActive() === false);
+  ok('production host + ?motion=1: ACTIVE (global activation)', prod.api.dfmMotionActive() === true);
   const prod2 = makeEnv({ hostname: 'beford782.github.io', search: '' });
-  ok('production host default DISABLED', prod2.api.dfmMotionActive() === false);
+  ok('production host default: ACTIVE — the flag is global, no parameter needed', prod2.api.dfmMotionActive() === true);
   const local = makeEnv({ hostname: 'localhost', search: '?motion=1' });
   ok('localhost + ?motion=1 ENABLED for owner review', local.api.dfmMotionActive() === true);
   const localOff = makeEnv({ hostname: 'localhost', search: '' });
-  ok('localhost without the parameter stays DISABLED', localOff.api.dfmMotionActive() === false);
+  ok('localhost default: ACTIVE under the global flag', localOff.api.dfmMotionActive() === true);
   const lan = makeEnv({ hostname: '192.168.1.20', search: '?motion=1' });
-  ok('LAN host + ?motion=1 stays DISABLED (fail closed)', lan.api.dfmMotionActive() === false);
+  ok('LAN host: ACTIVE under the global flag', lan.api.dfmMotionActive() === true);
+}
+
+section('feature gate under ROLLBACK: fails closed everywhere except explicit local preview');
+{
+  const prod = makeEnv({ hostname: 'beford782.github.io', search: '?motion=1', flagOff: true });
+  ok('ROLLBACK: production host + ?motion=1 stays DISABLED', prod.api.dfmMotionActive() === false);
+  const prod2 = makeEnv({ hostname: 'beford782.github.io', search: '', flagOff: true });
+  ok('ROLLBACK: production host default DISABLED', prod2.api.dfmMotionActive() === false);
+  const local = makeEnv({ hostname: 'localhost', search: '?motion=1', flagOff: true });
+  ok('ROLLBACK: localhost + ?motion=1 ENABLED for owner review', local.api.dfmMotionActive() === true);
+  const localOff = makeEnv({ hostname: 'localhost', search: '', flagOff: true });
+  ok('ROLLBACK: localhost without the parameter stays DISABLED', localOff.api.dfmMotionActive() === false);
+  const lan = makeEnv({ hostname: '192.168.1.20', search: '?motion=1', flagOff: true });
+  ok('ROLLBACK: LAN host + ?motion=1 stays DISABLED (fail closed)', lan.api.dfmMotionActive() === false);
 }
 
 // ------------------------------------------------------------ disabled path
-section('disabled path: legacy staged reveal, unchanged behavior and timing');
+section('disabled path (ROLLBACK state): legacy staged reveal, unchanged behavior and timing');
 {
-  const env = makeEnv({ hostname: 'beford782.github.io', search: '?motion=1' });
+  const env = makeEnv({ hostname: 'beford782.github.io', search: '?motion=1', flagOff: true });
   env.api.startProfileReveal();
   ok('legacy overlay opened', env.calls.overlayOpen === 1);
   ok('in-flight flag set', env.sandbox.window._profileRevealInFlight === true);
@@ -391,8 +421,8 @@ section('reduced motion: enabled preview OWNS the transition — immediate, zero
     env.calls.showProfile.length === 1);
 }
 {
-  // flag OFF + reduced motion: existing production behavior, untouched
-  const env = makeEnv({ hostname: 'beford782.github.io', search: '', reduced: true });
+  // flag OFF (rollback state) + reduced motion: legacy behavior, untouched
+  const env = makeEnv({ hostname: 'beford782.github.io', search: '', reduced: true, flagOff: true });
   ok('disabled + reduced: body class absent', !env.body.classList.contains('dfm-motion'));
   env.api.startProfileReveal();
   ok('disabled + reduced: legacy overlay path runs unchanged', env.calls.overlayOpen === 1);
