@@ -570,6 +570,17 @@ const MUTATIONS = [
   ["compare alignment: the Spanish key-feature label removed",
     "_esCmp ? 'Característica clave' : 'Key feature'", "'Key feature'", COMPARE],
 
+  // --- comparison table associations (a11y correction) ---------------------
+  ["compare alignment a11y: the table role is removed",
+    "role=\"table\" aria-labelledby=\"compareModalTitle\"", "", COMPARE],
+  ["compare alignment a11y: mattress column headers demoted to plain divs",
+    "'<div class=\"cmp-head\" role=\"columnheader\">'", "'<div class=\"cmp-head\">'", COMPARE],
+  ["compare alignment a11y: the merged-row header is demoted",
+    "cmp-row--same\" role=\"row\" data-cmp=\"' + r.key + '\">'\n                  + '<div class=\"cmp-label\" role=\"rowheader\">'",
+    "cmp-row--same\" role=\"row\" data-cmp=\"' + r.key + '\">'\n                  + '<div class=\"cmp-label\">'", COMPARE],
+  ["compare alignment a11y: the merged cell loses its column span",
+    "role=\"cell\" aria-colspan=\"2\"", "role=\"cell\"", COMPARE],
+
 ];
 
 // ---------------------------------------------------------------------------

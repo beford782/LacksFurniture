@@ -7962,10 +7962,11 @@
       line-height: 1.35;
     }
     .cmp-val { color: var(--cream); font-size: 0.75rem; line-height: 1.45; }
-    /* genuine differences: two emphasized cells plus a text glyph on the
-       label — the glyph and the split structure carry the cue, not color */
+    /* genuine differences: two emphasized cells; the aria-hidden glyph is
+       decorative — the TABLE STRUCTURE (separate cells under each mattress
+       column header) and the real-text same-tag are the accessible cues */
     .cmp-row--diff .cmp-val { font-weight: 700; }
-    .cmp-row--diff .cmp-label::after { content: ' ≠'; color: var(--gold); font-weight: 800; }
+    .cmp-diff-glyph { color: var(--gold); font-weight: 800; }
     /* identical values: one quiet merged cell spanning both mattress
        columns, tagged in text */
     .cmp-val--same {
@@ -19638,7 +19639,7 @@
         var d0 = mattressDifferentiators(m)[0] || {};
         var reaction = (window._mattressReactions || {})[m.id];
         return {
-          head: '<div class="cmp-head">'
+          head: '<div class="cmp-head" role="columnheader">'
             + (m.imageUrl ? '<div class="cmp-head-img"><img src="' + m.imageUrl + '" alt="' + escapeHtml(m.name) + '"></div>' : '')
             + '<div class="cmp-head-name">' + escapeHtml(m.name) + ' <span class="price-tier">' + priceTierSymbol(data.tier) + '</span></div>'
             + '<div class="cmp-head-brand">' + escapeHtml(m.brand + (m.subBrand ? ' · ' + m.subBrand : '')) + '</div>'
@@ -19665,21 +19666,25 @@
           { key: 'benefit', label: _esCmp ? 'En qué ayuda' : 'Why it helps', a: a.benefit, b: b.benefit, emphasis: true },
           { key: 'reaction', label: _esCmp ? 'Tu reacción' : 'Your reaction', a: a.reaction, b: b.reaction }
         ];
-        return '<div class="compare-rows">'
-          + '<div class="cmp-head-row"><div class="cmp-label"></div>' + a.head + b.head + '</div>'
+        return '<div class="compare-rows" role="table" aria-labelledby="compareModalTitle">'
+          + '<div class="cmp-head-row" role="row"><div class="cmp-label" role="columnheader"></div>' + a.head + b.head + '</div>'
           + rows.map(function(r) {
               var cls = 'cmp-row' + (r.emphasis ? ' cmp-row--key' : '');
               if (r.a === r.b) {
-                return '<div class="' + cls + ' cmp-row--same" data-cmp="' + r.key + '">'
-                  + '<div class="cmp-label">' + r.label + '</div>'
-                  + '<div class="cmp-val cmp-val--same">' + escapeHtml(r.a)
+                return '<div class="' + cls + ' cmp-row--same" role="row" data-cmp="' + r.key + '">'
+                  + '<div class="cmp-label" role="rowheader">' + r.label + '</div>'
+                  + '<div class="cmp-val cmp-val--same" role="cell" aria-colspan="2">' + escapeHtml(r.a)
                   + ' <span class="cmp-same-tag">· ' + sameTag + '</span></div>'
                   + '</div>';
               }
-              return '<div class="' + cls + ' cmp-row--diff" data-cmp="' + r.key + '">'
-                + '<div class="cmp-label">' + r.label + '</div>'
-                + '<div class="cmp-val">' + escapeHtml(r.a) + '</div>'
-                + '<div class="cmp-val">' + escapeHtml(r.b) + '</div>'
+              // the glyph is decorative and aria-hidden so the row header's
+              // accessible name stays clean; the table structure and the
+              // real-text same-tag are the accessible signals
+              return '<div class="' + cls + ' cmp-row--diff" role="row" data-cmp="' + r.key + '">'
+                + '<div class="cmp-label" role="rowheader">' + r.label
+                + ' <span class="cmp-diff-glyph" aria-hidden="true">≠</span></div>'
+                + '<div class="cmp-val" role="cell">' + escapeHtml(r.a) + '</div>'
+                + '<div class="cmp-val" role="cell">' + escapeHtml(r.b) + '</div>'
                 + '</div>';
             }).join('')
           + '</div>';

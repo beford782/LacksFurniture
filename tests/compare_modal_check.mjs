@@ -225,8 +225,8 @@ ok('the rows grid spans the legacy two-column wrapper',
   compareCss.includes('.compare-cols > .compare-rows { grid-column: 1 / -1; }'));
 ok('purely static: no transitions or animations anywhere in the aligned CSS',
   !/transition\s*:/.test(compareCss) && !/animation\s*:/.test(compareCss));
-ok('difference cue is a text glyph plus split structure, never color alone',
-  /\.cmp-row--diff \.cmp-label::after \{ content: ' ≠';/.test(norm));
+ok('the difference glyph is a real aria-hidden span, not CSS-generated content',
+  !/\.cmp-label::after/.test(norm) && /\.cmp-diff-glyph \{ color:/.test(norm));
 ok('identical values merge into a spanning cell (structural cue)',
   /\.cmp-val--same \{\s*grid-column: 2 \/ 4;/.test(norm));
 ok('narrow layout keeps the two mattresses side by side',
@@ -250,15 +250,15 @@ section('aligned comparison: executed rows, EN');
     order === 'feel,response,tier,fit,feature,benefit,reaction');
   ok('differing feel keeps two emphasized cells on one row',
     /data-cmp="feel"[^>]*>[\s\S]*?Medium 5\/10[\s\S]*?Firm 7\/10/.test(out) &&
-    /cmp-row--diff" data-cmp="feel"/.test(out));
+    /cmp-row--diff" role="row" data-cmp="feel"/.test(out));
   ok('identical tier merges into one quiet cell with the text tag',
-    /cmp-row--same" data-cmp="tier"/.test(out) &&
+    /cmp-row--same" role="row" data-cmp="tier"/.test(out) &&
     /data-cmp="tier"[\s\S]*?Gold[\s\S]*?Same for both/.test(out));
   ok('the KEY FEATURE row restores both differentiator TITLES',
-    /cmp-row--key cmp-row--diff" data-cmp="feature"/.test(out) &&
+    /cmp-row--key cmp-row--diff" role="row" data-cmp="feature"/.test(out) &&
     out.includes('KF-g2') && out.includes('KF-g6'));
   ok('the WHY IT HELPS row carries both differentiator details',
-    /cmp-row--key cmp-row--diff" data-cmp="benefit"/.test(out) &&
+    /cmp-row--key cmp-row--diff" role="row" data-cmp="benefit"/.test(out) &&
     out.includes('WB-g2') && out.includes('WB-g6'));
   ok('the strongest customer-fit priority renders per mattress',
     out.includes('P-g2 — d-g2') && out.includes('P-g6 — d-g6'));
@@ -296,6 +296,53 @@ section('aligned comparison: Spanish and missing-data fallbacks');
   ok('dialog lifecycle unchanged through the aligned render (focus on title)',
     bare.doc.activeElement === bare.els.compareModalTitle);
   bare.api.close();
+}
+
+// -------------------------------------- table semantics and associations
+// The matrix must be a real table to assistive technology: mattress
+// column headers, attribute row headers, cells associated with both, and
+// the merged cell spanning both mattress columns.
+section('aligned comparison: programmatic table associations');
+function tableChecks(out, tag, labels) {
+  ok(tag + ': the matrix is a labelled table (role + aria-labelledby)',
+    out.includes('class="compare-rows" role="table" aria-labelledby="compareModalTitle"'));
+  ok(tag + ': the head row holds three column headers (corner + both mattresses)',
+    /cmp-head-row" role="row"/.test(out) &&
+    (out.match(/role="columnheader"/g) || []).length === 3);
+  ok(tag + ': every attribute row is a role row with a rowheader label',
+    (out.match(/class="cmp-row[^"]*" role="row"/g) || []).length === 7 &&
+    (out.match(/role="rowheader"/g) || []).length === 7);
+  ok(tag + ': differing rows expose two plain cells under the mattress columns',
+    [...out.matchAll(/cmp-row--diff" role="row" data-cmp="[a-z]+">([\s\S]*?)<\/div><\/div>/g)]
+      .every((m) => (m[0].match(/role="cell"(?! aria-colspan)/g) || []).length === 2));
+  ok(tag + ': merged rows expose one cell spanning both columns (aria-colspan="2")',
+    [...out.matchAll(/cmp-row--same" role="row"[\s\S]*?data-cmp="[a-z]+">/g)].length > 0 &&
+    [...out.matchAll(/cmp-row--same" role="row"[^>]*>[\s\S]*?(<div class="cmp-val[^>]*>)/g)]
+      .every((m) => m[1].includes('role="cell" aria-colspan="2"')));
+  ok(tag + ': the glyph is aria-hidden inside diff rowheaders only',
+    /role="rowheader">[^<]*<span class="cmp-diff-glyph" aria-hidden="true">≠<\/span>/.test(out) &&
+    !/cmp-row--same"[^>]*>[\s\S]{0,200}?cmp-diff-glyph/.test(out));
+  ok(tag + ': row headers carry the attribute wording',
+    labels.every((l) => new RegExp('role="rowheader">' + l).test(out)));
+}
+{
+  const env = makeEnv({
+    diffs: (m) => [{ title: 'KF-' + m.id, detail: 'WB-' + m.id }],
+    reactions: { g2: 'good' }
+  });
+  env.focusOpener();
+  env.api.open();
+  tableChecks(env.els.compareCols.innerHTML, 'EN',
+    ['Feel', 'Response', 'Tier', 'Why it is here', 'Key feature', 'Why it helps', 'Your reaction']);
+  env.api.close();
+}
+{
+  const es = makeEnv({ lang: 'es', diffs: (m) => [{ title: 'KF-' + m.id, detail: 'WB-' + m.id }] });
+  es.focusOpener();
+  es.api.open();
+  tableChecks(es.els.compareCols.innerHTML, 'ES',
+    ['Sensación', 'Respuesta', 'Nivel', 'Por qué está aquí', 'Característica clave', 'En qué ayuda', 'Tu reacción']);
+  es.api.close();
 }
 
 console.log(`\n${failures === 0 ? 'PASS' : 'FAIL'} — ${checks - failures}/${checks} checks passed`);
