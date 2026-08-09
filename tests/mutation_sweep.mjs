@@ -555,7 +555,7 @@ const MUTATIONS = [
 
   // --- static comparison alignment (owner-approved slice) ------------------
   ["compare alignment: the head row regresses to independent columns",
-    "'<div class=\"cmp-head-row\"><div class=\"cmp-label\"></div>' + a.head + b.head + '</div>'",
+    "'<div class=\"cmp-head-row\" role=\"row\"><div class=\"cmp-label\" role=\"columnheader\"></div>' + a.head + b.head + '</div>'",
     "''", COMPARE],
   ["compare alignment: the key-feature title is dropped again",
     "feature: d0.title || mattressResponseLabel(m),",
@@ -566,7 +566,7 @@ const MUTATIONS = [
   ["compare alignment: identical values no longer merge",
     "if (r.a === r.b) {", "if (false) {", COMPARE],
   ["compare alignment: difference emphasis removed",
-    "' cmp-row--diff\" data-cmp=\"'", "' \" data-cmp=\"'", COMPARE],
+    "' cmp-row--diff\" role=\"row\" data-cmp=\"'", "' \" role=\"row\" data-cmp=\"'", COMPARE],
   ["compare alignment: the Spanish key-feature label removed",
     "_esCmp ? 'Característica clave' : 'Key feature'", "'Key feature'", COMPARE],
 
