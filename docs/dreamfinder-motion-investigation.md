@@ -34,6 +34,15 @@
 > bar, so the separate-label treatment is replaced by the **Atelier Woven Mark**
 > (§10) — wording integrated into the textile itself rather than a card placed
 > on it. Classifications and governance are unchanged.
+>
+> **Revision 6** is documentation-only: it records the owner's **final design
+> ruling** on Shared-Bed Priority (§10) — accepted as an Experimental/deferred
+> direction with the Atelier Woven Mark as the preserved research version, not
+> promoted, no further visual iteration authorized, physical disturbance
+> demonstrations expressly rejected — and closes this lab's design-review loop.
+> Production effort now prioritizes the approved motion directions. No lab,
+> prototype, or evidence file changed; the runnable prototype is byte-identical
+> to `4fd0c0e`.
 
 This investigation was produced by five parallel specialist reviews — repository/integration
 architecture, cinematic art direction, assisted-sales usability & accessibility, performance &
@@ -288,7 +297,7 @@ cost follow the build experience.
 | Synchronized compare (animated) | 2 | 4 | 3 | 1 | 2 | **4** | 2 | 3 |
 | Compare static alignment | 4 | 4 | 2 | 4 | 1 | 2* | 2 | 1 |
 | Base articulation | **5** | **5** | 3 | **5** | 1 | 1 | 1 | 2 |
-| Shared-Bed Priority (exp., replaces rejected ripple) | 4 | 3 | 3 | 3 | 1 | 1 | 2 | 2 |
+| Shared-Bed Priority — Atelier Woven Mark (exp./deferred, final ruling §10) | 4 | 3 | 3 | 3 | 1 | 1 | 2 | 2 |
 | Cooling textile (exp.) | 2 | 3 | 2 | 2 | 2 | 1 | **4** | 2 |
 | Cooling ambient (evaluated, not built) | 1 | 1 | 2 | 1 | 4 | **5** | **5** | 3 |
 | Priority mapping (exp.) | 4 | 3 | 2 | 3 | 1 | 2 | 3 | 2 |
@@ -304,7 +313,7 @@ and the natural replacement for the production SMIL loop that cannot honor reduc
 \* after the compare modal's missing dialog semantics are fixed — currently that surface is
 unusable for screen-reader users regardless of motion.
 
-## 10. Recommendation (revision 2 — reconciled after the correction pass)
+## 10. Recommendation (final owner ruling recorded — revision 6)
 
 **Night Loom kill-criterion record.** The criterion: if the labeled Sleep Brief cannot
 visibly become a mattress-specific surface within the 1400 ms cut without feeling rushed or
@@ -349,14 +358,20 @@ the same seam.
   kill-switch, replacing `startResultsReveal` — never stacking on it. The 2400 ms cut is
   expressly not a candidate.
 
-**Remain experimental:** Shared-Bed Priority (new in revision 3 — see the owner-ruling
-record below); priority mapping (needs copy review).
+**Experimental/deferred:** Shared-Bed Priority using the Atelier Woven Mark (final owner
+ruling below — accepted as a preserved research direction, not promoted, no further visual
+iteration authorized); priority mapping (needs copy review).
 
-**Rejected:** the partner-motion ripple (owner ruling below); ambient cooling atmosphere
-(continuous motion + implied thermal claim — fails on both axes); synchronized compare **as
-the production default** (ship the static bottom-baseline alignment; the synchronized build
-stays a lab demonstration); unsupported cutaway artwork (the Copper family in particular);
-any quantity-rendering animation; and Night Loom in any form that needs the 2400 ms cut to
+**Rejected:** the partner-motion ripple (owner ruling below); **falling-object,
+bowling-ball, glass-of-water, and equivalent physical disturbance demonstrations,
+including any animation showing one side of a mattress remaining unnaturally still**
+(final ruling below — they can reasonably imply measured motion-transfer, absorption,
+isolation, stability, or impact performance, and remain rejected without appropriate
+substantiation and approval); ambient cooling atmosphere (continuous motion + implied
+thermal claim — fails on both axes); synchronized compare **as the production default**
+(ship the static bottom-baseline alignment; the synchronized build stays a lab
+demonstration); unsupported cutaway artwork (the Copper family in particular); any
+quantity-rendering animation; and Night Loom in any form that needs the 2400 ms cut to
 be understood.
 
 ### Owner ruling — partner-motion ripple REJECTED (revision 3)
@@ -395,12 +410,36 @@ sleeper profile is fabricated. Adversarial review before commit: an ordinary vie
 sewn atelier detail carrying recorded wording, not a mattress *performing*. Spanish
 strings remain a prototype-only preview; the native-Spanish review gate remains open.
 
-**Scope of the owner's approval.** The owner's "pretty great" verdict is design approval at
-exactly the classifications in this section — it is NOT authorization to merge PR #23, begin
+### Final owner ruling — Shared-Bed Priority (revision 6)
+
+After experiencing the Atelier Woven Mark live, the owner ruled:
+
+1. **Shared-Bed Priority is accepted as an Experimental/deferred design direction.**
+2. The **Atelier Woven Mark** is visually understandable and acceptable **as the preserved
+   research version**.
+3. It is **not** promoted to Approved or Conditional.
+4. It does **not** yet warrant inclusion in the initial production motion package.
+5. **No further visual iteration on this scene is authorized at this time.**
+6. The Atelier Woven Mark is preferable to physical disturbance demonstrations such as
+   partner-motion waves or ripples; falling-object or bowling-ball demonstrations;
+   glass-of-water demonstrations; and any animation showing one side of a mattress
+   remaining unnaturally still.
+7. Those physical demonstrations can reasonably imply measured motion-transfer,
+   absorption, isolation, stability, or impact performance — **they remain rejected
+   without appropriate substantiation and approval.**
+8. The Atelier treatment instead **records the customer's stated shared-bed concern; it
+   does not demonstrate a mattress result.**
+9. The owner's "looks good enough for now" statement means **acceptable as a preserved
+   Experimental concept — not production approval.**
+10. **Production effort should now prioritize the stronger approved motion directions.**
+
+**Scope of the owner's approval.** The owner's design verdicts are approval at exactly the
+classifications in this section — they are NOT authorization to merge PR #23, begin
 production implementation, activate motion in the app, resolve Phase 0.4, clear imagery
-rights, or bypass content/legal/Spanish gates. The next owner action is to experience the
-Shared-Bed Priority scene and approve it for a future production spike, request revision, or
-reject it.
+rights, or bypass content/legal/Spanish gates. With the final ruling above, this lab's
+design-review loop is closed; the next task — separately authorized — is to define the
+narrow production-motion spike from current `main`, using only the approved directions and
+retaining all conditional gates.
 
 **Smallest reversible production slice** (proposed, NOT implemented): add the motion tokens +
 `prefers-reduced-motion` global baseline + the scene runner to `index.html` behind a
