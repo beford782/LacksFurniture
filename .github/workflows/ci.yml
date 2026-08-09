@@ -321,6 +321,19 @@ jobs:
       - name: motion spike flag gate + gather (both paths)
         run: node tests/motion_flag_check.mjs
 
+      # Compare-modal dialog semantics: extracts and EXECUTES the real
+      # open/close/keydown against a focus-tracking DOM stub. Proves the
+      # labelled-dialog contract, localized name and close label on every
+      # open, initial focus, Tab/Shift+Tab containment, Escape, exact-opener
+      # restoration (detached openers never focused), single keydown binding
+      # across reopenings, and the wipe's null-before-close ordering. This is
+      # the standing prerequisite in front of comparison-alignment work.
+      # (The job's display name remains pinned by branch protection — see the
+      # note at the top of this job; renaming name+protection together stays
+      # a tracked operator action.)
+      - name: compare modal dialog semantics
+        run: node tests/compare_modal_check.mjs
+
       # One level up from the suites: for each safety property in the manifest,
       # delete it from a COPY of the tree and require a suite to go red. A
       # survivor is a property with no effective test, and a mutation that fails
