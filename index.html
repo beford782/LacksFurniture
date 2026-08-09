@@ -808,6 +808,74 @@
       60% { transform: scaleY(0.997); }
       to { transform: none; }
     }
+    /* Construction reveal (slice 4) layout: a generic four-layer schematic.
+       Equal-weight bars (no proportions implied), textures only — the
+       stage reserves its exploded height so the reveal cannot shift
+       layout. End-state truth: .is-open means transform: none. The chip
+       is ALWAYS visible at rest inside the panel (lab ruling §8). */
+    .dfm-cons {
+      margin-top: 12px;
+    }
+    .dfm-cons-btn {
+      touch-action: manipulation;
+      min-height: 44px;
+      padding: 8px 14px;
+      font-size: 0.72rem;
+      letter-spacing: 0.04em;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(212, 168, 75, 0.35);
+      border-radius: 999px;
+      color: var(--cream, #F5EFE4);
+      cursor: pointer;
+    }
+    .dfm-cons-btn[aria-pressed="true"] {
+      background: rgba(212, 168, 75, 0.22);
+      border-color: var(--gold, #d4a84b);
+      color: var(--gold, #d4a84b);
+    }
+    .dfm-cons-stage {
+      position: relative;
+      height: 122px; /* reserved for the exploded state — no layout shift */
+      max-width: 320px;
+      margin: 10px 0 0;
+    }
+    .dfm-cons-layer {
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 16px;
+      border-radius: 3px;
+      border: 1px solid rgba(212, 168, 75, 0.35);
+      /* closed: the strata squeeze into one stack; open slot is static */
+      transform: translateY(calc(var(--dfm-ci) * 9px));
+    }
+    .dfm-cons-layer--a { bottom: 78px; --dfm-ci: 3;
+      background: repeating-linear-gradient(135deg, rgba(212,168,75,0.30) 0 6px, rgba(212,168,75,0.12) 6px 12px); }
+    .dfm-cons-layer--b { bottom: 52px; --dfm-ci: 2;
+      background: repeating-radial-gradient(circle at 8px 8px, rgba(212,168,75,0.28) 0 2px, rgba(212,168,75,0.10) 2px 10px); }
+    .dfm-cons-layer--c { bottom: 26px; --dfm-ci: 1;
+      background: repeating-linear-gradient(90deg, rgba(212,168,75,0.32) 0 3px, rgba(212,168,75,0.08) 3px 14px); }
+    .dfm-cons-layer--d { bottom: 0; --dfm-ci: 0;
+      background: repeating-linear-gradient(45deg, rgba(212,168,75,0.24) 0 4px, rgba(212,168,75,0.10) 4px 8px); }
+    .dfm-cons.is-open .dfm-cons-layer { transform: none; }
+    .dfm-cons-labels {
+      list-style: decimal inside;
+      margin: 8px 0 0;
+      padding: 0;
+      font-size: 0.7rem;
+      letter-spacing: 0.03em;
+      color: inherit;
+    }
+    .dfm-cons-labels li { opacity: 0; }
+    .dfm-cons.is-open .dfm-cons-labels li { opacity: 0.85; }
+    .dfm-cons-chip {
+      margin: 8px 0 0;
+      font-size: 0.66rem;
+      letter-spacing: 0.03em;
+      font-style: italic;
+      opacity: 0.7;
+      color: inherit;
+    }
     /* Adjustable-base articulation (slice 3): the sleep-system bed diagram
        travels between poses with actuator pacing — slow start, steady
        travel, slow stop — under this ONE finite gated rule (higher
@@ -825,6 +893,16 @@
       transition: transform var(--dfm-base) var(--dfm-e-actuator),
         bottom var(--dfm-base) var(--dfm-e-actuator),
         left var(--dfm-base) var(--dfm-e-actuator);
+    }
+    /* Construction reveal (slice 4): the strata travel on this ONE gated
+       pair — transform for the layers, opacity for the labels. Two-way by
+       construction (CSS retargets mid-flight); the defensive reduced block
+       below kills both if the preference flips after load. */
+    body.dfm-motion .dfm-cons-layer {
+      transition: transform var(--dfm-place) var(--dfm-e-place);
+    }
+    body.dfm-motion .dfm-cons-labels li {
+      transition: opacity var(--dfm-settle) var(--dfm-e-settle);
     }
     /* Defensive reduced-motion override — MUST come AFTER every ordinary DFM
        Card Table rule above: a media query adds no specificity, so at equal
@@ -850,6 +928,8 @@
       body.dfm-motion .sleep-system__bed-middle,
       body.dfm-motion .sleep-system__bed-foot,
       body.dfm-motion .sleep-system__bed-pillow { transition: none; }
+      body.dfm-motion .dfm-cons-layer,
+      body.dfm-motion .dfm-cons-labels li { transition: none; }
     }
     /* Gather layer: full-viewport, decorative, hidden from AT. Clones of the
        customer's actual review rows travel to a stack point; the layer also
@@ -14935,6 +15015,71 @@
       });
       return true;
     };
+    // ----- Construction reveal (slice 4 — approved direction §10.3)
+    // On-demand textured strata in the mattress drawer — never on drawer-
+    // open. Production data carries NO construction fields (lab finding
+    // §1), so this is the lab's GENERIC mode by design: one general
+    // mattress build, IDENTICAL for every model, with the lab's generic
+    // chip visible at rest inside the panel. Varying the stack per
+    // mattress would imply exactly the specificity the chip denies. The
+    // reveal is a two-way class toggle; the finite gated transitions do
+    // all pacing — this scene schedules NO frames and NO timers. The
+    // panel lives inside #drawerDifferentiators, so every drawer render
+    // replaces it collapsed and the session wipe clears it outright.
+    window.dfmConstructionMarkup = function() {
+      if (!dfmMotionActive()) return '';
+      var es = currentLang === 'es';
+      var openLabel = es ? 'Separar las capas' : 'Separate the layers';
+      var labels = es
+        ? ['Capa de confort', 'Capa de transición', 'Núcleo de soporte', 'Capa base']
+        : ['Comfort layer', 'Transition layer', 'Support core', 'Base layer'];
+      var chip = es
+        ? 'Demostración de construcción — estructura general de un colchón, no las especificaciones de este modelo.'
+        : 'Construction demonstration — a general mattress build, not this model’s specification.';
+      return '<div class="dfm-cons" id="dfmConstructionPanel">' +
+        '<button type="button" class="dfm-cons-btn" id="dfmConsToggle" aria-pressed="false">' + openLabel + '</button>' +
+        '<div class="dfm-cons-stage" aria-hidden="true">' +
+          '<div class="dfm-cons-layer dfm-cons-layer--a"></div>' +
+          '<div class="dfm-cons-layer dfm-cons-layer--b"></div>' +
+          '<div class="dfm-cons-layer dfm-cons-layer--c"></div>' +
+          '<div class="dfm-cons-layer dfm-cons-layer--d"></div>' +
+        '</div>' +
+        '<ol class="dfm-cons-labels">' +
+          labels.map(function(l) { return '<li>' + l + '</li>'; }).join('') +
+        '</ol>' +
+        '<p class="dfm-cons-chip">' + chip + '</p>' +
+        '</div>';
+    };
+    window.dfmConstructionRender = function() {
+      var host = document.getElementById('drawerDifferentiators');
+      if (!host) return false;
+      var markup = window.dfmConstructionMarkup();
+      if (!markup) return false; // gate closed: legacy DOM byte-identical
+      host.insertAdjacentHTML('beforeend', markup);
+      var panel = document.getElementById('dfmConstructionPanel');
+      var btn = document.getElementById('dfmConsToggle');
+      if (!panel || !btn) return false;
+      var es = currentLang === 'es';
+      var openLabel = es ? 'Separar las capas' : 'Separate the layers';
+      var closeLabel = es ? 'Reunir las capas' : 'Reassemble the layers';
+      function setState(open) {
+        if (open) panel.classList.add('is-open');
+        else panel.classList.remove('is-open');
+        btn.setAttribute('aria-pressed', open ? 'true' : 'false');
+        btn.textContent = open ? closeLabel : openLabel;
+      }
+      var act = function(e) {
+        if (e && e.type === 'touchend' && e.preventDefault) e.preventDefault();
+        setState(!panel.classList.contains('is-open'));
+      };
+      btn.addEventListener('click', act);
+      btn.addEventListener('touchend', act);
+      // Reduced motion presents the COMPLETE useful static state
+      // immediately — exploded, labeled, chip at rest; the button still
+      // toggles, instantly (transitions are gated off the reduced path).
+      if (dfmReducedMotion()) setState(true);
+      return true;
+    };
     // The styling hook is withheld entirely when reduced motion is already
     // active at load — the Card Table feedback never exists for those users.
     // (A defensive CSS override also covers a preference change after load.)
@@ -19740,6 +19885,7 @@
           + '<div class="drawer-differentiator-detail">' + escapeHtml(item.detail) + '</div>'
           + '</div>';
       }).join('');
+      if (window.dfmConstructionRender) window.dfmConstructionRender();
 
       // Ways to bring it home (Payment Choice) — after the fit content.
       renderDrawerFinancing();

@@ -891,5 +891,175 @@ section('base articulation: reduced motion, wipes, and missing elements');
     noPrev.api.flip(undefined) === false && noPrev.calls.frames === 0);
 }
 
+// ================================================================ slice 4
+// Construction reveal — on-demand generic textured strata in the drawer.
+// Self-contained mini-harness, same pattern as slices 2 and 3.
+section('construction reveal: static guarantees');
+ok('markup and render live inside the spike fences',
+  /window\.dfmConstructionMarkup = function/.test(spikeSrc) &&
+  /window\.dfmConstructionRender = function/.test(spikeSrc));
+ok('markup is gate-guarded (declines to empty when motion is inactive)',
+  /dfmConstructionMarkup = function\(\) \{\s*if \(!dfmMotionActive\(\)\) return '';/.test(cssNorm));
+ok('drawer hook is guarded and single-sited',
+  html.includes('if (window.dfmConstructionRender) window.dfmConstructionRender();') &&
+  (html.match(/dfmConstructionRender/g) || []).length === 3);
+ok('the scene has no JS animation machinery (no frames, no timers in its code)',
+  (() => {
+    const start = spikeSrc.indexOf('window.dfmConstructionMarkup');
+    const stop = spikeSrc.indexOf('// The styling hook is withheld');
+    if (start === -1 || stop === -1 || stop < start) return false;
+    const src = spikeSrc.slice(start, stop);
+    return !/sessionFrame\s*\(|sessionTimeout\s*\(|setInterval|requestAnimationFrame/.test(src);
+  })());
+ok('lab generic-mode chip preserved verbatim in both languages',
+  spikeSrc.includes('Construction demonstration — a general mattress build, not this model’s specification.') &&
+  spikeSrc.includes('Demostración de construcción — estructura general de un colchón, no las especificaciones de este modelo.'));
+ok('lab layer labels preserved in both languages',
+  ['Comfort layer', 'Transition layer', 'Support core', 'Base layer',
+   'Capa de confort', 'Capa de transición', 'Núcleo de soporte', 'Capa base']
+    .every((l) => spikeSrc.includes("'" + l + "'")));
+ok('lab button labels preserved in both languages',
+  ['Separate the layers', 'Reassemble the layers', 'Separar las capas', 'Reunir las capas']
+    .every((l) => spikeSrc.includes("'" + l + "'")));
+ok('new strings carry no quantities and no condition/performance language',
+  ['Comfort layer', 'Transition layer', 'Support core', 'Base layer',
+   'Separate the layers', 'Reassemble the layers',
+   'Construction demonstration — a general mattress build, not this model’s specification.']
+    .every((t) => !/\d/.test(t) && !/coil count|inch|cm|percent|%|degree|patent|antimicrobial|snor|apnea|reflux|pain|circulat/i.test(t)));
+ok('the stack is fully generic — markup takes no mattress input and reads no product data',
+  /dfmConstructionMarkup = function\(\)/.test(spikeSrc) &&
+  (() => {
+    const start = spikeSrc.indexOf('window.dfmConstructionMarkup');
+    const stop = spikeSrc.indexOf('// The styling hook is withheld');
+    const src = spikeSrc.slice(start, stop);
+    return !/m\.features|m\.tags|archetype|firmness/.test(src);
+  })());
+const consRuleIdx = cssNorm.indexOf('body.dfm-motion .dfm-cons-layer {\n      transition: transform var(--dfm-place) var(--dfm-e-place);');
+ok('strata transitions are gated with finite tokens',
+  consRuleIdx !== -1 &&
+  /body\.dfm-motion \.dfm-cons-labels li \{\s*transition: opacity var\(--dfm-settle\) var\(--dfm-e-settle\);/.test(cssNorm));
+ok('defensive reduced override kills the reveal travel AFTER the gated rules',
+  !!reducedBlk && reducedBlk.index > consRuleIdx &&
+  /body\.dfm-motion \.dfm-cons-layer,\s*body\.dfm-motion \.dfm-cons-labels li \{ transition: none; \}/.test(reducedBlk.text));
+ok('end-state truth: is-open means transform: none',
+  /\.dfm-cons\.is-open \.dfm-cons-layer \{ transform: none; \}/.test(cssNorm));
+ok('the stage reserves its exploded height (no layout shift) and is decorative',
+  /\.dfm-cons-stage \{[\s\S]{0,200}?height: 122px;/.test(cssNorm) &&
+  spikeSrc.includes('class="dfm-cons-stage" aria-hidden="true"'));
+ok('the toggle is a 44 px touch target with touch-action: manipulation',
+  /\.dfm-cons-btn \{\s*touch-action: manipulation;\s*min-height: 44px;/.test(cssNorm));
+
+// mini-harness: the host stub implements insertAdjacentHTML by registering
+// panel/button stubs when the markup carries their ids — the markup STRING
+// is asserted separately, the executed checks drive the real wiring
+function makeConsEnv({ hostname, search, reduced = false, lang = 'en', withHost = true, flagOff = false }) {
+  const clock = makeClock();
+  const els = {};
+  els.dfmGatherLayer = makeEl('dfmGatherLayer');
+  const calls = { frames: 0, timers: 0, inserted: '' };
+  if (withHost) {
+    const host = makeEl('drawerDifferentiators');
+    host.insertAdjacentHTML = (pos, htmlStr) => {
+      calls.inserted = htmlStr;
+      if (htmlStr.includes('id="dfmConstructionPanel"')) {
+        els.dfmConstructionPanel = makeEl('dfmConstructionPanel');
+        host.appendChild(els.dfmConstructionPanel);
+      }
+      if (htmlStr.includes('id="dfmConsToggle"')) {
+        els.dfmConsToggle = makeEl('dfmConsToggle');
+        els.dfmConsToggle.setAttribute('aria-pressed', 'false');
+        els.dfmConstructionPanel.appendChild(els.dfmConsToggle);
+      }
+    };
+    els.drawerDifferentiators = host;
+  }
+  const bodyEl = makeEl('body');
+  const pref = { reduced };
+  const win = { location: { hostname, search }, matchMedia: () => ({ matches: pref.reduced }), innerWidth: 1024, innerHeight: 768 };
+  const doc = { body: bodyEl, getElementById: (id) => els[id] || null, createElementNS: (ns, tag) => makeEl(tag) };
+  const src = (flagOff ? spikeSrcFlagOff : spikeSrc) +
+    '\nreturn { consMarkup: window.dfmConstructionMarkup, consRender: window.dfmConstructionRender };';
+  const fn = new Function('window', 'document', 'URLSearchParams', 'sessionTimeout',
+    'sessionFrame', 'clearTimeout', 'currentLang', src);
+  const api = fn(win, doc, URLSearchParams,
+    (f, ms) => { calls.timers++; return clock.setTimeout(f, ms); },
+    (f) => { calls.frames++; return clock.setTimeout(f, 0); },
+    (id) => clock.clearTimeout(id), lang);
+  return { clock, els, calls, api, pref };
+}
+
+section('construction reveal: gate behavior');
+{
+  const active = makeConsEnv({ hostname: 'localhost', search: '?motion=1' });
+  const m = active.api.consMarkup();
+  ok('active markup renders the panel, chip at rest, and EN labels',
+    m.includes('dfmConstructionPanel') && m.includes('dfm-cons-chip') &&
+    m.includes('Comfort layer') && m.includes('Separate the layers'));
+  const es = makeConsEnv({ hostname: 'localhost', search: '?motion=1', lang: 'es' });
+  ok('Spanish session renders the lab ES strings',
+    es.api.consMarkup().includes('Capa de confort') &&
+    es.api.consMarkup().includes('Separar las capas') &&
+    es.api.consMarkup().includes('Demostración de construcción'));
+  const globalHost = makeConsEnv({ hostname: 'beford782.github.io', search: '' });
+  ok('committed enabled state: public Pages hostname renders without ?motion=1',
+    globalHost.api.consMarkup().includes('dfmConstructionPanel'));
+  const rollback = makeConsEnv({ hostname: 'beford782.github.io', search: '?motion=1', flagOff: true });
+  ok('ROLLBACK: markup declines and render leaves the drawer untouched',
+    rollback.api.consMarkup() === '' && rollback.api.consRender() === false &&
+    rollback.calls.inserted === '' &&
+    rollback.els.drawerDifferentiators.children.length === 0);
+  const rollbackLocal = makeConsEnv({ hostname: 'localhost', search: '?motion=1', flagOff: true });
+  ok('ROLLBACK: localhost + ?motion=1 still previews for owner review',
+    rollbackLocal.api.consRender() === true);
+}
+
+section('construction reveal: on-demand toggle — zero animation machinery');
+{
+  const env = makeConsEnv({ hostname: 'localhost', search: '?motion=1' });
+  ok('render succeeds and starts COLLAPSED (never on drawer-open)',
+    env.api.consRender() === true &&
+    !env.els.dfmConstructionPanel.classList.contains('is-open') &&
+    env.els.dfmConsToggle.getAttribute('aria-pressed') === 'false');
+  const btn = env.els.dfmConsToggle;
+  btn.fire('click');
+  ok('toggle opens: is-open set, aria-pressed true, label swaps to reassemble',
+    env.els.dfmConstructionPanel.classList.contains('is-open') &&
+    btn.getAttribute('aria-pressed') === 'true' &&
+    btn.textContent === 'Reassemble the layers');
+  btn.fire('click');
+  ok('toggle closes symmetrically',
+    !env.els.dfmConstructionPanel.classList.contains('is-open') &&
+    btn.textContent === 'Separate the layers');
+  for (let i = 0; i < 11; i++) btn.fire('click');
+  ok('11 rapid taps land deterministically (odd count = open)',
+    env.els.dfmConstructionPanel.classList.contains('is-open') &&
+    btn.getAttribute('aria-pressed') === 'true');
+  btn.fire('touchend', { type: 'touchend', preventDefault() { env._pd = true; } });
+  ok('touchend toggles and suppresses the ghost click',
+    env._pd === true && !env.els.dfmConstructionPanel.classList.contains('is-open'));
+  env.clock.advance(10000);
+  ok('finite by construction: ZERO frames and ZERO timers ever scheduled',
+    env.calls.frames === 0 && env.calls.timers === 0);
+  ok('re-render replaces the panel collapsed (fresh per drawer view)',
+    env.api.consRender() === true &&
+    !env.els.dfmConstructionPanel.classList.contains('is-open'));
+}
+
+section('construction reveal: reduced motion, rollback, missing elements');
+{
+  const reduced = makeConsEnv({ hostname: 'localhost', search: '?motion=1', reduced: true });
+  ok('reduced render presents the COMPLETE static state immediately',
+    reduced.api.consRender() === true &&
+    reduced.els.dfmConstructionPanel.classList.contains('is-open') &&
+    reduced.els.dfmConsToggle.getAttribute('aria-pressed') === 'true' &&
+    reduced.els.dfmConsToggle.textContent === 'Reassemble the layers');
+  reduced.els.dfmConsToggle.fire('click');
+  ok('reduced toggle still works, instantly, with zero frames/timers',
+    !reduced.els.dfmConstructionPanel.classList.contains('is-open') &&
+    reduced.calls.frames === 0 && reduced.calls.timers === 0);
+  const bare = makeConsEnv({ hostname: 'localhost', search: '?motion=1', withHost: false });
+  ok('missing drawer host declines without throwing', bare.api.consRender() === false);
+}
+
 console.log(`\n${failures === 0 ? 'PASS' : 'FAIL'} — ${checks - failures}/${checks} checks passed`);
 process.exit(failures === 0 ? 0 : 1);
