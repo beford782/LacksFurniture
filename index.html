@@ -764,6 +764,89 @@
       opacity: 0.75;
     }
 
+    /* ===== DFM MOTION SPIKE (flag-gated, default OFF) =====
+       Motion tokens + Card Table feedback + gather transition styles.
+       Everything here is inert unless body carries .dfm-motion, which is
+       added only when MOTION_POLICY resolves enabled (see the JS block by
+       the same fence name). Tokens are namespaced --dfm-* so no existing
+       rule changes meaning. Reduced motion collapses the token timeline;
+       the JS ALSO branches before creating anything, so no sequence ever
+       waits on an animation that a media query removed. */
+    :root {
+      --dfm-quick: 180ms;
+      --dfm-settle: 320ms;
+      --dfm-place: 480ms;
+      --dfm-e-place: cubic-bezier(0.2, 0.72, 0.2, 1);
+      --dfm-e-settle: cubic-bezier(0.16, 0.84, 0.28, 1);
+      --dfm-e-compress: cubic-bezier(0.4, 0, 0.55, 0.35);
+    }
+    @media (prefers-reduced-motion: reduce) {
+      :root {
+        --dfm-quick: 0.01ms;
+        --dfm-settle: 0.01ms;
+        --dfm-place: 0.01ms;
+      }
+    }
+    /* Card Table selected-card feedback: a restrained press-in on tap and a
+       small settle when the selection lands. Transform-only; the existing
+       background/border/color transitions are preserved in the list. */
+    body.dfm-motion .noct-quiz-option {
+      transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease,
+        transform var(--dfm-quick) var(--dfm-e-compress);
+    }
+    body.dfm-motion .noct-quiz-option:active {
+      transform: translateY(1px) scaleY(0.985);
+    }
+    body.dfm-motion .noct-quiz-option.selected {
+      animation: dfmOptSettle 200ms var(--dfm-e-settle);
+    }
+    @keyframes dfmOptSettle {
+      from { transform: scaleY(0.99); }
+      60% { transform: scaleY(0.997); }
+      to { transform: none; }
+    }
+    /* Defensive reduced-motion override — MUST come AFTER every ordinary DFM
+       Card Table rule above: a media query adds no specificity, so at equal
+       specificity only source order lets these declarations win. The
+       dfm-motion class is never ADDED under reduced motion, but if the
+       preference flips after load the feedback must still go quiet — the
+       settle uses a literal 200 ms, so it is disabled here explicitly rather
+       than relying on the token collapse. */
+    @media (prefers-reduced-motion: reduce) {
+      body.dfm-motion .noct-quiz-option {
+        transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+      }
+      body.dfm-motion .noct-quiz-option:active { transform: none; }
+      body.dfm-motion .noct-quiz-option.selected { animation: none; }
+    }
+    /* Gather layer: full-viewport, decorative, hidden from AT. Clones of the
+       customer's actual review rows travel to a stack point; the layer also
+       catches a tap as "skip". Display is class-driven only — the wipe
+       registry removes the class and never sets inline display. */
+    #dfmGatherLayer {
+      position: fixed;
+      inset: 0;
+      z-index: 60;
+      display: none;
+      pointer-events: none;
+    }
+    body.dfm-motion #dfmGatherLayer.is-active {
+      display: block;
+      pointer-events: auto;
+    }
+    #dfmGatherLayer .dfm-clone {
+      position: absolute;
+      margin: 0;
+      box-shadow: 0 10px 22px -6px rgba(47, 39, 30, 0.22);
+      background: var(--landing-paper, #FBF7EF);
+      border-radius: var(--radius);
+      overflow: hidden;
+      /* the transition list is set inline per clone: the travel carries the
+         per-clone stagger delay, while the opacity exit is UNDELAYED and
+         short (180 ms) so every fade completes before the 700 ms teardown —
+         no clone may vanish on its final frame */
+    }
+
     /* Slider */
     .noct-slider-wrap {
       max-width: 480px;
@@ -9737,6 +9820,11 @@
     </div>
   </div>
 
+  <!-- DFM MOTION SPIKE: decorative gather layer (flag-gated, default OFF).
+       Holds aria-hidden clones of the customer's review rows for the brief
+       gather transition; a tap anywhere on it skips to the Sleep Brief. -->
+  <div id="dfmGatherLayer" aria-hidden="true"></div>
+
   <!-- FINANCING SHEET (Payment Choice) — accessible modal dialog.
        Opened by openFinancingSheet(placement); content rendered from
        STORE_CONFIG.financing by renderFinancingSheet(). Focus is moved in,
@@ -14421,11 +14509,173 @@
       elements.overlay.setAttribute('aria-busy', 'false');
     }
 
+    // ===== DFM MOTION SPIKE (begin) =====
+    // Flag-gated, default OFF.
+    // Production motion foundation: one explicit gate, a minimal
+    // interruptible transition, and the Card Table gather. Approved
+    // direction only ("Hand and Cloth"); everything below is inert unless
+    // the gate resolves enabled. The gate is data-independent on purpose:
+    // no workbook, catalog, or store-config schema is widened for this
+    // experiment.
+    var MOTION_POLICY = {
+      // The single production switch. Flipping this to true is an owner
+      // decision recorded in a reviewed commit — never a runtime override.
+      enabled: false,
+      status: 'spike-preview' // same provisional labeling as SESSION_POLICY
+    };
+    // Local preview follows the __dfSetSessionPolicy precedent: the query
+    // override exists ONLY for localhost-class hosts and fails closed
+    // everywhere else (GitHub Pages included).
+    function dfmLocalHost() {
+      var host = window.location.hostname;
+      return host === 'localhost' || host === '127.0.0.1' || host === '[::1]';
+    }
+    function dfmMotionActive() {
+      if (MOTION_POLICY.enabled === true) return true;
+      if (!dfmLocalHost()) return false;
+      try {
+        return new URLSearchParams(window.location.search).get('motion') === '1';
+      } catch (e) { return false; }
+    }
+    function dfmReducedMotion() {
+      try {
+        return !!(window.matchMedia &&
+          window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+      } catch (e) { return true; }
+    }
+    // Minimal interruptible transition state: a generation counter (same
+    // fail-closed shape as _sessionEpoch) plus one finisher that is safe to
+    // call from completion, skip, watchdog, or wipe. All timers/frames go
+    // through the session-scoped wrappers, so a customer wipe orphans every
+    // pending step and the wipe registry (plus line clearing
+    // _profileRevealInFlight) restores the resting state.
+    var _dfmGen = 0;
+    function dfmFinishGather(gen) {
+      if (gen !== _dfmGen) return;
+      _dfmGen++;
+      var layer = document.getElementById('dfmGatherLayer');
+      if (layer) {
+        layer.classList.remove('is-active');
+        layer.innerHTML = '';
+      }
+      window._profileRevealInFlight = false;
+      var reviewScreen = document.getElementById('reviewScreen');
+      if (reviewScreen && reviewScreen.classList.contains('active')) {
+        window.showProfileScreen();
+      }
+    }
+    // The gather: clones of the customer's ACTUAL rendered review rows (their
+    // own answer labels, already localized) travel to a stack point, then the
+    // existing Sleep Brief renders exactly as today. Returns true only when
+    // it has taken ownership of the review→profile transition; any doubt
+    // falls through to the legacy staged reveal unchanged.
+    window.dfmStartGather = function() {
+      if (!dfmMotionActive()) return false;
+      if (dfmReducedMotion()) {
+        // Reduced motion OWNS the transition when the preview is enabled:
+        // zero animations, zero clones, no legacy overlay, no 1500 ms wait —
+        // a direct synchronous advance to the same Sleep Brief destination
+        // (showProfileScreen moves focus exactly as it does today). Nothing
+        // is async here, so the in-flight flag is never needed.
+        window.showProfileScreen();
+        return true;
+      }
+      var list = document.getElementById('reviewList');
+      var layer = document.getElementById('dfmGatherLayer');
+      if (!list || !layer || typeof visibleQuestions !== 'function') return false;
+      var rows = Array.prototype.slice.call(list.children);
+      var qs = visibleQuestions();
+      if (!rows.length || rows.length !== qs.length) return false;
+      // Preferred trio (matches the lab's concept) — these three questions
+      // are always asked, but the mapping is verified against the live DOM
+      // and falls back to the customer's final three answers rather than
+      // ever fabricating one.
+      var wanted = ['sleep_position', 'temperature', 'firmness'];
+      var picks = [];
+      qs.forEach(function(q, i) {
+        if (wanted.indexOf(q.id) !== -1 && rows[i]) picks.push(rows[i]);
+      });
+      if (picks.length < 2) picks = rows.slice(-3);
+      if (!picks.length) return false;
+
+      window._profileRevealInFlight = true;
+      var gen = ++_dfmGen;
+      var startLang = currentLang;
+      layer.innerHTML = '';
+      layer.classList.add('is-active');
+
+      var cx = window.innerWidth / 2;
+      var cy = Math.max(140, window.innerHeight * 0.38);
+      picks.forEach(function(row, i) {
+        var rect = row.getBoundingClientRect();
+        var clone = row.cloneNode(true);
+        clone.className = 'noct-review-row dfm-clone';
+        var edit = clone.querySelector('.noct-review-edit');
+        if (edit) edit.parentNode.removeChild(edit);
+        clone.style.left = rect.left + 'px';
+        clone.style.top = rect.top + 'px';
+        clone.style.width = rect.width + 'px';
+        // per-property timing: travel is staggered (i * 40 ms) and done by
+        // ~560 ms; the opacity exit is undelayed at 180 ms, so setting
+        // opacity at the 500 ms step completes every fade by 680 ms —
+        // inside the 700 ms teardown, with no delay left to strand it
+        clone.style.transition =
+          'transform var(--dfm-place) var(--dfm-e-place) ' + (i * 40) + 'ms, ' +
+          'opacity 180ms var(--dfm-e-settle) 0ms';
+        layer.appendChild(clone);
+        var dx = cx - (rect.left + rect.width / 2);
+        var dy = cy - (rect.top + rect.height / 2) + i * 6;
+        var rot = ((i * 37) % 5) - 2; // deterministic -2..+2deg scatter
+        // double frame so the placed position paints before the travel starts
+        sessionFrame(function() {
+          sessionFrame(function() {
+            if (gen !== _dfmGen) return;
+            clone.style.transform =
+              'translate(' + dx + 'px,' + dy + 'px) scale(0.62) rotate(' + rot + 'deg)';
+          });
+        });
+      });
+      // the stack settles, then fades as the real Sleep Brief takes over
+      sessionTimeout(function() {
+        if (gen !== _dfmGen) return;
+        if (currentLang !== startLang) { dfmFinishGather(gen); return; }
+        Array.prototype.forEach.call(layer.children, function(c) {
+          c.style.opacity = '0';
+        });
+      }, 500);
+      sessionTimeout(function() { dfmFinishGather(gen); }, 700);
+      // watchdog: a stalled transition must never strand the consultation
+      sessionTimeout(function() { dfmFinishGather(gen); }, 1200);
+      return true;
+    };
+    // tap anywhere on the gather = skip straight to the Sleep Brief
+    (function() {
+      var layer = document.getElementById('dfmGatherLayer');
+      if (!layer) return;
+      var skip = function(e) {
+        if (e && e.type === 'touchend') e.preventDefault();
+        dfmFinishGather(_dfmGen);
+      };
+      layer.addEventListener('click', skip);
+      layer.addEventListener('touchend', skip);
+    })();
+    // The styling hook is withheld entirely when reduced motion is already
+    // active at load — the Card Table feedback never exists for those users.
+    // (A defensive CSS override also covers a preference change after load.)
+    if (dfmMotionActive() && !dfmReducedMotion()) {
+      document.body.classList.add('dfm-motion');
+    }
+    // ===== DFM MOTION SPIKE (end) =====
+
     // Staged review→profile calculation. The copy describes work the app
     // genuinely performs: interpreting answers, prioritizing needs, and
     // preparing the consultation starting point.
     window.startProfileReveal = function() {
       if (window._profileRevealInFlight) return;
+      // DFM MOTION SPIKE: when the flag resolves enabled, the gather owns
+      // this transition; disabled or reduced-motion paths fall through to
+      // the staged reveal below completely unchanged.
+      if (window.dfmStartGather && window.dfmStartGather()) return;
       var elements = getConsultationRevealElements();
       if (!elements.overlay || !elements.title || !elements.subtitle) {
         window.showProfileScreen();
@@ -18509,6 +18759,10 @@
       { id: 'revealCert', remove: ['is-visible'] },
       { id: 'resultsRevealOverlay', remove: ['is-visible', 'is-quick'], display: 'none',
         attrs: { 'aria-hidden': 'true', 'aria-busy': 'false' } },
+      // DFM MOTION SPIKE: the gather layer is class-driven only (no inline
+      // display, which would outlive the wipe); its clones are cleared on the
+      // next activation and are aria-hidden throughout.
+      { id: 'dfmGatherLayer', remove: ['is-active'] },
       { id: 'accCartBar', remove: ['visible'], display: 'none' },
       { id: 'savedPicksBtn', remove: ['noct-picks-pill--visible'] },
       { id: 'drawerSystemPrompt', remove: ['is-visible'] },
@@ -18656,6 +18910,13 @@
         clearSessionTimers();
         window._profileRevealInFlight = false;
         window._resultsRevealInFlight = false;
+        // DFM MOTION SPIKE: a wipe mid-gather must not leave clones in the
+        // (hidden) layer; the registry below removes its class, this removes
+        // its contents. Generation bump orphans any not-yet-fired finisher.
+        // (typeof-guarded so extracted-module test sandboxes stay runnable.)
+        if (typeof _dfmGen !== 'undefined') _dfmGen++;
+        var dfmLayer = document.getElementById('dfmGatherLayer');
+        if (dfmLayer) dfmLayer.innerHTML = '';
 
         // --- 3. quiz + results state --------------------------------------
         currentQuestion = 0;
