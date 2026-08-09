@@ -14805,6 +14805,9 @@
       function press(evt) {
         if (!alive()) return;
         if (evt && evt.preventDefault) evt.preventDefault();
+        // A manual press takes ownership: any pending slider-demonstration
+        // release must not fire mid-hold and drop the customer's dent.
+        clearTimeout(st.holdTimer);
         var pt = toViewBox(evt);
         st.px = Math.max(24, Math.min(296, pt.x));
         st.py = Math.max(30, Math.min(126, pt.y));
@@ -14839,7 +14842,9 @@
         kick();
         clearTimeout(st.holdTimer);
         st.holdTimer = sessionTimeout(function() {
-          if (!alive()) return;
+          // never release a surface the customer is actively holding —
+          // defense in depth behind press() clearing this timer
+          if (!alive() || st.pressing) return;
           st.target = 0;
           kick();
         }, 400 + dfmFirmParams(st.f).pressIn);

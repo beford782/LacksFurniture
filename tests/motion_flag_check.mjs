@@ -634,6 +634,31 @@ section('firmness surface: slider-driven demonstration press');
   env.clock.advance(5000);
 }
 
+section('firmness surface: slider demo overlapped by a manual press');
+{
+  const env = makeFirmEnv({ hostname: 'localhost', search: '?motion=1' });
+  env.api.init(5);
+  tagBaselines(env);
+  const rows = env.els.dfmFirmRows.children;
+  env.api.set(3);          // demonstration press; its release timer is pending
+  env.clock.advance(100);  // dent settling; the release timer has NOT fired
+  env.els.dfmFirmSvg.fire('pointerdown', { clientX: 120, clientY: 70, preventDefault() {} });
+  env.clock.advance(3000); // well beyond the original demo-release timer
+  ok('dent remains held across the stale demo-release timer',
+    !firmRowFlat(rows[2]) && parseFloat(env.els.dfmFirmContact.attrs.rx) > 0);
+  const framesHeld = env.calls.frames;
+  env.clock.advance(2000);
+  ok('held overlap reaches rest — the frame loop is dead while held',
+    env.calls.frames === framesHeld);
+  env.els.dfmFirmSvg.fire('pointerup', {});
+  env.clock.advance(4000);
+  ok('release after the overlap rebounds to flat and the loop dies',
+    rows.every(firmRowFlat) && parseFloat(env.els.dfmFirmContact.attrs.rx) === 0);
+  const framesRest = env.calls.frames;
+  env.clock.advance(3000);
+  ok('no frames after the overlap settles', env.calls.frames === framesRest);
+}
+
 section('firmness surface: reduced motion never schedules a frame');
 {
   const env = makeFirmEnv({ hostname: 'localhost', search: '?motion=1', reduced: true });
