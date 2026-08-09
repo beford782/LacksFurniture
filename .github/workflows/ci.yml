@@ -55,9 +55,10 @@ jobs:
     # The display name is PINNED by branch protection (required status check
     # "Full suite (18 checks)") — renaming it here without updating the
     # protection rule in the same change would leave every PR waiting on a
-    # check that never reports. The suite actually runs 19 checks since Phase
-    # 0.6 added the consultation-summary suite; renaming name+protection
-    # together is an operator (Blake) action, tracked in the 0.6 PR notes.
+    # check that never reports. The suite actually runs 20 checks: Phase 0.6
+    # added the consultation-summary suite and the compare-modal prerequisite
+    # added its dialog-semantics suite; renaming name+protection together is
+    # an operator (Blake) action, tracked in the 0.6 PR notes.
     name: Full suite (18 checks)
     runs-on: ubuntu-24.04
     # Raised from 20 for the mutation sweep, which re-runs the suites once per

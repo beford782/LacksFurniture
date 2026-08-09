@@ -46,6 +46,10 @@ const EMAIL_PRIORITIES = ["tests/email_priorities_check.mjs"];
 // resolver, the three hf2 rows, the payload consultation field, and the
 // Code.gs consultation rendering on both MIME parts.
 const CONSULT = ["tests/consultation_summary_check.mjs"];
+// Compare-modal prerequisite observer: the dialog-semantics suite owns the
+// labelled-dialog contract, focus lifecycle, localization, listener
+// idempotence, and the wipe null-before-close ordering.
+const COMPARE = ["tests/compare_modal_check.mjs"];
 
 // ---------------------------------------------------------------------------
 // THE MANIFEST. [label, find, replace] — `find` may span lines; index.html is
@@ -523,6 +527,32 @@ const MUTATIONS = [
     "      rsa\n    ]);",
     "      rsa,\n      JSON.stringify(data.consultation || '')\n    ]);",
     CONSULT, "Code.gs"],
+  // --- compare-modal dialog semantics (the alignment prerequisite) ---------
+  // Every anchor is compare-specific so none can alias onto the financing
+  // sheet's byte-identical wrap/label implementation (that aliasing was a
+  // real mistake caught during PR #30's scratch mutation pass).
+  ["compare modal: dialog semantics removed",
+    '<div id="compareModal" class="compare-modal" style="display:none;" role="dialog"\n       aria-modal="true" aria-labelledby="compareModalTitle">',
+    '<div id="compareModal" class="compare-modal" style="display:none;">', COMPARE],
+  ["compare modal: initial title focus removed",
+    "modal.classList.add('visible');\n      if (title && typeof title.focus === 'function') {",
+    "modal.classList.add('visible');\n      if (false) {", COMPARE],
+  ["compare modal: Escape handling removed",
+    "if (e.key === 'Escape') { e.preventDefault(); window.closeCompareModal(); return; }",
+    "if (false) { return; }", COMPARE],
+  ["compare modal: Shift+Tab wrap removed",
+    "return el.offsetParent !== null && el.disabled !== true;\n      });\n      if (!list.length) return;\n      var first = list[0], last = list[list.length - 1];\n      if (e.shiftKey && document.activeElement === first) {\n        e.preventDefault(); last.focus();\n      } else if (!e.shiftKey && document.activeElement === last) {",
+    "return el.offsetParent !== null && el.disabled !== true;\n      });\n      if (!list.length) return;\n      var first = list[0], last = list[list.length - 1];\n      if (!e.shiftKey && document.activeElement === last) {", COMPARE],
+  ["compare modal: focus restoration removed",
+    "try { opener.focus({ preventScroll: true }); } catch (err) { opener.focus(); }",
+    "if (false) {}", COMPARE],
+  ["compare modal: close-label localization removed",
+    "closeBtn.setAttribute('aria-label',\n          currentLang === 'es' ? 'Cerrar comparación' : 'Close comparison');",
+    "closeBtn.setAttribute('data-nope',\n          currentLang === 'es' ? 'Cerrar comparación' : 'Close comparison');", COMPARE],
+  ["compare modal: wipe null-before-close ordering reversed",
+    "window._compareReturnFocus = null;\n        if (typeof window.closeCompareModal === 'function') window.closeCompareModal();",
+    "if (typeof window.closeCompareModal === 'function') window.closeCompareModal();\n        window._compareReturnFocus = null;", COMPARE],
+
 ];
 
 // ---------------------------------------------------------------------------
