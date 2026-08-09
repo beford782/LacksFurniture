@@ -312,6 +312,15 @@ jobs:
       - name: consultation summary (implication mapping)
         run: node tests/consultation_summary_check.mjs
 
+      # DFM motion spike: extracts and EXECUTES the flag gate, the gather, and
+      # startProfileReveal against a DOM stub and fake clock. Proves the gate
+      # fails closed off-localhost, the disabled path keeps the legacy staged
+      # reveal byte-identical in behavior and timing, and the enabled path
+      # gathers the customer's actual review rows without leaking clones —
+      # across skip, spam, reduced-motion, Spanish, and mapping fallbacks.
+      - name: motion spike flag gate + gather (both paths)
+        run: node tests/motion_flag_check.mjs
+
       # One level up from the suites: for each safety property in the manifest,
       # delete it from a COPY of the tree and require a suite to go red. A
       # survivor is a property with no effective test, and a mutation that fails
