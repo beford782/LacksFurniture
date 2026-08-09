@@ -494,7 +494,7 @@ ok('caption contains no quantities (materials-and-mechanism content rule)',
 // mini-harness: spike source only, its own frame counter and a frame
 // budget — a loop that cannot die at rest THROWS here instead of hanging
 // the drain, so that defect fails loudly
-function makeFirmEnv({ hostname, search, reduced = false, lang = 'en', withEls = true }) {
+function makeFirmEnv({ hostname, search, reduced = false, lang = 'en', withEls = true, flagOff = false }) {
   const clock = makeClock();
   const els = {};
   if (withEls) {
@@ -522,7 +522,7 @@ function makeFirmEnv({ hostname, search, reduced = false, lang = 'en', withEls =
     return clock.setTimeout(fn, 0);
   };
   const sessionTimeoutStub = (fn, ms) => { calls.timers++; return clock.setTimeout(fn, ms); };
-  const src = spikeSrc +
+  const src = (flagOff ? spikeSrcFlagOff : spikeSrc) +
     '\nreturn { dfmMotionActive: dfmMotionActive, markup: window.dfmFirmnessMarkup,' +
     ' init: window.dfmFirmnessInit, set: window.dfmFirmnessSet };';
   const fn = new Function('window', 'document', 'URLSearchParams', 'sessionTimeout',
@@ -553,9 +553,22 @@ section('firmness surface: gate behavior');
   const es = makeFirmEnv({ hostname: 'localhost', search: '?motion=1', lang: 'es' });
   ok('Spanish session renders the ES caption',
     es.api.markup().includes('Tu firmeza elegida — solo demostración'));
-  const disabled = makeFirmEnv({ hostname: 'beford782.github.io', search: '?motion=1' });
-  ok('inactive gate: markup declines to the empty string (legacy DOM byte-identical)',
-    disabled.api.markup() === '');
+  // committed enabled state: the flag is GLOBAL — the public Pages hostname
+  // gets the surface with no ?motion=1 parameter
+  const globalHost = makeFirmEnv({ hostname: 'beford782.github.io', search: '' });
+  ok('committed enabled state: public Pages hostname renders the surface without ?motion=1',
+    globalHost.api.markup().includes('dfm-firm-panel'));
+  // ROLLBACK state (enabled: false injected into the executed source): the
+  // public hostname renders no surface and the legacy DOM is preserved —
+  // ?motion=1 stays fail-closed off-localhost
+  const rollback = makeFirmEnv({ hostname: 'beford782.github.io', search: '?motion=1', flagOff: true });
+  ok('ROLLBACK: public hostname + ?motion=1 renders no surface (legacy DOM byte-identical)',
+    rollback.api.markup() === '');
+  const rollbackPlain = makeFirmEnv({ hostname: 'beford782.github.io', search: '', flagOff: true });
+  ok('ROLLBACK: public hostname default renders no surface', rollbackPlain.api.markup() === '');
+  const rollbackLocal = makeFirmEnv({ hostname: 'localhost', search: '?motion=1', flagOff: true });
+  ok('ROLLBACK: localhost + ?motion=1 still previews the surface for owner review',
+    rollbackLocal.api.markup().includes('dfm-firm-panel'));
   const bare = makeFirmEnv({ hostname: 'localhost', search: '?motion=1', withEls: false });
   ok('init with no rendered surface declines and invalidates', bare.api.init(5) === false);
   ok('set with no engine declines', bare.api.set(5) === false);
