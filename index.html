@@ -14910,13 +14910,18 @@
     // the useful static state.
     var _dfmBaseGen = 0;
     window.dfmBaseDemoFlip = function(prevPose) {
+      // EVERY invocation supersedes pending articulation BEFORE any decline
+      // check — a selection that declines (reduced-motion switch mid-
+      // flight, same pose, missing elements) must still kill earlier
+      // pending frames, or a stale full-motion target could overwrite the
+      // newly rendered pose.
+      var gen = ++_dfmBaseGen;
       if (!dfmMotionActive() || dfmReducedMotion()) return false;
       var bed = document.getElementById('dfmSleepBed');
       if (!bed) return false;
       var target = bed.getAttribute('data-position');
       if (!prevPose || !target || prevPose === target) return false;
       bed.setAttribute('data-position', prevPose);
-      var gen = ++_dfmBaseGen;
       // double frame so the previous pose paints before the travel starts
       // (same seam as the gather); session-scoped, so a customer wipe
       // orphans both frames and the epoch guard makes them no-ops

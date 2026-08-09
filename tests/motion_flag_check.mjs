@@ -696,10 +696,10 @@ section('firmness surface: re-render and stale-engine safety');
 // retired in every state. Self-contained mini-harness, same pattern as
 // slice 2.
 section('base articulation: the SMIL loop is retired and cannot return');
-ok('no SMIL animation elements anywhere in index.html',
-  !html.includes('animateTransform') && !/<animate[\s>]/.test(html) &&
-  !/\+\s*'<animate/.test(html));
-ok('no indefinite repeat anywhere in index.html', !html.includes('repeatCount'));
+ok('no SMIL animation elements anywhere in index.html (every form, any case)',
+  !/<animate(transform|motion|color)?[\s>/]/i.test(html) &&
+  !/\+\s*'<animate/i.test(html));
+ok('no indefinite repeat anywhere in index.html (any case)', !/repeatcount/i.test(html));
 ok('the legacy hero cycling-labels arrays left with the loop',
   !html.includes("['PLANO', 'LECTURA', 'GRAVEDAD CERO', 'ANTI-RONQUIDOS']") &&
   !html.includes("['FLAT', 'READING', 'ZERO GRAVITY', 'ANTI-SNORE']"));
@@ -707,8 +707,8 @@ ok('the legacy hero cycling-labels arrays left with the loop',
 section('base articulation: static guarantees');
 ok('the flip lives inside the spike fences',
   /window\.dfmBaseDemoFlip = function/.test(spikeSrc));
-ok('the flip branches for reduced motion and the gate BEFORE any frame',
-  /dfmBaseDemoFlip = function\(prevPose\) \{\s*if \(!dfmMotionActive\(\) \|\| dfmReducedMotion\(\)\) return false;/.test(cssNorm));
+ok('every invocation supersedes pending work FIRST, then branches for the gate and reduced motion',
+  /dfmBaseDemoFlip = function\(prevPose\) \{[\s\S]{0,500}?var gen = \+\+_dfmBaseGen;\s*if \(!dfmMotionActive\(\) \|\| dfmReducedMotion\(\)\) return false;/.test(cssNorm));
 ok('demo-position handler hook is guarded and single-sited',
   html.includes('if (window.dfmBaseDemoFlip) window.dfmBaseDemoFlip(dfmPrevPose);') &&
   (html.match(/dfmBaseDemoFlip/g) || []).length === 3);
@@ -751,7 +751,10 @@ function makeBaseEnv({ hostname, search, reduced = false, lang = 'en', withBed =
   els.dfmGatherLayer = makeEl('dfmGatherLayer');
   const calls = { frames: 0, timers: 0 };
   const bodyEl = makeEl('body');
-  const win = { location: { hostname, search }, matchMedia: () => ({ matches: reduced }), innerWidth: 1024, innerHeight: 768 };
+  // pref is mutable so tests can flip the reduced-motion preference while
+  // frames are still pending — the engine reads matchMedia per call
+  const pref = { reduced };
+  const win = { location: { hostname, search }, matchMedia: () => ({ matches: pref.reduced }), innerWidth: 1024, innerHeight: 768 };
   const doc = { body: bodyEl, getElementById: (id) => els[id] || null, createElementNS: (ns, tag) => makeEl(tag) };
   const src = (flagOff ? spikeSrcFlagOff : spikeSrc) +
     '\nreturn { flip: window.dfmBaseDemoFlip };';
@@ -761,7 +764,7 @@ function makeBaseEnv({ hostname, search, reduced = false, lang = 'en', withBed =
     (f, ms) => { calls.timers++; return clock.setTimeout(f, ms); },
     (f) => { calls.frames++; if (calls.frames > 100) throw new Error('frame budget exceeded'); return clock.setTimeout(f, 0); },
     (id) => clock.clearTimeout(id), lang);
-  return { clock, els, calls, api };
+  return { clock, els, calls, api, pref };
 }
 
 section('base articulation: gate behavior');
@@ -816,6 +819,55 @@ section('base articulation: the flip travels, interrupts, and stays finite');
   same.els.dfmSleepBed.setAttribute('data-position', 'flat');
   ok('same-pose selection declines (no pointless travel)',
     same.api.flip('flat') === false && same.calls.frames === 0);
+}
+
+section('base articulation: declined selections still supersede pending work');
+{
+  // the Codex race: a full-motion flip is pending when the OS preference
+  // flips to reduced and the customer selects again — the stale target
+  // must never overwrite the new direct-rendered pose
+  const env = makeBaseEnv({ hostname: 'localhost', search: '?motion=1' });
+  const bed = env.els.dfmSleepBed;
+  bed.setAttribute('data-position', 'reading');
+  ok('full-motion flip accepted with frames pending',
+    env.api.flip('flat') === true && env.calls.frames === 1 &&
+    bed.getAttribute('data-position') === 'flat');
+  env.pref.reduced = true;                       // preference flips mid-flight
+  bed.setAttribute('data-position', 'anti-snore'); // new selection direct-renders
+  ok('reduced selection declines with zero new frames',
+    env.api.flip('reading') === false && env.calls.frames === 1);
+  env.clock.advance(0);                          // drain the stale frames
+  ok('the stale full-motion target never returns — the reduced pose stands',
+    bed.getAttribute('data-position') === 'anti-snore');
+  env.clock.advance(5000);
+  ok('nothing further fires after the superseded flip', env.calls.frames === 1);
+}
+{
+  const env = makeBaseEnv({ hostname: 'localhost', search: '?motion=1' });
+  const bed = env.els.dfmSleepBed;
+  bed.setAttribute('data-position', 'reading');
+  env.api.flip('flat');                          // pending
+  bed.setAttribute('data-position', 'zero-gravity'); // new render
+  ok('same-pose decline still supersedes pending work',
+    env.api.flip('zero-gravity') === false);
+  env.clock.advance(0);
+  ok('superseded frames never restore the earlier target',
+    bed.getAttribute('data-position') === 'zero-gravity');
+}
+{
+  const env = makeBaseEnv({ hostname: 'localhost', search: '?motion=1' });
+  const bed = env.els.dfmSleepBed;
+  bed.setAttribute('data-position', 'reading');
+  env.api.flip('flat');                          // pending
+  bed.setAttribute('data-position', 'zero-gravity');
+  const savedBed = env.els.dfmSleepBed;
+  env.els.dfmSleepBed = null;                    // element gone at next selection
+  ok('missing-element decline still supersedes pending work',
+    env.api.flip('reading') === false);
+  env.els.dfmSleepBed = savedBed;
+  env.clock.advance(0);
+  ok('restored bed keeps its rendered pose — stale target dead',
+    savedBed.getAttribute('data-position') === 'zero-gravity');
 }
 
 section('base articulation: reduced motion, wipes, and missing elements');
