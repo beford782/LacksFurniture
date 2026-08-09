@@ -553,6 +553,23 @@ const MUTATIONS = [
     "window._compareReturnFocus = null;\n        if (typeof window.closeCompareModal === 'function') window.closeCompareModal();",
     "if (typeof window.closeCompareModal === 'function') window.closeCompareModal();\n        window._compareReturnFocus = null;", COMPARE],
 
+  // --- static comparison alignment (owner-approved slice) ------------------
+  ["compare alignment: the head row regresses to independent columns",
+    "'<div class=\"cmp-head-row\"><div class=\"cmp-label\"></div>' + a.head + b.head + '</div>'",
+    "''", COMPARE],
+  ["compare alignment: the key-feature title is dropped again",
+    "feature: d0.title || mattressResponseLabel(m),",
+    "feature: d0.detail || mattressResponseLabel(m),", COMPARE],
+  ["compare alignment: the practical benefit is dropped",
+    "benefit: d0.detail || mattressDifferenceText(m),",
+    "benefit: mattressDifferenceText(m),", COMPARE],
+  ["compare alignment: identical values no longer merge",
+    "if (r.a === r.b) {", "if (false) {", COMPARE],
+  ["compare alignment: difference emphasis removed",
+    "' cmp-row--diff\" data-cmp=\"'", "' \" data-cmp=\"'", COMPARE],
+  ["compare alignment: the Spanish key-feature label removed",
+    "_esCmp ? 'Característica clave' : 'Key feature'", "'Key feature'", COMPARE],
+
 ];
 
 // ---------------------------------------------------------------------------
