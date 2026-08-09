@@ -846,6 +846,32 @@
          short (180 ms) so every fade completes before the 700 ms teardown —
          no clone may vanish on its final frame */
     }
+    /* Firmness surface (slice 2): the quilted demonstration panel under the
+       firmness slider. Every visible motion is JS point-rewriting of SVG
+       path data — deliberately ZERO CSS transitions or animations here, so
+       there is nothing for a reduced-motion override to beat; the JS
+       branches before scheduling any frame. touch-action: none keeps a
+       press on the panel from scrolling the quiz (new element, existing
+       touch handling untouched). */
+    .dfm-firm-panel {
+      margin: 18px auto 0;
+      max-width: 480px;
+    }
+    .dfm-firm-panel svg {
+      display: block;
+      width: 100%;
+      height: auto;
+      touch-action: none;
+      cursor: pointer;
+    }
+    .dfm-firm-caption {
+      margin: 6px 0 0;
+      font-size: 13px;
+      letter-spacing: 0.04em;
+      text-align: center;
+      color: inherit;
+      opacity: 0.72;
+    }
 
     /* Slider */
     .noct-slider-wrap {
@@ -12823,6 +12849,7 @@
             <div class="noct-slider-labels">
               ${q.labels.map(l => `<span>${L(l)}</span>`).join('')}
             </div>
+            ${window.dfmFirmnessMarkup ? window.dfmFirmnessMarkup() : ''}
           </div>
           <div class="noct-quiz-nav">
             ${currentQuestion > 0
@@ -12836,9 +12863,11 @@
           answers[q.id] = parseInt(this.value);
           document.getElementById('sliderVal').textContent = this.value;
           document.getElementById('sliderLabel').textContent = getFirmnessLabel(parseInt(this.value));
+          if (window.dfmFirmnessSet) window.dfmFirmnessSet(parseInt(this.value));
         });
         // Set default if not answered yet
         if (answers[q.id] === undefined) answers[q.id] = q.defaultValue;
+        if (window.dfmFirmnessInit) window.dfmFirmnessInit(val);
       } else {
         const isMulti = q.type === 'multiple';
         const selected = isMulti ? (answers[q.id] || []) : answers[q.id];
@@ -14659,6 +14688,180 @@
       layer.addEventListener('click', skip);
       layer.addEventListener('touchend', skip);
     })();
+    // ----- Firmness surface (slice 2 — approved direction, lab ruling §10.2)
+    // The quilted panel under the firmness slider. It demonstrates what the
+    // CUSTOMER'S OWN selection means on the feel scale — a schematic of the
+    // selected feel, never a product-performance test, and the persistent
+    // caption says so in both languages. All motion is JS-driven point
+    // rewriting of SVG path data: frames run ONLY while the dent is settling
+    // and the loop provably dies at rest (even mid-press — pointer moves
+    // redraw synchronously, so no free-running frame loop ever exists).
+    // Under reduced motion no frame is ever scheduled: state snaps and draws
+    // once. The SVG is aria-hidden decorative — the slider remains the one
+    // real control and also drives the demonstration, so keyboard and AT
+    // users lose nothing.
+    var _dfmFirm = null;
+    var _dfmFirmGen = 0;
+    function dfmFirmParams(f) {
+      return {
+        depth: (30 - 2.4 * f) * 0.8,   /* softer sinks deeper…            */
+        sigma: (78 + 8.5 * f) * 0.62,  /* …firmer spreads wide and shallow */
+        pressIn: 270 - 12 * f,
+        rebound: 800 - 52 * f
+      };
+    }
+    function dfmFirmNow() {
+      try { return performance.now(); } catch (e) { return Date.now(); }
+    }
+    window.dfmFirmnessMarkup = function() {
+      if (!dfmMotionActive()) return '';
+      var caption = currentLang === 'es'
+        ? 'Tu firmeza elegida — solo demostración'
+        : 'Your selected feel — demonstration only';
+      return '<div class="dfm-firm-panel" id="dfmFirmPanel">' +
+        '<svg viewBox="0 0 320 150" id="dfmFirmSvg" aria-hidden="true" focusable="false">' +
+        '<rect x="4" y="12" width="312" height="126" rx="2" fill="none" stroke="rgba(104,84,60,0.4)"></rect>' +
+        '<g id="dfmFirmRows" stroke="rgba(104,84,60,0.55)" stroke-width="1.2" fill="none"></g>' +
+        '<ellipse id="dfmFirmContact" cx="160" cy="70" rx="0" ry="0" fill="rgba(47,39,30,0.10)"></ellipse>' +
+        '</svg>' +
+        '<p class="dfm-firm-caption">' + caption + '</p></div>';
+    };
+    window.dfmFirmnessInit = function(f) {
+      var svg = document.getElementById('dfmFirmSvg');
+      var group = document.getElementById('dfmFirmRows');
+      var contact = document.getElementById('dfmFirmContact');
+      // No surface rendered (gate closed) => invalidate any stale engine and
+      // decline; the quiz renders exactly as legacy.
+      if (!svg || !group || !contact) { _dfmFirmGen++; _dfmFirm = null; return false; }
+      var gen = ++_dfmFirmGen;
+      var rowsY = [30, 46, 62, 78, 94, 110, 126];
+      var xs = [];
+      for (var i = 0; i < 33; i++) { xs.push(12 + (296 * i) / 32); }
+      var paths = rowsY.map(function(y) {
+        var p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        group.appendChild(p);
+        return { el: p, y: y };
+      });
+      var st = {
+        f: Math.max(1, Math.min(10, Number(f) || 5)),
+        px: 160, py: 70, t: 0, target: 0,
+        looping: false, last: 0, pressing: false, holdTimer: 0
+      };
+      function dent(x, y) {
+        var p = dfmFirmParams(st.f);
+        var rowDist = Math.abs(y - st.py) / 16;
+        return p.depth *
+          Math.exp(-((x - st.px) * (x - st.px)) / (2 * p.sigma * p.sigma)) *
+          Math.exp(-rowDist * 0.45) * st.t;
+      }
+      function draw() {
+        paths.forEach(function(row) {
+          var d = '';
+          xs.forEach(function(x, xi) {
+            d += (xi === 0 ? 'M' : 'L') + x.toFixed(1) + ' ' + (row.y + dent(x, row.y)).toFixed(1);
+          });
+          row.el.setAttribute('d', d);
+        });
+        var p = dfmFirmParams(st.f);
+        contact.setAttribute('cx', st.px);
+        contact.setAttribute('cy', st.py);
+        contact.setAttribute('rx', (p.sigma * 0.55 * st.t).toFixed(1));
+        contact.setAttribute('ry', (7 * st.t).toFixed(1));
+      }
+      function alive() { return gen === _dfmFirmGen && svg.isConnected !== false; }
+      function tick() {
+        if (!alive()) return;
+        var now = dfmFirmNow();
+        var p = dfmFirmParams(st.f);
+        /* dt floor: duplicate rAF timestamps (iOS Safari, virtual-time
+           harnesses) would stall the exponential settle at dt=0 and the
+           loop could never reach rest */
+        var dt = Math.min(48, Math.max(8, now - (st.last || now)));
+        st.last = now;
+        var tau = (st.target > st.t ? p.pressIn : p.rebound) / 3;
+        st.t += (st.target - st.t) * (1 - Math.exp(-dt / tau));
+        draw();
+        if (Math.abs(st.target - st.t) > 0.008) {
+          sessionFrame(tick);
+        } else {
+          st.t = st.target;
+          draw();
+          st.looping = false; /* the loop MUST die at rest — test-asserted */
+        }
+      }
+      function kick() {
+        // Reduced motion branches BEFORE any frame exists: snap and draw
+        // once, synchronously. The timeline is collapsed, not slowed.
+        if (dfmReducedMotion()) { st.t = st.target; st.last = 0; draw(); return; }
+        if (!st.looping) { st.looping = true; st.last = 0; sessionFrame(tick); }
+      }
+      function toViewBox(evt) {
+        var r = svg.getBoundingClientRect();
+        return {
+          x: 12 + ((evt.clientX - r.left) / (r.width || 1)) * 296,
+          y: 12 + ((evt.clientY - r.top) / (r.height || 1)) * 126
+        };
+      }
+      function press(evt) {
+        if (!alive()) return;
+        if (evt && evt.preventDefault) evt.preventDefault();
+        // A manual press takes ownership: any pending slider-demonstration
+        // release must not fire mid-hold and drop the customer's dent.
+        clearTimeout(st.holdTimer);
+        var pt = toViewBox(evt);
+        st.px = Math.max(24, Math.min(296, pt.x));
+        st.py = Math.max(30, Math.min(126, pt.y));
+        st.pressing = true;
+        st.target = 1;
+        kick();
+      }
+      function release() {
+        if (!alive() || !st.pressing) return;
+        st.pressing = false;
+        st.target = 0;
+        kick();
+      }
+      svg.addEventListener('pointerdown', press);
+      svg.addEventListener('pointermove', function(evt) {
+        if (!alive() || !st.pressing) return;
+        var pt = toViewBox(evt);
+        st.px = Math.max(24, Math.min(296, pt.x));
+        st.py = Math.max(30, Math.min(126, pt.y));
+        if (!st.looping) draw();
+      });
+      svg.addEventListener('pointerup', release);
+      svg.addEventListener('pointercancel', release);
+      svg.addEventListener('pointerleave', release);
+      function setFeel(val) {
+        st.f = Math.max(1, Math.min(10, Number(val) || st.f));
+        /* one demonstration press at panel center — input-driven, never
+           looped; under reduced motion a single frozen frame */
+        st.px = 160; st.py = 70;
+        if (dfmReducedMotion()) { st.t = 1; st.target = 1; draw(); return; }
+        st.target = 1;
+        kick();
+        clearTimeout(st.holdTimer);
+        st.holdTimer = sessionTimeout(function() {
+          // never release a surface the customer is actively holding —
+          // defense in depth behind press() clearing this timer
+          if (!alive() || st.pressing) return;
+          st.target = 0;
+          kick();
+        }, 400 + dfmFirmParams(st.f).pressIn);
+      }
+      _dfmFirm = { gen: gen, set: setFeel, isLooping: function() { return st.looping; } };
+      // Arrival state: flat under full motion (the demonstration is
+      // input-driven); under reduced motion a frozen centered dent — the
+      // same static-figure treatment the lab ruled for reduced users.
+      if (dfmReducedMotion()) { st.t = 1; st.target = 1; }
+      draw();
+      return true;
+    };
+    window.dfmFirmnessSet = function(val) {
+      if (!_dfmFirm || _dfmFirm.gen !== _dfmFirmGen) return false;
+      _dfmFirm.set(val);
+      return true;
+    };
     // The styling hook is withheld entirely when reduced motion is already
     // active at load — the Card Table feedback never exists for those users.
     // (A defensive CSS override also covers a preference change after load.)

@@ -454,5 +454,241 @@ section('mapping fallbacks never fabricate answers');
   ok('row/question count mismatch declines to legacy', env.calls.overlayOpen === 1);
 }
 
+// ================================================================ slice 2
+// Firmness surface — the quilted demonstration panel under the firmness
+// slider. Same house style: the REAL spike source is executed against a
+// DOM stub and a fake clock. This section is deliberately self-contained
+// (its own mini-harness) so it composes with concurrent edits to the
+// shared makeEnv without merge conflicts.
+section('firmness surface: static guarantees');
+ok('markup, init and set live inside the spike fences',
+  /window\.dfmFirmnessMarkup = function/.test(spikeSrc) &&
+  /window\.dfmFirmnessInit = function/.test(spikeSrc) &&
+  /window\.dfmFirmnessSet = function/.test(spikeSrc));
+ok('markup is gate-guarded (declines to empty when motion is inactive)',
+  /dfmFirmnessMarkup = function\(\) \{\s*if \(!dfmMotionActive\(\)\) return '';/.test(html.replace(/\r\n/g, '\n')));
+ok('slider template hook is guarded and falls through',
+  html.includes("${window.dfmFirmnessMarkup ? window.dfmFirmnessMarkup() : ''}"));
+ok('slider init hook is guarded',
+  html.includes('if (window.dfmFirmnessInit) window.dfmFirmnessInit(val);'));
+ok('slider input hook is guarded',
+  html.includes('if (window.dfmFirmnessSet) window.dfmFirmnessSet(parseInt(this.value));'));
+ok('persistent honesty caption present in both languages',
+  spikeSrc.includes('Your selected feel — demonstration only') &&
+  spikeSrc.includes('Tu firmeza elegida — solo demostración'));
+ok('the SVG is aria-hidden decorative (the slider stays the one real control)',
+  /<svg viewBox="0 0 320 150" id="dfmFirmSvg" aria-hidden="true" focusable="false">/.test(spikeSrc));
+const firmCssStart = cssNorm.indexOf('.dfm-firm-panel {');
+const firmCssEnd = cssNorm.indexOf('/* Slider */');
+const firmCss = firmCssStart !== -1 && firmCssEnd > firmCssStart
+  ? cssNorm.slice(firmCssStart, firmCssEnd) : '';
+ok('surface CSS block located', firmCss.length > 50);
+ok('surface CSS declares ZERO transitions/animations (all motion is JS point-rewriting)',
+  firmCss !== '' && !/transition\s*:/.test(firmCss) && !/animation\s*:/.test(firmCss));
+ok('surface SVG opts out of scroll gestures (touch-action: none)',
+  /touch-action:\s*none/.test(firmCss));
+ok('caption contains no quantities (materials-and-mechanism content rule)',
+  !/\d/.test('Your selected feel — demonstration only') &&
+  !/\d/.test('Tu firmeza elegida — solo demostración'));
+
+// mini-harness: spike source only, its own frame counter and a frame
+// budget — a loop that cannot die at rest THROWS here instead of hanging
+// the drain, so that defect fails loudly
+function makeFirmEnv({ hostname, search, reduced = false, lang = 'en', withEls = true, flagOff = false }) {
+  const clock = makeClock();
+  const els = {};
+  if (withEls) {
+    for (const id of ['dfmFirmSvg', 'dfmFirmRows', 'dfmFirmContact', 'dfmGatherLayer']) {
+      els[id] = makeEl(id);
+    }
+    els.dfmFirmSvg._rect = { left: 0, top: 0, width: 320, height: 150 };
+  }
+  const calls = { frames: 0, timers: 0 };
+  const bodyEl = makeEl('body');
+  const win = {
+    location: { hostname, search },
+    matchMedia: () => ({ matches: reduced }),
+    innerWidth: 1024,
+    innerHeight: 768
+  };
+  const doc = {
+    body: bodyEl,
+    getElementById: (id) => els[id] || null,
+    createElementNS: (ns, tag) => makeEl(tag)
+  };
+  const sessionFrameStub = (fn) => {
+    calls.frames++;
+    if (calls.frames > 5000) throw new Error('frame budget exceeded — a frame loop failed to die at rest');
+    return clock.setTimeout(fn, 0);
+  };
+  const sessionTimeoutStub = (fn, ms) => { calls.timers++; return clock.setTimeout(fn, ms); };
+  const src = (flagOff ? spikeSrcFlagOff : spikeSrc) +
+    '\nreturn { dfmMotionActive: dfmMotionActive, markup: window.dfmFirmnessMarkup,' +
+    ' init: window.dfmFirmnessInit, set: window.dfmFirmnessSet };';
+  const fn = new Function('window', 'document', 'URLSearchParams', 'sessionTimeout',
+    'sessionFrame', 'clearTimeout', 'currentLang', src);
+  const api = fn(win, doc, URLSearchParams, sessionTimeoutStub, sessionFrameStub,
+    (id) => clock.clearTimeout(id), lang);
+  return { clock, els, calls, api, body: bodyEl };
+}
+function firmRowYs(d) {
+  // parse every y ordinate out of an "Mx y Lx y…" path string
+  return [...d.matchAll(/[ML][\d.]+ ([\d.]+)/g)].map((m) => parseFloat(m[1]));
+}
+function firmRowFlat(row) {
+  const ys = firmRowYs(row.attrs.d || '');
+  return ys.length === 33 && ys.every((y) => Math.abs(y - row._baseY) < 0.05);
+}
+function tagBaselines(env) {
+  const rowsY = [30, 46, 62, 78, 94, 110, 126];
+  env.els.dfmFirmRows.children.forEach((row, i) => { row._baseY = rowsY[i]; });
+}
+
+section('firmness surface: gate behavior');
+{
+  const active = makeFirmEnv({ hostname: 'localhost', search: '?motion=1' });
+  const m = active.api.markup();
+  ok('active markup renders the panel with the EN caption',
+    m.includes('dfm-firm-panel') && m.includes('Your selected feel — demonstration only'));
+  const es = makeFirmEnv({ hostname: 'localhost', search: '?motion=1', lang: 'es' });
+  ok('Spanish session renders the ES caption',
+    es.api.markup().includes('Tu firmeza elegida — solo demostración'));
+  // committed enabled state: the flag is GLOBAL — the public Pages hostname
+  // gets the surface with no ?motion=1 parameter
+  const globalHost = makeFirmEnv({ hostname: 'beford782.github.io', search: '' });
+  ok('committed enabled state: public Pages hostname renders the surface without ?motion=1',
+    globalHost.api.markup().includes('dfm-firm-panel'));
+  // ROLLBACK state (enabled: false injected into the executed source): the
+  // public hostname renders no surface and the legacy DOM is preserved —
+  // ?motion=1 stays fail-closed off-localhost
+  const rollback = makeFirmEnv({ hostname: 'beford782.github.io', search: '?motion=1', flagOff: true });
+  ok('ROLLBACK: public hostname + ?motion=1 renders no surface (legacy DOM byte-identical)',
+    rollback.api.markup() === '');
+  const rollbackPlain = makeFirmEnv({ hostname: 'beford782.github.io', search: '', flagOff: true });
+  ok('ROLLBACK: public hostname default renders no surface', rollbackPlain.api.markup() === '');
+  const rollbackLocal = makeFirmEnv({ hostname: 'localhost', search: '?motion=1', flagOff: true });
+  ok('ROLLBACK: localhost + ?motion=1 still previews the surface for owner review',
+    rollbackLocal.api.markup().includes('dfm-firm-panel'));
+  const bare = makeFirmEnv({ hostname: 'localhost', search: '?motion=1', withEls: false });
+  ok('init with no rendered surface declines and invalidates', bare.api.init(5) === false);
+  ok('set with no engine declines', bare.api.set(5) === false);
+}
+
+section('firmness surface: press, settle, and the loop dying at rest');
+{
+  const env = makeFirmEnv({ hostname: 'localhost', search: '?motion=1' });
+  ok('init succeeds on the active path', env.api.init(5) === true);
+  tagBaselines(env);
+  const rows = env.els.dfmFirmRows.children;
+  ok('seven quilt rows drawn with 33 samples each',
+    rows.length === 7 && rows.every((r) => firmRowYs(r.attrs.d || '').length === 33));
+  ok('arrival state is flat (the demonstration is input-driven, never ambient)',
+    rows.every(firmRowFlat) && env.calls.frames === 0);
+  env.els.dfmFirmSvg.fire('pointerdown', { clientX: 160, clientY: 75, preventDefault() {} });
+  ok('press schedules frames', env.calls.frames > 0);
+  env.clock.advance(0);
+  // margin-based, not a strict float compare: an FP hairline between equal
+  // deviations must not satisfy "local" (caught by mutation testing — a
+  // falloff-removed mutant produced 14.399999999999999 < 14.400000000000006)
+  const edgeDev = Math.max(...firmRowYs(rows[0].attrs.d).map((y) => Math.abs(y - 30)));
+  const centerDev = Math.max(...firmRowYs(rows[3].attrs.d).map((y) => Math.abs(y - 78)));
+  ok('pressed surface shows a genuinely local dent (edge row < 60% of center-row deviation)',
+    !firmRowFlat(rows[2]) && !firmRowFlat(rows[3]) &&
+    centerDev > 1 && edgeDev < centerDev * 0.6);
+  const contact = env.els.dfmFirmContact;
+  ok('contact shadow tracks the press', parseFloat(contact.attrs.rx) > 0);
+  const framesHeld = env.calls.frames;
+  env.clock.advance(2000);
+  ok('loop DIES at rest even while the press is held (no free-running frames)',
+    env.calls.frames === framesHeld);
+  env.els.dfmFirmSvg.fire('pointerup', {});
+  env.clock.advance(3000);
+  ok('release rebounds to flat and the loop dies again',
+    rows.every(firmRowFlat) && parseFloat(contact.attrs.rx) === 0);
+  const framesRest = env.calls.frames;
+  env.clock.advance(5000);
+  ok('at rest, zero frames are ever scheduled', env.calls.frames === framesRest);
+}
+
+section('firmness surface: slider-driven demonstration press');
+{
+  const env = makeFirmEnv({ hostname: 'localhost', search: '?motion=1' });
+  env.api.init(5);
+  tagBaselines(env);
+  const rows = env.els.dfmFirmRows.children;
+  ok('set drives a centered demonstration press', env.api.set(2) === true);
+  env.clock.advance(0);
+  ok('demonstration dent appears at panel center', !firmRowFlat(rows[2]));
+  const softRx = parseFloat(env.els.dfmFirmContact.attrs.rx);
+  env.clock.advance(5000);
+  ok('demonstration releases by itself and settles flat (hold timer, then rebound)',
+    rows.every(firmRowFlat));
+  const framesRest = env.calls.frames;
+  env.clock.advance(3000);
+  ok('after the demonstration, the loop is dead', env.calls.frames === framesRest);
+  env.api.set(9);
+  env.clock.advance(0);
+  const firmRx = parseFloat(env.els.dfmFirmContact.attrs.rx);
+  ok('firmer selection spreads wider and shallower (physics follows the selection)',
+    firmRx > softRx);
+  env.clock.advance(5000);
+}
+
+section('firmness surface: slider demo overlapped by a manual press');
+{
+  const env = makeFirmEnv({ hostname: 'localhost', search: '?motion=1' });
+  env.api.init(5);
+  tagBaselines(env);
+  const rows = env.els.dfmFirmRows.children;
+  env.api.set(3);          // demonstration press; its release timer is pending
+  env.clock.advance(100);  // dent settling; the release timer has NOT fired
+  env.els.dfmFirmSvg.fire('pointerdown', { clientX: 120, clientY: 70, preventDefault() {} });
+  env.clock.advance(3000); // well beyond the original demo-release timer
+  ok('dent remains held across the stale demo-release timer',
+    !firmRowFlat(rows[2]) && parseFloat(env.els.dfmFirmContact.attrs.rx) > 0);
+  const framesHeld = env.calls.frames;
+  env.clock.advance(2000);
+  ok('held overlap reaches rest — the frame loop is dead while held',
+    env.calls.frames === framesHeld);
+  env.els.dfmFirmSvg.fire('pointerup', {});
+  env.clock.advance(4000);
+  ok('release after the overlap rebounds to flat and the loop dies',
+    rows.every(firmRowFlat) && parseFloat(env.els.dfmFirmContact.attrs.rx) === 0);
+  const framesRest = env.calls.frames;
+  env.clock.advance(3000);
+  ok('no frames after the overlap settles', env.calls.frames === framesRest);
+}
+
+section('firmness surface: reduced motion never schedules a frame');
+{
+  const env = makeFirmEnv({ hostname: 'localhost', search: '?motion=1', reduced: true });
+  ok('reduced init succeeds', env.api.init(5) === true);
+  tagBaselines(env);
+  const rows = env.els.dfmFirmRows.children;
+  ok('reduced arrival is the frozen static figure (dent drawn, zero frames)',
+    !firmRowFlat(rows[2]) && env.calls.frames === 0);
+  env.api.set(9);
+  ok('reduced set snaps instantly — still zero frames', env.calls.frames === 0);
+  env.els.dfmFirmSvg.fire('pointerdown', { clientX: 100, clientY: 60, preventDefault() {} });
+  env.els.dfmFirmSvg.fire('pointerup', {});
+  ok('reduced press is synchronous — still zero frames, timeline collapsed',
+    env.calls.frames === 0);
+  env.clock.advance(3000);
+  ok('nothing was deferred under reduced motion', env.calls.frames === 0);
+}
+
+section('firmness surface: re-render and stale-engine safety');
+{
+  const env = makeFirmEnv({ hostname: 'localhost', search: '?motion=1' });
+  env.api.init(5);
+  ok('re-init supersedes the previous engine generation', env.api.init(7) === true);
+  ok('set routes to the newest engine only', env.api.set(3) === true);
+  env.clock.advance(5000);
+  // a later render without the surface (gate closed mid-session) kills the engine
+  env.els.dfmFirmSvg = null;
+  ok('init after the surface disappears declines and invalidates the engine',
+    env.api.init(5) === false && env.api.set(5) === false);
+}
+
 console.log(`\n${failures === 0 ? 'PASS' : 'FAIL'} — ${checks - failures}/${checks} checks passed`);
 process.exit(failures === 0 ? 0 : 1);
