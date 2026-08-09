@@ -786,15 +786,6 @@
         --dfm-settle: 0.01ms;
         --dfm-place: 0.01ms;
       }
-      /* Defensive: the dfm-motion class is never ADDED under reduced motion,
-         but if the preference flips after load the DFM feedback must still
-         go quiet — the settle uses a literal 200 ms, so it is disabled here
-         explicitly rather than relying on the token collapse. */
-      body.dfm-motion .noct-quiz-option {
-        transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
-      }
-      body.dfm-motion .noct-quiz-option:active { transform: none; }
-      body.dfm-motion .noct-quiz-option.selected { animation: none; }
     }
     /* Card Table selected-card feedback: a restrained press-in on tap and a
        small settle when the selection lands. Transform-only; the existing
@@ -813,6 +804,20 @@
       from { transform: scaleY(0.99); }
       60% { transform: scaleY(0.997); }
       to { transform: none; }
+    }
+    /* Defensive reduced-motion override — MUST come AFTER every ordinary DFM
+       Card Table rule above: a media query adds no specificity, so at equal
+       specificity only source order lets these declarations win. The
+       dfm-motion class is never ADDED under reduced motion, but if the
+       preference flips after load the feedback must still go quiet — the
+       settle uses a literal 200 ms, so it is disabled here explicitly rather
+       than relying on the token collapse. */
+    @media (prefers-reduced-motion: reduce) {
+      body.dfm-motion .noct-quiz-option {
+        transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+      }
+      body.dfm-motion .noct-quiz-option:active { transform: none; }
+      body.dfm-motion .noct-quiz-option.selected { animation: none; }
     }
     /* Gather layer: full-viewport, decorative, hidden from AT. Clones of the
        customer's actual review rows travel to a stack point; the layer also

@@ -90,11 +90,44 @@ ok('reduced-motion fast path advances directly (source)',
 // changes after load
 ok('dfm-motion body class withheld under reduced motion (source)',
   /dfmMotionActive\(\) && !dfmReducedMotion\(\)/.test(spikeSrc));
-const reducedCss = (html.match(/@media \(prefers-reduced-motion: reduce\) \{[\s\S]*?\n    \}/g) || []).join('\n');
-ok('defensive CSS override: selected-card animation disabled under reduced motion',
-  /body\.dfm-motion \.noct-quiz-option\.selected \{ animation: none; \}/.test(reducedCss));
-ok('defensive CSS override: active-press transform disabled under reduced motion',
-  /body\.dfm-motion \.noct-quiz-option:active \{ transform: none; \}/.test(reducedCss));
+// The defensive override only works if it comes AFTER the ordinary rules:
+// a media query adds no specificity, so at equal specificity the LATER
+// declaration wins. These assertions are ordering-aware — presence alone
+// proved nothing (the original defect was a defensive block that existed
+// but lost the cascade).
+// line-ending-canonical copy: ordering logic must be checkout-agnostic (a
+// Windows autocrlf checkout serves \r\n which literal \n needles never match)
+const cssNorm = html.replace(/\r\n/g, '\n');
+function lastReducedBlock() {
+  const blocks = [...cssNorm.matchAll(/@media \(prefers-reduced-motion: reduce\) \{[\s\S]*?\n    \}/g)];
+  for (let i = blocks.length - 1; i >= 0; i--) {
+    if (blocks[i][0].includes('body.dfm-motion')) {
+      return { text: blocks[i][0], index: blocks[i].index };
+    }
+  }
+  return null;
+}
+const reducedBlk = lastReducedBlock();
+ok('a defensive DFM reduced-motion block exists', !!reducedBlk);
+const baseTransitionIdx = cssNorm.indexOf('body.dfm-motion .noct-quiz-option {\n      transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease,\n        transform var(--dfm-quick) var(--dfm-e-compress);');
+const baseActiveIdx = cssNorm.indexOf('body.dfm-motion .noct-quiz-option:active {\n      transform: translateY(1px) scaleY(0.985);');
+const baseSelectedIdx = cssNorm.indexOf('body.dfm-motion .noct-quiz-option.selected {\n      animation: dfmOptSettle');
+ok('ordinary DFM rules located', baseTransitionIdx !== -1 && baseActiveIdx !== -1 && baseSelectedIdx !== -1);
+ok('cascade assertions are non-vacuous (no anchor resolved to -1)',
+  Math.min(baseTransitionIdx, baseActiveIdx, baseSelectedIdx) > -1);
+if (reducedBlk) {
+  ok('cascade: reduced override comes AFTER the ordinary transition rule (so it wins)',
+    reducedBlk.index > baseTransitionIdx &&
+    /body\.dfm-motion \.noct-quiz-option \{\s*transition: background 0\.15s ease, border-color 0\.15s ease, color 0\.15s ease;\s*\}/.test(reducedBlk.text));
+  ok('cascade: reduced override comes AFTER the ordinary :active rule (transform: none wins)',
+    reducedBlk.index > baseActiveIdx &&
+    /body\.dfm-motion \.noct-quiz-option:active \{ transform: none; \}/.test(reducedBlk.text));
+  ok('cascade: reduced override comes AFTER the ordinary .selected rule (animation: none wins)',
+    reducedBlk.index > baseSelectedIdx &&
+    /body\.dfm-motion \.noct-quiz-option\.selected \{ animation: none; \}/.test(reducedBlk.text));
+  ok('reduced override does not reintroduce the transform transition',
+    !/transform var\(--dfm-quick\)/.test(reducedBlk.text));
+}
 // Codex finding 3: the opacity exit must be short and UNDELAYED so every
 // fade completes inside the 700 ms teardown
 ok('clone opacity exit is 180 ms and undelayed (source)',
