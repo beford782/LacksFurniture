@@ -55,9 +55,10 @@ jobs:
     # The display name is PINNED by branch protection (required status check
     # "Full suite (18 checks)") — renaming it here without updating the
     # protection rule in the same change would leave every PR waiting on a
-    # check that never reports. The suite actually runs 19 checks since Phase
-    # 0.6 added the consultation-summary suite; renaming name+protection
-    # together is an operator (Blake) action, tracked in the 0.6 PR notes.
+    # check that never reports. The suite actually runs 20 checks: Phase 0.6
+    # added the consultation-summary suite and the compare-modal prerequisite
+    # added its dialog-semantics suite; renaming name+protection together is
+    # an operator (Blake) action, tracked in the 0.6 PR notes.
     name: Full suite (18 checks)
     runs-on: ubuntu-24.04
     # Raised from 20 for the mutation sweep, which re-runs the suites once per
@@ -320,6 +321,19 @@ jobs:
       # across skip, spam, reduced-motion, Spanish, and mapping fallbacks.
       - name: motion spike flag gate + gather (both paths)
         run: node tests/motion_flag_check.mjs
+
+      # Compare-modal dialog semantics: extracts and EXECUTES the real
+      # open/close/keydown against a focus-tracking DOM stub. Proves the
+      # labelled-dialog contract, localized name and close label on every
+      # open, initial focus, Tab/Shift+Tab containment, Escape, exact-opener
+      # restoration (detached openers never focused), single keydown binding
+      # across reopenings, and the wipe's null-before-close ordering. This is
+      # the standing prerequisite in front of comparison-alignment work.
+      # (The job's display name remains pinned by branch protection — see the
+      # note at the top of this job; renaming name+protection together stays
+      # a tracked operator action.)
+      - name: compare modal dialog semantics
+        run: node tests/compare_modal_check.mjs
 
       # One level up from the suites: for each safety property in the manifest,
       # delete it from a COPY of the tree and require a suite to go red. A

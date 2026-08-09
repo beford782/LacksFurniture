@@ -15024,8 +15024,10 @@
     // mattress would imply exactly the specificity the chip denies. The
     // reveal is a two-way class toggle; the finite gated transitions do
     // all pacing — this scene schedules NO frames and NO timers. The
-    // panel lives inside #drawerDifferentiators, so every drawer render
-    // replaces it collapsed and the session wipe clears it outright.
+    // panel renders as a SIBLING section immediately after
+    // #drawerDifferentiators (never inside it); every drawer render
+    // dedupes and replaces it collapsed, and the session wipe clears it
+    // through SESSION_CONTENT_IDS.
     window.dfmConstructionMarkup = function() {
       if (!dfmMotionActive()) return '';
       var es = currentLang === 'es';
@@ -19311,6 +19313,10 @@
         _financeReturnFocus = null;
         if (typeof window.closeFinancingSheet === 'function') window.closeFinancingSheet();
         window._compareOrigin = '';
+        // Same contract as the financing sheet: null the stored opener
+        // BEFORE closing, or the close path pulls focus back into the
+        // torn-down session.
+        window._compareReturnFocus = null;
         if (typeof window.closeCompareModal === 'function') window.closeCompareModal();
         SESSION_LAYERS.forEach(wipeLayer);
 
@@ -19579,16 +19585,65 @@
 
       var title = document.getElementById('compareModalTitle');
       if (title) title.textContent = currentLang === 'es' ? 'Compara Tus Finalistas' : 'Compare Your Finalists';
+      // Accessible close label in the active language — the financing
+      // sheet's exact pattern; re-set on every open so a language change
+      // between opens relocalises it.
+      var closeBtn = document.getElementById('compareModalClose');
+      if (closeBtn) {
+        closeBtn.setAttribute('aria-label',
+          currentLang === 'es' ? 'Cerrar comparación' : 'Close comparison');
+      }
       document.getElementById('compareCols').innerHTML = colHtml(m1) + colHtml(m2);
       var modal = document.getElementById('compareModal');
+      // Capture the exact opener BEFORE moving focus, so close can hand
+      // focus straight back to it.
+      window._compareReturnFocus = document.activeElement;
       modal.style.display = 'flex';
       modal.classList.add('visible');
+      if (title && typeof title.focus === 'function') {
+        try { title.focus({ preventScroll: true }); } catch (err) { title.focus(); }
+      }
+      if (!window._compareKeydownBound) {
+        modal.addEventListener('keydown', compareModalKeydown);
+        window._compareKeydownBound = true;
+      }
     };
+
+    // Escape closes; Tab/Shift+Tab cycle within the dialog. Bound once to
+    // the modal element — it only needs to fire while focus is inside,
+    // which the initial focus and the cycle itself guarantee. Mirrors
+    // finSheetKeydown.
+    function compareModalKeydown(e) {
+      if (e.key === 'Escape') { e.preventDefault(); window.closeCompareModal(); return; }
+      if (e.key !== 'Tab') return;
+      var modal = document.getElementById('compareModal');
+      var focusables = modal.querySelectorAll(
+        'button, [href], [tabindex="-1"]#compareModalTitle');
+      var list = Array.prototype.filter.call(focusables, function(el) {
+        return el.offsetParent !== null && el.disabled !== true;
+      });
+      if (!list.length) return;
+      var first = list[0], last = list[list.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault(); last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault(); first.focus();
+      }
+    }
 
     window.closeCompareModal = function() {
       var modal = document.getElementById('compareModal');
       modal.style.display = 'none';
       modal.classList.remove('visible');
+      // Focus returns to the exact opener. A wipe nulls the stored opener
+      // BEFORE calling this (same contract as the financing sheet), and a
+      // detached opener is skipped rather than focused.
+      var opener = window._compareReturnFocus;
+      if (opener && typeof opener.focus === 'function' &&
+          (typeof document.contains !== 'function' || document.contains(opener))) {
+        try { opener.focus({ preventScroll: true }); } catch (err) { opener.focus(); }
+      }
+      window._compareReturnFocus = null;
       if (window._compareOrigin === 'review') {
         window._compareOrigin = '';
         window.clearCompare();
@@ -19667,11 +19722,16 @@
     </div>
   </div>
 
-  <div id="compareModal" class="compare-modal" style="display:none;">
+  <!-- Real dialog semantics (Gate: compare-modal prerequisite). Mirrors the
+       financing sheet's lifecycle: labelled dialog, initial focus on the
+       tabindex="-1" title, Tab containment + Escape on a keydown bound once,
+       focus returned to the exact opener on close. -->
+  <div id="compareModal" class="compare-modal" style="display:none;" role="dialog"
+       aria-modal="true" aria-labelledby="compareModalTitle">
     <div class="compare-modal-inner">
       <div class="compare-modal-header">
-        <div id="compareModalTitle" style="font-size:0.65rem; text-transform:uppercase; letter-spacing:2px; color:var(--gold); font-weight:700;">Compare Your Finalists</div>
-        <button class="compare-modal-close" onclick="window.closeCompareModal()"
+        <div id="compareModalTitle" tabindex="-1" style="font-size:0.65rem; text-transform:uppercase; letter-spacing:2px; color:var(--gold); font-weight:700;">Compare Your Finalists</div>
+        <button class="compare-modal-close" id="compareModalClose" onclick="window.closeCompareModal()"
           ontouchend="event.preventDefault();window.closeCompareModal();">&times;</button>
       </div>
       <div class="compare-cols" id="compareCols"></div>
