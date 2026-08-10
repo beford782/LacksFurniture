@@ -50,6 +50,10 @@ const CONSULT = ["tests/consultation_summary_check.mjs"];
 // labelled-dialog contract, focus lifecycle, localization, listener
 // idempotence, and the wipe null-before-close ordering.
 const COMPARE = ["tests/compare_modal_check.mjs"];
+// Construction reveal repair observer (slice 5a): the repair suite owns the
+// two-theme contrast arithmetic, motif ban, equal geometry, forced-colors
+// fallback, visibility-based legend hiding, and fill correspondence.
+const CONS = ["tests/construction_reveal_repair_check.mjs"];
 
 // ---------------------------------------------------------------------------
 // THE MANIFEST. [label, find, replace] — `find` may span lines; index.html is
@@ -580,6 +584,28 @@ const MUTATIONS = [
     "cmp-row--same\" role=\"row\" data-cmp=\"' + r.key + '\">'\n                  + '<div class=\"cmp-label\">'", COMPARE],
   ["compare alignment a11y: the merged cell loses its column span",
     "role=\"cell\" aria-colspan=\"2\"", "role=\"cell\"", COMPARE],
+
+  // --- construction reveal repair (slice 5a) -------------------------------
+  ["cons repair: the light-drawer palette override is removed",
+    "body:has(#resultsScreen.active) .dfm-cons {\n      --dfm-cons-ink: #7D5B34;\n      --dfm-cons-wash: #F3EADB;\n      --dfm-cons-edge: #9A7445;\n    }",
+    "", CONS],
+  ["cons repair: a coil-reading motif returns to a stratum",
+    ".dfm-cons-fill--b { background: repeating-linear-gradient(0deg, var(--dfm-cons-ink) 0 3px, var(--dfm-cons-wash) 3px 10px); }",
+    ".dfm-cons-fill--b { background: repeating-radial-gradient(circle at 8px 8px, var(--dfm-cons-ink) 0 2px, var(--dfm-cons-wash) 2px 10px); }",
+    CONS],
+  ["cons repair: a swatch stops matching its stratum",
+    "'<li><span class=\"dfm-cons-swatch dfm-cons-fill--' + keys[i] + '\" aria-hidden=\"true\"></span>'",
+    "'<li><span class=\"dfm-cons-swatch dfm-cons-fill--' + keys[0] + '\" aria-hidden=\"true\"></span>'",
+    CONS],
+  ["cons repair: the forced-colors fallback is removed",
+    "@media (forced-colors: active) {\n      .dfm-cons-layer, .dfm-cons-swatch { border-width: 3px; }\n      .dfm-cons-fill--a { border-style: solid; }\n      .dfm-cons-fill--b { border-style: dashed; }\n      .dfm-cons-fill--c { border-style: dotted; }\n      .dfm-cons-fill--d { border-style: double; }\n    }",
+    "", CONS],
+  ["cons repair: collapsed labels regress to opacity-only hiding",
+    ".dfm-cons-labels li { opacity: 0; visibility: hidden; }",
+    ".dfm-cons-labels li { opacity: 0; }", CONS],
+  ["cons repair: one stratum grows geometrically unequal",
+    ".dfm-cons-layer--a { bottom: 78px; --dfm-ci: 3; }",
+    ".dfm-cons-layer--a { bottom: 78px; --dfm-ci: 3; height: 22px; }", CONS],
 
 ];
 
