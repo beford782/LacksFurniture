@@ -13973,12 +13973,14 @@
         : 'Then we will explore Adjustability, Support, Pillow, and Protection. Every choice is optional.');
 
       // The meaningful calculation beat happens before this screen. This CTA
-      // uses only a brief handoff into the three mattress directions.
+      // uses only a brief handoff into the three mattress directions. Its label
+      // must describe that handoff — never a comparison it does not open (the
+      // "no first-visit Compare" direction; owner-ruled pair, 2026-08-10).
       var secondaryBtn = document.getElementById('profileSecondary');
       if (secondaryBtn) secondaryBtn.textContent = es ? '← Editar mis respuestas' : '← Edit my answers';
       var ctaBtn = document.getElementById('profileCta');
       if (ctaBtn) {
-        ctaBtn.textContent = es ? 'Comparar Mis Opciones →' : 'Compare My Matches →';
+        ctaBtn.textContent = es ? 'Ver Mis Opciones →' : 'See My Matches →';
       }
 
       // Gate 2A: the bespoke sessionFrame() focus that used to follow this

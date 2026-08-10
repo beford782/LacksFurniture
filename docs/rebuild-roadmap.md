@@ -3,10 +3,16 @@
 **Status: LIVING DOCUMENT. Phase 0 in progress. Phases 1–3 are a plan of intent,
 not a grant of approval — see the open-decisions register.**
 
-**Last updated:** 2026-08-05
-**Baseline:** `42ff5f3a2158bc68219b1c87cb6356f146009fdc` — GitHub `main`, the merge
-commit of PR #16 (2026-08-05). GitHub state is authoritative; a local checkout
-never is.
+**Last updated:** 2026-08-10 *(narrow reconciliation only: 1.6's Compare
+status table and the Sleep Brief CTA references — the table had gone stale
+after the owner-authorized compare-entry slice (PR #34) and CTA relabel. No
+other decision, status, or gate in this document moved.)*
+**Original roadmap baseline:** `42ff5f3a2158bc68219b1c87cb6356f146009fdc` — GitHub
+`main` when this document's phase statuses were written, the merge commit of
+PR #16 (2026-08-05). It is **not** current `main`. GitHub state is
+authoritative; a local checkout never is.
+**Reconciliation baseline:** `c165497f08c47255cf27887cfee36715a1f1587d` — GitHub
+`main` at the start of PR #35; PR #34 merge commit (2026-08-10).
 **Next implementation item:** none inside Phase 0 — 0.6 and 0.7 ship in the PR
 that carries this revision, and 0.4's code is merged and holds at ⏳ on its
 outstanding hardware verification (an evidence-recording task, not an
@@ -740,8 +746,10 @@ Current proposal — **not approved in detail**:
   title, one-line reason, and the testing detail behind progressive disclosure.
 - A simple next-step rail. **One already exists** ("What happens next", three
   steps) — this is restructuring, not new computation.
-- Keep **Edit Answers**. The **"Compare My Matches"** control also already
-  exists — see 1.6 for what is actually wrong with it.
+- Keep **Edit Answers**. The results-handoff CTA also already exists —
+  relabelled **"See My Matches →"** on 2026-08-10 (owner-authorized; it was
+  "Compare My Matches" and claimed a comparison it never opened — see 1.6's
+  reconciled Compare table).
 - **No decorative photography on this screen.** This is a constraint, not a
   proposal.
 
@@ -1012,7 +1020,9 @@ each ship their reworked presentation on `main`, **or** carry a no-change decisi
 explicitly approved by Blake and recorded here with the date; Compare is reachable
 and correctly labelled from the Sleep Brief, the results cards, the results action
 area and the Consultation Summary, with the existing working entry preserved and
-the Sleep Brief CTA's label/behaviour mismatch resolved; and 0.5's provisional
+the Sleep Brief CTA's label/behaviour mismatch resolved *(this one clause was
+resolved 2026-08-10 — see the reconciled Compare table below; every other clause
+stands open)*; and 0.5's provisional
 priorities presentation has been **either replaced, or kept under a no-change
 decision approved by Blake and recorded here with the date**.
 
@@ -1025,19 +1035,22 @@ path an implementer can walk alone.
 Review compression or removal is out of scope here; leaving Review as it stands
 satisfies this item.
 
-**Compare — the gap is discoverability, not absence.** Four facts:
+**Compare — the gap is discoverability, not absence.** Four facts,
+reconciled 2026-08-10 (the original table had gone stale):
 
 | Surface | State today |
 |---|---|
-| Consultation Summary "Compare finalists" | **Works.** Auto-selects two saved picks (favourite first) — the customer never chooses which two. |
-| Sleep Brief "Compare My Matches" | **Exists but misleads.** Navigates to Results; never opens comparison. |
-| Results cards | **No entry.** The card-level select-to-compare control is never rendered. |
-| Results compare tray and modal | **Built and dormant** — unreachable because nothing renders the card trigger. |
+| Consultation Summary "Compare finalists" | **Works.** Auto-selects two saved picks (favourite first) — the customer never chooses which two. Preserved unchanged through PR #34. |
+| Sleep Brief "See My Matches →" | **Resolved 2026-08-10** (owner-authorized relabel, ES provisional under the open native-Spanish gate). The CTA still navigates to Results — by design, per the approved "no first-visit Compare" direction — and its label now says so instead of claiming a comparison it never opened. Compare is reached from the Sleep Brief *through* Results. |
+| Results cards | **Entry shipped.** PR #34 (merged `c165497`, 2026-08-10, owner-approved live) renders card-level Compare controls on the top-pick and supporting cards. |
+| Results compare tray and modal | **Reachable.** The tray's "Compare →" / "Comparar →" opens the aligned comparison modal (dialog semantics PR #30, static alignment PR #31, entry PR #34). |
 
-So Phase 1 reactivates and makes discoverable; it does not build. Provide coherent
-access from the Sleep Brief, results cards, the results action area, and the
-Consultation Summary — **preserving the working entry**. Resolve the Sleep Brief
-CTA's label/behaviour mismatch. Do not turn Compare into another feature wall.
+So Phase 1's remaining Compare work here is coherence review, not
+reactivation: the entries above exist and the label/behaviour mismatch is
+resolved. **This does not close 1.6** — every other clause of the exit
+(Consultation Summary presentation, Welcome, drawer, email, 0.5's
+provisional presentation) stands, 1.6 stays ⬜, and Phase 1 implementation
+remains unauthorized. Do not turn Compare into another feature wall.
 
 **Welcome.** Brief, calm, and framed for a salesperson opening the conversation
 with the customer beside them. One restrained Payment Choice acknowledgment — no
