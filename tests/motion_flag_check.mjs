@@ -923,20 +923,24 @@ ok('the scene has no JS animation machinery (no frames, no timers in its code)',
     const src = spikeSrc.slice(start, stop);
     return !/sessionFrame\s*\(|sessionTimeout\s*\(|setInterval|requestAnimationFrame/.test(src);
   })());
-ok('lab generic-mode chip preserved verbatim in both languages',
-  spikeSrc.includes('Construction demonstration — a general mattress build, not this model’s specification.') &&
-  spikeSrc.includes('Demostración de construcción — estructura general de un colchón, no las especificaciones de este modelo.'));
-ok('lab layer labels preserved in both languages',
+ok('owner-ruled variance chip preserved verbatim in both languages (5b)',
+  spikeSrc.includes('Exact materials and construction vary by model. Ask your specialist about the model you’re trying.') &&
+  spikeSrc.includes('Los materiales y la construcción exactos varían según el modelo. Pregúntale a tu especialista sobre el modelo que estás probando.'));
+ok('owner-ruled two-role wording preserved verbatim in both languages (5b)',
+  ['Comfort', 'The part you feel first.', 'Support', 'The deeper structure that holds you up.',
+   'Confort', 'La parte que sientes primero.', 'Soporte', 'La estructura más profunda que te sostiene.']
+    .every((l) => spikeSrc.includes("'" + l + "'")));
+ok('the retired four-part taxonomy is fully absent from the spike (5b)',
   ['Comfort layer', 'Transition layer', 'Support core', 'Base layer',
    'Capa de confort', 'Capa de transición', 'Núcleo de soporte', 'Capa base']
-    .every((l) => spikeSrc.includes("'" + l + "'")));
+    .every((l) => !spikeSrc.includes("'" + l + "'")));
 ok('lab button labels preserved in both languages',
   ['Separate the layers', 'Reassemble the layers', 'Separar las capas', 'Reunir las capas']
     .every((l) => spikeSrc.includes("'" + l + "'")));
 ok('new strings carry no quantities and no condition/performance language',
-  ['Comfort layer', 'Transition layer', 'Support core', 'Base layer',
+  ['Comfort', 'The part you feel first.', 'Support', 'The deeper structure that holds you up.',
    'Separate the layers', 'Reassemble the layers', 'Construction demonstration',
-   'Construction demonstration — a general mattress build, not this model’s specification.']
+   'Exact materials and construction vary by model. Ask your specialist about the model you’re trying.']
     .every((t) => !/\d/.test(t) && !/coil count|inch|cm|percent|%|degree|patent|antimicrobial|snor|apnea|reflux|pain|circulat/i.test(t)));
 ok('the stack is fully generic — markup takes no mattress input and reads no product data',
   /dfmConstructionMarkup = function\(\)/.test(spikeSrc) &&
@@ -946,16 +950,16 @@ ok('the stack is fully generic — markup takes no mattress input and reads no p
     const src = spikeSrc.slice(start, stop);
     return !/m\.features|m\.tags|archetype|firmness/.test(src);
   })());
-const consRuleIdx = cssNorm.indexOf('body.dfm-motion .dfm-cons-layer {\n      transition: transform var(--dfm-place) var(--dfm-e-place);');
-ok('strata transitions are gated with finite tokens',
+const consRuleIdx = cssNorm.indexOf('body.dfm-motion .dfm-cons-region--comfort {\n      transition: transform var(--dfm-place) var(--dfm-e-place);');
+ok('region travel and role reveal are gated with finite tokens',
   consRuleIdx !== -1 &&
-  /body\.dfm-motion \.dfm-cons-labels li \{\s*transition: opacity var\(--dfm-settle\) var\(--dfm-e-settle\), visibility 0s var\(--dfm-settle\);/.test(cssNorm) &&
-  /body\.dfm-motion \.dfm-cons\.is-open \.dfm-cons-labels li \{\s*transition: opacity var\(--dfm-settle\) var\(--dfm-e-settle\), visibility 0s;/.test(cssNorm));
+  /body\.dfm-motion \.dfm-cons-roles \{\s*transition: opacity var\(--dfm-settle\) var\(--dfm-e-settle\), visibility 0s var\(--dfm-settle\);/.test(cssNorm) &&
+  /body\.dfm-motion \.dfm-cons\.is-open \.dfm-cons-roles \{\s*transition: opacity var\(--dfm-settle\) var\(--dfm-e-settle\), visibility 0s;/.test(cssNorm));
 ok('defensive reduced override kills the reveal travel AFTER the gated rules',
   !!reducedBlk && reducedBlk.index > consRuleIdx &&
-  /body\.dfm-motion \.dfm-cons-layer,\s*body\.dfm-motion \.dfm-cons-labels li,\s*body\.dfm-motion \.dfm-cons\.is-open \.dfm-cons-labels li \{ transition: none; \}/.test(reducedBlk.text));
+  /body\.dfm-motion \.dfm-cons-region--comfort,\s*body\.dfm-motion \.dfm-cons-roles,\s*body\.dfm-motion \.dfm-cons\.is-open \.dfm-cons-roles \{ transition: none; \}/.test(reducedBlk.text));
 ok('end-state truth: is-open means transform: none',
-  /\.dfm-cons\.is-open \.dfm-cons-layer \{ transform: none; \}/.test(cssNorm));
+  /\.dfm-cons\.is-open \.dfm-cons-region--comfort \{ transform: none; \}/.test(cssNorm));
 ok('the stage reserves its exploded height (no layout shift) and is decorative',
   /\.dfm-cons-stage \{[\s\S]{0,200}?height: 122px;/.test(cssNorm) &&
   spikeSrc.includes('class="dfm-cons-stage" aria-hidden="true"'));
@@ -1027,9 +1031,10 @@ section('construction reveal: gate behavior and honest placement');
 {
   const active = makeConsEnv({ hostname: 'localhost', search: '?motion=1' });
   const m = active.api.consMarkup();
-  ok('active markup renders the section, heading, chip at rest, and EN labels',
+  ok('active markup renders the section, heading, chip at rest, and EN roles',
     m.includes('dfmConstructionSection') && m.includes('Construction demonstration</div>') &&
-    m.includes('dfm-cons-chip') && m.includes('Comfort layer') && m.includes('Separate the layers'));
+    m.includes('dfm-cons-chip') && m.includes('<dt><span class="dfm-cons-swatch dfm-cons-fill--comfort" aria-hidden="true"></span>Comfort</dt>') &&
+    m.includes('Separate the layers'));
   ok('render places the section as a sibling AFTER the differentiators, not inside',
     active.api.consRender() === true &&
     active.els.dfmConstructionSection.parentNode === active.els.drawerScrollParent &&
@@ -1038,9 +1043,10 @@ section('construction reveal: gate behavior and honest placement');
     active.els.drawerDifferentiators.children.length === 0 &&
     (active.els.drawerDifferentiators.innerHTML || '') === '');
   const es = makeConsEnv({ hostname: 'localhost', search: '?motion=1', lang: 'es' });
-  ok('Spanish session renders the ES heading and lab ES strings',
+  ok('Spanish session renders the ES heading and provisional ES role strings',
     es.api.consMarkup().includes('Demostración de construcción</div>') &&
-    es.api.consMarkup().includes('Capa de confort') &&
+    es.api.consMarkup().includes('>Confort</dt>') &&
+    es.api.consMarkup().includes('La parte que sientes primero.') &&
     es.api.consMarkup().includes('Separar las capas'));
   const globalHost = makeConsEnv({ hostname: 'beford782.github.io', search: '' });
   ok('committed enabled state: public Pages hostname renders without ?motion=1',

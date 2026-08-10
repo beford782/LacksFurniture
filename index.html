@@ -808,11 +808,14 @@
       60% { transform: scaleY(0.997); }
       to { transform: none; }
     }
-    /* Construction reveal (slice 4) layout: a generic four-layer schematic.
-       Equal-weight bars (no proportions implied), textures only — the
-       stage reserves its exploded height so the reveal cannot shift
-       layout. End-state truth: .is-open means transform: none. The chip
-       is ALWAYS visible at rest inside the panel (lab ruling §8). */
+    /* Construction reveal (slice 4, reframed by slice 5b) layout: a generic
+       TWO-REGION schematic — an upper Comfort region and a deeper Support
+       region, identical for every mattress. No literal layer count is
+       implied; the region fills are abstract texture only, and the region
+       heights are design weights of a schematic, not thicknesses. The
+       stage reserves its open height so the reveal cannot shift layout.
+       End-state truth: .is-open means transform: none. The chip is ALWAYS
+       visible at rest inside the panel (lab ruling §8). */
     .dfm-cons {
       /* Repair pass (slice 5a): the reveal's palette lives in three tokens
          so each drawer theme restates only these. Base values suit the
@@ -846,31 +849,36 @@
       max-width: 320px;
       margin: 10px 0 0;
     }
-    .dfm-cons-layer {
+    /* Two regions: Comfort travels, Support holds still. Closed, Comfort
+       rests on Support with a hairline seam; open, one clear gap divides
+       them — the separation IS the two-ness. Deliberately unequal heights
+       so the pair never reads as an enumeration of literal layers. */
+    .dfm-cons-region {
       position: absolute;
       left: 0;
       right: 0;
-      height: 16px;
       border-radius: 3px;
       border: 1px solid var(--dfm-cons-edge);
-      /* closed: the strata squeeze into one stack; open slot is static */
-      transform: translateY(calc(var(--dfm-ci) * 9px));
     }
-    .dfm-cons-layer--a { bottom: 78px; --dfm-ci: 3; }
-    .dfm-cons-layer--b { bottom: 52px; --dfm-ci: 2; }
-    .dfm-cons-layer--c { bottom: 26px; --dfm-ci: 1; }
-    .dfm-cons-layer--d { bottom: 0; --dfm-ci: 0; }
-    /* Four abstract fills, shared verbatim by each stratum and its legend
-       swatch (same class = same paint, so the layer-to-label correspondence
-       is structural). Differentiated ONLY by line angle, weight, spacing
-       and the resulting value step — never by motif: nothing dotted or
-       circular (reads as coils or gel beads), no vertical pinstripes
-       (reads as an innerspring), no quilting. Ink/wash resolve per theme. */
-    .dfm-cons-fill--a { background: repeating-linear-gradient(135deg, var(--dfm-cons-ink) 0 2px, var(--dfm-cons-wash) 2px 12px); }
-    .dfm-cons-fill--b { background: repeating-linear-gradient(0deg, var(--dfm-cons-ink) 0 3px, var(--dfm-cons-wash) 3px 10px); }
-    .dfm-cons-fill--c { background: repeating-linear-gradient(45deg, var(--dfm-cons-ink) 0 5px, var(--dfm-cons-wash) 5px 12px); }
-    .dfm-cons-fill--d { background: var(--dfm-cons-ink); }
-    .dfm-cons.is-open .dfm-cons-layer { transform: none; }
+    .dfm-cons-region--comfort {
+      bottom: 80px;
+      height: 36px;
+      transform: translateY(26px);
+    }
+    .dfm-cons-region--support {
+      bottom: 0;
+      height: 52px;
+    }
+    /* Two abstract fills, shared verbatim by each region and its role
+       swatch (same class = same paint, so the region-to-role
+       correspondence is structural). Differentiated ONLY by line angle,
+       weight, spacing and the resulting value step — never by motif:
+       nothing dotted or circular (reads as coils or gel beads), no
+       vertical pinstripes (reads as an innerspring), no quilting.
+       Ink/wash resolve per theme. */
+    .dfm-cons-fill--comfort { background: repeating-linear-gradient(135deg, var(--dfm-cons-ink) 0 2px, var(--dfm-cons-wash) 2px 12px); }
+    .dfm-cons-fill--support { background: repeating-linear-gradient(45deg, var(--dfm-cons-ink) 0 5px, var(--dfm-cons-wash) 5px 11px); }
+    .dfm-cons.is-open .dfm-cons-region--comfort { transform: none; }
     .dfm-cons-swatch {
       display: inline-block;
       width: 18px;
@@ -880,20 +888,23 @@
       border: 1px solid var(--dfm-cons-edge);
       vertical-align: -1px;
     }
-    .dfm-cons-labels {
-      list-style: decimal inside;
+    /* The two roles are the reveal's REAL semantic content (dl/dt/dd).
+       Collapsed, they leave the accessibility tree (visibility), not just
+       the paint (opacity): an aria-expanded=false toggle must not preside
+       over content AT can still read. Both properties hold the box, so
+       the toggle stays layout-shift-free. */
+    .dfm-cons-roles {
       margin: 8px 0 0;
-      padding: 0;
       font-size: 0.7rem;
       letter-spacing: 0.03em;
       color: inherit;
+      opacity: 0;
+      visibility: hidden;
     }
-    /* Collapsed labels leave the accessibility tree (visibility), not just
-       the paint (opacity): an aria-expanded=false toggle must not preside
-       over a legend AT can still read. Both properties hold the box, so
-       the toggle stays layout-shift-free. */
-    .dfm-cons-labels li { opacity: 0; visibility: hidden; }
-    .dfm-cons.is-open .dfm-cons-labels li { opacity: 0.85; visibility: visible; }
+    .dfm-cons.is-open .dfm-cons-roles { opacity: 1; visibility: visible; }
+    .dfm-cons-role { margin: 0 0 5px; }
+    .dfm-cons-role dt { display: inline; font-weight: 700; }
+    .dfm-cons-role dd { display: inline; margin: 0; }
     .dfm-cons-chip {
       margin: 8px 0 0;
       font-size: 0.66rem;
@@ -924,20 +935,21 @@
         bottom var(--dfm-base) var(--dfm-e-actuator),
         left var(--dfm-base) var(--dfm-e-actuator);
     }
-    /* Construction reveal (slice 4): the strata travel on this ONE gated
-       set — transform for the layers, opacity for the labels. Two-way by
-       construction (CSS retargets mid-flight); the defensive reduced block
-       below kills all of it if the preference flips after load. The
-       labels' visibility rides the same gate: it flips immediately on
-       open (so the fade-in shows) and only after the fade on close (so
-       the fade-out shows); ungated, the base rules flip it instantly. */
-    body.dfm-motion .dfm-cons-layer {
+    /* Construction reveal (slices 4+5b): the Comfort region travels on this
+       ONE gated set — transform for the region, opacity for the roles.
+       Two-way by construction (CSS retargets mid-flight); the defensive
+       reduced block below kills all of it if the preference flips after
+       load. The roles' visibility rides the same gate: it flips
+       immediately on open (so the fade-in shows) and only after the fade
+       on close (so the fade-out shows); ungated, the base rules flip it
+       instantly. */
+    body.dfm-motion .dfm-cons-region--comfort {
       transition: transform var(--dfm-place) var(--dfm-e-place);
     }
-    body.dfm-motion .dfm-cons-labels li {
+    body.dfm-motion .dfm-cons-roles {
       transition: opacity var(--dfm-settle) var(--dfm-e-settle), visibility 0s var(--dfm-settle);
     }
-    body.dfm-motion .dfm-cons.is-open .dfm-cons-labels li {
+    body.dfm-motion .dfm-cons.is-open .dfm-cons-roles {
       transition: opacity var(--dfm-settle) var(--dfm-e-settle), visibility 0s;
     }
     /* Defensive reduced-motion override — MUST come AFTER every ordinary DFM
@@ -964,13 +976,13 @@
       body.dfm-motion .sleep-system__bed-middle,
       body.dfm-motion .sleep-system__bed-foot,
       body.dfm-motion .sleep-system__bed-pillow { transition: none; }
-      /* the is-open labels variant above outranks the two-class selectors
-         here (four classes beat two at media-query-equal specificity), so
+      /* the is-open roles variant above outranks the two-class selectors
+         here (more classes beat fewer at media-query-equal specificity), so
          it must be named explicitly or its gated visibility delay would
          survive a reduced-motion flip */
-      body.dfm-motion .dfm-cons-layer,
-      body.dfm-motion .dfm-cons-labels li,
-      body.dfm-motion .dfm-cons.is-open .dfm-cons-labels li { transition: none; }
+      body.dfm-motion .dfm-cons-region--comfort,
+      body.dfm-motion .dfm-cons-roles,
+      body.dfm-motion .dfm-cons.is-open .dfm-cons-roles { transition: none; }
     }
     /* Gather layer: full-viewport, decorative, hidden from AT. Clones of the
        customer's actual review rows travel to a stack point; the layer also
@@ -8830,7 +8842,7 @@
       border-color: #7D5B34;
       color: #6B4E27;
     }
-    body:has(#resultsScreen.active) .dfm-cons-labels {
+    body:has(#resultsScreen.active) .dfm-cons-roles {
       color: #2F271E;
     }
     body:has(#resultsScreen.active) .dfm-cons-chip {
@@ -9356,18 +9368,17 @@
         box-shadow: none;
       }
     }
-    /* Construction reveal (slice 5a): forced colors strip author hues and
-       backgrounds, so the layer-to-swatch correspondence falls back to
-       border-style, which forced colors keeps (drawn in CanvasText). Four
-       distinct styles, one per fill; 3px width so `double` genuinely draws
-       twice. Placed AFTER the focus block above — contrast_check anchors
-       the file's first forced-colors block as the focus one. */
+    /* Construction reveal (slices 5a+5b): forced colors strip author hues
+       and backgrounds, so the region-to-role correspondence falls back to
+       border-style, which forced colors keeps (drawn in CanvasText). Two
+       distinct styles, one per region fill; 3px width so `double`
+       genuinely draws twice. Placed AFTER the focus block above —
+       contrast_check anchors the file's first forced-colors block as the
+       focus one. */
     @media (forced-colors: active) {
-      .dfm-cons-layer, .dfm-cons-swatch { border-width: 3px; }
-      .dfm-cons-fill--a { border-style: solid; }
-      .dfm-cons-fill--b { border-style: dashed; }
-      .dfm-cons-fill--c { border-style: dotted; }
-      .dfm-cons-fill--d { border-style: double; }
+      .dfm-cons-region, .dfm-cons-swatch { border-width: 3px; }
+      .dfm-cons-fill--comfort { border-style: solid; }
+      .dfm-cons-fill--support { border-style: double; }
     }
 
     /* Sheet (modal dialog) */
@@ -15156,56 +15167,64 @@
       });
       return true;
     };
-    // ----- Construction reveal (slice 4 — approved direction §10.3)
-    // On-demand textured strata in the mattress drawer — never on drawer-
-    // open. Production data carries NO construction fields (lab finding
-    // §1), so this is the lab's GENERIC mode by design: one general
-    // mattress build, IDENTICAL for every model, with the lab's generic
-    // chip visible at rest inside the panel. Varying the stack per
-    // mattress would imply exactly the specificity the chip denies. The
-    // reveal is a two-way class toggle; the finite gated transitions do
-    // all pacing — this scene schedules NO frames and NO timers. The
-    // panel renders as a SIBLING section immediately after
+    // ----- Construction reveal (slice 4 — approved direction §10.3;
+    // content reframed by slice 5b owner ruling)
+    // On-demand generic schematic in the mattress drawer — never on
+    // drawer-open. Production data carries NO construction fields (lab
+    // finding §1), so this stays GENERIC by design: TWO functional roles —
+    // Comfort (what you feel first) and Support (the deeper structure) —
+    // IDENTICAL for every model, with the honesty chip visible at rest
+    // inside the panel. No literal layer count is shown or named; varying
+    // the schematic per mattress would imply exactly the specificity the
+    // chip denies. The reveal is a two-way class toggle; the finite gated
+    // transitions do all pacing — this scene schedules NO frames and NO
+    // timers. The panel renders as a SIBLING section immediately after
     // #drawerDifferentiators (never inside it); every drawer render
     // dedupes and replaces it collapsed, and the session wipe clears it
-    // through SESSION_CONTENT_IDS.
+    // through SESSION_CONTENT_IDS. Spanish role wording is PROVISIONAL —
+    // the native-Spanish review gate remains open.
     window.dfmConstructionMarkup = function() {
       if (!dfmMotionActive()) return '';
       var es = currentLang === 'es';
       var openLabel = es ? 'Separar las capas' : 'Separate the layers';
-      var labels = es
-        ? ['Capa de confort', 'Capa de transición', 'Núcleo de soporte', 'Capa base']
-        : ['Comfort layer', 'Transition layer', 'Support core', 'Base layer'];
+      // Owner-supplied wording (slice 5b ruling) — do not revise without a
+      // reported proposal. Roles are category-level functions of any
+      // mattress, never materials, quantities, or model claims.
+      var roles = es
+        ? [['Confort', 'La parte que sientes primero.'],
+           ['Soporte', 'La estructura más profunda que te sostiene.']]
+        : [['Comfort', 'The part you feel first.'],
+           ['Support', 'The deeper structure that holds you up.']];
       var chip = es
-        ? 'Demostración de construcción — estructura general de un colchón, no las especificaciones de este modelo.'
-        : 'Construction demonstration — a general mattress build, not this model’s specification.';
-      // The section heading reuses the chip's own opening words — no
-      // additional wording is introduced. The section is a SIBLING of the
-      // model-specific differentiators, never their child: the generic
-      // demonstration must not sit under "What makes this one different".
+        ? 'Los materiales y la construcción exactos varían según el modelo. Pregúntale a tu especialista sobre el modelo que estás probando.'
+        : 'Exact materials and construction vary by model. Ask your specialist about the model you’re trying.';
+      // The section is a SIBLING of the model-specific differentiators,
+      // never their child: the generic demonstration must not sit under
+      // "What makes this one different".
       var heading = es ? 'Demostración de construcción' : 'Construction demonstration';
-      // Repair pass (slice 5a): each stratum and its legend entry wear the
-      // SAME fill class — the layer-to-label correspondence is one paint in
-      // two places, never a number or a hue lookup. Swatches are decoration
-      // (aria-hidden); the ordered list text stays the semantic content.
-      // The toggle is a disclosure (aria-expanded + aria-controls) over the
-      // legend, whose collapsed items leave the accessibility tree via the
-      // CSS visibility rules.
-      var keys = ['a', 'b', 'c', 'd'];
+      // Each region and its role entry wear the SAME fill class — the
+      // region-to-role correspondence is one paint in two places, never a
+      // number or a hue lookup. Swatches are decoration (aria-hidden); the
+      // dl/dt/dd text is the semantic content. The toggle is a disclosure
+      // (aria-expanded + aria-controls) over the roles, whose collapsed
+      // content leaves the accessibility tree via the CSS visibility rules.
+      var keys = ['comfort', 'support'];
       return '<div class="dfm-cons-section" id="dfmConstructionSection">' +
         '<div class="drawer-section-label">' + heading + '</div>' +
         '<div class="dfm-cons" id="dfmConstructionPanel">' +
-        '<button type="button" class="dfm-cons-btn" id="dfmConsToggle" aria-expanded="false" aria-controls="dfmConsLegend">' + openLabel + '</button>' +
+        '<button type="button" class="dfm-cons-btn" id="dfmConsToggle" aria-expanded="false" aria-controls="dfmConsRoles">' + openLabel + '</button>' +
         '<div class="dfm-cons-stage" aria-hidden="true">' +
           keys.map(function(k) {
-            return '<div class="dfm-cons-layer dfm-cons-layer--' + k + ' dfm-cons-fill--' + k + '"></div>';
+            return '<div class="dfm-cons-region dfm-cons-region--' + k + ' dfm-cons-fill--' + k + '"></div>';
           }).join('') +
         '</div>' +
-        '<ol class="dfm-cons-labels" id="dfmConsLegend">' +
-          labels.map(function(l, i) {
-            return '<li><span class="dfm-cons-swatch dfm-cons-fill--' + keys[i] + '" aria-hidden="true"></span>' + l + '</li>';
+        '<dl class="dfm-cons-roles" id="dfmConsRoles">' +
+          roles.map(function(r, i) {
+            return '<div class="dfm-cons-role">' +
+              '<dt><span class="dfm-cons-swatch dfm-cons-fill--' + keys[i] + '" aria-hidden="true"></span>' + r[0] + '</dt> ' +
+              '<dd>' + r[1] + '</dd></div>';
           }).join('') +
-        '</ol>' +
+        '</dl>' +
         '<p class="dfm-cons-chip">' + chip + '</p>' +
         '</div>' +
         '</div>';
