@@ -13,7 +13,9 @@
 // current tree must reproduce that recorded output byte-identically — the
 // priorities block, summary, heading/intro, reflection, reassurance, meta
 // strip, journey block, secondary/CTA, profileBriefByLang and the results
-// trial-focus derivative: every element that render writes. That is what
+// trial-focus derivative: every element that render writes. (One recorded
+// exception: the CTA label's fourteen "cta" fields — see the 2026-08-10
+// amendment at the regeneration ratchet below.) That is what
 // "0.5 does not change the Sleep Brief" means, made executable. Do NOT
 // regenerate that file from a post-0.5 tree; a regenerated pin certifies
 // whatever the change produced, which is the vacuity this suite exists to
@@ -53,7 +55,15 @@ const BASELINE = JSON.parse(BASELINE_RAW.toString("utf8"));
 // answer. If the Sleep Brief legitimately changes in a later phase, the new
 // baseline must be generated from the PRE-change commit of THAT phase, and
 // this hash updated in the same reviewed diff.
-const BASELINE_SHA256 = "74fc298aeebf9eddb6088cb9878b8448688bede97c9d771967aa4733622bfe86";
+//
+// 2026-08-10 amendment (owner-authorized Sleep Brief CTA relabel): the
+// fixture's fourteen "cta" fields — and ONLY those fields — were hand-edited
+// to the ruled pair ("See My Matches →" / "Ver Mis Opciones →"), not
+// regenerated; every other byte remains the executed 572d405 output, and this
+// hash moved in the same reviewed diff. The final section below pins the
+// ruled pair as literals, so the fixture and the source must agree with the
+// ruling independently — a regeneration cannot move the label silently.
+const BASELINE_SHA256 = "75b4d244c18b2d2fc966982f03e24917af2ef1bc3bfc4830bff8d02e42a387e1";
 
 let passed = 0, failed = 0;
 function check(label, cond) {
@@ -532,6 +542,40 @@ check("the widened mapping stores no score, kind or rank",
 // store through L(item) rather than any new path.
 check("renderResultsTrialFocus still reads the store through L(item)",
   /var focus = Array\.isArray\(analytics\.trialFocus\)\s*\? analytics\.trialFocus\.map\(function\(item\) \{ return L\(item\); \}\)\.filter\(Boolean\)/.test(TRIAL_FN));
+
+// ===========================================================================
+// 7. THE CTA RELABEL (owner-authorized 2026-08-10)
+// ===========================================================================
+// The Sleep Brief CTA hands off to the results reveal and always has — but its
+// label used to claim "Compare My Matches", a comparison it never opened. The
+// owner-ruled correction keeps the behavior and fixes the words. Three pins:
+// the exact ruled pair as literals (on top of the fixture's cta fields, so
+// neither a source revert nor a fixture regeneration can move the label
+// alone), the unchanged handler wiring, and an honesty invariant coupling the
+// two — while this control routes to Results, its label may not claim a
+// comparison ("no first-visit Compare" is the controlling direction).
+section("Sleep Brief CTA: ruled label, unchanged handler, honesty invariant");
+{
+  const enCta = runProfile(FIXTURES.A, "en").els.get("profileCta");
+  const esCta = runProfile(FIXTURES.A, "es").els.get("profileCta");
+  const enLabel = enCta.innerHTML || enCta.textContent;
+  const esLabel = esCta.innerHTML || esCta.textContent;
+  check("the EN label is exactly the ruled 'See My Matches →'",
+    enLabel === "See My Matches →");
+  check("the ES label is exactly the ruled provisional 'Ver Mis Opciones →'",
+    esLabel === "Ver Mis Opciones →");
+  const routesToResults =
+    /<button class="noct-profile-cta" id="profileCta" onclick="window\.startResultsReveal\(\)" ontouchend="event\.preventDefault\(\);window\.startResultsReveal\(\);"><\/button>/
+      .test(html);
+  check("the CTA still routes to the results reveal via BOTH handlers, exactly",
+    routesToResults);
+  check("no comparison opener is wired to the CTA",
+    !/id="profileCta"[^>]*(compareReviewFinalists|openCompareModal|toggleCompare)/.test(html));
+  check("HONESTY: a results-routing CTA claims no comparison (EN)",
+    !routesToResults || !/compar/i.test(enLabel));
+  check("HONESTY: a results-routing CTA claims no comparison (ES)",
+    !routesToResults || !/compar/i.test(esLabel));
+}
 
 // ===========================================================================
 console.log(`\nConsultation priorities check: ${passed} passed, ${failed} failed`);

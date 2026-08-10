@@ -660,6 +660,23 @@ const MUTATIONS = [
     "body:has(#resultsScreen.active) #compareModalTitle,\n    body:has(#hf2Screen.active) #compareModalTitle {\n      --gold: #7D5B34;\n    }\n    body:has(#resultsScreen.active) .cmp-head-name .price-tier,\n    body:has(#hf2Screen.active) .cmp-head-name .price-tier {\n      color: #7D5B34;\n    }",
     "", CMPE],
 
+  // --- Sleep Brief CTA relabel (owner-authorized 2026-08-10) ---------------
+  // The label pair is ruled verbatim and the handler must keep routing to the
+  // results reveal. Anchored on the CTA's own ternary and its own button
+  // markup — nothing else in the file shares either string.
+  ["sleep brief CTA: the EN label reverts to the pre-relabel Compare claim",
+    "ctaBtn.textContent = es ? 'Ver Mis Opciones →' : 'See My Matches →';",
+    "ctaBtn.textContent = es ? 'Ver Mis Opciones →' : 'Compare My Matches →';",
+    PRIORITIES],
+  ["sleep brief CTA: the ES label reverts to the pre-relabel Compare claim",
+    "ctaBtn.textContent = es ? 'Ver Mis Opciones →' : 'See My Matches →';",
+    "ctaBtn.textContent = es ? 'Comparar Mis Opciones →' : 'See My Matches →';",
+    PRIORITIES],
+  ["sleep brief CTA: the handler repoints at the comparison opener",
+    'id="profileCta" onclick="window.startResultsReveal()" ontouchend="event.preventDefault();window.startResultsReveal();"',
+    'id="profileCta" onclick="window.compareReviewFinalists()" ontouchend="event.preventDefault();window.compareReviewFinalists();"',
+    PRIORITIES],
+
 ];
 
 // ---------------------------------------------------------------------------
