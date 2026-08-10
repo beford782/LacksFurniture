@@ -7,9 +7,12 @@ not a grant of approval — see the open-decisions register.**
 status table and the Sleep Brief CTA references — the table had gone stale
 after the owner-authorized compare-entry slice (PR #34) and CTA relabel. No
 other decision, status, or gate in this document moved.)*
-**Baseline:** `42ff5f3a2158bc68219b1c87cb6356f146009fdc` — GitHub `main`, the merge
-commit of PR #16 (2026-08-05). GitHub state is authoritative; a local checkout
-never is.
+**Original roadmap baseline:** `42ff5f3a2158bc68219b1c87cb6356f146009fdc` — GitHub
+`main` when this document's phase statuses were written, the merge commit of
+PR #16 (2026-08-05). It is **not** current `main`. GitHub state is
+authoritative; a local checkout never is.
+**Reconciliation baseline:** `c165497f08c47255cf27887cfee36715a1f1587d` — GitHub
+`main` at the start of PR #35; PR #34 merge commit (2026-08-10).
 **Next implementation item:** none inside Phase 0 — 0.6 and 0.7 ship in the PR
 that carries this revision, and 0.4's code is merged and holds at ⏳ on its
 outstanding hardware verification (an evidence-recording task, not an
