@@ -7929,6 +7929,68 @@
     @media (max-width: 520px) {
       .compare-cols { grid-template-columns: 1fr; }
     }
+    /* Static aligned comparison (owner-approved; lab §10.5 authority): the
+       same attribute occupies the same horizontal row for both mattresses.
+       Fixed column proportions keep every row's tracks identical, so
+       values align across rows by construction. Purely static in every
+       motion state — deliberately NO transitions, animations, timers or
+       frames anywhere in this block. The legacy .compare-col rules above
+       are retired in place (no markup emits them anymore). */
+    .compare-cols > .compare-rows { grid-column: 1 / -1; }
+    .cmp-head-row,
+    .cmp-row {
+      display: grid;
+      grid-template-columns: minmax(64px, 22%) 1fr 1fr;
+      column-gap: 0.6rem;
+      padding: 0.45rem 0.3rem;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      align-items: start;
+    }
+    .cmp-head-row > div,
+    .cmp-row > div { min-width: 0; overflow-wrap: break-word; }
+    .cmp-head-row { border-bottom: 1px solid rgba(212,168,75,0.35); padding-bottom: 0.6rem; }
+    .cmp-head-img { width: 100%; max-width: 150px; aspect-ratio: 3/2; background: rgba(0,0,0,0.3); border-radius: 8px; overflow: hidden; }
+    .cmp-head-img img { width: 100%; height: 100%; object-fit: cover; }
+    .cmp-head-name { font-size: 0.85rem; font-weight: 800; color: var(--cream); margin-top: 0.3rem; }
+    .cmp-head-brand { font-size: 0.65rem; color: var(--cream-dim); }
+    .cmp-label {
+      color: var(--cream-dim);
+      font-size: 0.66rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding-top: 0.15rem;
+      line-height: 1.35;
+    }
+    .cmp-val { color: var(--cream); font-size: 0.75rem; line-height: 1.45; }
+    /* genuine differences: two emphasized cells; the aria-hidden glyph is
+       decorative — the TABLE STRUCTURE (separate cells under each mattress
+       column header) and the real-text same-tag are the accessible cues */
+    .cmp-row--diff .cmp-val { font-weight: 700; }
+    .cmp-diff-glyph { color: var(--gold); font-weight: 800; }
+    /* identical values: one quiet merged cell spanning both mattress
+       columns, tagged in text */
+    .cmp-val--same {
+      grid-column: 2 / 4;
+      color: var(--cream-dim);
+      font-weight: 400;
+    }
+    .cmp-same-tag { font-style: italic; font-size: 0.66rem; opacity: 0.85; }
+    /* the Key feature / Why it helps pair is the prominent treatment */
+    .cmp-row--key {
+      background: rgba(212,168,75,0.06);
+      border-left: 2px solid rgba(212,168,75,0.55);
+      padding-left: 0.45rem;
+    }
+    .cmp-row--key .cmp-val { font-size: 0.8rem; }
+    /* narrow layout: the label folds above, but the two mattresses STAY
+       side by side — comparison never degrades to independent stacks */
+    @media (max-width: 520px) {
+      .cmp-head-row,
+      .cmp-row { grid-template-columns: 1fr 1fr; }
+      .cmp-label { grid-column: 1 / 3; padding-bottom: 0.2rem; }
+      .cmp-head-row .cmp-label { display: none; }
+      .cmp-val--same { grid-column: 1 / 3; }
+    }
 
     .card-name {
       font-size: 0.95rem;
@@ -19556,30 +19618,75 @@
       var m2 = (window._drawerData && window._drawerData[arr[1]]) || null;
       if (!m1 || !m2) return;
 
-      // Note which side wins on each stat for subtle highlighting
-      function colHtml(data) {
+      // Static aligned comparison (owner-approved direction; lab §10.5).
+      // The same attribute occupies the same horizontal row for both
+      // mattresses so a customer or salesperson scans ACROSS: what feature
+      // is different, what practical benefit it provides, and which of
+      // their priorities it addresses. Identical values merge into one
+      // quiet spanning cell with a text tag; genuine differences keep two
+      // emphasized cells — structure and text carry the signal, never
+      // color alone. All values come from existing vetted derivations; the
+      // Key feature row restores the differentiator TITLE the old columns
+      // dropped, and Why it helps carries its DETAIL.
+      function sideData(data) {
         var m = data.m;
-        var tier = data.tier;
-        var firmLabel = data.firmFeel;
         var _esCmp = currentLang === 'es';
         var _tierNames = _esCmp ? {gold:'Oro',silver:'Plata',bronze:'Bronce'} : {gold:'Gold',silver:'Silver',bronze:'Bronze'};
         var priorities = buildMattressPriorities(m);
-        var topReason = priorities.length
+        var fit = priorities.length
           ? priorities[0].title + ' — ' + priorities[0].desc
-          : hf2ReasonFor(m, tier);
+          : hf2ReasonFor(m, data.tier);
+        var d0 = mattressDifferentiators(m)[0] || {};
         var reaction = (window._mattressReactions || {})[m.id];
-        return '<div class="compare-col">'
-          + (m.imageUrl ? '<div class="compare-col-img"><img src="' + m.imageUrl + '" alt="' + m.name + '"></div>' : '')
-          + '<div>'
-          +   '<div class="compare-col-name">' + m.name + ' <span class="price-tier">' + priceTierSymbol(tier) + '</span></div>'
-          +   '<div class="compare-col-brand">' + m.brand + (m.subBrand ? ' · ' + m.subBrand : '') + '</div>'
-          + '</div>'
-          + '<div class="compare-col-stat"><span class="compare-col-stat-label">' + (_esCmp ? 'Sensación' : 'Feel') + '</span><span class="compare-col-stat-val">' + firmLabel + ' ' + m.firmness + '/10</span></div>'
-          + '<div class="compare-col-stat"><span class="compare-col-stat-label">' + (_esCmp ? 'Respuesta' : 'Response') + '</span><span class="compare-col-stat-val">' + mattressResponseLabel(m) + '</span></div>'
-          + '<div class="compare-col-stat"><span class="compare-col-stat-label">' + (_esCmp ? 'Nivel' : 'Tier') + '</span><span class="compare-col-stat-val">' + (_tierNames[tier] || tier) + '</span></div>'
-          + '<div class="compare-col-stat"><span class="compare-col-stat-label">' + (_esCmp ? 'Por qué está aquí' : 'Why it is here') + '</span><span class="compare-col-stat-val">' + escapeHtml(topReason) + '</span></div>'
-          + '<div class="compare-col-stat"><span class="compare-col-stat-label">' + (_esCmp ? 'Tu reacción' : 'Your reaction') + '</span><span class="compare-col-stat-val">' + (reaction ? escapeHtml(reactionLabel(reaction)) : (_esCmp ? 'Aún no registrada' : 'Not recorded yet')) + '</span></div>'
-          + '<div class="compare-col-stat"><span class="compare-col-stat-label">' + (_esCmp ? 'Diferencia' : 'Difference') + '</span><span class="compare-col-stat-val">' + escapeHtml((mattressDifferentiators(m)[0] || {}).detail || mattressDifferenceText(m)) + '</span></div>'
+        return {
+          head: '<div class="cmp-head" role="columnheader">'
+            + (m.imageUrl ? '<div class="cmp-head-img"><img src="' + m.imageUrl + '" alt="' + escapeHtml(m.name) + '"></div>' : '')
+            + '<div class="cmp-head-name">' + escapeHtml(m.name) + ' <span class="price-tier">' + priceTierSymbol(data.tier) + '</span></div>'
+            + '<div class="cmp-head-brand">' + escapeHtml(m.brand + (m.subBrand ? ' · ' + m.subBrand : '')) + '</div>'
+            + '</div>',
+          feel: data.firmFeel + ' ' + m.firmness + '/10',
+          response: mattressResponseLabel(m),
+          tier: _tierNames[data.tier] || data.tier,
+          fit: fit,
+          feature: d0.title || mattressResponseLabel(m),
+          benefit: d0.detail || mattressDifferenceText(m),
+          reaction: reaction ? reactionLabel(reaction) : (_esCmp ? 'Aún no registrada' : 'Not recorded yet')
+        };
+      }
+      function rowsHtml(d1, d2) {
+        var _esCmp = currentLang === 'es';
+        var a = sideData(d1), b = sideData(d2);
+        var sameTag = _esCmp ? 'Igual en ambos' : 'Same for both';
+        var rows = [
+          { key: 'feel', label: _esCmp ? 'Sensación' : 'Feel', a: a.feel, b: b.feel },
+          { key: 'response', label: _esCmp ? 'Respuesta' : 'Response', a: a.response, b: b.response },
+          { key: 'tier', label: _esCmp ? 'Nivel' : 'Tier', a: a.tier, b: b.tier },
+          { key: 'fit', label: _esCmp ? 'Por qué está aquí' : 'Why it is here', a: a.fit, b: b.fit },
+          { key: 'feature', label: _esCmp ? 'Característica clave' : 'Key feature', a: a.feature, b: b.feature, emphasis: true },
+          { key: 'benefit', label: _esCmp ? 'En qué ayuda' : 'Why it helps', a: a.benefit, b: b.benefit, emphasis: true },
+          { key: 'reaction', label: _esCmp ? 'Tu reacción' : 'Your reaction', a: a.reaction, b: b.reaction }
+        ];
+        return '<div class="compare-rows" role="table" aria-labelledby="compareModalTitle">'
+          + '<div class="cmp-head-row" role="row"><div class="cmp-label" role="columnheader"></div>' + a.head + b.head + '</div>'
+          + rows.map(function(r) {
+              var cls = 'cmp-row' + (r.emphasis ? ' cmp-row--key' : '');
+              if (r.a === r.b) {
+                return '<div class="' + cls + ' cmp-row--same" role="row" data-cmp="' + r.key + '">'
+                  + '<div class="cmp-label" role="rowheader">' + r.label + '</div>'
+                  + '<div class="cmp-val cmp-val--same" role="cell" aria-colspan="2">' + escapeHtml(r.a)
+                  + ' <span class="cmp-same-tag">· ' + sameTag + '</span></div>'
+                  + '</div>';
+              }
+              // the glyph is decorative and aria-hidden so the row header's
+              // accessible name stays clean; the table structure and the
+              // real-text same-tag are the accessible signals
+              return '<div class="' + cls + ' cmp-row--diff" role="row" data-cmp="' + r.key + '">'
+                + '<div class="cmp-label" role="rowheader">' + r.label
+                + ' <span class="cmp-diff-glyph" aria-hidden="true">≠</span></div>'
+                + '<div class="cmp-val" role="cell">' + escapeHtml(r.a) + '</div>'
+                + '<div class="cmp-val" role="cell">' + escapeHtml(r.b) + '</div>'
+                + '</div>';
+            }).join('')
           + '</div>';
       }
 
@@ -19593,7 +19700,7 @@
         closeBtn.setAttribute('aria-label',
           currentLang === 'es' ? 'Cerrar comparación' : 'Close comparison');
       }
-      document.getElementById('compareCols').innerHTML = colHtml(m1) + colHtml(m2);
+      document.getElementById('compareCols').innerHTML = rowsHtml(m1, m2);
       var modal = document.getElementById('compareModal');
       // Capture the exact opener BEFORE moving focus, so close can hand
       // focus straight back to it.

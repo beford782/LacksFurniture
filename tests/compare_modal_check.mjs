@@ -68,7 +68,7 @@ ok('WIPE ORDERING: the stored opener is nulled BEFORE the wipe closes the modal'
   /window\._compareOrigin = '';\s*(?:\/\/[^\n]*\s*)*window\._compareReturnFocus = null;\s*if \(typeof window\.closeCompareModal === 'function'\) window\.closeCompareModal\(\);/.test(norm));
 
 // --------------------------------------------------------------- harness
-function makeEnv({ lang = 'en' } = {}) {
+function makeEnv({ lang = 'en', diffs = null, priorities = null, reactions = null } = {}) {
   let active = null;
   const els = {};
   function makeEl(id) {
@@ -104,7 +104,7 @@ function makeEnv({ lang = 'en' } = {}) {
       g2: { m: { id: 'g2', name: 'A', brand: 'B', firmness: 5, imageUrl: '' }, tier: 'gold', firmFeel: 'Medium' },
       g6: { m: { id: 'g6', name: 'C', brand: 'D', firmness: 7, imageUrl: '' }, tier: 'gold', firmFeel: 'Firm' }
     },
-    _mattressReactions: {},
+    _mattressReactions: reactions || {},
     _compareOrigin: '',
     clearCompare: () => { win._clearCalls = (win._clearCalls || 0) + 1; }
   };
@@ -116,8 +116,8 @@ function makeEnv({ lang = 'en' } = {}) {
     'mattressDifferentiators', 'mattressDifferenceText', 'escapeHtml', 'priceTierSymbol',
     src);
   const api = fn(win, doc, lang,
-    stub([]), stub('reason'), stub('ok'), stub('resp'),
-    stub([{ detail: 'diff' }]), stub('difftext'), (s) => String(s), stub('$'));
+    priorities || stub([]), stub('reason'), stub('ok'), stub('resp'),
+    diffs || stub([{ detail: 'diff' }]), stub('difftext'), (s) => String(s), stub('$'));
   return {
     els, win, doc, opener, api,
     focusOpener() { opener.focus(); },
@@ -211,6 +211,138 @@ section('executed: idempotence and the wipe contract');
   env.api.close();
   ok('a wipe (null-then-close) cannot restore focus into the torn-down session',
     env.doc.activeElement !== env.opener);
+}
+
+// ------------------------------------------------ aligned comparison rows
+// The static comparison-alignment slice: same attribute, same horizontal
+// row, feature identity restored, differences emphasized structurally.
+section('aligned comparison: static contract');
+const compareCss = norm.slice(norm.indexOf('.compare-cols > .compare-rows'), norm.indexOf('.card-name'));
+ok('aligned CSS block located', compareCss.length > 200);
+ok('head row and value rows share ONE grid template (alignment by construction)',
+  /\.cmp-head-row,\n    \.cmp-row \{\n      display: grid;\n      grid-template-columns: minmax\(64px, 22%\) 1fr 1fr;/.test(norm));
+ok('the rows grid spans the legacy two-column wrapper',
+  compareCss.includes('.compare-cols > .compare-rows { grid-column: 1 / -1; }'));
+ok('purely static: no transitions or animations anywhere in the aligned CSS',
+  !/transition\s*:/.test(compareCss) && !/animation\s*:/.test(compareCss));
+ok('the difference glyph is a real aria-hidden span, not CSS-generated content',
+  !/\.cmp-label::after/.test(norm) && /\.cmp-diff-glyph \{ color:/.test(norm));
+ok('identical values merge into a spanning cell (structural cue)',
+  /\.cmp-val--same \{\s*grid-column: 2 \/ 4;/.test(norm));
+ok('narrow layout keeps the two mattresses side by side',
+  /@media \(max-width: 520px\) \{\s*\.cmp-head-row,\s*\.cmp-row \{ grid-template-columns: 1fr 1fr; \}/.test(norm));
+
+section('aligned comparison: executed rows, EN');
+{
+  const env = makeEnv({
+    diffs: (m) => [{ title: 'KF-' + m.id, detail: 'WB-' + m.id }],
+    priorities: (m) => [{ title: 'P-' + m.id, desc: 'd-' + m.id }],
+    reactions: { g2: 'good' }
+  });
+  env.focusOpener();
+  env.api.open();
+  const out = env.els.compareCols.innerHTML;
+  ok('one aligned grid renders', (out.match(/class="compare-rows"/g) || []).length === 1);
+  ok('the head row carries both mattress identities',
+    out.includes('cmp-head-row') && out.includes('>A <') && out.includes('>C <'));
+  const order = [...out.matchAll(/data-cmp="([a-z]+)"/g)].map((m) => m[1]).join(',');
+  ok('rows appear in the scan order: feel, response, tier, fit, feature, benefit, reaction',
+    order === 'feel,response,tier,fit,feature,benefit,reaction');
+  ok('differing feel keeps two emphasized cells on one row',
+    /data-cmp="feel"[^>]*>[\s\S]*?Medium 5\/10[\s\S]*?Firm 7\/10/.test(out) &&
+    /cmp-row--diff" role="row" data-cmp="feel"/.test(out));
+  ok('identical tier merges into one quiet cell with the text tag',
+    /cmp-row--same" role="row" data-cmp="tier"/.test(out) &&
+    /data-cmp="tier"[\s\S]*?Gold[\s\S]*?Same for both/.test(out));
+  ok('the KEY FEATURE row restores both differentiator TITLES',
+    /cmp-row--key cmp-row--diff" role="row" data-cmp="feature"/.test(out) &&
+    out.includes('KF-g2') && out.includes('KF-g6'));
+  ok('the WHY IT HELPS row carries both differentiator details',
+    /cmp-row--key cmp-row--diff" role="row" data-cmp="benefit"/.test(out) &&
+    out.includes('WB-g2') && out.includes('WB-g6'));
+  ok('the strongest customer-fit priority renders per mattress',
+    out.includes('P-g2 — d-g2') && out.includes('P-g6 — d-g6'));
+  ok('a missing reaction falls back to the vetted placeholder on its side only',
+    /data-cmp="reaction"[\s\S]*?ok[\s\S]*?Not recorded yet/.test(out));
+  env.api.close();
+}
+
+section('aligned comparison: Spanish and missing-data fallbacks');
+{
+  const es = makeEnv({
+    lang: 'es',
+    diffs: (m) => [{ title: 'KF-' + m.id, detail: 'WB-' + m.id }]
+  });
+  es.focusOpener();
+  es.api.open();
+  const out = es.els.compareCols.innerHTML;
+  ok('ES row labels render (Característica clave / En qué ayuda)',
+    out.includes('Característica clave') && out.includes('En qué ayuda') &&
+    out.includes('Sensación') && out.includes('Por qué está aquí'));
+  ok('ES same-tag renders (Igual en ambos)', out.includes('Igual en ambos'));
+  ok('ES missing reaction falls back to the vetted ES placeholder',
+    out.includes('Aún no registrada'));
+  es.api.close();
+}
+{
+  const bare = makeEnv({ diffs: () => [] }); // no authored differentiators at all
+  bare.focusOpener();
+  bare.api.open();
+  const out = bare.els.compareCols.innerHTML;
+  ok('missing differentiators: feature falls back to the response label',
+    /data-cmp="feature"[\s\S]*?resp/.test(out));
+  ok('missing differentiators: benefit falls back to the difference text',
+    /data-cmp="benefit"[\s\S]*?difftext/.test(out));
+  ok('dialog lifecycle unchanged through the aligned render (focus on title)',
+    bare.doc.activeElement === bare.els.compareModalTitle);
+  bare.api.close();
+}
+
+// -------------------------------------- table semantics and associations
+// The matrix must be a real table to assistive technology: mattress
+// column headers, attribute row headers, cells associated with both, and
+// the merged cell spanning both mattress columns.
+section('aligned comparison: programmatic table associations');
+function tableChecks(out, tag, labels) {
+  ok(tag + ': the matrix is a labelled table (role + aria-labelledby)',
+    out.includes('class="compare-rows" role="table" aria-labelledby="compareModalTitle"'));
+  ok(tag + ': the head row holds three column headers (corner + both mattresses)',
+    /cmp-head-row" role="row"/.test(out) &&
+    (out.match(/role="columnheader"/g) || []).length === 3);
+  ok(tag + ': every attribute row is a role row with a rowheader label',
+    (out.match(/class="cmp-row[^"]*" role="row"/g) || []).length === 7 &&
+    (out.match(/role="rowheader"/g) || []).length === 7);
+  ok(tag + ': differing rows expose two plain cells under the mattress columns',
+    [...out.matchAll(/cmp-row--diff" role="row" data-cmp="[a-z]+">([\s\S]*?)<\/div><\/div>/g)]
+      .every((m) => (m[0].match(/role="cell"(?! aria-colspan)/g) || []).length === 2));
+  ok(tag + ': merged rows expose one cell spanning both columns (aria-colspan="2")',
+    [...out.matchAll(/cmp-row--same" role="row"[\s\S]*?data-cmp="[a-z]+">/g)].length > 0 &&
+    [...out.matchAll(/cmp-row--same" role="row"[^>]*>[\s\S]*?(<div class="cmp-val[^>]*>)/g)]
+      .every((m) => m[1].includes('role="cell" aria-colspan="2"')));
+  ok(tag + ': the glyph is aria-hidden inside diff rowheaders only',
+    /role="rowheader">[^<]*<span class="cmp-diff-glyph" aria-hidden="true">≠<\/span>/.test(out) &&
+    !/cmp-row--same"[^>]*>[\s\S]{0,200}?cmp-diff-glyph/.test(out));
+  ok(tag + ': row headers carry the attribute wording',
+    labels.every((l) => new RegExp('role="rowheader">' + l).test(out)));
+}
+{
+  const env = makeEnv({
+    diffs: (m) => [{ title: 'KF-' + m.id, detail: 'WB-' + m.id }],
+    reactions: { g2: 'good' }
+  });
+  env.focusOpener();
+  env.api.open();
+  tableChecks(env.els.compareCols.innerHTML, 'EN',
+    ['Feel', 'Response', 'Tier', 'Why it is here', 'Key feature', 'Why it helps', 'Your reaction']);
+  env.api.close();
+}
+{
+  const es = makeEnv({ lang: 'es', diffs: (m) => [{ title: 'KF-' + m.id, detail: 'WB-' + m.id }] });
+  es.focusOpener();
+  es.api.open();
+  tableChecks(es.els.compareCols.innerHTML, 'ES',
+    ['Sensación', 'Respuesta', 'Nivel', 'Por qué está aquí', 'Característica clave', 'En qué ayuda', 'Tu reacción']);
+  es.api.close();
 }
 
 console.log(`\n${failures === 0 ? 'PASS' : 'FAIL'} — ${checks - failures}/${checks} checks passed`);
