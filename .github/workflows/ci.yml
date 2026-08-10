@@ -55,10 +55,11 @@ jobs:
     # The display name is PINNED by branch protection (required status check
     # "Full suite (18 checks)") — renaming it here without updating the
     # protection rule in the same change would leave every PR waiting on a
-    # check that never reports. The suite actually runs 20 checks: Phase 0.6
-    # added the consultation-summary suite and the compare-modal prerequisite
-    # added its dialog-semantics suite; renaming name+protection together is
-    # an operator (Blake) action, tracked in the 0.6 PR notes.
+    # check that never reports. The suite actually runs 21 checks: Phase 0.6
+    # added the consultation-summary suite, the compare-modal prerequisite
+    # added its dialog-semantics suite, and slice 5a added the construction
+    # reveal repair suite; renaming name+protection together is an operator
+    # (Blake) action, tracked in the 0.6 PR notes.
     name: Full suite (18 checks)
     runs-on: ubuntu-24.04
     # Raised from 20 for the mutation sweep, which re-runs the suites once per
@@ -334,6 +335,18 @@ jobs:
       # a tracked operator action.)
       - name: compare modal dialog semantics
         run: node tests/compare_modal_check.mjs
+
+      # Construction reveal repair (slice 5a): computes real WCAG contrast
+      # ratios from the authored colors on BOTH drawer themes (the light
+      # results-screen drawer is the only production entry and previously had
+      # no reveal styling at all), bans material-reading motifs (radial dots,
+      # vertical pinstripes), pins equal-weight geometry, the forced-colors
+      # border-style fallback, visibility-based legend hiding, disclosure
+      # semantics, layer-to-swatch correspondence, byte-identical wording,
+      # and executes the markup across every mattress record per language to
+      # prove one generic build.
+      - name: construction reveal repair (contrast, honesty, a11y)
+        run: node tests/construction_reveal_repair_check.mjs
 
       # One level up from the suites: for each safety property in the manifest,
       # delete it from a COPY of the tree and require a suite to go red. A

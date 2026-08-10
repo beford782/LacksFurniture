@@ -949,10 +949,11 @@ ok('the stack is fully generic — markup takes no mattress input and reads no p
 const consRuleIdx = cssNorm.indexOf('body.dfm-motion .dfm-cons-layer {\n      transition: transform var(--dfm-place) var(--dfm-e-place);');
 ok('strata transitions are gated with finite tokens',
   consRuleIdx !== -1 &&
-  /body\.dfm-motion \.dfm-cons-labels li \{\s*transition: opacity var\(--dfm-settle\) var\(--dfm-e-settle\);/.test(cssNorm));
+  /body\.dfm-motion \.dfm-cons-labels li \{\s*transition: opacity var\(--dfm-settle\) var\(--dfm-e-settle\), visibility 0s var\(--dfm-settle\);/.test(cssNorm) &&
+  /body\.dfm-motion \.dfm-cons\.is-open \.dfm-cons-labels li \{\s*transition: opacity var\(--dfm-settle\) var\(--dfm-e-settle\), visibility 0s;/.test(cssNorm));
 ok('defensive reduced override kills the reveal travel AFTER the gated rules',
   !!reducedBlk && reducedBlk.index > consRuleIdx &&
-  /body\.dfm-motion \.dfm-cons-layer,\s*body\.dfm-motion \.dfm-cons-labels li \{ transition: none; \}/.test(reducedBlk.text));
+  /body\.dfm-motion \.dfm-cons-layer,\s*body\.dfm-motion \.dfm-cons-labels li,\s*body\.dfm-motion \.dfm-cons\.is-open \.dfm-cons-labels li \{ transition: none; \}/.test(reducedBlk.text));
 ok('end-state truth: is-open means transform: none',
   /\.dfm-cons\.is-open \.dfm-cons-layer \{ transform: none; \}/.test(cssNorm));
 ok('the stage reserves its exploded height (no layout shift) and is decorative',
@@ -988,7 +989,7 @@ function makeConsEnv({ hostname, search, reduced = false, lang = 'en', withHost 
       }
       if (htmlStr.includes('id="dfmConsToggle"')) {
         els.dfmConsToggle = makeEl('dfmConsToggle');
-        els.dfmConsToggle.setAttribute('aria-pressed', 'false');
+        els.dfmConsToggle.setAttribute('aria-expanded', 'false');
         els.dfmConstructionPanel.appendChild(els.dfmConsToggle);
       }
     };
@@ -1083,12 +1084,12 @@ section('construction reveal: on-demand toggle — zero animation machinery');
   ok('render succeeds and starts COLLAPSED (never on drawer-open)',
     env.api.consRender() === true &&
     !env.els.dfmConstructionPanel.classList.contains('is-open') &&
-    env.els.dfmConsToggle.getAttribute('aria-pressed') === 'false');
+    env.els.dfmConsToggle.getAttribute('aria-expanded') === 'false');
   const btn = env.els.dfmConsToggle;
   btn.fire('click');
-  ok('toggle opens: is-open set, aria-pressed true, label swaps to reassemble',
+  ok('toggle opens: is-open set, aria-expanded true, label swaps to reassemble',
     env.els.dfmConstructionPanel.classList.contains('is-open') &&
-    btn.getAttribute('aria-pressed') === 'true' &&
+    btn.getAttribute('aria-expanded') === 'true' &&
     btn.textContent === 'Reassemble the layers');
   btn.fire('click');
   ok('toggle closes symmetrically',
@@ -1097,7 +1098,7 @@ section('construction reveal: on-demand toggle — zero animation machinery');
   for (let i = 0; i < 11; i++) btn.fire('click');
   ok('11 rapid taps land deterministically (odd count = open)',
     env.els.dfmConstructionPanel.classList.contains('is-open') &&
-    btn.getAttribute('aria-pressed') === 'true');
+    btn.getAttribute('aria-expanded') === 'true');
   btn.fire('touchend', { type: 'touchend', preventDefault() { env._pd = true; } });
   ok('touchend toggles and suppresses the ghost click',
     env._pd === true && !env.els.dfmConstructionPanel.classList.contains('is-open'));
@@ -1112,7 +1113,7 @@ section('construction reveal: reduced motion, missing elements');
   ok('reduced render presents the COMPLETE static state immediately',
     reduced.api.consRender() === true &&
     reduced.els.dfmConstructionPanel.classList.contains('is-open') &&
-    reduced.els.dfmConsToggle.getAttribute('aria-pressed') === 'true' &&
+    reduced.els.dfmConsToggle.getAttribute('aria-expanded') === 'true' &&
     reduced.els.dfmConsToggle.textContent === 'Reassemble the layers');
   reduced.els.dfmConsToggle.fire('click');
   ok('reduced toggle still works, instantly, with zero frames/timers',
