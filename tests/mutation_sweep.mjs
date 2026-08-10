@@ -54,6 +54,10 @@ const COMPARE = ["tests/compare_modal_check.mjs"];
 // two-theme contrast arithmetic, motif ban, equal geometry, forced-colors
 // fallback, visibility-based legend hiding, and fill correspondence.
 const CONS = ["tests/construction_reveal_repair_check.mjs"];
+// Compare entry-point observer: the entry suite owns the card controls,
+// ruled tray strings, selection/aria-pressed behavior, handler precedence,
+// and the wipe reset.
+const CMPE = ["tests/compare_entry_check.mjs"];
 
 // ---------------------------------------------------------------------------
 // THE MANIFEST. [label, find, replace] — `find` may span lines; index.html is
@@ -620,6 +624,32 @@ const MUTATIONS = [
     CONS],
   ["cons 5b: reduced motion no longer opens the demonstration",
     "if (dfmReducedMotion()) setState(true);", "", CONS],
+
+  // --- compare entry point (owner-authorized slice) ------------------------
+  ["compare entry: the top-pick card loses its compare control",
+    "+       detailsBtn\n        +       compareBtn\n        +       saveBtn",
+    "+       detailsBtn\n        +       saveBtn", CMPE],
+  ["compare entry: the supporting cards lose their compare control",
+    "+       detailsBtn\n          +       compareBtn\n          +       saveBtn",
+    "+       detailsBtn\n          +       saveBtn", CMPE],
+  ["compare entry: the tray go label loses its Spanish draft",
+    "go.textContent = currentLang === 'es' ? 'Comparar →' : 'Compare →';",
+    "go.textContent = 'Compare →';", CMPE],
+  ["compare entry: the two-selection cap is removed",
+    "if (arr.length >= 2) return; // soft cap at 2",
+    "if (false) return;", CMPE],
+  ["compare entry: toggle stops announcing state (aria-pressed dropped)",
+    "btn.classList.toggle('selected', on);\n        btn.setAttribute('aria-pressed', on ? 'true' : 'false');",
+    "btn.classList.toggle('selected', on);", CMPE],
+  ["compare entry: clear stops announcing state (aria-pressed dropped)",
+    "b.classList.remove('selected');\n        b.setAttribute('aria-pressed', 'false');",
+    "b.classList.remove('selected');", CMPE],
+  ["compare entry: a compare tap falls through and opens the drawer",
+    "var cmpBtn = e.target.closest('.compare-btn');",
+    "var cmpBtn = null;", CMPE],
+  ["compare entry: the session wipe keeps the previous customer's selection",
+    "window._favoriteMattressId = '';\n        window._compareSelected = [];",
+    "window._favoriteMattressId = '';", CMPE],
 
 ];
 

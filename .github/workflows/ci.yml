@@ -55,7 +55,7 @@ jobs:
     # The display name is PINNED by branch protection (required status check
     # "Full suite (18 checks)") — renaming it here without updating the
     # protection rule in the same change would leave every PR waiting on a
-    # check that never reports. The suite actually runs 21 checks: Phase 0.6
+    # check that never reports. The suite actually runs 22 checks: Phase 0.6
     # added the consultation-summary suite, the compare-modal prerequisite
     # added its dialog-semantics suite, and slice 5a added the construction
     # reveal repair suite; renaming name+protection together is an operator
@@ -347,6 +347,17 @@ jobs:
       # prove one generic build.
       - name: construction reveal repair (contrast, honesty, a11y)
         run: node tests/construction_reveal_repair_check.mjs
+
+      # Compare entry point (owner-authorized slice): the comparison machine
+      # shipped owner-approved but unreachable — no markup emitted the
+      # .compare-btn control. This suite extracts and EXECUTES the real
+      # toggle/tray/clear functions and the delegated tap handler, proving
+      # the ruled EN/ES strings verbatim, selection cap and aria-pressed
+      # sync, tray localization on every rewrite, handler precedence (a
+      # compare tap never opens the drawer), the 44px touch floor, contrast
+      # on the results surface, and the session-wipe reset.
+      - name: compare entry point (reachability, i18n, a11y)
+        run: node tests/compare_entry_check.mjs
 
       # One level up from the suites: for each safety property in the manifest,
       # delete it from a COPY of the tree and require a suite to go red. A
