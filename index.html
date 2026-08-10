@@ -7791,31 +7791,41 @@
     }
 
     /* ===== COMPARE BUTTON ON CARD ===== */
+    /* Compare entry (owner-authorized slice): the selection toggle joins
+       each result card's action cluster in the save-button idiom. The
+       previous absolute-overlay styling here targeted the retired
+       .mattress-card layout and never shipped a reachable control; the
+       cluster placement is the production entry point. aria-pressed
+       carries the state; .selected is the paint. 44px touch floor. */
     .compare-btn {
-      position: absolute;
-      top: 0.5rem;
-      right: 0.5rem;
-      z-index: 5;
-      background: rgba(15,31,51,0.7);
-      border: 1px solid rgba(212,168,75,0.4);
-      color: var(--gold);
-      font-family: inherit;
-      font-size: 0.6rem;
-      font-weight: 700;
-      letter-spacing: 0.8px;
-      padding: 0.3rem 0.55rem;
-      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      min-height: 44px;
+      background: transparent;
+      color: var(--color-text-subtle);
+      border: 0.5px solid var(--color-border);
+      font-family: var(--font-sans);
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      padding: 8px 14px;
+      border-radius: var(--radius);
       cursor: pointer;
       touch-action: manipulation;
-      backdrop-filter: blur(4px);
-      -webkit-backdrop-filter: blur(4px);
-      transition: all 0.15s ease;
+      transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    }
+    .compare-btn:hover {
+      border-color: var(--color-accent);
+      color: var(--color-accent);
+    }
+    .compare-btn:focus-visible {
+      outline: 2px solid var(--color-accent);
+      outline-offset: 2px;
     }
     .compare-btn.selected {
-      background: linear-gradient(135deg, var(--gold), var(--gold-light));
-      color: var(--navy);
-      border-color: var(--gold-pale);
-      font-weight: 800;
+      background: var(--color-accent);
+      color: var(--color-bg);
+      border-color: var(--color-accent);
     }
     .mattress-card { position: relative; }
 
@@ -7867,6 +7877,24 @@
       white-space: nowrap;
     }
     .compare-tray-actions { display:flex; gap:0.4rem; }
+    /* Codex hold on PR #34: the tray's entrance slide must go quiet under
+       reduced motion. AFTER the base .compare-tray rule — a media query
+       adds no specificity, so source order decides at equal specificity.
+       Ordinary motion keeps the entrance. */
+    @media (prefers-reduced-motion: reduce) {
+      .compare-tray { animation: none; }
+    }
+    .compare-tray-clear, .compare-tray-go { white-space: nowrap; }
+    /* Compare entry slice: the tray predates any reachable entry point and
+       was authored as one nowrap row — at phone widths the action buttons
+       crushed into the slot chips (flex SHRINKS nowrap content before it
+       wraps, so wrap alone is not enough). Force full rows: count, then
+       the slot chips, then right-aligned actions. Tablet is untouched. */
+    @media (max-width: 560px) {
+      .compare-tray-inner { flex-wrap: wrap; row-gap: 0.5rem; }
+      .compare-tray-slots { flex: 1 1 100%; order: 2; }
+      .compare-tray-actions { margin-left: auto; order: 3; }
+    }
     .compare-tray-clear {
       background: transparent;
       border: 1px solid rgba(255,255,255,0.15);
@@ -8694,6 +8722,11 @@
       color: #342A23;
       font-style: normal;
     }
+    #resultsScreen .compare-btn.selected {
+      border-color: #63765D;
+      background: #63765D;
+      color: #FFFFFF;
+    }
     #resultsScreen .noct-save-btn.saved {
       border-color: #63765D;
       background: #63765D;
@@ -8915,6 +8948,64 @@
       border-color: rgba(154,116,69,0.28);
       background: rgba(154,116,69,0.09);
       color: #59442D;
+    }
+    /* The ALIGNED comparison table (Codex hold on PR #34): the rules above
+       theme only the retired .compare-col-* column layout — the real table
+       shipped by PR #31 uses .cmp-* classes, which inherited cream-family
+       ink onto the #FFFDF8 modal surface. Every customer-visible aligned-
+       table class is restated here in the warm-theme ink. */
+    body:has(#resultsScreen.active) .cmp-head-name,
+    body:has(#hf2Screen.active) .cmp-head-name,
+    body:has(#resultsScreen.active) .cmp-val,
+    body:has(#hf2Screen.active) .cmp-val {
+      color: #2F271E;
+    }
+    body:has(#resultsScreen.active) .cmp-head-brand,
+    body:has(#hf2Screen.active) .cmp-head-brand,
+    body:has(#resultsScreen.active) .cmp-label,
+    body:has(#hf2Screen.active) .cmp-label,
+    body:has(#resultsScreen.active) .cmp-val--same,
+    body:has(#hf2Screen.active) .cmp-val--same {
+      color: #665D54;
+    }
+    /* the same-tag's 0.85 opacity lands #665D54 at 4.45:1 on #FFFDF8 —
+       full opacity keeps the quiet italic styling at 6.34:1 */
+    body:has(#resultsScreen.active) .cmp-same-tag,
+    body:has(#hf2Screen.active) .cmp-same-tag {
+      opacity: 1;
+    }
+    /* decorative aria-hidden difference glyph: accent ink, non-text floor */
+    body:has(#resultsScreen.active) .cmp-diff-glyph,
+    body:has(#hf2Screen.active) .cmp-diff-glyph {
+      color: #7D5B34;
+    }
+    body:has(#resultsScreen.active) .cmp-head-row,
+    body:has(#hf2Screen.active) .cmp-head-row {
+      border-bottom-color: #D1C5B6;
+    }
+    body:has(#resultsScreen.active) .cmp-head-img,
+    body:has(#hf2Screen.active) .cmp-head-img {
+      background: #EEE7DC;
+    }
+    body:has(#resultsScreen.active) .cmp-row--key,
+    body:has(#hf2Screen.active) .cmp-row--key {
+      background: rgba(154,116,69,0.07);
+      border-left-color: #9A7445;
+    }
+    /* Codex re-review 4899320843: the modal title's INLINE color:var(--gold)
+       and the head-name price tier resolve the root accent (#B8935D) at
+       ~2.8:1 on the light modal. An inline declaration outranks any
+       selector, but it re-resolves its var() from the cascade — so the
+       title is repainted by re-pointing the custom property it reads; the
+       tier glyph takes the approved warm dark accent directly. Wording,
+       typography, structure, and behavior untouched. */
+    body:has(#resultsScreen.active) #compareModalTitle,
+    body:has(#hf2Screen.active) #compareModalTitle {
+      --gold: #7D5B34;
+    }
+    body:has(#resultsScreen.active) .cmp-head-name .price-tier,
+    body:has(#hf2Screen.active) .cmp-head-name .price-tier {
+      color: #7D5B34;
     }
 
     /* Savings Pass reveal stays visually connected to the warm review workspace. */
@@ -14505,6 +14596,19 @@
         + (es ? 'Ver detalles →' : 'View match details →')
         + '</button>';
 
+      // Compare entry: no inline handler — the delegated handler routes
+      // .compare-btn BEFORE the card-open path. State renders from
+      // _compareSelected so tier/language re-renders keep the selection.
+      // The aria-label disambiguates identical "Compare" buttons across
+      // cards for AT by appending the model name already on the card.
+      var isCompared = (window._compareSelected || []).indexOf(m.id) > -1;
+      var compareBtn = '<button type="button" class="compare-btn' + (isCompared ? ' selected' : '') + '"'
+        + ' data-id="' + escapeHtml(m.id) + '"'
+        + ' aria-pressed="' + (isCompared ? 'true' : 'false') + '"'
+        + ' aria-label="' + escapeHtml((es ? 'Comparar' : 'Compare') + ': ' + m.name) + '">'
+        + (es ? 'Comparar' : 'Compare')
+        + '</button>';
+
       var html = '<div class="noct-toppick" data-id="' + escapeHtml(m.id) + '" data-tier="' + escapeHtml(tier) + '">'
         + promotionOfferTabHtml(promotion)
         + img
@@ -14525,6 +14629,7 @@
         +     '<div class="noct-toppick-stock">' + escapeHtml(stockText) + '</div>'
         +     '<div class="noct-card-action-cluster">'
         +       detailsBtn
+        +       compareBtn
         +       saveBtn
         +     '</div>'
         +   '</div>'
@@ -14571,6 +14676,16 @@
           + (es ? 'Ver detalles →' : 'View details →')
           + '</button>';
 
+        // Compare entry: same contract as the top pick — delegated handler,
+        // state from _compareSelected, AT name disambiguated by model name.
+        var isCompared = (window._compareSelected || []).indexOf(m.id) > -1;
+        var compareBtn = '<button type="button" class="compare-btn' + (isCompared ? ' selected' : '') + '"'
+          + ' data-id="' + escapeHtml(m.id) + '"'
+          + ' aria-pressed="' + (isCompared ? 'true' : 'false') + '"'
+          + ' aria-label="' + escapeHtml((es ? 'Comparar' : 'Compare') + ': ' + m.name) + '">'
+          + (es ? 'Comparar' : 'Compare')
+          + '</button>';
+
         return '<div class="noct-support-card" data-id="' + escapeHtml(m.id) + '" data-tier="' + escapeHtml(tier) + '">'
           + promotionOfferTabHtml(promotion)
           + img
@@ -14588,6 +14703,7 @@
           +     '<div class="noct-support-stock">' + escapeHtml(stockText) + '</div>'
           +     '<div class="noct-card-action-cluster">'
           +       detailsBtn
+          +       compareBtn
           +       saveBtn
           +     '</div>'
           +   '</div>'
@@ -14625,6 +14741,12 @@
     function _renderResults() {
       if (!_resultsState) return;
       window._drawerData = buildDrawerData();
+      // Cards below render their compare state from _compareSelected; the
+      // tray is the one compare surface OUTSIDE this render, so refresh it
+      // here (after _drawerData, which names its slots) — tier switches and
+      // language switches both land in this function, keeping tray text and
+      // count in the active language on every exit path.
+      if (window.updateCompareTray) window.updateCompareTray();
       renderResultsChrome();
       renderResultsTrialFocus();
       renderTierTabs();
@@ -19681,10 +19803,13 @@
         if (arr.length >= 2) return; // soft cap at 2
         arr.push(mattressId);
       }
-      // Refresh button visual state on all cards
+      // Refresh button visual state AND aria-pressed on all cards — the
+      // paint and the announced state must never disagree.
       document.querySelectorAll('.compare-btn').forEach(function(btn) {
         var id = btn.getAttribute('data-id');
-        btn.classList.toggle('selected', arr.indexOf(id) > -1);
+        var on = arr.indexOf(id) > -1;
+        btn.classList.toggle('selected', on);
+        btn.setAttribute('aria-pressed', on ? 'true' : 'false');
       });
       window.updateCompareTray();
     };
@@ -19701,7 +19826,14 @@
         return;
       }
       tray.style.display = 'block';
+      // Every visible tray string is rewritten per call so the static EN
+      // defaults in the markup never reach an ES session, and a language
+      // switch mid-selection relocalizes on the results re-render. Owner-
+      // ruled strings; ES is a provisional draft (native gate open).
       count.textContent = currentLang === 'es' ? arr.length + ' de 2 seleccionados' : arr.length + ' of 2 selected';
+      var clearBtn = document.getElementById('compareTrayClear');
+      if (clearBtn) clearBtn.textContent = currentLang === 'es' ? 'Quitar todo' : 'Clear';
+      go.textContent = currentLang === 'es' ? 'Comparar →' : 'Compare →';
       slots.innerHTML = arr.map(function(id) {
         var d = (window._drawerData && window._drawerData[id]) || null;
         var name = d ? d.m.name : id;
@@ -19714,6 +19846,7 @@
       window._compareSelected = [];
       document.querySelectorAll('.compare-btn.selected').forEach(function(b) {
         b.classList.remove('selected');
+        b.setAttribute('aria-pressed', 'false');
       });
       window.updateCompareTray();
     };
