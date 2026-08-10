@@ -311,6 +311,28 @@ if (modalSurface) {
   r = ratio(hexToRgb(darkInk), keyBg);
   ok('emphasized key-row values stay 4.5:1 over their tint', r >= 4.5, r.toFixed(2) + ':1');
 }
+// Codex re-review 4899320843 remainder: the modal title and price tier
+if (modalSurface) {
+  const surface = hexToRgb(modalSurface[1]);
+  ok('the modal title carries an inline color:var(--gold) (the repoint below is load-bearing)',
+    /<div id="compareModalTitle" tabindex="-1" style="[^"]*color:var\(--gold\);/.test(norm));
+  const titleRule = norm.match(
+    /body:has\(#resultsScreen\.active\) #compareModalTitle,\s*body:has\(#hf2Screen\.active\) #compareModalTitle \{\s*--gold: (#[0-9A-Fa-f]{6});\s*\}/);
+  ok('the light theme re-points the title\'s --gold custom property', !!titleRule);
+  if (titleRule) {
+    const r = ratio(hexToRgb(titleRule[1]), surface);
+    ok('the modal title meets 4.5:1 on the light modal surface', r >= 4.5, r.toFixed(2) + ':1');
+  }
+  ok('base .price-tier uses var(--gold) (the light restatement is load-bearing)',
+    /\.price-tier \{[^}]*color: var\(--gold\);/.test(norm));
+  const tierRule = norm.match(
+    /body:has\(#resultsScreen\.active\) \.cmp-head-name \.price-tier,\s*body:has\(#hf2Screen\.active\) \.cmp-head-name \.price-tier \{\s*color: (#[0-9A-Fa-f]{6});\s*\}/);
+  ok('the head-name price tier is themed for the light modal', !!tierRule);
+  if (tierRule) {
+    const r = ratio(hexToRgb(tierRule[1]), surface);
+    ok('the price tier meets 4.5:1 on the light modal surface', r >= 4.5, r.toFixed(2) + ':1');
+  }
+}
 // mapping proof: every cream-inked base cmp text class is restated for light
 for (const cls of ['cmp-head-name', 'cmp-head-brand', 'cmp-label', 'cmp-val', 'cmp-val--same', 'cmp-diff-glyph']) {
   const base = norm.match(new RegExp(`\\n    \\.${cls.replace(/[-]/g, '[-]')}[^{]*\\{[^}]*\\}`));

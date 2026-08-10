@@ -656,6 +656,9 @@ const MUTATIONS = [
   ["compare tray: reduced motion regains the entrance slide",
     "@media (prefers-reduced-motion: reduce) {\n      .compare-tray { animation: none; }\n    }",
     "", CMPE],
+  ["compare modal: title and price tier regress to root gold (~2.8:1)",
+    "body:has(#resultsScreen.active) #compareModalTitle,\n    body:has(#hf2Screen.active) #compareModalTitle {\n      --gold: #7D5B34;\n    }\n    body:has(#resultsScreen.active) .cmp-head-name .price-tier,\n    body:has(#hf2Screen.active) .cmp-head-name .price-tier {\n      color: #7D5B34;\n    }",
+    "", CMPE],
 
 ];
 

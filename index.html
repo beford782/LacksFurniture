@@ -8992,6 +8992,21 @@
       background: rgba(154,116,69,0.07);
       border-left-color: #9A7445;
     }
+    /* Codex re-review 4899320843: the modal title's INLINE color:var(--gold)
+       and the head-name price tier resolve the root accent (#B8935D) at
+       ~2.8:1 on the light modal. An inline declaration outranks any
+       selector, but it re-resolves its var() from the cascade — so the
+       title is repainted by re-pointing the custom property it reads; the
+       tier glyph takes the approved warm dark accent directly. Wording,
+       typography, structure, and behavior untouched. */
+    body:has(#resultsScreen.active) #compareModalTitle,
+    body:has(#hf2Screen.active) #compareModalTitle {
+      --gold: #7D5B34;
+    }
+    body:has(#resultsScreen.active) .cmp-head-name .price-tier,
+    body:has(#hf2Screen.active) .cmp-head-name .price-tier {
+      color: #7D5B34;
+    }
 
     /* Savings Pass reveal stays visually connected to the warm review workspace. */
     #discountRevealOverlay {
