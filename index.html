@@ -7877,6 +7877,13 @@
       white-space: nowrap;
     }
     .compare-tray-actions { display:flex; gap:0.4rem; }
+    /* Codex hold on PR #34: the tray's entrance slide must go quiet under
+       reduced motion. AFTER the base .compare-tray rule — a media query
+       adds no specificity, so source order decides at equal specificity.
+       Ordinary motion keeps the entrance. */
+    @media (prefers-reduced-motion: reduce) {
+      .compare-tray { animation: none; }
+    }
     .compare-tray-clear, .compare-tray-go { white-space: nowrap; }
     /* Compare entry slice: the tray predates any reachable entry point and
        was authored as one nowrap row — at phone widths the action buttons
@@ -8941,6 +8948,49 @@
       border-color: rgba(154,116,69,0.28);
       background: rgba(154,116,69,0.09);
       color: #59442D;
+    }
+    /* The ALIGNED comparison table (Codex hold on PR #34): the rules above
+       theme only the retired .compare-col-* column layout — the real table
+       shipped by PR #31 uses .cmp-* classes, which inherited cream-family
+       ink onto the #FFFDF8 modal surface. Every customer-visible aligned-
+       table class is restated here in the warm-theme ink. */
+    body:has(#resultsScreen.active) .cmp-head-name,
+    body:has(#hf2Screen.active) .cmp-head-name,
+    body:has(#resultsScreen.active) .cmp-val,
+    body:has(#hf2Screen.active) .cmp-val {
+      color: #2F271E;
+    }
+    body:has(#resultsScreen.active) .cmp-head-brand,
+    body:has(#hf2Screen.active) .cmp-head-brand,
+    body:has(#resultsScreen.active) .cmp-label,
+    body:has(#hf2Screen.active) .cmp-label,
+    body:has(#resultsScreen.active) .cmp-val--same,
+    body:has(#hf2Screen.active) .cmp-val--same {
+      color: #665D54;
+    }
+    /* the same-tag's 0.85 opacity lands #665D54 at 4.45:1 on #FFFDF8 —
+       full opacity keeps the quiet italic styling at 6.34:1 */
+    body:has(#resultsScreen.active) .cmp-same-tag,
+    body:has(#hf2Screen.active) .cmp-same-tag {
+      opacity: 1;
+    }
+    /* decorative aria-hidden difference glyph: accent ink, non-text floor */
+    body:has(#resultsScreen.active) .cmp-diff-glyph,
+    body:has(#hf2Screen.active) .cmp-diff-glyph {
+      color: #7D5B34;
+    }
+    body:has(#resultsScreen.active) .cmp-head-row,
+    body:has(#hf2Screen.active) .cmp-head-row {
+      border-bottom-color: #D1C5B6;
+    }
+    body:has(#resultsScreen.active) .cmp-head-img,
+    body:has(#hf2Screen.active) .cmp-head-img {
+      background: #EEE7DC;
+    }
+    body:has(#resultsScreen.active) .cmp-row--key,
+    body:has(#hf2Screen.active) .cmp-row--key {
+      background: rgba(154,116,69,0.07);
+      border-left-color: #9A7445;
     }
 
     /* Savings Pass reveal stays visually connected to the warm review workspace. */

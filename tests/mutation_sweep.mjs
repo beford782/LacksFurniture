@@ -650,6 +650,12 @@ const MUTATIONS = [
   ["compare entry: the session wipe keeps the previous customer's selection",
     "window._favoriteMattressId = '';\n        window._compareSelected = [];",
     "window._favoriteMattressId = '';", CMPE],
+  ["compare modal: the aligned table loses its light theme (cream on cream)",
+    "body:has(#resultsScreen.active) .cmp-head-name,\n    body:has(#hf2Screen.active) .cmp-head-name,\n    body:has(#resultsScreen.active) .cmp-val,\n    body:has(#hf2Screen.active) .cmp-val {\n      color: #2F271E;\n    }",
+    "", CMPE],
+  ["compare tray: reduced motion regains the entrance slide",
+    "@media (prefers-reduced-motion: reduce) {\n      .compare-tray { animation: none; }\n    }",
+    "", CMPE],
 
 ];
 

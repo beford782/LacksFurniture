@@ -244,6 +244,7 @@ function lum(rgb) {
   const [r, g, b] = rgb.map(f); return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
 function ratio(a, b) { const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x); return (hi + 0.05) / (lo + 0.05); }
+function over(rgb, alpha, backdrop) { return rgb.map((c, i) => Math.round(alpha * c + (1 - alpha) * backdrop[i])); }
 const theme = norm.match(/body:has\(#resultsScreen\.active\),[\s\S]{0,400}?--color-surface: (#[0-9A-Fa-f]{6});[\s\S]{0,400}?--color-text-subtle: (#[0-9A-Fa-f]{6});\s*--color-accent: (#[0-9A-Fa-f]{6});/);
 ok('results (showroom) theme tokens located', !!theme);
 if (theme) {
@@ -262,6 +263,71 @@ if (selOverride && theme) {
   r = ratio(fill, hexToRgb(theme[1]));
   ok('selected fill meets 3:1 against the card surface', r >= 3, r.toFixed(2) + ':1');
 }
+
+// --------------------------- light-theme aligned modal (Codex hold fix 1)
+section('aligned comparison table — themed and legible on the light modal');
+const modalSurface = norm.match(
+  /body:has\(#resultsScreen\.active\) \.compare-modal-inner,\s*body:has\(#hf2Screen\.active\) \.compare-modal-inner \{\s*border-color: #[0-9A-Fa-f]{6};\s*background: (#[0-9A-Fa-f]{6});/);
+ok('light modal surface located', !!modalSurface, modalSurface && modalSurface[1]);
+function lightCmpRule(cls) {
+  const m = norm.match(new RegExp(
+    `body:has\\(#resultsScreen\\.active\\) \\.${cls},\\s*body:has\\(#hf2Screen\\.active\\) \\.${cls}[^{]*\\{([^}]*)\\}`));
+  return m ? m[1] : null;
+}
+const CMP_TEXT_DARK = ['cmp-head-name', 'cmp-val'];
+const CMP_TEXT_MUTED = ['cmp-head-brand', 'cmp-label', 'cmp-val--same'];
+for (const cls of CMP_TEXT_DARK.concat(CMP_TEXT_MUTED)) {
+  const rule = lightCmpRule(cls === 'cmp-head-name' ? 'cmp-head-name' : cls);
+  ok(`.${cls} is themed for the light modal`, !!rule && /color: #[0-9A-Fa-f]{6};/.test(rule || ''));
+}
+ok('.cmp-same-tag opacity is restored so the tag clears the text floor',
+  /body:has\(#resultsScreen\.active\) \.cmp-same-tag,\s*body:has\(#hf2Screen\.active\) \.cmp-same-tag \{\s*opacity: 1;\s*\}/.test(norm));
+ok('.cmp-diff-glyph is themed (decorative accent ink)',
+  !!lightCmpRule('cmp-diff-glyph') && /color: #7D5B34;/.test(lightCmpRule('cmp-diff-glyph')));
+ok('.cmp-head-row separator and .cmp-head-img well are themed',
+  !!lightCmpRule('cmp-head-row') && !!lightCmpRule('cmp-head-img'));
+const keyRule = lightCmpRule('cmp-row--key');
+ok('.cmp-row--key keeps its emphasis with warm-theme tint and border', !!keyRule &&
+  /background: rgba\(154,116,69,0\.07\);/.test(keyRule) && /border-left-color: #9A7445;/.test(keyRule));
+if (modalSurface) {
+  const surface = hexToRgb(modalSurface[1]);
+  const darkInk = (lightCmpRule('cmp-val').match(/color: (#[0-9A-Fa-f]{6});/) || [])[1];
+  const mutedInk = (lightCmpRule('cmp-label').match(/color: (#[0-9A-Fa-f]{6});/) || [])[1];
+  let r = ratio(hexToRgb(darkInk), surface);
+  ok('values and heading names meet 4.5:1 on the modal surface', r >= 4.5, r.toFixed(2) + ':1');
+  r = ratio(hexToRgb(mutedInk), surface);
+  ok('brands, row labels, and merged values meet 4.5:1', r >= 4.5, r.toFixed(2) + ':1');
+  // same-tag effective contrast at its rendered opacity (parsed, not assumed)
+  const tagOpacity = /body:has\(#resultsScreen\.active\) \.cmp-same-tag[\s\S]{0,120}?opacity: 1;/.test(norm) ? 1
+    : parseFloat((norm.match(/\.cmp-same-tag \{[^}]*opacity: (0?\.\d+);/) || [0, '0.85'])[1]);
+  const tagEff = over(hexToRgb(mutedInk), tagOpacity, surface);
+  r = ratio(tagEff, surface);
+  ok('the same-tag meets 4.5:1 at its rendered opacity', r >= 4.5, r.toFixed(2) + ':1 @' + tagOpacity);
+  r = ratio(hexToRgb('#7D5B34'), surface);
+  ok('the decorative diff glyph meets the 3:1 non-text floor', r >= 3, r.toFixed(2) + ':1');
+  r = ratio(hexToRgb('#9A7445'), surface);
+  ok('the key-row border meets the 3:1 non-text floor', r >= 3, r.toFixed(2) + ':1');
+  const keyBg = over([154, 116, 69], 0.07, surface);
+  r = ratio(hexToRgb(darkInk), keyBg);
+  ok('emphasized key-row values stay 4.5:1 over their tint', r >= 4.5, r.toFixed(2) + ':1');
+}
+// mapping proof: every cream-inked base cmp text class is restated for light
+for (const cls of ['cmp-head-name', 'cmp-head-brand', 'cmp-label', 'cmp-val', 'cmp-val--same', 'cmp-diff-glyph']) {
+  const base = norm.match(new RegExp(`\\n    \\.${cls.replace(/[-]/g, '[-]')}[^{]*\\{[^}]*\\}`));
+  ok(`base .${cls} uses cream/gold ink (the light restatement is load-bearing)`,
+    !!base && /var\(--cream|var\(--gold/.test(base[0]));
+}
+
+// ------------------------------ reduced-motion tray (Codex hold fix 2)
+section('tray entrance goes quiet under reduced motion');
+const trayBaseIdx = norm.indexOf('.compare-tray {');
+const trayBase = norm.slice(trayBaseIdx, norm.indexOf('}', trayBaseIdx));
+ok('ordinary motion keeps the entrance slide',
+  trayBaseIdx !== -1 && /animation: compareTraySlide 0\.25s ease-out;/.test(trayBase));
+const trayReduced = norm.match(/@media \(prefers-reduced-motion: reduce\) \{\s*\.compare-tray \{ animation: none; \}\s*\}/);
+ok('reduced motion disables the slide with animation: none', !!trayReduced);
+ok('the reduced override comes AFTER the base rule (source order wins)',
+  !!trayReduced && norm.indexOf(trayReduced[0]) > trayBaseIdx);
 
 // ------------------------------------------------------ wipe integration
 section('session-wipe integration');
