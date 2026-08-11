@@ -1,26 +1,32 @@
 # DreamFinder rebuild roadmap — Lacks deployment
 
-**Status: LIVING DOCUMENT. Phase 0 in progress. Phases 1–3 are a plan of intent,
-not a grant of approval — see the open-decisions register.**
+**Status: LIVING DOCUMENT. Phase 0 COMPLETE (2026-08-10 — 0.4's mounted-device
+evidence recorded; see 0.4 and `docs/kiosk-device-hardening.md`). Phases 1–3
+are a plan of intent, not a grant of approval — see the open-decisions
+register. Phase 1 implementation remains unauthorized until Blake explicitly
+opens it.**
 
-**Last updated:** 2026-08-10 *(narrow reconciliation only: 1.6's Compare
-status table and the Sleep Brief CTA references — the table had gone stale
-after the owner-authorized compare-entry slice (PR #34) and CTA relabel. No
-other decision, status, or gate in this document moved.)*
+**Last updated:** 2026-08-10 *(second revision this date, documentation-only:
+records the owner-confirmed mounted-device evidence that closes Phase 0.4 and
+Phase 0, and marks recommended-sequence steps 5–6 complete. The earlier
+revision this date was the 1.6 Compare reconciliation. No product code moved
+in either revision, and no Phase 1 authorization is granted here.)*
 **Original roadmap baseline:** `42ff5f3a2158bc68219b1c87cb6356f146009fdc` — GitHub
 `main` when this document's phase statuses were written, the merge commit of
 PR #16 (2026-08-05). It is **not** current `main`. GitHub state is
 authoritative; a local checkout never is.
 **Reconciliation baseline:** `c165497f08c47255cf27887cfee36715a1f1587d` — GitHub
 `main` at the start of PR #35; PR #34 merge commit (2026-08-10).
-**Next implementation item:** none inside Phase 0 — 0.6 and 0.7 ship in the PR
-that carries this revision, and 0.4's code is merged and holds at ⏳ on its
-outstanding hardware verification (an evidence-recording task, not an
-implementation item). **Phase 1 research and prototyping may proceed where its
-items' own Proceeds lists permit** (e.g. 1.3's catalog reason-content
-authoring), but **Phase 1 implementation cannot begin until BOTH conditions
-hold: the 0.4 mounted-device evidence closes Phase 0, AND Blake explicitly
-opens Phase 1.** Neither alone is sufficient.
+**Next implementation item:** none inside Phase 0 — Phase 0 is complete.
+0.6 and 0.7 shipped in the PR that carried the 2026-08-05 revision, and 0.4's
+hardware verification was recorded 2026-08-10 (owner-confirmed on the mounted
+showroom device; evidence in `docs/kiosk-device-hardening.md`). **Phase 1
+research and prototyping may proceed where its items' own Proceeds lists
+permit** (e.g. 1.3's catalog reason-content authoring). Of the two conditions
+Phase 1 implementation required — the 0.4 mounted-device evidence closing
+Phase 0, AND Blake explicitly opening Phase 1 — **the first is now met and the
+second is not: Phase 1 implementation remains unauthorized until Blake
+explicitly opens it.**
 
 **Scope:** the Lacks deployment. Migrating store-agnostic work back to the WGR
 template is a real goal but has no owner, no phase and no schedule here; treat it
@@ -249,7 +255,20 @@ succeeded on that merge commit.
 **Known limitation carried forward:** question-to-question changes are not
 announced. See Phase 1.2.
 
-### 0.4 — Recovery from the data-error overlay ⏳
+### 0.4 — Recovery from the data-error overlay ✅
+
+**CLOSED 2026-08-10 — the hardware exit is satisfied.** Blake confirmed the
+mounted-device evidence: the actual mounted showroom device is an iPad Pro
+11-inch (2nd generation), tested in its normal mounted orientation, and both
+named routes — the data-error **retry** route and the data-error
+**clean-restart** route — passed, with no layout or interaction problem
+reported in the mounted configuration. The evidence is recorded, dated, and
+bounded in `docs/kiosk-device-hardening.md` (*Mounted-device verification —
+2026-08-10*), which also records exactly which protocol details the owner's
+report did and did not itemize. That is the named verification this item's
+exit demanded, so ⏳ → ✅ and Phase 0 closes. The prose below is the item's
+history and its requirements as written while the gate was open; it stands
+unedited.
 
 **Code merged: PR #15, merge commit `572d405` (2026-08-05). The item holds at ⏳
 — not ✅ — because its named verification is hardware, and that has not
@@ -554,7 +573,9 @@ re-executed by CI on the exact head.**
 
 **This does NOT close Phase 0.** 0.4 remains ⏳ until its mounted-showroom-device
 evidence is recorded in `docs/kiosk-device-hardening.md`; the phase closes when
-that lands, with no further implementation work.
+that lands, with no further implementation work. *(That is exactly how it
+closed: the evidence landed 2026-08-10 — see 0.4 — with no further
+implementation work.)*
 
 **Exit:** the full repository suite is green — scoring isolation, session async and
 privacy, session safety, data-error recovery, financing totality, validation and
@@ -648,6 +669,9 @@ Compare. Revision backlog before any final-layout approval:
 - the journey rail underuses landscape space;
 - the Sharing badge's value is questioned;
 - minor sticky-action crowding requires a mounted-device re-test.
+  *(Re-test done 2026-08-10: the owner ran the sticky-control crowding check
+  on the mounted showroom device and it passed — no layout or interaction
+  problem reported. The rest of this backlog stands.)*
 
 **Results (feeds 1.3's navigation question).** Structural direction
 confirmed for continued iteration: the tier tab affordance is retained
@@ -682,9 +706,11 @@ review remains required before any Spanish catalog reason content
 activates; the existing bilingual contracts, strict EN/ES parity, and
 no-English-fallback requirements are unchanged.
 
-**Gates that remain open.** 0.4 remains ⏳ pending mounted-showroom-device
-evidence, and Phase 0 remains open. Phase 1 implementation remains
-unauthorized and not started. Final visual approval remains open (an Open
+**Gates that remain open.** *(As written 2026-08-07; two entries have since
+closed — 0.4's mounted-device evidence landed and Phase 0 closed, both
+2026-08-10. Everything else in this block still stands.)* 0.4 remains ⏳
+pending mounted-showroom-device evidence, and Phase 0 remains open. Phase 1
+implementation remains unauthorized and not started. Final visual approval remains open (an Open
 decisions register item). The native-Spanish claim-equivalence reviewer
 and the legal/compliance reviewer (where claim class requires one) remain
 unnamed. The claim-inventory disposition remains open. Catalog schema,
@@ -700,9 +726,14 @@ already marked so elsewhere):
    mattresses that caused confusion in the walkthrough.
 4. Name the native-Spanish and legal/compliance reviewers when activation
    work approaches.
-5. Gather Phase 0.4 mounted-device evidence.
+5. Gather Phase 0.4 mounted-device evidence. **✅ 2026-08-10** — owner
+   confirmed both data-error routes on the actual mounted showroom device
+   (iPad Pro 11-inch, 2nd generation, normal mounted orientation); recorded
+   in `docs/kiosk-device-hardening.md`. Phase 0 is closed.
 6. Re-test sticky-bar crowding and comparison context on the mounted
-   device.
+   device. **✅ 2026-08-10** — owner confirmed the sticky-control crowding
+   check and the complete two-card Compare selection, tray, and modal flow
+   passed on the mounted device, with no layout or interaction problem.
 7. Request explicit Phase 1 implementation authorization only after the
    remaining gates close.
 
@@ -1305,7 +1336,7 @@ approval; its presence is a bar on proceeding.
 | Tier navigation presentation — adopting a replacement (Phase 1) | 🔒 | Blake | Blake's approval of a reviewed prototype — gated portion of 1.3 ◐; prototyping proceeds now; **not gated by 3.3**. *2026-08-07 direction decision: tabs retained/restyled, accordion rejected (PR #18 @ `8e850c4`) — no replacement is sought this cycle; the gate stays as written for any future replacement* |
 | Auto-advance | 🔒 | Blake | Observed sessions |
 | Review-screen compression or removal | 🔒 | Blake | Observed sessions. Review otherwise stays as it is; this does not hold 1.6 open |
-| Final Sleep Brief layout | 🔒 | Blake | Blake's approval of a reviewed prototype — gated output of 1.1 ◐. *2026-08-07: direction confirmed for continued iteration (PR #18 @ `8e850c4`); final layout remains open pending the recorded revision backlog and mounted-device evidence* |
+| Final Sleep Brief layout | 🔒 | Blake | Blake's approval of a reviewed prototype — gated output of 1.1 ◐. *2026-08-07: direction confirmed for continued iteration (PR #18 @ `8e850c4`); final layout remains open pending the recorded revision backlog and mounted-device evidence. 2026-08-10: the mounted-device crowding re-test passed — the revision backlog and Blake's approval remain the open gates* |
 | The device matrix itself | 🔒 | Blake | Confirming the showroom hardware — Phase 1 **merge** gate, blocks merging not starting |
 | Phase 2.2 price/payment activation | 🔒 | Blake + business/legal | Written approval |
 | Scoring case-fold (3.1) | 🔒 | Blake | Approval + enumerated impact |
@@ -1387,10 +1418,11 @@ document, not here.
 2. ✅ **Screen-transition focus and announcement** — 0.3. PR #13, head `1574c53`,
    merged `88f1e89`.
 3. ✅ **Roadmap reconciliation** — 0.2. PR #14 (`7fa8390`).
-4. 🔨 **Remaining Phase 0** — 0.4 merged (PR #15, `572d405`; ⏳, hardware
-   verification outstanding), 0.5 merged (PR #16, `42ff5f3`), 0.6 + 0.7 in the
-   PR carrying this revision. Phase 0 cannot close while 0.4's hardware gate is
-   open — the only remaining Phase 0 work is recording that evidence.
+4. ✅ **Remaining Phase 0** — 0.4 merged (PR #15, `572d405`), 0.5 merged
+   (PR #16, `42ff5f3`), 0.6 + 0.7 in the PR carrying the 2026-08-05 revision.
+   0.4's hardware gate closed 2026-08-10 with the owner-confirmed
+   mounted-device evidence (`docs/kiosk-device-hardening.md`) — **Phase 0 is
+   complete.**
 5. ⬜ **The visible redesign** — Phase 1. Start the catalog reason-content
    authoring (1.3's gated content) in parallel and early; it is not engineering
    work, and it gates **reason-led/personalised-card completion** — not the card

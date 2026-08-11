@@ -1,16 +1,17 @@
 # Kiosk device hardening — contact autofill and browser persistence
 
-**Status: BLOCKING for showroom use. The Gate 1B session paths are verified;
-the Phase 0.4 recovery routes and the device deployment are not.** The
+**Status: BLOCKING for showroom use. The Gate 1B session paths and the Phase
+0.4 recovery routes are verified; the device deployment is not.** The
 application-level work in Gate 1B is complete and verified. On the test iPad,
 Safari Contact AutoFill was identified as the observed mechanism and suppressed,
 and every session-ending route identified *at that time* was individually
-checked clean. What has **not** been done is the device deployment: no
-supervised MDM payload has been applied or proven, and several checklist
-controls remain unverified. That work cannot be done from the codebase. Phase
-0.4 has since added a session-ending route — the data-error overlay's **Start
-over** — which has not been exercised on any device; see *Routes added after
-that session* below.
+checked clean. The Phase 0.4 recovery routes — added after those runs — were
+verified by the owner on the actual mounted showroom device on **2026-08-10**;
+see *Mounted-device verification* below. What has **not** been done is the
+device deployment: no supervised MDM payload has been applied or proven, and
+several checklist controls remain unverified. That work cannot be done from
+the codebase, and it — not the recovery routes — is what keeps this document
+BLOCKING.
 
 The gap is no longer theoretical. **On a real iPad, iOS offered an autofill
 suggestion in the contact fields** on the deployed build, with every mitigation
@@ -83,6 +84,12 @@ was identified.
 > that the test iPad is the mounted showroom device or that every per-device
 > deployment control was configured and verified. Tick these items individually
 > on each deployed tablet after verification.
+>
+> *2026-08-10 note:* the mounted showroom device is now identified at model
+> level — an iPad Pro 11-inch (2nd generation); see *Mounted-device
+> verification* below. Whether it is the same physical unit as the 2026-08-03
+> test iPad was **not** stated, so no 2026-08-03 result transfers to it and
+> this checklist stays unticked per tablet.
 
 ### iPad / iOS (Safari or Guided Access kiosk)
 
@@ -223,7 +230,7 @@ deadline reconciliation behaves as designed — a tablet that sleeps past both
 deadlines still surfaces the warning rather than wiping silently, which is the
 recoverable behaviour Gate 1B was built for.
 
-### Routes added after that session — NOT yet exercised on hardware
+### Routes added after that session
 
 The table above is a record of what was run on 2026-08-03. A route added later
 does not inherit that result, for the reason the table exists at all: verifying
@@ -231,7 +238,7 @@ one route says nothing about another.
 
 | Route | How the session is ended | Hardware status |
 |---|---|---|
-| **Data-error overlay → Start over** | core data fails to load, the staff-notify overlay appears, and its **Start over** control is tapped | **not verified on any device** |
+| **Data-error overlay → Start over** | core data fails to load, the staff-notify overlay appears, and its **Start over** control is tapped | **verified on the mounted showroom device, 2026-08-10** — see *Mounted-device verification* below |
 
 Phase 0.4 added this control. It calls `window.dataErrorRestart()`, which
 delegates to `window.startOver()` and therefore reaches `resetSessionState()`
@@ -246,6 +253,56 @@ The automated suites execute both routes against a DOM shim
 `tests/session_safety_check.mjs`, which proves the overlay is closed and
 `aria-hidden` restored by the real wipe). That is a code result. It is not a
 device result, and this document has never treated the two as interchangeable.
+The device result arrived 2026-08-10 and is recorded next.
+
+## Mounted-device verification — 2026-08-10
+
+**Date:** 2026-08-10. **Observer:** Blake, by hand on the actual mounted
+showroom device. **Device, as confirmed by the owner:** iPad Pro 11-inch
+(2nd generation), tested in its normal mounted orientation. The OS version,
+browser, and per-step protocol details were **not** part of the report and
+are deliberately not recorded here — this document does not infer test detail
+that was not provided.
+
+The owner confirmed the following passes on the mounted device:
+
+1. **Data-error retry route** — the overlay's re-fetch route was exercised
+   and passed. (The overlay control ships as **Try again**; the owner's
+   report named the route "Retry".)
+2. **Data-error clean-restart route** — the overlay's session-ending route
+   was exercised and passed with a clean restart. (The overlay control ships
+   as **Start over**; the owner's report described this route as the
+   "Start New Customer" clean-restart route. The saved-confirmation screen
+   has a distinct control of that name — the route confirmed here is the
+   **data-error overlay's** clean restart, as the report's own "data-error"
+   prefix states.)
+3. **Sticky-control crowding check** — passed. This is the mounted-device
+   re-test the Sleep Brief revision backlog required.
+4. **Complete two-card Compare selection, tray, and modal flow** — passed.
+   This is the mounted-device comparison-context re-test from the roadmap's
+   recommended sequence (step 6).
+5. **No layout or interaction problem** was reported in the mounted
+   configuration.
+
+**What this closes.** Phase 0.4's hardware exit named exactly two routes —
+retry and clean restart — verified on the confirmed mounted showroom device.
+Both are confirmed above, so **Phase 0.4 is complete and Phase 0 closes**
+(recorded in `docs/rebuild-roadmap.md`). The roadmap's mounted-device steps 5
+and 6 (0.4 evidence; sticky-crowding and comparison-context re-test) are both
+satisfied by this session.
+
+**What this does not close, stated plainly.** The report is at route level:
+it does not itemize the fake-contact-value carryover protocol the 2026-08-03
+table applied to each route, and it does not include the focus-landing
+observation from the checklist below — those specifics stay recorded at the
+fidelity reported. It says nothing about the device-deployment controls: no
+supervised Restrictions payload was applied or proven, the device's
+supervision/enrolment state remains unestablished, and whether this mounted
+unit is the same iPad as the 2026-08-03 test device was not stated — so no
+2026-08-03 device-configuration result transfers. The per-tablet device
+checklist stays unticked, and **this document remains BLOCKING for showroom
+use on the device-deployment gap alone.** The native-Spanish gate is likewise
+untouched by this evidence.
 
 **Predictive keyboard.** Settings → General → Keyboard → **Predictive** was off
 during these runs, and the final fresh-session check offered none of the
@@ -276,6 +333,9 @@ Start New Customer route was added precisely because review found it had been
 missed. A further audit could surface another entry point — and Phase 0.4 has
 since ADDED one, the data-error overlay's **Start over**, which no run above
 covers. The established claim is bounded to the six rows in that table.
+*(The added route was subsequently verified on the mounted showroom device on
+2026-08-10 — see *Mounted-device verification* — as a separate, route-level
+result that does not extend the six 2026-08-03 rows or their protocol.)*
 
 **Not established — and important not to overstate.** This is verification of
 the *application/session paths* on *this iPad*, under *one* device
@@ -355,20 +415,26 @@ which run in Node against a DOM shim.
       confirm the reconciliation shows the **warning** (not a silent wipe) —
       confirmed; Restart then gave a clean session
 
-**Not verified — the Phase 0.4 recovery routes (added after the runs above):**
+**Verified at route level — the Phase 0.4 recovery routes (2026-08-10, owner
+report, mounted showroom device; see *Mounted-device verification* above):**
 
-- [ ] Force a core data-load failure on the mounted device (for example by
-      taking the network down before the page loads), confirm the staff-notify
-      overlay appears with both controls readable and reachable by touch, then
-      tap **Try again** with the data reachable again and confirm the overlay
-      closes and the Welcome screen is usable
-- [ ] From that same overlay, tap **Start over** and confirm it ends the
-      session cleanly: enter fake name, email and phone values first, end the
-      session by this route, begin a fresh session, and tap each contact field
-      — the check every other row in the routes table was subjected to
-- [ ] Confirm neither control leaves the overlay stranded over the Welcome
-      screen, and that focus lands on something real (not the page body) after
-      each
+- [x] The **Try again** route was exercised on the mounted device and passed
+      (owner report, route level). The original protocol below asked for a
+      forced core data-load failure with both controls readable and reachable
+      by touch, then a successful re-fetch landing on a usable Welcome; the
+      report confirms the route passed and reports no layout or interaction
+      problem, and did not itemize the per-step observations
+- [x] The **Start over** route was exercised on the mounted device and passed
+      with a clean restart (owner report, route level). The original protocol
+      below additionally asked for the fake-contact-value carryover check —
+      enter fake name, email and phone values first, end the session by this
+      route, begin a fresh session, tap each contact field — which the report
+      did not itemize; that per-field carryover observation on this route
+      remains at the fidelity reported
+- [ ] The focus-landing observation (focus on something real, not the page
+      body, after each control) was not part of the 2026-08-10 report and
+      stays open. The stranded-overlay half of this original check is covered:
+      both routes passed and no interaction problem was reported
 
 **Not verified — device deployment controls:**
 
