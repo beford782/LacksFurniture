@@ -874,9 +874,9 @@ the structure contract: canonical quiz source → workbook → bundle,
 `QUIZ_CANONICAL` and `CONSULTATION_QUESTIONS` in `tools/validation.py`,
 `resolveConsultationSummary()` and `QUESTION_ACCENTS` in `index.html`, and
 the affected suite fixtures. Deeper cuts (any scoring question) remain
-Phase 3. *(The 1.2 question-transition suite on PR #39's branch pins "of 12"
-totals; it updates to the 10/9 totals when that branch rebases onto this
-change.)*
+Phase 3. *(The 1.2 question-transition suite pinned "of 12" totals when it
+was written; it carries the 10/9 totals since PR #39's branch rebased onto
+this change.)*
 
 **Question-transition accessibility — an acceptance criterion, not an option.**
 *(Implemented 2026-08-12 as Phase 1's first slice — branch

@@ -250,7 +250,7 @@ function observe(overrides = {}, lang = "en") {
     const h = build(overrides);
     h.api.setLang(lang);
     enterQuiz(h);
-    h.api.setAnswer("sleep_quality", "poor");
+    h.api.setAnswer("trigger", "pain");
     o.next = movesDuring(h, () => h.api.nextQuestion()).map((m) => m.id);
     o.nextLabel = h.headingLabel();
     // Back: genuine change in the other direction
@@ -262,7 +262,7 @@ function observe(overrides = {}, lang = "en") {
     const h = build(overrides);
     h.api.setLang(lang);
     enterQuiz(h);
-    o.optionTap = movesDuring(h, () => h.api.selectOption("sleep_quality", "poor", false)).map((m) => m.id);
+    o.optionTap = movesDuring(h, () => h.api.selectOption("trigger", "pain", false)).map((m) => m.id);
   }
   // Language switch on the same question (switchLanguage() re-invokes the renderer)
   {
@@ -276,14 +276,14 @@ function observe(overrides = {}, lang = "en") {
     const h = build(overrides);
     h.api.setLang(lang);
     enterQuiz(h);
-    h.api.setAnswer("sleep_quality", "poor");
+    h.api.setAnswer("trigger", "pain");
     h.api.nextQuestion();
     h.api.goToReview();
     o.trackerAfterLeavingQuiz = h.api.getTracker();
     o.reviewEdit = movesDuring(h, () => h.api.editAnswer(0)).map((m) => m.id);
     // Edit-mode Next snaps straight back to Review (editingFromReview) — a
     // genuine screen transition, announced ONCE by Gate 2A, never doubled.
-    h.api.setAnswer("sleep_quality", "poor");
+    h.api.setAnswer("trigger", "pain");
     o.editSnapBack = movesDuring(h, () => h.api.nextQuestion()).map((m) => m.id);
   }
   // Review back-path (prevQuestion while reviewScreen is active), then a
@@ -301,7 +301,7 @@ function observe(overrides = {}, lang = "en") {
     const h = build(overrides);
     h.api.setLang(lang);
     enterQuiz(h);
-    h.api.setAnswer("sleep_quality", "poor");
+    h.api.setAnswer("trigger", "pain");
     h.api.setSafetyMode("restart");
     o.dialogRefusal = movesDuring(h, () => h.api.nextQuestion()).map((m) => m.id);
     // ownership released: the next genuine change announces normally
@@ -313,7 +313,7 @@ function observe(overrides = {}, lang = "en") {
     const h = build(overrides);
     h.api.setLang(lang);
     enterQuiz(h);
-    h.api.setAnswer("sleep_quality", "poor");
+    h.api.setAnswer("trigger", "pain");
     h.doc.getElementById("mattressDrawer").classList.add("drawer-open");
     o.drawerRefusal = movesDuring(h, () => h.api.nextQuestion()).map((m) => m.id);
   }
@@ -342,18 +342,18 @@ check("initial entry announces the SCREEN once (shipped Gate 2A), never the head
 check("Next: exactly one focus move, to the question heading",
   en.next.length === 1 && en.next[0] === "questionHeadline", JSON.stringify(en.next));
 check("Next: accessible name carries position and question text",
-  !!en.nextLabel && /^Question 2 of 12\. /.test(en.nextLabel)
+  !!en.nextLabel && /^Question 2 of 10\. /.test(en.nextLabel)
   && en.nextLabel.includes(QUIZ.questions[1].question.en), en.nextLabel || "(null)");
 check("Back: exactly one focus move, to the question heading",
   en.back.length === 1 && en.back[0] === "questionHeadline", JSON.stringify(en.back));
 check("Back: accessible name returns to position 1",
-  !!en.backLabel && /^Question 1 of 12\. /.test(en.backLabel), en.backLabel || "(null)");
+  !!en.backLabel && /^Question 1 of 10\. /.test(en.backLabel), en.backLabel || "(null)");
 check("option tap rerender (incl. Next enable/disable): ZERO focus moves",
   en.optionTap.length === 0, JSON.stringify(en.optionTap));
 check("language switch on the same question: ZERO focus moves",
   en.langSwitch.length === 0, JSON.stringify(en.langSwitch));
 check("language switch: accessible name re-renders in the NEW language",
-  !!en.langSwitchLabel && /^Pregunta 1 de 12\. /.test(en.langSwitchLabel),
+  !!en.langSwitchLabel && /^Pregunta 1 de 10\. /.test(en.langSwitchLabel),
   en.langSwitchLabel || "(null)");
 check("leaving the quiz clears the continuity tracker",
   en.trackerAfterLeavingQuiz === null, String(en.trackerAfterLeavingQuiz));
@@ -379,23 +379,23 @@ check("open drawer: the genuine change yields — ZERO moves",
 check("skip logic: solo path lands past partner_disturbance with ONE move",
   en.skip.length === 1 && en.skip[0] === "questionHeadline" && en.skipLandedOn === "sleep_position",
   `${JSON.stringify(en.skip)} landed ${en.skipLandedOn}`);
-check("skip logic: position reflects the VISIBLE list (5 of 11)",
-  !!en.skipLabel && /^Question 5 of 11\. /.test(en.skipLabel), en.skipLabel || "(null)");
+check("skip logic: position reflects the VISIBLE list (4 of 9)",
+  !!en.skipLabel && /^Question 4 of 9\. /.test(en.skipLabel), en.skipLabel || "(null)");
 
 section("Spanish behavior");
 const es = observe({}, "es");
 check("[es] Next: one move to the heading, name in Spanish",
   es.next.length === 1 && es.next[0] === "questionHeadline"
-  && !!es.nextLabel && /^Pregunta 2 de 12\. /.test(es.nextLabel)
+  && !!es.nextLabel && /^Pregunta 2 de 10\. /.test(es.nextLabel)
   && es.nextLabel.includes(QUIZ.questions[1].question.es), es.nextLabel || "(null)");
 check("[es] option tap: zero moves", es.optionTap.length === 0);
 check("[es] review-edit return: one screen announcement",
   es.reviewEdit.length === 1 && es.reviewEdit[0] === "questionScreen");
 check("[es] dialog refusal holds", es.dialogRefusal.length === 0);
 check("[es] skip position uses the visible list",
-  !!es.skipLabel && /^Pregunta 5 de 11\. /.test(es.skipLabel), es.skipLabel || "(null)");
+  !!es.skipLabel && /^Pregunta 4 de 9\. /.test(es.skipLabel), es.skipLabel || "(null)");
 
-section("full quiz walk (EN, partnered — all 12 questions)");
+section("full quiz walk (EN, partnered — all 10 questions)");
 {
   const h = build();
   enterQuiz(h);
@@ -413,8 +413,8 @@ section("full quiz walk (EN, partnered — all 12 questions)");
     const moves = movesDuring(h, () => h.api.nextQuestion());
     for (const m of moves) (m.id === "questionHeadline" ? headingMoves++ : otherMoves++);
   }
-  check("11 heading announcements for 11 question advances, then ONE review screen announcement",
-    headingMoves === 11 && otherMoves === 1, `heading=${headingMoves} other=${otherMoves}`);
+  check("9 heading announcements for 9 question advances, then ONE review screen announcement",
+    headingMoves === 9 && otherMoves === 1, `heading=${headingMoves} other=${otherMoves}`);
   check("the walk ends on the review screen",
     h.doc.querySelector(".screen.active").id === "reviewScreen");
 }
@@ -423,12 +423,16 @@ section("visible heading preserved");
 {
   const h = build();
   enterQuiz(h);
+  const head0 = h.doc.getElementById("questionHeadline");
+  check("heading text equals the visible question text",
+    !!head0 && head0.textContent === QUIZ.questions[0].question.en, head0 && head0.textContent);
+  // Q1 (trigger) deliberately has no accent entry; advance to mattress_size,
+  // which does, to prove the label does not replace the accented content.
+  h.api.setAnswer("trigger", "pain");
+  h.api.nextQuestion();
   const c = h.doc.getElementById("questionContainer").innerHTML;
   check("visible headline keeps the accent markup (label does not replace content)",
     c.includes('class="noct-quiz-headline"') && c.includes('<span class="accent">'));
-  const head = h.doc.getElementById("questionHeadline");
-  check("heading text equals the visible question text",
-    !!head && head.textContent === QUIZ.questions[0].question.en, head && head.textContent);
 }
 
 // ---------- mutation proof ----------------------------------------------------
