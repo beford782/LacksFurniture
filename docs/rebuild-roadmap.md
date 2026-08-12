@@ -589,6 +589,22 @@ and `git diff --check` is clean.
 **This is the substantial phase.** Everything below changes what is on screen.
 None of it changes what is recommended.
 
+**Phase 1 implementation authorization — granted 2026-08-12.** Following
+Phase 0's closure and the device-matrix recording (PR #37), Blake Ford
+explicitly authorized Phase 1 implementation under this document's
+constraints. The authorization covers work described by items' **Proceeds**
+lists. It lifts **no item-specific gate** and does not authorize: a final
+Sleep Brief layout; a need-derived hero replacing or subordinating the
+current heading (1.1's gated output); personalized per-model reasons without
+approved catalog content (1.3's reason gate); replacement of the tier-tab
+navigation (1.3's adoption gate); any scoring, ranking, tier, threshold, cap,
+back-fill or firmness change (Phase 3); auto-advance (3.4); prices or payment
+calculations (Phase 2); Phase 2.2 activation; Phase 3 work; or showroom use
+or production launch. **Device hardening remains BLOCKING for showroom use**
+(`docs/kiosk-device-hardening.md`) — no Phase 1 work deploys to
+customer-facing showroom use while that blocker stands. The regression exit
+gate below was built first, as the opening act of the phase.
+
 ### Standing Phase 1 constraints
 
 1. **Nothing here changes what is recommended** (Invariant 2). Scoring, ranking,
@@ -634,12 +650,21 @@ None of it changes what is recommended.
 4. **Accessibility acceptance criteria apply to every item** — see the section
    after 1.6.
 
-**Phase 1 exit gate (recommended, not yet built):** capture a fixture of fixed
-answer sets → (top pick, tier assignment, ordered result list, computed firmness)
-at the Phase 1 baseline commit, and assert it unchanged by every Phase 1 PR
-alongside `tests/scoring_isolation_check.mjs`. This is what would make Invariant 2
-enforceable rather than aspirational. Building it is itself a proposal (❓) — it
-needs Blake's agreement on cost.
+**Phase 1 exit gate — approved and built 2026-08-12 (owner directive).**
+`tests/phase1_output_regression_check.mjs`, in CI alongside
+`tests/scoring_isolation_check.mjs`, executes the real extracted engine over
+ten fixed answer sets in both languages and holds every recommendation output
+against `tests/fixtures/phase1_output_baseline_85c5c10.json`, generated at
+the Phase 1 baseline commit `85c5c10`: scores and match reasons, resolved
+firmness and feel classification, tier membership and within-tier order, pct,
+the 60% qualification, the cap of 3 and the back-fill floor, the top pick,
+the ordered accessory engine and its step groups, and the ordered Sleep Brief
+priorities. Fifteen in-memory engine mutations must each diverge from the
+baseline on every run, so the pin proves its own non-vacuity. This is
+Invariant 2 made enforceable. The fixture regenerates only from the
+pre-change commit of an approved engine change (Phase 3), with its pinned
+hash moved in the same reviewed diff. *(This closed the register's "Phase 1
+scoring-fixture exit gate" entry.)*
 
 ### Phase 1 direction decisions — recorded 2026-08-07
 
@@ -754,7 +779,10 @@ already marked so elsewhere):
    check and the complete two-card Compare selection, tray, and modal flow
    passed on the mounted device, with no layout or interaction problem.
 7. Request explicit Phase 1 implementation authorization only after the
-   remaining gates close.
+   remaining gates close. **Granted 2026-08-12** by owner directive ahead of
+   the catalog-substance and reviewer gates — owner's prerogative; those
+   gates and every item-specific gate stand unchanged (see the Phase 1
+   authorization block).
 
 ### 1.1 — Sleep Brief ◐
 
@@ -1385,8 +1413,11 @@ approval; its presence is a bar on proceeding.
 | Global maxScore / cross-tier ranking / tier merge or removal / threshold, cap, back-fill (3.3) | 🔒 | Blake | Evidence. **Does not gate a preserving Phase 1 tier-navigation change** |
 | Firmness stops (3.5) | 🔒 | Blake | Evidence |
 | Persistent identity bar (3.6) | ❓ | Blake | A case for it |
-| Phase 1 scoring-fixture exit gate | ❓ | Blake | Agreement on cost |
 | Dormant nickname-code cleanup | ❓ | Blake | Analytics review — see below |
+
+*(Resolved and removed from the table: "Phase 1 scoring-fixture exit gate" —
+approved by owner directive 2026-08-12 and built the same day; see the Phase 1
+exit gate block under Standing Phase 1 constraints.)*
 
 **Visible Gold/Silver/Bronze presentation may change in Phase 1** — including
 replacing the tab affordance with a grouped, stacked or accordion layout, which
@@ -1464,7 +1495,10 @@ document, not here.
    0.4's hardware gate closed 2026-08-10 with the owner-confirmed
    mounted-device evidence (`docs/kiosk-device-hardening.md`) — **Phase 0 is
    complete.**
-5. ⬜ **The visible redesign** — Phase 1. Start the catalog reason-content
+5. 🔨 **The visible redesign** — Phase 1. *(Implementation explicitly
+   authorized by Blake 2026-08-12 — see the authorization block at the top of
+   Phase 1; every item-specific gate stands. The output-regression exit gate
+   was built first.)* Start the catalog reason-content
    authoring (1.3's gated content) in parallel and early; it is not engineering
    work, and it gates **reason-led/personalised-card completion** — not the card
    redesign itself, which proceeds against today's generic-default content per
