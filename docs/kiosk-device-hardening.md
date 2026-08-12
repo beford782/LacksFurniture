@@ -11,7 +11,10 @@ see *Mounted-device verification* below. What has **not** been done is the
 device deployment: no supervised MDM payload has been applied or proven, and
 several checklist controls remain unverified. That work cannot be done from
 the codebase, and it — not the recovery routes — is what keeps this document
-BLOCKING.
+BLOCKING. A 2026-08-12 on-device audit sharpened the gap rather than closing
+it: the mounted device is **not supervised and not MDM-enrolled**, so neither
+required Restrictions payload can be applied to it as deployed today — see
+*Device identity and configuration audit — 2026-08-12*.
 
 The gap is no longer theoretical. **On a real iPad, iOS offered an autofill
 suggestion in the contact fields** on the deployed build, with every mitigation
@@ -78,7 +81,9 @@ in the actual kiosk browser, in both English and Spanish.
 **This checklist is per mounted showroom tablet and is deliberately still
 unticked**, including *Use Contact Info: OFF* — which was turned off on the test
 iPad during the 2026-08-03 runs recorded further down, and is how the mechanism
-was identified.
+was identified. *(2026-08-12: Use Contact Info was verified still OFF on the
+mounted device and is now ticked below with that date; every other item was
+observed out of its required state — see the audit section.)*
 
 > This checklist remains unticked because the hardware tests did not establish
 > that the test iPad is the mounted showroom device or that every per-device
@@ -90,18 +95,33 @@ was identified.
 > verification* below. Whether it is the same physical unit as the 2026-08-03
 > test iPad was **not** stated, so no 2026-08-03 result transfers to it and
 > this checklist stays unticked per tablet.
+>
+> *2026-08-12 note:* the owner confirmed on-device that the mounted showroom
+> device **is the same physical unit** as the 2026-08-03 test iPad, closing
+> that question. The items below now carry dated as-observed states from the
+> 2026-08-12 audit. An observed state is not a deployment control: these are
+> unmanaged Settings toggles on an unsupervised device, and the same audit
+> caught one of them (Predictive) drifted back on since the earlier runs.
 
 ### iPad / iOS (Safari or Guided Access kiosk)
 
-- [ ] Settings → Safari → AutoFill → **Use Contact Info: OFF**
-- [ ] Settings → Safari → AutoFill → **Credit Cards: OFF**
-- [ ] Settings → Passwords → Password Options → **AutoFill Passwords: OFF**
-- [ ] Settings → General → Keyboard → **Predictive: OFF** (QuickType strip)
-- [ ] No personal Apple ID / iCloud account signed in on the device
+- [x] Settings → Safari → AutoFill → **Use Contact Info: OFF** — *verified
+      still OFF on the mounted device, 2026-08-12. An unmanaged toggle, subject
+      to drift; see the Predictive finding*
+- [ ] Settings → Safari → AutoFill → **Credit Cards: OFF** — *observed **ON**,
+      2026-08-12*
+- [ ] Settings → Passwords → Password Options → **AutoFill Passwords: OFF** —
+      *observed **ON**, 2026-08-12*
+- [ ] Settings → General → Keyboard → **Predictive: OFF** (QuickType strip) —
+      *observed **ON**, 2026-08-12, despite being off during the earlier
+      verified runs — direct evidence that unmanaged toggles drift*
+- [ ] No personal Apple ID / iCloud account signed in on the device — *a
+      personal Apple ID **was signed in**, 2026-08-12*
 - [ ] Guided Access or an MDM kiosk/single-app profile enabled so the customer
-      cannot reach Settings, other tabs, or history
+      cannot reach Settings, other tabs, or history — *neither active,
+      2026-08-12*
 - [ ] Settings → Safari → **Clear History and Website Data** as part of the
-      opening routine
+      opening routine — *no opening routine exists, 2026-08-12*
 
 ### Managed deployment (MDM — Jamf, Intune, Apple Configurator)
 
@@ -128,7 +148,9 @@ management restrictions for supervised devices*: Safari AutoFill requires
 supervision from iOS 13 / iPadOS 13.1 onward, and Password AutoFill from
 iOS 12 / iPadOS 13.1. An unsupervised device cannot be restricted this way at
 all, which makes Automated Device Enrolment (or Apple Configurator) a
-prerequisite for this deployment, not an optional extra.
+prerequisite for this deployment, not an optional extra. The 2026-08-12 audit
+**established that the mounted device is not supervised** and carries no
+management profile, so neither key can be applied to it as deployed today.
 
 **What is still left open.** `allowPasswordAutoFill = false` suppresses the
 *system prompt* from third-party credential providers — it does not remove or
@@ -384,6 +406,70 @@ Password AutoFill, the QuickType strip's own behaviour, credit-card AutoFill,
 Apple ID state, kiosk/single-app enforcement and the clear-site-data routine
 remain unverified. Showroom use stays blocked until those are completed.
 
+## Device identity and configuration audit — 2026-08-12
+
+**Date/time:** 2026-08-12, ~09:00–09:39 America/Chicago. **Observer:** Blake,
+by hand on the actual mounted showroom device, working interactively with the
+assistant one item at a time. Every value below is as stated by the owner;
+none is inferred. **Build:** the deployed preview at
+`https://beford782.github.io/LacksFurniture/`, GitHub Pages built at exactly
+`fd70747` (current `main`), HTTP 200 at audit time.
+
+**Scope, stated plainly.** Device identity, the viewport matrix, and
+device-configuration states only. The Phase 0.4 recovery routes were **not**
+re-run — 0.4 closed 2026-08-10 and this audit neither extends nor disturbs
+that evidence. The focus-landing observation from the checklist below remains
+open. What this audit adds: the device matrix the Phase 1 merge gate requires
+(now recorded in `docs/rebuild-roadmap.md`), and dated as-observed states for
+the per-tablet checklist above.
+
+### Device identity — owner-stated
+
+| Field | Value |
+|---|---|
+| Mounted showroom tablet | confirmed — the actual mounted device |
+| Same physical unit as the 2026-08-03 test iPad | **yes — confirmed** (previously an open question) |
+| Model | iPad Pro 11-inch (2nd generation) |
+| iPadOS | 26.3.1 (a) |
+| Browser | Safari (version follows iPadOS: 26.3.1 (a)) |
+| Viewport, portrait | 834 × 1108 CSS px |
+| Viewport, landscape | 1194 × 748 CSS px |
+| Screen | 834 × 1194 CSS px |
+| Intended operating orientation | landscape |
+| Supervision banner in Settings | absent |
+| Profiles in VPN & Device Management | none |
+| Guided Access / single-app pinning | not active |
+
+### Configuration findings
+
+1. **The device is not supervised and not MDM-enrolled.** This settles the
+   open supervision-state item: no conclusion needed hedging any more — the
+   answer is no. Consequence: neither `safariAllowAutoFill = false` nor
+   `allowPasswordAutoFill = false` can be applied to this device as deployed;
+   supervision via Automated Device Enrolment or Apple Configurator (a
+   wipe-and-enroll) is a prerequisite step that has not begun.
+2. **Settings drift is now observed fact, not a hypothetical.** Predictive
+   was off during the earlier verified runs and was observed **ON** on
+   2026-08-12. Nothing in the application changed it; the device is shared
+   and unmanaged. This is the concrete demonstration of why this document
+   refuses to treat Settings toggles as deployment controls.
+3. **Live exposure on the floor.** As of this audit the mounted device has a
+   personal Apple ID signed in, Password AutoFill ON, Credit Cards AutoFill
+   ON, no Guided Access, and no single-app pinning. A customer who leaves the
+   kiosk page — which nothing prevents — reaches a browser carrying the
+   owner's credentials surface. This is the exposure the checklist exists to
+   close, now dated and specific.
+4. **Use Contact Info remains OFF** — the one control in its required state,
+   verified on the mounted device. It is still an unmanaged toggle, and
+   finding 2 shows what that is worth over time.
+
+**What this audit does and does not change.** It does not reopen Phase 0.4;
+the application/session routes stand as verified. It converts several
+unknowns in this document into dated facts, and every one of those facts
+points the same direction: **this document remains BLOCKING for showroom use,
+and the blocking gap is now concrete** — an unsupervised, unpinned,
+personally-signed-in device with autofill surfaces enabled.
+
 ## Real-device verification status
 
 The application/session paths are answered on this iPad. The device-deployment
@@ -442,20 +528,27 @@ report, mounted showroom device; see *Mounted-device verification* above):**
       = false` (a manual Settings toggle is **not** equivalent — see above)
 - [ ] Deploy and prove the supervised Restrictions payload
       `allowPasswordAutoFill = false`
-- [ ] Establish whether the test iPad is supervised at all. Its supervision /
-      enrolment state was never determined, so no conclusion about payload
-      enforceability can be drawn from these runs either way
+- [x] Establish whether the test iPad is supervised at all — **established
+      2026-08-12: it is not supervised** (no supervision banner in Settings,
+      no profiles in VPN & Device Management). The same audit confirmed the
+      mounted device is the same physical unit as the test iPad, so the
+      finding covers both. Consequence: neither Restrictions payload can be
+      applied until the device is enrolled
 - [ ] Supervise the mounted device via Automated Device Enrolment or Apple
       Configurator (prerequisite for both keys above)
 - [ ] Confirm the keyboard's predictive strip is itself absent / offers nothing
       from the previous customer. Predictive was off during the runs above and
-      no prior value was offered, but the strip was not separately observed
+      no prior value was offered, but the strip was not separately observed —
+      *2026-08-12: Predictive observed drifted back **ON***
 - [ ] Confirm no suggestion appears from Password AutoFill or another mechanism
       once the payloads are in place
-- [ ] Credit Cards AutoFill off; no personal Apple ID / iCloud account signed in
+- [ ] Credit Cards AutoFill off; no personal Apple ID / iCloud account signed
+      in — *2026-08-12: observed **contrary** — Credit Cards AutoFill ON and a
+      personal Apple ID signed in*
 - [ ] Kiosk / single-app enforcement (Guided Access is **not** a supervised MDM
-      profile)
-- [ ] **Clear History and Website Data** as part of the opening routine
+      profile) — *2026-08-12: neither Guided Access nor any pinning active*
+- [ ] **Clear History and Website Data** as part of the opening routine —
+      *2026-08-12: no opening routine exists*
 
 ## Session timing policy — provisional
 

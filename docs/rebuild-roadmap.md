@@ -717,6 +717,25 @@ unnamed. The claim-inventory disposition remains open. Catalog schema,
 scoring changes, and reason activation remain separately gated (Phase 3
 and 1.3 as written).
 
+**Mounted-device observations — 2026-08-12 (observations only, not
+approval).** Recorded during the 2026-08-12 device-identity audit on the
+confirmed mounted showroom device, deployed build `fd70747`, mounted
+landscape orientation. These are owner observations for continued
+prototyping; they are not visual approval, prototype approval, or Phase 1
+implementation authorization, and no mark moves on their account:
+
+- **The Sleep Brief reads as too textual** — in the owner's words, "just so
+  textual with so many words, no pictures or graphics to intrigue" before
+  mattress trials begin. Reinforces 1.1's need-led-hero direction and the
+  imagery/text-density revision items.
+- **The journey rail's use of landscape space was observed as good** on the
+  mounted device — a mounted-device data point against the 2026-08-07
+  hand-held observation that it underuses landscape. The backlog item's
+  disposition stays with its approver; both observations stand, dated.
+- **Glare and shared-viewing legibility: fine** under actual showroom
+  lighting at the mount.
+- **No touch-target, focus, or interaction concern** was noted this session.
+
 **Recommended sequence from here** (no step below is complete unless
 already marked so elsewhere):
 
@@ -1152,7 +1171,29 @@ It does not override the Phase 0 → Phase 1 sequence; the two apply in order:
 source in this repository identifies the showroom device, its viewport or its
 orientation, so "real iPad dimensions" is not yet a checkable acceptance
 criterion. **No Phase 1 change merges without verification on the confirmed
-hardware.**
+hardware.** *(The hardware was confirmed and the matrix recorded 2026-08-12 —
+see below. The merge requirement stands unchanged.)*
+
+**Device matrix — recorded 2026-08-12, owner-confirmed on the mounted device**
+(full session record: `docs/kiosk-device-hardening.md`, *Device identity and
+configuration audit — 2026-08-12*):
+
+| Field | Value |
+|---|---|
+| Device | iPad Pro 11-inch (2nd generation) — the actual mounted showroom tablet, confirmed the same physical unit as the 2026-08-03 test iPad |
+| iPadOS / browser | 26.3.1 (a) / Safari |
+| Viewport, portrait | 834 × 1108 CSS px |
+| Viewport, landscape | 1194 × 748 CSS px |
+| Intended operating orientation | landscape |
+| Supervision / management | not supervised, no MDM profiles (see the hardening doc — BLOCKING for showroom use) |
+
+With the matrix recorded, "real iPad dimensions" is now a checkable acceptance
+criterion, and the breakpoint-justification restriction below lifts on its own
+stated terms. What does **not** change: every Phase 1 merge still requires
+verification on this confirmed hardware, both orientations, English and
+Spanish — and **recording this matrix is not Phase 1 implementation
+authorization**, which remains a separate, explicit owner decision (owner
+directive 2026-08-12; sequence-of-record step 7).
 
 Prototyping and implementation proceed meanwhile under one restriction: **no new
 CSS breakpoint, and no change to an existing one, may be justified as matching the
