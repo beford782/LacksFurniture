@@ -52,10 +52,15 @@ foreach ($row in $rows) {
         }
     }
 
-    # Build tags array from pipe-delimited displayBadges (display chips)
+    # Build tags array from pipe-delimited displayBadges (display chips).
+    # @(...) so a SINGLE badge stays an ARRAY: a bare PS 5.1 pipeline unrolls
+    # one item to a scalar, which serializes as a JSON string and breaks every
+    # (m.tags || []).join() consumer. features is deliberately NOT wrapped in
+    # this slice — it is a scoring input and its serialization is a separately
+    # audited issue (owner ruling, 2026-08-12).
     $tags = @()
     if ($row.displayBadges -and $row.displayBadges.Trim()) {
-        $tags = $row.displayBadges.Split('|') | ForEach-Object { $_.Trim() }
+        $tags = @($row.displayBadges.Split('|') | ForEach-Object { $_.Trim() })
     }
 
     # Build reasons object from reason_* columns
@@ -149,9 +154,10 @@ foreach ($row in $rows) {
     if ($esLookup.ContainsKey($mattressId)) {
         $esRow = $esLookup[$mattressId]
 
-        # Spanish display badges -> tags_es
+        # Spanish display badges -> tags_es. @(...) for the same single-badge
+        # array-shape guarantee as the EN tags above.
         if ($esRow.displayBadges -and $esRow.displayBadges.Trim()) {
-            $tags_es = $esRow.displayBadges.Split('|') | ForEach-Object { $_.Trim() }
+            $tags_es = @($esRow.displayBadges.Split('|') | ForEach-Object { $_.Trim() })
         }
 
         # Spanish highlight

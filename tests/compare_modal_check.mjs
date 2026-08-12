@@ -285,14 +285,22 @@ section('aligned comparison: Spanish and missing-data fallbacks');
   es.api.close();
 }
 {
-  const bare = makeEnv({ diffs: () => [] }); // no authored differentiators at all
+  // Claim retirement (owner ruling 2026-08-12): an EMPTY differentiator
+  // list now means the model's copy was WITHDRAWN. This block previously
+  // pinned the superseded behavior (generic fallback text resurrecting in
+  // the feature/benefit cells); the ruled behavior is total omission when
+  // both sides are retired — no fallback, no all-empty row. Mixed pairings
+  // ("—" on the retired side only) are pinned by
+  // tests/claim_retirement_check.mjs.
+  const bare = makeEnv({ diffs: () => [] }); // both models retired
   bare.focusOpener();
   bare.api.open();
   const out = bare.els.compareCols.innerHTML;
-  ok('missing differentiators: feature falls back to the response label',
-    /data-cmp="feature"[\s\S]*?resp/.test(out));
-  ok('missing differentiators: benefit falls back to the difference text',
-    /data-cmp="benefit"[\s\S]*?difftext/.test(out));
+  ok('retired both sides: feature and benefit rows are omitted entirely',
+    !out.includes('data-cmp="feature"') && !out.includes('data-cmp="benefit"'));
+  ok('retired both sides: the remaining rows still render',
+    out.includes('data-cmp="feel"') && out.includes('data-cmp="fit"') &&
+    out.includes('data-cmp="reaction"'));
   ok('dialog lifecycle unchanged through the aligned render (focus on title)',
     bare.doc.activeElement === bare.els.compareModalTitle);
   bare.api.close();

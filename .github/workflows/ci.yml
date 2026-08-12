@@ -55,7 +55,7 @@ jobs:
     # The display name is PINNED by branch protection (required status check
     # "Full suite (18 checks)") — renaming it here without updating the
     # protection rule in the same change would leave every PR waiting on a
-    # check that never reports. The suite actually runs 23 checks: Phase 0.6
+    # check that never reports. The suite actually runs 24 checks: Phase 0.6
     # added the consultation-summary suite, the compare-modal prerequisite
     # added its dialog-semantics suite, slice 5a added the construction
     # reveal repair suite, and Phase 1 opened with its output-regression
@@ -373,6 +373,18 @@ jobs:
       # from the baseline or the suite fails as vacuous.
       - name: phase 1 output regression (recommendations pinned)
         run: node tests/phase1_output_regression_check.mjs
+
+      # Claim retirement (owner ruling 2026-08-12): executes the real
+      # mattressDifferentiators, drawer differentiator block, compare
+      # sideData/rowsHtml, buildMattressPriorities and hf2ReasonFor against
+      # the shipped catalog in both languages. Pins the exact retired set
+      # (g6/g7/s3/g8/g9 and no other), total drawer omission (no heading,
+      # no empty markup, no hardcoded or feature-derived fallback), compare
+      # semantics ("—" on the retired side only; retired×retired omits the
+      # two rows), the R4-exclusion evidence, and per-model banned-string
+      # absence. Four in-memory mutations must each be caught on every run.
+      - name: claim retirement (omission, no resurrection)
+        run: node tests/claim_retirement_check.mjs
 
       # One level up from the suites: for each safety property in the manifest,
       # delete it from a COPY of the tree and require a suite to go red. A

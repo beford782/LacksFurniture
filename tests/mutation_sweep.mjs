@@ -565,12 +565,16 @@ const MUTATIONS = [
   ["compare alignment: the head row regresses to independent columns",
     "'<div class=\"cmp-head-row\" role=\"row\"><div class=\"cmp-label\" role=\"columnheader\"></div>' + a.head + b.head + '</div>'",
     "''", COMPARE],
+  // Re-pointed 2026-08-12 (claim-retirement slice): the two lines gained the
+  // retired-model "—" ternary, so the find-strings moved with the code. The
+  // mutation semantics are IDENTICAL — drop the d0 term and the compare
+  // suite must notice the title/benefit vanish.
   ["compare alignment: the key-feature title is dropped again",
-    "feature: d0.title || mattressResponseLabel(m),",
-    "feature: d0.detail || mattressResponseLabel(m),", COMPARE],
+    "feature: _retired ? '—' : (d0.title || mattressResponseLabel(m)),",
+    "feature: _retired ? '—' : (d0.detail || mattressResponseLabel(m)),", COMPARE],
   ["compare alignment: the practical benefit is dropped",
-    "benefit: d0.detail || mattressDifferenceText(m),",
-    "benefit: mattressDifferenceText(m),", COMPARE],
+    "benefit: _retired ? '—' : (d0.detail || mattressDifferenceText(m)),",
+    "benefit: _retired ? '—' : (mattressDifferenceText(m)),", COMPARE],
   ["compare alignment: identical values no longer merge",
     "if (r.a === r.b) {", "if (false) {", COMPARE],
   ["compare alignment: difference emphasis removed",
