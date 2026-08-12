@@ -55,7 +55,7 @@ jobs:
     # The display name is PINNED by branch protection (required status check
     # "Full suite (18 checks)") — renaming it here without updating the
     # protection rule in the same change would leave every PR waiting on a
-    # check that never reports. The suite actually runs 23 checks: Phase 0.6
+    # check that never reports. The suite actually runs 24 checks: Phase 0.6
     # added the consultation-summary suite, the compare-modal prerequisite
     # added its dialog-semantics suite, slice 5a added the construction
     # reveal repair suite, and Phase 1 opened with its output-regression
@@ -359,6 +359,17 @@ jobs:
       # on the results surface, and the session-wipe reset.
       - name: compare entry point (reachability, i18n, a11y)
         run: node tests/compare_entry_check.mjs
+
+      # Phase 1.2: extracts and EXECUTES the real showScreen/renderQuestion/
+      # navigation and the Gate 2A focus machinery against a focus-recording
+      # DOM shim. Proves a genuine same-screen question change focuses the
+      # labelled heading exactly once (position + text, active language),
+      # while option taps, Next-state rerenders, language switches, initial
+      # entry, review-edit returns and the review back-path never double-
+      # announce — and that the shipped refusal gate is honored. Six in-memory
+      # mutations must each be caught on every run.
+      - name: question transition focus (1.2)
+        run: node tests/question_transition_check.mjs
 
       # Phase 1 exit gate (owner-approved 2026-08-12): executes the real
       # extracted engine — calculateScores, the tier derivation inside

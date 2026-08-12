@@ -852,7 +852,7 @@ block above. This item cannot be closed by shipping prototypes — if Blake has 
 approved a reviewed prototype and it is not recorded here, the remainder is still
 open.
 
-### 1.2 — Quiz ⬜
+### 1.2 — Quiz 🔨
 
 - Review all option icons for meaning **before** introducing any (47 since
   2026-08-12; 56 before the removal below). Suppress
@@ -879,6 +879,15 @@ totals; it updates to the 10/9 totals when that branch rebases onto this
 change.)*
 
 **Question-transition accessibility — an acceptance criterion, not an option.**
+*(Implemented 2026-08-12 as Phase 1's first slice — branch
+`claude/phase1.2-question-transition-accessibility`, suite
+`tests/question_transition_check.mjs` in CI. renderQuestion() tracks the
+rendered question id; showScreen() clears the tracker on every genuine screen
+transition; only a same-screen id change focuses the freshly rendered
+`#questionHeadline`, whose aria-label carries position and question text in
+the active language; the shipped refusal gate runs first, unchanged. Item
+stays open on the icon review. Merge additionally awaits mounted-device
+verification per the Phase 1 merge gate.)*
 
 Advancing between questions calls the question renderer without a screen
 transition, so Phase 0.3 does not announce it and cannot: the same-screen guard
