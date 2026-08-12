@@ -55,10 +55,11 @@ jobs:
     # The display name is PINNED by branch protection (required status check
     # "Full suite (18 checks)") — renaming it here without updating the
     # protection rule in the same change would leave every PR waiting on a
-    # check that never reports. The suite actually runs 22 checks: Phase 0.6
+    # check that never reports. The suite actually runs 23 checks: Phase 0.6
     # added the consultation-summary suite, the compare-modal prerequisite
-    # added its dialog-semantics suite, and slice 5a added the construction
-    # reveal repair suite; renaming name+protection together is an operator
+    # added its dialog-semantics suite, slice 5a added the construction
+    # reveal repair suite, and Phase 1 opened with its output-regression
+    # exit gate; renaming name+protection together is an operator
     # (Blake) action, tracked in the 0.6 PR notes.
     name: Full suite (18 checks)
     runs-on: ubuntu-24.04
@@ -358,6 +359,20 @@ jobs:
       # on the results surface, and the session-wipe reset.
       - name: compare entry point (reachability, i18n, a11y)
         run: node tests/compare_entry_check.mjs
+
+      # Phase 1 exit gate (owner-approved 2026-08-12): executes the real
+      # extracted engine — calculateScores, the tier derivation inside
+      # window.showResults, qualifyRankedChoices, the accessory scorer and
+      # view-model grouping, and showProfileScreen's priority computation —
+      # across ten fixed answer sets in both languages, and holds every
+      # recommendation output (scores, match reasons, tier membership and
+      # order, pct, threshold, cap, back-fill, top pick, accessories,
+      # priorities, resolved firmness, profile assignment) to the committed
+      # baseline fixture generated at the Phase 1 baseline commit (85c5c10).
+      # Self-proving: fifteen in-memory engine mutations must each diverge
+      # from the baseline or the suite fails as vacuous.
+      - name: phase 1 output regression (recommendations pinned)
+        run: node tests/phase1_output_regression_check.mjs
 
       # One level up from the suites: for each safety property in the manifest,
       # delete it from a COPY of the tree and require a suite to go red. A
