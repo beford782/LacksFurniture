@@ -451,12 +451,6 @@
       }
     },
     "consultationImplications": {
-      "sleep_quality": {
-        "poor": "aiming for a real change in nightly rest",
-        "fair": "aiming to sleep noticeably better",
-        "okay": "building on what already works",
-        "well": "protecting a setup that already works"
-      },
       "trigger": {
         "pain": "here to solve a comfort problem",
         "worn_out": "replacing an old mattress",
@@ -518,12 +512,6 @@
       }
     },
     "consultationImplications": {
-      "sleep_quality": {
-        "poor": "buscando un cambio real en el descanso",
-        "fair": "buscando dormir notablemente mejor",
-        "okay": "mejorando lo que ya funciona",
-        "well": "cuidando un descanso que ya funciona"
-      },
       "trigger": {
         "pain": "aquí para resolver un problema de comodidad",
         "worn_out": "reemplazando un colchón viejo",

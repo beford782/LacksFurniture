@@ -70,12 +70,6 @@
   "voice_es.outcomeLabel": "Tu consulta crea",
   "voice_es.outcomeItems": "Resumen de Sueño · Opciones de Colchón · Sistema de Sueño · Opciones de Pago",
   "salesNotes.consultationImplications": {
-    "sleep_quality": {
-      "poor": { "en": "aiming for a real change in nightly rest", "es": "buscando un cambio real en el descanso" },
-      "fair": { "en": "aiming to sleep noticeably better", "es": "buscando dormir notablemente mejor" },
-      "okay": { "en": "building on what already works", "es": "mejorando lo que ya funciona" },
-      "well": { "en": "protecting a setup that already works", "es": "cuidando un descanso que ya funciona" }
-    },
     "trigger": {
       "pain": { "en": "here to solve a comfort problem", "es": "aquí para resolver un problema de comodidad" },
       "worn_out": { "en": "replacing an old mattress", "es": "reemplazando un colchón viejo" },

@@ -13133,8 +13133,6 @@
       partner_disturbance:  { en: 'movement',       es: 'movimiento' },
       temperature:          { en: 'temperature',    es: 'temperatura' },
       firmness:             { en: 'firmness',       es: 'firmeza' },
-      current_mattress_age: { en: 'How old',        es: 'Cuántos años' },
-      sleep_quality:        { en: 'How well',       es: 'Qué tan bien' },
       sleep_issues:         { en: 'issues',         es: 'problema' },
       health_conditions:    { en: 'Anything else',  es: 'Algo más' }
     };
@@ -17843,9 +17841,10 @@
 
     function resolveConsultationSummary() {
       var nonEmpty = function(p) { return p && p.length; };
-      // Context row: the two non-scoring openers (sleep_quality, trigger).
+      // Context row: the non-scoring opener (trigger). sleep_quality was
+      // removed from the quiz 2026-08-12 (owner ruling) — the row now builds
+      // from the visit trigger alone.
       var ctxParts = [
-        consultImplication('sleep_quality', answers.sleep_quality),
         consultImplication('trigger', answers.trigger)
       ].filter(nonEmpty);
       // Who row: neutral mattress-size identity, then what each reported
