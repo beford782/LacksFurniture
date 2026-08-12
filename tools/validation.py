@@ -177,7 +177,7 @@ SALESNOTE_FORMATS = {"full", "coaching"}
 # resolveConsultationSummary() — change the two together. mattress_size is
 # deliberately absent (the neutral size identity renders as its own label) and
 # firmness renders as the computed score; neither goes through this mapping.
-CONSULTATION_QUESTIONS = ("sleep_quality", "trigger", "sleep_issues",
+CONSULTATION_QUESTIONS = ("trigger", "sleep_issues",
                           "sleep_position", "health_conditions", "temperature")
 
 
@@ -1738,8 +1738,13 @@ def validate_financing(config: dict, *, allowed_source_hosts=None) -> Validation
 # of the id consumers first.
 
 # (id, type, option ids in display order). None = slider (no options).
+# 2026-08-12 (owner ruling, Blake): sleep_quality and current_mattress_age
+# removed — both carried zero score tags, and the consumer audit found
+# current_mattress_age consumed by nothing at all while sleep_quality fed
+# only the consultation context row (which now builds from trigger alone).
+# 12 -> 10 questions; recommendations provably unchanged (the Phase 1
+# output-regression fixture is byte-identical across the change).
 QUIZ_CANONICAL = (
-    ("sleep_quality", "single", ("poor", "fair", "okay", "well")),
     ("trigger", "single", ("pain", "worn_out", "moving", "upgrade", "browsing")),
     ("mattress_size", "single",
      ("twin", "twin_xl", "full", "queen", "king", "cal_king")),
@@ -1750,8 +1755,6 @@ QUIZ_CANONICAL = (
     ("body_type", "single", ("petite", "average", "athletic", "plus", "different")),
     ("temperature", "single", ("hot", "comfortable", "cold", "opposite")),
     ("firmness", "slider", None),
-    ("current_mattress_age", "single",
-     ("under_2", "three_seven", "eight_fifteen", "fifteen_plus", "not_sure")),
     ("sleep_issues", "multiple",
      ("back_pain", "hip_pain", "hot", "tossing", "stiff", "sagging",
       "too_soft", "none")),
@@ -2693,7 +2696,7 @@ def _self_test() -> int:
     def _consult_tabs(quiz_payload):
         tc = _good_tabs()
         tc["SalesNotes"][1].append({
-            "Type": "consultation", "Key": "sleep_quality.poor",
+            "Type": "consultation", "Key": "trigger.pain",
             "Implication": "copy", "Implication (ES)": "copia"})
         tc["Quiz"] = (tc["Quiz"][0], [{"Quiz JSON": quiz_payload}])
         return tc
@@ -2702,8 +2705,8 @@ def _self_test() -> int:
         check(f"inner quiz envelope as {label} -> controlled error, no throw",
               any("no parseable Quiz tab" in e for e in rep.errors))
     rep = validate_sales_notes(_consult_tabs(
-        '{"quiz": {"questions": [{"id": "sleep_quality", '
-        '"options": [{"id": "poor"}]}]}}'))
+        '{"quiz": {"questions": [{"id": "trigger", '
+        '"options": [{"id": "pain"}]}]}}'))
     check("inner quiz envelope as a real object -> completeness engages, 0 errors",
           rep.ok)
 

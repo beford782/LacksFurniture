@@ -42,9 +42,11 @@ function grab(re, what) {
   return m ? m[0] : "";
 }
 
-// The six questions the resolver consumes — MIRRORS index.html's
+// The five questions the resolver consumes — MIRRORS index.html's
 // resolveConsultationSummary() and tools/validation.py CONSULTATION_QUESTIONS.
-const CONSUMED = ["sleep_quality", "trigger", "sleep_issues",
+// (sleep_quality was removed from the quiz 2026-08-12, owner ruling; the
+// context row now builds from trigger alone.)
+const CONSUMED = ["trigger", "sleep_issues",
   "sleep_position", "health_conditions", "temperature"];
 
 // ---------- extractions ------------------------------------------------------
@@ -110,6 +112,9 @@ function run(answers, lang, opts) {
   return { els, out };
 }
 
+// sleep_quality is DELIBERATELY kept in these answer fixtures although the
+// question no longer exists: a stale answer for a removed question must be
+// ignored by the resolver, never resurface on any surface.
 const ANSWERS_A = {
   sleep_quality: "poor", trigger: "pain", mattress_size: "queen",
   sleep_position: "side", temperature: "hot", firmness: 6,
@@ -138,19 +143,19 @@ section("real config: hydration and mapping completeness");
     out.en = CONSULT_IMPLICATIONS; out.es = CONSULT_IMPLICATIONS_ES;
     `)(CONFIG, out);
   check("the real hydration lines populate both maps from store-config.json",
-    Object.keys(out.en).length === 6 && Object.keys(out.es).length === 6);
+    Object.keys(out.en).length === 5 && Object.keys(out.es).length === 5);
   // Content, not just shape: each map must carry ITS OWN language — a
   // swapped pair of hydration lines ships Spanish copy to English kiosks
-  // (and vice versa) while both maps still count six questions.
+  // (and vice versa) while both maps still count five questions.
   check("the EN map is the config's EN copy and the ES map the ES copy",
-    out.en.sleep_quality.poor === CONFIG.salesNotes.consultationImplications.sleep_quality.poor
-    && out.es.sleep_quality.poor === CONFIG.salesNotes_es.consultationImplications.sleep_quality.poor
-    && out.en.sleep_quality.poor !== out.es.sleep_quality.poor);
+    out.en.trigger.pain === CONFIG.salesNotes.consultationImplications.trigger.pain
+    && out.es.trigger.pain === CONFIG.salesNotes_es.consultationImplications.trigger.pain
+    && out.en.trigger.pain !== out.es.trigger.pain);
   const quizOptions = {};
   for (const q of QUIZ.questions) {
     if (CONSUMED.includes(q.id)) quizOptions[q.id] = q.options.map((o) => o.id);
   }
-  check("all six consumed questions exist in the quiz", Object.keys(quizOptions).length === 6);
+  check("all five consumed questions exist in the quiz", Object.keys(quizOptions).length === 5);
   let missing = [], lopsided = 0, entries = 0, omissions = [];
   for (const qid of CONSUMED) {
     for (const oid of quizOptions[qid]) {
@@ -162,8 +167,10 @@ section("real config: hydration and mapping completeness");
       if (en.trim() === "" && es.trim() === "") omissions.push(`${qid}.${oid}`);
     }
   }
+  // 29 = trigger 5 + sleep_issues 8 + sleep_position 5 + health_conditions 7
+  // + temperature 4 (the five-question surface since sleep_quality's removal).
   check(`every consumed option id is mapped in BOTH languages (${entries} pairs, 0 missing)`,
-    missing.length === 0 && entries >= 30);
+    missing.length === 0 && entries >= 29);
   check("no lopsided pair (EN empty XOR ES empty)", lopsided === 0);
   check("intentional omissions exist and are represented as entries, not holes",
     omissions.length >= 1 && omissions.includes("sleep_issues.none")
@@ -220,8 +227,8 @@ section("resolution: EN content is implication copy, size and firmness intact");
   const { els, out } = run(ANSWERS_A, "en");
   out.render();
   const vm = out.resolve();
-  check("context row: the two openers resolve through the mapping",
-    vm.context === "aiming for a real change in nightly rest · here to solve a comfort problem");
+  check("context row: the opener resolves through the mapping (stale sleep_quality ignored)",
+    vm.context === "here to solve a comfort problem");
   check("who row: neutral size identity leads, then issue implications in answer order",
     vm.who === "Queen · test lower-back support carefully · prioritize temperature control");
   check("profile row: position, conditions, firmness value, temperature — in order",
@@ -247,7 +254,7 @@ section("resolution: Spanish re-renders the same answers with ES copy (exit 3)")
   out.render();
   const vm = out.resolve();
   check("[es] context uses Spanish implication copy",
-    vm.context === "buscando un cambio real en el descanso · aquí para resolver un problema de comodidad");
+    vm.context === "aquí para resolver un problema de comodidad");
   check("[es] who keeps the neutral size and uses Spanish implications",
     vm.who === "Queen · probar con cuidado el soporte lumbar · priorizar el control de temperatura");
   check("[es] profile is Spanish end to end (firmness feel included)",
@@ -344,7 +351,7 @@ section("missing / malformed / untranslated mappings omit the fragment");
   const vm = out.resolve();
   const pay = out.payload();
   check("[en] whitespace-only entries omit their fragments exactly",
-    vm.context === "aiming for a real change in nightly rest"
+    vm.context === ""
     && vm.who === "Queen · prioritize temperature control");
   check("[en] the DOM rows and payload carry the same omission — no orphan separators",
     els.get("hf2BriefWho").textContent === vm.who
@@ -677,7 +684,6 @@ for (const [label, bad] of [["a string", "zzz"], ["a number", 7], ["null", null]
 section("the consumed quiz surface is pinned (ids unchanged from main)");
 {
   const want = {
-    sleep_quality: ["poor", "fair", "okay", "well"],
     trigger: ["pain", "worn_out", "moving", "upgrade", "browsing"],
     sleep_issues: ["back_pain", "hip_pain", "hot", "tossing", "stiff", "sagging", "too_soft", "none"],
     sleep_position: ["side", "back", "stomach", "combo", "no_idea"],

@@ -134,8 +134,9 @@ bilingual **if a customer interacts with it directly**, because they will.
 **Sleep fit is primary. Payment Choice is secondary.**
 
 This premise supersedes any older self-service framing, including the
-"customers take a 12-question sleep quiz" description in CLAUDE.md, which
-predates it. Where the two conflict, this premise governs product direction;
+"customers take a sleep quiz" self-service description in CLAUDE.md, which
+predates it. *(That description said "12-question" until 2026-08-12; the
+quiz is 10 questions since the owner-ruled removal recorded under 1.2.)* Where the two conflict, this premise governs product direction;
 CLAUDE.md continues to govern architecture, i18n and the generated-artifact
 pipeline.
 
@@ -853,11 +854,29 @@ open.
 
 ### 1.2 — Quiz ⬜
 
-- Review all 56 option icons for meaning **before** introducing any. Suppress
+- Review all option icons for meaning **before** introducing any (47 since
+  2026-08-12; 56 before the removal below). Suppress
   icons that are confusing, insulting, medicalising or merely decorative. An icon
   that characterises the customer is worse than no icon.
 - No payment or budget question. No financing content.
 - No scoring change hidden inside presentation work.
+
+**Question removal — owner-ruled 2026-08-12 (12 → 10 questions; 9 visible on
+the solo path).** Blake ruled after a full consumer audit: `sleep_quality`
+and `current_mattress_age` removed. Both carried zero score tags;
+`current_mattress_age` had no consumer of any kind (its answer was collected
+and discarded), and `sleep_quality` fed only the Consultation Summary's
+context row, which now builds from `trigger` alone. Removal is **not** a
+scoring change: the engine ignores unknown answer ids, and the Phase 1
+output-regression fixture is **byte-identical across the change** — the
+executable proof that recommendations did not move. Changed together, per
+the structure contract: canonical quiz source → workbook → bundle,
+`QUIZ_CANONICAL` and `CONSULTATION_QUESTIONS` in `tools/validation.py`,
+`resolveConsultationSummary()` and `QUESTION_ACCENTS` in `index.html`, and
+the affected suite fixtures. Deeper cuts (any scoring question) remain
+Phase 3. *(The 1.2 question-transition suite on PR #39's branch pins "of 12"
+totals; it updates to the 10/9 totals when that branch rebases onto this
+change.)*
 
 **Question-transition accessibility — an acceptance criterion, not an option.**
 
@@ -1517,7 +1536,7 @@ described behaviour is the durable anchor.
 
 | # | Finding |
 |---|---|
-| 1 | Quiz: 12 questions, exactly 56 options (11 choice questions plus the firmness slider) — so "review all 56 icons" is a bounded task |
+| 1 | Quiz: 12 questions, exactly 56 options (11 choice questions plus the firmness slider) — so "review all 56 icons" is a bounded task. *(2026-08-12: now 10 questions / 47 options after the owner-ruled removal of sleep_quality and current_mattress_age — see 1.2)* |
 | 2 | The engine already computes the top three priorities with name, reason, testing prompt and kind; there is no rank field, and ordering is by an unrendered score |
 | 3 | A next-step rail already exists on the Sleep Brief, rendering three steps as plain divs |
 | 4 | The "Try this:" testing prompt is currently fully visible on the Sleep Brief, not behind disclosure |
