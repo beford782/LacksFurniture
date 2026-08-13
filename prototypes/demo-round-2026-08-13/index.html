@@ -684,7 +684,7 @@
       </div>
     </div>
   </div>
-  <p class="handoff-note" id="hNote" data-t="hNote"></p>
+  <p class="handoff-note" id="hNote"></p>
   <div class="handoff-foot"><button class="cta cta--ghost" onclick="startOver()" data-t="hAgain"></button></div>
 </section>
 
@@ -768,8 +768,16 @@ var T = {
   cmpTitle:{en:"Side by <em>side</em>",es:"Lado a <em>lado</em>"},
   cmpBack:{en:"← Back",es:"← Atrás"},
   cmpCta:{en:"Build my Sleep Plan →",es:"Crear mi Plan de Sueño →"},
-  hNote:{en:"Your specialist picks up exactly where you left off — matches, priorities, your finalist, and the payment conversation you chose.",
-         es:"Tu especialista continúa justo donde quedaste — opciones, prioridades, tu finalista y la conversación de pago que elegiste."},
+  /* handoff note varies on BOTH finalist state and payment-decision
+     state — it never claims a choice that was not made */
+  hNoteFinDec:{en:"Your specialist picks up exactly where you left off — matches, priorities, your finalist, and where you left the payment decision.",
+               es:"Tu especialista continúa justo donde quedaste — opciones, prioridades, tu finalista y dónde quedó la decisión de pago."},
+  hNoteFinOpen:{en:"Your specialist picks up exactly where you left off — matches, priorities, and your finalist. The payment decision is still open.",
+                es:"Tu especialista continúa justo donde quedaste — opciones, prioridades y tu finalista. La decisión de pago sigue abierta."},
+  hNoteStartDec:{en:"Your specialist picks up exactly where you left off — matches, priorities, a recommended starting point, and where you left the payment decision.",
+                 es:"Tu especialista continúa justo donde quedaste — opciones, prioridades, un punto de partida recomendado y dónde quedó la decisión de pago."},
+  hNoteStartOpen:{en:"Your specialist picks up exactly where you left off — matches, priorities, and a recommended starting point. The finalist and payment decisions are still open.",
+                  es:"Tu especialista continúa justo donde quedaste — opciones, prioridades y un punto de partida recomendado. El finalista y la decisión de pago siguen abiertos."},
   hAgain:{en:"New customer",es:"Nuevo cliente"},
   tierGold:{en:"Gold",es:"Oro"},tierSilver:{en:"Silver",es:"Plata"},tierBronze:{en:"Bronze",es:"Bronce"},
   bestMatch:{en:"Best match",es:"Mejor opción"},
@@ -787,12 +795,11 @@ var T = {
   noFinalistYet:{en:"No finalist selected yet",es:"Aún no has elegido finalista"},
   chooseFinalistPrompt:{en:"Choose a finalist to complete your plan — mark one from a mattress's details or the comparison.",
                         es:"Elige un finalista para completar tu plan — márcalo en los detalles de un colchón o en la comparación."},
-  hNoteNoFinalist:{en:"Your specialist picks up exactly where you left off — matches, priorities, a recommended starting point, and the payment conversation you chose.",
-                   es:"Tu especialista continúa justo donde quedaste — opciones, prioridades, un punto de partida recomendado y la conversación de pago que elegiste."},
   profileLbl:{en:"Profile",es:"Perfil"},
   comparedLbl:{en:"Compared",es:"Comparados"},
   systemLbl:{en:"System",es:"Sistema"},
   paymentLbl:{en:"Payment",es:"Pago"},
+  topicsLbl:{en:"Topics marked",es:"Temas marcados"},
   compareTag:{en:"Compare",es:"Comparar"},comparedTag:{en:"Comparing ✓",es:"Comparando ✓"},
   detailsBtn:{en:"Details ›",es:"Detalles ›"},
   makeFinalist:{en:"Make this my finalist",es:"Elegir como mi finalista"},
@@ -1385,6 +1392,18 @@ function renderWelcomeConfigLines(){
   document.getElementById("wPayLine").textContent = FIN ? L(FIN.copy.welcomeSupport) : "";
 }
 
+/* Exactly one production Sleep Brief branch (Comfortable elevation)
+   ships test prose that assumes a finalist exists ("Try the finalist
+   flat…" / "Prueba el finalista plano…"); production has no
+   context-neutral variant. Before a finalist is chosen, that
+   instruction is WITHHELD — never rewritten — detected against BOTH
+   language variants so EN and ES behave identically. Name and why
+   always render; the full instruction returns once finalistId is set. */
+function testProseFor(p){
+  if (!p || !p.test) return "";
+  if (!finalistId && /finalist|finalista/i.test(String(p.test.en || "") + " " + String(p.test.es || ""))) return "";
+  return L(p.test);
+}
 function togglePrio(i){
   prioOpen[i] = !prioOpen[i];
   if (!prioOpen[i]) delete prioOpen[i];
@@ -1408,8 +1427,10 @@ function renderReveal(){
     s += '<div class="prio-wrap' + (open ? ' open' : '') + '">'
       + '<button class="prio" aria-expanded="' + (open ? 'true' : 'false') + '" onclick="togglePrio(' + i + ')">'
       + star(12, "#E9CE8F") + '<span>' + L(p) + '</span><span class="tw" aria-hidden="true">' + (open ? '−' : '+') + '</span></button>'
-      + (open && p.why && p.test
-          ? '<div class="prio-more"><p class="why">' + L(p.why) + '</p><p class="test">' + L(p.test) + '</p></div>'
+      + (open && p.why
+          ? '<div class="prio-more"><p class="why">' + L(p.why) + '</p>'
+            + (testProseFor(p) ? '<p class="test">' + testProseFor(p) + '</p>' : '')
+            + '</div>'
           : '')
       + '</div>';
   });
@@ -1650,7 +1671,8 @@ function renderPlan(){
   s += '<div class="plan-block"><div class="bt">' + L(T.trialPrioritiesLbl) + '</div>';
   computed.trialFocus.forEach(function(p){
     s += '<div class="ln">' + star(11, "#E9CE8F") + ' ' + L(p) + '</div>';
-    if (p.test) s += '<div class="dim">' + L(p.test) + '</div>';
+    var tp = testProseFor(p);
+    if (tp) s += '<div class="dim">' + tp + '</div>';
   });
   s += '</div>';
   /* compared */
@@ -1694,18 +1716,30 @@ function renderPlan(){
   document.getElementById("planCol").innerHTML = s;
 }
 
-function payDecisionLabel(){
-  if (payDecision === "review"){
-    var m = paymentModel();
-    var names = Object.keys(finAgenda).map(function(id){
-      var c = m ? m.cards.find(function(x){ return x.id === id; }) : null;
-      return c ? c.title : id;
-    });
-    return L(FIN.copy.resultsAsk) + (names.length ? " — " + names.join(", ") : " — " + L(FIN.copy.agendaEmpty));
-  }
-  if (payDecision === "not_now") return L(FIN.copy.agendaNotNow) + " — " + L(FIN.copy.agendaDismissed);
+/* Payment state is TWO separate dimensions and the handoff shows both:
+   A) conversation preference (review / not_now / undecided / null), and
+   B) agenda topics the customer explicitly marked (finAgenda ids).
+   Marking a topic never implies a preference, and an unmade preference
+   never discards marked topics. */
+function payPrefLabel(){
+  if (payDecision === "review") return L(FIN.copy.resultsAsk);
+  if (payDecision === "not_now") return L(FIN.copy.agendaNotNow);
   if (payDecision === "undecided") return L(T.decideUndecided);
   return L(T.decideNone);
+}
+function payTopicsLabel(){
+  /* not_now precedence, POLICY (b): marked topics stay internally
+     reversible (finAgenda is preserved and returns if not_now is
+     cleared) but the ACTIVE handoff never hands the specialist an
+     agenda after the customer declined — the governed dismissed line
+     renders instead. */
+  if (payDecision === "not_now") return L(FIN.copy.agendaDismissed);
+  var m = paymentModel();
+  var names = Object.keys(finAgenda).map(function(id){
+    var c = m ? m.cards.find(function(x){ return x.id === id; }) : null;
+    return c ? c.title : id;
+  });
+  return names.length ? names.join(" · ") : L(FIN.copy.agendaEmpty);
 }
 function renderHandoff(){
   if (!computed) return;
@@ -1723,16 +1757,21 @@ function renderHandoff(){
   document.getElementById("hBrand").textContent = m ? (m.brand + (m.subBrand ? " · " + m.subBrand : "")) : "";
   document.getElementById("hName").textContent = m ? m.name : L(T.noFinalistYet);
   document.getElementById("hFeel").textContent = m ? (L(T.feelLbl) + ": " + feelOf(m) + " · " + tierNameOf(fid) + " · " + ordinalOf(fid)) : "";
-  document.getElementById("hNote").textContent = L(finalistId ? T.hNote : T.hNoteNoFinalist);
+  var hn = finalistId
+    ? (payDecision !== null ? T.hNoteFinDec : T.hNoteFinOpen)
+    : (payDecision !== null ? T.hNoteStartDec : T.hNoteStartOpen);
+  document.getElementById("hNote").textContent = L(hn);
   var rows = "";
   rows += '<div class="row"><b>' + L(T.finalist) + '</b><span>'
     + (finalistId && m ? m.name : L(T.noFinalistYet)) + '</span></div>';
   rows += '<div class="row"><b>' + L(T.profileLbl) + '</b><span>' + L(computed.subtitle) + '</span></div>';
   computed.trialFocus.forEach(function(p, i){
     /* name + the shipped test line — the specialist's in-store script,
-       production handoff parity (renderHf2Priorities) */
+       production handoff parity; finalist-dependent prose withheld
+       until a finalist exists */
+    var tp = testProseFor(p);
     rows += '<div class="row"><b>' + (i === 0 ? L(T.testLbl) : "") + '</b><span>' + L(p)
-      + (p.test ? ' <span class="ht">— ' + L(p.test) + '</span>' : '') + '</span></div>';
+      + (tp ? ' <span class="ht">— ' + tp + '</span>' : '') + '</span></div>';
   });
   rows += '<div class="row"><b>' + L(T.comparedLbl) + '</b><span>'
     + (cmpSel.length ? cmpSel.map(function(id){ var mm = model(id); return mm ? mm.name : id; }).join(" · ") : "—")
@@ -1741,7 +1780,8 @@ function renderHandoff(){
     + (sysSel.length ? sysSel.map(function(id){ var a = ACC.find(function(x){ return x.id === id; }); return a ? L(a.name) : id; }).join(" · ") : "—")
     + '</span></div>';
   if (FIN){
-    rows += '<div class="row"><b>' + L(T.paymentLbl) + '</b><span>' + payDecisionLabel() + '</span></div>';
+    rows += '<div class="row"><b>' + L(T.paymentLbl) + '</b><span>' + payPrefLabel() + '</span></div>';
+    rows += '<div class="row"><b>' + L(T.topicsLbl) + '</b><span>' + payTopicsLabel() + '</span></div>';
   }
   document.getElementById("hRows").innerHTML = rows;
   drawConstellation("stampHandoff", 64, 36, false);
