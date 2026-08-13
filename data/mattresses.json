@@ -305,7 +305,7 @@
                      "brand":  "Restonic",
                      "subBrand":  "Reserve",
                      "pitchKey":  "",
-                     "archetype":  "Hand-made plush luxury hybrid",
+                     "archetype":  "",
                      "displayPriority":  1,
                      "firmness":  3,
                      "firmnessLabel":  "Plush",
@@ -318,50 +318,23 @@
                                       "durability"
                                   ],
                      "tags":  [
-                                  "Hand-Made",
-                                  "Plush",
-                                  "Natural Materials"
+                                  "Plush"
                               ],
-                     "highlight":  "Hand-made in Texas — plush euro-top luxury",
+                     "highlight":  "",
                      "tags_es":  [
-                                     "Hecho a Mano",
-                                     "Suave",
-                                     "Materiales Naturales"
+                                     "Suave"
                                  ],
-                     "highlight_es":  "Hecho a mano en Texas — lujo suave con euro-top",
+                     "highlight_es":  "",
                      "imageUrl":  "images/mattresses/reserve mayfair plush.jpg",
                      "reasons":  {
-                                     "default":  "A hand-made hybrid of natural materials with a plush euro-top — built by Restonic craftspeople to last a lifetime."
+
                                  },
                      "reasons_es":  {
-                                        "default":  "Un híbrido hecho a mano con materiales naturales y euro-top suave — construido por artesanos de Restonic para durar toda la vida."
+
                                     },
                      "differentiators":  [
-                                             {
-                                                 "title":  {
-                                                               "en":  "Hand-made construction",
-                                                               "es":  "Construcción a mano"
-                                                           },
-                                                 "detail":  {
-                                                                "en":  "Assembled by hand with natural materials most factory beds skip.",
-                                                                "es":  "Ensamblado a mano con materiales naturales que la mayoría de las camas de fábrica omiten."
-                                                            }
-                                             },
-                                             {
-                                                 "title":  {
-                                                               "en":  "Plush euro-top feel",
-                                                               "es":  "Sensación de euro-top suave"
-                                                           },
-                                                 "detail":  {
-                                                                "en":  "Cushioned sink-in comfort over a supportive hybrid core.",
-                                                                "es":  "Confort acolchado y envolvente sobre un núcleo híbrido de soporte."
-                                                            }
-                                             }
-                                         ],
-                     "topPickReason":  {
-                                           "en":  "Hand-made plush luxury with natural materials, made regionally by Restonic.",
-                                           "es":  "Lujo suave hecho a mano con materiales naturales, fabricado regionalmente por Restonic."
-                                       }
+
+                                         ]
                  },
                  {
                      "id":  "g7",
@@ -369,7 +342,7 @@
                      "brand":  "Restonic",
                      "subBrand":  "Reserve",
                      "pitchKey":  "",
-                     "archetype":  "Hand-made balanced luxury hybrid",
+                     "archetype":  "",
                      "displayPriority":  1,
                      "firmness":  5,
                      "firmnessLabel":  "Medium",
@@ -382,45 +355,22 @@
                                       "pressurerelief"
                                   ],
                      "tags":  [
-                                  "Hand-Made",
-                                  "Medium",
-                                  "Natural Materials"
+                                  "Medium"
                               ],
-                     "highlight":  "Hand-made balanced luxury with natural materials",
+                     "highlight":  "",
                      "tags_es":  [
-                                     "Hecho a Mano",
-                                     "Medio",
-                                     "Materiales Naturales"
+                                     "Medio"
                                  ],
-                     "highlight_es":  "Lujo equilibrado hecho a mano con materiales naturales",
+                     "highlight_es":  "",
                      "imageUrl":  "images/mattresses/reserve mayfair medium.jpg",
                      "reasons":  {
-                                     "default":  "Hand-made with natural materials in a balanced medium tight-top — luxury that works for almost every sleeper."
+
                                  },
                      "reasons_es":  {
-                                        "default":  "Hecho a mano con materiales naturales en un tight-top medio equilibrado — lujo que funciona para casi todos."
+
                                     },
                      "differentiators":  [
-                                             {
-                                                 "title":  {
-                                                               "en":  "True balanced medium",
-                                                               "es":  "Medio verdaderamente equilibrado"
-                                                           },
-                                                 "detail":  {
-                                                                "en":  "Neither plush nor firm — a safe luxury pick for couples who disagree.",
-                                                                "es":  "Ni suave ni firme — una elección de lujo segura para parejas que no se ponen de acuerdo."
-                                                            }
-                                             },
-                                             {
-                                                 "title":  {
-                                                               "en":  "Natural-material build",
-                                                               "es":  "Construcción de materiales naturales"
-                                                           },
-                                                 "detail":  {
-                                                                "en":  "Hand-made with breathable natural layers built to outlast foam-only beds.",
-                                                                "es":  "Hecho a mano con capas naturales transpirables que duran más que las camas de pura espuma."
-                                                            }
-                                             }
+
                                          ]
                  },
                  {
@@ -429,7 +379,7 @@
                      "brand":  "Restonic",
                      "subBrand":  "Royal Reserve",
                      "pitchKey":  "",
-                     "archetype":  "Hand-made extra-firm luxury",
+                     "archetype":  "",
                      "displayPriority":  1,
                      "firmness":  8,
                      "firmnessLabel":  "Extra Firm",
@@ -441,45 +391,22 @@
                                       "hybrid"
                                   ],
                      "tags":  [
-                                  "Hand-Made",
-                                  "Extra Firm",
-                                  "Natural Materials"
+                                  "Extra Firm"
                               ],
-                     "highlight":  "Hand-made extra-firm — maximum support, luxury materials",
+                     "highlight":  "",
                      "tags_es":  [
-                                     "Hecho a Mano",
-                                     "Extra Firme",
-                                     "Materiales Naturales"
+                                     "Extra Firme"
                                  ],
-                     "highlight_es":  "Extra firme hecho a mano — máximo soporte, materiales de lujo",
+                     "highlight_es":  "",
                      "imageUrl":  "images/mattresses/royal reserve extra firm.jpg",
                      "reasons":  {
-                                     "default":  "The firmest bed in the Reserve line — hand-made hybrid support with natural materials for sleepers who want maximum lift."
+
                                  },
                      "reasons_es":  {
-                                        "default":  "La cama más firme de la línea Reserve — soporte híbrido hecho a mano con materiales naturales para quienes quieren máxima elevación."
+
                                     },
                      "differentiators":  [
-                                             {
-                                                 "title":  {
-                                                               "en":  "True extra-firm lift",
-                                                               "es":  "Verdadera elevación extra firme"
-                                                           },
-                                                 "detail":  {
-                                                                "en":  "",
-                                                                "es":  ""
-                                                            }
-                                             },
-                                             {
-                                                 "title":  {
-                                                               "en":  "Hand-made durability",
-                                                               "es":  "Durabilidad hecha a mano"
-                                                           },
-                                                 "detail":  {
-                                                                "en":  "Natural materials and hand assembly keep the firm feel from softening early.",
-                                                                "es":  "Los materiales naturales y el ensamblaje a mano evitan que la firmeza se ablande antes de tiempo."
-                                                            }
-                                             }
+
                                          ]
                  },
                  {
@@ -488,7 +415,7 @@
                      "brand":  "Spring Air",
                      "subBrand":  "Copper",
                      "pitchKey":  "",
-                     "archetype":  "Copper-infused cooling hybrid",
+                     "archetype":  "",
                      "displayPriority":  1,
                      "firmness":  6,
                      "firmnessLabel":  "Cushion Firm",
@@ -501,45 +428,22 @@
                                       "responsive"
                                   ],
                      "tags":  [
-                                  "Copper-Infused",
-                                  "Cooling",
                                   "Cushion Firm"
                               ],
-                     "highlight":  "Copper-infused cooling with cushion-firm support",
+                     "highlight":  "",
                      "tags_es":  [
-                                     "Infusión de Cobre",
-                                     "Frescura",
                                      "Cushion Firm"
                                  ],
-                     "highlight_es":  "Frescura con infusión de cobre y soporte cushion-firm",
+                     "highlight_es":  "",
                      "imageUrl":  "images/mattresses/copper cushion firm.jpg",
                      "reasons":  {
-                                     "default":  "Patented NatuVerex copper fabric and copper-infused memory foam — a cleaner, cooler sleep over cushion-firm hybrid support."
+
                                  },
                      "reasons_es":  {
-                                        "default":  "Tela de cobre patentada NatuVerex y espuma viscoelástica con cobre — un sueño más limpio y fresco sobre soporte híbrido cushion-firm."
+
                                     },
                      "differentiators":  [
-                                             {
-                                                 "title":  {
-                                                               "en":  "Copper-infused sleep surface",
-                                                               "es":  "Superficie con infusión de cobre"
-                                                           },
-                                                 "detail":  {
-                                                                "en":  "",
-                                                                "es":  ""
-                                                            }
-                                             },
-                                             {
-                                                 "title":  {
-                                                               "en":  "Cushion-firm balance",
-                                                               "es":  "Equilibrio cushion-firm"
-                                                           },
-                                                 "detail":  {
-                                                                "en":  "Supportive like a firm with a thin comfort cushion — firm without the board feel.",
-                                                                "es":  "Soporta como un firme con un cojín delgado de confort — firme sin sentirse como tabla."
-                                                            }
-                                             }
+
                                          ]
                  }
              ],
@@ -677,7 +581,7 @@
                        "brand":  "Restonic",
                        "subBrand":  "Platinum",
                        "pitchKey":  "",
-                       "archetype":  "Plush box-top zoned hybrid",
+                       "archetype":  "",
                        "displayPriority":  1,
                        "firmness":  3,
                        "firmnessLabel":  "Plush",
@@ -691,17 +595,13 @@
                                         "motionisolation"
                                     ],
                        "tags":  [
-                                    "Plush Box Top",
-                                    "Zoned Coils",
-                                    "Edge Support"
+                                    "Plush Box Top"
                                 ],
-                       "highlight":  "Deep plush box top over zoned wrapped coils",
+                       "highlight":  "",
                        "tags_es":  [
-                                       "Box Top Suave",
-                                       "Resortes Zonificados",
-                                       "Soporte de Borde"
+                                       "Box Top Suave"
                                    ],
-                       "highlight_es":  "Box top suave y profundo sobre resortes envueltos zonificados",
+                       "highlight_es":  "",
                        "imageUrl":  "images/mattresses/platinum maria plush.jpg",
                        "reasons":  {
 
@@ -710,31 +610,8 @@
 
                                       },
                        "differentiators":  [
-                                               {
-                                                   "title":  {
-                                                                 "en":  "Deep box-top plush",
-                                                                 "es":  "Suavidad box-top profunda"
-                                                             },
-                                                   "detail":  {
-                                                                  "en":  "A pillowy sewn-on top layer with more depth than a standard plush.",
-                                                                  "es":  "Una capa superior acolchada cosida con más profundidad que un suave estándar."
-                                                              }
-                                               },
-                                               {
-                                                   "title":  {
-                                                                 "en":  "Zoned wrapped coils",
-                                                                 "es":  "Resortes envueltos zonificados"
-                                                             },
-                                                   "detail":  {
-                                                                  "en":  "",
-                                                                  "es":  ""
-                                                              }
-                                               }
-                                           ],
-                       "topPickReason":  {
-                                             "en":  "Plush box-top softness with zoned wrapped-coil support and strong edges.",
-                                             "es":  "Suavidad box-top con soporte de resortes envueltos zonificados y bordes fuertes."
-                                         }
+
+                                           ]
                    },
                    {
                        "id":  "s4",

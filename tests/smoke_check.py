@@ -207,6 +207,35 @@ def main():
     check("9/10/7 tier split intact", tiers == {"gold": 9, "silver": 10, "bronze": 7}, str(tiers))
     names = json.dumps(mj).lower()
     check("no Sealy / Stearns & Foster", "sealy" not in names and "stearns" not in names)
+
+    # Claim retirement (owner ruling 2026-08-12): the withdrawn claims must
+    # never silently return to the five retired models' DISPLAY fields.
+    # Scoped per-mattress, not repo-wide: identity fields (name/brand) and
+    # scoring inputs (features) are outside the scan — g9 is legitimately
+    # named "Copper Cushion Firm" and keeps its cooling feature tag.
+    retired_banned = [
+        "hand-made", "hand made", "hecho a mano", "hecha a mano", "texas",
+        "natural materials", "materiales naturales", "wrapped", "envueltos",
+        "strong edges", "bordes fuertes", "lifetime", "toda la vida",
+        "euro-top", "euro top", "craftspeople", "artesanos", "copper-infused",
+        "infusión de cobre", "cooling", "frescura", "patented",
+        "patentada", "natuverex", "zoned coils", "resortes zonificados",
+        "outlast", "duran más", "maximum support", "máximo soporte",
+    ]
+    retired_ids = ("g6", "g7", "s3", "g8", "g9")
+    all_models = [m for t in ("gold", "silver", "bronze") for m in mj[t]]
+    for mid in retired_ids:
+        m = next(x for x in all_models if x["id"] == mid)
+        display = json.dumps({k: m.get(k) for k in (
+            "tags", "tags_es", "archetype", "highlight", "highlight_es",
+            "topPickReason", "differentiators", "reasons", "reasons_es")},
+            ensure_ascii=False).lower()
+        hits = [b for b in retired_banned if b in display]
+        check(f"{mid}: retired claims absent from display fields", not hits,
+              f"found {hits}")
+    check("tags/tags_es are arrays with equal counts on every model",
+          all(isinstance(m.get("tags"), list) and isinstance(m.get("tags_es"), list)
+              and len(m["tags"]) == len(m["tags_es"]) for m in all_models))
     acc = load_json("data/accessories.json")
     check("10 accessories with >=1 adjustable",
           len(acc) == 10 and any(a.get("subType") == "adjustable" for a in acc))

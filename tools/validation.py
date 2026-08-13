@@ -1964,10 +1964,50 @@ def validate_mattresses(raw_tabs, *, source_images=None, skip_images=False,
             if check_images and src_stems is not None and key not in src_stems:
                 r.add_error(f"Mattresses {tag}: no source image for "
                             f"{key}.[jpg|jpeg|png|webp] in {os.path.join(source_images, 'mattresses')}")
-        # ES policy (warnings only)
+        # ES policy — per-component fail-closed parity (claim-retirement
+        # slice, owner ruling 2026-08-12). The previous row-level rule warned
+        # only when EVERY (ES) cell was blank, so a one-sided component
+        # passed silently and the app rendered its other-language fallback
+        # to customers (EN into Spanish sessions via L() and
+        # topPickReasonText). Now: an optional bilingual display component
+        # may be absent only when BOTH languages are absent — an omission is
+        # never a claim — and one-sided presence is an ERROR. Each
+        # differentiator title/detail pair counts as ONE component.
         if languages and "es" in languages and es_cols:
-            if all(_blank(row.get(h)) for h in es_cols):
-                r.add_warning(f"Mattresses {tag}: no Spanish (ES) copy (languages includes 'es')")
+            def _has(*cols):
+                return any(not _blank(row.get(c)) for c in cols)
+            for col in ("highlight", "topPickReason", "reason_cooling",
+                        "reason_pressureRelief", "reason_motionIsolation",
+                        "reason_support", "reason_plush", "reason_medium",
+                        "reason_firm", "reason_durability", "reason_default"):
+                en_p, es_p = _has(col), _has(f"{col} (ES)")
+                if en_p != es_p:
+                    r.add_error(f"Mattresses {tag}: {col} present in "
+                                f"{'EN' if en_p else 'ES'} only — an optional "
+                                f"component needs both languages or neither")
+            for label, pair in (("differentiator1",
+                                 ("differentiator1Title", "differentiator1Detail")),
+                                ("differentiator2",
+                                 ("differentiator2Title", "differentiator2Detail"))):
+                en_p = _has(*pair)
+                es_p = _has(*(f"{c} (ES)" for c in pair))
+                if en_p != es_p:
+                    r.add_error(f"Mattresses {tag}: {label} pair present in "
+                                f"{'EN' if en_p else 'ES'} only — the pair is one "
+                                f"component and needs both languages or neither")
+            def _badge_count(col):
+                raw = row.get(col)
+                raw = "" if raw is None else str(raw)
+                return len([x for x in raw.split("|") if x.strip()]) if raw.strip() else 0
+            en_n, es_n = _badge_count("displayBadges"), _badge_count("displayBadges (ES)")
+            if (en_n == 0) != (es_n == 0):
+                r.add_error(f"Mattresses {tag}: displayBadges present in "
+                            f"{'EN' if en_n else 'ES'} only — badges need both "
+                            f"languages or neither")
+            elif en_n and en_n != es_n:
+                r.add_error(f"Mattresses {tag}: displayBadges has {en_n} EN "
+                            f"badge(s) but {es_n} ES — counts must match "
+                            f"positionally")
         elif languages and "es" not in languages and es_cols:
             if any(not _blank(row.get(h)) for h in es_cols):
                 r.add_warning(f"Mattresses {tag}: Spanish (ES) copy present but languages excludes 'es'")
@@ -2452,8 +2492,11 @@ def _good_tabs():
     tabs["Brands"][1][0].update({"Brand Name": "Acme"})
     tabs["Mattresses"][1][0].update({
         "tier": "gold", "id": "m1", "name": "Athena", "brand": "Acme",
-        "firmnessScore": "5", "features": "hybrid", "reason_default": "Great bed",
-        "highlight (ES)": "es-copy",
+        "firmnessScore": "5", "features": "hybrid",
+        # Parity-clean under the per-component EN<->ES rule: every optional
+        # component is either bilateral or absent in both languages.
+        "reason_default": "Great bed", "reason_default (ES)": "Gran cama",
+        "highlight": "en-copy", "highlight (ES)": "es-copy",
     })
     tabs["Accessories"][1][0].update({
         "ID": "a1", "Name": "Pillow", "Name (ES)": "Almohada",
@@ -2778,13 +2821,58 @@ def _self_test() -> int:
               not any("cannot be generated" in e
                       for e in validate_app_icon(ti, source_images=d).errors))
 
-    # ES missing copy warns when languages includes es
+    # Per-component EN<->ES parity (claim-retirement slice, 2026-08-12).
+    # One-sided EN: blanking every ES cell strands the fixture's EN
+    # highlight and reason_default -> errors, not the old row-level warning.
     t = _good_tabs()
     for hh in [c for c in t["Mattresses"][0] if c.endswith(" (ES)")]:
         t["Mattresses"][1][0][hh] = ""
     rr = validate_mattresses(t, languages=langs)
-    check("ES missing mattress copy -> warning (not error)",
-          rr.ok and any("no Spanish (ES) copy" in w for w in rr.warnings))
+    check("one-sided EN components -> errors (fallback laundering barred)",
+          not rr.ok
+          and any("highlight present in EN only" in e for e in rr.errors)
+          and any("reason_default present in EN only" in e for e in rr.errors))
+    # One-sided ES: copy present only in Spanish is equally barred.
+    t = _good_tabs()
+    t["Mattresses"][1][0]["topPickReason (ES)"] = "solo espanol"
+    rr = validate_mattresses(t, languages=langs)
+    check("one-sided ES component -> error",
+          any("topPickReason present in ES only" in e for e in rr.errors))
+    # Bilateral absence is VALID: retire every optional component in both
+    # languages and the row passes clean (an omission is never a claim).
+    t = _good_tabs()
+    t["Mattresses"][1][0].update({
+        "highlight": "", "highlight (ES)": "",
+        "reason_default": "", "reason_default (ES)": "",
+    })
+    rr = validate_mattresses(t, languages=langs)
+    check("bilateral absence of optional components -> valid, no warning",
+          rr.ok and not rr.warnings)
+    # Differentiator pair is ONE component: EN title with a fully blank ES
+    # pair is one-sided; EN title + ES detail is bilateral and fine.
+    t = _good_tabs()
+    t["Mattresses"][1][0]["differentiator1Title"] = "Something"
+    rr = validate_mattresses(t, languages=langs)
+    check("differentiator pair one-sided (EN only) -> error",
+          any("differentiator1 pair present in EN only" in e for e in rr.errors))
+    t["Mattresses"][1][0]["differentiator1Detail (ES)"] = "Algo"
+    rr = validate_mattresses(t, languages=langs)
+    check("differentiator pair present on both sides -> valid",
+          not any("differentiator1 pair" in e for e in rr.errors))
+    # Badges: one-sided and count-mismatch are both errors; equal counts pass.
+    t = _good_tabs()
+    t["Mattresses"][1][0]["displayBadges"] = "Only EN"
+    rr = validate_mattresses(t, languages=langs)
+    check("badges one-sided -> error",
+          any("displayBadges present in EN only" in e for e in rr.errors))
+    t["Mattresses"][1][0]["displayBadges (ES)"] = "Uno|Dos"
+    rr = validate_mattresses(t, languages=langs)
+    check("badge count mismatch -> error",
+          any("1 EN badge(s) but 2 ES" in e for e in rr.errors))
+    t["Mattresses"][1][0]["displayBadges"] = "One|Two"
+    rr = validate_mattresses(t, languages=langs)
+    check("badge counts match -> valid",
+          not any("displayBadges" in e for e in rr.errors))
 
     # ---- V3: post-emit output validation ----
     import tempfile
