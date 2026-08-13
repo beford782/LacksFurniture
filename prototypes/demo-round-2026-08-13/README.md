@@ -97,6 +97,14 @@ and no application is started"). Visuals are sober typographic cards — no
 cash imagery, approval marks, gauges, countdowns, or any implication that
 a displayed mattress qualifies.
 
+**Demo-prep rule — do not "freshen" the config.** To preview the
+exact-claim presentation it is not enough to flip
+`exactPromotionsEnabled`; the 2026-07-31 `verifiedAt` is past its 7-day
+window, so the age gate still suppresses. Editing `verifiedAt` to make
+the demo show rates would fabricate a verification event that never
+happened. The suppressed state IS the correct demonstration until a real
+re-verification against the allowlisted source is performed and recorded.
+
 ## The Sleep Plan and handoff
 
 The Sleep Plan combines: the explicit finalist (chosen on the compare
