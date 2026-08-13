@@ -183,10 +183,17 @@
   .profile-chip{display:inline-flex;gap:.6em;align-items:baseline;
     font-family:var(--util);font-weight:600;letter-spacing:.2em;text-transform:uppercase;font-size:.78rem;
     color:var(--brass);border:1px solid rgba(212,168,75,.4);border-radius:99px;padding:.55rem 1.3rem}
-  .priorities{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
-  .prio{display:flex;align-items:center;gap:.55em;background:var(--nocturne);
-    border:1px solid var(--veil-soft);border-radius:14px;padding:.75rem 1.1rem;
-    font-size:.96rem;font-weight:500}
+  .priorities{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;align-items:flex-start}
+  .prio-wrap{display:flex;flex-direction:column;background:var(--nocturne);
+    border:1px solid var(--veil-soft);border-radius:14px;max-width:min(520px,88vw);text-align:left}
+  .prio-wrap.open{border-color:rgba(212,168,75,.45)}
+  .prio{display:flex;align-items:center;gap:.55em;padding:.72rem 1.05rem;
+    font-size:.96rem;font-weight:500;text-align:left;width:100%}
+  .prio .tw{margin-left:auto;color:var(--brass);font-weight:600;padding-left:.6em}
+  .prio-more{padding:0 1.05rem .75rem;display:flex;flex-direction:column;gap:.28rem}
+  .prio-more .why{color:var(--moon-dim);font-size:.85rem;max-width:44ch}
+  .prio-more .test{color:var(--brass-soft);font-size:.85rem;max-width:44ch}
+  .reveal-reflect{font-size:clamp(.96rem,2vw,1.08rem);color:var(--moonlight);max-width:54ch}
   .reveal-sub{color:var(--moon-dim);font-size:.94rem;max-width:46ch}
 
   /* ===== RESULTS ========================================================= */
@@ -199,6 +206,7 @@
   .tiers button{font-family:var(--util);font-weight:600;font-size:.78rem;letter-spacing:.2em;
     text-transform:uppercase;padding:.55rem 1.35rem;border-radius:99px;color:var(--moon-dim)}
   .tiers button.on{background:var(--brass);color:var(--midnight)}
+  .pct-note{font-size:.72rem;color:var(--moon-dim);opacity:.85}
   .cards{display:grid;grid-template-columns:1.6fr 1fr;grid-template-rows:1fr 1fr;gap:14px;flex:1;min-height:0}
   .card{background:var(--linen);color:var(--ink);border-radius:22px;overflow:hidden;
     display:flex;flex-direction:column;position:relative;text-align:left;cursor:pointer;
@@ -227,6 +235,9 @@
   .card .chips{display:flex;gap:7px;flex-wrap:wrap;margin-top:.4rem}
   .chip{display:inline-flex;align-items:center;gap:.4em;font-size:.76rem;font-weight:600;
     color:var(--ink);background:rgba(26,32,54,.07);border-radius:99px;padding:.32rem .7rem}
+  /* provenance chip — driven strictly by the shipped locallyMade flag */
+  .chip.prov{background:rgba(212,168,75,.16);color:#7D5B34;border:1px solid rgba(212,168,75,.5);
+    font-size:.68rem;letter-spacing:.06em;padding:.24rem .6rem;vertical-align:middle}
   /* supporting cards run horizontal: plate left, identity right */
   .card.small{flex-direction:row;align-items:stretch}
   .card.small .ph{flex:none;width:44%;margin:14px 0 14px 14px;padding:4%}
@@ -387,6 +398,9 @@
     padding:1.1rem 1.7rem;display:flex;justify-content:space-between;align-items:center;gap:16px}
   .consult-band .t{font-family:var(--display);font-size:1.35rem}
   .consult-band .t em{font-style:italic;color:var(--brass-soft)}
+  .consult-who{display:flex;flex-direction:column;gap:.15rem;min-width:0}
+  .consult-band .who{font-family:var(--util);font-weight:600;font-size:.62rem;
+    letter-spacing:.3em;text-transform:uppercase;color:var(--brass)}
   .consult-body{display:grid;grid-template-columns:1fr 1.35fr;gap:1.3rem;padding:1.2rem 1.7rem 1.35rem}
   .consult-body .plate{background:#fff;border-radius:16px;padding:7%;
     box-shadow:0 10px 24px rgba(26,32,54,.12);align-self:center}
@@ -403,6 +417,7 @@
   .consult-list .row b{font-family:var(--util);font-weight:600;font-size:.62rem;letter-spacing:.2em;
     text-transform:uppercase;color:var(--brass);flex:none;width:92px}
   .consult-list .row span{min-width:0}
+  .consult-list .row .ht{color:var(--ink-soft);font-size:.82rem}
   .handoff-note{margin-top:1.1rem;color:var(--moon-dim);font-size:.88rem;text-align:center;max-width:56ch}
   .handoff-foot{margin-top:.85rem}
 
@@ -467,7 +482,9 @@
   <div class="sky" id="skyWelcome"></div>
   <svg id="welcomeArc" viewBox="0 0 1000 300" preserveAspectRatio="xMidYMax slice" aria-hidden="true"></svg>
   <div class="welcome-inner">
-    <div class="eyebrow" data-t="wEyebrow"></div>
+    <!-- Lacks introduces the fitting: the governed heritage eyebrow from
+         store-config voice.eyebrow / voice_es.eyebrow (config-driven) -->
+    <div class="eyebrow" id="wEyebrow"></div>
     <h1 class="masthead">Dream<em>Finder</em></h1>
     <div class="hairline"></div>
     <p class="welcome-line" data-t="wLine"></p>
@@ -511,8 +528,12 @@
     <svg id="constellation" viewBox="0 0 560 300" aria-hidden="true"></svg>
     <div class="eyebrow" data-t="rEyebrow"></div>
     <h2 class="reveal-title" data-t-html="rTitle"></h2>
-    <div class="profile-chip" id="profileChip"></div>
+    <!-- need-led hierarchy: the engine's own reflection of THEIR answers,
+         then the trial priorities as the primary content; the archetype
+         flourish is subordinate, beneath what actually matters -->
+    <p class="reveal-reflect" id="revealReflect"></p>
     <div class="priorities" id="prioList"></div>
+    <div class="profile-chip" id="profileChip"></div>
     <p class="reveal-sub" data-t="rSub"></p>
     <button class="cta" onclick="go('results')" data-t="rCta"></button>
   </div>
@@ -528,6 +549,7 @@
     <div class="sig-stamp"><svg id="stampResults" width="64" height="36" viewBox="0 0 64 36" aria-hidden="true"></svg><span id="stampName"></span></div>
   </div>
   <div class="tiers" id="tierTabs"></div>
+  <div class="pct-note" id="pctNote"></div>
   <div class="cards" id="cardGrid"></div>
   <div class="pay-band" id="payBand"></div>
   <div class="results-foot">
@@ -615,7 +637,12 @@
   <div class="sky" id="skyHandoff"></div>
   <div class="card-consult">
     <div class="consult-band">
-      <div class="t" id="hTitle"></div>
+      <!-- Lacks resumes the relationship: store attribution from
+           SC.storeName above the governed handoff headline -->
+      <div class="consult-who">
+        <div class="who" id="hStore"></div>
+        <div class="t" id="hTitle"></div>
+      </div>
       <svg id="stampHandoff" width="72" height="40" viewBox="0 0 64 36" aria-hidden="true"></svg>
     </div>
     <div class="consult-body">
@@ -653,7 +680,9 @@
    pure function of store-config.financing — quiz answers never enter it, and
    payment state never enters scoring.
 ============================================================================= */
-var STORE = "Lacks Furniture"; // demo config; production reads store-config.json
+/* No inline store constant: every store reference resolves from
+   store-config.json (SC.storeName) at render time via the {store}
+   placeholder — the white-label boundary, demonstrated. */
 
 var QUESTIONS = [], MATTRESSES = null, SC = null, FIN = null, ACC = [];
 var engine = null, briefRunner = null, accRunner = null, finKit = null;
@@ -663,6 +692,7 @@ var activeTier = "gold", cmpSel = [];
 /* payment-side state — deliberately never passed to the engine */
 var finalistId = null, sysSel = [], payDecision = null, finAgenda = {}, payReturn = "results";
 var payCleared = false;
+var prioOpen = {};   // reveal-scene disclosure state for the why/test prose
 
 function L(o){ if (o == null) return ""; if (typeof o === "string") return o; return o[lang] || o.en || ""; }
 
@@ -673,8 +703,8 @@ var T = {
   wLine:{en:"Ten questions on the floor. A shortlist made only for you.",
          es:"Diez preguntas en la tienda. Una selección hecha solo para ti."},
   wCta:{en:"Begin the fitting",es:"Comenzar la prueba"},
-  wSpecialist:{en:"Guided by your "+STORE+" sleep specialist",
-               es:"Con la guía de tu especialista de sueño de "+STORE},
+  wSpecialist:{en:"Guided by your {store} sleep specialist",
+               es:"Con la guía de tu especialista de sueño de {store}"},
   wDemo:{en:"Rehearsal: fill sample answers",es:"Ensayo: respuestas de muestra"},
   wIso:{en:"Isolation check",es:"Prueba de aislamiento"},
   restart:{en:"Start over",es:"Empezar de nuevo"},
@@ -706,6 +736,11 @@ var T = {
   hAgain:{en:"New customer",es:"Nuevo cliente"},
   tierGold:{en:"Gold",es:"Oro"},tierSilver:{en:"Silver",es:"Plata"},tierBronze:{en:"Bronze",es:"Bronce"},
   bestMatch:{en:"Best match",es:"Mejor opción"},
+  closeAlt:{en:"Close alternative",es:"Alternativa cercana"},
+  worthComparing:{en:"Worth comparing",es:"Vale la pena comparar"},
+  pctNote:{en:"Match strength is relative within each tier",
+           es:"La afinidad es relativa dentro de cada nivel"},
+  madeInTexas:{en:"Made in Texas",es:"Hecho en Texas"},
   feelLbl:{en:"Feel",es:"Sensación"},tierLbl:{en:"Tier",es:"Nivel"},
   matchLbl:{en:"Match",es:"Afinidad"},
   sameTag:{en:"Same for both",es:"Igual en ambos"},
@@ -790,8 +825,14 @@ var T = {
       "function t(k){return k;}function showScreen(){}" +
       escSrc + "\n" + lSrc + "\n" + profSrc + "\n" +
       "showProfileScreen();" +
+      /* the reflection sentence production composes and writes to
+         #profileReflection is captured from the DOM shim VERBATIM — no
+         second interpretation engine. It is single-language at composition
+         time (production behavior), so it must never be cached outside
+         computed: setLang() re-runs compute(), which re-captures it. */
       "return {trialFocus:analytics.trialFocus,profileName:analytics.profileName," +
-      "profileSubtitleByLang:analytics.profileSubtitleByLang};");
+      "profileSubtitleByLang:analytics.profileSubtitleByLang," +
+      "reflection:els.profileReflection?els.profileReflection.textContent:''};");
 
     /* the accessory ranking, verbatim — same inputs as production */
     accRunner = new Function("ACCESSORIES","answersIn","langIn",
@@ -839,6 +880,7 @@ function startQuiz(){ answers = {}; qPos = 0; resetJourneyState(); go("quiz"); r
 function resetJourneyState(){
   cmpSel = []; computed = null; finalistId = null; sysSel = [];
   payDecision = null; finAgenda = {}; payReturn = "results"; payCleared = false;
+  prioOpen = {};
 }
 function startOver(){ answers = {}; qPos = 0; resetJourneyState(); lang = "en";
   document.getElementById("langEn").classList.add("on");
@@ -973,7 +1015,8 @@ function compute(){
     topPickId: out.tiers.gold.length ? out.tiers.gold[0].id : null,
     trialFocus: brief.trialFocus || [],
     profileName: brief.profileName || "",
-    subtitle: brief.profileSubtitleByLang || {en:"",es:""}
+    subtitle: brief.profileSubtitleByLang || {en:"",es:""},
+    reflection: brief.reflection || ""
   };
 }
 function model(id){
@@ -1247,10 +1290,11 @@ function setLang(l){
   if (computed) compute();   // re-run the real engine so language-resolved output stays honest
   render();
 }
+function SN(s){ return String(s).replace(/\{store\}/g, (SC && SC.storeName) || ""); }
 function render(){
   document.documentElement.lang = lang;
-  document.querySelectorAll("[data-t]").forEach(function(el){ el.textContent = L(T[el.getAttribute("data-t")]); });
-  document.querySelectorAll("[data-t-html]").forEach(function(el){ el.innerHTML = L(T[el.getAttribute("data-t-html")]); });
+  document.querySelectorAll("[data-t]").forEach(function(el){ el.textContent = SN(L(T[el.getAttribute("data-t")])); });
+  document.querySelectorAll("[data-t-html]").forEach(function(el){ el.innerHTML = SN(L(T[el.getAttribute("data-t-html")])); });
   document.getElementById("restartBtn").textContent = L(T.restart);
   renderWelcomeConfigLines();
   var scene = sceneNow();
@@ -1265,21 +1309,47 @@ function render(){
   drawArc("welcomeArc", 1000, 300, 0);
 }
 function renderWelcomeConfigLines(){
-  /* governed copy: the journey the consultation builds (voice.outcome*) and
-     the neutral payment expectation (financing.copy.welcomeSupport) */
+  /* governed copy: the Lacks heritage eyebrow (voice.eyebrow — the ONE
+     identity signal on the welcome), the journey the consultation builds
+     (voice.outcome*), and the neutral payment expectation. Per-key EN
+     fallback so a missing _es key can never render blank. */
   if (!SC) return;
   var v = (lang === "es" && SC.voice_es) ? SC.voice_es : (SC.voice || {});
+  document.getElementById("wEyebrow").textContent =
+    v.eyebrow || (SC.voice || {}).eyebrow || L(T.wEyebrow);
   document.getElementById("wOutcomeLab").textContent = v.outcomeLabel || "";
   document.getElementById("wOutcomeItems").textContent = v.outcomeItems || "";
   document.getElementById("wPayLine").textContent = FIN ? L(FIN.copy.welcomeSupport) : "";
 }
 
+function togglePrio(i){
+  prioOpen[i] = !prioOpen[i];
+  if (!prioOpen[i]) delete prioOpen[i];
+  renderReveal();
+}
 function renderReveal(){
   if (!computed) return;
+  /* the engine's own answer reflection, verbatim — proof the signature is
+     built from THEIR answers, not a canned profile */
+  document.getElementById("revealReflect").textContent = computed.reflection || "";
+  /* archetype demoted to its bilingual subtitle: production never shows the
+     internal profile name to customers, and it has no Spanish */
   document.getElementById("profileChip").innerHTML =
-    star(11, "#D4A84B") + "&nbsp; " + computed.profileName + " &nbsp;·&nbsp; " + L(computed.subtitle);
+    star(11, "#D4A84B") + "&nbsp; " + L(computed.subtitle);
   var s = "";
-  computed.trialFocus.forEach(function(p){ s += '<div class="prio">' + star(12, "#E9CE8F") + L(p) + '</div>'; });
+  computed.trialFocus.forEach(function(p, i){
+    var open = !!prioOpen[i];
+    /* why/test are production's own shipped Sleep Brief prose, already
+       bilingual inside each trialFocus item — customer-level guidance,
+       disclosed on tap so the reveal stays cinematic */
+    s += '<div class="prio-wrap' + (open ? ' open' : '') + '">'
+      + '<button class="prio" aria-expanded="' + (open ? 'true' : 'false') + '" onclick="togglePrio(' + i + ')">'
+      + star(12, "#E9CE8F") + '<span>' + L(p) + '</span><span class="tw" aria-hidden="true">' + (open ? '−' : '+') + '</span></button>'
+      + (open && p.why && p.test
+          ? '<div class="prio-more"><p class="why">' + L(p.why) + '</p><p class="test">' + L(p.test) + '</p></div>'
+          : '')
+      + '</div>';
+  });
   document.getElementById("prioList").innerHTML = s;
 }
 
@@ -1287,8 +1357,9 @@ function cardHtml(entry, hero){
   var m = model(entry.id); if (!m) return "";
   var sel = cmpSel.indexOf(entry.id) >= 0;
   /* customer trial priorities never render inside a single mattress's card —
-     shown only on one model they read as that model's own attributes */
-  var chips = "";
+     shown only on one model they read as that model's own attributes.
+     Provenance is genuinely per-model data, so it may. */
+  var chips = provChip(m);
   return '<div class="card ' + (hero ? "hero" : "small") + (sel ? " cmp-sel" : "") + '" role="button" tabindex="0" onclick="toggleCmp(\'' + entry.id + '\')">'
     + (hero ? '<div class="ribbon">' + L(T.bestMatch) + '</div>' : '')
     + '<div class="ring">' + ringSvg(entry.pct) + '</div>'
@@ -1310,10 +1381,13 @@ function renderResults(){
     tt += '<button class="' + (activeTier === t[0] ? "on" : "") + '" onclick="activeTier=\'' + t[0] + '\';renderResults()">' + L(T[t[1]]) + '</button>';
   });
   document.getElementById("tierTabs").innerHTML = tt;
+  /* honest framing for the rings: percentages are normalized WITHIN the
+     active tier — never a cross-tier or absolute-fit number */
+  document.getElementById("pctNote").textContent = L(T.pctNote);
   var list = computed.tiers[activeTier] || [], s = "";
   list.forEach(function(e, i){ s += cardHtml(e, i === 0); });
   document.getElementById("cardGrid").innerHTML = s;
-  document.getElementById("stampName").textContent = computed.profileName;
+  document.getElementById("stampName").textContent = L(computed.subtitle);
   drawConstellation("stampResults", 64, 36, false);
   document.getElementById("cmpCta").disabled = cmpSel.length !== 2;
   /* the Sleep Plan is reachable without a finalist — it renders an honest
@@ -1341,9 +1415,13 @@ function openDetail(id){
   detailId = id;
   var m = model(id); if (!m) return;
   document.getElementById("dImg").src = imgOf(m);
-  document.getElementById("dBrand").textContent = m.brand + (m.subBrand ? " · " + m.subBrand : "");
+  document.getElementById("dBrand").innerHTML = m.brand + (m.subBrand ? " · " + m.subBrand : "")
+    + (provChip(m) ? " " + provChip(m) : "");
   document.getElementById("dName").textContent = m.name;
-  document.getElementById("dFeel").textContent = L(T.feelLbl) + ": " + feelOf(m) + " · " + L(T.matchLbl) + " " + pctOf(id) + "%";
+  /* tier + rank language, not a naked percentage — tier-normalized numbers
+     read as absolute certainty they don't carry */
+  document.getElementById("dFeel").textContent = L(T.feelLbl) + ": " + feelOf(m)
+    + " · " + tierNameOf(id) + " · " + ordinalOf(id);
   var chips = "";
   (computed ? computed.trialFocus : []).forEach(function(p){
     chips += '<span class="chip">' + star(10, "#D4A84B") + L(p) + '</span>';
@@ -1370,6 +1448,32 @@ function tierOf(id){
   for (var t in computed.tiers) if (computed.tiers[t].some(function(e){ return e.id === id; })) return t;
   return "";
 }
+function rankInfo(id){
+  if (!computed) return null;
+  for (var t in computed.tiers){
+    for (var i = 0; i < computed.tiers[t].length; i++){
+      if (computed.tiers[t][i].id === id) return { tier: t, rank: i + 1 };
+    }
+  }
+  return null;
+}
+/* ordinal language instead of percentage certainty: the engine's ORDER is
+   the honest signal — percentages are tier-normalized and not comparable
+   across tiers, so closing surfaces speak in rank, not numbers */
+function ordinalOf(id){
+  var r = rankInfo(id); if (!r) return "";
+  return r.rank === 1 ? L(T.bestMatch) : r.rank === 2 ? L(T.closeAlt) : L(T.worthComparing);
+}
+function tierNameOf(id){
+  var tn = {gold:T.tierGold, silver:T.tierSilver, bronze:T.tierBronze};
+  var r = rankInfo(id);
+  return r && tn[r.tier] ? L(tn[r.tier]) : "";
+}
+function provChip(m){
+  /* provenance chip renders ONLY on the shipped boolean — never inferred,
+     never extended to quality/durability/performance language */
+  return (m && m.locallyMade === true) ? '<span class="chip prov">' + L(T.madeInTexas) + '</span>' : "";
+}
 function pctOf(id){
   if (!computed) return "";
   for (var t in computed.tiers){ var e = computed.tiers[t].find(function(x){ return x.id === id; }); if (e) return e.pct; }
@@ -1385,7 +1489,7 @@ function renderCompare(){
   var stage = "";
   [a, b].forEach(function(m){
     stage += '<div class="cmp-side"><div class="plate"><img src="' + imgOf(m) + '" alt="' + m.name + '"></div>'
-      + '<div class="brand">' + m.brand + (m.subBrand ? ' · ' + m.subBrand : '') + '</div>'
+      + '<div class="brand">' + m.brand + (m.subBrand ? ' · ' + m.subBrand : '') + (provChip(m) ? ' ' + provChip(m) : '') + '</div>'
       + '<div class="name">' + m.name + '</div>'
       + '<button class="fin-btn' + (finalistId === m.id ? ' on' : '') + '" onclick="chooseFinalist(\'' + m.id + '\')">'
       + (finalistId === m.id ? L(T.isFinalist) : L(T.makeFinalist)) + '</button>'
@@ -1399,7 +1503,15 @@ function renderCompare(){
   var tn = {gold:T.tierGold, silver:T.tierSilver, bronze:T.tierBronze};
   var rows = "";
   rows += row(L(T.feelLbl), feelOf(a), feelOf(b));
-  rows += row(L(T.matchLbl), pctOf(a.id) + "%", pctOf(b.id) + "%");
+  /* percentages are tier-normalized: comparable only inside one tier.
+     Same tier → tier-labeled percentages; cross-tier → ordinal language */
+  if (tierOf(a.id) === tierOf(b.id)){
+    rows += row(L(T.matchLbl) + " · " + L(tn[tierOf(a.id)] || {en:tierOf(a.id)}),
+                pctOf(a.id) + "%", pctOf(b.id) + "%");
+  } else {
+    rows += row(L(T.matchLbl), tierNameOf(a.id) + " · " + ordinalOf(a.id),
+                tierNameOf(b.id) + " · " + ordinalOf(b.id));
+  }
   rows += row(L(T.tierLbl), L(tn[tierOf(a.id)] || {en:tierOf(a.id)}), L(tn[tierOf(b.id)] || {en:tierOf(b.id)}));
   if (computed.trialFocus.length){
     /* trial priorities are CUSTOMER-level (the engine never assigns one to a
@@ -1440,16 +1552,20 @@ function renderPlan(){
       + '<div class="plate"><img src="' + imgOf(m) + '" alt="' + m.name + '"></div>'
       + '<div class="fin-id"><div class="brand">' + m.brand + (m.subBrand ? ' · ' + m.subBrand : '') + '</div>'
       + '<div class="name">' + m.name + '</div>'
-      + '<div class="feel">' + L(T.feelLbl) + ': ' + feelOf(m) + ' · ' + L(T.matchLbl) + ' ' + pctOf(fid) + '%</div>'
+      + '<div class="feel">' + L(T.feelLbl) + ': ' + feelOf(m) + ' · ' + tierNameOf(fid) + ' · ' + ordinalOf(fid) + '</div>'
       + (finalistId ? '' : '<div class="note">' + L(T.noFinalistYet) + ' — ' + L(T.chooseFinalistPrompt) + '</div>')
       + '</div>';
   }
   document.getElementById("planFinal").innerHTML = f;
 
   var s = "";
-  /* trial priorities */
-  s += '<div class="plan-block"><div class="bt">' + L(T.testLbl) + '</div>';
-  computed.trialFocus.forEach(function(p){ s += '<div class="ln">' + star(11, "#E9CE8F") + ' ' + L(p) + '</div>'; });
+  /* trial priorities WITH the shipped test guidance — the literal
+     in-store script, customer-level (applies to every mattress) */
+  s += '<div class="plan-block"><div class="bt">' + L(T.trialPrioritiesLbl) + '</div>';
+  computed.trialFocus.forEach(function(p){
+    s += '<div class="ln">' + star(11, "#E9CE8F") + ' ' + L(p) + '</div>';
+    if (p.test) s += '<div class="dim">' + L(p.test) + '</div>';
+  });
   s += '</div>';
   /* compared */
   s += '<div class="plan-block"><div class="bt">' + L(T.comparedLbl) + '</div>';
@@ -1511,6 +1627,7 @@ function renderHandoff(){
      status line states which it is, and a Finalist row states absence */
   var fid = finalistId || computed.topPickId;
   var m = model(fid);
+  document.getElementById("hStore").textContent = (SC && SC.storeName) || "";
   document.getElementById("hTitle").textContent =
     FIN ? L(FIN.copy.handoffHeadline) : "Consultation card";
   document.getElementById("hStatus").textContent =
@@ -1519,14 +1636,17 @@ function renderHandoff(){
   if (m) document.getElementById("hImg").src = imgOf(m);
   document.getElementById("hBrand").textContent = m ? (m.brand + (m.subBrand ? " · " + m.subBrand : "")) : "";
   document.getElementById("hName").textContent = m ? m.name : L(T.noFinalistYet);
-  document.getElementById("hFeel").textContent = m ? (L(T.feelLbl) + ": " + feelOf(m) + " · " + L(T.matchLbl) + " " + pctOf(fid) + "%") : "";
+  document.getElementById("hFeel").textContent = m ? (L(T.feelLbl) + ": " + feelOf(m) + " · " + tierNameOf(fid) + " · " + ordinalOf(fid)) : "";
   document.getElementById("hNote").textContent = L(finalistId ? T.hNote : T.hNoteNoFinalist);
   var rows = "";
   rows += '<div class="row"><b>' + L(T.finalist) + '</b><span>'
     + (finalistId && m ? m.name : L(T.noFinalistYet)) + '</span></div>';
-  rows += '<div class="row"><b>' + L(T.profileLbl) + '</b><span>' + computed.profileName + ' · ' + L(computed.subtitle) + '</span></div>';
+  rows += '<div class="row"><b>' + L(T.profileLbl) + '</b><span>' + L(computed.subtitle) + '</span></div>';
   computed.trialFocus.forEach(function(p, i){
-    rows += '<div class="row"><b>' + (i === 0 ? L(T.testLbl) : "") + '</b><span>' + L(p) + '</span></div>';
+    /* name + the shipped test line — the specialist's in-store script,
+       production handoff parity (renderHf2Priorities) */
+    rows += '<div class="row"><b>' + (i === 0 ? L(T.testLbl) : "") + '</b><span>' + L(p)
+      + (p.test ? ' <span class="ht">— ' + L(p.test) + '</span>' : '') + '</span></div>';
   });
   rows += '<div class="row"><b>' + L(T.comparedLbl) + '</b><span>'
     + (cmpSel.length ? cmpSel.map(function(id){ var mm = model(id); return mm ? mm.name : id; }).join(" · ") : "—")
