@@ -6,17 +6,36 @@
 <title>DreamFinder — Nocturne demo prototype</title>
 <!--
   FULLY FUNCTIONAL PROTOTYPE — demo-impact visual round, 2026-08-13.
+  Revision 2: adds the Payment Choices layer (roughly half the commercial
+  story) per owner correction — sleep fit first, payment choice second,
+  and the two paths never touch.
+
   Isolated from production (lives under prototypes/, no domain lock, no
-  writes, no financing logic) but the recommendations are REAL:
+  writes) but everything shown is REAL:
     · questions load from ../../data/quiz.json (the shipped quiz)
     · the catalog loads from ../../data/mattresses.json
-    · calculateScores(), qualifyRankedChoices() and showProfileScreen()
-      are EXTRACTED VERBATIM from ../../index.html at runtime — the same
-      extract-and-execute technique the repo's test suites use — so every
-      score, tier, ordering, top pick, profile and priority shown here is
-      the production engine's own output for the answers given.
-  Nothing invented, nothing re-ranked, no product claims beyond identity,
-  firmness, match % and engine-computed priorities.
+    · accessories load from ../../data/accessories.json
+    · the ENTIRE financing layer reads ../../data/store-config.json
+      (store-config.financing) — every payment string on screen is the
+      governed config's own copy; nothing is hand-authored
+    · calculateScores(), qualifyRankedChoices(), showProfileScreen() and
+      scoreAccessoriesFromAnswers() are EXTRACTED VERBATIM from
+      ../../index.html at runtime — the repo's test-harness technique —
+      so every score, tier, top pick, profile, priority and accessory
+      ranking is the production engine's own output
+    · the financing GATING is also production's own code, extracted
+      verbatim: financingTermsFresh, financingPlanFresh, financingAgeOk,
+      financingSourceAllowed, finGroupedPlans, finPromotionalByProvider
+      and their taxonomy constants — so exact rate/term claims render
+      ONLY when production itself would render them (exactPromotionsEnabled
+      AND verifiedAt+maxAgeDays fresh AND allowlisted https source). With
+      today's config that means exact promotions AND the freshness-gated
+      In-House / Mexico details are SUPPRESSED to the specialist-confirm
+      staleNotice — exactly as deployed production behaves right now.
+      No monthly payments are ever computed (V1 invariant).
+  Payment state never enters scoring; quiz answers never alter the
+  payment layer. The in-app Isolation Check (welcome screen) proves both
+  directions live.
   Store name is demo config; production reads store-config.json.
 -->
 <style>
@@ -48,6 +67,7 @@
     overflow:hidden;touch-action:manipulation;
   }
   button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;touch-action:manipulation}
+  a{touch-action:manipulation}
   .scene{position:absolute;inset:0;display:none;flex-direction:column;overflow:hidden}
   .scene.on{display:flex}
   @media (prefers-reduced-motion:reduce){
@@ -84,22 +104,28 @@
       radial-gradient(80% 55% at 50% -12%, #1B2A55 0%, rgba(27,42,85,0) 60%),
       var(--midnight)}
   .masthead{font-family:var(--display);font-weight:400;
-    font-size:clamp(3.4rem,9.5vw,7rem);line-height:.98;letter-spacing:.01em}
+    font-size:clamp(3.2rem,9vw,6.6rem);line-height:.98;letter-spacing:.01em}
   .masthead em{font-style:italic;color:var(--brass-soft)}
   .welcome-inner{position:relative;z-index:2;display:flex;flex-direction:column;
-    align-items:center;gap:1.4rem;padding:0 8vw;max-width:900px}
+    align-items:center;gap:1.15rem;padding:0 8vw;max-width:900px}
   .welcome-line{font-size:clamp(1.02rem,2.2vw,1.3rem);color:var(--moon-dim);max-width:34ch}
   .hairline{width:52px;height:1px;background:var(--brass);opacity:.8}
   .cta{font-family:var(--util);font-weight:600;letter-spacing:.26em;text-transform:uppercase;
     font-size:.86rem;color:var(--midnight);background:var(--brass);
-    padding:1.05rem 2.6rem;border-radius:99px;margin-top:.6rem;
+    padding:1.05rem 2.6rem;border-radius:99px;margin-top:.4rem;
     box-shadow:0 8px 34px rgba(212,168,75,.35);
     transition:transform .18s ease, opacity .18s ease}
   .cta:active{transform:scale(.97)}
   .cta[disabled]{opacity:.35;pointer-events:none}
   .specialist{font-size:.86rem;color:var(--moon-dim);letter-spacing:.04em}
+  .outcome{display:flex;flex-direction:column;align-items:center;gap:.22rem;margin-top:.5rem}
+  .outcome .lab{font-family:var(--util);font-weight:600;font-size:.62rem;letter-spacing:.3em;
+    text-transform:uppercase;color:var(--moon-dim);opacity:.8}
+  .outcome .items{font-size:.86rem;color:var(--moon-dim)}
+  .outcome .pay{font-size:.82rem;color:var(--moon-dim);opacity:.85;max-width:46ch}
+  .demo-tools{display:flex;gap:1.6rem;margin-top:.7rem}
   .demo-fill{font-family:var(--util);font-weight:600;font-size:.7rem;letter-spacing:.24em;
-    text-transform:uppercase;color:var(--moon-dim);opacity:.7;margin-top:.8rem;
+    text-transform:uppercase;color:var(--moon-dim);opacity:.7;
     border-bottom:1px solid var(--veil);padding-bottom:2px}
   #welcomeArc{position:absolute;left:0;right:0;bottom:-4vh;height:34vh;opacity:.9}
 
@@ -134,6 +160,11 @@
   .q-back{font-family:var(--util);font-weight:600;letter-spacing:.2em;font-size:.8rem;
     color:var(--moon-dim);text-transform:uppercase;padding:.9rem 0}
   #quizArcWrap{height:52px;flex:none}
+  .journey{display:flex;justify-content:center;flex-wrap:wrap;gap:.7em;
+    font-family:var(--util);font-weight:600;font-size:.62rem;letter-spacing:.22em;
+    text-transform:uppercase;color:var(--moon-dim);opacity:.75;padding:4px 0 0}
+  .journey b{color:var(--brass);font-weight:600}
+  .journey i{font-style:normal;opacity:.65}
 
   /* ===== REVEAL ========================================================== */
   #reveal{align-items:center;justify-content:center;text-align:center;
@@ -159,7 +190,7 @@
   .reveal-sub{color:var(--moon-dim);font-size:.94rem;max-width:46ch}
 
   /* ===== RESULTS ========================================================= */
-  #results{padding:calc(64px + env(safe-area-inset-top)) 4vw 2.5vh;gap:1.4vh}
+  #results{padding:calc(64px + env(safe-area-inset-top)) 4vw 2vh;gap:1.2vh}
   .results-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}
   .results-title{font-family:var(--display);font-size:clamp(1.7rem,3.8vw,2.5rem);font-weight:400}
   .results-title em{font-style:italic;color:var(--brass-soft)}
@@ -170,7 +201,7 @@
   .tiers button.on{background:var(--brass);color:var(--midnight)}
   .cards{display:grid;grid-template-columns:1.6fr 1fr;grid-template-rows:1fr 1fr;gap:14px;flex:1;min-height:0}
   .card{background:var(--linen);color:var(--ink);border-radius:22px;overflow:hidden;
-    display:flex;flex-direction:column;position:relative;text-align:left;
+    display:flex;flex-direction:column;position:relative;text-align:left;cursor:pointer;
     border:2px solid transparent;transition:border-color .15s ease}
   .card.cmp-sel{border-color:var(--brass)}
   .card.hero{grid-row:1 / span 2}
@@ -178,7 +209,7 @@
     background:#fff;border-radius:16px;margin:14px 14px 0;padding:4% 6%;position:relative;
     box-shadow:0 10px 28px rgba(26,32,54,.12)}
   .card .ph img{max-width:100%;max-height:100%;object-fit:contain}
-  .card .meta{padding:.9rem 1.25rem 1.1rem;display:flex;flex-direction:column;gap:.24rem}
+  .card .meta{padding:.9rem 1.25rem 2.15rem;display:flex;flex-direction:column;gap:.24rem}
   .card .brand{font-family:var(--util);font-weight:600;font-size:.66rem;letter-spacing:.3em;
     text-transform:uppercase;color:var(--ink-soft)}
   .card .name{font-family:var(--display);font-size:1.45rem;line-height:1.1}
@@ -199,16 +230,58 @@
   /* supporting cards run horizontal: plate left, identity right */
   .card.small{flex-direction:row;align-items:stretch}
   .card.small .ph{flex:none;width:44%;margin:14px 0 14px 14px;padding:4%}
-  .card.small .meta{flex:1;justify-content:center;padding:1rem 1.1rem}
+  .card.small .meta{flex:1;justify-content:center;padding:1rem 1.1rem 2.05rem}
   .card.small .name{font-size:1.3rem}
   .card.small .ring{width:54px;height:54px;top:18px;right:18px}
   .card.small .ring text{font-size:13px}
   .cmp-tag{position:absolute;bottom:14px;right:16px;z-index:2;
     font-family:var(--util);font-weight:600;font-size:.64rem;letter-spacing:.22em;
     text-transform:uppercase;color:var(--ink-soft)}
-  .card.cmp-sel .cmp-tag{color:var(--brass);}
-  .results-foot{display:flex;justify-content:space-between;align-items:center}
+  .card.cmp-sel .cmp-tag{color:var(--brass)}
+  .d-btn{position:absolute;bottom:11px;left:16px;z-index:2;
+    font-family:var(--util);font-weight:600;font-size:.64rem;letter-spacing:.22em;
+    text-transform:uppercase;color:var(--ink-soft);
+    border-bottom:1px solid rgba(26,32,54,.25);padding:2px 0}
+  /* first Payment Choices entry — after matches are established, never before */
+  .pay-band{display:flex;justify-content:space-between;align-items:center;gap:16px;
+    border:1px solid var(--veil-soft);border-radius:16px;padding:.65rem 1.1rem;background:var(--nocturne)}
+  .pay-band .tx{display:flex;flex-direction:column;gap:.1rem;min-width:0}
+  .pay-band .fit{font-size:.88rem;color:var(--moonlight)}
+  .pay-band .lead{font-size:.78rem;color:var(--moon-dim)}
+  .btn-quiet{font-family:var(--util);font-weight:600;font-size:.72rem;letter-spacing:.2em;
+    text-transform:uppercase;color:var(--brass);border:1px solid rgba(212,168,75,.45);
+    border-radius:99px;padding:.6rem 1.15rem;white-space:nowrap;flex:none}
+  .results-foot{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
   .results-hint{color:var(--moon-dim);font-size:.86rem}
+  .foot-ctas{display:flex;gap:10px;align-items:center}
+
+  /* ===== MATTRESS DETAIL OVERLAY ======================================== */
+  #detail{position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;
+    background:rgba(10,17,36,.74)}
+  #detail.on{display:flex}
+  .detail-sheet{width:min(660px,92vw);max-height:88vh;overflow:auto;background:var(--linen);color:var(--ink);
+    border-radius:24px;padding:1.35rem 1.5rem;display:flex;flex-direction:column;gap:.65rem;position:relative}
+  .detail-sheet .plate{background:#fff;border-radius:16px;padding:4% 8%;display:flex;justify-content:center;
+    box-shadow:0 10px 24px rgba(26,32,54,.12)}
+  .detail-sheet .plate img{width:70%;max-height:24vh;object-fit:contain}
+  .detail-sheet .brand{font-family:var(--util);font-weight:600;font-size:.64rem;letter-spacing:.3em;
+    text-transform:uppercase;color:var(--ink-soft)}
+  .detail-sheet .name{font-family:var(--display);font-size:1.7rem;line-height:1.05}
+  .detail-sheet .feel{color:var(--ink-soft);font-size:.9rem}
+  .detail-chips{display:flex;gap:7px;flex-wrap:wrap}
+  .detail-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:.2rem}
+  .btn-ink{font-family:var(--util);font-weight:600;font-size:.72rem;letter-spacing:.2em;text-transform:uppercase;
+    color:var(--linen);background:var(--ink);border-radius:99px;padding:.65rem 1.3rem}
+  .btn-ink.on{background:var(--brass);color:var(--midnight)}
+  /* the ONE quiet, consistent link to the canonical Payment Choices layer */
+  .detail-pay{border-top:1px solid rgba(26,32,54,.14);padding-top:.8rem;margin-top:.3rem;
+    display:flex;flex-direction:column;gap:.3rem}
+  .detail-pay .t{font-family:var(--util);font-weight:600;font-size:.64rem;letter-spacing:.26em;
+    text-transform:uppercase;color:var(--ink-soft)}
+  .detail-pay p{font-size:.86rem;color:var(--ink-soft)}
+  .link-quiet{font-size:.88rem;font-weight:600;color:#7D5B34;text-decoration:underline;
+    text-underline-offset:3px;text-align:left;padding:2px 0;width:max-content}
+  .detail-close{position:absolute;top:12px;right:16px;font-size:1.5rem;color:var(--ink-soft);padding:6px 10px}
 
   /* ===== COMPARE ========================================================= */
   #compare{padding:calc(64px + env(safe-area-inset-top)) 5vw 2.5vh;gap:1.4vh;align-items:center}
@@ -220,10 +293,13 @@
     padding:.9rem .9rem .8rem;display:flex;flex-direction:column;align-items:center;gap:.28rem;text-align:center}
   .cmp-side .plate{background:#fff;border-radius:14px;padding:3% 6%;width:94%;
     display:flex;justify-content:center;box-shadow:0 8px 20px rgba(26,32,54,.12)}
-  .cmp-side img{width:84%;max-height:15vh;object-fit:contain}
+  .cmp-side img{width:84%;max-height:13vh;object-fit:contain}
   .cmp-side .brand{font-family:var(--util);font-weight:600;font-size:.62rem;letter-spacing:.28em;
     text-transform:uppercase;color:var(--ink-soft)}
   .cmp-side .name{font-family:var(--display);font-size:1.25rem;line-height:1.1}
+  .fin-btn{font-family:var(--util);font-weight:600;font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--ink-soft);border:1px solid rgba(26,32,54,.3);border-radius:99px;padding:.5rem 1.05rem;margin-top:.25rem}
+  .fin-btn.on{background:var(--ink);color:var(--brass-soft);border-color:var(--ink)}
   .cmp-rows{display:flex;flex-direction:column;gap:8px;overflow:auto;min-height:0}
   .cmp-row{display:grid;grid-template-columns:130px 1fr 1fr;gap:10px}
   .cmp-row .lab{font-family:var(--util);font-weight:600;font-size:.7rem;letter-spacing:.22em;
@@ -235,30 +311,110 @@
   .cmp-foot{display:flex;justify-content:center;gap:14px}
   .cta--ghost{background:none;color:var(--brass);border:1px solid var(--brass);box-shadow:none}
 
+  /* ===== SLEEP PLAN ====================================================== */
+  #plan{padding:calc(60px + env(safe-area-inset-top)) 4vw 2vh;align-items:center}
+  .plan-frame{width:100%;max-width:1020px;display:flex;flex-direction:column;gap:1vh;flex:1;min-height:0}
+  .plan-head{text-align:center;display:flex;flex-direction:column;gap:.15rem;align-items:center}
+  .plan-title{font-family:var(--display);font-size:clamp(1.6rem,3.4vw,2.3rem);font-weight:400}
+  .plan-title em{font-style:italic;color:var(--brass-soft)}
+  .plan-grid{display:grid;grid-template-columns:1fr 1.35fr;gap:14px;flex:1;min-height:0}
+  .plan-final{background:var(--linen);color:var(--ink);border-radius:20px;padding:1rem;
+    display:flex;flex-direction:column;gap:.35rem;align-items:center;text-align:center;justify-content:center}
+  .plan-final .k{font-family:var(--util);font-weight:600;font-size:.64rem;letter-spacing:.28em;
+    text-transform:uppercase;color:var(--brass);background:var(--midnight);border-radius:99px;padding:.4rem .95rem}
+  .plan-final .plate{background:#fff;border-radius:14px;padding:4% 8%;width:88%;
+    display:flex;justify-content:center;box-shadow:0 8px 20px rgba(26,32,54,.12)}
+  .plan-final img{width:76%;max-height:15vh;object-fit:contain}
+  .plan-final .brand{font-family:var(--util);font-weight:600;font-size:.62rem;letter-spacing:.28em;
+    text-transform:uppercase;color:var(--ink-soft)}
+  .plan-final .name{font-family:var(--display);font-size:1.45rem;line-height:1.08}
+  .plan-final .feel{color:var(--ink-soft);font-size:.86rem}
+  .plan-col{display:flex;flex-direction:column;gap:10px;overflow:auto;min-height:0;padding:2px}
+  .plan-block{background:var(--nocturne);border:1px solid var(--veil-soft);border-radius:16px;
+    padding:.8rem 1.05rem;display:flex;flex-direction:column;gap:.45rem}
+  .plan-block .bt{font-family:var(--util);font-weight:600;font-size:.64rem;letter-spacing:.26em;
+    text-transform:uppercase;color:var(--brass)}
+  .plan-block .ln{font-size:.9rem}
+  .plan-block .dim{color:var(--moon-dim);font-size:.82rem}
+  .sys-item{display:flex;align-items:center;justify-content:space-between;gap:.8em}
+  .sys-item .nm{font-size:.88rem;min-width:0}
+  .sys-item .nm i{font-style:normal;color:var(--moon-dim);font-size:.78rem;display:block}
+  .tog{font-family:var(--util);font-weight:600;font-size:.64rem;letter-spacing:.16em;text-transform:uppercase;
+    border:1px solid var(--veil);border-radius:99px;padding:.42rem .95rem;color:var(--moon-dim);flex:none}
+  .tog.on{border-color:var(--brass);color:var(--brass-soft);background:#1A2547}
+  /* equal, reversible payment decision — "Not now" as usable as "Review options" */
+  .decide{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+  .decide button{border:1px solid var(--veil);border-radius:12px;padding:.72rem .4rem;
+    font-size:.85rem;font-weight:600;color:var(--moonlight)}
+  .decide button.on{border-color:var(--brass);background:#1A2547;color:var(--brass-soft)}
+  .plan-foot{display:flex;justify-content:center;gap:14px;padding-top:.2vh}
+
+  /* ===== PAYMENT CHOICES (canonical layer) =============================== */
+  #payment{padding:calc(60px + env(safe-area-inset-top)) 5vw 2vh;align-items:center}
+  .pay-frame{width:100%;max-width:900px;display:flex;flex-direction:column;gap:.9vh;flex:1;min-height:0}
+  .pay-head{display:flex;flex-direction:column;gap:.2rem}
+  .pay-title{font-family:var(--display);font-size:clamp(1.6rem,3.4vw,2.3rem);font-weight:400}
+  .pay-fit{color:var(--brass-soft);font-size:.94rem}
+  .pay-body{color:var(--moon-dim);font-size:.88rem;max-width:72ch}
+  .pay-official{display:flex;flex-direction:column;gap:.1rem;padding:2px 4px}
+  .pay-official a{color:var(--brass);font-size:.88rem;text-decoration:underline;
+    text-underline-offset:3px;width:max-content}
+  .pay-paths{display:flex;flex-direction:column;gap:10px;overflow:auto;min-height:0;padding:2px}
+  .path{background:var(--nocturne);border:1px solid var(--veil-soft);border-radius:16px;
+    padding:.85rem 1.1rem;display:flex;flex-direction:column;gap:.35rem}
+  .path .k{font-family:var(--util);font-weight:600;font-size:.6rem;letter-spacing:.28em;
+    text-transform:uppercase;color:var(--moon-dim)}
+  .path .h{font-family:var(--display);font-size:1.3rem;line-height:1.15}
+  .path p{font-size:.86rem;color:var(--moon-dim)}
+  .path .links{display:flex;flex-direction:column;gap:.15rem;margin-top:.15rem}
+  .path a{color:var(--brass);font-size:.86rem;text-decoration:underline;text-underline-offset:3px;width:max-content}
+  .ext-note{font-size:.72rem;color:var(--moon-dim);opacity:.8}
+  .path .prow{display:flex;justify-content:space-between;align-items:flex-end;gap:12px}
+  .path.mx{border-color:rgba(212,168,75,.3)}
+  .pay-disc{font-size:.72rem;color:var(--moon-dim);opacity:.85;line-height:1.45}
+  .pay-foot{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}
+  .pay-consequence{font-size:.78rem;color:var(--moon-dim)}
+
   /* ===== HANDOFF ========================================================= */
-  #handoff{align-items:center;justify-content:center;padding:calc(58px + env(safe-area-inset-top)) 5vw 3vh}
-  .card-consult{width:100%;max-width:760px;background:var(--linen);color:var(--ink);
+  #handoff{align-items:center;justify-content:center;padding:calc(56px + env(safe-area-inset-top)) 5vw 2.5vh}
+  .card-consult{width:100%;max-width:820px;background:var(--linen);color:var(--ink);
     border-radius:26px;overflow:hidden;display:flex;flex-direction:column;
     box-shadow:0 30px 80px rgba(0,0,0,.5)}
   .consult-band{background:var(--midnight);color:var(--moonlight);
-    padding:1.2rem 1.7rem;display:flex;justify-content:space-between;align-items:center;gap:16px}
-  .consult-band .t{font-family:var(--display);font-size:1.4rem}
+    padding:1.1rem 1.7rem;display:flex;justify-content:space-between;align-items:center;gap:16px}
+  .consult-band .t{font-family:var(--display);font-size:1.35rem}
   .consult-band .t em{font-style:italic;color:var(--brass-soft)}
-  .consult-body{display:grid;grid-template-columns:1fr 1.2fr;gap:1.3rem;padding:1.3rem 1.7rem 1.5rem}
+  .consult-body{display:grid;grid-template-columns:1fr 1.35fr;gap:1.3rem;padding:1.2rem 1.7rem 1.35rem}
   .consult-body .plate{background:#fff;border-radius:16px;padding:7%;
     box-shadow:0 10px 24px rgba(26,32,54,.12);align-self:center}
   .consult-body img{width:100%;object-fit:contain}
-  .consult-info{display:flex;flex-direction:column;gap:.5rem}
+  .consult-info{display:flex;flex-direction:column;gap:.45rem;min-width:0}
   .consult-info .brand{font-family:var(--util);font-weight:600;font-size:.64rem;letter-spacing:.3em;
     text-transform:uppercase;color:var(--ink-soft)}
-  .consult-info .name{font-family:var(--display);font-size:1.8rem;line-height:1.05}
-  .consult-info .feel{color:var(--ink-soft);font-size:.9rem}
-  .consult-list{margin-top:.35rem;display:flex;flex-direction:column;gap:.42rem}
-  .consult-list .row{display:flex;gap:.6em;align-items:baseline;font-size:.94rem}
-  .consult-list .row b{font-family:var(--util);font-weight:600;font-size:.64rem;letter-spacing:.22em;
-    text-transform:uppercase;color:var(--brass);flex:none;width:86px}
-  .handoff-note{margin-top:1.4rem;color:var(--moon-dim);font-size:.9rem;text-align:center;max-width:52ch}
-  .handoff-foot{margin-top:1rem}
+  .consult-info .name{font-family:var(--display);font-size:1.7rem;line-height:1.05}
+  .consult-info .feel{color:var(--ink-soft);font-size:.88rem}
+  .consult-list{margin-top:.3rem;display:flex;flex-direction:column;gap:.4rem}
+  .consult-list .row{display:flex;gap:.6em;align-items:baseline;font-size:.9rem}
+  .consult-list .row b{font-family:var(--util);font-weight:600;font-size:.62rem;letter-spacing:.2em;
+    text-transform:uppercase;color:var(--brass);flex:none;width:92px}
+  .consult-list .row span{min-width:0}
+  .handoff-note{margin-top:1.1rem;color:var(--moon-dim);font-size:.88rem;text-align:center;max-width:56ch}
+  .handoff-foot{margin-top:.85rem}
+
+  /* ===== ISOLATION CHECK ================================================= */
+  #iso{position:fixed;inset:0;z-index:70;display:none;align-items:center;justify-content:center;
+    background:rgba(10,17,36,.82)}
+  #iso.on{display:flex}
+  .iso-sheet{width:min(760px,94vw);max-height:88vh;overflow:auto;background:var(--nocturne);
+    border:1px solid var(--veil);border-radius:20px;padding:1.25rem 1.5rem;
+    display:flex;flex-direction:column;gap:.55rem;position:relative}
+  .iso-sheet h3{font-family:var(--display);font-weight:400;font-size:1.4rem}
+  .iso-sheet .sub{color:var(--moon-dim);font-size:.85rem}
+  .iso-row{display:flex;gap:.8em;align-items:baseline;font-size:.88rem}
+  .iso-row .st{font-family:var(--util);font-weight:600;letter-spacing:.18em;font-size:.68rem;flex:none;width:44px}
+  .iso-row .st.ok{color:#7FD49B}
+  .iso-row .st.bad{color:#E58B8B}
+  .iso-close{position:absolute;top:10px;right:14px;font-size:1.4rem;color:var(--moon-dim);padding:6px 10px}
 
   /* loading veil */
   #boot{position:fixed;inset:0;z-index:90;background:var(--midnight);display:flex;
@@ -275,10 +431,17 @@
     .cmp-row{grid-template-columns:96px 1fr 1fr}
     .masthead{font-size:clamp(3rem,13vw,5.4rem)}
     .card.small .ph{width:34%}
+    .plan-grid{grid-template-columns:1fr;grid-template-rows:auto 1fr}
+    .plan-final{flex-direction:row;text-align:left;justify-content:flex-start;gap:1rem}
+    .plan-final .plate{width:34%;flex:none}
+    .plan-final img{max-height:11vh}
+    .plan-final .fin-id{display:flex;flex-direction:column;gap:.3rem;align-items:flex-start}
+    .pay-band{flex-direction:column;align-items:flex-start;gap:.5rem}
   }
   @media (max-width:560px){
     .q-options,.q-options.cols-3{grid-template-columns:1fr}
     .cmp-stage{grid-template-columns:1fr}
+    .decide{grid-template-columns:1fr}
   }
 </style>
 </head>
@@ -305,7 +468,17 @@
     <p class="welcome-line" data-t="wLine"></p>
     <button class="cta" onclick="startQuiz()" data-t="wCta"></button>
     <p class="specialist" data-t="wSpecialist"></p>
-    <button class="demo-fill" onclick="demoFill()" data-t="wDemo"></button>
+    <!-- neutral expectation: payment options exist for the FINAL Sleep Plan;
+         subordinate to Start, sourced from governed config copy -->
+    <div class="outcome">
+      <div class="lab" id="wOutcomeLab"></div>
+      <div class="items" id="wOutcomeItems"></div>
+      <div class="pay" id="wPayLine"></div>
+    </div>
+    <div class="demo-tools">
+      <button class="demo-fill" onclick="demoFill()" data-t="wDemo"></button>
+      <button class="demo-fill" onclick="runIso()" data-t="wIso"></button>
+    </div>
   </div>
 </section>
 
@@ -321,6 +494,8 @@
       <button class="cta" id="qNext" onclick="nextQ()"></button>
     </div>
     <div id="quizArcWrap"><svg id="quizArc" viewBox="0 0 1000 90" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%" aria-hidden="true"></svg></div>
+    <!-- journey indicator only — payment never interrupts the fitting -->
+    <div class="journey" id="journeyStrip"></div>
   </div>
 </section>
 
@@ -349,11 +524,35 @@
   </div>
   <div class="tiers" id="tierTabs"></div>
   <div class="cards" id="cardGrid"></div>
+  <div class="pay-band" id="payBand"></div>
   <div class="results-foot">
     <span class="results-hint" data-t="resHint"></span>
-    <button class="cta" id="cmpCta" onclick="go('compare')" disabled data-t="resCta"></button>
+    <div class="foot-ctas">
+      <button class="cta cta--ghost" id="planCta" onclick="go('plan')" disabled data-t="resPlanCta"></button>
+      <button class="cta" id="cmpCta" onclick="go('compare')" disabled data-t="resCta"></button>
+    </div>
   </div>
 </section>
+
+<!-- MATTRESS DETAIL OVERLAY -->
+<div id="detail" onclick="if(event.target===this)closeDetail()">
+  <div class="detail-sheet">
+    <button class="detail-close" onclick="closeDetail()" aria-label="Close">×</button>
+    <div class="plate"><img id="dImg" alt=""></div>
+    <div class="brand" id="dBrand"></div>
+    <div class="name" id="dName"></div>
+    <div class="feel" id="dFeel"></div>
+    <div class="detail-chips" id="dChips"></div>
+    <div class="detail-actions">
+      <button class="btn-ink" id="dFinBtn"></button>
+    </div>
+    <div class="detail-pay">
+      <div class="t" id="dPayT"></div>
+      <p id="dPayBody"></p>
+      <button class="link-quiet" id="dPayLink" onclick="openPay(sceneNow())"></button>
+    </div>
+  </div>
+</div>
 
 <!-- COMPARE -->
 <section class="scene" id="compare">
@@ -363,7 +562,44 @@
     <div class="cmp-rows" id="cmpRows"></div>
     <div class="cmp-foot">
       <button class="cta cta--ghost" onclick="go('results')" data-t="cmpBack"></button>
-      <button class="cta" onclick="go('handoff')" data-t="cmpCta"></button>
+      <button class="cta" id="cmpPlanCta" onclick="go('plan')" disabled data-t="cmpCta"></button>
+    </div>
+  </div>
+</section>
+
+<!-- SLEEP PLAN -->
+<section class="scene" id="plan">
+  <div class="plan-frame">
+    <div class="plan-head">
+      <div class="eyebrow" data-t="planEyebrow"></div>
+      <h2 class="plan-title" data-t-html="planTitle"></h2>
+    </div>
+    <div class="plan-grid">
+      <div class="plan-final" id="planFinal"></div>
+      <div class="plan-col" id="planCol"></div>
+    </div>
+    <div class="plan-foot">
+      <button class="cta cta--ghost" onclick="go('results')" data-t="planBack"></button>
+      <button class="cta" onclick="go('handoff')" data-t="planCta"></button>
+    </div>
+  </div>
+</section>
+
+<!-- PAYMENT CHOICES — the canonical, governed layer -->
+<section class="scene" id="payment">
+  <div class="pay-frame">
+    <div class="pay-head">
+      <div class="eyebrow" id="payEyebrow"></div>
+      <h2 class="pay-title" id="payTitle"></h2>
+      <p class="pay-fit" id="payFit"></p>
+      <p class="pay-body" id="payBody"></p>
+    </div>
+    <div class="pay-paths" id="payPaths"></div>
+    <div class="pay-official" id="payOfficial"></div>
+    <p class="pay-disc" id="payDisc"></p>
+    <div class="pay-foot">
+      <button class="cta cta--ghost" id="payBackBtn" onclick="closePay()"></button>
+      <span class="pay-consequence" id="payConsequence"></span>
     </div>
   </div>
 </section>
@@ -373,7 +609,7 @@
   <div class="sky" id="skyHandoff"></div>
   <div class="card-consult">
     <div class="consult-band">
-      <div class="t" data-t-html="hTitle"></div>
+      <div class="t" id="hTitle"></div>
       <svg id="stampHandoff" width="72" height="40" viewBox="0 0 64 36" aria-hidden="true"></svg>
     </div>
     <div class="consult-body">
@@ -390,24 +626,41 @@
   <div class="handoff-foot"><button class="cta cta--ghost" onclick="startOver()" data-t="hAgain"></button></div>
 </section>
 
+<!-- ISOLATION CHECK REPORT -->
+<div id="iso" onclick="if(event.target===this)closeIso()">
+  <div class="iso-sheet">
+    <button class="iso-close" onclick="closeIso()" aria-label="Close">×</button>
+    <h3 data-t="isoTitle"></h3>
+    <p class="sub" data-t="isoSub"></p>
+    <div id="isoRows"></div>
+  </div>
+</div>
+
 <script>
 /* =============================================================================
-   LIVE DATA + THE REAL ENGINE
-   quiz.json and mattresses.json are the shipped files; the scoring engine and
-   the Sleep Brief computation are extracted VERBATIM from ../../index.html at
-   runtime (the repo's own test-harness technique), so results here are the
-   production engine's output for whatever answers are given.
+   LIVE DATA + THE REAL ENGINE + THE GOVERNED FINANCING CONFIG
+   quiz.json, mattresses.json, accessories.json and store-config.json are the
+   shipped files; the scoring engine, the Sleep Brief computation and the
+   accessory ranking are extracted VERBATIM from ../../index.html at runtime
+   (the repo's own test-harness technique). The Payment Choices layer is a
+   pure function of store-config.financing — quiz answers never enter it, and
+   payment state never enters scoring.
 ============================================================================= */
 var STORE = "Lacks Furniture"; // demo config; production reads store-config.json
 
-var QUESTIONS = [], MATTRESSES = null, engine = null, briefRunner = null;
+var QUESTIONS = [], MATTRESSES = null, SC = null, FIN = null, ACC = [];
+var engine = null, briefRunner = null, accRunner = null, finKit = null;
 var lang = "en", answers = {}, qPos = 0, visible = [];
 var computed = null;   // { scores, tiers, topPickId, profile }
 var activeTier = "gold", cmpSel = [];
+/* payment-side state — deliberately never passed to the engine */
+var finalistId = null, sysSel = [], payDecision = null, finAgenda = {}, payReturn = "results";
+var payCleared = false;
 
 function L(o){ if (o == null) return ""; if (typeof o === "string") return o; return o[lang] || o.en || ""; }
 
-/* ---- bilingual chrome copy ---- */
+/* ---- bilingual chrome copy (UI labels only — every payment/financing
+       statement on screen comes from store-config.financing) ---- */
 var T = {
   wEyebrow:{en:"A guided mattress fitting",es:"Una prueba de colchón guiada"},
   wLine:{en:"Ten questions on the floor. A shortlist made only for you.",
@@ -416,12 +669,17 @@ var T = {
   wSpecialist:{en:"Guided by your "+STORE+" sleep specialist",
                es:"Con la guía de tu especialista de sueño de "+STORE},
   wDemo:{en:"Rehearsal: fill sample answers",es:"Ensayo: respuestas de muestra"},
+  wIso:{en:"Isolation check",es:"Prueba de aislamiento"},
   restart:{en:"Start over",es:"Empezar de nuevo"},
   ofN:{en:"of",es:"de"},
   back:{en:"← Back",es:"← Atrás"},
   next:{en:"Next",es:"Siguiente"},
   finish:{en:"See my sleep signature",es:"Ver mi firma de sueño"},
   pick3:{en:"Pick up to 3",es:"Elige hasta 3"},
+  jFitting:{en:"Fitting",es:"Prueba"},
+  jMatches:{en:"Matches",es:"Opciones"},
+  jPlan:{en:"Sleep Plan",es:"Plan de Sueño"},
+  jPay:{en:"Payment Choices",es:"Opciones de Pago"},
   rEyebrow:{en:"Your sleep signature",es:"Tu firma de sueño"},
   rTitle:{en:"Made from <em>your</em> answers",es:"Creada con <em>tus</em> respuestas"},
   rSub:{en:"Three things worth testing on every mattress you try today.",
@@ -429,41 +687,69 @@ var T = {
   rCta:{en:"See my matches →",es:"Ver mis opciones →"},
   resEyebrow:{en:"Matched to your signature",es:"Según tu firma"},
   resTitle:{en:"Your <em>shortlist</em>",es:"Tu <em>selección</em>"},
-  resHint:{en:"Tap two mattresses to compare them",es:"Toca dos colchones para compararlos"},
+  resHint:{en:"Tap two mattresses to compare · Details for more",
+           es:"Toca dos colchones para comparar · Detalles para más"},
   resCta:{en:"Compare →",es:"Comparar →"},
+  resPlanCta:{en:"Sleep Plan →",es:"Plan de Sueño →"},
   cmpTitle:{en:"Side by <em>side</em>",es:"Lado a <em>lado</em>"},
   cmpBack:{en:"← Back",es:"← Atrás"},
-  cmpCta:{en:"Hand off to my specialist →",es:"Pasar a mi especialista →"},
-  hTitle:{en:"Consultation <em>card</em>",es:"Tarjeta de <em>consulta</em>"},
-  hNote:{en:"Your specialist picks up exactly where you left off — matches, priorities, and the finalist you loved.",
-         es:"Tu especialista continúa justo donde quedaste — opciones, prioridades y tu finalista favorito."},
+  cmpCta:{en:"Build my Sleep Plan →",es:"Crear mi Plan de Sueño →"},
+  hNote:{en:"Your specialist picks up exactly where you left off — matches, priorities, your finalist, and the payment conversation you chose.",
+         es:"Tu especialista continúa justo donde quedaste — opciones, prioridades, tu finalista y la conversación de pago que elegiste."},
   hAgain:{en:"New customer",es:"Nuevo cliente"},
   tierGold:{en:"Gold",es:"Oro"},tierSilver:{en:"Silver",es:"Plata"},tierBronze:{en:"Bronze",es:"Bronce"},
   bestMatch:{en:"Best match",es:"Mejor opción"},
   feelLbl:{en:"Feel",es:"Sensación"},tierLbl:{en:"Tier",es:"Nivel"},
-  matchLbl:{en:"Match",es:"Afinidad"},whyLbl:{en:"Why it's here",es:"Por qué está aquí"},
+  matchLbl:{en:"Match",es:"Afinidad"},
   sameTag:{en:"Same for both",es:"Igual en ambos"},
   finalist:{en:"Finalist",es:"Finalista"},testLbl:{en:"Test for",es:"Probar"},
-  compareTag:{en:"Compare",es:"Comparar"},comparedTag:{en:"Comparing ✓",es:"Comparando ✓"}
+  profileLbl:{en:"Profile",es:"Perfil"},
+  comparedLbl:{en:"Compared",es:"Comparados"},
+  systemLbl:{en:"System",es:"Sistema"},
+  paymentLbl:{en:"Payment",es:"Pago"},
+  compareTag:{en:"Compare",es:"Comparar"},comparedTag:{en:"Comparing ✓",es:"Comparando ✓"},
+  detailsBtn:{en:"Details ›",es:"Detalles ›"},
+  makeFinalist:{en:"Make this my finalist",es:"Elegir como mi finalista"},
+  isFinalist:{en:"My finalist ✓",es:"Mi finalista ✓"},
+  planEyebrow:{en:"Built with your specialist",es:"Creado con tu especialista"},
+  planTitle:{en:"Your <em>Sleep Plan</em>",es:"Tu <em>Plan de Sueño</em>"},
+  planBack:{en:"← Matches",es:"← Opciones"},
+  planCta:{en:"Hand off to my specialist →",es:"Pasar a mi especialista →"},
+  sysNone:{en:"Nothing added — your specialist can suggest pieces in store.",
+           es:"Nada agregado — tu especialista puede sugerir piezas en tienda."},
+  addSys:{en:"Add",es:"Agregar"},
+  addedSys:{en:"Added ✓",es:"Agregado ✓"},
+  decideUndecided:{en:"Undecided",es:"Sin decidir"},
+  decideNone:{en:"Not selected yet",es:"Aún sin seleccionar"},
+  payBackLbl:{en:"← Back",es:"← Atrás"},
+  isoTitle:{en:"State isolation — live check",es:"Aislamiento de estado — prueba en vivo"},
+  isoSub:{en:"Runs the real extracted engine and the governed payment model against varied states. Sleep outputs must ignore payment state; the payment layer must ignore quiz answers.",
+          es:"Ejecuta el motor real extraído y el modelo de pago gobernado con estados variados. Los resultados de sueño deben ignorar el estado de pago; la capa de pago debe ignorar las respuestas."}
 };
 
 /* ---- boot: load data + extract the real engine ---- */
 (async function boot(){
   try{
-    var [quiz, mattresses, appHtml] = await Promise.all([
+    var results = await Promise.all([
       fetch("../../data/quiz.json").then(function(r){return r.json();}),
       fetch("../../data/mattresses.json").then(function(r){return r.json();}),
+      fetch("../../data/store-config.json").then(function(r){return r.json();}),
+      fetch("../../data/accessories.json").then(function(r){return r.json();}),
       fetch("../../index.html").then(function(r){return r.text();})
     ]);
-    QUESTIONS = quiz.questions; MATTRESSES = mattresses;
+    QUESTIONS = results[0].questions; MATTRESSES = results[1];
+    SC = results[2]; FIN = SC.financing || null; ACC = results[3];
+    var appHtml = results[4];
 
     var calcSrc = appHtml.match(/function calculateScores\(\)\s*\{[\s\S]*?\r?\n    \}/)[0];
     var qualSrc = appHtml.match(/function qualifyRankedChoices\([\s\S]*?\r?\n    \}/)[0];
     var profSrc = appHtml.match(/function showProfileScreen\(\) \{[\s\S]*?\r?\n    \}\r?\n/)[0];
     var lSrc    = appHtml.match(/function L\(obj\) \{[\s\S]*?\r?\n    \}/)[0];
     var escSrc  = appHtml.match(/function escapeHtml\([\s\S]*?\r?\n    \}/)[0];
+    var accSrc  = appHtml.match(/function scoreAccessoriesFromAnswers\(\) \{[\s\S]*?\r?\n    \}/)[0];
 
-    /* the scoring + tier derivation, verbatim */
+    /* the scoring + tier derivation, verbatim. NOTE the engine's ONLY inputs
+       are (answers, lang) — payment state has no argument to arrive through. */
     engine = new Function("MATTRESSES","QUESTIONS",
       "var answers={},currentLang='en';" +
       "var financingAgenda={},financingAgendaDismissed=false,financingExplored=false;" +
@@ -493,6 +779,35 @@ var T = {
       "return {trialFocus:analytics.trialFocus,profileName:analytics.profileName," +
       "profileSubtitleByLang:analytics.profileSubtitleByLang};");
 
+    /* the accessory ranking, verbatim — same inputs as production */
+    accRunner = new Function("ACCESSORIES","answersIn","langIn",
+      "var answers=JSON.parse(JSON.stringify(answersIn));var currentLang=langIn;" +
+      accSrc + "\nreturn scoreAccessoriesFromAnswers();");
+
+    /* the financing gating + taxonomy, verbatim — the exact code deployed
+       production runs to decide what may be claimed on screen */
+    var finSrcs = [
+      /var FINANCING_CLOCK_SKEW_MS = [^;]+;/,
+      /var FIN_SCENARIO_MEXICO = [^;]+;/,
+      /var FIN_EVERGREEN_KINDS = [^;]+;/,
+      /function getFinancingConfig\(\) \{[\s\S]*?\r?\n    \}/,
+      /function financingEnabled\(\) \{[\s\S]*?\r?\n    \}/,
+      /function finPlanScenario\([\s\S]*?\r?\n    \}/,
+      /function finPlanGroup\([\s\S]*?\r?\n    \}/,
+      /function finSafeProvider\([\s\S]*?\r?\n    \}/,
+      /function finGroupedPlans\([\s\S]*?\r?\n    \}/,
+      /function finPromotionalByProvider\([\s\S]*?\r?\n    \}/,
+      /function financingSourceAllowed\([\s\S]*?\r?\n    \}/,
+      /function financingAgeOk\([\s\S]*?\r?\n    \}/,
+      /function financingTermsFresh\(\) \{[\s\S]*?\r?\n    \}/,
+      /function financingPlanFresh\([\s\S]*?\r?\n    \}/
+    ].map(function(re){ return appHtml.match(re)[0]; }).join("\n");
+    finKit = new Function("STORE_CONFIG",
+      finSrcs +
+      "\nreturn {enabled:financingEnabled,termsFresh:financingTermsFresh," +
+      "planFresh:financingPlanFresh,allowed:financingSourceAllowed," +
+      "grouped:finGroupedPlans,byProvider:finPromotionalByProvider};")(SC);
+
     document.getElementById("boot").classList.add("off");
     render();
   }catch(e){
@@ -506,14 +821,20 @@ function visibleQuestions(){
     return !q.skipIf || answers[q.skipIf.question] !== q.skipIf.answer;
   });
 }
-function startQuiz(){ answers = {}; qPos = 0; cmpSel = []; computed = null; go("quiz"); renderQ(); }
-function startOver(){ answers = {}; qPos = 0; cmpSel = []; computed = null; lang = "en";
+function startQuiz(){ answers = {}; qPos = 0; resetJourneyState(); go("quiz"); renderQ(); }
+function resetJourneyState(){
+  cmpSel = []; computed = null; finalistId = null; sysSel = [];
+  payDecision = null; finAgenda = {}; payReturn = "results"; payCleared = false;
+}
+function startOver(){ answers = {}; qPos = 0; resetJourneyState(); lang = "en";
   document.getElementById("langEn").classList.add("on");
   document.getElementById("langEs").classList.remove("on");
+  closeDetail(); closeIso();
   go("welcome"); render(); }
 function demoFill(){
   /* rehearsal path — a plausible full answer set; results still come from
-     the real engine, exactly as if tapped by hand */
+     the real engine, exactly as if tapped by hand. Payment state is left
+     untouched: the fitting and the payment layer are independent. */
   answers = { sleep_quality:"fair", trigger:"worn_out", mattress_size:"queen",
     partner_sleep:"partner", partner_disturbance:"sometimes", sleep_position:"side",
     body_type:"average", temperature:"cold", firmness:3,
@@ -565,6 +886,14 @@ function renderQ(){
   document.getElementById("qBack").style.visibility = idx === 0 ? "hidden" : "visible";
   syncNext();
   drawArc("quizArc", 1000, 90, countAnswered());
+  renderJourney();
+}
+function renderJourney(){
+  /* a general indicator only: Payment Choices exist LATER in the journey.
+     No promotion, no rates, no interruption of the fitting. */
+  document.getElementById("journeyStrip").innerHTML =
+    '<b>' + L(T.jFitting) + '</b><i>·</i><span>' + L(T.jMatches) + '</span><i>·</i><span>'
+    + L(T.jPlan) + '</span><i>·</i><span>' + L(T.jPay) + '</span>';
 }
 function countAnswered(){
   return visibleQuestions().filter(answered).length;
@@ -595,7 +924,6 @@ function syncNext(){
 function nextQ(){
   var vis = visibleQuestions(); var q = vis[qPos];
   if (qPos >= vis.length - 1){ finishQuiz(); return; }
-  /* production parity: a skipped partner_disturbance records not_applicable */
   qPos++;
   vis = visibleQuestions();
   QUESTIONS.forEach(function(qq){
@@ -640,12 +968,16 @@ function feelOf(m){
   return lbl + " · " + m.firmness + "/10";
 }
 function imgOf(m){ return "../../" + (m.imageUrl || "").split("/").map(encodeURIComponent).join("/"); }
+function accImgOf(a){ return "../../" + (a.image || "").split("/").map(encodeURIComponent).join("/"); }
 
 /* ---- constellation: derived from the REAL answers ---- */
-function answerSeed(){
-  var vis = visibleQuestions(), seed = [];
+function answerSeedFor(ans){
+  var vis = QUESTIONS.filter(function(q){
+    return !q.skipIf || ans[q.skipIf.question] !== q.skipIf.answer;
+  });
+  var seed = [];
   vis.forEach(function(q){
-    var v = answers[q.id], n = 2;
+    var v = ans[q.id], n = 2;
     if (q.type === "slider"){ n = Math.round(((v||q.defaultValue) - q.min) / (q.max - q.min) * 4); }
     else if (q.type === "multiple"){ n = Math.min(4, (v||[]).length + 1); }
     else { n = Math.max(0, (q.options||[]).findIndex(function(o){ return o.id === v; })); }
@@ -654,6 +986,7 @@ function answerSeed(){
   while (seed.length < 10) seed.push(2);
   return seed.slice(0, 10);
 }
+function answerSeed(){ return answerSeedFor(answers); }
 function starPoints(w, h, pad){
   var seed = answerSeed(), pts = [];
   for (var i = 0; i < 10; i++){
@@ -709,12 +1042,174 @@ function ringSvg(pct){
     + '<text x="37" y="42" text-anchor="middle">' + pct + '%</text></svg>';
 }
 
+/* =============================================================================
+   PAYMENT CHOICES — a pure function of store-config.financing, decided by
+   the PRODUCTION gating code (finKit — extracted verbatim at boot). No quiz
+   answer, score, profile or mattress is read anywhere below this banner.
+   The card structure mirrors production renderFinancingSheet exactly:
+   · promotional cards per provider; stale/fail-closed → staleNotice body
+   · in-house installment: detail states a term range, so it is
+     freshness-gated; stale → staleNotice (disclosure still shows)
+   · evergreen paths (lease-to-own, credit-builder): claim-safe detail
+     always shows, plus production's fixed additional-options disclosure
+   · Mexico scenario: selected by presentationScenario only, fixed last,
+     detail + representative example freshness-gated, info link only when
+     financingSourceAllowed passes
+   paymentCalculationEnabled is false on every plan: no monthly payment is
+   ever computed or shown (V1 invariant).
+============================================================================= */
+function FC(key){
+  return (FIN && FIN.copy && FIN.copy[key]) ? L(FIN.copy[key]) : "";
+}
+function paymentModel(){
+  if (!FIN || !finKit || !finKit.enabled()) return null;
+  var es = lang === "es";
+  var fresh = finKit.termsFresh();
+  var groups = finKit.grouped(FIN.plans || []);
+  var cards = [], anyStale = false;
+
+  /* promotional financing — one card per provider, production titling */
+  finKit.byProvider(groups.promotional).forEach(function(grp){
+    var grpFresh = fresh && grp.plans.length && grp.plans.every(finKit.planFresh);
+    if (!grpFresh) anyStale = true;
+    cards.push({
+      id: "promotional:" + (grp.provider || "general"),
+      title: grp.provider
+        ? (es ? "Financiamiento promocional " + grp.provider : grp.provider + " promotional financing")
+        : (es ? "Financiamiento promocional" : "Promotional financing"),
+      offers: grpFresh ? grp.plans.map(function(p){
+        return { headline: L(p.headline), detail: L(p.detail), disclosure: L(p.disclosure) };
+      }) : null,
+      staleBody: grpFresh ? null : FC("staleNotice"),
+      prequal: FC("prequalNote") || null
+    });
+  });
+  /* retailer in-house installment — detail freshness-gated (term range) */
+  groups.installment.forEach(function(ih){
+    var ihFresh = fresh && finKit.planFresh(ih);
+    if (!ihFresh) anyStale = true;
+    cards.push({
+      id: "plan:" + ih.id, title: L(ih.headline),
+      detail: ihFresh ? L(ih.detail) : FC("staleNotice"),
+      disclosure: ih.disclosure ? L(ih.disclosure) : null
+    });
+  });
+  /* evergreen paths — orientation only, never payment math */
+  groups.evergreen.forEach(function(p){
+    cards.push({
+      id: "plan:" + p.id, title: L(p.headline), detail: L(p.detail),
+      disclosure: es
+        ? "Hay opciones adicionales disponibles. Los detalles del programa, costos, elegibilidad y términos de propiedad se confirman en tienda."
+        : "Additional options are available. Program details, costs, eligibility, and ownership terms are confirmed in store."
+    });
+  });
+  /* Mexico delivery scenario — fixed last, visible to everyone */
+  var mx = groups["scenario-mexico"][0];
+  if (mx){
+    var mxFresh = fresh && finKit.planFresh(mx);
+    if (!mxFresh) anyStale = true;
+    var mxLink = "", mxHost = "";
+    var mxConfigured = String(FIN.mexicoInfoUrl || "").trim();
+    if (mxConfigured){ if (finKit.allowed(mxConfigured)) mxLink = mxConfigured; }
+    else if (finKit.allowed(FIN.sourceUrl)) mxLink = FIN.sourceUrl;
+    if (mxLink){
+      try { mxHost = new URL(mxLink).hostname.replace(/^www\./, ""); } catch(e){ mxLink = ""; }
+      if (!mxHost) mxLink = "";
+    }
+    cards.push({
+      id: "scenario:" + mx.presentationScenario, mexico: true,
+      title: L(mx.headline),
+      detail: mxFresh ? L(mx.detail) : FC("staleNotice"),
+      example: (mxFresh && mx.representativeExample) ? L(mx.representativeExample) : null,
+      disclosure: mx.disclosure ? L(mx.disclosure) : null,
+      link: mxLink ? {
+        url: mxLink,
+        label: es ? ("Detalles en " + mxHost + " (se abre en otro sitio)")
+                  : ("Details on " + mxHost + " (opens a separate site)")
+      } : null
+    });
+  }
+
+  /* sheet-level official link — fails closed like production */
+  var official = null;
+  if (finKit.allowed(FIN.sourceUrl)){
+    var sn = (SC && SC.storeName) || "";
+    official = { url: FIN.sourceUrl,
+      label: es ? ("Página oficial de financiamiento de " + sn) : (sn + "'s official financing page") };
+  }
+  return {
+    eyebrow: FIN.copy.eyebrow, headline: FIN.copy.headline, body: FIN.copy.body,
+    fitFirst: FIN.copy.fitFirst,
+    cards: cards, anyStale: anyStale,
+    official: official,
+    disclosure: FIN.copy.disclosureFooter,
+    consequence: FIN.copy.agendaConsequence,
+    externalNotice: FIN.copy.externalNotice,
+    agendaMark: FIN.copy.agendaMark, agendaMarked: FIN.copy.agendaMarked
+  };
+}
+function openPay(from){
+  payReturn = from || "results";
+  closeDetail();
+  go("payment");
+}
+function closePay(){ go(payReturn === "plan" ? "plan" : payReturn); }
+function renderPayment(){
+  var m = paymentModel(); if (!m) return;
+  document.getElementById("payEyebrow").textContent = L(m.eyebrow);
+  document.getElementById("payTitle").textContent = L(m.headline);
+  document.getElementById("payFit").textContent = L(m.fitFirst);
+  document.getElementById("payBody").textContent = L(m.body);
+  var s = "";
+  m.cards.forEach(function(c){
+    s += '<div class="path' + (c.mexico ? ' mx' : '') + '">'
+      + '<div class="h">' + c.title + '</div>';
+    if (c.offers){
+      c.offers.forEach(function(o){
+        s += '<div class="h" style="font-size:1.05rem">' + o.headline + '</div>'
+          + '<p>' + o.detail + '</p>'
+          + '<p class="ext-note">' + o.disclosure + '</p>';
+      });
+    } else if (c.staleBody !== undefined && c.staleBody !== null){
+      s += '<p>' + c.staleBody + '</p>';
+    }
+    if (c.detail) s += '<p>' + c.detail + '</p>';
+    if (c.example) s += '<p>' + c.example + '</p>';
+    if (c.disclosure) s += '<p class="ext-note">' + c.disclosure + '</p>';
+    if (c.prequal) s += '<p class="ext-note">' + c.prequal + '</p>';
+    if (c.link){
+      s += '<div class="links"><a href="' + c.link.url + '" target="_blank" rel="noopener noreferrer">'
+        + c.link.label + '</a></div>';
+    }
+    s += '<button class="tog' + (finAgenda[c.id] ? ' on' : '') + '" style="align-self:flex-start" onclick="togAgenda(\'' + c.id + '\')">'
+      + (finAgenda[c.id] ? L(m.agendaMarked) : L(m.agendaMark)) + '</button>';
+    s += '</div>';
+  });
+  document.getElementById("payPaths").innerHTML = s;
+  var off = "";
+  if (m.official){
+    off = '<a href="' + m.official.url + '" target="_blank" rel="noopener noreferrer">' + m.official.label + ' ↗</a>'
+      + '<span class="ext-note">' + L(m.externalNotice) + '</span>';
+  }
+  document.getElementById("payOfficial").innerHTML = off;
+  document.getElementById("payDisc").textContent = L(m.disclosure);
+  document.getElementById("payConsequence").textContent = L(m.consequence);
+  document.getElementById("payBackBtn").textContent = L(T.payBackLbl);
+}
+function togAgenda(id){
+  finAgenda[id] = !finAgenda[id];
+  if (!finAgenda[id]) delete finAgenda[id];
+  renderPayment();
+}
+
 /* ---- scenes ---- */
-var SCENES = ["welcome","quiz","reveal","results","compare","handoff"];
+var SCENES = ["welcome","quiz","reveal","results","compare","plan","payment","handoff"];
 function go(name){
   SCENES.forEach(function(s){ document.getElementById(s).classList.toggle("on", s === name); });
   if (name === "results") renderResults();
   if (name === "compare") renderCompare();
+  if (name === "plan") renderPlan();
+  if (name === "payment") renderPayment();
   if (name === "handoff") renderHandoff();
 }
 function sceneNow(){
@@ -733,13 +1228,26 @@ function render(){
   document.querySelectorAll("[data-t]").forEach(function(el){ el.textContent = L(T[el.getAttribute("data-t")]); });
   document.querySelectorAll("[data-t-html]").forEach(function(el){ el.innerHTML = L(T[el.getAttribute("data-t-html")]); });
   document.getElementById("restartBtn").textContent = L(T.restart);
+  renderWelcomeConfigLines();
   var scene = sceneNow();
   if (scene === "quiz") renderQ();
   if (scene === "reveal"){ drawConstellation("constellation", 560, 300, false); renderReveal(); }
   if (scene === "results") renderResults();
   if (scene === "compare") renderCompare();
+  if (scene === "plan") renderPlan();
+  if (scene === "payment") renderPayment();
   if (scene === "handoff") renderHandoff();
+  if (document.getElementById("detail").classList.contains("on") && detailId) openDetail(detailId);
   drawArc("welcomeArc", 1000, 300, 0);
+}
+function renderWelcomeConfigLines(){
+  /* governed copy: the journey the consultation builds (voice.outcome*) and
+     the neutral payment expectation (financing.copy.welcomeSupport) */
+  if (!SC) return;
+  var v = (lang === "es" && SC.voice_es) ? SC.voice_es : (SC.voice || {});
+  document.getElementById("wOutcomeLab").textContent = v.outcomeLabel || "";
+  document.getElementById("wOutcomeItems").textContent = v.outcomeItems || "";
+  document.getElementById("wPayLine").textContent = FIN ? L(FIN.copy.welcomeSupport) : "";
 }
 
 function renderReveal(){
@@ -758,7 +1266,7 @@ function cardHtml(entry, hero){
   if (hero && computed){
     computed.trialFocus.forEach(function(p){ chips += '<span class="chip">' + star(10, "#D4A84B") + L(p) + '</span>'; });
   }
-  return '<button class="card ' + (hero ? "hero" : "small") + (sel ? " cmp-sel" : "") + '" onclick="toggleCmp(\'' + entry.id + '\')">'
+  return '<div class="card ' + (hero ? "hero" : "small") + (sel ? " cmp-sel" : "") + '" role="button" tabindex="0" onclick="toggleCmp(\'' + entry.id + '\')">'
     + (hero ? '<div class="ribbon">' + L(T.bestMatch) + '</div>' : '')
     + '<div class="ring">' + ringSvg(entry.pct) + '</div>'
     + '<div class="ph"><img src="' + imgOf(m) + '" alt="' + m.name + '"></div>'
@@ -768,8 +1276,9 @@ function cardHtml(entry, hero){
     +   '<div class="feel">' + L(T.feelLbl) + ': ' + feelOf(m) + '</div>'
     +   (chips ? '<div class="chips">' + chips + '</div>' : '')
     + '</div>'
+    + '<button class="d-btn" onclick="event.stopPropagation();openDetail(\'' + entry.id + '\')">' + L(T.detailsBtn) + '</button>'
     + '<span class="cmp-tag">' + (sel ? L(T.comparedTag) : L(T.compareTag)) + '</span>'
-    + '</button>';
+    + '</div>';
 }
 function renderResults(){
   if (!computed) return;
@@ -784,6 +1293,15 @@ function renderResults(){
   document.getElementById("stampName").textContent = computed.profileName;
   drawConstellation("stampResults", 64, 36, false);
   document.getElementById("cmpCta").disabled = cmpSel.length !== 2;
+  document.getElementById("planCta").disabled = !finalistId;
+  /* the first Payment Choices entry — established AFTER the matches, and
+     explicit that fit decided the shortlist and payment cannot move it */
+  if (FIN){
+    document.getElementById("payBand").innerHTML =
+      '<div class="tx"><span class="fit">' + L(FIN.copy.fitFirst) + '</span>'
+      + '<span class="lead">' + L(FIN.copy.resultsLead) + '</span></div>'
+      + '<button class="btn-quiet" onclick="openPay(\'results\')">' + L(FIN.copy.cta) + '</button>';
+  }
 }
 function toggleCmp(id){
   var i = cmpSel.indexOf(id);
@@ -792,13 +1310,46 @@ function toggleCmp(id){
   renderResults();
 }
 
+/* ---- mattress detail overlay ---- */
+var detailId = null;
+function openDetail(id){
+  detailId = id;
+  var m = model(id); if (!m) return;
+  document.getElementById("dImg").src = imgOf(m);
+  document.getElementById("dBrand").textContent = m.brand + (m.subBrand ? " · " + m.subBrand : "");
+  document.getElementById("dName").textContent = m.name;
+  document.getElementById("dFeel").textContent = L(T.feelLbl) + ": " + feelOf(m) + " · " + L(T.matchLbl) + " " + pctOf(id) + "%";
+  var chips = "";
+  (computed ? computed.trialFocus : []).forEach(function(p){
+    chips += '<span class="chip">' + star(10, "#D4A84B") + L(p) + '</span>';
+  });
+  document.getElementById("dChips").innerHTML = chips;
+  var fb = document.getElementById("dFinBtn");
+  fb.textContent = finalistId === id ? L(T.isFinalist) : L(T.makeFinalist);
+  fb.className = "btn-ink" + (finalistId === id ? " on" : "");
+  fb.onclick = function(){ finalistId = (finalistId === id) ? null : id; openDetail(id); renderResults(); };
+  /* the one quiet, consistent link to the canonical Payment Choices layer */
+  if (FIN){
+    document.getElementById("dPayT").textContent = L(FIN.copy.drawerTitle);
+    document.getElementById("dPayBody").textContent = L(FIN.copy.drawerBody);
+    document.getElementById("dPayLink").textContent = L(FIN.copy.drawerMark) + " →";
+  }
+  document.getElementById("detail").classList.add("on");
+}
+function closeDetail(){ detailId = null; document.getElementById("detail").classList.remove("on"); }
+
 function tierOf(id){
   for (var t in computed.tiers) if (computed.tiers[t].some(function(e){ return e.id === id; })) return t;
   return "";
 }
 function pctOf(id){
+  if (!computed) return "";
   for (var t in computed.tiers){ var e = computed.tiers[t].find(function(x){ return x.id === id; }); if (e) return e.pct; }
   return "";
+}
+function chooseFinalist(id){
+  finalistId = (finalistId === id) ? null : id;
+  renderCompare();
 }
 function renderCompare(){
   if (cmpSel.length !== 2){ go("results"); return; }
@@ -807,7 +1358,10 @@ function renderCompare(){
   [a, b].forEach(function(m){
     stage += '<div class="cmp-side"><div class="plate"><img src="' + imgOf(m) + '" alt="' + m.name + '"></div>'
       + '<div class="brand">' + m.brand + (m.subBrand ? ' · ' + m.subBrand : '') + '</div>'
-      + '<div class="name">' + m.name + '</div></div>';
+      + '<div class="name">' + m.name + '</div>'
+      + '<button class="fin-btn' + (finalistId === m.id ? ' on' : '') + '" onclick="chooseFinalist(\'' + m.id + '\')">'
+      + (finalistId === m.id ? L(T.isFinalist) : L(T.makeFinalist)) + '</button>'
+      + '</div>';
   });
   document.getElementById("cmpStage").innerHTML = stage;
   function row(lab, va, vb){
@@ -823,24 +1377,249 @@ function renderCompare(){
     rows += row(L(T.testLbl), L(computed.trialFocus[0]), L(computed.trialFocus[computed.trialFocus.length > 1 ? 1 : 0]));
   }
   document.getElementById("cmpRows").innerHTML = rows;
+  document.getElementById("cmpPlanCta").disabled = !finalistId;
 }
 
+/* ---- Sleep Plan: trial priorities + compared + finalist + optional Sleep
+        System + the Payment Choices decision (equal, reversible) ---- */
+function toggleSys(id){
+  var i = sysSel.indexOf(id);
+  if (i >= 0) sysSel.splice(i, 1); else sysSel.push(id);
+  renderPlan();
+}
+function decide(choice){
+  payCleared = (payDecision === choice);
+  payDecision = (payDecision === choice) ? null : choice;
+  if (choice === "review" && payDecision === "review"){ renderPlan(); openPay("plan"); return; }
+  renderPlan();
+}
+function renderPlan(){
+  if (!computed) { go("results"); return; }
+  var fid = finalistId || computed.topPickId;
+  var m = model(fid); if (!m) return;
+  var f = '<div class="k">' + L(T.finalist) + (finalistId ? '' : ' · ' + L(T.bestMatch)) + '</div>'
+    + '<div class="plate"><img src="' + imgOf(m) + '" alt="' + m.name + '"></div>'
+    + '<div class="fin-id"><div class="brand">' + m.brand + (m.subBrand ? ' · ' + m.subBrand : '') + '</div>'
+    + '<div class="name">' + m.name + '</div>'
+    + '<div class="feel">' + L(T.feelLbl) + ': ' + feelOf(m) + ' · ' + L(T.matchLbl) + ' ' + pctOf(fid) + '%</div></div>';
+  document.getElementById("planFinal").innerHTML = f;
+
+  var s = "";
+  /* trial priorities */
+  s += '<div class="plan-block"><div class="bt">' + L(T.testLbl) + '</div>';
+  computed.trialFocus.forEach(function(p){ s += '<div class="ln">' + star(11, "#E9CE8F") + ' ' + L(p) + '</div>'; });
+  s += '</div>';
+  /* compared */
+  s += '<div class="plan-block"><div class="bt">' + L(T.comparedLbl) + '</div>';
+  if (cmpSel.length){
+    s += '<div class="ln">' + cmpSel.map(function(id){ var mm = model(id); return mm ? mm.name : id; }).join('  ·  ') + '</div>';
+  } else {
+    s += '<div class="dim">—</div>';
+  }
+  s += '</div>';
+  /* optional Sleep System — the real production accessory ranking */
+  s += '<div class="plan-block"><div class="bt">' + L(T.systemLbl) + '</div>';
+  if (accRunner && ACC.length){
+    var ranked = accRunner(ACC, answers, lang);
+    var picks = ranked.filter(function(a){ return a.matched; }).slice(0, 3);
+    if (picks.length < 2) picks = ranked.slice(0, 3);
+    picks.forEach(function(a){
+      var on = sysSel.indexOf(a.id) >= 0;
+      s += '<div class="sys-item"><span class="nm">' + L(a.name)
+        + '<i>' + (a.reasons && a.reasons.length ? a.reasons[0] : "") + '</i></span>'
+        + '<button class="tog' + (on ? ' on' : '') + '" onclick="toggleSys(\'' + a.id + '\')">'
+        + (on ? L(T.addedSys) : L(T.addSys)) + '</button></div>';
+    });
+    if (FIN) s += '<div class="dim">' + L(FIN.copy.sleepSystemGuidance) + '</div>';
+  }
+  s += '</div>';
+  /* the Payment Choices decision — equal, reversible; "Not now" is as
+     usable as "Review options" */
+  if (FIN){
+    s += '<div class="plan-block"><div class="bt">' + L(FIN.copy.eyebrow) + '</div>'
+      + '<div class="dim">' + L(FIN.copy.fitFirst) + '</div>'
+      + '<div class="decide">'
+      + '<button class="' + (payDecision === "review" ? "on" : "") + '" onclick="decide(\'review\')">' + L(FIN.copy.resultsAsk) + '</button>'
+      + '<button class="' + (payDecision === "not_now" ? "on" : "") + '" onclick="decide(\'not_now\')">' + L(FIN.copy.agendaNotNow) + '</button>'
+      + '<button class="' + (payDecision === "undecided" ? "on" : "") + '" onclick="decide(\'undecided\')">' + L(T.decideUndecided) + '</button>'
+      + '</div>';
+    if (payDecision === "not_now") s += '<div class="dim">' + L(FIN.copy.interestNotNowAnnounce) + '</div>';
+    else if (payDecision === null && payCleared) s += '<div class="dim">' + L(FIN.copy.interestClearedAnnounce) + '</div>';
+    s += '</div>';
+  }
+  document.getElementById("planCol").innerHTML = s;
+}
+
+function payDecisionLabel(){
+  if (payDecision === "review"){
+    var m = paymentModel();
+    var names = Object.keys(finAgenda).map(function(id){
+      var c = m ? m.cards.find(function(x){ return x.id === id; }) : null;
+      return c ? c.title : id;
+    });
+    return L(FIN.copy.resultsAsk) + (names.length ? " — " + names.join(", ") : " — " + L(FIN.copy.agendaEmpty));
+  }
+  if (payDecision === "not_now") return L(FIN.copy.agendaNotNow) + " — " + L(FIN.copy.agendaDismissed);
+  if (payDecision === "undecided") return L(T.decideUndecided);
+  return L(T.decideNone);
+}
 function renderHandoff(){
   if (!computed) return;
-  var id = cmpSel.length ? cmpSel[cmpSel.length - 1] : computed.topPickId;
-  var m = model(id); if (!m) return;
+  var fid = finalistId || computed.topPickId;
+  var m = model(fid); if (!m) return;
+  /* governed handoff headline: "Your Sleep Plan. Your Payment Choices." */
+  document.getElementById("hTitle").textContent =
+    FIN ? L(FIN.copy.handoffHeadline) : "Consultation card";
   document.getElementById("hImg").src = imgOf(m);
   document.getElementById("hBrand").textContent = m.brand + (m.subBrand ? " · " + m.subBrand : "");
   document.getElementById("hName").textContent = m.name;
-  document.getElementById("hFeel").textContent = L(T.feelLbl) + ": " + feelOf(m) + " · " + L(T.matchLbl) + " " + pctOf(id) + "%";
+  document.getElementById("hFeel").textContent = L(T.feelLbl) + ": " + feelOf(m) + " · " + L(T.matchLbl) + " " + pctOf(fid) + "%";
   var rows = "";
-  rows += '<div class="row"><b>' + L(T.finalist) + '</b><span>' + computed.profileName + ' · ' + L(computed.subtitle) + '</span></div>';
+  rows += '<div class="row"><b>' + L(T.profileLbl) + '</b><span>' + computed.profileName + ' · ' + L(computed.subtitle) + '</span></div>';
   computed.trialFocus.forEach(function(p, i){
     rows += '<div class="row"><b>' + (i === 0 ? L(T.testLbl) : "") + '</b><span>' + L(p) + '</span></div>';
   });
+  rows += '<div class="row"><b>' + L(T.comparedLbl) + '</b><span>'
+    + (cmpSel.length ? cmpSel.map(function(id){ var mm = model(id); return mm ? mm.name : id; }).join(" · ") : "—")
+    + '</span></div>';
+  rows += '<div class="row"><b>' + L(T.systemLbl) + '</b><span>'
+    + (sysSel.length ? sysSel.map(function(id){ var a = ACC.find(function(x){ return x.id === id; }); return a ? L(a.name) : id; }).join(" · ") : "—")
+    + '</span></div>';
+  if (FIN){
+    rows += '<div class="row"><b>' + L(T.paymentLbl) + '</b><span>' + payDecisionLabel() + '</span></div>';
+  }
   document.getElementById("hRows").innerHTML = rows;
   drawConstellation("stampHandoff", 64, 36, false);
 }
+
+/* =============================================================================
+   STATE ISOLATION — LIVE CHECK
+   Direction 1: payment state (decision, agenda, Sleep System picks) must not
+   change scores, order, default tier, top pick emphasis, Sleep Signature,
+   Sleep Brief priorities, or the finalist.
+   Direction 2: quiz answers must not change payment program availability,
+   order, language, Mexico-path visibility, or official destinations.
+============================================================================= */
+function sleepFingerprint(ans, lg){
+  var out = engine(JSON.parse(JSON.stringify(ans)), lg);
+  var brief = briefRunner(ans, lg);
+  return JSON.stringify({
+    scores: out.scores, tiers: out.tiers,
+    topPick: out.tiers.gold.length ? out.tiers.gold[0].id : null,
+    defaultTier: "gold",
+    heroEmphasis: out.tiers.gold.length ? out.tiers.gold[0].id : null,
+    focus: brief.trialFocus, profile: brief.profileName,
+    signature: answerSeedFor(ans)
+  });
+}
+function payFingerprint(){
+  var m = paymentModel(); if (!m) return "none";
+  return JSON.stringify({
+    order: m.cards.map(function(c){ return c.id; }),
+    mexicoLast: m.cards.length && !!m.cards[m.cards.length - 1].mexico,
+    exactShown: m.cards.map(function(c){ return !!(c.offers && c.offers.length); }),
+    strings: m.cards.map(function(c){
+      return [c.title, c.detail, c.example, c.disclosure, c.staleBody, c.prequal]
+        .map(function(x){ return x ? JSON.stringify(x) : ""; }).join("|");
+    }),
+    destinations: m.cards.map(function(c){ return c.link ? c.link.url : ""; })
+      .concat([m.official ? m.official.url : ""])
+  });
+}
+function runIso(){
+  if (!engine || !briefRunner || !FIN || !finKit) return;
+  var ansA = { sleep_quality:"fair", trigger:"worn_out", mattress_size:"queen",
+    partner_sleep:"partner", partner_disturbance:"sometimes", sleep_position:"side",
+    body_type:"average", temperature:"cold", firmness:3,
+    sleep_issues:["hip_pain","sagging"], health_conditions:["reflux"] };
+  var ansB = JSON.parse(JSON.stringify(ansA));
+  ansB.sleep_position = "back"; ansB.temperature = "hot"; ansB.firmness = 8;
+  ansB.sleep_issues = ["back_pain"]; ansB.health_conditions = ["snoring"];
+
+  var checks = [];
+  function check(name, pass, note){ checks.push({ name: name, pass: pass, note: note || "" }); }
+
+  /* Direction 1 — vary payment state, sleep outputs must be identical */
+  var saved = { d: payDecision, a: JSON.parse(JSON.stringify(finAgenda)),
+                s: sysSel.slice(), f: finalistId };
+  var base = sleepFingerprint(ansA, lang);
+  var all = true;
+  [null, "review", "not_now", "undecided"].forEach(function(d){
+    payDecision = d;
+    if (sleepFingerprint(ansA, lang) !== base) all = false;
+  });
+  finAgenda = { "promotional:Synchrony": true, "plan:lacks-in-house": true, "scenario:mexico-delivery": true };
+  if (sleepFingerprint(ansA, lang) !== base) all = false;
+  sysSel = ACC.slice(0, 3).map(function(a){ return a.id; });
+  if (sleepFingerprint(ansA, lang) !== base) all = false;
+  check({en:"Payment state cannot move scores, order, default tier, top-pick emphasis, Sleep Signature, or Sleep Brief",
+         es:"El estado de pago no puede mover puntajes, orden, nivel, énfasis, Firma de Sueño ni Resumen de Sueño"}, all,
+        {en:"engine inputs are (answers, language) only — verified by 6 live re-runs",
+         es:"las entradas del motor son solo (respuestas, idioma) — verificado con 6 ejecuciones en vivo"});
+  var finalistUntouched = finalistId === saved.f;
+  payDecision = saved.d; finAgenda = saved.a; sysSel = saved.s; finalistId = saved.f;
+  check({en:"Saved finalist is untouched by payment-state changes",
+         es:"El finalista guardado no cambia con el estado de pago"}, finalistUntouched);
+
+  /* Direction 2 — vary quiz answers, payment layer must be identical */
+  var savedAns = answers;
+  answers = ansA; var p1 = payFingerprint();
+  answers = ansB; var p2 = payFingerprint();
+  answers = savedAns;
+  check({en:"Quiz answers cannot change program availability, order, or financing language",
+         es:"Las respuestas no pueden cambiar disponibilidad, orden ni el lenguaje de financiamiento"}, p1 === p2,
+        {en:"paymentModel() reads store-config.financing only — two contrasting answer sets, identical output",
+         es:"paymentModel() lee solo store-config.financing — dos perfiles distintos, salida idéntica"});
+  var mObj = paymentModel();
+  check({en:"Mexico path visible to everyone and fixed last",
+         es:"La opción México es visible para todos y siempre al final"},
+        !!(mObj && mObj.cards.length && mObj.cards[mObj.cards.length - 1].mexico));
+
+  /* language must restyle, never re-route */
+  var l0 = lang;
+  lang = "en"; var pe = JSON.parse(payFingerprint());
+  lang = "es"; var ps = JSON.parse(payFingerprint());
+  lang = l0;
+  var structuralSame = JSON.stringify(pe.order) === JSON.stringify(ps.order)
+    && JSON.stringify(pe.destinations) === JSON.stringify(ps.destinations)
+    && JSON.stringify(pe.suppressed) === JSON.stringify(ps.suppressed)
+    && pe.mexicoLast === ps.mexicoLast;
+  check({en:"Language changes copy only — no language-based routing of programs or destinations",
+         es:"El idioma cambia solo el texto — sin enrutar programas ni destinos por idioma"}, structuralSame);
+
+  /* governance floor, decided by PRODUCTION'S OWN extracted gating code:
+     when financingTermsFresh() is false, every promotional card must carry
+     the staleNotice instead of offers, and the freshness-gated installment
+     and Mexico details must be replaced by the staleNotice too */
+  var pFresh = finKit.termsFresh();
+  var promoCards = mObj ? mObj.cards.filter(function(c){ return c.id.indexOf("promotional:") === 0; }) : [];
+  var exactSuppressedOk = promoCards.length > 0 && promoCards.every(function(c){
+    return pFresh ? true : (!c.offers && !!c.staleBody);
+  });
+  if (!pFresh && mObj){
+    var stale = FC("staleNotice");
+    mObj.cards.forEach(function(c){
+      if (c.id === "plan:lacks-in-house" && c.detail !== stale) exactSuppressedOk = false;
+      if (c.mexico && (c.detail !== stale || c.example)) exactSuppressedOk = false;
+    });
+  }
+  check({en:"Exact rate/term claims render only when production's own financingTermsFresh() allows them (fail-closed today)",
+         es:"Las tasas y plazos exactos solo aparecen cuando financingTermsFresh() de producción lo permite (cerrado hoy)"},
+        exactSuppressedOk);
+  var noCalc = (FIN.plans || []).every(function(p){ return p.paymentCalculationEnabled !== true; });
+  check({en:"No plan enables payment calculation — no monthly-payment estimate can exist (V1 invariant)",
+         es:"Ningún plan permite calcular pagos — no puede existir un estimado mensual (invariante V1)"}, noCalc);
+
+  var s = "";
+  checks.forEach(function(c){
+    s += '<div class="iso-row"><span class="st ' + (c.pass ? "ok" : "bad") + '">' + (c.pass ? "PASS" : "FAIL") + '</span>'
+      + '<span>' + L(c.name) + (c.note ? ' <span style="opacity:.6">— ' + L(c.note) + '</span>' : '') + '</span></div>';
+  });
+  document.getElementById("isoRows").innerHTML = s;
+  document.getElementById("iso").classList.add("on");
+  render();
+}
+function closeIso(){ document.getElementById("iso").classList.remove("on"); }
 
 seedSky("skyWelcome", 60); seedSky("skyReveal", 36); seedSky("skyHandoff", 26);
 render();
