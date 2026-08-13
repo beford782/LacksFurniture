@@ -75,4 +75,48 @@ assert("'payment conversation you chose' phrasing is gone (EN)",
 assert("'conversación de pago que elegiste' phrasing is gone (ES)",
   !html.includes("que elegiste"));
 
+// --- FIX 2: single-open reveal accordion + focus preservation ---
+assert("accordion state is a single index, not a multi-open map",
+  html.includes("var prioOpenIdx = null") && !/prioOpen\[/.test(html));
+const tog = fnBody("togglePrio");
+assert("togglePrio closes the previous disclosure (single-open expression)",
+  tog.includes("prioOpenIdx = (prioOpenIdx === i) ? null : i"));
+assert("togglePrio restores focus to the re-rendered button",
+  tog.includes('getElementById("prioBtn" + i)') && tog.includes(".focus()"));
+const reveal31 = fnBody("renderReveal");
+assert("priority buttons carry stable ids for focus restore",
+  reveal31.includes("prioBtn' + i"));
+assert("open state derives from the single index", reveal31.includes("prioOpenIdx === i"));
+
+// --- FIX 3: one authoritative language-state writer ---
+const als = fnBody("applyLanguageState");
+assert("applyLanguageState exists", als.length > 0);
+assert("it synchronizes aria-pressed for BOTH toggles",
+  (als.match(/setAttribute\("aria-pressed"/g) || []).length === 2);
+assert("it synchronizes <html lang>", als.includes("documentElement.lang"));
+assert("setLang routes through it", fnBody("setLang").includes("applyLanguageState(l)"));
+const so = fnBody("startOver");
+assert("startOver routes through it (after journey reset)",
+  so.includes('applyLanguageState("en")'));
+assert("startOver no longer hand-toggles language classes",
+  !so.includes('classList.add("on")'));
+
+// --- FIX 5: modal containment / restoration / localization ---
+assert("background inert sync exists", html.includes("function syncBackgroundInert("));
+for (const fn of ["openDetail", "closeDetail", "runIso", "closeIso"]) {
+  assert(fn + " syncs background inert", fnBody(fn).includes("syncBackgroundInert()"));
+}
+assert("Tab trap exists and is wired", html.includes("function trapDialogTab(")
+  && html.includes('e.key === "Tab"'));
+const ci = fnBody("closeIso");
+assert("closeIso restores focus to the opener (with fallback)",
+  ci.includes("isoReturnFocus") && ci.includes(".focus()"));
+const cd = fnBody("closeDetail");
+assert("closeDetail falls back to the same mattress's Details button",
+  cd.includes("detailReturnId") && cd.includes("d-btn"));
+assert("close-button names are localized EN/ES",
+  html.includes("closeLbl:{en:") && html.includes('setAttribute("aria-label", L(T.closeLbl))'));
+assert("open isolation report re-renders rows on language switch",
+  html.includes("function renderIsoRows(") && fnBody("render").includes("renderIsoRows()"));
+
 process.exit(failures ? 1 : 0);

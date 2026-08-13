@@ -179,11 +179,15 @@
   .journey i{font-style:normal;opacity:.65}
 
   /* ===== REVEAL ========================================================== */
-  #reveal{align-items:center;justify-content:center;text-align:center;
+  /* overflow:auto + margin:auto centering — content centers when it fits
+     and becomes scrollable from the TOP if it ever exceeds the viewport,
+     so the CTA can never be clipped out of reach (the scrollbar simply
+     never appears at supported viewports) */
+  #reveal{align-items:center;justify-content:flex-start;text-align:center;overflow:auto;
     background:radial-gradient(95% 70% at 50% 42%, #16224A 0%, rgba(22,34,74,0) 62%), var(--midnight)}
   .reveal-inner{position:relative;z-index:2;display:flex;flex-direction:column;
-    align-items:center;gap:1rem;padding:0 7vw;width:100%;max-width:880px}
-  #constellation{width:min(70vw,520px);height:auto;max-height:26vh}
+    align-items:center;gap:.7rem;padding:1rem 7vw;width:100%;max-width:880px;margin:auto}
+  #constellation{width:min(70vw,520px);height:auto;max-height:min(26vh,170px)}
   #constellation .edge{stroke:var(--brass);stroke-width:1.1;opacity:.85;
     stroke-dasharray:1200;stroke-dashoffset:1200;animation:draw 1.8s .4s ease forwards}
   #constellation .node{fill:var(--moonlight);opacity:0;animation:nodeIn .4s ease forwards}
@@ -720,7 +724,10 @@ var activeTier = "gold", cmpSel = [];
 /* payment-side state — deliberately never passed to the engine */
 var finalistId = null, sysSel = [], payDecision = null, finAgenda = {}, payReturn = "results";
 var payCleared = false;
-var prioOpen = {};   // reveal-scene disclosure state for the why/test prose
+/* single-open accordion: index of the ONE disclosed priority, or null —
+   multiple open disclosures could push the CTA out of the fixed,
+   non-scrollable reveal scene at constrained heights */
+var prioOpenIdx = null;
 
 /* Presenter mode: documented opt-in via ?presenter=1. Gates DISPLAY of the
    rehearsal tools and isolation check only — customer behavior, scoring,
@@ -815,6 +822,7 @@ var T = {
   decideUndecided:{en:"Undecided",es:"Sin decidir"},
   decideNone:{en:"Not selected yet",es:"Aún sin seleccionar"},
   payBackLbl:{en:"← Back",es:"← Atrás"},
+  closeLbl:{en:"Close",es:"Cerrar"},
   isoTitle:{en:"State isolation — live check",es:"Aislamiento de estado — prueba en vivo"},
   isoSub:{en:"Runs the real extracted engine and the governed payment model against varied states. Sleep outputs must ignore payment state; the payment layer must ignore quiz answers.",
           es:"Ejecuta el motor real extraído y el modelo de pago gobernado con estados variados. Los resultados de sueño deben ignorar el estado de pago; la capa de pago debe ignorar las respuestas."}
@@ -924,11 +932,12 @@ function startQuiz(){ answers = {}; qPos = 0; resetJourneyState(); go("quiz"); r
 function resetJourneyState(){
   cmpSel = []; computed = null; finalistId = null; sysSel = [];
   payDecision = null; finAgenda = {}; payReturn = "results"; payCleared = false;
-  prioOpen = {};
+  prioOpenIdx = null;
 }
-function startOver(){ answers = {}; qPos = 0; resetJourneyState(); lang = "en";
-  document.getElementById("langEn").classList.add("on");
-  document.getElementById("langEs").classList.remove("on");
+function startOver(){ answers = {}; qPos = 0; resetJourneyState();
+  /* journey state is cleared FIRST, so applyLanguageState cannot trigger
+     a recompute of a wiped journey (setLang would; this must not) */
+  applyLanguageState("en");
   closeDetail(); closeIso();
   go("welcome"); render(); }
 /* the rehearsal sample mirrors the SHIPPED 10-question quiz exactly —
@@ -1351,12 +1360,21 @@ function sceneNow(){
   for (var i = 0; i < SCENES.length; i++) if (document.getElementById(SCENES[i]).classList.contains("on")) return SCENES[i];
   return "welcome";
 }
-function setLang(l){
+/* ONE authoritative language-state writer: every path that changes the
+   language (mid-session toggle AND the new-customer reset) goes through
+   here, so the variable, <html lang>, the visual selected state, and
+   both aria-pressed values can never disagree. */
+function applyLanguageState(l){
   lang = l;
-  document.getElementById("langEn").classList.toggle("on", l === "en");
-  document.getElementById("langEs").classList.toggle("on", l === "es");
-  document.getElementById("langEn").setAttribute("aria-pressed", l === "en" ? "true" : "false");
-  document.getElementById("langEs").setAttribute("aria-pressed", l === "es" ? "true" : "false");
+  document.documentElement.lang = l;
+  var en = document.getElementById("langEn"), es = document.getElementById("langEs");
+  en.classList.toggle("on", l === "en");
+  es.classList.toggle("on", l === "es");
+  en.setAttribute("aria-pressed", l === "en" ? "true" : "false");
+  es.setAttribute("aria-pressed", l === "es" ? "true" : "false");
+}
+function setLang(l){
+  applyLanguageState(l);
   if (computed) compute();   // re-run the real engine so language-resolved output stays honest
   render();
 }
@@ -1366,6 +1384,9 @@ function render(){
   document.querySelectorAll("[data-t]").forEach(function(el){ el.textContent = SN(L(T[el.getAttribute("data-t")])); });
   document.querySelectorAll("[data-t-html]").forEach(function(el){ el.innerHTML = SN(L(T[el.getAttribute("data-t-html")])); });
   document.getElementById("restartBtn").textContent = L(T.restart);
+  document.querySelector("#detail .detail-close").setAttribute("aria-label", L(T.closeLbl));
+  document.querySelector("#iso .iso-close").setAttribute("aria-label", L(T.closeLbl));
+  if (document.getElementById("iso").classList.contains("on")) renderIsoRows();
   renderWelcomeConfigLines();
   var scene = sceneNow();
   if (scene === "quiz") renderQ();
@@ -1405,9 +1426,13 @@ function testProseFor(p){
   return L(p.test);
 }
 function togglePrio(i){
-  prioOpen[i] = !prioOpen[i];
-  if (!prioOpen[i]) delete prioOpen[i];
+  /* single-open: opening one closes any other; re-pressing closes it.
+     renderReveal rebuilds via innerHTML, so focus is restored to the
+     NEW node representing the same priority — never left detached. */
+  prioOpenIdx = (prioOpenIdx === i) ? null : i;
   renderReveal();
+  var b = document.getElementById("prioBtn" + i);
+  if (b) b.focus();
 }
 function renderReveal(){
   if (!computed) return;
@@ -1420,12 +1445,12 @@ function renderReveal(){
     star(11, "#D4A84B") + "&nbsp; " + L(computed.subtitle);
   var s = "";
   computed.trialFocus.forEach(function(p, i){
-    var open = !!prioOpen[i];
+    var open = prioOpenIdx === i;
     /* why/test are production's own shipped Sleep Brief prose, already
        bilingual inside each trialFocus item — customer-level guidance,
        disclosed on tap so the reveal stays cinematic */
     s += '<div class="prio-wrap' + (open ? ' open' : '') + '">'
-      + '<button class="prio" aria-expanded="' + (open ? 'true' : 'false') + '" onclick="togglePrio(' + i + ')">'
+      + '<button class="prio" id="prioBtn' + i + '" aria-expanded="' + (open ? 'true' : 'false') + '" onclick="togglePrio(' + i + ')">'
       + star(12, "#E9CE8F") + '<span>' + L(p) + '</span><span class="tw" aria-hidden="true">' + (open ? '−' : '+') + '</span></button>'
       + (open && p.why
           ? '<div class="prio-more"><p class="why">' + L(p.why) + '</p>'
@@ -1435,6 +1460,10 @@ function renderReveal(){
       + '</div>';
   });
   document.getElementById("prioList").innerHTML = s;
+  /* while a disclosure is open its prose carries the message — the summary
+     sub-line yields its vertical space and returns on close */
+  var sub = document.querySelector('#reveal [data-t="rSub"]');
+  if (sub) sub.style.display = (prioOpenIdx === null) ? "" : "none";
 }
 
 function cardHtml(entry, hero){
@@ -1496,11 +1525,39 @@ function toggleCmp(id){
   renderResults();
 }
 
+/* ---- modal plumbing shared by the detail sheet and isolation report ----
+   aria-modal alone does not contain focus: the background becomes inert
+   while a dialog is open (restored on close), Tab and Shift+Tab cycle
+   inside the sheet, and closing restores focus to the invoking control —
+   or its semantic replacement if a re-render detached it. */
+function syncBackgroundInert(){
+  var anyOpen = document.getElementById("detail").classList.contains("on")
+    || document.getElementById("iso").classList.contains("on");
+  Array.prototype.forEach.call(document.body.children, function(el){
+    if (el.id === "detail" || el.id === "iso") return;
+    if (anyOpen) el.setAttribute("inert", "");
+    else el.removeAttribute("inert");
+  });
+}
+function trapDialogTab(e){
+  var sheet = document.getElementById("detail").classList.contains("on")
+    ? document.querySelector("#detail .detail-sheet")
+    : document.getElementById("iso").classList.contains("on")
+      ? document.querySelector("#iso .iso-sheet") : null;
+  if (!sheet) return;
+  var f = sheet.querySelectorAll("button, a[href], input");
+  if (!f.length) return;
+  var first = f[0], last = f[f.length - 1];
+  if (!sheet.contains(document.activeElement)){ e.preventDefault(); first.focus(); return; }
+  if (e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
+  else if (!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
+}
+
 /* ---- mattress detail overlay ---- */
-var detailId = null, detailReturnFocus = null;
+var detailId = null, detailReturnFocus = null, detailReturnId = null;
 function openDetail(id){
   var wasOpen = document.getElementById("detail").classList.contains("on");
-  if (!wasOpen) detailReturnFocus = document.activeElement;
+  if (!wasOpen){ detailReturnFocus = document.activeElement; detailReturnId = id; }
   detailId = id;
   var m = model(id); if (!m) return;
   document.getElementById("dImg").src = imgOf(m);
@@ -1532,6 +1589,7 @@ function openDetail(id){
   }
   if (!wasOpen){
     document.getElementById("detail").classList.add("on");
+    syncBackgroundInert();
     var cb = document.querySelector("#detail .detail-close");
     if (cb) cb.focus();
   }
@@ -1539,13 +1597,22 @@ function openDetail(id){
 function closeDetail(){
   var was = document.getElementById("detail").classList.contains("on");
   detailId = null; document.getElementById("detail").classList.remove("on");
-  if (was && detailReturnFocus && document.body.contains(detailReturnFocus)){
-    try { detailReturnFocus.focus(); } catch(e){}
+  syncBackgroundInert();
+  if (was){
+    var t = (detailReturnFocus && document.body.contains(detailReturnFocus))
+      ? detailReturnFocus
+      /* the opener lives inside re-rendered cards: fall back to the SAME
+         mattress's Details button, then to any control on the live scene */
+      : (detailReturnId && document.querySelector('button.d-btn[onclick*="' + detailReturnId + '"]'))
+        || document.querySelector(".scene.on button");
+    if (t) try { t.focus(); } catch(e){}
   }
-  detailReturnFocus = null;
+  detailReturnFocus = null; detailReturnId = null;
 }
-/* Escape closes whichever overlay is open (focus restored by closeDetail) */
+/* one keydown handler: Tab is contained inside an open dialog; Escape
+   closes it (the visible × stays the primary exit — iPads have no Esc) */
 document.addEventListener("keydown", function(e){
+  if (e.key === "Tab"){ trapDialogTab(e); return; }
   if (e.key !== "Escape") return;
   if (document.getElementById("detail").classList.contains("on")) closeDetail();
   else if (document.getElementById("iso").classList.contains("on")) closeIso();
@@ -1838,8 +1905,19 @@ function payFingerprint(){
     })
   });
 }
+var isoReturnFocus = null, lastIsoChecks = null;
+function renderIsoRows(){
+  if (!lastIsoChecks) return;
+  var s = "";
+  lastIsoChecks.forEach(function(c){
+    s += '<div class="iso-row"><span class="st ' + (c.pass ? "ok" : "bad") + '">' + (c.pass ? "PASS" : "FAIL") + '</span>'
+      + '<span>' + L(c.name) + (c.note ? ' <span style="opacity:.6">— ' + L(c.note) + '</span>' : '') + '</span></div>';
+  });
+  document.getElementById("isoRows").innerHTML = s;
+}
 function runIso(){
   if (!engine || !briefRunner || !FIN || !finKit) return;
+  if (!document.getElementById("iso").classList.contains("on")) isoReturnFocus = document.activeElement;
   var ansA = { sleep_quality:"fair", trigger:"worn_out", mattress_size:"queen",
     partner_sleep:"partner", partner_disturbance:"sometimes", sleep_position:"side",
     body_type:"average", temperature:"cold", firmness:3,
@@ -1931,18 +2009,27 @@ function runIso(){
   check({en:"No plan enables payment calculation — no monthly-payment estimate can exist (V1 invariant)",
          es:"Ningún plan permite calcular pagos — no puede existir un estimado mensual (invariante V1)"}, noCalc);
 
-  var s = "";
-  checks.forEach(function(c){
-    s += '<div class="iso-row"><span class="st ' + (c.pass ? "ok" : "bad") + '">' + (c.pass ? "PASS" : "FAIL") + '</span>'
-      + '<span>' + L(c.name) + (c.note ? ' <span style="opacity:.6">— ' + L(c.note) + '</span>' : '') + '</span></div>';
-  });
-  document.getElementById("isoRows").innerHTML = s;
+  /* rows re-render from lastIsoChecks on language switch (render() hook),
+     so an open report translates instead of going stale */
+  lastIsoChecks = checks;
+  renderIsoRows();
   document.getElementById("iso").classList.add("on");
+  syncBackgroundInert();
   var ic = document.querySelector("#iso .iso-close");
   if (ic) ic.focus();
   render();
 }
-function closeIso(){ document.getElementById("iso").classList.remove("on"); }
+function closeIso(){
+  var was = document.getElementById("iso").classList.contains("on");
+  document.getElementById("iso").classList.remove("on");
+  syncBackgroundInert();
+  if (was){
+    var t = (isoReturnFocus && document.body.contains(isoReturnFocus))
+      ? isoReturnFocus : document.querySelector(".scene.on button");
+    if (t) try { t.focus(); } catch(e){}
+  }
+  isoReturnFocus = null;
+}
 
 if (PRESENTER) document.body.classList.add("presenter");
 seedSky("skyWelcome", 60); seedSky("skyReveal", 36); seedSky("skyHandoff", 26);
