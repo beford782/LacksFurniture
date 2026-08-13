@@ -395,6 +395,18 @@
   .pay-gov{border-top:1px solid rgba(212,168,75,.45);border-bottom:1px solid rgba(212,168,75,.45);
     padding:.5rem .15rem;font-size:.84rem;color:var(--brass-soft);flex:none}
   .pay-gov:empty{display:none}
+  /* transient state-change announcements (consider / clear) — visible AND
+     announced; empty between changes */
+  .pay-status{font-size:.8rem;color:var(--brass-soft);flex:none}
+  .pay-status:empty{display:none}
+  /* the selected-state MARKER (not a control) + its subordinate clear action */
+  .pref-row{display:flex;align-items:center;gap:.9em;flex-wrap:wrap}
+  .pref-mark{font-family:var(--util);font-weight:600;font-size:.64rem;letter-spacing:.16em;
+    text-transform:uppercase;border:1px solid var(--brass);border-radius:99px;
+    padding:.42rem .95rem;color:var(--brass-soft);background:#1A2547}
+  .clear-pref{font-family:var(--util);font-weight:600;font-size:.62rem;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--moon-dim);text-decoration:underline;
+    text-underline-offset:3px;padding:.3rem 0}
   .pay-paths{display:flex;flex-direction:column;gap:10px;overflow:auto;min-height:0;padding:2px}
   .path{background:var(--nocturne);border:1px solid var(--veil-soft);border-radius:16px;
     padding:.85rem 1.1rem;display:flex;flex-direction:column;gap:.35rem}
@@ -654,6 +666,7 @@
          today; role="status" keeps the announcement semantics while adding
          sighted parity. Cleared on close so a reopen re-announces. -->
     <div class="pay-gov" id="payGov" role="status"></div>
+    <div class="pay-status" id="payStatus" role="status"></div>
     <div class="pay-paths" id="payPaths"></div>
     <div class="pay-official" id="payOfficial"></div>
     <p class="pay-disc" id="payDisc"></p>
@@ -829,6 +842,7 @@ var T = {
   hideDetails:{en:"Hide details",es:"Ocultar detalles"},
   consider:{en:"Consider this option",es:"Considerar esta opción"},
   considering:{en:"Currently considering ✓",es:"En consideración ✓"},
+  clearPref:{en:"Clear preference",es:"Quitar preferencia"},
   exploreConsequence:{en:"Explore options together. Nothing is submitted and no application is started.",
                       es:"Exploren las opciones juntos. No se envía nada y no se inicia ninguna solicitud."},
   compareTag:{en:"Compare",es:"Comparar"},comparedTag:{en:"Comparing ✓",es:"Comparando ✓"},
@@ -1300,6 +1314,16 @@ function paymentModel(){
     externalNotice: FIN.copy.externalNotice
   };
 }
+function payAnnounce(msg){
+  /* transient visible + announced state change; cleared by the next
+     renderPayment (plain re-renders and language switches wipe it) */
+  var el = document.getElementById("payStatus");
+  if (el) el.textContent = msg || "";
+}
+function payFocus(prefix, id){
+  var el = document.getElementById(prefix + id);
+  if (el) try { el.focus(); } catch(e){}
+}
 function reviewPath(id){
   /* EXPLORATION ONLY: reveals/hides the option's governed details and,
      on reveal, records the path as explored. Reviewing NEVER touches the
@@ -1309,15 +1333,28 @@ function reviewPath(id){
   if (!payOpen[id]) delete payOpen[id];
   else payExplored[id] = true;
   renderPayment();
+  payFocus("reviewBtn:", id);
 }
 function considerPath(id){
   /* the DELIBERATE preference action, offered inside reviewed details:
-     records the provisional preference (one path at a time; re-pressing
-     clears it). This is also the one action that replaces an earlier
-     "Not right now" — the customer reopened the conversation themselves. */
-  if (payPref === id){ payPref = null; payCleared = true; }
-  else { payPref = id; payExplored[id] = true; payCleared = false; }
+     records the provisional preference, one path at a time — a ONE-WAY
+     action. Clearing is its own explicit, labeled control (clearPath);
+     the selected state never silently toggles off. This is also the one
+     action that replaces an earlier "Not right now". */
+  payPref = id; payExplored[id] = true; payCleared = false;
   renderPayment();
+  var m = paymentModel();
+  var c = m ? m.cards.find(function(x){ return x.id === id; }) : null;
+  payAnnounce((c ? c.title + " — " : "") + L(T.considering));
+  payFocus("clearBtn:", id);
+}
+function clearPath(id){
+  /* the ONLY action that clears a path preference — explicit and labeled.
+     Never touches the explored history. */
+  payPref = null; payCleared = true;
+  renderPayment();
+  payAnnounce(L(FIN.copy.interestClearedAnnounce));
+  payFocus("considerBtn:", id);
 }
 function openPay(from){
   payReturn = from || "results";
@@ -1328,9 +1365,11 @@ function openPay(from){
   document.getElementById("payPaths").scrollTop = 0;
 }
 function closePay(){
-  /* clear the governance band on close (production lifecycle: identical
-     text is not a live-region mutation, so a reopen must re-announce) */
+  /* clear the governance band and status region on close (production
+     lifecycle: identical text is not a live-region mutation, so a
+     reopen must re-announce) */
   document.getElementById("payGov").textContent = "";
+  document.getElementById("payStatus").textContent = "";
   go(payReturn === "plan" ? "plan" : payReturn);
 }
 function renderPayment(){
@@ -1340,6 +1379,7 @@ function renderPayment(){
      evergreen paths beneath stay plainly available. Driven by the same
      anyStale predicate production uses for its SR announcement. */
   document.getElementById("payGov").textContent = m.anyStale ? FC("staleAnnouncement") : "";
+  document.getElementById("payStatus").textContent = "";
   document.getElementById("payEyebrow").textContent = L(m.eyebrow);
   document.getElementById("payTitle").textContent = L(m.headline);
   document.getElementById("payFit").textContent = L(m.fitFirst);
@@ -1352,7 +1392,7 @@ function renderPayment(){
       + '<div class="h">' + c.title + '</div>'
       /* exploration control: reveals the governed details and records the
          path as explored — it can never set a preference */
-      + '<button class="tog" aria-expanded="' + isOpen + '" style="align-self:flex-start" onclick="reviewPath(\'' + c.id + '\')">'
+      + '<button class="tog" id="reviewBtn:' + c.id + '" aria-expanded="' + isOpen + '" style="align-self:flex-start" onclick="reviewPath(\'' + c.id + '\')">'
       + (isOpen ? L(T.hideDetails) : L(T.reviewOption)) + '</button>';
     if (isOpen){
       if (c.offers){
@@ -1372,13 +1412,23 @@ function renderPayment(){
         s += '<div class="links"><a href="' + c.link.url + '" target="_blank" rel="noopener noreferrer">'
           + c.link.label + '</a></div>';
       }
-      /* the distinct INTENTIONAL action — only reachable inside reviewed
-         details; records the provisional preference, nothing more */
-      s += '<button class="tog' + (isPref ? ' on' : '') + '" aria-pressed="' + isPref + '" style="align-self:flex-start" onclick="considerPath(\'' + c.id + '\')">'
-        + (isPref ? L(T.considering) : L(T.consider)) + '</button>';
+      if (isPref){
+        /* selected state is a MARKER, not a control — it can never
+           silently clear itself; clearing is the explicit, subordinate
+           action beside it */
+        s += '<div class="pref-row"><span class="pref-mark">' + L(T.considering) + '</span>'
+          + '<button class="clear-pref" id="clearBtn:' + c.id + '" onclick="clearPath(\'' + c.id + '\')">'
+          + L(T.clearPref) + '</button></div>';
+      } else {
+        /* the distinct INTENTIONAL action — only reachable inside
+           reviewed details; a ONE-WAY set, nothing more */
+        s += '<button class="tog" id="considerBtn:' + c.id + '" style="align-self:flex-start" onclick="considerPath(\'' + c.id + '\')">'
+          + L(T.consider) + '</button>';
+      }
     } else if (isPref){
       /* the current preference stays visible even when its details are
-         collapsed — set only via Consider, never via review */
+         collapsed — set only via Consider; the clear action is available
+         immediately after reopening the details */
       s += '<p class="ext-note">' + L(T.considering) + '</p>';
     }
     s += '</div>';

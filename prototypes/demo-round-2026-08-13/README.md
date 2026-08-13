@@ -67,9 +67,10 @@ identical either way.
   owner-directed prototype UI copy, flagged in code as PROPOSED
   ENVELOPE EXTENSIONS pending adoption through
   `incoming/lacks_financing.json` — as are the exploration/preference
-  pair "Review this option" / "Hide details" and "Consider this
-  option" ("Considerar esta opción", subject to the standing
-  native-review caveat). Canonical financing config is untouched.
+  pair "Review this option" / "Hide details", "Consider this option"
+  ("Considerar esta opción"), and "Clear preference" ("Quitar
+  preferencia") — the Spanish subject to the standing native-review
+  caveat. Canonical financing config is untouched.
 - These production functions are **extracted verbatim from `index.html`
   at runtime** (the repo's test-harness technique):
   - `calculateScores()`, `qualifyRankedChoices()`, `showProfileScreen()`
@@ -265,10 +266,19 @@ Two DISTINCT per-card actions keep those meanings apart:
 **"Review this option"** is exploration only — it reveals the option's
 governed details (cards are collapsed by default) and records the path
 in the explored history; it can never set a preference. Inside the
-revealed details, **"Consider this option"** is the intentional action
-that records the provisional preference ("Currently considering ✓",
-`aria-pressed`; single-select — choosing another path replaces it;
-re-pressing clears). Merely reviewing one or several options can never
+revealed details, **"Consider this option"** is the intentional,
+ONE-WAY action that records the provisional preference. The selected
+state renders as a non-interactive **"Currently considering ✓"
+marker** — it can never silently clear itself — with a visibly
+subordinate, explicit **"Clear preference"** action beside it (the
+only way to clear a path preference; it announces the removal via the
+sheet's status region, restores focus to the option's Consider
+control, and never deletes the explored history). Single-select:
+choosing another path replaces the preference; clearing after an
+earlier pause yields "Not selected", never "Not right now". If the
+preferred card is collapsed, the static marker stays truthful and the
+clear action is available immediately after reopening the details.
+Merely reviewing one or several options can never
 produce "Currently considering" anywhere in the UI or handoff, and
 navigating to the sheet records nothing by itself. The handoff
 summarizes what actually happened — a "Payment preference" row always,
@@ -280,6 +290,7 @@ beyond the current preference):
 | no payment interaction | Not selected | (absent) |
 | explored, nothing selected | Not selected | the explored paths |
 | a path selected for review | that path's title | other explored paths, if any |
+| preference explicitly cleared | Not selected | all explored paths (history intact) |
 | Not right now chosen | Not right now | (suppressed — paused means paused) |
 
 **Not-right-now precedence, stated exactly:** the pause is the

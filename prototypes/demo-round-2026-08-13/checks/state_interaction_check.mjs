@@ -59,6 +59,25 @@ assert("considerPath records a deliberate selection AND the history",
   consider.includes("payPref = id") && consider.includes("payExplored[id] = true"));
 assert("a newer deliberate selection replaces the pause (unconditional assignment)",
   !consider.includes('"not_now"'));
+// clearing is EXPLICIT: Consider is one-way, the marker is not a control,
+// and only clearPath may clear a path preference
+assert("considerPath is ONE-WAY (no silent toggle-to-clear branch)",
+  !consider.includes("payPref = null") && !/payPref === id/.test(consider));
+const clear = fnBody("clearPath");
+assert("clearPath exists (the only explicit clear)", clear.length > 0);
+assert("clearPath clears to null (never to not_now)",
+  clear.includes("payPref = null") && !clear.includes('"not_now"'));
+assert("clearPath never touches the explored history", !clear.includes("payExplored"));
+assert("clearPath announces the removal", clear.includes("interestClearedAnnounce"));
+const rpClear = fnBody("renderPayment");
+assert("selected state renders as a MARKER (span), not a clickable control",
+  rpClear.includes('<span class="pref-mark">'));
+assert("the marker is never wired to considerPath or clearPath",
+  !/pref-mark[^>]*onclick/.test(rpClear));
+assert("the subordinate clear action sits beside the marker",
+  rpClear.indexOf("clearPath") > -1 && rpClear.indexOf('class="clear-pref"') > -1);
+assert("Consider renders only for non-preferred open cards (one-way set)",
+  /\} else \{[\s\S]{0,400}considerPath/.test(rpClear.slice(rpClear.indexOf("pref-mark"))));
 const rp = fnBody("renderPayment");
 assert("governed details render only when reviewed open", /if \(isOpen\)\{/.test(rp));
 assert("the Consider action lives INSIDE the revealed details",
