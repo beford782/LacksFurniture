@@ -14,6 +14,13 @@ four integrity defects found in review and turns the generic-premium
 surface into a demonstrably personalized Lacks experience. Details in
 "Revision 3 — what changed and why" below.
 
+**Revision 3.1 (corrective interaction-state pass, 2026-08-13):** fixes
+the remaining state combinations found in independent review — marked
+payment topics surviving every preference state, a single-open reveal
+accordion that keeps the CTA reachable, one authoritative language
+state, incomplete-journey copy that never claims an unmade choice, and
+a complete modal focus contract. Details in "Revision 3.1" below.
+
 ## Run it
 
 Serve the **repo root** (the prototype loads the real shipped data and
@@ -211,11 +218,128 @@ buttons, agenda toggles, Sleep System toggles, and the payment decision;
 the results card is no longer an ARIA button with buttons nested inside
 it (Details and Compare are real buttons; tap-anywhere still works);
 `role="dialog"` + `aria-modal` + labels on the detail sheet and isolation
-report, with initial focus, focus restoration, and Escape-to-close;
+report, with initial focus, focus restoration, and Escape-to-close
+(revision 3.1 completed the contract: background inert, Tab
+containment, opener restoration with fallbacks, localized names);
 `:focus-visible` outlines. Scope discipline: fixes cover the surfaces
 revision 3 touched; screen-reader/VoiceOver device work remains
 permanently out of scope by owner ruling, and a deeper production
 accessibility pass stays production work.
+
+## Revision 3.1 — corrective interaction-state pass
+
+### Payment preference and agenda topics are SEPARATE dimensions
+
+"Add to discussion" marks a topic; it never selects a conversation
+preference, and an unmade preference never discards marked topics. The
+handoff shows two rows — Payment (the preference) and Topics marked —
+with this truth table (all verified live, EN and ES):
+
+| preference | topics marked | Payment row | Topics row |
+|---|---|---|---|
+| none | none | Not selected yet | governed "No options are marked yet." |
+| none | some | Not selected yet | the marked topics |
+| Plan the conversation | none | Plan the conversation | governed empty-agenda line |
+| Plan the conversation | some | Plan the conversation | the marked topics |
+| Undecided | some | Undecided | the marked topics (context only — not permission) |
+| Not right now | any | Not right now | governed "No options marked for review right now." |
+
+**Not-right-now policy (b), stated exactly:** marked topics are
+PRESERVED internally and return if "Not right now" is cleared, but the
+active handoff never presents an agenda after the customer declined —
+the governed dismissed line renders instead. Nothing is silently lost;
+nothing pressures the customer. EN/ES switching changes labels only
+(topic ids and destinations are language-independent); Start over and
+New customer clear both dimensions.
+
+### Single-open reveal accordion, measured
+
+Zero or one priority may be disclosed; opening one closes the other;
+at most one `aria-expanded="true"`; focus follows the toggled priority
+across the innerHTML re-render. The vertical budget was repaired
+(constellation capped at min(26vh,170px), tighter stack gap, the
+summary sub-line yields while a disclosure is open), and the scene
+uses margin-auto centering with overflow:auto so the CTA can never be
+clipped out of reach — the scrollbar never appears at supported
+viewports. Measured worst-case single-open content height (geometry
+method: scene width simulated at exact device widths, both languages):
+698px at 1194px and 1180px widths — fits the 748 and 820 heights;
+768px at 834px width — fits the 985 and 1112 heights. The restored
+multi-open implementation measures 1075px at 834px/ES — past every
+target, which is the defect.
+
+### One authoritative language state
+
+`applyLanguageState()` is the only writer for the language variable,
+`<html lang>`, both visual selected states, and both `aria-pressed`
+values; the mid-session toggle and the new-customer reset both route
+through it (the reset after the journey wipe, so nothing recomputes a
+cleared journey). Verified: New customer / Start over from welcome,
+quiz, results, Payment Choices, and handoff all land in fully
+consistent English; mid-session switching preserves answers, tier,
+comparison, finalist, Sleep System picks, payment preference, marked
+topics, and presenter mode. The rev-3 defect (visible English with
+`aria-pressed` still claiming Spanish) is mutation-reproduced and
+ratchet-blocked.
+
+### Incomplete states never claim a made choice
+
+The one production test instruction that assumes a finalist (the
+Comfortable-elevation branch — traced; production ships no
+context-neutral variant) is withheld until a finalist exists:
+detection against BOTH language variants, withhold-not-rewrite, the
+priority's name and why always render, every other priority keeps its
+full prose. The handoff note derives from finalist state AND payment
+state (four bilingual variants) — it can no longer say a payment
+conversation was chosen beside a "Not selected yet" row, and that
+phrasing is ratchet-banned in both languages.
+
+### Modal contract completed
+
+`aria-modal` alone was not containment. Both dialogs now: make the
+background inert while open (restored on close, never left behind by
+Start over), contain Tab and Shift+Tab with wrap and an
+escaped-focus redirect, close on Escape (the visible × stays the
+primary exit — iPads have no Escape), and restore focus to the
+invoking control — the detail sheet falls back to the same mattress's
+Details button if the cards re-rendered, the isolation report to the
+live scene. Close buttons are localized (Close/Cerrar), and an open
+isolation report re-renders its rows on a language switch.
+
+### Verification and ratchets
+
+`checks/state_interaction_check.mjs` (47 assertions) covers the state
+table, the withhold gate, the note matrix, the accordion, the language
+authority, and the modal contract; its fix-1/fix-4 assertions FAIL
+against the rev-3 source and its fix-2/3/5 assertions FAIL against the
+3.1-commit-1 source. Live mutation proofs: multi-open overflow,
+focus-losing accordion, hand-toggled reset (stale ARIA), disabled
+trap, non-restoring close, plus the commit-1 set. Browser matrix run
+EN+ES with the geometry method standing in for real windows at device
+widths (the workstation constraint documented under EN/ES and layout);
+the physical-iPad touch review remains outstanding.
+
+### Deferred product recommendations (recorded, NOT in 3.1)
+
+1. **Percentage rings** remain visually dominant and can show multiple
+   100% values; a future design pass should weigh replacing them with
+   ordinal language. Not redesigned here.
+2. **Locally-made scoring transparency:** the +25 `locallyMade` bonus
+   means match strength includes a retailer preference, not only sleep
+   attributes. Owner decision for later: disclose the local preference
+   separately, or reconsider its place inside the score. Unchanged here.
+3. **Dedicated visible financing-status copy:** production should
+   preferably get its own visible governed key rather than reusing
+   `staleAnnouncement`; the prototype's visible reuse stays explicitly
+   marked as a proposed production change. No canonical config change.
+4. **Native Spanish showroom review:** "Queen", subtitle phrasing,
+   capitalization, and regional register need a qualified native Lacks
+   reviewer; the shipped bilingual behavior is kept as-is.
+5. **Customer-recorded mattress reactions** remain the recommended next
+   substantive personalization phase.
+6. **Physical iPad validation** is still required for touch, safe
+   areas, real browser chrome, and mounted-showroom behavior; the
+   workstation matrix does not replace it.
 
 ## The two-path architecture (the roadmap's, made visible)
 
@@ -297,9 +421,10 @@ Plan. Your Payment Choices.") gives the salesperson: the profile
 subtitle, the trial priorities with their in-store test script, which
 mattresses were compared, the finalist — explicitly distinguished from
 the engine's recommendation, with "No finalist selected yet" stated when
-none was chosen — Sleep System picks, and the payment signal (the
-decision plus any agenda-marked paths). No raw quiz answers, no
-eligibility implication.
+none was chosen — Sleep System picks, and the payment signal as TWO
+rows: the conversation preference and the customer's marked topics,
+with "Not right now" suppressing the active agenda (revision-3.1 truth
+table above). No raw quiz answers, no eligibility implication.
 
 ## State isolation — demonstrated live
 
@@ -382,8 +507,9 @@ ZIP-code routing.
    nothing is submitted, no application starts."
 6. **(30s) Spanish, live.** Tap ES with the sheet open. "Same programs,
    same order, same gates — the customer's marked agenda survives the
-   switch. The whole journey does this: answers, finalist, plan." Natural,
-   reviewed Spanish throughout — nothing performed.
+   switch. The whole journey does this: answers, finalist, plan." The
+   Spanish is the shipped bilingual copy — still pending native Lacks
+   review — and nothing is performed or improvised.
 7. **(45s) Compare → finalist → the close.** Back in EN: compare side by
    side — the trial priorities span BOTH beds, because they belong to the
    customer, not to a mattress. Pick a real finalist, add the suggested
