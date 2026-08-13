@@ -728,9 +728,11 @@ var activeTier = "gold", cmpSel = [];
      ("currently considering" that path), or "not_now" (the customer chose
      to pause the payment portion — authoritative until a NEWER deliberate
      path selection replaces it)
-   · payExplored — accumulated ids of paths the customer deliberately
-     selected for review at any point (history, never intent) */
-var finalistId = null, sysSel = [], payPref = null, payExplored = {}, payReturn = "results";
+   · payExplored — accumulated ids of paths whose governed details the
+     customer deliberately opened (history, never intent)
+   · payOpen — presentation only: which cards' details are currently
+     revealed (collapsible; collapsing never un-records exploration) */
+var finalistId = null, sysSel = [], payPref = null, payExplored = {}, payOpen = {}, payReturn = "results";
 var payCleared = false;
 /* single-open accordion: index of the ONE disclosed priority, or null —
    multiple open disclosures could push the CTA out of the fixed,
@@ -824,6 +826,8 @@ var T = {
   paymentLbl:{en:"Payment preference",es:"Preferencia de pago"},
   exploredLbl:{en:"Options explored",es:"Opciones exploradas"},
   reviewOption:{en:"Review this option",es:"Revisar esta opción"},
+  hideDetails:{en:"Hide details",es:"Ocultar detalles"},
+  consider:{en:"Consider this option",es:"Considerar esta opción"},
   considering:{en:"Currently considering ✓",es:"En consideración ✓"},
   exploreConsequence:{en:"Explore options together. Nothing is submitted and no application is started.",
                       es:"Exploren las opciones juntos. No se envía nada y no se inicia ninguna solicitud."},
@@ -950,7 +954,7 @@ function visibleQuestions(){
 function startQuiz(){ answers = {}; qPos = 0; resetJourneyState(); go("quiz"); renderQ(); }
 function resetJourneyState(){
   cmpSel = []; computed = null; finalistId = null; sysSel = [];
-  payPref = null; payExplored = {}; payReturn = "results"; payCleared = false;
+  payPref = null; payExplored = {}; payOpen = {}; payReturn = "results"; payCleared = false;
   prioOpenIdx = null;
 }
 function startOver(){ answers = {}; qPos = 0; resetJourneyState();
@@ -1296,11 +1300,21 @@ function paymentModel(){
     externalNotice: FIN.copy.externalNotice
   };
 }
+function reviewPath(id){
+  /* EXPLORATION ONLY: reveals/hides the option's governed details and,
+     on reveal, records the path as explored. Reviewing NEVER touches the
+     preference — that requires the distinct "Consider this option"
+     action inside the revealed details. Collapsing never un-records. */
+  payOpen[id] = !payOpen[id];
+  if (!payOpen[id]) delete payOpen[id];
+  else payExplored[id] = true;
+  renderPayment();
+}
 function considerPath(id){
-  /* a DELIBERATE selection records the current preference (one path at a
-     time) and joins the explored history; re-pressing clears it. Selecting
-     a path is the one action that replaces an earlier "Not right now" —
-     the customer reopened the payment conversation themselves. */
+  /* the DELIBERATE preference action, offered inside reviewed details:
+     records the provisional preference (one path at a time; re-pressing
+     clears it). This is also the one action that replaces an earlier
+     "Not right now" — the customer reopened the conversation themselves. */
   if (payPref === id){ payPref = null; payCleared = true; }
   else { payPref = id; payExplored[id] = true; payCleared = false; }
   renderPayment();
@@ -1332,28 +1346,41 @@ function renderPayment(){
   document.getElementById("payBody").textContent = L(m.body);
   var s = "";
   m.cards.forEach(function(c){
-    s += '<div class="path' + (c.mexico ? ' mx' : '') + '">'
-      + '<div class="h">' + c.title + '</div>';
-    if (c.offers){
-      c.offers.forEach(function(o){
-        s += '<div class="h" style="font-size:1.05rem">' + o.headline + '</div>'
-          + '<p>' + o.detail + '</p>'
-          + '<p class="ext-note">' + o.disclosure + '</p>';
-      });
-    } else if (c.staleBody !== undefined && c.staleBody !== null){
-      s += '<p>' + c.staleBody + '</p>';
-    }
-    if (c.detail) s += '<p>' + c.detail + '</p>';
-    if (c.example) s += '<p>' + c.example + '</p>';
-    if (c.disclosure) s += '<p class="ext-note">' + c.disclosure + '</p>';
-    if (c.prequal) s += '<p class="ext-note">' + c.prequal + '</p>';
-    if (c.link){
-      s += '<div class="links"><a href="' + c.link.url + '" target="_blank" rel="noopener noreferrer">'
-        + c.link.label + '</a></div>';
-    }
+    var isOpen = !!payOpen[c.id];
     var isPref = payPref === c.id;
-    s += '<button class="tog' + (isPref ? ' on' : '') + '" aria-pressed="' + isPref + '" style="align-self:flex-start" onclick="considerPath(\'' + c.id + '\')">'
-      + (isPref ? L(T.considering) : L(T.reviewOption)) + '</button>';
+    s += '<div class="path' + (c.mexico ? ' mx' : '') + '">'
+      + '<div class="h">' + c.title + '</div>'
+      /* exploration control: reveals the governed details and records the
+         path as explored — it can never set a preference */
+      + '<button class="tog" aria-expanded="' + isOpen + '" style="align-self:flex-start" onclick="reviewPath(\'' + c.id + '\')">'
+      + (isOpen ? L(T.hideDetails) : L(T.reviewOption)) + '</button>';
+    if (isOpen){
+      if (c.offers){
+        c.offers.forEach(function(o){
+          s += '<div class="h" style="font-size:1.05rem">' + o.headline + '</div>'
+            + '<p>' + o.detail + '</p>'
+            + '<p class="ext-note">' + o.disclosure + '</p>';
+        });
+      } else if (c.staleBody !== undefined && c.staleBody !== null){
+        s += '<p>' + c.staleBody + '</p>';
+      }
+      if (c.detail) s += '<p>' + c.detail + '</p>';
+      if (c.example) s += '<p>' + c.example + '</p>';
+      if (c.disclosure) s += '<p class="ext-note">' + c.disclosure + '</p>';
+      if (c.prequal) s += '<p class="ext-note">' + c.prequal + '</p>';
+      if (c.link){
+        s += '<div class="links"><a href="' + c.link.url + '" target="_blank" rel="noopener noreferrer">'
+          + c.link.label + '</a></div>';
+      }
+      /* the distinct INTENTIONAL action — only reachable inside reviewed
+         details; records the provisional preference, nothing more */
+      s += '<button class="tog' + (isPref ? ' on' : '') + '" aria-pressed="' + isPref + '" style="align-self:flex-start" onclick="considerPath(\'' + c.id + '\')">'
+        + (isPref ? L(T.considering) : L(T.consider)) + '</button>';
+    } else if (isPref){
+      /* the current preference stays visible even when its details are
+         collapsed — set only via Consider, never via review */
+      s += '<p class="ext-note">' + L(T.considering) + '</p>';
+    }
     s += '</div>';
   });
   document.getElementById("payPaths").innerHTML = s;

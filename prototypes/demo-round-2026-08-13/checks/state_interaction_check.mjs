@@ -47,11 +47,26 @@ assert("explored history excludes the current preference (its own row)",
   explored.includes("id !== payPref"));
 assert("pause suppresses the history from the active handoff",
   /if \(payPref === "not_now"\) return null/.test(explored));
+// review and consider are DISTINCT actions: reviewing reveals governed
+// details and records history; only Consider may set the preference
+const review = fnBody("reviewPath");
+assert("reviewPath exists (exploration action)", review.length > 0);
+assert("reviewPath toggles the revealed details", review.includes("payOpen[id]"));
+assert("reviewPath records exploration on reveal", review.includes("payExplored[id] = true"));
+assert("reviewPath NEVER touches the preference", !review.includes("payPref"));
 const consider = fnBody("considerPath");
 assert("considerPath records a deliberate selection AND the history",
   consider.includes("payPref = id") && consider.includes("payExplored[id] = true"));
 assert("a newer deliberate selection replaces the pause (unconditional assignment)",
   !consider.includes('"not_now"'));
+const rp = fnBody("renderPayment");
+assert("governed details render only when reviewed open", /if \(isOpen\)\{/.test(rp));
+assert("the Consider action lives INSIDE the revealed details",
+  rp.indexOf("considerPath") > rp.indexOf("if (isOpen){"));
+assert("review control exposes expanded state accessibly", rp.includes('aria-expanded="'));
+assert("Consider has its own label, distinct from the considering state",
+  html.includes("consider:{en:") && html.includes("considering:{en:"));
+assert("reset clears the revealed-details state", /payOpen\s*=\s*\{\}/.test(fnBody("resetJourneyState")));
 assert("pausePayment exists and toggles the authoritative pause",
   fnBody("pausePayment").includes('"not_now"'));
 const handoff = fnBody("renderHandoff");

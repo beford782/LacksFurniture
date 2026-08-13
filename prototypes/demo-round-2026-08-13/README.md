@@ -66,8 +66,10 @@ identical either way.
   application is started." sentence verbatim in both languages) — are
   owner-directed prototype UI copy, flagged in code as PROPOSED
   ENVELOPE EXTENSIONS pending adoption through
-  `incoming/lacks_financing.json`. Canonical financing config is
-  untouched.
+  `incoming/lacks_financing.json` — as are the exploration/preference
+  pair "Review this option" / "Hide details" and "Consider this
+  option" ("Considerar esta opción", subject to the standing
+  native-review caveat). Canonical financing config is untouched.
 - These production functions are **extracted verbatim from `index.html`
   at runtime** (the repo's test-harness technique):
   - `calculateScores()`, `qualifyRankedChoices()`, `showProfileScreen()`
@@ -252,18 +254,26 @@ the customer and specialist are using the tool together in real time,
 so the interaction never assembles items for a future discussion. The
 model captures OBSERVABLE actions only:
 
-- **Explored paths** — every path the customer deliberately selected
-  for review at any point. History, never intent.
+- **Explored paths** — every path whose governed details the customer
+  deliberately opened. History, never intent.
 - **Current preference** — one path "currently considering" (a
   provisional preference — never an application, approval, eligibility
   determination, or financing commitment), or "Not right now" (the
   authoritative pause), or nothing.
 
-Per-card control: "Review this option" → "Currently considering ✓"
-(single-select; selecting one path replaces another; re-pressing
-clears). The handoff summarizes what actually happened — a "Payment
-preference" row always, an "Options explored" row only when genuinely
-useful (explored paths beyond the current preference):
+Two DISTINCT per-card actions keep those meanings apart:
+**"Review this option"** is exploration only — it reveals the option's
+governed details (cards are collapsed by default) and records the path
+in the explored history; it can never set a preference. Inside the
+revealed details, **"Consider this option"** is the intentional action
+that records the provisional preference ("Currently considering ✓",
+`aria-pressed`; single-select — choosing another path replaces it;
+re-pressing clears). Merely reviewing one or several options can never
+produce "Currently considering" anywhere in the UI or handoff, and
+navigating to the sheet records nothing by itself. The handoff
+summarizes what actually happened — a "Payment preference" row always,
+an "Options explored" row only when genuinely useful (explored paths
+beyond the current preference):
 
 | what happened | Payment preference row | Options explored row |
 |---|---|---|
@@ -417,9 +427,12 @@ governed order:
    `mexicoInfoUrl`; the config's unverified Mexico application URL is
    never rendered (its own config note).
 
-Each card carries the "Review this option" preference control
-(owner-directed prototype copy — see the disclosed exception above);
-the sheet closes with the official Lacks financing-page link (fails
+Each card is collapsed by default and carries the "Review this option"
+exploration control — revealing the governed details records the path
+as explored, never a preference; the distinct "Consider this option"
+action inside the details records the provisional preference
+(owner-directed prototype copy — see the disclosed exception above).
+The sheet closes with the official Lacks financing-page link (fails
 closed via `financingSourceAllowed`), the external-site notice, the
 governed disclosure footer, and the consequence line, which preserves
 the governed "Nothing is submitted and no application is started"
