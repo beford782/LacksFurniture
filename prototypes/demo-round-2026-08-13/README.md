@@ -429,6 +429,12 @@ rules are unchanged, so risk is low — but device-size confirmation of
 revision 3, full-height portrait, and touch behavior all belong to the
 physical iPad review, the same standing caveat as revisions 1–2.
 
+Touch-handling note: the prototype uses `onclick` +
+`touch-action: manipulation` throughout (no `touchend`/`pointerdown`
+ghost-click guards — production's hard-won pattern). Adding those guards
+is a deliberate change that needs the owner's touch-rules sign-off, so it
+is documented here for the iPad pass rather than slipped into revision 3.
+
 ## Deliberately unchanged
 
 - **Recommendations** — the real engine, extracted verbatim; no
