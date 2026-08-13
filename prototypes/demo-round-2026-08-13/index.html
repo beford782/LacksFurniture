@@ -1152,6 +1152,9 @@ function openPay(from){
   payReturn = from || "results";
   closeDetail();
   go("payment");
+  /* scenes toggle a class, never rebuild, so #payPaths keeps its scrollTop
+     across close/reopen and New customer — always open at the top */
+  document.getElementById("payPaths").scrollTop = 0;
 }
 function closePay(){ go(payReturn === "plan" ? "plan" : payReturn); }
 function renderPayment(){
