@@ -96,12 +96,15 @@ identical either way.
    four live mutations (language-routed suppression / destination / calc,
    and a broken language switch) — each flips exactly check #5 to FAIL.
    Static ratchet: `checks/iso5_structural_check.mjs`.
-3. **Invented financing-history claim removed.** The script said "South
-   Texas families have financed with Lacks since 1935." The verified fact
-   is company heritage (family-owned, South Texas, since 1935) — no
-   source verifies any financing program's vintage, so the claim is gone
-   and nothing replaced it. Ratchet: a grep gate fails any line pairing
-   "1935" with financing vocabulary (`checks/finalist_state_check.mjs`).
+3. **Invented financing-history claim removed.** The script asserted
+   that South Texas families had used the store's payment programs since
+   the founding year. The verified fact is company heritage only
+   (family-owned, South Texas, since 1935) — no source verifies any
+   payment program's vintage, so the claim is gone and nothing replaced
+   it. Ratchet: a grep gate fails any line that pairs the founding year
+   with financing vocabulary (`checks/finalist_state_check.mjs`), which
+   is also why this paragraph describes the removed claim instead of
+   quoting it.
 4. **Silent finalist fallback eliminated.** Rev 2's plan and handoff
    substituted the engine's top pick when no finalist existed and labeled
    it "Finalist." State semantics are now explicit — "Best match" =
