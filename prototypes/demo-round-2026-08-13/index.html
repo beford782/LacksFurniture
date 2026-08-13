@@ -60,6 +60,7 @@
     --util:"Avenir Next Condensed","Avenir Next","Arial Narrow",sans-serif;
   }
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
   html,body{height:100%}
   body{
     background:var(--midnight);color:var(--moonlight);
@@ -123,7 +124,10 @@
     text-transform:uppercase;color:var(--moon-dim);opacity:.8}
   .outcome .items{font-size:.86rem;color:var(--moon-dim)}
   .outcome .pay{font-size:.82rem;color:var(--moon-dim);opacity:.85;max-width:46ch}
-  .demo-tools{display:flex;gap:1.6rem;margin-top:.7rem}
+  .demo-tools{display:none;gap:1.6rem;margin-top:.7rem}
+  .presenter .demo-tools{display:flex}
+  .q-rehearse{display:none;text-align:center;padding:4px 0 0}
+  .presenter .q-rehearse{display:block}
   .demo-fill{font-family:var(--util);font-weight:600;font-size:.7rem;letter-spacing:.24em;
     text-transform:uppercase;color:var(--moon-dim);opacity:.7;
     border-bottom:1px solid var(--veil);padding-bottom:2px}
@@ -245,9 +249,9 @@
   .card.small .name{font-size:1.3rem}
   .card.small .ring{width:54px;height:54px;top:18px;right:18px}
   .card.small .ring text{font-size:13px}
-  .cmp-tag{position:absolute;bottom:14px;right:16px;z-index:2;
+  .cmp-tag{position:absolute;bottom:11px;right:16px;z-index:2;
     font-family:var(--util);font-weight:600;font-size:.64rem;letter-spacing:.22em;
-    text-transform:uppercase;color:var(--ink-soft)}
+    text-transform:uppercase;color:var(--ink-soft);padding:2px 0}
   .card.cmp-sel .cmp-tag{color:var(--brass)}
   .d-btn{position:absolute;bottom:11px;left:16px;z-index:2;
     font-family:var(--util);font-weight:600;font-size:.64rem;letter-spacing:.22em;
@@ -373,6 +377,11 @@
   .pay-official{display:flex;flex-direction:column;gap:.1rem;padding:2px 4px}
   .pay-official a{color:var(--brass);font-size:.88rem;text-decoration:underline;
     text-underline-offset:3px;width:max-content}
+  /* sober sheet-level governance statement — self-contained hairlines so
+     the evergreen cards beneath never read as dimmed or disabled */
+  .pay-gov{border-top:1px solid rgba(212,168,75,.45);border-bottom:1px solid rgba(212,168,75,.45);
+    padding:.5rem .15rem;font-size:.84rem;color:var(--brass-soft);flex:none}
+  .pay-gov:empty{display:none}
   .pay-paths{display:flex;flex-direction:column;gap:10px;overflow:auto;min-height:0;padding:2px}
   .path{background:var(--nocturne);border:1px solid var(--veil-soft);border-radius:16px;
     padding:.85rem 1.1rem;display:flex;flex-direction:column;gap:.35rem}
@@ -471,8 +480,8 @@
 
 <div class="chrome">
   <div class="langs" role="group" aria-label="Language">
-    <button id="langEn" class="on" onclick="setLang('en')">EN</button>
-    <button id="langEs" onclick="setLang('es')">ES</button>
+    <button id="langEn" class="on" aria-pressed="true" onclick="setLang('en')">EN</button>
+    <button id="langEs" aria-pressed="false" onclick="setLang('es')">ES</button>
   </div>
   <button class="restart" id="restartBtn" onclick="startOver()"></button>
 </div>
@@ -497,7 +506,8 @@
       <div class="items" id="wOutcomeItems"></div>
       <div class="pay" id="wPayLine"></div>
     </div>
-    <div class="demo-tools">
+    <!-- presenter-only (hidden from customers unless ?presenter=1) -->
+    <div class="demo-tools" id="demoTools">
       <button class="demo-fill" onclick="demoFill()" data-t="wDemo"></button>
       <button class="demo-fill" onclick="runIso()" data-t="wIso"></button>
     </div>
@@ -518,6 +528,9 @@
     <div id="quizArcWrap"><svg id="quizArc" viewBox="0 0 1000 90" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%" aria-hidden="true"></svg></div>
     <!-- journey indicator only — payment never interrupts the fitting -->
     <div class="journey" id="journeyStrip"></div>
+    <!-- presenter-only: completes ONLY unanswered questions with the sample
+         set, preserving every answer already entered -->
+    <div class="q-rehearse"><button class="demo-fill" onclick="rehearseRemaining()" data-t="qRehearse"></button></div>
   </div>
 </section>
 
@@ -563,7 +576,7 @@
 
 <!-- MATTRESS DETAIL OVERLAY -->
 <div id="detail" onclick="if(event.target===this)closeDetail()">
-  <div class="detail-sheet">
+  <div class="detail-sheet" role="dialog" aria-modal="true" aria-labelledby="dName">
     <button class="detail-close" onclick="closeDetail()" aria-label="Close">×</button>
     <div class="plate"><img id="dImg" alt=""></div>
     <div class="brand" id="dBrand"></div>
@@ -622,6 +635,12 @@
       <p class="pay-fit" id="payFit"></p>
       <p class="pay-body" id="payBody"></p>
     </div>
+    <!-- Governance band: renders financing.copy.staleAnnouncement when
+         anyStale (production's own _finSheetStale predicate). PROPOSED
+         PRODUCTION CHANGE — production renders this copy screen-reader-only
+         today; role="status" keeps the announcement semantics while adding
+         sighted parity. Cleared on close so a reopen re-announces. -->
+    <div class="pay-gov" id="payGov" role="status"></div>
     <div class="pay-paths" id="payPaths"></div>
     <div class="pay-official" id="payOfficial"></div>
     <p class="pay-disc" id="payDisc"></p>
@@ -662,9 +681,9 @@
 
 <!-- ISOLATION CHECK REPORT -->
 <div id="iso" onclick="if(event.target===this)closeIso()">
-  <div class="iso-sheet">
+  <div class="iso-sheet" role="dialog" aria-modal="true" aria-labelledby="isoTitleH">
     <button class="iso-close" onclick="closeIso()" aria-label="Close">×</button>
-    <h3 data-t="isoTitle"></h3>
+    <h3 id="isoTitleH" data-t="isoTitle"></h3>
     <p class="sub" data-t="isoSub"></p>
     <div id="isoRows"></div>
   </div>
@@ -694,6 +713,13 @@ var finalistId = null, sysSel = [], payDecision = null, finAgenda = {}, payRetur
 var payCleared = false;
 var prioOpen = {};   // reveal-scene disclosure state for the why/test prose
 
+/* Presenter mode: documented opt-in via ?presenter=1. Gates DISPLAY of the
+   rehearsal tools and isolation check only — customer behavior, scoring,
+   payment, and session state are identical with it on or off. Hidden
+   controls use display:none, so they are neither visible nor focusable. */
+var PRESENTER = false;
+try { PRESENTER = new URLSearchParams(location.search).get("presenter") === "1"; } catch(e){}
+
 function L(o){ if (o == null) return ""; if (typeof o === "string") return o; return o[lang] || o.en || ""; }
 
 /* ---- bilingual chrome copy (UI labels only — every payment/financing
@@ -707,6 +733,8 @@ var T = {
                es:"Con la guía de tu especialista de sueño de {store}"},
   wDemo:{en:"Rehearsal: fill sample answers",es:"Ensayo: respuestas de muestra"},
   wIso:{en:"Isolation check",es:"Prueba de aislamiento"},
+  qRehearse:{en:"Complete remaining questions for rehearsal",
+             es:"Completar las preguntas restantes para el ensayo"},
   restart:{en:"Start over",es:"Empezar de nuevo"},
   ofN:{en:"of",es:"de"},
   back:{en:"← Back",es:"← Atrás"},
@@ -887,14 +915,28 @@ function startOver(){ answers = {}; qPos = 0; resetJourneyState(); lang = "en";
   document.getElementById("langEs").classList.remove("on");
   closeDetail(); closeIso();
   go("welcome"); render(); }
+/* the rehearsal sample mirrors the SHIPPED 10-question quiz exactly —
+   no retired question ids (sleep_quality / current_mattress_age are gone) */
+var SAMPLE_ANSWERS = { trigger:"worn_out", mattress_size:"queen",
+  partner_sleep:"partner", partner_disturbance:"sometimes", sleep_position:"side",
+  body_type:"average", temperature:"cold", firmness:3,
+  sleep_issues:["hip_pain","sagging"], health_conditions:["reflux"] };
 function demoFill(){
-  /* rehearsal path — a plausible full answer set; results still come from
-     the real engine, exactly as if tapped by hand. Payment state is left
-     untouched: the fitting and the payment layer are independent. */
-  answers = { sleep_quality:"fair", trigger:"worn_out", mattress_size:"queen",
-    partner_sleep:"partner", partner_disturbance:"sometimes", sleep_position:"side",
-    body_type:"average", temperature:"cold", firmness:3,
-    sleep_issues:["hip_pain","sagging"], health_conditions:["reflux"] };
+  /* presenter rehearsal — a plausible full answer set; results still come
+     from the real engine, exactly as if tapped by hand. Payment state is
+     left untouched: the fitting and the payment layer are independent. */
+  answers = JSON.parse(JSON.stringify(SAMPLE_ANSWERS));
+  finishQuiz();
+}
+function rehearseRemaining(){
+  /* presenter rehearsal, mid-quiz: fills ONLY unanswered visible questions
+     from the sample set — never overwrites an entered answer, respects
+     skip logic, and completes through the real production engine */
+  visibleQuestions().forEach(function(q){
+    if (!answered(q) && SAMPLE_ANSWERS.hasOwnProperty(q.id)){
+      answers[q.id] = JSON.parse(JSON.stringify(SAMPLE_ANSWERS[q.id]));
+    }
+  });
   finishQuiz();
 }
 function currentQ(){ visible = visibleQuestions(); return visible[Math.min(qPos, visible.length-1)]; }
@@ -1220,9 +1262,19 @@ function openPay(from){
      across close/reopen and New customer — always open at the top */
   document.getElementById("payPaths").scrollTop = 0;
 }
-function closePay(){ go(payReturn === "plan" ? "plan" : payReturn); }
+function closePay(){
+  /* clear the governance band on close (production lifecycle: identical
+     text is not a live-region mutation, so a reopen must re-announce) */
+  document.getElementById("payGov").textContent = "";
+  go(payReturn === "plan" ? "plan" : payReturn);
+}
 function renderPayment(){
   var m = paymentModel(); if (!m) return;
+  /* the band states ONLY that exact details are suppressed — scoped to
+     "exact rates and terms", never to Payment Choices as a whole, so the
+     evergreen paths beneath stay plainly available. Driven by the same
+     anyStale predicate production uses for its SR announcement. */
+  document.getElementById("payGov").textContent = m.anyStale ? FC("staleAnnouncement") : "";
   document.getElementById("payEyebrow").textContent = L(m.eyebrow);
   document.getElementById("payTitle").textContent = L(m.headline);
   document.getElementById("payFit").textContent = L(m.fitFirst);
@@ -1248,7 +1300,7 @@ function renderPayment(){
       s += '<div class="links"><a href="' + c.link.url + '" target="_blank" rel="noopener noreferrer">'
         + c.link.label + '</a></div>';
     }
-    s += '<button class="tog' + (finAgenda[c.id] ? ' on' : '') + '" style="align-self:flex-start" onclick="togAgenda(\'' + c.id + '\')">'
+    s += '<button class="tog' + (finAgenda[c.id] ? ' on' : '') + '" aria-pressed="' + !!finAgenda[c.id] + '" style="align-self:flex-start" onclick="togAgenda(\'' + c.id + '\')">'
       + (finAgenda[c.id] ? L(m.agendaMarked) : L(m.agendaMark)) + '</button>';
     s += '</div>';
   });
@@ -1287,6 +1339,8 @@ function setLang(l){
   lang = l;
   document.getElementById("langEn").classList.toggle("on", l === "en");
   document.getElementById("langEs").classList.toggle("on", l === "es");
+  document.getElementById("langEn").setAttribute("aria-pressed", l === "en" ? "true" : "false");
+  document.getElementById("langEs").setAttribute("aria-pressed", l === "es" ? "true" : "false");
   if (computed) compute();   // re-run the real engine so language-resolved output stays honest
   render();
 }
@@ -1360,7 +1414,10 @@ function cardHtml(entry, hero){
      shown only on one model they read as that model's own attributes.
      Provenance is genuinely per-model data, so it may. */
   var chips = provChip(m);
-  return '<div class="card ' + (hero ? "hero" : "small") + (sel ? " cmp-sel" : "") + '" role="button" tabindex="0" onclick="toggleCmp(\'' + entry.id + '\')">'
+  /* the card itself is a plain container (no role="button"): nesting the
+     Details and Compare buttons inside an ARIA button was invalid. Tap
+     anywhere still toggles compare; keyboard users get the real buttons. */
+  return '<div class="card ' + (hero ? "hero" : "small") + (sel ? " cmp-sel" : "") + '" onclick="toggleCmp(\'' + entry.id + '\')">'
     + (hero ? '<div class="ribbon">' + L(T.bestMatch) + '</div>' : '')
     + '<div class="ring">' + ringSvg(entry.pct) + '</div>'
     + '<div class="ph"><img src="' + imgOf(m) + '" alt="' + m.name + '"></div>'
@@ -1371,14 +1428,14 @@ function cardHtml(entry, hero){
     +   (chips ? '<div class="chips">' + chips + '</div>' : '')
     + '</div>'
     + '<button class="d-btn" onclick="event.stopPropagation();openDetail(\'' + entry.id + '\')">' + L(T.detailsBtn) + '</button>'
-    + '<span class="cmp-tag">' + (sel ? L(T.comparedTag) : L(T.compareTag)) + '</span>'
+    + '<button class="cmp-tag" aria-pressed="' + sel + '" onclick="event.stopPropagation();toggleCmp(\'' + entry.id + '\')">' + (sel ? L(T.comparedTag) : L(T.compareTag)) + '</button>'
     + '</div>';
 }
 function renderResults(){
   if (!computed) return;
   var tiers = [["gold","tierGold"],["silver","tierSilver"],["bronze","tierBronze"]], tt = "";
   tiers.forEach(function(t){
-    tt += '<button class="' + (activeTier === t[0] ? "on" : "") + '" onclick="activeTier=\'' + t[0] + '\';renderResults()">' + L(T[t[1]]) + '</button>';
+    tt += '<button class="' + (activeTier === t[0] ? "on" : "") + '" aria-pressed="' + (activeTier === t[0]) + '" onclick="activeTier=\'' + t[0] + '\';renderResults()">' + L(T[t[1]]) + '</button>';
   });
   document.getElementById("tierTabs").innerHTML = tt;
   /* honest framing for the rings: percentages are normalized WITHIN the
@@ -1410,8 +1467,10 @@ function toggleCmp(id){
 }
 
 /* ---- mattress detail overlay ---- */
-var detailId = null;
+var detailId = null, detailReturnFocus = null;
 function openDetail(id){
+  var wasOpen = document.getElementById("detail").classList.contains("on");
+  if (!wasOpen) detailReturnFocus = document.activeElement;
   detailId = id;
   var m = model(id); if (!m) return;
   document.getElementById("dImg").src = imgOf(m);
@@ -1433,6 +1492,7 @@ function openDetail(id){
   var fb = document.getElementById("dFinBtn");
   fb.textContent = finalistId === id ? L(T.isFinalist) : L(T.makeFinalist);
   fb.className = "btn-ink" + (finalistId === id ? " on" : "");
+  fb.setAttribute("aria-pressed", finalistId === id ? "true" : "false");
   fb.onclick = function(){ finalistId = (finalistId === id) ? null : id; openDetail(id); renderResults(); };
   /* the one quiet, consistent link to the canonical Payment Choices layer */
   if (FIN){
@@ -1440,9 +1500,26 @@ function openDetail(id){
     document.getElementById("dPayBody").textContent = L(FIN.copy.drawerBody);
     document.getElementById("dPayLink").textContent = L(FIN.copy.drawerMark) + " →";
   }
-  document.getElementById("detail").classList.add("on");
+  if (!wasOpen){
+    document.getElementById("detail").classList.add("on");
+    var cb = document.querySelector("#detail .detail-close");
+    if (cb) cb.focus();
+  }
 }
-function closeDetail(){ detailId = null; document.getElementById("detail").classList.remove("on"); }
+function closeDetail(){
+  var was = document.getElementById("detail").classList.contains("on");
+  detailId = null; document.getElementById("detail").classList.remove("on");
+  if (was && detailReturnFocus && document.body.contains(detailReturnFocus)){
+    try { detailReturnFocus.focus(); } catch(e){}
+  }
+  detailReturnFocus = null;
+}
+/* Escape closes whichever overlay is open (focus restored by closeDetail) */
+document.addEventListener("keydown", function(e){
+  if (e.key !== "Escape") return;
+  if (document.getElementById("detail").classList.contains("on")) closeDetail();
+  else if (document.getElementById("iso").classList.contains("on")) closeIso();
+});
 
 function tierOf(id){
   for (var t in computed.tiers) if (computed.tiers[t].some(function(e){ return e.id === id; })) return t;
@@ -1491,7 +1568,7 @@ function renderCompare(){
     stage += '<div class="cmp-side"><div class="plate"><img src="' + imgOf(m) + '" alt="' + m.name + '"></div>'
       + '<div class="brand">' + m.brand + (m.subBrand ? ' · ' + m.subBrand : '') + (provChip(m) ? ' ' + provChip(m) : '') + '</div>'
       + '<div class="name">' + m.name + '</div>'
-      + '<button class="fin-btn' + (finalistId === m.id ? ' on' : '') + '" onclick="chooseFinalist(\'' + m.id + '\')">'
+      + '<button class="fin-btn' + (finalistId === m.id ? ' on' : '') + '" aria-pressed="' + (finalistId === m.id) + '" onclick="chooseFinalist(\'' + m.id + '\')">'
       + (finalistId === m.id ? L(T.isFinalist) : L(T.makeFinalist)) + '</button>'
       + '</div>';
   });
@@ -1585,7 +1662,7 @@ function renderPlan(){
       var on = sysSel.indexOf(a.id) >= 0;
       s += '<div class="sys-item"><span class="nm">' + L(a.name)
         + '<i>' + (a.reasons && a.reasons.length ? a.reasons[0] : "") + '</i></span>'
-        + '<button class="tog' + (on ? ' on' : '') + '" onclick="toggleSys(\'' + a.id + '\')">'
+        + '<button class="tog' + (on ? ' on' : '') + '" aria-pressed="' + on + '" onclick="toggleSys(\'' + a.id + '\')">'
         + (on ? L(T.addedSys) : L(T.addSys)) + '</button></div>';
     });
     if (FIN) s += '<div class="dim">' + L(FIN.copy.sleepSystemGuidance) + '</div>';
@@ -1597,9 +1674,9 @@ function renderPlan(){
     s += '<div class="plan-block"><div class="bt">' + L(FIN.copy.eyebrow) + '</div>'
       + '<div class="dim">' + L(FIN.copy.fitFirst) + '</div>'
       + '<div class="decide">'
-      + '<button class="' + (payDecision === "review" ? "on" : "") + '" onclick="decide(\'review\')">' + L(FIN.copy.resultsAsk) + '</button>'
-      + '<button class="' + (payDecision === "not_now" ? "on" : "") + '" onclick="decide(\'not_now\')">' + L(FIN.copy.agendaNotNow) + '</button>'
-      + '<button class="' + (payDecision === "undecided" ? "on" : "") + '" onclick="decide(\'undecided\')">' + L(T.decideUndecided) + '</button>'
+      + '<button class="' + (payDecision === "review" ? "on" : "") + '" aria-pressed="' + (payDecision === "review") + '" onclick="decide(\'review\')">' + L(FIN.copy.resultsAsk) + '</button>'
+      + '<button class="' + (payDecision === "not_now" ? "on" : "") + '" aria-pressed="' + (payDecision === "not_now") + '" onclick="decide(\'not_now\')">' + L(FIN.copy.agendaNotNow) + '</button>'
+      + '<button class="' + (payDecision === "undecided" ? "on" : "") + '" aria-pressed="' + (payDecision === "undecided") + '" onclick="decide(\'undecided\')">' + L(T.decideUndecided) + '</button>'
       + '</div>';
     if (payDecision === "not_now") s += '<div class="dim">' + L(FIN.copy.interestNotNowAnnounce) + '</div>';
     else if (payDecision === null && payCleared) s += '<div class="dim">' + L(FIN.copy.interestClearedAnnounce) + '</div>';
@@ -1793,9 +1870,14 @@ function runIso(){
       if (c.mexico && (c.detail !== stale || c.example)) exactSuppressedOk = false;
     });
   }
+  /* the sheet-level governance band is driven by anyStale; pin anyStale to
+     its derivation so the band can never decouple from the gate it reports */
+  var bandCoupled = !!mObj && (mObj.anyStale === mObj.cards.some(function(c){
+    return !!c.staleBody || c.detail === FC("staleNotice");
+  }));
   check({en:"Exact rate/term claims render only when production's own financingTermsFresh() allows them (fail-closed today)",
          es:"Las tasas y plazos exactos solo aparecen cuando financingTermsFresh() de producción lo permite (cerrado hoy)"},
-        exactSuppressedOk);
+        exactSuppressedOk && bandCoupled);
   var noCalc = (FIN.plans || []).every(function(p){ return p.paymentCalculationEnabled !== true; });
   check({en:"No plan enables payment calculation — no monthly-payment estimate can exist (V1 invariant)",
          es:"Ningún plan permite calcular pagos — no puede existir un estimado mensual (invariante V1)"}, noCalc);
@@ -1807,10 +1889,13 @@ function runIso(){
   });
   document.getElementById("isoRows").innerHTML = s;
   document.getElementById("iso").classList.add("on");
+  var ic = document.querySelector("#iso .iso-close");
+  if (ic) ic.focus();
   render();
 }
 function closeIso(){ document.getElementById("iso").classList.remove("on"); }
 
+if (PRESENTER) document.body.classList.add("presenter");
 seedSky("skyWelcome", 60); seedSky("skyReveal", 36); seedSky("skyHandoff", 26);
 render();
 </script>

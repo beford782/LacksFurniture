@@ -1,4 +1,4 @@
-# Nocturne — demo-impact prototype (2026-08-13, revision 2)
+# Nocturne — demo-impact prototype (2026-08-13, revision 3)
 
 **Status: PROTOTYPE ONLY — awaiting owner visual review.** Isolated under
 `prototypes/`; no production behavior, scoring, canonical data, claims, or
@@ -9,6 +9,11 @@ Payment Choices layer — roughly half the commercial story. This revision
 integrates it end to end without letting it touch the fitting. See "Why
 the first prototype omitted this layer" at the bottom.
 
+**Revision 3 (integrity + personalization round, 2026-08-13):** corrects
+four integrity defects found in review and turns the generic-premium
+surface into a demonstrably personalized Lacks experience. Details in
+"Revision 3 — what changed and why" below.
+
 ## Run it
 
 Serve the **repo root** (the prototype loads the real shipped data and
@@ -18,6 +23,18 @@ engine), then open the prototype:
 python -m http.server 8000
 # → http://localhost:8000/prototypes/demo-round-2026-08-13/
 ```
+
+**Presenter mode** (rehearsal tools) is a documented opt-in:
+
+```
+http://localhost:8000/prototypes/demo-round-2026-08-13/?presenter=1
+```
+
+Without `?presenter=1` the welcome screen shows no rehearsal controls and
+no Isolation check button, and the quiz shows no completion shortcut —
+they are `display:none` (invisible AND unfocusable). Presenter mode gates
+display only; scoring, payment, session state, and customer behavior are
+identical either way.
 
 ## 100% functional — how
 
@@ -41,8 +58,161 @@ python -m http.server 8000
     claimed on the payment screen is decided by production's own gating
     code**, not by a demo imitation
 - EN | ES re-renders everything and re-runs the engine in the active
-  language. "Rehearsal: fill sample answers" fills a plausible answer set
-  for practicing the demo — results still come from the real engine.
+  language. Language switching preserves comparison state, the active
+  tier, the finalist, and the payment decision (rev 3 fixed a wipe).
+- Presenter rehearsal (`?presenter=1` only): "Rehearsal: fill sample
+  answers" on the welcome fills the full sample set; **"Complete
+  remaining questions for rehearsal"** on the quiz fills ONLY the
+  questions the presenter has not answered — it never overwrites an
+  entered answer, respects skip logic, and completes through the real
+  engine. Honesty note for the script: after a partial fill the output is
+  built from the owner's real answers PLUS the sample's remaining ones —
+  say so; do not present it as wholly customer-authored. The sample set
+  contains only the shipped quiz's 10 question ids (the retired
+  sleep_quality key is gone as of rev 3).
+- The reveal's reflection sentence, the why/test trial guidance, and the
+  profile subtitle are all production engine output captured verbatim —
+  the prototype authors none of them.
+
+## Revision 3 — what changed and why
+
+### Integrity corrections (mandatory, shipped first)
+
+1. **Compare "Test for" misattribution.** Rev 2 assigned the customer's
+   first trial priority to mattress A and the second to mattress B — a
+   per-mattress claim the engine never made. The compare screen now shows
+   ONE shared "Your trial priorities" block spanning both columns (all
+   priorities, engine order, no truncation). The hero card's priority
+   chips were removed and the detail sheet's chips are labeled "Your
+   trial priorities" for the same reason: customer-level guidance never
+   renders as one model's attribute.
+2. **Isolation check #5 was partly vacuous.** Its suppression clause
+   compared a fingerprint key that was never emitted (undefined ===
+   undefined — could not fail). The payment fingerprint now emits one
+   `structural` object (availability, order, scenario inclusion,
+   suppressed/exact state per card, official + per-card destinations,
+   calculation capability) compared WHOLESALE between EN and ES, and the
+   check additionally asserts the copy actually differs. Proven honest by
+   four live mutations (language-routed suppression / destination / calc,
+   and a broken language switch) — each flips exactly check #5 to FAIL.
+   Static ratchet: `checks/iso5_structural_check.mjs`.
+3. **Invented financing-history claim removed.** The script said "South
+   Texas families have financed with Lacks since 1935." The verified fact
+   is company heritage (family-owned, South Texas, since 1935) — no
+   source verifies any financing program's vintage, so the claim is gone
+   and nothing replaced it. Ratchet: a grep gate fails any line pairing
+   "1935" with financing vocabulary (`checks/finalist_state_check.mjs`).
+4. **Silent finalist fallback eliminated.** Rev 2's plan and handoff
+   substituted the engine's top pick when no finalist existed and labeled
+   it "Finalist." State semantics are now explicit — "Best match" =
+   algorithm output on results; "Compared" = customer placed it in
+   comparison; "Finalist" = customer explicitly chose it — and without a
+   finalist the plan and handoff show **"Recommended starting point"**
+   plus **"No finalist selected yet"** with a route back to choose one.
+   The plan CTAs are un-gated so the honest incomplete state is reachable
+   and demonstrable. The handoff note no longer promises "your finalist"
+   unconditionally.
+
+Also fixed while mapping: a language switch used to silently wipe the
+comparison selection and active tier (contradicting the i18n rule);
+`setLang` now preserves both.
+
+### Personalization (production output only — nothing hand-authored)
+
+- **The reveal speaks their answers back.** Production composes a
+  bilingual reflection sentence ("You are shopping for a Queen, share the
+  bed with a partner, sleep mostly on your side, and prefer a plush
+  feel."); rev 2 captured and discarded it. It now renders under the
+  reveal title, captured verbatim from the extracted `showProfileScreen()`
+  and recomposed on every language switch. Known production asymmetry,
+  inherited not fixed: the size label is English in both languages.
+- **The shipped why/test guidance renders.** Each trial priority already
+  carried bilingual `why` and `test` prose the prototype never read. Now:
+  tap-to-disclose on the reveal (why + what to try), test lines in the
+  Sleep Plan, and the specialist's in-store script on the handoff card
+  (production handoff parity). Always customer-level, never per-mattress.
+- **Need-led hierarchy.** The trial priorities and reflection are the
+  reveal's primary content. The archetype is demoted to its bilingual
+  subtitle; the internal profile name (never customer-facing in
+  production, and untranslated) no longer renders anywhere a customer
+  sees — reveal chip, results stamp, and handoff now use the subtitle.
+- **Lacks identity, config-driven, one signal per surface.** Welcome
+  opens on `voice.eyebrow` / `voice_es.eyebrow` ("FAMILY-OWNED · SOUTH
+  TEXAS · SINCE 1935"); the handoff band carries `storeName` above the
+  governed headline (Lacks introduces the fitting; Lacks resumes the
+  relationship). The inline store constant is gone — every store
+  reference resolves from `SC.storeName` at render time. Deliberately NOT
+  used: the text wordmark spec (no real logo asset exists in the repo —
+  rendering one would fabricate a mark), the city list (no ES value),
+  `text.trustSignal` (duplicates the heritage eyebrow), and the
+  production palette (a separate owner decision).
+- **Made in Texas provenance chip.** Renders strictly on the shipped
+  `locallyMade` boolean (`data/mattresses.csv` column `locally-made` →
+  `data/mattresses.json`), on cards, the detail sheet, and compare sides.
+  21 of 26 models qualify (18 Restonic + 3 Chattam & Wells); verified
+  26/26 against the flag at both function and DOM level. Provenance basis
+  is the owner ruling recorded in `incoming/lacks_catalog_selection.json`
+  (`_meta.notes`): "locallyMade: Restonic + Chattam & Wells (mfr
+  Restonic, Texas licensee per Blake)". Nuance for visual review: the
+  only production-verbatim customer string is "Made locally"; "Made in
+  Texas" follows the owner's directive and ruling, and Chattam & Wells
+  carries it via the manufactured-by-Restonic ruling. The chip never
+  extends to quality/durability/performance language.
+
+### Match-percentage presentation (no scoring change)
+
+Percentages are normalized WITHIN each tier, so several models can show
+100% and numbers are not comparable across tiers. Rev 3 keeps the engine
+order byte-identical and: adds a visible "Match strength is relative
+within each tier" note on results; keeps tier-labeled percentages in
+compare only when both models share a tier, switching to ordinal language
+("Best match" / "Close alternative" / "Worth comparing") cross-tier; and
+speaks tier + rank instead of a naked percentage on the detail sheet, the
+Sleep Plan, and the handoff card. The card rings remain (tier-scoped by
+the grid itself, framed by the note).
+
+### Stale-financing governance band (visible fail-closed state)
+
+`paymentModel()` computed `anyStale` and nothing rendered it; the
+fail-closed sheet read as missing content. Rev 3 renders a sheet-level
+governance band, `financing.copy.staleAnnouncement` verbatim ("Exact
+rates and terms are not shown right now. Your Lacks specialist can
+confirm current payment options in store."), driven by the same predicate
+production uses. Semantics, stated precisely:
+
+- `staleNotice` stays exactly as production renders it — visible,
+  per-card, unchanged.
+- `staleAnnouncement` is **screen-reader-only in production** (a
+  `role="status"` live region). The band keeps `role="status"` — an
+  SR-to-visible-and-announced upgrade, not a repurposing — and mirrors
+  production's lifecycle: populated when the sheet renders, cleared on
+  close so a reopen re-announces, re-announced in the new language on a
+  switch. **This is a PROPOSED production change**; production today
+  shows sighted customers no sheet-level stale statement.
+- The band is scoped to exact rates and terms only. Evergreen paths
+  (lease-to-own, Build My Credit) keep their full detail and normal
+  contrast — nothing implies Payment Choices is unavailable, that every
+  path is stale, or anything about eligibility.
+- The isolation harness now pins `anyStale` to its derivation (check #6),
+  so the band cannot decouple from the gate it reports.
+- `verifiedAt` and `exactPromotionsEnabled` are untouched. **No financing
+  verification event was fabricated for this revision** (see the
+  demo-prep rule below). If different band wording is ever wanted, that
+  is a NEW governed config key through the envelope pipeline — not
+  hand-authored prototype copy.
+
+### Accessibility on touched surfaces
+
+`aria-pressed` on the language toggle, tier tabs, compare tags, finalist
+buttons, agenda toggles, Sleep System toggles, and the payment decision;
+the results card is no longer an ARIA button with buttons nested inside
+it (Details and Compare are real buttons; tap-anywhere still works);
+`role="dialog"` + `aria-modal` + labels on the detail sheet and isolation
+report, with initial focus, focus restoration, and Escape-to-close;
+`:focus-visible` outlines. Scope discipline: fixes cover the surfaces
+revision 3 touched; screen-reader/VoiceOver device work remains
+permanently out of scope by owner ruling, and a deeper production
+accessibility pass stays production work.
 
 ## The two-path architecture (the roadmap's, made visible)
 
@@ -107,8 +277,10 @@ re-verification against the allowlisted source is performed and recorded.
 
 ## The Sleep Plan and handoff
 
-The Sleep Plan combines: the explicit finalist (chosen on the compare
-screen or in a detail sheet), trial priorities, compared mattresses,
+The Sleep Plan combines: the finalist when one was explicitly chosen (on
+the compare screen or in a detail sheet) — otherwise an honestly labeled
+"Recommended starting point" with "No finalist selected yet" and a route
+back — trial priorities with their test guidance, compared mattresses,
 optional Sleep System selections (production accessory ranking, governed
 `sleepSystemGuidance` line), and the Payment Choices decision as three
 equal, reversible buttons — governed "Plan the conversation" (the config's
@@ -117,15 +289,19 @@ now" (`agendaNotNow`, = "Not now"), and "Undecided". "Not right now" is
 exactly as prominent and as usable as the others, and any choice can be
 changed or cleared (governed announce copy confirms both).
 
-The handoff card (governed headline "Your Sleep Plan. Your Payment
-Choices.") gives the salesperson: profile, what the customer needs to
-feel, which mattresses were compared, the finalist, Sleep System picks,
-and the payment signal — the decision plus any agenda-marked paths. No
-raw quiz answers, no eligibility implication.
+The handoff card (store attribution + governed headline "Your Sleep
+Plan. Your Payment Choices.") gives the salesperson: the profile
+subtitle, the trial priorities with their in-store test script, which
+mattresses were compared, the finalist — explicitly distinguished from
+the engine's recommendation, with "No finalist selected yet" stated when
+none was chosen — Sleep System picks, and the payment signal (the
+decision plus any agenda-marked paths). No raw quiz answers, no
+eligibility implication.
 
 ## State isolation — demonstrated live
 
-"Isolation check" on the welcome screen runs in-app and reports PASS/FAIL:
+"Isolation check" on the welcome screen (presenter mode) runs in-app and
+reports PASS/FAIL:
 
 1. Payment state (decision, agenda marks, Sleep System picks) cannot move
    scores, recommendation order, default tier, top-pick emphasis, the
@@ -137,60 +313,86 @@ raw quiz answers, no eligibility implication.
    language — two contrasting answer profiles produce byte-identical
    payment output. (`paymentModel()` reads `store-config.financing` only.)
 4. The Mexico path is visible to everyone and fixed last.
-5. Language changes copy only — program order, suppression state, and
-   destinations are structurally identical EN vs ES (no language routing).
+5. Language changes copy only — program availability, order, scenario
+   inclusion, suppressed/exact state, official and per-card destinations,
+   and calculation capability are compared as ONE structural object that
+   must be identical EN vs ES, while the copy itself must actually
+   differ. (Rev 3: the rev-2 version of this check compared a key the
+   fingerprint never emitted and could not fail.)
 6. Exact rate/term claims render only when production's own
    `financingTermsFresh()` allows them (fail-closed today, including the
-   In-House and Mexico details).
+   In-House and Mexico details) — and `anyStale`, which drives the
+   governance band, is pinned to its per-card derivation.
 7. No plan enables payment calculation — no monthly-payment estimate can
    exist (V1 invariant).
 
-Harness honesty was proven by mutation: temporarily injecting an
-answer-sensitive payment model flips check 3 to FAIL; restoring it
-returns 7/7 PASS (verified in-session, 2026-08-13).
+Harness honesty was proven by mutation: injecting an answer-sensitive
+payment model flips check 3 to FAIL (rev 2, 2026-08-13); rev 3 added four
+proofs for check 5 — language-routed suppression, a language-routed
+Mexico destination, language-routed calculation capability, and a broken
+language switch that leaves ES rendering English copy — each flips
+exactly check 5 to FAIL, and restoring returns 7/7 PASS (verified live,
+2026-08-13). `checks/iso5_structural_check.mjs` and
+`checks/finalist_state_check.mjs` ratchet the repairs statically (both
+FAIL against the rev-2 source).
 
 Also absent by construction: monthly-payment estimates, approval
 predictions, product-specific qualification, credit or income questions,
 ZIP-code routing.
 
-## The 3–5 minute store-owner script (revised — the full business story)
+## The 3–5 minute store-owner script (revision 3 — run in `?presenter=1`)
 
-1. **(25s) Welcome.** "This is DreamFinder — your fitting room for sleep.
-   Bilingual, one tap. And notice the promise at the bottom: the
-   consultation builds toward a Sleep Plan **and** Payment Choices — but
-   payment waits its turn."
+1. **(25s) Welcome — Lacks introduces the fitting.** The screen opens on
+   the owner's own line: FAMILY-OWNED · SOUTH TEXAS · SINCE 1935. "Your
+   heritage frames the experience — straight from your config, both
+   languages. DreamFinder supports your specialist; it never replaces
+   them. And the promise at the bottom: the consultation builds toward a
+   Sleep Plan and Payment Choices — but payment waits its turn."
 2. **(60s) The fitting.** Hand them the tablet; let them answer 3–4
-   questions for real. "Ten questions, about two minutes. No payment
-   interruptions, no credit questions — the fitting stays about sleep."
-3. **(25s) The reveal.** The constellation draws. "Their sleep signature,
-   from their answers. These three chips are what your salesperson tests
-   with them on every bed."
-4. **(40s) The shortlist.** "Your inventory, your photography, real match
-   percentages. And here's the line that protects the whole thing —
-   *'Your matches are based on sleep fit — never on payment method.'*
-   The customer can explore payment right here, and the matches cannot
-   move."
-5. **(60s) Payment Choices.** Open the sheet. "Every way Lacks brings a
-   bed home, in one governed screen: promotional financing, Lacks
-   In-House Credit, lease-to-own, Build My Credit, and the
-   Mexico-delivery program,
-   always present, in Spanish too. Look at the promotional card today:
-   the system is showing 'your specialist has current options' instead
-   of a rate — because the config's verification window lapsed. It
-   refuses to advertise yesterday's terms. That's built-in compliance,
-   and when your team re-verifies, current terms come back on. The
-   customer can mark paths to discuss — nothing is submitted, no
-   application starts."
-6. **(45s) Compare → finalist → Sleep Plan.** "They compare side by side,
-   pick a real finalist, add the base the engine suggested — and answer
-   one respectful question: talk payment now, not right now, or
-   undecided. 'Not right now' is a first-class answer; nobody gets
-   cornered."
-7. **(25s) The close.** The handoff card. "Your salesperson gets the
-   whole consultation: what to have them feel, what they compared, the
-   finalist — and whether to open the payment conversation. The tool
-   doesn't replace your closer. It hands them the close, with the
-   payment door already ajar exactly as far as the customer opened it."
+   questions for real. Then tap **"Complete remaining questions for
+   rehearsal"** — their answers stay, only the unanswered ones fill from
+   the sample. Say so: "The rest is a rehearsal fill — your first four
+   answers are really yours, and everything you're about to see is
+   computed from the combined set by the production engine."
+3. **(25s) The reveal — their answers, spoken back.** The constellation
+   draws, and under the title the engine restates what they said: "You
+   are shopping for a Queen, share the bed with a partner…" Tap one
+   priority open: "One answer — side sleeping — became one priority —
+   pressure relief — and one showroom action: settle in for a minute and
+   notice pressure at the shoulder and hip. That's the fitting script,
+   written from their answers."
+4. **(40s) The shortlist.** "Your inventory, your photography. Order is
+   the engine's honest signal — the note says match strength is relative
+   within each tier, so nobody's oversold a number. See the Made in Texas
+   chips: your locally-made lineup, flagged from your own catalog data.
+   And the line that protects everything: *'Your matches are based on
+   sleep fit — never on payment method.'*"
+5. **(60s) Payment Choices — governed, visibly.** Open the sheet. "Every
+   way Lacks brings a bed home: promotional financing, Lacks In-House
+   Credit, lease-to-own, Build My Credit, and the Mexico-delivery
+   program, always present. Read the brass band: exact rates and terms
+   are not shown right now — because the governed verification conditions
+   aren't currently satisfied. The system refuses to advertise yesterday's
+   terms; that is a compliance feature, not a broken screen. Notice
+   lease-to-own and Build My Credit still show their full orientation —
+   only exact claims wait for re-verification. Mark a path to discuss —
+   nothing is submitted, no application starts."
+6. **(30s) Spanish, live.** Tap ES with the sheet open. "Same programs,
+   same order, same gates — the customer's marked agenda survives the
+   switch. The whole journey does this: answers, finalist, plan." Natural,
+   reviewed Spanish throughout — nothing performed.
+7. **(45s) Compare → finalist → the close.** Back in EN: compare side by
+   side — the trial priorities span BOTH beds, because they belong to the
+   customer, not to a mattress. Pick a real finalist, add the suggested
+   base, answer the one respectful question (now / not right now /
+   undecided — 'not right now' is a first-class answer). Then hand the
+   owner the handoff card and role-play: "You just walked over. Five
+   seconds — what do you know?" The card says what the customer CHOSE
+   versus what the engine recommended; if no finalist was picked it says
+   so — "No finalist selected yet," never a pretend choice.
+8. **(15s) The privacy close.** Tap "New customer." Card gone,
+   constellation gone, language back to English. "The next shopper
+   inherits nothing. That's the session discipline production enforces."
 
 ## Before / after — the key payment moments
 
@@ -211,11 +413,13 @@ ZIP-code routing.
 ## EN/ES and layout
 
 Every new string is bilingual — financing copy from the governed config,
-UI labels as `{en, es}` pairs. Landscape verified in-session; portrait
-CSS is in place for every new scene (single-column plan grid, stacked
-payment band) but the workstation window manager refused a portrait
-viewport, so portrait is deferred to the iPad review — same status as
-revision 1.
+UI labels as `{en, es}` pairs. One inherited production asymmetry is
+documented above (size labels render in English in the ES reflection).
+Landscape is verified at the recorded device viewport (1194×748).
+Portrait is verified at the exact device width (834px); the workstation
+display cannot produce the device's full 1108px height, so full-height
+portrait and touch behavior remain deferred to the physical iPad review —
+same standing caveat as revisions 1–2.
 
 ## Deliberately unchanged
 
@@ -244,6 +448,19 @@ M, constellation component M). The Payment Choices integration adds:
 | Explicit finalist selection | new state + compare/detail controls | M | feeds handoff + email |
 | Handoff payment signal row | extension of the handoff renderer | S–M | reuses agenda state |
 | Isolation checks | port into `tests/` as a node suite pinning both directions | S | belongs in the suite regardless |
+| Answer reflection + why/test surfacing | presentation of existing engine output | S–M | no engine change; email/handoff parity check |
+| Honest finalist semantics | state labels + incomplete-plan handling | S | pairs with the Sleep Plan slice |
+| Stale governance band | **PROPOSED production change**: render `staleAnnouncement` visibly with `role="status"` (production is SR-only today); lifecycle must ride along | S | needs owner + review sign-off explicitly |
+| Made in Texas chip | config/dict-driven provenance chip on `locallyMade` | S | wording decision (vs production-verbatim "Made locally") is the owner's |
+| Match-% presentation | tier-relative note + ordinal language | S | no scoring change; copy review |
+| Presenter mode | query-param-gated rehearsal tools | S | kiosk hardening review decides the mechanism |
+
+## Recommended next revision
+
+**Customer-recorded trial reactions** (capturing what the customer felt
+on each tested bed and carrying it to the handoff) is the highest-value
+next step — deliberately NOT built in revision 3 to keep this round
+reviewable.
 
 Each slice goes through the canonical PR workflow with the Phase 1
 output-regression gate proving recommendations byte-identical.
