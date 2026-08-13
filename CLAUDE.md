@@ -49,8 +49,10 @@ tools/convert_store_data.py). Catalog provenance + rescrape technique:
 incoming/lacks_catalog_selection.json (lacks.com is AVB/Magento — browser-session
 API + linqcdn image pull via fetch_lacks_images.py; NOT the Blueport sitemap
 technique). gasUrl is intentionally blank (demo mode — no live email/leads).
-Locally-made +25 bonus: Restonic + Chattam & Wells = yes (made in Texas, per
-Blake 2026-07-30). Do not treat any Lacks-specific content as a default or
+Locally-made provenance flag: Restonic + Chattam & Wells = yes (made in Texas,
+per Blake 2026-07-30); the flag's former +25 scoring bonus was retired by owner
+ruling 2026-08-13 (Daybreak PR 1) — it is data-only now, never a scoring
+input. Do not treat any Lacks-specific content as a default or
 starting point for other retailers. Elsewhere in this file, references to "Bel"
 are template heritage — read them as "this repo's retailer".
 
@@ -264,7 +266,7 @@ by default. Do not treat this as optional or Bel-specific.
 | `firmnessScore` | 1–10 number used by scoring engine |
 | `firmnessLabel` | Display text (Plush, Medium, Firm, etc.) |
 | `price` | Leave blank — not displayed in app |
-| `locally-made` | yes / no — affects scoring (see below) |
+| `locally-made` | yes / no — data-only provenance flag (scoring use retired 2026-08-13, see below) |
 | `quizTags` | Pipe-delimited. Used by scoring engine as `features` in JSON |
 | `displayBadges` | Pipe-delimited. 2–3 chips shown on card |
 | `highlight` | One punchy line for the card hero (~10 words) |
@@ -275,7 +277,7 @@ by default. Do not treat this as optional or Bel-specific.
 
 ## Scoring Engine — How Recommendations Work
 
-Located in `index.html` around line 4040. Three scoring passes:
+Located in `index.html` around line 4040. Two scoring passes:
 
 **1. Firmness (most important, max +50)**
 Linear sliding scale: `firmScore = max(0, 50 - diff * 10)` where
@@ -288,10 +290,16 @@ so a diff of 4 nets -10 and a diff of 5+ nets -20.
 Quiz answers map to feature tags via `opt.scores`. Each matching tag adds points.
 Tags are stored in the JSON `features` array (mapped from `quizTags` in CSV).
 
-**3. Locally made bonus (+25)**
-If `m.locallyMade === true`, adds 25 points and appends a match reason.
-In the Bel deployment: Spring Air and Restonic = locally made, Bel-O-Pedic = not.
-This value and logic may differ per retailer deployment.
+**3. Locally made bonus — RETIRED (owner ruling 2026-08-13, Daybreak PR 1)**
+The former +25 bonus for `locallyMade === true` (and its "typically in stock
+and ready for fast delivery" match reason) was removed: origin and
+availability must not alter sleep-fit ranking, and the reason text asserted
+stock/delivery facts no data source backs. The `locally-made` CSV column
+remains as a data-only provenance flag; the engine may not read it —
+`tests/scoring_isolation_check.mjs` pins the absence, and
+`tests/fixtures/phase1_output_baseline_daybreak_pr1.json` is the post-removal
+recommendation baseline. Reinstating any scoring use of origin requires
+Blake's explicit sign-off.
 
 Qualified results = top 3 models scoring ≥ 60% of the top score.
 

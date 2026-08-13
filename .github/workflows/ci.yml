@@ -368,9 +368,14 @@ jobs:
       # recommendation output (scores, match reasons, tier membership and
       # order, pct, threshold, cap, back-fill, top pick, accessories,
       # priorities, resolved firmness, profile assignment) to the committed
-      # baseline fixture generated at the Phase 1 baseline commit (85c5c10).
-      # Self-proving: fifteen in-memory engine mutations must each diverge
-      # from the baseline or the suite fails as vacuous.
+      # baseline fixture phase1_output_baseline_daybreak_pr1.json (regenerated
+      # for the owner-approved Daybreak PR 1 scoring change on top of 31a7e79;
+      # the original Phase 1 baseline was generated at 85c5c10).
+      # Self-proving: fourteen in-memory engine mutations must each diverge
+      # from the baseline or the suite fails as vacuous. (The locally-made
+      # bonus mutation retired with the bonus itself — owner-approved
+      # Daybreak PR 1, 2026-08-13; the baseline fixture regenerated to
+      # phase1_output_baseline_daybreak_pr1.json in the same change.)
       - name: phase 1 output regression (recommendations pinned)
         run: node tests/phase1_output_regression_check.mjs
 
@@ -385,6 +390,17 @@ jobs:
       # absence. Four in-memory mutations must each be caught on every run.
       - name: claim retirement (omission, no resurrection)
         run: node tests/claim_retirement_check.mjs
+
+      # PR 1 integrity repairs (Daybreak preparation, 2026-08-13): pins the
+      # retired unbacked availability claims ("In stock at …" / "In stock" /
+      # "Disponible…") out of the result-card renderers — the deployment has
+      # no inventory data source, so the strings were fabricated claims — and
+      # executes the real wipeLayer() against the SESSION_LAYERS inventory to
+      # prove the hidden-attribute-driven RSA roster panel actually closes on
+      # a session wipe (the old entry stripped a class the element never
+      # carried, a no-op).
+      - name: integrity repairs (availability claims, RSA panel wipe)
+        run: node tests/integrity_repairs_check.mjs
 
       # One level up from the suites: for each safety property in the manifest,
       # delete it from a COPY of the tree and require a suite to go red. A
