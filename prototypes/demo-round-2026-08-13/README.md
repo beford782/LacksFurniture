@@ -415,11 +415,19 @@ ZIP-code routing.
 Every new string is bilingual — financing copy from the governed config,
 UI labels as `{en, es}` pairs. One inherited production asymmetry is
 documented above (size labels render in English in the ES reflection).
-Landscape is verified at the recorded device viewport (1194×748).
-Portrait is verified at the exact device width (834px); the workstation
-display cannot produce the device's full 1108px height, so full-height
-portrait and touch behavior remain deferred to the physical iPad review —
-same standing caveat as revisions 1–2.
+
+Viewport status, stated exactly: the device-exact viewports (landscape
+1194×748, portrait 834×985 at exact device width) were verified on
+2026-08-13 for the revision-2 layout. The revision-3 additions
+(reflection, priority disclosure, governance band, honest-state notes,
+identity lines) were swept EN+ES at 1920×889 wide landscape — no
+horizontal scroll, everything in view — but could not be re-swept at
+device-exact sizes in-session (the workstation's Chrome windows were in
+active use and kept re-maximizing). All additions sit inside the
+already-verified column flows with max-width caps and the portrait media
+rules are unchanged, so risk is low — but device-size confirmation of
+revision 3, full-height portrait, and touch behavior all belong to the
+physical iPad review, the same standing caveat as revisions 1–2.
 
 ## Deliberately unchanged
 
