@@ -373,8 +373,8 @@
   .tog{font-family:var(--util);font-weight:600;font-size:.64rem;letter-spacing:.16em;text-transform:uppercase;
     border:1px solid var(--veil);border-radius:99px;padding:.42rem .95rem;color:var(--moon-dim);flex:none}
   .tog.on{border-color:var(--brass);color:var(--brass-soft);background:#1A2547}
-  /* equal, reversible payment decision — "Not now" as usable as "Review options" */
-  .decide{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+  /* equal, reversible: explore now, or pause — "Not right now" is first-class */
+  .decide{display:grid;grid-template-columns:1fr 1fr;gap:8px}
   .decide button{border:1px solid var(--veil);border-radius:12px;padding:.72rem .4rem;
     font-size:.85rem;font-weight:600;color:var(--moonlight)}
   .decide button.on{border-color:var(--brass);background:#1A2547;color:var(--brass-soft)}
@@ -721,8 +721,16 @@ var engine = null, briefRunner = null, accRunner = null, finKit = null;
 var lang = "en", answers = {}, qPos = 0, visible = [];
 var computed = null;   // { scores, tiers, topPickId, profile }
 var activeTier = "gold", cmpSel = [];
-/* payment-side state — deliberately never passed to the engine */
-var finalistId = null, sysSel = [], payDecision = null, finAgenda = {}, payReturn = "results";
+/* payment-side state — deliberately never passed to the engine.
+   OWNER CORRECTION (2026-08-13): the walkthrough IS the conversation, so
+   payment state models OBSERVABLE actions, not a future-discussion agenda:
+   · payPref — the current preference: null ("Not selected"), a path id
+     ("currently considering" that path), or "not_now" (the customer chose
+     to pause the payment portion — authoritative until a NEWER deliberate
+     path selection replaces it)
+   · payExplored — accumulated ids of paths the customer deliberately
+     selected for review at any point (history, never intent) */
+var finalistId = null, sysSel = [], payPref = null, payExplored = {}, payReturn = "results";
 var payCleared = false;
 /* single-open accordion: index of the ONE disclosed priority, or null —
    multiple open disclosures could push the CTA out of the fixed,
@@ -805,8 +813,20 @@ var T = {
   profileLbl:{en:"Profile",es:"Perfil"},
   comparedLbl:{en:"Compared",es:"Comparados"},
   systemLbl:{en:"System",es:"Sistema"},
-  paymentLbl:{en:"Payment",es:"Pago"},
-  topicsLbl:{en:"Topics marked",es:"Temas marcados"},
+  /* OWNER-DIRECTED PROTOTYPE COPY (2026-08-13 live-conversation ruling) —
+     PROPOSED ENVELOPE EXTENSIONS, pending adoption through
+     incoming/lacks_financing.json; not canonical governed copy yet. The
+     governed agendaMark / agendaMarked / drawerMark strings and the
+     rendered use of agendaConsequence are RETIRED from this prototype
+     (agenda framing contradicts the walkthrough-is-the-conversation
+     model); exploreConsequence preserves the governed no-submission
+     sentence verbatim in both languages. */
+  paymentLbl:{en:"Payment preference",es:"Preferencia de pago"},
+  exploredLbl:{en:"Options explored",es:"Opciones exploradas"},
+  reviewOption:{en:"Review this option",es:"Revisar esta opción"},
+  considering:{en:"Currently considering ✓",es:"En consideración ✓"},
+  exploreConsequence:{en:"Explore options together. Nothing is submitted and no application is started.",
+                      es:"Exploren las opciones juntos. No se envía nada y no se inicia ninguna solicitud."},
   compareTag:{en:"Compare",es:"Comparar"},comparedTag:{en:"Comparing ✓",es:"Comparando ✓"},
   detailsBtn:{en:"Details ›",es:"Detalles ›"},
   makeFinalist:{en:"Make this my finalist",es:"Elegir como mi finalista"},
@@ -819,8 +839,7 @@ var T = {
            es:"Nada agregado — tu especialista puede sugerir piezas en tienda."},
   addSys:{en:"Add",es:"Agregar"},
   addedSys:{en:"Added ✓",es:"Agregado ✓"},
-  decideUndecided:{en:"Undecided",es:"Sin decidir"},
-  decideNone:{en:"Not selected yet",es:"Aún sin seleccionar"},
+  decideNone:{en:"Not selected",es:"Sin seleccionar"},
   payBackLbl:{en:"← Back",es:"← Atrás"},
   closeLbl:{en:"Close",es:"Cerrar"},
   isoTitle:{en:"State isolation — live check",es:"Aislamiento de estado — prueba en vivo"},
@@ -931,7 +950,7 @@ function visibleQuestions(){
 function startQuiz(){ answers = {}; qPos = 0; resetJourneyState(); go("quiz"); renderQ(); }
 function resetJourneyState(){
   cmpSel = []; computed = null; finalistId = null; sysSel = [];
-  payDecision = null; finAgenda = {}; payReturn = "results"; payCleared = false;
+  payPref = null; payExplored = {}; payReturn = "results"; payCleared = false;
   prioOpenIdx = null;
 }
 function startOver(){ answers = {}; qPos = 0; resetJourneyState();
@@ -1274,10 +1293,17 @@ function paymentModel(){
     cards: cards, anyStale: anyStale,
     official: official,
     disclosure: FIN.copy.disclosureFooter,
-    consequence: FIN.copy.agendaConsequence,
-    externalNotice: FIN.copy.externalNotice,
-    agendaMark: FIN.copy.agendaMark, agendaMarked: FIN.copy.agendaMarked
+    externalNotice: FIN.copy.externalNotice
   };
+}
+function considerPath(id){
+  /* a DELIBERATE selection records the current preference (one path at a
+     time) and joins the explored history; re-pressing clears it. Selecting
+     a path is the one action that replaces an earlier "Not right now" —
+     the customer reopened the payment conversation themselves. */
+  if (payPref === id){ payPref = null; payCleared = true; }
+  else { payPref = id; payExplored[id] = true; payCleared = false; }
+  renderPayment();
 }
 function openPay(from){
   payReturn = from || "results";
@@ -1325,8 +1351,9 @@ function renderPayment(){
       s += '<div class="links"><a href="' + c.link.url + '" target="_blank" rel="noopener noreferrer">'
         + c.link.label + '</a></div>';
     }
-    s += '<button class="tog' + (finAgenda[c.id] ? ' on' : '') + '" aria-pressed="' + !!finAgenda[c.id] + '" style="align-self:flex-start" onclick="togAgenda(\'' + c.id + '\')">'
-      + (finAgenda[c.id] ? L(m.agendaMarked) : L(m.agendaMark)) + '</button>';
+    var isPref = payPref === c.id;
+    s += '<button class="tog' + (isPref ? ' on' : '') + '" aria-pressed="' + isPref + '" style="align-self:flex-start" onclick="considerPath(\'' + c.id + '\')">'
+      + (isPref ? L(T.considering) : L(T.reviewOption)) + '</button>';
     s += '</div>';
   });
   document.getElementById("payPaths").innerHTML = s;
@@ -1337,13 +1364,8 @@ function renderPayment(){
   }
   document.getElementById("payOfficial").innerHTML = off;
   document.getElementById("payDisc").textContent = L(m.disclosure);
-  document.getElementById("payConsequence").textContent = L(m.consequence);
+  document.getElementById("payConsequence").textContent = L(T.exploreConsequence);
   document.getElementById("payBackBtn").textContent = L(T.payBackLbl);
-}
-function togAgenda(id){
-  finAgenda[id] = !finAgenda[id];
-  if (!finAgenda[id]) delete finAgenda[id];
-  renderPayment();
 }
 
 /* ---- scenes ---- */
@@ -1585,7 +1607,10 @@ function openDetail(id){
   if (FIN){
     document.getElementById("dPayT").textContent = L(FIN.copy.drawerTitle);
     document.getElementById("dPayBody").textContent = L(FIN.copy.drawerBody);
-    document.getElementById("dPayLink").textContent = L(FIN.copy.drawerMark) + " →";
+    /* governed cta ("Explore payment options") — the drawerMark string
+       ("Plan the conversation") is retired under the live-conversation
+       ruling, pending envelope revision */
+    document.getElementById("dPayLink").textContent = L(FIN.copy.cta) + " →";
   }
   if (!wasOpen){
     document.getElementById("detail").classList.add("on");
@@ -1704,10 +1729,11 @@ function toggleSys(id){
   if (i >= 0) sysSel.splice(i, 1); else sysSel.push(id);
   renderPlan();
 }
-function decide(choice){
-  payCleared = (payDecision === choice);
-  payDecision = (payDecision === choice) ? null : choice;
-  if (choice === "review" && payDecision === "review"){ renderPlan(); openPay("plan"); return; }
+function pausePayment(){
+  /* "Not right now" pauses the payment portion — authoritative until the
+     customer deliberately selects a path again; re-pressing un-pauses */
+  payCleared = (payPref === "not_now");
+  payPref = (payPref === "not_now") ? null : "not_now";
   renderPlan();
 }
 function renderPlan(){
@@ -1766,47 +1792,57 @@ function renderPlan(){
     if (FIN) s += '<div class="dim">' + L(FIN.copy.sleepSystemGuidance) + '</div>';
   }
   s += '</div>';
-  /* the Payment Choices decision — equal, reversible; "Not now" is as
-     usable as "Review options" */
+  /* the live payment moment — this walkthrough IS the conversation:
+     exploring records nothing; a deliberate per-path selection (on the
+     sheet) records the current preference; "Not right now" pauses.
+     Both remain equal and reversible. */
   if (FIN){
     s += '<div class="plan-block"><div class="bt">' + L(FIN.copy.eyebrow) + '</div>'
       + '<div class="dim">' + L(FIN.copy.fitFirst) + '</div>'
+      + '<div class="ln">' + L(T.paymentLbl) + ': ' + payPrefLabel() + '</div>'
       + '<div class="decide">'
-      + '<button class="' + (payDecision === "review" ? "on" : "") + '" aria-pressed="' + (payDecision === "review") + '" onclick="decide(\'review\')">' + L(FIN.copy.resultsAsk) + '</button>'
-      + '<button class="' + (payDecision === "not_now" ? "on" : "") + '" aria-pressed="' + (payDecision === "not_now") + '" onclick="decide(\'not_now\')">' + L(FIN.copy.agendaNotNow) + '</button>'
-      + '<button class="' + (payDecision === "undecided" ? "on" : "") + '" aria-pressed="' + (payDecision === "undecided") + '" onclick="decide(\'undecided\')">' + L(T.decideUndecided) + '</button>'
+      + '<button onclick="openPay(\'plan\')">' + L(FIN.copy.cta) + '</button>'
+      + '<button class="' + (payPref === "not_now" ? "on" : "") + '" aria-pressed="' + (payPref === "not_now") + '" onclick="pausePayment()">' + L(FIN.copy.agendaNotNow) + '</button>'
       + '</div>';
-    if (payDecision === "not_now") s += '<div class="dim">' + L(FIN.copy.interestNotNowAnnounce) + '</div>';
-    else if (payDecision === null && payCleared) s += '<div class="dim">' + L(FIN.copy.interestClearedAnnounce) + '</div>';
+    if (payPref === "not_now") s += '<div class="dim">' + L(FIN.copy.interestNotNowAnnounce) + '</div>';
+    else if (payPref === null && payCleared) s += '<div class="dim">' + L(FIN.copy.interestClearedAnnounce) + '</div>';
     s += '</div>';
   }
   document.getElementById("planCol").innerHTML = s;
 }
 
-/* Payment state is TWO separate dimensions and the handoff shows both:
-   A) conversation preference (review / not_now / undecided / null), and
-   B) agenda topics the customer explicitly marked (finAgenda ids).
-   Marking a topic never implies a preference, and an unmade preference
-   never discards marked topics. */
+/* The handoff summarizes what ACTUALLY HAPPENED in the walkthrough — the
+   live conversation — in two truthful dimensions:
+   A) the current payment preference: a deliberately selected path,
+      "Not right now" (the authoritative pause), or "Not selected";
+   B) the paths the customer explored along the way — descriptive history,
+      never intent, never a future-discussion agenda.
+   Exploration is never inflated into a choice, and a made choice never
+   erases the history behind it. */
 function payPrefLabel(){
-  if (payDecision === "review") return L(FIN.copy.resultsAsk);
-  if (payDecision === "not_now") return L(FIN.copy.agendaNotNow);
-  if (payDecision === "undecided") return L(T.decideUndecided);
+  if (payPref === "not_now") return L(FIN.copy.agendaNotNow);
+  if (payPref){
+    var m = paymentModel();
+    var c = m ? m.cards.find(function(x){ return x.id === payPref; }) : null;
+    if (c) return c.title;
+  }
   return L(T.decideNone);
 }
-function payTopicsLabel(){
-  /* not_now precedence, POLICY (b): marked topics stay internally
-     reversible (finAgenda is preserved and returns if not_now is
-     cleared) but the ACTIVE handoff never hands the specialist an
-     agenda after the customer declined — the governed dismissed line
-     renders instead. */
-  if (payDecision === "not_now") return L(FIN.copy.agendaDismissed);
+function payExploredLabel(){
+  /* "genuinely useful" filter: lists explored paths EXCLUDING the current
+     preference (which has its own row); returns null when empty. While
+     "Not right now" is active the history is suppressed from the handoff
+     (paused means paused — explored paths are never presented as active
+     requests) but preserved internally: selecting a path later both
+     replaces the pause and restores the history. */
+  if (payPref === "not_now") return null;
+  var ids = Object.keys(payExplored).filter(function(id){ return id !== payPref; });
+  if (!ids.length) return null;
   var m = paymentModel();
-  var names = Object.keys(finAgenda).map(function(id){
+  return ids.map(function(id){
     var c = m ? m.cards.find(function(x){ return x.id === id; }) : null;
     return c ? c.title : id;
-  });
-  return names.length ? names.join(" · ") : L(FIN.copy.agendaEmpty);
+  }).join(" · ");
 }
 function renderHandoff(){
   if (!computed) return;
@@ -1825,8 +1861,8 @@ function renderHandoff(){
   document.getElementById("hName").textContent = m ? m.name : L(T.noFinalistYet);
   document.getElementById("hFeel").textContent = m ? (L(T.feelLbl) + ": " + feelOf(m) + " · " + tierNameOf(fid) + " · " + ordinalOf(fid)) : "";
   var hn = finalistId
-    ? (payDecision !== null ? T.hNoteFinDec : T.hNoteFinOpen)
-    : (payDecision !== null ? T.hNoteStartDec : T.hNoteStartOpen);
+    ? (payPref !== null ? T.hNoteFinDec : T.hNoteFinOpen)
+    : (payPref !== null ? T.hNoteStartDec : T.hNoteStartOpen);
   document.getElementById("hNote").textContent = L(hn);
   var rows = "";
   rows += '<div class="row"><b>' + L(T.finalist) + '</b><span>'
@@ -1848,7 +1884,8 @@ function renderHandoff(){
     + '</span></div>';
   if (FIN){
     rows += '<div class="row"><b>' + L(T.paymentLbl) + '</b><span>' + payPrefLabel() + '</span></div>';
-    rows += '<div class="row"><b>' + L(T.topicsLbl) + '</b><span>' + payTopicsLabel() + '</span></div>';
+    var explored = payExploredLabel();
+    if (explored) rows += '<div class="row"><b>' + L(T.exploredLbl) + '</b><span>' + explored + '</span></div>';
   }
   document.getElementById("hRows").innerHTML = rows;
   drawConstellation("stampHandoff", 64, 36, false);
@@ -1856,9 +1893,9 @@ function renderHandoff(){
 
 /* =============================================================================
    STATE ISOLATION — LIVE CHECK
-   Direction 1: payment state (decision, agenda, Sleep System picks) must not
-   change scores, order, default tier, top pick emphasis, Sleep Signature,
-   Sleep Brief priorities, or the finalist.
+   Direction 1: payment state (preference, explored history, Sleep System
+   picks) must not change scores, order, default tier, top pick emphasis,
+   Sleep Signature, Sleep Brief priorities, or the finalist.
    Direction 2: quiz answers must not change payment program availability,
    order, language, Mexico-path visibility, or official destinations.
 ============================================================================= */
@@ -1929,16 +1966,17 @@ function runIso(){
   var checks = [];
   function check(name, pass, note){ checks.push({ name: name, pass: pass, note: note || "" }); }
 
-  /* Direction 1 — vary payment state, sleep outputs must be identical */
-  var saved = { d: payDecision, a: JSON.parse(JSON.stringify(finAgenda)),
+  /* Direction 1 — vary payment state (preference, explored history, Sleep
+     System picks), sleep outputs must be identical */
+  var saved = { p: payPref, x: JSON.parse(JSON.stringify(payExplored)),
                 s: sysSel.slice(), f: finalistId };
   var base = sleepFingerprint(ansA, lang);
   var all = true;
-  [null, "review", "not_now", "undecided"].forEach(function(d){
-    payDecision = d;
+  [null, "not_now", "promotional:Synchrony", "plan:lacks-in-house"].forEach(function(p){
+    payPref = p;
     if (sleepFingerprint(ansA, lang) !== base) all = false;
   });
-  finAgenda = { "promotional:Synchrony": true, "plan:lacks-in-house": true, "scenario:mexico-delivery": true };
+  payExplored = { "promotional:Synchrony": true, "plan:lacks-in-house": true, "scenario:mexico-delivery": true };
   if (sleepFingerprint(ansA, lang) !== base) all = false;
   sysSel = ACC.slice(0, 3).map(function(a){ return a.id; });
   if (sleepFingerprint(ansA, lang) !== base) all = false;
@@ -1947,7 +1985,7 @@ function runIso(){
         {en:"engine inputs are (answers, language) only — verified by 6 live re-runs",
          es:"las entradas del motor son solo (respuestas, idioma) — verificado con 6 ejecuciones en vivo"});
   var finalistUntouched = finalistId === saved.f;
-  payDecision = saved.d; finAgenda = saved.a; sysSel = saved.s; finalistId = saved.f;
+  payPref = saved.p; payExplored = saved.x; sysSel = saved.s; finalistId = saved.f;
   check({en:"Saved finalist is untouched by payment-state changes",
          es:"El finalista guardado no cambia con el estado de pago"}, finalistUntouched);
 

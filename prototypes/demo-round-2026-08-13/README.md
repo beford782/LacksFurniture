@@ -15,11 +15,15 @@ surface into a demonstrably personalized Lacks experience. Details in
 "Revision 3 — what changed and why" below.
 
 **Revision 3.1 (corrective interaction-state pass, 2026-08-13):** fixes
-the remaining state combinations found in independent review — marked
-payment topics surviving every preference state, a single-open reveal
-accordion that keeps the CTA reachable, one authoritative language
-state, incomplete-journey copy that never claims an unmade choice, and
-a complete modal focus contract. Details in "Revision 3.1" below.
+the remaining state combinations found in independent review — payment
+exploration that survives every preference state without being inflated
+into intent, a single-open reveal accordion that keeps the CTA
+reachable, one authoritative language state, incomplete-journey copy
+that never claims an unmade choice, and a complete modal focus
+contract. Includes the owner's live-conversation correction: the
+walkthrough IS the payment conversation, so the interaction is modeled
+as exploration and preference capture — never a future-discussion
+agenda. Details in "Revision 3.1" below.
 
 ## Run it
 
@@ -51,7 +55,19 @@ identical either way.
   approved product photography; accessories from `data/accessories.json`.
 - The financing layer reads `data/store-config.json` →
   `store-config.financing`. **Every payment statement on screen is the
-  governed config's own copy; nothing is hand-authored.**
+  governed config's own copy, with one disclosed exception:** the
+  live-conversation ruling (owner, 2026-08-13) retired the governed
+  agenda strings (`agendaMark`/`agendaMarked`/`drawerMark` and the
+  rendered use of `agendaConsequence`) and supplied replacement
+  vocabulary that does not exist in the envelope yet. Those strings —
+  "Review this option" / "Currently considering", the "Payment
+  preference" / "Options explored" labels, and the consequence line
+  (which preserves the governed "Nothing is submitted and no
+  application is started." sentence verbatim in both languages) — are
+  owner-directed prototype UI copy, flagged in code as PROPOSED
+  ENVELOPE EXTENSIONS pending adoption through
+  `incoming/lacks_financing.json`. Canonical financing config is
+  untouched.
 - These production functions are **extracted verbatim from `index.html`
   at runtime** (the repo's test-harness technique):
   - `calculateScores()`, `qualifyRankedChoices()`, `showProfileScreen()`
@@ -214,7 +230,8 @@ production uses. Semantics, stated precisely:
 ### Accessibility on touched surfaces
 
 `aria-pressed` on the language toggle, tier tabs, compare tags, finalist
-buttons, agenda toggles, Sleep System toggles, and the payment decision;
+buttons, path-preference toggles, Sleep System toggles, and the payment
+pause control;
 the results card is no longer an ARIA button with buttons nested inside
 it (Details and Compare are real buttons; tap-anywhere still works);
 `role="dialog"` + `aria-modal` + labels on the detail sheet and isolation
@@ -228,29 +245,43 @@ accessibility pass stays production work.
 
 ## Revision 3.1 — corrective interaction-state pass
 
-### Payment preference and agenda topics are SEPARATE dimensions
+### Payment interaction = live exploration + preference capture
 
-"Add to discussion" marks a topic; it never selects a conversation
-preference, and an unmade preference never discards marked topics. The
-handoff shows two rows — Payment (the preference) and Topics marked —
-with this truth table (all verified live, EN and ES):
+**The walkthrough IS the conversation** (owner ruling, 2026-08-13) —
+the customer and specialist are using the tool together in real time,
+so the interaction never assembles items for a future discussion. The
+model captures OBSERVABLE actions only:
 
-| preference | topics marked | Payment row | Topics row |
-|---|---|---|---|
-| none | none | Not selected yet | governed "No options are marked yet." |
-| none | some | Not selected yet | the marked topics |
-| Plan the conversation | none | Plan the conversation | governed empty-agenda line |
-| Plan the conversation | some | Plan the conversation | the marked topics |
-| Undecided | some | Undecided | the marked topics (context only — not permission) |
-| Not right now | any | Not right now | governed "No options marked for review right now." |
+- **Explored paths** — every path the customer deliberately selected
+  for review at any point. History, never intent.
+- **Current preference** — one path "currently considering" (a
+  provisional preference — never an application, approval, eligibility
+  determination, or financing commitment), or "Not right now" (the
+  authoritative pause), or nothing.
 
-**Not-right-now policy (b), stated exactly:** marked topics are
-PRESERVED internally and return if "Not right now" is cleared, but the
-active handoff never presents an agenda after the customer declined —
-the governed dismissed line renders instead. Nothing is silently lost;
-nothing pressures the customer. EN/ES switching changes labels only
-(topic ids and destinations are language-independent); Start over and
-New customer clear both dimensions.
+Per-card control: "Review this option" → "Currently considering ✓"
+(single-select; selecting one path replaces another; re-pressing
+clears). The handoff summarizes what actually happened — a "Payment
+preference" row always, an "Options explored" row only when genuinely
+useful (explored paths beyond the current preference):
+
+| what happened | Payment preference row | Options explored row |
+|---|---|---|
+| no payment interaction | Not selected | (absent) |
+| explored, nothing selected | Not selected | the explored paths |
+| a path selected for review | that path's title | other explored paths, if any |
+| Not right now chosen | Not right now | (suppressed — paused means paused) |
+
+**Not-right-now precedence, stated exactly:** the pause is the
+authoritative current state. Explored history is suppressed from the
+active handoff (never presented as active requests) but PRESERVED
+internally; a newer deliberate path selection is the one action that
+replaces the pause — the customer reopened the conversation
+themselves — and the history returns with it. Exploration is never
+inflated into intent; a made choice never erases the history behind
+it. EN/ES switching changes labels only (path ids and destinations are
+language-independent); Start over and New customer clear both
+dimensions.
 
 ### Single-open reveal accordion, measured
 
@@ -277,8 +308,8 @@ through it (the reset after the journey wipe, so nothing recomputes a
 cleared journey). Verified: New customer / Start over from welcome,
 quiz, results, Payment Choices, and handoff all land in fully
 consistent English; mid-session switching preserves answers, tier,
-comparison, finalist, Sleep System picks, payment preference, marked
-topics, and presenter mode. The rev-3 defect (visible English with
+comparison, finalist, Sleep System picks, payment preference, explored
+paths, and presenter mode. The rev-3 defect (visible English with
 `aria-pressed` still claiming Spanish) is mutation-reproduced and
 ratchet-blocked.
 
@@ -357,7 +388,7 @@ Payment Choices — payment never interrupts the fitting); the first real
 entry appears **after** the matches, leading with the governed firewall
 line "Your matches are based on sleep fit — never on payment method";
 the mattress detail sheet carries the one quiet, consistent
-"Ways to bring it home → Plan the conversation" link; the Sleep Plan
+"Ways to bring it home → Explore payment options" link; the Sleep Plan
 records an equal, reversible decision; the handoff hands the specialist
 the payment-conversation signal.
 
@@ -386,11 +417,13 @@ governed order:
    `mexicoInfoUrl`; the config's unverified Mexico application URL is
    never rendered (its own config note).
 
-Each card carries the governed "Add to discussion" agenda toggle; the
-sheet closes with the official Lacks financing-page link (fails closed via
-`financingSourceAllowed`), the external-site notice, the governed
-disclosure footer, and the agenda consequence line ("Nothing is submitted
-and no application is started"). Visuals are sober typographic cards — no
+Each card carries the "Review this option" preference control
+(owner-directed prototype copy — see the disclosed exception above);
+the sheet closes with the official Lacks financing-page link (fails
+closed via `financingSourceAllowed`), the external-site notice, the
+governed disclosure footer, and the consequence line, which preserves
+the governed "Nothing is submitted and no application is started"
+sentence verbatim. Visuals are sober typographic cards — no
 cash imagery, approval marks, gauges, countdowns, or any implication that
 a displayed mattress qualifies.
 
@@ -409,29 +442,31 @@ the compare screen or in a detail sheet) — otherwise an honestly labeled
 "Recommended starting point" with "No finalist selected yet" and a route
 back — trial priorities with their test guidance, compared mattresses,
 optional Sleep System selections (production accessory ranking, governed
-`sleepSystemGuidance` line), and the Payment Choices decision as three
-equal, reversible buttons — governed "Plan the conversation" (the config's
-`resultsAsk`, = the directive's "Review options"), governed "Not right
-now" (`agendaNotNow`, = "Not now"), and "Undecided". "Not right now" is
-exactly as prominent and as usable as the others, and any choice can be
-changed or cleared (governed announce copy confirms both).
+`sleepSystemGuidance` line), and the live payment moment: the current
+preference stated plainly ("Payment preference: …"), a governed
+"Explore payment options" button that NAVIGATES to the sheet without
+recording anything (exploring is not intent), and governed "Not right
+now" — the authoritative, equal, reversible pause. Any preference can
+be changed or cleared (governed announce copy confirms both), and a
+deliberate path selection on the sheet replaces the pause.
 
 The handoff card (store attribution + governed headline "Your Sleep
 Plan. Your Payment Choices.") gives the salesperson: the profile
 subtitle, the trial priorities with their in-store test script, which
 mattresses were compared, the finalist — explicitly distinguished from
 the engine's recommendation, with "No finalist selected yet" stated when
-none was chosen — Sleep System picks, and the payment signal as TWO
-rows: the conversation preference and the customer's marked topics,
-with "Not right now" suppressing the active agenda (revision-3.1 truth
-table above). No raw quiz answers, no eligibility implication.
+none was chosen — Sleep System picks, and the payment summary of what
+actually happened in the walkthrough: the current preference, plus the
+options explored when that adds information ("Not right now"
+suppresses the history — revision-3.1 table above). No raw quiz
+answers, no eligibility implication, no future-discussion agenda.
 
 ## State isolation — demonstrated live
 
 "Isolation check" on the welcome screen (presenter mode) runs in-app and
 reports PASS/FAIL:
 
-1. Payment state (decision, agenda marks, Sleep System picks) cannot move
+1. Payment state (preference, explored paths, Sleep System picks) cannot move
    scores, recommendation order, default tier, top-pick emphasis, the
    Sleep Signature, or Sleep Brief priorities — verified by live engine
    re-runs across six payment-state mutations. (Structurally: the
@@ -503,18 +538,20 @@ ZIP-code routing.
    aren't currently satisfied. The system refuses to advertise yesterday's
    terms; that is a compliance feature, not a broken screen. Notice
    lease-to-own and Build My Credit still show their full orientation —
-   only exact claims wait for re-verification. Mark a path to discuss —
-   nothing is submitted, no application starts."
+   only exact claims wait for re-verification. Select a path to
+   consider together, right here — nothing is submitted, no
+   application starts."
 6. **(30s) Spanish, live.** Tap ES with the sheet open. "Same programs,
-   same order, same gates — the customer's marked agenda survives the
-   switch. The whole journey does this: answers, finalist, plan." The
+   same order, same gates — the customer's preference and explored
+   options survive the switch. The whole journey does this: answers,
+   finalist, plan." The
    Spanish is the shipped bilingual copy — still pending native Lacks
    review — and nothing is performed or improvised.
 7. **(45s) Compare → finalist → the close.** Back in EN: compare side by
    side — the trial priorities span BOTH beds, because they belong to the
    customer, not to a mattress. Pick a real finalist, add the suggested
-   base, answer the one respectful question (now / not right now /
-   undecided — 'not right now' is a first-class answer). Then hand the
+   base, and settle the payment moment together — explore the options
+   now, or 'not right now', a first-class answer. Then hand the
    owner the handoff card and role-play: "You just walked over. Five
    seconds — what do you know?" The card says what the customer CHOSE
    versus what the engine recommended; if no finalist was picked it says
@@ -589,7 +626,7 @@ M, constellation component M). The Payment Choices integration adds:
 | Payment Choices sheet restyle (Nocturne cards) | restyle of `renderFinancingSheet` markup/CSS; logic untouched | M | gating code must not change; validate_financing + smoke pins |
 | Sleep Plan scene (finalist + decision) | **new screen** between compare and handoff; decision state joins the session wipe inventory | L | biggest new surface; touch + session-reset review; device pass |
 | Explicit finalist selection | new state + compare/detail controls | M | feeds handoff + email |
-| Handoff payment signal row | extension of the handoff renderer | S–M | reuses agenda state |
+| Handoff payment signal rows | extension of the handoff renderer | S–M | reuses preference + explored-path state |
 | Isolation checks | port into `tests/` as a node suite pinning both directions | S | belongs in the suite regardless |
 | Answer reflection + why/test surfacing | presentation of existing engine output | S–M | no engine change; email/handoff parity check |
 | Honest finalist semantics | state labels + incomplete-plan handling | S | pairs with the Sleep Plan slice |

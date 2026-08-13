@@ -34,23 +34,45 @@ function fnBody(name) {
   return html.slice(start, end > -1 ? end : start + 6000);
 }
 
-// --- FIX 1: two-dimensional payment state ---
+// --- FIX 1 (as corrected by the live-conversation ruling): payment state
+// models OBSERVABLE actions — explored paths, a current preference, and an
+// explicit pause — never a future-discussion agenda ---
 const pref = fnBody("payPrefLabel");
-const topics = fnBody("payTopicsLabel");
-assert("payPrefLabel exists (preference dimension)", pref.length > 0);
-assert("payTopicsLabel exists (topics dimension)", topics.length > 0);
-assert("topics are NOT gated on the review preference", !topics.includes('"review"'));
-assert("topics render marked finAgenda ids", topics.includes("finAgenda"));
-assert("not_now suppresses the active agenda via governed dismissed line",
-  topics.includes('"not_now"') && topics.includes("agendaDismissed"));
-assert("empty topics fall back to governed agendaEmpty", topics.includes("agendaEmpty"));
+const explored = fnBody("payExploredLabel");
+assert("payPrefLabel exists (current preference)", pref.length > 0);
+assert("preference resolves a deliberately selected PATH title",
+  pref.includes("payPref") && pref.includes("c.title"));
+assert("payExploredLabel exists (observable history)", explored.length > 0);
+assert("explored history excludes the current preference (its own row)",
+  explored.includes("id !== payPref"));
+assert("pause suppresses the history from the active handoff",
+  /if \(payPref === "not_now"\) return null/.test(explored));
+const consider = fnBody("considerPath");
+assert("considerPath records a deliberate selection AND the history",
+  consider.includes("payPref = id") && consider.includes("payExplored[id] = true"));
+assert("a newer deliberate selection replaces the pause (unconditional assignment)",
+  !consider.includes('"not_now"'));
+assert("pausePayment exists and toggles the authoritative pause",
+  fnBody("pausePayment").includes('"not_now"'));
 const handoff = fnBody("renderHandoff");
 assert("handoff renders the preference row", handoff.includes("payPrefLabel()"));
-assert("handoff renders the topics row", handoff.includes("payTopicsLabel()"));
-assert("old single-row payDecisionLabel is gone", !html.includes("function payDecisionLabel"));
+assert("handoff renders the explored row only when genuinely useful",
+  handoff.includes("payExploredLabel()") && /if \(explored\)/.test(handoff));
 const reset = fnBody("resetJourneyState");
-assert("reset clears preference AND topics",
-  /payDecision\s*=\s*null/.test(reset) && /finAgenda\s*=\s*\{\}/.test(reset));
+assert("reset clears preference AND explored history",
+  /payPref\s*=\s*null/.test(reset) && /payExplored\s*=\s*\{\}/.test(reset));
+// agenda framing is retired: no render path may touch the agenda copy keys,
+// and no agenda vocabulary may appear in prototype-authored strings
+for (const key of ["agendaMark", "agendaMarked", "drawerMark", "agendaConsequence", "agendaDismissed", "agendaEmpty", "agendaPrompt"]) {
+  assert("no render path reads FIN.copy." + key, !html.includes("FIN.copy." + key));
+}
+assert("no 'Add to discussion' vocabulary", !html.includes("Add to discussion"));
+assert("old agenda/decision identifiers are gone",
+  !/\b(finAgenda|payDecision|togAgenda|decideUndecided)\b/.test(html));
+assert("consequence line preserves the governed no-submission sentence EN",
+  html.includes("Nothing is submitted and no application is started."));
+assert("consequence line preserves the governed no-submission sentence ES",
+  html.includes("No se envía nada y no se inicia ninguna solicitud."));
 
 // --- FIX 4A: finalist-dependent test prose withheld ---
 const gate = fnBody("testProseFor");
@@ -68,8 +90,8 @@ for (const fn of ["renderReveal", "renderPlan", "renderHandoff"]) {
 for (const k of ["hNoteFinDec", "hNoteFinOpen", "hNoteStartDec", "hNoteStartOpen"]) {
   assert("note variant " + k + " exists", html.includes(k + ":{en:"));
 }
-assert("note selection reads finalist AND decision state",
-  /finalistId\s*\?\s*\(payDecision !== null \? T\.hNoteFinDec : T\.hNoteFinOpen\)/.test(handoff));
+assert("note selection reads finalist AND payment-preference state",
+  /finalistId\s*\?\s*\(payPref !== null \? T\.hNoteFinDec : T\.hNoteFinOpen\)/.test(handoff));
 assert("'payment conversation you chose' phrasing is gone (EN)",
   !html.includes("payment conversation you chose"));
 assert("'conversación de pago que elegiste' phrasing is gone (ES)",
