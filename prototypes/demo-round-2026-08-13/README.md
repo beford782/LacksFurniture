@@ -171,9 +171,9 @@ ZIP-code routing.
    The customer can explore payment right here, and the matches cannot
    move."
 5. **(60s) Payment Choices.** Open the sheet. "Every way Lacks brings a
-   bed home, in one governed screen: promotional financing, In-House
-   Credit — South Texas families have financed with Lacks since 1935 —
-   lease-to-own, Build My Credit, and the Mexico-delivery program,
+   bed home, in one governed screen: promotional financing, Lacks
+   In-House Credit, lease-to-own, Build My Credit, and the
+   Mexico-delivery program,
    always present, in Spanish too. Look at the promotional card today:
    the system is showing 'your specialist has current options' instead
    of a rate — because the config's verification window lapsed. It

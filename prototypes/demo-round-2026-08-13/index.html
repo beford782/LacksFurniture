@@ -269,6 +269,8 @@
   .detail-sheet .name{font-family:var(--display);font-size:1.7rem;line-height:1.05}
   .detail-sheet .feel{color:var(--ink-soft);font-size:.9rem}
   .detail-chips{display:flex;gap:7px;flex-wrap:wrap}
+  .d-prios-t{font-family:var(--util);font-weight:600;font-size:.62rem;letter-spacing:.26em;
+    text-transform:uppercase;color:var(--ink-soft);margin-top:.2rem}
   .detail-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:.2rem}
   .btn-ink{font-family:var(--util);font-weight:600;font-size:.72rem;letter-spacing:.2em;text-transform:uppercase;
     color:var(--linen);background:var(--ink);border-radius:99px;padding:.65rem 1.3rem}
@@ -329,6 +331,7 @@
     text-transform:uppercase;color:var(--ink-soft)}
   .plan-final .name{font-family:var(--display);font-size:1.45rem;line-height:1.08}
   .plan-final .feel{color:var(--ink-soft);font-size:.86rem}
+  .plan-final .note{color:var(--ink-soft);font-size:.78rem;max-width:36ch}
   .plan-col{display:flex;flex-direction:column;gap:10px;overflow:auto;min-height:0;padding:2px}
   .plan-block{background:var(--nocturne);border:1px solid var(--veil-soft);border-radius:16px;
     padding:.8rem 1.05rem;display:flex;flex-direction:column;gap:.45rem}
@@ -391,6 +394,8 @@
   .consult-info{display:flex;flex-direction:column;gap:.45rem;min-width:0}
   .consult-info .brand{font-family:var(--util);font-weight:600;font-size:.64rem;letter-spacing:.3em;
     text-transform:uppercase;color:var(--ink-soft)}
+  .consult-info .h-status{font-family:var(--util);font-weight:600;font-size:.62rem;letter-spacing:.24em;
+    text-transform:uppercase;color:var(--brass)}
   .consult-info .name{font-family:var(--display);font-size:1.7rem;line-height:1.05}
   .consult-info .feel{color:var(--ink-soft);font-size:.88rem}
   .consult-list{margin-top:.3rem;display:flex;flex-direction:column;gap:.4rem}
@@ -542,6 +547,7 @@
     <div class="brand" id="dBrand"></div>
     <div class="name" id="dName"></div>
     <div class="feel" id="dFeel"></div>
+    <div class="d-prios-t" id="dPriosT"></div>
     <div class="detail-chips" id="dChips"></div>
     <div class="detail-actions">
       <button class="btn-ink" id="dFinBtn"></button>
@@ -615,6 +621,7 @@
     <div class="consult-body">
       <div class="plate"><img id="hImg" alt=""></div>
       <div class="consult-info">
+        <div class="h-status" id="hStatus"></div>
         <div class="brand" id="hBrand"></div>
         <div class="name" id="hName"></div>
         <div class="feel" id="hFeel"></div>
@@ -622,7 +629,7 @@
       </div>
     </div>
   </div>
-  <p class="handoff-note" data-t="hNote"></p>
+  <p class="handoff-note" id="hNote" data-t="hNote"></p>
   <div class="handoff-foot"><button class="cta cta--ghost" onclick="startOver()" data-t="hAgain"></button></div>
 </section>
 
@@ -703,6 +710,13 @@ var T = {
   matchLbl:{en:"Match",es:"Afinidad"},
   sameTag:{en:"Same for both",es:"Igual en ambos"},
   finalist:{en:"Finalist",es:"Finalista"},testLbl:{en:"Test for",es:"Probar"},
+  trialPrioritiesLbl:{en:"Your trial priorities",es:"Tus prioridades al probar"},
+  recommendedStart:{en:"Recommended starting point",es:"Punto de partida recomendado"},
+  noFinalistYet:{en:"No finalist selected yet",es:"Aún no has elegido finalista"},
+  chooseFinalistPrompt:{en:"Choose a finalist to complete your plan — mark one from a mattress's details or the comparison.",
+                        es:"Elige un finalista para completar tu plan — márcalo en los detalles de un colchón o en la comparación."},
+  hNoteNoFinalist:{en:"Your specialist picks up exactly where you left off — matches, priorities, a recommended starting point, and the payment conversation you chose.",
+                   es:"Tu especialista continúa justo donde quedaste — opciones, prioridades, un punto de partida recomendado y la conversación de pago que elegiste."},
   profileLbl:{en:"Profile",es:"Perfil"},
   comparedLbl:{en:"Compared",es:"Comparados"},
   systemLbl:{en:"System",es:"Sistema"},
@@ -941,6 +955,10 @@ function finishQuiz(){
       answers[qq.id] = "not_applicable";
     }
   });
+  /* fresh-journey presentation reset lives HERE, not in compute():
+     setLang() re-runs compute(), and a language switch must preserve
+     comparison state and the active tier (CLAUDE.md i18n rule) */
+  activeTier = "gold"; cmpSel = [];
   compute(); go("reveal");
   drawConstellation("constellation", 560, 300, true);
   renderReveal();
@@ -957,7 +975,6 @@ function compute(){
     profileName: brief.profileName || "",
     subtitle: brief.profileSubtitleByLang || {en:"",es:""}
   };
-  activeTier = "gold"; cmpSel = [];
 }
 function model(id){
   for (var t in MATTRESSES){ var f = MATTRESSES[t].find(function(m){ return m.id === id; }); if (f) return f; }
@@ -1081,7 +1098,8 @@ function paymentModel(){
         return { headline: L(p.headline), detail: L(p.detail), disclosure: L(p.disclosure) };
       }) : null,
       staleBody: grpFresh ? null : FC("staleNotice"),
-      prequal: FC("prequalNote") || null
+      prequal: FC("prequalNote") || null,
+      calcEnabled: grp.plans.some(function(p){ return p.paymentCalculationEnabled === true; })
     });
   });
   /* retailer in-house installment — detail freshness-gated (term range) */
@@ -1091,7 +1109,8 @@ function paymentModel(){
     cards.push({
       id: "plan:" + ih.id, title: L(ih.headline),
       detail: ihFresh ? L(ih.detail) : FC("staleNotice"),
-      disclosure: ih.disclosure ? L(ih.disclosure) : null
+      disclosure: ih.disclosure ? L(ih.disclosure) : null,
+      calcEnabled: ih.paymentCalculationEnabled === true
     });
   });
   /* evergreen paths — orientation only, never payment math */
@@ -1100,7 +1119,8 @@ function paymentModel(){
       id: "plan:" + p.id, title: L(p.headline), detail: L(p.detail),
       disclosure: es
         ? "Hay opciones adicionales disponibles. Los detalles del programa, costos, elegibilidad y términos de propiedad se confirman en tienda."
-        : "Additional options are available. Program details, costs, eligibility, and ownership terms are confirmed in store."
+        : "Additional options are available. Program details, costs, eligibility, and ownership terms are confirmed in store.",
+      calcEnabled: p.paymentCalculationEnabled === true
     });
   });
   /* Mexico delivery scenario — fixed last, visible to everyone */
@@ -1126,7 +1146,8 @@ function paymentModel(){
         url: mxLink,
         label: es ? ("Detalles en " + mxHost + " (se abre en otro sitio)")
                   : ("Details on " + mxHost + " (opens a separate site)")
-      } : null
+      } : null,
+      calcEnabled: mx.paymentCalculationEnabled === true
     });
   }
 
@@ -1265,10 +1286,9 @@ function renderReveal(){
 function cardHtml(entry, hero){
   var m = model(entry.id); if (!m) return "";
   var sel = cmpSel.indexOf(entry.id) >= 0;
+  /* customer trial priorities never render inside a single mattress's card —
+     shown only on one model they read as that model's own attributes */
   var chips = "";
-  if (hero && computed){
-    computed.trialFocus.forEach(function(p){ chips += '<span class="chip">' + star(10, "#D4A84B") + L(p) + '</span>'; });
-  }
   return '<div class="card ' + (hero ? "hero" : "small") + (sel ? " cmp-sel" : "") + '" role="button" tabindex="0" onclick="toggleCmp(\'' + entry.id + '\')">'
     + (hero ? '<div class="ribbon">' + L(T.bestMatch) + '</div>' : '')
     + '<div class="ring">' + ringSvg(entry.pct) + '</div>'
@@ -1296,7 +1316,9 @@ function renderResults(){
   document.getElementById("stampName").textContent = computed.profileName;
   drawConstellation("stampResults", 64, 36, false);
   document.getElementById("cmpCta").disabled = cmpSel.length !== 2;
-  document.getElementById("planCta").disabled = !finalistId;
+  /* the Sleep Plan is reachable without a finalist — it renders an honest
+     incomplete state instead of silently substituting the engine's pick */
+  document.getElementById("planCta").disabled = false;
   /* the first Payment Choices entry — established AFTER the matches, and
      explicit that fit decided the shortlist and payment cannot move it */
   if (FIN){
@@ -1326,6 +1348,9 @@ function openDetail(id){
   (computed ? computed.trialFocus : []).forEach(function(p){
     chips += '<span class="chip">' + star(10, "#D4A84B") + L(p) + '</span>';
   });
+  /* labeled as the CUSTOMER's priorities — they apply to every mattress,
+     not to the one this sheet happens to show */
+  document.getElementById("dPriosT").textContent = chips ? L(T.trialPrioritiesLbl) : "";
   document.getElementById("dChips").innerHTML = chips;
   var fb = document.getElementById("dFinBtn");
   fb.textContent = finalistId === id ? L(T.isFinalist) : L(T.makeFinalist);
@@ -1377,10 +1402,13 @@ function renderCompare(){
   rows += row(L(T.matchLbl), pctOf(a.id) + "%", pctOf(b.id) + "%");
   rows += row(L(T.tierLbl), L(tn[tierOf(a.id)] || {en:tierOf(a.id)}), L(tn[tierOf(b.id)] || {en:tierOf(b.id)}));
   if (computed.trialFocus.length){
-    rows += row(L(T.testLbl), L(computed.trialFocus[0]), L(computed.trialFocus[computed.trialFocus.length > 1 ? 1 : 0]));
+    /* trial priorities are CUSTOMER-level (the engine never assigns one to a
+       specific mattress), so they span both columns — never one per side */
+    rows += '<div class="cmp-row"><div class="lab">' + L(T.trialPrioritiesLbl) + '</div>'
+      + '<div class="val same">' + computed.trialFocus.map(function(p){ return L(p); }).join('  ·  ') + '</div></div>';
   }
   document.getElementById("cmpRows").innerHTML = rows;
-  document.getElementById("cmpPlanCta").disabled = !finalistId;
+  document.getElementById("cmpPlanCta").disabled = false;
 }
 
 /* ---- Sleep Plan: trial priorities + compared + finalist + optional Sleep
@@ -1398,13 +1426,24 @@ function decide(choice){
 }
 function renderPlan(){
   if (!computed) { go("results"); return; }
+  /* honest state semantics: "Finalist" = the customer explicitly chose it;
+     otherwise the engine's top pick renders as a RECOMMENDED STARTING POINT
+     and the absence of a finalist is stated, never papered over */
   var fid = finalistId || computed.topPickId;
-  var m = model(fid); if (!m) return;
-  var f = '<div class="k">' + L(T.finalist) + (finalistId ? '' : ' · ' + L(T.bestMatch)) + '</div>'
-    + '<div class="plate"><img src="' + imgOf(m) + '" alt="' + m.name + '"></div>'
-    + '<div class="fin-id"><div class="brand">' + m.brand + (m.subBrand ? ' · ' + m.subBrand : '') + '</div>'
-    + '<div class="name">' + m.name + '</div>'
-    + '<div class="feel">' + L(T.feelLbl) + ': ' + feelOf(m) + ' · ' + L(T.matchLbl) + ' ' + pctOf(fid) + '%</div></div>';
+  var m = model(fid);
+  var f;
+  if (!m){
+    f = '<div class="k">' + L(T.noFinalistYet) + '</div>'
+      + '<div class="note">' + L(T.chooseFinalistPrompt) + '</div>';
+  } else {
+    f = '<div class="k">' + (finalistId ? L(T.finalist) : L(T.recommendedStart)) + '</div>'
+      + '<div class="plate"><img src="' + imgOf(m) + '" alt="' + m.name + '"></div>'
+      + '<div class="fin-id"><div class="brand">' + m.brand + (m.subBrand ? ' · ' + m.subBrand : '') + '</div>'
+      + '<div class="name">' + m.name + '</div>'
+      + '<div class="feel">' + L(T.feelLbl) + ': ' + feelOf(m) + ' · ' + L(T.matchLbl) + ' ' + pctOf(fid) + '%</div>'
+      + (finalistId ? '' : '<div class="note">' + L(T.noFinalistYet) + ' — ' + L(T.chooseFinalistPrompt) + '</div>')
+      + '</div>';
+  }
   document.getElementById("planFinal").innerHTML = f;
 
   var s = "";
@@ -1468,16 +1507,23 @@ function payDecisionLabel(){
 }
 function renderHandoff(){
   if (!computed) return;
+  /* the card never presents the engine's pick as a customer choice: the
+     status line states which it is, and a Finalist row states absence */
   var fid = finalistId || computed.topPickId;
-  var m = model(fid); if (!m) return;
-  /* governed handoff headline: "Your Sleep Plan. Your Payment Choices." */
+  var m = model(fid);
   document.getElementById("hTitle").textContent =
     FIN ? L(FIN.copy.handoffHeadline) : "Consultation card";
-  document.getElementById("hImg").src = imgOf(m);
-  document.getElementById("hBrand").textContent = m.brand + (m.subBrand ? " · " + m.subBrand : "");
-  document.getElementById("hName").textContent = m.name;
-  document.getElementById("hFeel").textContent = L(T.feelLbl) + ": " + feelOf(m) + " · " + L(T.matchLbl) + " " + pctOf(fid) + "%";
+  document.getElementById("hStatus").textContent =
+    m ? (finalistId ? L(T.finalist) + " ✓" : L(T.recommendedStart)) : L(T.noFinalistYet);
+  document.getElementById("hImg").style.display = m ? "" : "none";
+  if (m) document.getElementById("hImg").src = imgOf(m);
+  document.getElementById("hBrand").textContent = m ? (m.brand + (m.subBrand ? " · " + m.subBrand : "")) : "";
+  document.getElementById("hName").textContent = m ? m.name : L(T.noFinalistYet);
+  document.getElementById("hFeel").textContent = m ? (L(T.feelLbl) + ": " + feelOf(m) + " · " + L(T.matchLbl) + " " + pctOf(fid) + "%") : "";
+  document.getElementById("hNote").textContent = L(finalistId ? T.hNote : T.hNoteNoFinalist);
   var rows = "";
+  rows += '<div class="row"><b>' + L(T.finalist) + '</b><span>'
+    + (finalistId && m ? m.name : L(T.noFinalistYet)) + '</span></div>';
   rows += '<div class="row"><b>' + L(T.profileLbl) + '</b><span>' + computed.profileName + ' · ' + L(computed.subtitle) + '</span></div>';
   computed.trialFocus.forEach(function(p, i){
     rows += '<div class="row"><b>' + (i === 0 ? L(T.testLbl) : "") + '</b><span>' + L(p) + '</span></div>';
@@ -1516,17 +1562,34 @@ function sleepFingerprint(ans, lg){
   });
 }
 function payFingerprint(){
-  var m = paymentModel(); if (!m) return "none";
+  /* Always returns parseable JSON. `structural` groups every language-
+     independent property into ONE object compared wholesale by check #5,
+     so a future field cannot be silently dropped and a misspelled key
+     cannot vacuously pass (the rev-2 defect: pe.suppressed on a key this
+     function never emitted). `strings` is the language-varying copy —
+     check #5 asserts it DOES differ EN vs ES. */
+  var m = paymentModel();
+  if (!m) return JSON.stringify({ structural: null, strings: null });
+  var stale = FC("staleNotice");
   return JSON.stringify({
-    order: m.cards.map(function(c){ return c.id; }),
-    mexicoLast: m.cards.length && !!m.cards[m.cards.length - 1].mexico,
-    exactShown: m.cards.map(function(c){ return !!(c.offers && c.offers.length); }),
+    structural: {
+      order: m.cards.map(function(c){ return c.id; }),
+      count: m.cards.length,
+      scenarios: m.cards.filter(function(c){ return c.mexico; }).map(function(c){ return c.id; }),
+      mexicoLast: m.cards.length ? !!m.cards[m.cards.length - 1].mexico : false,
+      exact: m.cards.map(function(c){ return !!(c.offers && c.offers.length); }),
+      offerCount: m.cards.map(function(c){ return c.offers ? c.offers.length : 0; }),
+      stale: m.cards.map(function(c){ return !!c.staleBody; }),
+      detailSuppressed: m.cards.map(function(c){ return c.detail === stale; }),
+      anyStale: !!m.anyStale,
+      officialUrl: m.official ? m.official.url : "",
+      destinations: m.cards.map(function(c){ return c.link ? c.link.url : ""; }),
+      calc: m.cards.map(function(c){ return !!c.calcEnabled; })
+    },
     strings: m.cards.map(function(c){
       return [c.title, c.detail, c.example, c.disclosure, c.staleBody, c.prequal]
         .map(function(x){ return x ? JSON.stringify(x) : ""; }).join("|");
-    }),
-    destinations: m.cards.map(function(c){ return c.link ? c.link.url : ""; })
-      .concat([m.official ? m.official.url : ""])
+    })
   });
 }
 function runIso(){
@@ -1578,17 +1641,21 @@ function runIso(){
          es:"La opción México es visible para todos y siempre al final"},
         !!(mObj && mObj.cards.length && mObj.cards[mObj.cards.length - 1].mexico));
 
-  /* language must restyle, never re-route */
+  /* language must restyle, never re-route: the WHOLE structural object
+     (availability, order, scenario inclusion, suppressed/exact state,
+     official + per-card destinations, calculation capability) must be
+     identical EN vs ES — and the copy must actually CHANGE, so a broken
+     language switch cannot pass as "structurally identical" */
   var l0 = lang;
   lang = "en"; var pe = JSON.parse(payFingerprint());
   lang = "es"; var ps = JSON.parse(payFingerprint());
   lang = l0;
-  var structuralSame = JSON.stringify(pe.order) === JSON.stringify(ps.order)
-    && JSON.stringify(pe.destinations) === JSON.stringify(ps.destinations)
-    && JSON.stringify(pe.suppressed) === JSON.stringify(ps.suppressed)
-    && pe.mexicoLast === ps.mexicoLast;
-  check({en:"Language changes copy only — no language-based routing of programs or destinations",
-         es:"El idioma cambia solo el texto — sin enrutar programas ni destinos por idioma"}, structuralSame);
+  var structuralSame = !!(pe.structural && ps.structural)
+    && Object.keys(pe.structural).length > 0
+    && JSON.stringify(pe.structural) === JSON.stringify(ps.structural)
+    && JSON.stringify(pe.strings) !== JSON.stringify(ps.strings);
+  check({en:"Language changes copy only — availability, order, scenarios, suppression, destinations, and calculation capability are identical EN vs ES",
+         es:"El idioma cambia solo el texto — disponibilidad, orden, escenarios, supresión, destinos y capacidad de cálculo son idénticos EN vs ES"}, structuralSame);
 
   /* governance floor, decided by PRODUCTION'S OWN extracted gating code:
      when financingTermsFresh() is false, every promotional card must carry
