@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>DreamFinder — Nocturne demo prototype</title>
+<!--
+  FULLY FUNCTIONAL PROTOTYPE — demo-impact visual round, 2026-08-13.
+  Isolated from production (lives under prototypes/, no domain lock, no
+  writes, no financing logic) but the recommendations are REAL:
+    · questions load from ../../data/quiz.json (the shipped quiz)
+    · the catalog loads from ../../data/mattresses.json
+    · calculateScores(), qualifyRankedChoices() and showProfileScreen()
+      are EXTRACTED VERBATIM from ../../index.html at runtime — the same
+      extract-and-execute technique the repo's test suites use — so every
+      score, tier, ordering, top pick, profile and priority shown here is
+      the production engine's own output for the answers given.
+  Nothing invented, nothing re-ranked, no product claims beyond identity,
+  firmness, match % and engine-computed priorities.
+  Store name is demo config; production reads store-config.json.
+-->
+<style>
+  /* ===== NOCTURNE TOKENS ==================================================
+     Evolves the shipped navy/brass identity — recognizably DreamFinder,
+     elevated. Boldness lives in ONE place: the Sleep Signature
+     constellation. Everything else stays quiet and disciplined. */
+  :root{
+    --midnight:#0A1124;
+    --nocturne:#141E3C;
+    --veil:rgba(233,239,250,.14);
+    --veil-soft:rgba(233,239,250,.07);
+    --brass:#D4A84B;
+    --brass-soft:#E9CE8F;
+    --moonlight:#E9EFFA;
+    --moon-dim:rgba(233,239,250,.62);
+    --linen:#F4EFE6;
+    --ink:#1A2036;
+    --ink-soft:#5A617A;
+    --display:"Didot","Didot LT STD","Bodoni 72",Georgia,"Times New Roman",serif;
+    --body:"Avenir Next","Avenir","Helvetica Neue",-apple-system,system-ui,sans-serif;
+    --util:"Avenir Next Condensed","Avenir Next","Arial Narrow",sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    background:var(--midnight);color:var(--moonlight);
+    font-family:var(--body);font-size:17px;line-height:1.5;
+    overflow:hidden;touch-action:manipulation;
+  }
+  button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;touch-action:manipulation}
+  .scene{position:absolute;inset:0;display:none;flex-direction:column;overflow:hidden}
+  .scene.on{display:flex}
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation-duration:.001s !important;transition-duration:.001s !important}
+  }
+  .eyebrow{font-family:var(--util);font-weight:600;font-size:.72rem;
+    letter-spacing:.34em;text-transform:uppercase;color:var(--brass)}
+  .eyebrow--moon{color:var(--moon-dim)}
+
+  /* ===== CHROME ========================================================== */
+  .chrome{position:fixed;top:0;left:0;right:0;z-index:40;display:flex;
+    justify-content:space-between;align-items:center;
+    padding:calc(14px + env(safe-area-inset-top)) 22px 10px;pointer-events:none}
+  .chrome>*{pointer-events:auto}
+  .langs{display:flex;gap:2px;border:1px solid var(--veil);border-radius:99px;padding:3px}
+  .langs button{font-family:var(--util);font-weight:600;font-size:.72rem;letter-spacing:.18em;
+    padding:5px 13px;border-radius:99px;color:var(--moon-dim)}
+  .langs button.on{background:var(--brass);color:var(--midnight)}
+  .restart{font-family:var(--util);font-weight:600;font-size:.72rem;letter-spacing:.22em;
+    text-transform:uppercase;color:var(--moon-dim);padding:8px 4px}
+
+  /* ===== AMBIENT STARFIELD =============================================== */
+  .sky{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+  .sky i{position:absolute;width:2px;height:2px;border-radius:50%;
+    background:var(--moonlight);opacity:.16;animation:breathe 6s ease-in-out infinite}
+  .sky i:nth-child(3n){animation-delay:2s;width:1.5px;height:1.5px}
+  .sky i:nth-child(4n){animation-delay:4s;opacity:.28}
+  @keyframes breathe{0%,100%{opacity:.10}50%{opacity:.34}}
+
+  /* ===== WELCOME ========================================================= */
+  #welcome{align-items:center;justify-content:center;text-align:center;
+    background:
+      radial-gradient(120% 90% at 50% 118%, #22315E 0%, rgba(34,49,94,0) 55%),
+      radial-gradient(80% 55% at 50% -12%, #1B2A55 0%, rgba(27,42,85,0) 60%),
+      var(--midnight)}
+  .masthead{font-family:var(--display);font-weight:400;
+    font-size:clamp(3.4rem,9.5vw,7rem);line-height:.98;letter-spacing:.01em}
+  .masthead em{font-style:italic;color:var(--brass-soft)}
+  .welcome-inner{position:relative;z-index:2;display:flex;flex-direction:column;
+    align-items:center;gap:1.4rem;padding:0 8vw;max-width:900px}
+  .welcome-line{font-size:clamp(1.02rem,2.2vw,1.3rem);color:var(--moon-dim);max-width:34ch}
+  .hairline{width:52px;height:1px;background:var(--brass);opacity:.8}
+  .cta{font-family:var(--util);font-weight:600;letter-spacing:.26em;text-transform:uppercase;
+    font-size:.86rem;color:var(--midnight);background:var(--brass);
+    padding:1.05rem 2.6rem;border-radius:99px;margin-top:.6rem;
+    box-shadow:0 8px 34px rgba(212,168,75,.35);
+    transition:transform .18s ease, opacity .18s ease}
+  .cta:active{transform:scale(.97)}
+  .cta[disabled]{opacity:.35;pointer-events:none}
+  .specialist{font-size:.86rem;color:var(--moon-dim);letter-spacing:.04em}
+  .demo-fill{font-family:var(--util);font-weight:600;font-size:.7rem;letter-spacing:.24em;
+    text-transform:uppercase;color:var(--moon-dim);opacity:.7;margin-top:.8rem;
+    border-bottom:1px solid var(--veil);padding-bottom:2px}
+  #welcomeArc{position:absolute;left:0;right:0;bottom:-4vh;height:34vh;opacity:.9}
+
+  /* ===== QUIZ (fully dynamic) =========================================== */
+  #quiz{padding:calc(56px + env(safe-area-inset-top)) 6vw 2vh;align-items:center}
+  .quiz-frame{width:100%;max-width:860px;display:flex;flex-direction:column;gap:1.5vh;flex:1;min-height:0}
+  .q-count{display:flex;align-items:baseline;gap:14px}
+  .q-count .n{font-family:var(--display);font-size:2rem;color:var(--brass-soft)}
+  .q-headline{font-family:var(--display);font-weight:400;
+    font-size:clamp(1.6rem,4vw,2.7rem);line-height:1.12}
+  .q-help{color:var(--moon-dim);font-size:.98rem;max-width:56ch}
+  .q-body{flex:1;min-height:0;overflow:auto;padding:2px}
+  .q-options{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+  .q-options.cols-3{grid-template-columns:repeat(3,1fr)}
+  .q-opt{text-align:left;background:var(--nocturne);border:1px solid var(--veil-soft);
+    border-radius:16px;padding:.95rem 1.15rem;display:flex;flex-direction:column;gap:.15rem;
+    transition:border-color .15s ease, background .15s ease}
+  .q-opt .l{font-weight:600;font-size:1.02rem}
+  .q-opt .s{color:var(--moon-dim);font-size:.84rem}
+  .q-opt.sel{border-color:var(--brass);background:#1A2547;box-shadow:0 0 0 1px var(--brass) inset}
+  .q-opt.sel .l{color:var(--brass-soft)}
+  .multi-note{color:var(--moon-dim);font-size:.85rem;margin-bottom:.6rem}
+  /* slider */
+  .slider-wrap{display:flex;flex-direction:column;align-items:center;gap:.7rem;padding:1.2rem 0}
+  .slider-val{font-family:var(--display);font-size:3.4rem;color:var(--brass-soft);line-height:1}
+  .slider-feel{font-family:var(--util);font-weight:600;font-size:.8rem;letter-spacing:.26em;
+    text-transform:uppercase;color:var(--moon-dim)}
+  input[type=range]{width:min(560px,86%);accent-color:var(--brass);height:34px}
+  .slider-labels{display:flex;justify-content:space-between;width:min(560px,86%);
+    color:var(--moon-dim);font-size:.82rem}
+  .q-nav{display:flex;justify-content:space-between;align-items:center;padding-top:.6vh}
+  .q-back{font-family:var(--util);font-weight:600;letter-spacing:.2em;font-size:.8rem;
+    color:var(--moon-dim);text-transform:uppercase;padding:.9rem 0}
+  #quizArcWrap{height:52px;flex:none}
+
+  /* ===== REVEAL ========================================================== */
+  #reveal{align-items:center;justify-content:center;text-align:center;
+    background:radial-gradient(95% 70% at 50% 42%, #16224A 0%, rgba(22,34,74,0) 62%), var(--midnight)}
+  .reveal-inner{position:relative;z-index:2;display:flex;flex-direction:column;
+    align-items:center;gap:1rem;padding:0 7vw;width:100%;max-width:880px}
+  #constellation{width:min(70vw,520px);height:auto;max-height:26vh}
+  #constellation .edge{stroke:var(--brass);stroke-width:1.1;opacity:.85;
+    stroke-dasharray:1200;stroke-dashoffset:1200;animation:draw 1.8s .4s ease forwards}
+  #constellation .node{fill:var(--moonlight);opacity:0;animation:nodeIn .4s ease forwards}
+  #constellation .node.b{fill:var(--brass-soft)}
+  @keyframes draw{to{stroke-dashoffset:0}}
+  @keyframes nodeIn{to{opacity:1}}
+  .reveal-title{font-family:var(--display);font-size:clamp(2rem,5vw,3.3rem);font-weight:400;line-height:1.08}
+  .reveal-title em{font-style:italic;color:var(--brass-soft)}
+  .profile-chip{display:inline-flex;gap:.6em;align-items:baseline;
+    font-family:var(--util);font-weight:600;letter-spacing:.2em;text-transform:uppercase;font-size:.78rem;
+    color:var(--brass);border:1px solid rgba(212,168,75,.4);border-radius:99px;padding:.55rem 1.3rem}
+  .priorities{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+  .prio{display:flex;align-items:center;gap:.55em;background:var(--nocturne);
+    border:1px solid var(--veil-soft);border-radius:14px;padding:.75rem 1.1rem;
+    font-size:.96rem;font-weight:500}
+  .reveal-sub{color:var(--moon-dim);font-size:.94rem;max-width:46ch}
+
+  /* ===== RESULTS ========================================================= */
+  #results{padding:calc(64px + env(safe-area-inset-top)) 4vw 2.5vh;gap:1.4vh}
+  .results-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}
+  .results-title{font-family:var(--display);font-size:clamp(1.7rem,3.8vw,2.5rem);font-weight:400}
+  .results-title em{font-style:italic;color:var(--brass-soft)}
+  .sig-stamp{display:flex;align-items:center;gap:10px;color:var(--moon-dim);font-size:.82rem}
+  .tiers{display:flex;gap:6px;border:1px solid var(--veil);border-radius:99px;padding:4px;width:max-content}
+  .tiers button{font-family:var(--util);font-weight:600;font-size:.78rem;letter-spacing:.2em;
+    text-transform:uppercase;padding:.55rem 1.35rem;border-radius:99px;color:var(--moon-dim)}
+  .tiers button.on{background:var(--brass);color:var(--midnight)}
+  .cards{display:grid;grid-template-columns:1.6fr 1fr;grid-template-rows:1fr 1fr;gap:14px;flex:1;min-height:0}
+  .card{background:var(--linen);color:var(--ink);border-radius:22px;overflow:hidden;
+    display:flex;flex-direction:column;position:relative;text-align:left;
+    border:2px solid transparent;transition:border-color .15s ease}
+  .card.cmp-sel{border-color:var(--brass)}
+  .card.hero{grid-row:1 / span 2}
+  .card .ph{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;
+    background:#fff;border-radius:16px;margin:14px 14px 0;padding:4% 6%;position:relative;
+    box-shadow:0 10px 28px rgba(26,32,54,.12)}
+  .card .ph img{max-width:100%;max-height:100%;object-fit:contain}
+  .card .meta{padding:.9rem 1.25rem 1.1rem;display:flex;flex-direction:column;gap:.24rem}
+  .card .brand{font-family:var(--util);font-weight:600;font-size:.66rem;letter-spacing:.3em;
+    text-transform:uppercase;color:var(--ink-soft)}
+  .card .name{font-family:var(--display);font-size:1.45rem;line-height:1.1}
+  .card.hero .name{font-size:clamp(1.6rem,2.8vw,2.2rem)}
+  .card .feel{font-size:.88rem;color:var(--ink-soft)}
+  .ribbon{position:absolute;top:24px;left:24px;z-index:2;
+    font-family:var(--util);font-weight:600;font-size:.66rem;letter-spacing:.26em;text-transform:uppercase;
+    background:var(--midnight);color:var(--brass-soft);border-radius:99px;padding:.5rem 1rem}
+  .ring{position:absolute;top:22px;right:22px;z-index:2;width:70px;height:70px}
+  .ring svg{width:100%;height:100%}
+  .ring .track{stroke:rgba(26,32,54,.15);fill:none;stroke-width:5}
+  .ring .val{stroke:var(--brass);fill:none;stroke-width:5;stroke-linecap:round;
+    transform:rotate(-90deg);transform-origin:center}
+  .ring text{font-family:var(--util);font-weight:600;font-size:15px;fill:var(--ink)}
+  .card .chips{display:flex;gap:7px;flex-wrap:wrap;margin-top:.4rem}
+  .chip{display:inline-flex;align-items:center;gap:.4em;font-size:.76rem;font-weight:600;
+    color:var(--ink);background:rgba(26,32,54,.07);border-radius:99px;padding:.32rem .7rem}
+  /* supporting cards run horizontal: plate left, identity right */
+  .card.small{flex-direction:row;align-items:stretch}
+  .card.small .ph{flex:none;width:44%;margin:14px 0 14px 14px;padding:4%}
+  .card.small .meta{flex:1;justify-content:center;padding:1rem 1.1rem}
+  .card.small .name{font-size:1.3rem}
+  .card.small .ring{width:54px;height:54px;top:18px;right:18px}
+  .card.small .ring text{font-size:13px}
+  .cmp-tag{position:absolute;bottom:14px;right:16px;z-index:2;
+    font-family:var(--util);font-weight:600;font-size:.64rem;letter-spacing:.22em;
+    text-transform:uppercase;color:var(--ink-soft)}
+  .card.cmp-sel .cmp-tag{color:var(--brass);}
+  .results-foot{display:flex;justify-content:space-between;align-items:center}
+  .results-hint{color:var(--moon-dim);font-size:.86rem}
+
+  /* ===== COMPARE ========================================================= */
+  #compare{padding:calc(64px + env(safe-area-inset-top)) 5vw 2.5vh;gap:1.4vh;align-items:center}
+  .cmp-frame{width:100%;max-width:980px;display:flex;flex-direction:column;gap:1.4vh;flex:1;min-height:0}
+  .cmp-title{font-family:var(--display);font-size:clamp(1.7rem,3.6vw,2.4rem);font-weight:400;text-align:center}
+  .cmp-title em{font-style:italic;color:var(--brass-soft)}
+  .cmp-stage{display:grid;grid-template-columns:1fr 1fr;gap:14px;flex:none}
+  .cmp-side{background:var(--linen);color:var(--ink);border-radius:20px;
+    padding:.9rem .9rem .8rem;display:flex;flex-direction:column;align-items:center;gap:.28rem;text-align:center}
+  .cmp-side .plate{background:#fff;border-radius:14px;padding:3% 6%;width:94%;
+    display:flex;justify-content:center;box-shadow:0 8px 20px rgba(26,32,54,.12)}
+  .cmp-side img{width:84%;max-height:15vh;object-fit:contain}
+  .cmp-side .brand{font-family:var(--util);font-weight:600;font-size:.62rem;letter-spacing:.28em;
+    text-transform:uppercase;color:var(--ink-soft)}
+  .cmp-side .name{font-family:var(--display);font-size:1.25rem;line-height:1.1}
+  .cmp-rows{display:flex;flex-direction:column;gap:8px;overflow:auto;min-height:0}
+  .cmp-row{display:grid;grid-template-columns:130px 1fr 1fr;gap:10px}
+  .cmp-row .lab{font-family:var(--util);font-weight:600;font-size:.7rem;letter-spacing:.22em;
+    text-transform:uppercase;color:var(--moon-dim);display:flex;align-items:center}
+  .cmp-row .val{background:var(--nocturne);border:1px solid var(--veil-soft);border-radius:12px;
+    padding:.7rem 1rem;font-size:.92rem;display:flex;align-items:center}
+  .cmp-row .val.same{grid-column:2 / span 2;justify-content:center;color:var(--moon-dim)}
+  .cmp-row .val.same b{color:var(--brass-soft);font-weight:600;margin-right:.5em}
+  .cmp-foot{display:flex;justify-content:center;gap:14px}
+  .cta--ghost{background:none;color:var(--brass);border:1px solid var(--brass);box-shadow:none}
+
+  /* ===== HANDOFF ========================================================= */
+  #handoff{align-items:center;justify-content:center;padding:calc(58px + env(safe-area-inset-top)) 5vw 3vh}
+  .card-consult{width:100%;max-width:760px;background:var(--linen);color:var(--ink);
+    border-radius:26px;overflow:hidden;display:flex;flex-direction:column;
+    box-shadow:0 30px 80px rgba(0,0,0,.5)}
+  .consult-band{background:var(--midnight);color:var(--moonlight);
+    padding:1.2rem 1.7rem;display:flex;justify-content:space-between;align-items:center;gap:16px}
+  .consult-band .t{font-family:var(--display);font-size:1.4rem}
+  .consult-band .t em{font-style:italic;color:var(--brass-soft)}
+  .consult-body{display:grid;grid-template-columns:1fr 1.2fr;gap:1.3rem;padding:1.3rem 1.7rem 1.5rem}
+  .consult-body .plate{background:#fff;border-radius:16px;padding:7%;
+    box-shadow:0 10px 24px rgba(26,32,54,.12);align-self:center}
+  .consult-body img{width:100%;object-fit:contain}
+  .consult-info{display:flex;flex-direction:column;gap:.5rem}
+  .consult-info .brand{font-family:var(--util);font-weight:600;font-size:.64rem;letter-spacing:.3em;
+    text-transform:uppercase;color:var(--ink-soft)}
+  .consult-info .name{font-family:var(--display);font-size:1.8rem;line-height:1.05}
+  .consult-info .feel{color:var(--ink-soft);font-size:.9rem}
+  .consult-list{margin-top:.35rem;display:flex;flex-direction:column;gap:.42rem}
+  .consult-list .row{display:flex;gap:.6em;align-items:baseline;font-size:.94rem}
+  .consult-list .row b{font-family:var(--util);font-weight:600;font-size:.64rem;letter-spacing:.22em;
+    text-transform:uppercase;color:var(--brass);flex:none;width:86px}
+  .handoff-note{margin-top:1.4rem;color:var(--moon-dim);font-size:.9rem;text-align:center;max-width:52ch}
+  .handoff-foot{margin-top:1rem}
+
+  /* loading veil */
+  #boot{position:fixed;inset:0;z-index:90;background:var(--midnight);display:flex;
+    align-items:center;justify-content:center;color:var(--moon-dim);
+    font-family:var(--util);letter-spacing:.3em;text-transform:uppercase;font-size:.75rem}
+  #boot.off{display:none}
+
+  /* ===== ORIENTATION ==================================================== */
+  @media (orientation:portrait){
+    .cards{grid-template-columns:1fr;grid-template-rows:1.4fr .55fr .55fr}
+    .card.hero{grid-row:1;grid-column:1}
+    .q-options{grid-template-columns:1fr 1fr}
+    .consult-body{grid-template-columns:1fr}
+    .cmp-row{grid-template-columns:96px 1fr 1fr}
+    .masthead{font-size:clamp(3rem,13vw,5.4rem)}
+    .card.small .ph{width:34%}
+  }
+  @media (max-width:560px){
+    .q-options,.q-options.cols-3{grid-template-columns:1fr}
+    .cmp-stage{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+
+<div id="boot">Preparing the fitting…</div>
+
+<div class="chrome">
+  <div class="langs" role="group" aria-label="Language">
+    <button id="langEn" class="on" onclick="setLang('en')">EN</button>
+    <button id="langEs" onclick="setLang('es')">ES</button>
+  </div>
+  <button class="restart" id="restartBtn" onclick="startOver()"></button>
+</div>
+
+<!-- WELCOME -->
+<section class="scene on" id="welcome">
+  <div class="sky" id="skyWelcome"></div>
+  <svg id="welcomeArc" viewBox="0 0 1000 300" preserveAspectRatio="xMidYMax slice" aria-hidden="true"></svg>
+  <div class="welcome-inner">
+    <div class="eyebrow" data-t="wEyebrow"></div>
+    <h1 class="masthead">Dream<em>Finder</em></h1>
+    <div class="hairline"></div>
+    <p class="welcome-line" data-t="wLine"></p>
+    <button class="cta" onclick="startQuiz()" data-t="wCta"></button>
+    <p class="specialist" data-t="wSpecialist"></p>
+    <button class="demo-fill" onclick="demoFill()" data-t="wDemo"></button>
+  </div>
+</section>
+
+<!-- QUIZ -->
+<section class="scene" id="quiz">
+  <div class="quiz-frame">
+    <div class="q-count"><span class="n" id="qNum"></span><span class="eyebrow eyebrow--moon" id="qOf"></span></div>
+    <h2 class="q-headline" id="qHeadline"></h2>
+    <p class="q-help" id="qHelp"></p>
+    <div class="q-body" id="qBody"></div>
+    <div class="q-nav">
+      <button class="q-back" id="qBack" onclick="prevQ()"></button>
+      <button class="cta" id="qNext" onclick="nextQ()"></button>
+    </div>
+    <div id="quizArcWrap"><svg id="quizArc" viewBox="0 0 1000 90" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%" aria-hidden="true"></svg></div>
+  </div>
+</section>
+
+<!-- REVEAL -->
+<section class="scene" id="reveal">
+  <div class="sky" id="skyReveal"></div>
+  <div class="reveal-inner">
+    <svg id="constellation" viewBox="0 0 560 300" aria-hidden="true"></svg>
+    <div class="eyebrow" data-t="rEyebrow"></div>
+    <h2 class="reveal-title" data-t-html="rTitle"></h2>
+    <div class="profile-chip" id="profileChip"></div>
+    <div class="priorities" id="prioList"></div>
+    <p class="reveal-sub" data-t="rSub"></p>
+    <button class="cta" onclick="go('results')" data-t="rCta"></button>
+  </div>
+</section>
+
+<!-- RESULTS -->
+<section class="scene" id="results">
+  <div class="results-head">
+    <div>
+      <div class="eyebrow" data-t="resEyebrow"></div>
+      <h2 class="results-title" data-t-html="resTitle"></h2>
+    </div>
+    <div class="sig-stamp"><svg id="stampResults" width="64" height="36" viewBox="0 0 64 36" aria-hidden="true"></svg><span id="stampName"></span></div>
+  </div>
+  <div class="tiers" id="tierTabs"></div>
+  <div class="cards" id="cardGrid"></div>
+  <div class="results-foot">
+    <span class="results-hint" data-t="resHint"></span>
+    <button class="cta" id="cmpCta" onclick="go('compare')" disabled data-t="resCta"></button>
+  </div>
+</section>
+
+<!-- COMPARE -->
+<section class="scene" id="compare">
+  <div class="cmp-frame">
+    <h2 class="cmp-title" data-t-html="cmpTitle"></h2>
+    <div class="cmp-stage" id="cmpStage"></div>
+    <div class="cmp-rows" id="cmpRows"></div>
+    <div class="cmp-foot">
+      <button class="cta cta--ghost" onclick="go('results')" data-t="cmpBack"></button>
+      <button class="cta" onclick="go('handoff')" data-t="cmpCta"></button>
+    </div>
+  </div>
+</section>
+
+<!-- HANDOFF -->
+<section class="scene" id="handoff">
+  <div class="sky" id="skyHandoff"></div>
+  <div class="card-consult">
+    <div class="consult-band">
+      <div class="t" data-t-html="hTitle"></div>
+      <svg id="stampHandoff" width="72" height="40" viewBox="0 0 64 36" aria-hidden="true"></svg>
+    </div>
+    <div class="consult-body">
+      <div class="plate"><img id="hImg" alt=""></div>
+      <div class="consult-info">
+        <div class="brand" id="hBrand"></div>
+        <div class="name" id="hName"></div>
+        <div class="feel" id="hFeel"></div>
+        <div class="consult-list" id="hRows"></div>
+      </div>
+    </div>
+  </div>
+  <p class="handoff-note" data-t="hNote"></p>
+  <div class="handoff-foot"><button class="cta cta--ghost" onclick="startOver()" data-t="hAgain"></button></div>
+</section>
+
+<script>
+/* =============================================================================
+   LIVE DATA + THE REAL ENGINE
+   quiz.json and mattresses.json are the shipped files; the scoring engine and
+   the Sleep Brief computation are extracted VERBATIM from ../../index.html at
+   runtime (the repo's own test-harness technique), so results here are the
+   production engine's output for whatever answers are given.
+============================================================================= */
+var STORE = "Lacks Furniture"; // demo config; production reads store-config.json
+
+var QUESTIONS = [], MATTRESSES = null, engine = null, briefRunner = null;
+var lang = "en", answers = {}, qPos = 0, visible = [];
+var computed = null;   // { scores, tiers, topPickId, profile }
+var activeTier = "gold", cmpSel = [];
+
+function L(o){ if (o == null) return ""; if (typeof o === "string") return o; return o[lang] || o.en || ""; }
+
+/* ---- bilingual chrome copy ---- */
+var T = {
+  wEyebrow:{en:"A guided mattress fitting",es:"Una prueba de colchón guiada"},
+  wLine:{en:"Ten questions on the floor. A shortlist made only for you.",
+         es:"Diez preguntas en la tienda. Una selección hecha solo para ti."},
+  wCta:{en:"Begin the fitting",es:"Comenzar la prueba"},
+  wSpecialist:{en:"Guided by your "+STORE+" sleep specialist",
+               es:"Con la guía de tu especialista de sueño de "+STORE},
+  wDemo:{en:"Rehearsal: fill sample answers",es:"Ensayo: respuestas de muestra"},
+  restart:{en:"Start over",es:"Empezar de nuevo"},
+  ofN:{en:"of",es:"de"},
+  back:{en:"← Back",es:"← Atrás"},
+  next:{en:"Next",es:"Siguiente"},
+  finish:{en:"See my sleep signature",es:"Ver mi firma de sueño"},
+  pick3:{en:"Pick up to 3",es:"Elige hasta 3"},
+  rEyebrow:{en:"Your sleep signature",es:"Tu firma de sueño"},
+  rTitle:{en:"Made from <em>your</em> answers",es:"Creada con <em>tus</em> respuestas"},
+  rSub:{en:"Three things worth testing on every mattress you try today.",
+        es:"Tres cosas que vale la pena probar en cada colchón hoy."},
+  rCta:{en:"See my matches →",es:"Ver mis opciones →"},
+  resEyebrow:{en:"Matched to your signature",es:"Según tu firma"},
+  resTitle:{en:"Your <em>shortlist</em>",es:"Tu <em>selección</em>"},
+  resHint:{en:"Tap two mattresses to compare them",es:"Toca dos colchones para compararlos"},
+  resCta:{en:"Compare →",es:"Comparar →"},
+  cmpTitle:{en:"Side by <em>side</em>",es:"Lado a <em>lado</em>"},
+  cmpBack:{en:"← Back",es:"← Atrás"},
+  cmpCta:{en:"Hand off to my specialist →",es:"Pasar a mi especialista →"},
+  hTitle:{en:"Consultation <em>card</em>",es:"Tarjeta de <em>consulta</em>"},
+  hNote:{en:"Your specialist picks up exactly where you left off — matches, priorities, and the finalist you loved.",
+         es:"Tu especialista continúa justo donde quedaste — opciones, prioridades y tu finalista favorito."},
+  hAgain:{en:"New customer",es:"Nuevo cliente"},
+  tierGold:{en:"Gold",es:"Oro"},tierSilver:{en:"Silver",es:"Plata"},tierBronze:{en:"Bronze",es:"Bronce"},
+  bestMatch:{en:"Best match",es:"Mejor opción"},
+  feelLbl:{en:"Feel",es:"Sensación"},tierLbl:{en:"Tier",es:"Nivel"},
+  matchLbl:{en:"Match",es:"Afinidad"},whyLbl:{en:"Why it's here",es:"Por qué está aquí"},
+  sameTag:{en:"Same for both",es:"Igual en ambos"},
+  finalist:{en:"Finalist",es:"Finalista"},testLbl:{en:"Test for",es:"Probar"},
+  compareTag:{en:"Compare",es:"Comparar"},comparedTag:{en:"Comparing ✓",es:"Comparando ✓"}
+};
+
+/* ---- boot: load data + extract the real engine ---- */
+(async function boot(){
+  try{
+    var [quiz, mattresses, appHtml] = await Promise.all([
+      fetch("../../data/quiz.json").then(function(r){return r.json();}),
+      fetch("../../data/mattresses.json").then(function(r){return r.json();}),
+      fetch("../../index.html").then(function(r){return r.text();})
+    ]);
+    QUESTIONS = quiz.questions; MATTRESSES = mattresses;
+
+    var calcSrc = appHtml.match(/function calculateScores\(\)\s*\{[\s\S]*?\r?\n    \}/)[0];
+    var qualSrc = appHtml.match(/function qualifyRankedChoices\([\s\S]*?\r?\n    \}/)[0];
+    var profSrc = appHtml.match(/function showProfileScreen\(\) \{[\s\S]*?\r?\n    \}\r?\n/)[0];
+    var lSrc    = appHtml.match(/function L\(obj\) \{[\s\S]*?\r?\n    \}/)[0];
+    var escSrc  = appHtml.match(/function escapeHtml\([\s\S]*?\r?\n    \}/)[0];
+
+    /* the scoring + tier derivation, verbatim */
+    engine = new Function("MATTRESSES","QUESTIONS",
+      "var answers={},currentLang='en';" +
+      "var financingAgenda={},financingAgendaDismissed=false,financingExplored=false;" +
+      calcSrc + "\n" + qualSrc + "\n" +
+      "return function(a,l){answers=a;currentLang=l;" +
+      "var calc=calculateScores();var scores=calc.scores;var tiers={};" +
+      "['gold','silver','bronze'].forEach(function(t){" +
+      "  var sorted=MATTRESSES[t].slice().sort(function(x,y){return scores[y.id]-scores[x.id];});" +
+      "  var maxScore=Math.max.apply(null,sorted.map(function(m){return scores[m.id];}).concat([1]));" +
+      "  tiers[t]=qualifyRankedChoices(sorted,function(m){return scores[m.id];}).map(function(m){" +
+      "    return {id:m.id,pct:Math.max(0,Math.min(100,Math.round((scores[m.id]/maxScore)*100)))};});" +
+      "});" +
+      "return {scores:scores,tiers:tiers};};")(MATTRESSES, QUESTIONS);
+
+    /* the Sleep Brief profile + priorities, verbatim, against a DOM shim */
+    briefRunner = new Function("answersIn","langIn",
+      "var els={};function mk(id){return {id:id,innerHTML:'',textContent:'',style:{}," +
+      "classList:{add:function(){},remove:function(){},contains:function(){return false;}}," +
+      "setAttribute:function(){},getAttribute:function(){return null;},focus:function(){}};}" +
+      "var document={getElementById:function(id){if(!els[id])els[id]=mk(id);return els[id];}," +
+      "querySelector:function(){return null;},querySelectorAll:function(){return [];}};" +
+      "var window={};var analytics={trialFocus:[],log:function(){}};" +
+      "var answers=JSON.parse(JSON.stringify(answersIn));var currentLang=langIn;" +
+      "function t(k){return k;}function showScreen(){}" +
+      escSrc + "\n" + lSrc + "\n" + profSrc + "\n" +
+      "showProfileScreen();" +
+      "return {trialFocus:analytics.trialFocus,profileName:analytics.profileName," +
+      "profileSubtitleByLang:analytics.profileSubtitleByLang};");
+
+    document.getElementById("boot").classList.add("off");
+    render();
+  }catch(e){
+    document.getElementById("boot").textContent = "Could not load app data — serve the repo root (python -m http.server) and open via http://";
+  }
+})();
+
+/* ---- quiz mechanics (mirrors production behavior) ---- */
+function visibleQuestions(){
+  return QUESTIONS.filter(function(q){
+    return !q.skipIf || answers[q.skipIf.question] !== q.skipIf.answer;
+  });
+}
+function startQuiz(){ answers = {}; qPos = 0; cmpSel = []; computed = null; go("quiz"); renderQ(); }
+function startOver(){ answers = {}; qPos = 0; cmpSel = []; computed = null; lang = "en";
+  document.getElementById("langEn").classList.add("on");
+  document.getElementById("langEs").classList.remove("on");
+  go("welcome"); render(); }
+function demoFill(){
+  /* rehearsal path — a plausible full answer set; results still come from
+     the real engine, exactly as if tapped by hand */
+  answers = { sleep_quality:"fair", trigger:"worn_out", mattress_size:"queen",
+    partner_sleep:"partner", partner_disturbance:"sometimes", sleep_position:"side",
+    body_type:"average", temperature:"cold", firmness:3,
+    sleep_issues:["hip_pain","sagging"], health_conditions:["reflux"] };
+  finishQuiz();
+}
+function currentQ(){ visible = visibleQuestions(); return visible[Math.min(qPos, visible.length-1)]; }
+function answered(q){
+  var v = answers[q.id];
+  if (q.type === "multiple") return Array.isArray(v) && v.length > 0;
+  return v !== undefined && v !== null && v !== "";
+}
+function renderQ(){
+  var q = currentQ(); if (!q) return;
+  visible = visibleQuestions();
+  var idx = visible.indexOf(q);
+  document.getElementById("qNum").textContent = idx + 1;
+  document.getElementById("qOf").textContent = L(T.ofN) + " " + visible.length;
+  document.getElementById("qHeadline").textContent = L(q.question);
+  document.getElementById("qHelp").textContent = L(q.helpText) || "";
+  var body = document.getElementById("qBody"), s = "";
+  if (q.type === "slider"){
+    var val = answers[q.id] !== undefined ? answers[q.id] : q.defaultValue;
+    answers[q.id] = val;
+    s += '<div class="slider-wrap">'
+      + '<div class="slider-val" id="sVal">' + val + '</div>'
+      + '<input type="range" min="' + q.min + '" max="' + q.max + '" value="' + val + '" '
+      + 'oninput="answers[\'' + q.id + '\']=parseInt(this.value);document.getElementById(\'sVal\').textContent=this.value;syncNext();">'
+      + '<div class="slider-labels">' + (q.labels||[]).map(function(l){return "<span>"+L(l)+"</span>";}).join("") + '</div>'
+      + '</div>';
+  } else {
+    var isMulti = q.type === "multiple";
+    var opts = (q.options||[]).filter(function(o){
+      return !o.hideIf || answers[o.hideIf.question] !== o.hideIf.answer;
+    });
+    if (isMulti) s += '<div class="multi-note">' + L(T.pick3) + '</div>';
+    s += '<div class="q-options' + (opts.length > 6 ? ' cols-3' : '') + '">';
+    opts.forEach(function(o){
+      var sel = isMulti ? (answers[q.id]||[]).indexOf(o.id) >= 0 : answers[q.id] === o.id;
+      s += '<button class="q-opt' + (sel ? ' sel' : '') + '" onclick="pick(\'' + q.id + '\',\'' + o.id + '\',' + isMulti + ')">'
+        + '<span class="l">' + L(o.label) + '</span>'
+        + (o.sublabel ? '<span class="s">' + L(o.sublabel) + '</span>' : '')
+        + '</button>';
+    });
+    s += '</div>';
+  }
+  body.innerHTML = s;
+  document.getElementById("qBack").textContent = L(T.back);
+  document.getElementById("qBack").style.visibility = idx === 0 ? "hidden" : "visible";
+  syncNext();
+  drawArc("quizArc", 1000, 90, countAnswered());
+}
+function countAnswered(){
+  return visibleQuestions().filter(answered).length;
+}
+function pick(qid, oid, isMulti){
+  /* mirrors production selectOption: none-exclusivity + soft cap of 3 */
+  if (isMulti){
+    if (!answers[qid]) answers[qid] = [];
+    if (oid === "none"){ answers[qid] = ["none"]; }
+    else {
+      answers[qid] = answers[qid].filter(function(x){ return x !== "none"; });
+      var i = answers[qid].indexOf(oid);
+      if (i > -1) answers[qid].splice(i, 1);
+      else { if (answers[qid].length >= 3) return; answers[qid].push(oid); }
+    }
+  } else { answers[qid] = oid; }
+  renderQ();
+}
+function syncNext(){
+  /* production parity: single-select requires a choice before Next; the
+     slider self-defaults; multiple may proceed with any count */
+  var vis = visibleQuestions();
+  var q = vis[Math.min(qPos, vis.length - 1)];
+  var btn = document.getElementById("qNext");
+  btn.textContent = (vis.indexOf(q) === vis.length - 1) ? L(T.finish) : L(T.next);
+  btn.disabled = (q.type === "single" && !answered(q));
+}
+function nextQ(){
+  var vis = visibleQuestions(); var q = vis[qPos];
+  if (qPos >= vis.length - 1){ finishQuiz(); return; }
+  /* production parity: a skipped partner_disturbance records not_applicable */
+  qPos++;
+  vis = visibleQuestions();
+  QUESTIONS.forEach(function(qq){
+    if (qq.skipIf && answers[qq.skipIf.question] === qq.skipIf.answer && answers[qq.id] === undefined){
+      answers[qq.id] = "not_applicable";
+    }
+  });
+  if (qPos > vis.length - 1) qPos = vis.length - 1;
+  renderQ();
+}
+function prevQ(){ if (qPos > 0){ qPos--; renderQ(); } }
+function finishQuiz(){
+  QUESTIONS.forEach(function(qq){
+    if (qq.skipIf && answers[qq.skipIf.question] === qq.skipIf.answer && answers[qq.id] === undefined){
+      answers[qq.id] = "not_applicable";
+    }
+  });
+  compute(); go("reveal");
+  drawConstellation("constellation", 560, 300, true);
+  renderReveal();
+}
+
+/* ---- the real computation ---- */
+function compute(){
+  var out = engine(JSON.parse(JSON.stringify(answers)), lang);
+  var brief = briefRunner(answers, lang);
+  computed = {
+    scores: out.scores, tiers: out.tiers,
+    topPickId: out.tiers.gold.length ? out.tiers.gold[0].id : null,
+    trialFocus: brief.trialFocus || [],
+    profileName: brief.profileName || "",
+    subtitle: brief.profileSubtitleByLang || {en:"",es:""}
+  };
+  activeTier = "gold"; cmpSel = [];
+}
+function model(id){
+  for (var t in MATTRESSES){ var f = MATTRESSES[t].find(function(m){ return m.id === id; }); if (f) return f; }
+  return null;
+}
+function feelOf(m){
+  var lbl = m.firmnessLabel || "";
+  return lbl + " · " + m.firmness + "/10";
+}
+function imgOf(m){ return "../../" + (m.imageUrl || "").split("/").map(encodeURIComponent).join("/"); }
+
+/* ---- constellation: derived from the REAL answers ---- */
+function answerSeed(){
+  var vis = visibleQuestions(), seed = [];
+  vis.forEach(function(q){
+    var v = answers[q.id], n = 2;
+    if (q.type === "slider"){ n = Math.round(((v||q.defaultValue) - q.min) / (q.max - q.min) * 4); }
+    else if (q.type === "multiple"){ n = Math.min(4, (v||[]).length + 1); }
+    else { n = Math.max(0, (q.options||[]).findIndex(function(o){ return o.id === v; })); }
+    seed.push(Math.max(0, Math.min(4, n)));
+  });
+  while (seed.length < 10) seed.push(2);
+  return seed.slice(0, 10);
+}
+function starPoints(w, h, pad){
+  var seed = answerSeed(), pts = [];
+  for (var i = 0; i < 10; i++){
+    var x = pad + (w - 2*pad) * (i/9);
+    var arcY = h*0.62 - Math.sin(Math.PI*(i/9)) * h*0.34;
+    pts.push([x, arcY + (seed[i] - 2.2) * (h*0.09)]);
+  }
+  return pts;
+}
+function drawConstellation(svgId, w, h, animate){
+  var svg = document.getElementById(svgId); if (!svg) return;
+  var pts = starPoints(w, h, 26), s = "";
+  var path = "M" + pts.map(function(p){ return p[0].toFixed(1) + " " + p[1].toFixed(1); }).join(" L ");
+  s += '<path class="edge" d="' + path + '" fill="none"'
+    + (animate ? '' : ' style="stroke-dasharray:none;stroke-dashoffset:0;animation:none;stroke:#D4A84B;opacity:.85"') + '/>';
+  pts.forEach(function(p, i){
+    var b = [0,4,9].indexOf(i) >= 0;
+    s += '<circle class="node' + (b ? ' b' : '') + '" cx="' + p[0] + '" cy="' + p[1] + '" r="' + (b ? 4 : 2.4) + '"'
+      + (animate ? ' style="animation-delay:' + (0.15 + i*0.14) + 's"' : ' style="opacity:1;animation:none"') + '/>';
+  });
+  svg.innerHTML = s;
+}
+function drawArc(svgId, w, h, lit){
+  var svg = document.getElementById(svgId); if (!svg) return;
+  var pts = starPoints(w, h, 30), s = "";
+  s += '<path d="M' + pts.map(function(p){ return p[0].toFixed(1) + " " + p[1].toFixed(1); }).join(" L ")
+    + '" fill="none" stroke="rgba(233,239,250,.14)" stroke-width="1"/>';
+  pts.forEach(function(p, i){
+    var on = i < lit;
+    s += '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="' + (on ? 3.4 : 2) + '" fill="'
+      + (on ? '#D4A84B' : 'rgba(233,239,250,.25)') + '"/>';
+  });
+  svg.innerHTML = s;
+}
+function seedSky(id, n){
+  var el = document.getElementById(id); if (!el || el.children.length) return;
+  var s = "";
+  for (var i = 0; i < n; i++){
+    var x = ((i*97)%100), y = ((i*61)%88), d = ((i*37)%60)/10;
+    s += '<i style="left:' + x + '%;top:' + y + '%;animation-delay:' + d + 's"></i>';
+  }
+  el.innerHTML = s;
+}
+function star(size, color){
+  return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 12 12" aria-hidden="true">'
+    + '<path d="M6 0 L7.2 4.8 L12 6 L7.2 7.2 L6 12 L4.8 7.2 L0 6 L4.8 4.8 Z" fill="' + color + '"/></svg>';
+}
+function ringSvg(pct){
+  var r = 30, c = 2*Math.PI*r, off = c*(1 - pct/100);
+  return '<svg viewBox="0 0 74 74"><circle class="track" cx="37" cy="37" r="' + r + '"/>'
+    + '<circle class="val" cx="37" cy="37" r="' + r + '" stroke-dasharray="' + c.toFixed(1)
+    + '" stroke-dashoffset="' + off.toFixed(1) + '"/>'
+    + '<text x="37" y="42" text-anchor="middle">' + pct + '%</text></svg>';
+}
+
+/* ---- scenes ---- */
+var SCENES = ["welcome","quiz","reveal","results","compare","handoff"];
+function go(name){
+  SCENES.forEach(function(s){ document.getElementById(s).classList.toggle("on", s === name); });
+  if (name === "results") renderResults();
+  if (name === "compare") renderCompare();
+  if (name === "handoff") renderHandoff();
+}
+function sceneNow(){
+  for (var i = 0; i < SCENES.length; i++) if (document.getElementById(SCENES[i]).classList.contains("on")) return SCENES[i];
+  return "welcome";
+}
+function setLang(l){
+  lang = l;
+  document.getElementById("langEn").classList.toggle("on", l === "en");
+  document.getElementById("langEs").classList.toggle("on", l === "es");
+  if (computed) compute();   // re-run the real engine so language-resolved output stays honest
+  render();
+}
+function render(){
+  document.documentElement.lang = lang;
+  document.querySelectorAll("[data-t]").forEach(function(el){ el.textContent = L(T[el.getAttribute("data-t")]); });
+  document.querySelectorAll("[data-t-html]").forEach(function(el){ el.innerHTML = L(T[el.getAttribute("data-t-html")]); });
+  document.getElementById("restartBtn").textContent = L(T.restart);
+  var scene = sceneNow();
+  if (scene === "quiz") renderQ();
+  if (scene === "reveal"){ drawConstellation("constellation", 560, 300, false); renderReveal(); }
+  if (scene === "results") renderResults();
+  if (scene === "compare") renderCompare();
+  if (scene === "handoff") renderHandoff();
+  drawArc("welcomeArc", 1000, 300, 0);
+}
+
+function renderReveal(){
+  if (!computed) return;
+  document.getElementById("profileChip").innerHTML =
+    star(11, "#D4A84B") + "&nbsp; " + computed.profileName + " &nbsp;·&nbsp; " + L(computed.subtitle);
+  var s = "";
+  computed.trialFocus.forEach(function(p){ s += '<div class="prio">' + star(12, "#E9CE8F") + L(p) + '</div>'; });
+  document.getElementById("prioList").innerHTML = s;
+}
+
+function cardHtml(entry, hero){
+  var m = model(entry.id); if (!m) return "";
+  var sel = cmpSel.indexOf(entry.id) >= 0;
+  var chips = "";
+  if (hero && computed){
+    computed.trialFocus.forEach(function(p){ chips += '<span class="chip">' + star(10, "#D4A84B") + L(p) + '</span>'; });
+  }
+  return '<button class="card ' + (hero ? "hero" : "small") + (sel ? " cmp-sel" : "") + '" onclick="toggleCmp(\'' + entry.id + '\')">'
+    + (hero ? '<div class="ribbon">' + L(T.bestMatch) + '</div>' : '')
+    + '<div class="ring">' + ringSvg(entry.pct) + '</div>'
+    + '<div class="ph"><img src="' + imgOf(m) + '" alt="' + m.name + '"></div>'
+    + '<div class="meta">'
+    +   '<div class="brand">' + m.brand + (m.subBrand ? ' · ' + m.subBrand : '') + '</div>'
+    +   '<div class="name">' + m.name + '</div>'
+    +   '<div class="feel">' + L(T.feelLbl) + ': ' + feelOf(m) + '</div>'
+    +   (chips ? '<div class="chips">' + chips + '</div>' : '')
+    + '</div>'
+    + '<span class="cmp-tag">' + (sel ? L(T.comparedTag) : L(T.compareTag)) + '</span>'
+    + '</button>';
+}
+function renderResults(){
+  if (!computed) return;
+  var tiers = [["gold","tierGold"],["silver","tierSilver"],["bronze","tierBronze"]], tt = "";
+  tiers.forEach(function(t){
+    tt += '<button class="' + (activeTier === t[0] ? "on" : "") + '" onclick="activeTier=\'' + t[0] + '\';renderResults()">' + L(T[t[1]]) + '</button>';
+  });
+  document.getElementById("tierTabs").innerHTML = tt;
+  var list = computed.tiers[activeTier] || [], s = "";
+  list.forEach(function(e, i){ s += cardHtml(e, i === 0); });
+  document.getElementById("cardGrid").innerHTML = s;
+  document.getElementById("stampName").textContent = computed.profileName;
+  drawConstellation("stampResults", 64, 36, false);
+  document.getElementById("cmpCta").disabled = cmpSel.length !== 2;
+}
+function toggleCmp(id){
+  var i = cmpSel.indexOf(id);
+  if (i >= 0) cmpSel.splice(i, 1);
+  else { if (cmpSel.length >= 2) cmpSel.shift(); cmpSel.push(id); }
+  renderResults();
+}
+
+function tierOf(id){
+  for (var t in computed.tiers) if (computed.tiers[t].some(function(e){ return e.id === id; })) return t;
+  return "";
+}
+function pctOf(id){
+  for (var t in computed.tiers){ var e = computed.tiers[t].find(function(x){ return x.id === id; }); if (e) return e.pct; }
+  return "";
+}
+function renderCompare(){
+  if (cmpSel.length !== 2){ go("results"); return; }
+  var a = model(cmpSel[0]), b = model(cmpSel[1]);
+  var stage = "";
+  [a, b].forEach(function(m){
+    stage += '<div class="cmp-side"><div class="plate"><img src="' + imgOf(m) + '" alt="' + m.name + '"></div>'
+      + '<div class="brand">' + m.brand + (m.subBrand ? ' · ' + m.subBrand : '') + '</div>'
+      + '<div class="name">' + m.name + '</div></div>';
+  });
+  document.getElementById("cmpStage").innerHTML = stage;
+  function row(lab, va, vb){
+    if (va === vb) return '<div class="cmp-row"><div class="lab">' + lab + '</div><div class="val same"><b>' + va + '</b>· ' + L(T.sameTag) + '</div></div>';
+    return '<div class="cmp-row"><div class="lab">' + lab + '</div><div class="val">' + va + '</div><div class="val">' + vb + '</div></div>';
+  }
+  var tn = {gold:T.tierGold, silver:T.tierSilver, bronze:T.tierBronze};
+  var rows = "";
+  rows += row(L(T.feelLbl), feelOf(a), feelOf(b));
+  rows += row(L(T.matchLbl), pctOf(a.id) + "%", pctOf(b.id) + "%");
+  rows += row(L(T.tierLbl), L(tn[tierOf(a.id)] || {en:tierOf(a.id)}), L(tn[tierOf(b.id)] || {en:tierOf(b.id)}));
+  if (computed.trialFocus.length){
+    rows += row(L(T.testLbl), L(computed.trialFocus[0]), L(computed.trialFocus[computed.trialFocus.length > 1 ? 1 : 0]));
+  }
+  document.getElementById("cmpRows").innerHTML = rows;
+}
+
+function renderHandoff(){
+  if (!computed) return;
+  var id = cmpSel.length ? cmpSel[cmpSel.length - 1] : computed.topPickId;
+  var m = model(id); if (!m) return;
+  document.getElementById("hImg").src = imgOf(m);
+  document.getElementById("hBrand").textContent = m.brand + (m.subBrand ? " · " + m.subBrand : "");
+  document.getElementById("hName").textContent = m.name;
+  document.getElementById("hFeel").textContent = L(T.feelLbl) + ": " + feelOf(m) + " · " + L(T.matchLbl) + " " + pctOf(id) + "%";
+  var rows = "";
+  rows += '<div class="row"><b>' + L(T.finalist) + '</b><span>' + computed.profileName + ' · ' + L(computed.subtitle) + '</span></div>';
+  computed.trialFocus.forEach(function(p, i){
+    rows += '<div class="row"><b>' + (i === 0 ? L(T.testLbl) : "") + '</b><span>' + L(p) + '</span></div>';
+  });
+  document.getElementById("hRows").innerHTML = rows;
+  drawConstellation("stampHandoff", 64, 36, false);
+}
+
+seedSky("skyWelcome", 60); seedSky("skyReveal", 36); seedSky("skyHandoff", 26);
+render();
+</script>
+</body>
+</html>
