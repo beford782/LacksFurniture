@@ -175,7 +175,12 @@ jobs:
           incoming/lacks_store_values.json
           incoming/dreamfinder_quiz.json
           incoming/Lacks_Store_Data.xlsx
+          incoming/lacks_promotions.json
           tools/source_hosts.json
+          demo/daybreak-black-friday.json
+          demo/black-friday/index.html
+          demo/black-friday/data/store-config.json
+          demo/black-friday/manifest.json
           EOF
           sha256sum $(cat /tmp/protected.txt) | tee /tmp/protected.sha256
 
@@ -402,6 +407,29 @@ jobs:
       - name: integrity repairs (availability claims, RSA panel wipe)
         run: node tests/integrity_repairs_check.mjs
 
+      # Daybreak PR 2 — production/demo separation. The committed production
+      # promotions block must stay the inert contract (a temporary pre-runtime
+      # activation lock; a later reviewed change may deliberately relax the
+      # empty-scenarios assertion once trusted-time and governed current-event
+      # runtime gates exist); the illustrative Black Friday content may exist
+      # ONLY in the tracked demo fixture and the generated /demo/black-friday/
+      # bundle, which must byte-match a fresh deterministic rebuild.
+      - name: daybreak contract (shipped-state lock + demo bundle)
+        run: python tests/daybreak_contract_check.py
+
+      # Executes the real localhost demo server against a live loopback
+      # socket: loopback-only bind, narrow store-config interception, the
+      # launch+72h window, untouched committed files.
+      - name: daybreak demo server (loopback interception)
+        run: python tests/daybreak_server_check.py
+
+      # Executes the real promotion helpers with the injected demo
+      # configuration and the real catalog: qualification, Sample/Ejemplo
+      # badges, disclosure-first cue/drawer, expiry rendering, and the
+      # scenario-level email block under a nonblank gasUrl.
+      - name: daybreak demo runtime (real helpers, injected config)
+        run: node tests/daybreak_demo_runtime_check.mjs
+
       # One level up from the suites: for each safety property in the manifest,
       # delete it from a COPY of the tree and require a suite to go red. A
       # survivor is a property with no effective test, and a mutation that fails
@@ -449,6 +477,7 @@ jobs:
           import io, json, sys
           cfg = json.load(io.open("data/store-config.json", encoding="utf-8"))
           fin = cfg.get("financing") or {}
+          promos = cfg.get("promotions")
           checks = {
               "financing.exactPromotionsEnabled is false":
                   fin.get("exactPromotionsEnabled") is False,
@@ -456,6 +485,14 @@ jobs:
                   not (cfg.get("gasUrl") or "").strip(),
               "discount.mode is disabled":
                   (cfg.get("discount") or {}).get("mode") == "disabled",
+              # Daybreak pre-runtime activation lock: the shipped promotions
+              # block stays exactly the inert contract until trusted-time and
+              # governed current-event runtime gates exist. Relaxing the
+              # empty-scenarios assertion is a deliberate reviewed change.
+              "promotions is exactly the inert Daybreak contract":
+                  promos == {"schemaVersion": 1, "activeScenario": None,
+                             "allowedSourceHosts": ["lacks.com"],
+                             "scenarios": {}},
           }
           bad = [k for k, ok in checks.items() if not ok]
           for k, ok in checks.items():

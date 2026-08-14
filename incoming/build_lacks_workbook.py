@@ -198,16 +198,22 @@ def _apply_build_values(store):
 _apply_build_values(STORE)
 
 
-# ---- Promotions tab: financing envelope -------------------------------------
-# The Lacks Payment Choice financing block rides the canonical Promotions-tab
-# JSON channel as an envelope {"financing": {...}} (no classic promotions yet).
-# Canonical editable source: incoming/lacks_financing.json (the "financing" key;
-# its sibling "_meta" is documentation and is NOT shipped). Chunked to stay
-# under Excel's 32,767-char cell limit.
+# ---- Promotions tab: promotions + financing envelope -------------------------
+# The canonical Promotions-tab JSON channel carries the two-key envelope
+# {"promotions": {...}, "financing": {...}} (Daybreak PR 2). Canonical editable
+# sources: incoming/lacks_promotions.json (the "promotions" key — the inert
+# Daybreak contract; illustrative demo campaigns live ONLY in demo/ fixtures and
+# must never enter this envelope) and incoming/lacks_financing.json (the
+# "financing" key). Each source's sibling "_meta" is documentation and is NOT
+# shipped. Chunked to stay under Excel's 32,767-char cell limit. The converter
+# refuses any third top-level envelope key (PR 1), so financing can never be
+# silently reclassified as legacy bare promotions.
 _PROMO_CHUNK = 30000
 
 
 def promotions_rows():
+    promo_src = _load("lacks_promotions.json")
+    promotions = json.loads(json.dumps(promo_src["promotions"]))  # deep copy
     src = _load("lacks_financing.json")
     financing = json.loads(json.dumps(src["financing"]))  # deep copy
     # V1 ships no payment-math inputs: the published Synchrony payment factor
@@ -227,7 +233,7 @@ def promotions_rows():
         fin_headline.apply_to_financing(financing)
     except fin_headline.HeadlineError as exc:
         raise SystemExit(f"build_lacks_workbook: {exc}")
-    envelope = {"financing": financing}
+    envelope = {"promotions": promotions, "financing": financing}
     payload = json.dumps(envelope, ensure_ascii=False, separators=(",", ":"))
     return [{"Promotions JSON": payload[i:i + _PROMO_CHUNK]}
             for i in range(0, len(payload), _PROMO_CHUNK)]
