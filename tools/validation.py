@@ -668,12 +668,23 @@ def _valid_ends_at(s: str) -> bool:
 
 def validate_promotions(config: dict, *, mattress_ids=None, accessory_ids=None,
                         accessory_categories=None,
-                        allowed_source_hosts=None) -> ValidationReport:
+                        allowed_source_hosts=None,
+                        mattress_brands=None,
+                        allow_illustrative=False) -> ValidationReport:
     """Validate the optional promotions block (scenario-aware or flat back-compat).
 
     Pure: takes the assembled config dict plus the known mattress/accessory id and
-    accessory-category sets, plus the explicit source-host allowlist for
-    source-backed evidence statuses. No-op when there is no promotions block."""
+    accessory-category sets, the known mattress brand set, plus the explicit
+    source-host allowlist for source-backed evidence statuses. No-op when there
+    is no promotions block.
+
+    Daybreak (PR 2): scenarios whose kind is "current-event" or
+    "illustrative-demo" are governed by the strict contracts below; every other
+    shape (legacy flat, historical-demo, pre-Daybreak scenarios) keeps its
+    existing validation unchanged. allow_illustrative defaults to False so the
+    production build path rejects any illustrative-demo scenario; only the demo
+    tools (localhost server / static demo-bundle builder) validate with
+    allow_illustrative=True."""
     r = ValidationReport()
     promos = config.get("promotions")
     if not promos:
@@ -682,6 +693,7 @@ def validate_promotions(config: dict, *, mattress_ids=None, accessory_ids=None,
     aids = set(accessory_ids or [])
     acats = set(c for c in (accessory_categories or []) if c)
     hosts = list(allowed_source_hosts or [])
+    brands = set(b for b in (mattress_brands or []) if b)
 
     scenarios = promos.get("scenarios")
     if scenarios is None:
@@ -698,7 +710,20 @@ def validate_promotions(config: dict, *, mattress_ids=None, accessory_ids=None,
         if not isinstance(sc, dict):
             r.add_error(f"promotions.scenarios[{sid!r}] must be an object")
             continue
-        _validate_promo_scenario(r, sid, sc, sid == active, mids, aids, acats, hosts)
+        kind = sc.get("kind")
+        if kind == "current-event":
+            _validate_current_event_scenario(r, sid, sc, mids, brands)
+        elif kind == "illustrative-demo":
+            if not allow_illustrative:
+                r.add_error(
+                    f"promotions.scenarios[{sid!r}]: illustrative-demo scenarios "
+                    f"must never ship in production configuration (demo fixtures "
+                    f"are validated separately with allow_illustrative=True)")
+            _validate_illustrative_scenario(r, sid, sc, mids, brands)
+        else:
+            _validate_promo_scenario(r, sid, sc, sid == active, mids, aids, acats, hosts)
+
+    _validate_governed_promotions(r, promos, scenarios, active, hosts)
     return r
 
 
@@ -798,6 +823,546 @@ def _validate_promo_item(r, sid, it, mids, aids, acats, hosts):
         if targets_products and it.get("eligibleForStorewide20") is not True:
             r.add_error(f"{tag}: 20% storewide event applied to individual products "
                         f"without eligibleForStorewide20=true")
+
+
+# -- Daybreak governed scenarios (PR 2) ----------------------------------------
+# Two governed scenario kinds exist beyond the legacy/back-compat shapes:
+#   * "current-event"     — the production Daybreak contract: strict key
+#     allowlists, activation coupling, evidence-when-operational. Production
+#     ships the machinery with scenarios {} until a real campaign is approved.
+#   * "illustrative-demo" — demonstration-only content (the Black Friday demo
+#     fixture). Never permitted in production generated configuration; the demo
+#     tools validate with allow_illustrative=True.
+# Legacy flat promotions, "historical-demo", and every other pre-Daybreak shape
+# keep their existing validation and rendering semantics untouched.
+
+PROMO_SCHEMA_VERSION = 1
+
+GOVERNED_SCENARIO_KINDS = {"current-event", "illustrative-demo"}
+
+CURRENT_EVENT_SCENARIO_KEYS = {
+    "kind", "enabledByOwner", "authority", "startAt", "endsAt", "verifiedAt",
+    "maxAgeDays", "sourceUrl", "esReviewStatus", "name", "whyItEnds",
+    "disclosure", "items", "storewide",
+}
+# V1 current-event items inherit the scenario's governance, evidence, and
+# window — item-level timestamps/authority/review fields are forbidden.
+CURRENT_EVENT_ITEM_KEYS = {
+    "id", "badge", "headline", "detail", "disclosure",
+    "eligibleMattressIds", "eligibleBrands",
+}
+# Storewide entries must not carry mattress-specific eligibility selectors.
+CURRENT_EVENT_STOREWIDE_KEYS = {"id", "badge", "headline", "detail", "disclosure"}
+
+# Illustrative demos may carry the runtime-injected window fields (the demo
+# server / demo page stamp startAt/endsAt/expiration at serve or load time), but
+# never evidence, authority, authorization, or authoring helpers.
+ILLUSTRATIVE_SCENARIO_KEYS = {
+    "kind", "demoOnly", "disableEmailSubmission", "verified", "name",
+    "disclosure", "items", "storewide", "startAt", "endsAt",
+}
+ILLUSTRATIVE_ITEM_KEYS = CURRENT_EVENT_ITEM_KEYS | {"endsAt", "expiration"}
+ILLUSTRATIVE_STOREWIDE_KEYS = CURRENT_EVENT_STOREWIDE_KEYS | {"endsAt", "expiration"}
+
+PROMO_ES_REVIEW_STATUSES = {"pending-native-legal-review",
+                            "approved-native-legal-review"}
+PROMO_ES_REVIEW_APPROVED = "approved-native-legal-review"
+
+# Explicitly forbidden keys plus a substring classifier for equivalent quiz-,
+# answer-, score-, inventory-, activity-, countdown-, or behavior-shaped keys.
+# The scan is recursive so a forbidden shape cannot hide inside a nested
+# eligibility object.
+_GOVERNED_FORBIDDEN_KEYS = {
+    "campaigns", "campaign", "eligibleQuizTags", "eligibleAnswers", "answers",
+    "answerIds", "quizAnswers", "recommendationScores", "scoreThreshold",
+    "customerSegment", "inferredUrgency", "inventoryCount", "stockCount",
+    "customersViewing", "purchaseCount", "countdownSeconds", "countdownMinutes",
+    "rollingDeadline", "resetAtMidnight",
+}
+_GOVERNED_FORBIDDEN_KEY_STEMS = (
+    "quiz", "answer", "score", "inventory", "stock", "countdown", "viewing",
+    "purchase", "segment", "urgency", "rolling", "midnight", "behavior",
+    "activity",
+)
+
+
+def _governed_key_forbidden(key):
+    """Reason string when a key is forbidden inside a governed scenario, else
+    None. Keys only — copy values are never scanned by this classifier."""
+    if not isinstance(key, str):
+        return "non-string key"
+    if key in _GOVERNED_FORBIDDEN_KEYS:
+        return "explicitly forbidden"
+    low = key.lower()
+    for stem in _GOVERNED_FORBIDDEN_KEY_STEMS:
+        if stem in low:
+            return f"matches the forbidden key pattern '{stem}'"
+    return None
+
+
+def _scan_governed_forbidden_keys(r, tag, obj):
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            why = _governed_key_forbidden(k)
+            if why:
+                r.add_error(f"{tag}: key {k!r} is not permitted in a governed "
+                            f"scenario ({why})")
+            _scan_governed_forbidden_keys(r, tag, v)
+    elif isinstance(obj, (list, tuple)):
+        for v in obj:
+            _scan_governed_forbidden_keys(r, tag, v)
+
+
+def _normalized_host_entry_error(h):
+    """Reason string when an allowedSourceHosts entry is not a normalized bare
+    host, else None."""
+    if not isinstance(h, str) or not h.strip():
+        return "blank or non-string"
+    if h != h.strip():
+        return "padded whitespace"
+    if h != h.lower():
+        return "not lowercase"
+    if "*" in h:
+        return "wildcard"
+    if "://" in h or "/" in h:
+        return "scheme or path"
+    if ":" in h:
+        return "port"
+    if h.startswith(".") or h.endswith(".") or ".." in h:
+        return "malformed"
+    return None
+
+
+def _host_covered(host, allowed_hosts):
+    """Exact-or-dot-boundary-subdomain coverage, mirroring the browser/build
+    source predicates, over bare host strings."""
+    for a in (allowed_hosts or []):
+        if not isinstance(a, str) or not a:
+            continue
+        if host == a or host.endswith("." + a):
+            return True
+    return False
+
+
+def _bilingual_nonblank(obj):
+    return isinstance(obj, dict) and bool(_s(obj.get("en"))) and bool(_s(obj.get("es")))
+
+
+def _verified_age_exceeds(verified_at, max_age_days):
+    """Build-time freshness: True when verifiedAt is older than maxAgeDays (or
+    unparseable/offset-less, which fails closed)."""
+    from datetime import datetime, timezone
+    try:
+        d = datetime.fromisoformat(verified_at)
+    except (ValueError, TypeError):
+        return True
+    if d.tzinfo is None:
+        return True
+    return (datetime.now(timezone.utc) - d).total_seconds() > max_age_days * 86400
+
+
+def _window_order_error(start, end):
+    """Error text when endsAt is not strictly later than startAt, else None.
+    Both inputs are already format-validated offset-bearing instants."""
+    from datetime import datetime
+    try:
+        s = datetime.fromisoformat(start)
+        e = datetime.fromisoformat(end)
+    except (ValueError, TypeError):
+        return None  # format errors are reported separately
+    if e <= s:
+        return ("endsAt must be strictly later than startAt "
+                f"(startAt {start!r}, endsAt {end!r})")
+    return None
+
+
+def _governed_item_ids(r, tag, sc):
+    """Shared duplicate-id check across items + storewide for governed kinds.
+    Non-list containers are reported by _governed_lists; skipped here so
+    malformed content errors instead of crashing."""
+    entries = []
+    for field in ("items", "storewide"):
+        val = sc.get(field)
+        if isinstance(val, list):
+            entries.extend(val)
+    seen = set()
+    for it in entries:
+        if not isinstance(it, dict):
+            continue
+        iid = _s(it.get("id"))
+        if not iid:
+            r.add_error(f"{tag}: every item needs a nonblank id")
+        elif iid in seen:
+            r.add_error(f"{tag}: duplicate promotion id {iid!r}")
+        else:
+            seen.add(iid)
+
+
+def _governed_entry_checks(r, tag, it, allowed_keys, mids, brands, *,
+                           require_eligibility):
+    """Per-entry checks shared by current-event and illustrative items."""
+    unknown = set(it) - allowed_keys
+    for k in sorted(unknown, key=str):
+        if _governed_key_forbidden(k):
+            continue  # already reported by the recursive scan
+        r.add_error(f"{tag}: item key {k!r} is not permitted here")
+    for field in ("badge", "headline"):
+        if not _bilingual_nonblank(it.get(field)):
+            r.add_error(f"{tag}: {field} must carry nonblank EN and ES")
+    for field in ("detail", "disclosure"):
+        obj = it.get(field)
+        if obj is not None and not _bilingual_nonblank(obj):
+            r.add_error(f"{tag}: {field}, when present, must carry nonblank EN and ES")
+    emi = it.get("eligibleMattressIds")
+    if emi is not None:
+        if not isinstance(emi, list):
+            r.add_error(f"{tag}: eligibleMattressIds must be an array")
+            emi = []
+        seen = set()
+        for mid in emi:
+            if not isinstance(mid, str) or not mid.strip():
+                r.add_error(f"{tag}: eligibleMattressIds entries must be nonblank strings")
+            elif mid in seen:
+                r.add_error(f"{tag}: duplicate eligibleMattressIds entry {mid!r}")
+            else:
+                seen.add(mid)
+                if mids and mid not in mids:
+                    r.add_error(f"{tag}: eligibleMattressIds {mid!r} not in mattresses")
+    ebr = it.get("eligibleBrands")
+    if ebr is not None:
+        if not isinstance(ebr, list):
+            r.add_error(f"{tag}: eligibleBrands must be an array")
+            ebr = []
+        seen = set()
+        for b in ebr:
+            if not isinstance(b, str) or not b.strip():
+                r.add_error(f"{tag}: eligibleBrands entries must be nonblank strings")
+            elif b in seen:
+                r.add_error(f"{tag}: duplicate eligibleBrands entry {b!r}")
+            else:
+                seen.add(b)
+                if brands and b not in brands:
+                    r.add_error(f"{tag}: eligibleBrands {b!r} does not exactly match "
+                                f"any brand in the mattress catalog — a misspelled "
+                                f"brand would render on zero products")
+    if require_eligibility:
+        has_ids = isinstance(emi, list) and len(emi) > 0
+        has_brands = isinstance(ebr, list) and len(ebr) > 0
+        if not (has_ids or has_brands):
+            r.add_error(f"{tag}: a product item needs at least one catalog "
+                        f"eligibility selector (eligibleMattressIds or eligibleBrands)")
+    ends = it.get("endsAt")
+    if ends is not None and not _valid_ends_at(_s(ends)):
+        r.add_error(f"{tag}: endsAt {ends!r} must be an ISO-8601 datetime with a "
+                    f"timezone offset")
+
+
+def _governed_lists(r, tag, sc):
+    """items/storewide must be arrays of objects; returns (items, storewide)
+    with non-objects filtered after reporting, so later checks cannot crash."""
+    out = []
+    for field in ("items", "storewide"):
+        val = sc.get(field, [])
+        if val is None:
+            val = []
+        if not isinstance(val, list):
+            r.add_error(f"{tag}: {field} must be an array")
+            out.append([])
+            continue
+        entries = []
+        for i, it in enumerate(val):
+            if not isinstance(it, dict):
+                r.add_error(f"{tag}: {field}[{i}] must be an object")
+            else:
+                entries.append(it)
+        out.append(entries)
+    return out[0], out[1]
+
+
+def _validate_current_event_scenario(r, sid, sc, mids, brands):
+    tag = f"promotions[{sid}]"
+    _scan_governed_forbidden_keys(r, tag, sc)
+    for k in sorted(set(sc) - CURRENT_EVENT_SCENARIO_KEYS, key=str):
+        if _governed_key_forbidden(k):
+            continue
+        r.add_error(f"{tag}: key {k!r} is not a recognized current-event scenario key")
+
+    if type(sc.get("enabledByOwner")) is not bool:
+        r.add_error(f"{tag}: enabledByOwner must be present as a real JSON boolean "
+                    f"(got {sc.get('enabledByOwner')!r})")
+
+    auth = sc.get("authority")
+    if auth is not None:
+        if not isinstance(auth, dict):
+            r.add_error(f"{tag}: authority must be an object")
+        else:
+            for k in sorted(set(auth) - {"owner", "role"}, key=str):
+                r.add_error(f"{tag}: authority may contain only owner and role "
+                            f"(got {k!r})")
+            for k in ("owner", "role"):
+                if k in auth and not isinstance(auth[k], str):
+                    r.add_error(f"{tag}: authority.{k} must be a string")
+
+    start = _s(sc.get("startAt"))
+    end = _s(sc.get("endsAt"))
+    for field, val in (("startAt", start), ("endsAt", end)):
+        if not val:
+            r.add_error(f"{tag}: {field} is required for a current-event scenario")
+        elif not _valid_ends_at(val):
+            r.add_error(f"{tag}: {field} {val!r} must be an ISO-8601 datetime with "
+                        f"an explicit timezone offset")
+    if start and end and _valid_ends_at(start) and _valid_ends_at(end):
+        order_err = _window_order_error(start, end)
+        if order_err:
+            r.add_error(f"{tag}: {order_err}")
+
+    mad = sc.get("maxAgeDays")
+    if mad is not None and (type(mad) is not int or not (1 <= mad <= 60)):
+        r.add_error(f"{tag}: maxAgeDays must be a non-bool integer in 1..60 "
+                    f"(got {mad!r})")
+
+    esr = sc.get("esReviewStatus")
+    if esr is not None and esr not in PROMO_ES_REVIEW_STATUSES:
+        r.add_error(f"{tag}: esReviewStatus {esr!r} not in "
+                    f"{sorted(PROMO_ES_REVIEW_STATUSES)}")
+
+    va = sc.get("verifiedAt")
+    if va is not None and _s(va) and not _valid_ends_at(_s(va)):
+        r.add_error(f"{tag}: verifiedAt {va!r} must be an ISO-8601 datetime with "
+                    f"an explicit timezone offset")
+
+    src = sc.get("sourceUrl")
+    if src is not None and not isinstance(src, str):
+        r.add_error(f"{tag}: sourceUrl must be a string")
+
+    for field in ("name", "whyItEnds", "disclosure"):
+        if not _bilingual_nonblank(sc.get(field)):
+            r.add_error(f"{tag}: {field} must carry nonblank EN and ES")
+
+    items, storewide = _governed_lists(r, tag, sc)
+    _governed_item_ids(r, tag, sc)
+    for it in items:
+        itag = f"{tag}.{_s(it.get('id')) or '?'}"
+        _governed_entry_checks(r, itag, it, CURRENT_EVENT_ITEM_KEYS, mids, brands,
+                               require_eligibility=True)
+        if it.get("endsAt") is not None:
+            r.add_error(f"{itag}: item-level endsAt is not permitted — V1 "
+                        f"current-event items inherit the scenario window")
+    for it in storewide:
+        itag = f"{tag}.{_s(it.get('id')) or '?'}"
+        _governed_entry_checks(r, itag, it, CURRENT_EVENT_STOREWIDE_KEYS, mids,
+                               brands, require_eligibility=False)
+        for k in ("eligibleMattressIds", "eligibleBrands"):
+            if k in it:
+                r.add_error(f"{itag}: storewide entries must not carry "
+                            f"mattress-specific eligibility ({k})")
+
+
+# Deliberately narrow claim-copy bans for illustrative demos. Structured fields
+# carry the strong rules (no sourceUrl, no evidence, no authorization); these
+# regexes only catch the most direct savings/inventory/activity/delivery claim
+# phrasings in each language and are NOT a general claim classifier. Both
+# languages are tested in the self-test.
+_ILLUSTRATIVE_COPY_BANS = (
+    ("dollar-savings claim", r"\$\s*\d", r"\$\s*\d"),
+    ("percentage-savings claim", r"\d\s*%", r"\d\s*%"),
+    ('"free" claim', r"\bfree\b", r"\bgratis\b"),
+    ("inventory claim", r"\bin stock\b|\bonly\s+\d+\s+left\b",
+     r"\bexistencias\b|\bquedan\s+\d+\b"),
+    ("customer-activity claim",
+     r"\b(customers|people|shoppers)\s+(are|have)\b|\bviewing\b",
+     r"\bviendo\b|\bpersonas\s+están\b"),
+    ("delivery-availability claim",
+     r"\bdeliver(?:y|ed)?\s+(?:today|tomorrow|by\b)|\bsame-?day\b",
+     r"\bentrega\s+(?:hoy|mañana|inmediata)\b"),
+)
+
+
+def _scan_illustrative_copy(r, tag, obj):
+    import re
+
+    def walk(o, path):
+        if isinstance(o, dict):
+            for k, v in o.items():
+                walk(v, f"{path}.{k}")
+        elif isinstance(o, (list, tuple)):
+            for i, v in enumerate(o):
+                walk(v, f"{path}[{i}]")
+        elif isinstance(o, str):
+            es = path.endswith(".es")
+            for label, en_re, es_re in _ILLUSTRATIVE_COPY_BANS:
+                if re.search(es_re if es else en_re, o, re.IGNORECASE):
+                    r.add_error(f"{tag}: {path} carries a {label} — forbidden in "
+                                f"illustrative demo copy")
+    walk(obj, tag)
+
+
+def _validate_illustrative_scenario(r, sid, sc, mids, brands):
+    tag = f"promotions[{sid}]"
+    _scan_governed_forbidden_keys(r, tag, sc)
+    for k in sorted(set(sc) - ILLUSTRATIVE_SCENARIO_KEYS, key=str):
+        if _governed_key_forbidden(k):
+            continue
+        extra = ""
+        if k in ("sourceUrl", "verifiedAt", "maxAgeDays", "authority",
+                 "enabledByOwner", "evidenceStatus", "evidenceProvenance",
+                 "esReviewStatus", "durationHours", "whyItEnds"):
+            extra = (" — illustrative demos may not carry evidence, authority, "
+                     "authorization, review status, or authoring helpers")
+        r.add_error(f"{tag}: key {k!r} is not permitted on an illustrative-demo "
+                    f"scenario{extra}")
+
+    if sc.get("demoOnly") is not True:
+        r.add_error(f"{tag}: illustrative-demo requires demoOnly exactly true")
+    if sc.get("disableEmailSubmission") is not True:
+        r.add_error(f"{tag}: illustrative-demo requires disableEmailSubmission "
+                    f"exactly true")
+    if sc.get("verified") is True:
+        r.add_error(f"{tag}: an illustrative-demo scenario must not claim "
+                    f"verified true")
+
+    if not _bilingual_nonblank(sc.get("name")):
+        r.add_error(f"{tag}: name must carry nonblank EN and ES")
+    disc = sc.get("disclosure")
+    if not _bilingual_nonblank(disc):
+        r.add_error(f"{tag}: disclosure must carry nonblank EN and ES")
+    else:
+        en_d = _s(disc.get("en")).lower()
+        es_d = _s(disc.get("es")).lower()
+        # Narrow-by-design content floor: the disclosure must self-identify as
+        # illustrative/demo AND deny being a current offer, in each language.
+        if not (("illustrative" in en_d or "demo" in en_d)
+                and "not current" in en_d):
+            r.add_error(f"{tag}: EN disclosure must clearly say the offers are "
+                        f"illustrative/demo and are not current offers")
+        if not (("ilustrativ" in es_d or "demostraci" in es_d)
+                and "no son promociones vigentes" in es_d):
+            r.add_error(f"{tag}: ES disclosure must clearly say the offers are "
+                        f"illustrative and not current promotions "
+                        f"('no son promociones vigentes')")
+
+    for field, val in (("startAt", sc.get("startAt")), ("endsAt", sc.get("endsAt"))):
+        if val is not None and not _valid_ends_at(_s(val)):
+            r.add_error(f"{tag}: {field} {val!r} must be an ISO-8601 datetime "
+                        f"with a timezone offset")
+
+    items, storewide = _governed_lists(r, tag, sc)
+    _governed_item_ids(r, tag, sc)
+    for it in items:
+        itag = f"{tag}.{_s(it.get('id')) or '?'}"
+        _governed_entry_checks(r, itag, it, ILLUSTRATIVE_ITEM_KEYS, mids, brands,
+                               require_eligibility=True)
+    for it in storewide:
+        itag = f"{tag}.{_s(it.get('id')) or '?'}"
+        _governed_entry_checks(r, itag, it, ILLUSTRATIVE_STOREWIDE_KEYS, mids,
+                               brands, require_eligibility=False)
+    _scan_illustrative_copy(r, tag, {
+        "name": sc.get("name"), "disclosure": sc.get("disclosure"),
+        "items": items, "storewide": storewide,
+    })
+
+
+def _validate_governed_promotions(r, promos, scenarios, active, canonical_hosts):
+    """Top-level rules + activation coupling, applied when any governed
+    (current-event / illustrative-demo) scenario is present."""
+    governed = {sid: sc for sid, sc in scenarios.items()
+                if isinstance(sc, dict) and sc.get("kind") in GOVERNED_SCENARIO_KINDS}
+    if not governed:
+        return
+
+    sv = promos.get("schemaVersion")
+    if type(sv) is not int or sv != PROMO_SCHEMA_VERSION:
+        r.add_error(f"promotions.schemaVersion must be the integer "
+                    f"{PROMO_SCHEMA_VERSION} when governed scenarios are present "
+                    f"(got {sv!r})")
+
+    if active is not None and not isinstance(active, str):
+        r.add_error(f"promotions.activeScenario must be null or a scenario id "
+                    f"string (got {active!r})")
+
+    shipped = promos.get("allowedSourceHosts")
+    if not isinstance(shipped, list) or not shipped:
+        r.add_error("promotions.allowedSourceHosts must be a nonempty array of "
+                    "normalized host strings when governed scenarios are present")
+        shipped = []
+    else:
+        for h in shipped:
+            err = _normalized_host_entry_error(h)
+            if err:
+                r.add_error(f"promotions.allowedSourceHosts entry {h!r}: {err}")
+        valid_shipped = [h for h in shipped
+                         if isinstance(h, str) and not _normalized_host_entry_error(h)]
+        if not canonical_hosts:
+            r.add_error("promotions.allowedSourceHosts: no canonical promotion "
+                        "source-host allowlist is configured "
+                        "(tools/source_hosts.json) — failing closed")
+        else:
+            for h in valid_shipped:
+                if not _host_covered(h, canonical_hosts):
+                    r.add_error(f"promotions.allowedSourceHosts entry {h!r} "
+                                f"widens the canonical allowlist "
+                                f"(tools/source_hosts.json promotionSourceHosts)")
+
+    # Activation coupling — current-event only. An enabled scenario must be the
+    # selected activeScenario and vice versa, so partial activation is
+    # unrepresentable and at most one current-event scenario is operational.
+    ce = {sid: sc for sid, sc in governed.items()
+          if sc.get("kind") == "current-event"}
+    for sid, sc in ce.items():
+        if sc.get("enabledByOwner") is True and active != sid:
+            r.add_error(f"promotions[{sid}]: enabledByOwner is true but "
+                        f"activeScenario is {active!r} — an enabled current-event "
+                        f"scenario must be the selected activeScenario")
+    if isinstance(active, str) and active in ce:
+        if ce[active].get("enabledByOwner") is not True:
+            r.add_error(f"promotions.activeScenario selects current-event "
+                        f"scenario {active!r} whose enabledByOwner is not true")
+
+    # Evidence-when-operational: enabled OR selected requires the full record.
+    for sid, sc in ce.items():
+        operational = sc.get("enabledByOwner") is True or active == sid
+        if not operational:
+            continue
+        tag = f"promotions[{sid}]"
+        auth = sc.get("authority") if isinstance(sc.get("authority"), dict) else {}
+        if _blank(auth.get("owner")):
+            r.add_error(f"{tag}: an operational current-event scenario requires a "
+                        f"nonblank authority.owner")
+        if _blank(auth.get("role")):
+            r.add_error(f"{tag}: an operational current-event scenario requires a "
+                        f"nonblank authority.role")
+        va = _s(sc.get("verifiedAt"))
+        mad = sc.get("maxAgeDays")
+        if not va or not _valid_ends_at(va):
+            r.add_error(f"{tag}: an operational current-event scenario requires a "
+                        f"valid offset-bearing verifiedAt")
+        elif _materially_future(va):
+            r.add_error(f"{tag}: verifiedAt {va!r} is materially in the future")
+        elif type(mad) is not int:
+            r.add_error(f"{tag}: an operational current-event scenario requires "
+                        f"an integer maxAgeDays")
+        elif _verified_age_exceeds(va, mad):
+            r.add_error(f"{tag}: verifiedAt {va!r} is older than maxAgeDays "
+                        f"({mad}) — re-verify before activation")
+        src = _s(sc.get("sourceUrl"))
+        if not src:
+            r.add_error(f"{tag}: an operational current-event scenario requires a "
+                        f"sourceUrl")
+        else:
+            if not _is_allowed_source(src, canonical_hosts):
+                r.add_error(f"{tag}: sourceUrl {src!r} is not allowed by the "
+                            f"canonical promotion source-host allowlist")
+            shipped_hosts = [h for h in (promos.get("allowedSourceHosts") or [])
+                             if isinstance(h, str)]
+            if not _is_allowed_source(src, shipped_hosts):
+                r.add_error(f"{tag}: sourceUrl {src!r} is not allowed by the "
+                            f"shipped promotions.allowedSourceHosts — build and "
+                            f"runtime allowlists must agree")
+        if sc.get("esReviewStatus") != PROMO_ES_REVIEW_APPROVED:
+            r.add_error(f"{tag}: an operational current-event scenario requires "
+                        f"esReviewStatus {PROMO_ES_REVIEW_APPROVED!r} — the "
+                        f"whole-campaign bilingual review gate (the event never "
+                        f"renders in EN while hidden in ES)")
 
 
 # -- Financing validation (Lacks Payment Choice) -------------------------------
@@ -4529,6 +5094,343 @@ def _self_test() -> int:
     qsl = _gq(); _q(qsl, "firmness")["defaultValue"] = 42
     check("quiz slider defaultValue out of range -> error",
           any("slider needs integer" in e for e in validate_quiz(qsl).errors))
+
+    # ---- Daybreak governed scenarios (PR 2) ---------------------------------
+    print("Daybreak governed scenarios:")
+    from datetime import datetime, timedelta, timezone
+
+    def _iso(delta_minutes):
+        return (datetime.now(timezone.utc)
+                + timedelta(minutes=delta_minutes)).isoformat()
+
+    def _ce(**over):
+        sc = {
+            "kind": "current-event",
+            "enabledByOwner": False,
+            "authority": {"owner": "", "role": "merchandising"},
+            "startAt": "2026-08-31T00:00:00-05:00",
+            "endsAt": "2026-09-09T23:59:59-05:00",
+            "maxAgeDays": 7,
+            "esReviewStatus": "pending-native-legal-review",
+            "name": {"en": "Event", "es": "Evento"},
+            "whyItEnds": {"en": "Advertised event closes.",
+                          "es": "El evento anunciado termina."},
+            "disclosure": {"en": "Terms confirmed in store.",
+                           "es": "Términos confirmados en tienda."},
+            "items": [],
+            "storewide": [],
+        }
+        sc.update(over)
+        return sc
+
+    def _ce_enabled(**over):
+        base = _ce(enabledByOwner=True,
+                   authority={"owner": "M. Example", "role": "merchandising"},
+                   verifiedAt=_iso(-30),
+                   sourceUrl="https://www.lacks.com/promotions",
+                   esReviewStatus="approved-native-legal-review")
+        base.update(over)
+        return base
+
+    def _pb(sc=None, **over):
+        p = {"schemaVersion": 1, "activeScenario": None,
+             "allowedSourceHosts": ["lacks.com"],
+             "scenarios": {} if sc is None else {"ev": sc}}
+        p.update(over)
+        return p
+
+    def _vp(promos, **kw):
+        kw.setdefault("mattress_ids", {"g1", "g2", "b3"})
+        kw.setdefault("mattress_brands", {"Restonic", "Chattam & Wells", "Genesis"})
+        kw.setdefault("allowed_source_hosts", ["lacks.com", "www.lacks.com"])
+        return validate_promotions({"promotions": promos}, **kw)
+
+    def _err(promos, needle, **kw):
+        return any(needle in e for e in _vp(promos, **kw).errors)
+
+    # -- positives ------------------------------------------------------------
+    check("inert production block (empty scenarios) passes", _vp(_pb()).ok)
+    check("valid disabled current-event draft passes", _vp(_pb(_ce())).ok)
+    check("valid enabled + selected current-event passes",
+          _vp(_pb(_ce_enabled(), activeScenario="ev")).ok)
+    good_item = {"id": "i1", "badge": {"en": "B", "es": "B"},
+                 "headline": {"en": "H", "es": "H"},
+                 "eligibleBrands": ["Restonic"]}
+    check("valid disabled draft with a product item passes",
+          _vp(_pb(_ce(items=[dict(good_item)]))).ok)
+    check("legacy flat promotions unaffected by governed rules",
+          _vp({"items": [{"id": "x", "badge": {"en": "B", "es": "B"},
+                          "headline": {"en": "H", "es": "H"}}]}).ok)
+
+    # -- top level ------------------------------------------------------------
+    check("schemaVersion missing -> error", _err(_pb(_ce(), schemaVersion=None), "schemaVersion"))
+    check("schemaVersion 2 -> error", _err(_pb(_ce(), schemaVersion=2), "schemaVersion"))
+    check("schemaVersion bool True (bool masquerading as int) -> error",
+          _err(_pb(_ce(), schemaVersion=True), "schemaVersion"))
+    check("activeScenario non-string -> error",
+          _err(_pb(_ce(), activeScenario=7), "null or a scenario id"))
+    check("activeScenario naming an undefined scenario -> error",
+          _err(_pb(_ce(), activeScenario="ghost"), "not a defined scenario"))
+    check("scenarios non-object -> error",
+          any("scenarios must be an object" in e
+              for e in validate_promotions({"promotions": {"scenarios": 3}}).errors))
+    check("non-object scenario -> error, no crash",
+          any("must be an object" in e
+              for e in _vp(_pb(**{"scenarios": {"ev": "nope"}})).errors))
+    check("allowedSourceHosts empty -> error",
+          _err(_pb(_ce(), allowedSourceHosts=[]), "allowedSourceHosts"))
+    for bad_host, why in [(" lacks.com", "padded"), ("LACKS.com", "lowercase"),
+                          ("https://lacks.com", "scheme"), ("lacks.com/promo", "scheme or path"),
+                          ("lacks.com:8443", "port"), ("*.lacks.com", "wildcard"),
+                          ("", "blank")]:
+        check(f"allowedSourceHosts entry {bad_host!r} -> error",
+              _err(_pb(_ce(), allowedSourceHosts=[bad_host]), "allowedSourceHosts"))
+    check("allowedSourceHosts widening the canonical list -> error",
+          _err(_pb(_ce(), allowedSourceHosts=["evil.example.com"]), "widens"))
+    check("subdomain of a canonical host does not widen",
+          not _err(_pb(_ce(), allowedSourceHosts=["shop.lacks.com"]), "widens"))
+    check("no canonical allowlist configured -> fail closed",
+          _err(_pb(_ce()), "failing closed", allowed_source_hosts=[]))
+
+    # -- scenario keys / forbidden shapes ------------------------------------
+    check("unknown scenario key -> error", _err(_pb(_ce(surprise=1)), "surprise"))
+    for bad_key in ["campaigns", "eligibleQuizTags", "quizAnswers",
+                    "recommendationScores", "customerSegment", "inferredUrgency",
+                    "inventoryCount", "customersViewing", "countdownSeconds",
+                    "rollingDeadline", "resetAtMidnight"]:
+        check(f"forbidden key {bad_key} -> error",
+              _err(_pb(_ce(**{bad_key: 1})), "not permitted"))
+    check("forbidden shape nested inside an item eligibility object -> error",
+          _err(_pb(_ce(items=[dict(good_item,
+                                   eligibleMattressIds={"quizTagFilter": "hot"})])),
+               "not permitted"))
+    check("answer-shaped key variant (answerBasedEligibility) -> error",
+          _err(_pb(_ce(answerBasedEligibility=[])), "not permitted"))
+    check("stock-shaped key variant (liveStockFeed) -> error",
+          _err(_pb(_ce(liveStockFeed=True)), "not permitted"))
+
+    # -- scenario fields ------------------------------------------------------
+    for val in ["true", "false", 0, 1, None]:
+        check(f"enabledByOwner {val!r} -> error",
+              _err(_pb(_ce(enabledByOwner=val)), "real JSON boolean"))
+    sc_no = _ce(); del sc_no["enabledByOwner"]
+    check("enabledByOwner missing -> error", _err(_pb(sc_no), "real JSON boolean"))
+    check("authority non-object -> error", _err(_pb(_ce(authority="me")), "authority"))
+    check("authority with extra key -> error",
+          _err(_pb(_ce(authority={"owner": "x", "role": "y", "phone": "z"})),
+               "only owner and role"))
+    sc_no = _ce(); del sc_no["startAt"]
+    check("startAt missing -> error", _err(_pb(sc_no), "startAt is required"))
+    sc_no = _ce(); del sc_no["endsAt"]
+    check("endsAt missing -> error", _err(_pb(sc_no), "endsAt is required"))
+    check("bare-date startAt -> error",
+          _err(_pb(_ce(startAt="2026-08-31")), "timezone offset"))
+    check("offset-less endsAt -> error",
+          _err(_pb(_ce(endsAt="2026-09-09T23:59:59")), "timezone offset"))
+    check("inverted window -> error",
+          _err(_pb(_ce(startAt="2026-09-10T00:00:00-05:00")), "strictly later"))
+    check("equal start/end -> error",
+          _err(_pb(_ce(startAt="2026-09-09T23:59:59-05:00")), "strictly later"))
+    check("maxAgeDays bool -> error", _err(_pb(_ce(maxAgeDays=True)), "maxAgeDays"))
+    check("maxAgeDays 0 -> error", _err(_pb(_ce(maxAgeDays=0)), "maxAgeDays"))
+    check("maxAgeDays 90 -> error", _err(_pb(_ce(maxAgeDays=90)), "maxAgeDays"))
+    check("esReviewStatus outside enum -> error",
+          _err(_pb(_ce(esReviewStatus="approved")), "esReviewStatus"))
+    for field in ("name", "whyItEnds", "disclosure"):
+        sc_bad = _ce(**{field: {"en": "only english"}})
+        check(f"{field} missing ES -> error", _err(_pb(sc_bad), field))
+        sc_bad = _ce(**{field: {"es": "solo español"}})
+        check(f"{field} missing EN -> error", _err(_pb(sc_bad), field))
+    check("items non-array -> error", _err(_pb(_ce(items="x")), "must be an array"))
+    check("storewide non-array -> error", _err(_pb(_ce(storewide=7)), "must be an array"))
+    check("non-object item -> error, no crash",
+          _err(_pb(_ce(items=["oops"])), "must be an object"))
+
+    # -- activation coupling / evidence --------------------------------------
+    check("enabled but not selected -> error",
+          _err(_pb(_ce_enabled()), "must be the selected activeScenario"))
+    check("selected but not enabled -> error",
+          _err(_pb(_ce(), activeScenario="ev"), "enabledByOwner is not true"))
+    check("enabled without owner -> error",
+          _err(_pb(_ce_enabled(authority={"owner": "", "role": "r"}),
+                   activeScenario="ev"), "authority.owner"))
+    check("enabled without role -> error",
+          _err(_pb(_ce_enabled(authority={"owner": "o", "role": ""}),
+                   activeScenario="ev"), "authority.role"))
+    sc_bad = _ce_enabled(); del sc_bad["verifiedAt"]
+    check("enabled without verifiedAt -> error",
+          _err(_pb(sc_bad, activeScenario="ev"), "verifiedAt"))
+    check("enabled with future verifiedAt -> error",
+          _err(_pb(_ce_enabled(verifiedAt=_iso(60)), activeScenario="ev"),
+               "materially in the future"))
+    check("enabled with verifiedAt 2 min ahead (inside skew) passes",
+          _vp(_pb(_ce_enabled(verifiedAt=_iso(2)), activeScenario="ev")).ok)
+    check("enabled with stale verifiedAt -> error",
+          _err(_pb(_ce_enabled(verifiedAt=_iso(-60 * 24 * 8)), activeScenario="ev"),
+               "older than maxAgeDays"))
+    sc_bad = _ce_enabled(); del sc_bad["sourceUrl"]
+    check("enabled without sourceUrl -> error",
+          _err(_pb(sc_bad, activeScenario="ev"), "sourceUrl"))
+    check("enabled with http source -> error",
+          _err(_pb(_ce_enabled(sourceUrl="http://www.lacks.com/x"),
+                   activeScenario="ev"), "sourceUrl"))
+    check("enabled with credentialed source -> error",
+          _err(_pb(_ce_enabled(sourceUrl="https://u:p@www.lacks.com/x"),
+                   activeScenario="ev"), "sourceUrl"))
+    check("enabled with non-default port -> error",
+          _err(_pb(_ce_enabled(sourceUrl="https://www.lacks.com:8443/x"),
+                   activeScenario="ev"), "sourceUrl"))
+    check("enabled with non-allowlisted host -> error",
+          _err(_pb(_ce_enabled(sourceUrl="https://evil.example.com/x"),
+                   activeScenario="ev"), "canonical promotion source-host"))
+    check("build/shipped allowlist disagreement -> error",
+          _err(_pb(_ce_enabled(sourceUrl="https://www.synchrony.com/x"),
+                   activeScenario="ev"),
+               "must agree",
+               allowed_source_hosts=["lacks.com", "www.lacks.com",
+                                     "www.synchrony.com"]))
+    check("enabled without approved ES review -> error (whole-campaign gate)",
+          _err(_pb(_ce_enabled(esReviewStatus="pending-native-legal-review"),
+                   activeScenario="ev"), "bilingual review gate"))
+
+    # -- items ---------------------------------------------------------------
+    check("item unknown key -> error",
+          _err(_pb(_ce(items=[dict(good_item, sparkle=1)])), "sparkle"))
+    check("item-level endsAt -> error",
+          _err(_pb(_ce(items=[dict(good_item, endsAt="2026-09-01T00:00:00-05:00")])),
+               "item-level endsAt"))
+    for gov_key in ("verifiedAt", "maxAgeDays", "authority", "esReviewStatus"):
+        check(f"item-level {gov_key} -> error",
+              _err(_pb(_ce(items=[dict(good_item, **{gov_key: "x"})])),
+                   "not permitted" if gov_key == "esReviewStatus" else gov_key))
+    check("duplicate item ids -> error",
+          _err(_pb(_ce(items=[dict(good_item), dict(good_item)])), "duplicate"))
+    check("item missing id -> error",
+          _err(_pb(_ce(items=[{k: v for k, v in good_item.items() if k != "id"}])),
+               "nonblank id"))
+    check("item without any eligibility selector -> error",
+          _err(_pb(_ce(items=[{"id": "i1", "badge": {"en": "B", "es": "B"},
+                               "headline": {"en": "H", "es": "H"}}])),
+               "eligibility selector"))
+    check("unresolved mattress id -> error",
+          _err(_pb(_ce(items=[dict(good_item, eligibleBrands=None,
+                                   eligibleMattressIds=["zz9"])])),
+               "not in mattresses"))
+    check("unresolved brand -> error",
+          _err(_pb(_ce(items=[dict(good_item, eligibleBrands=["Restonic Inc"])])),
+               "does not exactly match"))
+    check("duplicate brand entries -> error",
+          _err(_pb(_ce(items=[dict(good_item,
+                                   eligibleBrands=["Restonic", "Restonic"])])),
+               "duplicate eligibleBrands"))
+    check("item badge missing ES -> error",
+          _err(_pb(_ce(items=[dict(good_item, badge={"en": "B"})])), "badge"))
+    check("storewide entry with mattress eligibility -> error",
+          _err(_pb(_ce(storewide=[{"id": "s1", "badge": {"en": "B", "es": "B"},
+                                   "headline": {"en": "H", "es": "H"},
+                                   "eligibleBrands": ["Restonic"]}])),
+               "storewide"))
+
+    # -- illustrative-demo ----------------------------------------------------
+    def _ill(**over):
+        sc = {
+            "kind": "illustrative-demo",
+            "demoOnly": True,
+            "disableEmailSubmission": True,
+            "verified": False,
+            "name": {"en": "Preview", "es": "Vista Previa"},
+            "disclosure": {
+                "en": "DEMO — Illustrative offers only. These are not current "
+                      "Lacks promotions.",
+                "es": "DEMOSTRACIÓN — Ofertas ilustrativas. No son promociones "
+                      "vigentes de Lacks.",
+            },
+            "items": [dict(good_item)],
+            "storewide": [],
+        }
+        sc.update(over)
+        return sc
+
+    check("valid illustrative demo passes with allow_illustrative=True",
+          _vp(_pb(_ill(), activeScenario="ev"), allow_illustrative=True).ok)
+    check("illustrative demo in production path -> error",
+          _err(_pb(_ill()), "must never ship in production"))
+    check("demoOnly false -> error",
+          _err(_pb(_ill(demoOnly=False)), "demoOnly", allow_illustrative=True))
+    check("disableEmailSubmission missing -> error",
+          _err(_pb(_ill(disableEmailSubmission=None)), "disableEmailSubmission",
+               allow_illustrative=True))
+    check("verified true -> error",
+          _err(_pb(_ill(verified=True)), "verified", allow_illustrative=True))
+    check("illustrative sourceUrl -> error",
+          _err(_pb(_ill(sourceUrl="https://www.lacks.com/x")), "sourceUrl",
+               allow_illustrative=True))
+    check("illustrative authority -> error",
+          _err(_pb(_ill(authority={"owner": "x"})), "authority",
+               allow_illustrative=True))
+    check("illustrative enabledByOwner -> error",
+          _err(_pb(_ill(enabledByOwner=True)), "enabledByOwner",
+               allow_illustrative=True))
+    check("illustrative verifiedAt -> error",
+          _err(_pb(_ill(verifiedAt="2026-01-01T00:00:00-05:00")), "verifiedAt",
+               allow_illustrative=True))
+    check("illustrative durationHours inside scenario -> error",
+          _err(_pb(_ill(durationHours=72)), "durationHours",
+               allow_illustrative=True))
+    check("missing disclosure -> error",
+          _err(_pb(_ill(disclosure=None)), "disclosure", allow_illustrative=True))
+    check("disclosure missing ES -> error",
+          _err(_pb(_ill(disclosure={"en": "DEMO — not current offers."})),
+               "disclosure", allow_illustrative=True))
+    check("EN disclosure without 'not current' denial -> error",
+          _err(_pb(_ill(disclosure={"en": "Great illustrative offers!",
+                                    "es": "DEMOSTRACIÓN — No son promociones "
+                                          "vigentes de Lacks."})),
+               "EN disclosure", allow_illustrative=True))
+    check("ES disclosure without the denial -> error",
+          _err(_pb(_ill(disclosure={"en": "DEMO — these are not current offers.",
+                                    "es": "¡Grandes ofertas!"})),
+               "ES disclosure", allow_illustrative=True))
+    check("dollar claim in EN copy -> error",
+          _err(_pb(_ill(items=[dict(good_item,
+                                    headline={"en": "Save $400 now",
+                                              "es": "Ahorra ahora"})])),
+               "dollar-savings", allow_illustrative=True))
+    check("percentage claim in ES copy -> error",
+          _err(_pb(_ill(items=[dict(good_item,
+                                    headline={"en": "Big event",
+                                              "es": "Ahorra 20 % hoy"})])),
+               "percentage-savings", allow_illustrative=True))
+    check('"free" claim in EN copy -> error',
+          _err(_pb(_ill(items=[dict(good_item,
+                                    headline={"en": "Free pillow included",
+                                              "es": "Almohada incluida"})])),
+               '"free" claim', allow_illustrative=True))
+    check("'gratis' claim in ES copy -> error",
+          _err(_pb(_ill(items=[dict(good_item,
+                                    headline={"en": "Pillow included",
+                                              "es": "Almohada gratis"})])),
+               '"free" claim', allow_illustrative=True))
+    check("inventory claim -> error",
+          _err(_pb(_ill(items=[dict(good_item,
+                                    detail={"en": "Only 3 left today",
+                                            "es": "Pocas unidades"})])),
+               "inventory claim", allow_illustrative=True))
+    check("customer-activity claim -> error",
+          _err(_pb(_ill(items=[dict(good_item,
+                                    detail={"en": "12 customers are considering "
+                                                  "this", "es": "Muy popular"})])),
+               "customer-activity", allow_illustrative=True))
+    check("delivery-availability claim -> error",
+          _err(_pb(_ill(items=[dict(good_item,
+                                    detail={"en": "Delivered tomorrow",
+                                            "es": "Llega pronto"})])),
+               "delivery-availability", allow_illustrative=True))
+    check("illustrative unresolved brand -> error",
+          _err(_pb(_ill(items=[dict(good_item, eligibleBrands=["Bel-O-Pedic"])])),
+               "does not exactly match", allow_illustrative=True))
+    check("illustrative malformed item -> error, no crash",
+          _err(_pb(_ill(items=[42])), "must be an object", allow_illustrative=True))
 
     print(f"\nSelf-test: {passed} passed, {failed} failed")
     return 0 if failed == 0 else 1

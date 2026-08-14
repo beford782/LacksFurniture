@@ -31,6 +31,50 @@ rate/term claims are freshness-gated and fail closed to generic guidance when
 stale. Canonical editable source: `incoming/lacks_financing.json`; verification
 record: `docs/financing-verification-2026-07-30.md`.
 
+## Daybreak promotions contract (inert)
+
+The generated configuration carries a governed promotions contract
+(`store-config.promotions`) that ships **inert**: `activeScenario` is null and
+`scenarios` is empty, so the ordinary application renders exactly as it did
+without the key. Canonical editable source: `incoming/lacks_promotions.json`.
+Real campaigns require owner authorization, fresh allowlisted evidence, and
+approved bilingual review through `tools/validation.py`'s current-event
+contract before anything can activate — CI locks the shipped state until the
+governed runtime exists.
+
+## Local Black Friday promotion demo
+
+Two clearly separated URLs exist once deployed:
+
+- Ordinary preview (no promotions): https://beford782.github.io/LacksFurniture/
+- Illustrative Black Friday demo: https://beford782.github.io/LacksFurniture/demo/black-friday/
+
+The demo URL is designed for prospect demonstrations — it runs the complete
+application (quiz, recommendations, Payment Choice, comparison, Sleep System,
+handoff, EN/ES) with two **illustrative** Black Friday promotions injected. The
+offers are **not current Lacks promotions** and every promotion surface says so
+in both languages. A 72-hour demonstration deadline is computed when the page
+loads; no countdown ticks. The demo sends no lead or email data: its
+configuration ships a blank `gasUrl` and the scenario forces email into
+preview mode, so nothing a prospect types leaves the browser. It works in iPad
+Safari from a tapped link and is marked `noindex,nofollow,noarchive` where
+crawlers honor it.
+
+Local development preview (never changes production configuration; stop with
+Ctrl+C):
+
+    python tools/serve_daybreak_demo.py --port 8000
+    # then open http://127.0.0.1:8000/
+
+The hosted bundle under `demo/black-friday/` is **generated** — never edit it
+by hand. Regenerate with:
+
+    python tools/build_black_friday_demo.py
+
+Demo content lives only in `demo/daybreak-black-friday.json`; the production
+pipeline (`incoming/` → workbook → `data/store-config.json`) never consumes it,
+and CI proves it.
+
 ## Repo orientation
 
 - `index.html` — the entire kiosk app (single-file SPA, no build step). Domain-locked to the configured GitHub Pages host.

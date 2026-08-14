@@ -817,8 +817,14 @@ def main(argv=None) -> int:
             skip_images=args.skip_image_normalization))
         report.merge(validation.validate_sales_notes(raw_tabs, languages=langs))
         # Promotions (scenario-aware) validation against the assembled config +
-        # the known mattress/accessory catalog.
+        # the known mattress/accessory catalog. The brand set feeds the governed
+        # Daybreak eligibility check (a misspelled eligibleBrands entry would
+        # render on zero products). allow_illustrative stays at its False
+        # default: illustrative-demo scenarios must never reach production
+        # configuration through this build path.
         promo_mids = {_s(r0.get("id")) for r0 in (m_rows or []) if not _blank(r0.get("id"))}
+        promo_brands = {_s(r0.get("brand")) for r0 in (m_rows or [])
+                        if not _blank(r0.get("brand"))}
         promo_aids, promo_cats = set(), set()
         for a in accessories:
             if a.get("id"):
@@ -834,7 +840,8 @@ def main(argv=None) -> int:
         report.merge(validation.validate_promotions(
             config, mattress_ids=promo_mids, accessory_ids=promo_aids,
             accessory_categories=promo_cats,
-            allowed_source_hosts=source_hosts.get("promotionSourceHosts")))
+            allowed_source_hosts=source_hosts.get("promotionSourceHosts"),
+            mattress_brands=promo_brands))
         # Financing (Lacks Payment Choice) validation — fail-closed rules for
         # exact credit claims; no-op when the config carries no financing block.
         report.merge(validation.validate_financing(

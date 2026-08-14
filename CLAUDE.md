@@ -45,7 +45,16 @@ This is Lacks Furniture's instance (South Texas / Rio Grande Valley, family-owne
 since 1935; EN+ES). Everything in `data/` is Lacks-specific and generated from the
 build inputs in `incoming/` (lacks_store_values.json, lacks_mattresses.json,
 lacks_accessories.json → build_lacks_workbook.py → Lacks_Store_Data.xlsx →
-tools/convert_store_data.py). Catalog provenance + rescrape technique:
+tools/convert_store_data.py). The Promotions tab carries the two-key envelope
+`{"promotions": …, "financing": …}`: promotions from
+`incoming/lacks_promotions.json` (the inert Daybreak contract — shipped
+`scenarios` stays `{}` until a governed current-event campaign passes owner
+authorization + evidence + bilingual review; CI locks this), financing from
+`incoming/lacks_financing.json`. **Illustrative demo campaigns (the Black
+Friday demo) live ONLY in `demo/daybreak-black-friday.json` and the generated
+`demo/black-friday/` bundle (rebuild: `python tools/build_black_friday_demo.py`;
+localhost preview: `python tools/serve_daybreak_demo.py`) — they must never
+enter `incoming/`, the workbook, or production `data/`.** Catalog provenance + rescrape technique:
 incoming/lacks_catalog_selection.json (lacks.com is AVB/Magento — browser-session
 API + linqcdn image pull via fetch_lacks_images.py; NOT the Blueport sitemap
 technique). gasUrl is intentionally blank (demo mode — no live email/leads).
