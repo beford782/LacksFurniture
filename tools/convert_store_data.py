@@ -312,6 +312,12 @@ def build_promotions(wb):
         {"promotions", "financing"} — each part lands as its own
         store-config key (Lacks Payment Choice uses this form);
       * legacy: a bare promotions block (WGR-era) — becomes `promotions`.
+    An object that carries an envelope key PLUS any unrecognized top-level key
+    is neither shape and fails loudly. The earlier subset-only test silently
+    reclassified such a payload as legacy bare promotions, so the financing
+    slot came back None, validate_financing saw nothing to validate, and the
+    build published a bundle with the entire Payment Choice block missing —
+    a green build with a silently dead surface.
     Returns (promotions, financing); (None, None) when the tab is absent/empty
     (Bel and any deployment without promotions emit neither key)."""
     if "Promotions" not in wb.sheetnames:
@@ -324,8 +330,17 @@ def build_promotions(wb):
         parsed = json.loads(payload)
     except ValueError as exc:
         raise SystemExit(f"ERROR: Promotions tab payload is not valid JSON: {exc}")
-    if isinstance(parsed, dict) and parsed and set(parsed) <= {"promotions", "financing"}:
+    ENVELOPE_KEYS = {"promotions", "financing"}
+    if isinstance(parsed, dict) and parsed and set(parsed) <= ENVELOPE_KEYS:
         return parsed.get("promotions"), parsed.get("financing")
+    if isinstance(parsed, dict) and (set(parsed) & ENVELOPE_KEYS):
+        unknown = ", ".join(sorted(set(parsed) - ENVELOPE_KEYS))
+        raise SystemExit(
+            "ERROR: Promotions tab envelope carries unrecognized top-level "
+            f"key(s): {unknown}. Recognized envelope keys are 'promotions' and "
+            "'financing'. Refusing to guess: treating this payload as a legacy "
+            "bare-promotions block would silently drop the financing key from "
+            "store-config.json.")
     return parsed, None
 
 
@@ -661,6 +676,56 @@ def _self_test() -> int:
         check("build_quiz: invalid JSON -> SystemExit", False)
     except SystemExit:
         check("build_quiz: invalid JSON -> SystemExit", True)
+
+    # Promotions envelope split (build_promotions): in-memory workbooks.
+    # Regression for the silent-fallthrough hazard — an envelope carrying an
+    # unrecognized third key used to be reclassified as legacy bare
+    # promotions, dropping financing from the build with no error.
+    print("convert_store_data.py self-test (Promotions envelope split):")
+
+    def _wb_with_promotions(rows):
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Promotions"
+        ws.append(["Promotions JSON"])
+        for r in rows:
+            ws.append([r])
+        return wb
+
+    promo_obj = {"scenarios": {"s1": {"items": []}}, "activeScenario": "s1"}
+    fin_obj = {"enabled": True, "plans": []}
+    envelope = json.dumps({"promotions": promo_obj, "financing": fin_obj},
+                          separators=(",", ":"))
+    check("build_promotions: two-key envelope splits into both slots",
+          build_promotions(_wb_with_promotions([envelope]))
+          == (promo_obj, fin_obj))
+    fin_only = json.dumps({"financing": fin_obj}, separators=(",", ":"))
+    check("build_promotions: financing-only envelope keeps financing",
+          build_promotions(_wb_with_promotions([fin_only])) == (None, fin_obj))
+    legacy = json.dumps(promo_obj, separators=(",", ":"))
+    check("build_promotions: legacy bare promotions block still lands as promotions",
+          build_promotions(_wb_with_promotions([legacy])) == (promo_obj, None))
+    three_key = json.dumps({"promotions": promo_obj, "financing": fin_obj,
+                            "urgency": {"enabled": False}},
+                           separators=(",", ":"))
+    try:
+        result = build_promotions(_wb_with_promotions([three_key]))
+        check("build_promotions: envelope + unknown key -> SystemExit "
+              f"(got {result!r} instead — financing silently dropped)", False)
+    except SystemExit as exc:
+        check("build_promotions: envelope + unknown key -> SystemExit",
+              True)
+        check("build_promotions: the refusal names the unknown key",
+              "urgency" in str(exc))
+    fin_plus_unknown = json.dumps({"financing": fin_obj, "extras": 1},
+                                  separators=(",", ":"))
+    try:
+        build_promotions(_wb_with_promotions([fin_plus_unknown]))
+        check("build_promotions: financing + unknown key cannot silently "
+              "lose financing", False)
+    except SystemExit:
+        check("build_promotions: financing + unknown key cannot silently "
+              "lose financing", True)
 
     print(f"\nSelf-test: {passed} passed, {failed} failed")
     return 0 if failed == 0 else 1

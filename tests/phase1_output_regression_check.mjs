@@ -61,7 +61,7 @@
 // A mutation that no longer applies (stale find-string) or that produces zero
 // divergence fails the suite — the pin must stay demonstrably load-bearing
 // for ordering, tier membership, thresholds, cap, back-fill, firmness,
-// locally-made weight, feature cap, top pick, priorities and accessories.
+// feature cap, top pick, priorities and accessories.
 
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { createHash } from "node:crypto";
@@ -74,8 +74,12 @@ const MATTRESSES = JSON.parse(readFileSync(join(root, "data", "mattresses.json")
 const QUIZ = JSON.parse(readFileSync(join(root, "data", "quiz.json"), "utf8"));
 const ACCESSORIES = JSON.parse(readFileSync(join(root, "data", "accessories.json"), "utf8"));
 
-const BASELINE_PATH = join(root, "tests", "fixtures", "phase1_output_baseline_85c5c10.json");
-const BASELINE_SHA256 = "ecef21c2fc44d1ef6e85b37eef349f42753e25f4c3fa34317091b524743aa067";
+// Baseline regenerated for the owner-approved Daybreak PR 1 scoring change
+// (2026-08-13): the locally-made +25 bonus and its availability match reason
+// were removed from calculateScores(). Generated from the engine as changed on
+// top of 31a7e79; supersedes phase1_output_baseline_85c5c10.json.
+const BASELINE_PATH = join(root, "tests", "fixtures", "phase1_output_baseline_daybreak_pr1.json");
+const BASELINE_SHA256 = "4aa0e7adf94d5ddc4b2c5a033934cf30b579b8368a58d7ab7fa1985f732eaad7";
 
 const WRITE_MODE = process.argv.includes("--write-baseline");
 
@@ -312,7 +316,7 @@ function runProfile(answers, lang, profileSrc = PROFILE_FN) {
 
 // ---------- snapshot ---------------------------------------------------------
 function buildSnapshot(overrides = {}) {
-  const snap = { baselineCommit: "85c5c10", scenarios: {} };
+  const snap = { baselineCommit: "daybreak-pr1@31a7e79", scenarios: {} };
   for (const [name, answers] of Object.entries(SCENARIOS)) {
     const en = runScores(answers, "en", overrides.calcSrc);
     const es = runScores(answers, "es", overrides.calcSrc);
@@ -391,7 +395,7 @@ check("fixture matches its pinned sha256 (LF-normalized)",
 const BASELINE = JSON.parse(BASELINE_RAW);
 
 // ---------- 2. the live engine reproduces the baseline exactly ---------------
-section("engine outputs match the Phase 1 baseline (85c5c10)");
+section("engine outputs match the Phase 1 baseline (daybreak_pr1)");
 const live = buildSnapshot();
 for (const name of Object.keys(SCENARIOS)) {
   const diffs = diffPaths(BASELINE.scenarios[name], live.scenarios[name], name);
@@ -465,8 +469,11 @@ const MUTATIONS = [
   { name: "firmness resolution ignores the answer", key: "calcSrc", src: CALC_FN,
     find: "answers['firmness'] !== undefined ? answers['firmness'] : firmnessQ.defaultValue",
     replace: "firmnessQ.defaultValue" },
-  { name: "locally-made bonus 25 -> 0", key: "calcSrc", src: CALC_FN,
-    find: "scores[m.id] += 25;", replace: "scores[m.id] += 0;" },
+  // The "locally-made bonus 25 -> 0" mutation retired with the bonus itself
+  // (owner-approved removal, Daybreak PR 1, 2026-08-13): the block no longer
+  // exists to mutate. Its absence is pinned by scoring_isolation_check.mjs
+  // (the engine may not reference locallyMade at all) and by this suite's
+  // baseline, which was regenerated from the bonus-free engine.
   { name: "feature cap 5 -> 3", key: "calcSrc", src: CALC_FN,
     find: "const FEATURE_CAP = 5;", replace: "const FEATURE_CAP = 3;" },
   { name: "top pick reads Silver instead of Gold", key: "showSrc", src: SHOW_RESULTS_FN,

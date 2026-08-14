@@ -58,6 +58,9 @@ const CONS = ["tests/construction_reveal_repair_check.mjs"];
 // ruled tray strings, selection/aria-pressed behavior, handler precedence,
 // and the wipe reset.
 const CMPE = ["tests/compare_entry_check.mjs"];
+// PR 1 integrity observer: the integrity suite owns the retired
+// availability claims and the RSA-panel wipe entry.
+const INTEGRITY = ["tests/integrity_repairs_check.mjs"];
 
 // ---------------------------------------------------------------------------
 // THE MANIFEST. [label, find, replace] — `find` may span lines; index.html is
@@ -680,6 +683,19 @@ const MUTATIONS = [
     'id="profileCta" onclick="window.startResultsReveal()" ontouchend="event.preventDefault();window.startResultsReveal();"',
     'id="profileCta" onclick="window.compareReviewFinalists()" ontouchend="event.preventDefault();window.compareReviewFinalists();"',
     PRIORITIES],
+
+  // --- PR 1 integrity repairs (2026-08-13) ---------------------------------
+  // The deployment has no inventory data source, so a returning stock claim
+  // is a fabricated claim; the RSA-panel entry reverting to a class strip is
+  // the wipe no-op this repair removed.
+  ["a hardcoded stock claim returns to the top-pick card",
+    "'<div class=\"noct-toppick-actions\">'\n        +     '<div class=\"noct-card-action-cluster\">'",
+    "'<div class=\"noct-toppick-actions\">'\n        +     '<div class=\"noct-toppick-stock\">In stock</div>'\n        +     '<div class=\"noct-card-action-cluster\">'",
+    INTEGRITY],
+  ["the RSA panel wipe entry reverts to the is-open class strip",
+    "{ id: 'hf2RsaPanel', hiddenAttr: true },",
+    "{ id: 'hf2RsaPanel', remove: ['is-open'] },",
+    INTEGRITY],
 
 ];
 

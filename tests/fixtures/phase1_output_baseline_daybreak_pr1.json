@@ -1,5 +1,5 @@
 {
-  "baselineCommit": "85c5c10",
+  "baselineCommit": "daybreak-pr1@31a7e79",
   "scenarios": {
     "s1_solo_back_firm_no_issues": {
       "answers": {
@@ -21,203 +21,141 @@
       },
       "firmnessResolved": 8,
       "scores": {
-        "g1": 71,
-        "g2": 5,
-        "g3": 70,
+        "g1": 46,
+        "g2": -20,
+        "g3": 45,
         "g4": -20,
         "g5": 27,
-        "g6": 5,
-        "g7": 52,
-        "g8": 79,
+        "g6": -20,
+        "g7": 27,
+        "g8": 54,
         "g9": 38,
-        "s1": 70,
-        "s2": 80,
-        "s3": 6,
-        "s4": 70,
-        "s5": 69,
-        "s6": 52,
-        "s7": 5,
-        "s8": 70,
-        "s9": 52,
-        "s10": 80,
-        "b1": 5,
-        "b2": 69,
+        "s1": 45,
+        "s2": 55,
+        "s3": -19,
+        "s4": 45,
+        "s5": 44,
+        "s6": 27,
+        "s7": -20,
+        "s8": 45,
+        "s9": 27,
+        "s10": 55,
+        "b1": -20,
+        "b2": 44,
         "b3": 27,
         "b4": 44,
-        "b5": 6,
-        "b6": 80,
-        "b7": 54
+        "b5": -19,
+        "b6": 55,
+        "b7": 29
       },
       "matchReasons": {
         "en": {
           "g1": [
-            "Matches your firmness preference (8/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (8/10)"
           ],
-          "g2": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "g2": [],
           "g3": [
-            "Matches your firmness preference (8/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (8/10)"
           ],
           "g4": [],
           "g5": [],
-          "g6": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
-          "g7": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "g6": [],
+          "g7": [],
           "g8": [
-            "Matches your firmness preference (8/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (8/10)"
           ],
           "g9": [
             "Close to your preferred firmness"
           ],
           "s1": [
-            "Matches your firmness preference (8/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (8/10)"
           ],
           "s2": [
-            "Matches your firmness preference (8/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (8/10)"
           ],
-          "s3": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "s3": [],
           "s4": [
-            "Matches your firmness preference (8/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (8/10)"
           ],
           "s5": [
-            "Matches your firmness preference (8/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (8/10)"
           ],
-          "s6": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
-          "s7": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "s6": [],
+          "s7": [],
           "s8": [
-            "Matches your firmness preference (8/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (8/10)"
           ],
-          "s9": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "s9": [],
           "s10": [
-            "Matches your firmness preference (8/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (8/10)"
           ],
-          "b1": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "b1": [],
           "b2": [
-            "Matches your firmness preference (8/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (8/10)"
           ],
           "b3": [],
           "b4": [
             "Matches your firmness preference (8/10)"
           ],
-          "b5": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "b5": [],
           "b6": [
-            "Matches your firmness preference (8/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (8/10)"
           ],
-          "b7": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ]
+          "b7": []
         },
         "es": {
           "g1": [
-            "Coincide con tu preferencia de firmeza (8/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (8/10)"
           ],
-          "g2": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "g2": [],
           "g3": [
-            "Coincide con tu preferencia de firmeza (8/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (8/10)"
           ],
           "g4": [],
           "g5": [],
-          "g6": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
-          "g7": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "g6": [],
+          "g7": [],
           "g8": [
-            "Coincide con tu preferencia de firmeza (8/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (8/10)"
           ],
           "g9": [
             "Cerca de tu firmeza preferida"
           ],
           "s1": [
-            "Coincide con tu preferencia de firmeza (8/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (8/10)"
           ],
           "s2": [
-            "Coincide con tu preferencia de firmeza (8/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (8/10)"
           ],
-          "s3": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "s3": [],
           "s4": [
-            "Coincide con tu preferencia de firmeza (8/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (8/10)"
           ],
           "s5": [
-            "Coincide con tu preferencia de firmeza (8/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (8/10)"
           ],
-          "s6": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
-          "s7": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "s6": [],
+          "s7": [],
           "s8": [
-            "Coincide con tu preferencia de firmeza (8/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (8/10)"
           ],
-          "s9": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "s9": [],
           "s10": [
-            "Coincide con tu preferencia de firmeza (8/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (8/10)"
           ],
-          "b1": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "b1": [],
           "b2": [
-            "Coincide con tu preferencia de firmeza (8/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (8/10)"
           ],
           "b3": [],
           "b4": [
             "Coincide con tu preferencia de firmeza (8/10)"
           ],
-          "b5": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "b5": [],
           "b6": [
-            "Coincide con tu preferencia de firmeza (8/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (8/10)"
           ],
-          "b7": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ]
+          "b7": []
         }
       },
       "results": {
@@ -225,60 +163,60 @@
           "gold": [
             {
               "id": "g8",
-              "score": 79,
+              "score": 54,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
               "id": "g1",
-              "score": 71,
-              "pct": 90,
+              "score": 46,
+              "pct": 85,
               "meetsMatchThreshold": true
             },
             {
               "id": "g3",
-              "score": 70,
-              "pct": 89,
+              "score": 45,
+              "pct": 83,
               "meetsMatchThreshold": true
             }
           ],
           "silver": [
             {
               "id": "s2",
-              "score": 80,
+              "score": 55,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
               "id": "s10",
-              "score": 80,
+              "score": 55,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
               "id": "s1",
-              "score": 70,
-              "pct": 88,
+              "score": 45,
+              "pct": 82,
               "meetsMatchThreshold": true
             }
           ],
           "bronze": [
             {
               "id": "b6",
-              "score": 80,
+              "score": 55,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
               "id": "b2",
-              "score": 69,
-              "pct": 86,
+              "score": 44,
+              "pct": 80,
               "meetsMatchThreshold": true
             },
             {
-              "id": "b7",
-              "score": 54,
-              "pct": 68,
+              "id": "b4",
+              "score": 44,
+              "pct": 80,
               "meetsMatchThreshold": true
             }
           ]
@@ -303,7 +241,7 @@
             "name": "The Roma",
             "brand": "Chattam & Wells",
             "subBrand": "Roma",
-            "matchPct": 90,
+            "matchPct": 85,
             "meetsMatchThreshold": true,
             "imageUrl": "images/mattresses/the roma.jpg"
           },
@@ -311,7 +249,7 @@
             "name": "The Palermo",
             "brand": "Chattam & Wells",
             "subBrand": "Palermo",
-            "matchPct": 89,
+            "matchPct": 83,
             "meetsMatchThreshold": true,
             "imageUrl": "images/mattresses/the palermo.jpg"
           }
@@ -728,45 +666,40 @@
       },
       "firmnessResolved": 4,
       "scores": {
-        "g1": 56,
-        "g2": 73,
-        "g3": 56,
+        "g1": 31,
+        "g2": 48,
+        "g3": 31,
         "g4": 38,
         "g5": 55,
-        "g6": 73,
-        "g7": 75,
-        "g8": 24,
+        "g6": 48,
+        "g7": 50,
+        "g8": -1,
         "g9": 45,
-        "s1": 56,
-        "s2": 26,
-        "s3": 75,
-        "s4": 56,
-        "s5": 59,
-        "s6": 80,
-        "s7": 78,
-        "s8": 56,
-        "s9": 75,
-        "s10": 26,
-        "b1": 68,
-        "b2": 49,
+        "s1": 31,
+        "s2": 1,
+        "s3": 50,
+        "s4": 31,
+        "s5": 34,
+        "s6": 55,
+        "s7": 53,
+        "s8": 31,
+        "s9": 50,
+        "s10": 1,
+        "b1": 43,
+        "b2": 24,
         "b3": 50,
         "b4": 29,
-        "b5": 70,
-        "b6": 26,
-        "b7": 72
+        "b5": 45,
+        "b6": 1,
+        "b7": 47
       },
       "matchReasons": {
         "en": {
-          "g1": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "g1": [],
           "g2": [
-            "Matches your firmness preference (4/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (4/10)"
           ],
-          "g3": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "g3": [],
           "g4": [
             "Close to your preferred firmness"
           ],
@@ -774,87 +707,55 @@
             "Matches your firmness preference (4/10)"
           ],
           "g6": [
-            "Matches your firmness preference (4/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (4/10)"
           ],
           "g7": [
-            "Matches your firmness preference (4/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (4/10)"
           ],
-          "g8": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "g8": [],
           "g9": [
             "Close to your preferred firmness"
           ],
-          "s1": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
-          "s2": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "s1": [],
+          "s2": [],
           "s3": [
-            "Matches your firmness preference (4/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (4/10)"
           ],
-          "s4": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
-          "s5": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "s4": [],
+          "s5": [],
           "s6": [
-            "Matches your firmness preference (4/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (4/10)"
           ],
           "s7": [
-            "Matches your firmness preference (4/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (4/10)"
           ],
-          "s8": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "s8": [],
           "s9": [
-            "Matches your firmness preference (4/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (4/10)"
           ],
-          "s10": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "s10": [],
           "b1": [
-            "Matches your firmness preference (4/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (4/10)"
           ],
-          "b2": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "b2": [],
           "b3": [
             "Matches your firmness preference (4/10)"
           ],
           "b4": [],
           "b5": [
-            "Matches your firmness preference (4/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (4/10)"
           ],
-          "b6": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "b6": [],
           "b7": [
-            "Matches your firmness preference (4/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (4/10)"
           ]
         },
         "es": {
-          "g1": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "g1": [],
           "g2": [
-            "Coincide con tu preferencia de firmeza (4/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (4/10)"
           ],
-          "g3": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "g3": [],
           "g4": [
             "Cerca de tu firmeza preferida"
           ],
@@ -862,74 +763,47 @@
             "Coincide con tu preferencia de firmeza (4/10)"
           ],
           "g6": [
-            "Coincide con tu preferencia de firmeza (4/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (4/10)"
           ],
           "g7": [
-            "Coincide con tu preferencia de firmeza (4/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (4/10)"
           ],
-          "g8": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "g8": [],
           "g9": [
             "Cerca de tu firmeza preferida"
           ],
-          "s1": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
-          "s2": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "s1": [],
+          "s2": [],
           "s3": [
-            "Coincide con tu preferencia de firmeza (4/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (4/10)"
           ],
-          "s4": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
-          "s5": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "s4": [],
+          "s5": [],
           "s6": [
-            "Coincide con tu preferencia de firmeza (4/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (4/10)"
           ],
           "s7": [
-            "Coincide con tu preferencia de firmeza (4/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (4/10)"
           ],
-          "s8": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "s8": [],
           "s9": [
-            "Coincide con tu preferencia de firmeza (4/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (4/10)"
           ],
-          "s10": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "s10": [],
           "b1": [
-            "Coincide con tu preferencia de firmeza (4/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (4/10)"
           ],
-          "b2": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "b2": [],
           "b3": [
             "Coincide con tu preferencia de firmeza (4/10)"
           ],
           "b4": [],
           "b5": [
-            "Coincide con tu preferencia de firmeza (4/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (4/10)"
           ],
-          "b6": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "b6": [],
           "b7": [
-            "Coincide con tu preferencia de firmeza (4/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (4/10)"
           ]
         }
       },
@@ -937,78 +811,86 @@
         "tierData": {
           "gold": [
             {
-              "id": "g7",
-              "score": 75,
+              "id": "g5",
+              "score": 55,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
-              "id": "g2",
-              "score": 73,
-              "pct": 97,
+              "id": "g7",
+              "score": 50,
+              "pct": 91,
               "meetsMatchThreshold": true
             },
             {
-              "id": "g6",
-              "score": 73,
-              "pct": 97,
+              "id": "g2",
+              "score": 48,
+              "pct": 87,
               "meetsMatchThreshold": true
             }
           ],
           "silver": [
             {
               "id": "s6",
-              "score": 80,
+              "score": 55,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
               "id": "s7",
-              "score": 78,
-              "pct": 98,
+              "score": 53,
+              "pct": 96,
               "meetsMatchThreshold": true
             },
             {
               "id": "s3",
-              "score": 75,
-              "pct": 94,
+              "score": 50,
+              "pct": 91,
               "meetsMatchThreshold": true
             }
           ],
           "bronze": [
             {
-              "id": "b7",
-              "score": 72,
+              "id": "b3",
+              "score": 50,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
-              "id": "b5",
-              "score": 70,
-              "pct": 97,
+              "id": "b7",
+              "score": 47,
+              "pct": 94,
               "meetsMatchThreshold": true
             },
             {
-              "id": "b1",
-              "score": 68,
-              "pct": 94,
+              "id": "b5",
+              "score": 45,
+              "pct": 90,
               "meetsMatchThreshold": true
             }
           ]
         },
         "topPick": {
-          "name": "Reserve Mayfair Medium",
-          "brand": "Restonic",
+          "name": "Tempur-ProBreeze 2.0 Medium Hybrid",
+          "brand": "Tempur-Pedic",
           "tier": "gold",
           "matchPct": 100,
           "meetsMatchThreshold": true
         },
         "allMatches": [
           {
+            "name": "Tempur-ProBreeze 2.0 Medium Hybrid",
+            "brand": "Tempur-Pedic",
+            "subBrand": "ProBreeze",
+            "matchPct": 100,
+            "meetsMatchThreshold": true,
+            "imageUrl": "images/mattresses/tempur-probreeze 2.0 medium hybrid.jpg"
+          },
+          {
             "name": "Reserve Mayfair Medium",
             "brand": "Restonic",
             "subBrand": "Reserve",
-            "matchPct": 100,
+            "matchPct": 91,
             "meetsMatchThreshold": true,
             "imageUrl": "images/mattresses/reserve mayfair medium.jpg"
           },
@@ -1016,17 +898,9 @@
             "name": "The Saint Pierre",
             "brand": "Chattam & Wells",
             "subBrand": "Saint Pierre",
-            "matchPct": 97,
+            "matchPct": 87,
             "meetsMatchThreshold": true,
             "imageUrl": "images/mattresses/the saint pierre.jpg"
-          },
-          {
-            "name": "Reserve Mayfair Plush",
-            "brand": "Restonic",
-            "subBrand": "Reserve",
-            "matchPct": 97,
-            "meetsMatchThreshold": true,
-            "imageUrl": "images/mattresses/reserve mayfair plush.jpg"
           }
         ]
       },
@@ -1449,267 +1323,203 @@
       },
       "firmnessResolved": 2,
       "scores": {
-        "g1": 21,
-        "g2": 77,
-        "g3": 19,
+        "g1": -4,
+        "g2": 52,
+        "g3": -6,
         "g4": 53,
         "g5": 29,
-        "g6": 77,
-        "g7": 59,
-        "g8": 19,
+        "g6": 52,
+        "g7": 34,
+        "g8": -6,
         "g9": 1,
-        "s1": 19,
-        "s2": 14,
-        "s3": 72,
-        "s4": 19,
-        "s5": 14,
-        "s6": 54,
-        "s7": 72,
-        "s8": 14,
-        "s9": 54,
-        "s10": 19,
-        "b1": 68,
-        "b2": 15,
+        "s1": -6,
+        "s2": -11,
+        "s3": 47,
+        "s4": -6,
+        "s5": -11,
+        "s6": 29,
+        "s7": 47,
+        "s8": -11,
+        "s9": 29,
+        "s10": -6,
+        "b1": 43,
+        "b2": -10,
         "b3": 34,
         "b4": -6,
-        "b5": 68,
-        "b6": 14,
-        "b7": 52
+        "b5": 43,
+        "b6": -11,
+        "b7": 27
       },
       "matchReasons": {
         "en": {
-          "g1": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "g1": [],
           "g2": [
-            "Matches your firmness preference (2/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (2/10)"
           ],
-          "g3": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "g3": [],
           "g4": [
             "Matches your firmness preference (2/10)"
           ],
           "g5": [],
           "g6": [
-            "Matches your firmness preference (2/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (2/10)"
           ],
-          "g7": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
-          "g8": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "g7": [],
+          "g8": [],
           "g9": [],
-          "s1": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
-          "s2": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "s1": [],
+          "s2": [],
           "s3": [
-            "Matches your firmness preference (2/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (2/10)"
           ],
-          "s4": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
-          "s5": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
-          "s6": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "s4": [],
+          "s5": [],
+          "s6": [],
           "s7": [
-            "Matches your firmness preference (2/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (2/10)"
           ],
-          "s8": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
-          "s9": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
-          "s10": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "s8": [],
+          "s9": [],
+          "s10": [],
           "b1": [
-            "Matches your firmness preference (2/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (2/10)"
           ],
-          "b2": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "b2": [],
           "b3": [],
           "b4": [],
           "b5": [
-            "Matches your firmness preference (2/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (2/10)"
           ],
-          "b6": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
-          "b7": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ]
+          "b6": [],
+          "b7": []
         },
         "es": {
-          "g1": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "g1": [],
           "g2": [
-            "Coincide con tu preferencia de firmeza (2/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (2/10)"
           ],
-          "g3": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "g3": [],
           "g4": [
             "Coincide con tu preferencia de firmeza (2/10)"
           ],
           "g5": [],
           "g6": [
-            "Coincide con tu preferencia de firmeza (2/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (2/10)"
           ],
-          "g7": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
-          "g8": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "g7": [],
+          "g8": [],
           "g9": [],
-          "s1": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
-          "s2": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "s1": [],
+          "s2": [],
           "s3": [
-            "Coincide con tu preferencia de firmeza (2/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (2/10)"
           ],
-          "s4": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
-          "s5": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
-          "s6": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "s4": [],
+          "s5": [],
+          "s6": [],
           "s7": [
-            "Coincide con tu preferencia de firmeza (2/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (2/10)"
           ],
-          "s8": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
-          "s9": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
-          "s10": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "s8": [],
+          "s9": [],
+          "s10": [],
           "b1": [
-            "Coincide con tu preferencia de firmeza (2/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (2/10)"
           ],
-          "b2": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "b2": [],
           "b3": [],
           "b4": [],
           "b5": [
-            "Coincide con tu preferencia de firmeza (2/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (2/10)"
           ],
-          "b6": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
-          "b7": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ]
+          "b6": [],
+          "b7": []
         }
       },
       "results": {
         "tierData": {
           "gold": [
             {
-              "id": "g2",
-              "score": 77,
+              "id": "g4",
+              "score": 53,
               "pct": 100,
+              "meetsMatchThreshold": true
+            },
+            {
+              "id": "g2",
+              "score": 52,
+              "pct": 98,
               "meetsMatchThreshold": true
             },
             {
               "id": "g6",
-              "score": 77,
-              "pct": 100,
-              "meetsMatchThreshold": true
-            },
-            {
-              "id": "g7",
-              "score": 59,
-              "pct": 77,
+              "score": 52,
+              "pct": 98,
               "meetsMatchThreshold": true
             }
           ],
           "silver": [
             {
               "id": "s3",
-              "score": 72,
+              "score": 47,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
               "id": "s7",
-              "score": 72,
+              "score": 47,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
               "id": "s6",
-              "score": 54,
-              "pct": 75,
+              "score": 29,
+              "pct": 62,
               "meetsMatchThreshold": true
             }
           ],
           "bronze": [
             {
               "id": "b1",
-              "score": 68,
+              "score": 43,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
               "id": "b5",
-              "score": 68,
+              "score": 43,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
-              "id": "b7",
-              "score": 52,
-              "pct": 76,
+              "id": "b3",
+              "score": 34,
+              "pct": 79,
               "meetsMatchThreshold": true
             }
           ]
         },
         "topPick": {
-          "name": "The Saint Pierre",
-          "brand": "Chattam & Wells",
+          "name": "Tempur-LuxeBreeze 2.0 Soft",
+          "brand": "Tempur-Pedic",
           "tier": "gold",
           "matchPct": 100,
           "meetsMatchThreshold": true
         },
         "allMatches": [
           {
+            "name": "Tempur-LuxeBreeze 2.0 Soft",
+            "brand": "Tempur-Pedic",
+            "subBrand": "LuxeBreeze",
+            "matchPct": 100,
+            "meetsMatchThreshold": true,
+            "imageUrl": "images/mattresses/tempur-luxebreeze 2.0 soft.jpg"
+          },
+          {
             "name": "The Saint Pierre",
             "brand": "Chattam & Wells",
             "subBrand": "Saint Pierre",
-            "matchPct": 100,
+            "matchPct": 98,
             "meetsMatchThreshold": true,
             "imageUrl": "images/mattresses/the saint pierre.jpg"
           },
@@ -1717,17 +1527,9 @@
             "name": "Reserve Mayfair Plush",
             "brand": "Restonic",
             "subBrand": "Reserve",
-            "matchPct": 100,
+            "matchPct": 98,
             "meetsMatchThreshold": true,
             "imageUrl": "images/mattresses/reserve mayfair plush.jpg"
-          },
-          {
-            "name": "Reserve Mayfair Medium",
-            "brand": "Restonic",
-            "subBrand": "Reserve",
-            "matchPct": 77,
-            "meetsMatchThreshold": true,
-            "imageUrl": "images/mattresses/reserve mayfair medium.jpg"
           }
         ]
       },
@@ -2161,203 +1963,141 @@
       },
       "firmnessResolved": 8,
       "scores": {
-        "g1": 73,
-        "g2": 11,
-        "g3": 73,
+        "g1": 48,
+        "g2": -14,
+        "g3": 48,
         "g4": -19,
         "g5": 26,
-        "g6": 11,
-        "g7": 53,
-        "g8": 83,
+        "g6": -14,
+        "g7": 28,
+        "g8": 58,
         "g9": 36,
-        "s1": 73,
-        "s2": 81,
-        "s3": 9,
-        "s4": 73,
-        "s5": 71,
-        "s6": 51,
-        "s7": 9,
-        "s8": 71,
-        "s9": 51,
-        "s10": 83,
-        "b1": 6,
-        "b2": 70,
+        "s1": 48,
+        "s2": 56,
+        "s3": -16,
+        "s4": 48,
+        "s5": 46,
+        "s6": 26,
+        "s7": -16,
+        "s8": 46,
+        "s9": 26,
+        "s10": 58,
+        "b1": -19,
+        "b2": 45,
         "b3": 28,
         "b4": 48,
-        "b5": 6,
-        "b6": 81,
-        "b7": 48
+        "b5": -19,
+        "b6": 56,
+        "b7": 23
       },
       "matchReasons": {
         "en": {
           "g1": [
-            "Matches your firmness preference (8/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (8/10)"
           ],
-          "g2": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "g2": [],
           "g3": [
-            "Matches your firmness preference (8/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (8/10)"
           ],
           "g4": [],
           "g5": [],
-          "g6": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
-          "g7": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "g6": [],
+          "g7": [],
           "g8": [
-            "Matches your firmness preference (8/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (8/10)"
           ],
           "g9": [
             "Close to your preferred firmness"
           ],
           "s1": [
-            "Matches your firmness preference (8/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (8/10)"
           ],
           "s2": [
-            "Matches your firmness preference (8/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (8/10)"
           ],
-          "s3": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "s3": [],
           "s4": [
-            "Matches your firmness preference (8/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (8/10)"
           ],
           "s5": [
-            "Matches your firmness preference (8/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (8/10)"
           ],
-          "s6": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
-          "s7": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "s6": [],
+          "s7": [],
           "s8": [
-            "Matches your firmness preference (8/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (8/10)"
           ],
-          "s9": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "s9": [],
           "s10": [
-            "Matches your firmness preference (8/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (8/10)"
           ],
-          "b1": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "b1": [],
           "b2": [
-            "Matches your firmness preference (8/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (8/10)"
           ],
           "b3": [],
           "b4": [
             "Matches your firmness preference (8/10)"
           ],
-          "b5": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "b5": [],
           "b6": [
-            "Matches your firmness preference (8/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (8/10)"
           ],
-          "b7": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ]
+          "b7": []
         },
         "es": {
           "g1": [
-            "Coincide con tu preferencia de firmeza (8/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (8/10)"
           ],
-          "g2": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "g2": [],
           "g3": [
-            "Coincide con tu preferencia de firmeza (8/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (8/10)"
           ],
           "g4": [],
           "g5": [],
-          "g6": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
-          "g7": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "g6": [],
+          "g7": [],
           "g8": [
-            "Coincide con tu preferencia de firmeza (8/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (8/10)"
           ],
           "g9": [
             "Cerca de tu firmeza preferida"
           ],
           "s1": [
-            "Coincide con tu preferencia de firmeza (8/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (8/10)"
           ],
           "s2": [
-            "Coincide con tu preferencia de firmeza (8/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (8/10)"
           ],
-          "s3": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "s3": [],
           "s4": [
-            "Coincide con tu preferencia de firmeza (8/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (8/10)"
           ],
           "s5": [
-            "Coincide con tu preferencia de firmeza (8/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (8/10)"
           ],
-          "s6": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
-          "s7": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "s6": [],
+          "s7": [],
           "s8": [
-            "Coincide con tu preferencia de firmeza (8/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (8/10)"
           ],
-          "s9": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "s9": [],
           "s10": [
-            "Coincide con tu preferencia de firmeza (8/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (8/10)"
           ],
-          "b1": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "b1": [],
           "b2": [
-            "Coincide con tu preferencia de firmeza (8/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (8/10)"
           ],
           "b3": [],
           "b4": [
             "Coincide con tu preferencia de firmeza (8/10)"
           ],
-          "b5": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "b5": [],
           "b6": [
-            "Coincide con tu preferencia de firmeza (8/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (8/10)"
           ],
-          "b7": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ]
+          "b7": []
         }
       },
       "results": {
@@ -2365,54 +2105,60 @@
           "gold": [
             {
               "id": "g8",
-              "score": 83,
+              "score": 58,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
               "id": "g1",
-              "score": 73,
-              "pct": 88,
+              "score": 48,
+              "pct": 83,
               "meetsMatchThreshold": true
             },
             {
               "id": "g3",
-              "score": 73,
-              "pct": 88,
+              "score": 48,
+              "pct": 83,
               "meetsMatchThreshold": true
             }
           ],
           "silver": [
             {
               "id": "s10",
-              "score": 83,
+              "score": 58,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
               "id": "s2",
-              "score": 81,
-              "pct": 98,
+              "score": 56,
+              "pct": 97,
               "meetsMatchThreshold": true
             },
             {
               "id": "s1",
-              "score": 73,
-              "pct": 88,
+              "score": 48,
+              "pct": 83,
               "meetsMatchThreshold": true
             }
           ],
           "bronze": [
             {
               "id": "b6",
-              "score": 81,
+              "score": 56,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
-              "id": "b2",
-              "score": 70,
+              "id": "b4",
+              "score": 48,
               "pct": 86,
+              "meetsMatchThreshold": true
+            },
+            {
+              "id": "b2",
+              "score": 45,
+              "pct": 80,
               "meetsMatchThreshold": true
             }
           ]
@@ -2437,7 +2183,7 @@
             "name": "The Roma",
             "brand": "Chattam & Wells",
             "subBrand": "Roma",
-            "matchPct": 88,
+            "matchPct": 83,
             "meetsMatchThreshold": true,
             "imageUrl": "images/mattresses/the roma.jpg"
           },
@@ -2445,7 +2191,7 @@
             "name": "The Palermo",
             "brand": "Chattam & Wells",
             "subBrand": "Palermo",
-            "matchPct": 88,
+            "matchPct": 83,
             "meetsMatchThreshold": true,
             "imageUrl": "images/mattresses/the palermo.jpg"
           }
@@ -2873,110 +2619,89 @@
       },
       "firmnessResolved": 5,
       "scores": {
-        "g1": 61,
-        "g2": 58,
-        "g3": 61,
+        "g1": 36,
+        "g2": 33,
+        "g3": 36,
         "g4": 20,
         "g5": 60,
-        "g6": 58,
-        "g7": 85,
-        "g8": 50,
+        "g6": 33,
+        "g7": 60,
+        "g8": 25,
         "g9": 50,
-        "s1": 61,
-        "s2": 51,
-        "s3": 59,
-        "s4": 61,
-        "s5": 60,
-        "s6": 85,
-        "s7": 58,
-        "s8": 61,
-        "s9": 85,
-        "s10": 51,
-        "b1": 55,
-        "b2": 57,
+        "s1": 36,
+        "s2": 26,
+        "s3": 34,
+        "s4": 36,
+        "s5": 35,
+        "s6": 60,
+        "s7": 33,
+        "s8": 36,
+        "s9": 60,
+        "s10": 26,
+        "b1": 30,
+        "b2": 32,
         "b3": 60,
         "b4": 35,
-        "b5": 56,
-        "b6": 51,
-        "b7": 83
+        "b5": 31,
+        "b6": 26,
+        "b7": 58
       },
       "matchReasons": {
         "en": {
           "g1": [
-            "Close to your preferred firmness",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Close to your preferred firmness"
           ],
           "g2": [
-            "Close to your preferred firmness",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Close to your preferred firmness"
           ],
           "g3": [
-            "Close to your preferred firmness",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Close to your preferred firmness"
           ],
           "g4": [],
           "g5": [
             "Matches your firmness preference (5/10)"
           ],
           "g6": [
-            "Close to your preferred firmness",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Close to your preferred firmness"
           ],
           "g7": [
-            "Matches your firmness preference (5/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (5/10)"
           ],
-          "g8": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "g8": [],
           "g9": [
             "Matches your firmness preference (5/10)"
           ],
           "s1": [
-            "Close to your preferred firmness",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Close to your preferred firmness"
           ],
-          "s2": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "s2": [],
           "s3": [
-            "Close to your preferred firmness",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Close to your preferred firmness"
           ],
           "s4": [
-            "Close to your preferred firmness",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Close to your preferred firmness"
           ],
           "s5": [
-            "Close to your preferred firmness",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Close to your preferred firmness"
           ],
           "s6": [
-            "Matches your firmness preference (5/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (5/10)"
           ],
           "s7": [
-            "Close to your preferred firmness",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Close to your preferred firmness"
           ],
           "s8": [
-            "Close to your preferred firmness",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Close to your preferred firmness"
           ],
           "s9": [
-            "Matches your firmness preference (5/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (5/10)"
           ],
-          "s10": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "s10": [],
           "b1": [
-            "Close to your preferred firmness",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Close to your preferred firmness"
           ],
           "b2": [
-            "Close to your preferred firmness",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Close to your preferred firmness"
           ],
           "b3": [
             "Matches your firmness preference (5/10)"
@@ -2985,93 +2710,68 @@
             "Close to your preferred firmness"
           ],
           "b5": [
-            "Close to your preferred firmness",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Close to your preferred firmness"
           ],
-          "b6": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "b6": [],
           "b7": [
-            "Matches your firmness preference (5/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (5/10)"
           ]
         },
         "es": {
           "g1": [
-            "Cerca de tu firmeza preferida",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Cerca de tu firmeza preferida"
           ],
           "g2": [
-            "Cerca de tu firmeza preferida",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Cerca de tu firmeza preferida"
           ],
           "g3": [
-            "Cerca de tu firmeza preferida",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Cerca de tu firmeza preferida"
           ],
           "g4": [],
           "g5": [
             "Coincide con tu preferencia de firmeza (5/10)"
           ],
           "g6": [
-            "Cerca de tu firmeza preferida",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Cerca de tu firmeza preferida"
           ],
           "g7": [
-            "Coincide con tu preferencia de firmeza (5/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (5/10)"
           ],
-          "g8": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "g8": [],
           "g9": [
             "Coincide con tu preferencia de firmeza (5/10)"
           ],
           "s1": [
-            "Cerca de tu firmeza preferida",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Cerca de tu firmeza preferida"
           ],
-          "s2": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "s2": [],
           "s3": [
-            "Cerca de tu firmeza preferida",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Cerca de tu firmeza preferida"
           ],
           "s4": [
-            "Cerca de tu firmeza preferida",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Cerca de tu firmeza preferida"
           ],
           "s5": [
-            "Cerca de tu firmeza preferida",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Cerca de tu firmeza preferida"
           ],
           "s6": [
-            "Coincide con tu preferencia de firmeza (5/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (5/10)"
           ],
           "s7": [
-            "Cerca de tu firmeza preferida",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Cerca de tu firmeza preferida"
           ],
           "s8": [
-            "Cerca de tu firmeza preferida",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Cerca de tu firmeza preferida"
           ],
           "s9": [
-            "Coincide con tu preferencia de firmeza (5/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (5/10)"
           ],
-          "s10": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "s10": [],
           "b1": [
-            "Cerca de tu firmeza preferida",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Cerca de tu firmeza preferida"
           ],
           "b2": [
-            "Cerca de tu firmeza preferida",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Cerca de tu firmeza preferida"
           ],
           "b3": [
             "Coincide con tu preferencia de firmeza (5/10)"
@@ -3080,15 +2780,11 @@
             "Cerca de tu firmeza preferida"
           ],
           "b5": [
-            "Cerca de tu firmeza preferida",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Cerca de tu firmeza preferida"
           ],
-          "b6": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "b6": [],
           "b7": [
-            "Coincide con tu preferencia de firmeza (5/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (5/10)"
           ]
         }
       },
@@ -3096,73 +2792,75 @@
         "tierData": {
           "gold": [
             {
-              "id": "g7",
-              "score": 85,
+              "id": "g5",
+              "score": 60,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
-              "id": "g1",
-              "score": 61,
-              "pct": 72,
+              "id": "g7",
+              "score": 60,
+              "pct": 100,
               "meetsMatchThreshold": true
             },
             {
-              "id": "g3",
-              "score": 61,
-              "pct": 72,
+              "id": "g9",
+              "score": 50,
+              "pct": 83,
               "meetsMatchThreshold": true
             }
           ],
           "silver": [
             {
               "id": "s6",
-              "score": 85,
+              "score": 60,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
               "id": "s9",
-              "score": 85,
+              "score": 60,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
               "id": "s1",
-              "score": 61,
-              "pct": 72,
+              "score": 36,
+              "pct": 60,
               "meetsMatchThreshold": true
             }
           ],
           "bronze": [
             {
-              "id": "b7",
-              "score": 83,
+              "id": "b3",
+              "score": 60,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
-              "id": "b3",
-              "score": 60,
-              "pct": 72,
-              "meetsMatchThreshold": true
-            },
-            {
-              "id": "b2",
-              "score": 57,
-              "pct": 69,
+              "id": "b7",
+              "score": 58,
+              "pct": 97,
               "meetsMatchThreshold": true
             }
           ]
         },
         "topPick": {
-          "name": "Reserve Mayfair Medium",
-          "brand": "Restonic",
+          "name": "Tempur-ProBreeze 2.0 Medium Hybrid",
+          "brand": "Tempur-Pedic",
           "tier": "gold",
           "matchPct": 100,
           "meetsMatchThreshold": true
         },
         "allMatches": [
+          {
+            "name": "Tempur-ProBreeze 2.0 Medium Hybrid",
+            "brand": "Tempur-Pedic",
+            "subBrand": "ProBreeze",
+            "matchPct": 100,
+            "meetsMatchThreshold": true,
+            "imageUrl": "images/mattresses/tempur-probreeze 2.0 medium hybrid.jpg"
+          },
           {
             "name": "Reserve Mayfair Medium",
             "brand": "Restonic",
@@ -3172,20 +2870,12 @@
             "imageUrl": "images/mattresses/reserve mayfair medium.jpg"
           },
           {
-            "name": "The Roma",
-            "brand": "Chattam & Wells",
-            "subBrand": "Roma",
-            "matchPct": 72,
+            "name": "Copper Cushion Firm",
+            "brand": "Spring Air",
+            "subBrand": "Copper",
+            "matchPct": 83,
             "meetsMatchThreshold": true,
-            "imageUrl": "images/mattresses/the roma.jpg"
-          },
-          {
-            "name": "The Palermo",
-            "brand": "Chattam & Wells",
-            "subBrand": "Palermo",
-            "matchPct": 72,
-            "meetsMatchThreshold": true,
-            "imageUrl": "images/mattresses/the palermo.jpg"
+            "imageUrl": "images/mattresses/copper cushion firm.jpg"
           }
         ]
       },
@@ -3612,45 +3302,40 @@
       },
       "firmnessResolved": 3,
       "scores": {
-        "g1": 26,
-        "g2": 82,
-        "g3": 26,
+        "g1": 1,
+        "g2": 57,
+        "g3": 1,
         "g4": 47,
         "g5": 35,
-        "g6": 82,
-        "g7": 60,
-        "g8": 14,
+        "g6": 57,
+        "g7": 35,
+        "g8": -11,
         "g9": 25,
-        "s1": 26,
-        "s2": 16,
-        "s3": 84,
-        "s4": 26,
-        "s5": 24,
-        "s6": 60,
-        "s7": 82,
-        "s8": 26,
-        "s9": 60,
-        "s10": 16,
-        "b1": 82,
-        "b2": 24,
+        "s1": 1,
+        "s2": -9,
+        "s3": 59,
+        "s4": 1,
+        "s5": -1,
+        "s6": 35,
+        "s7": 57,
+        "s8": 1,
+        "s9": 35,
+        "s10": -9,
+        "b1": 57,
+        "b2": -1,
         "b3": 35,
         "b4": -1,
-        "b5": 84,
-        "b6": 16,
-        "b7": 62
+        "b5": 59,
+        "b6": -9,
+        "b7": 37
       },
       "matchReasons": {
         "en": {
-          "g1": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "g1": [],
           "g2": [
-            "Matches your firmness preference (3/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (3/10)"
           ],
-          "g3": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "g3": [],
           "g4": [
             "Matches your firmness preference (3/10)"
           ],
@@ -3658,85 +3343,53 @@
             "Close to your preferred firmness"
           ],
           "g6": [
-            "Matches your firmness preference (3/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (3/10)"
           ],
           "g7": [
-            "Close to your preferred firmness",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Close to your preferred firmness"
           ],
-          "g8": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "g8": [],
           "g9": [],
-          "s1": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
-          "s2": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "s1": [],
+          "s2": [],
           "s3": [
-            "Matches your firmness preference (3/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (3/10)"
           ],
-          "s4": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
-          "s5": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "s4": [],
+          "s5": [],
           "s6": [
-            "Close to your preferred firmness",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Close to your preferred firmness"
           ],
           "s7": [
-            "Matches your firmness preference (3/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (3/10)"
           ],
-          "s8": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "s8": [],
           "s9": [
-            "Close to your preferred firmness",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Close to your preferred firmness"
           ],
-          "s10": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "s10": [],
           "b1": [
-            "Matches your firmness preference (3/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (3/10)"
           ],
-          "b2": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "b2": [],
           "b3": [
             "Close to your preferred firmness"
           ],
           "b4": [],
           "b5": [
-            "Matches your firmness preference (3/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (3/10)"
           ],
-          "b6": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "b6": [],
           "b7": [
-            "Close to your preferred firmness",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Close to your preferred firmness"
           ]
         },
         "es": {
-          "g1": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "g1": [],
           "g2": [
-            "Coincide con tu preferencia de firmeza (3/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (3/10)"
           ],
-          "g3": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "g3": [],
           "g4": [
             "Coincide con tu preferencia de firmeza (3/10)"
           ],
@@ -3744,72 +3397,45 @@
             "Cerca de tu firmeza preferida"
           ],
           "g6": [
-            "Coincide con tu preferencia de firmeza (3/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (3/10)"
           ],
           "g7": [
-            "Cerca de tu firmeza preferida",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Cerca de tu firmeza preferida"
           ],
-          "g8": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "g8": [],
           "g9": [],
-          "s1": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
-          "s2": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "s1": [],
+          "s2": [],
           "s3": [
-            "Coincide con tu preferencia de firmeza (3/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (3/10)"
           ],
-          "s4": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
-          "s5": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "s4": [],
+          "s5": [],
           "s6": [
-            "Cerca de tu firmeza preferida",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Cerca de tu firmeza preferida"
           ],
           "s7": [
-            "Coincide con tu preferencia de firmeza (3/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (3/10)"
           ],
-          "s8": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "s8": [],
           "s9": [
-            "Cerca de tu firmeza preferida",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Cerca de tu firmeza preferida"
           ],
-          "s10": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "s10": [],
           "b1": [
-            "Coincide con tu preferencia de firmeza (3/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (3/10)"
           ],
-          "b2": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "b2": [],
           "b3": [
             "Cerca de tu firmeza preferida"
           ],
           "b4": [],
           "b5": [
-            "Coincide con tu preferencia de firmeza (3/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (3/10)"
           ],
-          "b6": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "b6": [],
           "b7": [
-            "Cerca de tu firmeza preferida",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Cerca de tu firmeza preferida"
           ]
         }
       },
@@ -3818,60 +3444,54 @@
           "gold": [
             {
               "id": "g2",
-              "score": 82,
+              "score": 57,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
               "id": "g6",
-              "score": 82,
+              "score": 57,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
-              "id": "g7",
-              "score": 60,
-              "pct": 73,
+              "id": "g4",
+              "score": 47,
+              "pct": 82,
               "meetsMatchThreshold": true
             }
           ],
           "silver": [
             {
               "id": "s3",
-              "score": 84,
+              "score": 59,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
               "id": "s7",
-              "score": 82,
-              "pct": 98,
-              "meetsMatchThreshold": true
-            },
-            {
-              "id": "s6",
-              "score": 60,
-              "pct": 71,
+              "score": 57,
+              "pct": 97,
               "meetsMatchThreshold": true
             }
           ],
           "bronze": [
             {
               "id": "b5",
-              "score": 84,
+              "score": 59,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
               "id": "b1",
-              "score": 82,
-              "pct": 98,
+              "score": 57,
+              "pct": 97,
               "meetsMatchThreshold": true
             },
             {
               "id": "b7",
-              "score": 62,
-              "pct": 74,
+              "score": 37,
+              "pct": 63,
               "meetsMatchThreshold": true
             }
           ]
@@ -3901,12 +3521,12 @@
             "imageUrl": "images/mattresses/reserve mayfair plush.jpg"
           },
           {
-            "name": "Reserve Mayfair Medium",
-            "brand": "Restonic",
-            "subBrand": "Reserve",
-            "matchPct": 73,
+            "name": "Tempur-LuxeBreeze 2.0 Soft",
+            "brand": "Tempur-Pedic",
+            "subBrand": "LuxeBreeze",
+            "matchPct": 82,
             "meetsMatchThreshold": true,
-            "imageUrl": "images/mattresses/reserve mayfair medium.jpg"
+            "imageUrl": "images/mattresses/tempur-luxebreeze 2.0 soft.jpg"
           }
         ]
       },
@@ -4332,108 +3952,85 @@
       },
       "firmnessResolved": 6,
       "scores": {
-        "g1": 74,
-        "g2": 46,
-        "g3": 72,
+        "g1": 49,
+        "g2": 21,
+        "g3": 47,
         "g4": -8,
         "g5": 50,
-        "g6": 46,
-        "g7": 73,
-        "g8": 62,
+        "g6": 21,
+        "g7": 48,
+        "g8": 37,
         "g9": 62,
-        "s1": 72,
-        "s2": 62,
-        "s3": 46,
-        "s4": 72,
-        "s5": 74,
-        "s6": 75,
-        "s7": 48,
-        "s8": 72,
-        "s9": 73,
-        "s10": 62,
-        "b1": 45,
-        "b2": 71,
+        "s1": 47,
+        "s2": 37,
+        "s3": 21,
+        "s4": 47,
+        "s5": 49,
+        "s6": 50,
+        "s7": 23,
+        "s8": 47,
+        "s9": 48,
+        "s10": 37,
+        "b1": 20,
+        "b2": 46,
         "b3": 48,
         "b4": 47,
-        "b5": 45,
-        "b6": 62,
-        "b7": 74
+        "b5": 20,
+        "b6": 37,
+        "b7": 49
       },
       "matchReasons": {
         "en": {
           "g1": [
-            "Matches your firmness preference (6/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (6/10)"
           ],
-          "g2": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "g2": [],
           "g3": [
-            "Matches your firmness preference (6/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (6/10)"
           ],
           "g4": [],
           "g5": [
             "Matches your firmness preference (6/10)"
           ],
-          "g6": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "g6": [],
           "g7": [
-            "Matches your firmness preference (6/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (6/10)"
           ],
           "g8": [
-            "Close to your preferred firmness",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Close to your preferred firmness"
           ],
           "g9": [
             "Matches your firmness preference (6/10)"
           ],
           "s1": [
-            "Matches your firmness preference (6/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (6/10)"
           ],
           "s2": [
-            "Close to your preferred firmness",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Close to your preferred firmness"
           ],
-          "s3": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "s3": [],
           "s4": [
-            "Matches your firmness preference (6/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (6/10)"
           ],
           "s5": [
-            "Matches your firmness preference (6/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (6/10)"
           ],
           "s6": [
-            "Matches your firmness preference (6/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (6/10)"
           ],
-          "s7": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "s7": [],
           "s8": [
-            "Matches your firmness preference (6/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (6/10)"
           ],
           "s9": [
-            "Matches your firmness preference (6/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (6/10)"
           ],
           "s10": [
-            "Close to your preferred firmness",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Close to your preferred firmness"
           ],
-          "b1": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "b1": [],
           "b2": [
-            "Matches your firmness preference (6/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (6/10)"
           ],
           "b3": [
             "Matches your firmness preference (6/10)"
@@ -4441,92 +4038,65 @@
           "b4": [
             "Matches your firmness preference (6/10)"
           ],
-          "b5": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "b5": [],
           "b6": [
-            "Close to your preferred firmness",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Close to your preferred firmness"
           ],
           "b7": [
-            "Matches your firmness preference (6/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (6/10)"
           ]
         },
         "es": {
           "g1": [
-            "Coincide con tu preferencia de firmeza (6/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (6/10)"
           ],
-          "g2": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "g2": [],
           "g3": [
-            "Coincide con tu preferencia de firmeza (6/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (6/10)"
           ],
           "g4": [],
           "g5": [
             "Coincide con tu preferencia de firmeza (6/10)"
           ],
-          "g6": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "g6": [],
           "g7": [
-            "Coincide con tu preferencia de firmeza (6/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (6/10)"
           ],
           "g8": [
-            "Cerca de tu firmeza preferida",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Cerca de tu firmeza preferida"
           ],
           "g9": [
             "Coincide con tu preferencia de firmeza (6/10)"
           ],
           "s1": [
-            "Coincide con tu preferencia de firmeza (6/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (6/10)"
           ],
           "s2": [
-            "Cerca de tu firmeza preferida",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Cerca de tu firmeza preferida"
           ],
-          "s3": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "s3": [],
           "s4": [
-            "Coincide con tu preferencia de firmeza (6/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (6/10)"
           ],
           "s5": [
-            "Coincide con tu preferencia de firmeza (6/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (6/10)"
           ],
           "s6": [
-            "Coincide con tu preferencia de firmeza (6/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (6/10)"
           ],
-          "s7": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "s7": [],
           "s8": [
-            "Coincide con tu preferencia de firmeza (6/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (6/10)"
           ],
           "s9": [
-            "Coincide con tu preferencia de firmeza (6/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (6/10)"
           ],
           "s10": [
-            "Cerca de tu firmeza preferida",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Cerca de tu firmeza preferida"
           ],
-          "b1": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "b1": [],
           "b2": [
-            "Coincide con tu preferencia de firmeza (6/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (6/10)"
           ],
           "b3": [
             "Coincide con tu preferencia de firmeza (6/10)"
@@ -4534,16 +4104,12 @@
           "b4": [
             "Coincide con tu preferencia de firmeza (6/10)"
           ],
-          "b5": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "b5": [],
           "b6": [
-            "Cerca de tu firmeza preferida",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Cerca de tu firmeza preferida"
           ],
           "b7": [
-            "Coincide con tu preferencia de firmeza (6/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (6/10)"
           ]
         }
       },
@@ -4551,96 +4117,96 @@
         "tierData": {
           "gold": [
             {
-              "id": "g1",
-              "score": 74,
+              "id": "g9",
+              "score": 62,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
-              "id": "g7",
-              "score": 73,
-              "pct": 99,
+              "id": "g5",
+              "score": 50,
+              "pct": 81,
               "meetsMatchThreshold": true
             },
             {
-              "id": "g3",
-              "score": 72,
-              "pct": 97,
+              "id": "g1",
+              "score": 49,
+              "pct": 79,
               "meetsMatchThreshold": true
             }
           ],
           "silver": [
             {
               "id": "s6",
-              "score": 75,
+              "score": 50,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
               "id": "s5",
-              "score": 74,
-              "pct": 99,
+              "score": 49,
+              "pct": 98,
               "meetsMatchThreshold": true
             },
             {
               "id": "s9",
-              "score": 73,
-              "pct": 97,
+              "score": 48,
+              "pct": 96,
               "meetsMatchThreshold": true
             }
           ],
           "bronze": [
             {
               "id": "b7",
-              "score": 74,
+              "score": 49,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
-              "id": "b2",
-              "score": 71,
-              "pct": 96,
+              "id": "b3",
+              "score": 48,
+              "pct": 98,
               "meetsMatchThreshold": true
             },
             {
-              "id": "b6",
-              "score": 62,
-              "pct": 84,
+              "id": "b4",
+              "score": 47,
+              "pct": 96,
               "meetsMatchThreshold": true
             }
           ]
         },
         "topPick": {
-          "name": "The Roma",
-          "brand": "Chattam & Wells",
+          "name": "Copper Cushion Firm",
+          "brand": "Spring Air",
           "tier": "gold",
           "matchPct": 100,
           "meetsMatchThreshold": true
         },
         "allMatches": [
           {
+            "name": "Copper Cushion Firm",
+            "brand": "Spring Air",
+            "subBrand": "Copper",
+            "matchPct": 100,
+            "meetsMatchThreshold": true,
+            "imageUrl": "images/mattresses/copper cushion firm.jpg"
+          },
+          {
+            "name": "Tempur-ProBreeze 2.0 Medium Hybrid",
+            "brand": "Tempur-Pedic",
+            "subBrand": "ProBreeze",
+            "matchPct": 81,
+            "meetsMatchThreshold": true,
+            "imageUrl": "images/mattresses/tempur-probreeze 2.0 medium hybrid.jpg"
+          },
+          {
             "name": "The Roma",
             "brand": "Chattam & Wells",
             "subBrand": "Roma",
-            "matchPct": 100,
+            "matchPct": 79,
             "meetsMatchThreshold": true,
             "imageUrl": "images/mattresses/the roma.jpg"
-          },
-          {
-            "name": "Reserve Mayfair Medium",
-            "brand": "Restonic",
-            "subBrand": "Reserve",
-            "matchPct": 99,
-            "meetsMatchThreshold": true,
-            "imageUrl": "images/mattresses/reserve mayfair medium.jpg"
-          },
-          {
-            "name": "The Palermo",
-            "brand": "Chattam & Wells",
-            "subBrand": "Palermo",
-            "matchPct": 97,
-            "meetsMatchThreshold": true,
-            "imageUrl": "images/mattresses/the palermo.jpg"
           }
         ]
       },
@@ -5066,110 +4632,89 @@
       },
       "firmnessResolved": 5,
       "scores": {
-        "g1": 63,
-        "g2": 59,
-        "g3": 61,
+        "g1": 38,
+        "g2": 34,
+        "g3": 36,
         "g4": 25,
         "g5": 66,
-        "g6": 59,
-        "g7": 86,
-        "g8": 51,
+        "g6": 34,
+        "g7": 61,
+        "g8": 26,
         "g9": 58,
-        "s1": 61,
-        "s2": 51,
-        "s3": 59,
-        "s4": 61,
-        "s5": 66,
-        "s6": 91,
-        "s7": 64,
-        "s8": 61,
-        "s9": 86,
-        "s10": 51,
-        "b1": 55,
-        "b2": 57,
+        "s1": 36,
+        "s2": 26,
+        "s3": 34,
+        "s4": 36,
+        "s5": 41,
+        "s6": 66,
+        "s7": 39,
+        "s8": 36,
+        "s9": 61,
+        "s10": 26,
+        "b1": 30,
+        "b2": 32,
         "b3": 61,
         "b4": 36,
-        "b5": 55,
-        "b6": 51,
-        "b7": 84
+        "b5": 30,
+        "b6": 26,
+        "b7": 59
       },
       "matchReasons": {
         "en": {
           "g1": [
-            "Close to your preferred firmness",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Close to your preferred firmness"
           ],
           "g2": [
-            "Close to your preferred firmness",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Close to your preferred firmness"
           ],
           "g3": [
-            "Close to your preferred firmness",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Close to your preferred firmness"
           ],
           "g4": [],
           "g5": [
             "Matches your firmness preference (5/10)"
           ],
           "g6": [
-            "Close to your preferred firmness",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Close to your preferred firmness"
           ],
           "g7": [
-            "Matches your firmness preference (5/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (5/10)"
           ],
-          "g8": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "g8": [],
           "g9": [
             "Matches your firmness preference (5/10)"
           ],
           "s1": [
-            "Close to your preferred firmness",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Close to your preferred firmness"
           ],
-          "s2": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "s2": [],
           "s3": [
-            "Close to your preferred firmness",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Close to your preferred firmness"
           ],
           "s4": [
-            "Close to your preferred firmness",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Close to your preferred firmness"
           ],
           "s5": [
-            "Close to your preferred firmness",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Close to your preferred firmness"
           ],
           "s6": [
-            "Matches your firmness preference (5/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (5/10)"
           ],
           "s7": [
-            "Close to your preferred firmness",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Close to your preferred firmness"
           ],
           "s8": [
-            "Close to your preferred firmness",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Close to your preferred firmness"
           ],
           "s9": [
-            "Matches your firmness preference (5/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (5/10)"
           ],
-          "s10": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "s10": [],
           "b1": [
-            "Close to your preferred firmness",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Close to your preferred firmness"
           ],
           "b2": [
-            "Close to your preferred firmness",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Close to your preferred firmness"
           ],
           "b3": [
             "Matches your firmness preference (5/10)"
@@ -5178,93 +4723,68 @@
             "Close to your preferred firmness"
           ],
           "b5": [
-            "Close to your preferred firmness",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Close to your preferred firmness"
           ],
-          "b6": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "b6": [],
           "b7": [
-            "Matches your firmness preference (5/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (5/10)"
           ]
         },
         "es": {
           "g1": [
-            "Cerca de tu firmeza preferida",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Cerca de tu firmeza preferida"
           ],
           "g2": [
-            "Cerca de tu firmeza preferida",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Cerca de tu firmeza preferida"
           ],
           "g3": [
-            "Cerca de tu firmeza preferida",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Cerca de tu firmeza preferida"
           ],
           "g4": [],
           "g5": [
             "Coincide con tu preferencia de firmeza (5/10)"
           ],
           "g6": [
-            "Cerca de tu firmeza preferida",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Cerca de tu firmeza preferida"
           ],
           "g7": [
-            "Coincide con tu preferencia de firmeza (5/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (5/10)"
           ],
-          "g8": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "g8": [],
           "g9": [
             "Coincide con tu preferencia de firmeza (5/10)"
           ],
           "s1": [
-            "Cerca de tu firmeza preferida",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Cerca de tu firmeza preferida"
           ],
-          "s2": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "s2": [],
           "s3": [
-            "Cerca de tu firmeza preferida",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Cerca de tu firmeza preferida"
           ],
           "s4": [
-            "Cerca de tu firmeza preferida",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Cerca de tu firmeza preferida"
           ],
           "s5": [
-            "Cerca de tu firmeza preferida",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Cerca de tu firmeza preferida"
           ],
           "s6": [
-            "Coincide con tu preferencia de firmeza (5/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (5/10)"
           ],
           "s7": [
-            "Cerca de tu firmeza preferida",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Cerca de tu firmeza preferida"
           ],
           "s8": [
-            "Cerca de tu firmeza preferida",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Cerca de tu firmeza preferida"
           ],
           "s9": [
-            "Coincide con tu preferencia de firmeza (5/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (5/10)"
           ],
-          "s10": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "s10": [],
           "b1": [
-            "Cerca de tu firmeza preferida",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Cerca de tu firmeza preferida"
           ],
           "b2": [
-            "Cerca de tu firmeza preferida",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Cerca de tu firmeza preferida"
           ],
           "b3": [
             "Coincide con tu preferencia de firmeza (5/10)"
@@ -5273,15 +4793,11 @@
             "Cerca de tu firmeza preferida"
           ],
           "b5": [
-            "Cerca de tu firmeza preferida",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Cerca de tu firmeza preferida"
           ],
-          "b6": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "b6": [],
           "b7": [
-            "Coincide con tu preferencia de firmeza (5/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (5/10)"
           ]
         }
       },
@@ -5289,96 +4805,90 @@
         "tierData": {
           "gold": [
             {
-              "id": "g7",
-              "score": 86,
+              "id": "g5",
+              "score": 66,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
-              "id": "g5",
-              "score": 66,
-              "pct": 77,
+              "id": "g7",
+              "score": 61,
+              "pct": 92,
               "meetsMatchThreshold": true
             },
             {
-              "id": "g1",
-              "score": 63,
-              "pct": 73,
+              "id": "g9",
+              "score": 58,
+              "pct": 88,
               "meetsMatchThreshold": true
             }
           ],
           "silver": [
             {
               "id": "s6",
-              "score": 91,
+              "score": 66,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
               "id": "s9",
-              "score": 86,
-              "pct": 95,
+              "score": 61,
+              "pct": 92,
               "meetsMatchThreshold": true
             },
             {
               "id": "s5",
-              "score": 66,
-              "pct": 73,
+              "score": 41,
+              "pct": 62,
               "meetsMatchThreshold": true
             }
           ],
           "bronze": [
             {
-              "id": "b7",
-              "score": 84,
+              "id": "b3",
+              "score": 61,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
-              "id": "b3",
-              "score": 61,
-              "pct": 73,
-              "meetsMatchThreshold": true
-            },
-            {
-              "id": "b2",
-              "score": 57,
-              "pct": 68,
+              "id": "b7",
+              "score": 59,
+              "pct": 97,
               "meetsMatchThreshold": true
             }
           ]
         },
         "topPick": {
-          "name": "Reserve Mayfair Medium",
-          "brand": "Restonic",
+          "name": "Tempur-ProBreeze 2.0 Medium Hybrid",
+          "brand": "Tempur-Pedic",
           "tier": "gold",
           "matchPct": 100,
           "meetsMatchThreshold": true
         },
         "allMatches": [
           {
-            "name": "Reserve Mayfair Medium",
-            "brand": "Restonic",
-            "subBrand": "Reserve",
-            "matchPct": 100,
-            "meetsMatchThreshold": true,
-            "imageUrl": "images/mattresses/reserve mayfair medium.jpg"
-          },
-          {
             "name": "Tempur-ProBreeze 2.0 Medium Hybrid",
             "brand": "Tempur-Pedic",
             "subBrand": "ProBreeze",
-            "matchPct": 77,
+            "matchPct": 100,
             "meetsMatchThreshold": true,
             "imageUrl": "images/mattresses/tempur-probreeze 2.0 medium hybrid.jpg"
           },
           {
-            "name": "The Roma",
-            "brand": "Chattam & Wells",
-            "subBrand": "Roma",
-            "matchPct": 73,
+            "name": "Reserve Mayfair Medium",
+            "brand": "Restonic",
+            "subBrand": "Reserve",
+            "matchPct": 92,
             "meetsMatchThreshold": true,
-            "imageUrl": "images/mattresses/the roma.jpg"
+            "imageUrl": "images/mattresses/reserve mayfair medium.jpg"
+          },
+          {
+            "name": "Copper Cushion Firm",
+            "brand": "Spring Air",
+            "subBrand": "Copper",
+            "matchPct": 88,
+            "meetsMatchThreshold": true,
+            "imageUrl": "images/mattresses/copper cushion firm.jpg"
           }
         ]
       },
@@ -5779,45 +5289,40 @@
       },
       "firmnessResolved": 4,
       "scores": {
-        "g1": 45,
-        "g2": 68,
-        "g3": 45,
+        "g1": 20,
+        "g2": 43,
+        "g3": 20,
         "g4": 33,
         "g5": 42,
-        "g6": 68,
-        "g7": 67,
-        "g8": 15,
+        "g6": 43,
+        "g7": 42,
+        "g8": -10,
         "g9": 32,
-        "s1": 45,
-        "s2": 15,
-        "s3": 68,
-        "s4": 45,
-        "s5": 45,
-        "s6": 67,
-        "s7": 68,
-        "s8": 45,
-        "s9": 67,
-        "s10": 15,
-        "b1": 68,
-        "b2": 45,
+        "s1": 20,
+        "s2": -10,
+        "s3": 43,
+        "s4": 20,
+        "s5": 20,
+        "s6": 42,
+        "s7": 43,
+        "s8": 20,
+        "s9": 42,
+        "s10": -10,
+        "b1": 43,
+        "b2": 20,
         "b3": 42,
         "b4": 20,
-        "b5": 68,
-        "b6": 15,
-        "b7": 67
+        "b5": 43,
+        "b6": -10,
+        "b7": 42
       },
       "matchReasons": {
         "en": {
-          "g1": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "g1": [],
           "g2": [
-            "Matches your firmness preference (4/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (4/10)"
           ],
-          "g3": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "g3": [],
           "g4": [
             "Close to your preferred firmness"
           ],
@@ -5825,87 +5330,55 @@
             "Matches your firmness preference (4/10)"
           ],
           "g6": [
-            "Matches your firmness preference (4/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (4/10)"
           ],
           "g7": [
-            "Matches your firmness preference (4/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (4/10)"
           ],
-          "g8": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "g8": [],
           "g9": [
             "Close to your preferred firmness"
           ],
-          "s1": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
-          "s2": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "s1": [],
+          "s2": [],
           "s3": [
-            "Matches your firmness preference (4/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (4/10)"
           ],
-          "s4": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
-          "s5": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "s4": [],
+          "s5": [],
           "s6": [
-            "Matches your firmness preference (4/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (4/10)"
           ],
           "s7": [
-            "Matches your firmness preference (4/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (4/10)"
           ],
-          "s8": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "s8": [],
           "s9": [
-            "Matches your firmness preference (4/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (4/10)"
           ],
-          "s10": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "s10": [],
           "b1": [
-            "Matches your firmness preference (4/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (4/10)"
           ],
-          "b2": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "b2": [],
           "b3": [
             "Matches your firmness preference (4/10)"
           ],
           "b4": [],
           "b5": [
-            "Matches your firmness preference (4/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (4/10)"
           ],
-          "b6": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "b6": [],
           "b7": [
-            "Matches your firmness preference (4/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (4/10)"
           ]
         },
         "es": {
-          "g1": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "g1": [],
           "g2": [
-            "Coincide con tu preferencia de firmeza (4/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (4/10)"
           ],
-          "g3": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "g3": [],
           "g4": [
             "Cerca de tu firmeza preferida"
           ],
@@ -5913,74 +5386,47 @@
             "Coincide con tu preferencia de firmeza (4/10)"
           ],
           "g6": [
-            "Coincide con tu preferencia de firmeza (4/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (4/10)"
           ],
           "g7": [
-            "Coincide con tu preferencia de firmeza (4/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (4/10)"
           ],
-          "g8": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "g8": [],
           "g9": [
             "Cerca de tu firmeza preferida"
           ],
-          "s1": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
-          "s2": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "s1": [],
+          "s2": [],
           "s3": [
-            "Coincide con tu preferencia de firmeza (4/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (4/10)"
           ],
-          "s4": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
-          "s5": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "s4": [],
+          "s5": [],
           "s6": [
-            "Coincide con tu preferencia de firmeza (4/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (4/10)"
           ],
           "s7": [
-            "Coincide con tu preferencia de firmeza (4/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (4/10)"
           ],
-          "s8": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "s8": [],
           "s9": [
-            "Coincide con tu preferencia de firmeza (4/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (4/10)"
           ],
-          "s10": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "s10": [],
           "b1": [
-            "Coincide con tu preferencia de firmeza (4/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (4/10)"
           ],
-          "b2": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "b2": [],
           "b3": [
             "Coincide con tu preferencia de firmeza (4/10)"
           ],
           "b4": [],
           "b5": [
-            "Coincide con tu preferencia de firmeza (4/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (4/10)"
           ],
-          "b6": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "b6": [],
           "b7": [
-            "Coincide con tu preferencia de firmeza (4/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (4/10)"
           ]
         }
       },
@@ -5989,60 +5435,60 @@
           "gold": [
             {
               "id": "g2",
-              "score": 68,
+              "score": 43,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
               "id": "g6",
-              "score": 68,
+              "score": 43,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
-              "id": "g7",
-              "score": 67,
-              "pct": 99,
+              "id": "g5",
+              "score": 42,
+              "pct": 98,
               "meetsMatchThreshold": true
             }
           ],
           "silver": [
             {
               "id": "s3",
-              "score": 68,
+              "score": 43,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
               "id": "s7",
-              "score": 68,
+              "score": 43,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
               "id": "s6",
-              "score": 67,
-              "pct": 99,
+              "score": 42,
+              "pct": 98,
               "meetsMatchThreshold": true
             }
           ],
           "bronze": [
             {
               "id": "b1",
-              "score": 68,
+              "score": 43,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
               "id": "b5",
-              "score": 68,
+              "score": 43,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
-              "id": "b7",
-              "score": 67,
-              "pct": 99,
+              "id": "b3",
+              "score": 42,
+              "pct": 98,
               "meetsMatchThreshold": true
             }
           ]
@@ -6072,12 +5518,12 @@
             "imageUrl": "images/mattresses/reserve mayfair plush.jpg"
           },
           {
-            "name": "Reserve Mayfair Medium",
-            "brand": "Restonic",
-            "subBrand": "Reserve",
-            "matchPct": 99,
+            "name": "Tempur-ProBreeze 2.0 Medium Hybrid",
+            "brand": "Tempur-Pedic",
+            "subBrand": "ProBreeze",
+            "matchPct": 98,
             "meetsMatchThreshold": true,
-            "imageUrl": "images/mattresses/reserve mayfair medium.jpg"
+            "imageUrl": "images/mattresses/tempur-probreeze 2.0 medium hybrid.jpg"
           }
         ]
       },
@@ -6474,110 +5920,89 @@
       "answers": {},
       "firmnessResolved": 5,
       "scores": {
-        "g1": 55,
-        "g2": 55,
-        "g3": 55,
+        "g1": 30,
+        "g2": 30,
+        "g3": 30,
         "g4": 20,
         "g5": 50,
-        "g6": 55,
-        "g7": 75,
-        "g8": 45,
+        "g6": 30,
+        "g7": 50,
+        "g8": 20,
         "g9": 40,
-        "s1": 55,
-        "s2": 45,
-        "s3": 55,
-        "s4": 55,
-        "s5": 55,
-        "s6": 75,
-        "s7": 55,
-        "s8": 55,
-        "s9": 75,
-        "s10": 45,
-        "b1": 55,
-        "b2": 55,
+        "s1": 30,
+        "s2": 20,
+        "s3": 30,
+        "s4": 30,
+        "s5": 30,
+        "s6": 50,
+        "s7": 30,
+        "s8": 30,
+        "s9": 50,
+        "s10": 20,
+        "b1": 30,
+        "b2": 30,
         "b3": 50,
         "b4": 30,
-        "b5": 55,
-        "b6": 45,
-        "b7": 75
+        "b5": 30,
+        "b6": 20,
+        "b7": 50
       },
       "matchReasons": {
         "en": {
           "g1": [
-            "Close to your preferred firmness",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Close to your preferred firmness"
           ],
           "g2": [
-            "Close to your preferred firmness",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Close to your preferred firmness"
           ],
           "g3": [
-            "Close to your preferred firmness",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Close to your preferred firmness"
           ],
           "g4": [],
           "g5": [
             "Matches your firmness preference (5/10)"
           ],
           "g6": [
-            "Close to your preferred firmness",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Close to your preferred firmness"
           ],
           "g7": [
-            "Matches your firmness preference (5/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (5/10)"
           ],
-          "g8": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "g8": [],
           "g9": [
             "Matches your firmness preference (5/10)"
           ],
           "s1": [
-            "Close to your preferred firmness",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Close to your preferred firmness"
           ],
-          "s2": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "s2": [],
           "s3": [
-            "Close to your preferred firmness",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Close to your preferred firmness"
           ],
           "s4": [
-            "Close to your preferred firmness",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Close to your preferred firmness"
           ],
           "s5": [
-            "Close to your preferred firmness",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Close to your preferred firmness"
           ],
           "s6": [
-            "Matches your firmness preference (5/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (5/10)"
           ],
           "s7": [
-            "Close to your preferred firmness",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Close to your preferred firmness"
           ],
           "s8": [
-            "Close to your preferred firmness",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Close to your preferred firmness"
           ],
           "s9": [
-            "Matches your firmness preference (5/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (5/10)"
           ],
-          "s10": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "s10": [],
           "b1": [
-            "Close to your preferred firmness",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Close to your preferred firmness"
           ],
           "b2": [
-            "Close to your preferred firmness",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Close to your preferred firmness"
           ],
           "b3": [
             "Matches your firmness preference (5/10)"
@@ -6586,93 +6011,68 @@
             "Close to your preferred firmness"
           ],
           "b5": [
-            "Close to your preferred firmness",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Close to your preferred firmness"
           ],
-          "b6": [
-            "Made locally — typically in stock and ready for fast delivery"
-          ],
+          "b6": [],
           "b7": [
-            "Matches your firmness preference (5/10)",
-            "Made locally — typically in stock and ready for fast delivery"
+            "Matches your firmness preference (5/10)"
           ]
         },
         "es": {
           "g1": [
-            "Cerca de tu firmeza preferida",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Cerca de tu firmeza preferida"
           ],
           "g2": [
-            "Cerca de tu firmeza preferida",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Cerca de tu firmeza preferida"
           ],
           "g3": [
-            "Cerca de tu firmeza preferida",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Cerca de tu firmeza preferida"
           ],
           "g4": [],
           "g5": [
             "Coincide con tu preferencia de firmeza (5/10)"
           ],
           "g6": [
-            "Cerca de tu firmeza preferida",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Cerca de tu firmeza preferida"
           ],
           "g7": [
-            "Coincide con tu preferencia de firmeza (5/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (5/10)"
           ],
-          "g8": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "g8": [],
           "g9": [
             "Coincide con tu preferencia de firmeza (5/10)"
           ],
           "s1": [
-            "Cerca de tu firmeza preferida",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Cerca de tu firmeza preferida"
           ],
-          "s2": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "s2": [],
           "s3": [
-            "Cerca de tu firmeza preferida",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Cerca de tu firmeza preferida"
           ],
           "s4": [
-            "Cerca de tu firmeza preferida",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Cerca de tu firmeza preferida"
           ],
           "s5": [
-            "Cerca de tu firmeza preferida",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Cerca de tu firmeza preferida"
           ],
           "s6": [
-            "Coincide con tu preferencia de firmeza (5/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (5/10)"
           ],
           "s7": [
-            "Cerca de tu firmeza preferida",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Cerca de tu firmeza preferida"
           ],
           "s8": [
-            "Cerca de tu firmeza preferida",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Cerca de tu firmeza preferida"
           ],
           "s9": [
-            "Coincide con tu preferencia de firmeza (5/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (5/10)"
           ],
-          "s10": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "s10": [],
           "b1": [
-            "Cerca de tu firmeza preferida",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Cerca de tu firmeza preferida"
           ],
           "b2": [
-            "Cerca de tu firmeza preferida",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Cerca de tu firmeza preferida"
           ],
           "b3": [
             "Coincide con tu preferencia de firmeza (5/10)"
@@ -6681,15 +6081,11 @@
             "Cerca de tu firmeza preferida"
           ],
           "b5": [
-            "Cerca de tu firmeza preferida",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Cerca de tu firmeza preferida"
           ],
-          "b6": [
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
-          ],
+          "b6": [],
           "b7": [
-            "Coincide con tu preferencia de firmeza (5/10)",
-            "Hecho localmente — generalmente en stock y listo para entrega rápida"
+            "Coincide con tu preferencia de firmeza (5/10)"
           ]
         }
       },
@@ -6697,73 +6093,81 @@
         "tierData": {
           "gold": [
             {
-              "id": "g7",
-              "score": 75,
+              "id": "g5",
+              "score": 50,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
-              "id": "g1",
-              "score": 55,
-              "pct": 73,
+              "id": "g7",
+              "score": 50,
+              "pct": 100,
               "meetsMatchThreshold": true
             },
             {
-              "id": "g2",
-              "score": 55,
-              "pct": 73,
+              "id": "g9",
+              "score": 40,
+              "pct": 80,
               "meetsMatchThreshold": true
             }
           ],
           "silver": [
             {
               "id": "s6",
-              "score": 75,
+              "score": 50,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
               "id": "s9",
-              "score": 75,
+              "score": 50,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
               "id": "s1",
-              "score": 55,
-              "pct": 73,
+              "score": 30,
+              "pct": 60,
               "meetsMatchThreshold": true
             }
           ],
           "bronze": [
             {
+              "id": "b3",
+              "score": 50,
+              "pct": 100,
+              "meetsMatchThreshold": true
+            },
+            {
               "id": "b7",
-              "score": 75,
+              "score": 50,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
               "id": "b1",
-              "score": 55,
-              "pct": 73,
-              "meetsMatchThreshold": true
-            },
-            {
-              "id": "b2",
-              "score": 55,
-              "pct": 73,
+              "score": 30,
+              "pct": 60,
               "meetsMatchThreshold": true
             }
           ]
         },
         "topPick": {
-          "name": "Reserve Mayfair Medium",
-          "brand": "Restonic",
+          "name": "Tempur-ProBreeze 2.0 Medium Hybrid",
+          "brand": "Tempur-Pedic",
           "tier": "gold",
           "matchPct": 100,
           "meetsMatchThreshold": true
         },
         "allMatches": [
+          {
+            "name": "Tempur-ProBreeze 2.0 Medium Hybrid",
+            "brand": "Tempur-Pedic",
+            "subBrand": "ProBreeze",
+            "matchPct": 100,
+            "meetsMatchThreshold": true,
+            "imageUrl": "images/mattresses/tempur-probreeze 2.0 medium hybrid.jpg"
+          },
           {
             "name": "Reserve Mayfair Medium",
             "brand": "Restonic",
@@ -6773,20 +6177,12 @@
             "imageUrl": "images/mattresses/reserve mayfair medium.jpg"
           },
           {
-            "name": "The Roma",
-            "brand": "Chattam & Wells",
-            "subBrand": "Roma",
-            "matchPct": 73,
+            "name": "Copper Cushion Firm",
+            "brand": "Spring Air",
+            "subBrand": "Copper",
+            "matchPct": 80,
             "meetsMatchThreshold": true,
-            "imageUrl": "images/mattresses/the roma.jpg"
-          },
-          {
-            "name": "The Saint Pierre",
-            "brand": "Chattam & Wells",
-            "subBrand": "Saint Pierre",
-            "matchPct": 73,
-            "meetsMatchThreshold": true,
-            "imageUrl": "images/mattresses/the saint pierre.jpg"
+            "imageUrl": "images/mattresses/copper cushion firm.jpg"
           }
         ]
       },

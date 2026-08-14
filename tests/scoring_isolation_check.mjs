@@ -15,8 +15,9 @@
 // This suite compiles calculateScores() against the real shipped catalogue and
 // quiz, and asserts:
 //   1. scores are byte-identical across every financing state;
-//   2. the documented weights still hold (firmness ladder, locally-made +25,
-//      the per-feature cap, the >=4 diff penalty);
+//   2. the documented weights still hold (firmness ladder, the per-feature
+//      cap, the >=4 diff penalty — the locally-made +25 was retired by owner
+//      ruling 2026-08-13, and the engine may not read the flag at all);
 //   3. golden pins on the shipped catalogue, so a silent retune is visible.
 //
 // Run: node tests/scoring_isolation_check.mjs     (exit 0 = all pass)
@@ -112,13 +113,20 @@ for (const id of ["financingAgenda", "financingAgendaDismissed", "financingExplo
                   // 0.5: consultation-priority state must never feed scoring —
                   // the priorities shape consultation copy only, and the
                   // engine may not so much as name their store.
-                  "trialFocus", "renderHf2Priorities"]) {
+                  "trialFocus", "renderHf2Priorities",
+                  // Daybreak PR 1 (owner ruling 2026-08-13): the locally-made
+                  // +25 bonus is retired. Origin is data-only and the engine
+                  // may not read the flag — a reintroduction fails here.
+                  "locallyMade", "Made locally", "Hecho localmente"]) {
   check(`calculateScores() does not reference ${id}`, !m[0].includes(id));
 }
 
 // --- 3. Documented weights still hold ---------------------------------------
 // From CLAUDE.md: firmness is a linear slide (50 - diff*10, floored at 0) with
-// an extra -20 once diff >= 4; locally-made is +25; the per-feature cap is 5.
+// an extra -20 once diff >= 4; the per-feature cap is 5. The locally-made +25
+// bonus was retired by owner ruling 2026-08-13 (Daybreak PR 1) — origin must
+// not alter sleep-fit ranking — so the expected math carries no origin term
+// and the engine may not read the flag at all (asserted in section 2 above).
 console.log("Documented scoring weights hold:");
 const all = Object.values(MATTRESSES).flat();
 {
@@ -130,7 +138,6 @@ const all = Object.values(MATTRESSES).flat();
       const diff = Math.abs(mm.firmness - target);
       let expected = Math.max(0, 50 - diff * 10);
       if (diff >= 4) expected -= 20;
-      if (mm.locallyMade === true) expected += 25;
       if (s[mm.id] !== expected) {
         check(`firmness ${target}: ${mm.id} scores ${expected}`, false,
           `got ${s[mm.id]}`);
@@ -138,22 +145,16 @@ const all = Object.values(MATTRESSES).flat();
       }
     }
   }
-  check("firmness ladder + locally-made bonus reproduce exactly for every model",
+  check("firmness ladder reproduces exactly for every model (no origin term)",
     [1, 5, 10].every(t => {
       const s = at(t);
       return all.every(mm => {
         const d = Math.abs(mm.firmness - t);
         let e = Math.max(0, 50 - d * 10);
         if (d >= 4) e -= 20;
-        if (mm.locallyMade === true) e += 25;
         return s[mm.id] === e;
       });
     }));
-  const local = all.filter(x => x.locallyMade === true);
-  const nonlocal = all.filter(x => x.locallyMade !== true);
-  check("catalogue actually exercises both locally-made branches",
-    local.length > 0 && nonlocal.length > 0,
-    `${local.length} local / ${nonlocal.length} not`);
 }
 
 // --- 3b. The per-feature cap actually caps ----------------------------------
@@ -223,15 +224,18 @@ console.log("The per-feature cap caps:");
 // data/mattresses.json, so a diff here means either a deliberate retune or an
 // unreviewed one — both worth stopping for. Regenerate only alongside an
 // approved scoring or catalogue change, never to make a red build green.
+// Regenerated 2026-08-13 alongside the owner-approved retirement of the
+// locally-made +25 bonus (Daybreak PR 1) — the previous pins carried the
+// bonus inside every locally-made model's score.
 const GOLDEN = {
   "side sleeper, hot, back pain": {
-    top5: [["s6", 80], ["s7", 78], ["g7", 75], ["s3", 75], ["s9", 75]], qualified: 19
+    top5: [["g5", 55], ["s6", 55], ["s7", 53], ["b3", 50], ["g7", 50]], qualified: 15
   },
   "solo, firm, no issues": {
-    top5: [["b6", 80], ["s10", 80], ["s2", 80], ["g8", 79], ["g1", 71]], qualified: 15
+    top5: [["b6", 55], ["s10", 55], ["s2", 55], ["g8", 54], ["g1", 46]], qualified: 13
   },
   "plus body, plush, reflux": {
-    top5: [["g2", 77], ["g6", 77], ["s3", 72], ["s7", 72], ["b1", 68]], qualified: 11
+    top5: [["g4", 53], ["g2", 52], ["g6", 52], ["s3", 47], ["s7", 47]], qualified: 9
   }
 };
 console.log("Golden pins on the shipped catalogue:");

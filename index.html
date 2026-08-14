@@ -2242,17 +2242,10 @@
 
     .noct-toppick-actions {
       display: flex;
-      justify-content: space-between;
+      justify-content: flex-end;
       align-items: center;
       padding-top: 16px;
       margin-top: auto;
-    }
-
-    .noct-toppick-stock {
-      font-family: var(--font-sans);
-      font-size: 12px;
-      letter-spacing: 0.05em;
-      color: var(--color-text-subtle);
     }
 
     .noct-supporting-row {
@@ -2394,16 +2387,10 @@
 
     .noct-support-actions {
       display: flex;
-      justify-content: space-between;
+      justify-content: flex-end;
       align-items: center;
       padding-top: 10px;
       border-top: 0.5px solid var(--color-border);
-    }
-
-    .noct-support-stock {
-      font-family: var(--font-sans);
-      font-size: 11px;
-      color: var(--color-text-subtle);
     }
 
     .noct-save-btn {
@@ -13497,13 +13484,12 @@
         });
       });
 
-      // 3. Locally made bonus — better availability, faster delivery, supports local
-      Object.values(MATTRESSES).flat().forEach(m => {
-        if (m.locallyMade === true) {
-          scores[m.id] += 25;
-          matchReasons[m.id].push(currentLang === 'es' ? 'Hecho localmente — generalmente en stock y listo para entrega rápida' : 'Made locally — typically in stock and ready for fast delivery');
-        }
-      });
+      // Owner ruling 2026-08-13 (Daybreak PR 1): the locally-made +25 bonus is
+      // retired — origin and availability must not alter sleep-fit ranking, and
+      // its match reason asserted stock/delivery facts no data source backs.
+      // The provenance flag on each mattress record is now data-only; the
+      // engine may not read it (scoring_isolation_check pins the absence), and
+      // reinstating any scoring use of origin requires Blake's sign-off.
 
       return { scores, matchReasons };
     }
@@ -14558,7 +14544,6 @@
       var feel = firmnessFeel(m.firmness);
       var priorities = buildMattressPriorities(m);
       var promotion = getMattressPromotion(m);
-      var stockText = es ? ('Disponible en ' + storeName()) : ('In stock at ' + storeName());
 
       var img = m.imageUrl
         ? '<img class="noct-toppick-photo" src="' + escapeHtml(m.imageUrl) + '" alt="' + escapeHtml(m.name) + '">'
@@ -14626,7 +14611,6 @@
         +   '</div>'
         +   '<div class="noct-toppick-priorities">' + prioritiesHtml + '</div>'
         +   '<div class="noct-toppick-actions">'
-        +     '<div class="noct-toppick-stock">' + escapeHtml(stockText) + '</div>'
         +     '<div class="noct-card-action-cluster">'
         +       detailsBtn
         +       compareBtn
@@ -14643,7 +14627,6 @@
       var es = currentLang === 'es';
       var matchLineText = es ? 'Coincide con tus prioridades' : 'Matches your priorities';
       var comparisonLabel = es ? 'Opción adicional para comparar' : 'Additional comparison option';
-      var stockText = es ? 'Disponible' : 'In stock';
 
       var html = mattresses.map(function(m) {
         var brandLine = m.brand + (m.subBrand ? ' · ' + m.subBrand : '');
@@ -14700,7 +14683,6 @@
           +   '</div>'
           +   '<div class="noct-support-priorities">' + chipsHtml + '</div>'
           +   '<div class="noct-support-actions">'
-          +     '<div class="noct-support-stock">' + escapeHtml(stockText) + '</div>'
           +     '<div class="noct-card-action-cluster">'
           +       detailsBtn
           +       compareBtn
@@ -19490,7 +19472,9 @@
       { id: 'emailConfirmation', remove: ['visible'] },
       { id: 'emailCaptureView', display: '' },
       { id: 'hf2DiscountBtn', remove: ['hf2-discount-btn--revealed'] },
-      { id: 'hf2RsaPanel', remove: ['is-open'] },
+      // The RSA roster panel is hidden-attribute-driven (toggleHf2RsaPanel);
+      // it never carries an is-open class, so a class strip cannot close it.
+      { id: 'hf2RsaPanel', hiddenAttr: true },
       // 0.5: the trial-priorities section returns to hidden on wipe, so even a
       // path that showed hf2 without re-rendering could not expose the prior
       // customer's label over a cleared list.
