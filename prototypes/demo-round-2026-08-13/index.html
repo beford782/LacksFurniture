@@ -424,10 +424,18 @@
   .pay-consequence{font-size:.78rem;color:var(--moon-dim)}
 
   /* ===== HANDOFF ========================================================= */
-  #handoff{align-items:center;justify-content:center;padding:calc(56px + env(safe-area-inset-top)) 5vw 2.5vh}
+  /* Scene-level vertical scroll at constrained heights: the summary card
+     GROWS to its content (flex:none — it may never shrink into its own
+     rounded overflow:hidden and silently clip rows), and the auto margins
+     center the stack when it fits while scrolling naturally from the top
+     when it doesn't. The starfield is fixed so the background stays
+     stable while the content scrolls. */
+  #handoff{align-items:center;justify-content:flex-start;overflow:auto;
+    padding:calc(56px + env(safe-area-inset-top)) 5vw 2.5vh}
+  #handoff .sky{position:fixed}
   .card-consult{width:100%;max-width:820px;background:var(--linen);color:var(--ink);
     border-radius:26px;overflow:hidden;display:flex;flex-direction:column;
-    box-shadow:0 30px 80px rgba(0,0,0,.5)}
+    box-shadow:0 30px 80px rgba(0,0,0,.5);flex:none;margin-top:auto}
   .consult-band{background:var(--midnight);color:var(--moonlight);
     padding:1.1rem 1.7rem;display:flex;justify-content:space-between;align-items:center;gap:16px}
   .consult-band .t{font-family:var(--display);font-size:1.35rem}
@@ -452,8 +460,8 @@
     text-transform:uppercase;color:var(--brass);flex:none;min-width:92px;max-width:150px}
   .consult-list .row span{min-width:0}
   .consult-list .row .ht{color:var(--ink-soft);font-size:.82rem}
-  .handoff-note{margin-top:1.1rem;color:var(--moon-dim);font-size:.88rem;text-align:center;max-width:56ch}
-  .handoff-foot{margin-top:.85rem}
+  .handoff-note{margin-top:1.1rem;color:var(--moon-dim);font-size:.88rem;text-align:center;max-width:56ch;flex:none}
+  .handoff-foot{margin-top:.85rem;flex:none;margin-bottom:auto}
 
   /* ===== ISOLATION CHECK ================================================= */
   #iso{position:fixed;inset:0;z-index:70;display:none;align-items:center;justify-content:center;
@@ -1923,6 +1931,10 @@ function payExploredLabel(){
 }
 function renderHandoff(){
   if (!computed) return;
+  /* the scene scrolls at constrained heights — every entry and every
+     major re-render (including a language switch) starts at the top so a
+     retained scroll position can never mislead */
+  document.getElementById("handoff").scrollTop = 0;
   /* the card never presents the engine's pick as a customer choice: the
      status line states which it is, and a Finalist row states absence */
   var fid = finalistId || computed.topPickId;

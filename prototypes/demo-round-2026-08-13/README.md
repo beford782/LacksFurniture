@@ -25,6 +25,22 @@ walkthrough IS the payment conversation, so the interaction is modeled
 as exploration and preference capture — never a future-discussion
 agenda. Details in "Revision 3.1" below.
 
+**Handoff responsive repair (owner-walkthrough defect, 2026-08-14):** at
+constrained heights (owner reproduction: 854×698) the summary card shrank
+inside the height-locked, centered handoff scene and its own rounded
+`overflow:hidden` silently clipped the System, Payment preference, and
+Options explored rows with no scroll surface. Fix: the handoff scene
+scrolls vertically (`overflow:auto`, auto-margin centering — centered
+when it fits, scrolls from the top when it doesn't), the card grows to
+its content (`flex:none` — it may never internally clip), the starfield
+is fixed so the background stays stable, and every handoff entry or
+major re-render (including a language switch) resets the scroll to the
+top. Verified at 854×698, 800×650, 834×698, 1194×748, 1180×820,
+834×985, and 834×1112 × EN/ES × customer/presenter (28/28), all six
+payment states reachable, keyboard reach intact. Rendered ratchet:
+`checks/handoff_layout_check.py` (requires playwright + the served
+prototype; fails against the pre-fix source).
+
 ## Run it
 
 Serve the **repo root** (the prototype loads the real shipped data and
