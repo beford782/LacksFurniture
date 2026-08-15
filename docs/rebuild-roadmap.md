@@ -1,32 +1,37 @@
 # DreamFinder rebuild roadmap — Lacks deployment
 
 **Status: LIVING DOCUMENT. Phase 0 COMPLETE (2026-08-10 — 0.4's mounted-device
-evidence recorded; see 0.4 and `docs/kiosk-device-hardening.md`). Phases 1–3
-are a plan of intent, not a grant of approval — see the open-decisions
-register. Phase 1 implementation remains unauthorized until Blake explicitly
-opens it.**
+evidence recorded; see 0.4 and `docs/kiosk-device-hardening.md`). Phase 1
+implementation AUTHORIZED (2026-08-12, owner directive — see the authorization
+block at the top of Phase 1) and, as of 2026-08-14, directed by the Nocturne
+owner-review decisions (see "Phase 1 direction decisions — recorded
+2026-08-14"). Phases 2–3 remain a plan of intent, not a grant of approval —
+see the open-decisions register. Device hardening remains BLOCKING for
+showroom use.**
 
-**Last updated:** 2026-08-10 *(second revision this date, documentation-only:
-records the owner-confirmed mounted-device evidence that closes Phase 0.4 and
-Phase 0, and marks recommended-sequence steps 5–6 complete. The earlier
-revision this date was the 1.6 Compare reconciliation. No product code moved
-in either revision, and no Phase 1 authorization is granted here.)*
+**Last updated:** 2026-08-14 *(documentation-only reconciliation: records the
+Nocturne owner-review decisions D1–D6, the 2026-08-12 screen-reader
+out-of-scope ruling's effect on 1.2, the settled tier-tab direction, the
+adopted Payment Choice state model, the Daybreak PRs #42/#43 and the
+2026-08-13 owner-approved scoring change they carried, and corrects statements
+that survived from before the 2026-08-12 Phase 1 authorization. No product
+code moves in this revision.)*
 **Original roadmap baseline:** `42ff5f3a2158bc68219b1c87cb6356f146009fdc` — GitHub
 `main` when this document's phase statuses were written, the merge commit of
 PR #16 (2026-08-05). It is **not** current `main`. GitHub state is
 authoritative; a local checkout never is.
-**Reconciliation baseline:** `c165497f08c47255cf27887cfee36715a1f1587d` — GitHub
-`main` at the start of PR #35; PR #34 merge commit (2026-08-10).
-**Next implementation item:** none inside Phase 0 — Phase 0 is complete.
-0.6 and 0.7 shipped in the PR that carried the 2026-08-05 revision, and 0.4's
-hardware verification was recorded 2026-08-10 (owner-confirmed on the mounted
-showroom device; evidence in `docs/kiosk-device-hardening.md`). **Phase 1
-research and prototyping may proceed where its items' own Proceeds lists
-permit** (e.g. 1.3's catalog reason-content authoring). Of the two conditions
-Phase 1 implementation required — the 0.4 mounted-device evidence closing
-Phase 0, AND Blake explicitly opening Phase 1 — **the first is now met and the
-second is not: Phase 1 implementation remains unauthorized until Blake
-explicitly opens it.**
+**Reconciliation baseline:** `83d4646e5af611a14a7b3fbd66f5a0604bb7886e` — GitHub
+`main` at this revision; PR #43 merge commit (2026-08-14, Daybreak PR 2).
+**Next implementation item:** per the approved 2026-08-14 slice order — after
+this reconciliation merges: (1) Results tier-tab restyle and card hierarchy
+(1.3 Proceeds, hero-plus-support grid per D3); then (2) the Sleep Brief
+recomposition under 1.1's lifted gate (constellation component first, then the
+reveal composition). The full recommended order is recorded in the 2026-08-14
+decision block. The two conditions Phase 1 implementation required — the 0.4
+mounted-device evidence closing Phase 0, AND Blake explicitly opening Phase 1 —
+**are both met** (2026-08-10 and 2026-08-12 respectively). Every merge still
+passes the phase-wide device-matrix merge gate and the Phase 1 output
+regression fixture.
 
 **Scope:** the Lacks deployment. Migrating store-agnostic work back to the WGR
 template is a real goal but has no owner, no phase and no schedule here; treat it
@@ -195,6 +200,13 @@ None of these are negotiable by a redesign.
    announcement; every customer-ending path clears the whole session.
 10. **Touch handling and `window.startOver()` are not refactored casually**, and
     `location.reload()` is never used.
+11. **Verification state is never staged.** `verifiedAt` is never freshened,
+    and `exactPromotionsEnabled` is never enabled, to make exact financing
+    claims render for a demonstration, review, screenshot or prospect. A
+    verification timestamp records a real verification event against an
+    allowlisted source, or it does not change. The suppressed, fail-closed
+    presentation **is** the correct demonstration of stale state. *(Made
+    permanent governance 2026-08-14, promoted from a prototype-round rule.)*
 
 ---
 
@@ -254,7 +266,9 @@ succeeded on that merge commit.
   a re-render, not a transition, and moves no focus.
 
 **Known limitation carried forward:** question-to-question changes are not
-announced. See Phase 1.2.
+announced. *(2026-08-12 owner ruling, recorded under 1.2: screen-reader
+announcement work is permanently out of scope; this limitation is accepted,
+not pending. The same-screen guard and everything shipped here stand.)*
 
 ### 0.4 — Recovery from the data-error overlay ✅
 
@@ -572,11 +586,11 @@ workbook validation green, ranged `git diff --check` clean, protected
 artifacts byte-identical across the test run, and a clean working tree — all
 re-executed by CI on the exact head.**
 
-**This does NOT close Phase 0.** 0.4 remains ⏳ until its mounted-showroom-device
-evidence is recorded in `docs/kiosk-device-hardening.md`; the phase closes when
-that lands, with no further implementation work. *(That is exactly how it
-closed: the evidence landed 2026-08-10 — see 0.4 — with no further
-implementation work.)*
+**This did NOT close Phase 0 by itself.** 0.4 stayed ⏳ until its
+mounted-showroom-device evidence was recorded in
+`docs/kiosk-device-hardening.md` — and that is exactly how the phase closed:
+the evidence landed 2026-08-10 (see 0.4), with no further implementation
+work.
 
 **Exit:** the full repository suite is green — scoring isolation, session async and
 privacy, session safety, data-error recovery, financing totality, validation and
@@ -605,6 +619,13 @@ or production launch. **Device hardening remains BLOCKING for showroom use**
 (`docs/kiosk-device-hardening.md`) — no Phase 1 work deploys to
 customer-facing showroom use while that blocker stands. The regression exit
 gate below was built first, as the opening act of the phase.
+
+*(2026-08-14: two entries on the not-authorized list above have since been
+authorized by the item-specific approvals they pointed to — the Sleep Brief
+composition and need-derived hero (1.1's gate, lifted by D1), and the
+finalized tier-tab direction (1.3's adoption clause, satisfied by "the tabs
+stand", D3). Everything else on the list stands, including the reason gate,
+Phase 2, Phase 3, and the showroom blocker.)*
 
 ### Standing Phase 1 constraints
 
@@ -655,17 +676,30 @@ gate below was built first, as the opening act of the phase.
 `tests/phase1_output_regression_check.mjs`, in CI alongside
 `tests/scoring_isolation_check.mjs`, executes the real extracted engine over
 ten fixed answer sets in both languages and holds every recommendation output
-against `tests/fixtures/phase1_output_baseline_85c5c10.json`, generated at
-the Phase 1 baseline commit `85c5c10`: scores and match reasons, resolved
+against the committed baseline fixture: scores and match reasons, resolved
 firmness and feel classification, tier membership and within-tier order, pct,
 the 60% qualification, the cap of 3 and the back-fill floor, the top pick,
 the ordered accessory engine and its step groups, and the ordered Sleep Brief
-priorities. Fifteen in-memory engine mutations must each diverge from the
+priorities. In-memory engine mutations must each diverge from the
 baseline on every run, so the pin proves its own non-vacuity. This is
 Invariant 2 made enforceable. The fixture regenerates only from the
-pre-change commit of an approved engine change (Phase 3), with its pinned
+pre-change commit of an approved engine change, with its pinned
 hash moved in the same reviewed diff. *(This closed the register's "Phase 1
 scoring-fixture exit gate" entry.)*
+
+*(Fixture history: originally
+`tests/fixtures/phase1_output_baseline_85c5c10.json`, generated at the Phase 1
+baseline commit `85c5c10` with fifteen mutations. Regenerated once, exactly by
+the fixture's own rule, as
+`tests/fixtures/phase1_output_baseline_daybreak_pr1.json` for the
+owner-approved 2026-08-13 scoring change in Daybreak PR #42 — the retirement
+of the `locallyMade` +25 bonus and its stock/delivery match reason, ruled by
+Blake because origin and availability must not alter sleep-fit ranking. The
+flag is data-only now; `tests/scoring_isolation_check.mjs` pins that the
+engine may not reference it, and the mutation for the retired bonus retired
+with it (fourteen mutations since). That change was an owner-approved engine
+change shipped on its own PR with the fixture moved in the same reviewed diff
+— it is the model for how such changes ship, and it does not open Phase 3.)*
 
 ### Phase 1 direction decisions — recorded 2026-08-07
 
@@ -714,11 +748,18 @@ Presentation requires revision:
   from another and why that matters to sleep.
 
 **Catalog-substance gate.** Catalog substance is the critical path before
-Phase 1 implementation authorization. **Blake Ford is the named Lacks
+Phase 1 implementation authorization. *(Overtaken 2026-08-12: authorization
+was granted ahead of this gate by owner prerogative — see sequence step 7
+below and the Phase 1 authorization block. The content gate itself stands.)*
+**Blake Ford is the named Lacks
 content owner and business approver as of 2026-08-07.** His next owner
 task is disposition of the **24 Tier-D/E claim-risk rows currently
 rendered in production** (the broader preliminary inventory flags 83
-rows; see PR #18's authoring-brief appendix). A spec-card → evidence
+rows; see PR #18's authoring-brief appendix). *(Count stale as of
+2026-08-14: PR #41 retired unsupported display claims on g6/g7/s3/g8/g9 with
+total component omission, and PR #42 removed the unbacked availability
+claims — re-derive the outstanding-row count from the current tree before
+acting on it.)* A spec-card → evidence
 record → AI draft → human approval workflow is a **proposal candidate
 only**; nothing from it is approved to render. Personalized catalog
 reasons remain absent and must continue to **fail closed by omission**
@@ -732,16 +773,17 @@ review remains required before any Spanish catalog reason content
 activates; the existing bilingual contracts, strict EN/ES parity, and
 no-English-fallback requirements are unchanged.
 
-**Gates that remain open.** *(As written 2026-08-07; two entries have since
-closed — 0.4's mounted-device evidence landed and Phase 0 closed, both
-2026-08-10. Everything else in this block still stands.)* 0.4 remains ⏳
-pending mounted-showroom-device evidence, and Phase 0 remains open. Phase 1
-implementation remains unauthorized and not started. Final visual approval remains open (an Open
-decisions register item). The native-Spanish claim-equivalence reviewer
-and the legal/compliance reviewer (where claim class requires one) remain
-unnamed. The claim-inventory disposition remains open. Catalog schema,
-scoring changes, and reason activation remain separately gated (Phase 3
-and 1.3 as written).
+**Gates — current state (rewritten 2026-08-14; the original 2026-08-07
+wording predated four closures).** Closed: 0.4's mounted-device evidence
+landed and Phase 0 closed (both 2026-08-10); Phase 1 implementation was
+authorized (2026-08-12); the Sleep Brief composition was approved and the
+tier-tab direction settled (2026-08-14 — see the decision block below).
+Still open: the native-Spanish claim-equivalence reviewer and the
+legal/compliance reviewer (where claim class requires one) remain unnamed;
+the claim-inventory disposition remains open (re-derive the outstanding
+count — see above); every merged slice still requires device-matrix
+verification and Blake's live review; and catalog schema, scoring changes,
+and reason activation remain separately gated (Phase 3 and 1.3 as written).
 
 **Mounted-device observations — 2026-08-12 (observations only, not
 approval).** Recorded during the 2026-08-12 device-identity audit on the
@@ -785,25 +827,156 @@ already marked so elsewhere):
    gates and every item-specific gate stand unchanged (see the Phase 1
    authorization block).
 
-### 1.1 — Sleep Brief ◐
+### Phase 1 direction decisions — Nocturne owner review, recorded 2026-08-14
 
-**Gated** — approver Blake, unblocked by his approval of a reviewed prototype,
-recorded here with the date. Two output properties, neither of which may appear in
-a merged diff before that:
+**Evidence source:** the Nocturne demo prototype, branch
+`claude/demo-prototype-round`, exact reviewed commit `6fe1669` (Rev 3.1 plus
+the handoff-clipping repair), entirely under
+`prototypes/demo-round-2026-08-13/`. **Approver: Blake Ford, who approved the
+recommended D1–D6 slate on 2026-08-14** after a read-only briefing comparing
+the prototype against this roadmap and the deployed application. The
+prototype branch remains research — its 17 commits are not merged wholesale;
+approved directions are re-implemented as small canonical PRs under every
+standing constraint (consume-never-re-derive, bilingual-by-construction,
+config-driven copy, the output-regression fixture, and the device-matrix
+merge gate).
 
-- the fixed bilingual heading "Your Sleep Brief" / "Tu Resumen de Sueño" is
-  replaced by, or subordinated to, a need-derived hero;
-- the screen's section order or top-level composition differs from `main`.
+**D1 — Sleep Brief composition APPROVED as the production 1.1 specification,
+as corrected by the owner 2026-08-14.** This is the reviewed-prototype
+approval 1.1's gate named, so **1.1's gate is lifted** (recorded on the
+item). The approved composition: the fixed bilingual heading "Your Sleep
+Brief" / "Tu Resumen de Sueño" is **retained as the screen's semantic heading
+and 0.3 focus anchor**; "Made from *your* answers" / "Creada con *tus*
+respuestas" may render as the **visible hero message beneath it** — a hero
+message under the heading, not a replacement for it; the constellation hero
+(D2) with the eyebrow "Your sleep signature" / "Tu firma de sueño"; the
+engine's own composed reflection sentence rendered verbatim; the 1–3 computed
+trial priorities as a **single-open** disclosure accordion (shipped `why`
+prose plus the in-store `test` prose behind disclosure); and the forward CTA.
+The quiz finish button becomes "See my sleep signature" (its bilingual pair
+ships with it). The reveal animation performs **once**, at quiz finish only;
+every re-render, re-entry and language switch redraws statically;
+`prefers-reduced-motion` is honored. **Not approved: rendering any internal
+archetype or profile nickname/subtitle customer-facing.** The prototype's
+subordinate profile-subtitle chip is excluded from this approval and requires
+its own separate bilingual approval before any surface renders it — this
+keeps the standing fact below ("archetype nicknames never reach the DOM")
+true.
 
-Prototypes and unmerged branches are not these outputs. The component set below is
-a proposal, not an approved layout. *(Direction decision recorded 2026-08-07 —
-see "Phase 1 direction decisions" above; the gate itself is unchanged.)*
+**D2 — Sleep Signature constellation APPROVED as a production component**, in
+the reveal and as the small stamp on the Results header and the Consultation
+Summary card. It is answer-derived and strictly decorative: `aria-hidden`,
+never an engine input, never a scoring surface. Per the 2026-08-12 permanent
+ruling, no screen-reader text alternative is required.
 
-**Proceeds:** prototyping; the firmness dial rendering the existing computed value
-unchanged; and the priority cards **once 0.5 has shipped**, since the detail they
-displace needs somewhere to go first. Replacing the prose priorities block with
-cards inside the existing section slot is a Proceeds change, not a change of
-top-level composition.
+**D3 — Results-card direction APPROVED, as corrected by the owner
+2026-08-14** (all within 1.3's Proceeds; both 1.3 gates stand): (a) the
+hero-plus-support card hierarchy — the first entry of the active tier as a
+large "Best match" card with the remaining entries compact — consuming the
+engine's order at its indices; (b) the Gold/Silver/Bronze **tabs stand**,
+retained and restyled (reaffirming 2026-08-07; the accordion replacement
+stays rejected; no replacement is sought this cycle); (c) **percentage rings
+are not approved for production** — the approved direction is **ordinal,
+tier-relative match-strength language** (tier and position, never a naked
+percentage), framed by the adopted relativity line "Match strength is
+relative within each tier" / "La afinidad es relativa dentro de cada nivel"
+wherever match strength is presented; the prototype's rings are
+prototype-only. Origin display is omitted from the cards entirely for now.
+Per-model personalized reasons remain absent and fail closed — 1.3's reason
+gate is untouched by this decision.
+
+**D4 — Payment Choice state model ADOPTED, superseding 1.5's agenda model.**
+The salesperson-marked "topics to discuss" agenda is replaced by two
+observable dimensions: **`payExplored`** — an accumulating history of payment
+paths whose governed details were deliberately opened (descriptive, never
+intent) — and **`payPref`** — exactly one of: nothing selected, a single
+provisional "currently considering" path, or an authoritative "Not right
+now". Consider is deliberate and one-way (exploring never sets it); Clear is
+the only way to unset a path preference and never erases history; "Not right
+now" is a first-class current state whose handoff row suppresses the explored
+list while preserving it internally. The durable protections carry forward
+unchanged: session-only, never affects scoring or the Sleep Brief, excluded
+from email and diagnostics beyond approved allowlisted events, wipes with the
+session, never a qualification form, never a scoring input. **Adopted with
+it:** the eight proposed envelope copy strings (Payment preference / Options
+explored / Review this option / Hide details / Consider this option /
+Currently considering ✓ / Clear preference / the exploration-consequence line
+preserving the governed no-submission sentence verbatim) enter
+`incoming/lacks_financing.json` through the pipeline — Spanish provisional
+under the native-review gate — and the governed keys still carrying retired
+agenda vocabulary (`agendaNotNow`, `interestNotNowAnnounce`,
+`interestClearedAnnounce`) are renamed in the envelope in that same adoption
+change.
+
+**D5 — Sleep Plan and Consultation Summary.** (a) The **Sleep Plan is
+commissioned as a new production screen** (see the new item 1.7) between
+comparison and the Consultation Summary. (b) **Explicit finalist-state
+semantics are adopted app-wide**: Finalist ✓ (customer-chosen), "Recommended
+starting point" (the engine's top pick, honestly labeled, never silently
+promoted to finalist), and an honest "No finalist selected yet" — no surface
+may silently substitute one state for another. (c) The prototype's
+consultation-card treatment is **adopted as 1.6's Consultation Summary
+direction**: store attribution from config, a status line, the finalist /
+profile / test-priorities / compared / system rows, the payment-preference
+and options-explored rows per D4, a bounded explanatory note varying on
+finalist state × payment state, and no raw quiz answers.
+
+**D6 — Confirmed prototype-only (not approved for production by this
+decision):** presenter mode (its shipping mechanism is decided by the kiosk
+hardening review, not defaulted to a query parameter); the visible
+stale-financing governance band (a separate proposal — if pursued, production
+gets its own dedicated governed key, not a reuse of `staleAnnouncement`;
+register entry added); customer-recorded trial reactions (not built; the
+prototype's own candidate for a next revision); the prototype's
+`touchend`/`pointerdown` guard changes (touch handling changes still require
+Blake's separate sign-off — Invariant 10); and any text wordmark or logo (no
+logo asset exists in the repo; rendering one would fabricate a mark). The
+prototype era's rule against staging financing verification state for
+demonstrations is **not** a prototype-only note — it is permanent governance,
+recorded as Invariant 11.
+
+**What D1–D6 are not.** Not final pixel-level visual approval — every merged
+slice still passes the device-matrix merge gate (both orientations, EN and
+ES) and Blake's live review, as every shipped slice has. Not Spanish
+approval — the native-Spanish review gate stands over all new ES copy. Not a
+scoring, ranking, tier, threshold, cap, back-fill or firmness change — the
+output-regression fixture holds. Not showroom-use authorization — device
+hardening remains blocking.
+
+**Approved slice order** (each its own small PR; merge order may adapt to
+review findings): (1) Results tier-tab restyle + hero-plus-support card
+hierarchy with the ordinal match-strength presentation (D3); (2) Sleep Brief
+recomposition (corrected D1/D2 — constellation
+component, then reveal composition; heading retained); (3) quiz visual/icon pass (1.2);
+(4) Payment Choice model (D4 — envelope extension + validation, then sheet
+interaction, then plan/handoff rows); (5) Sleep Plan screen (D5/1.7 —
+finalist-state machinery, then the screen); (6) Consultation Summary, then
+Welcome, drawer, email (1.6).
+
+### 1.1 — Sleep Brief ⬜
+
+**Gate lifted 2026-08-14.** The gate read: approver Blake, unblocked by his
+approval of a reviewed prototype, recorded here with the date, over two output
+properties — replacing or subordinating the fixed bilingual heading with a
+need-derived hero, and changing the screen's section order or top-level
+composition. **Blake approved the reviewed Nocturne prototype's composition on
+2026-08-14, as corrected in D1 (see the decision block above), which is
+exactly that approval — in the *subordinating* form:** the fixed bilingual
+heading "Your Sleep Brief" / "Tu Resumen de Sueño" is retained as the
+semantic heading and 0.3 focus anchor, with the hero message beneath it; the
+top-level composition changes per the D1 specification. Reviewed diffs
+implementing that specification may ship both formerly-gated outputs. **Still
+excluded:** rendering any internal archetype or profile nickname/subtitle
+customer-facing — that requires its own separate bilingual approval (D1).
+*(An earlier revision's Exit said "three layout properties" where the Gated
+block named two — the Gated block was correct.)*
+
+**Proceeds:** everything — the item is approved to build against the corrected
+D1 specification. The firmness dial and signal badges from the older proposal
+below are neither approved nor rejected by D1: the approved composition
+governs the top level, and any of those elements returns only where it fits
+that composition, under its own constraints (the dial renders the engine's
+exact value; badges restate stored answers verbatim).
 
 *(This item was previously ⬜ while its final design was transitively blocked by
 the device matrix and carried an unmarked hard dependency on 0.5 in prose — a
@@ -812,7 +985,9 @@ worse under-block than the one that prompted this correction.)*
 The central redesign. Reduce reading load and make the first five seconds useful
 to a salesperson presenting it aloud.
 
-Current proposal — **not approved in detail**:
+Earlier proposal — **superseded 2026-08-14 by the approved D1 composition**
+(kept for the constraints it recorded, which stand where their subject
+survives):
 
 - A **need-based hero** derived from the top priority, replacing the generic
   heading. (The heading today reads "Your Sleep Brief" / "Tu Resumen de Sueño".)
@@ -845,12 +1020,12 @@ is currently **fully visible** on the Sleep Brief, labelled "Try this:" — movi
 behind disclosure is a real reduction in visible words, not a relocation of
 something already hidden.
 
-**Exit:** the redesigned Sleep Brief ships with the priorities swap atomic, the
-dial showing the engine's own value, and every accessibility criterion met.
-**Excluded until the gate lifts:** the three layout properties named in the Gated
-block above. This item cannot be closed by shipping prototypes — if Blake has not
-approved a reviewed prototype and it is not recorded here, the remainder is still
-open.
+**Exit:** the redesigned Sleep Brief ships the approved D1 composition on
+`main` with the priorities swap atomic, any rendered firmness value being the
+engine's own, and every accessibility criterion met — verified on the
+confirmed hardware per the phase-wide merge gate. This item cannot be closed
+by shipping prototypes; the 2026-08-14 approval opens implementation, it does
+not close the item.
 
 ### 1.2 — Quiz ⬜
 
@@ -874,34 +1049,26 @@ the structure contract: canonical quiz source → workbook → bundle,
 `QUIZ_CANONICAL` and `CONSULTATION_QUESTIONS` in `tools/validation.py`,
 `resolveConsultationSummary()` and `QUESTION_ACCENTS` in `index.html`, and
 the affected suite fixtures. Deeper cuts (any scoring question) remain
-Phase 3. *(The 1.2 question-transition suite on PR #39's branch pins "of 12"
-totals; it updates to the 10/9 totals when that branch rebases onto this
-change.)*
+Phase 3.
 
-**Question-transition accessibility — an acceptance criterion, not an option.**
+**Question-transition accessibility — RETIRED by permanent owner ruling
+(2026-08-12).** An earlier revision required a bilingual focus-and-context
+announcement for question-to-question advance and called it "an acceptance
+criterion, not an option." Blake ruled screen-reader / VoiceOver announcement
+functionality **permanently out of scope** for this product; the work is
+neither required, deferred, nor gated — it is out of scope, full stop. The
+draft implementation (PR #39) was closed unmerged as a research record. What
+survives the ruling, because it never depended on it: the same-screen guard
+shipped in 0.3 stays; answer controls, touch behaviour, language switching,
+session safety and Review behaviour remain protected by their suites; and the
+sighted-user acceptance criteria (visible focus, contrast, touch targets) in
+the accessibility section apply in full. Do not reopen this as a gate or a
+deferred task.
 
-Advancing between questions calls the question renderer without a screen
-transition, so Phase 0.3 does not announce it and cannot: the same-screen guard
-that suppresses re-render announcements is correct and must stay. An
-assistive-technology user answering question 4 currently gets no indication that
-question 5 has appeared.
-
-Requirements:
-
-- A new question provides a reliable focus and context announcement, bilingual.
-- **No duplicate speech.** The renderer also runs on every option tap, on language
-  switch, and on the two paths that already transition screens and already
-  announce. A new-question guard analogous to the shipped same-screen guard is
-  required.
-- Answer controls, touch behaviour, language switching, session safety and Review
-  behaviour are all preserved. The renderer rewrites its container wholesale, so
-  inline handlers and disabled-state logic must survive.
-- Reuse the shipped refusal gate rather than reimplementing it, and do not
-  reintroduce a deferred or live-region announcer (0.3).
-
-**This is not a scoring change and is not optional because auto-advance is
-unresolved.** Auto-advance is a separate journey decision — see 3.4 🔒. The
-announcement gap exists today with manual navigation.
+**Remaining 1.2 work is visual:** the icon review above, and restyling the
+quiz without changing scoring, answer structure, touch behaviour, or
+navigation semantics. Auto-advance stays a separate locked journey decision —
+see 3.4 🔒.
 
 ### 1.3 — Results and mattress cards ◐
 
@@ -916,14 +1083,18 @@ in a merged diff until its condition is met.
 - **Reason-led per-model personalisation.** Approver: Blake; unblocked by
   populated per-feature catalog reason content. Gated output: any rendered card,
   drawer or summary string presenting a per-model "why this fits *this customer*"
-  reason. Across all 26 models every per-feature reason column is empty and only
-  the generic default is populated, so **placeholder, sample, authored-in-app or
-  generic-default text standing in for that content does not lift the gate** — a
-  diff adding such a string *is* the gated output, not a step toward it.
+  reason. Across all 26 models every per-feature reason column is empty
+  (re-verified 2026-08-14); the generic default is populated on only 14 of the
+  26, and the other 12 carry no reason text at all — so **placeholder, sample,
+  authored-in-app or generic-default text standing in for that content does
+  not lift the gate** — a diff adding such a string *is* the gated output, not
+  a step toward it.
 - **Adoption of a replacement tier navigation.** Approver: Blake; unblocked by his
-  approval of a reviewed prototype. *(Direction decision recorded 2026-08-07 —
-  tabs retained and restyled, accordion rejected; see "Phase 1 direction
-  decisions" above. A merged replacement would remain this gated output.)* Gated output: a merged diff in which the tier
+  approval of a reviewed prototype. *(Resolved for this cycle 2026-08-14: Blake
+  recorded that **the tabs stand** — retained and restyled, accordion rejected,
+  no replacement sought (D3, reaffirming 2026-08-07). The gate stays as
+  written for any future replacement; a merged replacement would remain this
+  gated output.)* Gated output: a merged diff in which the tier
   tab affordance is no longer the shipped Results navigation. Prototypes and
   unmerged branches are not this output. Any replacement must preserve tier
   identity and membership, the internal keys, within-tier ordering, per-tier
@@ -936,8 +1107,15 @@ in a merged diff until its condition is met.
 buyer-characterising labels; keeping sleep fit visually dominant over financing;
 restyling the current tier tabs; and **prototyping** replacement tier navigations,
 including grouped, stacked and accordion layouts. Each must read correctly against
-**today's** content — that is, with only the generic default reason present — and
+**today's** content — that is, with the generic default reason present on only
+14 of 26 models and no reason text at all on the other 12 — and
 must leave the shipped tab affordance in place until the adoption gate lifts.
+
+*(2026-08-14: the approved direction for this Proceeds work is D3 in the
+decision block above — hero-plus-support hierarchy at the engine's indices,
+tabs restyled, and ordinal tier-relative match-strength language framed by the
+relativity line; percentage rings are not approved for production, and origin
+display is omitted from the cards entirely for now.)*
 
 - Rework the card hierarchy so a salesperson can present it at a glance.
 - Lead with **why this fits this customer**, not a wall of generic features.
@@ -952,8 +1130,11 @@ must leave the shipped tab affordance in place until the adoption gate lifts.
 start early because it gates the most valuable part of this redesign. Reasons must
 be accurate, product-specific, bilingual, and safe for a salesperson to repeat.
 
-**Tier navigation — a Phase 1 presentation question, still unresolved.** Approver:
-Blake. Prototyping proceeds; adopting a replacement does not.
+**Tier navigation — resolved for this cycle (2026-08-14): the tabs stand.**
+Blake recorded the tabs as retained and restyled; no replacement is sought
+this cycle, and the adoption gate stays as written for any future one. The
+analysis below is kept because it corrects an earlier wrong claim and governs
+any future replacement proposal.
 
 An earlier draft claimed removing the tab affordance forces Results into a single
 cross-tier ordering. **That was wrong**, and the correction matters because it was
@@ -1032,9 +1213,8 @@ are scannable, no label characterises the buyer, and sleep fit reads as dominant
 over financing. **Excluded until their gates lift — both, separately:** (1) any
 card that leads with a per-model "why this fits" reason, and (2) any replacement
 for the tier tab affordance. Shipping the unblocked portion does not close this
-item: the reason-led card is the point of the redesign, and the tier-navigation
-question stays outstanding here until Blake approves a reviewed prototype or
-records that the tabs stand.
+item: the reason-led card is the point of the redesign. *(The tier-navigation
+clause is satisfied: Blake recorded that the tabs stand, 2026-08-14.)*
 
 ### 1.4 — Sleep System ⬜
 
@@ -1051,14 +1231,24 @@ The largest reading load in the app.
 
 ### 1.5 — Financing footprint ⬜
 
-- **Keep the Payment Choice agenda as built.** It is a deliberate product
-  decision: the salesperson marks financing topics to discuss; sheet controls are
-  persistent toggles carrying their own pressed state and announcing nothing;
-  handoff actions are transitions and do announce; agenda state is session-only,
-  never affects scoring or the Sleep Brief, is excluded from email and diagnostics
-  beyond approved allowlisted events, and wipes with the session. **Do not** revert
-  it to an interested/not-interested classification, a plan selector, a
-  qualification form, or a scoring input.
+- **The Payment Choice model is the 2026-08-14 exploration/preference model
+  (D4) — the agenda model is superseded.** An earlier revision of this bullet
+  mandated keeping the salesperson-marked "topics to discuss" agenda as built;
+  Blake superseded that on 2026-08-14 after the Nocturne review (the framing
+  itself was retired in an owner live-conversation ruling during prototyping).
+  The adopted model and its adoption requirements are recorded once, in D4 in
+  the decision block — implementation replaces the agenda interaction with
+  the explored-history + single-provisional-preference (or authoritative "Not
+  right now") model, shipping the approved envelope copy through the pipeline
+  and renaming the retired-vocabulary governed keys in the same change. The
+  durable protections the old bullet carried transfer unchanged: state is
+  session-only, never affects scoring or the Sleep Brief, is excluded from
+  email and diagnostics beyond approved allowlisted events, and wipes with the
+  session. **Still prohibited:** an interested/not-interested classification,
+  a qualification form, or a scoring input. (A recorded *provisional
+  preference with an explicit Clear* is the adopted design; it is not the
+  prohibited interest classification, and it still never reaches email or
+  unapproved diagnostics.)
 - **Config-disable** duplicate financing content in the mattress drawer and the
   Sleep System. Prefer disabling to deletion: Phase 2 may want a per-product price
   anchor on the drawer, and retiring the placement values from the closed
@@ -1102,8 +1292,17 @@ recorded here, not a guard that would catch a change.
 **Consultation Summary.** Because the salesperson is already present, this is not
 the moment a human enters the journey — it is where the conversation is concluded
 and continued. It should carry the customer's most important sleep needs, the
-finalists to compare, testing priorities, the selected Payment Choice discussion
-topics, next steps, and save/send options where operationally available.
+finalists to compare, testing priorities, the payment-preference and
+options-explored rows (per the adopted D4 model — an earlier revision said
+"the selected Payment Choice discussion topics", which the 2026-08-14 decision
+superseded), next steps, and save/send options where operationally available.
+
+*(2026-08-14, D5c: the Nocturne consultation-card treatment is the adopted
+design direction for this screen — store attribution from config, a status
+line carrying the explicit finalist state, the finalist / profile /
+test-priorities / compared / system rows, the D4 payment rows, a bounded
+explanatory note varying on finalist state × payment state, and no raw quiz
+answers. This is direction, not shipped work; the exit below is unchanged.)*
 
 It carries content added additively by 0.5 under an explicit no-new-component
 constraint, and content substituted in place by 0.6. **1.6 owns the design
@@ -1146,8 +1345,9 @@ So Phase 1's remaining Compare work here is coherence review, not
 reactivation: the entries above exist and the label/behaviour mismatch is
 resolved. **This does not close 1.6** — every other clause of the exit
 (Consultation Summary presentation, Welcome, drawer, email, 0.5's
-provisional presentation) stands, 1.6 stays ⬜, and Phase 1 implementation
-remains unauthorized. Do not turn Compare into another feature wall.
+provisional presentation) stands, and 1.6 stays ⬜. *(An earlier revision of
+this sentence also said Phase 1 implementation remained unauthorized; it was
+authorized 2026-08-12.)* Do not turn Compare into another feature wall.
 
 **Welcome.** Brief, calm, and framed for a salesperson opening the conversation
 with the customer beside them. One restrained Payment Choice acknowledgment — no
@@ -1172,6 +1372,42 @@ terms, or customer data beyond the reviewed payload contract. Keep four things
 distinct: UI implementation, payload capability, GAS activation, and verified
 delivery — `gasUrl` is blank today, so no email change is "live" merely because the
 template exists.
+
+### 1.7 — Sleep Plan ⬜
+
+**Commissioned 2026-08-14 (D5a — added by the Nocturne owner review; this item
+did not exist in earlier revisions).** A new screen between comparison and the
+Consultation Summary: the customer's plan for the in-store trial, presented
+by the salesperson.
+
+What it carries, per the approved direction: an explicit finalist block —
+either the customer-chosen **Finalist**, or the engine's top pick honestly
+labeled **"Recommended starting point"** with the absence of a finalist stated
+plainly and a route back to choose one, never a silent promotion of the top
+pick to finalist; the trial priorities with their in-store testing prose; the
+compared models; the top Sleep System items from the engine's accessory
+ranking, at the engine's indices, with add/added state; and the payment moment
+per D4 (preference line, governed explore action that navigates without
+recording, "Not right now" toggle).
+
+Constraints, none new: consume, never re-derive (the finalist block reads the
+engine's existing top pick; the accessory block reads the engine's existing
+ranking); model lines speak tier and position, never a naked cross-tier
+number; bilingual by construction; all copy config-driven through the
+pipeline; the screen joins `SESSION_LAYERS`/wipe coverage and every
+customer-ending path clears its state; touch behaviour follows the shipped
+patterns (Invariant 10 — the prototype's alternative guards were **not**
+adopted, D6).
+
+**The explicit finalist-state semantics adopted app-wide (D5b) land with or
+before this item** — Finalist ✓ / Recommended starting point / no finalist
+yet — and every surface that speaks about a finalist (this screen, the
+Consultation Summary, the email when its surface is reworked) uses them; no
+surface may substitute one state for another.
+
+**Exit:** the Sleep Plan ships on `main` with the finalist-state semantics,
+wipe coverage proven by the session suites, EN and ES, verified on the
+confirmed hardware per the phase-wide merge gate.
 
 ---
 
@@ -1239,8 +1475,8 @@ criterion, and the breakpoint-justification restriction below lifts on its own
 stated terms. What does **not** change: every Phase 1 merge still requires
 verification on this confirmed hardware, both orientations, English and
 Spanish — and **recording this matrix is not Phase 1 implementation
-authorization**, which remains a separate, explicit owner decision (owner
-directive 2026-08-12; sequence-of-record step 7).
+authorization**, which was a separate, explicit owner decision, granted
+2026-08-12 (see the Phase 1 authorization block).
 
 Prototyping and implementation proceed meanwhile under one restriction: **no new
 CSS breakpoint, and no change to an existing one, may be justified as matching the
@@ -1259,6 +1495,18 @@ device are different designs.
 ## Phase 2 — price and payment
 
 **Build dark first. No customer-facing output in the first stage.**
+
+> **Daybreak is not Phase 2.** The Daybreak work merged 2026-08-14 (PR #42
+> integrity repairs; PR #43 promotions contract + demo) established
+> *promotions governance*: an inert `store-config.promotions` contract
+> (`activeScenario: null`, empty `scenarios`, locked by CI's operating-state
+> invariant), a strict current-event validation contract in
+> `tools/validation.py` (owner authorization, fresh allowlisted evidence,
+> bilingual review), and a fully isolated illustrative Black Friday demo under
+> `demo/` that the production pipeline never consumes. It carries **no
+> verified product prices, no payment calculation, and no activation** — every
+> Phase 2 gate below stands untouched, and `incoming/lacks_catalog_selection.json`
+> remains exactly as the warning box in 2.1 describes it.
 
 ### 2.1 — The dark framework ⬜
 
@@ -1330,8 +1578,10 @@ collected; applications linked only to approved external destinations; emergency
 disable and freshness failure preserved.
 
 Price and Payment Choice should be grounded on the same screen but need not share
-one card. Keep the payment agenda structurally stable rather than varying it by
-tier or by customer interest.
+one card. Keep the payment-choice structure stable rather than varying it by
+tier or by customer interest *(written when 1.5 carried the agenda model; the
+rule transfers unchanged to the 2026-08-14 exploration/preference model — the
+path list and its order do not vary by tier or by recorded preference)*.
 
 ---
 
@@ -1421,11 +1671,8 @@ approval; its presence is a bar on proceeding.
 
 | Decision | Mark | Approver | Unblocked by |
 |---|---|---|---|
-| Tier navigation presentation — adopting a replacement (Phase 1) | 🔒 | Blake | Blake's approval of a reviewed prototype — gated portion of 1.3 ◐; prototyping proceeds now; **not gated by 3.3**. *2026-08-07 direction decision: tabs retained/restyled, accordion rejected (PR #18 @ `8e850c4`) — no replacement is sought this cycle; the gate stays as written for any future replacement* |
 | Auto-advance | 🔒 | Blake | Observed sessions |
 | Review-screen compression or removal | 🔒 | Blake | Observed sessions. Review otherwise stays as it is; this does not hold 1.6 open |
-| Final Sleep Brief layout | 🔒 | Blake | Blake's approval of a reviewed prototype — gated output of 1.1 ◐. *2026-08-07: direction confirmed for continued iteration (PR #18 @ `8e850c4`); final layout remains open pending the recorded revision backlog and mounted-device evidence. 2026-08-10: the mounted-device crowding re-test passed — the revision backlog and Blake's approval remain the open gates* |
-| The device matrix itself | 🔒 | Blake | Confirming the showroom hardware — Phase 1 **merge** gate, blocks merging not starting |
 | Phase 2.2 price/payment activation | 🔒 | Blake + business/legal | Written approval |
 | Scoring case-fold (3.1) | 🔒 | Blake | Approval + enumerated impact |
 | Quiz-tag vocabulary gap (3.2) | 🔒 | Blake | Populate-or-retire decision |
@@ -1433,20 +1680,34 @@ approval; its presence is a bar on proceeding.
 | Firmness stops (3.5) | 🔒 | Blake | Evidence |
 | Persistent identity bar (3.6) | ❓ | Blake | A case for it |
 | Dormant nickname-code cleanup | ❓ | Blake | Analytics review — see below |
+| Visible stale-financing status band (production) | ❓ | Blake | A case for it plus review sign-off. Prototype-only today (D6); if pursued, production gets its own dedicated governed key — not a reuse of `staleAnnouncement` |
+| Customer-recorded trial reactions | ❓ | Blake | A case for it. The Nocturne prototype's own candidate next revision; deliberately not built (D6) |
+| Presenter mode — shipping mechanism | ❓ | Blake + kiosk hardening review | The hardening review decides the mechanism; the prototype's query parameter is rehearsal tooling, not a shipped design (D6) |
 
 *(Resolved and removed from the table: "Phase 1 scoring-fixture exit gate" —
 approved by owner directive 2026-08-12 and built the same day; see the Phase 1
-exit gate block under Standing Phase 1 constraints.)*
+exit gate block under Standing Phase 1 constraints. "Tier navigation
+presentation — adopting a replacement" — resolved for this cycle 2026-08-14:
+Blake recorded that the tabs stand, retained and restyled, accordion rejected
+(D3, reaffirming the 2026-08-07 direction); 1.3's adoption gate stays as
+written for any future replacement proposal. "Final Sleep Brief layout" —
+resolved 2026-08-14: Blake approved the reviewed Nocturne prototype's
+composition as the production 1.1 specification (D1/D2); per-merge
+device-matrix verification and live review still apply to every shipped
+slice. "The device matrix itself" — resolved 2026-08-12: the showroom
+hardware was confirmed and the matrix recorded in the Phase 1 merge-gate
+block; the merge requirement it feeds stands unchanged.)*
 
-**Visible Gold/Silver/Bronze presentation may change in Phase 1** — including
-replacing the tab affordance with a grouped, stacked or accordion layout, which
-preserves tiers, within-tier order and per-tier percentages and needs no engine
-change. That change still needs Blake's approval of a reviewed prototype, but it
-is a *presentation* decision, not a Phase 3 one, and **it does not wait on 3.3**.
-A Phase 1 layout may ship first provided the diff preserves tier identity and
+**Visible Gold/Silver/Bronze presentation: the tabs stand (2026-08-14).** The
+earlier text here advertised grouped, stacked or accordion replacements as a
+live Phase 1 possibility; the accordion was rejected 2026-08-07 and Blake
+recorded the retained-and-restyled tabs as the operative decision for this
+cycle. The structural analysis it carried remains true and governs any future
+replacement proposal: such a change is a *presentation* decision, not a Phase
+3 one, **does not wait on 3.3**, and must preserve tier identity and
 membership, within-tier ordering, per-tier percentage computation, the
-qualification threshold, the result cap and the back-fill, and introduces no
-mixed cross-tier ordering.
+qualification threshold, the result cap and the back-fill, with no mixed
+cross-tier ordering.
 
 **Internal tier keys do not change**, and the structural questions — a global
 maximum, mixed cross-tier ranking, removing or merging a tier, or altering the
@@ -1478,8 +1739,12 @@ for two ancestors. A companion icon-key variable is read by nothing at all.
 for response labels, differentiator titles, trial prompts and summary reasons.
 It shares only a word with the nickname engine. **Do not remove it accidentally.**
 
-**Compare exists.** See the table in 1.6. The working entry is on the Consultation
-Summary; the Sleep Brief CTA is mislabelled; the card-level path is dormant.
+**Compare is fully shipped.** Compare is available from the Results cards
+through the tray and comparison modal (PRs #30/#31/#34, owner-approved live)
+and from the Consultation Summary's preserved "Compare finalists" entry; the
+Sleep Brief CTA — "See My Matches →" (PR #35) — correctly routes through
+Results, per the approved "no first-visit Compare" direction. See the
+reconciled table in 1.6.
 
 **The priorities data has no rank field.** Ordering is by an internal score that is
 never rendered. "Rank" in the 1.1 proposal means display position.
@@ -1514,17 +1779,30 @@ document, not here.
    0.4's hardware gate closed 2026-08-10 with the owner-confirmed
    mounted-device evidence (`docs/kiosk-device-hardening.md`) — **Phase 0 is
    complete.**
-5. 🔨 **The visible redesign** — Phase 1. *(Implementation explicitly
+5. ✅ **Presentation slices shipped between revisions of this document** —
+   the motion/construction program and Compare (PRs #24–#35, ending merge
+   `248123e`), Phase 0 closure docs (PR #36), the device matrix (PR #37), the
+   Phase 1 output-regression exit gate (PR #38), the owner-ruled 12→10
+   question removal (PR #40), and the claim retirement on g6/g7/s3/g8/g9
+   (PR #41).
+6. ✅ **Daybreak** (2026-08-14) — integrity repairs including the
+   owner-approved `locallyMade` bonus retirement (PR #42, merge `b0dc95a`),
+   then the inert promotions contract + isolated Black Friday demo (PR #43,
+   merge `83d4646`). Promotions governance, not Phase 2 pricing — see the
+   note at the top of Phase 2.
+7. 🔨 **The visible redesign** — Phase 1. *(Implementation explicitly
    authorized by Blake 2026-08-12 — see the authorization block at the top of
-   Phase 1; every item-specific gate stands. The output-regression exit gate
-   was built first.)* Start the catalog reason-content
+   Phase 1. Direction set by the 2026-08-14 Nocturne owner review, D1–D6,
+   with its approved slice order; 1.3's reason gate and the Phase 2/3 gates
+   stand.)* Start the catalog reason-content
    authoring (1.3's gated content) in parallel and early; it is not engineering
    work, and it gates **reason-led/personalised-card completion** — not the card
-   redesign itself, which proceeds against today's generic-default content per
+   redesign itself, which proceeds against today's reason content (the generic
+   default on 14 of 26 models only; none on the other 12) per
    1.3's Proceeds list.
-6. ⬜ **Dark pricing/payment foundation** — 2.1.
-7. 🔒 **Activate prices and payments** — 2.2, after business and legal approval.
-8. 🔒 **Structural scoring and tier changes last** — Phase 3.
+8. ⬜ **Dark pricing/payment foundation** — 2.1.
+9. 🔒 **Activate prices and payments** — 2.2, after business and legal approval.
+10. 🔒 **Structural scoring and tier changes last** — Phase 3.
 
 ---
 
@@ -1536,18 +1814,18 @@ described behaviour is the durable anchor.
 
 | # | Finding |
 |---|---|
-| 1 | Quiz: 12 questions, exactly 56 options (11 choice questions plus the firmness slider) — so "review all 56 icons" is a bounded task. *(2026-08-12: now 10 questions / 47 options after the owner-ruled removal of sleep_quality and current_mattress_age — see 1.2)* |
+| 1 | Quiz: 10 questions, exactly 47 options — so "review all 47 icons" is a bounded task. *(As originally recorded: 12 questions / 56 options; reduced 2026-08-12 by the owner-ruled removal of sleep_quality and current_mattress_age — see 1.2)* |
 | 2 | The engine already computes the top three priorities with name, reason, testing prompt and kind; there is no rank field, and ordering is by an unrendered score |
 | 3 | A next-step rail already exists on the Sleep Brief, rendering three steps as plain divs |
 | 4 | The "Try this:" testing prompt is currently fully visible on the Sleep Brief, not behind disclosure |
-| 5 | Per-feature match reasons never render: only the generic default is populated, across all 26 models |
+| 5 | Per-feature match reasons never render: every per-feature reason column is empty. *(Re-measured 2026-08-14 against the post-#41/#42 catalog: still true — and the generic default itself is now populated on only 14 of 26 models, so 12 models carry no reason text at all. 1.3's reason gate stands on this.)* |
 | 6 | Two quiz tags never score against the catalog because the match is case-sensitive; six more match no catalog feature in any casing |
 | 7 | The maximum score is per-tier, so match percentages are not comparable across tiers |
 | 8 | Consultation Summary condition strings are quiz option labels resolved at render time, which is why 0.6 needs a separate mapping rather than a relabel |
 | 9 | Of 8 screens, `welcomeScreen` and `questionScreen` render no heading, and the Sleep Brief heading is empty until runtime — the basis for 0.3's destination policy |
-| 10 | Question-to-question advance renders without a screen transition, so 0.3 does not announce it; the renderer also runs on every option tap and on language switch |
+| 10 | Question-to-question advance renders without a screen transition, so 0.3 does not announce it; the renderer also runs on every option tap and on language switch. *(Announcement work permanently out of scope by owner ruling 2026-08-12 — see 1.2; the finding stays as a description of behaviour, not a task)* |
 | 11 | The data-error overlay was terminal *before* 0.4 — no interactive element, a failure flag never cleared, and absent from the session-layer close list. These are the findings 0.4 was written against, not current state |
-| 12 | Compare works from the Consultation Summary only; the card-level control is never rendered and its tray is unreachable |
+| 12 | Compare is available from the Results cards through the tray and comparison modal and from the Consultation Summary; the Sleep Brief CTA correctly routes through Results (PRs #30/#31/#34/#35 — see the reconciled table in 1.6) |
 | 13 | Archetype nicknames are computed but never reach the DOM; the visible heading is a fixed bilingual string |
 | 14 | `incoming/lacks_catalog_selection.json` carries 26 Queen-only SKU/price/regular-price observations dated 2026-07-30, outside the production generation path |
 | 15 | Accessory prices flow end to end and display today; mattress prices do not exist anywhere in the shipped data |
