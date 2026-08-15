@@ -46,6 +46,12 @@ const html = readFileSync(join(root, "index.html"), "utf8");
 const BASELINE_RAW = readFileSync(
   join(root, "tests", "fixtures", "sleep_brief_baseline_572d405.json"));
 const BASELINE = JSON.parse(BASELINE_RAW.toString("utf8"));
+// Slice 2 moved the Sleep Brief's chrome copy into the governed dictionaries,
+// so the harness resolves t() against the real ones instead of echoing keys.
+const DICTS = {
+  en: JSON.parse(readFileSync(join(root, "data", "dict-en.json"), "utf8")),
+  es: JSON.parse(readFileSync(join(root, "data", "dict-es.json"), "utf8")),
+};
 
 // THE REGENERATION RATCHET. Nothing mechanical can stop a commit regenerating
 // the fixture from changed code — but pinning its hash HERE means doing so
@@ -88,6 +94,7 @@ check("sleep_brief_baseline_572d405.json matches its pinned sha256",
 // ---------- extractions ------------------------------------------------------
 section("extraction");
 const PROFILE_FN = grab(/function showProfileScreen\(\) \{[\s\S]*?\r?\n    \}\r?\n/, "showProfileScreen()");
+const SIGNATURE_FN = grab(/function buildSleepSignatureSvg\(answers\) \{[\s\S]*?\r?\n    \}/, "buildSleepSignatureSvg()");
 const TRIAL_FN = grab(/function renderResultsTrialFocus\(\)\s*\{[\s\S]*?\n    \}/, "renderResultsTrialFocus()");
 const HF2_FN = grab(/function renderHf2Priorities\(\)\s*\{[\s\S]*?\n    \}/, "renderHf2Priorities()");
 const L_FN = grab(/function L\(obj\) \{[\s\S]*?\n    \}/, "L()");
@@ -153,28 +160,34 @@ function runProfile(fixture, lang) {
   const { els, doc } = makeDoc();
   const analytics = { trialFocus: [], log() {} };
   const out = {};
-  new Function("document", "window", "answers", "currentLang", "analytics", "out",
+  const dict = DICTS[lang] || DICTS.en;
+  new Function("document", "window", "answers", "currentLang", "analytics", "out", "dict",
     `"use strict";
-    function t(k) { return k; }
+    function t(k) { return Object.prototype.hasOwnProperty.call(dict, k) ? dict[k] : k; }
     function showScreen() {}
+    function dfmReducedMotion() { return false; }
+    var _briefOpenPriority = null;
     ${ESCAPE_FN}
     ${L_FN}
+    ${SIGNATURE_FN}
     ${PROFILE_FN}
     ${TRIAL_FN}
     out.run = function() { showProfileScreen(); renderResultsTrialFocus(); };
-    `)(doc, {}, JSON.parse(JSON.stringify(fixture)), lang, analytics, out);
+    `)(doc, {}, JSON.parse(JSON.stringify(fixture)), lang, analytics, out, dict);
   out.run();
   return { els, analytics };
 }
 
+// Parses the Slice 2 disclosure accordion. `title` is the toggle's visible
+// (and accessible) name; `why` and `test` are the prose inside the panel —
+// the same three strings the 572d405 rows carried as title/desc/test, which
+// is what lets that fixture keep working as a semantic oracle.
 function parseBriefList(innerHTML) {
   return [...innerHTML.matchAll(/<li class="noct-profile-priority-row">([\s\S]*?)<\/li>/g)]
     .map((m) => ({
-      title: (m[1].match(/priority-title">([\s\S]*?)<\/div>/) || [, ""])[1],
-      desc: (m[1].match(/priority-desc">([\s\S]*?)<\/div>/) || [, ""])[1],
-      tagClass: (m[1].match(/priority-tag (tag-[a-z]+)">/) || [, ""])[1],
-      tag: (m[1].match(/priority-tag tag-[a-z]+">([\s\S]*?)<\/div>/) || [, ""])[1],
-      test: (m[1].match(/priority-test"><strong>[\s\S]*?<\/strong>([\s\S]*?)<\/div>$/) || [, ""])[1],
+      title: (m[1].match(/priority-title">([\s\S]*?)<\/span>/) || [, ""])[1],
+      why: (m[1].match(/priority-why">([\s\S]*?)<\/p>/) || [, ""])[1],
+      test: (m[1].match(/priority-test"><strong>[\s\S]*?<\/strong>([\s\S]*?)<\/p>/) || [, ""])[1],
     }));
 }
 
@@ -230,23 +243,33 @@ for (const f of ORDER_FIXTURES) {
 // ===========================================================================
 // 2. SLEEP BRIEF UNCHANGED — executed output vs the 572d405 pin
 // ===========================================================================
-section("Sleep Brief output is byte-identical to the 572d405 pin");
+// Slice 2 (D1 recomposition, owner-authorized 2026-08-15) changed this
+// screen's STRUCTURE. The fixture and its sha are deliberately UNCHANGED:
+// regenerating a DOM golden from the very code under review would have made
+// the strongest Sleep Brief pin certify whatever the slice produced. Instead
+// the 572d405 bytes keep working as the HISTORICAL SEMANTIC ORACLE — the
+// customer-facing meaning that must survive any recomposition — while the new
+// D1 structural and behavioral contract is owned by
+// tests/sleep_brief_presentation_check.mjs.
+//
+// Surviving, still pinned here: the priority set/order and all three strings
+// per row, the reflection sentence, the heading/intro/plan label, the stored
+// brief and trial-focus state, the Results derivative, and both buttons.
+// Deliberately NOT pinned: the removed surfaces (subtitle line, summary line,
+// meta strip, reassurance, journey rail, category tags) and the raw
+// innerHTML shape, which the recomposition rewrote by ruling. The subtitle
+// keeps its pin as ANALYTICS state — the ruling removed it from the DOM while
+// preserving its computation, and this is what proves that.
+section("Sleep Brief semantics survive the D1 recomposition (572d405 oracle)");
 for (const f of Object.keys(FIXTURES)) {
   for (const lang of ["en", "es"]) {
     const { els, analytics } = runProfile(FIXTURES[f], lang);
     const pin = BASELINE[f][lang];
     const got = parseBriefList(els.get("profilePriorities").innerHTML);
-    check(`[${f}/${lang}] priority rows (title/desc/tag/tagClass/test) unchanged`,
-      JSON.stringify(got) === JSON.stringify(pin.priorities));
-    // Byte equality on the WHOLE block: the parsed fields name what moved;
-    // this catches what they cannot — a div injected mid-row, title/desc
-    // swapped, the "Try this:"/"Pruébalo:" label rewritten, a sub-class
-    // renamed. All four were demonstrated green against the parsed pin alone.
-    check(`[${f}/${lang}] priorities block raw innerHTML byte-identical`,
-      els.get("profilePriorities").innerHTML === pin.prioritiesHtml);
+    const oracle = pin.priorities.map((p) => ({ title: p.title, why: p.desc, test: p.test }));
+    check(`[${f}/${lang}] priority titles, reasons and testing prose unchanged`,
+      JSON.stringify(got) === JSON.stringify(oracle));
     check(`[${f}/${lang}] row count unchanged`, got.length === pin.priorities.length);
-    check(`[${f}/${lang}] summary line unchanged`,
-      els.get("profileSummary").textContent === pin.summary);
     check(`[${f}/${lang}] heading and intro unchanged`,
       els.get("profilePrioritiesHeading").textContent === pin.heading
       && els.get("profilePrioritiesIntro").textContent === pin.intro);
@@ -254,19 +277,18 @@ for (const f of Object.keys(FIXTURES)) {
       JSON.stringify(analytics.profileBriefByLang) === JSON.stringify(pin.briefByLang));
     check(`[${f}/${lang}] results trial-focus derivative unchanged`,
       els.get("resultsTrialFocus").innerHTML === pin.resultsTrialFocus);
-    check(`[${f}/${lang}] the REST of the screen unchanged (name, reflection, reassurance, meta, journey, CTA)`,
-      els.get("profileEyebrow").textContent === pin.eyebrow
-      && els.get("profileName").textContent === pin.profileName
-      && els.get("profileSubtitle").textContent === pin.subtitle
+    check(`[${f}/${lang}] retained screen copy unchanged (heading, reflection, plan label, both buttons)`,
+      els.get("profileName").textContent === pin.profileName
       && els.get("profileReflection").textContent === pin.reflection
-      && els.get("profileReassurance").textContent === pin.reassurance
       && els.get("profilePlanLabel").textContent === pin.planLabel
-      && els.get("profileMetaStrip").innerHTML === pin.metaStrip
-      && els.get("profileJourneyHeading").textContent === pin.journeyHeading
-      && els.get("profileJourneySteps").innerHTML === pin.journeySteps
-      && els.get("profileJourneyCopy").textContent === pin.journeyCopy
       && els.get("profileSecondary").textContent === pin.secondary
       && (els.get("profileCta").innerHTML || els.get("profileCta").textContent) === pin.cta);
+    // The ruling removed the subtitle from the customer-visible DOM and
+    // PRESERVED its computation, analytics fields and email fallback. The
+    // oracle proves the computation is byte-for-byte the historical one.
+    check(`[${f}/${lang}] subtitle computation preserved in analytics (removed from the DOM only)`,
+      analytics.profileSubtitle === pin.subtitle
+      && analytics.profileSubtitleByLang[lang] === pin.subtitle);
     // The pin's trialFocus carried only {en, es}; the widened state must still
     // agree on those names, in the same positions.
     check(`[${f}/${lang}] trialFocus name pairs unchanged`,

@@ -421,13 +421,31 @@ section('reduced motion: enabled preview OWNS the transition — immediate, zero
     env.calls.showProfile.length === 1);
 }
 {
-  // flag OFF (rollback state) + reduced motion: legacy behavior, untouched
+  // Flag OFF (rollback state) + reduced motion. Slice 2 HARDENED this
+  // retained fallback (owner ruling 2026-08-15): when the gather declines
+  // ownership — because the flag is off, or because its elements are missing
+  // — reduced motion must not inherit the 1500 ms staged overlay the gather
+  // would have skipped. Same destination, no staging, no in-flight flag.
   const env = makeEnv({ hostname: 'beford782.github.io', search: '', reduced: true, flagOff: true });
   ok('disabled + reduced: body class absent', !env.body.classList.contains('dfm-motion'));
   env.api.startProfileReveal();
-  ok('disabled + reduced: legacy overlay path runs unchanged', env.calls.overlayOpen === 1);
+  ok('disabled + reduced: the staged overlay is NOT opened (hardened fallback)',
+    env.calls.overlayOpen === 0);
+  ok('disabled + reduced: advance happens IMMEDIATELY at time zero',
+    env.calls.showProfile.length === 1 && env.calls.showProfile[0] === 0);
+  ok('disabled + reduced: no in-flight flag left behind',
+    env.sandbox.window._profileRevealInFlight !== true);
+  env.clock.advance(3000);
+  ok('disabled + reduced: no delayed second advance (single destination arrival)',
+    env.calls.showProfile.length === 1);
+}
+{
+  // The non-reduced rollback path is untouched: staged overlay, 1500 ms.
+  const env = makeEnv({ hostname: 'beford782.github.io', search: '', reduced: false, flagOff: true });
+  env.api.startProfileReveal();
+  ok('disabled + full motion: legacy overlay path runs unchanged', env.calls.overlayOpen === 1);
   env.clock.advance(1500);
-  ok('disabled + reduced: legacy 1500 ms arrival preserved',
+  ok('disabled + full motion: legacy 1500 ms arrival preserved',
     env.calls.showProfile.length === 1 && env.calls.showProfile[0] === 1500);
 }
 {

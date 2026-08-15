@@ -1566,26 +1566,70 @@
       font-weight: 400;
       letter-spacing: -0.035em;
       line-height: 0.98;
-      outline: none;
     }
 
-    .noct-profile-subtitle {
-      margin-bottom: 20px;
-      color: #665D54;
-      font-family: var(--font-sans);
-      font-size: 13px;
-      font-weight: 650;
-      letter-spacing: 0.13em;
-      line-height: 1.4;
-      text-transform: uppercase;
-    }
-
-    .noct-profile-summary {
-      margin: 0 0 13px;
+    /* D1: a hero message UNDER the heading, never a replacement for it. */
+    .noct-profile-hero {
+      margin: 0 0 20px;
       color: #342A23;
       font-family: var(--font-serif);
       font-size: clamp(20px, 1.9vw, 24px);
       line-height: 1.32;
+    }
+
+    /* Sleep Signature (D2): decorative, answer-derived, aria-hidden. The
+       figure is drawn in currentColor, so each surface tints it. */
+    .noct-profile-signature {
+      margin: 0 0 20px;
+      color: #9A7445;
+    }
+
+    .noct-profile-signature .sleep-signature,
+    .noct-results-signature .sleep-signature,
+    .hf2-review-signature .sleep-signature {
+      display: block;
+      height: auto;
+    }
+
+    .noct-profile-signature .sleep-signature {
+      width: clamp(132px, 15vw, 168px);
+    }
+
+    /* The entry animation performs ONCE, on the quiz-completion entry
+       (window._sleepSignatureEntry). Re-entry and language switches redraw
+       the identical figure statically, and reduced motion never animates —
+       the JS gate refuses the class, and this media query is the backstop. */
+    .noct-profile-signature.is-entering .sleep-signature {
+      animation: sleepSignatureDraw 900ms ease-out both;
+    }
+
+    @keyframes sleepSignatureDraw {
+      from { opacity: 0; transform: scale(0.94); }
+      to   { opacity: 1; transform: none; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .noct-profile-signature.is-entering .sleep-signature {
+        animation: none;
+      }
+    }
+
+    .noct-results-signature {
+      margin-bottom: 8px;
+      color: var(--accent-ink);
+    }
+
+    .noct-results-signature .sleep-signature {
+      width: 54px;
+    }
+
+    .hf2-review-signature {
+      margin-bottom: 8px;
+      color: var(--accent-ink);
+    }
+
+    .hf2-review-signature .sleep-signature {
+      width: 48px;
     }
 
     .profile-launch__reflection {
@@ -1594,53 +1638,6 @@
       font-family: var(--font-sans);
       font-size: 14px;
       line-height: 1.45;
-    }
-
-    .noct-profile-meta-strip {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 10px;
-      margin: auto 0 16px;
-      padding: 14px 0;
-      border-top: 1px solid #D1C5B6;
-      border-bottom: 1px solid #D1C5B6;
-    }
-
-    .noct-profile-meta {
-      display: flex;
-      flex-direction: column;
-      min-width: 0;
-    }
-
-    .noct-profile-meta-value {
-      order: 1;
-      margin: 0 0 5px;
-      color: #7D5B34;
-      font-family: var(--font-serif);
-      font-size: 20px;
-      font-style: italic;
-      line-height: 1.1;
-    }
-
-    .noct-profile-meta-label {
-      order: 2;
-      color: #7A6E61;
-      font-family: var(--font-sans);
-      font-size: 9px;
-      font-weight: 700;
-      letter-spacing: 0.17em;
-      line-height: 1.3;
-      text-transform: uppercase;
-    }
-
-    .profile-launch__reassurance {
-      margin: 0;
-      padding-left: 14px;
-      border-left: 2px solid var(--store-primary);
-      color: #4F463E;
-      font-family: var(--font-sans);
-      font-size: 12px;
-      line-height: 1.42;
     }
 
     .profile-launch__brief {
@@ -1682,29 +1679,58 @@
     }
 
     .noct-profile-priority-row {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: 6px 14px;
-      padding: 10px 14px;
       border: 1px solid #D9CEC0;
       border-radius: 9px;
       background: #FAF6EF;
+      overflow: hidden;
     }
 
-    .noct-profile-priority-body {
-      min-width: 0;
+    /* Single-open disclosure (D1): a real button carrying aria-expanded,
+       with the priority title as its bilingual accessible name. Both the
+       reason and the in-store testing prose live in the panel below. */
+    .noct-profile-priority-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      width: 100%;
+      min-width: 44px;
+      min-height: 44px;
+      padding: 11px 14px;
+      border: 0;
+      background: transparent;
+      color: #342A23;
+      cursor: pointer;
+      font-family: var(--font-serif);
+      text-align: left;
+      touch-action: manipulation;
     }
 
     .noct-profile-priority-title {
-      margin-bottom: 4px;
-      color: #342A23;
-      font-family: var(--font-serif);
       font-size: 17px;
       line-height: 1.2;
     }
 
-    .noct-profile-priority-desc,
+    .noct-profile-priority-chevron {
+      flex: none;
+      width: 9px;
+      height: 9px;
+      border-right: 2px solid var(--accent-ink);
+      border-bottom: 2px solid var(--accent-ink);
+      transform: rotate(45deg) translate(-2px, -2px);
+    }
+
+    .noct-profile-priority-toggle[aria-expanded="true"] .noct-profile-priority-chevron {
+      transform: rotate(225deg) translate(-2px, -2px);
+    }
+
+    .noct-profile-priority-panel {
+      padding: 0 14px 12px;
+    }
+
+    .noct-profile-priority-why,
     .noct-profile-priority-test {
+      margin: 0;
       color: #665D54;
       font-family: var(--font-sans);
       font-size: 11.5px;
@@ -1712,7 +1738,7 @@
     }
 
     .noct-profile-priority-test {
-      grid-column: 1 / -1;
+      margin-top: 6px;
       padding-top: 6px;
       border-top: 1px solid #E3D9CD;
       color: #4F463E;
@@ -1725,86 +1751,17 @@
       text-transform: uppercase;
     }
 
-    .noct-profile-priority-tag {
-      align-self: start;
-      padding: 6px 9px;
-      border: 1px solid #CDBEAD;
-      border-radius: 999px;
-      color: #75685B;
-      font-family: var(--font-sans);
-      font-size: 8px;
-      font-weight: 800;
-      letter-spacing: 0.14em;
-      line-height: 1;
-      text-transform: uppercase;
-      white-space: nowrap;
-    }
-
-    .noct-profile-priority-tag.tag-key {
-      border-color: rgba(177, 45, 21, 0.28);
-      background: rgba(177, 45, 21, 0.08);
-      color: var(--accent-ink);
-    }
-
-    .noct-profile-priority-tag.tag-high {
-      border-color: rgba(72, 100, 122, 0.34);
-      background: #EEF2F4;
-      color: #48647A;
-    }
-
-    .profile-launch__journey {
-      margin-top: auto;
-      padding-top: 12px;
-      border-top: 1px solid #D9CEC0;
-    }
-
-    .profile-launch__journey-steps {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 8px;
-      margin: 7px 0 6px;
-    }
-
-    .profile-launch__journey-step {
-      position: relative;
-      min-width: 0;
-      padding: 8px 8px 8px 26px;
-      border-radius: 7px;
-      background: #F3EEE5;
-      color: #3F352D;
-      font-family: var(--font-sans);
-      font-size: 10.5px;
-      font-weight: 700;
-      line-height: 1.3;
-    }
-
-    .profile-launch__journey-step::before {
-      position: absolute;
-      top: 8px;
-      left: 10px;
-      color: #9A7445;
-      content: attr(data-step);
-      font-size: 10px;
-      font-weight: 850;
-    }
-
-    .profile-launch__journey-copy {
-      margin: 0;
-      color: #7A6E61;
-      font-family: var(--font-sans);
-      font-size: 11.5px;
-      line-height: 1.45;
-    }
-
     .profile-launch__actions {
       display: flex;
       align-items: center;
       gap: 12px;
-      margin-top: 12px;
+      margin-top: auto;
+      padding-top: 12px;
     }
 
     .noct-profile-cta,
     .noct-profile-secondary {
+      min-width: 44px;
       min-height: 48px;
       border-radius: 8px;
       cursor: pointer;
@@ -1867,9 +1824,6 @@
       .noct-profile-name {
         font-size: clamp(46px, 10vw, 66px);
       }
-      .noct-profile-meta-strip {
-        margin-top: 8px;
-      }
       .profile-launch__actions {
         position: sticky;
         bottom: 0;
@@ -1888,9 +1842,6 @@
         border-radius: 10px;
         flex-direction: column;
         text-align: left;
-      }
-      .profile-launch__journey-steps {
-        grid-template-columns: 1fr;
       }
       .profile-launch__actions {
         align-items: stretch;
@@ -9370,7 +9321,11 @@
     .fin-sheet-title:focus-visible,
     .fin-official-link:focus-visible,
     .noct-tier-tab:focus-visible,
-    #resultsScreen .noct-results-cta:focus-visible {
+    #resultsScreen .noct-results-cta:focus-visible,
+    .noct-profile-name:focus-visible,
+    .noct-profile-priority-toggle:focus-visible,
+    .noct-profile-cta:focus-visible,
+    .noct-profile-secondary:focus-visible {
       outline: 3px solid var(--focus-ring-outer);
       outline-offset: 2px;
       box-shadow: 0 0 0 5px var(--focus-ring-inner);
@@ -9381,7 +9336,11 @@
       .fin-sheet-title:focus-visible,
       .fin-official-link:focus-visible,
       .noct-tier-tab:focus-visible,
-      #resultsScreen .noct-results-cta:focus-visible {
+      #resultsScreen .noct-results-cta:focus-visible,
+      .noct-profile-name:focus-visible,
+      .noct-profile-priority-toggle:focus-visible,
+      .noct-profile-cta:focus-visible,
+      .noct-profile-secondary:focus-visible {
         outline-color: CanvasText;
         box-shadow: none;
       }
@@ -10001,7 +9960,7 @@
       <div class="noct-review-list" id="reviewList"></div>
       <div class="noct-quiz-nav">
         <button class="noct-quiz-back" onclick="prevQuestion()" ontouchend="event.preventDefault();prevQuestion();" id="reviewBackBtn">&larr; Back</button>
-        <button class="noct-quiz-next" onclick="window.startProfileReveal()" ontouchend="event.preventDefault();window.startProfileReveal();" id="reviewNextBtn">Looks good &rarr;</button>
+        <button class="noct-quiz-next" onclick="window.startProfileReveal()" ontouchend="event.preventDefault();window.startProfileReveal();" id="reviewNextBtn">See my sleep signature</button>
       </div>
     </div>
   </div>
@@ -10010,24 +9969,17 @@
   <div class="screen" id="profileScreen" role="region">
     <main class="noct-profile" aria-labelledby="profileName">
       <section class="profile-launch__identity" aria-labelledby="profileName">
-        <div class="noct-profile-eyebrow" id="profileEyebrow">Here is what we heard</div>
         <h1 class="noct-profile-name" id="profileName" tabindex="-1"></h1>
-        <div class="noct-profile-subtitle" id="profileSubtitle"></div>
-        <p class="noct-profile-summary" id="profileSummary"></p>
+        <p class="noct-profile-hero" id="profileHero"></p>
+        <div class="noct-profile-eyebrow" id="profileSignatureEyebrow"></div>
+        <div class="noct-profile-signature" id="profileSignature"></div>
         <p class="profile-launch__reflection" id="profileReflection"></p>
-        <dl class="noct-profile-meta-strip" id="profileMetaStrip"></dl>
-        <p class="profile-launch__reassurance" id="profileReassurance"></p>
       </section>
       <section class="profile-launch__brief" aria-labelledby="profilePrioritiesHeading">
         <div class="profile-launch__section-label" id="profilePlanLabel">Your guided trial</div>
         <h2 class="noct-profile-priorities-heading" id="profilePrioritiesHeading">What we will test together</h2>
         <p class="profile-launch__intro" id="profilePrioritiesIntro"></p>
         <ol class="noct-profile-priorities" id="profilePriorities"></ol>
-        <div class="profile-launch__journey">
-          <div class="profile-launch__section-label" id="profileJourneyHeading">What happens next</div>
-          <div class="profile-launch__journey-steps" id="profileJourneySteps"></div>
-          <p class="profile-launch__journey-copy" id="profileJourneyCopy"></p>
-        </div>
         <div class="profile-launch__actions">
           <button class="noct-profile-secondary" id="profileSecondary" onclick="event.preventDefault();window.showScreen('reviewScreen');window.renderReview();" ontouchend="event.preventDefault();window.showScreen('reviewScreen');window.renderReview();"></button>
           <button class="noct-profile-cta" id="profileCta" onclick="window.startResultsReveal()" ontouchend="event.preventDefault();window.startResultsReveal();"></button>
@@ -10039,6 +9991,9 @@
   <!-- SCREEN: Results -->
   <div class="screen" id="resultsScreen" role="region">
     <div class="noct-results">
+      <!-- Sleep Signature stamp (D2, Slice 2): the same answer-derived,
+           decorative figure the Sleep Brief renders, at stamp scale. -->
+      <div class="noct-results-signature" id="resultsSignature"></div>
       <div class="noct-results-eyebrow" id="resultsEyebrow">Your matches</div>
       <h1 class="noct-results-headline" id="resultsHeadline">Your <span class="accent">strongest matches</span> are ready</h1>
       <p class="noct-results-subhead" id="resultsSubhead">Tap any match to see why it fits, then ask your sleep specialist to compare your options.</p>
@@ -10299,6 +10254,9 @@
     </div>
 
     <div class="hf2-review-intro">
+      <!-- Sleep Signature stamp (D2, Slice 2). Stamp only: this screen's
+           layout, resolver, rows, priorities and copy are untouched. -->
+      <div class="hf2-review-signature" id="hf2Signature"></div>
       <div class="hf2-review-eyebrow" id="hf2ReviewEyebrow">Review with the customer</div>
       <h1 class="hf2-review-title" id="hf2ReviewTitle">Review Your Sleep Plan</h1>
       <p class="hf2-review-subtitle" id="hf2ReviewSubtitle">A quick recap of what matters, what felt best, and what to keep on the shortlist.</p>
@@ -13348,7 +13306,8 @@
           : "A quick check, then your specialist builds your recommendations.";
       }
       if (backBtn) backBtn.innerHTML = es ? '&larr; Atrás' : '&larr; Back';
-      if (nextBtn) nextBtn.innerHTML = es ? 'Todo bien &rarr;' : 'Looks good &rarr;';
+      // D1: the quiz finish control names the destination it opens.
+      if (nextBtn) nextBtn.textContent = t('brief.quiz_finish');
     }
 
     window.renderReview = function() {
@@ -13443,6 +13402,86 @@
     }
 
     // ----- SHOW PROFILE SCREEN -----
+    // ===== SLEEP SIGNATURE CONSTELLATION (D2, Slice 2) =====
+    // Deterministic, language-independent, strictly decorative. The geometry
+    // is a pure function of the customer's answers — no clock, no randomness,
+    // no DOM or engine reads — so the Sleep Brief hero, the Results header
+    // stamp, and the Consultation Summary stamp always agree, and a re-render
+    // or language switch redraws the identical figure. aria-hidden throughout:
+    // by owner ruling the constellation is never an engine input, never a
+    // scoring surface, and needs no text alternative. currentColor only —
+    // each surface tints it through CSS, never through a store color here.
+    function buildSleepSignatureSvg(answers) {
+      var a = answers || {};
+      // Each answer dimension owns a fixed bearing around the figure; the
+      // chosen option picks that star's distance from center. The index maps
+      // are part of the visual contract — reordering one re-draws every
+      // customer's figure at once — so they are stable literals.
+      var positionIdx = { side: 0, back: 1, stomach: 2, combo: 3, no_idea: 4 };
+      var tempIdx = { hot: 0, cold: 1, opposite: 2, comfortable: 3 };
+      var partnerIdx = { partner: 0, family: 1, solo: 2 };
+      var sizeIdx = { twin: 0, twin_xl: 1, full: 2, queen: 3, king: 4, cal_king: 5 };
+      var countSignals = function(list) {
+        if (!Array.isArray(list)) return 0;
+        var n = list.filter(function(v) { return v && v !== 'none'; }).length;
+        return n > 4 ? 4 : n;
+      };
+      var dims = [
+        { idx: positionIdx[a.sleep_position], span: 5 },
+        { idx: tempIdx[a.temperature], span: 4 },
+        { idx: (typeof a.firmness === 'number' ? a.firmness : 5) - 1, span: 10 },
+        { idx: countSignals(a.sleep_issues), span: 5 },
+        { idx: countSignals(a.health_conditions), span: 5 },
+        { idx: partnerIdx[a.partner_sleep], span: 3 },
+        { idx: sizeIdx[a.mattress_size], span: 6 }
+      ];
+      var stars = dims.map(function(dim, i) {
+        var idx = (typeof dim.idx === 'number' && dim.idx >= 0 && dim.idx < dim.span)
+          ? dim.idx
+          : Math.floor(dim.span / 2);
+        var angle = (Math.PI * 2 * i) / dims.length - Math.PI / 2;
+        var radius = 18 + (idx / (dim.span - 1)) * 30;
+        return {
+          x: (60 + radius * Math.cos(angle)).toFixed(1),
+          y: (60 + radius * Math.sin(angle)).toFixed(1),
+          r: (1.6 + (idx % 3) * 0.6).toFixed(1)
+        };
+      });
+      var points = stars.map(function(s) { return s.x + ',' + s.y; });
+      points.push(points[0]);
+      return '<svg class="sleep-signature" viewBox="0 0 120 120" aria-hidden="true" focusable="false">'
+        + '<polyline points="' + points.join(' ') + '" fill="none" stroke="currentColor" stroke-opacity="0.3" stroke-width="1"/>'
+        + stars.map(function(s) {
+            return '<circle cx="' + s.x + '" cy="' + s.y + '" r="' + s.r + '" fill="currentColor"/>';
+          }).join('')
+        + '</svg>';
+    }
+
+    // Which trial priority is open on the Sleep Brief, by engine index, or
+    // null when all are closed. Single-open by ruling: opening one closes the
+    // others. A re-render (language switch, re-entry) reads this back, so the
+    // customer's disclosure survives a copy swap; the authoritative wipe
+    // clears it with the rest of the session.
+    var _briefOpenPriority = null;
+
+    window._toggleBriefPriority = function(index) {
+      _briefOpenPriority = (_briefOpenPriority === index) ? null : index;
+      // The rows are already rendered; this is a state flip on the existing
+      // markup, not a re-render — so the toggle the customer just pressed
+      // keeps focus. `hidden` (not opacity) keeps a closed panel out of the
+      // page entirely.
+      var list = document.getElementById('profilePriorities');
+      var rows = list && list.children ? list.children.length : 0;
+      for (var i = 0; i < rows; i++) {
+        var toggle = document.getElementById('briefPriorityToggle-' + i);
+        var panel = document.getElementById('briefPriorityPanel-' + i);
+        if (!toggle || !panel) continue;
+        var open = _briefOpenPriority === i;
+        toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        panel.hidden = !open;
+      }
+    };
+
     function showProfileScreen() {
       document.getElementById('progressFill').style.width = '100%';
 
@@ -13570,9 +13609,27 @@
         if (el) el.textContent = value;
       };
 
-      setProfileText('profileEyebrow', es ? 'Personalizado con tus respuestas' : 'Personalized from your answers');
-      setProfileText('profileName', es ? 'Tu Resumen de Sueño' : 'Your Sleep Brief');
-      setProfileText('profileSubtitle', subtitle);
+      // D1 composition: the fixed heading stays the screen's semantic heading
+      // and focus anchor, with the ruled hero message BENEATH it — never a
+      // replacement for it. The answer-derived subtitle is no longer rendered
+      // to the customer (owner ruling 2026-08-15); its computation, analytics
+      // fields and email fallback are preserved below, untouched.
+      setProfileText('profileName', t('brief.heading'));
+      setProfileText('profileHero', t('brief.hero'));
+      setProfileText('profileSignatureEyebrow', t('brief.signature_eyebrow'));
+      var signatureEl = document.getElementById('profileSignature');
+      if (signatureEl) {
+        signatureEl.innerHTML = buildSleepSignatureSvg(answers);
+        // The entry animation performs ONCE, on the quiz-completion entry.
+        // Re-entry and language switches redraw the identical figure
+        // statically, and reduced motion never animates it.
+        var animateSignature = window._sleepSignatureEntry === true && !dfmReducedMotion();
+        window._sleepSignatureEntry = false;
+        if (signatureEl.classList) {
+          if (animateSignature) signatureEl.classList.add('is-entering');
+          else signatureEl.classList.remove('is-entering');
+        }
+      }
 
       var positionPhrase = {
         side: { en: 'sleep mostly on your side', es: 'duermes principalmente de lado' },
@@ -13600,34 +13657,13 @@
       // ----- CUSTOMER FACTS -----
       var sizeLabels = { twin: 'Twin', twin_xl: 'Twin XL', full: 'Full', queen: 'Queen', king: 'King', cal_king: 'Cal King' };
       var sizeVal = sizeLabels[answers.mattress_size] || (es ? 'Sin definir' : 'Not set');
-      var firmVal = firmness <= 3 ? (es ? 'Suave' : 'Plush') : firmness >= 7 ? (es ? 'Firme' : 'Firm') : (es ? 'Medio' : 'Medium');
-      var tempVal = temp === 'hot'
-        ? (es ? 'Duerme con calor' : 'Sleeps hot')
-        : temp === 'cold'
-          ? (es ? 'Duerme con frío' : 'Sleeps cold')
-          : temp === 'opposite'
-            ? (es ? 'Temperaturas diferentes' : 'Different sleep temperatures')
-            : (es ? 'Temperatura cómoda' : 'Comfortable temperature');
       var reflection = es
         ? 'Buscas un colchón ' + sizeVal + ', ' + sharePhrase + ', ' + (positionPhrase[position] ? positionPhrase[position].es : 'quieres dormir con más comodidad') + ' y prefieres ' + feelPhrase + '.'
         : 'You are shopping for a ' + sizeVal + ', ' + sharePhrase + ', ' + (positionPhrase[position] ? positionPhrase[position].en : 'want to sleep more comfortably') + ', and prefer ' + feelPhrase + '.';
       setProfileText('profileReflection', reflection);
-      var metaStrip = document.getElementById('profileMetaStrip');
-      if (metaStrip) {
-        metaStrip.innerHTML =
-          '<div class="noct-profile-meta"><dt class="noct-profile-meta-label">' + (es ? 'Tamaño' : 'Size') + '</dt><dd class="noct-profile-meta-value">' + escapeHtml(sizeVal) + '</dd></div>' +
-          '<div class="noct-profile-meta"><dt class="noct-profile-meta-label">' + (es ? 'Sensación' : 'Feel') + '</dt><dd class="noct-profile-meta-value">' + escapeHtml(firmVal) + '</dd></div>' +
-          '<div class="noct-profile-meta"><dt class="noct-profile-meta-label">' + (es ? 'Temperatura' : 'Temperature') + '</dt><dd class="noct-profile-meta-value">' + escapeHtml(tempVal) + '</dd></div>';
-      }
-
-      setProfileText('profileReassurance', es
-        ? 'Este resumen define por dónde empezamos. Tu comodidad durante la prueba decide qué se queda.'
-        : 'This brief guides where we start. Your comfort during the test decides what stays.');
-      setProfileText('profilePlanLabel', es ? 'Tu prueba guiada' : 'Your guided trial');
-      setProfileText('profilePrioritiesHeading', es ? 'Lo que probaremos juntos' : 'What we will test together');
-      setProfileText('profilePrioritiesIntro', es
-        ? 'Usa estas señales para comparar cada colchón en lugar de depender solo de una primera impresión.'
-        : 'Use these signals to compare each mattress instead of relying on first impressions alone.');
+      setProfileText('profilePlanLabel', t('brief.plan_label'));
+      setProfileText('profilePrioritiesHeading', t('brief.priorities_heading'));
+      setProfileText('profilePrioritiesIntro', t('brief.priorities_intro'));
 
       // These priorities shape consultation copy only. Mattress scoring is
       // calculated separately and remains unchanged.
@@ -13837,10 +13873,6 @@
         briefFocusByLang[lang] = naturalList(briefTerms, lang);
       });
       var briefFocus = briefFocusByLang[currentLang] || briefFocusByLang.en;
-      var briefSummary = es
-        ? 'Tu punto de partida: ' + briefFocus + '.'
-        : 'Your starting point: ' + briefFocus + '.';
-      setProfileText('profileSummary', briefSummary);
       analytics.profileBrief = (es ? 'Resumen de sueño' : 'Sleep brief') + ' · ' + briefFocus;
       analytics.profileBriefByLang = {
         en: 'Sleep brief · ' + briefFocusByLang.en,
@@ -13864,45 +13896,35 @@
         };
       });
 
-      var priorityLabel = function(kind) {
-        if (kind === 'need') return es ? 'Debe resolver' : 'Must solve';
-        if (kind === 'compare') return es ? 'Vale comparar' : 'Worth comparing';
-        return es ? 'Preferencia' : 'Feel preference';
-      };
-      var priorityTagClass = function(kind) {
-        if (kind === 'need') return 'tag-key';
-        if (kind === 'compare') return 'tag-high';
-        return 'tag-preference';
-      };
-
-      // ----- RENDER TRIAL PRIORITIES -----
+      // ----- RENDER TRIAL PRIORITIES (D1 single-open disclosure) -----
+      // Position is the order — the row set and its sequence are the engine's
+      // own topPriorities, never re-derived here. Each row's toggle is a real
+      // button whose accessible name is the bilingual priority title; BOTH the
+      // reason and the in-store testing prose sit in the panel behind the
+      // disclosure (owner correction 2026-08-15). The category tags are
+      // retired by the same ruling.
       var prioritiesEl = document.getElementById('profilePriorities');
       if (prioritiesEl) {
-        prioritiesEl.innerHTML = topPriorities.map(function(p) {
+        prioritiesEl.innerHTML = topPriorities.map(function(p, i) {
+          var open = _briefOpenPriority === i;
           return '<li class="noct-profile-priority-row">'
-            + '<div class="noct-profile-priority-body">'
-            + '<div class="noct-profile-priority-title">' + escapeHtml(p.name) + '</div>'
-            + '<div class="noct-profile-priority-desc">' + escapeHtml(p.why) + '</div>'
+            + '<button type="button" class="noct-profile-priority-toggle"'
+            + ' id="briefPriorityToggle-' + i + '"'
+            + ' aria-expanded="' + (open ? 'true' : 'false') + '"'
+            + ' aria-controls="briefPriorityPanel-' + i + '"'
+            + ' onclick="window._toggleBriefPriority(' + i + ')"'
+            + ' ontouchend="event.preventDefault();window._toggleBriefPriority(' + i + ');">'
+            + '<span class="noct-profile-priority-title">' + escapeHtml(p.name) + '</span>'
+            + '<span class="noct-profile-priority-chevron" aria-hidden="true"></span>'
+            + '</button>'
+            + '<div class="noct-profile-priority-panel" id="briefPriorityPanel-' + i + '"'
+            + (open ? '' : ' hidden') + '>'
+            + '<p class="noct-profile-priority-why">' + escapeHtml(p.why) + '</p>'
+            + '<p class="noct-profile-priority-test"><strong>' + escapeHtml(t('brief.try_this')) + '</strong>' + escapeHtml(p.test) + '</p>'
             + '</div>'
-            + '<div class="noct-profile-priority-tag ' + priorityTagClass(p.kind) + '">' + escapeHtml(priorityLabel(p.kind)) + '</div>'
-            + '<div class="noct-profile-priority-test"><strong>' + (es ? 'Pruébalo: ' : 'Try this: ') + '</strong>' + escapeHtml(p.test) + '</div>'
             + '</li>';
         }).join('');
       }
-
-      setProfileText('profileJourneyHeading', es ? 'Lo que sigue' : 'What happens next');
-      var journeySteps = document.getElementById('profileJourneySteps');
-      if (journeySteps) {
-        var steps = es
-          ? ['Comparar tus opciones', 'Registrar qué se siente mejor', 'Construir alrededor del finalista']
-          : ['Compare your matches', 'Record what feels best', 'Build around the finalist'];
-        journeySteps.innerHTML = steps.map(function(step, index) {
-          return '<div class="profile-launch__journey-step" data-step="' + (index + 1) + '">' + escapeHtml(step) + '</div>';
-        }).join('');
-      }
-      setProfileText('profileJourneyCopy', es
-        ? 'Después exploraremos Ajustabilidad, Soporte, Almohada y Protección. Cada elección es opcional.'
-        : 'Then we will explore Adjustability, Support, Pillow, and Protection. Every choice is optional.');
 
       // The meaningful calculation beat happens before this screen. This CTA
       // uses only a brief handoff into the three mattress directions. Its label
@@ -14217,6 +14239,11 @@
 
     function renderResultsChrome() {
       var es = currentLang === 'es';
+      // D2: the same answer-derived decorative figure the Sleep Brief renders,
+      // at stamp scale. Identical geometry by construction — one renderer, one
+      // input — and never animated here.
+      var resultsSignature = document.getElementById('resultsSignature');
+      if (resultsSignature) resultsSignature.innerHTML = buildSleepSignatureSvg(answers);
       document.getElementById('resultsEyebrow').textContent = es ? 'Tus opciones' : 'Your matches';
       document.getElementById('resultsHeadline').innerHTML = es
         ? 'Tus opciones <span class="accent">más compatibles</span> están listas'
@@ -14870,7 +14897,9 @@
     }
 
     // ===== DFM MOTION SPIKE (begin) =====
-    // Flag-gated, default OFF.
+    // Flag-gated; the production switch below is ON (owner decision, recorded
+    // in a reviewed commit), so the gather owns the review→Sleep Brief
+    // transition and reduced motion advances straight to the Brief.
     // Production motion foundation: one explicit gate, a minimal
     // interruptible transition, and the Card Table gather. Approved
     // direction only ("Hand and Cloth"); everything below is inert unless
@@ -14921,6 +14950,7 @@
       window._profileRevealInFlight = false;
       var reviewScreen = document.getElementById('reviewScreen');
       if (reviewScreen && reviewScreen.classList.contains('active')) {
+        window._sleepSignatureEntry = true;
         window.showProfileScreen();
       }
     }
@@ -14936,7 +14966,10 @@
         // zero animations, zero clones, no legacy overlay, no 1500 ms wait —
         // a direct synchronous advance to the same Sleep Brief destination
         // (showProfileScreen moves focus exactly as it does today). Nothing
-        // is async here, so the in-flight flag is never needed.
+        // is async here, so the in-flight flag is never needed. The Sleep
+        // Signature entry is still marked: the render gates the animation on
+        // reduced motion itself, so this path draws the figure statically.
+        window._sleepSignatureEntry = true;
         window.showProfileScreen();
         return true;
       }
@@ -15344,12 +15377,28 @@
     // preparing the consultation starting point.
     window.startProfileReveal = function() {
       if (window._profileRevealInFlight) return;
+      // A newly completed or revised quiz opens the Brief with every trial
+      // priority closed: the disclosure belongs to the reading, not to the
+      // customer's history, and a return through Edit Answers must not
+      // reopen whatever was expanded before. Reset HERE, at the quiz-finish
+      // entry only — a language switch re-renders through showProfileScreen()
+      // directly and preserves the open row.
+      _briefOpenPriority = null;
       // DFM MOTION SPIKE: when the flag resolves enabled, the gather owns
       // this transition; disabled or reduced-motion paths fall through to
       // the staged reveal below completely unchanged.
       if (window.dfmStartGather && window.dfmStartGather()) return;
+      // Retained fallback, hardened (Slice 2): if the gather declines
+      // ownership, reduced motion must not be handed the 1500 ms staged
+      // overlay the gather would have skipped. Same destination, no staging.
+      if (dfmReducedMotion()) {
+        window._sleepSignatureEntry = true;
+        window.showProfileScreen();
+        return;
+      }
       var elements = getConsultationRevealElements();
       if (!elements.overlay || !elements.title || !elements.subtitle) {
+        window._sleepSignatureEntry = true;
         window.showProfileScreen();
         return;
       }
@@ -15390,6 +15439,7 @@
         window._profileRevealInFlight = false;
         var reviewScreen = document.getElementById('reviewScreen');
         if (reviewScreen && reviewScreen.classList.contains('active')) {
+          window._sleepSignatureEntry = true;
           window.showProfileScreen();
         }
       }, 1500);
@@ -17824,6 +17874,11 @@
     }
 
     function renderHf2Brief() {
+      // D2 stamp only: the shared decorative figure, identical geometry to the
+      // Sleep Brief and the Results header. This screen's resolver, rows,
+      // priorities, layout and copy are deliberately untouched by Slice 2.
+      var hf2Signature = document.getElementById('hf2Signature');
+      if (hf2Signature) hf2Signature.innerHTML = buildSleepSignatureSvg(answers);
       var context = document.getElementById('hf2BriefContext');
       var who = document.getElementById('hf2BriefWho');
       var profile = document.getElementById('hf2BriefProfile');
@@ -19383,8 +19438,9 @@
     // screen's render path before it can be seen again.
     var SESSION_CONTENT_IDS = [
       'questionContainer', 'reviewList',
-      'profileName', 'profilePriorities', 'profileJourneySteps', 'profileMetaStrip',
-      'profileSecondary', 'profileCta',
+      'profileName', 'profilePriorities', 'profileSignature', 'profileHero',
+      'profileReflection', 'profileSecondary', 'profileCta',
+      'resultsSignature', 'hf2Signature',
       'resultsHeadline', 'tierTabs', 'tierDescriptor', 'topPickContainer',
       'supportingRow', 'resultsTrialFocus',
       'drawerName', 'drawerDifferentiators', 'dfmConstructionSection', 'drawerTryPrompts', 'drawerPromotionDetail',
@@ -19582,6 +19638,12 @@
         clearSessionTimers();
         window._profileRevealInFlight = false;
         window._resultsRevealInFlight = false;
+        // Slice 2: the next customer opens the Sleep Brief with every trial
+        // priority closed, and their own first entry — not this session's —
+        // decides whether the Sleep Signature animates.
+        // (typeof-guarded so extracted-module test sandboxes stay runnable.)
+        if (typeof _briefOpenPriority !== 'undefined') _briefOpenPriority = null;
+        window._sleepSignatureEntry = false;
         // DFM MOTION SPIKE: a wipe mid-gather must not leave clones in the
         // (hidden) layer; the registry below removes its class, this removes
         // its contents. Generation bump orphans any not-yet-fired finisher.

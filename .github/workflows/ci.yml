@@ -421,6 +421,15 @@ jobs:
       - name: results presentation (hierarchy, ordinal labels, tabs)
         run: node tests/results_presentation_check.mjs
 
+      # Sleep Brief recomposition (Slice 2, D1+D2 2026-08-15): extracts and
+      # EXECUTES the sleep-signature constellation renderer — deterministic,
+      # language-independent, answer-derived, strictly decorative — and, with
+      # the recomposition, the D1 structural/behavioral contract (retained
+      # heading + hero, single-open why+test disclosure, removed surfaces,
+      # cross-surface geometry identity, dict-driven copy, focus/touch/wipe).
+      - name: sleep brief presentation (constellation, D1 composition)
+        run: node tests/sleep_brief_presentation_check.mjs
+
       # Daybreak PR 2 — production/demo separation. The committed production
       # promotions block must stay the inert contract (a temporary pre-runtime
       # activation lock; a later reviewed change may deliberately relax the

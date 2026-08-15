@@ -68,6 +68,13 @@ const INTEGRITY = ["tests/integrity_repairs_check.mjs"];
 // de-rendered synthesized priority rows, and the promotion hooks on both card
 // types.
 const RESULTS = ["tests/results_presentation_check.mjs"];
+// Sleep Brief observer (Slice 2, D1+D2 2026-08-15): the sleep-brief suite owns
+// the constellation's determinism/decorative contract and, with the
+// recomposition, the D1 structural and behavioral contract.
+const BRIEF = ["tests/sleep_brief_presentation_check.mjs"];
+// The motion suite owns the review→Sleep Brief transition paths, including
+// the reduced-motion hardening of the retained legacy fallback (Slice 2).
+const MOTION = ["tests/motion_flag_check.mjs"];
 
 // ---------------------------------------------------------------------------
 // THE MANIFEST. [label, find, replace] — `find` may span lines; index.html is
@@ -292,9 +299,12 @@ const MUTATIONS = [
   ["the top-three bound is widened",
     "var topPriorities = priorities.slice(0, 3);",
     "var topPriorities = priorities.slice(0, 10);", PRIORITIES],
+  // Anchor updated for the Slice 2 disclosure accordion (the row renderer now
+  // takes the index too); the property — engine order IS render order — is
+  // unchanged, and both observers still see it.
   ["the Sleep Brief list renders reversed",
-    "prioritiesEl.innerHTML = topPriorities.map(function(p) {",
-    "prioritiesEl.innerHTML = topPriorities.slice().reverse().map(function(p) {", PRIORITIES],
+    "prioritiesEl.innerHTML = topPriorities.map(function(p, i) {",
+    "prioritiesEl.innerHTML = topPriorities.slice().reverse().map(function(p, i) {", PRIORITIES],
   ["the stored state loses its Spanish prose",
     "why: { en: priority.whyEn, es: priority.whyEs },",
     "why: { en: priority.whyEn, es: priority.whyEn },", PRIORITIES],
@@ -426,9 +436,12 @@ const MUTATIONS = [
     EMAIL_PRIORITIES, "Code.gs"],
 
   // --- the Sleep Brief pin ---------------------------------------------------
+  // Anchor updated for the Slice 2 disclosure panel, which now carries the
+  // reason prose; the property — the render reads the language-RESOLVED
+  // field, never the English one — is unchanged.
   ["the Sleep Brief render reads a widened field instead of the resolved one",
-    "+ '<div class=\"noct-profile-priority-desc\">' + escapeHtml(p.why) + '</div>'",
-    "+ '<div class=\"noct-profile-priority-desc\">' + escapeHtml(p.whyEn) + '</div>'",
+    "+ '<p class=\"noct-profile-priority-why\">' + escapeHtml(p.why) + '</p>'",
+    "+ '<p class=\"noct-profile-priority-why\">' + escapeHtml(p.whyEn) + '</p>'",
     PRIORITIES],
   ["the brief summary stops resolving Spanish names",
     "var name = lang === 'es' ? priority.nameEs : priority.nameEn;",
@@ -761,6 +774,64 @@ const MUTATIONS = [
   ["results: the tier tap strands keyboard focus on the detached tab",
     "      var tab = document.getElementById('tierTab-' + tier);\n      if (tab) { try { tab.focus({ preventScroll: true }); } catch (err) { tab.focus(); } }\n",
     "", RESULTS],
+
+  // --- Slice 2: the Sleep Signature constellation (D2) ---------------------
+  ["constellation: the geometry goes nondeterministic",
+    "        var angle = (Math.PI * 2 * i) / dims.length - Math.PI / 2;",
+    "        var angle = (Math.PI * 2 * i) / dims.length - Math.PI / 2 + Math.random() * 0.01;",
+    BRIEF],
+  ["constellation: the decorative shield is dropped",
+    "viewBox=\"0 0 120 120\" aria-hidden=\"true\" focusable=\"false\"",
+    "viewBox=\"0 0 120 120\"", BRIEF],
+
+  // --- Slice 2: the D1 Sleep Brief composition ----------------------------
+  ["brief: the heading stops resolving from the governed dictionary",
+    "setProfileText('profileName', t('brief.heading'));",
+    "setProfileText('profileName', 'Your Sleep Brief');", BRIEF],
+  ["brief: the ruled hero message is dropped from beneath the heading",
+    "      setProfileText('profileHero', t('brief.hero'));\n", "", BRIEF],
+  ["brief: the answer-derived subtitle returns to the customer-visible DOM",
+    "        <p class=\"noct-profile-hero\" id=\"profileHero\"></p>\n",
+    "        <p class=\"noct-profile-hero\" id=\"profileHero\"></p>\n        <div id=\"profileSubtitle\"></div>\n",
+    BRIEF],
+  ["brief: every disclosure opens at once (single-open contract lost)",
+    "          var open = _briefOpenPriority === i;", "          var open = true;", BRIEF],
+  ["brief: a revised quiz completion inherits the previous open disclosure",
+    "      _briefOpenPriority = null;\n", "", BRIEF],
+  ["brief: opening a second priority stops closing the first",
+    "      _briefOpenPriority = (_briefOpenPriority === index) ? null : index;",
+    "      _briefOpenPriority = index;", BRIEF],
+  ["brief: the disclosure stops announcing its state",
+    "            + ' aria-expanded=\"' + (open ? 'true' : 'false') + '\"'\n", "", BRIEF],
+  ["brief: the testing prose leaves the disclosure panel",
+    "            + '<p class=\"noct-profile-priority-test\"><strong>' + escapeHtml(t('brief.try_this')) + '</strong>' + escapeHtml(p.test) + '</p>'\n",
+    "", BRIEF],
+  ["brief: the reason prose leaves the disclosure panel",
+    "            + '<p class=\"noct-profile-priority-why\">' + escapeHtml(p.why) + '</p>'\n",
+    "", BRIEF],
+  ["brief: the disclosure toggle falls below the 44px touch floor",
+    "      min-width: 44px;\n      min-height: 44px;\n      padding: 11px 14px;",
+    "      padding: 11px 14px;", BRIEF],
+  ["brief: the focus destination suppresses its own indicator again",
+    "      letter-spacing: -0.035em;\n      line-height: 0.98;\n    }",
+    "      letter-spacing: -0.035em;\n      line-height: 0.98;\n      outline: none;\n    }", BRIEF],
+  ["brief: the wipe stops owning the Sleep Signature containers",
+    "      'profileName', 'profilePriorities', 'profileSignature', 'profileHero',",
+    "      'profileName', 'profilePriorities', 'profileHero',", BRIEF],
+  ["brief: the signature animates on every render, not just the quiz entry",
+    "        window._sleepSignatureEntry = false;\n", "", BRIEF],
+  ["brief: the Results header stamp stops sharing the answer-derived geometry",
+    "      if (resultsSignature) resultsSignature.innerHTML = buildSleepSignatureSvg(answers);",
+    "      if (resultsSignature) resultsSignature.innerHTML = '';", BRIEF],
+  ["brief: the Consultation Summary stamp is dropped",
+    "      if (hf2Signature) hf2Signature.innerHTML = buildSleepSignatureSvg(answers);\n",
+    "", BRIEF],
+  ["brief: the Spanish signature eyebrow is anglicized",
+    "\"brief.signature_eyebrow\": \"Tu firma de sueño\",",
+    "\"brief.signature_eyebrow\": \"Your sleep signature\",", BRIEF, "data/dict-es.json"],
+  ["brief: the retained reveal fallback stops honoring reduced motion",
+    "      if (dfmReducedMotion()) {\n        window._sleepSignatureEntry = true;\n        window.showProfileScreen();\n        return;\n      }\n      var elements = getConsultationRevealElements();",
+    "      var elements = getConsultationRevealElements();", MOTION],
 
 ];
 

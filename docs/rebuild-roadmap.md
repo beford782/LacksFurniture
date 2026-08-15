@@ -869,6 +869,42 @@ Summary card. It is answer-derived and strictly decorative: `aria-hidden`,
 never an engine input, never a scoring surface. Per the 2026-08-12 permanent
 ruling, no screen-reader text alternative is required.
 
+*(Slice 2 clarification — owner rulings 2026-08-15, recorded with the
+implementation of D1 + D2 under item 1.1. **Composition.** The heading is
+retained and the ruled hero message renders beneath it; the constellation
+carries its ruled eyebrow; the engine's reflection sentence is unchanged;
+the 1–3 computed priorities become a single-open disclosure accordion whose
+panel carries **both** the reason and the in-store testing prose (an earlier
+reading that left the reason permanently visible was corrected by the owner);
+the forward CTA keeps its owner-ruled "See My Matches →" label and Results
+route, and Edit Answers is retained as a subdued secondary action. The quiz
+finish control is relabeled "See my sleep signature". **Removed from the
+customer-visible screen:** the answer-derived subtitle line, the summary
+line, the meta strip, the reassurance line, the journey rail, and the
+priority category tags. The subtitle's computation, its `analytics` fields
+and its email fallback are preserved untouched — the ruling removed it from
+the DOM only. **Excluded from this slice:** the firmness dial and signal
+badges (neither approved nor rejected by D1, and optional), and the
+2026-08-07 Sleep Brief backlog, both deferred. **Motion.** The Card Table
+gather is retained as the production entry path; the constellation animates
+only on the quiz-completion entry, while re-entry and language switches
+redraw the identical figure statically; the retained legacy reveal fallback
+was hardened so reduced motion advances straight to the Brief instead of
+inheriting the staged overlay the gather would have skipped. **Copy** for the
+new and surviving D1 chrome moved to the governed dictionaries; the unrelated
+orphaned `profile.*` and `review.looks_good` keys are left for a later
+cleanup by ruling. **D2 placements** all ship here — Sleep Brief hero,
+Results header stamp, and a stamp-only addition to the Consultation Summary
+whose layout, resolver, rows, priorities and copy are untouched.
+**Repairs in-slice** (required by D1's own accessibility criteria): the focus
+destination's suppressed indicator, and wipe ownership of every container the
+recomposed screen renders into. **Fixture policy.** Both pinned fixtures and
+both `BASELINE_SHA256` values are unchanged: the 572d405 Sleep Brief baseline
+is retained as the historical *semantic* oracle for what survives the
+recomposition, and the Phase 1 harvester was decoupled from the removed
+meta-strip markup rather than re-baselined. The new D1 structural and
+behavioral contract lives in `tests/sleep_brief_presentation_check.mjs`.)*
+
 **D3 — Results-card direction APPROVED, as corrected by the owner
 2026-08-14** (all within 1.3's Proceeds; both 1.3 gates stand): (a) the
 hero-plus-support card hierarchy — the first entry of the active tier as a
