@@ -407,6 +407,20 @@ jobs:
       - name: integrity repairs (availability claims, RSA panel wipe)
         run: node tests/integrity_repairs_check.mjs
 
+      # Results presentation (Slice 1, D3 2026-08-14): extracts and EXECUTES
+      # the real tier-tab, tier-descriptor, lead-card, support-card and
+      # _renderResults renderers against a DOM shim. Pins the index-only
+      # hero/support hierarchy at the engine's own cap (a four-item
+      # negative-control input proves the view never re-applies it), the
+      # ruled EN/ES role labels and relativity line resolved from the
+      # governed dictionaries, aria-pressed tier tabs with stable ids, the
+      # 44px touch floor and focus/forced-colors wiring, tier_view fidelity,
+      # the retired buyer-characterising descriptor, the de-rendered
+      # synthesized priority rows (helper and non-Results consumers intact),
+      # and bans on percentages, rings, provenance and nickname output.
+      - name: results presentation (hierarchy, ordinal labels, tabs)
+        run: node tests/results_presentation_check.mjs
+
       # Daybreak PR 2 — production/demo separation. The committed production
       # promotions block must stay the inert contract (a temporary pre-runtime
       # activation lock; a later reviewed change may deliberately relax the

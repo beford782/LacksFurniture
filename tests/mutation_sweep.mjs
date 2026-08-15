@@ -61,6 +61,13 @@ const CMPE = ["tests/compare_entry_check.mjs"];
 // PR 1 integrity observer: the integrity suite owns the retired
 // availability claims and the RSA-panel wipe entry.
 const INTEGRITY = ["tests/integrity_repairs_check.mjs"];
+// Results presentation observer (Slice 1, 2026-08-14): the results suite owns
+// the index-only hero/support hierarchy and its absent presentation cap, the
+// tier-tab state contract and touch floor, the ruled EN/ES match-ordinal dict
+// keys and relativity line, the retired buyer-characterising descriptor, the
+// de-rendered synthesized priority rows, and the promotion hooks on both card
+// types.
+const RESULTS = ["tests/results_presentation_check.mjs"];
 
 // ---------------------------------------------------------------------------
 // THE MANIFEST. [label, find, replace] — `find` may span lines; index.html is
@@ -697,6 +704,64 @@ const MUTATIONS = [
     "{ id: 'hf2RsaPanel', remove: ['is-open'] },",
     INTEGRITY],
 
+  // --- Results presentation (Slice 1, 2026-08-14) --------------------------
+  // D3: index-only hierarchy at the engine's own cap, ruled dict labels, the
+  // relativity line, restyled 44px tabs with real selected-state semantics,
+  // no buyer labels, no provenance, no synthesized priority rows on cards.
+  ["results: the hero renders a different index than the engine's first entry",
+    "renderTopPickCard(list[0], tier);",
+    "renderTopPickCard(list[list.length - 1], tier);", RESULTS],
+  ["results: the support cards render in reversed order",
+    "renderSupportingCards(supports, tier);",
+    "renderSupportingCards(supports.slice().reverse(), tier);", RESULTS],
+  ["results: the supports are predicate-filtered on meetsMatchThreshold",
+    "var supports = list.slice(1);",
+    "var supports = list.slice(1).filter(function(m){ return m.meetsMatchThreshold; });",
+    RESULTS],
+  ["results: the presentation layer re-applies the engine cap",
+    "var supports = list.slice(1);",
+    "var supports = list.slice(1, 3);", RESULTS],
+  ["results: the ordinal role label reads pct off the item",
+    "var ordinalKey = i === 0 ? 'results.match_second'",
+    "var ordinalKey = (m.pct >= 90) ? null : i === 0 ? 'results.match_second'",
+    RESULTS],
+  ["results: the lead role label conditions on meetsMatchThreshold",
+    "escapeHtml(t('results.match_lead'))",
+    "escapeHtml(m.meetsMatchThreshold ? t('results.match_lead') : '')", RESULTS],
+  ["results: the tier tab stops announcing its selected state",
+    "          + ' aria-pressed=\"' + (isActive ? 'true' : 'false') + '\"'\n",
+    "", RESULTS],
+  ["results: the tier tab falls below the 44px touch floor",
+    "      min-height: 44px;\n      padding: 10px 20px 10px 24px;",
+    "      padding: 10px 20px 10px 24px;", RESULTS],
+  ["results: the relativity line is dropped from the tier descriptor",
+    "      html += '<span class=\"tier-relativity\">' + escapeHtml(t('results.match_relativity')) + '</span>';\n",
+    "", RESULTS],
+  ["results: the Spanish relativity line is silently anglicized",
+    "\"results.match_relativity\": \"La afinidad es relativa dentro de cada nivel\"",
+    "\"results.match_relativity\": \"Match strength is relative within each tier\"",
+    RESULTS, "data/dict-es.json"],
+  ["results: a fabricated reason fallback stands in for missing catalog content",
+    "      var reasonHtml = reason\n        ? '<p class=\"noct-toppick-reason\">' + escapeHtml(reason) + '</p>'\n        : '';",
+    "      var reasonHtml = '<p class=\"noct-toppick-reason\">' + escapeHtml(reason || (es ? 'Ideal para ti' : 'A great fit for you')) + '</p>';",
+    RESULTS],
+  ["results: an origin/provenance chip returns to the lead card",
+    "        +   '<div class=\"noct-toppick-brand\">' + escapeHtml(brandLine) + '</div>'",
+    "        +   (m.locallyMade ? '<div class=\"noct-origin-chip\">Made in Texas</div>' : '')\n        +   '<div class=\"noct-toppick-brand\">' + escapeHtml(brandLine) + '</div>'",
+    RESULTS],
+  ["results: the promotion badges hook is removed from the support cards",
+    "          +   promotionBadgesHtml(m)\n",
+    "", RESULTS],
+  ["results: the promotion offer tab hook is removed from the lead card",
+    "        + promotionOfferTabHtml(promotion)\n        + img",
+    "        + img", RESULTS],
+  ["results: tier_view logs a hardcoded tier instead of the viewed one",
+    "        analytics.log('tier_view', { tier: tier });",
+    "        analytics.log('tier_view', { tier: 'gold' });", RESULTS],
+  ["results: the tier tap strands keyboard focus on the detached tab",
+    "      var tab = document.getElementById('tierTab-' + tier);\n      if (tab) { try { tab.focus({ preventScroll: true }); } catch (err) { tab.focus(); } }\n",
+    "", RESULTS],
+
 ];
 
 // ---------------------------------------------------------------------------
@@ -720,6 +785,7 @@ const PRISTINE = readFileSync(join(sandbox, "index.html"), "utf8");
 const PRISTINE_BY_FILE = {
   "index.html": PRISTINE,
   "Code.gs": readFileSync(join(sandbox, "Code.gs"), "utf8"),
+  "data/dict-es.json": readFileSync(join(sandbox, "data", "dict-es.json"), "utf8"),
 };
 
 function runSuites(suites) {

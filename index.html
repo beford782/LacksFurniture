@@ -2007,48 +2007,50 @@
     .noct-tier-tabs {
       display: flex;
       justify-content: center;
-      gap: 40px;
-      margin-bottom: 8px;
+      gap: 14px;
+      margin-bottom: 12px;
       padding-bottom: 14px;
       border-bottom: 0.5px solid var(--color-border);
     }
 
+    /* Pill tabs. The selected state is carried by aria-pressed plus the
+       filled pill (surface-token ink on a text-token fill — both resolve
+       per theme, never the raw store primary). Single-selector rule: the
+       results suite greps this body for the 44px floor. */
     .noct-tier-tab {
       background: transparent;
-      border: none;
+      /* Transparent border reserves the box the forced-colors selected cue
+         paints into, so a tab switch never reflows the label. */
+      border: 2px solid transparent;
+      border-radius: 999px;
       font-family: var(--font-sans);
       font-size: 13px;
       font-weight: 500;
       letter-spacing: 0.3em;
       text-transform: uppercase;
-      color: var(--color-text-subtle);
+      /* Muted, not subtle: the resting tab is 13px normal text and must
+         clear 4.5:1 on the warm page (subtle is 4.30:1 there). */
+      color: var(--color-text-muted);
       cursor: pointer;
       touch-action: manipulation;
-      padding: 8px 4px;
+      min-height: 44px;
+      padding: 10px 20px 10px 24px;
       position: relative;
-      transition: color 0.15s ease;
+      transition: color 0.15s ease, background 0.15s ease;
     }
 
-    .noct-tier-tab:hover { color: var(--color-text-muted); }
+    .noct-tier-tab:hover { color: var(--color-text); }
 
     .noct-tier-tab.active {
-      color: var(--color-accent);
-    }
-
-    .noct-tier-tab.active::after {
-      content: "";
-      position: absolute;
-      left: 0;
-      right: 0;
-      bottom: -15px;
-      height: 1px;
-      background: var(--color-accent);
+      color: var(--color-surface);
+      background: var(--color-text);
     }
 
     .noct-tier-descriptor {
       font-family: var(--font-sans);
       font-size: 12px;
-      color: var(--color-text-subtle);
+      /* Muted for the same 4.5:1 reason as the resting tab above. */
+      color: var(--color-text-muted);
       text-align: center;
       margin-bottom: 36px;
       letter-spacing: 0.02em;
@@ -2057,6 +2059,14 @@
     .noct-tier-descriptor .tier-name {
       color: var(--color-accent);
       font-weight: 500;
+    }
+
+    .noct-tier-descriptor .tier-relativity {
+      display: block;
+      margin-top: 6px;
+      font-size: 11px;
+      color: var(--color-text-muted);
+      letter-spacing: 0.04em;
     }
 
     .noct-toppick {
@@ -2187,59 +2197,6 @@
       color: var(--color-text-muted);
     }
 
-    .noct-toppick-priorities {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .noct-toppick-priority-row {
-      display: flex;
-      align-items: center;
-      gap: 20px;
-      padding: 16px 0;
-      border-bottom: 0.5px solid var(--color-border);
-    }
-
-    .noct-toppick-priority-rank {
-      font-family: var(--font-serif);
-      font-style: italic;
-      font-size: 22px;
-      color: var(--color-accent);
-      width: 28px;
-      text-align: center;
-      flex-shrink: 0;
-    }
-
-    .noct-toppick-priority-body { flex: 1; min-width: 0; }
-
-    .noct-toppick-priority-title {
-      font-family: var(--font-serif);
-      font-size: 18px;
-      color: var(--color-text);
-      line-height: 1.2;
-      margin-bottom: 3px;
-    }
-
-    .noct-toppick-priority-desc {
-      font-family: var(--font-sans);
-      font-size: 13px;
-      color: var(--color-text-muted);
-      line-height: 1.4;
-    }
-
-    .noct-toppick-priority-tag {
-      font-family: var(--font-sans);
-      font-size: 10px;
-      letter-spacing: 0.25em;
-      text-transform: uppercase;
-      padding: 6px 12px;
-      border-radius: var(--radius);
-      white-space: nowrap;
-      flex-shrink: 0;
-      border: 0.5px solid var(--color-accent);
-      color: var(--color-accent);
-    }
-
     .noct-toppick-actions {
       display: flex;
       justify-content: flex-end;
@@ -2274,6 +2231,16 @@
     }
 
     .noct-support-body { padding: 22px 24px 24px; flex: 1; display: flex; flex-direction: column; }
+
+    .noct-support-role {
+      font-family: var(--font-sans);
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--color-accent);
+      margin-bottom: 8px;
+    }
 
     .noct-support-brand {
       font-family: var(--font-sans);
@@ -2359,33 +2326,8 @@
       margin-right: 4px;
     }
 
-    .noct-support-meta .match-line {
-      font-family: var(--font-serif);
-      font-style: italic;
-      color: var(--color-accent);
-      font-size: 13px;
-    }
-
-    .noct-support-priorities {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      margin-bottom: auto;
-      padding-bottom: 14px;
-    }
-
-    .noct-support-chip {
-      font-family: var(--font-sans);
-      font-size: 10px;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      padding: 5px 10px;
-      border-radius: var(--radius);
-      border: 0.5px solid var(--color-border);
-      color: var(--color-text-muted);
-    }
-
     .noct-support-actions {
+      margin-top: auto;
       display: flex;
       justify-content: flex-end;
       align-items: center;
@@ -8680,6 +8622,7 @@
     }
     #resultsScreen .noct-results-eyebrow,
     #resultsScreen .noct-toppick-eyebrow,
+    #resultsScreen .noct-support-role,
     #resultsScreen .noct-tier-descriptor .tier-name,
     #hf2Screen .hf2-review-eyebrow,
     #hf2Screen .hf2-review-section__label {
@@ -8688,16 +8631,11 @@
     #resultsScreen .noct-results-headline .accent {
       color: #7D5B34;
     }
-    #resultsScreen .noct-tier-tab.active {
-      color: var(--accent-ink);
-    }
-    #resultsScreen .noct-tier-tab.active::after {
-      height: 2px;
-      /* The active-tab underline is a STATE indicator, so it needs 3:1 against
-         the surface (WCAG 1.4.11). The brand primary is ~1.5:1 on this cream
-         and cannot carry that job even though it is only 2px of paint. */
-      background: var(--accent-ink);
-    }
+    /* The active tier tab is a STATE indicator, so its fill needs 3:1 against
+       the surface (WCAG 1.4.11). The base pill rule resolves to
+       --color-text (#2F271E) on this theme — the same ink contrast_check
+       proves >= 4.5:1 on every warm surface — and never the brand primary,
+       which is ~1.5:1 on this cream and cannot carry that job. */
     #resultsScreen .noct-toppick,
     #resultsScreen .noct-support-card,
     #hf2Screen .hf2-review-section {
@@ -9431,6 +9369,7 @@
     .fin-sheet-close:focus-visible,
     .fin-sheet-title:focus-visible,
     .fin-official-link:focus-visible,
+    .noct-tier-tab:focus-visible,
     #resultsScreen .noct-results-cta:focus-visible {
       outline: 3px solid var(--focus-ring-outer);
       outline-offset: 2px;
@@ -9441,6 +9380,7 @@
       .fin-sheet-close:focus-visible,
       .fin-sheet-title:focus-visible,
       .fin-official-link:focus-visible,
+      .noct-tier-tab:focus-visible,
       #resultsScreen .noct-results-cta:focus-visible {
         outline-color: CanvasText;
         box-shadow: none;
@@ -9457,6 +9397,14 @@
       .dfm-cons-region, .dfm-cons-swatch { border-width: 3px; }
       .dfm-cons-fill--comfort { border-style: solid; }
       .dfm-cons-fill--support { border-style: double; }
+    }
+    /* Tier-tab selected state under forced colors: the pill's background
+       fill is stripped, so the active tab keeps a non-color cue via a
+       CanvasText border (aria-pressed carries the semantics). Placed after
+       the focus block above — contrast_check anchors the file's FIRST
+       forced-colors block as the focus one. */
+    @media (forced-colors: active) {
+      .noct-tier-tab.active { border: 2px solid CanvasText; }
     }
 
     /* Sheet (modal dialog) */
@@ -14315,10 +14263,16 @@
       var labels = currentLang === 'es'
         ? { gold: 'ORO', silver: 'PLATA', bronze: 'BRONCE' }
         : { gold: 'GOLD', silver: 'SILVER', bronze: 'BRONZE' };
+      // Stable ids let restoreLanguageFocus() return focus to the same tab
+      // after the EN/ES re-render; aria-pressed carries the selected state
+      // (same idiom as the card compare buttons). Touch handling stays the
+      // shipped onclick + ontouchend pair (Invariant 10 — not refactored).
       var html = ['gold','silver','bronze'].map(function(tier) {
         var isActive = tier === _resultsState.activeTier;
         var cls = 'noct-tier-tab' + (isActive ? ' active' : '');
-        return '<button class="' + cls + '"'
+        return '<button type="button" class="' + cls + '"'
+          + ' id="tierTab-' + tier + '"'
+          + ' aria-pressed="' + (isActive ? 'true' : 'false') + '"'
           + ' onclick="window._setActiveResultsTier(\'' + tier + '\')"'
           + ' ontouchend="event.preventDefault();window._setActiveResultsTier(\'' + tier + '\');">'
           + labels[tier]
@@ -14328,18 +14282,23 @@
     }
 
     function renderTierDescriptor() {
+      // Bronze carries no descriptor phrase: its former wording characterised
+      // the buyer, not the product, and was retired by owner ruling
+      // (2026-08-14, D3 clarification) — the tier name plus the relativity
+      // line below is the framing, with no replacement buyer label.
       var es = currentLang === 'es';
-      var t = _resultsState.activeTier;
+      var tier = _resultsState.activeTier;
       var html;
       if (es) {
-        if (t === 'gold')        html = '<span class="tier-name">Oro</span> · materiales premium';
-        else if (t === 'silver') html = '<span class="tier-name">Plata</span> · gama media';
-        else                     html = '<span class="tier-name">Bronce</span> · básico';
+        if (tier === 'gold')        html = '<span class="tier-name">Oro</span> · materiales premium';
+        else if (tier === 'silver') html = '<span class="tier-name">Plata</span> · gama media';
+        else                        html = '<span class="tier-name">Bronce</span>';
       } else {
-        if (t === 'gold')        html = '<span class="tier-name">Gold</span> · premium materials';
-        else if (t === 'silver') html = '<span class="tier-name">Silver</span> · mid-range value';
-        else                     html = '<span class="tier-name">Bronze</span> · entry-level';
+        if (tier === 'gold')        html = '<span class="tier-name">Gold</span> · premium materials';
+        else if (tier === 'silver') html = '<span class="tier-name">Silver</span> · mid-range value';
+        else                        html = '<span class="tier-name">Bronze</span>';
       }
+      html += '<span class="tier-relativity">' + escapeHtml(t('results.match_relativity')) + '</span>';
       document.getElementById('tierDescriptor').innerHTML = html;
     }
 
@@ -14538,11 +14497,9 @@
 
     function renderTopPickCard(m, tier) {
       var es = currentLang === 'es';
-      var comparisonLabel = es ? 'Opción adicional para comparar' : 'Additional comparison option';
       var brandLine = m.brand + (m.subBrand ? ' · ' + m.subBrand : '');
       var reason = topPickReasonText(m);
       var feel = firmnessFeel(m.firmness);
-      var priorities = buildMattressPriorities(m);
       var promotion = getMattressPromotion(m);
 
       var img = m.imageUrl
@@ -14552,17 +14509,6 @@
       var reasonHtml = reason
         ? '<p class="noct-toppick-reason">' + escapeHtml(reason) + '</p>'
         : '';
-
-      var prioritiesHtml = priorities.map(function(p, i) {
-        return '<div class="noct-toppick-priority-row">'
-          + '<div class="noct-toppick-priority-rank">' + (i + 1) + '</div>'
-          + '<div class="noct-toppick-priority-body">'
-          +   '<div class="noct-toppick-priority-title">' + escapeHtml(p.title) + '</div>'
-          +   '<div class="noct-toppick-priority-desc">' + escapeHtml(p.desc) + '</div>'
-          + '</div>'
-          + '<div class="noct-toppick-priority-tag">' + escapeHtml(p.tag) + '</div>'
-          + '</div>';
-      }).join('');
 
       var isSaved = (window._savedPicks || []).some(function(p){ return p.id === m.id; });
       var saveBtn = '<button class="noct-save-btn' + (isSaved ? ' saved' : '') + '"'
@@ -14594,13 +14540,15 @@
         + (es ? 'Comparar' : 'Compare')
         + '</button>';
 
+      // Role label is INDEX-ONLY: this renderer receives the engine list's
+      // first element and nothing else, so "Best match" is a statement of
+      // position within the active tier (Phase 1 constraint 2 — no item
+      // field may choose role copy).
       var html = '<div class="noct-toppick" data-id="' + escapeHtml(m.id) + '" data-tier="' + escapeHtml(tier) + '">'
         + promotionOfferTabHtml(promotion)
         + img
         + '<div class="noct-toppick-body">'
-        +   '<div class="noct-toppick-eyebrow">' + escapeHtml(m.meetsMatchThreshold
-              ? (es ? 'El mejor punto de partida' : 'Best place to start')
-              : comparisonLabel) + '</div>'
+        +   '<div class="noct-toppick-eyebrow">' + escapeHtml(t('results.match_lead')) + '</div>'
         +   '<div class="noct-toppick-brand">' + escapeHtml(brandLine) + '</div>'
         +   '<div class="noct-toppick-name">' + escapeHtml(m.name) + '</div>'
         +   promotionBadgesHtml(m)
@@ -14609,7 +14557,6 @@
         +     '<div class="noct-toppick-firmness-value">' + m.firmness + '/10</div>'
         +     '<div class="noct-toppick-firmness-label">' + escapeHtml(feel) + '</div>'
         +   '</div>'
-        +   '<div class="noct-toppick-priorities">' + prioritiesHtml + '</div>'
         +   '<div class="noct-toppick-actions">'
         +     '<div class="noct-card-action-cluster">'
         +       detailsBtn
@@ -14625,15 +14572,24 @@
 
     function renderSupportingCards(mattresses, tier) {
       var es = currentLang === 'es';
-      var matchLineText = es ? 'Coincide con tus prioridades' : 'Matches your priorities';
-      var comparisonLabel = es ? 'Opción adicional para comparar' : 'Additional comparison option';
 
-      var html = mattresses.map(function(m) {
+      var html = mattresses.map(function(m, i) {
         var brandLine = m.brand + (m.subBrand ? ' · ' + m.subBrand : '');
         var reason = topPickReasonText(m);
         var feel = firmnessFeel(m.firmness);
-        var priorities = buildMattressPriorities(m);
         var promotion = getMattressPromotion(m);
+
+        // Role label is INDEX-ONLY (Phase 1 constraint 2): support index 0 is
+        // the tier's second entry, index 1 its third. The engine's own cap
+        // (qualifyRankedChoices, 3 per tier) bounds real input at two support
+        // cards; a longer synthetic list still renders every card in input
+        // order, with the ordinal label omitted past the named positions
+        // rather than re-capped or re-labelled here.
+        var ordinalKey = i === 0 ? 'results.match_second'
+          : (i === 1 ? 'results.match_third' : null);
+        var roleHtml = ordinalKey
+          ? '<div class="noct-support-role">' + escapeHtml(t(ordinalKey)) + '</div>'
+          : '';
 
         var img = m.imageUrl
           ? '<img class="noct-support-photo" src="' + escapeHtml(m.imageUrl) + '" alt="' + escapeHtml(m.name) + '">'
@@ -14642,10 +14598,6 @@
         var reasonHtml = reason
           ? '<p class="noct-support-reason">' + escapeHtml(reason) + '</p>'
           : '';
-
-        var chipsHtml = priorities.map(function(p) {
-          return '<span class="noct-support-chip">' + escapeHtml(p.title) + '</span>';
-        }).join('');
 
         var isSaved = (window._savedPicks || []).some(function(p){ return p.id === m.id; });
         var saveBtn = '<button class="noct-save-btn' + (isSaved ? ' saved' : '') + '"'
@@ -14673,15 +14625,14 @@
           + promotionOfferTabHtml(promotion)
           + img
           + '<div class="noct-support-body">'
+          +   roleHtml
           +   '<div class="noct-support-brand">' + escapeHtml(brandLine) + '</div>'
           +   '<div class="noct-support-name">' + escapeHtml(m.name) + '</div>'
           +   promotionBadgesHtml(m)
           +   reasonHtml
           +   '<div class="noct-support-meta">'
-          +     '<span class="firm-value">' + m.firmness + '/10</span>' + escapeHtml(feel) + ' · '
-          +     '<span class="match-line">' + escapeHtml(m.meetsMatchThreshold ? matchLineText : comparisonLabel) + '</span>'
+          +     '<span class="firm-value">' + m.firmness + '/10</span>' + escapeHtml(feel)
           +   '</div>'
-          +   '<div class="noct-support-priorities">' + chipsHtml + '</div>'
           +   '<div class="noct-support-actions">'
           +     '<div class="noct-card-action-cluster">'
           +       detailsBtn
@@ -14734,8 +14685,11 @@
       renderTierTabs();
       renderTierDescriptor();
       var tier = _resultsState.activeTier;
+      // Consume the engine's qualified list AT ITS OWN CAP — qualifyRankedChoices
+      // caps each tier at 3 inside the engine; the presentation layer never
+      // re-applies a cap (Phase 1 standing constraint 2).
       var list = _resultsState.tierData[tier] || [];
-      renderResultsOfferCue(list.slice(0, 3));
+      renderResultsOfferCue(list);
       if (list.length === 0) {
         var es = currentLang === 'es';
         document.getElementById('resultsSupportingHeading').textContent = '';
@@ -14747,10 +14701,13 @@
         return;
       }
       renderTopPickCard(list[0], tier);
-      document.getElementById('resultsSupportingHeading').textContent = currentLang === 'es'
-        ? 'Más opciones para comparar'
-        : 'More directions to compare';
-      renderSupportingCards(list.slice(1, 3), tier);
+      var supports = list.slice(1);
+      // A one-entry tier renders no support heading — the heading must not
+      // strand above an empty grid.
+      document.getElementById('resultsSupportingHeading').textContent = supports.length === 0
+        ? ''
+        : (currentLang === 'es' ? 'Más opciones para comparar' : 'More directions to compare');
+      renderSupportingCards(supports, tier);
     }
 
     window._setActiveResultsTier = function(tier) {
@@ -14758,6 +14715,12 @@
       if (_resultsState.activeTier === tier) return;
       _resultsState.activeTier = tier;
       _renderResults();
+      // renderTierTabs() just replaced the tab that triggered this call, so a
+      // keyboard activation would otherwise drop focus to <body>. Restored
+      // HERE, not in _renderResults(): the language-switch path re-renders
+      // through the same function while restoreLanguageFocus() owns focus.
+      var tab = document.getElementById('tierTab-' + tier);
+      if (tab) { try { tab.focus({ preventScroll: true }); } catch (err) { tab.focus(); } }
       if (analytics) {
         analytics.tierViews[tier] = (analytics.tierViews[tier] || 0) + 1;
         analytics.log('tier_view', { tier: tier });

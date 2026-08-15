@@ -885,6 +885,40 @@ prototype-only. Origin display is omitted from the cards entirely for now.
 Per-model personalized reasons remain absent and fail closed — 1.3's reason
 gate is untouched by this decision.
 
+*(Slice 1 clarification — owner-approved 2026-08-14, recorded with the
+implementation. The role labels are exactly "Best match" / "Mejor opción",
+"Second match" / "Segunda opción", "Third match" / "Tercera opción",
+shipped as generic dictionary copy. The "entry-level" / "básico" Results
+tier descriptor is removed without a replacement buyer label — the tier name
+and the relativity line are the framing — and the long-dead
+`results.tier_explainer` dictionary key, which carried the same retired
+labels, is removed from both dictionaries. The synthesized
+`buildMattressPriorities()` rows/chips stop rendering on the Results
+mattress cards ONLY; the helper and its logic are unchanged, and its three
+non-Results consumers — the drawer data, the Compare modal, and the HF2
+Consultation Summary pick card — are untouched and outside this slice: this
+is a Results-card presentation correction, not cross-surface reason or
+claim work. The former `meetsMatchThreshold`-conditioned card copy ("Best
+place to start" / "Additional comparison option" / "Matches your
+priorities") is replaced by the index-only role labels, so the
+below-threshold comparison cue is retired from the Results cards by this
+decision — surfacing position, never selecting by the field; the
+below-threshold cues that survive elsewhere (the HF2 pick card's line and
+the Sleep System step badge) are untouched and remain later-slice
+territory. Three further owner-directed repairs ship in the same slice: the
+promotions offer cue now receives the engine's full qualified list instead
+of a presentation-layer slice (behaviorally identical at the engine's cap
+of 3; cue and cards can no longer diverge), a one-entry tier no longer
+strands the "More directions to compare" heading over an empty support
+grid, and a tier tap now restores keyboard focus to the newly rendered
+active tab (renderTierTabs() replaces the activated button, which
+previously dropped focus to the document body; the restore lives in the
+tap handler, not the shared re-render, so the language-switch focus
+policy — restoreLanguageFocus() — is untouched). The relativity line's
+Slice 1 scope is the Results screen; the
+drawer and Consultation Summary instances of match-strength presentation
+belong to their own slices.)*
+
 **D4 — Payment Choice state model ADOPTED, superseding 1.5's agenda model.**
 The salesperson-marked "topics to discuss" agenda is replaced by two
 observable dimensions: **`payExplored`** — an accumulating history of payment
