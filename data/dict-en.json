@@ -30,6 +30,15 @@
   "review.looks_good": "Looks Good →",
   "nav.back": "← Back",
 
+  "brief.heading": "Your Sleep Brief",
+  "brief.hero": "Made from your answers",
+  "brief.signature_eyebrow": "Your sleep signature",
+  "brief.plan_label": "Your guided trial",
+  "brief.priorities_heading": "What we will test together",
+  "brief.priorities_intro": "Use these signals to compare each mattress instead of relying on first impressions alone.",
+  "brief.try_this": "Try this: ",
+  "brief.quiz_finish": "See my sleep signature",
+
   "profile.badge": "Personalized From Your Answers",
   "profile.perfect_match": "Your Sleep Brief",
   "profile.edit_answers": "← Edit my answers",

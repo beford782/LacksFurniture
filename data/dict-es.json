@@ -30,6 +30,15 @@
   "review.looks_good": "Se Ve Bien →",
   "nav.back": "← Atrás",
 
+  "brief.heading": "Tu Resumen de Sueño",
+  "brief.hero": "Creada con tus respuestas",
+  "brief.signature_eyebrow": "Tu firma de sueño",
+  "brief.plan_label": "Tu prueba guiada",
+  "brief.priorities_heading": "Lo que probaremos juntos",
+  "brief.priorities_intro": "Usa estas señales para comparar cada colchón en lugar de depender solo de una primera impresión.",
+  "brief.try_this": "Pruébalo: ",
+  "brief.quiz_finish": "Ver mi firma de sueño",
+
   "profile.badge": "Personalizado Según Tus Respuestas",
   "profile.perfect_match": "Tu Resumen de Sueño",
   "profile.edit_answers": "← Editar mis respuestas",

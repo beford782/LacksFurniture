@@ -1031,8 +1031,13 @@ el("emailContactForm").children = CONTACT_IDS.map(el);
 // path.
 const REQUIRED_CONTENT_IDS = [
   "questionContainer", "reviewList",
-  "profileName", "profilePriorities", "profileJourneySteps", "profileMetaStrip",
-  "profileSecondary", "profileCta",
+  // Slice 2 (D1 recomposition): the meta strip and the journey rail are gone
+  // from the Sleep Brief; the hero line, the reflection and the three
+  // Sleep Signature stamps are the customer-derived containers that replaced
+  // them, and each must be owned by the wipe.
+  "profileName", "profilePriorities", "profileSignature", "profileHero",
+  "profileReflection", "profileSecondary", "profileCta",
+  "resultsSignature", "hf2Signature",
   "resultsHeadline", "tierTabs", "tierDescriptor", "topPickContainer",
   "supportingRow", "resultsTrialFocus",
   "drawerName", "drawerDifferentiators", "drawerTryPrompts", "drawerPromotionDetail",

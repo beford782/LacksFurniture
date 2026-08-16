@@ -109,6 +109,11 @@ const FINALIST_FN = grab(/function getSleepSystemFinalist\(\)\s*\{[\s\S]*?\r?\n 
 const PROFILE_FN = grab(/function showProfileScreen\(\) \{[\s\S]*?\r?\n    \}\r?\n/, "showProfileScreen()");
 const L_FN = grab(/function L\(obj\) \{[\s\S]*?\r?\n    \}/, "L()");
 const ESCAPE_FN = grab(/function escapeHtml\([\s\S]*?\r?\n    \}/, "escapeHtml()");
+// Slice 2 collaborators the render calls. The constellation is executed for
+// real (it is answer-derived, so a broken one would surface here too);
+// reduced motion is stubbed off because the entry animation is presentation,
+// and this suite pins engine state only.
+const SIGNATURE_FN = grab(/function buildSleepSignatureSvg\(answers\) \{[\s\S]*?\r?\n    \}/, "buildSleepSignatureSvg()");
 if (failed) { console.log("\nextraction failed — aborting"); process.exit(1); }
 
 // The engine's own firmness-resolution line, executed as-is. This is the
@@ -299,18 +304,18 @@ function runProfile(answers, lang, profileSrc = PROFILE_FN) {
   new Function("document", "window", "answers", "currentLang", "analytics", `"use strict";
     function t(k) { return k; }
     function showScreen() {}
+    function dfmReducedMotion() { return false; }
+    var _briefOpenPriority = null;
     ${ESCAPE_FN}
     ${L_FN}
+    ${SIGNATURE_FN}
     ${profileSrc}
     showProfileScreen();`)(doc, {}, clone(answers), lang, analytics);
-  const meta = els.get("profileMetaStrip") ? els.get("profileMetaStrip").innerHTML : "";
-  const feel = (meta.match(/(?:Feel|Sensación)<\/dt><dd class="noct-profile-meta-value">([^<]*)<\/dd>/) || [, ""])[1];
   return {
     trialFocus: analytics.trialFocus,
     profileName: analytics.profileName,
     profileSubtitleByLang: analytics.profileSubtitleByLang,
-    profileBriefByLang: analytics.profileBriefByLang,
-    feelWord: feel
+    profileBriefByLang: analytics.profileBriefByLang
   };
 }
 
@@ -341,7 +346,6 @@ function buildSnapshot(overrides = {}) {
         profileName: profileEn.profileName,
         profileSubtitleByLang: profileEn.profileSubtitleByLang,
         profileBriefByLang: profileEn.profileBriefByLang,
-        feelWord: { en: profileEn.feelWord, es: profileEs.feelWord },
         trialFocusLangStable:
           JSON.stringify(profileEn.trialFocus) === JSON.stringify(profileEs.trialFocus)
       }
@@ -397,8 +401,35 @@ const BASELINE = JSON.parse(BASELINE_RAW);
 // ---------- 2. the live engine reproduces the baseline exactly ---------------
 section("engine outputs match the Phase 1 baseline (daybreak_pr1)");
 const live = buildSnapshot();
+// Slice 2 (owner amendment, 2026-08-15). `profile.feelWord` was harvested by
+// scraping the Sleep Brief's meta strip — a presentation surface the approved
+// D1 recomposition removed. The fixture and its sha are deliberately UNCHANGED
+// (regenerating an oracle from the code under review is what the ratchet
+// exists to prevent), so the field still sits in the pinned bytes; it is
+// excluded from the comparison rather than re-derived from any rendered
+// markup. Nothing is lost: the engine's resolved firmness is pinned directly
+// as `firmnessResolved` below, and the customer-visible firmness wording is
+// pinned verbatim by the Sleep Brief reflection oracle in
+// tests/consultation_priorities_check.mjs.
+const OBSOLETE_PROFILE_FIELDS = ["feelWord"];
+function withoutObsoletePresentation(scenario) {
+  if (!scenario || !scenario.profile) return scenario;
+  const profile = { ...scenario.profile };
+  for (const k of OBSOLETE_PROFILE_FIELDS) delete profile[k];
+  return { ...scenario, profile };
+}
+// The exclusion must stay exactly this narrow: any OTHER pinned profile field
+// that stops being produced is a regression, not a presentation retirement.
+{
+  const first = Object.keys(SCENARIOS)[0];
+  const dropped = Object.keys(BASELINE.scenarios[first].profile)
+    .filter((k) => !(k in live.scenarios[first].profile));
+  check("the only pinned profile field excluded from comparison is the obsolete feelWord",
+    JSON.stringify(dropped) === JSON.stringify(OBSOLETE_PROFILE_FIELDS), dropped.join(", "));
+}
 for (const name of Object.keys(SCENARIOS)) {
-  const diffs = diffPaths(BASELINE.scenarios[name], live.scenarios[name], name);
+  const diffs = diffPaths(withoutObsoletePresentation(BASELINE.scenarios[name]),
+    live.scenarios[name], name);
   check(`${name}: every pinned output identical`, diffs.length === 0,
     diffs.slice(0, 5).join(" | "));
 }
@@ -430,9 +461,14 @@ section("fixture non-triviality");
     new Set(all.map((s) => s.firmnessResolved)).size >= 4
     && BASELINE.scenarios.s9_empty_defaults.firmnessResolved
        === QUIZ.questions.find((q) => q.id === "firmness").defaultValue);
-  check("feel classification covers Plush, Medium and Firm across the set",
-    ["Plush", "Medium", "Firm"].every(
-      (w) => all.some((s) => s.profile.feelWord.en === w)));
+  // Band coverage, expressed on the ENGINE's resolved firmness rather than on
+  // any rendered wording: the scenario set must still exercise the plush,
+  // medium and firm bands the engine distinguishes.
+  check("the scenario set spans the plush, medium and firm firmness bands",
+    all.some((s) => s.firmnessResolved <= 3)
+    && all.some((s) => s.firmnessResolved >= 4 && s.firmnessResolved <= 6)
+    && all.some((s) => s.firmnessResolved >= 7),
+    all.map((s) => s.firmnessResolved).join(","));
   check("EN and ES accessory reasons genuinely differ (language reaches the engine)",
     all.some((s) => JSON.stringify(s.accessories.en.ordered) !== JSON.stringify(s.accessories.es.ordered)));
   check("trialFocus is language-stable (bilingual objects, not per-language recompute)",

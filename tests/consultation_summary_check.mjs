@@ -54,6 +54,11 @@ section("extraction");
 const IMPLICATION_FN = grab(/function consultImplication\(questionId, optionId\) \{[\s\S]*?\n    \}/, "consultImplication()");
 const RESOLVER_FN = grab(/function resolveConsultationSummary\(\) \{[\s\S]*?\n    \}/, "resolveConsultationSummary()");
 const RENDER_FN = grab(/function renderHf2Brief\(\) \{[\s\S]*?\n    \}/, "renderHf2Brief()");
+// Slice 2 stamp: renderHf2Brief() draws the shared decorative Sleep Signature
+// before the rows. Executed for real here so this suite keeps proving that
+// the stamp is the ONLY change to this screen — the resolver, rows, copy and
+// payload assertions below are untouched.
+const SIGNATURE_FN = grab(/function buildSleepSignatureSvg\(answers\) \{[\s\S]*?\n    \}/, "buildSleepSignatureSvg()");
 const ANSWER_LABEL_FN = grab(/function answerLabelFor\(questionId, optionId\) \{[\s\S]*?\n    \}/, "answerLabelFor()");
 const FIRMNESS_FN = grab(/function firmnessFeel\(score\) \{[\s\S]*?\n    \}/, "firmnessFeel()");
 // The real hydration assignments, anchored on the (pinned) BRAND_NOTES_ES
@@ -102,6 +107,7 @@ function run(answers, lang, opts) {
     ${ANSWER_LABEL_FN}
     ${IMPLICATION_FN}
     ${RESOLVER_FN}
+    ${SIGNATURE_FN}
     ${RENDER_FN}
     out.resolve = resolveConsultationSummary;
     out.render = renderHf2Brief;

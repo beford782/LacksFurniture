@@ -207,6 +207,26 @@ None of these are negotiable by a redesign.
     allowlisted source, or it does not change. The suppressed, fail-closed
     presentation **is** the correct demonstration of stale state. *(Made
     permanent governance 2026-08-14, promoted from a prototype-round rule.)*
+12. **Native-Spanish linguistic approval is consolidated, not per-slice.**
+    *(Owner ruling 2026-08-15.)* The native-Spanish review of customer-facing
+    ES copy is **deferred to a single consolidated pass at the end of
+    development**, rather than gating each slice. A slice therefore does not
+    wait on a Spanish linguistic sign-off to merge. What each slice still
+    owes, without exception:
+    - **EN and ES functional testing** on the device matrix (both
+      orientations, both languages) — the language toggle, layout under
+      Spanish text expansion, and every ES surface the slice touches.
+    - **Automated EN/ES parity** — identical dictionary key sets, every new
+      key present and genuinely translated in both languages, and the
+      slice's own suite executing its ES path.
+    - **A copy inventory**: every new or changed ES string the slice ships is
+      listed in its PR, so the consolidated review has a complete ledger to
+      work from rather than reconstructing it from diffs.
+    Deferral is not approval. Until that consolidated pass happens, shipped
+    ES copy is provisional, and this invariant is what records that it is
+    owed. It does not touch the separate, still-open native-Spanish
+    **claim-equivalence** reviewer for catalog claims (see the claim
+    inventory), which remains its own gate.
 
 ---
 
@@ -869,6 +889,42 @@ Summary card. It is answer-derived and strictly decorative: `aria-hidden`,
 never an engine input, never a scoring surface. Per the 2026-08-12 permanent
 ruling, no screen-reader text alternative is required.
 
+*(Slice 2 clarification — owner rulings 2026-08-15, recorded with the
+implementation of D1 + D2 under item 1.1. **Composition.** The heading is
+retained and the ruled hero message renders beneath it; the constellation
+carries its ruled eyebrow; the engine's reflection sentence is unchanged;
+the 1–3 computed priorities become a single-open disclosure accordion whose
+panel carries **both** the reason and the in-store testing prose (an earlier
+reading that left the reason permanently visible was corrected by the owner);
+the forward CTA keeps its owner-ruled "See My Matches →" label and Results
+route, and Edit Answers is retained as a subdued secondary action. The quiz
+finish control is relabeled "See my sleep signature". **Removed from the
+customer-visible screen:** the answer-derived subtitle line, the summary
+line, the meta strip, the reassurance line, the journey rail, and the
+priority category tags. The subtitle's computation, its `analytics` fields
+and its email fallback are preserved untouched — the ruling removed it from
+the DOM only. **Excluded from this slice:** the firmness dial and signal
+badges (neither approved nor rejected by D1, and optional), and the
+2026-08-07 Sleep Brief backlog, both deferred. **Motion.** The Card Table
+gather is retained as the production entry path; the constellation animates
+only on the quiz-completion entry, while re-entry and language switches
+redraw the identical figure statically; the retained legacy reveal fallback
+was hardened so reduced motion advances straight to the Brief instead of
+inheriting the staged overlay the gather would have skipped. **Copy** for the
+new and surviving D1 chrome moved to the governed dictionaries; the unrelated
+orphaned `profile.*` and `review.looks_good` keys are left for a later
+cleanup by ruling. **D2 placements** all ship here — Sleep Brief hero,
+Results header stamp, and a stamp-only addition to the Consultation Summary
+whose layout, resolver, rows, priorities and copy are untouched.
+**Repairs in-slice** (required by D1's own accessibility criteria): the focus
+destination's suppressed indicator, and wipe ownership of every container the
+recomposed screen renders into. **Fixture policy.** Both pinned fixtures and
+both `BASELINE_SHA256` values are unchanged: the 572d405 Sleep Brief baseline
+is retained as the historical *semantic* oracle for what survives the
+recomposition, and the Phase 1 harvester was decoupled from the removed
+meta-strip markup rather than re-baselined. The new D1 structural and
+behavioral contract lives in `tests/sleep_brief_presentation_check.mjs`.)*
+
 **D3 — Results-card direction APPROVED, as corrected by the owner
 2026-08-14** (all within 1.3's Proceeds; both 1.3 gates stand): (a) the
 hero-plus-support card hierarchy — the first entry of the active tier as a
@@ -972,7 +1028,9 @@ recorded as Invariant 11.
 **What D1–D6 are not.** Not final pixel-level visual approval — every merged
 slice still passes the device-matrix merge gate (both orientations, EN and
 ES) and Blake's live review, as every shipped slice has. Not Spanish
-approval — the native-Spanish review gate stands over all new ES copy. Not a
+approval — ES copy remains provisional until the consolidated end-of-
+development native-Spanish pass (Invariant 12, owner ruling 2026-08-15;
+before that ruling this gate blocked each slice). Not a
 scoring, ranking, tier, threshold, cap, back-fill or firmness change — the
 output-regression fixture holds. Not showroom-use authorization — device
 hardening remains blocking.
