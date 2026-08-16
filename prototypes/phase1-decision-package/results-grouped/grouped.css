@@ -1,0 +1,633 @@
+/* Results — grouped (single-open accordion). Phase 1 prototype, variant-owned CSS.
+   PROTOTYPE ONLY — never loaded by the production application.
+
+   Every breakpoint in this file is CONTENT-DRIVEN (stated inline at each rule)
+   and is NOT derived from, or a claim about, showroom hardware. The device
+   matrix is unconfirmed (Phase 0.4 pending). Rendering samples: 320 / 480 /
+   768x1024 portrait / 1024x768 landscape / 1180+.
+
+   Two-tier reading model (w2-tablet-shared-viewing): customer-glanceable
+   anchors (tier names, model names, firmness word) sized large and set in
+   near-black ink on paper (7:1-class contrast); operator detail (fit rows,
+   differentiators) conventional size, still >= 4.5:1. */
+
+/* Lead fix (post-build review): the hidden attribute must win over any
+   later display rule. Mirrors the production guard at index.html:8925.
+   Without it an empty [hidden] element with display:inline-block still
+   paints (found on .tier-descriptor-alt in the tabs variant). */
+[hidden] { display: none !important; }
+
+
+:root {
+  --rg-ink: #221a10;        /* customer-anchor ink — ~14:1 on --rg-paper */
+  --rg-ink-soft: #4c4335;   /* operator detail — ~7.5:1 on white */
+  --rg-muted: #5c5244;      /* labels — ~7:1 on white */
+  --rg-paper: #faf6ee;
+  --rg-card: #ffffff;
+  --rg-line: #d9cfbc;
+  --rg-line-soft: #e8e1d2;
+  --rg-fin-paper: #fbf7ef;  /* echoes production fin-module paper tone */
+  /* Decorative tier accents keyed off data-tier (per w1-results-tier-contract
+     rec. 3: theme off data-tier attributes; the dead --tier-* custom properties
+     and undefined --silver/--bronze in production are NOT built upon).
+     Accent is never the sole tier signal — the verbatim tier name text is. */
+  --rg-accent-gold: #8a6d1f;
+  --rg-accent-silver: #63696e;
+  --rg-accent-bronze: #7a5233;
+  /* Dual-ring focus tokens (echoes production --focus-ring-inner/outer pattern) */
+  --focus-outer: #1a1208;
+  --focus-inner: #ffffff;
+  --rg-sticky-top: 0px;     /* set by JS to the harness review-bar height —
+                               prototype chrome accommodation only; production
+                               has no review bar, so there this would be 0. */
+}
+
+* { box-sizing: border-box; }
+
+html, body { margin: 0; padding: 0; }
+
+body {
+  background: var(--rg-paper);
+  color: var(--rg-ink);
+  /* Fix G10: 1rem, not 16px — every font-size in this file is rem-based so
+     the browser's default-font-size setting scales the whole page (this was
+     the only variant that ignored it). px stays for borders and spacing. */
+  font: 400 1rem/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  overflow-x: hidden; /* wide content scrolls in its own containers, never the body */
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+img { max-width: 100%; }
+
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* NEVER outline:none globally — visible focus is load-bearing. */
+button:focus-visible,
+a:focus-visible {
+  outline: 3px solid var(--focus-outer);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 6px var(--focus-inner);
+}
+@media (forced-colors: active) {
+  button:focus-visible, a:focus-visible { outline: 3px solid CanvasText; }
+}
+
+button {
+  font: inherit;
+  touch-action: manipulation;
+  cursor: pointer;
+}
+button[disabled] { cursor: not-allowed; }
+
+/* ---------- Page shell ---------- */
+
+.rg-main {
+  max-width: 1080px; /* echoes the production Results surface max-width (1080) */
+  margin: 0 auto;
+  /* Fix G6b: the bottom reserve for the fixed tray is the tray's MEASURED
+     rendered height (JS sets --rg-tray-reserve; 0 while hidden) — the old
+     fixed 140px let a wrapped tray cover the financing fit-first hint. */
+  padding: 24px clamp(16px, 4vw, 48px) calc(24px + var(--rg-tray-reserve, 0px));
+}
+
+.rg-eyebrow {
+  margin: 0 0 6px;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--rg-muted);
+}
+
+.rg-headline {
+  margin: 0 0 10px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 400;
+  font-size: clamp(1.75rem, 4.5vw, 2.75rem);
+  line-height: 1.15;
+  color: var(--rg-ink);
+}
+.rg-headline .accent { font-style: italic; color: var(--rg-accent-gold); }
+
+.rg-subhead {
+  margin: 0 0 18px;
+  max-width: 62ch;
+  font-size: clamp(0.9375rem, 2vw, 1.0625rem);
+  color: var(--rg-ink-soft);
+}
+
+/* Trial-focus strip (captured production markup classes reused) */
+.rg-trial-focus {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  align-items: baseline;
+  margin: 0 0 26px;
+  padding: 12px 16px;
+  border: 1px solid var(--rg-line);
+  border-left: 4px solid var(--rg-accent-gold);
+  background: var(--rg-card);
+  font-size: 0.9375rem;
+}
+.rg-trial-focus .results-trial-focus__label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--rg-muted);
+}
+
+/* ---------- Accordion ---------- */
+
+.rg-acc { margin: 0 0 34px; }
+
+.rg-acc-item {
+  border: 1px solid var(--rg-line);
+  background: var(--rg-card);
+}
+.rg-acc-item + .rg-acc-item { margin-top: 10px; }
+
+.rg-acc-h { margin: 0; }
+
+/* The open tier's header stays visible while its panel scrolls. CONTENT-DRIVEN:
+   a three-card panel at the narrow end of the sample spread spans several
+   viewport heights, and the header is the tier anchor the salesperson narrates
+   from (NN/g mobile-accordion sticky-header guidance, w2-tier-navigation F4).
+   Not a hardware claim. The --rg-sticky-top offset exists only because the
+   prototype harness owns a sticky review bar; in production this would be 0. */
+.rg-acc-h {
+  position: sticky;
+  top: var(--rg-sticky-top);
+  z-index: 5;
+  /* Fix G5: scrollIntoView target margin — the compensating scroll after a
+     header toggle must land the header below the sticky harness bar. */
+  scroll-margin-top: var(--rg-sticky-top);
+}
+
+.rg-acc-btn {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-height: 60px; /* comfortably above the 44px floor, collapsed included */
+  padding: 12px 18px;
+  border: 0;
+  border-left: 5px solid transparent;
+  background: var(--rg-card);
+  text-align: left;
+  color: var(--rg-ink);
+}
+.rg-acc-item[data-tier="gold"]   .rg-acc-btn { border-left-color: var(--rg-accent-gold); }
+.rg-acc-item[data-tier="silver"] .rg-acc-btn { border-left-color: var(--rg-accent-silver); }
+.rg-acc-item[data-tier="bronze"] .rg-acc-btn { border-left-color: var(--rg-accent-bronze); }
+
+.rg-acc-btn[aria-expanded="true"] {
+  border-bottom: 1px solid var(--rg-line);
+  background: var(--rg-paper);
+}
+
+/* Collapsed affordance: chevron + full-width row + border; never color alone. */
+.rg-acc-label {
+  font-size: clamp(1.125rem, 2.6vw, 1.5rem); /* customer-glanceable anchor */
+  font-weight: 800;
+  letter-spacing: 0.22em;
+}
+
+.rg-acc-desc {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 0.875rem;
+  color: var(--rg-muted);
+}
+.rg-acc-desc .tier-name { font-weight: 700; color: var(--rg-ink-soft); }
+
+.rg-acc-chevron {
+  flex: 0 0 auto;
+  font-size: 1.125rem;
+  line-height: 1;
+  color: var(--rg-muted);
+  transition: transform 0.15s ease;
+}
+.rg-acc-btn[aria-expanded="true"] .rg-acc-chevron { transform: rotate(180deg); }
+@media (prefers-reduced-motion: reduce) {
+  .rg-acc-chevron { transition: none; }
+}
+
+.rg-acc-panel { padding: 18px clamp(12px, 2.5vw, 24px) 24px; }
+
+.rg-empty {
+  padding: 48px 0;
+  text-align: center;
+  font-family: Georgia, serif;
+  font-style: italic;
+  font-size: 1.0625rem;
+  color: var(--rg-muted);
+}
+
+/* ---------- Cards ---------- */
+
+.rg-more-label {
+  margin: 22px 0 12px;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--rg-muted);
+}
+
+.rg-supports {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+/* CONTENT-DRIVEN: two full card columns need roughly 640px of content box
+   before line lengths stay readable; below that, stack. Not a device claim. */
+@media (min-width: 760px) {
+  .rg-supports { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+.rg-card {
+  border: 1px solid var(--rg-line);
+  background: var(--rg-card);
+}
+
+.rg-card-photo {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  /* Fix G1 (content-driven, not a device claim): cap the photo height so no
+     viewport's first screen is all photograph with zero fit information.
+     The wide lead card's 16:9 photo alone was ~500-550px tall at
+     1024-1112px content widths, pushing name + firmness below an 834px AND
+     a 768px fold. At 28vh: 834px-tall viewport -> ~234px photo, name ~743px
+     and firmness ~780px from the top (harness bar ~86 + chrome ~312 + panel
+     pad 18 + photo + body offsets); 768px-tall -> ~215px photo, name ~725px,
+     firmness ~762px — both land above both folds. object-fit: cover keeps
+     the crop honest. */
+  max-height: clamp(160px, 28vh, 320px);
+  object-fit: cover;
+  border-bottom: 1px solid var(--rg-line-soft);
+}
+
+.rg-card-body { padding: 16px 18px 18px; }
+
+.rg-card-eyebrow {
+  margin: 0 0 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--rg-muted);
+}
+
+.rg-card-brand {
+  margin: 0 0 2px;
+  font-size: 0.8125rem;
+  color: var(--rg-muted);
+}
+
+.rg-card-name {
+  margin: 0 0 10px;
+  font-family: Georgia, serif;
+  font-weight: 400;
+  font-size: clamp(1.25rem, 2.6vw, 1.625rem); /* customer-glanceable anchor */
+  color: var(--rg-ink);
+}
+
+/* Firmness: word + numeral always paired; graphic is 10 DISCRETE segments
+   (never a continuous fill — false precision), aria-hidden with a real sr text
+   alternative adjacent. Filled vs unfilled differs by luminance + border,
+   never hue alone. */
+.rg-firmness { margin: 0 0 12px; }
+.rg-firm-visible {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.rg-firm-word {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--rg-ink); /* customer-glanceable anchor */
+}
+.rg-firm-num { font-size: 0.875rem; color: var(--rg-ink-soft); }
+.rg-firm-pips { display: inline-flex; gap: 3px; }
+.rg-firm-pip {
+  width: 12px;
+  height: 12px;
+  border: 1.5px solid var(--rg-ink-soft); /* >=3:1 boundary on white */
+  border-radius: 2px;
+  background: var(--rg-card);
+}
+.rg-firm-pip.is-filled { background: var(--rg-ink-soft); }
+
+/* .rg-tags / .rg-tag removed (fix G2): displayBadges no longer render —
+   they created a customer-facing surface production doesn't have. */
+
+.rg-layer-label {
+  margin: 14px 0 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--rg-muted);
+}
+
+.rg-reason {
+  margin: 0;
+  font-size: 0.9375rem;
+  color: var(--rg-ink-soft);
+}
+
+.rg-fit-rows {
+  list-style: none; /* order conveyed by <ol> semantics; visible marker below */
+  margin: 0;
+  padding: 0;
+  counter-reset: fitrow;
+}
+.rg-fit-row {
+  counter-increment: fitrow;
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr) auto;
+  gap: 4px 10px;
+  align-items: start;
+  padding: 8px 0;
+  border-top: 1px solid var(--rg-line-soft);
+}
+.rg-fit-row:first-child { border-top: 0; }
+.rg-fit-rank {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--rg-muted);
+  padding-top: 2px;
+}
+.rg-fit-title { font-size: 0.9375rem; font-weight: 600; color: var(--rg-ink); }
+.rg-fit-desc {
+  grid-column: 2 / 4;
+  font-size: 0.875rem;
+  color: var(--rg-ink-soft);
+}
+/* Fix G11: no white-space:nowrap here — the nowrap ES chip ("NECESIDAD
+   CLAVE") collapsed the minmax(0,1fr) title track at 320px and painted over
+   it. The chip's auto grid track keeps it one line whenever it fits and
+   wraps it at narrow widths, so nothing paints over anything. */
+.rg-fit-tag {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 2px 8px;
+  border: 1px solid var(--rg-line);
+  background: var(--rg-paper);
+  color: var(--rg-ink-soft);
+}
+/* Fix G4: FEATURE tags are visually distinct (muted) from KEY NEED — one
+   shared style made an unmatched product fact read at the same claim
+   strength as a matched customer need. Keyed on the fixture matched flag. */
+.rg-fit-tag.is-matched {
+  border-color: var(--rg-ink-soft);
+  color: var(--rg-ink);
+}
+.rg-fit-tag.is-feature {
+  border-color: var(--rg-line-soft);
+  background: transparent;
+  color: var(--rg-muted);
+  font-weight: 600;
+}
+
+/* .rg-diffs / .rg-diff removed (fix G3): differentiators left the card
+   face; the compare panel's Difference row remains. */
+
+.rg-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--rg-line-soft);
+}
+.rg-stock { font-size: 0.8125rem; color: var(--rg-muted); }
+
+.rg-cmp-btn {
+  min-height: 48px;
+  min-width: 44px;
+  padding: 8px 20px;
+  border: 1.5px solid var(--rg-ink);
+  background: var(--rg-card);
+  color: var(--rg-ink);
+  font-weight: 600;
+}
+.rg-cmp-btn[aria-pressed="true"] {
+  background: var(--rg-ink);
+  color: var(--rg-paper);
+}
+.rg-cmp-btn[disabled] {
+  border-color: var(--rg-line);
+  color: var(--rg-muted);
+  background: var(--rg-paper);
+}
+
+/* ---------- Compare section ---------- */
+
+.rg-compare {
+  margin: 0 0 34px;
+  padding: 18px clamp(12px, 2.5vw, 24px);
+  border: 1px solid var(--rg-line);
+  background: var(--rg-card);
+}
+.rg-compare-h {
+  margin: 0 0 4px;
+  font-family: Georgia, serif;
+  font-weight: 400;
+  font-size: clamp(1.25rem, 2.6vw, 1.625rem);
+}
+.rg-sim-note {
+  margin: 0 0 12px;
+  font-size: 0.8125rem;
+  color: var(--rg-muted);
+  border-left: 3px solid var(--rg-line);
+  padding-left: 10px;
+}
+.rg-compare-hint { margin: 0 0 10px; font-size: 0.875rem; color: var(--rg-ink-soft); }
+
+.rg-compare-open {
+  min-height: 48px;
+  padding: 10px 22px;
+  border: 1.5px solid var(--rg-ink);
+  background: var(--rg-ink);
+  color: var(--rg-paper);
+  font-weight: 700;
+}
+.rg-compare-open[disabled] {
+  background: var(--rg-paper);
+  color: var(--rg-muted);
+  border-color: var(--rg-line);
+}
+
+.rg-compare-panel { margin-top: 18px; }
+.rg-compare-cols {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+/* CONTENT-DRIVEN: two readable comparison columns need ~640px of content box;
+   below that they stack (production compare columns collapse similarly). */
+@media (min-width: 760px) {
+  .rg-compare-cols { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+.rg-compare-col {
+  border: 1px solid var(--rg-line);
+  background: var(--rg-paper);
+  padding: 14px;
+}
+.rg-compare-col img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  margin-bottom: 10px;
+  border: 1px solid var(--rg-line-soft);
+}
+.rg-compare-name { font-family: Georgia, serif; font-size: 1.25rem; margin: 0; }
+.rg-price-tier { font-size: 0.875rem; color: var(--rg-muted); }
+.rg-compare-brand { margin: 0 0 10px; font-size: 0.8125rem; color: var(--rg-muted); }
+.rg-compare-stats { margin: 0; }
+.rg-compare-stats dt {
+  margin-top: 8px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--rg-muted);
+}
+.rg-compare-stats dd { margin: 2px 0 0; font-size: 0.9375rem; color: var(--rg-ink); }
+
+/* ---------- Financing (secondary, downstream of all fit content) ---------- */
+
+.rg-fin {
+  max-width: 640px; /* echoes the production 640px fin-module card */
+  margin: 0 auto 12px;
+  padding: 22px 24px;
+  background: var(--rg-fin-paper);
+  border: 1px solid var(--rg-line);
+  text-align: center;
+}
+.rg-fin-rule {
+  width: 44px;
+  height: 3px;
+  margin: 0 auto 14px;
+  /* Fix G12a: neutral token — the Gold tier accent on the financing module
+     visually bound payment choice to the Gold tier. */
+  background: var(--rg-ink-soft);
+}
+.rg-fin-eyebrow {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  color: var(--rg-muted);
+  margin-bottom: 10px;
+}
+.rg-fin-lead {
+  margin: 0 0 8px;
+  font-family: Georgia, serif;
+  font-size: 1.0625rem;
+  color: var(--rg-ink);
+}
+.rg-fin-fitfirst { margin: 0 0 14px; font-size: 0.875rem; color: var(--rg-ink-soft); }
+.rg-fin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.rg-fin-btn {
+  min-height: 48px;
+  padding: 10px 18px;
+  border: 1.5px solid var(--rg-ink-soft);
+  background: var(--rg-card);
+  color: var(--rg-ink-soft);
+  font-weight: 600;
+}
+.rg-fin-btn[disabled] { color: var(--rg-muted); border-color: var(--rg-line); }
+/* .rg-fin-stale removed (fix G12c): staleNotice no longer renders in the
+   module — production shows it only inside the financing sheet. */
+/* The financing sim-note (fix G12b) reuses .rg-sim-note; inside the
+   centered module it needs no left rule. */
+.rg-fin .rg-sim-note { border-left: 0; padding-left: 0; margin: 0; }
+
+.rg-footer-hint {
+  margin: 0 0 24px;
+  text-align: center;
+  font-size: 0.8125rem;
+  color: var(--rg-muted);
+}
+
+/* ---------- Compare tray (fixed bottom, appears on first selection) ---------- */
+
+.rg-tray {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  z-index: 60;
+  background: var(--rg-ink);
+  color: var(--rg-paper);
+  padding: 10px clamp(12px, 3vw, 24px) calc(10px + env(safe-area-inset-bottom, 0px));
+}
+.rg-tray-inner {
+  max-width: 1080px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+.rg-tray-count { margin: 0; font-size: 0.875rem; font-weight: 700; }
+.rg-tray-slots {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.rg-tray-slot {
+  padding: 3px 10px;
+  border: 1px solid var(--rg-paper);
+  font-size: 0.8125rem;
+}
+.rg-tray-actions { display: flex; gap: 8px; }
+.rg-tray-btn {
+  min-height: 44px;
+  padding: 6px 16px;
+  border: 1.5px solid var(--rg-paper);
+  background: transparent;
+  color: var(--rg-paper);
+  font-weight: 600;
+}
+.rg-tray-btn[disabled] { opacity: 0.55; }
+.rg-tray-btn:focus-visible {
+  outline: 3px solid var(--rg-paper);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 6px var(--rg-ink);
+}
+
+/* Proposed-copy marker: subtle dotted underline so reviewers can spot
+   non-production strings on sight; full inventory in VARIANT-NOTES.md. */
+[data-proposed-copy] { text-decoration: underline dotted var(--rg-muted) 1px; text-underline-offset: 3px; }
+button[data-proposed-copy] { text-decoration: none; box-shadow: inset 0 -2px 0 rgba(92, 82, 68, 0.35); }
