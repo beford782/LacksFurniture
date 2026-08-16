@@ -75,6 +75,12 @@ const BRIEF = ["tests/sleep_brief_presentation_check.mjs"];
 // The motion suite owns the review→Sleep Brief transition paths, including
 // the reduced-motion hardening of the retained legacy fallback (Slice 2).
 const MOTION = ["tests/motion_flag_check.mjs"];
+// Quiz presentation observer (Slice 3, item 1.2): the quiz suite owns the
+// zero-icon ruling, the two-column grid cap, option order/skip/hide semantics,
+// selection and cap/exclusivity behaviour, the aria-pressed state contract,
+// the non-color and forced-colors selected cues, the focus wiring, the 44px
+// interaction floors, and the keyboard-only focus restoration.
+const QUIZ = ["tests/quiz_presentation_check.mjs"];
 
 // ---------------------------------------------------------------------------
 // THE MANIFEST. [label, find, replace] — `find` may span lines; index.html is
@@ -846,6 +852,92 @@ const MUTATIONS = [
   ["brief: the retained reveal fallback stops honoring reduced motion",
     "      if (dfmReducedMotion()) {\n        window._sleepSignatureEntry = true;\n        window.showProfileScreen();\n        return;\n      }\n      var elements = getConsultationRevealElements();",
     "      var elements = getConsultationRevealElements();", MOTION],
+
+  // --- Slice 3: Quiz presentation -----------------------------------------
+  // Rendering: the owner ruling is ZERO option icons, configured order, the
+  // governed hide/skip semantics, and manual advance.
+  ["quiz: an option icon is rendered into the customer UI",
+    "<span class=\"opt-label\">${L(opt.label)}</span>",
+    "<span class=\"opt-icon\">${opt.icon}</span><span class=\"opt-label\">${L(opt.label)}</span>", QUIZ],
+  ["quiz: displayed option order is reversed",
+    "${displayOptions.map(opt => {", "${displayOptions.slice().reverse().map(opt => {", QUIZ],
+  ["quiz: hideIf filtering is neutralized",
+    "!opt.hideIf || answers[opt.hideIf.question] !== opt.hideIf.answer", "true", QUIZ],
+  ["quiz: selecting an option auto-advances",
+    "      renderQuestion();\n      if (restoreId) {",
+    "      renderQuestion();\n      nextQuestion();\n      if (restoreId) {", QUIZ],
+  ["quiz: the three-selection cap is removed",
+    "if (answers[qId].length >= 3) return;", "if (false) return;", QUIZ],
+  ["quiz: \"None\" stops being exclusive",
+    "if (optId === 'none') {", "if (false) {", QUIZ],
+  ["quiz: the solo path stops stamping not_applicable",
+    "answers[q.id] = 'not_applicable';", "", QUIZ],
+  ["quiz: the stable option ids are removed",
+    "                id=\"qopt-${q.id}-${opt.id}\"\n", "", QUIZ],
+
+  // Selected-state semantics and its two non-color cues.
+  ["quiz: aria-pressed is removed from the option buttons",
+    "                aria-pressed=\"${isSel ? 'true' : 'false'}\"\n", "", QUIZ],
+  ["quiz: aria-pressed is inverted",
+    "aria-pressed=\"${isSel ? 'true' : 'false'}\"",
+    "aria-pressed=\"${isSel ? 'false' : 'true'}\"", QUIZ],
+  ["quiz: the selected state loses its geometric cue (back to colour alone)",
+    "      border-width: 2px;\n      border-left-width: 6px;\n", "", QUIZ],
+  ["quiz: the resting option stops reserving the rail (selection would reflow)",
+    "      border-left: 6px solid transparent;\n", "", QUIZ],
+  ["quiz: hover borrows the selected rail (an unselected option reads as chosen)",
+    "        border-left-color: transparent;\n", "", QUIZ],
+  ["quiz: the forced-colors selected cue is removed",
+    ".noct-quiz-option[aria-pressed=\"true\"] { border-width: 3px; border-left-width: 6px; }",
+    "", QUIZ],
+
+  // Focus wiring: both halves of the shared contract.
+  ["quiz: the five Quiz/Review controls are dropped from the focus rule",
+    "    .noct-profile-secondary:focus-visible,\n    .noct-quiz-option:focus-visible,\n    .noct-quiz-back:focus-visible,\n    .noct-quiz-next:focus-visible,\n    .noct-review-edit:focus-visible,\n    .noct-slider-track:focus-visible {\n      outline: 3px solid var(--focus-ring-outer);",
+    "    .noct-profile-secondary:focus-visible {\n      outline: 3px solid var(--focus-ring-outer);", QUIZ],
+  ["quiz: the five controls are dropped from the forced-colors focus fallback",
+    "      .noct-profile-secondary:focus-visible,\n      .noct-quiz-option:focus-visible,\n      .noct-quiz-back:focus-visible,\n      .noct-quiz-next:focus-visible,\n      .noct-review-edit:focus-visible,\n      .noct-slider-track:focus-visible {\n        outline-color: CanvasText;",
+    "      .noct-profile-secondary:focus-visible {\n        outline-color: CanvasText;", QUIZ],
+
+  // Every required 44px interaction floor, one entry each.
+  ["quiz: the base option row drops below the 44px floor",
+    "      gap: 4px;\n      min-height: 84px;", "      gap: 4px;\n      min-height: 24px;", QUIZ],
+  ["quiz: the consultation option row drops below the 44px floor",
+    "      min-height: 88px;\n      padding: 20px 22px 20px 17px;",
+    "      min-height: 24px;\n      padding: 20px 22px 20px 17px;", QUIZ],
+  ["quiz: Back drops below the 44px floor",
+    "      padding: 8px 10px;\n      min-height: 44px;", "      padding: 8px 10px;", QUIZ],
+  ["quiz: Next drops below the 44px floor",
+    "      padding: 16px 32px;\n      font-family: var(--font-serif);",
+    "      padding: 4px 32px;\n      font-family: var(--font-serif);", QUIZ],
+  ["quiz: Review Edit drops below the 44px floor",
+    "      min-height: 44px;\n      display: inline-flex;\n      align-items: center;\n      border-radius: var(--radius);",
+    "      border-radius: var(--radius);", QUIZ],
+  ["quiz: the slider interaction band collapses below 44px",
+    "      padding: 22px 0;", "      padding: 2px 0;", QUIZ],
+  ["quiz: the slider falls back to the global border-box reset (painted line clipped to nothing)",
+    "      box-sizing: content-box;\n", "", QUIZ],
+
+  // Layout ruling and the language-switch rerenders.
+  ["quiz: cols-3 behaviour is restored for the 7- and 8-option questions",
+    "      if (n <= 3) return 'cols-1';\n      return 'cols-2';",
+    "      if (n <= 3) return 'cols-1';\n      if (n <= 6) return 'cols-2';\n      return 'cols-3';", QUIZ],
+  ["quiz: a language switch stops re-rendering the active question",
+    "      if (questionScreen && questionScreen.classList.contains('active')) {\n        window.renderQuestion();\n      }",
+    "      if (questionScreen && false) {\n        window.renderQuestion();\n      }", QUIZ],
+  ["quiz: a language switch stops re-rendering the Review rows",
+    "      if (reviewScreen && reviewScreen.classList.contains('active')) {\n        window.renderReview();\n      }",
+    "      if (reviewScreen && false) {\n        window.renderReview();\n      }", QUIZ],
+
+  // The keyboard focus repair, in both failure directions.
+  ["quiz: keyboard focus restoration is removed",
+    "      if (restoreId) {\n        var replacement = document.getElementById(restoreId);",
+    "      if (false) {\n        var replacement = document.getElementById(restoreId);", QUIZ],
+  ["quiz: focus is restored after TOUCH too (the :focus-visible guard is dropped)",
+    "            && active.matches(':focus-visible')) {", "            && true) {", QUIZ],
+  ["quiz: switchLanguage stops recording the focus hint by id (option ids no longer feed the restore path)",
+    "      if (active && active.id) _langFocusHintId = active.id;",
+    "      if (false) _langFocusHintId = active.id;", QUIZ],
 
 ];
 
