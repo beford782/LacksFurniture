@@ -655,14 +655,138 @@ ok('labels keep the serif treatment and sublabels reach 14–15px with comfortab
   && /font-size:\s*15px;/.test((norm.match(/body:has\(#questionScreen\.active\) \.noct-quiz-option \.opt-sub \{([^}]*)\}/) || [null, ''])[1])
   && /line-height:\s*1\.45;/.test((norm.match(/body:has\(#questionScreen\.active\) \.noct-quiz-option \.opt-sub \{([^}]*)\}/) || [null, ''])[1]));
 
-section('REPAIR 3 — forced colors keeps a non-color selected cue, keyed to aria-pressed');
-ok('a forced-colors rule keys the selected option cue to aria-pressed',
-  /@media \(forced-colors: active\)\s*\{\s*\.noct-quiz-option\[aria-pressed="true"\] \{[^}]*border-width: 3px;[^}]*border-left-width: 6px;[^}]*\}\s*\}/.test(norm));
+section('REPAIR 3 — forced colors: the cue must WIN the cascade, not merely exist');
+// The first version of this section asserted only that a string of CSS was
+// present. It was: `.noct-quiz-option[aria-pressed="true"]` is (0,2,0) and lost
+// to the normal selected rule at (1,3,1), which already sets border-width: 2px
+// — so the declaration never applied and the assertion passed anyway. These
+// checks compute the CASCADE OUTCOME and the resulting box geometry instead.
+//
+// Honest scope: this is static cascade analysis of the shipped stylesheet, not
+// a rendered forced-colors verification. No forced-colors rendering environment
+// was available; nothing here claims the cue was seen.
+
+// Specificity of a compound selector, per CSS Selectors 4. `:has()` takes the
+// specificity of its most specific argument.
+function specificity(sel) {
+  let s = sel.trim();
+  let a = 0, b = 0, c = 0;
+  s = s.replace(/:has\(([^)]*)\)/g, (_, inner) => {
+    const [ia, ib, ic] = specificity(inner);
+    a += ia; b += ib; c += ic;
+    return ' ';
+  });
+  a += (s.match(/#[\w-]+/g) || []).length;
+  b += (s.match(/\.[\w-]+/g) || []).length;
+  b += (s.match(/\[[^\]]*\]/g) || []).length;
+  b += (s.match(/:(?!:)(?!has\b)[\w-]+/g) || []).length;
+  c += (s.replace(/[#.\[][^\s>+~]*/g, ' ').match(/\b[a-zA-Z][\w-]*\b/g) || []).length;
+  return [a, b, c];
+}
+const cmpSpec = (x, y) => (x[0] - y[0]) || (x[1] - y[1]) || (x[2] - y[2]);
+
+// Pull a rule body out of an already-isolated @media block. Takes the block
+// TEXT, not a regex: several forced-colors blocks exist and the focus one also
+// mentions `.noct-quiz-option` (as `:focus-visible`), so matching by regex
+// against the whole file silently resolves to the wrong block.
+function ruleIn(block, selector) {
+  if (!block) return null;
+  const re = new RegExp(selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*\\{([^}]*)\\}');
+  const r = block.match(re);
+  return r ? r[1] : null;
+}
+const forcedWideBlock = (() => {
+  const blocks = norm.match(/@media \(forced-colors: active\) \{[\s\S]*?\n    \}/g) || [];
+  // the quiz state block is the one declaring the aria-pressed geometry
+  return blocks.find((b) => b.includes('[aria-pressed="true"]') && b.includes('border-width')) || '';
+})();
+const forcedNarrowBlock = (norm.match(/@media \(forced-colors: active\) and \(max-width: 700px\) \{[\s\S]*?\n    \}/) || [''])[0];
+
+const SEL_NORMAL_SELECTED = 'body:has(#questionScreen.active) .noct-quiz-option.selected';
+const SEL_FORCED_SELECTED = 'body:has(#questionScreen.active) .noct-quiz-option.selected[aria-pressed="true"]';
+const SEL_FORCED_RESTING = 'body:has(#questionScreen.active) .noct-quiz-option';
+
+// Both halves matter: the selector the FILE ships must be the one whose
+// specificity outranks the normal rule. Comparing two constants would pass
+// against any tree at all — that is the exact vacuity this section replaced.
+ok('the forced-colors selected rule outranks the normal selected rule (so it can actually apply)',
+  norm.includes(SEL_FORCED_SELECTED)
+  && norm.includes(SEL_NORMAL_SELECTED)
+  && cmpSpec(specificity(SEL_FORCED_SELECTED), specificity(SEL_NORMAL_SELECTED)) > 0,
+  `forced ${specificity(SEL_FORCED_SELECTED).join(',')} vs normal ${specificity(SEL_NORMAL_SELECTED).join(',')}`);
+ok('the retired (0,2,0) selector that lost the cascade is gone',
+  !/^\s*\.noct-quiz-option\[aria-pressed="true"\] \{/m.test(norm));
+ok('the forced-colors selected rule is scoped to the active quiz screen',
+  forcedWideBlock.includes(SEL_FORCED_SELECTED));
+ok('the resting option gets a UNIFORM boundary under forced colors, not a reserved transparent rail',
+  /border-width:\s*1px;/.test(ruleIn(forcedWideBlock, SEL_FORCED_RESTING) || '')
+  && !/transparent/.test(forcedWideBlock));
+ok('the forced-colors selected option carries a 3px frame with a 6px left rail',
+  /border-width:\s*3px;/.test(ruleIn(forcedWideBlock, SEL_FORCED_SELECTED) || '')
+  && /border-left-width:\s*6px;/.test(ruleIn(forcedWideBlock, SEL_FORCED_SELECTED) || ''));
+ok('forced colors is achieved without forced-color-adjust: none',
+  !/forced-color-adjust\s*:\s*none/.test(norm));
+
+// --- per-side border+padding totals: text and box must not move ------------
+function sides(body, fallbackBorder) {
+  if (body === null) return null;
+  const pad = (body.match(/padding:\s*([^;]+);/) || [])[1];
+  const bw = (body.match(/border-width:\s*([\d.]+)px;/) || [])[1];
+  const blw = (body.match(/border-left-width:\s*([\d.]+)px;/) || [])[1];
+  const shorthand = (body.match(/border:\s*([\d.]+)px/) || [])[1];
+  const bl = (body.match(/border-left:\s*([\d.]+)px/) || [])[1];
+  const base = parseFloat(bw ?? shorthand ?? fallbackBorder?.all ?? 'NaN');
+  const left = parseFloat(blw ?? bl ?? bw ?? shorthand ?? fallbackBorder?.left ?? 'NaN');
+  if (!pad) return null;
+  const p = pad.trim().split(/\s+/).map((v) => parseFloat(v));
+  const [pt, pr, pb, pl] = p.length === 4 ? p
+    : p.length === 2 ? [p[0], p[1], p[0], p[1]]
+    : [p[0], p[0], p[0], p[0]];
+  return { top: base + pt, right: base + pr, bottom: base + pb, left: left + pl };
+}
+const eq = (x, y) => x && y && x.top === y.top && x.right === y.right && x.bottom === y.bottom && x.left === y.left;
+const show = (o) => (o ? `${o.top}/${o.right}/${o.bottom}/${o.left}` : 'unparsed');
+{
+  // normal state, wide
+  const nRest = sides((norm.match(/body:has\(#questionScreen\.active\) \.noct-quiz-option \{([^}]*)\}/) || [null, null])[1]);
+  const nSel = sides((norm.match(/body:has\(#questionScreen\.active\) \.noct-quiz-option\.selected \{([^}]*)\}/) || [null, null])[1],
+    { all: 1, left: 6 });
+  // forced state, wide
+  const fRest = sides(ruleIn(forcedWideBlock, SEL_FORCED_RESTING));
+  const fSel = sides(ruleIn(forcedWideBlock, SEL_FORCED_SELECTED));
+  ok('normal state: selected and resting already share border+padding on every side',
+    eq(nRest, nSel), `resting ${show(nRest)} vs selected ${show(nSel)}`);
+  ok('forced colors: resting keeps the SAME per-side totals as normal, so nothing moves entering forced colors',
+    eq(fRest, nRest), `forced ${show(fRest)} vs normal ${show(nRest)}`);
+  ok('forced colors: selecting does not move the text or grow the box',
+    eq(fSel, fRest), `selected ${show(fSel)} vs resting ${show(fRest)}`);
+}
+{
+  // narrow breakpoint, both states
+  const narrow = (norm.match(/@media \(max-width: 700px\) \{[\s\S]*?\n    \}/) || [''])[0];
+  const nRest = sides((narrow.match(/body:has\(#questionScreen\.active\) \.noct-quiz-option \{([^}]*)\}/) || [null, null])[1],
+    { all: 1, left: 6 });
+  const nSel = sides((narrow.match(/body:has\(#questionScreen\.active\) \.noct-quiz-option\.selected \{([^}]*)\}/) || [null, null])[1],
+    { all: 2, left: 6 });
+  const fRest = sides(ruleIn(forcedNarrowBlock, SEL_FORCED_RESTING), { all: 1, left: 1 });
+  const fSel = sides(ruleIn(forcedNarrowBlock, SEL_FORCED_SELECTED), { all: 3, left: 6 });
+  ok('narrow breakpoint has its own forced-colors geometry (else the wide rule wins there by source order)',
+    !!forcedNarrowBlock && forcedNarrowBlock.includes(SEL_FORCED_SELECTED));
+  ok('narrow breakpoint, normal state: totals already match between states',
+    eq(nRest, nSel), `resting ${show(nRest)} vs selected ${show(nSel)}`);
+  ok('narrow breakpoint, forced colors: resting totals match the normal narrow state',
+    eq(fRest, nRest), `forced ${show(fRest)} vs normal ${show(nRest)}`);
+  ok('narrow breakpoint, forced colors: selecting does not move the text or grow the box',
+    eq(fSel, fRest), `selected ${show(fSel)} vs resting ${show(fRest)}`);
+  ok('the narrow forced block is placed AFTER the wide one (equal specificity — order decides)',
+    norm.indexOf('@media (forced-colors: active) and (max-width: 700px)')
+      > norm.indexOf(forcedWideBlock.slice(0, 60)));
+}
 {
   const firstForcedIdx = norm.indexOf('@media (forced-colors: active)');
-  const quizForcedIdx = norm.indexOf('.noct-quiz-option[aria-pressed="true"]');
+  const quizForcedIdx = norm.indexOf(SEL_FORCED_SELECTED);
   const focusBlockIdx = norm.indexOf('.fin-btn:focus-visible');
-  ok('the new forced-colors block is placed AFTER the anchored focus block (suite ordering preserved)',
+  ok('the quiz forced-colors block is placed AFTER the anchored focus block (suite ordering preserved)',
     firstForcedIdx > focusBlockIdx && quizForcedIdx > firstForcedIdx);
   ok('the first forced-colors block in the file is still the focus one',
     norm.slice(firstForcedIdx, firstForcedIdx + 900).includes('outline-color: CanvasText'));
@@ -746,6 +870,8 @@ ok('Back and Review Edit center their label inside the enlarged box',
     `painted line ${h}px`);
   ok('the enlarged band is absorbed by negative margins so layout does not shift',
     /margin:\s*-?[\d.]+px 0 -?[\d.]+px;/.test(sliderCss) || /margin:\s*-[\d.]+px/.test(sliderCss));
+  ok('the slider carries touch-action: manipulation (CLAUDE.md interactive-element rule)',
+    /touch-action: manipulation;/.test(sliderCss));
   const thumbW = (norm.match(/\.noct-slider-track::-webkit-slider-thumb \{([^}]*)\}/) || [null, ''])[1];
   const thumbM = (norm.match(/\.noct-slider-track::-moz-range-thumb \{([^}]*)\}/) || [null, ''])[1];
   ok('the PAINTED thumb is unchanged at 20px in both engines',

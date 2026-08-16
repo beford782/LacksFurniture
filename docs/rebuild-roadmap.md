@@ -1248,11 +1248,29 @@ question-transition announcement work):**
 1. `aria-pressed` on every option button, single- and multiple-select alike,
    mirroring the stored answer exactly. The controls stay `<button>`s: no
    radio/checkbox roles, no arrow-key group semantics.
-2. A non-colour selected cue. A 6px rail is reserved transparently at rest and
-   painted on selection while the remaining boundary doubles to 2px, with
-   padding compensation so no text moves; a forced-colors rule keyed to
-   `aria-pressed` carries the same geometry when author colours are stripped.
-   No answer icon, no decorative checkmark.
+2. A non-colour selected cue. In normal rendering a 6px rail is reserved
+   transparently at rest and painted on selection while the remaining boundary
+   doubles to 2px, with padding compensation so no text moves. Under forced
+   colours the treatment is deliberately different, because a transparent
+   border is not guaranteed to stay transparent there and a reserved rail could
+   paint on every option: resting options take a **uniform 1px boundary on all
+   four sides** and the selected option a **3px frame with a 6px left rail**,
+   padding-compensated to the same per-side totals (21/23/21/23 wide,
+   18/19/18/19 at the narrow breakpoint, which carries its own forced-colours
+   geometry). The rule is scoped to the active quiz screen and qualified by
+   `.selected[aria-pressed="true"]` so it outranks the normal selected rule
+   (1,4,1 against 1,3,1); `forced-color-adjust: none` is not used. No answer
+   icon, no decorative checkmark.
+
+   *An earlier revision of this slice shipped this cue as
+   `.noct-quiz-option[aria-pressed="true"]` at specificity (0,2,0), which lost
+   the cascade to the normal selected rule's `border-width: 2px` at (1,3,1) and
+   therefore never applied — the paragraph above described behaviour that did
+   not occur. Found in review and repaired; the regression test now asserts the
+   cascade outcome and the per-side geometry rather than the presence of CSS
+   text. **The forced-colours result is verified by static cascade analysis
+   only — no forced-colours rendering environment was available, and it has not
+   been visually confirmed.***
 3. Visible focus. `.noct-quiz-option`, `.noct-quiz-back`, `.noct-quiz-next`,
    `.noct-review-edit` and `.noct-slider-track` joined the existing shared
    two-ring `:focus-visible` block and its CanvasText forced-colors fallback,
@@ -1264,7 +1282,9 @@ question-transition announcement work):**
    (32px) did not and were raised. The slider gained a transparent 44px
    interaction band via vertical padding with the paint clipped to the content
    box — the ~20px painted thumb, the 1–10 values, stops, default, drag
-   semantics and touch handlers are all unchanged.
+   semantics and touch handlers are all unchanged. The band also carries
+   `touch-action: manipulation`, as CLAUDE.md requires of every interactive
+   element; it was missing when the band was first enlarged (found in review).
 5. Keyboard-only focus restoration. `selectOption()` replaces the activated
    button, which dropped keyboard focus to BODY. Options now carry stable ids
    (`qopt-<questionId>-<optionId>`); focus is restored synchronously with

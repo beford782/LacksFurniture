@@ -411,10 +411,21 @@ function over(fg, bg, alpha) {
       !!consolidated && quizFocus.every((s) => consolidated[0].includes(s + ":focus-visible")));
     check("all five joined the forced-colors focus fallback",
       !!forced && quizFocus.every((s) => forced[0].includes(s + ":focus-visible")));
+    // The cue is GEOMETRY, not colour, because forced colours strip the tint
+    // and are not required to preserve a transparent border. Resting options
+    // take a uniform 1px boundary; the selected one a 3px frame with a 6px
+    // left rail. Scoped to the quiz screen and qualified by .selected so it
+    // outranks the normal selected rule (1,4,1 vs 1,3,1) — the previous
+    // (0,2,0) selector lost the cascade and never applied.
+    const forcedSel = 'body:has(#questionScreen.active) .noct-quiz-option.selected[aria-pressed="true"]';
     check("forced colors keeps a geometric selected cue keyed to aria-pressed",
-      /@media \(forced-colors: active\)\s*\{\s*\.noct-quiz-option\[aria-pressed="true"\] \{ border-width: 3px; border-left-width: 6px; \}\s*\}/.test(html));
+      html.includes(forcedSel) && /border-left-width: 6px;/.test(html));
+    check("forced colors gives resting options a uniform boundary (no reliance on a transparent rail)",
+      /@media \(forced-colors: active\) \{[\s\S]*?body:has\(#questionScreen\.active\) \.noct-quiz-option \{[^}]*border-width: 1px;/.test(html));
     check("the Quiz forced-colors cue is placed AFTER the anchored focus block",
-      html.indexOf('.noct-quiz-option[aria-pressed="true"]') > html.indexOf(".fin-btn:focus-visible"));
+      html.indexOf(forcedSel) > html.indexOf(".fin-btn:focus-visible"));
+    check("the retired (0,2,0) forced-colors selector is gone",
+      !/^\s*\.noct-quiz-option\[aria-pressed="true"\] \{/m.test(html));
   }
 }
 

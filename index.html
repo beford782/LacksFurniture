@@ -1094,6 +1094,12 @@
       background: var(--color-border);
       background-clip: content-box;
       margin: -22px 0 -8px;
+      /* Required on every interactive element (CLAUDE.md). It matters more
+         here than on a button: the band above is a 44px transparent target
+         inside a page that scrolls, so the control must not also carry the
+         double-tap delay. `manipulation` still permits panning and pinch
+         zoom, so a vertical drag begun in the band can still scroll. */
+      touch-action: manipulation;
     }
 
     .noct-slider-track::-webkit-slider-thumb {
@@ -9524,14 +9530,60 @@
     @media (forced-colors: active) {
       .noct-tier-tab.active { border: 2px solid CanvasText; }
     }
-    /* Quiz selected option under forced colors: the warm tint is stripped, so
-       the state falls back entirely to geometry — the reserved rail widens to
-       6px and the remaining boundary to 3px, both drawn in CanvasText. Keyed
-       to aria-pressed, which carries the semantics. Placed after the focus
-       block above — contrast_check anchors the file's FIRST forced-colors
-       block as the focus one. */
+    /* Quiz option state under forced colors.
+
+       Two things the previous version got wrong, both found in review:
+
+       1. CASCADE. It selected `.noct-quiz-option[aria-pressed="true"]` — (0,2,0)
+          — against the normal selected rule
+          `body:has(#questionScreen.active) .noct-quiz-option.selected` at (1,3,1),
+          which already declares border-width: 2px. Media queries add no
+          specificity, and border-width is not a colour property, so forced
+          colours never touch it: the 3px simply lost the cascade and the rule
+          was inert. These rules re-scope to the quiz screen and add the
+          attribute on top of .selected, giving (1,4,1) — strictly greater than
+          the normal rule, so they win regardless of source order.
+
+       2. TRANSPARENCY. It relied on the resting rail staying `transparent`
+          under forced colours so only the selected rail would paint. Forced
+          colours are not required to preserve a transparent border-color, and
+          if the rail paints on every option the cue vanishes. So the resting
+          option no longer depends on a reserved transparent rail here: it gets
+          a UNIFORM 1px boundary on all four sides, and the selected option a
+          3px frame with a 6px left rail. That difference is pure geometry and
+          survives any colour forcing.
+
+       Padding compensates on every side so neither the text nor the border box
+       moves between states (border + padding per side is 21/23/21/23 in both,
+       matching the normal-state totals exactly).
+
+       Placed after the focus block above — contrast_check anchors the file's
+       FIRST forced-colors block as the focus one. */
     @media (forced-colors: active) {
-      .noct-quiz-option[aria-pressed="true"] { border-width: 3px; border-left-width: 6px; }
+      body:has(#questionScreen.active) .noct-quiz-option {
+        border-width: 1px;
+        padding: 20px 22px;
+      }
+
+      body:has(#questionScreen.active) .noct-quiz-option.selected[aria-pressed="true"] {
+        border-width: 3px;
+        border-left-width: 6px;
+        padding: 18px 20px 18px 17px;
+      }
+    }
+    /* The narrow breakpoint needs its own forced-colors geometry: the rules
+       above carry the same (1,3,1)/(1,4,1) specificity as the max-width: 700px
+       block far earlier in the file, so without this they would win there by
+       source order and shift the text. Totals here are 18/19/18/19, matching
+       the narrow normal state. Must stay AFTER the block above. */
+    @media (forced-colors: active) and (max-width: 700px) {
+      body:has(#questionScreen.active) .noct-quiz-option {
+        padding: 17px 18px;
+      }
+
+      body:has(#questionScreen.active) .noct-quiz-option.selected[aria-pressed="true"] {
+        padding: 15px 16px 15px 13px;
+      }
     }
 
     /* Sheet (modal dialog) */
