@@ -207,6 +207,26 @@ None of these are negotiable by a redesign.
     allowlisted source, or it does not change. The suppressed, fail-closed
     presentation **is** the correct demonstration of stale state. *(Made
     permanent governance 2026-08-14, promoted from a prototype-round rule.)*
+12. **Native-Spanish linguistic approval is consolidated, not per-slice.**
+    *(Owner ruling 2026-08-15.)* The native-Spanish review of customer-facing
+    ES copy is **deferred to a single consolidated pass at the end of
+    development**, rather than gating each slice. A slice therefore does not
+    wait on a Spanish linguistic sign-off to merge. What each slice still
+    owes, without exception:
+    - **EN and ES functional testing** on the device matrix (both
+      orientations, both languages) — the language toggle, layout under
+      Spanish text expansion, and every ES surface the slice touches.
+    - **Automated EN/ES parity** — identical dictionary key sets, every new
+      key present and genuinely translated in both languages, and the
+      slice's own suite executing its ES path.
+    - **A copy inventory**: every new or changed ES string the slice ships is
+      listed in its PR, so the consolidated review has a complete ledger to
+      work from rather than reconstructing it from diffs.
+    Deferral is not approval. Until that consolidated pass happens, shipped
+    ES copy is provisional, and this invariant is what records that it is
+    owed. It does not touch the separate, still-open native-Spanish
+    **claim-equivalence** reviewer for catalog claims (see the claim
+    inventory), which remains its own gate.
 
 ---
 
@@ -1008,7 +1028,9 @@ recorded as Invariant 11.
 **What D1–D6 are not.** Not final pixel-level visual approval — every merged
 slice still passes the device-matrix merge gate (both orientations, EN and
 ES) and Blake's live review, as every shipped slice has. Not Spanish
-approval — the native-Spanish review gate stands over all new ES copy. Not a
+approval — ES copy remains provisional until the consolidated end-of-
+development native-Spanish pass (Invariant 12, owner ruling 2026-08-15;
+before that ruling this gate blocked each slice). Not a
 scoring, ranking, tier, threshold, cap, back-fill or firmness change — the
 output-regression fixture holds. Not showroom-use authorization — device
 hardening remains blocking.
