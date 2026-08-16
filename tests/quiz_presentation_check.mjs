@@ -695,12 +695,18 @@ function ruleIn(block, selector) {
   const r = block.match(re);
   return r ? r[1] : null;
 }
+// Comments are stripped before any CSS is parsed, the same way
+// tests/contrast_check.mjs does it. A rationale comment inside a rule body that
+// quotes a declaration ("the base rule's `border-left: 6px solid transparent`")
+// is prose, not CSS, and a regex parser that sees it reads the wrong geometry
+// and the wrong colours.
+const cssNorm = norm.replace(/\/\*[\s\S]*?\*\//g, '');
 const forcedWideBlock = (() => {
-  const blocks = norm.match(/@media \(forced-colors: active\) \{[\s\S]*?\n    \}/g) || [];
+  const blocks = cssNorm.match(/@media \(forced-colors: active\) \{[\s\S]*?\n    \}/g) || [];
   // the quiz state block is the one declaring the aria-pressed geometry
   return blocks.find((b) => b.includes('[aria-pressed="true"]') && b.includes('border-width')) || '';
 })();
-const forcedNarrowBlock = (norm.match(/@media \(forced-colors: active\) and \(max-width: 700px\) \{[\s\S]*?\n    \}/) || [''])[0];
+const forcedNarrowBlock = (cssNorm.match(/@media \(forced-colors: active\) and \(max-width: 700px\) \{[\s\S]*?\n    \}/) || [''])[0];
 
 const SEL_NORMAL_SELECTED = 'body:has(#questionScreen.active) .noct-quiz-option.selected';
 const SEL_FORCED_SELECTED = 'body:has(#questionScreen.active) .noct-quiz-option.selected[aria-pressed="true"]';
@@ -718,9 +724,49 @@ ok('the retired (0,2,0) selector that lost the cascade is gone',
   !/^\s*\.noct-quiz-option\[aria-pressed="true"\] \{/m.test(norm));
 ok('the forced-colors selected rule is scoped to the active quiz screen',
   forcedWideBlock.includes(SEL_FORCED_SELECTED));
-ok('the resting option gets a UNIFORM boundary under forced colors, not a reserved transparent rail',
-  /border-width:\s*1px;/.test(ruleIn(forcedWideBlock, SEL_FORCED_RESTING) || '')
-  && !/transparent/.test(forcedWideBlock));
+ok('the resting option gets a uniform 1px WIDTH on all four sides under forced colors',
+  /border-width:\s*1px;/.test(ruleIn(forcedWideBlock, SEL_FORCED_RESTING) || ''));
+
+// The width alone is not the boundary. The base rule declares
+// `border-left: 6px solid transparent`, so unless the forced rule pins a colour
+// too, the left edge's VISIBILITY depends on whether the UA forces
+// `transparent` — which forced colours does not guarantee. Searching the forced
+// block for the word "transparent" cannot see that, because the transparency
+// lives in a rule the block does not contain. So resolve the cascade instead.
+{
+  const baseResting = (cssNorm.match(/body:has\(#questionScreen\.active\) \.noct-quiz-option \{([^}]*)\}/) || [null, ''])[1];
+  const normalSelected = (cssNorm.match(/body:has\(#questionScreen\.active\) \.noct-quiz-option\.selected \{([^}]*)\}/) || [null, ''])[1];
+  const forcedResting = ruleIn(forcedWideBlock, SEL_FORCED_RESTING) || '';
+  const forcedSelected = ruleIn(forcedWideBlock, SEL_FORCED_SELECTED) || '';
+
+  ok('precondition: the base resting rule really does declare a transparent left rail (the hazard is real)',
+    /border-left:\s*6px solid transparent;/.test(baseResting));
+  ok('precondition: the normal selected rule really does declare an author colour',
+    /border-color:\s*var\(--accent-ink\);/.test(normalSelected));
+
+  // A colour on the RESTING rule alone is not enough: that selector is (1,2,1)
+  // and loses to the normal selected rule at (1,3,1), so a selected option would
+  // keep the author colour. Both forced rules must pin it.
+  ok('the forced RESTING rule pins an explicit system colour on all four edges',
+    /border-color:\s*CanvasText;/.test(forcedResting));
+  ok('the forced SELECTED rule pins it too — the resting rule alone cannot reach a selected option',
+    /border-color:\s*CanvasText;/.test(forcedSelected));
+
+  const idxCanvas = cssNorm.indexOf('border-color: CanvasText;', cssNorm.indexOf(forcedWideBlock.slice(0, 40)));
+  const idxRail = cssNorm.indexOf('border-left: 6px solid transparent;');
+  const idxInk = cssNorm.indexOf('border-color: var(--accent-ink);', cssNorm.indexOf('background: #F2E9DB;'));
+  ok('resting: the system colour ties the base rail on specificity and is declared later, so it wins',
+    cmpSpec(specificity(SEL_FORCED_RESTING), specificity(SEL_FORCED_RESTING)) === 0
+    && idxRail > 0 && idxCanvas > idxRail,
+    `${specificity(SEL_FORCED_RESTING).join(',')} at ${idxCanvas} vs rail at ${idxRail}`);
+  ok('selected: the system colour OUTRANKS the normal selected author colour, so selected edges are system-coloured',
+    cmpSpec(specificity(SEL_FORCED_SELECTED), specificity(SEL_NORMAL_SELECTED)) > 0
+    && idxInk > 0 && idxCanvas > 0,
+    `forced selected ${specificity(SEL_FORCED_SELECTED).join(',')} vs normal selected ${specificity(SEL_NORMAL_SELECTED).join(',')}`);
+  ok('no forced-colors quiz rule reintroduces transparent or an author colour token',
+    !/transparent/.test(forcedWideBlock) && !/transparent/.test(forcedNarrowBlock)
+    && !/var\(--/.test(forcedWideBlock.match(/border-color:[^;]*;/g)?.join(' ') || ''));
+}
 ok('the forced-colors selected option carries a 3px frame with a 6px left rail',
   /border-width:\s*3px;/.test(ruleIn(forcedWideBlock, SEL_FORCED_SELECTED) || '')
   && /border-left-width:\s*6px;/.test(ruleIn(forcedWideBlock, SEL_FORCED_SELECTED) || ''));
@@ -748,8 +794,8 @@ const eq = (x, y) => x && y && x.top === y.top && x.right === y.right && x.botto
 const show = (o) => (o ? `${o.top}/${o.right}/${o.bottom}/${o.left}` : 'unparsed');
 {
   // normal state, wide
-  const nRest = sides((norm.match(/body:has\(#questionScreen\.active\) \.noct-quiz-option \{([^}]*)\}/) || [null, null])[1]);
-  const nSel = sides((norm.match(/body:has\(#questionScreen\.active\) \.noct-quiz-option\.selected \{([^}]*)\}/) || [null, null])[1],
+  const nRest = sides((cssNorm.match(/body:has\(#questionScreen\.active\) \.noct-quiz-option \{([^}]*)\}/) || [null, null])[1]);
+  const nSel = sides((cssNorm.match(/body:has\(#questionScreen\.active\) \.noct-quiz-option\.selected \{([^}]*)\}/) || [null, null])[1],
     { all: 1, left: 6 });
   // forced state, wide
   const fRest = sides(ruleIn(forcedWideBlock, SEL_FORCED_RESTING));
@@ -763,7 +809,7 @@ const show = (o) => (o ? `${o.top}/${o.right}/${o.bottom}/${o.left}` : 'unparsed
 }
 {
   // narrow breakpoint, both states
-  const narrow = (norm.match(/@media \(max-width: 700px\) \{[\s\S]*?\n    \}/) || [''])[0];
+  const narrow = (cssNorm.match(/@media \(max-width: 700px\) \{[\s\S]*?\n    \}/) || [''])[0];
   const nRest = sides((narrow.match(/body:has\(#questionScreen\.active\) \.noct-quiz-option \{([^}]*)\}/) || [null, null])[1],
     { all: 1, left: 6 });
   const nSel = sides((narrow.match(/body:has\(#questionScreen\.active\) \.noct-quiz-option\.selected \{([^}]*)\}/) || [null, null])[1],

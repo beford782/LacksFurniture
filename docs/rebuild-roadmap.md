@@ -1254,7 +1254,13 @@ question-transition announcement work):**
    colours the treatment is deliberately different, because a transparent
    border is not guaranteed to stay transparent there and a reserved rail could
    paint on every option: resting options take a **uniform 1px boundary on all
-   four sides** and the selected option a **3px frame with a 6px left rail**,
+   four sides, explicitly coloured `CanvasText`**, and the selected option a
+   **3px frame with a 6px left rail, also explicitly `CanvasText`**. Pinning the
+   colour on *both* rules is load-bearing rather than tidy: a uniform width
+   alone still left the left edge carrying the base rule's `solid transparent`,
+   whose visibility is the UA's choice; and a colour on the resting rule alone
+   could never reach a selected option, because that selector is (1,2,1) and
+   loses to the normal selected rule's author colour at (1,3,1). Both are
    padding-compensated to the same per-side totals (21/23/21/23 wide,
    18/19/18/19 at the narrow breakpoint, which carries its own forced-colours
    geometry). The rule is scoped to the active quiz screen and qualified by

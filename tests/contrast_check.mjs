@@ -420,8 +420,24 @@ function over(fg, bg, alpha) {
     const forcedSel = 'body:has(#questionScreen.active) .noct-quiz-option.selected[aria-pressed="true"]';
     check("forced colors keeps a geometric selected cue keyed to aria-pressed",
       html.includes(forcedSel) && /border-left-width: 6px;/.test(html));
-    check("forced colors gives resting options a uniform boundary (no reliance on a transparent rail)",
-      /@media \(forced-colors: active\) \{[\s\S]*?body:has\(#questionScreen\.active\) \.noct-quiz-option \{[^}]*border-width: 1px;/.test(html));
+    // Boundary VISIBILITY, resolved — not a word search. The base rule declares
+    // `border-left: 6px solid transparent`; a uniform width would still leave
+    // that edge's visibility up to whether the UA forces `transparent`. The
+    // forced rule must therefore pin a system colour, and must do so later in
+    // the file than both the transparent rail and .selected's author colour
+    // (all three are the same specificity, so source order decides).
+    const forcedResting = (html.match(/@media \(forced-colors: active\) \{[\s\S]*?body:has\(#questionScreen\.active\) \.noct-quiz-option \{([^}]*)\}/) || [null, ""])[1];
+    check("forced colors gives resting options a uniform 1px width on all four sides",
+      /border-width: 1px;/.test(forcedResting));
+    check("forced colors pins an explicit CanvasText boundary rather than inheriting the transparent base rail",
+      /border-color: CanvasText;/.test(forcedResting));
+    {
+      const iRail = html.indexOf("border-left: 6px solid transparent;");
+      const iInk = html.indexOf("border-color: var(--accent-ink);", html.indexOf("background: #F2E9DB;"));
+      const iCanvas = html.indexOf("border-color: CanvasText;", html.indexOf("@media (forced-colors: active) {"));
+      check("the CanvasText boundary is declared after the transparent rail and after the selected author colour (equal specificity, order decides)",
+        iRail > 0 && iInk > 0 && iCanvas > iRail && iCanvas > iInk);
+    }
     check("the Quiz forced-colors cue is placed AFTER the anchored focus block",
       html.indexOf(forcedSel) > html.indexOf(".fin-btn:focus-visible"));
     check("the retired (0,2,0) forced-colors selector is gone",

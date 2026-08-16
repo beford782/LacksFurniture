@@ -9555,6 +9555,16 @@
           3px frame with a 6px left rail. That difference is pure geometry and
           survives any colour forcing.
 
+       BOTH rules pin `border-color: CanvasText` explicitly, and they have to be
+       on both: the resting selector is (1,2,1), which loses to the normal
+       selected rule's `border-color: var(--accent-ink)` at (1,3,1), so a colour
+       declared only on the resting rule would never reach a selected option.
+       The selected rule here is (1,4,1) and wins. Pinning the colour is what
+       makes the boundary genuinely uniform — a uniform WIDTH alone still left
+       the left edge carrying the base rule's `solid transparent`, whose
+       visibility is up to the UA, and forced colours does not guarantee it.
+       Same idiom as the tier tab above.
+
        Padding compensates on every side so neither the text nor the border box
        moves between states (border + padding per side is 21/23/21/23 in both,
        matching the normal-state totals exactly).
@@ -9564,20 +9574,23 @@
     @media (forced-colors: active) {
       body:has(#questionScreen.active) .noct-quiz-option {
         border-width: 1px;
+        border-color: CanvasText;
         padding: 20px 22px;
       }
 
       body:has(#questionScreen.active) .noct-quiz-option.selected[aria-pressed="true"] {
         border-width: 3px;
         border-left-width: 6px;
+        border-color: CanvasText;
         padding: 18px 20px 18px 17px;
       }
     }
     /* The narrow breakpoint needs its own forced-colors geometry: the rules
-       above carry the same (1,3,1)/(1,4,1) specificity as the max-width: 700px
-       block far earlier in the file, so without this they would win there by
-       source order and shift the text. Totals here are 18/19/18/19, matching
-       the narrow normal state. Must stay AFTER the block above. */
+       above carry the same (1,2,1)/(1,4,1) specificity as their counterparts in
+       the max-width: 700px block far earlier in the file, so without this they
+       would win there by source order and shift the text. Totals here are
+       18/19/18/19, matching the narrow normal state. Colour is inherited from
+       the block above and needs no repeat. Must stay AFTER that block. */
     @media (forced-colors: active) and (max-width: 700px) {
       body:has(#questionScreen.active) .noct-quiz-option {
         padding: 17px 18px;
