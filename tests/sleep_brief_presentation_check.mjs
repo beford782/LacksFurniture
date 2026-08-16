@@ -341,6 +341,55 @@ section('entry animation performs once, on the quiz-completion entry only');
   ok('a re-render schedules no reveal work',
     env.frames.length === 0);
 }
+section('hero scale — the Sleep Brief figure is a hero, the stamps stay stamps');
+{
+  // Device gate 2026-08-15 (second pass): the reveal was visible but the
+  // figure still read as a stamp on the mounted iPad. The hero is enlarged;
+  // the two stamp placements are deliberately untouched.
+  const heroBase = norm.match(/\.noct-profile-signature \.sleep-signature \{\s*\n\s*width: clamp\((\d+)px, ([\d.]+)vw, (\d+)px\);/);
+  ok('the hero width is located as a clamp', !!heroBase);
+  if (heroBase) {
+    const [, min, , max] = heroBase.map(Number);
+    ok('landscape/desktop hero sits in the ruled 220-260px band', min >= 220 && max <= 260,
+      `${min}-${max}px`);
+  }
+  const portrait = norm.match(/@media \(max-width: 900px\), \(orientation: portrait\) \{[\s\S]*?\n    \}\n/);
+  const pBlock = portrait ? portrait[0] : '';
+  const heroPortrait = pBlock.match(/\.noct-profile-signature \.sleep-signature \{\s*\n\s*width: clamp\((\d+)px, ([\d.]+)vw, (\d+)px\);/);
+  ok('a tablet-portrait hero width is declared', !!heroPortrait);
+  if (heroPortrait) {
+    const [, min, , max] = heroPortrait.map(Number);
+    ok('tablet portrait hero meets the ruled 260-300px band', min >= 260 && max <= 300,
+      `${min}-${max}px`);
+  }
+  // Several 560px blocks exist; take the one that owns the profile rules.
+  const phBlock = [...norm.matchAll(/@media \(max-width: 560px\) \{[\s\S]*?\n    \}\n/g)]
+    .map((m) => m[0]).find((b) => b.includes('.noct-profile-secondary')) || '';
+  ok('the phone block that owns the profile rules is located', phBlock.length > 0);
+  ok('phones get a smaller explicit override so the figure cannot overflow',
+    /\.noct-profile-signature \.sleep-signature \{\s*\n\s*width: min\(\d+px, \d+vw\);/.test(phBlock));
+  {
+    const phoneMax = Number((phBlock.match(/\.noct-profile-signature \.sleep-signature \{\s*\n\s*width: min\((\d+)px/) || [, 0])[1]);
+    const tabletMin = heroPortrait ? Number(heroPortrait[1]) : 0;
+    ok('the phone override is genuinely smaller than the tablet minimum',
+      phoneMax > 0 && phoneMax < tabletMin, `${phoneMax}px < ${tabletMin}px`);
+  }
+  ok('the hero is placed deliberately in its field, not left clustered in a corner',
+    /\.noct-profile-signature \.sleep-signature \{[^}]*margin-inline: auto;/.test(norm)
+    || /\.noct-profile-signature \{[^}]*justify-content: center;/.test(norm));
+  // The stamps are NOT part of this change.
+  ok('the Results header stamp keeps its 54px size',
+    /\.noct-results-signature \.sleep-signature \{\s*\n\s*width: 54px;\s*\n\s*\}/.test(norm));
+  ok('the Consultation Summary stamp keeps its 48px size',
+    /\.hf2-review-signature \.sleep-signature \{\s*\n\s*width: 48px;\s*\n\s*\}/.test(norm));
+  ok('neither stamp is resized by a portrait or phone override',
+    !/noct-results-signature \.sleep-signature/.test(pBlock + phBlock)
+    && !/hf2-review-signature \.sleep-signature/.test(pBlock + phBlock));
+  // Sizing stays in CSS: the SVG bytes are answer-derived and must not change.
+  ok('the renderer emits no sizing attributes (scale is CSS, the SVG bytes are unchanged)',
+    !/\swidth="/.test(sigSrc) && !/\sheight="/.test(sigSrc));
+}
+
 section('the reveal is perceptible: a line draw, then the nodes');
 {
   const drawKeys = norm.match(/@keyframes sleepSignatureDraw \{[\s\S]*?\n    \}/);

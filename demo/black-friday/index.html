@@ -1602,8 +1602,16 @@
       height: auto;
     }
 
+    /* The Sleep Brief figure is the screen's hero, not a stamp: the mounted
+       device read the earlier 132-168px figure as a mark in the corner even
+       once the reveal was visible (owner device gate, 2026-08-15). Sizing
+       lives here, in CSS — the SVG bytes stay answer-derived and unchanged —
+       and `margin-inline: auto` seats the figure in the middle of the hero
+       field instead of hugging its left edge. The Results and Consultation
+       Summary stamps below are deliberately untouched by this change. */
     .noct-profile-signature .sleep-signature {
-      width: clamp(132px, 15vw, 168px);
+      width: clamp(220px, 20vw, 260px);
+      margin-inline: auto;
     }
 
     /* The entry reveal performs ONCE, on the quiz-completion entry
@@ -1885,6 +1893,10 @@
       .noct-profile-signature {
         margin-bottom: 10px;
       }
+      /* The tablet hero field is the widest this figure ever gets. */
+      .noct-profile-signature .sleep-signature {
+        width: clamp(260px, 34vw, 300px);
+      }
       .profile-launch__reflection {
         margin-bottom: 0;
       }
@@ -1913,6 +1925,11 @@
       }
       .noct-profile-secondary {
         min-height: 44px;
+      }
+      /* Phones get an explicit smaller figure: the tablet clamp's minimum
+         would crowd a narrow column and could force horizontal overflow. */
+      .noct-profile-signature .sleep-signature {
+        width: min(200px, 62vw);
       }
     }
 
