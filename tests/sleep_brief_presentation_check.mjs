@@ -216,6 +216,7 @@ const esc = (s) => String(s)
 function makeEnv({ lang = 'en', answers = ANSWERS_A, dict = null, reduced = false,
                    entry = false, openPriority = null, mutate = null } = {}) {
   const els = new Map();
+  const frames = [];
   const doc = {
     getElementById(id) { if (!els.has(id)) els.set(id, makeEl(id)); return els.get(id); }
   };
@@ -229,7 +230,8 @@ function makeEnv({ lang = 'en', answers = ANSWERS_A, dict = null, reduced = fals
   const api = new Function(
     'document', 'window', 'answers', 'currentLang', 'analytics', 'D', 'escapeHtml',
     'dfmReducedMotion', 'resolveConsultationSummary', 'financingEnabled',
-    'savingsPassEnabled', 'FC', 'renderResultsFinancing', 'showScreen', '__open',
+    'savingsPassEnabled', 'FC', 'renderResultsFinancing', 'showScreen', 'sessionFrame',
+    '__open',
     `"use strict";
     function t(k) { return Object.prototype.hasOwnProperty.call(D, k) ? D[k] : k; }
     var _briefOpenPriority = __open;
@@ -251,9 +253,22 @@ function makeEnv({ lang = 'en', answers = ANSWERS_A, dict = null, reduced = fals
     () => ({ context: 'ctx', who: 'who', profile: 'prof' }),
     () => false, () => false, () => '', () => {},
     (id) => screens.push(id),
+    // The session-owned frame mechanism, captured rather than executed: a
+    // reveal that runs during the render would be invisible on the device,
+    // which is exactly the defect this models.
+    (fn) => { frames.push(fn); return frames.length; },
     openPriority
   );
-  return { api, get: (id) => doc.getElementById(id), win, analytics, screens, els };
+  // Drains one generation of scheduled frames at a time, the way the browser
+  // would across successive paints.
+  const drainFrames = (generations = 1) => {
+    for (let g = 0; g < generations; g++) {
+      const due = frames.splice(0, frames.length);
+      due.forEach((fn) => fn());
+    }
+  };
+  return { api, get: (id) => doc.getElementById(id), win, analytics, screens, els,
+    frames, drainFrames };
 }
 
 // ------------------------------------- cross-surface geometry identity (D2)
@@ -291,13 +306,62 @@ section('entry animation performs once, on the quiz-completion entry only');
 {
   const env = makeEnv({ entry: true });
   env.api.brief();
-  ok('the quiz-completion entry animates the signature',
+  // Device gate 2026-08-15: the reveal was applied DURING the render, so it
+  // had already played by the time the Sleep Brief was painted — invisible on
+  // the iPad with Reduce Motion off. It must be scheduled on the session-owned
+  // frame mechanism and start only after the screen is visibly painted.
+  ok('the reveal is NOT applied during the render (it would play before paint)',
+    !env.get('profileSignature').classList.contains('is-entering'));
+  ok('the reveal is scheduled on the session-owned frame mechanism',
+    env.frames.length === 1, `${env.frames.length} frame(s) scheduled`);
+  env.drainFrames(1);
+  ok('one frame is not enough — the reveal waits for a painted screen (second frame)',
+    !env.get('profileSignature').classList.contains('is-entering')
+    && env.frames.length === 1);
+  env.drainFrames(1);
+  ok('the quiz-completion entry animates the signature once the screen has painted',
     env.get('profileSignature').classList.contains('is-entering'));
   ok('the entry flag is consumed by the render (one performance, not every render)',
     env.win._sleepSignatureEntry === false);
   env.api.brief();
+  env.drainFrames(2);
   ok('the immediate re-render redraws statically',
     !env.get('profileSignature').classList.contains('is-entering'));
+}
+{
+  const env = makeEnv({ entry: true, reduced: true });
+  env.api.brief();
+  ok('reduced motion renders statically and immediately — no frames scheduled at all',
+    env.frames.length === 0
+    && !env.get('profileSignature').classList.contains('is-entering'));
+}
+{
+  const env = makeEnv({ entry: false });
+  env.api.brief();
+  ok('a re-render schedules no reveal work',
+    env.frames.length === 0);
+}
+section('the reveal is perceptible: a line draw, then the nodes');
+{
+  const drawKeys = norm.match(/@keyframes sleepSignatureDraw \{[\s\S]*?\n    \}/);
+  ok('the line-draw keyframes animate stroke geometry, not opacity alone',
+    !!drawKeys && /stroke-dashoffset/.test(drawKeys[0]));
+  const nodeKeys = norm.match(/@keyframes sleepSignatureNode \{[\s\S]*?\n    \}/);
+  ok('a separate node-appearance animation exists', !!nodeKeys);
+  const drawRule = norm.match(/\.noct-profile-signature\.is-entering \.sleep-signature polyline \{([^}]*)\}/);
+  const nodeRule = norm.match(/\.noct-profile-signature\.is-entering \.sleep-signature circle \{([^}]*)\}/);
+  ok('the polyline draws and the circles appear as distinct animations',
+    !!drawRule && /sleepSignatureDraw/.test(drawRule[1])
+    && !!nodeRule && /sleepSignatureNode/.test(nodeRule[1]));
+  ok('the nodes are staggered so the reveal reads as a sequence, not a flash',
+    (norm.match(/\.sleep-signature circle:nth-of-type\(\d+\)/g) || []).length >= 5);
+  // Perceptibility floor: the old 900ms opacity/scale fade read as nothing on
+  // the device. The draw alone must run long enough to be seen.
+  const drawMs = drawRule ? Number((drawRule[1].match(/(\d+)ms/) || [, 0])[1]) : 0;
+  ok('the line draw runs long enough to be perceptible (>= 900ms)', drawMs >= 900,
+    drawMs + 'ms');
+  ok('reduced motion still suppresses the whole reveal in CSS as a backstop',
+    /@media \(prefers-reduced-motion: reduce\)\s*\{[\s\S]{0,400}?\.noct-profile-signature\.is-entering[\s\S]{0,200}?animation: none/.test(norm));
 }
 {
   const env = makeEnv({ entry: false });
@@ -564,6 +628,34 @@ section('focus, touch targets and forced colors on the recomposed screen');
   }
 }
 
+// ------------------------------------------- tablet portrait (device gate)
+section('tablet portrait layout — no dead zone, no collision with fixed controls');
+{
+  const portrait = norm.match(/@media \(max-width: 900px\), \(orientation: portrait\) \{[\s\S]*?\n    \}\n/);
+  ok('the tablet portrait block is located', !!portrait);
+  const block = portrait ? portrait[0] : '';
+  // Device gate 2026-08-15: the card was pinned to 100dvh, leaving ~330px of
+  // empty card below the action row at 834x1108.
+  ok('portrait does not stretch the card to the full viewport below the actions',
+    !/min-height: 100dvh/.test(block) && /\.noct-profile \{[^}]*min-height: auto;/.test(block));
+  // The fixed session utility bar (top 8px, ~56px tall) shares the top band
+  // with the heading in portrait; the heading box ended 2px from it, so its
+  // focus ring overlapped the controls.
+  ok('a named clearance token for the fixed utility bar exists',
+    /--session-utility-clearance:\s*(\d+)px/.test(norm));
+  const clearance = Number((norm.match(/--session-utility-clearance:\s*(\d+)px/) || [, 0])[1]);
+  // 64px is the bar's own bottom edge; the heading's focus ring extends 8px
+  // above its box, so the token must clear both with visible separation.
+  ok('the clearance covers the bar, the heading\'s focus ring, and a visible gap',
+    clearance >= 80, clearance + 'px');
+  ok('portrait carries the card surface beneath the content (no empty band, no filler)',
+    /body:has\(#profileScreen\.active\) #profileScreen \{[^}]*background: var\(--color-surface\);/.test(block));
+  ok('portrait reserves that clearance above the heading, honoring the safe area',
+    /padding-top: calc\(var\(--session-utility-clearance\) \+ env\(safe-area-inset-top\)\)/.test(block));
+  ok('the signature and the reflection it explains are grouped compactly in portrait',
+    /\.noct-profile-signature \{[^}]*margin-bottom: 10px;/.test(block));
+}
+
 // -------------------------------------------------------- session integrity
 section('session integrity — wipe ownership, timers, engine boundary');
 {
@@ -574,6 +666,8 @@ section('session integrity — wipe ownership, timers, engine boundary');
       .every((id) => contentIds.includes(`'${id}'`)));
   ok('the inventory no longer names the removed containers',
     !contentIds.includes("'profileMetaStrip'") && !contentIds.includes("'profileJourneySteps'"));
+  ok('the wipe strips a stale reveal marker from the signature container',
+    /\{ id: 'profileSignature', remove: \['is-entering'\] \}/.test(norm));
   ok('the wipe closes every disclosure and disarms the entry animation',
     /_briefOpenPriority = null;/.test(norm.slice(norm.indexOf('function resetSessionState')))
     && /window\._sleepSignatureEntry = false;/.test(norm.slice(norm.indexOf('function resetSessionState'))));

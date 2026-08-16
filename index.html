@@ -51,6 +51,15 @@
          (black on #B8935D = 7.4:1, on #C9A874 = 9.3:1). */
       --focus-ring-inner: #FFFFFF;
       --focus-ring-outer: #000000;
+      /* Vertical space the fixed session utility bar occupies at the top of
+         every screen: its own 8px offset, its rendered height at the shipped
+         control sizes, and room for a focus ring around whatever sits beside
+         it. A screen whose heading reaches the top edge in portrait — where
+         the bar and the heading share one band — reserves this rather than
+         relying on the heading staying narrow enough to miss it.
+         64px is the bar's own bottom edge; the remainder clears the 8px focus
+         ring drawn around the heading and leaves visible separation. */
+      --session-utility-clearance: 84px;
       --on-store-primary: #000000;
       --on-store-primary-light: #000000;
 
@@ -1595,21 +1604,49 @@
       width: clamp(132px, 15vw, 168px);
     }
 
-    /* The entry animation performs ONCE, on the quiz-completion entry
-       (window._sleepSignatureEntry). Re-entry and language switches redraw
-       the identical figure statically, and reduced motion never animates —
-       the JS gate refuses the class, and this media query is the backstop. */
-    .noct-profile-signature.is-entering .sleep-signature {
-      animation: sleepSignatureDraw 900ms ease-out both;
+    /* The entry reveal performs ONCE, on the quiz-completion entry
+       (window._sleepSignatureEntry), and only after the Sleep Brief has
+       actually painted — the render schedules it across two session-owned
+       frames. Re-entry and language switches redraw the identical figure
+       statically, and reduced motion never animates: the JS gate refuses the
+       class and the media query below is the backstop.
+
+       The figure draws itself — the outline traces first, then the stars
+       arrive in order — because the earlier fade-and-scale was imperceptible
+       on the mounted device (owner device gate, 2026-08-15). */
+    .noct-profile-signature.is-entering .sleep-signature polyline {
+      stroke-dasharray: 1;
+      animation: sleepSignatureDraw 1100ms ease-in-out both;
     }
 
+    .noct-profile-signature.is-entering .sleep-signature circle {
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: sleepSignatureNode 380ms ease-out both;
+    }
+
+    /* One star per answer dimension, arriving after the outline reaches it. */
+    .noct-profile-signature.is-entering .sleep-signature circle:nth-of-type(1) { animation-delay: 820ms; }
+    .noct-profile-signature.is-entering .sleep-signature circle:nth-of-type(2) { animation-delay: 900ms; }
+    .noct-profile-signature.is-entering .sleep-signature circle:nth-of-type(3) { animation-delay: 980ms; }
+    .noct-profile-signature.is-entering .sleep-signature circle:nth-of-type(4) { animation-delay: 1060ms; }
+    .noct-profile-signature.is-entering .sleep-signature circle:nth-of-type(5) { animation-delay: 1140ms; }
+    .noct-profile-signature.is-entering .sleep-signature circle:nth-of-type(6) { animation-delay: 1220ms; }
+    .noct-profile-signature.is-entering .sleep-signature circle:nth-of-type(7) { animation-delay: 1300ms; }
+
     @keyframes sleepSignatureDraw {
-      from { opacity: 0; transform: scale(0.94); }
+      from { stroke-dashoffset: 1; }
+      to   { stroke-dashoffset: 0; }
+    }
+
+    @keyframes sleepSignatureNode {
+      from { opacity: 0; transform: scale(0.4); }
       to   { opacity: 1; transform: none; }
     }
 
     @media (prefers-reduced-motion: reduce) {
-      .noct-profile-signature.is-entering .sleep-signature {
+      .noct-profile-signature.is-entering .sleep-signature polyline,
+      .noct-profile-signature.is-entering .sleep-signature circle {
         animation: none;
       }
     }
@@ -1805,9 +1842,20 @@
         align-items: flex-start;
         padding: 0;
       }
+      /* The card ends with its content (below), so the screen carries the same
+         surface beneath it: the page reads as one continuous sheet rather than
+         a card floating over a band of empty background. No filler content is
+         added — this is paint, not content. Selector depth matches the theme's
+         own screen-paint rule, which is later in the file. */
+      body:has(#profileScreen.active) #profileScreen {
+        background: var(--color-surface);
+      }
+      /* The card ends with its content. Pinning it to the viewport left a
+         dead band below the action row on the tablet (~330px at 834x1108),
+         which the mounted-device pass rejected. */
       .noct-profile {
         display: block;
-        min-height: 100dvh;
+        min-height: auto;
         border: 0;
         border-radius: 0;
         box-shadow: none;
@@ -1817,12 +1865,26 @@
         padding: 28px clamp(20px, 6vw, 46px);
       }
       .profile-launch__identity {
+        /* The fixed utility bar shares this band with the heading in
+           portrait; reserving its clearance keeps the controls clear of the
+           heading AND of the focus ring drawn around it. */
+        padding-top: calc(var(--session-utility-clearance) + env(safe-area-inset-top));
         min-height: auto;
         border-right: 0;
         border-bottom: 1px solid #D1C5B6;
       }
       .noct-profile-name {
         font-size: clamp(46px, 10vw, 66px);
+      }
+      /* The signature and the reflection it explains read as one group. */
+      .noct-profile-hero {
+        margin-bottom: 14px;
+      }
+      .noct-profile-signature {
+        margin-bottom: 10px;
+      }
+      .profile-launch__reflection {
+        margin-bottom: 0;
       }
       .profile-launch__actions {
         position: sticky;
@@ -13449,8 +13511,11 @@
       });
       var points = stars.map(function(s) { return s.x + ',' + s.y; });
       points.push(points[0]);
+      // pathLength="1" normalises the outline so the reveal's dash animation
+      // is expressed in fractions of the figure rather than in units that
+      // would drift if the geometry above ever changed.
       return '<svg class="sleep-signature" viewBox="0 0 120 120" aria-hidden="true" focusable="false">'
-        + '<polyline points="' + points.join(' ') + '" fill="none" stroke="currentColor" stroke-opacity="0.3" stroke-width="1"/>'
+        + '<polyline points="' + points.join(' ') + '" pathLength="1" fill="none" stroke="currentColor" stroke-opacity="0.3" stroke-width="1"/>'
         + stars.map(function(s) {
             return '<circle cx="' + s.x + '" cy="' + s.y + '" r="' + s.r + '" fill="currentColor"/>';
           }).join('')
@@ -13620,14 +13685,27 @@
       var signatureEl = document.getElementById('profileSignature');
       if (signatureEl) {
         signatureEl.innerHTML = buildSleepSignatureSvg(answers);
-        // The entry animation performs ONCE, on the quiz-completion entry.
+        // The entry reveal performs ONCE, on the quiz-completion entry.
         // Re-entry and language switches redraw the identical figure
-        // statically, and reduced motion never animates it.
+        // statically, and reduced motion renders it statically and
+        // immediately — no reveal is scheduled at all.
         var animateSignature = window._sleepSignatureEntry === true && !dfmReducedMotion();
         window._sleepSignatureEntry = false;
-        if (signatureEl.classList) {
-          if (animateSignature) signatureEl.classList.add('is-entering');
-          else signatureEl.classList.remove('is-entering');
+        if (signatureEl.classList) signatureEl.classList.remove('is-entering');
+        if (animateSignature) {
+          // TWO session-owned frames, deliberately. Adding the class during
+          // the render started the reveal before the Sleep Brief was painted,
+          // so the customer arrived on a figure that had already finished —
+          // the defect the mounted-device pass caught. The first frame lands
+          // after this render's work, the second after the browser has
+          // actually painted the screen. Session-owned (never a raw rAF), so
+          // a wipe mid-reveal orphans it with the rest of the session.
+          sessionFrame(function() {
+            sessionFrame(function() {
+              var el = document.getElementById('profileSignature');
+              if (el && el.classList) el.classList.add('is-entering');
+            });
+          });
         }
       }
 
@@ -19499,6 +19577,9 @@
       // customer's label over a cleared list.
       { id: 'hf2PrioritiesSection', display: 'none' },
       { id: 'profileScreen', remove: ['animate'] },
+      // Slice 2: a wipe during the Sleep Signature reveal must not leave the
+      // marker behind for the next customer's first render to inherit.
+      { id: 'profileSignature', remove: ['is-entering'] },
       { id: 'dreamCodeBox', hiddenAttr: true, display: 'none' },
       { id: 'financingSheet', hiddenAttr: true },
       { id: 'financingSheetBackdrop', hiddenAttr: true }
