@@ -124,7 +124,7 @@ If you find yourself writing a store name or brand color into the HTML, stop —
 it belongs in config.
 
 ### Quiz questions are config-driven (data/quiz.json)
-The 12 quiz questions live in `incoming/dreamfinder_quiz.json` → workbook
+The 10 quiz questions live in `incoming/dreamfinder_quiz.json` → workbook
 Quiz tab (JSON envelope, same channel as the Promotions financing envelope)
 → `data/quiz.json` (generated — never edit directly; rebuild via
 build_lacks_workbook.py + convert_store_data.py). The app fetches it at load
