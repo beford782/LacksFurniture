@@ -11354,6 +11354,22 @@
     // preference that cannot be compared cannot be cleared. tools/validation.py
     // refuses such a config at build time, so this is defence in depth behind a
     // gate, not the gate itself.
+    //
+    // ONE KNOWN GAP, unreachable BY CONSTRUCTION rather than by luck, and the
+    // exact condition that would open it. The String() coercion below sits
+    // inside the try, but finPathId() runs the same coercion again outside it,
+    // so a value whose toString() threw would escape this guard. No such value
+    // can arrive: STORE_CONFIG is assigned in exactly ONE place — from
+    // res.json() in the store-config loader — and a native JSON parse yields
+    // only plain objects, arrays, strings, numbers, booleans and null, none of
+    // which can throw on coercion. finPathId is module-scope, not on window, so
+    // there is no external caller either.
+    //
+    // THE TRIPWIRE: if the loader ever gains a second STORE_CONFIG assignment
+    // from a non-JSON source, this stops being unreachable. At that point make
+    // this encoder return null for "unencodable" — as its Python mirror
+    // _fin_path_encode already does — so finPathId can test the sentinel
+    // instead of re-deriving the coercion.
     function finPathEncode(value) {
       // encodeURIComponent leaves [A-Za-z0-9-_.!~*'()] alone and percent-escapes
       // everything else as its UTF-8 bytes, which is exactly the byte walk
