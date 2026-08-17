@@ -11260,20 +11260,25 @@
     // True when the last renderFinancingSheet() swapped any path's exact
     // terms for the generic staleNotice — drives the sheet's freshness region.
     var _finSheetStale = false;
-    // Queued preference-action announcement work, keyed BY REGION so a second
-    // transition supersedes only its own region's pending message, and the wipe
-    // can cancel every one of them.
+    // Queued preference-action announcement work. ONE slot, deliberately.
     //
-    // This was a single shared slot, and three independent reviews caught the
-    // same thing: the two live regions were separate ELEMENTS but shared one
-    // SCHEDULER, so a handoff announcement cancelled a pending sheet
-    // announcement and left the sheet region cleared-but-never-populated. Both
-    // regions really are live at once whenever the sheet is opened FROM the
-    // handoff. Nobody could construct a customer-reachable interleaving inside
-    // the 50 ms window, but the commit that introduced it asserted the
-    // separation as a guarantee — so the code now provides the guarantee rather
-    // than relying on the window being narrow.
-    var _payAnnounceTimer = {};
+    // All four announcement strings describe the SAME variable. The sheet's
+    // region carries currentlyConsidering / preferenceCleared and the handoff's
+    // carries preferenceNotNow / preferenceCleared, and every one of them is a
+    // statement about payPref — two VIEWS of one value, split by which control
+    // the customer operated, not two independent facts. So the invariant is:
+    // AT MOST ONE PENDING ANNOUNCEMENT ACROSS ALL REGIONS, AND IT DESCRIBES THE
+    // CURRENT payPref. A queued message goes stale the instant payPref moves
+    // again, wherever the next transition is operated, and cancelling it is the
+    // correct outcome rather than an erasure.
+    //
+    // A per-region slot was tried and reverted: it made a second transition in
+    // another region leave the first message pending, so a screen reader
+    // announced a payment position the customer had already left — and it also
+    // removed the cross-region cancellation that was the only thing fixing the
+    // stale-message case in the first place. Only the ORDERING in
+    // announcePayAction() was ever wrong.
+    var _payAnnounceTimer = null;
 
     // Email body for the save packet. D4 ruling: payment state is entirely
     // excluded from email, so this is the NEUTRAL availability body in EVERY
@@ -11591,19 +11596,23 @@
     function announcePayAction(regionId, key) {
       var region = document.getElementById(regionId);
       if (!region) return;
-      // Supersede THIS region's own pending message, and do it BEFORE the
-      // liveness test. The test used to come first, so a transition whose own
-      // region had gone dark could not cancel the message it had just made
-      // stale — the old announcement would still land and describe a state the
-      // model had already left.
-      if (_payAnnounceTimer[regionId]) {
-        clearTimeout(_payAnnounceTimer[regionId]);
-        delete _payAnnounceTimer[regionId];
+      // Supersede ANY pending message — this region's or the other's — and do
+      // it BEFORE the liveness test. Both halves matter and neither is
+      // sufficient alone:
+      //
+      //   * cancelling across regions is what stops a stale statement about
+      //     payPref surviving a transition operated on the other surface;
+      //   * doing it before the liveness test is what lets a transition whose
+      //     own region has gone dark still cancel the message it just made
+      //     false. With the test first, that message landed anyway.
+      if (_payAnnounceTimer !== null) {
+        clearTimeout(_payAnnounceTimer);
+        _payAnnounceTimer = null;
       }
       if (!payRegionLive(regionId)) return;
       region.textContent = '';
-      _payAnnounceTimer[regionId] = setTimeout(function() {
-        delete _payAnnounceTimer[regionId];
+      _payAnnounceTimer = setTimeout(function() {
+        _payAnnounceTimer = null;
         if (!payRegionLive(regionId)) return;
         var el = document.getElementById(regionId);
         if (el) el.textContent = FC(key) || '';
@@ -11646,10 +11655,10 @@
     // payment state so no stale queued work from the prior customer can run
     // after reset.
     function cancelPayAnnouncePending() {
-      Object.keys(_payAnnounceTimer).forEach(function(regionId) {
-        clearTimeout(_payAnnounceTimer[regionId]);
-      });
-      _payAnnounceTimer = {};
+      if (_payAnnounceTimer !== null) {
+        clearTimeout(_payAnnounceTimer);
+        _payAnnounceTimer = null;
+      }
     }
 
     window.logFinancingLinkClick = function(placement) {

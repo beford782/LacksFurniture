@@ -153,7 +153,7 @@ const VARS = {
   returnFocus: /var _financeReturnFocus = null;/,
   impression: /var _finModuleImpressionLogged = false;/,
   sheetStale: /var _finSheetStale = false;/,
-  announceTimer: /var _payAnnounceTimer = \{\};/,
+  announceTimer: /var _payAnnounceTimer = null;/,
   clockSkew: /var FINANCING_CLOCK_SKEW_MS = [^;]+;/,
   scenarioMexico: /var FIN_SCENARIO_MEXICO = [^;]+;/,
   evergreenKinds: /var FIN_EVERGREEN_KINDS = [^;]+;/,
@@ -410,8 +410,7 @@ const RETURN_API = `
     FC: FC,
     NOT_NOW: PAY_NOT_NOW,
     timer: function() { return _payAnnounceTimer; },
-    timerFor: function(id) { return _payAnnounceTimer[id] || null; },
-    timerCount: function() { return Object.keys(_payAnnounceTimer).length; },
+    timerCount: function() { return _payAnnounceTimer === null ? 0 : 1; },
     stale: function() { return _finSheetStale; },
     returnFocus: function() { return _financeReturnFocus; },
     state: function() {
@@ -1379,12 +1378,12 @@ ok('§19 the handoff region markup carries the same contract',
 
     env.api.consider(A);
     ok(`§19 [${label}] Consider clears the ACTION region synchronously and queues the message`,
-      action.textContent === '' && env.api.timerFor('financingSheetAction') !== null);
+      action.textContent === '' && env.api.timer() !== null);
     env.flush();
     ok(`§19 [${label}] the deferred callback populates the action region`,
       action.textContent === CFG.financing.copy.currentlyConsidering.en, action.textContent);
     ok(`§19 [${label}] the timer id is released once the callback runs`,
-      env.api.timerFor('financingSheetAction') === null && env.api.timerCount() === 0);
+      env.api.timer() === null && env.api.timerCount() === 0);
     ok(`§19 [${label}] the Consider announcement neither erased the freshness status nor was erased by it`,
       status.textContent === before && status.textContent !== action.textContent);
 
@@ -2101,55 +2100,121 @@ section('§27 — an unencodable value fails CLOSED, and the two regions schedul
   }
 }
 {
-  // TWO REGIONS, TWO SCHEDULERS. They were separate elements sharing one timer
-  // slot, so a handoff announcement cancelled a pending sheet announcement and
-  // left the sheet region cleared-but-never-populated. Both regions are live at
-  // once whenever the sheet is opened FROM the handoff.
-  const env = openEnv();
-  const A = P(env)[0];
-  ok('§27 precondition: both action regions are live at the same time',
-    env.api.regionLive('financingSheetAction') === true
-    && env.api.regionLive('hf2FinancingStatus') === true);
+  // ONE PENDING ANNOUNCEMENT, AND IT DESCRIBES THE CURRENT payPref.
+  //
+  // This is the invariant, and an earlier version of this section got it
+  // wrong. All four announcement strings describe the SAME variable:
+  // #financingSheetAction carries currentlyConsidering / preferenceCleared and
+  // #hf2FinancingStatus carries preferenceNotNow / preferenceCleared, and every
+  // one of them is a statement about payPref. They are two VIEWS of one value,
+  // split by which control the customer operated — not two independent facts.
+  //
+  // So a queued message goes stale the instant payPref moves again, wherever
+  // the next transition happens to be operated. Cancelling it is the correct
+  // outcome, not an erasure, and "both land, each in its own region" — which
+  // this section previously asserted as desirable — would make a screen reader
+  // announce a payment position the customer has already left.
+  //
+  // Every case below runs two transitions INSIDE the 50 ms window, which only a
+  // script can do; a customer cannot press two controls that fast. That is why
+  // this is an invariant test rather than a defect report. The invariant is
+  // still worth holding: it is what the commit that introduced these regions
+  // claimed, and correctness that depends on humans being slow is not
+  // correctness.
+  const CUR = CFG.financing.copy.currentlyConsidering.en;
+  const NOTNOW = CFG.financing.copy.preferenceNotNowAnnounce.en;
+  const CLEARED = CFG.financing.copy.preferenceClearedAnnounce.en;
+  const heard = (e) => [e.txt('financingSheetAction'), e.txt('hf2FinancingStatus')]
+    .filter((t) => t !== '');
 
-  env.api.consider(A);
-  ok('§27 the sheet announcement is queued in its OWN region slot',
-    env.api.timerFor('financingSheetAction') !== null
-    && env.api.timerFor('hf2FinancingStatus') === null);
-  env.api.notNow();
-  ok('§27 a handoff announcement does NOT cancel the pending sheet announcement',
-    env.api.timerFor('financingSheetAction') !== null
-    && env.api.timerFor('hf2FinancingStatus') !== null
-    && env.api.timerCount() === 2);
-  env.flush();
-  ok('§27 both land, each in its own region, neither erasing the other',
-    env.txt('financingSheetAction') === CFG.financing.copy.currentlyConsidering.en
-    && env.txt('hf2FinancingStatus') === CFG.financing.copy.preferenceNotNowAnnounce.en,
-    JSON.stringify([env.txt('financingSheetAction'), env.txt('hf2FinancingStatus')]));
+  {
+    const env = openEnv();                       // handoff ACTIVE: both live
+    const [A, B] = P(env);
+    ok('§27 precondition: both action regions are live at the same time',
+      env.api.regionLive('financingSheetAction') === true
+      && env.api.regionLive('hf2FinancingStatus') === true);
 
-  // A region that has gone dark must still be able to supersede its own stale
-  // message: the liveness test used to run BEFORE the cancel, so a queued
-  // announcement outlived the transition that invalidated it.
-  const env2 = openEnv();
-  const B = P(env2)[0];
-  env2.api.consider(B);
-  ok('§27 precondition: an announcement is queued for the sheet region',
-    env2.api.timerFor('financingSheetAction') !== null);
-  env2.get('financingSheet').hidden = true;              // the sheet goes dark
-  env2.api.announce('financingSheetAction', 'preferenceClearedAnnounce');
-  ok('§27 a transition supersedes its own queued message even when its region is dark',
-    env2.api.timerFor('financingSheetAction') === null);
-  env2.flush();
-  ok('§27 ...so the stale announcement never lands',
-    env2.txt('financingSheetAction') === '');
+    env.api.consider(A);
+    ok('§27 one announcement is pending after the first transition',
+      env.api.timerCount() === 1);
+    env.api.notNow();
+    ok('§27 a SECOND transition supersedes the first ACROSS regions — still one pending',
+      env.api.timerCount() === 1, `${env.api.timerCount()} pending`);
+    env.flush();
+    ok('§27 exactly one utterance lands, and it describes the CURRENT payPref',
+      env.api.state().pref === env.api.NOT_NOW
+      && JSON.stringify(heard(env)) === JSON.stringify([NOTNOW]),
+      JSON.stringify(heard(env)));
 
-  // The wipe helper must clear EVERY region's slot, not just one.
-  const env3 = openEnv();
-  env3.api.consider(P(env3)[0]);
-  env3.api.notNow();
-  ok('§27 precondition: two slots are armed', env3.api.timerCount() === 2);
-  env3.api.cancelAnnounce();
-  ok('§27 cancelPayAnnouncePending() clears every region slot',
-    env3.api.timerCount() === 0 && env3.pending() === 0);
+    // ...and in the other order.
+    const env2 = openEnv();
+    env2.api.notNow();
+    env2.api.consider(P(env2)[0]);
+    env2.flush();
+    ok('§27 the reverse order also yields ONE utterance for the current payPref',
+      env2.api.state().pref === P(env2)[0]
+      && JSON.stringify(heard(env2)) === JSON.stringify([CUR]),
+      JSON.stringify(heard(env2)));
+
+    // Three transitions, ending on a path.
+    const env3 = openEnv();
+    const [C, D] = P(env3);
+    env3.api.consider(C); env3.api.notNow(); env3.api.consider(D);
+    env3.flush();
+    ok('§27 three chained transitions leave exactly the last one audible',
+      env3.api.state().pref === D
+      && JSON.stringify(heard(env3)) === JSON.stringify([CUR]),
+      JSON.stringify(heard(env3)));
+  }
+
+  {
+    // THE CROSS-REGION DARK CASE. A queued SHEET announcement, then a HANDOFF
+    // transition while the handoff screen is inactive. The handoff cannot
+    // speak — but the sheet's pending message is now false, so it must not be
+    // allowed to land. This is the case a per-region timer cannot see, because
+    // the transition and the stale message live in different slots.
+    const env = openEnv({ handoffActive: false });
+    const A = P(env)[0];
+    ok('§27 precondition: the sheet is live and the handoff is dark',
+      env.api.regionLive('financingSheetAction') === true
+      && env.api.regionLive('hf2FinancingStatus') === false);
+    env.api.consider(A);
+    ok('§27 precondition: the sheet announcement really is queued',
+      env.api.timerCount() === 1);
+    env.api.notNow();
+    ok('§27 a dark-region transition still cancels the stale message in the OTHER region',
+      env.api.timerCount() === 0, `${env.api.timerCount()} pending`);
+    env.flush();
+    ok('§27 ...so nothing stale is heard, and silence is correct (no live region can speak)',
+      env.api.state().pref === env.api.NOT_NOW && heard(env).length === 0,
+      JSON.stringify(heard(env)));
+  }
+
+  {
+    // The same-region case, which the previous version of this section covered
+    // and which must keep working: a transition supersedes its own queued
+    // message even when its own region has gone dark.
+    const env = openEnv();
+    env.api.consider(P(env)[0]);
+    ok('§27 precondition: an announcement is queued for the sheet region',
+      env.api.timerCount() === 1);
+    env.get('financingSheet').hidden = true;            // the sheet goes dark
+    env.api.announce('financingSheetAction', 'preferenceClearedAnnounce');
+    ok('§27 a same-region transition supersedes its own queued message when dark',
+      env.api.timerCount() === 0);
+    env.flush();
+    ok('§27 ...and the stale announcement never lands', env.txt('financingSheetAction') === '');
+  }
+
+  {
+    // The wipe helper clears whatever is pending, wherever it is.
+    const env = openEnv();
+    env.api.consider(P(env)[0]);
+    ok('§27 precondition: an announcement is armed', env.api.timerCount() === 1);
+    env.api.cancelAnnounce();
+    ok('§27 cancelPayAnnouncePending() leaves nothing pending anywhere',
+      env.api.timerCount() === 0 && env.pending() === 0);
+  }
 }
 
 section('negative controls — each load-bearing behaviour is proved detectable');
@@ -2240,7 +2305,7 @@ section('negative controls — each load-bearing behaviour is proved detectable'
     env.get('financingSheetAction').textContent === CFG.financing.copy.currentlyConsidering.en);
 }
 {
-  const env = openEnv({ mutate: (s) => s.replace("region.textContent = '';\n      _payAnnounceTimer[regionId] = setTimeout", "_payAnnounceTimer[regionId] = setTimeout") });
+  const env = openEnv({ mutate: (s) => s.replace("region.textContent = '';\n      _payAnnounceTimer = setTimeout", "_payAnnounceTimer = setTimeout") });
   const [A, B] = P(env);
   env.api.consider(A); env.flush();
   env.api.consider(B); env.flush();

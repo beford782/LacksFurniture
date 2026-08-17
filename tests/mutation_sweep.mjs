@@ -1047,15 +1047,16 @@ const MUTATIONS = [
     "", PAY],
   // The two action regions must schedule INDEPENDENTLY, not merely render into
   // separate elements.
-  ["payment: the two live regions share one announcement timer slot again",
-    "      _payAnnounceTimer[regionId] = setTimeout(function() {",
-    "      _payAnnounceTimer['shared'] = setTimeout(function() {", PAY],
-  ["payment: the liveness test runs BEFORE the cancel, so a dark region cannot supersede its own stale message",
-    "      if (_payAnnounceTimer[regionId]) {\n        clearTimeout(_payAnnounceTimer[regionId]);\n        delete _payAnnounceTimer[regionId];\n      }\n      if (!payRegionLive(regionId)) return;",
-    "      if (!payRegionLive(regionId)) return;\n      if (_payAnnounceTimer[regionId]) {\n        clearTimeout(_payAnnounceTimer[regionId]);\n        delete _payAnnounceTimer[regionId];\n      }", PAY],
-  ["payment: cancelPayAnnouncePending clears only one region slot",
-    "      Object.keys(_payAnnounceTimer).forEach(function(regionId) {\n        clearTimeout(_payAnnounceTimer[regionId]);\n      });\n      _payAnnounceTimer = {};",
-    "      clearTimeout(_payAnnounceTimer['financingSheetAction']);\n      delete _payAnnounceTimer['financingSheetAction'];", PAY],
+  // C8 reverted a per-region timer that had exactly this effect: the cancel
+  // became same-region-only, so a transition on one surface left the other
+  // surface's now-false message pending and a screen reader announced a payment
+  // position the customer had already left.
+  ["payment: the announcement cancel becomes same-region-only (a stale message survives elsewhere)",
+    "      if (_payAnnounceTimer !== null) {\n        clearTimeout(_payAnnounceTimer);\n        _payAnnounceTimer = null;\n      }\n      if (!payRegionLive(regionId)) return;",
+    "      if (_payAnnounceTimer !== null && window._payAnnounceRegion === regionId) {\n        clearTimeout(_payAnnounceTimer);\n        _payAnnounceTimer = null;\n      }\n      window._payAnnounceRegion = regionId;\n      if (!payRegionLive(regionId)) return;", PAY],
+  ["payment: the liveness test runs BEFORE the cancel, so a dark region cannot supersede a stale message",
+    "      if (_payAnnounceTimer !== null) {\n        clearTimeout(_payAnnounceTimer);\n        _payAnnounceTimer = null;\n      }\n      if (!payRegionLive(regionId)) return;",
+    "      if (!payRegionLive(regionId)) return;\n      if (_payAnnounceTimer !== null) {\n        clearTimeout(_payAnnounceTimer);\n        _payAnnounceTimer = null;\n      }", PAY],
 
   // Accessibility of the new controls.
   ["payment: the disclosure loses aria-expanded",
@@ -1093,7 +1094,7 @@ const MUTATIONS = [
     "      announcePayAction('financingSheetAction', 'currentlyConsidering');",
     "      announcePayAction('financingSheetStatus', 'currentlyConsidering');", PAY],
   ["payment: a queued announcement is no longer superseded (two utterances race)",
-    "      if (_payAnnounceTimer[regionId]) {\n        clearTimeout(_payAnnounceTimer[regionId]);\n        delete _payAnnounceTimer[regionId];\n      }\n      if (!payRegionLive(regionId)) return;\n      region.textContent = '';",
+    "      if (_payAnnounceTimer !== null) {\n        clearTimeout(_payAnnounceTimer);\n        _payAnnounceTimer = null;\n      }\n      if (!payRegionLive(regionId)) return;\n      region.textContent = '';",
     "      region.textContent = '';", PAY_ASYNC],
 
   // Forced colors: the cue must WIN the cascade and must be geometry.

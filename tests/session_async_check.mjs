@@ -161,7 +161,7 @@ const RAW_ALLOWLIST = [
   // Same class, same reason, one addition: the callback re-checks that its
   // region is still live before writing, so a queued utterance whose sheet or
   // handoff went away in the meantime lands nowhere.
-  { cls: "A", count: 1, match: "_payAnnounceTimer[regionId] = setTimeout(",
+  { cls: "A", count: 1, match: "_payAnnounceTimer = setTimeout(",
     why: "the Payment Choice preference-action announcement; superseded by name on the next announcement and cancelled by name in cancelPayAnnouncePending(), which clearPayAnnouncements(), closeFinancingSheet() and the wipe all call" },
   { cls: "A", count: 1, match: "_drawerCloseTimer = setTimeout(",
     why: "cleared by name in closeMattressDrawer(), which the wipe calls first with {immediate:true}" },
@@ -716,7 +716,7 @@ section("Payment Choice announcements: supersession, cancellation, hygiene");
     const out = {};
     new Function("document", "setTimeout", "clearTimeout", "FCimpl", "out", `
       "use strict";
-      var _payAnnounceTimer = {};
+      var _payAnnounceTimer = null;
       // Seeded dirty, so "clearPayAnnouncements() does not reset the model" is
       // a real observation rather than two empty values compared to each other.
       var payExplored = ['promo-Synchrony', 'plan-lacks-in-house'];
@@ -728,7 +728,7 @@ section("Payment Choice announcements: supersession, cancellation, hygiene");
       out.clearAll = clearPayAnnouncements;
       out.cancel = cancelPayAnnouncePending;
       out.regionLive = payRegionLive;
-      out.armed = function() { return Object.keys(_payAnnounceTimer).length > 0; };
+      out.armed = function() { return _payAnnounceTimer !== null; };
       out.probe = function() {
         return { payExplored: payExplored, payPref: payPref, payOpen: payOpen };
       };

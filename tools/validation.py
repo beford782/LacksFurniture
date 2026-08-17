@@ -1467,7 +1467,7 @@ PAYMENT_CHOICE_RETIRED_COPY = {
 }
 
 
-def _fin_path_encode(value) -> str:
+def _fin_path_encode(value):
     """Mirror of finPathEncode() in index.html: every character outside
     [A-Za-z0-9-] becomes '_' plus its UTF-8 bytes in lowercase hex.
 
