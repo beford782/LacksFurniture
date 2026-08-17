@@ -9,25 +9,31 @@ owner-review decisions (see "Phase 1 direction decisions — recorded
 see the open-decisions register. Device hardening remains BLOCKING for
 showroom use.**
 
-**Last updated:** 2026-08-14 *(documentation-only reconciliation: records the
-Nocturne owner-review decisions D1–D6, the 2026-08-12 screen-reader
-out-of-scope ruling's effect on 1.2, the settled tier-tab direction, the
-adopted Payment Choice state model, the Daybreak PRs #42/#43 and the
-2026-08-13 owner-approved scoring change they carried, and corrects statements
-that survived from before the 2026-08-12 Phase 1 authorization. No product
-code moves in this revision.)*
+**Last updated:** 2026-08-16 *(records the Slice 3 Quiz owner rulings — zero
+option icons, the two-column grid cap, and the five authorized accessibility
+repairs — together with the honest 47-icon audit ledger, and re-points the
+reconciliation baseline and next-item pointer now that Slices 1 and 2 have
+merged. The previous revision, 2026-08-14, recorded the Nocturne owner-review
+decisions D1–D6, the 2026-08-12 screen-reader out-of-scope ruling's effect on
+1.2, the settled tier-tab direction, the adopted Payment Choice state model,
+the Daybreak PRs #42/#43 and the 2026-08-13 owner-approved scoring change they
+carried.)*
 **Original roadmap baseline:** `42ff5f3a2158bc68219b1c87cb6356f146009fdc` — GitHub
 `main` when this document's phase statuses were written, the merge commit of
 PR #16 (2026-08-05). It is **not** current `main`. GitHub state is
 authoritative; a local checkout never is.
-**Reconciliation baseline:** `83d4646e5af611a14a7b3fbd66f5a0604bb7886e` — GitHub
-`main` at this revision; PR #43 merge commit (2026-08-14, Daybreak PR 2).
-**Next implementation item:** per the approved 2026-08-14 slice order — after
-this reconciliation merges: (1) Results tier-tab restyle and card hierarchy
-(1.3 Proceeds, hero-plus-support grid per D3); then (2) the Sleep Brief
-recomposition under 1.1's lifted gate (constellation component first, then the
-reveal composition). The full recommended order is recorded in the 2026-08-14
-decision block. The two conditions Phase 1 implementation required — the 0.4
+**Reconciliation baseline:** `b05d47fdf88c54d2dda666e7e3c6b475aa1cc734` — GitHub
+`main` at this revision; PR #46 merge commit (2026-08-16, Nocturne Slice 2).
+The prior baseline was `83d4646e5af611a14a7b3fbd66f5a0604bb7886e` (PR #43,
+Daybreak PR 2, 2026-08-14).
+**Next implementation item:** per the approved 2026-08-14 slice order, items
+(1) and (2) have merged — Slice 1, the Results tier-tab restyle and
+hero-plus-support card hierarchy (1.3 per D3), as PR #45; and Slice 2, the
+Sleep Brief recomposition and Sleep Signature (1.1 per D1+D2), as PR #46. The
+next item is **(3) the Quiz visual pass (1.2)** — Slice 3, in progress at this
+revision. It is a presentation slice only: no scoring, answer-structure,
+question, option, skip or navigation change. The full recommended order is
+recorded in the 2026-08-14 decision block. The two conditions Phase 1 implementation required — the 0.4
 mounted-device evidence closing Phase 0, AND Blake explicitly opening Phase 1 —
 **are both met** (2026-08-10 and 2026-08-12 respectively). Every merge still
 passes the phase-wide device-matrix merge gate and the Phase 1 output
@@ -1047,6 +1053,13 @@ Welcome, drawer, email (1.6).
 
 ### 1.1 — Sleep Brief ⬜
 
+**Slice 2 merged 2026-08-16 (PR #46, merge `b05d47f`)** — the D1 recomposition
+plus the D2 Sleep Signature. The status mark above still reads ⬜ ("approved to
+build, not started"), which this merge contradicts; moving it is the owner's
+call, not this slice's, so it is flagged rather than changed. Native-Spanish
+approval remains deferred to the consolidated end-of-development review
+(Invariant 12).
+
 **Gate lifted 2026-08-14.** The gate read: approver Blake, unblocked by his
 approval of a reviewed prototype, recorded here with the date, over two output
 properties — replacing or subordinating the fixed bilingual heading with a
@@ -1161,6 +1174,139 @@ deferred task.
 quiz without changing scoring, answer structure, touch behaviour, or
 navigation semantics. Auto-advance stays a separate locked journey decision —
 see 3.4 🔒.
+
+**Icon review — COMPLETE, and the ruling is ZERO icons (owner, 2026-08-16).**
+The review the bullet above required has been done, and Blake ruled that the
+Quiz displays **no option icons at all**. The honest ledger, recorded here so
+the count is auditable rather than asserted:
+
+| Outcome of the 47-mapping review | Count |
+|---|---|
+| Configured option-icon mappings reviewed | **47** |
+| Pass the meaning test above | **18** |
+| Fail it | **28** |
+| Semantically deferred (neither clearly meaningful nor clearly harmful) | **1** |
+| Introduced into the customer UI | **0** |
+
+**"Passes the meaning test" is not pre-approval to render an icon later.** The
+18 passing mappings are recorded as *reviewed and not disqualified*, nothing
+more; introducing any of them is a new decision, not a resumption of this one.
+The 47 dormant `icon` fields stay in `incoming/dreamfinder_quiz.json` → the
+workbook → `data/quiz.json`, and `validate_quiz`'s requirement that every
+option carry one stays in force — the data contract is unchanged, only the
+renderer never reads it. Selective introduction of the 18, any new icon
+vocabulary, deletion of the dormant fields, and cleanup of the orphaned
+`.opt-icon` / `.option-btn` / `.options-grid` CSS are all explicitly out of
+scope for Slice 3.
+
+What the 28 failures fail on, with real examples from the shipped data:
+
+- *Medicalising* — `nerve_pain → lightning`, `reflux → flame`,
+  `back_pain → spine`, `hip_pain → pressure`, `allergies → sneeze`,
+  `snoring → snore`. Clinical iconography on a furniture showroom floor.
+- *Characterising the customer* — `body_type/petite → cloud`,
+  `average → weight`, `athletic → support`, `plus → support`,
+  `getting_older → aging`. These depict the shopper's body or age, which the
+  meaning test above already calls worse than no icon.
+- *Confusing* — `trigger/moving → family`, `trigger/upgrade → cloud`,
+  `too_soft → couch`.
+- *Merely decorative* — `trigger/browsing → smile`,
+  `temperature/comfortable → smile`, `rarely → check`, and both `none → check`
+  mappings.
+- *Colliding* — one glyph carrying several unrelated meanings defeats the
+  purpose: `flame` serves temperature/hot, sleep_issues/hot **and**
+  health_conditions/reflux; `combo` serves sleep_position/combo and
+  sleep_issues/tossing; `support` serves both `athletic` and `plus`; `weight`
+  serves `average` and `extra_support`.
+
+The one deferred mapping is `sleep_position/no_idea → question`: whether a
+question-mark glyph dignifies "I'm not sure" or signals confusion is a copy
+question, not an icon question, and it is not being answered here.
+
+**Visual direction — owner-ruled 2026-08-16:** *"A refined consultation form,
+not an illustrated card quiz."* Implemented as flat, restrained editorial
+answer rows on the existing warm consultation palette. Preserved unchanged:
+the eyebrow, the progress rule, the question headline and its italic accent
+treatment, the help copy, option labels and sublabels, firmness behaviour, and
+the manual Back/Next journey. Prohibited and absent: pictograms,
+illustrations, badges, decorative checkmarks, shadows, gradients, ripples,
+stagger, bounce, and any new selection animation. Labels keep the serif
+treatment; sublabels were raised to 15px/1.45 for legibility.
+
+**Grid — owner-ruled 2026-08-16:** `quizColsClass` emits `cols-1` for 1–3
+options and `cols-2` for 4–8; the live Quiz **never** emits `cols-3`, and the
+existing sub-700px one-column behaviour is untouched. The two-column cap
+deliberately favours readable bilingual options over fitting the eight-option
+question inside a 748px landscape viewport — the screen already scrolls, and
+normal document scrolling is preserved (no nested option-grid scrolling, no
+clipped choices, no obscured navigation).
+
+**Authorized accessibility repairs (sighted-user criteria only — the
+2026-08-12 screen-reader ruling above is untouched, and none of this is
+question-transition announcement work):**
+
+1. `aria-pressed` on every option button, single- and multiple-select alike,
+   mirroring the stored answer exactly. The controls stay `<button>`s: no
+   radio/checkbox roles, no arrow-key group semantics.
+2. A non-colour selected cue. In normal rendering a 6px rail is reserved
+   transparently at rest and painted on selection while the remaining boundary
+   doubles to 2px, with padding compensation so no text moves. Under forced
+   colours the treatment is deliberately different, because a transparent
+   border is not guaranteed to stay transparent there and a reserved rail could
+   paint on every option: resting options take a **uniform 1px boundary on all
+   four sides, explicitly coloured `CanvasText`**, and the selected option a
+   **3px frame with a 6px left rail, also explicitly `CanvasText`**. Pinning the
+   colour on *both* rules is load-bearing rather than tidy: a uniform width
+   alone still left the left edge carrying the base rule's `solid transparent`,
+   whose visibility is the UA's choice; and a colour on the resting rule alone
+   could never reach a selected option, because that selector is (1,2,1) and
+   loses to the normal selected rule's author colour at (1,3,1). Both are
+   padding-compensated to the same per-side totals (21/23/21/23 wide,
+   18/19/18/19 at the narrow breakpoint, which carries its own forced-colours
+   geometry). The rule is scoped to the active quiz screen and qualified by
+   `.selected[aria-pressed="true"]` so it outranks the normal selected rule
+   (1,4,1 against 1,3,1); `forced-color-adjust: none` is not used. No answer
+   icon, no decorative checkmark.
+
+   *An earlier revision of this slice shipped this cue as
+   `.noct-quiz-option[aria-pressed="true"]` at specificity (0,2,0), which lost
+   the cascade to the normal selected rule's `border-width: 2px` at (1,3,1) and
+   therefore never applied — the paragraph above described behaviour that did
+   not occur. Found in review and repaired; the regression test now asserts the
+   cascade outcome and the per-side geometry rather than the presence of CSS
+   text. **The forced-colours result is verified by static cascade analysis
+   only — no forced-colours rendering environment was available, and it has not
+   been visually confirmed.***
+3. Visible focus. `.noct-quiz-option`, `.noct-quiz-back`, `.noct-quiz-next`,
+   `.noct-review-edit` and `.noct-slider-track` joined the existing shared
+   two-ring `:focus-visible` block and its CanvasText forced-colors fallback,
+   in place — the anchored block's position is unchanged, because current
+   suites depend on it. The firmness slider had removed its outline with no
+   replacement; that is repaired.
+4. 44×44 CSS-px interaction areas. Option rows (84/88/76px) and Next (~53px)
+   already cleared the floor and are now pinned; Back (33px) and Review Edit
+   (32px) did not and were raised. The slider gained a transparent 44px
+   interaction band via vertical padding with the paint clipped to the content
+   box — the ~20px painted thumb, the 1–10 values, stops, default, drag
+   semantics and touch handlers are all unchanged. The band also carries
+   `touch-action: manipulation`, as CLAUDE.md requires of every interactive
+   element; it was missing when the band was first enlarged (found in review).
+5. Keyboard-only focus restoration. `selectOption()` replaces the activated
+   button, which dropped keyboard focus to BODY. Options now carry stable ids
+   (`qopt-<questionId>-<optionId>`); focus is restored synchronously with
+   `focus({preventScroll: true})` **only** when the outgoing element was
+   `:focus-visible`, so touch (whose `ontouchend` preventDefault means the
+   button never took focus) and mouse (focused but not `:focus-visible`) never
+   enter the path. No timer, no `requestAnimationFrame`, and the shipped
+   `onclick` + `ontouchend` handler pair is untouched.
+
+Review rendering, layout, column count, content, order, copy and navigation
+are **unchanged**; the only Review-adjacent changes are the Edit control's
+44px floor and its focus/forced-colors styling.
+
+**1.2 is not closed by this slice.** The item stays ⬜ until the Slice 3 PR is
+merged AND the phase-wide device-matrix gate passes on confirmed hardware.
+Desktop screenshots are not a physical-iPad pass.
 
 ### 1.3 — Results and mattress cards ◐
 
@@ -1882,7 +2028,13 @@ document, not here.
    then the inert promotions contract + isolated Black Friday demo (PR #43,
    merge `83d4646`). Promotions governance, not Phase 2 pricing — see the
    note at the top of Phase 2.
-7. 🔨 **The visible redesign** — Phase 1. *(Implementation explicitly
+7. ✅ **Nocturne presentation slices** (2026-08-15/16) — the D1–D6 slate
+   recorded as the plan of record (PR #44, merge `aee0410`), then Slice 1, the
+   Results tier-tab restyle and hero-plus-support card hierarchy per D3
+   (PR #45, merge `69d5d36`), then Slice 2, the Sleep Brief recomposition and
+   Sleep Signature per D1+D2 (PR #46, merge `b05d47f`). Slice 3, the Quiz
+   visual pass (1.2), is in progress at this revision and is **not** merged.
+8. 🔨 **The visible redesign** — Phase 1. *(Implementation explicitly
    authorized by Blake 2026-08-12 — see the authorization block at the top of
    Phase 1. Direction set by the 2026-08-14 Nocturne owner review, D1–D6,
    with its approved slice order; 1.3's reason gate and the Phase 2/3 gates
@@ -1892,9 +2044,9 @@ document, not here.
    redesign itself, which proceeds against today's reason content (the generic
    default on 14 of 26 models only; none on the other 12) per
    1.3's Proceeds list.
-8. ⬜ **Dark pricing/payment foundation** — 2.1.
-9. 🔒 **Activate prices and payments** — 2.2, after business and legal approval.
-10. 🔒 **Structural scoring and tier changes last** — Phase 3.
+9. ⬜ **Dark pricing/payment foundation** — 2.1.
+10. 🔒 **Activate prices and payments** — 2.2, after business and legal approval.
+11. 🔒 **Structural scoring and tier changes last** — Phase 3.
 
 ---
 

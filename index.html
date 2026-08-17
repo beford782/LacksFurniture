@@ -1072,14 +1072,34 @@
       margin-bottom: 28px;
     }
 
+    /* The PAINTED line stays hairline; the INTERACTION band is 44 CSS px.
+       Vertical padding grows the border box (which is what hit-testing uses)
+       while background-clip keeps the paint inside the 0.5px content box, so
+       the band is invisible. The negative margins absorb the extra 44px so
+       the slider occupies exactly the vertical space it always did
+       (-22 + 44.5 + -8 = 14.5px, the old 0.5px line + 14px gap). The 20px
+       painted thumb is untouched. `outline: none` is deliberately NOT set:
+       the control joins the shared :focus-visible ring below. */
     .noct-slider-track {
       -webkit-appearance: none;
       appearance: none;
+      /* content-box is load-bearing, not tidiness: the global reset makes
+         every element border-box, which would make `height` the BORDER box
+         and let the 22px padding collapse the content box to 0 — clipping the
+         painted line out of existence while the band still measured 44px. */
+      box-sizing: content-box;
       width: 100%;
       height: 0.5px;
+      padding: 22px 0;
       background: var(--color-border);
-      outline: none;
-      margin: 0 0 14px;
+      background-clip: content-box;
+      margin: -22px 0 -8px;
+      /* Required on every interactive element (CLAUDE.md). It matters more
+         here than on a button: the band above is a 44px transparent target
+         inside a page that scrolls, so the control must not also carry the
+         double-tap delay. `manipulation` still permits panning and pinch
+         zoom, so a vertical drag begun in the band can still scroll. */
+      touch-action: manipulation;
     }
 
     .noct-slider-track::-webkit-slider-thumb {
@@ -1122,6 +1142,7 @@
       gap: 16px;
     }
 
+    /* Single-selector rule: the quiz suite greps this body for the 44px floor. */
     .noct-quiz-back {
       background: transparent;
       border: none;
@@ -1131,10 +1152,17 @@
       letter-spacing: 0.1em;
       cursor: pointer;
       touch-action: manipulation;
-      padding: 8px 4px;
+      padding: 8px 10px;
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
     }
 
-    .noct-quiz-back:hover { color: var(--color-text); }
+    /* Hover decoration is gated so an iPad tap cannot leave a control stuck
+       in its hover skin after the finger lifts. */
+    @media (hover: hover) {
+      .noct-quiz-back:hover { color: var(--color-text); }
+    }
 
     .noct-quiz-next {
       background: transparent;
@@ -1150,9 +1178,11 @@
       transition: background 0.15s ease, color 0.15s ease;
     }
 
-    .noct-quiz-next:hover:not(:disabled) {
-      background: var(--color-accent);
-      color: var(--color-bg);
+    @media (hover: hover) {
+      .noct-quiz-next:hover:not(:disabled) {
+        background: var(--color-accent);
+        color: var(--color-bg);
+      }
     }
 
     .noct-quiz-next:disabled {
@@ -1202,6 +1232,9 @@
       color: var(--color-text-muted);
     }
 
+    /* Single-selector rule: the quiz suite greps this body for the 44px floor.
+       The row's own height is set by the category/question/answer stack
+       (~60px), so the taller control changes no Review layout. */
     .noct-review-edit {
       background: transparent;
       border: 0.5px solid var(--color-border);
@@ -1211,15 +1244,20 @@
       letter-spacing: 0.25em;
       text-transform: uppercase;
       padding: 10px 16px;
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
       border-radius: var(--radius);
       cursor: pointer;
       touch-action: manipulation;
       transition: border-color 0.15s ease, color 0.15s ease;
     }
 
-    .noct-review-edit:hover {
-      border-color: var(--color-accent);
-      color: var(--color-accent);
+    @media (hover: hover) {
+      .noct-review-edit:hover {
+        border-color: var(--color-accent);
+        color: var(--color-accent);
+      }
     }
 
     /* ===== WARM CONSULTATION: QUESTIONS + REVIEW =====
@@ -1332,17 +1370,31 @@
       max-width: 560px;
     }
 
+    /* Slice 3: a refined consultation form, not an illustrated card quiz.
+       Flat editorial answer rows — no pictogram, badge, shadow or gradient.
+       The 6px left rail is RESERVED transparent at rest so that selecting an
+       option paints it without moving a single pixel of text (same technique
+       as the tier tabs' transparent forced-colors border). */
     body:has(#questionScreen.active) .noct-quiz-option {
       min-height: 88px;
-      padding: 20px 22px;
+      padding: 20px 22px 20px 17px;
       background: rgba(255, 255, 255, 0.24);
       border: 1px solid var(--consultation-rule);
+      border-left: 6px solid transparent;
       color: var(--consultation-ink);
     }
 
-    body:has(#questionScreen.active) .noct-quiz-option:hover {
-      border-color: var(--consultation-brass);
-      background: rgba(255, 255, 255, 0.42);
+    @media (hover: hover) {
+      body:has(#questionScreen.active) .noct-quiz-option:hover {
+        border-color: var(--consultation-brass);
+        /* The rail belongs to the SELECTED state alone. `border-color` above
+           would paint the reserved 6px left edge too, and a hovered option
+           would read as chosen — so the rail is held transparent here. The
+           .selected rule below is equally specific and comes later, so a
+           hovered SELECTED option still keeps its ink rail. */
+        border-left-color: transparent;
+        background: rgba(255, 255, 255, 0.42);
+      }
     }
 
     body:has(#questionScreen.active) .noct-quiz-option .opt-label {
@@ -1351,21 +1403,33 @@
 
     body:has(#questionScreen.active) .noct-quiz-option .opt-sub {
       color: var(--consultation-muted);
+      font-size: 15px;
+      line-height: 1.45;
     }
 
+    /* Selected state, owner-ruled: a restrained warm tint PLUS geometry — the
+       6px rail lights up and the remaining boundary doubles to 2px. The tonal
+       shift alone never carries the state, so a customer who cannot separate
+       these two warm tones still sees a bar appear and the frame thicken.
+       Padding compensates the extra 1px on the three non-rail sides, so the
+       label and sublabel do not move at all. #F2E9DB is the brass mixed 14%
+       into the paper tone, written literally so tests/contrast_check.mjs can
+       measure it directly instead of re-deriving a color-mix(). */
     body:has(#questionScreen.active) .noct-quiz-option.selected {
-      background: var(--consultation-red);
+      background: #F2E9DB;
+      border-width: 2px;
+      border-left-width: 6px;
       border-color: var(--accent-ink);
-      color: var(--on-store-primary);
+      color: var(--consultation-ink);
+      padding: 19px 21px 19px 17px;
     }
 
     body:has(#questionScreen.active) .noct-quiz-option.selected .opt-sub {
-      /* Descendant of a store-primary-filled control, so it needs the computed
-         on-primary foreground too — a near-white here measured ~1.5:1. The
-         0.82 opacity is retained and the COMPOSITED result is asserted in
-         tests/contrast_check.mjs, not assumed. */
-      color: var(--on-store-primary);
-      opacity: 0.82;
+      /* The selected surface is now a light warm tint, not a store-primary
+         fill, so the sublabel keeps the ordinary muted ink at full opacity.
+         The COMPOSITED result is asserted in tests/contrast_check.mjs. */
+      color: var(--consultation-muted);
+      opacity: 1;
     }
 
     body:has(#questionScreen.active) .noct-slider-value {
@@ -1379,7 +1443,9 @@
 
     body:has(#questionScreen.active) .noct-slider-track {
       height: 2px;
-      background: var(--consultation-rule);
+      /* background-COLOR, not the shorthand: the shorthand would reset the
+         base rule's background-clip and paint the whole 44px band. */
+      background-color: var(--consultation-rule);
     }
 
     body:has(#questionScreen.active) .noct-slider-track::-webkit-slider-thumb {
@@ -1403,9 +1469,11 @@
       color: var(--consultation-muted);
     }
 
-    body:has(#questionScreen.active) .noct-quiz-back:hover,
-    body:has(#reviewScreen.active) .noct-quiz-back:hover {
-      color: var(--accent-ink);
+    @media (hover: hover) {
+      body:has(#questionScreen.active) .noct-quiz-back:hover,
+      body:has(#reviewScreen.active) .noct-quiz-back:hover {
+        color: var(--accent-ink);
+      }
     }
 
     body:has(#questionScreen.active) .noct-quiz-next,
@@ -1419,10 +1487,12 @@
       padding: 15px 28px;
     }
 
-    body:has(#questionScreen.active) .noct-quiz-next:hover:not(:disabled),
-    body:has(#reviewScreen.active) .noct-quiz-next:hover:not(:disabled) {
-      background: color-mix(in srgb, var(--consultation-red) 88%, #000);
-      color: var(--on-store-primary);
+    @media (hover: hover) {
+      body:has(#questionScreen.active) .noct-quiz-next:hover:not(:disabled),
+      body:has(#reviewScreen.active) .noct-quiz-next:hover:not(:disabled) {
+        background: color-mix(in srgb, var(--consultation-red) 88%, #000);
+        color: var(--on-store-primary);
+      }
     }
 
     body:has(#questionScreen.active) .noct-quiz-next:disabled {
@@ -1475,9 +1545,11 @@
       padding: 9px 12px;
     }
 
-    body:has(#reviewScreen.active) .noct-review-edit:hover {
-      border-color: var(--accent-ink);
-      color: var(--accent-ink);
+    @media (hover: hover) {
+      body:has(#reviewScreen.active) .noct-review-edit:hover {
+        border-color: var(--accent-ink);
+        color: var(--accent-ink);
+      }
     }
 
     @media (max-width: 700px) {
@@ -1498,7 +1570,11 @@
 
       body:has(#questionScreen.active) .noct-quiz-option {
         min-height: 76px;
-        padding: 17px 18px;
+        padding: 17px 18px 17px 13px;
+      }
+
+      body:has(#questionScreen.active) .noct-quiz-option.selected {
+        padding: 16px 17px 16px 13px;
       }
 
       body:has(#reviewScreen.active) .noct-review-list {
@@ -9404,7 +9480,12 @@
     .noct-profile-name:focus-visible,
     .noct-profile-priority-toggle:focus-visible,
     .noct-profile-cta:focus-visible,
-    .noct-profile-secondary:focus-visible {
+    .noct-profile-secondary:focus-visible,
+    .noct-quiz-option:focus-visible,
+    .noct-quiz-back:focus-visible,
+    .noct-quiz-next:focus-visible,
+    .noct-review-edit:focus-visible,
+    .noct-slider-track:focus-visible {
       outline: 3px solid var(--focus-ring-outer);
       outline-offset: 2px;
       box-shadow: 0 0 0 5px var(--focus-ring-inner);
@@ -9419,7 +9500,12 @@
       .noct-profile-name:focus-visible,
       .noct-profile-priority-toggle:focus-visible,
       .noct-profile-cta:focus-visible,
-      .noct-profile-secondary:focus-visible {
+      .noct-profile-secondary:focus-visible,
+      .noct-quiz-option:focus-visible,
+      .noct-quiz-back:focus-visible,
+      .noct-quiz-next:focus-visible,
+      .noct-review-edit:focus-visible,
+      .noct-slider-track:focus-visible {
         outline-color: CanvasText;
         box-shadow: none;
       }
@@ -9443,6 +9529,74 @@
        forced-colors block as the focus one. */
     @media (forced-colors: active) {
       .noct-tier-tab.active { border: 2px solid CanvasText; }
+    }
+    /* Quiz option state under forced colors.
+
+       Two things the previous version got wrong, both found in review:
+
+       1. CASCADE. It selected `.noct-quiz-option[aria-pressed="true"]` — (0,2,0)
+          — against the normal selected rule
+          `body:has(#questionScreen.active) .noct-quiz-option.selected` at (1,3,1),
+          which already declares border-width: 2px. Media queries add no
+          specificity, and border-width is not a colour property, so forced
+          colours never touch it: the 3px simply lost the cascade and the rule
+          was inert. These rules re-scope to the quiz screen and add the
+          attribute on top of .selected, giving (1,4,1) — strictly greater than
+          the normal rule, so they win regardless of source order.
+
+       2. TRANSPARENCY. It relied on the resting rail staying `transparent`
+          under forced colours so only the selected rail would paint. Forced
+          colours are not required to preserve a transparent border-color, and
+          if the rail paints on every option the cue vanishes. So the resting
+          option no longer depends on a reserved transparent rail here: it gets
+          a UNIFORM 1px boundary on all four sides, and the selected option a
+          3px frame with a 6px left rail. That difference is pure geometry and
+          survives any colour forcing.
+
+       BOTH rules pin `border-color: CanvasText` explicitly, and they have to be
+       on both: the resting selector is (1,2,1), which loses to the normal
+       selected rule's `border-color: var(--accent-ink)` at (1,3,1), so a colour
+       declared only on the resting rule would never reach a selected option.
+       The selected rule here is (1,4,1) and wins. Pinning the colour is what
+       makes the boundary genuinely uniform — a uniform WIDTH alone still left
+       the left edge carrying the base rule's `solid transparent`, whose
+       visibility is up to the UA, and forced colours does not guarantee it.
+       Same idiom as the tier tab above.
+
+       Padding compensates on every side so neither the text nor the border box
+       moves between states (border + padding per side is 21/23/21/23 in both,
+       matching the normal-state totals exactly).
+
+       Placed after the focus block above — contrast_check anchors the file's
+       FIRST forced-colors block as the focus one. */
+    @media (forced-colors: active) {
+      body:has(#questionScreen.active) .noct-quiz-option {
+        border-width: 1px;
+        border-color: CanvasText;
+        padding: 20px 22px;
+      }
+
+      body:has(#questionScreen.active) .noct-quiz-option.selected[aria-pressed="true"] {
+        border-width: 3px;
+        border-left-width: 6px;
+        border-color: CanvasText;
+        padding: 18px 20px 18px 17px;
+      }
+    }
+    /* The narrow breakpoint needs its own forced-colors geometry: the rules
+       above carry the same (1,2,1)/(1,4,1) specificity as their counterparts in
+       the max-width: 700px block far earlier in the file, so without this they
+       would win there by source order and shift the text. Totals here are
+       18/19/18/19, matching the narrow normal state. Colour is inherited from
+       the block above and needs no repeat. Must stay AFTER that block. */
+    @media (forced-colors: active) and (max-width: 700px) {
+      body:has(#questionScreen.active) .noct-quiz-option {
+        padding: 17px 18px;
+      }
+
+      body:has(#questionScreen.active) .noct-quiz-option.selected[aria-pressed="true"] {
+        padding: 15px 16px 15px 13px;
+      }
     }
 
     /* Sheet (modal dialog) */
@@ -13118,11 +13272,14 @@
       return text.slice(0, idx) + '<span class="accent">' + phrase + '</span>' + text.slice(idx + phrase.length);
     }
 
-    // Column count: <=3 vertical list, <=6 two-col, else three-col
+    // Column count: 1-3 vertical list, 4-8 two-col. The live Quiz never emits
+    // cols-3 (Slice 3 owner ruling). The two-column cap deliberately favours
+    // readable bilingual option labels over fitting the eight-option question
+    // inside a 748px landscape viewport — the screen already scrolls, and a
+    // cramped three-column card wall is what the ruling replaced.
     function quizColsClass(n) {
       if (n <= 3) return 'cols-1';
-      if (n <= 6) return 'cols-2';
-      return 'cols-3';
+      return 'cols-2';
     }
 
     window.renderQuestion = function() {
@@ -13214,14 +13371,24 @@
           <p class="noct-quiz-help">${L(qHelp)}</p>
           ${isMulti ? '<p class="noct-quiz-multi-note">' + multiNote + '</p>' : ''}
           <div class="noct-quiz-options ${colClass}">
-            ${displayOptions.map(opt => `
-              <button class="noct-quiz-option ${isMulti ? (selected.includes(opt.id) ? 'selected' : '') : (selected === opt.id ? 'selected' : '')}"
+            ${displayOptions.map(opt => {
+              // aria-pressed carries the selected state (same idiom as the
+              // tier tabs and the compare buttons); the fill and the rail are
+              // its visual echo, never the state itself. The stable id lets
+              // selectOption() hand keyboard focus to the replacement button
+              // after the rerender. Touch handling is the shipped
+              // onclick + ontouchend pair, unchanged (Invariant 10).
+              const isSel = isMulti ? selected.includes(opt.id) : selected === opt.id;
+              return `
+              <button class="noct-quiz-option ${isSel ? 'selected' : ''}"
+                id="qopt-${q.id}-${opt.id}"
+                aria-pressed="${isSel ? 'true' : 'false'}"
                 onclick="selectOption('${q.id}', '${opt.id}', ${isMulti})"
                 ontouchend="event.preventDefault();selectOption('${q.id}', '${opt.id}', ${isMulti});">
                 <span class="opt-label">${L(opt.label)}</span>
                 ${opt.sublabel ? `<span class="opt-sub">${L(opt.sublabel)}</span>` : ''}
               </button>
-            `).join('')}
+            `;}).join('')}
           </div>
           <div class="noct-quiz-nav">
             ${currentQuestion > 0
@@ -13261,6 +13428,41 @@
     }
 
     window.selectOption = function(qId, optId, isMulti) {
+      // Keyboard-only focus restoration. renderQuestion() replaces the whole
+      // option list, so an option activated with Enter/Space would drop focus
+      // to BODY and a keyboard customer would lose their place mid-question.
+      // The check runs BEFORE the rerender and is deliberately narrow:
+      //   - touch: ontouchend calls preventDefault(), so the button never took
+      //     focus and activeElement is not an option — nothing to restore;
+      //   - mouse: the button does take focus but does NOT match
+      //     :focus-visible, so the branch is skipped;
+      //   - keyboard: focused AND :focus-visible — the only case that restores.
+      //
+      // The identity check is load-bearing, not defensive. Testing only "is
+      // some focus-visible option active" was a defect (found in review): on a
+      // hybrid iPad, after activating option A with a hardware keyboard,
+      // TAPPING option B moves no focus at all — ontouchend calls
+      // preventDefault() — so activeElement is STILL A and still matches
+      // :focus-visible. The old guard captured A and put the focus ring back
+      // on the wrong answer after the rerender. Restoration is therefore gated
+      // on the active element being the very option being activated; the id is
+      // rebuilt from the same parts the renderer used to emit it.
+      //
+      // No timer, no frame: the focus call is synchronous, and preventScroll
+      // keeps a long option list from jumping (idiom shared with
+      // focusDataError() and the tier-tab restore).
+      var restoreId = null;
+      try {
+        var activatedId = 'qopt-' + qId + '-' + optId;
+        var active = document.activeElement;
+        if (active && active.id === activatedId
+            && active.classList
+            && active.classList.contains('noct-quiz-option')
+            && typeof active.matches === 'function'
+            && active.matches(':focus-visible')) {
+          restoreId = active.id;
+        }
+      } catch (err) { restoreId = null; }
       if (isMulti) {
         if (!answers[qId]) answers[qId] = [];
         if (optId === 'none') {
@@ -13280,6 +13482,12 @@
         answers[qId] = optId;
       }
       renderQuestion();
+      if (restoreId) {
+        var replacement = document.getElementById(restoreId);
+        if (replacement && typeof replacement.focus === 'function') {
+          try { replacement.focus({ preventScroll: true }); } catch (err) { replacement.focus(); }
+        }
+      }
     }
 
     // When the user taps "Edit" on the review screen we enter edit mode:

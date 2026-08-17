@@ -430,6 +430,9 @@ jobs:
       - name: sleep brief presentation (constellation, D1 composition)
         run: node tests/sleep_brief_presentation_check.mjs
 
+      - name: quiz presentation (zero icons, grid cap, a11y repairs)
+        run: node tests/quiz_presentation_check.mjs
+
       # Daybreak PR 2 — production/demo separation. The committed production
       # promotions block must stay the inert contract (a temporary pre-runtime
       # activation lock; a later reviewed change may deliberately relax the
