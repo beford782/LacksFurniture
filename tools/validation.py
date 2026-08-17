@@ -1395,6 +1395,24 @@ FINANCING_ES_REVIEW_STATUSES = {
     "approved-native-legal-review",
 }
 
+# ===== Per-surface financing placement (item 1.5) ============================
+# `financing.surfaces` config-DISABLES a duplicate financing placement without
+# deleting it. Exactly two surfaces are addressable, because exactly two exist
+# as duplicates of content the Results module and the handoff already carry.
+#
+# An unknown key is an ERROR, not a no-op: `{"drawer": false, "sleepsystem":
+# false}` would read as a policy that turns two surfaces off while turning one
+# off, and the runtime's `surfaces[name] !== false` test cannot tell the
+# difference. So can a typo like "sleepSystems". Fail the build instead.
+#
+# Values must be JSON booleans. The runtime gate is `!== false`, so a string
+# "false" would read as ENABLED while looking disabled to a human — the same
+# class of trap exactPromotionsEnabled guards against.
+#
+# A MISSING key means ENABLED, and that is a contract, not an accident: another
+# retailer's financing block that predates this field must keep both surfaces.
+FINANCING_SURFACES = {"drawer", "sleepSystem"}
+
 # ===== The D4 Payment Choice copy contract ===================================
 # Keys the Payment Choice runtime reads by literal name and renders to a
 # customer. FC() returns '' for a key that is not there, so a missing one is not
@@ -1862,6 +1880,33 @@ def validate_financing(config: dict, *, allowed_source_hosts=None) -> Validation
             f"financing.esReviewStatus {fin_headline.short_repr(_esr)} must be one of "
             f"{sorted(FINANCING_ES_REVIEW_STATUSES)} — 'pending-native-legal-review' "
             f"is a legal shipped state and is deliberately not an error")
+
+    # Optional per-surface placement policy. Absent = every surface enabled.
+    _surfaces = fin.get("surfaces")
+    if _surfaces is not None:
+        if not isinstance(_surfaces, dict):
+            r.add_error(
+                f"financing.surfaces must be an object mapping surface names to "
+                f"booleans, got {_type_name(_surfaces)} "
+                f"({fin_headline.short_repr(_surfaces)}) — a missing surfaces block "
+                f"already means every surface is enabled, so there is no reason "
+                f"to write anything else here")
+        else:
+            for _sk in sorted(_surfaces):
+                if _sk not in FINANCING_SURFACES:
+                    r.add_error(
+                        f"financing.surfaces.{_sk} is not an addressable surface "
+                        f"(expected one of {sorted(FINANCING_SURFACES)}) — the "
+                        f"runtime reads surfaces[name] !== false, so an unknown or "
+                        f"misspelled key silently disables nothing while reading "
+                        f"like a policy that does")
+                elif not isinstance(_surfaces[_sk], bool):
+                    r.add_error(
+                        f"financing.surfaces.{_sk} "
+                        f"{fin_headline.short_repr(_surfaces[_sk])} must be a JSON "
+                        f"boolean — the runtime gate is `!== false`, so a string "
+                        f"\"false\" reads as ENABLED while looking disabled to a "
+                        f"human")
 
     # `plans` is iterated in FOUR places. Normalise it ONCE, here, so no loop
     # can iterate a non-list: `for x in (fin.get("plans") or [])` walked the
@@ -4055,6 +4100,36 @@ def _self_test() -> int:
           all(re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]*",
                            _fin_path_id(_k, "Synchrony Bank / Café #1"))
               for _k in ("promo", "plan", "scenario")))
+    # ---- per-surface placement policy (item 1.5) ---------------------------
+    check("financing.surfaces absent -> valid (every surface enabled)",
+          "surfaces" not in _fmut()
+          and validate_financing(_fc(_fmut()), allowed_source_hosts=_FHOSTS).ok)
+    for _combo in ({"drawer": False}, {"sleepSystem": False},
+                   {"drawer": False, "sleepSystem": False},
+                   {"drawer": True, "sleepSystem": True},
+                   {"drawer": True, "sleepSystem": False}, {}):
+        _sf = _fmut(); _sf["surfaces"] = dict(_combo)
+        check(f"financing.surfaces {sorted(_combo.items())} -> valid",
+              validate_financing(_fc(_sf), allowed_source_hosts=_FHOSTS).ok)
+    for _bad_key in ("sleepsystem", "sleepSystems", "Drawer", "handoff",
+                     "results", "sheet", ""):
+        _sf = _fmut(); _sf["surfaces"] = {"drawer": False, _bad_key: False}
+        check(f"financing.surfaces unknown key {_bad_key!r} -> error",
+              any("addressable surface" in e for e in
+                  validate_financing(_fc(_sf), allowed_source_hosts=_FHOSTS).errors))
+    for _bad_val in ("false", "true", 0, 1, None, [], {}):
+        _sf = _fmut(); _sf["surfaces"] = {"drawer": _bad_val}
+        check(f"financing.surfaces.drawer {_bad_val!r} -> error (JSON boolean only)",
+              any("surfaces.drawer" in e and "JSON boolean" in e for e in
+                  validate_financing(_fc(_sf), allowed_source_hosts=_FHOSTS).errors))
+    for _bad_shape in ("drawer", 7, True, [], 0.5):
+        _sf = _fmut(); _sf["surfaces"] = _bad_shape
+        check(f"financing.surfaces of the wrong TYPE ({_type_name(_bad_shape)}) -> error",
+              any("surfaces must be an object" in e for e in
+                  validate_financing(_fc(_sf), allowed_source_hosts=_FHOSTS).errors))
+    check("the addressable surface set is exactly drawer + sleepSystem",
+          FINANCING_SURFACES == {"drawer", "sleepSystem"})
+
     _dup = _fmut()
     _dup["plans"].append(json.loads(json.dumps(_dup["plans"][0])))
     _dup["plans"][1]["id"] = "syn-second"

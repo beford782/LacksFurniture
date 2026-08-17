@@ -90,6 +90,7 @@ const FUNCS = {
   storeName: 'function storeName()',
   getFinancingConfig: 'function getFinancingConfig()',
   financingEnabled: 'function financingEnabled()',
+  finSurfaceEnabled: 'function finSurfaceEnabled(name)',
   finPlanScenario: 'function finPlanScenario(p)',
   finPlanGroup: 'function finPlanGroup(p)',
   finSafeProvider: 'function finSafeProvider(p)',
@@ -351,7 +352,7 @@ const MODULE_ORDER = [
   vars.payState, vars.returnFocus, vars.impression, vars.sheetStale,
   vars.announceTimer, vars.keydownBound,
   src.L, src.escapeHtml, src.storeName,
-  src.getFinancingConfig, src.financingEnabled,
+  src.getFinancingConfig, src.financingEnabled, src.finSurfaceEnabled,
   src.finPlanScenario, src.finPlanGroup, src.finSafeProvider,
   src.finGroupedPlans, src.finPromotionalByProvider,
   src.financingSourceAllowed, src.setAllowedFinancingLink,
@@ -404,6 +405,7 @@ const RETURN_API = `
     regionLive: payRegionLive,
     handoffVisible: finHandoffVisible,
     enabled: financingEnabled,
+    surfaceEnabled: finSurfaceEnabled,
     termsFresh: financingTermsFresh,
     FC: FC,
     NOT_NOW: PAY_NOT_NOW,
@@ -1923,6 +1925,115 @@ section('§25 — nothing in D4 computes a monthly payment (V1 invariant)');
 // ===========================================================================
 // NEGATIVE CONTROLS — the behavioural assertions must fail on a broken tree
 // ===========================================================================
+// ===========================================================================
+// 26. Per-surface placement: financing.surfaces
+// ===========================================================================
+section('§26 — the drawer and Sleep System surfaces are config-DISABLED, not deleted');
+{
+  // The shipped policy.
+  const env = openEnv();
+  ok('§26 the shipped config disables both duplicate surfaces',
+    env.api.surfaceEnabled('drawer') === false
+    && env.api.surfaceEnabled('sleepSystem') === false,
+    JSON.stringify(CFG.financing.surfaces));
+  ok('§26 the canonical source and the generated config agree on the policy',
+    JSON.stringify(INCOMING.financing.surfaces)
+    === JSON.stringify(CFG.financing.surfaces),
+    JSON.stringify(INCOMING.financing.surfaces));
+
+  // BACKWARD COMPATIBILITY is the load-bearing half. A retailer whose
+  // financing block predates this field must keep both surfaces, so a MISSING
+  // flag — and a missing surfaces object entirely — means ENABLED. Only an
+  // explicit `false` turns a surface off.
+  const cfgWith = (surfaces) => {
+    const c = JSON.parse(JSON.stringify(CFG));
+    if (surfaces === undefined) delete c.financing.surfaces;
+    else c.financing.surfaces = surfaces;
+    return c;
+  };
+  const surf = (surfaces, name) =>
+    makeEnv({ config: cfgWith(surfaces) }).api.surfaceEnabled(name);
+
+  for (const [label, surfaces, drawer, sleep] of [
+    ['no surfaces block at all', undefined, true, true],
+    ['an empty surfaces object', {}, true, true],
+    ['drawer:false only — sleepSystem is missing, so enabled', { drawer: false }, false, true],
+    ['sleepSystem:false only — drawer is missing, so enabled', { sleepSystem: false }, true, false],
+    ['both false', { drawer: false, sleepSystem: false }, false, false],
+    ['both true', { drawer: true, sleepSystem: true }, true, true],
+    ['mixed', { drawer: true, sleepSystem: false }, true, false]
+  ]) {
+    ok(`§26 ${label} -> drawer=${drawer}, sleepSystem=${sleep}`,
+      surf(surfaces, 'drawer') === drawer && surf(surfaces, 'sleepSystem') === sleep,
+      `got drawer=${surf(surfaces, 'drawer')}, sleepSystem=${surf(surfaces, 'sleepSystem')}`);
+  }
+  // A malformed surfaces value must not silently disable anything. Build
+  // validation rejects these shapes; the runtime still has to fail towards the
+  // EXISTING behaviour rather than towards a blank screen.
+  for (const bad of ['drawer', 7, null, true, 0]) {
+    ok(`§26 a malformed surfaces value (${JSON.stringify(bad)}) leaves every surface enabled`,
+      surf(bad, 'drawer') === true && surf(bad, 'sleepSystem') === true);
+  }
+  ok('§26 an unknown surface name reads as enabled (the enum lives in validation, not here)',
+    surf({ drawer: false }, 'handoff') === true);
+
+  // BEHAVIOUR: the drawer renderer, both ways.
+  {
+    const off = makeEnv({ config: cfgWith({ drawer: false }) });
+    off.api.renderDrawer();
+    ok('§26 drawer disabled: the box is hidden',
+      off.get('drawerFinancing').hidden === true);
+    ok('§26 drawer disabled: no copy is written into it',
+      off.txt('drawerFinancingLabel') === ''
+      && off.txt('drawerFinancingBody') === ''
+      && off.txt('drawerFinancingExplore') === '');
+  }
+  {
+    const on = makeEnv({ config: cfgWith({ drawer: true }) });
+    on.api.renderDrawer();
+    ok('§26 drawer enabled: the box renders (so the disabled case is not vacuous)',
+      on.get('drawerFinancing').hidden === false
+      && on.txt('drawerFinancingLabel') === CFG.financing.copy.drawerTitle.en
+      && on.txt('drawerFinancingExplore') === CFG.financing.copy.cta.en);
+  }
+  {
+    // The financing experience being OFF must still hide it, independently.
+    const noFin = JSON.parse(JSON.stringify(CFG));
+    noFin.financing.enabled = false;
+    const env2 = makeEnv({ config: noFin });
+    env2.api.renderDrawer();
+    ok('§26 financing disabled entirely still hides the drawer box',
+      env2.get('drawerFinancing').hidden === true);
+  }
+
+  // DORMANT, NOT DELETED. The whole point of config-disabling rather than
+  // removing is that Phase 2 can turn these back on, and that the closed
+  // analytics `placement` enum keeps values its live call sites still pass.
+  ok('§26 the drawer financing markup is still in the shipped page',
+    /id="drawerFinancing"/.test(norm) && /id="drawerFinancingExplore"/.test(norm));
+  ok('§26 the drawer renderer still exists and is still called',
+    /function renderDrawerFinancing\(\)/.test(codeOnly)
+    && (codeOnly.match(/renderDrawerFinancing\(\)/g) || []).length >= 2);
+  ok('§26 the drawer call site still opens the sheet with placement "drawer"',
+    /window\.openFinancingSheet\('drawer'\)/.test(norm));
+  ok('§26 the Sleep System financing block and its call site still exist',
+    /sleep-system__financing/.test(norm)
+    && /window\.openFinancingSheet\(\\?'sleep-system\\?'\)/.test(norm));
+  ok('§26 the drawer financing CSS is still present',
+    /\.drawer-financing \{/.test(norm));
+  ok('§26 the closed placement enum still carries BOTH disabled surfaces',
+    /placement: \['results', 'drawer', 'handoff', 'sheet', 'mexico', 'sleep-system'\]/.test(norm));
+
+  // The Sleep System gate is source-level (its renderer is a large screen
+  // builder outside this harness's module), so it is asserted as a gate rather
+  // than executed — and the assertion is proved able to fire below.
+  ok('§26 the Sleep System block is gated on BOTH financingEnabled and the surface flag',
+    /var financingBlock = \(financingEnabled\(\) && finSurfaceEnabled\('sleepSystem'\)\)/
+      .test(codeOnly));
+  ok('§26 the drawer renderer is gated on BOTH, too',
+    /if \(!financingEnabled\(\) \|\| !finSurfaceEnabled\('drawer'\)\)/.test(codeOnly));
+}
+
 section('negative controls — each load-bearing behaviour is proved detectable');
 {
   const env = openEnv({ mutate: (s) => s.replace('if (!payIsExplored(id)) payExplored.push(id);', 'payExplored.push(id);') });
@@ -2058,6 +2169,39 @@ section('negative controls — each load-bearing behaviour is proved detectable'
   env.api.review(A);
   ok('control: an opener that also sets the preference is detected (§3)',
     env.api.state().pref === A);
+}
+{
+  const env = makeEnv({
+    config: (() => { const c = JSON.parse(JSON.stringify(CFG)); c.financing.surfaces = { drawer: false }; return c; })(),
+    mutate: (s) => s.replace("if (!financingEnabled() || !finSurfaceEnabled('drawer'))", 'if (!financingEnabled())')
+  });
+  env.api.renderDrawer();
+  ok('control: ignoring the drawer surface flag is detected (§26)',
+    env.get('drawerFinancing').hidden === false);
+}
+{
+  const env = makeEnv({
+    // A surfaces object that EXISTS but omits `drawer`. Deleting the object
+    // entirely would short-circuit on the guard above and never reach the line
+    // this control mutates.
+    config: (() => { const c = JSON.parse(JSON.stringify(CFG)); c.financing.surfaces = { sleepSystem: false }; return c; })(),
+    mutate: (s) => s.replace('return surfaces[name] !== false;', 'return surfaces[name] === true;')
+  });
+  ok('control: treating a MISSING flag as disabled is detected (§26 backward compatibility)',
+    env.api.surfaceEnabled('drawer') === false);
+}
+{
+  const env = makeEnv({
+    // `surfaces: null` is the shape that PROVES the guard is load-bearing:
+    // without it, `surfaces[name]` throws on null. A string would merely read
+    // undefined and pass, which is why this control does not use one.
+    config: (() => { const c = JSON.parse(JSON.stringify(CFG)); c.financing.surfaces = null; return c; })(),
+    mutate: (s) => s.replace("if (!surfaces || typeof surfaces !== 'object') return true;", '')
+  });
+  let threwOrDisabled = false;
+  try { threwOrDisabled = env.api.surfaceEnabled('drawer') !== true; }
+  catch (e) { threwOrDisabled = true; }
+  ok('control: dropping the malformed-surfaces guard is detected (§26)', threwOrDisabled);
 }
 
 console.log(`\n${failures === 0 ? 'PASS' : 'FAIL'} — ${checks - failures}/${checks} checks passed`);

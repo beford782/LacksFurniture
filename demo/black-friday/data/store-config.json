@@ -186,6 +186,10 @@
     "savingsPassPolicy": "specialist_confirm",
     "exactPromotionsEnabled": false,
     "esReviewStatus": "pending-native-legal-review",
+    "surfaces": {
+      "drawer": false,
+      "sleepSystem": false
+    },
     "allowedSourceHosts": [
       "lacks.com",
       "www.lacks.com",

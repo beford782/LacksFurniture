@@ -1139,6 +1139,29 @@ const MUTATIONS = [
     "      finPromotionalByProvider(groups.promotional).forEach(function(grp) {\n        var provider = grp.provider;\n        paths.push({",
     "      groups.promotional.forEach(function(grp) {\n        var provider = grp.provider;\n        paths.push({", PAY_RENDER],
 
+  // ---- Slice 4 / D4: per-surface placement (item 1.5) ----------------------
+  // Config-DISABLING rather than deleting only means something if the flag is
+  // actually consulted, if a MISSING flag still means enabled, and if the
+  // dormant surface really is still there to re-enable.
+  ["payment: the drawer surface flag is ignored (a disabled surface renders anyway)",
+    "      if (!financingEnabled() || !finSurfaceEnabled('drawer')) {",
+    "      if (!financingEnabled()) {", PAY],
+  ["payment: the Sleep System surface flag is ignored",
+    "      var financingBlock = (financingEnabled() && finSurfaceEnabled('sleepSystem'))",
+    "      var financingBlock = financingEnabled()", PAY],
+  ["payment: a MISSING surface flag is treated as DISABLED (breaks every other deployment)",
+    "      return surfaces[name] !== false;",
+    "      return surfaces[name] === true;", PAY],
+  ["payment: the malformed-surfaces guard is dropped (a null surfaces block throws)",
+    "      if (!surfaces || typeof surfaces !== 'object') return true;",
+    "", PAY],
+  ["payment: the shipped drawer surface policy silently flips back on",
+    '      "drawer": false,',
+    '      "drawer": true,', PAY, "incoming/lacks_financing.json"],
+  ["payment: the generated config's surface policy drifts from the canonical source",
+    '      "sleepSystem": false',
+    '      "sleepSystem": true', PAY_COPY, "data/store-config.json"],
+
 ];
 
 // ---------------------------------------------------------------------------

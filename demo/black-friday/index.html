@@ -11190,6 +11190,36 @@
       return (f && f.copy && f.copy[key]) ? L(f.copy[key]) : '';
     }
 
+    // ---- Per-surface financing placement (item 1.5) -------------------------
+    // financing.surfaces disables a DUPLICATE financing placement without
+    // deleting it. This deployment ships drawer:false and sleepSystem:false
+    // because both repeated the same generic orientation the Results module and
+    // the handoff already carry: on the way to a single sheet the customer met
+    // the same paragraph three times, and repetition is what made the financing
+    // read louder than the sleep fit it is supposed to follow.
+    //
+    // DISABLING RATHER THAN DELETING is deliberate, and the reason is specific.
+    // Phase 2 may want a per-product price anchor on the drawer; and the
+    // analytics `placement` enum still carries 'drawer' and 'sleep-system'.
+    // Retiring those enum values here would retire values a live call site still
+    // passes, and NOTHING catches that — the diagnostics contract holds the
+    // logged event set and EVENT_FIELDS to set equality, but it never inspects
+    // enum VALUES, so an unlisted value is dropped at runtime with only an
+    // anonymous count. The markup, the renderers, the call sites, the CSS and
+    // the enum values therefore all stay exactly where they are; only the flag
+    // decides whether they render.
+    //
+    // A MISSING flag means ENABLED. Another retailer's config that predates this
+    // field keeps both surfaces, which is what "config-driven and backward
+    // compatible" has to mean in a white-label template. Only an explicit
+    // `false` turns a surface off.
+    function finSurfaceEnabled(name) {
+      var f = getFinancingConfig();
+      var surfaces = f && f.surfaces;
+      if (!surfaces || typeof surfaces !== 'object') return true;
+      return surfaces[name] !== false;
+    }
+
     // ===== LACKS PAYMENT CHOICE — the D4 state model =========================
     //
     // TWO observable dimensions, and nothing else:
@@ -11923,10 +11953,17 @@
         && mod && !mod.hidden && !mod.closest('[hidden]'));
     }
 
+    // Dormant when financing.surfaces.drawer is false: the box, its renderer,
+    // its call sites, its CSS and its 'drawer' analytics placement all remain —
+    // the hidden attribute simply keeps it out of the layout AND the
+    // accessibility tree, exactly as a disabled financing experience does.
     function renderDrawerFinancing() {
       var box = document.getElementById('drawerFinancing');
       if (!box) return;
-      if (!financingEnabled()) { box.hidden = true; return; }
+      if (!financingEnabled() || !finSurfaceEnabled('drawer')) {
+        box.hidden = true;
+        return;
+      }
       box.hidden = false;
       document.getElementById('drawerFinancingLabel').textContent = FC('drawerTitle');
       document.getElementById('drawerFinancingBody').textContent = FC('drawerBody');
@@ -17945,7 +17982,7 @@
       // complete plan. NEVER a subtotal, an accessory-only payment, or any
       // "add $X to unlock" math — mattress prices are intentionally absent at
       // runtime, so no displayed sum could represent the real transaction.
-      var financingBlock = financingEnabled()
+      var financingBlock = (financingEnabled() && finSurfaceEnabled('sleepSystem'))
         ? '<div class="sleep-system__financing" id="sleepSystemFinancing">' +
             '<div class="sleep-system__plan-eyebrow">' + escapeHtml(FC('eyebrow')) + '</div>' +
             '<p>' + escapeHtml(FC('sleepSystemGuidance')) + '</p>' +
