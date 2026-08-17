@@ -16666,8 +16666,12 @@
           primary: (STORE_CONFIG.colors && STORE_CONFIG.colors.storePrimary) || '',
           accent: (STORE_CONFIG.colors && STORE_CONFIG.colors.accent) || ''
         },
-        // Payment Choice email content stays category-level. The customer's
-        // agenda choices remain on the shared tablet and are not transmitted.
+        // Payment Choice email content stays category-level, and every value
+        // below is CONFIG-DERIVED. No part of the customer's payment position
+        // is transmitted: not payPref, not payExplored, not payOpen, not a path
+        // identifier. `body` is finEmailBody(), which returns the neutral
+        // availability copy in EVERY D4 state — a customer who explored three
+        // paths and one who opened nothing send byte-identical packets.
         financing: financingEnabled() ? (function () {
           var f = getFinancingConfig();
           return {
