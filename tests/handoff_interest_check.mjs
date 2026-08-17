@@ -46,7 +46,7 @@ check("marking clears the not-now state", toggle.includes("financingAgendaDismis
 // Handoff is a salesperson-guided discussion agenda, not an application.
 check("handoff renders only selected agenda items", handoff.includes("var selected = finAgendaSelected()") && handoff.includes("fin-agenda-list"));
 check("handoff includes the consequence statement", handoff.includes("agendaConsequence"));
-check("handoff retains an equally available not-now route", handoff.includes("hf2FinancingInterestNotNow") && handoff.includes("agendaNotNow"));
+check("handoff retains an equally available not-now route", handoff.includes("hf2FinancingInterestNotNow") && handoff.includes("preferenceNotNow"));
 check("handoff can reopen the sheet to change the agenda", handoff.includes("agendaChange"));
 check("renderer never focuses a hidden handoff", !handoff.includes(".focus("));
 check("handoff not-now rerender restores focus to the replacement control",
@@ -109,8 +109,8 @@ const annCode = stripComments(annSrc);
 check("announceFinInterest() has no 'interested' mapping",
   !/'interested'/.test(annCode) && !annCode.includes("interestMarkedAnnounce"));
 check("announceFinInterest() maps exactly the two reachable states",
-  /state === 'not_now' \? 'interestNotNowAnnounce'/.test(annCode)
-  && (annCode.match(/interestNotNowAnnounce|interestClearedAnnounce/g) || []).length === 2);
+  /state === 'not_now' \? 'preferenceNotNowAnnounce'/.test(annCode)
+  && (annCode.match(/preferenceNotNowAnnounce|preferenceClearedAnnounce/g) || []).length === 2);
 check("setFinancingInterestChoice() still rejects every other state",
   /if \(state !== 'not_now' && state !== 'undecided'\) return;/.test(decline));
 check("interestMarkedAnnounce is absent from the whole app source",
@@ -125,8 +125,8 @@ check("handoff live region is unique",
 function makeAnnouncer() {
   const h = { lang: "en", visible: true, writes: [], timers: [] };
   const FCmap = {
-    en: { interestNotNowAnnounce: "NOTNOW-EN", interestClearedAnnounce: "CLEARED-EN" },
-    es: { interestNotNowAnnounce: "NOTNOW-ES", interestClearedAnnounce: "CLEARED-ES" },
+    en: { preferenceNotNowAnnounce: "NOTNOW-EN", preferenceClearedAnnounce: "CLEARED-EN" },
+    es: { preferenceNotNowAnnounce: "NOTNOW-ES", preferenceClearedAnnounce: "CLEARED-ES" },
   };
   const region = {
     _t: "initial",

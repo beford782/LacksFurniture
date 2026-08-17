@@ -11262,8 +11262,8 @@
       // Exactly the two states setFinancingInterestChoice() accepts. There is
       // no 'interested' announcement: the sheet's agenda toggles carry their
       // own aria-pressed and never reach this region.
-      var key = state === 'not_now' ? 'interestNotNowAnnounce'
-        : 'interestClearedAnnounce';
+      var key = state === 'not_now' ? 'preferenceNotNowAnnounce'
+        : 'preferenceClearedAnnounce';
       if (_finInterestAnnounceTimer !== null) clearTimeout(_finInterestAnnounceTimer);
       region.textContent = '';
       _finInterestAnnounceTimer = setTimeout(function() {
@@ -11552,7 +11552,7 @@
            : storeName() + "'s official financing page",
         document.getElementById('financingSheetExternal'));
       var spec = document.getElementById('financingSheetSpecialist');
-      spec.textContent = FC('agendaDone');
+      spec.textContent = FC('sheetDone');
       _finSheetStale = anyStale;
       // Live-update the status region on re-renders of an already-open sheet
       // (language switch); no-op while hidden — openFinancingSheet defers the
@@ -11667,7 +11667,7 @@
           + '<button type="button" class="fin-btn fin-btn-ghost" id="hf2FinancingInterestNotNow" '
           + 'onclick="window.setFinancingInterestChoice(\'not_now\')" '
           + 'ontouchend="event.preventDefault();window.setFinancingInterestChoice(\'not_now\');">'
-          + finEsc(FC('agendaNotNow')) + '</button>';
+          + finEsc(FC('preferenceNotNow')) + '</button>';
       }
       // Neutral program-category chips only — never rate/term headlines here
       // (rates belong solely to the freshness-gated sheet cards). Open-end

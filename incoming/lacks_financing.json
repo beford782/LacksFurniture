@@ -134,7 +134,7 @@
         "en": "Change discussion agenda",
         "es": "Cambiar agenda de conversación"
       },
-      "agendaNotNow": {
+      "preferenceNotNow": {
         "en": "Not right now",
         "es": "Ahora no"
       },
@@ -142,15 +142,15 @@
         "en": "No options marked for review right now.",
         "es": "No hay opciones de pago marcadas para revisar por ahora."
       },
-      "agendaDone": {
+      "sheetDone": {
         "en": "Done",
         "es": "Listo"
       },
-      "interestNotNowAnnounce": {
+      "preferenceNotNowAnnounce": {
         "en": "Not right now selected. You can change this choice.",
         "es": "Se seleccionó 'Ahora no'. Puedes cambiar esta opción."
       },
-      "interestClearedAnnounce": {
+      "preferenceClearedAnnounce": {
         "en": "Selection cleared. Choose again when you're ready.",
         "es": "Se borró la selección. Elige de nuevo cuando quieras."
       },

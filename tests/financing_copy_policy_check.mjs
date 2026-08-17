@@ -134,7 +134,7 @@ const copyKeys = Object.keys(cfg.financing.copy);
 // The inventory is declared ONCE, here. The canonical source, the generated
 // config, and the app's own indirect-consumption set are each compared
 // against IT.
-const ANNOUNCEMENT_KEYS = ["interestNotNowAnnounce", "interestClearedAnnounce"];
+const ANNOUNCEMENT_KEYS = ["preferenceNotNowAnnounce", "preferenceClearedAnnounce"];
 
 // Keys the app reaches WITHOUT a literal FC('key'): a copy key that appears as
 // a bare quoted literal in the app source but is never read through FC(). This

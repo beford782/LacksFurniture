@@ -1000,9 +1000,12 @@ Currently considering ✓ / Clear preference / the exploration-consequence line
 preserving the governed no-submission sentence verbatim) enter
 `incoming/lacks_financing.json` through the pipeline — Spanish provisional
 under the native-review gate — and the governed keys still carrying retired
-agenda vocabulary (`agendaNotNow`, `interestNotNowAnnounce`,
-`interestClearedAnnounce`) are renamed in the envelope in that same adoption
-change.
+agenda vocabulary are renamed in the envelope in that same adoption change.
+*(Renames DONE, Slice 4 commit C1, output-identical — every value preserved
+character-for-character: `agendaNotNow` → `preferenceNotNow`,
+`interestNotNowAnnounce` → `preferenceNotNowAnnounce`,
+`interestClearedAnnounce` → `preferenceClearedAnnounce`, `agendaDone` →
+`sheetDone`.)*
 
 **D5 — Sleep Plan and Consultation Summary.** (a) The **Sleep Plan is
 commissioned as a new production screen** (see the new item 1.7) between
