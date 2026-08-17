@@ -13437,13 +13437,26 @@
       //   - mouse: the button does take focus but does NOT match
       //     :focus-visible, so the branch is skipped;
       //   - keyboard: focused AND :focus-visible — the only case that restores.
+      //
+      // The identity check is load-bearing, not defensive. Testing only "is
+      // some focus-visible option active" was a defect (found in review): on a
+      // hybrid iPad, after activating option A with a hardware keyboard,
+      // TAPPING option B moves no focus at all — ontouchend calls
+      // preventDefault() — so activeElement is STILL A and still matches
+      // :focus-visible. The old guard captured A and put the focus ring back
+      // on the wrong answer after the rerender. Restoration is therefore gated
+      // on the active element being the very option being activated; the id is
+      // rebuilt from the same parts the renderer used to emit it.
+      //
       // No timer, no frame: the focus call is synchronous, and preventScroll
       // keeps a long option list from jumping (idiom shared with
       // focusDataError() and the tier-tab restore).
       var restoreId = null;
       try {
+        var activatedId = 'qopt-' + qId + '-' + optId;
         var active = document.activeElement;
-        if (active && active.id && active.classList
+        if (active && active.id === activatedId
+            && active.classList
             && active.classList.contains('noct-quiz-option')
             && typeof active.matches === 'function'
             && active.matches(':focus-visible')) {

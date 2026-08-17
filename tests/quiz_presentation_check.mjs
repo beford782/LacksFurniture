@@ -1005,6 +1005,68 @@ ok('options carry stable ids derived from question id + option id',
   ok('multi-select keyboard activation restores focus to the same option (Spanish path)',
     env.get(`qopt-health_conditions-${q.options[2].id}`)._focusCount === 1);
 }
+{
+  // HYBRID INPUT — the sequence that exposed the identity defect (review P2).
+  // A hardware keyboard activates option A, so A holds focus and matches
+  // :focus-visible. The customer then TAPS option B. ontouchend calls
+  // preventDefault(), so the tap moves no focus at all: activeElement is still
+  // A, still focus-visible. A guard that only asks "is some focus-visible
+  // option active" restores A — putting the ring on an answer the customer did
+  // not choose. Restoration must be gated on the option actually activated.
+  const q = QUIZ.questions[QID('trigger')];
+  const A = q.options[0].id;
+  const B = q.options[1].id;
+  const env = makeQuizEnv({ at: QID('trigger'), answers: {} });
+  env.api.render();
+
+  // 1. keyboard-activate A; it keeps focus and :focus-visible
+  const a1 = env.get(`qopt-trigger-${A}`);
+  a1.classList.add('noct-quiz-option');
+  a1._focusVisible = true;
+  env.doc.activeElement = a1;
+  env.api.select('trigger', A, false);
+  const aAfter = env.get(`qopt-trigger-${A}`);
+  ok('hybrid precondition: keyboard activation of A restores focus to A',
+    aAfter._focusCount === 1);
+  aAfter.classList.add('noct-quiz-option');
+  aAfter._focusVisible = true;
+  env.doc.activeElement = aAfter;
+
+  // 2. touch-activate B — preventDefault means focus never leaves A
+  env.api.select('trigger', B, false);
+
+  // 3. the stored answer is B
+  ok('hybrid: tapping B stores B, not A', env.api.answers().trigger === B, env.api.answers().trigger);
+  // 4. focus is NOT restored to the stale option A
+  ok('hybrid: focus is not restored to the stale keyboard-focused option A',
+    env.get(`qopt-trigger-${A}`)._focusCount === 0,
+    `A focus calls after tapping B: ${env.get(`qopt-trigger-${A}`)._focusCount}`);
+  // 5. and B, which never held focus, is not given a ring either
+  ok('hybrid: B is not given a focus ring it never had (touch grants no focus)',
+    env.get(`qopt-trigger-${B}`)._focusCount === 0);
+  const marked = optionsOf(env.get('questionContainer').innerHTML).filter((o) => o.selected);
+  ok('hybrid: exactly one option is marked selected, and it is B',
+    marked.length === 1 && marked[0].optId === B);
+}
+{
+  // The intended keyboard path must survive the identity gate: activating the
+  // option that currently holds focus still restores it after the rerender.
+  const q = QUIZ.questions[QID('temperature')];
+  const id = q.options[2].id;
+  const env = makeQuizEnv({ at: QID('temperature'), answers: {} });
+  env.api.render();
+  const t = env.get(`qopt-temperature-${id}`);
+  t.classList.add('noct-quiz-option');
+  t._focusVisible = true;
+  env.doc.activeElement = t;
+  env.api.select('temperature', id, false);
+  const rep = env.get(`qopt-temperature-${id}`);
+  ok('the identity gate does not break the intended keyboard path (same option still restores)',
+    rep._focusCount === 1 && !!rep._focusOpts && rep._focusOpts.preventScroll === true);
+}
+ok('the restoration is gated on the option actually activated, rebuilt from the renderer\'s own parts',
+  /var activatedId = 'qopt-' \+ qId \+ '-' \+ optId;/.test(src.select)
+  && /active\.id === activatedId/.test(src.select));
 
 section('REPAIR 7 — the option grid never exceeds two columns');
 {
