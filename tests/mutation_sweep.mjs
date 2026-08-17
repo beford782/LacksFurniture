@@ -1030,11 +1030,32 @@ const MUTATIONS = [
   // Identity. The retired slugifier collapsed distinct provider/plan values
   // onto one key and produced colon-bearing DOM ids.
   ["payment: path identity falls back to the lossy slugifier (distinct paths collide)",
-    "      var esc = encodeURIComponent(String(value == null ? '' : value));",
-    "      return String(value == null ? '' : value).trim().toLowerCase().replace(/[^a-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '');\n      var esc = encodeURIComponent(String(value == null ? '' : value));", PAY],
+    "      var esc;",
+    "      return String(value == null ? '' : value).trim().toLowerCase().replace(/[^a-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '');\n      var esc;", PAY],
   ["payment: path ids regain a colon separator (unusable in querySelector/CSS)",
-    "      return kind + '-' + finPathEncode(value);",
-    "      return kind + ':' + finPathEncode(value);", PAY],
+    "      return kind + '-' + enc;",
+    "      return kind + ':' + enc;", PAY],
+  // The unencodable-value guard. An unpaired surrogate makes
+  // encodeURIComponent throw, and the throw used to escape three guarded entry
+  // points: it blanked the handoff module after it was already visible, killed
+  // the sheet CTA after its own guard, and halted a language switch mid-way.
+  ["payment: the unencodable-value guard is removed (a lone surrogate throws through the renderers)",
+    "      var esc;\n      try {\n        esc = encodeURIComponent(String(value == null ? '' : value));\n      } catch (err) {\n        return '';\n      }",
+    "      var esc = encodeURIComponent(String(value == null ? '' : value));", PAY],
+  ["payment: an unencodable value yields an id anyway (the path is mis-identified, not dropped)",
+    "      if (!enc && String(value == null ? '' : value) !== '') return '';",
+    "", PAY],
+  // The two action regions must schedule INDEPENDENTLY, not merely render into
+  // separate elements.
+  ["payment: the two live regions share one announcement timer slot again",
+    "      _payAnnounceTimer[regionId] = setTimeout(function() {",
+    "      _payAnnounceTimer['shared'] = setTimeout(function() {", PAY],
+  ["payment: the liveness test runs BEFORE the cancel, so a dark region cannot supersede its own stale message",
+    "      if (_payAnnounceTimer[regionId]) {\n        clearTimeout(_payAnnounceTimer[regionId]);\n        delete _payAnnounceTimer[regionId];\n      }\n      if (!payRegionLive(regionId)) return;",
+    "      if (!payRegionLive(regionId)) return;\n      if (_payAnnounceTimer[regionId]) {\n        clearTimeout(_payAnnounceTimer[regionId]);\n        delete _payAnnounceTimer[regionId];\n      }", PAY],
+  ["payment: cancelPayAnnouncePending clears only one region slot",
+    "      Object.keys(_payAnnounceTimer).forEach(function(regionId) {\n        clearTimeout(_payAnnounceTimer[regionId]);\n      });\n      _payAnnounceTimer = {};",
+    "      clearTimeout(_payAnnounceTimer['financingSheetAction']);\n      delete _payAnnounceTimer['financingSheetAction'];", PAY],
 
   // Accessibility of the new controls.
   ["payment: the disclosure loses aria-expanded",
@@ -1072,7 +1093,7 @@ const MUTATIONS = [
     "      announcePayAction('financingSheetAction', 'currentlyConsidering');",
     "      announcePayAction('financingSheetStatus', 'currentlyConsidering');", PAY],
   ["payment: a queued announcement is no longer superseded (two utterances race)",
-    "      if (_payAnnounceTimer !== null) clearTimeout(_payAnnounceTimer);\n      region.textContent = '';",
+    "      if (_payAnnounceTimer[regionId]) {\n        clearTimeout(_payAnnounceTimer[regionId]);\n        delete _payAnnounceTimer[regionId];\n      }\n      if (!payRegionLive(regionId)) return;\n      region.textContent = '';",
     "      region.textContent = '';", PAY_ASYNC],
 
   // Forced colors: the cue must WIN the cascade and must be geometry.

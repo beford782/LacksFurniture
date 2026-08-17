@@ -11260,9 +11260,20 @@
     // True when the last renderFinancingSheet() swapped any path's exact
     // terms for the generic staleNotice — drives the sheet's freshness region.
     var _finSheetStale = false;
-    // Queued preference-action announcement work, tracked so a second
-    // transition supersedes the first and the wipe can cancel stale work.
-    var _payAnnounceTimer = null;
+    // Queued preference-action announcement work, keyed BY REGION so a second
+    // transition supersedes only its own region's pending message, and the wipe
+    // can cancel every one of them.
+    //
+    // This was a single shared slot, and three independent reviews caught the
+    // same thing: the two live regions were separate ELEMENTS but shared one
+    // SCHEDULER, so a handoff announcement cancelled a pending sheet
+    // announcement and left the sheet region cleared-but-never-populated. Both
+    // regions really are live at once whenever the sheet is opened FROM the
+    // handoff. Nobody could construct a customer-reachable interleaving inside
+    // the 50 ms window, but the commit that introduced it asserted the
+    // separation as a guarantee — so the code now provides the guarantee rather
+    // than relying on the window being narrow.
+    var _payAnnounceTimer = {};
 
     // Email body for the save packet. D4 ruling: payment state is entirely
     // excluded from email, so this is the NEUTRAL availability body in EVERY
@@ -11321,11 +11332,33 @@
     // old keys embedded a COLON ("promotional:provider"), which getElementById
     // tolerates but querySelector parses as a pseudo-class, so those ids could
     // never be used with querySelector or in a CSS selector without escaping.
+    // Returns '' — never throws — for a value that cannot be encoded. The only
+    // such value is a string containing an UNPAIRED SURROGATE (the thing
+    // JSON.parse('"\ud800"') produces), on which encodeURIComponent raises
+    // URIError. That was uncaught, and the throw did not stay local: it escaped
+    // renderHandoffFinancing() after the module was already visible — leaving a
+    // permanently blank Payment Choice block — it escaped openFinancingSheet()
+    // after its own guard but before the sheet was revealed, so the CTA died
+    // silently, and inside switchLanguage() it stopped every renderer queued
+    // after it, leaving the app half-translated. Found by adversarial review.
+    //
+    // Failing CLOSED is what a payment surface owes: an unencodable value
+    // yields no id, finPaymentPaths() drops the path (it filters on a truthy
+    // id), and everything else keeps rendering. The path is not selectable,
+    // which is correct — an id that cannot be formed cannot be compared, and a
+    // preference that cannot be compared cannot be cleared. tools/validation.py
+    // refuses such a config at build time, so this is defence in depth behind a
+    // gate, not the gate itself.
     function finPathEncode(value) {
       // encodeURIComponent leaves [A-Za-z0-9-_.!~*'()] alone and percent-escapes
       // everything else as its UTF-8 bytes, which is exactly the byte walk
       // needed here without depending on TextEncoder.
-      var esc = encodeURIComponent(String(value == null ? '' : value));
+      var esc;
+      try {
+        esc = encodeURIComponent(String(value == null ? '' : value));
+      } catch (err) {
+        return '';
+      }
       var out = '';
       for (var i = 0; i < esc.length; i++) {
         var ch = esc.charAt(i);
@@ -11343,7 +11376,15 @@
     var FIN_PATH_KINDS = ['promo', 'plan', 'scenario'];
 
     function finPathId(kind, value) {
-      return kind + '-' + finPathEncode(value);
+      // '' from the encoder means "unencodable", not "empty string": a genuinely
+      // empty value encodes to '' too, and that case is legitimate (a
+      // promotional group with no provider). The two are distinguished by
+      // asking the encoder about the ORIGINAL value — an empty string encodes
+      // to '' without throwing, so it still yields a usable id, while an
+      // unencodable one yields no id at all and its path is dropped.
+      var enc = finPathEncode(value);
+      if (!enc && String(value == null ? '' : value) !== '') return '';
+      return kind + '-' + enc;
     }
 
     // DOM ids derived from a path id. Every one is [A-Za-z][A-Za-z0-9_-]*, so
@@ -11549,11 +11590,20 @@
 
     function announcePayAction(regionId, key) {
       var region = document.getElementById(regionId);
-      if (!region || !payRegionLive(regionId)) return;
-      if (_payAnnounceTimer !== null) clearTimeout(_payAnnounceTimer);
+      if (!region) return;
+      // Supersede THIS region's own pending message, and do it BEFORE the
+      // liveness test. The test used to come first, so a transition whose own
+      // region had gone dark could not cancel the message it had just made
+      // stale — the old announcement would still land and describe a state the
+      // model had already left.
+      if (_payAnnounceTimer[regionId]) {
+        clearTimeout(_payAnnounceTimer[regionId]);
+        delete _payAnnounceTimer[regionId];
+      }
+      if (!payRegionLive(regionId)) return;
       region.textContent = '';
-      _payAnnounceTimer = setTimeout(function() {
-        _payAnnounceTimer = null;
+      _payAnnounceTimer[regionId] = setTimeout(function() {
+        delete _payAnnounceTimer[regionId];
         if (!payRegionLive(regionId)) return;
         var el = document.getElementById(regionId);
         if (el) el.textContent = FC(key) || '';
@@ -11596,10 +11646,10 @@
     // payment state so no stale queued work from the prior customer can run
     // after reset.
     function cancelPayAnnouncePending() {
-      if (_payAnnounceTimer !== null) {
-        clearTimeout(_payAnnounceTimer);
-        _payAnnounceTimer = null;
-      }
+      Object.keys(_payAnnounceTimer).forEach(function(regionId) {
+        clearTimeout(_payAnnounceTimer[regionId]);
+      });
+      _payAnnounceTimer = {};
     }
 
     window.logFinancingLinkClick = function(placement) {

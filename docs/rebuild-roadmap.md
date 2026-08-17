@@ -1652,8 +1652,15 @@ dormant, the enum values do not move.
    exact currently selected path.
 8. `payExplored` uses first-deliberate-open order and is de-duplicated.
 9. Not-right-now suppresses explored history **only** in the handoff
-   presentation. History is preserved internally; Results and the sheet are
-   unchanged; undoing it restores the row exactly.
+   presentation. History is preserved internally; nothing is hidden or
+   suppressed on Results or in the sheet; undoing it restores the row exactly.
+   *(Wording corrected 2026-08-17 after review. An earlier draft said Results
+   and the sheet "are unchanged", which is over-broad: when a path WAS the
+   preference, pressing Not right now necessarily re-renders that card —
+   the considering marker and Clear revert to Consider — because ruling 7
+   makes not_now replace the selected path. That is the ruled behaviour, not
+   an exception to it. What ruling 9 forbids is SUPPRESSION outside the
+   handoff, and there is none.)*
 10. A stale promotional path remains reviewable, its disclosure revealing the
     governed `staleNotice`. No visible stale-governance band was added and
     `staleAnnouncement` was not reused for a new visible surface (D6 stands).

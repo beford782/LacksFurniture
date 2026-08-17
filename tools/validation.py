@@ -1475,20 +1475,36 @@ def _fin_path_encode(value) -> str:
     previous runtime slugifier lower-cased and collapsed unsupported runs, so
     "Synchrony Bank"/"Synchrony-Bank", "Synchrony"/"SYNCHRONY" and a provider
     literally named "General"/a promotional group with no provider all shared
-    one identity."""
+    one identity.
+
+    Returns None — never raises — for a value that cannot be encoded. The only
+    such value is a string holding an UNPAIRED SURROGATE, on which
+    `.encode("utf-8")` raises UnicodeEncodeError. That was uncaught, and it
+    broke this module's own stated contract ("TOTAL over JSON … It never raises
+    … Malformed author input is a VERDICT, not a crash"): validate_financing
+    produced a traceback instead of a report, so the build could not refuse the
+    one config shape that also breaks the runtime encoder. Found by adversarial
+    review. The caller turns None into a named error."""
     out = []
     for ch in str("" if value is None else value):
         if ch.isascii() and (ch.isalnum() or ch == "-") and not ch.isspace():
             out.append(ch)
         else:
-            out.extend("_%02x" % b for b in ch.encode("utf-8"))
+            try:
+                out.extend("_%02x" % b for b in ch.encode("utf-8"))
+            except UnicodeEncodeError:
+                return None
     return "".join(out)
 
 
-def _fin_path_id(kind: str, value) -> str:
+def _fin_path_id(kind: str, value):
     """Mirror of finPathId(). KIND contains no '-', so splitting on the first
-    '-' recovers it unambiguously."""
-    return kind + "-" + _fin_path_encode(value)
+    '-' recovers it unambiguously.
+
+    Returns None when the value cannot be encoded, propagating the encoder's
+    refusal rather than raising."""
+    enc = _fin_path_encode(value)
+    return None if enc is None else kind + "-" + enc
 
 # -- Exact-claim detection for UNGATED financing copy --------------------------
 # financing.exactPromotionsEnabled and financingTermsFresh()/financingPlanFresh()
@@ -2529,6 +2545,17 @@ def validate_financing(config: dict, *, allowed_source_hosts=None) -> Validation
                 _owner = (f"scenario "
                           f"{fin_headline.short_repr(_plan_scenario(plan))}")
             else:
+                continue
+            if _pid is None:
+                # Unencodable (an unpaired surrogate). Refused HERE, by name,
+                # because the runtime encoder cannot form an id for it either:
+                # the path would silently vanish from the sheet and from the
+                # handoff, and a preference on it could never be cleared.
+                r.add_error(
+                    f"{_owner}: the value identifying this Payment Choice path "
+                    f"contains an unpaired surrogate and cannot be encoded, so "
+                    f"no canonical path id exists for it - the runtime would "
+                    f"drop the path entirely. Fix the source text.")
                 continue
             _path_owners.setdefault(_pid, []).append(_owner)
         for _pid, owners in sorted(_path_owners.items()):
@@ -4096,6 +4123,37 @@ def _self_test() -> int:
     ]:
         check(f"path ids stay distinct where the old slugifier collided: {_why}",
               _fin_path_id("promo", _a) != _fin_path_id("promo", _b))
+    # TOTALITY. The module's own contract says validate_financing "never
+    # raises" and turns malformed author input into a VERDICT. An unpaired
+    # surrogate broke that: .encode("utf-8") raised, so the build produced a
+    # traceback instead of a report -- and could not refuse the one config
+    # shape that also breaks the runtime encoder. Found by adversarial review.
+    _LONE = "a" + chr(0xD800) + "b"
+    check("path encoding REFUSES an unpaired surrogate instead of raising",
+          _fin_path_encode(_LONE) is None and _fin_path_id("plan", _LONE) is None)
+    check("...and a well-formed astral character still encodes",
+          _fin_path_encode("a" + chr(0x1F6CF) + "b") == "a_f0_9f_9b_8fb")
+    # An INSTALLMENT plan, because that is the arm whose path id derives from
+    # the plan id (the promotional arm derives from the provider, covered below).
+    _sur = _fmut()
+    _sur["plans"].append({
+        "id": "lease" + _LONE + "own", "kind": "closed-end-installment",
+        "provider": "Retailer", "verified": True,
+        "verifiedAt": _sur["verifiedAt"],
+        "sourceUrl": "https://www.lacks.com/financing",
+        "headline": {"en": "In-House Credit", "es": "Credito Interno"},
+        "detail": {"en": "D", "es": "D"},
+        "disclosure": {"en": "X", "es": "X"}})
+    _sur_rep = validate_financing(_fc(_sur), allowed_source_hosts=_FHOSTS)
+    check("an unencodable plan id is a named ERROR, not a traceback",
+          any("unpaired surrogate" in e for e in _sur_rep.errors))
+    check("...and the report is still a report (validate_financing stayed total)",
+          isinstance(_sur_rep.errors, list) and not _sur_rep.ok)
+    _sur2 = _fmut(); _sur2["plans"][0]["provider"] = "Prov" + chr(0xDFFF)
+    check("an unencodable PROVIDER is refused the same way",
+          any("unpaired surrogate" in e for e in
+              validate_financing(_fc(_sur2), allowed_source_hosts=_FHOSTS).errors))
+
     check("a path id is safe as a DOM/CSS identifier (no colon, no space)",
           all(re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]*",
                            _fin_path_id(_k, "Synchrony Bank / Café #1"))

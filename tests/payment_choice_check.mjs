@@ -153,7 +153,7 @@ const VARS = {
   returnFocus: /var _financeReturnFocus = null;/,
   impression: /var _finModuleImpressionLogged = false;/,
   sheetStale: /var _finSheetStale = false;/,
-  announceTimer: /var _payAnnounceTimer = null;/,
+  announceTimer: /var _payAnnounceTimer = \{\};/,
   clockSkew: /var FINANCING_CLOCK_SKEW_MS = [^;]+;/,
   scenarioMexico: /var FIN_SCENARIO_MEXICO = [^;]+;/,
   evergreenKinds: /var FIN_EVERGREEN_KINDS = [^;]+;/,
@@ -410,6 +410,8 @@ const RETURN_API = `
     FC: FC,
     NOT_NOW: PAY_NOT_NOW,
     timer: function() { return _payAnnounceTimer; },
+    timerFor: function(id) { return _payAnnounceTimer[id] || null; },
+    timerCount: function() { return Object.keys(_payAnnounceTimer).length; },
     stale: function() { return _finSheetStale; },
     returnFocus: function() { return _financeReturnFocus; },
     state: function() {
@@ -1377,11 +1379,12 @@ ok('§19 the handoff region markup carries the same contract',
 
     env.api.consider(A);
     ok(`§19 [${label}] Consider clears the ACTION region synchronously and queues the message`,
-      action.textContent === '' && env.api.timer() !== null);
+      action.textContent === '' && env.api.timerFor('financingSheetAction') !== null);
     env.flush();
     ok(`§19 [${label}] the deferred callback populates the action region`,
       action.textContent === CFG.financing.copy.currentlyConsidering.en, action.textContent);
-    ok(`§19 [${label}] the timer id is released once the callback runs`, env.api.timer() === null);
+    ok(`§19 [${label}] the timer id is released once the callback runs`,
+      env.api.timerFor('financingSheetAction') === null && env.api.timerCount() === 0);
     ok(`§19 [${label}] the Consider announcement neither erased the freshness status nor was erased by it`,
       status.textContent === before && status.textContent !== action.textContent);
 
@@ -1459,13 +1462,13 @@ ok('§19 the handoff region markup carries the same contract',
   const A = P(env)[0];
   env.api.announce('financingSheetAction', 'currentlyConsidering');
   ok('§19 a CLOSED sheet: nothing is scheduled and the action region is untouched',
-    env.api.timer() === null && env.pending() === 0
+    env.api.timerCount() === 0 && env.pending() === 0
     && env.get('financingSheetAction').textContent === '');
 
   const hidden = openEnv({ handoffActive: false });
   hidden.api.announce('hf2FinancingStatus', 'preferenceNotNowAnnounce');
   ok('§19 an INACTIVE handoff screen: nothing is scheduled and its region is untouched',
-    hidden.api.timer() === null && hidden.pending() === 0
+    hidden.api.timerCount() === 0 && hidden.pending() === 0
     && hidden.get('hf2FinancingStatus').textContent === '');
 }
 {
@@ -2034,6 +2037,121 @@ section('§26 — the drawer and Sleep System surfaces are config-DISABLED, not 
     /if \(!financingEnabled\(\) \|\| !finSurfaceEnabled\('drawer'\)\)/.test(codeOnly));
 }
 
+// ===========================================================================
+// 27. Unencodable path values, and the two live regions' independence
+// ===========================================================================
+// Both raised by adversarial review against the first behavioural commit.
+section('§27 — an unencodable value fails CLOSED, and the two regions schedule independently');
+{
+  // An UNPAIRED SURROGATE is what JSON.parse('"\ud800"') produces, so it is a
+  // value a hand-authored canonical source can genuinely carry. encodeURIComponent
+  // raises URIError on it, and the throw used to escape three guarded entry
+  // points: renderHandoffFinancing() after the module was already visible
+  // (leaving a permanently blank Payment Choice block), openFinancingSheet()
+  // after its guard but before the sheet was revealed (a silently dead CTA),
+  // and renderAllFinancingSurfaces() inside switchLanguage() (stopping every
+  // renderer queued behind it, leaving the app half-translated).
+  const LONE = 'a\uD800b';
+  ok('§27 precondition: the value really is unencodable (encodeURIComponent throws on it)',
+    (() => { try { encodeURIComponent(LONE); return false; } catch (e) { return e instanceof URIError; } })());
+
+  const env = openEnv();
+  ok('§27 the encoder returns empty rather than throwing', env.api.encode(LONE) === '');
+  ok('§27 finPathId yields NO id for it, so the path is dropped, not mis-identified',
+    env.api.pathId('plan', LONE) === '');
+  ok('§27 a genuinely EMPTY value still yields a usable id (the two are distinguished)',
+    env.api.pathId('promo', '') === 'promo-' && env.api.encode('') === '');
+  ok('§27 a well-formed astral pair still encodes (only unpaired surrogates are refused)',
+    env.api.encode('a\u{1F6CF}b') === 'a_f0_9f_9b_8fb');
+
+  // The three surfaces the throw escaped, driven through a config carrying one.
+  const hostile = JSON.parse(JSON.stringify(CFG));
+  hostile.financing.plans[2].id = 'lease' + LONE + 'own';
+  const henv = makeEnv({ config: hostile, sheetOpen: true });
+  let threw = null;
+  try {
+    henv.api.renderHandoff();
+    henv.api.renderSheet();
+    henv.api.renderResults();
+    henv.api.openSheet('results');
+    henv.api.renderAll();
+  } catch (e) { threw = e; }
+  ok('§27 no surface throws on a config carrying an unencodable plan id',
+    threw === null, threw && String(threw));
+  ok('§27 the handoff still renders its rows rather than going blank',
+    /fin-pref-rows/.test(henv.handoffHtml()));
+  ok('§27 the sheet still opens', henv.get('financingSheet').hidden === false);
+  ok('§27 the unencodable path is DROPPED from the path set, and the others survive',
+    henv.api.paths().every((x) => x.id && x.id.indexOf('-') > 0)
+    && henv.api.paths().length === P(env).length - 1,
+    henv.api.paths().map((x) => x.id).join(','));
+
+  // NON-VACUITY: the pre-fix encoder really did throw through these surfaces.
+  {
+    const broken = makeEnv({
+      config: hostile, sheetOpen: true,
+      mutate: (src) => src.replace(
+        '      var esc;\n      try {\n        esc = encodeURIComponent(String(value == null ? \'\' : value));\n      } catch (err) {\n        return \'\';\n      }',
+        '      var esc = encodeURIComponent(String(value == null ? \'\' : value));')
+    });
+    let brokeThrew = false;
+    try { broken.api.renderHandoff(); } catch (e) { brokeThrew = e instanceof URIError; }
+    ok('§27 [control] without the guard the handoff renderer really does throw URIError',
+      brokeThrew);
+  }
+}
+{
+  // TWO REGIONS, TWO SCHEDULERS. They were separate elements sharing one timer
+  // slot, so a handoff announcement cancelled a pending sheet announcement and
+  // left the sheet region cleared-but-never-populated. Both regions are live at
+  // once whenever the sheet is opened FROM the handoff.
+  const env = openEnv();
+  const A = P(env)[0];
+  ok('§27 precondition: both action regions are live at the same time',
+    env.api.regionLive('financingSheetAction') === true
+    && env.api.regionLive('hf2FinancingStatus') === true);
+
+  env.api.consider(A);
+  ok('§27 the sheet announcement is queued in its OWN region slot',
+    env.api.timerFor('financingSheetAction') !== null
+    && env.api.timerFor('hf2FinancingStatus') === null);
+  env.api.notNow();
+  ok('§27 a handoff announcement does NOT cancel the pending sheet announcement',
+    env.api.timerFor('financingSheetAction') !== null
+    && env.api.timerFor('hf2FinancingStatus') !== null
+    && env.api.timerCount() === 2);
+  env.flush();
+  ok('§27 both land, each in its own region, neither erasing the other',
+    env.txt('financingSheetAction') === CFG.financing.copy.currentlyConsidering.en
+    && env.txt('hf2FinancingStatus') === CFG.financing.copy.preferenceNotNowAnnounce.en,
+    JSON.stringify([env.txt('financingSheetAction'), env.txt('hf2FinancingStatus')]));
+
+  // A region that has gone dark must still be able to supersede its own stale
+  // message: the liveness test used to run BEFORE the cancel, so a queued
+  // announcement outlived the transition that invalidated it.
+  const env2 = openEnv();
+  const B = P(env2)[0];
+  env2.api.consider(B);
+  ok('§27 precondition: an announcement is queued for the sheet region',
+    env2.api.timerFor('financingSheetAction') !== null);
+  env2.get('financingSheet').hidden = true;              // the sheet goes dark
+  env2.api.announce('financingSheetAction', 'preferenceClearedAnnounce');
+  ok('§27 a transition supersedes its own queued message even when its region is dark',
+    env2.api.timerFor('financingSheetAction') === null);
+  env2.flush();
+  ok('§27 ...so the stale announcement never lands',
+    env2.txt('financingSheetAction') === '');
+
+  // The wipe helper must clear EVERY region's slot, not just one.
+  const env3 = openEnv();
+  env3.api.consider(P(env3)[0]);
+  env3.api.notNow();
+  ok('§27 precondition: two slots are armed', env3.api.timerCount() === 2);
+  env3.api.cancelAnnounce();
+  ok('§27 cancelPayAnnouncePending() clears every region slot',
+    env3.api.timerCount() === 0 && env3.pending() === 0);
+}
+
 section('negative controls — each load-bearing behaviour is proved detectable');
 {
   const env = openEnv({ mutate: (s) => s.replace('if (!payIsExplored(id)) payExplored.push(id);', 'payExplored.push(id);') });
@@ -2122,7 +2240,7 @@ section('negative controls — each load-bearing behaviour is proved detectable'
     env.get('financingSheetAction').textContent === CFG.financing.copy.currentlyConsidering.en);
 }
 {
-  const env = openEnv({ mutate: (s) => s.replace("region.textContent = '';\n      _payAnnounceTimer = setTimeout", "_payAnnounceTimer = setTimeout") });
+  const env = openEnv({ mutate: (s) => s.replace("region.textContent = '';\n      _payAnnounceTimer[regionId] = setTimeout", "_payAnnounceTimer[regionId] = setTimeout") });
   const [A, B] = P(env);
   env.api.consider(A); env.flush();
   env.api.consider(B); env.flush();
@@ -2131,7 +2249,7 @@ section('negative controls — each load-bearing behaviour is proved detectable'
     env.get('financingSheetAction').textContent !== '');
 }
 {
-  const env = openEnv({ mutate: (s) => s.replace('return kind + \'-\' + finPathEncode(value);', "return kind + '-' + String(value).toLowerCase().replace(/[^a-z0-9_-]+/g, '-');") });
+  const env = openEnv({ mutate: (s) => s.replace('      var enc = finPathEncode(value);', "      return kind + '-' + String(value).toLowerCase().replace(/[^a-z0-9_-]+/g, '-');\n      var enc = finPathEncode(value);") });
   ok('control: reinstating the lossy slugifier is detected (§16)',
     env.api.encode('Synchrony Bank') !== 'synchrony-bank'
     && env.api.pathId('promo', 'Synchrony Bank') === env.api.pathId('promo', 'Synchrony-Bank'));
