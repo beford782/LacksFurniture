@@ -9,30 +9,42 @@ owner-review decisions (see "Phase 1 direction decisions — recorded
 see the open-decisions register. Device hardening remains BLOCKING for
 showroom use.**
 
-**Last updated:** 2026-08-16 *(records the Slice 3 Quiz owner rulings — zero
-option icons, the two-column grid cap, and the five authorized accessibility
-repairs — together with the honest 47-icon audit ledger, and re-points the
-reconciliation baseline and next-item pointer now that Slices 1 and 2 have
-merged. The previous revision, 2026-08-14, recorded the Nocturne owner-review
-decisions D1–D6, the 2026-08-12 screen-reader out-of-scope ruling's effect on
-1.2, the settled tier-tab direction, the adopted Payment Choice state model,
-the Daybreak PRs #42/#43 and the 2026-08-13 owner-approved scoring change they
-carried.)*
+**Last updated:** 2026-08-17 *(records the Slice 4 Payment Choice owner
+rulings — the preserved "Payment preference" wording and its narrow validator
+allowlist, the two-dimension durable model, the D4 rows landing on the existing
+handoff only, the four key renames, the nine adopted copy strings, the ten
+retired ones, the not-right-now transition table, first-open exploration
+ordering, handoff-only suppression, the stale-path disclosure, the accepted
+cache-skew window, the two retired diagnostics, the total email exclusion and
+the drawer/Sleep System surface disable — and re-points the reconciliation
+baseline and next-item pointer now that Slice 3 has merged. The previous
+revision, 2026-08-16, recorded the Slice 3 Quiz owner rulings — zero option
+icons, the two-column grid cap, and the five authorized accessibility repairs —
+together with the honest 47-icon audit ledger. The 2026-08-14 revision recorded
+the Nocturne owner-review decisions D1–D6, the 2026-08-12 screen-reader
+out-of-scope ruling's effect on 1.2, the settled tier-tab direction, the adopted
+Payment Choice state model, the Daybreak PRs #42/#43 and the 2026-08-13
+owner-approved scoring change they carried.)*
 **Original roadmap baseline:** `42ff5f3a2158bc68219b1c87cb6356f146009fdc` — GitHub
 `main` when this document's phase statuses were written, the merge commit of
 PR #16 (2026-08-05). It is **not** current `main`. GitHub state is
 authoritative; a local checkout never is.
-**Reconciliation baseline:** `b05d47fdf88c54d2dda666e7e3c6b475aa1cc734` — GitHub
-`main` at this revision; PR #46 merge commit (2026-08-16, Nocturne Slice 2).
-The prior baseline was `83d4646e5af611a14a7b3fbd66f5a0604bb7886e` (PR #43,
+**Reconciliation baseline:** `5436deaea432ec87eb6b4d9f06cd82a85fb1910c` — GitHub
+`main` at this revision; PR #47 merge commit (2026-08-16, Nocturne Slice 3, the
+Quiz visual pass). The prior baseline was
+`b05d47fdf88c54d2dda666e7e3c6b475aa1cc734` (PR #46, Nocturne Slice 2,
+2026-08-16), and before that `83d4646e5af611a14a7b3fbd66f5a0604bb7886e` (PR #43,
 Daybreak PR 2, 2026-08-14).
 **Next implementation item:** per the approved 2026-08-14 slice order, items
-(1) and (2) have merged — Slice 1, the Results tier-tab restyle and
-hero-plus-support card hierarchy (1.3 per D3), as PR #45; and Slice 2, the
-Sleep Brief recomposition and Sleep Signature (1.1 per D1+D2), as PR #46. The
-next item is **(3) the Quiz visual pass (1.2)** — Slice 3, in progress at this
-revision. It is a presentation slice only: no scoring, answer-structure,
-question, option, skip or navigation change. The full recommended order is
+(1), (2) and (3) have merged — Slice 1, the Results tier-tab restyle and
+hero-plus-support card hierarchy (1.3 per D3), as PR #45; Slice 2, the Sleep
+Brief recomposition and Sleep Signature (1.1 per D1+D2), as PR #46; and
+Slice 3, the Quiz visual pass (1.2), as PR #47. The current item is
+**Slice 4 — Payment Choice (1.5 per D4)**, in progress at this revision. Unlike
+Slices 1–3 it is not presentation-only: it replaces an interaction model. It
+still changes nothing the engine computes — the Phase 1 output-regression
+fixture and its pinned sha256 are byte-identical across it — and it adds no
+telemetry, no email content and no payment math. The full recommended order is
 recorded in the 2026-08-14 decision block. The two conditions Phase 1 implementation required — the 0.4
 mounted-device evidence closing Phase 0, AND Blake explicitly opening Phase 1 —
 **are both met** (2026-08-10 and 2026-08-12 respectively). Every merge still
@@ -199,6 +211,14 @@ None of these are negotiable by a redesign.
    for reviewed staff/device state only.
 7. **Diagnostics are allowlisted per event and value-validated**, and the logged
    event set and `EVENT_FIELDS` are held to set equality in both directions.
+   The contract governs whatever event set exists, in both directions and at any
+   size: adding an event without declaring it drops its whole payload, and
+   declaring one nothing logs leaves dead contract surface — so **retiring an
+   event means removing it from both halves in the same change**, which is how
+   Slice 4 removed the two agenda events. *(What the guard does NOT cover is
+   enum VALUES: an unlisted `placement` value is dropped at runtime with only an
+   anonymous count. That gap is why 1.5 config-disables the drawer and Sleep
+   System surfaces instead of retiring their placement values.)*
 8. **The kiosk collects no financial data.** Applications happen only on approved
    external Lacks/lender pages.
 9. **Focus, wipe and language safety.** Focus ownership is respected (safety
@@ -240,7 +260,7 @@ None of these are negotiable by a redesign.
 
 Closes out before Phase 1 implementation begins.
 
-### 0.1 — Agenda analytics contract ✅
+### 0.1 — Financing analytics contract ✅
 
 **Shipped.** PR #11 (merged `5a9cd10`) corrected an event rename that had left
 `EVENT_FIELDS` declaring two retired names while two live events went undeclared —
@@ -253,6 +273,17 @@ set equality in both directions, and any `analytics.log()` call whose event name
 cannot be statically enumerated fails the suite. Implementation and mutation
 evidence live in `tests/session_async_check.mjs` and in the PR history; they are
 not restated here.
+
+*(Terminology, 2026-08-17: this item is named for the two **agenda** events it
+repaired — `financing_agenda_changed` and `financing_agenda_reviewed`. Slice 4
+**retired both outright, with no replacement**, because a payment preference is
+the customer's own position and no consumer needs it; the heading is renamed
+accordingly. The item stays ✅: what 0.1 delivered was the set-equality contract,
+not those two names, and that contract is exactly what let two events be removed
+in one change without either half drifting — the same suite that caught the
+rename now proves the retirement. The four surviving financing events are
+`finance_module_impression`, `finance_details_open`,
+`official_financing_link_click` and `mexico_financing_details_open`.)*
 
 ### 0.2 — This roadmap ✅
 
@@ -1006,6 +1037,13 @@ character-for-character: `agendaNotNow` → `preferenceNotNow`,
 `interestNotNowAnnounce` → `preferenceNotNowAnnounce`,
 `interestClearedAnnounce` → `preferenceClearedAnnounce`, `agendaDone` →
 `sheetDone`.)*
+*(Copy count corrected, 2026-08-17: the adopted set is NINE, not eight. The
+2026-08-17 Slice 4 authorization added `preferenceNone` — "Not selected" /
+"Sin seleccionar" — which the eight above had no way to express: the preference
+row needs a value when nothing is selected, and leaving it blank would read as a
+rendering failure rather than as a state. All nine shipped in commit C2; the
+governed no-submission sentence is preserved character-for-character in both
+languages and pinned by exact tests.)*
 
 **D5 — Sleep Plan and Consultation Summary.** (a) The **Sleep Plan is
 commissioned as a new production screen** (see the new item 1.7) between
@@ -1311,6 +1349,16 @@ are **unchanged**; the only Review-adjacent changes are the Edit control's
 merged AND the phase-wide device-matrix gate passes on confirmed hardware.
 Desktop screenshots are not a physical-iPad pass.
 
+**Both conditions are now met (recorded 2026-08-17).** Slice 3 merged as
+**PR #47**, merge commit `5436deaea432ec87eb6b4d9f06cd82a85fb1910c`, and its
+manual gates — the desktop keyboard/zoom/reduced-motion pass, the Windows
+forced-colors visual check, and the physical mounted iPad Pro 11-inch pass in
+both orientations and both languages — **passed**. 1.2's presentation work is
+therefore closed; the item's remaining ⬜ scope is the icon programme, which is
+content authoring rather than engineering. Native-Spanish linguistic approval
+remains deferred to the consolidated end-of-development pass (Invariant 12) and
+is **not** a Slice 3 gate.
+
 ### 1.3 — Results and mattress cards ◐
 
 *(The heading previously also carried ❓, which contradicted its own Proceeds
@@ -1516,6 +1564,180 @@ The largest reading load in the app.
 - Make financing concrete through eventual verified price grounding, not by
   repeating vague financing copy everywhere.
 
+**SLICE 4 IMPLEMENTED — PR pending merge (branch
+`claude/nocturne-slice4-payment-choice`, base `5436dea`).** Item 1.5 stays ⬜
+until that PR merges AND the manual gates below pass; a merged branch and a
+passed CI run are not a device pass, and neither is a desktop screenshot.
+
+**What shipped.** The agenda interaction is replaced by the D4 model in one
+atomic runtime change (commit C2), preceded by test hardening (C0) and an
+output-identical key rename (C1), and followed by the surface policy (C3) and
+this documentation (C4).
+
+*The model.* Two observable dimensions and nothing else — `payExplored`, an
+ordered de-duplicated history in first-deliberate-open order, and `payPref`,
+exactly one of null / a canonical path id / `not_now`. `payOpen` is a third
+variable but NOT a third dimension: ephemeral disclosure state, invisible to the
+handoff, the email, the diagnostics and the recorded position.
+
+*Canonical path identity.* Path ids are now `kind '-' <injective escape>` rather
+than a slug. This is a correctness fix, not a tidy-up: the retired slugifier
+collapsed `"Synchrony Bank"`/`"Synchrony-Bank"`, `"Synchrony"`/`"SYNCHRONY"`
+(two distinct provider groups), an accented provider against a punctuated one,
+and a provider literally named `"General"` against a promotional group with no
+provider — so two payment paths could share one preference row and one set of
+DOM ids, and a customer's Consider could land on a path they did not pick. The
+old ids also embedded a colon, which `getElementById` tolerates but
+`querySelector` parses as a pseudo-class. `tools/validation.py` mirrors the
+encoder and refuses a config whose derived path ids collide.
+
+*Interaction.* A native button plus a hidden panel per path (`aria-expanded`,
+`aria-controls`) — deliberately not `<details>`/`<summary>`, because the sheet's
+focus trap would exclude a `<summary>`. Consider is one-way and carries no
+`aria-pressed`; the considering marker is a non-interactive span; Clear is a
+separately named subordinate action; "Not right now" is the one genuinely
+reversible two-state control and is the only one with `aria-pressed`. A stale
+path stays fully reviewable — its disclosure reveals the governed `staleNotice`
+instead of rates and terms.
+
+*Isolation.* Payment state reaches no score, ranking, tier, match reason,
+priority, Sleep Signature, Sleep Brief, result order, email, GAS payload,
+`Code.gs`, diagnostic or session summary. `financingExplored` and the
+state-specific `emailBody` key are deleted; the email's financing row is the
+neutral `emailBodyAvailable` in every state. `financing_agenda_changed` and
+`financing_agenda_reviewed` are retired outright from both their call sites and
+`EVENT_FIELDS`, with no replacement — D4 adds no telemetry at all.
+
+*Surfaces.* `financing.surfaces` config-disables the drawer and Sleep System
+duplicates. The markup, renderers, call sites, CSS and the `placement` enum
+values all stay; only the flag decides whether they render, and a MISSING flag
+means enabled so a deployment predating the field is unaffected. This is the
+resolution of the "enum retirement is deferred" bullet above — the surfaces go
+dormant, the enum values do not move.
+
+**Owner rulings recorded (2026-08-17, all implemented as written).**
+
+1. The adopted copy "Payment preference" / "Preferencia de pago" is preserved
+   verbatim. The validator's payment-claim guard learned exactly that
+   collocation — the copy did not learn the guard. The addition is narrow:
+   `preference` neutralises a payment noun only in that two-word phrase, and
+   "Payment-preference", "Preferencia del pago", "Preference of payment" and
+   "Preferencia de pago mensual" all still fail, as does every
+   previously-rejected benign phrasing.
+2. Exactly two durable dimensions. No `payCleared`, no fourth durable variable,
+   no second cleared sentinel; clear announcements are transient action effects
+   in a dedicated live region. `payOpen` is permitted solely as ephemeral
+   disclosure UI state.
+3. D4 rows land on the EXISTING handoff only. The Sleep Plan screen and its
+   payment row remain Slice 5 (item 1.7) and appear nowhere in this change.
+4. Four governed keys renamed, values preserved character-for-character:
+   `agendaNotNow` → `preferenceNotNow`, `interestNotNowAnnounce` →
+   `preferenceNotNowAnnounce`, `interestClearedAnnounce` →
+   `preferenceClearedAnnounce`, `agendaDone` → `sheetDone`.
+5. Nine governed bilingual keys added: `paymentPreferenceLabel`,
+   `optionsExploredLabel`, `reviewOption`, `hideDetails`, `considerOption`,
+   `currentlyConsidering`, `clearPreference`, `exploreConsequence`,
+   `preferenceNone`. The governed no-submission sentence is pinned verbatim in
+   both languages by exact tests.
+6. Ten keys retired in the same atomic runtime change: `agendaMark`,
+   `agendaMarked`, `agendaPrompt`, `agendaConsequence`, `agendaEmpty`,
+   `agendaDismissed`, `agendaChange`, `resultsAsk`, `drawerMark` and the
+   state-specific `emailBody`. The hardcoded "Review agenda (N)" /
+   "Revisar agenda (N)" output is gone. Results retains ONE governed
+   "Explore payment options" CTA; the obsolete duplicate button is removed, as
+   are the drawer's and the handoff's duplicates. 34 → 33 copy keys.
+7. Not-right-now transitions: null → not_now; a selected path → not_now;
+   not_now pressed again → null; Consider from not_now → that path. History is
+   never erased by not_now or by clearing it, and Clear applies only to the
+   exact currently selected path.
+8. `payExplored` uses first-deliberate-open order and is de-duplicated.
+9. Not-right-now suppresses explored history **only** in the handoff
+   presentation. History is preserved internally; Results and the sheet are
+   unchanged; undoing it restores the row exactly.
+10. A stale promotional path remains reviewable, its disclosure revealing the
+    governed `staleNotice`. No visible stale-governance band was added and
+    `staleAnnouncement` was not reused for a new visible surface (D6 stands).
+11. The short shell/config cache-skew window is ACCEPTED. No compatibility
+    aliases were added; the manual device card below carries an explicit
+    hard-reload step because of it.
+12. `financing_agenda_changed` and `financing_agenda_reviewed` retired
+    atomically, call sites and `EVENT_FIELDS` together, with no preference,
+    path, Consider, Clear or Not-right-now telemetry added. The four neutral
+    events survive: module impression, whole-sheet open, official-link click,
+    Mexico detail open.
+13. Payment state is entirely excluded from email.
+14. The surface disable ships in this PR as its own commit, with the dormant
+    markup, renderers, call sites, CSS and enum values all preserved.
+
+**Spanish is PROVISIONAL.** Every ES string added here is unreviewed by a native
+speaker and ships under `esReviewStatus: "pending-native-legal-review"`. Per
+Invariant 12 that is not a merge gate for this slice; the consolidated
+native-Spanish pass at the end of development is where it is settled. Nothing
+in this slice may be described as native-reviewed.
+
+**Verification (automated, all zero failures).** Payment Choice 327 (new suite,
+replacing the retired handoff-interest suite); financing renderer 97 → 319;
+financing copy policy 95 → 215; scoring isolation 71 → 247; session safety
+489 → 535; session async/privacy 216 → 283; email gating 19 → 96; phase 1
+output regression 65 → 72; `tools/validation.py --self-test` 757 → 920; smoke
+112 → 113; financing totality 3395; Daybreak contract 87; lineage 10; QR
+payload 188; contrast 90; financing taxonomy 102; financing URL 53;
+exact-promotions policy 45; claim retirement 53; integrity repairs 17; quiz
+presentation 176; results presentation 83; Sleep Brief presentation 134;
+compare modal 65 and entry 75; construction reveal 102; drawer lifecycle 44;
+motion 202; data-error recovery 331; consultation priorities 219 and summary
+94; email priorities 96; Daybreak demo runtime 54 and server 23; strict golden
+bundle PASS; converter 16; canonical 14; reverify 25; workbook validation OK
+with warnings-as-errors. **Mutation sweep 294/294 caught, 0 survived, 0 did not
+apply** (244 before). The Phase 1 recommendation fixture and its pinned
+`BASELINE_SHA256` are byte-identical.
+
+**Manual gates — OPEN. None is self-closed by this slice.**
+
+1. Desktop keyboard / zoom / reduced-motion / manual modal lifecycle.
+2. Windows forced-colors visual check. The automated coverage is STATIC CASCADE
+   ANALYSIS of the shipped stylesheet, not rendered verification; no
+   forced-colors rendering environment was available and nothing claims a cue
+   was seen.
+3. Physical mounted iPad Pro 11-inch, both orientations, EN and ES — the card
+   below.
+4. Owner live review.
+
+Screen-reader / VoiceOver verification remains OUT OF SCOPE by the permanent
+2026-08-12 owner ruling. The automated semantic checks still apply.
+
+**Manual iPad card — Slice 4.** Run on the confirmed mounted device (the matrix
+recorded under 1.2's device section), in both orientations and both languages.
+
+0. **Hard-reload before testing.** The app shell and `data/store-config.json`
+   are fetched separately, so a warm cache can pair a NEW shell with an OLD
+   config for a short window — new code reading retired copy keys, or old code
+   reading keys that no longer exist. That window is accepted rather than
+   papered over with compatibility aliases, which is exactly why this step is
+   first: a stale-cache reading is not a defect finding.
+1. Single tap on Review, Hide, Consider, Clear and Not right now — each fires
+   once, no double fire, no sticky hover state left behind.
+2. No stale focus ring under hybrid keyboard + touch: activate one control with
+   a keyboard, then TAP a different one, and confirm the ring does not jump
+   back to the first.
+3. State survives rotation and an EN/ES switch: the same paths stay explored, in
+   the same order; the same preference stays selected; open panels stay open.
+4. Spanish wrapping: "Considerar esta opción", "Quitar preferencia",
+   "Preferencia de pago" and "En consideración ✓" wrap without horizontal
+   overflow, including at 200% zoom.
+5. The sheet footer and the card actions remain reachable — nothing is pushed
+   out of the scroll area.
+6. Not-right-now suppression and recovery: with paths explored, press Not right
+   now and confirm the explored row disappears from the handoff; press it again
+   and confirm the row returns unchanged.
+7. Idle Continue preserves the payment state.
+8. Timeout and "Start new customer" clear it completely — reopen the sheet and
+   confirm nothing is explored, nothing is preferred and no panel is open.
+
+If a gesture test exposes a defect that would require changing the established
+touch-handler architecture, STOP: that is Invariant 10 and D6 territory and
+needs its own authorization.
+
 ### 1.6 — Consultation Summary, Compare, and the remaining screens ⬜
 
 **The Review screen stays complete and fully editable.** That is the approved
@@ -1608,8 +1830,13 @@ speculative payment claims.
 
 **Email.** The only artifact the customer leaves with. A concise brief, ranked
 priorities, matches, practical testing guidance, and approved next steps. **Never**
-financing-interest or agenda state, medical-style labels, unapproved rates or
-terms, or customer data beyond the reviewed payload contract. Keep four things
+payment state of any kind — no preference, no explored history, no path
+identifier — nor medical-style labels, unapproved rates or terms, or customer
+data beyond the reviewed payload contract. *(Slice 4 made this executable: the
+email's financing row is the neutral `emailBodyAvailable` in **every** D4 state,
+proven byte-identical across the whole state matrix in both languages by
+`tests/email_gating_check.mjs`, and the `financingExplored` flag that used to
+split "explored" from "available" wording is deleted.)* Keep four things
 distinct: UI implementation, payload capability, GAS activation, and verified
 delivery — `gasUrl` is blank today, so no email change is "live" merely because the
 template exists.
@@ -2035,8 +2262,10 @@ document, not here.
    recorded as the plan of record (PR #44, merge `aee0410`), then Slice 1, the
    Results tier-tab restyle and hero-plus-support card hierarchy per D3
    (PR #45, merge `69d5d36`), then Slice 2, the Sleep Brief recomposition and
-   Sleep Signature per D1+D2 (PR #46, merge `b05d47f`). Slice 3, the Quiz
-   visual pass (1.2), is in progress at this revision and is **not** merged.
+   Sleep Signature per D1+D2 (PR #46, merge `b05d47f`), then Slice 3, the Quiz
+   visual pass per 1.2 (PR #47, merge `5436dea`), whose manual desktop,
+   forced-colors and physical-iPad gates passed. Slice 4, Payment Choice per D4
+   (1.5), is in progress at this revision and is **not** merged.
 8. 🔨 **The visible redesign** — Phase 1. *(Implementation explicitly
    authorized by Blake 2026-08-12 — see the authorization block at the top of
    Phase 1. Direction set by the 2026-08-14 Nocturne owner review, D1–D6,
