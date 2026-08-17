@@ -1695,6 +1695,22 @@ apply** (244 before). The Phase 1 recommendation fixture and its pinned
 **Manual gates — OPEN. None is self-closed by this slice.**
 
 1. Desktop keyboard / zoom / reduced-motion / manual modal lifecycle.
+   **Carry one specific unresolved item into this gate.** An independent
+   accessibility review argued that a MOUSE click on a Payment Choice control
+   focuses it without matching `:focus-visible`, so `payFocusOrigin` declines to
+   restore, the control is destroyed by the rerender, and focus falls to
+   `<body>` — outside the sheet, where the modal trap's listener cannot see Tab.
+   It was reasoned from documented UA behaviour, not observed, and an attempt to
+   reproduce it in Chrome was inconclusive: `:focus-visible` after a programmatic
+   `focus()` follows the page's current input modality, which the reproduction
+   could not isolate. Touch is unaffected either way (`ontouchend` preventDefaults,
+   so the control never takes focus and the identity gate declines for a
+   different reason), and keyboard is unaffected. So this is a DESKTOP-REVIEW
+   question, not a kiosk one. **Check it explicitly:** with a mouse, click
+   Consider, then press Tab, and confirm focus stays inside the dialog. If it
+   escapes, the fix is to let restoration turn on origin identity alone and
+   leave the ring to the browser — but that relaxes the ruled "keyboard-visible
+   focus" condition, so it is Blake's call and not the implementation's.
 2. Windows forced-colors visual check. The automated coverage is STATIC CASCADE
    ANALYSIS of the shipped stylesheet, not rendered verification; no
    forced-colors rendering environment was available and nothing claims a cue

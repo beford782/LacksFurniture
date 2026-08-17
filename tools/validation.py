@@ -5278,13 +5278,35 @@ def _self_test() -> int:
         check(f"D4 adopted copy validates in place: {_k}",
               _fin_with(lambda m, k=_k, e=_en, s=_es: m["copy"].__setitem__(
                   k, {"en": e, "es": s})).ok)
-    # The governed no-submission sentence, character-for-character.
-    check("D4: the EN no-submission sentence is preserved verbatim",
-          "Nothing is submitted and no application is started."
-          in "Explore options together. Nothing is submitted and no application is started.")
-    check("D4: the ES no-submission sentence is preserved verbatim",
-          "No se envía nada y no se inicia ninguna solicitud."
-          in "Exploren las opciones juntos. No se envía nada y no se inicia ninguna solicitud.")
+    # The governed no-submission sentence, character-for-character, IN THE
+    # SHIPPED SOURCE.
+    #
+    # These two were tautologies — `"<literal>" in "<literal>"` with both
+    # operands written here — so they could not fail and said nothing about
+    # what ships. Found in review. They now read the canonical financing source
+    # off disk, which is the only file an author edits, and a precondition
+    # proves the read actually produced the key rather than an empty default.
+    _canon_path = os.path.join(os.path.dirname(os.path.dirname(
+        os.path.abspath(__file__))), "incoming", "lacks_financing.json")
+    if os.path.exists(_canon_path):
+        with open(_canon_path, encoding="utf-8") as _fh:
+            _canon_copy = (json.load(_fh).get("financing") or {}).get("copy") or {}
+        _consequence = _canon_copy.get("exploreConsequence") or {}
+        check("D4 precondition: exploreConsequence was actually read from the "
+              "canonical source (so the two pins below are not vacuous)",
+              isinstance(_consequence, dict)
+              and bool(_consequence.get("en")) and bool(_consequence.get("es")))
+        check("D4: the shipped EN no-submission sentence is preserved verbatim",
+              "Nothing is submitted and no application is started."
+              in _consequence.get("en", ""))
+        check("D4: the shipped ES no-submission sentence is preserved verbatim",
+              "No se envía nada y no se inicia ninguna solicitud."
+              in _consequence.get("es", ""))
+        check("D4: the shipped payment-preference label is exact, both languages",
+              (_canon_copy.get("paymentPreferenceLabel") or {}).get("en")
+              == "Payment preference"
+              and (_canon_copy.get("paymentPreferenceLabel") or {}).get("es")
+              == "Preferencia de pago")
 
     # HONESTY PINS (behavioural). These document the detector's real posture so
     # a future edit cannot quietly restore a description that contradicts it.

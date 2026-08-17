@@ -282,8 +282,43 @@ def main():
           "FC('staleAnnouncement') || FC('staleNotice')" in html)
     check("no WG&R in index.html", not re.search(r"WG&R|WG&amp;R|wgrfurniture", html))
     check("no WG&R in Code.gs", not re.search(r"WG&R|WG&amp;R|wgrfurniture", gs))
-    check("no hardcoded retailer name in index.html (white-label boundary)",
-          "Lacks" not in html)
+    # WHITE-LABEL BOUNDARY. CLAUDE.md: "index.html must contain zero
+    # store-specific content. No retailer names ... hardcoded in the HTML."
+    #
+    # This was `"Lacks" not in html` — a CASE-SENSITIVE substring test — and it
+    # was routed around by capitalisation: a Slice 4 comment header reading
+    # "LACKS PAYMENT CHOICE" sailed straight through while this check reported
+    # green, and three lender names went with it. A guard that can be defeated
+    # by pressing shift is not a boundary.
+    #
+    # Case is handled, but not by banning "lacks" outright: the English VERB
+    # appears legitimately ("the dictionary lacks it"). Only a CAPITALISED form
+    # can be the proper noun, so that is what is banned — any of Lacks, LACKS,
+    # LaCkS. A lowercase "lacks" stays legal.
+    #
+    # Lender names are banned outright and case-insensitively. They are as
+    # store-specific as the retailer's own name — this deployment's promotional
+    # provider is one retailer's commercial relationship, not a template fact —
+    # and, unlike "lacks", they have no innocent English reading.
+    retailer_hits = re.findall(r"\bL[Aa][Cc][Kk][Ss]\b", html)
+    lender_hits = re.findall(r"(?i)\b(?:synchrony|mysynchrony)\b", html)
+    check(f"no hardcoded retailer name in index.html, ANY capitalisation "
+          f"(white-label boundary){' — FOUND: ' + ', '.join(sorted(set(retailer_hits))) if retailer_hits else ''}",
+          not retailer_hits)
+    check(f"no hardcoded lender name in index.html"
+          f"{' — FOUND: ' + ', '.join(sorted(set(lender_hits))) if lender_hits else ''}",
+          not lender_hits)
+    # The guard must be able to FIRE. Both patterns are proved against planted
+    # examples, including the exact capitalisation that defeated the old test,
+    # and the innocent lowercase verb is proved still legal.
+    check("the retailer pattern catches every capitalisation, and spares the English verb",
+          all(re.search(r"\bL[Aa][Cc][Kk][Ss]\b", f"// ===== {v} PAYMENT CHOICE =====")
+              for v in ("LACKS", "Lacks", "LaCkS"))
+          and not re.search(r"\bL[Aa][Cc][Kk][Ss]\b",
+                            "// t() returns the KEY when the dictionary lacks it"))
+    check("the lender pattern catches every capitalisation",
+          all(re.search(r"(?i)\b(?:synchrony|mysynchrony)\b", f'"{v}" and "{v}-Bank"')
+              for v in ("Synchrony", "SYNCHRONY", "synchrony")))
     check("publishedPaymentFactor stripped from shipped config",
           "publishedPaymentFactor" not in json.dumps(cfg))
     # The dead Mexico application URL is stored in config as documentation

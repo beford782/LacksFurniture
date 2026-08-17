@@ -11220,7 +11220,7 @@
       return surfaces[name] !== false;
     }
 
-    // ===== LACKS PAYMENT CHOICE — the D4 state model =========================
+    // ===== PAYMENT CHOICE — the D4 state model ===============================
     //
     // TWO observable dimensions, and nothing else:
     //
@@ -11301,8 +11301,8 @@
     // replaced each run of unsupported characters with a single '-'. That is
     // LOSSY, and it collided on values a real config can hold:
     //
-    //   "Synchrony Bank" and "Synchrony-Bank"  -> both "synchrony-bank"
-    //   "Synchrony" and "SYNCHRONY"            -> both "synchrony", even though
+    //   "Provider Bank" and "Provider-Bank"   -> both "provider-bank"
+    //   "Provider" and "PROVIDER"              -> both "provider", even though
     //                                             finPromotionalByProvider keeps
     //                                             them as two distinct groups
     //   "Café" and "Caf!"                      -> both "caf"
@@ -11318,7 +11318,7 @@
     //
     // The escape below is INJECTIVE — it is decodable, so distinct values always
     // produce distinct ids — and the result matches [A-Za-z][A-Za-z0-9_-]*. The
-    // old keys embedded a COLON ("promotional:synchrony"), which getElementById
+    // old keys embedded a COLON ("promotional:provider"), which getElementById
     // tolerates but querySelector parses as a pseudo-class, so those ids could
     // never be used with querySelector or in a CSS selector without escaping.
     function finPathEncode(value) {
@@ -11689,12 +11689,26 @@
 
     // ---- One payment path's controls + collapsed disclosure ------------------
     //
-    // A BUTTON plus a hidden panel, deliberately NOT <details>/<summary>: the
-    // sheet's focus trap selects `button, [href], [tabindex="-1"]#...Title`, and
-    // a <summary> is none of those, so a disclosure built that way would be
-    // unreachable by Tab inside the modal. The button carries aria-expanded and
-    // aria-controls; the panel is hidden with the `hidden` attribute, which also
-    // keeps its contents out of the trap's offsetParent filter while collapsed.
+    // A BUTTON plus a hidden panel, deliberately NOT <details>/<summary>.
+    //
+    // The reason is the focus trap's BOUNDARY COMPUTATION, not reachability.
+    // finSheetKeydown enumerates `button, [href], [tabindex="-1"]#...Title` to
+    // decide which element is first and which is last, and preventDefaults Tab
+    // only at those two. A <summary> is natively focusable but matches none of
+    // those selectors, so it would be reachable by Tab in the middle of the
+    // dialog while being INVISIBLE to the trap's model of the focusable set —
+    // the computed boundary would no longer be the real one. (An earlier
+    // version of this comment claimed a <summary> would be "unreachable by
+    // Tab"; that was wrong, and is corrected here rather than left to mislead
+    // the next reader of a focus-trap contract.)
+    //
+    // It also matches the house pattern: every other disclosure in this app —
+    // the Sleep Brief priorities, the construction reveal — is a native button
+    // carrying aria-expanded and aria-controls.
+    //
+    // The panel is hidden with the `hidden` attribute, so while collapsed it is
+    // display:none and drops out of BOTH the tab order and the trap's
+    // offsetParent filter.
     //
     // Consider is a ONE-WAY native action button and carries NO aria-pressed:
     // it is not a two-state control, and labelling it as one would tell
