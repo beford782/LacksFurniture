@@ -1477,16 +1477,31 @@ def _fin_path_encode(value):
     literally named "General"/a promotional group with no provider all shared
     one identity.
 
-    Returns None — never raises — for a value that cannot be encoded. The only
-    such value is a string holding an UNPAIRED SURROGATE, on which
-    `.encode("utf-8")` raises UnicodeEncodeError. That was uncaught, and it
-    broke this module's own stated contract ("TOTAL over JSON … It never raises
-    … Malformed author input is a VERDICT, not a crash"): validate_financing
-    produced a traceback instead of a report, so the build could not refuse the
-    one config shape that also breaks the runtime encoder. Found by adversarial
-    review. The caller turns None into a named error."""
+    Returns None — never raises — for a value with no canonical identity:
+
+      * a NON-STRING. Identity values are strings; a dict, list, number or
+        boolean has no canonical path id. This previously str()-serialised them,
+        so `{"toString": None}` became the id `plan-_7b_27toString_27...` here
+        while the JS runtime THREW on the same input — the two mirrors
+        disagreed on exactly the value that broke the browser. The specific
+        "id must be a string" error is raised separately by validate_financing
+        and is what an author actually needs to read.
+      * a string holding an UNPAIRED SURROGATE, on which `.encode("utf-8")`
+        raises UnicodeEncodeError. That was uncaught, and it broke this module's
+        own stated contract ("TOTAL over JSON … It never raises … Malformed
+        author input is a VERDICT, not a crash"): validate_financing produced a
+        traceback instead of a report, so the build could not refuse the one
+        config shape that also breaks the runtime encoder.
+
+    None/absent maps to the empty encoding rather than the sentinel, mirroring
+    the runtime: a promotional group with no provider is identified by the empty
+    string and keeps a usable id."""
+    if value is None:
+        return ""
+    if not isinstance(value, str):
+        return None
     out = []
-    for ch in str("" if value is None else value):
+    for ch in value:
         if ch.isascii() and (ch.isalnum() or ch == "-") and not ch.isspace():
             out.append(ch)
         else:
@@ -2535,27 +2550,36 @@ def validate_financing(config: dict, *, allowed_source_hosts=None) -> Validation
                 if prov in _seen_providers:
                     continue          # one path per provider, by construction
                 _seen_providers.append(prov)
+                _raw = prov
                 _pid = _fin_path_id("promo", prov)
                 _owner = f"promotional provider {fin_headline.short_repr(prov)}"
             elif group in ("installment", "evergreen"):
-                _pid = _fin_path_id("plan", plan.get("id"))
+                _raw = plan.get("id")
+                _pid = _fin_path_id("plan", _raw)
                 _owner = _plan_tag(plan, i)
             elif group == "scenario":
-                _pid = _fin_path_id("scenario", _plan_scenario(plan))
+                _raw = _plan_scenario(plan)
+                _pid = _fin_path_id("scenario", _raw)
                 _owner = (f"scenario "
                           f"{fin_headline.short_repr(_plan_scenario(plan))}")
             else:
                 continue
             if _pid is None:
-                # Unencodable (an unpaired surrogate). Refused HERE, by name,
-                # because the runtime encoder cannot form an id for it either:
-                # the path would silently vanish from the sheet and from the
-                # handoff, and a preference on it could never be cleared.
-                r.add_error(
-                    f"{_owner}: the value identifying this Payment Choice path "
-                    f"contains an unpaired surrogate and cannot be encoded, so "
-                    f"no canonical path id exists for it - the runtime would "
-                    f"drop the path entirely. Fix the source text.")
+                # No canonical identity. TWO causes, and only ONE of them needs
+                # a message here: a NON-STRING identity value already has its
+                # own specific error ("id must be a string"), and repeating it
+                # in different words would tell the author less, not more. A
+                # STRING that cannot be encoded has no other reporter, so it is
+                # named here — the runtime cannot form an id for it either, the
+                # path would silently vanish from the sheet and the handoff, and
+                # a preference on it could never be cleared.
+                if isinstance(_raw, str):
+                    r.add_error(
+                        f"{_owner}: the value identifying this Payment Choice "
+                        f"path contains an unpaired surrogate and cannot be "
+                        f"encoded, so no canonical path id exists for it - the "
+                        f"runtime would drop the path entirely. Fix the source "
+                        f"text.")
                 continue
             _path_owners.setdefault(_pid, []).append(_owner)
         for _pid, owners in sorted(_path_owners.items()):
@@ -4153,6 +4177,35 @@ def _self_test() -> int:
     check("an unencodable PROVIDER is refused the same way",
           any("unpaired surrogate" in e for e in
               validate_financing(_fc(_sur2), allowed_source_hosts=_FHOSTS).errors))
+
+    # NON-STRING IDENTITY VALUES. The mirror used to str()-serialise these, so
+    # {"toString": None} became a valid-looking id HERE while the JS runtime
+    # THREW on the same input — the two mirrors disagreed on exactly the value
+    # that broke the browser. Both now refuse it, and the author still gets the
+    # specific "id must be a string" error rather than a second message about
+    # canonical ids.
+    for _label, _bad in (("dict", {"toString": None}), ("list", [1, 2]),
+                         ("int", 7), ("float", 1.5), ("bool", True),
+                         ("dict-with-callable-looking-key", {"a": 1})):
+        check(f"path encoding refuses a non-string identity value ({_label})",
+              _fin_path_encode(_bad) is None and _fin_path_id("plan", _bad) is None)
+    check("None still maps to the LEGITIMATE empty encoding, not the sentinel",
+          _fin_path_encode(None) == "" and _fin_path_id("promo", None) == "promo-")
+    check("an empty string still yields a usable id (the providerless case)",
+          _fin_path_encode("") == "" and _fin_path_id("promo", "") == "promo-")
+    _obj = _fmut()
+    _obj["plans"].append({
+        "id": {"toString": None}, "kind": "lease-to-own", "provider": "Retailer",
+        "verified": True, "verifiedAt": _obj["verifiedAt"],
+        "sourceUrl": "https://www.lacks.com/financing",
+        "headline": {"en": "M", "es": "M"}, "detail": {"en": "D", "es": "D"}})
+    _obj_rep = validate_financing(_fc(_obj), allowed_source_hosts=_FHOSTS)
+    check("a non-string plan id keeps its own specific 'must be a string' error",
+          any("must be a string" in e for e in _obj_rep.errors))
+    check("...and is NOT also reported as an unpaired surrogate (one clear message)",
+          not any("unpaired surrogate" in e for e in _obj_rep.errors))
+    check("...and validate_financing stayed total (a report, not a traceback)",
+          isinstance(_obj_rep.errors, list) and not _obj_rep.ok)
 
     check("a path id is safe as a DOM/CSS identifier (no colon, no space)",
           all(re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]*",

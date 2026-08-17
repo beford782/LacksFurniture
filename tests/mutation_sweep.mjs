@@ -1033,18 +1033,26 @@ const MUTATIONS = [
     "      var esc;",
     "      return String(value == null ? '' : value).trim().toLowerCase().replace(/[^a-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '');\n      var esc;", PAY],
   ["payment: path ids regain a colon separator (unusable in querySelector/CSS)",
-    "      return kind + '-' + enc;",
-    "      return kind + ':' + enc;", PAY],
+    "      return enc === null ? '' : kind + '-' + enc;",
+    "      return enc === null ? '' : kind + ':' + enc;", PAY],
   // The unencodable-value guard. An unpaired surrogate makes
   // encodeURIComponent throw, and the throw used to escape three guarded entry
   // points: it blanked the handoff module after it was already visible, killed
   // the sheet CTA after its own guard, and halted a language switch mid-way.
-  ["payment: the unencodable-value guard is removed (a lone surrogate throws through the renderers)",
-    "      var esc;\n      try {\n        esc = encodeURIComponent(String(value == null ? '' : value));\n      } catch (err) {\n        return '';\n      }",
-    "      var esc = encodeURIComponent(String(value == null ? '' : value));", PAY],
-  ["payment: an unencodable value yields an id anyway (the path is mis-identified, not dropped)",
-    "      if (!enc && String(value == null ? '' : value) !== '') return '';",
-    "", PAY],
+  ["payment: the unencodable-string guard is removed (a lone surrogate throws through the renderers)",
+    "      var esc;\n      try {\n        esc = encodeURIComponent(value);\n      } catch (err) {\n        return null;\n      }",
+    "      var esc = encodeURIComponent(value);", PAY],
+  // THE COERCION. Restoring String() here reintroduces the defect an
+  // external review found: JSON.parse('{"toString": null}') is a plain
+  // object whose own toString is not callable, String() on it throws
+  // TypeError, and the throw escapes the handoff renderer, the sheet opener
+  // and the language switch.
+  ["payment: identity values are coerced again instead of being required to be strings",
+    "      if (value === null || value === undefined) return '';\n      if (typeof value !== 'string') return null;",
+    "      value = String(value == null ? '' : value);", PAY],
+  ["payment: finPathId re-derives the coercion outside the encoder (the second String() returns)",
+    "      return enc === null ? '' : kind + '-' + enc;",
+    "      if (!enc && String(value == null ? '' : value) !== '') return '';\n      return kind + '-' + enc;", PAY],
   // The two action regions must schedule INDEPENDENTLY, not merely render into
   // separate elements.
   // C8 reverted a per-region timer that had exactly this effect: the cancel

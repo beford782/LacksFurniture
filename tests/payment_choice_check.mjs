@@ -572,7 +572,11 @@ section('§3–5 — disclosure records history, once, in first-open order');
   const env = openEnv();
   const ids = P(env);
   ids.forEach((id) => env.api.review(id));
-  ok('§5 opening every path records every path, in configuration order',
+  // NOT an independent check of authored-config order: `ids` is the list
+  // finPaymentPaths() returned, and the assertion compares the history with
+  // that same list. What it proves is completeness plus preservation of the
+  // order the paths were REVIEWED in, which is the order they were enumerated.
+  ok('§5 opening every path records every path, in the path enumeration order returned by finPaymentPaths',
     JSON.stringify(env.api.state().explored) === JSON.stringify(ids));
   ok('§5 opening every path leaves every panel open simultaneously (disclosure is not exclusive)',
     env.api.state().open.length === ids.length);
@@ -2055,7 +2059,8 @@ section('§27 — an unencodable value fails CLOSED, and the two regions schedul
     (() => { try { encodeURIComponent(LONE); return false; } catch (e) { return e instanceof URIError; } })());
 
   const env = openEnv();
-  ok('§27 the encoder returns empty rather than throwing', env.api.encode(LONE) === '');
+  ok('§27 the encoder returns the failure SENTINEL rather than throwing',
+    env.api.encode(LONE) === null);
   ok('§27 finPathId yields NO id for it, so the path is dropped, not mis-identified',
     env.api.pathId('plan', LONE) === '');
   ok('§27 a genuinely EMPTY value still yields a usable id (the two are distinguished)',
@@ -2090,8 +2095,8 @@ section('§27 — an unencodable value fails CLOSED, and the two regions schedul
     const broken = makeEnv({
       config: hostile, sheetOpen: true,
       mutate: (src) => src.replace(
-        '      var esc;\n      try {\n        esc = encodeURIComponent(String(value == null ? \'\' : value));\n      } catch (err) {\n        return \'\';\n      }',
-        '      var esc = encodeURIComponent(String(value == null ? \'\' : value));')
+        '      var esc;\n      try {\n        esc = encodeURIComponent(value);\n      } catch (err) {\n        return null;\n      }',
+        '      var esc = encodeURIComponent(value);')
     });
     let brokeThrew = false;
     try { broken.api.renderHandoff(); } catch (e) { brokeThrew = e instanceof URIError; }
@@ -2215,6 +2220,152 @@ section('§27 — an unencodable value fails CLOSED, and the two regions schedul
     ok('§27 cancelPayAnnouncePending() leaves nothing pending anywhere',
       env.api.timerCount() === 0 && env.pending() === 0);
   }
+}
+
+// ===========================================================================
+// 28. A malformed identity value has no canonical id, and nothing throws
+// ===========================================================================
+// Raised by an external read-only review, which disproved the reachability
+// premise a previous commit recorded in index.html. That comment claimed a
+// native JSON parse "yields only plain objects, arrays, strings, numbers,
+// booleans and null, none of which can throw on coercion". FALSE:
+// JSON.parse('{"toString": null}') is a plain object whose own toString is not
+// callable, and String() on it throws TypeError. Any non-callable toString does
+// it. finGroupedPlans admits such a plan on its `kind` alone, so
+// finPaymentPaths reached a second String() coercion that sat OUTSIDE the
+// encoder's try, and the throw escaped the same three guarded entry points the
+// unpaired-surrogate defect did.
+//
+// The contract is now: identity values are STRINGS. null/undefined still map to
+// the legitimate empty encoding (the providerless promotional path relies on
+// it); every other type returns the failure sentinel WITHOUT being coerced.
+section('§28 — a non-string identity value fails closed, never throws');
+{
+  // Built through JSON.parse, not an object literal, so the test exercises
+  // exactly what the loader can hand the runtime.
+  const VIA_JSON = JSON.parse('{"toString": null}');
+  ok('§28 precondition: this JSON-derived value really does throw on String()',
+    (() => { try { String(VIA_JSON); return false; } catch (e) { return e instanceof TypeError; } })());
+  ok('§28 precondition: and it is an ordinary JSON object, not a crafted literal',
+    typeof VIA_JSON === 'object' && VIA_JSON !== null
+    && Object.prototype.hasOwnProperty.call(VIA_JSON, 'toString')
+    && typeof VIA_JSON.toString !== 'function');
+
+  const env = openEnv();
+  // The encoder refuses without coercing; finPathId yields no id and does not
+  // re-derive the coercion that reintroduced the throw.
+  for (const [label, v] of [
+    ['the JSON-derived object', VIA_JSON],
+    ['a plain object', JSON.parse('{"a":1}')],
+    ['an array', JSON.parse('[1,2]')],
+    ['a number', JSON.parse('7')],
+    ['a boolean', JSON.parse('true')]
+  ]) {
+    let enc, id, threw = null;
+    try { enc = env.api.encode(v); id = env.api.pathId('plan', v); }
+    catch (e) { threw = e; }
+    ok(`§28 ${label}: encoder returns the sentinel and finPathId yields no id, without throwing`,
+      threw === null && enc === null && id === '', threw ? String(threw) : `enc=${enc} id=${id}`);
+  }
+  ok('§28 null and undefined still encode to the LEGITIMATE empty string',
+    env.api.encode(null) === '' && env.api.encode(undefined) === ''
+    && env.api.pathId('promo', null) === 'promo-');
+  ok('§28 a providerless promotional group still has a usable id (the case the empty encoding exists for)',
+    env.api.pathId('promo', '') === 'promo-' && env.api.encode('') === '');
+  ok('§28 ordinary strings are unaffected',
+    env.api.pathId('plan', 'lacks-in-house') === 'plan-lacks-in-house');
+}
+{
+  // The whole chain, against a config carrying the malformed plan: the path
+  // enumeration, then each guarded entry point the throw previously escaped.
+  const hostile = JSON.parse(JSON.stringify(CFG));
+  hostile.financing.plans.push(JSON.parse(
+    '{"id": {"toString": null}, "kind": "lease-to-own", "provider": "X",'
+    + ' "verified": true, "headline": {"en": "Malformed", "es": "Malformado"},'
+    + ' "detail": {"en": "D", "es": "D"}}'));
+  const clean = openEnv();
+  const expected = P(clean).length;
+
+  const env = makeEnv({ config: hostile, sheetOpen: true, resultsActive: true });
+  let paths = null, threw = null;
+  try { paths = env.api.paths(); } catch (e) { threw = e; }
+  ok('§28 finPaymentPaths does not throw on the malformed plan',
+    threw === null, threw && String(threw));
+  ok('§28 the malformed path is DROPPED and every well-formed path survives',
+    !!paths && paths.length === expected
+    && paths.every((x) => typeof x.id === 'string' && x.id.indexOf('-') > 0),
+    paths && paths.map((x) => x.id).join(','));
+  ok('§28 no empty-id DOM id can leak from it',
+    !!paths && paths.every((x) => x.id !== '' && x.id !== 'plan-'));
+
+  // Entry point 1: the handoff renderer, which previously threw AFTER the
+  // module was already visible and left a permanently blank block.
+  let hThrew = null;
+  try { env.api.renderHandoff(); } catch (e) { hThrew = e; }
+  ok('§28 renderHandoffFinancing does not throw', hThrew === null, hThrew && String(hThrew));
+  ok('§28 ...and the handoff still renders its rows rather than going blank',
+    /fin-pref-rows/.test(env.handoffHtml()) && /hf2FinancingNotNow/.test(env.handoffHtml()));
+
+  // Entry point 2: opening the sheet, which previously threw after its own
+  // guard but before the sheet was revealed, leaving a silently dead CTA.
+  let sThrew = null;
+  try { env.api.openSheet('results'); } catch (e) { sThrew = e; }
+  ok('§28 openFinancingSheet does not throw', sThrew === null, sThrew && String(sThrew));
+  ok('§28 ...and the sheet actually opens',
+    env.get('financingSheet').hidden === false
+    && env.doc.body.classList.contains('fin-sheet-open'));
+  ok('§28 ...and the well-formed cards still render inside it',
+    /fin-path-review/.test(env.sheetHtml()));
+  ok('§28 ...while the malformed plan contributes no control',
+    !/Malformado/.test(env.sheetHtml()) && !/finPathReview--/.test(env.sheetHtml()));
+
+  // Entry point 3: the language switch. switchLanguage() calls
+  // clearPayAnnouncements() then renderAllFinancingSurfaces(); the throw used
+  // to stop every renderer queued behind it, leaving the app half-translated.
+  // The financing half is executed here; the call itself is pinned from source
+  // below, because switchLanguage is an async screen-wide function outside this
+  // harness's module.
+  let lThrew = null;
+  try { env.api.setLang('es'); env.api.clearAnnouncements(); env.api.renderAll(); }
+  catch (e) { lThrew = e; }
+  ok('§28 the language-switch render path does not throw', lThrew === null, lThrew && String(lThrew));
+  ok('§28 ...and the surfaces really re-rendered into Spanish',
+    env.handoffHtml().includes(CFG.financing.copy.paymentPreferenceLabel.es));
+  ok('§28 switchLanguage really does drive that path (source pin, not an assumption)',
+    /clearPayAnnouncements\(\);\n      renderAllFinancingSurfaces\(\);/.test(norm));
+
+  // State remains coherent: the malformed path can never become a preference.
+  env.api.setLang('en');
+  env.api.renderSheet();
+  const good = env.api.paths()[0].id;
+  env.api.review(good);
+  env.api.consider(good);
+  ok('§28 the surviving paths remain fully operable alongside the malformed one',
+    env.api.state().pref === good && env.api.state().explored.length === 1);
+  env.api.consider('');
+  env.api.consider('plan-');
+  ok('§28 an empty or stub id is not a path and cannot become the preference',
+    env.api.state().pref === good);
+}
+{
+  // NON-VACUITY: without the guard, this really does throw through the chain.
+  const hostile = JSON.parse(JSON.stringify(CFG));
+  hostile.financing.plans.push(JSON.parse(
+    '{"id": {"toString": null}, "kind": "lease-to-own", "provider": "X",'
+    + ' "verified": true, "headline": {"en": "Malformed", "es": "Malformado"},'
+    + ' "detail": {"en": "D", "es": "D"}}'));
+  const broken = makeEnv({
+    config: hostile, sheetOpen: true,
+    mutate: (src) => src
+      .replace("      if (value === null || value === undefined) return '';\n      if (typeof value !== 'string') return null;",
+               "      value = String(value == null ? '' : value);")
+      .replace('      var enc = finPathEncode(value);\n      return enc === null ? \'\' : kind + \'-\' + enc;',
+               "      var enc = finPathEncode(value);\n      if (!enc && String(value == null ? '' : value) !== '') return '';\n      return kind + '-' + enc;")
+  });
+  let brokeThrew = false;
+  try { broken.api.renderHandoff(); } catch (e) { brokeThrew = e instanceof TypeError; }
+  ok('§28 [control] restoring the unsafe coercion really does throw TypeError through the handoff renderer',
+    brokeThrew);
 }
 
 section('negative controls — each load-bearing behaviour is proved detectable');
