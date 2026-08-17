@@ -354,10 +354,20 @@ def main():
     # meant to verify. The call-site/EVENT_FIELDS set equality that actually
     # catches a rename lives in tests/session_async_check.mjs; this stays a
     # cheap presence sweep and is deliberately not the guard.
+    #
+    # Slice 4 (D4) retired financing_agenda_changed and financing_agenda_reviewed
+    # OUTRIGHT, with no replacement: Consider, Clear, Review and Not-right-now
+    # emit nothing, because a preference is the customer's own position and no
+    # consumer needs it. The four neutral events below — module impression,
+    # whole-sheet open, official-link click, Mexico detail open — are the whole
+    # remaining financing surface, and their absence is asserted alongside.
     check("financing analytics events wired",
           all(e in html for e in ["finance_module_impression", "finance_details_open",
-                                  "official_financing_link_click", "financing_agenda_reviewed",
-                                  "financing_agenda_changed", "mexico_financing_details_open"]))
+                                  "official_financing_link_click",
+                                  "mexico_financing_details_open"]))
+    check("the two retired agenda events are gone from the app",
+          "financing_agenda_reviewed" not in html
+          and "financing_agenda_changed" not in html)
     check("no PII in financing analytics payload builder",
           "finEventBase" in html and not re.search(r"finEventBase[^}]*email", html))
     ah = load_text("data/allowed-hosts.js")

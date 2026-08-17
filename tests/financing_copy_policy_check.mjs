@@ -322,9 +322,26 @@ check("validation.py carries the count/down-payment/deferral/proportion signals"
 check("validation.py handles the payment noun structurally, not by a plain ban",
   /_NEUTRAL_PAYMENT_PHRASES/.test(py) && /def _bare_payment_noun/.test(py)
   && /_PAYMENT_NOUN\.search\(_NEUTRAL_PAYMENT_PHRASES\.sub/.test(py));
-const NEUTRAL_PAY = /\bpayment\s+(?:options?|choices?|methods?)\b|\b(?:opciones?|formas?|m[eé]todos?|maneras?)\s+de\s+pago\b/gi;
+// Mirrors _NEUTRAL_PAYMENT_PHRASES. The `preferences?` / `preferencias?`
+// alternative was added with the D4 adopted copy ("Payment preference" /
+// "Preferencia de pago", owner-adopted and not to be reworded). It is exactly
+// as narrow as its neighbours: `preference` neutralises a payment noun ONLY in
+// that two-word collocation, which the near-miss block below proves.
+const NEUTRAL_PAY = /\bpayment\s+(?:options?|choices?|methods?|preferences?)\b|\b(?:opciones?|formas?|m[eé]todos?|maneras?|preferencias?)\s+de\s+pago\b/gi;
 const PAY_NOUN = /\bpayments?\b|\bpagos?\b/i;
 const barePayment = (s) => PAY_NOUN.test((s || "").replace(NEUTRAL_PAY, " "));
+check("validation.py's allowlist carries the D4 payment-preference collocation",
+  /methods\?\|preferences\?\)/.test(py) && /maneras\?\|preferencias\?\)/.test(py));
+for (const s of ["Payment preference", "Preferencia de pago",
+                 "Payment preferences", "Preferencias de pago"]) {
+  check(`D4 adopted payment collocation stays legal: ${s}`, !barePayment(s));
+}
+for (const s of ["Payment-preference", "Preferencia del pago",
+                 "Preference of payment", "Pago de preferencia",
+                 "Payment preference: ask about payment.",
+                 "Preferencia de pago: pregunta por el pago."]) {
+  check(`D4 near miss is still rejected: ${s}`, barePayment(s));
+}
 for (const s of ["Make twelve payments.", "Haz doce pagos.", "Repay in twelve payments.",
                  "Only one payment required.", "Un solo pago requerido."]) {
   check(`ordinary-word payment count detected: ${s}`, barePayment(s));
@@ -440,6 +457,83 @@ check(`shipped ungated copy trips no unit marker (offenders: ${JSON.stringify(sh
     Object.keys(canonicalCopy)
       .filter((k) => !fcConsumed.has(k) && quotedInApp.has(k))
       .every((k) => ANNOUNCEMENT_KEYS.includes(k)));
+}
+
+// ---------------------------------------------------------------------------
+// PROPAGATION: canonical source -> production config -> demo bundle.
+//
+// incoming/lacks_financing.json is the ONLY authored financing input. Every
+// other copy of this block is generated:
+//
+//   incoming/lacks_financing.json
+//     -> incoming/build_lacks_workbook.py  -> incoming/Lacks_Store_Data.xlsx
+//     -> tools/convert_store_data.py       -> data/store-config.json
+//     -> tools/build_black_friday_demo.py  -> demo/black-friday/*
+//
+// Nothing stopped a generated artifact from being hand-edited, or from being
+// left behind when the source moved: the app would then render one wording, the
+// demo another, and both would "validate". The workbook link in that chain is a
+// binary .xlsx and is verified cell-semantically by tests/lineage_check.py; the
+// three JSON/HTML links are compared here, byte-for-byte in structure.
+{
+  const prodFin = cfg.financing;
+  const demoCfg = JSON.parse(readFileSync(
+    join(root, "demo", "black-friday", "data", "store-config.json"), "utf8"));
+  const demoHtml = readFileSync(
+    join(root, "demo", "black-friday", "index.html"), "utf8");
+
+  check("canonical financing copy and the generated production copy are identical",
+    JSON.stringify(canonicalCopy) === JSON.stringify(prodFin.copy));
+  check("the demo bundle's financing block is identical to production's",
+    JSON.stringify(demoCfg.financing) === JSON.stringify(prodFin));
+  check("the demo page reads exactly the same financing copy keys as the app",
+    JSON.stringify([...new Set(
+      [...demoHtml.matchAll(/FC\('([A-Za-z0-9_]+)'\)/g)].map((x) => x[1]))].sort())
+    === JSON.stringify(fcLiterals));
+  // The comparison must be able to fail: a planted difference has to break it.
+  {
+    const tampered = JSON.parse(JSON.stringify(prodFin.copy));
+    tampered.cta = { en: "drifted", es: "drifted" };
+    check("the propagation comparison rejects a planted drift (non-vacuous)",
+      JSON.stringify(canonicalCopy) !== JSON.stringify(tampered));
+  }
+  // The generated artifacts must carry the D4 vocabulary, not the retired one.
+  for (const [label, obj] of [["canonical source", canonicalCopy],
+                              ["production config", prodFin.copy],
+                              ["demo bundle config", demoCfg.financing.copy]]) {
+    for (const retired of ["agendaPrompt", "agendaMark", "agendaMarked", "agendaEmpty",
+                           "agendaConsequence", "agendaChange", "agendaDismissed",
+                           "agendaDone", "agendaNotNow", "resultsAsk", "drawerMark",
+                           "emailBody", "interestNotNowAnnounce", "interestClearedAnnounce"]) {
+      check(`${label} no longer ships the retired key '${retired}'`,
+        !Object.prototype.hasOwnProperty.call(obj, retired));
+    }
+    for (const adopted of ["paymentPreferenceLabel", "optionsExploredLabel", "reviewOption",
+                           "hideDetails", "considerOption", "currentlyConsidering",
+                           "clearPreference", "exploreConsequence", "preferenceNone",
+                           "preferenceNotNow", "preferenceNotNowAnnounce",
+                           "preferenceClearedAnnounce", "sheetDone", "emailBodyAvailable"]) {
+      check(`${label} ships the adopted D4 key '${adopted}' with EN and ES`,
+        !!obj[adopted] && typeof obj[adopted] === "object"
+        && String(obj[adopted].en || "").trim().length > 0
+        && String(obj[adopted].es || "").trim().length > 0);
+    }
+  }
+  // The governed no-submission sentence, character-for-character, in all three.
+  const EN_NO_SUBMIT = "Nothing is submitted and no application is started.";
+  const ES_NO_SUBMIT = "No se envía nada y no se inicia ninguna solicitud.";
+  for (const [label, obj] of [["canonical source", canonicalCopy],
+                              ["production config", prodFin.copy],
+                              ["demo bundle config", demoCfg.financing.copy]]) {
+    check(`${label} preserves the EN no-submission sentence verbatim`,
+      String(obj.exploreConsequence.en).includes(EN_NO_SUBMIT));
+    check(`${label} preserves the ES no-submission sentence verbatim`,
+      String(obj.exploreConsequence.es).includes(ES_NO_SUBMIT));
+  }
+  check("the adopted EN payment-preference label is exact",
+    prodFin.copy.paymentPreferenceLabel.en === "Payment preference");
+  check("the adopted ES payment-preference label is exact",
+    prodFin.copy.paymentPreferenceLabel.es === "Preferencia de pago");
 }
 
 console.log(`\nFinancing copy policy check: ${passed} passed, ${failed} failed`);

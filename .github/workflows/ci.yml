@@ -235,8 +235,13 @@ jobs:
       - name: scoring isolation
         run: node tests/scoring_isolation_check.mjs
 
-      - name: handoff interest
-        run: node tests/handoff_interest_check.mjs
+      # Replaces the retired "handoff interest" suite, which tested the
+      # salesperson-marked discussion agenda that Slice 4 (decision D4) removed.
+      # This one owns the Payment Choice state machine: the transitions, the
+      # canonical path identity, the disclosures, focus restoration, the two
+      # live regions, the forced-colors cue, and the email/telemetry exclusion.
+      - name: payment choice (D4 state model)
+        run: node tests/payment_choice_check.mjs
 
       - name: financing copy policy
         run: node tests/financing_copy_policy_check.mjs
