@@ -20,6 +20,14 @@ import { fileURLToPath } from "node:url";
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const html = readFileSync(join(root, "index.html"), "utf8");
 const cfg = JSON.parse(readFileSync(join(root, "data", "store-config.json"), "utf8"));
+// The CANONICAL authored source. incoming/lacks_financing.json is the only
+// editable financing input; data/store-config.json is generated from it. Both
+// are read here so the copy contract is checked against the thing an author
+// edits AND the thing the browser fetches.
+const canonicalDoc = JSON.parse(
+  readFileSync(join(root, "incoming", "lacks_financing.json"), "utf8"));
+const canonicalCopy =
+  (canonicalDoc.copy || (canonicalDoc.financing || {}).copy || {});
 const py = readFileSync(join(root, "tools", "validation.py"), "utf8");
 // Python f-strings split messages across adjacent literals; normalise before matching.
 const pyFlat = py.replace(/["']\s*\n\s*f?["']/g, "").replace(/\s+/g, " ");
@@ -104,15 +112,79 @@ check("validator guards provider plus each group's ungated fields",
 
 // --- every shipped copy key really is an ungated surface ---
 const copyKeys = Object.keys(cfg.financing.copy);
-// Announcement copy is read through a computed key inside announceFinInterest(),
-// not a literal FC('...'), so these are exempt from the literal-consumer scan.
-// The list is exactly the states setFinancingInterestChoice() accepts — a third
-// entry here would let an unreachable key ship unnoticed, which is what
-// interestMarkedAnnounce did.
-const announceKeys = ["interestNotNowAnnounce", "interestClearedAnnounce"];
-const missing = copyKeys.filter(k => !html.includes(`FC('${k}')`) && !announceKeys.includes(k));
+
+// ---------------------------------------------------------------------------
+// THE ANNOUNCEMENT-KEY INVENTORY — DECLARED, never inferred.
+//
+// Announcement copy is reached through a COMPUTED key inside the announcer
+// rather than as a literal FC('...'), so the literal-consumer scan below
+// cannot see it and it has to be declared somewhere. It used to be declared
+// here AND separately inferred, further down, as
+// `Object.keys(copy).filter(k => k.endsWith("Announce"))`.
+//
+// That suffix filter was a naming convention wearing a contract's clothes. It
+// could not see an announcement key that did not end in "Announce"; it swept
+// in any unrelated key that did; and — the reason it is gone rather than
+// merely tightened — BOTH sides of its "canonical and generated agree exactly"
+// comparison were themselves derived from the shipped data, so the assertion
+// re-derived itself from whatever happened to ship. Rename both files' keys in
+// step and it still agreed with itself, which is precisely the drift it was
+// written to catch.
+//
+// The inventory is declared ONCE, here. The canonical source, the generated
+// config, and the app's own indirect-consumption set are each compared
+// against IT.
+const ANNOUNCEMENT_KEYS = ["interestNotNowAnnounce", "interestClearedAnnounce"];
+
+// Keys the app reaches WITHOUT a literal FC('key'): a copy key that appears as
+// a bare quoted literal in the app source but is never read through FC(). This
+// is derived from the app, not from a suffix, so it stays correct when the
+// announcer is refactored or the keys are renamed.
+const fcConsumed = new Set(
+  [...html.matchAll(/FC\('([A-Za-z0-9_]+)'\)/g)].map((x) => x[1]));
+const quotedInApp = new Set(
+  [...html.matchAll(/'([A-Za-z0-9_]+)'/g)].map((x) => x[1]));
+const indirectlyConsumed = copyKeys
+  .filter((k) => !fcConsumed.has(k) && quotedInApp.has(k)).sort();
+
+check(`the app's indirectly-consumed copy keys are exactly the declared inventory `
+  + `(found: ${JSON.stringify(indirectlyConsumed)})`,
+  JSON.stringify(indirectlyConsumed) === JSON.stringify([...ANNOUNCEMENT_KEYS].sort()));
+
+const missing = copyKeys.filter(
+  (k) => !fcConsumed.has(k) && !ANNOUNCEMENT_KEYS.includes(k));
 check(`every financing.copy key has a runtime consumer (unconsumed: ${JSON.stringify(missing)})`,
   missing.length === 0);
+
+// REVERSE DIRECTION. The forward check above proves no shipped key is dead; it
+// says nothing about a consumer that names a key nothing ships. FC() returns
+// '' for an unknown key, so a typo'd or renamed-on-one-side consumer renders a
+// BLANK surface silently — no error, no console warning, just missing copy in
+// front of a customer. Both the authored source and the generated config are
+// checked, because a key can exist in one and not the other.
+const fcLiterals = [...fcConsumed].sort();
+check("the app reads at least one financing copy key through FC() (scan is non-vacuous)",
+  fcLiterals.length > 0);
+const orphanedCanonical = fcLiterals.filter(
+  (k) => !Object.prototype.hasOwnProperty.call(canonicalCopy, k));
+check(`every FC('key') consumer exists in the canonical financing source `
+  + `(orphaned: ${JSON.stringify(orphanedCanonical)})`,
+  orphanedCanonical.length === 0);
+const orphanedShipped = fcLiterals.filter((k) => !copyKeys.includes(k));
+check(`every FC('key') consumer exists in the generated store config `
+  + `(orphaned: ${JSON.stringify(orphanedShipped)})`,
+  orphanedShipped.length === 0);
+// The same reverse obligation for the indirect set: a declared announcement
+// key that ships in neither file would announce nothing at all.
+for (const k of ANNOUNCEMENT_KEYS) {
+  check(`declared announcement key '${k}' exists in the canonical source`,
+    Object.prototype.hasOwnProperty.call(canonicalCopy, k));
+  check(`declared announcement key '${k}' exists in the generated store config`,
+    copyKeys.includes(k));
+  check(`declared announcement key '${k}' is reachable from the app source`,
+    quotedInApp.has(k));
+}
+
 check("no financing.copy key is read inside the exact-terms gate",
   !copyKeys.some(k => k !== "staleNotice" && gated.includes(`FC('${k}')`)));
 
@@ -342,21 +414,32 @@ check(`shipped ungated copy trips no unit marker (offenders: ${JSON.stringify(sh
 // read must not survive in either the canonical financing source or the
 // generated store config, or a future edit could quietly wire it back up.
 {
-  const canonical = JSON.parse(
-    readFileSync(join(root, "incoming", "lacks_financing.json"), "utf8"));
-  const canonicalCopy = (canonical.copy || (canonical.financing || {}).copy || {});
   check("canonical financing source has no interestMarkedAnnounce",
     !Object.prototype.hasOwnProperty.call(canonicalCopy, "interestMarkedAnnounce"));
   check("generated store config has no interestMarkedAnnounce",
     !Object.prototype.hasOwnProperty.call(cfg.financing.copy, "interestMarkedAnnounce"));
-  check("canonical and generated announcement copy agree exactly",
-    JSON.stringify(Object.keys(canonicalCopy).filter((k) => k.endsWith("Announce")))
-    === JSON.stringify(Object.keys(cfg.financing.copy).filter((k) => k.endsWith("Announce"))));
-  check("the two reachable announcement keys are the only ones shipped",
-    JSON.stringify(Object.keys(cfg.financing.copy).filter((k) => k.endsWith("Announce")))
-    === JSON.stringify(["interestNotNowAnnounce", "interestClearedAnnounce"]));
   check("interestMarkedAnnounce appears nowhere in the app source",
     !html.includes("interestMarkedAnnounce"));
+  // Canonical vs generated, compared against the DECLARED inventory on both
+  // sides rather than against each other's suffix-filtered key lists. Values
+  // are compared too: agreeing on key NAMES while the generated text drifted
+  // would ship a customer-visible difference this file used to call "exact".
+  for (const k of ANNOUNCEMENT_KEYS) {
+    check(`announcement '${k}': canonical and generated values are identical`,
+      JSON.stringify(canonicalCopy[k]) === JSON.stringify(cfg.financing.copy[k]));
+    check(`announcement '${k}': ships full non-empty EN and ES text`,
+      !!cfg.financing.copy[k] && typeof cfg.financing.copy[k] === "object"
+      && String(cfg.financing.copy[k].en || "").trim().length > 0
+      && String(cfg.financing.copy[k].es || "").trim().length > 0);
+  }
+  // No announcement key ships that the inventory does not declare. This is the
+  // containment half the suffix filter was standing in for — expressed over
+  // the DERIVED indirect-consumption set, so it cannot be defeated by a key
+  // whose name simply does not end in "Announce".
+  check("no undeclared indirectly-consumed copy key ships in the canonical source",
+    Object.keys(canonicalCopy)
+      .filter((k) => !fcConsumed.has(k) && quotedInApp.has(k))
+      .every((k) => ANNOUNCEMENT_KEYS.includes(k)));
 }
 
 console.log(`\nFinancing copy policy check: ${passed} passed, ${failed} failed`);
