@@ -1676,6 +1676,58 @@ dormant, the enum values do not move.
 14. The surface disable ships in this PR as its own commit, with the dormant
     markup, renderers, call sites, CSS and enum values all preserved.
 
+**Four further owner rulings, 2026-08-17 — the open questions the independent
+reviews raised, put to Blake and answered.** None required a code change; the
+implementation stands as shipped. They are recorded because each closes a
+question a future reviewer would otherwise reopen, and because "we looked at it
+and decided" is worth exactly nothing if it is not written down.
+
+15. **Consider stays available without expanding the path's details.** The plan
+    detail and disclosure moved inside the collapsed panel in Slice 4; before
+    it they were always visible on the card. Ruling 10 authorised the
+    disclosure MECHANISM and did not address this, so it was put separately.
+    **Ruled: leave as-is.** Nothing is submitted, no application starts, no
+    exact terms are agreed, and the governed `disclosureFooter` renders in
+    every state at the bottom of the sheet. While `exactPromotionsEnabled` is
+    false the panel shows the generic `staleNotice` in any case. The two
+    alternatives were considered and declined: gating Consider on a prior
+    expand would make a salesperson-led choice impossible without a step that
+    means nothing to the customer, and auto-expanding on Consider would move
+    layout under the customer at the instant they act.
+
+16. **Ruling 8 is confirmed as written, not widened.** The governance review
+    read Consider's `payRecordExplored(id)` as widening "first-deliberate-open
+    order", because a path chosen on the salesperson's word and never opened is
+    recorded as explored and then surfaces under "Options explored" once Clear
+    is pressed. That behaviour is the STATE-MACHINE CONTRACT verbatim
+    ("Considering X ensures X is explored and sets payPref to X"); the reviewer
+    did not have that clause. **Ruled: keep as specified.** "Explored" means
+    "this path was on the table", which is the more useful record for a
+    salesperson resuming the conversation. The alternative — Consider setting
+    the preference without recording history — would leave a considered-then-
+    cleared path with no trace on the handoff at all.
+
+17. **The Consider announcement keeps reusing `currentlyConsidering`.** The nine
+    adopted strings contain no dedicated "considering" announcement, so the
+    runtime announces the marker's own copy ("Currently considering ✓" / "En
+    consideración ✓") into the sheet's action region. **Ruled: keep the reuse;
+    no tenth governed key.** No new copy enters the pipeline and no further
+    provisional-Spanish string joins the consolidated native pass. The ✓ glyph
+    reads oddly as speech, which is immaterial: screen-reader function is out of
+    scope by the permanent 2026-08-12 ruling, so nothing depends on how it
+    sounds.
+
+18. **The desktop mouse-focus question waits for the desktop gate.** The
+    accessibility review argued that a mouse click drops focus to `<body>`
+    outside the sheet's focus trap, because `payFocusOrigin` declines to restore
+    when `:focus-visible` is false; the implementation could not reproduce it
+    deterministically, and touch and keyboard are unaffected. **Ruled: do not
+    pre-emptively change it.** It stays an explicit item on the desktop manual
+    card with the exact reproduction to run. If it reproduces, the decision is
+    taken then with evidence — relaxing the ruled "keyboard-visible focus"
+    condition on a reviewer's inference plus a failed reproduction is the wrong
+    order.
+
 **Spanish is PROVISIONAL.** Every ES string added here is unreviewed by a native
 speaker and ships under `esReviewStatus: "pending-native-legal-review"`. Per
 Invariant 12 that is not a merge gate for this slice; the consolidated
