@@ -2041,10 +2041,10 @@ section('§26 — the drawer and Sleep System surfaces are config-DISABLED, not 
 }
 
 // ===========================================================================
-// 27. Unencodable path values, and the two live regions' independence
+// 27. Unencodable path values, and the single current-preference announcement
 // ===========================================================================
 // Both raised by adversarial review against the first behavioural commit.
-section('§27 — an unencodable value fails CLOSED, and the two regions schedule independently');
+section('§27 — an unencodable value fails closed, and only the current preference remains pending');
 {
   // An UNPAIRED SURROGATE is what JSON.parse('"\ud800"') produces, so it is a
   // value a hand-authored canonical source can genuinely carry. encodeURIComponent
@@ -2086,7 +2086,7 @@ section('§27 — an unencodable value fails CLOSED, and the two regions schedul
     /fin-pref-rows/.test(henv.handoffHtml()));
   ok('§27 the sheet still opens', henv.get('financingSheet').hidden === false);
   ok('§27 the unencodable path is DROPPED from the path set, and the others survive',
-    henv.api.paths().every((x) => x.id && x.id.indexOf('-') > 0)
+    henv.api.paths().every((x) => x.id && /^[a-z]+-.+$/.test(x.id))
     && henv.api.paths().length === P(env).length - 1,
     henv.api.paths().map((x) => x.id).join(','));
 
@@ -2293,7 +2293,7 @@ section('§28 — a non-string identity value fails closed, never throws');
     threw === null, threw && String(threw));
   ok('§28 the malformed path is DROPPED and every well-formed path survives',
     !!paths && paths.length === expected
-    && paths.every((x) => typeof x.id === 'string' && x.id.indexOf('-') > 0),
+    && paths.every((x) => typeof x.id === 'string' && /^[a-z]+-.+$/.test(x.id)),
     paths && paths.map((x) => x.id).join(','));
   ok('§28 no empty-id DOM id can leak from it',
     !!paths && paths.every((x) => x.id !== '' && x.id !== 'plan-'));
@@ -2316,8 +2316,18 @@ section('§28 — a non-string identity value fails closed, never throws');
     && env.doc.body.classList.contains('fin-sheet-open'));
   ok('§28 ...and the well-formed cards still render inside it',
     /fin-path-review/.test(env.sheetHtml()));
-  ok('§28 ...while the malformed plan contributes no control',
-    !/Malformado/.test(env.sheetHtml()) && !/finPathReview--/.test(env.sheetHtml()));
+  // WHAT "DROPPED" MEANS, stated exactly. finPathBlock(null, body) returns the
+  // body, so a plan with no canonical identity still renders as an
+  // INFORMATIONAL card carrying its own governed copy — it simply has no
+  // controls and no path id, so it cannot be reviewed, considered or preferred.
+  // The previous version of this assertion tested an ES headline against a
+  // sheet rendered in EN, which could not fail whatever the code did.
+  ok('§28 ...while the malformed plan contributes NO CONTROL and NO path id',
+    !/finPathReview-plan-["\s]/.test(env.sheetHtml())
+    && !/data-path-id="plan-"/.test(env.sheetHtml())
+    && env.get('finPathConsider-plan-') === null);
+  ok('§28 [precondition] the malformed card itself DID render, so the check above is about controls',
+    /Malformed/.test(env.sheetHtml()));
 
   // Entry point 3: the language switch. switchLanguage() calls
   // clearPayAnnouncements() then renderAllFinancingSurfaces(); the throw used
@@ -2346,6 +2356,133 @@ section('§28 — a non-string identity value fails closed, never throws');
   env.api.consider('plan-');
   ok('§28 an empty or stub id is not a path and cannot become the preference',
     env.api.state().pref === good);
+}
+{
+  // BLANK IDENTITIES. C11 refused objects, arrays, numbers and booleans but
+  // still mapped null/undefined/'' to an empty encoding for EVERY kind, so a
+  // plan with a null or blank id produced the TRUTHY id 'plan-'. That survived
+  // finPaymentPaths()'s filter, resolved through finPathById(), emitted
+  // controls named finPathReview-plan- and could become payPref. Found by
+  // external review; the empty encoding is now an identity only for the
+  // promotional group, which genuinely has one.
+  //
+  // Each configuration below is well-formed in every respect EXCEPT the id, so
+  // nothing but the identity defect can be what drops the path.
+  const MALFORMED = [
+    ['null id', '{"id": null, "kind": "lease-to-own", "provider": "X", "verified": true,'
+      + ' "headline": {"en": "Blank Id Plan", "es": "Plan Sin Id"},'
+      + ' "detail": {"en": "D", "es": "D"}}'],
+    ['empty-string id', '{"id": "", "kind": "closed-end-installment", "provider": "X", "verified": true,'
+      + ' "headline": {"en": "Blank Id Plan", "es": "Plan Sin Id"},'
+      + ' "detail": {"en": "D", "es": "D"}}']
+  ];
+  const baseline = P(openEnv());
+
+  for (const [label, planJson] of MALFORMED) {
+    const cfg = JSON.parse(JSON.stringify(CFG));
+    cfg.financing.plans.push(JSON.parse(planJson));
+    const env = makeEnv({ config: cfg, sheetOpen: true, resultsActive: true });
+
+    ok(`§28 [${label}] precondition: the derived id would have been the truthy stub 'plan-'`,
+      env.api.pathId('plan', JSON.parse(planJson).id) === ''
+      && baseline.indexOf('plan-') === -1);
+
+    let paths = null, threw = null;
+    try { paths = env.api.paths(); } catch (e) { threw = e; }
+    ok(`§28 [${label}] finPaymentPaths does not throw`, threw === null, threw && String(threw));
+    ok(`§28 [${label}] the malformed path is DROPPED and every well-formed path survives`,
+      !!paths && JSON.stringify(paths.map((x) => x.id)) === JSON.stringify(baseline),
+      paths && paths.map((x) => x.id).join(','));
+    ok(`§28 [${label}] the stub id 'plan-' is absent from the path set`,
+      !!paths && paths.every((x) => x.id !== 'plan-' && /^[a-z]+-.+$/.test(x.id)));
+    ok(`§28 [${label}] finPathById('plan-') resolves to null`,
+      env.api.pathById('plan-') === null);
+
+    // The rendered surfaces must carry no trace of it.
+    let rThrew = null;
+    try { env.api.renderSheet(); env.api.renderHandoff(); } catch (e) { rThrew = e; }
+    ok(`§28 [${label}] the sheet and handoff render without throwing`,
+      rThrew === null, rThrew && String(rThrew));
+    ok(`§28 [${label}] no data-path-id="plan-" is emitted`,
+      !/data-path-id="plan-"/.test(env.sheetHtml()));
+    for (const prefix of ['finPathReview', 'finPathConsider', 'finPathClear']) {
+      ok(`§28 [${label}] no ${prefix}-plan- control is emitted`,
+        !new RegExp(prefix + '-plan-["\\s]').test(env.sheetHtml())
+        && env.get(prefix + '-plan-') === null);
+    }
+    // Its governed copy still renders as an unselectable informational card —
+    // that is the designed degradation, and asserting it here keeps the
+    // control-absence claims above honest about what "dropped" means.
+    ok(`§28 [${label}] its card still renders as informational copy (dropped means UNSELECTABLE)`,
+      /Blank Id Plan/.test(env.sheetHtml()));
+
+    // The actions must refuse it, and it must never become the preference.
+    env.api.review('plan-');
+    ok(`§28 [${label}] Review('plan-') is a no-op`,
+      env.api.state().explored.length === 0 && env.api.state().open.length === 0);
+    env.api.consider('plan-');
+    ok(`§28 [${label}] Consider('plan-') is a no-op and cannot become payPref`,
+      env.api.state().pref === null && env.api.state().explored.length === 0);
+    const good = paths[0].id;
+    env.api.consider(good);
+    env.api.clearPref('plan-');
+    ok(`§28 [${label}] Clear('plan-') is a no-op and does not disturb the real preference`,
+      env.api.state().pref === good);
+
+    // The guarded entry points, as for the non-string case.
+    let oThrew = null;
+    try { env.api.openSheet('results'); } catch (e) { oThrew = e; }
+    ok(`§28 [${label}] openFinancingSheet completes`,
+      oThrew === null && env.get('financingSheet').hidden === false, oThrew && String(oThrew));
+    let lThrew = null;
+    try { env.api.setLang('es'); env.api.clearAnnouncements(); env.api.renderAll(); }
+    catch (e) { lThrew = e; }
+    ok(`§28 [${label}] the language rerender completes, in Spanish`,
+      lThrew === null
+      && env.handoffHtml().includes(CFG.financing.copy.paymentPreferenceLabel.es),
+      lThrew && String(lThrew));
+    ok(`§28 [${label}] ...and it still emits no control or path id after the rerender`,
+      !/data-path-id="plan-"/.test(env.sheetHtml())
+      && !/finPathReview-plan-["\s]/.test(env.sheetHtml())
+      && env.api.paths().every((x) => x.id !== 'plan-'));
+  }
+}
+{
+  // THE CASE THE EMPTY ENCODING EXISTS FOR must keep working, and must not be
+  // confused with a rejected plan/scenario identity.
+  const cfg = JSON.parse(JSON.stringify(CFG));
+  cfg.financing.plans.forEach((pl) => {
+    if (pl.kind === 'open-end-promotional-credit') delete pl.provider;
+  });
+  const env = makeEnv({ config: cfg, sheetOpen: true });
+  const ids = env.api.paths().map((x) => x.id);
+  ok('§28 a providerless promotional group still has the identity promo-',
+    ids.indexOf('promo-') !== -1, ids.join(','));
+  ok('§28 ...and it resolves, with the generic label rather than a lender name',
+    !!env.api.pathById('promo-')
+    && env.api.pathById('promo-').label === 'Promotional financing');
+  ok('§28 ...and blank promo identity is NOT treated like a blank plan identity',
+    env.api.pathId('promo', '') === 'promo-' && env.api.pathId('plan', '') === ''
+    && env.api.pathId('scenario', '') === '');
+
+  env.api.renderSheet();
+  ok('§28 ...and its disclosure control is emitted and operable',
+    /data-path-id="promo-"/.test(env.sheetHtml())
+    && env.get('finPathReview-promo-') !== null);
+  env.api.review('promo-');
+  ok('§28 ...Review records it exactly once',
+    JSON.stringify(env.api.state().explored) === JSON.stringify(['promo-']));
+  env.api.consider('promo-');
+  ok('§28 ...Consider makes it the preference',
+    env.api.state().pref === 'promo-' && env.get('finPathClear-promo-') !== null);
+  env.api.clearPref('promo-');
+  ok('§28 ...and Clear unsets it while preserving the history',
+    env.api.state().pref === null
+    && JSON.stringify(env.api.state().explored) === JSON.stringify(['promo-']));
+  env.api.renderHandoff();
+  ok('§28 ...and the handoff names it rather than showing a raw id',
+    env.handoffHtml().includes('Promotional financing')
+    && !env.handoffHtml().includes('promo-'));
 }
 {
   // NON-VACUITY: without the guard, this really does throw through the chain.

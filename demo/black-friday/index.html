@@ -11422,7 +11422,27 @@
       // which is what previously reintroduced the throw this guard exists to
       // stop. '' means "no id"; every caller filters on a truthy id.
       var enc = finPathEncode(value);
-      return enc === null ? '' : kind + '-' + enc;
+      if (enc === null) return '';
+      // AN EMPTY ENCODING IS AN IDENTITY ONLY FOR THE PROMOTIONAL GROUP.
+      //
+      // finPromotionalByProvider groups promotional plans by their trimmed
+      // provider string, and a group whose provider is missing or blank is a
+      // real, presentable path — it renders as the generic "Promotional
+      // financing" card. Its identity IS the empty string, so 'promo-' is a
+      // legitimate id.
+      //
+      // A plan or a scenario has no such case. Their identity is a plan id or
+      // a presentationScenario, both of which validation requires to be
+      // present and non-blank ("id is required"). A blank one reaching here
+      // means the config bypassed that gate, and admitting it produced a
+      // TRUTHY id — 'plan-' — which then survived finPaymentPaths()'s filter,
+      // resolved through finPathById(), emitted controls with ids like
+      // finPathReview-plan-, and could be stored as payPref. That is a
+      // malformed path made selectable, which is exactly what this whole
+      // encoder guard exists to prevent; refusing non-strings while admitting
+      // a blank one closed half the hole. Found by external review.
+      if (enc === '' && kind !== 'promo') return '';
+      return kind + '-' + enc;
     }
 
     // DOM ids derived from a path id. Every one is [A-Za-z][A-Za-z0-9_-]*, so

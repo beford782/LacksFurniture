@@ -1033,8 +1033,8 @@ const MUTATIONS = [
     "      var esc;",
     "      return String(value == null ? '' : value).trim().toLowerCase().replace(/[^a-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '');\n      var esc;", PAY],
   ["payment: path ids regain a colon separator (unusable in querySelector/CSS)",
-    "      return enc === null ? '' : kind + '-' + enc;",
-    "      return enc === null ? '' : kind + ':' + enc;", PAY],
+    "      return kind + '-' + enc;",
+    "      return kind + ':' + enc;", PAY],
   // The unencodable-value guard. An unpaired surrogate makes
   // encodeURIComponent throw, and the throw used to escape three guarded entry
   // points: it blanked the handoff module after it was already visible, killed
@@ -1050,11 +1050,18 @@ const MUTATIONS = [
   ["payment: identity values are coerced again instead of being required to be strings",
     "      if (value === null || value === undefined) return '';\n      if (typeof value !== 'string') return null;",
     "      value = String(value == null ? '' : value);", PAY],
+  // The empty encoding is an identity only for the promotional group.
+  // Dropping the kind restriction lets a plan with a null or blank id
+  // become the truthy stub "plan-", which then survives filtering,
+  // resolves, emits controls and can be stored as payPref.
+  ["payment: an empty identity is accepted for every kind again (the stub plan- returns)",
+    "      if (enc === '' && kind !== 'promo') return '';",
+    "", PAY],
   ["payment: finPathId re-derives the coercion outside the encoder (the second String() returns)",
-    "      return enc === null ? '' : kind + '-' + enc;",
-    "      if (!enc && String(value == null ? '' : value) !== '') return '';\n      return kind + '-' + enc;", PAY],
-  // The two action regions must schedule INDEPENDENTLY, not merely render into
-  // separate elements.
+    "      if (enc === null) return '';",
+    "      if (!enc && String(value == null ? '' : value) !== '') return '';", PAY],
+  // The two action regions share one announcement slot. Every transition must
+  // cancel the prior pending utterance across regions, not merely within its own.
   // C8 reverted a per-region timer that had exactly this effect: the cancel
   // became same-region-only, so a transition on one surface left the other
   // surface's now-false message pending and a screen reader announced a payment

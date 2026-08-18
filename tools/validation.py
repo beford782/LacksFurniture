@@ -1517,9 +1517,21 @@ def _fin_path_id(kind: str, value):
     '-' recovers it unambiguously.
 
     Returns None when the value cannot be encoded, propagating the encoder's
-    refusal rather than raising."""
+    refusal rather than raising, AND when an empty encoding is not a legitimate
+    identity for that kind.
+
+    An empty encoding identifies exactly one real path: the promotional group
+    whose provider is missing or blank, which renders as the generic
+    "Promotional financing" card. A plan or scenario identity is required to be
+    present and non-blank, so an empty one means the config bypassed that gate —
+    and admitting it yields a TRUTHY id ("plan-") that the runtime would treat
+    as a selectable path. Mirrors finPathId() in index.html."""
     enc = _fin_path_encode(value)
-    return None if enc is None else kind + "-" + enc
+    if enc is None:
+        return None
+    if enc == "" and kind != "promo":
+        return None
+    return kind + "-" + enc
 
 # -- Exact-claim detection for UNGATED financing copy --------------------------
 # financing.exactPromotionsEnabled and financingTermsFresh()/financingPlanFresh()
@@ -2573,7 +2585,13 @@ def validate_financing(config: dict, *, allowed_source_hosts=None) -> Validation
                 # named here — the runtime cannot form an id for it either, the
                 # path would silently vanish from the sheet and the handoff, and
                 # a preference on it could never be cleared.
-                if isinstance(_raw, str):
+                # A BLANK identity is reported by the required-id rule, and a
+                # NON-STRING by the must-be-a-string rule. Only a non-empty
+                # string that fails to ENCODE has no other reporter, so only
+                # that case is named here — otherwise an empty id would be
+                # described to the author as an unpaired surrogate, which it is
+                # not.
+                if isinstance(_raw, str) and _raw != "":
                     r.add_error(
                         f"{_owner}: the value identifying this Payment Choice "
                         f"path contains an unpaired surrogate and cannot be "
@@ -4189,10 +4207,36 @@ def _self_test() -> int:
                          ("dict-with-callable-looking-key", {"a": 1})):
         check(f"path encoding refuses a non-string identity value ({_label})",
               _fin_path_encode(_bad) is None and _fin_path_id("plan", _bad) is None)
-    check("None still maps to the LEGITIMATE empty encoding, not the sentinel",
-          _fin_path_encode(None) == "" and _fin_path_id("promo", None) == "promo-")
-    check("an empty string still yields a usable id (the providerless case)",
-          _fin_path_encode("") == "" and _fin_path_id("promo", "") == "promo-")
+    # AN EMPTY ENCODING IS AN IDENTITY ONLY FOR THE PROMOTIONAL GROUP. Refusing
+    # non-strings while still admitting a blank one closed half the hole: a plan
+    # with a null or blank id produced the TRUTHY stub id "plan-", which the
+    # runtime treated as a selectable path.
+    check("None/'' still map to the LEGITIMATE empty encoding at the encoder",
+          _fin_path_encode(None) == "" and _fin_path_encode("") == "")
+    check("a providerless promotional group keeps its identity",
+          _fin_path_id("promo", None) == "promo-"
+          and _fin_path_id("promo", "") == "promo-")
+    for _kind in ("plan", "scenario"):
+        check(f"a blank {_kind} identity is REFUSED, not turned into the stub '{_kind}-'",
+              _fin_path_id(_kind, None) is None and _fin_path_id(_kind, "") is None)
+    check("ordinary non-empty strings are unaffected for every kind",
+          _fin_path_id("plan", "lacks-in-house") == "plan-lacks-in-house"
+          and _fin_path_id("scenario", "mexico-delivery") == "scenario-mexico-delivery"
+          and _fin_path_id("promo", "Synchrony") == "promo-Synchrony")
+    for _blank_label, _blank in (("null", None), ("empty string", "")):
+        _bl = _fmut()
+        _bl["plans"].append({
+            "id": _blank, "kind": "lease-to-own", "provider": "Retailer",
+            "verified": True, "verifiedAt": _bl["verifiedAt"],
+            "sourceUrl": "https://www.lacks.com/financing",
+            "headline": {"en": "B", "es": "B"}, "detail": {"en": "D", "es": "D"}})
+        _bl_rep = validate_financing(_fc(_bl), allowed_source_hosts=_FHOSTS)
+        check(f"a {_blank_label} plan id keeps the required-id error",
+              any("id is required" in e for e in _bl_rep.errors))
+        check(f"...and a {_blank_label} id is NOT mis-reported as an unpaired surrogate",
+              not any("unpaired surrogate" in e for e in _bl_rep.errors))
+        check(f"...and validate_financing stays total for a {_blank_label} id",
+              isinstance(_bl_rep.errors, list) and not _bl_rep.ok)
     _obj = _fmut()
     _obj["plans"].append({
         "id": {"toString": None}, "kind": "lease-to-own", "provider": "Retailer",
