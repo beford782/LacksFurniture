@@ -81,6 +81,25 @@ const MOTION = ["tests/motion_flag_check.mjs"];
 // the non-color and forced-colors selected cues, the focus wiring, the 44px
 // interaction floors, and the keyboard-only focus restoration.
 const QUIZ = ["tests/quiz_presentation_check.mjs"];
+// Payment Choice observer (Slice 4, item 1.5 / decision D4): the payment suite
+// owns the two-dimension state model (payExplored / payPref) and its ephemeral
+// disclosure store, the canonical collision-proof path identity, the
+// button+panel disclosures, Consider/marker/Clear, "Not right now" and its
+// handoff suppression, the exact-identity focus restoration, the two separate
+// live regions, the forced-colors geometric cue, and the adopted EN/ES copy.
+// Every Payment Choice entry below names an observer EXPLICITLY — none may fall
+// through to DEFAULT_SUITES, which observes data-error recovery and would
+// report a survivor as a pass.
+const PAY = ["tests/payment_choice_check.mjs"];
+const PAY_WITH_SESSION = PAY.concat(["tests/session_safety_check.mjs"]);
+const PAY_EMAIL = ["tests/email_gating_check.mjs"];
+const PAY_ASYNC = ["tests/session_async_check.mjs"];
+const PAY_COPY = ["tests/financing_copy_policy_check.mjs"];
+const PAY_RENDER = ["tests/financing_render_check.mjs"];
+// The validator's own self-test, the one PYTHON observer. It owns the
+// config-admission side of Payment Choice: which financing blocks are allowed
+// to exist, as distinct from what index.html does with one that does.
+const PAY_VALIDATOR = ["tools/validation.py --self-test"];
 
 // ---------------------------------------------------------------------------
 // THE MANIFEST. [label, find, replace] — `find` may span lines; index.html is
@@ -968,6 +987,234 @@ const MUTATIONS = [
     "      if (active && active.id) _langFocusHintId = active.id;",
     "      if (false) _langFocusHintId = active.id;", QUIZ],
 
+  // ---- Slice 4 / D4: the Payment Choice state model ------------------------
+  // The two dimensions, and the line between them. Exploration is descriptive
+  // history; a preference is a deliberate one-way choice. Each mutation below
+  // collapses one of those properties.
+  ["payment: exploring a path also sets it as the preference",
+    "        payOpen[id] = true;\n        payRecordExplored(id);",
+    "        payOpen[id] = true;\n        payRecordExplored(id);\n        payPref = id;", PAY],
+  ["payment: opening the whole sheet records every path as explored",
+    "      sheet.hidden = false;\n      // Deliberately records NOTHING.",
+    "      sheet.hidden = false;\n      finPaymentPaths().forEach(function(p) { payRecordExplored(p.id); });\n      // Deliberately records NOTHING.", PAY],
+  ["payment: explored history admits duplicates",
+    "      if (!payIsExplored(id)) payExplored.push(id);",
+    "      payExplored.push(id);", PAY],
+  ["payment: explored history reorders to most-recent-first",
+    "      if (!payIsExplored(id)) payExplored.push(id);",
+    "      payExplored = [id].concat(payExplored.filter(function(x) { return x !== id; }));", PAY],
+  ["payment: hiding a disclosure deletes the explored entry",
+    "      if (payOpen[id] === true) {\n        delete payOpen[id];",
+    "      if (payOpen[id] === true) {\n        delete payOpen[id];\n        payExplored = payExplored.filter(function(x) { return x !== id; });", PAY],
+  ["payment: Consider becomes a toggle and unsets itself",
+    "      if (payPref === id) return;                  // idempotent, never a toggle",
+    "      if (payPref === id) { payPref = null; renderAllFinancingSurfaces(); return; }", PAY],
+  ["payment: Clear accepts a path that is not the current preference",
+    "      if (payPref !== id) return;",
+    "      if (false) return;", PAY],
+  ["payment: Clear erases the explored history",
+    "      payPref = null;\n      renderAllFinancingSurfaces();\n      if (keepFocus) payRestoreFocus(finPathDom('finPathConsider', id));",
+    "      payPref = null;\n      payExplored = [];\n      renderAllFinancingSurfaces();\n      if (keepFocus) payRestoreFocus(finPathDom('finPathConsider', id));", PAY],
+  ["payment: Not right now erases the explored history instead of preserving it",
+    "      payPref = turningOn ? PAY_NOT_NOW : null;",
+    "      payPref = turningOn ? PAY_NOT_NOW : null;\n      if (turningOn) payExplored = [];", PAY],
+  ["payment: Not right now stops suppressing the explored row on the handoff",
+    "      var exploredLabels = notNow ? [] : payExplored",
+    "      var exploredLabels = payExplored", PAY],
+  ["payment: the current preference is listed again as merely explored",
+    "        .filter(function(id) { return id !== payPref; })",
+    "        .filter(function(id) { return id !== null; })", PAY],
+  ["payment: an unknown/stale path id renders as a raw token",
+    "        return '';        // unknown/stale id: NEVER rendered, never as a raw id",
+    "        return id;", PAY],
+  ["payment: Consider stops validating the path id (an unknown id writes state)",
+    "      if (!finPathById(id)) return;\n      if (payPref === id) return;",
+    "      if (payPref === id) return;", PAY],
+
+  // Identity. The retired slugifier collapsed distinct provider/plan values
+  // onto one key and produced colon-bearing DOM ids.
+  ["payment: path identity falls back to the lossy slugifier (distinct paths collide)",
+    "      var esc;",
+    "      return String(value == null ? '' : value).trim().toLowerCase().replace(/[^a-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '');\n      var esc;", PAY],
+  ["payment: path ids regain a colon separator (unusable in querySelector/CSS)",
+    "      return kind + '-' + enc;",
+    "      return kind + ':' + enc;", PAY],
+  // The unencodable-value guard. An unpaired surrogate makes
+  // encodeURIComponent throw, and the throw used to escape three guarded entry
+  // points: it blanked the handoff module after it was already visible, killed
+  // the sheet CTA after its own guard, and halted a language switch mid-way.
+  ["payment: the unencodable-string guard is removed (a lone surrogate throws through the renderers)",
+    "      var esc;\n      try {\n        esc = encodeURIComponent(value);\n      } catch (err) {\n        return null;\n      }",
+    "      var esc = encodeURIComponent(value);", PAY],
+  // THE COERCION. Restoring String() here reintroduces the defect an
+  // external review found: JSON.parse('{"toString": null}') is a plain
+  // object whose own toString is not callable, String() on it throws
+  // TypeError, and the throw escapes the handoff renderer, the sheet opener
+  // and the language switch.
+  ["payment: identity values are coerced again instead of being required to be strings",
+    "      if (value === null || value === undefined) return '';\n      if (typeof value !== 'string') return null;",
+    "      value = String(value == null ? '' : value);", PAY],
+  // The empty encoding is an identity only for the promotional group.
+  // Dropping the kind restriction lets a plan with a null or blank id
+  // become the truthy stub "plan-", which then survives filtering,
+  // resolves, emits controls and can be stored as payPref.
+  ["payment: an empty identity is accepted for every kind again (the stub plan- returns)",
+    "      if (enc === '' && kind !== 'promo') return '';",
+    "", PAY],
+  ["payment: finPathId re-derives the coercion outside the encoder (the second String() returns)",
+    "      if (enc === null) return '';",
+    "      if (!enc && String(value == null ? '' : value) !== '') return '';", PAY],
+  // The two action regions share one announcement slot. Every transition must
+  // cancel the prior pending utterance across regions, not merely within its own.
+  // C8 reverted a per-region timer that had exactly this effect: the cancel
+  // became same-region-only, so a transition on one surface left the other
+  // surface's now-false message pending and a screen reader announced a payment
+  // position the customer had already left.
+  ["payment: the announcement cancel becomes same-region-only (a stale message survives elsewhere)",
+    "      if (_payAnnounceTimer !== null) {\n        clearTimeout(_payAnnounceTimer);\n        _payAnnounceTimer = null;\n      }\n      if (!payRegionLive(regionId)) return;",
+    "      if (_payAnnounceTimer !== null && window._payAnnounceRegion === regionId) {\n        clearTimeout(_payAnnounceTimer);\n        _payAnnounceTimer = null;\n      }\n      window._payAnnounceRegion = regionId;\n      if (!payRegionLive(regionId)) return;", PAY],
+  ["payment: the liveness test runs BEFORE the cancel, so a dark region cannot supersede a stale message",
+    "      if (_payAnnounceTimer !== null) {\n        clearTimeout(_payAnnounceTimer);\n        _payAnnounceTimer = null;\n      }\n      if (!payRegionLive(regionId)) return;",
+    "      if (!payRegionLive(regionId)) return;\n      if (_payAnnounceTimer !== null) {\n        clearTimeout(_payAnnounceTimer);\n        _payAnnounceTimer = null;\n      }", PAY],
+
+  // Accessibility of the new controls.
+  ["payment: the disclosure loses aria-expanded",
+    "        + 'aria-expanded=\"' + (open ? 'true' : 'false') + '\" '",
+    "        + ''", PAY],
+  ["payment: the disclosure loses aria-controls",
+    "        + 'aria-controls=\"' + finEsc(panelId) + '\" '",
+    "        + ''", PAY],
+  ["payment: Consider claims to be a two-state control (gains aria-pressed)",
+    "        html += '<button type=\"button\" class=\"fin-btn fin-btn-secondary fin-path-consider\"",
+    "        html += '<button type=\"button\" aria-pressed=\"false\" class=\"fin-btn fin-btn-secondary fin-path-consider\"", PAY],
+  ["payment: the considering marker becomes an interactive control",
+    "        html += '<span class=\"fin-path-marker\" id=\"'",
+    "        html += '<button type=\"button\" class=\"fin-path-marker\" id=\"'", PAY],
+  ["payment: \"Not right now\" loses aria-pressed (its one genuine two-state control)",
+    "        + 'aria-pressed=\"' + (notNow ? 'true' : 'false') + '\" '",
+    "        + ''", PAY],
+  ["payment: the new controls lose the .fin-btn interaction floor (48px + touch-action)",
+    "class=\"fin-btn fin-btn-ghost fin-path-review\"",
+    "class=\"fin-path-review\"", PAY],
+  ["payment: a path control drops its ontouchend preventDefault (iPad ghost clicks)",
+    "'ontouchend=\"event.preventDefault();window.considerPaymentPath(this.getAttribute(\\'data-path-id\\'));\">'",
+    "'ontouchend=\"window.considerPaymentPath(this.getAttribute(\\'data-path-id\\'));\">'", PAY],
+
+  // Focus restoration, in both failure directions.
+  ["payment: focus restoration drops the control-identity gate",
+    "        return !!(active && active.id === controlId",
+    "        return !!(active && active.id", PAY],
+  ["payment: focus is restored after TOUCH too (the :focus-visible guard is dropped)",
+    "          && active.matches(':focus-visible'));",
+    "          && true);", PAY],
+
+  // The two live regions must stay two.
+  ["payment: Consider/Clear announce through the freshness region instead",
+    "      announcePayAction('financingSheetAction', 'currentlyConsidering');",
+    "      announcePayAction('financingSheetStatus', 'currentlyConsidering');", PAY],
+  ["payment: a queued announcement is no longer superseded (two utterances race)",
+    "      if (_payAnnounceTimer !== null) {\n        clearTimeout(_payAnnounceTimer);\n        _payAnnounceTimer = null;\n      }\n      if (!payRegionLive(regionId)) return;\n      region.textContent = '';",
+    "      region.textContent = '';", PAY_ASYNC],
+
+  // Forced colors: the cue must WIN the cascade and must be geometry.
+  ["payment: the forced-colors pressed rule stops pinning an explicit system colour",
+    "      .fin-handoff__interest .fin-not-now[aria-pressed=\"true\"] {\n        border-width: 2px;\n        border-color: CanvasText;",
+    "      .fin-handoff__interest .fin-not-now[aria-pressed=\"true\"] {\n        border-width: 2px;\n        border-color: #211E19;", PAY],
+  ["payment: the forced-colors pressed rule loses its cascade scope (drops to a losing selector)",
+    "      .fin-handoff__interest .fin-not-now[aria-pressed=\"true\"] {",
+    "      .fin-not-now {", PAY],
+  ["payment: the considering marker's geometric cue collapses to the resting width",
+    "      .fin-card .fin-path-marker {\n        border-width: 2px;",
+    "      .fin-card .fin-path-marker {\n        border-width: 1px;", PAY],
+  ["payment: the resting path controls lose their explicit system boundary",
+    "      .fin-card .fin-path-review,\n      .fin-card .fin-path-consider,\n      .fin-card .fin-path-clear {\n        border-color: CanvasText;",
+    "      .fin-card .fin-path-review,\n      .fin-card .fin-path-consider,\n      .fin-card .fin-path-clear {\n        border-color: #C9C1AF;", PAY],
+
+  // Session + language.
+  ["payment: a language switch resets the model instead of only the announcements",
+    "      clearPayAnnouncements();\n      renderAllFinancingSurfaces();",
+    "      clearPayAnnouncements();\n      payExplored = []; payPref = null; payOpen = {};\n      renderAllFinancingSurfaces();", PAY_WITH_SESSION],
+  ["payment: the wipe leaves the explored history behind",
+    "        payExplored = [];\n        payPref = null;",
+    "        payPref = null;", PAY_WITH_SESSION],
+  ["payment: the wipe leaves the preference behind",
+    "        payPref = null;\n        payOpen = {};",
+    "        payOpen = {};", PAY_WITH_SESSION],
+  ["payment: the wipe hides a missing binding behind a typeof guard",
+    "        payExplored = [];",
+    "        if (typeof payExplored !== 'undefined') payExplored = [];", PAY_WITH_SESSION],
+  ["payment: the sheet's action region drops out of the wipe's text inventory",
+    "      'hf2FinancingStatus', 'financingSheetStatus', 'financingSheetAction',",
+    "      'hf2FinancingStatus', 'financingSheetStatus',", PAY_WITH_SESSION],
+  ["payment: the customer-derived financing containers drop out of the wipe inventory",
+    "      'financingSheetCards', 'hf2FinancingInterest', 'hf2FinancingPrograms',",
+    "", PAY_WITH_SESSION],
+
+  // Privacy: email, payload, diagnostics.
+  ["payment: the email body starts reading the preference",
+    "      return FC('emailBodyAvailable');",
+    "      return payPref ? FC('emailBody') : FC('emailBodyAvailable');", PAY_EMAIL],
+  ["payment: a retired agenda diagnostic event returns",
+    "      payPref = turningOn ? PAY_NOT_NOW : null;",
+    "      payPref = turningOn ? PAY_NOT_NOW : null;\n      analytics.log('financing_agenda_changed', finEventBase('handoff'));", PAY_ASYNC],
+
+  // Copy: a retired key comes back, or an adopted one disappears.
+  ["payment: a retired agenda copy key is wired back into the renderer",
+    "      spec.textContent = FC('sheetDone');",
+    "      spec.textContent = FC('agendaDone');", PAY_COPY],
+  ["payment: an adopted D4 key disappears from the canonical source",
+    '      "paymentPreferenceLabel": {',
+    '      "paymentPreferenceLabelRetired": {', PAY_COPY, "incoming/lacks_financing.json"],
+  ["payment: the generated production config drifts from the canonical source",
+    '      "exploreConsequence": {',
+    '      "exploreConsequenceDrifted": {', PAY_COPY, "data/store-config.json"],
+  ["payment: the demo bundle's financing block drifts from production",
+    '        "en": "Payment preference",',
+    '        "en": "Payment preferences",', PAY_COPY, "demo/black-friday/data/store-config.json"],
+  ["payment: the governed no-submission sentence is reworded",
+    "Nothing is submitted and no application is started.",
+    "Nothing is sent right now.", PAY_COPY, "incoming/lacks_financing.json"],
+
+  // Taxonomy/renderer.
+  ["payment: promotional paths stop grouping by provider (one path per PLAN)",
+    "      finPromotionalByProvider(groups.promotional).forEach(function(grp) {\n        var provider = grp.provider;\n        paths.push({",
+    "      groups.promotional.forEach(function(grp) {\n        var provider = grp.provider;\n        paths.push({", PAY_RENDER],
+
+  // ---- Slice 4 / D4: per-surface placement (item 1.5) ----------------------
+  // Config-DISABLING rather than deleting only means something if the flag is
+  // actually consulted, if a MISSING flag still means enabled, and if the
+  // dormant surface really is still there to re-enable.
+  ["payment: the drawer surface flag is ignored (a disabled surface renders anyway)",
+    "      if (!financingEnabled() || !finSurfaceEnabled('drawer')) {",
+    "      if (!financingEnabled()) {", PAY],
+  ["payment: the Sleep System surface flag is ignored",
+    "      var financingBlock = (financingEnabled() && finSurfaceEnabled('sleepSystem'))",
+    "      var financingBlock = financingEnabled()", PAY],
+  ["payment: a MISSING surface flag is treated as DISABLED (breaks every other deployment)",
+    "      return surfaces[name] !== false;",
+    "      return surfaces[name] === true;", PAY],
+  ["payment: the malformed-surfaces guard is dropped (a null surfaces block throws)",
+    "      if (!surfaces || typeof surfaces !== 'object') return true;",
+    "", PAY],
+  ["payment: the shipped drawer surface policy silently flips back on",
+    '      "drawer": false,',
+    '      "drawer": true,', PAY, "incoming/lacks_financing.json"],
+  ["payment: the generated config's surface policy drifts from the canonical source",
+    '      "sleepSystem": false',
+    '      "sleepSystem": true', PAY_COPY, "data/store-config.json"],
+
+  // ---- Slice 4 / C13: the config-admission gate ---------------------------
+  // Restores the exact bypass an external review found on this branch: scoping
+  // the required-copy contract to a DECLARED `experience` rather than to
+  // `enabled`. The runtime never reads `experience`, so under the bypass an
+  // enabled financing block that predates the field validated green and then
+  // rendered blank Payment Choice controls to a customer. No runtime suite can
+  // see this — the defect is in what the build lets through, not in what the
+  // page does — which is why the observer is the validator's own self-test.
+  ["payment: required copy is scoped to a DECLARED experience again (C13 bypass)",
+    'if _exp is None or _exp == "payment-choice":',
+    'if _exp == "payment-choice":', PAY_VALIDATOR, "tools/validation.py"],
+
 ];
 
 // ---------------------------------------------------------------------------
@@ -979,7 +1226,10 @@ if (process.argv.includes("--list")) {
 
 const sandbox = mkdtempSync(join(tmpdir(), "df-mutsweep-"));
 process.on("exit", () => { try { rmSync(sandbox, { recursive: true, force: true }); } catch {} });
-for (const d of ["tests", "data", "docs", "tools", "incoming"]) {
+// `demo` joins the copy set so a mutation of the GENERATED demo bundle is
+// observable: the financing copy propagation chain ends there, and a drifted
+// demo would otherwise be unreachable from this sandbox.
+for (const d of ["tests", "data", "docs", "tools", "incoming", "demo"]) {
   cpSync(join(root, d), join(sandbox, d), { recursive: true });
 }
 for (const f of ["index.html", "Code.gs"]) cpSync(join(root, f), join(sandbox, f));
@@ -992,15 +1242,40 @@ const PRISTINE_BY_FILE = {
   "index.html": PRISTINE,
   "Code.gs": readFileSync(join(sandbox, "Code.gs"), "utf8"),
   "data/dict-es.json": readFileSync(join(sandbox, "data", "dict-es.json"), "utf8"),
+  // The financing copy propagation chain: authored source, generated
+  // production config, generated demo bundle. Mutating each in turn proves the
+  // chain is actually compared rather than assumed.
+  "incoming/lacks_financing.json":
+    readFileSync(join(sandbox, "incoming", "lacks_financing.json"), "utf8"),
+  "data/store-config.json":
+    readFileSync(join(sandbox, "data", "store-config.json"), "utf8"),
+  "demo/black-friday/data/store-config.json":
+    readFileSync(join(sandbox, "demo", "black-friday", "data", "store-config.json"), "utf8"),
+  // The build-time gate itself. index.html decides what a customer sees given
+  // a config; the validator decides which configs may exist at all, and a hole
+  // there is invisible to every runtime suite — which is precisely how the
+  // `experience` bypass shipped green.
+  "tools/validation.py":
+    readFileSync(join(sandbox, "tools", "validation.py"), "utf8"),
 };
 
+// Observers are node suites by default. The validator's self-test is the one
+// PYTHON observer, and the fact that it lives inside the very file it
+// validates is what makes it the correct observer for a validator mutation:
+// restore the bypass in the implementation half and the assertion half goes
+// red in the same process, with no cross-file wiring to get stale. Entries may
+// carry arguments, so the string is split rather than passed whole.
 function runSuites(suites) {
   const red = [];
   for (const s of suites) {
+    const argv = s.split(" ");
+    const py = argv[0].endsWith(".py");
     try {
-      execFileSync("node", [s], { cwd: sandbox, stdio: "pipe", timeout: 180000 });
+      execFileSync(py ? "python" : "node", argv,
+                   { cwd: sandbox, stdio: "pipe", timeout: 180000 });
     } catch {
-      red.push(s.replace("tests/", "").replace("_check.mjs", ""));
+      red.push(argv[0].replace("tests/", "").replace("tools/", "")
+                      .replace("_check.mjs", "").replace(".py", ""));
     }
   }
   return red;
