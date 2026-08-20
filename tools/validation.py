@@ -1419,8 +1419,13 @@ FINANCING_SURFACES = {"drawer", "sleepSystem"}
 # an error anywhere at runtime — it is a BLANK button, a blank row label, or a
 # silent live region. Requiring them here is what makes that impossible.
 #
-# Scoped to `enabled` + `experience == "payment-choice"`: this is the contract
-# of that experience, not of financing in general.
+# Scoped to `enabled` ALONE, not to `experience`. The browser gates Payment
+# Choice on financingEnabled() and nothing else — it never reads `experience` —
+# so enabled financing renders these controls whether or not the field is
+# declared, and the requirement has to follow what renders rather than what is
+# declared. `experience` remains optional and enum-checked when present; a
+# deployment predating it keeps validating, but does not thereby become exempt
+# from the copy its customers will see.
 #
 # Full bilingual objects, both languages non-blank: every one of these is a
 # customer-facing string on a bilingual kiosk, and a half-translated control is
@@ -2039,23 +2044,45 @@ def validate_financing(config: dict, *, allowed_source_hosts=None) -> Validation
                 "customers who never opened Payment Choice content (COPY-15); "
                 "add the neutral availability variant")
         # ---- the D4 Payment Choice copy contract --------------------------
-        # Only for the experience that actually consumes these keys. A
-        # deployment with a different (future) experience, or none declared,
-        # keeps the general copy rules above and nothing more.
-        if _exp == "payment-choice":
+        # REQUIRED copy is scoped to `enabled` (the enclosing branch) and NOT
+        # to `experience`, because `experience` selects nothing at runtime.
+        # index.html never reads it — the only gate the browser applies is
+        # financingEnabled(), i.e. `enabled === true` plus a non-empty plans
+        # array — so an enabled deployment whose financing block predates the
+        # field still renders every Payment Choice control and still reads
+        # these keys by literal name. Requiring them only when the field
+        # happens to be declared made the validator green for a configuration
+        # that ships blank buttons, blank row labels and silent live regions,
+        # which is the exact outcome this contract exists to prevent. The
+        # field stays OPTIONAL for backward compatibility and is enum-checked
+        # when present; what it must never do is buy an exemption from the
+        # requirements of UI the runtime renders anyway.
+        if _exp is None or _exp == "payment-choice":
+            _for_exp = ("for experience='payment-choice'" if _exp
+                        else "for enabled financing (no `experience` declared, "
+                             "which the runtime ignores)")
             for key in PAYMENT_CHOICE_REQUIRED_COPY:
                 if key not in copy:
                     r.add_error(
-                        f"financing.copy.{key} is required for "
-                        f"experience='payment-choice' — the Payment Choice runtime "
+                        f"financing.copy.{key} is required {_for_exp} — the "
+                        f"Payment Choice runtime "
                         f"reads it by name and FC() renders '' for a missing key, so "
                         f"its absence is a BLANK control or row rather than an error")
                 elif not _bilingual_ok(copy.get(key)):
                     r.add_error(
                         f"financing.copy.{key} must be a bilingual object with "
-                        f"non-blank EN and ES text for experience='payment-choice' "
+                        f"non-blank EN and ES text {_for_exp} "
                         f"(got {fin_headline.short_repr(copy.get(key))}) — a "
                         f"half-translated control changes language only in part")
+        # RETIRED copy is deliberately NARROWER, and the asymmetry is the same
+        # principle read the other way: a retired key is rendered by nothing,
+        # so its presence is inert rather than customer-visible. An agenda-era
+        # block predating `experience` legitimately still carries `agendaMark`
+        # and friends; erroring on those would break precisely the backward
+        # compatibility the field was left optional to preserve, and would buy
+        # a customer nothing. Retirement therefore needs an EXPLICIT
+        # payment-choice declaration.
+        if _exp == "payment-choice":
             for key, why in sorted(PAYMENT_CHOICE_RETIRED_COPY.items()):
                 if key in copy:
                     r.add_error(
@@ -4102,16 +4129,32 @@ def _self_test() -> int:
         check(f"D4: a plain string for financing.copy.{_rq} -> error (bilingual required)",
               any(f"copy.{_rq}" in e for e in
                   validate_financing(_fc(_str), allowed_source_hosts=_FHOSTS).errors))
-        # ...and the same key is NOT required when the experience is absent.
-        _other = _fmut(); del _other["experience"]; del _other["copy"][_rq]
-        check(f"D4: financing.copy.{_rq} is not required without experience='payment-choice'",
-              not any(f"copy.{_rq}" in e for e in
-                      validate_financing(_fc(_other), allowed_source_hosts=_FHOSTS).errors))
+        # ...and the SAME key is required when `experience` is ABSENT, because
+        # the runtime does not read `experience` at all. This assertion used to
+        # say the opposite ("not required without experience") and that is the
+        # defect it now pins: an enabled config predating the field renders
+        # every Payment Choice control regardless, reads this key by name, and
+        # FC() returns '' for a key that is not there — so the validator was
+        # passing configurations that ship a BLANK control to a customer.
+        _noexp = _fmut(); del _noexp["experience"]; del _noexp["copy"][_rq]
+        check(f"D4: financing.copy.{_rq} is required for ENABLED financing even "
+              f"without `experience` (runtime parity)",
+              any(f"copy.{_rq}" in e and "required" in e for e in
+                  validate_financing(_fc(_noexp), allowed_source_hosts=_FHOSTS).errors))
     for _rt in sorted(PAYMENT_CHOICE_RETIRED_COPY):
         _res = _fmut(); _res["copy"][_rt] = {"en": "back", "es": "back"}
         check(f"D4: retired financing.copy.{_rt} -> error under payment-choice",
               any(f"copy.{_rt}" in e and "retired" in e for e in
                   validate_financing(_fc(_res), allowed_source_hosts=_FHOSTS).errors))
+        # RETIRED copy is deliberately NOT widened the way required copy was.
+        # The two are asymmetric because the runtime is asymmetric: a required
+        # key is read by name and rendered, so its absence is a blank control a
+        # customer sees; a retired key is read by nothing, so its presence is
+        # inert. An agenda-era config predating `experience` legitimately still
+        # carries `agendaMark` and friends, and erroring on them would break
+        # exactly the backward compatibility `experience` was left optional to
+        # preserve — for zero customer benefit. Retirement stays scoped to an
+        # EXPLICIT payment-choice declaration.
         _res2 = _fmut(); del _res2["experience"]
         _res2["copy"][_rt] = {"en": "back", "es": "back"}
         check(f"D4: retired financing.copy.{_rt} is tolerated without the experience",
@@ -4119,6 +4162,41 @@ def _self_test() -> int:
                       validate_financing(_fc(_res2), allowed_source_hosts=_FHOSTS).errors))
     check("D4: required and retired copy sets are disjoint",
           not (set(PAYMENT_CHOICE_REQUIRED_COPY) & set(PAYMENT_CHOICE_RETIRED_COPY)))
+
+    # ---- runtime parity: the three states, as whole-config verdicts ---------
+    # Stated once at config level rather than per key, so a future change that
+    # widens or narrows the gate has to move all three at the same time.
+    #
+    # The rule being pinned: what the RUNTIME renders decides what the
+    # validator requires. `financing.experience` selects nothing at runtime —
+    # index.html never reads it — so it cannot be what decides whether the
+    # copy those controls render is required.
+    _rp_ok = _fmut(); del _rp_ok["experience"]
+    check("D4 parity: enabled + NO experience + complete required copy -> valid",
+          validate_financing(_fc(_rp_ok), allowed_source_hosts=_FHOSTS).ok)
+
+    _rp_gap = _fmut(); del _rp_gap["experience"]; del _rp_gap["copy"]["reviewOption"]
+    check("D4 parity: enabled + NO experience + a missing required key -> named error",
+          any("copy.reviewOption" in e and "required" in e for e in
+              validate_financing(_fc(_rp_gap), allowed_source_hosts=_FHOSTS).errors))
+
+    _rp_off = _fmut(); del _rp_off["experience"]; _rp_off["enabled"] = False
+    for _k in PAYMENT_CHOICE_REQUIRED_COPY:
+        _rp_off["copy"].pop(_k, None)
+    check("D4 parity: DISABLED + NO experience -> acquires NO required-copy obligation",
+          not any(f"copy.{_k}" in e
+                  for _k in PAYMENT_CHOICE_REQUIRED_COPY
+                  for e in validate_financing(
+                      _fc(_rp_off), allowed_source_hosts=_FHOSTS).errors))
+
+    _rp_off2 = _fmut(); _rp_off2["enabled"] = False
+    for _k in PAYMENT_CHOICE_REQUIRED_COPY:
+        _rp_off2["copy"].pop(_k, None)
+    check("D4 parity: DISABLED + explicit payment-choice -> still no copy obligation",
+          not any(f"copy.{_k}" in e
+                  for _k in PAYMENT_CHOICE_REQUIRED_COPY
+                  for e in validate_financing(
+                      _fc(_rp_off2), allowed_source_hosts=_FHOSTS).errors))
 
     # ---- experience + esReviewStatus ---------------------------------------
     _xp = _fmut(); _xp["experience"] = "sleep-plan"

@@ -96,6 +96,10 @@ const PAY_EMAIL = ["tests/email_gating_check.mjs"];
 const PAY_ASYNC = ["tests/session_async_check.mjs"];
 const PAY_COPY = ["tests/financing_copy_policy_check.mjs"];
 const PAY_RENDER = ["tests/financing_render_check.mjs"];
+// The validator's own self-test, the one PYTHON observer. It owns the
+// config-admission side of Payment Choice: which financing blocks are allowed
+// to exist, as distinct from what index.html does with one that does.
+const PAY_VALIDATOR = ["tools/validation.py --self-test"];
 
 // ---------------------------------------------------------------------------
 // THE MANIFEST. [label, find, replace] — `find` may span lines; index.html is
@@ -1199,6 +1203,18 @@ const MUTATIONS = [
     '      "sleepSystem": false',
     '      "sleepSystem": true', PAY_COPY, "data/store-config.json"],
 
+  // ---- Slice 4 / C13: the config-admission gate ---------------------------
+  // Restores the exact bypass an external review found on this branch: scoping
+  // the required-copy contract to a DECLARED `experience` rather than to
+  // `enabled`. The runtime never reads `experience`, so under the bypass an
+  // enabled financing block that predates the field validated green and then
+  // rendered blank Payment Choice controls to a customer. No runtime suite can
+  // see this — the defect is in what the build lets through, not in what the
+  // page does — which is why the observer is the validator's own self-test.
+  ["payment: required copy is scoped to a DECLARED experience again (C13 bypass)",
+    'if _exp is None or _exp == "payment-choice":',
+    'if _exp == "payment-choice":', PAY_VALIDATOR, "tools/validation.py"],
+
 ];
 
 // ---------------------------------------------------------------------------
@@ -1235,15 +1251,31 @@ const PRISTINE_BY_FILE = {
     readFileSync(join(sandbox, "data", "store-config.json"), "utf8"),
   "demo/black-friday/data/store-config.json":
     readFileSync(join(sandbox, "demo", "black-friday", "data", "store-config.json"), "utf8"),
+  // The build-time gate itself. index.html decides what a customer sees given
+  // a config; the validator decides which configs may exist at all, and a hole
+  // there is invisible to every runtime suite — which is precisely how the
+  // `experience` bypass shipped green.
+  "tools/validation.py":
+    readFileSync(join(sandbox, "tools", "validation.py"), "utf8"),
 };
 
+// Observers are node suites by default. The validator's self-test is the one
+// PYTHON observer, and the fact that it lives inside the very file it
+// validates is what makes it the correct observer for a validator mutation:
+// restore the bypass in the implementation half and the assertion half goes
+// red in the same process, with no cross-file wiring to get stale. Entries may
+// carry arguments, so the string is split rather than passed whole.
 function runSuites(suites) {
   const red = [];
   for (const s of suites) {
+    const argv = s.split(" ");
+    const py = argv[0].endsWith(".py");
     try {
-      execFileSync("node", [s], { cwd: sandbox, stdio: "pipe", timeout: 180000 });
+      execFileSync(py ? "python" : "node", argv,
+                   { cwd: sandbox, stdio: "pipe", timeout: 180000 });
     } catch {
-      red.push(s.replace("tests/", "").replace("_check.mjs", ""));
+      red.push(argv[0].replace("tests/", "").replace("tools/", "")
+                      .replace("_check.mjs", "").replace(".py", ""));
     }
   }
   return red;
