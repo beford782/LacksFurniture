@@ -9,16 +9,23 @@ owner-review decisions (see "Phase 1 direction decisions — recorded
 see the open-decisions register. Device hardening remains BLOCKING for
 showroom use.**
 
-**Last updated:** 2026-08-17 *(records the Slice 4 Payment Choice owner
+**Last updated:** 2026-08-20 *(closes out Slice 4: PR #51 merged as `b2acd7e`
+with all four manual gates passed and owner-reported, the final reviewed head
+`ee6e402` green in CI and clean on external review, and the Pages deployment
+verified at exactly the merge commit. Item 1.5 moves ⬜ → ✅, and the
+reconciliation baseline and next-item pointer are re-pointed accordingly. It
+closes nothing else: Spanish stays provisional and device hardening still blocks
+showroom use. The previous revision, 2026-08-17, recorded the Slice 4 Payment
+Choice owner
 rulings — the preserved "Payment preference" wording and its narrow validator
 allowlist, the two-dimension durable model, the D4 rows landing on the existing
 handoff only, the four key renames, the nine adopted copy strings, the ten
 retired ones, the not-right-now transition table, first-open exploration
 ordering, handoff-only suppression, the stale-path disclosure, the accepted
 cache-skew window, the two retired diagnostics, the total email exclusion and
-the drawer/Sleep System surface disable — and re-points the reconciliation
-baseline and next-item pointer now that Slice 3 has merged. The previous
-revision, 2026-08-16, recorded the Slice 3 Quiz owner rulings — zero option
+the drawer/Sleep System surface disable — and re-pointed the reconciliation
+baseline and next-item pointer once Slice 3 had merged. The
+2026-08-16 revision recorded the Slice 3 Quiz owner rulings — zero option
 icons, the two-column grid cap, and the five authorized accessibility repairs —
 together with the honest 47-icon audit ledger. The 2026-08-14 revision recorded
 the Nocturne owner-review decisions D1–D6, the 2026-08-12 screen-reader
@@ -29,23 +36,32 @@ owner-approved scoring change they carried.)*
 `main` when this document's phase statuses were written, the merge commit of
 PR #16 (2026-08-05). It is **not** current `main`. GitHub state is
 authoritative; a local checkout never is.
-**Reconciliation baseline:** `5436deaea432ec87eb6b4d9f06cd82a85fb1910c` — GitHub
-`main` at this revision; PR #47 merge commit (2026-08-16, Nocturne Slice 3, the
-Quiz visual pass). The prior baseline was
-`b05d47fdf88c54d2dda666e7e3c6b475aa1cc734` (PR #46, Nocturne Slice 2,
-2026-08-16), and before that `83d4646e5af611a14a7b3fbd66f5a0604bb7886e` (PR #43,
+**Reconciliation baseline:** `b2acd7edfb0aa2dfb3add2cf55d7489c0fe50c2a` — GitHub
+`main` at this revision; PR #51 merge commit (2026-08-20, Nocturne Slice 4, the
+Payment Choice model per D4). The prior baseline was
+`5436deaea432ec87eb6b4d9f06cd82a85fb1910c` (PR #47, Nocturne Slice 3,
+2026-08-16), before that `b05d47fdf88c54d2dda666e7e3c6b475aa1cc734` (PR #46,
+Nocturne Slice 2, 2026-08-16), and before that
+`83d4646e5af611a14a7b3fbd66f5a0604bb7886e` (PR #43,
 Daybreak PR 2, 2026-08-14).
 **Next implementation item:** per the approved 2026-08-14 slice order, items
-(1), (2) and (3) have merged — Slice 1, the Results tier-tab restyle and
-hero-plus-support card hierarchy (1.3 per D3), as PR #45; Slice 2, the Sleep
-Brief recomposition and Sleep Signature (1.1 per D1+D2), as PR #46; and
-Slice 3, the Quiz visual pass (1.2), as PR #47. The current item is
-**Slice 4 — Payment Choice (1.5 per D4)**, merged on 2026-08-20 as `b2acd7e`
-and deployed to the Pages preview. Unlike
-Slices 1–3 it is not presentation-only: it replaces an interaction model. It
-still changes nothing the engine computes — the Phase 1 output-regression
-fixture and its pinned sha256 are byte-identical across it — and it adds no
-telemetry, no email content and no payment math. The full recommended order is
+(1), (2), (3) and (4) have all merged — Slice 1, the Results tier-tab restyle
+and hero-plus-support card hierarchy (1.3 per D3), as PR #45; Slice 2, the Sleep
+Brief recomposition and Sleep Signature (1.1 per D1+D2), as PR #46;
+Slice 3, the Quiz visual pass (1.2), as PR #47; and Slice 4, Payment Choice
+(1.5 per D4), as PR #51, merged 2026-08-20 as `b2acd7e` with its four manual
+gates passed and its Pages deployment verified. **Slice 4 is complete, not the
+current item.** Unlike
+Slices 1–3 it was not presentation-only: it replaced an interaction model. It
+still changed nothing the engine computes — the Phase 1 output-regression
+fixture and its pinned sha256 are byte-identical across it — and it added no
+telemetry, no email content and no payment math.
+
+The next item in the approved order is **(5) Slice 5 — the Sleep Plan screen
+(D5 / item 1.7)**, which is `⬜`: approved to build, **not started**. Nothing
+here begins it, schedules it or authorizes it — item 1.7 carries its own scope
+and exit, and its Payment Choice row was deliberately excluded from Slice 4 by
+owner ruling 3. The full recommended order is
 recorded in the 2026-08-14 decision block. The two conditions Phase 1 implementation required — the 0.4
 mounted-device evidence closing Phase 0, AND Blake explicitly opening Phase 1 —
 **are both met** (2026-08-10 and 2026-08-12 respectively). Every merge still
