@@ -1785,12 +1785,15 @@ Invariant 12 that is not a merge gate for this slice; the consolidated
 native-Spanish pass at the end of development is where it is settled. Nothing
 in this slice may be described as native-reviewed.
 
-**Verification (automated, all zero failures).** Payment Choice 327 (new suite,
+**Verification (automated, all zero failures), as executed on the merged tree.**
+Every count below is the current total at the Slice 4 merge; where a figure is
+written `before → after`, the first is the count at base `5436dea` and the
+second is current. Payment Choice 420 (new suite,
 replacing the retired handoff-interest suite); financing renderer 97 → 319;
 financing copy policy 95 → 215; scoring isolation 71 → 247; session safety
 489 → 535; session async/privacy 216 → 283; email gating 19 → 96; phase 1
-output regression 65 → 72; `tools/validation.py --self-test` 757 → 920; smoke
-112 → 113; financing totality 3395; Daybreak contract 87; lineage 10; QR
+output regression 65 → 72; `tools/validation.py --self-test` 757 → 951; smoke
+112 → 116; financing totality 3395; Daybreak contract 87; lineage 10; QR
 payload 188; contrast 90; financing taxonomy 102; financing URL 53;
 exact-promotions policy 45; claim retirement 53; integrity repairs 17; quiz
 presentation 176; results presentation 83; Sleep Brief presentation 134;
