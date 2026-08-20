@@ -40,7 +40,8 @@ Daybreak PR 2, 2026-08-14).
 hero-plus-support card hierarchy (1.3 per D3), as PR #45; Slice 2, the Sleep
 Brief recomposition and Sleep Signature (1.1 per D1+D2), as PR #46; and
 Slice 3, the Quiz visual pass (1.2), as PR #47. The current item is
-**Slice 4 — Payment Choice (1.5 per D4)**, in progress at this revision. Unlike
+**Slice 4 — Payment Choice (1.5 per D4)**, merged on 2026-08-20 as `b2acd7e`
+and deployed to the Pages preview. Unlike
 Slices 1–3 it is not presentation-only: it replaces an interaction model. It
 still changes nothing the engine computes — the Phase 1 output-regression
 fixture and its pinned sha256 are byte-identical across it — and it adds no
@@ -1518,7 +1519,7 @@ The largest reading load in the app.
 - **Prices:** accessory prices are displayed today and stay as they are. Phase 1
   adds no new price surface, and this bullet does not license one — see Phase 2.
 
-### 1.5 — Financing footprint ⬜
+### 1.5 — Financing footprint ✅
 
 - **The Payment Choice model is the 2026-08-14 exploration/preference model
   (D4) — the agenda model is superseded.** An earlier revision of this bullet
@@ -1564,10 +1565,44 @@ The largest reading load in the app.
 - Make financing concrete through eventual verified price grounding, not by
   repeating vague financing copy everywhere.
 
-**SLICE 4 IMPLEMENTED — PR pending merge (branch
-`claude/nocturne-slice4-payment-choice`, base `5436dea`).** Item 1.5 stays ⬜
-until that PR merges AND the manual gates below pass; a merged branch and a
-passed CI run are not a device pass, and neither is a desktop screenshot.
+**SLICE 4 MERGED AND DEPLOYED — item 1.5 closed 2026-08-20.** PR #51 merged as
+**`b2acd7e`** (a merge commit; parents `5436dea` + `ee6e402`, the fourteen-commit
+correction history deliberately preserved rather than squashed, and the source
+branch `claude/nocturne-slice4-payment-choice` kept). The condition this block
+previously stated has been met in both halves — the PR merged **and** all four
+manual gates passed. Neither half was waived.
+
+*Final reviewed head.* **`ee6e402`** — CI `Full suite (18 checks)` green at
+exactly that head (run 32381397192), and an external Codex review of exactly
+that commit returned no findings, with zero unresolved review threads.
+Post-merge CI on `main` (run 32388655153) is green at exactly `b2acd7e`.
+
+*The gates, and why they still apply to what merged.* All four passed on
+**2026-08-20**, owner-reported by Blake on real hardware — they are manual
+findings, not automated ones, and were not independently observed or reproduced
+by the implementation. They were performed against **`305fb41`**, one commit
+below the merged head. They carry forward because **C13 changed validator and
+test infrastructure only**: all **25 protected customer-facing artifacts are
+byte-identical** between `305fb41` and `ee6e402`, `index.html` included, so the
+bytes the gates ran against are the bytes that merged. That is a byte-identity
+proof, not an assumption that a test-only change must be harmless.
+
+*Deployment.* Pages built from **exactly `b2acd7e`** (run 32388653613; build
+record `status=built commit=b2acd7e`) and serves
+https://beford782.github.io/LacksFurniture/. Deployed smoke passed: 12 of 12
+served files byte-identical to the repository blobs at `b2acd7e`, with
+`index.html` at the same hash proven identical to `305fb41`; all 14 D4 required
+copy keys served and none of the 10 retired keys; promotions still the inert
+contract; the demo route reachable; and the white-label boundary intact in the
+served bytes.
+
+*What this does NOT close.* **Spanish remains PROVISIONAL** under
+`esReviewStatus: "pending-native-legal-review"` and may not be described as
+native-reviewed anywhere; per Invariant 12 that pass is consolidated to the end
+of development and was never a merge gate for this slice. **Kiosk hardening
+independently blocks showroom authorization** — see
+`docs/kiosk-device-hardening.md`. A verified preview deployment is not showroom
+readiness, and ✅ on this item does not assert that it is.
 
 **What shipped.** The agenda interaction is replaced by the D4 model in one
 atomic runtime change (commit C2), preceded by test hardening (C0) and an
@@ -1747,13 +1782,27 @@ compare modal 65 and entry 75; construction reveal 102; drawer lifecycle 44;
 motion 202; data-error recovery 331; consultation priorities 219 and summary
 94; email priorities 96; Daybreak demo runtime 54 and server 23; strict golden
 bundle PASS; converter 16; canonical 14; reverify 25; workbook validation OK
-with warnings-as-errors. **Mutation sweep 294/294 caught, 0 survived, 0 did not
-apply** (244 before). The Phase 1 recommendation fixture and its pinned
-`BASELINE_SHA256` are byte-identical.
+with warnings-as-errors. **Mutation sweep 301/301 caught, 0 survived, 0 did not
+apply** (244 before; this figure read 294 when written at C4 and moved with
+C7–C13). The Phase 1 recommendation fixture and its pinned `BASELINE_SHA256` are
+byte-identical.
 
-**Manual gates — OPEN. None is self-closed by this slice.**
+The last of those entries is C13's, and it is the one worth remembering: it
+restores a bypass in `tools/validation.py` and is caught by the **validator's
+own self-test**, because no runtime suite can observe that class of defect at
+all. It lives in what the build *admits*, not in what the page does — which is
+exactly how it survived every green suite until an external review found it.
 
-1. Desktop keyboard / zoom / reduced-motion / manual modal lifecycle.
+**Manual gates — ALL FOUR PASSED 2026-08-20.** Run and reported by Blake on
+real hardware. They are manual findings: not automated, covered by no suite, and
+not independently observed or reproduced by the implementation. Each gate's
+description is preserved as written below, with its outcome recorded against it,
+so the scope of what was actually checked stays legible.
+
+1. Desktop keyboard / zoom / reduced-motion / manual modal lifecycle —
+   **PASSED.** The ruling-18 mouse-focus escape did **not** reproduce. The
+   finding therefore stays *recorded, not fixed*: one manual pass that fails to
+   reproduce a defect is not proof of its absence, and ruling 18 stands.
    **Carry one specific unresolved item into this gate.** An independent
    accessibility review argued that a MOUSE click on a Payment Choice control
    focuses it without matching `:focus-visible`, so `payFocusOrigin` declines to
@@ -1770,13 +1819,15 @@ apply** (244 before). The Phase 1 recommendation fixture and its pinned
    escapes, the fix is to let restoration turn on origin identity alone and
    leave the ring to the browser — but that relaxes the ruled "keyboard-visible
    focus" condition, so it is Blake's call and not the implementation's.
-2. Windows forced-colors visual check. The automated coverage is STATIC CASCADE
-   ANALYSIS of the shipped stylesheet, not rendered verification; no
-   forced-colors rendering environment was available and nothing claims a cue
-   was seen.
-3. Physical mounted iPad Pro 11-inch, both orientations, EN and ES — the card
+2. Windows forced-colors visual check — **PASSED, rendered.** This closed the
+   gap the gate existed for: the automated coverage is STATIC CASCADE
+   ANALYSIS of the shipped stylesheet, not rendered verification, and until this
+   pass no forced-colors rendering environment had been available and nothing
+   claimed a cue was seen.
+3. Physical mounted iPad Pro 11-inch, portrait and landscape, EN and ES —
+   **PASSED.** Run against the card
    below.
-4. Owner live review.
+4. Owner live review — **PASSED.**
 
 Screen-reader / VoiceOver verification remains OUT OF SCOPE by the permanent
 2026-08-12 owner ruling. The automated semantic checks still apply.
@@ -2339,8 +2390,9 @@ document, not here.
    (PR #45, merge `69d5d36`), then Slice 2, the Sleep Brief recomposition and
    Sleep Signature per D1+D2 (PR #46, merge `b05d47f`), then Slice 3, the Quiz
    visual pass per 1.2 (PR #47, merge `5436dea`), whose manual desktop,
-   forced-colors and physical-iPad gates passed. Slice 4, Payment Choice per D4
-   (1.5), is in progress at this revision and is **not** merged.
+   forced-colors and physical-iPad gates passed. Then Slice 4, Payment Choice per
+   D4 (1.5), merged 2026-08-20 as `b2acd7e`, with all four of its manual gates
+   passed and its Pages deployment verified at exactly that commit.
 8. 🔨 **The visible redesign** — Phase 1. *(Implementation explicitly
    authorized by Blake 2026-08-12 — see the authorization block at the top of
    Phase 1. Direction set by the 2026-08-14 Nocturne owner review, D1–D6,
