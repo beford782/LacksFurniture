@@ -301,8 +301,10 @@ if (gate("chooseFinalist", !!CHOOSE_SRC && !!TOGGLE_SAVE_SRC && !!REMOVE_SRC)) {
         w._favoriteMattressId === "" && !w._savedPicks.some((p) => p && p.id === bad));
     }
   }
-  check("the Results cards emit the finalist control on BOTH templates (top pick + supporting)",
+  check("the Results cards DEFINE the finalist control on BOTH templates (top pick + supporting)",
     countOccurrences(norm, "class=\"finalist-btn'") === 2);
+  check("...and EMIT it into BOTH action clusters between compare and save (definition alone is not emission)",
+    (norm.match(/\+\s+detailsBtn\s+\+\s+compareBtn\s+\+\s+finalistBtn\s+\+\s+saveBtn/g) || []).length === 2);
   check("the finalist control is routed through the delegated click handler before the card-tap path",
     /closest\('\.finalist-btn'\)[\s\S]{0,200}chooseFinalist\(/.test(norm)
     && norm.indexOf("closest('.finalist-btn')") < norm.indexOf("closest('.noct-toppick, .noct-support-card')"));
@@ -416,8 +418,9 @@ if (gate("sleepPlanScreen", SCREEN_PRESENT)) {
   check("sleepPlanScreen is registered in SCREEN_HEADING_IDS (render-then-showScreen shape)", /sleepPlanScreen:\s*'sleepPlanTitle'/.test(html));
   check("the Plan is wiped by name in resetSessionState (no typeof guard)",
     /window\._sleepPlanState = \{/.test(extractFunction("function resetSessionState(opts)") || ""));
-  check("switchLanguage re-renders the Plan when it is active",
-    /sleepPlanScreen[\s\S]{0,120}renderSleepPlan\(\)/.test(extractFunction("async function switchLanguage(lang)") || extractFunction("function switchLanguage(lang)") || ""));
+  check("switchLanguage re-renders the Plan when it is active (a live classList.contains('active') branch, not dead text)",
+    /var sleepPlanScreen = document\.getElementById\('sleepPlanScreen'\);\s*if \(sleepPlanScreen && sleepPlanScreen\.classList\.contains\('active'\)\) \{\s*renderSleepPlan\(\);/.test(
+      extractFunction("async function switchLanguage(lang)") || extractFunction("function switchLanguage(lang)") || ""));
 }
 
 section("contract / renderSleepPlan() — executed against a DOM stub");
@@ -500,7 +503,7 @@ if (gate("renderSleepPlan", RENDER_SRCS.every(Boolean) && !!FALLBACK_SRC && !!RE
          ${PLAN_SRC}
          out.api = { render: renderSleepPlan, show: window.showSleepPlan, back: window.sleepPlanBack, cont: window.sleepPlanContinue, choose: window.sleepPlanChooseFinalist, recover: window.sleepPlanReturnToBrief };`)(
         doc, win, analytics, results, lang, dict, (x) => String(x), (o) => (o && typeof o === "object" ? (o[lang] || o.en) : String(o)), (o) => (o && typeof o === "object" ? (o[lang] || o.en) : String(o)),
-        (id) => screens.push(id), () => { out.rendered = (out.rendered || 0) + 1; }, () => { out.profile = (out.profile || 0) + 1; }, (fn) => fn(), out);
+        (id) => { screens.push(id); out.titleAtShow = (out.titleAtShow || []).concat([els.sleepPlanTitle.textContent]); }, () => { out.rendered = (out.rendered || 0) + 1; }, () => { out.profile = (out.profile || 0) + 1; }, (fn) => fn(), out);
       out.err = null;
     } catch (e) { out.err = e; }
     return out;
@@ -578,7 +581,8 @@ if (gate("renderSleepPlan", RENDER_SRCS.every(Boolean) && !!FALLBACK_SRC && !!RE
 
   // Routes + focus shape.
   { const env = makePlanEnv({ results: RESULTS }); env.api.show("results");
-    check("showSleepPlan renders THEN shows (title populated before showScreen)", env.screens[0] === "sleepPlanScreen" && env.els.sleepPlanTitle.textContent === "EN:plan.title");
+    check("showSleepPlan renders THEN shows (the heading is ALREADY populated at the moment showScreen is called)",
+      env.screens[0] === "sleepPlanScreen" && env.titleAtShow && env.titleAtShow[0] === "EN:plan.title");
     env.api.back(); check("Back returns to Results", env.screens[1] === "resultsScreen" && env.rendered === 1); }
   { const env = makePlanEnv({ results: null }); env.api.show("results"); check("showSleepPlan is a no-op before Results exist", env.screens.length === 0); }
   { const env = makePlanEnv({ results: RESULTS }); env.api.choose();

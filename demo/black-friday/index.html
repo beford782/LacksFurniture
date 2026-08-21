@@ -9520,6 +9520,7 @@
     }
     @media (forced-colors: active) {
       .fin-btn:focus-visible,
+      .finalist-btn:focus-visible,
       .fin-sheet-close:focus-visible,
       .fin-sheet-title:focus-visible,
       .fin-official-link:focus-visible,
@@ -9557,6 +9558,12 @@
        forced-colors block as the focus one. */
     @media (forced-colors: active) {
       .noct-tier-tab.active { border: 2px solid CanvasText; }
+    }
+    /* Slice 5: the chosen finalist keeps its 2px geometry in forced colours
+       (fills and author hues are stripped; border-style/width survive). Its
+       own block — results_presentation_check pins the tab block's shape. */
+    @media (forced-colors: active) {
+      .finalist-btn.chosen, .finalist-btn[aria-pressed="true"] { border: 2px solid CanvasText; }
     }
     /* Quiz option state under forced colors.
 

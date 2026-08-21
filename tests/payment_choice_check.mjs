@@ -2717,6 +2717,16 @@ section('§29 — Sleep Plan surface: truthful placement, read-only rows, one ow
     /placement: \[[^\]]*'sleep-plan'[^\]]*\]/.test(norm));
   ok('§29 the Plan renderer emits the explore CTA calling openFinancingSheet with the literal sleep-plan placement',
     /id="sleepPlanFinancingExplore"[\s\S]*?openFinancingSheet\(\\'sleep-plan\\'\)/.test(stripComments(src.renderSleepPlanFinancing)));
+  // Drive the RENDERED control, not a direct call: parse the placement the
+  // emitted onclick actually passes and open the sheet with exactly that.
+  env.api.renderPlan();
+  const planCta = tagOf(env.get('sleepPlanFinancingInterest').innerHTML, 'sleepPlanFinancingExplore');
+  const ctaPlacement = planCta ? (planCta.attrs.match(/openFinancingSheet\('([^']+)'\)/) || [])[1] : null;
+  ok("§29 the RENDERED explore control passes 'sleep-plan' (never 'handoff' / 'sleep-system')", ctaPlacement === 'sleep-plan', String(ctaPlacement));
+  env.events.length = 0;
+  if (ctaPlacement) env.api.openSheet(ctaPlacement);
+  ok("§29 opening through the rendered control's own placement emits finance_details_open{placement:'sleep-plan'}",
+    env.events.some((e) => e.name === 'finance_details_open' && e.data && e.data.placement === 'sleep-plan'));
   // Read-only rows: rendering the Plan twice changes nothing and writes no dimension.
   const b2 = snapshot(env);
   env.api.renderPlan(); env.api.renderPlan();
