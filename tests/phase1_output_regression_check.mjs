@@ -106,6 +106,10 @@ const CAT_FN = grab(/function sleepSystemCategory\([\s\S]*?\r?\n    \}/, "sleepS
 const STEP_FN = grab(/function sleepSystemStepForItem\([\s\S]*?\r?\n    \}/, "sleepSystemStepForItem()");
 const VIEWMODEL_FN = grab(/function getSleepSystemViewModel\(\)\s*\{[\s\S]*?\r?\n    \}/, "getSleepSystemViewModel()");
 const FINALIST_FN = grab(/function getSleepSystemFinalist\(\)\s*\{[\s\S]*?\r?\n    \}/, "getSleepSystemFinalist()");
+// Slice 5 C2: getSleepSystemFinalist() now delegates to the D5b resolver. The
+// resolver is extracted BESIDE it (not instead of it) so the fixture-facing
+// entry keeps its name and shape; the fixture stays null (nothing is seeded).
+const RESOLVER_FN = grab(/function resolveFinalistState\(\)\s*\{[\s\S]*?\r?\n    \}/, "resolveFinalistState()");
 const PROFILE_FN = grab(/function showProfileScreen\(\) \{[\s\S]*?\r?\n    \}\r?\n/, "showProfileScreen()");
 const L_FN = grab(/function L\(obj\) \{[\s\S]*?\r?\n    \}/, "L()");
 const ESCAPE_FN = grab(/function escapeHtml\([\s\S]*?\r?\n    \}/, "escapeHtml()");
@@ -320,6 +324,7 @@ function runAccessories(answers, lang, { accSrc = SCORE_ACC_FN, qualifySrc = QUA
     ${CAT_FN}
     ${stepSrc}
     ${accSrc}
+    ${RESOLVER_FN}
     ${FINALIST_FN}
     ${vmSrc}
     out.ordered = scoreAccessoriesFromAnswers();
@@ -574,7 +579,7 @@ section("fixture non-triviality");
   // which stays null because the fixture harness seeds nothing.
   {
     const probe = new Function("window", "_resultsState", "analytics",
-      FINALIST_FN + "\n return getSleepSystemFinalist();");
+      RESOLVER_FN + "\n" + FINALIST_FN + "\n return getSleepSystemFinalist();");
     const gold = [{ id: "gX", name: "GX" }];
     const top = { name: "TOP", tier: "gold" };
     const r1 = probe({ _savedPicks: [{ id: "g5" }, { id: "g6" }], _favoriteMattressId: "" }, null, {});

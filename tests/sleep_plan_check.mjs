@@ -75,7 +75,7 @@ function throwingWindow(seed = {}) {
 // landing the symbol. A section listed here whose symbol is absent is a
 // failure; one not listed is reported [pending].
 const REQUIRED = new Set([
-  // "resolveFinalistState",   // finalist provenance commit
+  "resolveFinalistState", "chooseFinalist",   // finalist provenance commit (C2)
   // "readSleepSystemGroups",  // content-consumer commit
   // "sleepPlanScreen",        // screen-shell commit
 ]);
@@ -99,10 +99,13 @@ const CAT_SRC = extractFunction("function sleepSystemCategory(item)");
 section("pass-1 / finalist: no silent promotion (RED at 4a76503 by design)");
 check("getSleepSystemFinalist() extracted", !!FINALIST_SRC);
 if (FINALIST_SRC) {
+  // Once the resolver lands, getSleepSystemFinalist() delegates to it; the
+  // sandbox includes it when present so the wrapper is exercised as shipped.
+  const RESOLVER_FOR_PASS1 = extractFunction("function resolveFinalistState()") || "";
   const run = (savedPicks, favorite, resultsState, analytics) => {
     try {
       return { ok: true, v: new Function("window", "_resultsState", "analytics",
-        FINALIST_SRC + "\n return getSleepSystemFinalist();")(
+        RESOLVER_FOR_PASS1 + "\n" + FINALIST_SRC + "\n return getSleepSystemFinalist();")(
         { _savedPicks: savedPicks, _favoriteMattressId: favorite }, resultsState, analytics) };
     } catch (e) { return { ok: false, err: e }; }
   };
@@ -165,7 +168,7 @@ if (VIEWMODEL_SRC && QUALIFY_SRC && STEP_SRC && CAT_SRC && FINALIST_SRC) {
     new Function("ACCESSORIES", "window", "answers", "currentLang", "analytics", "_resultsState", "onScore", "out",
       `"use strict";
        function scoreAccessoriesFromAnswers() { onScore(); throw new Error('PLAN_CALLED_SCORER'); }
-       ${QUALIFY_SRC} ${CAT_SRC} ${STEP_SRC} ${FINALIST_SRC} ${VIEWMODEL_SRC}
+       ${extractFunction("function resolveFinalistState()") || ""} ${QUALIFY_SRC} ${CAT_SRC} ${STEP_SRC} ${FINALIST_SRC} ${VIEWMODEL_SRC}
        out.vm = getSleepSystemViewModel();`)(
       ACCESSORIES, throwingWindow({ _savedPicks: [], _favoriteMattressId: "" }), {}, "en", analytics, null, () => { scorerCalls++; }, out);
     out.threw = null;
@@ -206,6 +209,112 @@ if (gate("resolveFinalistState", !!RESOLVER_SRC)) {
   }
   check("the resolver never references tierData, topPick or analytics (no engine fallback path exists)",
     !/tierData|topPick|analytics/.test(RESOLVER_SRC));
+}
+
+section("contract / chooseFinalist() producer + atomic clears (R-1)");
+const CHOOSE_SRC = extractFunction("window.chooseFinalist = function(mattressId)");
+const TOGGLE_SAVE_SRC = extractFunction("window._toggleSavePick = function(mattressId)");
+const REMOVE_SRC = extractFunction("window.removeReviewMattress = function(mattressId)");
+if (gate("chooseFinalist", !!CHOOSE_SRC && !!TOGGLE_SAVE_SRC && !!REMOVE_SRC)) {
+  // Minimal executable environment: a results state with two gold mattresses,
+  // a DOM stub that records button repaints, an analytics recorder.
+  const mk = () => {
+    const events = [];
+    const buttons = {};
+    const doc = {
+      getElementById: (id) => buttons[id] || null,
+      querySelectorAll: () => Object.values(buttons).filter((b) => b.className.includes("finalist-btn")),
+    };
+    const btn = (id, cls) => (buttons[id] = { id, className: cls, attrs: {}, textContent: "",
+      classList: { add(c) { if (!this._s.has(c)) this._s.add(c); }, remove(c) { this._s.delete(c); }, toggle(c, on) { on ? this._s.add(c) : this._s.delete(c); }, _s: new Set() },
+      setAttribute(k, v) { this.attrs[k] = v; }, getAttribute(k) { return k in this.attrs ? this.attrs[k] : (k === "data-id" ? id.replace(/^fin-/, "") : null); } });
+    btn("save-g5", "noct-save-btn"); btn("save-g6", "noct-save-btn");
+    btn("fin-g5", "finalist-btn"); btn("fin-g6", "finalist-btn");
+    const win = { _savedPicks: [], _favoriteMattressId: "", _updatePicksBadge: () => {} };
+    const resultsState = { tierData: { gold: [{ id: "g5", name: "G5", brand: "B", firmness: 5 }, { id: "g6", name: "G6", brand: "B", firmness: 6 }], silver: [], bronze: [] } };
+    new Function("window", "document", "_resultsState", "analytics", "t", "saveButtonLabel", "firmnessFeel", "renderHf2", "_renderResults",
+      `"use strict";
+       ${TOGGLE_SAVE_SRC}
+       ${CHOOSE_SRC}
+       function finalistButtonLabel(c) { return c ? 'CHOSEN' : 'CHOOSE'; }
+       window._repaintFinalistControls = function() {
+         document.querySelectorAll('.finalist-btn').forEach(function(btn) {
+           var on = btn.getAttribute('data-id') === window._favoriteMattressId;
+           btn.classList.toggle('chosen', on); btn.setAttribute('aria-pressed', on ? 'true' : 'false'); btn.textContent = finalistButtonLabel(on);
+         });
+       };
+       ${REMOVE_SRC}`)(
+      win, doc, resultsState, { log: (e, d) => events.push({ e, d }) }, (k) => k, (s) => (s ? "SAVED" : "SAVE"), () => "FEEL", () => {}, () => {});
+    return { win, events, buttons };
+  };
+  {
+    const { win } = mk();
+    win.chooseFinalist("g5");
+    check("choosing an UNSAVED mattress saves it AND sets it as finalist (atomic)",
+      win._savedPicks.some((p) => p.id === "g5") && win._favoriteMattressId === "g5");
+    win.chooseFinalist("g6");
+    check("choosing a second mattress REPLACES the previous finalist (single finalist) and saves it",
+      win._favoriteMattressId === "g6" && win._savedPicks.some((p) => p.id === "g6") && win._savedPicks.some((p) => p.id === "g5"));
+    const before = win._favoriteMattressId;
+    win.chooseFinalist("g6");
+    check("re-choosing the current finalist is an idempotent no-op (never a toggle off)", win._favoriteMattressId === before && before === "g6");
+  }
+  {
+    const { win } = mk();
+    win._toggleSavePick("g5");
+    check("SAVING ALONE never chooses a finalist", win._savedPicks.length === 1 && win._favoriteMattressId === "");
+  }
+  {
+    const { win } = mk();
+    win.chooseFinalist("g5"); win._toggleSavePick("g6");
+    win._toggleSavePick("g5");   // un-save the chosen one on Results
+    check("un-saving the chosen mattress on Results ATOMICALLY clears _favoriteMattressId (the two-tap orphan is closed)",
+      !win._savedPicks.some((p) => p.id === "g5") && win._favoriteMattressId === "");
+  }
+  {
+    const { win } = mk();
+    win.chooseFinalist("g5"); win._toggleSavePick("g6");
+    win._toggleSavePick("g6");   // un-save a NON-finalist
+    check("un-saving a different mattress leaves the finalist intact", win._favoriteMattressId === "g5");
+  }
+  {
+    const { win } = mk();
+    win.chooseFinalist("g5"); win.removeReviewMattress("g5");
+    check("hf2 Remove of the chosen mattress clears the finalist", win._favoriteMattressId === "" && !win._savedPicks.some((p) => p.id === "g5"));
+  }
+  {
+    const { win, events } = mk();
+    win.chooseFinalist("g5");
+    check("choosing emits NO analytics event of its own (only the save toggle's existing event, if a save happened)",
+      events.every((x) => x.e === "save_pick_toggle"));
+    for (const bad of ["", "  ", null, undefined, 42, {}, [], "g999"]) {
+      const w = mk().win; w.chooseFinalist(bad);
+      check(`chooseFinalist(${JSON.stringify(bad)}) is a no-op: no finalist, no throw, no stray save`,
+        w._favoriteMattressId === "" && !w._savedPicks.some((p) => p && p.id === bad));
+    }
+  }
+  check("the Results cards emit the finalist control on BOTH templates (top pick + supporting)",
+    countOccurrences(norm, "class=\"finalist-btn'") === 2);
+  check("the finalist control is routed through the delegated click handler before the card-tap path",
+    /closest\('\.finalist-btn'\)[\s\S]{0,200}chooseFinalist\(/.test(norm)
+    && norm.indexOf("closest('.finalist-btn')") < norm.indexOf("closest('.noct-toppick, .noct-support-card')"));
+  check("the drawer's save control no longer says 'Save as Finalist' (labels a save as a save)",
+    !/Save as Finalist|Guardar como finalista|Finalist saved|Finalista guardado/.test(norm));
+  check("hf2 no longer calls saved picks 'finalists' (plural vocabulary retired)",
+    !/'Your finalists'|'Tus finalistas'|'Add to finalists'|'Agregar a finalistas'|'Compare finalists'|'Comparar finalistas'|Only saved finalists|Solo los finalistas/.test(norm));
+  check("the compare modal title no longer labels an arbitrary pair as finalists",
+    !/Compare Your Finalists|Compara Tus Finalistas/.test(norm));
+  check("the Sleep System anchor label is kind-aware (finalist vs recommended starting point) and dictionary-driven",
+    /t\('finalist\.building_around_finalist'\)/.test(norm) && /t\('finalist\.building_around_recommended'\)/.test(norm)
+    && !/'Building around your finalist'/.test(norm));
+  for (const k of ["finalist.chosen", "finalist.recommended", "finalist.none", "finalist.choose", "finalist.choose_as", "finalist.chosen_btn",
+    "finalist.building_around_finalist", "finalist.building_around_recommended", "compare.modal_title", "hf2.saved_picks_label", "hf2.compare_saved", "hf2.add_to_saved"]) {
+    check(`dict key ${k} present in both languages and translated`,
+      typeof dictEn[k] === "string" && dictEn[k].length > 0 && typeof dictEs[k] === "string" && dictEs[k].length > 0 && dictEn[k] !== dictEs[k]);
+  }
+  check("the governed EN strings are exact", dictEn["finalist.chosen"] === "Finalist ✓" && dictEn["finalist.recommended"] === "Recommended starting point"
+    && dictEn["finalist.none"] === "No finalist selected yet" && dictEn["finalist.choose"] === "Choose a finalist"
+    && dictEn["finalist.choose_as"] === "Choose as finalist" && dictEn["finalist.chosen_btn"] === "Chosen ✓");
 }
 
 section("contract / readSleepSystemGroups() — side-effect-free Plan accessor");

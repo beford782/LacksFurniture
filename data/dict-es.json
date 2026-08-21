@@ -1,16 +1,13 @@
 {
   "lang.toggle_en": "EN",
   "lang.toggle_es": "ES",
-
   "header.tagline": "Consulta Personalizada de Sueño",
   "header.picks": "Favoritos",
-
   "session.lang_group": "Idioma",
   "session.lang_en": "English",
   "session.lang_es": "Español",
   "session.restart": "Reiniciar",
   "session.restart_aria": "Reiniciar — empezar con otro cliente",
-
   "safety.restart_title": "¿Empezar con otro cliente?",
   "safety.restart_body": "Se borrarán las respuestas, los colchones elegidos y el Plan de Sueño de esta sesión.",
   "safety.restart_keep": "Seguir en esta sesión",
@@ -21,15 +18,12 @@
   "safety.timeout_confirm": "Empezar con otro cliente",
   "safety.timeout_remaining": "Quedan {seconds} segundos",
   "safety.timeout_final_warning": "Esta sesión se borrará en unos {seconds} segundos.",
-
   "footer.powered": "Desarrollado por <strong>DreamFinder</strong>",
-
   "review.category": "Casi Listo",
   "review.title": "Revisión rápida",
   "review.help": "Asegúrate de que todo esté bien, luego crearemos tu combinación.",
   "review.looks_good": "Se Ve Bien →",
   "nav.back": "← Atrás",
-
   "brief.heading": "Tu Resumen de Sueño",
   "brief.hero": "Creada con tus respuestas",
   "brief.signature_eyebrow": "Tu firma de sueño",
@@ -38,11 +32,9 @@
   "brief.priorities_intro": "Usa estas señales para comparar cada colchón en lugar de depender solo de una primera impresión.",
   "brief.try_this": "Pruébalo: ",
   "brief.quiz_finish": "Ver mi firma de sueño",
-
   "profile.badge": "Personalizado Según Tus Respuestas",
   "profile.perfect_match": "Tu Resumen de Sueño",
   "profile.edit_answers": "← Editar mis respuestas",
-
   "results.header": "Tus opciones más compatibles están listas",
   "results.specialist_cue": "<span style=\"color:var(--gold); font-weight:700;\">Pide a tu especialista de sueño</span> que te explique cada opción a continuación.",
   "results.tier_gold": "Oro",
@@ -56,7 +48,6 @@
   "results.complete_setup": "Construye Tu Sistema de Sueño →",
   "results.discount_applies": "Tu Pase de Ahorro de 30 días aplica a una selección de colchón que califique",
   "results.back_to_results": "← Volver a los resultados",
-
   "drawer.why_matches": "Por qué te conviene",
   "drawer.about": "Acerca de este colchón",
   "drawer.whats_in_it": "Qué incluye",
@@ -65,14 +56,12 @@
   "drawer.brand_heading": "Sobre la marca",
   "drawer.prev": "← Anterior",
   "drawer.next": "Siguiente →",
-
   "discount.title": "Tu Pase de Ahorro",
   "discount.calculating": "Preparando tu oferta de 30 días...",
   "discount.code_label": "Tu Pase de Ahorro",
   "discount.unlocked": "Pase de Ahorro de 30 Días",
   "discount.off": "% DE DESC.",
   "discount.show_specialist": "Tómate tu tiempo. Tu oferta está guardada.",
-
   "handoff.summary_label": "Resumen para el Vendedor",
   "handoff.title": "Selecciones del Cliente",
   "handoff.subtitle": "Colchones que el cliente marcó como interesado",
@@ -82,7 +71,6 @@
   "handoff.demo_hook": "GANCHO DE DEMOSTRACIÓN:",
   "handoff.close_angle": "CIERRA CON:",
   "handoff.rsa_note": "NOTA PARA EL VENDEDOR:",
-
   "email.title": "No olvides tus resultados",
   "email.subtitle": "Lleva contigo tu Resumen de Sueño, colchones recomendados y Pase de Ahorro de 30 días para decidir a tu ritmo.",
   "email.name_label": "Tu Nombre",
@@ -96,7 +84,6 @@
   "email.discount_label": "Tu Pase de Ahorro de 30 Días",
   "email.discount_hint": "Muestra este código a tu especialista de sueño · <span style=\"color:var(--gold); font-weight:600;\" id=\"dreamCodePct\"></span>",
   "email.start_new": "↺ Nuevo Cliente",
-
   "accessories.analysis_label": "Prioridades del Resumen de Sueño",
   "accessories.title": "Tu Sistema Completo de Sueño",
   "accessories.subtitle": "Tu colchón es una pieza del rompecabezas. La base, almohada y protector correctos completan el sistema.",
@@ -104,7 +91,6 @@
   "accessories.send_results": "Envíame Mis Resultados",
   "accessories.start_over": "Empezar de Nuevo",
   "accessories.tap_hint": "Toca una tarjeta para agregar o quitar",
-
   "screen.welcome": "Bienvenido",
   "screen.question": "Cuestionario de sueño",
   "screen.review": "Revisión rápida",
@@ -112,5 +98,18 @@
   "screen.results": "Tus opciones",
   "screen.handoff": "Tu plan de sueño",
   "screen.email": "Guarda tus resultados",
-  "screen.sleep_system": "Tu sistema de sueño"
+  "screen.sleep_system": "Tu sistema de sueño",
+  "finalist.chosen": "Finalista ✓",
+  "finalist.recommended": "Punto de partida recomendado",
+  "finalist.none": "Aún no has elegido finalista",
+  "finalist.choose": "Elegir finalista",
+  "finalist.choose_as": "Elegir como finalista",
+  "finalist.chosen_btn": "Elegido ✓",
+  "finalist.chosen_prefix": "Finalista ✓ · ",
+  "finalist.building_around_finalist": "Construyendo alrededor de tu finalista",
+  "finalist.building_around_recommended": "Construyendo alrededor de un punto de partida recomendado",
+  "compare.modal_title": "Compara tus selecciones",
+  "hf2.saved_picks_label": "Tus selecciones guardadas",
+  "hf2.compare_saved": "Comparar selecciones guardadas",
+  "hf2.add_to_saved": "Agregar a selecciones guardadas"
 }

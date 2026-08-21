@@ -7862,6 +7862,32 @@
       color: var(--color-bg);
       border-color: var(--color-accent);
     }
+    /* "Choose as finalist" — same family as .compare-btn; the chosen state
+       is carried by aria-pressed (semantics), a 2px border (geometry) and
+       the "Chosen ✓" label (text), never by colour alone. */
+    .finalist-btn {
+      display: inline-flex;
+      align-items: center;
+      min-height: 44px;
+      background: transparent;
+      color: var(--color-text-subtle);
+      border: 0.5px solid var(--color-border);
+      font-family: var(--font-sans);
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      padding: 8px 14px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    .finalist-btn:hover { border-color: var(--gold); color: var(--gold); }
+    .finalist-btn:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+    .finalist-btn.chosen, .finalist-btn[aria-pressed="true"] {
+      background: var(--gold);
+      color: var(--color-bg);
+      border: 2px solid var(--gold);
+    }
     .mattress-card { position: relative; }
 
     /* ===== COMPARE TRAY (fixed bottom) ===== */
@@ -10526,7 +10552,7 @@
           <button type="button" data-reaction="firm" onclick="window.setDrawerReaction('firm')" ontouchend="event.preventDefault();window.setDrawerReaction('firm');">Too Firm</button>
         </div>
         <div class="drawer-cta-row">
-          <button id="drawerInterestedBtn" class="drawer-btn drawer-btn-primary" onclick="window.saveDrawerPick()" ontouchend="event.preventDefault();window.saveDrawerPick();">Save as Finalist</button>
+          <button id="drawerInterestedBtn" class="drawer-btn drawer-btn-primary" onclick="window.saveDrawerPick()" ontouchend="event.preventDefault();window.saveDrawerPick();">Save for later</button>
         </div>
         <div class="drawer-system-prompt" id="drawerSystemPrompt" aria-live="polite">
           <div class="drawer-system-prompt__eyebrow" id="drawerSystemPromptEyebrow"></div>
@@ -10621,7 +10647,7 @@
         </div>
         <button class="hf2-compare-finalists" id="hf2CompareBtn" type="button"
                 onclick="window.compareReviewFinalists()"
-                ontouchend="event.preventDefault();window.compareReviewFinalists();">Compare finalists</button>
+                ontouchend="event.preventDefault();window.compareReviewFinalists();">Compare saved picks</button>
       </div>
       <div id="hf2PicksList"></div>
     </section>
@@ -15376,6 +15402,17 @@
         + ' aria-label="' + escapeHtml((es ? 'Comparar' : 'Compare') + ': ' + m.name) + '">'
         + (es ? 'Comparar' : 'Compare')
         + '</button>';
+      // "Choose as finalist" (R-1): the explicit finalist PRODUCER, distinct
+      // from Save. aria-pressed carries the single-finalist state. Routed
+      // through the delegated click handler like .compare-btn so the
+      // card-tap path never double-fires.
+      var isChosen = m.id === window._favoriteMattressId;
+      var finalistBtn = '<button type="button" class="finalist-btn' + (isChosen ? ' chosen' : '') + '"'
+        + ' data-id="' + escapeHtml(m.id) + '"'
+        + ' aria-pressed="' + (isChosen ? 'true' : 'false') + '"'
+        + ' aria-label="' + escapeHtml(t('finalist.choose_as') + ': ' + m.name) + '">'
+        + finalistButtonLabel(isChosen)
+        + '</button>';
 
       // Role label is INDEX-ONLY: this renderer receives the engine list's
       // first element and nothing else, so "Best match" is a statement of
@@ -15398,6 +15435,7 @@
         +     '<div class="noct-card-action-cluster">'
         +       detailsBtn
         +       compareBtn
+        +       finalistBtn
         +       saveBtn
         +     '</div>'
         +   '</div>'
@@ -15457,6 +15495,13 @@
           + ' aria-label="' + escapeHtml((es ? 'Comparar' : 'Compare') + ': ' + m.name) + '">'
           + (es ? 'Comparar' : 'Compare')
           + '</button>';
+        var isChosen = m.id === window._favoriteMattressId;
+        var finalistBtn = '<button type="button" class="finalist-btn' + (isChosen ? ' chosen' : '') + '"'
+          + ' data-id="' + escapeHtml(m.id) + '"'
+          + ' aria-pressed="' + (isChosen ? 'true' : 'false') + '"'
+          + ' aria-label="' + escapeHtml(t('finalist.choose_as') + ': ' + m.name) + '">'
+          + finalistButtonLabel(isChosen)
+          + '</button>';
 
         return '<div class="noct-support-card" data-id="' + escapeHtml(m.id) + '" data-tier="' + escapeHtml(tier) + '">'
           + promotionOfferTabHtml(promotion)
@@ -15474,6 +15519,7 @@
           +     '<div class="noct-card-action-cluster">'
           +       detailsBtn
           +       compareBtn
+          +       finalistBtn
           +       saveBtn
           +     '</div>'
           +   '</div>'
@@ -15609,8 +15655,50 @@
         btn.textContent = saveButtonLabel(willBeSaved);
       }
 
+      // Un-saving the chosen finalist clears the finalist ATOMICALLY (R-1):
+      // the shipped code left _favoriteMattressId pointing at a mattress no
+      // longer in _savedPicks, and the old resolver then promoted saved[0].
+      if (!willBeSaved && window._favoriteMattressId === mattressId) {
+        window._favoriteMattressId = '';
+        if (typeof window._repaintFinalistControls === 'function') window._repaintFinalistControls();
+      }
+
       if (typeof window._updatePicksBadge === 'function') window._updatePicksBadge();
       if (analytics) analytics.log('save_pick_toggle', { mattressId: mattressId, tier: foundTier, saved: willBeSaved });
+    };
+
+    // ---- "Choose as finalist" — the explicit finalist PRODUCER (R-1) -------
+    // Distinct from "Save for later". Choosing atomically (1) ensures the
+    // mattress is in _savedPicks, (2) sets _favoriteMattressId, (3) replaces
+    // any previous finalist. Choosing the current finalist again is an
+    // idempotent no-op (Remove/un-save is the way to unset it). Saving alone
+    // NEVER chooses. No analytics event: D4's posture, and the owner added no
+    // telemetry for this control.
+    window.chooseFinalist = function(mattressId) {
+      if (typeof mattressId !== 'string' || mattressId.trim() === '') return;
+      var saved = Array.isArray(window._savedPicks) ? window._savedPicks : (window._savedPicks = []);
+      var isSaved = saved.some(function(p) { return p && p.id === mattressId; });
+      if (!isSaved) {
+        window._toggleSavePick(mattressId);
+        saved = window._savedPicks || [];
+        if (!saved.some(function(p) { return p && p.id === mattressId; })) return; // unknown id: nothing to choose
+      }
+      if (window._favoriteMattressId === mattressId) return;
+      window._favoriteMattressId = mattressId;
+      if (typeof window._repaintFinalistControls === 'function') window._repaintFinalistControls();
+    };
+    function finalistButtonLabel(isChosen) {
+      return isChosen ? t('finalist.chosen_btn') : t('finalist.choose_as');
+    }
+    // Repaint every Results "Choose as finalist" control in place (no full
+    // re-render) so the single-finalist invariant is visible immediately.
+    window._repaintFinalistControls = function() {
+      document.querySelectorAll('.finalist-btn').forEach(function(btn) {
+        var on = btn.getAttribute('data-id') === window._favoriteMattressId;
+        btn.classList.toggle('chosen', on);
+        btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+        btn.textContent = finalistButtonLabel(on);
+      });
     };
 
     // Premium pass reveal. RSA-tap-triggered on the review screen and populated
@@ -17380,15 +17468,44 @@
       };
     }
 
-    function getSleepSystemFinalist() {
-      var saved = window._savedPicks || [];
-      var favoriteId = window._favoriteMattressId || '';
-      var finalist = saved.find(function(item) { return item.id === favoriteId; }) || saved[0];
-      if (!finalist && _resultsState && _resultsState.tierData && _resultsState.tierData.gold) {
-        finalist = _resultsState.tierData.gold[0];
+    // ---- Explicit finalist provenance (D5b, owner ruling R-1 2026-08-21) ----
+    // THREE states and nothing else: 'chosen' (the customer explicitly chose
+    // this saved mattress), 'recommended' (no explicit finalist; the engine's
+    // top pick is offered as a RECOMMENDED STARTING POINT and is never called
+    // a finalist), 'none' (no explicit finalist and no engine pick either).
+    //
+    // _favoriteMattressId is a finalist ONLY when it is a non-blank string
+    // that resolves to a mattress CURRENTLY in _savedPicks. A blank, stale,
+    // malformed, unknown or un-saved id produces NO finalist. This replaces
+    // the shipped fallback chain (saved[0] -> tierData.gold[0] ->
+    // analytics.topPick), which silently promoted the first saved pick or the
+    // engine's Gold #1 to "your finalist" for every customer who had not
+    // chosen — including the reachable orphan where the chosen mattress was
+    // un-saved on Results. The resolver never reaches engine output; the
+    // 'recommended' item is supplied by the CALLER that owns that engine
+    // read, so the finalist path carries no engine fallback at all.
+    function resolveFinalistState() {
+      var saved = Array.isArray(window._savedPicks)
+        ? window._savedPicks.filter(function(p) { return !!p && typeof p === 'object'; })
+        : [];
+      var favId = window._favoriteMattressId;
+      if (typeof favId !== 'string' || favId.trim() === '') favId = null;
+      var chosen = null;
+      if (favId !== null) {
+        for (var i = 0; i < saved.length; i++) {
+          var pid = saved[i].id;
+          if (typeof pid === 'string' && pid.trim() !== '' && pid === favId) { chosen = saved[i]; break; }
+        }
       }
-      if (!finalist && analytics.topPick) finalist = analytics.topPick;
-      return finalist || null;
+      if (chosen) return { kind: 'chosen', item: chosen };
+      return { kind: 'none', item: null };
+    }
+    // Fixture-facing entry retained by name: the Sleep System view model and
+    // the Phase 1 output-regression harness call this. It now returns the
+    // explicitly chosen mattress or null — never a promoted substitute.
+    function getSleepSystemFinalist() {
+      var state = resolveFinalistState();
+      return state.kind === 'chosen' ? state.item : null;
     }
 
     function sleepSystemDecision(stepId) {
@@ -17625,7 +17742,19 @@
       return notices.slice(0, 3);
     }
 
-    function renderSleepSystemAnchor(finalist) {
+    // The engine's top pick, read ONCE here for the recommended-starting-point
+    // presentation. This is a consume-only read of existing engine output
+    // (Phase 1 constraint 2): tierData.gold[0] at its index, never re-ranked.
+    function finalistRecommendedFallback() {
+      if (_resultsState && _resultsState.tierData && Array.isArray(_resultsState.tierData.gold)
+          && _resultsState.tierData.gold[0]) {
+        return _resultsState.tierData.gold[0];
+      }
+      return null;
+    }
+    function renderSleepSystemAnchor(finalistState, recommended) {
+      var kind = finalistState && finalistState.kind === 'chosen' ? 'chosen' : (recommended ? 'recommended' : 'none');
+      var finalist = kind === 'chosen' ? finalistState.item : (kind === 'recommended' ? recommended : null);
       var target = document.getElementById('sleepSystemAnchor');
       if (!target) return;
       if (!finalist) {
@@ -17645,7 +17774,7 @@
       target.innerHTML =
         (image ? '<img class="sleep-system__anchor-image" src="' + escapeHtml(image) + '" alt="">' : '') +
         '<div>' +
-          '<div class="sleep-system__anchor-label">' + escapeHtml(sleepSystemText({ en: 'Building around your finalist', es: 'Construyendo alrededor de tu finalista' })) + '</div>' +
+          '<div class="sleep-system__anchor-label">' + escapeHtml(kind === 'chosen' ? t('finalist.building_around_finalist') : t('finalist.building_around_recommended')) + '</div>' +
           '<div class="sleep-system__anchor-name">' + escapeHtml(finalist.name || '') + '</div>' +
           '<div class="sleep-system__anchor-meta">' + escapeHtml(meta) + '</div>' +
         '</div>' +
@@ -18176,7 +18305,10 @@
         if (element) element.textContent = sleepSystemText(staticCopy[id]);
       });
 
-      renderSleepSystemAnchor(viewModel.finalist);
+      // D5b: the anchor renders the explicit finalist when one is chosen,
+      // otherwise the engine's top pick HONESTLY LABELED as a recommended
+      // starting point. The engine read is the caller's, never the resolver's.
+      renderSleepSystemAnchor(resolveFinalistState(), finalistRecommendedFallback());
       if (empty) empty.hidden = hasAccessories;
       if (workspace) workspace.hidden = !hasAccessories;
       if (rail) rail.hidden = !hasAccessories;
@@ -18460,7 +18592,7 @@
       // Update button state
       var btn = document.getElementById('drawerInterestedBtn');
       if (btn) {
-        btn.textContent = currentLang === 'es' ? '✓ Finalista guardado' : '✓ Finalist saved';
+        btn.textContent = saveButtonLabel(true);
         btn.style.background = 'linear-gradient(180deg,var(--color-match-positive),#4caf6e)';
       }
       // Update picks badge
@@ -18592,7 +18724,7 @@
         // Reuses the Sleep Brief's approved heading pair verbatim — same
         // content, same name, zero invented copy (0.5).
         hf2PrioritiesLabel: es ? 'Lo que probaremos juntos' : 'What we will test together',
-        hf2FinalistsLabel: es ? 'Tus finalistas' : 'Your finalists',
+        hf2FinalistsLabel: t('hf2.saved_picks_label'),
         hf2FinalistsHint: es ? 'Los finalistas guardados se envían; las sugerencias son opciones para comparar.' : 'Saved finalists are sent; suggestions remain comparison options.',
         hf2SystemLabel: es ? 'Sistema de Sueño seleccionado' : 'Selected Sleep System',
         hf2SystemHint: es ? 'Solo las piezas que ya se agregaron al plan.' : 'Only the pieces already added to the plan.',
@@ -18610,7 +18742,7 @@
         if (el) el.textContent = reviewCopy[id];
       });
       var compareBtn = document.getElementById('hf2CompareBtn');
-      if (compareBtn) compareBtn.textContent = es ? 'Comparar finalistas' : 'Compare finalists';
+      if (compareBtn) compareBtn.textContent = t('hf2.compare_saved');
       var editSystemBtn = document.getElementById('hf2EditSystemBtn');
       if (editSystemBtn) editSystemBtn.textContent = es ? 'Editar Sistema de Sueño' : 'Edit Sleep System';
       renderHf2Brief();
@@ -18850,9 +18982,9 @@
         hint.textContent = currentLang === 'es'
           ? saved.length + ' guardado' + (saved.length === 1 ? '' : 's') + ' · '
               + suggestionCount + ' sugerencia' + (suggestionCount === 1 ? '' : 's')
-              + '. Solo los finalistas guardados se envían.'
+              + '. Solo las selecciones guardadas se envían.'
           : saved.length + ' saved · ' + suggestionCount + ' suggestion'
-              + (suggestionCount === 1 ? '' : 's') + '. Only saved finalists are sent.';
+              + (suggestionCount === 1 ? '' : 's') + '. Only saved picks are sent.';
       }
 
       var compareBtn = document.getElementById('hf2CompareBtn');
@@ -19087,8 +19219,8 @@
           : 'A floating, flexible feel that gives way under pressure points.';
       }
       return es
-        ? 'Una sensación equilibrada que vale comparar directamente con tu otro finalista.'
-        : 'A balanced feel worth comparing directly with your other finalist.';
+        ? 'Una sensación equilibrada que vale comparar directamente con tus otras selecciones.'
+        : 'A balanced feel worth comparing directly with your other saved picks.';
     }
 
     function renderHf2Pick(m, tier, suggested) {
@@ -19104,7 +19236,7 @@
         : { gold: 'Gold', silver: 'Silver', bronze: 'Bronze' };
       tierTag.textContent = (suggested
         ? (currentLang === 'es' ? 'Sugerencia · ' : 'Suggested · ')
-        : (m.id === window._favoriteMattressId ? (currentLang === 'es' ? 'Favorito · ' : 'Favorite · ') : ''))
+        : (m.id === window._favoriteMattressId ? t('finalist.chosen_prefix') : ''))
         + tierNames[tier] + ' · ' + firmnessFeel(m.firmness) + ' · ' + mattressResponseLabel(m)
         + (m.meetsMatchThreshold ? '' : ' · ' + (currentLang === 'es'
           ? 'Opción adicional para comparar'
@@ -19140,11 +19272,11 @@
         ? '<button class="hf2-pick__action is-selected"'
             + ' onclick="window.addReviewMattress(\'' + m.id + '\')"'
             + ' ontouchend="event.preventDefault();window.addReviewMattress(\'' + m.id + '\');">'
-            + (currentLang === 'es' ? 'Agregar a finalistas' : 'Add to finalists') + '</button>'
+            + t('hf2.add_to_saved') + '</button>'
         : '<button class="hf2-pick__action' + (m.id === window._favoriteMattressId ? ' is-selected' : '') + '"'
             + ' onclick="window.toggleFavoriteMattress(\'' + m.id + '\')"'
             + ' ontouchend="event.preventDefault();window.toggleFavoriteMattress(\'' + m.id + '\');">'
-            + (currentLang === 'es' ? 'Favorito' : 'Favorite') + '</button>')
+            + finalistButtonLabel(m.id === window._favoriteMattressId) + '</button>')
         + '<button class="hf2-pick__action"'
           + ' onclick="window.showMattressInResults(\'' + m.id + '\',\'' + tier + '\')"'
           + ' ontouchend="event.preventDefault();window.showMattressInResults(\'' + m.id + '\',\'' + tier + '\');">'
@@ -19183,7 +19315,12 @@
     };
 
     window.toggleFavoriteMattress = function(mattressId) {
-      window._favoriteMattressId = window._favoriteMattressId === mattressId ? '' : mattressId;
+      if (window._favoriteMattressId === mattressId) {
+        window._favoriteMattressId = '';
+        if (typeof window._repaintFinalistControls === 'function') window._repaintFinalistControls();
+      } else {
+        window.chooseFinalist(mattressId);
+      }
       renderHf2();
     };
 
@@ -20820,7 +20957,7 @@
       }
 
       var title = document.getElementById('compareModalTitle');
-      if (title) title.textContent = currentLang === 'es' ? 'Compara Tus Finalistas' : 'Compare Your Finalists';
+      if (title) title.textContent = t('compare.modal_title');
       // Accessible close label in the active language — the financing
       // sheet's exact pattern; re-set on every open so a language change
       // between opens relocalises it.
@@ -20913,6 +21050,15 @@
 
       // Compare button on a mattress card — handle BEFORE the card check
       // so it doesn't also open the drawer.
+      // "Choose as finalist" on a mattress card — same treatment as Compare:
+      // handled BEFORE the card check so it never also opens the drawer.
+      var finBtn = e.target.closest('.finalist-btn');
+      if (finBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        window.chooseFinalist(finBtn.getAttribute('data-id'));
+        return;
+      }
       var cmpBtn = e.target.closest('.compare-btn');
       if (cmpBtn) {
         e.preventDefault();
@@ -20966,7 +21112,7 @@
        aria-modal="true" aria-labelledby="compareModalTitle">
     <div class="compare-modal-inner">
       <div class="compare-modal-header">
-        <div id="compareModalTitle" tabindex="-1" style="font-size:0.65rem; text-transform:uppercase; letter-spacing:2px; color:var(--gold); font-weight:700;">Compare Your Finalists</div>
+        <div id="compareModalTitle" tabindex="-1" style="font-size:0.65rem; text-transform:uppercase; letter-spacing:2px; color:var(--gold); font-weight:700;" data-i18n="compare.modal_title">Compare your selections</div>
         <button class="compare-modal-close" id="compareModalClose" onclick="window.closeCompareModal()"
           ontouchend="event.preventDefault();window.closeCompareModal();">&times;</button>
       </div>
@@ -21132,7 +21278,7 @@
       var intBtn = document.getElementById('drawerInterestedBtn');
       if (intBtn) {
         var alreadySaved = window._savedPicks && window._savedPicks.some(function(p) { return p.id === mattressId; });
-        intBtn.textContent = alreadySaved ? (currentLang === 'es' ? '✓ Finalista guardado' : '✓ Finalist saved') : (currentLang === 'es' ? 'Guardar como finalista' : 'Save as Finalist');
+        intBtn.textContent = saveButtonLabel(alreadySaved);
         intBtn.style.background = alreadySaved ? 'linear-gradient(180deg,var(--color-match-positive),#4caf6e)' : '';
       }
       var systemPrompt = document.getElementById('drawerSystemPrompt');
@@ -21182,7 +21328,7 @@
         (currentLang === 'es' ? 'Sensación: ' : 'Feel: ')
         + d.firmFeel + ' ' + m.firmness + '/10 · ' + mattressResponseLabel(m);
       document.getElementById('drawerWhyLabel').textContent = currentLang === 'es'
-        ? 'Por qué llegó a tus finalistas'
+        ? 'Por qué llegó a tu lista'
         : 'Why it made your shortlist';
       document.getElementById('drawerShortlistFit').textContent = mattressShortlistFitText(m);
       // Claim retirement (2026-08-12): a fully retired model has no
