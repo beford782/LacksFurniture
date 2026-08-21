@@ -2178,12 +2178,19 @@
       font-weight: 500;
     }
 
+    /* The one honest statement about match strength ("Match strength is
+       relative within each tier" / "La afinidad es relativa dentro de cada
+       nivel", D3) shipped at 11px — below body size, unreadable at arm's
+       length on the mounted tablet. Raised to body size by the trust gate;
+       the wording, the dictionary key, the markup and the muted ink token
+       are unchanged (results_presentation_check pins them). */
     .noct-tier-descriptor .tier-relativity {
       display: block;
-      margin-top: 6px;
-      font-size: 11px;
+      margin-top: 8px;
+      font-size: 15px;
+      line-height: 1.45;
       color: var(--color-text-muted);
-      letter-spacing: 0.04em;
+      letter-spacing: 0.01em;
     }
 
     .noct-toppick {

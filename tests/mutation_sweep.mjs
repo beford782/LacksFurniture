@@ -107,6 +107,9 @@ const PAY_VALIDATOR = ["tools/validation.py --self-test"];
 // tier-relativity legibility. Entries that mutate a generated or documentary
 // target name it with the fifth field.
 const TRUST = ["tests/trust_integrity_check.mjs"];
+// The contrast suite joins the trust suite as observer for the legibility of
+// the three integrity lines (size floors and normal-text contrast).
+const TRUST_CONTRAST = TRUST.concat(["tests/contrast_check.mjs"]);
 
 // ---------------------------------------------------------------------------
 // THE MANIFEST. [label, find, replace] — `find` may span lines; index.html is
@@ -1064,6 +1067,17 @@ const MUTATIONS = [
   ["trust: the validator stops rejecting preview-mode privacy prose under a live gasUrl",
     "    if not is_placeholder:\n        _check_privacy_prose_mode(r, config)",
     "    if False:\n        _check_privacy_prose_mode(r, config)", PAY_VALIDATOR, "tools/validation.py"],
+
+  // ---- Trust integrity gate (2026-08-21): legibility of the honest lines ---
+  ["trust: the tier-relativity note shrinks back below body size",
+    "      margin-top: 8px;\n      font-size: 15px;\n      line-height: 1.45;",
+    "      margin-top: 8px;\n      font-size: 11px;\n      line-height: 1.45;", TRUST_CONTRAST],
+  ["trust: the welcome data-use sentence shrinks below body size",
+    "    .landing-data-use {\n      font-family: var(--font-sans);\n      font-size: 16px;",
+    "    .landing-data-use {\n      font-family: var(--font-sans);\n      font-size: 12px;", TRUST_CONTRAST],
+  ["trust: the tier-relativity note drops to a low-contrast ink",
+    "      font-size: 15px;\n      line-height: 1.45;\n      color: var(--color-text-muted);",
+    "      font-size: 15px;\n      line-height: 1.45;\n      color: var(--color-text-subtle);", TRUST_CONTRAST],
 
   // ---- Slice 4 / D4: the Payment Choice state model ------------------------
   // The two dimensions, and the line between them. Exploration is descriptive

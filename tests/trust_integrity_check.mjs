@@ -377,6 +377,25 @@ ok("tools/validation.py rejects preview-mode privacy prose under a live gasUrl (
 ok("the validator's signal list covers the runtime's preview sentence (build gate and runtime agree on what preview wording is)",
   /"stays on this tablet"/.test(VALIDATION) && /"permanecen en esta tableta"/.test(VALIDATION));
 
+// ================================================================ D. tier-relativity legibility
+section("D — the tier-relativity statement is legible and semantically untouched");
+{
+  const rule = norm.match(/\.noct-tier-descriptor \.tier-relativity \{([^}]*)\}/);
+  const size = rule ? Number((rule[1].match(/font-size:\s*(\d+(?:\.\d+)?)px/) || [])[1]) : NaN;
+  ok(`the relativity note is body size: computed font-size >= 15px (got ${size}px)`, size >= 15);
+  ok("the relativity note keeps the muted showroom ink (contrast pinned in contrast_check)",
+    !!rule && /color: var\(--color-text-muted\);/.test(rule[1]));
+  ok("the relativity note's wording is exactly the D3 ruling in both languages (semantics unchanged)",
+    dictEn["results.match_relativity"] === "Match strength is relative within each tier"
+    && dictEs["results.match_relativity"] === "La afinidad es relativa dentro de cada nivel");
+  ok("the renderer still emits the note from the dictionary key inside the tier descriptor (markup unchanged)",
+    /html \+= '<span class="tier-relativity">' \+ escapeHtml\(t\('results\.match_relativity'\)\) \+ '<\/span>';/.test(norm));
+  ok("no cross-tier marker, global best-match or naked percentage was added to the results descriptor",
+    !/best overall|highest overall|across all tiers|global.?max|globalMax/i.test(norm.slice(norm.indexOf("function renderTierDescriptor"), norm.indexOf("function renderTierDescriptor") + 1500)));
+  ok("Gold remains the initial active tier (presentation untouched — an open owner decision, register)",
+    /activeTier:\s*'gold'/.test(norm) || /activeTier = 'gold'/.test(norm));
+}
+
 // ================================================================ summary
 console.log(`\n${failures === 0 ? "PASS" : "FAIL"} — ${checks - failures}/${checks} checks passed`);
 process.exit(failures === 0 ? 0 : 1);
