@@ -100,6 +100,13 @@ const PAY_RENDER = ["tests/financing_render_check.mjs"];
 // config-admission side of Payment Choice: which financing blocks are allowed
 // to exist, as distinct from what index.html does with one that does.
 const PAY_VALIDATOR = ["tools/validation.py --self-test"];
+// Trust integrity gate observer (2026-08-21): the trust suite owns the copy <->
+// engine correspondence (document sections, cited tags, the inert-tag set,
+// shipped-vs-documented help lines, banned claims), the absence of the
+// heritage rail, the privacy voice and its network-sink pin, and the
+// tier-relativity legibility. Entries that mutate a generated or documentary
+// target name it with the fifth field.
+const TRUST = ["tests/trust_integrity_check.mjs"];
 
 // ---------------------------------------------------------------------------
 // THE MANIFEST. [label, find, replace] — `find` may span lines; index.html is
@@ -1010,6 +1017,23 @@ const MUTATIONS = [
     "      if (typeof screenTransitionOwnedElsewhere === 'function' && screenTransitionOwnedElsewhere()) return;\n      var screen = document.getElementById('questionScreen');",
     "      var screen = document.getElementById('questionScreen');", QUIZ],
 
+  // ---- Trust integrity gate (2026-08-21): copy <-> engine correspondence --
+  ["trust: a shipped overclaim returns to a help line (\"easy fix\")",
+    '"en": "If you sleep hot, we favor cooling features in your matches."',
+    '"en": "Sleeping hot or cold is an easy fix with the right materials."', TRUST, "data/quiz.json"],
+  ["trust: a help line drifts from the line the correspondence document records",
+    '"en": "This helps us favor pressure relief, support, or a responsive feel."',
+    '"en": "This helps us favor pressure relief, support, or a responsive feel, and more."', TRUST, "data/quiz.json"],
+  ["trust: a question loses its correspondence section",
+    "### 2. mattress_size", "### 2. mattress_sizes", TRUST, "docs/quiz-copy-engine-correspondence.md"],
+  ["trust: the documented inert-tag set drifts from the shipped catalog",
+    "`Inert tags: adjustable, comfort,", "`Inert tags: comfort,", TRUST, "docs/quiz-copy-engine-correspondence.md"],
+  ["trust: the document cites a mechanism the question does not score",
+    "- **Cited tags:** cooling, hybrid, memory, plush.", "- **Cited tags:** cooling, hybrid, memory, plush, motionIsolation.",
+    TRUST, "docs/quiz-copy-engine-correspondence.md"],
+  ["trust: the quiz root contract is widened for retailer prose",
+    '{\n  "questions": [', '{\n  "trustStories": [],\n  "questions": [', TRUST, "data/quiz.json"],
+
   // ---- Slice 4 / D4: the Payment Choice state model ------------------------
   // The two dimensions, and the line between them. Exploration is descriptive
   // history; a preference is a deliberate one-way choice. Each mutation below
@@ -1255,7 +1279,9 @@ process.on("exit", () => { try { rmSync(sandbox, { recursive: true, force: true 
 for (const d of ["tests", "data", "docs", "tools", "incoming", "demo"]) {
   cpSync(join(root, d), join(sandbox, d), { recursive: true });
 }
-for (const f of ["index.html", "Code.gs"]) cpSync(join(root, f), join(sandbox, f));
+// CLAUDE.md joins the copy set because the trust suite pins that it carries no
+// paragraph legitimizing retailer prose in the quiz contract.
+for (const f of ["index.html", "Code.gs", "CLAUDE.md"]) cpSync(join(root, f), join(sandbox, f));
 
 // Per-target pristine sources. Entries name their target with a fifth field;
 // index.html is the default. Every mutated target is restored before the next
@@ -1280,6 +1306,12 @@ const PRISTINE_BY_FILE = {
   // `experience` bypass shipped green.
   "tools/validation.py":
     readFileSync(join(sandbox, "tools", "validation.py"), "utf8"),
+  // Trust gate: the generated quiz copy and the correspondence document that
+  // governs it. Mutating each proves the suite compares them rather than
+  // trusting either.
+  "data/quiz.json": readFileSync(join(sandbox, "data", "quiz.json"), "utf8"),
+  "docs/quiz-copy-engine-correspondence.md":
+    readFileSync(join(sandbox, "docs", "quiz-copy-engine-correspondence.md"), "utf8"),
 };
 
 // Observers are node suites by default. The validator's self-test is the one
