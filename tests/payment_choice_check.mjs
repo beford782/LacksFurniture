@@ -442,10 +442,12 @@ const RETURN_API = `
   };`;
 
 function makeEnv({ lang = 'en', config = CFG, mutate = null,
-                   sheetOpen = false, handoffActive = true, resultsActive = false } = {}) {
+                   sheetOpen = false, handoffActive = true, resultsActive = false, planActive = false } = {}) {
   const doc = makeDoc();
   if (handoffActive) doc.getElementById('hf2Screen').classList.add('active');
   if (resultsActive) doc.getElementById('resultsScreen').classList.add('active');
+  // Slice 5: the Sleep Plan is a fifth financing surface with its own live region.
+  if (planActive) doc.getElementById('sleepPlanScreen').classList.add('active');
   if (sheetOpen) {
     doc.getElementById('financingSheet').hidden = false;
     doc.getElementById('financingSheetBackdrop').hidden = false;
@@ -2746,6 +2748,30 @@ section('§29 — Sleep Plan surface: truthful placement, read-only rows, one ow
     /var _payNotNowSurface = 'hf2';/.test(norm) && /finally \{ _payNotNowSurface = 'hf2'; \}/.test(norm));
   ok('§29 the Plan wrapper contains NO payPref write of its own (the single owned write stays in setPaymentNotNow)',
     !/payPref\s*=[^=]/.test(stripComments(src.setPaymentNotNowFromPlan)));
+
+  // Liveness of the Plan's own region — the §19 doctrine applied to the fifth
+  // surface: an announcement from the Plan lands in the Plan's region ONLY
+  // when the Plan is the active screen and its module is visible; an inactive
+  // Plan schedules nothing and its region stays untouched.
+  const live = makeEnv({ handoffActive: false, planActive: true });
+  live.api.renderPlan();
+  live.api.notNowFromPlan();
+  live.flush();
+  ok("§29 with the Plan ACTIVE, 'Not right now' from the Plan populates the Plan's own region",
+    live.get('sleepPlanFinancingStatus').textContent.length > 0,
+    JSON.stringify(live.get('sleepPlanFinancingStatus').textContent));
+  ok("§29 ...and does NOT write the handoff's region", live.get('hf2FinancingStatus').textContent === '');
+  const dark = makeEnv({ handoffActive: false, planActive: false });
+  dark.api.renderPlan();
+  dark.api.notNowFromPlan();
+  dark.flush();
+  ok("§29 with the Plan INACTIVE, the Plan's region is untouched (never populated behind another screen)",
+    dark.get('sleepPlanFinancingStatus').textContent === '');
+  ok("§29 the Plan's Not right now control carries aria-pressed reflecting the shared payPref",
+    (() => { const e = openEnv({ handoffActive: false, planActive: true }); e.api.renderPlan();
+      const off = tagOf(e.get('sleepPlanFinancingInterest').innerHTML, 'sleepPlanFinancingNotNow');
+      e.api.notNowFromPlan(); const on = tagOf(e.get('sleepPlanFinancingInterest').innerHTML, 'sleepPlanFinancingNotNow');
+      return off && on && /aria-pressed="false"/.test(off.attrs) && /aria-pressed="true"/.test(on.attrs); })());
 }
 
 console.log(`\n${failures === 0 ? 'PASS' : 'FAIL'} — ${checks - failures}/${checks} checks passed`);

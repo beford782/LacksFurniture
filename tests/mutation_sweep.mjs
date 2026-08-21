@@ -684,12 +684,14 @@ const MUTATIONS = [
     "if (dfmReducedMotion()) setState(true);", "", CONS],
 
   // --- compare entry point (owner-authorized slice) ------------------------
+  // (Slice 5 C2: the clusters gained the finalist control between compare and
+  // save; the find-strings follow the new shape.)
   ["compare entry: the top-pick card loses its compare control",
-    "+       detailsBtn\n        +       compareBtn\n        +       saveBtn",
-    "+       detailsBtn\n        +       saveBtn", CMPE],
+    "+       detailsBtn\n        +       compareBtn\n        +       finalistBtn\n        +       saveBtn",
+    "+       detailsBtn\n        +       finalistBtn\n        +       saveBtn", CMPE],
   ["compare entry: the supporting cards lose their compare control",
-    "+       detailsBtn\n          +       compareBtn\n          +       saveBtn",
-    "+       detailsBtn\n          +       saveBtn", CMPE],
+    "+       detailsBtn\n          +       compareBtn\n          +       finalistBtn\n          +       saveBtn",
+    "+       detailsBtn\n          +       finalistBtn\n          +       saveBtn", CMPE],
   ["compare entry: the tray go label loses its Spanish draft",
     "go.textContent = currentLang === 'es' ? 'Comparar →' : 'Compare →';",
     "go.textContent = 'Compare →';", CMPE],
@@ -1367,9 +1369,15 @@ const MUTATIONS = [
   ["plan: the Plan wrapper takes its own payPref write (second owner)",
     "    window.setPaymentNotNowFromPlan = function() {\n      _payNotNowSurface = 'plan';",
     "    window.setPaymentNotNowFromPlan = function() {\n      payPref = PAY_NOT_NOW;\n      _payNotNowSurface = 'plan';", PAY_WITH_SESSION],
+  // Twin of the handoff aria-pressed mutant, on the PLAN's own control. The
+  // handoff renderers now precede the Plan's in the file, so the original
+  // handoff entries keep their short anchors; this one is Plan-unique.
+  ["plan: the Plan's Not right now loses aria-pressed",
+    "id=\"sleepPlanFinancingNotNow\" '\n        + 'aria-pressed=\"' + (notNow ? 'true' : 'false') + '\" '",
+    "id=\"sleepPlanFinancingNotNow\" '\n        + ''", PAY],
   ["plan: the announcement region for the Plan is never live",
     "      if (regionId === 'sleepPlanFinancingStatus') return finPlanVisible();",
-    "      if (regionId === 'sleepPlanFinancingStatus') return false;", PAY_ASYNC],
+    "      if (regionId === 'sleepPlanFinancingStatus') return false;", PAY],
 
 ];
 
