@@ -660,5 +660,28 @@ section("Sleep Brief CTA: ruled label, unchanged handler, honesty invariant");
 }
 
 // ===========================================================================
+// Slice 5 C1: the completeness predicate is INLINED in both the producer
+// (showProfileScreen) and the consumer (renderHf2Priorities) because four
+// suites extract those functions by regex. Inlining is only safe if the two
+// copies are byte-identical, so that is pinned here.
+{
+  const copies = [...html.matchAll(/      var trialFocusIsComplete = function\(stored\) \{[\s\S]*?\r?\n      \};\r?\n/g)].map((m) => m[0].replace(/\r\n/g, "\n"));
+  check(`the all-or-nothing completeness predicate is inlined exactly twice (producer + consumer), found ${copies.length}`, copies.length === 2);
+  check("the two inlined copies are byte-identical (no drift between producer and consumer)",
+    copies.length === 2 && copies[0] === copies[1]);
+  check("the predicate requires BOTH languages for name, why and test (completeness is language-independent)",
+    copies.length === 2 && /str\(item\.en\) && str\(item\.es\)/.test(copies[0])
+    && /str\(item\.why\.en\) && str\(item\.why\.es\)/.test(copies[0])
+    && /str\(item\.test\.en\) && str\(item\.test\.es\)/.test(copies[0]));
+  check("the consumer no longer filters per element (no `var valid = stored.filter(`)",
+    !/var valid = stored\.filter\(/.test(html));
+  check("the producer stores the built array only when complete, else []",
+    /analytics\.trialFocus = trialFocusIsComplete\(builtTrialFocus\) \? builtTrialFocus : \[\];/.test(html));
+  // The EMAIL projection keeps its pre-existing per-entry filter — deferred
+  // §1.6 work by owner ruling. Pinned so nobody "fixes" it here silently.
+  check("[deferred §1.6] the email projection's per-entry filter is untouched by this slice",
+    /priorities: \(Array\.isArray\(analytics\.trialFocus\) \? analytics\.trialFocus : \[\]\)/.test(html));
+}
+
 console.log(`\nConsultation priorities check: ${passed} passed, ${failed} failed`);
 process.exit(failed === 0 ? 0 : 1);

@@ -14680,7 +14680,17 @@
       // nothing beyond these customer-facing strings ever leaves this object.
       // Reassigned wholesale on every profile render (never appended), and
       // reset to [] by the authoritative wipe.
-      analytics.trialFocus = topPriorities.map(function(priority) {
+      var trialFocusIsComplete = function(stored) {
+        var str = function(v) { return typeof v === 'string' && v.trim().length > 0; };
+        var entryOk = function(item) {
+          return !!item && typeof item === 'object'
+            && str(item.en) && str(item.es)
+            && !!item.why && typeof item.why === 'object' && str(item.why.en) && str(item.why.es)
+            && !!item.test && typeof item.test === 'object' && str(item.test.en) && str(item.test.es);
+        };
+        return Array.isArray(stored) && stored.length > 0 && stored.every(entryOk);
+      };
+      var builtTrialFocus = topPriorities.map(function(priority) {
         return {
           en: priority.nameEn,
           es: priority.nameEs,
@@ -14688,6 +14698,11 @@
           test: { en: priority.testEn, es: priority.testEs }
         };
       });
+      // Producer-boundary enforcement (R-8): the stored collection is either
+      // COMPLETE or EMPTY — never a partially-shaped array that a consumer
+      // would have to filter. An incomplete build is a producer defect; it
+      // stores [] so every consumer fails closed on one signal.
+      analytics.trialFocus = trialFocusIsComplete(builtTrialFocus) ? builtTrialFocus : [];
 
       // ----- RENDER TRIAL PRIORITIES (D1 single-open disclosure) -----
       // Position is the order — the row set and its sequence are the engine's
@@ -18698,27 +18713,50 @@
     // owns display, and a language switch on this screen re-runs renderHf2()
     // which lands back here reading the same stored array.
     //
-    // An entry is valid only when it carries a resolvable name AND both prose
-    // pairs. If nothing valid is stored (fresh session, wiped session, or a
-    // pre-widening shape), the WHOLE section hides — the label must never sit
-    // over an empty or stale list.
+    // COMPLETENESS IS ALL-OR-NOTHING (owner ruling R-8, 2026-08-21). The stored
+    // collection is consumed only when EVERY entry carries a name pair and
+    // both prose pairs in BOTH languages; completeness is a property of the
+    // stored object, not of the active language, so a collection is never
+    // "valid in EN, partial in ES". One malformed entry invalidates the whole
+    // collection: nothing is filtered, shortened, padded, synthesised or
+    // partially rendered. The 0.5 contract ("the engine's count in the
+    // engine's order — never padded, never synthesised") forbids rendering a
+    // different count than the producer stored; Phase 1 constraint 2 forbids
+    // filtering elements. This predicate is the single authority for that
+    // decision and is shared by every on-screen consumer so two adjacent
+    // screens can never disagree about the same array.
+    // The predicate is INLINED, byte-identically, inside showProfileScreen()
+    // (producer) and renderHf2Priorities() (consumer) rather than hoisted:
+    // four suites extract those two functions by regex and execute them in
+    // isolation, so a hoisted helper would be invisible to every one of them.
+    // tests/consultation_priorities_check.mjs pins the two inlined copies as
+    // identical text so they cannot drift.
+    // If the stored collection is not complete (fresh session, wiped session,
+    // a pre-widening shape, OR any single malformed entry), the WHOLE section
+    // hides and the list empties — the label must never sit over an empty,
+    // stale or shortened list.
     function renderHf2Priorities() {
+      var trialFocusIsComplete = function(stored) {
+        var str = function(v) { return typeof v === 'string' && v.trim().length > 0; };
+        var entryOk = function(item) {
+          return !!item && typeof item === 'object'
+            && str(item.en) && str(item.es)
+            && !!item.why && typeof item.why === 'object' && str(item.why.en) && str(item.why.es)
+            && !!item.test && typeof item.test === 'object' && str(item.test.en) && str(item.test.es);
+        };
+        return Array.isArray(stored) && stored.length > 0 && stored.every(entryOk);
+      };
       var section = document.getElementById('hf2PrioritiesSection');
       var list = document.getElementById('hf2Priorities');
       if (!section || !list) return;
       var es = currentLang === 'es';
-      var stored = (typeof analytics !== 'undefined' && Array.isArray(analytics.trialFocus))
-        ? analytics.trialFocus : [];
-      var valid = stored.filter(function(item) {
-        return item && L(item)
-          && item.why && (item.why[currentLang] || item.why.en)
-          && item.test && (item.test[currentLang] || item.test.en);
-      });
-      if (!valid.length) {
+      var stored = (typeof analytics !== 'undefined') ? analytics.trialFocus : undefined;
+      if (!trialFocusIsComplete(stored)) {
         list.innerHTML = '';
         section.style.display = 'none';
         return;
       }
+      var valid = stored;
       // Inline spacing, not a class: without it the reset collapses the three
       // items into one six-line block. Mirrors the email body's inline
       // treatment of the same content; 1.6 re-decides both.
