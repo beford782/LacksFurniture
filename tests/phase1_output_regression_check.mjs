@@ -553,8 +553,40 @@ section("fixture non-triviality");
     all.every((s) => s.results.topPick && s.results.topPick.tier === "gold"
       && s.results.topPick.name === MATTRESSES.gold.find(
            (m) => m.id === s.results.tierData.gold[0].id).name));
-  check("the finalist is session state, not engine output — null under empty session",
+  // Slice 5 C0 — label corrected. This harness seeds EMPTY picks, a null
+  // _resultsState and an empty analytics object, so every fallback branch of
+  // getSleepSystemFinalist() (saved[0], tierData.gold[0], analytics.topPick)
+  // is structurally unreachable from here. The assertion below therefore
+  // proves only that the fixture's `finalist` field is null under an EMPTY
+  // session — it does not and cannot prove the function never returns engine
+  // output. The seeded characterization that follows is what sees the
+  // fallbacks; the earlier label ("session state, not engine output") claimed
+  // what this line cannot show.
+  check("the fixture's finalist field is null under the EMPTY session this harness seeds",
     all.every((s) => s.accessories.en.finalist === null && s.accessories.es.finalist === null));
+
+  // Seeded characterization (Slice 5 C0). Runs the REAL getSleepSystemFinalist()
+  // with populated engine output and no explicit favorite, and records what it
+  // returns TODAY. Written as characterization, not aspiration: at 4a76503 the
+  // function falls through to saved[0] / tierData.gold[0] / analytics.topPick.
+  // The resolver commit that lands the D5b semantics must flip these to the
+  // honest outcome (null — no explicit finalist) WITHOUT moving the fixture,
+  // which stays null because the fixture harness seeds nothing.
+  {
+    const probe = new Function("window", "_resultsState", "analytics",
+      FINALIST_FN + "\n return getSleepSystemFinalist();");
+    const gold = [{ id: "gX", name: "GX" }];
+    const top = { name: "TOP", tier: "gold" };
+    const r1 = probe({ _savedPicks: [{ id: "g5" }, { id: "g6" }], _favoriteMattressId: "" }, null, {});
+    const r2 = probe({ _savedPicks: [], _favoriteMattressId: "" }, { tierData: { gold } }, {});
+    const r3 = probe({ _savedPicks: [], _favoriteMattressId: "" }, { tierData: { gold: [] } }, { topPick: top });
+    const r4 = probe({ _savedPicks: [{ id: "g6" }], _favoriteMattressId: "g5" }, null, {});
+    const promotes = r1 && r1.id === "g5" && r2 && r2.id === "gX" && r3 === top && r4 && r4.id === "g6";
+    const honest = r1 === null && r2 === null && r3 === null && r4 === null;
+    check("[characterization] getSleepSystemFinalist() with no explicit favorite is EITHER the shipped silent promotion (saved[0] / gold[0] / topPick / orphaned->saved[0]) OR the honest null — never a third thing",
+      promotes || honest);
+    console.log(`  [info] finalist fallback characterization at this head: ${promotes ? "SILENT PROMOTION (pre-D5b shipped behaviour)" : honest ? "HONEST NULL (D5b semantics landed)" : "UNRECOGNISED"}`);
+  }
   // Catalog ratchet: today the support group is a single item, which is WHY
   // the sub-type re-sort carries no mutation (see the MUTATIONS comment).
   // When this fails, the catalog gained support sub-types — add the re-sort
@@ -611,6 +643,13 @@ const MUTATIONS = [
   // any such mutation is uncatchable on this data. The single-item reality is
   // ratcheted in the non-triviality section; when the catalog gains a second
   // support sub-type that check fails and the re-sort mutation must be added.
+  // Slice 5 C0: vmSrc was threaded as a mutation key from the start but no
+  // entry used it, so nothing proved the view-model extraction was
+  // load-bearing. The threshold stamp lives inside getSleepSystemViewModel and
+  // is pinned per group item; moving it must diverge.
+  { name: "view-model meetsMatchThreshold 0.6 -> 0.9", key: "vmSrc", src: VIEWMODEL_FN,
+    find: "meetsMatchThreshold: (item.score || 0) >= maxScore * 0.6",
+    replace: "meetsMatchThreshold: (item.score || 0) >= maxScore * 0.9" },
   { name: "step partition collapsed (adjustable bases leak into support)", key: "stepSrc", src: STEP_FN,
     find: "return item.subType === 'adjustable' ? 'adjustability' : 'support';",
     replace: "return 'support';" }

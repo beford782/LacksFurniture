@@ -440,6 +440,66 @@ section("hf2: ordered render from stored state, both languages, no recompute");
       els.get("hf2PrioritiesSection").style.display === "none"
       && els.get("hf2Priorities").innerHTML === "");
   }
+  // Slice 5 C0 — MIXED VALIDITY (owner ruling R-8, 2026-08-21). The hostile
+  // fixtures above test the two ENDS of the validity spectrum (all valid, all
+  // invalid). The middle was never exercised: three stored entries with ONE
+  // malformed. The governing contract (roadmap 0.5: "render the engine's count
+  // in the engine's order — never padded, never synthesised"; Phase 1
+  // constraint 2: never "filter ... elements") admits no partial render, and the
+  // owner ruled ALL-OR-NOTHING FAIL-CLOSED: any malformed entry invalidates the
+  // whole collection; never filter, shorten, pad, synthesise or partially
+  // render. This block is RED at 4a76503 by design (the renderer filters per
+  // element and emits 2 rows) and is repaired in the prerequisite commit.
+  for (const badIndex of [0, 1, 2]) {
+    for (const lang of ["en", "es"]) {
+      const { els, doc } = makeDoc();
+      const base = runProfile(FIXTURES.C, lang).analytics.trialFocus;
+      if (base.length !== 3) { check(`[mixed] fixture C yields 3 priorities in ${lang} (got ${base.length})`, false); continue; }
+      const analytics = { trialFocus: base };
+      const out = {};
+      new Function("document", "currentLang", "analytics", "out",
+        `"use strict";
+        ${ESCAPE_FN}
+        ${L_FN}
+        ${HF2_FN}
+        out.run = function() { renderHf2Priorities(); };
+        `)(doc, lang, analytics, out);
+      out.run();
+      check(`[mixed ${lang} idx${badIndex}] precondition: all-valid renders exactly 3 rows`,
+        (els.get("hf2Priorities").innerHTML.match(/<li /g) || []).length === 3);
+      const broken = Object.assign({}, base[badIndex]);
+      delete broken.test;
+      analytics.trialFocus = base.map((x, i) => (i === badIndex ? broken : x));
+      out.run();
+      const rows = (els.get("hf2Priorities").innerHTML.match(/<li /g) || []).length;
+      const hidden = els.get("hf2PrioritiesSection").style.display === "none";
+      check(`[mixed ${lang} idx${badIndex}] one malformed entry is ALL-OR-NOTHING: the section hides and the list empties — never a silent partial (rows=${rows} hidden=${hidden})`,
+        rows === 0 && hidden && els.get("hf2Priorities").innerHTML === "");
+      // Negative control: restoring the full valid array restores all 3.
+      analytics.trialFocus = base;
+      out.run();
+      check(`[mixed ${lang} idx${badIndex}] negative control: the restored valid array renders 3 rows again`,
+        (els.get("hf2Priorities").innerHTML.match(/<li /g) || []).length === 3
+        && els.get("hf2PrioritiesSection").style.display === "");
+    }
+  }
+  // EN and ES must agree on the count from identical stored state: a
+  // language-dependent partial is a second way to ship a shortened list.
+  {
+    const mk = (lang) => {
+      const { els, doc } = makeDoc();
+      const base = runProfile(FIXTURES.C, lang).analytics.trialFocus;
+      const broken = Object.assign({}, base[1]); delete broken.why;
+      const analytics = { trialFocus: [base[0], broken, base[2]] };
+      new Function("document", "currentLang", "analytics",
+        `"use strict"; ${ESCAPE_FN} ${L_FN} ${HF2_FN} renderHf2Priorities();`)(doc, lang, analytics);
+      return (els.get("hf2Priorities").innerHTML.match(/<li /g) || []).length;
+    };
+    const en = mk("en"), es = mk("es");
+    check(`[mixed] EN and ES render the SAME count from the same partially-malformed state (en=${en}, es=${es}) and that count is 0`,
+      en === es && en === 0);
+  }
+
   // The hide is not the vacuous starting state: show first, then clear.
   const state = runProfile(FIXTURES.C, "en").analytics.trialFocus;
   const { els, doc } = makeDoc();
