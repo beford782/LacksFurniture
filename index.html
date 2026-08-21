@@ -17414,7 +17414,18 @@
       return qualified;
     }
 
-    function getSleepSystemViewModel() {
+    // ---- The engine's Sleep System groups — side-effect-free read -----------
+    // Slice 5 (owner ruling, accessory projection A): the grouping,
+    // qualification, cap/back-fill, threshold stamp and the fixed support
+    // sub-type order are ENGINE behaviour (Phase 1 constraint 2 exempts the
+    // support re-sort as "inside the engine"). They live here, once. This
+    // accessor writes nothing — no analytics, no window state — and reads
+    // only answers / ACCESSORIES / currentLang through the scorer. It is the
+    // Plan's only accessory source; the Plan renderer never calls the scorer
+    // and never calls getSleepSystemViewModel() (which writes analytics and
+    // bundles the finalist). The view model below composes over this so the
+    // Sleep System screen and the Phase 1 fixture see byte-identical groups.
+    function readSleepSystemGroups() {
       var scored = Array.isArray(ACCESSORIES) ? scoreAccessoriesFromAnswers() : [];
       var groups = {
         support: scored.filter(function(item) {
@@ -17450,6 +17461,15 @@
         return (order[a.subType] == null ? 9 : order[a.subType]) -
           (order[b.subType] == null ? 9 : order[b.subType]);
       });
+      return groups;
+    }
+
+    // Fixture-facing view model, retained by name and shape. It composes the
+    // engine groups with the analytics projection the Sleep System screen has
+    // always written and the (chosen-only) finalist. The Plan does NOT call
+    // this.
+    function getSleepSystemViewModel() {
+      var groups = readSleepSystemGroups();
 
       var recommended = groups.pillow.concat(groups.protection).map(function(item) {
         return {

@@ -76,7 +76,7 @@ function throwingWindow(seed = {}) {
 // failure; one not listed is reported [pending].
 const REQUIRED = new Set([
   "resolveFinalistState", "chooseFinalist",   // finalist provenance commit (C2)
-  // "readSleepSystemGroups",  // content-consumer commit
+  "readSleepSystemGroups",   // accessor commit (C3)
   // "sleepPlanScreen",        // screen-shell commit
 ]);
 function gate(symbolName, present) {
@@ -158,26 +158,34 @@ section("pass-1 / accessories: the shipped view model is not a safe Plan accesso
 check("getSleepSystemViewModel() extracted", !!VIEWMODEL_SRC);
 check("qualifyRankedChoices/sleepSystemStepForItem/sleepSystemCategory extracted", !!QUALIFY_SRC && !!STEP_SRC && !!CAT_SRC);
 if (VIEWMODEL_SRC && QUALIFY_SRC && STEP_SRC && CAT_SRC && FINALIST_SRC) {
-  // A5: rendering-time reads must not mutate analytics. The shipped view model
-  // assigns analytics.recommendedAccessories on every call.
+  // A5: the shipped view model MUTATES analytics.recommendedAccessories on
+  // every call, so it is not a safe thing for a renderer to read. At 4a76503
+  // it was the only accessor; the Plan's accessor (readSleepSystemGroups,
+  // gated below) must leave the sentinel IDENTICAL. Measured with a real
+  // scorer so the call reaches the write.
   const SENTINEL = Object.freeze([]);
   const analytics = { recommendedAccessories: SENTINEL, topPick: null };
-  let scorerCalls = 0;
-  const out = {};
-  try {
-    new Function("ACCESSORIES", "window", "answers", "currentLang", "analytics", "_resultsState", "onScore", "out",
-      `"use strict";
-       function scoreAccessoriesFromAnswers() { onScore(); throw new Error('PLAN_CALLED_SCORER'); }
-       ${extractFunction("function resolveFinalistState()") || ""} ${QUALIFY_SRC} ${CAT_SRC} ${STEP_SRC} ${FINALIST_SRC} ${VIEWMODEL_SRC}
-       out.vm = getSleepSystemViewModel();`)(
-      ACCESSORIES, throwingWindow({ _savedPicks: [], _favoriteMattressId: "" }), {}, "en", analytics, null, () => { scorerCalls++; }, out);
-    out.threw = null;
-  } catch (e) { out.threw = e; }
-  check("A6: reading the Plan's accessory groups does NOT invoke the scorer (a throwing scorer stub must not fire)",
-    scorerCalls === 0 && !(out.threw && /PLAN_CALLED_SCORER/.test(out.threw.message)),
-    out.threw ? out.threw.message : `scorer calls=${scorerCalls}`);
-  check("A5: reading the Plan's accessory groups leaves analytics.recommendedAccessories IDENTICAL (sentinel identity, not deep-equal)",
-    analytics.recommendedAccessories === SENTINEL);
+  const SCORE_FOR_A5 = extractFunction("function scoreAccessoriesFromAnswers()");
+  const READ_FOR_A5 = extractFunction("function readSleepSystemGroups()") || "";
+  new Function("ACCESSORIES", "window", "answers", "currentLang", "analytics", "_resultsState",
+    `"use strict"; ${SCORE_FOR_A5} ${extractFunction("function resolveFinalistState()") || ""} ${QUALIFY_SRC} ${CAT_SRC} ${STEP_SRC} ${FINALIST_SRC} ${READ_FOR_A5} ${VIEWMODEL_SRC}
+     getSleepSystemViewModel();`)(
+    ACCESSORIES, throwingWindow({ _savedPicks: [], _favoriteMattressId: "" }), { sleep_position: "side" }, "en", analytics, null);
+  check("A5 (characterization): the shipped view model REASSIGNS analytics.recommendedAccessories — a renderer must not read through it",
+    analytics.recommendedAccessories !== SENTINEL);
+  if (READ_FOR_A5) {
+    const a2 = { recommendedAccessories: SENTINEL, topPick: null };
+    new Function("ACCESSORIES", "window", "answers", "currentLang", "analytics",
+      `"use strict"; ${SCORE_FOR_A5} ${QUALIFY_SRC} ${CAT_SRC} ${STEP_SRC} ${READ_FOR_A5} readSleepSystemGroups();`)(
+      ACCESSORIES, throwingWindow({}), { sleep_position: "side" }, "en", a2);
+    check("A5: the Plan's accessor leaves analytics.recommendedAccessories IDENTICAL (sentinel identity, not deep-equal)",
+      a2.recommendedAccessories === SENTINEL);
+  } else {
+    console.log("  [pending] A5 accessor half skipped — readSleepSystemGroups not present at this head");
+  }
+  // A6 belongs to the Plan RENDERER (it must never call the scorer, directly
+  // or indirectly); it is asserted in the screen-shell section with a
+  // throwing scorer stub once renderSleepPlan exists.
 }
 
 // ============================================================================
@@ -319,25 +327,80 @@ if (gate("chooseFinalist", !!CHOOSE_SRC && !!TOGGLE_SAVE_SRC && !!REMOVE_SRC)) {
 
 section("contract / readSleepSystemGroups() — side-effect-free Plan accessor");
 const READ_SRC = extractFunction("function readSleepSystemGroups()");
-if (gate("readSleepSystemGroups", !!READ_SRC) && QUALIFY_SRC && STEP_SRC && CAT_SRC) {
-  check("the accessor does not write analytics", !/analytics\s*\./.test(READ_SRC.replace(/\/\/.*$/gm, "")));
-  check("the accessor does not reach the finalist (no getSleepSystemFinalist / _favoriteMattressId)",
-    !/getSleepSystemFinalist|_favoriteMattressId|_savedPicks/.test(READ_SRC));
-  check("the accessor does not re-sort by score and does not re-apply the support sub-type sort",
-    !/\.sort\(/.test(READ_SRC.replace(/\/\/.*$/gm, "")) || /groups\.support\.sort/.test(READ_SRC) === false);
-  // The shipped view model must still produce byte-identical groups (the
-  // fixture pins them); the accessor must equal the view model's groups.
-  if (VIEWMODEL_SRC && FINALIST_SRC) {
-    const SCORE_SRC = extractFunction("function scoreAccessoriesFromAnswers()");
+const SCORE_SRC = extractFunction("function scoreAccessoriesFromAnswers()");
+if (gate("readSleepSystemGroups", !!READ_SRC) && QUALIFY_SRC && STEP_SRC && CAT_SRC && SCORE_SRC) {
+  const stripComments = (src) => src.replace(/\/\/.*$/gm, "");
+  check("the accessor writes nothing to analytics", !/analytics\s*\./.test(stripComments(READ_SRC)));
+  check("the accessor writes nothing to window state", !/window\.[A-Za-z_$][\w$]*\s*=/.test(stripComments(READ_SRC)));
+  check("the accessor does not reach the finalist", !/getSleepSystemFinalist|resolveFinalistState|_favoriteMattressId|_savedPicks/.test(READ_SRC));
+  check("the accessor carries the engine-owned support sub-type sort and NO score re-sort",
+    /groups\.support\.sort\(/.test(READ_SRC) && (stripComments(READ_SRC).match(/\.sort\(/g) || []).length === 1);
+  // A: engine parity. The accessor's groups must equal the fixture-facing
+  // view model's groups id-for-id, index-for-index (the fixture pins the
+  // latter; this ties the Plan's source to the pinned one).
+  {
     const answers = { sleep_position: "side", temperature: "hot", sleep_issues: ["snoring"], health_conditions: [], budget: "mid" };
     const out = {};
     new Function("ACCESSORIES", "window", "answers", "currentLang", "analytics", "_resultsState", "out",
-      `"use strict"; ${SCORE_SRC} ${QUALIFY_SRC} ${CAT_SRC} ${STEP_SRC} ${FINALIST_SRC} ${VIEWMODEL_SRC} ${READ_SRC}
+      `"use strict"; ${SCORE_SRC} ${QUALIFY_SRC} ${CAT_SRC} ${STEP_SRC} ${extractFunction("function resolveFinalistState()") || ""} ${FINALIST_SRC} ${READ_SRC} ${VIEWMODEL_SRC}
        out.vm = getSleepSystemViewModel().groups; out.rd = readSleepSystemGroups();`)(
       ACCESSORIES, throwingWindow({ _savedPicks: [], _favoriteMattressId: "" }), answers, "en", {}, null, out);
     const ids = (g) => ["support", "adjustability", "pillow", "protection"].map((k) => g[k].map((a) => a.id));
     check("the accessor's four groups equal the view model's four groups, id-for-id, index-for-index",
       JSON.stringify(ids(out.vm)) === JSON.stringify(ids(out.rd)));
+    check("at the pinned catalog every group is non-empty (support/adjustability/pillow/protection)",
+      ["support", "adjustability", "pillow", "protection"].every((k) => out.rd[k].length > 0));
+  }
+  // B: NOT memoized — and the assertion discriminates a PER-LANGUAGE memo,
+  // which an EN/ES-differ check cannot. Same language, module-scope answers
+  // mutated between two reads: the output MUST change. The scorer reads
+  // `answers` directly, so no plumbing is needed.
+  {
+    const out = {};
+    new Function("ACCESSORIES", "window", "currentLang", "out",
+      `"use strict"; var answers = { sleep_position: "side", temperature: "hot", sleep_issues: ["snoring"], health_conditions: [], budget: "mid" };
+       ${SCORE_SRC} ${QUALIFY_SRC} ${CAT_SRC} ${STEP_SRC} ${READ_SRC}
+       out.a = JSON.stringify(readSleepSystemGroups());
+       answers = { sleep_position: "back", temperature: "cold", sleep_issues: [], health_conditions: ["back_pain"], budget: "premium" };
+       out.b = JSON.stringify(readSleepSystemGroups());
+       out.a2 = (function(){ answers = { sleep_position: "side", temperature: "hot", sleep_issues: ["snoring"], health_conditions: [], budget: "mid" }; return JSON.stringify(readSleepSystemGroups()); })();`)(
+      ACCESSORIES, throwingWindow({}), "en", out);
+    check("two reads in the SAME language with answers mutated between them differ (no memo of any kind, per-language included)",
+      out.a !== out.b);
+    check("restoring the answers restores the output (deterministic given inputs)", out.a === out.a2);
+  }
+  // C: language reaches the reasons through the read, every time (no stale
+  // first-render language). ES-first equals EN-then-ES.
+  {
+    const run = (seq) => {
+      const out = {};
+      new Function("ACCESSORIES", "window", "answers", "seq", "out",
+        `"use strict"; var currentLang = seq[0];
+         ${SCORE_SRC} ${QUALIFY_SRC} ${CAT_SRC} ${STEP_SRC} ${READ_SRC}
+         out.r = seq.map(function(l){ currentLang = l; return readSleepSystemGroups(); });`)(
+        ACCESSORIES, throwingWindow({}), { sleep_position: "side", temperature: "hot", sleep_issues: ["snoring"], health_conditions: [], budget: "mid" }, seq, out);
+      return out.r;
+    };
+    const [en, es] = run(["en", "es"]);
+    const [esFirst] = run(["es"]);
+    const ids = (g) => JSON.stringify(["support", "adjustability", "pillow", "protection"].map((k) => g[k].map((a) => a.id)));
+    const reasons = (g) => JSON.stringify(["support", "adjustability", "pillow", "protection"].map((k) => g[k].map((a) => a.reasons)));
+    check("EN and ES reads yield identical ids in identical order (ranking is language-invariant)", ids(en) === ids(es));
+    check("EN and ES reads yield DIFFERENT reason text (language reaches the read)", reasons(en) !== reasons(es));
+    check("an ES-first read equals the ES read after EN (no first-render language freeze)", reasons(esFirst) === reasons(es));
+  }
+  // D: the accessor really invokes the scorer exactly once per read (a
+  // throwing stub fires; a counting stub counts one) — it is a READ of the
+  // engine, not a cache.
+  {
+    let calls = 0; let threw = null;
+    try {
+      new Function("ACCESSORIES", "window", "answers", "currentLang", "onScore",
+        `"use strict"; function scoreAccessoriesFromAnswers() { onScore(); return []; }
+         ${QUALIFY_SRC} ${CAT_SRC} ${STEP_SRC} ${READ_SRC}
+         readSleepSystemGroups(); readSleepSystemGroups();`)(ACCESSORIES, throwingWindow({}), {}, "en", () => { calls++; });
+    } catch (e) { threw = e; }
+    check("each read invokes the engine scorer exactly once (two reads -> two calls; no cache)", !threw && calls === 2, threw && threw.message);
   }
 }
 

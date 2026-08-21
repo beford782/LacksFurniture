@@ -105,6 +105,11 @@ const SCORE_ACC_FN = grab(/function scoreAccessoriesFromAnswers\(\)\s*\{[\s\S]*?
 const CAT_FN = grab(/function sleepSystemCategory\([\s\S]*?\r?\n    \}/, "sleepSystemCategory()");
 const STEP_FN = grab(/function sleepSystemStepForItem\([\s\S]*?\r?\n    \}/, "sleepSystemStepForItem()");
 const VIEWMODEL_FN = grab(/function getSleepSystemViewModel\(\)\s*\{[\s\S]*?\r?\n    \}/, "getSleepSystemViewModel()");
+// Slice 5 C3: the engine grouping now lives in readSleepSystemGroups(), which
+// the view model composes over. Extracted BESIDE the view model so the
+// fixture-facing entry keeps its name; the groups it yields must remain
+// byte-identical (the fixture pins them per step).
+const READGROUPS_FN = grab(/function readSleepSystemGroups\(\)\s*\{[\s\S]*?\r?\n    \}/, "readSleepSystemGroups()");
 const FINALIST_FN = grab(/function getSleepSystemFinalist\(\)\s*\{[\s\S]*?\r?\n    \}/, "getSleepSystemFinalist()");
 // Slice 5 C2: getSleepSystemFinalist() now delegates to the D5b resolver. The
 // resolver is extracted BESIDE it (not instead of it) so the fixture-facing
@@ -315,7 +320,7 @@ function runResults(answers, lang, { calcSrc = CALC_FN, qualifySrc = QUALIFY_FN,
 
 // Executes the real accessory engine: the answer-driven scorer and the Sleep
 // System view-model grouping (qualification + support sub-type re-sort).
-function runAccessories(answers, lang, { accSrc = SCORE_ACC_FN, qualifySrc = QUALIFY_FN, vmSrc = VIEWMODEL_FN, stepSrc = STEP_FN } = {}) {
+function runAccessories(answers, lang, { accSrc = SCORE_ACC_FN, qualifySrc = QUALIFY_FN, vmSrc = VIEWMODEL_FN, groupsSrc = READGROUPS_FN, stepSrc = STEP_FN } = {}) {
   const out = {};
   new Function("ACCESSORIES", "window", "answers", "currentLang", "out", `"use strict";
     var _resultsState = null;
@@ -326,6 +331,7 @@ function runAccessories(answers, lang, { accSrc = SCORE_ACC_FN, qualifySrc = QUA
     ${accSrc}
     ${RESOLVER_FN}
     ${FINALIST_FN}
+    ${groupsSrc}
     ${vmSrc}
     out.ordered = scoreAccessoriesFromAnswers();
     out.vm = getSleepSystemViewModel();
@@ -652,7 +658,9 @@ const MUTATIONS = [
   // entry used it, so nothing proved the view-model extraction was
   // load-bearing. The threshold stamp lives inside getSleepSystemViewModel and
   // is pinned per group item; moving it must diverge.
-  { name: "view-model meetsMatchThreshold 0.6 -> 0.9", key: "vmSrc", src: VIEWMODEL_FN,
+  // (C3 moved the threshold stamp into readSleepSystemGroups; the mutant
+  // keys on that extraction now, proving IT is load-bearing.)
+  { name: "engine-groups meetsMatchThreshold 0.6 -> 0.9", key: "groupsSrc", src: READGROUPS_FN,
     find: "meetsMatchThreshold: (item.score || 0) >= maxScore * 0.6",
     replace: "meetsMatchThreshold: (item.score || 0) >= maxScore * 0.9" },
   { name: "step partition collapsed (adjustable bases leak into support)", key: "stepSrc", src: STEP_FN,
