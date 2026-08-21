@@ -9483,6 +9483,7 @@
     .noct-profile-priority-toggle:focus-visible,
     .noct-profile-cta:focus-visible,
     .noct-profile-secondary:focus-visible,
+    .noct-quiz-headline:focus-visible,
     .noct-quiz-option:focus-visible,
     .noct-quiz-back:focus-visible,
     .noct-quiz-next:focus-visible,
@@ -9503,6 +9504,7 @@
       .noct-profile-priority-toggle:focus-visible,
       .noct-profile-cta:focus-visible,
       .noct-profile-secondary:focus-visible,
+      .noct-quiz-headline:focus-visible,
       .noct-quiz-option:focus-visible,
       .noct-quiz-back:focus-visible,
       .noct-quiz-next:focus-visible,
@@ -13703,6 +13705,9 @@
       if (!sameScreen && typeof focusScreenDestination === 'function') {
         focusScreenDestination(id);
       }
+      // A true screen transition owns the first question render that follows
+      // it (startQuiz, Review -> Edit, Review -> Back); see afterQuestionChange.
+      if (!sameScreen && typeof noteQuestionScreenEntered === 'function') noteQuestionScreenEntered();
     }
 
     // ----- START QUIZ -----
@@ -13818,6 +13823,46 @@
       return 'cols-2';
     }
 
+    // ----- QUESTION CHANGE: scroll reset + headline focus (trust gate, 2026-08-21)
+    // Advancing inside the question screen is a same-screen re-render, so
+    // showScreen()'s scroll reset and focus move never ran: after Next on a
+    // tall question the next question's eyebrow, progress row and headline
+    // rendered ABOVE the viewport and keyboard focus fell to BODY (measured on
+    // the mounted 1194x748 orientation: headline top -6px; -216px at 390x844;
+    // -308px at 200% zoom). renderQuestion() records the id it last rendered;
+    // a render whose id DIFFERS is a question change and gets exactly
+    // showScreen()'s scroll idiom plus focus on the new headline, in the
+    // focusScreenDestination() idiom (tabindex="-1" on the heading, synchronous
+    // focus({preventScroll:true}) behind the shared refusal gate). Same-id
+    // renders are NOT changes and do nothing here: an answer tap (selectOption
+    // restores focus to the activated option, Slice 3) and a language switch
+    // (restoreLanguageFocus() owns it). showScreen() nulls the record on every
+    // TRUE screen transition, so the first render after startQuiz(),
+    // Review -> Edit and Review -> Back is owned by the screen transition and
+    // is not double-handled. No timer, no frame, no live region, no
+    // announcement: this is sighted-user scroll/focus work under 1.2's
+    // surviving criteria, not the retired transition-announcement item.
+    var _renderedQuestionId = null;
+    function noteQuestionScreenEntered() {
+      _renderedQuestionId = null;
+    }
+    function afterQuestionChange() {
+      if (typeof screenTransitionOwnedElsewhere === 'function' && screenTransitionOwnedElsewhere()) return;
+      var screen = document.getElementById('questionScreen');
+      if (!screen || !screen.classList || !screen.classList.contains('active')) return;
+      // Scroll to top on question change — the same reset showScreen() performs.
+      if (typeof window.scrollTo === 'function') window.scrollTo(0, 0);
+      screen.scrollTop = 0;
+      var heading = document.getElementById('questionHeadline');
+      if (!heading || typeof heading.focus !== 'function') return;
+      if (typeof isFocusRestorable === 'function' && !isFocusRestorable(heading)) return;
+      try {
+        heading.focus({ preventScroll: true });
+      } catch (err) {
+        heading.focus();
+      }
+    }
+
     window.renderQuestion = function() {
       const q = QUESTIONS[currentQuestion];
       // Progress reflects only questions that will actually be shown.
@@ -13858,7 +13903,7 @@
             </div>
             <div class="noct-quiz-progress-pct">${stepIdx + 1} / ${total}</div>
           </div>
-          <h2 class="noct-quiz-headline">${headlineHtml}</h2>
+          <h2 class="noct-quiz-headline" id="questionHeadline" tabindex="-1">${headlineHtml}</h2>
           <p class="noct-quiz-help">${L(qHelp)}</p>
           <div class="noct-slider-wrap">
             <div class="noct-slider-value" id="sliderVal">${val}</div>
@@ -13903,7 +13948,7 @@
             </div>
             <div class="noct-quiz-progress-pct">${stepIdx + 1} / ${total}</div>
           </div>
-          <h2 class="noct-quiz-headline">${headlineHtml}</h2>
+          <h2 class="noct-quiz-headline" id="questionHeadline" tabindex="-1">${headlineHtml}</h2>
           <p class="noct-quiz-help">${L(qHelp)}</p>
           ${isMulti ? '<p class="noct-quiz-multi-note">' + multiNote + '</p>' : ''}
           <div class="noct-quiz-options ${colClass}">
@@ -13938,6 +13983,12 @@
       container.style.animation = 'none';
       container.offsetHeight;
       container.style.animation = '';
+      // A question CHANGE is a render whose id differs from the one last
+      // rendered on this screen visit; same-id re-renders and the first render
+      // after a screen transition are not (see afterQuestionChange above).
+      var questionChanged = _renderedQuestionId !== null && _renderedQuestionId !== q.id;
+      _renderedQuestionId = q.id;
+      if (questionChanged) afterQuestionChange();
     }
 
     // Quality tiers (gold/silver/bronze) map directly to price indicators.

@@ -987,6 +987,29 @@ const MUTATIONS = [
     "      if (active && active.id) _langFocusHintId = active.id;",
     "      if (false) _langFocusHintId = active.id;", QUIZ],
 
+  // ---- Trust integrity gate (2026-08-21): question-change scroll/focus ------
+  // Observed by the quiz suite's REPAIR 9 section. The defect these guard
+  // against was measured on the mounted orientation: after Next on a tall
+  // question the next headline rendered above the viewport and focus fell to
+  // BODY.
+  ["trust: a question change no longer resets the scroll position",
+    "      if (typeof window.scrollTo === 'function') window.scrollTo(0, 0);\n      screen.scrollTop = 0;",
+    "      screen.scrollTop = 0;", QUIZ],
+  ["trust: a question change no longer focuses the new headline",
+    "      var heading = document.getElementById('questionHeadline');",
+    "      var heading = null;", QUIZ],
+  ["trust: every render is treated as a question change (answer taps and language switches would steal focus)",
+    "      var questionChanged = _renderedQuestionId !== null && _renderedQuestionId !== q.id;",
+    "      var questionChanged = true;", QUIZ],
+  ["trust: showScreen stops handing the first render to the screen transition (double-handled entry)",
+    "      if (!sameScreen && typeof noteQuestionScreenEntered === 'function') noteQuestionScreenEntered();",
+    "", QUIZ],
+  ["trust: the question headline becomes a permanent tab stop",
+    'id="questionHeadline" tabindex="-1"', 'id="questionHeadline" tabindex="0"', QUIZ],
+  ["trust: the question-change repair ignores the shared refusal gate",
+    "      if (typeof screenTransitionOwnedElsewhere === 'function' && screenTransitionOwnedElsewhere()) return;\n      var screen = document.getElementById('questionScreen');",
+    "      var screen = document.getElementById('questionScreen');", QUIZ],
+
   // ---- Slice 4 / D4: the Payment Choice state model ------------------------
   // The two dimensions, and the line between them. Exploration is descriptive
   // history; a preference is a deliberate one-way choice. Each mutation below

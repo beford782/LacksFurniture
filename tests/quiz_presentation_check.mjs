@@ -97,6 +97,15 @@ for (const [key, anchor] of Object.entries(SOURCES)) {
 }
 ok('all sixteen production quiz sources found', missing.length === 0, missing.join(','));
 if (missing.length) { console.log('FAIL — sources missing'); process.exit(1); }
+// Trust-integrity gate (2026-08-21): the question-change scroll/focus helpers.
+// Extracted OPTIONALLY so that REPAIR 9 below reports its own failures on a
+// tree that lacks them instead of aborting the whole suite.
+const OPTIONAL_SOURCES = {
+  entered: 'function noteQuestionScreenEntered()',
+  afterChange: 'function afterQuestionChange()',
+  showScreen: 'window.showScreen = function(id)'
+};
+for (const [key, anchor] of Object.entries(OPTIONAL_SOURCES)) src[key] = extractFunction(anchor);
 
 // ------------------------------------------------------------ DOM harness
 function makeEl(id, doc) {
@@ -117,7 +126,7 @@ function makeEl(id, doc) {
     // answers it from an explicit flag so a test can model a KEYBOARD
     // activation (true) and a TOUCH/POINTER activation (false) distinctly.
     matches(sel) { return sel === ':focus-visible' ? el._focusVisible : false; },
-    focus(opts) { el._focusCount++; el._focusOpts = opts || null; if (doc) doc.activeElement = el; },
+    focus(opts) { el._focusCount++; el._focusOpts = opts || null; if (doc) { doc.activeElement = el; if (doc._log) doc._log.push('focus:' + id); } },
     fire(type) { (el._ev[type] || []).forEach((fn) => fn.call(el, { type })); }
   };
   Object.defineProperty(el, 'innerHTML', {
@@ -148,7 +157,10 @@ function makeEl(id, doc) {
 
 const SCREEN_IDS = ['welcomeScreen', 'questionScreen', 'reviewScreen', 'profileScreen', 'resultsScreen'];
 
-function makeQuizEnv({ lang = 'en', answers = {}, at = 0, mutate = null, active = 'questionScreen' } = {}) {
+function makeQuizEnv({ lang = 'en', answers = {}, at = 0, mutate = null, active = 'questionScreen', gate = undefined } = {}) {
+  // `log` records the ORDER of scroll resets and focus moves, so a test can
+  // assert "scroll first, then focus" rather than merely "both happened".
+  const log = [];
   const doc = {
     _els: new Map(),
     activeElement: null,
@@ -157,31 +169,46 @@ function makeQuizEnv({ lang = 'en', answers = {}, at = 0, mutate = null, active 
       return doc._els.get(id);
     }
   };
+  doc._log = log;
   SCREEN_IDS.forEach((s) => { doc.getElementById(s); });
   if (active) doc.getElementById(active).classList.add('active');
 
   const D = lang === 'es' ? dictEs : dictEn;
   const t = (key) => (Object.prototype.hasOwnProperty.call(D, key) ? D[key] : key);
-  const win = {};
+  const scrollCalls = [];
+  const win = { scrollTo(x, y) { scrollCalls.push([x, y]); log.push('scroll'); } };
   const screenCalls = [];
+  // Mirrors the production showScreen() contract the question-change repair
+  // relies on: a TRUE screen transition (destination not already active)
+  // nulls the rendered-question record, so the first render on the new
+  // screen is owned by the screen transition. The production call itself is
+  // pinned statically in REPAIR 9 — this stub only models the effect.
   const showScreen = (id) => {
     screenCalls.push(id);
+    const sameScreen = doc.getElementById(id).classList.contains('active');
     SCREEN_IDS.forEach((s) => doc.getElementById(s).classList.remove('active'));
     doc.getElementById(id).classList.add('active');
+    if (!sameScreen && typeof win.__noteQuestionScreenEntered === 'function') win.__noteQuestionScreenEntered();
   };
 
   let body = [
     src.L, src.accents, src.applyAccent, src.cols, src.visible, src.resolveCopy,
     src.feel, src.render, src.select, src.next, src.prev, src.review,
-    src.formatAnswer, src.reviewChrome, src.renderReview, src.edit
+    src.formatAnswer, src.reviewChrome, src.renderReview, src.edit,
+    src.entered || '', src.afterChange || ''
   ].join('\n');
   if (mutate) body = mutate(body);
 
+  // `screenTransitionOwnedElsewhere` is the production refusal gate (a dialog,
+  // drawer or overlay owns focus). Injected as undefined by default — the
+  // production helper typeof-guards it — or as a function returning true.
   const preamble = 'var currentLang = __lang;\n'
     + 'var QUESTIONS = __questions;\n'
     + 'var currentQuestion = __at;\n'
     + 'var answers = __answers;\n'
-    + 'var editingFromReview = false;\n';
+    + 'var editingFromReview = false;\n'
+    + 'var _renderedQuestionId = null;\n'
+    + 'var screenTransitionOwnedElsewhere = __gate;\n';
   // In the page these live on window AND as globals; inside this Function
   // scope only the window property exists, so the bare-identifier calls the
   // production code makes (renderQuestion(), goToReview(), …) need the same
@@ -191,7 +218,8 @@ function makeQuizEnv({ lang = 'en', answers = {}, at = 0, mutate = null, active 
     + 'var nextQuestion = window.nextQuestion;\n'
     + 'var prevQuestion = window.prevQuestion;\n'
     + 'var renderReview = window.renderReview;\n'
-    + 'var editAnswer = window.editAnswer;\n';
+    + 'var editAnswer = window.editAnswer;\n'
+    + 'window.__noteQuestionScreenEntered = (typeof noteQuestionScreenEntered === "function") ? noteQuestionScreenEntered : null;\n';
   const tail = 'return {\n'
     + '  render: function(){ return window.renderQuestion(); },\n'
     + '  select: function(q,o,m){ return window.selectOption(q,o,m); },\n'
@@ -208,15 +236,16 @@ function makeQuizEnv({ lang = 'en', answers = {}, at = 0, mutate = null, active 
     + '  at: function(){ return currentQuestion; },\n'
     + '  answers: function(){ return answers; },\n'
     + '  wipe: function(){ currentQuestion = 0; answers = {}; editingFromReview = false; },\n'
-    + '  editing: function(){ return editingFromReview; }\n'
+    + '  editing: function(){ return editingFromReview; },\n'
+    + '  entered: function(){ if (typeof noteQuestionScreenEntered === "function") noteQuestionScreenEntered(); }\n'
     + '};';
 
   const api = new Function(
-    'document', 'window', 't', 'showScreen', '__lang', '__questions', '__at', '__answers',
+    'document', 'window', 't', 'showScreen', '__lang', '__questions', '__at', '__answers', '__gate',
     preamble + body + bind + tail
-  )(doc, win, t, showScreen, lang, JSON.parse(JSON.stringify(QUIZ.questions)), at, answers);
+  )(doc, win, t, showScreen, lang, JSON.parse(JSON.stringify(QUIZ.questions)), at, answers, gate);
 
-  return { api, doc, get: (id) => doc.getElementById(id), screenCalls, win };
+  return { api, doc, get: (id) => doc.getElementById(id), screenCalls, win, scrollCalls, log };
 }
 
 // Parse the option buttons out of rendered question markup.
@@ -1118,6 +1147,217 @@ section('REPAIR 8 — hover decoration cannot stick, and never impersonates sele
     && before.lastIndexOf('@media (hover: hover)') > before.lastIndexOf('\n    }\n'));
 });
 
+// ================================================================ TRUST GATE
+// Trust integrity and transparency gate (2026-08-21), quiz portion. Advancing
+// inside the question screen is a same-screen re-render, so showScreen()'s
+// scroll reset and focus move never ran: after Next on a tall question the
+// next question's eyebrow, progress row and headline rendered ABOVE the
+// viewport and keyboard focus fell to BODY (measured on main at 4a76503:
+// headline top -6px at 1194x748, -216px at 390x844, -308px at 200% zoom).
+// The repair: renderQuestion() records the id it rendered; a render whose id
+// DIFFERS is a question change and gets showScreen()'s scroll idiom plus focus
+// on the new headline. Same-id renders (answer tap, language switch) and the
+// first render after a true screen transition are not changes.
+section('REPAIR 9 — a question change scrolls to the top and focuses the new headline');
+const HEADLINE_TAG = '<h2 class="noct-quiz-headline" id="questionHeadline" tabindex="-1">';
+ok('both render branches emit the headline with a stable id and tabindex="-1" (no permanent tab stop)',
+  src.render.split(HEADLINE_TAG).length === 3 && !/tabindex="0"/.test(src.render));
+ok('the question-change helpers exist in production', !!src.entered && !!src.afterChange);
+ok('the repair uses no timer, frame, smooth scroll, scrollIntoView, live region or label',
+  !!src.afterChange
+  && !/setTimeout|requestAnimationFrame|sessionFrame|setInterval|scrollIntoView|smooth|aria-live|aria-label|role=/.test(src.afterChange + src.entered));
+ok('the repair uses showScreen()\'s scroll idiom and the established focus({preventScroll:true}) try/catch',
+  !!src.afterChange && /window\.scrollTo\(0, 0\)/.test(src.afterChange)
+  && /scrollTop = 0/.test(src.afterChange)
+  && /focus\(\{ preventScroll: true \}\)/.test(src.afterChange) && /try \{/.test(src.afterChange) && /catch/.test(src.afterChange));
+ok('the repair defers to the shared refusal gate (a dialog, drawer or overlay owning focus)',
+  !!src.afterChange && /typeof screenTransitionOwnedElsewhere === 'function' && screenTransitionOwnedElsewhere\(\)/.test(src.afterChange));
+ok('renderQuestion() treats a render as a change ONLY when the rendered id differs from a recorded one',
+  /_renderedQuestionId !== null && _renderedQuestionId !== q\.id/.test(src.render)
+  && /_renderedQuestionId = q\.id;/.test(src.render));
+ok('the production showScreen() nulls the record on a true screen transition (not on a same-screen re-render)',
+  !!src.showScreen && /if \(!sameScreen && typeof noteQuestionScreenEntered === 'function'\) noteQuestionScreenEntered\(\);/.test(src.showScreen));
+ok('selectOption() is untouched by the repair (its own restoration and the auto-advance control stand)',
+  src.select.includes('      renderQuestion();\n      if (restoreId) {') && !/_renderedQuestionId|afterQuestionChange/.test(src.select));
+ok('the touch/click handler pairs on Next and Back are untouched (Invariant 10)',
+  src.render.includes(`onclick="nextQuestion()" ontouchend="event.preventDefault();nextQuestion();"`)
+  && src.render.includes(`onclick="prevQuestion()" ontouchend="event.preventDefault();prevQuestion();"`)
+  && src.render.includes(`onclick="nextQuestion()" ontouchend="event.preventDefault();if(!this.disabled)nextQuestion();"`));
+ok('the quiz headline joins the consolidated two-ring focus block and its forced-colors fallback',
+  (norm.match(/\.noct-quiz-headline:focus-visible,/g) || []).length === 2);
+
+// Walk a path with Next, asserting per transition: exactly one scroll reset to
+// (0,0), the NEW headline focused once with preventScroll, scroll before focus,
+// activeElement on the headline, and the screen never re-entered.
+function answerCurrent(env) {
+  const q = QUIZ.questions[env.api.at()];
+  if (q.type === 'slider') return;
+  env.api.select(q.id, q.options[0].id, q.type === 'multiple');
+}
+function walkNext(env, label) {
+  let failures = [];
+  while (env.get('questionScreen').classList.contains('active')) {
+    const from = QUIZ.questions[env.api.at()].id;
+    answerCurrent(env);
+    const scrollsBefore = env.scrollCalls.length;
+    const logBefore = env.log.length;
+    env.api.next();
+    if (!env.get('questionScreen').classList.contains('active')) break; // review
+    const to = QUIZ.questions[env.api.at()].id;
+    const headline = env.get('questionHeadline');
+    const scrolls = env.scrollCalls.slice(scrollsBefore);
+    const events = env.log.slice(logBefore);
+    const good = scrolls.length === 1 && scrolls[0][0] === 0 && scrolls[0][1] === 0
+      && headline._focusCount === 1 && !!headline._focusOpts && headline._focusOpts.preventScroll === true
+      && env.doc.activeElement === headline
+      && events.indexOf('scroll') >= 0 && events.indexOf('focus:questionHeadline') > events.indexOf('scroll');
+    if (!good) failures.push(`${from}→${to}: scrolls=${JSON.stringify(scrolls)} focus=${headline._focusCount} events=${events.join(',')}`);
+  }
+  ok(`${label}: every Next transition resets scroll then focuses the new headline`, failures.length === 0, failures.join(' | '));
+}
+{
+  // Partner path: all ten questions, entered the way startQuiz() enters —
+  // showScreen('questionScreen') then renderQuestion().
+  const env = makeQuizEnv({ at: 0, answers: {}, active: 'welcomeScreen' });
+  env.api.entered(); // the production showScreen() does this on a true transition
+  env.doc.getElementById('questionScreen').classList.add('active');
+  env.api.render();
+  ok('the first render after a screen transition is owned by the screen: no helper scroll, no headline focus',
+    env.scrollCalls.length === 0 && env.get('questionHeadline')._focusCount === 0);
+  // Keep the partner path: answer partner_sleep with "partner".
+  const partnerEnv = env;
+  let transitions = 0;
+  const seen = [];
+  while (partnerEnv.get('questionScreen').classList.contains('active')) {
+    const q = QUIZ.questions[partnerEnv.api.at()];
+    seen.push(q.id);
+    if (q.id === 'partner_sleep') partnerEnv.api.select('partner_sleep', 'partner', false);
+    else answerCurrent(partnerEnv);
+    const before = partnerEnv.scrollCalls.length;
+    partnerEnv.api.next();
+    if (!partnerEnv.get('questionScreen').classList.contains('active')) break;
+    transitions++;
+    const h = partnerEnv.get('questionHeadline');
+    if (!(partnerEnv.scrollCalls.length === before + 1 && h._focusCount === 1 && partnerEnv.doc.activeElement === h)) {
+      ok(`partner path transition out of ${q.id} resets scroll and focuses the headline`, false,
+        `scrolls +${partnerEnv.scrollCalls.length - before}, focus ${h._focusCount}`);
+    }
+  }
+  ok('partner path: nine Next transitions across all ten questions, each repaired',
+    transitions === 9 && seen.length === 10, `transitions=${transitions} seen=${seen.join(',')}`);
+  ok('partner path: no transition re-entered the screen (the repair is same-screen, not a showScreen call)',
+    partnerEnv.screenCalls.filter((s) => s === 'questionScreen').length === 0);
+}
+{
+  // Solo path: partner_disturbance is skipped by nextQuestion(); the skip is
+  // ONE question change, scrolled and focused once, landing on sleep_position.
+  const env = makeQuizEnv({ at: QID('partner_sleep'), answers: { trigger: 'pain', mattress_size: 'queen' } });
+  env.api.entered(); env.api.render();
+  env.api.select('partner_sleep', 'solo', false);
+  env.api.next();
+  ok('solo path: the skipped question is one change — landed on sleep_position, one scroll, headline focused once',
+    env.api.at() === QID('sleep_position') && env.scrollCalls.length === 1
+    && env.get('questionHeadline')._focusCount === 1 && env.doc.activeElement === env.get('questionHeadline'));
+  walkNext(env, 'solo path (from sleep_position)');
+}
+{
+  // Back from every question, including backwards over the solo skip, and the
+  // tall-question pairs the defect was measured on.
+  const env = makeQuizEnv({ at: QID('health_conditions'),
+    answers: { trigger: 'pain', mattress_size: 'queen', partner_sleep: 'solo', partner_disturbance: 'not_applicable',
+      sleep_position: 'side', body_type: 'average', temperature: 'hot', firmness: 6, sleep_issues: ['back_pain'] } });
+  env.api.entered(); env.api.render();
+  const failures = [];
+  const visited = [];
+  let steps = 0;
+  while (env.api.at() > 0) {
+    const from = QUIZ.questions[env.api.at()].id;
+    const before = env.scrollCalls.length;
+    env.api.prev();
+    steps++;
+    visited.push(QUIZ.questions[env.api.at()].id);
+    const h = env.get('questionHeadline');
+    if (!(env.scrollCalls.length === before + 1 && h._focusCount === 1 && env.doc.activeElement === h)) {
+      failures.push(`${from}→${QUIZ.questions[env.api.at()].id}`);
+    }
+  }
+  ok('Back from every question (solo path, skipping backwards over partner_disturbance) resets scroll and focuses the headline',
+    failures.length === 0 && steps === 8, failures.join(',') + ` steps=${steps}`);
+  ok('Back skipped over partner_disturbance as one change (never rendered it)',
+    !visited.includes('partner_disturbance') && visited[0] === 'sleep_issues' && visited[visited.length - 1] === 'trigger');
+}
+{
+  // Review → Edit and Review → Back go through showScreen(): the screen owns
+  // the transition, the helper stays silent.
+  const env = makeQuizEnv({ at: QID('health_conditions'), active: 'reviewScreen',
+    answers: { trigger: 'pain', mattress_size: 'queen', partner_sleep: 'partner', partner_disturbance: 'sometimes',
+      sleep_position: 'side', body_type: 'average', temperature: 'hot', firmness: 6, sleep_issues: ['back_pain'], health_conditions: ['none'] } });
+  env.api.review();
+  env.api.edit(QID('temperature'));
+  ok('Review → Edit: showScreen owns the transition — no helper scroll, no headline focus',
+    env.screenCalls.includes('questionScreen') && env.scrollCalls.length === 0 && env.get('questionHeadline')._focusCount === 0);
+  env.api.select('temperature', 'cold', false);
+  ok('editing the answer on that question is a same-question re-render — still no headline focus',
+    env.get('questionHeadline')._focusCount === 0 && env.scrollCalls.length === 0);
+  env.api.next(); // snaps back to review
+  ok('Edit round trip returns to Review without touching the helper', env.screenCalls.slice(-1)[0] === 'reviewScreen' && env.scrollCalls.length === 0);
+  env.api.prev(); // Review → Back: showScreen('questionScreen') + render of the last visible question
+  ok('Review → Back: showScreen owns the transition — no helper scroll, no headline focus',
+    env.api.at() === QID('health_conditions') && env.scrollCalls.length === 0 && env.get('questionHeadline')._focusCount === 0);
+  // ...and a genuine Back from there IS a change again.
+  env.api.prev();
+  ok('a genuine Back after a screen-owned render is a change again',
+    env.api.at() === QID('sleep_issues') && env.scrollCalls.length === 1 && env.get('questionHeadline')._focusCount === 1);
+}
+{
+  // Same-question re-renders are NOT changes: an answer tap (touch, mouse,
+  // keyboard — REPAIR 6's restoration stands) and a language switch.
+  const q = QUIZ.questions[QID('sleep_issues')];
+  const env = makeQuizEnv({ at: QID('sleep_issues'), answers: {} });
+  env.api.entered(); env.api.render();
+  env.doc.activeElement = null;
+  env.api.select('sleep_issues', q.options[0].id, true);
+  ok('touch answer tap: same question — no scroll reset, headline not focused',
+    env.scrollCalls.length === 0 && env.get('questionHeadline')._focusCount === 0);
+  const kb = env.get(`qopt-sleep_issues-${q.options[1].id}`);
+  kb.classList.add('noct-quiz-option'); kb._focusVisible = true; env.doc.activeElement = kb;
+  env.api.select('sleep_issues', q.options[1].id, true);
+  ok('keyboard answer tap: focus goes to the replacement OPTION (Slice 3), not the headline, and nothing scrolls',
+    env.get(`qopt-sleep_issues-${q.options[1].id}`)._focusCount === 1
+    && env.doc.activeElement === env.get(`qopt-sleep_issues-${q.options[1].id}`)
+    && env.get('questionHeadline')._focusCount === 0 && env.scrollCalls.length === 0);
+  env.api.setLang('es');
+  env.api.render(); // switchLanguage() re-renders the same question
+  ok('language switch re-render: same question — no scroll reset, headline not focused (restoreLanguageFocus owns it)',
+    env.scrollCalls.length === 0 && env.get('questionHeadline')._focusCount === 0);
+  env.api.next();
+  ok('...and the next genuine change after those re-renders is repaired normally',
+    env.scrollCalls.length === 1 && env.get('questionHeadline')._focusCount === 1);
+}
+{
+  // The refusal gate: when another layer owns focus, a question change moves
+  // neither scroll nor focus.
+  const env = makeQuizEnv({ at: QID('trigger'), answers: {}, gate: function() { return true; } });
+  env.api.entered(); env.api.render();
+  env.api.select('trigger', 'pain', false);
+  env.api.next();
+  ok('refusal gate open: a question change moves neither scroll nor focus',
+    env.api.at() === QID('mattress_size') && env.scrollCalls.length === 0 && env.get('questionHeadline')._focusCount === 0);
+}
+{
+  // A wipe followed by a new customer: the screen transition nulls the record
+  // so the new customer's first question is not treated as a change.
+  const env = makeQuizEnv({ at: QID('body_type'), answers: {} });
+  env.api.entered(); env.api.render();
+  env.api.select('body_type', 'average', false);
+  env.api.next();
+  env.api.wipe();
+  env.api.entered(); // resetSessionState → showScreen('welcomeScreen'), then startQuiz → showScreen('questionScreen')
+  env.api.render();
+  ok('after a wipe, the new customer\'s first render is screen-owned: one earlier scroll/focus only',
+    env.scrollCalls.length === 1 && env.get('questionHeadline')._focusCount === 0);
+}
+
 // ---------------------------------------------------- negative controls
 // Each control proves the assertion above it actually bites.
 section('negative controls — the load-bearing assertions fail on a broken tree');
@@ -1240,6 +1480,57 @@ section('negative controls — the load-bearing assertions fail on a broken tree
   env.api.render();
   ok('control: removing the stable option ids is detected',
     optionsOf(env.get('questionContainer').innerHTML).every((o) => o.id === null));
+}
+
+{
+  const env = makeQuizEnv({
+    at: QID('trigger'), answers: {},
+    mutate: (s) => s.replace('window.scrollTo(0, 0);', '')
+  });
+  env.api.entered(); env.api.render();
+  env.api.select('trigger', 'pain', false);
+  env.api.next();
+  ok('control: dropping the question-change scroll reset is detected', env.scrollCalls.length === 0 && env.api.at() === QID('mattress_size'));
+}
+{
+  const env = makeQuizEnv({
+    at: QID('trigger'), answers: {},
+    mutate: (s) => s.replace('_renderedQuestionId !== null && ', '')
+  });
+  env.api.entered(); env.api.render();
+  ok('control: treating the first screen-owned render as a change is detected (double-handled entry)',
+    env.get('questionHeadline')._focusCount === 1);
+}
+{
+  const env = makeQuizEnv({
+    at: QID('trigger'), answers: {},
+    mutate: (s) => s.replace('_renderedQuestionId !== null && _renderedQuestionId !== q.id', 'true')
+  });
+  env.api.entered(); env.api.render();
+  env.doc.activeElement = null;
+  env.api.select('trigger', 'pain', false);
+  ok('control: treating an answer-tap re-render as a change is detected (focus would jump to the headline)',
+    env.get('questionHeadline')._focusCount >= 1);
+}
+{
+  const env = makeQuizEnv({
+    at: QID('trigger'), answers: {}, gate: function() { return true; },
+    mutate: (s) => s.replace("if (typeof screenTransitionOwnedElsewhere === 'function' && screenTransitionOwnedElsewhere()) return;", '')
+  });
+  env.api.entered(); env.api.render();
+  env.api.select('trigger', 'pain', false);
+  env.api.next();
+  ok('control: dropping the refusal gate is detected (a dialog would lose focus to the headline)',
+    env.get('questionHeadline')._focusCount === 1);
+}
+{
+  const env = makeQuizEnv({
+    at: QID('trigger'), answers: {},
+    mutate: (s) => s.split('id="questionHeadline" tabindex="-1"').join('id="questionHeadline" tabindex="0"')
+  });
+  env.api.render();
+  ok('control: a permanent tab stop on the headline is detected',
+    env.get('questionContainer').innerHTML.includes('tabindex="0"'));
 }
 
 console.log(`\n${failures === 0 ? 'PASS' : 'FAIL'} — ${checks - failures}/${checks} checks passed`);
