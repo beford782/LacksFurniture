@@ -9,13 +9,24 @@ owner-review decisions (see "Phase 1 direction decisions — recorded
 see the open-decisions register. Device hardening remains BLOCKING for
 showroom use.**
 
-**Last updated:** 2026-08-20 *(closes out Slice 4: PR #51 merged as `b2acd7e`
+**Last updated:** 2026-08-21 *(inserts the **Phase 1 cross-cutting gate —
+Trust integrity and transparency** (🔨, on branch `claude/phase1-trust-integrity`
+from `4a76503`), discovered by the 2026-08-21 quiz trust investigation
+(`docs/quiz-trust-investigation-2026-08-21.md`). By owner instruction it sits
+after Slice 4 Payment Choice and before Slice 5 Sleep Plan in the approved
+order; it repairs shipped trust defects that cross the ownership of 1.2, 1.3 and
+1.6 and closes none of those items. It records the in-quiz heritage rail as not
+approved, adds the tier-presentation, heritage, founding-year, privacy-approval,
+specialist-audience, measurement and VoiceOver questions to the register, and
+re-points the reconciliation baseline. It closes nothing else: no scoring, tier,
+threshold, touch, persistence or financing-influence change is implied or made;
+Spanish stays provisional — with the privacy sentences now owed native review
+FIRST; device hardening still blocks showroom use; Phase 0 stays closed. The
+previous revision, 2026-08-20, closed out Slice 4: PR #51 merged as `b2acd7e`
 with all four manual gates passed and owner-reported, the final reviewed head
 `ee6e402` green in CI and clean on external review, and the Pages deployment
-verified at exactly the merge commit. Item 1.5 moves ⬜ → ✅, and the
-reconciliation baseline and next-item pointer are re-pointed accordingly. It
-closes nothing else: Spanish stays provisional and device hardening still blocks
-showroom use. The previous revision, 2026-08-17, recorded the Slice 4 Payment
+verified at exactly the merge commit; item 1.5 moved ⬜ → ✅. The
+2026-08-17 revision recorded the Slice 4 Payment
 Choice owner
 rulings — the preserved "Payment preference" wording and its narrow validator
 allowlist, the two-dimension durable model, the D4 rows landing on the existing
@@ -36,9 +47,11 @@ owner-approved scoring change they carried.)*
 `main` when this document's phase statuses were written, the merge commit of
 PR #16 (2026-08-05). It is **not** current `main`. GitHub state is
 authoritative; a local checkout never is.
-**Reconciliation baseline:** `b2acd7edfb0aa2dfb3add2cf55d7489c0fe50c2a` — GitHub
-`main` at this revision; PR #51 merge commit (2026-08-20, Nocturne Slice 4, the
-Payment Choice model per D4). The prior baseline was
+**Reconciliation baseline:** `4a765034b402ddfbfdb8bfcf3313cf2ee6c8e88b` — GitHub
+`main` at this revision; PR #52 merge commit (2026-08-20, the docs-only Slice 4
+close-out), and the commit the trust-integrity branch was cut from. The prior
+baseline was `b2acd7edfb0aa2dfb3add2cf55d7489c0fe50c2a` (PR #51, Nocturne
+Slice 4, the Payment Choice model per D4, 2026-08-20), before that
 `5436deaea432ec87eb6b4d9f06cd82a85fb1910c` (PR #47, Nocturne Slice 3,
 2026-08-16), before that `b05d47fdf88c54d2dda666e7e3c6b475aa1cc734` (PR #46,
 Nocturne Slice 2, 2026-08-16), and before that
@@ -57,9 +70,16 @@ still changed nothing the engine computes — the Phase 1 output-regression
 fixture and its pinned sha256 are byte-identical across it — and it added no
 telemetry, no email content and no payment math.
 
-The next item in the approved order is **(5) Slice 5 — the Sleep Plan screen
-(D5 / item 1.7)**, which is `⬜`: approved to build, **not started**. Nothing
-here begins it, schedules it or authorizes it — item 1.7 carries its own scope
+**Current work (2026-08-21), two branches.** The owner-inserted **Phase 1
+cross-cutting gate — Trust integrity and transparency** is `🔨` on
+`claude/phase1-trust-integrity` (cut from `4a76503`); it is placed in the
+approved order after Slice 4 and before Slice 5, and its block sits after item
+1.7. **(5) Slice 5 — the Sleep Plan screen (D5 / item 1.7)** is `🔨` on
+`claude/nocturne-slice5-sleep-plan` (commits C0–C7, unmerged). *(An earlier
+revision of this paragraph said Slice 5 was `⬜`, approved to build and not
+started; it began on its own branch before 2026-08-21. The gate's insertion
+does not re-sequence Slice 5 — the two proceed concurrently on separate
+branches, and the owner decides merge order.)* Item 1.7 carries its own scope
 and exit, and its Payment Choice row was deliberately excluded from Slice 4 by
 owner ruling 3. The full recommended order is
 recorded in the 2026-08-14 decision block. The two conditions Phase 1 implementation required — the 0.4
@@ -270,6 +290,10 @@ None of these are negotiable by a redesign.
     owed. It does not touch the separate, still-open native-Spanish
     **claim-equivalence** reviewer for catalog claims (see the claim
     inventory), which remains its own gate.
+    *(2026-08-21: the customer-facing privacy / data-use sentences are the
+    one recorded exception to the deferral — a wrong translation there changes
+    a promise, so they are owed native review before showroom use, ahead of
+    the consolidated pass. See the Phase 1 cross-cutting Trust integrity gate.)*
 
 ---
 
@@ -1015,7 +1039,12 @@ below-threshold comparison cue is retired from the Results cards by this
 decision — surfacing position, never selecting by the field; the
 below-threshold cues that survive elsewhere (the HF2 pick card's line and
 the Sleep System step badge) are untouched and remain later-slice
-territory. Three further owner-directed repairs ship in the same slice: the
+territory. *(2026-08-21: the relativity line shipped at 11px, below body size
+for the one honest statement about tier-relative match strength; the
+cross-cutting Trust integrity gate (block after 1.7) raises it to body size
+with contrast and size assertions. Its wording, its semantics, the tabs, the
+Gold-first default, the engine's order and everything else in this ruling are
+unchanged — legibility only.)* Three further owner-directed repairs ship in the same slice: the
 promotions offer cue now receives the engine's full qualified list instead
 of a presentation-layer slice (behaviorally identical at the engine's cap
 of 3; cue and cards can no longer diverge), a one-entry tier no longer
@@ -1108,6 +1137,15 @@ component, then reveal composition; heading retained); (3) quiz visual/icon pass
 interaction, then plan/handoff rows); (5) Sleep Plan screen (D5/1.7 —
 finalist-state machinery, then the screen); (6) Consultation Summary, then
 Welcome, drawer, email (1.6).
+
+*(2026-08-21: by owner instruction, a **cross-cutting Trust integrity and
+transparency gate** is inserted after (4) Payment Choice and before (5) Sleep
+Plan — see the gate block after item 1.7. It is an integrity repair and a
+prerequisite for the later customer-facing screens, not a new visual feature,
+and it does not change the approved D1–D6 direction. Slice 5 had already begun
+on `claude/nocturne-slice5-sleep-plan` (C0–C7, unmerged) when the gate was
+inserted; the two proceed concurrently on separate branches and the owner
+decides merge order. Nothing here re-sequences Slice 5.)*
 
 ### 1.1 — Sleep Brief ⬜
 
@@ -1375,6 +1413,17 @@ therefore closed; the item's remaining ⬜ scope is the icon programme, which is
 content authoring rather than engineering. Native-Spanish linguistic approval
 remains deferred to the consolidated end-of-development pass (Invariant 12) and
 is **not** a Slice 3 gate.
+
+*(2026-08-21: two shipped defects inside this item's territory are repaired
+under the cross-cutting Trust integrity and transparency gate (block after 1.7):
+the question-change scroll position and keyboard-focus placement inside the
+quiz — after Next on a tall question the next headline rendered above the
+viewport and focus fell to the document body — and the truth of the
+per-question `helpText` against the engine. The scroll/focus repair is
+sighted-user work under the surviving clause above (visible focus, viewport):
+no announcement, no live region, no timer. It does not reopen the retired
+2026-08-12 question-transition-announcement item. The copy repair is
+copy-only through the canonical pipeline and moves no score tag.)*
 
 ### 1.3 — Results and mattress cards ◐
 
@@ -1968,6 +2017,18 @@ salesperson confirms answers, a couple catches a misunderstanding, and a second
 participant corrects the first. It stays as it is; compression or removal is a
 separate locked decision.
 
+*(2026-08-21: three integrity repairs inside this item's territory ship under
+the cross-cutting Trust integrity and transparency gate (block after 1.7),
+ahead of 1.6's own presentation work and without deciding any of it: the
+Welcome screen gains one deployment-mode-aware data-use sentence; the email
+screen's template-hardcoded "never sold / unsubscribe anytime" promise is
+retired and the privacy line reads retailer config in both languages; and the
+Review screen's help line becomes the audience statement that a specialist
+summary is produced from the answers. 1.6's exit clauses — Consultation
+Summary, Welcome, drawer and email presentation, and 0.5's provisional
+presentation — all stand open; the broader Review/Consultation Summary
+composition remains 1.6's.)*
+
 **Mattress drawer.** Genuine product detail — firmness, match reasons, features.
 Duplicate financing reduced per 1.5. Eventually it may show a verified price and
 one concise path to Payment Choice. It must never become a per-product wall of
@@ -2021,6 +2082,128 @@ surface may substitute one state for another.
 **Exit:** the Sleep Plan ships on `main` with the finalist-state semantics,
 wipe coverage proven by the session suites, EN and ES, verified on the
 confirmed hardware per the phase-wide merge gate.
+
+### Phase 1 cross-cutting gate — Trust integrity and transparency 🔨
+
+**Inserted 2026-08-21 by owner instruction**, following the 2026-08-21 quiz
+trust investigation (`docs/quiz-trust-investigation-2026-08-21.md`; verbatim
+agent and red-team reports in
+`docs/quiz-trust-investigation-2026-08-21-agent-reports.md`). The
+investigation asked whether the quiz should show company history, process
+explanations or privacy notes to build justified customer trust, and found
+instead that the shipped app already made several claims its code did not
+keep. **This is Phase 1 work — an integrity repair and a prerequisite for the
+later customer-facing screens, not a new visual feature.** Phase 0 is closed
+and is not reopened by it.
+
+**Placement.** In the approved 2026-08-14 slice order it sits **after (4)
+Slice 4 Payment Choice and before (5) Slice 5 Sleep Plan**; Slice 5 had already
+begun on its own branch when the gate was inserted and is not re-sequenced by
+it (see the decision block). It has no number of its own because it is
+**cross-cutting**: it repairs shipped defects that fall inside three existing
+items' ownership and closes none of them —
+
+- **1.2 (Quiz)** — question-change scroll position and keyboard-focus placement;
+  the truth of every `helpText` line against the engine.
+- **1.3 (Results)** — the legibility of the ruled relativity line "Match
+  strength is relative within each tier" / "La afinidad es relativa dentro de
+  cada nivel" (D3), which shipped at 11px.
+- **1.6 (Welcome / Review / email)** — one deployment-mode-aware data-use
+  sentence on Welcome; retirement of the template-hardcoded "Your info is never
+  sold to third parties. Unsubscribe anytime." promise (EN+ES) on the email
+  screen; the Review screen's help line becoming an honest statement of the
+  specialist audience.
+
+Each of those items keeps its own mark, gates and exit; this gate lifts
+nothing on any of them. The approved D1–D6 direction is unchanged.
+
+**Defects it fixes, all found by code audit and mounted-device measurement
+(1194×748 and 834×1108, the recorded device matrix), not by preference:**
+
+1. `renderQuestion()` never reset scroll, so after Next on a tall question the
+   next question's eyebrow, progress row and headline rendered above the
+   viewport and keyboard focus fell to the document body (measured on `main`
+   at `4a76503`: headline top −6 px at 1194×748, −216 px at 390×844, −308 px
+   at 200% zoom; `activeElement` = BODY on every Next and Back).
+2. Help lines overstated the engine: "So every mattress we show actually fits
+   your space" (size never filters the lineup); "the biggest clue to the
+   support you need" (a ≤5-point tag against a 50-point firmness term); "an
+   easy fix with the right materials"; "one of the first upgrades you'll feel";
+   and several Spanish lines that said something different from their English.
+3. `index.html` hardcoded a retailer privacy promise in both languages — a
+   white-label breach, an absolute claim, and an "unsubscribe" for a
+   subscription that does not exist — and ignored the configured Spanish
+   email-privacy text.
+4. Nothing told the customer that a specialist summary is produced from their
+   answers, although the Consultation Summary renders implications derived
+   from the sleep-issue and health answers.
+5. The one honest tier statement was 11px.
+
+**What it does not do.** It does not alter scoring, ranking, tier membership,
+the Gold-first default tab, thresholds, caps, back-fill, firmness, the
+qualification rule, touch handling (Invariant 10), persistence (Invariant 6),
+financing influence (Invariant 1), or the engine's computed output
+(Invariant 2 — the Phase 1 output-regression fixture and its pinned sha256
+are byte-identical across it). It adds no auto-advance (3.4 🔒), no consent
+flow, no live region or announcement, no analytics field, no email content.
+**The in-quiz heritage rail ("From the Lacks story") is not approved for
+production and is not built**: no `quiz.trustStories`, no validator contract
+for it, no renderer, no CLAUDE.md paragraph. Heritage stays on the Welcome
+screen once. A restrained heritage treatment remains available only as a
+separately testable research condition in moderated sessions; no
+company-history content belongs beside `sleep_issues` or `health_conditions`,
+and no automatic rotation, background watermark, answer-aware anecdote,
+testimonial, QR or external navigation is authorized. The superseded
+prototype worktree is preserved as research evidence and is not merged.
+
+**Tier architecture and Gold-first presentation remain Phase 3.3 and an open
+owner decision (register).** This gate may improve the existing relativity
+note's legibility; it may not change tier behaviour, and it adds no
+confessional line and no cross-tier marker.
+
+**Privacy language is conditional on verified deployment behaviour.** The
+data-use sentence is dictionary copy in two variants — a preview-mode
+sentence shown only while `gasUrl` is blank (nothing is sent; this is the
+shipped state) and a live-mode sentence for retailers with email enabled —
+selected at runtime by the same `gasUrl` truth the email screen uses, and
+gated at build by `tools/validation.py`, which rejects preview-mode wording
+in retailer privacy prose under a non-blank `gasUrl`. The network-sink set
+that makes the sentence true (exactly two `fetch` call sites: the same-origin
+data loader and the `gasUrl`-gated results POST; no beacon, socket, form
+action, storage of answers or query serialization) is pinned by
+`tests/trust_integrity_check.mjs`. No privacy policy is claimed approved:
+`text.privacyDraftNotice` stays until the approver of record resolves it.
+
+**Native-Spanish review (Invariant 12) still applies to every ES string this
+gate ships, and the privacy/data-use sentences are the recorded exception that
+goes first** — a wrong translation there changes the promise, so they are
+owed native review before showroom use rather than at the consolidated pass.
+The copy inventory is in `docs/trust-integrity-implementation-2026-08-21.md`.
+
+**This gate grants no showroom-use authorization.** `docs/kiosk-device-hardening.md`
+remains BLOCKING; the phase-wide device-matrix merge gate and Blake's live
+review apply to it exactly as to every slice.
+
+**Exit:**
+
+1. A question change no longer inherits an off-screen scroll position.
+2. A question change scrolls the new question into view and moves keyboard
+   focus to its headline, without touching the answer-tap focus restoration
+   (Slice 3) or the language-switch focus policy.
+3. Every quiz help line corresponds to real engine or handoff behaviour, as
+   recorded in `docs/quiz-copy-engine-correspondence.md`.
+4. The copy distinguishes scoring inputs from consultation-only inputs.
+5. No template-hardcoded retailer privacy promise remains in `index.html`.
+6. The customer-facing data-use sentence is true for the active deployment
+   mode, and the build rejects a preview-only statement under a live endpoint.
+7. Customers are told, on the Review screen, that a specialist summary is
+   produced from their answers.
+8. The tier-relativity statement is readable at body size (≥15px, ≥4.5:1).
+9. Scoring outputs and the Phase 1 output fixture are unchanged.
+10. The full suite and the device matrix pass.
+11. No trust-story rail exists on production question screens.
+12. The remaining tier-presentation questions are recorded in the register,
+    not implemented.
 
 ---
 
@@ -2296,6 +2479,14 @@ approval; its presence is a bar on proceeding.
 | Visible stale-financing status band (production) | ❓ | Blake | A case for it plus review sign-off. Prototype-only today (D6); if pursued, production gets its own dedicated governed key — not a reuse of `staleAnnouncement` |
 | Customer-recorded trial reactions | ❓ | Blake | A case for it. The Nocturne prototype's own candidate next revision; deliberately not built (D6) |
 | Presenter mode — shipping mechanism | ❓ | Blake + kiosk hardening review | The hardening review decides the mechanism; the prototype's query parameter is rehearsal tooling, not a shipped design (D6) |
+| **Tier presentation (trust)** — retain Gold-first with the within-tier model, a neutral initial tier choice, a cross-tier highest-fit marker, or another owner-approved control | 🔒 | Blake | Explicit approval. *Should the experience provide a neutral initial tier choice, a cross-tier highest-fit marker, or retain Gold-first presentation with the current within-tier model?* A cross-tier marker or global best-match computation is 3.3; a neutral initial tab is presentation but still needs the ruling. The legible within-tier relativity note (trust gate) is NOT this decision |
+| **Heritage content** — Welcome only (current), an optional moderated-research condition, or no additional heritage | ❓ | Blake | A case for any addition. The in-quiz rail is not approved (2026-08-21 investigation); any future fact beyond the Welcome line needs governance modelled on financing (freshness, allowlisted source, approval, ES review) |
+| **Founding-year discrepancy** — lacks.com "1935" vs the BBB record "Business Started 1/1/1924" | ❓ | Blake | Confirm 1935 through corporate records and explain the BBB entry; affects `text.heritage` / `voice.eyebrow` (and the dead `text.trustSignal`). No anniversary arithmetic is to be added either way |
+| **Privacy approval** — approver of record; final showroom wording; `text.privacyDraftNotice` resolution; the native-Spanish reviewer for the data-use sentences; the live-mode (email-enabled) wording, which must disclose what `Code.gs` does with a submitted address | ❓ | Blake + business/legal | Written approval recorded in config or this document. Until then the preview-mode sentence ships only while `gasUrl` is blank, and the overlay keeps its draft notice |
+| **Specialist-summary scope** — exactly what the Consultation Summary shows from the answers (today: finalists, what to test, and implications derived from sleep-issue and health answers), whether the customer may control what appears, whether health-derived implications remain | ❓ | Blake | A ruling; 1.6 owns the presentation. The trust gate's Review line describes today's behaviour and must be re-verified if the scope changes |
+| **Idle-dialog wording** — "Your session is paused to protect your privacy." is Gate 1B required copy, pinned exactly by `tests/session_safety_check.mjs`; the session is obscured and inert but the answers persist for the grace period | ❓ | Blake | A ruling plus the test edits; the trust gate left it as shipped |
+| **Trust measurement** — moderated current-vs-process-transparency sessions; whether a restrained heritage condition is retained as a third research condition; any aggregate local measurement store (which must record no answers and no identity, or the data-use sentence becomes false) | ❓ | Blake | Approval of the study design; the store is designed before anything is promised |
+| **VoiceOver sanity pass on the trust copy** — required manual pass on the mounted iPad, or explicitly accepted residual risk | ❓ | Blake | A decision either way; screen-reader functionality itself stays out of scope by the 2026-08-12 permanent ruling |
 
 *(Resolved and removed from the table: "Phase 1 scoring-fixture exit gate" —
 approved by owner directive 2026-08-12 and built the same day; see the Phase 1
@@ -2412,7 +2603,11 @@ document, not here.
    forced-colors and physical-iPad gates passed. Then Slice 4, Payment Choice per
    D4 (1.5), merged 2026-08-20 as `b2acd7e`, with all four of its manual gates
    passed and its Pages deployment verified at exactly that commit.
-8. 🔨 **The visible redesign** — Phase 1. *(Implementation explicitly
+8. 🔨 **Trust integrity and transparency** — the Phase 1 cross-cutting gate,
+   inserted 2026-08-21 by owner instruction after Slice 4 and before Slice 5
+   (block after item 1.7; branch `claude/phase1-trust-integrity` from
+   `4a76503`). Slice 5 is concurrently in progress on its own branch.
+9. 🔨 **The visible redesign** — Phase 1. *(Implementation explicitly
    authorized by Blake 2026-08-12 — see the authorization block at the top of
    Phase 1. Direction set by the 2026-08-14 Nocturne owner review, D1–D6,
    with its approved slice order; 1.3's reason gate and the Phase 2/3 gates
@@ -2422,9 +2617,9 @@ document, not here.
    redesign itself, which proceeds against today's reason content (the generic
    default on 14 of 26 models only; none on the other 12) per
    1.3's Proceeds list.
-9. ⬜ **Dark pricing/payment foundation** — 2.1.
-10. 🔒 **Activate prices and payments** — 2.2, after business and legal approval.
-11. 🔒 **Structural scoring and tier changes last** — Phase 3.
+10. ⬜ **Dark pricing/payment foundation** — 2.1.
+11. 🔒 **Activate prices and payments** — 2.2, after business and legal approval.
+12. 🔒 **Structural scoring and tier changes last** — Phase 3.
 
 ---
 
