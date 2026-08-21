@@ -11670,15 +11670,33 @@
     // path. Either way the explored history is PRESERVED: not_now suppresses
     // the explored row in the handoff presentation only, and undoing it restores
     // the row unchanged.
+    // Slice 5: the same reversible control exists on the Sleep Plan. ONE
+    // payPref, ONE pending-announcement slot (a per-region slot was tried and
+    // reverted — see the invariant above); only the originating control and
+    // the region that is live differ. The surface name picks the pair.
+    var PAY_NOT_NOW_SURFACES = {
+      hf2: { control: 'hf2FinancingNotNow', region: 'hf2FinancingStatus' },
+      plan: { control: 'sleepPlanFinancingNotNow', region: 'sleepPlanFinancingStatus' }
+    };
+    // The surface whose control is being operated. Set by the Plan's wrapper
+    // for the duration of ONE call and restored after, so the single owned
+    // payPref write below stays inside window.setPaymentNotNow (the D4
+    // ownership audit names that function as the sole writer for this
+    // transition) while the control/region pair follows the surface.
+    var _payNotNowSurface = 'hf2';
     window.setPaymentNotNow = function() {
-      var control = 'hf2FinancingNotNow';
-      var keepFocus = payFocusOrigin(control);
+      var ids = PAY_NOT_NOW_SURFACES[_payNotNowSurface] || PAY_NOT_NOW_SURFACES.hf2;
+      var keepFocus = payFocusOrigin(ids.control);
       var turningOn = payPref !== PAY_NOT_NOW;
       payPref = turningOn ? PAY_NOT_NOW : null;
       renderAllFinancingSurfaces();
-      if (keepFocus) payRestoreFocus(control);
-      announcePayAction('hf2FinancingStatus',
+      if (keepFocus) payRestoreFocus(ids.control);
+      announcePayAction(ids.region,
         turningOn ? 'preferenceNotNowAnnounce' : 'preferenceClearedAnnounce');
+    };
+    window.setPaymentNotNowFromPlan = function() {
+      _payNotNowSurface = 'plan';
+      try { window.setPaymentNotNow(); } finally { _payNotNowSurface = 'hf2'; }
     };
 
     // ---- Focus restoration across a rerender -----------------------------------
@@ -11734,6 +11752,7 @@
     // populated.
     function payRegionLive(regionId) {
       if (regionId === 'hf2FinancingStatus') return finHandoffVisible();
+      if (regionId === 'sleepPlanFinancingStatus') return finPlanVisible();
       var sheet = document.getElementById('financingSheet');
       return !!(sheet && !sheet.hidden);
     }
@@ -11768,6 +11787,12 @@
     // while the handoff screen is active and the module itself is visible.
     // Explicit screen-state + hidden-ancestor checks — offsetParent is unreliable
     // for this app's overlay/`:has()`-themed layouts, so it is not used here.
+    function finPlanVisible() {
+      var screen = document.getElementById('sleepPlanScreen');
+      var mod = document.getElementById('sleepPlanFinancing');
+      return !!(screen && screen.classList.contains('active')
+        && mod && !mod.hidden && !mod.closest('[hidden]'));
+    }
     function finHandoffVisible() {
       var screen = document.getElementById('hf2Screen');
       var mod = document.getElementById('hf2Financing');
@@ -11790,7 +11815,7 @@
     // untouched — a language switch is a copy swap, not a reset.
     function clearPayAnnouncements() {
       cancelPayAnnouncePending();
-      ['hf2FinancingStatus', 'financingSheetAction'].forEach(function(id) {
+      ['hf2FinancingStatus', 'financingSheetAction', 'sleepPlanFinancingStatus'].forEach(function(id) {
         var region = document.getElementById(id);
         if (region) region.textContent = '';
       });
@@ -12193,6 +12218,62 @@
     // "Not right now" control. This is what the salesperson reads; it is a
     // record of the conversation, never a product choice and never an
     // application.
+    // Slice 5 — the Sleep Plan's payment moment (D4, owner ruling R-3 A).
+    // READ-ONLY over payPref / payExplored: the preference line, the explored
+    // row (suppressed — not erased — under "Not right now"), the exploration
+    // consequence line, the reversible "Not right now" control, and a governed
+    // "Explore payment options" CTA that opens the sheet DIRECTLY with the
+    // truthful placement 'sleep-plan'. Opening records no exploration (that
+    // is D4's sheet-open contract); deliberate review on the sheet remains
+    // the only recorder. Nothing here writes a payment dimension.
+    function renderSleepPlanFinancing() {
+      var mod = document.getElementById('sleepPlanFinancing');
+      if (!mod) return;
+      if (!financingEnabled()) { mod.hidden = true; return; }
+      mod.hidden = false;
+      document.getElementById('sleepPlanFinancingEyebrow').textContent = FC('eyebrow');
+      document.getElementById('sleepPlanFinancingHeadline').textContent = FC('handoffHeadline');
+
+      var paths = finPaymentPaths();
+      function labelFor(id) {
+        for (var i = 0; i < paths.length; i++) if (paths[i].id === id) return paths[i].label;
+        return '';
+      }
+      var notNow = payPref === PAY_NOT_NOW;
+      var prefLabel = notNow ? FC('preferenceNotNow') : (payPref ? labelFor(payPref) : '');
+      if (!prefLabel) prefLabel = FC('preferenceNone');
+      var exploredLabels = notNow ? [] : payExplored
+        .filter(function(id) { return id !== payPref; })
+        .map(labelFor)
+        .filter(function(x) { return !!x; });
+
+      var rows = '<div class="fin-pref-row">'
+        + '<dt class="fin-pref-row__label">' + finEsc(FC('paymentPreferenceLabel')) + '</dt>'
+        + '<dd class="fin-pref-row__value">' + finEsc(prefLabel) + '</dd>'
+        + '</div>';
+      if (exploredLabels.length) {
+        rows += '<div class="fin-pref-row">'
+          + '<dt class="fin-pref-row__label">' + finEsc(FC('optionsExploredLabel')) + '</dt>'
+          + '<dd class="fin-pref-row__value"><ul class="fin-explored-list">'
+          + exploredLabels.map(function(x) { return '<li>' + finEsc(x) + '</li>'; }).join('')
+          + '</ul></dd></div>';
+      }
+      document.getElementById('sleepPlanFinancingInterest').innerHTML =
+        '<dl class="fin-pref-rows">' + rows + '</dl>'
+        + '<p class="fin-explore-consequence">' + finEsc(FC('exploreConsequence')) + '</p>'
+        + '<div class="fin-actions">'
+        + '<button type="button" class="fin-btn fin-btn-primary" id="sleepPlanFinancingExplore" '
+        + 'onclick="window.openFinancingSheet(\'sleep-plan\')" '
+        + 'ontouchend="event.preventDefault();window.openFinancingSheet(\'sleep-plan\');">'
+        + finEsc(FC('cta')) + '</button>'
+        + '<button type="button" class="fin-btn fin-btn-ghost fin-not-now" id="sleepPlanFinancingNotNow" '
+        + 'aria-pressed="' + (notNow ? 'true' : 'false') + '" '
+        + 'onclick="window.setPaymentNotNowFromPlan()" '
+        + 'ontouchend="event.preventDefault();window.setPaymentNotNowFromPlan();">'
+        + finEsc(FC('preferenceNotNow')) + '</button>'
+        + '</div>';
+    }
+
     function renderHandoffFinancing() {
       var mod = document.getElementById('hf2Financing');
       if (!mod) return;
@@ -12302,6 +12383,7 @@
       renderResultsFinancing();
       renderDrawerFinancing();
       renderHandoffFinancing();
+      renderSleepPlanFinancing();
       var sheet = document.getElementById('financingSheet');
       if (sheet && !sheet.hidden) renderFinancingSheet();
     }
@@ -14960,7 +15042,7 @@
         lang: ['en', 'es'],
         step: ['adjustability', 'support', 'pillow', 'protection'],
         decisionStatus: ['already', 'confirm', 'demo', 'later', 'open', 'selected'],
-        placement: ['results', 'drawer', 'handoff', 'sheet', 'mexico', 'sleep-system'],
+        placement: ['results', 'drawer', 'handoff', 'sheet', 'mexico', 'sleep-system', 'sleep-plan'],
         layout: ['tablet', 'desktop'],
         endReason: ['start_over', 'confirmed_new_customer', 'idle_timeout',
                     'results_viewed', 'unspecified']
@@ -18996,7 +19078,7 @@
       renderSleepPlanPriorities();
       renderSleepPlanCompared();
       renderSleepPlanSystem();
-      if (typeof renderSleepPlanFinancing === 'function') renderSleepPlanFinancing();
+      renderSleepPlanFinancing();
       // R-8: the Plan does not reach a behaviour-complete state without its
       // priorities; the forward control is withheld while the recovery shows.
       if (cont) cont.hidden = !!window._sleepPlanState.prioritiesInvalid;

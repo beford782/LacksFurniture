@@ -493,6 +493,10 @@ if (gate("renderSleepPlan", RENDER_SRCS.every(Boolean) && !!FALLBACK_SRC && !!RE
          function readSleepSystemGroups() { return ${JSON.stringify(HOSTILE_GROUPS)}; }
          ${RESOLVER_SRC}
          ${FALLBACK_SRC}
+         // The payment moment is a separate financing surface exercised by
+         // payment_choice_check §29; stubbed here so the Plan renderer's own
+         // contract is tested in isolation from D4's module state.
+         function renderSleepPlanFinancing() {}
          ${PLAN_SRC}
          out.api = { render: renderSleepPlan, show: window.showSleepPlan, back: window.sleepPlanBack, cont: window.sleepPlanContinue, choose: window.sleepPlanChooseFinalist, recover: window.sleepPlanReturnToBrief };`)(
         doc, win, analytics, results, lang, dict, (x) => String(x), (o) => (o && typeof o === "object" ? (o[lang] || o.en) : String(o)), (o) => (o && typeof o === "object" ? (o[lang] || o.en) : String(o)),
