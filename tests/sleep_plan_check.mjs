@@ -77,7 +77,7 @@ function throwingWindow(seed = {}) {
 const REQUIRED = new Set([
   "resolveFinalistState", "chooseFinalist",   // finalist provenance commit (C2)
   "readSleepSystemGroups",   // accessor commit (C3)
-  // "sleepPlanScreen",        // screen-shell commit
+  "sleepPlanScreen", "renderSleepPlan",   // screen-shell commit (C4)
 ]);
 function gate(symbolName, present) {
   if (present) return true;
@@ -418,6 +418,182 @@ if (gate("sleepPlanScreen", SCREEN_PRESENT)) {
     /window\._sleepPlanState = \{/.test(extractFunction("function resetSessionState(opts)") || ""));
   check("switchLanguage re-renders the Plan when it is active",
     /sleepPlanScreen[\s\S]{0,120}renderSleepPlan\(\)/.test(extractFunction("async function switchLanguage(lang)") || extractFunction("function switchLanguage(lang)") || ""));
+}
+
+section("contract / renderSleepPlan() — executed against a DOM stub");
+const RENDER_SRCS = [
+  "function sleepPlanTrialFocusIsComplete(stored)", "function sleepPlanTierLabel(tier)",
+  "function sleepPlanMattressById(id)", "function sleepPlanModelLine(m)",
+  "function renderSleepPlanFinalist()", "function renderSleepPlanPriorities()",
+  "function renderSleepPlanCompared()", "function renderSleepPlanSystem()", "function renderSleepPlan()",
+  "window.showSleepPlan = function(origin)", "window.sleepPlanBack = function()",
+  "window.sleepPlanContinue = function()", "window.sleepPlanChooseFinalist = function()",
+  "window.sleepPlanReturnToBrief = function()",
+].map((a) => extractFunction(a));
+const FALLBACK_SRC = extractFunction("function finalistRecommendedFallback()");
+if (gate("renderSleepPlan", RENDER_SRCS.every(Boolean) && !!FALLBACK_SRC && !!READ_SRC && !!RESOLVER_SRC)) {
+  const PLAN_SRC = RENDER_SRCS.join("\n");
+  // Source-level bans on the renderer (cheap, and they catch the obvious).
+  check("the renderer never calls scoreAccessoriesFromAnswers() (source)", !/scoreAccessoriesFromAnswers\s*\(/.test(PLAN_SRC));
+  check("the renderer never calls getSleepSystemViewModel() (source)", !/getSleepSystemViewModel\s*\(/.test(PLAN_SRC));
+  check("the renderer never writes analytics (source)", !/analytics\s*\.\s*[A-Za-z_$][\w$]*\s*=/.test(PLAN_SRC) && !/analytics\.log\(/.test(PLAN_SRC));
+  check("the renderer never reads tierData/topPick for the FINALIST (the engine read is the caller-owned fallback only)",
+    !/tierData|topPick/.test(extractFunction("function renderSleepPlanFinalist()").replace(/finalistRecommendedFallback\(\)/g, "")) );
+  check("the renderer never reaches the payment dimensions", !/payExplored|payPref|payOpen|PAY_NOT_NOW|payRecordExplored|reviewPaymentPath/.test(PLAN_SRC));
+  check("the renderer resolves tier labels through the existing results.tier_* keys (no second tier authority)",
+    /'results\.tier_' \+/.test(PLAN_SRC) && !/'Oro'|'Plata'|'Bronce'|'Gold'|'Silver'|'Bronze'/.test(PLAN_SRC));
+  check("the renderer contains no inline bilingual literal", !/\{\s*en:\s*'/.test(PLAN_SRC));
+  check("the completeness predicate inlined in the Plan is textually identical to the producer/consumer copies",
+    (() => {
+      // Indentation differs (the producer/consumer copies sit one level
+      // deeper), so compare with whitespace collapsed — the PREDICATE must be
+      // identical, not the column it starts in.
+      const ws = (x) => x.replace(/\s+/g, " ").trim();
+      const plan = ws((PLAN_SRC.match(/var entryOk = function\(item\) \{[\s\S]*?\};/) || [""])[0]);
+      const hf2 = ws((norm.match(/var entryOk = function\(item\) \{[\s\S]*?\};/) || [""])[0]);
+      return plan.length > 50 && plan === hf2;
+    })());
+
+  // Executable harness: DOM stub, throwing scorer by default, recorder for
+  // analytics, throwingWindow for undeclared reads.
+  function makePlanEnv({ savedPicks = [], favorite = "", compare = [], cart = {}, trialFocus = null, results = null, groups = null, lang = "en", scorer = "throw" } = {}) {
+    const els = {}; const focusLog = []; const screens = [];
+    const mk = (id, tag) => (els[id] = { id, tag, innerHTML: "", textContent: "", hidden: false, style: {}, attrs: {},
+      setAttribute(k, v) { this.attrs[k] = v; }, getAttribute(k) { return k in this.attrs ? this.attrs[k] : null; },
+      focus() { focusLog.push(id); }, scrollIntoView() {}, classList: { _s: new Set(), add(c) { this._s.add(c); }, remove(c) { this._s.delete(c); }, contains(c) { return this._s.has(c); }, toggle(c, on) { on ? this._s.add(c) : this._s.delete(c); } } });
+    for (const id of ["sleepPlanBack", "sleepPlanEyebrow", "sleepPlanTitle", "sleepPlanContinue", "sleepPlanFinalistLabel", "sleepPlanFinalist",
+      "sleepPlanPrioritiesLabel", "sleepPlanPriorities", "sleepPlanPrioritiesRecovery", "sleepPlanPrioritiesRecoveryText", "sleepPlanPrioritiesRecoveryBtn",
+      "sleepPlanComparedLabel", "sleepPlanCompared", "sleepPlanSystemLabel", "sleepPlanSystem"]) mk(id);
+    const doc = { getElementById: (id) => els[id] || null, querySelector: () => null, querySelectorAll: () => [] };
+    const analytics = { trialFocus: trialFocus === null ? [
+      { en: "P1", es: "P1e", why: { en: "w1", es: "w1e" }, test: { en: "t1", es: "t1e" } },
+      { en: "P2", es: "P2e", why: { en: "w2", es: "w2e" }, test: { en: "t2", es: "t2e" } },
+      { en: "P3", es: "P3e", why: { en: "w3", es: "w3e" }, test: { en: "t3", es: "t3e" } }] : trialFocus,
+      recommendedAccessories: Object.freeze([]), topPick: null, log: () => { analytics._logged = (analytics._logged || 0) + 1; } };
+    const win = throwingWindow({ _savedPicks: savedPicks, _favoriteMattressId: favorite, _compareSelected: compare, _accCart: cart,
+      _drawerData: {}, _sleepPlanState: { prioritiesInvalid: false, origin: "" } });
+    const HOSTILE_GROUPS = groups || {
+      support: [], adjustability: [],
+      pillow: [ { id: "p-A", score: 10, matched: false, meetsMatchThreshold: false, name: { en: "A", es: "Ae" } },
+                { id: "p-B", score: 99, matched: true, meetsMatchThreshold: true, name: { en: "B", es: "Be" } },
+                { id: "p-C", score: 55, matched: true, meetsMatchThreshold: false, name: { en: "C", es: "Ce" } } ],
+      protection: [ { id: "x-Z", score: 1, matched: false, meetsMatchThreshold: false, name: { en: "Z", es: "Ze" } } ] };
+    const scorerSrc = scorer === "throw"
+      ? "function scoreAccessoriesFromAnswers() { throw new Error('PLAN_CALLED_SCORER'); }"
+      : "function scoreAccessoriesFromAnswers() { return []; }";
+    const out = { screens, focusLog, els, win, analytics };
+    const dict = (k) => (lang === "es" ? "ES:" : "EN:") + k;
+    try {
+      new Function("document", "window", "analytics", "_resultsState", "currentLang", "t", "escapeHtml", "L", "sleepSystemText", "showScreen", "_renderResults", "showProfileScreen", "sessionTimeout", "out",
+        `"use strict";
+         ${scorerSrc}
+         // The accessor is REPLACED by a fixture for the renderer tests: this
+         // proves the renderer consumes whatever the engine hands it at exact
+         // indices, and cannot reach the real scorer (which throws).
+         function readSleepSystemGroups() { return ${JSON.stringify(HOSTILE_GROUPS)}; }
+         ${RESOLVER_SRC}
+         ${FALLBACK_SRC}
+         ${PLAN_SRC}
+         out.api = { render: renderSleepPlan, show: window.showSleepPlan, back: window.sleepPlanBack, cont: window.sleepPlanContinue, choose: window.sleepPlanChooseFinalist, recover: window.sleepPlanReturnToBrief };`)(
+        doc, win, analytics, results, lang, dict, (x) => String(x), (o) => (o && typeof o === "object" ? (o[lang] || o.en) : String(o)), (o) => (o && typeof o === "object" ? (o[lang] || o.en) : String(o)),
+        (id) => screens.push(id), () => { out.rendered = (out.rendered || 0) + 1; }, () => { out.profile = (out.profile || 0) + 1; }, (fn) => fn(), out);
+      out.err = null;
+    } catch (e) { out.err = e; }
+    return out;
+  }
+  const RESULTS = { tierData: { gold: [{ id: "g1", name: "Gold One", tier: "gold" }, { id: "g2", name: "Gold Two", tier: "gold" }], silver: [], bronze: [] } };
+  const ids = (html, attr) => [...String(html).matchAll(new RegExp(attr + '="([^"]+)"', "g"))].map((m) => m[1]);
+
+  // A6 — the renderer never reaches the scorer (a throwing stub must not fire).
+  { const env = makePlanEnv({ results: RESULTS }); env.api.render();
+    check("A6: renderSleepPlan() completes with a THROWING scorer installed (the renderer never reaches it, directly or indirectly)", !env.err, env.err && env.err.message); }
+
+  // Accessory block: hostile snapshot consumed at EXACT indices, order, length.
+  { const env = makePlanEnv({ results: RESULTS, cart: { "p-B": { reasons: [] } } }); env.api.render();
+    const got = ids(env.els.sleepPlanSystem.innerHTML, "data-acc-id");
+    const idx = ids(env.els.sleepPlanSystem.innerHTML, "data-acc-index");
+    check("system block renders pillow THEN protection at exact indices and produced length — ['p-A','p-B','p-C','x-Z']", JSON.stringify(got) === JSON.stringify(["p-A", "p-B", "p-C", "x-Z"]));
+    check("system block indices are 0..n-1 in DOM order (index fidelity, not just sequence)", JSON.stringify(idx) === JSON.stringify(["0", "1", "2", "3"]));
+    check("hostile order is NOT re-sorted by score (index 0 is the LOWEST score)", got[0] === "p-A");
+    check("matched=false / meetsMatchThreshold=false items are NOT filtered", got.includes("p-A") && got.includes("x-Z"));
+    check("an ADDED item stays in its engine position and reads 'added' (overlay, never a filter)",
+      got[1] === "p-B" && /data-acc-id="p-B"[\s\S]*?EN:plan\.added/.test(env.els.sleepPlanSystem.innerHTML));
+    check("not-added items read 'not added'", (env.els.sleepPlanSystem.innerHTML.match(/EN:plan\.not_added/g) || []).length === 3); }
+  { const env = makePlanEnv({ results: RESULTS, groups: { support: [], adjustability: [], pillow: [{ id: "p-A", name: { en: "A" } }], protection: [] } }); env.api.render();
+    check("a SHORT engine output renders at its produced length (1) — no backfill, no cap", ids(env.els.sleepPlanSystem.innerHTML, "data-acc-id").length === 1); }
+  { const env = makePlanEnv({ results: RESULTS, groups: { support: [], adjustability: [], pillow: [], protection: [] } }); env.api.render();
+    check("an EMPTY engine output renders an empty block without throwing (accessories-unavailable path)", !env.err && env.els.sleepPlanSystem.innerHTML === ""); }
+
+  // Finalist block: the three states, never a substitution.
+  { const env = makePlanEnv({ results: RESULTS, savedPicks: [{ id: "g2", name: "Gold Two", tier: "gold" }], favorite: "g2" }); env.api.render();
+    check("chosen: label is finalist.chosen and the chosen mattress renders; no route-back control",
+      env.els.sleepPlanFinalistLabel.textContent === "EN:finalist.chosen" && /Gold Two/.test(env.els.sleepPlanFinalist.innerHTML) && !/sleepPlanChooseFinalist/.test(env.els.sleepPlanFinalist.innerHTML)); }
+  { const env = makePlanEnv({ results: RESULTS, savedPicks: [{ id: "g2", name: "Gold Two", tier: "gold" }], favorite: "" }); env.api.render();
+    check("saved picks with NO favorite: label is finalist.recommended, the ENGINE's Gold #1 (not saved[0]) renders, absence stated, route-back offered",
+      env.els.sleepPlanFinalistLabel.textContent === "EN:finalist.recommended" && /Gold One/.test(env.els.sleepPlanFinalist.innerHTML)
+      && !/Gold Two/.test(env.els.sleepPlanFinalist.innerHTML) && /EN:finalist\.none/.test(env.els.sleepPlanFinalist.innerHTML) && /sleepPlanChooseFinalist/.test(env.els.sleepPlanFinalist.innerHTML)); }
+  { const env = makePlanEnv({ results: RESULTS, savedPicks: [{ id: "g2", name: "Gold Two", tier: "gold" }], favorite: "g9" }); env.api.render();
+    check("stale favorite ('g9' unsaved): recommended state, never a promotion of saved[0]",
+      env.els.sleepPlanFinalistLabel.textContent === "EN:finalist.recommended" && !/Gold Two/.test(env.els.sleepPlanFinalist.innerHTML)); }
+  { const env = makePlanEnv({ results: { tierData: { gold: [], silver: [], bronze: [] } } }); env.api.render();
+    check("no engine pick and no favorite: label is finalist.none, nothing rendered as a mattress, route-back offered",
+      env.els.sleepPlanFinalistLabel.textContent === "EN:finalist.none" && !/hf2-pick__name/.test(env.els.sleepPlanFinalist.innerHTML) && /sleepPlanChooseFinalist/.test(env.els.sleepPlanFinalist.innerHTML)); }
+  { const env = makePlanEnv({ results: RESULTS, savedPicks: [{ id: "g2", name: "Gold Two", tier: "gold" }], favorite: "g2" });
+    env.api.render(); env.win._favoriteMattressId = ""; env.api.render();
+    check("the Plan RE-RESOLVES on every render (favorite cleared between renders -> recommended, not a cached Finalist ✓)",
+      env.els.sleepPlanFinalistLabel.textContent === "EN:finalist.recommended"); }
+
+  // Compared block: membership, equality + order, unresolvable ids omitted.
+  { const env = makePlanEnv({ results: RESULTS, savedPicks: [{ id: "g1", name: "Gold One", tier: "gold" }, { id: "g2", name: "Gold Two", tier: "gold" }], compare: ["g2", "g1"] }); env.api.render();
+    check("compared block renders EXACTLY _compareSelected in its order (['g2','g1'])", JSON.stringify(ids(env.els.sleepPlanCompared.innerHTML, "data-compared-id")) === JSON.stringify(["g2", "g1"])); }
+  { const env = makePlanEnv({ results: RESULTS, savedPicks: [{ id: "g1", name: "Gold One", tier: "gold" }], compare: [] }); env.api.render();
+    check("compared block with an empty selection renders the neutral empty line — NEVER the saved picks", /EN:plan\.compared_empty/.test(env.els.sleepPlanCompared.innerHTML) && !/Gold One/.test(env.els.sleepPlanCompared.innerHTML)); }
+  { const env = makePlanEnv({ results: RESULTS, savedPicks: [{ id: "g1", name: "Gold One", tier: "gold" }], compare: ["g1", "zzz", "", 42, null] }); env.api.render();
+    check("unresolvable / blank / wrong-type compare ids are omitted; no raw token is rendered", JSON.stringify(ids(env.els.sleepPlanCompared.innerHTML, "data-compared-id")) === JSON.stringify(["g1"]) && !/zzz/.test(env.els.sleepPlanCompared.innerHTML)); }
+
+  // Priorities: all-or-nothing, recovery, forward control withheld.
+  { const env = makePlanEnv({ results: RESULTS }); env.api.render();
+    check("valid priorities render 3 <li> in an <ol> and the forward control is available",
+      (env.els.sleepPlanPriorities.innerHTML.match(/<li /g) || []).length === 3 && env.els.sleepPlanPrioritiesRecovery.hidden === true && env.els.sleepPlanContinue.hidden === false); }
+  for (const badIndex of [0, 1, 2]) {
+    const base = [ { en: "P1", es: "P1e", why: { en: "w1", es: "w1e" }, test: { en: "t1", es: "t1e" } },
+      { en: "P2", es: "P2e", why: { en: "w2", es: "w2e" }, test: { en: "t2", es: "t2e" } },
+      { en: "P3", es: "P3e", why: { en: "w3", es: "w3e" }, test: { en: "t3", es: "t3e" } } ];
+    const broken = Object.assign({}, base[badIndex]); delete broken.test;
+    const env = makePlanEnv({ results: RESULTS, trialFocus: base.map((x, i) => (i === badIndex ? broken : x)) }); env.api.render();
+    check(`one malformed entry at index ${badIndex}: ZERO rows, recovery shown with the governed copy, forward control WITHHELD`,
+      (env.els.sleepPlanPriorities.innerHTML.match(/<li /g) || []).length === 0 && env.els.sleepPlanPrioritiesRecovery.hidden === false
+      && env.els.sleepPlanPrioritiesRecoveryText.textContent === "EN:plan.priorities_recovery" && env.els.sleepPlanContinue.hidden === true
+      && env.win._sleepPlanState.prioritiesInvalid === true);
+    env.api.cont();
+    check(`...and sleepPlanContinue() is a no-op while priorities are invalid (index ${badIndex})`, env.screens.length === 0);
+  }
+  { const env = makePlanEnv({ results: RESULTS, trialFocus: [] }); env.api.render(); env.api.recover();
+    check("the recovery action returns to the producer (showProfileScreen) and does NOT wipe, fetch, log, or touch _dataLoadFailed",
+      env.profile === 1 && !env.analytics._logged && !/showDataError|_dataLoadFailed|resetSessionState|fetch\(/.test(extractFunction("window.sleepPlanReturnToBrief = function()"))); }
+
+  // Routes + focus shape.
+  { const env = makePlanEnv({ results: RESULTS }); env.api.show("results");
+    check("showSleepPlan renders THEN shows (title populated before showScreen)", env.screens[0] === "sleepPlanScreen" && env.els.sleepPlanTitle.textContent === "EN:plan.title");
+    env.api.back(); check("Back returns to Results", env.screens[1] === "resultsScreen" && env.rendered === 1); }
+  { const env = makePlanEnv({ results: null }); env.api.show("results"); check("showSleepPlan is a no-op before Results exist", env.screens.length === 0); }
+  { const env = makePlanEnv({ results: RESULTS }); env.api.choose();
+    check("'Choose a finalist' routes BACK to Results (never to hf2) and re-renders it", env.screens[0] === "resultsScreen" && env.rendered === 1); }
+  { const env = makePlanEnv({ results: RESULTS, lang: "es" }); env.api.render();
+    check("ES render resolves every label through the dictionary in ES", env.els.sleepPlanTitle.textContent === "ES:plan.title" && env.els.sleepPlanSystemLabel.textContent === "ES:plan.system_label"); }
+
+  // Route ledger pins (per call site; the chokepoint body is untouched).
+  check("the showSavedPicks() chokepoint body is UNCHANGED (renderHf2(); showScreen('hf2Screen');)",
+    /window\.showSavedPicks = function\(\) \{\s*renderHf2\(\);\s*showScreen\('hf2Screen'\);\s*\};/.test(norm));
+  check("email 'Back to handoff' still targets showSavedPicks() (never the Plan)", /id="emailConfirmBackHandoff" onclick="window\.showSavedPicks\(\)"/.test(norm));
+  check("the floating Selections pill still targets showSavedPicks() (R-5)", /id="savedPicksBtn"\s+onclick="window\.showSavedPicks\(\)"/.test(norm));
+  check("the Sleep System review-plan branch and the last-step terminal both route to the Plan", (norm.match(/window\.showSleepPlan\('sleep-system'\)/g) || []).length === 2);
+  check("the Results 'Review with customer' CTA routes to the Plan", /id="reviewWithCustomerBtn" onclick="window\.showSleepPlan\('results'\)"/.test(norm));
+  check("hf2Screen's spoken name is now distinct from the Plan's", dictEn["screen.handoff"] !== dictEn["screen.sleep_plan"] && dictEs["screen.handoff"] !== dictEs["screen.sleep_plan"]);
+  check("the governed recovery strings are exact EN", dictEn["plan.priorities_recovery"] === "We couldn't prepare the trial priorities. Return to the Sleep Brief and try again." && dictEn["plan.priorities_recovery_action"] === "Return to Sleep Brief");
+  check("the Plan's generated containers are in the content/text wipe inventories",
+    ["sleepPlanFinalist", "sleepPlanPriorities", "sleepPlanCompared", "sleepPlanSystem", "sleepPlanFinancingInterest"].every((id) => new RegExp(`'${id}'`).test((norm.match(/var SESSION_CONTENT_IDS = \[[\s\S]*?\];/) || [""])[0]))
+    && /'sleepPlanFinancingStatus', 'sleepPlanPrioritiesRecoveryText'/.test(norm));
 }
 
 console.log(`\nSleep Plan check: ${passed} passed, ${failed} failed`);

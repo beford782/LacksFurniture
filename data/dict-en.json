@@ -96,7 +96,7 @@
   "screen.review": "Quick review",
   "screen.profile": "Your Sleep Brief",
   "screen.results": "Your matches",
-  "screen.handoff": "Your sleep plan",
+  "screen.handoff": "Your consultation summary",
   "screen.email": "Save your results",
   "screen.sleep_system": "Your sleep system",
   "finalist.chosen": "Finalist ✓",
@@ -111,5 +111,17 @@
   "compare.modal_title": "Compare your selections",
   "hf2.saved_picks_label": "Your saved picks",
   "hf2.compare_saved": "Compare saved picks",
-  "hf2.add_to_saved": "Add to saved picks"
+  "hf2.add_to_saved": "Add to saved picks",
+  "screen.sleep_plan": "Your Sleep Plan",
+  "plan.eyebrow": "Your plan for the in-store trial",
+  "plan.title": "Your Sleep Plan",
+  "plan.back_to_matches": "← Back to matches",
+  "plan.continue": "Continue to your consultation summary →",
+  "plan.compared_label": "Compared mattresses",
+  "plan.compared_empty": "No mattresses compared yet.",
+  "plan.system_label": "Your Sleep System",
+  "plan.added": "Added to your plan",
+  "plan.not_added": "Not added",
+  "plan.priorities_recovery": "We couldn't prepare the trial priorities. Return to the Sleep Brief and try again.",
+  "plan.priorities_recovery_action": "Return to Sleep Brief"
 }

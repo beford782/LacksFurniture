@@ -96,7 +96,7 @@
   "screen.review": "Revisión rápida",
   "screen.profile": "Tu resumen de sueño",
   "screen.results": "Tus opciones",
-  "screen.handoff": "Tu plan de sueño",
+  "screen.handoff": "Tu resumen de consulta",
   "screen.email": "Guarda tus resultados",
   "screen.sleep_system": "Tu sistema de sueño",
   "finalist.chosen": "Finalista ✓",
@@ -111,5 +111,17 @@
   "compare.modal_title": "Compara tus selecciones",
   "hf2.saved_picks_label": "Tus selecciones guardadas",
   "hf2.compare_saved": "Comparar selecciones guardadas",
-  "hf2.add_to_saved": "Agregar a selecciones guardadas"
+  "hf2.add_to_saved": "Agregar a selecciones guardadas",
+  "screen.sleep_plan": "Tu Plan de Sueño",
+  "plan.eyebrow": "Tu plan para la prueba en la tienda",
+  "plan.title": "Tu Plan de Sueño",
+  "plan.back_to_matches": "← Volver a colchones",
+  "plan.continue": "Continuar al resumen de tu consulta →",
+  "plan.compared_label": "Colchones comparados",
+  "plan.compared_empty": "Aún no has comparado colchones.",
+  "plan.system_label": "Tu Sistema de Sueño",
+  "plan.added": "Agregado a tu plan",
+  "plan.not_added": "No agregado",
+  "plan.priorities_recovery": "No pudimos preparar las prioridades de prueba. Vuelve al Resumen de sueño e inténtalo de nuevo.",
+  "plan.priorities_recovery_action": "Volver al Resumen de sueño"
 }
