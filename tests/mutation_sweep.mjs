@@ -942,11 +942,11 @@ const MUTATIONS = [
     "    }\n\n    .noct-slider-track::-webkit-slider-thumb {", QUIZ],
 
   // Focus wiring: both halves of the shared contract.
-  ["quiz: the five Quiz/Review controls are dropped from the focus rule",
-    "    .noct-profile-secondary:focus-visible,\n    .noct-quiz-option:focus-visible,\n    .noct-quiz-back:focus-visible,\n    .noct-quiz-next:focus-visible,\n    .noct-review-edit:focus-visible,\n    .noct-slider-track:focus-visible {\n      outline: 3px solid var(--focus-ring-outer);",
+  ["quiz: the five Quiz/Review controls (and the trust-gate headline) are dropped from the focus rule",
+    "    .noct-profile-secondary:focus-visible,\n    .noct-quiz-headline:focus-visible,\n    .noct-quiz-option:focus-visible,\n    .noct-quiz-back:focus-visible,\n    .noct-quiz-next:focus-visible,\n    .noct-review-edit:focus-visible,\n    .noct-slider-track:focus-visible {\n      outline: 3px solid var(--focus-ring-outer);",
     "    .noct-profile-secondary:focus-visible {\n      outline: 3px solid var(--focus-ring-outer);", QUIZ],
-  ["quiz: the five controls are dropped from the forced-colors focus fallback",
-    "      .noct-profile-secondary:focus-visible,\n      .noct-quiz-option:focus-visible,\n      .noct-quiz-back:focus-visible,\n      .noct-quiz-next:focus-visible,\n      .noct-review-edit:focus-visible,\n      .noct-slider-track:focus-visible {\n        outline-color: CanvasText;",
+  ["quiz: the five controls (and the trust-gate headline) are dropped from the forced-colors focus fallback",
+    "      .noct-profile-secondary:focus-visible,\n      .noct-quiz-headline:focus-visible,\n      .noct-quiz-option:focus-visible,\n      .noct-quiz-back:focus-visible,\n      .noct-quiz-next:focus-visible,\n      .noct-review-edit:focus-visible,\n      .noct-slider-track:focus-visible {\n        outline-color: CanvasText;",
     "      .noct-profile-secondary:focus-visible {\n        outline-color: CanvasText;", QUIZ],
 
   // Every required 44px interaction floor, one entry each.
@@ -1033,6 +1033,37 @@ const MUTATIONS = [
     TRUST, "docs/quiz-copy-engine-correspondence.md"],
   ["trust: the quiz root contract is widened for retailer prose",
     '{\n  "questions": [', '{\n  "trustStories": [],\n  "questions": [', TRUST, "data/quiz.json"],
+
+  // ---- Trust integrity gate (2026-08-21): privacy voice ---------------------
+  ["trust: the welcome data-use line ignores deployment mode (always the preview sentence)",
+    "      var key = emailDeliveryLive() ? 'privacy.data_use_live' : 'privacy.data_use_preview';",
+    "      var key = 'privacy.data_use_preview';", TRUST],
+  ["trust: a missing data-use variant renders the dictionary KEY instead of nothing",
+    "      if (typeof text === 'string' && text.trim() && text !== key) {",
+    "      if (typeof text === 'string') {", TRUST],
+  ["trust: the shared mode helper ignores a scenario that disables submission",
+    "      return !!gasUrl && !scenarioBlocksEmail;", "      return !!gasUrl;", TRUST],
+  ["trust: the email screen's preview note stops deriving from the shared mode helper",
+    "      var isDemoMode = !emailDeliveryLive();", "      var isDemoMode = false;", TRUST],
+  ["trust: the retired template promise returns to the email screen",
+    "      setText('emailPrivacyLead', localizedConfigBlock('text').emailPrivacy || '');",
+    "      setText('emailPrivacyLead', (localizedConfigBlock('text').emailPrivacy || '') + ' Your info is never sold to third parties. Unsubscribe anytime.');",
+    TRUST],
+  ["trust: the privacy-overlay fallback promise returns to the template",
+    '<span data-store="privacy-body"></span>',
+    '<span data-store="privacy-body">Your information is never sold or shared with third parties.</span>', TRUST],
+  ["trust: the Review line reverts to the inline claim that the specialist builds the matches",
+    "      if (help) help.textContent = t('review.help');",
+    "      if (help) help.textContent = 'A quick check, then your specialist builds your recommendations.';", TRUST],
+  ["trust: a third network sink appears (a beacon carrying the answers)",
+    "        answers[qId] = optId;\n      }\n      renderQuestion();",
+    "        answers[qId] = optId;\n      }\n      navigator.sendBeacon('/collect', JSON.stringify(answers));\n      renderQuestion();", TRUST],
+  ["trust: the Spanish data-use variant silently becomes English",
+    '"privacy.data_use_preview": "Durante esta sesión en la tienda,',
+    '"privacy.data_use_preview": "During this showroom session,', TRUST, "data/dict-es.json"],
+  ["trust: the validator stops rejecting preview-mode privacy prose under a live gasUrl",
+    "    if not is_placeholder:\n        _check_privacy_prose_mode(r, config)",
+    "    if False:\n        _check_privacy_prose_mode(r, config)", PAY_VALIDATOR, "tools/validation.py"],
 
   // ---- Slice 4 / D4: the Payment Choice state model ------------------------
   // The two dimensions, and the line between them. Exploration is descriptive

@@ -296,6 +296,17 @@
       color: var(--landing-muted, var(--color-text-subtle));
     }
 
+    /* Data-use sentence: supporting copy at body size, never smaller than the
+       help lines it sits beside; the same muted ink the sub-copy uses. */
+    .landing-data-use {
+      font-family: var(--font-sans);
+      font-size: 16px;
+      line-height: 1.5;
+      color: var(--landing-muted, var(--color-text-muted));
+      max-width: 720px;
+      margin: 14px 0 26px;
+    }
+
     .landing-outcome {
       border-top: 1px solid var(--landing-rule, var(--color-border));
       border-bottom: 1px solid var(--landing-rule, var(--color-border));
@@ -10222,6 +10233,16 @@
         <span class="landing-time-estimate" id="landingTimeEstimate">≈ 4 minutes</span>
       </div>
 
+      <!-- Data-use sentence (trust gate, 2026-08-21). ONE statement of what the
+           app does with the answers, in the variant that is true for this
+           deployment mode: the preview-mode sentence while gasUrl is blank
+           (nothing is sent), the live-mode sentence otherwise. Selected by
+           renderDataUseStatement() from the generic dictionaries; hidden and
+           EMPTY until then, and hidden again if the variant is missing, so no
+           template promise and no other mode's sentence can ever render. Plain
+           paragraph in reading order: not focusable, not live, no landmark. -->
+      <p class="landing-data-use" id="landingDataUse" hidden></p>
+
       <!-- Outcome row. Promotion-neutral default: no program (Savings Pass or
            Payment Choice) may be promised before store-config loads — the
            configured voice.outcomeItems replaces this at render time. -->
@@ -10771,8 +10792,7 @@
               <button class="noct-email-send-btn" id="emailSendBtn" onclick="sendResults()" ontouchend="event.preventDefault();sendResults();">Save My Sleep Brief &rarr;</button>
               <div class="email-preview-note" id="emailPreviewNote">Preview mode: live email delivery isn't connected yet.</div>
               <div class="noct-email-privacy" id="emailPrivacy">
-                <span id="emailPrivacyLead" data-store="email-privacy">We'll only use your email to send your results.</span>
-                <span id="emailPrivacyStatic"> Your info is never sold to third parties. Unsubscribe anytime.</span>
+                <span id="emailPrivacyLead" data-store="email-privacy"></span>
                 <a href="#" onclick="event.preventDefault();document.getElementById('privacyOverlay').classList.add('visible');" id="emailPrivacyLink">Privacy &amp; Terms</a>
               </div>
             </div>
@@ -13431,8 +13451,10 @@
         if (ogDesc && textBlock.metaDescription) ogDesc.setAttribute('content', textBlock.metaDescription);
         var ogTitle = document.getElementById('ogTitle');
         if (ogTitle && textBlock.ogTitle) ogTitle.setAttribute('content', textBlock.ogTitle);
+        // Retailer privacy prose is config or NOTHING: the template carries no
+        // fallback promise of its own (trust gate).
         document.querySelectorAll('[data-store="email-privacy"]').forEach(function(el) {
-          el.textContent = textBlock.emailPrivacy || el.textContent;
+          el.textContent = textBlock.emailPrivacy || '';
         });
         document.querySelectorAll('[data-store="privacy-policy-contact"]').forEach(function(el) {
           el.textContent = textBlock.privacyPolicyContact || el.textContent;
@@ -13445,7 +13467,7 @@
           el.textContent = textBlock.privacyHeading || el.textContent;
         });
         document.querySelectorAll('[data-store="privacy-body"]').forEach(function(el) {
-          el.textContent = textBlock.privacyBody || el.textContent;
+          el.textContent = textBlock.privacyBody || '';
         });
         document.querySelectorAll('[data-store="disclaimer-heading"]').forEach(function(el) {
           el.textContent = textBlock.disclaimerHeading || el.textContent;
@@ -13474,6 +13496,40 @@
     // ===== NOCTURNAL LANDING RENDERER =====
     // Populates the welcome screen from STORE_CONFIG.voice / voice_es / storeName / brands / discount / text*.
     // Safe to call before STORE_CONFIG is loaded (no-ops on missing data); re-runs on every language switch.
+    // ----- Deployment mode: does anything leave this tablet? (trust gate)
+    // ONE truth for every surface that speaks about it. Live delivery exists
+    // only when a GAS endpoint is configured AND the active promotion scenario
+    // does not block submission — the same two conditions sendResults() gates
+    // its POST on. The welcome data-use sentence, the email screen's preview
+    // note and the send path must never disagree about this.
+    function emailDeliveryLive() {
+      var gasUrl = (STORE_CONFIG && STORE_CONFIG.gasUrl) || '';
+      var scenario = (typeof getActivePromotionScenario === 'function') ? getActivePromotionScenario() : null;
+      var scenarioBlocksEmail = !!(scenario && scenario.disableEmailSubmission);
+      return !!gasUrl && !scenarioBlocksEmail;
+    }
+
+    // The single customer-facing data-use sentence. Generic app truth, so it
+    // lives in the dictionaries in two variants and the runtime selects the
+    // one that is true for this deployment: preview (nothing is sent) while
+    // no live endpoint exists, live (sent only if the customer chooses to
+    // email) otherwise. Fail-safe: t() returns the KEY on a miss, and a
+    // missing variant renders NOTHING — never the key, never the other mode's
+    // sentence — with the element hidden so the layout does not carry a blank.
+    function renderDataUseStatement() {
+      var el = document.getElementById('landingDataUse');
+      if (!el) return;
+      var key = emailDeliveryLive() ? 'privacy.data_use_live' : 'privacy.data_use_preview';
+      var text = (typeof t === 'function') ? t(key) : '';
+      if (typeof text === 'string' && text.trim() && text !== key) {
+        el.textContent = text;
+        el.hidden = false;
+      } else {
+        el.textContent = '';
+        el.hidden = true;
+      }
+    }
+
     function renderNocturnalLanding() {
       if (!STORE_CONFIG) return;
       var es = currentLang === 'es';
@@ -13516,6 +13572,7 @@
       }
       setText('landingHeritage', textBlock.heritage);
       setText('landingTrustBadge', textBlock.ownershipBadge);
+      renderDataUseStatement();
 
       // Store locations: optional label + city list (subtle premium row). Source
       // values come from STORE_CONFIG (trusted, same-origin) — safe to innerHTML.
@@ -14128,11 +14185,12 @@
           ? 'Revisión <span class="accent">rápida</span>'
           : 'Quick <span class="accent">review</span>';
       }
-      if (help) {
-        help.textContent = es
-          ? "Asegúrate de que todo esté bien, luego construiremos tu combinación."
-          : "A quick check, then your specialist builds your recommendations.";
-      }
+      // The audience statement (trust gate): these answers build the matches
+      // AND the summary the specialist reviews — the Consultation Summary
+      // renders implications derived from the sleep-issue and health answers,
+      // and the customer should not be surprised by that. Dictionary copy;
+      // the previous inline line claimed the specialist builds the matches.
+      if (help) help.textContent = t('review.help');
       if (backBtn) backBtn.innerHTML = es ? '&larr; Atrás' : '&larr; Back';
       // D1: the quiz finish control names the destination it opens.
       if (nextBtn) nextBtn.textContent = t('brief.quiz_finish');
@@ -16400,9 +16458,9 @@
       // Savings Pass is disabled; the consumers below live inside #dreamCodeBox,
       // which stays hidden in that state.
       var pass = savingsPassEnabled() ? generateSavingsPass(analytics.sessionId) : null;
-      var _emailScenario = getActivePromotionScenario();
-      var isDemoMode = !(STORE_CONFIG && STORE_CONFIG.gasUrl)
-        || !!(_emailScenario && _emailScenario.disableEmailSubmission);
+      // Preview vs live is the shared emailDeliveryLive() truth (trust gate):
+      // gasUrl configured AND the active scenario does not block submission.
+      var isDemoMode = !emailDeliveryLive();
       var setText = function(id, text) {
         var el = document.getElementById(id);
         if (el) el.textContent = text;
@@ -16445,14 +16503,13 @@
       setText('emailSendBtn', es ? 'Guardar Mi Resumen →' : 'Save My Sleep Brief →');
       setText('emailPrivacyLink', es ? 'Privacidad y Términos' : 'Privacy & Terms');
       setText('emailStartOver', es ? '↺ Empezar de nuevo' : '↺ Start over');
-      // Privacy line: EN lead stays config-driven (store-config text.emailPrivacy);
-      // ES lead is translated inline because text_es.emailPrivacy is not supplied.
-      setText('emailPrivacyLead', es
-        ? 'Solo usaremos tu correo para enviarte tus resultados.'
-        : ((STORE_CONFIG && STORE_CONFIG.text && STORE_CONFIG.text.emailPrivacy) || "We'll only use your email to send your results."));
-      setText('emailPrivacyStatic', es
-        ? ' Tu información nunca se vende. Puedes cancelar la suscripción en cualquier momento.'
-        : ' Your info is never sold to third parties. Unsubscribe anytime.');
+      // Privacy line: retailer policy copy from store-config text.emailPrivacy /
+      // text_es.emailPrivacy (language-merged), and nothing else. The template
+      // used to append a hardcoded absolute not-sold / unsubscribe promise
+      // here in both languages — a white-label breach and a claim no code
+      // kept — and ignored the configured Spanish lead. Retired by the trust
+      // gate; a retailer with no configured line shows no line.
+      setText('emailPrivacyLead', localizedConfigBlock('text').emailPrivacy || '');
 
       // Preview-mode note under the CTA — shown only while live email is not wired.
       var noteEl = document.getElementById('emailPreviewNote');
@@ -20994,7 +21051,7 @@
       <div data-store="privacy-draft-notice" style="font-size:0.62rem; font-style:italic; color:rgba(248,246,241,0.45); margin-bottom:0.85rem;">Draft policy — pending retailer approval before live use.</div>
       <div data-store="privacy-heading" style="font-size:0.9rem; font-weight:700; color:var(--color-gold-bright); margin-bottom:0.75rem;">Privacy</div>
       <div style="font-size:0.68rem; color:rgba(248,246,241,0.7); line-height:1.65; margin-bottom:1rem;">
-        <span data-store="privacy-body">DreamFinder collects your name, email, and optional phone number to deliver your mattress recommendations. Your information is only used for this purpose and is never sold or shared with third parties.</span> <span data-store="privacy-policy-contact">To access or remove your information, contact your local store.</span>
+        <span data-store="privacy-body"></span> <span data-store="privacy-policy-contact">To access or remove your information, contact your local store.</span>
       </div>
       <div data-store="disclaimer-heading" style="font-size:0.9rem; font-weight:700; color:var(--color-gold-bright); margin-bottom:0.75rem;">Disclaimer</div>
       <div data-store="disclaimer-body" style="font-size:0.68rem; color:rgba(248,246,241,0.7); line-height:1.65;">DreamFinder is a product recommendation tool. Match percentages and Sleep Brief guidance are generated from your quiz answers and should be treated as starting points, not guarantees. This tool does not provide medical advice — consult a healthcare provider for medical sleep concerns. Discounts and product availability are subject to store terms.</div>

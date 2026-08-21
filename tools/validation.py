@@ -269,6 +269,41 @@ def validate_structure(raw_tabs: Dict[str, Tuple[List[str], List[dict]]]) -> Val
 
 # -- Store-config value validation (assembled config dict) --------------------
 
+# Retailer privacy prose keys (both language blocks) that the mode rule reads.
+PRIVACY_PROSE_KEYS = ("emailPrivacy", "privacyBody", "privacyDraftNotice",
+                      "privacyPolicyContact", "disclaimerBody")
+# Preview-mode signal phrases: wording that is only true while nothing leaves
+# the tablet. Lower-cased substring match in either language.
+PREVIEW_MODE_SIGNALS = (
+    "preview mode", "modo de vista previa",
+    "stays on this tablet", "stay on this tablet", "permanecen en esta tableta",
+    "permanece en esta tableta", "se queda en esta tableta", "se quedan en esta tableta",
+    "isn't connected", "is not connected", "no está conectada", "no esta conectada",
+    "nothing is sent", "nothing leaves", "not sent anywhere", "never sent",
+    "no se envía nada", "no se envia nada", "nada sale", "no se envía a ning",
+    "no se envia a ning",
+)
+
+
+def _check_privacy_prose_mode(r: ValidationReport, config: dict) -> None:
+    """With a live gasUrl, reject preview-only wording in retailer privacy prose."""
+    for block in ("text", "text_es"):
+        prose = config.get(block)
+        if not isinstance(prose, dict):
+            continue
+        for key in PRIVACY_PROSE_KEYS:
+            value = prose.get(key)
+            if not isinstance(value, str) or not value.strip():
+                continue
+            low = value.lower()
+            hit = next((sig for sig in PREVIEW_MODE_SIGNALS if sig in low), None)
+            if hit:
+                r.add_error(f"{block}.{key} carries preview-mode wording ({hit!r}) but "
+                            "gasUrl is live - a statement that nothing leaves the tablet "
+                            "is false once live email is enabled; author the live-mode "
+                            "wording or blank gasUrl")
+
+
 def validate_store_config(config: dict, manifest: Optional[dict] = None, *,
                           require_gas_url: bool = False) -> ValidationReport:
     r = ValidationReport()
@@ -342,6 +377,20 @@ def validate_store_config(config: dict, manifest: Optional[dict] = None, *,
 
     if manifest is not None and _blank(manifest.get("start_url")):
         r.add_error("manifest.start_url is empty")
+
+    # Trust integrity gate (2026-08-21): retailer privacy prose must be true for
+    # the deployment mode it ships in. The app's own data-use sentence is
+    # dictionary copy selected at runtime by gasUrl, so it can never say
+    # "nothing is sent" under a live endpoint — but the retailer-authored
+    # privacy text (text / text_es) is free prose, and a preview-only promise
+    # left in it while a live GAS endpoint is configured would be a false
+    # representation the moment the first email goes out. The build refuses
+    # that combination: with a live gasUrl, no retailer privacy key may carry
+    # a preview-mode signal phrase. With gasUrl blank the same prose is true
+    # and passes. Phrases, not semantics — the validator cannot judge intent;
+    # it catches the sentences this repo has actually shipped or proposed.
+    if not is_placeholder:
+        _check_privacy_prose_mode(r, config)
 
     # Consultation implications (0.6): structural + cross-language checks on the
     # EMITTED maps. Completeness against the quiz definition lives in
@@ -3517,6 +3566,34 @@ def _self_test() -> int:
     r = validate_store_config(c, require_gas_url=True)
     check("require_gas_url promotes gasUrl to error",
           any("gasUrl" in e for e in r.errors))
+
+    # Trust gate: preview-only privacy wording is rejected under a LIVE gasUrl
+    # (_good_config's gasUrl is live), accepted under a blank one, and live-mode
+    # wording passes either way. Both language blocks and every prose key.
+    c = _good_config(); c["text"] = {"emailPrivacy": "Preview mode: nothing is sent from this tablet."}
+    r = validate_store_config(c)
+    check("preview-mode privacy wording under a live gasUrl -> error",
+          not r.ok and any("preview-mode wording" in e and "text.emailPrivacy" in e for e in r.errors))
+    c = _good_config(); c["text_es"] = {"privacyBody": "Tus respuestas permanecen en esta tableta."}
+    r = validate_store_config(c)
+    check("preview-mode wording in the ES block under a live gasUrl -> error",
+          not r.ok and any("text_es.privacyBody" in e for e in r.errors))
+    for key in PRIVACY_PROSE_KEYS:
+        c = _good_config(); c["text"] = {key: "Nothing leaves this tablet."}
+        check(f"preview-mode wording in text.{key} under a live gasUrl -> error",
+              any(f"text.{key}" in e for e in validate_store_config(c).errors))
+    c = _good_config(); c["gasUrl"] = ""
+    c["text"] = {"emailPrivacy": "Preview mode: nothing is sent from this tablet."}
+    r = validate_store_config(c)
+    check("the same preview-mode wording under a BLANK gasUrl -> accepted (it is true there)",
+          r.ok)
+    c = _good_config(); c["text"] = {"emailPrivacy": "We'll only use your email to send your results."}
+    c["text_es"] = {"emailPrivacy": "Solo usaremos tu correo para enviarte tus resultados."}
+    check("live-mode privacy wording under a live gasUrl -> accepted",
+          validate_store_config(c).ok)
+    c = _good_config(); c["text"] = {"heritage": "nothing is sent"}
+    check("the rule reads only privacy prose keys (other text keys are not privacy statements)",
+          validate_store_config(c).ok)
 
     # warnings_as_errors promotes allowedHosts-missing-Pages-host warning to blocking
     c = _good_config(); c["allowedHosts"] = ["someoneelse.github.io"]

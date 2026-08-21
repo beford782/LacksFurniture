@@ -15,7 +15,10 @@
 //   B. the heritage / trust-story rail is absent from production (no
 //      quiz.trustStories, no validator contract, no renderer, no CLAUDE.md
 //      paragraph) — the prototype is research, not product.
-//   C. privacy voice — (added with the privacy commit)
+//   C. privacy voice — the template carries no privacy promise of its own; the
+//      data-use sentence is dictionary copy in two mode variants selected at
+//      runtime by the same gasUrl truth the send path uses; the network-sink
+//      set that makes it true is pinned; the build gate exists and is tested.
 //   D. tier-relativity legibility — (added with the legibility commit)
 //
 // Run: node tests/trust_integrity_check.mjs
@@ -184,6 +187,195 @@ ok("tools/validation.py has no trustStories contract and no unknown_root tighten
 ok("CLAUDE.md carries no paragraph legitimizing trustStories in quiz.json", !/trustStories/.test(CLAUDE_MD));
 ok("the quiz root contract is still exactly {questions} (no widening for retailer prose)",
   Object.keys(QUIZ).join(",") === "questions" && Object.keys(CANON.quiz).join(",") === "questions");
+
+// ================================================================ C. privacy voice
+section("C — privacy voice: one data-use truth, selected by deployment mode, pinned to the sinks");
+
+const dictEn = JSON.parse(read("data", "dict-en.json"));
+const dictEs = JSON.parse(read("data", "dict-es.json"));
+const STORE = JSON.parse(read("data", "store-config.json"));
+const DEMO_STORE = JSON.parse(read("demo", "black-friday", "data", "store-config.json"));
+const CODE_GS = read("Code.gs");
+// Executable text only: HTML comments and whole-line // comments stripped, so
+// a comment that MENTIONS a sink or a promise is not mistaken for one.
+const code = norm.replace(/<!--[\s\S]*?-->/g, "").split("\n").filter((l) => !/^\s*\/\//.test(l)).join("\n");
+
+// C1. The template carries no privacy promise of its own.
+const TEMPLATE_PROMISES = [
+  /never sold/i, /nunca se vende/i, /never shared/i, /nunca se comparte/i, /unsubscribe anytime/i,
+  /cancelar la suscripci/i, /third parties/i, /\banonymous\b/i, /\banónim/i, /nothing is stored/i,
+  /deleted immediately/i, /cleared when you finish/i, /we do not collect/i, /never sent anywhere/i
+];
+{
+  const hits = TEMPLATE_PROMISES.filter((re) => re.test(code)).map(String);
+  ok("index.html carries no template-hardcoded privacy promise (EN or ES)", hits.length === 0, hits.join(" "));
+}
+ok("the email screen's static promise span is gone (markup and renderer)",
+  !/emailPrivacyStatic/.test(norm));
+ok("the email privacy lead is retailer config in BOTH languages (text / text_es merged), or nothing",
+  /setText\('emailPrivacyLead', localizedConfigBlock\('text'\)\.emailPrivacy \|\| ''\);/.test(norm)
+  && !/Solo usaremos tu correo/.test(norm) && !/We'll only use your email/.test(norm));
+ok("the privacy-overlay body and the email lead have EMPTY pre-config placeholders and hydrate to config or nothing",
+  /<span data-store="privacy-body"><\/span>/.test(norm)
+  && /<span id="emailPrivacyLead" data-store="email-privacy"><\/span>/.test(norm)
+  && /el\.textContent = textBlock\.privacyBody \|\| '';/.test(norm)
+  && /el\.textContent = textBlock\.emailPrivacy \|\| '';/.test(norm));
+ok("the retailer's configured privacy lead exists in both languages (so the email screen is not blank here)",
+  typeof STORE.text.emailPrivacy === "string" && STORE.text.emailPrivacy.trim().length > 0
+  && typeof STORE.text_es.emailPrivacy === "string" && STORE.text_es.emailPrivacy.trim().length > 0);
+
+// C2. The dictionary carries both mode variants and the audience line, in both languages.
+const KEYS = ["privacy.data_use_preview", "privacy.data_use_live", "review.help"];
+ok("both dictionaries carry the two data-use variants and review.help, non-empty and genuinely translated",
+  KEYS.every((k) => typeof dictEn[k] === "string" && dictEn[k].trim() && typeof dictEs[k] === "string" && dictEs[k].trim()
+    && dictEn[k] !== dictEs[k]));
+ok("the Spanish values are Spanish and the English values are English (no half-translated string)",
+  KEYS.every((k) => /\b(tus|tu|se usan|resultados|especialista|respuestas)\b/i.test(dictEs[k]) && !/\b(your|during|restart|matches|specialist)\b/i.test(dictEs[k])
+    && !/\b(tus|respuestas|especialista|resultados)\b/i.test(dictEn[k])));
+ok("the preview and live variants differ in both languages",
+  dictEn["privacy.data_use_preview"] !== dictEn["privacy.data_use_live"]
+  && dictEs["privacy.data_use_preview"] !== dictEs["privacy.data_use_live"]);
+const ABSOLUTES = [/\bnever\b/i, /\banonymous\b/i, /\bnothing is stored\b/i, /deleted immediately/i, /cleared when you finish/i,
+  /\bnunca\b/i, /\banónim/i, /\bno se guarda nada\b/i, /unsubscribe/i, /suscripci/i, /\d/, /!/, /¡/, /[<&]/];
+for (const k of KEYS) {
+  const hits = ABSOLUTES.filter((re) => re.test(dictEn[k]) || re.test(dictEs[k])).map(String);
+  ok(`${k}: no absolute promise, subscription, digit, exclamation or markup (EN, ES)`, hits.length === 0, hits.join(" "));
+}
+// The preview sentence is the one the validator would reject under a live
+// endpoint; the live sentence is not. Runtime and build gate agree on what
+// "preview wording" is.
+const PREVIEW_SIGNALS = [/stays? on this tablet/i, /permanecen? en esta tableta/i, /nothing is sent/i, /no se envía nada/i];
+ok("the preview variant carries a preview-mode signal phrase in both languages (what the validator rejects under a live gasUrl)",
+  PREVIEW_SIGNALS.some((re) => re.test(dictEn["privacy.data_use_preview"]))
+  && PREVIEW_SIGNALS.some((re) => re.test(dictEs["privacy.data_use_preview"])));
+ok("the preview variant says Restart clears the answers — and the confirmed Restart does (Gate 1B wipe)",
+  /Restart clears them\.$/.test(dictEn["privacy.data_use_preview"]) && /Reiniciar las borra\.$/.test(dictEs["privacy.data_use_preview"])
+  && /resetSessionState\(\{ reason: 'confirmed_new_customer' \}\)/.test(norm));
+ok("the live variant makes sending conditional on the customer's choice and never claims nothing leaves",
+  /sent only if you choose to email/i.test(dictEn["privacy.data_use_live"]) && /solo se envían si eliges/i.test(dictEs["privacy.data_use_live"])
+  && !/stays? on this tablet|nothing is sent/i.test(dictEn["privacy.data_use_live"])
+  && !/permanecen? en esta tableta|no se envía nada a ning/i.test(dictEs["privacy.data_use_live"]));
+ok("the Review audience line names both products of the answers: the matches and the specialist's summary",
+  /matches/.test(dictEn["review.help"]) && /specialist/.test(dictEn["review.help"])
+  && /resultados/.test(dictEs["review.help"]) && /especialista/.test(dictEs["review.help"]));
+ok("the Review line does not claim the specialist sees only finalists, nor that answers are transmitted",
+  !/only|finalist|not your full|sent|transmit/i.test(dictEn["review.help"]) && !/solo|finalista|envía/i.test(dictEs["review.help"]));
+
+// C3. One shared mode truth, executed.
+const fnSrc = (anchor) => {
+  const start = norm.indexOf(anchor);
+  if (start < 0) return null;
+  let i = norm.indexOf("{", start), depth = 1; i++;
+  while (i < norm.length && depth > 0) { if (norm[i] === "{") depth++; else if (norm[i] === "}") depth--; i++; }
+  return norm.slice(start, i);
+};
+const liveSrc = fnSrc("function emailDeliveryLive()");
+const dataUseSrc = fnSrc("function renderDataUseStatement()");
+ok("emailDeliveryLive() and renderDataUseStatement() exist", !!liveSrc && !!dataUseSrc);
+ok("renderNocturnalLanding() renders the data-use statement and the email screen derives preview mode from the same helper",
+  /renderDataUseStatement\(\);/.test(fnSrc("function renderNocturnalLanding()") || "")
+  && /var isDemoMode = !emailDeliveryLive\(\);/.test(norm));
+function liveFor(gasUrl, blocks) {
+  return new Function("STORE_CONFIG", "getActivePromotionScenario", liveSrc + "\nreturn emailDeliveryLive();")(
+    { gasUrl }, () => (blocks ? { disableEmailSubmission: true } : null));
+}
+// The send path's own gate, extracted verbatim and evaluated over the same matrix.
+const sendGate = norm.match(/const isEmailPreview = ([^;]+);/);
+function sendPreviewFor(gasUrl, blocks) {
+  return new Function("gasUrl", "scenarioBlocksEmail", `return (${sendGate[1]});`)(gasUrl, blocks);
+}
+{
+  const matrix = [["", false], ["", true], ["https://script.google.com/macros/s/x/exec", false], ["https://script.google.com/macros/s/x/exec", true]];
+  const agree = matrix.every(([g, b]) => liveFor(g, b) === !sendPreviewFor(g, b));
+  ok("emailDeliveryLive() agrees with sendResults()'s own preview gate over the whole (gasUrl x scenario-block) matrix", !!sendGate && agree);
+  ok("blank gasUrl -> not live; live gasUrl -> live; a scenario that disables submission -> not live even with a gasUrl",
+    liveFor("", false) === false && liveFor("https://x/exec", false) === true && liveFor("https://x/exec", true) === false);
+}
+ok("the POST to gasUrl is still gated on both conditions (the helper mirrors it, it does not replace it)",
+  /if \(gasUrl && !scenarioBlocksEmail\) \{/.test(norm));
+
+// C4. The renderer, executed: preview text here, live text under a live endpoint, nothing on a missing variant.
+function renderDataUse({ gasUrl = "", blocks = false, dict = dictEn } = {}) {
+  const el = { textContent: "<untouched>", hidden: true };
+  const doc = { getElementById: (id) => (id === "landingDataUse" ? el : null) };
+  const t = (key) => (Object.prototype.hasOwnProperty.call(dict, key) ? dict[key] : key);
+  new Function("document", "t", "STORE_CONFIG", "getActivePromotionScenario",
+    liveSrc + "\n" + dataUseSrc + "\nrenderDataUseStatement();")(doc, t, { gasUrl }, () => (blocks ? { disableEmailSubmission: true } : null));
+  return el;
+}
+{
+  const shipped = renderDataUse({ gasUrl: STORE.gasUrl });
+  ok("with the shipped config (gasUrl blank) the Welcome line is the PREVIEW sentence, visible",
+    shipped.hidden === false && shipped.textContent === dictEn["privacy.data_use_preview"]);
+  const es = renderDataUse({ gasUrl: STORE.gasUrl, dict: dictEs });
+  ok("...and the Spanish preview sentence in Spanish", es.hidden === false && es.textContent === dictEs["privacy.data_use_preview"]);
+  const live = renderDataUse({ gasUrl: "https://script.google.com/macros/s/x/exec" });
+  ok("under a live endpoint the Welcome line is the LIVE sentence — never the preview one",
+    live.hidden === false && live.textContent === dictEn["privacy.data_use_live"]);
+  const blocked = renderDataUse({ gasUrl: "https://script.google.com/macros/s/x/exec", blocks: true });
+  ok("a scenario that disables submission makes the preview sentence true again, and it is shown",
+    blocked.hidden === false && blocked.textContent === dictEn["privacy.data_use_preview"]);
+  const missing = renderDataUse({ dict: Object.fromEntries(Object.entries(dictEn).filter(([k]) => k !== "privacy.data_use_preview")) });
+  ok("a missing variant renders NOTHING — not the key, not the other mode's sentence — and hides the element",
+    missing.hidden === true && missing.textContent === "");
+  const blank = renderDataUse({ dict: { ...dictEn, "privacy.data_use_preview": "   " } });
+  ok("a blank variant is treated as missing", blank.hidden === true && blank.textContent === "");
+}
+ok("the Welcome line is a plain paragraph in reading order: hidden and empty until rendered, not focusable, not live, no role",
+  /<p class="landing-data-use" id="landingDataUse" hidden><\/p>/.test(norm)
+  && !/id="landingDataUse"[^>]*(tabindex|aria-live|role=)/.test(norm));
+ok("the Welcome line is body size (16px) in the landing's muted ink",
+  /\.landing-data-use \{[^}]*font-size: 16px;[^}]*color: var\(--landing-muted, var\(--color-text-muted\)\);/.test(norm));
+ok("the Review help line reads the dictionary audience statement, and the old inline claim is gone",
+  /if \(help\) help\.textContent = t\('review\.help'\);/.test(norm)
+  && !/specialist builds your recommendations|construiremos tu combinación/.test(norm));
+
+// C5. The shipped operating state makes the preview sentence the true one, in production and in the demo.
+ok("production store-config gasUrl is blank and the demo bundle's is forced blank (the preview sentence is the shipped statement)",
+  STORE.gasUrl === "" && DEMO_STORE.gasUrl === "");
+
+// C6. The network-sink set that makes the sentence true, pinned. A new sink
+// of any kind changes one of these counts and must be reviewed against the
+// sentence before it ships.
+const countOf = (re) => (code.match(re) || []).length;
+{
+  const fetchSites = countOf(/\bfetch\(/g);
+  ok("exactly two fetch() call sites: the same-origin data loader and the gasUrl-gated results POST", fetchSites === 2, `found ${fetchSites}`);
+  const loader = fnSrc("async function boundedJson(") || fnSrc("function boundedJson(");
+  ok("one fetch lives inside the bounded same-origin JSON loader", !!loader && /\bfetch\(/.test(loader));
+  ok("the other fetch is the results POST whose first argument is gasUrl, inside the gated block",
+    /fetch\(gasUrl, \{/.test(norm) && norm.indexOf("fetch(gasUrl, {") > norm.indexOf("if (gasUrl && !scenarioBlocksEmail) {"));
+  const forbidden = {
+    XMLHttpRequest: /XMLHttpRequest/g, sendBeacon: /sendBeacon/g, WebSocket: /\bWebSocket\b/g, EventSource: /\bEventSource\b/g,
+    "navigator.share": /navigator\.share/g, postMessage: /postMessage\(/g, "window.open": /window\.open\(/g,
+    "new Image(": /new Image\(/g, ".submit(": /\.submit\(/g, "history.pushState": /history\.(pushState|replaceState)/g,
+    "location writes": /location\.(href\s*=|assign\(|replace\()/g, iframe: /<iframe/gi, "document.cookie": /document\.cookie/g,
+    sessionStorage: /sessionStorage/g, indexedDB: /indexedDB/g, "caches.": /\bcaches\./g, serviceWorker: /serviceWorker/g,
+    "external script/style": /<(script|link)[^>]+(src|href)="https?:\/\//gi
+  };
+  const present = Object.entries(forbidden).filter(([, re]) => countOf(re) > 0).map(([k]) => k);
+  ok("zero other network, messaging, navigation or storage sinks", present.length === 0, present.join(","));
+  const forms = code.match(/<form\b[^>]*>/gi) || [];
+  ok("the one <form> never submits (preventDefault, no action attribute)",
+    forms.length === 1 && /onsubmit="[^"]*preventDefault/.test(forms[0]) && !/\baction=/.test(forms[0]), forms.join(" | "));
+  const storage = code.split("\n").filter((l) => /localStorage\./.test(l));
+  ok("every localStorage call site names a 'dreamfinder.' staff/device key (deviceRsa or rsaList) — no customer data is persisted",
+    storage.length === 5 && storage.every((s) => /'dreamfinder\.'/.test(s) && /deviceRsa|rsaList/.test(s)), `${storage.length} sites`);
+  ok("the only URL read is the motion flag; nothing writes answers or contact values to the URL or hash",
+    countOf(/location\.search/g) <= 1 && countOf(/location\.hash\s*=/g) === 0 && countOf(/URLSearchParams\(/g) <= 1);
+}
+ok("the analytics sink is in-memory plus a redacted console line — no transport (pinned by session_async_check too)",
+  /analytics\.log = function|log: function|function log\(/.test(norm) && !/analytics[\s\S]{0,400}sendBeacon|fetch\(analytics/.test(norm));
+ok("Code.gs is reached only through that POST and its CAN-SPAM refusal sentinels still stand (no live send is possible yet)",
+  /UNSUBSCRIBE_URL/.test(CODE_GS) && /dreamfinderleads@gmail\.com|RESULT_EMAIL_BCC/.test(CODE_GS));
+
+// C7. The build-time gate exists and is self-tested.
+ok("tools/validation.py rejects preview-mode privacy prose under a live gasUrl (rule + phrase list + self-test)",
+  /def _check_privacy_prose_mode\(/.test(VALIDATION) && /PREVIEW_MODE_SIGNALS/.test(VALIDATION)
+  && /if not is_placeholder:\s*\n\s*_check_privacy_prose_mode\(r, config\)/.test(VALIDATION.replace(/\r\n/g, "\n"))
+  && /preview-mode privacy wording under a live gasUrl -> error/.test(VALIDATION));
+ok("the validator's signal list covers the runtime's preview sentence (build gate and runtime agree on what preview wording is)",
+  /"stays on this tablet"/.test(VALIDATION) && /"permanecen en esta tableta"/.test(VALIDATION));
 
 // ================================================================ summary
 console.log(`\n${failures === 0 ? "PASS" : "FAIL"} — ${checks - failures}/${checks} checks passed`);
