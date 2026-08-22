@@ -134,6 +134,21 @@ def _type_name(v) -> str:
 _finite_number = fin_headline.finite_number
 
 
+def _runtime_truthy(v) -> bool:
+    """JavaScript truthiness of a config value as index.html reads it RAW
+    (`(STORE_CONFIG && STORE_CONFIG.gasUrl) || ''` then `!!gasUrl` /
+    `if (gasUrl && ...)`): a whitespace-only string is TRUE there. Mirrors JS
+    for the JSON-representable types (strings, numbers, booleans, null,
+    objects, arrays); used for admission decisions that must match the kiosk."""
+    if v is None or v is False:
+        return False
+    if isinstance(v, str):
+        return v != ""
+    if isinstance(v, (int, float)):
+        return v != 0 and v == v  # 0 and NaN are falsy in JS
+    return True  # objects/arrays are truthy in JS even when empty
+
+
 def _blank(v) -> bool:
     return v is None or _safe_str(v).strip() == ""
 
@@ -444,7 +459,8 @@ def validate_store_config(config: dict, manifest: Optional[dict] = None, *,
     if isinstance(cd, bool) or not isinstance(cd, int) or not (CODE_DIGITS_MIN <= cd <= CODE_DIGITS_MAX):
         r.add_error(f"discount.codeDigits must be an integer {CODE_DIGITS_MIN}-{CODE_DIGITS_MAX}, got {cd!r}")
 
-    gas = str(config.get("gasUrl") or "").strip()
+    raw_gas = config.get("gasUrl")
+    gas = str(raw_gas or "").strip()
     is_placeholder = _blank(gas) or "example" in gas.lower() or gas.upper() in ("TODO", "PLACEHOLDER")
     # Build admission treats ANY non-blank gasUrl as LIVE-CAPABLE. The runtime
     # (index.html emailDeliveryLive() and the sendResults() gate) speaks the
@@ -459,11 +475,15 @@ def validate_store_config(config: dict, manifest: Optional[dict] = None, *,
     # (external review P2, 2026-08-22: preserved as intentional). A non-blank
     # placeholder is likewise not "not yet configured"; it is a live-capable
     # endpoint pointing at a sentinel, refused regardless of --require-gas-url.
-    live_at_runtime = not _blank(gas)
+    # Keyed on the RAW value's JavaScript truthiness, never on the stripped
+    # string: the kiosk reads STORE_CONFIG.gasUrl raw, so a whitespace-only
+    # gasUrl is live there (live-mode copy, a real fetch to "   ") and must be
+    # refused here (external review P2 at `aa08e7e`, 2026-08-22).
+    live_at_runtime = _runtime_truthy(raw_gas)
     if live_at_runtime and is_placeholder:
-        r.add_error(f"gasUrl {gas!r} is a non-blank placeholder: the kiosk treats any "
-                    "non-blank gasUrl as live (live-mode copy, real POST) - blank it "
-                    "for preview or set the deployed endpoint")
+        r.add_error(f"gasUrl {raw_gas!r} is a non-blank placeholder: the kiosk treats any "
+                    "non-empty gasUrl as live (live-mode copy, real POST) - whitespace "
+                    "counts - blank it for preview or set the deployed endpoint")
     if is_placeholder:
         msg = "gasUrl is blank/placeholder (set it after the Google Apps Script deploy)"
         if require_gas_url:
@@ -3713,9 +3733,31 @@ def _self_test() -> int:
     c = _good_config(); c["gasUrl"] = "TODO"
     check("a non-blank placeholder gasUrl is an error even with nothing else wrong",
           any("non-blank placeholder" in e for e in validate_store_config(c).errors))
+    # External review P2 at `aa08e7e` (2026-08-22): the kiosk reads gasUrl RAW
+    # (`!!gasUrl`, `if (gasUrl && ...)` before fetch), so a whitespace-only
+    # value is LIVE there. Admission keys on that same raw truthiness: the
+    # value is refused as a non-blank placeholder, and preview prose under it
+    # is refused too — never admitted as "blank".
     c = _good_config(); c["gasUrl"] = "   "
-    check("a whitespace-only gasUrl is blank (preview), not a placeholder error",
-          validate_store_config(c).ok)
+    r = validate_store_config(c)
+    check("a whitespace-only gasUrl is live at runtime -> non-blank placeholder error (whitespace counts)",
+          not r.ok and any("non-blank placeholder" in e and "whitespace counts" in e for e in r.errors))
+    c = _good_config(); c["gasUrl"] = "  \t "; c["text"] = {"privacyBody": "Nothing leaves this tablet."}
+    r = validate_store_config(c)
+    check("whitespace-only gasUrl + preview prose -> BOTH the placeholder error and the preview-wording error",
+          any("non-blank placeholder" in e for e in r.errors)
+          and any("preview-mode wording" in e for e in r.errors))
+    for blank_like in ("", None):
+        c = _good_config(); c["gasUrl"] = blank_like; c["text"] = {"privacyBody": "Nothing leaves this tablet."}
+        check(f"gasUrl {blank_like!r} is falsy at runtime -> preview prose accepted",
+              validate_store_config(c).ok)
+    c = _good_config(); c["gasUrl"] = "  https://script.google.com/macros/s/AKxyz/exec  "
+    c["text"] = {"privacyBody": "Nothing leaves this tablet."}
+    check("a padded real endpoint is live-capable -> preview prose rejected (strip never hides a live value)",
+          any("preview-mode wording" in e for e in validate_store_config(c).errors))
+    check("_runtime_truthy mirrors JS: '' None False 0 -> False; '   ' 'x' True 1 {} [] -> True",
+          not any(_runtime_truthy(v) for v in ("", None, False, 0))
+          and all(_runtime_truthy(v) for v in ("   ", "x", True, 1, {}, [])))
     # The proposed preview sentences from the investigation and the audits are
     # all caught; live-appropriate wording is not.
     for phrase in ("Your answers aren't saved or sent anywhere.",
