@@ -23,13 +23,25 @@ they do not authorize merging either PR.
 | **NOT AUTHORIZED** | per-question heritage rail, counts, awards, testimonials, QR codes, anecdotes · cross-tier highest-fit marker / global maximum (3.3 🔒) · showroom use · deployment · merging #54 or #53 (merge authorization is the one gate still open) · removing the draft-policy notice |
 
 **What still needs you (after your 2026-08-22 decisions, #1–#9 and #11–#13
-all recorded):** only the explicit authorization to merge (#14). Three heads, one set of application bytes: **physical-test head `f748f59`** (owner-attested device pass), **reviewed application head `9f27680`** (owner live review; CI run 32593585017 pass), and the **current PR/documentation head** (the latest docs-only commit recording these decisions). `index.html` and the `data/`, `demo/`, `tests/`, `tools/` and `incoming/` trees are byte-identical across all three. Native review (#9 waived as a gate,
+all recorded):** only the explicit authorization to merge (#14). Three heads, one set of application bytes: **physical-test head `f748f59`** (owner-attested device pass), **reviewed application head `9f27680`** (owner live review; CI run 32593585017 pass), and the **current PR/documentation head** (the latest docs-only commit recording these decisions). `index.html` and the `data/`, `demo/` and `incoming/` trees — every customer-visible byte, configuration, generated file and scoring input — are byte-identical across all three. After the reviewed head, and only by the owner's 2026-08-22 option-B direction on the external review, `tools/validation.py` (the build-admission validator) and `tests/mutation_sweep.mjs` changed; those are build tooling and test manifest, not the served application, so the physical and live-review passes are not reopened. Native review (#9 waived as a gate,
 #10 on the consolidated ledger) stays owed before Spanish showroom use or any
 live-mode deployment. The physical packet is complete by your 2026-08-22
 attestation. The decision sheet directly below records what is decided and
 what remains.
 
 ## Decision sheet — 2026-08-22, after the physical pass: 14 decisions (12 decided 2026-08-22, 1 remains: merge authorization)
+
+**External review disposition (Blake Ford, 2026-08-22, option B).** When PR #54 left
+draft, the repository's automated Codex review left two P2 threads on
+`tools/validation.py`. You directed: thread 1 (a temporary scenario that disables
+email should not make a non-blank `gasUrl` count as preview) — **preserve the
+conservative behaviour**, correct the inaccurate comment, add self-tests proving a
+temporary scenario cannot relax admission; thread 2 (bare "not stored" rejected
+even in an unrelated truthful sentence) — **fix now**, narrowing storage-negation
+phrases to sentences about answers, customer information, session or results,
+with positive and negative self-tests. Implemented in the validator and the
+mutation manifest only; no customer-visible byte changed (implementation report
+§33). Both threads answered and resolved on the PR.
 
 The physical gates are closed for the bytes at `f748f59` (§5). Everything
 below is **yours or someone you name**; nothing on this sheet is pre-decided,

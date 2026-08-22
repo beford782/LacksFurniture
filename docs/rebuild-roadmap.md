@@ -2273,8 +2273,14 @@ attested `f748f59`; mirror re-verified byte-identical before the walk).
 **Reviewed application head designated `9f27680`** (Blake Ford, 2026-08-22;
 CI run 32593585017 pass; app bytes identical to `f748f59`; later commits are
 documentation only) and **ready-for-review authorized** the same day,
-conditional on green CI at the documentation head. Still open under Exit 13:
-the explicit merge authorization only.
+conditional on green CI at the documentation head. **External review at the
+ready head (2026-08-22):** two P2 validator threads, owner option B — the
+live-capable `gasUrl` rule preserved and documented with self-tests; the
+storage-negation phrase match narrowed to governed-data sentences with
+positive and negative self-tests (implementation report §33); validator and
+sweep manifest only, customer-visible bytes unchanged, physical and
+live-review passes not reopened. Still open under Exit 13: the explicit
+merge authorization only.
 
 **Exit:**
 

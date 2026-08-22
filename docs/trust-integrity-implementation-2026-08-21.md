@@ -869,3 +869,66 @@ is merged, deployed or showroom-authorized; PR #53 is untouched; Spanish
 stays provisional (native review waived as a gate only, §30); `gasUrl` stays
 blank; the preview-only privacy decision (§29) and the visible draft-policy
 notice remain in force.
+
+## 33. External review at `f7a63f5` — two P2 threads, owner disposition option B (2026-08-22)
+
+Marking the PR ready triggered the repository's automated Codex review, which
+left two P2 threads on `tools/validation.py`. The pre-merge rule (no
+unresolved review threads) stopped the merge; Blake Ford chose option B — fix
+before merging — with the disposition below.
+
+**Thread 1 (`live_at_runtime`, ~line 397) — preserved as intentional.** The
+runtime's `emailDeliveryLive()` is `gasUrl && !activeScenario.disableEmailSubmission`;
+the validator treats any non-blank `gasUrl` as live. Codex proposed deriving
+the validator's notion from the scenario flag. Ruled no: a scenario is a
+date-windowed runtime state, so the same configured bytes go live the day it
+expires without another build — a config must be true in every state it can
+reach, and a non-blank `gasUrl` is therefore *live-capable* for admission.
+Change: the comment that wrongly claimed the runtime treats every non-blank
+`gasUrl` as presently live is corrected and now explains the live-capable
+rule; the code line `live_at_runtime = not _blank(gas)` is byte-identical.
+Four self-tests pin it (live `gasUrl` + active `historical-demo` scenario
+with `disableEmailSubmission: true` + preview wording → still rejected, EN and
+ES; placeholder under a blocking scenario → still the placeholder error;
+blank `gasUrl` under a blocking scenario → accepted). A sweep mutant that
+makes the validator follow the scenario is caught by those tests (3 failures).
+
+**Thread 2 (`PREVIEW_MODE_SIGNALS`, ~line 287) — fixed.** The bare
+storage-negation phrases ("not stored", "never stored", "do not store",
+"not saved", "no se guarda(n)", "no se almacena(n)", …) moved out of the
+unconditional list into `STORAGE_NEGATION_SIGNALS`, matched by
+`_preview_signal_hit()` only inside a sentence (split on `. ! ? ;` and line
+breaks) that also names governed data (`GOVERNED_DATA_TERMS`: answers,
+responses, quiz, results, session, email, phone, contact, your name,
+your/personal/customer/contact information, your/personal/customer data, and
+the Spanish equivalents — deliberately not generic "details", "information"
+or "data" alone). Unconditional signals ("nothing is sent", "stays on this
+tablet", "does not send or store", …) are unchanged. Self-tests: nine
+governed-data storage claims still fail under a live `gasUrl` (EN and ES);
+five unrelated truthful storage statements ("Payment card details are not
+stored by this application.", "This kiosk does not store cookies.", …) are
+accepted; sentence scoping cannot be laundered by an unrelated sentence in
+the same key; unconditional signals still fire regardless of context; every
+prose key is read; the same governed claim is accepted under a blank `gasUrl`;
+three unit checks on `_preview_signal_hit`. Two sweep mutants (context gate
+removed → 6 failures; storage family disabled → 16 failures) are caught.
+The absolute-promise ban (R4) is a product rule outside the validator and is
+untouched; no existing rejection was weakened — every previously caught
+sentence in the self-test still fails.
+
+**Counts.** Validator self-test 978 → 1003 (0 failed); mutation manifest
+339 → 342; every other `ci.yml` step re-run locally green (financing
+totality 3395/0, smoke 118/0, golden strict reproduced, lineage 10/0, QR
+188/0, Daybreak contract 87/0 and server 23/0, workbook validation OK with
+warnings-as-errors, 28 node suites green, `git diff --check` clean). The
+full sweep at this head is recorded below once it finishes, and by the PR's
+CI.
+
+**Scope statement, re-framed.** `index.html` and the `data/`, `demo/` and `incoming/` trees — every customer-visible byte, configuration, generated file and scoring input — are byte-identical across all three. After the reviewed head, and only by the owner's 2026-08-22 option-B direction on the external review, `tools/validation.py` (the build-admission validator) and `tests/mutation_sweep.mjs` changed; those are build tooling and test manifest, not the served application, so the physical and live-review passes are not reopened. The physical packet's §11
+keys retests on `index.html`, dictionary, config and quiz copy — none
+changed. The reviewed application head stays `9f27680`; the merge candidate
+is the head carrying this change plus its record.
+
+Both threads were answered on the PR with this rationale and resolved after
+the tests passed; the external reviewer was asked to re-inspect the change
+before the merge.
