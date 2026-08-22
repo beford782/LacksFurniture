@@ -535,9 +535,11 @@ before #54 leaves draft; R8 the mounted-device gate stands.
    research condition.
 3. **Founding year:** corporate/archival confirmation of 1935 and an
    explanation of the BBB "1924" entry (no copy changes meanwhile).
-4. **Privacy approval:** approver of record; final showroom wording;
-   `privacyDraftNotice`; the native-Spanish reviewer for the data-use
-   sentences; the email-enabled wording (incl. BCC/sheet disclosure).
+4. **Privacy approval:** approver of record **named 2026-08-22: Blake
+   Ford**; still open — his business/legal sign-off of the Welcome and
+   Review representations; final showroom wording; `privacyDraftNotice`;
+   the native-Spanish reviewer for the data-use sentences; the
+   email-enabled wording (incl. BCC/sheet disclosure).
 5. **Specialist audience:** exact scope of the Consultation Summary; whether
    the customer may control what appears; whether health-derived implications
    remain.
@@ -546,11 +548,15 @@ before #54 leaves draft; R8 the mounted-device gate stands.
    store (must record no answers and no identity).
 7. **VoiceOver:** the required sanity pass itself (a physical-device gate,
    not a decision) — recorded in the physical packet when run.
-8. **Idle-dialog wording:** copy sign-off on the final EN sentence and native
-   review of the Spanish (the direction is ruled).
-9. **Quiz copy sign-off** as governed quiz copy (CLAUDE.md) — the nine lines
-   in §8 including the `sleep_position` gloss; and the `partner_disturbance`
-   preferred line once 3.1 ships.
+8. **Idle-dialog wording:** ~~copy sign-off on the final EN sentence~~
+   **approved as shipped, Blake Ford, 2026-08-22**; native review of the
+   Spanish still open.
+9. **Quiz copy sign-off** as governed quiz copy (CLAUDE.md) — **the nine
+   EN lines in §8 approved as proposed and the `sleep_position` gloss kept
+   (option A), Blake Ford, 2026-08-22**; the Welcome and Review sentences
+   approved as product wording the same day. Still open: the
+   `partner_disturbance` preferred line once 3.1 ships; every ES line
+   (native review).
 
 ## 20. Native-Spanish review debt
 
@@ -733,3 +739,21 @@ on a later one). Reverting `d56284d` requires re-running the canonical pipeline
 reverting `c979547`, `66f787d` or `812a984` requires `python tools/build_black_friday_demo.py`
 to keep the demo bundle byte-matched. `3bfbe92` is docs-only. Nothing was
 pushed to `main`; no deployment occurred.
+
+## 28. Owner copy approvals (2026-08-22)
+
+Blake Ford approved, in writing to the lead: all nine rewritten EN help lines
+as governed quiz copy; `sleep_position` option A (the shipped gloss stays);
+the Welcome data-use sentence, the Review specialist-summary sentence and the
+idle-dialog sentence as shipped English product wording; and named himself
+the business/legal approver of record. English only — every Spanish string
+remains provisional pending native review (§20). No bytes changed: the quiz
+pipeline was not re-run, `data/quiz.json`, both dictionaries and `index.html`
+are identical to `f748f59`, so the owner-attested physical pass (§27) carries
+forward.
+
+Not decided by this round and not inferred from it: the business/legal
+sign-off of the Welcome and Review representations by the approver of record;
+the privacy-policy and draft-notice decision; native Spanish; the owner live
+review; the reviewed-head designation; ready-for-review and merge
+authorization. PR #54 stays draft.
