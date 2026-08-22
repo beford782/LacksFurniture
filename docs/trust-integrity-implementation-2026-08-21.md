@@ -1043,6 +1043,15 @@ scoped, qualified claim. Self-tests 1118 → 1129 / 0; manifest 354 → 356; all
 nineteen validator entries proven caught in place. Customer-visible bytes
 unchanged. The external reviewer was asked to re-inspect a ninth time.
 
-All fourteen threads were answered on the PR with this rationale and resolved after
+**Thread 15 (`4fe6db5`, ninth re-review) — fixed in `53b7e27`.** The
+sentence-tail scan from thread 13 also caught a universal in an unrelated
+following clause ("not shared with lenders, *but anyone* can ask us
+questions"). The destination now extends only through comma segments that
+read as coordinated list items, stopping at a clause starter, a verb-like
+token or a long segment. Self-tests 1129 → 1134 / 0; manifest 356 → 357;
+all twenty validator entries proven caught in place. Customer-visible bytes
+unchanged. The external reviewer was asked to re-inspect a tenth time.
+
+All fifteen threads were answered on the PR with this rationale and resolved after
 the tests passed; the external reviewer was asked to re-inspect the change
 before the merge.
