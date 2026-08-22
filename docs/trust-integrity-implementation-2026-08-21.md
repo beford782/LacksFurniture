@@ -929,6 +929,25 @@ keys retests on `index.html`, dictionary, config and quiz copy — none
 changed. The reviewed application head stays `9f27680`; the merge candidate
 is the head carrying this change plus its record.
 
-Both threads were answered on the PR with this rationale and resolved after
+**Thread 3 (`aa08e7e`, raised on the re-review) — fixed in `5a1f70c`.** The
+kiosk reads `STORE_CONFIG.gasUrl` raw: `emailDeliveryLive()` is `!!gasUrl`
+and `sendResults()` guards its POST with `if (gasUrl && …)`, so a
+whitespace-only `gasUrl` is live at runtime (live-mode copy, a real fetch),
+while the validator stripped it to blank and admitted preview prose under
+it — the validator admitting a promise the kiosk would break, the exact case
+the live-capable ruling forbids. The whitespace self-test that expected
+acceptance was this branch's own (`8d0bda6`) and was wrong. Fix: a
+`_runtime_truthy()` helper mirroring JavaScript truthiness; `live_at_runtime`
+derives from the raw value, never the stripped string; a whitespace-only
+`gasUrl` is refused as a non-blank placeholder ("whitespace counts") and
+preview prose under it is refused too; `""` and `null` stay preview; a padded
+real endpoint stays live-capable. Self-tests 1003 → 1008 / 0; manifest 342 →
+343 (a stripped-admission regression mutant, 2 failures; the scenario mutant
+re-anchored, 3 failures); `tests/trust_integrity_check.mjs` re-pins the
+corrected line and additionally requires the helper and the new self-test
+(122/122). Customer-visible bytes unchanged. The external reviewer was asked
+to re-inspect again at this head.
+
+All three threads were answered on the PR with this rationale and resolved after
 the tests passed; the external reviewer was asked to re-inspect the change
 before the merge.

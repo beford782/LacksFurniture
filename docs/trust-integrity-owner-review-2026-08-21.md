@@ -41,7 +41,10 @@ even in an unrelated truthful sentence) — **fix now**, narrowing storage-negat
 phrases to sentences about answers, customer information, session or results,
 with positive and negative self-tests. Implemented in the validator and the
 mutation manifest only; no customer-visible byte changed (implementation report
-§33). Both threads answered and resolved on the PR.
+§33). The re-review raised a third thread — a whitespace-only `gasUrl` is live
+at runtime but was admitted as blank — fixed the same way under your
+live-capable ruling (`5a1f70c`). All three threads answered and resolved on
+the PR.
 
 The physical gates are closed for the bytes at `f748f59` (§5). Everything
 below is **yours or someone you name**; nothing on this sheet is pre-decided,
