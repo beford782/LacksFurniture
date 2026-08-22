@@ -1062,9 +1062,11 @@ const MUTATIONS = [
   ["trust: the idle dialog body becomes a hardcoded literal in index.html",
     "      setSafetyText('sessionSafetyBody', t(cfg.bodyKey));",
     "      setSafetyText('sessionSafetyBody', _safetyMode === 'timeout' ? 'Session paused. Continue this session where you left off, or start a new customer to clear it.' : t(cfg.bodyKey));", WITH_SESSION],
+  // Anchored on the four ids alone (not on their position in the array), so the
+  // entry still applies after Slice 5 appends its own ids to the inventory.
   ["trust: the Sleep System containers leave the wipe inventory (a previous customer's prose survives Restart)",
-    "      'sleepSystemMain', 'sleepSystemGuidance', 'sleepSystemRail', 'sleepSystemPlanList'\n    ];",
-    "    ];", TRUST.concat(["tests/session_safety_check.mjs"])],
+    "'sleepSystemMain', 'sleepSystemGuidance', 'sleepSystemRail', 'sleepSystemPlanList'",
+    "", TRUST.concat(["tests/session_safety_check.mjs"])],
   ["trust: the Welcome renderer stops calling the data-use renderer (the line never renders)",
     "      renderDataUseStatement();", "      if (false) renderDataUseStatement();", TRUST],
   ["trust: the welcome data-use line ignores deployment mode (always the preview sentence)",
