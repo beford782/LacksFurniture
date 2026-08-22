@@ -1019,6 +1019,17 @@ object followed by an adverbial widens to the previous sentence. Self-tests
 caught in place. Customer-visible bytes unchanged. The external reviewer was
 asked to re-inspect a seventh time.
 
-All ten threads were answered on the PR with this rationale and resolved after
+**Threads 11 and 12 (`d33bde2`, seventh re-review) — fixed in `dbde3ec`.**
+Thread 11 (fail-open): the universal-destination test looked only at the
+first captured word, so "not sent to absolutely anyone" was admitted as a
+qualified destination; every word of the destination is now tested. Thread
+12 (false rejection): the three-word gap accepted any word, so "we do not
+ask lenders to store your answers" — a claim about lenders, not the kiosk —
+was reported as a storage negation; the gap now admits only auxiliaries and
+adverbs. Self-tests 1104 → 1118 / 0; manifest 352 → 354; all seventeen
+validator entries proven caught in place. Customer-visible bytes unchanged.
+The external reviewer was asked to re-inspect an eighth time.
+
+All twelve threads were answered on the PR with this rationale and resolved after
 the tests passed; the external reviewer was asked to re-inspect the change
 before the merge.

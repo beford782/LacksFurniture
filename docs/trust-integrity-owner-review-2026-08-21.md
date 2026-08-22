@@ -50,7 +50,8 @@ clause conjunctions (but/while/although…) delimit the bound phrase — "and" i
 deliberately not a delimiter, fail closed. A seventh (`babef79`) completes the family with contractions, "won't be", keep/retain
 and the Spanish active forms. An eighth (`bbf3c9c`) replaces the phrase list with a grammatical family after
 folding typographic apostrophes. A ninth and tenth (`9aa11ac`) allow adverbs between negation and verb and scope
-transmission negations to absolute claims about governed data. All ten threads
+transmission negations to absolute claims about governed data. An eleventh and twelfth (`dbde3ec`) test every destination word for universality and
+restrict the negation gap to auxiliaries and adverbs. All twelve threads
 answered and resolved
 on the PR.
 
