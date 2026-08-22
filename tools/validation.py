@@ -269,6 +269,66 @@ def validate_structure(raw_tabs: Dict[str, Tuple[List[str], List[dict]]]) -> Val
 
 # -- Store-config value validation (assembled config dict) --------------------
 
+# Retailer privacy prose keys (both language blocks) that the mode rule reads.
+PRIVACY_PROSE_KEYS = ("emailPrivacy", "privacyBody", "privacyDraftNotice",
+                      "privacyPolicyContact", "disclaimerBody")
+# Preview-mode signal phrases: wording that is only true while nothing leaves
+# the tablet. Lower-cased substring match in either language.
+PREVIEW_MODE_SIGNALS = (
+    "preview mode", "preview deployment", "in this preview",
+    "modo de vista previa", "en esta vista previa",
+    "stays on this tablet", "stay on this tablet", "permanecen en esta tableta",
+    "permanece en esta tableta", "se queda en esta tableta", "se quedan en esta tableta",
+    "isn't connected", "is not connected", "no está conectada", "no esta conectada",
+    "nothing is sent", "nothing leaves", "never leaves", "not sent anywhere",
+    "never sent anywhere", "aren't sent anywhere", "are not sent anywhere",
+    "is not sent anywhere", "isn't sent anywhere", "not sent or stored",
+    "no email is sent", "no email was sent", "not transmitted", "never transmitted",
+    "not saved", "aren't saved", "never saved", "not stored", "never stored",
+    "don't store", "do not store", "doesn't store", "does not store",
+    "does not send or store", "doesn't send or store",
+    "no se envía nada", "no se envia nada", "nada sale", "no se envía a ning",
+    "no se envia a ning", "no se envía ning", "no se envia ning", "no se guarda",
+    "no se guardan", "no se almacena", "no se almacenan", "no se transmite",
+    "no se transmiten", "no se envían", "no se envian",
+)
+
+
+def _check_privacy_prose_present(r: ValidationReport, config: dict) -> None:
+    """Warn when a retailer that authors a text block leaves the two privacy
+    prose keys the template now renders config-or-nothing blank in English
+    (the Spanish block falls back to English through localizedConfigBlock).
+    A blank emailPrivacy shows no line on the email screen; a blank
+    privacyBody shows an empty Privacy section under its heading."""
+    text = config.get("text")
+    if not isinstance(text, dict):
+        return
+    for key, surface in (("emailPrivacy", "the email screen's privacy line"),
+                         ("privacyBody", "the Privacy & Terms overlay body")):
+        if _blank(text.get(key)):
+            r.add_warning(f"text.{key} is blank: {surface} renders nothing (the template "
+                          "carries no fallback promise of its own)")
+
+
+def _check_privacy_prose_mode(r: ValidationReport, config: dict) -> None:
+    """With a live gasUrl, reject preview-only wording in retailer privacy prose."""
+    for block in ("text", "text_es"):
+        prose = config.get(block)
+        if not isinstance(prose, dict):
+            continue
+        for key in PRIVACY_PROSE_KEYS:
+            value = prose.get(key)
+            if not isinstance(value, str) or not value.strip():
+                continue
+            low = value.lower()
+            hit = next((sig for sig in PREVIEW_MODE_SIGNALS if sig in low), None)
+            if hit:
+                r.add_error(f"{block}.{key} carries preview-mode wording ({hit!r}) but "
+                            "gasUrl is live - a statement that nothing leaves the tablet "
+                            "is false once live email is enabled; author the live-mode "
+                            "wording or blank gasUrl")
+
+
 def validate_store_config(config: dict, manifest: Optional[dict] = None, *,
                           require_gas_url: bool = False) -> ValidationReport:
     r = ValidationReport()
@@ -328,6 +388,17 @@ def validate_store_config(config: dict, manifest: Optional[dict] = None, *,
 
     gas = str(config.get("gasUrl") or "").strip()
     is_placeholder = _blank(gas) or "example" in gas.lower() or gas.upper() in ("TODO", "PLACEHOLDER")
+    # The RUNTIME'S notion of live: index.html (emailDeliveryLive() and the
+    # sendResults() gate) treats ANY non-blank gasUrl as a live endpoint — it
+    # speaks the live-mode data-use copy and POSTs the customer's contact
+    # values and derived summary to it. A non-blank placeholder is therefore
+    # not "not yet configured"; it is a live endpoint pointing at a sentinel,
+    # and it is refused here regardless of --require-gas-url (trust gate).
+    live_at_runtime = not _blank(gas)
+    if live_at_runtime and is_placeholder:
+        r.add_error(f"gasUrl {gas!r} is a non-blank placeholder: the kiosk treats any "
+                    "non-blank gasUrl as live (live-mode copy, real POST) - blank it "
+                    "for preview or set the deployed endpoint")
     if is_placeholder:
         msg = "gasUrl is blank/placeholder (set it after the Google Apps Script deploy)"
         if require_gas_url:
@@ -342,6 +413,23 @@ def validate_store_config(config: dict, manifest: Optional[dict] = None, *,
 
     if manifest is not None and _blank(manifest.get("start_url")):
         r.add_error("manifest.start_url is empty")
+
+    # Trust integrity gate (2026-08-21): retailer privacy prose must be true for
+    # the deployment mode it ships in. The app's own data-use sentence is
+    # dictionary copy selected at runtime by gasUrl, so it can never say
+    # "nothing is sent" under a live endpoint — but the retailer-authored
+    # privacy text (text / text_es) is free prose, and a preview-only promise
+    # left in it while a live GAS endpoint is configured would be a false
+    # representation the moment the first email goes out. The build refuses
+    # that combination: with a live gasUrl, no retailer privacy key may carry
+    # a preview-mode signal phrase. With gasUrl blank the same prose is true
+    # and passes. Phrases, not semantics — the validator cannot judge intent;
+    # it catches the sentences this repo has shipped or proposed so far. Keyed
+    # on the runtime's own notion of live (any non-blank gasUrl), never on the
+    # placeholder heuristic, so the gate and the kiosk cannot disagree.
+    if live_at_runtime:
+        _check_privacy_prose_mode(r, config)
+    _check_privacy_prose_present(r, config)
 
     # Consultation implications (0.6): structural + cross-language checks on the
     # EMITTED maps. Completeness against the quiz definition lives in
@@ -3517,6 +3605,82 @@ def _self_test() -> int:
     r = validate_store_config(c, require_gas_url=True)
     check("require_gas_url promotes gasUrl to error",
           any("gasUrl" in e for e in r.errors))
+
+    # Trust gate: preview-only privacy wording is rejected under a LIVE gasUrl
+    # (_good_config's gasUrl is live), accepted under a blank one, and live-mode
+    # wording passes either way. Both language blocks and every prose key.
+    c = _good_config(); c["text"] = {"emailPrivacy": "Preview mode: nothing is sent from this tablet."}
+    r = validate_store_config(c)
+    check("preview-mode privacy wording under a live gasUrl -> error",
+          not r.ok and any("preview-mode wording" in e and "text.emailPrivacy" in e for e in r.errors))
+    c = _good_config(); c["text_es"] = {"privacyBody": "Tus respuestas permanecen en esta tableta."}
+    r = validate_store_config(c)
+    check("preview-mode wording in the ES block under a live gasUrl -> error",
+          not r.ok and any("text_es.privacyBody" in e for e in r.errors))
+    for key in PRIVACY_PROSE_KEYS:
+        c = _good_config(); c["text"] = {key: "Nothing leaves this tablet."}
+        check(f"preview-mode wording in text.{key} under a live gasUrl -> error",
+              any(f"text.{key}" in e for e in validate_store_config(c).errors))
+    c = _good_config(); c["gasUrl"] = ""
+    c["text"] = {"emailPrivacy": "Preview mode: nothing is sent from this tablet."}
+    r = validate_store_config(c)
+    check("the same preview-mode wording under a BLANK gasUrl -> accepted (it is true there)",
+          r.ok)
+    c = _good_config(); c["text"] = {"emailPrivacy": "We'll only use your email to send your results."}
+    c["text_es"] = {"emailPrivacy": "Solo usaremos tu correo para enviarte tus resultados."}
+    check("live-mode privacy wording under a live gasUrl -> accepted",
+          validate_store_config(c).ok)
+    c = _good_config(); c["text"] = {"heritage": "nothing is sent"}
+    check("the rule reads only privacy prose keys (other text keys are not privacy statements)",
+          validate_store_config(c).ok)
+    # The gate keys on the RUNTIME's notion of live (any non-blank gasUrl), and
+    # a non-blank placeholder is itself an error: the kiosk would speak
+    # live-mode copy and POST to the sentinel.
+    for sentinel in ("TODO", "PLACEHOLDER", "https://example.com/exec", "todo"):
+        c = _good_config(); c["gasUrl"] = sentinel
+        c["text"] = {"privacyBody": "Your answers stay on this tablet."}
+        r = validate_store_config(c)
+        check(f"non-blank placeholder gasUrl {sentinel!r} -> error, and preview wording under it -> error",
+              not r.ok and any("non-blank placeholder" in e for e in r.errors)
+              and any("preview-mode wording" in e for e in r.errors))
+    c = _good_config(); c["gasUrl"] = "TODO"
+    check("a non-blank placeholder gasUrl is an error even with nothing else wrong",
+          any("non-blank placeholder" in e for e in validate_store_config(c).errors))
+    c = _good_config(); c["gasUrl"] = "   "
+    check("a whitespace-only gasUrl is blank (preview), not a placeholder error",
+          validate_store_config(c).ok)
+    # The proposed preview sentences from the investigation and the audits are
+    # all caught; live-appropriate wording is not.
+    for phrase in ("Your answers aren't saved or sent anywhere.",
+                   "This kiosk does not send or store your answers.",
+                   "We don't store your answers.",
+                   "Your answers are not stored or transmitted.",
+                   "No email is sent in this preview.",
+                   "Tus respuestas no se guardan ni se envían a ningún lado."):
+        c = _good_config(); c["text"] = {"privacyBody": phrase}
+        check(f"proposed preview sentence is caught under a live gasUrl: {phrase[:40]!r}",
+              any("preview-mode wording" in e for e in validate_store_config(c).errors))
+    c = _good_config(); c["text"] = {"privacyBody": "DreamFinder does not send your information to lenders. "
+                                                    "Your answers are never sent to lenders."}
+    check("live-appropriate wording about lenders is not mis-rejected",
+          validate_store_config(c).ok)
+    c = _good_config(); c["text"] = {"privacyBody": "Your answers are not sent to lenders.",
+                                     "emailPrivacy": "We use your email to send your results."}
+    check("'are not sent to lenders' (live-appropriate) is not mis-rejected, and the 'sent' family needs 'anywhere'",
+          validate_store_config(c).ok)
+    c = _good_config(); c["text"] = {"privacyBody": "Your answers are not sent anywhere."}
+    check("'are not sent anywhere' under a live gasUrl -> error",
+          any("preview-mode wording" in e for e in validate_store_config(c).errors))
+    # Config-or-nothing consequence: a text block that leaves the two prose
+    # keys blank is warned (the surfaces render nothing), never errored.
+    c = _good_config(); c["text"] = {"heritage": "x"}
+    r = validate_store_config(c)
+    check("blank text.emailPrivacy / text.privacyBody -> two warnings naming the surfaces, no error",
+          r.ok and sum(1 for w in r.warnings if "renders nothing" in w) == 2
+          and any("emailPrivacy" in w for w in r.warnings) and any("privacyBody" in w for w in r.warnings))
+    c = _good_config()
+    check("a config with no text block at all is not warned (nothing was authored)",
+          not any("renders nothing" in w for w in validate_store_config(c).warnings))
 
     # warnings_as_errors promotes allowedHosts-missing-Pages-host warning to blocking
     c = _good_config(); c["allowedHosts"] = ["someoneelse.github.io"]
