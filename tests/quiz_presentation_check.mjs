@@ -1198,9 +1198,12 @@ function walkNext(env, label) {
   let failures = [];
   while (env.get('questionScreen').classList.contains('active')) {
     const from = QUIZ.questions[env.api.at()].id;
-    answerCurrent(env);
+    // Counted from BEFORE the answer tap, so a tap that scrolled or focused
+    // (a frozen tracker treating every render as a change) shows up as a
+    // second scroll call or a stray focus on this transition.
     const scrollsBefore = env.scrollCalls.length;
     const logBefore = env.log.length;
+    answerCurrent(env);
     env.api.next();
     if (!env.get('questionScreen').classList.contains('active')) break; // review
     const to = QUIZ.questions[env.api.at()].id;
@@ -1228,23 +1231,23 @@ function walkNext(env, label) {
   const partnerEnv = env;
   let transitions = 0;
   const seen = [];
+  const bad = [];
   while (partnerEnv.get('questionScreen').classList.contains('active')) {
     const q = QUIZ.questions[partnerEnv.api.at()];
     seen.push(q.id);
+    const before = partnerEnv.scrollCalls.length; // before the tap, so a tap-scroll counts
     if (q.id === 'partner_sleep') partnerEnv.api.select('partner_sleep', 'partner', false);
     else answerCurrent(partnerEnv);
-    const before = partnerEnv.scrollCalls.length;
     partnerEnv.api.next();
     if (!partnerEnv.get('questionScreen').classList.contains('active')) break;
     transitions++;
     const h = partnerEnv.get('questionHeadline');
     if (!(partnerEnv.scrollCalls.length === before + 1 && h._focusCount === 1 && partnerEnv.doc.activeElement === h)) {
-      ok(`partner path transition out of ${q.id} resets scroll and focuses the headline`, false,
-        `scrolls +${partnerEnv.scrollCalls.length - before}, focus ${h._focusCount}`);
+      bad.push(`${q.id}: scrolls +${partnerEnv.scrollCalls.length - before}, focus ${h._focusCount}`);
     }
   }
-  ok('partner path: nine Next transitions across all ten questions, each repaired',
-    transitions === 9 && seen.length === 10, `transitions=${transitions} seen=${seen.join(',')}`);
+  ok('partner path: nine Next transitions across all ten questions, each scrolled once and focused once',
+    transitions === 9 && seen.length === 10 && bad.length === 0, `transitions=${transitions} seen=${seen.join(',')} ${bad.join(' | ')}`);
   ok('partner path: no transition re-entered the screen (the repair is same-screen, not a showScreen call)',
     partnerEnv.screenCalls.filter((s) => s === 'questionScreen').length === 0);
 }
@@ -1333,6 +1336,63 @@ function walkNext(env, label) {
   env.api.next();
   ok('...and the next genuine change after those re-renders is repaired normally',
     env.scrollCalls.length === 1 && env.get('questionHeadline')._focusCount === 1);
+}
+{
+  // Answer taps on a question reached by NEXT: the tracker follows the
+  // question, so a tap on the current question is still not a change. (A
+  // tracker frozen at the first id would scroll and steal focus here.)
+  const env = makeQuizEnv({ at: QID('trigger'), answers: {} });
+  env.api.entered(); env.api.render();
+  env.api.select('trigger', 'pain', false); env.api.next();
+  env.api.select('mattress_size', 'queen', false); env.api.next();
+  env.api.select('partner_sleep', 'partner', false); env.api.next();
+  const scrollsAfterNav = env.scrollCalls.length;
+  const q = QUIZ.questions[QID('partner_disturbance')];
+  env.doc.activeElement = null;
+  env.api.select('partner_disturbance', q.options[0].id, false); // touch
+  const h1 = env.get('questionHeadline');
+  ok('touch answer tap on a question reached by Next: no scroll reset, the CURRENT headline instance not focused',
+    env.api.at() === QID('partner_disturbance') && env.scrollCalls.length === scrollsAfterNav && h1._focusCount === 0);
+  const kb = env.get(`qopt-partner_disturbance-${q.options[1].id}`);
+  kb.classList.add('noct-quiz-option'); kb._focusVisible = true; env.doc.activeElement = kb;
+  env.api.select('partner_disturbance', q.options[1].id, false); // keyboard
+  const h2 = env.get('questionHeadline');
+  ok('keyboard answer tap on a question reached by Next: the replacement option is focused, the headline is not, nothing scrolls',
+    env.scrollCalls.length === scrollsAfterNav && h2._focusCount === 0
+    && env.doc.activeElement === env.get(`qopt-partner_disturbance-${q.options[1].id}`));
+  env.api.next();
+  ok('...and the next genuine change is still repaired exactly once',
+    env.api.at() === QID('sleep_position') && env.scrollCalls.length === scrollsAfterNav + 1 && env.get('questionHeadline')._focusCount === 1);
+}
+{
+  // The refusal gate releases: one gated transition, then a normal one.
+  let gated = true;
+  const env = makeQuizEnv({ at: QID('trigger'), answers: {}, gate: function() { return gated; } });
+  env.api.entered(); env.api.render();
+  env.api.select('trigger', 'pain', false); env.api.next();
+  ok('gated transition: nothing moved', env.scrollCalls.length === 0 && env.get('questionHeadline')._focusCount === 0);
+  gated = false;
+  env.api.prev();
+  ok('once the gate releases, the next change is repaired', env.api.at() === QID('trigger') && env.scrollCalls.length === 1 && env.get('questionHeadline')._focusCount === 1);
+}
+{
+  // A render while the question screen is NOT the active screen (another
+  // screen owns the page) never scrolls or focuses.
+  const env = makeQuizEnv({ at: QID('trigger'), answers: {}, active: 'reviewScreen' });
+  env.api.entered(); env.api.render();
+  env.api.select('trigger', 'pain', false); env.api.next();
+  ok('a question change while the question screen is inactive moves neither scroll nor focus',
+    env.api.at() === QID('mattress_size') && env.scrollCalls.length === 0 && env.get('questionHeadline')._focusCount === 0);
+}
+{
+  // The isFocusRestorable gate: a headline the gate refuses is not focused,
+  // though the scroll reset still happens (the page is still the quiz).
+  const env = makeQuizEnv({ at: QID('trigger'), answers: {},
+    mutate: (s) => s.replace('function afterQuestionChange() {', 'function isFocusRestorable() { return false; }\nfunction afterQuestionChange() {') });
+  env.api.entered(); env.api.render();
+  env.api.select('trigger', 'pain', false); env.api.next();
+  ok('a headline isFocusRestorable() refuses is not focused; the scroll reset still runs',
+    env.scrollCalls.length === 1 && env.get('questionHeadline')._focusCount === 0);
 }
 {
   // The refusal gate: when another layer owns focus, a question change moves
@@ -1490,7 +1550,8 @@ section('negative controls — the load-bearing assertions fail on a broken tree
   env.api.entered(); env.api.render();
   env.api.select('trigger', 'pain', false);
   env.api.next();
-  ok('control: dropping the question-change scroll reset is detected', env.scrollCalls.length === 0 && env.api.at() === QID('mattress_size'));
+  ok('harness control: with the scroll reset removed the harness records no scroll (the sweep entry is the regression guard)',
+    env.scrollCalls.length === 0 && env.api.at() === QID('mattress_size'));
 }
 {
   const env = makeQuizEnv({
@@ -1500,6 +1561,19 @@ section('negative controls — the load-bearing assertions fail on a broken tree
   env.api.entered(); env.api.render();
   ok('control: treating the first screen-owned render as a change is detected (double-handled entry)',
     env.get('questionHeadline')._focusCount === 1);
+}
+{
+  const env = makeQuizEnv({
+    at: QID('trigger'), answers: {},
+    mutate: (s) => s.replace('      _renderedQuestionId = q.id;', '      if (_renderedQuestionId === null) _renderedQuestionId = q.id;')
+  });
+  env.api.entered(); env.api.render();
+  env.api.select('trigger', 'pain', false); env.api.next();
+  const scrolls = env.scrollCalls.length;
+  env.doc.activeElement = null;
+  env.api.select('mattress_size', 'queen', false);
+  ok('control: a tracker frozen at the first question is detected (an answer tap after Next would scroll and steal focus)',
+    env.scrollCalls.length > scrolls || env.get('questionHeadline')._focusCount > 0);
 }
 {
   const env = makeQuizEnv({

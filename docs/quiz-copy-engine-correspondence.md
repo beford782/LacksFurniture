@@ -104,7 +104,7 @@ Sleep System / base suggestions.
 - **Previous EN:** So every mattress we show actually fits your space.
 - **Previous ES:** Nos aseguraremos de que las recomendaciones se ajusten a tu espacio
 - **Current EN:** We carry your selected size into the consultation. Your sleep-fit ranking is based on your comfort and support answers.
-- **Current ES (provisional):** Llevamos el tamaño que elijas a la consulta. El orden de tus opciones se basa en tus respuestas sobre comodidad y soporte.
+- **Current ES (provisional):** Tomamos en cuenta el tamaño que elijas en la consulta. El orden de tus opciones se basa en tus respuestas sobre comodidad y soporte.
 - **Ranks:** no — every option `scores: {}`; the lineup is never filtered by size and no availability check exists anywhere. **Firmness:** no. **Display:** yes — Sleep Brief reflection (`sizeLabels`), decorative signature. **Summary:** yes — the "who" row opens with the size label. **Accessories:** no. Also the email payload's `mattressSize` label.
 - **Cited tags:** none.
 - **Mechanism the copy describes:** carried into the consultation; ranking comes from the other answers.
@@ -144,7 +144,7 @@ Sleep System / base suggestions.
 - **Previous EN:** Your sleep position is the biggest clue to the support you need.
 - **Previous ES:** Piensa en cómo terminas naturalmente
 - **Current EN:** This helps us favor pressure relief, support, or a responsive feel.
-- **Current ES (provisional):** Esto nos ayuda a priorizar alivio de presión, soporte o una sensación más reactiva.
+- **Current ES (provisional):** Esto nos ayuda a priorizar alivio de presión, soporte o una sensación con más respuesta.
 - **Ranks:** yes — `side` → `plush: 2, pressureRelief: 2, soft: 1`; `back` → `support: 2, medium: 2, zoned: 1`; `stomach` → `firm: 2, support: 1`; `combo` / `no_idea` → `medium: 2, responsive: 2`. (`pressureRelief` is inert; the side sleeper's live tags are `plush`/`soft`, which is what "pressure relief" means in plain language, and the Sleep Brief carries a pressure-relief priority for side sleepers.) **Firmness:** no. **Display:** yes — profile wording, reflection, signature. **Summary:** yes — the profile row's position implication. **Accessories:** yes — position-matched pillows.
 - **Cited tags:** plush, pressureRelief, soft, support, medium, zoned, firm, responsive.
 - **Mechanism the copy describes:** which feel/feature family is favored — live.
@@ -155,7 +155,7 @@ Sleep System / base suggestions.
 
 - **Question:** What weight range should this mattress support? (couples variant: "…for the sleeper who needs more support?")
 - **Current EN (unchanged):** This helps us account for cushioning, support, and durability.
-- **Couples variant EN/ES (unchanged, `copyVariants`):** If you fall into different ranges, choose the "Different weight ranges" option. / Si están en rangos diferentes, elige "Rangos de peso diferentes".
+- **Couples variant EN/ES (unchanged, `copyVariants`):** If you fall into different ranges, choose “Different weight ranges.” / Si están en rangos diferentes, elige “Rangos de peso diferentes”.
 - **Current ES (unchanged):** Esto nos ayuda a considerar la amortiguación, el soporte y la durabilidad.
 - **Ranks:** yes — `petite` → `plush: 2, soft: 1`; `average` → `medium: 2`; `athletic` → `support: 2, medium: 1, responsive: 1`; `plus` → `firm: 2, support: 3, hybrid: 2, durability: 2`; `different` → `medium: 2, support: 1, motionIsolation: 2`. All three named mechanisms (cushioning = plush/soft, support, durability) are live. **Firmness:** no. **Display:** no. **Summary:** no. **Accessories:** no. **Priorities:** support priority raised for `plus`.
 - **Cited tags:** plush, soft, medium, support, responsive, firm, hybrid, durability, motionIsolation.
@@ -167,7 +167,7 @@ Sleep System / base suggestions.
 - **Previous EN:** Sleeping hot or cold is an easy fix with the right materials.
 - **Previous ES:** La regulación de temperatura es clave para un sueño profundo
 - **Current EN:** If you sleep hot, we favor cooling features in your matches.
-- **Current ES (provisional):** Si duermes con calor, priorizamos características frescas en tus opciones.
+- **Current ES (provisional):** Si duermes con calor, priorizamos materiales refrescantes en tus opciones.
 - **Ranks:** yes — `hot` → `cooling: 3, hybrid: 2`; `opposite` → `cooling: 2, hybrid: 1`; `cold` → `memory: 1, plush: 1` (memory inert; plush 1 live); `comfortable` → nothing. The copy is deliberately silent about "cold", whose live effect is one point. **Firmness:** no. **Display:** yes — profile wording. **Summary:** yes — the profile row's temperature implication. **Accessories:** yes — cooling pillows/protectors, the protection goal.
 - **Cited tags:** cooling, hybrid, memory, plush.
 - **Mechanism the copy describes:** cooling features favored for hot sleepers — live.
@@ -203,7 +203,7 @@ Sleep System / base suggestions.
 - **Previous EN:** Tap any that apply. A few of these change what we'd suggest.
 - **Previous ES:** Toca las que apliquen
 - **Current EN:** Tap any that apply. Some shape your matches; some change what we suggest trying, like an adjustable base or a mattress protector.
-- **Current ES (provisional):** Marca lo que aplique. Algunas influyen en tus opciones; otras cambian lo que sugerimos probar, como una base ajustable o un protector de colchón.
+- **Current ES (provisional):** Toca lo que aplique. Algunas influyen en tus opciones; otras cambian lo que sugerimos probar, como una base ajustable o un protector de colchón.
 - **Ranks:** yes for some — `nerve_pain` → `support: 3, firm: 2, zoned: 2`; `extra_support` → `support: 3, firm: 2, durable: 3`; `getting_older` → `support: 2, comfort: 2, pressureRelief: 1`; `allergies` → `hypoallergenic: 3` (inert); `snoring` / `reflux` → `adjustable: 3` (inert); `none` → nothing. **Firmness:** no. **Display:** yes — profile wording, signature. **Summary:** yes — each selected condition's implication in the profile row (e.g. head-of-bed elevation for snoring). **Accessories:** yes — `snoring`/`reflux` raise adjustable-base scoring and set the demo position (anti-snore / zero-gravity); `allergies` sets the protector goal.
 - **Cited tags:** support, firm, zoned, durable, comfort, pressureRelief, hypoallergenic, adjustable.
 - **Mechanism the copy describes:** some answers shape the ranking; some change what is suggested to try (base, protector) — both live, with no condition→product pairing stated as a treatment.

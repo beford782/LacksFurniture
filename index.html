@@ -303,8 +303,8 @@
       font-size: 16px;
       line-height: 1.5;
       color: var(--landing-muted, var(--color-text-muted));
-      max-width: 720px;
-      margin: 14px 0 26px;
+      max-width: 760px;
+      margin: 10px 0 18px;
     }
 
     .landing-outcome {
@@ -13464,7 +13464,7 @@
           el.textContent = textBlock.emailPrivacy || '';
         });
         document.querySelectorAll('[data-store="privacy-policy-contact"]').forEach(function(el) {
-          el.textContent = textBlock.privacyPolicyContact || el.textContent;
+          el.textContent = textBlock.privacyPolicyContact || '';
         });
         // Privacy & Terms overlay body — retailer-specific draft copy (text/text_es).
         document.querySelectorAll('[data-store="privacy-draft-notice"]').forEach(function(el) {
@@ -21058,7 +21058,7 @@
       <div data-store="privacy-draft-notice" style="font-size:0.62rem; font-style:italic; color:rgba(248,246,241,0.45); margin-bottom:0.85rem;">Draft policy — pending retailer approval before live use.</div>
       <div data-store="privacy-heading" style="font-size:0.9rem; font-weight:700; color:var(--color-gold-bright); margin-bottom:0.75rem;">Privacy</div>
       <div style="font-size:0.68rem; color:rgba(248,246,241,0.7); line-height:1.65; margin-bottom:1rem;">
-        <span data-store="privacy-body"></span> <span data-store="privacy-policy-contact">To access or remove your information, contact your local store.</span>
+        <span data-store="privacy-body"></span> <span data-store="privacy-policy-contact"></span>
       </div>
       <div data-store="disclaimer-heading" style="font-size:0.9rem; font-weight:700; color:var(--color-gold-bright); margin-bottom:0.75rem;">Disclaimer</div>
       <div data-store="disclaimer-body" style="font-size:0.68rem; color:rgba(248,246,241,0.7); line-height:1.65;">DreamFinder is a product recommendation tool. Match percentages and Sleep Brief guidance are generated from your quiz answers and should be treated as starting points, not guarantees. This tool does not provide medical advice — consult a healthcare provider for medical sleep concerns. Discounts and product availability are subject to store terms.</div>

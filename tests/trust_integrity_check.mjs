@@ -126,6 +126,15 @@ for (const q of questions) {
   ok(`${q.id}: the shipped ES help line is the one the document records`, es !== null && es === q.helpText.es,
     es === q.helpText.es ? "" : `doc="${es}" shipped="${q.helpText.es}"`);
 }
+for (const q of questions) {
+  for (const v of (q.copyVariants || [])) {
+    if (!v || !v.helpText) continue;
+    const sec = sectionFor(q.id);
+    const line = field(sec, "Couples variant EN/ES (unchanged, `copyVariants`)");
+    ok(`${q.id}: the copy-variant help line is the one the document records (EN / ES)`,
+      line !== null && line === `${v.helpText.en} / ${v.helpText.es}`, line === null ? "no variant line in the document" : `doc="${line}"`);
+  }
+}
 ok("the canonical source and the generated bundle carry identical help lines (pipeline, not hand edits)",
   questions.every((q, i) => q.helpText.en === canonical[i].helpText.en && q.helpText.es === canonical[i].helpText.es));
 
@@ -199,6 +208,9 @@ const CODE_GS = read("Code.gs");
 // Executable text only: HTML comments and whole-line // comments stripped, so
 // a comment that MENTIONS a sink or a promise is not mistaken for one.
 const code = norm.replace(/<!--[\s\S]*?-->/g, "").split("\n").filter((l) => !/^\s*\/\//.test(l)).join("\n");
+// ...and with trailing `// ...` comments removed too (a URL's `//` is never
+// preceded by whitespace, so `http://www.w3.org/2000/svg` survives).
+const code2 = code.replace(/\s\/\/.*$/gm, "");
 
 // C1. The template carries no privacy promise of its own.
 const TEMPLATE_PROMISES = [
@@ -219,7 +231,9 @@ ok("the privacy-overlay body and the email lead have EMPTY pre-config placeholde
   /<span data-store="privacy-body"><\/span>/.test(norm)
   && /<span id="emailPrivacyLead" data-store="email-privacy"><\/span>/.test(norm)
   && /el\.textContent = textBlock\.privacyBody \|\| '';/.test(norm)
-  && /el\.textContent = textBlock\.emailPrivacy \|\| '';/.test(norm));
+  && /el\.textContent = textBlock\.emailPrivacy \|\| '';/.test(norm)
+  && /<span data-store="privacy-policy-contact"><\/span>/.test(norm)
+  && /el\.textContent = textBlock\.privacyPolicyContact \|\| '';/.test(norm));
 ok("the retailer's configured privacy lead exists in both languages (so the email screen is not blank here)",
   typeof STORE.text.emailPrivacy === "string" && STORE.text.emailPrivacy.trim().length > 0
   && typeof STORE.text_es.emailPrivacy === "string" && STORE.text_es.emailPrivacy.trim().length > 0);
@@ -341,6 +355,13 @@ const countOf = (re) => (code.match(re) || []).length;
 {
   const fetchSites = countOf(/\bfetch\(/g);
   ok("exactly two fetch() call sites: the same-origin data loader and the gasUrl-gated results POST", fetchSites === 2, `found ${fetchSites}`);
+  const fetchRefs = (code2.match(/\bfetch\b/g) || []).length;
+  ok("...and exactly two references to the fetch IDENTIFIER at all (no aliasing, no `fetch (` spacing, no window['fetch'])",
+    fetchRefs === 2 && !/\bfetch\s+\(/.test(code2) && !/\[\s*['"]fetch['"]\s*\]/.test(code2), `found ${fetchRefs}`);
+  const urlLiterals = (code2.match(/https?:\/\/[^\s"'`)<]+/g) || []).filter((u) => u !== "http://www.w3.org/2000/svg");
+  ok("no external URL literal in executable code except the SVG namespace (no pixel, font, script or style beacons)",
+    urlLiterals.length === 0, urlLiterals.slice(0, 5).join(" "));
+  ok("no protocol-relative URL literal", !/["'`]\/\/[a-z0-9.-]+\.[a-z]/i.test(code2));
   const loader = fnSrc("async function boundedJson(") || fnSrc("function boundedJson(");
   ok("one fetch lives inside the bounded same-origin JSON loader", !!loader && /\bfetch\(/.test(loader));
   ok("the other fetch is the results POST whose first argument is gasUrl, inside the gated block",
@@ -351,16 +372,21 @@ const countOf = (re) => (code.match(re) || []).length;
     "new Image(": /new Image\(/g, ".submit(": /\.submit\(/g, "history.pushState": /history\.(pushState|replaceState)/g,
     "location writes": /location\.(href\s*=|assign\(|replace\()/g, iframe: /<iframe/gi, "document.cookie": /document\.cookie/g,
     sessionStorage: /sessionStorage/g, indexedDB: /indexedDB/g, "caches.": /\bcaches\./g, serviceWorker: /serviceWorker/g,
-    "external script/style": /<(script|link)[^>]+(src|href)="https?:\/\//gi
+    "external script/style": /<(script|link)[^>]+(src|href)="https?:\/\//gi,
+    "Image()": /\bImage\s*\(/g, ".src assignment": /\.src\s*=[^=]/g, "location assignment": /\blocation\s*=[^=]/g,
+    "document.location": /document\.location/g, "window.name": /window\.name\s*=[^=]/g, clipboard: /clipboard/gi,
+    "Worker(": /\b(Shared)?Worker\s*\(/g, BroadcastChannel: /BroadcastChannel/g, RTCPeerConnection: /RTCPeerConnection/g,
+    importScripts: /importScripts/g, "new WebSocket": /new\s+WebSocket/g
   };
   const present = Object.entries(forbidden).filter(([, re]) => countOf(re) > 0).map(([k]) => k);
   ok("zero other network, messaging, navigation or storage sinks", present.length === 0, present.join(","));
   const forms = code.match(/<form\b[^>]*>/gi) || [];
   ok("the one <form> never submits (preventDefault, no action attribute)",
     forms.length === 1 && /onsubmit="[^"]*preventDefault/.test(forms[0]) && !/\baction=/.test(forms[0]), forms.join(" | "));
-  const storage = code.split("\n").filter((l) => /localStorage\./.test(l));
-  ok("every localStorage call site names a 'dreamfinder.' staff/device key (deviceRsa or rsaList) — no customer data is persisted",
-    storage.length === 5 && storage.every((s) => /'dreamfinder\.'/.test(s) && /deviceRsa|rsaList/.test(s)), `${storage.length} sites`);
+  const storage = code2.split("\n").filter((l) => /localStorage/.test(l));
+  ok("every localStorage reference (any access form) names a 'dreamfinder.' staff/device key (deviceRsa or rsaList) — no customer data is persisted",
+    storage.length === 5 && storage.every((s) => /localStorage\.(getItem|setItem)\(/.test(s) && /'dreamfinder\.'/.test(s) && /deviceRsa|rsaList/.test(s)),
+    `${storage.length} references`);
   ok("the only URL read is the motion flag; nothing writes answers or contact values to the URL or hash",
     countOf(/location\.search/g) <= 1 && countOf(/location\.hash\s*=/g) === 0 && countOf(/URLSearchParams\(/g) <= 1);
 }
@@ -372,17 +398,20 @@ ok("Code.gs is reached only through that POST and its CAN-SPAM refusal sentinels
 // C7. The build-time gate exists and is self-tested.
 ok("tools/validation.py rejects preview-mode privacy prose under a live gasUrl (rule + phrase list + self-test)",
   /def _check_privacy_prose_mode\(/.test(VALIDATION) && /PREVIEW_MODE_SIGNALS/.test(VALIDATION)
-  && /if not is_placeholder:\s*\n\s*_check_privacy_prose_mode\(r, config\)/.test(VALIDATION.replace(/\r\n/g, "\n"))
+  && /if live_at_runtime:\s*\n\s*_check_privacy_prose_mode\(r, config\)/.test(VALIDATION.replace(/\r\n/g, "\n"))
   && /preview-mode privacy wording under a live gasUrl -> error/.test(VALIDATION));
 ok("the validator's signal list covers the runtime's preview sentence (build gate and runtime agree on what preview wording is)",
   /"stays on this tablet"/.test(VALIDATION) && /"permanecen en esta tableta"/.test(VALIDATION));
+ok("the validator keys the gate on the runtime's notion of live (any non-blank gasUrl) and refuses a non-blank placeholder",
+  /live_at_runtime = not _blank\(gas\)/.test(VALIDATION) && /if live_at_runtime:\s*\n\s*_check_privacy_prose_mode/.test(VALIDATION.replace(/\r\n/g, "\n"))
+  && /non-blank placeholder/.test(VALIDATION));
 
 // ================================================================ D. tier-relativity legibility
 section("D — the tier-relativity statement is legible and semantically untouched");
 {
   const rule = norm.match(/\.noct-tier-descriptor \.tier-relativity \{([^}]*)\}/);
   const size = rule ? Number((rule[1].match(/font-size:\s*(\d+(?:\.\d+)?)px/) || [])[1]) : NaN;
-  ok(`the relativity note is body size: computed font-size >= 15px (got ${size}px)`, size >= 15);
+  ok(`the relativity note is body size: the declared font-size is >= 15px (got ${size}px; the single rule, so computed = declared)`, size >= 15);
   ok("the relativity note keeps the muted showroom ink (contrast pinned in contrast_check)",
     !!rule && /color: var\(--color-text-muted\);/.test(rule[1]));
   ok("the relativity note's wording is exactly the D3 ruling in both languages (semantics unchanged)",

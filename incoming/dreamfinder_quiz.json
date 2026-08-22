@@ -101,7 +101,7 @@
         },
         "helpText": {
           "en": "We carry your selected size into the consultation. Your sleep-fit ranking is based on your comfort and support answers.",
-          "es": "Llevamos el tamaño que elijas a la consulta. El orden de tus opciones se basa en tus respuestas sobre comodidad y soporte."
+          "es": "Tomamos en cuenta el tamaño que elijas en la consulta. El orden de tus opciones se basa en tus respuestas sobre comodidad y soporte."
         },
         "type": "single",
         "options": [
@@ -342,7 +342,7 @@
         },
         "helpText": {
           "en": "This helps us favor pressure relief, support, or a responsive feel.",
-          "es": "Esto nos ayuda a priorizar alivio de presión, soporte o una sensación más reactiva."
+          "es": "Esto nos ayuda a priorizar alivio de presión, soporte o una sensación con más respuesta."
         },
         "type": "single",
         "options": [
@@ -566,7 +566,7 @@
         },
         "helpText": {
           "en": "If you sleep hot, we favor cooling features in your matches.",
-          "es": "Si duermes con calor, priorizamos características frescas en tus opciones."
+          "es": "Si duermes con calor, priorizamos materiales refrescantes en tus opciones."
         },
         "type": "single",
         "options": [
@@ -830,7 +830,7 @@
         },
         "helpText": {
           "en": "Tap any that apply. Some shape your matches; some change what we suggest trying, like an adjustable base or a mattress protector.",
-          "es": "Marca lo que aplique. Algunas influyen en tus opciones; otras cambian lo que sugerimos probar, como una base ajustable o un protector de colchón."
+          "es": "Toca lo que aplique. Algunas influyen en tus opciones; otras cambian lo que sugerimos probar, como una base ajustable o un protector de colchón."
         },
         "type": "multiple",
         "options": [
