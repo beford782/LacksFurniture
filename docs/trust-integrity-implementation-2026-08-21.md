@@ -920,9 +920,9 @@ sentence in the self-test still fails.
 339 → 342; every other `ci.yml` step re-run locally green (financing
 totality 3395/0, smoke 118/0, golden strict reproduced, lineage 10/0, QR
 188/0, Daybreak contract 87/0 and server 23/0, workbook validation OK with
-warnings-as-errors, 28 node suites green, `git diff --check` clean). The
-full sweep at this head is recorded below once it finishes, and by the PR's
-CI.
+warnings-as-errors, 28 node suites green, `git diff --check` clean). Full local mutation sweep at the fix commit `8742764`: **342/342 caught, 0
+survived, 0 did not apply** — the three new validator mutants all caught by
+the self-test; the PR's CI re-runs it.
 
 **Scope statement, re-framed.** `index.html` and the `data/`, `demo/` and `incoming/` trees — every customer-visible byte, configuration, generated file and scoring input — are byte-identical across all three. After the reviewed head, and only by the owner's 2026-08-22 option-B direction on the external review, `tools/validation.py` (the build-admission validator) and `tests/mutation_sweep.mjs` changed; those are build tooling and test manifest, not the served application, so the physical and live-review passes are not reopened. The physical packet's §11
 keys retests on `index.html`, dictionary, config and quiz copy — none
