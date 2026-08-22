@@ -2269,9 +2269,12 @@ finalized, live activation stays a separate gated decision. **Also 2026-08-22:**
 the priority native-Spanish review waived as a PR #54 gate (owner ruling; not
 a translation approval — see the native-review paragraph above). **Blake's
 live review passed 2026-08-22 at `9f27680`** (app bytes identical to the
-attested `f748f59`; mirror re-verified byte-identical before the walk). Still
-open under Exit 13: the reviewed-head designation and the ready/merge
-authorizations.
+attested `f748f59`; mirror re-verified byte-identical before the walk).
+**Reviewed application head designated `9f27680`** (Blake Ford, 2026-08-22;
+CI run 32593585017 pass; app bytes identical to `f748f59`; later commits are
+documentation only) and **ready-for-review authorized** the same day,
+conditional on green CI at the documentation head. Still open under Exit 13:
+the explicit merge authorization only.
 
 **Exit:**
 

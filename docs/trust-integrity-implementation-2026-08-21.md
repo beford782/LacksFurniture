@@ -835,8 +835,37 @@ the retired promise and with the draft-policy overlay notice retained by
 option C; the idle dialog wording against its two controls) and the critical
 path in Spanish, viewed as provisional — not a translation approval.
 
-This closes the live-review gate only. Still open: the reviewed-head / CI
-designation (the lead recommends `9f27680`, CI run 32593585017, as the head
-walked), and the explicit authorizations to mark ready and to merge. Commits
-after `9f27680` on this branch are documentation only and do not change the
-reviewed bytes. PR #54 stays draft; nothing merged or deployed.
+This closes the live-review gate only. The reviewed-head designation and
+the ready-for-review authorization followed the same day (§32); merge
+authorization is still open. Commits after `9f27680` on this branch are
+documentation only and do not change the reviewed bytes. Nothing merged or
+deployed.
+
+## 32. Reviewed application head designated; ready-for-review authorized (2026-08-22)
+
+**Designation.** Blake Ford designated **`9f27680` as the owner-reviewed
+application head** for PR #54: the owner live review (§31) was performed
+against those application bytes; CI run 32593585017 at `9f27680` passed; the
+application bytes are identical to the physically tested `f748f59` (§27);
+later commits only record decisions and do not change the application.
+
+Three heads, one set of application bytes: **physical-test head `f748f59`** (owner-attested device pass), **reviewed application head `9f27680`** (owner live review; CI run 32593585017 pass), and the **current PR/documentation head** (the latest docs-only commit recording these decisions). `index.html` and the `data/`, `demo/`, `tests/`, `tools/` and `incoming/` trees are byte-identical across all three. The proof at the time of
+recording: `git diff --name-only 9f27680 HEAD` lists only
+`docs/rebuild-roadmap.md`, `docs/trust-integrity-implementation-2026-08-21.md`
+and `docs/trust-integrity-owner-review-2026-08-21.md`; `git diff --stat
+f748f59 9f27680 -- index.html data/ demo/ tests/ tools/ incoming/` is empty;
+the `index.html` blob (SHA-256 `b0981e11…412321`) and the five tree ids are
+equal at `f748f59`, `9f27680` and the current head.
+
+**Ready-for-review.** Blake Ford authorized marking PR #54 ready for review
+once all state and SHA checks pass, this designation is recorded
+consistently, the current documentation-only head has green CI, and the
+checklist shows only the merge-authorization gate open. The lead performs the
+draft → ready change only after the CI run at the documentation head that
+carries this record is green.
+
+**Not authorized:** merging PR #54. The merge gate stays unchecked; nothing
+is merged, deployed or showroom-authorized; PR #53 is untouched; Spanish
+stays provisional (native review waived as a gate only, §30); `gasUrl` stays
+blank; the preview-only privacy decision (§29) and the visible draft-policy
+notice remain in force.
