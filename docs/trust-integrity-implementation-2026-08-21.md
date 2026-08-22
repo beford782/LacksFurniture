@@ -3,8 +3,10 @@
 **Status (three separate states, per `docs/deployment-workflow.md`):** the
 branch `claude/phase1-trust-integrity` is **pushed** to `origin`; a **draft PR**
 targets `main` (number and URL in §23); **nothing is merged, nothing is
-deployed, and nothing is showroom-authorized.** Owner review, the device-matrix
-merge gate on the confirmed hardware, and the open decisions below all stand.
+deployed, and nothing is showroom-authorized.** The device-matrix, VoiceOver
+and real Windows forced-colors gates passed by Blake's 2026-08-22 owner
+attestation at `f748f59` (§27); copy, legal/business, native-Spanish, privacy,
+owner-live-review and explicit readiness/merge decisions remain open.
 **Owner packet:** `docs/trust-integrity-owner-review-2026-08-21.md` (the nine
 quiz lines, the privacy sentences, the tier-presentation options, the
 founding-year decision, the physical checklists).
@@ -451,13 +453,15 @@ sequence is now stated identically at the header, the slice-order list, the
 gate block, item 1.7 and the sequence of record: Slice 4 → this gate → Slice 5
 → Slice 6, with Slice 5's concurrent development recorded as history.
 
-## 15. Device-matrix status — browser emulation done; physical gates outstanding
+## 15. Device-matrix status — physical gates passed by owner attestation
 
 Browser (Chromium, Playwright, DPR 1) at the recorded matrix sizes and beyond,
-EN and ES, partner and solo paths — §12. **Physical iPad Pro 11" (1194×748
-landscape, 834×1108 portrait), real touch, glare, and the Windows
-forced-colors rendering remain owner-run gates under the phase-wide merge
-gate; not performed here.**
+EN and ES, partner and solo paths — §12. **Blake's 2026-08-22 attestation at
+`f748f59` records PASS for the compact packet's mounted-iPad matrix, partner
+and solo paths, VoiceOver sanity pass and real Windows Aquatic/Desert
+forced-colors checks.** The owner supplied no checklist export, screenshots,
+spoken transcript or exact device-version metadata; that evidence limitation
+and the byte-verified dry-run mirror are recorded in the physical packet §15.
 
 ## 16. Screenshots / scratch evidence
 
@@ -560,10 +564,10 @@ the consolidated ledger.
 
 ## 21. Showroom-authorization status
 
-**Not authorized.** `docs/kiosk-device-hardening.md` remains BLOCKING; the
-phase-wide device-matrix merge gate (physical iPad, both orientations, EN/ES)
-and Blake's live review apply to this branch exactly as to every slice; Spanish
-is provisional; no privacy policy is claimed approved.
+**Not authorized.** `docs/kiosk-device-hardening.md` remains BLOCKING. The
+phase-wide physical device gate is complete for `f748f59` by owner attestation,
+but Blake's distinct live review remains open; Spanish is provisional; no
+privacy policy is claimed approved.
 
 ## 23. Pull request, CI and final state (2026-08-22)
 
@@ -572,10 +576,10 @@ is provisional; no privacy policy is claimed approved.
   ruled 2026-08-21 (this PR first; #53 integrates afterwards, §14d). Not to
   be marked ready until every gate in Exit 13 of the roadmap block is
   recorded: the nine-line copy approval (incl. the `sleep_position` gloss),
-  the Welcome/Review copy approval, the privacy-policy decision, the physical
-  mounted-iPad pass in both orientations and languages, the VoiceOver sanity
-  pass, a real Windows forced-colors pass, the priority native-Spanish review,
-  and the owner's live review.**
+  the Welcome/Review copy approval, the privacy-policy decision, the priority
+  native-Spanish review, and the owner's live review. The physical mounted-iPad,
+  VoiceOver and real Windows forced-colors gates are now recorded complete in
+  §27.**
 - Revalidation commit `f6fac09` (audits 1–3 resolved; packet; roadmap
   sequence) followed by this record. Pushed to `origin`.
 - GitHub CI: pull_request run 32542916416 at `12ad950` — **success** (trust
@@ -586,12 +590,11 @@ is provisional; no privacy policy is claimed approved.
 - Baselines: original implementation baseline `4a76503` (origin/main at branch
   creation); post-integration `main` baseline **unchanged — `4a76503`** (no
   new `main` existed to integrate; Slice 5 is unmerged draft PR #53).
-- **Nothing merged. Nothing deployed. No showroom authorization.** The physical
-  iPad pass (both orientations, EN/ES), the real Windows forced-colors check,
-  the VoiceOver sanity pass (required, R7), the priority native-Spanish review
-  of the three privacy/audience sentences and the idle body, the privacy-policy approval
+- **Nothing merged. Nothing deployed. No showroom authorization.** The priority
+  native-Spanish review of the three privacy/audience sentences and the idle body, the privacy-policy approval
   (`privacyDraftNotice` is customer-visible today) and Blake's sign-off on the
-  nine help lines all remain outstanding; the owner packet lists each.
+  nine help lines all remain outstanding; the owner packet lists each. The
+  three physical gates are complete by the §27 owner attestation.
 
 ## 24. Owner rulings round (2026-08-22) — what changed
 
@@ -698,6 +701,28 @@ reproduced by the lead before acting.
   byte-identical to `main`; `git diff --check` clean. This round changes
   three Markdown files only; the full run at its head is recorded by CI on
   the PR.
+
+## 27. Owner-attested physical pass (2026-08-22; `f748f59`)
+
+- The retained public dry-run mirror served commit `22b9109`: the exact PR #54
+  tree at `f748f59` plus only the compact `verify.html` packet. GitHub Pages
+  reported the build complete. The live `index.html` matched the `f748f59` git
+  blob byte-for-byte (SHA-256
+  `B0981E11F9065FA69DBD8BCD31EE100C7044E1FFB58C56AC87241E525D412321`),
+  and the live app reached Welcome with no domain-lock or data-error screen.
+- Blake first reported **“all tests passed”**, then instructed the lead to
+  assume every compact test passed without exchanging the Share Results
+  export. The physical packet §15 therefore records PASS for all 21 compact
+  checks: mounted iPad landscape/portrait EN/ES, partner/solo, idle and wipe,
+  VoiceOver including the Spanish spot-check, and real Windows Aquatic/Desert
+  forced colors.
+- Evidence limitation: no checklist export, screenshots, spoken transcript,
+  exact device/iPadOS/Windows/browser versions, location or evidence directory
+  were supplied. The record says so; no evidence details were invented.
+- This closes R7/R8's physical gates for the tested `f748f59` bytes. It does
+  not approve copy, legal/business representations, the privacy policy, native
+  Spanish, owner live review, showroom use, deployment, readiness or merge.
+  Any later `index.html` change invokes the packet's retest rule.
 
 ## 22. Rollback strategy
 

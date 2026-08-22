@@ -17,13 +17,13 @@ they do not authorize merging either PR.
 | **PENDING — COPY APPROVAL** (yours) | the nine quiz help lines (§1) · the `sleep_position` gloss (§1a) · the final idle-dialog EN sentence as shipped (§2.5) · the Welcome and Review sentences as product wording (§2.1, §2.2) |
 | **PENDING — LEGAL/BUSINESS** | the Welcome and Review sentences as representations (approver of record unnamed) · the privacy overlay policy and its draft notice (§2.4) · the email line in any live (email-enabled) mode (§2.3) · founding year 1935 by corporate/archival record (§4) |
 | **PENDING — NATIVE SPANISH** | priority: `privacy.data_use_preview`, `privacy.data_use_live`, `review.help`, `safety.timeout_body` (§2.6) · the eight changed quiz ES lines (§1) |
-| **PENDING — PHYSICAL DEVICE** | mounted iPad Pro 11" landscape and portrait, EN and ES · VoiceOver sanity pass · real Windows forced colors — all in `docs/trust-integrity-physical-gate-2026-08-21.md` |
+| **COMPLETED — PHYSICAL DEVICE (owner attestation, 2026-08-22)** | Blake instructed the lead to treat all 21 compact checks as passed for `f748f59`: mounted iPad landscape and portrait, EN and ES; partner and solo paths; VoiceOver sanity pass; real Windows Aquatic and Desert forced colors. No export, screenshots or exact device-version metadata were supplied; the evidence limitation is recorded in `docs/trust-integrity-physical-gate-2026-08-21.md` §15. |
 | **DEFERRED — LATER PHASE** | tier options B (neutral initial tier) and D; the `partner_disturbance` preferred line (until 3.1 ships); heritage as an optional research condition; the Sleep System's own benefit-flavoured reason lines (1.4); the Results tier-tab overflow at 320px (1.3) |
 | **NOT AUTHORIZED** | per-question heritage rail, counts, awards, testimonials, QR codes, anecdotes · cross-tier highest-fit marker / global maximum (3.3 🔒) · showroom use · deployment · merging #54 or #53 · marking #54 ready for review (gates above outstanding) · removing the draft-policy notice |
 
 **What still needs you:** the ten ☐ decisions in §1/§1a, the wording sign-off in
 §2.1/§2.2/§2.5, naming an approver of record (§2.1), and the policy decision
-in §2.4. Then the physical packet.
+in §2.4. The physical packet is complete by your 2026-08-22 attestation.
 
 Legend — **Ranks:** the answer changes the sleep-fit ranking. **Consult:** it
 feeds the specialist's Consultation Summary. **Suggests:** it changes accessory
@@ -134,7 +134,7 @@ The eight changed quiz ES lines (§1) follow on the consolidated ledger.
 - **Welcome-only this cycle:** the restrained heritage line stays; no per-question rail; no anniversary count; no store counts, awards, testimonials, QR codes, community claims or anecdotes in the quiz; the research prototype is preserved separately; historical content may be tested later as an optional research condition.
 - **Founding year:** "since 1935" is **not altered** and is treated as **provisional** pending corporate/archival confirmation (1935 is corroborated by two independent sources; the BBB profile reportedly lists 1924 — an unresolved discrepancy that may describe a predecessor or be inaccurate, and is **not** proof that 1935 is false). No anniversary arithmetic and no second founding-year exposure are added. (The configured `text.trustSignal` / `text_es.trustSignal` line — "…90 years of South Texas homes" — has **no consumer** in `index.html` and is not rendered; the implementation report records it as dead. It must not be wired up without a new ruling, since it would add exactly the anniversary count this ruling excludes.) This ruling is not historical verification. Pending: ☐ records confirm 1935 · ☐ the BBB entry explained.
 
-## 5. Physical gates — PENDING — PHYSICAL DEVICE (R7, R8)
+## 5. Physical gates — PASS BY OWNER ATTESTATION (R7, R8; 2026-08-22)
 
 All steps, expected results and the evidence convention are in
 **`docs/trust-integrity-physical-gate-2026-08-21.md`**: mounted iPad Pro 11"
@@ -142,7 +142,10 @@ landscape (1194×748) and portrait (834×1108), EN and ES, partner and solo
 paths; the VoiceOver sanity pass (required before #54 leaves draft — not a
 reopening of the 2026-08-12 ruling that screen-reader *function* is out of
 scope); a real Windows forced-colors pass (browser emulation does not satisfy
-it). **Known residues, recorded separately:** at 1194×748 in Spanish the
+it). Blake instructed the lead to treat every check in the compact 21-check
+packet as passed for `f748f59`; §15 of the physical packet records the served
+build proof and the fact that no export, screenshots or exact device metadata
+were supplied. **Known residues, recorded separately:** at 1194×748 in Spanish the
 Welcome "Tu consulta crea" outcome row bottoms ~39px below the fold (the wider
 ES button wraps the time estimate) — 1.6; the Results tier-tab row overflows
 ~19px at 320px (outside the device matrix) — 1.3; the Sleep System's own

@@ -2245,7 +2245,11 @@ required before PR #54 leaves draft (owner ruling R7, 2026-08-21)** — a check
 of the new headline focus and of the Welcome and Review lines in reading
 order, with no accepted-risk alternative; screen-reader functionality itself
 stays out of scope by the 2026-08-12 permanent ruling, which this does not
-reopen.
+reopen. **Recorded PASS for `f748f59` by Blake's 2026-08-22 owner attestation:**
+all 21 compact physical checks passed, covering the mounted-iPad matrix,
+VoiceOver sanity pass and real Windows forced colors. The physical packet §15
+records the byte-verified mirror and the absence of an exported checklist or
+screenshots. This closes only the physical portion of Exit 13.
 
 **Exit:**
 
@@ -2337,6 +2341,17 @@ configuration audit — 2026-08-12*):
 | Viewport, landscape | 1194 × 748 CSS px |
 | Intended operating orientation | landscape |
 | Supervision / management | not supervised, no MDM profiles (see the hardening doc — BLOCKING for showroom use) |
+
+**PR #54 trust-gate run — 2026-08-22:** Blake instructed the lead to record all
+21 compact checks as PASS for branch head `f748f59`, served from the retained
+dry-run mirror at mirror commit `22b9109`. This covers landscape and portrait,
+EN and ES, partner and solo paths, VoiceOver, and real Windows Aquatic/Desert
+forced colors. The served `index.html` was byte-identical to the branch blob
+(SHA-256 `B0981E11F9065FA69DBD8BCD31EE100C7044E1FFB58C56AC87241E525D412321`).
+No Share Results export, screenshots or exact device-version metadata were
+supplied; `docs/trust-integrity-physical-gate-2026-08-21.md` §15 is the record.
+The matrix gate is closed for these bytes only; showroom hardening and every
+non-physical Exit 13 approval remain separate.
 
 With the matrix recorded, "real iPad dimensions" is now a checkable acceptance
 criterion, and the breakpoint-justification restriction below lifts on its own
@@ -2558,7 +2573,7 @@ approval; its presence is a bar on proceeding.
 | **Specialist-summary scope** — exactly what the Consultation Summary shows from the answers (today: finalists, what to test, and implications derived from sleep-issue and health answers), whether the customer may control what appears, whether health-derived implications remain | ❓ | Blake | A ruling; 1.6 owns the presentation. The trust gate's Review line describes today's behaviour and must be re-verified if the scope changes |
 | **Idle-dialog wording** — the Gate 1B body "Your session is paused to protect your privacy." described intent, not behaviour (a grace countdown runs; the answers persist until it ends or Start new customer) | ❓ | Blake | *(Ruled 2026-08-21, R5: replaced on the trust branch with dictionary copy that names the dialog's real controls — EN "Session paused. Continue this session where you left off, or start a new customer to clear it."; ES provisional. Product direction only.)* Still open here: the final EN wording's copy sign-off and the native review of the Spanish |
 | **Trust measurement** — moderated current-vs-process-transparency sessions; whether a restrained heritage condition is retained as a third research condition; any aggregate local measurement store (which must record no answers and no identity, or the data-use sentence becomes false) | ❓ | Blake | Approval of the study design; the store is designed before anything is promised |
-| **VoiceOver sanity pass on the trust copy** — the owner's 2026-08-21 ruling (R7) requires a one-time sanity pass on the mounted iPad (new headline focus, the Welcome and Review lines in reading order, no duplicate announcement) before PR #54 leaves draft | ❓ | Blake | Run it and record the result in `docs/trust-integrity-physical-gate-2026-08-21.md`; there is no accepted-risk alternative. Screen-reader functionality itself stays out of scope by the 2026-08-12 permanent ruling, which this row does not reopen |
+| **VoiceOver sanity pass on the trust copy** — the owner's 2026-08-21 ruling (R7) requires a one-time sanity pass on the mounted iPad (new headline focus, the Welcome and Review lines in reading order, no duplicate announcement) before PR #54 leaves draft | ✅ | Blake | PASS by Blake's 2026-08-22 all-tests-pass attestation for `f748f59`; compact VO-01…04 and VO-ES-01 covered. No transcript/export supplied; evidence limitation recorded in `docs/trust-integrity-physical-gate-2026-08-21.md` §15. Screen-reader functionality itself stays out of scope by the 2026-08-12 permanent ruling. |
 
 *(Resolved and removed from the table: "Phase 1 scoring-fixture exit gate" —
 approved by owner directive 2026-08-12 and built the same day; see the Phase 1
