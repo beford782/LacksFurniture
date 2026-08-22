@@ -22,15 +22,15 @@ they do not authorize merging either PR.
 | **DEFERRED — LATER PHASE** | tier options B (neutral initial tier) and D; the `partner_disturbance` preferred line (until 3.1 ships); heritage as an optional research condition; the Sleep System's own benefit-flavoured reason lines (1.4); the Results tier-tab overflow at 320px (1.3) |
 | **NOT AUTHORIZED** | per-question heritage rail, counts, awards, testimonials, QR codes, anecdotes · cross-tier highest-fit marker / global maximum (3.3 🔒) · showroom use · deployment · merging #54 or #53 · marking #54 ready for review (gates above outstanding) · removing the draft-policy notice |
 
-**What still needs you (after your 2026-08-22 decisions, #1–#9 all
-recorded):** your live review (#11), the head designation (#12), and the
-ready/merge authorizations (#13, #14). Native review (#9 waived as a gate,
+**What still needs you (after your 2026-08-22 decisions, #1–#9 and #11 all
+recorded):** the reviewed-head designation (#12) and the ready/merge
+authorizations (#13, #14). Native review (#9 waived as a gate,
 #10 on the consolidated ledger) stays owed before Spanish showroom use or any
 live-mode deployment. The physical packet is complete by your 2026-08-22
 attestation. The decision sheet directly below records what is decided and
 what remains.
 
-## Decision sheet — 2026-08-22, after the physical pass: 14 decisions (9 decided 2026-08-22, 4 remain as gates)
+## Decision sheet — 2026-08-22, after the physical pass: 14 decisions (10 decided 2026-08-22, 3 remain as gates)
 
 The physical gates are closed for the bytes at `f748f59` (§5). Everything
 below is **yours or someone you name**; nothing on this sheet is pre-decided,
@@ -56,8 +56,8 @@ implies another. No decision here authorizes deployment or showroom use —
 | 8 ✅ | Legal/business | Name the legal/business approver of record (§2.1) — **Blake Ford named, 2026-08-22** | Blake Ford | Yourself as business owner · Yourself plus counsel for #6/#7 · Someone else named | **Name yourself now** and decide whether counsel reviews #6/#7. Until a name is on record, #6 and #7 cannot close. | Lets #6/#7 be signed · does not itself approve anything. |
 | 9 ✅ (waived as a gate) | Native Spanish | The four priority strings (§2.6) — **owner ruling, Blake Ford, 2026-08-22: native review waived as a PR #54 readiness/merge gate for this preview-only merge.** Not a translation approval: the strings are not native-reviewed, approved or final; Spanish provisional; review still required before Spanish showroom authorization or any live email/lead-enabled deployment, which reopens it | `privacy.data_use_preview`, `privacy.data_use_live`, `review.help`, `safety.timeout_body` — exact ES in §2.1, §2.6, §2.2, §2.5 | Commission a native reviewer now · Defer to the consolidated end-of-development pass (Invariant 12 made these four the exception — they were a PR #54 gate until the 2026-08-22 waiver) | **Commission as soon as #3–#5 are approved**, so the reviewer sees final English. The review notes in §2.6 tell the reviewer what each string must not drift into. | The ES strings may ship as reviewed · does not approve the eight quiz lines (#10). |
 | 10 | Native Spanish | The eight changed Spanish quiz help lines (§1) | §1, "Proposed ES" column | Review now with #9 · Leave on the consolidated ledger (roadmap Invariant 12) | **Leave on the consolidated ledger** unless the reviewer is already engaged — these are not a PR #54 gate; ship provisional, as every slice has. | Nothing for this PR · the lines remain provisional either way. |
-| 11 | Owner live review | Your own walkthrough of the build that will merge | — | Walk it at `be32b87` on the mirror (same app bytes as `f748f59`) · Walk it after #1–#5 if any copy changes (new head) | **After #1–#5 are decided**, so you review the wording that merges. If nothing changes, the mirror at commit `22b9109` already serves these bytes. | Closes the live-review gate · not readiness, not merge. |
-| 12 | Readiness | Designate the final reviewed head and its CI run | today: `be32b87`, CI run 32588449462 pass (18 checks); app bytes identical to `f748f59` | Name `be32b87` · Name the later head produced by #1–#5 | **Name the head that #11 walked.** Any copy change produces a new head whose CI run then becomes the one of record. | Ticks "Final CI at the reviewed head" · nothing else. |
+| 11 ✅ | Owner live review | Your own walkthrough of the build that will merge — **PASSED, Blake Ford, 2026-08-22, at branch head `9f27680`** (app bytes identical to the attested `f748f59`; walked on the dry-run mirror, whose `index.html`, `store-config.json`, `quiz.json` and `dict-es.json` were re-verified byte-identical to the branch immediately before the walk). Reviewed the seven customer-visible changes in EN and the critical path in ES; Spanish viewed as provisional, not approved | — | — | — | Closes the live-review gate · not readiness, not merge. |
+| 12 | Readiness | Designate the final reviewed head and its CI run | the head #11 walked: `9f27680`, CI run 32593585017 pass (18 checks); app bytes identical to `f748f59`. Commits after it are documentation only (they record your decisions) and do not change the reviewed bytes | Name `9f27680` as the reviewed head (its CI run is the one of record; later docs-only commits each get their own green run) · Name a later head instead | **Name `9f27680`** — it is the head you walked and its CI is green. | Ticks "Final CI at the reviewed head" · nothing else. |
 | 13 | Readiness | Explicit authorization to mark PR #54 ready for review | — | Authorize · Hold | Only after #1–#9, #11 and #12 are recorded (#10 is not required). | The lead flips draft → ready · not merge. |
 | 14 | Merge | Explicit authorization to merge PR #54 | — | Authorize · Hold | After #13; merge as a merge commit, branch kept, then PR #53 integrates the resulting `main` (R1). | Merges to `main` and deploys the Pages preview · not showroom use (hardening blocks), not PR #53. |
 
@@ -73,8 +73,9 @@ English-only, all as shipped — no bytes changed, so the physical pass at
 strings waived as a PR #54 gate — not approved, Spanish provisional, owed
 before Spanish showroom or live-mode use.
 
-**Remaining order:** #11 on the head that will merge; then #12 → #13 → #14.
-#10 stays on the consolidated ledger.
+**Also 2026-08-22 (Blake Ford):** #11 live review passed at `9f27680`.
+
+**Remaining order:** #12 → #13 → #14. #10 stays on the consolidated ledger.
 
 Legend — **Ranks:** the answer changes the sleep-fit ranking. **Consult:** it
 feeds the specialist's Consultation Summary. **Suggests:** it changes accessory

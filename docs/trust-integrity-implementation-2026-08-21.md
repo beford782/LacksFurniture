@@ -577,8 +577,8 @@ the consolidated ledger.
 ## 21. Showroom-authorization status
 
 **Not authorized.** `docs/kiosk-device-hardening.md` remains BLOCKING. The
-phase-wide physical device gate is complete for `f748f59` by owner attestation,
-but Blake's distinct live review remains open; Spanish is provisional; no
+phase-wide physical device gate is complete for `f748f59` by owner attestation
+and Blake's distinct live review passed at `9f27680` (§31); Spanish is provisional; no
 privacy policy is claimed approved — the privacy gate for this PR is resolved
 by the explicit preview-only decision (§29), with the draft notice retained.
 
@@ -818,3 +818,25 @@ block this preview-only merge. Recorded narrowly:
 - This ruling does not authorize marking ready, merging, deployment or
   showroom use. Gates still open: the owner live review, the reviewed-head /
   CI designation, and the explicit authorizations to mark ready and to merge.
+
+## 31. Owner live review — passed (2026-08-22; `9f27680`)
+
+Blake Ford walked the build on the retained dry-run mirror
+(`https://beford782.github.io/df-phase1-dryrun/`) and reported it passed.
+Immediately before the walk the lead re-verified the mirror's served
+`index.html`, `data/store-config.json`, `data/quiz.json` and
+`data/dict-es.json` byte-identical (SHA-256) to the branch blobs at `9f27680`,
+whose application bytes are identical to the attested `f748f59`. The walk
+covered the seven customer-visible changes (Welcome data-use sentence and
+single heritage line; the help lines in place; question transitions incl.
+Back from the tall questions and Edit from Review; the Review sentence; the
+15px tier-relativity note with ordering unchanged; the email screen without
+the retired promise and with the draft-policy overlay notice retained by
+option C; the idle dialog wording against its two controls) and the critical
+path in Spanish, viewed as provisional — not a translation approval.
+
+This closes the live-review gate only. Still open: the reviewed-head / CI
+designation (the lead recommends `9f27680`, CI run 32593585017, as the head
+walked), and the explicit authorizations to mark ready and to merge. Commits
+after `9f27680` on this branch are documentation only and do not change the
+reviewed bytes. PR #54 stays draft; nothing merged or deployed.

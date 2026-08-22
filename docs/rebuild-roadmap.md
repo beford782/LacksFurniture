@@ -2267,8 +2267,11 @@ privacy-policy decision taken as **option C, preview-only for this merge** —
 the draft policy and its visible notice stay, the policy is not claimed
 finalized, live activation stays a separate gated decision. **Also 2026-08-22:**
 the priority native-Spanish review waived as a PR #54 gate (owner ruling; not
-a translation approval — see the native-review paragraph above). Still open
-under Exit 13: Blake's live review and the ready/merge authorizations.
+a translation approval — see the native-review paragraph above). **Blake's
+live review passed 2026-08-22 at `9f27680`** (app bytes identical to the
+attested `f748f59`; mirror re-verified byte-identical before the walk). Still
+open under Exit 13: the reviewed-head designation and the ready/merge
+authorizations.
 
 **Exit:**
 
