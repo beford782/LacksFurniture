@@ -320,10 +320,16 @@ PREVIEW_MODE_SIGNALS = (
 # the keep/retain verbs are all one rule. Each match is then bound to the
 # noun phrase it is about (_storage_claim_is_governed).
 _NEG = r"(?:n't|\bnot\b|\bnever\b|\bcannot\b|\bno longer\b)"
-# Up to three words may sit between the negation and the verb: auxiliaries
-# ("won't BE stored"), adverbs ("not PERMANENTLY stored", "do not EVER store")
-# — external review thread 9 (2026-08-22).
-_GAP = r"\s+(?:[a-z\u00e1\u00e9\u00ed\u00f3\u00fa\u00f1\u00fc'-]+\s+){0,3}?"
+# Up to three MODIFIERS may sit between the negation and the verb: auxiliaries
+# ("won't BE stored", "not GOING TO BE stored"), adverbs ("not PERMANENTLY
+# stored", "do not EVER store") — external review thread 9 (2026-08-22).
+# Restricted to those token classes (thread 12): an unrestricted gap turned
+# "we do not ASK LENDERS TO store your answers" — a claim about lenders, not
+# about the kiosk — into a storage negation.
+_GAP_TOKEN = (r"(?:be|being|been|get|gets|got|gotten|going\s+to|ever|even|also|still|yet|just|"
+              r"simply|again|anywhere|elsewhere|at\s+all|in\s+any\s+way|in\s+any\s+form|"
+              r"[a-z\u00e1\u00e9\u00ed\u00f3\u00fa\u00f1\u00fc]+ly|[a-z\u00e1\u00e9\u00ed\u00f3\u00fa\u00f1\u00fc]+mente)")
+_GAP = r"\s+(?:" + _GAP_TOKEN + r"\s+){0,3}?"
 _ES_NEG = r"\b(?:no|nunca|jam[a\u00e1]s)\s+"
 _ES_OBJ = r"(?:(?:lo|la|los|las|le|les|te|nos)\s+)?"
 STORAGE_NEGATION_PATTERNS = (
@@ -354,10 +360,16 @@ _TRANSMIT_KINDS = ("passive_transmit", "active_transmit", "es_reflexive_transmit
 # condition ("unless you choose to email") makes it a qualified claim the
 # business owns, not a statement that nothing leaves the tablet — external
 # review thread 10 (2026-08-22). Universal destinations keep it absolute.
-_DESTINATION_RE = re.compile(r"\b(?:to|with|a|al|hacia|con|para)\s+([^\s]+(?:\s+[^\s]+)?)")
+_DESTINATION_RE = re.compile(r"\b(?:to|with|a|al|hacia|con|para)\s+([^\s]+(?:\s+[^\s]+){0,2})")
 _CONDITION_RE = re.compile(r"\b(?:unless|until|except|only if|only when|a menos que|hasta que|salvo|solo si|s\u00f3lo si|excepto)\b")
-_UNIVERSAL_DESTINATIONS = ("anyone", "anybody", "anywhere", "any ", "elsewhere", "outside", "beyond",
-                           "nadie", "ning\u00fan", "ninguna", "ningun", "fuera", "terceros no", "otro sitio")
+# Universal-destination words. Checked on EVERY word of the captured
+# destination, not only the first, so an intensifier ("to ABSOLUTELY anyone",
+# "with literally anybody else") does not turn an absolute promise into a
+# qualified one \u2014 external review thread 11 (2026-08-22).
+_UNIVERSAL_DESTINATIONS = ("anyone", "anybody", "anywhere", "any", "elsewhere", "outside", "beyond",
+                           "nobody", "none", "nothing", "nadie", "ning\u00fan", "ninguna", "ningun",
+                           "ninguno", "fuera")
+_UNIVERSAL_PHRASES = ("otro sitio", "otro lugar", "otra parte", "other place", "anyone else")
 
 
 def _transmission_is_absolute(clause_after: str) -> bool:
@@ -368,7 +380,8 @@ def _transmission_is_absolute(clause_after: str) -> bool:
     if not m:
         return True
     dest = m.group(1).strip()
-    return dest.startswith(_UNIVERSAL_DESTINATIONS)
+    return (any(w.startswith(_UNIVERSAL_DESTINATIONS) for w in dest.split())
+            or any(p in dest for p in _UNIVERSAL_PHRASES))
 # Typographic apostrophes and quotes fold to ASCII before any matching, so a
 # retailer's "weren’t stored" is the same claim as "weren't stored".
 _PROSE_FOLD = str.maketrans({"\u2019": "'", "\u2018": "'", "\u02bc": "'", "`": "'",
@@ -4195,6 +4208,34 @@ def _self_test() -> int:
           and _transmission_is_absolute(" anywhere") and not _transmission_is_absolute(" to lenders")
           and not _transmission_is_absolute(" unless you choose to email them")
           and _transmission_is_absolute(" a nadie") and not _transmission_is_absolute(" a prestamistas"))
+    # External review thread 11 (2026-08-22): an intensifier before a
+    # universal destination does not make the claim qualified.
+    for phrase in ("Your answers are not sent to absolutely anyone.",
+                   "Your email is never shared with literally anybody else.",
+                   "Your answers are not transmitted to any other party or system.",
+                   "Tus respuestas no se envían absolutamente a nadie.",
+                   "Tus respuestas nunca se comparten con ningún otro sitio."):
+        c = _good_config(); c["text"] = {"privacyBody": phrase}
+        check(f"intensified universal destination stays absolute -> rejected: {phrase[:44]!r}",
+              any("preview-mode wording" in e for e in validate_store_config(c).errors))
+    check("_transmission_is_absolute: universal words anywhere in the destination",
+          _transmission_is_absolute(" to absolutely anyone") and _transmission_is_absolute(" with literally anybody else")
+          and _transmission_is_absolute(" a otro sitio") and not _transmission_is_absolute(" to our delivery partner"))
+    # External review thread 12 (2026-08-22): the gap admits only auxiliaries
+    # and adverbs, so a claim about what lenders are asked to do is not a
+    # claim about the kiosk.
+    for phrase in ("We do not ask lenders to store your answers.",
+                   "We do not allow lenders to keep your answers.",
+                   "We do not require partners to retain your email.",
+                   "No pedimos a los prestamistas que guarden tus respuestas."):
+        c = _good_config(); c["text"] = {"privacyBody": phrase}; c["text_es"] = {"privacyBody": phrase}
+        check(f"gap restricted to modifiers: a claim about lenders is not a kiosk storage claim -> accepted: {phrase[:44]!r}",
+              validate_store_config(c).ok)
+    for phrase in ("Your answers are not going to be stored.", "Your answers will not ever be stored.",
+                   "Your answers are not at all stored.", "We do not simply store your answers."):
+        c = _good_config(); c["text"] = {"privacyBody": phrase}
+        check(f"gap still admits auxiliaries and adverbs -> rejected: {phrase[:44]!r}",
+              any("preview-mode wording" in e for e in validate_store_config(c).errors))
     kinds = {k for k, *_ in _storage_matches("your answers aren't stored; we won't keep them; no se guardan; no guardamos; "
                                              "not transmitted; do not send; no se env\u00edan; no enviamos")}
     check("_storage_matches: every pattern kind is represented and sorted by position",
