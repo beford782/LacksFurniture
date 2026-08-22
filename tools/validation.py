@@ -386,19 +386,66 @@ def _is_universal(text: str) -> bool:
             or any(p in text for p in _UNIVERSAL_PHRASES))
 
 
+# Tokens that mark a comma segment as a NEW CLAUSE rather than a coordinated
+# continuation of the destination list ("..., but anyone can ask us
+# questions" is not part of "with lenders"). A segment with one of these is
+# where the destination scan stops — external review thread 15 (2026-08-22).
+_CLAUSE_STARTERS = frozenset((
+    "but", "while", "whereas", "although", "though", "yet", "so", "because", "since",
+    "if", "when", "unless", "then", "which", "who", "that", "pero", "aunque",
+    "mientras", "porque", "si", "cuando", "que", "sino", "entonces",
+))
+_VERB_LIKE = frozenset((
+    "is", "are", "was", "were", "be", "been", "being", "can", "could", "will", "would",
+    "may", "might", "must", "shall", "should", "do", "does", "did", "has", "have", "had",
+    "es", "son", "está", "están", "puede", "pueden", "hay", "será", "serán",
+))
+
+
+def _destination_continuation(clause_after: str, rest_after: str) -> str:
+    """The destination text plus the comma segments that continue it as a
+    coordinated list ("with lenders, partners, advertisers or anybody else"),
+    stopping at the first segment that opens a new clause or carries a verb."""
+    out = [clause_after]
+    tail = rest_after[len(clause_after):]
+    for segment in _split_clauses(tail):
+        tokens = segment.split()
+        if not tokens:
+            continue
+        if tokens[0] in _CLAUSE_STARTERS or any(t in _VERB_LIKE for t in tokens) or len(tokens) > 6:
+            break
+        out.append(segment)
+    return " ".join(out)
+
+
+def _split_clauses(text: str):
+    parts, cur = [], []
+    for ch in text:
+        if ch in _CLAUSE_BREAKS:
+            parts.append("".join(cur))
+            cur = []
+        else:
+            cur.append(ch)
+    parts.append("".join(cur))
+    return parts
+
+
 def _transmission_is_absolute(clause_after: str, rest_after: str = None) -> bool:
     """True when nothing after the verb qualifies the negation.
 
     `clause_after` is the in-clause text after the verb (qualifying
     destinations and conditions live there); `rest_after` is everything after
-    the verb to the end of the SENTENCE, scanned for a universal destination
-    so a comma-separated list that ends in "… or anybody else" is seen even
-    though commas are clause breaks (fail closed; thread 13)."""
+    the verb to the end of the SENTENCE, from which only the coordinated
+    continuation of the destination is scanned for a universal — so a list
+    that ends in "… or anybody else" is seen even though commas are clause
+    breaks (thread 13), while an unrelated following clause ("…, but anyone
+    can ask us questions") is not (thread 15)."""
     if rest_after is None:
         rest_after = clause_after
     if _CONDITION_RE.search(clause_after):
         return False
-    if _is_universal(rest_after):
+    destination_text = _destination_continuation(clause_after, rest_after)
+    if _is_universal(destination_text):
         return True
     m = _DESTINATION_RE.search(clause_after)
     if not m:
@@ -4255,6 +4302,20 @@ def _self_test() -> int:
     check("_transmission_is_absolute: a universal late in a long coordinated destination is seen",
           _transmission_is_absolute(" with our service providers or anyone else")
           and not _transmission_is_absolute(" with our service providers or our delivery partner"))
+    # External review thread 15 (2026-08-22): only the coordinated
+    # continuation of the destination is scanned, not an unrelated clause.
+    for phrase in ("Your answers are not shared with lenders, but anyone can ask us questions.",
+                   "Your answers are not sent to lenders; anyone on our team can explain why.",
+                   "Your email is not shared with advertisers, which is something anyone can verify.",
+                   "Tus respuestas no se comparten con prestamistas, pero cualquiera puede preguntarnos."):
+        c = _good_config(); c["text"] = {"privacyBody": phrase}; c["text_es"] = {"privacyBody": phrase}
+        check(f"a universal in an unrelated following clause does not make the claim absolute -> accepted: {phrase[:44]!r}",
+              validate_store_config(c).ok)
+    check("_destination_continuation: list items continue, a new clause stops",
+          _destination_continuation(" with lenders", " with lenders, partners, advertisers or anybody else")
+          == " with lenders  partners  advertisers or anybody else"
+          and _destination_continuation(" with lenders", " with lenders, but anyone can ask us questions") == " with lenders"
+          and _destination_continuation(" to lenders", " to lenders, and to anyone else") == " to lenders  and to anyone else")
     # External review thread 14 (2026-08-22): the determiner "any" / "ningún"
     # before a noun is SCOPED (the quantified form of "to lenders"), not
     # universal; only pronouns and universal phrases are absolute.
