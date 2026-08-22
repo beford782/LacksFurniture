@@ -359,6 +359,15 @@ _CLAUSE_BREAKS = (",", "(", ")", "\u2014", "\u2013", ":", "\"", "\u201c", "\u201
 # allowing the object after ("no se almacenan X").
 _ACTIVE_STORAGE_SIGNALS = ("don't store", "do not store", "doesn't store", "does not store")
 _ES_REFLEXIVE_SIGNALS = ("no se guarda", "no se guardan", "no se almacena", "no se almacenan")
+# Conjunctions that open a new CLAUSE ("your answers are emailed but card
+# details are not stored") and so delimit the noun phrase a negation binds
+# to. Deliberately NOT "and" / "or" / "y" / "o": those also coordinate subject
+# noun phrases ("your email and card numbers are not stored"), and splitting
+# there would bind the negation to the last conjunct only and admit a false
+# promise about the first. Fail closed: a coordinated clause on "and" is
+# rejected and can be rephrased with "but" or a comma.
+_CLAUSE_CONJUNCTIONS = (" but ", " while ", " whereas ", " although ", " though ", " yet ",
+                        " pero ", " sino ", " aunque ", " mientras ")
 # After a Spanish reflexive negation, text that opens with a preposition or
 # adverb is an adverbial ("en este quiosco", "después de la sesión"), not the
 # object; the object, when it follows, opens with a noun phrase.
@@ -397,7 +406,7 @@ def _governed_in(fragment: str) -> bool:
     return any(term in fragment for term in GOVERNED_DATA_TERMS)
 
 
-def _storage_claim_is_governed(sentence: str, prev_sentence: str, sig: str) -> bool:
+def _storage_claim_is_governed(sentence: str, prev_sentence: str, sig: str, pos: int = -1) -> bool:
     """Bind a storage-negation phrase to the noun phrase it is about and say
     whether that phrase names governed data.
 
@@ -412,12 +421,20 @@ def _storage_claim_is_governed(sentence: str, prev_sentence: str, sig: str) -> b
     "Your answers, like everything else, are not stored" and
     "We use your email to send results. It is not stored." are still caught,
     while "During your showroom session, payment card details are not stored
-    by this application" binds to "payment card details" and passes."""
-    pos = sentence.find(sig)
+    by this application" binds to "payment card details" and passes.
+
+    `pos` is the occurrence to bind; every occurrence of a signal in a
+    sentence is inspected by the caller, so "card details are not stored, but
+    your answers are not stored" is caught on its second clause."""
     if pos < 0:
+        pos = sentence.find(sig)
+    if pos < 0 or sentence[pos:pos + len(sig)] != sig:
         return False
-    start = max([sentence.rfind(b, 0, pos) for b in _CLAUSE_BREAKS] + [-1]) + 1
-    ends = [i for i in (sentence.find(b, pos + len(sig)) for b in _CLAUSE_BREAKS) if i >= 0]
+    starts = [sentence.rfind(b, 0, pos) + 1 for b in _CLAUSE_BREAKS]
+    starts += [i + len(c) for i, c in ((sentence.rfind(c, 0, pos), c) for c in _CLAUSE_CONJUNCTIONS) if i >= 0]
+    start = max(starts + [0])
+    after_pos = pos + len(sig)
+    ends = [i for i in (sentence.find(b, after_pos) for b in _CLAUSE_BREAKS + _CLAUSE_CONJUNCTIONS) if i >= 0]
     end = min(ends) if ends else len(sentence)
     clause_before = sentence[start:pos]
     clause_after = sentence[pos + len(sig):end]
@@ -450,8 +467,11 @@ def _preview_signal_hit(low: str):
     for idx, sentence in enumerate(sentences):
         prev_sentence = sentences[idx - 1] if idx else ""
         for sig in STORAGE_NEGATION_SIGNALS:
-            if sig in sentence and _storage_claim_is_governed(sentence, prev_sentence, sig):
-                return sig
+            pos = sentence.find(sig)
+            while pos >= 0:
+                if _storage_claim_is_governed(sentence, prev_sentence, sig, pos):
+                    return sig
+                pos = sentence.find(sig, pos + 1)
     return None
 
 
@@ -3965,6 +3985,31 @@ def _self_test() -> int:
     c = _good_config(); c["text"] = {"privacyBody": "Card numbers go to lacks.com. They are not stored here."}
     check("a pronoun subject binds to the previous sentence: unrelated antecedent -> accepted",
           validate_store_config(c).ok)
+    # External review threads 5 and 6 (2026-08-22): every occurrence of a
+    # signal is inspected, and clause conjunctions delimit the bound phrase.
+    for phrase in ("Payment card details are not stored, but your answers are not stored.",
+                   "Card numbers are never stored; your email is never stored either.",
+                   "Los números de tarjeta no se guardan, pero tus respuestas no se guardan tampoco."):
+        c = _good_config(); c["text"] = {"privacyBody": phrase}
+        check(f"every occurrence is inspected: a later governed clause still rejects: {phrase[:44]!r}",
+              any("preview-mode wording" in e for e in validate_store_config(c).errors))
+    for phrase in ("Your answers are emailed but payment card details are not stored.",
+                   "Your answers build your matches while card numbers are never stored here.",
+                   "Although your answers are used for your matches, card details are not saved.",
+                   "Tus respuestas se envían por correo pero los números de tarjeta no se guardan.",
+                   "Aunque tus respuestas crean tus resultados, los datos de la tarjeta no se almacenan."):
+        c = _good_config(); c["text"] = {"privacyBody": phrase}; c["text_es"] = {"privacyBody": phrase}
+        check(f"conjunction-delimited clause: the unrelated claim binds to its own clause -> accepted: {phrase[:44]!r}",
+              validate_store_config(c).ok)
+    for phrase in ("Your email and card numbers are not stored.",
+                   "Your answers are emailed and payment card details are not stored."):
+        c = _good_config(); c["text"] = {"privacyBody": phrase}
+        check(f"deliberately fail closed: 'and' coordinates noun phrases, so it does not delimit -> rejected: {phrase[:44]!r}",
+              any("preview-mode wording" in e for e in validate_store_config(c).errors))
+    check("_storage_claim_is_governed: binds the occurrence at pos, not the first",
+          _storage_claim_is_governed("card details are not stored, but your answers are not stored", "", "not stored") is False
+          and _storage_claim_is_governed("card details are not stored, but your answers are not stored", "", "not stored",
+                                         "card details are not stored, but your answers are not stored".rfind("not stored")) is True)
     check("_storage_claim_is_governed: subject before the verb, in clause",
           _storage_claim_is_governed("during your session, card details are not stored", "", "not stored") is False
           and _storage_claim_is_governed("during your session, your answers are not stored", "", "not stored") is True)
