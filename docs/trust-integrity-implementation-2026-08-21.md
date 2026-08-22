@@ -309,11 +309,12 @@ and approval status. Pinned by `tests/trust_integrity_check.mjs` section A.
   the live `plush`/`soft` tags (the literal `pressureRelief` tag is inert here,
   3.1); the packet asks the owner to accept the gloss or take the stricter
   wording.
-- VoiceOver: not run. A one-time sanity pass on the mounted iPad is
-  **required** before PR #54 leaves draft (owner ruling R7, 2026-08-21; no
-  accepted-risk alternative); screen-reader functionality itself stays out of
-  scope (2026-08-12 ruling). Steps and expected announcements:
-  `docs/trust-integrity-physical-gate-2026-08-21.md`.
+- VoiceOver: a one-time sanity pass on the mounted iPad is **required**
+  before PR #54 leaves draft (owner ruling R7, 2026-08-21; no accepted-risk
+  alternative); screen-reader functionality itself stays out of scope
+  (2026-08-12 ruling). **Passed by owner attestation 2026-08-22 at `f748f59`
+  (§27; physical packet §15) — no transcript supplied.** Steps and expected
+  announcements: `docs/trust-integrity-physical-gate-2026-08-21.md`.
 
 ## 13. Generated-file lineage
 
