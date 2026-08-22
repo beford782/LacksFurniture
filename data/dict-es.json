@@ -16,7 +16,7 @@
   "safety.restart_keep": "Seguir en esta sesión",
   "safety.restart_confirm": "Empezar con otro cliente",
   "safety.timeout_title": "¿Sigues comparando?",
-  "safety.timeout_body": "Pausamos tu sesión para proteger tu privacidad.",
+  "safety.timeout_body": "Sesión en pausa. Sigue en esta sesión donde la dejaste o empieza con otro cliente para borrarla.",
   "safety.timeout_continue": "Seguir en esta sesión",
   "safety.timeout_confirm": "Empezar con otro cliente",
   "safety.timeout_remaining": "Quedan {seconds} segundos",

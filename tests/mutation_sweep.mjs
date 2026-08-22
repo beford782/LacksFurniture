@@ -1047,6 +1047,21 @@ const MUTATIONS = [
     '{\n  "questions": [', '{\n  "trustStories": [],\n  "questions": [', TRUST, "data/quiz.json"],
 
   // ---- Trust integrity gate (2026-08-21): privacy voice ---------------------
+  // ---- Trust gate, owner ruling R5 (2026-08-21): the idle dialog body --------
+  // Observed by the session suite, which opens the dialog through the real
+  // controller on a fake clock and pins the RENDERED body in both languages.
+  ["trust: the idle dialog body reverts to the privacy reassurance (EN)",
+    '"safety.timeout_body": "Session paused. Continue this session where you left off, or start a new customer to clear it.",',
+    '"safety.timeout_body": "Your session is paused to protect your privacy.",', WITH_SESSION, "data/dict-en.json"],
+  ["trust: the idle dialog body stops naming the real controls (EN)",
+    '"safety.timeout_body": "Session paused. Continue this session where you left off, or start a new customer to clear it.",',
+    '"safety.timeout_body": "Session paused. Continue where you left off, or restart to clear this session.",', WITH_SESSION, "data/dict-en.json"],
+  ["trust: the Spanish idle dialog body silently becomes English",
+    '"safety.timeout_body": "Sesión en pausa. Sigue en esta sesión donde la dejaste o empieza con otro cliente para borrarla.",',
+    '"safety.timeout_body": "Session paused. Continue this session where you left off, or start a new customer to clear it.",', WITH_SESSION, "data/dict-es.json"],
+  ["trust: the idle dialog body becomes a hardcoded literal in index.html",
+    "      setSafetyText('sessionSafetyBody', t(cfg.bodyKey));",
+    "      setSafetyText('sessionSafetyBody', _safetyMode === 'timeout' ? 'Session paused. Continue this session where you left off, or start a new customer to clear it.' : t(cfg.bodyKey));", WITH_SESSION],
   ["trust: the Sleep System containers leave the wipe inventory (a previous customer's prose survives Restart)",
     "      'sleepSystemMain', 'sleepSystemGuidance', 'sleepSystemRail', 'sleepSystemPlanList'\n    ];",
     "    ];", TRUST.concat(["tests/session_safety_check.mjs"])],
@@ -1356,6 +1371,7 @@ const PRISTINE_BY_FILE = {
   "index.html": PRISTINE,
   "Code.gs": readFileSync(join(sandbox, "Code.gs"), "utf8"),
   "data/dict-es.json": readFileSync(join(sandbox, "data", "dict-es.json"), "utf8"),
+  "data/dict-en.json": readFileSync(join(sandbox, "data", "dict-en.json"), "utf8"),
   // The financing copy propagation chain: authored source, generated
   // production config, generated demo bundle. Mutating each in turn proves the
   // chain is actually compared rather than assumed.
