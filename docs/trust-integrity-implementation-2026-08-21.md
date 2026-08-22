@@ -1001,6 +1001,24 @@ bound to its clause exactly as before. Self-tests 1056 → 1073 / 0; manifest
 Customer-visible bytes unchanged. The external reviewer was asked to
 re-inspect a sixth time.
 
-All eight threads were answered on the PR with this rationale and resolved after
+**Threads 9 and 10 (`3b5b837`, sixth re-review) — fixed in `9aa11ac`.** Thread
+9 (fail-open): only "ever" or an auxiliary could sit between the negation and
+the verb, so "not permanently stored" passed; up to three words may now
+(`_GAP`), and the Spanish patterns accept a clitic object. Thread 10 (false
+rejection, inconsistent with the "sent to lenders" acceptance): transmission
+negations (transmit / send / share / upload / forward / submit; ES transmitir
+/ enviar / compartir) move from the unconditional list into the grammatical
+family and are a preview claim only when **absolute** — no destination after
+the verb, or a universal one ("anywhere", "to anyone", "a nadie") — and bound
+to governed data; a qualifying destination or condition ("to lenders",
+"unless you choose to email them") is a claim the business owns. Binder
+corrections found while testing: fallback fragments never include the
+matched verb; auxiliaries and Spanish clitics are non-content; a pronoun
+object followed by an adverbial widens to the previous sentence. Self-tests
+1073 → 1104 / 0; manifest 349 → 352; all fifteen validator entries proven
+caught in place. Customer-visible bytes unchanged. The external reviewer was
+asked to re-inspect a seventh time.
+
+All ten threads were answered on the PR with this rationale and resolved after
 the tests passed; the external reviewer was asked to re-inspect the change
 before the merge.

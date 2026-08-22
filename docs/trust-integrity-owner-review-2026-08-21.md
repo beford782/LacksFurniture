@@ -49,7 +49,9 @@ unrelated claim (`ea887db`). A fifth and sixth (`b98b7a7`) inspect every occurre
 clause conjunctions (but/while/although…) delimit the bound phrase — "and" is
 deliberately not a delimiter, fail closed. A seventh (`babef79`) completes the family with contractions, "won't be", keep/retain
 and the Spanish active forms. An eighth (`bbf3c9c`) replaces the phrase list with a grammatical family after
-folding typographic apostrophes. All eight threads answered and resolved
+folding typographic apostrophes. A ninth and tenth (`9aa11ac`) allow adverbs between negation and verb and scope
+transmission negations to absolute claims about governed data. All ten threads
+answered and resolved
 on the PR.
 
 The physical gates are closed for the bytes at `f748f59` (§5). Everything
