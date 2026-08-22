@@ -948,6 +948,19 @@ corrected line and additionally requires the helper and the new self-test
 (122/122). Customer-visible bytes unchanged. The external reviewer was asked
 to re-inspect again at this head.
 
-All three threads were answered on the PR with this rationale and resolved after
+**Thread 4 (`133fef2`, second re-review) — fixed.** The sentence-wide
+context test still rejected "During your showroom session, payment card
+details are not stored by this application" (the time adverbial "session").
+`_storage_claim_is_governed()` now binds the negation to the noun phrase it
+is about — passive/reflexive: the in-clause text before the verb; active:
+the in-clause text after it; Spanish reflexive: the object after the verb
+when it opens with a noun phrase rather than a preposition — and, when the
+bound fragment has no noun of its own (a bare pronoun, an interjected
+aside), widens in the fail-closed direction to the rest of the sentence and
+then the previous sentence. Self-tests 1008 → 1027 / 0; manifest 343 → 345;
+all eight validator entries proven caught in place. Customer-visible bytes
+unchanged. The external reviewer was asked to re-inspect a third time.
+
+All four threads were answered on the PR with this rationale and resolved after
 the tests passed; the external reviewer was asked to re-inspect the change
 before the merge.
