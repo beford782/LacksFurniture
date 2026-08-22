@@ -360,28 +360,50 @@ _TRANSMIT_KINDS = ("passive_transmit", "active_transmit", "es_reflexive_transmit
 # condition ("unless you choose to email") makes it a qualified claim the
 # business owns, not a statement that nothing leaves the tablet — external
 # review thread 10 (2026-08-22). Universal destinations keep it absolute.
-_DESTINATION_RE = re.compile(r"\b(?:to|with|a|al|hacia|con|para)\s+([^\s]+(?:\s+[^\s]+){0,2})")
+# The destination runs from the preposition to the END of the clause, so a
+# coordinated destination ("with our service providers OR ANYONE ELSE") is
+# scanned whole — external review thread 13 (2026-08-22).
+_DESTINATION_RE = re.compile(r"\b(?:to|with|a|al|hacia|con|para)\s+(.+)$")
 _CONDITION_RE = re.compile(r"\b(?:unless|until|except|only if|only when|a menos que|hasta que|salvo|solo si|s\u00f3lo si|excepto)\b")
 # Universal-destination words. Checked on EVERY word of the captured
 # destination, not only the first, so an intensifier ("to ABSOLUTELY anyone",
 # "with literally anybody else") does not turn an absolute promise into a
-# qualified one \u2014 external review thread 11 (2026-08-22).
-_UNIVERSAL_DESTINATIONS = ("anyone", "anybody", "anywhere", "any", "elsewhere", "outside", "beyond",
-                           "nobody", "none", "nothing", "nadie", "ning\u00fan", "ninguna", "ningun",
-                           "ninguno", "fuera")
-_UNIVERSAL_PHRASES = ("otro sitio", "otro lugar", "otra parte", "other place", "anyone else")
+# qualified one \u2014 external review thread 11 (2026-08-22). Universal means
+# a PRONOUN ("anyone", "nadie") or a universal phrase ("any other party",
+# "ning\u00fan sitio"); the bare determiner "any" / "ning\u00fan" before a noun ("any
+# lender", "ning\u00fan prestamista") is SCOPED \u2014 the quantified form of "to
+# lenders" \u2014 and stays a qualified claim (thread 14).
+_UNIVERSAL_DESTINATIONS = ("anyone", "anybody", "anything", "anywhere", "elsewhere", "outside",
+                           "beyond", "nobody", "none", "nothing", "nadie", "fuera")
+_UNIVERSAL_PHRASES = ("any other", "anyone else", "anybody else", "other place", "otro sitio",
+                      "otro lugar", "otra parte", "ning\u00fan sitio", "ningun sitio", "ning\u00fan lugar",
+                      "ningun lugar", "ning\u00fan lado", "ningun lado", "ninguna parte", "ning\u00fan otro",
+                      "ningun otro", "ninguna otra")
 
 
-def _transmission_is_absolute(clause_after: str) -> bool:
-    """True when nothing after the verb qualifies the negation."""
+def _is_universal(text: str) -> bool:
+    return (any(w.startswith(_UNIVERSAL_DESTINATIONS) for w in text.split())
+            or any(p in text for p in _UNIVERSAL_PHRASES))
+
+
+def _transmission_is_absolute(clause_after: str, rest_after: str = None) -> bool:
+    """True when nothing after the verb qualifies the negation.
+
+    `clause_after` is the in-clause text after the verb (qualifying
+    destinations and conditions live there); `rest_after` is everything after
+    the verb to the end of the SENTENCE, scanned for a universal destination
+    so a comma-separated list that ends in "… or anybody else" is seen even
+    though commas are clause breaks (fail closed; thread 13)."""
+    if rest_after is None:
+        rest_after = clause_after
     if _CONDITION_RE.search(clause_after):
         return False
+    if _is_universal(rest_after):
+        return True
     m = _DESTINATION_RE.search(clause_after)
     if not m:
         return True
-    dest = m.group(1).strip()
-    return (any(w.startswith(_UNIVERSAL_DESTINATIONS) for w in dest.split())
-            or any(p in dest for p in _UNIVERSAL_PHRASES))
+    return _is_universal(m.group(1).strip())
 # Typographic apostrophes and quotes fold to ASCII before any matching, so a
 # retailer's "weren’t stored" is the same claim as "weren't stored".
 _PROSE_FOLD = str.maketrans({"\u2019": "'", "\u2018": "'", "\u02bc": "'", "`": "'",
@@ -542,7 +564,7 @@ def _storage_claim_is_governed(sentence: str, prev_sentence: str, kind: str, pos
     end = min(ends) if ends else len(sentence)
     clause_before = sentence[start:pos]
     clause_after = sentence[end_pos:end]
-    if kind in _TRANSMIT_KINDS and not _transmission_is_absolute(clause_after):
+    if kind in _TRANSMIT_KINDS and not _transmission_is_absolute(clause_after, sentence[end_pos:]):
         return False
     # No fallback fragment includes the matched negation+verb itself: the verb
     # is a content word, and counting it would stop the search before the
@@ -4187,7 +4209,7 @@ def _self_test() -> int:
     # the family, rejected only when absolute and about governed data.
     for phrase in ("Your answers are not transmitted.", "Your answers are never transmitted anywhere.",
                    "Your answers are not sent.", "We do not share your information with anyone.",
-                   "Your email is not transmitted to any third party.", "Your answers are not uploaded elsewhere.",
+                   "Your email is not transmitted to any other party.", "Your answers are not uploaded elsewhere.",
                    "Tus respuestas no se env\u00edan.", "Tus respuestas nunca se transmiten a nadie.",
                    "No compartimos tu informaci\u00f3n con nadie."):
         c = _good_config(); c["text"] = {"privacyBody": phrase}
@@ -4221,6 +4243,33 @@ def _self_test() -> int:
     check("_transmission_is_absolute: universal words anywhere in the destination",
           _transmission_is_absolute(" to absolutely anyone") and _transmission_is_absolute(" with literally anybody else")
           and _transmission_is_absolute(" a otro sitio") and not _transmission_is_absolute(" to our delivery partner"))
+    # External review thread 13 (2026-08-22): the destination is scanned to
+    # the end of its clause, so a coordinated universal is seen.
+    for phrase in ("Your answers are not shared with our service providers or anyone else.",
+                   "Your email is never sent to lenders, partners, advertisers or anybody else.",
+                   "Your answers are not transmitted to our delivery partner or to any other company.",
+                   "Tus respuestas no se comparten con nuestros proveedores ni con nadie más."):
+        c = _good_config(); c["text"] = {"privacyBody": phrase}
+        check(f"coordinated destination ending in a universal stays absolute -> rejected: {phrase[:44]!r}",
+              any("preview-mode wording" in e for e in validate_store_config(c).errors))
+    check("_transmission_is_absolute: a universal late in a long coordinated destination is seen",
+          _transmission_is_absolute(" with our service providers or anyone else")
+          and not _transmission_is_absolute(" with our service providers or our delivery partner"))
+    # External review thread 14 (2026-08-22): the determiner "any" / "ningún"
+    # before a noun is SCOPED (the quantified form of "to lenders"), not
+    # universal; only pronouns and universal phrases are absolute.
+    for phrase in ("Your answers are not sent to absolutely any lender.",
+                   "Your email is not transmitted to any third party.",
+                   "Your answers are never shared with any advertiser.",
+                   "Tus respuestas no se envían a ningún prestamista.",
+                   "Tu correo nunca se comparte con ninguna empresa de publicidad."):
+        c = _good_config(); c["text"] = {"privacyBody": phrase}; c["text_es"] = {"privacyBody": phrase}
+        check(f"scoped determiner destination is a qualified claim -> accepted: {phrase[:44]!r}",
+              validate_store_config(c).ok)
+    check("_transmission_is_absolute: determiner + noun is scoped; pronoun and 'any other' are universal",
+          not _transmission_is_absolute(" to any lender") and not _transmission_is_absolute(" a ningún prestamista")
+          and _transmission_is_absolute(" to any other party") and _transmission_is_absolute(" to anything else")
+          and _transmission_is_absolute(" a ningún sitio"))
     # External review thread 12 (2026-08-22): the gap admits only auxiliaries
     # and adverbs, so a claim about what lenders are asked to do is not a
     # claim about the kiosk.
