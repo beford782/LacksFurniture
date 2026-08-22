@@ -299,12 +299,16 @@ PREVIEW_MODE_SIGNALS = (
     "nothing is sent", "nothing leaves", "never leaves", "not sent anywhere",
     "never sent anywhere", "aren't sent anywhere", "are not sent anywhere",
     "is not sent anywhere", "isn't sent anywhere", "not sent or stored",
-    "no email is sent", "no email was sent", "not transmitted", "never transmitted",
+    "no email is sent", "no email was sent",
     "does not send or store", "doesn't send or store",
     "no se envía nada", "no se envia nada", "nada sale", "no se envía a ning",
-    "no se envia a ning", "no se envía ning", "no se envia ning", "no se transmite",
-    "no se transmiten", "no se envían", "no se envian",
+    "no se envia a ning", "no se envía ning", "no se envia ning",
 )
+# Transmission negations ("not transmitted", "no se envían") are NOT in the
+# unconditional list: "Your answers are not transmitted to lenders" is true
+# under a live endpoint. They live in the grammatical family below and are
+# rejected only when ABSOLUTE (no destination or a universal one such as
+# "anywhere" / "to anyone") and bound to governed data.
 # Storage negations. Bare, these are not preview signals: a retailer may
 # truthfully write "Payment card details are not stored by this application"
 # under a live endpoint. They become a false promise only when bound to
@@ -316,18 +320,55 @@ PREVIEW_MODE_SIGNALS = (
 # the keep/retain verbs are all one rule. Each match is then bound to the
 # noun phrase it is about (_storage_claim_is_governed).
 _NEG = r"(?:n't|\bnot\b|\bnever\b|\bcannot\b|\bno longer\b)"
+# Up to three words may sit between the negation and the verb: auxiliaries
+# ("won't BE stored"), adverbs ("not PERMANENTLY stored", "do not EVER store")
+# — external review thread 9 (2026-08-22).
+_GAP = r"\s+(?:[a-z\u00e1\u00e9\u00ed\u00f3\u00fa\u00f1\u00fc'-]+\s+){0,3}?"
+_ES_NEG = r"\b(?:no|nunca|jam[a\u00e1]s)\s+"
+_ES_OBJ = r"(?:(?:lo|la|los|las|le|les|te|nos)\s+)?"
 STORAGE_NEGATION_PATTERNS = (
-    # passive: "X is/are/was/were/won't be/cannot be ... not|never stored|saved|kept|retained"
-    ("passive", re.compile(_NEG + r"\s+(?:ever\s+)?(?:be\s+|being\s+|been\s+)?(?:stored|saved|kept|retained)\b")),
-    # active: "we do not|don't|never|won't|cannot store|save|keep|retain X"
-    ("active", re.compile(_NEG + r"\s+(?:ever\s+)?(?:store|save|keep|retain)\b")),
+    # passive: "X is/are/was/were/won't be/cannot be ... not|never [adv] stored|saved|kept|retained"
+    ("passive", re.compile(_NEG + _GAP + r"(?:stored|saved|kept|retained)\b")),
+    # active: "we do not|don't|never|won't|cannot [adv] store|save|keep|retain X"
+    ("active", re.compile(_NEG + _GAP + r"(?:store|save|keep|retain)\b")),
+    # transmission, passive: "X is not [adv] transmitted|sent|shared|uploaded|forwarded|submitted"
+    ("passive_transmit", re.compile(_NEG + _GAP + r"(?:transmitted|sent|shared|uploaded|forwarded|submitted)\b")),
+    # transmission, active: "we do not [adv] transmit|send|share|upload|forward|submit X"
+    ("active_transmit", re.compile(_NEG + _GAP + r"(?:transmit|send|share|upload|forward|submit)\b")),
     # Spanish reflexive: "X no|nunca se guarda(n)..." / "no se guardan X"
-    ("es_reflexive", re.compile(r"\b(?:no|nunca|jam[aá]s)\s+se\s+(?:guarda|guardan|guardar[aá]n?|almacena|almacenan|"
-                                r"almacenar[aá]n?|conserva|conservan|conservar[aá]n?|retiene|retienen|retendr[aá]n?)\b")),
-    # Spanish active: "no|nunca guardamos X"
-    ("es_active", re.compile(r"\b(?:no|nunca|jam[aá]s)\s+(?:guardamos|guardaremos|almacenamos|almacenaremos|"
+    ("es_reflexive", re.compile(_ES_NEG + r"se\s+" + _ES_OBJ + r"(?:guarda|guardan|guardar[a\u00e1]n?|almacena|almacenan|"
+                                r"almacenar[a\u00e1]n?|conserva|conservan|conservar[a\u00e1]n?|retiene|retienen|retendr[a\u00e1]n?)\b")),
+    # Spanish active: "no|nunca [las] guardamos X"
+    ("es_active", re.compile(_ES_NEG + _ES_OBJ + r"(?:guardamos|guardaremos|almacenamos|almacenaremos|"
                              r"conservamos|conservaremos|retenemos|retendremos)\b")),
+    # Spanish transmission, reflexive: "X no se transmite(n)|env\u00eda(n)|comparte(n)"
+    ("es_reflexive_transmit", re.compile(_ES_NEG + r"se\s+" + _ES_OBJ + r"(?:transmite|transmiten|transmitir[a\u00e1]n?|env[i\u00ed]a|env[i\u00ed]an|"
+                                         r"enviar[a\u00e1]n?|comparte|comparten|compartir[a\u00e1]n?)\b")),
+    # Spanish transmission, active: "no [las] transmitimos|enviamos|compartimos"
+    ("es_active_transmit", re.compile(_ES_NEG + _ES_OBJ + r"(?:transmitimos|transmitiremos|enviamos|enviaremos|"
+                                      r"compartimos|compartiremos)\b")),
 )
+_TRANSMIT_KINDS = ("passive_transmit", "active_transmit", "es_reflexive_transmit", "es_active_transmit")
+# A transmission negation is a PREVIEW claim only when absolute. A
+# destination qualifier after the verb ("to lenders", "a prestamistas") or a
+# condition ("unless you choose to email") makes it a qualified claim the
+# business owns, not a statement that nothing leaves the tablet — external
+# review thread 10 (2026-08-22). Universal destinations keep it absolute.
+_DESTINATION_RE = re.compile(r"\b(?:to|with|a|al|hacia|con|para)\s+([^\s]+(?:\s+[^\s]+)?)")
+_CONDITION_RE = re.compile(r"\b(?:unless|until|except|only if|only when|a menos que|hasta que|salvo|solo si|s\u00f3lo si|excepto)\b")
+_UNIVERSAL_DESTINATIONS = ("anyone", "anybody", "anywhere", "any ", "elsewhere", "outside", "beyond",
+                           "nadie", "ning\u00fan", "ninguna", "ningun", "fuera", "terceros no", "otro sitio")
+
+
+def _transmission_is_absolute(clause_after: str) -> bool:
+    """True when nothing after the verb qualifies the negation."""
+    if _CONDITION_RE.search(clause_after):
+        return False
+    m = _DESTINATION_RE.search(clause_after)
+    if not m:
+        return True
+    dest = m.group(1).strip()
+    return dest.startswith(_UNIVERSAL_DESTINATIONS)
 # Typographic apostrophes and quotes fold to ASCII before any matching, so a
 # retailer's "weren’t stored" is the same claim as "weren't stored".
 _PROSE_FOLD = str.maketrans({"\u2019": "'", "\u2018": "'", "\u02bc": "'", "`": "'",
@@ -411,6 +452,12 @@ _CLAUSE_CONJUNCTIONS = (" but ", " while ", " whereas ", " although ", " though 
 _ES_ADVERBIAL_OPENERS = ("en ", "de ", "del ", "por ", "para ", "con ", "sin ", "desde ",
                          "hasta ", "durante ", "después", "despues", "antes ", "aquí", "aqui",
                          "ahí", "ahi", "nunca", "jamás", "jamas", "ni ", "tampoco", "más ", "mas ")
+# English adverbials that can follow an active verb in place of its object
+# ("we do not keep it ON any server", "we never store ANYWHERE").
+_EN_ADVERBIAL_OPENERS = ("on ", "in ", "at ", "by ", "for ", "after ", "before ", "beyond ",
+                         "outside ", "anywhere", "elsewhere", "here", "there", "once ", "when ",
+                         "unless ", "until ", "again", "permanently", "ever ", "to ", "with ")
+_ADVERBIAL_OPENERS = _ES_ADVERBIAL_OPENERS + _EN_ADVERBIAL_OPENERS
 # Tokens that do not name anything on their own; a fragment made only of
 # these has no noun to bind to, so the search widens (fail closed).
 _NON_CONTENT_TOKENS = frozenset((
@@ -419,11 +466,20 @@ _NON_CONTENT_TOKENS = frozenset((
     "we", "you", "i", "he", "she", "is", "are", "was", "were", "be", "been",
     "will", "would", "can", "may", "a", "an", "the", "of", "to", "in", "on",
     "by", "for", "at", "from", "with", "ever", "never", "not", "only",
+    "do", "does", "did", "don't", "doesn't", "didn't", "won't", "wouldn't",
+    "can't", "cannot", "couldn't", "shouldn't", "isn't", "aren't", "wasn't",
+    "weren't", "have", "has", "had", "haven't", "hasn't", "hadn't", "get", "gets",
+    "got", "shall", "should", "could", "might", "must", "being",
     "esto", "eso", "esta", "este", "estos", "estas", "ese", "esa", "esos",
     "esas", "ellos", "ellas", "que", "y", "o", "pero", "tampoco", "también",
-    "tambien", "se", "no", "nunca", "ni", "el", "la", "los", "las", "un", "una",
-    "de", "del", "en", "por", "para", "con", "a", "al",
+    "tambien", "se", "no", "nunca", "jamás", "jamas", "ni", "el", "la", "los",
+    "las", "le", "les", "lo", "te", "nos", "me", "os", "un", "una", "de", "del",
+    "en", "por", "para", "con", "a", "al", "es", "son", "está", "están", "esta",
 ))
+# Object pronouns that may stand where a noun object would ("keep IT on any
+# server", the clitics "lo / las"); skipped before the adverbial test.
+_OBJECT_PRONOUNS = frozenset(("it", "them", "this", "that", "these", "those",
+                              "lo", "la", "los", "las", "le", "les", "te", "nos", "me", "os"))
 
 
 def _has_content(fragment: str) -> bool:
@@ -473,9 +529,25 @@ def _storage_claim_is_governed(sentence: str, prev_sentence: str, kind: str, pos
     end = min(ends) if ends else len(sentence)
     clause_before = sentence[start:pos]
     clause_after = sentence[end_pos:end]
-    if kind in ("active", "es_active"):
-        order = (clause_after, sentence, prev_sentence)
-    elif kind == "es_reflexive":
+    if kind in _TRANSMIT_KINDS and not _transmission_is_absolute(clause_after):
+        return False
+    # No fallback fragment includes the matched negation+verb itself: the verb
+    # is a content word, and counting it would stop the search before the
+    # previous sentence ("We use your answers ... . No las guardamos.").
+    if kind in ("active", "es_active", "active_transmit", "es_active_transmit"):
+        # The object follows the verb unless what follows opens with an
+        # adverbial ("we do not keep it ON any server", "nunca lo almacenamos
+        # EN ningún servidor" — the clitic object is inside the match); then
+        # the object is a pronoun or absent and the search widens.
+        tokens = clause_after.split()
+        while tokens and tokens[0] in _OBJECT_PRONOUNS:
+            tokens.pop(0)  # a pronoun object ("keep IT on any server") is not a noun
+        remainder = " ".join(tokens)
+        object_after = clause_after if (remainder and not remainder.startswith(_ADVERBIAL_OPENERS)
+                                        and _has_content(remainder)) else ""
+        # trailing adverbial text is consulted last, only as a fail-closed net
+        order = (object_after, sentence[:pos], prev_sentence, clause_after)
+    elif kind in ("es_reflexive", "es_reflexive_transmit"):
         after = clause_after.strip()
         object_after = clause_after if (after and not after.startswith(_ES_ADVERBIAL_OPENERS)) else ""
         order = (clause_before, object_after, sentence[:pos], clause_after, prev_sentence)
@@ -4077,9 +4149,57 @@ def _self_test() -> int:
     c = _good_config(); c["text"] = {"emailPrivacy": "Nothing is sent from this tablet \u2014 it isn\u2019t connected."}
     check("apostrophe folding applies to the unconditional signals too (\u2019isn\u2019t connected\u2019)",
           any("preview-mode wording" in e for e in validate_store_config(c).errors))
-    kinds = {k for k, *_ in _storage_matches("your answers aren't stored; we won't keep them; no se guardan; no guardamos")}
+    # External review thread 9 (2026-08-22): adverbs and auxiliaries between
+    # the negation and the verb.
+    for phrase in ("Your answers are not permanently stored.", "We do not permanently store your answers.",
+                   "Your answers won't be permanently kept.", "We will never store your answers.",
+                   "We do not ever retain your email.",
+                   "Usamos tus respuestas para crear tus resultados. No las guardamos.",
+                   "Tus respuestas no se guardan permanentemente.",
+                   "Tu correo solo sirve para enviarte resultados. Nunca lo almacenamos en ning\u00fan servidor."):
+        c = _good_config(); c["text"] = {"privacyBody": phrase}
+        check(f"adverb/auxiliary between negation and verb -> rejected: {phrase[:44]!r}",
+              any("preview-mode wording" in e for e in validate_store_config(c).errors))
+    c = _good_config(); c["text"] = {"privacyBody": "Card numbers are not permanently stored."}
+    check("adverb gap is still clause-bound: unrelated subject accepted", validate_store_config(c).ok)
+    c = _good_config(); c["text_es"] = {"privacyBody": "No las guardamos."}
+    check("an object pronoun with no antecedent binds to nothing (consistent with 'It is not stored.' alone)",
+          validate_store_config(c).ok)
+    c = _good_config(); c["text"] = {"privacyBody": "We use your email to send results. We do not keep it on any server."}
+    check("a pronoun object followed by an adverbial widens to the previous sentence (governed antecedent -> rejected)",
+          any("preview-mode wording" in e for e in validate_store_config(c).errors))
+    c = _good_config(); c["text"] = {"privacyBody": "Card numbers go to lacks.com. We do not keep them on any server."}
+    check("the same with an unrelated antecedent -> accepted", validate_store_config(c).ok)
+    # External review thread 10 (2026-08-22): transmission negations are in
+    # the family, rejected only when absolute and about governed data.
+    for phrase in ("Your answers are not transmitted.", "Your answers are never transmitted anywhere.",
+                   "Your answers are not sent.", "We do not share your information with anyone.",
+                   "Your email is not transmitted to any third party.", "Your answers are not uploaded elsewhere.",
+                   "Tus respuestas no se env\u00edan.", "Tus respuestas nunca se transmiten a nadie.",
+                   "No compartimos tu informaci\u00f3n con nadie."):
+        c = _good_config(); c["text"] = {"privacyBody": phrase}
+        check(f"absolute transmission negation about governed data -> rejected: {phrase[:44]!r}",
+              any("preview-mode wording" in e for e in validate_store_config(c).errors))
+    for phrase in ("Your answers are not transmitted to lenders.", "Payment card details are not transmitted.",
+                   "Your answers are not sent unless you choose to email them.",
+                   "Your answers are not shared with lenders or advertisers.",
+                   "DreamFinder does not send your information to lenders.",
+                   "Tus respuestas no se transmiten a prestamistas.", "Tus respuestas no se env\u00edan a prestamistas.",
+                   "No enviamos tu informaci\u00f3n a prestamistas.",
+                   "Los datos de la tarjeta no se transmiten."):
+        c = _good_config(); c["text"] = {"privacyBody": phrase}; c["text_es"] = {"privacyBody": phrase}
+        check(f"qualified or unrelated transmission negation -> accepted: {phrase[:44]!r}",
+              validate_store_config(c).ok)
+    check("_transmission_is_absolute: bare, universal, qualified, conditional",
+          _transmission_is_absolute(" by this kiosk") and _transmission_is_absolute(" to anyone")
+          and _transmission_is_absolute(" anywhere") and not _transmission_is_absolute(" to lenders")
+          and not _transmission_is_absolute(" unless you choose to email them")
+          and _transmission_is_absolute(" a nadie") and not _transmission_is_absolute(" a prestamistas"))
+    kinds = {k for k, *_ in _storage_matches("your answers aren't stored; we won't keep them; no se guardan; no guardamos; "
+                                             "not transmitted; do not send; no se env\u00edan; no enviamos")}
     check("_storage_matches: every pattern kind is represented and sorted by position",
-          kinds == {"passive", "active", "es_reflexive", "es_active"}
+          kinds == {"passive", "active", "es_reflexive", "es_active",
+                    "passive_transmit", "active_transmit", "es_reflexive_transmit", "es_active_transmit"}
           and [t[1] for t in _storage_matches("a not stored b not saved")] == sorted(t[1] for t in _storage_matches("a not stored b not saved")))
     check("_storage_matches: display carries the preceding word for a contraction",
           _storage_matches("your answers aren't stored")[0][3] == "aren't stored"
