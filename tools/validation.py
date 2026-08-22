@@ -402,32 +402,52 @@ _VERB_LIKE = frozenset((
 ))
 
 
+_COORDINATORS = frozenset(("and", "or", "nor", "y", "e", "o", "u", "ni"))
+_LIST_ITEM_MAX_WORDS = 4
+
+
 def _destination_continuation(clause_after: str, rest_after: str) -> str:
-    """The destination text plus the comma segments that continue it as a
-    coordinated list ("with lenders, partners, advertisers or anybody else"),
-    stopping at the first segment that opens a new clause or carries a verb."""
+    """The destination text plus the COMMA-joined segments that continue it
+    as a coordinated list ("with lenders, partners, advertisers or anybody
+    else"). A segment continues only on structural evidence of coordination
+    (threads 15–17): it is joined by a comma (a dash, colon, parenthesis or
+    quote ends the destination), it opens with no clause starter and carries
+    no verb-like token, and it either contains a coordinator ("… and cloud
+    infrastructure service providers or anyone else", any length) or is a
+    short list item of at most four words ("partners"). A comma-spliced
+    clause with a lexical verb ("…, anyone needing help receives support")
+    is longer than a list item and has no coordinator, so it stops the scan."""
     out = [clause_after]
     tail = rest_after[len(clause_after):]
-    for segment in _split_clauses(tail):
+    for sep, segment in _split_clauses_with_separators(tail):
         tokens = segment.split()
+        if sep != ",":
+            # an emphatic dash may continue the list ("— or anyone else");
+            # a colon, parenthesis, quote or a dash opening a new clause ends it
+            if not (sep in ("—", "–") and tokens and tokens[0] in _COORDINATORS):
+                break
         if not tokens:
             continue
-        if tokens[0] in _CLAUSE_STARTERS or any(t in _VERB_LIKE for t in tokens) or len(tokens) > 6:
+        if tokens[0] in _CLAUSE_STARTERS or any(t in _VERB_LIKE for t in tokens):
+            break
+        if not (any(t in _COORDINATORS for t in tokens) or len(tokens) <= _LIST_ITEM_MAX_WORDS):
             break
         out.append(segment)
     return " ".join(out)
 
 
-def _split_clauses(text: str):
-    parts, cur = [], []
+def _split_clauses_with_separators(text: str):
+    """(separator, segment) pairs for the text after a clause; the first
+    separator is the break that ended the previous clause."""
+    pairs, cur, sep = [], [], ""
     for ch in text:
         if ch in _CLAUSE_BREAKS:
-            parts.append("".join(cur))
-            cur = []
+            pairs.append((sep, "".join(cur)))
+            cur, sep = [], ch
         else:
             cur.append(ch)
-    parts.append("".join(cur))
-    return parts
+    pairs.append((sep, "".join(cur)))
+    return pairs[1:] if pairs and pairs[0][0] == "" and not pairs[0][1].strip() else pairs
 
 
 def _transmission_is_absolute(clause_after: str, rest_after: str = None) -> bool:
@@ -4316,6 +4336,35 @@ def _self_test() -> int:
           == " with lenders  partners  advertisers or anybody else"
           and _destination_continuation(" with lenders", " with lenders, but anyone can ask us questions") == " with lenders"
           and _destination_continuation(" to lenders", " to lenders, and to anyone else") == " to lenders  and to anyone else")
+    # External review threads 16 and 17 (2026-08-22): no length cap on a
+    # coordinated segment; only comma-joined list items continue.
+    for phrase in ("Your answers are not shared with lenders, our customer communication and cloud infrastructure service providers or anyone else.",
+                   "Your email is never sent to lenders, our delivery partner, our customer communication and cloud infrastructure service providers, or anybody else.",
+                   "Tus respuestas no se comparten con prestamistas, nuestros proveedores de comunicación y de infraestructura en la nube ni con nadie más."):
+        c = _good_config(); c["text"] = {"privacyBody": phrase}
+        check(f"a long coordinated segment is still scanned to its universal -> rejected: {phrase[:44]!r}",
+              any("preview-mode wording" in e for e in validate_store_config(c).errors))
+    for phrase in ("Your answers are not sent to lenders — anyone needing help receives support.",
+                   "Your answers are not sent to lenders: anyone needing help receives support.",
+                   "Your answers are not sent to lenders (anyone needing help receives support).",
+                   "Your answers are not sent to lenders, anyone needing help receives support from our team.",
+                   "Tus respuestas no se envían a prestamistas — cualquiera que necesite ayuda recibe apoyo."):
+        c = _good_config(); c["text"] = {"privacyBody": phrase}; c["text_es"] = {"privacyBody": phrase}
+        check(f"a following clause (dash/colon/parenthesis, or a comma splice with a lexical verb) is not a destination -> accepted: {phrase[:44]!r}",
+              validate_store_config(c).ok)
+    check("_destination_continuation: comma list items of any length with a coordinator continue; other separators stop",
+          "anyone else" in _destination_continuation(" with lenders", " with lenders, our customer communication and cloud infrastructure service providers or anyone else")
+          and _destination_continuation(" to lenders", " to lenders — anyone needing help receives support") == " to lenders"
+          and _destination_continuation(" to lenders", " to lenders, anyone needing help receives support from our team") == " to lenders"
+          and _destination_continuation(" to lenders", " to lenders, anyone") == " to lenders  anyone")
+    check("_destination_continuation: separator semantics — colon/parenthesis stop, a coordinator-led dash continues",
+          _destination_continuation(" to lenders", " to lenders: anyone") == " to lenders"
+          and _destination_continuation(" to lenders", " to lenders (anyone)") == " to lenders"
+          and _destination_continuation(" to lenders", " to lenders — or anyone else") == " to lenders  or anyone else"
+          and _destination_continuation(" to lenders", " to lenders — anyone") == " to lenders")
+    c = _good_config(); c["text"] = {"privacyBody": "Your answers are not sent to lenders — or anyone else."}
+    check("an emphatic dash continuation ('— or anyone else') is still absolute -> rejected",
+          any("preview-mode wording" in e for e in validate_store_config(c).errors))
     # External review thread 14 (2026-08-22): the determiner "any" / "ningún"
     # before a noun is SCOPED (the quantified form of "to lenders"), not
     # universal; only pronouns and universal phrases are absolute.
