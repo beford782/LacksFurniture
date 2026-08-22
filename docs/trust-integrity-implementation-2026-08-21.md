@@ -642,8 +642,12 @@ is provisional; no privacy policy is claimed approved.
   transition heading). All editorial; a faithful owner would otherwise have
   recorded spurious FAILs. Every table row in the three trust documents now
   has its header's cell count (checked by script).
-- The head and CI run for this round are recorded in the terminal summary and
-  in PR #54's checks; the "Final CI at the reviewed head" gate stays unchecked.
+- Heads: `25ee157` (the wipe change) and `24d8ff7` (this report and the
+  packets). GitHub CI pull_request run 32545837035 at `24d8ff7` — **success**
+  (trust 122/122, session safety 543/0, mutation sweep 339/339 including the
+  drawer entry, caught by both owning suites). The commit that records this
+  run is docs-only and gets its own run; the "Final CI at the reviewed head"
+  gate in PR #54 stays unchecked until the owner names the reviewed head.
 
 ## 22. Rollback strategy
 
