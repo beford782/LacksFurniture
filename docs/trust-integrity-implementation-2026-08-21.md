@@ -988,6 +988,19 @@ so unrelated statements stay accepted. Self-tests 1038 → 1056 / 0; manifest
 Customer-visible bytes unchanged. The external reviewer was asked to
 re-inspect a fifth time.
 
-All seven threads were answered on the PR with this rationale and resolved after
+**Thread 8 (`a9d24cd`, fifth re-review) — fixed in `bbf3c9c`.** Typographic
+apostrophes ("weren’t stored") and past-tense contractions bypassed the
+enumerated list. Enumeration cannot close that class, so the storage family
+is now grammatical: apostrophes and quotes fold to ASCII before matching
+(for the unconditional signals too), and four compiled patterns — passive
+(n't / not / never / cannot / no longer + optional be + stored / saved /
+kept / retained), active (+ store / save / keep / retain), Spanish reflexive
+and Spanish active, including future forms — replace the list. Each match is
+bound to its clause exactly as before. Self-tests 1056 → 1073 / 0; manifest
+348 → 349; all twelve validator entries proven caught in place.
+Customer-visible bytes unchanged. The external reviewer was asked to
+re-inspect a sixth time.
+
+All eight threads were answered on the PR with this rationale and resolved after
 the tests passed; the external reviewer was asked to re-inspect the change
 before the merge.
