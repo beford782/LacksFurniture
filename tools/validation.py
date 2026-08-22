@@ -312,9 +312,25 @@ PREVIEW_MODE_SIGNALS = (
 # values, session or results, which a live gasUrl does send and Code.gs does
 # store. Context-gated substring match (external review P2, 2026-08-22).
 STORAGE_NEGATION_SIGNALS = (
-    "not saved", "aren't saved", "never saved", "not stored", "never stored",
-    "don't store", "do not store", "doesn't store", "does not store",
-    "no se guarda", "no se guardan", "no se almacena", "no se almacenan",
+    # passive: "X is/are not|never stored|saved|kept|retained", contractions,
+    # and the future "won't be"
+    "not saved", "aren't saved", "isn't saved", "never saved", "won't be saved",
+    "not stored", "aren't stored", "isn't stored", "never stored", "won't be stored",
+    "not kept", "aren't kept", "isn't kept", "never kept", "won't be kept",
+    "not retained", "aren't retained", "isn't retained", "never retained", "won't be retained",
+    # active: "we do not|don't|never|won't store|save|keep|retain X"
+    "don't store", "do not store", "doesn't store", "does not store", "never store", "won't store",
+    "don't save", "do not save", "doesn't save", "does not save", "never save", "won't save",
+    "don't keep", "do not keep", "doesn't keep", "does not keep", "never keep", "won't keep",
+    "don't retain", "do not retain", "doesn't retain", "does not retain", "never retain", "won't retain",
+    # Spanish reflexive ("X no se guarda" / "no se guardan X") and active
+    # ("no guardamos X")
+    "no se guarda", "no se guardan", "nunca se guarda", "nunca se guardan",
+    "no se almacena", "no se almacenan", "nunca se almacena", "nunca se almacenan",
+    "no se conserva", "no se conservan", "nunca se conserva", "nunca se conservan",
+    "no se retiene", "no se retienen", "nunca se retiene", "nunca se retienen",
+    "no guardamos", "nunca guardamos", "no almacenamos", "nunca almacenamos",
+    "no conservamos", "nunca conservamos", "no retenemos", "nunca retenemos",
 )
 # Governed-data context terms (lower-cased substrings). Deliberately the
 # customer-facing nouns for what the kiosk collects — answers, results,
@@ -357,8 +373,11 @@ _CLAUSE_BREAKS = (",", "(", ")", "\u2014", "\u2013", ":", "\"", "\u201c", "\u201
 # store X"); the rest are passive/reflexive and take their subject BEFORE
 # ("X is not stored", "X no se guarda") — with the Spanish reflexive also
 # allowing the object after ("no se almacenan X").
-_ACTIVE_STORAGE_SIGNALS = ("don't store", "do not store", "doesn't store", "does not store")
-_ES_REFLEXIVE_SIGNALS = ("no se guarda", "no se guardan", "no se almacena", "no se almacenan")
+_ACTIVE_STORAGE_SIGNALS = tuple(
+    sig for sig in STORAGE_NEGATION_SIGNALS
+    if sig.split()[0] in ("don't", "do", "doesn't", "does", "never", "won't", "no", "nunca")
+    and not sig.startswith(("no se ", "nunca se ", "never saved", "never stored", "never kept", "never retained")))
+_ES_REFLEXIVE_SIGNALS = tuple(sig for sig in STORAGE_NEGATION_SIGNALS if sig.startswith(("no se ", "nunca se ")))
 # Conjunctions that open a new CLAUSE ("your answers are emailed but card
 # details are not stored") and so delimit the noun phrase a negation binds
 # to. Deliberately NOT "and" / "or" / "y" / "o": those also coordinate subject
@@ -4006,6 +4025,28 @@ def _self_test() -> int:
         c = _good_config(); c["text"] = {"privacyBody": phrase}
         check(f"deliberately fail closed: 'and' coordinates noun phrases, so it does not delimit -> rejected: {phrase[:44]!r}",
               any("preview-mode wording" in e for e in validate_store_config(c).errors))
+    # External review thread 7 (2026-08-22): contractions, "won't be", the
+    # keep/retain verbs and the Spanish active forms are in the family.
+    for phrase in ("Your answers aren't stored.", "Your email isn't saved.",
+                   "Your answers won't be stored after this session.",
+                   "We won't keep your answers.", "We do not keep your information.",
+                   "We never retain your contact information.", "Your responses aren't kept.",
+                   "No guardamos tus respuestas.", "No conservamos tu correo.",
+                   "Nunca se guardan tus respuestas.", "Tus datos no se conservan.",
+                   "No retenemos tu información."):
+        c = _good_config(); c["text"] = {"privacyBody": phrase}
+        check(f"storage family covers contractions/keep/retain/ES active forms -> rejected: {phrase[:44]!r}",
+              any("preview-mode wording" in e for e in validate_store_config(c).errors))
+    for phrase in ("Card numbers aren't stored here.", "We won't keep card numbers.",
+                   "Cookies are never kept by this kiosk.", "No guardamos números de tarjeta.",
+                   "No se conservan los datos de la tarjeta."):
+        c = _good_config(); c["text"] = {"privacyBody": phrase}; c["text_es"] = {"privacyBody": phrase}
+        check(f"the wider family is still clause-bound: unrelated claim accepted: {phrase[:44]!r}",
+              validate_store_config(c).ok)
+    check("active/reflexive families are derived consistently from the signal list",
+          "won't keep" in _ACTIVE_STORAGE_SIGNALS and "no guardamos" in _ACTIVE_STORAGE_SIGNALS
+          and "never stored" not in _ACTIVE_STORAGE_SIGNALS and "no se guarda" not in _ACTIVE_STORAGE_SIGNALS
+          and "nunca se guardan" in _ES_REFLEXIVE_SIGNALS and "no guardamos" not in _ES_REFLEXIVE_SIGNALS)
     check("_storage_claim_is_governed: binds the occurrence at pos, not the first",
           _storage_claim_is_governed("card details are not stored, but your answers are not stored", "", "not stored") is False
           and _storage_claim_is_governed("card details are not stored, but your answers are not stored", "", "not stored",
