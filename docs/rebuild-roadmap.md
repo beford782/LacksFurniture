@@ -2235,6 +2235,12 @@ still reviewed against the sentence. No privacy policy is claimed approved:
 gate ships, and the privacy/data-use sentences (and, since R5, the idle-dialog
 body `safety.timeout_body`) are the recorded exception that goes first** — a wrong translation there changes the promise, so they are
 owed native review before showroom use rather than at the consolidated pass.
+**Owner ruling 2026-08-22 (Blake Ford): that review is waived as a PR #54
+readiness/merge gate for the preview-only merge** — the four strings are not
+native-reviewed or approved, Spanish stays provisional, and native review is
+still required before any Spanish showroom authorization or any live
+email/lead-enabled deployment (either reopens it). The eight changed ES quiz
+lines stay on the consolidated ledger.
 The copy inventory is in `docs/trust-integrity-implementation-2026-08-21.md`.
 
 **This gate grants no showroom-use authorization.** `docs/kiosk-device-hardening.md`
@@ -2259,9 +2265,10 @@ English sentences signed as accurate business representations for the current
 preview-mode deployment (`gasUrl` blank; not a live-email approval); and the
 privacy-policy decision taken as **option C, preview-only for this merge** —
 the draft policy and its visible notice stay, the policy is not claimed
-finalized, live activation stays a separate gated decision. Still open under
-Exit 13: the priority native-Spanish review, Blake's live review, and the
-ready/merge authorizations.
+finalized, live activation stays a separate gated decision. **Also 2026-08-22:**
+the priority native-Spanish review waived as a PR #54 gate (owner ruling; not
+a translation approval — see the native-review paragraph above). Still open
+under Exit 13: Blake's live review and the ready/merge authorizations.
 
 **Exit:**
 
@@ -2288,7 +2295,9 @@ ready/merge authorizations.
     of the Welcome and Review sentences; the privacy-policy decision; the
     priority native-Spanish review of `privacy.data_use_preview`,
     `privacy.data_use_live`, `review.help` and `safety.timeout_body` (the
-    Invariant 12 exception); the physical mounted-iPad pass in both
+    Invariant 12 exception — *waived as a gate for this preview-only merge by
+    owner ruling 2026-08-22; still owed before Spanish showroom or live-mode
+    use*); the physical mounted-iPad pass in both
     orientations and languages; the VoiceOver sanity pass; a real Windows
     forced-colors pass; and Blake's live review. None of these is satisfied by
     browser emulation or by the strings being implemented.

@@ -562,8 +562,11 @@ before #54 leaves draft; R8 the mounted-device gate stands.
 
 ## 20. Native-Spanish review debt
 
+**Owner ruling 2026-08-22 (Blake Ford): native-Spanish review is waived as a PR #54 readiness/merge gate for this preview-only merge.** The four priority strings are **not** native-reviewed, approved, final or production-ready; Spanish stays provisional; native review remains required before any Spanish showroom authorization or any live email/lead-enabled deployment, and any such activation or claim reopens it. The eight changed ES quiz lines stay on the consolidated ledger. No Spanish copy, dictionary, configuration or generated file changed.
+
 Provisional ES strings shipped by this gate (all owed native review; the four
-dictionary sentences **first**, ahead of the consolidated pass):
+dictionary sentences were to go **first**, ahead of the consolidated pass —
+that ordering stands for the review itself, it just no longer gates this PR):
 `privacy.data_use_preview`, `privacy.data_use_live`, `review.help`,
 `safety.timeout_body`; quiz
 `helpText.es` for `trigger`, `mattress_size`, `partner_sleep`,
@@ -787,7 +790,31 @@ is unchanged and is not to be weakened.
 No bytes changed: `index.html`, both dictionaries, `data/store-config.json`,
 `data/quiz.json` and the demo bundle are identical to `f748f59`, so the
 owner-attested physical pass (§27) carries forward. Still open after this
-round: native Spanish (the four priority strings are the PR gate; the eight
-quiz lines follow on the consolidated ledger), the owner live review, the
-reviewed-head designation, and the ready-for-review and merge authorizations.
-PR #54 stays draft.
+round: native Spanish (the four priority strings were the PR gate until the
+2026-08-22 waiver, §30; the eight quiz lines follow on the consolidated
+ledger), the owner live review, the reviewed-head designation, and the
+ready-for-review and merge authorizations. PR #54 stays draft.
+
+## 30. Owner ruling — native-Spanish review waived as a PR #54 gate (2026-08-22)
+
+Blake Ford directed that native-Spanish review be skipped for PR #54 and not
+block this preview-only merge. Recorded narrowly:
+
+- The PR #54 checklist gate for native review of `privacy.data_use_preview`,
+  `privacy.data_use_live`, `review.help` and `safety.timeout_body` is resolved
+  by **explicit owner waiver/deferment** — not by review. None of the four is
+  native-reviewed, approved, final or production-ready; Spanish remains
+  provisional in every record.
+- The eight changed Spanish quiz help lines stay pending on the consolidated
+  ledger (§20).
+- Native review remains required before any Spanish showroom authorization
+  or any live email/lead-enabled deployment; any future live activation, or
+  any claim that Spanish is showroom-ready, reopens it.
+- `gasUrl` stays blank; the preview-only decision (§29) and the visible draft
+  policy notice remain in force.
+- No Spanish copy, dictionary, application code, configuration, generated
+  file, scoring or touch behaviour changed; application bytes are identical
+  to `f748f59`, so the owner-attested physical pass (§27) carries forward.
+- This ruling does not authorize marking ready, merging, deployment or
+  showroom use. Gates still open: the owner live review, the reviewed-head /
+  CI designation, and the explicit authorizations to mark ready and to merge.
