@@ -350,21 +350,108 @@ def _sentences(text: str):
     return out
 
 
+# Clause boundaries inside a sentence: commas, dashes, colons, parentheses,
+# quotes. The storage negation binds to the noun phrase in ITS clause.
+_CLAUSE_BREAKS = (",", "(", ")", "\u2014", "\u2013", ":", "\"", "\u201c", "\u201d", "\u00ab", "\u00bb")
+# Active-voice storage negations take their object AFTER the verb ("we do not
+# store X"); the rest are passive/reflexive and take their subject BEFORE
+# ("X is not stored", "X no se guarda") — with the Spanish reflexive also
+# allowing the object after ("no se almacenan X").
+_ACTIVE_STORAGE_SIGNALS = ("don't store", "do not store", "doesn't store", "does not store")
+_ES_REFLEXIVE_SIGNALS = ("no se guarda", "no se guardan", "no se almacena", "no se almacenan")
+# After a Spanish reflexive negation, text that opens with a preposition or
+# adverb is an adverbial ("en este quiosco", "después de la sesión"), not the
+# object; the object, when it follows, opens with a noun phrase.
+_ES_ADVERBIAL_OPENERS = ("en ", "de ", "del ", "por ", "para ", "con ", "sin ", "desde ",
+                         "hasta ", "durante ", "después", "despues", "antes ", "aquí", "aqui",
+                         "ahí", "ahi", "nunca", "jamás", "jamas", "ni ", "tampoco", "más ", "mas ")
+# Tokens that do not name anything on their own; a fragment made only of
+# these has no noun to bind to, so the search widens (fail closed).
+_NON_CONTENT_TOKENS = frozenset((
+    "it", "its", "they", "them", "this", "that", "these", "those", "which", "who",
+    "what", "and", "but", "or", "nor", "also", "so", "then", "there", "here",
+    "we", "you", "i", "he", "she", "is", "are", "was", "were", "be", "been",
+    "will", "would", "can", "may", "a", "an", "the", "of", "to", "in", "on",
+    "by", "for", "at", "from", "with", "ever", "never", "not", "only",
+    "esto", "eso", "esta", "este", "estos", "estas", "ese", "esa", "esos",
+    "esas", "ellos", "ellas", "que", "y", "o", "pero", "tampoco", "también",
+    "tambien", "se", "no", "nunca", "ni", "el", "la", "los", "las", "un", "una",
+    "de", "del", "en", "por", "para", "con", "a", "al",
+))
+
+
+def _has_content(fragment: str) -> bool:
+    tok = []
+    for ch in fragment:
+        if ch.isalpha() or ch == "'":
+            tok.append(ch)
+        else:
+            if tok:
+                if "".join(tok) not in _NON_CONTENT_TOKENS:
+                    return True
+                tok = []
+    return bool(tok) and "".join(tok) not in _NON_CONTENT_TOKENS
+
+
+def _governed_in(fragment: str) -> bool:
+    return any(term in fragment for term in GOVERNED_DATA_TERMS)
+
+
+def _storage_claim_is_governed(sentence: str, prev_sentence: str, sig: str) -> bool:
+    """Bind a storage-negation phrase to the noun phrase it is about and say
+    whether that phrase names governed data.
+
+    Passive / reflexive ("X is not stored", "X no se guarda"): the subject is
+    the in-clause text BEFORE the phrase. Active ("we do not store X"): the
+    object is the in-clause text AFTER it; the Spanish reflexive ("no se
+    guardan X") takes the object after the verb when that text opens with a
+    noun phrase rather than a preposition. When the bound fragment has no
+    noun of its own (a bare pronoun, an interjected aside, a Spanish
+    object-after construction), the search widens in the fail-closed
+    direction: the rest of the sentence, then the previous sentence — so
+    "Your answers, like everything else, are not stored" and
+    "We use your email to send results. It is not stored." are still caught,
+    while "During your showroom session, payment card details are not stored
+    by this application" binds to "payment card details" and passes."""
+    pos = sentence.find(sig)
+    if pos < 0:
+        return False
+    start = max([sentence.rfind(b, 0, pos) for b in _CLAUSE_BREAKS] + [-1]) + 1
+    ends = [i for i in (sentence.find(b, pos + len(sig)) for b in _CLAUSE_BREAKS) if i >= 0]
+    end = min(ends) if ends else len(sentence)
+    clause_before = sentence[start:pos]
+    clause_after = sentence[pos + len(sig):end]
+    if sig in _ACTIVE_STORAGE_SIGNALS:
+        order = (clause_after, sentence, prev_sentence)
+    elif sig in _ES_REFLEXIVE_SIGNALS:
+        after = clause_after.strip()
+        object_after = clause_after if (after and not after.startswith(_ES_ADVERBIAL_OPENERS)) else ""
+        order = (clause_before, object_after, sentence[:pos], clause_after, prev_sentence)
+    else:
+        order = (clause_before, sentence[:pos], clause_after, prev_sentence)
+    for fragment in order:
+        if _has_content(fragment):
+            return _governed_in(fragment)
+    return False
+
+
 def _preview_signal_hit(low: str):
     """Return the offending phrase when lower-cased prose carries a
     preview-mode claim under a live endpoint, else None.
 
     Unconditional signals match anywhere. Storage-negation phrases match only
-    inside a sentence that also names governed data, so "Payment card details
-    are not stored by this application" passes while "Your answers are not
-    stored" and "We do not store your information" fail."""
+    when bound to governed data (_storage_claim_is_governed), so "Payment
+    card details are not stored by this application" passes while "Your
+    answers are not stored" and "We do not store your information" fail."""
     hit = next((sig for sig in PREVIEW_MODE_SIGNALS if sig in low), None)
     if hit:
         return hit
-    for sentence in _sentences(low):
-        sig = next((sig for sig in STORAGE_NEGATION_SIGNALS if sig in sentence), None)
-        if sig and any(term in sentence for term in GOVERNED_DATA_TERMS):
-            return sig
+    sentences = _sentences(low)
+    for idx, sentence in enumerate(sentences):
+        prev_sentence = sentences[idx - 1] if idx else ""
+        for sig in STORAGE_NEGATION_SIGNALS:
+            if sig in sentence and _storage_claim_is_governed(sentence, prev_sentence, sig):
+                return sig
     return None
 
 
@@ -3849,6 +3936,43 @@ def _self_test() -> int:
           _preview_signal_hit("card details are not stored") is None)
     check("_preview_signal_hit: storage phrase with governed context -> the phrase",
           _preview_signal_hit("your answers are not stored") == "not stored")
+    # External review thread 4 (2026-08-22): the negation binds to the noun
+    # phrase in ITS clause, not to any governed word elsewhere in the sentence.
+    for phrase in ("During your showroom session, payment card details are not stored by this application.",
+                   "To keep your session quick, card numbers are never stored here.",
+                   "After your quiz, financing details are not saved on this kiosk.",
+                   "Durante tu sesión en la tienda, los datos de la tarjeta no se guardan en esta aplicación.",
+                   "Para agilizar tu sesión, no se almacenan números de tarjeta en este quiosco.",
+                   "We do not store card numbers, even during your session."):
+        c = _good_config(); c["text"] = {"privacyBody": phrase}; c["text_es"] = {"privacyBody": phrase}
+        check(f"clause-bound: governed word elsewhere in the sentence does not reject an unrelated claim: {phrase[:44]!r}",
+              validate_store_config(c).ok)
+    for phrase in ("During your showroom session, your answers are not stored by this application.",
+                   "Your answers, like everything else, are not stored.",
+                   "Your answers (and your email) are not stored.",
+                   "We use your email to send results. It is not stored.",
+                   "We do not store anything about your session.",
+                   "No se guardan tus respuestas en este quiosco.",
+                   "Usamos tu correo para enviarte resultados. No se guarda."):
+        c = _good_config(); c["text"] = {"privacyBody": phrase}
+        check(f"clause-bound, fail closed: a governed subject/object still rejects: {phrase[:44]!r}",
+              any("preview-mode wording" in e for e in validate_store_config(c).errors))
+    for phrase in ("Tus respuestas, como todo lo demás, no se guardan en este quiosco.",
+                   "Durante tu sesión, tus respuestas no se almacenan en ningún servidor."):
+        c = _good_config(); c["text_es"] = {"privacyBody": phrase}
+        check(f"ES reflexive: an adverbial after the verb is not the object, so the subject still binds: {phrase[:40]!r}",
+              any("preview-mode wording" in e for e in validate_store_config(c).errors))
+    c = _good_config(); c["text"] = {"privacyBody": "Card numbers go to lacks.com. They are not stored here."}
+    check("a pronoun subject binds to the previous sentence: unrelated antecedent -> accepted",
+          validate_store_config(c).ok)
+    check("_storage_claim_is_governed: subject before the verb, in clause",
+          _storage_claim_is_governed("during your session, card details are not stored", "", "not stored") is False
+          and _storage_claim_is_governed("during your session, your answers are not stored", "", "not stored") is True)
+    check("_storage_claim_is_governed: active object after the verb",
+          _storage_claim_is_governed("we do not store card numbers", "", "do not store") is False
+          and _storage_claim_is_governed("we do not store your answers", "", "do not store") is True)
+    check("_has_content: pronouns and function words alone are not content",
+          not _has_content(" it is ") and not _has_content("se") and _has_content("card details"))
     # Config-or-nothing consequence: a text block that leaves the two prose
     # keys blank is warned (the surfaces render nothing), never errored.
     c = _good_config(); c["text"] = {"heritage": "x"}
