@@ -529,6 +529,27 @@ phase-wide device-matrix merge gate (physical iPad, both orientations, EN/ES)
 and Blake's live review apply to this branch exactly as to every slice; Spanish
 is provisional; no privacy policy is claimed approved.
 
+## 23. Pull request, CI and final state (2026-08-22)
+
+- **Draft PR #54** — https://github.com/beford782/LacksFurniture/pull/54 —
+  `claude/phase1-trust-integrity` → `main`, **draft, not merged, not to be
+  marked ready until the owner rules on the Slice 5 merge order (§14d)**.
+- Revalidation commit `f6fac09` (audits 1–3 resolved; packet; roadmap
+  sequence) followed by this record. Pushed to `origin`.
+- GitHub CI at `f6fac09`: workflow_dispatch run 32542823153 and the PR's own
+  pull_request run 32542881301 (results recorded in the PR's checks; the
+  terminal summary of the session that opened the PR lists their conclusions).
+  Earlier head `ac95a7b`: run 32539492057 success (sweep 331/331).
+- Baselines: original implementation baseline `4a76503` (origin/main at branch
+  creation); post-integration `main` baseline **unchanged — `4a76503`** (no
+  new `main` existed to integrate; Slice 5 is unmerged draft PR #53).
+- **Nothing merged. Nothing deployed. No showroom authorization.** The physical
+  iPad pass (both orientations, EN/ES), the Windows forced-colors check, the
+  VoiceOver sanity pass or accepted risk, the native-Spanish review of the
+  three privacy/audience sentences, the privacy-policy approval
+  (`privacyDraftNotice` is customer-visible today) and Blake's sign-off on the
+  nine help lines all remain outstanding; the owner packet lists each.
+
 ## 22. Rollback strategy
 
 Each commit is independently revertible with `git revert` (no commit depends
