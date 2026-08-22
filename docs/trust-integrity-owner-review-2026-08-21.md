@@ -47,7 +47,8 @@ live-capable ruling (`5a1f70c`); a fourth bound the storage negation to its own
 clause so a time adverbial such as "during your session" no longer rejects an
 unrelated claim (`ea887db`). A fifth and sixth (`b98b7a7`) inspect every occurrence of a phrase and let
 clause conjunctions (but/while/although…) delimit the bound phrase — "and" is
-deliberately not a delimiter, fail closed. All six threads answered and resolved
+deliberately not a delimiter, fail closed. A seventh (`babef79`) completes the family with contractions, "won't be", keep/retain
+and the Spanish active forms. All seven threads answered and resolved
 on the PR.
 
 The physical gates are closed for the bytes at `f748f59` (§5). Everything

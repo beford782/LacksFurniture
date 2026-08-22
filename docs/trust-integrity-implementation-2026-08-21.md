@@ -976,6 +976,18 @@ two self-tests pin that choice by name. Self-tests 1027 → 1038 / 0; manifest
 345 → 347; all ten validator entries proven caught in place. Customer-visible
 bytes unchanged. The external reviewer was asked to re-inspect a fourth time.
 
-All six threads were answered on the PR with this rationale and resolved after
+**Thread 7 (`e4f4d42`, fourth re-review) — fixed in `babef79`.** A fail-open
+list gap: "aren't stored" / "isn't stored" were absent, so "Your answers
+aren't stored." shipped with no error. The family now covers, for
+store/save/keep/retain, the passive negations with contractions and "won't
+be", the active "do not / don't / doesn't / does not / never / won't" forms,
+and the Spanish reflexive and active forms; the active and reflexive
+sub-families are derived from the one list. Every addition is clause-bound,
+so unrelated statements stay accepted. Self-tests 1038 → 1056 / 0; manifest
+347 → 348; all eleven validator entries proven caught in place.
+Customer-visible bytes unchanged. The external reviewer was asked to
+re-inspect a fifth time.
+
+All seven threads were answered on the PR with this rationale and resolved after
 the tests passed; the external reviewer was asked to re-inspect the change
 before the merge.
