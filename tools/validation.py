@@ -305,33 +305,55 @@ PREVIEW_MODE_SIGNALS = (
     "no se envia a ning", "no se envía ning", "no se envia ning", "no se transmite",
     "no se transmiten", "no se envían", "no se envian",
 )
-# Storage-negation phrases. Bare, these are not preview signals: a retailer
-# may truthfully write "Payment card details are not stored by this
-# application" under a live endpoint. They become a false promise only when
-# the SAME SENTENCE is about governed data — the customer's answers, contact
-# values, session or results, which a live gasUrl does send and Code.gs does
-# store. Context-gated substring match (external review P2, 2026-08-22).
-STORAGE_NEGATION_SIGNALS = (
-    # passive: "X is/are not|never stored|saved|kept|retained", contractions,
-    # and the future "won't be"
-    "not saved", "aren't saved", "isn't saved", "never saved", "won't be saved",
-    "not stored", "aren't stored", "isn't stored", "never stored", "won't be stored",
-    "not kept", "aren't kept", "isn't kept", "never kept", "won't be kept",
-    "not retained", "aren't retained", "isn't retained", "never retained", "won't be retained",
-    # active: "we do not|don't|never|won't store|save|keep|retain X"
-    "don't store", "do not store", "doesn't store", "does not store", "never store", "won't store",
-    "don't save", "do not save", "doesn't save", "does not save", "never save", "won't save",
-    "don't keep", "do not keep", "doesn't keep", "does not keep", "never keep", "won't keep",
-    "don't retain", "do not retain", "doesn't retain", "does not retain", "never retain", "won't retain",
-    # Spanish reflexive ("X no se guarda" / "no se guardan X") and active
-    # ("no guardamos X")
-    "no se guarda", "no se guardan", "nunca se guarda", "nunca se guardan",
-    "no se almacena", "no se almacenan", "nunca se almacena", "nunca se almacenan",
-    "no se conserva", "no se conservan", "nunca se conserva", "nunca se conservan",
-    "no se retiene", "no se retienen", "nunca se retiene", "nunca se retienen",
-    "no guardamos", "nunca guardamos", "no almacenamos", "nunca almacenamos",
-    "no conservamos", "nunca conservamos", "no retenemos", "nunca retenemos",
+# Storage negations. Bare, these are not preview signals: a retailer may
+# truthfully write "Payment card details are not stored by this application"
+# under a live endpoint. They become a false promise only when bound to
+# governed data — the customer's answers, contact values, session or results,
+# which a live gasUrl does send and Code.gs does store. Matched as a
+# GRAMMATICAL FAMILY (external review threads 2, 7, 8, 2026-08-22), not an
+# enumerated phrase list, after apostrophes and quotes are normalized — so
+# "aren't", "weren’t" (typographic), "won't be", "cannot be", past tenses and
+# the keep/retain verbs are all one rule. Each match is then bound to the
+# noun phrase it is about (_storage_claim_is_governed).
+_NEG = r"(?:n't|\bnot\b|\bnever\b|\bcannot\b|\bno longer\b)"
+STORAGE_NEGATION_PATTERNS = (
+    # passive: "X is/are/was/were/won't be/cannot be ... not|never stored|saved|kept|retained"
+    ("passive", re.compile(_NEG + r"\s+(?:ever\s+)?(?:be\s+|being\s+|been\s+)?(?:stored|saved|kept|retained)\b")),
+    # active: "we do not|don't|never|won't|cannot store|save|keep|retain X"
+    ("active", re.compile(_NEG + r"\s+(?:ever\s+)?(?:store|save|keep|retain)\b")),
+    # Spanish reflexive: "X no|nunca se guarda(n)..." / "no se guardan X"
+    ("es_reflexive", re.compile(r"\b(?:no|nunca|jam[aá]s)\s+se\s+(?:guarda|guardan|guardar[aá]n?|almacena|almacenan|"
+                                r"almacenar[aá]n?|conserva|conservan|conservar[aá]n?|retiene|retienen|retendr[aá]n?)\b")),
+    # Spanish active: "no|nunca guardamos X"
+    ("es_active", re.compile(r"\b(?:no|nunca|jam[aá]s)\s+(?:guardamos|guardaremos|almacenamos|almacenaremos|"
+                             r"conservamos|conservaremos|retenemos|retendremos)\b")),
 )
+# Typographic apostrophes and quotes fold to ASCII before any matching, so a
+# retailer's "weren’t stored" is the same claim as "weren't stored".
+_PROSE_FOLD = str.maketrans({"\u2019": "'", "\u2018": "'", "\u02bc": "'", "`": "'",
+                             "\u201c": '"', "\u201d": '"'})
+
+
+def _normalize_prose(text: str) -> str:
+    return text.lower().translate(_PROSE_FOLD)
+
+
+def _storage_matches(sentence: str):
+    """Every storage-negation match in a normalized sentence as
+    (kind, start, end, display) — start/end span the negation + verb;
+    display adds the preceding word so an error reads "aren't stored"."""
+    out = []
+    for kind, pat in STORAGE_NEGATION_PATTERNS:
+        for m in pat.finditer(sentence):
+            start, end = m.start(), m.end()
+            disp_start = start
+            if m.group(0).startswith("n't"):
+                disp_start = sentence.rfind(" ", 0, start) + 1
+            out.append((kind, start, end, sentence[disp_start:end]))
+    out.sort(key=lambda t: t[1])
+    return out
+
+
 # Governed-data context terms (lower-cased substrings). Deliberately the
 # customer-facing nouns for what the kiosk collects — answers, results,
 # session, contact values, "your/personal/customer information|data" — and
@@ -370,14 +392,10 @@ def _sentences(text: str):
 # quotes. The storage negation binds to the noun phrase in ITS clause.
 _CLAUSE_BREAKS = (",", "(", ")", "\u2014", "\u2013", ":", "\"", "\u201c", "\u201d", "\u00ab", "\u00bb")
 # Active-voice storage negations take their object AFTER the verb ("we do not
-# store X"); the rest are passive/reflexive and take their subject BEFORE
-# ("X is not stored", "X no se guarda") — with the Spanish reflexive also
-# allowing the object after ("no se almacenan X").
-_ACTIVE_STORAGE_SIGNALS = tuple(
-    sig for sig in STORAGE_NEGATION_SIGNALS
-    if sig.split()[0] in ("don't", "do", "doesn't", "does", "never", "won't", "no", "nunca")
-    and not sig.startswith(("no se ", "nunca se ", "never saved", "never stored", "never kept", "never retained")))
-_ES_REFLEXIVE_SIGNALS = tuple(sig for sig in STORAGE_NEGATION_SIGNALS if sig.startswith(("no se ", "nunca se ")))
+# store X"); passive ones take their subject BEFORE ("X is not stored"); the
+# Spanish reflexive ("X no se guarda") takes the subject before but also
+# allows the object after ("no se almacenan X"). The kind comes from the
+# pattern that matched.
 # Conjunctions that open a new CLAUSE ("your answers are emailed but card
 # details are not stored") and so delimit the noun phrase a negation binds
 # to. Deliberately NOT "and" / "or" / "y" / "o": those also coordinate subject
@@ -425,7 +443,7 @@ def _governed_in(fragment: str) -> bool:
     return any(term in fragment for term in GOVERNED_DATA_TERMS)
 
 
-def _storage_claim_is_governed(sentence: str, prev_sentence: str, sig: str, pos: int = -1) -> bool:
+def _storage_claim_is_governed(sentence: str, prev_sentence: str, kind: str, pos: int, end_pos: int) -> bool:
     """Bind a storage-negation phrase to the noun phrase it is about and say
     whether that phrase names governed data.
 
@@ -442,24 +460,22 @@ def _storage_claim_is_governed(sentence: str, prev_sentence: str, sig: str, pos:
     while "During your showroom session, payment card details are not stored
     by this application" binds to "payment card details" and passes.
 
-    `pos` is the occurrence to bind; every occurrence of a signal in a
+    `pos`/`end_pos` span the occurrence to bind; every occurrence in a
     sentence is inspected by the caller, so "card details are not stored, but
-    your answers are not stored" is caught on its second clause."""
-    if pos < 0:
-        pos = sentence.find(sig)
-    if pos < 0 or sentence[pos:pos + len(sig)] != sig:
+    your answers are not stored" is caught on its second clause. `kind` is
+    the matching pattern's: passive, active, es_reflexive or es_active."""
+    if pos < 0 or end_pos <= pos or end_pos > len(sentence):
         return False
     starts = [sentence.rfind(b, 0, pos) + 1 for b in _CLAUSE_BREAKS]
     starts += [i + len(c) for i, c in ((sentence.rfind(c, 0, pos), c) for c in _CLAUSE_CONJUNCTIONS) if i >= 0]
     start = max(starts + [0])
-    after_pos = pos + len(sig)
-    ends = [i for i in (sentence.find(b, after_pos) for b in _CLAUSE_BREAKS + _CLAUSE_CONJUNCTIONS) if i >= 0]
+    ends = [i for i in (sentence.find(b, end_pos) for b in _CLAUSE_BREAKS + _CLAUSE_CONJUNCTIONS) if i >= 0]
     end = min(ends) if ends else len(sentence)
     clause_before = sentence[start:pos]
-    clause_after = sentence[pos + len(sig):end]
-    if sig in _ACTIVE_STORAGE_SIGNALS:
+    clause_after = sentence[end_pos:end]
+    if kind in ("active", "es_active"):
         order = (clause_after, sentence, prev_sentence)
-    elif sig in _ES_REFLEXIVE_SIGNALS:
+    elif kind == "es_reflexive":
         after = clause_after.strip()
         object_after = clause_after if (after and not after.startswith(_ES_ADVERBIAL_OPENERS)) else ""
         order = (clause_before, object_after, sentence[:pos], clause_after, prev_sentence)
@@ -479,18 +495,16 @@ def _preview_signal_hit(low: str):
     when bound to governed data (_storage_claim_is_governed), so "Payment
     card details are not stored by this application" passes while "Your
     answers are not stored" and "We do not store your information" fail."""
+    low = _normalize_prose(low)
     hit = next((sig for sig in PREVIEW_MODE_SIGNALS if sig in low), None)
     if hit:
         return hit
     sentences = _sentences(low)
     for idx, sentence in enumerate(sentences):
         prev_sentence = sentences[idx - 1] if idx else ""
-        for sig in STORAGE_NEGATION_SIGNALS:
-            pos = sentence.find(sig)
-            while pos >= 0:
-                if _storage_claim_is_governed(sentence, prev_sentence, sig, pos):
-                    return sig
-                pos = sentence.find(sig, pos + 1)
+        for kind, start, end, display in _storage_matches(sentence):
+            if _storage_claim_is_governed(sentence, prev_sentence, kind, start, end):
+                return display
     return None
 
 
@@ -520,7 +534,7 @@ def _check_privacy_prose_mode(r: ValidationReport, config: dict) -> None:
             value = prose.get(key)
             if not isinstance(value, str) or not value.strip():
                 continue
-            hit = _preview_signal_hit(value.lower())
+            hit = _preview_signal_hit(value)
             if hit:
                 r.add_error(f"{block}.{key} carries preview-mode wording ({hit!r}) but "
                             "gasUrl is live - a statement that nothing leaves the tablet "
@@ -4043,20 +4057,44 @@ def _self_test() -> int:
         c = _good_config(); c["text"] = {"privacyBody": phrase}; c["text_es"] = {"privacyBody": phrase}
         check(f"the wider family is still clause-bound: unrelated claim accepted: {phrase[:44]!r}",
               validate_store_config(c).ok)
-    check("active/reflexive families are derived consistently from the signal list",
-          "won't keep" in _ACTIVE_STORAGE_SIGNALS and "no guardamos" in _ACTIVE_STORAGE_SIGNALS
-          and "never stored" not in _ACTIVE_STORAGE_SIGNALS and "no se guarda" not in _ACTIVE_STORAGE_SIGNALS
-          and "nunca se guardan" in _ES_REFLEXIVE_SIGNALS and "no guardamos" not in _ES_REFLEXIVE_SIGNALS)
-    check("_storage_claim_is_governed: binds the occurrence at pos, not the first",
-          _storage_claim_is_governed("card details are not stored, but your answers are not stored", "", "not stored") is False
-          and _storage_claim_is_governed("card details are not stored, but your answers are not stored", "", "not stored",
-                                         "card details are not stored, but your answers are not stored".rfind("not stored")) is True)
+    # External review thread 8 (2026-08-22): the family is grammatical, not
+    # enumerated — typographic apostrophes fold to ASCII and every tense /
+    # auxiliary of the negation is one rule.
+    for phrase in ("Your answers weren\u2019t stored.", "Your answers weren't stored.",
+                   "Your email wasn\u2019t saved.", "Your answers cannot be stored.",
+                   "Your responses will not be kept.", "Your answers are no longer stored.",
+                   "Your answers can\u2019t be retained.", "We didn't store your answers.",
+                   "We\u2019ll never save your email.", "Tus respuestas jam\u00e1s se guardan.",
+                   "No se guardar\u00e1n tus respuestas.", "Nunca almacenaremos tu informaci\u00f3n."):
+        c = _good_config(); c["text"] = {"privacyBody": phrase}
+        check(f"grammatical family + apostrophe folding -> rejected: {phrase[:44]!r}",
+              any("preview-mode wording" in e for e in validate_store_config(c).errors))
+    for phrase in ("Card numbers weren\u2019t stored.", "Cookies can\u2019t be retained by this kiosk.",
+                   "Los n\u00fameros de tarjeta jam\u00e1s se guardan."):
+        c = _good_config(); c["text"] = {"privacyBody": phrase}; c["text_es"] = {"privacyBody": phrase}
+        check(f"the grammatical family is still clause-bound: unrelated claim accepted: {phrase[:44]!r}",
+              validate_store_config(c).ok)
+    c = _good_config(); c["text"] = {"emailPrivacy": "Nothing is sent from this tablet \u2014 it isn\u2019t connected."}
+    check("apostrophe folding applies to the unconditional signals too (\u2019isn\u2019t connected\u2019)",
+          any("preview-mode wording" in e for e in validate_store_config(c).errors))
+    kinds = {k for k, *_ in _storage_matches("your answers aren't stored; we won't keep them; no se guardan; no guardamos")}
+    check("_storage_matches: every pattern kind is represented and sorted by position",
+          kinds == {"passive", "active", "es_reflexive", "es_active"}
+          and [t[1] for t in _storage_matches("a not stored b not saved")] == sorted(t[1] for t in _storage_matches("a not stored b not saved")))
+    check("_storage_matches: display carries the preceding word for a contraction",
+          _storage_matches("your answers aren't stored")[0][3] == "aren't stored"
+          and _storage_matches("your answers are not stored")[0][3] == "not stored")
+    def _bind(sentence, which=0, prev=""):
+        kind, start, end, _ = _storage_matches(sentence)[which]
+        return _storage_claim_is_governed(sentence, prev, kind, start, end)
+    check("_storage_claim_is_governed: binds the occurrence given, not the first",
+          _bind("card details are not stored, but your answers are not stored", 0) is False
+          and _bind("card details are not stored, but your answers are not stored", 1) is True)
     check("_storage_claim_is_governed: subject before the verb, in clause",
-          _storage_claim_is_governed("during your session, card details are not stored", "", "not stored") is False
-          and _storage_claim_is_governed("during your session, your answers are not stored", "", "not stored") is True)
+          _bind("during your session, card details are not stored") is False
+          and _bind("during your session, your answers are not stored") is True)
     check("_storage_claim_is_governed: active object after the verb",
-          _storage_claim_is_governed("we do not store card numbers", "", "do not store") is False
-          and _storage_claim_is_governed("we do not store your answers", "", "do not store") is True)
+          _bind("we do not store card numbers") is False and _bind("we do not store your answers") is True)
     check("_has_content: pronouns and function words alone are not content",
           not _has_content(" it is ") and not _has_content("se") and _has_content("card details"))
     # Config-or-nothing consequence: a text block that leaves the two prose
