@@ -97,8 +97,8 @@ untouched.
 | Line references in the investigation (e.g. `index.html:10744`) | Were prototype-tree lines; on `main` the promise lived at `:10773` and `:16402–16404`. The investigation docs are preserved verbatim as research records. |
 | "text_es.emailPrivacy is not supplied" (code comment the investigation relied on) | False — it is configured; the renderer ignored it. Now honoured. |
 | Data-use sentence location: the investigation's architecture section proposed dictionary copy; the white-label reading could also argue store-config | Dictionary, in two mode variants, selected at runtime from `gasUrl` (one source of truth, no new workbook column); the retailer's own policy prose stays in config and is gated at build. |
-| Sleep System containers absent from the wipe list (data-flow audit) | Not changed here: they are rebuilt before every display, so no previous customer's text can be seen; adding them conflicts with Slice 5's edits to the same table. Deferred to Slice 5 / 1.4 (§18). |
-| Idle-dialog wording ("paused to protect your privacy") | Left as shipped: it is Gate 1B required copy pinned exactly by the session suite; recorded as an owner decision. |
+| Sleep System containers absent from the wipe list (data-flow audit) | Deferred at first (rebuilt before display; the table is also edited by Slice 5), then **added in the 2026-08-22 revalidation (`f6fac09`)** after the privacy auditor measured a previous customer's prose in the hidden DOM after a confirmed Restart (§18). This is what raised the Slice 5 conflict forecast from three files to five (§14d). |
+| Idle-dialog wording ("paused to protect your privacy") | Left as shipped through the first two rounds (Gate 1B required copy, test-pinned; recorded as an owner decision), then **replaced on the owner's R5 ruling (2026-08-21, commit `444abe2`)** with behaviourally exact dictionary copy naming the dialog's real controls — §8. |
 
 ## 7. Exact implemented behaviour
 
@@ -306,8 +306,11 @@ and approval status. Pinned by `tests/trust_integrity_check.mjs` section A.
   the live `plush`/`soft` tags (the literal `pressureRelief` tag is inert here,
   3.1); the packet asks the owner to accept the gloss or take the stricter
   wording.
-- VoiceOver: not run (owner decision §19; screen-reader functionality is out of
-  scope by the 2026-08-12 ruling).
+- VoiceOver: not run. A one-time sanity pass on the mounted iPad is
+  **required** before PR #54 leaves draft (owner ruling R7, 2026-08-21; no
+  accepted-risk alternative); screen-reader functionality itself stays out of
+  scope (2026-08-12 ruling). Steps and expected announcements:
+  `docs/trust-integrity-physical-gate-2026-08-21.md`.
 
 ## 13. Generated-file lineage
 
@@ -392,7 +395,7 @@ itself.** Resolutions shipped in `8d0bda6`:
 | C (architecture) | `tests/sleep_brief_presentation_check.mjs` captured the focus block through a fixed 700-char window the new selector overflowed: a vacuous pass here, red on the first merge with Slice 5 | Brace-anchored regex; the match is the first block |
 | C | Roadmap header enumerated seven register rows of eight; the 🔒 row did not say what locks it; the report was referenced before it existed | Fixed; this report committed |
 | C | CLAUDE.md should record where mode-aware data-use copy lives | One bullet added to the bilingual architecture section |
-| C | Merge with Slice 5 (`6decbef`): three trivial both-added conflicts (`data/dict-en.json`, `data/dict-es.json`, `tests/mutation_sweep.mjs` observer constants), everything else auto-merges; the merged tree was exercised green apart from the Sleep Brief window (now fixed) | Recorded; whoever merges second re-runs `python tools/build_black_friday_demo.py` |
+| C | Merge with Slice 5 (`6decbef`): three trivial both-added conflicts (`data/dict-en.json`, `data/dict-es.json`, `tests/mutation_sweep.mjs` observer constants), everything else auto-merges; the merged tree was exercised green apart from the Sleep Brief window (now fixed) | Recorded at `8d0bda6`/`ac95a7b`. **Superseded:** `f6fac09` added the four Sleep System ids to `SESSION_CONTENT_IDS`, which Slice 5 also extends, so the forecast is now five files (§14d); the integrating side rebuilds the demo bundle rather than resolving it by hand |
 
 Reviewer NOTES left as recorded: the hidden Sleep System containers (§18);
 `text.privacyBody` still says "never sold" (retailer draft, register); the
@@ -421,15 +424,21 @@ Conflict forecast, re-verified read-only with `git merge-tree --write-tree`:
 
 | File | Git conflict type | Slice 5 change | Trust change | Expected merged result | Why both intents survive | Proof |
 |---|---|---|---|---|---|---|
-| `data/dict-en.json` (and `dict-es.json`) | content, one both-added hunk inside the `safety.*` group | strips the blank separator line between key groups; appends ~27 `plan.*` keys at the end | adds `privacy.data_use_preview` / `_live` after `safety.timeout_final_warning`; changes the value of `review.help` | keep both: trust's two keys stay in the group; Slice 5's blank-line removal and appended keys stay | disjoint keys; `review.help` is trust-only (no consumer on Slice 5) | `session_safety_check` key-set parity; `trust_integrity_check` C2; `sleep_plan_check` on the merged tree |
-| `tests/mutation_sweep.mjs` | content, one both-added hunk after `PAY_VALIDATOR` | adds `PLAN`, `PLAN_WITH_SESSION`, … observer constants | adds `TRUST`, `TRUST_CONTRAST` | keep both constant blocks | disjoint identifiers; entries were inserted mid-manifest on the trust side | merged manifest parses; the merged sweep ran **375/375 caught, 0 not-applied** in the auditor's scratch copy |
-| `index.html`, `demo/black-friday/index.html`, `.github/workflows/ci.yml`, `tests/sleep_brief_presentation_check.mjs` | auto-merge (no textual conflict) | Slice 5 hunks (Sleep Plan screen, payment moment, `SCREEN_HEADING_IDS` / `SESSION_CONTENT_IDS`, a CI step after quiz presentation, a forced-colors selector in the focus twin) | trust hunks (quiz renderer/helpers, welcome/review/email/overlay, CSS, a CI step in the same position, the brace-anchored focus-block regex) | both sides land; the demo bundle must be **rebuilt** by whoever merges second | no shared function is edited by both; the CI steps are adjacent additions; the regex repair in the Sleep Brief suite is what keeps it green once Slice 5's selector also lands | merged-tree suites (trust 111/111, quiz 217/217, sleep_brief 134/134, sleep_plan, session_safety, contrast, smoke, daybreak contract after `build_black_friday_demo.py`) — run by the integration auditor in a scratch copy |
+| `data/dict-en.json` (and `dict-es.json`) | content, one both-added hunk inside the `safety.*` group | strips the blank separator line between key groups; appends ~27 `plan.*` keys at the end | adds `privacy.data_use_preview` / `_live` after `safety.timeout_final_warning`; changes the values of `review.help` and `safety.timeout_body` | keep both: trust's keys stay in the group; Slice 5's blank-line removal and appended keys stay | disjoint keys; the two value changes are trust-only | `session_safety_check` key-set parity and exact-copy pins; `trust_integrity_check` C2; `sleep_plan_check` on the merged tree |
+| `index.html` | content, one both-added hunk at the tail of `SESSION_CONTENT_IDS` (since `f6fac09`) | appends five `sleepPlan*` ids | appends the four `sleepSystem*` ids (with a comment) | keep both id blocks (either order; a trailing comma on the first) | disjoint ids; both sides' wipe-matrix tests require their own ids; the trust sweep entry anchors on the ids, not their position (`c65a437`) | `session_safety_check` wipe matrix (both required lists); `sleep_plan_check`; `trust_integrity_check` C |
+| `demo/black-friday/index.html` | content, the same hunk (derived file) | same | same | **do not hand-resolve — regenerate** with `python tools/build_black_friday_demo.py` after `index.html` is resolved | the contract check compares against a fresh rebuild | `tests/daybreak_contract_check.py` |
+| `tests/mutation_sweep.mjs` | content, one both-added hunk after `PAY_VALIDATOR` | adds `PLAN`, `PLAN_WITH_SESSION`, … observer constants | adds `TRUST`, `TRUST_CONTRAST` | keep both constant blocks | disjoint identifiers; trust entries were inserted mid-manifest, Slice 5's appended | merged manifest parses; full merged sweep (expected ≈ 338 + Slice 5's entries, 0 survived, 0 not-applied) |
+| `.github/workflows/ci.yml`, `tests/session_safety_check.mjs`, `tests/sleep_brief_presentation_check.mjs` | auto-merge (both sides edit, no textual conflict) | a CI step after quiz presentation; Gate 2A rewrites; a forced-colors selector in the focus twin | a CI step in the same position; four required wipe ids; the brace-anchored focus-block regex | both sides land | adjacent additions; the regex repair is what keeps the Sleep Brief suite green once Slice 5's selector also lands | the combined suite run the integrating side owes |
 
-**Merge order (roadmap, 2026-08-21 owner instruction):** the gate first, then
-Slice 5 integrates across it. If the owner rules the other way, this branch
-merges `main` after Slice 5 lands and resolves exactly the three hunks above
-keep-both, then rebuilds the demo bundle and re-runs the suite. **The current
-CI run is not post-Slice-5 integration proof.**
+**Merge order — owner ruling R1 (2026-08-21):** PR #54 (this gate) is the
+intended next merge candidate and merges before PR #53. PR #54 stays
+independent of unmerged Slice 5 code. After #54 eventually merges, #53 must
+update from `main`, re-run the forecast against the actual `main` (the table
+above is a forecast at `12ad950` × `6decbef`, not a promise), resolve the
+both-added conflicts semantically preserving both features, rebuild the demo
+bundle with the canonical tool, and re-run the complete suite on the combined
+tree. **#53's current CI is not post-#54 integration proof, and this
+documentation authorizes neither merge.**
 
 **Roadmap placement decision:** the block stays after item 1.7 (its position is
 topical, not temporal — the 1.x items have never encoded schedule), and the
@@ -488,15 +497,29 @@ touches only `helpText` values (no `scores`, ids, order, types, `skipIf`,
 - Results tier-tab row overflow at 320px (pre-existing) — 1.3.
 - Optional moderated research condition for heritage (register).
 
-## 19. Open owner decisions (recorded in the roadmap register, not resolved)
+## 19. Owner decisions — ruled 2026-08-21 (product direction) and still open
 
-1. **Tier presentation:** retain Gold-first with the within-tier model, a
-   neutral initial tier choice, a cross-tier highest-fit marker, or another
-   owner-approved control (3.3 territory for anything cross-tier).
-2. **Heritage:** Welcome only (current), an optional moderated-research
-   condition, or no additional heritage.
-3. **Founding year:** confirm 1935 through corporate records; explain the BBB
-   "1924" entry; no anniversary arithmetic.
+**Ruled (product direction only — not legal, native-language, device or
+showroom approval, and not authorization to merge):** R1 merge order (#54
+before #53); R2 heritage Welcome-only this cycle (no rail, counts, awards,
+testimonials, QR, anecdotes; prototype preserved; a later optional research
+condition stays possible); R3 tier presentation option A retained this cycle
+(Gold-first, within-tier, 15px note; B/C/D deferred; 3.3 untouched; not a
+permanent endorsement); R4 the hardcoded email promise stays removed and no
+other absolute promise is authored; R5 the idle dialog body replaced with
+behaviourally exact dictionary copy (`444abe2`); R6 "since 1935" provisional,
+BBB 1924 unresolved, no arithmetic; R7 a VoiceOver sanity pass is required
+before #54 leaves draft; R8 the mounted-device gate stands.
+
+**Still open (recorded in the roadmap register):**
+
+1. **Tier presentation (later cycle):** a neutral initial tier choice or
+   another presentation control (B/D) — deferred; a cross-tier marker (C) is
+   3.3 and not authorized.
+2. **Heritage (later):** whether historical content is tested as an optional
+   research condition.
+3. **Founding year:** corporate/archival confirmation of 1935 and an
+   explanation of the BBB "1924" entry (no copy changes meanwhile).
 4. **Privacy approval:** approver of record; final showroom wording;
    `privacyDraftNotice`; the native-Spanish reviewer for the data-use
    sentences; the email-enabled wording (incl. BCC/sheet disclosure).
@@ -506,11 +529,13 @@ touches only `helpText` values (no `scores`, ids, order, types, `skipIf`,
 6. **Measurement:** moderated current-vs-process-transparency sessions;
    whether heritage is retained as a third condition; any aggregate local
    store (must record no answers and no identity).
-7. **VoiceOver:** a required manual pass on the mounted iPad, or explicitly
-   accepted residual risk.
-8. **Idle-dialog wording** (Gate 1B required copy, test-pinned).
+7. **VoiceOver:** the required sanity pass itself (a physical-device gate,
+   not a decision) — recorded in the physical packet when run.
+8. **Idle-dialog wording:** copy sign-off on the final EN sentence and native
+   review of the Spanish (the direction is ruled).
 9. **Quiz copy sign-off** as governed quiz copy (CLAUDE.md) — the nine lines
-   in §8; and the `partner_disturbance` preferred line once 3.1 ships.
+   in §8 including the `sleep_position` gloss; and the `partner_disturbance`
+   preferred line once 3.1 ships.
 
 ## 20. Native-Spanish review debt
 
@@ -532,23 +557,51 @@ is provisional; no privacy policy is claimed approved.
 ## 23. Pull request, CI and final state (2026-08-22)
 
 - **Draft PR #54** — https://github.com/beford782/LacksFurniture/pull/54 —
-  `claude/phase1-trust-integrity` → `main`, **draft, not merged, not to be
-  marked ready until the owner rules on the Slice 5 merge order (§14d)**.
+  `claude/phase1-trust-integrity` → `main`, **draft, not merged. Merge order
+  ruled 2026-08-21 (this PR first; #53 integrates afterwards, §14d). Not to
+  be marked ready until every gate in Exit 13 of the roadmap block is
+  recorded: the nine-line copy approval (incl. the `sleep_position` gloss),
+  the Welcome/Review copy approval, the privacy-policy decision, the physical
+  mounted-iPad pass in both orientations and languages, the VoiceOver sanity
+  pass, a real Windows forced-colors pass, the priority native-Spanish review,
+  and the owner's live review.**
 - Revalidation commit `f6fac09` (audits 1–3 resolved; packet; roadmap
   sequence) followed by this record. Pushed to `origin`.
-- GitHub CI at `f6fac09`: workflow_dispatch run 32542823153 and the PR's own
-  pull_request run 32542881301 (results recorded in the PR's checks; the
-  terminal summary of the session that opened the PR lists their conclusions).
-  Earlier head `ac95a7b`: run 32539492057 success (sweep 331/331).
+- GitHub CI: pull_request run 32542916416 at `12ad950` — **success** (trust
+  121/121, sweep 334/334); workflow_dispatch 32542823153 at `f6fac09` —
+  success; 32539492057 at `ac95a7b` — success (sweep 331/331). Run
+  32542881301 (pull_request at `f6fac09`) was cancelled as superseded when
+  `12ad950` was pushed. The run at the current head is recorded in §24.
 - Baselines: original implementation baseline `4a76503` (origin/main at branch
   creation); post-integration `main` baseline **unchanged — `4a76503`** (no
   new `main` existed to integrate; Slice 5 is unmerged draft PR #53).
 - **Nothing merged. Nothing deployed. No showroom authorization.** The physical
-  iPad pass (both orientations, EN/ES), the Windows forced-colors check, the
-  VoiceOver sanity pass or accepted risk, the native-Spanish review of the
-  three privacy/audience sentences, the privacy-policy approval
+  iPad pass (both orientations, EN/ES), the real Windows forced-colors check,
+  the VoiceOver sanity pass (required, R7), the priority native-Spanish review
+  of the three privacy/audience sentences and the idle body, the privacy-policy approval
   (`privacyDraftNotice` is customer-visible today) and Blake's sign-off on the
   nine help lines all remain outstanding; the owner packet lists each.
+
+## 24. Owner rulings round (2026-08-22) — what changed
+
+- Commits: `444abe2` idle-dialog copy (R5); `c65a437` sweep anchor
+  (position-independent wipe-inventory mutant); the docs commits that record
+  R1–R8 in the roadmap, this report, the owner packet and the PR bodies; the
+  physical verification packet `docs/trust-integrity-physical-gate-2026-08-21.md`.
+- GitHub: PR #54's body rewritten to the 16-section structure with 16
+  unchecked gates; one factual merge-order comment posted on PR #53; no labels
+  applied (the repository has only GitHub's nine defaults, none of which
+  expresses a dependency or a manual-testing requirement; no label was created).
+- Exact idle copy now shipped: EN "Session paused. Continue this session where
+  you left off, or start a new customer to clear it." / ES (provisional)
+  "Sesión en pausa. Sigue en esta sesión donde la dejaste o empieza con otro
+  cliente para borrarla." The dialog's controls are "Continue this session" /
+  "Start new customer" (ES "Seguir en esta sesión" / "Empezar con otro
+  cliente"); the owner's direction said "restart", which is the utility-bar
+  control and is inert while the dialog is open, so the sentence names the
+  dialog's own confirm control instead (deviation documented).
+- Conflict forecast re-run at `12ad950` × `6decbef`: five files (§14d).
+- CI at the final head and the PR state: §23 / the terminal summary.
 
 ## 22. Rollback strategy
 

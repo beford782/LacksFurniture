@@ -9,7 +9,24 @@ owner-review decisions (see "Phase 1 direction decisions — recorded
 see the open-decisions register. Device hardening remains BLOCKING for
 showroom use.**
 
-**Last updated:** 2026-08-21 *(inserts the **Phase 1 cross-cutting gate —
+**Last updated:** 2026-08-22 *(records the owner's 2026-08-21 product-direction
+rulings on the Trust integrity gate — R1 merge order: draft PR #54 (the gate)
+merges before draft PR #53 (Slice 5), which then integrates the resulting
+`main` and proves the combined behaviour; R2 heritage stays Welcome-only this
+cycle; R3 the shipped Gold-first / within-tier presentation is retained this
+cycle with the 15px relativity note, options B–D deferred, nothing in 3.3
+authorized; R4 the removed hardcoded "never sold / unsubscribe" promise is
+never restored and no other absolute promise is authored; R5 the idle
+dialog's body becomes behaviourally exact and dictionary-driven (shipped on
+the branch, Spanish provisional); R6 "since 1935" stays as shipped,
+provisional, the BBB 1924 entry unresolved, no anniversary arithmetic; R7 a
+one-time VoiceOver sanity pass on the mounted iPad is REQUIRED before #54
+leaves draft; R8 the mounted-device gate stands. These are product-direction
+rulings only — not legal, native-language, device or showroom approval, and
+not authorization to merge either PR. The conflict forecast between the two
+branches is re-stated as five files (it was three before the Sleep System
+containers joined the wipe inventory). The previous revision, 2026-08-21,
+inserted the **Phase 1 cross-cutting gate —
 Trust integrity and transparency** (🔨, on branch `claude/phase1-trust-integrity`
 from `4a76503`), discovered by the 2026-08-21 quiz trust investigation
 (`docs/quiz-trust-investigation-2026-08-21.md`). By owner instruction it sits
@@ -79,11 +96,13 @@ approved order after Slice 4 and before Slice 5, and its block sits after item
 `claude/nocturne-slice5-sleep-plan` (commits C0–C7, draft PR #53, unmerged).
 *(An earlier revision of this paragraph said Slice 5 was `⬜`, approved to build
 and not started; it began on its own branch — draft PR #53, head `6decbef` —
-before 2026-08-21. The gate is Slice 5's prerequisite in the approved order:
-the planned merge order is the gate first, then Slice 5, which integrates
-across it once the gate is on `main`. That does not stop Slice 5's branch
-work, which continues concurrently. Any other merge order is an owner ruling
-to be recorded here, not a default.)* Item 1.7 carries its own scope
+before 2026-08-21. The gate is Slice 5's prerequisite in the approved order,
+and the merge order is **ruled (owner, 2026-08-21): the gate — draft PR #54 —
+merges first; Slice 5 — draft PR #53 — then updates from the resulting
+`main`, resolves the forecast both-added conflicts semantically, rebuilds the
+demo bundle and re-runs the complete suite on the combined tree.** Slice 5
+was developed concurrently and its branch work continues; #53's current CI is
+not post-gate integration proof. The ruling authorizes neither merge.)* Item 1.7 carries its own scope
 and exit, and its Payment Choice row was deliberately excluded from Slice 4 by
 owner ruling 3. The full recommended order is
 recorded in the 2026-08-14 decision block. The two conditions Phase 1 implementation required — the 0.4
@@ -1156,8 +1175,9 @@ Plan — see the gate block after item 1.7. It is an integrity repair and a
 prerequisite for the later customer-facing screens, not a new visual feature,
 and it does not change the approved D1–D6 direction. Slice 5 had already begun
 on `claude/nocturne-slice5-sleep-plan` (C0–C7, draft PR #53, unmerged) when the
-gate was inserted; its branch work continues, and per this order it merges
-after the gate. Nothing here changes Slice 5's scope or exit.)*
+gate was inserted; its branch work continues, and by owner ruling (2026-08-21)
+it merges after the gate and integrates the resulting `main`. Nothing here
+changes Slice 5's scope or exit.)*
 
 ### 1.1 — Sleep Brief ⬜
 
@@ -2072,10 +2092,11 @@ Consultation Summary: the customer's plan for the in-store trial, presented
 by the salesperson.
 
 *(2026-08-21: in the approved order the cross-cutting Trust integrity gate
-(the block after this item) precedes this item and merges first. Slice 5
-began on `claude/nocturne-slice5-sleep-plan` (draft PR #53) before the gate
-was inserted and continues; the gate adds nothing to this item's scope or
-exit. The `⬜` above is stale — Slice 5 is `🔨` — and is Slice 5's branch to
+(the block after this item) precedes this item and merges first (owner
+ruling 2026-08-21). Slice 5 began on `claude/nocturne-slice5-sleep-plan`
+(draft PR #53) before the gate was inserted and continues; after the gate
+merges it integrates the resulting `main` and proves the combined behaviour;
+the gate adds nothing to this item's scope or exit. The `⬜` above is stale — Slice 5 is `🔨` — and is Slice 5's branch to
 move, per the 1.1 precedent.)*
 
 What it carries, per the approved direction: an explicit finalist block —
@@ -2124,8 +2145,8 @@ and is not reopened by it.
 **Placement.** In the approved 2026-08-14 slice order it sits **after (4)
 Slice 4 Payment Choice and before (5) Slice 5 Sleep Plan**; Slice 5 had already
 begun on its own branch (draft PR #53) when the gate was inserted; its
-development continues, and per the approved order it merges after this gate
-(see the decision block). **This block's position after item 1.7 is topical,
+development continues, and by owner ruling (2026-08-21) it merges after this
+gate and integrates the resulting `main` (see the decision block). **This block's position after item 1.7 is topical,
 not temporal** — the 1.x items are numbered by subject and have never encoded
 schedule (Slice 1 shipped as 1.3, Slice 2 as 1.1, Slice 3 as 1.2, Slice 4 as
 1.5); the gate's place in the schedule is the approved slice order and the
@@ -2188,8 +2209,10 @@ prototype worktree is preserved as research evidence and is not merged.
 
 **Tier architecture — a cross-tier marker, a global maximum, any cross-tier
 ranking — remains Phase 3.3 🔒. The Gold-first initial-tier presentation is a
-separate, presentation-only open owner decision (register: "Tier presentation
-(trust)"); it is not 3.3 and does not wait on it.** This gate may improve the existing relativity
+separate, presentation-only owner decision (register: "Tier presentation
+(trust)" — ruled 2026-08-21: the shipped Gold-first presentation is retained
+this cycle; a neutral initial tier and a cross-tier marker stay deferred); it
+is not 3.3 and does not wait on it.** This gate may improve the existing relativity
 note's legibility; it may not change tier behaviour, and it adds no
 confessional line and no cross-tier marker.
 
@@ -2217,10 +2240,12 @@ The copy inventory is in `docs/trust-integrity-implementation-2026-08-21.md`.
 **This gate grants no showroom-use authorization.** `docs/kiosk-device-hardening.md`
 remains BLOCKING; the phase-wide device-matrix merge gate, the Windows
 forced-colors visual check and Blake's live review apply to it exactly as to
-every slice. No VoiceOver verification is owed as a gate (screen-reader
-functionality is out of scope by the 2026-08-12 permanent ruling); the
-owner's 2026-08-21 instruction asked for a one-time sanity pass on the new
-copy and focus behaviour, recorded in the register as that and nothing more.
+every slice. **A one-time VoiceOver sanity pass on the mounted iPad is
+required before PR #54 leaves draft (owner ruling R7, 2026-08-21)** — a check
+of the new headline focus and of the Welcome and Review lines in reading
+order, with no accepted-risk alternative; screen-reader functionality itself
+stays out of scope by the 2026-08-12 permanent ruling, which this does not
+reopen.
 
 **Exit:**
 
@@ -2242,10 +2267,15 @@ copy and focus behaviour, recorded in the register as that and nothing more.
 11. No trust-story rail exists on production question screens.
 12. The remaining tier-presentation questions are recorded in the register,
     not implemented.
-13. Outstanding at merge, so the gate reads ⏳ until each is recorded:
-    native-Spanish review of `privacy.data_use_preview`, `privacy.data_use_live`
-    and `review.help` (the Invariant 12 exception), and Blake's sign-off on the
-    nine rewritten help lines as governed quiz copy.
+13. Recorded before PR #54 may leave draft (owner ruling 2026-08-21): Blake's
+    sign-off on the nine rewritten help lines as governed quiz copy; approval
+    of the Welcome and Review sentences; the privacy-policy decision; the
+    priority native-Spanish review of `privacy.data_use_preview`,
+    `privacy.data_use_live`, `review.help` and `safety.timeout_body` (the
+    Invariant 12 exception); the physical mounted-iPad pass in both
+    orientations and languages; the VoiceOver sanity pass; a real Windows
+    forced-colors pass; and Blake's live review. None of these is satisfied by
+    browser emulation or by the strings being implemented.
 
 ---
 
@@ -2521,14 +2551,14 @@ approval; its presence is a bar on proceeding.
 | Visible stale-financing status band (production) | ❓ | Blake | A case for it plus review sign-off. Prototype-only today (D6); if pursued, production gets its own dedicated governed key — not a reuse of `staleAnnouncement` |
 | Customer-recorded trial reactions | ❓ | Blake | A case for it. The Nocturne prototype's own candidate next revision; deliberately not built (D6) |
 | Presenter mode — shipping mechanism | ❓ | Blake + kiosk hardening review | The hardening review decides the mechanism; the prototype's query parameter is rehearsal tooling, not a shipped design (D6) |
-| **Tier presentation (trust)** — retain the shipped Gold-first initial tier with the within-tier model, or a neutral initial tier choice, or another owner-approved presentation control | ❓ | Blake | A ruling. *Should the experience provide a neutral initial tier choice, or retain Gold-first presentation with the current within-tier model?* Presentation only — it must preserve tier identity and membership, within-tier order, the threshold, cap and back-fill. A cross-tier highest-fit marker or any global best-match computation is the 3.3 row above, not this one. The legible within-tier relativity note (trust gate) is NOT this decision |
-| **Heritage content** — Welcome only (current), an optional moderated-research condition, or no additional heritage | ❓ | Blake | A case for any addition. The in-quiz rail is not approved (2026-08-21 investigation); any future fact beyond the Welcome line needs governance modelled on financing (freshness, allowlisted source, approval, ES review) |
-| **Founding-year discrepancy** — lacks.com "1935" vs the BBB record "Business Started 1/1/1924" | ❓ | Blake | Resolve through corporate or archival records. 1935 is corroborated by two independent sources (the ISJL encyclopedia; the HFA's 2025 "90th year"); the BBB entry may describe a predecessor entity, an earlier registration, or be inaccurate — it is not evidence that 1935 is false, and the corroboration is not proof either. Affects `text.heritage` / `voice.eyebrow` (and the dead `text.trustSignal`); the shipped line stays as it is meanwhile. No anniversary arithmetic is to be added either way |
+| **Tier presentation (trust)** — a neutral initial tier choice or another presentation control, versus the shipped Gold-first initial tier with the within-tier model | ❓ | Blake | *(Ruled for this cycle, 2026-08-21: the shipped Gold-first / within-tier presentation is retained with the 15px relativity note; a neutral initial tier (B) and any other control (D) are DEFERRED to a later owner/research decision; this is not a permanent endorsement of Gold-first.)* Any future change is presentation only — it must preserve tier identity and membership, within-tier order, the threshold, cap and back-fill. A cross-tier highest-fit marker or any global best-match computation is the 3.3 row above (NOT AUTHORIZED), not this one. The legible within-tier relativity note is NOT this decision |
+| **Heritage content** — Welcome only (current), an optional moderated-research condition, or no additional heritage | ❓ | Blake | *(Ruled for this cycle, 2026-08-21: the restrained Welcome treatment stays; no per-question rail, no anniversary count, no store counts, awards, testimonials, QR codes, community claims or anecdotes in the quiz; the research prototype is preserved separately; historical content may be tested later as an optional research condition — that later test is what stays open here.)* Any future fact beyond the Welcome line needs governance modelled on financing (freshness, allowlisted source, approval, ES review) |
+| **Founding-year discrepancy** — lacks.com "1935" vs the BBB record "Business Started 1/1/1924" | ❓ | Blake | *(Ruled for this branch, 2026-08-21: the "since 1935" line is not altered and is treated as provisional; the BBB entry is an unresolved discrepancy, not proof; no second founding-year exposure and no anniversary arithmetic are added; the ruling is not historical verification.)* Resolve through corporate or archival records. 1935 is corroborated by two independent sources (the ISJL encyclopedia; the HFA's 2025 "90th year"); the BBB entry may describe a predecessor entity, an earlier registration, or be inaccurate — it is not evidence that 1935 is false, and the corroboration is not proof either. Affects `text.heritage` / `voice.eyebrow` (and the dead `text.trustSignal`); the shipped line stays as it is meanwhile. No anniversary arithmetic is to be added either way |
 | **Privacy approval** — approver of record; final showroom wording; `text.privacyDraftNotice` resolution — **the overlay shows "Draft policy — pending Lacks Furniture approval before live use." to customers today, EN and ES, until this is resolved**; the native-Spanish reviewer for the data-use sentences; the live-mode (email-enabled) wording, which must disclose what `Code.gs` does with a submitted address | ❓ | Blake + business/legal | Written approval recorded in config or this document. Until then the preview-mode sentence ships only while `gasUrl` is blank, and the overlay keeps its draft notice |
 | **Specialist-summary scope** — exactly what the Consultation Summary shows from the answers (today: finalists, what to test, and implications derived from sleep-issue and health answers), whether the customer may control what appears, whether health-derived implications remain | ❓ | Blake | A ruling; 1.6 owns the presentation. The trust gate's Review line describes today's behaviour and must be re-verified if the scope changes |
-| **Idle-dialog wording** — "Your session is paused to protect your privacy." is Gate 1B required copy, pinned exactly by `tests/session_safety_check.mjs`; the session is obscured and inert but the answers persist for the grace period | ❓ | Blake | A ruling plus the test edits; the trust gate left it as shipped |
+| **Idle-dialog wording** — the Gate 1B body "Your session is paused to protect your privacy." described intent, not behaviour (a grace countdown runs; the answers persist until it ends or Start new customer) | ❓ | Blake | *(Ruled 2026-08-21, R5: replaced on the trust branch with dictionary copy that names the dialog's real controls — EN "Session paused. Continue this session where you left off, or start a new customer to clear it."; ES provisional. Product direction only.)* Still open here: the final EN wording's copy sign-off and the native review of the Spanish |
 | **Trust measurement** — moderated current-vs-process-transparency sessions; whether a restrained heritage condition is retained as a third research condition; any aggregate local measurement store (which must record no answers and no identity, or the data-use sentence becomes false) | ❓ | Blake | Approval of the study design; the store is designed before anything is promised |
-| **VoiceOver sanity pass on the trust copy** — the owner's 2026-08-21 instruction asked for a one-time sanity pass on the mounted iPad (new headline focus, the Welcome and Review lines in reading order, no duplicate announcement) or an explicitly accepted residual risk | ❓ | Blake | Run it, or record the residual risk as accepted. Not a gate and not a deferred task: screen-reader functionality stays out of scope by the 2026-08-12 permanent ruling, which this row does not reopen |
+| **VoiceOver sanity pass on the trust copy** — the owner's 2026-08-21 ruling (R7) requires a one-time sanity pass on the mounted iPad (new headline focus, the Welcome and Review lines in reading order, no duplicate announcement) before PR #54 leaves draft | ❓ | Blake | Run it and record the result in `docs/trust-integrity-physical-gate-2026-08-21.md`; there is no accepted-risk alternative. Screen-reader functionality itself stays out of scope by the 2026-08-12 permanent ruling, which this row does not reopen |
 
 *(Resolved and removed from the table: "Phase 1 scoring-fixture exit gate" —
 approved by owner directive 2026-08-12 and built the same day; see the Phase 1
@@ -2649,8 +2679,8 @@ document, not here.
    inserted 2026-08-21 by owner instruction after Slice 4 and before Slice 5
    (block after item 1.7; branch `claude/phase1-trust-integrity` from
    `4a76503`). Slice 5 is concurrently in development on its own branch
-   (draft PR #53, head `6decbef`) and, per the approved order, merges after
-   this gate.
+   (draft PR #53, head `6decbef`) and, by owner ruling 2026-08-21, merges
+   after this gate and integrates the resulting `main`.
 9. 🔨 **The visible redesign** — Phase 1. *(Implementation explicitly
    authorized by Blake 2026-08-12 — see the authorization block at the top of
    Phase 1. Direction set by the 2026-08-14 Nocturne owner review, D1–D6,
