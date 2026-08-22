@@ -1030,6 +1030,19 @@ adverbs. Self-tests 1104 → 1118 / 0; manifest 352 → 354; all seventeen
 validator entries proven caught in place. Customer-visible bytes unchanged.
 The external reviewer was asked to re-inspect an eighth time.
 
-All twelve threads were answered on the PR with this rationale and resolved after
+**Threads 13 and 14 (`f3a8b91`, eighth re-review) — fixed in `9988795`.**
+Thread 13 (fail-open): the destination capture stopped at three words, so
+"not shared with our service providers or anyone else" was admitted; the
+destination now runs to the end of its clause and the universal scan
+separately covers everything after the verb to the end of the sentence
+(fail closed across a comma list). Thread 14 (false rejection): the bare
+determiner "any" counted as universal, so "not sent to absolutely any
+lender" was rejected; universality now means a pronoun or a universal phrase
+("any other", "anyone else", "ningún sitio"), and determiner + noun stays a
+scoped, qualified claim. Self-tests 1118 → 1129 / 0; manifest 354 → 356; all
+nineteen validator entries proven caught in place. Customer-visible bytes
+unchanged. The external reviewer was asked to re-inspect a ninth time.
+
+All fourteen threads were answered on the PR with this rationale and resolved after
 the tests passed; the external reviewer was asked to re-inspect the change
 before the merge.

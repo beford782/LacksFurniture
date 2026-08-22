@@ -51,7 +51,8 @@ deliberately not a delimiter, fail closed. A seventh (`babef79`) completes the f
 and the Spanish active forms. An eighth (`bbf3c9c`) replaces the phrase list with a grammatical family after
 folding typographic apostrophes. A ninth and tenth (`9aa11ac`) allow adverbs between negation and verb and scope
 transmission negations to absolute claims about governed data. An eleventh and twelfth (`dbde3ec`) test every destination word for universality and
-restrict the negation gap to auxiliaries and adverbs. All twelve threads
+restrict the negation gap to auxiliaries and adverbs. A thirteenth and fourteenth (`9988795`) scan the whole destination for a universal and
+treat a scoped "any lender" as qualified. All fourteen threads
 answered and resolved
 on the PR.
 
