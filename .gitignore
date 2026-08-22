@@ -14,6 +14,7 @@ docs/*
 !docs/quiz-copy-engine-correspondence.md
 !docs/trust-integrity-implementation-2026-08-21.md
 !docs/trust-integrity-owner-review-2026-08-21.md
+!docs/trust-integrity-physical-gate-2026-08-21.md
 tools/strip-bg.py
 
 # Local scratch / design mockups (kept locally, never committed)
@@ -22,3 +23,6 @@ tmp/
 # Python bytecode
 __pycache__/
 *.pyc
+
+# Manual-gate evidence (screenshots from the physical iPad / Windows passes) - never committed
+outputs/manual-gates/
