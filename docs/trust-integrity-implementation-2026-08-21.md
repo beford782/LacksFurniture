@@ -961,6 +961,21 @@ then the previous sentence. Self-tests 1008 → 1027 / 0; manifest 343 → 345;
 all eight validator entries proven caught in place. Customer-visible bytes
 unchanged. The external reviewer was asked to re-inspect a third time.
 
-All four threads were answered on the PR with this rationale and resolved after
+**Threads 5 and 6 (`bf87c26`, third re-review) — fixed in `b98b7a7`.** Thread
+5 was a real fail-open: only the first occurrence of a signal in a sentence
+was bound, so "Payment card details are not stored, but your answers are not
+stored." was admitted; every occurrence is now inspected. Thread 6: "but",
+"while", "whereas", "although", "though", "yet" (ES "pero", "sino",
+"aunque", "mientras") now delimit the clause a negation binds to, so "Your
+answers are emailed but payment card details are not stored." passes.
+"and"/"or" are **deliberately not** clause delimiters — they also coordinate
+subject noun phrases ("your email and card numbers are not stored"), and
+splitting there would admit a false promise about the first conjunct; a
+coordinated clause on "and" stays rejected (fail closed, rephrasable) and
+two self-tests pin that choice by name. Self-tests 1027 → 1038 / 0; manifest
+345 → 347; all ten validator entries proven caught in place. Customer-visible
+bytes unchanged. The external reviewer was asked to re-inspect a fourth time.
+
+All six threads were answered on the PR with this rationale and resolved after
 the tests passed; the external reviewer was asked to re-inspect the change
 before the merge.

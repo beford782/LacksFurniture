@@ -45,7 +45,10 @@ mutation manifest only; no customer-visible byte changed (implementation report
 at runtime but was admitted as blank — fixed the same way under your
 live-capable ruling (`5a1f70c`); a fourth bound the storage negation to its own
 clause so a time adverbial such as "during your session" no longer rejects an
-unrelated claim (`ea887db`). All four threads answered and resolved on the PR.
+unrelated claim (`ea887db`). A fifth and sixth (`b98b7a7`) inspect every occurrence of a phrase and let
+clause conjunctions (but/while/although…) delimit the bound phrase — "and" is
+deliberately not a delimiter, fail closed. All six threads answered and resolved
+on the PR.
 
 The physical gates are closed for the bytes at `f748f59` (§5). Everything
 below is **yours or someone you name**; nothing on this sheet is pre-decided,
