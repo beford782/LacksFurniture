@@ -1052,6 +1052,18 @@ token or a long segment. Self-tests 1129 → 1134 / 0; manifest 356 → 357;
 all twenty validator entries proven caught in place. Customer-visible bytes
 unchanged. The external reviewer was asked to re-inspect a tenth time.
 
-All fifteen threads were answered on the PR with this rationale and resolved after
+**Threads 16 and 17 (`9fa87e2`, tenth re-review) — fixed in `f2aa300`.**
+Thread 16 (fail-open): a coordinated segment longer than six words stopped
+the destination scan before "… or anyone else"; the length cap is gone.
+Thread 17 (false rejection): a dash-introduced clause with a lexical verb
+was appended to the destination. A segment now continues only on structural
+evidence of coordination — comma-joined (a colon, parenthesis, quote or a
+dash that does not open with a coordinator ends the destination), no clause
+starter or verb-like token, and either a coordinator or a short list item of
+at most four words. Self-tests 1134 → 1145 / 0; manifest 357 → 359; all
+twenty-two validator entries proven caught in place. Customer-visible bytes
+unchanged. The external reviewer was asked to re-inspect an eleventh time.
+
+All seventeen threads were answered on the PR with this rationale and resolved after
 the tests passed; the external reviewer was asked to re-inspect the change
 before the merge.

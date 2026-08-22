@@ -53,7 +53,8 @@ folding typographic apostrophes. A ninth and tenth (`9aa11ac`) allow adverbs bet
 transmission negations to absolute claims about governed data. An eleventh and twelfth (`dbde3ec`) test every destination word for universality and
 restrict the negation gap to auxiliaries and adverbs. A thirteenth and fourteenth (`9988795`) scan the whole destination for a universal and
 treat a scoped "any lender" as qualified. A fifteenth (`53b7e27`) limits that scan to the coordinated continuation of the
-destination. All fifteen threads
+destination. A sixteenth and seventeenth (`f2aa300`) remove the length cap and require structural
+evidence of coordination for a continuation. All seventeen threads
 answered and resolved
 on the PR.
 
