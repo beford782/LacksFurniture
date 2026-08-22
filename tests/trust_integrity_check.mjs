@@ -272,6 +272,9 @@ ok("the preview variant says Restart clears the answers — and the confirmed Re
   const inventory = (norm.match(/var SESSION_CONTENT_IDS = \[([\s\S]*?)\];/) || [null, ""])[1];
   ok("the wipe inventory includes the four Sleep System containers (answer-derived prose)",
     ["sleepSystemMain", "sleepSystemGuidance", "sleepSystemRail", "sleepSystemPlanList"].every((id) => inventory.includes(`'${id}'`)));
+  const textInventory = (norm.match(/var SESSION_TEXT_IDS = \[([\s\S]*?)\];/) || [null, ""])[1];
+  ok("the text wipe inventory includes the drawer's answer-derived lines (shortlist fit, pillow prompt title and reason)",
+    ["drawerShortlistFit", "drawerSystemPromptTitle", "drawerSystemPromptReason"].every((id) => textInventory.includes(`'${id}'`)));
 }
 ok("the live variant makes sending conditional on the customer's choice and never claims nothing leaves",
   /sent only if you choose to email/i.test(dictEn["privacy.data_use_live"]) && /solo se envían si eliges/i.test(dictEs["privacy.data_use_live"])

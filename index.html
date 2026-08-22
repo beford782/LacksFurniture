@@ -20382,6 +20382,12 @@
     // would otherwise still be holding the previous customer's last utterance.
     var SESSION_TEXT_IDS = [
       'dreamCodeValue', 'dreamCodePct', 'emailError', 'drawerNavLabel', 'accStatus',
+      // Trust gate (2026-08-21): answer-derived drawer text (shortlist fit line,
+      // pillow prompt title and reason) is overwritten before the drawer can open
+      // again, but the wipe owns every answer-derived surface, not only the
+      // visible ones (found by the privacy re-review). No quote characters in
+      // this comment: the session suite parses the quoted ids from this block.
+      'drawerShortlistFit', 'drawerSystemPromptTitle', 'drawerSystemPromptReason',
       'hf2FinancingStatus', 'financingSheetStatus', 'financingSheetAction',
       'sessionSafetyLive', 'dataErrorLive',
       'resultsRevealTitle', 'resultsRevealSubtitle',
