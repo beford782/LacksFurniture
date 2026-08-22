@@ -117,7 +117,8 @@ function makeEl(id, doc) {
       _s: new Set(),
       add(...c) { c.forEach((x) => el.classList._s.add(x)); },
       remove(...c) { c.forEach((x) => el.classList._s.delete(x)); },
-      contains(c) { return el.classList._s.has(c); }
+      contains(c) { return el.classList._s.has(c); },
+      toggle(c, force) { if (force === undefined) force = !el.classList._s.has(c); if (force) el.classList._s.add(c); else el.classList._s.delete(c); return force; }
     },
     getAttribute(k) { return el.attrs[k]; },
     setAttribute(k, v) { el.attrs[k] = v; },
@@ -157,7 +158,7 @@ function makeEl(id, doc) {
 
 const SCREEN_IDS = ['welcomeScreen', 'questionScreen', 'reviewScreen', 'profileScreen', 'resultsScreen'];
 
-function makeQuizEnv({ lang = 'en', answers = {}, at = 0, mutate = null, active = 'questionScreen', gate = undefined } = {}) {
+function makeQuizEnv({ lang = 'en', answers = {}, at = 0, mutate = null, active = 'questionScreen', gate = undefined, realShowScreen = false } = {}) {
   // `log` records the ORDER of scroll resets and focus moves, so a test can
   // assert "scroll first, then focus" rather than merely "both happened".
   const log = [];
@@ -167,6 +168,13 @@ function makeQuizEnv({ lang = 'en', answers = {}, at = 0, mutate = null, active 
     getElementById(id) {
       if (!doc._els.has(id)) doc._els.set(id, makeEl(id, doc));
       return doc._els.get(id);
+    },
+    // Enough of the document for the PRODUCTION showScreen() to run: the
+    // screen set, the active screen, and the header chrome it toggles.
+    querySelectorAll(sel) { return sel === '.screen' ? SCREEN_IDS.map((s) => doc.getElementById(s)) : []; },
+    querySelector(sel) {
+      if (sel === '.screen.active') return SCREEN_IDS.map((s) => doc.getElementById(s)).find((e) => e.classList.contains('active')) || null;
+      return doc.getElementById('sel:' + sel);
     }
   };
   doc._log = log;
@@ -195,7 +203,10 @@ function makeQuizEnv({ lang = 'en', answers = {}, at = 0, mutate = null, active 
     src.L, src.accents, src.applyAccent, src.cols, src.visible, src.resolveCopy,
     src.feel, src.render, src.select, src.next, src.prev, src.review,
     src.formatAnswer, src.reviewChrome, src.renderReview, src.edit,
-    src.entered || '', src.afterChange || ''
+    src.entered || '', src.afterChange || '',
+    // The real showScreen() when asked for: it then OWNS the screen-transition
+    // hand-off (the tracker reset) instead of the stub modelling it.
+    realShowScreen && src.showScreen ? src.showScreen + '\nshowScreen = window.showScreen;' : ''
   ].join('\n');
   if (mutate) body = mutate(body);
 
@@ -237,7 +248,8 @@ function makeQuizEnv({ lang = 'en', answers = {}, at = 0, mutate = null, active 
     + '  answers: function(){ return answers; },\n'
     + '  wipe: function(){ currentQuestion = 0; answers = {}; editingFromReview = false; },\n'
     + '  editing: function(){ return editingFromReview; },\n'
-    + '  entered: function(){ if (typeof noteQuestionScreenEntered === "function") noteQuestionScreenEntered(); }\n'
+    + '  entered: function(){ if (typeof noteQuestionScreenEntered === "function") noteQuestionScreenEntered(); },\n'
+    + '  showScreen: function(id){ return showScreen(id); }\n'
     + '};';
 
   const api = new Function(
@@ -1365,6 +1377,30 @@ function walkNext(env, label) {
     env.api.at() === QID('sleep_position') && env.scrollCalls.length === scrollsAfterNav + 1 && env.get('questionHeadline')._focusCount === 1);
 }
 {
+  // The PRODUCTION showScreen() owns the hand-off. A previous customer left the
+  // record at sleep_issues; the wipe shows Welcome and the next customer starts
+  // the quiz. Executed against the real showScreen: the true transition nulls
+  // the record, so the new customer's first render is screen-owned.
+  const env = makeQuizEnv({ at: QID('sleep_issues'), answers: {}, realShowScreen: true });
+  ok('the production showScreen() was extracted for this case', !!src.showScreen);
+  env.api.entered(); env.api.render();                 // previous customer is on sleep_issues
+  env.api.showScreen('welcomeScreen');                 // wipe: resetSessionState → showScreen('welcomeScreen')
+  env.api.wipe();
+  env.api.showScreen('questionScreen');                // startQuiz → showScreen('questionScreen')
+  env.api.render();                                    // → renderQuestion() of the first question
+  ok('real showScreen: the new customer\'s first render after the true transition is screen-owned (no headline focus)',
+    env.api.at() === QID('trigger') && env.get('questionHeadline')._focusCount === 0 && !env.log.includes('focus:questionHeadline'));
+  env.api.select('trigger', 'pain', false); env.api.next();
+  ok('...and the next genuine change is repaired', env.get('questionHeadline')._focusCount === 1);
+  // A same-screen showScreen('questionScreen') (a re-render, as switchLanguage
+  // does) does NOT hand the next render to the screen: the record survives.
+  const logBefore = env.log.length;
+  env.api.showScreen('questionScreen');
+  env.api.select('mattress_size', 'queen', false); env.api.next();
+  ok('real showScreen: a same-screen call keeps the record, so the following change is still repaired',
+    env.api.at() === QID('partner_sleep') && env.get('questionHeadline')._focusCount === 1 && env.log.slice(logBefore).includes('focus:questionHeadline'));
+}
+{
   // The refusal gate releases: one gated transition, then a normal one.
   let gated = true;
   const env = makeQuizEnv({ at: QID('trigger'), answers: {}, gate: function() { return gated; } });
@@ -1561,6 +1597,16 @@ section('negative controls — the load-bearing assertions fail on a broken tree
   env.api.entered(); env.api.render();
   ok('control: treating the first screen-owned render as a change is detected (double-handled entry)',
     env.get('questionHeadline')._focusCount === 1);
+}
+{
+  const env = makeQuizEnv({
+    at: QID('sleep_issues'), answers: {}, realShowScreen: true,
+    mutate: (s) => s.replace("      if (!sameScreen && typeof noteQuestionScreenEntered === 'function') noteQuestionScreenEntered();", '')
+  });
+  env.api.entered(); env.api.render();
+  env.api.showScreen('welcomeScreen'); env.api.wipe(); env.api.showScreen('questionScreen'); env.api.render();
+  ok('control: showScreen no longer handing the first render to the screen is detected (the next customer\'s first question would be double-handled)',
+    env.get('questionHeadline')._focusCount >= 1);
 }
 {
   const env = makeQuizEnv({

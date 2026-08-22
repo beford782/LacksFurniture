@@ -181,7 +181,7 @@ ok("the document records the re-audit triggers (scores, catalog tags, priorities
   /Code\/data locations that trigger a re-audit/.test(DOC) && /calculateScores\(\)/.test(DOC)
   && /resolveConsultationSummary\(\)/.test(DOC) && /scoreAccessoriesFromAnswers\(\)/.test(DOC));
 ok("the document records the verification date and the outstanding approvals (owner sign-off, native ES)",
-  /\*\*Verification date:\*\* 2026-08-21/.test(DOC) && /sign-off as governed quiz copy is\s+still owed/.test(DOC)
+  /\*\*Verification date:\*\* 2026-08-21/.test(DOC) && /sign-off as governed quiz copy[\s\S]{0,160}still owed/.test(DOC)
   && /NATIVE REVIEW REQUIRED/.test(DOC));
 
 // ================================================================ B. no heritage rail
@@ -265,6 +265,14 @@ ok("the preview variant carries a preview-mode signal phrase in both languages (
 ok("the preview variant says Restart clears the answers — and the confirmed Restart does (Gate 1B wipe)",
   /Restart clears them\.$/.test(dictEn["privacy.data_use_preview"]) && /Reiniciar las borra\.$/.test(dictEs["privacy.data_use_preview"])
   && /resetSessionState\(\{ reason: 'confirmed_new_customer' \}\)/.test(norm));
+{
+  // ...of the DOM too: every container that renders answer-derived prose is in
+  // the wipe inventory, including the four Sleep System containers the
+  // privacy audit found still holding the previous customer's text.
+  const inventory = (norm.match(/var SESSION_CONTENT_IDS = \[([\s\S]*?)\];/) || [null, ""])[1];
+  ok("the wipe inventory includes the four Sleep System containers (answer-derived prose)",
+    ["sleepSystemMain", "sleepSystemGuidance", "sleepSystemRail", "sleepSystemPlanList"].every((id) => inventory.includes(`'${id}'`)));
+}
 ok("the live variant makes sending conditional on the customer's choice and never claims nothing leaves",
   /sent only if you choose to email/i.test(dictEn["privacy.data_use_live"]) && /solo se envían si eliges/i.test(dictEs["privacy.data_use_live"])
   && !/stays? on this tablet|nothing is sent/i.test(dictEn["privacy.data_use_live"])
@@ -344,6 +352,45 @@ ok("the Review help line reads the dictionary audience statement, and the old in
   /if \(help\) help\.textContent = t\('review\.help'\);/.test(norm)
   && !/specialist builds your recommendations|construiremos tu combinación/.test(norm));
 
+// C4b. The CALL SITE, executed: the real renderNocturnalLanding() (with the
+// real localizedConfigBlock, emailDeliveryLive and renderDataUseStatement, and
+// stubs for the landing's other collaborators) populates #landingDataUse from
+// the shipped config and dictionary. A regex on the call text could not tell
+// a live call from a dead one (found in review); this executes it.
+{
+  const landingSrc = fnSrc("function renderNocturnalLanding()");
+  const lcbSrc = fnSrc("function localizedConfigBlock(key)");
+  ok("renderNocturnalLanding() and localizedConfigBlock() extracted", !!landingSrc && !!lcbSrc);
+  function runLanding({ lang = "en", dict = dictEn, gasUrl = STORE.gasUrl, mutate = null } = {}) {
+    const els = new Map();
+    const mk = (id) => ({ id, textContent: "<untouched>", hidden: true, innerHTML: "", style: {}, classList: { add() {}, remove() {}, contains() { return false; } } });
+    const doc = {
+      getElementById: (id) => { if (!els.has(id)) els.set(id, mk(id)); return els.get(id); },
+      querySelector: (sel) => { if (!els.has(sel)) els.set(sel, mk(sel)); return els.get(sel); }
+    };
+    const t = (key) => (Object.prototype.hasOwnProperty.call(dict, key) ? dict[key] : key);
+    let body = lcbSrc + "\n" + liveSrc + "\n" + dataUseSrc + "\n" + landingSrc + "\nrenderNocturnalLanding();";
+    if (mutate) body = mutate(body);
+    new Function("document", "t", "STORE_CONFIG", "currentLang", "getActivePromotionScenario", "getSavingsPassConfig",
+      "financingEnabled", "savingsPassEnabled", "FC", "L", "updateLanguageControls", body)(
+      doc, t, { ...STORE, gasUrl }, lang, () => null, () => ({}), () => false, () => false, () => "",
+      (o) => (o && typeof o === "object" ? (o[lang] || o.en || "") : o), () => {});
+    return els.get("landingDataUse");
+  }
+  const en = runLanding();
+  ok("executing the real Welcome renderer with the shipped config populates the data-use line with the EN preview sentence",
+    !!en && en.hidden === false && en.textContent === dictEn["privacy.data_use_preview"]);
+  const es = runLanding({ lang: "es", dict: dictEs });
+  ok("...and with the Spanish dictionary, the ES preview sentence",
+    !!es && es.hidden === false && es.textContent === dictEs["privacy.data_use_preview"]);
+  const live = runLanding({ gasUrl: "https://script.google.com/macros/s/x/exec" });
+  ok("...and under a live gasUrl, the live sentence — from the same call site", !!live && live.textContent === dictEn["privacy.data_use_live"]);
+  const dead = runLanding({ mutate: (b) => b.replace("      renderDataUseStatement();", "      if (false) renderDataUseStatement();") });
+  ok("control: a dead call site is detected (the line would never render)", dead === undefined || dead.textContent === "<untouched>");
+}
+ok("the Review help placeholder in the static markup is EMPTY (the audience line is dictionary copy rendered at runtime; no stale claim in the pre-render DOM)",
+  /<p class="noct-quiz-help" id="reviewHelp"><\/p>/.test(norm) && !/Make sure everything looks right/.test(norm));
+
 // C5. The shipped operating state makes the preview sentence the true one, in production and in the demo.
 ok("production store-config gasUrl is blank and the demo bundle's is forced blank (the preview sentence is the shipped statement)",
   STORE.gasUrl === "" && DEMO_STORE.gasUrl === "");
@@ -376,7 +423,15 @@ const countOf = (re) => (code.match(re) || []).length;
     "Image()": /\bImage\s*\(/g, ".src assignment": /\.src\s*=[^=]/g, "location assignment": /\blocation\s*=[^=]/g,
     "document.location": /document\.location/g, "window.name": /window\.name\s*=[^=]/g, clipboard: /clipboard/gi,
     "Worker(": /\b(Shared)?Worker\s*\(/g, BroadcastChannel: /BroadcastChannel/g, RTCPeerConnection: /RTCPeerConnection/g,
-    importScripts: /importScripts/g, "new WebSocket": /new\s+WebSocket/g
+    importScripts: /importScripts/g, "new WebSocket": /new\s+WebSocket/g,
+    // Attribute- and element-based sinks (an image, media, form or frame whose
+    // URL is built at runtime rather than written as a literal).
+    "setAttribute(src/href/action/ping/srcset/formaction)": /setAttribute\(\s*['"](src|href|action|ping|data|srcset|formaction)['"]/g,
+    requestSubmit: /requestSubmit/g, ".srcset assignment": /\.srcset\s*=/g, ".action assignment": /\.action\s*=[^=]/g,
+    "print(": /\bprint\s*\(/g, "download attribute": /\bdownload\b/g, "dynamic import(": /\bimport\s*\(/g,
+    cookieStore: /cookieStore/g, WebTransport: /WebTransport/g, "Audio(": /\bnew\s+Audio\b|\bAudio\s*\(/g,
+    "createElement(iframe/object/embed/base/video/audio/script/link/form)": /createElement\(\s*['"](iframe|object|embed|base|video|audio|script|link|form)['"]/g,
+    formaction: /formaction/gi, "meta http-equiv": /http-equiv/gi, "ping=": /\bping=/gi
   };
   const present = Object.entries(forbidden).filter(([, re]) => countOf(re) > 0).map(([k]) => k);
   ok("zero other network, messaging, navigation or storage sinks", present.length === 0, present.join(","));
@@ -390,6 +445,23 @@ const countOf = (re) => (code.match(re) || []).length;
   ok("the only URL read is the motion flag; nothing writes answers or contact values to the URL or hash",
     countOf(/location\.search/g) <= 1 && countOf(/location\.hash\s*=/g) === 0 && countOf(/URLSearchParams\(/g) <= 1);
 }
+// publicAssetRoot is the one configured absolute host the app knows; it must
+// feed only the email payload's image URLs inside sendResults(), never a DOM
+// element (a config-host image is how a beacon would avoid the literal-URL pin).
+{
+  const refs = (code2.match(/publicAssetRoot/g) || []).length;
+  const sendSrc = fnSrc("window.sendResults = function()") || "";
+  ok("publicAssetRoot is referenced exactly once, inside sendResults() (the email payload), never to build a DOM element",
+    refs === 1 && /publicAssetRoot/.test(sendSrc));
+}
+// analytics.getSummary() returns the raw answers; it has no caller. Pinned so a
+// caller (a console dump, a payload field) cannot appear without a reviewed diff.
+ok("analytics.getSummary() (which returns raw answers) has no call site",
+  /getSummary: function\(\)/.test(norm) && !/\.getSummary\(/.test(code2));
+// This tripwire pins the named sink forms on executable text. It is a drift
+// alarm, not a proof against every possible sink (a string-split API name or
+// a config-host URL would evade it) — which is why the sentence's truth also
+// rests on the session suites' redaction pins and on review.
 ok("the analytics sink is in-memory plus a redacted console line — no transport (pinned by session_async_check too)",
   /analytics\.log = function|log: function|function log\(/.test(norm) && !/analytics[\s\S]{0,400}sendBeacon|fetch\(analytics/.test(norm));
 ok("Code.gs is reached only through that POST and its CAN-SPAM refusal sentinels still stand (no live send is possible yet)",
@@ -409,9 +481,11 @@ ok("the validator keys the gate on the runtime's notion of live (any non-blank g
 // ================================================================ D. tier-relativity legibility
 section("D — the tier-relativity statement is legible and semantically untouched");
 {
-  const rule = norm.match(/\.noct-tier-descriptor \.tier-relativity \{([^}]*)\}/);
+  const rules = [...norm.matchAll(/\.noct-tier-descriptor \.tier-relativity \{([^}]*)\}/g)];
+  const rule = rules[0];
   const size = rule ? Number((rule[1].match(/font-size:\s*(\d+(?:\.\d+)?)px/) || [])[1]) : NaN;
-  ok(`the relativity note is body size: the declared font-size is >= 15px (got ${size}px; the single rule, so computed = declared)`, size >= 15);
+  ok("exactly one rule styles the relativity note (no later override can shrink it unseen)", rules.length === 1, `${rules.length} rules`);
+  ok(`the relativity note is body size: the declared font-size is >= 15px (got ${size}px; one rule, so computed = declared)`, size >= 15);
   ok("the relativity note keeps the muted showroom ink (contrast pinned in contrast_check)",
     !!rule && /color: var\(--color-text-muted\);/.test(rule[1]));
   ok("the relativity note's wording is exactly the D3 ruling in both languages (semantics unchanged)",

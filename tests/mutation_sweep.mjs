@@ -1019,6 +1019,9 @@ const MUTATIONS = [
   ["trust: the question-change repair ignores the shared refusal gate",
     "      if (typeof screenTransitionOwnedElsewhere === 'function' && screenTransitionOwnedElsewhere()) return;\n      var screen = document.getElementById('questionScreen');",
     "      var screen = document.getElementById('questionScreen');", QUIZ],
+  ["trust: showScreen hands the first render to the screen only on Review transitions (a new customer's first question is double-handled)",
+    "      if (!sameScreen && typeof noteQuestionScreenEntered === 'function') noteQuestionScreenEntered();",
+    "      if (!sameScreen && id === 'reviewScreen' && typeof noteQuestionScreenEntered === 'function') noteQuestionScreenEntered();", QUIZ],
   ["trust: the rendered-question record freezes at the first question (every later answer tap becomes a change)",
     "      _renderedQuestionId = q.id;", "      if (_renderedQuestionId === null) _renderedQuestionId = q.id;", QUIZ],
   ["trust: the question-change repair stops checking that the question screen is the active screen",
@@ -1044,6 +1047,11 @@ const MUTATIONS = [
     '{\n  "questions": [', '{\n  "trustStories": [],\n  "questions": [', TRUST, "data/quiz.json"],
 
   // ---- Trust integrity gate (2026-08-21): privacy voice ---------------------
+  ["trust: the Sleep System containers leave the wipe inventory (a previous customer's prose survives Restart)",
+    "      'sleepSystemMain', 'sleepSystemGuidance', 'sleepSystemRail', 'sleepSystemPlanList'\n    ];",
+    "    ];", TRUST.concat(["tests/session_safety_check.mjs"])],
+  ["trust: the Welcome renderer stops calling the data-use renderer (the line never renders)",
+    "      renderDataUseStatement();", "      if (false) renderDataUseStatement();", TRUST],
   ["trust: the welcome data-use line ignores deployment mode (always the preview sentence)",
     "      var key = emailDeliveryLive() ? 'privacy.data_use_live' : 'privacy.data_use_preview';",
     "      var key = 'privacy.data_use_preview';", TRUST],

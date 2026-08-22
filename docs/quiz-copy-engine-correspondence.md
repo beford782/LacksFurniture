@@ -14,9 +14,11 @@ file.
 **Approval / review status:** EN copy implemented under the owner's 2026-08-21
 instruction (the preferred directions for `mattress_size`, `sleep_position`,
 `temperature`, `trigger` and `health_conditions` were adopted; `partner_disturbance`
-was adapted — see its section); **Blake's sign-off as governed quiz copy is
-still owed** (CLAUDE.md: per-retailer variation is copy-only, and quiz copy
-still needs Blake). **ES copy is provisional — NATIVE REVIEW REQUIRED** for every
+was adapted — see its section). The instruction gave directions; **the final
+lines as shipped are what Blake's sign-off as governed quiz copy covers, and
+that sign-off is still owed** (CLAUDE.md: per-retailer variation is copy-only,
+and quiz copy still needs Blake). The owner packet for it is
+`docs/trust-integrity-owner-review-2026-08-21.md`. **ES copy is provisional — NATIVE REVIEW REQUIRED** for every
 changed line (roadmap Invariant 12).
 
 ## How the engine actually uses an answer (what the copy may describe)
@@ -134,7 +136,9 @@ Sleep System / base suggestions.
 - **Ranks:** yes, graded — `yes_often` → `motionIsolation: 4, hybrid: 3, memory: 2`; `sometimes` → `motionIsolation: 3, hybrid: 2`; `rarely` → `motionIsolation: 1`; `not_applicable` → nothing. Live effect here is `hybrid` 3 / 2 / 0 (motionIsolation and memory are inert). **Firmness:** no. **Display:** yes — profile naming. **Summary:** no. **Accessories:** no. **Priorities:** the "Motion control" Sleep Brief priority at a higher rank when this is `yes_often`/`sometimes`; the couple trial prompt.
 - **Cited tags:** motionIsolation, hybrid, memory.
 - **Mechanism the copy describes:** a graded effect on the ranking and on the testing guidance — true of the live tags and the priorities.
-- **Owner note:** the owner's preferred line — "The more movement wakes you, the more we favor motion isolation." — is true of the engine **rule** but not of this deployment's **output** until item 3.1 (case-fold) ships, because the `motionIsolation` tag never matches the catalog's `motionisolation`. The adapted line above is code-true today; adopt the preferred line when 3.1 is approved and shipped.
+- **Owner note:** the owner's preferred line — "The more movement wakes you, the more we favor motion isolation." — is true of the engine **rule** but not of this deployment's **output** until item 3.1 (case-fold) ships, because the `motionIsolation` tag never matches the catalog's `motionisolation`. The adapted line above is code-true today. The preferred line may be proposed for adoption once 3.1
+  ships — it is not pre-approved and is not to be implemented before then; like
+  every help line it needs Blake's sign-off at that time.
 - **Must not say:** a benefit promise ("you'll feel"), or that motion isolation is favored in the ranking while the tag is inert.
 - **Verdict on the previous line:** BENEFIT CLAIM in both languages.
 

@@ -281,7 +281,8 @@ PREVIEW_MODE_SIGNALS = (
     "permanece en esta tableta", "se queda en esta tableta", "se quedan en esta tableta",
     "isn't connected", "is not connected", "no está conectada", "no esta conectada",
     "nothing is sent", "nothing leaves", "never leaves", "not sent anywhere",
-    "never sent anywhere", "aren't sent", "are not sent", "is not sent", "isn't sent",
+    "never sent anywhere", "aren't sent anywhere", "are not sent anywhere",
+    "is not sent anywhere", "isn't sent anywhere", "not sent or stored",
     "no email is sent", "no email was sent", "not transmitted", "never transmitted",
     "not saved", "aren't saved", "never saved", "not stored", "never stored",
     "don't store", "do not store", "doesn't store", "does not store",
@@ -291,6 +292,22 @@ PREVIEW_MODE_SIGNALS = (
     "no se guardan", "no se almacena", "no se almacenan", "no se transmite",
     "no se transmiten", "no se envían", "no se envian",
 )
+
+
+def _check_privacy_prose_present(r: ValidationReport, config: dict) -> None:
+    """Warn when a retailer that authors a text block leaves the two privacy
+    prose keys the template now renders config-or-nothing blank in English
+    (the Spanish block falls back to English through localizedConfigBlock).
+    A blank emailPrivacy shows no line on the email screen; a blank
+    privacyBody shows an empty Privacy section under its heading."""
+    text = config.get("text")
+    if not isinstance(text, dict):
+        return
+    for key, surface in (("emailPrivacy", "the email screen's privacy line"),
+                         ("privacyBody", "the Privacy & Terms overlay body")):
+        if _blank(text.get(key)):
+            r.add_warning(f"text.{key} is blank: {surface} renders nothing (the template "
+                          "carries no fallback promise of its own)")
 
 
 def _check_privacy_prose_mode(r: ValidationReport, config: dict) -> None:
@@ -412,6 +429,7 @@ def validate_store_config(config: dict, manifest: Optional[dict] = None, *,
     # placeholder heuristic, so the gate and the kiosk cannot disagree.
     if live_at_runtime:
         _check_privacy_prose_mode(r, config)
+    _check_privacy_prose_present(r, config)
 
     # Consultation implications (0.6): structural + cross-language checks on the
     # EMITTED maps. Completeness against the quiz definition lives in
@@ -3646,6 +3664,23 @@ def _self_test() -> int:
                                                     "Your answers are never sent to lenders."}
     check("live-appropriate wording about lenders is not mis-rejected",
           validate_store_config(c).ok)
+    c = _good_config(); c["text"] = {"privacyBody": "Your answers are not sent to lenders.",
+                                     "emailPrivacy": "We use your email to send your results."}
+    check("'are not sent to lenders' (live-appropriate) is not mis-rejected, and the 'sent' family needs 'anywhere'",
+          validate_store_config(c).ok)
+    c = _good_config(); c["text"] = {"privacyBody": "Your answers are not sent anywhere."}
+    check("'are not sent anywhere' under a live gasUrl -> error",
+          any("preview-mode wording" in e for e in validate_store_config(c).errors))
+    # Config-or-nothing consequence: a text block that leaves the two prose
+    # keys blank is warned (the surfaces render nothing), never errored.
+    c = _good_config(); c["text"] = {"heritage": "x"}
+    r = validate_store_config(c)
+    check("blank text.emailPrivacy / text.privacyBody -> two warnings naming the surfaces, no error",
+          r.ok and sum(1 for w in r.warnings if "renders nothing" in w) == 2
+          and any("emailPrivacy" in w for w in r.warnings) and any("privacyBody" in w for w in r.warnings))
+    c = _good_config()
+    check("a config with no text block at all is not warned (nothing was authored)",
+          not any("renders nothing" in w for w in validate_store_config(c).warnings))
 
     # warnings_as_errors promotes allowedHosts-missing-Pages-host warning to blocking
     c = _good_config(); c["allowedHosts"] = ["someoneelse.github.io"]

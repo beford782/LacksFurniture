@@ -13,6 +13,7 @@ docs/*
 !docs/quiz-trust-investigation-2026-08-21-agent-reports.md
 !docs/quiz-copy-engine-correspondence.md
 !docs/trust-integrity-implementation-2026-08-21.md
+!docs/trust-integrity-owner-review-2026-08-21.md
 tools/strip-bg.py
 
 # Local scratch / design mockups (kept locally, never committed)

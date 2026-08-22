@@ -1,8 +1,13 @@
 # Trust integrity and transparency — implementation report (2026-08-21)
 
-**Status:** implemented on branch `claude/phase1-trust-integrity`; **not merged,
-not deployed, not showroom-authorized.** Owner review, the device-matrix merge
-gate on the confirmed hardware, and the open decisions below all stand.
+**Status (three separate states, per `docs/deployment-workflow.md`):** the
+branch `claude/phase1-trust-integrity` is **pushed** to `origin`; a **draft PR**
+targets `main` (number and URL in §23); **nothing is merged, nothing is
+deployed, and nothing is showroom-authorized.** Owner review, the device-matrix
+merge gate on the confirmed hardware, and the open decisions below all stand.
+**Owner packet:** `docs/trust-integrity-owner-review-2026-08-21.md` (the nine
+quiz lines, the privacy sentences, the tier-presentation options, the
+founding-year decision, the physical checklists).
 **Placement:** Phase 1 cross-cutting gate (roadmap block after item 1.7), after
 Slice 4 Payment Choice and before Slice 5 Sleep Plan in the approved order.
 **Discovered by:** the 2026-08-21 quiz trust investigation
@@ -65,7 +70,7 @@ the header's "Next implementation item" paragraph is corrected with the
 document's own correction idiom (Slice 5 🔨, not ⬜); the reconciliation
 baseline moves to `4a76503` with the chain kept; items 1.2, 1.3 and 1.6 carry
 cross-reference parentheticals; Invariant 12 records the privacy-sentence
-exception; the open-decisions register gains eight rows (§19 below); the
+exception; the open-decisions register gains eight rows (§19 items 1–8); the
 sequence of record gains entry 8 and renumbers. Phase 0 is not reopened; 3.3 is
 untouched.
 
@@ -128,7 +133,10 @@ renders nothing and hides the element (never the key, never the other mode's
 sentence). `renderReviewChrome()` reads `t('review.help')`. The email screen's
 static promise span is removed (markup and renderer); the lead reads
 `localizedConfigBlock('text').emailPrivacy || ''`. The privacy overlay's
-pre-config placeholder is empty and hydrates to config or nothing.
+pre-config placeholder is empty and hydrates to config or nothing (so do the
+email lead and the policy-contact line; the draft-notice line keeps its
+generic template fallback "Draft policy — pending retailer approval before
+live use." — a status label, not a promise).
 `tools/validation.py` rejects preview-mode signal phrases in retailer privacy
 prose under a live `gasUrl` — "live" meaning the runtime's own notion, any
 non-blank `gasUrl`; a non-blank placeholder `gasUrl` ("TODO",
@@ -206,7 +214,7 @@ dialog, the relativity line.
 | State | Where | Lifetime | Who sees it | Sink |
 |---|---|---|---|---|
 | `answers` | in-memory module variable | until confirmed Restart, final idle timeout (5 min visible + 5 min obscured), or the email confirmation's "Start New Customer" | customer + salesperson on the shared screen; Review lists every answer as labels | none |
-| derived: scores, match reasons, tiers, Sleep Brief priorities, Sleep Signature, profile subtitle, accessory scores, consultation summary rows, saved picks, payment state | in-memory / DOM | same; every customer-ending path wipes the state and every *visible* container (`SESSION_CONTENT_IDS`, `resetSessionState`); the four hidden Sleep System containers are rebuilt before each display rather than wiped (§18) | same; the Consultation Summary shows the specialist implications derived from sleep-issue and health answers | none |
+| derived: scores, match reasons, tiers, Sleep Brief priorities, Sleep Signature, profile subtitle, accessory scores, consultation summary rows, Sleep System guidance, saved picks, payment state | in-memory / DOM | same; every customer-ending path wipes the state and every container that renders answer-derived content (`SESSION_CONTENT_IDS`, `resetSessionState`), the four Sleep System containers included since the 2026-08-22 revalidation | same; the Consultation Summary shows the specialist implications derived from sleep-issue and health answers | none |
 | name / email / phone | inputs + in-memory locals | same | same | with `gasUrl` blank: nothing is sent; a preview recap is shown. With `gasUrl` set: one POST to `gasUrl` on Save |
 | salesperson name / roster | `localStorage` `dreamfinder.<store>.deviceRsa` / `.rsaList` (5 call sites) | device-persistent, outside the wipe by design | staff | none |
 | analytics | in-memory `events[]` + a redacted `console.log` | session | nobody off-device | none; `EVENT_FIELDS` default-deny, answer values and contact values never logged (session async suite) |
@@ -222,8 +230,18 @@ code other than the SVG namespace; no protocol-relative URL. Zero
 `document.location`, `window.name`, clipboard, Worker/SharedWorker,
 `BroadcastChannel`, `RTCPeerConnection`, `importScripts`, `.submit(`,
 history/location writes, iframes, cookies, `sessionStorage`, `indexedDB`,
-Cache API, service worker, or external script/style URLs. One `<form>`,
-`onsubmit` prevents default, no `action`.
+Cache API, service worker, or external script/style URLs; zero attribute-set
+`src/href/action/ping/srcset/formaction`, `requestSubmit`, `print(`,
+`download`, dynamic `import(`, `cookieStore`, `WebTransport`, `Audio(`,
+element-created `iframe/object/embed/base/video/audio/script/link/form`,
+`formaction`, `http-equiv` or `ping=`; `publicAssetRoot` referenced once, in
+the email payload only; `analytics.getSummary()` (raw answers) has no caller.
+One `<form>`, `onsubmit` prevents default, no `action`. **This pin is a
+tripwire on the named sink forms in executable text, not a proof against
+every possible sink** — a string-split API name or a config-host URL built
+at runtime would evade it (the privacy auditor's evasion matrix: 27 of 35
+forms before this widening). The sentence's truth also rests on the session
+suites' redaction pins and on review of every diff that touches `index.html`.
 External financing links are bare allowlisted URLs; the QR encodes
 `https://www.lacks.com/financing` with no query. Pinned by
 `tests/trust_integrity_check.mjs` section C on comment-stripped code.
@@ -260,8 +278,9 @@ and approval status. Pinned by `tests/trust_integrity_check.mjs` section A.
   `activeElement` = `H2#questionHeadline`; keyboard Enter on Next draws the
   two-ring ring (`:focus-visible` true); touch/mouse Next draws none; Tab after
   the headline goes to the first option; Shift+Tab skips the headline (no tab
-  stop). Reduced motion: identical (scroll is instant `auto`). Forced colors:
-  CanvasText ring and text.
+  stop). Reduced motion: identical (scroll is instant `auto`). Forced colors
+  (Chromium `forced-colors: active` emulation only): CanvasText ring and text;
+  the Windows forced-colors rendering is an owner-run gate (§15).
 - Supporting copy: Welcome line 16px `#685C4D` on `#F4EFE6` (5.68:1); Review
   line 15px same pair; tier note 15px `#665D54` on `#F3EEE5` (5.58:1). All in
   normal flow, not focusable, no `aria-live`, no role. Welcome line inside the
@@ -274,10 +293,19 @@ and approval status. Pinned by `tests/trust_integrity_check.mjs` section A.
   1.3. Also for 1.3: the tier note (15px) now visually outranks the 12px
   descriptor line above it ("Gold · premium materials"); raising the
   descriptor is outside this gate's authorization.
-- Welcome at 1194×748 in Spanish: the second line of the "Tu consulta crea"
-  outcome list sits 20px below the fold (715–768) because the wider ES CTA
-  wraps the time estimate onto its own line (pre-existing); the data-use line
-  is inside the fold in both languages. For the owner's iPad pass.
+- Welcome at 1194×748 in Spanish: the "Tu consulta crea" outcome row bottoms
+  39px below the fold (its items line ends 20px below, 715–768) because the
+  wider ES CTA wraps the time estimate onto its own line (pre-existing); the
+  data-use line is inside the fold in both languages. For the owner's iPad
+  pass; the Welcome composition is 1.6's.
+- The Sleep System's own reason strings ("Helps with the snoring you
+  reported", "Targets the back pain you mentioned") are benefit-flavoured on a
+  surface adjacent to help lines that forbid such claims — outside this gate
+  (1.4); recorded for the owner.
+- The `sleep_position` line's "pressure relief" is a plain-language gloss for
+  the live `plush`/`soft` tags (the literal `pressureRelief` tag is inert here,
+  3.1); the packet asks the owner to accept the gloss or take the stricter
+  wording.
 - VoiceOver: not run (owner decision §19; screen-reader functionality is out of
   scope by the 2026-08-12 ruling).
 
@@ -356,7 +384,7 @@ itself.** Resolutions shipped in `8d0bda6`:
 | A | The privacy overlay's retailer draft body still describes live-mode collection under a blank `gasUrl` | Retailer-authored draft under its draft notice — owner decision (§19), not code |
 | A | `privacy-policy-contact` kept a template fallback | Config-or-nothing like its siblings |
 | B (navigation/copy) | REPAIR 9 could not see a tracker frozen at the first question (ad-hoc mutant survived) | Walkers count from before the tap; answer-tap-after-Next (touch + keyboard), gate-release, inactive-screen and `isFocusRestorable` cases; negative control; three sweep entries |
-| B | Welcome outcome row pushed below the 1194×748 fold in Spanish (items 727–780) | Margins tightened (items now 715–768: a 20px residue from the pre-existing ES CTA wrap) — recorded for the owner's iPad pass; the data-use line itself is inside the fold in both languages |
+| B | Welcome outcome row pushed below the 1194×748 fold in Spanish (items 727–780) | Margins tightened to 10/18 and max-width 720 → 760px (items now 715–768: a 20px residue from the pre-existing ES CTA wrap) — recorded for the owner's iPad pass; the data-use line itself is inside the fold in both languages |
 | B | Four provisional ES help lines read awkwardly ("características frescas", "sensación más reactiva", "Llevamos el tamaño", "Marca" vs "Toca") | Reworded at the canonical source; still provisional |
 | B | Correspondence doc misquoted the `body_type` copy-variant line; variant lines were not pinned | Fixed and pinned |
 | B | Two test labels stronger than their assertions | Relabelled / folded |
@@ -375,11 +403,41 @@ from a `touchend` handler was verified in Chromium only — it is the idiom
 `focusScreenDestination()` already uses, but this branch has not been
 observed on the device.
 
-## 14c. Final run at the reviewed head
+## 14c. Runs at the reviewed heads
 
-*(see the terminal summary for the post-`8d0bda6` full run and CI status)*
+- `ac95a7b` (report commit): GitHub CI workflow_dispatch run **32539492057 —
+  success** on the pinned toolchain (Python 3.12 / Node 20.18.1), every step
+  including `tests/mutation_sweep.mjs` (331/331 caught). Local CI-equivalent
+  run at the same head: all 45 non-sweep steps green; local sweep 331/331.
+- Post-integration-review head (§23): see §23 for the run at the final head.
 
-## 15. Manual device-matrix results
+## 14d. Second-round revalidation (2026-08-22) and Slice 5 status
+
+**Slice 5 status — STATE B, unmerged.** `origin/main` is still `4a76503`; Slice
+5 is open **draft PR #53** on `claude/nocturne-slice5-sleep-plan` @ `6decbef`,
+untouched. No integration merge was performed (there is nothing new on `main`
+to integrate); the unmerged Slice 5 branch was NOT merged or cherry-picked.
+Conflict forecast, re-verified read-only with `git merge-tree --write-tree`:
+
+| File | Git conflict type | Slice 5 change | Trust change | Expected merged result | Why both intents survive | Proof |
+|---|---|---|---|---|---|---|
+| `data/dict-en.json` (and `dict-es.json`) | content, one both-added hunk inside the `safety.*` group | strips the blank separator line between key groups; appends ~27 `plan.*` keys at the end | adds `privacy.data_use_preview` / `_live` after `safety.timeout_final_warning`; changes the value of `review.help` | keep both: trust's two keys stay in the group; Slice 5's blank-line removal and appended keys stay | disjoint keys; `review.help` is trust-only (no consumer on Slice 5) | `session_safety_check` key-set parity; `trust_integrity_check` C2; `sleep_plan_check` on the merged tree |
+| `tests/mutation_sweep.mjs` | content, one both-added hunk after `PAY_VALIDATOR` | adds `PLAN`, `PLAN_WITH_SESSION`, … observer constants | adds `TRUST`, `TRUST_CONTRAST` | keep both constant blocks | disjoint identifiers; entries were inserted mid-manifest on the trust side | merged manifest parses; the merged sweep ran **375/375 caught, 0 not-applied** in the auditor's scratch copy |
+| `index.html`, `demo/black-friday/index.html`, `.github/workflows/ci.yml`, `tests/sleep_brief_presentation_check.mjs` | auto-merge (no textual conflict) | Slice 5 hunks (Sleep Plan screen, payment moment, `SCREEN_HEADING_IDS` / `SESSION_CONTENT_IDS`, a CI step after quiz presentation, a forced-colors selector in the focus twin) | trust hunks (quiz renderer/helpers, welcome/review/email/overlay, CSS, a CI step in the same position, the brace-anchored focus-block regex) | both sides land; the demo bundle must be **rebuilt** by whoever merges second | no shared function is edited by both; the CI steps are adjacent additions; the regex repair in the Sleep Brief suite is what keeps it green once Slice 5's selector also lands | merged-tree suites (trust 111/111, quiz 217/217, sleep_brief 134/134, sleep_plan, session_safety, contrast, smoke, daybreak contract after `build_black_friday_demo.py`) — run by the integration auditor in a scratch copy |
+
+**Merge order (roadmap, 2026-08-21 owner instruction):** the gate first, then
+Slice 5 integrates across it. If the owner rules the other way, this branch
+merges `main` after Slice 5 lands and resolves exactly the three hunks above
+keep-both, then rebuilds the demo bundle and re-runs the suite. **The current
+CI run is not post-Slice-5 integration proof.**
+
+**Roadmap placement decision:** the block stays after item 1.7 (its position is
+topical, not temporal — the 1.x items have never encoded schedule), and the
+sequence is now stated identically at the header, the slice-order list, the
+gate block, item 1.7 and the sequence of record: Slice 4 → this gate → Slice 5
+→ Slice 6, with Slice 5's concurrent development recorded as history.
+
+## 15. Device-matrix status — browser emulation done; physical gates outstanding
 
 Browser (Chromium, Playwright, DPR 1) at the recorded matrix sizes and beyond,
 EN and ES, partner and solo paths — §12. **Physical iPad Pro 11" (1194×748
@@ -413,10 +471,12 @@ touches only `helpText` values (no `scores`, ids, order, types, `skipIf`,
 
 ## 18. Deferred work
 
-- Sleep System containers (`#sleepSystemMain/Guidance/Rail/PlanList`) are not
-  in `SESSION_CONTENT_IDS`; rebuilt before display, so nothing visible
-  survives a wipe, but the hidden DOM retains answer-derived prose until the
-  next render. Slice 5 / 1.4 (that table is being edited there).
+- *(Resolved in the 2026-08-22 revalidation — no longer deferred.)* The four
+  Sleep System containers (`#sleepSystemMain/Guidance/Rail/PlanList`) joined
+  `SESSION_CONTENT_IDS` after the privacy auditor measured a previous
+  customer's "Targets the back pain you mentioned" still in the hidden DOM
+  after a confirmed Restart. Each is rebuilt by its renderer before display;
+  the wipe matrix (`session_safety_check`) now seeds and clears all four.
 - Live-mode readiness: before any `gasUrl` is set, disclose or disable
   Code.gs's sheet row and default BCC, resolve `privacyDraftNotice`, and
   author the email-enabled wording (register).

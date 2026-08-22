@@ -1082,6 +1082,10 @@ const REQUIRED_CONTENT_IDS = [
   // text over the next customer's session.
   "financingSheetCards", "hf2FinancingInterest", "hf2FinancingPrograms",
   "emailPreview", "emailRecap", "accessoriesGrid",
+  // Trust gate (2026-08-21): the four Sleep System containers hold
+  // answer-derived prose; "Restart clears them" must be true of the DOM, not
+  // only of the visible surfaces.
+  "sleepSystemMain", "sleepSystemGuidance", "sleepSystemRail", "sleepSystemPlanList",
 ];
 const REQUIRED_TEXT_IDS = [
   "dreamCodeValue", "dreamCodePct", "emailError", "drawerNavLabel", "accStatus",
