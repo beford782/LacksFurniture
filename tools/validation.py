@@ -273,7 +273,8 @@ def validate_structure(raw_tabs: Dict[str, Tuple[List[str], List[dict]]]) -> Val
 PRIVACY_PROSE_KEYS = ("emailPrivacy", "privacyBody", "privacyDraftNotice",
                       "privacyPolicyContact", "disclaimerBody")
 # Preview-mode signal phrases: wording that is only true while nothing leaves
-# the tablet. Lower-cased substring match in either language.
+# the tablet. Lower-cased substring match in either language. These fire
+# unconditionally: each one is a claim about the kiosk's own behaviour.
 PREVIEW_MODE_SIGNALS = (
     "preview mode", "preview deployment", "in this preview",
     "modo de vista previa", "en esta vista previa",
@@ -284,14 +285,72 @@ PREVIEW_MODE_SIGNALS = (
     "never sent anywhere", "aren't sent anywhere", "are not sent anywhere",
     "is not sent anywhere", "isn't sent anywhere", "not sent or stored",
     "no email is sent", "no email was sent", "not transmitted", "never transmitted",
-    "not saved", "aren't saved", "never saved", "not stored", "never stored",
-    "don't store", "do not store", "doesn't store", "does not store",
     "does not send or store", "doesn't send or store",
     "no se envía nada", "no se envia nada", "nada sale", "no se envía a ning",
-    "no se envia a ning", "no se envía ning", "no se envia ning", "no se guarda",
-    "no se guardan", "no se almacena", "no se almacenan", "no se transmite",
+    "no se envia a ning", "no se envía ning", "no se envia ning", "no se transmite",
     "no se transmiten", "no se envían", "no se envian",
 )
+# Storage-negation phrases. Bare, these are not preview signals: a retailer
+# may truthfully write "Payment card details are not stored by this
+# application" under a live endpoint. They become a false promise only when
+# the SAME SENTENCE is about governed data — the customer's answers, contact
+# values, session or results, which a live gasUrl does send and Code.gs does
+# store. Context-gated substring match (external review P2, 2026-08-22).
+STORAGE_NEGATION_SIGNALS = (
+    "not saved", "aren't saved", "never saved", "not stored", "never stored",
+    "don't store", "do not store", "doesn't store", "does not store",
+    "no se guarda", "no se guardan", "no se almacena", "no se almacenan",
+)
+# Governed-data context terms (lower-cased substrings). Deliberately the
+# customer-facing nouns for what the kiosk collects — answers, results,
+# session, contact values, "your/personal/customer information|data" — and
+# NOT generic nouns such as "details", "information" or "data" on their own,
+# so that a truthful sentence about unrelated data is not rejected.
+GOVERNED_DATA_TERMS = (
+    "answer", "response", "quiz", "result", "sleep brief", "sleep profile",
+    "session", "email", "e-mail", "phone", "contact", "your name",
+    "your information", "your info", "personal information", "customer information",
+    "contact information", "your data", "personal data", "customer data",
+    "respuesta", "cuestionario", "resultado", "sesión", "sesion", "correo",
+    "teléfono", "telefono", "contacto", "tu nombre", "tu información",
+    "tu informacion", "tus datos", "información personal", "informacion personal",
+    "datos personales", "datos del cliente", "información del cliente",
+    "informacion del cliente",
+)
+_SENTENCE_BREAKS = (".", "!", "?", ";", "\n", "\r")
+
+
+def _sentences(text: str):
+    """Split lower-cased prose into sentences on . ! ? ; and line breaks."""
+    out, cur = [], []
+    for ch in text:
+        if ch in _SENTENCE_BREAKS:
+            if cur:
+                out.append("".join(cur))
+            cur = []
+        else:
+            cur.append(ch)
+    if cur:
+        out.append("".join(cur))
+    return out
+
+
+def _preview_signal_hit(low: str):
+    """Return the offending phrase when lower-cased prose carries a
+    preview-mode claim under a live endpoint, else None.
+
+    Unconditional signals match anywhere. Storage-negation phrases match only
+    inside a sentence that also names governed data, so "Payment card details
+    are not stored by this application" passes while "Your answers are not
+    stored" and "We do not store your information" fail."""
+    hit = next((sig for sig in PREVIEW_MODE_SIGNALS if sig in low), None)
+    if hit:
+        return hit
+    for sentence in _sentences(low):
+        sig = next((sig for sig in STORAGE_NEGATION_SIGNALS if sig in sentence), None)
+        if sig and any(term in sentence for term in GOVERNED_DATA_TERMS):
+            return sig
+    return None
 
 
 def _check_privacy_prose_present(r: ValidationReport, config: dict) -> None:
@@ -320,8 +379,7 @@ def _check_privacy_prose_mode(r: ValidationReport, config: dict) -> None:
             value = prose.get(key)
             if not isinstance(value, str) or not value.strip():
                 continue
-            low = value.lower()
-            hit = next((sig for sig in PREVIEW_MODE_SIGNALS if sig in low), None)
+            hit = _preview_signal_hit(value.lower())
             if hit:
                 r.add_error(f"{block}.{key} carries preview-mode wording ({hit!r}) but "
                             "gasUrl is live - a statement that nothing leaves the tablet "
@@ -388,12 +446,19 @@ def validate_store_config(config: dict, manifest: Optional[dict] = None, *,
 
     gas = str(config.get("gasUrl") or "").strip()
     is_placeholder = _blank(gas) or "example" in gas.lower() or gas.upper() in ("TODO", "PLACEHOLDER")
-    # The RUNTIME'S notion of live: index.html (emailDeliveryLive() and the
-    # sendResults() gate) treats ANY non-blank gasUrl as a live endpoint — it
-    # speaks the live-mode data-use copy and POSTs the customer's contact
-    # values and derived summary to it. A non-blank placeholder is therefore
-    # not "not yet configured"; it is a live endpoint pointing at a sentinel,
-    # and it is refused here regardless of --require-gas-url (trust gate).
+    # Build admission treats ANY non-blank gasUrl as LIVE-CAPABLE. The runtime
+    # (index.html emailDeliveryLive() and the sendResults() gate) speaks the
+    # live-mode data-use copy and POSTs the customer's contact values and
+    # derived summary whenever gasUrl is non-blank AND no active promotion
+    # scenario sets disableEmailSubmission. That scenario clause is a
+    # date-windowed runtime state: the moment the scenario expires, the same
+    # configured bytes go live without another build. The validator therefore
+    # deliberately does NOT follow the runtime's momentary scenario state —
+    # a config must be true in every state it can reach, so a non-blank gasUrl
+    # is judged live here even while a temporary scenario suppresses delivery
+    # (external review P2, 2026-08-22: preserved as intentional). A non-blank
+    # placeholder is likewise not "not yet configured"; it is a live-capable
+    # endpoint pointing at a sentinel, refused regardless of --require-gas-url.
     live_at_runtime = not _blank(gas)
     if live_at_runtime and is_placeholder:
         r.add_error(f"gasUrl {gas!r} is a non-blank placeholder: the kiosk treats any "
@@ -421,12 +486,14 @@ def validate_store_config(config: dict, manifest: Optional[dict] = None, *,
     # privacy text (text / text_es) is free prose, and a preview-only promise
     # left in it while a live GAS endpoint is configured would be a false
     # representation the moment the first email goes out. The build refuses
-    # that combination: with a live gasUrl, no retailer privacy key may carry
-    # a preview-mode signal phrase. With gasUrl blank the same prose is true
-    # and passes. Phrases, not semantics — the validator cannot judge intent;
-    # it catches the sentences this repo has shipped or proposed so far. Keyed
-    # on the runtime's own notion of live (any non-blank gasUrl), never on the
-    # placeholder heuristic, so the gate and the kiosk cannot disagree.
+    # that combination: with a live-capable gasUrl, no retailer privacy key
+    # may carry a preview-mode signal phrase. With gasUrl blank the same prose
+    # is true and passes. Phrases, not semantics — the validator cannot judge
+    # intent; it catches the sentences this repo has shipped or proposed so
+    # far, and storage-negation phrases only when the sentence is about
+    # governed data (_preview_signal_hit). Keyed on live-CAPABLE (any
+    # non-blank gasUrl), never on the placeholder heuristic and never on a
+    # temporary scenario, so the gate can only be stricter than the kiosk.
     if live_at_runtime:
         _check_privacy_prose_mode(r, config)
     _check_privacy_prose_present(r, config)
@@ -3671,6 +3738,75 @@ def _self_test() -> int:
     c = _good_config(); c["text"] = {"privacyBody": "Your answers are not sent anywhere."}
     check("'are not sent anywhere' under a live gasUrl -> error",
           any("preview-mode wording" in e for e in validate_store_config(c).errors))
+    # External review (2026-08-22) thread 1, preserved as intentional: a
+    # non-blank gasUrl is LIVE-CAPABLE for admission even while an active,
+    # date-windowed scenario disables email at runtime — the scenario expires
+    # without another build, and the preview promise would turn false on its
+    # own. A temporary scenario must not relax the rule.
+    def _blocking_scenario_config():
+        c = _good_config()
+        c["promotions"] = {"activeScenario": "demo",
+                           "scenarios": {"demo": {"kind": "historical-demo",
+                                                  "disableEmailSubmission": True}}}
+        return c
+    c = _blocking_scenario_config(); c["text"] = {"privacyBody": "Your answers stay on this tablet."}
+    r = validate_store_config(c)
+    check("live gasUrl + active scenario with disableEmailSubmission=true: preview wording is STILL rejected",
+          any("preview-mode wording" in e for e in r.errors))
+    c = _blocking_scenario_config(); c["text_es"] = {"emailPrivacy": "No se envía nada desde esta tableta."}
+    check("the same under the ES block: a temporary scenario does not relax admission",
+          any("preview-mode wording" in e for e in validate_store_config(c).errors))
+    c = _blocking_scenario_config(); c["gasUrl"] = "TODO"; c["text"] = {"privacyBody": "Nothing leaves this tablet."}
+    check("a placeholder gasUrl under a blocking scenario is still a non-blank placeholder error",
+          any("non-blank placeholder" in e for e in validate_store_config(c).errors))
+    c = _blocking_scenario_config(); c["gasUrl"] = ""; c["text"] = {"privacyBody": "Your answers stay on this tablet."}
+    check("blank gasUrl under a blocking scenario: preview wording accepted (blank is the only preview-true state)",
+          validate_store_config(c).ok)
+    # External review (2026-08-22) thread 2, fixed: storage-negation phrases
+    # are rejected only when the sentence is about governed data. Harmful
+    # answer/contact storage claims still fail; an unrelated truthful storage
+    # statement is not rejected.
+    for phrase in ("Your answers are not stored.",
+                   "We do not store your information.",
+                   "We don't store your answers or your email.",
+                   "Your contact information is never saved.",
+                   "Quiz responses aren't saved by this kiosk.",
+                   "Session data is not stored after you finish.",
+                   "Tus respuestas no se guardan.",
+                   "Tu información no se almacena en ningún servidor.",
+                   "Tus datos no se guardan después de la sesión."):
+        c = _good_config(); c["text"] = {"privacyBody": phrase}
+        check(f"governed-data storage claim under a live gasUrl -> error: {phrase[:44]!r}",
+              any("preview-mode wording" in e for e in validate_store_config(c).errors))
+    for phrase in ("Payment card details are not stored by this application.",
+                   "Card numbers are never stored here; financing is handled on lacks.com.",
+                   "This kiosk does not store cookies.",
+                   "Los datos de la tarjeta de pago no se guardan en esta aplicación.",
+                   "No se almacenan números de tarjeta en este quiosco."):
+        c = _good_config(); c["text"] = {"privacyBody": phrase}
+        c["text_es"] = {"privacyBody": phrase}
+        check(f"unrelated truthful storage statement under a live gasUrl -> accepted: {phrase[:44]!r}",
+              validate_store_config(c).ok)
+    c = _good_config(); c["text"] = {"privacyBody": "Payment card details are not stored by this application. "
+                                                    "Your answers are not stored either."}
+    check("sentence-scoped: an unrelated storage sentence does not launder a governed one in the same key",
+          any("preview-mode wording" in e for e in validate_store_config(c).errors))
+    c = _good_config(); c["text"] = {"privacyBody": "Payment card details are not stored. "
+                                                    "Nothing leaves this tablet."}
+    check("unconditional signals still fire regardless of sentence context",
+          any("preview-mode wording" in e for e in validate_store_config(c).errors))
+    c = _good_config(); c["text"] = {"disclaimerBody": "Your email is not stored; we do not keep a copy."}
+    check("the storage rule reads every privacy prose key, not only privacyBody",
+          any("text.disclaimerBody" in e for e in validate_store_config(c).errors))
+    c = _good_config(); c["gasUrl"] = ""; c["text"] = {"privacyBody": "Your answers are not stored."}
+    check("a governed-data storage claim under a BLANK gasUrl is accepted (true in preview)",
+          validate_store_config(c).ok)
+    check("_preview_signal_hit: unconditional phrase wins even without governed context",
+          _preview_signal_hit("nothing is sent from here") == "nothing is sent")
+    check("_preview_signal_hit: bare storage phrase without governed context -> None",
+          _preview_signal_hit("card details are not stored") is None)
+    check("_preview_signal_hit: storage phrase with governed context -> the phrase",
+          _preview_signal_hit("your answers are not stored") == "not stored")
     # Config-or-nothing consequence: a text block that leaves the two prose
     # keys blank is warned (the surfaces render nothing), never errored.
     c = _good_config(); c["text"] = {"heritage": "x"}

@@ -1106,6 +1106,18 @@ const MUTATIONS = [
   ["trust: the validator accepts a non-blank placeholder gasUrl again (live at runtime, pointing at a sentinel)",
     "    if live_at_runtime and is_placeholder:",
     "    if False:", PAY_VALIDATOR, "tools/validation.py"],
+  // External review threads (2026-08-22): thread 1 preserved as intentional,
+  // thread 2 fixed — each pinned by the validator self-test.
+  ["trust: the validator follows a temporary scenario's momentary email block (live-capable admission relaxed)",
+    "    live_at_runtime = not _blank(gas)",
+    "    live_at_runtime = not _blank(gas) and not ((config.get('promotions') or {}).get('activeScenario'))",
+    PAY_VALIDATOR, "tools/validation.py"],
+  ["trust: storage-negation phrases fire without governed-data context (truthful unrelated sentence rejected)",
+    "        if sig and any(term in sentence for term in GOVERNED_DATA_TERMS):",
+    "        if sig:", PAY_VALIDATOR, "tools/validation.py"],
+  ["trust: the storage-negation family is switched off (answer-storage promises admitted under a live gasUrl)",
+    "    for sentence in _sentences(low):",
+    "    for sentence in []:", PAY_VALIDATOR, "tools/validation.py"],
 
   // ---- Trust integrity gate (2026-08-21): legibility of the honest lines ---
   ["trust: the tier-relativity note shrinks back below body size",
