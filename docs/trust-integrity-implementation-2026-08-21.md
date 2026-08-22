@@ -435,7 +435,11 @@ Conflict forecast, re-verified read-only with `git merge-tree --write-tree`:
 intended next merge candidate and merges before PR #53. PR #54 stays
 independent of unmerged Slice 5 code. After #54 eventually merges, #53 must
 update from `main`, re-run the forecast against the actual `main` (the table
-above is a forecast at `12ad950` × `6decbef`, not a promise), resolve the
+above is a forecast at `12ad950` × `6decbef`, re-run unchanged at `85c34b9` ×
+`6decbef` on 2026-08-22 — five files carrying three both-added regions: the
+`safety.*` dictionary group in both dictionaries, the `SESSION_CONTENT_IDS`
+tail in `index.html` and its derived demo index, and the observer constants in
+`tests/mutation_sweep.mjs` — not a promise), resolve the
 both-added conflicts semantically preserving both features, rebuild the demo
 bundle with the canonical tool, and re-run the complete suite on the combined
 tree. **#53's current CI is not post-#54 integration proof, and this
@@ -648,6 +652,52 @@ is provisional; no privacy policy is claimed approved.
   drawer entry, caught by both owning suites). The commit that records this
   run is docs-only and gets its own run; the "Final CI at the reviewed head"
   gate in PR #54 stays unchecked until the owner names the reviewed head.
+- GitHub CI pull_request run 32546014806 at `85c34b9` (the commit recording
+  the run above) — **success**.
+
+## 26. Final-review round (2026-08-22) — three read-only auditors at `85c34b9`
+
+Re-run of the setup instruction against the pushed branch: the expected head
+`12ad950` was seven commits behind, every task already landed, so the round
+became an audit. Three independent read-only agents (owner-ruling/copy;
+physical-gate/accessibility; GitHub/roadmap/merge-order), each finding
+reproduced by the lead before acting.
+
+- **Copy / rulings:** no MATERIAL finding. All eight rulings recorded as
+  product direction only; nothing marked approved that the instruction leaves
+  pending; every customer-visible sentence code-true at this head (help-line
+  mechanism claims re-verified against `data/quiz.json` `scores` and the
+  catalog tag set; the idle body matches the rendered controls in both
+  languages and is pinned through the real renderer). Two MINOR packet
+  clarifications applied: the `temperature` row now says the sentence is
+  conditional (silent about `cold` and `opposite`), and §4 records that the
+  configured `text.trustSignal` "90 years" line has no consumer.
+- **Physical packet:** two MATERIAL spec gaps, both closed — the VoiceOver
+  table had no "Actual (spoken)" column, and there was no place to record
+  residual risks (new §14: observation → lead ruling → accepted by/date →
+  retest row; PASS with unruled rows is PARTIAL). MINOR: IPAD-L-EN-07 quoted
+  "Back pain / aches" (the option is "Back or Body Pain"); a hard-reload step
+  in §3 Setup; a horizontal-scroll sweep and a "subordinate but legible"
+  criterion on the portrait rows; WIN-FC-11 whole-flow "nothing essential
+  disappeared" sweep in both themes; VO-EN-06 gains the double-dispatch
+  fail-if (a double-tapped multi-select option reading unselected); the
+  collapsed VO-ES / SOLO-ES rows state the one-Result-per-EN-step recording
+  rule. Confirmed: no emulation anywhere stands in for physical evidence;
+  every quoted label, dict string and focus claim matches `index.html`.
+- **GitHub / roadmap:** no contradictory dependency language in the roadmap,
+  this report, either PR body or the #53 comment; concurrency history
+  preserved; neither PR merged (`mergedAt` null) or ready (`isDraft` true);
+  `origin/main` still `4a76503`. Stale-by-one-docs-commit forecast anchors
+  refreshed above (§14d) and in PR #54 §10. Labels: the repository has only
+  GitHub's nine defaults, none of which represents a dependency or
+  manual-testing state — **none applied, none created**. Milestones: none.
+- Targeted suites re-run locally at `85c34b9` before editing: session safety
+  543/0, session async 283/0, trust 122/122, quiz presentation 222/222,
+  scoring isolation 247/0, phase 1 regression 72/0, contrast 98/0, smoke
+  118/0, validator self-test 978/0, Daybreak contract 87/0; fixtures
+  byte-identical to `main`; `git diff --check` clean. This round changes
+  three Markdown files only; the full run at its head is recorded by CI on
+  the PR.
 
 ## 22. Rollback strategy
 
