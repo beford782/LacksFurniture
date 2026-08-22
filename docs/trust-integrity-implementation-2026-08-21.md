@@ -536,10 +536,12 @@ before #54 leaves draft; R8 the mounted-device gate stands.
 3. **Founding year:** corporate/archival confirmation of 1935 and an
    explanation of the BBB "1924" entry (no copy changes meanwhile).
 4. **Privacy approval:** approver of record **named 2026-08-22: Blake
-   Ford**; still open — his business/legal sign-off of the Welcome and
-   Review representations; final showroom wording; `privacyDraftNotice`;
-   the native-Spanish reviewer for the data-use sentences; the
-   email-enabled wording (incl. BCC/sheet disclosure).
+   Ford**, who the same day **signed the Welcome and Review representations
+   for the preview-mode deployment (#6)** and chose **option C, preview-only
+   for this merge (#7)** — draft notice retained, policy not finalized (§29).
+   Still open: the native-Spanish reviewer for the data-use sentences; and,
+   for any future email-enabled configuration, the Code.gs audit, final
+   policy wording, business/legal approval and deployment authorization.
 5. **Specialist audience:** exact scope of the Consultation Summary; whether
    the customer may control what appears; whether health-derived implications
    remain.
@@ -574,7 +576,8 @@ the consolidated ledger.
 **Not authorized.** `docs/kiosk-device-hardening.md` remains BLOCKING. The
 phase-wide physical device gate is complete for `f748f59` by owner attestation,
 but Blake's distinct live review remains open; Spanish is provisional; no
-privacy policy is claimed approved.
+privacy policy is claimed approved — the privacy gate for this PR is resolved
+by the explicit preview-only decision (§29), with the draft notice retained.
 
 ## 23. Pull request, CI and final state (2026-08-22)
 
@@ -754,6 +757,37 @@ forward.
 
 Not decided by this round and not inferred from it: the business/legal
 sign-off of the Welcome and Review representations by the approver of record;
-the privacy-policy and draft-notice decision; native Spanish; the owner live
-review; the reviewed-head designation; ready-for-review and merge
-authorization. PR #54 stays draft.
+the privacy-policy and draft-notice decision (both decided later the same day
+— §29); native Spanish; the owner live review; the reviewed-head designation;
+ready-for-review and merge authorization. PR #54 stays draft.
+
+## 29. Owner business/legal decisions (2026-08-22)
+
+**#6 — signed.** Blake Ford, as the named business/legal approver of record,
+signed the English Welcome sentence ("During this showroom session, your
+answers stay on this tablet and are used to create your matches and
+specialist summary. Restart clears them.") and the English Review sentence
+("These answers create your matches and the summary your specialist will
+review with you.") as accurate business representations for the **current
+preview-mode deployment**: `gasUrl` blank; answers stay on the tablet unless a
+future email-enabled configuration is separately approved. The signature does
+not cover a live-email configuration, does not approve the Spanish, and does
+not authorize showroom use, deployment, readiness or merge.
+
+**#7 — option C, preview-only for this merge.** `gasUrl` stays blank; live
+email and lead collection stay off; the draft privacy policy and its visible
+notice ("Draft policy — pending Lacks Furniture approval before live use.")
+stay as shipped; the policy is **not** claimed finalized. The privacy-policy
+gate is resolved for this PR by that explicit decision — not by approving the
+draft. Any future live activation requires, separately: a Code.gs audit,
+final policy wording, business/legal approval, native-Spanish review and
+deployment authorization. The fail-closed validation in `tools/validation.py`
+is unchanged and is not to be weakened.
+
+No bytes changed: `index.html`, both dictionaries, `data/store-config.json`,
+`data/quiz.json` and the demo bundle are identical to `f748f59`, so the
+owner-attested physical pass (§27) carries forward. Still open after this
+round: native Spanish (the four priority strings are the PR gate; the eight
+quiz lines follow on the consolidated ledger), the owner live review, the
+reviewed-head designation, and the ready-for-review and merge authorizations.
+PR #54 stays draft.

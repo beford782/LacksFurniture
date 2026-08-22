@@ -15,21 +15,22 @@ they do not authorize merging either PR.
 |---|---|
 | **APPROVED — PRODUCT DIRECTION** | R1 merge order: #54 (this gate) before #53 (Slice 5) · R2 heritage Welcome-only this cycle · R3 tier presentation option A retained this cycle (Gold-first, within-tier, 15px relativity note) · R4 the hardcoded "never sold / unsubscribe" promise stays removed; no other absolute promise · R5 idle-dialog body replaced with behaviourally exact wording (direction) · R6 no anniversary arithmetic; "since 1935" stays, provisional · R7 VoiceOver sanity pass required before #54 leaves draft · R8 mounted-device gate stands |
 | **APPROVED — PRODUCT COPY (Blake Ford, 2026-08-22)** | the nine quiz help lines as governed EN copy (§1) · `sleep_position` option A — the shipped gloss stays (§1a) · the final idle-dialog EN sentence as shipped (§2.5) · the Welcome and Review sentences as product wording (§2.1, §2.2). English only — every Spanish line stays provisional. No bytes changed; the `f748f59` physical pass carries forward. |
-| **PENDING — LEGAL/BUSINESS** (approver of record: **Blake Ford**, named 2026-08-22) | the Welcome and Review sentences as representations — now signable by the named approver, not yet signed (§2.1, §2.2) · the privacy overlay policy and its draft notice (§2.4) · the email line in any live (email-enabled) mode (§2.3) · founding year 1935 by corporate/archival record (§4) |
+| **APPROVED — LEGAL/BUSINESS (Blake Ford, approver of record, 2026-08-22)** | #6 the Welcome and Review English sentences signed as accurate business representations for the current preview-mode deployment (`gasUrl` blank; scope: the current preview-mode deployment only, `gasUrl` blank, answers staying on the tablet unless a future email-enabled configuration is separately approved; it does not cover a live-email configuration, does not approve Spanish, and does not authorize showroom use, deployment, readiness or merge) (§2.1, §2.2) · #7 **option C — preview-only for this merge**: `gasUrl` stays blank, no live email or lead collection, the draft policy and its visible notice stay, the policy is **not** claimed finalized; the privacy-policy gate is resolved for this PR by that explicit decision (§2.4) |
+| **PENDING — LEGAL/BUSINESS** (approver of record: Blake Ford) | the email line and the live-mode Welcome sentence in any future email-enabled configuration — separate Code.gs audit, final policy wording, business/legal approval, native Spanish and deployment authorization (§2.3) · founding year 1935 by corporate/archival record (§4) |
 | **PENDING — NATIVE SPANISH** | priority: `privacy.data_use_preview`, `privacy.data_use_live`, `review.help`, `safety.timeout_body` (§2.6) · the eight changed quiz ES lines (§1) |
 | **COMPLETED — PHYSICAL DEVICE (owner attestation, 2026-08-22)** | Blake instructed the lead to treat all 21 compact checks as passed for `f748f59`: mounted iPad landscape and portrait, EN and ES; partner and solo paths; VoiceOver sanity pass; real Windows Aquatic and Desert forced colors. No export, screenshots or exact device-version metadata were supplied; the evidence limitation is recorded in `docs/trust-integrity-physical-gate-2026-08-21.md` §15. |
 | **DEFERRED — LATER PHASE** | tier options B (neutral initial tier) and D; the `partner_disturbance` preferred line (until 3.1 ships); heritage as an optional research condition; the Sleep System's own benefit-flavoured reason lines (1.4); the Results tier-tab overflow at 320px (1.3) |
 | **NOT AUTHORIZED** | per-question heritage rail, counts, awards, testimonials, QR codes, anecdotes · cross-tier highest-fit marker / global maximum (3.3 🔒) · showroom use · deployment · merging #54 or #53 · marking #54 ready for review (gates above outstanding) · removing the draft-policy notice |
 
-**What still needs you (after your 2026-08-22 approvals):** as the named
-approver of record, the business/legal sign-off on the Welcome and Review
-representations (§2.1, §2.2; sheet #6) and the privacy-policy decision (§2.4;
-sheet #7); then the native-Spanish review (#9), your live review (#11), the
-head designation (#12), and the ready/merge authorizations (#13, #14). The
-physical packet is complete by your 2026-08-22 attestation. The decision
-sheet directly below records what is decided and what remains.
+**What still needs you (after your 2026-08-22 approvals, #1–#8 all
+recorded):** the native-Spanish review of the four priority strings (#9), your
+live review (#11), the head designation (#12), and the ready/merge
+authorizations (#13, #14). The eight ES quiz lines (#10) stay on the
+consolidated ledger. The physical packet is complete by your 2026-08-22
+attestation. The decision sheet directly below records what is decided and
+what remains.
 
-## Decision sheet — 2026-08-22, after the physical pass: 14 decisions (6 decided 2026-08-22, 8 remain)
+## Decision sheet — 2026-08-22, after the physical pass: 14 decisions (8 decided 2026-08-22, 6 remain)
 
 The physical gates are closed for the bytes at `f748f59` (§5). Everything
 below is **yours or someone you name**; nothing on this sheet is pre-decided,
@@ -50,8 +51,8 @@ implies another. No decision here authorizes deployment or showroom use —
 | 3 ✅ | Product copy | Welcome data-use sentence as product wording (§2.1) — **APPROVED as shipped, Blake Ford, 2026-08-22** | "During this showroom session, your answers stay on this tablet and are used to create your matches and specialist summary. Restart clears them." | Approve · Revise · Defer | **Approve.** True under the blank `gasUrl` (two network calls only, no storage of answers, wipe inventory test-pinned); the validator refuses the wording under any live `gasUrl`, where the live variant renders instead. | The sentence stays as shipped · does not make it a legal representation (#6), does not approve the ES (#9). |
 | 4 ✅ | Product copy | Review specialist-summary sentence as product wording (§2.2) — **APPROVED as shipped, Blake Ford, 2026-08-22** | "These answers create your matches and the summary your specialist will review with you." | Approve · Revise · Defer | **Approve.** It claims exactly what happens: the answers build the matches and the Consultation Summary the specialist reviews with the customer on the same tablet. The separate *specialist-summary scope* question (what the summary shows, whether the customer can trim it) stays open and is not forced by this wording. | The sentence stays as shipped · not the scope ruling, not legal (#6), not the ES (#9). |
 | 5 ✅ | Product copy | Final English idle-dialog sentence as shipped (§2.5; direction R5 already approved) — **APPROVED as shipped, Blake Ford, 2026-08-22** | "Session paused. Continue this session where you left off, or start a new customer to clear it." | Approve as shipped · Revise (the sentence must keep naming the dialog's real controls, "Continue this session" / "Start new customer") | **Approve as shipped.** It names the two controls exactly and promises nothing about privacy; tests pin both. Your direction's "restart" could not be used literally because the Restart utility control is inert while the dialog is open. | The EN sentence stays · not the ES (#9). A revision re-pins `session_safety_check` / `mutation_sweep` and re-runs the §11 idle rows. |
-| 6 | Legal/business | The Welcome and Review sentences as representations the business stands behind (§2.1, §2.2) — **open; signable now by the approver of record (Blake Ford)** | the two sentences in #3 and #4 | Approve (by the approver of record) · Request counsel review · Defer | **Approve once #8 names the approver** — in preview mode both sentences describe what the code does, test-pinned; a live (`gasUrl`) deployment needs its own pass because the live variant and the Code.gs sheet/BCC behaviour must be disclosed then. | The representation is the business's · does not approve the privacy policy (#7) or any live-email wording. |
-| 7 | Legal/business | Privacy policy and the visible draft notice (§2.4) | Notice: "Draft policy — pending Lacks Furniture approval before live use." Body: your configured draft, unchanged (§2.4) | **A** approve the final policy (supply text) · **B** supply a revised policy · **C** keep preview-only — no email, the draft policy and its notice stay visible · **D** another business/legal decision | **C for this merge, with A scheduled beside the live-email decision.** Nothing is collected while `gasUrl` is blank, so the policy's "collects" describes a mode that is not on; the draft notice is honest about that. The notice is incompatible with *showroom* readiness, which hardening already blocks — it is not a reason to hold this integrity PR. | C keeps the PR mergeable with the notice visible; A/B ship a final policy and remove the notice · neither authorizes live email, which needs the Code.gs audit first. |
+| 6 ✅ | Legal/business | The Welcome and Review sentences as representations the business stands behind (§2.1, §2.2) — **SIGNED, Blake Ford, approver of record, 2026-08-22**, for the current preview-mode deployment only (`gasUrl` blank); not a live-email approval, not Spanish, not showroom/deploy/ready/merge | the two sentences in #3 and #4 | Approve (by the approver of record) · Request counsel review · Defer | **Approve once #8 names the approver** — in preview mode both sentences describe what the code does, test-pinned; a live (`gasUrl`) deployment needs its own pass because the live variant and the Code.gs sheet/BCC behaviour must be disclosed then. | The representation is the business's · does not approve the privacy policy (#7) or any live-email wording. |
+| 7 ✅ | Legal/business | Privacy policy and the visible draft notice (§2.4) — **OPTION C chosen, Blake Ford, 2026-08-22**: preview-only for this merge; `gasUrl` blank; no live email or lead collection; the draft policy and its visible notice stay; the policy is not finalized; the gate is resolved for this PR by this explicit decision | Notice: "Draft policy — pending Lacks Furniture approval before live use." Body: your configured draft, unchanged (§2.4) | **A** approve the final policy (supply text) · **B** supply a revised policy · **C** keep preview-only — no email, the draft policy and its notice stay visible · **D** another business/legal decision | **C for this merge, with A scheduled beside the live-email decision.** Nothing is collected while `gasUrl` is blank, so the policy's "collects" describes a mode that is not on; the draft notice is honest about that. The notice is incompatible with *showroom* readiness, which hardening already blocks — it is not a reason to hold this integrity PR. | C keeps the PR mergeable with the notice visible; A/B ship a final policy and remove the notice · neither authorizes live email, which needs the Code.gs audit first. |
 | 8 ✅ | Legal/business | Name the legal/business approver of record (§2.1) — **Blake Ford named, 2026-08-22** | Blake Ford | Yourself as business owner · Yourself plus counsel for #6/#7 · Someone else named | **Name yourself now** and decide whether counsel reviews #6/#7. Until a name is on record, #6 and #7 cannot close. | Lets #6/#7 be signed · does not itself approve anything. |
 | 9 | Native Spanish | The four priority strings (§2.6) | `privacy.data_use_preview`, `privacy.data_use_live`, `review.help`, `safety.timeout_body` — exact ES in §2.1, §2.6, §2.2, §2.5 | Commission a native reviewer now · Defer to the consolidated end-of-development pass (Invariant 12 makes these four the exception — they are a PR #54 gate) | **Commission as soon as #3–#5 are approved**, so the reviewer sees final English. The review notes in §2.6 tell the reviewer what each string must not drift into. | The ES strings may ship as reviewed · does not approve the eight quiz lines (#10). |
 | 10 | Native Spanish | The eight changed Spanish quiz help lines (§1) | §1, "Proposed ES" column | Review now with #9 · Leave on the consolidated ledger (roadmap Invariant 12) | **Leave on the consolidated ledger** unless the reviewer is already engaged — these are not a PR #54 gate; ship provisional, as every slice has. | Nothing for this PR · the lines remain provisional either way. |
@@ -62,13 +63,14 @@ implies another. No decision here authorizes deployment or showroom use —
 
 **Decided 2026-08-22 (Blake Ford):** #1 all nine lines approved as proposed;
 #2 option A; #3, #4, #5 approved as shipped; #8 Blake Ford is the approver of
-record. All English-only, all as shipped — no bytes changed, so the physical
-pass at `f748f59` carries forward unchanged. Naming the approver (#8) did not
-sign #6 or decide #7; those are now yours to sign as that approver.
+record; then, as that approver, #6 the Welcome and Review sentences signed as
+business representations for the preview-mode deployment, and #7 option C —
+preview-only for this merge, draft notice retained, policy not finalized. All
+English-only, all as shipped — no bytes changed, so the physical pass at
+`f748f59` carries forward unchanged.
 
-**Remaining order:** #6 and #7 (as approver of record); commission #9; #11 on
-the head that will merge; then #12 → #13 → #14. #10 stays on the consolidated
-ledger.
+**Remaining order:** commission #9; #11 on the head that will merge; then
+#12 → #13 → #14. #10 stays on the consolidated ledger.
 
 Legend — **Ranks:** the answer changes the sleep-fit ranking. **Consult:** it
 feeds the specialist's Consultation Summary. **Suggests:** it changes accessory
@@ -116,23 +118,23 @@ implemented and no rebuild or retest follows. The ES line stays provisional.
 
 ## 2. Privacy and data-use copy
 
-### 2.1 Welcome data-use sentence — COPY APPROVED (Blake Ford, 2026-08-22) · PENDING — LEGAL/BUSINESS (representation; approver of record Blake Ford) · NATIVE SPANISH
+### 2.1 Welcome data-use sentence — COPY APPROVED · REPRESENTATION SIGNED (Blake Ford, approver of record, 2026-08-22; preview mode only) · PENDING — NATIVE SPANISH
 
 - **EN (shown now — `gasUrl` is blank):** During this showroom session, your answers stay on this tablet and are used to create your matches and specialist summary. Restart clears them.
 - **ES (provisional):** Durante esta sesión en la tienda, tus respuestas permanecen en esta tableta y se usan para crear tus resultados y el resumen para tu especialista. Reiniciar las borra.
 - **Why it is true with a blank `gasUrl`:** the app's only two network calls are loading its own data files and a results POST that exists only when a Google Apps Script URL is configured; no beacon, socket, cookie, storage, image or frame carries answers; the salesperson roster is the only thing in `localStorage`; a confirmed Restart (and the final idle timeout) wipes the answers and every container that renders anything derived from them. Each of these is pinned by tests.
 - **When it becomes false:** the moment a `gasUrl` is configured (then the live variant renders automatically instead), or if a new network sink or any persistence of answers is ever added (the suites fail).
 - **How validation prevents incompatible activation:** `tools/validation.py` refuses a build whose retailer privacy prose carries preview-mode wording under any non-blank `gasUrl`, and refuses placeholder `gasUrl`s outright; the runtime selects the live variant from the same truth the send path uses.
-- **Product wording:** ☑ approved as shipped, Blake Ford, 2026-08-22. **Approver of record:** Blake Ford (named 2026-08-22). **Pending:** legal/business sign-off of the representation by the approver of record ☐ · native Spanish ☐.
+- **Product wording:** ☑ approved as shipped, Blake Ford, 2026-08-22. **Approver of record:** Blake Ford (named 2026-08-22). **Business/legal representation:** ☑ signed as accurate for the current preview-mode deployment, Blake Ford, approver of record, 2026-08-22 — scope: the current preview-mode deployment only, `gasUrl` blank, answers staying on the tablet unless a future email-enabled configuration is separately approved; it does not cover a live-email configuration, does not approve Spanish, and does not authorize showroom use, deployment, readiness or merge. **Pending:** native Spanish ☐.
 
-### 2.2 Review audience sentence — COPY APPROVED (Blake Ford, 2026-08-22) · PENDING — LEGAL/BUSINESS · NATIVE SPANISH
+### 2.2 Review audience sentence — COPY APPROVED · REPRESENTATION SIGNED (Blake Ford, approver of record, 2026-08-22; preview mode only) · PENDING — NATIVE SPANISH
 
 - **EN:** These answers create your matches and the summary your specialist will review with you.
 - **ES (provisional):** Estas respuestas crean tus resultados y el resumen que tu especialista revisará contigo.
 - **What the specialist summary shows** (on the same tablet): the finalists or the engine's recommended starting point; the 1–3 trial priorities with testing prose; three rows built from the answers — *context* (why they came in), *who* (mattress size, then a testing implication for each sleep issue ticked, e.g. back pain → "test lower-back support carefully"), *profile* (sleep-position implication, a testing implication for each health condition ticked, e.g. snoring → "test head-of-bed elevation on an adjustable base", the firmness feel and value, the temperature implication).
 - **Derived health/sleep implications:** yes, included. **Raw answers reproduced:** no — but the implications map one-to-one to the answers, so a specialist can infer them; the sentence does not claim otherwise.
 - **What the customer controls:** Edit Answers on Review before the summary exists; Restart at any time. There is no per-item control over what the summary shows (open decision: specialist-summary scope).
-- **Wording:** ☑ approved as shipped, Blake Ford, 2026-08-22. **Pending:** legal/business sign-off by the approver of record (Blake Ford) ☐ · native Spanish ☐ · the scope ruling ☐.
+- **Wording:** ☑ approved as shipped, Blake Ford, 2026-08-22. **Business/legal representation:** ☑ signed as accurate for the current preview-mode deployment, Blake Ford, approver of record, 2026-08-22 (same scope as §2.1). **Pending:** native Spanish ☐ · the scope ruling ☐.
 
 ### 2.3 Email line — R4 recorded
 
@@ -142,13 +144,16 @@ implemented and no rebuild or retest follows. The ES line stays provisional.
 - **Current `gasUrl`:** blank — nothing is sent. **Live variant** of the Welcome sentence exists for an email-enabled deployment and is not shown.
 - **Before any live activation:** a Code.gs audit is required — today it would log a sheet row and BCC a central inbox, which the live wording must disclose. **No live approval is granted.**
 
-### 2.4 Privacy overlay — PENDING — LEGAL/BUSINESS
+### 2.4 Privacy overlay — RESOLVED FOR THIS PR: OPTION C, PREVIEW-ONLY (Blake Ford, approver of record, 2026-08-22)
 
 - **Customer-visible location:** the "Privacy & Terms" link on the email screen.
 - **Current draft notice (visible today):** "Draft policy — pending Lacks Furniture approval before live use." / "Política preliminar — pendiente de aprobación de Lacks Furniture antes de su uso."
 - **Current policy body (your configured draft, unchanged):** "DreamFinder collects your name, email, and optional phone number to deliver your mattress recommendations. Your information is only used for this purpose and is never sold. DreamFinder does not send your information to lenders. If you choose to open Lacks' financing or application pages, you continue on lacks.com — a separate site governed by its own terms and privacy policy." + "To access or remove your information, contact your local Lacks Furniture store."
 - **Why a draft policy is incompatible with showroom readiness:** a customer reads a policy that says it is not yet approved; in preview mode nothing is collected, so "collects" describes a future mode; "never sold" is an absolute promise that only the business can make.
-- **Decision:** ☐ Approve the final policy (text: ____) · ☐ Supply a revised policy · ☐ Keep preview-only (no email, policy stays draft and visible) · ☐ Another business/legal decision: ____ · Approver of record: **Blake Ford** (named 2026-08-22) / decision date ____
+- **Decision:** ☐ Approve the final policy · ☐ Supply a revised policy · ☑ **Keep preview-only (no email, policy stays draft and visible)** · ☐ Another business/legal decision · Approver of record: **Blake Ford** / decision date **2026-08-22**
+- **What option C means for this PR:** `gasUrl` stays blank; no live email or lead collection; the draft policy body and its visible notice stay exactly as they are; the policy is **not** claimed finalized or approved. The privacy-policy gate is resolved for this PR by this explicit preview-only decision, not by approving the draft.
+- **Why the draft notice remains visible:** it is true — the policy has not been approved for live use, and in preview mode nothing is collected, so the notice is the honest state rather than a defect. Removing it would require a final approved policy (option A/B), which is a separate decision.
+- **Any future live activation requires, separately:** a Code.gs audit (sheet row, BCC), final policy wording, business/legal approval, native-Spanish review, and deployment authorization. The existing fail-closed validation (`tools/validation.py` refuses preview wording under a non-blank `gasUrl` and refuses placeholder `gasUrl`s) is not to be removed or weakened.
 
 ### 2.5 Idle dialog — R5 recorded; final EN copy APPROVED as shipped (Blake Ford, 2026-08-22); PENDING — NATIVE SPANISH
 
