@@ -2232,8 +2232,8 @@ still reviewed against the sentence. No privacy policy is claimed approved:
 `text.privacyDraftNotice` stays until the approver of record resolves it.
 
 **Native-Spanish review (Invariant 12) still applies to every ES string this
-gate ships, and the privacy/data-use sentences are the recorded exception that
-goes first** — a wrong translation there changes the promise, so they are
+gate ships, and the privacy/data-use sentences (and, since R5, the idle-dialog
+body `safety.timeout_body`) are the recorded exception that goes first** — a wrong translation there changes the promise, so they are
 owed native review before showroom use rather than at the consolidated pass.
 The copy inventory is in `docs/trust-integrity-implementation-2026-08-21.md`.
 

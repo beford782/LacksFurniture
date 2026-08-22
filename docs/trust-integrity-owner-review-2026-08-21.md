@@ -92,7 +92,7 @@ implemented.
 ### 2.3 Email line — R4 recorded
 
 - **Removed (template, both languages):** "Your info is never sold to third parties. Unsubscribe anytime." / "Tu información nunca se vende. Puedes cancelar la suscripción en cualquier momento."
-- **R4 — APPROVED, PRODUCT DIRECTION:** removal approved as an integrity correction; never to be restored; no other absolute privacy promise is to be authored. Your configured line is the only customer-facing policy language on that screen.
+- **R4 — APPROVED, PRODUCT DIRECTION:** removal approved as an integrity correction; never to be restored; no other absolute privacy promise is to be authored. Your configured line is the only policy sentence on the screen itself; the draft policy opens from its "Privacy & Terms" link (§2.4).
 - **Configured replacement behaviour:** EN "We'll only use your email to send your results." / ES "Solo usaremos tu correo para enviarte tus resultados." (the Spanish was configured but ignored before; it now renders), plus "Preview mode: live email delivery isn't connected yet."
 - **Current `gasUrl`:** blank — nothing is sent. **Live variant** of the Welcome sentence exists for an email-enabled deployment and is not shown.
 - **Before any live activation:** a Code.gs audit is required — today it would log a sheet row and BCC a central inbox, which the live wording must disclose. **No live approval is granted.**
@@ -117,7 +117,7 @@ implemented.
 ### 2.6 Spanish — PENDING — NATIVE SPANISH (priority first)
 
 1. `privacy.data_use_preview` (§2.1) — a literal rendering of "stay on this tablet" could read as a storage promise; "Restart clears them" must not become "deletes everything" (the salesperson roster persists by design).
-2. `privacy.data_use_live` — "sent only if you choose" must stay conditional; a looser verb would widen the promise.
+2. `privacy.data_use_live` (not shown while `gasUrl` is blank) — EN "Your answers are used on this tablet to create your matches and specialist summary. They are sent only if you choose to email your Sleep Brief. Restart clears them." / ES "Tus respuestas se usan en esta tableta para crear tus resultados y el resumen para tu especialista. Solo se envían si eliges recibir tu Resumen de Sueño por correo. Reiniciar las borra." — "sent only if you choose" must stay conditional; a looser verb would widen the promise.
 3. `review.help` (§2.2) — "revisará contigo" must not become "decidirá por ti" or imply the specialist receives the answers elsewhere.
 4. `safety.timeout_body` (§2.5) — must keep the two controls' own terminology ("Seguir en esta sesión", "Empezar con otro cliente") and promise nothing about privacy.
 The eight changed quiz ES lines (§1) follow on the consolidated ledger.

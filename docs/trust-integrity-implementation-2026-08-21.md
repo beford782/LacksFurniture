@@ -197,6 +197,7 @@ Dictionary (generic, both languages):
 | privacy.data_use_preview *(shown: gasUrl blank)* | During this showroom session, your answers stay on this tablet and are used to create your matches and specialist summary. Restart clears them. | Durante esta sesión en la tienda, tus respuestas permanecen en esta tableta y se usan para crear tus resultados y el resumen para tu especialista. Reiniciar las borra. |
 | privacy.data_use_live *(not shown here)* | Your answers are used on this tablet to create your matches and specialist summary. They are sent only if you choose to email your Sleep Brief. Restart clears them. | Tus respuestas se usan en esta tableta para crear tus resultados y el resumen para tu especialista. Solo se envían si eliges recibir tu Resumen de Sueño por correo. Reiniciar las borra. |
 | review.help | These answers create your matches and the summary your specialist will review with you. | Estas respuestas crean tus resultados y el resumen que tu especialista revisará contigo. |
+| safety.timeout_body *(ruling R5, `444abe2`; replaces "Your session is paused to protect your privacy." / "Pausamos tu sesión para proteger tu privacidad.")* | Session paused. Continue this session where you left off, or start a new customer to clear it. | Sesión en pausa. Sigue en esta sesión donde la dejaste o empieza con otro cliente para borrarla. |
 
 Removed: "Your info is never sold to third parties. Unsubscribe anytime." /
 "Tu información nunca se vende. Puedes cancelar la suscripción en cualquier
@@ -206,8 +207,8 @@ tu combinación." (Review, inline); the overlay's placeholder "…never sold or
 shared with third parties." (pre-config DOM). Unchanged: `text.emailPrivacy`
 ("We'll only use your email to send your results." / "Solo usaremos tu correo
 para enviarte tus resultados." — now rendered in both languages), the preview
-notes, the privacy overlay's configured body and draft notice, the idle
-dialog, the relativity line.
+notes, the privacy overlay's configured body and draft notice, the relativity
+line's wording.
 
 ## 9. Data-flow inventory (verified on `4a76503` and re-verified on `812a984`)
 
@@ -256,7 +257,7 @@ External financing links are bare allowlisted URLs; the QR encodes
 | "We'll only use your email to send your results." | Email screen | config `text.emailPrivacy` / `text_es` | CONDITIONAL — vacuous in preview (nothing sent; the adjacent "Preview mode" note says so); in live mode needs the BCC/sheet disclosure | `gasUrl` set with default Code.gs |
 | "Preview mode: live email delivery isn't connected yet." / "No email was sent…" | Email screen | inline, shown when `!emailDeliveryLive()` | TRUE | — |
 | Privacy overlay body (retailer draft: "collects your name, email… never sold… does not send your information to lenders…") + "Draft policy — pending Lacks Furniture approval before live use." | Overlay from the email screen | config `text.privacyBody` / `privacyDraftNotice` | RETAILER DRAFT, labelled as such; "does not send … to lenders" TRUE; "collects" is a live-mode description | owner decision (§19) |
-| "Your session is paused to protect your privacy." | Idle dialog | dict `safety.timeout_body` (Gate 1B required copy) | AMBIGUOUS (screen obscured and inert; answers persist for the grace period) | owner decision (§19) |
+| "Session paused. Continue this session where you left off, or start a new customer to clear it." | Idle dialog | dict `safety.timeout_body` (replaced on ruling R5, `444abe2`; rendered through the real controller and pinned in EN and ES) | TRUE — interaction is suspended (backdrop + inert) while the grace countdown runs and is shown by the meter; "Continue this session" restores the exact prior layer and focus and grants a full window; "Start new customer" runs the authoritative wipe; it claims nothing about privacy, protection, hiding, encryption, anonymity or transmission | the dialog's control labels change without the sentence (the terminology pin fails), or the sentence is reworded to claim privacy (the banned-claim pin fails) |
 | "This clears the current answers, mattress selections, and Sleep Plan." | Restart dialog | dict | TRUE | — |
 
 No "anonymous", "never shared", "nothing is stored", "deleted immediately",
@@ -493,6 +494,11 @@ touches only `helpText` values (no `scores`, ids, order, types, `skipIf`,
   (true; a later dictionary move).
 - Dead `text.trustSignal` ("90 years") has no consumer; retire or govern.
 - `text.disclaimerBody` mentions "match percentages" — none render on screen.
+- *(Resolved in the re-review round — no longer deferred.)* The drawer's
+  answer-derived text (`#drawerShortlistFit`, `#drawerSystemPromptTitle`,
+  `#drawerSystemPromptReason`) joined `SESSION_TEXT_IDS` after the privacy
+  re-review found it outside the wipe, the same class as the Sleep System
+  residue; overwritten before the drawer can open again, now also cleared.
 - Results method note + one modest limitation (§7 G) — next Phase 1 slice.
 - Results tier-tab row overflow at 320px (pre-existing) — 1.3.
 - Optional moderated research condition for heritage (register).
@@ -539,9 +545,10 @@ before #54 leaves draft; R8 the mounted-device gate stands.
 
 ## 20. Native-Spanish review debt
 
-Provisional ES strings shipped by this gate (all owed native review; the three
+Provisional ES strings shipped by this gate (all owed native review; the four
 dictionary sentences **first**, ahead of the consolidated pass):
-`privacy.data_use_preview`, `privacy.data_use_live`, `review.help`; quiz
+`privacy.data_use_preview`, `privacy.data_use_live`, `review.help`,
+`safety.timeout_body`; quiz
 `helpText.es` for `trigger`, `mattress_size`, `partner_sleep`,
 `partner_disturbance`, `sleep_position`, `temperature`, `sleep_issues`,
 `health_conditions`. Unchanged ES lines (`body_type`, `firmness`) are already on
@@ -571,7 +578,7 @@ is provisional; no privacy policy is claimed approved.
   121/121, sweep 334/334); workflow_dispatch 32542823153 at `f6fac09` —
   success; 32539492057 at `ac95a7b` — success (sweep 331/331). Run
   32542881301 (pull_request at `f6fac09`) was cancelled as superseded when
-  `12ad950` was pushed. The run at the current head is recorded in §24.
+  `12ad950` was pushed. Later heads: §24.
 - Baselines: original implementation baseline `4a76503` (origin/main at branch
   creation); post-integration `main` baseline **unchanged — `4a76503`** (no
   new `main` existed to integrate; Slice 5 is unmerged draft PR #53).
@@ -600,8 +607,43 @@ is provisional; no privacy policy is claimed approved.
   cliente"); the owner's direction said "restart", which is the utility-bar
   control and is inert while the dialog is open, so the sentence names the
   dialog's own confirm control instead (deviation documented).
-- Conflict forecast re-run at `12ad950` × `6decbef`: five files (§14d).
-- CI at the final head and the PR state: §23 / the terminal summary.
+- Conflict forecast re-run at `12ad950` × `6decbef`: five files (§14d);
+  re-confirmed unchanged at `d75ac98`.
+- GitHub CI: pull_request run 32544882828 at `d75ac98` — **success** (trust
+  121/121, session safety 543/0, mutation sweep 338/338, 0 survived, 0
+  not-applied). The re-review round that followed adds the drawer's three
+  answer-derived text ids to the wipe inventory and corrects this report; its
+  head and run are recorded in §25. Any later docs-only commit gets its own
+  run; the "Final CI at the reviewed head" gate in PR #54 stays unchecked until
+  the owner names the reviewed head.
+- Dates: this round was worked on the evening of 2026-08-21 local time (-0500);
+  GitHub records the pushes and runs as 2026-08-22 UTC. The documents use
+  2026-08-21 for the owner's rulings and 2026-08-22 for the round's record.
+
+## 25. Re-review round — what changed after `d75ac98`
+
+- The drawer's three answer-derived text ids join the wipe inventory (and the
+  session suite's required list); a trust assertion and a sweep entry pin it.
+- This report's stale rows (the idle truth-table row, §8's copy table and its
+  "unchanged" list, §20's priority list, the circular §23/§24 CI reference)
+  were re-executed rather than patched by reference.
+- The physical packet was corrected on the third re-review (packet reviewer,
+  code read + Chromium probe of the focus claims only): four table rows had a
+  sixth cell or an unescaped pipe (the pass criterion rendered in the Result
+  column); twelve option labels did not match the kiosk (e.g. "Solo Sleeper",
+  "With a Partner", "I Sleep Hot", "Snoring or Sleep Apnea", "Duermo Solo");
+  Q6 on the partner path renders its copy variant, not the base help line;
+  Edit mode returns to Review on the first Next; and four VoiceOver rows
+  described behaviour the code does not produce — `restoreLanguageFocus()`
+  re-focuses the element that had focus (the button is the fallback), the
+  Sleep Signature motion gather is `aria-hidden` so no reveal status is spoken,
+  the Restart control's accessible name is "Restart — start a new customer",
+  and the dialog returns focus to whatever had it (on a touch kiosk, the last
+  transition heading). All editorial; a faithful owner would otherwise have
+  recorded spurious FAILs. Every table row in the three trust documents now
+  has its header's cell count (checked by script).
+- The head and CI run for this round are recorded in the terminal summary and
+  in PR #54's checks; the "Final CI at the reviewed head" gate stays unchecked.
 
 ## 22. Rollback strategy
 
