@@ -9,7 +9,7 @@ owner-review decisions (see "Phase 1 direction decisions — recorded
 see the open-decisions register. Device hardening remains BLOCKING for
 showroom use.**
 
-**Last updated:** 2026-08-23 *(closes out Slice 5: PR #53 merged 2026-08-23 15:05Z as merge commit `f27f879` (parents `ed9374b` + `cd1f1ef`; merge, not squash; branch kept); post-merge CI run 32647462080 and Pages run 32647461216 succeeded at exactly `f27f879`; the public preview serves `index.html` SHA-256 `91C267E81FF20FCB1F1EDC350E167ABB11568E58B1CEEF6FAFD841E71F306591` = the `cd1f1ef` blob, every data file hash-identical, headless render clean at both iPad viewports, `gasUrl` blank. Item 1.7 moves 🔨 → ✅ with its merge record, the C8–C10 external-review fixes (C10 = the owner-authorized "Try the mattress flat" prose with both fixture pins moved), the PLAN-01 focused retest (RT-01/02/03 owner-attested PASS at `cd1f1ef`) and one non-blocking follow-up (the Summary's "← Back to matches" label/route). The reconciliation baseline is re-pointed from `d4049cb` to `f27f879`. Showroom NOT authorized; forced-colors required before showroom; Spanish provisional and deferred. Earlier the same day, on the Slice 5 branch: item 1.7 recorded the `466a474` integration, the owner-attested manual pass and the five owner rulings of 2026-08-23 — forced-colors waived for the preview merge only and required before showroom; native Spanish deferred; ready-for-review authorized; merge not yet; showroom no. Earlier on 2026-08-23 this revision closed out the Trust integrity gate: PR #54 merged 2026-08-23 00:13Z as merge commit `d4049cb` (parents `4a76503` + `084f2f0`; merge, not squash; branch kept). Post-merge CI run 32607312520 and Pages run 32607311802 both succeeded at exactly `d4049cb`; the public preview `https://beford782.github.io/LacksFurniture/` serves `index.html` with SHA-256 `B0981E11F9065FA69DBD8BCD31EE100C7044E1FFB58C56AC87241E525D412321` — the bytes physically tested at `f748f59` and owner-reviewed at `9f27680` — and `store-config`, `quiz`, both dictionaries, `mattresses` and `allowed-hosts` hash-identical to `main`; a headless render showed Welcome with its Start button, one heritage line and the data-use sentence, no unauthorized-domain screen, no data-error overlay, a clean console; served `gasUrl` is blank, the draft-policy notice and preview wording are served. Preview deployment only: no showroom use, no live email, Spanish provisional. The gate moves 🔨 → ✅; Slice 5 (draft PR #53, `6decbef`) is next and must update from `main` at `d4049cb`, re-run the conflict forecast against that actual `main` — which now also carries the validator and test-manifest changes from the external-review fixes — resolve keep-both, rebuild the demo bundle with the canonical tool and re-run the complete suite and sweep on the combined tree; #53's pre-integration CI is not post-gate evidence. The reconciliation baseline is re-pointed from `4a76503` to `d4049cb`.)* The previous revision, 2026-08-22, recorded the owner's 2026-08-21 product-direction
+**Last updated:** 2026-08-23 *(closes out Slice 5: PR #53 merged 2026-08-23 15:05Z as merge commit `f27f879` (parents `ed9374b` + `cd1f1ef`; merge, not squash; branch kept); post-merge CI run 32647462080 and Pages run 32647461216 succeeded at exactly `f27f879`; the public preview serves `index.html` SHA-256 `91C267E81FF20FCB1F1EDC350E167ABB11568E58B1CEEF6FAFD841E71F306591` = the `cd1f1ef` blob, every data file hash-identical, headless render clean at both iPad viewports, `gasUrl` blank. Item 1.7 moves 🔨 → ✅ with its merge record, the C8–C10 external-review fixes (C10 = the owner-authorized "Try the mattress flat" prose with both fixture pins moved), the PLAN-01 focused retest (RT-01/02/03 owner-attested PASS at `cd1f1ef` — a browser verification the owner accepted in lieu of a mounted-device re-walk of the C8–C10 surfaces; recorded as an explicit waiver, the full device matrix having passed at `466a474`) and one non-blocking follow-up (the Summary's "← Back to matches" label/route). The reconciliation baseline is re-pointed from `d4049cb` to `f27f879`. Showroom NOT authorized; forced-colors required before showroom; Spanish provisional and deferred. Earlier the same day, on the Slice 5 branch: item 1.7 recorded the `466a474` integration, the owner-attested manual pass and the five owner rulings of 2026-08-23 — forced-colors waived for the preview merge only and required before showroom; native Spanish deferred; ready-for-review authorized; merge not yet; showroom no. Earlier on 2026-08-23 this revision closed out the Trust integrity gate: PR #54 merged 2026-08-23 00:13Z as merge commit `d4049cb` (parents `4a76503` + `084f2f0`; merge, not squash; branch kept). Post-merge CI run 32607312520 and Pages run 32607311802 both succeeded at exactly `d4049cb`; the public preview `https://beford782.github.io/LacksFurniture/` serves `index.html` with SHA-256 `B0981E11F9065FA69DBD8BCD31EE100C7044E1FFB58C56AC87241E525D412321` — the bytes physically tested at `f748f59` and owner-reviewed at `9f27680` — and `store-config`, `quiz`, both dictionaries, `mattresses` and `allowed-hosts` hash-identical to `main`; a headless render showed Welcome with its Start button, one heritage line and the data-use sentence, no unauthorized-domain screen, no data-error overlay, a clean console; served `gasUrl` is blank, the draft-policy notice and preview wording are served. Preview deployment only: no showroom use, no live email, Spanish provisional. The gate moves 🔨 → ✅; Slice 5 (draft PR #53, `6decbef`) is next and must update from `main` at `d4049cb`, re-run the conflict forecast against that actual `main` — which now also carries the validator and test-manifest changes from the external-review fixes — resolve keep-both, rebuild the demo bundle with the canonical tool and re-run the complete suite and sweep on the combined tree; #53's pre-integration CI is not post-gate evidence. The reconciliation baseline is re-pointed from `4a76503` to `d4049cb`.)* The previous revision, 2026-08-22, recorded the owner's 2026-08-21 product-direction
 rulings on the Trust integrity gate — R1 merge order: draft PR #54 (the gate)
 merges before draft PR #53 (Slice 5), which then integrates the resulting
 `main` and proves the combined behaviour; R2 heritage stays Welcome-only this
@@ -2106,8 +2106,10 @@ by the salesperson.
 ruling 2026-08-21). Slice 5 began on `claude/nocturne-slice5-sleep-plan`
 (draft PR #53) before the gate was inserted and continues; after the gate
 merges it integrates the resulting `main` and proves the combined behaviour;
-the gate adds nothing to this item's scope or exit. The `⬜` above is stale — Slice 5 is `🔨` — and is Slice 5's branch to
-move, per the 1.1 precedent.)*
+the gate adds nothing to this item's scope or exit. SUPERSEDED 2026-08-23:
+this note described the in-progress state; the heading above now reads `✅`
+because Slice 5 merged as `f27f879` — see the merge record at the end of this
+item. The "`⬜` is stale / Slice 5 is `🔨`" instruction it carried is retired.)*
 
 *(2026-08-23 — integration, manual pass and owner rulings. The gate merged as
 `d4049cb` and its docs close-out as `ed9374b`; Slice 5 integrated that `main`
@@ -2204,7 +2206,24 @@ dry-run mirror `df-phase1-dryrun@d349458` whose served `index.html` was the
 tier-and-position line; RT-02 with no finalist the priority line says
 "mattress", not "finalist"; RT-03 "Chosen ✓" again on the Summary neither
 unsets nor replaces the finalist. The `466a474` attestation was not carried
-forward for those surfaces. **Observation logged as a non-blocking
+forward for those surfaces. **Device-gate disposition for this merge, stated
+exactly.** The phase-wide gate (the device matrix block below: every Phase 1
+merge verified on the confirmed mounted iPad Pro 11-inch, both orientations,
+English and Spanish) was met in full at `466a474` by the owner-attested
+eight-item pass — portrait 834×1108 and landscape 1194×748, English, and
+Spanish rendering in both orientations — on the `df-phase1-dryrun@062bf21`
+mirror serving the `466a474` bytes. The bytes merged at `cd1f1ef` differ from
+`466a474` in `index.html` by the C8–C10 changes only (two finalist functions,
+one Summary hint that is overwritten before paint, one priority sentence);
+for those surfaces the owner **accepted a browser verification of RT-01/02/03
+at `cd1f1ef` in lieu of a second mounted-device walk** — an explicit owner
+waiver of the mounted-iPad re-walk for this preview merge, recorded here as
+such. The C8–C10 surfaces were therefore NOT re-verified on the mounted
+device in both orientations and languages; no such verification is claimed.
+Under the standing rulings this is a preview deployment only: showroom
+authorization remains withheld and, when it is considered, the full device
+matrix (plus the waived forced-colors check) is owed on the then-current
+bytes. **Observation logged as a non-blocking
 follow-up:** the Consultation Summary's back control reads "← Back to
 matches" and returns to Results (pre-Slice 5 behaviour; the label matches
 its destination); returning Matches → Review with customer → Plan kept the
@@ -2222,7 +2241,10 @@ remains provisional. Item 1.7 moves 🔨 → ✅; the exit below is met on
 **Exit:** the Sleep Plan ships on `main` with the finalist-state semantics,
 wipe coverage proven by the session suites, EN and ES, verified on the
 confirmed hardware per the phase-wide merge gate. **Met 2026-08-23 at
-`f27f879` (see the merge record above).**
+`f27f879` — with the hardware clause satisfied at `466a474` and, for the
+C8–C10 surfaces, by the explicit owner waiver recorded in the merge record
+above (browser verification accepted in lieu of a mounted-device re-walk);
+see that record for exactly what was and was not verified.**
 
 ### Phase 1 cross-cutting gate — Trust integrity and transparency ✅ (merged 2026-08-23, `d4049cb`)
 
