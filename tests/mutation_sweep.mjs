@@ -1587,6 +1587,9 @@ const MUTATIONS = [
   ["plan: the Consultation Summary's finalist control toggles the current finalist OFF again",
     "    window.toggleFavoriteMattress = function(mattressId) {\n      window.chooseFinalist(mattressId);",
     "    window.toggleFavoriteMattress = function(mattressId) {\n      if (window._favoriteMattressId === mattressId) { window._favoriteMattressId = ''; } else window.chooseFinalist(mattressId);", PLAN],
+  ["plan: the Consultation Summary's saved-picks hint calls every saved pick a finalist again (inline literal restored)",
+    "        hf2FinalistsHint: t('hf2.saved_picks_hint'),",
+    "        hf2FinalistsHint: es ? 'Los finalistas guardados se envían; las sugerencias son opciones para comparar.' : 'Saved finalists are sent; suggestions remain comparison options.',", PLAN],
 
 ];
 

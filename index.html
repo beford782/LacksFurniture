@@ -19317,7 +19317,10 @@
         // content, same name, zero invented copy (0.5).
         hf2PrioritiesLabel: es ? 'Lo que probaremos juntos' : 'What we will test together',
         hf2FinalistsLabel: t('hf2.saved_picks_label'),
-        hf2FinalistsHint: es ? 'Los finalistas guardados se envían; las sugerencias son opciones para comparar.' : 'Saved finalists are sent; suggestions remain comparison options.',
+        // Saved-pick terminology, paired with hf2.saved_picks_label: saving and
+        // choosing are separate actions, so saved mattresses are never all
+        // "finalists". (External review P2 at 0613805.)
+        hf2FinalistsHint: t('hf2.saved_picks_hint'),
         hf2SystemLabel: es ? 'Sistema de Sueño seleccionado' : 'Selected Sleep System',
         hf2SystemHint: es ? 'Solo las piezas que ya se agregaron al plan.' : 'Only the pieces already added to the plan.',
         hf2PassLabel: es ? 'Tu consulta está lista para guardar' : 'Your consultation is ready to save',

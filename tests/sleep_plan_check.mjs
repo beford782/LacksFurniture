@@ -338,10 +338,17 @@ if (gate("chooseFinalist", !!CHOOSE_SRC && !!TOGGLE_SAVE_SRC && !!REMOVE_SRC && 
     /t\('finalist\.building_around_finalist'\)/.test(norm) && /t\('finalist\.building_around_recommended'\)/.test(norm)
     && !/'Building around your finalist'/.test(norm));
   for (const k of ["finalist.chosen", "finalist.recommended", "finalist.none", "finalist.choose", "finalist.choose_as", "finalist.chosen_btn",
-    "finalist.building_around_finalist", "finalist.building_around_recommended", "compare.modal_title", "hf2.saved_picks_label", "hf2.compare_saved", "hf2.add_to_saved"]) {
+    "finalist.building_around_finalist", "finalist.building_around_recommended", "compare.modal_title", "hf2.saved_picks_label", "hf2.compare_saved", "hf2.add_to_saved",
+    "hf2.saved_picks_hint"]) {
     check(`dict key ${k} present in both languages and translated`,
       typeof dictEn[k] === "string" && dictEn[k].length > 0 && typeof dictEs[k] === "string" && dictEs[k].length > 0 && dictEn[k] !== dictEs[k]);
   }
+  // The hint paired with "Your saved picks" must not call every saved pick a
+  // finalist (saving and choosing are separate actions). External review P2
+  // at 0613805: the renamed label still sat beside "Saved finalists are sent".
+  check("the saved-picks hint is dictionary-driven and uses saved-pick terminology in BOTH languages (no 'finalist')",
+    /hf2FinalistsHint:\s*t\('hf2\.saved_picks_hint'\)/.test(norm) && !/Saved finalists are sent/.test(norm) && !/Los finalistas guardados se env/.test(norm)
+    && !/finalist/i.test(dictEn["hf2.saved_picks_hint"]) && !/finalista/i.test(dictEs["hf2.saved_picks_hint"]));
   check("the governed EN strings are exact", dictEn["finalist.chosen"] === "Finalist ✓" && dictEn["finalist.recommended"] === "Recommended starting point"
     && dictEn["finalist.none"] === "No finalist selected yet" && dictEn["finalist.choose"] === "Choose a finalist"
     && dictEn["finalist.choose_as"] === "Choose as finalist" && dictEn["finalist.chosen_btn"] === "Chosen ✓");
