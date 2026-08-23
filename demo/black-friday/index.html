@@ -3764,12 +3764,17 @@
     .hf2-pick--gold {
       border-left: 3px solid var(--color-accent);
     }
-    /* Tier + archetype tag — brass small-caps tracking, NOT uppercase per hard rules */
+    /* Tier + model line — small-caps tracking, NOT uppercase per hard rules.
+       Slice 6 contrast repair (the dated 2026-08-23 roadmap gate): the old
+       --color-accent ink measured 4.17:1 on the card surface, below the
+       4.5:1 normal-text floor, on BOTH surfaces this class renders on (the
+       Summary and the Sleep Plan). --accent-ink clears it everywhere; the
+       named ratio lives in tests/contrast_check.mjs. */
     .hf2-pick__tier {
       font-family: var(--font-serif);
       font-size: 0.7rem;
       letter-spacing: 0.18em;
-      color: var(--color-accent);
+      color: var(--accent-ink);
       margin-bottom: 0.4rem;
     }
     /* Brand + model — Georgia serif, sized by tier (gold 19px / silver-bronze 16.5px) */
