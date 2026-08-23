@@ -19984,14 +19984,25 @@
     };
 
     window.compareReviewFinalists = function() {
-      var saved = Array.isArray(window._savedPicks) ? window._savedPicks : [];
-      if (saved.length < 2) return;
-      var ordered = saved.slice().sort(function(a, b) {
-        if (a.id === window._favoriteMattressId) return -1;
-        if (b.id === window._favoriteMattressId) return 1;
-        return 0;
-      });
-      window._compareSelected = ordered.slice(0, 2).map(function(p) { return p.id; });
+      // Slice 6 (owner ruling): the comparison selection is PERSISTED customer
+      // state — opening or closing the Summary's compare must never clear it,
+      // and this entry must never destroy a pair the customer already chose.
+      // A complete existing pair is compared as-is; only when no complete
+      // pair exists does the recorded auto-select (favourite-first top two of
+      // the saved picks — preserved unchanged through PR #34) fill it, and
+      // that fill PERSISTS honestly: the Results tray and the Sleep Plan's
+      // compared row show exactly what was compared here.
+      var existing = Array.isArray(window._compareSelected) ? window._compareSelected : [];
+      if (existing.length !== 2) {
+        var saved = Array.isArray(window._savedPicks) ? window._savedPicks : [];
+        if (saved.length < 2) return;
+        var ordered = saved.slice().sort(function(a, b) {
+          if (a.id === window._favoriteMattressId) return -1;
+          if (b.id === window._favoriteMattressId) return 1;
+          return 0;
+        });
+        window._compareSelected = ordered.slice(0, 2).map(function(p) { return p.id; });
+      }
       window._compareOrigin = 'review';
       window.openCompareModal();
     };
@@ -21687,9 +21698,12 @@
         try { opener.focus({ preventScroll: true }); } catch (err) { opener.focus(); }
       }
       window._compareReturnFocus = null;
+      // Slice 6 (owner ruling): closing the modal never clears the persisted
+      // comparison selection, whatever opened it. Only the customer's own
+      // Clear control and the session wipe empty _compareSelected. The origin
+      // marker still resets so a later close carries no stale provenance.
       if (window._compareOrigin === 'review') {
         window._compareOrigin = '';
-        window.clearCompare();
       }
     };
 

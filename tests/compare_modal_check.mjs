@@ -357,5 +357,45 @@ function tableChecks(out, tag, labels) {
   es.api.close();
 }
 
+// ---------------------------------------------------------------- Slice 6 C3
+// The comparison selection is persisted customer state (owner ruling): the
+// Summary's compare entry never destroys an existing pair, and closing the
+// modal - from any origin - never clears the selection. Only the customer's
+// Clear control and the session wipe may empty it.
+section('Slice 6 C3: comparison selection persists across the Summary compare');
+{
+  const reviewSrc = extractFunction('window.compareReviewFinalists = function()');
+  ok('extraction: compareReviewFinalists found', !!reviewSrc && reviewSrc.includes('_compareSelected'));
+  const env = makeEnv();
+  new Function('window', 'document', reviewSrc)(env.win, env.doc);
+
+  env.api.open();
+  env.win._compareOrigin = 'review';
+  env.api.close();
+  ok('closing from review-origin does NOT clear the selection', JSON.stringify(env.win._compareSelected) === JSON.stringify(['g2', 'g6']));
+  ok('...clearCompare is never called on close', !env.win._clearCalls);
+  ok('...the origin marker still resets', env.win._compareOrigin === '');
+
+  env.win._savedPicks = [{ id: 's1' }, { id: 's2' }, { id: 's3' }];
+  env.win._favoriteMattressId = 's2';
+  env.win.compareReviewFinalists();
+  ok('an existing complete pair is not overwritten by the saved-pick auto-select', JSON.stringify(env.win._compareSelected) === JSON.stringify(['g2', 'g6']));
+  ok('...and the modal opened from review origin', env.win._compareOrigin === 'review' && env.els.compareModal.style.display === 'flex');
+  env.api.close();
+
+  env.win._compareSelected = [];
+  env.win.compareReviewFinalists();
+  ok('auto-select fills an empty selection favourite-first and persists', JSON.stringify(env.win._compareSelected) === JSON.stringify(['s2', 's1']));
+  env.api.close();
+  ok('...and it survives the close too', JSON.stringify(env.win._compareSelected) === JSON.stringify(['s2', 's1']));
+
+  env.win._compareSelected = [];
+  env.win._savedPicks = [{ id: 's1' }];
+  env.els.compareModal.style.display = 'none';
+  env.win.compareReviewFinalists();
+  ok('fewer than two saved picks and no pair: no-op', env.els.compareModal.style.display === 'none' && env.win._compareSelected.length === 0);
+}
+
+
 console.log(`\n${failures === 0 ? 'PASS' : 'FAIL'} — ${checks - failures}/${checks} checks passed`);
 process.exit(failures === 0 ? 0 : 1);
