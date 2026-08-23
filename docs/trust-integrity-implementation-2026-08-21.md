@@ -1107,3 +1107,9 @@ The merge proceeds only after this record's own commit is CI-green and the
 PR re-verified ready and mergeable; the post-merge verification (merge
 commit, new `main`, Pages build/deploy, served `index.html` SHA-256
 `b0981e11…412321`, blank `gasUrl`, preview wording) is recorded in §35.
+
+## 35. Merged and deployed (2026-08-23)
+
+PR #54 merged 2026-08-23 00:13Z as merge commit `d4049cb` (parents `4a76503` + `084f2f0`; merge, not squash; branch kept). Post-merge CI run 32607312520 and Pages run 32607311802 both succeeded at exactly `d4049cb`; the public preview `https://beford782.github.io/LacksFurniture/` serves `index.html` with SHA-256 `B0981E11F9065FA69DBD8BCD31EE100C7044E1FFB58C56AC87241E525D412321` — the bytes physically tested at `f748f59` and owner-reviewed at `9f27680` — and `store-config`, `quiz`, both dictionaries, `mattresses` and `allowed-hosts` hash-identical to `main`; a headless render showed Welcome with its Start button, one heritage line and the data-use sentence, no unauthorized-domain screen, no data-error overlay, a clean console; served `gasUrl` is blank, the draft-policy notice and preview wording are served. Preview deployment only: no showroom use, no live email, Spanish provisional.
+
+PR #53 (Slice 5) is untouched at `6decbef`, open and draft. Its next step: update from `main` at `d4049cb`; re-run the conflict forecast against that actual `main` (the pre-merge forecast was five files / three both-added regions against `4a76503`; `main` now also carries the `tools/validation.py`, `tests/mutation_sweep.mjs` and `tests/trust_integrity_check.mjs` changes from the external-review fixes, so the manifest's observer constants are a fresh conflict surface); resolve every conflict semantically, preserving both features; rebuild `demo/black-friday/` with `python tools/build_black_friday_demo.py`; run the complete suite and the full mutation sweep on the combined tree. #53's existing CI is not post-merge evidence.
