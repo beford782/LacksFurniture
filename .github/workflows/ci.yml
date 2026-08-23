@@ -321,11 +321,12 @@ jobs:
       # Hotfix 2026-08-23. The Plan shipped with no CSS rule of its own and
       # rendered as nine side-by-side columns on the dark theme while every
       # static suite stayed green. This is the repo's one RENDERED check:
-      # headless Chromium, loopback server, the app's own functions, three
-      # viewports (1194x748, 834x1108, 390x844) — computed column layout, no
-      # horizontal overflow, warm-theme parity with the Summary, title and
-      # Payment Choice headline contrast, Continue visible and Tab-reachable.
-      - name: sleep plan rendered layout (three viewports)
+      # headless Chromium, loopback server, the app's own functions, four
+      # viewports (1194x748, 834x1108, 390x844, 597x374 — the mounted
+      # landscape device at 200% zoom) — computed column layout, no horizontal
+      # overflow, warm-theme parity with the Summary, title / Payment Choice
+      # headline / Continue contrast, Continue visible and Tab-reachable.
+      - name: sleep plan rendered layout (four viewports)
         run: python tests/sleep_plan_layout_check.py
 
       # Phase 0.5, server side. The first suite to EXECUTE Code.gs (whole-file
