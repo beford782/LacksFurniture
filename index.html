@@ -3513,6 +3513,23 @@
       color: var(--color-text-muted);
       margin-bottom: 0.5rem;
     }
+    .hf2-lead-line {
+      margin: 0.35rem 0 0;
+      font-size: 1rem;
+      line-height: 1.55;
+      color: var(--color-text);
+    }
+    .hf2-priorities {
+      margin: 8px 0 0;
+      padding-left: 1.5em;
+    }
+    .hf2-priorities__item {
+      margin-bottom: 10px;
+      line-height: 1.55;
+    }
+    .hf2-priorities__try {
+      font-style: italic;
+    }
     .hf2-review-eyebrow,
     .hf2-review-section__label {
       font-size: 0.68rem;
@@ -10751,6 +10768,17 @@
       <p class="hf2-review-subtitle" id="hf2ReviewSubtitle">A quick recap of what matters, what felt best, and what to keep on the shortlist.</p>
     </div>
 
+    <!-- Lead status line (Slice 6, D5b/D5c): the explicit finalist state
+         (chosen / recommended starting point / none) COMPOSED with the
+         payment-state sentence. Rendered by renderHf2LeadLine(), which is
+         also called (typeof-guarded) from renderAllFinancingSurfaces() so a
+         payment change on this screen can never leave the sentence stale.
+         Customer-derived text: both ids are in the wipe inventories. -->
+    <section class="hf2-review-section" id="hf2LeadSection" aria-labelledby="hf2LeadLabel">
+      <div class="hf2-review-section__label" id="hf2LeadLabel"></div>
+      <p class="hf2-lead-line" id="hf2LeadLine"></p>
+    </section>
+
     <section class="hf2-review-section">
       <div class="hf2-review-section__label" id="hf2NeedsLabel">What we set out to solve</div>
       <div class="hf2-brief">
@@ -10774,9 +10802,14 @@
          gutter; they mirror the email body's own inline treatment of this same
          content (Code.gs sets line-height and per-entry spacing inline) and
          stay inline precisely so no rule outlives 1.6's re-decision. -->
+    <!-- Trial priorities (Slice 6 resolves the 0.5 provisional presentation):
+         a real ordered component. Native <ol> semantics stay — order is
+         conveyed by list position, not styling. renderHf2Priorities() still
+         owns display and still hides the WHOLE section (label included) on
+         any incomplete collection (R-8). -->
     <section class="hf2-review-section" id="hf2PrioritiesSection" style="display:none">
       <div class="hf2-review-section__label" id="hf2PrioritiesLabel">What we will test together</div>
-      <ol id="hf2Priorities" style="margin-top:8px; padding-left:1.5em"></ol>
+      <ol class="hf2-priorities" id="hf2Priorities"></ol>
     </section>
 
     <section class="hf2-review-section">
@@ -10790,6 +10823,7 @@
                 ontouchend="event.preventDefault();window.compareReviewFinalists();">Compare saved picks</button>
       </div>
       <div id="hf2PicksList"></div>
+      <p class="hf2-review-section__hint" id="hf2PicksEmpty" hidden></p>
     </section>
 
     <section class="hf2-review-section" id="hf2SleepSystemSection">
@@ -10803,6 +10837,7 @@
                 ontouchend="event.preventDefault();window.showAccessories();">Edit Sleep System</button>
       </div>
       <div id="hf2AccessoriesList"></div>
+      <p class="hf2-review-section__hint" id="hf2SystemEmpty" hidden></p>
     </section>
 
     <!-- Payment Choices handoff module (Payment Choice) — the strongest
@@ -12446,6 +12481,11 @@
       renderResultsFinancing();
       renderDrawerFinancing();
       renderHandoffFinancing();
+      // Slice 6: the Summary's composed lead+payment sentence reads payPref;
+      // a payment change while hf2 is active must repaint it in the same
+      // pass. typeof-guarded: the payment suites execute this function in a
+      // sandbox that does not declare the Summary renderer.
+      if (typeof renderHf2LeadLine === 'function') renderHf2LeadLine();
       renderSleepPlanFinancing();
       var sheet = document.getElementById('financingSheet');
       if (sheet && !sheet.hidden) renderFinancingSheet();
@@ -19084,14 +19124,15 @@
         return;
       }
       var valid = stored;
-      // Inline spacing, not a class: without it the reset collapses the three
-      // items into one six-line block. Mirrors the email body's inline
-      // treatment of the same content; 1.6 re-decides both.
+      // Slice 6 (resolving 0.5's provisional presentation): a classed ordered
+      // component. Same content, same engine order and wording, same
+      // all-or-nothing posture; "Try this" now comes from the dictionary —
+      // the same key the Sleep Plan renders (brief.try_this), one fork fewer.
       list.innerHTML = valid.map(function(item) {
-        return '<li style="margin-bottom:8px; line-height:1.5">'
+        return '<li class="hf2-priorities__item">'
           + '<strong>' + escapeHtml(L(item)) + '</strong> — '
           + escapeHtml(item.why[currentLang] || item.why.en)
-          + '<br><em>' + (es ? 'Pruébalo: ' : 'Try this: ') + '</em>'
+          + '<br><em class="hf2-priorities__try">' + escapeHtml(t('brief.try_this')) + '</em>'
           + escapeHtml(item.test[currentLang] || item.test.en)
           + '</li>';
       }).join('');
@@ -19407,6 +19448,7 @@
       if (compareBtn) compareBtn.textContent = t('hf2.compare_saved');
       var editSystemBtn = document.getElementById('hf2EditSystemBtn');
       if (editSystemBtn) editSystemBtn.textContent = es ? 'Editar Sistema de Sueño' : 'Edit Sleep System';
+      renderHf2LeadLine();
       renderHf2Brief();
       renderHf2Priorities();
       renderHf2Picks();
@@ -19520,10 +19562,58 @@
       return '';
     }
 
+    // ---- Lead status line (Slice 6, D5b x D4) --------------------------------
+    // The explicit finalist state COMPOSED with the payment-preference state.
+    // Finalist side: resolveFinalistState() and finalistRecommendedFallback(),
+    // exactly as the Sleep Plan consumes them, with the Plan's own model line
+    // (tier + position). Payment side: the SAME three-line derivation the D4
+    // preference row uses (labelFor over finPaymentPaths, the Not-right-now
+    // override, the preferenceNone fallback), so this sentence can never
+    // contradict the Payment Choice module rendered below it. Composition,
+    // not a matrix: three lead sentences x one payment template.
+    // Re-rendered by renderHf2() AND (typeof-guarded) by
+    // renderAllFinancingSurfaces(), so a payment tap on this screen repaints
+    // the sentence in the same pass as the module.
+    function renderHf2LeadLine() {
+      var label = document.getElementById('hf2LeadLabel');
+      var lineEl = document.getElementById('hf2LeadLine');
+      if (!label || !lineEl) return;
+      label.textContent = t('hf2.lead_label');
+      var pickText = function(m) {
+        var name = (m.brand ? m.brand + ' \u00b7 ' : '') + (m.name || '');
+        var line = sleepPlanModelLine(m) || sleepPlanTierLabel(m.tier) || '';
+        return line ? name + ' (' + line + ')' : name;
+      };
+      var finalist = resolveFinalistState();
+      var lead;
+      if (finalist.kind === 'chosen') {
+        lead = t('hf2.lead_chosen', { pick: pickText(finalist.item) });
+      } else {
+        var rec = finalistRecommendedFallback();
+        lead = rec ? t('hf2.lead_recommended', { pick: pickText(rec) }) : t('hf2.lead_none');
+      }
+      var payment = '';
+      if (financingEnabled()) {
+        var paths = finPaymentPaths();
+        var labelFor = function(id) {
+          for (var i = 0; i < paths.length; i++) if (paths[i].id === id) return paths[i].label;
+          return '';
+        };
+        var notNow = payPref === PAY_NOT_NOW;
+        var prefLabel = notNow ? FC('preferenceNotNow') : (payPref ? labelFor(payPref) : '');
+        if (!prefLabel) prefLabel = FC('preferenceNone');
+        payment = t('hf2.pay_state', { value: prefLabel });
+      }
+      lineEl.textContent = payment ? lead + ' ' + payment : lead;
+    }
+
     // ---- Picks ---------------------------------------------------------------
-    // The review is chosen-first. It shows every mattress the customer saved,
-    // then fills the comparison set to three with ranked suggestions when fewer
-    // than three were saved.
+    // Slice 6 (owner ruling): the Summary is a compact authoritative READ
+    // MODEL of saved state. Only customer-saved picks render, in the order
+    // they were saved — no engine suggestion padding, no favourite-first
+    // re-sort, no re-derived reason prose, no reaction row (reactions are
+    // drawer-only). The finalist story belongs to the lead line above, not
+    // to an ordering of this list.
     window._mattressReactions = window._mattressReactions || {};
     window._favoriteMattressId = window._favoriteMattressId || '';
 
@@ -19531,60 +19621,32 @@
       var list = document.getElementById('hf2PicksList');
       if (!list) return;
       list.innerHTML = '';
-      var state = (typeof _resultsState !== 'undefined' && _resultsState) ? _resultsState : null;
-      if (!state || !state.tierData) return;
-      var saved = Array.isArray(window._savedPicks) ? window._savedPicks.slice() : [];
-      var reviewPicks = saved.map(function(p) {
+      var saved = Array.isArray(window._savedPicks) ? window._savedPicks : [];
+      // Stored save order. Unresolvable ids are omitted, never rendered raw —
+      // the same posture as sleepPlanMattressById.
+      var resolved = saved.map(function(p) {
         var data = window._drawerData && window._drawerData[p.id];
-        return data ? { m: data.m, tier: data.tier, suggested: false } : null;
+        return data ? { m: data.m, tier: data.tier } : null;
       }).filter(Boolean);
-
-      var reviewIds = new Set(reviewPicks.map(function(item) { return item.m.id; }));
-      var suggestionPool = [];
-      // Start with one strong option per tier for useful price/feature contrast.
-      ['gold', 'silver', 'bronze'].forEach(function(tier) {
-        var top = (state.tierData[tier] || [])[0];
-        if (top) suggestionPool.push({ m: top, tier: tier });
+      resolved.forEach(function(item) {
+        list.appendChild(renderHf2Pick(item.m, item.tier));
       });
-      // Then use remaining ranked options if a saved item already occupied a
-      // tier's first slot or a tier has fewer products.
-      ['gold', 'silver', 'bronze'].forEach(function(tier) {
-        (state.tierData[tier] || []).slice(1).forEach(function(m) {
-          suggestionPool.push({ m: m, tier: tier });
-        });
-      });
-      suggestionPool.some(function(candidate) {
-        if (reviewPicks.length >= 3) return true;
-        if (reviewIds.has(candidate.m.id)) return false;
-        var data = window._drawerData && window._drawerData[candidate.m.id];
-        if (!data) return false;
-        reviewPicks.push({ m: data.m, tier: data.tier, suggested: true });
-        reviewIds.add(candidate.m.id);
-        return false;
-      });
-
-      reviewPicks.sort(function(a, b) {
-        if (a.m.id === window._favoriteMattressId) return -1;
-        if (b.m.id === window._favoriteMattressId) return 1;
-        return 0;
-      });
-      reviewPicks.forEach(function(item) {
-        list.appendChild(renderHf2Pick(item.m, item.tier, item.suggested));
-      });
-
-      var hint = document.getElementById('hf2FinalistsHint');
-      var suggestionCount = reviewPicks.filter(function(item) { return item.suggested; }).length;
-      if (hint) {
-        hint.textContent = currentLang === 'es'
-          ? saved.length + ' guardado' + (saved.length === 1 ? '' : 's') + ' · '
-              + suggestionCount + ' sugerencia' + (suggestionCount === 1 ? '' : 's')
-              + '. Solo las selecciones guardadas se envían.'
-          : saved.length + ' saved · ' + suggestionCount + ' suggestion'
-              + (suggestionCount === 1 ? '' : 's') + '. Only saved picks are sent.';
+      // Honest empty state: with no padding, an empty list needs words, not
+      // an unexplained blank under the section label.
+      var empty = document.getElementById('hf2PicksEmpty');
+      if (empty) {
+        empty.textContent = t('hf2.no_saved_picks');
+        empty.hidden = resolved.length > 0;
       }
-
+      // The hint is the dictionary sentence — no runtime overwrite and no
+      // delivery claim (the old count line asserted delivery while gasUrl
+      // is blank; preview mode delivers nothing).
+      var hint = document.getElementById('hf2FinalistsHint');
+      if (hint) hint.textContent = t('hf2.saved_picks_hint');
       var compareBtn = document.getElementById('hf2CompareBtn');
-      if (compareBtn) compareBtn.disabled = saved.length < 2;
+      // Compare works from two saved picks OR a complete persisted pair (C3).
+      if (compareBtn) compareBtn.disabled = saved.length < 2
+        && !(Array.isArray(window._compareSelected) && window._compareSelected.length === 2);
     }
 
     // Templated pivot-reason archetype labels for silver/bronze. Lowercase per
@@ -19819,24 +19881,20 @@
         : 'A balanced feel worth comparing directly with your other saved picks.';
     }
 
-    function renderHf2Pick(m, tier, suggested) {
+    function renderHf2Pick(m, tier) {
+      // Slice 6: a compact saved-pick card — the Plan-parity model line
+      // (tier · position via sleepPlanModelLine, one producer for both
+      // screens), the name, and the customer's controls. The re-derived
+      // reason prose and the reaction row are gone: reasons live on Results
+      // and in the drawer; reactions are drawer-only by owner ruling.
       var card = document.createElement('div');
-      card.className = 'hf2-pick' + (tier === 'gold' ? ' hf2-pick--gold' : '')
-        + (suggested ? ' hf2-pick--suggested' : ' hf2-pick--saved');
+      card.className = 'hf2-pick' + (tier === 'gold' ? ' hf2-pick--gold' : '') + ' hf2-pick--saved';
 
       var tierTag = document.createElement('div');
       tierTag.className = 'hf2-pick__tier';
-      // Lowercase content; brass small-caps appearance comes from CSS letter-spacing.
-      var tierNames = currentLang === 'es'
-        ? { gold: 'Oro', silver: 'Plata', bronze: 'Bronce' }
-        : { gold: 'Gold', silver: 'Silver', bronze: 'Bronze' };
-      tierTag.textContent = (suggested
-        ? (currentLang === 'es' ? 'Sugerencia · ' : 'Suggested · ')
-        : (m.id === window._favoriteMattressId ? t('finalist.chosen_prefix') : ''))
-        + tierNames[tier] + ' · ' + firmnessFeel(m.firmness) + ' · ' + mattressResponseLabel(m)
-        + (m.meetsMatchThreshold ? '' : ' · ' + (currentLang === 'es'
-          ? 'Opción adicional para comparar'
-          : 'Additional comparison option'));
+      var line = sleepPlanModelLine(Object.assign({}, m, { tier: tier }));
+      tierTag.textContent = (m.id === window._favoriteMattressId ? t('finalist.chosen_prefix') : '')
+        + (line || sleepPlanTierLabel(tier));
       card.appendChild(tierTag);
 
       var name = document.createElement('div');
@@ -19844,45 +19902,20 @@
       name.textContent = (m.brand || '') + ' · ' + (m.name || '');
       card.appendChild(name);
 
-      var reason = document.createElement('div');
-      reason.className = 'hf2-pick__reason';
-      var priorities = buildMattressPriorities(m);
-      reason.textContent = priorities.length
-        ? priorities[0].title + ' — ' + priorities[0].desc
-        : hf2ReasonFor(m, tier);
-      card.appendChild(reason);
-
-      var reaction = window._mattressReactions[m.id];
-      if (reaction) {
-        var reactionEl = document.createElement('div');
-        reactionEl.className = 'hf2-pick__reaction';
-        reactionEl.innerHTML = '<span class="hf2-pick__reaction-label">'
-          + (currentLang === 'es' ? 'Su reacción:' : 'Your reaction:')
-          + '</span>' + escapeHtml(reactionLabel(reaction));
-        card.appendChild(reactionEl);
-      }
-
       var actions = document.createElement('div');
       actions.className = 'hf2-pick__actions';
-      actions.innerHTML = (suggested
-        ? '<button class="hf2-pick__action is-selected"'
-            + ' onclick="window.addReviewMattress(\'' + m.id + '\')"'
-            + ' ontouchend="event.preventDefault();window.addReviewMattress(\'' + m.id + '\');">'
-            + t('hf2.add_to_saved') + '</button>'
-        : '<button class="hf2-pick__action' + (m.id === window._favoriteMattressId ? ' is-selected' : '') + '"'
+      actions.innerHTML = '<button class="hf2-pick__action' + (m.id === window._favoriteMattressId ? ' is-selected' : '') + '"'
             + ' onclick="window.toggleFavoriteMattress(\'' + m.id + '\')"'
             + ' ontouchend="event.preventDefault();window.toggleFavoriteMattress(\'' + m.id + '\');">'
-            + finalistButtonLabel(m.id === window._favoriteMattressId) + '</button>')
+            + finalistButtonLabel(m.id === window._favoriteMattressId) + '</button>'
         + '<button class="hf2-pick__action"'
           + ' onclick="window.showMattressInResults(\'' + m.id + '\',\'' + tier + '\')"'
           + ' ontouchend="event.preventDefault();window.showMattressInResults(\'' + m.id + '\',\'' + tier + '\');">'
           + (currentLang === 'es' ? 'Ver en colchones →' : 'View in matches →') + '</button>'
-        + (!suggested
-          ? '<button class="hf2-pick__action hf2-pick__action--remove"'
+        + '<button class="hf2-pick__action hf2-pick__action--remove"'
             + ' onclick="window.removeReviewMattress(\'' + m.id + '\')"'
             + ' ontouchend="event.preventDefault();window.removeReviewMattress(\'' + m.id + '\');">'
-            + (currentLang === 'es' ? 'Quitar' : 'Remove') + '</button>'
-          : '');
+            + (currentLang === 'es' ? 'Quitar' : 'Remove') + '</button>';
       card.appendChild(actions);
       return card;
     }
@@ -19962,8 +19995,10 @@
     };
 
     // ---- Accessories block ---------------------------------------------------
-    // Shared review keeps selected components explicit and fills the comparison
-    // set to three with suggestions that do not enter the plan until added.
+    // Slice 6 (owner ruling): the Summary shows ONLY the selected Sleep System
+    // configuration — the customer's cart, resolved against the catalog in
+    // catalog order. No re-scoring, no suggestion fill: exploration lives on
+    // the Sleep System screen behind the Edit/Explore control.
     function renderHf2Accessories() {
       var container = document.getElementById('hf2AccessoriesList');
       if (!container) return;
@@ -19973,43 +20008,17 @@
 
       var cart = window._accCart || {};
       var cartIds = new Set(Object.keys(cart));
+      // Names and categories resolve through the catalog (bilingual objects),
+      // never the cart snapshot — the snapshot's name is the language it was
+      // added in, and a language switch must re-localize.
       var cartItems = (typeof ACCESSORIES !== 'undefined' ? ACCESSORIES : []).filter(function(a) {
         return cartIds.has(a.id);
       }).map(function(a) {
         return Object.assign({}, a, { reasons: cart[a.id].reasons || [] });
       });
-      var selectedCategories = new Set(cartItems.map(function(item) {
-        return typeof item.category === 'object' ? item.category.en : item.category;
-      }));
-      var recommendationCount = Math.max(0, 3 - cartItems.length);
-      var candidateItems = scoreAccessoriesFromAnswers().filter(function(item) {
-        return !cartIds.has(item.id);
-      }).sort(function(a, b) {
-        // Personalized matches lead; neutral catalog options remain available
-        // to complete a three-option salesperson comparison set.
-        return Number(b.matched === true) - Number(a.matched === true);
-      });
-      var recommendedItems = [];
-      var seenCategories = new Set();
-      // First pass favors category diversity and avoids re-pitching a category
-      // already represented in the customer's selected plan.
-      candidateItems.forEach(function(item) {
-        if (recommendedItems.length >= recommendationCount) return;
-        var category = typeof item.category === 'object' ? item.category.en : item.category;
-        if (selectedCategories.has(category) || seenCategories.has(category)) return;
-        recommendedItems.push(item);
-        seenCategories.add(category);
-      });
-      // Second pass fills any remaining slots with the next ranked products,
-      // even when that requires a second option from the same category.
-      candidateItems.forEach(function(item) {
-        if (recommendedItems.length >= recommendationCount) return;
-        if (recommendedItems.some(function(existing) { return existing.id === item.id; })) return;
-        recommendedItems.push(item);
-      });
 
       var section = document.getElementById('hf2SleepSystemSection');
-      if (section) section.style.display = (cartItems.length || recommendedItems.length) ? '' : 'none';
+      if (section) section.style.display = '';
       if (cartItems.length > 0) {
         container.appendChild(renderHf2AccBlock(
           es ? 'Incluido en tu plan' : 'Included in your plan',
@@ -20017,24 +20026,18 @@
           false
         ));
       }
-      if (recommendedItems.length > 0) {
-        container.appendChild(renderHf2AccBlock(
-          es ? 'A\u00fan vale la pena probar' : 'Still worth trying',
-          recommendedItems,
-          true
-        ));
+      var emptyLine = document.getElementById('hf2SystemEmpty');
+      if (emptyLine) {
+        emptyLine.textContent = t('hf2.no_system_items');
+        emptyLine.hidden = cartItems.length > 0;
       }
 
       var systemLabel = document.getElementById('hf2SystemLabel');
       var systemHint = document.getElementById('hf2SystemHint');
       var editButton = document.getElementById('hf2EditSystemBtn');
       if (systemLabel) systemLabel.textContent = es ? 'Tu Sistema de Sue\u00f1o' : 'Your Sleep System';
-      if (systemHint) systemHint.textContent = es
-        ? cartItems.length + ' incluido' + (cartItems.length === 1 ? '' : 's') + ' · '
-            + recommendedItems.length + ' sugerencia' + (recommendedItems.length === 1 ? '' : 's')
-            + '. Solo las piezas incluidas se envían.'
-        : cartItems.length + ' included · ' + recommendedItems.length + ' suggestion'
-            + (recommendedItems.length === 1 ? '' : 's') + '. Only included pieces are sent.';
+      // Dictionary sentence, no runtime count overwrite, no delivery claim.
+      if (systemHint) systemHint.textContent = t('hf2.system_hint');
       if (editButton) editButton.textContent = cartItems.length
         ? (es ? 'Editar Sistema de Sue\u00f1o' : 'Edit Sleep System')
         : (es ? 'Explorar Sistema de Sue\u00f1o' : 'Explore Sleep System');
@@ -21063,6 +21066,7 @@
       // visible ones (found by the privacy re-review). No quote characters in
       // this comment: the session suite parses the quoted ids from this block.
       'drawerShortlistFit', 'drawerSystemPromptTitle', 'drawerSystemPromptReason',
+      'hf2LeadLine',
       'hf2FinancingStatus', 'financingSheetStatus', 'financingSheetAction',
       'sleepPlanFinancingStatus', 'sleepPlanPrioritiesRecoveryText',
       'sessionSafetyLive', 'dataErrorLive',

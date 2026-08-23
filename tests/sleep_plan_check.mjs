@@ -791,6 +791,109 @@ if (gate("renderSleepPlan", RENDER_SRCS.every(Boolean) && !!FALLBACK_SRC && !!RE
   check("the Results 'Review with customer' CTA routes to the Plan", /id="reviewWithCustomerBtn" onclick="window\.showSleepPlan\('results'\)"/.test(norm));
   check("hf2Screen's spoken name is now distinct from the Plan's", dictEn["screen.handoff"] !== dictEn["screen.sleep_plan"] && dictEs["screen.handoff"] !== dictEs["screen.sleep_plan"]);
   check("the governed recovery strings are exact EN", dictEn["plan.priorities_recovery"] === "We couldn't prepare the trial priorities. Return to the Sleep Brief and try again." && dictEn["plan.priorities_recovery_action"] === "Return to Sleep Brief");
+  // ---- Slice 6 C4: the Summary is a compact read model of saved state ------
+  section("Slice 6 C4 — read model: saved-only picks, cart-only system, drawer-only reactions");
+  {
+    const picksSrc = extractFunction("function renderHf2Picks()");
+    const pickSrc = extractFunction("function renderHf2Pick(m, tier)");
+    const accSrc = extractFunction("function renderHf2Accessories()");
+    check("renderHf2Picks renders ONLY saved picks in stored order (no suggestion pool, no favourite-first sort)",
+      !!picksSrc && !/suggestionPool|tierData|\.sort\(/.test(picksSrc)
+      && /window\._savedPicks/.test(picksSrc));
+    check("...the empty state is worded, dictionary-driven", /t\('hf2\.no_saved_picks'\)/.test(picksSrc));
+    check("...the hint is the dictionary sentence — no runtime count overwrite, no delivery claim",
+      /t\('hf2\.saved_picks_hint'\)/.test(picksSrc) && !/are sent|se env/i.test(picksSrc));
+    check("...Compare enables from two saved picks OR a persisted complete pair (C3)",
+      /_compareSelected/.test(picksSrc) && /saved\.length < 2/.test(picksSrc));
+    check("the pick card is compact: Plan-parity model line, no re-derived reason, no reaction row",
+      !!pickSrc && /sleepPlanModelLine/.test(pickSrc)
+      && !/buildMattressPriorities|hf2ReasonFor|_mattressReactions|reactionLabel/.test(pickSrc));
+    check("renderHf2Accessories is cart-only: no scorer, no suggestion fill, catalog-resolved names",
+      !!accSrc && !/scoreAccessoriesFromAnswers|recommendationCount|Still worth trying/.test(accSrc)
+      && /window\._accCart/.test(accSrc) && /ACCESSORIES/.test(accSrc));
+    check("...with a worded, dictionary-driven empty state and hint",
+      /t\('hf2\.no_system_items'\)/.test(accSrc) && /t\('hf2\.system_hint'\)/.test(accSrc));
+    check("the Summary no longer claims anything 'is sent' in either language (preview truth; gasUrl is blank)",
+      !/Only saved picks are sent|Only included pieces are sent|se envían\./.test(norm.match(/function renderHf2Picks\(\)[\s\S]*?function renderHf2AccBlock/) ? norm.match(/function renderHf2Picks\(\)[\s\S]*?function renderHf2AccBlock/)[0] : "x")
+      && !/are sent/i.test(dictEn["hf2.saved_picks_hint"]) && !/se env/i.test(dictEs["hf2.saved_picks_hint"]));
+    check("the lead line is in the wipe inventories (app SESSION_TEXT_IDS)",
+      /'hf2LeadLine',/.test(norm));
+  }
+
+  // ---- Slice 6 C4: the composed lead + payment sentence (executed) ----------
+  section("Slice 6 C4 — lead line: finalist state composed with payment state");
+  {
+    const leadSrc = extractFunction("function renderHf2LeadLine()");
+    const finSrc = extractFunction("function resolveFinalistState()");
+    const fallbackSrc = extractFunction("function finalistRecommendedFallback()");
+    const lineSrc = extractFunction("function sleepPlanModelLine(m)");
+    const tierSrc = extractFunction("function sleepPlanTierLabel(tier)");
+    check("extractions for the lead-line execution", !!leadSrc && !!finSrc && !!fallbackSrc && !!lineSrc && !!tierSrc);
+
+    const DICT = { en: dictEn, es: dictEs };
+    function makeLeadEnv(opts) {
+      const els = {};
+      const doc = { getElementById: (id) => (els[id] = els[id] || { textContent: "", hidden: false }) };
+      const win = throwingWindow({
+        _savedPicks: opts.saved || [],
+        _favoriteMattressId: opts.fav || ""
+      });
+      const lang = opts.lang || "en";
+      const t = (k, repl) => {
+        let v = DICT[lang][k] != null ? DICT[lang][k] : k;
+        if (repl) for (const key of Object.keys(repl)) v = v.split("{" + key + "}").join(repl[key]);
+        return v;
+      };
+      const FC = (k) => ({ preferenceNotNow: lang === "es" ? "Ahora no" : "Not right now",
+                           preferenceNone: lang === "es" ? "Sin seleccionar" : "Not selected" })[k] || k;
+      const src = finSrc + "\n" + fallbackSrc + "\n" + tierSrc + "\n" + lineSrc + "\n" + leadSrc
+        + "\nout.run = function() { renderHf2LeadLine(); };";
+      const out = {};
+      new Function("window", "document", "t", "FC", "financingEnabled", "finPaymentPaths",
+        "payPref", "PAY_NOT_NOW", "_resultsState", "currentLang", "out",
+        '"use strict";' + src)(
+        win, doc, t, FC, () => opts.financing !== false,
+        () => (opts.paths || [{ id: "plan-a", label: "Path A" }]),
+        "payPref" in opts ? opts.payPref : null, "not_now",
+        opts.results === undefined ? null : opts.results, lang, out);
+      out.run();
+      return els;
+    }
+    const RESULTS = { tierData: { gold: [{ id: "g1", name: "Cloud Nine", brand: "Restonic" }], silver: [], bronze: [] } };
+
+    let els = makeLeadEnv({ saved: [{ id: "g1", name: "Cloud Nine", brand: "Restonic", tier: "gold" }], fav: "g1", results: RESULTS, financing: false });
+    check("chosen + financing off: the finalist sentence alone, name + tier-and-position",
+      els.hf2LeadLine.textContent === "Finalist ✓ Restonic · Cloud Nine (" + dictEn["results.tier_gold"] + " · " + dictEn["results.match_lead"] + ").");
+    check("...the label renders from the dictionary", els.hf2LeadLabel.textContent === dictEn["hf2.lead_label"]);
+
+    els = makeLeadEnv({ results: RESULTS, payPref: null });
+    check("no finalist + engine pick + nothing selected: recommended sentence composed with 'Not selected'",
+      els.hf2LeadLine.textContent === "No finalist selected yet — Restonic · Cloud Nine (" + dictEn["results.tier_gold"] + " · " + dictEn["results.match_lead"] + ") is the recommended starting point. Payment preference: Not selected.");
+
+    els = makeLeadEnv({ results: RESULTS, payPref: "not_now" });
+    check("...Not right now flows through the SAME derivation the D4 rows use",
+      /Payment preference: Not right now\.$/.test(els.hf2LeadLine.textContent));
+
+    els = makeLeadEnv({ results: RESULTS, payPref: "plan-a" });
+    check("...a considered path names the path label", /Payment preference: Path A\.$/.test(els.hf2LeadLine.textContent));
+
+    els = makeLeadEnv({ results: RESULTS, payPref: "gone-path" });
+    check("...a stale path id falls back to 'Not selected', never a raw token",
+      /Payment preference: Not selected\.$/.test(els.hf2LeadLine.textContent) && !/gone-path/.test(els.hf2LeadLine.textContent));
+
+    els = makeLeadEnv({ results: null, financing: false });
+    check("no finalist and no results: the honest none sentence", els.hf2LeadLine.textContent === dictEn["hf2.lead_none"]);
+
+    els = makeLeadEnv({ lang: "es", results: RESULTS, payPref: null });
+    check("ES: the composed sentence resolves fully in Spanish",
+      els.hf2LeadLine.textContent.indexOf("Aún no has elegido finalista") === 0
+      && /Preferencia de pago: Sin seleccionar\.$/.test(els.hf2LeadLine.textContent));
+
+    check("renderAllFinancingSurfaces refreshes the lead line (typeof-guarded — a payment tap cannot leave it stale)",
+      /if \(typeof renderHf2LeadLine === 'function'\) renderHf2LeadLine\(\);/.test(
+        (norm.match(/function renderAllFinancingSurfaces\(\)[\s\S]*?\n    \}/) || [""])[0]));
+  }
+
   // ---- Slice 6 C2: retitle, honest CTA, attribution, secondary Plan route --
   section("Slice 6 C2 — Summary identity and routes");
   check("the Results CTA names its destination: 'Review Sleep Plan' in both languages (runtime writer)",

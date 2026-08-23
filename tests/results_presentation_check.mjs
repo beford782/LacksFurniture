@@ -382,8 +382,11 @@ ok('the priority row / chip markup is gone from both renderers',
   !/noct-toppick-priority/.test(topPickSrc) && !/noct-support-chip/.test(supportSrc));
 ok('buildMattressPriorities() itself survives, unchanged in reach',
   norm.includes('function buildMattressPriorities(m)'));
-ok('exactly its non-Results consumers remain: definition + drawer data + HF2 + compare modal',
-  (norm.match(/buildMattressPriorities\(/g) || []).length === 4,
+// Slice 6: the Consultation Summary became a read model and dropped its
+// re-derived reason line, so the helper's consumers are now the
+// definition, the drawer data and the compare modal (4 -> 3, deliberate).
+ok('exactly its non-Results consumers remain: definition + drawer data + compare modal',
+  (norm.match(/buildMattressPriorities\(/g) || []).length === 3,
   `found ${(norm.match(/buildMattressPriorities\(/g) || []).length} occurrences`);
 const drawerDataSrc = extractFunction('function buildDrawerData()');
 ok('the drawer data path still consumes the helper',

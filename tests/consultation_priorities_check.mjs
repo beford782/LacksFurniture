@@ -205,13 +205,16 @@ function runHf2(trialFocus, lang) {
   const { els, doc } = makeDoc();
   const analytics = { trialFocus };
   const out = {};
-  new Function("document", "currentLang", "analytics", "out",
+  // Slice 6: the renderer resolves "Try this" through the dictionary
+  // (brief.try_this — the Sleep Plan's key), so the harness supplies the
+  // REAL dictionaries, exactly as runProfile already does.
+  new Function("document", "currentLang", "analytics", "out", "t",
     `"use strict";
     ${ESCAPE_FN}
     ${L_FN}
     ${HF2_FN}
     out.run = function() { renderHf2Priorities(); };
-    `)(doc, lang, analytics, out);
+    `)(doc, lang, analytics, out, (k) => (DICTS[lang] && DICTS[lang][k]) != null ? DICTS[lang][k] : k);
   out.run();
   return {
     section: els.get("hf2PrioritiesSection"),
@@ -432,13 +435,13 @@ section("hf2: ordered render from stored state, both languages, no recompute");
     const { els, doc } = makeDoc();
     const analytics = { trialFocus: runProfile(FIXTURES.C, "en").analytics.trialFocus };
     const out = {};
-    new Function("document", "currentLang", "analytics", "out",
+    new Function("document", "currentLang", "analytics", "out", "t",
       `"use strict";
       ${ESCAPE_FN}
       ${L_FN}
       ${HF2_FN}
       out.run = function() { renderHf2Priorities(); };
-      `)(doc, "en", analytics, out);
+      `)(doc, "en", analytics, out, (k) => (DICTS.en && DICTS.en[k]) != null ? DICTS.en[k] : k);
     out.run();
     check(`[${label}] precondition: visible with content first`,
       els.get("hf2PrioritiesSection").style.display === ""
@@ -466,13 +469,13 @@ section("hf2: ordered render from stored state, both languages, no recompute");
       if (base.length !== 3) { check(`[mixed] fixture C yields 3 priorities in ${lang} (got ${base.length})`, false); continue; }
       const analytics = { trialFocus: base };
       const out = {};
-      new Function("document", "currentLang", "analytics", "out",
+      new Function("document", "currentLang", "analytics", "out", "t",
         `"use strict";
         ${ESCAPE_FN}
         ${L_FN}
         ${HF2_FN}
         out.run = function() { renderHf2Priorities(); };
-        `)(doc, lang, analytics, out);
+        `)(doc, lang, analytics, out, (k) => (DICTS[lang] && DICTS[lang][k]) != null ? DICTS[lang][k] : k);
       out.run();
       check(`[mixed ${lang} idx${badIndex}] precondition: all-valid renders exactly 3 rows`,
         (els.get("hf2Priorities").innerHTML.match(/<li /g) || []).length === 3);
@@ -514,14 +517,14 @@ section("hf2: ordered render from stored state, both languages, no recompute");
   const { els, doc } = makeDoc();
   const analytics = { trialFocus: state };
   const out = {};
-  new Function("document", "analytics", "out", "langBox",
+  new Function("document", "analytics", "out", "langBox", "t",
     `"use strict";
     var currentLang = 'en';
     ${ESCAPE_FN}
     ${L_FN}
     ${HF2_FN}
     out.run = function() { renderHf2Priorities(); };
-    `)(doc, analytics, out, {});
+    `)(doc, analytics, out, {}, (k) => (DICTS.en && DICTS.en[k]) != null ? DICTS.en[k] : k);
   out.run();
   check("precondition: rendered visible with 3 rows first",
     els.get("hf2PrioritiesSection").style.display === ""
@@ -599,25 +602,38 @@ section("payload: bounded, allowlisted, pre-localized, ordered");
 // 6. STATIC WIRING
 // ===========================================================================
 section("static wiring: markup, placement, wipe inventory, isolation");
-check("the section markup exists with a class-free <ol>, statically empty",
-  /<ol id="hf2Priorities" style="[^"]*"><\/ol>/.test(html)
-  && !/<ol id="hf2Priorities"[^>]*class=/.test(html));
-check("the section ships hidden and carries the existing pattern's classes only",
+// Slice 6 resolves 0.5's provisional presentation: the <ol> keeps its native
+// ordered-list semantics and gains the component class; the inline spacing
+// styles move to CSS. The section still ships hidden.
+check("the priorities <ol> is the classed ordered component (no inline styles, semantics kept)",
+  /<ol class="hf2-priorities" id="hf2Priorities"><\/ol>/.test(html)
+  && !/<ol[^>]*id="hf2Priorities"[^>]*style=/.test(html));
+check("the component classes exist in CSS (the inline spacing moved, not vanished)",
+  /\.hf2-priorities \{/.test(html) && /\.hf2-priorities__item \{/.test(html));
+check("the section ships hidden and keeps the section pattern",
   /<section class="hf2-review-section" id="hf2PrioritiesSection" style="display:none">/.test(html));
 check("placement: after 'What we set out to solve', above the finalists",
   html.indexOf('id="hf2NeedsLabel"') < html.indexOf('id="hf2PrioritiesSection"')
   && html.indexOf('id="hf2PrioritiesSection"') < html.indexOf('id="hf2FinalistsLabel"'));
-check("no new component class: the section introduces no class outside the existing pattern",
+// The 0.5-era "no new component class" constraint was that item's own limit,
+// recorded as inherited debt for 1.6 — which this slice IS. The closed set
+// below is the deliberate replacement contract: the section may use exactly
+// the section pattern plus the named priorities component, nothing else.
+check("the section's class set is exactly the section pattern + the priorities component",
   (() => {
     const m = html.match(/<section class="hf2-review-section" id="hf2PrioritiesSection"[\s\S]*?<\/section>/);
     if (!m) return false;
     const classes = [...m[0].matchAll(/class="([^"]+)"/g)].flatMap((c) => c[1].split(/\s+/));
-    return classes.every((c) => ["hf2-review-section", "hf2-review-section__label"].includes(c));
+    return classes.length > 0 && classes.every((c) => ["hf2-review-section", "hf2-review-section__label", "hf2-priorities"].includes(c));
   })());
+check("the rendered items carry the component classes (li + try label)",
+  /'<li class="hf2-priorities__item">'/.test(html) && /class="hf2-priorities__try"/.test(html));
+check("the testing label resolves through the dictionary (brief.try_this — the Plan's key)",
+  /escapeHtml\(t\('brief\.try_this'\)\)/.test((html.match(/function renderHf2Priorities\(\)[\s\S]*?\n    \}/) || [""])[0]));
 check("the label is written by renderHf2's copy map, bilingually",
   /hf2PrioritiesLabel: es \? 'Lo que probaremos juntos' : 'What we will test together',/.test(html));
-check("renderHf2 renders priorities between the brief and the picks",
-  /renderHf2Brief\(\);\s*renderHf2Priorities\(\);\s*renderHf2Picks\(\);/.test(html));
+check("renderHf2 renders priorities between the brief and the picks (lead line precedes the triple)",
+  /renderHf2LeadLine\(\);\s*renderHf2Brief\(\);\s*renderHf2Priorities\(\);\s*renderHf2Picks\(\);/.test(html));
 check("the list is in the wipe's content inventory",
   /'hf2SleepSystemSection', 'hf2Priorities',/.test(html));
 check("the section returns to hidden through SESSION_LAYERS",
