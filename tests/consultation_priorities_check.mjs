@@ -626,8 +626,17 @@ check("the payload literal keeps the shape session_async pins ('};' at six space
   /const payload = \{[\s\S]*?\n      \};/.test(html));
 check("the compute block never references financing",
   !/financing/i.test(PROFILE_FN));
-check("the widened mapping stores no score, kind or rank",
-  !/score|kind|rank/.test((PROFILE_FN.match(/analytics\.trialFocus = topPriorities\.map[\s\S]*?\}\);/) || [""])[0]));
+// Hardened 2026-08-23 (Slice 6 C1): the old anchor
+// `analytics.trialFocus = topPriorities.map` stopped matching when Slice 5
+// introduced the builtTrialFocus intermediary, and the check passed
+// VACUOUSLY on the empty string. The extraction is now required to be
+// non-empty, so a renamed or moved mapping fails here instead of
+// silently asserting nothing.
+check("the widened mapping stores no score, kind or rank (extraction non-vacuous)",
+  (function () {
+    var mapped = (PROFILE_FN.match(/var builtTrialFocus = topPriorities\.map[\s\S]*?\}\);/) || [""])[0];
+    return mapped.length > 50 && !/score|kind|rank/.test(mapped);
+  })());
 // A source-shape complement to the per-fixture resultsTrialFocus pins above
 // (which are the real behavioral coverage): the derivative still reads the
 // store through L(item) rather than any new path.
