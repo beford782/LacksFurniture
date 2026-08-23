@@ -10324,7 +10324,6 @@
           <span id="landingCtaText">Find My Mattress</span>
           <span class="landing-cta-arrow">&rarr;</span>
         </button>
-        <span class="landing-time-estimate" id="landingTimeEstimate">≈ 4 minutes</span>
       </div>
 
       <!-- Data-use sentence (trust gate, 2026-08-21). ONE statement of what the
@@ -13831,7 +13830,10 @@
       setText('landingHeadlineMain', voice.headlineMain);
       setText('landingHeadlineAccent', voice.headlineAccent);
       setText('landingCtaText', voice.ctaPrimary);
-      setText('landingTimeEstimate', voice.timeEstimate);
+      // Slice 6 (owner decision): the completion-time estimate is removed —
+      // no measured session data backs any number, and the roadmap forbids
+      // promising an inaccurate completion time. voice.timeEstimate becomes a
+      // dormant config key (render-side removal only).
       setText('landingOutcomeLabel', voice.outcomeLabel || (es ? 'Tu consulta crea' : 'Your consultation builds'));
       // Promotion-neutral fallback: never promise a program (Savings Pass or
       // Payment Choice) that the loaded config does not declare.
@@ -13840,12 +13842,13 @@
       // the Savings Pass tease when financing is enabled; the pass tease
       // renders only when the pass itself is enabled; otherwise the row hides
       // (hidden attribute keeps it out of the accessibility tree).
+      // Slice 6 (owner decision): the Payment Choice tease is REMOVED from
+      // the Welcome — the outcome list's quiet "Payment Choices" entry is the
+      // one retained acknowledgment. The Savings-Pass tease below is a
+      // white-label template capability (dormant here, discount.mode
+      // disabled) and is deliberately untouched.
       var teaseRow = document.querySelector('.landing-discount-tease');
-      if (financingEnabled()) {
-        if (teaseRow) teaseRow.hidden = false;
-        setText('landingDiscountLabel', FC('eyebrow'));
-        setText('landingDiscountHint', FC('welcomeTagline') + ' ' + FC('welcomeSupport'));
-      } else if (savingsPassEnabled()) {
+      if (savingsPassEnabled()) {
         if (teaseRow) teaseRow.hidden = false;
         setText('landingDiscountLabel', es ? 'Tu Pase de Ahorro de 30 Días' : 'Your 30-Day Savings Pass');
         setText('landingDiscountHint', L(passConfig.landingHint));

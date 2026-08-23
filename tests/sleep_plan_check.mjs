@@ -894,6 +894,28 @@ if (gate("renderSleepPlan", RENDER_SRCS.every(Boolean) && !!FALLBACK_SRC && !!RE
         (norm.match(/function renderAllFinancingSurfaces\(\)[\s\S]*?\n    \}/) || [""])[0]));
   }
 
+  // ---- Slice 6 C6: Welcome — tease removed, estimate removed, keys retired --
+  section("Slice 6 C6 — Welcome removals");
+  {
+    const INCOMING_FIN = JSON.parse(readFileSync(join(root, "incoming", "lacks_financing.json"), "utf8"));
+    const CFG_FIN_COPY = (STORE_CONFIG.financing && STORE_CONFIG.financing.copy) || {};
+    check("the Payment Choice tease branch is gone from the Welcome renderer (no financingEnabled tease, no tease FC reads)",
+      !/FC\('welcomeTagline'\)|FC\('welcomeSupport'\)/.test(norm)
+      && !/financingEnabled\(\)\) \{\s*\r?\n\s*if \(teaseRow\) teaseRow\.hidden = false;/.test(norm));
+    check("...the Savings-Pass tease branch (template capability) survives, dormant",
+      /savingsPassEnabled\(\)\) \{\s*\r?\n\s*if \(teaseRow\) teaseRow\.hidden = false;/.test(norm));
+    check("the tease copy keys are retired from the canonical envelope AND the generated config",
+      !("welcomeTagline" in (INCOMING_FIN.copy || {})) && !("welcomeSupport" in (INCOMING_FIN.copy || {}))
+      && !("welcomeTagline" in CFG_FIN_COPY) && !("welcomeSupport" in CFG_FIN_COPY)
+      && Object.keys(CFG_FIN_COPY).length > 10);
+    check("the completion-time estimate is gone: no element, no renderer write, no static literal",
+      !/id="landingTimeEstimate"/.test(norm) && !/setText\('landingTimeEstimate'/.test(norm) && !/≈ 4 minutes/.test(norm));
+    check("the outcome row keeps the one quiet Payment Choice reference (config voice.outcomeItems)",
+      /landingOutcomeItems/.test(norm) && /Payment Choices/.test(JSON.stringify(STORE_CONFIG.voice || {})));
+    check("the rendered heritage (the Welcome eyebrow) is untouched",
+      /setText\('landingEyebrow', voice\.eyebrow\)/.test(norm) && /setText\('landingHeritage', textBlock\.heritage\)/.test(norm));
+  }
+
   // ---- Slice 6 C2: retitle, honest CTA, attribution, secondary Plan route --
   section("Slice 6 C2 — Summary identity and routes");
   check("the Results CTA names its destination: 'Review Sleep Plan' in both languages (runtime writer)",
