@@ -54,7 +54,9 @@ transmission negations to absolute claims about governed data. An eleventh and t
 restrict the negation gap to auxiliaries and adverbs. A thirteenth and fourteenth (`9988795`) scan the whole destination for a universal and
 treat a scoped "any lender" as qualified. A fifteenth (`53b7e27`) limits that scan to the coordinated continuation of the
 destination. A sixteenth and seventeenth (`f2aa300`) remove the length cap and require structural
-evidence of coordination for a continuation. All seventeen threads
+evidence of coordination for a continuation. An eighteenth (`b7eff97`) keeps a coordinated clause after ", and" out of the
+destination; after it the lead closed the review loop (eleven passes, all on the
+same prose heuristic, none touching the app). All eighteen threads
 answered and resolved
 on the PR.
 

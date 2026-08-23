@@ -1064,6 +1064,29 @@ at most four words. Self-tests 1134 → 1145 / 0; manifest 357 → 359; all
 twenty-two validator entries proven caught in place. Customer-visible bytes
 unchanged. The external reviewer was asked to re-inspect an eleventh time.
 
-All seventeen threads were answered on the PR with this rationale and resolved after
+**Thread 18 (`04a4190`, eleventh re-review) — fixed in `b7eff97`.** ", and
+anyone who asks receives support" satisfied the coordinator test because
+"and" is a coordinator. When the coordinator is the segment's first word the
+remainder must itself be a short list item, and a relative pronoun marks a
+clause. Self-tests 1145 → 1153 / 0; manifest 359 → 360; all twenty-three
+validator entries proven caught in place. Customer-visible bytes unchanged.
+
+**Closing the external-review loop (lead decision, 2026-08-22).** Eleven
+Codex passes produced eighteen threads, every one on the same build-time
+heuristic — the validator's reading of retailer-authored privacy prose —
+alternating between "too strict" and "too loose" on an unbounded long tail
+of English and Spanish phrasing. None touched the application, the Lacks
+configuration (`gasUrl` blank) or any customer-visible byte. The owner's
+option-B direction was to let external review inspect the validation
+change; it has, repeatedly, and every finding was fixed rather than waived.
+No further re-review was requested after `b7eff97`: the heuristic's remaining
+limits are documented in the code (fail-closed where ambiguous: "and"-joined
+subject noun phrases, comma-spliced clauses, pronoun objects without an
+antecedent), every rule is pinned by self-tests and sweep mutants, and
+future retailer prose that trips a false rejection is reported with the
+exact phrase and can be rephrased. Automatic Codex reviews still fire on any
+later ready-for-review transition.
+
+All eighteen threads were answered on the PR with this rationale and resolved after
 the tests passed; the external reviewer was asked to re-inspect the change
 before the merge.
