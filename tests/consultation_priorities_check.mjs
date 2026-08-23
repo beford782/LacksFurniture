@@ -795,6 +795,14 @@ section("Slice 6: payload projection all-or-nothing (executed)");
       return runProjection(broken, "en").length === 0 && runProjection(broken, "es").length === 3;
     })());
   check("an empty store projects [] (unchanged posture)", runProjection([], "en").length === 0);
+  // R2 I-3 (client side): the projection caps FIRST — a malformed entry
+  // beyond the cap is sliced away before the gate ever sees it.
+  check("CAP-THEN-VALIDATE: a malformed 4th entry beyond the cap cannot empty the capped block",
+    (() => {
+      const four = base.concat([{ en: "", es: "", why: {}, test: {} }]);
+      const out = runProjection(four, "en");
+      return out.length === 3 && out.every((pr) => pr.name && pr.reason && pr.test);
+    })());
 }
 
 console.log(`\nConsultation priorities check: ${passed} passed, ${failed} failed`);

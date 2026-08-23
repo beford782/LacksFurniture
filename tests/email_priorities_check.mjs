@@ -178,7 +178,9 @@ section("HTML email renders the priorities in order, localized");
       g2.api.approveCanSpam();
       post(g2.api, basePayload({ priorities: [] }));
       const h2 = g2.sent[0].opts.htmlBody || "";
-      return h2.indexOf("Sleep brief ·") !== -1 && h2.indexOf("WHAT WE WILL TEST TOGETHER") === -1;
+      const p2 = g2.sent[0].body || "";
+      return h2.indexOf("Sleep brief ·") !== -1 && h2.indexOf("WHAT WE WILL TEST TOGETHER") === -1
+        && p2.indexOf("Sleep Brief: Sleep brief ·") !== -1;
     })());
   check("safeData carries the priorities", Array.isArray(seenSafe.priorities)
     && seenSafe.priorities.length === 3);
@@ -466,6 +468,46 @@ for (const field of ["name", "reason", "test"]) {
 // Slice 6: lead contract, list provenance, percentage-free customer copy
 // ===========================================================================
 section("Slice 6: lead / matchesSource / percentage-free customer copy");
+
+{
+  // Sweep-survivor repair: the orphan-label guard needs a fixture whose
+  // sleepProfile is BLANK — only then does the guard's second clause matter.
+  const g = buildGas();
+  g.api.approveCanSpam();
+  post(g.api, basePayload({ priorities: [], sleepProfile: "" }));
+  const plain = g.sent[0].body || "";
+  check("a blank sleepProfile never leaves an orphan 'Sleep Brief: ' label in the plain part",
+    plain.indexOf("Sleep Brief: ") === -1
+    && plain.indexOf("Show this email to your Test Store sleep specialist.") !== -1);
+}
+{
+  // R2 I-3: the discriminator between cap-then-validate (shipped) and
+  // validate-then-cap — a malformed entry BEYOND the cap must be inert.
+  const g = buildGas();
+  g.api.approveCanSpam();
+  post(g.api, basePayload({ priorities: [
+    PRIORITIES_EN[0], PRIORITIES_EN[1], PRIORITIES_EN[2],
+    { name: "beyond the cap", reason: "", test: "" },
+  ] }));
+  const h = g.sent[0].opts.htmlBody || "";
+  check("CAP-THEN-VALIDATE: a malformed entry beyond the cap cannot empty the capped block",
+    h.indexOf("WHAT WE WILL TEST TOGETHER") !== -1
+    && PRIORITIES_EN.every((pr) => h.indexOf(pr.name) !== -1)
+    && h.indexOf("beyond the cap") === -1);
+}
+{
+  // R2 FOLLOW-UP: an empty match list must not render an orphan list header.
+  const g = buildGas();
+  g.api.approveCanSpam();
+  post(g.api, basePayload({ allMatches: [], priorities: [] }));
+  const plain = g.sent[0].body || "";
+  check("an empty match list renders no orphan plain list header",
+    plain.indexOf("Your mattress matches:") === -1
+    && plain.indexOf("Your saved mattress picks:") === -1
+    && plain.indexOf("Show this email to your Test Store sleep specialist.") !== -1);
+}
+
+
 {
   const g = buildGas();
   g.api.approveCanSpam();
@@ -480,10 +522,14 @@ section("Slice 6: lead / matchesSource / percentage-free customer copy");
     h.includes("YOUR FINALIST") && h.includes("Gold · Best match") && !h.includes("YOUR BEST MATCH"));
   check("...the plain part opens with the finalist line", plain.includes("Your finalist: Cloud Nine (Gold · Best match)"));
   check("saved provenance: the list is labelled as saved picks, never finalists-plural, never MORE MATCHES",
-    h.includes("YOUR SAVED MATTRESS PICKS") && !h.includes("MORE MATCHES TO COMPARE") && !/FINALISTS/.test(h.replace("YOUR FINALIST", "")));
+    h.includes("YOUR SAVED MATTRESS PICKS") && !h.includes("MORE MATCHES TO COMPARE") && !h.includes("FINALISTS"));
   check("...and the plain list header matches", plain.includes("Your saved mattress picks:"));
+  // dreamCode is blank here, so the Savings-Pass discount line is absent and
+  // NO digit-percent of any phrasing may survive in customer-VISIBLE copy:
+  // the HTML part is judged on its tag-stripped text (markup attributes like
+  // width="100%" are not customer copy), the plain part verbatim.
   check("no customer-facing percentage in either part (the sheet keeps the internal record)",
-    !/\d+%\s*(match|compatibilidad)/.test(h) && !/\d+%\s*(match|compatibilidad)/.test(plain)
+    !/\d+%/.test(h.replace(/<[^>]*>/g, "")) && !/\d+%/.test(plain)
     && (g.rows[0] || []).join("|").indexOf("(88%)") !== -1);
 }
 {

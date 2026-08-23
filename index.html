@@ -289,13 +289,6 @@
       font-size: 16px;
     }
 
-    .landing-time-estimate {
-      font-family: var(--font-sans);
-      font-size: 15px;
-      letter-spacing: 0.12em;
-      color: var(--landing-muted, var(--color-text-subtle));
-    }
-
     /* Data-use sentence: supporting copy at body size, never smaller than the
        help lines it sits beside; the same muted ink the sub-copy uses. */
     .landing-data-use {
@@ -599,9 +592,6 @@
         justify-content: center;
         padding: 18px 24px;
         font-size: 22px;
-      }
-      .landing-time-estimate {
-        font-size: 13px;
       }
       .landing-discount-tease {
         flex-direction: column;
@@ -3796,18 +3786,6 @@
     .hf2-pick__reason:last-child {
       margin-bottom: 0;
     }
-    .hf2-pick__reaction {
-      margin: 0.65rem 0;
-      padding: 0.55rem 0.65rem;
-      background: var(--color-surface-alt);
-      border-radius: 5px;
-      color: var(--color-text);
-      font-size: 0.78rem;
-    }
-    .hf2-pick__reaction-label {
-      color: var(--color-text-muted);
-      margin-right: 0.35rem;
-    }
     .hf2-pick__actions {
       display: flex;
       flex-wrap: wrap;
@@ -3937,7 +3915,6 @@
       touch-action: manipulation;
     }
     .hf2-rsa-panel__item {
-      display: block;
       width: 100%;
       text-align: left;
       background: transparent;
@@ -10854,7 +10831,9 @@
          payment-state sentence. Rendered by renderHf2LeadLine(), which is
          also called (typeof-guarded) from renderAllFinancingSurfaces() so a
          payment change on this screen can never leave the sentence stale.
-         Customer-derived text: both ids are in the wipe inventories. -->
+         Customer-derived text: hf2LeadLine is in the wipe inventories; the
+         label is dictionary-only ("Consultation status") and correctly
+         survives a wipe. -->
     <section class="hf2-review-section" id="hf2LeadSection" aria-labelledby="hf2LeadLabel">
       <div class="hf2-review-section__label" id="hf2LeadLabel"></div>
       <p class="hf2-lead-line" id="hf2LeadLine"></p>
@@ -17228,7 +17207,12 @@
       const lead = {
         kind: _leadItem ? (_finalist.kind === 'chosen' ? 'chosen' : 'recommended') : 'none',
         name: _leadItem ? (_leadItem.name || '') : '',
-        brand: _leadItem ? String(_leadItem.brand || '') : '',
+        // The engine's raw records carry brand and subBrand separately; the
+        // saved records ship a pre-joined display brand. Join once, guarded
+        // against double-joining, so the hero and its own list row agree.
+        brand: _leadItem ? (String(_leadItem.brand || '')
+          + (_leadItem.subBrand && String(_leadItem.brand || '').indexOf(' \u00b7 ') === -1
+              ? ' \u00b7 ' + _leadItem.subBrand : '')) : '',
         line: _leadItem ? (sleepPlanModelLine(_leadItem) || sleepPlanTierLabel(_leadItem.tier) || '') : '',
         imageUrl: _leadItem ? toAbsoluteImageUrl(_leadItem.imageUrl || '') : ''
       };
@@ -17307,14 +17291,16 @@
         // no kind, no rank, no id, no raw answer. Position is the order.
         priorities: (function () {
           // ALL-OR-NOTHING at the payload boundary (owner ruling R-8, carried
-          // into the email by 1.6): the block ships complete or not at all.
-          // One entry missing its name, reason or testing prompt IN THIS
-          // PAYLOAD'S LANGUAGE empties the whole field — never a shortened
-          // list, never a partial entry, exactly the contract the on-screen
-          // consumers keep. The producer already stores only a complete
-          // bilingual collection or []; this gate enforces the same rule at
-          // the boundary against any future producer defect. Whitespace-only
-          // counts as missing, mirroring the inlined predicate's trim.
+          // into the email by 1.6): the block ships complete or not at all —
+          // never a shortened list, never a partial entry, exactly the
+          // contract the on-screen consumers keep. The projection resolves
+          // each field in the payload's language with the app-wide EN
+          // fallback, and the gate judges the RESOLVED strings: an entry
+          // still blank after that fallback empties the whole field. The
+          // producer already stores only a complete bilingual collection or
+          // []; this gate enforces the same rule at the boundary against any
+          // future producer defect. Whitespace-only counts as missing,
+          // mirroring the inlined predicate's trim.
           var entries = (Array.isArray(analytics.trialFocus) ? analytics.trialFocus : [])
           .slice(0, 3)
           .map(function(item) {
@@ -19716,7 +19702,9 @@
       if (!label || !lineEl) return;
       label.textContent = t('hf2.lead_label');
       var pickText = function(m) {
-        var name = (m.brand ? m.brand + ' \u00b7 ' : '') + (m.name || '');
+        var brandText = String(m.brand || '')
+          + (m.subBrand && String(m.brand || '').indexOf(' \u00b7 ') === -1 ? ' \u00b7 ' + m.subBrand : '');
+        var name = (brandText ? brandText + ' \u00b7 ' : '') + (m.name || '');
         var line = sleepPlanModelLine(m) || sleepPlanTierLabel(m.tier) || '';
         return line ? name + ' (' + line + ')' : name;
       };
@@ -20102,12 +20090,6 @@
     // Plan render fall back to the recommended starting point unannounced.
     window.toggleFavoriteMattress = function(mattressId) {
       window.chooseFinalist(mattressId);
-      renderHf2();
-    };
-
-    window.addReviewMattress = function(mattressId) {
-      var alreadySaved = (window._savedPicks || []).some(function(p) { return p.id === mattressId; });
-      if (!alreadySaved) window._toggleSavePick(mattressId);
       renderHf2();
     };
 
@@ -20543,6 +20525,11 @@
       renderHf2RsaStrip();
       renderHf2RsaPanel();
       window.toggleHf2RsaPanel('close');
+      // Closing the panel while it contains the focused control would drop
+      // focus to <body> and make a keyboard/switch user restart from the top
+      // of the document. Mirror the Escape path: focus returns to the strip.
+      var strip = document.getElementById('hf2RsaStripBtn');
+      if (strip && typeof strip.focus === 'function') strip.focus();
     }
 
     // Add-RSA is the inline row above (Slice 6): window.prompt() was the

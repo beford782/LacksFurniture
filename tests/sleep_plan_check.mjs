@@ -339,7 +339,7 @@ if (gate("chooseFinalist", !!CHOOSE_SRC && !!TOGGLE_SAVE_SRC && !!REMOVE_SRC && 
     /t\('finalist\.building_around_finalist'\)/.test(norm) && /t\('finalist\.building_around_recommended'\)/.test(norm)
     && !/'Building around your finalist'/.test(norm));
   for (const k of ["finalist.chosen", "finalist.recommended", "finalist.none", "finalist.choose", "finalist.choose_as", "finalist.chosen_btn",
-    "finalist.building_around_finalist", "finalist.building_around_recommended", "compare.modal_title", "hf2.saved_picks_label", "hf2.compare_saved", "hf2.add_to_saved",
+    "finalist.building_around_finalist", "finalist.building_around_recommended", "compare.modal_title", "hf2.saved_picks_label", "hf2.compare_saved",
     "hf2.saved_picks_hint"]) {
     check(`dict key ${k} present in both languages and translated`,
       typeof dictEn[k] === "string" && dictEn[k].length > 0 && typeof dictEs[k] === "string" && dictEs[k].length > 0 && dictEn[k] !== dictEs[k]);
@@ -814,8 +814,14 @@ if (gate("renderSleepPlan", RENDER_SRCS.every(Boolean) && !!FALLBACK_SRC && !!RE
     check("...with a worded, dictionary-driven empty state and hint",
       /t\('hf2\.no_system_items'\)/.test(accSrc) && /t\('hf2\.system_hint'\)/.test(accSrc));
     check("the Summary no longer claims anything 'is sent' in either language (preview truth; gasUrl is blank)",
-      !/Only saved picks are sent|Only included pieces are sent|se envían\./.test(norm.match(/function renderHf2Picks\(\)[\s\S]*?function renderHf2AccBlock/) ? norm.match(/function renderHf2Picks\(\)[\s\S]*?function renderHf2AccBlock/)[0] : "x")
-      && !/are sent/i.test(dictEn["hf2.saved_picks_hint"]) && !/se env/i.test(dictEs["hf2.saved_picks_hint"]));
+      (() => {
+        // Extraction REQUIRED: a failed region match must FAIL the check,
+        // never fall through to a vacuous pass on a placeholder string.
+        const region = (norm.match(/function renderHf2Picks\(\)[\s\S]*?function renderHf2AccBlock/) || [""])[0];
+        return region.length > 200
+          && !/Only saved picks are sent|Only included pieces are sent|se envían\./.test(region)
+          && !/are sent/i.test(dictEn["hf2.saved_picks_hint"]) && !/se env/i.test(dictEs["hf2.saved_picks_hint"]);
+      })());
     check("the lead line is in the wipe inventories (app SESSION_TEXT_IDS)",
       /'hf2LeadLine',/.test(norm));
   }
@@ -889,6 +895,26 @@ if (gate("renderSleepPlan", RENDER_SRCS.every(Boolean) && !!FALLBACK_SRC && !!RE
       els.hf2LeadLine.textContent.indexOf("Aún no has elegido finalista") === 0
       && /Preferencia de pago: Sin seleccionar\.$/.test(els.hf2LeadLine.textContent));
 
+    // C12 (R3 I1): the remaining matrix cells — chosen composes with every
+    // payment state, and the none sentence composes too.
+    const CHOSEN_CELL = { saved: [{ id: "g1", name: "Cloud Nine", brand: "Restonic", tier: "gold" }], fav: "g1", results: RESULTS };
+    const _pickLine = "Finalist ✓ Restonic · Cloud Nine (" + dictEn["results.tier_gold"] + " · " + dictEn["results.match_lead"] + ").";
+    els = makeLeadEnv(Object.assign({ payPref: "plan-a" }, CHOSEN_CELL));
+    check("chosen x selected path: the finalist sentence composes with the path label",
+      els.hf2LeadLine.textContent === _pickLine + " Payment preference: Path A.");
+    els = makeLeadEnv(Object.assign({ payPref: "not_now" }, CHOSEN_CELL));
+    check("chosen x paused: ...with Not right now",
+      els.hf2LeadLine.textContent === _pickLine + " Payment preference: Not right now.");
+    els = makeLeadEnv(Object.assign({ payPref: null }, CHOSEN_CELL));
+    check("chosen x unselected: ...with the Not selected fallback",
+      els.hf2LeadLine.textContent === _pickLine + " Payment preference: Not selected.");
+    els = makeLeadEnv({ results: null, payPref: "plan-a" });
+    check("none x selected path: the honest none sentence still composes with payment state",
+      els.hf2LeadLine.textContent === dictEn["hf2.lead_none"] + " Payment preference: Path A.");
+    els = makeLeadEnv({ results: null, payPref: "not_now" });
+    check("none x paused: ...with Not right now",
+      els.hf2LeadLine.textContent === dictEn["hf2.lead_none"] + " Payment preference: Not right now.");
+
     check("renderAllFinancingSurfaces refreshes the lead line (typeof-guarded — a payment tap cannot leave it stale)",
       /if \(typeof renderHf2LeadLine === 'function'\) renderHf2LeadLine\(\);/.test(
         (norm.match(/function renderAllFinancingSurfaces\(\)[\s\S]*?\n    \}/) || [""])[0]));
@@ -919,6 +945,65 @@ if (gate("renderSleepPlan", RENDER_SRCS.every(Boolean) && !!FALLBACK_SRC && !!RE
       && /window\.toggleHf2RsaPanel\('close'\);\s*\r?\n\s*var strip = document\.getElementById\('hf2RsaStripBtn'\);\s*\r?\n\s*if \(strip && typeof strip\.focus === 'function'\) strip\.focus\(\);/.test(norm));
     check("no NEW localStorage reference: the raw count stays at six (five executable device-roster lines + one comment; trust_integrity owns the executable-line pin)",
       (norm.match(/localStorage/g) || []).length === 6);
+  }
+
+  // ---- Slice 6 C12: the payload lead assembly, executed ---------------------
+  section("Slice 6 C12 — payload lead/matchesSource assembly (executed)");
+  {
+    const finSrc = extractFunction("function resolveFinalistState()");
+    const fallbackSrc = extractFunction("function finalistRecommendedFallback()");
+    const lineSrc = extractFunction("function sleepPlanModelLine(m)");
+    const tierSrc = extractFunction("function sleepPlanTierLabel(tier)");
+    // The lead-assembly block inside sendResults, extracted verbatim — the
+    // anchor line is unique in the file.
+    const leadBlock = (norm.match(/const _finalist = resolveFinalistState\(\);[\s\S]*?const lead = \{[\s\S]*?\r?\n      \};/) || [""])[0];
+    const srcMS = (norm.match(/const matchesSource = saved\.length > 0 \? 'saved' : 'recommended';/) || [""])[0];
+    check("extractions: the lead assembly and the provenance line", leadBlock.length > 200 && srcMS.length > 10);
+    const runLead = (savedArr, fav, results) => {
+      const win = throwingWindow({ _savedPicks: savedArr, _favoriteMattressId: fav });
+      const t = (k) => k;
+      return new Function("window", "_resultsState", "t", "currentLang", "toAbsoluteImageUrl", "saved",
+        '"use strict";' + finSrc + "\n" + fallbackSrc + "\n" + tierSrc + "\n" + lineSrc + "\n"
+        + srcMS + "\n" + leadBlock + "\nreturn { lead: lead, matchesSource: matchesSource };")(
+        win, results, t, "en", (u) => u || "", savedArr);
+    };
+    const RESULTS2 = { tierData: { gold: [{ id: "g1", name: "Cloud Nine", brand: "Restonic", subBrand: "Core", imageUrl: "" }], silver: [], bronze: [] } };
+    let out = runLead([{ id: "g1", name: "Cloud Nine", brand: "Restonic · Core", subBrand: "Core", tier: "gold" }], "g1", RESULTS2);
+    check("chosen: the favourite saved pick is the lead; provenance 'saved'",
+      out.lead.kind === "chosen" && out.lead.name === "Cloud Nine" && out.matchesSource === "saved");
+    check("...the saved record's pre-joined display brand is NOT double-joined",
+      out.lead.brand === "Restonic · Core");
+    out = runLead([], "", RESULTS2);
+    check("no saved picks: the engine top pick is the lead, HONESTLY kind 'recommended', provenance 'recommended'",
+      out.lead.kind === "recommended" && out.lead.name === "Cloud Nine" && out.matchesSource === "recommended");
+    check("...the raw engine brand joins its subBrand exactly as the list rows do",
+      out.lead.brand === "Restonic · Core");
+    out = runLead([], "", null);
+    check("no results at all: the lead fails closed to kind 'none' with every field blank",
+      out.lead.kind === "none" && out.lead.name === "" && out.lead.brand === ""
+      && out.lead.line === "" && out.lead.imageUrl === "");
+    out = runLead([{ id: "s9", name: "Other", brand: "OtherBrand", tier: "silver" }], "", RESULTS2);
+    check("saved WITHOUT a favourite: provenance 'saved', but the lead stays the honest recommendation — never a promoted saved[0]",
+      out.matchesSource === "saved" && out.lead.kind === "recommended" && out.lead.name === "Cloud Nine");
+  }
+
+  // ---- Slice 6 C12: RSA focus restore + packet rows + mode verbs ------------
+  section("Slice 6 C12 — RSA focus restore, packet rows, mode-aware verbs");
+  {
+    const rsaSel = extractFunction("function selectHf2Rsa(name)");
+    check("roster-select and successful-add close the panel AND restore focus to the strip (the Escape pattern)",
+      !!rsaSel && /toggleHf2RsaPanel\('close'\);/.test(rsaSel)
+      && /getElementById\('hf2RsaStripBtn'\)/.test(rsaSel)
+      && /strip\.focus\(\)/.test(rsaSel));
+    check("the email packet row labels the list Saved mattress picks / Recommended matches — never finalists",
+      /\? \(_esE \? 'Selecciones de colchón guardadas' : 'Saved mattress picks'\)/.test(norm)
+      && /: \(_esE \? 'Colchones recomendados' : 'Recommended matches'\)/.test(norm));
+    check("the in-flight verb is mode-aware (Saving… while delivery is not live)",
+      /sendBtn\.textContent = emailDeliveryLive\(\)\s*\r?\n\s*\? \(currentLang === 'es' \? 'Enviando\.\.\.' : 'Sending\.\.\.'\)\s*\r?\n\s*: \(currentLang === 'es' \? 'Guardando\.\.\.' : 'Saving\.\.\.'\);/.test(norm));
+    check("the Summary send verbs are mode-aware (Save picks / Save Pass & Picks in preview)",
+      /var live = emailDeliveryLive\(\);/.test(norm)
+      && /'Guardar Pase y Selecciones' : 'Save Pass & Picks'/.test(norm)
+      && /'Guardar selecciones' : 'Save picks'/.test(norm));
   }
 
   // ---- Slice 6 C6: Welcome — tease removed, estimate removed, keys retired --

@@ -1717,6 +1717,16 @@ const MUTATIONS = [
   ["Code.gs: the plain brief label sits over a blank value again",
     "    if (priorityText || !sleepProfile) return '';",
     "    if (priorityText) return '';", EMAIL_PRIORITIES, "Code.gs"],
+  // C12: review-pass repairs stay repaired.
+  ["slice6: closing the RSA panel drops focus to body again",
+    "      // Closing the panel while it contains the focused control would drop\n      // focus to <body> and make a keyboard/switch user restart from the top\n      // of the document. Mirror the Escape path: focus returns to the strip.\n      var strip = document.getElementById('hf2RsaStripBtn');\n      if (strip && typeof strip.focus === 'function') strip.focus();",
+    "      // focus restore retired", PLAN],
+  ["slice6: the payload lead's brand stops matching its own list row",
+    "        brand: _leadItem ? (String(_leadItem.brand || '')\n          + (_leadItem.subBrand && String(_leadItem.brand || '').indexOf(' \\u00b7 ') === -1\n              ? ' \\u00b7 ' + _leadItem.subBrand : '')) : '',",
+    "        brand: _leadItem ? String(_leadItem.brand || '') : '',", PLAN],
+  ["Code.gs: the plain list header sits over an empty list again",
+    "      + 'Show this email to your ' + storeName + ' sleep specialist.\\n\\n'\n      + (allMatches.length ? _plainListHeader + '\\n' : '')",
+    "      + 'Show this email to your ' + storeName + ' sleep specialist.\\n\\n'\n      + _plainListHeader + '\\n'", EMAIL_PRIORITIES, "Code.gs"],
   // C7/C8: drawer + RSA accessibility.
   ["slice6: drawer prev/next fall back to focusable-but-inert styling",
     "        prevBtn.disabled = window._drawerCurrentIndex <= 0;\n        nextBtn.disabled = window._drawerCurrentIndex >= window._drawerOrder.length - 1;",

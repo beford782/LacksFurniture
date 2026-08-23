@@ -472,7 +472,7 @@ function buildPlainBody(data, isEs, storeName) {
       + (priorityLines ? 'Lo que probaremos juntos:\n' + priorityLines + '\n' : '')
       + passBlockEs
       + 'Muestra este correo a tu especialista de sue\u00f1o de ' + storeName + '.\n\n'
-      + _plainListHeader + '\n'
+      + (allMatches.length ? _plainListHeader + '\n' : '')
       + allMatches.map(function(m, i) {
           var lineText = (typeof m.line === 'string' && m.line) ? m.line
             : (m.meetsMatchThreshold ? '' : comparisonLabel);
@@ -493,7 +493,7 @@ function buildPlainBody(data, isEs, storeName) {
       + (priorityLines ? 'What we will test together:\n' + priorityLines + '\n' : '')
       + passBlockEn
       + 'Show this email to your ' + storeName + ' sleep specialist.\n\n'
-      + _plainListHeader + '\n'
+      + (allMatches.length ? _plainListHeader + '\n' : '')
       + allMatches.map(function(m, i) {
           var lineText = (typeof m.line === 'string' && m.line) ? m.line
             : (m.meetsMatchThreshold ? '' : comparisonLabel);
