@@ -136,6 +136,11 @@ jobs:
           # own requirements file so the QR suite reports 0 skipped.
           python -m pip install 'openpyxl==3.1.5' 'Pillow==11.0.0'
           python -m pip install -r incoming/requirements-qr.txt
+          # playwright: the ONE rendered check (tests/sleep_plan_layout_check.py).
+          # Pinned like everything else; Chromium only, with the runner's
+          # system deps, so "a screen with no CSS" can never be green again.
+          python -m pip install 'playwright==1.62.0'
+          python -m playwright install --with-deps chromium
 
       - name: Record the toolchain and prove pwsh is present
         run: |
@@ -312,6 +317,16 @@ jobs:
       # renderer executed against a DOM stub with a throwing scorer.
       - name: sleep plan (D5 finalist provenance + screen)
         run: node tests/sleep_plan_check.mjs
+
+      # Hotfix 2026-08-23. The Plan shipped with no CSS rule of its own and
+      # rendered as nine side-by-side columns on the dark theme while every
+      # static suite stayed green. This is the repo's one RENDERED check:
+      # headless Chromium, loopback server, the app's own functions, three
+      # viewports (1194x748, 834x1108, 390x844) — computed column layout, no
+      # horizontal overflow, warm-theme parity with the Summary, title and
+      # Payment Choice headline contrast, Continue visible and Tab-reachable.
+      - name: sleep plan rendered layout (three viewports)
+        run: python tests/sleep_plan_layout_check.py
 
       # Phase 0.5, server side. The first suite to EXECUTE Code.gs (whole-file
       # load, four recorder stubs): safeData projection, HTML email order and

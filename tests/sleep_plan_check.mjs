@@ -33,6 +33,7 @@ const norm = html.replace(/\r\n/g, "\n");
 const dictEn = JSON.parse(readFileSync(join(root, "data", "dict-en.json"), "utf8"));
 const dictEs = JSON.parse(readFileSync(join(root, "data", "dict-es.json"), "utf8"));
 const ACCESSORIES = JSON.parse(readFileSync(join(root, "data", "accessories.json"), "utf8"));
+const STORE_CONFIG = JSON.parse(readFileSync(join(root, "data", "store-config.json"), "utf8"));
 
 let passed = 0, failed = 0;
 function check(label, cond, detail) {
@@ -660,6 +661,126 @@ if (gate("renderSleepPlan", RENDER_SRCS.every(Boolean) && !!FALLBACK_SRC && !!RE
     check("'Choose a finalist' routes BACK to Results (never to hf2) and re-renders it", env.screens[0] === "resultsScreen" && env.rendered === 1); }
   { const env = makePlanEnv({ results: RESULTS, lang: "es" }); env.api.render();
     check("ES render resolves every label through the dictionary in ES", env.els.sleepPlanTitle.textContent === "ES:plan.title" && env.els.sleepPlanSystemLabel.textContent === "ES:plan.system_label"); }
+
+  // ---- Layout + theme contract (hotfix 2026-08-23) ------------------------
+  // The Plan shipped with NO CSS rule of its own. `.screen.active` is
+  // `display: flex` with the flex-ROW default and the dark root tokens, so the
+  // deployed Plan rendered as nine side-by-side columns on the dark theme, its
+  // Payment Choice headline (hardcoded dark ink) was invisible, and at tablet
+  // portrait the financing block and Continue sat outside the viewport. Every
+  // static suite was green. These pins make the omission itself a failure:
+  // the Plan is a multi-block screen built on the hf2 classes, so it must
+  // carry hf2's column override and sit in every hf2 theme group. The
+  // rendered proof (three viewports, computed layout, contrast, keyboard
+  // reach) lives in tests/sleep_plan_layout_check.py.
+  section("Part 2 — layout + theme contract (the Plan shares hf2's column layout and warm theme)");
+  {
+    const css = (norm.match(/<style>[\s\S]*?<\/style>/) || [""])[0];
+    const rules = [];
+    const re = /([^{}]+)\{([^{}]*)\}/g; let m;
+    while ((m = re.exec(css))) {
+      const sel = m[1].split("\n").map((x) => x.trim()).filter(Boolean).join(" ").replace(/.*\*\//, "").trim();
+      rules.push({ sel: sel.split(",").map((x) => x.trim()), body: m[2] });
+    }
+    const withSel = (needle) => rules.filter((r) => r.sel.includes(needle));
+    check("#sleepPlanScreen.active has the column layout override (flex-direction: column) — the .screen.active default is a ROW",
+      withSel("#sleepPlanScreen.active").some((r) => /flex-direction:\s*column/.test(r.body)));
+    check("#sleepPlanScreen.active carries the same padding as #hf2Screen.active (one rule, both selectors)",
+      rules.some((r) => r.sel.includes("#sleepPlanScreen.active") && r.sel.includes("#hf2Screen.active") && /flex-direction:\s*column/.test(r.body) && /padding:/.test(r.body)));
+    check("body:has(#sleepPlanScreen.active) is in the warm work-theme token group (--color-bg …) with the Summary",
+      rules.some((r) => r.sel.includes("body:has(#sleepPlanScreen.active)") && r.sel.includes("body:has(#hf2Screen.active)") && /--color-bg:/.test(r.body) && /--color-text:/.test(r.body)));
+    check("#sleepPlanScreen.active is in the warm background/ink group with #hf2Screen.active",
+      rules.some((r) => r.sel.includes("#sleepPlanScreen.active") && r.sel.includes("#hf2Screen.active") && /background:\s*#F3EEE5/i.test(r.body) && /color:\s*#2F271E/i.test(r.body)));
+    // Parity: every hf2-scoped theme rule for a class the Plan's markup uses
+    // must name the Plan too — otherwise the next shared class silently
+    // renders un-themed on the Plan again.
+    const planMarkup = (norm.match(/<div class="screen" id="sleepPlanScreen"[\s\S]*?<div class="screen" id="hf2Screen"/) || [""])[0];
+    const shared = ["hf2-review-eyebrow", "hf2-review-section__label", "hf2-review-section", "hf2-review-title", "hf2-review-nav", "hf2-back-btn", "hf2-send-btn", "hf2-pick", "hf2-acc-card"]
+      .filter((c) => new RegExp('class="(?:[^"]*\s)?' + c + '(?:\s[^"]*)?"').test(planMarkup));
+    check(`the Plan's markup uses hf2 classes (${shared.length} found: ${shared.join(", ")})`, shared.length >= 5);
+    const missing = [];
+    for (const r of rules) {
+      for (const c of shared) {
+        const hf2Sel = r.sel.find((x) => x === `#hf2Screen .${c}`);
+        if (hf2Sel && !r.sel.includes(`#sleepPlanScreen .${c}`)) missing.push(hf2Sel);
+      }
+    }
+    check("every #hf2Screen-scoped rule for a class the Plan uses also names #sleepPlanScreen (theme parity)",
+      shared.length >= 5 && missing.length === 0, missing.join(" | ") || "shared class set empty");
+    check("the hf2 eyebrow/section-label ink rule names the Plan (labels read as accent ink, not the dark-theme token)",
+      rules.some((r) => r.sel.includes("#sleepPlanScreen .hf2-review-section__label") && /--accent-ink/.test(r.body)));
+
+    // The forward control. hf2 restates its Send button on the store primary
+    // through `.hf2-review-finale`, a wrapper the Plan does not have, so the
+    // Plan's Continue would fall back to the base .hf2-send-btn pairing —
+    // --color-bg on --color-accent — which on the warm theme is below the
+    // 4.5:1 floor. The restatement is therefore load-bearing, and both halves
+    // are proven numerically rather than by string presence.
+    const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+    const lum = (rgb) => { const f = (v) => { v /= 255; return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }; const [r, g, b] = rgb; return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b); };
+    const ratio = (a, b) => { const [x, y] = [lum(hex(a)), lum(hex(b))]; return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+    const token = (name) => ((norm.match(new RegExp(`--${name}:\\s*(#[0-9A-Fa-f]{6})`)) || [])[1] || "");
+    const warm = (name) => (((rules.find((r) => r.sel.includes("body:has(#hf2Screen.active)") && /--color-bg:/.test(r.body)) || { body: "" }).body).match(new RegExp(`--${name}:\\s*(#[0-9A-Fa-f]{6})`)) || [])[1] || "";
+    const storePrimary = (STORE_CONFIG.colors && STORE_CONFIG.colors.storePrimary) || "";
+    const onStorePrimary = token("on-store-primary");
+    const sendRule = rules.find((r) => r.sel.includes("#sleepPlanScreen .hf2-send-btn"));
+    check("the Plan's Continue (.hf2-send-btn) is restated on the store primary with --on-store-primary ink, like the Summary's Send button",
+      !!sendRule && /background:\s*var\(--store-primary\)/.test(sendRule.body) && /color:\s*var\(--on-store-primary\)/.test(sendRule.body));
+    check(`...and that pairing clears 4.5:1 on this store's primary (${onStorePrimary} on ${storePrimary} = ${storePrimary && onStorePrimary ? ratio(onStorePrimary, storePrimary).toFixed(2) : "?"}:1)`,
+      /^#[0-9A-Fa-f]{6}$/.test(storePrimary) && /^#[0-9A-Fa-f]{6}$/.test(onStorePrimary) && ratio(onStorePrimary, storePrimary) >= 4.5);
+    check(`negative control — the base pairing the restatement replaces (--color-bg ${warm("color-bg")} on --color-accent ${warm("color-accent")}) is BELOW 4.5:1 on the warm theme, so the restatement is load-bearing`,
+      !!warm("color-bg") && !!warm("color-accent") && ratio(warm("color-bg"), warm("color-accent")) < 4.5);
+  }
+
+  // ---- Roster-derived layout rule (the failure class, not just the instance) --
+  // `.screen.active` is a flex ROW. A screen with a single wrapper child never
+  // notices; a screen with several direct children renders them side by side
+  // unless it carries a column override. Every multi-child screen in the roster
+  // must therefore have one — derived from SCREEN_NAME_KEYS and the static
+  // markup, so the next screen added without its rule fails here, not on a
+  // customer's tablet.
+  section("Part 2 — every multi-child screen in the roster has a column layout rule");
+  {
+    const css = (norm.match(/<style>[\s\S]*?<\/style>/) || [""])[0];
+    const rules = [];
+    const re = /([^{}]+)\{([^{}]*)\}/g; let m;
+    while ((m = re.exec(css))) {
+      const sel = m[1].split("\n").map((x) => x.trim()).filter(Boolean).join(" ").replace(/.*\*\//, "").trim();
+      rules.push({ sel: sel.split(",").map((x) => x.trim()), body: m[2] });
+    }
+    const ids = [...(((norm.match(/var SCREEN_NAME_KEYS = \{([\s\S]*?)\};/) || ["", ""])[1]).matchAll(/(\w+Screen):/g))].map((x) => x[1]);
+    const markup = norm.replace(/<script[\s\S]*?<\/script>/g, "").replace(/<!--[\s\S]*?-->/g, "");
+    const VOID = new Set(["br", "input", "img", "hr", "meta", "link", "path", "circle", "polyline", "stop", "rect", "line", "use", "source", "area", "col", "wbr"]);
+    // Count direct element children of the root tag carrying id="<id>".
+    const directChildren = (id) => {
+      const open = markup.match(new RegExp(`<(div|main|section)\\b[^>]*\\sid="${id}"[^>]*>`));
+      if (!open) return -1;
+      let i = open.index + open[0].length, depth = 0, count = 0;
+      const tag = /<\/?([a-zA-Z][\w-]*)[^>]*?(\/?)>/g; tag.lastIndex = i;
+      let t;
+      while ((t = tag.exec(markup))) {
+        const closing = t[0][1] === "/", name = t[1].toLowerCase(), selfClosed = t[2] === "/" || VOID.has(name);
+        if (closing) { if (depth === 0) break; depth--; continue; }
+        if (depth === 0) count++;
+        if (!selfClosed) depth++;
+      }
+      return count;
+    };
+    const classesOf = (id) => ((markup.match(new RegExp(`<(?:div|main|section)\\b[^>]*\\sid="${id}"[^>]*>`)) || [""])[0].match(/class="([^"]*)"/) || ["", ""])[1].split(/\s+/).filter(Boolean);
+    const hasColumnRule = (id, classes, ruleSet) => ruleSet.some((r) => /flex-direction:\s*column/.test(r.body)
+      && (r.sel.includes(`#${id}.active`) || r.sel.includes(`#${id}`) || classes.some((c) => r.sel.includes(`.${c}`))));
+    check(`the screen roster was derived from SCREEN_NAME_KEYS (${ids.length} screens)`, ids.length >= 9 && ids.includes("sleepPlanScreen") && ids.includes("hf2Screen"));
+    for (const id of ids) {
+      const n = directChildren(id);
+      const ok = n <= 1 || hasColumnRule(id, classesOf(id), rules);
+      check(`${id}: ${n} direct child${n === 1 ? "" : "ren"} — ${n <= 1 ? "single wrapper, row default is harmless" : "column rule present"}`, n >= 0 && ok);
+    }
+    // Negative control: strip the Plan's selector from the layout rule and the
+    // derivation must turn red for the Plan alone.
+    const stripped = rules.map((r) => ({ sel: r.sel.filter((x) => x !== "#sleepPlanScreen.active"), body: r.body }));
+    check("negative control — without its selector in the column rule the Plan (9 children) is flagged and hf2 is not",
+      !hasColumnRule("sleepPlanScreen", [], stripped) && hasColumnRule("hf2Screen", [], stripped) && directChildren("sleepPlanScreen") > 1);
+  }
 
   // Route ledger pins (per call site; the chokepoint body is untouched).
   check("the showSavedPicks() chokepoint body is UNCHANGED (renderHf2(); showScreen('hf2Screen');)",

@@ -1599,6 +1599,29 @@ const MUTATIONS = [
   ["plan: the Consultation Summary's saved-picks hint calls every saved pick a finalist again (inline literal restored)",
     "        hf2FinalistsHint: t('hf2.saved_picks_hint'),",
     "        hf2FinalistsHint: es ? 'Los finalistas guardados se envían; las sugerencias son opciones para comparar.' : 'Saved finalists are sent; suggestions remain comparison options.',", PLAN],
+  // --- Sleep Plan layout + theme (hotfix 2026-08-23) --------------------------
+  // The Plan shipped with no CSS of its own (flex-row on the dark theme on the
+  // deployed preview). Each mutant re-creates one half of that omission; the
+  // static pins in sleep_plan_check must catch every one. The rendered proof
+  // (tests/sleep_plan_layout_check.py) is a separate CI step, not an observer.
+  ["plan-layout: the Plan loses hf2's column override (flex-row default returns)",
+    "    #hf2Screen.active,\n    #sleepPlanScreen.active {\n      flex-direction: column;",
+    "    #hf2Screen.active {\n      flex-direction: column;", PLAN],
+  ["plan-layout: the Plan leaves the warm work-theme token group (dark root tokens return)",
+    "    body:has(#resultsScreen.active),\n    body:has(#sleepPlanScreen.active),\n    body:has(#hf2Screen.active),",
+    "    body:has(#resultsScreen.active),\n    body:has(#hf2Screen.active),", PLAN],
+  ["plan-layout: the Plan leaves the warm background/ink group",
+    "    #resultsScreen.active,\n    #sleepPlanScreen.active,\n    #hf2Screen.active,\n    #accessoriesScreen.active {",
+    "    #resultsScreen.active,\n    #hf2Screen.active,\n    #accessoriesScreen.active {", PLAN],
+  ["plan-layout: the section-label ink rule drops the Plan (labels fall back to the theme token)",
+    "    #hf2Screen .hf2-review-section__label,\n    #sleepPlanScreen .hf2-review-eyebrow,\n    #sleepPlanScreen .hf2-review-section__label {",
+    "    #hf2Screen .hf2-review-section__label {", PLAN],
+  ["plan-layout: one hf2-scoped rule for a shared class stops naming the Plan (theme parity)",
+    "    #hf2Screen .hf2-review-section,\n    #sleepPlanScreen .hf2-review-section {\n      background: #FFFDF8;",
+    "    #hf2Screen .hf2-review-section {\n      background: #FFFDF8;", PLAN],
+  ["plan-layout: the Continue button loses its store-primary restatement (falls to --color-bg on --color-accent, 3.67:1)",
+    "    #sleepPlanScreen .hf2-send-btn {\n      background: var(--store-primary);\n      color: var(--on-store-primary);\n    }",
+    "", PLAN],
 
 ];
 
