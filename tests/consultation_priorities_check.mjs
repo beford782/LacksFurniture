@@ -69,7 +69,16 @@ const DICTS = {
 // hash moved in the same reviewed diff. The final section below pins the
 // ruled pair as literals, so the fixture and the source must agree with the
 // ruling independently — a regeneration cannot move the label silently.
-const BASELINE_SHA256 = "75b4d244c18b2d2fc966982f03e24917af2ef1bc3bfc4830bff8d02e42a387e1";
+// 2026-08-23 amendment (owner-authorized Sleep Brief copy change, Slice 5
+// C10): the "Comfortable elevation" testing prose — "Try the finalist flat,
+// ..." / "Prueba el finalista plano ..." — was hand-edited to "Try the mattress
+// flat, ..." / "Prueba el colchón plano ..." in its eight occurrences (the four
+// `test` fields and the four `prioritiesHtml` strings of fixtures C and I,
+// EN and ES), not regenerated; every other byte remains the executed 572d405
+// output, and this hash moved in the same reviewed diff. The final section
+// pins the ruled wording as literals so fixture and source must agree with the
+// ruling independently.
+const BASELINE_SHA256 = "0dbd354c2fb7e64237e18f1c7b75a0cd5795f980e9ae1c58a6ba4d1e835170c4";
 
 let passed = 0, failed = 0;
 function check(label, cond) {
@@ -440,6 +449,66 @@ section("hf2: ordered render from stored state, both languages, no recompute");
       els.get("hf2PrioritiesSection").style.display === "none"
       && els.get("hf2Priorities").innerHTML === "");
   }
+  // Slice 5 C0 — MIXED VALIDITY (owner ruling R-8, 2026-08-21). The hostile
+  // fixtures above test the two ENDS of the validity spectrum (all valid, all
+  // invalid). The middle was never exercised: three stored entries with ONE
+  // malformed. The governing contract (roadmap 0.5: "render the engine's count
+  // in the engine's order — never padded, never synthesised"; Phase 1
+  // constraint 2: never "filter ... elements") admits no partial render, and the
+  // owner ruled ALL-OR-NOTHING FAIL-CLOSED: any malformed entry invalidates the
+  // whole collection; never filter, shorten, pad, synthesise or partially
+  // render. This block is RED at 4a76503 by design (the renderer filters per
+  // element and emits 2 rows) and is repaired in the prerequisite commit.
+  for (const badIndex of [0, 1, 2]) {
+    for (const lang of ["en", "es"]) {
+      const { els, doc } = makeDoc();
+      const base = runProfile(FIXTURES.C, lang).analytics.trialFocus;
+      if (base.length !== 3) { check(`[mixed] fixture C yields 3 priorities in ${lang} (got ${base.length})`, false); continue; }
+      const analytics = { trialFocus: base };
+      const out = {};
+      new Function("document", "currentLang", "analytics", "out",
+        `"use strict";
+        ${ESCAPE_FN}
+        ${L_FN}
+        ${HF2_FN}
+        out.run = function() { renderHf2Priorities(); };
+        `)(doc, lang, analytics, out);
+      out.run();
+      check(`[mixed ${lang} idx${badIndex}] precondition: all-valid renders exactly 3 rows`,
+        (els.get("hf2Priorities").innerHTML.match(/<li /g) || []).length === 3);
+      const broken = Object.assign({}, base[badIndex]);
+      delete broken.test;
+      analytics.trialFocus = base.map((x, i) => (i === badIndex ? broken : x));
+      out.run();
+      const rows = (els.get("hf2Priorities").innerHTML.match(/<li /g) || []).length;
+      const hidden = els.get("hf2PrioritiesSection").style.display === "none";
+      check(`[mixed ${lang} idx${badIndex}] one malformed entry is ALL-OR-NOTHING: the section hides and the list empties — never a silent partial (rows=${rows} hidden=${hidden})`,
+        rows === 0 && hidden && els.get("hf2Priorities").innerHTML === "");
+      // Negative control: restoring the full valid array restores all 3.
+      analytics.trialFocus = base;
+      out.run();
+      check(`[mixed ${lang} idx${badIndex}] negative control: the restored valid array renders 3 rows again`,
+        (els.get("hf2Priorities").innerHTML.match(/<li /g) || []).length === 3
+        && els.get("hf2PrioritiesSection").style.display === "");
+    }
+  }
+  // EN and ES must agree on the count from identical stored state: a
+  // language-dependent partial is a second way to ship a shortened list.
+  {
+    const mk = (lang) => {
+      const { els, doc } = makeDoc();
+      const base = runProfile(FIXTURES.C, lang).analytics.trialFocus;
+      const broken = Object.assign({}, base[1]); delete broken.why;
+      const analytics = { trialFocus: [base[0], broken, base[2]] };
+      new Function("document", "currentLang", "analytics",
+        `"use strict"; ${ESCAPE_FN} ${L_FN} ${HF2_FN} renderHf2Priorities();`)(doc, lang, analytics);
+      return (els.get("hf2Priorities").innerHTML.match(/<li /g) || []).length;
+    };
+    const en = mk("en"), es = mk("es");
+    check(`[mixed] EN and ES render the SAME count from the same partially-malformed state (en=${en}, es=${es}) and that count is 0`,
+      en === es && en === 0);
+  }
+
   // The hide is not the vacuous starting state: show first, then clear.
   const state = runProfile(FIXTURES.C, "en").analytics.trialFocus;
   const { els, doc } = makeDoc();
@@ -599,6 +668,63 @@ section("Sleep Brief CTA: ruled label, unchanged handler, honesty invariant");
     !routesToResults || !/compar/i.test(esLabel));
 }
 
+// 2026-08-23 owner ruling (Slice 5 C10): the trial priorities are written
+// BEFORE any finalist exists and are shown on the Sleep Plan in the
+// no-finalist state beside "Recommended starting point / No finalist selected
+// yet", so their prose may not call the mattress under test "the finalist".
+// Three pins: the ruled wording as literals (on top of the fixture's test
+// fields, so neither a source revert nor a fixture regeneration can move it
+// alone), and a vocabulary invariant over every priority the engine emits.
+section("trial priorities: ruled neutral wording, no 'finalist' vocabulary");
+{
+  const EN_RULED = "Try the mattress flat, then with the head gently raised on an adjustable base.";
+  const ES_RULED = "Prueba el colchón plano y luego con la cabeza ligeramente elevada en una base ajustable.";
+  const elevEn = runProfile(FIXTURES.C, "en").analytics.trialFocus.find((t) => t.en === "Comfortable elevation");
+  const elevEs = runProfile(FIXTURES.C, "es").analytics.trialFocus.find((t) => t.en === "Comfortable elevation");
+  check("the 'Comfortable elevation' testing prose is exactly the ruled EN wording",
+    !!elevEn && elevEn.test.en === EN_RULED);
+  check("...and exactly the ruled provisional ES wording",
+    !!elevEs && elevEs.test.es === ES_RULED);
+  check("the fixture carries the ruled wording too (source and oracle agree independently)",
+    BASELINE.C.en.priorities.some((p) => p.test === EN_RULED) && BASELINE.C.es.priorities.some((p) => p.test === ES_RULED));
+  check("the retired wording is gone from the producer source", !/the finalist flat/.test(html) && !/el finalista plano/.test(html));
+  let violations = [];
+  for (const f of Object.keys(FIXTURES)) {
+    for (const lang of ["en", "es"]) {
+      for (const t of runProfile(FIXTURES[f], lang).analytics.trialFocus) {
+        for (const s of [t.en, t.es, t.why && t.why.en, t.why && t.why.es, t.test && t.test.en, t.test && t.test.es]) {
+          if (typeof s === "string" && /\bfinalist(a|as|s)?\b/i.test(s)) violations.push(`${f}/${lang}: ${s}`);
+        }
+      }
+    }
+  }
+  check("VOCABULARY: no emitted priority name, reason or testing prose calls the mattress 'the finalist' (EN or ES), across every fixture",
+    violations.length === 0, violations.join(" | "));
+}
+
 // ===========================================================================
+// Slice 5 C1: the completeness predicate is INLINED in both the producer
+// (showProfileScreen) and the consumer (renderHf2Priorities) because four
+// suites extract those functions by regex. Inlining is only safe if the two
+// copies are byte-identical, so that is pinned here.
+{
+  const copies = [...html.matchAll(/      var trialFocusIsComplete = function\(stored\) \{[\s\S]*?\r?\n      \};\r?\n/g)].map((m) => m[0].replace(/\r\n/g, "\n"));
+  check(`the all-or-nothing completeness predicate is inlined exactly twice (producer + consumer), found ${copies.length}`, copies.length === 2);
+  check("the two inlined copies are byte-identical (no drift between producer and consumer)",
+    copies.length === 2 && copies[0] === copies[1]);
+  check("the predicate requires BOTH languages for name, why and test (completeness is language-independent)",
+    copies.length === 2 && /str\(item\.en\) && str\(item\.es\)/.test(copies[0])
+    && /str\(item\.why\.en\) && str\(item\.why\.es\)/.test(copies[0])
+    && /str\(item\.test\.en\) && str\(item\.test\.es\)/.test(copies[0]));
+  check("the consumer no longer filters per element (no `var valid = stored.filter(`)",
+    !/var valid = stored\.filter\(/.test(html));
+  check("the producer stores the built array only when complete, else []",
+    /analytics\.trialFocus = trialFocusIsComplete\(builtTrialFocus\) \? builtTrialFocus : \[\];/.test(html));
+  // The EMAIL projection keeps its pre-existing per-entry filter — deferred
+  // §1.6 work by owner ruling. Pinned so nobody "fixes" it here silently.
+  check("[deferred §1.6] the email projection's per-entry filter is untouched by this slice",
+    /priorities: \(Array\.isArray\(analytics\.trialFocus\) \? analytics\.trialFocus : \[\]\)/.test(html));
+}
+
 console.log(`\nConsultation priorities check: ${passed} passed, ${failed} failed`);
 process.exit(failed === 0 ? 0 : 1);
