@@ -1585,10 +1585,8 @@ const MUTATIONS = [
     "        return Object.assign({}, _resultsState.tierData.gold[0], { tier: 'gold' });",
     "        _resultsState.tierData.gold[0].tier = 'gold'; return _resultsState.tierData.gold[0];", PLAN],
   ["plan: the Consultation Summary's finalist control toggles the current finalist OFF again",
-    "    window.toggleFavoriteMattress = function(mattressId) {
-      window.chooseFinalist(mattressId);",
-    "    window.toggleFavoriteMattress = function(mattressId) {
-      if (window._favoriteMattressId === mattressId) { window._favoriteMattressId = ''; } else window.chooseFinalist(mattressId);", PLAN],
+    "    window.toggleFavoriteMattress = function(mattressId) {\n      window.chooseFinalist(mattressId);",
+    "    window.toggleFavoriteMattress = function(mattressId) {\n      if (window._favoriteMattressId === mattressId) { window._favoriteMattressId = ''; } else window.chooseFinalist(mattressId);", PLAN],
 
 ];
 
