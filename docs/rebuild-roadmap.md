@@ -2094,6 +2094,8 @@ distinct: UI implementation, payload capability, GAS activation, and verified
 delivery — `gasUrl` is blank today, so no email change is "live" merely because the
 template exists.
 
+*(2026-08-23 — accessibility debt, tracked here, NOT conforming and NOT accepted. The pick-card tier line `.hf2-pick__tier` (11.2px serif, `--color-accent` #9A7445 on the card surface #FFFDF8) measures **4.17:1**, below the 4.5:1 normal-text floor, on both the Consultation Summary and the Sleep Plan — pre-existing on the Summary since its redesign and inherited by the Plan through the shared class; the Sleep Plan layout hotfix (`claude/hotfix-sleep-plan-layout`) did not introduce or change it and did not widen to recolor it. Owner: this item (1.6, which owns the pick card's presentation) or, failing that, the pre-showroom accessibility gate; whichever ships first must raise the pairing to ≥ 4.5:1 on every surface the class renders on and add a named ratio to `tests/contrast_check.mjs`. Not a showroom acceptance of the current value.)*
+
 ### 1.7 — Sleep Plan ✅ (merged 2026-08-23, `f27f879`; PR #53 head `cd1f1ef`)
 
 **Commissioned 2026-08-14 (D5a — added by the Nocturne owner review; this item
