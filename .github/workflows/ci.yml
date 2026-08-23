@@ -318,15 +318,17 @@ jobs:
       - name: sleep plan (D5 finalist provenance + screen)
         run: node tests/sleep_plan_check.mjs
 
-      # Hotfix 2026-08-23. The Plan shipped with no CSS rule of its own and
-      # rendered as nine side-by-side columns on the dark theme while every
-      # static suite stayed green. This is the repo's one RENDERED check:
-      # headless Chromium, loopback server, the app's own functions, four
+      # Hotfix 2026-08-23; extended by Slice 6. The Plan shipped with no CSS
+      # rule of its own and rendered as nine side-by-side columns while every
+      # static suite stayed green. This is the repo's RENDERED check: headless
+      # Chromium, loopback server, the app's own functions. Plan pass at four
       # viewports (1194x748, 834x1108, 390x844, 597x374 — the mounted
-      # landscape device at 200% zoom) — computed column layout, no horizontal
-      # overflow, warm-theme parity with the Summary, title / Payment Choice
-      # headline / Continue contrast, Continue visible and Tab-reachable.
-      - name: sleep plan rendered layout (four viewports)
+      # landscape device at 200% zoom): computed column layout, no horizontal
+      # overflow, warm-theme parity, contrast, Continue Tab-reachable.
+      # Slice 6 adds a Consultation Summary pass at both device viewports
+      # (column, overflow, lead-line/tier/send contrast, saved-only picks)
+      # and a forced-colors emulation pass (no probed text invisible).
+      - name: rendered layout (Plan four viewports + Summary + forced-colors)
         run: python tests/sleep_plan_layout_check.py
 
       # Phase 0.5, server side. The first suite to EXECUTE Code.gs (whole-file
