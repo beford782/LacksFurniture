@@ -17078,7 +17078,9 @@
           title: _esE ? 'Resumen de Sueño' : 'Sleep Brief',
           detail: _esE ? 'Tu perfil de confort y enfoque de prueba.' : 'Your comfort profile and trial focus.' },
         { present: (savedMattresses.length > 0 || recCount > 0),
-          title: _esE ? 'Colchones finalistas' : 'Mattress finalists',
+          title: savedMattresses.length
+            ? (_esE ? 'Selecciones de colchón guardadas' : 'Saved mattress picks')
+            : (_esE ? 'Colchones recomendados' : 'Recommended matches'),
           detail: savedMattresses.length
             ? (_esE ? (savedMattresses.length + ' guardados · tus opciones más compatibles y para comparar')
                     : (savedMattresses.length + ' saved · your strongest matches and comparison options'))
@@ -17195,7 +17197,11 @@
       }
 
       errorEl.textContent = '';
-      sendBtn.textContent = currentLang === 'es' ? 'Enviando...' : 'Sending...';
+      // Slice 6: the in-flight verb is mode-aware — preview mode saves on
+      // this tablet and sends nothing (emailDeliveryLive() is the one truth).
+      sendBtn.textContent = emailDeliveryLive()
+        ? (currentLang === 'es' ? 'Enviando...' : 'Sending...')
+        : (currentLang === 'es' ? 'Guardando...' : 'Saving...');
       sendBtn.classList.add('sending');
 
       // Send the customer-facing brief; the internal archetype remains in analytics.
@@ -17207,7 +17213,6 @@
             || ''));
 
       // Get the lead recommendation and all matches from analytics
-      const topPick = analytics.topPick;
       // Email clients (Gmail etc.) can't resolve relative image paths, so
       // convert any relative URLs (e.g. "images/mattresses/caitlin.png")
       // into absolute URLs rooted at the retailer's public deployment.
@@ -17222,19 +17227,36 @@
       // over the algorithm's top recommendations. Fall back to the top
       // recommendations if they didn't save anything.
       const saved = getSelectedMattressPlan();
+      // Slice 6: the list's provenance is explicit — 'saved' only when the
+      // customer actually saved picks; anything else reads as the engine's
+      // recommendation. Each entry carries the Plan-parity tier-and-position
+      // line (D3: ordinal, tier-relative — never a naked percentage in
+      // customer copy; matchPct stays as internal record data).
+      const matchesSource = saved.length > 0 ? 'saved' : 'recommended';
+      const _recLine = function(pos) {
+        var tierLabel = sleepPlanTierLabel('gold');
+        var posKey = pos === 0 ? 'results.match_lead' : pos === 1 ? 'results.match_second' : pos === 2 ? 'results.match_third' : '';
+        return [tierLabel, posKey ? t(posKey) : ''].filter(Boolean).join(' · ');
+      };
       const allMatches = saved.length > 0
         ? saved.map(p => ({
             name: p.name,
             brand: p.brand,
             matchPct: p.pct,
             meetsMatchThreshold: p.meetsMatchThreshold,
+            line: sleepPlanModelLine(p) || sleepPlanTierLabel(p.tier) || '',
             imageUrl: toAbsoluteImageUrl(p.imageUrl)
           }))
-        : (analytics.allMatches || []).map(m => ({
+        : (analytics.allMatches || []).map((m, i) => ({
             name: m.name,
             brand: m.brand + (m.subBrand ? ' · ' + m.subBrand : ''),
             matchPct: m.matchPct,
             meetsMatchThreshold: m.meetsMatchThreshold,
+            // analytics.allMatches is the engine's gold top three IN ORDER;
+            // the sha-pinned fixture forbids widening that object, so the
+            // line derives from the index with the same dictionary keys
+            // sleepPlanModelLine uses.
+            line: _recLine(i),
             imageUrl: toAbsoluteImageUrl(m.imageUrl)
           }));
       // Suggestions shown on the shared review remain comparison options until
@@ -17242,7 +17264,20 @@
       const accList = getSelectedAccessoryPlan().map(a => Object.assign({}, a, {
         imageUrl: toAbsoluteImageUrl(a.imageUrl)
       }));
-      const emailTopPick = allMatches[0] || topPick;
+      // Slice 6: the lead is a CLOSED contract (chosen / recommended / none)
+      // from the same resolvers the Sleep Plan consumes — never a silent
+      // promotion of the first list entry to "best match". A kind without a
+      // mattress is no lead.
+      const _finalist = resolveFinalistState();
+      const _recommendedLead = _finalist.kind === 'chosen' ? null : finalistRecommendedFallback();
+      const _leadItem = _finalist.kind === 'chosen' ? _finalist.item : _recommendedLead;
+      const lead = {
+        kind: _leadItem ? (_finalist.kind === 'chosen' ? 'chosen' : 'recommended') : 'none',
+        name: _leadItem ? (_leadItem.name || '') : '',
+        brand: _leadItem ? String(_leadItem.brand || '') : '',
+        line: _leadItem ? (sleepPlanModelLine(_leadItem) || sleepPlanTierLabel(_leadItem.tier) || '') : '',
+        imageUrl: _leadItem ? toAbsoluteImageUrl(_leadItem.imageUrl || '') : ''
+      };
 
       // RSA attribution for the handoff redesign — set via the salesperson picker
       // on the handoff screen, persisted in localStorage as
@@ -17291,9 +17326,6 @@
         phone: phone,
         sleepProfile: profName,
         mattressSize: ({'twin':'Twin','twin_xl':'Twin XL','full':'Full','queen':'Queen','king':'King','cal_king':'Cal King'})[answers.mattress_size] || '',
-        topMatch: emailTopPick ? emailTopPick.name : '',
-        matchPct: emailTopPick ? emailTopPick.matchPct : '',
-        meetsMatchThreshold: emailTopPick ? emailTopPick.meetsMatchThreshold : false,
         discount: savingsPass ? savingsPass.percentage : 0,
         dreamCode: savingsPass ? savingsPass.code : '',
         passExpiration: savingsPass ? savingsPass.expirationLabel : '',
@@ -17309,12 +17341,27 @@
         lang: currentLang,
         allMatches: allMatches,
         accessories: accList,
+        // Slice 6: the closed lead contract and the list's provenance. Never
+        // payment state (email_gating pins the name-space), never a raw
+        // answer, never a score.
+        lead: lead,
+        matchesSource: matchesSource,
         // Trial priorities (0.5): at most three entries of exactly
         // name/reason/test, pre-localized to this payload's lang — the same
         // convention every other content field follows. Projected fresh from
         // the stored bilingual state so nothing else can ride along: no score,
         // no kind, no rank, no id, no raw answer. Position is the order.
-        priorities: (Array.isArray(analytics.trialFocus) ? analytics.trialFocus : [])
+        priorities: (function () {
+          // ALL-OR-NOTHING at the payload boundary (owner ruling R-8, carried
+          // into the email by 1.6): the block ships complete or not at all.
+          // One entry missing its name, reason or testing prompt IN THIS
+          // PAYLOAD'S LANGUAGE empties the whole field — never a shortened
+          // list, never a partial entry, exactly the contract the on-screen
+          // consumers keep. The producer already stores only a complete
+          // bilingual collection or []; this gate enforces the same rule at
+          // the boundary against any future producer defect. Whitespace-only
+          // counts as missing, mirroring the inlined predicate's trim.
+          var entries = (Array.isArray(analytics.trialFocus) ? analytics.trialFocus : [])
           .slice(0, 3)
           .map(function(item) {
             return {
@@ -17322,8 +17369,12 @@
               reason: (item && item.why && (item.why[currentLang] || item.why.en)) || '',
               test: (item && item.test && (item.test[currentLang] || item.test.en)) || ''
             };
-          })
-          .filter(function(p) { return p.name; }),
+          });
+          var whole = function(p) {
+            return p.name.trim().length > 0 && p.reason.trim().length > 0 && p.test.trim().length > 0;
+          };
+          return entries.length > 0 && entries.every(whole) ? entries : [];
+        })(),
         // Consultation Summary (0.6): exactly the three strings the hf2
         // screen renders, from the SAME resolver — pre-localized to this
         // payload's lang. Implication copy, the neutral size identity and the
@@ -17402,9 +17453,9 @@
       }
 
       function showError(msg) {
-        sendBtn.textContent = isEmailPreview
-          ? (currentLang === 'es' ? 'Vista Previa del Correo →' : 'Preview Email Experience →')
-          : (currentLang === 'es' ? 'Enviar Mis Resultados' : 'Send My Results');
+        // Slice 6: restore the button's actual initial label (renderEmailChrome
+        // sets it); the old reset labels matched nothing on the screen.
+        sendBtn.textContent = currentLang === 'es' ? 'Guardar Mi Resumen →' : 'Save My Sleep Brief →';
         sendBtn.classList.remove('sending');
         errorEl.textContent = msg || (currentLang === 'es' ? 'Algo salió mal. Por favor intenta de nuevo.' : 'Something went wrong. Please try again.');
       }
@@ -20341,9 +20392,14 @@
       if (!btn) return;
       var revealed = savingsPassEnabled()
         && document.getElementById('hf2DiscountBtn')?.classList.contains('hf2-discount-btn--revealed');
+      // Slice 6: the verb is mode-aware — with delivery not live, the action
+      // saves the brief on this tablet and sends nothing.
+      var live = emailDeliveryLive();
       btn.textContent = revealed
-        ? (currentLang === 'es' ? 'Enviar Pase y Selecciones' : 'Send Pass & Picks')
-        : (currentLang === 'es' ? 'Enviar selecciones' : 'Send picks');
+        ? (live ? (currentLang === 'es' ? 'Enviar Pase y Selecciones' : 'Send Pass & Picks')
+                : (currentLang === 'es' ? 'Guardar Pase y Selecciones' : 'Save Pass & Picks'))
+        : (live ? (currentLang === 'es' ? 'Enviar selecciones' : 'Send picks')
+                : (currentLang === 'es' ? 'Guardar selecciones' : 'Save picks'));
       btn.onclick = function() { showEmailCapture(); };
       renderHandoffFinancing();
     }

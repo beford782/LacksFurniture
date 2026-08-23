@@ -161,11 +161,25 @@ section("HTML email renders the priorities in order, localized");
   check("each entry carries its testing prompt with the EN label",
     PRIORITIES_EN.every((p) => htmlBody.includes(p.test)) && htmlBody.includes("Try this: "));
   check("entries are numbered 1..3 in order", inOrder(htmlBody, ["1. ", "2. ", "3. "]));
-  check("the section sits after the Sleep Brief line",
-    htmlBody.indexOf("Sleep brief ·") !== -1
-    && htmlBody.indexOf("Sleep brief ·") < htmlBody.indexOf("WHAT WE WILL TEST TOGETHER"));
+  // Slice 6: with a COMPLETE priorities block on the page the redundant
+  // sleepProfile prose (the same names, lowercased) is SUPPRESSED. This
+  // fixture ships no consultation rows, so the whole brief cell (label
+  // included) is legitimately absent — consultation_summary_check owns the
+  // with-rows ordering. The counter-case below proves the prose returns
+  // whenever the priorities block is empty.
+  check("the redundant brief prose is suppressed beside a complete priorities block (both parts)",
+    htmlBody.indexOf("Sleep brief ·") === -1
+    && htmlBody.indexOf("WHAT WE WILL TEST TOGETHER") !== -1);
 
   // safeData: allowlist projection, observed on the object the builder received.
+  check("[counter-case] with NO priorities the brief prose renders in both parts (the fallback content survives)",
+    (() => {
+      const g2 = buildGas();
+      g2.api.approveCanSpam();
+      post(g2.api, basePayload({ priorities: [] }));
+      const h2 = g2.sent[0].opts.htmlBody || "";
+      return h2.indexOf("Sleep brief ·") !== -1 && h2.indexOf("WHAT WE WILL TEST TOGETHER") === -1;
+    })());
   check("safeData carries the priorities", Array.isArray(seenSafe.priorities)
     && seenSafe.priorities.length === 3);
   seenSafe.priorities.forEach((p, i) => {
@@ -414,14 +428,113 @@ for (const field of ["name", "reason", "test"]) {
     PRIORITIES_EN[0],
   ] }));
   const htmlBody = g.sent[0].opts.htmlBody || "";
-  check("an entry with only a name still renders; a nameless entry is dropped",
-    htmlBody.includes("Only a name") && !htmlBody.includes("no name at all")
-    && htmlBody.includes(PRIORITIES_EN[0].name));
+  const plainBody = g.sent[0].plainBody || (g.sent[0].opts && g.sent[0].opts.plainBody) || g.sent[0].body || "";
+  // Slice 6 (R-8 at the server): ALL-OR-NOTHING. One malformed entry empties
+  // the whole block — the section, label included, is absent from BOTH MIME
+  // parts; no name from the mixed batch survives.
+  check("one malformed entry empties the WHOLE block (label and every name absent from the HTML part)",
+    !htmlBody.includes("WHAT WE WILL TEST TOGETHER")
+    && !htmlBody.includes("Only a name") && !htmlBody.includes("no name at all")
+    && !htmlBody.includes(PRIORITIES_EN[0].name));
+}
+{
+  const g = buildGas();
+  g.api.approveCanSpam();
+  post(g.api, basePayload({ priorities: [
+    PRIORITIES_EN[0],
+    Object.assign({}, PRIORITIES_EN[1], { test: "   " }),
+    PRIORITIES_EN[2],
+  ] }));
+  const htmlBody = g.sent[0].opts.htmlBody || "";
+  check("a whitespace-only field counts as missing (block absent)",
+    !htmlBody.includes("WHAT WE WILL TEST TOGETHER") && !htmlBody.includes(PRIORITIES_EN[0].name));
+}
+{
+  const g = buildGas();
+  g.api.approveCanSpam();
+  post(g.api, basePayload({ priorities: [PRIORITIES_EN[0], PRIORITIES_EN[1], PRIORITIES_EN[2]] }));
+  const htmlBody = g.sent[0].opts.htmlBody || "";
+  check("[negative control] a complete block still renders all three",
+    htmlBody.includes("WHAT WE WILL TEST TOGETHER")
+    && PRIORITIES_EN.every((p) => htmlBody.includes(p.name)));
 }
 
 // ===========================================================================
 // 4. EXISTING BEHAVIOR UNTOUCHED
 // ===========================================================================
+// ===========================================================================
+// Slice 6: lead contract, list provenance, percentage-free customer copy
+// ===========================================================================
+section("Slice 6: lead / matchesSource / percentage-free customer copy");
+{
+  const g = buildGas();
+  g.api.approveCanSpam();
+  post(g.api, basePayload({
+    lead: { kind: "chosen", name: "Cloud Nine", brand: "Restonic", line: "Gold · Best match", imageUrl: "" },
+    matchesSource: "saved",
+    allMatches: [{ name: "Cloud Nine", brand: "Restonic", matchPct: "88", meetsMatchThreshold: true, line: "Gold · Best match", imageUrl: "" }],
+  }));
+  const h = g.sent[0].opts.htmlBody || "";
+  const plain = g.sent[0].body || "";
+  check("chosen lead: the hero says YOUR FINALIST with the tier-and-position line, never YOUR BEST MATCH",
+    h.includes("YOUR FINALIST") && h.includes("Gold · Best match") && !h.includes("YOUR BEST MATCH"));
+  check("...the plain part opens with the finalist line", plain.includes("Your finalist: Cloud Nine (Gold · Best match)"));
+  check("saved provenance: the list is labelled as saved picks, never finalists-plural, never MORE MATCHES",
+    h.includes("YOUR SAVED MATTRESS PICKS") && !h.includes("MORE MATCHES TO COMPARE") && !/FINALISTS/.test(h.replace("YOUR FINALIST", "")));
+  check("...and the plain list header matches", plain.includes("Your saved mattress picks:"));
+  check("no customer-facing percentage in either part (the sheet keeps the internal record)",
+    !/\d+%\s*(match|compatibilidad)/.test(h) && !/\d+%\s*(match|compatibilidad)/.test(plain)
+    && (g.rows[0] || []).join("|").indexOf("(88%)") !== -1);
+}
+{
+  const g = buildGas();
+  g.api.approveCanSpam();
+  post(g.api, basePayload({
+    lead: { kind: "recommended", name: "Cloud Nine", brand: "Restonic", line: "Gold · Best match", imageUrl: "" },
+    matchesSource: "recommended",
+  }));
+  const h = g.sent[0].opts.htmlBody || "";
+  const plain = g.sent[0].body || "";
+  check("recommended lead: honestly labelled, with the in-store start line",
+    h.includes("RECOMMENDED STARTING POINT") && h.includes("Best place to start in-store.")
+    && plain.includes("Recommended starting point: Cloud Nine (Gold · Best match)"));
+  check("recommended provenance labels the list as matches", h.includes("YOUR MATTRESS MATCHES"));
+}
+{
+  const g = buildGas();
+  g.api.approveCanSpam();
+  post(g.api, basePayload({ lead: { kind: "bogus", name: "X" } }));
+  const h = g.sent[0].opts.htmlBody || "";
+  check("an unknown lead kind fails closed to none: no hero, no lead label",
+    !h.includes("YOUR FINALIST") && !h.includes("RECOMMENDED STARTING POINT") && !h.includes("YOUR BEST MATCH"));
+}
+{
+  const g = buildGas();
+  g.api.approveCanSpam();
+  post(g.api, basePayload({ lead: { kind: "chosen", name: "   " }, matchesSource: "garbage" }));
+  const h = g.sent[0].opts.htmlBody || "";
+  check("a kind without a non-blank name is no lead; unknown provenance fails closed to recommended",
+    !h.includes("YOUR FINALIST") && h.includes("YOUR MATTRESS MATCHES"));
+}
+{
+  const g = buildGas();
+  g.api.approveCanSpam();
+  post(g.api, basePayload({}));
+  const h = g.sent[0].opts.htmlBody || "";
+  check("an OLD payload (no lead, no matchesSource) renders no fabricated hero and the recommended label",
+    !h.includes("YOUR BEST MATCH") && !h.includes("YOUR FINALIST") && h.includes("YOUR MATTRESS MATCHES"));
+  check("...and nothing throws (compat: new server, old payload)", g.sent.length === 1);
+}
+{
+  const g = buildGas();
+  g.api.approveCanSpam();
+  post(g.api, basePayload({
+    lead: { kind: "chosen", name: "<script>x</script>", brand: "B", line: "Gold", imageUrl: "" },
+  }));
+  const h = g.sent[0].opts.htmlBody || "";
+  check("a hostile lead name is escaped at interpolation", !h.includes("<script>x</script>") && h.includes("&lt;script&gt;"));
+}
+
 section("existing doPost behavior untouched");
 {
   const g = buildGas();

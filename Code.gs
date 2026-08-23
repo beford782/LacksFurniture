@@ -120,12 +120,28 @@ function doPost(e) {
 
     // Bound client-controlled scalars defensively.
     var name = _safeText(data.name, 200);
+    // Slice 6: the lead is a CLOSED contract (chosen / recommended / none).
+    // Unknown kinds fail closed to 'none'; a kind without a non-blank name is
+    // no lead (a best-match claim over an empty subject is worse than none).
+    // matchesSource fails closed to 'recommended': a false "saved" would
+    // fabricate customer action; a false "recommended" merely understates it.
+    var lead = (function(l) {
+      var ok = l && typeof l === 'object';
+      var kind = ok && (l.kind === 'chosen' || l.kind === 'recommended') ? l.kind : 'none';
+      var leadName = kind !== 'none' ? _safeText(l.name, 200).trim() : '';
+      if (!leadName) kind = 'none';
+      return {
+        kind: kind,
+        name: leadName,
+        brand: kind !== 'none' ? _safeText(l.brand, 100) : '',
+        line: kind !== 'none' ? _safeText(l.line, 120) : '',
+        imageUrl: kind !== 'none' ? _safeImageUrl(l.imageUrl) : ''
+      };
+    })(data.lead);
+    var matchesSource = data.matchesSource === 'saved' ? 'saved' : 'recommended';
     var phone = _safeText(data.phone, 40);
     var dreamCode = _safeText(data.dreamCode, 40);
     var sleepProfile = _safeText(data.sleepProfile, 500);
-    var topMatch = _safeText(data.topMatch, 200);
-    var matchPct = _safeText(data.matchPct, 10);
-    var meetsMatchThreshold = data.meetsMatchThreshold === true;
     var rsa = _safeText(data.rsa, 100);
     var discount = _safeText(data.discount || 5, 10);
     var passExpiration = _safeText(data.passExpiration, 80) || '30 days from issue';
@@ -202,9 +218,8 @@ function doPost(e) {
     var safeData = {
       dreamCode: dreamCode,
       sleepProfile: sleepProfile,
-      topMatch: topMatch,
-      matchPct: matchPct,
-      meetsMatchThreshold: meetsMatchThreshold,
+      lead: lead,
+      matchesSource: matchesSource,
       discount: discount,
       passExpiration: passExpiration,
       passScope: passScope,
@@ -214,8 +229,13 @@ function doPost(e) {
         return {
           name: _safeText(m && m.name, 200),
           brand: _safeText(m && m.brand, 100),
+          // matchPct stays INTERNAL record data (the sheet row reads the raw
+          // payload); customer-facing copy renders the tier-and-position
+          // line instead (D3: ordinal, tier-relative, never a naked
+          // percentage). String-typed pick, like the consultation fields.
           matchPct: _safeText(m && m.matchPct, 10),
           meetsMatchThreshold: m && m.meetsMatchThreshold === true,
+          line: (function(v) { var t = typeof v === 'string' ? v.trim() : ''; return t ? _safeText(t, 120) : ''; })(m && m.line),
           imageUrl: _safeImageUrl(m && m.imageUrl)
         };
       }),
@@ -230,16 +250,24 @@ function doPost(e) {
       // Untrusted like everything else here: array-coerced, capped, every
       // field bounded, and projected onto a fresh literal so ONLY these three
       // keys can survive into the email - a score, rank, id or raw answer
-      // riding on an entry is dropped by construction. Entries without a name
-      // are dropped; the section renders at whatever length remains, and an
-      // empty result omits the section cleanly.
-      priorities: _safeArray(data.priorities).slice(0, MAX_EMAIL_PRIORITIES).map(function(p) {
+      // riding on an entry is dropped by construction. Slice 6 (R-8 at the
+      // server): the block is ALL-OR-NOTHING - cap first (mirroring the
+      // client, which slices before judging), then if ANY capped entry lacks
+      // a non-blank name, reason or test, the whole array is [] and the
+      // section, label included, is absent from BOTH MIME parts. Never a
+      // shortened list, never a partial entry.
+      priorities: (function(list) {
+        var whole = function(p) {
+          return p.name.trim().length > 0 && p.reason.trim().length > 0 && p.test.trim().length > 0;
+        };
+        return list.length > 0 && list.every(whole) ? list : [];
+      })(_safeArray(data.priorities).slice(0, MAX_EMAIL_PRIORITIES).map(function(p) {
         return {
           name: _safeText(p && p.name, 200),
           reason: _safeText(p && p.reason, 400),
           test: _safeText(p && p.test, 400)
         };
-      }).filter(function(p) { return p.name; }),
+      })),
       // Consultation Summary strings (0.6), pre-localized by the client to
       // data.lang from the SAME resolver the kiosk screen renders. Projected
       // onto a fresh three-key literal so nothing else can ride along, each
@@ -334,9 +362,10 @@ function buildPlainBody(data, isEs, storeName) {
   storeName = storeName || (isEs ? 'nuestra tienda' : 'our store');
   var dreamCode = data.dreamCode || '';
   var sleepProfile = data.sleepProfile || '';
-  var topMatch = data.topMatch || '';
-  var matchPct = data.matchPct || '';
-  var meetsMatchThreshold = data.meetsMatchThreshold === true;
+  // Slice 6: the lead contract replaces the promoted first list entry; an
+  // old payload without it reads as 'none' (no fabricated best-match line).
+  var lead = (data.lead && typeof data.lead === 'object') ? data.lead : { kind: 'none' };
+  var matchesSource = data.matchesSource === 'saved' ? 'saved' : 'recommended';
   var discount = data.discount || 5;
   var passExpiration = data.passExpiration || '30 days from issue';
   var passScope = data.passScope || 'a qualifying DreamFinder mattress selection';
@@ -389,9 +418,29 @@ function buildPlainBody(data, isEs, storeName) {
         + promoLines)
     : '';
   var comparisonLabel = isEs ? 'Opci\u00f3n adicional para comparar' : 'Additional comparison option';
-  var topMatchDetail = meetsMatchThreshold
-    ? matchPct + (isEs ? '% compatibilidad' : '% match')
-    : comparisonLabel;
+  // Slice 6: the top line speaks the lead kind and the tier-and-position
+  // line; no percentage reaches customer copy (D3). sleepProfile prose is
+  // suppressed while a complete priorities block renders (its names are the
+  // same content), and its label never renders over a blank value.
+  var _plainLead = function() {
+    if (lead.kind === 'chosen') {
+      return (isEs ? 'Tu finalista: ' : 'Your finalist: ') + lead.name
+        + (lead.line ? ' (' + lead.line + ')' : '') + '\n';
+    }
+    if (lead.kind === 'recommended') {
+      return (isEs ? 'Punto de partida recomendado: ' : 'Recommended starting point: ') + lead.name
+        + (lead.line ? ' (' + lead.line + ')' : '') + '\n'
+        + (isEs ? 'El mejor punto de partida en la tienda.' : 'Best place to start in-store.') + '\n';
+    }
+    return '';
+  };
+  var _plainBrief = function(priorityText) {
+    if (priorityText || !sleepProfile) return '';
+    return (isEs ? 'Resumen de sue\u00f1o: ' : 'Sleep Brief: ') + sleepProfile + '\n';
+  };
+  var _plainListHeader = matchesSource === 'saved'
+    ? (isEs ? 'Tus selecciones de colch\u00f3n guardadas:' : 'Your saved mattress picks:')
+    : (isEs ? 'Tus colchones recomendados:' : 'Your mattress matches:');
   // Savings Pass lines only when a code was actually issued; Payment
   // Choice lines only when the client sent a financing block (no terms
   // math, no approval language \u2014 categories + official URL only).
@@ -417,17 +466,17 @@ function buildPlainBody(data, isEs, storeName) {
     : '';
   return isEs
     ? ('Tu match de sue\u00f1o de ' + storeName + ' est\u00e1 listo.\n\n'
-      + (meetsMatchThreshold ? 'Tu mejor opci\u00f3n: ' : 'Opci\u00f3n para comparar: ') + topMatch + ' (' + topMatchDetail + ')\n'
-      + 'El mejor punto de partida en la tienda.\n'
-      + 'Resumen de sue\u00f1o: ' + sleepProfile + '\n'
+      + _plainLead()
+      + _plainBrief(priorityLines)
       + consultBlock
       + (priorityLines ? 'Lo que probaremos juntos:\n' + priorityLines + '\n' : '')
       + passBlockEs
       + 'Muestra este correo a tu especialista de sue\u00f1o de ' + storeName + '.\n\n'
+      + _plainListHeader + '\n'
       + allMatches.map(function(m, i) {
-          return (i+1) + '. ' + m.name + ' - ' + (m.meetsMatchThreshold
-            ? m.matchPct + '% compatibilidad'
-            : comparisonLabel);
+          var lineText = (typeof m.line === 'string' && m.line) ? m.line
+            : (m.meetsMatchThreshold ? '' : comparisonLabel);
+          return (i+1) + '. ' + m.name + (lineText ? ' - ' + lineText : '');
         }).join('\n')
       + (accessoryLines ? '\n\nTu Sistema de Sue\u00f1o guardado:\n' + accessoryLines : '')
       + promoBlock
@@ -438,17 +487,17 @@ function buildPlainBody(data, isEs, storeName) {
       + 'Cancelar suscripci\u00f3n: ' + UNSUBSCRIBE_URL + '\n'
       + 'Privacidad y solicitudes de datos: ' + PRIVACY_CONTACT)
     : ('Your ' + storeName + ' sleep match is ready.\n\n'
-      + (meetsMatchThreshold ? 'Your best match: ' : 'Option to compare: ') + topMatch + ' (' + topMatchDetail + ')\n'
-      + 'Best place to start in-store.\n'
-      + 'Sleep Brief: ' + sleepProfile + '\n'
+      + _plainLead()
+      + _plainBrief(priorityLines)
       + consultBlock
       + (priorityLines ? 'What we will test together:\n' + priorityLines + '\n' : '')
       + passBlockEn
       + 'Show this email to your ' + storeName + ' sleep specialist.\n\n'
+      + _plainListHeader + '\n'
       + allMatches.map(function(m, i) {
-          return (i+1) + '. ' + m.name + ' - ' + (m.meetsMatchThreshold
-            ? m.matchPct + '% match'
-            : comparisonLabel);
+          var lineText = (typeof m.line === 'string' && m.line) ? m.line
+            : (m.meetsMatchThreshold ? '' : comparisonLabel);
+          return (i+1) + '. ' + m.name + (lineText ? ' - ' + lineText : '');
         }).join('\n')
       + (accessoryLines ? '\n\nYour saved Sleep System:\n' + accessoryLines : '')
       + promoBlock
@@ -522,9 +571,9 @@ function buildSimpleHtml(data, firstName, isEs, storeName) {
     eyebrow: 'TUS RESULTADOS',
     headline: 'Tu match de sue\u00f1o de ' + storeName + ' est\u00e1 listo',
     headlineAccent: 'match de sue\u00f1o de ' + storeName,
-    bestLabel: 'TU MEJOR OPCI\u00d3N',
+    leadChosen: 'TU FINALISTA',
+    leadRecommended: 'PUNTO DE PARTIDA RECOMENDADO',
     bestStart: 'El mejor punto de partida en la tienda.',
-    matchSuffix: 'compatibilidad',
     comparisonOption: 'Opci\u00f3n adicional para comparar',
     briefLabel: 'TU RESUMEN DE SUE\u00d1O',
     prioritiesLabel: 'LO QUE PROBAREMOS JUNTOS',
@@ -532,7 +581,8 @@ function buildSimpleHtml(data, firstName, isEs, storeName) {
     savingsHint: discount + '% DE DESCUENTO en ' + passScope,
     savingsExpiry: 'V\u00e1lido hasta ' + passExpiration,
     savingsTerms: passTerms,
-    moreLabel: 'M\u00c1S OPCIONES PARA COMPARAR',
+    savedLabel: 'TUS SELECCIONES DE COLCH\u00d3N GUARDADAS',
+    recommendedLabel: 'TUS COLCHONES RECOMENDADOS',
     accLabel: 'TU SISTEMA DE SUE\u00d1O GUARDADO',
     ctaMain: 'Lleva este correo a tu especialista de sue\u00f1o de ' + storeName + ' \u2014 tendr\u00e1n tus opciones listas.',
     helpedBy: rsa ? 'Atendido por ' + rsa + ' en ' + storeName : '',
@@ -547,9 +597,9 @@ function buildSimpleHtml(data, firstName, isEs, storeName) {
     eyebrow: 'YOUR RESULTS',
     headline: 'Your ' + storeName + ' sleep match is ready',
     headlineAccent: storeName + ' sleep match',
-    bestLabel: 'YOUR BEST MATCH',
+    leadChosen: 'YOUR FINALIST',
+    leadRecommended: 'RECOMMENDED STARTING POINT',
     bestStart: 'Best place to start in-store.',
-    matchSuffix: 'match',
     comparisonOption: 'Additional comparison option',
     briefLabel: 'YOUR SLEEP BRIEF',
     prioritiesLabel: 'WHAT WE WILL TEST TOGETHER',
@@ -557,7 +607,8 @@ function buildSimpleHtml(data, firstName, isEs, storeName) {
     savingsHint: discount + '% OFF ' + passScope,
     savingsExpiry: 'Good through ' + passExpiration,
     savingsTerms: passTerms,
-    moreLabel: 'MORE MATCHES TO COMPARE',
+    savedLabel: 'YOUR SAVED MATTRESS PICKS',
+    recommendedLabel: 'YOUR MATTRESS MATCHES',
     accLabel: 'YOUR SAVED SLEEP SYSTEM',
     ctaMain: 'Bring this email to your ' + storeName + ' sleep specialist \u2014 they\u2019ll have your picks ready.',
     helpedBy: rsa ? 'Helped by ' + rsa + ' at ' + storeName : '',
@@ -581,36 +632,47 @@ function buildSimpleHtml(data, firstName, isEs, storeName) {
 
   // Helper: one mattress card. hero=true => elevated top-match treatment with a
   // red rule, larger name, a brass match-chip, and the showroom start line.
-  function mattressCard(m, hero) {
+  // Slice 6: the hero card is the LEAD contract (chosen / recommended),
+  // labelled by kind and chipped with the tier-and-position line - never a
+  // percentage, never a promoted list entry. 'none' renders no hero at all.
+  function leadCard(lead) {
+    var name = _escapeHtml(lead.name || '');
+    var brand = _escapeHtml(lead.brand || '');
+    var line = _escapeHtml(lead.line || '');
+    var img = _escapeHtml(lead.imageUrl || '');
+    var label = lead.kind === 'chosen' ? L.leadChosen : L.leadRecommended;
+    var chip = line
+      ? '<span style="display:inline-block;background:' + c.surfaceAlt + ';color:' + c.text + ';font-family:' + sans + ';font-size:12px;font-weight:600;letter-spacing:0.5px;padding:5px 12px;border-radius:3px;border:1px solid ' + c.border + ';">' + line + '</span>'
+      : '';
+    var heroImg = '<td width="110" valign="middle" style="padding:0;background:' + c.surfaceAlt + ';border-right:1px solid ' + c.border + ';">'
+      + (img
+          ? '<img src="' + img + '" width="110" height="108" alt="' + name + '" style="display:block;border:0;width:110px;height:108px;object-fit:cover;background:' + c.surfaceAlt + ';">'
+          : '<div style="width:110px;height:108px;background:' + c.surfaceAlt + ';"></div>')
+      + '</td>';
+    return ''
+      + '<table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="background:' + c.surface + ';border:1px solid ' + c.border + ';border-left:4px solid ' + c.red + ';margin-bottom:6px;border-radius:3px;">'
+      + '<tr>'
+      + heroImg
+      + '<td valign="middle" style="padding:18px 20px;">'
+      + '<div style="font-family:' + sans + ';font-size:10px;letter-spacing:2.5px;color:' + c.red + ';text-transform:uppercase;font-weight:700;margin-bottom:8px;">' + label + '</div>'
+      + '<div style="font-family:' + serif + ';font-size:25px;color:' + c.text + ';font-weight:normal;line-height:1.15;margin-bottom:5px;">' + name + '</div>'
+      + '<div style="font-family:' + sans + ';font-size:12px;color:' + c.textMuted + ';margin-bottom:12px;">' + brand + '</div>'
+      + chip
+      + (lead.kind === 'recommended'
+          ? '<div style="font-family:' + sans + ';font-size:11px;color:' + c.textSubtle + ';margin-top:10px;">' + L.bestStart + '</div>'
+          : '')
+      + '</td>'
+      + '</tr>'
+      + '</table>';
+  }
+
+  function mattressCard(m) {
     var name = _escapeHtml(m.name || '');
     var brand = _escapeHtml(m.brand || '');
-    var pct = _escapeHtml(m.matchPct || '');
     var meets = m.meetsMatchThreshold === true;
     var img = _escapeHtml(m.imageUrl || '');
-    if (hero) {
-      var chip = meets
-        ? '<span style="display:inline-block;background:' + c.accent + ';color:' + c.surface + ';font-family:' + sans + ';font-size:13px;font-weight:700;letter-spacing:0.5px;padding:5px 12px;border-radius:3px;">' + pct + '% ' + L.matchSuffix + '</span>'
-        : '<span style="display:inline-block;background:' + c.surfaceAlt + ';color:' + c.textMuted + ';font-family:' + sans + ';font-size:12px;font-weight:600;padding:5px 12px;border-radius:3px;border:1px solid ' + c.border + ';">' + L.comparisonOption + '</span>';
-      var heroImg = '<td width="110" valign="middle" style="padding:0;background:' + c.surfaceAlt + ';border-right:1px solid ' + c.border + ';">'
-        + (img
-            ? '<img src="' + img + '" width="110" height="108" alt="' + name + '" style="display:block;border:0;width:110px;height:108px;object-fit:cover;background:' + c.surfaceAlt + ';">'
-            : '<div style="width:110px;height:108px;background:' + c.surfaceAlt + ';"></div>')
-        + '</td>';
-      return ''
-        + '<table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="background:' + c.surface + ';border:1px solid ' + c.border + ';border-left:4px solid ' + c.red + ';margin-bottom:6px;border-radius:3px;">'
-        + '<tr>'
-        + heroImg
-        + '<td valign="middle" style="padding:18px 20px;">'
-        + '<div style="font-family:' + sans + ';font-size:10px;letter-spacing:2.5px;color:' + c.red + ';text-transform:uppercase;font-weight:700;margin-bottom:8px;">' + L.bestLabel + '</div>'
-        + '<div style="font-family:' + serif + ';font-size:25px;color:' + c.text + ';font-weight:normal;line-height:1.15;margin-bottom:5px;">' + name + '</div>'
-        + '<div style="font-family:' + sans + ';font-size:12px;color:' + c.textMuted + ';margin-bottom:12px;">' + brand + '</div>'
-        + chip
-        + '<div style="font-family:' + sans + ';font-size:11px;color:' + c.textSubtle + ';margin-top:10px;">' + L.bestStart + '</div>'
-        + '</td>'
-        + '</tr>'
-        + '</table>';
-    }
-    var matchLine = meets ? pct + '% ' + L.matchSuffix : L.comparisonOption;
+    var line = _escapeHtml((typeof m.line === 'string' && m.line) || '');
+    var matchLine = line || (meets ? '' : L.comparisonOption);
     var imgCell = '<td width="80" valign="middle" style="padding:0;background:' + c.surfaceAlt + ';border-right:1px solid ' + c.border + ';">'
       + (img
           ? '<img src="' + img + '" width="80" height="72" alt="' + name + '" style="display:block;border:0;width:80px;height:72px;object-fit:cover;background:' + c.surfaceAlt + ';">'
@@ -623,15 +685,15 @@ function buildSimpleHtml(data, firstName, isEs, storeName) {
       + '<td valign="middle" style="padding:12px 16px;">'
       + '<div style="font-family:' + serif + ';font-size:16px;color:' + c.text + ';font-weight:normal;line-height:1.2;margin-bottom:3px;">' + name + '</div>'
       + '<div style="font-family:' + sans + ';font-size:11px;color:' + c.textMuted + ';margin-bottom:5px;">' + brand + '</div>'
-      + '<div style="font-family:' + sans + ';font-size:11px;letter-spacing:1px;color:' + c.accent + ';text-transform:uppercase;font-weight:600;">' + matchLine + '</div>'
+      + (matchLine ? '<div style="font-family:' + sans + ';font-size:11px;letter-spacing:1px;color:' + c.accent + ';text-transform:uppercase;font-weight:600;">' + matchLine + '</div>' : '')
       + '</td>'
       + '</tr>'
       + '</table>';
   }
 
-  var topMatch = matches.length ? matches[0] : null;
-  var heroCard = topMatch ? mattressCard(topMatch, true) : '';
-  var secondaryRows = matches.slice(1).map(function(m) { return mattressCard(m, false); }).join('');
+  var heroCard = (data.lead && data.lead.kind !== 'none') ? leadCard(data.lead) : '';
+  var listLabel = data.matchesSource === 'saved' ? L.savedLabel : L.recommendedLabel;
+  var secondaryRows = matches.map(function(m) { return mattressCard(m); }).join('');
 
   // Accessories - single column rows (Outlook table-cell math is unreliable).
   var accRows = accs.map(function(a) {
@@ -727,15 +789,21 @@ function buildSimpleHtml(data, firstName, isEs, storeName) {
 
     + (heroCard ? '<tr><td style="padding:24px 32px 8px;">' + heroCard + '</td></tr>' : '')
 
-    + ((sleepProfile || consultLines.length)
+    + ((function() {
+        // Slice 6: with a complete priorities block on the page, the brief
+        // prose (largely the same names, lowercased) is redundant and is
+        // suppressed; consultation rows keep the block alive either way.
+        var briefProse = (data.priorities || []).length ? '' : sleepProfile;
+        return (briefProse || consultLines.length)
         ? '<tr><td style="padding:8px 32px 16px;">'
           + '<div style="font-family:' + sans + ';font-size:10px;letter-spacing:2.5px;color:' + c.accent + ';text-transform:uppercase;font-weight:600;margin-bottom:8px;">' + L.briefLabel + '</div>'
-          + (sleepProfile ? '<div style="font-family:' + serif + ';font-size:17px;color:' + c.text + ';line-height:1.35;">' + sleepProfile + '</div>' : '')
+          + (briefProse ? '<div style="font-family:' + serif + ';font-size:17px;color:' + c.text + ';line-height:1.35;">' + briefProse + '</div>' : '')
           + consultLines.map(function(line) {
               return '<div style="font-family:' + sans + ';font-size:12px;color:' + c.textMuted + ';line-height:1.5;margin-top:6px;">' + line + '</div>';
             }).join('')
           + '</td></tr>'
-        : '')
+        : '';
+      })())
 
     // Trial priorities (0.5), directly under the Sleep Brief line it expands
     // on. Numbered divs rather than <ol> for email-client robustness (the
@@ -779,7 +847,7 @@ function buildSimpleHtml(data, firstName, isEs, storeName) {
 
     + (secondaryRows
         ? '<tr><td style="padding:16px 32px 8px;">'
-          + '<div style="font-family:' + sans + ';font-size:10px;letter-spacing:2.5px;color:' + c.accent + ';text-transform:uppercase;font-weight:600;margin-bottom:14px;">' + L.moreLabel + '</div>'
+          + '<div style="font-family:' + sans + ';font-size:10px;letter-spacing:2.5px;color:' + c.accent + ';text-transform:uppercase;font-weight:600;margin-bottom:14px;">' + listLabel + '</div>'
           + secondaryRows
           + '</td></tr>'
         : '')

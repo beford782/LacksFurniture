@@ -108,8 +108,10 @@ const TRIAL_FN = grab(/function renderResultsTrialFocus\(\)\s*\{[\s\S]*?\n    \}
 const HF2_FN = grab(/function renderHf2Priorities\(\)\s*\{[\s\S]*?\n    \}/, "renderHf2Priorities()");
 const L_FN = grab(/function L\(obj\) \{[\s\S]*?\n    \}/, "L()");
 const ESCAPE_FN = grab(/function escapeHtml\([\s\S]*?\n    \}/, "escapeHtml()");
+// Slice 6 implemented the deferred all-or-nothing projection: the payload
+// field is now a gated IIFE (complete block or []). The extraction follows.
 const PROJECTION = grab(
-  /priorities: \(Array\.isArray\(analytics\.trialFocus\) \? analytics\.trialFocus : \[\]\)[\s\S]*?\.filter\(function\(p\) \{ return p\.name; \}\),/,
+  /priorities: \(function \(\) \{[\s\S]*?return entries\.length > 0 && entries\.every\(whole\) \? entries : \[\];\r?\n        \}\)\(\),/,
   "the payload priorities projection");
 
 // ---------- fixtures (identical to the baseline generator's) ----------------
@@ -745,10 +747,54 @@ section("trial priorities: ruled neutral wording, no 'finalist' vocabulary");
     !/var valid = stored\.filter\(/.test(html));
   check("the producer stores the built array only when complete, else []",
     /analytics\.trialFocus = trialFocusIsComplete\(builtTrialFocus\) \? builtTrialFocus : \[\];/.test(html));
-  // The EMAIL projection keeps its pre-existing per-entry filter — deferred
-  // §1.6 work by owner ruling. Pinned so nobody "fixes" it here silently.
-  check("[deferred §1.6] the email projection's per-entry filter is untouched by this slice",
-    /priorities: \(Array\.isArray\(analytics\.trialFocus\) \? analytics\.trialFocus : \[\]\)/.test(html));
+  // Slice 6 IMPLEMENTED the deferral: the projection is all-or-nothing at
+  // the boundary. The bare per-entry filter is gone, and the gate is proven
+  // by execution below, not by string presence alone.
+  check("[§1.6 done] the email projection carries NO per-entry filter and IS the all-or-nothing gate",
+    !/\.filter\(function\(p\) \{ return p\.name; \}\),/.test(html)
+    && /priorities: \(function \(\) \{/.test(html));
+}
+
+// ===========================================================================
+// Slice 6: the payload projection is ALL-OR-NOTHING (executed).
+// ===========================================================================
+section("Slice 6: payload projection all-or-nothing (executed)");
+{
+  const base = runProfile(FIXTURES.C, "en").analytics.trialFocus;
+  check("[precondition] fixture C yields 3 complete priorities", base.length === 3);
+  check("complete store: the projection ships all 3, shaped name/reason/test",
+    (() => {
+      const out = runProjection(base, "en");
+      return out.length === 3 && out.every((p) => p.name && p.reason && p.test
+        && Object.keys(p).sort().join(",") === "name,reason,test");
+    })());
+  for (const [label, mutate] of [
+    ["a blank name", (e) => { e.en = ""; e.es = ""; }],
+    ["a missing reason", (e) => { delete e.why; }],
+    ["a whitespace-only test prompt", (e) => { e.test = { en: "   ", es: "   " }; }],
+  ]) {
+    for (const idx of [0, 1, 2]) {
+      const broken = base.map((x, i) => {
+        const copy = JSON.parse(JSON.stringify(x));
+        if (i === idx) mutate(copy);
+        return copy;
+      });
+      const out = runProjection(broken, "en");
+      check(`[${label} @${idx}] the WHOLE block empties — never a shortened or partial list (got ${out.length})`, out.length === 0);
+    }
+  }
+  // The boundary judges the PAYLOAD'S OWN language: a store whose ES prose
+  // is complete ships a complete ES payload even when an EN string is blank
+  // (the payload is single-language at send time), while the EN payload
+  // empties. The stricter both-language rule still lives where it belongs —
+  // in the producer/on-screen predicate, which such a store could never
+  // legally reach (it stores complete-or-[]).
+  check("the gate judges the payload's language: EN empties, ES ships complete, never a PARTIAL in either",
+    (() => {
+      const broken = base.map((x, i) => (i === 1 ? Object.assign(JSON.parse(JSON.stringify(x)), { test: { en: "", es: "x" } }) : x));
+      return runProjection(broken, "en").length === 0 && runProjection(broken, "es").length === 3;
+    })());
+  check("an empty store projects [] (unchanged posture)", runProjection([], "en").length === 0);
 }
 
 console.log(`\nConsultation priorities check: ${passed} passed, ${failed} failed`);
