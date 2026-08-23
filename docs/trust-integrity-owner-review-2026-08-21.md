@@ -1,9 +1,11 @@
 # Trust integrity gate — owner review packet (2026-08-21, updated 2026-08-22)
 
 **For:** Blake Ford (content owner / business approver). **Branch:**
-`claude/phase1-trust-integrity` — **draft PR #54**
-(https://github.com/beford782/LacksFurniture/pull/54). **Nothing is merged,
-deployed or showroom-authorized**, and this packet does not change that.
+`claude/phase1-trust-integrity` — **PR #54, merged 2026-08-23 as `d4049cb`**
+(https://github.com/beford782/LacksFurniture/pull/54) and live on the Pages
+preview with the physically tested bytes. **Not showroom-authorized**; no live
+email; Spanish provisional. This packet is now the record of the decisions
+that took it there.
 
 ## Status at 2026-08-22 — decision checklist
 
