@@ -321,6 +321,26 @@ def main():
               for v in ("Synchrony", "SYNCHRONY", "synchrony")))
     check("publishedPaymentFactor stripped from shipped config",
           "publishedPaymentFactor" not in json.dumps(cfg))
+    # PRIVACY HALF OF THE BOUNDARY (trust gate, 2026-08-21). A privacy promise
+    # is retailer policy, so it is config (text / text_es) or nothing — the
+    # template may not carry one of its own. index.html used to hardcode
+    # "Your info is never sold to third parties. Unsubscribe anytime." in both
+    # languages: an absolute claim no code kept, an "unsubscribe" for a
+    # subscription that does not exist, and a white-label breach. Scanned on
+    # executable text (HTML comments and //-comment lines removed) so a
+    # comment that mentions the retired line is not mistaken for it.
+    executable = re.sub(r"<!--.*?-->", "", html, flags=re.S)
+    executable = "\n".join(l for l in executable.splitlines() if not re.match(r"\s*//", l))
+    promise_hits = re.findall(
+        r"(?i)never sold|nunca se vende|never shared|nunca se comparte|unsubscribe anytime|"
+        r"cancelar la suscripci|third parties|cleared when you finish|deleted immediately",
+        executable)
+    check(f"no template-hardcoded privacy promise in index.html (privacy copy is config or dictionary)"
+          f"{' — FOUND: ' + ', '.join(sorted(set(promise_hits))) if promise_hits else ''}",
+          not promise_hits)
+    check("the promise pattern fires on the retired line in both languages",
+          re.search(r"(?i)never sold", " Your info is never sold to third parties. Unsubscribe anytime.")
+          and re.search(r"(?i)nunca se vende", " Tu información nunca se vende. Puedes cancelar la suscripción."))
     # The dead Mexico application URL is stored in config as documentation
     # (verified:false) and must stay structurally unreachable: no runtime code
     # reads the field or the URL, so no config edit alone can render it.
