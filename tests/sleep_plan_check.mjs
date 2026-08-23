@@ -894,6 +894,33 @@ if (gate("renderSleepPlan", RENDER_SRCS.every(Boolean) && !!FALLBACK_SRC && !!RE
         (norm.match(/function renderAllFinancingSurfaces\(\)[\s\S]*?\n    \}/) || [""])[0]));
   }
 
+  // ---- Slice 6 C8: RSA picker accessibility ---------------------------------
+  section("Slice 6 C8 — RSA picker: real buttons, disclosure semantics, no native dialog");
+  {
+    check("roster items are real buttons with aria-current and the Invariant-10 touch pair",
+      /itemBtn\.type = 'button';/.test(norm)
+      && /itemBtn\.setAttribute\('aria-current', isCurrent \? 'true' : 'false'\);/.test(norm)
+      && /itemBtn\.ontouchend = function\(event\) \{ event\.preventDefault\(\); selectHf2Rsa\(rsaName\); \};/.test(norm)
+      && !/li\.onclick/.test(norm));
+    check("the strip button declares the disclosure (aria-expanded + aria-controls) and every toggle branch derives it from the panel",
+      /id="hf2RsaStripBtn" type="button"\s*\r?\n\s*aria-expanded="false" aria-controls="hf2RsaPanel"/.test(norm)
+      && /strip\.setAttribute\('aria-expanded', panel\.hasAttribute\('hidden'\) \? 'false' : 'true'\);/.test(norm));
+    check("window.prompt is gone from executable code (comments may explain why)",
+      (norm.split("\n").filter((l) => l.includes("window.prompt") && !/^\s*(\/\/|<!--|\*)/.test(l)).length) === 0);
+    check("the inline add row is NOT a form, its input clears with the contact wipe, and its layers reset",
+      !/<form[^>]*hf2Rsa/.test(norm)
+      && /'emailNameInput', 'emailInput', 'emailPhoneInput', 'hf2RsaAddInput'/.test(norm)
+      && /\{ id: 'hf2RsaAddRow', hiddenAttr: true \},/.test(norm)
+      && /\{ id: 'hf2RsaStripBtn', attrs: \{ 'aria-expanded': 'false' \} \},/.test(norm));
+    check("the byte-pinned hf2RsaPanel layer entry is untouched",
+      /\{ id: 'hf2RsaPanel', hiddenAttr: true \},/.test(norm));
+    check("Escape closes the open panel and focus returns to the strip",
+      /if \(event\.key !== 'Escape'\) return;/.test(norm)
+      && /window\.toggleHf2RsaPanel\('close'\);\s*\r?\n\s*var strip = document\.getElementById\('hf2RsaStripBtn'\);\s*\r?\n\s*if \(strip && typeof strip\.focus === 'function'\) strip\.focus\(\);/.test(norm));
+    check("no NEW localStorage reference: the raw count stays at six (five executable device-roster lines + one comment; trust_integrity owns the executable-line pin)",
+      (norm.match(/localStorage/g) || []).length === 6);
+  }
+
   // ---- Slice 6 C6: Welcome — tease removed, estimate removed, keys retired --
   section("Slice 6 C6 — Welcome removals");
   {

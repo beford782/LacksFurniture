@@ -3912,7 +3912,42 @@
       max-height: 280px;
       overflow-y: auto;
     }
+    .hf2-rsa-panel__addrow {
+      display: flex;
+      gap: 6px;
+      margin-top: 6px;
+    }
+    .hf2-rsa-panel__input {
+      flex: 1;
+      min-height: 40px;
+      padding: 0.3rem 0.5rem;
+      border: 1px solid var(--color-border);
+      border-radius: 5px;
+      background: var(--color-surface);
+      color: var(--color-text);
+      font: inherit;
+    }
+    .hf2-rsa-panel__confirm {
+      min-height: 40px;
+      padding: 0.3rem 0.7rem;
+      border: 1px solid var(--color-border);
+      border-radius: 5px;
+      background: transparent;
+      color: var(--color-text);
+      font: inherit;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
     .hf2-rsa-panel__item {
+      display: block;
+      width: 100%;
+      text-align: left;
+      background: transparent;
+      border: 0;
+      font: inherit;
+      color: inherit;
+      cursor: pointer;
+      touch-action: manipulation;
       display: flex;
       align-items: center;
       gap: 0.55rem;
@@ -10791,6 +10826,7 @@
          outside-click listener from immediately closing the panel on the same tap. -->
     <div class="hf2-rsa-strip">
       <button class="hf2-rsa-strip__btn" id="hf2RsaStripBtn" type="button"
+              aria-expanded="false" aria-controls="hf2RsaPanel"
               onclick="event.stopPropagation(); toggleHf2RsaPanel();"
               ontouchend="event.preventDefault(); event.stopPropagation(); toggleHf2RsaPanel();">
         <span class="hf2-rsa-strip__label"></span>
@@ -10800,6 +10836,17 @@
       <div class="hf2-rsa-panel" id="hf2RsaPanel" hidden>
         <ul class="hf2-rsa-panel__list"></ul>
         <button class="hf2-rsa-panel__add" type="button"></button>
+        <!-- Slice 6: inline add row replaces window.prompt() — a native
+             dialog is untranslatable, unstyleable and blocks the kiosk.
+             Deliberately NOT a <form> (the app's single form is pinned).
+             The input's value is customer-typed text: it is cleared by the
+             session wipe (SESSION_CONTACT_INPUT_IDS) and the row closes
+             through SESSION_LAYERS. -->
+        <div class="hf2-rsa-panel__addrow" id="hf2RsaAddRow" hidden>
+          <input type="text" class="hf2-rsa-panel__input" id="hf2RsaAddInput"
+                 autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false">
+          <button class="hf2-rsa-panel__confirm" id="hf2RsaAddConfirm" type="button"></button>
+        </div>
       </div>
     </div>
     </div>
@@ -20383,18 +20430,34 @@
       var current = (getHf2DeviceRsa() || '').toLowerCase();
       var roster = getHf2MergedRsaList();
       roster.forEach(function(rsaName) {
+        // Slice 6 a11y repair: a real <button> inside the <li> — focusable,
+        // in the tab order, announced, and touch-paired like every other
+        // control (the old bare list-item click handler was none of those).
         var li = document.createElement('li');
-        li.className = 'hf2-rsa-panel__item';
-        if (current && rsaName.toLowerCase() === current) {
-          li.classList.add('hf2-rsa-panel__item--current');
-        }
-        li.textContent = rsaName;
-        li.onclick = function() { selectHf2Rsa(rsaName); };
+        var itemBtn = document.createElement('button');
+        itemBtn.type = 'button';
+        itemBtn.className = 'hf2-rsa-panel__item';
+        var isCurrent = !!current && rsaName.toLowerCase() === current;
+        if (isCurrent) itemBtn.classList.add('hf2-rsa-panel__item--current');
+        itemBtn.setAttribute('aria-current', isCurrent ? 'true' : 'false');
+        itemBtn.textContent = rsaName;
+        itemBtn.onclick = function() { selectHf2Rsa(rsaName); };
+        itemBtn.ontouchend = function(event) { event.preventDefault(); selectHf2Rsa(rsaName); };
+        li.appendChild(itemBtn);
         listEl.appendChild(li);
       });
       var es = currentLang === 'es';
       addBtn.textContent = es ? '+ agregar vendedor' : '+ add salesperson';
-      addBtn.onclick = addHf2Rsa;
+      addBtn.onclick = toggleHf2RsaAddRow;
+      addBtn.ontouchend = function(event) { event.preventDefault(); toggleHf2RsaAddRow(); };
+      var addInput = document.getElementById('hf2RsaAddInput');
+      var addConfirm = document.getElementById('hf2RsaAddConfirm');
+      if (addInput) addInput.setAttribute('aria-label', es ? 'Nombre del vendedor' : 'Salesperson name');
+      if (addConfirm) {
+        addConfirm.textContent = es ? 'Agregar' : 'Add';
+        addConfirm.onclick = confirmHf2RsaAdd;
+        addConfirm.ontouchend = function(event) { event.preventDefault(); confirmHf2RsaAdd(); };
+      }
     }
 
     // iOS Safari can fire both touchend and click on a single tap. The button's
@@ -20421,7 +20484,48 @@
       } else {
         panel.setAttribute('hidden', '');
       }
+      // aria-expanded is DERIVED from the panel's actual state on every
+      // toggle; the wipe path (which hides the panel via SESSION_LAYERS
+      // without coming through here) resets the attribute through its own
+      // layer entry, so the two can never disagree across a session wipe.
+      var strip = document.getElementById('hf2RsaStripBtn');
+      if (strip) strip.setAttribute('aria-expanded', panel.hasAttribute('hidden') ? 'false' : 'true');
+      if (panel.hasAttribute('hidden')) {
+        var addRow = document.getElementById('hf2RsaAddRow');
+        if (addRow) addRow.hidden = true;
+      }
     };
+
+    // Escape inside the panel closes it and returns focus to the strip —
+    // the pattern every other closable layer on this screen follows.
+    document.addEventListener('keydown', function(event) {
+      if (event.key !== 'Escape') return;
+      var panel = document.getElementById('hf2RsaPanel');
+      if (!panel || panel.hasAttribute('hidden')) return;
+      if (!panel.contains(document.activeElement) &&
+          document.activeElement !== document.getElementById('hf2RsaStripBtn')) return;
+      window.toggleHf2RsaPanel('close');
+      var strip = document.getElementById('hf2RsaStripBtn');
+      if (strip && typeof strip.focus === 'function') strip.focus();
+    });
+
+    // The inline add row: open + focus, confirm on the button or Enter.
+    function toggleHf2RsaAddRow() {
+      var row = document.getElementById('hf2RsaAddRow');
+      var input = document.getElementById('hf2RsaAddInput');
+      if (!row) return;
+      row.hidden = !row.hidden;
+      if (!row.hidden && input && typeof input.focus === 'function') input.focus();
+    }
+    function confirmHf2RsaAdd() {
+      var input = document.getElementById('hf2RsaAddInput');
+      if (!input) return;
+      var name = (input.value || '').trim();
+      if (!name) return;
+      input.value = '';
+      persistHf2UserAddedRsa(name);
+      selectHf2Rsa(name);
+    }
 
     function selectHf2Rsa(name) {
       if (!name) return;
@@ -20431,25 +20535,19 @@
       window.toggleHf2RsaPanel('close');
     }
 
-    // Add-RSA via prompt(). Validates: null (cancel), empty, whitespace-only
-    // all reject without writing. Successful add auto-selects the new name —
-    // intentional for the floor case (RSA adds themselves at start of shift,
-    // immediately owns this device). Edge case: a manager doing bulk roster
-    // setup will end up with the device assigned to whoever they typed last;
-    // that's acceptable since the manager will reassign or hand off the
-    // device anyway. Floor flow stays fast — no confirmation prompt.
-    function addHf2Rsa() {
-      var es = currentLang === 'es';
-      var promptText = es
-        ? 'Nombre del vendedor para agregar a la lista:'
-        : 'Salesperson name to add to the list:';
-      var raw = window.prompt(promptText);
-      if (raw === null) return;
-      var name = raw.trim();
-      if (!name) return;
-      persistHf2UserAddedRsa(name);
-      selectHf2Rsa(name);
-    }
+    // Add-RSA is the inline row above (Slice 6): window.prompt() was the
+    // file's only native dialog — untranslatable, unstyleable, and it blocks
+    // the kiosk's event loop. Validation is unchanged: empty and
+    // whitespace-only reject without writing; a successful add auto-selects
+    // the new name (the floor case: an RSA adds themselves at the start of a
+    // shift and immediately owns this device).
+
+    document.addEventListener('keydown', function(event) {
+      if (event.key !== 'Enter') return;
+      if (document.activeElement !== document.getElementById('hf2RsaAddInput')) return;
+      event.preventDefault();
+      confirmHf2RsaAdd();
+    });
 
     // Outside-click closes the panel. Registered once on document; checks the
     // event target against the strip and panel to avoid closing on the trigger
@@ -21121,7 +21219,7 @@
     // Contact fields. Cleared three ways: form.reset(), value, and
     // defaultValue — a value written into the `value` ATTRIBUTE survives
     // form.reset() and would be restored under the next customer.
-    var SESSION_CONTACT_INPUT_IDS = ['emailNameInput', 'emailInput', 'emailPhoneInput'];
+    var SESSION_CONTACT_INPUT_IDS = ['emailNameInput', 'emailInput', 'emailPhoneInput', 'hf2RsaAddInput'];
 
     // Generated customer content. Every one of these is rebuilt by its own
     // screen's render path before it can be seen again.
@@ -21208,6 +21306,8 @@
       // The RSA roster panel is hidden-attribute-driven (toggleHf2RsaPanel);
       // it never carries an is-open class, so a class strip cannot close it.
       { id: 'hf2RsaPanel', hiddenAttr: true },
+      { id: 'hf2RsaAddRow', hiddenAttr: true },
+      { id: 'hf2RsaStripBtn', attrs: { 'aria-expanded': 'false' } },
       // 0.5: the trial-priorities section returns to hidden on wipe, so even a
       // path that showed hf2 without re-rendering could not expose the prior
       // customer's label over a cleared list.
