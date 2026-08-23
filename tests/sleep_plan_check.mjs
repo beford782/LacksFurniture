@@ -791,6 +791,31 @@ if (gate("renderSleepPlan", RENDER_SRCS.every(Boolean) && !!FALLBACK_SRC && !!RE
   check("the Results 'Review with customer' CTA routes to the Plan", /id="reviewWithCustomerBtn" onclick="window\.showSleepPlan\('results'\)"/.test(norm));
   check("hf2Screen's spoken name is now distinct from the Plan's", dictEn["screen.handoff"] !== dictEn["screen.sleep_plan"] && dictEs["screen.handoff"] !== dictEs["screen.sleep_plan"]);
   check("the governed recovery strings are exact EN", dictEn["plan.priorities_recovery"] === "We couldn't prepare the trial priorities. Return to the Sleep Brief and try again." && dictEn["plan.priorities_recovery_action"] === "Return to Sleep Brief");
+  // ---- Slice 6 C2: retitle, honest CTA, attribution, secondary Plan route --
+  section("Slice 6 C2 — Summary identity and routes");
+  check("the Results CTA names its destination: 'Review Sleep Plan' in both languages (runtime writer)",
+    /reviewWithCustomerBtn'\)\.textContent = es \? 'Revisar Plan de Sueño →' : 'Review Sleep Plan →';/.test(norm));
+  check("...and the static fallback label matches", /window\.showSleepPlan\('results'\);">Review Sleep Plan →<\/button>/.test(norm));
+  check("the Summary's visible title is 'Your Consultation Summary' / 'Tu Resumen de Consulta' (no longer the Plan's name)",
+    /hf2ReviewTitle: es \? 'Tu Resumen de Consulta' : 'Your Consultation Summary',/.test(norm)
+    && /id="hf2ReviewTitle">Your Consultation Summary<\/h1>/.test(norm)
+    && !/Review Your Sleep Plan/.test(norm));
+  check("the Summary's back control uses the SAME dictionary pair as the Plan's (plan.back_to_matches) — no inline fork",
+    /backBtn\.textContent = t\('plan\.back_to_matches'\);/.test(norm)
+    && !/'← Volver a colchones' : '← Back to matches'/.test(norm));
+  check("the secondary 'Review Sleep Plan' action exists with the Invariant-10 pair and the 'summary' origin",
+    /id="hf2ReviewPlanBtn" type="button"\s*\r?\n\s*onclick="window\.showSleepPlan\('summary'\)"\s*\r?\n\s*ontouchend="event\.preventDefault\(\);window\.showSleepPlan\('summary'\);"/.test(norm)
+    && (norm.match(/window\.showSleepPlan\('summary'\)/g) || []).length === 2);
+  check("...its label comes from the dictionary and it hides while Results state is absent",
+    /planBtn\.textContent = t\('hf2\.review_plan'\);/.test(norm) && /planBtn\.hidden = !_resultsState;/.test(norm)
+    && typeof dictEn["hf2.review_plan"] === "string" && typeof dictEs["hf2.review_plan"] === "string"
+    && dictEn["hf2.review_plan"] !== dictEs["hf2.review_plan"]);
+  check("the attribution line is config-derived only (storeName + voice.retailerSubline) and hides when blank",
+    /var attribution = document\.getElementById\('hf2Attribution'\);/.test(norm)
+    && /storeName\(\) \? \(attrSub \? storeName\(\) \+ ' · ' \+ attrSub : storeName\(\)\) : '';/.test(norm)
+    && /attribution\.hidden = !attrText;/.test(norm)
+    && /id="hf2Attribution" hidden><\/div>/.test(norm));
+
   check("the Plan's generated containers are in the content/text wipe inventories",
     ["sleepPlanFinalist", "sleepPlanPriorities", "sleepPlanCompared", "sleepPlanSystem", "sleepPlanFinancingInterest"].every((id) => new RegExp(`'${id}'`).test((norm.match(/var SESSION_CONTENT_IDS = \[[\s\S]*?\];/) || [""])[0]))
     && /'sleepPlanFinancingStatus', 'sleepPlanPrioritiesRecoveryText'/.test(norm));

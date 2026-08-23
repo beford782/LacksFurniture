@@ -3507,6 +3507,14 @@
       margin: 0 auto 1.5rem;
       text-align: center;
     }
+    .hf2-review-attribution {
+      font-family: var(--font-sans);
+      font-size: 0.72rem;
+      letter-spacing: 1.6px;
+      text-transform: uppercase;
+      color: var(--color-text-muted);
+      margin-bottom: 0.5rem;
+    }
     .hf2-review-eyebrow,
     .hf2-review-section__label {
       font-size: 0.68rem;
@@ -10455,7 +10463,7 @@
       <div class="noct-results-footer">
         <div class="noct-results-footer-actions">
           <button class="noct-results-cta" id="buildSystemBtn" onclick="window.showAccessories()" ontouchend="event.preventDefault();window.showAccessories();">Build Your Sleep System →</button>
-          <button class="noct-results-review-btn" id="reviewWithCustomerBtn" onclick="window.showSleepPlan('results')" ontouchend="event.preventDefault();window.showSleepPlan('results');">Review with customer →</button>
+          <button class="noct-results-review-btn" id="reviewWithCustomerBtn" onclick="window.showSleepPlan('results')" ontouchend="event.preventDefault();window.showSleepPlan('results');">Review Sleep Plan →</button>
         </div>
         <div class="noct-results-footer-hint" id="resultsFooterHint"></div>
       </div>
@@ -10749,8 +10757,13 @@
       <!-- Sleep Signature stamp (D2, Slice 2). Stamp only: this screen's
            layout, resolver, rows, priorities and copy are untouched. -->
       <div class="hf2-review-signature" id="hf2Signature"></div>
+      <!-- Store attribution (Slice 6, D5c): storeName + the configured
+           consultation subline, config-derived only — never a literal, never
+           heritage copy (the Welcome eyebrow owns that). Empty config hides
+           it entirely. Not customer-derived, so not in the wipe inventory. -->
+      <div class="hf2-review-attribution" id="hf2Attribution" hidden></div>
       <div class="hf2-review-eyebrow" id="hf2ReviewEyebrow">Review with the customer</div>
-      <h1 class="hf2-review-title" id="hf2ReviewTitle">Review Your Sleep Plan</h1>
+      <h1 class="hf2-review-title" id="hf2ReviewTitle">Your Consultation Summary</h1>
       <p class="hf2-review-subtitle" id="hf2ReviewSubtitle">A quick recap of what matters, what felt best, and what to keep on the shortlist.</p>
     </div>
 
@@ -10866,6 +10879,12 @@
         <span>Savings Pass</span>
         <span>Reveal for customer →</span>
       </button>
+      <!-- Secondary route back into the trial plan (Slice 6): a deliberate,
+           labelled action — never an origin-aware Back. Hidden while the
+           Results state does not exist (showSleepPlan would no-op). -->
+      <button class="hf2-back-btn" id="hf2ReviewPlanBtn" type="button"
+              onclick="window.showSleepPlan('summary')"
+              ontouchend="event.preventDefault();window.showSleepPlan('summary');"></button>
       <button class="hf2-send-btn" id="hf2SendBtn" type="button"></button>
     </section>
 
@@ -15435,7 +15454,10 @@
         ? 'Empieza con la primera opción y compara cómo se sienten las demás. Tu comodidad decide cuál permanece.'
         : 'Start with the first option, then compare how the others feel. Your comfort decides what stays.';
       document.getElementById('buildSystemBtn').textContent = es ? 'Crea Tu Sistema de Sueño →' : 'Build Your Sleep System →';
-      document.getElementById('reviewWithCustomerBtn').textContent = es ? 'Revisar con el cliente →' : 'Review with customer →';
+      // Slice 6: the control opens the Sleep Plan screen, so it says so —
+      // the same label/destination honesty the Sleep Brief CTA adopted
+      // 2026-08-10. Wording mirrors plan.title.
+      document.getElementById('reviewWithCustomerBtn').textContent = es ? 'Revisar Plan de Sueño →' : 'Review Sleep Plan →';
       // Footer hint: fit-first financing line when financing is on, the
       // Savings Pass line only when the pass is enabled, empty otherwise.
       var footerHint = document.getElementById('resultsFooterHint');
@@ -19375,10 +19397,15 @@
     function renderHf2() {
       var es = currentLang === 'es';
       var backBtn = document.getElementById('hf2BackToMatches');
-      if (backBtn) backBtn.textContent = es ? '← Volver a colchones' : '← Back to matches';
+      // Same label pair the Plan's back control uses (plan.back_to_matches) —
+      // one string, two consumers, no fork. Route unchanged: Results.
+      if (backBtn) backBtn.textContent = t('plan.back_to_matches');
       var reviewCopy = {
         hf2ReviewEyebrow: es ? 'Revisar con el cliente' : 'Review with the customer',
-        hf2ReviewTitle: es ? 'Revisa Tu Plan de Sueño' : 'Review Your Sleep Plan',
+        // Slice 6 retitle: the screen's visible name now matches its spoken
+        // name (screen.handoff) and no longer collides with the Sleep Plan
+        // screen's own title.
+        hf2ReviewTitle: es ? 'Tu Resumen de Consulta' : 'Your Consultation Summary',
         hf2ReviewSubtitle: es
           ? 'Un resumen rápido de lo que importa, lo que se sintió mejor y lo que debe quedar en la lista.'
           : 'A quick recap of what matters, what felt best, and what to keep on the shortlist.',
@@ -19406,6 +19433,22 @@
         var el = document.getElementById(id);
         if (el) el.textContent = reviewCopy[id];
       });
+      // Store attribution: config-derived only (storeName + the consultation
+      // subline). Blank config hides the element — never a fallback literal.
+      var attribution = document.getElementById('hf2Attribution');
+      if (attribution) {
+        var attrSub = (localizedConfigBlock('voice') || {}).retailerSubline || '';
+        var attrText = storeName() ? (attrSub ? storeName() + ' · ' + attrSub : storeName()) : '';
+        attribution.textContent = attrText;
+        attribution.hidden = !attrText;
+      }
+      // Secondary route into the Sleep Plan (deliberate action, not a Back);
+      // hidden while Results state does not exist, where showSleepPlan no-ops.
+      var planBtn = document.getElementById('hf2ReviewPlanBtn');
+      if (planBtn) {
+        planBtn.textContent = t('hf2.review_plan');
+        planBtn.hidden = !_resultsState;
+      }
       var compareBtn = document.getElementById('hf2CompareBtn');
       if (compareBtn) compareBtn.textContent = t('hf2.compare_saved');
       var editSystemBtn = document.getElementById('hf2EditSystemBtn');
