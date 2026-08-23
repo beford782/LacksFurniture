@@ -20,16 +20,16 @@ they do not authorize merging either PR.
 | **WAIVED AS A PR #54 GATE — NATIVE SPANISH STILL PENDING** (owner ruling, Blake Ford, 2026-08-22) | the four priority strings `privacy.data_use_preview`, `privacy.data_use_live`, `review.help`, `safety.timeout_body` (§2.6) no longer block this preview-only merge — **not** native-reviewed, approved or final; Spanish provisional · the eight changed quiz ES lines stay on the consolidated ledger (§1) · native review is still required before Spanish showroom authorization or any live email/lead-enabled deployment, and either reopens it |
 | **COMPLETED — PHYSICAL DEVICE (owner attestation, 2026-08-22)** | Blake instructed the lead to treat all 21 compact checks as passed for `f748f59`: mounted iPad landscape and portrait, EN and ES; partner and solo paths; VoiceOver sanity pass; real Windows Aquatic and Desert forced colors. No export, screenshots or exact device-version metadata were supplied; the evidence limitation is recorded in `docs/trust-integrity-physical-gate-2026-08-21.md` §15. |
 | **DEFERRED — LATER PHASE** | tier options B (neutral initial tier) and D; the `partner_disturbance` preferred line (until 3.1 ships); heritage as an optional research condition; the Sleep System's own benefit-flavoured reason lines (1.4); the Results tier-tab overflow at 320px (1.3) |
-| **NOT AUTHORIZED** | per-question heritage rail, counts, awards, testimonials, QR codes, anecdotes · cross-tier highest-fit marker / global maximum (3.3 🔒) · showroom use · deployment · merging #54 or #53 (merge authorization is the one gate still open) · removing the draft-policy notice |
+| **NOT AUTHORIZED** | per-question heritage rail, counts, awards, testimonials, QR codes, anecdotes · cross-tier highest-fit marker / global maximum (3.3 🔒) · showroom use · live email / lead collection / a non-blank `gasUrl` · merging or modifying #53 · removing the draft-policy notice |
 
-**What still needs you (after your 2026-08-22 decisions, #1–#9 and #11–#13
-all recorded):** only the explicit authorization to merge (#14). Three heads, one set of application bytes: **physical-test head `f748f59`** (owner-attested device pass), **reviewed application head `9f27680`** (owner live review; CI run 32593585017 pass), and the **current PR/documentation head** (the latest docs-only commit recording these decisions). `index.html` and the `data/`, `demo/` and `incoming/` trees — every customer-visible byte, configuration, generated file and scoring input — are byte-identical across all three. After the reviewed head, and only by the owner's 2026-08-22 option-B direction on the external review, `tools/validation.py` (the build-admission validator) and `tests/mutation_sweep.mjs` changed; those are build tooling and test manifest, not the served application, so the physical and live-review passes are not reopened. Native review (#9 waived as a gate,
+**Nothing further is needed from you for this PR: #14 merge authorization was
+given 2026-08-22** (merge commit, branch kept, no squash/rebase). Merging to `main` publishes only the existing GitHub Pages preview. The authorization grants no showroom use, no live email or lead collection, no non-blank `gasUrl`, no final Spanish approval, no production/live-business approval beyond the existing preview deployment, and no permission to merge or modify PR #53. Three heads, one set of application bytes: **physical-test head `f748f59`** (owner-attested device pass), **reviewed application head `9f27680`** (owner live review; CI run 32593585017 pass), and the **current PR/documentation head** (the latest docs-only commit recording these decisions). `index.html` and the `data/`, `demo/` and `incoming/` trees — every customer-visible byte, configuration, generated file and scoring input — are byte-identical across all three. After the reviewed head, and only by the owner's 2026-08-22 option-B direction on the external review, `tools/validation.py` (the build-admission validator) and `tests/mutation_sweep.mjs` changed; those are build tooling and test manifest, not the served application, so the physical and live-review passes are not reopened. Native review (#9 waived as a gate,
 #10 on the consolidated ledger) stays owed before Spanish showroom use or any
 live-mode deployment. The physical packet is complete by your 2026-08-22
 attestation. The decision sheet directly below records what is decided and
 what remains.
 
-## Decision sheet — 2026-08-22, after the physical pass: 14 decisions (12 decided 2026-08-22, 1 remains: merge authorization)
+## Decision sheet — 2026-08-22, after the physical pass: all 14 decisions taken 2026-08-22
 
 **External review disposition (Blake Ford, 2026-08-22, option B).** When PR #54 left
 draft, the repository's automated Codex review left two P2 threads on
@@ -87,7 +87,7 @@ implies another. No decision here authorizes deployment or showroom use —
 | 11 ✅ | Owner live review | Your own walkthrough of the build that will merge — **PASSED, Blake Ford, 2026-08-22, at branch head `9f27680`** (app bytes identical to the attested `f748f59`; walked on the dry-run mirror, whose `index.html`, `store-config.json`, `quiz.json` and `dict-es.json` were re-verified byte-identical to the branch immediately before the walk). Reviewed the seven customer-visible changes in EN and the critical path in ES; Spanish viewed as provisional, not approved | — | — | — | Closes the live-review gate · not readiness, not merge. |
 | 12 ✅ | Readiness | Designate the final reviewed head and its CI run — **DESIGNATED, Blake Ford, 2026-08-22: reviewed application head `9f27680`**, CI run 32593585017 pass (18 checks); app bytes identical to the physical-test head `f748f59`; commits after it are documentation only and do not change the reviewed bytes. The current documentation head must still carry green CI before the PR is marked ready | `9f27680` | — | — | Ticks "Final CI at the reviewed head" · nothing else. |
 | 13 ✅ | Readiness | Explicit authorization to mark PR #54 ready for review — **AUTHORIZED, Blake Ford, 2026-08-22**, conditional on: all state/SHA checks passing, the reviewed-head designation recorded consistently, green CI on the current documentation-only head, and the checklist showing only the merge gate open. The lead flips draft → ready once those hold | — | — | — | The lead flips draft → ready · **not merge** (#14 stays open). |
-| 14 | Merge | Explicit authorization to merge PR #54 | — | Authorize · Hold | After #13; merge as a merge commit, branch kept, then PR #53 integrates the resulting `main` (R1). | Merges to `main` and deploys the Pages preview · not showroom use (hardening blocks), not PR #53. |
+| 14 ✅ | Merge | Explicit authorization to merge PR #54 — **AUTHORIZED, Blake Ford, 2026-08-22**: merge commit, keep the branch, no squash, no rebase; acknowledges that merging updates the Pages preview. Merging to `main` publishes only the existing GitHub Pages preview. The authorization grants no showroom use, no live email or lead collection, no non-blank `gasUrl`, no final Spanish approval, no production/live-business approval beyond the existing preview deployment, and no permission to merge or modify PR #53. | — | — | After #13; merge as a merge commit, branch kept, then PR #53 integrates the resulting `main` (R1). | Merges to `main` and deploys the Pages preview · not showroom use (hardening blocks), not PR #53. |
 
 **Decided 2026-08-22 (Blake Ford):** #1 all nine lines approved as proposed;
 #2 option A; #3, #4, #5 approved as shipped; #8 Blake Ford is the approver of
@@ -107,7 +107,10 @@ before Spanish showroom or live-mode use.
 `9f27680`; #13 ready-for-review authorized (conditional on green CI at the
 documentation head). **Not authorized: #14 merge.**
 
-**Remaining:** #14 only. #10 stays on the consolidated ledger.
+**Also 2026-08-22 (Blake Ford):** #14 merge authorized (after the external-review
+threads were resolved and the validator change recorded). **Remaining:** nothing
+for this PR; #10 stays on the consolidated ledger; Slice 5 (#53) integrates the
+resulting `main` next (R1).
 
 Legend — **Ranks:** the answer changes the sleep-fit ranking. **Consult:** it
 feeds the specialist's Consultation Summary. **Suggests:** it changes accessory

@@ -2279,8 +2279,12 @@ live-capable `gasUrl` rule preserved and documented with self-tests; the
 storage-negation phrase match narrowed to governed-data sentences with
 positive and negative self-tests (implementation report §33); validator and
 sweep manifest only, customer-visible bytes unchanged, physical and
-live-review passes not reopened. Still open under Exit 13: the explicit
-merge authorization only.
+live-review passes not reopened; eighteen external-review threads on that
+heuristic fixed, none waived (report §33). **Merge authorized 2026-08-22 by
+Blake Ford** — merge commit, branch kept; the merge publishes only the existing
+Pages preview and grants no showroom use, no live email, no non-blank `gasUrl`,
+no Spanish approval and nothing for PR #53. Exit 13 is complete on merge; the
+post-merge record (merge commit, Pages, served bytes) follows below.
 
 **Exit:**
 

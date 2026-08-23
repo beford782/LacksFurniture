@@ -1090,3 +1090,20 @@ later ready-for-review transition.
 All eighteen threads were answered on the PR with this rationale and resolved after
 the tests passed; the external reviewer was asked to re-inspect the change
 before the merge.
+
+## 34. Merge authorization (Blake Ford, 2026-08-22)
+
+Blake Ford explicitly authorized merging PR #54: a **merge commit**, source
+branch **kept**, no squash, no rebase, no auto-merge; acknowledging that a
+merge to `main` automatically updates the GitHub Pages preview. Merging to `main` publishes only the existing GitHub Pages preview. The authorization grants no showroom use, no live email or lead collection, no non-blank `gasUrl`, no final Spanish approval, no production/live-business approval beyond the existing preview deployment, and no permission to merge or modify PR #53.
+
+Pre-merge state at the time of recording: `origin/main` `4a76503`; PR #53
+open/draft at `6decbef`, untouched; PR #54 open, ready, MERGEABLE/CLEAN, all
+eighteen external-review threads resolved, auto-merge disabled; the
+application bytes (`index.html`, `data/`, `demo/`, `incoming/`) identical to
+the physically tested `f748f59` and the owner-reviewed `9f27680`; the
+validator and test changes after `9f27680` (§33) CI-green at `1b776a1`.
+The merge proceeds only after this record's own commit is CI-green and the
+PR re-verified ready and mergeable; the post-merge verification (merge
+commit, new `main`, Pages build/deploy, served `index.html` SHA-256
+`b0981e11…412321`, blank `gasUrl`, preview wording) is recorded in §35.
