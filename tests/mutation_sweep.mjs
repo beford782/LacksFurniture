@@ -1575,6 +1575,20 @@ const MUTATIONS = [
   ["plan: the announcement region for the Plan is never live",
     "      if (regionId === 'sleepPlanFinancingStatus') return finPlanVisible();",
     "      if (regionId === 'sleepPlanFinancingStatus') return false;", PAY],
+  // External review at eb7b124 (two P2s, both fixed): the recommended starting
+  // point lost its tier (showResults() never stamps one on the bucket entries),
+  // and the Consultation Summary's "Chosen" control toggled the finalist OFF.
+  ["plan: the recommended fallback returns the raw bucket entry again (no tier -> blank tier-and-position line)",
+    "        return Object.assign({}, _resultsState.tierData.gold[0], { tier: 'gold' });",
+    "        return _resultsState.tierData.gold[0];", PLAN],
+  ["plan: the recommended fallback stamps the tier onto the engine's shared entry (mutates tierData)",
+    "        return Object.assign({}, _resultsState.tierData.gold[0], { tier: 'gold' });",
+    "        _resultsState.tierData.gold[0].tier = 'gold'; return _resultsState.tierData.gold[0];", PLAN],
+  ["plan: the Consultation Summary's finalist control toggles the current finalist OFF again",
+    "    window.toggleFavoriteMattress = function(mattressId) {
+      window.chooseFinalist(mattressId);",
+    "    window.toggleFavoriteMattress = function(mattressId) {
+      if (window._favoriteMattressId === mattressId) { window._favoriteMattressId = ''; } else window.chooseFinalist(mattressId);", PLAN],
 
 ];
 

@@ -18089,10 +18089,14 @@
     // The engine's top pick, read ONCE here for the recommended-starting-point
     // presentation. This is a consume-only read of existing engine output
     // (Phase 1 constraint 2): tierData.gold[0] at its index, never re-ranked.
+    // showResults() keeps the tier as the bucket key only — the entries carry
+    // score/pct/meetsMatchThreshold but no `tier` property — so the known
+    // tier is attached to a shallow copy here (the tier-and-position line
+    // reads m.tier); the engine's own entry is never mutated.
     function finalistRecommendedFallback() {
       if (_resultsState && _resultsState.tierData && Array.isArray(_resultsState.tierData.gold)
           && _resultsState.tierData.gold[0]) {
-        return _resultsState.tierData.gold[0];
+        return Object.assign({}, _resultsState.tierData.gold[0], { tier: 'gold' });
       }
       return null;
     }
@@ -19882,13 +19886,14 @@
       });
     };
 
+    // The Consultation Summary's finalist control carries the same label as
+    // the Results producer ("Choose as finalist" / "Chosen ✓") and means the
+    // same thing: it SETS the finalist through chooseFinalist(), which is
+    // idempotent on the current finalist. Unsetting is the adjacent Remove
+    // control's job — a toggle-off here left the pick saved and made the next
+    // Plan render fall back to the recommended starting point unannounced.
     window.toggleFavoriteMattress = function(mattressId) {
-      if (window._favoriteMattressId === mattressId) {
-        window._favoriteMattressId = '';
-        if (typeof window._repaintFinalistControls === 'function') window._repaintFinalistControls();
-      } else {
-        window.chooseFinalist(mattressId);
-      }
+      window.chooseFinalist(mattressId);
       renderHf2();
     };
 

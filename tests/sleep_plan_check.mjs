@@ -223,7 +223,8 @@ section("contract / chooseFinalist() producer + atomic clears (R-1)");
 const CHOOSE_SRC = extractFunction("window.chooseFinalist = function(mattressId)");
 const TOGGLE_SAVE_SRC = extractFunction("window._toggleSavePick = function(mattressId)");
 const REMOVE_SRC = extractFunction("window.removeReviewMattress = function(mattressId)");
-if (gate("chooseFinalist", !!CHOOSE_SRC && !!TOGGLE_SAVE_SRC && !!REMOVE_SRC)) {
+const HF2_TOGGLE_SRC = extractFunction("window.toggleFavoriteMattress = function(mattressId)");
+if (gate("chooseFinalist", !!CHOOSE_SRC && !!TOGGLE_SAVE_SRC && !!REMOVE_SRC && !!HF2_TOGGLE_SRC)) {
   // Minimal executable environment: a results state with two gold mattresses,
   // a DOM stub that records button repaints, an analytics recorder.
   const mk = () => {
@@ -251,7 +252,8 @@ if (gate("chooseFinalist", !!CHOOSE_SRC && !!TOGGLE_SAVE_SRC && !!REMOVE_SRC)) {
            btn.classList.toggle('chosen', on); btn.setAttribute('aria-pressed', on ? 'true' : 'false'); btn.textContent = finalistButtonLabel(on);
          });
        };
-       ${REMOVE_SRC}`)(
+       ${REMOVE_SRC}
+       ${HF2_TOGGLE_SRC}`)(
       win, doc, resultsState, { log: (e, d) => events.push({ e, d }) }, (k) => k, (s) => (s ? "SAVED" : "SAVE"), () => "FEEL", () => {}, () => {});
     return { win, events, buttons };
   };
@@ -266,6 +268,24 @@ if (gate("chooseFinalist", !!CHOOSE_SRC && !!TOGGLE_SAVE_SRC && !!REMOVE_SRC)) {
     const before = win._favoriteMattressId;
     win.chooseFinalist("g6");
     check("re-choosing the current finalist is an idempotent no-op (never a toggle off)", win._favoriteMattressId === before && before === "g6");
+  }
+  {
+    // The Consultation Summary's control carries the SAME "Chosen ✓" label as
+    // the Results producer (finalistButtonLabel) and must mean the same thing:
+    // activating it on the current finalist keeps the finalist and keeps the
+    // pick saved. Unsetting belongs to the adjacent Remove control. (External
+    // review P2 at eb7b124: the hf2 control toggled the finalist OFF, so the
+    // next Plan render silently fell back to the recommended starting point.)
+    const { win } = mk();
+    win.toggleFavoriteMattress("g5");
+    check("hf2 control on an unchosen saved pick SETS it as finalist through the producer (saves + chooses)",
+      win._favoriteMattressId === "g5" && win._savedPicks.some((p) => p.id === "g5"));
+    win.toggleFavoriteMattress("g5");
+    check("hf2 control on the CURRENT finalist is idempotent — finalist kept, pick still saved (never a toggle off)",
+      win._favoriteMattressId === "g5" && win._savedPicks.some((p) => p.id === "g5"));
+    win.toggleFavoriteMattress("g6");
+    check("hf2 control on another pick REPLACES the finalist (single finalist), both picks stay saved",
+      win._favoriteMattressId === "g6" && win._savedPicks.some((p) => p.id === "g5") && win._savedPicks.some((p) => p.id === "g6"));
   }
   {
     const { win } = mk();
@@ -542,6 +562,22 @@ if (gate("renderSleepPlan", RENDER_SRCS.every(Boolean) && !!FALLBACK_SRC && !!RE
   { const env = makePlanEnv({ results: RESULTS, savedPicks: [{ id: "g2", name: "Gold Two", tier: "gold" }], favorite: "g9" }); env.api.render();
     check("stale favorite ('g9' unsaved): recommended state, never a promotion of saved[0]",
       env.els.sleepPlanFinalistLabel.textContent === "EN:finalist.recommended" && !/Gold Two/.test(env.els.sleepPlanFinalist.innerHTML)); }
+  { // PRODUCTION SHAPE: showResults() maps MATTRESSES[tier] entries with score/pct/
+    // meetsMatchThreshold and NO `tier` property (the tier is the bucket key only).
+    // The recommended starting point is read from that bucket, so its tier-and-
+    // position line must still resolve to Gold · lead. (External review P2 at
+    // eb7b124: the fallback returned the raw entry and the line rendered blank.)
+    const PROD = { tierData: { gold: [{ id: "g1", name: "Gold One", score: 90, pct: 100, meetsMatchThreshold: true },
+                                      { id: "g2", name: "Gold Two", score: 80, pct: 89, meetsMatchThreshold: true }], silver: [], bronze: [] } };
+    const env = makePlanEnv({ results: PROD, savedPicks: [], favorite: "" }); env.api.render();
+    const html = env.els.sleepPlanFinalist.innerHTML;
+    check("recommended starting point from PRODUCTION-shaped tierData (no tier stamp) still renders Gold One",
+      env.els.sleepPlanFinalistLabel.textContent === "EN:finalist.recommended" && /Gold One/.test(html));
+    check("…and its model line carries the GOLD tier label (results.tier_gold), not a blank tier",
+      /results\.tier_gold/.test(html) && !/results\.tier_(?![a-z])/.test(html));
+    check("…and the lead position within Gold (results.match_lead)", /results\.match_lead/.test(html));
+    check("the fallback does not mutate the engine's tierData entry (no tier stamped onto the shared object)",
+      !("tier" in PROD.tierData.gold[0])); }
   { const env = makePlanEnv({ results: { tierData: { gold: [], silver: [], bronze: [] } } }); env.api.render();
     check("no engine pick and no favorite: label is finalist.none, nothing rendered as a mattress, route-back offered",
       env.els.sleepPlanFinalistLabel.textContent === "EN:finalist.none" && !/hf2-pick__name/.test(env.els.sleepPlanFinalist.innerHTML) && /sleepPlanChooseFinalist/.test(env.els.sleepPlanFinalist.innerHTML)); }
