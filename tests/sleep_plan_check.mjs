@@ -585,6 +585,34 @@ if (gate("renderSleepPlan", RENDER_SRCS.every(Boolean) && !!FALLBACK_SRC && !!RE
     check("…and the lead position within Gold (results.match_lead)", /results\.match_lead/.test(html));
     check("the fallback does not mutate the engine's tierData entry (no tier stamped onto the shared object)",
       !("tier" in PROD.tierData.gold[0])); }
+  { // NO-FINALIST HONESTY (owner ruling 2026-08-23, Slice 5 C10). The Plan's
+    // priorities are the stored Sleep Brief prose; in the no-finalist state they
+    // sit beside "Recommended starting point / No finalist selected yet", so the
+    // real producer prose may not call the recommendation "the finalist". The
+    // trialFocus used here is built from the REAL priority strings in the
+    // producer source (every quoted argument of every addPriority(...) call),
+    // not a hand-written fixture — so a regression in the source is what fails.
+    const producer = (norm.match(/addPriority\(([\s\S]*?)\);/g) || []);
+    const strings = producer.flatMap((call) => [...call.matchAll(/'((?:[^'\\]|\\.)*)'/g)].map((m) => m[1]));
+    check("the producer source exposes its priority strings (harness sanity)", producer.length >= 5 && strings.length >= 20);
+    check("no producer priority string says 'the finalist' / 'el finalista' (source)",
+      !strings.some((s) => /\bfinalist(a|as|s)?\b/i.test(s)), strings.filter((s) => /finalist/i.test(s)).join(" | "));
+    const PROD2 = { tierData: { gold: [{ id: "g1", name: "Gold One", score: 90, pct: 100, meetsMatchThreshold: true }], silver: [], bronze: [] } };
+    const realFocus = [{ en: "Comfortable elevation", es: "Elevación cómoda",
+      why: { en: strings.find((s) => /raised upper body/i.test(s)) || "", es: strings.find((s) => /posición elevada/i.test(s)) || "" },
+      test: { en: strings.find((s) => /^Try the .* flat, then with the head/i.test(s)) || "", es: strings.find((s) => /^Prueba el .* plano y luego/i.test(s)) || "" } }];
+    check("the real 'Comfortable elevation' prose was located in the producer source", !!realFocus[0].test.en && !!realFocus[0].test.es && !!realFocus[0].why.en);
+    for (const lang of ["en", "es"]) {
+      const env = makePlanEnv({ results: PROD2, savedPicks: [], favorite: "", trialFocus: realFocus, lang }); env.api.render();
+      const plain = (env.els.sleepPlanPriorities.innerHTML + " " + env.els.sleepPlanFinalist.innerHTML).replace(/(EN|ES):[a-z_.]+/g, "");
+      check(`[${lang}] no-finalist Plan: the finalist block is the RECOMMENDED state (not a finalist)`,
+        env.els.sleepPlanFinalistLabel.textContent === (lang === "es" ? "ES:" : "EN:") + "finalist.recommended");
+      check(`[${lang}] no-finalist Plan: the rendered priority and finalist markup never calls the recommendation 'the finalist' (dictionary keys excluded)`,
+        !/\bfinalist(a|as|s)?\b/i.test(plain), plain.slice(0, 200));
+      check(`[${lang}] no-finalist Plan: the testing line says 'mattress' / 'colchón'`,
+        lang === "es" ? /colchón plano/.test(env.els.sleepPlanPriorities.innerHTML) : /mattress flat/.test(env.els.sleepPlanPriorities.innerHTML));
+    }
+  }
   { const env = makePlanEnv({ results: { tierData: { gold: [], silver: [], bronze: [] } } }); env.api.render();
     check("no engine pick and no favorite: label is finalist.none, nothing rendered as a mattress, route-back offered",
       env.els.sleepPlanFinalistLabel.textContent === "EN:finalist.none" && !/hf2-pick__name/.test(env.els.sleepPlanFinalist.innerHTML) && /sleepPlanChooseFinalist/.test(env.els.sleepPlanFinalist.innerHTML)); }
