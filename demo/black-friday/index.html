@@ -8543,7 +8543,7 @@
     .drawer-promotion.is-visible { display: block; }
     .drawer-promotion__kicker {
       color: var(--accent-ink);
-      font: 750 10px/1.2 var(--font-sans);
+      font: 750 12px/1.2 var(--font-sans);
       letter-spacing: 0.2em;
       text-transform: uppercase;
     }
@@ -8568,7 +8568,7 @@
     .drawer-system-prompt.is-visible { display: block; }
     .drawer-system-prompt__eyebrow {
       color: #795A35;
-      font: 750 10px/1.2 var(--font-sans);
+      font: 750 12px/1.2 var(--font-sans);
       letter-spacing: 0.18em;
       text-transform: uppercase;
     }
@@ -10086,6 +10086,36 @@
       .session-utility__btn[aria-pressed="true"] { border-width: 3px; }
     }
 
+    /* ===== Slice 6: drawer control accessibility ==========================
+       Native disabled styling for the prev/next ends, a real focus
+       indicator for every drawer control (they previously fell back to the
+       UA default), and the forced-colors counterparts. Kept as its OWN
+       rule and its OWN forced-colors block: the file's FIRST forced-colors
+       block and the first block carrying aria-pressed+border-width are both
+       test-anchored and must stay where they are. */
+    .drawer-nav-btn:disabled {
+      opacity: 0.45;
+      cursor: default;
+    }
+    .drawer-back-to-results:focus-visible,
+    .drawer-nav-btn:focus-visible,
+    .drawer-reaction-row button:focus-visible,
+    .drawer-btn:focus-visible {
+      outline: 3px solid var(--focus-ring-outer);
+      outline-offset: 2px;
+      box-shadow: 0 0 0 5px var(--focus-ring-inner);
+    }
+    @media (forced-colors: active) {
+      .drawer-back-to-results:focus-visible,
+      .drawer-nav-btn:focus-visible,
+      .drawer-reaction-row button:focus-visible,
+      .drawer-btn:focus-visible {
+        outline-color: CanvasText;
+        box-shadow: none;
+      }
+      .drawer-reaction-row button[aria-pressed="true"] { border-width: 3px; }
+    }
+
     /* 320px CSS px and 200%-zoom reflow: labels stay whole words and never
        truncate; the bar wraps instead. */
     @media (max-width: 400px) {
@@ -10653,9 +10683,9 @@
         <div class="drawer-try-prompts" id="drawerTryPrompts"></div>
         <div class="drawer-section-label" id="drawerReactionLabel">How did it feel?</div>
         <div class="drawer-reaction-row" id="drawerReactionRow">
-          <button type="button" data-reaction="soft" onclick="window.setDrawerReaction('soft')" ontouchend="event.preventDefault();window.setDrawerReaction('soft');">Too Soft</button>
-          <button type="button" data-reaction="good" onclick="window.setDrawerReaction('good')" ontouchend="event.preventDefault();window.setDrawerReaction('good');">Good Feel</button>
-          <button type="button" data-reaction="firm" onclick="window.setDrawerReaction('firm')" ontouchend="event.preventDefault();window.setDrawerReaction('firm');">Too Firm</button>
+          <button type="button" data-reaction="soft" aria-pressed="false" onclick="window.setDrawerReaction('soft')" ontouchend="event.preventDefault();window.setDrawerReaction('soft');">Too Soft</button>
+          <button type="button" data-reaction="good" aria-pressed="false" onclick="window.setDrawerReaction('good')" ontouchend="event.preventDefault();window.setDrawerReaction('good');">Good Feel</button>
+          <button type="button" data-reaction="firm" aria-pressed="false" onclick="window.setDrawerReaction('firm')" ontouchend="event.preventDefault();window.setDrawerReaction('firm');">Too Firm</button>
         </div>
         <div class="drawer-cta-row">
           <button id="drawerInterestedBtn" class="drawer-btn drawer-btn-primary" onclick="window.saveDrawerPick()" ontouchend="event.preventDefault();window.saveDrawerPick();">Save for later</button>
@@ -19987,14 +20017,29 @@
       renderHf2();
     };
 
+    // Slice 6 a11y repair: ONE painter for the reaction row, called from the
+    // drawer-open path and from the tap handler, so the two can never drift.
+    // Selected state is announced (aria-pressed) and carried by a non-colour
+    // cue (the check mark) in addition to the colour treatment.
+    function paintDrawerReactions(mattressId) {
+      var labels = currentLang === 'es'
+        ? { soft: 'Muy Suave', good: 'Buena Sensación', firm: 'Muy Firme' }
+        : { soft: 'Too Soft', good: 'Good Feel', firm: 'Too Firm' };
+      var selected = (window._mattressReactions || {})[mattressId];
+      document.querySelectorAll('#drawerReactionRow button').forEach(function(btn) {
+        var reaction = btn.getAttribute('data-reaction');
+        var isSelected = selected === reaction;
+        btn.textContent = (isSelected ? '\u2713 ' : '') + labels[reaction];
+        btn.classList.toggle('is-selected', isSelected);
+        btn.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+      });
+    }
     window.setDrawerReaction = function(reaction) {
       var mattressId = window._currentDrawerMattressId;
       if (!mattressId) return;
       window._mattressReactions = window._mattressReactions || {};
       window._mattressReactions[mattressId] = reaction;
-      document.querySelectorAll('#drawerReactionRow button').forEach(function(btn) {
-        btn.classList.toggle('is-selected', btn.getAttribute('data-reaction') === reaction);
-      });
+      paintDrawerReactions(mattressId);
     };
 
     // The Consultation Summary's finalist control carries the same label as
@@ -21984,14 +22029,22 @@
       var navLabel = document.getElementById('drawerNavLabel');
       var prevBtn = document.getElementById('drawerPrevBtn');
       var nextBtn = document.getElementById('drawerNextBtn');
+      // Slice 6 a11y repair: NATIVE disabled at the ends. The old inline
+      // opacity/pointer-events pair left the buttons focusable and announced
+      // as enabled while taps silently no-opped, and the single-item branch
+      // never cleared the styles. disabled drops them from the drawer's tab
+      // cycle (drawerKeydown already filters el.disabled), announces
+      // correctly, and renders natively in forced colors.
       if (navLabel && window._drawerOrder.length > 1) {
         navLabel.textContent = (window._drawerCurrentIndex + 1) + (currentLang === 'es' ? ' de ' : ' of ') + window._drawerOrder.length;
-        prevBtn.style.opacity = window._drawerCurrentIndex > 0 ? '1' : '0.3';
-        prevBtn.style.pointerEvents = window._drawerCurrentIndex > 0 ? 'auto' : 'none';
-        nextBtn.style.opacity = window._drawerCurrentIndex < window._drawerOrder.length - 1 ? '1' : '0.3';
-        nextBtn.style.pointerEvents = window._drawerCurrentIndex < window._drawerOrder.length - 1 ? 'auto' : 'none';
+        prevBtn.disabled = window._drawerCurrentIndex <= 0;
+        nextBtn.disabled = window._drawerCurrentIndex >= window._drawerOrder.length - 1;
       }
-      if (navLabel && window._drawerOrder.length <= 1) navLabel.textContent = '';
+      if (navLabel && window._drawerOrder.length <= 1) {
+        navLabel.textContent = '';
+        prevBtn.disabled = true;
+        nextBtn.disabled = true;
+      }
 
       var drawer = document.getElementById('mattressDrawer');
       drawer.classList.remove('silver-drawer','bronze-drawer');
@@ -22076,14 +22129,7 @@
         return '<div class="drawer-try-prompt">' + escapeHtml(prompt) + '</div>';
       }).join('');
       document.getElementById('drawerReactionLabel').textContent = currentLang === 'es' ? '¿Cómo se sintió?' : 'How did it feel?';
-      var reactionLabels = currentLang === 'es'
-        ? { soft: 'Muy Suave', good: 'Buena Sensación', firm: 'Muy Firme' }
-        : { soft: 'Too Soft', good: 'Good Feel', firm: 'Too Firm' };
-      document.querySelectorAll('#drawerReactionRow button').forEach(function(btn) {
-        var reaction = btn.getAttribute('data-reaction');
-        btn.textContent = reactionLabels[reaction];
-        btn.classList.toggle('is-selected', (window._mattressReactions || {})[mattressId] === reaction);
-      });
+      paintDrawerReactions(mattressId);
 
       // opts.contentOnly — relocalise an ALREADY-OPEN drawer without touching
       // the dialog lifecycle. A language switch must not re-run focus entry,
