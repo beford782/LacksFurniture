@@ -3466,8 +3466,14 @@
     /* Screen-level layout override mirroring .noct-handoff's column override
        of the .screen.active flex-row default. Added 2026-05-02 after step 3
        visual verification surfaced row-layout issues (RSA strip on left,
-       brief and timeline side-by-side, timeline rail line not drawing). */
-    #hf2Screen.active {
+       brief and timeline side-by-side, timeline rail line not drawing).
+       The Sleep Plan is the same shape — a multi-block screen on the hf2
+       classes — and shipped without this override (hotfix 2026-08-23): every
+       screen with more than one direct child needs it, and
+       tests/sleep_plan_check.mjs now derives that requirement from the
+       screen roster. */
+    #hf2Screen.active,
+    #sleepPlanScreen.active {
       flex-direction: column;
       padding: 1.25rem;
     }
@@ -8742,10 +8748,12 @@
     }
 
     /* ===== SURGICAL SHOWROOM WORK THEME =====
-       The consultation launch, results, guided trials, comparisons, review, and
-       Savings Pass share a warm workspace for salesperson and customer. */
+       The consultation launch, results, guided trials, comparisons, the Sleep
+       Plan, review, and Savings Pass share a warm workspace for salesperson and
+       customer. */
     body:has(#profileScreen.active),
     body:has(#resultsScreen.active),
+    body:has(#sleepPlanScreen.active),
     body:has(#hf2Screen.active),
     body:has(#accessoriesScreen.active),
     body:has(#emailScreen.active) {
@@ -8765,6 +8773,7 @@
 
     #profileScreen.active,
     #resultsScreen.active,
+    #sleepPlanScreen.active,
     #hf2Screen.active,
     #accessoriesScreen.active {
       background: #F3EEE5;
@@ -8775,7 +8784,9 @@
     #resultsScreen .noct-support-role,
     #resultsScreen .noct-tier-descriptor .tier-name,
     #hf2Screen .hf2-review-eyebrow,
-    #hf2Screen .hf2-review-section__label {
+    #hf2Screen .hf2-review-section__label,
+    #sleepPlanScreen .hf2-review-eyebrow,
+    #sleepPlanScreen .hf2-review-section__label {
       color: var(--accent-ink);
     }
     #resultsScreen .noct-results-headline .accent {
@@ -8788,7 +8799,8 @@
        which is ~1.5:1 on this cream and cannot carry that job. */
     #resultsScreen .noct-toppick,
     #resultsScreen .noct-support-card,
-    #hf2Screen .hf2-review-section {
+    #hf2Screen .hf2-review-section,
+    #sleepPlanScreen .hf2-review-section {
       border-radius: 10px;
       box-shadow: 0 8px 24px rgba(55,40,28,0.06);
     }
@@ -8957,11 +8969,14 @@
       color: #2F271E;
     }
 
-    #hf2Screen .hf2-review-section {
+    #hf2Screen .hf2-review-section,
+    #sleepPlanScreen .hf2-review-section {
       background: #FFFDF8;
     }
     #hf2Screen .hf2-pick,
-    #hf2Screen .hf2-acc-card {
+    #hf2Screen .hf2-acc-card,
+    #sleepPlanScreen .hf2-pick,
+    #sleepPlanScreen .hf2-acc-card {
       border-radius: 8px;
     }
     #hf2Screen .hf2-pick--gold {
@@ -8977,6 +8992,15 @@
     }
     #hf2Screen .hf2-review-finale .hf2-send-btn {
       border-color: var(--accent-ink);
+      background: var(--store-primary);
+      color: var(--on-store-primary);
+    }
+    /* The Plan's forward control sits in a .hf2-review-nav, not a
+       .hf2-review-finale, so the restatement above cannot reach it, and the
+       base .hf2-send-btn pairs --color-bg on --color-accent — 3.67:1 on this
+       theme. Same fill and ink as the Summary's Send button. (Hotfix
+       2026-08-23: the Plan shipped with none of this screen's theme.) */
+    #sleepPlanScreen .hf2-send-btn {
       background: var(--store-primary);
       color: var(--on-store-primary);
     }
