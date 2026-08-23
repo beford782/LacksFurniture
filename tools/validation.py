@@ -403,6 +403,7 @@ _VERB_LIKE = frozenset((
 
 
 _COORDINATORS = frozenset(("and", "or", "nor", "y", "e", "o", "u", "ni"))
+_RELATIVE_PRONOUNS = frozenset(("who", "whom", "whose", "which", "that", "quien", "quienes", "que", "cual", "cuales"))
 _LIST_ITEM_MAX_WORDS = 4
 
 
@@ -430,7 +431,14 @@ def _destination_continuation(clause_after: str, rest_after: str) -> str:
             continue
         if tokens[0] in _CLAUSE_STARTERS or any(t in _VERB_LIKE for t in tokens):
             break
-        if not (any(t in _COORDINATORS for t in tokens) or len(tokens) <= _LIST_ITEM_MAX_WORDS):
+        if any(t in _RELATIVE_PRONOUNS for t in tokens):
+            break  # "anyone WHO asks receives support" is a clause, not an item
+        if tokens[0] in _COORDINATORS:
+            # ", and X": a clause-level coordinator unless X is itself a short
+            # list item ("and to anyone else") — thread 18
+            if len(tokens) - 1 > _LIST_ITEM_MAX_WORDS:
+                break
+        elif not (any(t in _COORDINATORS for t in tokens) or len(tokens) <= _LIST_ITEM_MAX_WORDS):
             break
         out.append(segment)
     return " ".join(out)
@@ -4365,6 +4373,25 @@ def _self_test() -> int:
     c = _good_config(); c["text"] = {"privacyBody": "Your answers are not sent to lenders — or anyone else."}
     check("an emphatic dash continuation ('— or anyone else') is still absolute -> rejected",
           any("preview-mode wording" in e for e in validate_store_config(c).errors))
+    # External review thread 18 (2026-08-22): a coordinated CLAUSE (", and
+    # anyone who asks receives support") is not a destination continuation.
+    for phrase in ("Your answers are not sent to lenders, and anyone who asks receives support.",
+                   "Your answers are not sent to lenders, and anyone needing help receives support.",
+                   "Your answers are not shared with advertisers, or anyone on our team explains why.",
+                   "Tus respuestas no se envían a prestamistas, y cualquiera que pregunte recibe ayuda."):
+        c = _good_config(); c["text"] = {"privacyBody": phrase}; c["text_es"] = {"privacyBody": phrase}
+        check(f"a coordinated clause after ', and' is not a destination -> accepted: {phrase[:44]!r}",
+              validate_store_config(c).ok)
+    for phrase in ("Your answers are not sent to lenders, and to anyone else.",
+                   "Your answers are not sent to lenders, or anyone else.",
+                   "Your answers are not sent to lenders, and nobody else."):
+        c = _good_config(); c["text"] = {"privacyBody": phrase}
+        check(f"', and/or' + a short universal item still continues the destination -> rejected: {phrase[:44]!r}",
+              any("preview-mode wording" in e for e in validate_store_config(c).errors))
+    check("_destination_continuation: a leading coordinator needs a short item after it; a relative pronoun stops",
+          _destination_continuation(" to lenders", " to lenders, and anyone who asks receives support") == " to lenders"
+          and _destination_continuation(" to lenders", " to lenders, and anyone needing help receives support") == " to lenders"
+          and _destination_continuation(" to lenders", " to lenders, and to anyone else") == " to lenders  and to anyone else")
     # External review thread 14 (2026-08-22): the determiner "any" / "ningún"
     # before a noun is SCOPED (the quantified form of "to lenders"), not
     # universal; only pronouns and universal phrases are absolute.
