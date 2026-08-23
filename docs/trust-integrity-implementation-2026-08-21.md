@@ -1,12 +1,20 @@
 # Trust integrity and transparency — implementation report (2026-08-21)
 
-**Status (three separate states, per `docs/deployment-workflow.md`):** the
-branch `claude/phase1-trust-integrity` is **pushed** to `origin`; a **draft PR**
-targets `main` (number and URL in §23); **nothing is merged, nothing is
-deployed, and nothing is showroom-authorized.** The device-matrix, VoiceOver
-and real Windows forced-colors gates passed by Blake's 2026-08-22 owner
-attestation at `f748f59` (§27); copy, legal/business, native-Spanish, privacy,
-owner-live-review and explicit readiness/merge decisions remain open.
+**Status at 2026-08-23 (three separate states, per
+`docs/deployment-workflow.md`):** the branch `claude/phase1-trust-integrity` is
+**pushed** to `origin` and kept at `084f2f0`; PR #54 is **merged** to `main`
+as merge commit `d4049cb` (2026-08-23 00:13Z); the Pages preview is
+**deployed** at exactly `d4049cb`, serving `index.html` SHA-256
+`b0981e11…412321` — the bytes physically tested at `f748f59` and
+owner-reviewed at `9f27680` (§35). **Nothing is showroom-authorized:** preview
+deployment only, `gasUrl` blank (no live email), Spanish provisional (native
+review still owed, privacy sentences first). The device-matrix, VoiceOver and
+real Windows forced-colors gates passed by Blake's 2026-08-22 owner attestation
+at `f748f59` (§27); copy, legal/business, privacy and owner-live-review
+decisions were answered by the owner and recorded in §28–§34; merge was authorized
+2026-08-22. Earlier sections below are dated history of how the branch got
+there and are not re-written; where they say "draft PR" or "nothing is
+merged", read them as of their own date.
 **Owner packet:** `docs/trust-integrity-owner-review-2026-08-21.md` (the nine
 quiz lines, the privacy sentences, the tier-presentation options, the
 founding-year decision, the physical checklists).
