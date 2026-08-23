@@ -155,8 +155,26 @@ check("required English restart title is exact", dictEn["safety.restart_title"] 
 check("required English restart body is exact",
   dictEn["safety.restart_body"] === "This clears the current answers, mattress selections, and Sleep Plan.");
 check("required English timeout title is exact", dictEn["safety.timeout_title"] === "Still comparing?");
+// Trust gate (owner ruling R5, 2026-08-21): the body is behaviourally exact
+// and names the dialog's REAL controls. The earlier "paused to protect your
+// privacy" reassurance described intent, not behaviour (a grace countdown runs
+// and the answers persist until it ends or Start new customer is pressed).
 check("required English timeout body is exact",
-  dictEn["safety.timeout_body"] === "Your session is paused to protect your privacy.");
+  dictEn["safety.timeout_body"] === "Session paused. Continue this session where you left off, or start a new customer to clear it.");
+check("required Spanish timeout body is exact (provisional, native review owed)",
+  dictEs["safety.timeout_body"] === "Sesión en pausa. Sigue en esta sesión donde la dejaste o empieza con otro cliente para borrarla.");
+// The sentence must use the same terminology as the two controls it refers to,
+// in each language: the cancel label verbatim and the confirm label's words.
+check("EN timeout body names the Continue control verbatim and the Start-new-customer control's terminology",
+  dictEn["safety.timeout_body"].toLowerCase().includes(dictEn["safety.timeout_continue"].toLowerCase())
+  && /start (a )?new customer/i.test(dictEn["safety.timeout_body"]) && dictEn["safety.timeout_confirm"] === "Start new customer");
+check("ES timeout body uses the controls' terminology (en esta sesión / con otro cliente)",
+  /en esta sesi[oó]n/i.test(dictEs["safety.timeout_body"]) && /con otro cliente/i.test(dictEs["safety.timeout_body"])
+  && /en esta sesi[oó]n/i.test(dictEs["safety.timeout_continue"]) && /con otro cliente/i.test(dictEs["safety.timeout_confirm"]));
+check("the timeout body claims nothing about privacy, protection, hiding, encryption, anonymity or transmission, and names no number",
+  ["en", "es"].every((l) => !/privac|protect|proteg|hidden|oculta|encrypt|cifra|anonym|anónim|\bsent\b|envia|envía|\d/i.test(l === "en" ? dictEn["safety.timeout_body"] : dictEs["safety.timeout_body"])));
+check("the timeout body is not a literal in index.html (dictionary-driven only)",
+  !html.includes("Session paused.") && !html.includes("Sesión en pausa."));
 // Spanish expansion must not blow the 320px bar apart. The bar wraps rather
 // than truncating, but a runaway label would still push the panel wide.
 for (const k of ["session.restart", "session.lang_en", "session.lang_es"]) {
@@ -550,8 +568,23 @@ check("backdrop is shown", !el("sessionSafetyBackdrop").hidden);
 check("focus entered the dialog title", doc.activeElement === el("sessionSafetyTitle"));
 check("dialog is in timeout mode", el("sessionSafetyDialog").getAttribute("data-mode") === "timeout");
 check("timeout title is the required copy", el("sessionSafetyTitle").textContent === "Still comparing?");
-check("timeout body is the required copy",
-  el("sessionSafetyBody").textContent === "Your session is paused to protect your privacy.");
+check("timeout body is the required copy (rendered through the real path)",
+  el("sessionSafetyBody").textContent === "Session paused. Continue this session where you left off, or start a new customer to clear it.");
+check("the rendered body equals the governed dictionary value (no drift between dict and render)",
+  el("sessionSafetyBody").textContent === dictEn["safety.timeout_body"]);
+// Same open dialog, relocalised through the real renderer with the Spanish
+// dictionary installed: the ES body renders, then English is restored.
+DICT = dictEs;
+S.renderSafety();
+check("open timeout dialog relocalises its body to the governed Spanish sentence",
+  el("sessionSafetyBody").textContent === dictEs["safety.timeout_body"]
+  && el("sessionSafetyTitle").textContent === dictEs["safety.timeout_title"]
+  && el("sessionSafetyCancel").textContent === dictEs["safety.timeout_continue"]
+  && el("sessionSafetyConfirm").textContent === dictEs["safety.timeout_confirm"]);
+DICT = dictEn;
+S.renderSafety();
+check("switching back restores the English timeout body",
+  el("sessionSafetyBody").textContent === dictEn["safety.timeout_body"]);
 check("remaining-time meter is shown in timeout mode", el("sessionSafetyMeter").hidden === false);
 check("meter reports a real remaining time", /\d+ seconds left/.test(el("sessionSafetyMeterText").textContent));
 
@@ -1082,9 +1115,15 @@ const REQUIRED_CONTENT_IDS = [
   // text over the next customer's session.
   "financingSheetCards", "hf2FinancingInterest", "hf2FinancingPrograms",
   "emailPreview", "emailRecap", "accessoriesGrid",
+  // Trust gate (2026-08-21): the four Sleep System containers hold
+  // answer-derived prose; "Restart clears them" must be true of the DOM, not
+  // only of the visible surfaces.
+  "sleepSystemMain", "sleepSystemGuidance", "sleepSystemRail", "sleepSystemPlanList",
 ];
 const REQUIRED_TEXT_IDS = [
   "dreamCodeValue", "dreamCodePct", "emailError", "drawerNavLabel", "accStatus",
+  // Trust gate (2026-08-21): the drawer's answer-derived text targets.
+  "drawerShortlistFit", "drawerSystemPromptTitle", "drawerSystemPromptReason",
   // Three separate financing regions on purpose: freshness, the sheet's
   // Consider/Clear announcement (new in Slice 4), and the handoff's
   // Not-right-now announcement. Each keeps its last utterance until something

