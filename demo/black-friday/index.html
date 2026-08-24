@@ -291,13 +291,6 @@
       font-size: 16px;
     }
 
-    .landing-time-estimate {
-      font-family: var(--font-sans);
-      font-size: 15px;
-      letter-spacing: 0.12em;
-      color: var(--landing-muted, var(--color-text-subtle));
-    }
-
     /* Data-use sentence: supporting copy at body size, never smaller than the
        help lines it sits beside; the same muted ink the sub-copy uses. */
     .landing-data-use {
@@ -601,9 +594,6 @@
         justify-content: center;
         padding: 18px 24px;
         font-size: 22px;
-      }
-      .landing-time-estimate {
-        font-size: 13px;
       }
       .landing-discount-tease {
         flex-direction: column;
@@ -3507,6 +3497,31 @@
       margin: 0 auto 1.5rem;
       text-align: center;
     }
+    .hf2-review-attribution {
+      font-family: var(--font-sans);
+      font-size: 0.72rem;
+      letter-spacing: 1.6px;
+      text-transform: uppercase;
+      color: var(--color-text-muted);
+      margin-bottom: 0.5rem;
+    }
+    .hf2-lead-line {
+      margin: 0.35rem 0 0;
+      font-size: 1rem;
+      line-height: 1.55;
+      color: var(--color-text);
+    }
+    .hf2-priorities {
+      margin: 8px 0 0;
+      padding-left: 1.5em;
+    }
+    .hf2-priorities__item {
+      margin-bottom: 10px;
+      line-height: 1.55;
+    }
+    .hf2-priorities__try {
+      font-style: italic;
+    }
     .hf2-review-eyebrow,
     .hf2-review-section__label {
       font-size: 0.68rem;
@@ -3739,12 +3754,17 @@
     .hf2-pick--gold {
       border-left: 3px solid var(--color-accent);
     }
-    /* Tier + archetype tag — brass small-caps tracking, NOT uppercase per hard rules */
+    /* Tier + model line — small-caps tracking, NOT uppercase per hard rules.
+       Slice 6 contrast repair (the dated 2026-08-23 roadmap gate): the old
+       --color-accent ink measured 4.17:1 on the card surface, below the
+       4.5:1 normal-text floor, on BOTH surfaces this class renders on (the
+       Summary and the Sleep Plan). --accent-ink clears it everywhere; the
+       named ratio lives in tests/contrast_check.mjs. */
     .hf2-pick__tier {
       font-family: var(--font-serif);
       font-size: 0.7rem;
       letter-spacing: 0.18em;
-      color: var(--color-accent);
+      color: var(--accent-ink);
       margin-bottom: 0.4rem;
     }
     /* Brand + model — Georgia serif, sized by tier (gold 19px / silver-bronze 16.5px) */
@@ -3767,18 +3787,6 @@
     }
     .hf2-pick__reason:last-child {
       margin-bottom: 0;
-    }
-    .hf2-pick__reaction {
-      margin: 0.65rem 0;
-      padding: 0.55rem 0.65rem;
-      background: var(--color-surface-alt);
-      border-radius: 5px;
-      color: var(--color-text);
-      font-size: 0.78rem;
-    }
-    .hf2-pick__reaction-label {
-      color: var(--color-text-muted);
-      margin-right: 0.35rem;
     }
     .hf2-pick__actions {
       display: flex;
@@ -3882,7 +3890,41 @@
       max-height: 280px;
       overflow-y: auto;
     }
+    .hf2-rsa-panel__addrow {
+      display: flex;
+      gap: 6px;
+      margin-top: 6px;
+    }
+    .hf2-rsa-panel__input {
+      flex: 1;
+      min-height: 40px;
+      padding: 0.3rem 0.5rem;
+      border: 1px solid var(--color-border);
+      border-radius: 5px;
+      background: var(--color-surface);
+      color: var(--color-text);
+      font: inherit;
+    }
+    .hf2-rsa-panel__confirm {
+      min-height: 40px;
+      padding: 0.3rem 0.7rem;
+      border: 1px solid var(--color-border);
+      border-radius: 5px;
+      background: transparent;
+      color: var(--color-text);
+      font: inherit;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
     .hf2-rsa-panel__item {
+      width: 100%;
+      text-align: left;
+      background: transparent;
+      border: 0;
+      font: inherit;
+      color: inherit;
+      cursor: pointer;
+      touch-action: manipulation;
       display: flex;
       align-items: center;
       gap: 0.55rem;
@@ -8513,7 +8555,7 @@
     .drawer-promotion.is-visible { display: block; }
     .drawer-promotion__kicker {
       color: var(--accent-ink);
-      font: 750 10px/1.2 var(--font-sans);
+      font: 750 12px/1.2 var(--font-sans);
       letter-spacing: 0.2em;
       text-transform: uppercase;
     }
@@ -8538,7 +8580,7 @@
     .drawer-system-prompt.is-visible { display: block; }
     .drawer-system-prompt__eyebrow {
       color: #795A35;
-      font: 750 10px/1.2 var(--font-sans);
+      font: 750 12px/1.2 var(--font-sans);
       letter-spacing: 0.18em;
       text-transform: uppercase;
     }
@@ -10056,6 +10098,36 @@
       .session-utility__btn[aria-pressed="true"] { border-width: 3px; }
     }
 
+    /* ===== Slice 6: drawer control accessibility ==========================
+       Native disabled styling for the prev/next ends, a real focus
+       indicator for every drawer control (they previously fell back to the
+       UA default), and the forced-colors counterparts. Kept as its OWN
+       rule and its OWN forced-colors block: the file's FIRST forced-colors
+       block and the first block carrying aria-pressed+border-width are both
+       test-anchored and must stay where they are. */
+    .drawer-nav-btn:disabled {
+      opacity: 0.45;
+      cursor: default;
+    }
+    .drawer-back-to-results:focus-visible,
+    .drawer-nav-btn:focus-visible,
+    .drawer-reaction-row button:focus-visible,
+    .drawer-btn:focus-visible {
+      outline: 3px solid var(--focus-ring-outer);
+      outline-offset: 2px;
+      box-shadow: 0 0 0 5px var(--focus-ring-inner);
+    }
+    @media (forced-colors: active) {
+      .drawer-back-to-results:focus-visible,
+      .drawer-nav-btn:focus-visible,
+      .drawer-reaction-row button:focus-visible,
+      .drawer-btn:focus-visible {
+        outline-color: CanvasText;
+        box-shadow: none;
+      }
+      .drawer-reaction-row button[aria-pressed="true"] { border-width: 3px; }
+    }
+
     /* 320px CSS px and 200%-zoom reflow: labels stay whole words and never
        truncate; the bar wraps instead. */
     @media (max-width: 400px) {
@@ -10310,7 +10382,6 @@
           <span id="landingCtaText">Find My Mattress</span>
           <span class="landing-cta-arrow">&rarr;</span>
         </button>
-        <span class="landing-time-estimate" id="landingTimeEstimate">≈ 4 minutes</span>
       </div>
 
       <!-- Data-use sentence (trust gate, 2026-08-21). ONE statement of what the
@@ -10455,7 +10526,7 @@
       <div class="noct-results-footer">
         <div class="noct-results-footer-actions">
           <button class="noct-results-cta" id="buildSystemBtn" onclick="window.showAccessories()" ontouchend="event.preventDefault();window.showAccessories();">Build Your Sleep System →</button>
-          <button class="noct-results-review-btn" id="reviewWithCustomerBtn" onclick="window.showSleepPlan('results')" ontouchend="event.preventDefault();window.showSleepPlan('results');">Review with customer →</button>
+          <button class="noct-results-review-btn" id="reviewWithCustomerBtn" onclick="window.showSleepPlan('results')" ontouchend="event.preventDefault();window.showSleepPlan('results');">Review Sleep Plan →</button>
         </div>
         <div class="noct-results-footer-hint" id="resultsFooterHint"></div>
       </div>
@@ -10624,9 +10695,9 @@
         <div class="drawer-try-prompts" id="drawerTryPrompts"></div>
         <div class="drawer-section-label" id="drawerReactionLabel">How did it feel?</div>
         <div class="drawer-reaction-row" id="drawerReactionRow">
-          <button type="button" data-reaction="soft" onclick="window.setDrawerReaction('soft')" ontouchend="event.preventDefault();window.setDrawerReaction('soft');">Too Soft</button>
-          <button type="button" data-reaction="good" onclick="window.setDrawerReaction('good')" ontouchend="event.preventDefault();window.setDrawerReaction('good');">Good Feel</button>
-          <button type="button" data-reaction="firm" onclick="window.setDrawerReaction('firm')" ontouchend="event.preventDefault();window.setDrawerReaction('firm');">Too Firm</button>
+          <button type="button" data-reaction="soft" aria-pressed="false" onclick="window.setDrawerReaction('soft')" ontouchend="event.preventDefault();window.setDrawerReaction('soft');">Too Soft</button>
+          <button type="button" data-reaction="good" aria-pressed="false" onclick="window.setDrawerReaction('good')" ontouchend="event.preventDefault();window.setDrawerReaction('good');">Good Feel</button>
+          <button type="button" data-reaction="firm" aria-pressed="false" onclick="window.setDrawerReaction('firm')" ontouchend="event.preventDefault();window.setDrawerReaction('firm');">Too Firm</button>
         </div>
         <div class="drawer-cta-row">
           <button id="drawerInterestedBtn" class="drawer-btn drawer-btn-primary" onclick="window.saveDrawerPick()" ontouchend="event.preventDefault();window.saveDrawerPick();">Save for later</button>
@@ -10732,6 +10803,7 @@
          outside-click listener from immediately closing the panel on the same tap. -->
     <div class="hf2-rsa-strip">
       <button class="hf2-rsa-strip__btn" id="hf2RsaStripBtn" type="button"
+              aria-expanded="false" aria-controls="hf2RsaPanel"
               onclick="event.stopPropagation(); toggleHf2RsaPanel();"
               ontouchend="event.preventDefault(); event.stopPropagation(); toggleHf2RsaPanel();">
         <span class="hf2-rsa-strip__label"></span>
@@ -10741,6 +10813,17 @@
       <div class="hf2-rsa-panel" id="hf2RsaPanel" hidden>
         <ul class="hf2-rsa-panel__list"></ul>
         <button class="hf2-rsa-panel__add" type="button"></button>
+        <!-- Slice 6: inline add row replaces window.prompt() — a native
+             dialog is untranslatable, unstyleable and blocks the kiosk.
+             Deliberately NOT a <form> (the app's single form is pinned).
+             The input's value is customer-typed text: it is cleared by the
+             session wipe (SESSION_CONTACT_INPUT_IDS) and the row closes
+             through SESSION_LAYERS. -->
+        <div class="hf2-rsa-panel__addrow" id="hf2RsaAddRow" hidden>
+          <input type="text" class="hf2-rsa-panel__input" id="hf2RsaAddInput"
+                 autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false">
+          <button class="hf2-rsa-panel__confirm" id="hf2RsaAddConfirm" type="button"></button>
+        </div>
       </div>
     </div>
     </div>
@@ -10749,10 +10832,28 @@
       <!-- Sleep Signature stamp (D2, Slice 2). Stamp only: this screen's
            layout, resolver, rows, priorities and copy are untouched. -->
       <div class="hf2-review-signature" id="hf2Signature"></div>
+      <!-- Store attribution (Slice 6, D5c): storeName + the configured
+           consultation subline, config-derived only — never a literal, never
+           heritage copy (the Welcome eyebrow owns that). Empty config hides
+           it entirely. Not customer-derived, so not in the wipe inventory. -->
+      <div class="hf2-review-attribution" id="hf2Attribution" hidden></div>
       <div class="hf2-review-eyebrow" id="hf2ReviewEyebrow">Review with the customer</div>
-      <h1 class="hf2-review-title" id="hf2ReviewTitle">Review Your Sleep Plan</h1>
+      <h1 class="hf2-review-title" id="hf2ReviewTitle">Your Consultation Summary</h1>
       <p class="hf2-review-subtitle" id="hf2ReviewSubtitle">A quick recap of what matters, what felt best, and what to keep on the shortlist.</p>
     </div>
+
+    <!-- Lead status line (Slice 6, D5b/D5c): the explicit finalist state
+         (chosen / recommended starting point / none) COMPOSED with the
+         payment-state sentence. Rendered by renderHf2LeadLine(), which is
+         also called (typeof-guarded) from renderAllFinancingSurfaces() so a
+         payment change on this screen can never leave the sentence stale.
+         Customer-derived text: hf2LeadLine is in the wipe inventories; the
+         label is dictionary-only ("Consultation status") and correctly
+         survives a wipe. -->
+    <section class="hf2-review-section" id="hf2LeadSection" aria-labelledby="hf2LeadLabel">
+      <div class="hf2-review-section__label" id="hf2LeadLabel"></div>
+      <p class="hf2-lead-line" id="hf2LeadLine"></p>
+    </section>
 
     <section class="hf2-review-section">
       <div class="hf2-review-section__label" id="hf2NeedsLabel">What we set out to solve</div>
@@ -10777,9 +10878,14 @@
          gutter; they mirror the email body's own inline treatment of this same
          content (Code.gs sets line-height and per-entry spacing inline) and
          stay inline precisely so no rule outlives 1.6's re-decision. -->
+    <!-- Trial priorities (Slice 6 resolves the 0.5 provisional presentation):
+         a real ordered component. Native <ol> semantics stay — order is
+         conveyed by list position, not styling. renderHf2Priorities() still
+         owns display and still hides the WHOLE section (label included) on
+         any incomplete collection (R-8). -->
     <section class="hf2-review-section" id="hf2PrioritiesSection" style="display:none">
       <div class="hf2-review-section__label" id="hf2PrioritiesLabel">What we will test together</div>
-      <ol id="hf2Priorities" style="margin-top:8px; padding-left:1.5em"></ol>
+      <ol class="hf2-priorities" id="hf2Priorities"></ol>
     </section>
 
     <section class="hf2-review-section">
@@ -10793,6 +10899,7 @@
                 ontouchend="event.preventDefault();window.compareReviewFinalists();">Compare saved picks</button>
       </div>
       <div id="hf2PicksList"></div>
+      <p class="hf2-review-section__hint" id="hf2PicksEmpty" hidden></p>
     </section>
 
     <section class="hf2-review-section" id="hf2SleepSystemSection">
@@ -10806,6 +10913,7 @@
                 ontouchend="event.preventDefault();window.showAccessories();">Edit Sleep System</button>
       </div>
       <div id="hf2AccessoriesList"></div>
+      <p class="hf2-review-section__hint" id="hf2SystemEmpty" hidden></p>
     </section>
 
     <!-- Payment Choices handoff module (Payment Choice) — the strongest
@@ -10866,6 +10974,12 @@
         <span>Savings Pass</span>
         <span>Reveal for customer →</span>
       </button>
+      <!-- Secondary route back into the trial plan (Slice 6): a deliberate,
+           labelled action — never an origin-aware Back. Hidden while the
+           Results state does not exist (showSleepPlan would no-op). -->
+      <button class="hf2-back-btn" id="hf2ReviewPlanBtn" type="button"
+              onclick="window.showSleepPlan('summary')"
+              ontouchend="event.preventDefault();window.showSleepPlan('summary');"></button>
       <button class="hf2-send-btn" id="hf2SendBtn" type="button"></button>
     </section>
 
@@ -12443,6 +12557,11 @@
       renderResultsFinancing();
       renderDrawerFinancing();
       renderHandoffFinancing();
+      // Slice 6: the Summary's composed lead+payment sentence reads payPref;
+      // a payment change while hf2 is active must repaint it in the same
+      // pass. typeof-guarded: the payment suites execute this function in a
+      // sandbox that does not declare the Summary renderer.
+      if (typeof renderHf2LeadLine === 'function') renderHf2LeadLine();
       renderSleepPlanFinancing();
       var sheet = document.getElementById('financingSheet');
       if (sheet && !sheet.hidden) renderFinancingSheet();
@@ -13813,7 +13932,10 @@
       setText('landingHeadlineMain', voice.headlineMain);
       setText('landingHeadlineAccent', voice.headlineAccent);
       setText('landingCtaText', voice.ctaPrimary);
-      setText('landingTimeEstimate', voice.timeEstimate);
+      // Slice 6 (owner decision): the completion-time estimate is removed —
+      // no measured session data backs any number, and the roadmap forbids
+      // promising an inaccurate completion time. voice.timeEstimate becomes a
+      // dormant config key (render-side removal only).
       setText('landingOutcomeLabel', voice.outcomeLabel || (es ? 'Tu consulta crea' : 'Your consultation builds'));
       // Promotion-neutral fallback: never promise a program (Savings Pass or
       // Payment Choice) that the loaded config does not declare.
@@ -13822,12 +13944,13 @@
       // the Savings Pass tease when financing is enabled; the pass tease
       // renders only when the pass itself is enabled; otherwise the row hides
       // (hidden attribute keeps it out of the accessibility tree).
+      // Slice 6 (owner decision): the Payment Choice tease is REMOVED from
+      // the Welcome — the outcome list's quiet "Payment Choices" entry is the
+      // one retained acknowledgment. The Savings-Pass tease below is a
+      // white-label template capability (dormant here, discount.mode
+      // disabled) and is deliberately untouched.
       var teaseRow = document.querySelector('.landing-discount-tease');
-      if (financingEnabled()) {
-        if (teaseRow) teaseRow.hidden = false;
-        setText('landingDiscountLabel', FC('eyebrow'));
-        setText('landingDiscountHint', FC('welcomeTagline') + ' ' + FC('welcomeSupport'));
-      } else if (savingsPassEnabled()) {
+      if (savingsPassEnabled()) {
         if (teaseRow) teaseRow.hidden = false;
         setText('landingDiscountLabel', es ? 'Tu Pase de Ahorro de 30 Días' : 'Your 30-Day Savings Pass');
         setText('landingDiscountHint', L(passConfig.landingHint));
@@ -15435,7 +15558,10 @@
         ? 'Empieza con la primera opción y compara cómo se sienten las demás. Tu comodidad decide cuál permanece.'
         : 'Start with the first option, then compare how the others feel. Your comfort decides what stays.';
       document.getElementById('buildSystemBtn').textContent = es ? 'Crea Tu Sistema de Sueño →' : 'Build Your Sleep System →';
-      document.getElementById('reviewWithCustomerBtn').textContent = es ? 'Revisar con el cliente →' : 'Review with customer →';
+      // Slice 6: the control opens the Sleep Plan screen, so it says so —
+      // the same label/destination honesty the Sleep Brief CTA adopted
+      // 2026-08-10. Wording mirrors plan.title.
+      document.getElementById('reviewWithCustomerBtn').textContent = es ? 'Revisar Plan de Sueño →' : 'Review Sleep Plan →';
       // Footer hint: fit-first financing line when financing is on, the
       // Savings Pass line only when the pass is enabled, empty otherwise.
       var footerHint = document.getElementById('resultsFooterHint');
@@ -16931,7 +17057,9 @@
           title: _esE ? 'Resumen de Sueño' : 'Sleep Brief',
           detail: _esE ? 'Tu perfil de confort y enfoque de prueba.' : 'Your comfort profile and trial focus.' },
         { present: (savedMattresses.length > 0 || recCount > 0),
-          title: _esE ? 'Colchones finalistas' : 'Mattress finalists',
+          title: savedMattresses.length
+            ? (_esE ? 'Selecciones de colchón guardadas' : 'Saved mattress picks')
+            : (_esE ? 'Colchones recomendados' : 'Recommended matches'),
           detail: savedMattresses.length
             ? (_esE ? (savedMattresses.length + ' guardados · tus opciones más compatibles y para comparar')
                     : (savedMattresses.length + ' saved · your strongest matches and comparison options'))
@@ -17048,7 +17176,11 @@
       }
 
       errorEl.textContent = '';
-      sendBtn.textContent = currentLang === 'es' ? 'Enviando...' : 'Sending...';
+      // Slice 6: the in-flight verb is mode-aware — preview mode saves on
+      // this tablet and sends nothing (emailDeliveryLive() is the one truth).
+      sendBtn.textContent = emailDeliveryLive()
+        ? (currentLang === 'es' ? 'Enviando...' : 'Sending...')
+        : (currentLang === 'es' ? 'Guardando...' : 'Saving...');
       sendBtn.classList.add('sending');
 
       // Send the customer-facing brief; the internal archetype remains in analytics.
@@ -17060,7 +17192,6 @@
             || ''));
 
       // Get the lead recommendation and all matches from analytics
-      const topPick = analytics.topPick;
       // Email clients (Gmail etc.) can't resolve relative image paths, so
       // convert any relative URLs (e.g. "images/mattresses/caitlin.png")
       // into absolute URLs rooted at the retailer's public deployment.
@@ -17075,19 +17206,36 @@
       // over the algorithm's top recommendations. Fall back to the top
       // recommendations if they didn't save anything.
       const saved = getSelectedMattressPlan();
+      // Slice 6: the list's provenance is explicit — 'saved' only when the
+      // customer actually saved picks; anything else reads as the engine's
+      // recommendation. Each entry carries the Plan-parity tier-and-position
+      // line (D3: ordinal, tier-relative — never a naked percentage in
+      // customer copy; matchPct stays as internal record data).
+      const matchesSource = saved.length > 0 ? 'saved' : 'recommended';
+      const _recLine = function(pos) {
+        var tierLabel = sleepPlanTierLabel('gold');
+        var posKey = pos === 0 ? 'results.match_lead' : pos === 1 ? 'results.match_second' : pos === 2 ? 'results.match_third' : '';
+        return [tierLabel, posKey ? t(posKey) : ''].filter(Boolean).join(' · ');
+      };
       const allMatches = saved.length > 0
         ? saved.map(p => ({
             name: p.name,
             brand: p.brand,
             matchPct: p.pct,
             meetsMatchThreshold: p.meetsMatchThreshold,
+            line: sleepPlanModelLine(p) || sleepPlanTierLabel(p.tier) || '',
             imageUrl: toAbsoluteImageUrl(p.imageUrl)
           }))
-        : (analytics.allMatches || []).map(m => ({
+        : (analytics.allMatches || []).map((m, i) => ({
             name: m.name,
             brand: m.brand + (m.subBrand ? ' · ' + m.subBrand : ''),
             matchPct: m.matchPct,
             meetsMatchThreshold: m.meetsMatchThreshold,
+            // analytics.allMatches is the engine's gold top three IN ORDER;
+            // the sha-pinned fixture forbids widening that object, so the
+            // line derives from the index with the same dictionary keys
+            // sleepPlanModelLine uses.
+            line: _recLine(i),
             imageUrl: toAbsoluteImageUrl(m.imageUrl)
           }));
       // Suggestions shown on the shared review remain comparison options until
@@ -17095,7 +17243,25 @@
       const accList = getSelectedAccessoryPlan().map(a => Object.assign({}, a, {
         imageUrl: toAbsoluteImageUrl(a.imageUrl)
       }));
-      const emailTopPick = allMatches[0] || topPick;
+      // Slice 6: the lead is a CLOSED contract (chosen / recommended / none)
+      // from the same resolvers the Sleep Plan consumes — never a silent
+      // promotion of the first list entry to "best match". A kind without a
+      // mattress is no lead.
+      const _finalist = resolveFinalistState();
+      const _recommendedLead = _finalist.kind === 'chosen' ? null : finalistRecommendedFallback();
+      const _leadItem = _finalist.kind === 'chosen' ? _finalist.item : _recommendedLead;
+      const lead = {
+        kind: _leadItem ? (_finalist.kind === 'chosen' ? 'chosen' : 'recommended') : 'none',
+        name: _leadItem ? (_leadItem.name || '') : '',
+        // The engine's raw records carry brand and subBrand separately; the
+        // saved records ship a pre-joined display brand. Join once, guarded
+        // against double-joining, so the hero and its own list row agree.
+        brand: _leadItem ? (String(_leadItem.brand || '')
+          + (_leadItem.subBrand && String(_leadItem.brand || '').indexOf(' \u00b7 ') === -1
+              ? ' \u00b7 ' + _leadItem.subBrand : '')) : '',
+        line: _leadItem ? (sleepPlanModelLine(_leadItem) || sleepPlanTierLabel(_leadItem.tier) || '') : '',
+        imageUrl: _leadItem ? toAbsoluteImageUrl(_leadItem.imageUrl || '') : ''
+      };
 
       // RSA attribution for the handoff redesign — set via the salesperson picker
       // on the handoff screen, persisted in localStorage as
@@ -17144,9 +17310,6 @@
         phone: phone,
         sleepProfile: profName,
         mattressSize: ({'twin':'Twin','twin_xl':'Twin XL','full':'Full','queen':'Queen','king':'King','cal_king':'Cal King'})[answers.mattress_size] || '',
-        topMatch: emailTopPick ? emailTopPick.name : '',
-        matchPct: emailTopPick ? emailTopPick.matchPct : '',
-        meetsMatchThreshold: emailTopPick ? emailTopPick.meetsMatchThreshold : false,
         discount: savingsPass ? savingsPass.percentage : 0,
         dreamCode: savingsPass ? savingsPass.code : '',
         passExpiration: savingsPass ? savingsPass.expirationLabel : '',
@@ -17162,21 +17325,47 @@
         lang: currentLang,
         allMatches: allMatches,
         accessories: accList,
+        // Slice 6: the closed lead contract and the list's provenance. Never
+        // payment state (email_gating pins the name-space), never a raw
+        // answer, never a score.
+        lead: lead,
+        matchesSource: matchesSource,
         // Trial priorities (0.5): at most three entries of exactly
         // name/reason/test, pre-localized to this payload's lang — the same
         // convention every other content field follows. Projected fresh from
         // the stored bilingual state so nothing else can ride along: no score,
         // no kind, no rank, no id, no raw answer. Position is the order.
-        priorities: (Array.isArray(analytics.trialFocus) ? analytics.trialFocus : [])
+        priorities: (function () {
+          // ALL-OR-NOTHING at the payload boundary (owner ruling R-8, carried
+          // into the email by 1.6): the block ships complete or not at all —
+          // never a shortened list, never a partial entry, exactly the
+          // contract the on-screen consumers keep. The projection resolves
+          // each field in the payload's language with the app-wide EN
+          // fallback, and the gate judges the RESOLVED strings: an entry
+          // still blank after that fallback empties the whole field. The
+          // producer already stores only a complete bilingual collection or
+          // []; this gate enforces the same rule at the boundary against any
+          // future producer defect. Whitespace-only counts as missing,
+          // mirroring the inlined predicate's trim.
+          // C14 (external review round 2): resolve to STRINGS ONLY. A truthy
+          // non-string localized field (a malformed future producer) must
+          // empty the block fail-closed like every other defect this gate
+          // guards — never throw a TypeError out of sendResults().
+          var str = function(v) { return typeof v === 'string' ? v : ''; };
+          var entries = (Array.isArray(analytics.trialFocus) ? analytics.trialFocus : [])
           .slice(0, 3)
           .map(function(item) {
             return {
-              name: (item && (item[currentLang] || item.en)) || '',
-              reason: (item && item.why && (item.why[currentLang] || item.why.en)) || '',
-              test: (item && item.test && (item.test[currentLang] || item.test.en)) || ''
+              name: str(item && (item[currentLang] || item.en)),
+              reason: str(item && item.why && (item.why[currentLang] || item.why.en)),
+              test: str(item && item.test && (item.test[currentLang] || item.test.en))
             };
-          })
-          .filter(function(p) { return p.name; }),
+          });
+          var whole = function(p) {
+            return p.name.trim().length > 0 && p.reason.trim().length > 0 && p.test.trim().length > 0;
+          };
+          return entries.length > 0 && entries.every(whole) ? entries : [];
+        })(),
         // Consultation Summary (0.6): exactly the three strings the hf2
         // screen renders, from the SAME resolver — pre-localized to this
         // payload's lang. Implication copy, the neutral size identity and the
@@ -17255,9 +17444,9 @@
       }
 
       function showError(msg) {
-        sendBtn.textContent = isEmailPreview
-          ? (currentLang === 'es' ? 'Vista Previa del Correo →' : 'Preview Email Experience →')
-          : (currentLang === 'es' ? 'Enviar Mis Resultados' : 'Send My Results');
+        // Slice 6: restore the button's actual initial label (renderEmailChrome
+        // sets it); the old reset labels matched nothing on the screen.
+        sendBtn.textContent = currentLang === 'es' ? 'Guardar Mi Resumen →' : 'Save My Sleep Brief →';
         sendBtn.classList.remove('sending');
         errorEl.textContent = msg || (currentLang === 'es' ? 'Algo salió mal. Por favor intenta de nuevo.' : 'Something went wrong. Please try again.');
       }
@@ -19108,14 +19297,15 @@
         return;
       }
       var valid = stored;
-      // Inline spacing, not a class: without it the reset collapses the three
-      // items into one six-line block. Mirrors the email body's inline
-      // treatment of the same content; 1.6 re-decides both.
+      // Slice 6 (resolving 0.5's provisional presentation): a classed ordered
+      // component. Same content, same engine order and wording, same
+      // all-or-nothing posture; "Try this" now comes from the dictionary —
+      // the same key the Sleep Plan renders (brief.try_this), one fork fewer.
       list.innerHTML = valid.map(function(item) {
-        return '<li style="margin-bottom:8px; line-height:1.5">'
+        return '<li class="hf2-priorities__item">'
           + '<strong>' + escapeHtml(L(item)) + '</strong> — '
           + escapeHtml(item.why[currentLang] || item.why.en)
-          + '<br><em>' + (es ? 'Pruébalo: ' : 'Try this: ') + '</em>'
+          + '<br><em class="hf2-priorities__try">' + escapeHtml(t('brief.try_this')) + '</em>'
           + escapeHtml(item.test[currentLang] || item.test.en)
           + '</li>';
       }).join('');
@@ -19375,10 +19565,15 @@
     function renderHf2() {
       var es = currentLang === 'es';
       var backBtn = document.getElementById('hf2BackToMatches');
-      if (backBtn) backBtn.textContent = es ? '← Volver a colchones' : '← Back to matches';
+      // Same label pair the Plan's back control uses (plan.back_to_matches) —
+      // one string, two consumers, no fork. Route unchanged: Results.
+      if (backBtn) backBtn.textContent = t('plan.back_to_matches');
       var reviewCopy = {
         hf2ReviewEyebrow: es ? 'Revisar con el cliente' : 'Review with the customer',
-        hf2ReviewTitle: es ? 'Revisa Tu Plan de Sueño' : 'Review Your Sleep Plan',
+        // Slice 6 retitle: the screen's visible name now matches its spoken
+        // name (screen.handoff) and no longer collides with the Sleep Plan
+        // screen's own title.
+        hf2ReviewTitle: es ? 'Tu Resumen de Consulta' : 'Your Consultation Summary',
         hf2ReviewSubtitle: es
           ? 'Un resumen rápido de lo que importa, lo que se sintió mejor y lo que debe quedar en la lista.'
           : 'A quick recap of what matters, what felt best, and what to keep on the shortlist.',
@@ -19406,10 +19601,27 @@
         var el = document.getElementById(id);
         if (el) el.textContent = reviewCopy[id];
       });
+      // Store attribution: config-derived only (storeName + the consultation
+      // subline). Blank config hides the element — never a fallback literal.
+      var attribution = document.getElementById('hf2Attribution');
+      if (attribution) {
+        var attrSub = (localizedConfigBlock('voice') || {}).retailerSubline || '';
+        var attrText = storeName() ? (attrSub ? storeName() + ' · ' + attrSub : storeName()) : '';
+        attribution.textContent = attrText;
+        attribution.hidden = !attrText;
+      }
+      // Secondary route into the Sleep Plan (deliberate action, not a Back);
+      // hidden while Results state does not exist, where showSleepPlan no-ops.
+      var planBtn = document.getElementById('hf2ReviewPlanBtn');
+      if (planBtn) {
+        planBtn.textContent = t('hf2.review_plan');
+        planBtn.hidden = !_resultsState;
+      }
       var compareBtn = document.getElementById('hf2CompareBtn');
       if (compareBtn) compareBtn.textContent = t('hf2.compare_saved');
       var editSystemBtn = document.getElementById('hf2EditSystemBtn');
       if (editSystemBtn) editSystemBtn.textContent = es ? 'Editar Sistema de Sueño' : 'Edit Sleep System';
+      renderHf2LeadLine();
       renderHf2Brief();
       renderHf2Priorities();
       renderHf2Picks();
@@ -19523,10 +19735,60 @@
       return '';
     }
 
+    // ---- Lead status line (Slice 6, D5b x D4) --------------------------------
+    // The explicit finalist state COMPOSED with the payment-preference state.
+    // Finalist side: resolveFinalistState() and finalistRecommendedFallback(),
+    // exactly as the Sleep Plan consumes them, with the Plan's own model line
+    // (tier + position). Payment side: the SAME three-line derivation the D4
+    // preference row uses (labelFor over finPaymentPaths, the Not-right-now
+    // override, the preferenceNone fallback), so this sentence can never
+    // contradict the Payment Choice module rendered below it. Composition,
+    // not a matrix: three lead sentences x one payment template.
+    // Re-rendered by renderHf2() AND (typeof-guarded) by
+    // renderAllFinancingSurfaces(), so a payment tap on this screen repaints
+    // the sentence in the same pass as the module.
+    function renderHf2LeadLine() {
+      var label = document.getElementById('hf2LeadLabel');
+      var lineEl = document.getElementById('hf2LeadLine');
+      if (!label || !lineEl) return;
+      label.textContent = t('hf2.lead_label');
+      var pickText = function(m) {
+        var brandText = String(m.brand || '')
+          + (m.subBrand && String(m.brand || '').indexOf(' \u00b7 ') === -1 ? ' \u00b7 ' + m.subBrand : '');
+        var name = (brandText ? brandText + ' \u00b7 ' : '') + (m.name || '');
+        var line = sleepPlanModelLine(m) || sleepPlanTierLabel(m.tier) || '';
+        return line ? name + ' (' + line + ')' : name;
+      };
+      var finalist = resolveFinalistState();
+      var lead;
+      if (finalist.kind === 'chosen') {
+        lead = t('hf2.lead_chosen', { pick: pickText(finalist.item) });
+      } else {
+        var rec = finalistRecommendedFallback();
+        lead = rec ? t('hf2.lead_recommended', { pick: pickText(rec) }) : t('hf2.lead_none');
+      }
+      var payment = '';
+      if (financingEnabled()) {
+        var paths = finPaymentPaths();
+        var labelFor = function(id) {
+          for (var i = 0; i < paths.length; i++) if (paths[i].id === id) return paths[i].label;
+          return '';
+        };
+        var notNow = payPref === PAY_NOT_NOW;
+        var prefLabel = notNow ? FC('preferenceNotNow') : (payPref ? labelFor(payPref) : '');
+        if (!prefLabel) prefLabel = FC('preferenceNone');
+        payment = t('hf2.pay_state', { value: prefLabel });
+      }
+      lineEl.textContent = payment ? lead + ' ' + payment : lead;
+    }
+
     // ---- Picks ---------------------------------------------------------------
-    // The review is chosen-first. It shows every mattress the customer saved,
-    // then fills the comparison set to three with ranked suggestions when fewer
-    // than three were saved.
+    // Slice 6 (owner ruling): the Summary is a compact authoritative READ
+    // MODEL of saved state. Only customer-saved picks render, in the order
+    // they were saved — no engine suggestion padding, no favourite-first
+    // re-sort, no re-derived reason prose, no reaction row (reactions are
+    // drawer-only). The finalist story belongs to the lead line above, not
+    // to an ordering of this list.
     window._mattressReactions = window._mattressReactions || {};
     window._favoriteMattressId = window._favoriteMattressId || '';
 
@@ -19534,60 +19796,32 @@
       var list = document.getElementById('hf2PicksList');
       if (!list) return;
       list.innerHTML = '';
-      var state = (typeof _resultsState !== 'undefined' && _resultsState) ? _resultsState : null;
-      if (!state || !state.tierData) return;
-      var saved = Array.isArray(window._savedPicks) ? window._savedPicks.slice() : [];
-      var reviewPicks = saved.map(function(p) {
+      var saved = Array.isArray(window._savedPicks) ? window._savedPicks : [];
+      // Stored save order. Unresolvable ids are omitted, never rendered raw —
+      // the same posture as sleepPlanMattressById.
+      var resolved = saved.map(function(p) {
         var data = window._drawerData && window._drawerData[p.id];
-        return data ? { m: data.m, tier: data.tier, suggested: false } : null;
+        return data ? { m: data.m, tier: data.tier } : null;
       }).filter(Boolean);
-
-      var reviewIds = new Set(reviewPicks.map(function(item) { return item.m.id; }));
-      var suggestionPool = [];
-      // Start with one strong option per tier for useful price/feature contrast.
-      ['gold', 'silver', 'bronze'].forEach(function(tier) {
-        var top = (state.tierData[tier] || [])[0];
-        if (top) suggestionPool.push({ m: top, tier: tier });
+      resolved.forEach(function(item) {
+        list.appendChild(renderHf2Pick(item.m, item.tier));
       });
-      // Then use remaining ranked options if a saved item already occupied a
-      // tier's first slot or a tier has fewer products.
-      ['gold', 'silver', 'bronze'].forEach(function(tier) {
-        (state.tierData[tier] || []).slice(1).forEach(function(m) {
-          suggestionPool.push({ m: m, tier: tier });
-        });
-      });
-      suggestionPool.some(function(candidate) {
-        if (reviewPicks.length >= 3) return true;
-        if (reviewIds.has(candidate.m.id)) return false;
-        var data = window._drawerData && window._drawerData[candidate.m.id];
-        if (!data) return false;
-        reviewPicks.push({ m: data.m, tier: data.tier, suggested: true });
-        reviewIds.add(candidate.m.id);
-        return false;
-      });
-
-      reviewPicks.sort(function(a, b) {
-        if (a.m.id === window._favoriteMattressId) return -1;
-        if (b.m.id === window._favoriteMattressId) return 1;
-        return 0;
-      });
-      reviewPicks.forEach(function(item) {
-        list.appendChild(renderHf2Pick(item.m, item.tier, item.suggested));
-      });
-
-      var hint = document.getElementById('hf2FinalistsHint');
-      var suggestionCount = reviewPicks.filter(function(item) { return item.suggested; }).length;
-      if (hint) {
-        hint.textContent = currentLang === 'es'
-          ? saved.length + ' guardado' + (saved.length === 1 ? '' : 's') + ' · '
-              + suggestionCount + ' sugerencia' + (suggestionCount === 1 ? '' : 's')
-              + '. Solo las selecciones guardadas se envían.'
-          : saved.length + ' saved · ' + suggestionCount + ' suggestion'
-              + (suggestionCount === 1 ? '' : 's') + '. Only saved picks are sent.';
+      // Honest empty state: with no padding, an empty list needs words, not
+      // an unexplained blank under the section label.
+      var empty = document.getElementById('hf2PicksEmpty');
+      if (empty) {
+        empty.textContent = t('hf2.no_saved_picks');
+        empty.hidden = resolved.length > 0;
       }
-
+      // The hint is the dictionary sentence — no runtime overwrite and no
+      // delivery claim (the old count line asserted delivery while gasUrl
+      // is blank; preview mode delivers nothing).
+      var hint = document.getElementById('hf2FinalistsHint');
+      if (hint) hint.textContent = t('hf2.saved_picks_hint');
       var compareBtn = document.getElementById('hf2CompareBtn');
-      if (compareBtn) compareBtn.disabled = saved.length < 2;
+      // Compare works from two saved picks OR a complete persisted pair (C3).
+      if (compareBtn) compareBtn.disabled = saved.length < 2
+        && !(Array.isArray(window._compareSelected) && window._compareSelected.length === 2);
     }
 
     // Templated pivot-reason archetype labels for silver/bronze. Lowercase per
@@ -19822,24 +20056,20 @@
         : 'A balanced feel worth comparing directly with your other saved picks.';
     }
 
-    function renderHf2Pick(m, tier, suggested) {
+    function renderHf2Pick(m, tier) {
+      // Slice 6: a compact saved-pick card — the Plan-parity model line
+      // (tier · position via sleepPlanModelLine, one producer for both
+      // screens), the name, and the customer's controls. The re-derived
+      // reason prose and the reaction row are gone: reasons live on Results
+      // and in the drawer; reactions are drawer-only by owner ruling.
       var card = document.createElement('div');
-      card.className = 'hf2-pick' + (tier === 'gold' ? ' hf2-pick--gold' : '')
-        + (suggested ? ' hf2-pick--suggested' : ' hf2-pick--saved');
+      card.className = 'hf2-pick' + (tier === 'gold' ? ' hf2-pick--gold' : '') + ' hf2-pick--saved';
 
       var tierTag = document.createElement('div');
       tierTag.className = 'hf2-pick__tier';
-      // Lowercase content; brass small-caps appearance comes from CSS letter-spacing.
-      var tierNames = currentLang === 'es'
-        ? { gold: 'Oro', silver: 'Plata', bronze: 'Bronce' }
-        : { gold: 'Gold', silver: 'Silver', bronze: 'Bronze' };
-      tierTag.textContent = (suggested
-        ? (currentLang === 'es' ? 'Sugerencia · ' : 'Suggested · ')
-        : (m.id === window._favoriteMattressId ? t('finalist.chosen_prefix') : ''))
-        + tierNames[tier] + ' · ' + firmnessFeel(m.firmness) + ' · ' + mattressResponseLabel(m)
-        + (m.meetsMatchThreshold ? '' : ' · ' + (currentLang === 'es'
-          ? 'Opción adicional para comparar'
-          : 'Additional comparison option'));
+      var line = sleepPlanModelLine(Object.assign({}, m, { tier: tier }));
+      tierTag.textContent = (m.id === window._favoriteMattressId ? t('finalist.chosen_prefix') : '')
+        + (line || sleepPlanTierLabel(tier));
       card.appendChild(tierTag);
 
       var name = document.createElement('div');
@@ -19847,45 +20077,20 @@
       name.textContent = (m.brand || '') + ' · ' + (m.name || '');
       card.appendChild(name);
 
-      var reason = document.createElement('div');
-      reason.className = 'hf2-pick__reason';
-      var priorities = buildMattressPriorities(m);
-      reason.textContent = priorities.length
-        ? priorities[0].title + ' — ' + priorities[0].desc
-        : hf2ReasonFor(m, tier);
-      card.appendChild(reason);
-
-      var reaction = window._mattressReactions[m.id];
-      if (reaction) {
-        var reactionEl = document.createElement('div');
-        reactionEl.className = 'hf2-pick__reaction';
-        reactionEl.innerHTML = '<span class="hf2-pick__reaction-label">'
-          + (currentLang === 'es' ? 'Su reacción:' : 'Your reaction:')
-          + '</span>' + escapeHtml(reactionLabel(reaction));
-        card.appendChild(reactionEl);
-      }
-
       var actions = document.createElement('div');
       actions.className = 'hf2-pick__actions';
-      actions.innerHTML = (suggested
-        ? '<button class="hf2-pick__action is-selected"'
-            + ' onclick="window.addReviewMattress(\'' + m.id + '\')"'
-            + ' ontouchend="event.preventDefault();window.addReviewMattress(\'' + m.id + '\');">'
-            + t('hf2.add_to_saved') + '</button>'
-        : '<button class="hf2-pick__action' + (m.id === window._favoriteMattressId ? ' is-selected' : '') + '"'
+      actions.innerHTML = '<button class="hf2-pick__action' + (m.id === window._favoriteMattressId ? ' is-selected' : '') + '"'
             + ' onclick="window.toggleFavoriteMattress(\'' + m.id + '\')"'
             + ' ontouchend="event.preventDefault();window.toggleFavoriteMattress(\'' + m.id + '\');">'
-            + finalistButtonLabel(m.id === window._favoriteMattressId) + '</button>')
+            + finalistButtonLabel(m.id === window._favoriteMattressId) + '</button>'
         + '<button class="hf2-pick__action"'
           + ' onclick="window.showMattressInResults(\'' + m.id + '\',\'' + tier + '\')"'
           + ' ontouchend="event.preventDefault();window.showMattressInResults(\'' + m.id + '\',\'' + tier + '\');">'
           + (currentLang === 'es' ? 'Ver en colchones →' : 'View in matches →') + '</button>'
-        + (!suggested
-          ? '<button class="hf2-pick__action hf2-pick__action--remove"'
+        + '<button class="hf2-pick__action hf2-pick__action--remove"'
             + ' onclick="window.removeReviewMattress(\'' + m.id + '\')"'
             + ' ontouchend="event.preventDefault();window.removeReviewMattress(\'' + m.id + '\');">'
-            + (currentLang === 'es' ? 'Quitar' : 'Remove') + '</button>'
-          : '');
+            + (currentLang === 'es' ? 'Quitar' : 'Remove') + '</button>';
       card.appendChild(actions);
       return card;
     }
@@ -19903,14 +20108,29 @@
       renderHf2();
     };
 
+    // Slice 6 a11y repair: ONE painter for the reaction row, called from the
+    // drawer-open path and from the tap handler, so the two can never drift.
+    // Selected state is announced (aria-pressed) and carried by a non-colour
+    // cue (the check mark) in addition to the colour treatment.
+    function paintDrawerReactions(mattressId) {
+      var labels = currentLang === 'es'
+        ? { soft: 'Muy Suave', good: 'Buena Sensación', firm: 'Muy Firme' }
+        : { soft: 'Too Soft', good: 'Good Feel', firm: 'Too Firm' };
+      var selected = (window._mattressReactions || {})[mattressId];
+      document.querySelectorAll('#drawerReactionRow button').forEach(function(btn) {
+        var reaction = btn.getAttribute('data-reaction');
+        var isSelected = selected === reaction;
+        btn.textContent = (isSelected ? '\u2713 ' : '') + labels[reaction];
+        btn.classList.toggle('is-selected', isSelected);
+        btn.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+      });
+    }
     window.setDrawerReaction = function(reaction) {
       var mattressId = window._currentDrawerMattressId;
       if (!mattressId) return;
       window._mattressReactions = window._mattressReactions || {};
       window._mattressReactions[mattressId] = reaction;
-      document.querySelectorAll('#drawerReactionRow button').forEach(function(btn) {
-        btn.classList.toggle('is-selected', btn.getAttribute('data-reaction') === reaction);
-      });
+      paintDrawerReactions(mattressId);
     };
 
     // The Consultation Summary's finalist control carries the same label as
@@ -19921,12 +20141,6 @@
     // Plan render fall back to the recommended starting point unannounced.
     window.toggleFavoriteMattress = function(mattressId) {
       window.chooseFinalist(mattressId);
-      renderHf2();
-    };
-
-    window.addReviewMattress = function(mattressId) {
-      var alreadySaved = (window._savedPicks || []).some(function(p) { return p.id === mattressId; });
-      if (!alreadySaved) window._toggleSavePick(mattressId);
       renderHf2();
     };
 
@@ -19941,21 +20155,34 @@
     };
 
     window.compareReviewFinalists = function() {
-      var saved = Array.isArray(window._savedPicks) ? window._savedPicks : [];
-      if (saved.length < 2) return;
-      var ordered = saved.slice().sort(function(a, b) {
-        if (a.id === window._favoriteMattressId) return -1;
-        if (b.id === window._favoriteMattressId) return 1;
-        return 0;
-      });
-      window._compareSelected = ordered.slice(0, 2).map(function(p) { return p.id; });
+      // Slice 6 (owner ruling): the comparison selection is PERSISTED customer
+      // state — opening or closing the Summary's compare must never clear it,
+      // and this entry must never destroy a pair the customer already chose.
+      // A complete existing pair is compared as-is; only when no complete
+      // pair exists does the recorded auto-select (favourite-first top two of
+      // the saved picks — preserved unchanged through PR #34) fill it, and
+      // that fill PERSISTS honestly: the Results tray and the Sleep Plan's
+      // compared row show exactly what was compared here.
+      var existing = Array.isArray(window._compareSelected) ? window._compareSelected : [];
+      if (existing.length !== 2) {
+        var saved = Array.isArray(window._savedPicks) ? window._savedPicks : [];
+        if (saved.length < 2) return;
+        var ordered = saved.slice().sort(function(a, b) {
+          if (a.id === window._favoriteMattressId) return -1;
+          if (b.id === window._favoriteMattressId) return 1;
+          return 0;
+        });
+        window._compareSelected = ordered.slice(0, 2).map(function(p) { return p.id; });
+      }
       window._compareOrigin = 'review';
       window.openCompareModal();
     };
 
     // ---- Accessories block ---------------------------------------------------
-    // Shared review keeps selected components explicit and fills the comparison
-    // set to three with suggestions that do not enter the plan until added.
+    // Slice 6 (owner ruling): the Summary shows ONLY the selected Sleep System
+    // configuration — the customer's cart, resolved against the catalog in
+    // catalog order. No re-scoring, no suggestion fill: exploration lives on
+    // the Sleep System screen behind the Edit/Explore control.
     function renderHf2Accessories() {
       var container = document.getElementById('hf2AccessoriesList');
       if (!container) return;
@@ -19965,43 +20192,17 @@
 
       var cart = window._accCart || {};
       var cartIds = new Set(Object.keys(cart));
+      // Names and categories resolve through the catalog (bilingual objects),
+      // never the cart snapshot — the snapshot's name is the language it was
+      // added in, and a language switch must re-localize.
       var cartItems = (typeof ACCESSORIES !== 'undefined' ? ACCESSORIES : []).filter(function(a) {
         return cartIds.has(a.id);
       }).map(function(a) {
         return Object.assign({}, a, { reasons: cart[a.id].reasons || [] });
       });
-      var selectedCategories = new Set(cartItems.map(function(item) {
-        return typeof item.category === 'object' ? item.category.en : item.category;
-      }));
-      var recommendationCount = Math.max(0, 3 - cartItems.length);
-      var candidateItems = scoreAccessoriesFromAnswers().filter(function(item) {
-        return !cartIds.has(item.id);
-      }).sort(function(a, b) {
-        // Personalized matches lead; neutral catalog options remain available
-        // to complete a three-option salesperson comparison set.
-        return Number(b.matched === true) - Number(a.matched === true);
-      });
-      var recommendedItems = [];
-      var seenCategories = new Set();
-      // First pass favors category diversity and avoids re-pitching a category
-      // already represented in the customer's selected plan.
-      candidateItems.forEach(function(item) {
-        if (recommendedItems.length >= recommendationCount) return;
-        var category = typeof item.category === 'object' ? item.category.en : item.category;
-        if (selectedCategories.has(category) || seenCategories.has(category)) return;
-        recommendedItems.push(item);
-        seenCategories.add(category);
-      });
-      // Second pass fills any remaining slots with the next ranked products,
-      // even when that requires a second option from the same category.
-      candidateItems.forEach(function(item) {
-        if (recommendedItems.length >= recommendationCount) return;
-        if (recommendedItems.some(function(existing) { return existing.id === item.id; })) return;
-        recommendedItems.push(item);
-      });
 
       var section = document.getElementById('hf2SleepSystemSection');
-      if (section) section.style.display = (cartItems.length || recommendedItems.length) ? '' : 'none';
+      if (section) section.style.display = '';
       if (cartItems.length > 0) {
         container.appendChild(renderHf2AccBlock(
           es ? 'Incluido en tu plan' : 'Included in your plan',
@@ -20009,24 +20210,18 @@
           false
         ));
       }
-      if (recommendedItems.length > 0) {
-        container.appendChild(renderHf2AccBlock(
-          es ? 'A\u00fan vale la pena probar' : 'Still worth trying',
-          recommendedItems,
-          true
-        ));
+      var emptyLine = document.getElementById('hf2SystemEmpty');
+      if (emptyLine) {
+        emptyLine.textContent = t('hf2.no_system_items');
+        emptyLine.hidden = cartItems.length > 0;
       }
 
       var systemLabel = document.getElementById('hf2SystemLabel');
       var systemHint = document.getElementById('hf2SystemHint');
       var editButton = document.getElementById('hf2EditSystemBtn');
       if (systemLabel) systemLabel.textContent = es ? 'Tu Sistema de Sue\u00f1o' : 'Your Sleep System';
-      if (systemHint) systemHint.textContent = es
-        ? cartItems.length + ' incluido' + (cartItems.length === 1 ? '' : 's') + ' · '
-            + recommendedItems.length + ' sugerencia' + (recommendedItems.length === 1 ? '' : 's')
-            + '. Solo las piezas incluidas se envían.'
-        : cartItems.length + ' included · ' + recommendedItems.length + ' suggestion'
-            + (recommendedItems.length === 1 ? '' : 's') + '. Only included pieces are sent.';
+      // Dictionary sentence, no runtime count overwrite, no delivery claim.
+      if (systemHint) systemHint.textContent = t('hf2.system_hint');
       if (editButton) editButton.textContent = cartItems.length
         ? (es ? 'Editar Sistema de Sue\u00f1o' : 'Edit Sleep System')
         : (es ? 'Explorar Sistema de Sue\u00f1o' : 'Explore Sleep System');
@@ -20163,12 +20358,11 @@
             + (es ? '% de descuento · hasta ' : '% off · through ')
             + pass.expirationLabel;
         }
-        var sendBtn = document.getElementById('hf2SendBtn');
-        if (sendBtn) {
-          sendBtn.textContent = es
-            ? 'Enviar Pase y Selecciones'
-            : 'Send Pass & Picks';
-        }
+        // C13 (external review, PR #58): the send verb is owned by the ONE
+        // mode-aware renderer. The --revealed class is already set above, so
+        // re-rendering yields the right verb for the mode — preview mode keeps
+        // saying Save/Guardar, never a "send" claim while gasUrl is blank.
+        renderHf2SendButton();
         playSavingsPassReveal();
       };
     }
@@ -20184,9 +20378,14 @@
       if (!btn) return;
       var revealed = savingsPassEnabled()
         && document.getElementById('hf2DiscountBtn')?.classList.contains('hf2-discount-btn--revealed');
+      // Slice 6: the verb is mode-aware — with delivery not live, the action
+      // saves the brief on this tablet and sends nothing.
+      var live = emailDeliveryLive();
       btn.textContent = revealed
-        ? (currentLang === 'es' ? 'Enviar Pase y Selecciones' : 'Send Pass & Picks')
-        : (currentLang === 'es' ? 'Enviar selecciones' : 'Send picks');
+        ? (live ? (currentLang === 'es' ? 'Enviar Pase y Selecciones' : 'Send Pass & Picks')
+                : (currentLang === 'es' ? 'Guardar Pase y Selecciones' : 'Save Pass & Picks'))
+        : (live ? (currentLang === 'es' ? 'Enviar selecciones' : 'Send picks')
+                : (currentLang === 'es' ? 'Guardar selecciones' : 'Save picks'));
       btn.onclick = function() { showEmailCapture(); };
       renderHandoffFinancing();
     }
@@ -20273,18 +20472,34 @@
       var current = (getHf2DeviceRsa() || '').toLowerCase();
       var roster = getHf2MergedRsaList();
       roster.forEach(function(rsaName) {
+        // Slice 6 a11y repair: a real <button> inside the <li> — focusable,
+        // in the tab order, announced, and touch-paired like every other
+        // control (the old bare list-item click handler was none of those).
         var li = document.createElement('li');
-        li.className = 'hf2-rsa-panel__item';
-        if (current && rsaName.toLowerCase() === current) {
-          li.classList.add('hf2-rsa-panel__item--current');
-        }
-        li.textContent = rsaName;
-        li.onclick = function() { selectHf2Rsa(rsaName); };
+        var itemBtn = document.createElement('button');
+        itemBtn.type = 'button';
+        itemBtn.className = 'hf2-rsa-panel__item';
+        var isCurrent = !!current && rsaName.toLowerCase() === current;
+        if (isCurrent) itemBtn.classList.add('hf2-rsa-panel__item--current');
+        itemBtn.setAttribute('aria-current', isCurrent ? 'true' : 'false');
+        itemBtn.textContent = rsaName;
+        itemBtn.onclick = function() { selectHf2Rsa(rsaName); };
+        itemBtn.ontouchend = function(event) { event.preventDefault(); selectHf2Rsa(rsaName); };
+        li.appendChild(itemBtn);
         listEl.appendChild(li);
       });
       var es = currentLang === 'es';
       addBtn.textContent = es ? '+ agregar vendedor' : '+ add salesperson';
-      addBtn.onclick = addHf2Rsa;
+      addBtn.onclick = toggleHf2RsaAddRow;
+      addBtn.ontouchend = function(event) { event.preventDefault(); toggleHf2RsaAddRow(); };
+      var addInput = document.getElementById('hf2RsaAddInput');
+      var addConfirm = document.getElementById('hf2RsaAddConfirm');
+      if (addInput) addInput.setAttribute('aria-label', es ? 'Nombre del vendedor' : 'Salesperson name');
+      if (addConfirm) {
+        addConfirm.textContent = es ? 'Agregar' : 'Add';
+        addConfirm.onclick = confirmHf2RsaAdd;
+        addConfirm.ontouchend = function(event) { event.preventDefault(); confirmHf2RsaAdd(); };
+      }
     }
 
     // iOS Safari can fire both touchend and click on a single tap. The button's
@@ -20311,7 +20526,48 @@
       } else {
         panel.setAttribute('hidden', '');
       }
+      // aria-expanded is DERIVED from the panel's actual state on every
+      // toggle; the wipe path (which hides the panel via SESSION_LAYERS
+      // without coming through here) resets the attribute through its own
+      // layer entry, so the two can never disagree across a session wipe.
+      var strip = document.getElementById('hf2RsaStripBtn');
+      if (strip) strip.setAttribute('aria-expanded', panel.hasAttribute('hidden') ? 'false' : 'true');
+      if (panel.hasAttribute('hidden')) {
+        var addRow = document.getElementById('hf2RsaAddRow');
+        if (addRow) addRow.hidden = true;
+      }
     };
+
+    // Escape inside the panel closes it and returns focus to the strip —
+    // the pattern every other closable layer on this screen follows.
+    document.addEventListener('keydown', function(event) {
+      if (event.key !== 'Escape') return;
+      var panel = document.getElementById('hf2RsaPanel');
+      if (!panel || panel.hasAttribute('hidden')) return;
+      if (!panel.contains(document.activeElement) &&
+          document.activeElement !== document.getElementById('hf2RsaStripBtn')) return;
+      window.toggleHf2RsaPanel('close');
+      var strip = document.getElementById('hf2RsaStripBtn');
+      if (strip && typeof strip.focus === 'function') strip.focus();
+    });
+
+    // The inline add row: open + focus, confirm on the button or Enter.
+    function toggleHf2RsaAddRow() {
+      var row = document.getElementById('hf2RsaAddRow');
+      var input = document.getElementById('hf2RsaAddInput');
+      if (!row) return;
+      row.hidden = !row.hidden;
+      if (!row.hidden && input && typeof input.focus === 'function') input.focus();
+    }
+    function confirmHf2RsaAdd() {
+      var input = document.getElementById('hf2RsaAddInput');
+      if (!input) return;
+      var name = (input.value || '').trim();
+      if (!name) return;
+      input.value = '';
+      persistHf2UserAddedRsa(name);
+      selectHf2Rsa(name);
+    }
 
     function selectHf2Rsa(name) {
       if (!name) return;
@@ -20319,27 +20575,26 @@
       renderHf2RsaStrip();
       renderHf2RsaPanel();
       window.toggleHf2RsaPanel('close');
+      // Closing the panel while it contains the focused control would drop
+      // focus to <body> and make a keyboard/switch user restart from the top
+      // of the document. Mirror the Escape path: focus returns to the strip.
+      var strip = document.getElementById('hf2RsaStripBtn');
+      if (strip && typeof strip.focus === 'function') strip.focus();
     }
 
-    // Add-RSA via prompt(). Validates: null (cancel), empty, whitespace-only
-    // all reject without writing. Successful add auto-selects the new name —
-    // intentional for the floor case (RSA adds themselves at start of shift,
-    // immediately owns this device). Edge case: a manager doing bulk roster
-    // setup will end up with the device assigned to whoever they typed last;
-    // that's acceptable since the manager will reassign or hand off the
-    // device anyway. Floor flow stays fast — no confirmation prompt.
-    function addHf2Rsa() {
-      var es = currentLang === 'es';
-      var promptText = es
-        ? 'Nombre del vendedor para agregar a la lista:'
-        : 'Salesperson name to add to the list:';
-      var raw = window.prompt(promptText);
-      if (raw === null) return;
-      var name = raw.trim();
-      if (!name) return;
-      persistHf2UserAddedRsa(name);
-      selectHf2Rsa(name);
-    }
+    // Add-RSA is the inline row above (Slice 6): window.prompt() was the
+    // file's only native dialog — untranslatable, unstyleable, and it blocks
+    // the kiosk's event loop. Validation is unchanged: empty and
+    // whitespace-only reject without writing; a successful add auto-selects
+    // the new name (the floor case: an RSA adds themselves at the start of a
+    // shift and immediately owns this device).
+
+    document.addEventListener('keydown', function(event) {
+      if (event.key !== 'Enter') return;
+      if (document.activeElement !== document.getElementById('hf2RsaAddInput')) return;
+      event.preventDefault();
+      confirmHf2RsaAdd();
+    });
 
     // Outside-click closes the panel. Registered once on document; checks the
     // event target against the strip and panel to avoid closing on the trigger
@@ -21011,7 +21266,7 @@
     // Contact fields. Cleared three ways: form.reset(), value, and
     // defaultValue — a value written into the `value` ATTRIBUTE survives
     // form.reset() and would be restored under the next customer.
-    var SESSION_CONTACT_INPUT_IDS = ['emailNameInput', 'emailInput', 'emailPhoneInput'];
+    var SESSION_CONTACT_INPUT_IDS = ['emailNameInput', 'emailInput', 'emailPhoneInput', 'hf2RsaAddInput'];
 
     // Generated customer content. Every one of these is rebuilt by its own
     // screen's render path before it can be seen again.
@@ -21055,6 +21310,7 @@
       // visible ones (found by the privacy re-review). No quote characters in
       // this comment: the session suite parses the quoted ids from this block.
       'drawerShortlistFit', 'drawerSystemPromptTitle', 'drawerSystemPromptReason',
+      'hf2LeadLine',
       'hf2FinancingStatus', 'financingSheetStatus', 'financingSheetAction',
       'sleepPlanFinancingStatus', 'sleepPlanPrioritiesRecoveryText',
       'sessionSafetyLive', 'dataErrorLive',
@@ -21097,6 +21353,8 @@
       // The RSA roster panel is hidden-attribute-driven (toggleHf2RsaPanel);
       // it never carries an is-open class, so a class strip cannot close it.
       { id: 'hf2RsaPanel', hiddenAttr: true },
+      { id: 'hf2RsaAddRow', hiddenAttr: true },
+      { id: 'hf2RsaStripBtn', attrs: { 'aria-expanded': 'false' } },
       // 0.5: the trial-priorities section returns to hidden on wipe, so even a
       // path that showed hf2 without re-rendering could not expose the prior
       // customer's label over a cleared list.
@@ -21644,9 +21902,12 @@
         try { opener.focus({ preventScroll: true }); } catch (err) { opener.focus(); }
       }
       window._compareReturnFocus = null;
+      // Slice 6 (owner ruling): closing the modal never clears the persisted
+      // comparison selection, whatever opened it. Only the customer's own
+      // Clear control and the session wipe empty _compareSelected. The origin
+      // marker still resets so a later close carries no stale provenance.
       if (window._compareOrigin === 'review') {
         window._compareOrigin = '';
-        window.clearCompare();
       }
     };
 
@@ -21915,14 +22176,22 @@
       var navLabel = document.getElementById('drawerNavLabel');
       var prevBtn = document.getElementById('drawerPrevBtn');
       var nextBtn = document.getElementById('drawerNextBtn');
+      // Slice 6 a11y repair: NATIVE disabled at the ends. The old inline
+      // opacity/pointer-events pair left the buttons focusable and announced
+      // as enabled while taps silently no-opped, and the single-item branch
+      // never cleared the styles. disabled drops them from the drawer's tab
+      // cycle (drawerKeydown already filters el.disabled), announces
+      // correctly, and renders natively in forced colors.
       if (navLabel && window._drawerOrder.length > 1) {
         navLabel.textContent = (window._drawerCurrentIndex + 1) + (currentLang === 'es' ? ' de ' : ' of ') + window._drawerOrder.length;
-        prevBtn.style.opacity = window._drawerCurrentIndex > 0 ? '1' : '0.3';
-        prevBtn.style.pointerEvents = window._drawerCurrentIndex > 0 ? 'auto' : 'none';
-        nextBtn.style.opacity = window._drawerCurrentIndex < window._drawerOrder.length - 1 ? '1' : '0.3';
-        nextBtn.style.pointerEvents = window._drawerCurrentIndex < window._drawerOrder.length - 1 ? 'auto' : 'none';
+        prevBtn.disabled = window._drawerCurrentIndex <= 0;
+        nextBtn.disabled = window._drawerCurrentIndex >= window._drawerOrder.length - 1;
       }
-      if (navLabel && window._drawerOrder.length <= 1) navLabel.textContent = '';
+      if (navLabel && window._drawerOrder.length <= 1) {
+        navLabel.textContent = '';
+        prevBtn.disabled = true;
+        nextBtn.disabled = true;
+      }
 
       var drawer = document.getElementById('mattressDrawer');
       drawer.classList.remove('silver-drawer','bronze-drawer');
@@ -22007,14 +22276,7 @@
         return '<div class="drawer-try-prompt">' + escapeHtml(prompt) + '</div>';
       }).join('');
       document.getElementById('drawerReactionLabel').textContent = currentLang === 'es' ? '¿Cómo se sintió?' : 'How did it feel?';
-      var reactionLabels = currentLang === 'es'
-        ? { soft: 'Muy Suave', good: 'Buena Sensación', firm: 'Muy Firme' }
-        : { soft: 'Too Soft', good: 'Good Feel', firm: 'Too Firm' };
-      document.querySelectorAll('#drawerReactionRow button').forEach(function(btn) {
-        var reaction = btn.getAttribute('data-reaction');
-        btn.textContent = reactionLabels[reaction];
-        btn.classList.toggle('is-selected', (window._mattressReactions || {})[mattressId] === reaction);
-      });
+      paintDrawerReactions(mattressId);
 
       // opts.contentOnly — relocalise an ALREADY-OPEN drawer without touching
       // the dialog lifecycle. A language switch must not re-run focus entry,

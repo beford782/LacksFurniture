@@ -214,6 +214,23 @@ if (primaryStateFill.length) primaryStateFill.forEach((r) => console.log(`      
 // --- the shipped primary genuinely cannot carry text (proves D2 is required,
 //     and would flag a future retailer whose primary CAN, so the token stays
 //     justified rather than cargo-culted) ---
+// --- Slice 6: the pick-card tier/model line clears the normal-text floor ---
+// (the dated 2026-08-23 roadmap gate: whichever of 1.6 / the pre-showroom
+// accessibility gate shipped first had to raise this pairing). The line
+// renders at 11.2px on the #FFFDF8 card surface on the Summary AND the
+// Sleep Plan, so it needs the full 4.5:1, and the old pairing is pinned
+// below the floor as the negative control.
+{
+  const rule = cssRules.find((r) => r.sel.split(",").some((x) => x.trim() === ".hf2-pick__tier"));
+  check(".hf2-pick__tier takes --accent-ink (never --color-accent) for its text",
+    !!rule && /color:\s*var\(--accent-ink\)/.test(rule.body) && !/var\(--color-accent\)/.test(rule.body));
+  const ink = (styleBlock.match(/--accent-ink:\s*(#[0-9a-fA-F]{3,6})\s*;/) || [])[1];
+  const rr = ratio(ink, "#FFFDF8");
+  check(`the tier-line ink clears 4.5:1 on the card surface (got ${rr.toFixed(2)}:1)`, rr >= 4.5);
+  const old = ratio("#9A7445", "#FFFDF8");
+  check(`negative control: the retired warm-accent pairing is below the floor (got ${old.toFixed(2)}:1)`, old < 4.5);
+}
+
 {
   const rr = ratio(cfg.colors.storePrimary, "#F3EEE5");
   check(`shipped primary ${cfg.colors.storePrimary} on cream is below 4.5:1, so --accent-ink is required (got ${rr.toFixed(2)}:1)`,

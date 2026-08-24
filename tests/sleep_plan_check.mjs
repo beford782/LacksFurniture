@@ -339,7 +339,7 @@ if (gate("chooseFinalist", !!CHOOSE_SRC && !!TOGGLE_SAVE_SRC && !!REMOVE_SRC && 
     /t\('finalist\.building_around_finalist'\)/.test(norm) && /t\('finalist\.building_around_recommended'\)/.test(norm)
     && !/'Building around your finalist'/.test(norm));
   for (const k of ["finalist.chosen", "finalist.recommended", "finalist.none", "finalist.choose", "finalist.choose_as", "finalist.chosen_btn",
-    "finalist.building_around_finalist", "finalist.building_around_recommended", "compare.modal_title", "hf2.saved_picks_label", "hf2.compare_saved", "hf2.add_to_saved",
+    "finalist.building_around_finalist", "finalist.building_around_recommended", "compare.modal_title", "hf2.saved_picks_label", "hf2.compare_saved",
     "hf2.saved_picks_hint"]) {
     check(`dict key ${k} present in both languages and translated`,
       typeof dictEn[k] === "string" && dictEn[k].length > 0 && typeof dictEs[k] === "string" && dictEs[k].length > 0 && dictEn[k] !== dictEs[k]);
@@ -791,6 +791,275 @@ if (gate("renderSleepPlan", RENDER_SRCS.every(Boolean) && !!FALLBACK_SRC && !!RE
   check("the Results 'Review with customer' CTA routes to the Plan", /id="reviewWithCustomerBtn" onclick="window\.showSleepPlan\('results'\)"/.test(norm));
   check("hf2Screen's spoken name is now distinct from the Plan's", dictEn["screen.handoff"] !== dictEn["screen.sleep_plan"] && dictEs["screen.handoff"] !== dictEs["screen.sleep_plan"]);
   check("the governed recovery strings are exact EN", dictEn["plan.priorities_recovery"] === "We couldn't prepare the trial priorities. Return to the Sleep Brief and try again." && dictEn["plan.priorities_recovery_action"] === "Return to Sleep Brief");
+  // ---- Slice 6 C4: the Summary is a compact read model of saved state ------
+  section("Slice 6 C4 — read model: saved-only picks, cart-only system, drawer-only reactions");
+  {
+    const picksSrc = extractFunction("function renderHf2Picks()");
+    const pickSrc = extractFunction("function renderHf2Pick(m, tier)");
+    const accSrc = extractFunction("function renderHf2Accessories()");
+    check("renderHf2Picks renders ONLY saved picks in stored order (no suggestion pool, no favourite-first sort)",
+      !!picksSrc && !/suggestionPool|tierData|\.sort\(/.test(picksSrc)
+      && /window\._savedPicks/.test(picksSrc));
+    check("...the empty state is worded, dictionary-driven", /t\('hf2\.no_saved_picks'\)/.test(picksSrc));
+    check("...the hint is the dictionary sentence — no runtime count overwrite, no delivery claim",
+      /t\('hf2\.saved_picks_hint'\)/.test(picksSrc) && !/are sent|se env/i.test(picksSrc));
+    check("...Compare enables from two saved picks OR a persisted complete pair (C3)",
+      /_compareSelected/.test(picksSrc) && /saved\.length < 2/.test(picksSrc));
+    check("the pick card is compact: Plan-parity model line, no re-derived reason, no reaction row",
+      !!pickSrc && /sleepPlanModelLine/.test(pickSrc)
+      && !/buildMattressPriorities|hf2ReasonFor|_mattressReactions|reactionLabel/.test(pickSrc));
+    check("renderHf2Accessories is cart-only: no scorer, no suggestion fill, catalog-resolved names",
+      !!accSrc && !/scoreAccessoriesFromAnswers|recommendationCount|Still worth trying/.test(accSrc)
+      && /window\._accCart/.test(accSrc) && /ACCESSORIES/.test(accSrc));
+    check("...with a worded, dictionary-driven empty state and hint",
+      /t\('hf2\.no_system_items'\)/.test(accSrc) && /t\('hf2\.system_hint'\)/.test(accSrc));
+    check("the Summary no longer claims anything 'is sent' in either language (preview truth; gasUrl is blank)",
+      (() => {
+        // Extraction REQUIRED: a failed region match must FAIL the check,
+        // never fall through to a vacuous pass on a placeholder string.
+        const region = (norm.match(/function renderHf2Picks\(\)[\s\S]*?function renderHf2AccBlock/) || [""])[0];
+        return region.length > 200
+          && !/Only saved picks are sent|Only included pieces are sent|se envían\./.test(region)
+          && !/are sent/i.test(dictEn["hf2.saved_picks_hint"]) && !/se env/i.test(dictEs["hf2.saved_picks_hint"]);
+      })());
+    check("the lead line is in the wipe inventories (app SESSION_TEXT_IDS)",
+      /'hf2LeadLine',/.test(norm));
+  }
+
+  // ---- Slice 6 C4: the composed lead + payment sentence (executed) ----------
+  section("Slice 6 C4 — lead line: finalist state composed with payment state");
+  {
+    const leadSrc = extractFunction("function renderHf2LeadLine()");
+    const finSrc = extractFunction("function resolveFinalistState()");
+    const fallbackSrc = extractFunction("function finalistRecommendedFallback()");
+    const lineSrc = extractFunction("function sleepPlanModelLine(m)");
+    const tierSrc = extractFunction("function sleepPlanTierLabel(tier)");
+    check("extractions for the lead-line execution", !!leadSrc && !!finSrc && !!fallbackSrc && !!lineSrc && !!tierSrc);
+
+    const DICT = { en: dictEn, es: dictEs };
+    function makeLeadEnv(opts) {
+      const els = {};
+      const doc = { getElementById: (id) => (els[id] = els[id] || { textContent: "", hidden: false }) };
+      const win = throwingWindow({
+        _savedPicks: opts.saved || [],
+        _favoriteMattressId: opts.fav || ""
+      });
+      const lang = opts.lang || "en";
+      const t = (k, repl) => {
+        let v = DICT[lang][k] != null ? DICT[lang][k] : k;
+        if (repl) for (const key of Object.keys(repl)) v = v.split("{" + key + "}").join(repl[key]);
+        return v;
+      };
+      const FC = (k) => ({ preferenceNotNow: lang === "es" ? "Ahora no" : "Not right now",
+                           preferenceNone: lang === "es" ? "Sin seleccionar" : "Not selected" })[k] || k;
+      const src = finSrc + "\n" + fallbackSrc + "\n" + tierSrc + "\n" + lineSrc + "\n" + leadSrc
+        + "\nout.run = function() { renderHf2LeadLine(); };";
+      const out = {};
+      new Function("window", "document", "t", "FC", "financingEnabled", "finPaymentPaths",
+        "payPref", "PAY_NOT_NOW", "_resultsState", "currentLang", "out",
+        '"use strict";' + src)(
+        win, doc, t, FC, () => opts.financing !== false,
+        () => (opts.paths || [{ id: "plan-a", label: "Path A" }]),
+        "payPref" in opts ? opts.payPref : null, "not_now",
+        opts.results === undefined ? null : opts.results, lang, out);
+      out.run();
+      return els;
+    }
+    const RESULTS = { tierData: { gold: [{ id: "g1", name: "Cloud Nine", brand: "Restonic" }], silver: [], bronze: [] } };
+
+    let els = makeLeadEnv({ saved: [{ id: "g1", name: "Cloud Nine", brand: "Restonic", tier: "gold" }], fav: "g1", results: RESULTS, financing: false });
+    check("chosen + financing off: the finalist sentence alone, name + tier-and-position",
+      els.hf2LeadLine.textContent === "Finalist ✓ Restonic · Cloud Nine (" + dictEn["results.tier_gold"] + " · " + dictEn["results.match_lead"] + ").");
+    check("...the label renders from the dictionary", els.hf2LeadLabel.textContent === dictEn["hf2.lead_label"]);
+
+    els = makeLeadEnv({ results: RESULTS, payPref: null });
+    check("no finalist + engine pick + nothing selected: recommended sentence composed with 'Not selected'",
+      els.hf2LeadLine.textContent === "No finalist selected yet — Restonic · Cloud Nine (" + dictEn["results.tier_gold"] + " · " + dictEn["results.match_lead"] + ") is the recommended starting point. Payment preference: Not selected.");
+
+    els = makeLeadEnv({ results: RESULTS, payPref: "not_now" });
+    check("...Not right now flows through the SAME derivation the D4 rows use",
+      /Payment preference: Not right now\.$/.test(els.hf2LeadLine.textContent));
+
+    els = makeLeadEnv({ results: RESULTS, payPref: "plan-a" });
+    check("...a considered path names the path label", /Payment preference: Path A\.$/.test(els.hf2LeadLine.textContent));
+
+    els = makeLeadEnv({ results: RESULTS, payPref: "gone-path" });
+    check("...a stale path id falls back to 'Not selected', never a raw token",
+      /Payment preference: Not selected\.$/.test(els.hf2LeadLine.textContent) && !/gone-path/.test(els.hf2LeadLine.textContent));
+
+    els = makeLeadEnv({ results: null, financing: false });
+    check("no finalist and no results: the honest none sentence", els.hf2LeadLine.textContent === dictEn["hf2.lead_none"]);
+
+    els = makeLeadEnv({ lang: "es", results: RESULTS, payPref: null });
+    check("ES: the composed sentence resolves fully in Spanish",
+      els.hf2LeadLine.textContent.indexOf("Aún no has elegido finalista") === 0
+      && /Preferencia de pago: Sin seleccionar\.$/.test(els.hf2LeadLine.textContent));
+
+    // C12 (R3 I1): the remaining matrix cells — chosen composes with every
+    // payment state, and the none sentence composes too.
+    const CHOSEN_CELL = { saved: [{ id: "g1", name: "Cloud Nine", brand: "Restonic", tier: "gold" }], fav: "g1", results: RESULTS };
+    const _pickLine = "Finalist ✓ Restonic · Cloud Nine (" + dictEn["results.tier_gold"] + " · " + dictEn["results.match_lead"] + ").";
+    els = makeLeadEnv(Object.assign({ payPref: "plan-a" }, CHOSEN_CELL));
+    check("chosen x selected path: the finalist sentence composes with the path label",
+      els.hf2LeadLine.textContent === _pickLine + " Payment preference: Path A.");
+    els = makeLeadEnv(Object.assign({ payPref: "not_now" }, CHOSEN_CELL));
+    check("chosen x paused: ...with Not right now",
+      els.hf2LeadLine.textContent === _pickLine + " Payment preference: Not right now.");
+    els = makeLeadEnv(Object.assign({ payPref: null }, CHOSEN_CELL));
+    check("chosen x unselected: ...with the Not selected fallback",
+      els.hf2LeadLine.textContent === _pickLine + " Payment preference: Not selected.");
+    els = makeLeadEnv({ results: null, payPref: "plan-a" });
+    check("none x selected path: the honest none sentence still composes with payment state",
+      els.hf2LeadLine.textContent === dictEn["hf2.lead_none"] + " Payment preference: Path A.");
+    els = makeLeadEnv({ results: null, payPref: "not_now" });
+    check("none x paused: ...with Not right now",
+      els.hf2LeadLine.textContent === dictEn["hf2.lead_none"] + " Payment preference: Not right now.");
+
+    check("renderAllFinancingSurfaces refreshes the lead line (typeof-guarded — a payment tap cannot leave it stale)",
+      /if \(typeof renderHf2LeadLine === 'function'\) renderHf2LeadLine\(\);/.test(
+        (norm.match(/function renderAllFinancingSurfaces\(\)[\s\S]*?\n    \}/) || [""])[0]));
+  }
+
+  // ---- Slice 6 C8: RSA picker accessibility ---------------------------------
+  section("Slice 6 C8 — RSA picker: real buttons, disclosure semantics, no native dialog");
+  {
+    check("roster items are real buttons with aria-current and the Invariant-10 touch pair",
+      /itemBtn\.type = 'button';/.test(norm)
+      && /itemBtn\.setAttribute\('aria-current', isCurrent \? 'true' : 'false'\);/.test(norm)
+      && /itemBtn\.ontouchend = function\(event\) \{ event\.preventDefault\(\); selectHf2Rsa\(rsaName\); \};/.test(norm)
+      && !/li\.onclick/.test(norm));
+    check("the strip button declares the disclosure (aria-expanded + aria-controls) and every toggle branch derives it from the panel",
+      /id="hf2RsaStripBtn" type="button"\s*\r?\n\s*aria-expanded="false" aria-controls="hf2RsaPanel"/.test(norm)
+      && /strip\.setAttribute\('aria-expanded', panel\.hasAttribute\('hidden'\) \? 'false' : 'true'\);/.test(norm));
+    check("window.prompt is gone from executable code (comments may explain why)",
+      (norm.split("\n").filter((l) => l.includes("window.prompt") && !/^\s*(\/\/|<!--|\*)/.test(l)).length) === 0);
+    check("the inline add row is NOT a form, its input clears with the contact wipe, and its layers reset",
+      !/<form[^>]*hf2Rsa/.test(norm)
+      && /'emailNameInput', 'emailInput', 'emailPhoneInput', 'hf2RsaAddInput'/.test(norm)
+      && /\{ id: 'hf2RsaAddRow', hiddenAttr: true \},/.test(norm)
+      && /\{ id: 'hf2RsaStripBtn', attrs: \{ 'aria-expanded': 'false' \} \},/.test(norm));
+    check("the byte-pinned hf2RsaPanel layer entry is untouched",
+      /\{ id: 'hf2RsaPanel', hiddenAttr: true \},/.test(norm));
+    check("Escape closes the open panel and focus returns to the strip",
+      /if \(event\.key !== 'Escape'\) return;/.test(norm)
+      && /window\.toggleHf2RsaPanel\('close'\);\s*\r?\n\s*var strip = document\.getElementById\('hf2RsaStripBtn'\);\s*\r?\n\s*if \(strip && typeof strip\.focus === 'function'\) strip\.focus\(\);/.test(norm));
+    check("no NEW localStorage reference: the raw count stays at six (five executable device-roster lines + one comment; trust_integrity owns the executable-line pin)",
+      (norm.match(/localStorage/g) || []).length === 6);
+  }
+
+  // ---- Slice 6 C12: the payload lead assembly, executed ---------------------
+  section("Slice 6 C12 — payload lead/matchesSource assembly (executed)");
+  {
+    const finSrc = extractFunction("function resolveFinalistState()");
+    const fallbackSrc = extractFunction("function finalistRecommendedFallback()");
+    const lineSrc = extractFunction("function sleepPlanModelLine(m)");
+    const tierSrc = extractFunction("function sleepPlanTierLabel(tier)");
+    // The lead-assembly block inside sendResults, extracted verbatim — the
+    // anchor line is unique in the file.
+    const leadBlock = (norm.match(/const _finalist = resolveFinalistState\(\);[\s\S]*?const lead = \{[\s\S]*?\r?\n      \};/) || [""])[0];
+    const srcMS = (norm.match(/const matchesSource = saved\.length > 0 \? 'saved' : 'recommended';/) || [""])[0];
+    check("extractions: the lead assembly and the provenance line", leadBlock.length > 200 && srcMS.length > 10);
+    const runLead = (savedArr, fav, results) => {
+      const win = throwingWindow({ _savedPicks: savedArr, _favoriteMattressId: fav });
+      const t = (k) => k;
+      return new Function("window", "_resultsState", "t", "currentLang", "toAbsoluteImageUrl", "saved",
+        '"use strict";' + finSrc + "\n" + fallbackSrc + "\n" + tierSrc + "\n" + lineSrc + "\n"
+        + srcMS + "\n" + leadBlock + "\nreturn { lead: lead, matchesSource: matchesSource };")(
+        win, results, t, "en", (u) => u || "", savedArr);
+    };
+    const RESULTS2 = { tierData: { gold: [{ id: "g1", name: "Cloud Nine", brand: "Restonic", subBrand: "Core", imageUrl: "" }], silver: [], bronze: [] } };
+    let out = runLead([{ id: "g1", name: "Cloud Nine", brand: "Restonic · Core", subBrand: "Core", tier: "gold" }], "g1", RESULTS2);
+    check("chosen: the favourite saved pick is the lead; provenance 'saved'",
+      out.lead.kind === "chosen" && out.lead.name === "Cloud Nine" && out.matchesSource === "saved");
+    check("...the saved record's pre-joined display brand is NOT double-joined",
+      out.lead.brand === "Restonic · Core");
+    out = runLead([], "", RESULTS2);
+    check("no saved picks: the engine top pick is the lead, HONESTLY kind 'recommended', provenance 'recommended'",
+      out.lead.kind === "recommended" && out.lead.name === "Cloud Nine" && out.matchesSource === "recommended");
+    check("...the raw engine brand joins its subBrand exactly as the list rows do",
+      out.lead.brand === "Restonic · Core");
+    out = runLead([], "", null);
+    check("no results at all: the lead fails closed to kind 'none' with every field blank",
+      out.lead.kind === "none" && out.lead.name === "" && out.lead.brand === ""
+      && out.lead.line === "" && out.lead.imageUrl === "");
+    out = runLead([{ id: "s9", name: "Other", brand: "OtherBrand", tier: "silver" }], "", RESULTS2);
+    check("saved WITHOUT a favourite: provenance 'saved', but the lead stays the honest recommendation — never a promoted saved[0]",
+      out.matchesSource === "saved" && out.lead.kind === "recommended" && out.lead.name === "Cloud Nine");
+  }
+
+  // ---- Slice 6 C12: RSA focus restore + packet rows + mode verbs ------------
+  section("Slice 6 C12 — RSA focus restore, packet rows, mode-aware verbs");
+  {
+    const rsaSel = extractFunction("function selectHf2Rsa(name)");
+    check("roster-select and successful-add close the panel AND restore focus to the strip (the Escape pattern)",
+      !!rsaSel && /toggleHf2RsaPanel\('close'\);/.test(rsaSel)
+      && /getElementById\('hf2RsaStripBtn'\)/.test(rsaSel)
+      && /strip\.focus\(\)/.test(rsaSel));
+    check("the email packet row labels the list Saved mattress picks / Recommended matches — never finalists",
+      /\? \(_esE \? 'Selecciones de colchón guardadas' : 'Saved mattress picks'\)/.test(norm)
+      && /: \(_esE \? 'Colchones recomendados' : 'Recommended matches'\)/.test(norm));
+    check("the in-flight verb is mode-aware (Saving… while delivery is not live)",
+      /sendBtn\.textContent = emailDeliveryLive\(\)\s*\r?\n\s*\? \(currentLang === 'es' \? 'Enviando\.\.\.' : 'Sending\.\.\.'\)\s*\r?\n\s*: \(currentLang === 'es' \? 'Guardando\.\.\.' : 'Saving\.\.\.'\);/.test(norm));
+    check("the Summary send verbs are mode-aware (Save picks / Save Pass & Picks in preview)",
+      /var live = emailDeliveryLive\(\);/.test(norm)
+      && /'Guardar Pase y Selecciones' : 'Save Pass & Picks'/.test(norm)
+      && /'Guardar selecciones' : 'Save picks'/.test(norm));
+    check("C13 (external review): the reveal handler never writes the send verb itself — the ONE mode-aware renderer owns it",
+      (() => {
+        const reveal = extractFunction("function renderHf2DiscountButton()");
+        return !!reveal && reveal.length > 200
+          && !/hf2SendBtn/.test(reveal)
+          && /renderHf2SendButton\(\);/.test(reveal);
+      })());
+  }
+
+  // ---- Slice 6 C6: Welcome — tease removed, estimate removed, keys retired --
+  section("Slice 6 C6 — Welcome removals");
+  {
+    const INCOMING_FIN = JSON.parse(readFileSync(join(root, "incoming", "lacks_financing.json"), "utf8"));
+    const CFG_FIN_COPY = (STORE_CONFIG.financing && STORE_CONFIG.financing.copy) || {};
+    check("the Payment Choice tease branch is gone from the Welcome renderer (no financingEnabled tease, no tease FC reads)",
+      !/FC\('welcomeTagline'\)|FC\('welcomeSupport'\)/.test(norm)
+      && !/financingEnabled\(\)\) \{\s*\r?\n\s*if \(teaseRow\) teaseRow\.hidden = false;/.test(norm));
+    check("...the Savings-Pass tease branch (template capability) survives, dormant",
+      /savingsPassEnabled\(\)\) \{\s*\r?\n\s*if \(teaseRow\) teaseRow\.hidden = false;/.test(norm));
+    check("the tease copy keys are retired from the canonical envelope AND the generated config",
+      !("welcomeTagline" in (INCOMING_FIN.copy || {})) && !("welcomeSupport" in (INCOMING_FIN.copy || {}))
+      && !("welcomeTagline" in CFG_FIN_COPY) && !("welcomeSupport" in CFG_FIN_COPY)
+      && Object.keys(CFG_FIN_COPY).length > 10);
+    check("the completion-time estimate is gone: no element, no renderer write, no static literal",
+      !/id="landingTimeEstimate"/.test(norm) && !/setText\('landingTimeEstimate'/.test(norm) && !/≈ 4 minutes/.test(norm));
+    check("the outcome row keeps the one quiet Payment Choice reference (config voice.outcomeItems)",
+      /landingOutcomeItems/.test(norm) && /Payment Choices/.test(JSON.stringify(STORE_CONFIG.voice || {})));
+    check("the rendered heritage (the Welcome eyebrow) is untouched",
+      /setText\('landingEyebrow', voice\.eyebrow\)/.test(norm) && /setText\('landingHeritage', textBlock\.heritage\)/.test(norm));
+  }
+
+  // ---- Slice 6 C2: retitle, honest CTA, attribution, secondary Plan route --
+  section("Slice 6 C2 — Summary identity and routes");
+  check("the Results CTA names its destination: 'Review Sleep Plan' in both languages (runtime writer)",
+    /reviewWithCustomerBtn'\)\.textContent = es \? 'Revisar Plan de Sueño →' : 'Review Sleep Plan →';/.test(norm));
+  check("...and the static fallback label matches", /window\.showSleepPlan\('results'\);">Review Sleep Plan →<\/button>/.test(norm));
+  check("the Summary's visible title is 'Your Consultation Summary' / 'Tu Resumen de Consulta' (no longer the Plan's name)",
+    /hf2ReviewTitle: es \? 'Tu Resumen de Consulta' : 'Your Consultation Summary',/.test(norm)
+    && /id="hf2ReviewTitle">Your Consultation Summary<\/h1>/.test(norm)
+    && !/Review Your Sleep Plan/.test(norm));
+  check("the Summary's back control uses the SAME dictionary pair as the Plan's (plan.back_to_matches) — no inline fork",
+    /backBtn\.textContent = t\('plan\.back_to_matches'\);/.test(norm)
+    && !/'← Volver a colchones' : '← Back to matches'/.test(norm));
+  check("the secondary 'Review Sleep Plan' action exists with the Invariant-10 pair and the 'summary' origin",
+    /id="hf2ReviewPlanBtn" type="button"\s*\r?\n\s*onclick="window\.showSleepPlan\('summary'\)"\s*\r?\n\s*ontouchend="event\.preventDefault\(\);window\.showSleepPlan\('summary'\);"/.test(norm)
+    && (norm.match(/window\.showSleepPlan\('summary'\)/g) || []).length === 2);
+  check("...its label comes from the dictionary and it hides while Results state is absent",
+    /planBtn\.textContent = t\('hf2\.review_plan'\);/.test(norm) && /planBtn\.hidden = !_resultsState;/.test(norm)
+    && typeof dictEn["hf2.review_plan"] === "string" && typeof dictEs["hf2.review_plan"] === "string"
+    && dictEn["hf2.review_plan"] !== dictEs["hf2.review_plan"]);
+  check("the attribution line is config-derived only (storeName + voice.retailerSubline) and hides when blank",
+    /var attribution = document\.getElementById\('hf2Attribution'\);/.test(norm)
+    && /storeName\(\) \? \(attrSub \? storeName\(\) \+ ' · ' \+ attrSub : storeName\(\)\) : '';/.test(norm)
+    && /attribution\.hidden = !attrText;/.test(norm)
+    && /id="hf2Attribution" hidden><\/div>/.test(norm));
+
   check("the Plan's generated containers are in the content/text wipe inventories",
     ["sleepPlanFinalist", "sleepPlanPriorities", "sleepPlanCompared", "sleepPlanSystem", "sleepPlanFinancingInterest"].every((id) => new RegExp(`'${id}'`).test((norm.match(/var SESSION_CONTENT_IDS = \[[\s\S]*?\];/) || [""])[0]))
     && /'sleepPlanFinancingStatus', 'sleepPlanPrioritiesRecoveryText'/.test(norm));

@@ -108,8 +108,10 @@ const TRIAL_FN = grab(/function renderResultsTrialFocus\(\)\s*\{[\s\S]*?\n    \}
 const HF2_FN = grab(/function renderHf2Priorities\(\)\s*\{[\s\S]*?\n    \}/, "renderHf2Priorities()");
 const L_FN = grab(/function L\(obj\) \{[\s\S]*?\n    \}/, "L()");
 const ESCAPE_FN = grab(/function escapeHtml\([\s\S]*?\n    \}/, "escapeHtml()");
+// Slice 6 implemented the deferred all-or-nothing projection: the payload
+// field is now a gated IIFE (complete block or []). The extraction follows.
 const PROJECTION = grab(
-  /priorities: \(Array\.isArray\(analytics\.trialFocus\) \? analytics\.trialFocus : \[\]\)[\s\S]*?\.filter\(function\(p\) \{ return p\.name; \}\),/,
+  /priorities: \(function \(\) \{[\s\S]*?return entries\.length > 0 && entries\.every\(whole\) \? entries : \[\];\r?\n        \}\)\(\),/,
   "the payload priorities projection");
 
 // ---------- fixtures (identical to the baseline generator's) ----------------
@@ -205,13 +207,16 @@ function runHf2(trialFocus, lang) {
   const { els, doc } = makeDoc();
   const analytics = { trialFocus };
   const out = {};
-  new Function("document", "currentLang", "analytics", "out",
+  // Slice 6: the renderer resolves "Try this" through the dictionary
+  // (brief.try_this — the Sleep Plan's key), so the harness supplies the
+  // REAL dictionaries, exactly as runProfile already does.
+  new Function("document", "currentLang", "analytics", "out", "t",
     `"use strict";
     ${ESCAPE_FN}
     ${L_FN}
     ${HF2_FN}
     out.run = function() { renderHf2Priorities(); };
-    `)(doc, lang, analytics, out);
+    `)(doc, lang, analytics, out, (k) => (DICTS[lang] && DICTS[lang][k]) != null ? DICTS[lang][k] : k);
   out.run();
   return {
     section: els.get("hf2PrioritiesSection"),
@@ -432,13 +437,13 @@ section("hf2: ordered render from stored state, both languages, no recompute");
     const { els, doc } = makeDoc();
     const analytics = { trialFocus: runProfile(FIXTURES.C, "en").analytics.trialFocus };
     const out = {};
-    new Function("document", "currentLang", "analytics", "out",
+    new Function("document", "currentLang", "analytics", "out", "t",
       `"use strict";
       ${ESCAPE_FN}
       ${L_FN}
       ${HF2_FN}
       out.run = function() { renderHf2Priorities(); };
-      `)(doc, "en", analytics, out);
+      `)(doc, "en", analytics, out, (k) => (DICTS.en && DICTS.en[k]) != null ? DICTS.en[k] : k);
     out.run();
     check(`[${label}] precondition: visible with content first`,
       els.get("hf2PrioritiesSection").style.display === ""
@@ -466,13 +471,13 @@ section("hf2: ordered render from stored state, both languages, no recompute");
       if (base.length !== 3) { check(`[mixed] fixture C yields 3 priorities in ${lang} (got ${base.length})`, false); continue; }
       const analytics = { trialFocus: base };
       const out = {};
-      new Function("document", "currentLang", "analytics", "out",
+      new Function("document", "currentLang", "analytics", "out", "t",
         `"use strict";
         ${ESCAPE_FN}
         ${L_FN}
         ${HF2_FN}
         out.run = function() { renderHf2Priorities(); };
-        `)(doc, lang, analytics, out);
+        `)(doc, lang, analytics, out, (k) => (DICTS[lang] && DICTS[lang][k]) != null ? DICTS[lang][k] : k);
       out.run();
       check(`[mixed ${lang} idx${badIndex}] precondition: all-valid renders exactly 3 rows`,
         (els.get("hf2Priorities").innerHTML.match(/<li /g) || []).length === 3);
@@ -514,14 +519,14 @@ section("hf2: ordered render from stored state, both languages, no recompute");
   const { els, doc } = makeDoc();
   const analytics = { trialFocus: state };
   const out = {};
-  new Function("document", "analytics", "out", "langBox",
+  new Function("document", "analytics", "out", "langBox", "t",
     `"use strict";
     var currentLang = 'en';
     ${ESCAPE_FN}
     ${L_FN}
     ${HF2_FN}
     out.run = function() { renderHf2Priorities(); };
-    `)(doc, analytics, out, {});
+    `)(doc, analytics, out, {}, (k) => (DICTS.en && DICTS.en[k]) != null ? DICTS.en[k] : k);
   out.run();
   check("precondition: rendered visible with 3 rows first",
     els.get("hf2PrioritiesSection").style.display === ""
@@ -599,25 +604,38 @@ section("payload: bounded, allowlisted, pre-localized, ordered");
 // 6. STATIC WIRING
 // ===========================================================================
 section("static wiring: markup, placement, wipe inventory, isolation");
-check("the section markup exists with a class-free <ol>, statically empty",
-  /<ol id="hf2Priorities" style="[^"]*"><\/ol>/.test(html)
-  && !/<ol id="hf2Priorities"[^>]*class=/.test(html));
-check("the section ships hidden and carries the existing pattern's classes only",
+// Slice 6 resolves 0.5's provisional presentation: the <ol> keeps its native
+// ordered-list semantics and gains the component class; the inline spacing
+// styles move to CSS. The section still ships hidden.
+check("the priorities <ol> is the classed ordered component (no inline styles, semantics kept)",
+  /<ol class="hf2-priorities" id="hf2Priorities"><\/ol>/.test(html)
+  && !/<ol[^>]*id="hf2Priorities"[^>]*style=/.test(html));
+check("the component classes exist in CSS (the inline spacing moved, not vanished)",
+  /\.hf2-priorities \{/.test(html) && /\.hf2-priorities__item \{/.test(html));
+check("the section ships hidden and keeps the section pattern",
   /<section class="hf2-review-section" id="hf2PrioritiesSection" style="display:none">/.test(html));
 check("placement: after 'What we set out to solve', above the finalists",
   html.indexOf('id="hf2NeedsLabel"') < html.indexOf('id="hf2PrioritiesSection"')
   && html.indexOf('id="hf2PrioritiesSection"') < html.indexOf('id="hf2FinalistsLabel"'));
-check("no new component class: the section introduces no class outside the existing pattern",
+// The 0.5-era "no new component class" constraint was that item's own limit,
+// recorded as inherited debt for 1.6 — which this slice IS. The closed set
+// below is the deliberate replacement contract: the section may use exactly
+// the section pattern plus the named priorities component, nothing else.
+check("the section's class set is exactly the section pattern + the priorities component",
   (() => {
     const m = html.match(/<section class="hf2-review-section" id="hf2PrioritiesSection"[\s\S]*?<\/section>/);
     if (!m) return false;
     const classes = [...m[0].matchAll(/class="([^"]+)"/g)].flatMap((c) => c[1].split(/\s+/));
-    return classes.every((c) => ["hf2-review-section", "hf2-review-section__label"].includes(c));
+    return classes.length > 0 && classes.every((c) => ["hf2-review-section", "hf2-review-section__label", "hf2-priorities"].includes(c));
   })());
+check("the rendered items carry the component classes (li + try label)",
+  /'<li class="hf2-priorities__item">'/.test(html) && /class="hf2-priorities__try"/.test(html));
+check("the testing label resolves through the dictionary (brief.try_this — the Plan's key)",
+  /escapeHtml\(t\('brief\.try_this'\)\)/.test((html.match(/function renderHf2Priorities\(\)[\s\S]*?\n    \}/) || [""])[0]));
 check("the label is written by renderHf2's copy map, bilingually",
   /hf2PrioritiesLabel: es \? 'Lo que probaremos juntos' : 'What we will test together',/.test(html));
-check("renderHf2 renders priorities between the brief and the picks",
-  /renderHf2Brief\(\);\s*renderHf2Priorities\(\);\s*renderHf2Picks\(\);/.test(html));
+check("renderHf2 renders priorities between the brief and the picks (lead line precedes the triple)",
+  /renderHf2LeadLine\(\);\s*renderHf2Brief\(\);\s*renderHf2Priorities\(\);\s*renderHf2Picks\(\);/.test(html));
 check("the list is in the wipe's content inventory",
   /'hf2SleepSystemSection', 'hf2Priorities',/.test(html));
 check("the section returns to hidden through SESSION_LAYERS",
@@ -626,8 +644,17 @@ check("the payload literal keeps the shape session_async pins ('};' at six space
   /const payload = \{[\s\S]*?\n      \};/.test(html));
 check("the compute block never references financing",
   !/financing/i.test(PROFILE_FN));
-check("the widened mapping stores no score, kind or rank",
-  !/score|kind|rank/.test((PROFILE_FN.match(/analytics\.trialFocus = topPriorities\.map[\s\S]*?\}\);/) || [""])[0]));
+// Hardened 2026-08-23 (Slice 6 C1): the old anchor
+// `analytics.trialFocus = topPriorities.map` stopped matching when Slice 5
+// introduced the builtTrialFocus intermediary, and the check passed
+// VACUOUSLY on the empty string. The extraction is now required to be
+// non-empty, so a renamed or moved mapping fails here instead of
+// silently asserting nothing.
+check("the widened mapping stores no score, kind or rank (extraction non-vacuous)",
+  (function () {
+    var mapped = (PROFILE_FN.match(/var builtTrialFocus = topPriorities\.map[\s\S]*?\}\);/) || [""])[0];
+    return mapped.length > 50 && !/score|kind|rank/.test(mapped);
+  })());
 // A source-shape complement to the per-fixture resultsTrialFocus pins above
 // (which are the real behavioral coverage): the derivative still reads the
 // store through L(item) rather than any new path.
@@ -720,10 +747,79 @@ section("trial priorities: ruled neutral wording, no 'finalist' vocabulary");
     !/var valid = stored\.filter\(/.test(html));
   check("the producer stores the built array only when complete, else []",
     /analytics\.trialFocus = trialFocusIsComplete\(builtTrialFocus\) \? builtTrialFocus : \[\];/.test(html));
-  // The EMAIL projection keeps its pre-existing per-entry filter — deferred
-  // §1.6 work by owner ruling. Pinned so nobody "fixes" it here silently.
-  check("[deferred §1.6] the email projection's per-entry filter is untouched by this slice",
-    /priorities: \(Array\.isArray\(analytics\.trialFocus\) \? analytics\.trialFocus : \[\]\)/.test(html));
+  // Slice 6 IMPLEMENTED the deferral: the projection is all-or-nothing at
+  // the boundary. The bare per-entry filter is gone, and the gate is proven
+  // by execution below, not by string presence alone.
+  check("[§1.6 done] the email projection carries NO per-entry filter and IS the all-or-nothing gate",
+    !/\.filter\(function\(p\) \{ return p\.name; \}\),/.test(html)
+    && /priorities: \(function \(\) \{/.test(html));
+}
+
+// ===========================================================================
+// Slice 6: the payload projection is ALL-OR-NOTHING (executed).
+// ===========================================================================
+section("Slice 6: payload projection all-or-nothing (executed)");
+{
+  const base = runProfile(FIXTURES.C, "en").analytics.trialFocus;
+  check("[precondition] fixture C yields 3 complete priorities", base.length === 3);
+  check("complete store: the projection ships all 3, shaped name/reason/test",
+    (() => {
+      const out = runProjection(base, "en");
+      return out.length === 3 && out.every((p) => p.name && p.reason && p.test
+        && Object.keys(p).sort().join(",") === "name,reason,test");
+    })());
+  for (const [label, mutate] of [
+    ["a blank name", (e) => { e.en = ""; e.es = ""; }],
+    ["a missing reason", (e) => { delete e.why; }],
+    ["a whitespace-only test prompt", (e) => { e.test = { en: "   ", es: "   " }; }],
+  ]) {
+    for (const idx of [0, 1, 2]) {
+      const broken = base.map((x, i) => {
+        const copy = JSON.parse(JSON.stringify(x));
+        if (i === idx) mutate(copy);
+        return copy;
+      });
+      const out = runProjection(broken, "en");
+      check(`[${label} @${idx}] the WHOLE block empties — never a shortened or partial list (got ${out.length})`, out.length === 0);
+    }
+  }
+  // The boundary judges the PAYLOAD'S OWN language: a store whose ES prose
+  // is complete ships a complete ES payload even when an EN string is blank
+  // (the payload is single-language at send time), while the EN payload
+  // empties. The stricter both-language rule still lives where it belongs —
+  // in the producer/on-screen predicate, which such a store could never
+  // legally reach (it stores complete-or-[]).
+  check("the gate judges the payload's language: EN empties, ES ships complete, never a PARTIAL in either",
+    (() => {
+      const broken = base.map((x, i) => (i === 1 ? Object.assign(JSON.parse(JSON.stringify(x)), { test: { en: "", es: "x" } }) : x));
+      return runProjection(broken, "en").length === 0 && runProjection(broken, "es").length === 3;
+    })());
+  check("an empty store projects [] (unchanged posture)", runProjection([], "en").length === 0);
+  // R2 I-3 (client side): the projection caps FIRST — a malformed entry
+  // beyond the cap is sliced away before the gate ever sees it.
+  check("CAP-THEN-VALIDATE: a malformed 4th entry beyond the cap cannot empty the capped block",
+    (() => {
+      const four = base.concat([{ en: "", es: "", why: {}, test: {} }]);
+      const out = runProjection(four, "en");
+      return out.length === 3 && out.every((pr) => pr.name && pr.reason && pr.test);
+    })());
+  // C14 (external review round 2): the gate must FAIL CLOSED on a truthy
+  // non-string localized field — never throw out of sendResults().
+  check("a truthy non-string name field empties the block fail-closed — never a throw",
+    (() => {
+      const broken = base.map((x, i) => (i === 1 ? Object.assign(JSON.parse(JSON.stringify(x)), { en: {} }) : x));
+      try { return runProjection(broken, "en").length === 0; } catch (e) { return false; }
+    })());
+  check("...while the untouched-language payload still ships complete (per-language semantics hold)",
+    (() => {
+      const broken = base.map((x, i) => (i === 1 ? Object.assign(JSON.parse(JSON.stringify(x)), { en: {} }) : x));
+      try { return runProjection(broken, "es").length === 3; } catch (e) { return false; }
+    })());
+  check("a numeric test-prompt field empties the block fail-closed too",
+    (() => {
+      const broken = base.map((x, i) => (i === 2 ? Object.assign(JSON.parse(JSON.stringify(x)), { test: { en: 7, es: 7 } }) : x));
+      try { return runProjection(broken, "en").length === 0; } catch (e) { return false; }
+    })());
 }
 
 console.log(`\nConsultation priorities check: ${passed} passed, ${failed} failed`);

@@ -258,5 +258,33 @@ win.closeMattressDrawer();
 check("closing an already-closed drawer is harmless", drawer.hasAttribute("inert")
   && !drawer.classList.contains("drawer-open") && !resultsScreen.hasAttribute("inert"));
 
+
+console.log("\n-- Slice 6 C7: drawer control accessibility --");
+{
+  const norm = html.replace(/\r\n/g, "\n");
+  check("prev/next use NATIVE disabled at the ends (no opacity/pointer-events inertness)",
+    /prevBtn\.disabled = window\._drawerCurrentIndex <= 0;/.test(norm)
+    && /nextBtn\.disabled = window\._drawerCurrentIndex >= window\._drawerOrder\.length - 1;/.test(norm)
+    && !/prevBtn\.style\.pointerEvents/.test(norm));
+  check("...and the single-item branch disables BOTH (the stale-style leak is closed)",
+    /navLabel\.textContent = '';\s*\n\s*prevBtn\.disabled = true;\s*\n\s*nextBtn\.disabled = true;/.test(norm)
+    && /\.drawer-nav-btn:disabled \{/.test(norm));
+  check("ONE reaction painter serves both call sites, with aria-pressed and a non-colour check-mark cue",
+    (norm.match(/paintDrawerReactions\(/g) || []).length === 3
+    && /btn\.setAttribute\('aria-pressed', isSelected \? 'true' : 'false'\);/.test(norm)
+    && norm.includes("btn.textContent = (isSelected ? '\\u2713 ' : '') + labels[reaction];"));
+  check("the static reaction buttons declare aria-pressed from first paint",
+    (norm.match(/data-reaction="(soft|good|firm)" aria-pressed="false"/g) || []).length === 3);
+  check("drawer controls have a real focus indicator and its forced-colors counterpart, in a NEW block after the anchored ones",
+    /\.drawer-nav-btn:focus-visible,\s*\n\s*\.drawer-reaction-row button:focus-visible,\s*\n\s*\.drawer-btn:focus-visible \{/.test(norm)
+    && /\.drawer-reaction-row button\[aria-pressed="true"\] \{ border-width: 3px; \}/.test(norm));
+  check("the drawer promo kicker and system-prompt eyebrow rose to a usable 12px",
+    (() => {
+      const flat = norm.split("\n").join(" ");
+      return /drawer-promotion__kicker \{[^}]*font: 750 12px/.test(flat)
+        && /drawer-system-prompt__eyebrow \{[^}]*font: 750 12px/.test(flat);
+    })());
+}
+
 console.log(`\nDrawer lifecycle check: ${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

@@ -1128,6 +1128,9 @@ const REQUIRED_TEXT_IDS = [
   // Consider/Clear announcement (new in Slice 4), and the handoff's
   // Not-right-now announcement. Each keeps its last utterance until something
   // overwrites it, so each must be emptied by the wipe.
+  // Slice 6: the composed lead+payment sentence carries the finalist name
+  // and the payment-preference state — customer-derived, wiped by name.
+  "hf2LeadLine",
   "hf2FinancingStatus", "financingSheetStatus", "financingSheetAction",
   "sessionSafetyLive",
   "resultsRevealTitle", "resultsRevealSubtitle",

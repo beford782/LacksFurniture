@@ -31,6 +31,14 @@ Brief -> Results -> showSleepPlan('results')). No repository file is written.
 Requires the `playwright` package with Chromium installed
 (`python -m pip install playwright && python -m playwright install chromium`).
 
+Slice 6 extends the same run with a CONSULTATION SUMMARY pass (the redesign
+would otherwise ship with zero rendered verification - the exact blind spot
+that produced this file): per viewport, with a chosen finalist and a saved
+pick, the Summary must lay out as a column with no horizontal overflow, the
+lead line must speak the finalist and payment state legibly, and the send
+button must be reachable. A final forced-colors pass (Chromium forced-colors
+emulation) proves no probed Summary/Plan text renders invisible.
+
 Run: python tests/sleep_plan_layout_check.py
      python tests/sleep_plan_layout_check.py --screenshots <dir>   # also save PNGs
 """
@@ -204,6 +212,102 @@ PROBE_JS = r"""
 """
 
 
+SUMMARY_JS = r"""
+(ANS) => {
+  const out = {};
+  for (const k of Object.keys(ANS)) answers[k] = ANS[k];
+  showProfileScreen();
+  window.showResults();
+  // Real interactions: choose the engine's top pick as the finalist (this
+  // auto-saves it), then open the Summary through the chokepoint.
+  const top = _resultsState.tierData.gold[0];
+  window.chooseFinalist(top.id);
+  window.showSavedPicks();
+  const s = document.getElementById('hf2Screen');
+  const cs = getComputedStyle(s);
+  const doc = document.documentElement;
+  const bgOf = (el) => {
+    const layers = [];
+    for (let n = el; n; n = n.parentElement) {
+      const c = getComputedStyle(n).backgroundColor;
+      if (c && c !== 'rgba(0, 0, 0, 0)' && c !== 'transparent') layers.push(c);
+    }
+    layers.push(getComputedStyle(document.body).backgroundColor);
+    return layers;
+  };
+  const lead = document.getElementById('hf2LeadLine');
+  const title = document.getElementById('hf2ReviewTitle');
+  const tier = document.querySelector('.hf2-pick__tier');
+  const send = document.getElementById('hf2SendBtn');
+  const sb = send.getBoundingClientRect();
+  out.flexDirection = cs.flexDirection;
+  out.scrollWidth = doc.scrollWidth; out.clientWidth = doc.clientWidth;
+  out.activeElement = document.activeElement ? document.activeElement.id : null;
+  out.title = title.textContent;
+  out.lead = { text: lead.textContent, color: getComputedStyle(lead).color, bg: bgOf(lead) };
+  out.tier = tier ? { text: tier.textContent, color: getComputedStyle(tier).color, bg: bgOf(tier) } : null;
+  out.send = { text: send.textContent, x: sb.x, w: sb.width, color: getComputedStyle(send).color, bg: bgOf(send) };
+  out.attribution = document.getElementById('hf2Attribution').textContent;
+  out.picks = document.querySelectorAll('#hf2PicksList .hf2-pick').length;
+  return out;
+}
+"""
+
+
+def run_summary(browser, port, name, width, height, shots_dir):
+    print(f"\n-- SUMMARY {name} {width}x{height} --")
+    page = browser.new_page(viewport={"width": width, "height": height})
+    errors = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    page.goto(f"http://127.0.0.1:{port}/", wait_until="networkidle")
+    page.wait_for_selector("#startBtn")
+    r = page.evaluate(SUMMARY_JS, ANSWERS)
+    if shots_dir:
+        os.makedirs(shots_dir, exist_ok=True)
+        page.screenshot(path=os.path.join(shots_dir, f"summary-{name}-{width}x{height}.png"))
+    check("the Summary renders without a page error and focuses its title", not errors and r["activeElement"] == "hf2ReviewTitle")
+    check("the Summary is a flex COLUMN with no horizontal document scroll",
+          r["flexDirection"] == "column" and r["scrollWidth"] <= r["clientWidth"],
+          f"flex={r['flexDirection']} scrollW={r['scrollWidth']}/{r['clientWidth']}")
+    check("the visible title is the Consultation Summary", "Consultation Summary" in r["title"])
+    check("the chosen finalist appears in the lead line with the finalist vocabulary",
+          "Finalist" in r["lead"]["text"] and len(r["lead"]["text"]) > 20, r["lead"]["text"][:80])
+    l_fg, l_bg = parse_rgb(r["lead"]["color"]), composite(r["lead"]["bg"])
+    l_ratio = contrast(l_fg, l_bg) if l_fg and l_bg else 0
+    check(f"the lead line is readable (>= {MIN_CONTRAST}:1, got {l_ratio:.2f})", l_ratio >= MIN_CONTRAST)
+    if r["tier"]:
+        t_fg, t_bg = parse_rgb(r["tier"]["color"]), composite(r["tier"]["bg"])
+        t_ratio = contrast(t_fg, t_bg) if t_fg and t_bg else 0
+        check(f"the pick-card tier line clears the repaired floor (>= {MIN_CONTRAST}:1, got {t_ratio:.2f})", t_ratio >= MIN_CONTRAST)
+    check("exactly the saved pick renders (no suggestion padding)", r["picks"] == 1, f"picks={r['picks']}")
+    check("the attribution line is config-derived and non-empty", len(r["attribution"]) > 0)
+    s_fg, s_bg = parse_rgb(r["send"]["color"]), composite(r["send"]["bg"])
+    s_ratio = contrast(s_fg, s_bg) if s_fg and s_bg else 0
+    check(f"the send button sits inside the page and its label is readable (got {s_ratio:.2f}:1)",
+          r["send"]["x"] >= 0 and r["send"]["x"] + r["send"]["w"] <= width + 1 and s_ratio >= MIN_CONTRAST)
+    page.close()
+
+
+def run_forced_colors(browser, port, shots_dir):
+    print("\n-- forced-colors (Chromium emulation) 1194x748 --")
+    page = browser.new_page(viewport={"width": 1194, "height": 748}, forced_colors="active")
+    errors = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    page.goto(f"http://127.0.0.1:{port}/", wait_until="networkidle")
+    page.wait_for_selector("#startBtn")
+    r = page.evaluate(SUMMARY_JS, ANSWERS)
+    if shots_dir:
+        page.screenshot(path=os.path.join(shots_dir, "summary-forced-colors-1194x748.png"))
+    check("forced colors: the Summary renders without a page error", not errors)
+    for label in ("lead", "send"):
+        el = r[label]
+        fg, bg = parse_rgb(el["color"]), composite(el["bg"])
+        ok = fg is not None and bg is not None and fg != bg
+        check(f"forced colors: the {label} text is not invisible (fg != bg)", ok,
+              f"color={el['color']} bg={el['bg']}")
+    page.close()
+
+
 def run_viewport(browser, port, name, width, height, shots_dir):
     print(f"\n-- {name} {width}x{height} --")
     page = browser.new_page(viewport={"width": width, "height": height})
@@ -290,6 +394,9 @@ def main():
             browser = p.chromium.launch()
             for name, w, h in VIEWPORTS:
                 run_viewport(browser, port, name, w, h, args.screenshots)
+            for name, w, h in VIEWPORTS[:2]:
+                run_summary(browser, port, name, w, h, args.screenshots)
+            run_forced_colors(browser, port, args.screenshots)
             browser.close()
     finally:
         server.shutdown()
