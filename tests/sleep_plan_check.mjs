@@ -1004,6 +1004,13 @@ if (gate("renderSleepPlan", RENDER_SRCS.every(Boolean) && !!FALLBACK_SRC && !!RE
       /var live = emailDeliveryLive\(\);/.test(norm)
       && /'Guardar Pase y Selecciones' : 'Save Pass & Picks'/.test(norm)
       && /'Guardar selecciones' : 'Save picks'/.test(norm));
+    check("C13 (external review): the reveal handler never writes the send verb itself — the ONE mode-aware renderer owns it",
+      (() => {
+        const reveal = extractFunction("function renderHf2DiscountButton()");
+        return !!reveal && reveal.length > 200
+          && !/hf2SendBtn/.test(reveal)
+          && /renderHf2SendButton\(\);/.test(reveal);
+      })());
   }
 
   // ---- Slice 6 C6: Welcome — tease removed, estimate removed, keys retired --

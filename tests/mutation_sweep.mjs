@@ -1727,6 +1727,9 @@ const MUTATIONS = [
   ["Code.gs: the plain list header sits over an empty list again",
     "      + 'Show this email to your ' + storeName + ' sleep specialist.\\n\\n'\n      + (allMatches.length ? _plainListHeader + '\\n' : '')",
     "      + 'Show this email to your ' + storeName + ' sleep specialist.\\n\\n'\n      + _plainListHeader + '\\n'", EMAIL_PRIORITIES, "Code.gs"],
+  ["slice6: the reveal handler claims Send in preview mode again",
+    "        // C13 (external review, PR #58): the send verb is owned by the ONE\n        // mode-aware renderer. The --revealed class is already set above, so\n        // re-rendering yields the right verb for the mode — preview mode keeps\n        // saying Save/Guardar, never a \"send\" claim while gasUrl is blank.\n        renderHf2SendButton();",
+    "        var sendBtn = document.getElementById('hf2SendBtn');\n        if (sendBtn) sendBtn.textContent = es ? 'Enviar Pase y Selecciones' : 'Send Pass & Picks';", PLAN],
   // C7/C8: drawer + RSA accessibility.
   ["slice6: drawer prev/next fall back to focusable-but-inert styling",
     "        prevBtn.disabled = window._drawerCurrentIndex <= 0;\n        nextBtn.disabled = window._drawerCurrentIndex >= window._drawerOrder.length - 1;",

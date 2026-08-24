@@ -20307,12 +20307,11 @@
             + (es ? '% de descuento · hasta ' : '% off · through ')
             + pass.expirationLabel;
         }
-        var sendBtn = document.getElementById('hf2SendBtn');
-        if (sendBtn) {
-          sendBtn.textContent = es
-            ? 'Enviar Pase y Selecciones'
-            : 'Send Pass & Picks';
-        }
+        // C13 (external review, PR #58): the send verb is owned by the ONE
+        // mode-aware renderer. The --revealed class is already set above, so
+        // re-rendering yields the right verb for the mode — preview mode keeps
+        // saying Save/Guardar, never a "send" claim while gasUrl is blank.
+        renderHf2SendButton();
         playSavingsPassReveal();
       };
     }
