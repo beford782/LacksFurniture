@@ -29,7 +29,12 @@ round 3 was clean at exactly `ca088e3`. The real Windows forced-colors gate
 is **owner-run and owner-attested PASS** at the frozen reviewed head — that
 is owner-reported evidence, not independently observed by the implementer,
 and it is not browser emulation and not a device result. Item 1.6 moves
-⬜ → ✅. Standing: the mounted-device check for this merge was **NOT
+⬜ → ⏳ — its code is merged and verified, but the exit's "Compare correctly
+labelled from the Consultation Summary" clause is not met in one reachable
+state (a complete comparison pair persisted from unsaved Results cards is
+opened under a "Compare saved picks" label), and the exit grants no follow-up
+exception; closing it needs either a label correction (an application change,
+not authorized here) or a dated owner ruling amending the clause. Standing: the mounted-device check for this merge was **NOT
 PERFORMED — permitted under the standing owner waiver for development/preview
 merges; not a pass**; the complete pre-showroom device and accessibility
 matrix remains blocking; showroom authorization NO; Spanish provisional;
@@ -130,8 +135,10 @@ screen (D5 / item 1.7)** is `✅` — PR #53 merged 2026-08-23 as `f27f879`
 (head `cd1f1ef` = commits C0–C10 plus the merge of `main` `ed9374b`; branch
 kept; post-merge CI and Pages verified at exactly `f27f879`; served bytes
 identical to the owner-retested `cd1f1ef`). **(6) Slice 6 — the Consultation
-Summary, Welcome, the mattress drawer and the email (item 1.6)** is `✅` —
-PR #58 merged 2026-08-24 as `3f92241` (head `ca088e3` = commits C1–C14;
+Summary, Welcome, the mattress drawer and the email (item 1.6)** is `⏳` —
+its code is merged and verified, but one exit clause (Compare correctly
+labelled from the Consultation Summary) is outstanding, so the item is not
+closed. PR #58 merged 2026-08-24 as `3f92241` (head `ca088e3` = commits C1–C14;
 parents `5d05141` + `ca088e3`; branch kept; post-merge CI run 32679509403 and
 Pages run 32679508890 verified at exactly `3f92241`; served bytes identical
 to the merged blobs; a 70/70 live deployed rendered walk in both device
@@ -805,8 +812,8 @@ Phase 2, Phase 3, and the showroom blocker.)*
 
 *(2026-08-21: Blake Ford instructed, in conversation, that a cross-cutting
 Trust integrity and transparency gate be inserted after Slice 4 and before
-Slice 5. Its work lies inside 1.2 and 1.6 (⬜ when this was written; 1.6 is ✅ as of
-2026-08-24) and 1.3's Proceeds (neither gated output), so it proceeds under
+Slice 5. Its work lies inside 1.2 and 1.6 (⬜ when this was written; 1.6 is ⏳ as of
+2026-08-24 — code merged, one exit clause outstanding) and 1.3's Proceeds (neither gated output), so it proceeds under
 this authorization and lifts nothing on the list above.)*
 
 ### Standing Phase 1 constraints
@@ -2022,7 +2029,7 @@ If a gesture test exposes a defect that would require changing the established
 touch-handler architecture, STOP: that is Invariant 10 and D6 territory and
 needs its own authorization.
 
-### 1.6 — Consultation Summary, Compare, and the remaining screens ✅ (merged 2026-08-24, `3f92241`; PR #58 head `ca088e3`)
+### 1.6 — Consultation Summary, Compare, and the remaining screens ⏳ (code merged 2026-08-24, `3f92241`; PR #58 head `ca088e3`; one exit clause outstanding)
 
 **The Review screen stays complete and fully editable.** That is the approved
 default, not a pending question, and it does not hold this item open. Compressing
@@ -2069,8 +2076,9 @@ stands open)*; and 0.5's provisional
 priorities presentation has been **either replaced, or kept under a no-change
 decision approved by Blake and recorded here with the date**.
 
-*(2026-08-24 — the exit is met, clause by clause, on `main` at `3f92241`
-(PR #58). **Consultation Summary:** ships its reworked presentation — the
+*(2026-08-24 — where the exit stands, clause by clause, on `main` at `3f92241`
+(PR #58). Three clauses are met and one is **not**, so the item takes ⏳ —
+code merged, not closed, not ✅. **Consultation Summary:** ships its reworked presentation — the
 compact saved-state read model, the composed lead/payment status line, the
 attribution, the classed ordered priorities component and the retained
 navigation. **Welcome:** ships its reworked presentation — the Payment Choice
@@ -2086,16 +2094,26 @@ with `aria-pressed` and a check-mark cue, real focus indicators with their own
 forced-colors block, 12px eyebrows) **under an explicit owner decision, dated
 2026-08-23, that the drawer's presentation is otherwise unchanged** — that is
 this clause's "no-change decision", recorded here, not an implementer's
-judgement. **Compare:** all four entry surfaces exist and are correctly
-labelled (the reconciled table below; the Sleep Brief clause was resolved
-2026-08-10), and Slice 6 preserved the persisted comparison selection rather
-than clearing it on close. **0.5's provisional priorities presentation:**
+judgement. **0.5's provisional priorities presentation:**
 replaced, not merely kept — it is now a classed ordered component with native
-list semantics. One residual honesty edge is recorded, not closed: with 0–1
-saved picks but a persisted complete pair selected from unsaved Results cards,
-the Summary's compare control still reads "Compare saved picks" while
-comparing that pair — the persistence ruling working as decided, with the
-label left as a follow-up.)*
+list semantics.
+
+**Compare — this clause is NOT met, and it is what holds 1.6 at ⏳.** All four
+entry surfaces exist and the Sleep Brief clause was resolved 2026-08-10 (the
+reconciled table below), and Slice 6 preserved the persisted comparison
+selection rather than clearing it on close, per the owner's ruling. But the
+exit requires Compare to be **correctly labelled** from the Consultation
+Summary, and in one reachable state it is not: with 0–1 saved picks and a
+complete pair persisted from *unsaved* Results cards, the Summary's control
+reads "Compare saved picks" while opening that unsaved pair. The exit grants
+no follow-up exception, so recording this as a follow-up while marking the
+item complete would falsely close an unmet clause — the item stays ⏳ instead.
+**Named condition for ⏳ → ✅:** the Summary's compare control is correctly
+labelled in every state its enable rule admits — either by correcting the
+label (an application change, which needs its own authorization and is not in
+this documentation-only close-out) or by an owner ruling that amends this
+clause and is recorded here with its date. Nothing else in the exit is
+outstanding.)*
 
 A description of intended direction, written by whoever is doing the work,
 satisfies no clause of this exit — this is a visible-redesign item, and 1.6 is the
@@ -2120,9 +2138,11 @@ So Phase 1's remaining Compare work here is coherence review, not
 reactivation: the entries above exist and the label/behaviour mismatch is
 resolved. **This did not close 1.6** — at the time it was written every other clause of
 the exit (Consultation Summary presentation, Welcome, drawer, email, 0.5's
-provisional presentation) stood open. *(Status correction, 2026-08-24: those
-remaining clauses were met by Slice 6, merged as `3f92241`; 1.6 is now ✅ —
-see the dated exit record above. An earlier revision of this sentence also
+provisional presentation) stood open. *(Status correction, 2026-08-24: the
+Consultation Summary, Welcome, drawer and email clauses, and 0.5's provisional
+presentation, were met by Slice 6, merged as `3f92241`; 1.6 is now ⏳ — code
+merged, not closed — with the Compare-label clause outstanding, see the dated
+exit record above. An earlier revision of this sentence also
 said Phase 1 implementation remained unauthorized; it was authorized
 2026-08-12.)* Do not turn Compare into another feature wall.
 
@@ -2167,7 +2187,7 @@ distinct: UI implementation, payload capability, GAS activation, and verified
 delivery — `gasUrl` is blank today, so no email change is "live" merely because the
 template exists.
 
-*(2026-08-23 → merged 2026-08-24, Slice 6 — owner-decided implementation, shipped from branch `claude/nocturne-slice6-consultation-summary` (base `5d05141`, head `ca088e3`) as PR #58, merge commit `3f92241adac309d6fcc4b5525ccd6e1aade30fb9`. The owner's recorded decisions, all implemented: the Consultation Summary retitles to “Your Consultation Summary” and becomes a compact authoritative read model of saved state — only customer-saved picks in stored order, only the selected Sleep System configuration, reactions drawer-only, the implication rows and trial priorities kept (the priorities as a classed ordered component, resolving 0.5's provisional presentation), an explicit lead state (Finalist ✓ / Recommended starting point / none) COMPOSED with a payment-state sentence derived exactly as the D4 rows derive theirs, storeName + the configured consultation subline as attribution (no heritage repeat); navigation keeps “← Back to matches” and adds a distinct secondary “Review Sleep Plan” action (no origin-aware Back); closing the Summary or Compare never clears the persisted comparison selection (the recorded favourite-first auto-select fills an empty pair and persists honestly; an existing complete pair is never overwritten). Welcome: the Payment Choice tease row and the unverified completion-time estimate are removed; the outcome list's quiet “Payment Choices” entry is the one retained acknowledgment; the tease-only envelope keys welcomeTagline / welcomeSupport retired through the canonical pipeline; the eyebrow (the only RENDERED heritage — the footer duplicate never renders) and the data-use sentence untouched. Drawer: a bounded accessibility repair (native disabled prev/next, aria-pressed + check-mark reactions via one painter, real focus indicators with their own forced-colors block, 12px eyebrows) — the drawer's presentation is otherwise deliberately unchanged under the same owner decisions; the RSA picker gains real button items, disclosure semantics and an inline add row replacing the app's only window.prompt. Email/payload: the priorities projection is ALL-OR-NOTHING on both the client and Code.gs (implementing the Slice 5 C1 deferral); a closed lead contract {chosen/recommended/none} replaces the silent allMatches[0] promotion; matchesSource labels the list “Saved mattress picks” vs “Your mattress matches” (fail-closed to recommended); match percentages leave customer copy in both MIME parts (tier-and-position lines instead; the sheet row keeps its internal record); the redundant sleepProfile prose is suppressed while a complete priorities block renders; saved/send wording is mode-aware (nothing says “sent” while gasUrl is blank). Code.gs changes are capability only — NOT deployed, gasUrl stays blank. The Results CTA relabels to “Review Sleep Plan →” (it opens the Plan). All new ES strings are provisional under Invariant 12 and inventoried in the PR. **Merge gate for this slice (owner instruction, 2026-08-23): a real Windows forced-colors check before Slice 6 can merge — no waiver.** The branch's rendered check includes a Chromium forced-colors emulation pass as supporting evidence; it is not that gate.)*
+*(2026-08-23, Slice 6 — owner-decided implementation IN PROGRESS on branch `claude/nocturne-slice6-consultation-summary` (base `5d05141`); the exit marks move only when the reviewed PR merges. The owner's recorded decisions: the Consultation Summary retitles to “Your Consultation Summary” and becomes a compact authoritative read model of saved state — only customer-saved picks in stored order, only the selected Sleep System configuration, reactions drawer-only, the implication rows and trial priorities kept (the priorities as a classed ordered component, resolving 0.5's provisional presentation), an explicit lead state (Finalist ✓ / Recommended starting point / none) COMPOSED with a payment-state sentence derived exactly as the D4 rows derive theirs, storeName + the configured consultation subline as attribution (no heritage repeat); navigation keeps “← Back to matches” and adds a distinct secondary “Review Sleep Plan” action (no origin-aware Back); closing the Summary or Compare never clears the persisted comparison selection (the recorded favourite-first auto-select fills an empty pair and persists honestly; an existing complete pair is never overwritten). Welcome: the Payment Choice tease row and the unverified completion-time estimate are removed; the outcome list's quiet “Payment Choices” entry is the one retained acknowledgment; the tease-only envelope keys welcomeTagline / welcomeSupport retired through the canonical pipeline; the eyebrow (the only RENDERED heritage — the footer duplicate never renders) and the data-use sentence untouched. Drawer: a bounded accessibility repair (native disabled prev/next, aria-pressed + check-mark reactions via one painter, real focus indicators with their own forced-colors block, 12px eyebrows) — the drawer's presentation is otherwise deliberately unchanged under the same owner decisions; the RSA picker gains real button items, disclosure semantics and an inline add row replacing the app's only window.prompt. Email/payload: the priorities projection is ALL-OR-NOTHING on both the client and Code.gs (implementing the Slice 5 C1 deferral); a closed lead contract {chosen/recommended/none} replaces the silent allMatches[0] promotion; matchesSource labels the list “Saved mattress picks” vs “Your mattress matches” (fail-closed to recommended); match percentages leave customer copy in both MIME parts (tier-and-position lines instead; the sheet row keeps its internal record); the redundant sleepProfile prose is suppressed while a complete priorities block renders; saved/send wording is mode-aware (nothing says “sent” while gasUrl is blank). Code.gs changes are capability only — NOT deployed, gasUrl stays blank. The Results CTA relabels to “Review Sleep Plan →” (it opens the Plan). All new ES strings are provisional under Invariant 12 and inventoried in the PR. **Merge gate for this slice (owner instruction, 2026-08-23): a real Windows forced-colors check before Slice 6 can merge — no waiver.** The branch's rendered check includes a Chromium forced-colors emulation pass as supporting evidence; it is not that gate.)*
 
 *(2026-08-24, Slice 6 merge and deployment record. **Merge:** PR #58 merged
 01:21Z as merge commit `3f92241adac309d6fcc4b5525ccd6e1aade30fb9` — first
