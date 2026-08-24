@@ -9,7 +9,33 @@ owner-review decisions (see "Phase 1 direction decisions — recorded
 see the open-decisions register. Device hardening remains BLOCKING for
 showroom use.**
 
-**Last updated:** 2026-08-23 *(hotfix record: a rendered verification found the shipped Sleep Plan had no CSS rule of its own — flex-row on the dark theme, Continue outside the portrait viewport — see the dated paragraph at the end of item 1.7 and "Facts that correct earlier drafts"; repair merged 2026-08-23 as `5d05141` (PR #57; post-merge CI, Pages and served-bytes verified). Earlier the same day, this revision closed out Slice 5: PR #53 merged 2026-08-23 15:05Z as merge commit `f27f879` (parents `ed9374b` + `cd1f1ef`; merge, not squash; branch kept); post-merge CI run 32647462080 and Pages run 32647461216 succeeded at exactly `f27f879`; the public preview serves `index.html` SHA-256 `91C267E81FF20FCB1F1EDC350E167ABB11568E58B1CEEF6FAFD841E71F306591` = the `cd1f1ef` blob, every data file hash-identical, headless render clean at both iPad viewports, `gasUrl` blank. Item 1.7 moves 🔨 → ✅ with its merge record, the C8–C10 external-review fixes (C10 = the owner-authorized "Try the mattress flat" prose with both fixture pins moved), the PLAN-01 focused retest (RT-01/02/03 owner-attested PASS at `cd1f1ef` — a browser verification the owner accepted in lieu of a mounted-device re-walk of the C8–C10 surfaces; recorded as an explicit waiver, the full device matrix having passed at `466a474`) and one non-blocking follow-up (the Summary's "← Back to matches" label/route). The reconciliation baseline is re-pointed from `d4049cb` to `f27f879`. Showroom NOT authorized; forced-colors required before showroom; Spanish provisional and deferred. Earlier the same day, on the Slice 5 branch: item 1.7 recorded the `466a474` integration, the owner-attested manual pass and the five owner rulings of 2026-08-23 — forced-colors waived for the preview merge only and required before showroom; native Spanish deferred; ready-for-review authorized; merge not yet; showroom no. Earlier on 2026-08-23 this revision closed out the Trust integrity gate: PR #54 merged 2026-08-23 00:13Z as merge commit `d4049cb` (parents `4a76503` + `084f2f0`; merge, not squash; branch kept). Post-merge CI run 32607312520 and Pages run 32607311802 both succeeded at exactly `d4049cb`; the public preview `https://beford782.github.io/LacksFurniture/` serves `index.html` with SHA-256 `B0981E11F9065FA69DBD8BCD31EE100C7044E1FFB58C56AC87241E525D412321` — the bytes physically tested at `f748f59` and owner-reviewed at `9f27680` — and `store-config`, `quiz`, both dictionaries, `mattresses` and `allowed-hosts` hash-identical to `main`; a headless render showed Welcome with its Start button, one heritage line and the data-use sentence, no unauthorized-domain screen, no data-error overlay, a clean console; served `gasUrl` is blank, the draft-policy notice and preview wording are served. Preview deployment only: no showroom use, no live email, Spanish provisional. The gate moves 🔨 → ✅; Slice 5 (draft PR #53, `6decbef`) is next and must update from `main` at `d4049cb`, re-run the conflict forecast against that actual `main` — which now also carries the validator and test-manifest changes from the external-review fixes — resolve keep-both, rebuild the demo bundle with the canonical tool and re-run the complete suite and sweep on the combined tree; #53's pre-integration CI is not post-gate evidence. The reconciliation baseline is re-pointed from `4a76503` to `d4049cb`.)* The previous revision, 2026-08-22, recorded the owner's 2026-08-21 product-direction
+**Last updated:** 2026-08-24 *(Slice 6 close-out: PR #58 merged 2026-08-24
+01:21Z as merge commit `3f92241adac309d6fcc4b5525ccd6e1aade30fb9` (parents
+`5d05141` + `ca088e3`; merge, not squash; branch kept). Post-merge CI run
+32679509403 and Pages run 32679508890 both succeeded at exactly `3f92241`;
+served bytes are byte-identical to the merged blobs for `index.html`,
+`store-config`, `allowed-hosts`, both dictionaries and all three demo-bundle
+files (8/8); a live deployed rendered walk passed 70/70 in both device
+viewports (Results → Sleep Plan → Consultation Summary, saved-only picks,
+drawer disabled ends and reaction cue, RSA focus restore on both paths,
+"Save picks" never "Send" under blank `gasUrl`, fail-closed priorities, clean
+wipe, no horizontal overflow, zero console errors); the full mutation sweep
+was 453/453 caught, 0 survived, 0 not applied at the reviewed head. Three
+external review rounds were reconciled: round 1 and round 2 each raised one
+P2 — the Savings-Pass reveal handler bypassing the mode-aware send-verb
+renderer (fixed, C13) and the payload priorities gate throwing on a
+non-string localized field instead of failing closed (fixed, C14) — and
+round 3 was clean at exactly `ca088e3`. The real Windows forced-colors gate
+is **owner-run and owner-attested PASS** at the frozen reviewed head — that
+is owner-reported evidence, not independently observed by the implementer,
+and it is not browser emulation and not a device result. Item 1.6 moves
+⬜ → ✅. Standing: the mounted-device check for this merge was **NOT
+PERFORMED — permitted under the standing owner waiver for development/preview
+merges; not a pass**; the complete pre-showroom device and accessibility
+matrix remains blocking; showroom authorization NO; Spanish provisional;
+live email off with `gasUrl` blank; `Code.gs` is capability only and was not
+deployed. The reconciliation baseline is re-pointed from `f27f879` to
+`3f92241`. The previous revision, 2026-08-23, recorded the hotfix: a rendered verification found the shipped Sleep Plan had no CSS rule of its own — flex-row on the dark theme, Continue outside the portrait viewport — see the dated paragraph at the end of item 1.7 and "Facts that correct earlier drafts"; repair merged 2026-08-23 as `5d05141` (PR #57; post-merge CI, Pages and served-bytes verified). Earlier the same day, this revision closed out Slice 5: PR #53 merged 2026-08-23 15:05Z as merge commit `f27f879` (parents `ed9374b` + `cd1f1ef`; merge, not squash; branch kept); post-merge CI run 32647462080 and Pages run 32647461216 succeeded at exactly `f27f879`; the public preview serves `index.html` SHA-256 `91C267E81FF20FCB1F1EDC350E167ABB11568E58B1CEEF6FAFD841E71F306591` = the `cd1f1ef` blob, every data file hash-identical, headless render clean at both iPad viewports, `gasUrl` blank. Item 1.7 moves 🔨 → ✅ with its merge record, the C8–C10 external-review fixes (C10 = the owner-authorized "Try the mattress flat" prose with both fixture pins moved), the PLAN-01 focused retest (RT-01/02/03 owner-attested PASS at `cd1f1ef` — a browser verification the owner accepted in lieu of a mounted-device re-walk of the C8–C10 surfaces; recorded as an explicit waiver, the full device matrix having passed at `466a474`) and one non-blocking follow-up (the Summary's "← Back to matches" label/route). The reconciliation baseline is re-pointed from `d4049cb` to `f27f879`. Showroom NOT authorized; forced-colors required before showroom; Spanish provisional and deferred. Earlier the same day, on the Slice 5 branch: item 1.7 recorded the `466a474` integration, the owner-attested manual pass and the five owner rulings of 2026-08-23 — forced-colors waived for the preview merge only and required before showroom; native Spanish deferred; ready-for-review authorized; merge not yet; showroom no. Earlier on 2026-08-23 this revision closed out the Trust integrity gate: PR #54 merged 2026-08-23 00:13Z as merge commit `d4049cb` (parents `4a76503` + `084f2f0`; merge, not squash; branch kept). Post-merge CI run 32607312520 and Pages run 32607311802 both succeeded at exactly `d4049cb`; the public preview `https://beford782.github.io/LacksFurniture/` serves `index.html` with SHA-256 `B0981E11F9065FA69DBD8BCD31EE100C7044E1FFB58C56AC87241E525D412321` — the bytes physically tested at `f748f59` and owner-reviewed at `9f27680` — and `store-config`, `quiz`, both dictionaries, `mattresses` and `allowed-hosts` hash-identical to `main`; a headless render showed Welcome with its Start button, one heritage line and the data-use sentence, no unauthorized-domain screen, no data-error overlay, a clean console; served `gasUrl` is blank, the draft-policy notice and preview wording are served. Preview deployment only: no showroom use, no live email, Spanish provisional. The gate moves 🔨 → ✅; Slice 5 (draft PR #53, `6decbef`) is next and must update from `main` at `d4049cb`, re-run the conflict forecast against that actual `main` — which now also carries the validator and test-manifest changes from the external-review fixes — resolve keep-both, rebuild the demo bundle with the canonical tool and re-run the complete suite and sweep on the combined tree; #53's pre-integration CI is not post-gate evidence. The reconciliation baseline is re-pointed from `4a76503` to `d4049cb`.)* The previous revision, 2026-08-22, recorded the owner's 2026-08-21 product-direction
 rulings on the Trust integrity gate — R1 merge order: draft PR #54 (the gate)
 merges before draft PR #53 (Slice 5), which then integrates the resulting
 `main` and proves the combined behaviour; R2 heritage stays Welcome-only this
@@ -65,9 +91,11 @@ owner-approved scoring change they carried.)*
 `main` when this document's phase statuses were written, the merge commit of
 PR #16 (2026-08-05). It is **not** current `main`. GitHub state is
 authoritative; a local checkout never is.
-**Reconciliation baseline:** `f27f879efd4573bd15ef402efb8b17cc6cd5baa6` — GitHub
-`main` at this revision; PR #53 merge commit (2026-08-23, Slice 5 — the Sleep
-Plan, D5 / item 1.7). The prior baseline was
+**Reconciliation baseline:** `3f92241adac309d6fcc4b5525ccd6e1aade30fb9` — GitHub
+`main` at this revision; PR #58 merge commit (2026-08-24, Slice 6 — the
+Consultation Summary, Welcome, drawer and email / item 1.6). The prior
+baseline was `f27f879efd4573bd15ef402efb8b17cc6cd5baa6` (PR #53, 2026-08-23,
+Slice 5 — the Sleep Plan, D5 / item 1.7), and before it
 `d4049cb0694f2dcba5322afef433a08c088238a3` (PR #54, the Phase 1
 cross-cutting Trust integrity gate, 2026-08-23; its docs close-out merged as
 `ed9374b`), before that
@@ -101,9 +129,18 @@ Slice 5, and its block sits after item 1.7. **(5) Slice 5 — the Sleep Plan
 screen (D5 / item 1.7)** is `✅` — PR #53 merged 2026-08-23 as `f27f879`
 (head `cd1f1ef` = commits C0–C10 plus the merge of `main` `ed9374b`; branch
 kept; post-merge CI and Pages verified at exactly `f27f879`; served bytes
-identical to the owner-retested `cd1f1ef`). No Phase 1 slice is currently in
-progress; the next item is the owner's call (see the sequence at the end of
-this document) and nothing is authorized by this revision.
+identical to the owner-retested `cd1f1ef`). **(6) Slice 6 — the Consultation
+Summary, Welcome, the mattress drawer and the email (item 1.6)** is `✅` —
+PR #58 merged 2026-08-24 as `3f92241` (head `ca088e3` = commits C1–C14;
+parents `5d05141` + `ca088e3`; branch kept; post-merge CI run 32679509403 and
+Pages run 32679508890 verified at exactly `3f92241`; served bytes identical
+to the merged blobs; a 70/70 live deployed rendered walk in both device
+viewports; sweep 453/453 with zero survivors; three external review rounds
+with two P2 findings fixed as C13/C14 and round 3 clean at the reviewed head;
+the real Windows forced-colors gate owner-run and owner-attested PASS). No
+Phase 1 slice is currently in progress; the next item is the owner's call
+(see the sequence at the end of this document) and nothing is authorized by
+this revision.
 *(An earlier revision of this paragraph said Slice 5 was `⬜`, approved to build
 and not started; it began on its own branch — draft PR #53, head `6decbef` —
 before 2026-08-21. The gate is Slice 5's prerequisite in the approved order,
@@ -515,6 +552,10 @@ about the exit, not about the presentation:
 the new section's rendering was reviewed once, in a real browser, and its
 deliberately-unstyled look (bare list inside the section card, minimal inline
 spacing only) is part of the 1.6 debt below, not a settled design.
+*(Status pointer, 2026-08-24: that debt was discharged by Slice 6 — the
+priorities now render as a classed ordered component with native list
+semantics, merged as `3f92241`. The sentence above stands as the record of
+what 0.5 shipped and why.)*
 
 **What shipped, so nobody re-derives it wrongly:**
 
@@ -592,7 +633,9 @@ semantics, placed above the finalists it explains. **It introduces no new
 component class.** A diff that adds one has left additive content and entered
 redesign; it stops and waits for 1.6. This presentation is **provisional and is
 re-decided in 1.6**, where it is recorded as inherited design debt rather than a
-settled layout.
+settled layout. *(Status pointer, 2026-08-24: 1.6 re-decided it — Slice 6
+replaced the provisional presentation with a classed ordered component, merged
+as `3f92241`.)*
 
 **The real cost here is plumbing, not design.** The computed priorities are local
 to the profile render; the only thing that outlives them carries names without the
@@ -762,9 +805,9 @@ Phase 2, Phase 3, and the showroom blocker.)*
 
 *(2026-08-21: Blake Ford instructed, in conversation, that a cross-cutting
 Trust integrity and transparency gate be inserted after Slice 4 and before
-Slice 5. Its work lies inside 1.2 and 1.6 (⬜) and 1.3's Proceeds (neither
-gated output), so it proceeds under this authorization and lifts nothing on
-the list above.)*
+Slice 5. Its work lies inside 1.2 and 1.6 (⬜ when this was written; 1.6 is ✅ as of
+2026-08-24) and 1.3's Proceeds (neither gated output), so it proceeds under
+this authorization and lifts nothing on the list above.)*
 
 ### Standing Phase 1 constraints
 
@@ -1979,7 +2022,7 @@ If a gesture test exposes a defect that would require changing the established
 touch-handler architecture, STOP: that is Invariant 10 and D6 territory and
 needs its own authorization.
 
-### 1.6 — Consultation Summary, Compare, and the remaining screens ⬜
+### 1.6 — Consultation Summary, Compare, and the remaining screens ✅ (merged 2026-08-24, `3f92241`; PR #58 head `ca088e3`)
 
 **The Review screen stays complete and fully editable.** That is the approved
 default, not a pending question, and it does not hold this item open. Compressing
@@ -2026,6 +2069,34 @@ stands open)*; and 0.5's provisional
 priorities presentation has been **either replaced, or kept under a no-change
 decision approved by Blake and recorded here with the date**.
 
+*(2026-08-24 — the exit is met, clause by clause, on `main` at `3f92241`
+(PR #58). **Consultation Summary:** ships its reworked presentation — the
+compact saved-state read model, the composed lead/payment status line, the
+attribution, the classed ordered priorities component and the retained
+navigation. **Welcome:** ships its reworked presentation — the Payment Choice
+tease row and the unverified completion-time estimate are gone, the outcome
+list's quiet acknowledgment is retained. **Email:** ships its reworked
+presentation — the all-or-nothing priorities projection, the closed lead
+contract replacing the silent first-entry promotion, provenance-labelled
+match lists, percentage-free customer copy in both MIME parts, suppressed
+duplicate prose and mode-aware save/send wording (capability only; `gasUrl`
+is blank and `Code.gs` was not deployed). **Mattress drawer:** ships a
+bounded accessibility repair (native disabled prev/next, one reaction painter
+with `aria-pressed` and a check-mark cue, real focus indicators with their own
+forced-colors block, 12px eyebrows) **under an explicit owner decision, dated
+2026-08-23, that the drawer's presentation is otherwise unchanged** — that is
+this clause's "no-change decision", recorded here, not an implementer's
+judgement. **Compare:** all four entry surfaces exist and are correctly
+labelled (the reconciled table below; the Sleep Brief clause was resolved
+2026-08-10), and Slice 6 preserved the persisted comparison selection rather
+than clearing it on close. **0.5's provisional priorities presentation:**
+replaced, not merely kept — it is now a classed ordered component with native
+list semantics. One residual honesty edge is recorded, not closed: with 0–1
+saved picks but a persisted complete pair selected from unsaved Results cards,
+the Summary's compare control still reads "Compare saved picks" while
+comparing that pair — the persistence ruling working as decided, with the
+label left as a follow-up.)*
+
 A description of intended direction, written by whoever is doing the work,
 satisfies no clause of this exit — this is a visible-redesign item, and 1.6 is the
 only owner of 0.5's inherited design debt. Preserving "no change" as a legitimate
@@ -2047,11 +2118,13 @@ reconciled 2026-08-10 (the original table had gone stale):
 
 So Phase 1's remaining Compare work here is coherence review, not
 reactivation: the entries above exist and the label/behaviour mismatch is
-resolved. **This does not close 1.6** — every other clause of the exit
-(Consultation Summary presentation, Welcome, drawer, email, 0.5's
-provisional presentation) stands, and 1.6 stays ⬜. *(An earlier revision of
-this sentence also said Phase 1 implementation remained unauthorized; it was
-authorized 2026-08-12.)* Do not turn Compare into another feature wall.
+resolved. **This did not close 1.6** — at the time it was written every other clause of
+the exit (Consultation Summary presentation, Welcome, drawer, email, 0.5's
+provisional presentation) stood open. *(Status correction, 2026-08-24: those
+remaining clauses were met by Slice 6, merged as `3f92241`; 1.6 is now ✅ —
+see the dated exit record above. An earlier revision of this sentence also
+said Phase 1 implementation remained unauthorized; it was authorized
+2026-08-12.)* Do not turn Compare into another feature wall.
 
 **Welcome.** Brief, calm, and framed for a salesperson opening the conversation
 with the customer beside them. One restrained Payment Choice acknowledgment — no
@@ -2094,11 +2167,66 @@ distinct: UI implementation, payload capability, GAS activation, and verified
 delivery — `gasUrl` is blank today, so no email change is "live" merely because the
 template exists.
 
-*(2026-08-23, Slice 6 — owner-decided implementation IN PROGRESS on branch `claude/nocturne-slice6-consultation-summary` (base `5d05141`); the exit marks move only when the reviewed PR merges. The owner's recorded decisions: the Consultation Summary retitles to “Your Consultation Summary” and becomes a compact authoritative read model of saved state — only customer-saved picks in stored order, only the selected Sleep System configuration, reactions drawer-only, the implication rows and trial priorities kept (the priorities as a classed ordered component, resolving 0.5's provisional presentation), an explicit lead state (Finalist ✓ / Recommended starting point / none) COMPOSED with a payment-state sentence derived exactly as the D4 rows derive theirs, storeName + the configured consultation subline as attribution (no heritage repeat); navigation keeps “← Back to matches” and adds a distinct secondary “Review Sleep Plan” action (no origin-aware Back); closing the Summary or Compare never clears the persisted comparison selection (the recorded favourite-first auto-select fills an empty pair and persists honestly; an existing complete pair is never overwritten). Welcome: the Payment Choice tease row and the unverified completion-time estimate are removed; the outcome list's quiet “Payment Choices” entry is the one retained acknowledgment; the tease-only envelope keys welcomeTagline / welcomeSupport retired through the canonical pipeline; the eyebrow (the only RENDERED heritage — the footer duplicate never renders) and the data-use sentence untouched. Drawer: a bounded accessibility repair (native disabled prev/next, aria-pressed + check-mark reactions via one painter, real focus indicators with their own forced-colors block, 12px eyebrows) — the drawer's presentation is otherwise deliberately unchanged under the same owner decisions; the RSA picker gains real button items, disclosure semantics and an inline add row replacing the app's only window.prompt. Email/payload: the priorities projection is ALL-OR-NOTHING on both the client and Code.gs (implementing the Slice 5 C1 deferral); a closed lead contract {chosen/recommended/none} replaces the silent allMatches[0] promotion; matchesSource labels the list “Saved mattress picks” vs “Your mattress matches” (fail-closed to recommended); match percentages leave customer copy in both MIME parts (tier-and-position lines instead; the sheet row keeps its internal record); the redundant sleepProfile prose is suppressed while a complete priorities block renders; saved/send wording is mode-aware (nothing says “sent” while gasUrl is blank). Code.gs changes are capability only — NOT deployed, gasUrl stays blank. The Results CTA relabels to “Review Sleep Plan →” (it opens the Plan). All new ES strings are provisional under Invariant 12 and inventoried in the PR. **Merge gate for this slice (owner instruction, 2026-08-23): a real Windows forced-colors check before Slice 6 can merge — no waiver.** The branch's rendered check includes a Chromium forced-colors emulation pass as supporting evidence; it is not that gate.)*
+*(2026-08-23 → merged 2026-08-24, Slice 6 — owner-decided implementation, shipped from branch `claude/nocturne-slice6-consultation-summary` (base `5d05141`, head `ca088e3`) as PR #58, merge commit `3f92241adac309d6fcc4b5525ccd6e1aade30fb9`. The owner's recorded decisions, all implemented: the Consultation Summary retitles to “Your Consultation Summary” and becomes a compact authoritative read model of saved state — only customer-saved picks in stored order, only the selected Sleep System configuration, reactions drawer-only, the implication rows and trial priorities kept (the priorities as a classed ordered component, resolving 0.5's provisional presentation), an explicit lead state (Finalist ✓ / Recommended starting point / none) COMPOSED with a payment-state sentence derived exactly as the D4 rows derive theirs, storeName + the configured consultation subline as attribution (no heritage repeat); navigation keeps “← Back to matches” and adds a distinct secondary “Review Sleep Plan” action (no origin-aware Back); closing the Summary or Compare never clears the persisted comparison selection (the recorded favourite-first auto-select fills an empty pair and persists honestly; an existing complete pair is never overwritten). Welcome: the Payment Choice tease row and the unverified completion-time estimate are removed; the outcome list's quiet “Payment Choices” entry is the one retained acknowledgment; the tease-only envelope keys welcomeTagline / welcomeSupport retired through the canonical pipeline; the eyebrow (the only RENDERED heritage — the footer duplicate never renders) and the data-use sentence untouched. Drawer: a bounded accessibility repair (native disabled prev/next, aria-pressed + check-mark reactions via one painter, real focus indicators with their own forced-colors block, 12px eyebrows) — the drawer's presentation is otherwise deliberately unchanged under the same owner decisions; the RSA picker gains real button items, disclosure semantics and an inline add row replacing the app's only window.prompt. Email/payload: the priorities projection is ALL-OR-NOTHING on both the client and Code.gs (implementing the Slice 5 C1 deferral); a closed lead contract {chosen/recommended/none} replaces the silent allMatches[0] promotion; matchesSource labels the list “Saved mattress picks” vs “Your mattress matches” (fail-closed to recommended); match percentages leave customer copy in both MIME parts (tier-and-position lines instead; the sheet row keeps its internal record); the redundant sleepProfile prose is suppressed while a complete priorities block renders; saved/send wording is mode-aware (nothing says “sent” while gasUrl is blank). Code.gs changes are capability only — NOT deployed, gasUrl stays blank. The Results CTA relabels to “Review Sleep Plan →” (it opens the Plan). All new ES strings are provisional under Invariant 12 and inventoried in the PR. **Merge gate for this slice (owner instruction, 2026-08-23): a real Windows forced-colors check before Slice 6 can merge — no waiver.** The branch's rendered check includes a Chromium forced-colors emulation pass as supporting evidence; it is not that gate.)*
+
+*(2026-08-24, Slice 6 merge and deployment record. **Merge:** PR #58 merged
+01:21Z as merge commit `3f92241adac309d6fcc4b5525ccd6e1aade30fb9` — first
+parent `5d05141b71f9318a22a228f6bb8008639c9c3a3b` (the authorized base),
+second parent `ca088e318f46e78a263d5f88294ad5d1847f643c` (the reviewed head,
+commits C1–C14); a merge commit, not a squash or rebase; the source branch is
+retained and was never force-pushed. **Workflows at the exact merge commit:**
+CI run 32679509403 and Pages run 32679508890 both completed successfully at
+`3f92241`; no other SHA's results were accepted as evidence. **Deployed-byte
+verification:** the served `index.html`, `store-config.json`,
+`allowed-hosts.js`, both dictionaries and all three demo-bundle files are
+byte-identical to the merged blobs (8/8 SHA-256 matches). **Deployed rendered
+walk:** 70 of 70 checks passed with zero failures against the deployed site
+in both device viewports (1194×748 and 834×1108) — the public flow reaches
+Results → Sleep Plan → Consultation Summary; the Summary shows exactly the
+saved picks with its composed lead/payment line, dictionary label,
+attribution and secondary action; the drawer's prev/next are natively
+disabled at each end and exactly one reaction reports `aria-pressed="true"`
+carrying the check-mark cue; the RSA picker's focus restore holds on both the
+add and roster-selection paths; the send wording reads "Save picks" and never
+"Send" under a blank `gasUrl`; a malformed priority value resolves fail-closed
+without throwing; the wipe clears the lead line, panel state, typed draft and
+comparison selection; there is no horizontal overflow and there were zero
+console or page errors. This walk is **independently observed** evidence,
+produced by an automated browser run, distinct from the owner-attested
+evidence below. **Mutation protection:** the full sweep at the reviewed head
+was 453/453 caught, 0 survived, 0 not applied. **External review:** three
+rounds. Round 1 (at `0515448`) raised one P2 — the Savings-Pass reveal handler
+relabelled the send button unconditionally, resuming a "send" claim in preview
+mode — fixed as C13 by delegating to the one mode-aware renderer. Round 2 (at
+`70fbcb7`) raised one P2 — the payload priorities gate called `.trim()` on a
+resolved field and would throw out of `sendResults()` on a truthy non-string
+value instead of failing closed — fixed as C14 by resolving strings only.
+Round 3 was **clean at exactly `ca088e3`**, and both formal review threads were
+resolved after re-verifying each fix in the committed blob. Each fix carried a
+failing-first pin, a targeted mutant kill, a complete battery re-run and a
+complete re-sweep before the head was pushed. **Forced-colors gate:** the
+required real Windows forced-colors check was **run by the owner against the
+frozen head and attested PASS** — every required card observation recorded as
+passed. That is **owner-attested evidence, owner-reported and not
+independently observed by the implementer**; it was produced by an actual
+Windows Contrast Theme, so it is neither browser emulation nor a mounted-device
+result, and the branch's Chromium emulation pass remains supporting evidence
+only. The gate is closed as passed on those terms. **Mounted-device check for
+this merge: NOT PERFORMED — permitted under the standing owner waiver for
+development/preview merges. This is not a pass and does not satisfy the final
+pre-showroom device gate**, which remains blocking. **Showroom authorization
+remains NO. Spanish remains provisional** under Invariant 12 — every new ES
+string in this slice is provisional and none is native-reviewed. **Live email
+remains off: `gasUrl` is blank, and `Code.gs` is capability only and was not
+deployed** — no Google Apps Script deployment was performed, so no endpoint is
+called. (The file is served as inert static text by Pages exactly as it was
+before this merge; that is repository hosting, not a GAS deployment.)
+**Protected artifacts:** no fixture or golden file changed in this merge and
+both `BASELINE_SHA256` pins are unchanged.)*
 
 *(2026-08-23 — standing owner policy, recorded verbatim by owner instruction: By owner directive, mounted-device checks are waived as per-PR development/preview merge prerequisites for the remainder of the rebuild. Absence is recorded as not performed, never as a pass. The complete mounted-device and accessibility matrix remains blocking before showroom authorization.)*
 
-*(2026-08-23 — accessibility debt, tracked here, NOT conforming and NOT accepted. The pick-card tier line `.hf2-pick__tier` (11.2px serif, `--color-accent` #9A7445 on the card surface #FFFDF8) measures **4.17:1**, below the 4.5:1 normal-text floor, on both the Consultation Summary and the Sleep Plan — pre-existing on the Summary since its redesign and inherited by the Plan through the shared class; the Sleep Plan layout hotfix (`claude/hotfix-sleep-plan-layout`) did not introduce or change it and did not widen to recolor it. Owner: this item (1.6, which owns the pick card's presentation) or, failing that, the pre-showroom accessibility gate; whichever ships first must raise the pairing to ≥ 4.5:1 on every surface the class renders on and add a named ratio to `tests/contrast_check.mjs`. Not a showroom acceptance of the current value. REPAIRED on the Slice 6 branch (2026-08-23): `.hf2-pick__tier` takes `--accent-ink` (14.45:1 on the card surface, both screens), with the named contrast_check ratio and a negative control pinning the retired 4.17:1 pairing below the floor; effective when that branch merges.)*
+*(2026-08-23 — accessibility debt, tracked here, NOT conforming and NOT accepted. The pick-card tier line `.hf2-pick__tier` (11.2px serif, `--color-accent` #9A7445 on the card surface #FFFDF8) measures **4.17:1**, below the 4.5:1 normal-text floor, on both the Consultation Summary and the Sleep Plan — pre-existing on the Summary since its redesign and inherited by the Plan through the shared class; the Sleep Plan layout hotfix (`claude/hotfix-sleep-plan-layout`) did not introduce or change it and did not widen to recolor it. Owner: this item (1.6, which owns the pick card's presentation) or, failing that, the pre-showroom accessibility gate; whichever ships first must raise the pairing to ≥ 4.5:1 on every surface the class renders on and add a named ratio to `tests/contrast_check.mjs`. Not a showroom acceptance of the current value. REPAIRED and MERGED (2026-08-24, `3f92241`, PR #58): `.hf2-pick__tier` takes `--accent-ink` (14.45:1 on the card surface, on both the Consultation Summary and the Sleep Plan), with the named ratio in `tests/contrast_check.mjs` and a negative control pinning the retired 4.17:1 pairing below the floor. The repair is **effective on `main` and on the deployed preview** as of that merge; this debt entry is closed. It remains a preview deployment, not a showroom acceptance, and it closes no other item on the pre-showroom accessibility gate.)*
 
 ### 1.7 — Sleep Plan ✅ (merged 2026-08-23, `f27f879`; PR #53 head `cd1f1ef`)
 
