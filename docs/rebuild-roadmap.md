@@ -9,7 +9,28 @@ owner-review decisions (see "Phase 1 direction decisions — recorded
 see the open-decisions register. Device hardening remains BLOCKING for
 showroom use.**
 
-**Last updated:** 2026-08-24 *(Item 1.6 close-out: PR #60 merged 2026-08-24
+**Last updated:** 2026-08-24 *(Items 1.1 and 1.2 close-out — documentation
+only, zero application bytes. Both items were shipped and gate-passed long ago
+and both marks had gone stale; this revision records the evidence **on the
+items**, where the mark rules require it, so it no longer lives only in pull
+request bodies. **Item 1.1 moves ⬜ → ✅**: Slice 2 merged 2026-08-16 as
+`b05d47f` (PR #46, head `a9a01e1`), and the exit's one named verification —
+the owner-operated physical iPad pass — was performed at exactly `5dede84` on
+2026-08-15 and carries forward to the merge on a proven byte-identity chain.
+**Item 1.2 moves ⬜ → ✅**: Slice 3 merged 2026-08-17 as
+`5436deaea432ec87eb6b4d9f06cd82a85fb1910c` (PR #47) with its manual and device
+gates passed as already recorded at 2026-08-17, and the icon programme is
+complete under the 2026-08-16 zero-icons ruling. Both transitions are ordinary
+⬜ → ✅ moves permitted by the mark rules; **no ◐, 🔒 or ❓ gate text is moved,
+narrowed or widened by this revision**, and items 1.3 and 1.4 are untouched.
+Nothing in the standing state changes: the mounted-device check remains
+waived per-PR for development/preview merges and is **never a pass**, the
+complete pre-showroom device and accessibility matrix remains blocking,
+showroom authorization is NO, Spanish stays provisional under Invariant 12,
+live email stays off with `gasUrl` blank, and `Code.gs` remains capability
+only and undeployed. The reconciliation baseline is **not** re-pointed —
+this revision ships no application byte. The previous revision, also
+2026-08-24, recorded the Item 1.6 close-out: PR #60 merged 2026-08-24
 16:07Z as merge commit `8aeb6b3694d8090bea45219f08648a3c36db7071` (parents
 `1e47076` + `71c5b34`; merge, not squash or rebase; source branch retained).
 It carries the narrowly scoped correction that closes item 1.6's one
@@ -1281,7 +1302,7 @@ gate was inserted; its branch work continues, and by owner ruling (2026-08-21)
 it merges after the gate and integrates the resulting `main`. Nothing here
 changes Slice 5's scope or exit.)*
 
-### 1.1 — Sleep Brief ⬜
+### 1.1 — Sleep Brief ✅ (merged 2026-08-16, `b05d47f`; PR #46 head `a9a01e1`; the exit's hardware verification passed at `5dede84`, recorded on the item 2026-08-24)
 
 **Slice 2 merged 2026-08-16 (PR #46, merge `b05d47f`)** — the D1 recomposition
 plus the D2 Sleep Signature. The status mark above still reads ⬜ ("approved to
@@ -1289,6 +1310,71 @@ build, not started"), which this merge contradicts; moving it is the owner's
 call, not this slice's, so it is flagged rather than changed. Native-Spanish
 approval remains deferred to the consolidated end-of-development review
 (Invariant 12).
+
+*(2026-08-24 — close-out. The paragraph above stands as written and is not
+amended: at the time it was written, moving the mark was correctly left to the
+owner. This is that decision, taken and recorded, and it supersedes only the
+instruction to leave the mark alone. **Item 1.1 is ✅.**
+
+**Why the item was not closeable until now, and what this record supplies.**
+The exit names exactly one verification — the Sleep Brief "verified on the
+confirmed hardware per the phase-wide merge gate". That verification was
+performed and passed. What was missing was the record of it **on the item**:
+the mark rules require a named verification to be recorded on the item it
+closes, and until today it existed only in the PR #46 body. In substance the
+item stood where ⏳ describes — *"code merged on `main`; a named verification
+remains outstanding"* — while its mark read ⬜; the document itself flagged
+that contradiction in the paragraph above. This close-out supplies the missing
+record, which is the whole of what was outstanding.
+
+**The verification.** An owner-operated physical iPad pass at **exactly
+`5dede84`**, on **2026-08-15**, on the confirmed mounted device, in portrait
+and landscape and in English and Spanish. It was the third attempt: passes at
+`9eb4232` and `bc17e6c` **failed** and were repaired, and each of those
+repair commits correctly stated that it did not itself re-pass the gate.
+
+**The evidence and its limits, stated plainly.** This is **owner-attested**
+evidence recorded in the **PR #46 body**, which carries **zero comments and
+zero reviews**. There is no committed artifact — no screenshots, no
+transcript, no device-capture file — and the passing commit `5dede84` is named
+nowhere else in the repository. It is **not independently observed and not
+reproduced**, and must never be described as either. It is recorded here so
+that it no longer lives only in a pull request body.
+
+**Byte-identity chain — why the pass covers the merged bytes.** The pass was
+performed at `5dede84`; the item shipped at merge `b05d47f` by way of PR #46's
+head `a9a01e1`. Every runtime and served artifact is byte-identical across all
+three commits: `index.html` blob `26fc1485e10d`, `data/dict-en.json`
+`9b13e9e663be`, `data/dict-es.json` `f2c860d0a62c`, `data/mattresses.json`
+`a0891f285173`, `data/store-config.json` `8c9d3b4890a8`. The bytes verified on
+the device are therefore the bytes that merged.
+
+**The exit, clause by clause — met as written, not weakened.** The exit text
+below is unchanged and nothing in it is narrowed. (1) *The approved D1
+composition ships on `main`* — met; the composition is pinned by
+`tests/sleep_brief_presentation_check.mjs`, green in CI. (2) *The priorities
+swap atomic* — met by Slice 2 itself: the prose block was removed in the same
+commit that landed the cards, which is exactly what this document defines the
+swap to be, so no customer state ever existed without priority orientation.
+(3) *Any rendered firmness value being the engine's own* — met; the firmness
+dial was excluded from the shipped composition by owner ruling, so no numeric
+firmness renders on this screen, and the copy that does render reads the same
+answer value the engine reads. (4) *Every accessibility criterion met* — met
+against this document's own Phase 1 list, pinned by the same suite. (5)
+*Verified on the confirmed hardware per the phase-wide merge gate* — met at
+the merge, per the pass and the byte-identity chain above; that gate is
+per-merge by its own text, and this item has a real pass, so the standing
+development/preview waiver is **not** its basis and must not be cited as such.
+(6) *Cannot be closed by shipping prototypes* — met; closure rests on merged
+`main` code and a device pass on merged bytes.
+
+**What this close-out does not claim.** It is not showroom authorization,
+which is NO and blocked independently by device hardening. It is not
+native-Spanish approval: Spanish remains provisional, deferred to the
+consolidated end-of-development review under Invariant 12, which is not an
+item-level closure blocker for 1.1. It is not a Windows forced-colors result,
+which was never an item-1.1 criterion and is required before showroom. And it
+closes no other item's debt.)*
 
 **Gate lifted 2026-08-14.** The gate read: approver Blake, unblocked by his
 approval of a reviewed prototype, recorded here with the date, over two output
@@ -1362,7 +1448,7 @@ confirmed hardware per the phase-wide merge gate. This item cannot be closed
 by shipping prototypes; the 2026-08-14 approval opens implementation, it does
 not close the item.
 
-### 1.2 — Quiz ⬜
+### 1.2 — Quiz ✅ (Slice 3 merged 2026-08-17, `5436deaea432ec87eb6b4d9f06cd82a85fb1910c`, PR #47; icon programme complete under the 2026-08-16 zero-icons ruling; closed on the item 2026-08-24)
 
 - Review all option icons for meaning **before** introducing any (47 since
   2026-08-12; 56 before the removal below). Suppress
@@ -1547,6 +1633,52 @@ therefore closed; the item's remaining ⬜ scope is the icon programme, which is
 content authoring rather than engineering. Native-Spanish linguistic approval
 remains deferred to the consolidated end-of-development pass (Invariant 12) and
 is **not** a Slice 3 gate.
+
+*(2026-08-24 — close-out. The paragraph above stands as written and is not
+amended. One clause in it is superseded: **"the item's remaining ⬜ scope is
+the icon programme"** was already incorrect when it was written on 2026-08-17,
+because the icon programme had been closed by the owner's **zero-icons ruling
+of 2026-08-16**, recorded earlier in this same item. No icon work remained
+then and none remains now. **Item 1.2 is ✅.**
+
+**Slice 3.** Merged 2026-08-17 as
+`5436deaea432ec87eb6b4d9f06cd82a85fb1910c` (PR #47). Its required manual and
+device gates — the desktop keyboard, zoom and reduced-motion pass, the Windows
+forced-colors visual check, and the physical mounted iPad Pro 11-inch pass in
+both orientations and both languages — **passed as already documented in the
+paragraph above**, dated 2026-08-17. That record is owner-attested prose; it
+is not accompanied by a committed artifact, and it is not described here as
+independently observed.
+
+**The icon programme is complete.** The owner's 2026-08-16 ruling is
+**zero icons**, and the shipped bytes match it: all **47** configured option
+mappings remain in the canonical quiz data as **dormant** fields, and the
+question renderer emits **no icon element at all**, so none reaches a
+customer. The review that preceded the ruling is finished, not paused; as this
+item already records, a mapping merely "not disqualified" is not
+pre-approval, and introducing any icon later would be a new decision rather
+than a resumption of this one.
+
+**Native Spanish.** Linguistic approval remains **provisional** and deferred
+to the consolidated end-of-development pass under Invariant 12. Invariant 12
+is a phase-wide obligation, not an item-level closure blocker, and it was
+explicitly not a Slice 3 gate. Spanish is never described here as
+native-approved.
+
+**Why the mark may move.** ⬜ → ✅ is an ordinary transition that the mark
+rules permit whoever does the work to make; item 1.2 carries no ◐, 🔒 or ❓,
+so **no new gated decision and no named approver is required**, and none is
+sought. Nor does the item enter ⏳: that mark is for a named verification
+still outstanding, and none is — the device gate is recorded passed and
+Invariant 12 is phase-wide. Screen-reader and announcement work is **out of
+scope and not required** by permanent owner ruling; it is not a gate, not
+deferred, and not outstanding.
+
+**What this close-out does not claim.** Not showroom authorization, which is
+NO. Not native-Spanish approval. Not a fresh device pass — the standing
+mounted-device waiver for development and preview merges remains a waiver and
+is **never a pass**, and the complete pre-showroom device and accessibility
+matrix remains blocking. It closes no other item's debt.)*
 
 *(2026-08-21: two shipped defects inside this item's territory are repaired
 under the cross-cutting Trust integrity and transparency gate (block after 1.7):
