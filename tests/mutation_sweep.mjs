@@ -1100,8 +1100,12 @@ const MUTATIONS = [
   ["trust: the Sleep System containers leave the wipe inventory (a previous customer's prose survives Restart)",
     "'sleepSystemMain', 'sleepSystemGuidance', 'sleepSystemRail', 'sleepSystemPlanList'",
     "", TRUST.concat(["tests/session_safety_check.mjs"])],
+  // Item 1.3 containment (2026-08-24) removed drawerShortlistFit from the app
+  // and therefore from this inventory line, which left this entry unable to
+  // apply. Re-pointed at the ids that REMAIN answer-derived, so the guard is
+  // live again rather than a stale manifest row that silently tests nothing.
   ["trust: the drawer's answer-derived text leaves the wipe inventory",
-    "'drawerShortlistFit', 'drawerSystemPromptTitle', 'drawerSystemPromptReason',", "", TRUST.concat(["tests/session_safety_check.mjs"])],
+    "'drawerSystemPromptTitle', 'drawerSystemPromptReason',", "", TRUST.concat(["tests/session_safety_check.mjs"])],
   ["trust: the Welcome renderer stops calling the data-use renderer (the line never renders)",
     "      renderDataUseStatement();", "      if (false) renderDataUseStatement();", TRUST],
   ["trust: the welcome data-use line ignores deployment mode (always the preview sentence)",
