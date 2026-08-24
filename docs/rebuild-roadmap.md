@@ -9,7 +9,38 @@ owner-review decisions (see "Phase 1 direction decisions — recorded
 see the open-decisions register. Device hardening remains BLOCKING for
 showroom use.**
 
-**Last updated:** 2026-08-24 *(Slice 6 close-out: PR #58 merged 2026-08-24
+**Last updated:** 2026-08-24 *(Item 1.6 close-out: PR #60 merged 2026-08-24
+16:07Z as merge commit `8aeb6b3694d8090bea45219f08648a3c36db7071` (parents
+`1e47076` + `71c5b34`; merge, not squash or rebase; source branch retained).
+It carries the narrowly scoped correction that closes item 1.6's one
+outstanding exit clause: the Consultation Summary's compare control now reads
+**"Compare mattresses" / "Comparar colchones"**, wording that is accurate in
+every state the existing enable rule admits, and **comparison behaviour itself
+was not changed**. Post-merge CI run 32748968103 and Pages run 32748966914 both
+succeeded at exactly `8aeb6b3`, Pages built at that SHA. Served bytes are
+byte-identical to the merged blobs for `index.html`, both dictionaries,
+`store-config`, `quiz`, `mattresses`, `allowed-hosts` and the generated demo
+bundle (8/8). Deployed rendered verification passed 124 checks with zero
+failures: the EN and ES labels render correctly on the live preview, with the
+asynchronous Spanish dictionary installation verified rather than inferred from
+the language flag; the control is enabled with two saved picks, with zero saved
+picks and a complete persisted unsaved pair, and with one saved pick and a
+complete persisted unsaved pair; the persisted unsaved pair opens exactly
+as-is; it remains disabled with insufficient saved picks and no complete pair;
+the retired Summary wording is absent; and comparison state, route, modal, the
+Results tray and the Sleep Plan's compared row are unchanged, with no
+horizontal overflow, no console errors and no page errors. Item 1.6 moves
+⏳ → ✅ on its recorded named condition. This close-out changes documentation
+only — no application, dictionary, test, generated, configuration, fixture,
+workflow or `Code.gs` byte. Standing, unchanged: the mounted-device check
+remains **NOT PERFORMED — permitted under the standing owner waiver for
+development/preview merges; not a pass**; the complete pre-showroom device and
+accessibility matrix remains blocking; showroom authorization NO; Spanish
+provisional; live email off with `gasUrl` blank; `Code.gs` capability only and
+not deployed; and no new owner-run forced-colors check was required for this
+text-only correction. The reconciliation baseline is re-pointed from `3f92241`
+to `8aeb6b3`. The previous revision, also 2026-08-24, recorded the Slice 6
+close-out: PR #58 merged 2026-08-24
 01:21Z as merge commit `3f92241adac309d6fcc4b5525ccd6e1aade30fb9` (parents
 `5d05141` + `ca088e3`; merge, not squash; branch kept). Post-merge CI run
 32679509403 and Pages run 32679508890 both succeeded at exactly `3f92241`;
@@ -96,10 +127,12 @@ owner-approved scoring change they carried.)*
 `main` when this document's phase statuses were written, the merge commit of
 PR #16 (2026-08-05). It is **not** current `main`. GitHub state is
 authoritative; a local checkout never is.
-**Reconciliation baseline:** `3f92241adac309d6fcc4b5525ccd6e1aade30fb9` — GitHub
-`main` at this revision; PR #58 merge commit (2026-08-24, Slice 6 — the
-Consultation Summary, Welcome, drawer and email / item 1.6). The prior
-baseline was `f27f879efd4573bd15ef402efb8b17cc6cd5baa6` (PR #53, 2026-08-23,
+**Reconciliation baseline:** `8aeb6b3694d8090bea45219f08648a3c36db7071` — GitHub
+`main` at this revision; PR #60 merge commit (2026-08-24, the Consultation
+Summary compare-label correction that closed item 1.6's last exit clause). The
+prior baseline was `3f92241adac309d6fcc4b5525ccd6e1aade30fb9` (PR #58,
+2026-08-24, Slice 6 — the Consultation Summary, Welcome, drawer and email /
+item 1.6), before it `f27f879efd4573bd15ef402efb8b17cc6cd5baa6` (PR #53, 2026-08-23,
 Slice 5 — the Sleep Plan, D5 / item 1.7), and before it
 `d4049cb0694f2dcba5322afef433a08c088238a3` (PR #54, the Phase 1
 cross-cutting Trust integrity gate, 2026-08-23; its docs close-out merged as
@@ -135,10 +168,18 @@ screen (D5 / item 1.7)** is `✅` — PR #53 merged 2026-08-23 as `f27f879`
 (head `cd1f1ef` = commits C0–C10 plus the merge of `main` `ed9374b`; branch
 kept; post-merge CI and Pages verified at exactly `f27f879`; served bytes
 identical to the owner-retested `cd1f1ef`). **(6) Slice 6 — the Consultation
-Summary, Welcome, the mattress drawer and the email (item 1.6)** is `⏳` —
-its code is merged and verified, but one exit clause (Compare correctly
-labelled from the Consultation Summary) is outstanding, so the item is not
-closed. PR #58 merged 2026-08-24 as `3f92241` (head `ca088e3` = commits C1–C14;
+Summary, Welcome, the mattress drawer and the email (item 1.6)** is `✅` — its
+code merged as `3f92241`, and the one exit clause that had held it at `⏳`
+(Compare correctly labelled from the Consultation Summary) was closed by
+**PR #60, merged 2026-08-24 as `8aeb6b3`** (parents `1e47076` + `71c5b34`;
+merge, not squash or rebase; branch kept; post-merge CI run 32748968103 and
+Pages run 32748966914 verified at exactly `8aeb6b3`; served application,
+dictionary and generated-demo bytes identical to the merged blobs; 124/124
+deployed rendered checks across every state the enable rule admits, in both
+languages, with no overflow, console errors or page errors). The Summary's
+compare control now reads "Compare mattresses" / "Comparar colchones" and
+comparison behaviour is unchanged.
+PR #58 merged 2026-08-24 as `3f92241` (head `ca088e3` = commits C1–C14;
 parents `5d05141` + `ca088e3`; branch kept; post-merge CI run 32679509403 and
 Pages run 32679508890 verified at exactly `3f92241`; served bytes identical
 to the merged blobs; a 70/70 live deployed rendered walk in both device
@@ -812,8 +853,9 @@ Phase 2, Phase 3, and the showroom blocker.)*
 
 *(2026-08-21: Blake Ford instructed, in conversation, that a cross-cutting
 Trust integrity and transparency gate be inserted after Slice 4 and before
-Slice 5. Its work lies inside 1.2 and 1.6 (⬜ when this was written; 1.6 is ⏳ as of
-2026-08-24 — code merged, one exit clause outstanding) and 1.3's Proceeds (neither gated output), so it proceeds under
+Slice 5. Its work lies inside 1.2 and 1.6 (⬜ when this was written; 1.6 is ✅ as of
+2026-08-24 — code merged as `3f92241`, its last exit clause closed by PR #60,
+`8aeb6b3`) and 1.3's Proceeds (neither gated output), so it proceeds under
 this authorization and lifts nothing on the list above.)*
 
 ### Standing Phase 1 constraints
@@ -2029,7 +2071,7 @@ If a gesture test exposes a defect that would require changing the established
 touch-handler architecture, STOP: that is Invariant 10 and D6 territory and
 needs its own authorization.
 
-### 1.6 — Consultation Summary, Compare, and the remaining screens ⏳ (code merged 2026-08-24, `3f92241`; PR #58 head `ca088e3`; one exit clause outstanding)
+### 1.6 — Consultation Summary, Compare, and the remaining screens ✅ (code merged 2026-08-24, `3f92241`, PR #58 head `ca088e3`; the last exit clause closed 2026-08-24 by PR #60, `8aeb6b3`)
 
 **The Review screen stays complete and fully editable.** That is the approved
 default, not a pending question, and it does not hold this item open. Compressing
@@ -2120,6 +2162,48 @@ this documentation-only close-out) or by an owner ruling that amends this
 clause and is recorded here with its date. Nothing else in the exit is
 outstanding.)*
 
+*(2026-08-24, superseding record — the exit is now met in full on `main` at
+`8aeb6b3` (PR #60), and item 1.6 is ✅. The dated clause-by-clause record above
+was written by the Slice 6 documentation close-out, **PR #59, merged
+2026-08-24 as `1e47076`** — the base PR #60 was merged onto, and therefore
+`8aeb6b3`'s first parent. That close-out
+**correctly left item 1.6 at ⏳** rather than marking it ✅ over an unmet
+clause, and an external review caught an earlier draft of it doing exactly
+that; the record it wrote stands as written and is not amended: at `3f92241` two of the three top-level
+clauses were met, Compare was not, and the item correctly took ⏳. The **named
+⏳ → ✅ condition recorded there** — "the Summary's compare control is correctly
+labelled in every state its enable rule admits" — is the verification this
+close-out records as satisfied. It was satisfied by the first of the two routes
+that condition allowed, correcting the label; **the clause itself was never
+amended or weakened**, and no owner ruling was used to close it. **Compare,
+now:** the Consultation Summary's control reads **"Compare mattresses" /
+"Comparar colchones"** (`hf2.compare_saved` — the key was deliberately not
+renamed, and no conditional label logic was introduced). That wording is
+accurate in every state the existing enable rule admits, including the state
+that produced the defect — a complete pair persisted from *unsaved* Results
+cards with 0–1 saved picks — because it no longer asserts the pair was saved.
+**Comparison behaviour itself was not changed:** the enable rule, the
+compare-an-existing-complete-pair-as-is behaviour, the favourite-first
+auto-select fallback, the routing, the modal, the Results tray and the Sleep
+Plan's compared row are all as Slice 6 shipped them. Verified on the deployed
+preview at `8aeb6b3`: served application, dictionary and generated-demo bytes
+matched the merged blobs; the EN and ES labels rendered correctly, with the
+asynchronous Spanish dictionary installation verified rather than inferred from
+the language flag; the control was enabled with two saved picks, with zero
+saved picks and a complete persisted unsaved pair, and with one saved pick and
+a complete persisted unsaved pair; the persisted unsaved pair opened exactly
+as-is; the control remained disabled with insufficient saved picks and no
+complete pair; the retired Summary wording was absent; and the rendered
+verification reported no horizontal overflow, no console errors and no page
+errors. One method note, kept because it bears on how this evidence should be
+read: an interrupted, partially language-switched browser state seen during
+verification was **discarded, not recorded as a defect** — only the clean
+browser run was accepted as evidence. This close-out closes no other debt: the
+pre-showroom device and accessibility matrix remains blocking, the
+mounted-device check remains NOT PERFORMED under the standing waiver and is not
+a pass, Spanish remains provisional, live email remains off with `gasUrl`
+blank, and `Code.gs` remains capability only and not deployed.)*
+
 A description of intended direction, written by whoever is doing the work,
 satisfies no clause of this exit — this is a visible-redesign item, and 1.6 is the
 only owner of 0.5's inherited design debt. Preserving "no change" as a legitimate
@@ -2134,7 +2218,7 @@ reconciled 2026-08-10 (the original table had gone stale):
 
 | Surface | State today |
 |---|---|
-| Consultation Summary compare control | **Works, with one label defect — this is the clause holding 1.6 at ⏳.** *(State today, re-verified against the merged blob at `3f92241`; the row below it described the pre-Slice-6 behaviour and was stale.)* The control is labelled **"Compare saved picks" / "Comparar selecciones guardadas"** (`hf2.compare_saved`), not the retired "Compare finalists". It is enabled when at least two picks are saved **or** a complete two-item comparison pair is already persisted. On tap it compares an **existing complete pair as-is**, and only when no complete pair exists does the recorded favourite-first auto-select of the top two saved picks fill it (that PR #34 behaviour is preserved) — and the fill persists honestly to the Results tray and the Sleep Plan's compared row. **The defect:** with 0–1 saved picks and a complete pair persisted from *unsaved* Results cards, the control opens that unsaved pair under the "saved picks" label. Owner ruling 2026-08-24: the exit clause is not amended, and the item stays ⏳ until a separately authorized label correction lands. |
+| Consultation Summary compare control | **Works and is correctly labelled — this clause is met, and 1.6 is ✅.** *(State today, re-verified on the deployed preview at `8aeb6b3` (PR #60).)* The control is labelled **"Compare mattresses" / "Comparar colchones"** (`hf2.compare_saved`). It is enabled when at least two picks are saved **or** a complete two-item comparison pair is already persisted. On tap it compares an **existing complete pair as-is**, and only when no complete pair exists does the recorded favourite-first auto-select of the top two saved picks fill it (that PR #34 behaviour is preserved) — and the fill persists honestly to the Results tray and the Sleep Plan's compared row. *(Retired wordings, kept here as history: at `3f92241` (Slice 6, PR #58) this control read **"Compare saved picks" / "Comparar selecciones guardadas"**, which had itself replaced the earlier retired **"Compare finalists"**. The Slice 6 wording carried the defect that held 1.6 at ⏳ — with 0–1 saved picks and a complete pair persisted from *unsaved* Results cards it opened that unsaved pair under a "saved picks" label — and owner ruling 2026-08-24 held the exit clause unamended until a separately authorized label correction landed. PR #60 is that correction, merged 2026-08-24 as `8aeb6b3`; it changed the label only, not the enable rule or any comparison behaviour.)* |
 | Sleep Brief "See My Matches →" | **Resolved 2026-08-10** (owner-authorized relabel, ES provisional under the open native-Spanish gate). The CTA still navigates to Results — by design, per the approved "no first-visit Compare" direction — and its label now says so instead of claiming a comparison it never opened. Compare is reached from the Sleep Brief *through* Results. |
 | Results cards | **Entry shipped.** PR #34 (merged `c165497`, 2026-08-10, owner-approved live) renders card-level Compare controls on the top-pick and supporting cards. |
 | Results compare tray and modal | **Reachable.** The tray's "Compare →" / "Comparar →" opens the aligned comparison modal (dialog semantics PR #30, static alignment PR #31, entry PR #34). |
@@ -2149,7 +2233,11 @@ presentation, were met by Slice 6, merged as `3f92241`; 1.6 is now ⏳ — code
 merged, not closed — with the Compare-label clause outstanding, see the dated
 exit record above. An earlier revision of this sentence also
 said Phase 1 implementation remained unauthorized; it was authorized
-2026-08-12.)* Do not turn Compare into another feature wall.
+2026-08-12.)* *(Further status correction, 2026-08-24, superseding the
+sentence immediately above: the Compare-label clause was closed by PR #60,
+merged as `8aeb6b3`, and **1.6 is ✅**. The ⏳ record above stands as an
+accurate account of the state at `3f92241` and is deliberately not
+rewritten.)* Do not turn Compare into another feature wall.
 
 **Welcome.** Brief, calm, and framed for a salesperson opening the conversation
 with the customer beside them. One restrained Payment Choice acknowledgment — no
@@ -2949,12 +3037,15 @@ It shares only a word with the nickname engine. **Do not remove it accidentally.
 
 **Compare is fully shipped.** Compare is available from the Results cards
 through the tray and comparison modal (PRs #30/#31/#34, owner-approved live)
-and from the Consultation Summary's preserved compare entry — **relabelled
-"Compare saved picks" / "Comparar selecciones guardadas" by Slice 6
-(`3f92241`), retiring the "Compare finalists" wording this fact previously
-cited, and carrying the one label defect that holds item 1.6 at ⏳ (it can
-open a persisted pair of unsaved mattresses under that "saved picks"
-label)**; the
+and from the Consultation Summary's preserved compare entry — **labelled
+"Compare mattresses" / "Comparar colchones" since PR #60 (`8aeb6b3`,
+2026-08-24), the correction that closed item 1.6's last exit clause. Two
+earlier wordings are retired: Slice 6's "Compare saved picks" /
+"Comparar selecciones guardadas" (`3f92241`), which could open a persisted pair
+of unsaved mattresses under a "saved picks" label, and before it
+"Compare finalists", which this fact previously cited. PR #60 corrected the
+label only — the enable rule and every comparison behaviour are
+unchanged**; the
 Sleep Brief CTA — "See My Matches →" (PR #35) — correctly routes through
 Results, per the approved "no first-visit Compare" direction. See the
 reconciled table in 1.6.
@@ -3030,12 +3121,24 @@ document, not here.
    identical to the merged blobs; a 70/70 deployed rendered walk; sweep
    453/453; two external-review P2 findings fixed and a clean third round;
    the real Windows forced-colors gate owner-run and owner-attested PASS).
-   **Item 1.6 is ⏳, not ✅** — its code is merged and verified, but the
-   exit's "Compare correctly labelled from the Consultation Summary" clause
-   is not met while that control can read "Compare saved picks" over a
-   persisted pair of unsaved mattresses; by owner ruling 2026-08-24 the
-   clause is not amended, and the item stays ⏳ until a separately authorized
-   label correction closes it.
+   That merge left one exit clause open, and **item 1.6 was recorded ⏳, not
+   ✅** — its code was merged and verified, but the exit's "Compare correctly
+   labelled from the Consultation Summary" clause was not met while that
+   control could read "Compare saved picks" over a persisted pair of unsaved
+   mattresses; by owner ruling 2026-08-24 the clause was not amended, and the
+   item stayed ⏳ until a separately authorized label correction closed it.
+   That correction is the closing entry in this sequence: the Consultation
+   Summary compare-label correction, **merged 2026-08-24 as `8aeb6b3`**
+   (PR #60, head `71c5b34`; parents `1e47076` + `71c5b34`; merge, not squash
+   or rebase; source branch retained; post-merge CI run 32748968103 and Pages
+   run 32748966914 verified at exactly that commit; served application,
+   dictionary and generated-demo bytes identical to the merged blobs; 124/124
+   deployed rendered checks with no horizontal overflow, console errors or
+   page errors). The control now reads "Compare mattresses" /
+   "Comparar colchones", accurate in every state the enable rule admits, with
+   comparison behaviour unchanged. **Item 1.6 is ✅.** Showroom authorization
+   remains NO and the pre-showroom device and accessibility matrix remains
+   blocking; this closed one exit clause, not that gate.
 9. 🔨 **The visible redesign** — Phase 1. *(Implementation explicitly
    authorized by Blake 2026-08-12 — see the authorization block at the top of
    Phase 1. Direction set by the 2026-08-14 Nocturne owner review, D1–D6,
