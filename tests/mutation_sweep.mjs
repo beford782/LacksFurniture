@@ -1730,6 +1730,22 @@ const MUTATIONS = [
   ["Code.gs: the plain list header sits over an empty list again",
     "      + 'Show this email to your ' + storeName + ' sleep specialist.\\n\\n'\n      + (allMatches.length ? _plainListHeader + '\\n' : '')",
     "      + 'Show this email to your ' + storeName + ' sleep specialist.\\n\\n'\n      + _plainListHeader + '\\n'", EMAIL_PRIORITIES, "Code.gs"],
+  // Item 1.6 exit clause: the compare control's label must stay honest in
+  // every state its enable rule admits (including a persisted pair the
+  // customer never saved). EN and ES are separate surfaces: the dictionary
+  // files are distinct targets, and the pre-render static markup is a third.
+  ["item 1.6: the EN compare label claims 'saved picks' again",
+    "\"hf2.compare_saved\": \"Compare mattresses\",",
+    "\"hf2.compare_saved\": \"Compare saved picks\",", PLAN, "data/dict-en.json"],
+  ["item 1.6: the ES compare label claims 'selecciones guardadas' again",
+    "\"hf2.compare_saved\": \"Comparar colchones\",",
+    "\"hf2.compare_saved\": \"Comparar selecciones guardadas\",", PLAN, "data/dict-es.json"],
+  ["item 1.6: the pre-render markup flashes the retired compare label again",
+    ">Compare mattresses</button>",
+    ">Compare saved picks</button>", PLAN],
+  ["item 1.6: the compare control stops localizing its label",
+    "if (compareBtn) compareBtn.textContent = t('hf2.compare_saved');",
+    "if (compareBtn) compareBtn.textContent = 'Compare saved picks';", PLAN],
   ["slice6: the reveal handler claims Send in preview mode again",
     "        // C13 (external review, PR #58): the send verb is owned by the ONE\n        // mode-aware renderer. The --revealed class is already set above, so\n        // re-rendering yields the right verb for the mode — preview mode keeps\n        // saying Save/Guardar, never a \"send\" claim while gasUrl is blank.\n        renderHf2SendButton();",
     "        var sendBtn = document.getElementById('hf2SendBtn');\n        if (sendBtn) sendBtn.textContent = es ? 'Enviar Pase y Selecciones' : 'Send Pass & Picks';", PLAN],

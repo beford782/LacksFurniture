@@ -254,6 +254,84 @@ SUMMARY_JS = r"""
 """
 
 
+COMPARE_LABEL_JS = r"""
+async (ARGS) => {
+  const out = {};
+  const ANS = ARGS.answers;
+  for (const k of Object.keys(ANS)) answers[k] = ANS[k];
+  showProfileScreen();
+  window.showResults();
+  const gold = _resultsState.tierData.gold;
+  if (ARGS.mode === "saved") {
+    // Two SAVED picks, no persisted comparison pair.
+    window._toggleSavePick(gold[0].id);
+    window._toggleSavePick(gold[1].id);
+  } else {
+    // The honesty case: a complete comparison pair chosen from cards the
+    // customer never saved, with zero saved picks.
+    window.toggleCompare(gold[1].id);
+    window.toggleCompare(gold[2].id);
+  }
+  // switchLanguage is async (it fetches the dictionary): AWAIT it, or the
+  // probe reads the outgoing language and reports a false result.
+  if (ARGS.lang === "es") await switchLanguage("es");
+  window.showSavedPicks();
+  const btn = document.getElementById("hf2CompareBtn");
+  const cs = getComputedStyle(btn);
+  const r = btn.getBoundingClientRect();
+  out.label = btn.textContent;
+  out.disabled = btn.disabled;
+  out.visible = cs.display !== "none" && cs.visibility !== "hidden" && r.width > 0 && r.height > 0;
+  out.inPage = r.x >= 0 && r.x + r.width <= window.innerWidth + 1;
+  out.savedCount = (window._savedPicks || []).length;
+  out.pair = (window._compareSelected || []).slice();
+  out.cards = document.querySelectorAll("#hf2PicksList .hf2-pick").length;
+  out.bodyHasRetired = document.body.innerText.indexOf("Compare saved picks") !== -1
+    || document.body.innerText.indexOf("Comparar selecciones guardadas") !== -1;
+  return out;
+}
+"""
+
+COMPARE_LABELS = {"en": "Compare mattresses", "es": "Comparar colchones"}
+
+
+def run_compare_label(browser, port, shots_dir):
+    """The Summary compare control must read honestly in EVERY state its
+    enable rule admits - including a persisted pair of mattresses the
+    customer never saved (roadmap item 1.6's outstanding exit clause)."""
+    for lang in ("en", "es"):
+        for mode, desc in (("saved", "two saved picks"),
+                           ("unsaved-pair", "a persisted pair from UNSAVED cards, zero saved picks")):
+            print(f"\n-- COMPARE LABEL [{lang}] {desc} --")
+            page = browser.new_page(viewport={"width": 1194, "height": 748})
+            errors = []
+            page.on("pageerror", lambda e: errors.append(str(e)))
+            page.goto(f"http://127.0.0.1:{port}/", wait_until="networkidle")
+            page.wait_for_selector("#startBtn")
+            r = page.evaluate(COMPARE_LABEL_JS, {"answers": ANSWERS, "mode": mode, "lang": lang})
+            if shots_dir:
+                os.makedirs(shots_dir, exist_ok=True)
+                page.screenshot(path=os.path.join(shots_dir, f"compare-label-{lang}-{mode}.png"))
+            want = COMPARE_LABELS[lang]
+            check(f"[{lang}/{mode}] no page error and the control is visibly rendered inside the page",
+                  not errors and r["visible"] and r["inPage"], str(errors)[:120])
+            check(f"[{lang}/{mode}] the rendered label reads '{want}'",
+                  r["label"].strip() == want, f"got {r['label']!r}")
+            check(f"[{lang}/{mode}] the control is ENABLED in this state (enable rule unchanged)",
+                  r["disabled"] is False)
+            check(f"[{lang}/{mode}] no retired 'saved picks' compare wording is visible anywhere on the Summary",
+                  not r["bodyHasRetired"])
+            if mode == "saved":
+                check(f"[{lang}/{mode}] the state is what it claims: two saved picks rendered, no persisted pair",
+                      r["savedCount"] == 2 and r["cards"] == 2 and len(r["pair"]) == 0,
+                      f"saved={r['savedCount']} cards={r['cards']} pair={r['pair']}")
+            else:
+                check(f"[{lang}/{mode}] the state is what it claims: ZERO saved picks and a complete persisted pair",
+                      r["savedCount"] == 0 and r["cards"] == 0 and len(r["pair"]) == 2,
+                      f"saved={r['savedCount']} cards={r['cards']} pair={r['pair']}")
+            page.close()
+
+
 def run_summary(browser, port, name, width, height, shots_dir):
     print(f"\n-- SUMMARY {name} {width}x{height} --")
     page = browser.new_page(viewport={"width": width, "height": height})
@@ -396,6 +474,7 @@ def main():
                 run_viewport(browser, port, name, w, h, args.screenshots)
             for name, w, h in VIEWPORTS[:2]:
                 run_summary(browser, port, name, w, h, args.screenshots)
+            run_compare_label(browser, port, args.screenshots)
             run_forced_colors(browser, port, args.screenshots)
             browser.close()
     finally:
