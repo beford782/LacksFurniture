@@ -273,8 +273,14 @@ ok("the preview variant says Restart clears the answers — and the confirmed Re
   ok("the wipe inventory includes the four Sleep System containers (answer-derived prose)",
     ["sleepSystemMain", "sleepSystemGuidance", "sleepSystemRail", "sleepSystemPlanList"].every((id) => inventory.includes(`'${id}'`)));
   const textInventory = (norm.match(/var SESSION_TEXT_IDS = \[([\s\S]*?)\];/) || [null, ""])[1];
-  ok("the text wipe inventory includes the drawer's answer-derived lines (shortlist fit, pillow prompt title and reason)",
-    ["drawerShortlistFit", "drawerSystemPromptTitle", "drawerSystemPromptReason"].every((id) => textInventory.includes(`'${id}'`)));
+  ok("the text wipe inventory includes the drawer's answer-derived lines (pillow prompt title and reason)",
+    ["drawerSystemPromptTitle", "drawerSystemPromptReason"].every((id) => textInventory.includes(`'${id}'`)));
+  // Item 1.3 reason-gate containment (2026-08-24): the shortlist-fit surface
+  // was removed from the app entirely, so it is neither rendered nor wiped.
+  // Assert BOTH halves - the element is gone AND its id left the inventory -
+  // so re-introducing the element without a wipe entry cannot pass silently.
+  ok("the contained shortlist-fit surface is absent from the app and from the wipe inventory",
+    !html.includes('id="drawerShortlistFit"') && !textInventory.includes("'drawerShortlistFit'"));
 }
 ok("the live variant makes sending conditional on the customer's choice and never claims nothing leaves",
   /sent only if you choose to email/i.test(dictEn["privacy.data_use_live"]) && /solo se envían si eliges/i.test(dictEs["privacy.data_use_live"])

@@ -250,8 +250,14 @@ section('aligned comparison: executed rows, EN');
   ok('the head row carries both mattress identities',
     out.includes('cmp-head-row') && out.includes('>A <') && out.includes('>C <'));
   const order = [...out.matchAll(/data-cmp="([a-z]+)"/g)].map((m) => m[1]).join(',');
-  ok('rows appear in the scan order: feel, response, tier, fit, feature, benefit, reaction',
-    order === 'feel,response,tier,fit,feature,benefit,reaction');
+  // Item 1.3 containment (owner ruling 2026-08-24): the gated "Why it is
+  // here" row is omitted, so the scan order closes over it with no gap.
+  ok('rows appear in the scan order: feel, response, tier, feature, benefit, reaction',
+    order === 'feel,response,tier,feature,benefit,reaction');
+  ok('the contained why-fit row does not render',
+    !out.includes('data-cmp="fit"'));
+  ok('no contained why-fit label renders in either language',
+    !out.includes('Why it is here') && !out.includes('Por qu\u00e9 est\u00e1 aqu\u00ed'));
   ok('differing feel keeps two emphasized cells on one row',
     /data-cmp="feel"[^>]*>[\s\S]*?Medium 5\/10[\s\S]*?Firm 7\/10/.test(out) &&
     /cmp-row--diff" role="row" data-cmp="feel"/.test(out));
@@ -264,8 +270,12 @@ section('aligned comparison: executed rows, EN');
   ok('the WHY IT HELPS row carries both differentiator details',
     /cmp-row--key cmp-row--diff" role="row" data-cmp="benefit"/.test(out) &&
     out.includes('WB-g2') && out.includes('WB-g6'));
-  ok('the strongest customer-fit priority renders per mattress',
-    out.includes('P-g2 — d-g2') && out.includes('P-g6 — d-g6'));
+  // Containment: the customer-answer-derived priority string that used to
+  // fill the why-fit cell must not reach the customer through Compare.
+  ok('the customer-answer-derived priority string does NOT render',
+    !out.includes('P-g2 — d-g2') && !out.includes('P-g6 — d-g6'));
+  ok('no stranded empty row survives the omission',
+    !/data-cmp="fit"/.test(out) && !/<div class="cmp-row[^"]*" role="row"><div class="cmp-label" role="rowheader"><\/div>/.test(out));
   ok('a missing reaction falls back to the vetted placeholder on its side only',
     /data-cmp="reaction"[\s\S]*?ok[\s\S]*?Not recorded yet/.test(out));
   env.api.close();
@@ -282,7 +292,11 @@ section('aligned comparison: Spanish and missing-data fallbacks');
   const out = es.els.compareCols.innerHTML;
   ok('ES row labels render (Característica clave / En qué ayuda)',
     out.includes('Característica clave') && out.includes('En qué ayuda') &&
-    out.includes('Sensación') && out.includes('Por qué está aquí'));
+    out.includes('Sensación'));
+  // Item 1.3 containment: the Spanish why-fit label must not survive anywhere
+  // in the rendered Compare output, including the accessibility tree.
+  ok('ES: the contained why-fit label is absent',
+    !out.includes('Por qué está aquí'));
   ok('ES same-tag renders (Igual en ambos)', out.includes('Igual en ambos'));
   ok('ES missing reaction falls back to the vetted ES placeholder',
     out.includes('Aún no registrada'));
@@ -303,8 +317,10 @@ section('aligned comparison: Spanish and missing-data fallbacks');
   ok('retired both sides: feature and benefit rows are omitted entirely',
     !out.includes('data-cmp="feature"') && !out.includes('data-cmp="benefit"'));
   ok('retired both sides: the remaining rows still render',
-    out.includes('data-cmp="feel"') && out.includes('data-cmp="fit"') &&
-    out.includes('data-cmp="reaction"'));
+    out.includes('data-cmp="feel"') && out.includes('data-cmp="response"') &&
+    out.includes('data-cmp="tier"') && out.includes('data-cmp="reaction"'));
+  ok('retired both sides: the contained why-fit row is absent too',
+    !out.includes('data-cmp="fit"'));
   ok('dialog lifecycle unchanged through the aligned render (focus on title)',
     bare.doc.activeElement === bare.els.compareModalTitle);
   bare.api.close();
@@ -321,9 +337,12 @@ function tableChecks(out, tag, labels) {
   ok(tag + ': the head row holds three column headers (corner + both mattresses)',
     /cmp-head-row" role="row"/.test(out) &&
     (out.match(/role="columnheader"/g) || []).length === 3);
+  // Item 1.3 containment (2026-08-24): six attribute rows, not seven - the
+  // gated why-fit row is omitted, and the accessibility tree must show no
+  // remnant of it (no extra row, no empty rowheader).
   ok(tag + ': every attribute row is a role row with a rowheader label',
-    (out.match(/class="cmp-row[^"]*" role="row"/g) || []).length === 7 &&
-    (out.match(/role="rowheader"/g) || []).length === 7);
+    (out.match(/class="cmp-row[^"]*" role="row"/g) || []).length === 6 &&
+    (out.match(/role="rowheader"/g) || []).length === 6);
   ok(tag + ': differing rows expose two plain cells under the mattress columns',
     [...out.matchAll(/cmp-row--diff" role="row" data-cmp="[a-z]+">([\s\S]*?)<\/div><\/div>/g)]
       .every((m) => (m[0].match(/role="cell"(?! aria-colspan)/g) || []).length === 2));
@@ -345,7 +364,7 @@ function tableChecks(out, tag, labels) {
   env.focusOpener();
   env.api.open();
   tableChecks(env.els.compareCols.innerHTML, 'EN',
-    ['Feel', 'Response', 'Tier', 'Why it is here', 'Key feature', 'Why it helps', 'Your reaction']);
+    ['Feel', 'Response', 'Tier', 'Key feature', 'Why it helps', 'Your reaction']);
   env.api.close();
 }
 {
@@ -353,7 +372,7 @@ function tableChecks(out, tag, labels) {
   es.focusOpener();
   es.api.open();
   tableChecks(es.els.compareCols.innerHTML, 'ES',
-    ['Sensación', 'Respuesta', 'Nivel', 'Por qué está aquí', 'Característica clave', 'En qué ayuda', 'Tu reacción']);
+    ['Sensación', 'Respuesta', 'Nivel', 'Característica clave', 'En qué ayuda', 'Tu reacción']);
   es.api.close();
 }
 

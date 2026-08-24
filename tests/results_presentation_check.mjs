@@ -383,10 +383,13 @@ ok('the priority row / chip markup is gone from both renderers',
 ok('buildMattressPriorities() itself survives, unchanged in reach',
   norm.includes('function buildMattressPriorities(m)'));
 // Slice 6: the Consultation Summary became a read model and dropped its
-// re-derived reason line, so the helper's consumers are now the
-// definition, the drawer data and the compare modal (4 -> 3, deliberate).
-ok('exactly its non-Results consumers remain: definition + drawer data + compare modal',
-  (norm.match(/buildMattressPriorities\(/g) || []).length === 3,
+// re-derived reason line (4 -> 3). Item 1.3 containment (2026-08-24) then
+// removed the compare modal's gated why-fit derivation (3 -> 2), so the
+// helper's only remaining consumers are its own definition and the drawer
+// DATA builder - which assembles `feats` that nothing renders. The helper
+// therefore has NO rendered consumer at all, which is the containment.
+ok('exactly its non-Results consumers remain: definition + drawer data',
+  (norm.match(/buildMattressPriorities\(/g) || []).length === 2,
   `found ${(norm.match(/buildMattressPriorities\(/g) || []).length} occurrences`);
 const drawerDataSrc = extractFunction('function buildDrawerData()');
 ok('the drawer data path still consumes the helper',
@@ -541,6 +544,122 @@ function mustReplace(src, find, replace) {
   env.api.setTier('silver');
   ok('control: a dropped focus restore is detected (no focus call reaches the new active tab)',
     !env.get('tierTab-silver')._focusCount);
+}
+
+// ============================================================================
+// ITEM 1.3 REASON-GATE CONTAINMENT (owner ruling 2026-08-24)
+// ----------------------------------------------------------------------------
+// Two rendered per-model, per-customer "why this fits" outputs predated the
+// gate (entered 2da6fef, before the gate at fc3329b): the drawer's
+// "Why it made your shortlist" sentence and the Compare "Why it is here" row.
+// Their history is not a breach, but they are not grandfathered: the gate
+// fails closed by OMISSION. The Compare half is pinned in
+// tests/compare_modal_check.mjs; the drawer half and the catalog-reason
+// reachability facts are pinned here.
+//
+// Containment is of the RENDERED OUTPUT. The producing functions are retained
+// on purpose - breaking them would hide, not contain, and would change what
+// other suites can execute. So the first assertion proves the producer still
+// WORKS, and the rest prove nothing renders it.
+// ============================================================================
+{
+  // LIVE SOURCE: index.html with HTML comments and JS line comments removed,
+  // so containment is judged on code that can actually execute or render.
+  // Commentary that quotes a retired literal is documentation, not output.
+  const live = norm
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .split('\n')
+    .filter((l) => !/^\s*\/\//.test(l))
+    .join('\n');
+
+  const shortlistSrc = extractFunction('function mattressShortlistFitText(m)');
+  ok('the why-fit producer is retained, not broken (containment is by omission)',
+    !!shortlistSrc && shortlistSrc.includes('function mattressShortlistFitText(m)'));
+
+  // EXECUTE the real producer in both languages against a real-shaped model,
+  // so a future "containment" that silently guts the function is detected.
+  const makeShortlist = (lang, answers) => new Function('currentLang', 'answers', `"use strict";
+    ${extractFunction('function firmnessFeel(score)')}
+    ${extractFunction('function mattressResponseLabel(m)')}
+    ${shortlistSrc}
+    return mattressShortlistFitText;`)(lang, answers);
+
+  const hotSideSleeper = {
+    temperature: 'hot', sleep_position: 'side', sleep_issues: ['back_pain'],
+    partner_sleep: 'partner', health_conditions: []
+  };
+  const model = { id: 'x1', features: ['cooling', 'pressure', 'support', 'motion'],
+                  archetype: 'hybrid', firmness: 5 };
+
+  const en = makeShortlist('en', hotSideSleeper)(model);
+  const es = makeShortlist('es', hotSideSleeper)(model);
+  ok('producer still yields answer-derived EN text when executed directly',
+    typeof en === 'string' && en.length > 0);
+  ok('producer still yields answer-derived ES text when executed directly',
+    typeof es === 'string' && es.length > 0 && es !== en);
+
+  // ---- the containment itself ---------------------------------------------
+  ok('no renderer calls the why-fit producer any more',
+    (live.match(/mattressShortlistFitText\(/g) || []).length === 1,
+    `found ${(live.match(/mattressShortlistFitText\(/g) || []).length} live occurrences (definition only expected)`);
+
+  ok('the drawer why-fit heading element is gone (no stranded label)',
+    !norm.includes('id="drawerWhyLabel"'));
+  ok('the drawer why-fit container element is gone (no empty box, no a11y remnant)',
+    !norm.includes('id="drawerShortlistFit"'));
+
+  // Both languages: neither literal may survive anywhere in the shipped app.
+  for (const [lang, literal] of [['EN', 'Why it made your shortlist'],
+                                 ['ES', 'Por qué llegó a tu lista']]) {
+    ok(`${lang}: the contained drawer why-fit string appears in no live code`,
+      !live.includes(literal));
+  }
+  // The Compare labels are contained too - pinned in compare_modal_check.mjs
+  // by execution; pinned here as a source-level backstop in both languages.
+  for (const [lang, literal] of [['EN', 'Why it is here'],
+                                 ['ES', 'Por qué está aquí']]) {
+    ok(`${lang}: the contained Compare why-fit label appears in no live code`,
+      !live.includes(literal));
+  }
+
+  // No language-switch path can restore it: renderDrawer is the only writer
+  // and runs on every open AND every switch, so absence there is sufficient.
+  const drawerWriter = norm.includes('function renderDrawer(')
+    ? extractFunction('function renderDrawer(') : null;
+  if (drawerWriter) {
+    ok('the drawer writer contains no why-fit write in either language',
+      !drawerWriter.includes('drawerWhyLabel') && !drawerWriter.includes('drawerShortlistFit'));
+  }
+
+  // ---- preserved drawer content must still be written ----------------------
+  for (const id of ['drawerFeelAnchor', 'drawerDifferentiatorsLabel',
+                    'drawerDifferentiators']) {
+    ok(`preserved drawer surface still present: ${id}`, norm.includes(`id="${id}"`));
+  }
+
+  // ---- catalog reason objects remain non-rendering (dead), unchanged --------
+  ok('catalog reasons still have exactly one reader, inside the scoring loop',
+    (norm.match(/\.reasons\?\.\[/g) || []).length === 1);
+  ok('catalog reasons_es still has NO reader at all',
+    !norm.includes('reasons_es'));
+  ok('the per-feature reason harvest is still discarded, not rendered',
+    /var calc = calculateScores\(\);\s*\n\s*var scores = calc\.scores;/.test(norm) &&
+    !norm.includes('calc.matchReasons'));
+
+  // ---- product-specific reason-like surfaces are NOT contained -------------
+  // These are outside the gate because they are product-specific, not derived
+  // from the customer's answers. Proven, not asserted: their extracted bodies
+  // must contain no read of `answers`.
+  for (const [name, anchor] of [
+    ['topPickReasonText', 'function topPickReasonText(m)'],
+    ['mattressDifferentiators', 'function mattressDifferentiators(m)'],
+    ['hf2ReasonFor', 'function hf2ReasonFor(m, tier)'],
+    ['mattressDifferenceText', 'function mattressDifferenceText(m)']
+  ]) {
+    const body = extractFunction(anchor);
+    ok(`${name} is outside the gate: it reads no customer answer`,
+      !!body && !/answers[.[]/.test(body));
+  }
 }
 
 console.log(`\n${failures === 0 ? 'PASS' : 'FAIL'} — ${checks - failures}/${checks} checks passed`);
