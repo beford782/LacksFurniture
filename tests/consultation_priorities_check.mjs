@@ -803,6 +803,23 @@ section("Slice 6: payload projection all-or-nothing (executed)");
       const out = runProjection(four, "en");
       return out.length === 3 && out.every((pr) => pr.name && pr.reason && pr.test);
     })());
+  // C14 (external review round 2): the gate must FAIL CLOSED on a truthy
+  // non-string localized field — never throw out of sendResults().
+  check("a truthy non-string name field empties the block fail-closed — never a throw",
+    (() => {
+      const broken = base.map((x, i) => (i === 1 ? Object.assign(JSON.parse(JSON.stringify(x)), { en: {} }) : x));
+      try { return runProjection(broken, "en").length === 0; } catch (e) { return false; }
+    })());
+  check("...while the untouched-language payload still ships complete (per-language semantics hold)",
+    (() => {
+      const broken = base.map((x, i) => (i === 1 ? Object.assign(JSON.parse(JSON.stringify(x)), { en: {} }) : x));
+      try { return runProjection(broken, "es").length === 3; } catch (e) { return false; }
+    })());
+  check("a numeric test-prompt field empties the block fail-closed too",
+    (() => {
+      const broken = base.map((x, i) => (i === 2 ? Object.assign(JSON.parse(JSON.stringify(x)), { test: { en: 7, es: 7 } }) : x));
+      try { return runProjection(broken, "en").length === 0; } catch (e) { return false; }
+    })());
 }
 
 console.log(`\nConsultation priorities check: ${passed} passed, ${failed} failed`);

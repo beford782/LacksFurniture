@@ -389,11 +389,14 @@ const MUTATIONS = [
     ".slice(0, 3)\n          .map(function(item) {",
     ".slice(0, 10)\n          .map(function(item) {", PRIORITIES],
   ["the payload grows an extra key",
-    "name: (item && (item[currentLang] || item.en)) || '',",
-    "name: (item && (item[currentLang] || item.en)) || '', raw: item,", PRIORITIES],
+    "name: str(item && (item[currentLang] || item.en)),",
+    "name: str(item && (item[currentLang] || item.en)), raw: item,", PRIORITIES],
   ["the payload stops pre-localizing the reason",
-    "reason: (item && item.why && (item.why[currentLang] || item.why.en)) || '',",
-    "reason: (item && item.why && item.why.en) || '',", PRIORITIES],
+    "reason: str(item && item.why && (item.why[currentLang] || item.why.en)),",
+    "reason: str(item && item.why && item.why.en),", PRIORITIES],
+  ["slice6: the payload gate throws on a non-string priority field again",
+    "var str = function(v) { return typeof v === 'string' ? v : ''; };",
+    "var str = function(v) { return v || ''; };", PRIORITIES],
 
   // --- the wipe inventories -------------------------------------------------
   ["the hf2 list leaves the wipe's content inventory",

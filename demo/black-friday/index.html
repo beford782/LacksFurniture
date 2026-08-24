@@ -17347,13 +17347,18 @@
           // []; this gate enforces the same rule at the boundary against any
           // future producer defect. Whitespace-only counts as missing,
           // mirroring the inlined predicate's trim.
+          // C14 (external review round 2): resolve to STRINGS ONLY. A truthy
+          // non-string localized field (a malformed future producer) must
+          // empty the block fail-closed like every other defect this gate
+          // guards — never throw a TypeError out of sendResults().
+          var str = function(v) { return typeof v === 'string' ? v : ''; };
           var entries = (Array.isArray(analytics.trialFocus) ? analytics.trialFocus : [])
           .slice(0, 3)
           .map(function(item) {
             return {
-              name: (item && (item[currentLang] || item.en)) || '',
-              reason: (item && item.why && (item.why[currentLang] || item.why.en)) || '',
-              test: (item && item.test && (item.test[currentLang] || item.test.en)) || ''
+              name: str(item && (item[currentLang] || item.en)),
+              reason: str(item && item.why && (item.why[currentLang] || item.why.en)),
+              test: str(item && item.test && (item.test[currentLang] || item.test.en))
             };
           });
           var whole = function(p) {
