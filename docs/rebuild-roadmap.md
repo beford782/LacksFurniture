@@ -2077,8 +2077,13 @@ priorities presentation has been **either replaced, or kept under a no-change
 decision approved by Blake and recorded here with the date**.
 
 *(2026-08-24 — where the exit stands, clause by clause, on `main` at `3f92241`
-(PR #58). Three clauses are met and one is **not**, so the item takes ⏳ —
-code merged, not closed, not ✅. **Consultation Summary:** ships its reworked presentation — the
+(PR #58). The exit carries three top-level clauses — the four-surface
+presentation condition, Compare, and 0.5's provisional priorities
+presentation. **Two are met and one — Compare — is not**, so the item takes
+⏳: code merged, not closed, not ✅. (Counted by surface instead, the
+presentation condition's four surfaces and the priorities presentation are
+five satisfied items against the one unmet Compare clause; either way, exactly
+one clause is outstanding.) **Consultation Summary:** ships its reworked presentation — the
 compact saved-state read model, the composed lead/payment status line, the
 attribution, the classed ordered priorities component and the retained
 navigation. **Welcome:** ships its reworked presentation — the Payment Choice
@@ -3011,7 +3016,21 @@ document, not here.
    own branch (PR #53) and, by owner ruling 2026-08-21, integrated the
    resulting `main` and **merged 2026-08-23 as `f27f879`** (item 1.7 ✅ —
    the Sleep Plan per D5, head `cd1f1ef`, PLAN-01 retest owner-attested;
-   post-merge CI and Pages verified at exactly that commit).
+   post-merge CI and Pages verified at exactly that commit). A Sleep Plan
+   layout defect found by rendered verification after that merge was repaired
+   and **merged 2026-08-23 as `5d05141`** (PR #57). Then Slice 6, the
+   Consultation Summary, Welcome, the mattress drawer and the email per
+   item 1.6, **merged 2026-08-24 as `3f92241`** (PR #58, head `ca088e3`;
+   post-merge CI and Pages verified at exactly that commit; served bytes
+   identical to the merged blobs; a 70/70 deployed rendered walk; sweep
+   453/453; two external-review P2 findings fixed and a clean third round;
+   the real Windows forced-colors gate owner-run and owner-attested PASS).
+   **Item 1.6 is ⏳, not ✅** — its code is merged and verified, but the
+   exit's "Compare correctly labelled from the Consultation Summary" clause
+   is not met while that control can read "Compare saved picks" over a
+   persisted pair of unsaved mattresses; by owner ruling 2026-08-24 the
+   clause is not amended, and the item stays ⏳ until a separately authorized
+   label correction closes it.
 9. 🔨 **The visible redesign** — Phase 1. *(Implementation explicitly
    authorized by Blake 2026-08-12 — see the authorization block at the top of
    Phase 1. Direction set by the 2026-08-14 Nocturne owner review, D1–D6,
