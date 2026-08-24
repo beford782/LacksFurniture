@@ -947,6 +947,105 @@ if (gate("renderSleepPlan", RENDER_SRCS.every(Boolean) && !!FALLBACK_SRC && !!RE
       (norm.match(/localStorage/g) || []).length === 6);
   }
 
+  // ---- Compare-control label honesty (item 1.6's outstanding exit clause) ---
+  // The Summary's compare control is enabled by TWO different conditions, and
+  // one of them can open a pair the customer never saved. The label must be
+  // accurate in every state the enable rule admits, with no conditional
+  // wording. Executed against the shipped source and the real dictionaries.
+  section("Compare control: an honest label in every enabled state");
+  {
+    const LABEL = { en: "Compare mattresses", es: "Comparar colchones" };
+    const RETIRED = { en: "Compare saved picks", es: "Comparar selecciones guardadas" };
+    const DICTS = { en: dictEn, es: dictEs };
+
+    // The two shipped blocks, extracted verbatim: the label writer inside
+    // renderHf2() and the enable rule inside renderHf2Picks().
+    const labelBlock = (norm.match(/ {6}var compareBtn = document\.getElementById\('hf2CompareBtn'\);\r?\n {6}if \(compareBtn\) compareBtn\.textContent = t\('hf2\.compare_saved'\);/) || [""])[0];
+    const picksSrc = extractFunction("function renderHf2Picks()");
+    check("extractions: the label writer and renderHf2Picks",
+      labelBlock.length > 80 && !!picksSrc && picksSrc.includes("compareBtn.disabled"));
+
+    // One environment renders BOTH: the label writer, then the real
+    // renderHf2Picks, so the visible label and the disabled flag come from
+    // the same shipped code paths the app runs.
+    const render = (lang, saved, pair) => {
+      const els = {};
+      const doc = {
+        getElementById: (id) => (els[id] = els[id] || { textContent: "", hidden: false, disabled: false, innerHTML: "", appendChild() {} }),
+      };
+      const win = throwingWindow({
+        _savedPicks: saved,
+        _compareSelected: pair,
+        _drawerData: {},
+      });
+      const t = (k) => (DICTS[lang][k] != null ? DICTS[lang][k] : k);
+      new Function("window", "document", "t", "renderHf2Pick",
+        '"use strict";' + labelBlock + "\n" + picksSrc + "\nrenderHf2Picks();")(
+        win, doc, t, () => ({}));
+      return els.hf2CompareBtn;
+    };
+
+    const TWO_SAVED = [{ id: "g1" }, { id: "g2" }];
+    const ONE_SAVED = [{ id: "g1" }];
+    const PAIR = ["g7", "s3"];
+
+    for (const lang of ["en", "es"]) {
+      const want = LABEL[lang];
+      // State 1: two saved picks, no persisted pair.
+      let btn = render(lang, TWO_SAVED, []);
+      check(`[${lang}] two saved picks, no pair: the control reads "${want}" and is enabled`,
+        btn.textContent === want && btn.disabled === false, btn.textContent);
+      // State 2: two saved picks AND a persisted pair.
+      btn = render(lang, TWO_SAVED, PAIR);
+      check(`[${lang}] two saved picks with a persisted pair: same label, enabled`,
+        btn.textContent === want && btn.disabled === false, btn.textContent);
+      // State 3: the honesty case — a complete pair persisted from UNSAVED
+      // Results cards, with zero or one saved pick.
+      btn = render(lang, [], PAIR);
+      check(`[${lang}] ZERO saved picks with a persisted unsaved pair: the label does not claim "saved picks"`,
+        btn.textContent === want && btn.disabled === false, btn.textContent);
+      btn = render(lang, ONE_SAVED, PAIR);
+      check(`[${lang}] ONE saved pick with a persisted unsaved pair: same honest label, enabled`,
+        btn.textContent === want && btn.disabled === false, btn.textContent);
+      // The disabled posture is UNCHANGED where it was disabled before.
+      btn = render(lang, [], []);
+      check(`[${lang}] no saved picks and no pair: still disabled (enable rule unchanged)`,
+        btn.disabled === true && btn.textContent === want);
+      btn = render(lang, ONE_SAVED, []);
+      check(`[${lang}] one saved pick and no pair: still disabled (enable rule unchanged)`,
+        btn.disabled === true && btn.textContent === want);
+      // An incomplete persisted selection does not enable the control.
+      btn = render(lang, [], ["g7"]);
+      check(`[${lang}] a one-item persisted selection does not enable the control`,
+        btn.disabled === true);
+      // The retired wording is gone from the rendered control.
+      btn = render(lang, TWO_SAVED, []);
+      check(`[${lang}] the retired wording never renders on the control`,
+        btn.textContent.indexOf(RETIRED[lang]) === -1);
+    }
+
+    // The dictionary values themselves, and the pre-render static markup.
+    check("both dictionaries carry the honest label and neither retains the retired wording",
+      dictEn["hf2.compare_saved"] === LABEL.en && dictEs["hf2.compare_saved"] === LABEL.es
+      && dictEn["hf2.compare_saved"] !== RETIRED.en && dictEs["hf2.compare_saved"] !== RETIRED.es);
+    check("the static pre-render markup carries the honest label too (nothing flashes the retired wording)",
+      /id="hf2CompareBtn"[\s\S]{0,220}>Compare mattresses<\/button>/.test(norm)
+      && norm.indexOf(">Compare saved picks</button>") === -1);
+    check("the retired customer strings are absent from the whole app source",
+      norm.indexOf("Compare saved picks") === -1 && norm.indexOf("Comparar selecciones guardadas") === -1);
+
+    // Nothing else moves: the enable rule, the key, and the action are pinned
+    // byte-for-byte.
+    check("the enable rule is byte-unchanged (two saved picks OR a complete persisted pair)",
+      norm.includes("if (compareBtn) compareBtn.disabled = saved.length < 2\n        && !(Array.isArray(window._compareSelected) && window._compareSelected.length === 2);"));
+    check("the dictionary key is unchanged (values changed, no rename)",
+      /"hf2\.compare_saved":/.test(readFileSync(join(root, "data", "dict-en.json"), "utf8"))
+      && /"hf2\.compare_saved":/.test(readFileSync(join(root, "data", "dict-es.json"), "utf8"))
+      && /compareBtn\.textContent = t\('hf2\.compare_saved'\);/.test(norm));
+    check("the control's route/action is unchanged (both handlers still call compareReviewFinalists)",
+      /id="hf2CompareBtn"[\s\S]{0,200}onclick="window\.compareReviewFinalists\(\)"[\s\S]{0,200}ontouchend="event\.preventDefault\(\);window\.compareReviewFinalists\(\);"/.test(norm));
+  }
+
   // ---- Slice 6 C12: the payload lead assembly, executed ---------------------
   section("Slice 6 C12 — payload lead/matchesSource assembly (executed)");
   {

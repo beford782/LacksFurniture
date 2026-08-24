@@ -394,6 +394,31 @@ section('Slice 6 C3: comparison selection persists across the Summary compare');
   env.els.compareModal.style.display = 'none';
   env.win.compareReviewFinalists();
   ok('fewer than two saved picks and no pair: no-op', env.els.compareModal.style.display === 'none' && env.win._compareSelected.length === 0);
+
+  // The honesty case the item-1.6 label fix addresses: a complete pair
+  // persisted from UNSAVED Results cards, with fewer than two saved picks.
+  // The pair opens AS-IS and is never rewritten from the saved picks - which
+  // is exactly why the control may not call them "saved picks".
+  env.win._compareSelected = ['g2', 'g6'];
+  env.win._savedPicks = [{ id: 's1' }];
+  env.win._favoriteMattressId = 's1';
+  env.els.compareModal.style.display = 'none';
+  env.win.compareReviewFinalists();
+  ok('one saved pick + a persisted UNSAVED pair: the unsaved pair opens exactly as-is',
+    JSON.stringify(env.win._compareSelected) === JSON.stringify(['g2', 'g6'])
+    && env.els.compareModal.style.display === 'flex');
+  env.api.close();
+  ok('...and closing still preserves it', JSON.stringify(env.win._compareSelected) === JSON.stringify(['g2', 'g6']));
+
+  env.win._compareSelected = ['g2', 'g6'];
+  env.win._savedPicks = [];
+  env.win._favoriteMattressId = '';
+  env.els.compareModal.style.display = 'none';
+  env.win.compareReviewFinalists();
+  ok('ZERO saved picks + a persisted unsaved pair: it still opens as-is (the control is enabled in this state)',
+    JSON.stringify(env.win._compareSelected) === JSON.stringify(['g2', 'g6'])
+    && env.els.compareModal.style.display === 'flex');
+  env.api.close();
 }
 
 
