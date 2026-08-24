@@ -126,7 +126,7 @@ still changed nothing the engine computes — the Phase 1 output-regression
 fixture and its pinned sha256 are byte-identical across it — and it added no
 telemetry, no email content and no payment math.
 
-**Current work (2026-08-23).** The owner-inserted **Phase 1
+**Current work (2026-08-24).** The owner-inserted **Phase 1
 cross-cutting gate — Trust integrity and transparency** is `✅` — PR #54 merged
 as `d4049cb` on 2026-08-23 (branch `claude/phase1-trust-integrity`, cut from
 `4a76503`, kept); it is placed in the approved order after Slice 4 and before
@@ -2134,7 +2134,7 @@ reconciled 2026-08-10 (the original table had gone stale):
 
 | Surface | State today |
 |---|---|
-| Consultation Summary "Compare finalists" | **Works.** Auto-selects two saved picks (favourite first) — the customer never chooses which two. Preserved unchanged through PR #34. |
+| Consultation Summary compare control | **Works, with one label defect — this is the clause holding 1.6 at ⏳.** *(State today, re-verified against the merged blob at `3f92241`; the row below it described the pre-Slice-6 behaviour and was stale.)* The control is labelled **"Compare saved picks" / "Comparar selecciones guardadas"** (`hf2.compare_saved`), not the retired "Compare finalists". It is enabled when at least two picks are saved **or** a complete two-item comparison pair is already persisted. On tap it compares an **existing complete pair as-is**, and only when no complete pair exists does the recorded favourite-first auto-select of the top two saved picks fill it (that PR #34 behaviour is preserved) — and the fill persists honestly to the Results tray and the Sleep Plan's compared row. **The defect:** with 0–1 saved picks and a complete pair persisted from *unsaved* Results cards, the control opens that unsaved pair under the "saved picks" label. Owner ruling 2026-08-24: the exit clause is not amended, and the item stays ⏳ until a separately authorized label correction lands. |
 | Sleep Brief "See My Matches →" | **Resolved 2026-08-10** (owner-authorized relabel, ES provisional under the open native-Spanish gate). The CTA still navigates to Results — by design, per the approved "no first-visit Compare" direction — and its label now says so instead of claiming a comparison it never opened. Compare is reached from the Sleep Brief *through* Results. |
 | Results cards | **Entry shipped.** PR #34 (merged `c165497`, 2026-08-10, owner-approved live) renders card-level Compare controls on the top-pick and supporting cards. |
 | Results compare tray and modal | **Reachable.** The tray's "Compare →" / "Comparar →" opens the aligned comparison modal (dialog semantics PR #30, static alignment PR #31, entry PR #34). |
@@ -2949,7 +2949,12 @@ It shares only a word with the nickname engine. **Do not remove it accidentally.
 
 **Compare is fully shipped.** Compare is available from the Results cards
 through the tray and comparison modal (PRs #30/#31/#34, owner-approved live)
-and from the Consultation Summary's preserved "Compare finalists" entry; the
+and from the Consultation Summary's preserved compare entry — **relabelled
+"Compare saved picks" / "Comparar selecciones guardadas" by Slice 6
+(`3f92241`), retiring the "Compare finalists" wording this fact previously
+cited, and carrying the one label defect that holds item 1.6 at ⏳ (it can
+open a persisted pair of unsaved mattresses under that "saved picks"
+label)**; the
 Sleep Brief CTA — "See My Matches →" (PR #35) — correctly routes through
 Results, per the approved "no first-visit Compare" direction. See the
 reconciled table in 1.6.
