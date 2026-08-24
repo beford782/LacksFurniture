@@ -2165,7 +2165,8 @@ outstanding.)*
 *(2026-08-24, superseding record — the exit is now met in full on `main` at
 `8aeb6b3` (PR #60), and item 1.6 is ✅. The dated clause-by-clause record above
 was written by the Slice 6 documentation close-out, **PR #59, merged
-2026-08-24 as `1e47076`** — the base `8aeb6b3` was merged onto. That close-out
+2026-08-24 as `1e47076`** — the base PR #60 was merged onto, and therefore
+`8aeb6b3`'s first parent. That close-out
 **correctly left item 1.6 at ⏳** rather than marking it ✅ over an unmet
 clause, and an external review caught an earlier draft of it doing exactly
 that; the record it wrote stands as written and is not amended: at `3f92241` two of the three top-level
