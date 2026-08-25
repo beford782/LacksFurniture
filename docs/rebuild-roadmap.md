@@ -9,7 +9,29 @@ owner-review decisions (see "Phase 1 direction decisions — recorded
 see the open-decisions register. Device hardening remains BLOCKING for
 showroom use.**
 
-**Last updated:** 2026-08-24 *(Items 1.1 and 1.2 close-out — documentation
+**Last updated:** 2026-08-25 *(Item 1.3 inherited reason-gate containment
+merged. **PR #63** merged 2026-08-25 00:23:52Z as merge commit
+`f87194a53de6163d89bc07979ebf2912d54b9f36` (parents
+`1178c4ae09bbd923150e4ff5a97aa4dc957ec5ca` + `91dfe81931685298d6de0b61df88cae639c833e7`;
+merge, not squash or rebase; source branch `codex/phase1-13-reason-gate-containment`
+preserved). Two rendered per-model, per-customer why-fit outputs that predated
+the gate are now omitted, failing closed. **Item 1.3 stays ◐** — no gate lifted,
+no Exit clause closed, and its Gated and Proceeds block is unchanged. Pre-merge
+CI 32791161751 succeeded at the exact reviewed head; post-merge CI 32793465435
+and Pages 32793464831 both succeeded at exactly `f87194a`; eight served
+artifacts returned HTTP 200 byte-identical to the merged blobs; deployed
+rendered verification passed **75/75 in EN and ES**; the full mutation sweep was
+**461/461 caught, 0 survived, 0 did not apply**; recommendation and scoring
+outputs are unchanged. The reconciliation baseline is re-pointed from
+`8aeb6b3` to `f87194a` — **this is the first application-byte change since
+`8aeb6b3`**, because the two intervening merges (`c0fed1c`/PR #61 and
+`1178c4a`/PR #62) were documentation-only. Standing, all unchanged:
+mounted-device verification **NOT PERFORMED** under the development/preview
+waiver — **the waiver is never a pass**; the full pre-showroom device and
+accessibility matrix remains blocking; showroom authorization NO; Spanish
+provisional; live email off with `gasUrl` blank; `Code.gs` unchanged and
+undeployed; reason authoring and reviewer naming remain unauthorized. The
+previous revision, 2026-08-24, recorded the Items 1.1 and 1.2 close-out — documentation
 only, zero application bytes. Both items were shipped and gate-passed long ago
 and both marks had gone stale; this revision records the evidence **on the
 items**, where the mark rules require it, so it no longer lives only in pull
@@ -148,10 +170,21 @@ owner-approved scoring change they carried.)*
 `main` when this document's phase statuses were written, the merge commit of
 PR #16 (2026-08-05). It is **not** current `main`. GitHub state is
 authoritative; a local checkout never is.
-**Reconciliation baseline:** `8aeb6b3694d8090bea45219f08648a3c36db7071` — GitHub
-`main` at this revision; PR #60 merge commit (2026-08-24, the Consultation
-Summary compare-label correction that closed item 1.6's last exit clause). The
-prior baseline was `3f92241adac309d6fcc4b5525ccd6e1aade30fb9` (PR #58,
+**Reconciliation baseline:** `f87194a53de6163d89bc07979ebf2912d54b9f36` — GitHub
+`main` at this revision; PR #63 merge commit (2026-08-25, the item 1.3
+inherited reason-gate containment).
+
+**Why the baseline skips two merges.** The prior baseline `8aeb6b3` held
+through **`c0fed1c` (PR #61)** and **`1178c4a` (PR #62)** because both were
+**documentation-only** — each changed exactly one file, `docs/rebuild-roadmap.md`,
+and moved no application byte, so `8aeb6b3` remained the last
+application-byte baseline until PR #63. PR #63 is the first application change
+since, which is why the baseline moves now.
+
+The prior baseline was `8aeb6b3694d8090bea45219f08648a3c36db7071` (PR #60,
+2026-08-24, the Consultation
+Summary compare-label correction that closed item 1.6's last exit clause),
+before it `3f92241adac309d6fcc4b5525ccd6e1aade30fb9` (PR #58,
 2026-08-24, Slice 6 — the Consultation Summary, Welcome, drawer and email /
 item 1.6), before it `f27f879efd4573bd15ef402efb8b17cc6cd5baa6` (PR #53, 2026-08-23,
 Slice 5 — the Sleep Plan, D5 / item 1.7), and before it
@@ -1756,6 +1789,54 @@ was authored or activated. The reason-led redesign remains the gated output,
 and both of this item's outstanding Exit assessments — that the card hierarchy
 is presentable at a glance, and that sleep fit reads as dominant over financing
 — remain unrecorded and outstanding.)*
+
+*(2026-08-25 — the containment above is **merged and verified**. The ruling and
+provenance recorded above stand as written and are not amended; this adds only
+the merge and its evidence. **Item 1.3 remains ◐.**
+
+**The merge.** **PR #63**, source branch `codex/phase1-13-reason-gate-containment`,
+reviewed head `91dfe81931685298d6de0b61df88cae639c833e7`, merged **2026-08-25
+00:23:52Z** as merge commit
+**`f87194a53de6163d89bc07979ebf2912d54b9f36`** — first parent
+`1178c4ae09bbd923150e4ff5a97aa4dc957ec5ca`, second parent
+`91dfe81931685298d6de0b61df88cae639c833e7`. A merge commit, not a squash or a
+rebase; the source branch is preserved.
+
+**Verification.** Pre-merge CI run **32791161751** succeeded at the exact
+reviewed head. Post-merge CI run **32793465435** and Pages run **32793464831**
+both succeeded at exactly `f87194a`. Eight served artifacts returned HTTP 200
+and were byte-identical to the merged blobs: `index.html`, both dictionaries,
+`store-config`, `quiz`, `mattresses`, `allowed-hosts` and the generated demo.
+The full mutation sweep was **461/461 caught, zero survived, zero did not
+apply**. Recommendation and scoring outputs are **unchanged**.
+
+**Deployed rendered verification — 75/75 passed, English and Spanish.** The
+drawer carries no shortlist-fit heading, sentence, container or visible gap;
+Compare renders six preserved attribute rows and **no fit row**; none of the
+four contained strings renders; switching language with the drawer open and
+reopening the drawer cannot restore them; the preserved drawer and Compare
+content still renders; focus and dialog behaviour remain intact; and there is
+no horizontal overflow, page error or console error.
+
+**One false positive, recorded honestly.** The first rendered run reported two
+"stranded label" failures. They were not defects: the element was
+`drawerFinancingLabel`, which is **pre-existing, config-disabled for this
+retailer** (`financing.surfaces.drawer` is false) and renders at zero size. The
+check was corrected to require a label to be **visible** before judging its
+section empty, and it then passed. **No production change followed from that
+test correction** — the flagged element is untouched by this work.
+
+**What did NOT happen.** No gate was lifted and no Exit clause was closed. The
+**reason-led per-model content remains gated**; **"the card hierarchy is
+presentable at a glance" remains unassessed**; **"sleep fit reads as dominant
+over financing" remains unassessed**. The Gated and Proceeds block below is
+unchanged. Catalog reason content remains unauthored, unactivated and
+non-rendering. Standing restrictions are unchanged: mounted-device verification
+**NOT PERFORMED** under the development/preview waiver, which is **never a
+pass**; the full pre-showroom device and accessibility matrix remains blocking;
+showroom authorization NO; Spanish provisional; live email off with `gasUrl`
+blank; `Code.gs` unchanged and undeployed; reason authoring and reviewer naming
+remain unauthorized.)*
 
 **Gated** — two outputs, each with its own unblock condition. Neither may appear
 in a merged diff until its condition is met.
