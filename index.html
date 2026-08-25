@@ -7029,11 +7029,15 @@
       color: inherit;
       font: 750 13px/1.2 var(--font-sans);
     }
+    /* Item 1.4 close-out: 10px -> 12px. The line may wrap (a selected
+       product name is long); it is never truncated, and the chip's
+       min-height lets it grow. The 13px step-name stays the larger of the two. */
     .sleep-system__step-status {
       display: block;
       margin-top: 3px;
       color: #7A6E61;
-      font: 500 10px/1.2 var(--font-sans);
+      font: 500 12px/1.2 var(--font-sans);
+      overflow-wrap: anywhere;
     }
     .sleep-system__workspace {
       display: grid;
@@ -7605,6 +7609,9 @@
       gap: 7px;
       margin-top: 13px;
     }
+    /* Item 1.4 close-out: the procedure notes rendered at 11px, below the
+       15px floor this project applies to repaired lines. Size only - weight,
+       ink (#394C5B on #EEF2F4, 7.9:1) and line-height are unchanged. */
     .sleep-system__notice {
       display: grid;
       grid-template-columns: 14px minmax(0, 1fr);
@@ -7613,7 +7620,7 @@
       border-left: 3px solid #48647A;
       background: #EEF2F4;
       color: #394C5B;
-      font: 600 11px/1.4 var(--font-sans);
+      font: 600 15px/1.4 var(--font-sans);
     }
     .sleep-system__plan-header {
       display: flex;
@@ -7752,10 +7759,15 @@
       }
       .sleep-system__anchor-image { width: 68px; height: 56px; }
       .sleep-system__anchor-note { display: none; }
+      /* Item 1.4 close-out (owner ruling 2026-08-25, option B): the four
+         112px chips left ~44px for a label, so "Adjustability" /
+         "Ajustabilidad" / "Protección" clipped INSIDE their chips while the
+         rail scrolled sideways - scrolling never revealed them. Wrap to two
+         columns instead: every label fits at 390, 417 (834 @ 200%) and 597
+         (1194 @ 200%), and the horizontal scroll goes away. DOM order, and
+         therefore reading and Tab order, is unchanged: 1 2 / 3 4. */
       .sleep-system__rail {
-        grid-template-columns: repeat(4, minmax(112px, 1fr));
-        overflow-x: auto;
-        padding-bottom: 4px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
       }
       .sleep-system__section-head {
         display: block;
