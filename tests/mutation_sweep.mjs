@@ -122,10 +122,11 @@ const SESSION = ["tests/session_safety_check.mjs"];
 // salesperson procedure region and its freedom from the customer-benefit
 // sentence, product distinguishability, the four decision states, the
 // fail-closed empty-catalog path, the single catalog-sourced price surface,
-// EN/ES state preservation, button/touch semantics, and the config-disabled
-// financing surface. Every 1.4 entry names it EXPLICITLY - none may fall
-// through to DEFAULT_SUITES, which observes data-error recovery and would
-// report a survivor as a pass.
+// EN/ES state preservation, button/touch semantics, the config-disabled
+// financing surface and, since the 2026-08-25 close-out, the CSS pins on the
+// rail / notes / statuses and the salesperson-voice procedure copy. Every 1.4
+// entry names it EXPLICITLY - none may fall through to DEFAULT_SUITES, which
+// observes data-error recovery and would report a survivor as a pass.
 const SLEEP = ["tests/sleep_system_presentation_check.mjs"];
 
 
@@ -1821,13 +1822,69 @@ const MUTATIONS = [
     "      return notices.slice(0, 3);",
     "      if (primary && primary.reasons && primary.reasons[0]) notices.unshift(primary.reasons[0]);\n      return notices.slice(0, 3);",
     SLEEP],
+  // Close-out re-point (2026-08-25): the pillow note was reworded to
+  // salesperson voice, so the find string quotes the NEW note; the `\\'`
+  // matches the source's escaped apostrophe byte-for-byte.
   ["1.4: the pillow specialist note echoes the customer benefit again",
-    "          sleepSystemText({ en: 'Explain why this pillow fits the customer priorities.', es: 'Explica por qu\u00e9 esta almohada coincide con las prioridades del cliente.' }),",
-    "          primary && primary.reasons && primary.reasons[0] ? primary.reasons[0] : sleepSystemText({ en: 'Explain why this pillow fits the customer priorities.', es: 'Explica por qu\u00e9 esta almohada coincide con las prioridades del cliente.' }),",
+    "          sleepSystemText({ en: 'Explain how this pillow addresses the customer\\'s priorities.', es: 'Explica c\u00f3mo esta almohada responde a las prioridades del cliente.' }),",
+    "          primary && primary.reasons && primary.reasons[0] ? primary.reasons[0] : sleepSystemText({ en: 'Explain how this pillow addresses the customer\\'s priorities.', es: 'Explica c\u00f3mo esta almohada responde a las prioridades del cliente.' }),",
     SLEEP],
   ["1.4: the salesperson procedure region loses its accessible name",
     "      guidance.setAttribute('aria-label', guidanceKind);\n",
     "", SLEEP],
+
+  // --- Item 1.4 close-out (owner ruling 2026-08-25) -------------------------
+  // Three CSS-only repairs and one copy repair. Each entry reverts exactly
+  // ONE of them; the sleep-system suite's close-out guards (13-14) are the
+  // observer, and each find string matches index.html exactly once.
+  // (1) the <=680px rail back to four 112px chips in a sideways scroller -
+  //     the geometry whose labels clipped inside their chips.
+  ["1.4 close-out: the narrow rail goes back to four 112px scrolling columns",
+    "      .sleep-system__rail {\n        grid-template-columns: repeat(2, minmax(0, 1fr));\n      }",
+    "      .sleep-system__rail {\n        grid-template-columns: repeat(4, minmax(112px, 1fr));\n        overflow-x: auto;\n        padding-bottom: 4px;\n      }",
+    SLEEP],
+  // (2) the two-column rail regains a horizontal scroller on its own.
+  ["1.4 close-out: the narrow rail regains overflow-x: auto",
+    "        grid-template-columns: repeat(2, minmax(0, 1fr));\n      }\n      .sleep-system__section-head {",
+    "        grid-template-columns: repeat(2, minmax(0, 1fr));\n        overflow-x: auto;\n      }\n      .sleep-system__section-head {",
+    SLEEP],
+  // (3) the procedure notes back under the 15px floor.
+  ["1.4 close-out: the procedure notes shrink back to 11px",
+    "      font: 600 15px/1.4 var(--font-sans);",
+    "      font: 600 11px/1.4 var(--font-sans);",
+    SLEEP],
+  // (4) the chip status back to 10px.
+  ["1.4 close-out: the rail chip status shrinks back to 10px",
+    "      font: 500 12px/1.2 var(--font-sans);\n      overflow-wrap: anywhere;",
+    "      font: 500 10px/1.2 var(--font-sans);\n      overflow-wrap: anywhere;",
+    SLEEP],
+  // (5) the chip status may no longer wrap - a long product name overflows.
+  ["1.4 close-out: the rail chip status loses overflow-wrap: anywhere",
+    "      font: 500 12px/1.2 var(--font-sans);\n      overflow-wrap: anywhere;\n",
+    "      font: 500 12px/1.2 var(--font-sans);\n",
+    SLEEP],
+  // (6) the two-label eyebrow returns: adjustability and support are named
+  //     "During the trial" again instead of "Specialist notes".
+  ["1.4 close-out: the procedure eyebrow goes back to the two-label form",
+    "      var guidanceKind = sleepSystemText({ en: 'Specialist notes', es: 'Notas del especialista' });",
+    "      var guidanceKind = step.id === 'pillow' || step.id === 'protection'\n        ? sleepSystemText({ en: 'Specialist notes', es: 'Notas del especialista' })\n        : sleepSystemText({ en: 'During the trial', es: 'Durante la prueba' });",
+    SLEEP],
+  // (7) one approved note back in customer voice (the side-sleeper cue).
+  ["1.4 close-out: the side-sleeper pillow cue reverts to customer voice",
+    "          side: { en: 'Check that the customer\\'s head fills the shoulder-to-mattress gap.', es: 'Verifica que la cabeza del cliente llene el espacio entre el hombro y el colch\u00f3n.' },",
+    "          side: { en: 'Your head should fill the shoulder-to-mattress gap.', es: 'Tu cabeza debe llenar el espacio entre el hombro y el colch\u00f3n.' },",
+    SLEEP],
+  // (8) an ES counterpart goes English-only (the support step's third note).
+  ["1.4 close-out: a reworded note's ES value is replaced by its EN value",
+    "es: 'Verifica la configuraci\u00f3n final antes de que el cliente haga su selecci\u00f3n.'",
+    "es: 'Verify the final setup before the customer makes a selection.'",
+    SLEEP],
+  // (9) a new, narrower breakpoint is added - the "no breakpoint added" pin
+  //     counts @media max-width blocks against the da4f746 count.
+  ["1.4 close-out: a new @media (max-width: 600px) block is added",
+    "    @media (prefers-reduced-motion: reduce) {\n      .sleep-system__main { animation: none; }",
+    "    @media (max-width: 600px) {\n      .sleep-system__rail { gap: 6px; }\n    }\n    @media (prefers-reduced-motion: reduce) {\n      .sleep-system__main { animation: none; }",
+    SLEEP],
 
 ];
 
