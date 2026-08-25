@@ -23,9 +23,14 @@ presentation-only: the card rendered the product distinction ABOVE the customer
 benefit on all four steps in both languages; the benefit sentence was rendered a
 second time inside the salesperson panel, displacing a real procedure note; and
 the procedure `<section>` carried no accessible name. New suite
-`tests/sleep_system_presentation_check.mjs` (233 checks) fails 43 assertions
+`tests/sleep_system_presentation_check.mjs` (237 checks) fails 43 assertions
 against the pre-branch tree, so it is not vacuous; five mutation-sweep entries
-were each proven to match uniquely, apply and be caught. **No production merge
+were each proven to match uniquely, apply and be caught. **Corrected after
+review:** an earlier revision claimed Exit clauses 1–7 were pinned by that
+suite — **clauses 1–6 are; clause 7 is not**, because the suite runs against a
+DOM shim with no layout or console, and clause 7 stays **partially open** on
+the known step-rail clipping at 390×844 and 200% zoom. A vacuous `count >= 1`
+negative control was repaired in the same pass. **No production merge
 yet, so the reconciliation baseline is NOT re-pointed** — it stays at
 `f87194a53de6163d89bc07979ebf2912d54b9f36`. Standing, all unchanged:
 mounted-device verification **NOT PERFORMED** under the development/preview
@@ -2074,12 +2079,18 @@ navigation, the Invariant 10 handler pair and the config-disabled financing
 surface are unchanged and are now pinned. Item 1.3's contained outputs are
 asserted absent from this surface.
 
-**Coverage.** New suite `tests/sleep_system_presentation_check.mjs` — 233
-checks, extracting and EXECUTING the real renderers against a DOM shim driven
-by the real catalog and the real store-config financing block, with in-suite
-negative controls. Run against the pre-branch tree it fails 43 assertions —
-all three defects, in both languages, across all four steps — so it is not
-vacuous. It is added to CI without renaming the required job. Five
+**Coverage.** New suite `tests/sleep_system_presentation_check.mjs` — **237
+checks**, extracting and EXECUTING the real renderers against a **DOM shim**
+(so it carries no layout, viewport or console evidence — see the Exit evidence
+note) driven by the real catalog and the real store-config financing block,
+with in-suite negative controls. Run against the pre-branch tree it fails **43
+assertions** — all three defects, in both languages, across all four steps — so
+it is not vacuous. *(2026-08-25, from the PR #65 review: the extra-price
+negative control asserted `count >= 1`, a floor the UNMUTATED tree already
+meets, so it would have passed even if its injection had silently failed to
+apply. It now proves the injection applied exactly once and asserts the exact
+post-injection count, and was confirmed to go red when the injection does not
+apply. 233 → 237 checks.)* It is added to CI without renaming the required job. Five
 mutation-sweep entries reintroduce each repaired defect; each was proven to
 match uniquely, to apply, and to be caught. The generated demo bundle was
 rebuilt only through the canonical builder, is byte-identical across three
@@ -2117,16 +2128,64 @@ hold on `main`:
 6. scoring, qualification and recommendation outputs are unchanged, proven by
    the Phase 1 output-regression and scoring-isolation fixtures, unedited;
 7. the EN/ES presentation and accessibility checks pass, including no clipped
-   Spanish, no page-level horizontal overflow and a clean console;
+   labels in either language, no page-level horizontal overflow and a clean
+   console — **PARTIALLY OPEN, see the evidence note below**;
 8. **Blake's assessment is recorded here with the date**, and any
    confirmed-hardware verification he requires is recorded as PERFORMED — the
    development/preview mounted-device waiver is not a pass and cannot close
    this clause.
 
-Clauses 1–7 are pinned by `tests/sleep_system_presentation_check.mjs` and the
-mutation sweep; **clause 8 is not, and cannot be.** A green suite is evidence
-for the first seven and is not this item's exit. On merge, with clause 8
-outstanding, the item takes ⏳, not ✅.
+**What actually pins each clause — corrected 2026-08-25 after review of PR
+#65.** An earlier revision of this paragraph claimed clauses 1–7 were pinned by
+the suite and the mutation sweep. **That was wrong about clause 7**, and the
+correction matters because it was the one clause whose evidence was weakest:
+
+- **Clauses 1–6 are pinned** by `tests/sleep_system_presentation_check.mjs` and
+  the mutation sweep, with clause 6 additionally pinned by the Phase 1
+  output-regression and scoring-isolation fixtures.
+- **Clause 7 is NOT pinned by that suite.** The suite executes the real
+  renderers against a **DOM shim**, which has no layout, no viewport, no
+  painting and no console. It can and does prove the language half of clause 7
+  — that EN and ES render their own copy and never mix — but the
+  **browser/layout portions (clipping, overflow, console cleanliness) are
+  supported only by the recorded browser-emulation evidence**, which is not a
+  merge gate and not physical-device evidence.
+- **Clause 7 also remains PARTIALLY OPEN on its merits**, not merely
+  under-evidenced: **step-rail labels clip at 390×844 and at 200% text zoom**,
+  in both languages. That clipping is proven byte-identical between the
+  pre-branch tree and this branch, so it is inherited and not a regression —
+  **but inherited is not passing, and this document does not record it as
+  passing.**
+- **Clause 8 is not pinned and cannot be**, and remains **open pending Blake's
+  recorded assessment**.
+
+So: a green suite is evidence for clauses 1–6, partial evidence for clause 7,
+and no evidence at all for clause 8. **It is not this item's exit.** On merge,
+with clause 7 partially open and clause 8 outstanding, the item takes ⏳ — **not
+✅**.
+
+*(Merge-gate ruling, preserved unchanged: **no new mounted-device run is
+required for this preview-only merge.** The development/preview mounted-device
+waiver stands for it, and — as clause 8 says — **the waiver is never a pass**.
+The **full hardware and accessibility matrix remains REQUIRED before any
+showroom use**; nothing here narrows that.)*
+
+*(Owner disposition recorded 2026-08-25, from the PR #65 review. **The 14px
+benefit treatment is ACCEPTED** — the type-size change that keeps the customer
+benefit from rendering smaller than the product distinction beneath it stands as
+shipped. **Three items remain FOLLOW-UP WORK and must be resolved or explicitly
+dispositioned before item 1.4 can close:** (1) the step-rail label clipping at
+390×844 and at 200% zoom; (2) the procedure notes rendering at **11px**, below
+the 15px floor applied elsewhere in this document to individually repaired
+lines; and (3) the procedure panel's **mixed-audience copy**, where some notes
+address the salesperson in the third person and others address the customer.
+None of the three is repaired on this branch, none is claimed as passing, and
+(3) needs copy authorization this item does not carry.
+
+**This disposition is NOT the clause 8 assessment and does not close it.** It
+accepts one treatment and names three follow-ups; clause 8 asks for Blake's
+assessment of the item, which **remains outstanding**. Item 1.4 stays 🔨 and
+may not be marked ✅ on the strength of this paragraph.)*
 
 ### 1.5 — Financing footprint ✅
 

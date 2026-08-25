@@ -768,17 +768,44 @@ section('negative controls — the load-bearing assertions bite');
     'the region-name guard would fail on this tree');
 }
 {
-  // A second price surface must be visible to the price guard.
+  // A second price surface must be visible to BOTH price guards.
+  //
+  // REVIEW REPAIR (PR #65): the first version of this control asserted
+  // `count >= 1`, which the UNMUTATED tree already satisfies — it carries one
+  // price surface by design. That assertion would have passed even if the
+  // injection had silently failed to apply, making the control vacuous: it
+  // could not distinguish "the guard sees the extra price" from "no extra
+  // price was ever added". It now (a) proves the injection applied exactly
+  // once against the real source, (b) asserts the EXACT post-injection count
+  // rather than a floor, and (c) names the two production assertions it is a
+  // control for and shows each would go red.
+  const FIND = "'<div class=\"sleep-system__alternative-copy\">' ";
+  const INJECT = "'<div class=\"sleep-system__price\">X</div><div class=\"sleep-system__alternative-copy\">' ";
+  let injectionHits = null;
   const extraPrice = renderStep('protection', {
     answers: ANSWERS,
-    mutate: (s) => s.replace(
-      "var alternativesHtml = alternatives.length",
-      "var __x = 1; var alternativesHtml = alternatives.length")
-      .replace("'<div class=\"sleep-system__alternative-copy\">' ", "'<div class=\"sleep-system__price\">X</div><div class=\"sleep-system__alternative-copy\">' ")
+    mutate: (s) => {
+      injectionHits = s.split(FIND).length - 1;
+      return s.split(FIND).join(INJECT);
+    }
   });
+  ok('control: the alternative-price injection applies exactly once to the real source',
+    injectionHits === 1, `${injectionHits} match(es) for the find string`);
+
+  // Expected count is derived from the tree, not hardcoded, so the control
+  // stays exact if the catalog's alternative count ever changes.
+  const clean = renderStep('protection', { answers: ANSWERS });
+  const altCount = (clean.main.match(/class="sleep-system__alternative"/g) || []).length;
+  const expected = 1 + altCount;
   const count = (extraPrice.main.match(/class="sleep-system__price"/g) || []).length;
-  ok('control: an added alternative price is counted by the price guard',
-    count >= 1, `${count} price surfaces in the mutated tree`);
+  ok('control: the mutated tree renders one price per alternative PLUS the primary',
+    count === expected, `${count} price surfaces, expected ${expected} (1 primary + ${altCount} injected)`);
+  ok('control: on the shipped catalog that is exactly two price surfaces',
+    count === 2, `${count} price surfaces in the mutated tree`);
+  ok('control: the "exactly one price surface renders" guard would FAIL on this tree',
+    count !== 1, `${count} price surfaces`);
+  ok('control: the "alternatives carry no price of their own" guard would FAIL on this tree',
+    /sleep-system__alternative[\s\S]*?sleep-system__price/.test(extraPrice.main));
 }
 
 // ------------------------------------------------------------------- summary
