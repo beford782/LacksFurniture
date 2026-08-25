@@ -116,6 +116,18 @@ const PLAN_WITH_SESSION = PLAN.concat(["tests/session_safety_check.mjs"]);
 const PLAN_WITH_PAY = PLAN.concat(["tests/payment_choice_check.mjs"]);
 const PLAN_WITH_PHASE1 = PLAN.concat(["tests/phase1_output_regression_check.mjs"]);
 const SESSION = ["tests/session_safety_check.mjs"];
+// Sleep System presentation observer (item 1.4): the sleep-system suite owns
+// the governed four-step order, the benefit-first/distinction-second card
+// hierarchy (DOM order AND relative type size), the separately named
+// salesperson procedure region and its freedom from the customer-benefit
+// sentence, product distinguishability, the four decision states, the
+// fail-closed empty-catalog path, the single catalog-sourced price surface,
+// EN/ES state preservation, button/touch semantics, and the config-disabled
+// financing surface. Every 1.4 entry names it EXPLICITLY - none may fall
+// through to DEFAULT_SUITES, which observes data-error recovery and would
+// report a survivor as a pass.
+const SLEEP = ["tests/sleep_system_presentation_check.mjs"];
+
 
 // ---------------------------------------------------------------------------
 // THE MANIFEST. [label, find, replace] — `find` may span lines; index.html is
@@ -1791,6 +1803,31 @@ const MUTATIONS = [
   ["slice6: a new Summary key goes English-only",
     "  \"hf2.lead_none\": \"A\u00fan no has elegido finalista.\",",
     "", PLAN_WITH_SESSION, "data/dict-es.json"],
+
+  // --- Item 1.4, the Sleep System presentation ------------------------------
+  // Each entry restores exactly one defect this item repaired, so a survivor
+  // would mean the repair has no effective test. All five name SLEEP.
+  ["1.4: the card puts the product distinction back above the customer benefit",
+    "              '<div class=\"sleep-system__featured-reason\">' + escapeHtml(reason) + '</div>' +\n              '<p class=\"sleep-system__featured-description\">' + escapeHtml(sleepSystemText(primary.description)) + '</p>' +",
+    "              '<p class=\"sleep-system__featured-description\">' + escapeHtml(sleepSystemText(primary.description)) + '</p>' +\n              '<div class=\"sleep-system__featured-reason\">' + escapeHtml(reason) + '</div>' +",
+    SLEEP],
+  // DOM order alone is not the hierarchy: a benefit rendered smaller than the
+  // distinction under it is first in the tree and second on the screen.
+  ["1.4: the benefit block shrinks below the product distinction again",
+    "      border-left: 3px solid #9A7445;\n      background: #F6EFE4;\n      color: #4F4439;\n      font: 600 14px/1.45 var(--font-sans);",
+    "      border-left: 3px solid #9A7445;\n      background: #F6EFE4;\n      color: #4F4439;\n      font: 600 12px/1.45 var(--font-sans);",
+    SLEEP],
+  ["1.4: the guidance panel echoes the customer benefit again (adjustability, support)",
+    "      return notices.slice(0, 3);",
+    "      if (primary && primary.reasons && primary.reasons[0]) notices.unshift(primary.reasons[0]);\n      return notices.slice(0, 3);",
+    SLEEP],
+  ["1.4: the pillow specialist note echoes the customer benefit again",
+    "          sleepSystemText({ en: 'Explain why this pillow fits the customer priorities.', es: 'Explica por qu\u00e9 esta almohada coincide con las prioridades del cliente.' }),",
+    "          primary && primary.reasons && primary.reasons[0] ? primary.reasons[0] : sleepSystemText({ en: 'Explain why this pillow fits the customer priorities.', es: 'Explica por qu\u00e9 esta almohada coincide con las prioridades del cliente.' }),",
+    SLEEP],
+  ["1.4: the salesperson procedure region loses its accessible name",
+    "      guidance.setAttribute('aria-label', guidanceKind);\n",
+    "", SLEEP],
 
 ];
 

@@ -9,7 +9,31 @@ owner-review decisions (see "Phase 1 direction decisions — recorded
 see the open-decisions register. Device hardening remains BLOCKING for
 showroom use.**
 
-**Last updated:** 2026-08-25 *(Item 1.3 inherited reason-gate containment
+**Last updated:** 2026-08-25 *(Item 1.4 Sleep System presentation opened on a
+branch. **Item 1.4 moves ⬜ → 🔨** — the ordinary in-progress move, permitted
+by the mark rules without a named approver; nothing is lifted, narrowed or
+widened, and **items 1.1, 1.2, 1.3 and 1.5–1.7 are untouched**, including item
+1.3's status, its Gated and Proceeds lists and its Exit. The audit executed the
+real renderers in EN and ES and found **most of item 1.4 already satisfied by
+the inherited implementation** — the four-step order, product
+distinguishability, the four decision states, the fail-closed empty-catalog
+path and the single catalog-sourced price surface — all now pinned by tests
+rather than changed. Three inherited defects genuinely failed and were repaired
+presentation-only: the card rendered the product distinction ABOVE the customer
+benefit on all four steps in both languages; the benefit sentence was rendered a
+second time inside the salesperson panel, displacing a real procedure note; and
+the procedure `<section>` carried no accessible name. New suite
+`tests/sleep_system_presentation_check.mjs` (233 checks) fails 43 assertions
+against the pre-branch tree, so it is not vacuous; five mutation-sweep entries
+were each proven to match uniquely, apply and be caught. **No production merge
+yet, so the reconciliation baseline is NOT re-pointed** — it stays at
+`f87194a53de6163d89bc07979ebf2912d54b9f36`. Standing, all unchanged:
+mounted-device verification **NOT PERFORMED** under the development/preview
+waiver — **the waiver is never a pass**; the full pre-showroom device and
+accessibility matrix remains blocking; showroom authorization NO; Spanish
+provisional; live email off with `gasUrl` blank; `Code.gs` unchanged and
+undeployed; reason authoring and reviewer naming remain unauthorized. The
+previous revision, also 2026-08-25, recorded the Item 1.3 inherited reason-gate containment
 merged. **PR #63** merged 2026-08-25 00:23:52Z as merge commit
 `f87194a53de6163d89bc07979ebf2912d54b9f36` (parents
 `1178c4ae09bbd923150e4ff5a97aa4dc957ec5ca` + `91dfe81931685298d6de0b61df88cae639c833e7`;
@@ -1982,7 +2006,7 @@ repaired under the cross-cutting Trust integrity gate (block after 1.7; see
 the D3 clarification in the decision block). CSS only; it touches neither
 gated output and edits neither list above.)*
 
-### 1.4 — Sleep System ⬜
+### 1.4 — Sleep System 🔨
 
 The largest reading load in the app.
 
@@ -1994,6 +2018,115 @@ The largest reading load in the app.
   materially different products become indistinguishable.
 - **Prices:** accessory prices are displayed today and stay as they are. Phase 1
   adds no new price surface, and this bullet does not license one — see Phase 2.
+
+*(2026-08-25 — current-state audit and presentation repairs, on branch
+`codex/phase1-14-sleep-system-presentation`. **Item 1.4 moves ⬜ → 🔨** — an
+ordinary move permitted by the mark rules; it lifts nothing and gates nothing.
+This item is approved, unblocked engineering and needed no approver.
+
+**What the audit found, honestly: most of this item was already satisfied
+before this branch.** The Sleep System entered at `db46d4b` already
+implementing the four-step model, and the audit executed the real renderers
+against the real catalog in EN and ES rather than reading the source. Already
+met, and now pinned by tests rather than changed: the governed four-step order
+(adjustability → support → pillow → protection, walked from one table by the
+rail, the plan and the footer); product distinguishability (each primary and
+each alternative carries its own name and its own distinguishing copy, and no
+step collapses materially different products into one row); the four decision
+states rendering honestly (selected names the chosen product rather than a
+generic "selected"; keep-current and specialist-check REPLACE the product card
+rather than sitting beside it, so no price is shown for something that is not
+being added; decide-later is reported as addressed but not as bought; undecided
+reads "Not decided"); the fail-closed empty-catalog path (an explicit
+unavailable state with a skip, no invented price, no add control, and the whole
+workspace withdrawn at the screen level without touching the mattress results);
+and the price surface — exactly one, sourced from the accessory's own catalog
+price, with no subtotal, total or monthly figure anywhere and no price on the
+alternatives. **No new price surface was added, and none of the above was
+altered.**
+
+**What genuinely failed, and the three presentation-only repairs made.**
+(1) *The hierarchy was inverted.* On all four steps in both languages the card
+rendered the product distinction (`description`) ABOVE the customer benefit —
+the exact inverse of this item's first bullet. The two nodes are swapped, and
+the benefit block, which had been rendered SMALLER than the distinction beneath
+it (12px against 13px), is now 14px, so "first" holds visually as well as in
+the DOM. No wording changed. (2) *The benefit was rendered twice.* On
+adjustability, support and pillow the customer-benefit sentence was repeated
+verbatim at the top of the salesperson panel, and — through that panel's
+`slice(0, 3)` — displaced each of those steps' third real procedure note. The
+duplicate is removed and the displaced note returns; every surviving string
+already shipped, and nothing in the procedure builder reads the product any
+more, which is what keeps the duplication from coming back. (3) *The procedure
+region had no accessible name.* `#sleepSystemGuidance` is a `<section>` with no
+label, so it was separate visually but was not exposed as a region at all. It
+is now named from the eyebrow it already renders, re-set on every render so a
+language switch relabels it.
+
+**Provenance.** All three defects are INHERITED, not introduced by Phase 1: the
+card order, the guidance `unshift` and the unnamed section all predate this
+phase. Nothing here authors mattress or accessory reason content, changes
+catalog `reasons` / `reasons_es` / `topPickReason` / features / workbook data /
+schemas / quiz scores, or touches scoring, qualification, ranking,
+recommendation or accessory-selection logic. The four steps keep their order.
+Session-only state, wipe behaviour, analytics contracts, focus lifecycle,
+navigation, the Invariant 10 handler pair and the config-disabled financing
+surface are unchanged and are now pinned. Item 1.3's contained outputs are
+asserted absent from this surface.
+
+**Coverage.** New suite `tests/sleep_system_presentation_check.mjs` — 233
+checks, extracting and EXECUTING the real renderers against a DOM shim driven
+by the real catalog and the real store-config financing block, with in-suite
+negative controls. Run against the pre-branch tree it fails 43 assertions —
+all three defects, in both languages, across all four steps — so it is not
+vacuous. It is added to CI without renaming the required job. Five
+mutation-sweep entries reintroduce each repaired defect; each was proven to
+match uniquely, to apply, and to be caught. The generated demo bundle was
+rebuilt only through the canonical builder, is byte-identical across three
+consecutive rebuilds, and `--check` is clean.
+
+**Known and NOT repaired, recorded for the owner.** The step-rail chips clip
+their labels at 390×844 and at 200% zoom on the tablet viewports; this is
+byte-identical between the pre-branch tree and this branch — pre-existing,
+below the kiosk target width, and outside a benefit/procedure hierarchy repair.
+The procedure notes render at 11px, below the 15px floor applied elsewhere to
+individually repaired lines; raising the Sleep System's type generally is a
+legibility programme, not this item's minimal repair, and is left for an owner
+ruling. The procedure panel also MIXES audiences in its wording — some notes
+address the salesperson in the third person, others address the customer —
+which no ordering or labelling change can fix without rewriting copy this item
+is not authorized to author. `segun` in the protection step's Spanish copy is
+missing its accent; that correction is explicitly out of scope for this branch
+and is NOT made here.)*
+
+**Exit — checkable, and not closed by tests passing alone.** Every clause must
+hold on `main`:
+
+1. the four steps remain in their governed order — adjustability, support,
+   pillow, protection — walked from a single table;
+2. every recommendation presents the customer benefit BEFORE the product
+   distinction, in DOM order and in visual weight, on all four steps in both
+   languages;
+3. the salesperson procedure occupies a separately labelled region and is not
+   duplicated inside the customer-benefit block;
+4. primary and alternative products, and the selected / keep-current / skipped
+   / undecided states, remain distinguishable;
+5. existing price behaviour is unchanged and **no new price surface exists** —
+   one catalog-sourced price on the primary card, and no subtotal, total or
+   monthly figure anywhere on this screen;
+6. scoring, qualification and recommendation outputs are unchanged, proven by
+   the Phase 1 output-regression and scoring-isolation fixtures, unedited;
+7. the EN/ES presentation and accessibility checks pass, including no clipped
+   Spanish, no page-level horizontal overflow and a clean console;
+8. **Blake's assessment is recorded here with the date**, and any
+   confirmed-hardware verification he requires is recorded as PERFORMED — the
+   development/preview mounted-device waiver is not a pass and cannot close
+   this clause.
+
+Clauses 1–7 are pinned by `tests/sleep_system_presentation_check.mjs` and the
+mutation sweep; **clause 8 is not, and cannot be.** A green suite is evidence
+for the first seven and is not this item's exit. On merge, with clause 8
+outstanding, the item takes ⏳, not ✅.
 
 ### 1.5 — Financing footprint ✅
 

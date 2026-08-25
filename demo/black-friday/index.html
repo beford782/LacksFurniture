@@ -7122,13 +7122,17 @@
       color: #665D54;
       font: 500 13px/1.5 var(--font-sans);
     }
+    /* Item 1.4: the benefit block now leads the card, so it sits directly
+       under the name and is no longer SMALLER than the product distinction
+       beneath it (14px semibold over the description's 13px). Colour, accent
+       rule and wording are unchanged. */
     .sleep-system__featured-reason {
-      margin-top: 14px;
+      margin: 0 0 12px;
       padding: 11px 12px;
       border-left: 3px solid #9A7445;
       background: #F6EFE4;
       color: #4F4439;
-      font: 600 12px/1.45 var(--font-sans);
+      font: 600 14px/1.45 var(--font-sans);
     }
     .sleep-system__price {
       margin-top: auto;
@@ -18222,6 +18226,11 @@
         '</section>';
     }
 
+    // The specialist/trial panel. Item 1.4: NOTHING in this function reads the
+    // product any more - the `primary` parameter is retained so the call site
+    // and signature stay stable, but every live line below composes step
+    // procedure from the step id and the customer's answers only. That is what
+    // keeps the customer-benefit sentence from rendering twice on one screen.
     function sleepSystemGuidance(stepId, primary) {
       var position = answers.sleep_position || '';
       var temperature = answers.temperature || '';
@@ -18262,9 +18271,12 @@
           }
         };
         notices = [
-          primary && primary.reasons && primary.reasons[0]
-            ? primary.reasons[0]
-            : sleepSystemText({ en: 'Explain why this pillow fits the customer priorities.', es: 'Explica por qué esta almohada coincide con las prioridades del cliente.' }),
+          // Item 1.4: this slot used to repeat primary.reasons[0] - the exact
+          // sentence the customer card already shows - which both duplicated
+          // the benefit inside the procedure panel and pushed a real specialist
+          // note off the end of the three-item list. The shipped procedure
+          // string is now used unconditionally.
+          sleepSystemText({ en: 'Explain why this pillow fits the customer priorities.', es: 'Explica por qué esta almohada coincide con las prioridades del cliente.' }),
           sleepSystemText(positionCue[position] || { en: 'Keep your head centered over your shoulders.', es: 'Mantén la cabeza centrada sobre los hombros.' }),
           sleepSystemText(reactionNote[window._sleepSystemState.pillowFeedback] || {
             en: 'Test it on the finalist mattress and watch the neck line from the side.',
@@ -18298,12 +18310,12 @@
         ];
       }
 
-      var suppressProductReason = stepId === 'support' &&
-        ['current', 'unsure'].includes(window._sleepSystemState.supportChoice);
-      if (stepId !== 'pillow' && stepId !== 'protection' &&
-          !suppressProductReason && primary && primary.reasons && primary.reasons[0]) {
-        notices.unshift(primary.reasons[0]);
-      }
+      // Item 1.4: the adjustability and support panels used to unshift
+      // primary.reasons[0] here, so the customer-benefit sentence rendered
+      // TWICE on screen - once in the card, once at the top of the specialist
+      // panel - and displaced each step's third procedure note through the
+      // slice(0, 3) below. Removing the duplicate restores that note. The
+      // benefit itself is unchanged and still renders, once, on the card.
       return notices.slice(0, 3);
     }
 
@@ -18737,8 +18749,11 @@
             '<div class="sleep-system__featured-body">' +
               '<div class="sleep-system__card-eyebrow">' + escapeHtml(badge) + '</div>' +
               '<h3 class="sleep-system__featured-name">' + escapeHtml(sleepSystemText(primary.name)) + '</h3>' +
-              '<p class="sleep-system__featured-description">' + escapeHtml(sleepSystemText(primary.description)) + '</p>' +
+              // Item 1.4: customer benefit FIRST, product distinction SECOND.
+              // Only the node order changes - both strings are the ones this
+              // surface already rendered, in the same language resolution.
               '<div class="sleep-system__featured-reason">' + escapeHtml(reason) + '</div>' +
+              '<p class="sleep-system__featured-description">' + escapeHtml(sleepSystemText(primary.description)) + '</p>' +
               (price ? '<div class="sleep-system__price">' + escapeHtml(price) + '</div>' : '') +
               '<div class="sleep-system__actions">' + actionHtml + '</div>' +
             '</div>' +
@@ -18789,10 +18804,17 @@
               escapeHtml(FC('cta')) + '</button>' +
           '</div>'
         : '';
+      // Item 1.4: the procedure panel is a <section> with no accessible name,
+      // so it was not exposed as a region at all - "separate" visually but not
+      // semantically. Name it from the label it already renders, re-set on
+      // every render so a language switch relabels it too. No new copy: the
+      // name is the shipped eyebrow string in the active language.
+      var guidanceKind = step.id === 'pillow' || step.id === 'protection'
+        ? sleepSystemText({ en: 'Specialist notes', es: 'Notas del especialista' })
+        : sleepSystemText({ en: 'During the trial', es: 'Durante la prueba' });
+      guidance.setAttribute('aria-label', guidanceKind);
       guidance.innerHTML =
-        '<div class="sleep-system__plan-eyebrow">' + escapeHtml(step.id === 'pillow' || step.id === 'protection'
-          ? sleepSystemText({ en: 'Specialist notes', es: 'Notas del especialista' })
-          : sleepSystemText({ en: 'During the trial', es: 'Durante la prueba' })) + '</div>' +
+        '<div class="sleep-system__plan-eyebrow">' + escapeHtml(guidanceKind) + '</div>' +
         '<h2>' + escapeHtml(sleepSystemText(step.guidanceTitle)) + '</h2>' +
         '<div class="sleep-system__notice-list">' +
           notices.map(function(notice) {
