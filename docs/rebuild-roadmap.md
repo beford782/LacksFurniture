@@ -1698,6 +1698,65 @@ list: ❓ means do not implement, while Proceeds authorises implementation. The
 document already says globally that named components are proposals unless an item
 says otherwise, so the second mark added nothing but the conflict.)*
 
+*(2026-08-24 — inherited reason-gate containment. **Item 1.3 remains ◐**;
+this record closes no clause and lifts no gate.
+
+**What was found.** Two RENDERED per-model, per-customer "why this fits *this
+customer*" outputs were already shipping, and both fall inside the first Gated
+output below as written: the mattress drawer's **"Why it made your shortlist" /
+"Por qué llegó a tu lista"** sentence, composed from the model's features
+against the customer's own answers; and the Compare modal's **"Why it is here" /
+"Por qué está aquí"** row, whose value came from the same answer-derived
+priorities with a product-specific fallback.
+
+**Provenance — no retrospective breach.** Both entered at **`2da6fef`
+(2026-06-05)**, in the inherited template, **before this gate was introduced at
+`fc3329b` (2026-08-04)**. Nobody shipped the gated output in violation of the
+gate. What happened is narrower and worth stating exactly: **the gate was
+written under an incorrect premise about what the tree already rendered.** Its
+Gated clause described an output that already existed, and this document never
+mentioned that it did.
+
+**Why that could not simply be recorded and left.** A ◐ item whose unblocked
+work already contains the gated output is, by this document's own rule, an item
+that **reverts to 🔒 and goes back to its named approver**. On discovery the
+item therefore read as 🔒 pending Blake, not as a healthy ◐.
+
+**The ruling (Blake, 2026-08-24).** Contain, do not grandfather, and do not
+narrow the gate. **Fail closed by omitting the rendered outputs.** The
+authorization covers containment only — it is not authorization for
+reason-content authoring, for the reason-led redesign, or for any other part of
+item 1.3.
+
+**What shipped under it.** Both outputs are omitted in both languages: the
+drawer heading and its container are gone, so there is no stranded label, empty
+container, layout gap or accessibility-tree remnant, and the only writer is
+removed, which closes the language-switch restore path too; the Compare row is
+omitted, and the surrounding rows close over it with no gap. The producing
+functions are deliberately retained — containment is of the rendered output,
+and the suites still execute them. Everything else is preserved: Feel,
+Response, Tier, Key feature, Why it helps, Your reaction, the drawer
+differentiators, trial guidance, reactions, navigation, focus lifecycle and
+dialog semantics.
+
+**What is explicitly NOT contained, and why.** Product-specific surfaces stay,
+because the gate is about answer-derived fit, not about the words "reason",
+"fit" or "match": `topPickReason`, the vetted differentiators, the archetype
+label fallback and the difference text are **proven** to read no customer
+answer, pinned by an assertion over each function's extracted body. The trial
+prompts also stay: they select *which test to suggest* from the answers but
+assert no fit, and this item's own list preserves trial guidance.
+
+**State after containment.** The Gated and Proceeds contract below is truthful
+again as written, and is deliberately unedited — neither narrowed, widened nor
+weakened. **Item 1.3 stays ◐.** Both catalog reason languages remain
+non-rendering: `reasons` has a single reader inside the scoring loop whose
+output is discarded, `reasons_es` has no reader at all, and no reason content
+was authored or activated. The reason-led redesign remains the gated output,
+and both of this item's outstanding Exit assessments — that the card hierarchy
+is presentable at a glance, and that sleep fit reads as dominant over financing
+— remain unrecorded and outstanding.)*
+
 **Gated** — two outputs, each with its own unblock condition. Neither may appear
 in a merged diff until its condition is met.
 

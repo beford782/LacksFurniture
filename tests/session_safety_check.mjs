@@ -1123,7 +1123,11 @@ const REQUIRED_CONTENT_IDS = [
 const REQUIRED_TEXT_IDS = [
   "dreamCodeValue", "dreamCodePct", "emailError", "drawerNavLabel", "accStatus",
   // Trust gate (2026-08-21): the drawer's answer-derived text targets.
-  "drawerShortlistFit", "drawerSystemPromptTitle", "drawerSystemPromptReason",
+  // Item 1.3 reason-gate containment (2026-08-24): drawerShortlistFit was
+  // REMOVED from the app, so it cannot be a required wipe region. There is
+  // no longer an answer-derived shortlist surface to wipe. The remaining
+  // answer-derived drawer regions are unchanged and still required.
+  "drawerSystemPromptTitle", "drawerSystemPromptReason",
   // Three separate financing regions on purpose: freshness, the sheet's
   // Consider/Clear announcement (new in Slice 4), and the handoff's
   // Not-right-now announcement. Each keeps its last utterance until something

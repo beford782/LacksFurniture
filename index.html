@@ -10654,8 +10654,16 @@
           <div class="drawer-match-badge" id="drawerMatch"></div>
         </div>
         <div class="drawer-trial-feel" id="drawerFeelAnchor"></div>
-        <div class="drawer-section-label" id="drawerWhyLabel">Why it made your shortlist</div>
-        <div class="drawer-shortlist-fit" id="drawerShortlistFit"></div>
+        <!-- Item 1.3 reason-gate containment (owner ruling 2026-08-24): the
+             inherited "Why it made your shortlist" heading and its
+             answer-derived sentence were a rendered per-model,
+             per-customer why-fit output, which is exactly this item's gated
+             output. They predate the gate (2da6fef, before fc3329b), so their
+             history is not a breach, but they are not grandfathered either:
+             the gate fails closed by OMISSION. Both the heading and the
+             container are gone, so no stranded label, empty box or
+             accessibility-tree remnant survives. Nothing here is narrowed -
+             the reason-led redesign remains gated and unauthorized. -->
         <div class="drawer-section-label" id="drawerDifferentiatorsLabel">What makes this one different</div>
         <div class="drawer-differentiators" id="drawerDifferentiators"></div>
         <!-- Ways to bring it home (Payment Choice) — sleep fit first,
@@ -21258,12 +21266,16 @@
     // would otherwise still be holding the previous customer's last utterance.
     var SESSION_TEXT_IDS = [
       'dreamCodeValue', 'dreamCodePct', 'emailError', 'drawerNavLabel', 'accStatus',
-      // Trust gate (2026-08-21): answer-derived drawer text (shortlist fit line,
-      // pillow prompt title and reason) is overwritten before the drawer can open
+      // Trust gate (2026-08-21): answer-derived drawer text (pillow prompt
+      // title and reason) is overwritten before the drawer can open
       // again, but the wipe owns every answer-derived surface, not only the
       // visible ones (found by the privacy re-review). No quote characters in
       // this comment: the session suite parses the quoted ids from this block.
-      'drawerShortlistFit', 'drawerSystemPromptTitle', 'drawerSystemPromptReason',
+      // Item 1.3 containment (2026-08-24): drawerShortlistFit left this
+      // inventory because the element itself was removed - there is no longer
+      // an answer-derived shortlist surface to wipe. Omission, not a weakened
+      // wipe: the remaining answer-derived ids are unchanged.
+      'drawerSystemPromptTitle', 'drawerSystemPromptReason',
       'hf2LeadLine',
       'hf2FinancingStatus', 'financingSheetStatus', 'financingSheetAction',
       'sleepPlanFinancingStatus', 'sleepPlanPrioritiesRecoveryText',
@@ -21721,10 +21733,14 @@
         var m = data.m;
         var _esCmp = currentLang === 'es';
         var _tierNames = _esCmp ? {gold:'Oro',silver:'Plata',bronze:'Bronce'} : {gold:'Gold',silver:'Silver',bronze:'Bronze'};
-        var priorities = buildMattressPriorities(m);
-        var fit = priorities.length
-          ? priorities[0].title + ' — ' + priorities[0].desc
-          : hf2ReasonFor(m, data.tier);
+        // Item 1.3 reason-gate containment (owner ruling 2026-08-24): the
+        // "Why it is here" value was a per-model, per-customer why-fit string
+        // (buildMattressPriorities), falling back to a product-specific one
+        // (hf2ReasonFor). The owner named the ROW itself as gated output, so
+        // the whole row is omitted rather than quietly downgraded to the
+        // fallback - failing closed, not grandfathering. Both producers are
+        // retained for the suites that execute them; neither has a rendered
+        // consumer here any more.
         // Claim retirement (2026-08-12): an empty differentiator list means
         // the model's copy was withdrawn — the compare cell shows a neutral
         // "—" rather than resurrecting generic fallback text. When BOTH
@@ -21742,7 +21758,6 @@
           feel: data.firmFeel + ' ' + m.firmness + '/10',
           response: mattressResponseLabel(m),
           tier: _tierNames[data.tier] || data.tier,
-          fit: fit,
           retired: _retired,
           feature: _retired ? '—' : (d0.title || mattressResponseLabel(m)),
           benefit: _retired ? '—' : (d0.detail || mattressDifferenceText(m)),
@@ -21757,7 +21772,9 @@
           { key: 'feel', label: _esCmp ? 'Sensación' : 'Feel', a: a.feel, b: b.feel },
           { key: 'response', label: _esCmp ? 'Respuesta' : 'Response', a: a.response, b: b.response },
           { key: 'tier', label: _esCmp ? 'Nivel' : 'Tier', a: a.tier, b: b.tier },
-          { key: 'fit', label: _esCmp ? 'Por qué está aquí' : 'Why it is here', a: a.fit, b: b.fit },
+          // Item 1.3 containment (2026-08-24): the gated "Why it is here" /
+          // "Por qué está aquí" row is omitted in BOTH languages. The rows
+          // around it are untouched, so the table has no gap and no empty row.
           { key: 'feature', label: _esCmp ? 'Característica clave' : 'Key feature', a: a.feature, b: b.feature, emphasis: true },
           { key: 'benefit', label: _esCmp ? 'En qué ayuda' : 'Why it helps', a: a.benefit, b: b.benefit, emphasis: true },
           { key: 'reaction', label: _esCmp ? 'Tu reacción' : 'Your reaction', a: a.reaction, b: b.reaction }
@@ -22177,10 +22194,12 @@
       document.getElementById('drawerFeelAnchor').textContent =
         (currentLang === 'es' ? 'Sensación: ' : 'Feel: ')
         + d.firmFeel + ' ' + m.firmness + '/10 · ' + mattressResponseLabel(m);
-      document.getElementById('drawerWhyLabel').textContent = currentLang === 'es'
-        ? 'Por qué llegó a tu lista'
-        : 'Why it made your shortlist';
-      document.getElementById('drawerShortlistFit').textContent = mattressShortlistFitText(m);
+      // Item 1.3 reason-gate containment (2026-08-24): the why-fit label and
+      // its answer-derived sentence are no longer written in EITHER language.
+      // renderDrawer() is the only writer and runs on every open AND on every
+      // language switch, so removing the writes here closes the restore path
+      // too. mattressShortlistFitText() is intentionally retained but now has
+      // no rendered consumer; tests/compare_modal_check.mjs pins that.
       // Claim retirement (2026-08-12): a fully retired model has no
       // differentiator content — hide the heading AND the container so the
       // drawer shows no empty section, no gap, no stranded label. Elements

@@ -608,6 +608,26 @@ const MUTATIONS = [
   // Every anchor is compare-specific so none can alias onto the financing
   // sheet's byte-identical wrap/label implementation (that aliasing was a
   // real mistake caught during PR #30's scratch mutation pass).
+  // --- Item 1.3 reason-gate containment (owner ruling 2026-08-24) ----------
+  // Each entry REINTRODUCES a contained gated output. The gate fails closed by
+  // omission, so a re-introduction must turn the suites red - otherwise the
+  // containment assertions are decorative.
+  ["1.3 containment: the drawer why-fit heading element returns",
+    '        <div class="drawer-section-label" id="drawerDifferentiatorsLabel">What makes this one different</div>',
+    '        <div class="drawer-section-label" id="drawerWhyLabel">Why it made your shortlist</div>\n        <div class="drawer-section-label" id="drawerDifferentiatorsLabel">What makes this one different</div>',
+    RESULTS],
+  ["1.3 containment: the drawer answer-derived why-fit container returns",
+    '        <div class="drawer-differentiators" id="drawerDifferentiators"></div>',
+    '        <div class="drawer-shortlist-fit" id="drawerShortlistFit"></div>\n        <div class="drawer-differentiators" id="drawerDifferentiators"></div>',
+    RESULTS],
+  ["1.3 containment: a renderer calls the why-fit producer again",
+    "      // Item 1.3 reason-gate containment (2026-08-24): the why-fit label and",
+    "      var _reintroduced = mattressShortlistFitText(m);\n      // Item 1.3 reason-gate containment (2026-08-24): the why-fit label and",
+    RESULTS],
+  ["1.3 containment: the Compare why-fit row returns",
+    "          { key: 'feature', label: _esCmp ? 'Característica clave' : 'Key feature', a: a.feature, b: b.feature, emphasis: true },",
+    "          { key: 'fit', label: _esCmp ? 'Por qué está aquí' : 'Why it is here', a: a.fit, b: b.fit },\n          { key: 'feature', label: _esCmp ? 'Característica clave' : 'Key feature', a: a.feature, b: b.feature, emphasis: true },",
+    COMPARE],
   ["compare modal: dialog semantics removed",
     '<div id="compareModal" class="compare-modal" style="display:none;" role="dialog"\n       aria-modal="true" aria-labelledby="compareModalTitle">',
     '<div id="compareModal" class="compare-modal" style="display:none;">', COMPARE],
@@ -1080,8 +1100,12 @@ const MUTATIONS = [
   ["trust: the Sleep System containers leave the wipe inventory (a previous customer's prose survives Restart)",
     "'sleepSystemMain', 'sleepSystemGuidance', 'sleepSystemRail', 'sleepSystemPlanList'",
     "", TRUST.concat(["tests/session_safety_check.mjs"])],
+  // Item 1.3 containment (2026-08-24) removed drawerShortlistFit from the app
+  // and therefore from this inventory line, which left this entry unable to
+  // apply. Re-pointed at the ids that REMAIN answer-derived, so the guard is
+  // live again rather than a stale manifest row that silently tests nothing.
   ["trust: the drawer's answer-derived text leaves the wipe inventory",
-    "'drawerShortlistFit', 'drawerSystemPromptTitle', 'drawerSystemPromptReason',", "", TRUST.concat(["tests/session_safety_check.mjs"])],
+    "'drawerSystemPromptTitle', 'drawerSystemPromptReason',", "", TRUST.concat(["tests/session_safety_check.mjs"])],
   ["trust: the Welcome renderer stops calling the data-use renderer (the line never renders)",
     "      renderDataUseStatement();", "      if (false) renderDataUseStatement();", TRUST],
   ["trust: the welcome data-use line ignores deployment mode (always the preview sentence)",

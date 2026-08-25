@@ -186,8 +186,13 @@ for (const lang of ["en", "es"]) {
   const rrHtml = cmp.rowsHtml(dd(byId("g6"), "gold"), dd(byId("g7"), "gold"));
   check(`[${lang}] retired×retired: feature and benefit rows OMITTED`,
     !rrHtml.includes('data-cmp="feature"') && !rrHtml.includes('data-cmp="benefit"'));
-  check(`[${lang}] retired×retired: feel/response/tier/fit/reaction rows preserved`,
-    ["feel", "response", "tier", "fit", "reaction"].every((k) => rrHtml.includes(`data-cmp="${k}"`)));
+  // Item 1.3 containment (2026-08-24): the gated "fit" row is omitted for
+  // every pairing, so it is no longer in the preserved set. The rows that
+  // remain must still all render - containment must not have collapsed them.
+  check(`[${lang}] retired×retired: feel/response/tier/reaction rows preserved`,
+    ["feel", "response", "tier", "reaction"].every((k) => rrHtml.includes(`data-cmp="${k}"`)));
+  check(`[${lang}] retired×retired: the contained why-fit row is absent`,
+    !rrHtml.includes('data-cmp="fit"'));
 }
 
 // ---------- 4. R4-exclusion evidence ------------------------------------------
@@ -211,9 +216,16 @@ section("hf2ReasonFor latent path stays unreachable (R4 excluded by ruling)");
     RETIRED.map((id) => `${id}:${emptyP(byId(id)).length}`).join(" "));
   check("every retired model yields >=1 priority with a populated session",
     RETIRED.every((id) => fullP(byId(id)).length >= 1));
-  const fit = cmp.sideData(dd(byId("s3"), "silver")).fit;
-  check("silver retired model's compare fit comes from priorities, no dangling separator",
-    fit.length > 0 && !/—\s*$/.test(fit) && !/ alternative — $/.test(fit));
+  // Item 1.3 containment (2026-08-24): sideData no longer exposes a `fit`
+  // value and the compare modal no longer renders a why-fit row, so the
+  // dangling-separator path cannot reach a customer through ANY render.
+  // The R4 exclusion is now proven structurally rather than by inspecting a
+  // rendered string: the producers still behave, and nothing renders them.
+  check("sideData no longer exposes a why-fit value (containment)",
+    cmp.sideData(dd(byId("s3"), "silver")).fit === undefined);
+  const rrS3 = cmp.rowsHtml(dd(byId("s3"), "silver"), dd(byId("g6"), "gold"));
+  check("no why-fit row renders for a retired model in any pairing",
+    !rrS3.includes('data-cmp="fit"'));
 }
 
 // ---------- 5. banned retired claims are gone from display fields -------------
