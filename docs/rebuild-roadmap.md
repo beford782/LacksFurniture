@@ -219,18 +219,28 @@ owner-approved scoring change they carried.)*
 `main` when this document's phase statuses were written, the merge commit of
 PR #16 (2026-08-05). It is **not** current `main`. GitHub state is
 authoritative; a local checkout never is.
-**Reconciliation baseline:** `f87194a53de6163d89bc07979ebf2912d54b9f36` — GitHub
-`main` at this revision; PR #63 merge commit (2026-08-25, the item 1.3
-inherited reason-gate containment).
+**Reconciliation baseline:** `342ae2f153bb733145837e8e9ba7b9c347d8f908` — GitHub
+`main` after PR #65; the PR #65 merge commit (2026-08-25, the item 1.4 Sleep
+System presentation — an application-byte merge).
 
-**Why the baseline skips two merges.** The prior baseline `8aeb6b3` held
-through **`c0fed1c` (PR #61)** and **`1178c4a` (PR #62)** because both were
-**documentation-only** — each changed exactly one file, `docs/rebuild-roadmap.md`,
+**Why the baseline moved, and what it skipped.** The previous baseline was
+**`f87194a`**, from **PR #63** (2026-08-25, the item 1.3 inherited reason-gate
+containment). **PR #64** (the item 1.3 containment close-out) was
+**documentation-only** — one file, `docs/rebuild-roadmap.md`, no application
+byte — and did **not** advance it. **PR #65** changed application bytes
+(`index.html` and the generated demo bundle) and therefore **advanced the
+baseline to `342ae2f`**. The rule is unchanged: the baseline moves only on an
+application-byte merge, never on a documentation-only one.
+
+*(Older history, preserved: before PR #63 the baseline `8aeb6b3` held through
+**`c0fed1c` (PR #61)** and **`1178c4a` (PR #62)** because both were
+documentation-only — each changed exactly one file, `docs/rebuild-roadmap.md`,
 and moved no application byte, so `8aeb6b3` remained the last
-application-byte baseline until PR #63. PR #63 is the first application change
-since, which is why the baseline moves now.
+application-byte baseline until PR #63, the first application change since.)*
 
-The prior baseline was `8aeb6b3694d8090bea45219f08648a3c36db7071` (PR #60,
+The prior baseline was `f87194a53de6163d89bc07979ebf2912d54b9f36` (PR #63,
+2026-08-25, the item 1.3 inherited reason-gate containment), before it
+`8aeb6b3694d8090bea45219f08648a3c36db7071` (PR #60,
 2026-08-24, the Consultation
 Summary compare-label correction that closed item 1.6's last exit clause),
 before it `3f92241adac309d6fcc4b5525ccd6e1aade30fb9` (PR #58,
