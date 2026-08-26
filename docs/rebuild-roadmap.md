@@ -9,21 +9,32 @@ owner-review decisions (see "Phase 1 direction decisions — recorded
 see the open-decisions register. Device hardening remains BLOCKING for
 showroom use.**
 
-**Last updated:** 2026-08-25 *(Item 1.4 close-out repairs opened on branch
-`codex/phase1-14-closeout-repairs` at `96b141f` — **item 1.4 remains ⏳**.
-Under owner rulings of 2026-08-25 the three recorded follow-ups are repaired:
-the ≤680px step rail wraps 2×2 with no horizontal scroll (no breakpoint added),
-procedure notes rise 11px → 15px, the rail status line 10px → 12px with
-wrapping, and the procedure panel adopts salesperson voice under one
-"Specialist notes" eyebrow with the owner's approved English verbatim and
-provisional Spanish counterparts (fourteen ES strings queued for the
-consolidated native review on the item; no reviewer named). Suite 373/373;
-sweep 475/475 caught, 0 survived, 0 did not apply; scoring, ranking,
-recommendation outputs, prices, financing state and item 1.3's containment
-untouched. **Clause 7's browser half is supported by emulation only; clause 8
-stays open and now REQUIRES a focused mounted-iPad pass before ✅ — the
-preview waiver is not a pass.** No merge yet; the reconciliation baseline
-stays `342ae2f`. Standing, all unchanged: mounted-device verification NOT
+**Last updated:** 2026-08-25 *(Item 1.4 close-out repairs on branch
+`codex/phase1-14-closeout-repairs` (PR #67), opened at `96b141f` and corrected
+under review in application/test commit `6a5dbc3` — the branch head is the
+later documentation commit — **item 1.4 remains ⏳**. Under owner rulings of
+2026-08-25 the three recorded follow-ups are repaired: the ≤680px step rail
+wraps 2×2 with no horizontal scroll (no breakpoint added), procedure notes
+rise 11px → 15px, the rail status line 10px → 12px with wrapping, and the
+procedure panel adopts salesperson voice under one "Specialist notes" eyebrow
+with the owner's approved English verbatim and provisional Spanish
+counterparts (fourteen ES strings queued for the consolidated native review on
+the item; no reviewer named). From the review: the per-alternative "Add"
+control now declares a **44×44px minimum** (a declared CSS floor the device
+pass must still measure); the copy evidence is stated as the precise invariant
+that **no explicit customer-directed second-person pronouns appear in
+procedure headings or notes** (salesperson-directed imperatives are
+intentionally allowed); and the fixed utility bar's acceptance criterion —
+transient overlap while scrolling is acceptable only when every affected
+control can be scrolled fully clear of the bar, receive visible keyboard focus
+and be activated normally; persistent occlusion is a failure — is recorded as
+an owner ruling and is **explicitly not yet passed**. Suite 380/380; sweep
+manifest 477 entries, with the full CI sweep green (477/477 caught, 0
+survived, 0 did not apply); scoring, ranking, recommendation outputs, prices,
+financing state and item 1.3's containment untouched. **Clause 7's browser
+half is supported by emulation only; clause 8 remains outstanding and now
+REQUIRES a focused mounted-iPad pass before ✅ — the preview waiver is not a
+pass.** No merge yet; the reconciliation baseline stays `342ae2f`. Standing, all unchanged: mounted-device verification NOT
 PERFORMED; full pre-showroom matrix blocking; forced-colors required before
 showroom; showroom NO; Spanish provisional; live email off with `gasUrl`
 blank; `Code.gs` undeployed. The previous revision, also 2026-08-25, recorded
@@ -2410,7 +2421,8 @@ auto-translate before the Spanish cells. Record per-cell screenshots with a
 naming scheme and a pass/fail per criterion; **NOT PERFORMED is never a
 pass.**)*
 
-*(2026-08-25 — **PR #67 review corrections, head `6a5dbc3`; item 1.4 still
+*(2026-08-25 — **PR #67 review corrections, application/test commit
+`6a5dbc3` (the later documentation commit is the branch head); item 1.4 still
 ⏳.** Two corrections and one ruling, nothing else: (1) `.sleep-system__alternative
 button` gains `min-width: 44px` and `min-height: 44px` — the only application
 change, with padding, typography, placement, wrapping and button semantics
@@ -2423,8 +2435,10 @@ pronouns appear in procedure headings or notes* — rather than a "second-person
 ban"; the executable pronoun checks and their behaviour are unchanged, and no
 production copy was touched. (3) The utility-bar occlusion criterion above is
 recorded as an owner ruling for the device pass and is not claimed as passed.
-Re-derived counts: suite **380/380 (373 before this correction)**; sweep **477 entries (475 before; the two new entries and all sixteen item-1.4 entries proven locally to match once, apply and be caught — the authoritative full run is CI's Full suite at the pushed head)**; the new entries
-proven to match exactly once, apply, and be caught. Everything else stands:
+Re-derived counts: suite **380/380** (373 before this correction); sweep
+manifest **477 entries** (475 before), two of them new; all sixteen item-1.4
+entries were proven locally to match exactly once, apply, and be caught; the
+full CI sweep is authoritative and green. Everything else stands:
 approved English verbatim, Spanish provisional with its queue intact, the
 universal "Specialist notes" eyebrow, the 2×2 / four-column rail, 15px/1.4
 notes and 12px/1.2 wrapping statuses, mounted-device testing NOT PERFORMED,
