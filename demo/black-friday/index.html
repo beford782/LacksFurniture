@@ -7031,11 +7031,15 @@
       color: inherit;
       font: 750 13px/1.2 var(--font-sans);
     }
+    /* Item 1.4 close-out: 10px -> 12px. The line may wrap (a selected
+       product name is long); it is never truncated, and the chip's
+       min-height lets it grow. The 13px step-name stays the larger of the two. */
     .sleep-system__step-status {
       display: block;
       margin-top: 3px;
       color: #7A6E61;
-      font: 500 10px/1.2 var(--font-sans);
+      font: 500 12px/1.2 var(--font-sans);
+      overflow-wrap: anywhere;
     }
     .sleep-system__workspace {
       display: grid;
@@ -7566,8 +7570,12 @@
       color: #7A6E61;
       font: 500 11px/1.35 var(--font-sans);
     }
+    /* Item 1.4 close-out review (owner ruling 2026-08-25): the per-alternative
+       control measured 40x45px, under the 44px touch floor. Both minimums are
+       pinned; padding, type and placement are unchanged. */
     .sleep-system__alternative button {
-      min-height: 40px;
+      min-width: 44px;
+      min-height: 44px;
       padding: 8px 11px;
       border: 1px solid #B9A894;
       border-radius: 7px;
@@ -7607,6 +7615,9 @@
       gap: 7px;
       margin-top: 13px;
     }
+    /* Item 1.4 close-out: the procedure notes rendered at 11px, below the
+       15px floor this project applies to repaired lines. Size only - weight,
+       ink (#394C5B on #EEF2F4, 7.9:1) and line-height are unchanged. */
     .sleep-system__notice {
       display: grid;
       grid-template-columns: 14px minmax(0, 1fr);
@@ -7615,7 +7626,7 @@
       border-left: 3px solid #48647A;
       background: #EEF2F4;
       color: #394C5B;
-      font: 600 11px/1.4 var(--font-sans);
+      font: 600 15px/1.4 var(--font-sans);
     }
     .sleep-system__plan-header {
       display: flex;
@@ -7754,10 +7765,15 @@
       }
       .sleep-system__anchor-image { width: 68px; height: 56px; }
       .sleep-system__anchor-note { display: none; }
+      /* Item 1.4 close-out (owner ruling 2026-08-25, option B): the four
+         112px chips left ~44px for a label, so "Adjustability" /
+         "Ajustabilidad" / "Protección" clipped INSIDE their chips while the
+         rail scrolled sideways - scrolling never revealed them. Wrap to two
+         columns instead: every label fits at 390, 417 (834 @ 200%) and 597
+         (1194 @ 200%), and the horizontal scroll goes away. DOM order, and
+         therefore reading and Tab order, is unchanged: 1 2 / 3 4. */
       .sleep-system__rail {
-        grid-template-columns: repeat(4, minmax(112px, 1fr));
-        overflow-x: auto;
-        padding-bottom: 4px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
       }
       .sleep-system__section-head {
         display: block;
@@ -17880,7 +17896,7 @@
           en: 'A base can change how the whole bed works for reading, relaxing, and certain sleep concerns. A showroom demo is the best test.',
           es: 'Una base puede cambiar cómo funciona toda la cama para leer, relajarse y ciertas necesidades de sueño. Una demostración es la mejor prueba.'
         },
-        guidanceTitle: { en: 'Try it in the showroom', es: 'Pruébala en la tienda' }
+        guidanceTitle: { en: 'Guide the showroom trial', es: 'Guía la prueba en la tienda' }
       },
       {
         id: 'support',
@@ -17900,7 +17916,7 @@
           en: 'Try one pillow with your finalist mattress. The goal is neutral alignment, not simply the softest or tallest option.',
           es: 'Prueba una almohada con tu colchón finalista. La meta es una alineación neutral, no solo la opción más suave o alta.'
         },
-        guidanceTitle: { en: 'Notice your alignment', es: 'Observa tu alineación' }
+        guidanceTitle: { en: 'Check alignment', es: 'Revisa la alineación' }
       },
       {
         id: 'protection',
@@ -17910,7 +17926,7 @@
           en: 'Choose protection around the goal that matters most: spills, allergens, cooling, or everyday care.',
           es: 'Elige protección segun la meta más importante: derrames, alérgenos, frescura o cuidado diario.'
         },
-        guidanceTitle: { en: 'Choose by priority', es: 'Elige por prioridad' }
+        guidanceTitle: { en: 'Match protection to the priority', es: 'Ajusta la protección a la prioridad' }
       }
     ];
 
@@ -18242,32 +18258,32 @@
         notices = [
           sleepSystemText({ en: 'Confirm frame or platform compatibility.', es: 'Confirma la compatibilidad del marco o plataforma.' }),
           sleepSystemText({ en: 'Compare standard and lower bed heights.', es: 'Compara alturas estándar y más bajas.' }),
-          sleepSystemText({ en: 'A specialist should verify the final setup.', es: 'Un especialista debe verificar la configuración final.' })
+          sleepSystemText({ en: 'Verify the final setup before the customer makes a selection.', es: 'Verifica la configuración final antes de que el cliente haga su selección.' })
         ];
       } else if (stepId === 'adjustability') {
         notices = [
           sleepSystemText({ en: 'Begin Flat so every change has a clear baseline.', es: 'Empieza Plana para tener una referencia clara.' }),
           sleepSystemText({ en: 'Move one position at a time and pause to notice the difference.', es: 'Cambia una posición a la vez y detente para notar la diferencia.' }),
-          sleepSystemText({ en: 'Choose a base only after trying the positions that matter to you.', es: 'Elige una base solo después de probar las posiciones importantes para ti.' })
+          sleepSystemText({ en: 'Recommend a base only after the customer tries the positions that matter most to them.', es: 'Recomienda una base solo después de que el cliente pruebe las posiciones que más le importan.' })
         ];
       } else if (stepId === 'pillow') {
         var positionCue = {
-          side: { en: 'Your head should fill the shoulder-to-mattress gap.', es: 'Tu cabeza debe llenar el espacio entre el hombro y el colchón.' },
-          back: { en: 'Keep your chin neutral rather than tipped forward.', es: 'Mantén la barbilla neutral, sin inclinarla hacia adelante.' },
+          side: { en: 'Check that the customer\'s head fills the shoulder-to-mattress gap.', es: 'Verifica que la cabeza del cliente llene el espacio entre el hombro y el colchón.' },
+          back: { en: 'Check that the customer\'s chin stays neutral rather than tipped forward.', es: 'Verifica que la barbilla del cliente se mantenga neutral, sin inclinarse hacia adelante.' },
           stomach: { en: 'Look for a lower profile that avoids neck strain.', es: 'Busca un perfil bajo que evite tension en el cuello.' }
         };
         var reactionNote = {
           low: {
-            en: 'Customer said too low: add loft or try adjustable fill, then retest.',
-            es: 'El cliente dijo muy baja: agrega altura o prueba relleno ajustable y vuelve a probar.'
+            en: 'If the customer says it feels too low, add loft or try adjustable fill, then retest.',
+            es: 'Si el cliente dice que se siente muy baja, agrega altura o prueba relleno ajustable y vuelve a probar.'
           },
           high: {
-            en: 'Customer said too high: move to a lower profile, then retest.',
-            es: 'El cliente dijo muy alta: cambia a un perfil más bajo y vuelve a probar.'
+            en: 'If the customer says it feels too high, move to a lower profile, then retest.',
+            es: 'Si el cliente dice que se siente muy alta, cambia a un perfil más bajo y vuelve a probar.'
           },
           aligned: {
-            en: 'Customer feels aligned: confirm comfort for several minutes before adding.',
-            es: 'El cliente se siente alineado: confirma la comodidad varios minutos antes de agregar.'
+            en: 'If the customer feels aligned, confirm comfort for several minutes before adding the pillow to the plan.',
+            es: 'Si el cliente se siente alineado, confirma la comodidad durante varios minutos antes de agregar la almohada al plan.'
           }
         };
         notices = [
@@ -18276,8 +18292,8 @@
           // the benefit inside the procedure panel and pushed a real specialist
           // note off the end of the three-item list. The shipped procedure
           // string is now used unconditionally.
-          sleepSystemText({ en: 'Explain why this pillow fits the customer priorities.', es: 'Explica por qué esta almohada coincide con las prioridades del cliente.' }),
-          sleepSystemText(positionCue[position] || { en: 'Keep your head centered over your shoulders.', es: 'Mantén la cabeza centrada sobre los hombros.' }),
+          sleepSystemText({ en: 'Explain how this pillow addresses the customer\'s priorities.', es: 'Explica cómo esta almohada responde a las prioridades del cliente.' }),
+          sleepSystemText(positionCue[position] || { en: 'Check that the customer\'s head stays centered over their shoulders.', es: 'Verifica que la cabeza del cliente se mantenga centrada sobre los hombros.' }),
           sleepSystemText(reactionNote[window._sleepSystemState.pillowFeedback] || {
             en: 'Test it on the finalist mattress and watch the neck line from the side.',
             es: 'Pruébala en el colchón finalista y observa la línea del cuello de lado.'
@@ -18292,7 +18308,7 @@
           ],
           allergens: [
             { en: 'Prioritize an allergen barrier that remains breathable.', es: 'Prioriza una barrera contra alérgenos que sea transpirable.' },
-            { en: 'Clarify whether fitted protection or full encasement is preferred.', es: 'Aclara si prefieren protección ajustada o cobertura completa.' }
+            { en: 'Ask whether the customer prefers fitted protection or full encasement.', es: 'Pregunta si el cliente prefiere protección ajustada o cobertura completa.' }
           ],
           cooling: [
             { en: 'Check that the protector does not trap extra heat.', es: 'Verifica que el protector no atrape calor adicional.' },
@@ -18306,7 +18322,7 @@
         notices = [
           sleepSystemText(goalNotes[goal][0]),
           sleepSystemText(goalNotes[goal][1]),
-          sleepSystemText({ en: 'Confirm fit and care instructions with your specialist.', es: 'Confirma el ajuste y cuidado con tu especialista.' })
+          sleepSystemText({ en: 'Review fit and care instructions with the customer.', es: 'Revisa las instrucciones de ajuste y cuidado con el cliente.' })
         ];
       }
 
@@ -18807,11 +18823,11 @@
       // Item 1.4: the procedure panel is a <section> with no accessible name,
       // so it was not exposed as a region at all - "separate" visually but not
       // semantically. Name it from the label it already renders, re-set on
-      // every render so a language switch relabels it too. No new copy: the
-      // name is the shipped eyebrow string in the active language.
-      var guidanceKind = step.id === 'pillow' || step.id === 'protection'
-        ? sleepSystemText({ en: 'Specialist notes', es: 'Notas del especialista' })
-        : sleepSystemText({ en: 'During the trial', es: 'Durante la prueba' });
+      // every render so a language switch relabels it too.
+      // Close-out (owner ruling 2026-08-25): the panel addresses the
+      // salesperson on every step, so it carries ONE eyebrow on all four -
+      // the former "During the trial" label is retired.
+      var guidanceKind = sleepSystemText({ en: 'Specialist notes', es: 'Notas del especialista' });
       guidance.setAttribute('aria-label', guidanceKind);
       guidance.innerHTML =
         '<div class="sleep-system__plan-eyebrow">' + escapeHtml(guidanceKind) + '</div>' +

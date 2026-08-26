@@ -9,7 +9,36 @@ owner-review decisions (see "Phase 1 direction decisions — recorded
 see the open-decisions register. Device hardening remains BLOCKING for
 showroom use.**
 
-**Last updated:** 2026-08-25 *(Item 1.4 Sleep System presentation **merged**.
+**Last updated:** 2026-08-25 *(Item 1.4 close-out repairs on branch
+`codex/phase1-14-closeout-repairs` (PR #67), opened at `96b141f` and corrected
+under review in application/test commit `6a5dbc3` — the branch head is the
+later documentation commit — **item 1.4 remains ⏳**. Under owner rulings of
+2026-08-25 the three recorded follow-ups are repaired: the ≤680px step rail
+wraps 2×2 with no horizontal scroll (no breakpoint added), procedure notes
+rise 11px → 15px, the rail status line 10px → 12px with wrapping, and the
+procedure panel adopts salesperson voice under one "Specialist notes" eyebrow
+with the owner's approved English verbatim and provisional Spanish
+counterparts (fourteen ES strings queued for the consolidated native review on
+the item; no reviewer named). From the review: the per-alternative "Add"
+control now declares a **44×44px minimum** (a declared CSS floor the device
+pass must still measure); the copy evidence is stated as the precise invariant
+that **no explicit customer-directed second-person pronouns appear in
+procedure headings or notes** (salesperson-directed imperatives are
+intentionally allowed); and the fixed utility bar's acceptance criterion —
+transient overlap while scrolling is acceptable only when every affected
+control can be scrolled fully clear of the bar, receive visible keyboard focus
+and be activated normally; persistent occlusion is a failure — is recorded as
+an owner ruling and is **explicitly not yet passed**. Suite 380/380; sweep
+manifest 477 entries, with the full CI sweep green (477/477 caught, 0
+survived, 0 did not apply); scoring, ranking, recommendation outputs, prices,
+financing state and item 1.3's containment untouched. **Clause 7's browser
+half is supported by emulation only; clause 8 remains outstanding and now
+REQUIRES a focused mounted-iPad pass before ✅ — the preview waiver is not a
+pass.** No merge yet; the reconciliation baseline stays `342ae2f`. Standing, all unchanged: mounted-device verification NOT
+PERFORMED; full pre-showroom matrix blocking; forced-colors required before
+showroom; showroom NO; Spanish provisional; live email off with `gasUrl`
+blank; `Code.gs` undeployed. The previous revision, also 2026-08-25, recorded
+Item 1.4 Sleep System presentation **merged**.
 **PR #65** merged 2026-08-25 14:48:51Z as merge commit
 `342ae2f153bb733145837e8e9ba7b9c347d8f908` (parents
 `43e0a3d3bfd8e3fd9c0c3428bdf7eb8488c3e08d` + `93846afa96407b1155ae4eff2c11f1119dbb1c1d`;
@@ -2216,6 +2245,206 @@ None of the three is repaired on this branch, none is claimed as passing, and
 accepts one treatment and names three follow-ups; clause 8 asks for Blake's
 assessment of the item, which **remains outstanding**. Item 1.4 stays 🔨 and
 may not be marked ✅ on the strength of this paragraph.)*
+
+*(2026-08-25 — **close-out repairs, on branch `codex/phase1-14-closeout-repairs`
+at `96b141f`; item 1.4 remains ⏳.** The three follow-ups recorded above are
+repaired under owner rulings of 2026-08-25; **nothing here closes clause 8**,
+and the item may not become ✅ until the required mounted-device pass and
+Blake's clause-8 assessment are both recorded below.
+
+**Owner rulings implemented.** (1) Rail: option B — at ≤680px the rail wraps to
+two columns and two rows, horizontal scrolling removed, no breakpoint added or
+changed, DOM/reading order, `<button type="button">` semantics, selection state
+and ≥64px chips preserved. (2) Procedure notes 15px/1.4 at the existing weight
+and colours (#394C5B on #EEF2F4, 7.9:1 — unchanged). (3) `.sleep-system__step-status`
+brought into scope: 10px → 12px, wrapping permitted, never truncated; the 13px
+step-name stays the larger. (4) The ≤680 sticky footer's `margin: 16px -14px
+-14px` is intentional padding cancellation — untouched, and now pinned so it
+is not "fixed" later. (5) Procedure audience: salesperson voice throughout;
+the single "Specialist notes" / "Notas del especialista" eyebrow on all four
+steps; one procedure list, no sub-lists. (6) The approved English headings and
+eleven approved notes, verbatim; neutral imperatives preserved. (7) Spanish
+counterparts added through the existing bilingual mechanism, **provisional**,
+every changed string queued below; no reviewer named. (9) No scoring, ranking,
+recommendation, price, financing, item 1.3, Phase 2, analytics, session, email
+or gate change.
+
+**Root causes, from the read-only discovery pass.** At ≤680px each chip was
+`minmax(112px, 1fr)`: 112 − 24 padding − 32 badge − 10 gap left ~44px for a
+label against "Adjustability" at 78px and "Ajustabilidad" at 81px, so labels
+clipped *inside their chips* while the rail scrolled — scrolling never revealed
+them. Reproduced at 390×844, 417×554 (834 @ 200%) and 597×374 (1194 @ 200%) in
+both languages. The notes carried a hard-coded 11px; the status line 10px.
+
+**What changed, in three reviewable commits.** *CSS* (`d054ddc`): the ≤680
+rail rule becomes `repeat(2, minmax(0, 1fr))` with `overflow-x` and its padding
+removed; notes `600 15px/1.4`; status `500 12px/1.2` + `overflow-wrap:
+anywhere`. Measured on the frozen tree: chips 170 / 183 / 273px at 390 / 417 /
+597 with zero clipped labels and no rail scroll; +52px rail height below 680px
+only; notes cost zero height at 834 portrait (the aside row is set by the plan
+card) and +64–80px in 1194 landscape, still inside the viewport. *Copy*
+(`3876c47`): three headings, one eyebrow, eleven notes. *Tests* (`96b141f`,
+authored by a test subagent in an isolated worktree and reviewed line by line
+before integration): static and rendered pins for the 2×2 rail, the absent
+rail scroll, the unchanged breakpoint count (a hand-counted 24 at `da4f746`,
+independently re-derived), complete labels, 15px notes, 12px statuses, the
+single eyebrow, every approved note in the state that produces it, the retired
+customer-voice strings at zero live occurrences, the executable invariant
+that **no explicit customer-directed second-person pronouns appear in
+procedure headings or notes** in either language (a pronoun check —
+salesperson-directed imperatives such as "Verifica" and "Confirma" are
+intentionally allowed), and byte-identity of everything the customer reads
+against `da4f746`; suite **373/373** (237 before this work), with 43
+CI-equivalent checks green at the final head. Targeted mutation entries
+revert each repair one at a time; the full sweep is **475/475 caught, 0
+survived, 0 did not apply** (466 before), and every one of the fourteen
+item-1.4 entries was additionally proven by hand to match the source exactly
+once, apply, and be caught by the named observer. *(Counts as of `96b141f`;
+the review corrections below re-derive them.)*
+
+**Browser evidence (emulation, NOT physical-device evidence).** A read-only
+visual/accessibility pass by a subagent, then an independent spot-check by the
+main session, both on the frozen tree: five viewports (834×1108, 1194×748,
+390×844, and 417×554 / 597×374 as the 200% surrogates) × EN/ES × eight driven
+states (adjustability open and decide-later; support open and keep-current;
+pillow open and aligned → selected; protection open and allergens) — 80
+measurements plus a second Spanish pass with browser auto-translate
+suppressed — **0 failures**: two tracks at every ≤680px width and four above;
+rail `scrollWidth` = `clientWidth` everywhere (no sideways scroll); no
+page-level horizontal overflow; zero clipped labels or statuses (the 3-line
+"Bedgear Flow 2.0 Performance Pillow" status wraps, chips growing 64 → 83px);
+notes computed 15px/21px and statuses 12px on every cell; one eyebrow equal to
+the region name on all four steps; every control a `<button type="button">` in
+DOM order with the UA focus ring intact; the landscape sticky aside 623px ≤
+748; and zero console errors or unhandled rejections across every cell.
+Screenshots are retained outside the repository. Reduced-motion rules on this
+surface are unchanged; forced-colors could not be toggled in emulation and the
+repairs add no colour-only cue.
+
+*Pre-existing, observed by the visual pass:* the pillow list's
+per-alternative **"Add" control measured 40×45px**, under the 44px floor
+(**repaired in this PR's review correction at `6a5dbc3` — see below**); and at
+597×374 (1194 landscape at 200%) scrolling the rail to the top places the
+**fixed session utility bar over the Support chip** — content scrolled beneath
+that fixed bar is occluded (**owner ruling recorded below; no layout change in
+this pass**). The row-aligned grid also grows a chip's row-mate to 83px when a
+3-line status wraps, which is consistent behaviour, not a defect.
+
+**Native-review queue — every Spanish string changed by this work, all
+PROVISIONAL.** Headings: "Pruébala en la tienda" → "Guía la prueba en la
+tienda"; "Observa tu alineación" → "Revisa la alineación"; "Elige por
+prioridad" → "Ajusta la protección a la prioridad". Notes: "Elige una base solo
+después de probar las posiciones importantes para ti." → "Recomienda una base
+solo después de que el cliente pruebe las posiciones que más le importan.";
+"Un especialista debe verificar la configuración final." → "Verifica la
+configuración final antes de que el cliente haga su selección."; "Explica por
+qué esta almohada coincide con las prioridades del cliente." → "Explica cómo
+esta almohada responde a las prioridades del cliente."; "Tu cabeza debe llenar
+el espacio entre el hombro y el colchón." → "Verifica que la cabeza del cliente
+llene el espacio entre el hombro y el colchón."; "Mantén la barbilla neutral,
+sin inclinarla hacia adelante." → "Verifica que la barbilla del cliente se
+mantenga neutral, sin inclinarse hacia adelante."; "Mantén la cabeza centrada
+sobre los hombros." → "Verifica que la cabeza del cliente se mantenga centrada
+sobre los hombros."; "El cliente dijo muy baja: agrega altura o prueba relleno
+ajustable y vuelve a probar." → "Si el cliente dice que se siente muy baja,
+agrega altura o prueba relleno ajustable y vuelve a probar."; "El cliente dijo
+muy alta: cambia a un perfil más bajo y vuelve a probar." → "Si el cliente dice
+que se siente muy alta, cambia a un perfil más bajo y vuelve a probar."; "El
+cliente se siente alineado: confirma la comodidad varios minutos antes de
+agregar." → "Si el cliente se siente alineado, confirma la comodidad durante
+varios minutos antes de agregar la almohada al plan."; "Aclara si prefieren
+protección ajustada o cobertura completa." → "Pregunta si el cliente prefiere
+protección ajustada o cobertura completa."; "Confirma el ajuste y cuidado con
+tu especialista." → "Revisa las instrucciones de ajuste y cuidado con el
+cliente." The "Notas del especialista" eyebrow, previously on two steps, now
+also replaces "Durante la prueba" on adjustability and support. The
+pre-existing `segun` in the protection step copy is **not** corrected. Spanish
+remains provisional under Invariant 12; nothing here is native-reviewed or
+approved.
+
+*Candidates flagged for that review by the read-only copy pass (recorded, not
+changed — the approved wording stands as shipped):* (a) the preserved
+adjustability line "Move one position at a time and pause to notice the
+difference." / "Cambia una posición a la vez y detente para notar la
+diferencia." is grammatically neutral but describes what the person on the bed
+does, so its audience is ambiguous in both languages; (b) in the new pillow
+low/high lines, "dice que **se siente** muy baja/alta" is grammatical (feminine
+agreement with *la almohada*) but can momentarily read as the customer feeling
+low/high — a native reviewer may prefer "dice que **la** siente"; (c) the new
+protection heading "**Ajusta** la protección a la prioridad" is faithful to
+"Match … to", but on a step whose notes also use "protección **ajustada**"
+(fitted), "Ajusta" can be read as fit/tighten.
+
+**Exit clauses after this work.** Clauses 1–6 continue to hold and are pinned.
+**Clause 7** — its language half is pinned by the suite; its browser/layout
+half (no clipped labels, no page overflow, clean console, 15px/12px computed
+sizes) is now supported by the emulation matrix above, which is evidence but
+not a mounted-device pass. **Clause 8 remains open**, and its requirement is
+now specific by owner ruling: **a focused mounted-iPad pass is REQUIRED before
+item 1.4 may become ✅** — both orientations, EN and ES, normal and 200% zoom,
+rail and state labels complete, notes legible, no page overflow, touch targets
+intact — plus Blake's dated assessment recorded here. **The preview waiver is
+not a pass.** Until both are recorded the item stays ⏳.
+
+*Device-pass specification, sharpened by the visual review so "complete" is
+testable rather than impressionistic.* Pin the artifact: the Pages URL, the
+merged `main` commit and the served `index.html` hash, plus iPadOS and Safari
+versions. **"200% zoom" means Safari page zoom** (the Aa menu or Settings ›
+Safari › Page Zoom) — iOS Larger Text does not scale this page's CSS-pixel
+text — and pinch-zoom must remain available. Expected layout per condition:
+at 100% a four-across rail; at 200% (834 → 417 / 1194 → 597 CSS px) a 2×2
+rail with no sideways rail scroll and no page horizontal scroll. Drive the
+named states, not merely the four steps: adjustability decide-later; support
+keep-current; pillow aligned → selected, whose 3-line status must wrap and
+never clip; a protection goal; then switch language and confirm rail
+statuses, the selected pillow, and the eyebrow / heading / notes all relabel
+in Spanish with state intact; then a new-customer wipe returns to English.
+Touch targets: chips, `.sleep-system__action` controls and the
+per-alternative "Add" controls all ≥ 44×44px (the Add control's floor is a
+declared CSS minimum as of `6a5dbc3`; the device pass must still measure it),
+sticky-footer controls reachable, and "taps register once" defined as no
+double-fire on a chip. **Occlusion — owner ruling 2026-08-25, recorded here
+and NOT claimed as passed:** the fixed utility bar may *transiently* overlap
+content while the user scrolls underneath it; that is acceptable **only** when
+every affected control can be scrolled completely clear of the bar, receive
+visible keyboard focus, and be activated normally. **Persistent occlusion at
+rest, or after focus or scroll positioning, is a failure.** Check the rail
+chips (the Support chip in particular at 597×374) and the sticky footer over
+the guidance panel at 200% against that criterion; at landscape 100% the
+sticky aside must fit the viewport while the main column scrolls, and at
+200% it stacks. No speculative global utility-bar or header-layout change was
+made in this pass. Rotate the
+device mid-session on this screen: layout re-flows and state persists. Test
+on-device Reduce Motion (Settings › Accessibility › Motion); there is no iOS
+forced-colors equivalent, and the record must say so. Disable Safari
+auto-translate before the Spanish cells. Record per-cell screenshots with a
+naming scheme and a pass/fail per criterion; **NOT PERFORMED is never a
+pass.**)*
+
+*(2026-08-25 — **PR #67 review corrections, application/test commit
+`6a5dbc3` (the later documentation commit is the branch head); item 1.4 still
+⏳.** Two corrections and one ruling, nothing else: (1) `.sleep-system__alternative
+button` gains `min-width: 44px` and `min-height: 44px` — the only application
+change, with padding, typography, placement, wrapping and button semantics
+untouched; the demo was regenerated through the canonical builder; the suite
+pins both minimums and asserts the rule's padding/type/pointer semantics
+unchanged, with negative controls, and two uniquely applying mutation entries
+revert each minimum. (2) The evidence wording above and the two suite comments
+now state the precise invariant — *no explicit customer-directed second-person
+pronouns appear in procedure headings or notes* — rather than a "second-person
+ban"; the executable pronoun checks and their behaviour are unchanged, and no
+production copy was touched. (3) The utility-bar occlusion criterion above is
+recorded as an owner ruling for the device pass and is not claimed as passed.
+Re-derived counts: suite **380/380** (373 before this correction); sweep
+manifest **477 entries** (475 before), two of them new; all sixteen item-1.4
+entries were proven locally to match exactly once, apply, and be caught; the
+full CI sweep is authoritative and green. Everything else stands:
+approved English verbatim, Spanish provisional with its queue intact, the
+universal "Specialist notes" eyebrow, the 2×2 / four-column rail, 15px/1.4
+notes and 12px/1.2 wrapping statuses, mounted-device testing NOT PERFORMED,
+clause 8 outstanding, baseline `342ae2f`, no scoring / ranking /
+recommendation / price / financing / analytics / session / email / item 1.3 /
+gate change.)*
 
 *(2026-08-25 — **merged and verified; item 1.4 moves 🔨 → ⏳, not ✅.** The
 audit, repairs, evidence corrections and owner disposition recorded above stand
