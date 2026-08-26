@@ -2096,7 +2096,7 @@ repaired under the cross-cutting Trust integrity gate (block after 1.7; see
 the D3 clarification in the decision block). CSS only; it touches neither
 gated output and edits neither list above.)*
 
-### 1.4 — Sleep System ⏳ (merged 2026-08-25, `342ae2f`; PR #65 head `93846af`; exit clauses 7 and 8 open)
+### 1.4 — Sleep System ⏳ (presentation merged 2026-08-25 via PR #65 / `342ae2f`; close-out repairs merged 2026-08-26 via PR #67 / `90ecd04`; exit clauses 7 and 8 open)
 
 The largest reading load in the app.
 
