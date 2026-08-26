@@ -9,7 +9,26 @@ owner-review decisions (see "Phase 1 direction decisions — recorded
 see the open-decisions register. Device hardening remains BLOCKING for
 showroom use.**
 
-**Last updated:** 2026-08-25 *(Item 1.4 close-out repairs on branch
+**Last updated:** 2026-08-26 *(Item 1.4 close-out repairs **merged**. **PR
+#67** merged 2026-08-26 01:12:46Z as merge commit
+`90ecd04942615bb07fd4504682eceb1bb5601874` (parents
+`da4f74665995bcbad236d5ab872107f83dfdf0f5` + `5c097a4cad454d1491dbbac81d1d079c6e9fdcc4`;
+merge, not squash or rebase; source branch `codex/phase1-14-closeout-repairs`
+preserved; merge tree byte-identical to the reviewed head). **Item 1.4 remains
+⏳, not ✅.** Pre-merge CI 32917473354 succeeded at the exact authorized head;
+post-merge CI 32918118421 and Pages 32918117633 both succeeded at exactly
+`90ecd04`; nine served artifacts returned HTTP 200 byte-identical to the
+merged blobs, served `index.html` SHA-256 `F576379C…FEC051` carrying every
+repair; served `gasUrl` blank and `financing.surfaces.sleepSystem` false.
+**The reconciliation baseline advances from `342ae2f` to `90ecd04`** — an
+application-byte merge. Still open, none of it closed here: mounted-iPad
+testing NOT PERFORMED (deployment and emulation are not device evidence);
+clause 7's rendered evidence emulation-only; clause 8 outstanding pending
+Blake's dated assessment; Spanish provisional with its queue intact; the
+utility-bar acceptance ruling unchanged and not yet passed; forced-colors
+before showroom, showroom NO, live email off with `gasUrl` blank, `Code.gs`
+undeployed; the preview waiver never a pass. The previous revision,
+2026-08-25, recorded the close-out repairs on branch
 `codex/phase1-14-closeout-repairs` (PR #67), opened at `96b141f` and corrected
 under review in application/test commit `6a5dbc3` — the branch head is the
 later documentation commit — **item 1.4 remains ⏳**. Under owner rulings of
@@ -248,18 +267,23 @@ owner-approved scoring change they carried.)*
 `main` when this document's phase statuses were written, the merge commit of
 PR #16 (2026-08-05). It is **not** current `main`. GitHub state is
 authoritative; a local checkout never is.
-**Reconciliation baseline:** `342ae2f153bb733145837e8e9ba7b9c347d8f908` — GitHub
-`main` after PR #65; the PR #65 merge commit (2026-08-25, the item 1.4 Sleep
-System presentation — an application-byte merge).
+**Reconciliation baseline:** `90ecd04942615bb07fd4504682eceb1bb5601874` — GitHub
+`main` after PR #67; the PR #67 merge commit (2026-08-26, the item 1.4
+close-out repairs — an application-byte merge).
 
 **Why the baseline moved, and what it skipped.** The previous baseline was
-**`f87194a`**, from **PR #63** (2026-08-25, the item 1.3 inherited reason-gate
-containment). **PR #64** (the item 1.3 containment close-out) was
+**`342ae2f`**, from **PR #65** (2026-08-25, the item 1.4 Sleep System
+presentation). **PR #66** (the item 1.4 merge close-out) was
 **documentation-only** — one file, `docs/rebuild-roadmap.md`, no application
-byte — and did **not** advance it. **PR #65** changed application bytes
+byte — and did **not** advance it. **PR #67** changed application bytes
 (`index.html` and the generated demo bundle) and therefore **advanced the
-baseline to `342ae2f`**. The rule is unchanged: the baseline moves only on an
+baseline to `90ecd04`**. The rule is unchanged: the baseline moves only on an
 application-byte merge, never on a documentation-only one.
+
+*(Earlier step, preserved: before PR #65 the baseline was `f87194a`, from
+PR #63 (2026-08-25, the item 1.3 inherited reason-gate containment); PR #64
+(the item 1.3 containment close-out) was documentation-only and did not
+advance it; PR #65 changed application bytes and advanced it to `342ae2f`.)*
 
 *(Older history, preserved: before PR #63 the baseline `8aeb6b3` held through
 **`c0fed1c` (PR #61)** and **`1178c4a` (PR #62)** because both were
@@ -267,7 +291,9 @@ documentation-only — each changed exactly one file, `docs/rebuild-roadmap.md`,
 and moved no application byte, so `8aeb6b3` remained the last
 application-byte baseline until PR #63, the first application change since.)*
 
-The prior baseline was `f87194a53de6163d89bc07979ebf2912d54b9f36` (PR #63,
+The prior baseline was `342ae2f153bb733145837e8e9ba7b9c347d8f908` (PR #65,
+2026-08-25, the item 1.4 Sleep System presentation), before it
+`f87194a53de6163d89bc07979ebf2912d54b9f36` (PR #63,
 2026-08-25, the item 1.3 inherited reason-gate containment), before it
 `8aeb6b3694d8090bea45219f08648a3c36db7071` (PR #60,
 2026-08-24, the Consultation
@@ -2500,6 +2526,67 @@ narrows or characterises any of them.
 **Reconciliation baseline.** Re-pointed from `f87194a` to **`342ae2f`** — this
 is an application-byte change (`index.html` and the generated demo bundle),
 which is the condition the baseline rule sets for re-pointing.)*
+
+*(2026-08-26 — **PR #67 (the close-out repairs) merged and verified; item 1.4
+remains ⏳, not ✅.** The repairs, review corrections and rulings recorded above
+stand as written and are not amended; this adds only the merge and its
+evidence.
+
+**The merge.** **PR #67**, source branch `codex/phase1-14-closeout-repairs`,
+reviewed head **`5c097a4cad454d1491dbbac81d1d079c6e9fdcc4`**, merged
+**2026-08-26 01:12:46Z** as merge commit
+**`90ecd04942615bb07fd4504682eceb1bb5601874`** — first parent
+`da4f74665995bcbad236d5ab872107f83dfdf0f5` (the `main` it was cut from), second
+parent `5c097a4cad454d1491dbbac81d1d079c6e9fdcc4`; a true merge commit, not a
+squash or rebase; **the source branch is preserved**. Merge authorization was
+granted at that exact head and the merge was matched to it
+(`--match-head-commit`). Every precondition was reconfirmed immediately
+beforehand: open and non-draft, merge state CLEAN, `origin/main` still
+`da4f746`, the file set exactly the five reviewed files, the source branch
+unmoved. **Tree identity:** the merge commit's tree
+(`93473161194bf79283879fafe3f7ca910b192d2e`) is byte-identical to the reviewed
+head's tree — nothing was added or modified at merge.
+
+**Pre-merge CI at the exact authorized head.** `Full suite (18 checks)` run
+**32917473354** succeeded at exactly `5c097a4`, the only check-run at that
+SHA, with no newer or rerun result.
+
+**Post-merge.** CI run **32918118421** succeeded at exactly `90ecd04` (sweep
+`477/477 caught, 0 survived, 0 did not apply`; presentation suite 380/380).
+Pages run **32918117633** succeeded at exactly `90ecd04`; the Pages build
+record reads `status=built commit=90ecd04`.
+
+**Served bytes.** **Nine of nine** artifacts returned HTTP 200 byte-identical
+to the merged blobs at `90ecd04`: `index.html`, `data/store-config.json`,
+`data/quiz.json`, `data/dict-en.json`, `data/dict-es.json`,
+`data/mattresses.json`, `data/accessories.json`, `data/allowed-hosts.js` and
+`demo/black-friday/index.html`. Served `index.html` SHA-256
+`F576379C78AAD27C2EE71C744D32CA7BCF5B78E9081B67DEED81C31BE8FEC051` = the
+`90ecd04` blob, and it carries the ≤680px 2×2 rail, the 15px procedure notes,
+the 12px wrapping statuses, the universal "Specialist notes" region, the
+approved copy in both languages, and the alternative Add control's 44×44px
+minimum. The demo route returns 200 and matches its merged blob.
+
+**Application and configuration invariants, confirmed on the served
+config.** `gasUrl` is **blank**; `financing.surfaces.sleepSystem` is **false**
+(and `drawer` false); `discount.mode` is `disabled`. No showroom, live-email,
+pricing, scoring or configuration authorization changed.
+
+**Status and what stays open — none of it closed by this merge.** **Item 1.4
+remains ⏳, not ✅.** Mounted-iPad testing remains **NOT PERFORMED**: nothing
+above is device evidence, and neither deployment nor browser emulation is
+claimed as such. Clause 7's rendered evidence remains **emulation evidence
+only**. Clause 8 remains **outstanding pending Blake's dated assessment**.
+Spanish remains **provisional** with its fourteen-string native-review queue
+intact. The utility-bar acceptance ruling stands **unchanged and not yet
+passed**. Forced-colors before showroom, showroom authorization **NO**, live
+email **off**, and every other standing gate remain unchanged. **The preview
+waiver remains never a pass.**
+
+**Reconciliation baseline.** Advanced from `342ae2f` to **`90ecd04`** — PR #67
+changed application bytes (`index.html` and the generated demo bundle), the
+condition the baseline rule sets for re-pointing; PR #66, documentation-only,
+did not move it.)*
 
 ### 1.5 — Financing footprint ✅
 
