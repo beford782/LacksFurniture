@@ -1885,6 +1885,18 @@ const MUTATIONS = [
     "    @media (prefers-reduced-motion: reduce) {\n      .sleep-system__main { animation: none; }",
     "    @media (max-width: 600px) {\n      .sleep-system__rail { gap: 6px; }\n    }\n    @media (prefers-reduced-motion: reduce) {\n      .sleep-system__main { animation: none; }",
     SLEEP],
+  // (10)/(11) review correction (owner ruling 2026-08-25): the per-alternative
+  //     "Add" control's 44px touch floor. The padding line anchors both finds
+  //     to THIS rule - the .sleep-system__action rule also declares
+  //     min-height: 44px but pads 9px 13px, so neither find can drift onto it.
+  ["1.4 close-out: the alternative Add control sinks back under the 44px height floor",
+    "      min-height: 44px;\n      padding: 8px 11px;",
+    "      min-height: 40px;\n      padding: 8px 11px;",
+    SLEEP],
+  ["1.4 close-out: the alternative Add control loses its 44px width floor",
+    "      min-width: 44px;\n      min-height: 44px;\n      padding: 8px 11px;",
+    "      min-height: 44px;\n      padding: 8px 11px;",
+    SLEEP],
 
 ];
 

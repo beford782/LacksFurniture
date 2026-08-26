@@ -61,7 +61,10 @@
 //       15px notes, 12px wrapping statuses, name > status, the chip floor
 //  14.  close-out copy: one eyebrow, approved headings, every approved note
 //       in the state that selects it, retired customer-voice strings gone,
-//       no second-person address, customer copy byte-identical to da4f746
+//       no explicit customer-directed second-person pronouns in procedure
+//       headings or notes (salesperson imperatives such as "Verifica" and
+//       "Confirma" are intentionally allowed), customer copy byte-identical
+//       to da4f746, and the per-alternative control's 44x44px touch floor
 //  15.  negative controls proving the load-bearing assertions bite
 //
 // Run: node tests/sleep_system_presentation_check.mjs
@@ -860,6 +863,23 @@ function auditCloseoutCss(src) {
     nameFont !== null && statusFont !== null && nameFont.px === 13 && nameFont.px > statusFont.px,
     `name ${nameFont && nameFont.px}px vs status ${statusFont && statusFont.px}px`);
 
+  // C4 — the per-alternative "Add" control (review correction, owner ruling
+  // 2026-08-25). The visual pass measured it at 40x45px, under the 44px touch
+  // floor. Both minimums are pinned on the BASE rule (the first
+  // `.sleep-system__alternative button {` rule; the <=680px override only
+  // repositions it); padding, type and placement are asserted unchanged.
+  const altButton = cssRule(css, '.sleep-system__alternative button');
+  const minPx = (rule, prop) => { const m = rule.match(new RegExp(prop + ':\\s*(\\d+)px')); return m ? Number(m[1]) : null; };
+  pin('C4: the alternative Add control declares min-width >= 44px',
+    minPx(altButton, 'min-width') !== null && minPx(altButton, 'min-width') >= 44,
+    `min-width ${minPx(altButton, 'min-width')}px`);
+  pin('C4: the alternative Add control declares min-height >= 44px',
+    minPx(altButton, 'min-height') !== null && minPx(altButton, 'min-height') >= 44,
+    `min-height ${minPx(altButton, 'min-height')}px`);
+  pin('C4: its padding, type and pointer semantics are unchanged (8px 11px, 700 11px/1.2, manipulation)',
+    /padding:\s*8px 11px;/.test(altButton) && /font:\s*700 11px\/1\.2/.test(altButton) &&
+    /touch-action:\s*manipulation;/.test(altButton));
+
   // Deliberately untouched neighbours, pinned so nobody "fixes" them in passing.
   pin('untouched: the <=680px sticky footer keeps its owner-ruled negative margin (16px -14px -14px)',
     /margin:\s*16px -14px -14px;/.test(footerNarrow), flat(footerNarrow).slice(0, 80));
@@ -1033,11 +1053,14 @@ const sleepLive = Object.values(SRC).map(stripComments).join('\n');
     rendered.length === 0, rendered.join(' | '));
 }
 
-// 14d — no second-person address anywhere in the panel. JS `\b` is ASCII-only,
-// so the Spanish test uses Unicode letter boundaries: "detente" must not match
-// `te`, and "tú" must match. `usted` is included — formal address is still
-// address. Imperatives ("Verifica", "Confirma") are the procedure voice and
-// are not caught: they instruct the salesperson.
+// 14d — the invariant, precisely: NO EXPLICIT CUSTOMER-DIRECTED SECOND-PERSON
+// PRONOUNS APPEAR IN PROCEDURE HEADINGS OR NOTES. It is a pronoun check, not a
+// ban on the second person as a grammatical category: Spanish salesperson-
+// directed imperatives ("Verifica", "Confirma", "Revisa") are the procedure
+// voice and are intentionally allowed — they instruct the salesperson and
+// carry no pronoun. JS `\b` is ASCII-only, so the Spanish test uses Unicode
+// letter boundaries: "detente" must not match `te`, and "tú" must match.
+// `usted` is included — formal address is still customer-directed address.
 const EN_SECOND_PERSON = /\b(you|your|yours|yourself)\b/i;
 const ES_SECOND_PERSON = /(?<!\p{L})(tu|tus|te|ti|tú|usted|ustedes)(?!\p{L})/iu;
 {
@@ -1389,7 +1412,16 @@ section('negative controls — the load-bearing assertions bite');
       ['C3: chip status may wrap anywhere (a long product name breaks rather than overflows)']],
     ['statuses grow past the step name',
       'font: 500 12px/1.2 var(--font-sans);', 'font: 500 14px/1.2 var(--font-sans);',
-      ['C3: the step name stays 13px and larger than the status (hierarchy holds)']]
+      ['C3: the step name stays 13px and larger than the status (hierarchy holds)']],
+    // Review correction: the alternative Add control's 44px floor. The padding
+    // line anchors both finds to this rule (the .sleep-system__action rule
+    // also declares min-height: 44px but pads 9px 13px).
+    ['alternative Add control sinks back to 40px high',
+      'min-height: 44px;\n      padding: 8px 11px;', 'min-height: 40px;\n      padding: 8px 11px;',
+      ['C4: the alternative Add control declares min-height >= 44px']],
+    ['alternative Add control loses its min-width',
+      'min-width: 44px;\n      min-height: 44px;\n      padding: 8px 11px;', 'min-height: 44px;\n      padding: 8px 11px;',
+      ['C4: the alternative Add control declares min-width >= 44px']]
   ];
   const cleanAudit = new Map(auditCloseoutCss(html).map(([n, c]) => [n, c]));
   for (const [what, find, replace, pins] of CSS_CONTROLS) {

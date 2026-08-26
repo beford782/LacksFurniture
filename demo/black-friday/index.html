@@ -7570,8 +7570,12 @@
       color: #7A6E61;
       font: 500 11px/1.35 var(--font-sans);
     }
+    /* Item 1.4 close-out review (owner ruling 2026-08-25): the per-alternative
+       control measured 40x45px, under the 44px touch floor. Both minimums are
+       pinned; padding, type and placement are unchanged. */
     .sleep-system__alternative button {
-      min-height: 40px;
+      min-width: 44px;
+      min-height: 44px;
       padding: 8px 11px;
       border: 1px solid #B9A894;
       border-radius: 7px;
