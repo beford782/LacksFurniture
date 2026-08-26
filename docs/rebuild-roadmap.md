@@ -2278,14 +2278,18 @@ before integration): static and rendered pins for the 2×2 rail, the absent
 rail scroll, the unchanged breakpoint count (a hand-counted 24 at `da4f746`,
 independently re-derived), complete labels, 15px notes, 12px statuses, the
 single eyebrow, every approved note in the state that produces it, the retired
-customer-voice strings at zero live occurrences, a second-person ban over every
-rendered heading and note in both languages, and byte-identity of everything
-the customer reads against `da4f746`; suite **373/373** (237 before this work),
-with 43 CI-equivalent checks green at the final head. Targeted mutation entries
+customer-voice strings at zero live occurrences, the executable invariant
+that **no explicit customer-directed second-person pronouns appear in
+procedure headings or notes** in either language (a pronoun check —
+salesperson-directed imperatives such as "Verifica" and "Confirma" are
+intentionally allowed), and byte-identity of everything the customer reads
+against `da4f746`; suite **373/373** (237 before this work), with 43
+CI-equivalent checks green at the final head. Targeted mutation entries
 revert each repair one at a time; the full sweep is **475/475 caught, 0
 survived, 0 did not apply** (466 before), and every one of the fourteen
 item-1.4 entries was additionally proven by hand to match the source exactly
-once, apply, and be caught by the named observer.
+once, apply, and be caught by the named observer. *(Counts as of `96b141f`;
+the review corrections below re-derive them.)*
 
 **Browser evidence (emulation, NOT physical-device evidence).** A read-only
 visual/accessibility pass by a subagent, then an independent spot-check by the
@@ -2306,13 +2310,13 @@ Screenshots are retained outside the repository. Reduced-motion rules on this
 surface are unchanged; forced-colors could not be toggled in emulation and the
 repairs add no colour-only cue.
 
-*Pre-existing, observed by the visual pass and NOT repaired here (outside the
-three ruled follow-ups; recorded so the device pass checks them
-deliberately):* the pillow list's per-alternative **"Add" control measures
-40×45px**, under the 44px floor, unchanged by this diff; and at 597×374 (1194
-landscape at 200%) scrolling the rail to the top places the **fixed session
-utility bar over the Support chip** — content scrolled beneath that fixed bar
-is occluded. The row-aligned grid also grows a chip's row-mate to 83px when a
+*Pre-existing, observed by the visual pass:* the pillow list's
+per-alternative **"Add" control measured 40×45px**, under the 44px floor
+(**repaired in this PR's review correction at `6a5dbc3` — see below**); and at
+597×374 (1194 landscape at 200%) scrolling the rail to the top places the
+**fixed session utility bar over the Support chip** — content scrolled beneath
+that fixed bar is occluded (**owner ruling recorded below; no layout change in
+this pass**). The row-aligned grid also grows a chip's row-mate to 83px when a
 3-line status wraps, which is consistent behaviour, not a defect.
 
 **Native-review queue — every Spanish string changed by this work, all
@@ -2384,18 +2388,49 @@ keep-current; pillow aligned → selected, whose 3-line status must wrap and
 never clip; a protection goal; then switch language and confirm rail
 statuses, the selected pillow, and the eyebrow / heading / notes all relabel
 in Spanish with state intact; then a new-customer wipe returns to English.
-Touch targets: chips and `.sleep-system__action` controls ≥ 44px, the 40px
-"Add" controls above called out explicitly, sticky-footer controls reachable,
-and "taps register once" defined as no double-fire on a chip. Occlusion: the
-fixed utility bar over scrolled content and the sticky footer over the
-guidance panel at 200%; at landscape 100% the sticky aside must fit the
-viewport while the main column scrolls, and at 200% it stacks. Rotate the
+Touch targets: chips, `.sleep-system__action` controls and the
+per-alternative "Add" controls all ≥ 44×44px (the Add control's floor is a
+declared CSS minimum as of `6a5dbc3`; the device pass must still measure it),
+sticky-footer controls reachable, and "taps register once" defined as no
+double-fire on a chip. **Occlusion — owner ruling 2026-08-25, recorded here
+and NOT claimed as passed:** the fixed utility bar may *transiently* overlap
+content while the user scrolls underneath it; that is acceptable **only** when
+every affected control can be scrolled completely clear of the bar, receive
+visible keyboard focus, and be activated normally. **Persistent occlusion at
+rest, or after focus or scroll positioning, is a failure.** Check the rail
+chips (the Support chip in particular at 597×374) and the sticky footer over
+the guidance panel at 200% against that criterion; at landscape 100% the
+sticky aside must fit the viewport while the main column scrolls, and at
+200% it stacks. No speculative global utility-bar or header-layout change was
+made in this pass. Rotate the
 device mid-session on this screen: layout re-flows and state persists. Test
 on-device Reduce Motion (Settings › Accessibility › Motion); there is no iOS
 forced-colors equivalent, and the record must say so. Disable Safari
 auto-translate before the Spanish cells. Record per-cell screenshots with a
 naming scheme and a pass/fail per criterion; **NOT PERFORMED is never a
 pass.**)*
+
+*(2026-08-25 — **PR #67 review corrections, head `6a5dbc3`; item 1.4 still
+⏳.** Two corrections and one ruling, nothing else: (1) `.sleep-system__alternative
+button` gains `min-width: 44px` and `min-height: 44px` — the only application
+change, with padding, typography, placement, wrapping and button semantics
+untouched; the demo was regenerated through the canonical builder; the suite
+pins both minimums and asserts the rule's padding/type/pointer semantics
+unchanged, with negative controls, and two uniquely applying mutation entries
+revert each minimum. (2) The evidence wording above and the two suite comments
+now state the precise invariant — *no explicit customer-directed second-person
+pronouns appear in procedure headings or notes* — rather than a "second-person
+ban"; the executable pronoun checks and their behaviour are unchanged, and no
+production copy was touched. (3) The utility-bar occlusion criterion above is
+recorded as an owner ruling for the device pass and is not claimed as passed.
+Re-derived counts: suite **380/380 (373 before this correction)**; sweep **477 entries (475 before; the two new entries and all sixteen item-1.4 entries proven locally to match once, apply and be caught — the authoritative full run is CI's Full suite at the pushed head)**; the new entries
+proven to match exactly once, apply, and be caught. Everything else stands:
+approved English verbatim, Spanish provisional with its queue intact, the
+universal "Specialist notes" eyebrow, the 2×2 / four-column rail, 15px/1.4
+notes and 12px/1.2 wrapping statuses, mounted-device testing NOT PERFORMED,
+clause 8 outstanding, baseline `342ae2f`, no scoring / ranking /
+recommendation / price / financing / analytics / session / email / item 1.3 /
+gate change.)*
 
 *(2026-08-25 — **merged and verified; item 1.4 moves 🔨 → ⏳, not ✅.** The
 audit, repairs, evidence corrections and owner disposition recorded above stand
