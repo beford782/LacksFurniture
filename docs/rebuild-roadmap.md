@@ -3746,9 +3746,14 @@ true, the financing configuration and the referenced plan verified, fresh and
 allowlisted under the FINANCING source policy (never the price list), the
 plan's `calculationMode` matching, and approved formula evidence; (3) the
 catalog-wide `mapClearance` is replaced by a per-entry `clearance` scoped to
-exactly {productId, sku, amountMinor, currency, kind, evidenceVerifiedAt,
-evidenceSourceUrl}, so any change invalidates it, with an attested
-`not-required` state and no inference; (4) a governed, NON-RENDERED
+exactly {productId, productKind, sku, size, amountMinor, currency, kind,
+evidenceStatus, evidenceVerifiedAt, evidenceSourceUrl, windowStartAt,
+windowEndsAt} — absent window bounds as explicit nulls — so a change to the
+product, its kind, the SKU, the size, the price, the evidence classification,
+stamp or source, or either promotional-window bound invalidates it and
+requires re-attestation (the correction review of 2026-08-27 widened the
+scope from seven fields to twelve), with an attested `not-required` state
+and no inference; (4) a governed, NON-RENDERED
 `presentation` contract (assumptions, disclosures, bilingual EN/ES state
 copy) with business, legal and native-language approvals recorded
 separately — production ships it explicitly unapproved and empty, and

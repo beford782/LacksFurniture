@@ -1957,6 +1957,11 @@ const MUTATIONS = [
     "        if enabled and not approved:\n            r.add_error(\"pricing.freshness.status must be 'approved' (with maxAgeDays, \"",
     "        if False:\n            r.add_error(\"pricing.freshness.status must be 'approved' (with maxAgeDays, \"",
     PRICING_VALIDATOR, "tools/validation.py"],
+  // Clearance-integrity correction (Codex, 2026-08-27): the scope binds size.
+  ["2.1a review: a clearance survives a size change (the size scope comparison is gone)",
+    "                            \"size\": size if kind == \"mattress\" else None,",
+    "                            \"size\": scope.get(\"size\"),",
+    PRICING_VALIDATOR, "tools/validation.py"],
 
 ];
 

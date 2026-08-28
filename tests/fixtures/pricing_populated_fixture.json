@@ -117,12 +117,17 @@
           "attestedAt": "2026-08-26T11:00:00-05:00",
           "scope": {
             "productId": "g6",
+            "productKind": "mattress",
             "sku": "FIXTURE-0001",
+            "size": "queen",
             "amountMinor": 369900,
             "currency": "USD",
             "kind": "regular",
+            "evidenceStatus": "retailer-product-page-current",
             "evidenceVerifiedAt": "2026-08-26T10:00:00-05:00",
-            "evidenceSourceUrl": "https://www.lacks.com/fixture-product-page"
+            "evidenceSourceUrl": "https://www.lacks.com/fixture-product-page",
+            "windowStartAt": null,
+            "windowEndsAt": null
           }
         },
         "window": {

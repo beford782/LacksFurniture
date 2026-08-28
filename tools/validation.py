@@ -3219,9 +3219,16 @@ PRICE_EVIDENCE_STATUSES = frozenset({
 })
 PRICING_CLEARANCE_KEYS = frozenset({"status", "attestedBy", "attestedAt", "scope"})
 PRICING_CLEARANCE_STATUSES = frozenset({"not-cleared", "cleared", "not-required"})
+# A clearance binds EVERYTHING that identifies what was cleared: the product
+# and its kind, the SKU, the size, the exact price (amount / currency / kind),
+# the evidence (classification, stamp, source) and both promotional-window
+# bounds. Absent window bounds are EXPLICIT nulls so the scope shape is
+# deterministic. Any change to any of these invalidates the clearance and
+# requires re-attestation.
 PRICING_CLEARANCE_SCOPE_KEYS = frozenset({
-    "productId", "sku", "amountMinor", "currency", "kind",
-    "evidenceVerifiedAt", "evidenceSourceUrl",
+    "productId", "productKind", "sku", "size", "amountMinor", "currency", "kind",
+    "evidenceStatus", "evidenceVerifiedAt", "evidenceSourceUrl",
+    "windowStartAt", "windowEndsAt",
 })
 PRICING_WINDOW_KEYS = frozenset({"startAt", "endsAt"})
 PRICING_FORMULA_KEYS = frozenset({
@@ -3845,9 +3852,10 @@ def validate_pricing(config, *, allowed_source_hosts=None, financing_source_host
                                 f"one of {sorted(PRICING_PRICE_KINDS)}")
 
             ev = entry.get("evidence")
-            ev_at = ev_url = None
+            ev_at = ev_url = ev_status = None
             if _pricing_object(r, f"{tag}.evidence", ev, PRICING_EVIDENCE_KEYS):
                 st = ev.get("status")
+                ev_status = st
                 if not _pricing_enum(st, PRICE_EVIDENCE_STATUSES):
                     r.add_error(f"{tag}.evidence.status {fin_headline.short_repr(st)} "
                                 f"must be one of {sorted(PRICE_EVIDENCE_STATUSES)} — "
@@ -3883,10 +3891,20 @@ def validate_pricing(config, *, allowed_source_hosts=None, financing_source_host
                     scope = cl.get("scope")
                     if _pricing_object(r, f"{tag}.clearance.scope", scope,
                                        PRICING_CLEARANCE_SCOPE_KEYS):
+                        win_raw = entry.get("window") if isinstance(entry.get("window"), dict) else {}
                         expected = {
-                            "productId": pid, "sku": sku, "amountMinor": amt,
-                            "currency": pc, "kind": pk, "evidenceVerifiedAt": ev_at,
+                            "productId": pid,
+                            "productKind": kind,
+                            "sku": sku,
+                            "size": size if kind == "mattress" else None,
+                            "amountMinor": amt,
+                            "currency": pc,
+                            "kind": pk,
+                            "evidenceStatus": ev_status,
+                            "evidenceVerifiedAt": ev_at,
                             "evidenceSourceUrl": ev_url,
+                            "windowStartAt": win_raw.get("startAt"),
+                            "windowEndsAt": win_raw.get("endsAt"),
                         }
                         for key in sorted(PRICING_CLEARANCE_SCOPE_KEYS):
                             if key not in scope:
@@ -7661,10 +7679,13 @@ def _self_test() -> int:
                          "sourceUrl": "https://www.lacks.com/p/x"},
             "clearance": {"status": "cleared", "attestedBy": "Test",
                           "attestedAt": "2026-08-26T11:00:00-05:00",
-                          "scope": {"productId": "g6", "sku": "T-0001", "amountMinor": 369900,
+                          "scope": {"productId": "g6", "productKind": "mattress", "sku": "T-0001",
+                                    "size": "queen", "amountMinor": 369900,
                                     "currency": "USD", "kind": "regular",
+                                    "evidenceStatus": "retailer-product-page-current",
                                     "evidenceVerifiedAt": _PSTAMP,
-                                    "evidenceSourceUrl": "https://www.lacks.com/p/x"}},
+                                    "evidenceSourceUrl": "https://www.lacks.com/p/x",
+                                    "windowStartAt": None, "windowEndsAt": None}},
             "window": {"startAt": None, "endsAt": None},
         }],
         "formulas": [{
@@ -7891,7 +7912,7 @@ def _self_test() -> int:
     pu = _pmut(); pu["products"][0]["size"] = "queen_xl"
     check("pricing size outside the quiz ids -> error", _perr(pu, "products[0].size"))
     pu = _pmut(); pu["products"][0].update({"productKind": "accessory", "productId": "pillow-flow"})
-    pu["products"][0]["clearance"]["scope"]["productId"] = "pillow-flow"
+    pu["products"][0]["clearance"]["scope"].update({"productId": "pillow-flow", "productKind": "accessory", "size": None})
     check("pricing accessory with a size -> error", _perr(pu, "size must be null for an accessory"))
     pu["products"][0]["size"] = None
     check("pricing accessory entry with null size -> ok", _pv(pu).ok)
@@ -7925,6 +7946,7 @@ def _self_test() -> int:
         pu = _pmut(); pu["products"][0]["evidence"]["status"] = st
         check(f"pricing evidence status {st!r} (promotions ladder) -> REFUSED", _perr(pu, "evidence.status"))
     pu = _pmut(); pu["products"][0]["evidence"]["status"] = "retailer-price-list-current"
+    pu["products"][0]["clearance"]["scope"]["evidenceStatus"] = "retailer-price-list-current"
     check("pricing evidence status price-list-current -> ok", _pv(pu).ok)
     pu = _pmut(); pu["products"][0]["evidence"]["verified"] = False
     check("pricing unverified evidence -> error", _perr(pu, "evidence.verified must be true"))
@@ -7943,7 +7965,15 @@ def _self_test() -> int:
     pu = _pmut(); pu["products"][0]["price"]["kind"] = "promotional"; pu["products"][0]["clearance"]["scope"]["kind"] = "promotional"
     check("pricing promotional price without endsAt -> error", _perr(pu, "endsAt is required for a promotional"))
     pu["products"][0]["window"] = {"startAt": "2026-08-20T00:00:00-05:00", "endsAt": "2026-09-01T00:00:00-05:00"}
-    check("pricing promotional price with a future window -> ok", _pv(pu).ok)
+    pu["products"][0]["clearance"]["scope"].update({"windowStartAt": "2026-08-20T00:00:00-05:00",
+                                                    "windowEndsAt": "2026-09-01T00:00:00-05:00"})
+    check("pricing promotional price with a future window (scope bound to both bounds) -> ok", _pv(pu).ok)
+    pw = json.loads(json.dumps(pu)); pw["products"][0]["window"]["startAt"] = "2026-08-21T00:00:00-05:00"
+    check("pricing promotional START moved after clearance -> scope mismatch (re-attest)",
+          _perr(pw, "clearance.scope.windowStartAt"))
+    pw = json.loads(json.dumps(pu)); pw["products"][0]["window"]["endsAt"] = "2026-09-02T00:00:00-05:00"
+    check("pricing promotional END moved after clearance -> scope mismatch (re-attest)",
+          _perr(pw, "clearance.scope.windowEndsAt"))
     pu["products"][0]["window"] = {"startAt": "2026-09-01T00:00:00-05:00", "endsAt": "2026-08-20T00:00:00-05:00"}
     check("pricing window endsAt before startAt -> error", _perr(pu, "endsAt must be after startAt"))
     pu["products"][0]["window"] = {"startAt": None, "endsAt": "2026-08-01T00:00:00-05:00"}
@@ -7952,7 +7982,7 @@ def _self_test() -> int:
     check("pricing duplicate product-size -> error", _perr(pu, "duplicates products[0]"))
     pu["products"][1]["size"] = "king"
     check("pricing duplicate sku across sizes -> error", _perr(pu, "sku 'T-0001' duplicates"))
-    pu["products"][1]["sku"] = "T-0002"; pu["products"][1]["clearance"]["scope"]["sku"] = "T-0002"
+    pu["products"][1]["sku"] = "T-0002"; pu["products"][1]["clearance"]["scope"].update({"sku": "T-0002", "size": "king"})
     check("pricing second size with its OWN evidence and clearance -> ok", _pv(pu).ok)
     pu = _pmut(); pu["products"] = "none"
     check("pricing products non-array -> error", _perr(pu, "pricing.products must be an array"))
@@ -7974,6 +8004,23 @@ def _self_test() -> int:
     pu = _pmut(); pu["products"][0]["clearance"]["scope"]["amountMinor"] = "369900"
     check("pricing clearance scope with a same-looking string amount -> mismatch (type-exact)",
           _perr(pu, "clearance.scope.amountMinor"))
+    # the four review cases: kind, size, evidence classification, window bounds
+    pu = _pmut(); pu["products"][0]["size"] = "king"
+    check("pricing Queen -> King with the same SKU and price -> clearance invalidated (scope.size)",
+          _perr(pu, "clearance.scope.size") and _perr(pu, "any change invalidates it"))
+    pu = _pmut(); pu["products"][0].update({"productKind": "accessory", "productId": "pillow-flow", "size": None})
+    pu["products"][0]["clearance"]["scope"].update({"productId": "pillow-flow", "size": None})   # kind left as cleared
+    check("pricing mattress -> accessory -> clearance invalidated (scope.productKind)",
+          _perr(pu, "clearance.scope.productKind"))
+    pu = _pmut(); pu["products"][0]["evidence"]["status"] = "retailer-price-list-current"
+    check("pricing evidence classification changed -> clearance invalidated (scope.evidenceStatus)",
+          _perr(pu, "clearance.scope.evidenceStatus"))
+    pu = _pmut(); del pu["products"][0]["clearance"]["scope"]["windowStartAt"]
+    check("pricing clearance scope must carry explicit null window bounds -> required error",
+          _perr(pu, "clearance.scope.windowStartAt is required"))
+    pu = _pmut(); pu["products"][0]["window"] = {"startAt": None, "endsAt": "2026-09-01T00:00:00-05:00"}
+    check("pricing regular price gains an end bound after clearance -> scope mismatch",
+          _perr(pu, "clearance.scope.windowEndsAt"))
     pu = _pmut(); del pu["products"][0]["clearance"]["scope"]["kind"]
     check("pricing clearance scope missing a field -> error", _perr(pu, "clearance.scope.kind is required"))
     pu = _pmut(); pu["products"][0]["clearance"] = {"status": "not-required", "attestedBy": "", "attestedAt": None, "scope": None}

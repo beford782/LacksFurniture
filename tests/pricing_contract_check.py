@@ -324,6 +324,14 @@ try:
          "canonical financing source-host allowlist"),
         ("price changed after clearance (§3)", ("pricing", "products", 0, "price", "amountMinor"),
          359900, "clearance.scope.amountMinor"),
+        ("Queen -> King with the same SKU and price (§3 scope.size)",
+         ("pricing", "products", 0, "size"), "king", "clearance.scope.size"),
+        ("evidence classification changed (§3 scope.evidenceStatus)",
+         ("pricing", "products", 0, "evidence", "status"), "retailer-price-list-current",
+         "clearance.scope.evidenceStatus"),
+        ("an end bound appears after clearance (§3 scope.windowEndsAt)",
+         ("pricing", "products", 0, "window"), {"startAt": None, "endsAt": "2026-09-01T00:00:00-05:00"},
+         "clearance.scope.windowEndsAt"),
         ("clearance downgraded to not-cleared (§3)", ("pricing", "products", 0, "clearance"),
          {"status": "not-cleared", "attestedBy": "", "attestedAt": None, "scope": None},
          "clearance.status must be 'cleared' or an attested"),
@@ -346,6 +354,15 @@ try:
         check(f"fixture corrupted — {label} -> REFUSED",
               not bad.ok and any(needle in e for e in bad.errors),
               "; ".join(bad.errors[:2]) or "(admitted)")
+    # mattress -> accessory with everything else re-pointed except the cleared kind
+    kinddoc = json.loads(json.dumps(config))
+    e0 = kinddoc["pricing"]["products"][0]
+    e0.update({"productKind": "accessory", "productId": sorted(accessory_ids)[0], "size": None})
+    e0["clearance"]["scope"].update({"productId": sorted(accessory_ids)[0], "size": None})
+    kindrep = validation.validate_pricing(kinddoc, now=CLOCK, **KW)
+    check("fixture corrupted — mattress -> accessory (§3 scope.productKind) -> REFUSED",
+          not kindrep.ok and any("clearance.scope.productKind" in e for e in kindrep.errors),
+          "; ".join(kindrep.errors[:2]) or "(admitted)")
     stale = validation.validate_pricing(config, now=CLOCK + timedelta(days=30), **KW)
     check("the injected clock is the clock: same fixture 30 days on -> stale, refused",
           not stale.ok and any("older than maxAgeDays" in e for e in stale.errors))
@@ -395,6 +412,8 @@ SWEEP_FINDS = [
      "        if enabled and not papproved:\n            r.add_error(\"pricing.presentation.status must be 'approved' when pricing is \""),
     ("tools/validation.py",
      "        if enabled and not approved:\n            r.add_error(\"pricing.freshness.status must be 'approved' (with maxAgeDays, \""),
+    ("tools/validation.py",
+     "                            \"size\": size if kind == \"mattress\" else None,"),
 ]
 for target, find in SWEEP_FINDS:
     n = _lf(_read(target)).count(find)
