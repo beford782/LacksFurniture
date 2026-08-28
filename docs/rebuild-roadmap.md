@@ -5,12 +5,90 @@ evidence recorded; see 0.4 and `docs/kiosk-device-hardening.md`). Phase 1
 implementation AUTHORIZED (2026-08-12, owner directive — see the authorization
 block at the top of Phase 1) and, as of 2026-08-14, directed by the Nocturne
 owner-review decisions (see "Phase 1 direction decisions — recorded
-2026-08-14"). Phase 2.1 (the dark framework) was opened by Blake 2026-08-27 and is 🔨;
-Phase 2.2 and Phase 3 remain a plan of intent, not a grant of approval —
-see the open-decisions register. Device hardening remains BLOCKING for
-showroom use.**
+2026-08-14"). Phase 2.1 (the dark framework) was opened by Blake 2026-08-27 and is 🔨
+(slice 2.1a MERGED 2026-08-28, PR #69 → `95935ab`). By owner ruling 2026-08-28,
+final business and legal approval occurs only at the end of the project
+immediately before live deployment and does not block dark development,
+provisional data, internal computation, previews, testing, or completion of
+earlier roadmap items; the governance model recorded under that ruling gates
+live output on it (see 2.1). Phase 2.2's activation output is gated ◐ to that
+final stage (Gated and Proceeds under 2.2); Phase 3 remains a plan of intent,
+not a grant of approval — see the open-decisions register. Device hardening
+remains BLOCKING for showroom use.**
 
-**Last updated:** 2026-08-27 *(**Phase 2.1 opened** by owner directive after
+**Last updated:** 2026-08-28 *(**Slice 2.1a merged; the approval-timing owner
+ruling recorded; the 2.1b design revised under the gate split.** **PR #69**
+merged 2026-08-28 02:18:19Z as merge commit
+`95935abe8493f22e99b7881e1abdb7c7f4deb5cd` (parents
+`fc61a262d67d7c656a32f4f735fcebfd98ad6ce0` + `f6267e411979a93854585b7d1a972e63eedbf0b3`;
+merge, not squash or rebase; source branch `claude/phase2-1a-pricing-contract`
+preserved; merge tree `c407802…` byte-identical to the reviewed head).
+Pre-merge CI 33134459093 succeeded at the exact reviewed head `f6267e4`;
+post-merge CI 33135513855 and Pages 33135513339 both succeeded at exactly
+`95935ab`; nine served artifacts returned HTTP 200 byte-identical to the
+merged blobs (`index.html`, `data/store-config.json`, `data/quiz.json`,
+`data/mattresses.json`, both dictionaries, `data/allowed-hosts.js`, the demo
+`store-config.json`, `incoming/lacks_pricing.json`); served `index.html` blob
+`ee39112…` unchanged from the `90ecd04` baseline (the slice touched no
+application markup); served pricing DARK — `enabled:false`,
+`displayEnabled:false`, all five surfaces false, `products`/`formulas` empty,
+every business policy explicitly unapproved; served `gasUrl` blank; the
+Daybreak promotions envelope inert and byte-untouched. **The reconciliation
+baseline advances from `90ecd04` to `95935ab`** — an application-byte merge
+(`data/store-config.json` is consumed at runtime). **Owner ruling recorded
+2026-08-28** (the dated block under 2.1): final business and legal approval
+occurs only at the end of the project immediately before live deployment and
+does not block dark development, provisional data, internal computation,
+previews, testing, or completion of earlier roadmap items. Recorded under it
+as **implementation governance derived from the ruling, not owner speech**:
+the Phase 2 governance model splits **technical verification** (fail-closed,
+dark) from **live-output approval** (gates `displayEnabled`, enabled surfaces
+and live deployment only); **2.1's completion criterion is revised under that
+derived model** — 2.1 may close after 2.1b proves the complete dark mechanism
+with governed non-shipping fixtures, since the ruling's direct terms state
+final approval does not block completion of earlier roadmap items; and **2.2
+moves 🔒 → ◐** — the activation output is gated to the final end-of-project
+deployment stage while its listed Proceeds preparation (non-live only)
+continues, the mark moved by owner direction of 2026-08-28 with the
+live-output gate unweakened.
+*(Codex review corrections of 2026-08-28, applied on the close-out branch in
+two rounds. Round one: the owner's direct ruling is the business-and-legal
+approval timing — the native-review and MAP-clearance controls remain
+activation requirements where already specified, their precise timing being
+implementation governance, not quoted owner speech; dark verification still
+requires governed source identity, allowlisting, freshness and integrity;
+the provisional-material rule permits clearly identified non-shipping
+preview/test fixtures; the 2.2 lock is on activation, not on non-live
+preparation; and the 2.1b resolver is respecified as independent structured
+axes, not one combined enum. Round two: residual over-attribution corrected
+— the derived consequences, the fixture-based completion criterion included,
+are governance under the ruling, never "owner amendment" language; the price
+axis distinguishes technically invalid data (no numeric result, ever) from
+technically valid but activation-unapproved data (may resolve numerically in
+governed non-shipping fixtures while approval/presentation eligibility stays
+false and nothing renders live), with the unavailability table, 2.1 exit and
+2.1b tests updated to match; and 2.2's mark is resolved to the legend's ◐
+model with complete Gated and Proceeds blocks. Round three: the stale case is
+made coherent with axis independence — staleness is removed from the
+technically-invalid list and is a cadence/freshness-axis outcome: an
+otherwise technically valid amount may resolve **only as inert internal
+data** while the axis reports *stale* and every fail-closed consumer
+(financing calculation, presentation, email payloads, analytics,
+persistence, live output) refuses it, so no customer-visible numeric result
+exists in any state; build-time admission is unchanged — validation still
+refuses a stale entry in an enabled production configuration; the resolver
+definition, fixtures, 2.1 exit and the table carry the same contract, with
+the stale independent-axis split a required 2.1b test case.)* Slice 2.1b (the dark resolver) is now specified under the gate split
+— design only, **NOT started**; `displayEnabled` and every surface remain
+false throughout 2.1 and the CI operating-state lock stands. PR #69 is not
+reopened: the merged validator's approvals-on-`enabled` binding and the
+`exactPromotionsEnabled:true` formula cross-gate are recorded as superseded
+and re-point in 2.1b; the shipped all-dark production state satisfies both
+the old and the new model, so nothing merged is invalidated. Item 1.4
+unchanged (⏳, deferred matrix); standing gates unchanged: showroom NO,
+Spanish provisional, forced-colors before showroom, live email off with
+`gasUrl` blank, `Code.gs` undeployed. The previous revision, 2026-08-27,
+recorded **Phase 2.1 opened** by owner directive after
 Phase 1 was found to have no unblocked engineering left; **slice 2.1a** —
 the dark pricing contract (`incoming/lacks_pricing.json` → workbook Pricing
 tab → `store-config.pricing`, shipped `enabled:false` / `displayEnabled:false`
@@ -284,18 +362,26 @@ owner-approved scoring change they carried.)*
 `main` when this document's phase statuses were written, the merge commit of
 PR #16 (2026-08-05). It is **not** current `main`. GitHub state is
 authoritative; a local checkout never is.
-**Reconciliation baseline:** `90ecd04942615bb07fd4504682eceb1bb5601874` — GitHub
-`main` after PR #67; the PR #67 merge commit (2026-08-26, the item 1.4
-close-out repairs — an application-byte merge).
+**Reconciliation baseline:** `95935abe8493f22e99b7881e1abdb7c7f4deb5cd` — GitHub
+`main` after PR #69; the PR #69 merge commit (2026-08-28, the slice 2.1a dark
+pricing contract — an application-byte merge).
 
 **Why the baseline moved, and what it skipped.** The previous baseline was
-**`342ae2f`**, from **PR #65** (2026-08-25, the item 1.4 Sleep System
-presentation). **PR #66** (the item 1.4 merge close-out) was
-**documentation-only** — one file, `docs/rebuild-roadmap.md`, no application
-byte — and did **not** advance it. **PR #67** changed application bytes
-(`index.html` and the generated demo bundle) and therefore **advanced the
-baseline to `90ecd04`**. The rule is unchanged: the baseline moves only on an
-application-byte merge, never on a documentation-only one.
+**`90ecd04`**, from **PR #67** (2026-08-26, the item 1.4 close-out repairs).
+**PR #68** (the item 1.4 close-out merge record) was **documentation-only** —
+one file, `docs/rebuild-roadmap.md`, no application byte — and did **not**
+advance it. **PR #69** changed application bytes (`data/store-config.json`,
+consumed by the app at load, plus the generated demo bundle's config —
+`index.html` itself untouched, blob `ee39112…` unchanged) and therefore
+**advanced the baseline to `95935ab`**. The rule is unchanged: the baseline
+moves only on an application-byte merge, never on a documentation-only one —
+this revision's own close-out PR is documentation-only and does not move it.
+
+*(Earlier step, preserved: before PR #67 the baseline was `342ae2f`, from
+**PR #65** (2026-08-25, the item 1.4 Sleep System presentation); **PR #66**
+(the item 1.4 merge close-out) was documentation-only and did not advance it;
+PR #67 changed application bytes (`index.html` and the generated demo bundle)
+and advanced it to `90ecd04`.)*
 
 *(Earlier step, preserved: before PR #65 the baseline was `f87194a`, from
 PR #63 (2026-08-25, the item 1.3 inherited reason-gate containment); PR #64
@@ -308,7 +394,9 @@ documentation-only — each changed exactly one file, `docs/rebuild-roadmap.md`,
 and moved no application byte, so `8aeb6b3` remained the last
 application-byte baseline until PR #63, the first application change since.)*
 
-The prior baseline was `342ae2f153bb733145837e8e9ba7b9c347d8f908` (PR #65,
+The prior baseline was `90ecd04942615bb07fd4504682eceb1bb5601874` (PR #67,
+2026-08-26, the item 1.4 close-out repairs), before it
+`342ae2f153bb733145837e8e9ba7b9c347d8f908` (PR #65,
 2026-08-25, the item 1.4 Sleep System presentation), before it
 `f87194a53de6163d89bc07979ebf2912d54b9f36` (PR #63,
 2026-08-25, the item 1.3 inherited reason-gate containment), before it
@@ -373,7 +461,10 @@ with two P2 findings fixed as C13/C14 and round 3 clean at the reviewed head;
 the real Windows forced-colors gate owner-run and owner-attested PASS). No
 Phase 1 slice is currently in progress; the next item is the owner's call
 (see the sequence at the end of this document) and nothing is authorized by
-this revision.
+this revision. *(2026-08-28: the active item is Phase 2.1 — opened by Blake
+2026-08-27, slice 2.1a merged as `95935ab`, slice 2.1b specified under the
+2026-08-28 approval-timing ruling and its recorded governance model, and NOT
+started. No Phase 1 item is reopened by that work.)*
 *(An earlier revision of this paragraph said Slice 5 was `⬜`, approved to build
 and not started; it began on its own branch — draft PR #53, head `6decbef` —
 before 2026-08-21. The gate is Slice 5's prerequisite in the approved order,
@@ -3676,7 +3767,7 @@ device are different designs.
 > Phase 2 gate below stands untouched, and `incoming/lacks_catalog_selection.json`
 > remains exactly as the warning box in 2.1 describes it.
 
-### 2.1 — The dark framework 🔨 (opened by Blake 2026-08-27; slice 2.1a on branch `claude/phase2-1a-pricing-contract`, not merged)
+### 2.1 — The dark framework 🔨 (opened by Blake 2026-08-27; slice 2.1a MERGED 2026-08-28, PR #69 → `95935ab`; completion criterion revised under the governance model derived from the 2026-08-28 ruling — see the dated blocks below)
 
 *(2026-08-27 — **Phase 2.1 opened.** Blake explicitly authorized opening 2.1
 after Phase 1 was found to have no unblocked engineering left (1.3 ◐ with
@@ -3770,10 +3861,174 @@ carries an explicitly authorized, current financing block (production
 financing stays exactly as shipped, `exactPromotionsEnabled` false) so the
 formula cross-gate is exercised end to end. Sweep manifest 483 → 488.
 
+**Merged — recorded 2026-08-28.** PR #69 merged 2026-08-28 02:18:19Z as merge
+commit `95935abe8493f22e99b7881e1abdb7c7f4deb5cd` (parents
+`fc61a262d67d7c656a32f4f735fcebfd98ad6ce0` +
+`f6267e411979a93854585b7d1a972e63eedbf0b3`; merge, not squash or rebase;
+source branch `claude/phase2-1a-pricing-contract` preserved; merge tree
+`c407802…` byte-identical to the reviewed head, which carries all three slice
+commits `e083b44` → `20645ff` → `f6267e4`). Pre-merge CI 33134459093 succeeded
+at the exact reviewed head; post-merge CI 33135513855 and Pages 33135513339
+both succeeded at exactly `95935ab`. Nine served artifacts returned HTTP 200
+byte-identical to the merged blobs; served `index.html` blob `ee39112…` is
+unchanged from the `90ecd04` baseline (no application markup touched); the
+served `store-config.json` carries the pricing block exactly as authored —
+`enabled:false`, `displayEnabled:false`, all five surfaces false,
+`products: []`, `formulas: []`, `purchaseAssessment.policy:
+"runtime-transaction-amount"`, freshness/sourcePolicy/presentation all
+explicitly unapproved; served `gasUrl` blank; the Daybreak promotions envelope
+inert (`activeScenario: null`, `scenarios: {}`) and byte-untouched; production
+`financing.exactPromotionsEnabled` false as shipped. The reconciliation
+baseline advances from `90ecd04` to `95935ab` — an application-byte merge.
+
+**Owner ruling — recorded 2026-08-28 (approval timing).**
+Blake ruled: **final business and legal approval occurs only at the end of the
+project, immediately before live deployment. It does not block dark
+development, provisional data, internal computation, previews, testing, or
+completion of earlier roadmap items.** That timing statement is the owner's
+direct ruling. The numbered model below is the Phase 2 governance revision
+recorded under it — **implementation governance, not quoted owner speech**:
+the existing native-review, MAP-clearance and other operational controls
+remain activation requirements where already specified, and their precise
+timing is implementation governance.
+
+**The revised Phase 2 governance model — technical verification separated
+from live-output approval:**
+
+1. `pricing.enabled` may support the dark resolver without final business,
+   legal, native-review or MAP approval.
+2. Technical source, identity, freshness and formula-integrity checks still
+   fail closed. Dark verification still requires **governed source identity,
+   host allowlisting, freshness and integrity** — technical source
+   authorization is NOT deferred to deployment.
+3. Final business and legal approval — and the existing native-review and
+   MAP-clearance activation requirements, where already specified — gate
+   `displayEnabled`, enabled surfaces and live deployment **only**.
+4. `exactPromotionsEnabled: false` prevents live exact-term **output**; it
+   must not prevent **validation** of a dark formula artifact.
+5. Provisional material must remain explicitly labelled pending / not
+   approved. It **may** appear in clearly identified NON-SHIPPING preview or
+   test fixtures and harnesses; it must **not** appear in the shipped
+   customer experience, production email payloads, analytics, persistence,
+   or live deployment, and must never be represented as approved. "Must not
+   render" means the shipped/live customer surfaces — it is not a ban on
+   controlled previews.
+6. `displayEnabled` and every surface remain false throughout Phase 2.1 (the
+   CI operating-state lock stands, permanent until 2.2 activation).
+7. **Phase 2.1 may close after 2.1b proves the complete dark mechanism with
+   governed non-shipping fixtures; real production prices and the activation
+   approvals are not required for dark-framework completion.** This follows
+   from the ruling's direct terms — final approval does not block completion
+   of earlier roadmap items — and revises the completion criterion in "What
+   2.1a is NOT" as implementation governance derived under that ruling, not
+   as separately spoken owner text.
+8. Phase 2.2's **activation output** is gated to the **final end-of-project
+   deployment stage** — the item's mark is ◐ under the legend's
+   gated-output model (see 2.2's Gated and Proceeds blocks). Non-live 2.2
+   preparation — disabled implementation, isolated previews, automated tests
+   and other work that ships no customer-visible output — may proceed
+   earlier so the roadmap can continue. Only setting `displayEnabled` or any
+   customer surface true, treating provisional content as approved, and live
+   deployment require the final approval; production surfaces stay false
+   until that gate.
+
+**Effect on the merged 2.1a contract (PR #69 is NOT reopened or altered).**
+Two shipped validator bindings are recorded as superseded under the revised
+governance model above and re-point in slice 2.1b: (a) `validate_pricing`
+requires ownership, MAP clearance and approved ES review **when `enabled`** —
+under the split those approvals re-bind to the activation set
+(`displayEnabled`, enabled surfaces, live deployment), remaining activation
+requirements exactly where already specified, while `enabled` admits the dark
+resolver on the technical checks alone; (b) a formula artifact is admitted
+**only under
+`exactPromotionsEnabled: true`** — under the split that flag gates live
+exact-term output only, and a dark formula artifact validates on its technical
+integrity (verified/fresh/allowlisted financing configuration and plan under
+the FINANCING source policy, `calculationMode` match, complete named inputs,
+verified cadence) with `exactPromotionsEnabled` false. Until 2.1b lands, the
+merged validator remains the enforced contract; the shipped all-dark,
+all-empty, all-unapproved production state satisfies both the old and the new
+model, so nothing merged is invalidated and no CI lock weakens. Every
+fail-closed technical check (per-entry `verifiedAt` + `sourceUrl` +
+`verifiedBy`, dual host-allowlist agreement, injected-clock freshness, integer
+minor-unit money, per-entry twelve-field clearance scope, strict nested-key
+rejection, the transaction-amount refusal) carries forward unchanged.
+
+**Slice 2.1b — the dark resolver (designed under the 2026-08-28 gate split;
+NOT started).** Runtime code in `index.html`: a pure, deterministic resolver
+taking product/SKU/size identity and an optional runtime transaction amount
+(never configuration — absent input means purchase-threshold status
+`unknown`), returning **independent structured axes, not one combined enum**:
+(1) price availability/resolution; (2) financing calculation availability,
+including *quote-only*; (3) purchase-threshold status from the explicit
+runtime transaction amount; (4) cadence/freshness; (5)
+approval/presentation eligibility. **A resolved price must not imply that
+calculation, threshold, cadence or presentation eligibility is also
+resolved** — the never-conflated table below generalizes to every pair of
+axes. On the price axis, technically invalid data — missing, unverified, or
+from an unauthorized source — yields **no numeric result** in any context.
+**Staleness is not invalidity**: an otherwise technically valid amount whose
+evidence has aged past the governed cadence may resolve **only as inert
+internal data** — the cadence/freshness axis reports *stale*, and every
+fail-closed consumer (financing calculation, presentation, email payloads,
+analytics, persistence, live output) is prohibited from using it, so no
+customer-visible numeric result exists in any state. Build-time admission is
+unchanged: validation still refuses a stale entry in an enabled production
+configuration — the runtime freshness axis governs data that goes stale
+after admission or lives in dark/fixture states. Technically valid but
+activation-unapproved (provisional) data **may resolve numerically inside
+governed non-shipping fixtures or harnesses**, with the
+approval/presentation-eligibility axis reporting
+not-eligible and nothing shipping or rendering live. The resolver computes internally and
+renders **nothing** — `displayEnabled` and every surface stay false, and DOM
+silence in every state is pinned by tests. Scope: (i) the resolver and its
+isolation proofs — scoring/recommendation isolation in the pattern of
+`tests/scoring_isolation_check.mjs`, DOM silence on shipped customer
+surfaces, and **no provisional material in production email payloads,
+analytics or persistence** (extending the payload pins); (ii)
+the validator re-binding described above — approvals move to the activation
+set, `enabled` becomes the technical dark-resolver admission, the formula
+cross-gate drops its `exactPromotionsEnabled: true` condition while every
+other financing-governance check stays fail-closed, and
+`tests/exact_promotions_policy_check.mjs` continues to pin that false means no
+live exact-term output; (iii) explicit pending / not-approved labelling on
+all provisional material — permitted in clearly identified non-shipping
+preview/test fixtures and harnesses, pinned out of the shipped customer
+experience, production email payloads, analytics and persistence, and never
+representable as approved; (iv) **governed
+non-shipping fixtures** exercising the complete mechanism end to end through
+the real converter, validator and resolver under injected clocks — populated
+prices, a formula artifact validated dark, threshold outcomes with and without
+a runtime amount, both unavailability states, emergency disable, and —
+**as their own required test cases** — the two independent-axis splits:
+(a) a technically valid but activation-unapproved price resolving numerically
+while approval/presentation eligibility reports not-eligible and no shipped
+surface renders; (b) a technically valid but stale amount resolving only as
+inert internal data while the cadence/freshness axis reports *stale* and
+every fail-closed consumer refuses it; alongside their converse, technically
+invalid data yielding no numeric result on any axis
+— while production `incoming/lacks_pricing.json` stays exactly as shipped
+(dark, empty, unapproved) and `incoming/lacks_catalog_selection.json` stays
+ring-fenced and unconsumed. Exit for the slice and for 2.1: deterministic
+proof of the complete dark mechanism on those fixtures with zero price or
+payment output on any shipped/live customer surface in any state — per model
+point 7, that closes 2.1 without real production prices and without the
+activation approvals.
+
 **What 2.1a is NOT.** Not 2.1 completion: under this document, 2.1 stays 🔨
 until approved ownership, source, legal/MAP and cadence inputs exist and at
 least one verified size-specific price traverses the real pipeline — unless
-Blake later explicitly amends this item. No runtime code (the JS resolver and
+Blake later explicitly amends this item. *(Revised 2026-08-28, as
+implementation governance derived under the owner's approval-timing ruling —
+whose direct terms state that final business/legal approval does not block
+completion of earlier roadmap items, so a completion criterion requiring
+those approvals cannot stand. The criterion is now model point 7 above: 2.1
+may close after 2.1b proves the complete dark mechanism with governed
+non-shipping fixtures. Real production prices, ownership approval, final
+business/legal approval and the activation-time clearances are end-of-project
+activation inputs, not 2.1 completion requirements — while governed source
+identity, allowlisting, freshness and integrity remain dark technical
+requirements, fail-closed. The rest of this paragraph stands.)* No runtime code (the JS resolver and
 its isolation proofs are slice 2.1b); no periodic-payment arithmetic (Option
 A); no change to the accessory "From $" surface or its data (an owner decision
 — see the register); `lacks_catalog_selection.json` stays unconsumed. Standing
@@ -3796,18 +4051,46 @@ payment output in any state:
 - freshness and cadence control, and emergency disable;
 - plan eligibility, calculation mode, and the plan's actual cadence;
 - the price-unavailable and quote-only states as **separate** outcomes;
-- a missing, stale or unapproved price producing **no numeric result**;
+- **technically invalid** price data — missing, unverified, or from an
+  unauthorized source — producing **no numeric result**;
+- **technically valid but stale** data resolving, at most, as **inert
+  internal data**: the cadence/freshness axis reports *stale* and every
+  fail-closed consumer — financing calculation, presentation, email
+  payloads, analytics, persistence, live output — refuses it, so no
+  customer-visible numeric result exists;
+- **technically valid but activation-unapproved** (provisional) data resolving
+  numerically **only inside governed non-shipping fixtures or harnesses**,
+  with the approval/presentation-eligibility axis false and nothing shipped
+  or rendered live — proven as its own tested case, never conflated with
+  technical invalidity;
 - validation and fail-closed behaviour on every one of the above.
 
-**Two unavailability states, never conflated:**
+*(Under the governance model derived from the 2026-08-28 ruling, this exit is
+proven with **governed non-shipping fixtures** traversing the real pipeline —
+real production prices and the activation approvals (final business/legal
+approval and the activation-time operational clearances) are not required for
+dark-framework completion; they gate 2.2 activation at the end-of-project
+deployment stage. The fixtures themselves stay under governed source
+identity, allowlisting, freshness and integrity — technical authorization is
+not deferred.)*
+
+**Unavailability and eligibility states, never conflated:**
 
 | Condition | State | What is shown |
 |---|---|---|
-| The **product price** is missing, stale, or unapproved | *price unavailable* | No numeric price and no payment result. No estimate from a substitute price, and never a figure inferred from another size. |
-| The **plan** has no approved payment formula, but an approved price exists | *quote-only plan* | The price may be shown per 2.2; no calculated periodic payment, because the **formula** is missing — not the price. |
+| The **product price** is technically invalid — missing, unverified, or from an unauthorized source | *price unavailable* | No numeric price and no payment result, in any context. No estimate from a substitute price, and never a figure inferred from another size. |
+| The price is **technically valid but stale** — its evidence has aged past the governed cadence | *stale — consumption prohibited* | Nothing a customer can see, in any state: no financing calculation, no presentation, no email payload, no analytics, no persistence, no live output. The amount may exist only as **inert internal data**, and the cadence/freshness axis reports *stale*. |
+| The **plan** has no valid payment formula, but a resolved price exists | *quote-only plan* | The price may be shown only per 2.2 activation; no calculated periodic payment, because the **formula** is missing — not the price. |
+| The price is **technically valid but activation-unapproved** (provisional) | *eligibility withheld* | Nothing on any shipped/live customer surface. Inside clearly identified governed non-shipping fixtures and harnesses the price axis may resolve numerically, labelled pending; the approval/presentation-eligibility axis stays false. |
 
 "Quote-only" is a property of a plan. It is never a fallback label for an
-unverified price.
+unverified price. "Eligibility withheld" is a property of approval state,
+never of technical validity — it must not be conflated with *price
+unavailable*, and it never licenses a live render. "Stale" is a
+cadence/freshness outcome, not invalidity: the axes stay independently
+reported, and their independence is bounded by fail-closed consumption — an
+inert internal value never reaches a customer, an email payload, analytics,
+persistence or a live deployment through any consumer.
 
 > **⚠️ `incoming/lacks_catalog_selection.json` is discovery evidence, not a price
 > source.** It contains 26 Queen-model observations carrying SKU, a promotional
@@ -3824,20 +4107,53 @@ unverified price.
 > allowlisted source, and its prices are promotional — the kind that move on a
 > merchandising calendar. **Never infer another size's price from Queen.**
 >
-> Phase 2.1 still requires approved ownership, an approved source, freshness and
-> cadence control, size identity, legal and MAP clearance, validation, and
-> emergency-disable behaviour.
+> Phase 2.1 still requires the full fail-closed mechanism even for dark data —
+> governed source identity and host allowlisting, freshness and cadence
+> control, size identity, validation, and emergency-disable behaviour;
+> technical source authorization is not deferred to deployment. Ownership
+> approval, final business/legal approval and the activation-time clearances
+> (MAP, native review) gate live output at the end-of-project deployment
+> stage (the 2026-08-28 ruling and its recorded governance model), and
+> nothing in this file supplies any of it — the ring-fence stands in full.
 
 **Validator relaxation is gated too.** The shipped invariant that no product-level
 payment is calculated or shown is enforced by validation. Split it: 2.1 may relax
 what is **computed**; what may be **displayed** stays enforced until 2.2 is
 approved. Otherwise the dark phase silently weakens a shipped guarantee ahead of
-its gate.
+its gate. *(The 2026-08-28 ruling formalizes this same split across the whole
+Phase 2 governance model.)*
 
-### 2.2 — Activation 🔒
+### 2.2 — Activation ◐ (the activation output is gated to the final end-of-project deployment stage — owner ruling 2026-08-28)
 
-Approver: Blake, plus written business and legal approval. Hardware and browser
-verification required.
+**Gated** — approver: Blake, plus written business and legal approval, taken
+only at the final end-of-project deployment stage immediately before live
+deployment (the owner's 2026-08-28 ruling), with hardware and browser
+verification at the same stage. What may not ship or merge until then —
+each a property checkable in a diff, and the first two named by CI's
+operating-state lock: `pricing.displayEnabled: true`; any `pricing.surfaces`
+key set true; any customer-facing render of a price or payment figure; any
+provisional material represented as approved (a pending label removed, or an
+approval status set approved, without the recorded approvals); any live
+deployment carrying one of the above.
+
+**Proceeds:** non-live preparation only — disabled implementation behind the
+false flags, isolated previews and harnesses clearly identified as
+non-shipping, automated tests, and governed non-shipping fixture work under
+the 2.1 model. Per the legend's guards on ◐, none of it may encode the
+activation outcome, ship placeholder content standing in for it, or weaken a
+shipped fail-closed guarantee; production surfaces stay false throughout.
+
+*(Mark rationale, 2026-08-28. 🔒 reads "no part of this item may start,"
+which contradicted the ruling-derived allowance for non-live preparation.
+Under the legend's own model the correct mark is ◐ — a gated production
+output with listed Proceeds work — so the mark moved 🔒 → ◐ by the owner's
+direction of 2026-08-28 applying the Codex re-review. The activation
+output's approval requirement is unchanged and not weakened.)*
+
+The gated approval's absence does not block dark development, provisional
+data, internal computation, previews, testing, or completion of earlier
+roadmap items — and Phase 2.1 closing on the dark mechanism does not advance
+this item.
 
 Only then: an approved cash-price or price-range anchor; periodic-payment
 illustrations **only** for plans with approved formulas; the plan's **actual
@@ -3852,6 +4168,12 @@ one card. Keep the payment-choice structure stable rather than varying it by
 tier or by customer interest *(written when 1.5 carried the agenda model; the
 rule transfers unchanged to the 2026-08-14 exploration/preference model — the
 path list and its order do not vary by tier or by recorded preference)*.
+
+**Exit:** the activation output ships — every "Only then" condition met, and
+the written business and legal approval plus the hardware and browser
+verification recorded on this item. **Excluded:** everything under Proceeds
+closes nothing here — no dark implementation, preview, test or fixture,
+however complete, advances or closes 2.2.
 
 ---
 
@@ -3937,13 +4259,15 @@ for approved work.
 ## Open decisions register
 
 Everything here is **unresolved**. An item's absence from this list is not
-approval; its presence is a bar on proceeding.
+approval; its presence is a bar on proceeding — on **adopting or shipping the
+decision**, per the legend's register rule; it does not bar prototypes or
+work listed under a ◐ item's Proceeds line.
 
 | Decision | Mark | Approver | Unblocked by |
 |---|---|---|---|
 | Auto-advance | 🔒 | Blake | Observed sessions |
 | Review-screen compression or removal | 🔒 | Blake | Observed sessions. Review otherwise stays as it is; this does not hold 1.6 open |
-| Phase 2.2 price/payment activation | 🔒 | Blake + business/legal | Written approval |
+| Phase 2.2 price/payment activation | ◐ | Blake + business/legal | Written approval, taken only at the final end-of-project deployment stage immediately before live deployment (owner ruling 2026-08-28). It gates `displayEnabled`, enabled surfaces and live deployment only — its absence does not block dark development, provisional data, internal computation, previews, testing, completion of earlier roadmap items, or non-live 2.2 preparation under 2.2's Proceeds list (disabled implementation, isolated previews, automated tests). Production surfaces stay false until the gate — see 2.2's Gated block for the checkable properties |
 | Scoring case-fold (3.1) | 🔒 | Blake | Approval + enumerated impact |
 | Quiz-tag vocabulary gap (3.2) | 🔒 | Blake | Populate-or-retire decision |
 | Global maxScore / cross-tier ranking / tier merge or removal / threshold, cap, back-fill (3.3) | 🔒 | Blake | Evidence. **Does not gate a preserving Phase 1 tier-navigation change.** *(2026-08-21: a cross-tier "highest-fit" marker — raised as a trust question — is this row, because it changes what the customer is told about fit; see "Tier presentation (trust)" for the presentation-only half.)* |
@@ -4137,11 +4461,20 @@ document, not here.
    1.3's Proceeds list.
 10. 🔨 **Dark pricing/payment foundation** — 2.1. *(Opened by Blake
     2026-08-27; slice 2.1a — contract, validator and CI locks, no
-    `index.html` change — on branch `claude/phase2-1a-pricing-contract`,
-    not merged. The item stays 🔨 until approved ownership/source/legal/MAP/
-    cadence inputs and at least one verified size-specific price traverse
-    the real pipeline.)*
-11. 🔒 **Activate prices and payments** — 2.2, after business and legal approval.
+    `index.html` change — **merged 2026-08-28 as `95935ab`** (PR #69; CI and
+    Pages verified at exactly that commit; nine served artifacts
+    byte-identical). Completion criterion revised under the governance model
+    derived from the 2026-08-28 ruling: the item stays 🔨 until slice 2.1b
+    proves the complete dark mechanism with governed non-shipping fixtures —
+    real production prices and the activation approvals are activation
+    inputs, not 2.1 completion requirements, while governed source identity,
+    allowlisting, freshness and integrity remain dark technical
+    requirements. 2.1b is designed under the gate split, NOT started.)*
+11. ◐ **Activate prices and payments** — 2.2. The activation output is gated
+    to the final end-of-project deployment stage, its approval — written
+    business and legal — taken there (owner ruling 2026-08-28); non-live
+    preparation proceeds under 2.2's Proceeds list, and production surfaces
+    stay false until the gate.
 12. 🔒 **Structural scoring and tier changes last** — Phase 3.
 
 ---
