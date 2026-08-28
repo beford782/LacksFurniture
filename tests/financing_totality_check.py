@@ -50,6 +50,12 @@ NAN, INF, NINF = float("nan"), float("inf"), float("-inf")
 JSON_VALUES = [
     ("null", None), ("true", True), ("false", False),
     ("zero", 0), ("negative", -1), ("float", 1.5), ("huge int", HUGE),
+    # 1e308 is a FINITE JSON float whose scaled arithmetic (x * 100)
+    # overflows to infinity — the class the Codex re-review of PR #71 found
+    # escaping validate_financing as OverflowError through round() on
+    # minimumPurchase; the huge INT here scales without overflow in Python,
+    # which is exactly why this class needed its own lexicon probe.
+    ("huge float", 1e308),
     ("NaN", NAN), ("Infinity", INF), ("-Infinity", NINF),
     ("empty string", ""), ("string", "bad"),
     ("empty array", []), ("array", ["x"]), ("nested array", [[["deep"]]]),

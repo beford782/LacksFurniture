@@ -2989,8 +2989,11 @@ def validate_financing(config: dict, *, allowed_source_hosts=None) -> Validation
         # Infinity matter beyond tidiness: json.dumps writes them as the bare
         # tokens NaN / Infinity, which are NOT JSON, so such a value in
         # data/store-config.json yields a config the browser's JSON.parse
-        # refuses — the app would fail to load at all. No upper bound is
-        # imposed: a business maximum is Blake's call, not this validator's.
+        # refuses — the app would fail to load at all. A TECHNICAL
+        # representability ceiling IS imposed (safe-integer minor units, the
+        # currency-precision branch below) so the 2.1b resolver's exact
+        # conversion covers every admitted value; no separate BUSINESS
+        # maximum is introduced — that remains Blake's call.
         mp = plan.get("minimumPurchase")
         if mp is not None and not _finite_number(mp):
             r.add_error(f"{tag}: minimumPurchase {fin_headline.short_repr(mp)} must be "
@@ -2998,8 +3001,16 @@ def validate_financing(config: dict, *, allowed_source_hosts=None) -> Validation
         elif mp is not None and mp < 0:
             r.add_error(f"{tag}: minimumPurchase {fin_headline.short_repr(mp)} "
                         f"out of range (must not be negative)")
-        elif mp is not None and (abs(mp * 100 - round(mp * 100)) > 1e-6
-                                 or round(mp * 100) > 9007199254740991):
+        elif mp is not None and (mp * 100 > 9007199254740991
+                                 or abs(mp * 100 - round(mp * 100)) > 1e-6):
+            # Order is TOTALITY-load-bearing (Codex re-review of PR #71 at
+            # b6a3e89): a finite mp can still overflow to +inf when scaled
+            # (1e308 * 100), and round(inf) raises. The safe-integer ceiling
+            # is therefore judged FIRST on the raw scaled value — infinity
+            # exceeds it and short-circuits — so round() only ever runs on a
+            # scaled value at or below the ceiling. Mirrors the resolver's
+            # minorFromMajor, where Math.round(Infinity) is non-throwing and
+            # the same ceiling refuses it.
             # Schema narrowed 2026-08-28 (Codex exact-head review of PR #71,
             # finding 4): a plan minimum is a currency fact, so it must sit at
             # USD currency precision (at most two decimal places) within
@@ -7252,6 +7263,12 @@ def _self_test() -> int:
     check("minimumPurchase beyond safe-integer minor units -> refused",
           any("currency precision" in e for e in
               _fin_with(lambda m: m["plans"][0].__setitem__("minimumPurchase", 1e17)).errors))
+    # Totality regression (Codex re-review of PR #71 at b6a3e89): a finite
+    # JSON number whose SCALED value overflows to infinity (1e308 * 100) must
+    # produce a bounded named error, never an OverflowError out of round().
+    check("minimumPurchase 1e308 -> named minimumPurchase error, NEVER raises (totality)",
+          any("minimumPurchase" in e and "currency precision" in e for e in
+              _fin_with(lambda m: m["plans"][0].__setitem__("minimumPurchase", 1e308)).errors))
     check("minimumPurchase zero (an explicit no-minimum) -> admitted",
           _fin_with(lambda m: m["plans"][0].__setitem__("minimumPurchase", 0)).ok)
 
