@@ -3996,8 +3996,8 @@ from live-output approval:**
    approvals are not required for dark-framework completion.** This follows
    from the ruling's direct terms — final approval does not block completion
    of earlier roadmap items — and revises the completion criterion in "What
-   2.1a is NOT" as implementation governance derived under that ruling, not
-   as separately spoken owner text.
+   2.1a was NOT at merge" as implementation governance derived under that
+   ruling, not as separately spoken owner text.
 8. Phase 2.2's **activation output** is gated to the **final end-of-project
    deployment stage** — the item's mark is ◐ under the legend's
    gated-output model (see 2.2's Gated and Proceeds blocks). Non-live 2.2
@@ -4264,27 +4264,29 @@ every standing blocker are untouched; no pricing is activated, no live
 consumer exists, and the 2.2 breadcrumb stands — the first consumer 2.2
 wires must turn the stale-refusal contract into an executed test.
 
-**What 2.1a is NOT.** Not 2.1 completion: under this document, 2.1 stays 🔨
-until approved ownership, source, legal/MAP and cadence inputs exist and at
-least one verified size-specific price traverses the real pipeline — unless
-Blake later explicitly amends this item. *(Revised 2026-08-28, as
+**What 2.1a was NOT at merge.** Slice 2.1a alone was not Phase 2.1
+completion. The then-current text held 2.1 at 🔨 pending approved ownership,
+source, legal/MAP and cadence inputs and at least one verified size-specific
+price traversing the real pipeline — unless Blake later explicitly amended
+this item. *(That pre-ruling criterion was superseded 2026-08-28, as
 implementation governance derived under the owner's approval-timing ruling —
 whose direct terms state that final business/legal approval does not block
 completion of earlier roadmap items, so a completion criterion requiring
-those approvals cannot stand. The criterion is now model point 7 above: 2.1
-may close after 2.1b proves the complete dark mechanism with governed
-non-shipping fixtures. Real production prices, ownership approval, final
-business/legal approval and the activation-time clearances are end-of-project
-activation inputs, not 2.1 completion requirements — while governed source
-identity, allowlisting, freshness and integrity remain dark technical
-requirements, fail-closed. The rest of this paragraph stands. MET
+those approvals could not stand. The operative criterion became model point
+7 above: 2.1 may close after 2.1b proves the complete dark mechanism with
+governed non-shipping fixtures. Real production prices, ownership approval,
+final business/legal approval and the activation-time clearances are
+end-of-project activation inputs, never 2.1 completion requirements — while
+governed source identity, allowlisting, freshness and integrity remain dark
+technical requirements, fail-closed. That superseding criterion was MET
 2026-08-28: 2.1b merged as `9a1b7f3` and Phase 2.1 is closed — see the
-closure record.)* No runtime code (the JS resolver and
-its isolation proofs are slice 2.1b); no periodic-payment arithmetic (Option
-A); no change to the accessory "From $" surface or its data (an owner decision
-— see the register); `lacks_catalog_selection.json` stays unconsumed. Standing
-gates unchanged: showroom NO; Spanish provisional; forced-colors before
-showroom; live email off with `gasUrl` blank.)*
+closure record.)* 2.1a also shipped no runtime code (the JS resolver and
+its isolation proofs became slice 2.1b, since merged); no periodic-payment
+arithmetic (Option A); no change to the accessory "From $" surface or its
+data (an owner decision — see the register); and
+`lacks_catalog_selection.json` stays unconsumed. Standing gates unchanged:
+showroom NO; Spanish provisional; forced-colors before showroom; live email
+off with `gasUrl` blank.)*
 
 Ship the whole mechanism with nothing rendered: product/SKU/size identity,
 verified prices, canonical source and generation pipeline, price ownership,
