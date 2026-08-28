@@ -1,0 +1,86 @@
+{
+  "_meta": {
+    "note": "NON-SHIPPING test fixture for Phase 2.1 (tests/pricing_contract_check.py). A populated pricing contract that traverses the real pipeline in a temp workbook: canonical envelope -> Pricing tab -> converter build_pricing -> validate_pricing under an INJECTED clock. It never enters incoming/, the committed workbook, data/, or demo/. The single product entry is a deliberately ILLUSTRATIVE Queen price for g6 (Reserve Mayfair Plush) with a placeholder attestation; it is NOT a verified Lacks price and must never be copied into a shipping source. Production pricing.products stays [] until approved ownership/source/legal/MAP/cadence inputs exist (roadmap §2.1).",
+    "clock": "2026-08-27T12:00:00+00:00"
+  },
+  "pricing": {
+    "schemaVersion": 1,
+    "enabled": true,
+    "displayEnabled": false,
+    "currency": "USD",
+    "authority": {
+      "owner": "FIXTURE — placeholder owner (not a real approval)",
+      "role": "merchandising"
+    },
+    "mapClearance": {
+      "status": "cleared",
+      "clearedBy": "FIXTURE — placeholder (not a real clearance)",
+      "clearedAt": "2026-08-26T09:00:00-05:00"
+    },
+    "esReviewStatus": "approved-native-legal-review",
+    "maxAgeDays": 7,
+    "allowedSourceHosts": [
+      "lacks.com",
+      "www.lacks.com"
+    ],
+    "sizes": [
+      "twin",
+      "twin_xl",
+      "full",
+      "queen",
+      "king",
+      "cal_king"
+    ],
+    "surfaces": {
+      "drawer": false,
+      "sleepSystem": false,
+      "results": false,
+      "handoff": false,
+      "sleepPlan": false
+    },
+    "purchaseAssessment": {
+      "basis": "unknown"
+    },
+    "products": [
+      {
+        "productId": "g6",
+        "productKind": "mattress",
+        "sku": "FIXTURE-0001",
+        "size": "queen",
+        "price": {
+          "amountMinor": 369900,
+          "currency": "USD",
+          "kind": "regular"
+        },
+        "evidence": {
+          "status": "retailer-product-page-current",
+          "verified": true,
+          "verifiedAt": "2026-08-26T10:00:00-05:00",
+          "verifiedBy": "FIXTURE — placeholder attestation (not a real verification)",
+          "sourceUrl": "https://www.lacks.com/fixture-product-page"
+        },
+        "window": {
+          "startAt": null,
+          "endsAt": null
+        }
+      }
+    ],
+    "formulas": [
+      {
+        "id": "fixture-fixed-factor",
+        "planId": "synchrony-9-99-72",
+        "mode": "published-fixed-factor",
+        "cadence": "monthly",
+        "cadenceVerified": true,
+        "inputs": [
+          "principalMinor",
+          "publishedPaymentFactor"
+        ],
+        "approvedBy": "FIXTURE — placeholder (not a real approval)",
+        "approvedAt": "2026-08-26T09:30:00-05:00",
+        "sourceUrl": "https://www.lacks.com/financing",
+        "verifiedAt": "2026-08-26T10:00:00-05:00"
+      }
+    ]
+  }
+}

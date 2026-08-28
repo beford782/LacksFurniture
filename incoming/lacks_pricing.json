@@ -1,0 +1,51 @@
+{
+  "_meta": {
+    "editableSource": true,
+    "note": "Canonical Phase 2.1 pricing source (the DARK framework). Rides the workbook Pricing tab as a JSON envelope {\"pricing\": ...} and ships as store-config.json `pricing` (see tools/convert_store_data.py build_pricing). `_meta` is documentation and is NOT shipped. Edit this file, then rebuild: python incoming/build_lacks_workbook.py && python tools/convert_store_data.py incoming/Lacks_Store_Data.xlsx --output-dir . --skip-build-json && python tools/build_black_friday_demo.py",
+    "operatingState": "enabled is FALSE and displayEnabled is FALSE by deliberate operating decision. `products` and `formulas` ship EMPTY: no business-approved price source, price owner, MAP clearance or merchandising cadence exists yet, and incoming/lacks_catalog_selection.json is discovery evidence that must never be copied here (Queen-only, promotional, undated per entry, unapproved — see docs/rebuild-roadmap.md §2.1). Populating `products` requires a named authority.owner/role, mapClearance for brand-maintained prices, a price-specific current-retail evidence status, and one verifiedAt + sourceUrl PER ENTRY — never a size inferred from another size. displayEnabled is a Phase 2.2 output: tools/validation.py refuses true, and CI's operating-state lock names it; lifting either is the 2.2 activation change with Blake's + business/legal approval recorded on the item.",
+    "purchaseThreshold": "A single product price is NEVER the qualifying purchase amount for a financing plan minimum. purchaseAssessment.basis defaults to 'unknown'; a transaction amount must be supplied explicitly (basis 'transaction-amount' + transactionAmountMinor) before any plan-eligibility outcome other than unknown can be derived.",
+    "money": "Amounts are integer MINOR units (cents) with an explicit currency, e.g. amountMinor 369900 = $3,699.00 USD. No floats, no ranges, no 'from' prices.",
+    "verificationLog": []
+  },
+  "pricing": {
+    "schemaVersion": 1,
+    "enabled": false,
+    "displayEnabled": false,
+    "currency": "USD",
+    "authority": {
+      "owner": "",
+      "role": ""
+    },
+    "mapClearance": {
+      "status": "not-cleared",
+      "clearedBy": "",
+      "clearedAt": null
+    },
+    "esReviewStatus": "pending-native-legal-review",
+    "maxAgeDays": 7,
+    "allowedSourceHosts": [
+      "lacks.com",
+      "www.lacks.com"
+    ],
+    "sizes": [
+      "twin",
+      "twin_xl",
+      "full",
+      "queen",
+      "king",
+      "cal_king"
+    ],
+    "surfaces": {
+      "drawer": false,
+      "sleepSystem": false,
+      "results": false,
+      "handoff": false,
+      "sleepPlan": false
+    },
+    "purchaseAssessment": {
+      "basis": "unknown"
+    },
+    "products": [],
+    "formulas": []
+  }
+}

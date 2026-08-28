@@ -461,6 +461,47 @@
       }
     ]
   },
+  "pricing": {
+    "schemaVersion": 1,
+    "enabled": false,
+    "displayEnabled": false,
+    "currency": "USD",
+    "authority": {
+      "owner": "",
+      "role": ""
+    },
+    "mapClearance": {
+      "status": "not-cleared",
+      "clearedBy": "",
+      "clearedAt": null
+    },
+    "esReviewStatus": "pending-native-legal-review",
+    "maxAgeDays": 7,
+    "allowedSourceHosts": [
+      "lacks.com",
+      "www.lacks.com"
+    ],
+    "sizes": [
+      "twin",
+      "twin_xl",
+      "full",
+      "queen",
+      "king",
+      "cal_king"
+    ],
+    "surfaces": {
+      "drawer": false,
+      "sleepSystem": false,
+      "results": false,
+      "handoff": false,
+      "sleepPlan": false
+    },
+    "purchaseAssessment": {
+      "basis": "unknown"
+    },
+    "products": [],
+    "formulas": []
+  },
   "voice": {
     "eyebrow": "FAMILY-OWNED · SOUTH TEXAS · SINCE 1935",
     "headlineMain": "South Texas'",

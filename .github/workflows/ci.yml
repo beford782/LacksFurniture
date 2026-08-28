@@ -56,9 +56,10 @@ jobs:
     # "Full suite (18 checks)") — renaming it here without updating the
     # protection rule in the same change would leave every PR waiting on a
     # check that never reports. The name is a LEGACY LABEL and its number has
-    # been wrong for many slices: the workflow now invokes 43 suites (40
-    # `run: node|python tests/...` steps plus three `tools/*.py --self-test`
-    # steps), item 1.4's Sleep System presentation suite being the newest.
+    # been wrong for many slices: the workflow now invokes 47 verification
+    # steps (42 `run: node|python tests/...` steps, three `tools/*.py
+    # --self-test` steps, the workbook validation and the QR committed-asset
+    # check), Phase 2.1a's pricing totality + contract suites being the newest.
     # The count is stated with its own definition so it can be re-derived
     # rather than trusted; renaming name+protection together is an operator
     # (Blake) action, tracked in the 0.6 PR notes.
@@ -182,6 +183,7 @@ jobs:
           incoming/dreamfinder_quiz.json
           incoming/Lacks_Store_Data.xlsx
           incoming/lacks_promotions.json
+          incoming/lacks_pricing.json
           tools/source_hosts.json
           demo/daybreak-black-friday.json
           demo/black-friday/index.html
@@ -196,6 +198,12 @@ jobs:
 
       - name: financing totality
         run: python tests/financing_totality_check.py
+
+      # Phase 2.1a: validate_pricing is a build gate too, so it must be TOTAL
+      # over JSON (and over its own keyword arguments) — a traceback is not a
+      # refusal an operator can act on.
+      - name: pricing totality
+        run: python tests/pricing_totality_check.py
 
       - name: smoke
         run: python tests/smoke_check.py
@@ -499,6 +507,15 @@ jobs:
       - name: daybreak contract (shipped-state lock + demo bundle)
         run: python tests/daybreak_contract_check.py
 
+      # Phase 2.1a: the DARK pricing framework ships exactly its inert
+      # contract at every layer (canonical source, workbook Pricing tab,
+      # generated store-config, demo bundle) with no numeric price anywhere;
+      # a populated NON-SHIPPING fixture traverses the real pipeline under an
+      # injected clock and is admitted, then refused on five single-field
+      # corruptions; and every sweep find string this slice adds matches once.
+      - name: pricing contract (dark shipped-state lock + fixture traversal)
+        run: python tests/pricing_contract_check.py
+
       # Executes the real localhost demo server against a live loopback
       # socket: loopback-only bind, narrow store-config interception, the
       # launch+72h window, untouched committed files.
@@ -560,6 +577,7 @@ jobs:
           cfg = json.load(io.open("data/store-config.json", encoding="utf-8"))
           fin = cfg.get("financing") or {}
           promos = cfg.get("promotions")
+          pricing = cfg.get("pricing") or {}
           checks = {
               "financing.exactPromotionsEnabled is false":
                   fin.get("exactPromotionsEnabled") is False,
@@ -575,6 +593,22 @@ jobs:
                   promos == {"schemaVersion": 1, "activeScenario": None,
                              "allowedSourceHosts": ["lacks.com"],
                              "scenarios": {}},
+              # Phase 2.1 pre-activation lock, PERMANENT until Phase 2.2:
+              # the pricing framework ships dark. displayEnabled and every
+              # surface stay false, and no product or formula ships. Flipping
+              # displayEnabled is the 2.2 activation change (Blake + written
+              # business/legal approval recorded on the item); populating
+              # products/formulas is the governed path through
+              # validate_pricing and re-pins tests/pricing_contract_check.py
+              # in the same reviewed diff.
+              "pricing ships dark: displayEnabled false, every surface false, "
+              "no product or formula":
+                  pricing.get("displayEnabled") is False
+                  and pricing.get("enabled") is False
+                  and isinstance(pricing.get("surfaces"), dict)
+                  and all(v is False for v in pricing["surfaces"].values())
+                  and pricing.get("products") == []
+                  and pricing.get("formulas") == [],
           }
           bad = [k for k, ok in checks.items() if not ok]
           for k, ok in checks.items():

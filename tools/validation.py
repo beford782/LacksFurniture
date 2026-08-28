@@ -3134,6 +3134,640 @@ def validate_financing(config: dict, *, allowed_source_hosts=None) -> Validation
     return r
 
 
+# -- Pricing validation (Phase 2.1 dark framework) ----------------------------
+# The DARK pricing/payment contract: store-config.json `pricing`, authored at
+# incoming/lacks_pricing.json and carried by the workbook Pricing tab. Phase
+# 2.1 ships the mechanism with `products` and `formulas` EMPTY and both
+# operating switches false; nothing renders. This validator is the build-time
+# admission gate for whatever a retailer later populates. Same contract as
+# validate_financing: TOTAL over JSON, never raises, never mutates.
+#
+# Design rulings carried from the 2026-08-27 Codex review of the 2.1 proposal:
+#   * money is integer MINOR units with an explicit currency — no floats, no
+#     ranges, no "from" prices;
+#   * a single product price is NEVER the qualifying purchase amount for a
+#     plan minimum: the purchase-threshold assessment has its own explicit
+#     basis and defaults to unknown;
+#   * price evidence has its OWN taxonomy of CURRENT retail sources — the
+#     promotions ladder (archives, lender pages, operator-reported history)
+#     is deliberately NOT reused for a price;
+#   * calculation-readiness requires an approved formula ARTIFACT with
+#     complete NAMED inputs and a verified cadence, not merely a mode string;
+#   * unknown keys are rejected at EVERY nested level;
+#   * the forbidden-key scan is narrowed to unsafe numeric-result / formula
+#     fields — it does not ban words a governed disclosure may need;
+#   * freshness is evaluated against an INJECTED clock (`now`) so the gate is
+#     deterministic under test; production passes no clock and gets UTC now.
+#   * displayEnabled=true is refused outright: customer-visible price or
+#     payment output is a Phase 2.2 activation output (Blake + written
+#     business/legal approval recorded on the item). The CI operating-state
+#     lock names the same switch. Neither relaxes without the other.
+
+PRICING_SCHEMA_VERSION = 1
+PRICING_KEYS = frozenset({
+    "schemaVersion", "enabled", "displayEnabled", "currency", "authority",
+    "mapClearance", "esReviewStatus", "maxAgeDays", "allowedSourceHosts",
+    "sizes", "surfaces", "purchaseAssessment", "products", "formulas",
+})
+PRICING_AUTHORITY_KEYS = frozenset({"owner", "role"})
+PRICING_MAP_KEYS = frozenset({"status", "clearedBy", "clearedAt"})
+PRICING_MAP_STATUSES = frozenset({"not-cleared", "cleared"})
+PRICING_CURRENCIES = frozenset({"USD"})
+PRICING_SURFACES = frozenset({"drawer", "sleepSystem", "results", "handoff", "sleepPlan"})
+PRICING_ASSESSMENT_KEYS = frozenset({"basis", "transactionAmountMinor"})
+# The qualifying purchase amount is a TRANSACTION fact supplied explicitly.
+# There is deliberately no "product-price" basis: one product's price is not
+# the purchase, and deriving eligibility from it would present a plan a
+# customer may not qualify for.
+PRICING_ASSESSMENT_BASES = frozenset({"unknown", "transaction-amount"})
+PRICING_PRODUCT_KEYS = frozenset({
+    "productId", "productKind", "sku", "size", "price", "evidence", "window",
+})
+PRICING_PRODUCT_REQUIRED = ("productId", "productKind", "sku", "size", "price", "evidence")
+PRICING_PRODUCT_KINDS = frozenset({"mattress", "accessory"})
+PRICING_PRICE_KEYS = frozenset({"amountMinor", "currency", "kind"})
+PRICING_PRICE_KINDS = frozenset({"regular", "promotional"})
+PRICING_AMOUNT_MINOR_MAX = 10 ** 9          # $10,000,000.00 — a sanity ceiling, not a business rule
+PRICING_EVIDENCE_KEYS = frozenset({"status", "verified", "verifiedAt", "verifiedBy", "sourceUrl"})
+# Price-specific evidence taxonomy: CURRENT, FIRST-PARTY retail sources only.
+# Deliberately disjoint from PROMO_EVIDENCE_STATUSES — an archive capture, a
+# lender page or an operator-reported historical observation can evidence a
+# promotion's terms; none of them is a current retail price.
+PRICE_EVIDENCE_STATUSES = frozenset({
+    "retailer-product-page-current",
+    "retailer-price-list-current",
+})
+PRICING_WINDOW_KEYS = frozenset({"startAt", "endsAt"})
+PRICING_FORMULA_KEYS = frozenset({
+    "id", "planId", "mode", "cadence", "cadenceVerified", "inputs",
+    "approvedBy", "approvedAt", "sourceUrl", "verifiedAt",
+})
+PRICING_FORMULA_REQUIRED = tuple(sorted(PRICING_FORMULA_KEYS))
+# A formula artifact names its inputs; it never carries their VALUES. The
+# published fixed factor stays where it is today (documented in the financing
+# source, stripped at build) — a 2.2 activation supplies it through its own
+# reviewed channel. The mode's required inputs are a closed set, so "complete
+# inputs" is set equality, not a lower bound.
+PRICING_FORMULA_MODES = {
+    "published-fixed-factor": frozenset({"principalMinor", "publishedPaymentFactor"}),
+}
+PRICING_CADENCES = frozenset({"monthly", "biweekly", "weekly"})
+PRICING_SKU_MAX = 64
+# Narrow forbidden-key scan (lowercased, exact): unsafe numeric-result or
+# formula-value fields that must never exist in a pricing document at any
+# depth. Unknown-key rejection already refuses them; this names WHY.
+PRICING_FORBIDDEN_KEYS = frozenset({
+    "monthlypayment", "permonth", "estimatedpayment", "periodicpayment",
+    "paymentamount", "paymentamountminor", "publishedpaymentfactor",
+    "factor", "factorvalue", "inferredamountminor", "derivedamountminor",
+    "fromamountminor", "startingatminor", "pricerange",
+})
+_PRICING_SIZE_WILDCARDS = frozenset({"*", "all", "any", "default"})
+
+
+def _pricing_enum(v, options) -> bool:
+    """Membership of an author value in a closed string set, total over JSON
+    (a list or object value is simply not a member; it must not raise)."""
+    return isinstance(v, str) and v in options
+
+
+def _pricing_clock(now):
+    """The injected clock, or UTC now. A naive datetime is ignored — an
+    instant without an offset cannot be compared with offset-bearing stamps."""
+    from datetime import datetime, timezone
+    if isinstance(now, datetime) and now.tzinfo is not None:
+        return now
+    return datetime.now(timezone.utc)
+
+
+def _pricing_instant(s):
+    """Offset-bearing datetime parsed from s, or None (non-string, unparseable
+    or naive all fail closed to None)."""
+    from datetime import datetime
+    if not isinstance(s, str):
+        return None
+    try:
+        d = datetime.fromisoformat(s)
+    except (ValueError, TypeError):
+        return None
+    return d if d.tzinfo is not None else None
+
+
+def _pricing_future(d, now):
+    from datetime import timedelta
+    return d > now + timedelta(seconds=FINANCING_CLOCK_SKEW_SECONDS)
+
+
+def _pricing_age_exceeds(d, max_age_days, now):
+    return (now - d).total_seconds() > max_age_days * 86400
+
+
+def _pricing_object(r, tag, obj, allowed):
+    """Type-guard obj as an object and reject unknown keys. Returns True when
+    obj is a dict (its recognized keys may still be invalid)."""
+    if not isinstance(obj, dict):
+        r.add_error(f"{tag} must be an object (got {_type_name(obj)})")
+        return False
+    for k in obj:
+        if k not in allowed:
+            r.add_error(f"{tag}: key {fin_headline.short_repr(k)} is not a "
+                        f"recognized {tag} key (recognized: {sorted(allowed)})")
+    return True
+
+
+def _pricing_bool(r, tag, obj, key):
+    """A REAL JSON boolean, present. Returns the value or None."""
+    v = obj.get(key)
+    if type(v) is not bool:
+        r.add_error(f"{tag}.{key} must be a JSON boolean (true/false), not "
+                    f"{fin_headline.short_repr(v)} — the gate is a strict identity "
+                    f"test and anything else fails closed")
+        return None
+    return v
+
+
+def _pricing_str(r, tag, obj, key, *, required):
+    v = obj.get(key)
+    if v is None and not required:
+        return ""
+    if not isinstance(v, str):
+        r.add_error(f"{tag}.{key} must be a string (got {_type_name(v)})")
+        return None
+    if required and not v.strip():
+        r.add_error(f"{tag}.{key} is required and must be non-blank")
+        return None
+    return v
+
+
+def _pricing_stamp(r, tag, value, now, *, what):
+    """Offset-bearing, not materially future. Returns the instant or None."""
+    d = _pricing_instant(value)
+    if d is None:
+        r.add_error(f"{tag}.{what} {fin_headline.short_repr(value)} must be ISO-8601 "
+                    f"with a timezone offset")
+        return None
+    if _pricing_future(d, now):
+        r.add_error(f"{tag}.{what} {fin_headline.short_repr(value)} is materially in "
+                    f"the future (beyond {FINANCING_CLOCK_SKEW_SECONDS}s clock skew) — "
+                    f"verification is an observation and cannot postdate now")
+        return None
+    return d
+
+
+def _pricing_source_url(r, tag, url, canonical_hosts, shipped_hosts, *, what="sourceUrl"):
+    """CURRENT retail evidence URL: safe https on a host allowed by BOTH the
+    canonical (tools/source_hosts.json priceSourceHosts) and the shipped
+    (pricing.allowedSourceHosts) allowlists. Archive captures are refused
+    outright — an archived page is never a current price."""
+    if not isinstance(url, str) or not url.strip():
+        r.add_error(f"{tag}.{what} is required (a safe https URL on an allowlisted host)")
+        return
+    if _is_archive_capture(url):
+        r.add_error(f"{tag}.{what} {fin_headline.short_repr(url)} is a web.archive.org "
+                    f"capture — an archived page is never CURRENT retail price "
+                    f"evidence; point at the live page")
+        return
+    if _split_safe_https(url) is None:
+        r.add_error(f"{tag}.{what} {fin_headline.short_repr(url)} must be a safe "
+                    f"absolute https URL (no credentials, default port)")
+        return
+    if not _is_allowed_source(url, canonical_hosts):
+        r.add_error(f"{tag}.{what} {fin_headline.short_repr(url)} is not allowed by "
+                    f"the canonical price source-host allowlist "
+                    f"(tools/source_hosts.json priceSourceHosts)")
+    if not _is_allowed_source(url, shipped_hosts):
+        r.add_error(f"{tag}.{what} {fin_headline.short_repr(url)} is not allowed by "
+                    f"the shipped pricing.allowedSourceHosts — build and runtime "
+                    f"allowlists must agree")
+
+
+def _pricing_freshness(r, tag, d, max_age_days, now, enabled, *, what):
+    """Age against maxAgeDays: an ERROR when the framework is enabled (stale
+    evidence must not be admitted), a WARNING when disabled (an inert contract
+    must not nag about a historical stamp aging out — mirrors financing)."""
+    if d is None or not isinstance(max_age_days, int) or type(max_age_days) is bool:
+        return
+    if _pricing_age_exceeds(d, max_age_days, now):
+        msg = (f"{tag}.{what} is older than maxAgeDays={max_age_days} — re-verify "
+               f"against the live source before enabling; a stale price is "
+               f"price-unavailable, never a substitute")
+        if enabled:
+            r.add_error(msg)
+        else:
+            r.add_warning(msg)
+
+
+def _scan_pricing_forbidden_keys(r, tag, obj):
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            if isinstance(k, str) and k.lower() in PRICING_FORBIDDEN_KEYS:
+                r.add_error(f"{tag}: key {fin_headline.short_repr(k)} is a numeric "
+                            f"payment-result or formula-value field and may not exist "
+                            f"anywhere in the pricing contract — payment figures are "
+                            f"never stored, and never computed before Phase 2.2")
+            _scan_pricing_forbidden_keys(r, tag, v)
+    elif isinstance(obj, (list, tuple)):
+        for v in obj:
+            _scan_pricing_forbidden_keys(r, tag, v)
+
+
+def _pricing_hosts_arg(r, allowed_source_hosts):
+    """Canonical allowlist argument sanity (mirrors validate_financing): a
+    malformed list allows nothing and is reported, never raised on."""
+    if allowed_source_hosts is None:
+        return []
+    if not isinstance(allowed_source_hosts, (list, tuple)):
+        r.add_error("allowed_source_hosts must be a list of host strings — see "
+                    "tools/source_hosts.json priceSourceHosts; treating the "
+                    "allowlist as empty, which allows no host")
+        return []
+    bad = sum(1 for h in allowed_source_hosts if not isinstance(h, str))
+    if bad:
+        r.add_error(f"allowed_source_hosts contains {bad} non-string entries — see "
+                    f"tools/source_hosts.json priceSourceHosts; they are ignored, so "
+                    f"those hosts allow nothing")
+    return [h for h in allowed_source_hosts if isinstance(h, str)]
+
+
+def _pricing_ids_arg(r, name, value):
+    """Catalog-id argument sanity: None means "not supplied, do not check";
+    anything else must be a collection of id strings. A malformed argument
+    is reported and treated as EMPTY, so every product id is unknown — the
+    validator fails closed rather than raising on its own caller."""
+    if value is None:
+        return None
+    if isinstance(value, (list, tuple, set, frozenset, dict)):
+        return {x for x in value if isinstance(x, str)}
+    r.add_error(f"{name} must be a collection of catalog id strings (got "
+                f"{_type_name(value)}) — treating it as empty, so no productId "
+                f"can be admitted")
+    return set()
+
+
+def _pricing_canonical_sizes():
+    for qid, _qtype, opts in QUIZ_CANONICAL:
+        if qid == "mattress_size":
+            return list(opts)
+    return []
+
+
+def validate_pricing(config, *, allowed_source_hosts=None, mattress_ids=None,
+                     accessory_ids=None, now=None) -> ValidationReport:
+    """Validate store-config `pricing` — the Phase 2.1 dark framework.
+
+    TOTAL over JSON: for any value json.loads can produce, at the top level or
+    anywhere inside the pricing subtree, this returns a ValidationReport with
+    bounded, named errors. It never raises and never mutates its argument.
+
+    `mattress_ids` / `accessory_ids`: the catalog ids the same bundle ships;
+    when supplied (any iterable), every product entry must name one of them.
+    `now`: an offset-bearing datetime for deterministic freshness under test;
+    production passes nothing and is judged against UTC now."""
+    r = ValidationReport()
+    if not isinstance(config, dict):
+        r.add_error("config must be an object")
+        return r
+    p = config.get("pricing")
+    if p is None:
+        return r
+    if not _pricing_object(r, "pricing", p, PRICING_KEYS):
+        return r
+    now_dt = _pricing_clock(now)
+    canonical_hosts = _pricing_hosts_arg(r, allowed_source_hosts)
+
+    sv = p.get("schemaVersion")
+    if type(sv) is bool or sv != PRICING_SCHEMA_VERSION:
+        r.add_error(f"pricing.schemaVersion must be the integer "
+                    f"{PRICING_SCHEMA_VERSION} (got {fin_headline.short_repr(sv)})")
+
+    enabled = _pricing_bool(r, "pricing", p, "enabled") is True
+    display = _pricing_bool(r, "pricing", p, "displayEnabled")
+    if display is True:
+        r.add_error("pricing.displayEnabled must be false — customer-visible price or "
+                    "payment output is a Phase 2.2 activation output (Blake plus "
+                    "written business/legal approval, recorded on the item); Phase "
+                    "2.1 ships the framework DARK, and CI's operating-state lock "
+                    "names this same switch")
+
+    currency = p.get("currency")
+    if not _pricing_enum(currency, PRICING_CURRENCIES):
+        r.add_error(f"pricing.currency {fin_headline.short_repr(currency)} must be one "
+                    f"of {sorted(PRICING_CURRENCIES)}")
+
+    mad = p.get("maxAgeDays")
+    if type(mad) is not int or not 1 <= mad <= 60:
+        r.add_error(f"pricing.maxAgeDays {fin_headline.short_repr(mad)} must be an "
+                    f"integer between 1 and 60 (not a boolean)")
+        mad = None
+
+    # ---- ownership, MAP clearance, bilingual review (required when enabled)
+    auth = p.get("authority")
+    if _pricing_object(r, "pricing.authority", auth, PRICING_AUTHORITY_KEYS):
+        for key in ("owner", "role"):
+            v = _pricing_str(r, "pricing.authority", auth, key, required=enabled)
+            if enabled and v is not None and not v.strip():
+                r.add_error(f"pricing.authority.{key} must be non-blank when pricing "
+                            f"is enabled — a price without a named owner is "
+                            f"unapproved")
+
+    mc = p.get("mapClearance")
+    if _pricing_object(r, "pricing.mapClearance", mc, PRICING_MAP_KEYS):
+        status = mc.get("status")
+        if not _pricing_enum(status, PRICING_MAP_STATUSES):
+            r.add_error(f"pricing.mapClearance.status {fin_headline.short_repr(status)} "
+                        f"must be one of {sorted(PRICING_MAP_STATUSES)}")
+        by = _pricing_str(r, "pricing.mapClearance", mc, "clearedBy",
+                          required=(status == "cleared"))
+        at = mc.get("clearedAt")
+        if status == "cleared":
+            _pricing_stamp(r, "pricing.mapClearance", at, now_dt, what="clearedAt")
+        elif at is not None:
+            r.add_error("pricing.mapClearance.clearedAt must be null unless status "
+                        "is 'cleared'")
+        if enabled and status != "cleared":
+            r.add_error("pricing.mapClearance.status must be 'cleared' when pricing is "
+                        "enabled — brand price-maintenance clearance is a business "
+                        "and legal input, not a validator default")
+        del by
+
+    es = p.get("esReviewStatus")
+    if not _pricing_enum(es, FINANCING_ES_REVIEW_STATUSES):
+        r.add_error(f"pricing.esReviewStatus {fin_headline.short_repr(es)} must be one "
+                    f"of {sorted(FINANCING_ES_REVIEW_STATUSES)}")
+    elif enabled and es != "approved-native-legal-review":
+        r.add_error("pricing.esReviewStatus must be 'approved-native-legal-review' when "
+                    "pricing is enabled — the whole-contract bilingual review gate")
+
+    # ---- allowlists: shipped may never widen canonical; must agree
+    shipped_hosts = []
+    ash = p.get("allowedSourceHosts")
+    if not isinstance(ash, list):
+        r.add_error("pricing.allowedSourceHosts must be an array of host strings")
+    else:
+        for i, h in enumerate(ash):
+            if not isinstance(h, str) or not h.strip():
+                r.add_error(f"pricing.allowedSourceHosts[{i}] must be a non-blank host "
+                            f"string (got {fin_headline.short_repr(h)})")
+                continue
+            if h != h.strip() or h != h.lower():
+                r.add_error(f"pricing.allowedSourceHosts[{i}] "
+                            f"{fin_headline.short_repr(h)} must be trimmed "
+                            f"and lowercase — a runtime allowlist compares literally")
+                continue
+            if canonical_hosts and not any(h == c or h.endswith("." + c)
+                                           for c in canonical_hosts):
+                r.add_error(f"pricing.allowedSourceHosts[{i}] "
+                            f"{fin_headline.short_repr(h)} widens the canonical "
+                            f"price source-host allowlist (tools/source_hosts.json "
+                            f"priceSourceHosts)")
+                continue
+            shipped_hosts.append(h)
+        if enabled and not shipped_hosts:
+            r.add_error("pricing.allowedSourceHosts must be non-empty when pricing is "
+                        "enabled — an empty allowlist allows no source, so no price "
+                        "could ever be admitted")
+
+    # ---- sizes: the quiz's mattress_size option ids, exactly and in order
+    want_sizes = _pricing_canonical_sizes()
+    sizes = p.get("sizes")
+    if sizes != want_sizes or any(type(s) is not str for s in (sizes or [])):
+        r.add_error(f"pricing.sizes must equal the quiz mattress_size option ids "
+                    f"exactly and in order: {want_sizes} (got "
+                    f"{fin_headline.short_repr(sizes)}) — size identity is the app "
+                    f"contract, and a price is keyed by it")
+    size_set = set(want_sizes)
+
+    # ---- surfaces: every surface declared, every one off (dark)
+    surfaces = p.get("surfaces")
+    if _pricing_object(r, "pricing.surfaces", surfaces, PRICING_SURFACES):
+        for name in sorted(PRICING_SURFACES):
+            if name not in surfaces:
+                r.add_error(f"pricing.surfaces.{name} must be declared explicitly "
+                            f"(false) — a missing surface reads as enabled at runtime")
+                continue
+            v = _pricing_bool(r, "pricing.surfaces", surfaces, name)
+            if v is True:
+                r.add_error(f"pricing.surfaces.{name} must be false while "
+                            f"displayEnabled is false — no surface may render a "
+                            f"price before Phase 2.2")
+
+    # ---- purchase-threshold assessment basis
+    pa = p.get("purchaseAssessment")
+    if _pricing_object(r, "pricing.purchaseAssessment", pa, PRICING_ASSESSMENT_KEYS):
+        basis = pa.get("basis")
+        amt = pa.get("transactionAmountMinor")
+        if not _pricing_enum(basis, PRICING_ASSESSMENT_BASES):
+            r.add_error(f"pricing.purchaseAssessment.basis "
+                        f"{fin_headline.short_repr(basis)} must be one of "
+                        f"{sorted(PRICING_ASSESSMENT_BASES)} — a single product price "
+                        f"is never the qualifying purchase amount; eligibility needs "
+                        f"an explicit transaction amount or stays unknown")
+        elif basis == "transaction-amount":
+            if type(amt) is not int or amt <= 0 or amt > PRICING_AMOUNT_MINOR_MAX:
+                r.add_error("pricing.purchaseAssessment.transactionAmountMinor must be "
+                            "a positive integer of minor units when basis is "
+                            "'transaction-amount' (got "
+                            f"{fin_headline.short_repr(amt)})")
+        elif "transactionAmountMinor" in pa:
+            r.add_error("pricing.purchaseAssessment.transactionAmountMinor must be "
+                        "absent when basis is 'unknown' — an amount without a stated "
+                        "basis is an inferred purchase")
+
+    # ---- products
+    mids = _pricing_ids_arg(r, "mattress_ids", mattress_ids)
+    aids = _pricing_ids_arg(r, "accessory_ids", accessory_ids)
+    products = p.get("products")
+    seen_identity = {}
+    seen_sku = {}
+    if not isinstance(products, list):
+        r.add_error("pricing.products must be an array of product-size price entries "
+                    "(empty until an approved source exists)")
+    else:
+        for i, entry in enumerate(products):
+            tag = f"pricing.products[{i}]"
+            if not _pricing_object(r, tag, entry, PRICING_PRODUCT_KEYS):
+                continue
+            for key in PRICING_PRODUCT_REQUIRED:
+                if key not in entry:
+                    r.add_error(f"{tag}.{key} is required")
+            kind = entry.get("productKind")
+            if not _pricing_enum(kind, PRICING_PRODUCT_KINDS):
+                r.add_error(f"{tag}.productKind {fin_headline.short_repr(kind)} must be "
+                            f"one of {sorted(PRICING_PRODUCT_KINDS)}")
+            pid = _pricing_str(r, tag, entry, "productId", required=True)
+            if pid:
+                known = mids if kind == "mattress" else aids if kind == "accessory" else None
+                if known is not None and pid not in known:
+                    r.add_error(f"{tag}.productId {fin_headline.short_repr(pid)} is "
+                                f"not a {kind} id in the "
+                                f"catalog this bundle ships — a price must name a "
+                                f"product that exists")
+            sku = _pricing_str(r, tag, entry, "sku", required=True)
+            if sku:
+                if (sku != sku.strip() or len(sku) > PRICING_SKU_MAX
+                        or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", sku)):
+                    r.add_error(f"{tag}.sku {fin_headline.short_repr(sku)} must be a "
+                                f"trimmed identifier of at most {PRICING_SKU_MAX} chars "
+                                f"([A-Za-z0-9._-])")
+                elif sku in seen_sku:
+                    r.add_error(f"{tag}.sku {sku!r} duplicates products[{seen_sku[sku]}] "
+                                f"— one SKU identifies one product-size")
+                else:
+                    seen_sku[sku] = i
+            size = entry.get("size")
+            if kind == "mattress":
+                if isinstance(size, str) and size.strip().lower() in _PRICING_SIZE_WILDCARDS:
+                    r.add_error(f"{tag}.size {size!r} is a wildcard — a mattress price "
+                                f"is verified for ONE size; never infer another size's "
+                                f"price")
+                elif type(size) is not str or size not in size_set:
+                    r.add_error(f"{tag}.size {fin_headline.short_repr(size)} must be one "
+                                f"of the quiz mattress_size ids {want_sizes} — a "
+                                f"mattress price without a verified size is "
+                                f"price-unavailable, never inferred from another size")
+            elif kind == "accessory":
+                if size is not None:
+                    r.add_error(f"{tag}.size must be null for an accessory (got "
+                                f"{fin_headline.short_repr(size)})")
+            if pid and (kind == "mattress" and isinstance(size, str) or kind == "accessory"):
+                ident = (pid, size if kind == "mattress" else None)
+                if ident in seen_identity:
+                    r.add_error(f"{tag} duplicates products[{seen_identity[ident]}] for "
+                                f"productId {fin_headline.short_repr(pid)} size "
+                                f"{fin_headline.short_repr(ident[1])} — one verified "
+                                f"price per product-size")
+                else:
+                    seen_identity[ident] = i
+
+            price = entry.get("price")
+            if _pricing_object(r, f"{tag}.price", price, PRICING_PRICE_KEYS):
+                amt = price.get("amountMinor")
+                if type(amt) is not int or amt <= 0 or amt > PRICING_AMOUNT_MINOR_MAX:
+                    r.add_error(f"{tag}.price.amountMinor {fin_headline.short_repr(amt)} "
+                                f"must be a positive integer of minor units (cents) at "
+                                f"most {PRICING_AMOUNT_MINOR_MAX} — never a float, a "
+                                f"boolean, a range or a string")
+                pc = price.get("currency")
+                if not _pricing_enum(pc, PRICING_CURRENCIES) or pc != currency:
+                    r.add_error(f"{tag}.price.currency {fin_headline.short_repr(pc)} must "
+                                f"equal pricing.currency "
+                                f"{fin_headline.short_repr(currency)}")
+                pk = price.get("kind")
+                if not _pricing_enum(pk, PRICING_PRICE_KINDS):
+                    r.add_error(f"{tag}.price.kind {fin_headline.short_repr(pk)} must be "
+                                f"one of {sorted(PRICING_PRICE_KINDS)}")
+            else:
+                pk = None
+
+            ev = entry.get("evidence")
+            if _pricing_object(r, f"{tag}.evidence", ev, PRICING_EVIDENCE_KEYS):
+                st = ev.get("status")
+                if not _pricing_enum(st, PRICE_EVIDENCE_STATUSES):
+                    r.add_error(f"{tag}.evidence.status {fin_headline.short_repr(st)} "
+                                f"must be one of {sorted(PRICE_EVIDENCE_STATUSES)} — "
+                                f"archives, lender pages and operator-reported "
+                                f"historical observations are never current retail "
+                                f"prices")
+                if ev.get("verified") is not True:
+                    r.add_error(f"{tag}.evidence.verified must be true — an unverified "
+                                f"price is price-unavailable")
+                d = _pricing_stamp(r, f"{tag}.evidence", ev.get("verifiedAt"), now_dt,
+                                   what="verifiedAt")
+                _pricing_freshness(r, f"{tag}.evidence", d, mad, now_dt, enabled,
+                                   what="verifiedAt")
+                _pricing_str(r, f"{tag}.evidence", ev, "verifiedBy", required=True)
+                _pricing_source_url(r, f"{tag}.evidence", ev.get("sourceUrl"),
+                                    canonical_hosts, shipped_hosts)
+
+            win = entry.get("window")
+            start = end = None
+            if win is not None:
+                if _pricing_object(r, f"{tag}.window", win, PRICING_WINDOW_KEYS):
+                    if win.get("startAt") is not None:
+                        start = _pricing_instant(win.get("startAt"))
+                        if start is None:
+                            r.add_error(f"{tag}.window.startAt must be null or ISO-8601 "
+                                        f"with a timezone offset")
+                    if win.get("endsAt") is not None:
+                        end = _pricing_instant(win.get("endsAt"))
+                        if end is None:
+                            r.add_error(f"{tag}.window.endsAt must be null or ISO-8601 "
+                                        f"with a timezone offset")
+                    if start is not None and end is not None and end <= start:
+                        r.add_error(f"{tag}.window.endsAt must be after startAt")
+                    if enabled and end is not None and end <= now_dt:
+                        r.add_error(f"{tag}.window.endsAt has passed — an expired price "
+                                    f"is price-unavailable and must be re-verified or "
+                                    f"removed")
+            if pk == "promotional" and end is None:
+                r.add_error(f"{tag}.window.endsAt is required for a promotional price — "
+                            f"a promotion without a published end cannot be admitted")
+
+    # ---- formula artifacts (calculation-readiness data; no values, no math)
+    plan_ids = set()
+    fin = config.get("financing")
+    if isinstance(fin, dict) and isinstance(fin.get("plans"), list):
+        plan_ids = {pl.get("id") for pl in fin["plans"]
+                    if isinstance(pl, dict) and isinstance(pl.get("id"), str)}
+    formulas = p.get("formulas")
+    seen_formula = {}
+    if not isinstance(formulas, list):
+        r.add_error("pricing.formulas must be an array of approved formula artifacts "
+                    "(empty until a formula is approved)")
+    else:
+        for i, f in enumerate(formulas):
+            tag = f"pricing.formulas[{i}]"
+            if not _pricing_object(r, tag, f, PRICING_FORMULA_KEYS):
+                continue
+            for key in PRICING_FORMULA_REQUIRED:
+                if key not in f:
+                    r.add_error(f"{tag}.{key} is required — an approved formula "
+                                f"artifact is complete or it is not approved")
+            fid = _pricing_str(r, tag, f, "id", required=True)
+            if fid:
+                if fid in seen_formula:
+                    r.add_error(f"{tag}.id {fin_headline.short_repr(fid)} duplicates "
+                                f"formulas[{seen_formula[fid]}]")
+                seen_formula.setdefault(fid, i)
+            plan = _pricing_str(r, tag, f, "planId", required=True)
+            if plan and plan not in plan_ids:
+                r.add_error(f"{tag}.planId {fin_headline.short_repr(plan)} names no "
+                            f"financing plan in this "
+                            f"configuration — a formula belongs to one verified plan")
+            mode = f.get("mode")
+            if not _pricing_enum(mode, PRICING_FORMULA_MODES):
+                r.add_error(f"{tag}.mode {fin_headline.short_repr(mode)} must be one of "
+                            f"{sorted(PRICING_FORMULA_MODES)} — an unapproved calculation "
+                            f"mode is quote-only")
+            else:
+                want = PRICING_FORMULA_MODES[mode]
+                inputs = f.get("inputs")
+                if (not isinstance(inputs, list)
+                        or any(not isinstance(x, str) for x in inputs)
+                        or len(set(inputs)) != len(inputs)
+                        or set(inputs) != want):
+                    r.add_error(f"{tag}.inputs must name exactly {sorted(want)} for mode "
+                                f"{mode!r} (got {fin_headline.short_repr(inputs)}) — "
+                                f"complete inputs are set equality, and a formula "
+                                f"names its inputs, never their values")
+            cad = f.get("cadence")
+            if not _pricing_enum(cad, PRICING_CADENCES):
+                r.add_error(f"{tag}.cadence {fin_headline.short_repr(cad)} must be one of "
+                            f"{sorted(PRICING_CADENCES)} — the plan's ACTUAL cadence, "
+                            f"never restated as monthly")
+            if f.get("cadenceVerified") is not True:
+                r.add_error(f"{tag}.cadenceVerified must be true — an unverified cadence "
+                            f"is not calculation-ready")
+            _pricing_str(r, tag, f, "approvedBy", required=True)
+            _pricing_stamp(r, tag, f.get("approvedAt"), now_dt, what="approvedAt")
+            d = _pricing_stamp(r, tag, f.get("verifiedAt"), now_dt, what="verifiedAt")
+            _pricing_freshness(r, tag, d, mad, now_dt, enabled, what="verifiedAt")
+            _pricing_source_url(r, tag, f.get("sourceUrl"), canonical_hosts, shipped_hosts)
+
+    _scan_pricing_forbidden_keys(r, "pricing", p)
+    return r
+
+
 # -- Quiz definition (data/quiz.json payload) ---------------------------------
 # The quiz structure is an app-level contract: ~15 code sites consume question
 # and option ids by name (profile assignment, Sleep Brief, adjustable-base
@@ -6672,6 +7306,281 @@ def _self_test() -> int:
 
     def _q(quiz, qid):
         return next(x for x in quiz["questions"] if x["id"] == qid)
+
+    # ---- Phase 2.1 pricing (dark framework) ----------------------------------
+    # Every freshness case below runs under an INJECTED clock so the verdicts
+    # are deterministic; the last two cases prove the clock is actually used.
+    from datetime import datetime as _pdt, timedelta as _ptd, timezone as _ptz
+    _PHOSTS = ["lacks.com", "www.lacks.com"]
+    _PNOW = _pdt(2026, 8, 27, 12, 0, tzinfo=_ptz.utc)
+    good_pricing = {
+        "schemaVersion": 1, "enabled": True, "displayEnabled": False,
+        "currency": "USD",
+        "authority": {"owner": "Test Owner", "role": "merchandising"},
+        "mapClearance": {"status": "cleared", "clearedBy": "Test",
+                         "clearedAt": "2026-08-26T09:00:00-05:00"},
+        "esReviewStatus": "approved-native-legal-review",
+        "maxAgeDays": 7,
+        "allowedSourceHosts": ["lacks.com", "www.lacks.com"],
+        "sizes": ["twin", "twin_xl", "full", "queen", "king", "cal_king"],
+        "surfaces": {"drawer": False, "sleepSystem": False, "results": False,
+                     "handoff": False, "sleepPlan": False},
+        "purchaseAssessment": {"basis": "unknown"},
+        "products": [{
+            "productId": "g6", "productKind": "mattress", "sku": "T-0001",
+            "size": "queen",
+            "price": {"amountMinor": 369900, "currency": "USD", "kind": "regular"},
+            "evidence": {"status": "retailer-product-page-current", "verified": True,
+                         "verifiedAt": "2026-08-26T10:00:00-05:00",
+                         "verifiedBy": "Test", "sourceUrl": "https://www.lacks.com/p/x"},
+            "window": {"startAt": None, "endsAt": None},
+        }],
+        "formulas": [{
+            "id": "f1", "planId": "synchrony-9-99-72",
+            "mode": "published-fixed-factor", "cadence": "monthly",
+            "cadenceVerified": True,
+            "inputs": ["principalMinor", "publishedPaymentFactor"],
+            "approvedBy": "Test", "approvedAt": "2026-08-26T09:30:00-05:00",
+            "sourceUrl": "https://www.lacks.com/financing",
+            "verifiedAt": "2026-08-26T10:00:00-05:00",
+        }],
+    }
+    dark_pricing = {
+        "schemaVersion": 1, "enabled": False, "displayEnabled": False,
+        "currency": "USD", "authority": {"owner": "", "role": ""},
+        "mapClearance": {"status": "not-cleared", "clearedBy": "", "clearedAt": None},
+        "esReviewStatus": "pending-native-legal-review", "maxAgeDays": 7,
+        "allowedSourceHosts": ["lacks.com", "www.lacks.com"],
+        "sizes": ["twin", "twin_xl", "full", "queen", "king", "cal_king"],
+        "surfaces": {"drawer": False, "sleepSystem": False, "results": False,
+                     "handoff": False, "sleepPlan": False},
+        "purchaseAssessment": {"basis": "unknown"}, "products": [], "formulas": [],
+    }
+
+    def _pmut():
+        return json.loads(json.dumps(good_pricing))
+
+    def _pv(pr, **kw):
+        kw.setdefault("allowed_source_hosts", _PHOSTS)
+        kw.setdefault("mattress_ids", {"g6", "g7"})
+        kw.setdefault("accessory_ids", {"pillow-flow"})
+        kw.setdefault("now", _PNOW)
+        cfg = {"pricing": pr,
+               "financing": {"plans": [{"id": "synchrony-9-99-72"}]}}
+        return validate_pricing(cfg, **kw)
+
+    def _perr(pr, needle, **kw):
+        return any(needle in e for e in _pv(pr, **kw).errors)
+
+    check("pricing absent -> ok (no-op)", validate_pricing({}).ok)
+    check("pricing null -> ok (no-op)", validate_pricing({"pricing": None}).ok)
+    rp = _pv(_pmut())
+    check("pricing populated + enabled under the fixture clock -> ok, no warnings",
+          rp.ok and not rp.warnings)
+    rd = _pv(dark_pricing)
+    check("pricing DARK shipped contract -> ok, no warnings", rd.ok and not rd.warnings)
+    check("pricing non-object -> error, not raise",
+          any("pricing must be an object" in e for e in validate_pricing({"pricing": "x"}).errors))
+
+    # unknown keys at every level
+    pu = _pmut(); pu["urgency"] = 1
+    check("pricing unknown top-level key -> error names it", _perr(pu, "'urgency'"))
+    pu = _pmut(); pu["products"][0]["priceRange"] = [1, 2]
+    check("pricing unknown product key -> error", _perr(pu, "'priceRange'"))
+    pu = _pmut(); pu["products"][0]["evidence"]["archiveUrl"] = "x"
+    check("pricing unknown evidence key -> error", _perr(pu, "'archiveUrl'"))
+    pu = _pmut(); pu["formulas"][0]["factor"] = 0.018521
+    check("pricing formula carrying a factor VALUE -> unknown-key error",
+          _perr(pu, "'factor'"))
+    check("pricing formula factor value -> forbidden-key error names the rule",
+          _perr(pu, "never computed before Phase 2.2"))
+
+    # the 2.2 lock
+    pu = _pmut(); pu["displayEnabled"] = True
+    check("pricing displayEnabled true -> REFUSED, names Phase 2.2",
+          _perr(pu, "Phase 2.2 activation output"))
+    pu = _pmut(); pu["displayEnabled"] = "false"
+    check("pricing displayEnabled string -> error (strict boolean)",
+          _perr(pu, "displayEnabled must be a JSON boolean"))
+    pu = _pmut(); pu["enabled"] = 1
+    check("pricing enabled numeric -> error (strict boolean)",
+          _perr(pu, "enabled must be a JSON boolean"))
+    pu = _pmut(); pu["surfaces"]["drawer"] = True
+    check("pricing surface enabled while dark -> error", _perr(pu, "surfaces.drawer must be false"))
+    pu = _pmut(); del pu["surfaces"]["sleepPlan"]
+    check("pricing surface missing -> error (missing reads as enabled)",
+          _perr(pu, "surfaces.sleepPlan must be declared"))
+    pu = _pmut(); pu["surfaces"]["compare"] = False
+    check("pricing unknown surface -> error", _perr(pu, "'compare'"))
+
+    # scalars
+    pu = _pmut(); pu["schemaVersion"] = True
+    check("pricing schemaVersion boolean -> error", _perr(pu, "schemaVersion"))
+    pu = _pmut(); pu["currency"] = "EUR"
+    check("pricing unsupported currency -> error", _perr(pu, "pricing.currency"))
+    pu = _pmut(); pu["maxAgeDays"] = True
+    check("pricing maxAgeDays boolean -> error", _perr(pu, "maxAgeDays"))
+    pu = _pmut(); pu["maxAgeDays"] = 0
+    check("pricing maxAgeDays 0 -> error", _perr(pu, "maxAgeDays"))
+
+    # ownership / MAP / ES review when enabled vs dark
+    pu = _pmut(); pu["authority"]["owner"] = ""
+    check("pricing enabled with blank owner -> error", _perr(pu, "authority.owner"))
+    pu = _pmut(); pu["mapClearance"] = {"status": "not-cleared", "clearedBy": "", "clearedAt": None}
+    check("pricing enabled without MAP clearance -> error", _perr(pu, "mapClearance.status must be 'cleared'"))
+    pu = _pmut(); pu["mapClearance"]["clearedAt"] = "2026-08-26"
+    check("pricing MAP clearedAt without offset -> error", _perr(pu, "clearedAt"))
+    pu = _pmut(); pu["esReviewStatus"] = "pending-native-legal-review"
+    check("pricing enabled with ES review pending -> error", _perr(pu, "esReviewStatus"))
+    pu = _pmut(); pu["esReviewStatus"] = "approved"
+    check("pricing esReviewStatus outside enum -> error", _perr(pu, "esReviewStatus"))
+    dd = json.loads(json.dumps(dark_pricing)); dd["authority"] = {"owner": 5, "role": ""}
+    check("pricing dark with non-string owner -> error (shape still checked when dark)",
+          _perr(dd, "authority.owner must be a string"))
+
+    # allowlists
+    pu = _pmut(); pu["allowedSourceHosts"].append("synchrony.com")
+    check("pricing allowlist widening canonical -> error", _perr(pu, "widens the canonical"))
+    pu = _pmut(); pu["allowedSourceHosts"] = ["lacks.com "]
+    check("pricing untrimmed allowlist entry -> error", _perr(pu, "must be trimmed"))
+    pu = _pmut(); pu["allowedSourceHosts"] = []
+    check("pricing enabled with empty allowlist -> error", _perr(pu, "allowedSourceHosts must be non-empty"))
+    pu = _pmut(); pu["allowedSourceHosts"] = ["www.lacks.com"]
+    pu["products"][0]["evidence"]["sourceUrl"] = "https://lacks.com/p/x"
+    check("pricing evidence host allowed canonically but not shipped -> 'must agree' error",
+          _perr(pu, "build and runtime allowlists must agree"))
+    check("pricing malformed canonical allowlist -> reported, fails closed",
+          _perr(_pmut(), "allowed_source_hosts must be a list", allowed_source_hosts=5)
+          and _perr(_pmut(), "canonical price source-host allowlist", allowed_source_hosts=5))
+
+    # sizes
+    pu = _pmut(); pu["sizes"] = ["queen", "king", "twin", "twin_xl", "full", "cal_king"]
+    check("pricing sizes reordered -> error", _perr(pu, "pricing.sizes must equal"))
+    pu = _pmut(); pu["sizes"] = pu["sizes"][:-1]
+    check("pricing sizes missing one -> error", _perr(pu, "pricing.sizes must equal"))
+
+    # purchase-threshold assessment
+    pu = _pmut(); pu["purchaseAssessment"] = {"basis": "product-price"}
+    check("pricing purchase basis product-price -> REFUSED (never the qualifying amount)",
+          _perr(pu, "never the qualifying purchase amount"))
+    pu = _pmut(); pu["purchaseAssessment"] = {"basis": "transaction-amount"}
+    check("pricing transaction basis without amount -> error", _perr(pu, "transactionAmountMinor must be"))
+    pu = _pmut(); pu["purchaseAssessment"] = {"basis": "transaction-amount", "transactionAmountMinor": 250000}
+    check("pricing transaction basis with integer amount -> ok", _pv(pu).ok)
+    pu = _pmut(); pu["purchaseAssessment"] = {"basis": "transaction-amount", "transactionAmountMinor": 2500.5}
+    check("pricing transaction amount float -> error", _perr(pu, "transactionAmountMinor must be"))
+    pu = _pmut(); pu["purchaseAssessment"] = {"basis": "unknown", "transactionAmountMinor": 250000}
+    check("pricing unknown basis carrying an amount -> error", _perr(pu, "must be absent when basis is 'unknown'"))
+
+    # products: identity, size, money, evidence, window, uniqueness
+    pu = _pmut(); del pu["products"][0]["size"]
+    check("pricing mattress without size -> error names 'never inferred'", _perr(pu, "never inferred from another size"))
+    pu = _pmut(); pu["products"][0]["size"] = "*"
+    check("pricing wildcard size -> error", _perr(pu, "is a wildcard"))
+    pu = _pmut(); pu["products"][0]["size"] = "queen_xl"
+    check("pricing size outside the quiz ids -> error", _perr(pu, "products[0].size"))
+    pu = _pmut(); pu["products"][0].update({"productKind": "accessory", "productId": "pillow-flow"})
+    check("pricing accessory with a size -> error", _perr(pu, "size must be null for an accessory"))
+    pu = _pmut(); pu["products"][0].update({"productKind": "accessory", "productId": "pillow-flow", "size": None})
+    check("pricing accessory entry with null size -> ok", _pv(pu).ok)
+    pu = _pmut(); pu["products"][0]["productId"] = "g99"
+    check("pricing unknown productId -> error when catalog ids supplied", _perr(pu, "not a mattress id"))
+    check("pricing productId unchecked when catalog ids not supplied",
+          _pv(pu, mattress_ids=None).ok)
+    pu = _pmut(); pu["products"][0]["productKind"] = "bundle"
+    check("pricing productKind outside enum -> error", _perr(pu, "productKind"))
+    pu = _pmut(); pu["products"][0]["sku"] = " T-0001"
+    check("pricing untrimmed sku -> error", _perr(pu, "products[0].sku"))
+    pu = _pmut(); pu["products"][0]["sku"] = "x" * 65
+    check("pricing over-long sku -> error, bounded", _perr(pu, "products[0].sku")
+          and all(len(e) < 400 for e in _pv(pu).errors))
+    for bad_amt, lbl in ((3699.0, "float"), (0, "zero"), (True, "boolean"),
+                         ("369900", "string"), (-1, "negative"), (10 ** 10, "over ceiling"),
+                         (10 ** 5000, "huge int")):
+        pu = _pmut(); pu["products"][0]["price"]["amountMinor"] = bad_amt
+        check(f"pricing amountMinor {lbl} -> error", _perr(pu, "amountMinor"))
+    pu = _pmut(); pu["products"][0]["price"]["currency"] = "MXN"
+    check("pricing entry currency mismatch -> error", _perr(pu, "price.currency"))
+    pu = _pmut(); pu["products"][0]["price"]["kind"] = "from"
+    check("pricing price kind outside enum -> error", _perr(pu, "price.kind"))
+    for st in ("retailer-full-page-archive", "lender-current-page",
+               "operator-reported-retailer-indexed-historical", "prior-research-observation",
+               "retailer-product-page"):
+        pu = _pmut(); pu["products"][0]["evidence"]["status"] = st
+        check(f"pricing evidence status {st!r} (promotions ladder) -> REFUSED", _perr(pu, "evidence.status"))
+    pu = _pmut(); pu["products"][0]["evidence"]["status"] = "retailer-price-list-current"
+    check("pricing evidence status price-list-current -> ok", _pv(pu).ok)
+    pu = _pmut(); pu["products"][0]["evidence"]["verified"] = False
+    check("pricing unverified evidence -> error", _perr(pu, "evidence.verified must be true"))
+    pu = _pmut(); pu["products"][0]["evidence"]["verifiedAt"] = "2026-08-26T10:00:00"
+    check("pricing verifiedAt without offset -> error", _perr(pu, "timezone offset"))
+    pu = _pmut(); pu["products"][0]["evidence"]["verifiedAt"] = "2026-08-27T13:00:00+00:00"
+    check("pricing verifiedAt materially future (vs injected clock) -> error", _perr(pu, "materially in the future"))
+    pu = _pmut(); pu["products"][0]["evidence"]["verifiedBy"] = ""
+    check("pricing blank verifiedBy -> error", _perr(pu, "verifiedBy"))
+    pu = _pmut(); pu["products"][0]["evidence"]["sourceUrl"] = "https://web.archive.org/web/2026/https://www.lacks.com/p/x"
+    check("pricing archive capture as price evidence -> REFUSED", _perr(pu, "archived page is never CURRENT"))
+    pu = _pmut(); pu["products"][0]["evidence"]["sourceUrl"] = "https://linqcdn.avbportal.com/images/x.jpg"
+    check("pricing image-CDN source -> not allowlisted", _perr(pu, "canonical price source-host allowlist"))
+    pu = _pmut(); pu["products"][0]["evidence"]["sourceUrl"] = "http://www.lacks.com/p/x"
+    check("pricing http source -> error", _perr(pu, "safe absolute https"))
+    pu = _pmut(); pu["products"][0]["price"]["kind"] = "promotional"
+    check("pricing promotional price without endsAt -> error", _perr(pu, "endsAt is required for a promotional"))
+    pu["products"][0]["window"] = {"startAt": "2026-08-20T00:00:00-05:00", "endsAt": "2026-09-01T00:00:00-05:00"}
+    check("pricing promotional price with a future window -> ok", _pv(pu).ok)
+    pu["products"][0]["window"] = {"startAt": "2026-09-01T00:00:00-05:00", "endsAt": "2026-08-20T00:00:00-05:00"}
+    check("pricing window endsAt before startAt -> error", _perr(pu, "endsAt must be after startAt"))
+    pu["products"][0]["window"] = {"startAt": None, "endsAt": "2026-08-01T00:00:00-05:00"}
+    check("pricing expired window while enabled -> error", _perr(pu, "endsAt has passed"))
+    pu = _pmut(); pu["products"].append(json.loads(json.dumps(pu["products"][0])))
+    check("pricing duplicate product-size -> error", _perr(pu, "duplicates products[0]"))
+    pu["products"][1]["size"] = "king"
+    check("pricing duplicate sku across sizes -> error", _perr(pu, "sku 'T-0001' duplicates"))
+    pu["products"][1]["sku"] = "T-0002"
+    check("pricing second size with its OWN evidence -> ok", _pv(pu).ok)
+    pu = _pmut(); pu["products"] = "none"
+    check("pricing products non-array -> error", _perr(pu, "pricing.products must be an array"))
+    pu = _pmut(); pu["products"] = [5]
+    check("pricing product entry non-object -> error", _perr(pu, "products[0] must be an object"))
+
+    # formulas: complete artifact, named inputs, verified cadence
+    pu = _pmut(); pu["formulas"][0]["planId"] = "no-such-plan"
+    check("pricing formula for unknown plan -> error", _perr(pu, "names no financing plan"))
+    pu = _pmut(); pu["formulas"][0]["mode"] = "estimated"
+    check("pricing formula mode outside enum -> error", _perr(pu, "formulas[0].mode"))
+    pu = _pmut(); pu["formulas"][0]["inputs"] = ["principalMinor"]
+    check("pricing formula incomplete inputs -> error", _perr(pu, "inputs must name exactly"))
+    pu = _pmut(); pu["formulas"][0]["inputs"] = ["principalMinor", "publishedPaymentFactor", "apr"]
+    check("pricing formula extra input -> error", _perr(pu, "inputs must name exactly"))
+    pu = _pmut(); pu["formulas"][0]["cadence"] = "per-month"
+    check("pricing formula cadence outside enum -> error", _perr(pu, "formulas[0].cadence"))
+    pu = _pmut(); pu["formulas"][0]["cadenceVerified"] = False
+    check("pricing formula unverified cadence -> error", _perr(pu, "cadenceVerified must be true"))
+    pu = _pmut(); del pu["formulas"][0]["approvedBy"]
+    check("pricing formula missing approvedBy -> error", _perr(pu, "approvedBy is required"))
+    pu = _pmut(); pu["formulas"][0]["approvedAt"] = "2026-08-30T00:00:00+00:00"
+    check("pricing formula approvedAt in the future -> error", _perr(pu, "approvedAt"))
+    pu = _pmut(); pu["formulas"].append(json.loads(json.dumps(pu["formulas"][0])))
+    check("pricing duplicate formula id -> error", _perr(pu, "duplicates formulas[0]"))
+
+    # forbidden numeric-result keys anywhere, and the narrowness of the ban
+    pu = _pmut(); pu["products"][0]["window"]["monthlyPayment"] = 5200
+    check("pricing nested monthlyPayment key -> forbidden-key error", _perr(pu, "'monthlyPayment'"))
+    check("pricing forbidden-key scan does NOT ban ordinary words",
+          "payment" not in PRICING_FORBIDDEN_KEYS and "range" not in PRICING_FORBIDDEN_KEYS
+          and "from" not in PRICING_FORBIDDEN_KEYS and "estimate" not in PRICING_FORBIDDEN_KEYS)
+
+    # the injected clock is the clock
+    check("pricing stale under a clock 30 days on -> error while enabled",
+          _perr(_pmut(), "older than maxAgeDays", now=_PNOW + _ptd(days=30)))
+    rs = _pv(dark_pricing | {"products": _pmut()["products"]}, now=_PNOW + _ptd(days=30))
+    check("pricing stale entry while DARK -> warning, not error",
+          rs.ok and any("older than maxAgeDays" in w for w in rs.warnings))
+    check("pricing fresh under the fixture clock -> ok (same document)", _pv(_pmut()).ok)
+    check("pricing naive `now` is ignored, never raises",
+          isinstance(_pv(_pmut(), now=_pdt(2030, 1, 1)), ValidationReport))
+    check("pricing non-datetime `now` is ignored, never raises",
+          isinstance(_pv(_pmut(), now="2030-01-01"), ValidationReport))
 
     check("quiz absent -> ok (no-op)", validate_quiz(None).ok)
     check("quiz canonical shape -> ok", validate_quiz(_gq()).ok)

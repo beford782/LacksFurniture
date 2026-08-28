@@ -5,11 +5,24 @@ evidence recorded; see 0.4 and `docs/kiosk-device-hardening.md`). Phase 1
 implementation AUTHORIZED (2026-08-12, owner directive — see the authorization
 block at the top of Phase 1) and, as of 2026-08-14, directed by the Nocturne
 owner-review decisions (see "Phase 1 direction decisions — recorded
-2026-08-14"). Phases 2–3 remain a plan of intent, not a grant of approval —
+2026-08-14"). Phase 2.1 (the dark framework) was opened by Blake 2026-08-27 and is 🔨;
+Phase 2.2 and Phase 3 remain a plan of intent, not a grant of approval —
 see the open-decisions register. Device hardening remains BLOCKING for
 showroom use.**
 
-**Last updated:** 2026-08-26 *(Item 1.4 close-out repairs **merged**. **PR
+**Last updated:** 2026-08-27 *(**Phase 2.1 opened** by owner directive after
+Phase 1 was found to have no unblocked engineering left; **slice 2.1a** —
+the dark pricing contract (`incoming/lacks_pricing.json` → workbook Pricing
+tab → `store-config.pricing`, shipped `enabled:false` / `displayEnabled:false`
+/ `products: []`), `validate_pricing`, two new Python suites, the CI
+operating-state lock naming `pricing.displayEnabled`, and six mutation
+entries — is on branch `claude/phase2-1a-pricing-contract`, **not merged**;
+see the dated record under 2.1. No `index.html` change; scoring,
+recommendation and every Phase 1 suite unchanged. Item 1.4 is unchanged in
+this revision (its device matrix was deferred by owner ruling 2026-08-27 to
+one consolidated end-of-roadmap session; 1.4 stays ⏳ and is not edited
+here). The previous revision, 2026-08-26, recorded Item 1.4 close-out
+repairs **merged**. **PR
 #67** merged 2026-08-26 01:12:46Z as merge commit
 `90ecd04942615bb07fd4504682eceb1bb5601874` (parents
 `da4f74665995bcbad236d5ab872107f83dfdf0f5` + `5c097a4cad454d1491dbbac81d1d079c6e9fdcc4`;
@@ -3659,7 +3672,73 @@ device are different designs.
 > Phase 2 gate below stands untouched, and `incoming/lacks_catalog_selection.json`
 > remains exactly as the warning box in 2.1 describes it.
 
-### 2.1 — The dark framework ⬜
+### 2.1 — The dark framework 🔨 (opened by Blake 2026-08-27; slice 2.1a on branch `claude/phase2-1a-pricing-contract`, not merged)
+
+*(2026-08-27 — **Phase 2.1 opened.** Blake explicitly authorized opening 2.1
+after Phase 1 was found to have no unblocked engineering left (1.3 ◐ with
+owner-only exits; 1.4 ⏳, deferred the same day by owner ruling to one
+consolidated end-of-roadmap device/accessibility session). A three-lane
+read-only discovery at `fc61a26` established: the app renders exactly ONE
+numeric dollar amount — the accessory "From $" line (`index.html:18608` →
+`:18727`), CI-pinned to stay the only one; mattress prices exist nowhere in
+shipped data (`build-data.ps1` drops the blank column); no SKU, currency
+formatter, subtotal or payment arithmetic exists; the quiz already captures
+size (`mattress_size`, zero-scoring); and `incoming/lacks_catalog_selection
+.json` is consumed by nothing but the image fetcher — every claim in the
+warning box below holds. The design proposal was reviewed by three
+independent Codex agents; their corrections govern the slice and are recorded
+in `tools/validation.py`'s pricing banner: integer minor-unit money with an
+explicit currency; a purchase-threshold assessment with its own explicit
+basis (a single product price is NEVER the qualifying amount; default
+unknown); a price-specific evidence taxonomy of current first-party retail
+sources (the promotions ladder is not reused); calculation-readiness as an
+approved formula ARTIFACT with complete named inputs and verified cadence;
+unknown keys rejected at every nested level; a forbidden-key scan narrowed to
+numeric-result / formula-value fields; an injected clock in every freshness
+test; one populated NON-SHIPPING fixture traversing the real pipeline; no live
+size-accessor consolidation in 2.1; 4–6 focused mutations rather than a quota;
+and **an empty production contract is not 2.1 completion**.
+
+**Slice 2.1a — contract, validator, locks. No `index.html` change.**
+Canonical source `incoming/lacks_pricing.json` → new workbook **Pricing** tab
+(its own envelope, so the Daybreak Promotions envelope lock is byte-untouched)
+→ `store-config.pricing` (registered after `financing`), zero transforms,
+`_meta` never shipped. The shipped state is DARK: `enabled:false`,
+`displayEnabled:false`, every surface false, `products: []`, `formulas: []`,
+`purchaseAssessment.basis: "unknown"`. `tools/validation.py validate_pricing`
+is total over JSON (never raises, never mutates — `tests/pricing_totality_check
+.py` fuzzes every field and every keyword argument), refuses
+`displayEnabled:true` outright (a 2.2 output), requires ownership, MAP
+clearance and approved ES review only when enabled, enforces the quiz size ids
+exactly, per-entry `verifiedAt` + `sourceUrl` + `verifiedBy`, dual (canonical
++ shipped) source-host agreement against `tools/source_hosts.json
+priceSourceHosts`, refuses archive captures, evaluates freshness under an
+injectable clock (an error when enabled, a warning when dark), integer
+`amountMinor`, one price per product-size, no wildcard or absent size,
+promotional prices only with a published end, and formula artifacts with
+set-equal named inputs and a verified cadence. `tests/pricing_contract_check.py`
+pins the dark contract at every layer (canonical source, workbook tab,
+generated config, demo bundle), that no price or payment field ships, the
+untouched Daybreak envelope and the narrow allowlist, and traverses
+`tests/fixtures/pricing_populated_fixture.json` through the real converter and
+validator under its injected clock — admitted, then refused on five
+single-field corruptions and when the clock advances 30 days. CI gains
+`pricing totality` and `pricing contract`, protects `incoming/lacks_pricing
+.json`, and its operating-state lock names `pricing.displayEnabled` — a
+pre-activation lock **permanent until Phase 2.2**. Six focused mutation-sweep
+entries (display lock, size inference, stale-while-enabled, float money,
+unknown keys, shipped display flag), each find string proven to match once.
+Validator self-test 1153 → 1248; sweep manifest 477 → 483.
+
+**What 2.1a is NOT.** Not 2.1 completion: under this document, 2.1 stays 🔨
+until approved ownership, source, legal/MAP and cadence inputs exist and at
+least one verified size-specific price traverses the real pipeline — unless
+Blake later explicitly amends this item. No runtime code (the JS resolver and
+its isolation proofs are slice 2.1b); no periodic-payment arithmetic (Option
+A); no change to the accessory "From $" surface or its data (an owner decision
+— see the register); `lacks_catalog_selection.json` stays unconsumed. Standing
+gates unchanged: showroom NO; Spanish provisional; forced-colors before
+showroom; live email off with `gasUrl` blank.)*
 
 Ship the whole mechanism with nothing rendered: product/SKU/size identity,
 verified prices, canonical source and generation pipeline, price ownership,
@@ -3833,6 +3912,8 @@ approval; its presence is a bar on proceeding.
 | Dormant nickname-code cleanup | ❓ | Blake | Analytics review — see below |
 | Visible stale-financing status band (production) | ❓ | Blake | A case for it plus review sign-off. Prototype-only today (D6); if pursued, production gets its own dedicated governed key — not a reuse of `staleAnnouncement` |
 | Customer-recorded trial reactions | ❓ | Blake | A case for it. The Nocturne prototype's own candidate next revision; deliberately not built (D6) |
+| **Accessory price provenance** — the shipped accessory prices (the one live "From $" surface) drift from `incoming/lacks_catalog_selection.json`: four are cent-truncated about $1 BELOW the observed catalog price (Dri-Tec 149.95→149, iProtect 89.95→89, Ver-Tex 249.95→249, gel memory pillow 99.95→99) and `foundation-princess` $499 has no recorded source anywhere; none carries `verifiedAt`, a source URL or an owner | ❓ | Blake | Correct as data after confirming the values with Lacks, and/or bring accessories under the 2.1 contract (they would then fail "verified" and stop rendering until attested). Found by the 2026-08-27 Phase 2.1 discovery; deliberately NOT changed by slice 2.1a |
+| **Accessory `price` in the email payload** — the GAS packet spreads whole accessory objects (`index.html:17225–17227` → `:17309`), so `price` is transmitted although `Code.gs` never reads it | ❓ | Blake | Narrow the spread to the fields `Code.gs` reads, as its own small reviewed PR; not bundled into 2.1. Found by the 2026-08-27 discovery |
 | Presenter mode — shipping mechanism | ❓ | Blake + kiosk hardening review | The hardening review decides the mechanism; the prototype's query parameter is rehearsal tooling, not a shipped design (D6) |
 | **Tier presentation (trust)** — a neutral initial tier choice or another presentation control, versus the shipped Gold-first initial tier with the within-tier model | ❓ | Blake | *(Ruled for this cycle, 2026-08-21: the shipped Gold-first / within-tier presentation is retained with the 15px relativity note; a neutral initial tier (B) and any other control (D) are DEFERRED to a later owner/research decision; this is not a permanent endorsement of Gold-first.)* Any future change is presentation only — it must preserve tier identity and membership, within-tier order, the threshold, cap and back-fill. A cross-tier highest-fit marker or any global best-match computation is the 3.3 row above (NOT AUTHORIZED), not this one. The legible within-tier relativity note is NOT this decision |
 | **Heritage content** — Welcome only (current), an optional moderated-research condition, or no additional heritage | ❓ | Blake | *(Ruled for this cycle, 2026-08-21: the restrained Welcome treatment stays; no per-question rail, no anniversary count, no store counts, awards, testimonials, QR codes, community claims or anecdotes in the quiz; the research prototype is preserved separately; historical content may be tested later as an optional research condition — that later test is what stays open here.)* Any future fact beyond the Welcome line needs governance modelled on financing (freshness, allowlisted source, approval, ES review) |
@@ -4014,7 +4095,12 @@ document, not here.
    redesign itself, which proceeds against today's reason content (the generic
    default on 14 of 26 models only; none on the other 12) per
    1.3's Proceeds list.
-10. ⬜ **Dark pricing/payment foundation** — 2.1.
+10. 🔨 **Dark pricing/payment foundation** — 2.1. *(Opened by Blake
+    2026-08-27; slice 2.1a — contract, validator and CI locks, no
+    `index.html` change — on branch `claude/phase2-1a-pricing-contract`,
+    not merged. The item stays 🔨 until approved ownership/source/legal/MAP/
+    cadence inputs and at least one verified size-specific price traverse
+    the real pipeline.)*
 11. 🔒 **Activate prices and payments** — 2.2, after business and legal approval.
 12. 🔒 **Structural scoring and tier changes last** — Phase 3.
 

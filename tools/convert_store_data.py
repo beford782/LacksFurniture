@@ -68,7 +68,7 @@ STORE_INFO_LISTS = {"languages", "allowedHosts"}
 STORE_CONFIG_KEY_ORDER = [
     "storeName", "storeKey", "languages", "logo", "colors", "gasUrl",
     "publicAssetRoot", "allowedHosts", "brands", "rsaList", "text", "text_es",
-    "discount", "promotions", "financing", "voice", "voice_es",
+    "discount", "promotions", "financing", "pricing", "voice", "voice_es",
     "salesNotes", "salesNotes_es",
 ]
 
@@ -298,6 +298,13 @@ def build_store_config(wb):
     if financing is not None:
         cfg["financing"] = financing
 
+    # Optional Phase 2.1 pricing payload (its own tab). Same present-vs-absent
+    # rule as financing: a PRESENT value is carried whatever its shape so
+    # validate_pricing gets to rule on it; an absent tab/payload emits nothing.
+    pricing = build_pricing(wb)
+    if pricing is not None:
+        cfg["pricing"] = pricing
+
     # Reorder top-level keys to the committed order (readability only).
     return {k: cfg[k] for k in STORE_CONFIG_KEY_ORDER if k in cfg}
 
@@ -342,6 +349,32 @@ def build_promotions(wb):
             "bare-promotions block would silently drop the financing key from "
             "store-config.json.")
     return parsed, None
+
+
+def build_pricing(wb):
+    """Reassemble the Phase 2.1 pricing contract from the optional-payload
+    Pricing tab.
+
+    Same canonical-JSON channel as Quiz: chunked fragments in column
+    'Pricing JSON', concatenated in row order, parsed as an envelope
+    {"pricing": {...}}. Returns the pricing value, or None when the tab is
+    absent or empty (deployments without the dark framework emit no key).
+    Any other top-level shape fails loudly — refusing to guess, exactly as
+    build_promotions does — so a payload can never be silently reclassified."""
+    if "Pricing" not in wb.sheetnames:
+        return None
+    _, rows = read_tab(wb, "Pricing")
+    payload = "".join(_s(r.get("Pricing JSON")) for r in rows).strip()
+    if not payload:
+        return None
+    try:
+        parsed = json.loads(payload)
+    except ValueError as exc:
+        raise SystemExit(f"ERROR: Pricing tab payload is not valid JSON: {exc}")
+    if not (isinstance(parsed, dict) and set(parsed) == {"pricing"}):
+        raise SystemExit("ERROR: Pricing tab payload must be an envelope "
+                         "{\"pricing\": {...}} and nothing else")
+    return parsed["pricing"]
 
 
 def build_quiz(wb):
@@ -645,6 +678,41 @@ def _self_test() -> int:
     check("G2 --skip-build-json with built is not blocking",
           build_json_blocking(skip_build_json=True, built=True) is False)
 
+    # Pricing tab reassembly (build_pricing): in-memory workbooks, no files.
+    print("convert_store_data.py self-test (Pricing tab reassembly):")
+
+    def _wb_with_pricing(rows):
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Pricing"
+        ws.append(["Pricing JSON"])
+        for r in rows:
+            ws.append([r])
+        return wb
+
+    check("build_pricing: workbook without Pricing tab -> None",
+          build_pricing(openpyxl.Workbook()) is None)
+    check("build_pricing: header-only Pricing tab -> None",
+          build_pricing(_wb_with_pricing([])) is None)
+    pricing_obj = {"schemaVersion": 1, "enabled": False, "products": []}
+    ppayload = json.dumps({"pricing": pricing_obj}, separators=(",", ":"))
+    pmid = len(ppayload) // 2
+    check("build_pricing: chunked envelope reassembles to the pricing object",
+          build_pricing(_wb_with_pricing([ppayload[:pmid], ppayload[pmid:]]))
+          == pricing_obj)
+    check("build_pricing: a PRESENT falsy pricing value is carried, not dropped",
+          build_pricing(_wb_with_pricing(['{"pricing": false}'])) is False)
+    for bad_label, bad_payload in (
+            ("non-envelope payload", '{"notpricing": 1}'),
+            ("envelope + unknown key", '{"pricing": {}, "extra": 1}'),
+            ("bare array", '[1, 2]'),
+            ("invalid JSON", "{broken")):
+        try:
+            build_pricing(_wb_with_pricing([bad_payload]))
+            check(f"build_pricing: {bad_label} -> SystemExit", False)
+        except SystemExit:
+            check(f"build_pricing: {bad_label} -> SystemExit", True)
+
     # Quiz tab reassembly (build_quiz): in-memory workbooks, no files.
     print("convert_store_data.py self-test (Quiz tab reassembly):")
 
@@ -847,6 +915,15 @@ def main(argv=None) -> int:
         report.merge(validation.validate_financing(
             config,
             allowed_source_hosts=source_hosts.get("financingSourceHosts")))
+        # Phase 2.1 dark pricing framework — build-time admission. Product ids
+        # are cross-checked against the catalog the same bundle ships, the
+        # source allowlist is the price-specific canonical list, and the
+        # validator refuses displayEnabled=true until Phase 2.2 lifts it.
+        report.merge(validation.validate_pricing(
+            config,
+            allowed_source_hosts=source_hosts.get("priceSourceHosts"),
+            mattress_ids=promo_mids,
+            accessory_ids=[a.get("id") for a in accessories]))
         # Quiz definition — structural contract (pinned ids/types/options) plus
         # bilingual copy and score-tag checks; no-op when the tab is empty.
         report.merge(validation.validate_quiz(quiz))
