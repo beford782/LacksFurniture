@@ -2998,6 +2998,19 @@ def validate_financing(config: dict, *, allowed_source_hosts=None) -> Validation
         elif mp is not None and mp < 0:
             r.add_error(f"{tag}: minimumPurchase {fin_headline.short_repr(mp)} "
                         f"out of range (must not be negative)")
+        elif mp is not None and (abs(mp * 100 - round(mp * 100)) > 1e-6
+                                 or round(mp * 100) > 9007199254740991):
+            # Schema narrowed 2026-08-28 (Codex exact-head review of PR #71,
+            # finding 4): a plan minimum is a currency fact, so it must sit at
+            # USD currency precision (at most two decimal places) within
+            # safe-integer MINOR units — the 2.1b resolver converts it to
+            # integer cents EXACTLY, and the two contracts must admit the
+            # same set so no validator-admitted value is ever classified
+            # malformed at runtime.
+            r.add_error(f"{tag}: minimumPurchase {fin_headline.short_repr(mp)} must be "
+                        f"expressed at currency precision (at most two decimal "
+                        f"places, within safe-integer minor units) — the dark "
+                        f"resolver converts plan minimums to integer cents exactly")
         ppf = plan.get("publishedPaymentFactor")
         if ppf is not None and (not _finite_number(ppf) or not 0 < ppf < 1):
             r.add_error(f"{tag}: publishedPaymentFactor "
@@ -7226,6 +7239,21 @@ def _self_test() -> int:
               f"{_FH.short_repr(_v)}",
               _ranged(_rep, "termMonths")
               == (_v is not None and not _FH.term_in_domain(_v)))
+
+    # Schema narrowed 2026-08-28 (Codex exact-head review of PR #71, finding
+    # 4): plan minimums sit at currency precision within safe-integer minor
+    # units, so the 2.1b resolver's exact major->minor conversion admits the
+    # SAME set — no validator-admitted value is runtime-malformed.
+    check("minimumPurchase at currency precision (499.99) -> admitted",
+          _fin_with(lambda m: m["plans"][0].__setitem__("minimumPurchase", 499.99)).ok)
+    check("minimumPurchase beyond currency precision (499.999) -> refused",
+          any("currency precision" in e for e in
+              _fin_with(lambda m: m["plans"][0].__setitem__("minimumPurchase", 499.999)).errors))
+    check("minimumPurchase beyond safe-integer minor units -> refused",
+          any("currency precision" in e for e in
+              _fin_with(lambda m: m["plans"][0].__setitem__("minimumPurchase", 1e17)).errors))
+    check("minimumPurchase zero (an explicit no-minimum) -> admitted",
+          _fin_with(lambda m: m["plans"][0].__setitem__("minimumPurchase", 0)).ok)
 
     # Fields that must NOT influence the headline.
     check("minimumPurchase changes do not affect the generated headline",

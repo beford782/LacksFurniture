@@ -11509,6 +11509,18 @@
       var nonBlank = function (v) { return isStr(v) && v.replace(/\s+/g, '').length > 0; };
       var isInt = function (v) { return typeof v === 'number' && isFinite(v) && Math.floor(v) === v; };
       var posInt = function (v, max) { return isInt(v) && v > 0 && (max === undefined || v <= max); };
+      // Exact MAJOR->MINOR currency conversion (Codex exact-head review of
+      // PR #71, finding 4): plan minimums are validated at currency precision
+      // (at most two decimal places, safe-integer minor units), and this
+      // converts exactly that set — beyond it, null, and the threshold stays
+      // unknown. Aligned with the narrowed validate_financing schema.
+      var minorFromMajor = function (v) {
+        if (typeof v !== 'number' || !isFinite(v) || v < 0) return null;
+        var m = Math.round(v * 100);
+        if (m > 9007199254740991) return null;
+        if (Math.abs(v * 100 - m) > 0.000001) return null;
+        return m;
+      };
       var parseStamp = function (v) {
         if (!isStr(v) || v === '') return null;
         if (!/(?:[zZ]|[+-]\d\d:?\d\d)$/.test(v)) return null; // offset-bearing only
@@ -11566,6 +11578,10 @@
           var e = p.products[i2];
           if (!isObj(e)) continue;
           if (!isStr(q.productId) || e.productId !== q.productId) continue;
+          // SKU identity (Codex exact-head review of PR #71, finding 1): a
+          // price is resolved for one product-size AND its exact SKU — a
+          // missing, blank, malformed or mismatched SKU resolves nothing.
+          if (!isStr(q.sku) || !nonBlank(q.sku) || e.sku !== q.sku) continue;
           if (e.productKind === 'mattress') {
             if (!isStr(q.size) || e.size !== q.size) continue;
             if (isStr(e.size) && SIZE_WILDCARDS.indexOf(e.size.replace(/\s+/g, '').toLowerCase()) !== -1) continue;
@@ -11593,10 +11609,19 @@
         var win = isObj(entry.window) ? entry.window : null;
         var endRaw = win ? win.endsAt : null;
         var endAt = (endRaw === null || endRaw === undefined) ? null : parseStamp(endRaw);
+        // Window start (Codex exact-head review of PR #71, finding 2): a
+        // bound that is present must parse, and a price is unavailable
+        // BEFORE its start. Boundaries: at exactly startAt the price is
+        // admitted (start-inclusive); at exactly endsAt it is unavailable
+        // (end-exclusive, the existing rule).
+        var startRaw = win ? win.startAt : null;
+        var startAt = (startRaw === null || startRaw === undefined) ? null : parseStamp(startRaw);
         var winOk = true;
-        if (endRaw !== null && endRaw !== undefined && endAt === null) winOk = false; // malformed end bound
-        if (endAt !== null && endAt <= now) winOk = false;                            // expired price
-        if (pr && pr.kind === 'promotional' && endAt === null) winOk = false;         // promo needs a published end
+        if (endRaw !== null && endRaw !== undefined && endAt === null) winOk = false;       // malformed end bound
+        if (startRaw !== null && startRaw !== undefined && startAt === null) winOk = false; // malformed start bound
+        if (endAt !== null && endAt <= now) winOk = false;                                  // expired price
+        if (startAt !== null && now < startAt) winOk = false;                               // not yet started
+        if (pr && pr.kind === 'promotional' && endAt === null) winOk = false;               // promo needs a published end
         priceValid = !!(pr && ev
           && posInt(pr.amountMinor, 1000000000)
           && isStr(pr.currency) && nonBlank(pr.currency) && p !== null && pr.currency === p.currency
@@ -11625,11 +11650,25 @@
         }
       }
 
-      // ---- financing plan validity (feeds axes 2 and 3) ------------------
+      // ---- financing envelope + plan validity (feeds axes 2 and 3) -------
+      // Top-level governance first (Codex exact-head review of PR #71,
+      // finding 3): before ANY plan can be valid, the financing ENVELOPE
+      // itself must be enabled, fresh under the injected clock and skew, and
+      // sourced from its own allowlist — a malformed, future, stale or
+      // off-allowlist envelope makes calculation unavailable and the
+      // threshold unknown regardless of how the nested plan looks. The
+      // exact-term output flag stays deliberately unread.
+      var finMad = fin ? fin.maxAgeDays : null;
+      var finValid = false;
+      if (fin && fin.enabled === true && now !== null && posInt(finMad, 60)) {
+        var finAt = parseStamp(fin.verifiedAt);
+        finValid = finAt !== null && finAt <= now + SKEW_MS
+          && (now - finAt) <= finMad * 86400000
+          && allowedHost(fin.sourceUrl, fin.allowedSourceHosts);
+      }
       var plan = null;
       var planValid = false;
-      var finMad = fin ? fin.maxAgeDays : null;
-      if (fin && fin.enabled === true && now !== null && Array.isArray(fin.plans) && isStr(q.planId)) {
+      if (finValid && Array.isArray(fin.plans) && isStr(q.planId)) {
         for (var j = 0; j < fin.plans.length; j++) {
           var pl = fin.plans[j];
           if (isObj(pl) && pl.id === q.planId) { plan = pl; break; }
@@ -11638,7 +11677,6 @@
       if (plan) {
         var plAt = parseStamp(plan.verifiedAt);
         planValid = !!(plan.verified === true
-          && posInt(finMad, 60)
           && plAt !== null && plAt <= now + SKEW_MS
           && (now - plAt) <= finMad * 86400000
           && allowedHost(plan.sourceUrl, fin.allowedSourceHosts));
@@ -11681,15 +11719,16 @@
 
       // ---- axis 3: purchase threshold ------------------------------------
       // The qualifying amount is the explicit runtime transaction amount in
-      // MINOR units; minimumPurchase is published in MAJOR units (dollars),
-      // so the * 100 conversion below is load-bearing ($499 -> 49900 minor
-      // vs a $500 minimum -> 50000 minor -> not-met).
+      // MINOR units; minimumPurchase is published in MAJOR units (dollars)
+      // at currency precision, and minorFromMajor converts it EXACTLY
+      // ($499.99 -> 49999 minor; a 49998 transaction is not-met, 49999 is
+      // met). A plan without a convertible minimum assesses nothing.
       var threshold = 'unknown';
       var txn = q.transactionAmountMinor;
       if (planValid && posInt(txn)) {
-        var minMajor = plan.minimumPurchase;
-        if (posInt(minMajor)) {
-          threshold = txn >= minMajor * 100 ? 'met' : 'not-met';
+        var minMinor = minorFromMajor(plan.minimumPurchase);
+        if (minMinor !== null) {
+          threshold = txn >= minMinor ? 'met' : 'not-met';
         }
       }
 

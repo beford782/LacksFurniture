@@ -4120,6 +4120,47 @@ because ZERO consumers exist — **the moment 2.2 wires the first consumer,
 the refusal must become an EXECUTED test driving that consumer with the
 stale case-(b) state**, and 2.2's Gated work must carry it.)*
 
+*(Codex exact-head review of PR #71 at `531a7c8`, 2026-08-28 — four
+findings, all fixed on the branch in one correction commit; each fix
+carries dedicated tests, its own mutation-sweep entry, and an in-suite
+planted-mutant probe that RECONSTRUCTS the pre-fix behaviour and proves the
+new assertion fails against it: **(1) SKU identity** — the query must name
+the entry's exact SKU (non-blank, exact match, mattress and accessory
+alike); missing, blank, malformed, mismatched or lone-surrogate SKUs
+resolve nothing, with zero numeric leakage. **(2) window start** — a
+present `startAt` must parse (malformed bounds fail closed) and a price is
+unavailable before it; boundaries pinned start-INCLUSIVE
+(one instant before start unavailable, exactly at start admitted) and
+end-EXCLUSIVE (exactly at end unavailable), promotional-end and
+clearance-scope behaviour preserved. **(3) top-level financing
+governance** — before any plan is valid the financing ENVELOPE itself must
+be enabled, fresh under the injected clock and skew, and sourced from its
+own allowlist; a malformed, future, stale or off-allowlist envelope makes
+calculation unavailable and the threshold unknown even over a pristine
+plan and formula, with the price axis untouched (independence) and
+`exactPromotionsEnabled` still deliberately unread. **(4) minimumPurchase
+schema alignment** — the validator admitted any finite non-negative
+number while the resolver accepted only integers, silently reclassifying
+validator-admitted values like 499.99; reconciled from BOTH ends:
+`validate_financing` is narrowed to currency precision (at most two
+decimal places within safe-integer minor units — a documented, self-tested
+schema change), and the resolver converts exactly that set with an exact
+major→minor conversion (`$499.99` → 49999: a 49998 transaction is not-met,
+49999 met, 50000 met; beyond-precision and non-numeric minimums stay
+unknown; an explicit zero minimum is met — a recorded behaviour change the
+round-3 contract audit blessed as semantically correct). After the fixes no
+validator-admitted value is runtime-malformed. Round-3 audits of the
+correction: BOTH CONFORMS, zero REQUIRED; the test audit's one RECOMMENDED
+(a dedicated mutant for the malformed-start-bound line) was applied in the
+same commit. Two recorded asymmetries, both deliberate and fail-closed: the
+resolver refuses a not-yet-started price while the validator admits a
+future-start window at build (pre-staged promotions — do not "align" the
+validator without an owner decision), and the financing envelope checks the
+shipped allowlist with no approval-status field because financing carries
+none (the shipped list IS the governed contract). Sweep manifest 497 → 501;
+resolver suite 234 checks; validator self-test 1323. PR #71 stays
+unmerged and 2.1 stays 🔨 pending the re-review and owner authorization.)*
+
 **What 2.1a is NOT.** Not 2.1 completion: under this document, 2.1 stays 🔨
 until approved ownership, source, legal/MAP and cadence inputs exist and at
 least one verified size-specific price traverses the real pipeline — unless

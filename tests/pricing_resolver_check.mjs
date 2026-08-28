@@ -216,7 +216,8 @@ check("fixture clock parses", Number.isFinite(CLOCK));
 const P = () => JSON.parse(JSON.stringify(fx.pricing));
 const F = () => JSON.parse(JSON.stringify(fx.financing));
 const Q = (over = {}) => Object.assign(
-  { productId: "g6", size: "queen", planId: "synchrony-9-99-72", nowMs: CLOCK }, over);
+  { productId: "g6", sku: "FIXTURE-0001", size: "queen",
+    planId: "synchrony-9-99-72", nowMs: CLOCK }, over);
 const AX = ["price", "calculation", "threshold", "freshness", "eligibility"];
 const ENUMS = {
   price: ["resolved", "unavailable"],
@@ -350,6 +351,12 @@ const INVALID = [
   ["malformed window end", (p) => { p.products[0].window = { startAt: null, endsAt: "whenever" }; }],
   ["promotional price without a published end",
     (p) => { p.products[0].price.kind = "promotional"; }],
+  ["malformed window start bound",
+    (p) => { p.products[0].window = { startAt: "whenever", endsAt: null }; }],
+  ["window start in the future (price not yet started)",
+    (p) => { p.products[0].window = { startAt: "2026-09-15T00:00:00+00:00", endsAt: null }; }],
+  ["entry with a blank SKU (identity incomplete)",
+    (p) => { p.products[0].sku = ""; }],
   ["emergency disable (enabled false)", (p) => { p.enabled = false; }],
   ["enabled as the string 'true'", (p) => { p.enabled = "true"; }],
 ];
@@ -370,6 +377,77 @@ for (const [label, mut, qOver] of INVALID) {
     r.calculation.status === "quote-only" && r.threshold.status === "met"
     && r.freshness.status === "not-judgeable");
 }
+// SKU identity (exact-head review finding 1): the query names the exact SKU
+// or nothing resolves — missing, blank, malformed and mismatched all fail
+// with zero numeric leakage.
+for (const [label, sku] of [["missing", undefined], ["null", null],
+  ["blank", "   "], ["mismatched", "FIXTURE-9999"], ["non-string", 5],
+  ["lone-surrogate", "a\ud800b"]]) {
+  const r = resolver(P(), F(), Q({ sku }));
+  check(`SKU ${label} -> price unavailable, zero numeric leakage`, leakFree(r),
+    JSON.stringify(r.price));
+}
+check("SKU exact match (the base query) still resolves — the identity check is not over-broad",
+  resolver(P(), F(), Q()).price.status === "resolved");
+
+// Price-window boundaries (exact-head review finding 2): start-INCLUSIVE,
+// end-EXCLUSIVE. The window opens after the evidence stamp so every probe
+// instant keeps the evidence non-future and fresh.
+{
+  const winP = () => {
+    const p = P();
+    p.products[0].price.kind = "promotional";
+    p.products[0].window = { startAt: "2026-08-27T00:00:00+00:00",
+                             endsAt: "2026-09-01T00:00:00+00:00" };
+    return p;
+  };
+  const S = Date.parse("2026-08-27T00:00:00+00:00");
+  const E = Date.parse("2026-09-01T00:00:00+00:00");
+  const st = (nowMs) => resolver(winP(), F(), Q({ nowMs })).price.status;
+  check("inside the window -> resolved", st(CLOCK) === "resolved");
+  check("one second BEFORE startAt -> unavailable (not yet started)",
+    st(S - 1000) === "unavailable");
+  check("EXACTLY at startAt -> resolved (start-inclusive boundary)", st(S) === "resolved");
+  check("one second before endsAt -> resolved", st(E - 1000) === "resolved");
+  check("EXACTLY at endsAt -> unavailable (end-exclusive boundary preserved)",
+    st(E) === "unavailable");
+}
+
+// Top-level financing-envelope governance (exact-head review finding 3):
+// a malformed, future, stale or off-allowlist ENVELOPE makes calculation
+// unavailable and the threshold unknown even though the nested plan and
+// formula are pristine — while the PRICE axis stays resolved (independence).
+const FIN_ENV_BAD = [
+  ["stale envelope verifiedAt", (f) => { f.verifiedAt = "2026-07-31T16:43:00-05:00"; }],
+  ["future envelope verifiedAt (beyond skew)", (f) => { f.verifiedAt = "2026-08-27T13:00:00+00:00"; }],
+  ["malformed envelope verifiedAt", (f) => { f.verifiedAt = "not-a-stamp"; }],
+  ["missing envelope verifiedAt", (f) => { delete f.verifiedAt; }],
+  ["offset-less envelope verifiedAt", (f) => { f.verifiedAt = "2026-08-26T10:00:00"; }],
+  ["http envelope source", (f) => { f.sourceUrl = "http://www.lacks.com/financing"; }],
+  ["off-allowlist envelope source", (f) => { f.sourceUrl = "https://deals.example.com/financing"; }],
+  ["credentialed envelope source", (f) => { f.sourceUrl = "https://u:p@www.lacks.com/financing"; }],
+  ["archive envelope source", (f) => {
+    f.allowedSourceHosts.push("web.archive.org");
+    f.sourceUrl = "https://web.archive.org/web/2026/financing"; }],
+  ["missing envelope maxAgeDays", (f) => { delete f.maxAgeDays; }],
+  ["zero envelope maxAgeDays", (f) => { f.maxAgeDays = 0; }],
+  ["oversize envelope maxAgeDays", (f) => { f.maxAgeDays = 61; }],
+  ["float envelope maxAgeDays", (f) => { f.maxAgeDays = 7.5; }],
+];
+for (const [label, mut] of FIN_ENV_BAD) {
+  const f = F(); mut(f);
+  const r = resolver(P(), f, Q({ transactionAmountMinor: 60000 }));
+  check(`financing envelope — ${label} -> calculation unavailable AND threshold unknown`,
+    r.calculation.status === "unavailable" && r.threshold.status === "unknown");
+  check(`financing envelope — ${label} -> the price axis is untouched (independence)`,
+    r.price.status === "resolved");
+}
+{
+  const f = F(); f.verifiedAt = "2026-08-27T12:02:00+00:00";
+  check("envelope stamp 2 min ahead (inside skew) -> still governs (calculation available)",
+    resolver(P(), f, Q()).calculation.status === "available");
+}
+
 // Clock skew at the resolver (round-2 test audit N1): a within-skew future
 // evidence stamp is valid; past the 5-minute skew it is invalid.
 {
@@ -385,10 +463,13 @@ for (const [label, mut, qOver] of INVALID) {
   const p = P();
   p.products[0] = Object.assign(JSON.parse(JSON.stringify(p.products[0])), {
     productKind: "accessory", productId: "pillow-flow", size: null, sku: "FIXTURE-0002" });
-  const r = resolver(p, F(), Q({ productId: "pillow-flow", size: null }));
+  const r = resolver(p, F(), Q({ productId: "pillow-flow", sku: "FIXTURE-0002", size: null }));
   check("accessory entry: resolves for a null-size query", r.price.status === "resolved");
-  const r2 = resolver(p, F(), Q({ productId: "pillow-flow", size: "queen" }));
+  const r2 = resolver(p, F(), Q({ productId: "pillow-flow", sku: "FIXTURE-0002", size: "queen" }));
   check("accessory entry: a sized query does not match it", r2.price.status === "unavailable");
+  const r3 = resolver(p, F(), Q({ productId: "pillow-flow", sku: "FIXTURE-0001", size: null }));
+  check("accessory entry: the OTHER entry's SKU does not match it (SKU identity holds per kind)",
+    r3.price.status === "unavailable");
 }
 
 // ===========================================================================
@@ -419,8 +500,29 @@ check("$500.00 exactly (50000 minor) -> met (>= boundary)", tq(50000) === "met")
 check("plan without minimumPurchase (lacks-in-house) + a valid amount -> unknown",
   resolver(P(), F(), Q({ planId: "lacks-in-house", transactionAmountMinor: 60000 }))
     .threshold.status === "unknown");
-// Malformed plan minimums assess nothing either (round-2 test audit N2).
-for (const [label, v] of [["float", 499.99], ["string", "500"], ["boolean", true]]) {
+// minimumPurchase schema alignment (exact-head review finding 4): the
+// validator admits currency-precision decimals, and the resolver converts
+// them EXACTLY — a validator-admitted value is never runtime-malformed.
+{
+  const f = F(); f.plans[0].minimumPurchase = 499.99;
+  const t = (amt) => resolver(P(), f, Q({ transactionAmountMinor: amt })).threshold.status;
+  check("$499.99 minimum: 49998 minor -> not-met (one cent below the exact conversion)",
+    t(49998) === "not-met");
+  check("$499.99 minimum: 49999 minor -> met (the exact boundary)", t(49999) === "met");
+  check("$499.99 minimum: 50000 minor -> met (above)", t(50000) === "met");
+}
+{
+  const f = F(); f.plans[0].minimumPurchase = 499.999;
+  check("beyond currency precision (499.999 — now refused by the narrowed validator) -> unknown, fail-closed",
+    resolver(P(), f, Q({ transactionAmountMinor: 60000 })).threshold.status === "unknown");
+}
+{
+  const f = F(); f.plans[0].minimumPurchase = 0;
+  check("explicit zero minimum -> met for any valid amount",
+    resolver(P(), f, Q({ transactionAmountMinor: 1 })).threshold.status === "met");
+}
+// Non-numeric plan minimums still assess nothing (round-2 test audit N2).
+for (const [label, v] of [["string", "500"], ["boolean", true], ["negative", -5]]) {
   const f = F(); f.plans[0].minimumPurchase = v;
   check(`malformed minimumPurchase (${label}) + a valid amount -> unknown`,
     resolver(P(), f, Q({ transactionAmountMinor: 60000 })).threshold.status === "unknown");
@@ -582,9 +684,13 @@ section("Planted mutants — every detector can fire (the sweep's replace string
 // Each mutant recompiles the REAL source with the sweep's replacement and
 // asserts the specific probe that claims to catch it actually fails.
 function mutate(find, replace) {
+  // LF-normalized copies so a multi-line find matches regardless of the
+  // checkout's line endings (the sweep normalizes the same way).
+  const src0 = fnSrc.replace(/\r\n/g, "\n");
+  const page0 = html.replace(/\r\n/g, "\n");
   check(`mutant find-string anchors once: ${find.slice(0, 48)}...`,
-    fnSrc.split(find).length === 2 || html.split(find).length === 2);
-  const src = fnSrc.includes(find) ? fnSrc.replace(find, replace) : null;
+    src0.split(find).length === 2 || page0.split(find).length === 2);
+  const src = src0.includes(find) ? src0.replace(find, replace) : null;
   if (src === null) return null;
   try {
     return new Function("Date", `"use strict";\n${src}\nreturn resolveDarkPricing;`)(DATE_SHIM);
@@ -616,10 +722,41 @@ function mutate(find, replace) {
     m !== null && m(P(), F(), Q()).threshold.status !== "unknown");
 }
 {
-  const m = mutate("          threshold = txn >= minMajor * 100 ? 'met' : 'not-met';",
-    "          threshold = txn >= minMajor ? 'met' : 'not-met';");
-  check("M5 unit conversion dropped -> the $499 boundary probe FAILS on the mutant",
+  const m = mutate("          threshold = txn >= minMinor ? 'met' : 'not-met';",
+    "          threshold = txn >= plan.minimumPurchase ? 'met' : 'not-met';");
+  check("M5 exact conversion dropped -> the $499 boundary probe FAILS on the mutant",
     m !== null && m(P(), F(), Q({ transactionAmountMinor: 49900 })).threshold.status === "met");
+}
+{
+  const m = mutate("          if (!isStr(q.sku) || !nonBlank(q.sku) || e.sku !== q.sku) continue;",
+    "          if (false) continue;");
+  check("M9 SKU identity check removed -> the mismatched-SKU probe FAILS on the mutant",
+    m !== null && m(P(), F(), Q({ sku: "FIXTURE-9999" })).price.status === "resolved");
+}
+{
+  const m = mutate("if (startAt !== null && now < startAt) winOk = false;",
+    "if (false && startAt !== null && now < startAt) winOk = false;");
+  const p = P();
+  p.products[0].price.kind = "promotional";
+  p.products[0].window = { startAt: "2026-08-27T00:00:00+00:00", endsAt: "2026-09-01T00:00:00+00:00" };
+  check("M10 window-start check removed -> the before-start probe FAILS on the mutant",
+    m !== null && m(p, F(), Q({ nowMs: Date.parse("2026-08-27T00:00:00+00:00") - 1000 }))
+      .price.status === "resolved");
+}
+{
+  const m = mutate("if (startRaw !== null && startRaw !== undefined && startAt === null) winOk = false;",
+    "if (false) winOk = false;");
+  const p = P();
+  p.products[0].window = { startAt: "whenever", endsAt: null };
+  check("M12 malformed-start-bound check removed -> the malformed-start probe FAILS on the mutant",
+    m !== null && m(p, F(), Q()).price.status === "resolved");
+}
+{
+  const m = mutate("        finValid = finAt !== null && finAt <= now + SKEW_MS\n          && (now - finAt) <= finMad * 86400000\n          && allowedHost(fin.sourceUrl, fin.allowedSourceHosts);",
+    "        finValid = true;");
+  const f = F(); f.verifiedAt = "2026-07-31T16:43:00-05:00";
+  check("M11 financing-envelope gate forced open -> the stale-envelope probe FAILS on the mutant",
+    m !== null && m(P(), f, Q()).calculation.status !== "unavailable");
 }
 {
   const m = mutate("        calculation = 'quote-only';",

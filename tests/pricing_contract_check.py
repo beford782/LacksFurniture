@@ -492,9 +492,20 @@ SWEEP_FINDS = [
     ("index.html",
      "      var txn = q.transactionAmountMinor;"),
     ("index.html",
-     "          threshold = txn >= minMajor * 100 ? 'met' : 'not-met';"),
+     "          threshold = txn >= minMinor ? 'met' : 'not-met';"),
     ("index.html",
      "        calculation = 'quote-only';"),
+    # ---- Codex exact-head review anchors (2026-08-28) -----------------------
+    ("index.html",
+     "          if (!isStr(q.sku) || !nonBlank(q.sku) || e.sku !== q.sku) continue;"),
+    ("index.html",
+     "if (startAt !== null && now < startAt) winOk = false;"),
+    ("index.html",
+     "if (startRaw !== null && startRaw !== undefined && startAt === null) winOk = false;"),
+    ("index.html",
+     "        finValid = finAt !== null && finAt <= now + SKEW_MS\n"
+     "          && (now - finAt) <= finMad * 86400000\n"
+     "          && allowedHost(fin.sourceUrl, fin.allowedSourceHosts);"),
     ("index.html",
      "      const payload = {\n        storeName: (STORE_CONFIG && STORE_CONFIG.storeName) || '',"),
     ("index.html",
