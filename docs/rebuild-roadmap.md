@@ -5,8 +5,12 @@ evidence recorded; see 0.4 and `docs/kiosk-device-hardening.md`). Phase 1
 implementation AUTHORIZED (2026-08-12, owner directive — see the authorization
 block at the top of Phase 1) and, as of 2026-08-14, directed by the Nocturne
 owner-review decisions (see "Phase 1 direction decisions — recorded
-2026-08-14"). Phase 2.1 (the dark framework) was opened by Blake 2026-08-27 and is 🔨
-(slice 2.1a MERGED 2026-08-28, PR #69 → `95935ab`). By owner ruling 2026-08-28,
+2026-08-14"). **Phase 2.1 (the dark framework) is ✅ CLOSED (2026-08-28)** —
+opened by Blake 2026-08-27, slice 2.1a merged (PR #69 → `95935ab`), slice
+2.1b merged (PR #71 → `9a1b7f3`), and its completion criterion met: 2.1b
+proved the complete dark mechanism on governed non-shipping fixtures, merged
+to `main`, with post-merge verification proving zero customer output (see
+the closure record under 2.1). By owner ruling 2026-08-28,
 final business and legal approval occurs only at the end of the project
 immediately before live deployment and does not block dark development,
 provisional data, internal computation, previews, testing, or completion of
@@ -16,7 +20,41 @@ final stage (Gated and Proceeds under 2.2); Phase 3 remains a plan of intent,
 not a grant of approval — see the open-decisions register. Device hardening
 remains BLOCKING for showroom use.**
 
-**Last updated:** 2026-08-28, second revision this date *(**Slice 2.1b
+**Last updated:** 2026-08-28, third revision this date *(**PHASE 2.1
+CLOSED — the PR #71 merge record and the ✅ closure.** **PR #71** merged
+2026-08-28 22:26:10Z as merge commit
+`9a1b7f3b977e07bd906613e856c57c10318940ef` (parents
+`6c3e74de7cd1a1d172cb4bfab71bd382adc8d2d0` +
+`18f8c260392ad7de04435d4ac30f50913b35c91e`; merge commit, not squash or
+rebase; source branch `claude/phase2-1b-dark-resolver` preserved at the
+Codex-approved head `18f8c26`, which Codex approved with ZERO findings).
+Pre-merge CI run 33216070393 succeeded at the exact approved head (18
+checks, 4m59s); post-merge CI run 33216788571 (18 checks, 4m58s) and Pages
+run 33216787889 both succeeded at exactly `9a1b7f3`. First-parent diff: 14
+files, +2065/−97, with NO `incoming/` and NO `data/` changes. Served blobs
+equal the merge: `index.html`
+`5dc5f9cb3f6ee4c24760fbce1e27cad895e6f8dd`, `data/store-config.json`
+`f529ef717b8f3936631d536b2bcd4f43f01dc492` (unchanged since the `95935ab`
+deployment), `docs/rebuild-roadmap.md`
+`f09c66190350659028f84c45668ae51b4e76cb0c` — eleven served artifacts in all,
+each byte-identical to its merged blob. Production pricing remains
+`enabled:false`, `displayEnabled:false`, `products: []`, `formulas: []`,
+every surface false; `resolveDarkPricing` has exactly one declaration, zero
+call sites, and there are zero `STORE_CONFIG.pricing` reads. The final
+correction `18f8c26` preserved validator totality for 1e308 (a finite float
+whose scaling overflows): self-test 1324/0, financing totality 3576/0,
+pricing totality 10669/0, resolver 234/0, mutation sweep 501/501 caught / 0
+survived / 0 not-applied. **Phase 2.1 moves 🔨 → ✅**: its completion
+criterion (model point 7 — the complete dark mechanism proven with governed
+non-shipping fixtures, real prices and activation approvals not required)
+is MET on the merged, deployed evidence. **The reconciliation baseline
+advances from `95935ab` to `9a1b7f3`** — PR #71 changed application source
+(`index.html` and the generated demo). PR #69 and PR #70 evidence is
+preserved unchanged below. Nothing else moves: 2.2's ◐ activation gate,
+its Gated and Proceeds blocks, every other item status, the standing
+blockers (showroom NO, device matrix, Spanish provisional, live email off)
+are all untouched; no pricing activation, no live consumer, no 2.2 work.
+The previous revision, also 2026-08-28, recorded **Slice 2.1b
 BUILT** — the dark resolver, the validator re-binding and the five-axis
 contract, on branch `claude/phase2-1b-dark-resolver` from `6c3e74d` under the
 owner's 2026-08-28 subagent directive (single writer; two read-only audits —
@@ -388,20 +426,29 @@ owner-approved scoring change they carried.)*
 `main` when this document's phase statuses were written, the merge commit of
 PR #16 (2026-08-05). It is **not** current `main`. GitHub state is
 authoritative; a local checkout never is.
-**Reconciliation baseline:** `95935abe8493f22e99b7881e1abdb7c7f4deb5cd` — GitHub
-`main` after PR #69; the PR #69 merge commit (2026-08-28, the slice 2.1a dark
-pricing contract — an application-byte merge).
+**Reconciliation baseline:** `9a1b7f3b977e07bd906613e856c57c10318940ef` — GitHub
+`main` after PR #71; the PR #71 merge commit (2026-08-28, the slice 2.1b dark
+resolver — an application-byte merge).
 
 **Why the baseline moved, and what it skipped.** The previous baseline was
-**`90ecd04`**, from **PR #67** (2026-08-26, the item 1.4 close-out repairs).
-**PR #68** (the item 1.4 close-out merge record) was **documentation-only** —
-one file, `docs/rebuild-roadmap.md`, no application byte — and did **not**
-advance it. **PR #69** changed application bytes (`data/store-config.json`,
-consumed by the app at load, plus the generated demo bundle's config —
-`index.html` itself untouched, blob `ee39112…` unchanged) and therefore
-**advanced the baseline to `95935ab`**. The rule is unchanged: the baseline
-moves only on an application-byte merge, never on a documentation-only one —
-this revision's own close-out PR is documentation-only and does not move it.
+**`95935ab`**, from **PR #69** (2026-08-28, the slice 2.1a dark pricing
+contract). **PR #70** (the 2.1a close-out and the approval-timing ruling)
+was **documentation-only** — one file, `docs/rebuild-roadmap.md`, no
+application byte — and did **not** advance it. **PR #71** changed
+application source (`index.html` gains the `resolveDarkPricing` definition,
+plus the regenerated demo copy — `data/store-config.json` untouched, blob
+`f529ef7…` unchanged) and therefore **advanced the baseline to `9a1b7f3`**.
+The rule is unchanged: the baseline moves only on an application-byte merge,
+never on a documentation-only one — this revision's own close-out PR is
+documentation-only and does not move it.
+
+*(Earlier step, preserved: before PR #69 the baseline was `90ecd04`, from
+**PR #67** (2026-08-26, the item 1.4 close-out repairs); **PR #68** (the
+item 1.4 close-out merge record) was documentation-only and did not advance
+it; PR #69 changed application bytes (`data/store-config.json`, consumed by
+the app at load, plus the generated demo bundle's config — `index.html`
+itself untouched, blob `ee39112…` unchanged) and advanced it to
+`95935ab`.)*
 
 *(Earlier step, preserved: before PR #67 the baseline was `342ae2f`, from
 **PR #65** (2026-08-25, the item 1.4 Sleep System presentation); **PR #66**
@@ -420,7 +467,9 @@ documentation-only — each changed exactly one file, `docs/rebuild-roadmap.md`,
 and moved no application byte, so `8aeb6b3` remained the last
 application-byte baseline until PR #63, the first application change since.)*
 
-The prior baseline was `90ecd04942615bb07fd4504682eceb1bb5601874` (PR #67,
+The prior baseline was `95935abe8493f22e99b7881e1abdb7c7f4deb5cd` (PR #69,
+2026-08-28, the slice 2.1a dark pricing contract), before it
+`90ecd04942615bb07fd4504682eceb1bb5601874` (PR #67,
 2026-08-26, the item 1.4 close-out repairs), before it
 `342ae2f153bb733145837e8e9ba7b9c347d8f908` (PR #65,
 2026-08-25, the item 1.4 Sleep System presentation), before it
@@ -487,11 +536,11 @@ with two P2 findings fixed as C13/C14 and round 3 clean at the reviewed head;
 the real Windows forced-colors gate owner-run and owner-attested PASS). No
 Phase 1 slice is currently in progress; the next item is the owner's call
 (see the sequence at the end of this document) and nothing is authorized by
-this revision. *(2026-08-28: the active item is Phase 2.1 — opened by Blake
-2026-08-27, slice 2.1a merged as `95935ab`, slice 2.1b 🔨 on branch
-`claude/phase2-1b-dark-resolver` under the 2026-08-28 approval-timing ruling
-and its recorded governance model. No Phase 1 item is reopened by that
-work.)*
+this revision. *(2026-08-28: Phase 2.1 ran and CLOSED this date — opened by
+Blake 2026-08-27, slice 2.1a merged as `95935ab`, slice 2.1b merged as
+`9a1b7f3`, and the item closed ✅ on its met completion criterion (see the
+closure record under 2.1). No Phase 1 item was reopened by that work; the
+next item is again the owner's call.)*
 *(An earlier revision of this paragraph said Slice 5 was `⬜`, approved to build
 and not started; it began on its own branch — draft PR #53, head `6decbef` —
 before 2026-08-21. The gate is Slice 5's prerequisite in the approved order,
@@ -3794,7 +3843,7 @@ device are different designs.
 > Phase 2 gate below stands untouched, and `incoming/lacks_catalog_selection.json`
 > remains exactly as the warning box in 2.1 describes it.
 
-### 2.1 — The dark framework 🔨 (opened by Blake 2026-08-27; slice 2.1a MERGED 2026-08-28, PR #69 → `95935ab`; completion criterion revised under the governance model derived from the 2026-08-28 ruling; slice 2.1b 🔨 on branch `claude/phase2-1b-dark-resolver` — see the dated blocks below)
+### 2.1 — The dark framework ✅ (CLOSED 2026-08-28 — opened by Blake 2026-08-27; slice 2.1a merged, PR #69 → `95935ab`; slice 2.1b merged, PR #71 → `9a1b7f3`; the completion criterion of the 2026-08-28 governance model met — see the closure record below)
 
 *(2026-08-27 — **Phase 2.1 opened.** Blake explicitly authorized opening 2.1
 after Phase 1 was found to have no unblocked engineering left (1.3 ◐ with
@@ -3947,8 +3996,8 @@ from live-output approval:**
    approvals are not required for dark-framework completion.** This follows
    from the ruling's direct terms — final approval does not block completion
    of earlier roadmap items — and revises the completion criterion in "What
-   2.1a is NOT" as implementation governance derived under that ruling, not
-   as separately spoken owner text.
+   2.1a was NOT at merge" as implementation governance derived under that
+   ruling, not as separately spoken owner text.
 8. Phase 2.2's **activation output** is gated to the **final end-of-project
    deployment stage** — the item's mark is ◐ under the legend's
    gated-output model (see 2.2's Gated and Proceeds blocks). Non-live 2.2
@@ -3982,7 +4031,9 @@ minor-unit money, per-entry twelve-field clearance scope, strict nested-key
 rejection, the transaction-amount refusal) carries forward unchanged.
 
 **Slice 2.1b — the dark resolver (designed under the 2026-08-28 gate split;
-NOT started).** Runtime code in `index.html`: a pure, deterministic resolver
+subsequently BUILT and MERGED the same date — the build, correction and
+closure records below are the record of execution).** Runtime code in
+`index.html`: a pure, deterministic resolver
 taking product/SKU/size identity and an optional runtime transaction amount
 (never configuration — absent input means purchase-threshold status
 `unknown`), returning **independent structured axes, not one combined enum**:
@@ -4043,7 +4094,8 @@ point 7, that closes 2.1 without real production prices and without the
 activation approvals.
 
 **Slice 2.1b — build record (2026-08-28, branch
-`claude/phase2-1b-dark-resolver` from `6c3e74d`; 🔨 until its PR merges).**
+`claude/phase2-1b-dark-resolver` from `6c3e74d`; merged 2026-08-28 as
+`9a1b7f3` — see the closure record below).**
 Built under the owner's 2026-08-28 subagent directive: one writer; a
 CONTRACT audit and a TEST/ISOLATION audit ran read-only BEFORE
 implementation, and both found **no genuine governance contradiction** — the
@@ -4158,28 +4210,83 @@ future-start window at build (pre-staged promotions — do not "align" the
 validator without an owner decision), and the financing envelope checks the
 shipped allowlist with no approval-status field because financing carries
 none (the shipped list IS the governed contract). Sweep manifest 497 → 501;
-resolver suite 234 checks; validator self-test 1323. PR #71 stays
-unmerged and 2.1 stays 🔨 pending the re-review and owner authorization.)*
+resolver suite 234 checks; validator self-test 1323 at that commit.)*
 
-**What 2.1a is NOT.** Not 2.1 completion: under this document, 2.1 stays 🔨
-until approved ownership, source, legal/MAP and cadence inputs exist and at
-least one verified size-specific price traverses the real pipeline — unless
-Blake later explicitly amends this item. *(Revised 2026-08-28, as
+*(Second Codex exact-head finding, 2026-08-28, at `b6a3e89` — one blocking
+validator-TOTALITY defect, fixed as the branch's final commit `18f8c26`:
+the narrowed minimumPurchase check evaluated `round(mp * 100)` before
+proving the SCALED value finite, so a finite JSON float like 1e308
+overflowed to infinity and `round(inf)` raised OverflowError out of
+`validate_financing` — reproduced as a traceback first, at defect level and
+independently by the read-only round-4 audit. The fix judges the
+safe-integer ceiling FIRST on the raw scaled value (infinity exceeds it and
+short-circuits), so `round()` only ever runs at or below the ceiling; the
+stale "no upper bound" comment now records the intentional TECHNICAL
+representability ceiling (no business maximum introduced); the admitted set
+is unchanged (the reorder proven extensionally identical below the ceiling;
+the exact 2^53−1 / 2^53 boundary verified in real Node on both contract
+sides). Regressions: a named 1e308 self-test case, plus a
+`("huge float", 1e308)` probe in BOTH totality lexicons — proven to fail on
+the defect (the updated financing totality suite against the `b6a3e89`
+validator fails on exactly that probe and nothing else). Round-4 audit:
+CONFORMS, zero REQUIRED. Final counts at `18f8c26`: validator self-test
+1324/0, financing totality 3576/0, pricing totality 10669/0, resolver
+234/0, mutation sweep 501/501 caught / 0 survived / 0 not-applied. Codex
+then re-reviewed the exact head `18f8c26` and APPROVED with ZERO
+findings.)*
+
+**Phase 2.1 — closure record (2026-08-28; recorded at the owner's explicit
+direction of the same date, on the met criterion below).** **PR #71
+merged** 2026-08-28
+22:26:10Z as merge commit `9a1b7f3b977e07bd906613e856c57c10318940ef`
+(parents `6c3e74de7cd1a1d172cb4bfab71bd382adc8d2d0` +
+`18f8c260392ad7de04435d4ac30f50913b35c91e`; a merge commit, not squash or
+rebase; the second parent is the Codex-approved head, pinned at merge time
+with `--match-head-commit`; source branch preserved). Pre-merge CI run
+33216070393 succeeded at the exact approved head (18 checks, 4m59s);
+post-merge CI run 33216788571 (18 checks, 4m58s) and Pages run 33216787889
+both succeeded at exactly `9a1b7f3`. First-parent diff: 14 files,
++2065/−97, no `incoming/` or `data/` changes. Served blobs equal the merge
+— `index.html` `5dc5f9cb3f6ee4c24760fbce1e27cad895e6f8dd`,
+`data/store-config.json` `f529ef717b8f3936631d536b2bcd4f43f01dc492`
+(unchanged since the `95935ab` deployment), `docs/rebuild-roadmap.md`
+`f09c66190350659028f84c45668ae51b4e76cb0c`; eleven served artifacts in all,
+each byte-identical to its merged blob. Production pricing remains
+`enabled:false`, `displayEnabled:false`, `products: []`, `formulas: []`,
+every surface false; `resolveDarkPricing` has exactly one declaration, zero
+call sites; there are zero `STORE_CONFIG.pricing` reads. **Phase 2.1 is ✅
+CLOSED**: its completion criterion (model point 7) is met — 2.1b proved the
+complete dark mechanism on governed non-shipping fixtures, merged to
+`main`, and post-merge verification proves zero customer output. Closure
+closes THIS item only: 2.2's ◐ activation gate, its Gated and Proceeds
+blocks, the end-of-project approval stage, every other item status and
+every standing blocker are untouched; no pricing is activated, no live
+consumer exists, and the 2.2 breadcrumb stands — the first consumer 2.2
+wires must turn the stale-refusal contract into an executed test.
+
+**What 2.1a was NOT at merge.** Slice 2.1a alone was not Phase 2.1
+completion. The then-current text held 2.1 at 🔨 pending approved ownership,
+source, legal/MAP and cadence inputs and at least one verified size-specific
+price traversing the real pipeline — unless Blake later explicitly amended
+this item. *(That pre-ruling criterion was superseded 2026-08-28, as
 implementation governance derived under the owner's approval-timing ruling —
 whose direct terms state that final business/legal approval does not block
 completion of earlier roadmap items, so a completion criterion requiring
-those approvals cannot stand. The criterion is now model point 7 above: 2.1
-may close after 2.1b proves the complete dark mechanism with governed
-non-shipping fixtures. Real production prices, ownership approval, final
-business/legal approval and the activation-time clearances are end-of-project
-activation inputs, not 2.1 completion requirements — while governed source
-identity, allowlisting, freshness and integrity remain dark technical
-requirements, fail-closed. The rest of this paragraph stands.)* No runtime code (the JS resolver and
-its isolation proofs are slice 2.1b); no periodic-payment arithmetic (Option
-A); no change to the accessory "From $" surface or its data (an owner decision
-— see the register); `lacks_catalog_selection.json` stays unconsumed. Standing
-gates unchanged: showroom NO; Spanish provisional; forced-colors before
-showroom; live email off with `gasUrl` blank.)*
+those approvals could not stand. The operative criterion became model point
+7 above: 2.1 may close after 2.1b proves the complete dark mechanism with
+governed non-shipping fixtures. Real production prices, ownership approval,
+final business/legal approval and the activation-time clearances are
+end-of-project activation inputs, never 2.1 completion requirements — while
+governed source identity, allowlisting, freshness and integrity remain dark
+technical requirements, fail-closed. That superseding criterion was MET
+2026-08-28: 2.1b merged as `9a1b7f3` and Phase 2.1 is closed — see the
+closure record.)* 2.1a also shipped no runtime code (the JS resolver and
+its isolation proofs became slice 2.1b, since merged); no periodic-payment
+arithmetic (Option A); no change to the accessory "From $" surface or its
+data (an owner decision — see the register); and
+`lacks_catalog_selection.json` stays unconsumed. Standing gates unchanged:
+showroom NO; Spanish provisional; forced-colors before showroom; live email
+off with `gasUrl` blank.)*
 
 Ship the whole mechanism with nothing rendered: product/SKU/size identity,
 verified prices, canonical source and generation pipeline, price ownership,
@@ -4218,7 +4325,7 @@ approval and the activation-time operational clearances) are not required for
 dark-framework completion; they gate 2.2 activation at the end-of-project
 deployment stage. The fixtures themselves stay under governed source
 identity, allowlisting, freshness and integrity — technical authorization is
-not deferred.)*
+not deferred. MET 2026-08-28 by the merged 2.1b — see the closure record.)*
 
 **Unavailability and eligibility states, never conflated:**
 
@@ -4605,19 +4712,22 @@ document, not here.
    redesign itself, which proceeds against today's reason content (the generic
    default on 14 of 26 models only; none on the other 12) per
    1.3's Proceeds list.
-10. 🔨 **Dark pricing/payment foundation** — 2.1. *(Opened by Blake
-    2026-08-27; slice 2.1a — contract, validator and CI locks, no
-    `index.html` change — **merged 2026-08-28 as `95935ab`** (PR #69; CI and
-    Pages verified at exactly that commit; nine served artifacts
-    byte-identical). Completion criterion revised under the governance model
-    derived from the 2026-08-28 ruling: the item stays 🔨 until slice 2.1b
-    proves the complete dark mechanism with governed non-shipping fixtures —
-    real production prices and the activation approvals are activation
-    inputs, not 2.1 completion requirements, while governed source identity,
-    allowlisting, freshness and integrity remain dark technical
-    requirements. 2.1b is 🔨 on branch `claude/phase2-1b-dark-resolver`,
-    built 2026-08-28 under the audited single-writer process; it closes only
-    by its merged PR.)*
+10. ✅ **Dark pricing/payment foundation** — 2.1, CLOSED 2026-08-28.
+    *(Opened by Blake 2026-08-27. Slice 2.1a — contract, validator and CI
+    locks, no `index.html` change — merged 2026-08-28 as `95935ab` (PR #69;
+    CI and Pages verified at exactly that commit; nine served artifacts
+    byte-identical). Slice 2.1b — the dark resolver, the validator
+    re-binding and the five-axis contract, built under the audited
+    single-writer process with two pre-implementation audits, four audit
+    rounds and three external Codex review rounds all resolved — **merged
+    2026-08-28 as `9a1b7f3`** (PR #71, merge commit pinned to the
+    Codex-approved head `18f8c26`; post-merge CI and Pages verified at
+    exactly that commit; eleven served artifacts byte-identical; mutation
+    sweep 501/501). The completion criterion of the 2026-08-28 governance
+    model is MET: the complete dark mechanism proven with governed
+    non-shipping fixtures, zero customer output in any state. Real
+    production prices and the activation approvals remain end-of-project
+    activation inputs — closing 2.1 grants nothing to 2.2.)*
 11. ◐ **Activate prices and payments** — 2.2. The activation output is gated
     to the final end-of-project deployment stage, its approval — written
     business and legal — taken there (owner ruling 2026-08-28); non-live
