@@ -12,7 +12,14 @@ Owns the DARK framework's production/test separation:
     tab envelope, generated store-config, generated demo bundle) with ZERO
     transforms between canonical source and shipped config;
   * no numeric price, payment or transaction figure ships in any production
-    artifact, and index.html reads none of the contract (DOM silence);
+    artifact. DOM silence is a CONTAINMENT proof as of Phase 2.1b (a reviewed
+    change to the 2.1a token-absence lock, named in the PR): index.html
+    carries exactly one pricing artifact — the pure resolveDarkPricing
+    DEFINITION between its two markers, with ZERO live call sites — every
+    pricing token in the file lives inside that block, and nothing anywhere
+    reads STORE_CONFIG.pricing, so no runtime code path can depend on the
+    contract and rendered output is structurally invariant to it
+    (tests/pricing_resolver_check.mjs owns the resolver's behaviour);
   * the Daybreak Promotions envelope is untouched (still exactly
     {promotions, financing}) — pricing rides its OWN tab;
   * the price-specific canonical allowlist exists and is narrow, and the
@@ -24,8 +31,8 @@ Owns the DARK framework's production/test separation:
     validate_financing + validate_pricing under an INJECTED clock — and is
     admitted; then single-field corruptions covering every reviewed contract
     rule are each REFUSED, so the admission is not vacuous. (The JS resolver
-    leg joins this traversal in Phase 2.1b; there is no runtime pricing code
-    in 2.1a.)
+    leg lives in tests/pricing_resolver_check.mjs, which derives its governed
+    variants from this same fixture under the same injected clock.)
   * the fixture's placeholder text never appears in a shipping artifact;
   * every mutation-sweep find string this slice adds matches its target
     EXACTLY ONCE (the sweep itself does not check uniqueness).
@@ -114,10 +121,17 @@ DARK = {
 NO_SHIP_STRINGS = ('"amountMinor"', '"transactionAmountMinor"', '"transactionAmount"',
                    '"monthlyPayment"', '"perMonth"', '"estimatedPayment"',
                    '"publishedPaymentFactor"', "FIXTURE")
-# Tokens index.html must never contain while the framework is dark: nothing
-# reads the contract, so nothing can render it.
-DOM_SILENCE = ("STORE_CONFIG.pricing", "getPricingConfig", "resolvePrice", "displayEnabled",
-               "amountMinor", "pricing.presentation", "purchaseAssessment")
+# DOM silence, Phase 2.1b form. ABSENT tokens may appear NOWHERE in the app:
+# nothing reads the shipped contract (no STORE_CONFIG.pricing read exists) and
+# no accessor or legacy resolver name was introduced. CONTAINED tokens exist
+# ONLY inside the marked resolver-definition block — the one pricing artifact
+# index.html carries, a pure function with zero live call sites.
+DOM_ABSENT = ("STORE_CONFIG.pricing", "getPricingConfig", "resolvePrice",
+              "pricing.presentation", "purchaseAssessment")
+DOM_CONTAINED = ("resolveDarkPricing", "displayEnabled", "amountMinor",
+                 "transactionAmountMinor", "minimumPurchase", "sourcePolicy")
+RESOLVER_START = "// ═══ PHASE 2.1B DARK RESOLVER (definition only — zero live call sites) ═══"
+RESOLVER_END = "// ═══ END PHASE 2.1B DARK RESOLVER ═══"
 
 # ---- production artifacts ---------------------------------------------------
 print("Production shipped-state lock (dark until Phase 2.2):")
@@ -160,10 +174,31 @@ check("shipped contract carries no combined ES/legal flag and no catalog-wide cl
 check("shipped purchase-threshold policy is runtime-transaction-amount only",
       pr.get("purchaseAssessment") == {"policy": "runtime-transaction-amount"})
 
-# DOM silence: nothing in the app reads the contract.
+# DOM silence (2.1b containment form): nothing reads the shipped contract, and
+# every pricing token lives inside the marked resolver definition. The demo
+# bundle is a copy of index.html and gets the identical scan.
+for page in ("index.html", "demo/black-friday/index.html"):
+    root = _read(page)
+    s_count, e_count = root.count(RESOLVER_START), root.count(RESOLVER_END)
+    check(f"{page}: resolver markers appear exactly once each", s_count == 1 and e_count == 1,
+          f"start={s_count} end={e_count}")
+    if s_count == 1 and e_count == 1:
+        s_idx, e_idx = root.index(RESOLVER_START), root.index(RESOLVER_END)
+        check(f"{page}: resolver block is well-formed (start before end)", s_idx < e_idx)
+        block = root[s_idx:e_idx + len(RESOLVER_END)]
+        for tok in DOM_ABSENT:
+            check(f"{page}: token absent everywhere (nothing reads the contract): {tok!r}",
+                  tok not in root)
+        for tok in DOM_CONTAINED:
+            n_all, n_block = root.count(tok), block.count(tok)
+            check(f"{page}: token {tok!r} appears only inside the resolver block",
+                  n_block >= 1 and n_all == n_block, f"file={n_all} block={n_block}")
+        # Zero live call sites: the resolver NAME appears exactly once as its
+        # own declaration (plus marker-comment mentions inside the block).
+        check(f"{page}: resolveDarkPricing is declared once and never called",
+              root.count("function resolveDarkPricing(") == 1
+              and root.count("resolveDarkPricing(") == 1)
 root = _read("index.html")
-for tok in DOM_SILENCE:
-    check(f"index.html never references the pricing contract: {tok!r}", tok not in root)
 
 # The workbook: its own tab, chunked envelope, Daybreak envelope untouched.
 wb = openpyxl.load_workbook(os.path.join(REPO, "incoming", "Lacks_Store_Data.xlsx"))
@@ -183,7 +218,7 @@ prod_envelope = json.loads(ppayload)
 check("Daybreak Promotions envelope still carries exactly promotions and financing",
       set(prod_envelope) == {"promotions", "financing"})
 check("pricing never entered the Promotions envelope", '"pricing"' not in ppayload)
-check("production financing keeps exact-term authorization OFF (the fixture's ON state never leaks)",
+check("production financing keeps exact-term OUTPUT authorization OFF (the runtime render gate stands)",
       cfg.get("financing", {}).get("exactPromotionsEnabled") is False)
 
 # The demo bundle derives from production config and must carry the same dark block.
@@ -215,8 +250,9 @@ check("shipped pricing validates clean under the real clock (no errors, no warni
 ci = _lf(_read(".github/workflows/ci.yml"))
 check("CI operating-state lock names pricing.displayEnabled",
       "pricing ships dark" in ci and "displayEnabled" in ci)
-check("CI runs this suite and the pricing totality suite",
-      "tests/pricing_contract_check.py" in ci and "tests/pricing_totality_check.py" in ci)
+check("CI runs this suite, the pricing totality suite and the 2.1b resolver suite",
+      "tests/pricing_contract_check.py" in ci and "tests/pricing_totality_check.py" in ci
+      and "tests/pricing_resolver_check.mjs" in ci)
 check("CI protects the canonical pricing source",
       "incoming/lacks_pricing.json" in ci)
 
@@ -229,8 +265,9 @@ fx_fin = fx["financing"]
 check("fixture is populated (one product, one formula) and dark for display",
       len(fx_pricing["products"]) == 1 and len(fx_pricing["formulas"]) == 1
       and fx_pricing["displayEnabled"] is False and fx_pricing["enabled"] is True)
-check("fixture financing is explicitly authorized and current under the fixture clock",
-      fx_fin.get("exactPromotionsEnabled") is True and fx_fin.get("enabled") is True
+check("fixture financing is enabled and current, with exact-term OUTPUT authorization OFF "
+      "exactly as production ships it (gate split 2026-08-28: the flag never gates validation)",
+      fx_fin.get("exactPromotionsEnabled") is False and fx_fin.get("enabled") is True
       and all(datetime.fromisoformat(p["verifiedAt"]) <= CLOCK for p in fx_fin["plans"] if "verifiedAt" in p))
 for rel in ("data/store-config.json", "incoming/lacks_pricing.json",
             "demo/black-friday/data/store-config.json", "incoming/lacks_financing.json"):
@@ -313,8 +350,6 @@ try:
          "a transaction amount is a runtime argument, never configuration"),
         ("purchase policy = product price (§1)", ("pricing", "purchaseAssessment"),
          {"policy": "product-price"}, "a single product price is never it"),
-        ("exact-term authorization switched off (§2)", ("financing", "exactPromotionsEnabled"),
-         False, "exactPromotionsEnabled must be true"),
         ("referenced plan unverified (§2)", ("financing", "plans", 0, "verified"), False,
          "referenced plan is not verified"),
         ("referenced plan stale (§2)", ("financing", "plans", 0, "verifiedAt"),
@@ -332,9 +367,6 @@ try:
         ("an end bound appears after clearance (§3 scope.windowEndsAt)",
          ("pricing", "products", 0, "window"), {"startAt": None, "endsAt": "2026-09-01T00:00:00-05:00"},
          "clearance.scope.windowEndsAt"),
-        ("clearance downgraded to not-cleared (§3)", ("pricing", "products", 0, "clearance"),
-         {"status": "not-cleared", "attestedBy": "", "attestedAt": None, "scope": None},
-         "clearance.status must be 'cleared' or an attested"),
         ("legal approval withdrawn (§4)", ("pricing", "presentation", "approvals", "legal"),
          {"status": "unapproved", "by": "", "at": None}, "one approval never stands in for another"),
         ("a disclosure loses its Spanish (§4)",
@@ -371,6 +403,44 @@ try:
     check("formula source on a financing-only host is ADMITTED (financing policy, not the price list)",
           okrep.ok, "; ".join(okrep.errors[:2]))
 
+    # ---- gate split (owner ruling 2026-08-28): the re-bound bindings ----------
+    # The fixture already proves the dark formula validates with exact-term
+    # output authorization OFF (production's own state). The flag is orthogonal:
+    # switching it ON changes nothing for validation.
+    on_doc = corrupt(("financing", "exactPromotionsEnabled"), True)
+    onrep = validation.validate_pricing(on_doc, now=CLOCK, **KW)
+    check("gate split — exact-term authorization ON is equally admitted (validation is orthogonal to output)",
+          onrep.ok, "; ".join(onrep.errors[:2]))
+    # Activation approvals absent while ENABLED and dark -> ADMITTED (the dark
+    # resolver's case (a) configuration): MAP clearance not-cleared, blank
+    # authority, presentation unapproved/pending and EMPTY.
+    ua_doc = json.loads(json.dumps(config))
+    ua_doc["pricing"]["authority"] = {"owner": "", "role": ""}
+    ua_doc["pricing"]["products"][0]["clearance"] = {
+        "status": "not-cleared", "attestedBy": "", "attestedAt": None, "scope": None}
+    ua_doc["pricing"]["presentation"] = {
+        "status": "unapproved",
+        "approvals": {"business": {"status": "unapproved", "by": "", "at": None},
+                      "legal": {"status": "unapproved", "by": "", "at": None},
+                      "nativeReview": {"status": "pending", "by": "", "at": None}},
+        "assumptions": [], "disclosures": [], "states": {},
+    }
+    ua_rep = validation.validate_pricing(ua_doc, now=CLOCK, **KW)
+    check("gate split — ENABLED dark with every activation approval absent -> ADMITTED (case (a) config)",
+          ua_rep.ok, "; ".join(ua_rep.errors[:3]))
+    # The SAME document at activation -> every re-bound approval error fires
+    # alongside the permanent display lock, so the approvals were MOVED to the
+    # activation set, never dropped.
+    ua_doc["pricing"]["displayEnabled"] = True
+    act_rep = validation.validate_pricing(ua_doc, now=CLOCK, **KW)
+    act_needles = ("Phase 2.2", "authority.owner",
+                   "clearance.status must be 'cleared' or an attested",
+                   "presentation.status must be 'approved' at activation",
+                   "disclosures must be non-empty at activation")
+    for needle in act_needles:
+        check(f"gate split — same document at activation -> refused, names {needle[:44]!r}",
+              any(needle in e for e in act_rep.errors), "; ".join(act_rep.errors[:3]))
+
     # The real converter subprocess refuses a hostile Pricing payload without a
     # traceback (its freshness verdict depends on the wall clock, so only the
     # shape is asserted through the subprocess).
@@ -405,15 +475,31 @@ SWEEP_FINDS = [
     ("tools/validation.py",
      "    \"transactionamountminor\", \"transactionamount\", \"purchaseamountminor\","),
     ("tools/validation.py",
-     "        if not fin_exact:\n            r.add_error(\"pricing.formulas: financing.exactPromotionsEnabled must be true \""),
+     "        if not fin_enabled:\n            r.add_error(\"pricing.formulas: financing must be enabled — a formula \""),
     ("tools/validation.py",
      "                            elif scope[key] != expected[key] or type(scope[key]) is not type(expected[key]):"),
     ("tools/validation.py",
-     "        if enabled and not papproved:\n            r.add_error(\"pricing.presentation.status must be 'approved' when pricing is \""),
+     "        if activation and not papproved:\n            r.add_error(\"pricing.presentation.status must be 'approved' at activation \""),
     ("tools/validation.py",
      "        if enabled and not approved:\n            r.add_error(\"pricing.freshness.status must be 'approved' (with maxAgeDays, \""),
     ("tools/validation.py",
      "                            \"size\": size if kind == \"mattress\" else None,"),
+    # ---- Phase 2.1b resolver anchors (index.html) and the payload anchor ----
+    ("index.html",
+     "        eligible = p.displayEnabled === true"),
+    ("index.html",
+     "          freshness = (now - evInstant) > mad * 86400000 ? 'stale' : 'fresh';"),
+    ("index.html",
+     "      var txn = q.transactionAmountMinor;"),
+    ("index.html",
+     "          threshold = txn >= minMajor * 100 ? 'met' : 'not-met';"),
+    ("index.html",
+     "        calculation = 'quote-only';"),
+    ("index.html",
+     "      const payload = {\n        storeName: (STORE_CONFIG && STORE_CONFIG.storeName) || '',"),
+    ("index.html",
+     "        var price = Number(primary.price) > 0\n"
+     "          ? sleepSystemText({ en: 'From $', es: 'Desde $' }) + Number(primary.price).toLocaleString()"),
 ]
 for target, find in SWEEP_FINDS:
     n = _lf(_read(target)).count(find)

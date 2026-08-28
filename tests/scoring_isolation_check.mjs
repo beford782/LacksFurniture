@@ -206,7 +206,14 @@ for (const id of ["financingAgenda", "financingAgendaDismissed", "financingExplo
                   // Daybreak PR 1 (owner ruling 2026-08-13): the locally-made
                   // +25 bonus is retired. Origin is data-only and the engine
                   // may not read the flag — a reintroduction fails here.
-                  "locallyMade", "Made locally", "Hecho localmente"]) {
+                  "locallyMade", "Made locally", "Hecho localmente",
+                  // Phase 2.1b: the dark pricing resolver and its contract.
+                  // Price NEVER affects scoring, ranking or recommendation —
+                  // the engine may not name the resolver, its axes, the
+                  // shipped pricing config or a transaction amount.
+                  "resolveDarkPricing", "amountMinor", "transactionAmountMinor",
+                  "STORE_CONFIG.pricing", "purchaseAssessment", "displayEnabled",
+                  "minimumPurchase"]) {
   check(`calculateScores() does not reference ${id}`, !m[0].includes(id));
 }
 
@@ -223,7 +230,13 @@ for (const [label, rx] of [
   ["a payment read through the global object", /window\s*\.\s*_?pay[A-Z]/],
   ["a financing read through the global object", /window\s*\.\s*_?financing/i],
   ["an optional-chaining payment read", /\?\.\s*pay(?:Pref|Explored|Open)\b/],
-  ["a bracketed payment read", /\[\s*['"]pay(?:Pref|Explored|Open)['"]\s*\]/]
+  ["a bracketed payment read", /\[\s*['"]pay(?:Pref|Explored|Open)['"]\s*\]/],
+  // Phase 2.1b escape variants: pricing state through typeof, the global
+  // object, optional chaining or bracket access is banned the same way.
+  ["a typeof guard on pricing state", /typeof\s+(?:resolveDarkPricing|pricing[A-Za-z]*)\b/],
+  ["a pricing read through the global object", /window\s*\.\s*_?pricing/i],
+  ["an optional-chaining pricing read", /\?\.\s*(?:pricing|amountMinor)\b/],
+  ["a bracketed pricing read", /\[\s*['"](?:pricing|amountMinor)['"]\s*\]/]
 ]) {
   check(`calculateScores() contains no ${label}`, !rx.test(m[0]));
 }
@@ -235,7 +248,11 @@ for (const [label, rx, sample] of [
   ["global payment read", /window\s*\.\s*_?pay[A-Z]/, "var x = window._payExplored;"],
   ["global financing read", /window\s*\.\s*_?financing/i, "var x = window._financingAgenda;"],
   ["optional-chaining payment read", /\?\.\s*pay(?:Pref|Explored|Open)\b/, "var x = state?.payPref;"],
-  ["bracketed payment read", /\[\s*['"]pay(?:Pref|Explored|Open)['"]\s*\]/, "var x = g['payPref'];"]
+  ["bracketed payment read", /\[\s*['"]pay(?:Pref|Explored|Open)['"]\s*\]/, "var x = g['payPref'];"],
+  ["typeof pricing guard", /typeof\s+(?:resolveDarkPricing|pricing[A-Za-z]*)\b/, "if (typeof resolveDarkPricing === 'function') {}"],
+  ["global pricing read", /window\s*\.\s*_?pricing/i, "var x = window._pricingState;"],
+  ["optional-chaining pricing read", /\?\.\s*(?:pricing|amountMinor)\b/, "var x = cfg?.pricing;"],
+  ["bracketed pricing read", /\[\s*['"](?:pricing|amountMinor)['"]\s*\]/, "var x = cfg['pricing'];"]
 ]) {
   check(`the ${label} pattern actually matches a planted example`, rx.test(sample));
 }

@@ -1930,9 +1930,30 @@ section('§25 — nothing in D4 computes a monthly payment (V1 invariant)');
   ];
   ok('§25 all four bans match a planted counter-example',
     PLANTED25.every(([rx, sample]) => rx.test(sample)));
-  ok('§25 publishedPaymentFactor is absent from the shipped store config as well as from the app',
-    !JSON.stringify(CFG).includes('publishedPaymentFactor')
-    && !codeOnly.includes('publishedPaymentFactor'));
+  // Phase 2.1b (owner ruling 2026-08-28, a reviewed change to this lock,
+  // named in the PR): the dark resolver's closed formula-mode set names
+  // publishedPaymentFactor as an input NAME — never a value, which the
+  // validator's forbidden-key scan still refuses anywhere in configuration.
+  // The ban therefore becomes a CONTAINMENT pin: absent from the shipped
+  // config and from ALL executable code outside the marked resolver block,
+  // and inside the block it appears exactly once, as the mode's input name.
+  ok('§25 publishedPaymentFactor is absent from the shipped store config',
+    !JSON.stringify(CFG).includes('publishedPaymentFactor'));
+  ok('§25 publishedPaymentFactor appears in app code ONLY as the resolver mode\'s input name',
+    (() => {
+      const rs = codeOnly.indexOf('function resolveDarkPricing(');
+      if (rs === -1) return false;
+      let depth = 0, i = codeOnly.indexOf('{', rs), end = -1;
+      for (; i < codeOnly.length; i++) {
+        if (codeOnly[i] === '{') depth++;
+        else if (codeOnly[i] === '}') { depth--; if (depth === 0) { end = i + 1; break; } }
+      }
+      if (end === -1) return false;
+      const inside = codeOnly.slice(rs, end);
+      const total = codeOnly.split('publishedPaymentFactor').length - 1;
+      const contained = inside.split('publishedPaymentFactor').length - 1;
+      return total === contained && contained === 1;
+    })());
   ok('§25 no rendered D4 surface prints a currency amount',
     (() => {
       const env = openEnv();

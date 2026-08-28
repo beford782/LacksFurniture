@@ -108,6 +108,11 @@ const PAY_VALIDATOR = ["tools/validation.py --self-test"];
 // EXPLICITLY - none may fall through to DEFAULT_SUITES.
 const PRICING = ["tests/pricing_contract_check.py"];
 const PRICING_VALIDATOR = ["tools/validation.py --self-test", "tests/pricing_contract_check.py"];
+// Phase 2.1b: the dark-resolver suite executes the REAL resolveDarkPricing
+// extracted from index.html, so a resolver mutation is observed by behaviour,
+// not by grep. Payload/render leaks are observed by the email-gating and
+// sleep-system suites, which own those surfaces' pins.
+const PRICING_RESOLVER = ["tests/pricing_resolver_check.mjs"];
 // Trust integrity gate observer (2026-08-21): the trust suite owns the copy <->
 // engine correspondence (document sections, cited tags, the inert-tag set,
 // shipped-vs-documented help lines, banned claims), the absence of the
@@ -1941,17 +1946,21 @@ const MUTATIONS = [
     "    \"transactionamountminor\", \"transactionamount\", \"purchaseamountminor\",",
     "    \"transactionamount\", \"purchaseamountminor\",",
     PRICING_VALIDATOR, "tools/validation.py"],
-  ["2.1a review: a formula is admitted while exact-term authorization is off",
-    "        if not fin_exact:\n            r.add_error(\"pricing.formulas: financing.exactPromotionsEnabled must be true \"",
-    "        if False:\n            r.add_error(\"pricing.formulas: financing.exactPromotionsEnabled must be true \"",
+  // Gate split (owner ruling 2026-08-28): the exact-term entry is RETIRED with
+  // its check — the flag gates live exact-term OUTPUT only (the policy suite
+  // pins that) and no longer gates validation. Its replacement guards the
+  // financing-enabled leg of the same cross-gate.
+  ["2.1b: a formula is admitted while financing itself is disabled",
+    "        if not fin_enabled:\n            r.add_error(\"pricing.formulas: financing must be enabled — a formula \"",
+    "        if False:\n            r.add_error(\"pricing.formulas: financing must be enabled — a formula \"",
     PRICING_VALIDATOR, "tools/validation.py"],
   ["2.1a review: one entry's clearance clears another (the scope match is gone)",
     "                            elif scope[key] != expected[key] or type(scope[key]) is not type(expected[key]):",
     "                            elif False:",
     PRICING_VALIDATOR, "tools/validation.py"],
-  ["2.1a review: an enabled contract no longer needs an approved presentation",
-    "        if enabled and not papproved:\n            r.add_error(\"pricing.presentation.status must be 'approved' when pricing is \"",
-    "        if False:\n            r.add_error(\"pricing.presentation.status must be 'approved' when pricing is \"",
+  ["2.1b: the activation gate on presentation approval is gone (approvals silently DROPPED, not moved)",
+    "        if activation and not papproved:\n            r.add_error(\"pricing.presentation.status must be 'approved' at activation \"",
+    "        if False and not papproved:\n            r.add_error(\"pricing.presentation.status must be 'approved' at activation \"",
     PRICING_VALIDATOR, "tools/validation.py"],
   ["2.1a review: an enabled contract no longer needs an approved freshness policy",
     "        if enabled and not approved:\n            r.add_error(\"pricing.freshness.status must be 'approved' (with maxAgeDays, \"",
@@ -1962,6 +1971,43 @@ const MUTATIONS = [
     "                            \"size\": size if kind == \"mattress\" else None,",
     "                            \"size\": scope.get(\"size\"),",
     PRICING_VALIDATOR, "tools/validation.py"],
+
+  // --- Phase 2.1b: the dark resolver (index.html) --------------------------
+  // Each entry mutates the REAL resolver source; the resolver suite executes
+  // the mutated function and the specific five-axis probe fails. Find strings
+  // are proven to match exactly once by tests/pricing_contract_check.py.
+  ["2.1b: the eligibility axis is forced eligible (activation approvals become decorative)",
+    "        eligible = p.displayEnabled === true",
+    "        eligible = true || p.displayEnabled === true",
+    PRICING_RESOLVER, "index.html"],
+  ["2.1b: stale strips the numeric (stale conflated with technical invalidity)",
+    "          freshness = (now - evInstant) > mad * 86400000 ? 'stale' : 'fresh';",
+    "          freshness = (now - evInstant) > mad * 86400000 ? 'stale' : 'fresh';\n          if (freshness === 'stale') { priceValid = false; amountMinor = null; }",
+    PRICING_RESOLVER, "index.html"],
+  ["2.1b: stale reports fresh (the cadence axis stops firing)",
+    "          freshness = (now - evInstant) > mad * 86400000 ? 'stale' : 'fresh';",
+    "          freshness = (now - evInstant) > mad * 86400000 ? 'fresh' : 'fresh';",
+    PRICING_RESOLVER, "index.html"],
+  ["2.1b: the threshold reads a constant instead of the runtime transaction amount",
+    "      var txn = q.transactionAmountMinor;",
+    "      var txn = 250000;",
+    PRICING_RESOLVER, "index.html"],
+  ["2.1b: the minor/major unit conversion is dropped ($499 meets a $500 minimum)",
+    "          threshold = txn >= minMajor * 100 ? 'met' : 'not-met';",
+    "          threshold = txn >= minMajor ? 'met' : 'not-met';",
+    PRICING_RESOLVER, "index.html"],
+  ["2.1b: quote-only is conflated with calculation-unavailable",
+    "        calculation = 'quote-only';",
+    "        calculation = 'unavailable';",
+    PRICING_RESOLVER, "index.html"],
+  ["2.1b: resolver data enters the GAS email payload",
+    "      const payload = {\n        storeName: (STORE_CONFIG && STORE_CONFIG.storeName) || '',",
+    "      const payload = {\n        pricingAmountMinor: 369900,\n        storeName: (STORE_CONFIG && STORE_CONFIG.storeName) || '',",
+    PAY_EMAIL, "index.html"],
+  ["2.1b: a resolved amount reaches the one live price surface",
+    "        var price = Number(primary.price) > 0\n          ? sleepSystemText({ en: 'From $', es: 'Desde $' }) + Number(primary.price).toLocaleString()",
+    "        var price = Number(primary.price) > 0\n          ? sleepSystemText({ en: 'From $', es: 'Desde $' }) + Number(primary.price).toLocaleString() + ' ($3,699)'",
+    SLEEP, "index.html"],
 
 ];
 

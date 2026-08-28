@@ -559,6 +559,64 @@ check("...and the same scan flags a planted payPref field",
   [...plantedFields].some((k) => PAY_DERIVED_NAME.test(k)));
 
 // ===========================================================================
+section("Exclusion: pricing (Phase 2.1b — resolver/contract data never ships)");
+// ===========================================================================
+// The dark resolver's vocabulary. Bare `price` is deliberately NOT in this
+// lexicon: the payload's accessory spread already carries a catalog `price`
+// field (an open owner-register row, deliberately unchanged by 2.1b) and the
+// Sleep System's one "From $" line is the pinned live surface — what 2.1b
+// bans from email, analytics and persistence is the pricing CONTRACT and
+// RESOLVER vocabulary, provisional material included.
+const PRICING_SYMBOL = new RegExp(
+  "\\b(?:resolveDarkPricing|amountMinor|transactionAmountMinor|purchaseAssessment"
+  + "|displayEnabled|minimumPurchase)\\b");
+const PLANTED_PRICING = [
+  "pricing: resolveDarkPricing(cfg, fin, q),",
+  "amount: r.price.amountMinor,",
+  "transactionAmountMinor: total,",
+  "assessment: cfg.purchaseAssessment.policy,",
+  "if (cfg.displayEnabled) packet.push(x);",
+  "minimum: plan.minimumPurchase * 100,"];
+check("PRICING_SYMBOL fires on every planted resolver/contract line",
+  PLANTED_PRICING.every((l) => PRICING_SYMBOL.test(l)),
+  PLANTED_PRICING.filter((l) => !PRICING_SYMBOL.test(l)).join(" | "));
+const PERMITTED_PRICING_LINES = [
+  "accessories: accList,",
+  "price: Number(primary.price) > 0 ? x : '',",
+  "discount: savingsPass ? savingsPass.percentage : 0,"];
+check("PRICING_SYMBOL stays silent on the shipped catalog-price surfaces",
+  PERMITTED_PRICING_LINES.every((l) => !PRICING_SYMBOL.test(l)),
+  PERMITTED_PRICING_LINES.filter((l) => PRICING_SYMBOL.test(l)).join(" | "));
+const PRICE_DERIVED_NAME =
+  /^pricing(?:[A-Z_]|$)|amountMinor|resolvedPrice|priceAxis|thresholdStatus|purchaseAssessment/i;
+check("PRICE_DERIVED_NAME flags planted pricing key names",
+  ["pricingAmountMinor", "pricing", "amountMinor", "resolvedPrice", "thresholdStatus"]
+    .every((k) => PRICE_DERIVED_NAME.test(k)));
+check("PRICE_DERIVED_NAME spares legitimate shipped keys",
+  ["priorities", "discount", "passScope", "passExpiration", "branding",
+   "storeName", "financing", "accessories", "consultation"]
+    .every((k) => !PRICE_DERIVED_NAME.test(k)));
+check("no payload key is pricing-derived",
+  payloadKeys.filter((k) => PRICE_DERIVED_NAME.test(k)).length === 0,
+  payloadKeys.filter((k) => PRICE_DERIVED_NAME.test(k)).join(", "));
+check("the payload body carries no resolver/contract symbol",
+  !PRICING_SYMBOL.test(payloadBlock), (payloadBlock.match(PRICING_SYMBOL) || [""])[0]);
+check("the preview builder carries no resolver/contract symbol",
+  !PRICING_SYMBOL.test(previewBlock));
+check("Code.gs carries no resolver/contract symbol", !PRICING_SYMBOL.test(gsCode));
+check("no session-summary field is pricing-derived",
+  Object.keys(summary).filter((k) => PRICE_DERIVED_NAME.test(k)).length === 0);
+check("no declared analytics field is pricing-derived",
+  [...declaredFields].filter((k) => PRICE_DERIVED_NAME.test(k)).length === 0);
+check("no analytics event name is pricing-derived",
+  !Object.keys(EVENT_FIELDS).some((e) => /pricing|amount_minor|threshold/i.test(e)));
+// Planted counterexamples: the same scans over widened structures must flag.
+check("...and the key scan flags a planted pricing payload key",
+  ["pricingAmountMinor"].some((k) => PRICE_DERIVED_NAME.test(k)));
+check("...and the symbol scan flags a planted payload line",
+  PRICING_SYMBOL.test("pricing: { amountMinor: 369900 },"));
+
+// ===========================================================================
 section("Wiring (static)");
 // ===========================================================================
 const callSites = (htmlCode.match(/\bfinEmailBody\(\s*\)/g) || []).length;
@@ -590,6 +648,8 @@ check("the wipe clears all three D4 dimensions by name",
   && /payOpen = \{\};/.test(wipeBlock));
 check("the wipe no longer references the retired financingExplored flag",
   !/financingExplored/.test(wipeBlock));
+check("the wipe carries no pricing/resolver binding (the 2.1b resolver is stateless — nothing to wipe, nothing persisted)",
+  !PRICING_SYMBOL.test(wipeBlock) && !/resolveDarkPricing/.test(wipeBlock));
 check("window.startOver() still exists and delegates to that one wipe",
   /window\.startOver = function\(\) \{\s*return resetSessionState\(/.test(html));
 

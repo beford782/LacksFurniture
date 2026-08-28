@@ -516,6 +516,16 @@ jobs:
       - name: pricing contract (dark shipped-state lock + fixture traversal)
         run: python tests/pricing_contract_check.py
 
+      # Phase 2.1b: the dark resolver — executes the REAL resolveDarkPricing
+      # extracted from index.html (definition only, zero live call sites) in
+      # a poisoned pure scope: five independent axes over the governed
+      # non-shipping fixture and its derived variants under the injected
+      # clock; stale resolves as inert internal data; invalid data yields no
+      # numeric result; thresholds convert MAJOR-unit plan minimums; hostile
+      # totality; planted mutants rejected.
+      - name: pricing resolver (2.1b dark resolver, five-axis contract)
+        run: node tests/pricing_resolver_check.mjs
+
       # Executes the real localhost demo server against a live loopback
       # socket: loopback-only bind, narrow store-config interception, the
       # launch+72h window, untouched committed files.
