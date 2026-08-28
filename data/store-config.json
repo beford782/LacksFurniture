@@ -414,17 +414,21 @@
       "owner": "",
       "role": ""
     },
-    "mapClearance": {
-      "status": "not-cleared",
-      "clearedBy": "",
-      "clearedAt": null
+    "freshness": {
+      "status": "unapproved",
+      "maxAgeDays": null,
+      "approvedBy": "",
+      "approvedAt": null
     },
-    "esReviewStatus": "pending-native-legal-review",
-    "maxAgeDays": 7,
-    "allowedSourceHosts": [
-      "lacks.com",
-      "www.lacks.com"
-    ],
+    "sourcePolicy": {
+      "status": "unapproved",
+      "allowedSourceHosts": [],
+      "approvedBy": "",
+      "approvedAt": null
+    },
+    "purchaseAssessment": {
+      "policy": "runtime-transaction-amount"
+    },
     "sizes": [
       "twin",
       "twin_xl",
@@ -440,8 +444,28 @@
       "handoff": false,
       "sleepPlan": false
     },
-    "purchaseAssessment": {
-      "basis": "unknown"
+    "presentation": {
+      "status": "unapproved",
+      "approvals": {
+        "business": {
+          "status": "unapproved",
+          "by": "",
+          "at": null
+        },
+        "legal": {
+          "status": "unapproved",
+          "by": "",
+          "at": null
+        },
+        "nativeReview": {
+          "status": "pending",
+          "by": "",
+          "at": null
+        }
+      },
+      "assumptions": [],
+      "disclosures": [],
+      "states": {}
     },
     "products": [],
     "formulas": []

@@ -3,9 +3,9 @@
 
 validate_pricing() is a BUILD GATE: the converter refuses to publish a bundle
 when it reports errors. That only works if it always produces a verdict. For
-every value python's json.loads can produce, anywhere in the pricing subtree —
-and for every hostile value of the validator's own keyword arguments — this
-must hold:
+every value python's json.loads can produce, anywhere in the pricing subtree,
+anywhere in the financing subtree the formula cross-gate reads, and for every
+hostile value of the validator's own keyword arguments, this must hold:
 
   1. no exception escapes;
   2. a ValidationReport is returned;
@@ -13,9 +13,10 @@ must hold:
   4. no diagnostic is unbounded (a 5,000-digit amount must not become the message);
   5. the caller's config object is not mutated.
 
-The BASE document is the populated, non-shipping fixture under its injected
-clock, so every probe starts from a document the validator ADMITS — a probe
-that produces an error is therefore attributable to the probe.
+The BASE document is the populated, non-shipping fixture (pricing + its
+explicitly authorized financing) under its injected clock, so every probe
+starts from a document the validator ADMITS — a probe that produces an error
+is therefore attributable to the probe.
 
 Run: python tests/pricing_totality_check.py     (exit 0 = all pass)
 """
@@ -65,12 +66,14 @@ def load(rel):
 
 FX = load("tests/fixtures/pricing_populated_fixture.json")
 CLOCK = datetime.fromisoformat(FX["_meta"]["clock"])
-HOSTS = load("tools/source_hosts.json")["priceSourceHosts"]
+SH = load("tools/source_hosts.json")
+HOSTS = SH["priceSourceHosts"]
+FIN_HOSTS = SH["financingSourceHosts"]
 MIDS = {m["id"] for tier in load("data/mattresses.json").values() for m in tier}
 AIDS = {a["id"] for a in load("data/accessories.json")}
-BASE = {"pricing": FX["pricing"],
-        "financing": load("data/store-config.json").get("financing")}
-KW = dict(allowed_source_hosts=HOSTS, mattress_ids=MIDS, accessory_ids=AIDS, now=CLOCK)
+BASE = {"pricing": FX["pricing"], "financing": FX["financing"]}
+KW = dict(allowed_source_hosts=HOSTS, financing_source_hosts=FIN_HOSTS,
+          mattress_ids=MIDS, accessory_ids=AIDS, now=CLOCK)
 
 
 def _fingerprint(o):
@@ -137,6 +140,12 @@ def cfg_with(path, value):
     return doc
 
 
+def sweep_fields(prefix, path, keys):
+    for field in sorted(keys):
+        for lbl, val in JSON_VALUES:
+            probe(f"{prefix}.{field} = {lbl}", cfg_with(path + (field,), val))
+
+
 def main():
     print("Valid-input verdicts are preserved:")
     rep = validation.validate_pricing(json.loads(json.dumps(BASE)), **KW)
@@ -150,58 +159,78 @@ def main():
         probe(f"config = {lbl}", cfg_with((), val),
               None if isinstance(val, dict) else "config must be an object")
     for lbl, val in JSON_VALUES:
-        expect = None if val is None else ("pricing" if not isinstance(val, dict) else "pricing")
-        probe(f"pricing = {lbl}", cfg_with(("pricing",), val), expect)
-    for field in sorted(validation.PRICING_KEYS):
-        for lbl, val in JSON_VALUES:
-            probe(f"pricing.{field} = {lbl}", cfg_with(("pricing", field), val))
+        probe(f"pricing = {lbl}", cfg_with(("pricing",), val), None if val is None else "pricing")
+    sweep_fields("pricing", ("pricing",), validation.PRICING_KEYS)
 
-    print("Nested objects and their leaves:")
+    print("Nested policy objects and their leaves:")
     for block, keys in (("authority", validation.PRICING_AUTHORITY_KEYS),
-                        ("mapClearance", validation.PRICING_MAP_KEYS),
+                        ("freshness", validation.PRICING_FRESHNESS_KEYS),
+                        ("sourcePolicy", validation.PRICING_SOURCE_POLICY_KEYS),
                         ("surfaces", validation.PRICING_SURFACES),
-                        ("purchaseAssessment", validation.PRICING_ASSESSMENT_KEYS)):
-        for field in sorted(keys):
-            for lbl, val in JSON_VALUES:
-                probe(f"pricing.{block}.{field} = {lbl}", cfg_with(("pricing", block, field), val))
+                        ("purchaseAssessment", validation.PRICING_ASSESSMENT_KEYS),
+                        ("presentation", validation.PRICING_PRESENTATION_KEYS)):
+        sweep_fields(f"pricing.{block}", ("pricing", block), keys)
     for lbl, val in JSON_VALUES:
-        probe(f"allowedSourceHosts[0] = {lbl}",
-              cfg_with(("pricing", "allowedSourceHosts"), [val]),
+        probe(f"sourcePolicy.allowedSourceHosts[0] = {lbl}",
+              cfg_with(("pricing", "sourcePolicy", "allowedSourceHosts"), [val]),
               None if isinstance(val, str) and val.strip() else "allowedSourceHosts")
         probe(f"sizes[0] = {lbl}", cfg_with(("pricing", "sizes"), [val]), "pricing.sizes")
+
+    print("presentation approvals, copy lists and states:")
+    for who in sorted(validation.PRICING_PRESENTATION_APPROVAL_KEYS):
+        for lbl, val in JSON_VALUES:
+            probe(f"approvals.{who} = {lbl}", cfg_with(("pricing", "presentation", "approvals", who), val))
+        sweep_fields(f"approvals.{who}", ("pricing", "presentation", "approvals", who),
+                     validation.PRICING_APPROVAL_RECORD_KEYS)
+    for lst in ("assumptions", "disclosures"):
+        for lbl, val in JSON_VALUES:
+            probe(f"{lst}[0] = {lbl}", cfg_with(("pricing", "presentation", lst), [val]))
+        sweep_fields(f"{lst}[0]", ("pricing", "presentation", lst, 0), validation.PRICING_COPY_ITEM_KEYS)
+    for st in sorted(validation.PRICING_STATE_KEYS):
+        for lbl, val in JSON_VALUES:
+            probe(f"states.{st} = {lbl}", cfg_with(("pricing", "presentation", "states", st), val))
+            probe(f"states.{st}.es = {lbl}",
+                  cfg_with(("pricing", "presentation", "states", st), {"en": "ok", "es": val}))
 
     print("products and their leaves:")
     for lbl, val in JSON_VALUES:
         probe(f"products[0] = {lbl}", cfg_with(("pricing", "products"), [val]),
               None if isinstance(val, dict) else "pricing.products[0]")
-    for field in sorted(validation.PRICING_PRODUCT_KEYS):
-        for lbl, val in JSON_VALUES:
-            probe(f"products[0].{field} = {lbl}", cfg_with(("pricing", "products", 0, field), val))
+    sweep_fields("products[0]", ("pricing", "products", 0), validation.PRICING_PRODUCT_KEYS)
     for block, keys in (("price", validation.PRICING_PRICE_KEYS),
                         ("evidence", validation.PRICING_EVIDENCE_KEYS),
+                        ("clearance", validation.PRICING_CLEARANCE_KEYS),
                         ("window", validation.PRICING_WINDOW_KEYS)):
-        for field in sorted(keys):
-            for lbl, val in JSON_VALUES:
-                probe(f"products[0].{block}.{field} = {lbl}",
-                      cfg_with(("pricing", "products", 0, block, field), val))
+        sweep_fields(f"products[0].{block}", ("pricing", "products", 0, block), keys)
+    sweep_fields("products[0].clearance.scope", ("pricing", "products", 0, "clearance", "scope"),
+                 validation.PRICING_CLEARANCE_SCOPE_KEYS)
 
     print("formulas and their leaves:")
     for lbl, val in JSON_VALUES:
         probe(f"formulas[0] = {lbl}", cfg_with(("pricing", "formulas"), [val]),
               None if isinstance(val, dict) else "pricing.formulas[0]")
-    for field in sorted(validation.PRICING_FORMULA_KEYS):
-        for lbl, val in JSON_VALUES:
-            probe(f"formulas[0].{field} = {lbl}", cfg_with(("pricing", "formulas", 0, field), val))
+    sweep_fields("formulas[0]", ("pricing", "formulas", 0), validation.PRICING_FORMULA_KEYS)
     for lbl, val in JSON_VALUES:
         probe(f"formulas[0].inputs[0] = {lbl}", cfg_with(("pricing", "formulas", 0, "inputs"), [val]))
+
+    print("the financing subtree the formula cross-gate reads:")
+    for lbl, val in JSON_VALUES:
+        probe(f"financing = {lbl}", cfg_with(("financing",), val))
+        probe(f"financing.plans = {lbl}", cfg_with(("financing", "plans"), val))
+        probe(f"financing.plans[0] = {lbl}", cfg_with(("financing", "plans"), [val]))
+    sweep_fields("financing", ("financing",),
+                 ("enabled", "exactPromotionsEnabled", "verifiedAt", "maxAgeDays",
+                  "sourceUrl", "allowedSourceHosts"))
+    sweep_fields("financing.plans[0]", ("financing", "plans", 0),
+                 ("id", "verified", "verifiedAt", "sourceUrl", "calculationMode"))
 
     print("Named regressions - the shapes most likely to raise:")
     NAMED = [
         ("amountMinor = huge int", ("pricing", "products", 0, "price", "amountMinor"), HUGE, "amountMinor"),
         ("amountMinor = NaN", ("pricing", "products", 0, "price", "amountMinor"), NAN, "amountMinor"),
         ("amountMinor = true", ("pricing", "products", 0, "price", "amountMinor"), True, "amountMinor"),
-        ("maxAgeDays = true", ("pricing", "maxAgeDays"), True, "maxAgeDays"),
-        ("maxAgeDays = huge int", ("pricing", "maxAgeDays"), HUGE, "maxAgeDays"),
+        ("freshness.maxAgeDays = true", ("pricing", "freshness", "maxAgeDays"), True, "maxAgeDays"),
+        ("freshness.maxAgeDays = huge int", ("pricing", "freshness", "maxAgeDays"), HUGE, "maxAgeDays"),
         ("verifiedAt = huge int", ("pricing", "products", 0, "evidence", "verifiedAt"), HUGE, "verifiedAt"),
         ("verifiedAt = huge string", ("pricing", "products", 0, "evidence", "verifiedAt"), "9" * 20000, "verifiedAt"),
         ("sku = huge int", ("pricing", "products", 0, "sku"), HUGE, "sku"),
@@ -213,11 +242,19 @@ def main():
          "https://user:pw@www.lacks.com/p", "sourceUrl"),
         ("lone surrogate in sku", ("pricing", "products", 0, "sku"), "a\ud800b", "sku"),
         ("lone surrogate in a key", ("pricing", "products", 0), {"a\ud800b": 1}, "products[0]"),
-        ("transactionAmountMinor = huge int", ("pricing", "purchaseAssessment"),
-         {"basis": "transaction-amount", "transactionAmountMinor": HUGE}, "transactionAmountMinor"),
+        ("clearance.scope.amountMinor = huge int", ("pricing", "products", 0, "clearance", "scope", "amountMinor"),
+         HUGE, "clearance.scope.amountMinor"),
+        ("clearance.scope.sku = huge string", ("pricing", "products", 0, "clearance", "scope", "sku"),
+         "s" * 20000, "clearance.scope.sku"),
+        ("a transaction amount = huge int", ("pricing", "purchaseAssessment", "transactionAmountMinor"),
+         HUGE, "transactionAmountMinor"),
         ("inputs = huge list", ("pricing", "formulas", 0, "inputs"), ["x"] * 5000, "inputs"),
-        ("financing = string (formula cross-check source)", ("financing",), "bad", "names no financing plan"),
-        ("financing.plans = [5]", ("financing",), {"plans": [5]}, "names no financing plan"),
+        ("financing = string (cross-gate source)", ("financing",), "bad", "financing must be enabled"),
+        ("financing.plans = [5]", ("financing",), {"plans": [5]}, "financing must be enabled"),
+        ("plan verifiedAt = huge string", ("financing", "plans", 0, "verifiedAt"), "9" * 20000, "verifiedAt"),
+        ("plan sourceUrl = huge string", ("financing", "plans", 0, "sourceUrl"),
+         "https://www.lacks.com/" + "f" * 20000, None),
+        ("financing.maxAgeDays = huge int", ("financing", "maxAgeDays"), HUGE, "maxAgeDays"),
     ]
     for lbl, path, val, expect in NAMED:
         probe(lbl, cfg_with(path, val), expect)
@@ -225,19 +262,15 @@ def main():
     print("The keyword arguments are hostile too:")
     for lbl, val in JSON_VALUES + [("list with non-string entries", [5, None, []]),
                                    ("mixed list", ["lacks.com", 7])]:
-        probe(f"allowed_source_hosts = {lbl}", json.loads(json.dumps(BASE)),
-              allowed_source_hosts=val)
+        probe(f"allowed_source_hosts = {lbl}", json.loads(json.dumps(BASE)), allowed_source_hosts=val)
+        probe(f"financing_source_hosts = {lbl}", json.loads(json.dumps(BASE)), financing_source_hosts=val)
         probe(f"mattress_ids = {lbl}", json.loads(json.dumps(BASE)), mattress_ids=val)
         probe(f"accessory_ids = {lbl}", json.loads(json.dumps(BASE)), accessory_ids=val)
         probe(f"now = {lbl}", json.loads(json.dumps(BASE)), now=val)
-    check("a malformed canonical allowlist fails CLOSED",
-          any("canonical price source-host allowlist" in e
-              for e in validation.validate_pricing(json.loads(json.dumps(BASE)),
-                                                   **dict(KW, allowed_source_hosts=5)).errors))
-    check("a malformed canonical allowlist is reported",
-          any("allowed_source_hosts" in e
-              for e in validation.validate_pricing(json.loads(json.dumps(BASE)),
-                                                   **dict(KW, allowed_source_hosts=5)).errors))
+    for name in ("allowed_source_hosts", "financing_source_hosts"):
+        errs = validation.validate_pricing(json.loads(json.dumps(BASE)), **dict(KW, **{name: 5})).errors
+        check(f"a malformed {name} fails CLOSED", any("source-host allowlist" in e for e in errs))
+        check(f"a malformed {name} is reported", any(name in e for e in errs))
     check("a naive datetime clock is ignored, never raises",
           isinstance(validation.validate_pricing(json.loads(json.dumps(BASE)),
                                                  **dict(KW, now=datetime(2030, 1, 1))),

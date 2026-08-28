@@ -17,7 +17,11 @@ tab → `store-config.pricing`, shipped `enabled:false` / `displayEnabled:false`
 / `products: []`), `validate_pricing`, two new Python suites, the CI
 operating-state lock naming `pricing.displayEnabled`, and six mutation
 entries — is on branch `claude/phase2-1a-pricing-contract`, **not merged**;
-see the dated record under 2.1. No `index.html` change; scoring,
+its Codex PR review requested six contract changes (transaction amounts out
+of configuration, formulas cross-gated against financing governance,
+per-entry clearance, a governed non-rendered presentation contract with
+separate approvals, unresolved policies represented as unapproved, corrected
+narrative), corrected on the same branch — see the dated record under 2.1. No `index.html` change; scoring,
 recommendation and every Phase 1 suite unchanged. Item 1.4 is unchanged in
 this revision (its device matrix was deferred by owner ruling 2026-08-27 to
 one consolidated end-of-roadmap session; 1.4 stays ⏳ and is not edited
@@ -3728,7 +3732,38 @@ single-field corruptions and when the clock advances 30 days. CI gains
 pre-activation lock **permanent until Phase 2.2**. Six focused mutation-sweep
 entries (display lock, size inference, stale-while-enabled, float money,
 unknown keys, shipped display flag), each find string proven to match once.
-Validator self-test 1153 → 1248; sweep manifest 477 → 483.
+
+**PR #69 review (Codex, 2026-08-27): CHANGES REQUESTED — corrected on the
+same branch.** The first commit (`e083b44`) applied the proposal-review
+corrections but the PR review found six contract issues, each fixed in the
+follow-up commit and each carrying its own negative tests and a sweep entry:
+(1) transaction amounts are never configuration — `purchaseAssessment`
+carries only the policy `runtime-transaction-amount`, the resolver will take
+the amount as an argument (absent → threshold `unknown`), and any transaction-
+amount key at any depth is refused; (2) a formula artifact is admitted only
+under financing governance — financing enabled, `exactPromotionsEnabled`
+true, the financing configuration and the referenced plan verified, fresh and
+allowlisted under the FINANCING source policy (never the price list), the
+plan's `calculationMode` matching, and approved formula evidence; (3) the
+catalog-wide `mapClearance` is replaced by a per-entry `clearance` scoped to
+exactly {productId, sku, amountMinor, currency, kind, evidenceVerifiedAt,
+evidenceSourceUrl}, so any change invalidates it, with an attested
+`not-required` state and no inference; (4) a governed, NON-RENDERED
+`presentation` contract (assumptions, disclosures, bilingual EN/ES state
+copy) with business, legal and native-language approvals recorded
+separately — production ships it explicitly unapproved and empty, and
+index.html is pinned to reference none of it; (5) unresolved business policy
+is represented honestly — `freshness` and `sourcePolicy` ship `unapproved`
+with `maxAgeDays: null` and no approved hosts (the candidate hosts in
+`tools/source_hosts.json` are a technical ceiling, not approval), and enabling
+requires approved, non-empty policy metadata; (6) the narrative is corrected
+(this paragraph), `lacks_catalog_selection.json` stays ring-fenced, and the
+integer-minor-unit money, global SKU uniqueness, injected clocks, strict
+nested-key rejection, all-surfaces-false and empty-products/formulas /
+displayEnabled-false invariants are preserved. The non-shipping fixture now
+carries an explicitly authorized, current financing block (production
+financing stays exactly as shipped, `exactPromotionsEnabled` false) so the
+formula cross-gate is exercised end to end. Sweep manifest 483 → 488.
 
 **What 2.1a is NOT.** Not 2.1 completion: under this document, 2.1 stays 🔨
 until approved ownership, source, legal/MAP and cadence inputs exist and at

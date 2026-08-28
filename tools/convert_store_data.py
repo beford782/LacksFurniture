@@ -922,6 +922,7 @@ def main(argv=None) -> int:
         report.merge(validation.validate_pricing(
             config,
             allowed_source_hosts=source_hosts.get("priceSourceHosts"),
+            financing_source_hosts=source_hosts.get("financingSourceHosts"),
             mattress_ids=promo_mids,
             accessory_ids=[a.get("id") for a in accessories]))
         # Quiz definition — structural contract (pinned ids/types/options) plus

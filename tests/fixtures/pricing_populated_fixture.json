@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "note": "NON-SHIPPING test fixture for Phase 2.1 (tests/pricing_contract_check.py). A populated pricing contract that traverses the real pipeline in a temp workbook: canonical envelope -> Pricing tab -> converter build_pricing -> validate_pricing under an INJECTED clock. It never enters incoming/, the committed workbook, data/, or demo/. The single product entry is a deliberately ILLUSTRATIVE Queen price for g6 (Reserve Mayfair Plush) with a placeholder attestation; it is NOT a verified Lacks price and must never be copied into a shipping source. Production pricing.products stays [] until approved ownership/source/legal/MAP/cadence inputs exist (roadmap §2.1).",
+    "note": "NON-SHIPPING test fixture for Phase 2.1 (tests/pricing_contract_check.py, tests/pricing_totality_check.py). A populated pricing contract that traverses the real pipeline in a temp workbook: canonical envelope -> Pricing tab -> converter build_pricing -> build_store_config -> validate_financing + validate_pricing under an INJECTED clock. It never enters incoming/, the committed workbook, data/, or demo/. Every approval, attestation and policy here is an explicit ILLUSTRATIVE placeholder for exercising the pipeline — not a real Lacks approval, price, clearance or verification — and must never be copied into a shipping source. The `financing` block is the production block with exact-term authorization switched ON and stamps set current under the fixture clock, so the formula cross-gate can be exercised; production financing stays exactly as shipped (exactPromotionsEnabled false). Production pricing.products stays [] and every production policy stays unapproved until real ownership/source/legal/MAP/cadence inputs exist (roadmap §2.1).",
     "clock": "2026-08-27T12:00:00+00:00"
   },
   "pricing": {
@@ -12,17 +12,24 @@
       "owner": "FIXTURE — placeholder owner (not a real approval)",
       "role": "merchandising"
     },
-    "mapClearance": {
-      "status": "cleared",
-      "clearedBy": "FIXTURE — placeholder (not a real clearance)",
-      "clearedAt": "2026-08-26T09:00:00-05:00"
+    "freshness": {
+      "status": "approved",
+      "maxAgeDays": 7,
+      "approvedBy": "FIXTURE — placeholder (illustrative policy, not approved)",
+      "approvedAt": "2026-08-26T09:00:00-05:00"
     },
-    "esReviewStatus": "approved-native-legal-review",
-    "maxAgeDays": 7,
-    "allowedSourceHosts": [
-      "lacks.com",
-      "www.lacks.com"
-    ],
+    "sourcePolicy": {
+      "status": "approved",
+      "allowedSourceHosts": [
+        "lacks.com",
+        "www.lacks.com"
+      ],
+      "approvedBy": "FIXTURE — placeholder (illustrative policy, not approved)",
+      "approvedAt": "2026-08-26T09:00:00-05:00"
+    },
+    "purchaseAssessment": {
+      "policy": "runtime-transaction-amount"
+    },
     "sizes": [
       "twin",
       "twin_xl",
@@ -38,8 +45,53 @@
       "handoff": false,
       "sleepPlan": false
     },
-    "purchaseAssessment": {
-      "basis": "unknown"
+    "presentation": {
+      "status": "approved",
+      "approvals": {
+        "business": {
+          "status": "approved",
+          "by": "FIXTURE — placeholder business approval",
+          "at": "2026-08-26T09:00:00-05:00"
+        },
+        "legal": {
+          "status": "approved",
+          "by": "FIXTURE — placeholder legal approval",
+          "at": "2026-08-26T09:00:00-05:00"
+        },
+        "nativeReview": {
+          "status": "approved",
+          "by": "FIXTURE — placeholder native-language review",
+          "at": "2026-08-26T09:00:00-05:00"
+        }
+      },
+      "assumptions": [
+        {
+          "id": "fixture-assumption-size",
+          "en": "FIXTURE — a price applies to one verified size only.",
+          "es": "FIXTURE — un precio aplica solo a un tamaño verificado."
+        }
+      ],
+      "disclosures": [
+        {
+          "id": "fixture-disclosure-threshold",
+          "en": "FIXTURE — plan eligibility depends on the whole transaction amount, confirmed in store.",
+          "es": "FIXTURE — la elegibilidad del plan depende del monto total de la transacción, confirmado en tienda."
+        }
+      ],
+      "states": {
+        "price-unavailable": {
+          "en": "FIXTURE — Price unavailable.",
+          "es": "FIXTURE — Precio no disponible."
+        },
+        "quote-only": {
+          "en": "FIXTURE — Quote in store.",
+          "es": "FIXTURE — Cotización en tienda."
+        },
+        "threshold-unknown": {
+          "en": "FIXTURE — Eligibility unknown until the transaction amount is known.",
+          "es": "FIXTURE — Elegibilidad desconocida hasta conocer el monto de la transacción."
+        }
+      }
     },
     "products": [
       {
@@ -58,6 +110,20 @@
           "verifiedAt": "2026-08-26T10:00:00-05:00",
           "verifiedBy": "FIXTURE — placeholder attestation (not a real verification)",
           "sourceUrl": "https://www.lacks.com/fixture-product-page"
+        },
+        "clearance": {
+          "status": "cleared",
+          "attestedBy": "FIXTURE — placeholder clearance (not a real clearance)",
+          "attestedAt": "2026-08-26T11:00:00-05:00",
+          "scope": {
+            "productId": "g6",
+            "sku": "FIXTURE-0001",
+            "amountMinor": 369900,
+            "currency": "USD",
+            "kind": "regular",
+            "evidenceVerifiedAt": "2026-08-26T10:00:00-05:00",
+            "evidenceSourceUrl": "https://www.lacks.com/fixture-product-page"
+          }
         },
         "window": {
           "startAt": null,
@@ -80,6 +146,298 @@
         "approvedAt": "2026-08-26T09:30:00-05:00",
         "sourceUrl": "https://www.lacks.com/financing",
         "verifiedAt": "2026-08-26T10:00:00-05:00"
+      }
+    ]
+  },
+  "financing": {
+    "enabled": true,
+    "experience": "payment-choice",
+    "offerVersion": "2026-07-30a",
+    "verifiedAt": "2026-08-26T10:00:00-05:00",
+    "maxAgeDays": 7,
+    "sourceUrl": "https://www.lacks.com/financing",
+    "applicationUrl": "https://www.lacks.com/credit-application",
+    "mexicoInfoUrl": "https://www.lacks.com/faq",
+    "mexicoApplicationUrl": {
+      "url": "https://www.lacks.com/mexican-credit-application",
+      "verified": false,
+      "note": "Published in Lacks' FAQ but returned 404 on 2026-07-30. Do not render as a link until it resolves; the Mexico card links to mexicoInfoUrl."
+    },
+    "savingsPassPolicy": "specialist_confirm",
+    "exactPromotionsEnabled": true,
+    "esReviewStatus": "pending-native-legal-review",
+    "surfaces": {
+      "drawer": false,
+      "sleepSystem": false
+    },
+    "allowedSourceHosts": [
+      "lacks.com",
+      "www.lacks.com",
+      "synchrony.com",
+      "www.synchrony.com",
+      "mysynchrony.com"
+    ],
+    "copy": {
+      "eyebrow": {
+        "en": "LACKS PAYMENT CHOICE",
+        "es": "OPCIONES DE PAGO LACKS"
+      },
+      "headline": {
+        "en": "Better sleep. More ways to bring it home.",
+        "es": "Duerme mejor. Más opciones para llevarlo a casa."
+      },
+      "body": {
+        "en": "Explore promotional financing, Lacks In-House Credit, lease-to-own, and Build My Credit. Options are subject to terms and approval.",
+        "es": "Explora financiamiento promocional, Crédito Interno de Lacks, arrendamiento con opción a compra y Build My Credit. Las opciones están sujetas a términos y aprobación."
+      },
+      "cta": {
+        "en": "Explore payment options",
+        "es": "Explorar opciones de pago"
+      },
+      "resultsLead": {
+        "en": "Your strongest mattress match may have more than one way to bring it home.",
+        "es": "Tu mejor opción de colchón puede tener más de una forma de llegar a casa."
+      },
+      "fitFirst": {
+        "en": "Your matches are based on sleep fit — never on payment method.",
+        "es": "Tus opciones se basan en tu descanso — nunca en la forma de pago."
+      },
+      "drawerTitle": {
+        "en": "Ways to bring it home",
+        "es": "Formas de llevarlo a casa"
+      },
+      "drawerBody": {
+        "en": "This recommendation is based on your sleep fit. When you're ready, Lacks offers more than one way to bring it home.",
+        "es": "Esta recomendación se basa en tu descanso. Cuando estés listo, Lacks ofrece más de una forma de llevarlo a casa."
+      },
+      "sleepSystemGuidance": {
+        "en": "Build the sleep setup that fits you first. Your Lacks specialist can then review current payment options for the complete plan.",
+        "es": "Primero arma el sistema de sueño que te quede bien. Después, tu especialista de Lacks puede revisar las opciones de pago actuales para el plan completo."
+      },
+      "handoffHeadline": {
+        "en": "Your Sleep Plan. Your Payment Choices.",
+        "es": "Tu Plan de Sueño. Tus Opciones de Pago."
+      },
+      "handoffPrivate": {
+        "en": "Continue on your phone — scan to open Lacks' official financing page.",
+        "es": "Continúa desde tu teléfono — escanea para abrir la página oficial de financiamiento de Lacks."
+      },
+      "paymentPreferenceLabel": {
+        "en": "Payment preference",
+        "es": "Preferencia de pago"
+      },
+      "preferenceNone": {
+        "en": "Not selected",
+        "es": "Sin seleccionar"
+      },
+      "optionsExploredLabel": {
+        "en": "Options explored",
+        "es": "Opciones exploradas"
+      },
+      "reviewOption": {
+        "en": "Review this option",
+        "es": "Revisar esta opción"
+      },
+      "hideDetails": {
+        "en": "Hide details",
+        "es": "Ocultar detalles"
+      },
+      "considerOption": {
+        "en": "Consider this option",
+        "es": "Considerar esta opción"
+      },
+      "currentlyConsidering": {
+        "en": "Currently considering ✓",
+        "es": "En consideración ✓"
+      },
+      "clearPreference": {
+        "en": "Clear preference",
+        "es": "Quitar preferencia"
+      },
+      "preferenceNotNow": {
+        "en": "Not right now",
+        "es": "Ahora no"
+      },
+      "exploreConsequence": {
+        "en": "Explore options together. Nothing is submitted and no application is started.",
+        "es": "Exploren las opciones juntos. No se envía nada y no se inicia ninguna solicitud."
+      },
+      "sheetDone": {
+        "en": "Done",
+        "es": "Listo"
+      },
+      "preferenceNotNowAnnounce": {
+        "en": "Not right now selected. You can change this choice.",
+        "es": "Se seleccionó 'Ahora no'. Puedes cambiar esta opción."
+      },
+      "preferenceClearedAnnounce": {
+        "en": "Selection cleared. Choose again when you're ready.",
+        "es": "Se borró la selección. Elige de nuevo cuando quieras."
+      },
+      "staleNotice": {
+        "en": "Current payment options are available from your Lacks specialist.",
+        "es": "Tu especialista de Lacks tiene las opciones de pago actuales."
+      },
+      "staleAnnouncement": {
+        "en": "Exact rates and terms are not shown right now. Your Lacks specialist can confirm current payment options in store.",
+        "es": "Las tasas y los plazos exactos no se muestran en este momento. Tu especialista de Lacks puede confirmar las opciones de pago actuales en tienda."
+      },
+      "externalNotice": {
+        "en": "Opens lacks.com — a separate site governed by its own terms and privacy policy.",
+        "es": "Abre lacks.com — un sitio aparte, regido por sus propios términos y política de privacidad."
+      },
+      "emailHeading": {
+        "en": "Payment options",
+        "es": "Opciones de pago"
+      },
+      "emailBodyAvailable": {
+        "en": "Lacks Payment Choice offers more than one way to bring it home: promotional financing, Lacks In-House Credit, lease-to-own, and Build My Credit. Final pricing, eligibility, terms, and approval are confirmed by Lacks.",
+        "es": "Las Opciones de Pago Lacks ofrecen más de una forma de llevarlo a casa: financiamiento promocional, Crédito Interno de Lacks, arrendamiento con opción a compra y Build My Credit. El precio final, la elegibilidad, los términos y la aprobación los confirma Lacks."
+      },
+      "disclosureFooter": {
+        "en": "All payment options are subject to terms and approval. Advertised purchase minimums, rates, and terms are set by Lacks and its financing partners and may change or end at any time. Your Lacks specialist confirms current details in store.",
+        "es": "Todas las opciones de pago están sujetas a términos y aprobación. Los mínimos de compra, tasas y plazos anunciados los establecen Lacks y sus socios financieros y pueden cambiar o terminar en cualquier momento. Tu especialista de Lacks confirma los detalles vigentes en tienda."
+      },
+      "prequalNote": {
+        "en": "See if you prequalify on Lacks' official financing page — prequalification is not approval.",
+        "es": "Consulta si precalificas en la página oficial de financiamiento de Lacks — precalificar no es una aprobación."
+      }
+    },
+    "plans": [
+      {
+        "id": "synchrony-9-99-72",
+        "kind": "open-end-promotional-credit",
+        "provider": "Synchrony",
+        "verified": true,
+        "verifiedAt": "2026-08-26T10:00:00-05:00",
+        "sourceUrl": "https://www.lacks.com/financing",
+        "apr": 9.99,
+        "termMonths": 72,
+        "minimumPurchase": 500,
+        "channel": "per-current-source",
+        "calculationMode": "published-fixed-factor",
+        "paymentCalculationEnabled": false,
+        "headline": {
+          "en": "9.99% APR for 72 months",
+          "es": "9.99% APR por 72 meses"
+        },
+        "detail": {
+          "en": "On qualifying purchases of $500 or more with the Lacks Furniture Synchrony HOME Credit Card. Fixed monthly payments required. Interest is charged from the purchase date at the reduced APR. The advertised purchase minimum must be met on one receipt; discounts may reduce the purchase below it.",
+          "es": "En compras que califiquen de $500 o más con la tarjeta Lacks Furniture Synchrony HOME. Se requieren pagos mensuales fijos. Se cobra interés desde la fecha de compra a la tasa APR reducida. El mínimo de compra anunciado debe cumplirse en un solo recibo; los descuentos pueden reducir la compra por debajo del mínimo."
+        },
+        "disclosure": {
+          "en": "Subject to credit approval. Regular account terms apply to non-promo purchases; for new accounts as of 07/31/2025 the purchase APR is 34.99%, penalty APR 39.99%, minimum interest charge $2. Lacks may alter or discontinue this offer at any time.",
+          "es": "Sujeto a aprobación de crédito. Los términos regulares de la cuenta aplican a compras fuera de promoción; para cuentas nuevas al 07/31/2025 la tasa APR de compra es 34.99%, la APR de penalización 39.99% y el cargo mínimo por interés $2. Lacks puede modificar o descontinuar esta oferta en cualquier momento."
+        }
+      },
+      {
+        "id": "synchrony-0-48",
+        "kind": "open-end-promotional-credit",
+        "provider": "Synchrony",
+        "verified": true,
+        "verifiedAt": "2026-08-26T10:00:00-05:00",
+        "sourceUrl": "https://www.lacks.com/financing",
+        "apr": 0,
+        "termMonths": 48,
+        "minimumPurchase": 4200,
+        "channel": "in-store",
+        "calculationMode": "not-published",
+        "paymentCalculationEnabled": false,
+        "headline": {
+          "en": "0% APR for 48 months",
+          "es": "0% APR por 48 meses"
+        },
+        "detail": {
+          "en": "On qualifying in-store purchases of $4,200 or more with the Lacks Furniture Synchrony HOME Credit Card. Equal monthly payments required. A minimum purchase and a down payment, plus tax and delivery fee, are required. The advertised purchase minimum must be met on one receipt; discounts may reduce the purchase below it.",
+          "es": "En compras en tienda que califiquen de $4,200 o más con la tarjeta Lacks Furniture Synchrony HOME. Se requieren pagos mensuales iguales. Se requiere una compra mínima y un enganche, más impuestos y cargo de entrega. El mínimo de compra anunciado debe cumplirse en un solo recibo; los descuentos pueden reducir la compra por debajo del mínimo."
+        },
+        "disclosure": {
+          "en": "Subject to credit approval. No interest is charged on the promotional purchase. Regular account terms apply to non-promo purchases; for new accounts as of 07/31/2025 the purchase APR is 34.99%, penalty APR 39.99%, minimum interest charge $2.",
+          "es": "Sujeto a aprobación de crédito. No se cobra interés en la compra promocional. Los términos regulares de la cuenta aplican a compras fuera de promoción; para cuentas nuevas al 07/31/2025 la tasa APR de compra es 34.99%, la APR de penalización 39.99% y el cargo mínimo por interés $2."
+        }
+      },
+      {
+        "id": "lacks-in-house",
+        "kind": "closed-end-installment",
+        "provider": "Lacks",
+        "verified": true,
+        "verifiedAt": "2026-08-26T10:00:00-05:00",
+        "sourceUrl": "https://www.lacks.com/financing",
+        "paymentCalculationEnabled": false,
+        "headline": {
+          "en": "Lacks In-House Credit",
+          "es": "Crédito Interno de Lacks"
+        },
+        "detail": {
+          "en": "Installment contracts may be available from 6–36 months for qualifying customers, with in-house approvals by Lacks' own credit team. Purchases may also qualify for promotional pricing. Subject to Lacks approval and applicable offer terms.",
+          "es": "Para clientes que califiquen, puede haber contratos a plazos de 6 a 36 meses, con aprobación interna del propio equipo de crédito de Lacks. Las compras también pueden calificar para precios promocionales. Sujeto a la aprobación de Lacks y a los términos de la oferta aplicable."
+        },
+        "disclosure": {
+          "en": "Availability, terms, and promotional pricing are confirmed by Lacks in store.",
+          "es": "La disponibilidad, los términos y los precios promocionales los confirma Lacks en tienda."
+        }
+      },
+      {
+        "id": "lease-to-own",
+        "kind": "lease-to-own",
+        "provider": "Lacks",
+        "verified": true,
+        "verifiedAt": "2026-08-26T10:00:00-05:00",
+        "sourceUrl": "https://www.lacks.com/financing",
+        "paymentCalculationEnabled": false,
+        "headline": {
+          "en": "Lease-to-own",
+          "es": "Arrendamiento con opción a compra"
+        },
+        "detail": {
+          "en": "Lease-to-own is available. Program details, costs, eligibility, and ownership terms are confirmed in store.",
+          "es": "El arrendamiento con opción a compra está disponible. Los detalles del programa, costos, elegibilidad y términos de propiedad se confirman en tienda."
+        }
+      },
+      {
+        "id": "build-my-credit",
+        "kind": "credit-builder",
+        "provider": "Lacks",
+        "verified": true,
+        "verifiedAt": "2026-08-26T10:00:00-05:00",
+        "sourceUrl": "https://www.lacks.com/financing",
+        "paymentCalculationEnabled": false,
+        "headline": {
+          "en": "Build My Credit",
+          "es": "Build My Credit"
+        },
+        "detail": {
+          "en": "An available path for customers with little or no credit history. Program details are confirmed in store.",
+          "es": "Una opción disponible para clientes con poco o ningún historial de crédito. Los detalles del programa se confirman en tienda."
+        }
+      },
+      {
+        "id": "mexico-in-house",
+        "kind": "closed-end-installment",
+        "provider": "Lacks",
+        "presentationScenario": "mexico-delivery",
+        "verified": true,
+        "verifiedAt": "2026-08-26T10:00:00-05:00",
+        "sourceUrl": "https://www.lacks.com/faq",
+        "apr": 24,
+        "termMonths": 24,
+        "paymentCalculationEnabled": false,
+        "headline": {
+          "en": "Purchasing for delivery to Mexico?",
+          "es": "¿Compras para entrega en México?"
+        },
+        "detail": {
+          "en": "An optional program for customers purchasing for delivery to Mexico: Lacks in-house credit for up to 24 months with a maximum contract APR of 24% (which may vary). Requirements currently include two official IDs, three personal references, and income verification.",
+          "es": "Un programa opcional para clientes que compran para entrega en México: crédito interno de Lacks hasta por 24 meses con un interés máximo del contrato de 24% APR (mismo que puede variar). Los requisitos actuales incluyen dos identificaciones oficiales, 3 referencias personales y verificación de ingresos."
+        },
+        "representativeExample": {
+          "en": "Lacks' published example: $999 financed for 24 months at 24% APR equals 24 monthly payments of $52.82.",
+          "es": "Ejemplo publicado por Lacks: $999 financiados durante 24 meses con 24% APR tendrán 24 pagos mensuales de $52.82."
+        },
+        "disclosure": {
+          "en": "For purchases intended for delivery to Mexico, ask a Lacks specialist to confirm current details and requirements.",
+          "es": "Para compras destinadas a entrega en México, consulta con un especialista de Lacks para confirmar los detalles y requisitos actuales."
+        }
       }
     ]
   }

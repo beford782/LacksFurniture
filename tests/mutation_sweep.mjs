@@ -1936,6 +1936,27 @@ const MUTATIONS = [
     "    \"enabled\": false,\n    \"displayEnabled\": false,",
     "    \"enabled\": false,\n    \"displayEnabled\": true,",
     PRICING, "data/store-config.json"],
+  // PR #69 review (Codex, 2026-08-27): one entry per requested contract change.
+  ["2.1a review: a transaction amount is admitted as configuration (the forbidden key is gone)",
+    "    \"transactionamountminor\", \"transactionamount\", \"purchaseamountminor\",",
+    "    \"transactionamount\", \"purchaseamountminor\",",
+    PRICING_VALIDATOR, "tools/validation.py"],
+  ["2.1a review: a formula is admitted while exact-term authorization is off",
+    "        if not fin_exact:\n            r.add_error(\"pricing.formulas: financing.exactPromotionsEnabled must be true \"",
+    "        if False:\n            r.add_error(\"pricing.formulas: financing.exactPromotionsEnabled must be true \"",
+    PRICING_VALIDATOR, "tools/validation.py"],
+  ["2.1a review: one entry's clearance clears another (the scope match is gone)",
+    "                            elif scope[key] != expected[key] or type(scope[key]) is not type(expected[key]):",
+    "                            elif False:",
+    PRICING_VALIDATOR, "tools/validation.py"],
+  ["2.1a review: an enabled contract no longer needs an approved presentation",
+    "        if enabled and not papproved:\n            r.add_error(\"pricing.presentation.status must be 'approved' when pricing is \"",
+    "        if False:\n            r.add_error(\"pricing.presentation.status must be 'approved' when pricing is \"",
+    PRICING_VALIDATOR, "tools/validation.py"],
+  ["2.1a review: an enabled contract no longer needs an approved freshness policy",
+    "        if enabled and not approved:\n            r.add_error(\"pricing.freshness.status must be 'approved' (with maxAgeDays, \"",
+    "        if False:\n            r.add_error(\"pricing.freshness.status must be 'approved' (with maxAgeDays, \"",
+    PRICING_VALIDATOR, "tools/validation.py"],
 
 ];
 
