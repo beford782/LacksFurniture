@@ -16,7 +16,33 @@ final stage (Gated and Proceeds under 2.2); Phase 3 remains a plan of intent,
 not a grant of approval — see the open-decisions register. Device hardening
 remains BLOCKING for showroom use.**
 
-**Last updated:** 2026-08-28 *(**Slice 2.1a merged; the approval-timing owner
+**Last updated:** 2026-08-28, second revision this date *(**Slice 2.1b
+BUILT** — the dark resolver, the validator re-binding and the five-axis
+contract, on branch `claude/phase2-1b-dark-resolver` from `6c3e74d` under the
+owner's 2026-08-28 subagent directive (single writer; two read-only audits —
+contract, test/isolation — ran BEFORE implementation and found **no
+governance contradiction**; the adopted readings A1–A4 and notes N1–N4 are
+recorded in the dated build record under 2.1). Implementation, in one line
+each: `validate_pricing` re-binds the activation approvals (ownership, MAP
+clearance, presentation approvals/status/completeness) to an ACTIVATION
+predicate — displayEnabled or any enabled surface, both still refused, so the
+re-bound errors fire alongside the lock errors; the formula cross-gate drops
+exactly its exact-term-output condition; `index.html` gains the pure
+`resolveDarkPricing` DEFINITION (zero live call sites, nothing reads the
+shipped pricing config, clock as a parameter, the exact-term flag never
+read); the populated fixture's financing flips to production's own
+`exactPromotionsEnabled:false`; the 2.1a token-absence DOM lock is
+deliberately reversed into a CONTAINMENT proof (named in the PR); new suite
+`tests/pricing_resolver_check.mjs` executes the real resolver in a poisoned
+pure scope over governed fixture variants — the two independent-axis splits,
+the inert-internal-data stale case, the $499/$600 major/minor-unit boundary,
+hostile totality with lone surrogates, planted-mutant rejections; the email
+gating, scoring isolation and mutation-sweep suites extend their pins.
+Production `incoming/lacks_pricing.json` is byte-untouched and fully dark;
+scoring/recommendation outputs byte-identical (the sha-pinned regression
+fixture is unchanged). **2.1 stays 🔨; 2.1b closes only by its merged PR.**
+The previous revision, also 2026-08-28, recorded
+**Slice 2.1a merged; the approval-timing owner
 ruling recorded; the 2.1b design revised under the gate split.** **PR #69**
 merged 2026-08-28 02:18:19Z as merge commit
 `95935abe8493f22e99b7881e1abdb7c7f4deb5cd` (parents
@@ -462,9 +488,10 @@ the real Windows forced-colors gate owner-run and owner-attested PASS). No
 Phase 1 slice is currently in progress; the next item is the owner's call
 (see the sequence at the end of this document) and nothing is authorized by
 this revision. *(2026-08-28: the active item is Phase 2.1 — opened by Blake
-2026-08-27, slice 2.1a merged as `95935ab`, slice 2.1b specified under the
-2026-08-28 approval-timing ruling and its recorded governance model, and NOT
-started. No Phase 1 item is reopened by that work.)*
+2026-08-27, slice 2.1a merged as `95935ab`, slice 2.1b 🔨 on branch
+`claude/phase2-1b-dark-resolver` under the 2026-08-28 approval-timing ruling
+and its recorded governance model. No Phase 1 item is reopened by that
+work.)*
 *(An earlier revision of this paragraph said Slice 5 was `⬜`, approved to build
 and not started; it began on its own branch — draft PR #53, head `6decbef` —
 before 2026-08-21. The gate is Slice 5's prerequisite in the approved order,
@@ -3767,7 +3794,7 @@ device are different designs.
 > Phase 2 gate below stands untouched, and `incoming/lacks_catalog_selection.json`
 > remains exactly as the warning box in 2.1 describes it.
 
-### 2.1 — The dark framework 🔨 (opened by Blake 2026-08-27; slice 2.1a MERGED 2026-08-28, PR #69 → `95935ab`; completion criterion revised under the governance model derived from the 2026-08-28 ruling — see the dated blocks below)
+### 2.1 — The dark framework 🔨 (opened by Blake 2026-08-27; slice 2.1a MERGED 2026-08-28, PR #69 → `95935ab`; completion criterion revised under the governance model derived from the 2026-08-28 ruling; slice 2.1b 🔨 on branch `claude/phase2-1b-dark-resolver` — see the dated blocks below)
 
 *(2026-08-27 — **Phase 2.1 opened.** Blake explicitly authorized opening 2.1
 after Phase 1 was found to have no unblocked engineering left (1.3 ◐ with
@@ -4014,6 +4041,125 @@ proof of the complete dark mechanism on those fixtures with zero price or
 payment output on any shipped/live customer surface in any state — per model
 point 7, that closes 2.1 without real production prices and without the
 activation approvals.
+
+**Slice 2.1b — build record (2026-08-28, branch
+`claude/phase2-1b-dark-resolver` from `6c3e74d`; 🔨 until its PR merges).**
+Built under the owner's 2026-08-28 subagent directive: one writer; a
+CONTRACT audit and a TEST/ISOLATION audit ran read-only BEFORE
+implementation, and both found **no genuine governance contradiction** — the
+owner-stop rule was not triggered. The audits' recommended readings are
+ADOPTED and recorded here as the implementation's interpretations:
+**A1** — everything enabled-gated under `presentation` (the business/legal/
+native approvals, the status, and completeness: assumptions, disclosures,
+state copy) re-binds to the activation set; presentation is consumed only at
+display time and the eligibility axis reports not-eligible meanwhile.
+**A2** — the formula artifact's own `approvedBy`/`approvedAt` requirement
+STAYS: the slice's operative sentence is "every other financing-governance
+check stays fail-closed", and dropping it would be a second binding removal
+the spec authorizes only by omission.
+**A3** — freshness and source-policy approval WHEN ENABLED stay as technical
+gates: with `maxAgeDays` null nothing is judgeable, and with an empty
+allowlist no entry can pass the dual host agreement — moving either would
+make an enabled contract undecidable, violating model point 2. The
+validator's "business decision" error wording is drafting residue, not a
+binding.
+**A4** — with no governed cadence (or no valid clock, or nothing to judge)
+the resolver's freshness axis reports `not-judgeable`, a distinct state every
+fail-closed consumer treats exactly like stale.
+**N2** — "dark formula artifact" means DISPLAY-dark (`enabled:true`,
+`displayEnabled:false`); the formulas-empty-while-disabled rule stands.
+**N3** — two 2.1a lexical locks are DELIBERATELY reversed into containment
+locks, named here and in the PR as reviewed changes: the contract suite's
+token-absence DOM pin becomes a containment proof (every pricing token lives
+inside the marked resolver block; nothing anywhere reads the shipped pricing
+config, so renderers are structurally invariant to it), and the payment-
+choice suite's app-wide `publishedPaymentFactor` ban becomes a containment
+pin (the resolver's closed formula-mode set names it exactly once as an
+input NAME — never a value, which the validator's forbidden-key scan still
+refuses everywhere in configuration).
+**N4** — emergency disable is the `enabled` switch: flipping it false
+empties the price axis and darkens formulas; no new mechanism was added.
+The activation predicate implementation follows the contract audit's
+recommendation: the re-bound approval errors attach to a LIVE predicate
+(`displayEnabled` or any enabled surface — both refused throughout 2.1), so
+they fire alongside the lock errors and stay observable by the self-tests
+and the sweep rather than becoming dead code. The threshold axis converts
+plan minimums from MAJOR units (dollars) to minor units — the test audit
+found this 100× trap before any code existed, and the $499/$600-vs-$500
+boundary plus a dedicated sweep entry pin it. The resolver never reads the
+exact-term output flag (the policy suite's one-read pin stands) and has zero
+live call sites; `tests/pricing_resolver_check.mjs` executes the real
+extracted function in a poisoned pure scope. Production
+`incoming/lacks_pricing.json` is byte-untouched; the populated fixture's
+financing carries production's own `exactPromotionsEnabled:false`.
+
+*(Round-2 audits, 2026-08-28 — both auditors independently reviewed the
+committed diff at `27ab9e0` against their own round-1 reports: **both
+verdicts CONFORMS with ZERO REQUIRED findings**; the contract auditor
+adjudicated the §25 `publishedPaymentFactor` containment re-scoping CORRECT
+and fail-closed; the test auditor adjudicated the structural DOM-silence
+proof SUFFICIENT and withdrew its dynamic render-invariance requirement,
+after hand-verifying that the two externally-observed mutants (payload leak,
+live-surface leak) fail their observers on the pricing-specific assertions.
+All five RECOMMENDED findings were applied on the branch in the same cycle:
+the resolver counts the shipped allowlist only under an APPROVED source
+policy (independent fail-closed source authorization, with its own invalid
+case); per-conjunct eligibility negatives (eight probes, one conjunct
+withdrawn each); escape-hardened containment (outside the resolver block,
+executable code never names `pricing` — string-blanked word scan plus a
+bracket-access scan, both pages, with planted firing proofs and a
+spared-copy-string control); a Python-side boundary-instant admission case
+proving both freshness legs are strictly-older; and the CI header ledger
+re-derived (48 steps / 43 suite runs, newest = the resolver suite).
+Recorded notes: the validator's activation predicate (approvals REQUIRED at
+displayEnabled-or-surface) and the resolver's eligibility axis (eligible
+ONLY at displayEnabled plus full approvals) are deliberately different, the
+resolver strictly narrower — do not "unify" them; and for 2.2: the
+"every fail-closed consumer refuses non-fresh" contract is honest today
+because ZERO consumers exist — **the moment 2.2 wires the first consumer,
+the refusal must become an EXECUTED test driving that consumer with the
+stale case-(b) state**, and 2.2's Gated work must carry it.)*
+
+*(Codex exact-head review of PR #71 at `531a7c8`, 2026-08-28 — four
+findings, all fixed on the branch in one correction commit; each fix
+carries dedicated tests, its own mutation-sweep entry, and an in-suite
+planted-mutant probe that RECONSTRUCTS the pre-fix behaviour and proves the
+new assertion fails against it: **(1) SKU identity** — the query must name
+the entry's exact SKU (non-blank, exact match, mattress and accessory
+alike); missing, blank, malformed, mismatched or lone-surrogate SKUs
+resolve nothing, with zero numeric leakage. **(2) window start** — a
+present `startAt` must parse (malformed bounds fail closed) and a price is
+unavailable before it; boundaries pinned start-INCLUSIVE
+(one instant before start unavailable, exactly at start admitted) and
+end-EXCLUSIVE (exactly at end unavailable), promotional-end and
+clearance-scope behaviour preserved. **(3) top-level financing
+governance** — before any plan is valid the financing ENVELOPE itself must
+be enabled, fresh under the injected clock and skew, and sourced from its
+own allowlist; a malformed, future, stale or off-allowlist envelope makes
+calculation unavailable and the threshold unknown even over a pristine
+plan and formula, with the price axis untouched (independence) and
+`exactPromotionsEnabled` still deliberately unread. **(4) minimumPurchase
+schema alignment** — the validator admitted any finite non-negative
+number while the resolver accepted only integers, silently reclassifying
+validator-admitted values like 499.99; reconciled from BOTH ends:
+`validate_financing` is narrowed to currency precision (at most two
+decimal places within safe-integer minor units — a documented, self-tested
+schema change), and the resolver converts exactly that set with an exact
+major→minor conversion (`$499.99` → 49999: a 49998 transaction is not-met,
+49999 met, 50000 met; beyond-precision and non-numeric minimums stay
+unknown; an explicit zero minimum is met — a recorded behaviour change the
+round-3 contract audit blessed as semantically correct). After the fixes no
+validator-admitted value is runtime-malformed. Round-3 audits of the
+correction: BOTH CONFORMS, zero REQUIRED; the test audit's one RECOMMENDED
+(a dedicated mutant for the malformed-start-bound line) was applied in the
+same commit. Two recorded asymmetries, both deliberate and fail-closed: the
+resolver refuses a not-yet-started price while the validator admits a
+future-start window at build (pre-staged promotions — do not "align" the
+validator without an owner decision), and the financing envelope checks the
+shipped allowlist with no approval-status field because financing carries
+none (the shipped list IS the governed contract). Sweep manifest 497 → 501;
+resolver suite 234 checks; validator self-test 1323. PR #71 stays
+unmerged and 2.1 stays 🔨 pending the re-review and owner authorization.)*
 
 **What 2.1a is NOT.** Not 2.1 completion: under this document, 2.1 stays 🔨
 until approved ownership, source, legal/MAP and cadence inputs exist and at
@@ -4469,7 +4615,9 @@ document, not here.
     real production prices and the activation approvals are activation
     inputs, not 2.1 completion requirements, while governed source identity,
     allowlisting, freshness and integrity remain dark technical
-    requirements. 2.1b is designed under the gate split, NOT started.)*
+    requirements. 2.1b is 🔨 on branch `claude/phase2-1b-dark-resolver`,
+    built 2026-08-28 under the audited single-writer process; it closes only
+    by its merged PR.)*
 11. ◐ **Activate prices and payments** — 2.2. The activation output is gated
     to the final end-of-project deployment stage, its approval — written
     business and legal — taken there (owner ruling 2026-08-28); non-live

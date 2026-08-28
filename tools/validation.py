@@ -2989,8 +2989,11 @@ def validate_financing(config: dict, *, allowed_source_hosts=None) -> Validation
         # Infinity matter beyond tidiness: json.dumps writes them as the bare
         # tokens NaN / Infinity, which are NOT JSON, so such a value in
         # data/store-config.json yields a config the browser's JSON.parse
-        # refuses — the app would fail to load at all. No upper bound is
-        # imposed: a business maximum is Blake's call, not this validator's.
+        # refuses — the app would fail to load at all. A TECHNICAL
+        # representability ceiling IS imposed (safe-integer minor units, the
+        # currency-precision branch below) so the 2.1b resolver's exact
+        # conversion covers every admitted value; no separate BUSINESS
+        # maximum is introduced — that remains Blake's call.
         mp = plan.get("minimumPurchase")
         if mp is not None and not _finite_number(mp):
             r.add_error(f"{tag}: minimumPurchase {fin_headline.short_repr(mp)} must be "
@@ -2998,6 +3001,27 @@ def validate_financing(config: dict, *, allowed_source_hosts=None) -> Validation
         elif mp is not None and mp < 0:
             r.add_error(f"{tag}: minimumPurchase {fin_headline.short_repr(mp)} "
                         f"out of range (must not be negative)")
+        elif mp is not None and (mp * 100 > 9007199254740991
+                                 or abs(mp * 100 - round(mp * 100)) > 1e-6):
+            # Order is TOTALITY-load-bearing (Codex re-review of PR #71 at
+            # b6a3e89): a finite mp can still overflow to +inf when scaled
+            # (1e308 * 100), and round(inf) raises. The safe-integer ceiling
+            # is therefore judged FIRST on the raw scaled value — infinity
+            # exceeds it and short-circuits — so round() only ever runs on a
+            # scaled value at or below the ceiling. Mirrors the resolver's
+            # minorFromMajor, where Math.round(Infinity) is non-throwing and
+            # the same ceiling refuses it.
+            # Schema narrowed 2026-08-28 (Codex exact-head review of PR #71,
+            # finding 4): a plan minimum is a currency fact, so it must sit at
+            # USD currency precision (at most two decimal places) within
+            # safe-integer MINOR units — the 2.1b resolver converts it to
+            # integer cents EXACTLY, and the two contracts must admit the
+            # same set so no validator-admitted value is ever classified
+            # malformed at runtime.
+            r.add_error(f"{tag}: minimumPurchase {fin_headline.short_repr(mp)} must be "
+                        f"expressed at currency precision (at most two decimal "
+                        f"places, within safe-integer minor units) — the dark "
+                        f"resolver converts plan minimums to integer cents exactly")
         ppf = plan.get("publishedPaymentFactor")
         if ppf is not None and (not _finite_number(ppf) or not 0 < ppf < 1):
             r.add_error(f"{tag}: publishedPaymentFactor "
@@ -3139,9 +3163,30 @@ def validate_financing(config: dict, *, allowed_source_hosts=None) -> Validation
 # incoming/lacks_pricing.json and carried by the workbook Pricing tab. Phase
 # 2.1 ships the mechanism with `products` and `formulas` EMPTY, both operating
 # switches false, and every business policy explicitly UNAPPROVED; nothing
-# renders and index.html reads none of it. This validator is the build-time
-# admission gate for whatever a retailer later populates. Same contract as
-# validate_financing: TOTAL over JSON, never raises, never mutates.
+# renders, and index.html carries only the Phase 2.1b resolver DEFINITION —
+# a pure function with zero live call sites — so nothing reads the contract
+# at runtime. This validator is the build-time admission gate for whatever a
+# retailer later populates. Same contract as validate_financing: TOTAL over
+# JSON, never raises, never mutates.
+#
+# Gate split (owner ruling 2026-08-28, roadmap §2.1 — the derived governance
+# model; slice 2.1b implements it here):
+#   * TECHNICAL VERIFICATION stays fail-closed and enabled-gated: freshness
+#     and source policies must be approved WHEN ENABLED (an enabled contract
+#     with no judgeable cadence or no allowlisted host would be undecidable),
+#     and every per-entry technical check below holds in every state;
+#   * LIVE-OUTPUT APPROVALS re-bind to the ACTIVATION set — displayEnabled or
+#     any enabled surface (both refused throughout 2.1, so these errors fire
+#     alongside the lock errors): ownership (authority), per-entry MAP
+#     clearance, and the presentation contract's business/legal/native
+#     approvals, status and completeness (the recorded A1 reading:
+#     everything enabled-gated under `presentation` re-binds);
+#   * a formula artifact validates DARK without financing
+#     .exactPromotionsEnabled — that flag gates live exact-term OUTPUT only
+#     (tests/exact_promotions_policy_check.mjs pins it); every OTHER
+#     financing-governance check on formulas stays, including the artifact's
+#     own approvedBy/approvedAt (the recorded A2 reading: dropping it would
+#     be a second binding removal the spec never authorizes).
 #
 # Design rulings from the Codex reviews of 2026-08-27 (the proposal review and
 # the PR #69 review that requested changes):
@@ -3469,12 +3514,13 @@ def _pricing_canonical_sizes():
     return []
 
 
-def _pricing_approval(r, tag, rec, now, *, statuses, required_status, enabled,
+def _pricing_approval(r, tag, rec, now, *, statuses, required_status, activation,
                       what="approval"):
-    """An approval record {status, by, at}. While disabled any listed status is
-    admissible and by/at may be blank/null; while enabled the record must carry
+    """An approval record {status, by, at}. Short of activation any listed
+    status is admissible and by/at may be blank/null; at activation
+    (displayEnabled or an enabled surface) the record must carry
     `required_status` with a non-blank `by` and an offset-bearing, non-future
-    `at`. An 'approved' record is never admitted without by/at, enabled or not
+    `at`. An 'approved' record is never admitted without by/at, in any state
     — approval without a signature is not approval. Returns the status."""
     if not _pricing_object(r, tag, rec, PRICING_APPROVAL_RECORD_KEYS):
         return None
@@ -3490,9 +3536,10 @@ def _pricing_approval(r, tag, rec, now, *, statuses, required_status, enabled,
         _pricing_stamp(r, tag, at, now, what="at")
     elif at is not None:
         r.add_error(f"{tag}.at must be null unless the {what} is {required_status!r}")
-    if enabled and status != required_status:
-        r.add_error(f"{tag}.status must be {required_status!r} when pricing is "
-                    f"enabled — a {what} is a business input, not a validator default")
+    if activation and status != required_status:
+        r.add_error(f"{tag}.status must be {required_status!r} at activation "
+                    f"(displayEnabled or an enabled surface) — a {what} gates live "
+                    f"output only, never dark computation (owner ruling 2026-08-28)")
     del by
     return status
 
@@ -3505,8 +3552,9 @@ def _pricing_copy_list(r, tag, items, *, required_nonempty):
         r.add_error(f"{tag} must be an array of bilingual items")
         return
     if required_nonempty and not items:
-        r.add_error(f"{tag} must be non-empty when pricing is enabled — the "
-                    f"presentation contract is complete or it is not approved")
+        r.add_error(f"{tag} must be non-empty at activation (displayEnabled or an "
+                    f"enabled surface) — the presentation contract is complete "
+                    f"before anything could be shown")
     seen = {}
     for i, it in enumerate(items):
         itag = f"{tag}[{i}]"
@@ -3569,17 +3617,26 @@ def validate_pricing(config, *, allowed_source_hosts=None, financing_source_host
                     "written business/legal approval, recorded on the item); Phase "
                     "2.1 ships the framework DARK, and CI's operating-state lock "
                     "names this same switch")
+    # The ACTIVATION predicate (owner ruling 2026-08-28): the live-output
+    # approvals below bind to displayEnabled or any enabled surface — both
+    # refused throughout Phase 2.1 — never to `enabled`, which is the
+    # technical dark-resolver admission. Reading surfaces raw here is total:
+    # the surfaces block itself is validated below.
+    _surfaces_raw = p.get("surfaces")
+    activation = (display is True) or (
+        isinstance(_surfaces_raw, dict)
+        and any(_surfaces_raw.get(name) is True for name in PRICING_SURFACES))
 
     currency = p.get("currency")
     if not _pricing_enum(currency, PRICING_CURRENCIES):
         r.add_error(f"pricing.currency {fin_headline.short_repr(currency)} must be one "
                     f"of {sorted(PRICING_CURRENCIES)}")
 
-    # ---- ownership (required when enabled)
+    # ---- ownership (an activation approval — required at activation only)
     auth = p.get("authority")
     if _pricing_object(r, "pricing.authority", auth, PRICING_AUTHORITY_KEYS):
         for key in ("owner", "role"):
-            _pricing_str(r, "pricing.authority", auth, key, required=enabled)
+            _pricing_str(r, "pricing.authority", auth, key, required=activation)
 
     # ---- freshness policy: UNAPPROVED and unset in production, no silent default
     mad = None
@@ -3731,13 +3788,13 @@ def validate_pricing(config, *, allowed_source_hosts=None, financing_source_host
                     got[key] = _pricing_approval(
                         r, f"pricing.presentation.approvals.{key}", appr[key], now_dt,
                         statuses=PRICING_NATIVE_REVIEW_STATUSES,
-                        required_status="approved", enabled=enabled,
+                        required_status="approved", activation=activation,
                         what="native-language review")
                 else:
                     got[key] = _pricing_approval(
                         r, f"pricing.presentation.approvals.{key}", appr[key], now_dt,
                         statuses=PRICING_APPROVAL_STATUSES,
-                        required_status="approved", enabled=enabled,
+                        required_status="approved", activation=activation,
                         what=f"{key} approval")
         if papproved and any(got.get(k) != "approved"
                              for k in PRICING_PRESENTATION_APPROVAL_KEYS):
@@ -3745,27 +3802,29 @@ def validate_pricing(config, *, allowed_source_hosts=None, financing_source_host
                         "business, legal AND native-language approvals are each "
                         "'approved' — one approval never stands in for another")
         _pricing_copy_list(r, "pricing.presentation.assumptions",
-                           pres.get("assumptions"), required_nonempty=enabled)
+                           pres.get("assumptions"), required_nonempty=activation)
         _pricing_copy_list(r, "pricing.presentation.disclosures",
-                           pres.get("disclosures"), required_nonempty=enabled)
+                           pres.get("disclosures"), required_nonempty=activation)
         states = pres.get("states")
         if _pricing_object(r, "pricing.presentation.states", states, PRICING_STATE_KEYS):
             for name in sorted(PRICING_STATE_KEYS):
                 if name not in states:
-                    if enabled:
+                    if activation:
                         r.add_error(f"pricing.presentation.states.{name} is required "
-                                    f"when pricing is enabled — every dark outcome "
-                                    f"has approved bilingual copy or the framework "
-                                    f"is not ready")
+                                    f"at activation — every dark outcome has "
+                                    f"approved bilingual copy before anything "
+                                    f"could be shown")
                     continue
                 st = states[name]
                 if not _bilingual_ok(st):
                     r.add_error(f"pricing.presentation.states.{name} must be a "
                                 f"bilingual object with non-blank en and es strings")
-        if enabled and not papproved:
-            r.add_error("pricing.presentation.status must be 'approved' when pricing is "
-                        "enabled — assumptions, disclosures and state copy are approved "
-                        "and reviewed before anything could be shown")
+        if activation and not papproved:
+            r.add_error("pricing.presentation.status must be 'approved' at activation "
+                        "(displayEnabled or an enabled surface) — assumptions, "
+                        "disclosures and state copy are approved and reviewed before "
+                        "anything could be shown; short of activation an unapproved "
+                        "presentation is the honest dark state (owner ruling 2026-08-28)")
 
     # ---- products
     mids = _pricing_ids_arg(r, "mattress_ids", mattress_ids)
@@ -3926,10 +3985,12 @@ def validate_pricing(config, *, allowed_source_hosts=None, financing_source_host
                     if cl.get("scope") is not None:
                         r.add_error(f"{tag}.clearance.scope must be null unless the entry "
                                     f"is cleared or attested not-required")
-                if enabled and not attested:
+                if activation and not attested:
                     r.add_error(f"{tag}.clearance.status must be 'cleared' or an attested "
-                                f"'not-required' when pricing is enabled — price-"
-                                f"maintenance clearance is never inferred")
+                                f"'not-required' at activation (displayEnabled or an "
+                                f"enabled surface) — price-maintenance clearance gates "
+                                f"live output and is never inferred (owner ruling "
+                                f"2026-08-28)")
 
             win = entry.get("window")
             start = end = None
@@ -3960,7 +4021,10 @@ def validate_pricing(config, *, allowed_source_hosts=None, financing_source_host
     fin = config.get("financing")
     fin_ok = isinstance(fin, dict)
     fin_enabled = fin_ok and fin.get("enabled") is True
-    fin_exact = fin_ok and fin.get("exactPromotionsEnabled") is True
+    # exactPromotionsEnabled is deliberately NOT read here (owner ruling
+    # 2026-08-28): that flag gates live exact-term OUTPUT only — a dark
+    # formula artifact validates without it, under every other
+    # financing-governance check below.
     fin_mad = fin.get("maxAgeDays") if fin_ok else None
     if type(fin_mad) is not int or not 1 <= fin_mad <= 60:
         fin_mad = None
@@ -3984,11 +4048,6 @@ def validate_pricing(config, *, allowed_source_hosts=None, financing_source_host
         if not fin_enabled:
             r.add_error("pricing.formulas: financing must be enabled — a formula "
                         "belongs to a live financing programme")
-            gate_ok = False
-        if not fin_exact:
-            r.add_error("pricing.formulas: financing.exactPromotionsEnabled must be true "
-                        "— exact-term authorization is the operating decision that "
-                        "admits payment formulas, and it is currently off")
             gate_ok = False
         fin_at = _pricing_instant(fin.get("verifiedAt")) if fin_ok else None
         if fin_at is None or _pricing_future(fin_at, now_dt):
@@ -7192,6 +7251,27 @@ def _self_test() -> int:
               _ranged(_rep, "termMonths")
               == (_v is not None and not _FH.term_in_domain(_v)))
 
+    # Schema narrowed 2026-08-28 (Codex exact-head review of PR #71, finding
+    # 4): plan minimums sit at currency precision within safe-integer minor
+    # units, so the 2.1b resolver's exact major->minor conversion admits the
+    # SAME set — no validator-admitted value is runtime-malformed.
+    check("minimumPurchase at currency precision (499.99) -> admitted",
+          _fin_with(lambda m: m["plans"][0].__setitem__("minimumPurchase", 499.99)).ok)
+    check("minimumPurchase beyond currency precision (499.999) -> refused",
+          any("currency precision" in e for e in
+              _fin_with(lambda m: m["plans"][0].__setitem__("minimumPurchase", 499.999)).errors))
+    check("minimumPurchase beyond safe-integer minor units -> refused",
+          any("currency precision" in e for e in
+              _fin_with(lambda m: m["plans"][0].__setitem__("minimumPurchase", 1e17)).errors))
+    # Totality regression (Codex re-review of PR #71 at b6a3e89): a finite
+    # JSON number whose SCALED value overflows to infinity (1e308 * 100) must
+    # produce a bounded named error, never an OverflowError out of round().
+    check("minimumPurchase 1e308 -> named minimumPurchase error, NEVER raises (totality)",
+          any("minimumPurchase" in e and "currency precision" in e for e in
+              _fin_with(lambda m: m["plans"][0].__setitem__("minimumPurchase", 1e308)).errors))
+    check("minimumPurchase zero (an explicit no-minimum) -> admitted",
+          _fin_with(lambda m: m["plans"][0].__setitem__("minimumPurchase", 0)).ok)
+
     # Fields that must NOT influence the headline.
     check("minimumPurchase changes do not affect the generated headline",
           _fin_with(lambda m: m["plans"][0].__setitem__("minimumPurchase", 999)).ok)
@@ -7637,8 +7717,12 @@ def _self_test() -> int:
                    "mysynchrony.com"]
     _PNOW = _pdt(2026, 8, 27, 12, 0, tzinfo=_ptz.utc)
     _PSTAMP = "2026-08-26T10:00:00-05:00"
+    # exactPromotionsEnabled is FALSE here — production's own state. Under the
+    # 2026-08-28 gate split a dark formula artifact validates without it (the
+    # flag gates live exact-term OUTPUT only); a dedicated case below proves
+    # true is equally admissible (the flag is orthogonal to validation).
     good_fin = {
-        "enabled": True, "exactPromotionsEnabled": True, "verifiedAt": _PSTAMP,
+        "enabled": True, "exactPromotionsEnabled": False, "verifiedAt": _PSTAMP,
         "maxAgeDays": 7, "sourceUrl": "https://www.lacks.com/financing",
         "allowedSourceHosts": list(_PFIN_HOSTS),
         "plans": [{"id": "synchrony-9-99-72", "verified": True, "verifiedAt": _PSTAMP,
@@ -7794,8 +7878,20 @@ def _self_test() -> int:
     check("pricing unsupported currency -> error", _perr(pu, "pricing.currency"))
     pu = _pmut(); pu["currency"] = ["USD"]
     check("pricing currency array -> error, not raise", _perr(pu, "pricing.currency"))
+    # Gate split (owner ruling 2026-08-28): ownership is an ACTIVATION
+    # approval. Enabled-but-dark with a blank owner is ADMITTED; at activation
+    # (displayEnabled or an enabled surface — both themselves refused) the
+    # ownership error fires ALONGSIDE the lock error, so the re-bound path is
+    # live, observable and never dead code.
     pu = _pmut(); pu["authority"]["owner"] = ""
-    check("pricing enabled with blank owner -> error", _perr(pu, "authority.owner"))
+    check("pricing ENABLED dark with blank owner -> ADMITTED (ownership re-bound to activation)",
+          _pv(pu).ok)
+    pu["displayEnabled"] = True
+    check("pricing displayEnabled true with blank owner -> ownership error fires alongside the lock",
+          _perr(pu, "authority.owner") and _perr(pu, "Phase 2.2 activation output"))
+    pu = _pmut(); pu["authority"]["owner"] = ""; pu["surfaces"]["drawer"] = True
+    check("pricing enabled surface with blank owner -> ownership error fires alongside the surface error",
+          _perr(pu, "authority.owner") and _perr(pu, "surfaces.drawer must be false"))
     dd = json.loads(json.dumps(dark_pricing)); dd["authority"] = {"owner": 5, "role": ""}
     check("pricing dark with non-string owner -> error (shape still checked when dark)",
           _perr(dd, "authority.owner must be a string"))
@@ -7869,11 +7965,22 @@ def _self_test() -> int:
     pu = _pmut(); pu["presentation"]["approvals"]["legal"] = {"status": "unapproved", "by": "", "at": None}
     check("pricing presentation approved with legal unapproved -> error (no combined approval)",
           _perr(pu, "one approval never stands in for another"))
-    check("pricing enabled with legal unapproved -> approval-gate error",
-          _perr(pu, "approvals.legal.status must be 'approved' when pricing is enabled"))
+    # Gate split: business/legal/native approvals re-bind to activation. An
+    # enabled-but-dark contract with them unapproved is admissible once
+    # presentation.status is honest about it; at activation each fires.
+    pu["presentation"]["status"] = "unapproved"
+    check("pricing ENABLED dark with legal unapproved (status honest) -> ADMITTED (re-bound)",
+          _pv(pu).ok)
+    pu["displayEnabled"] = True
+    check("pricing at activation with legal unapproved -> approval-gate error names activation",
+          _perr(pu, "approvals.legal.status must be 'approved' at activation"))
     pu = _pmut(); pu["presentation"]["approvals"]["nativeReview"] = {"status": "pending", "by": "", "at": None}
-    check("pricing enabled with native review pending -> error",
-          _perr(pu, "approvals.nativeReview.status must be 'approved'"))
+    pu["presentation"]["status"] = "unapproved"
+    check("pricing ENABLED dark with native review pending (status honest) -> ADMITTED (re-bound)",
+          _pv(pu).ok)
+    pu["surfaces"]["results"] = True
+    check("pricing enabled surface with native review pending -> error at activation",
+          _perr(pu, "approvals.nativeReview.status must be 'approved' at activation"))
     pu = _pmut(); pu["presentation"]["approvals"]["business"]["by"] = ""
     check("pricing approval marked approved without a signer -> error",
           _perr(pu, "approvals.business.by is required"))
@@ -7885,19 +7992,34 @@ def _self_test() -> int:
           _perr(pu, "approvals.legal is required"))
     pu = _pmut(); pu["presentation"]["assumptions"][0]["es"] = ""
     check("pricing assumption missing ES -> parity error", _perr(pu, "assumptions[0].es"))
+    # Gate split (A1 reading): presentation COMPLETENESS re-binds to
+    # activation with the approvals — empty copy is admissible dark, required
+    # the moment anything could show.
     pu = _pmut(); pu["presentation"]["disclosures"] = []
-    check("pricing enabled with no disclosures -> error", _perr(pu, "disclosures must be non-empty"))
+    check("pricing ENABLED dark with no disclosures -> ADMITTED (completeness re-bound, A1)",
+          _pv(pu).ok)
+    pu["displayEnabled"] = True
+    check("pricing at activation with no disclosures -> error names activation",
+          _perr(pu, "disclosures must be non-empty at activation"))
     pu = _pmut(); pu["presentation"]["disclosures"].append(dict(pu["presentation"]["disclosures"][0]))
     check("pricing duplicate disclosure id -> error", _perr(pu, "disclosures[1].id"))
     pu = _pmut(); del pu["presentation"]["states"]["quote-only"]
-    check("pricing enabled missing a state's copy -> error", _perr(pu, "states.quote-only is required"))
+    check("pricing ENABLED dark missing a state's copy -> ADMITTED (completeness re-bound, A1)",
+          _pv(pu).ok)
+    pu["displayEnabled"] = True
+    check("pricing at activation missing a state's copy -> error",
+          _perr(pu, "states.quote-only is required at activation"))
     pu = _pmut(); pu["presentation"]["states"]["quote-only"] = {"en": "Quote", "es": ""}
-    check("pricing state copy with blank ES -> error", _perr(pu, "states.quote-only must be a bilingual"))
+    check("pricing state copy with blank ES -> error (parity holds in every state)",
+          _perr(pu, "states.quote-only must be a bilingual"))
     pu = _pmut(); pu["presentation"]["states"]["eligible"] = {"en": "x", "es": "y"}
     check("pricing unknown state name -> error", _perr(pu, "'eligible'"))
     pu = _pmut(); pu["presentation"]["status"] = "unapproved"
-    check("pricing enabled with presentation unapproved -> error",
-          _perr(pu, "presentation.status must be 'approved' when pricing is enabled"))
+    check("pricing ENABLED dark with presentation unapproved -> ADMITTED (re-bound)",
+          _pv(pu).ok)
+    pu["displayEnabled"] = True
+    check("pricing at activation with presentation unapproved -> error names activation",
+          _perr(pu, "presentation.status must be 'approved' at activation"))
     dd = json.loads(json.dumps(dark_pricing)); dd["presentation"]["assumptions"] = [{"id": "a", "en": "x", "es": "y"}]
     check("pricing DARK may carry bilingual draft assumptions -> ok", _pv(dd).ok)
     dd["presentation"]["assumptions"] = [{"id": "a", "en": "x"}]
@@ -8028,8 +8150,14 @@ def _self_test() -> int:
           _perr(pu, "clearance.attestedBy is required"))
     pu = _pmut(); pu["products"][0]["clearance"].update({"status": "not-required"})
     check("pricing attested not-required clearance with matching scope -> ok", _pv(pu).ok)
+    # Gate split: MAP clearance re-binds to activation. Not-cleared is the
+    # honest dark state; at activation it refuses.
     pu = _pmut(); pu["products"][0]["clearance"] = {"status": "not-cleared", "attestedBy": "", "attestedAt": None, "scope": None}
-    check("pricing enabled with a not-cleared entry -> error", _perr(pu, "clearance.status must be 'cleared' or an attested"))
+    check("pricing ENABLED dark with a not-cleared entry -> ADMITTED (MAP re-bound to activation)",
+          _pv(pu).ok)
+    pu["displayEnabled"] = True
+    check("pricing at activation with a not-cleared entry -> error names activation",
+          _perr(pu, "clearance.status must be 'cleared' or an attested"))
     pu = _pmut(); pu["products"][0]["clearance"] = {"status": "not-cleared", "attestedBy": "", "attestedAt": None,
                                                     "scope": _pmut()["products"][0]["clearance"]["scope"]}
     check("pricing not-cleared entry carrying a scope -> error", _perr(pu, "clearance.scope must be null"))
@@ -8039,9 +8167,14 @@ def _self_test() -> int:
     # §2 formulas: admitted only under financing governance
     pu = _pmut(); pu["formulas"][0]["planId"] = "no-such-plan"
     check("pricing formula for unknown plan -> error", _perr(pu, "names no financing plan"))
-    fin = _pfin(); fin["exactPromotionsEnabled"] = False
-    check("pricing formula while exact-term authorization is OFF -> error",
-          _perr(_pmut(), "exactPromotionsEnabled must be true", fin=fin))
+    # Gate split: a dark formula artifact validates with exact-term output
+    # authorization OFF (the base good_fin) AND with it ON — the flag is
+    # orthogonal to validation; it gates live exact-term OUTPUT only.
+    check("pricing formula with exactPromotionsEnabled FALSE -> ADMITTED (validation is not output)",
+          _pv(_pmut()).ok and _pfin()["exactPromotionsEnabled"] is False)
+    fin = _pfin(); fin["exactPromotionsEnabled"] = True
+    check("pricing formula with exactPromotionsEnabled TRUE -> equally admitted (orthogonal)",
+          _pv(_pmut(), fin=fin).ok)
     fin = _pfin(); fin["enabled"] = False
     check("pricing formula while financing disabled -> error", _perr(_pmut(), "financing must be enabled", fin=fin))
     fin = _pfin(); fin["verifiedAt"] = "2026-07-31T16:43:00-05:00"
@@ -8100,9 +8233,54 @@ def _self_test() -> int:
           and "from" not in PRICING_FORBIDDEN_KEYS and "estimate" not in PRICING_FORBIDDEN_KEYS
           and "disclosure" not in PRICING_FORBIDDEN_KEYS)
 
+    # Gate split, combined probe (roadmap required case (a) admission shape):
+    # ENABLED with EVERY activation approval absent — blank authority,
+    # not-cleared clearance, unapproved/pending presentation, empty copy —
+    # while the TECHNICAL layer (approved freshness/source policies, verified
+    # fresh allowlisted evidence, integer money, scope-intact-or-absent
+    # clearance) holds -> ADMITTED. Flipping displayEnabled on the SAME
+    # document surfaces every re-bound error at once.
+    ua = _pmut()
+    ua["authority"] = {"owner": "", "role": ""}
+    ua["products"][0]["clearance"] = {"status": "not-cleared", "attestedBy": "",
+                                      "attestedAt": None, "scope": None}
+    ua["presentation"] = {
+        "status": "unapproved",
+        "approvals": {"business": {"status": "unapproved", "by": "", "at": None},
+                      "legal": {"status": "unapproved", "by": "", "at": None},
+                      "nativeReview": {"status": "pending", "by": "", "at": None}},
+        "assumptions": [], "disclosures": [], "states": {},
+    }
+    check("pricing ENABLED with every activation approval absent -> ADMITTED (the dark resolver's case (a) config)",
+          _pv(ua).ok)
+    ua["displayEnabled"] = True
+    ra = _pv(ua)
+    check("same document at activation -> every re-bound approval error fires alongside the lock",
+          any("Phase 2.2 activation output" in e for e in ra.errors)
+          and any("authority.owner" in e for e in ra.errors)
+          and any("clearance.status must be 'cleared'" in e for e in ra.errors)
+          and any("presentation.status must be 'approved' at activation" in e for e in ra.errors)
+          and any("disclosures must be non-empty at activation" in e for e in ra.errors))
+    # Activation via a surface alone (displayEnabled still false), even with
+    # pricing DISABLED: an enabled surface IS activation state.
+    ds = json.loads(json.dumps(dark_pricing)); ds["surfaces"]["handoff"] = True
+    check("pricing DISABLED with a surface enabled -> surface error AND activation approvals fire",
+          _perr(ds, "surfaces.handoff must be false")
+          and _perr(ds, "authority.owner")
+          and _perr(ds, "presentation.status must be 'approved' at activation"))
+
     # the injected clock is the clock
     check("pricing stale under a clock 30 days on -> error while enabled",
           _perr(_pmut(), "older than maxAgeDays", now=_PNOW + _ptd(days=30)))
+    # Boundary agreement with the 2.1b JS resolver (round-2 test audit R3):
+    # both legs are STRICTLY-older — exactly at verifiedAt + maxAgeDays is
+    # fresh/admitted; one second past is stale/refused. _PSTAMP is
+    # 2026-08-26T10:00:00-05:00 = 15:00Z, maxAgeDays 7 -> the limit instant.
+    _PLIMIT = _pdt(2026, 9, 2, 15, 0, tzinfo=_ptz.utc)
+    check("pricing at EXACTLY verifiedAt+maxAgeDays -> admitted while enabled (strict inequality)",
+          _pv(_pmut(), now=_PLIMIT).ok)
+    check("pricing one second past the limit -> stale, refused while enabled",
+          _perr(_pmut(), "older than maxAgeDays", now=_PLIMIT + _ptd(seconds=1)))
     dd = json.loads(json.dumps(dark_pricing))
     dd["freshness"] = {"status": "approved", "maxAgeDays": 7, "approvedBy": "Test", "approvedAt": "2026-08-26T09:00:00-05:00"}
     dd["sourcePolicy"] = _pmut()["sourcePolicy"]

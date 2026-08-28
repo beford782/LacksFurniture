@@ -41,6 +41,11 @@ NAN, INF, NINF = float("nan"), float("inf"), float("-inf")
 JSON_VALUES = [
     ("null", None), ("true", True), ("false", False),
     ("zero", 0), ("negative", -1), ("float", 1.5), ("huge int", HUGE),
+    # 1e308 is a FINITE JSON float whose scaled arithmetic (x * 100)
+    # overflows to infinity — the class the Codex re-review of PR #71 found
+    # escaping as OverflowError through round(); a lexicon probe catches it
+    # generically wherever a validator scales a raw float.
+    ("huge float", 1e308),
     ("NaN", NAN), ("Infinity", INF), ("-Infinity", NINF),
     ("empty string", ""), ("string", "bad"), ("huge string", "x" * 20000),
     ("empty array", []), ("array", ["x"]), ("nested array", [[["deep"]]]),

@@ -56,10 +56,10 @@ jobs:
     # "Full suite (18 checks)") — renaming it here without updating the
     # protection rule in the same change would leave every PR waiting on a
     # check that never reports. The name is a LEGACY LABEL and its number has
-    # been wrong for many slices: the workflow now invokes 47 verification
-    # steps (42 `run: node|python tests/...` steps, three `tools/*.py
+    # been wrong for many slices: the workflow now invokes 48 verification
+    # steps (43 `run: node|python tests/...` steps, three `tools/*.py
     # --self-test` steps, the workbook validation and the QR committed-asset
-    # check), Phase 2.1a's pricing totality + contract suites being the newest.
+    # check), Phase 2.1b's pricing resolver suite being the newest.
     # The count is stated with its own definition so it can be re-derived
     # rather than trusted; renaming name+protection together is an operator
     # (Blake) action, tracked in the 0.6 PR notes.
@@ -515,6 +515,16 @@ jobs:
       # corruptions; and every sweep find string this slice adds matches once.
       - name: pricing contract (dark shipped-state lock + fixture traversal)
         run: python tests/pricing_contract_check.py
+
+      # Phase 2.1b: the dark resolver — executes the REAL resolveDarkPricing
+      # extracted from index.html (definition only, zero live call sites) in
+      # a poisoned pure scope: five independent axes over the governed
+      # non-shipping fixture and its derived variants under the injected
+      # clock; stale resolves as inert internal data; invalid data yields no
+      # numeric result; thresholds convert MAJOR-unit plan minimums; hostile
+      # totality; planted mutants rejected.
+      - name: pricing resolver (2.1b dark resolver, five-axis contract)
+        run: node tests/pricing_resolver_check.mjs
 
       # Executes the real localhost demo server against a live loopback
       # socket: loopback-only bind, narrow store-config interception, the

@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "note": "NON-SHIPPING test fixture for Phase 2.1 (tests/pricing_contract_check.py, tests/pricing_totality_check.py). A populated pricing contract that traverses the real pipeline in a temp workbook: canonical envelope -> Pricing tab -> converter build_pricing -> build_store_config -> validate_financing + validate_pricing under an INJECTED clock. It never enters incoming/, the committed workbook, data/, or demo/. Every approval, attestation and policy here is an explicit ILLUSTRATIVE placeholder for exercising the pipeline — not a real Lacks approval, price, clearance or verification — and must never be copied into a shipping source. The `financing` block is the production block with exact-term authorization switched ON and stamps set current under the fixture clock, so the formula cross-gate can be exercised; production financing stays exactly as shipped (exactPromotionsEnabled false). Production pricing.products stays [] and every production policy stays unapproved until real ownership/source/legal/MAP/cadence inputs exist (roadmap §2.1).",
+    "note": "NON-SHIPPING test fixture for Phase 2.1 (tests/pricing_contract_check.py, tests/pricing_totality_check.py, tests/pricing_resolver_check.mjs). A populated pricing contract that traverses the real pipeline in a temp workbook: canonical envelope -> Pricing tab -> converter build_pricing -> build_store_config -> validate_financing + validate_pricing under an INJECTED clock; the 2.1b resolver suite derives its governed variants (stale / activation-unapproved / invalid / disabled) from this same document in memory. It never enters incoming/, the committed workbook, data/, or demo/. Every approval, attestation and policy here is an explicit ILLUSTRATIVE placeholder for exercising the pipeline — not a real Lacks approval, price, clearance or verification — and must never be copied into a shipping source. The `financing` block is the production block with stamps set current under the fixture clock; exactPromotionsEnabled stays FALSE exactly as production ships it — under the 2026-08-28 gate split a dark formula artifact validates without exact-term output authorization (that flag gates live exact-term OUTPUT only). Production pricing.products stays [] and every production policy stays unapproved until real ownership/source/legal/MAP/cadence inputs exist (roadmap §2.1).",
     "clock": "2026-08-27T12:00:00+00:00"
   },
   "pricing": {
@@ -169,7 +169,7 @@
       "note": "Published in Lacks' FAQ but returned 404 on 2026-07-30. Do not render as a link until it resolves; the Mexico card links to mexicoInfoUrl."
     },
     "savingsPassPolicy": "specialist_confirm",
-    "exactPromotionsEnabled": true,
+    "exactPromotionsEnabled": false,
     "esReviewStatus": "pending-native-legal-review",
     "surfaces": {
       "drawer": false,

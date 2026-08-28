@@ -11478,6 +11478,303 @@
       return financingSourceAllowed(p.sourceUrl);
     }
 
+    // ═══ PHASE 2.1B DARK RESOLVER (definition only — zero live call sites) ═══
+    // Owner ruling 2026-08-28 (roadmap §2.1, slice 2.1b): a PURE, DETERMINISTIC
+    // resolver. Nothing in this file calls it, and no code anywhere reads the
+    // shipped pricing config — tests/pricing_resolver_check.mjs extracts and
+    // exercises it against governed NON-SHIPPING fixtures, and the containment
+    // pins hold every pricing token inside this block. It returns FIVE
+    // INDEPENDENT AXES and never renders anything:
+    //   price        resolved | unavailable — the ONLY axis carrying a number.
+    //                Technically invalid data (missing, unverified,
+    //                unauthorized source, malformed, expired) resolves nothing.
+    //   calculation  available | quote-only | unavailable — STATUS only; no
+    //                payment figure is ever computed (V1 invariant). Derived
+    //                from formula-artifact validity under financing
+    //                governance, deliberately NOT from the financing
+    //                exact-term output flag, which this function never reads.
+    //   threshold    met | not-met | unknown — from the EXPLICIT runtime
+    //                transaction amount in MINOR units (cents); absent or
+    //                invalid input means unknown, and configuration can never
+    //                supply it. Plan minimums are published in MAJOR units
+    //                (dollars); the conversion is load-bearing.
+    //   freshness    fresh | stale | not-judgeable — STALE DOES NOT STRIP THE
+    //                NUMBER: a technically valid but stale amount resolves as
+    //                inert internal data, and every fail-closed consumer must
+    //                refuse any status other than 'fresh'. No governed
+    //                cadence, no valid clock, or nothing to judge means
+    //                not-judgeable, which consumers treat exactly like stale.
+    //   eligibility  eligible | not-eligible — the activation set
+    //                (displayEnabled, recorded approvals, attested clearance).
+    //                Unreachable as 'eligible' throughout Phase 2.1: the
+    //                validator and CI's operating-state lock refuse
+    //                displayEnabled=true.
+    // A resolved price implies NOTHING about any other axis. The injected
+    // clock is query.nowMs (epoch milliseconds); an invalid clock fails every
+    // time-dependent judgment closed. Date.now is deliberately absent.
+    function resolveDarkPricing(pricingCfg, financingCfg, query) {
+      'use strict';
+      var SKEW_MS = 300000; // 5-minute skew, mirroring the financing gate
+      var SIZE_WILDCARDS = ['*', 'all', 'any', 'default'];
+      var PRICE_KINDS = ['regular', 'promotional'];
+      var EVIDENCE_STATUSES = ['retailer-product-page-current', 'retailer-price-list-current'];
+      var FORMULA_MODES = { 'published-fixed-factor': ['principalMinor', 'publishedPaymentFactor'] };
+      var CADENCES = ['monthly', 'biweekly', 'weekly'];
+      var isObj = function (v) { return !!v && typeof v === 'object' && !Array.isArray(v); };
+      var isStr = function (v) { return typeof v === 'string'; };
+      var nonBlank = function (v) { return isStr(v) && v.replace(/\s+/g, '').length > 0; };
+      var isInt = function (v) { return typeof v === 'number' && isFinite(v) && Math.floor(v) === v; };
+      var posInt = function (v, max) { return isInt(v) && v > 0 && (max === undefined || v <= max); };
+      // Exact MAJOR->MINOR currency conversion (Codex exact-head review of
+      // PR #71, finding 4): plan minimums are validated at currency precision
+      // (at most two decimal places, safe-integer minor units), and this
+      // converts exactly that set — beyond it, null, and the threshold stays
+      // unknown. Aligned with the narrowed validate_financing schema.
+      var minorFromMajor = function (v) {
+        if (typeof v !== 'number' || !isFinite(v) || v < 0) return null;
+        var m = Math.round(v * 100);
+        if (m > 9007199254740991) return null;
+        if (Math.abs(v * 100 - m) > 0.000001) return null;
+        return m;
+      };
+      var parseStamp = function (v) {
+        if (!isStr(v) || v === '') return null;
+        if (!/(?:[zZ]|[+-]\d\d:?\d\d)$/.test(v)) return null; // offset-bearing only
+        var t = Date.parse(v);
+        return isFinite(t) ? t : null;
+      };
+      var hostOf = function (url) {
+        if (!isStr(url) || url.slice(0, 8) !== 'https://') return null;
+        var rest = url.slice(8);
+        var cut = rest.length;
+        for (var i = 0; i < rest.length; i++) {
+          var c = rest.charAt(i);
+          if (c === '/' || c === '?' || c === '#') { cut = i; break; }
+        }
+        var auth = rest.slice(0, cut);
+        if (auth === '' || auth.indexOf('@') !== -1 || auth.indexOf(':') !== -1) return null;
+        return auth.toLowerCase();
+      };
+      var allowedHost = function (url, hosts) {
+        var h = hostOf(url);
+        if (!h) return false;
+        if (h === 'web.archive.org' || h.slice(-16) === '.web.archive.org') return false;
+        if (!Array.isArray(hosts)) return false;
+        for (var i = 0; i < hosts.length; i++) {
+          var a = hosts[i];
+          if (!isStr(a) || a === '') continue;
+          if (h === a || h.slice(-(a.length + 1)) === '.' + a) return true;
+        }
+        return false;
+      };
+      var approvedRec = function (rec) {
+        return isObj(rec) && rec.status === 'approved' && nonBlank(rec.by)
+          && parseStamp(rec.at) !== null;
+      };
+
+      var q = isObj(query) ? query : {};
+      var now = (typeof q.nowMs === 'number' && isFinite(q.nowMs)) ? q.nowMs : null;
+      var p = isObj(pricingCfg) ? pricingCfg : null;
+      var fin = isObj(financingCfg) ? financingCfg : null;
+      // Emergency disable: enabled !== true empties the price axis and
+      // darkens formulas; plan-side facts (quote-only status, a threshold
+      // assessment) survive because they are financing facts carrying no
+      // pricing data — the axes stay independent.
+      var pricingOn = !!p && p.enabled === true;
+
+      // ---- axis 1: price availability / resolution ----------------------
+      var entry = null;
+      var priceValid = false;
+      var amountMinor = null;
+      var priceCurrency = null;
+      var priceKind = null;
+      var evInstant = null;
+      if (pricingOn && now !== null && Array.isArray(p.products)) {
+        for (var i2 = 0; i2 < p.products.length; i2++) {
+          var e = p.products[i2];
+          if (!isObj(e)) continue;
+          if (!isStr(q.productId) || e.productId !== q.productId) continue;
+          // SKU identity (Codex exact-head review of PR #71, finding 1): a
+          // price is resolved for one product-size AND its exact SKU — a
+          // missing, blank, malformed or mismatched SKU resolves nothing.
+          if (!isStr(q.sku) || !nonBlank(q.sku) || e.sku !== q.sku) continue;
+          if (e.productKind === 'mattress') {
+            if (!isStr(q.size) || e.size !== q.size) continue;
+            if (isStr(e.size) && SIZE_WILDCARDS.indexOf(e.size.replace(/\s+/g, '').toLowerCase()) !== -1) continue;
+          } else if (e.productKind === 'accessory') {
+            if (e.size !== null && e.size !== undefined) continue;
+            if (q.size !== null && q.size !== undefined) continue;
+          } else {
+            continue;
+          }
+          entry = e;
+          break;
+        }
+      }
+      if (entry) {
+        var pr = isObj(entry.price) ? entry.price : null;
+        var ev = isObj(entry.evidence) ? entry.evidence : null;
+        // Defense in depth (round-2 contract audit): the allowlist counts
+        // only under an APPROVED source policy, so the resolver fails closed
+        // on technical source authorization independently of build admission
+        // (which already refuses populated hosts while unapproved).
+        var shippedHosts = (p && isObj(p.sourcePolicy)
+          && p.sourcePolicy.status === 'approved')
+          ? p.sourcePolicy.allowedSourceHosts : null;
+        evInstant = ev ? parseStamp(ev.verifiedAt) : null;
+        var win = isObj(entry.window) ? entry.window : null;
+        var endRaw = win ? win.endsAt : null;
+        var endAt = (endRaw === null || endRaw === undefined) ? null : parseStamp(endRaw);
+        // Window start (Codex exact-head review of PR #71, finding 2): a
+        // bound that is present must parse, and a price is unavailable
+        // BEFORE its start. Boundaries: at exactly startAt the price is
+        // admitted (start-inclusive); at exactly endsAt it is unavailable
+        // (end-exclusive, the existing rule).
+        var startRaw = win ? win.startAt : null;
+        var startAt = (startRaw === null || startRaw === undefined) ? null : parseStamp(startRaw);
+        var winOk = true;
+        if (endRaw !== null && endRaw !== undefined && endAt === null) winOk = false;       // malformed end bound
+        if (startRaw !== null && startRaw !== undefined && startAt === null) winOk = false; // malformed start bound
+        if (endAt !== null && endAt <= now) winOk = false;                                  // expired price
+        if (startAt !== null && now < startAt) winOk = false;                               // not yet started
+        if (pr && pr.kind === 'promotional' && endAt === null) winOk = false;               // promo needs a published end
+        priceValid = !!(pr && ev
+          && posInt(pr.amountMinor, 1000000000)
+          && isStr(pr.currency) && nonBlank(pr.currency) && p !== null && pr.currency === p.currency
+          && PRICE_KINDS.indexOf(pr.kind) !== -1
+          && EVIDENCE_STATUSES.indexOf(ev.status) !== -1
+          && ev.verified === true
+          && nonBlank(ev.verifiedBy)
+          && evInstant !== null && evInstant <= now + SKEW_MS
+          && allowedHost(ev.sourceUrl, shippedHosts)
+          && winOk);
+        if (priceValid) {
+          amountMinor = pr.amountMinor;
+          priceCurrency = pr.currency;
+          priceKind = pr.kind;
+        }
+      }
+
+      // ---- axis 4: cadence / freshness ----------------------------------
+      // Judged only over a technically valid entry, and NEVER feeding back
+      // into axis 1: a stale amount stays resolved as inert internal data.
+      var freshness = 'not-judgeable';
+      if (priceValid) {
+        var mad = (p && isObj(p.freshness)) ? p.freshness.maxAgeDays : null;
+        if (posInt(mad, 60)) {
+          freshness = (now - evInstant) > mad * 86400000 ? 'stale' : 'fresh';
+        }
+      }
+
+      // ---- financing envelope + plan validity (feeds axes 2 and 3) -------
+      // Top-level governance first (Codex exact-head review of PR #71,
+      // finding 3): before ANY plan can be valid, the financing ENVELOPE
+      // itself must be enabled, fresh under the injected clock and skew, and
+      // sourced from its own allowlist — a malformed, future, stale or
+      // off-allowlist envelope makes calculation unavailable and the
+      // threshold unknown regardless of how the nested plan looks. The
+      // exact-term output flag stays deliberately unread.
+      var finMad = fin ? fin.maxAgeDays : null;
+      var finValid = false;
+      if (fin && fin.enabled === true && now !== null && posInt(finMad, 60)) {
+        var finAt = parseStamp(fin.verifiedAt);
+        finValid = finAt !== null && finAt <= now + SKEW_MS
+          && (now - finAt) <= finMad * 86400000
+          && allowedHost(fin.sourceUrl, fin.allowedSourceHosts);
+      }
+      var plan = null;
+      var planValid = false;
+      if (finValid && Array.isArray(fin.plans) && isStr(q.planId)) {
+        for (var j = 0; j < fin.plans.length; j++) {
+          var pl = fin.plans[j];
+          if (isObj(pl) && pl.id === q.planId) { plan = pl; break; }
+        }
+      }
+      if (plan) {
+        var plAt = parseStamp(plan.verifiedAt);
+        planValid = !!(plan.verified === true
+          && plAt !== null && plAt <= now + SKEW_MS
+          && (now - plAt) <= finMad * 86400000
+          && allowedHost(plan.sourceUrl, fin.allowedSourceHosts));
+      }
+
+      // ---- axis 2: financing calculation availability (STATUS only) ------
+      var calculation = 'unavailable';
+      if (planValid) {
+        calculation = 'quote-only';
+        var formulas = (pricingOn && p && Array.isArray(p.formulas)) ? p.formulas : [];
+        for (var k = 0; k < formulas.length; k++) {
+          var f = formulas[k];
+          if (!isObj(f) || f.planId !== q.planId) continue;
+          var want = Object.prototype.hasOwnProperty.call(FORMULA_MODES, f.mode)
+            ? FORMULA_MODES[f.mode] : null;
+          var inputsOk = false;
+          if (want && Array.isArray(f.inputs) && f.inputs.length === want.length) {
+            inputsOk = true;
+            for (var n = 0; n < want.length; n++) {
+              if (f.inputs.indexOf(want[n]) === -1) { inputsOk = false; break; }
+            }
+            for (var n2 = 0; n2 < f.inputs.length; n2++) {
+              if (!isStr(f.inputs[n2]) || f.inputs.indexOf(f.inputs[n2]) !== n2) { inputsOk = false; break; }
+            }
+          }
+          var fAt = parseStamp(f.verifiedAt);
+          var aAt = parseStamp(f.approvedAt);
+          var formulaValid = !!(want && inputsOk
+            && plan.calculationMode === f.mode
+            && CADENCES.indexOf(f.cadence) !== -1
+            && f.cadenceVerified === true
+            && nonBlank(f.approvedBy)
+            && aAt !== null && aAt <= now + SKEW_MS
+            && fAt !== null && fAt <= now + SKEW_MS
+            && (now - fAt) <= finMad * 86400000
+            && allowedHost(f.sourceUrl, fin.allowedSourceHosts));
+          if (formulaValid) { calculation = 'available'; break; }
+        }
+      }
+
+      // ---- axis 3: purchase threshold ------------------------------------
+      // The qualifying amount is the explicit runtime transaction amount in
+      // MINOR units; minimumPurchase is published in MAJOR units (dollars)
+      // at currency precision, and minorFromMajor converts it EXACTLY
+      // ($499.99 -> 49999 minor; a 49998 transaction is not-met, 49999 is
+      // met). A plan without a convertible minimum assesses nothing.
+      var threshold = 'unknown';
+      var txn = q.transactionAmountMinor;
+      if (planValid && posInt(txn)) {
+        var minMinor = minorFromMajor(plan.minimumPurchase);
+        if (minMinor !== null) {
+          threshold = txn >= minMinor ? 'met' : 'not-met';
+        }
+      }
+
+      // ---- axis 5: approval / presentation eligibility --------------------
+      var eligible = false;
+      if (p !== null && entry !== null) {
+        var pres = isObj(p.presentation) ? p.presentation : null;
+        var appr = (pres && isObj(pres.approvals)) ? pres.approvals : null;
+        var cl = isObj(entry.clearance) ? entry.clearance : null;
+        eligible = p.displayEnabled === true
+          && pres !== null && pres.status === 'approved'
+          && appr !== null
+          && approvedRec(appr.business) && approvedRec(appr.legal) && approvedRec(appr.nativeReview)
+          && isObj(p.authority) && nonBlank(p.authority.owner) && nonBlank(p.authority.role)
+          && cl !== null && (cl.status === 'cleared' || cl.status === 'not-required')
+          && nonBlank(cl.attestedBy);
+      }
+
+      return {
+        price: priceValid
+          ? { status: 'resolved', amountMinor: amountMinor, currency: priceCurrency, kind: priceKind }
+          : { status: 'unavailable', amountMinor: null, currency: null, kind: null },
+        calculation: { status: calculation },
+        threshold: { status: threshold },
+        freshness: { status: freshness },
+        eligibility: { status: eligible ? 'eligible' : 'not-eligible' }
+      };
+    }
+    // ═══ END PHASE 2.1B DARK RESOLVER ═══
+
     // Financing copy accessor (config copy block, language-aware).
     function FC(key) {
       var f = getFinancingConfig();
