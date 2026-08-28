@@ -68,7 +68,17 @@ technically valid but activation-unapproved data (may resolve numerically in
 governed non-shipping fixtures while approval/presentation eligibility stays
 false and nothing renders live), with the unavailability table, 2.1 exit and
 2.1b tests updated to match; and 2.2's mark is resolved to the legend's ◐
-model with complete Gated and Proceeds blocks.)* Slice 2.1b (the dark resolver) is now specified under the gate split
+model with complete Gated and Proceeds blocks. Round three: the stale case is
+made coherent with axis independence — staleness is removed from the
+technically-invalid list and is a cadence/freshness-axis outcome: an
+otherwise technically valid amount may resolve **only as inert internal
+data** while the axis reports *stale* and every fail-closed consumer
+(financing calculation, presentation, email payloads, analytics,
+persistence, live output) refuses it, so no customer-visible numeric result
+exists in any state; build-time admission is unchanged — validation still
+refuses a stale entry in an enabled production configuration; the resolver
+definition, fixtures, 2.1 exit and the table carry the same contract, with
+the stale independent-axis split a required 2.1b test case.)* Slice 2.1b (the dark resolver) is now specified under the gate split
 — design only, **NOT started**; `displayEnabled` and every surface remain
 false throughout 2.1 and the CI operating-state lock stands. PR #69 is not
 reopened: the merged validator's approvals-on-`enabled` binding and the
@@ -3955,11 +3965,20 @@ runtime transaction amount; (4) cadence/freshness; (5)
 approval/presentation eligibility. **A resolved price must not imply that
 calculation, threshold, cadence or presentation eligibility is also
 resolved** — the never-conflated table below generalizes to every pair of
-axes. On the price axis, technically invalid data — missing, stale,
-unverified, or from an unauthorized source — yields **no numeric result** in
-any context; technically valid but activation-unapproved (provisional) data
-**may resolve numerically inside governed non-shipping fixtures or
-harnesses**, with the approval/presentation-eligibility axis reporting
+axes. On the price axis, technically invalid data — missing, unverified, or
+from an unauthorized source — yields **no numeric result** in any context.
+**Staleness is not invalidity**: an otherwise technically valid amount whose
+evidence has aged past the governed cadence may resolve **only as inert
+internal data** — the cadence/freshness axis reports *stale*, and every
+fail-closed consumer (financing calculation, presentation, email payloads,
+analytics, persistence, live output) is prohibited from using it, so no
+customer-visible numeric result exists in any state. Build-time admission is
+unchanged: validation still refuses a stale entry in an enabled production
+configuration — the runtime freshness axis governs data that goes stale
+after admission or lives in dark/fixture states. Technically valid but
+activation-unapproved (provisional) data **may resolve numerically inside
+governed non-shipping fixtures or harnesses**, with the
+approval/presentation-eligibility axis reporting
 not-eligible and nothing shipping or rendering live. The resolver computes internally and
 renders **nothing** — `displayEnabled` and every surface stay false, and DOM
 silence in every state is pinned by tests. Scope: (i) the resolver and its
@@ -3980,12 +3999,14 @@ representable as approved; (iv) **governed
 non-shipping fixtures** exercising the complete mechanism end to end through
 the real converter, validator and resolver under injected clocks — populated
 prices, a formula artifact validated dark, threshold outcomes with and without
-a runtime amount, both unavailability states, staleness and emergency-disable,
-and — **as its own required test case** — the independent-axis split: a
-technically valid but activation-unapproved price resolving numerically while
-approval/presentation eligibility reports not-eligible and no shipped surface
-renders, alongside its converse, technically invalid data yielding no numeric
-result on any axis
+a runtime amount, both unavailability states, emergency disable, and —
+**as their own required test cases** — the two independent-axis splits:
+(a) a technically valid but activation-unapproved price resolving numerically
+while approval/presentation eligibility reports not-eligible and no shipped
+surface renders; (b) a technically valid but stale amount resolving only as
+inert internal data while the cadence/freshness axis reports *stale* and
+every fail-closed consumer refuses it; alongside their converse, technically
+invalid data yielding no numeric result on any axis
 — while production `incoming/lacks_pricing.json` stays exactly as shipped
 (dark, empty, unapproved) and `incoming/lacks_catalog_selection.json` stays
 ring-fenced and unconsumed. Exit for the slice and for 2.1: deterministic
@@ -4030,8 +4051,13 @@ payment output in any state:
 - freshness and cadence control, and emergency disable;
 - plan eligibility, calculation mode, and the plan's actual cadence;
 - the price-unavailable and quote-only states as **separate** outcomes;
-- **technically invalid** price data — missing, stale, unverified, or from an
+- **technically invalid** price data — missing, unverified, or from an
   unauthorized source — producing **no numeric result**;
+- **technically valid but stale** data resolving, at most, as **inert
+  internal data**: the cadence/freshness axis reports *stale* and every
+  fail-closed consumer — financing calculation, presentation, email
+  payloads, analytics, persistence, live output — refuses it, so no
+  customer-visible numeric result exists;
 - **technically valid but activation-unapproved** (provisional) data resolving
   numerically **only inside governed non-shipping fixtures or harnesses**,
   with the approval/presentation-eligibility axis false and nothing shipped
@@ -4052,14 +4078,19 @@ not deferred.)*
 
 | Condition | State | What is shown |
 |---|---|---|
-| The **product price** is technically invalid — missing, stale, unverified, or from an unauthorized source | *price unavailable* | No numeric price and no payment result, in any context. No estimate from a substitute price, and never a figure inferred from another size. |
+| The **product price** is technically invalid — missing, unverified, or from an unauthorized source | *price unavailable* | No numeric price and no payment result, in any context. No estimate from a substitute price, and never a figure inferred from another size. |
+| The price is **technically valid but stale** — its evidence has aged past the governed cadence | *stale — consumption prohibited* | Nothing a customer can see, in any state: no financing calculation, no presentation, no email payload, no analytics, no persistence, no live output. The amount may exist only as **inert internal data**, and the cadence/freshness axis reports *stale*. |
 | The **plan** has no valid payment formula, but a resolved price exists | *quote-only plan* | The price may be shown only per 2.2 activation; no calculated periodic payment, because the **formula** is missing — not the price. |
 | The price is **technically valid but activation-unapproved** (provisional) | *eligibility withheld* | Nothing on any shipped/live customer surface. Inside clearly identified governed non-shipping fixtures and harnesses the price axis may resolve numerically, labelled pending; the approval/presentation-eligibility axis stays false. |
 
 "Quote-only" is a property of a plan. It is never a fallback label for an
 unverified price. "Eligibility withheld" is a property of approval state,
 never of technical validity — it must not be conflated with *price
-unavailable*, and it never licenses a live render.
+unavailable*, and it never licenses a live render. "Stale" is a
+cadence/freshness outcome, not invalidity: the axes stay independently
+reported, and their independence is bounded by fail-closed consumption — an
+inert internal value never reaches a customer, an email payload, analytics,
+persistence or a live deployment through any consumer.
 
 > **⚠️ `incoming/lacks_catalog_selection.json` is discovery evidence, not a price
 > source.** It contains 26 Queen-model observations carrying SKU, a promotional
