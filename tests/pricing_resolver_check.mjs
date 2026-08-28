@@ -149,6 +149,40 @@ check("resolveDarkPricing has ZERO live call sites (declaration only)",
 check("nothing anywhere reads the shipped pricing config (no STORE_CONFIG.pricing)",
   !/STORE_CONFIG\s*\.\s*pricing\b/.test(htmlCode) && !htmlCode.includes("getPricingConfig"));
 
+// Escape-hardened containment (round-2 test audit R2): outside the resolver
+// block, executable code never names `pricing` at all. Two scans close the
+// substring lock's escapes: (A) the bare word over string-BLANKED code
+// catches destructured ({pricing}), aliased (C.pricing) and identifier
+// reads while sparing legitimate copy strings ("Final pricing, ...");
+// (B) a bracket-access scan over string-KEPT code catches
+// STORE_CONFIG['pricing']. Both pages get both scans.
+function blankStrings(src) {
+  return src
+    .replace(/'(?:\\.|[^'\\])*'/g, "''")
+    .replace(/"(?:\\.|[^"\\])*"/g, '""')
+    .replace(/`(?:\\.|[^`\\])*`/g, "``");
+}
+const demoHtml = readFileSync(join(root, "demo", "black-friday", "index.html"), "utf8");
+for (const [pageName, page] of [["index.html", html], ["demo/black-friday/index.html", demoHtml]]) {
+  const s = page.indexOf(START), e = page.indexOf(END);
+  check(`${pageName}: resolver markers present for the containment scan`, s !== -1 && e > s);
+  const outside = page.slice(0, s) + page.slice(e + END.length);
+  const outsideCode = stripComments(outside);
+  const hitA = blankStrings(outsideCode).match(/[^\n]{0,40}\bpricing\b[^\n]{0,40}/);
+  check(`${pageName}: the bare word 'pricing' never appears in executable code outside the block`,
+    hitA === null, hitA ? hitA[0] : "");
+  const hitB = outsideCode.match(/[^\n]{0,30}\[\s*['"`]pricing['"`]\s*\][^\n]{0,30}/);
+  check(`${pageName}: no bracketed ['pricing'] access outside the block`,
+    hitB === null, hitB ? hitB[0] : "");
+}
+check("...scan A fires on planted destructured and aliased reads",
+  /\bpricing\b/.test(blankStrings(stripComments("const {pricing} = STORE_CONFIG;")))
+  && /\bpricing\b/.test(blankStrings(stripComments("var C = STORE_CONFIG; C.pricing.enabled;"))));
+check("...scan B fires on a planted bracketed read",
+  /\[\s*['"`]pricing['"`]\s*\]/.test(stripComments("var x = STORE_CONFIG['pricing'];")));
+check("...and scan A correctly spares a legitimate copy string",
+  !/\bpricing\b/.test(blankStrings(stripComments("var t = 'Final pricing, eligibility, terms';"))));
+
 // Source purity pins: the clock is a parameter; no ambient time, DOM, storage,
 // network or app-global access; the exact-term output flag is never read.
 check("resolver never calls Date.now or new Date()",
@@ -299,6 +333,8 @@ const INVALID = [
   ["credentialed source", (p) => { p.products[0].evidence.sourceUrl = "https://u:p@www.lacks.com/x"; }],
   ["empty shipped allowlist (unapproved source policy allows nothing)",
     (p) => { p.sourcePolicy.allowedSourceHosts = []; }],
+  ["UNAPPROVED source policy with populated hosts (defense in depth — round-2 contract audit R1)",
+    (p) => { p.sourcePolicy.status = "unapproved"; }],
   ["allowlist not an array", (p) => { p.sourcePolicy.allowedSourceHosts = "lacks.com"; }],
   ["float amountMinor", (p) => { p.products[0].price.amountMinor = 3699.0 + 0.5; }],
   ["zero amountMinor", (p) => { p.products[0].price.amountMinor = 0; }],
@@ -333,6 +369,16 @@ for (const [label, mut, qOver] of INVALID) {
   check("emergency disable: calculation degrades to quote-only (formulas dark with pricing off), plan-side threshold still assessable",
     r.calculation.status === "quote-only" && r.threshold.status === "met"
     && r.freshness.status === "not-judgeable");
+}
+// Clock skew at the resolver (round-2 test audit N1): a within-skew future
+// evidence stamp is valid; past the 5-minute skew it is invalid.
+{
+  const p = P(); p.products[0].evidence.verifiedAt = "2026-08-27T12:02:00+00:00";
+  check("evidence stamp 2 min ahead (inside clock skew) -> still resolved",
+    resolver(p, F(), Q()).price.status === "resolved");
+  p.products[0].evidence.verifiedAt = "2026-08-27T12:06:00+00:00";
+  check("evidence stamp 6 min ahead (outside clock skew) -> unavailable",
+    resolver(p, F(), Q()).price.status === "unavailable");
 }
 // An accessory entry resolves with a null-size query (derived variant).
 {
@@ -373,6 +419,12 @@ check("$500.00 exactly (50000 minor) -> met (>= boundary)", tq(50000) === "met")
 check("plan without minimumPurchase (lacks-in-house) + a valid amount -> unknown",
   resolver(P(), F(), Q({ planId: "lacks-in-house", transactionAmountMinor: 60000 }))
     .threshold.status === "unknown");
+// Malformed plan minimums assess nothing either (round-2 test audit N2).
+for (const [label, v] of [["float", 499.99], ["string", "500"], ["boolean", true]]) {
+  const f = F(); f.plans[0].minimumPurchase = v;
+  check(`malformed minimumPurchase (${label}) + a valid amount -> unknown`,
+    resolver(P(), f, Q({ transactionAmountMinor: 60000 })).threshold.status === "unknown");
+}
 // Threshold never echoes the amount into any axis.
 {
   const r = resolver(P(), F(), Q({ transactionAmountMinor: 77777700 }));
@@ -455,6 +507,24 @@ section("Eligibility — the activation set, computed for real, unreachable in 2
   const p2 = stripApprovals(P()); p2.displayEnabled = true;
   check("displayEnabled true WITHOUT approvals -> still not-eligible (approvals are not decorative)",
     resolver(p2, F(), Q()).eligibility.status === "not-eligible");
+}
+// Per-conjunct negatives (round-2 test audit R1): withdrawing any ONE member
+// of the eligibility AND-chain flips the axis, so no conjunct is decorative
+// and a mutant deleting one cannot survive.
+const CONJUNCTS = [
+  ["business approval withdrawn", (p) => { p.presentation.approvals.business.status = "unapproved"; }],
+  ["legal approval withdrawn", (p) => { p.presentation.approvals.legal.status = "unapproved"; }],
+  ["native review back to pending", (p) => { p.presentation.approvals.nativeReview.status = "pending"; }],
+  ["blank authority owner", (p) => { p.authority.owner = ""; }],
+  ["blank authority role", (p) => { p.authority.role = " "; }],
+  ["clearance not-cleared", (p) => { p.products[0].clearance.status = "not-cleared"; }],
+  ["blank clearance attestation", (p) => { p.products[0].clearance.attestedBy = ""; }],
+  ["presentation status unapproved", (p) => { p.presentation.status = "unapproved"; }],
+];
+for (const [label, mut] of CONJUNCTS) {
+  const p = P(); p.displayEnabled = true; mut(p);
+  check(`eligibility conjunct — ${label} -> not-eligible even under displayEnabled:true`,
+    resolver(p, F(), Q()).eligibility.status === "not-eligible");
 }
 
 // ===========================================================================

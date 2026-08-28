@@ -11548,7 +11548,11 @@
       var now = (typeof q.nowMs === 'number' && isFinite(q.nowMs)) ? q.nowMs : null;
       var p = isObj(pricingCfg) ? pricingCfg : null;
       var fin = isObj(financingCfg) ? financingCfg : null;
-      var pricingOn = !!p && p.enabled === true; // emergency disable empties every axis
+      // Emergency disable: enabled !== true empties the price axis and
+      // darkens formulas; plan-side facts (quote-only status, a threshold
+      // assessment) survive because they are financing facts carrying no
+      // pricing data — the axes stay independent.
+      var pricingOn = !!p && p.enabled === true;
 
       // ---- axis 1: price availability / resolution ----------------------
       var entry = null;
@@ -11578,7 +11582,13 @@
       if (entry) {
         var pr = isObj(entry.price) ? entry.price : null;
         var ev = isObj(entry.evidence) ? entry.evidence : null;
-        var shippedHosts = (p && isObj(p.sourcePolicy)) ? p.sourcePolicy.allowedSourceHosts : null;
+        // Defense in depth (round-2 contract audit): the allowlist counts
+        // only under an APPROVED source policy, so the resolver fails closed
+        // on technical source authorization independently of build admission
+        // (which already refuses populated hosts while unapproved).
+        var shippedHosts = (p && isObj(p.sourcePolicy)
+          && p.sourcePolicy.status === 'approved')
+          ? p.sourcePolicy.allowedSourceHosts : null;
         evInstant = ev ? parseStamp(ev.verifiedAt) : null;
         var win = isObj(entry.window) ? entry.window : null;
         var endRaw = win ? win.endsAt : null;

@@ -4093,6 +4093,33 @@ extracted function in a poisoned pure scope. Production
 `incoming/lacks_pricing.json` is byte-untouched; the populated fixture's
 financing carries production's own `exactPromotionsEnabled:false`.
 
+*(Round-2 audits, 2026-08-28 — both auditors independently reviewed the
+committed diff at `27ab9e0` against their own round-1 reports: **both
+verdicts CONFORMS with ZERO REQUIRED findings**; the contract auditor
+adjudicated the §25 `publishedPaymentFactor` containment re-scoping CORRECT
+and fail-closed; the test auditor adjudicated the structural DOM-silence
+proof SUFFICIENT and withdrew its dynamic render-invariance requirement,
+after hand-verifying that the two externally-observed mutants (payload leak,
+live-surface leak) fail their observers on the pricing-specific assertions.
+All five RECOMMENDED findings were applied on the branch in the same cycle:
+the resolver counts the shipped allowlist only under an APPROVED source
+policy (independent fail-closed source authorization, with its own invalid
+case); per-conjunct eligibility negatives (eight probes, one conjunct
+withdrawn each); escape-hardened containment (outside the resolver block,
+executable code never names `pricing` — string-blanked word scan plus a
+bracket-access scan, both pages, with planted firing proofs and a
+spared-copy-string control); a Python-side boundary-instant admission case
+proving both freshness legs are strictly-older; and the CI header ledger
+re-derived (48 steps / 43 suite runs, newest = the resolver suite).
+Recorded notes: the validator's activation predicate (approvals REQUIRED at
+displayEnabled-or-surface) and the resolver's eligibility axis (eligible
+ONLY at displayEnabled plus full approvals) are deliberately different, the
+resolver strictly narrower — do not "unify" them; and for 2.2: the
+"every fail-closed consumer refuses non-fresh" contract is honest today
+because ZERO consumers exist — **the moment 2.2 wires the first consumer,
+the refusal must become an EXECUTED test driving that consumer with the
+stale case-(b) state**, and 2.2's Gated work must carry it.)*
+
 **What 2.1a is NOT.** Not 2.1 completion: under this document, 2.1 stays 🔨
 until approved ownership, source, legal/MAP and cadence inputs exist and at
 least one verified size-specific price traverses the real pipeline — unless

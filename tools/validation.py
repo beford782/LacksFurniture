@@ -8227,6 +8227,15 @@ def _self_test() -> int:
     # the injected clock is the clock
     check("pricing stale under a clock 30 days on -> error while enabled",
           _perr(_pmut(), "older than maxAgeDays", now=_PNOW + _ptd(days=30)))
+    # Boundary agreement with the 2.1b JS resolver (round-2 test audit R3):
+    # both legs are STRICTLY-older — exactly at verifiedAt + maxAgeDays is
+    # fresh/admitted; one second past is stale/refused. _PSTAMP is
+    # 2026-08-26T10:00:00-05:00 = 15:00Z, maxAgeDays 7 -> the limit instant.
+    _PLIMIT = _pdt(2026, 9, 2, 15, 0, tzinfo=_ptz.utc)
+    check("pricing at EXACTLY verifiedAt+maxAgeDays -> admitted while enabled (strict inequality)",
+          _pv(_pmut(), now=_PLIMIT).ok)
+    check("pricing one second past the limit -> stale, refused while enabled",
+          _perr(_pmut(), "older than maxAgeDays", now=_PLIMIT + _ptd(seconds=1)))
     dd = json.loads(json.dumps(dark_pricing))
     dd["freshness"] = {"status": "approved", "maxAgeDays": 7, "approvedBy": "Test", "approvedAt": "2026-08-26T09:00:00-05:00"}
     dd["sourcePolicy"] = _pmut()["sourcePolicy"]
