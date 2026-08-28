@@ -1,123 +1,164 @@
 {
-  "storeName": "Lacks Furniture",
-  "storeKey": "lacks",
-  "languages": [
-    "en",
-    "es"
-  ],
-  "logo": {
-    "main": "Lacks",
-    "sub": "furniture"
+  "_meta": {
+    "note": "NON-SHIPPING test fixture for Phase 2.1 (tests/pricing_contract_check.py, tests/pricing_totality_check.py). A populated pricing contract that traverses the real pipeline in a temp workbook: canonical envelope -> Pricing tab -> converter build_pricing -> build_store_config -> validate_financing + validate_pricing under an INJECTED clock. It never enters incoming/, the committed workbook, data/, or demo/. Every approval, attestation and policy here is an explicit ILLUSTRATIVE placeholder for exercising the pipeline — not a real Lacks approval, price, clearance or verification — and must never be copied into a shipping source. The `financing` block is the production block with exact-term authorization switched ON and stamps set current under the fixture clock, so the formula cross-gate can be exercised; production financing stays exactly as shipped (exactPromotionsEnabled false). Production pricing.products stays [] and every production policy stays unapproved until real ownership/source/legal/MAP/cadence inputs exist (roadmap §2.1).",
+    "clock": "2026-08-27T12:00:00+00:00"
   },
-  "colors": {
-    "storePrimary": "#FABD0F",
-    "storePrimaryLight": "#FFD24D",
-    "storePrimaryGlow": "rgba(250,189,15,0.15)",
-    "accent": "#FF5C36"
-  },
-  "gasUrl": "",
-  "publicAssetRoot": "https://beford782.github.io/LacksFurniture/",
-  "allowedHosts": [
-    "beford782.github.io"
-  ],
-  "brands": [
-    {
-      "name": "Restonic",
-      "logo": ""
-    },
-    {
-      "name": "Chattam & Wells",
-      "logo": ""
-    },
-    {
-      "name": "Spring Air",
-      "logo": ""
-    },
-    {
-      "name": "Tempur-Pedic",
-      "logo": ""
-    },
-    {
-      "name": "Genesis",
-      "logo": ""
-    }
-  ],
-  "rsaList": [],
-  "text": {
-    "pageTitle": "DreamFinder - Lacks Furniture Sleep Quiz",
-    "metaDescription": "Take the Lacks Furniture sleep quiz and get personalized mattress recommendations.",
-    "ogTitle": "DreamFinder - Lacks Furniture",
-    "trustSignal": "Family-owned since 1935 — 90 years of South Texas homes",
-    "heritage": "FAMILY-OWNED · SOUTH TEXAS · SINCE 1935",
-    "emailPrivacy": "We'll only use your email to send your results.",
-    "privacyPolicyContact": "To access or remove your information, contact your local Lacks Furniture store.",
-    "inStockText": "In stock at Lacks",
-    "emailHeader": "Lacks Furniture x DreamFinder",
-    "emailSubtext": "Your personalized mattress matches",
-    "locationLabel": "South Texas & the Rio Grande Valley",
-    "privacyDraftNotice": "Draft policy — pending Lacks Furniture approval before live use.",
-    "privacyHeading": "Privacy",
-    "privacyBody": "DreamFinder collects your name, email, and optional phone number to deliver your mattress recommendations. Your information is only used for this purpose and is never sold. DreamFinder does not send your information to lenders. If you choose to open Lacks' financing or application pages, you continue on lacks.com — a separate site governed by its own terms and privacy policy.",
-    "disclaimerHeading": "Disclaimer",
-    "disclaimerBody": "DreamFinder is a product recommendation tool. Match percentages and Sleep Brief guidance are generated from your quiz answers and should be treated as starting points, not guarantees. This tool does not provide medical advice — consult a healthcare provider for medical sleep concerns. Payment options, pricing, and product availability are subject to Lacks Furniture store terms and approval.",
-    "ownershipBadge": "",
-    "locationsLabel": "",
-    "locations": "Brownsville · Laredo · McAllen · Alice · Harlingen · Rio Grande City"
-  },
-  "text_es": {
-    "pageTitle": "DreamFinder - Cuestionario del Sueño de Lacks Furniture",
-    "metaDescription": "Responde el cuestionario del sueño de Lacks Furniture y recibe recomendaciones personalizadas de colchones.",
-    "ogTitle": "DreamFinder - Lacks Furniture",
-    "trustSignal": "Negocio familiar desde 1935 — 90 años en los hogares del sur de Texas",
-    "heritage": "NEGOCIO FAMILIAR · SUR DE TEXAS · DESDE 1935",
-    "emailPrivacy": "Solo usaremos tu correo para enviarte tus resultados.",
-    "privacyPolicyContact": "Para acceder o eliminar tu información, comunícate con tu tienda Lacks Furniture local.",
-    "inStockText": "En stock en Lacks",
-    "emailHeader": "",
-    "emailSubtext": "",
-    "locationLabel": "Sur de Texas y el Valle del Río Grande",
-    "privacyDraftNotice": "Política preliminar — pendiente de aprobación de Lacks Furniture antes de su uso.",
-    "privacyHeading": "Privacidad",
-    "privacyBody": "DreamFinder recopila tu nombre, correo electrónico y número de teléfono opcional para enviarte tus recomendaciones de colchón. Tu información se usa únicamente para este fin y nunca se vende. DreamFinder no envía tu información a prestamistas. Si decides abrir las páginas de financiamiento o solicitud de Lacks, continúas en lacks.com — un sitio aparte, regido por sus propios términos y política de privacidad.",
-    "disclaimerHeading": "Aviso legal",
-    "disclaimerBody": "DreamFinder es una herramienta de recomendación de productos. Los porcentajes de compatibilidad y la guía del Resumen de Sueño se generan a partir de tus respuestas y deben tomarse como punto de partida, no como garantía. Esta herramienta no ofrece asesoramiento médico — consulta a un profesional de la salud para problemas médicos del sueño. Las opciones de pago, los precios y la disponibilidad de productos están sujetos a los términos de las tiendas Lacks Furniture y a aprobación."
-  },
-  "discount": {
-    "codePrefix": "DREAM",
-    "codeDigits": 4,
-    "mode": "disabled",
-    "percentage": 5,
-    "validityDays": 30,
-    "scope": {
-      "en": "a qualifying DreamFinder mattress selection",
-      "es": "una selección de colchón DreamFinder que califique"
-    },
-    "landingHint": {
-      "en": "A 30-day offer to bring home with your matches",
-      "es": "Una oferta de 30 días para llevar con tus recomendaciones"
-    },
-    "demoDeliveryNote": {
-      "en": "Live delivery can be connected after Lacks approves the experience.",
-      "es": "La entrega real se puede conectar después de que Lacks apruebe la experiencia."
-    },
-    "terms": {
-      "en": "Valid on qualifying mattress selections. Cannot be combined with other offers. Final eligibility confirmed by your Lacks sleep specialist.",
-      "es": "Válido en selecciones de colchones que califiquen. No se puede combinar con otras ofertas. Elegibilidad final confirmada por tu especialista del sueño de Lacks."
-    }
-  },
-  "promotions": {
+  "pricing": {
     "schemaVersion": 1,
-    "activeScenario": null,
-    "allowedSourceHosts": [
-      "lacks.com"
+    "enabled": true,
+    "displayEnabled": false,
+    "currency": "USD",
+    "authority": {
+      "owner": "FIXTURE — placeholder owner (not a real approval)",
+      "role": "merchandising"
+    },
+    "freshness": {
+      "status": "approved",
+      "maxAgeDays": 7,
+      "approvedBy": "FIXTURE — placeholder (illustrative policy, not approved)",
+      "approvedAt": "2026-08-26T09:00:00-05:00"
+    },
+    "sourcePolicy": {
+      "status": "approved",
+      "allowedSourceHosts": [
+        "lacks.com",
+        "www.lacks.com"
+      ],
+      "approvedBy": "FIXTURE — placeholder (illustrative policy, not approved)",
+      "approvedAt": "2026-08-26T09:00:00-05:00"
+    },
+    "purchaseAssessment": {
+      "policy": "runtime-transaction-amount"
+    },
+    "sizes": [
+      "twin",
+      "twin_xl",
+      "full",
+      "queen",
+      "king",
+      "cal_king"
     ],
-    "scenarios": {}
+    "surfaces": {
+      "drawer": false,
+      "sleepSystem": false,
+      "results": false,
+      "handoff": false,
+      "sleepPlan": false
+    },
+    "presentation": {
+      "status": "approved",
+      "approvals": {
+        "business": {
+          "status": "approved",
+          "by": "FIXTURE — placeholder business approval",
+          "at": "2026-08-26T09:00:00-05:00"
+        },
+        "legal": {
+          "status": "approved",
+          "by": "FIXTURE — placeholder legal approval",
+          "at": "2026-08-26T09:00:00-05:00"
+        },
+        "nativeReview": {
+          "status": "approved",
+          "by": "FIXTURE — placeholder native-language review",
+          "at": "2026-08-26T09:00:00-05:00"
+        }
+      },
+      "assumptions": [
+        {
+          "id": "fixture-assumption-size",
+          "en": "FIXTURE — a price applies to one verified size only.",
+          "es": "FIXTURE — un precio aplica solo a un tamaño verificado."
+        }
+      ],
+      "disclosures": [
+        {
+          "id": "fixture-disclosure-threshold",
+          "en": "FIXTURE — plan eligibility depends on the whole transaction amount, confirmed in store.",
+          "es": "FIXTURE — la elegibilidad del plan depende del monto total de la transacción, confirmado en tienda."
+        }
+      ],
+      "states": {
+        "price-unavailable": {
+          "en": "FIXTURE — Price unavailable.",
+          "es": "FIXTURE — Precio no disponible."
+        },
+        "quote-only": {
+          "en": "FIXTURE — Quote in store.",
+          "es": "FIXTURE — Cotización en tienda."
+        },
+        "threshold-unknown": {
+          "en": "FIXTURE — Eligibility unknown until the transaction amount is known.",
+          "es": "FIXTURE — Elegibilidad desconocida hasta conocer el monto de la transacción."
+        }
+      }
+    },
+    "products": [
+      {
+        "productId": "g6",
+        "productKind": "mattress",
+        "sku": "FIXTURE-0001",
+        "size": "queen",
+        "price": {
+          "amountMinor": 369900,
+          "currency": "USD",
+          "kind": "regular"
+        },
+        "evidence": {
+          "status": "retailer-product-page-current",
+          "verified": true,
+          "verifiedAt": "2026-08-26T10:00:00-05:00",
+          "verifiedBy": "FIXTURE — placeholder attestation (not a real verification)",
+          "sourceUrl": "https://www.lacks.com/fixture-product-page"
+        },
+        "clearance": {
+          "status": "cleared",
+          "attestedBy": "FIXTURE — placeholder clearance (not a real clearance)",
+          "attestedAt": "2026-08-26T11:00:00-05:00",
+          "scope": {
+            "productId": "g6",
+            "productKind": "mattress",
+            "sku": "FIXTURE-0001",
+            "size": "queen",
+            "amountMinor": 369900,
+            "currency": "USD",
+            "kind": "regular",
+            "evidenceStatus": "retailer-product-page-current",
+            "evidenceVerifiedAt": "2026-08-26T10:00:00-05:00",
+            "evidenceSourceUrl": "https://www.lacks.com/fixture-product-page",
+            "windowStartAt": null,
+            "windowEndsAt": null
+          }
+        },
+        "window": {
+          "startAt": null,
+          "endsAt": null
+        }
+      }
+    ],
+    "formulas": [
+      {
+        "id": "fixture-fixed-factor",
+        "planId": "synchrony-9-99-72",
+        "mode": "published-fixed-factor",
+        "cadence": "monthly",
+        "cadenceVerified": true,
+        "inputs": [
+          "principalMinor",
+          "publishedPaymentFactor"
+        ],
+        "approvedBy": "FIXTURE — placeholder (not a real approval)",
+        "approvedAt": "2026-08-26T09:30:00-05:00",
+        "sourceUrl": "https://www.lacks.com/financing",
+        "verifiedAt": "2026-08-26T10:00:00-05:00"
+      }
+    ]
   },
   "financing": {
     "enabled": true,
     "experience": "payment-choice",
     "offerVersion": "2026-07-30a",
-    "verifiedAt": "2026-07-31T16:43:00-05:00",
+    "verifiedAt": "2026-08-26T10:00:00-05:00",
     "maxAgeDays": 7,
     "sourceUrl": "https://www.lacks.com/financing",
     "applicationUrl": "https://www.lacks.com/credit-application",
@@ -128,7 +169,7 @@
       "note": "Published in Lacks' FAQ but returned 404 on 2026-07-30. Do not render as a link until it resolves; the Mexico card links to mexicoInfoUrl."
     },
     "savingsPassPolicy": "specialist_confirm",
-    "exactPromotionsEnabled": false,
+    "exactPromotionsEnabled": true,
     "esReviewStatus": "pending-native-legal-review",
     "surfaces": {
       "drawer": false,
@@ -273,7 +314,7 @@
         "kind": "open-end-promotional-credit",
         "provider": "Synchrony",
         "verified": true,
-        "verifiedAt": "2026-07-31T16:43:00-05:00",
+        "verifiedAt": "2026-08-26T10:00:00-05:00",
         "sourceUrl": "https://www.lacks.com/financing",
         "apr": 9.99,
         "termMonths": 72,
@@ -299,7 +340,7 @@
         "kind": "open-end-promotional-credit",
         "provider": "Synchrony",
         "verified": true,
-        "verifiedAt": "2026-07-31T16:43:00-05:00",
+        "verifiedAt": "2026-08-26T10:00:00-05:00",
         "sourceUrl": "https://www.lacks.com/financing",
         "apr": 0,
         "termMonths": 48,
@@ -325,7 +366,7 @@
         "kind": "closed-end-installment",
         "provider": "Lacks",
         "verified": true,
-        "verifiedAt": "2026-07-31T16:43:00-05:00",
+        "verifiedAt": "2026-08-26T10:00:00-05:00",
         "sourceUrl": "https://www.lacks.com/financing",
         "paymentCalculationEnabled": false,
         "headline": {
@@ -346,7 +387,7 @@
         "kind": "lease-to-own",
         "provider": "Lacks",
         "verified": true,
-        "verifiedAt": "2026-07-31T16:43:00-05:00",
+        "verifiedAt": "2026-08-26T10:00:00-05:00",
         "sourceUrl": "https://www.lacks.com/financing",
         "paymentCalculationEnabled": false,
         "headline": {
@@ -363,7 +404,7 @@
         "kind": "credit-builder",
         "provider": "Lacks",
         "verified": true,
-        "verifiedAt": "2026-07-31T16:43:00-05:00",
+        "verifiedAt": "2026-08-26T10:00:00-05:00",
         "sourceUrl": "https://www.lacks.com/financing",
         "paymentCalculationEnabled": false,
         "headline": {
@@ -381,7 +422,7 @@
         "provider": "Lacks",
         "presentationScenario": "mexico-delivery",
         "verified": true,
-        "verifiedAt": "2026-07-31T16:43:00-05:00",
+        "verifiedAt": "2026-08-26T10:00:00-05:00",
         "sourceUrl": "https://www.lacks.com/faq",
         "apr": 24,
         "termMonths": 24,
@@ -404,218 +445,5 @@
         }
       }
     ]
-  },
-  "pricing": {
-    "schemaVersion": 1,
-    "enabled": false,
-    "displayEnabled": false,
-    "currency": "USD",
-    "authority": {
-      "owner": "",
-      "role": ""
-    },
-    "freshness": {
-      "status": "unapproved",
-      "maxAgeDays": null,
-      "approvedBy": "",
-      "approvedAt": null
-    },
-    "sourcePolicy": {
-      "status": "unapproved",
-      "allowedSourceHosts": [],
-      "approvedBy": "",
-      "approvedAt": null
-    },
-    "purchaseAssessment": {
-      "policy": "runtime-transaction-amount"
-    },
-    "sizes": [
-      "twin",
-      "twin_xl",
-      "full",
-      "queen",
-      "king",
-      "cal_king"
-    ],
-    "surfaces": {
-      "drawer": false,
-      "sleepSystem": false,
-      "results": false,
-      "handoff": false,
-      "sleepPlan": false
-    },
-    "presentation": {
-      "status": "unapproved",
-      "approvals": {
-        "business": {
-          "status": "unapproved",
-          "by": "",
-          "at": null
-        },
-        "legal": {
-          "status": "unapproved",
-          "by": "",
-          "at": null
-        },
-        "nativeReview": {
-          "status": "pending",
-          "by": "",
-          "at": null
-        }
-      },
-      "assumptions": [],
-      "disclosures": [],
-      "states": {}
-    },
-    "products": [],
-    "formulas": []
-  },
-  "voice": {
-    "eyebrow": "FAMILY-OWNED · SOUTH TEXAS · SINCE 1935",
-    "headlineMain": "South Texas'",
-    "headlineAccent": "Sleep Shop.",
-    "subCopyBefore": "Answer a few questions, then review your mattress matches with a Lacks sleep specialist.",
-    "subCopyAccent": "",
-    "subCopyAfter": "",
-    "ctaPrimary": "Find My Sleep Match",
-    "timeEstimate": "About 2 minutes · No pressure",
-    "retailerSubline": "SLEEP SHOP",
-    "outcomeLabel": "Your consultation builds",
-    "outcomeItems": "Sleep Brief · Mattress Matches · Sleep System Picks · Payment Choices"
-  },
-  "voice_es": {
-    "eyebrow": "NEGOCIO FAMILIAR · SUR DE TEXAS · DESDE 1935",
-    "headlineMain": "La tienda del descanso",
-    "headlineAccent": "del sur de Texas.",
-    "subCopyBefore": "Responde unas preguntas y revisa tus opciones de colchón con un especialista del descanso de Lacks.",
-    "subCopyAccent": "",
-    "subCopyAfter": "",
-    "ctaPrimary": "Encontrar Mi Opción Ideal",
-    "timeEstimate": "Aproximadamente 2 minutos · Sin presión",
-    "retailerSubline": "TIENDA DEL DESCANSO",
-    "outcomeLabel": "Tu consulta crea",
-    "outcomeItems": "Resumen de Sueño · Opciones de Colchón · Sistema de Sueño · Opciones de Pago"
-  },
-  "salesNotes": {
-    "subBrands": {},
-    "brands": {
-      "Restonic": {
-        "story": "Made locally in Texas and named a Consumers Digest Best Buy year after year, Restonic's Marvelous Middle builds 25% more support into the center third of every bed — where support matters most."
-      },
-      "Chattam & Wells": {
-        "story": "Chattam & Wells is hand-crafted luxury built by Restonic's finest craftspeople — Merino wool, cashmere, and graphite latex layered over precision coils for heirloom-quality sleep."
-      },
-      "Spring Air": {
-        "story": "Spring Air's patented Copper collection pairs NatuVerex copper fabric with copper-infused foams for a cooler, fresher, health-forward sleep experience."
-      },
-      "Tempur-Pedic": {
-        "story": "Developed from NASA-engineered pressure-relieving material, Tempur-Pedic is the benchmark for adaptive memory-foam comfort, cooling innovation, and zero motion transfer."
-      },
-      "Genesis": {
-        "story": "Genesis by Kingdom Mattress is engineered entirely in the USA by a 30-year family company — honest, durable comfort built for real family life."
-      }
-    },
-    "consultationImplications": {
-      "trigger": {
-        "pain": "here to solve a comfort problem",
-        "worn_out": "replacing an old mattress",
-        "moving": "furnishing a new space",
-        "upgrade": "ready for an upgrade",
-        "browsing": "exploring options today"
-      },
-      "sleep_issues": {
-        "back_pain": "test lower-back support carefully",
-        "hip_pain": "focus on pressure relief at hips and shoulders",
-        "hot": "prioritize temperature control",
-        "tossing": "notice how easy it is to settle in",
-        "stiff": "compare alignment and morning comfort",
-        "sagging": "check for durable, consistent support",
-        "too_soft": "try firmer, more supportive feels",
-        "none": ""
-      },
-      "sleep_position": {
-        "side": "prioritize shoulder and hip cushioning",
-        "back": "look for even lumbar support",
-        "stomach": "keep the midsection supported",
-        "combo": "notice ease of movement between positions",
-        "no_idea": "compare a few different feels to find a starting point"
-      },
-      "health_conditions": {
-        "nerve_pain": "compare gentle, even pressure relief",
-        "allergies": "ask about washable and protective covers",
-        "snoring": "test head-of-bed elevation on an adjustable base",
-        "reflux": "notice how a raised upper body feels",
-        "extra_support": "prioritize reinforced, sturdy support",
-        "getting_older": "compare ease of getting in and out of bed",
-        "none": ""
-      },
-      "temperature": {
-        "hot": "compare cooling covers and airflow",
-        "comfortable": "",
-        "cold": "notice warmth and cozier surface feels",
-        "opposite": "compare temperature balance for two sleepers"
-      }
-    }
-  },
-  "salesNotes_es": {
-    "subBrands": {},
-    "brands": {
-      "Restonic": {
-        "story": "Fabricado localmente en Texas y nombrado Best Buy por Consumers Digest año tras año, el Marvelous Middle de Restonic construye 25% más soporte en el tercio central de cada cama — donde el soporte más importa."
-      },
-      "Chattam & Wells": {
-        "story": "Chattam & Wells es lujo artesanal construido por los mejores artesanos de Restonic — lana Merino, cachemira y látex de grafito sobre resortes de precisión para un descanso de calidad heredable."
-      },
-      "Spring Air": {
-        "story": "La colección Copper patentada de Spring Air combina la tela de cobre NatuVerex con espumas infundidas de cobre para un descanso más fresco y saludable."
-      },
-      "Tempur-Pedic": {
-        "story": "Desarrollado a partir del material de alivio de presión diseñado por la NASA, Tempur-Pedic es el referente del confort adaptable, la innovación en frescura y la cero transferencia de movimiento."
-      },
-      "Genesis": {
-        "story": "Genesis de Kingdom Mattress está diseñado completamente en EE. UU. por una empresa familiar de 30 años — confort honesto y duradero hecho para la vida familiar real."
-      }
-    },
-    "consultationImplications": {
-      "trigger": {
-        "pain": "aquí para resolver un problema de comodidad",
-        "worn_out": "reemplazando un colchón viejo",
-        "moving": "amueblando un espacio nuevo",
-        "upgrade": "buscando una mejora",
-        "browsing": "explorando opciones hoy"
-      },
-      "sleep_issues": {
-        "back_pain": "probar con cuidado el soporte lumbar",
-        "hip_pain": "enfocarse en aliviar la presión en caderas y hombros",
-        "hot": "priorizar el control de temperatura",
-        "tossing": "notar qué tan fácil es acomodarse",
-        "stiff": "comparar la alineación y la comodidad al despertar",
-        "sagging": "revisar que el soporte sea duradero y consistente",
-        "too_soft": "probar sensaciones más firmes y con más soporte",
-        "none": ""
-      },
-      "sleep_position": {
-        "side": "priorizar el acolchado de hombros y caderas",
-        "back": "buscar soporte lumbar uniforme",
-        "stomach": "mantener la zona media con soporte",
-        "combo": "notar la facilidad para cambiar de posición",
-        "no_idea": "comparar varias sensaciones para encontrar un punto de partida"
-      },
-      "health_conditions": {
-        "nerve_pain": "comparar un alivio de presión suave y uniforme",
-        "allergies": "preguntar por fundas lavables y protectoras",
-        "snoring": "probar la elevación de la cabecera en una base ajustable",
-        "reflux": "notar cómo se siente el torso elevado",
-        "extra_support": "priorizar un soporte reforzado y resistente",
-        "getting_older": "comparar la facilidad para acostarse y levantarse",
-        "none": ""
-      },
-      "temperature": {
-        "hot": "comparar fundas frescas y ventilación",
-        "comfortable": "",
-        "cold": "notar calidez y superficies más acogedoras",
-        "opposite": "comparar el equilibrio de temperatura para dos personas"
-      }
-    }
   }
 }

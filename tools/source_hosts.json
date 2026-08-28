@@ -1,5 +1,5 @@
 {
-  "_comment": "Explicit source-host allowlist for promotion/financing evidence URLs. Validation fails closed: source-backed claims error when their URL host is not listed here (web.archive.org captures are checked against their embedded target host). Narrow by design — add hosts deliberately, never wildcard. etail.mysynchrony.com may be added only if an approved stable partner link is supplied.",
+  "_comment": "Explicit source-host allowlist for promotion/financing evidence URLs. Validation fails closed: source-backed claims error when their URL host is not listed here (web.archive.org captures are checked against their embedded target host). Narrow by design — add hosts deliberately, never wildcard. etail.mysynchrony.com may be added only if an approved stable partner link is supplied. priceSourceHosts (Phase 2.1) is the TECHNICAL CEILING for CURRENT retail price evidence — first-party retailer pages only; no lender pages, no archive captures, no image CDNs (linqcdn.avbportal.com is deliberately absent). It is not business approval: the approved retail price source is recorded in store-config pricing.sourcePolicy, which ships unapproved and empty until a named owner approves it, and may never widen this list.",
   "promotionSourceHosts": [
     "lacks.com",
     "www.lacks.com"
@@ -10,5 +10,9 @@
     "synchrony.com",
     "www.synchrony.com",
     "mysynchrony.com"
+  ],
+  "priceSourceHosts": [
+    "lacks.com",
+    "www.lacks.com"
   ]
 }

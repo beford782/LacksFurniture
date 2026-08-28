@@ -1,0 +1,76 @@
+{
+  "_meta": {
+    "editableSource": true,
+    "note": "Canonical Phase 2.1 pricing source (the DARK framework). Rides the workbook Pricing tab as a JSON envelope {\"pricing\": ...} and ships as store-config.json `pricing` (see tools/convert_store_data.py build_pricing). `_meta` is documentation and is NOT shipped. Edit this file, then rebuild: python incoming/build_lacks_workbook.py && python tools/convert_store_data.py incoming/Lacks_Store_Data.xlsx --output-dir . --skip-build-json && python tools/build_black_friday_demo.py",
+    "operatingState": "enabled is FALSE and displayEnabled is FALSE by deliberate operating decision. `products` and `formulas` ship EMPTY, and every business policy ships explicitly UNAPPROVED and unset: no price owner is named, no freshness cadence is approved (maxAgeDays is null, not a default), no retail price source is approved (the candidate hosts in tools/source_hosts.json are a technical ceiling, not business approval, so allowedSourceHosts is empty), and the presentation contract (assumptions, disclosures, bilingual state copy) is unapproved with business, legal and native-language review recorded SEPARATELY. incoming/lacks_catalog_selection.json is discovery evidence that must never be copied here (Queen-only, promotional, undated per entry, unapproved — see docs/rebuild-roadmap.md §2.1). Populating `products` requires the approved policies above, one verifiedAt + sourceUrl + verifiedBy PER ENTRY (never a size inferred from another size), and a per-entry clearance scoped to that exact identity, price and evidence. displayEnabled is a Phase 2.2 output: tools/validation.py refuses true, and CI's operating-state lock names it; lifting either is the 2.2 activation change with Blake's + business/legal approval recorded on the item.",
+    "purchaseThreshold": "A single product price is NEVER the qualifying purchase amount for a financing plan minimum. The qualifying amount is an explicit RUNTIME transaction amount handed to the resolver as an argument (Phase 2.1b); absent input means threshold status 'unknown'. Static configuration never carries a transaction amount — tools/validation.py refuses any such key at any depth.",
+    "formulas": "A formula artifact is admitted only under financing governance: financing enabled, exactPromotionsEnabled true, the financing configuration and the referenced plan verified, fresh and allowlisted under the FINANCING source policy (never the retail price allowlist), and the artifact approved with complete named inputs and a verified cadence. A planId existing is not admission.",
+    "money": "Amounts are integer MINOR units (cents) with an explicit currency, e.g. amountMinor 369900 = $3,699.00 USD. No floats, no ranges, no 'from' prices.",
+    "verificationLog": []
+  },
+  "pricing": {
+    "schemaVersion": 1,
+    "enabled": false,
+    "displayEnabled": false,
+    "currency": "USD",
+    "authority": {
+      "owner": "",
+      "role": ""
+    },
+    "freshness": {
+      "status": "unapproved",
+      "maxAgeDays": null,
+      "approvedBy": "",
+      "approvedAt": null
+    },
+    "sourcePolicy": {
+      "status": "unapproved",
+      "allowedSourceHosts": [],
+      "approvedBy": "",
+      "approvedAt": null
+    },
+    "purchaseAssessment": {
+      "policy": "runtime-transaction-amount"
+    },
+    "sizes": [
+      "twin",
+      "twin_xl",
+      "full",
+      "queen",
+      "king",
+      "cal_king"
+    ],
+    "surfaces": {
+      "drawer": false,
+      "sleepSystem": false,
+      "results": false,
+      "handoff": false,
+      "sleepPlan": false
+    },
+    "presentation": {
+      "status": "unapproved",
+      "approvals": {
+        "business": {
+          "status": "unapproved",
+          "by": "",
+          "at": null
+        },
+        "legal": {
+          "status": "unapproved",
+          "by": "",
+          "at": null
+        },
+        "nativeReview": {
+          "status": "pending",
+          "by": "",
+          "at": null
+        }
+      },
+      "assumptions": [],
+      "disclosures": [],
+      "states": {}
+    },
+    "products": [],
+    "formulas": []
+  }
+}

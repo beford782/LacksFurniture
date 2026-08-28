@@ -252,6 +252,23 @@ def quiz_rows():
             for i in range(0, len(payload), _PROMO_CHUNK)]
 
 
+# ---- Pricing tab: pricing envelope (Phase 2.1, dark) ------------------------
+# The dark pricing/payment framework rides its own canonical-JSON tab as an
+# envelope {"pricing": {...}} -> store-config.json `pricing`. Canonical
+# editable source: incoming/lacks_pricing.json (the "pricing" key; "_meta" is
+# documentation and is NOT shipped). ZERO transforms between source and
+# envelope — tests/pricing_contract_check.py demands deep equality, so a
+# canonical edit that is never rebuilt cannot ship silently. It is a separate
+# tab (not a third Promotions-envelope key) so the Daybreak envelope lock is
+# untouched. Same chunking as Promotions.
+def pricing_rows():
+    src = _load("lacks_pricing.json")
+    envelope = {"pricing": src["pricing"]}
+    payload = json.dumps(envelope, ensure_ascii=False, separators=(",", ":"))
+    return [{"Pricing JSON": payload[i:i + _PROMO_CHUNK]}
+            for i in range(0, len(payload), _PROMO_CHUNK)]
+
+
 # ---- write workbook ---------------------------------------------------------
 def write_sheet(wb, tab, rows):
     ws = wb.create_sheet(title=tab)
@@ -282,6 +299,7 @@ def main(argv=None):
     write_sheet(wb, "SalesNotes", [sales_row(s) for s in SALES] + consult_rows)
     write_sheet(wb, "Promotions", promotions_rows())
     write_sheet(wb, "Quiz", quiz_rows())
+    write_sheet(wb, "Pricing", pricing_rows())
     wb.save(args.out)
     from collections import Counter
     c = Counter(m["tier"] for m in M)

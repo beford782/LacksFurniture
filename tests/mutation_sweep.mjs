@@ -100,6 +100,14 @@ const PAY_RENDER = ["tests/financing_render_check.mjs"];
 // config-admission side of Payment Choice: which financing blocks are allowed
 // to exist, as distinct from what index.html does with one that does.
 const PAY_VALIDATOR = ["tools/validation.py --self-test"];
+// Phase 2.1a (dark pricing framework) observers. The validator self-test owns
+// validate_pricing's admission rules; the contract suite owns the shipped
+// dark state at every layer AND re-runs the populated fixture through the
+// real converter + validator, so a validator mutation that admits a corrupted
+// fixture is observed twice. Every pricing entry names an observer
+// EXPLICITLY - none may fall through to DEFAULT_SUITES.
+const PRICING = ["tests/pricing_contract_check.py"];
+const PRICING_VALIDATOR = ["tools/validation.py --self-test", "tests/pricing_contract_check.py"];
 // Trust integrity gate observer (2026-08-21): the trust suite owns the copy <->
 // engine correspondence (document sections, cited tags, the inert-tag set,
 // shipped-vs-documented help lines, banned claims), the absence of the
@@ -1898,6 +1906,63 @@ const MUTATIONS = [
     "      min-height: 44px;\n      padding: 8px 11px;",
     SLEEP],
 
+  // --- Phase 2.1a: the dark pricing framework's admission gate ---------------
+  // Focused on the critical properties (Codex review 2026-08-27, correction
+  // 10): the 2.2 display lock, the never-infer-a-size rule, freshness while
+  // enabled, integer-minor-unit money, closed-world keys, and the shipped
+  // dark state itself. Each find string is proven to match its target exactly
+  // once by tests/pricing_contract_check.py.
+  ["2.1a: the validator stops refusing displayEnabled=true (the Phase 2.2 lock is gone)",
+    "    if display is True:\n        r.add_error(\"pricing.displayEnabled must be false",
+    "    if False:\n        r.add_error(\"pricing.displayEnabled must be false",
+    PRICING_VALIDATOR, "tools/validation.py"],
+  ["2.1a: a mattress price without a verified size is admitted (a size could be inferred)",
+    "                elif type(size) is not str or size not in size_set:",
+    "                elif False:",
+    PRICING_VALIDATOR, "tools/validation.py"],
+  ["2.1a: stale price evidence is admitted while the framework is enabled",
+    "        if enabled:\n            r.add_error(msg)\n        else:\n            r.add_warning(msg)",
+    "        if False:\n            r.add_error(msg)\n        else:\n            r.add_warning(msg)",
+    PRICING_VALIDATOR, "tools/validation.py"],
+  ["2.1a: a float amount is admitted as money (minor-unit integers no longer required)",
+    "                if type(amt) is not int or amt <= 0 or amt > PRICING_AMOUNT_MINOR_MAX:\n                    r.add_error(f\"{tag}.price.amountMinor",
+    "                if not isinstance(amt, (int, float)) or amt <= 0 or amt > PRICING_AMOUNT_MINOR_MAX:\n                    r.add_error(f\"{tag}.price.amountMinor",
+    PRICING_VALIDATOR, "tools/validation.py"],
+  ["2.1a: unknown keys are accepted at every nested pricing level",
+    "    for k in obj:\n        if k not in allowed:\n            r.add_error(f\"{tag}: key",
+    "    for k in ():\n        if k not in allowed:\n            r.add_error(f\"{tag}: key",
+    PRICING_VALIDATOR, "tools/validation.py"],
+  ["2.1a: the generated production config ships displayEnabled=true",
+    "    \"enabled\": false,\n    \"displayEnabled\": false,",
+    "    \"enabled\": false,\n    \"displayEnabled\": true,",
+    PRICING, "data/store-config.json"],
+  // PR #69 review (Codex, 2026-08-27): one entry per requested contract change.
+  ["2.1a review: a transaction amount is admitted as configuration (the forbidden key is gone)",
+    "    \"transactionamountminor\", \"transactionamount\", \"purchaseamountminor\",",
+    "    \"transactionamount\", \"purchaseamountminor\",",
+    PRICING_VALIDATOR, "tools/validation.py"],
+  ["2.1a review: a formula is admitted while exact-term authorization is off",
+    "        if not fin_exact:\n            r.add_error(\"pricing.formulas: financing.exactPromotionsEnabled must be true \"",
+    "        if False:\n            r.add_error(\"pricing.formulas: financing.exactPromotionsEnabled must be true \"",
+    PRICING_VALIDATOR, "tools/validation.py"],
+  ["2.1a review: one entry's clearance clears another (the scope match is gone)",
+    "                            elif scope[key] != expected[key] or type(scope[key]) is not type(expected[key]):",
+    "                            elif False:",
+    PRICING_VALIDATOR, "tools/validation.py"],
+  ["2.1a review: an enabled contract no longer needs an approved presentation",
+    "        if enabled and not papproved:\n            r.add_error(\"pricing.presentation.status must be 'approved' when pricing is \"",
+    "        if False:\n            r.add_error(\"pricing.presentation.status must be 'approved' when pricing is \"",
+    PRICING_VALIDATOR, "tools/validation.py"],
+  ["2.1a review: an enabled contract no longer needs an approved freshness policy",
+    "        if enabled and not approved:\n            r.add_error(\"pricing.freshness.status must be 'approved' (with maxAgeDays, \"",
+    "        if False:\n            r.add_error(\"pricing.freshness.status must be 'approved' (with maxAgeDays, \"",
+    PRICING_VALIDATOR, "tools/validation.py"],
+  // Clearance-integrity correction (Codex, 2026-08-27): the scope binds size.
+  ["2.1a review: a clearance survives a size change (the size scope comparison is gone)",
+    "                            \"size\": size if kind == \"mattress\" else None,",
+    "                            \"size\": scope.get(\"size\"),",
+    PRICING_VALIDATOR, "tools/validation.py"],
+
 ];
 
 // ---------------------------------------------------------------------------
@@ -1912,7 +1977,9 @@ process.on("exit", () => { try { rmSync(sandbox, { recursive: true, force: true 
 // `demo` joins the copy set so a mutation of the GENERATED demo bundle is
 // observable: the financing copy propagation chain ends there, and a drifted
 // demo would otherwise be unreachable from this sandbox.
-for (const d of ["tests", "data", "docs", "tools", "incoming", "demo"]) {
+// `.github` joins the copy set because the pricing contract suite pins that
+// CI's operating-state lock names pricing.displayEnabled.
+for (const d of ["tests", "data", "docs", "tools", "incoming", "demo", ".github"]) {
   cpSync(join(root, d), join(sandbox, d), { recursive: true });
 }
 // CLAUDE.md joins the copy set because the trust suite pins that it carries no

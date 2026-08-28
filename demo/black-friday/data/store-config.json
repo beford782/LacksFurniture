@@ -461,6 +461,71 @@
       }
     ]
   },
+  "pricing": {
+    "schemaVersion": 1,
+    "enabled": false,
+    "displayEnabled": false,
+    "currency": "USD",
+    "authority": {
+      "owner": "",
+      "role": ""
+    },
+    "freshness": {
+      "status": "unapproved",
+      "maxAgeDays": null,
+      "approvedBy": "",
+      "approvedAt": null
+    },
+    "sourcePolicy": {
+      "status": "unapproved",
+      "allowedSourceHosts": [],
+      "approvedBy": "",
+      "approvedAt": null
+    },
+    "purchaseAssessment": {
+      "policy": "runtime-transaction-amount"
+    },
+    "sizes": [
+      "twin",
+      "twin_xl",
+      "full",
+      "queen",
+      "king",
+      "cal_king"
+    ],
+    "surfaces": {
+      "drawer": false,
+      "sleepSystem": false,
+      "results": false,
+      "handoff": false,
+      "sleepPlan": false
+    },
+    "presentation": {
+      "status": "unapproved",
+      "approvals": {
+        "business": {
+          "status": "unapproved",
+          "by": "",
+          "at": null
+        },
+        "legal": {
+          "status": "unapproved",
+          "by": "",
+          "at": null
+        },
+        "nativeReview": {
+          "status": "pending",
+          "by": "",
+          "at": null
+        }
+      },
+      "assumptions": [],
+      "disclosures": [],
+      "states": {}
+    },
+    "products": [],
+    "formulas": []
+  },
   "voice": {
     "eyebrow": "FAMILY-OWNED · SOUTH TEXAS · SINCE 1935",
     "headlineMain": "South Texas'",

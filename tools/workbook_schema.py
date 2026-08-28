@@ -427,6 +427,29 @@ QUIZ = Tab(
 )
 
 
+# -- Tab: Pricing --------------------------------------------------------------
+# OPTIONAL-payload tab (tab itself is always present, like Quiz). Phase 2.1's
+# DARK pricing/payment framework: product/SKU/size identity, integer-minor-unit
+# prices with per-entry evidence, freshness, dual source-host allowlisting,
+# ownership, MAP clearance, purchase-threshold assessment basis, and approved
+# formula artifacts — as canonical JSON in an envelope {"pricing": ...},
+# chunked one fragment per row and concatenated by the converter
+# (build_pricing) into store-config.json `pricing`. Editable source is the
+# retailer's build input (incoming/lacks_pricing.json). It is its OWN tab, not
+# a third key of the Promotions envelope, so the Daybreak envelope lock
+# (tests/daybreak_contract_check.py: exactly {promotions, financing}) stays
+# byte-untouched. tools/validation.py validate_pricing refuses
+# displayEnabled=true until Phase 2.2 lifts it. An empty tab emits no
+# `pricing` key (deployments without the framework, e.g. Bel).
+PRICING = Tab(
+    name="Pricing",
+    note="Optional payload. Canonical pricing JSON, chunked -> store-config.json pricing",
+    columns=(
+        col("Pricing JSON", "pricingJson", note="one JSON fragment per row, concatenated in order"),
+    ),
+)
+
+
 # ── Registry + helpers ───────────────────────────────────────────────────────
 # Ordered tuple defines the canonical tab order in the generated workbook.
 
@@ -438,6 +461,7 @@ TABS: Tuple[Tab, ...] = (
     SALES_NOTES,
     PROMOTIONS,
     QUIZ,
+    PRICING,
 )
 
 _TABS_BY_NAME: Dict[str, Tab] = {t.name: t for t in TABS}
