@@ -15,6 +15,7 @@ docs/*
 !docs/trust-integrity-implementation-2026-08-21.md
 !docs/trust-integrity-owner-review-2026-08-21.md
 !docs/trust-integrity-physical-gate-2026-08-21.md
+!docs/catalog-reason-tranche-1-2026-08-29.md
 tools/strip-bg.py
 
 # Local scratch / design mockups (kept locally, never committed)

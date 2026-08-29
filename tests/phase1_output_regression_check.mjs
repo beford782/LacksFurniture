@@ -89,7 +89,29 @@ const BASELINE_PATH = join(root, "tests", "fixtures", "phase1_output_baseline_da
 // feelWord field, which stays in the pinned bytes per the 2026-08-15
 // amendment; no score, rank, pct, threshold or resolved-firmness byte moved.
 // Hash moved in the same reviewed diff.
-const BASELINE_SHA256 = "e7e5c27df363a936052003f325e6e54a9452b4dea8336052afa195dd4f04cfb2";
+// 2026-08-29 amendment (owner-authorized item 1.3 first dark reason tranche):
+// four per-feature catalog reasons were authored as DARK data (s5.reason_firm,
+// s1.reason_support, b2.reason_firm, b7.reason_medium; EN at the top level of
+// incoming/lacks_mattresses.json, ES under each model's es object). The
+// engine reads m.reasons in BOTH language passes and nothing reads
+// reasons_es, so the ONLY pinned output that moved is the per-language
+// matchReasons harvest: exactly 52 cells —
+// scenarios.*.matchReasons.{en,es}.{s1,s5,b2,b7} in the nine reached
+// scenarios (s1.support 8/10, b7.medium 8/10, s5.firm 5/10, b2.firm 5/10;
+// s9_empty_defaults untouched), each gaining one appended element. The ES
+// cells hold the ENGLISH text: the engine has no Spanish reason reader, and no
+// customer sees either language (the reason surfaces stay omitted under
+// PR #63). No score, rank, pct, tier, threshold, cap, back-fill,
+// resolved-firmness, accessory, profile or rendered byte moved, and no engine
+// source changed. Evidence: the established tool (--write-baseline) was run on
+// the pre-change and post-change trees in temp copies; the post-change output
+// equals this fixture minus the obsolete feelWord field (retained per the
+// 2026-08-15 amendment); a structural path diff of the two outputs lists
+// exactly the 52 cells above and nothing else; reverting only those 52 cells
+// reproduces the previous fixture bytes (sha e7e5c27d…). Hash moved in the
+// same reviewed diff. The catalog-data mutations M1–M4 and the tranche
+// non-triviality pins in section 5 make this bounded amendment load-bearing.
+const BASELINE_SHA256 = "24dad01631c99f861929868855082bc8385bae51d76ffc06a826f1d5583f00a1";
 
 const WRITE_MODE = process.argv.includes("--write-baseline");
 
@@ -295,16 +317,18 @@ function runFirmness(answers) {
 }
 
 // Executes the real calculateScores().
-function runScores(answers, lang, calcSrc = CALC_FN) {
+// `mattresses` (2026-08-29): the catalog-data mutations in section 5 substitute
+// an in-memory catalog copy; the engine source is untouched by them.
+function runScores(answers, lang, calcSrc = CALC_FN, mattresses = MATTRESSES) {
   return new Function("MATTRESSES", "QUESTIONS", "answers", "currentLang", `"use strict";
     ${calcSrc}
-    return calculateScores();`)(MATTRESSES, QUIZ.questions, clone(answers), lang);
+    return calculateScores();`)(mattresses, QUIZ.questions, clone(answers), lang);
 }
 
 // Executes the real window.showResults() whole — the tier derivation, the
 // qualification/cap/back-fill, pct, topPick and allMatches — against shims for
 // its render/analytics side effects.
-function runResults(answers, lang, { calcSrc = CALC_FN, qualifySrc = QUALIFY_FN, showSrc = SHOW_RESULTS_FN } = {}) {
+function runResults(answers, lang, { calcSrc = CALC_FN, qualifySrc = QUALIFY_FN, showSrc = SHOW_RESULTS_FN, mattresses = MATTRESSES } = {}) {
   const { doc } = domShim();
   const out = {};
   new Function("document", "window", "MATTRESSES", "QUESTIONS", "answers", "currentLang", "out", `"use strict";
@@ -318,7 +342,7 @@ function runResults(answers, lang, { calcSrc = CALC_FN, qualifySrc = QUALIFY_FN,
     ${showSrc};
     window.showResults();
     out.state = _resultsState;
-    out.analytics = analytics;`)(doc, throwingWindow(), MATTRESSES, QUIZ.questions, clone(answers), lang, out);
+    out.analytics = analytics;`)(doc, throwingWindow(), mattresses, QUIZ.questions, clone(answers), lang, out);
   const slim = {};
   for (const tier of ["gold", "silver", "bronze"]) {
     slim[tier] = out.state.tierData[tier].map((m) => ({
@@ -420,8 +444,8 @@ section("window shim fails loudly (harness non-vacuity)");
 function buildSnapshot(overrides = {}) {
   const snap = { baselineCommit: "daybreak-pr1@31a7e79", scenarios: {} };
   for (const [name, answers] of Object.entries(SCENARIOS)) {
-    const en = runScores(answers, "en", overrides.calcSrc);
-    const es = runScores(answers, "es", overrides.calcSrc);
+    const en = runScores(answers, "en", overrides.calcSrc, overrides.mattresses);
+    const es = runScores(answers, "es", overrides.calcSrc, overrides.mattresses);
     if (JSON.stringify(en.scores) !== JSON.stringify(es.scores)) {
       snap.scenarios[name] = { LANGUAGE_DIVERGENCE_IN_SCORES: true };
       continue;
@@ -677,15 +701,129 @@ const MUTATIONS = [
     find: "return item.subType === 'adjustable' ? 'adjustability' : 'support';",
     replace: "return 'support';" }
 ];
+// Loop non-vacuity (repaired 2026-08-29). From the 2026-08-15 amendment until
+// this repair the loop diffed the RAW baseline, whose retained obsolete
+// feelWord field diverges from every fresh snapshot, so every mutation
+// "diverged" in 10/10 scenarios whatever it changed: the [caught] lines were
+// noise. The comparison now applies the same feelWord exclusion section 2
+// uses, and the guard below proves the unmutated engine reports ZERO
+// divergence on that basis — otherwise the [caught] lines prove nothing.
+// All fifteen source mutations still diverge on the repaired basis; their
+// real per-scenario counts are printed on each line.
+const mutationDiffs = (snap) => {
+  const out = [];
+  for (const name of Object.keys(SCENARIOS)) {
+    out.push(...diffPaths(withoutObsoletePresentation(BASELINE.scenarios[name]), snap.scenarios[name], name));
+  }
+  return out;
+};
+const scenariosOf = (diffs) => new Set(diffs.map((d) => d.split(".")[0])).size;
+check("the mutation comparison reports zero divergence for the UNMUTATED engine (loop non-vacuity)",
+  mutationDiffs(live).length === 0, mutationDiffs(live).slice(0, 3).join(" | "));
 for (const mu of MUTATIONS) {
   if (!check(`[applies] ${mu.name}`, mu.src.includes(mu.find), "find-string not in source — stale mutation")) continue;
   const mutated = mu.src.split(mu.find).join(mu.replace);
   const snap = buildSnapshot({ [mu.key]: mutated });
-  let divergent = 0;
-  for (const name of Object.keys(SCENARIOS)) {
-    if (diffPaths(BASELINE.scenarios[name], snap.scenarios[name], name).length) divergent++;
-  }
+  const divergent = scenariosOf(mutationDiffs(snap));
   check(`[caught] ${mu.name} — ${divergent} scenario(s) diverge`, divergent > 0);
+}
+
+// ---------- 5. catalog reason data: exactly the authorized tranche ------------
+// Item 1.3 first dark reason tranche (owner-authorized 2026-08-29). The
+// per-feature reason strings are catalog DATA, not engine source, so the
+// source mutations above cannot see them. These pins prove (a) exactly the
+// four authorized (model, axis) pairs exist, in both languages, on live
+// scoring tags; (b) the pinned baseline carries them in exactly the 52 cells
+// the amendment declared; and (c) the pin is load-bearing for reason data:
+// each catalog mutation below edits an in-memory COPY of the catalog, never
+// the engine, must diverge at its NAMED matchReasons path, and must diverge
+// NOWHERE outside matchReasons (a reason string cannot move a score, rank or
+// result — if one ever does, [bounded] fails and that is the finding).
+// No mutation may target a case-fold-dead axis (pressureRelief /
+// motionIsolation, roadmap 3.1): the engine never reaches those, so such a
+// mutation could not be caught and would be a vacuous entry.
+section("catalog reason data (item 1.3 tranche): authorized pairs only, and the pin sees them");
+const AUTHORIZED_REASONS = { s1: "support", s5: "firm", b2: "firm", b7: "medium" };
+const findIn = (cat, id) => Object.values(cat).flat().find((m) => m.id === id);
+const byId = (id) => findIn(MATTRESSES, id);
+const perFeatureKeys = (obj) => Object.keys(obj || {}).filter((k) => k !== "default").sort();
+{
+  const all = Object.values(MATTRESSES).flat();
+  const populated = all.filter((m) => perFeatureKeys(m.reasons).length)
+    .map((m) => `${m.id}.${perFeatureKeys(m.reasons).join("+")}`).sort();
+  check("exactly the four authorized (model, axis) per-feature reasons exist in `reasons`: b2.firm, b7.medium, s1.support, s5.firm",
+    JSON.stringify(populated) === JSON.stringify(["b2.firm", "b7.medium", "s1.support", "s5.firm"]), populated.join(", "));
+  check("reasons_es carries exactly the same per-feature (model, axis) key set as reasons on every model",
+    all.every((m) => JSON.stringify(perFeatureKeys(m.reasons)) === JSON.stringify(perFeatureKeys(m.reasons_es))),
+    all.filter((m) => JSON.stringify(perFeatureKeys(m.reasons)) !== JSON.stringify(perFeatureKeys(m.reasons_es))).map((m) => m.id).join(", "));
+  check("every authorized string is non-empty in both languages and ends with a full stop",
+    Object.entries(AUTHORIZED_REASONS).every(([id, axis]) =>
+      /\.$/.test(byId(id).reasons[axis] || "") && /\.$/.test(byId(id).reasons_es[axis] || "")));
+  check("every authorized axis is a live scoring tag on its model (not a case-fold-dead slot)",
+    Object.entries(AUTHORIZED_REASONS).every(([id, axis]) => byId(id).features.includes(axis)));
+  let cells = 0, esCellsHoldEnglish = 0;
+  const reach = { s1: [], s5: [], b2: [], b7: [] };
+  for (const [name, s] of Object.entries(BASELINE.scenarios)) {
+    for (const [id, axis] of Object.entries(AUTHORIZED_REASONS)) {
+      if (s.matchReasons.en[id].includes(byId(id).reasons[axis])) { cells++; reach[id].push(name); }
+      if (s.matchReasons.es[id].includes(byId(id).reasons[axis])) { cells++; esCellsHoldEnglish++; }
+    }
+  }
+  check("the pinned baseline carries the tranche in exactly 52 matchReasons cells (26 EN + 26 ES)", cells === 52, String(cells));
+  check("the 26 ES cells hold the ENGLISH string (no Spanish reason reader exists; recorded, not approved)",
+    esCellsHoldEnglish === 26, String(esCellsHoldEnglish));
+  check("per-model reach is s1.support 8, b7.medium 8, s5.firm 5, b2.firm 5, and s9_empty_defaults carries none",
+    reach.s1.length === 8 && reach.b7.length === 8 && reach.s5.length === 5 && reach.b2.length === 5
+    && !Object.values(reach).flat().includes("s9_empty_defaults"),
+    JSON.stringify(Object.fromEntries(Object.entries(reach).map(([k, v]) => [k, v.length]))));
+}
+const DATA_MUTATIONS = [
+  { name: "M1 unauthorized fifth model (g1.reasons.support added)",
+    at: /^[^.]+\.matchReasons\.(en|es)\.g1\.length: /,
+    apply(cat) {
+      const m = findIn(cat, "g1");
+      if (!m) return "g1 missing";
+      if (m.reasons && "support" in m.reasons) return "g1 already carries a support reason";
+      if (!m.features.includes("support")) return "g1 has no live support tag";
+      m.reasons = { ...(m.reasons || {}), support: "UNAUTHORIZED REASON" };
+      return "applied";
+    } },
+  { name: "M2 unauthorized second axis (s1.reasons.firm added)",
+    at: /^[^.]+\.matchReasons\.(en|es)\.s1\.length: /,
+    apply(cat) {
+      const m = findIn(cat, "s1");
+      if ("firm" in m.reasons) return "s1 already carries a firm reason";
+      if (!m.features.includes("firm")) return "s1 has no live firm tag";
+      m.reasons = { ...m.reasons, firm: "UNAUTHORIZED REASON" };
+      return "applied";
+    } },
+  { name: "M3 approved-string drift (s5.reasons.firm loses its terminal full stop)",
+    at: /^[^.]+\.matchReasons\.(en|es)\.s5\[\d+\]: /,
+    apply(cat) {
+      const m = findIn(cat, "s5");
+      if (!m.reasons.firm || !m.reasons.firm.endsWith(".")) return "s5.reasons.firm missing or already without a full stop";
+      m.reasons.firm = m.reasons.firm.slice(0, -1);
+      return "applied";
+    } },
+  { name: "M4 tranche removal (b7.reasons.medium deleted)",
+    at: /^[^.]+\.matchReasons\.(en|es)\.b7\.length: /,
+    apply(cat) {
+      const m = findIn(cat, "b7");
+      if (!("medium" in m.reasons)) return "b7.reasons.medium missing";
+      delete m.reasons.medium;
+      return "applied";
+    } }
+];
+for (const mu of DATA_MUTATIONS) {
+  const cat = clone(MATTRESSES);
+  const status = mu.apply(cat);
+  if (!check(`[applies] ${mu.name}`, status === "applied", status)) continue;
+  const diffs = mutationDiffs(buildSnapshot({ mattresses: cat }));
+  const named = diffs.filter((d) => mu.at.test(d));
+  const outside = diffs.filter((d) => !/\.matchReasons\./.test(d));
+  check(`[caught] ${mu.name} — ${scenariosOf(diffs)} scenario(s) diverge, ${named.length} at the named path`,
+    diffs.length > 0 && named.length > 0, diffs.slice(0, 3).join(" | "));
+  check(`[bounded] ${mu.name} — no divergence outside matchReasons`, outside.length === 0, outside.slice(0, 3).join(" | "));
 }
 
 console.log(`\nPhase 1 output regression check: ${passed} passed, ${failed} failed`);

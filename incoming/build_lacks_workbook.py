@@ -76,8 +76,9 @@ BRANDS = ["Restonic", "Chattam & Wells", "Spring Air", "Tempur-Pedic", "Genesis"
 # ---- Mattresses (26: 9 gold / 10 silver / 7 bronze) --------------------------
 M = _load("lacks_mattresses.json")
 
-# Live CSV column order (EN). Per-feature reason_* + price/quizTags stay blank
-# (matches the template live contract: only reason_default + topPick + differentiators).
+# Live CSV column order (EN). price/quizTags stay blank. The eight per-feature
+# reason_* columns are populated only by owner-authorized dark authoring tranches
+# (item 1.3; first tranche 2026-08-29: s5/s1/b2/b7) — every other cell stays blank.
 MATT_EN_COLS = [
     "tier", "id", "name", "brand", "subBrand", "pitchKey", "archetype", "displayPriority",
     "firmnessScore", "firmnessLabel", "price", "quizTags", "displayBadges", "highlight",
@@ -86,8 +87,15 @@ MATT_EN_COLS = [
     "reason_firm", "reason_durability", "reason_default", "topPickReason",
     "differentiator1Title", "differentiator1Detail", "differentiator2Title", "differentiator2Detail",
 ]
+# Every ES key the workbook schema defines for a mattress row. The eight
+# per-feature reason keys were added 2026-08-29 (item 1.3 first dark tranche):
+# tools/validation.py enforces both-or-neither EN/ES parity per reason column,
+# so a Spanish per-feature reason must be able to flow through this builder.
 MATT_ES_KEYS = [
-    "displayBadges", "highlight", "reason_default", "topPickReason",
+    "displayBadges", "highlight",
+    "reason_cooling", "reason_pressureRelief", "reason_motionIsolation", "reason_support",
+    "reason_plush", "reason_medium", "reason_firm", "reason_durability",
+    "reason_default", "topPickReason",
     "differentiator1Title", "differentiator1Detail", "differentiator2Title", "differentiator2Detail",
 ]
 

@@ -68,7 +68,8 @@
             "Close to your preferred firmness"
           ],
           "s1": [
-            "Matches your firmness preference (8/10)"
+            "Matches your firmness preference (8/10)",
+            "Individually pocketed coils that move independently, zoned for targeted support, with foam encasement around the edge."
           ],
           "s2": [
             "Matches your firmness preference (8/10)"
@@ -101,7 +102,9 @@
           "b6": [
             "Matches your firmness preference (8/10)"
           ],
-          "b7": []
+          "b7": [
+            "Rated Medium — a balanced feel between plush and firm."
+          ]
         },
         "es": {
           "g1": [
@@ -122,7 +125,8 @@
             "Cerca de tu firmeza preferida"
           ],
           "s1": [
-            "Coincide con tu preferencia de firmeza (8/10)"
+            "Coincide con tu preferencia de firmeza (8/10)",
+            "Individually pocketed coils that move independently, zoned for targeted support, with foam encasement around the edge."
           ],
           "s2": [
             "Coincide con tu preferencia de firmeza (8/10)"
@@ -155,7 +159,9 @@
           "b6": [
             "Coincide con tu preferencia de firmeza (8/10)"
           ],
-          "b7": []
+          "b7": [
+            "Rated Medium — a balanced feel between plush and firm."
+          ]
         }
       },
       "results": {
@@ -716,13 +722,17 @@
           "g9": [
             "Close to your preferred firmness"
           ],
-          "s1": [],
+          "s1": [
+            "Individually pocketed coils that move independently, zoned for targeted support, with foam encasement around the edge."
+          ],
           "s2": [],
           "s3": [
             "Matches your firmness preference (4/10)"
           ],
           "s4": [],
-          "s5": [],
+          "s5": [
+            "Rated Firm, with less give at the surface and a tight-top construction without a pillow-top layer."
+          ],
           "s6": [
             "Matches your firmness preference (4/10)"
           ],
@@ -737,7 +747,9 @@
           "b1": [
             "Matches your firmness preference (4/10)"
           ],
-          "b2": [],
+          "b2": [
+            "Rated Firm, with less give and more pushback at the surface."
+          ],
           "b3": [
             "Matches your firmness preference (4/10)"
           ],
@@ -747,7 +759,8 @@
           ],
           "b6": [],
           "b7": [
-            "Matches your firmness preference (4/10)"
+            "Matches your firmness preference (4/10)",
+            "Rated Medium — a balanced feel between plush and firm."
           ]
         },
         "es": {
@@ -772,13 +785,17 @@
           "g9": [
             "Cerca de tu firmeza preferida"
           ],
-          "s1": [],
+          "s1": [
+            "Individually pocketed coils that move independently, zoned for targeted support, with foam encasement around the edge."
+          ],
           "s2": [],
           "s3": [
             "Coincide con tu preferencia de firmeza (4/10)"
           ],
           "s4": [],
-          "s5": [],
+          "s5": [
+            "Rated Firm, with less give at the surface and a tight-top construction without a pillow-top layer."
+          ],
           "s6": [
             "Coincide con tu preferencia de firmeza (4/10)"
           ],
@@ -793,7 +810,9 @@
           "b1": [
             "Coincide con tu preferencia de firmeza (4/10)"
           ],
-          "b2": [],
+          "b2": [
+            "Rated Firm, with less give and more pushback at the surface."
+          ],
           "b3": [
             "Coincide con tu preferencia de firmeza (4/10)"
           ],
@@ -803,7 +822,8 @@
           ],
           "b6": [],
           "b7": [
-            "Coincide con tu preferencia de firmeza (4/10)"
+            "Coincide con tu preferencia de firmeza (4/10)",
+            "Rated Medium — a balanced feel between plush and firm."
           ]
         }
       },
@@ -1367,13 +1387,17 @@
           "g7": [],
           "g8": [],
           "g9": [],
-          "s1": [],
+          "s1": [
+            "Individually pocketed coils that move independently, zoned for targeted support, with foam encasement around the edge."
+          ],
           "s2": [],
           "s3": [
             "Matches your firmness preference (2/10)"
           ],
           "s4": [],
-          "s5": [],
+          "s5": [
+            "Rated Firm, with less give at the surface and a tight-top construction without a pillow-top layer."
+          ],
           "s6": [],
           "s7": [
             "Matches your firmness preference (2/10)"
@@ -1384,14 +1408,18 @@
           "b1": [
             "Matches your firmness preference (2/10)"
           ],
-          "b2": [],
+          "b2": [
+            "Rated Firm, with less give and more pushback at the surface."
+          ],
           "b3": [],
           "b4": [],
           "b5": [
             "Matches your firmness preference (2/10)"
           ],
           "b6": [],
-          "b7": []
+          "b7": [
+            "Rated Medium — a balanced feel between plush and firm."
+          ]
         },
         "es": {
           "g1": [],
@@ -1409,13 +1437,17 @@
           "g7": [],
           "g8": [],
           "g9": [],
-          "s1": [],
+          "s1": [
+            "Individually pocketed coils that move independently, zoned for targeted support, with foam encasement around the edge."
+          ],
           "s2": [],
           "s3": [
             "Coincide con tu preferencia de firmeza (2/10)"
           ],
           "s4": [],
-          "s5": [],
+          "s5": [
+            "Rated Firm, with less give at the surface and a tight-top construction without a pillow-top layer."
+          ],
           "s6": [],
           "s7": [
             "Coincide con tu preferencia de firmeza (2/10)"
@@ -1426,14 +1458,18 @@
           "b1": [
             "Coincide con tu preferencia de firmeza (2/10)"
           ],
-          "b2": [],
+          "b2": [
+            "Rated Firm, with less give and more pushback at the surface."
+          ],
           "b3": [],
           "b4": [],
           "b5": [
             "Coincide con tu preferencia de firmeza (2/10)"
           ],
           "b6": [],
-          "b7": []
+          "b7": [
+            "Rated Medium — a balanced feel between plush and firm."
+          ]
         }
       },
       "results": {
@@ -2010,7 +2046,8 @@
             "Close to your preferred firmness"
           ],
           "s1": [
-            "Matches your firmness preference (8/10)"
+            "Matches your firmness preference (8/10)",
+            "Individually pocketed coils that move independently, zoned for targeted support, with foam encasement around the edge."
           ],
           "s2": [
             "Matches your firmness preference (8/10)"
@@ -2020,7 +2057,8 @@
             "Matches your firmness preference (8/10)"
           ],
           "s5": [
-            "Matches your firmness preference (8/10)"
+            "Matches your firmness preference (8/10)",
+            "Rated Firm, with less give at the surface and a tight-top construction without a pillow-top layer."
           ],
           "s6": [],
           "s7": [],
@@ -2033,7 +2071,8 @@
           ],
           "b1": [],
           "b2": [
-            "Matches your firmness preference (8/10)"
+            "Matches your firmness preference (8/10)",
+            "Rated Firm, with less give and more pushback at the surface."
           ],
           "b3": [],
           "b4": [
@@ -2043,7 +2082,9 @@
           "b6": [
             "Matches your firmness preference (8/10)"
           ],
-          "b7": []
+          "b7": [
+            "Rated Medium — a balanced feel between plush and firm."
+          ]
         },
         "es": {
           "g1": [
@@ -2064,7 +2105,8 @@
             "Cerca de tu firmeza preferida"
           ],
           "s1": [
-            "Coincide con tu preferencia de firmeza (8/10)"
+            "Coincide con tu preferencia de firmeza (8/10)",
+            "Individually pocketed coils that move independently, zoned for targeted support, with foam encasement around the edge."
           ],
           "s2": [
             "Coincide con tu preferencia de firmeza (8/10)"
@@ -2074,7 +2116,8 @@
             "Coincide con tu preferencia de firmeza (8/10)"
           ],
           "s5": [
-            "Coincide con tu preferencia de firmeza (8/10)"
+            "Coincide con tu preferencia de firmeza (8/10)",
+            "Rated Firm, with less give at the surface and a tight-top construction without a pillow-top layer."
           ],
           "s6": [],
           "s7": [],
@@ -2087,7 +2130,8 @@
           ],
           "b1": [],
           "b2": [
-            "Coincide con tu preferencia de firmeza (8/10)"
+            "Coincide con tu preferencia de firmeza (8/10)",
+            "Rated Firm, with less give and more pushback at the surface."
           ],
           "b3": [],
           "b4": [
@@ -2097,7 +2141,9 @@
           "b6": [
             "Coincide con tu preferencia de firmeza (8/10)"
           ],
-          "b7": []
+          "b7": [
+            "Rated Medium — a balanced feel between plush and firm."
+          ]
         }
       },
       "results": {
@@ -2672,7 +2718,8 @@
             "Matches your firmness preference (5/10)"
           ],
           "s1": [
-            "Close to your preferred firmness"
+            "Close to your preferred firmness",
+            "Individually pocketed coils that move independently, zoned for targeted support, with foam encasement around the edge."
           ],
           "s2": [],
           "s3": [
@@ -2714,7 +2761,8 @@
           ],
           "b6": [],
           "b7": [
-            "Matches your firmness preference (5/10)"
+            "Matches your firmness preference (5/10)",
+            "Rated Medium — a balanced feel between plush and firm."
           ]
         },
         "es": {
@@ -2742,7 +2790,8 @@
             "Coincide con tu preferencia de firmeza (5/10)"
           ],
           "s1": [
-            "Cerca de tu firmeza preferida"
+            "Cerca de tu firmeza preferida",
+            "Individually pocketed coils that move independently, zoned for targeted support, with foam encasement around the edge."
           ],
           "s2": [],
           "s3": [
@@ -2784,7 +2833,8 @@
           ],
           "b6": [],
           "b7": [
-            "Coincide con tu preferencia de firmeza (5/10)"
+            "Coincide con tu preferencia de firmeza (5/10)",
+            "Rated Medium — a balanced feel between plush and firm."
           ]
         }
       },
@@ -3350,13 +3400,17 @@
           ],
           "g8": [],
           "g9": [],
-          "s1": [],
+          "s1": [
+            "Individually pocketed coils that move independently, zoned for targeted support, with foam encasement around the edge."
+          ],
           "s2": [],
           "s3": [
             "Matches your firmness preference (3/10)"
           ],
           "s4": [],
-          "s5": [],
+          "s5": [
+            "Rated Firm, with less give at the surface and a tight-top construction without a pillow-top layer."
+          ],
           "s6": [
             "Close to your preferred firmness"
           ],
@@ -3371,7 +3425,9 @@
           "b1": [
             "Matches your firmness preference (3/10)"
           ],
-          "b2": [],
+          "b2": [
+            "Rated Firm, with less give and more pushback at the surface."
+          ],
           "b3": [
             "Close to your preferred firmness"
           ],
@@ -3404,13 +3460,17 @@
           ],
           "g8": [],
           "g9": [],
-          "s1": [],
+          "s1": [
+            "Individually pocketed coils that move independently, zoned for targeted support, with foam encasement around the edge."
+          ],
           "s2": [],
           "s3": [
             "Coincide con tu preferencia de firmeza (3/10)"
           ],
           "s4": [],
-          "s5": [],
+          "s5": [
+            "Rated Firm, with less give at the surface and a tight-top construction without a pillow-top layer."
+          ],
           "s6": [
             "Cerca de tu firmeza preferida"
           ],
@@ -3425,7 +3485,9 @@
           "b1": [
             "Coincide con tu preferencia de firmeza (3/10)"
           ],
-          "b2": [],
+          "b2": [
+            "Rated Firm, with less give and more pushback at the surface."
+          ],
           "b3": [
             "Cerca de tu firmeza preferida"
           ],
@@ -4003,7 +4065,8 @@
             "Matches your firmness preference (6/10)"
           ],
           "s1": [
-            "Matches your firmness preference (6/10)"
+            "Matches your firmness preference (6/10)",
+            "Individually pocketed coils that move independently, zoned for targeted support, with foam encasement around the edge."
           ],
           "s2": [
             "Close to your preferred firmness"
@@ -4013,7 +4076,8 @@
             "Matches your firmness preference (6/10)"
           ],
           "s5": [
-            "Matches your firmness preference (6/10)"
+            "Matches your firmness preference (6/10)",
+            "Rated Firm, with less give at the surface and a tight-top construction without a pillow-top layer."
           ],
           "s6": [
             "Matches your firmness preference (6/10)"
@@ -4030,7 +4094,8 @@
           ],
           "b1": [],
           "b2": [
-            "Matches your firmness preference (6/10)"
+            "Matches your firmness preference (6/10)",
+            "Rated Firm, with less give and more pushback at the surface."
           ],
           "b3": [
             "Matches your firmness preference (6/10)"
@@ -4043,7 +4108,8 @@
             "Close to your preferred firmness"
           ],
           "b7": [
-            "Matches your firmness preference (6/10)"
+            "Matches your firmness preference (6/10)",
+            "Rated Medium — a balanced feel between plush and firm."
           ]
         },
         "es": {
@@ -4069,7 +4135,8 @@
             "Coincide con tu preferencia de firmeza (6/10)"
           ],
           "s1": [
-            "Coincide con tu preferencia de firmeza (6/10)"
+            "Coincide con tu preferencia de firmeza (6/10)",
+            "Individually pocketed coils that move independently, zoned for targeted support, with foam encasement around the edge."
           ],
           "s2": [
             "Cerca de tu firmeza preferida"
@@ -4079,7 +4146,8 @@
             "Coincide con tu preferencia de firmeza (6/10)"
           ],
           "s5": [
-            "Coincide con tu preferencia de firmeza (6/10)"
+            "Coincide con tu preferencia de firmeza (6/10)",
+            "Rated Firm, with less give at the surface and a tight-top construction without a pillow-top layer."
           ],
           "s6": [
             "Coincide con tu preferencia de firmeza (6/10)"
@@ -4096,7 +4164,8 @@
           ],
           "b1": [],
           "b2": [
-            "Coincide con tu preferencia de firmeza (6/10)"
+            "Coincide con tu preferencia de firmeza (6/10)",
+            "Rated Firm, with less give and more pushback at the surface."
           ],
           "b3": [
             "Coincide con tu preferencia de firmeza (6/10)"
@@ -4109,7 +4178,8 @@
             "Cerca de tu firmeza preferida"
           ],
           "b7": [
-            "Coincide con tu preferencia de firmeza (6/10)"
+            "Coincide con tu preferencia de firmeza (6/10)",
+            "Rated Medium — a balanced feel between plush and firm."
           ]
         }
       },
@@ -4685,7 +4755,8 @@
             "Matches your firmness preference (5/10)"
           ],
           "s1": [
-            "Close to your preferred firmness"
+            "Close to your preferred firmness",
+            "Individually pocketed coils that move independently, zoned for targeted support, with foam encasement around the edge."
           ],
           "s2": [],
           "s3": [
@@ -4727,7 +4798,8 @@
           ],
           "b6": [],
           "b7": [
-            "Matches your firmness preference (5/10)"
+            "Matches your firmness preference (5/10)",
+            "Rated Medium — a balanced feel between plush and firm."
           ]
         },
         "es": {
@@ -4755,7 +4827,8 @@
             "Coincide con tu preferencia de firmeza (5/10)"
           ],
           "s1": [
-            "Cerca de tu firmeza preferida"
+            "Cerca de tu firmeza preferida",
+            "Individually pocketed coils that move independently, zoned for targeted support, with foam encasement around the edge."
           ],
           "s2": [],
           "s3": [
@@ -4797,7 +4870,8 @@
           ],
           "b6": [],
           "b7": [
-            "Coincide con tu preferencia de firmeza (5/10)"
+            "Coincide con tu preferencia de firmeza (5/10)",
+            "Rated Medium — a balanced feel between plush and firm."
           ]
         }
       },
@@ -5370,7 +5444,8 @@
           ],
           "b6": [],
           "b7": [
-            "Matches your firmness preference (4/10)"
+            "Matches your firmness preference (4/10)",
+            "Rated Medium — a balanced feel between plush and firm."
           ]
         },
         "es": {
@@ -5426,7 +5501,8 @@
           ],
           "b6": [],
           "b7": [
-            "Coincide con tu preferencia de firmeza (4/10)"
+            "Coincide con tu preferencia de firmeza (4/10)",
+            "Rated Medium — a balanced feel between plush and firm."
           ]
         }
       },

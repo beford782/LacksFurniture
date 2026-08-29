@@ -20,7 +20,28 @@ final stage (Gated and Proceeds under 2.2); Phase 3 remains a plan of intent,
 not a grant of approval — see the open-decisions register. Device hardening
 remains BLOCKING for showroom use.**
 
-**Last updated:** 2026-08-28, fourth revision this date *(**Item 1.3
+**Last updated:** 2026-08-29 *(**Item 1.3 first dark reason-authoring
+tranche — four of 79 per-feature catalog reason slots populated as
+non-rendering data; no gate moved.** Owner-authorized (Decision A: the
+exact eight EN/ES strings; Decision B: the bounded matchReasons-only
+fixture amendment; routing confirmations recorded), the four pairs
+`s5.reason_firm`, `s1.reason_support`, `b2.reason_firm` and
+`b7.reason_medium` were authored at `incoming/lacks_mattresses.json` and
+flowed through the canonical lineage; `MATT_ES_KEYS` gained the eight
+per-feature reason keys (pipeline plumbing only); the Phase 1 regression
+fixture moved in exactly 52 `matchReasons` cells with every other pinned
+path byte-identical, hash moved in the same diff, plus four catalog-data
+mutations and a repair of the mutation loop's latent vacuity. The Spanish
+is **provisional** (native claim-equivalence review still required before
+any activation); `reasons_es` has no reader; the reason surfaces stay
+omitted under PR #63; `index.html` is byte-identical; no engine behaviour
+changed; no cooling, medical, quantified, comparative, price, durability,
+patent or origin claim was introduced. **Item 1.3 stays ◐** — four of 79
+slots do not unblock the rendered-output gate, and no Gated, Proceeds or
+Exit clause moved; every other phase and item status is unchanged;
+pricing remains dark and 2.2 is untouched. Record:
+`docs/catalog-reason-tranche-1-2026-08-29.md`. The previous revision,
+2026-08-28 (the fourth that date), recorded the **Item 1.3
 catalog-reason evidence record — docs only, no gate moved.** The
 live-browser source-discovery campaign of 2026-08-28 is preserved as
 `docs/catalog-reason-evidence-2026-08-28.md`: exact current lacks.com
@@ -2206,6 +2227,62 @@ record proposes a first dark authoring tranche nucleus (`s5.reason_firm`,
 `s1.reason_support`, `b2.reason_firm`, `b7.reason_medium`, deliberately
 excluding the retired models) for a **separate** authorization block; nothing
 begins on its account.)*
+
+*(2026-08-29 — first dark reason-authoring tranche, **implemented**.
+**Item 1.3 remains ◐**; this entry closes no clause and lifts no gate.
+Record: `docs/catalog-reason-tranche-1-2026-08-29.md`.
+
+**What was authorized (owner, 2026-08-29).** Decision A — the exact eight
+EN/ES strings for `s5.reason_firm`, `s1.reason_support`, `b2.reason_firm`
+and `b7.reason_medium` (the §12 nucleus of the evidence record; the earlier
+label-only candidates and their expected hash are void); Decision B —
+separately, the bounded matchReasons-only amendment of the Phase 1
+regression fixture; and the routing confirmations that the eight-key
+`MATT_ES_KEYS` extension is authorized as pipeline plumbing, that paired
+Spanish may merge provisionally while non-rendering with native review
+still required before activation, that the four facts are outside the
+unresolved cooling/legal route, and that the item stays ◐ with its
+rendered-output gate locked.
+
+**What shipped.** The four EN reasons at the top level of
+`incoming/lacks_mattresses.json` and their provisional ES counterparts
+under each model's `es` object, flowed through builder → workbook →
+validator → converter → `build-data.ps1` (nothing generated was
+hand-edited; lineage check 10/10). The copy states the models' comfort
+ratings and named constructions and their ordinary category meaning
+(less give / more pushback at the surface, no pillow-top layer,
+independently moving pocketed coils zoned for targeted support, a foam
+edge encasement, a feel between plush and firm) — **not**
+product-performance promises. No cooling, medical, quantified,
+comparative, price, durability, patent or origin claim was introduced; the
+retirement suites are unamended.
+
+**What did not change.** `index.html` is byte-identical: the reasons
+remain non-rendering (the drawer and Compare reason surfaces stay omitted
+under PR #63), `reasons_es` still has no reader, and no engine behaviour
+moved — the engine reads `reasons` in both language passes, so the
+Spanish pass of the fixture holds the English text (recorded, not
+approved; language-aware routing and native claim-equivalence review
+remain mandatory before activation). The Phase 1 fixture moved in exactly
+52 `matchReasons` cells (s1.support 8/10, b7.medium 8/10, s5.firm 5/10,
+b2.firm 5/10; `s9_empty_defaults` untouched) with every other pinned path
+byte-identical, the obsolete `feelWord` bytes retained, reconstruction
+proven and the hash moved in the same diff; four catalog-data mutations
+(M1–M4) and tranche non-triviality pins were added, and the suite's
+mutation loop — vacuous since 2026-08-15 because it diffed the raw
+baseline's retained `feelWord` — was repaired with a non-vacuity guard;
+all fifteen source mutations still diverge on the repaired basis.
+
+**State after this tranche.** Four of 79 per-feature slots are populated
+(both languages); 75 remain blank; the 16 case-fold-dead slots stay dead
+and unauthored (3.1 untouched). **Four populated slots do not constitute
+the Gated clause's "populated per-feature catalog reason content", and
+the rendered-output gate stays locked by ruling regardless.** The Gated
+and Proceeds block below is unchanged — neither narrowed, widened,
+weakened nor closed — and both Exit assessments remain outstanding.
+Standing restrictions unchanged: Spanish provisional; native-Spanish
+reviewer unnamed; showroom NO; the 1.4 matrix deferred and blocking;
+`gasUrl` blank; pricing dark; 2.2 untouched.)*
 
 **Gated** — two outputs, each with its own unblock condition. Neither may appear
 in a merged diff until its condition is met.
