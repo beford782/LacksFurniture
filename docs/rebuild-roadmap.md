@@ -20,7 +20,26 @@ final stage (Gated and Proceeds under 2.2); Phase 3 remains a plan of intent,
 not a grant of approval — see the open-decisions register. Device hardening
 remains BLOCKING for showroom use.**
 
-**Last updated:** 2026-08-28, third revision this date *(**PHASE 2.1
+**Last updated:** 2026-08-28, fourth revision this date *(**Item 1.3
+catalog-reason evidence record — docs only, no gate moved.** The
+live-browser source-discovery campaign of 2026-08-28 is preserved as
+`docs/catalog-reason-evidence-2026-08-28.md`: exact current lacks.com
+product pages were found, rendered and identity-bound for **26 of 26**
+catalog models (direct URLs, four distinct identifiers, access timestamps,
+per-model state fields and the open conflict register), superseding the
+earlier external "14 found / 12 blocked" result — every block was
+tool-level. This **lifts the missing-page discovery block only**; it does
+**not** lift item 1.3's rendered-output gate, grants no authoring
+authorization, authors no reason content, and changes no runtime, catalog,
+pipeline or test artifact. The remaining blockers are recorded on the item
+and in full in the record's §11 (among them: authoring not opened;
+native-Spanish reviewer unnamed; the `MATT_ES_KEYS` extension; the 3.1
+case-fold fix for the 16 dead slots; per-model retired-suite dispositions
+for g6/g7/g8/g9/s3; the Lacks page-correction and licensee requests; the
+legal-scope reconciliation). **Item 1.3 stays
+◐**; every other phase and item status is unchanged; pricing remains dark
+and 2.2 is untouched; the reconciliation baseline stays `9a1b7f3`. The
+previous revision, also 2026-08-28 (the third), recorded **PHASE 2.1
 CLOSED — the PR #71 merge record and the ✅ closure.** **PR #71** merged
 2026-08-28 22:26:10Z as merge commit
 `9a1b7f3b977e07bd906613e856c57c10318940ef` (parents
@@ -2135,6 +2154,58 @@ pass**; the full pre-showroom device and accessibility matrix remains blocking;
 showroom authorization NO; Spanish provisional; live email off with `gasUrl`
 blank; `Code.gs` unchanged and undeployed; reason authoring and reviewer naming
 remain unauthorized.)*
+
+*(2026-08-28 — catalog-reason evidence record. **Item 1.3 remains ◐**; this
+record closes no clause and lifts no gate. The live-browser source-discovery
+campaign of 2026-08-28 is preserved as
+**`docs/catalog-reason-evidence-2026-08-28.md`**, the auditable evidence base
+for the per-feature reason content that this item's first Gated output waits
+on.
+
+**What it establishes.** Exact current lacks.com product pages were found,
+rendered in a real browser session and identity-bound for **26 of 26**
+catalog models. The repository's seven-digit `sku` is the Lacks URL /
+catalog-API SKU for every model — it is not the Magento `entity_id`, the
+displayed retailer SKU or the manufacturer Model #, and the record keeps all
+four distinct. This supersedes the earlier external "14 found / 12 blocked"
+result: every block was tool-level (HTTP 403 to non-browser fetches;
+category/search delisting of pages that remain live by direct URL). **It
+lifts the missing-page discovery block and nothing else** — that block was a
+working-state condition on the evidence campaign, never a Gated clause of
+this item, so no mark moves. Page existence is
+not catalog discoverability, active-offer status, claim readiness or
+approval, and the record states each separately: exact-page discovery
+COMPLETE, 26/26; identity binding COMPLETE subject to the recorded
+duplicate-entity, naming and status qualifications; authoring evidence
+PARTIAL BY AXIS; authoring authorization NOT GRANTED; **rendered-output gate
+NOT LIFTED**.
+
+**What remains open — recorded, not closed.** The 79-slot inventory (Gold 30
+/ Silver 31 / Bronze 18 = 158 paired EN+ES strings; 63 reachable, 16
+dead-by-casing; all 79 empty in both languages; 14 paired defaults
+populated, all classified REVISE; 12 missing; none approved to retain
+verbatim). The unresolved page conflicts: g3 delisted from category and
+search with its offer status unconfirmed; g9's firmness-taxonomy conflict and
+its suite-blocked cooling axis; s9's Kendal II / Kendall III naming; the s10,
+s3 and g2 height contradictions (no height-based reason until resolved); the
+b1/b2 Giselle construction drift (layer construction non-binding); b3
+"Product Coming Soon" with no stated comfort level; b6's mattress-versus-set
+distinction; the MZ972 code collision; the licensee clarification requests.
+The authoring and governance blockers: authoring not opened by its approver;
+the native-Spanish claim-equivalence reviewer unnamed; the `MATT_ES_KEYS`
+pipeline extension (recorded, not implemented); the 3.1 case-fold fix, which
+must precede even drafting the 16 dead slots; per-model retired-suite
+dispositions for g6/g7/g8/g9/s3 — the evidence does not itself authorize
+removing or weakening the retirement suites; the legal-scope reconciliation.
+The runtime findings are diagnostic and unchanged under PR #63.
+
+**What did not happen.** No reason content was authored in either language;
+no catalog, workbook, generated, runtime, pipeline or test artifact changed;
+no suite was amended; the Gated and Proceeds block below is unchanged. The
+record proposes a first dark authoring tranche nucleus (`s5.reason_firm`,
+`s1.reason_support`, `b2.reason_firm`, `b7.reason_medium`, deliberately
+excluding the retired models) for a **separate** authorization block; nothing
+begins on its account.)*
 
 **Gated** — two outputs, each with its own unblock condition. Neither may appear
 in a merged diff until its condition is met.
