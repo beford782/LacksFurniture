@@ -4,8 +4,10 @@
 reason content for the Lacks deployment: four (model, axis) pairs, English and
 provisional Spanish, authored as **non-rendering catalog data** and flowed
 through the canonical lineage, with the Phase 1 regression fixture amended by
-the bounded Slice 5 C10 method. It **renders nothing, changes no engine
-behaviour and lifts no gate. Item 1.3 remains ◐.**
+the bounded Slice 5 C10 method. It **renders nothing and lifts no gate. Item
+1.3 remains ◐.** No engine source, scoring, ranking, recommendation or
+rendered behavior changed. The only computed-output movement is the authorized
+dormant `matchReasons` amendment recorded in §4.
 
 **Base.** `main` at `d842e6a8b09fcd6416f94435b6b7701f52dbbc4f` (the PR #73
 merge, 2026-08-28), carrying `docs/catalog-reason-evidence-2026-08-28.md`
@@ -29,17 +31,20 @@ label-only candidate strings and the expected fixture hash computed for them
 | `b2.reason_firm` | Giselle Firm · SKU 1601-372 · Model # 1601-372-ML23950 · sku 2031228 | Rated Firm, with less give and more pushback at the surface. | Nivel de confort firme, con menos hundimiento y más empuje en la superficie. |
 | `b7.reason_medium` | Gracie Medium · SKU 1601-132 · Model # 1601-132-MC45850 · sku 2030258 | Rated Medium — a balanced feel between plush and firm. | Nivel de confort medio: una sensación equilibrada entre suave y firme. |
 
-**Factual basis (evidence record, §4/§5).** s5: comfort-level spec row
-"Firm"; "Tight Top" in H1 and spec. s1: "zoned individually pocketed coils"
-and "HD foam encasement" (quantities deliberately unused). b2: spec row
-"Firm". b7: spec row "Medium". Every other clause is ordinary category
-interpretation of those stated terms — what *firm*, *medium*, *tight top*,
-*pocketed*, *zoned* and *encasement* mean by definition (less give / more
-pushback at the surface; no pillow-top layer; coils that move independently;
-support targeted by zone; a foam rail at the edge; a feel between plush and
-firm). **None is a product-performance promise.** No line asserts an outcome
-for a body, a sleeper type, a temperature, a duration, a comparison with any
-other product, a quantity, a price, a patent or an origin.
+**Factual basis (evidence record, §4/§5).** s5: comfort-level spec row "Firm";
+"Tight Top" in H1 and spec. s1: "zoned individually pocketed coils" and "HD
+foam encasement" (quantities deliberately unused). b2: spec row "Firm". b7:
+spec row "Medium". Every other clause is ordinary category interpretation of
+those stated terms — what *firm*, *medium*, *tight top*, *pocketed*, *zoned*
+and *encasement* mean by definition (less give / more pushback at the surface;
+no pillow-top layer; coils that move independently; support targeted by zone;
+a foam rail at the edge; a feel between plush and firm). **None is a
+product-performance promise.** No line asserts an outcome for a body, a
+sleeper type, a temperature or a duration, a quantity, a price, a patent or an
+origin. No product-to-product, quantified, superiority, price-positioning or
+market-position comparison was introduced. The phrases "less give" and "more
+pushback" are relative feel descriptions derived from the manufacturer's Firm
+comfort rating, not comparisons against another product.
 
 **Pre-edit equivalence audit (recorded, not acted on).** Each ES sentence
 carries the same clauses and hedges as its EN sentence and adds no attribute.
@@ -90,8 +95,10 @@ incoming/lacks_mattresses.json      (+4 EN top-level reason_* keys, +4 es.reason
 
 ## 3. Runtime facts — unchanged, and why nothing renders
 
-- `index.html` is **byte-identical** to `d842e6a`. No engine, runtime,
-  rendering or routing change of any kind.
+- `index.html` is **byte-identical** to `d842e6a`. No engine source,
+  scoring, ranking, recommendation, runtime, rendering or routing change of
+  any kind. The only computed-output movement is the authorized dormant
+  `matchReasons` amendment recorded in §4.
 - `reasons` has exactly one reader, inside `calculateScores()`
   (`const reason = m.reasons?.[feat]`), guarded by the model's live scoring
   tags; the string is pushed into `matchReasons` **after** the score is
@@ -180,15 +187,19 @@ Suite result on this tree: **97 passed, 0 failed** (previously 77/0).
 ## 5. Claim classes — what was deliberately not introduced
 
 No cooling, medical or anatomical, pressure-relief, motion, quantified,
-comparative, superlative, price/value, durability/longevity, warranty,
-patent/trademark, origin (hand-made / Texas / USA), sleeper-type, stock or
-delivery claim was introduced in either language. In particular: s5's
-**cooling axis is untouched** (cooling-class claims stay routed under the
-unresolved cooling/legal question, evidence record §11(7)); s1 carries no
-"25%" form, no Marvelous Middle, no zone location and no body outcome; b2
-carries no Giselle/Grace layer construction (§6 C-giselle); b7 carries no
-"Gracie II" marker, no price position and no adjustable-base statement. The
-retirement suites were **not** amended or weakened.
+superlative, price/value, durability/longevity, warranty, patent/trademark,
+origin (hand-made / Texas / USA), sleeper-type, stock or delivery claim was
+introduced in either language. No product-to-product, quantified, superiority,
+price-positioning or market-position comparison was introduced. The phrases
+(s5, b2) "less give" and "more pushback" are relative feel descriptions
+derived from the manufacturer's Firm comfort rating, not comparisons against
+another product. In particular: s5's **cooling axis is untouched**
+(cooling-class claims stay routed under the unresolved cooling/legal question,
+evidence record §11(7)); s1 carries no "25%" form, no Marvelous Middle, no
+zone location and no body outcome; b2 carries no Giselle/Grace layer
+construction (§6 C-giselle); b7 carries no "Gracie II" marker, no price
+position and no adjustable-base statement. The retirement suites were **not**
+amended or weakened.
 
 ## 6. Governance state after this tranche
 

@@ -34,9 +34,15 @@ path byte-identical, hash moved in the same diff, plus four catalog-data
 mutations and a repair of the mutation loop's latent vacuity. The Spanish
 is **provisional** (native claim-equivalence review still required before
 any activation); `reasons_es` has no reader; the reason surfaces stay
-omitted under PR #63; `index.html` is byte-identical; no engine behaviour
-changed; no cooling, medical, quantified, comparative, price, durability,
-patent or origin claim was introduced. **Item 1.3 stays ◐** — four of 79
+omitted under PR #63; `index.html` is byte-identical; no engine source,
+scoring, ranking, recommendation or rendered behavior changed — the only
+computed-output movement is the authorized dormant `matchReasons`
+amendment; no cooling, medical, quantified, price, durability, patent or
+origin claim was introduced, and no product-to-product, quantified,
+superiority, price-positioning or market-position comparison was
+introduced ("less give" / "more pushback" are relative feel descriptions
+derived from the manufacturer's Firm comfort rating, not comparisons
+against another product). **Item 1.3 stays ◐** — four of 79
 slots do not unblock the rendered-output gate, and no Gated, Proceeds or
 Exit clause moved; every other phase and item status is unchanged;
 pricing remains dark and 2.2 is untouched. Record:
@@ -2253,14 +2259,20 @@ ratings and named constructions and their ordinary category meaning
 (less give / more pushback at the surface, no pillow-top layer,
 independently moving pocketed coils zoned for targeted support, a foam
 edge encasement, a feel between plush and firm) — **not**
-product-performance promises. No cooling, medical, quantified,
-comparative, price, durability, patent or origin claim was introduced; the
+product-performance promises. No cooling, medical, quantified, price,
+durability, patent or origin claim was introduced, and no
+product-to-product, quantified, superiority, price-positioning or
+market-position comparison was introduced — "less give" and "more
+pushback" are relative feel descriptions derived from the manufacturer's
+Firm comfort rating, not comparisons against another product; the
 retirement suites are unamended.
 
 **What did not change.** `index.html` is byte-identical: the reasons
 remain non-rendering (the drawer and Compare reason surfaces stay omitted
-under PR #63), `reasons_es` still has no reader, and no engine behaviour
-moved — the engine reads `reasons` in both language passes, so the
+under PR #63), `reasons_es` still has no reader, and no engine source,
+scoring, ranking, recommendation or rendered behavior changed — the only
+computed-output movement is the authorized dormant `matchReasons`
+amendment below: the engine reads `reasons` in both language passes, so the
 Spanish pass of the fixture holds the English text (recorded, not
 approved; language-aware routing and native claim-equivalence review
 remain mandatory before activation). The Phase 1 fixture moved in exactly
