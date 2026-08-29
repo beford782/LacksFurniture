@@ -743,9 +743,48 @@ for (const mu of MUTATIONS) {
 // motionIsolation, roadmap 3.1): the engine never reaches those, so such a
 // mutation could not be caught and would be a vacuous entry.
 section("catalog reason data (item 1.3 tranche): authorized pairs only, and the pin sees them");
-const AUTHORIZED_REASONS = { s1: "support", s5: "firm", b2: "firm", b7: "medium" };
+// The owner-approved copy, byte for byte (Decision A, 2026-08-29). The fixture
+// pins only the ENGLISH strings, because the engine reads `reasons` alone; a
+// Spanish sentence could therefore drift through a lineage rebuild and reach
+// eventual activation unnoticed. This map pins BOTH languages exactly, and the
+// axis view the rest of this section uses is derived from it so the two can
+// never disagree. Changing any of these bytes is an owner decision.
+const APPROVED_REASON_COPY = {
+  s5: { axis: "firm",
+    en: "Rated Firm, with less give at the surface and a tight-top construction without a pillow-top layer.",
+    es: "Nivel de confort firme, con menos hundimiento en la superficie y una construcción tight top sin capa tipo pillow top." },
+  s1: { axis: "support",
+    en: "Individually pocketed coils that move independently, zoned for targeted support, with foam encasement around the edge.",
+    es: "Resortes embolsados individualmente que se mueven de forma independiente, zonificados para brindar soporte focalizado, con encapsulado de espuma alrededor del borde." },
+  b2: { axis: "firm",
+    en: "Rated Firm, with less give and more pushback at the surface.",
+    es: "Nivel de confort firme, con menos hundimiento y más empuje en la superficie." },
+  b7: { axis: "medium",
+    en: "Rated Medium — a balanced feel between plush and firm.",
+    es: "Nivel de confort medio: una sensación equilibrada entre suave y firme." }
+};
+const AUTHORIZED_REASONS = Object.fromEntries(
+  Object.entries(APPROVED_REASON_COPY).map(([id, c]) => [id, c.axis]));
 const findIn = (cat, id) => Object.values(cat).flat().find((m) => m.id === id);
 const byId = (id) => findIn(MATTRESSES, id);
+// Reusable comparator: every authorized model id, axis, `reasons[axis]` and
+// `reasons_es[axis]` against the map, exact string equality, returning named
+// mismatches ("<id>.<axis>.<lang>"). The live assertion and the negative
+// controls below run this same function.
+function reasonCopyMismatches(cat) {
+  const out = [];
+  for (const [id, exp] of Object.entries(APPROVED_REASON_COPY)) {
+    const m = findIn(cat, id);
+    if (!m) { out.push(`${id}: model missing`); continue; }
+    const got = { en: (m.reasons || {})[exp.axis], es: (m.reasons_es || {})[exp.axis] };
+    for (const lang of ["en", "es"]) {
+      if (got[lang] !== exp[lang]) {
+        out.push(`${id}.${exp.axis}.${lang}: ${JSON.stringify(got[lang])} != ${JSON.stringify(exp[lang])}`);
+      }
+    }
+  }
+  return out;
+}
 const perFeatureKeys = (obj) => Object.keys(obj || {}).filter((k) => k !== "default").sort();
 {
   const all = Object.values(MATTRESSES).flat();
@@ -756,9 +795,15 @@ const perFeatureKeys = (obj) => Object.keys(obj || {}).filter((k) => k !== "defa
   check("reasons_es carries exactly the same per-feature (model, axis) key set as reasons on every model",
     all.every((m) => JSON.stringify(perFeatureKeys(m.reasons)) === JSON.stringify(perFeatureKeys(m.reasons_es))),
     all.filter((m) => JSON.stringify(perFeatureKeys(m.reasons)) !== JSON.stringify(perFeatureKeys(m.reasons_es))).map((m) => m.id).join(", "));
-  check("every authorized string is non-empty in both languages and ends with a full stop",
-    Object.entries(AUTHORIZED_REASONS).every(([id, axis]) =>
-      /\.$/.test(byId(id).reasons[axis] || "") && /\.$/.test(byId(id).reasons_es[axis] || "")));
+  {
+    const mism = reasonCopyMismatches(MATTRESSES);
+    check("every authorized (model, axis) carries EXACTLY the owner-approved EN and ES bytes (APPROVED_REASON_COPY)",
+      mism.length === 0, mism.join(" | "));
+  }
+  // Secondary to the exact-copy pin above: documents that every approved
+  // sentence is full-stop terminated, which is what data mutation M3 removes.
+  check("(secondary) every approved EN/ES sentence in the map ends with a full stop",
+    Object.values(APPROVED_REASON_COPY).every((c) => /\.$/.test(c.en) && /\.$/.test(c.es)));
   check("every authorized axis is a live scoring tag on its model (not a case-fold-dead slot)",
     Object.entries(AUTHORIZED_REASONS).every(([id, axis]) => byId(id).features.includes(axis)));
   let cells = 0, esCellsHoldEnglish = 0;
@@ -776,6 +821,47 @@ const perFeatureKeys = (obj) => Object.keys(obj || {}).filter((k) => k !== "defa
     reach.s1.length === 8 && reach.b7.length === 8 && reach.s5.length === 5 && reach.b2.length === 5
     && !Object.values(reach).flat().includes("s9_empty_defaults"),
     JSON.stringify(Object.fromEntries(Object.entries(reach).map(([k, v]) => [k, v.length]))));
+}
+// Negative controls for the exact-copy contract. reasons_es has no runtime
+// reader, so an ES drift can NEVER surface through buildSnapshot()/the fixture;
+// these controls run the comparator itself on an in-memory catalog clone and
+// require a failure naming the expected model, axis and language. Every
+// approved translation is controlled individually, two ways (terminal full
+// stop removed; one character changed), plus one EN control proving the
+// comparator covers both languages. Nothing is written to disk: the source
+// bytes of data/mattresses.json and the loaded MATTRESSES object are proven
+// unchanged afterwards.
+section("exact-copy contract: negative controls (ES drift is caught without a runtime reader)");
+{
+  const catalogPath = join(root, "data", "mattresses.json");
+  const diskBefore = createHash("sha256").update(readFileSync(catalogPath)).digest("hex");
+  const memBefore = JSON.stringify(MATTRESSES);
+  const controls = [];
+  for (const [id, exp] of Object.entries(APPROVED_REASON_COPY)) {
+    controls.push({ id, lang: "es", name: `${id}.${exp.axis}.es terminal full stop removed`,
+      mutate: (v) => v.replace(/\.$/, "") });
+    controls.push({ id, lang: "es", name: `${id}.${exp.axis}.es one character changed`,
+      mutate: (v) => v.slice(0, 5) + (v[5] === "x" ? "y" : "x") + v.slice(6) });
+  }
+  controls.push({ id: "s5", lang: "en", name: "s5.firm.en one character changed (comparator covers EN too)",
+    mutate: (v) => v.slice(0, 5) + (v[5] === "x" ? "y" : "x") + v.slice(6) });
+  for (const c of controls) {
+    const exp = APPROVED_REASON_COPY[c.id];
+    const cat = clone(MATTRESSES);
+    const m = findIn(cat, c.id);
+    const field = c.lang === "es" ? "reasons_es" : "reasons";
+    const before = m[field][exp.axis];
+    m[field][exp.axis] = c.mutate(before);
+    if (!check(`[applies] ${c.name}`, m[field][exp.axis] !== before, "mutation produced no change")) continue;
+    const mism = reasonCopyMismatches(cat);
+    const expected = `${c.id}.${exp.axis}.${c.lang}: `;
+    check(`[caught] ${c.name} — exactly one mismatch, naming ${expected.trim()}`,
+      mism.length === 1 && mism[0].startsWith(expected), mism.join(" | "));
+  }
+  check("negative controls touched no disk artifact (data/mattresses.json bytes unchanged)",
+    createHash("sha256").update(readFileSync(catalogPath)).digest("hex") === diskBefore);
+  check("negative controls left the loaded catalog untouched (mutations were on clones)",
+    JSON.stringify(MATTRESSES) === memBefore && reasonCopyMismatches(MATTRESSES).length === 0);
 }
 const DATA_MUTATIONS = [
   { name: "M1 unauthorized fifth model (g1.reasons.support added)",
