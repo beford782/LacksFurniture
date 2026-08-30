@@ -48,8 +48,34 @@ standing constraints; the work it adds is recorded in the third 2026-08-29
 revision note below and on items 1.3, 1.4 and 1.6, the Phase 1 cohesion
 milestone, the pre-floor evidence plan and Phase 3 item 3.7.
 
-**Last updated:** 2026-08-30 *(**Owner rulings of 2026-08-30 and the
-governance landing.** Blake ruled, in writing: this reconciliation lands as one
+**Last updated:** 2026-08-30, later the same day *(**Cohesion pass-1
+decisions recorded; governance PR #76 merged.** Documentation only — no
+application, data, test or engine artifact changed; no gate, Gated list,
+Proceeds list or Exit clause moved. PR #76 was approved by Blake and merged
+as `3dac218` (CI run 33320468148 success; Pages deployment success); the
+cohesion packet was deliberately kept out of it. Blake then ruled, in
+writing, on the pass-1 packet: **CHANGE** (six bounded PRs) — the Sleep
+System utility-bar / header collision (EN/ES, both orientations; routed via
+1.4), mattress identity and starting context in the Results landscape first
+fold, a prototyped Consultation Summary finalist hero / status block and
+implication-line presentation with approved meaning unchanged, a
+text-hugging heading focus treatment that preserves visible focus and the
+0.3 behaviour, the singular / plural "Selection(s)" fix, and positive
+non-loss-aversion wording in place of "Don't lose your matches";
+**KEEP** — Welcome, quiz structure, Review, drawer structure, Compare
+structure, Sleep Plan content, Payment Choice and the take-home structure,
+and touch focus returning to `body` after a quiz tap is not a defect (the
+keyboard path is what gets tested); **EXPERIMENT** — the Sleep Brief
+landscape composition only, and two chrome-normalisation alternatives
+(remove the isolated headers versus a slim unified identity treatment),
+with the optional Welcome motif deferred. The record, the committed packet,
+the evidence manifest and the PR schedule are in
+`docs/guided-selling-cohesion-decisions-2026-08-30.md`; the packet's
+screenshots are preserved outside the repository. The milestone stays 🔨
+(pass 2 still owed; changes scheduled, not shipped). The 3.7 offline audit
+began the same day as read-only analysis with the engine untouched; 3.7
+stays ◐. The previous revision, earlier on 2026-08-30, recorded the **Owner
+rulings of 2026-08-30 and the governance landing.** Blake ruled, in writing: this reconciliation lands as one
 governance PR from branch `codex/guided-selling-roadmap` (two commits — the
 agent operating files, Codex skills and the 48-check local runner; then the
 roadmap and guidance reconciliation), **not merged without his approval**; the
@@ -4254,7 +4280,7 @@ no Spanish approval and nothing for PR #53. **Merged and verified:** PR #54 merg
 
 ---
 
-### Phase 1 milestone — Guided-selling cohesion and conversion readiness 🔨 (added 2026-08-29 by owner direction; review opened 2026-08-30 as a read-only evidence and proposal phase; after Slice 6, before 2.2 activation)
+### Phase 1 milestone — Guided-selling cohesion and conversion readiness 🔨 (added 2026-08-29 by owner direction; review opened 2026-08-30 as a read-only evidence and proposal phase; after Slice 6, before 2.2 activation; pass-1 decisions recorded 2026-08-30)
 
 **What it is.** The first review of the whole experience as one guided sales
 presentation rather than seven slices. It sits after every Phase 1 slice has
@@ -4306,6 +4332,34 @@ packet is implemented until he records keep / change / experiment per surface.
 a recorded decision, the *change* items are scheduled as bounded PRs, and the
 *keep* items cite their evidence. The 1.6 surfaces are the first targets (see
 the lens note on item 1.6).
+
+**Pass 1 — decisions recorded 2026-08-30 (Blake Ford).** The pass-1 packet
+(`docs/guided-selling-cohesion-review-2026-08-30.md`: Playwright/Chromium
+walk of every beat in EN and ES at 1194×748 and 834×1108 against application
+bytes identical to `db68f3f`; 0 page errors, no horizontal overflow, the 0.3
+focus contract holding on every transition) received written rulings, kept
+in `docs/guided-selling-cohesion-decisions-2026-08-30.md` with the PR
+schedule and the evidence manifest. **Change (six bounded PRs, one item
+each):** C1 the Sleep System utility-bar / header collision, EN and ES, both
+orientations (defect; routed through the 1.4 workstream); C2 mattress identity
+and useful starting context in the Results landscape first fold; C3 a
+prototyped Consultation Summary finalist hero / status block and improved
+implication-line presentation with approved meaning unchanged; C4 a polished
+text-hugging heading focus treatment that preserves visible focus and the 0.3
+behaviour; C5 singular / plural "Selection(s)"; C6 positive,
+non-loss-aversion wording in place of "Don't lose your matches". **Keep:**
+Welcome, quiz structure, Review, drawer structure, Compare structure, Sleep
+Plan content, Payment Choice, take-home structure; and touch focus returning
+to `body` after a quiz tap is not a defect — the keyboard path is tested
+specifically. **Experiment (branches, never merged as such):** the Sleep
+Brief landscape composition only; two chrome-normalisation alternatives —
+remove the isolated headers versus a slim unified identity treatment (3.6
+stays ❓). **Deferred:** the optional Welcome motif. Not ruled, not
+scheduled: the drawer price-band colour, the larger Results continuity mark,
+and every pass-2 item the packet could not judge statically. The milestone
+stays 🔨: pass 2 (in-app browser, mounted device) is owed and the change items
+are scheduled, not shipped. Reason content on Results and Compare remains
+item 1.3.
 
 ---
 
@@ -5199,6 +5253,7 @@ work listed under a ◐ item's Proceeds line.
 | Global maxScore / cross-tier ranking / tier merge or removal / threshold, cap, back-fill (3.3) | 🔒 | Blake | Evidence. **Does not gate a preserving Phase 1 tier-navigation change.** *(2026-08-21: a cross-tier "highest-fit" marker — raised as a trust question — is this row, because it changes what the customer is told about fit; see "Tier presentation (trust)" for the presentation-only half.)* |
 | Firmness stops (3.5) | 🔒 | Blake | Evidence |
 | Persistent identity bar (3.6) | ❓ | Blake | A case for it |
+| **Cohesion pass-1 change items C1–C6 and experiments E1–E2** — each shipped only on its own bounded PR / prototype branch | 🔨 | Blake | Rulings recorded 2026-08-30 in `docs/guided-selling-cohesion-decisions-2026-08-30.md`; approval of each PR is per PR; E2 does not open 3.6 *(added 2026-08-30)* |
 | Dormant nickname-code cleanup | ❓ | Blake | Analytics review — see below |
 | Visible stale-financing status band (production) | ❓ | Blake | A case for it plus review sign-off. Prototype-only today (D6); if pursued, production gets its own dedicated governed key — not a reuse of `staleAnnouncement` |
 | Customer-recorded trial reactions | ❓ | Blake | A case for it. The Nocturne prototype's own candidate next revision; deliberately not built (D6) |
@@ -5416,7 +5471,10 @@ document, not here.
     (◐), and — before any launch preparation — the pre-floor role-play
     evidence sessions. The review began 2026-08-30 (read-only); 3.7 is ◐
     since 2026-08-30, its audit scheduled by Blake as read-only offline
-    analysis.
+    analysis. Pass-1 cohesion decisions were recorded 2026-08-30 in
+    `docs/guided-selling-cohesion-decisions-2026-08-30.md` (six bounded
+    change PRs scheduled, two experiments, the rest kept); the 3.7 audit
+    began the same day, engine untouched.
 
 ---
 
