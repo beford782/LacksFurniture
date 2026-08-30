@@ -2026,6 +2026,14 @@ const MUTATIONS = [
     "        var price = Number(primary.price) > 0\n          ? sleepSystemText({ en: 'From $', es: 'Desde $' }) + Number(primary.price).toLocaleString() + ' ($3,699)'",
     SLEEP, "index.html"],
 
+  // 3.7 P2 (owner ruling 2026-08-30): the hero badge keys on an answer-derived
+  // match. Re-keying it on the relative threshold re-badges the gel pillow
+  // (best on its catalog default alone) as "Recommended to try" for a back
+  // sleeper - observed by the rendered P2 section of the presentation suite.
+  ["sleep system: the hero badge keys on meetsMatchThreshold instead of matched (P2 reverted)",
+    "          : (primary.matched\n            ? sleepSystemText({ en: 'Recommended to try', es: 'Recomendado para probar' })",
+    "          : (primary.meetsMatchThreshold\n            ? sleepSystemText({ en: 'Recommended to try', es: 'Recomendado para probar' })", SLEEP],
+
 ];
 
 // ---------------------------------------------------------------------------
