@@ -111,7 +111,29 @@ const BASELINE_PATH = join(root, "tests", "fixtures", "phase1_output_baseline_da
 // reproduces the previous fixture bytes (sha e7e5c27d…). Hash moved in the
 // same reviewed diff. The catalog-data mutations M1–M4 and the tranche
 // non-triviality pins in section 5 make this bounded amendment load-bearing.
-const BASELINE_SHA256 = "24dad01631c99f861929868855082bc8385bae51d76ffc06a826f1d5583f00a1";
+// 2026-08-29 amendment, tranche 2 (owner-authorized item 1.3 second dark reason
+// tranche; Decision B approved separately from the eight Decision A strings):
+// eight further per-feature catalog reasons were authored as DARK data —
+// s4/s2/s8/b4/b6.reason_firm, s6.reason_medium, s7/b5.reason_plush (EN top
+// level, ES under each model's es object). Same mechanism as tranche 1: the
+// engine reads m.reasons in BOTH language passes and nothing reads
+// reasons_es, so the ONLY pinned output that moved is the per-language
+// matchReasons harvest — exactly 86 cells, scenarios.*.matchReasons.{en,es}.
+// {s4,s2,s8,s6,s7,b4,b6,b5} in the nine reached scenarios (s6.medium 8/10;
+// s4, s2, s8, b4, b6.firm 5/10 each; s7, b5.plush 5/10 each;
+// s9_empty_defaults untouched), each gaining one appended element; the
+// tranche-1 cells (52) are byte-identical; cumulative 138 (69 EN + 69 ES).
+// The ES cells hold the ENGLISH text (recorded, not approved). No score,
+// rank, pct, tier, threshold, cap, back-fill, resolved-firmness, accessory,
+// profile or rendered byte moved; no engine source changed. Evidence: the
+// established tool (--write-baseline) run on the pre- and post-change trees in
+// temp copies; post-change output == this fixture minus the obsolete feelWord
+// field (retained); the structural path diff lists exactly the 86 cells and
+// nothing else; reverting only those 86 cells reproduces the tranche-1 fixture
+// bytes (sha 24dad016…). Hash moved in the same reviewed diff; the per-slot
+// removal mutations, M5/M6 probes and the 12-pair non-triviality pins below
+// make this bounded amendment load-bearing.
+const BASELINE_SHA256 = "d973fae2fd4b31d7931ffb955830ebfc21256b8658d43c25522e0afaf23e48a6";
 
 const WRITE_MODE = process.argv.includes("--write-baseline");
 
@@ -732,9 +754,11 @@ for (const mu of MUTATIONS) {
 // Item 1.3 first dark reason tranche (owner-authorized 2026-08-29). The
 // per-feature reason strings are catalog DATA, not engine source, so the
 // source mutations above cannot see them. These pins prove (a) exactly the
-// four authorized (model, axis) pairs exist, in both languages, on live
-// scoring tags; (b) the pinned baseline carries them in exactly the 52 cells
-// the amendment declared; and (c) the pin is load-bearing for reason data:
+// authorized (model, axis) pairs exist — four from tranche 1 plus eight from
+// tranche 2 (2026-08-29) — in both languages, on live scoring tags; (b) the
+// pinned baseline carries them in exactly the cells the two bounded
+// amendments declared (52 + 86 = 138); and (c) the pin is load-bearing for
+// reason data:
 // each catalog mutation below edits an in-memory COPY of the catalog, never
 // the engine, must diverge at its NAMED matchReasons path, and must diverge
 // NOWHERE outside matchReasons (a reason string cannot move a score, rank or
@@ -761,7 +785,32 @@ const APPROVED_REASON_COPY = {
     es: "Nivel de confort firme, con menos hundimiento y más empuje en la superficie." },
   b7: { axis: "medium",
     en: "Rated Medium — a balanced feel between plush and firm.",
-    es: "Nivel de confort medio: una sensación equilibrada entre suave y firme." }
+    es: "Nivel de confort medio: una sensación equilibrada entre suave y firme." },
+  // Tranche 2 (owner Decision A, 2026-08-29): eight further pairs, byte-exact.
+  s4: { axis: "firm",
+    en: "Rated Firm, with less give and more pushback at the surface.",
+    es: "Nivel de confort firme, con menos hundimiento y más empuje en la superficie." },
+  s2: { axis: "firm",
+    en: "Rated Extra Firm — a very firm feel with little give at the surface.",
+    es: "Nivel de confort extra firme: una sensación muy firme, con poco hundimiento en la superficie." },
+  s8: { axis: "firm",
+    en: "Rated Firm, with less give and more pushback at the surface.",
+    es: "Nivel de confort firme, con menos hundimiento y más empuje en la superficie." },
+  s6: { axis: "medium",
+    en: "Rated Medium — a balanced feel between plush and firm.",
+    es: "Nivel de confort medio: una sensación equilibrada entre suave y firme." },
+  s7: { axis: "plush",
+    en: "Rated Plush — a softer feel with more give at the surface.",
+    es: "Nivel de confort suave: una sensación más suave, con más hundimiento en la superficie." },
+  b4: { axis: "firm",
+    en: "Rated Firm, with less give and more pushback at the surface.",
+    es: "Nivel de confort firme, con menos hundimiento y más empuje en la superficie." },
+  b6: { axis: "firm",
+    en: "Rated Extra Firm — a very firm feel with little give at the surface.",
+    es: "Nivel de confort extra firme: una sensación muy firme, con poco hundimiento en la superficie." },
+  b5: { axis: "plush",
+    en: "Rated Plush — a softer feel with more give at the surface.",
+    es: "Nivel de confort suave: una sensación más suave, con más hundimiento en la superficie." }
 };
 const AUTHORIZED_REASONS = Object.fromEntries(
   Object.entries(APPROVED_REASON_COPY).map(([id, c]) => [id, c.axis]));
@@ -790,8 +839,10 @@ const perFeatureKeys = (obj) => Object.keys(obj || {}).filter((k) => k !== "defa
   const all = Object.values(MATTRESSES).flat();
   const populated = all.filter((m) => perFeatureKeys(m.reasons).length)
     .map((m) => `${m.id}.${perFeatureKeys(m.reasons).join("+")}`).sort();
-  check("exactly the four authorized (model, axis) per-feature reasons exist in `reasons`: b2.firm, b7.medium, s1.support, s5.firm",
-    JSON.stringify(populated) === JSON.stringify(["b2.firm", "b7.medium", "s1.support", "s5.firm"]), populated.join(", "));
+  check("exactly the twelve authorized (model, axis) per-feature reasons exist in `reasons` (tranche 1: b2.firm, b7.medium, s1.support, s5.firm; tranche 2: b4.firm, b5.plush, b6.firm, s2.firm, s4.firm, s6.medium, s7.plush, s8.firm)",
+    JSON.stringify(populated) === JSON.stringify(["b2.firm", "b4.firm", "b5.plush", "b6.firm", "b7.medium", "s1.support", "s2.firm", "s4.firm", "s5.firm", "s6.medium", "s7.plush", "s8.firm"]), populated.join(", "));
+  check("the authorized set in the map is exactly those twelve (map and catalog agree)",
+    JSON.stringify(Object.entries(AUTHORIZED_REASONS).map(([id, a]) => `${id}.${a}`).sort()) === JSON.stringify(populated));
   check("reasons_es carries exactly the same per-feature (model, axis) key set as reasons on every model",
     all.every((m) => JSON.stringify(perFeatureKeys(m.reasons)) === JSON.stringify(perFeatureKeys(m.reasons_es))),
     all.filter((m) => JSON.stringify(perFeatureKeys(m.reasons)) !== JSON.stringify(perFeatureKeys(m.reasons_es))).map((m) => m.id).join(", "));
@@ -807,18 +858,23 @@ const perFeatureKeys = (obj) => Object.keys(obj || {}).filter((k) => k !== "defa
   check("every authorized axis is a live scoring tag on its model (not a case-fold-dead slot)",
     Object.entries(AUTHORIZED_REASONS).every(([id, axis]) => byId(id).features.includes(axis)));
   let cells = 0, esCellsHoldEnglish = 0;
-  const reach = { s1: [], s5: [], b2: [], b7: [] };
+  const reach = Object.fromEntries(Object.keys(AUTHORIZED_REASONS).map((id) => [id, []]));
   for (const [name, s] of Object.entries(BASELINE.scenarios)) {
     for (const [id, axis] of Object.entries(AUTHORIZED_REASONS)) {
       if (s.matchReasons.en[id].includes(byId(id).reasons[axis])) { cells++; reach[id].push(name); }
       if (s.matchReasons.es[id].includes(byId(id).reasons[axis])) { cells++; esCellsHoldEnglish++; }
     }
   }
-  check("the pinned baseline carries the tranche in exactly 52 matchReasons cells (26 EN + 26 ES)", cells === 52, String(cells));
-  check("the 26 ES cells hold the ENGLISH string (no Spanish reason reader exists; recorded, not approved)",
-    esCellsHoldEnglish === 26, String(esCellsHoldEnglish));
-  check("per-model reach is s1.support 8, b7.medium 8, s5.firm 5, b2.firm 5, and s9_empty_defaults carries none",
+  check("the pinned baseline carries the two tranches in exactly 138 matchReasons cells (69 EN + 69 ES; tranche 1 = 52, tranche 2 = 86)", cells === 138, String(cells));
+  check("the 69 ES cells hold the ENGLISH string (no Spanish reason reader exists; recorded, not approved)",
+    esCellsHoldEnglish === 69, String(esCellsHoldEnglish));
+  const T1_CELLS = (reach.s1.length + reach.s5.length + reach.b2.length + reach.b7.length) * 2;
+  check("tranche-1 cells are still exactly 52 (its reach did not move: s1.support 8, b7.medium 8, s5.firm 5, b2.firm 5)",
+    T1_CELLS === 52 && reach.s1.length === 8 && reach.b7.length === 8 && reach.s5.length === 5 && reach.b2.length === 5, String(T1_CELLS));
+  check("per-model reach: tranche 1 as above; tranche 2 s6.medium 8, s4/s2/s8/b4/b6.firm 5 each, s7/b5.plush 5 each; s9_empty_defaults carries none",
     reach.s1.length === 8 && reach.b7.length === 8 && reach.s5.length === 5 && reach.b2.length === 5
+    && reach.s6.length === 8 && reach.s4.length === 5 && reach.s2.length === 5 && reach.s8.length === 5
+    && reach.b4.length === 5 && reach.b6.length === 5 && reach.s7.length === 5 && reach.b5.length === 5
     && !Object.values(reach).flat().includes("s9_empty_defaults"),
     JSON.stringify(Object.fromEntries(Object.entries(reach).map(([k, v]) => [k, v.length]))));
 }
@@ -864,7 +920,7 @@ section("exact-copy contract: negative controls (ES drift is caught without a ru
     JSON.stringify(MATTRESSES) === memBefore && reasonCopyMismatches(MATTRESSES).length === 0);
 }
 const DATA_MUTATIONS = [
-  { name: "M1 unauthorized fifth model (g1.reasons.support added)",
+  { name: "M1 unauthorized model outside the approved set (g1.reasons.support added)",
     at: /^[^.]+\.matchReasons\.(en|es)\.g1\.length: /,
     apply(cat) {
       const m = findIn(cat, "g1");
@@ -897,6 +953,46 @@ const DATA_MUTATIONS = [
       const m = findIn(cat, "b7");
       if (!("medium" in m.reasons)) return "b7.reasons.medium missing";
       delete m.reasons.medium;
+      return "applied";
+    } },
+  // Tranche 2 (2026-08-29): one removal mutation per newly populated slot, so
+  // each of the eight is individually pinned by the fixture; plus an
+  // unauthorized second axis on a tranche-2 model, an unauthorized thirteenth
+  // model, and a string-drift control on the new Extra Firm sentence class.
+  ...Object.entries({ s4: "firm", s2: "firm", s8: "firm", s6: "medium", s7: "plush", b4: "firm", b6: "firm", b5: "plush" })
+    .map(([id, axis]) => ({
+      name: `T2 tranche removal (${id}.reasons.${axis} deleted)`,
+      at: new RegExp(`^[^.]+\\.matchReasons\\.(en|es)\\.${id}\\.length: `),
+      apply(cat) {
+        const m = findIn(cat, id);
+        if (!(axis in m.reasons)) return `${id}.reasons.${axis} missing`;
+        delete m.reasons[axis];
+        return "applied";
+      } })),
+  { name: "M5 unauthorized second axis on a tranche-2 model (s6.reasons.support added)",
+    at: /^[^.]+\.matchReasons\.(en|es)\.s6\.length: /,
+    apply(cat) {
+      const m = findIn(cat, "s6");
+      if ("support" in m.reasons) return "s6 already carries a support reason";
+      if (!m.features.includes("support")) return "s6 has no live support tag";
+      m.reasons = { ...m.reasons, support: "UNAUTHORIZED REASON" };
+      return "applied";
+    } },
+  { name: "M6 unauthorized thirteenth model (s9.reasons.medium added)",
+    at: /^[^.]+\.matchReasons\.(en|es)\.s9\.length: /,
+    apply(cat) {
+      const m = findIn(cat, "s9");
+      if (m.reasons && "medium" in m.reasons) return "s9 already carries a medium reason";
+      if (!m.features.includes("medium")) return "s9 has no live medium tag";
+      m.reasons = { ...(m.reasons || {}), medium: "UNAUTHORIZED REASON" };
+      return "applied";
+    } },
+  { name: "M7 approved-string drift on the Extra Firm sentence (s2.reasons.firm loses its terminal full stop)",
+    at: /^[^.]+\.matchReasons\.(en|es)\.s2\[\d+\]: /,
+    apply(cat) {
+      const m = findIn(cat, "s2");
+      if (!m.reasons.firm || !m.reasons.firm.endsWith(".")) return "s2.reasons.firm missing or already without a full stop";
+      m.reasons.firm = m.reasons.firm.slice(0, -1);
       return "applied";
     } }
 ];
