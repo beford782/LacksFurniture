@@ -366,6 +366,74 @@ def run_summary(browser, port, name, width, height, shots_dir):
     page.close()
 
 
+# Cohesion change C1 (owner ruling 2026-08-30): the fixed session utility bar
+# (language + Restart, `position: fixed; top: 8px; right: 8px`) collided with
+# the Sleep System header — at 1194x748 it covered the top of the "Review
+# Sleep Plan" control, at 834x1108 the right end of the h1 — in both languages.
+# The screen now reserves --session-utility-clearance like the Sleep Brief
+# does. This pass renders the Sleep System in EN and ES at both mounted tablet
+# viewports and proves the bar's box intersects none of the title, the Back
+# control or the top Review control, and that the heading still takes focus.
+SLEEP_SYSTEM_JS = r"""
+async (ARGS) => {
+  const ANS = ARGS.answers;
+  if (ARGS.lang === 'es') await switchLanguage('es');
+  for (const k of Object.keys(ANS)) answers[k] = ANS[k];
+  showProfileScreen();
+  window.showResults();
+  window.chooseFinalist(_resultsState.tierData.gold[0].id);
+  window.showSleepPlan('results');
+  window.showAccessories();
+  await new Promise((res) => setTimeout(res, 500));
+  const rect = (el) => {
+    if (!el) return null;
+    const b = el.getBoundingClientRect();
+    if (b.width === 0 && b.height === 0) return null;
+    return { x: b.x, y: b.y, w: b.width, h: b.height };
+  };
+  const inter = (a, b) => !!(a && b && !(a.x + a.w <= b.x || b.x + b.w <= a.x || a.y + a.h <= b.y || b.y + b.h <= a.y));
+  const bar = rect(document.querySelector('.session-utility'));
+  const title = rect(document.getElementById('sleepSystemTitle'));
+  const back = rect(document.getElementById('sleepSystemBack'));
+  const review = rect(document.getElementById('sleepSystemReviewTop'));
+  const doc = document.documentElement;
+  return {
+    barVisible: !!bar, title, back, review, bar,
+    barOverTitle: inter(bar, title), barOverBack: inter(bar, back), barOverReview: inter(bar, review),
+    activeElement: document.activeElement && document.activeElement.id,
+    titleText: (document.getElementById('sleepSystemTitle') || {}).textContent || '',
+    scrollWidth: doc.scrollWidth, clientWidth: doc.clientWidth,
+  };
+}
+"""
+
+
+def run_sleep_system_header(browser, port, name, width, height, lang, shots_dir):
+    print(f"\n-- SLEEP SYSTEM header vs utility bar {lang} {name} {width}x{height} --")
+    page = browser.new_page(viewport={"width": width, "height": height})
+    errors = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    page.goto(f"http://127.0.0.1:{port}/", wait_until="networkidle")
+    page.wait_for_selector("#startBtn")
+    r = page.evaluate(SLEEP_SYSTEM_JS, {"answers": ANSWERS, "lang": lang})
+    if shots_dir:
+        os.makedirs(shots_dir, exist_ok=True)
+        page.screenshot(path=os.path.join(shots_dir, f"sleep-system-header-{lang}-{name}-{width}x{height}.png"))
+    check("the Sleep System renders without a page error and focuses its title",
+          not errors and r["activeElement"] == "sleepSystemTitle", f"active={r['activeElement']} errors={errors[:1]}")
+    check("the persistent utility bar is present on the Sleep System", r["barVisible"])
+    check("the title, Back control and top Review control all render", bool(r["title"] and r["back"] and r["review"]),
+          f"title={bool(r['title'])} back={bool(r['back'])} review={bool(r['review'])}")
+    check("the utility bar does not intersect the h1",
+          not r["barOverTitle"], f"bar={r['bar']} title={r['title']}")
+    check("the utility bar does not intersect the Back control",
+          not r["barOverBack"], f"bar={r['bar']} back={r['back']}")
+    check("the utility bar does not intersect the top Review Sleep Plan control",
+          not r["barOverReview"], f"bar={r['bar']} review={r['review']}")
+    check("no horizontal document scroll", r["scrollWidth"] <= r["clientWidth"], f"{r['scrollWidth']}/{r['clientWidth']}")
+    page.close()
+
+
 def run_forced_colors(browser, port, shots_dir):
     print("\n-- forced-colors (Chromium emulation) 1194x748 --")
     page = browser.new_page(viewport={"width": 1194, "height": 748}, forced_colors="active")
@@ -474,6 +542,9 @@ def main():
                 run_viewport(browser, port, name, w, h, args.screenshots)
             for name, w, h in VIEWPORTS[:2]:
                 run_summary(browser, port, name, w, h, args.screenshots)
+            for lang in ("en", "es"):
+                for name, w, h in VIEWPORTS[:2]:
+                    run_sleep_system_header(browser, port, name, w, h, lang, args.screenshots)
             run_compare_label(browser, port, args.screenshots)
             run_forced_colors(browser, port, args.screenshots)
             browser.close()

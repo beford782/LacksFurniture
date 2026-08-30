@@ -6864,6 +6864,15 @@
       height: calc(100vh - var(--header-height) - var(--accent-bar-height));
       overflow-y: auto;
       padding: clamp(18px, 3vw, 34px);
+      /* Cohesion C1 (owner ruling 2026-08-30): the fixed session utility bar
+         (top: 8px, 56px tall) covered the top of the Review Sleep Plan
+         control at 1194x748 and the right end of the h1 at 834x1108, in
+         both languages. Reserve the same clearance the Sleep Brief reserves
+         (--session-utility-clearance: the bar, its offset and the focus ring
+         drawn around whatever sits beside it) at EVERY viewport - the bar is
+         present on this screen at every width. Restated in the <=680px rule
+         below, whose padding shorthand would otherwise reset it. */
+      padding-top: calc(var(--session-utility-clearance) + env(safe-area-inset-top, 0px));
       background: #F3EEE5;
       color: #2F271E;
     }
@@ -7756,7 +7765,10 @@
       .sleep-system__demo { grid-template-columns: minmax(190px, 0.72fr) minmax(0, 1.28fr); }
     }
     @media (max-width: 680px) {
-      .sleep-system { padding: 14px; }
+      .sleep-system {
+        padding: 14px;
+        padding-top: calc(var(--session-utility-clearance) + env(safe-area-inset-top, 0px));
+      }
       .sleep-system__header { gap: 12px; }
       .sleep-system__review-top { display: none; }
       .sleep-system__back { grid-column: 1 / -1; }
