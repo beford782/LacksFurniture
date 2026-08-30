@@ -18961,7 +18961,15 @@
                 en: 'Best for ' + sleepSystemText(protectionGoalLabel(window._sleepSystemState.protectionGoal || getSuggestedProtectionGoal())),
                 es: 'Mejor para ' + sleepSystemText(protectionGoalLabel(window._sleepSystemState.protectionGoal || getSuggestedProtectionGoal()))
               })
-          : (primary.meetsMatchThreshold
+          // 3.7 P2 (owner ruling 2026-08-30): "Recommended to try" requires an
+          // ANSWER-DERIVED match. `matched` is true only when at least one
+          // answer-specific reason fired in scoreAccessoriesFromAnswers(); the
+          // relative 60% threshold is stamped against the group's best item,
+          // which an item can be on its catalog default score alone (the gel
+          // pillow's `default: 2` for every non-hot back / stomach / combo
+          // sleeper) - that used to badge a neutral-reason hero as recommended.
+          // Presentation only: ranking, groups and the baseline are untouched.
+          : (primary.matched
             ? sleepSystemText({ en: 'Recommended to try', es: 'Recomendado para probar' })
             : sleepSystemText({ en: 'Worth comparing', es: 'Vale la pena comparar' }));
         var actionHtml;
