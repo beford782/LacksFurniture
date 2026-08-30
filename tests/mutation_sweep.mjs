@@ -2042,6 +2042,17 @@ const MUTATIONS = [
     "        return (b.matched ? 1 : 0) - (a.matched ? 1 : 0);",
     "        return 0;", ["tests/phase1_output_regression_check.mjs"].concat(SLEEP)],
 
+  // 3.7 P1 (owner ruling 2026-08-30): heat parity in the accessory scorer and
+  // the protection-goal chooser. Each reverted alone must be observed - the
+  // scorer by the fixture (s11) and the rendered P1 section, the goal chooser
+  // by the rendered P1 section.
+  ["sleep system: the accessory scorer reads only the temperature answer again (P1 reverted)",
+    "      const hotSleeper = temp === 'hot' || issues.includes('hot');",
+    "      const hotSleeper = temp === 'hot';", ["tests/phase1_output_regression_check.mjs"].concat(SLEEP)],
+  ["sleep system: the protection goal reads only the temperature answer again (P1 reverted)",
+    "      if (answers.temperature === 'hot' || issues.includes('hot')) return 'cooling';",
+    "      if (answers.temperature === 'hot') return 'cooling';", SLEEP],
+
 ];
 
 // ---------------------------------------------------------------------------

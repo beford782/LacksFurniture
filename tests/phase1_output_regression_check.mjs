@@ -153,7 +153,24 @@ const BASELINE_PATH = join(root, "tests", "fixtures", "phase1_output_baseline_da
 // reverting only those 56 cells reproduces the previous fixture bytes (sha
 // d973fae2...). Hash moved in the same reviewed diff; the "P3 matched-first
 // pillow rank removed" mutation below makes the amendment load-bearing.
-const BASELINE_SHA256 = "35c1c70e9e37befa67782e54a937cbfe932cea672862c65bf30d4660732f1dce";
+// 2026-08-30 amendment (owner-authorized item 3.7 step-4 change P1, third of
+// P2 -> P3 -> P1): the accessory scorer and the protection-goal chooser now
+// treat `sleep_issues` containing `hot` as the same heat signal as
+// `temperature: hot` (the signal the Sleep Brief, profile and Results
+// already use). No existing scenario says heat ONLY through the issue (s2
+// and s8 say it both ways), so - per the owner instruction - NO existing
+// cell moved; instead ONE focused scenario was ADDED at the end,
+// s11_heat_only_via_sleep_issue = { sleep_issues: ["hot"] } on engine
+// defaults (the s9 doctrine; reaches no per-feature reason slot). Evidence:
+// the established tool (--write-baseline) run with the new scenario on the
+// pre- and post-change trees in temp copies; the structural diff between
+// them lists only s11 accessory cells (ordered scores / matched / reasons /
+// groups / recommendedAccessories for the two pillows and the cooling
+// protector); the other ten scenarios are byte-identical to the previous
+// fixture (sha 35c1c70e...), which removing s11 reproduces. Hash moved in
+// the same reviewed diff; the "P1 heat parity removed" mutation below
+// diverges in s11 alone, keeping the addition load-bearing.
+const BASELINE_SHA256 = "4ae5c964beb4ef1085e75f229f3cb72809f100bcdc35c89042ca6fcc9e812462";
 
 const WRITE_MODE = process.argv.includes("--write-baseline");
 
@@ -277,7 +294,17 @@ const SCENARIOS = {
   // Bounds: an empty answer set exercises every default the engine owns —
   // the slider default, the '' position, the solo share phrase, the minimum
   // priority count. Same doctrine as fixture H in the consultation suite.
-  s9_empty_defaults: {}
+  s9_empty_defaults: {},
+  // 3.7 P1 (owner ruling 2026-08-30): the FOCUSED heat-only scenario. The
+  // quiz lets a customer say heat two ways - temperature `hot` and the
+  // sleep-issues `hot` option; no earlier scenario says it ONLY the second
+  // way (s2 and s8 say both). Everything else stays at the engine's defaults
+  // (the s9 doctrine), so this scenario reaches no per-feature reason slot
+  // and the tranche reach pins above are untouched; what it pins is the
+  // accessory scorer's heat parity (cooling pillow and protector, cooling
+  // goal) for a customer who flagged heat as an issue but not as their
+  // temperature.
+  s11_heat_only_via_sleep_issue: { sleep_issues: ["hot"] }
 };
 
 // ---------- harness ----------------------------------------------------------
@@ -722,6 +749,12 @@ const MUTATIONS = [
   { name: "accessory ordering reversed", key: "accSrc", src: SCORE_ACC_FN,
     find: "accessoryData.sort((a, b) => b.score - a.score);",
     replace: "accessoryData.sort((a, b) => a.score - b.score);" },
+  // 3.7 P1 (2026-08-30): heat parity. Reading only the temperature answer
+  // again must diverge in s11 (the heat-only-via-issue scenario) and nowhere
+  // else.
+  { name: "P1 heat parity removed (sleep_issues hot ignored again)", key: "accSrc", src: SCORE_ACC_FN,
+    find: "const hotSleeper = temp === 'hot' || issues.includes('hot');",
+    replace: "const hotSleeper = temp === 'hot';" },
   { name: "accessory matched flag forced on", key: "accSrc", src: SCORE_ACC_FN,
     find: "const matched = reasons.length > 0;", replace: "const matched = true;" },
   // The support sub-type re-sort ({foundation:0, low_profile:1, bunkie:2})

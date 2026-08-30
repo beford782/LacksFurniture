@@ -17860,6 +17860,13 @@
       const issues = answers.sleep_issues || [];
       const health = answers.health_conditions || [];
       const budget = answers.budget || '';
+      // 3.7 P1 (owner ruling 2026-08-30): the quiz lets a customer say heat
+      // two ways - the temperature answer (`hot`) and the sleep-issues answer
+      // (`hot`). The Sleep Brief, the profile and Results already treat either
+      // as the heat signal; the accessory scorer read only the temperature
+      // answer, so a customer who flagged heat as an issue got no cooling
+      // pillow or protector. One signal, both answers, from here on.
+      const hotSleeper = temp === 'hot' || issues.includes('hot');
       const _es = currentLang === 'es';
       const reasonMap = {
         'position_side': _es ? 'Adaptado a tu posición de dormir de lado' : 'Matched to your side sleeping position',
@@ -17879,8 +17886,8 @@
         let score = a.matchScores.default || 0;
         const reasons = [];
         if (a.matchScores['position_' + position]) { score += a.matchScores['position_' + position]; reasons.push(reasonMap['position_' + position]); }
-        if (temp === 'hot' && a.matchScores.cooling) { score += a.matchScores.cooling; reasons.push(reasonMap.cooling); }
-        if (temp === 'hot' && a.matchScores.hot) { score += a.matchScores.hot; if (!reasons.includes(reasonMap.cooling)) reasons.push(reasonMap.hot); }
+        if (hotSleeper && a.matchScores.cooling) { score += a.matchScores.cooling; reasons.push(reasonMap.cooling); }
+        if (hotSleeper && a.matchScores.hot) { score += a.matchScores.hot; if (!reasons.includes(reasonMap.cooling)) reasons.push(reasonMap.hot); }
         if (issues.includes('back_pain') && a.matchScores.back_pain) { score += a.matchScores.back_pain; reasons.push(reasonMap.back_pain); }
         if (health.includes('snoring') && a.matchScores.snoring) { score += a.matchScores.snoring; reasons.push(reasonMap.snoring); }
         if (health.includes('reflux') && a.matchScores.reflux) { score += a.matchScores.reflux; reasons.push(reasonMap.reflux); }
@@ -18843,8 +18850,10 @@
 
     function getSuggestedProtectionGoal() {
       var health = answers.health_conditions || [];
+      var issues = answers.sleep_issues || [];
       if (health.includes('allergies')) return 'allergens';
-      if (answers.temperature === 'hot') return 'cooling';
+      // 3.7 P1: the same heat signal the accessory scorer uses - either answer.
+      if (answers.temperature === 'hot' || issues.includes('hot')) return 'cooling';
       return 'everyday';
     }
 
