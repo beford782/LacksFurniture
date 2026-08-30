@@ -19053,24 +19053,29 @@
         var adjustabilityNoTrigger = step.id === 'adjustability' && !primary.matched;
         var basesCompareHtml = '';
         if (adjustabilityNoTrigger) {
+          // Every cataloged adjustable base, catalog order, equal prominence -
+          // NOT the engine's qualified / back-filled group (owner ruling).
+          var allBases = (Array.isArray(ACCESSORIES) ? ACCESSORIES : []).filter(function(a) {
+            return sleepSystemStepForItem(a) === 'adjustability';
+          });
           basesCompareHtml =
             '<section class="sleep-system__alternatives sleep-system__bases-compare" aria-label="' +
-              escapeHtml(sleepSystemText({ en: 'Adjustable bases on the floor', es: 'Bases ajustables en la tienda' })) + '">' +
+              escapeHtml(sleepSystemText({ en: 'Optional base demo', es: 'Demostración opcional de base' })) + '">' +
               '<div class="sleep-system__card-eyebrow">' +
-                escapeHtml(sleepSystemText({ en: 'Nothing in your answers points to a base', es: 'Nada en tus respuestas apunta a una base' })) +
+                escapeHtml(sleepSystemText({ en: 'Optional base demo', es: 'Demostración opcional de base' })) +
               '</div>' +
               '<h3 class="sleep-system__featured-name">' +
                 escapeHtml(sleepSystemText({ en: 'Try the positions first', es: 'Prueba las posiciones primero' })) +
               '</h3>' +
               '<p class="sleep-system__featured-description">' +
                 escapeHtml(sleepSystemText({
-                  en: 'Feel Flat, Reading and Zero Gravity in the demo. If a position helps you, these are the bases on the floor that offer it. None of them is suggested from your answers.',
-                  es: 'Siente Plana, Lectura y Gravedad Cero en la demostración. Si una posición te ayuda, estas son las bases en la tienda que la ofrecen. Ninguna se sugiere a partir de tus respuestas.'
+                  en: 'Your answers do not point to a specific adjustable base. Try the positions, then compare a base only if the movement improves your comfort.',
+                  es: 'Tus respuestas no apuntan a una base ajustable en particular. Prueba las posiciones y compara una base solo si el movimiento mejora tu comodidad.'
                 })) +
               '</p>' +
               '<div class="sleep-system__alternatives-label">' +
-                escapeHtml(sleepSystemText({ en: 'Bases you can compare', es: 'Bases que puedes comparar' })) + '</div>' +
-              items.map(function(item) {
+                escapeHtml(sleepSystemText({ en: 'Bases to compare', es: 'Bases para comparar' })) + '</div>' +
+              allBases.map(function(item) {
                 var itemSelected = !!(window._accCart && window._accCart[item.id]);
                 return '<div class="sleep-system__alternative">' +
                   (item.image ? '<img src="' + escapeHtml(item.image) + '" alt="">' : '') +
