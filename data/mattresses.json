@@ -545,9 +545,11 @@
                        "highlight_es":  "Máximo soporte con capas de confort de lujo Paige",
                        "imageUrl":  "images/mattresses/platinum paige extra firm.jpg",
                        "reasons":  {
+                                       "firm":  "Rated Extra Firm — a very firm feel with little give at the surface.",
                                        "default":  "Extra-firm hybrid support with Marvelous Middle zoning — maximum lift without giving up the luxury layers."
                                    },
                        "reasons_es":  {
+                                          "firm":  "Nivel de confort extra firme: una sensación muy firme, con poco hundimiento en la superficie.",
                                           "default":  "Soporte híbrido extra firme con zonificación Marvelous Middle — máxima elevación sin renunciar a las capas de lujo."
                                       },
                        "differentiators":  [
@@ -647,10 +649,10 @@
                        "highlight_es":  "Confort box-top firme con soporte de resortes zonificados",
                        "imageUrl":  "images/mattresses/platinum maria firm.jpg",
                        "reasons":  {
-
+                                       "firm":  "Rated Firm, with less give and more pushback at the surface."
                                    },
                        "reasons_es":  {
-
+                                          "firm":  "Nivel de confort firme, con menos hundimiento y más empuje en la superficie."
                                       },
                        "differentiators":  [
                                                {
@@ -775,10 +777,10 @@
                        "highlight_es":  "",
                        "imageUrl":  "images/mattresses/platinum summit medium.jpg",
                        "reasons":  {
-
+                                       "medium":  "Rated Medium — a balanced feel between plush and firm."
                                    },
                        "reasons_es":  {
-
+                                          "medium":  "Nivel de confort medio: una sensación equilibrada entre suave y firme."
                                       },
                        "differentiators":  [
                                                {
@@ -823,10 +825,10 @@
                        "highlight_es":  "",
                        "imageUrl":  "images/mattresses/platinum summit plush.jpg",
                        "reasons":  {
-
+                                       "plush":  "Rated Plush — a softer feel with more give at the surface."
                                    },
                        "reasons_es":  {
-
+                                          "plush":  "Nivel de confort suave: una sensación más suave, con más hundimiento en la superficie."
                                       },
                        "differentiators":  [
                                                {
@@ -872,10 +874,10 @@
                        "highlight_es":  "",
                        "imageUrl":  "images/mattresses/kendall firm euro top.jpg",
                        "reasons":  {
-
+                                       "firm":  "Rated Firm, with less give and more pushback at the surface."
                                    },
                        "reasons_es":  {
-
+                                          "firm":  "Nivel de confort firme, con menos hundimiento y más empuje en la superficie."
                                       },
                        "differentiators":  [
                                                {
@@ -1243,9 +1245,11 @@
                        "highlight_es":  "Híbrido firme de empresa familiar al mejor valor",
                        "imageUrl":  "images/mattresses/genesis firm.jpg",
                        "reasons":  {
+                                       "firm":  "Rated Firm, with less give and more pushback at the surface.",
                                        "default":  "A firm hybrid engineered entirely in the USA by a 30-year family company — solid support at the best value in the store."
                                    },
                        "reasons_es":  {
+                                          "firm":  "Nivel de confort firme, con menos hundimiento y más empuje en la superficie.",
                                           "default":  "Un híbrido firme diseñado completamente en EE. UU. por una empresa familiar de 30 años — soporte sólido al mejor valor de la tienda."
                                       },
                        "differentiators":  [
@@ -1306,10 +1310,10 @@
                        "highlight_es":  "",
                        "imageUrl":  "images/mattresses/angelina plush.jpg",
                        "reasons":  {
-
+                                       "plush":  "Rated Plush — a softer feel with more give at the surface."
                                    },
                        "reasons_es":  {
-
+                                          "plush":  "Nivel de confort suave: una sensación más suave, con más hundimiento en la superficie."
                                       },
                        "differentiators":  [
                                                {
@@ -1355,10 +1359,10 @@
                        "highlight_es":  "Soporte híbrido extra firme a precio de valor",
                        "imageUrl":  "images/mattresses/angelina extra firm.jpg",
                        "reasons":  {
-
+                                       "firm":  "Rated Extra Firm — a very firm feel with little give at the surface."
                                    },
                        "reasons_es":  {
-
+                                          "firm":  "Nivel de confort extra firme: una sensación muy firme, con poco hundimiento en la superficie."
                                       },
                        "differentiators":  [
                                                {
