@@ -20,7 +20,83 @@ final stage (Gated and Proceeds under 2.2); Phase 3 remains a plan of intent,
 not a grant of approval — see the open-decisions register. Device hardening
 remains BLOCKING for showroom use.**
 
-**Last updated:** 2026-08-29, second revision this date *(**Item 1.3 dark
+**Owner product direction — 2026-08-29.** DreamFinder remains a pre-floor
+prototype until Blake explicitly begins launch preparation. Routine financing-
+term and promotion-evidence refreshes are not current roadmap work; time-sensitive
+claims continue to fail closed. The primary design objective for all remaining
+work is to make DreamFinder the most visually impressive, persuasive and useful
+salesperson-led mattress consultation possible: create a premium in-store moment,
+help the salesperson tell a clearer story, increase customer confidence, convert
+more shoppers into better-fitting mattresses, and attach more and better-matched
+sleep accessories. This direction raises the visual and commercial acceptance
+bar; it does not authorize deceptive urgency, generic upselling, unsupported
+claims, financing influence on sleep-fit outputs, a deployment, or floor use.
+
+Lifecycle, stated exactly: a public preview, a merged PR, a green CI run or a
+Pages deployment is never showroom authorization. Email, Google Apps Script,
+live lead collection, production monitoring, promotion scenarios and financing
+applications stay off (`gasUrl` blank); deployment, live integration, floor
+rollout and production monitoring are each a separately owner-gated phase. The
+freshness architecture (`verifiedAt` + `maxAgeDays` + allowlisted `sourceUrl`,
+`tools/reverify_financing.py`, the fail-closed validators) is a mechanism for
+refusing stale exact claims, not a maintenance schedule: it creates **no present
+obligation** to refresh terms, rates, promotions or evidence on any cadence.
+Re-verification happens only when Blake requests it, changes the underlying
+content, or explicitly begins launch preparation. The constraints this direction
+does not reopen are those under "The permanent operating premise" and the Phase 1
+standing constraints; the work it adds is recorded in the third 2026-08-29
+revision note below and on items 1.3, 1.4 and 1.6, the Phase 1 cohesion
+milestone, the pre-floor evidence plan and Phase 3 item 3.7.
+
+**Last updated:** 2026-08-30 *(**Owner rulings of 2026-08-30 and the
+governance landing.** Blake ruled, in writing: this reconciliation lands as one
+governance PR from branch `codex/guided-selling-roadmap` (two commits — the
+agent operating files, Codex skills and the 48-check local runner; then the
+roadmap and guidance reconciliation), **not merged without his approval**; the
+guided-selling cohesion review **begins now as a read-only evidence and
+proposal phase** (the milestone moves ⬜ → 🔨 on that basis — a review with no
+code branch, whose output is a decision packet); the 3.7
+accessory-recommendation audit is **scheduled as read-only offline analysis
+with no engine change** (3.7 moves 🔒 → ◐ by its approver, with Gated and
+Proceeds recorded on the item); Sleep System **clause 8 stays open** for his
+later visual assessment; the **native-Spanish reviewer decision is deferred**;
+the **CI job is not renamed**; nothing is deployed, no live service is
+activated, and the clone, branch and `stash@{0}` are preserved until the PR is
+merged and verified. No other mark moves. The previous revision, the third on
+2026-08-29, recorded the **Owner direction
+and roadmap reconciliation — documentation only; no application, data or test
+artifact changed; no gate, Gated list, Proceeds list or Exit clause moved.**
+Records the pre-floor lifecycle ruling and the product north star (the block
+above and the operating premise); adds the **Phase 1 milestone — guided-selling
+cohesion and conversion readiness** (⬜, after Slice 6 and before 2.2
+activation); the **pre-floor success evidence plan** (moderated role-play, no
+persistent analytics) under the acceptance criteria; the **item 1.4 Sleep
+System workstream** — owner, scope, sequence, evidence plan and exit lens (item
+stays ⏳, clauses 7 and 8 unchanged); the **item 1.3 catalog-differentiation
+content schedule** with its evidence-backed value/tradeoff layer (item stays
+◐); the **1.6 north-star acceptance lens**, routed to the cohesion milestone
+because that item is closed; the Phase 3 visibility rule for 3.1/3.2; and the
+new **3.7 — accessory-recommendation quality 🔒**. **Status audit, recorded so
+it is not repeated:** the 2026-08-29 direction listed items 1.1, 1.2 and 1.6
+as still open and 2.1 as ⬜. Checked against `main` at `db68f3f`, all four
+already carried their correct marks — 1.1 ✅ (`b05d47f`; closed on the item
+2026-08-24), 1.2 ✅ (`5436dea`; closed 2026-08-24), 1.6 ✅ (`3f92241` +
+`8aeb6b3`; closed 2026-08-24) and 2.1 ✅ CLOSED 2026-08-28 (opened explicitly
+by Blake 2026-08-27), with 2.2 ◐ gated to the end-of-project activation stage.
+That list described the stale `d6ca237` tree the direction was drafted
+against, not `main`; no status was changed by this revision, and Phase 2
+stands exactly as authorized — 2.1 done, 2.2 gated, nothing else opened. The
+same change set corrects `CLAUDE.md` (salesperson-led framing; discount reveal
+and live email marked template heritage / disabled; canonical
+`incoming/ → workbook → converter → data/` mattress-data ownership; the fixed
+clone-path assumption; the "18 checks" label explained; the
+no-commit/push/PR/merge/deploy-without-request boundary shared with the new
+`AGENTS.md`) and adds the agent operating files (`AGENTS.md`,
+`CODE_REVIEW.md`, `agent-workflows/`, `tools/run_full_suite.ps1` — the local
+CI mirror, brought to the 48 checks `ci.yml` runs). Nothing merged, deployed,
+activated or authorized; showroom NO; `gasUrl` blank; Spanish provisional; the
+reconciliation baseline stays `9a1b7f3`. The previous revision, the second that
+date, recorded the **Item 1.3 dark
 reason-authoring tranche 2 — eight further per-feature catalog reason
 slots populated as non-rendering data (12 of 79 now populated, 67 blank);
 no gate moved.** Owner-authorized (Decision A: the exact eight EN/ES
@@ -577,7 +653,7 @@ still changed nothing the engine computes — the Phase 1 output-regression
 fixture and its pinned sha256 are byte-identical across it — and it added no
 telemetry, no email content and no payment math.
 
-**Current work (2026-08-24).** The owner-inserted **Phase 1
+**Current work (2026-08-29).** The owner-inserted **Phase 1
 cross-cutting gate — Trust integrity and transparency** is `✅` — PR #54 merged
 as `d4049cb` on 2026-08-23 (branch `claude/phase1-trust-integrity`, cut from
 `4a76503`, kept); it is placed in the approved order after Slice 4 and before
@@ -610,7 +686,17 @@ this revision. *(2026-08-28: Phase 2.1 ran and CLOSED this date — opened by
 Blake 2026-08-27, slice 2.1a merged as `95935ab`, slice 2.1b merged as
 `9a1b7f3`, and the item closed ✅ on its met completion criterion (see the
 closure record under 2.1). No Phase 1 item was reopened by that work; the
-next item is again the owner's call.)*
+next item is again the owner's call.)* *(2026-08-29 — owner direction. No
+Phase 1 slice is in progress and none was reopened. The work this direction
+adds, recorded on the items and in the third 2026-08-29 revision note, is:
+the **guided-selling cohesion and conversion-readiness milestone** (⬜ — the
+next Phase 1 work; its review may start, and its first targets are the 1.6
+surfaces re-read against the north star with explicit keep / change /
+experiment decisions that are Blake's to record); the **1.4 Sleep System
+workstream** (⏳ stays; the primary accessory-conversion experience); the
+**1.3 content schedule** (◐ stays; owner-authorized dark tranches continue);
+the **pre-floor role-play evidence plan**; and **3.7** (🔒). This revision
+authorizes nothing beyond what each item's own mark already permits.)*
 *(An earlier revision of this paragraph said Slice 5 was `⬜`, approved to build
 and not started; it began on its own branch — draft PR #53, head `6decbef` —
 before 2026-08-21. The gate is Slice 5's prerequisite in the approved order,
@@ -732,6 +818,16 @@ It must nonetheless remain safe, respectful, accessible, comprehensible and
 bilingual **if a customer interacts with it directly**, because they will.
 
 **Sleep fit is primary. Payment Choice is secondary.**
+
+**The product north star is an exceptional guided selling experience, not merely
+a correct questionnaire.** Every customer-visible phase should feel premium,
+memorable and deliberate; help the salesperson explain fit, value and tradeoffs;
+and move the customer confidently toward a better-fitting mattress and a more
+complete, better-matched sleep system. Visual impact, emotional pacing, touch
+polish, comparison clarity, salesperson usefulness and accessory relevance are
+first-class acceptance criteria. Conversion is earned through confidence and
+clarity: accessibility, bilingual parity, privacy, performance, honest claims and
+sleep-fit independence remain constraints on the experience, not tradeable costs.
 
 This premise supersedes any older self-service framing, including the
 "customers take a sleep quiz" self-service description in CLAUDE.md, which
@@ -2099,6 +2195,66 @@ list: ❓ means do not implement, while Proceeds authorises implementation. The
 document already says globally that named components are proposals unless an item
 says otherwise, so the second mark added nothing but the conflict.)*
 
+*(2026-08-29 — **owner direction: catalog differentiation becomes a scheduled
+content workstream.** **Item 1.3 stays ◐**; the Gated, Proceeds and Exit lists
+below are untouched; this record schedules the content the gate is waiting for
+and adds one content layer. Nothing renders as a result of this record.)*
+
+**Where the content stands (from the records on this item).** 12 of 79
+per-feature reason slots carry owner-authorized EN/ES text as non-rendering
+data (tranches 1 and 2, 2026-08-29); 67 are blank; 16 are dead until the 3.1
+case-fold fix; the generic default reason is the only reason text on 14 of 26
+models and 12 models have none; the reason surfaces stay omitted under PR #63.
+The Results redesign's stated point — reason-led cards — cannot complete on
+this content. The gap is filled by authoring, never by generic or unsupported
+copy: **fail closed stays the rule.**
+
+**Ownership.** Content owner and per-tranche approver: Blake (Decision A
+wording, Decision B fixture amendment, as in tranches 1–2). Drafting: Claude
+Code / Codex, from the evidence record only. Native-Spanish claim-equivalence
+reviewer: **still unnamed** — every Spanish string stays provisional until that
+reviewer is named and has reviewed it, and nothing activates before then.
+Legal-scope reconciliation: open, per the evidence record §11. *(2026-08-30 —
+naming the reviewer is deferred by Blake; Spanish stays provisional.)*
+
+**Source evidence.** `docs/catalog-reason-evidence-2026-08-28.md` (26 of 26
+current lacks.com product pages, identity-bound, with the conflict register) is
+the only permitted source of product facts; `incoming/lacks_mattresses.json`
+via the workbook is the only authoring point; the tranche records
+(`docs/catalog-reason-tranche-1-2026-08-29.md`, `-tranche-2-`) are the pattern.
+
+**Claim safety.** The standing bans hold for every tranche: no cooling,
+medical, quantified, price, durability, patent or origin claim; no
+product-to-product, quantified, superiority, price-positioning or
+market-position comparison; no availability or delivery assertion; relative
+feel descriptions only where the manufacturer's own comfort rating supports
+them.
+
+**Bounded authoring sequence.**
+
+1. Tranches 3 onward — the remaining live slots on the evidence record's
+   candidate list, in the record's own order, eight or fewer pairs per tranche,
+   each on its own PR with the fixture amendment scoped to `matchReasons` only.
+2. Per-model dispositions for g6/g7/g8/g9/s3 (the retired-suite models) —
+   Blake decides keep-blank or author, per model.
+3. The 16 case-fold-dead slots stay dead until 3.1 is decided; authoring them
+   is not wasted (it is dark data) but their rendering cannot be promised.
+4. Name the native-Spanish reviewer; review the accumulated provisional Spanish
+   in one pass.
+5. Only then is the rendered-output gate re-read by its approver.
+
+**New layer — evidence-backed value and tradeoff content.** So that a
+salesperson can explain *why a better mattress is better* without implying a
+lower tier is a poor fit, each model may carry, from the same evidence record
+and under the same bans: (a) what it adds relative to the customer's *needs*,
+not relative to another model; (b) what the customer gives up — feel, height,
+edge, motion, temperature — stated neutrally; (c) an honest tier-relative line
+consistent with the retained tier structure and the Results tabs' ordinal
+labels. This is catalog authoring under this item; its rendering falls inside
+1.3's existing Gated outputs and does not ship until that gate is met. Nothing
+in it may say a lower tier is a poor fit, name a competitor, or imply a price
+position.
+
 *(2026-08-24 — inherited reason-gate containment. **Item 1.3 remains ◐**;
 this record closes no clause and lifts no gate.
 
@@ -2527,6 +2683,90 @@ gated output and edits neither list above.)*
 ### 1.4 — Sleep System ⏳ (presentation merged 2026-08-25 via PR #65 / `342ae2f`; close-out repairs merged 2026-08-26 via PR #67 / `90ecd04`; exit clauses 7 and 8 open)
 
 The largest reading load in the app.
+
+*(2026-08-29 — **owner direction: the Sleep System is the primary
+accessory-conversion experience.** This turns item 1.4 from a
+presentation-repair item with two open clauses into a scheduled product
+workstream. **Item 1.4 stays ⏳**; clauses 1–8 stand as written, clause 7 stays
+partially open and clause 8 stays outstanding; the three 2026-08-25 follow-ups
+stay open and are absorbed into the sequence below. Nothing here changes the
+accessory engine.)*
+
+**Owner / status.** Approver: Blake. Implementation: Claude Code or Codex, one
+writer per branch, under the Phase 1 standing constraints and the Phase 1 merge
+gate (the development/preview mounted-device waiver applies per PR and is never
+a pass). Status stays ⏳ until clauses 7 and 8 close; the workstream adds exit
+criteria, it does not replace the eight. *(2026-08-30 — Blake: clause 8 stays
+open for his later visual assessment; the native-Spanish reviewer decision is
+deferred.)*
+
+**Scope — what the screen must do under the north star.**
+
+- **Benefit-first salesperson narration.** Each surfaced step opens with the
+  customer benefit the salesperson can say aloud, in the customer's own terms
+  from the quiz, before the product distinction (clause 2 already pins DOM
+  order and visual weight; this adds the spoken-line requirement, in both
+  languages).
+- **Explain why each surfaced accessory is relevant to this customer** — the
+  answer-derived reason (for example the adjustability step's existing
+  snoring / reflux / back-pain trigger), rendered from the accessory engine's
+  existing inputs. No relevance may be asserted that the engine did not
+  compute.
+- **Three states, unmistakable:** *suggested* (the engine's proposal),
+  *selected* (the customer's choice, named), *declined* (keep-current,
+  specialist-check, decide-later or skipped — each rendered as what it is,
+  never as a loss). Every choice is optional and reversible; declining is one
+  obvious touch with no confirm-to-decline friction.
+- **Presentation quality:** strong product imagery (jpg, kebab-case, per the
+  image convention), clear distinctions between primary and alternative,
+  premium touch feedback and purposeful transitions that respect
+  `prefers-reduced-motion`, English/Spanish parity, the 44px touch floor, and
+  both tablet orientations (834 × 1108 and 1194 × 748).
+- **Carry choices forward** into the Sleep Plan (1.7), the Consultation Summary
+  (1.6) and the take-home preview **where the existing data contract already
+  permits** — the current selection-state object and the Summary's system
+  rows; no new persisted field, no new email content, no analytics.
+- **No "better matched" claim through presentation alone.** Whether the engine
+  actually produces relevant recommendations is Phase 3 item 3.7's question;
+  until that audit is done and ruled on, copy may say an accessory is suggested
+  *because of* a named answer, and may not say it is the best, right or
+  better-matched choice.
+
+**Preserved unchanged in Phase 1:** the accessory engine's selection, ranking,
+grouping, hero rule and step order (adjustability → support → pillow →
+protection); mattress-fit scoring, tiers and ordering (the Phase 1
+output-regression and scoring-isolation fixtures stay unedited); the one
+catalog-sourced price on the primary card and no new price surface (clause 5);
+financing isolation; memory-only sessions. Any change to selection, ranking,
+grouping or hero logic is 3.7 and needs Blake's approval first.
+
+**Sequence.**
+
+1. **Audit** the merged screen against the scope above in the browser (HTTP,
+   EN/ES, both orientations, reduced motion): for each bullet, met / partly /
+   not met with evidence. Record for each of the three 2026-08-25 follow-ups
+   (rail clipping at 390 × 844 and 200% zoom; 11px procedure notes;
+   mixed-audience procedure copy) whether the 2026-08-26 close-out repairs
+   (PR #67: 15px/1.4 notes, the 2×2 / four-column rail, the "Specialist notes"
+   eyebrow) already closed it, rather than assuming either way.
+2. **Proposal** — a bounded change list, each item tied to a scope bullet, with
+   copy in both languages marked provisional until native review; any change to
+   approved English goes to Blake first.
+3. **Implement** on a branch, one PR per coherent change; focused tests extend
+   `tests/sleep_system_presentation_check.mjs` and the sweep manifest; the
+   output-regression fixture must not move.
+4. **Evidence** per `agent-workflows/browser-evidence.md`, plus the accessory
+   questions of the pre-floor role-play plan (relevance felt? declining
+   comfortable?).
+5. **Close** — clause 7 in full; clause 8 by Blake's recorded assessment.
+
+**Exit — additions to clauses 1–8:** every surfaced accessory shows its
+answer-derived reason in both languages; suggested / selected / declined are
+visually and semantically distinct and each reversible; the three follow-ups
+are repaired or explicitly dispositioned; the browser matrix is recorded at
+both orientations in both languages; the Sleep Plan, Consultation Summary and
+take-home preview show the same system choices the screen holds; and no copy
+asserts match quality the engine has not been shown to produce.
 
 - Rebuild feature cards for salesperson-led scanning: customer benefit first,
   product distinction second.
@@ -3366,6 +3606,31 @@ needs its own authorization.
 
 ### 1.6 — Consultation Summary, Compare, and the remaining screens ✅ (code merged 2026-08-24, `3f92241`, PR #58 head `ca088e3`; the last exit clause closed 2026-08-24 by PR #60, `8aeb6b3`)
 
+*(2026-08-29 — **north-star acceptance lens. Item 1.6 stays ✅**; nothing here
+reopens it or amends its exit. The owner direction of this date asks that the
+Consultation Summary feel like the confident culmination of a premium
+consultation, not an administrative report: a glanceable narrative for the
+salesperson; finalist versus recommended-starting-point state unmistakable; the
+customer's needs and testing priorities explained; compared mattresses and
+their meaningful tradeoffs coherent; relevant Sleep System choices shown
+without forcing a bundle; one obvious next action; fit-first trust preserved; a
+memorable visual close. The same lens extends to the other 1.6 surfaces:
+Welcome opens a guided, premium consultation rather than a form landing page;
+Compare helps the salesperson explain meaningful differences and supports a
+decision rather than merely displaying columns; the mattress drawer turns
+specifications into customer-facing distinctions; the take-home preview keeps
+the consultation story, finalist semantics, testing plan, system selections and
+approved next step. **Because this item is closed, the lens is applied by the
+Phase 1 cohesion milestone below, whose first review targets are these
+surfaces.** A "no change" decision on any of them must state, with browser
+evidence, that the shipped surface already meets the lens; a "change" decision
+is Blake's, recorded on the milestone, and is implemented as a bounded PR
+against the current `main`, never by reopening the merged slice. A separately
+named worktree/branch, `codex/nocturne-slice6-consultation` cut from
+`d6ca237`, was found on 2026-08-29 to hold no Slice 6 implementation — no
+commits and no application change — and this note supersedes any statement
+that Slice 6 was "in progress" on that date.)*
+
 **The Review screen stays complete and fully editable.** That is the approved
 default, not a pending question, and it does not hold this item open. Compressing
 or removing it is a separate locked decision (see the register) that only Blake
@@ -3385,6 +3650,16 @@ finalists to compare, testing priorities, the payment-preference and
 options-explored rows (per the adopted D4 model — an earlier revision said
 "the selected Payment Choice discussion topics", which the 2026-08-14 decision
 superseded), next steps, and save/send options where operationally available.
+
+**North-star acceptance lens — owner direction 2026-08-29.** This screen should
+feel like the confident culmination of a premium consultation, not an
+administrative recap. It should give the salesperson a clear, glanceable story to
+present; make the chosen mattress, comparison logic and next action feel coherent;
+and make relevant sleep-system additions feel personally justified by the
+customer's needs. The visual hierarchy, pacing, micro-interactions and touch
+response should create a memorable customer-facing moment. Accessory presentation
+must remain explainable and optional—never a generic bundle, forced add-on or
+reason to distort mattress fit.
 
 *(2026-08-14, D5c: the Nocturne consultation-card treatment is the adopted
 design direction for this screen — store attribution from config, a status
@@ -3979,6 +4254,61 @@ no Spanish approval and nothing for PR #53. **Merged and verified:** PR #54 merg
 
 ---
 
+### Phase 1 milestone — Guided-selling cohesion and conversion readiness 🔨 (added 2026-08-29 by owner direction; review opened 2026-08-30 as a read-only evidence and proposal phase; after Slice 6, before 2.2 activation)
+
+**What it is.** The first review of the whole experience as one guided sales
+presentation rather than seven slices. It sits after every Phase 1 slice has
+shipped (1.1, 1.2, 1.5, 1.6, 1.7 ✅; 1.4 ⏳; 1.3 ◐ on content) and before the
+end-of-project 2.2 activation; it is not a slice and it does not reopen one.
+
+**Conversation beats.** Screens are read as beats of one conversation, each
+with a salesperson line and a customer moment: invitation (Welcome) →
+discovery (quiz) → reveal (Sleep Brief) → confidence (Results, cards, drawer) →
+comparison (Compare) → system building (Sleep System) → commitment (Sleep Plan,
+Payment Choice) → handoff (Consultation Summary, take-home preview).
+
+**What the review produces — one decision packet, per beat and per
+transition:**
+
+- the intended emotional weight — a deliberate *wow* moment or a quieter
+  decision moment — and whether the shipped screen delivers it in the first
+  five seconds;
+- visual continuity across beats (type, colour, depth, motion language, card
+  grammar) and journey momentum: does each beat end with one obvious next
+  action, and does the salesperson know what to say?;
+- the salesperson narration for the beat, in both languages, as it would be
+  said aloud;
+- a **keep / change / experiment** decision for each surface, with evidence:
+  *keep* = meets the north star as shipped (browser evidence cited); *change*
+  = a bounded, named improvement for Blake to approve; *experiment* = a
+  prototype on a branch, never merged as such. Completed slices are not
+  reopened by default; a *change* needs the decision recorded here first.
+
+**Preserved.** Every standing Phase 1 constraint; the zero-icon quiz and its
+restrained consultation-form character (subtle touch feedback, depth and
+purposeful transitions may be considered; they do not reverse those decisions,
+and gimmicky effects are out); the retained tier structure and tabs; the
+complete and editable Review step; no auto-advance without observed evidence;
+scoring, ranking, tiers, thresholds, caps, back-fill and the accessory engine
+untouched; reduced-motion and forced-colors behaviour; bilingual parity;
+memory-only sessions.
+
+**Evidence.** The browser matrix in `agent-workflows/browser-evidence.md` in
+EN and ES at both device orientations; the pre-floor role-play plan (below)
+for the questions a screenshot cannot answer; no analytics.
+
+**Approver and status.** The review may start without further approval (⬜ →
+🔨 by whoever does it). *(Started 2026-08-30 on Blake's instruction as a
+read-only evidence and proposal phase: no application change and no code
+branch; the decision packet is the output.)* Its outputs are decisions for Blake; nothing in the
+packet is implemented until he records keep / change / experiment per surface.
+**Exit:** the packet exists for every beat and transition, each surface carries
+a recorded decision, the *change* items are scheduled as bounded PRs, and the
+*keep* items cite their evidence. The 1.6 surfaces are the first targets (see
+the lens note on item 1.6).
+
+---
+
 ## Accessibility and showroom acceptance criteria
 
 These apply to every Phase 1 item.
@@ -4004,6 +4334,36 @@ These apply to every Phase 1 item.
 **Real-device QA must cover** the actual approved showroom iPad hardware and
 browser, its viewport width **and** height, both orientations, English and
 Spanish, glare and shared-viewing conditions, and touch.
+
+### Pre-floor success evidence — moderated role-play, not production tracking ⬜ (added 2026-08-29)
+
+Whether the north star is met is answered before any floor use by **moderated
+role-play sessions** — a salesperson and a stand-in customer walking a real
+consultation on the preview build, served over HTTP — not by production
+analytics. **No persistent customer analytics may be added to answer these
+questions**: the data-use sentence would become false, and sessions stay
+memory-only.
+
+Questions, each answered with an observed yes / no and a note:
+
+1. Can the customer explain, in their own words, why the finalist fits them?
+2. Can the salesperson explain two meaningful differences between two
+   mattresses?
+3. Can the customer identify the next action at the close?
+4. Do the suggested accessories feel relevant to that customer?
+5. Can the customer comfortably decline an accessory?
+6. Does the salesperson know what to say and do on every screen?
+7. Does the Consultation Summary reconstruct the consultation quickly?
+8. Which moments felt memorable, and which effects felt distracting?
+
+Conditions: English and Spanish presentation; portrait and landscape; realistic
+shared viewing (the tablet between two people, showroom lighting). Record per
+session the build identifier, language, orientation, answers 1–8 and any defect
+with reproduction steps — as a local evidence file, never committed with any
+personal detail. Scheduling and the stand-in participants are Blake's; the
+sessions feed the cohesion milestone's decision packet and item 1.4's evidence,
+and they are not a substitute for the physical-device merge gate or the
+pre-showroom accessibility matrix.
 
 ### Phase 1 merge gate — the device matrix
 
@@ -4086,6 +4446,22 @@ device are different designs.
 > verified product prices, no payment calculation, and no activation** — every
 > Phase 2 gate below stands untouched, and `incoming/lacks_catalog_selection.json`
 > remains exactly as the warning box in 2.1 describes it.
+
+> **Phase 2 authorization and freshness under the pre-floor lifecycle
+> (2026-08-29).** Phase 2 as a whole is not opened by the 2026-08-29 product
+> direction: 2.1 was opened by an explicit owner decision (2026-08-27) and
+> closed on its evidence; 2.2's activation output is ◐, gated to the
+> end-of-project deployment stage, and nothing below moves without that
+> recorded approval. The freshness architecture this phase shares with the
+> financing footprint (`verifiedAt`, `maxAgeDays`, allowlisted `sourceUrl`,
+> `tools/reverify_financing.py`, the fail-closed validators) is a mechanism for
+> *refusing* stale exact claims, not a schedule for refreshing them: while
+> DreamFinder is a pre-floor prototype it creates **no present obligation** to
+> re-verify financing terms, rates, promotions or their evidence on any
+> cadence. Stale or incomplete exact claims fail closed and are omitted.
+> Re-verification is done only when Blake requests it, changes the underlying
+> content, or explicitly begins launch preparation — at which point it becomes
+> one of the 2.2 activation inputs, not routine work.
 
 ### 2.1 — The dark framework ✅ (CLOSED 2026-08-28 — opened by Blake 2026-08-27; slice 2.1a merged, PR #69 → `95935ab`; slice 2.1b merged, PR #71 → `9a1b7f3`; the completion criterion of the 2026-08-28 governance model met — see the closure record below)
 
@@ -4679,6 +5055,17 @@ however complete, advances or closes 2.2.
 Every item here changes what is recommended or how the journey works. **Approver
 for all of them: Blake.** None may be bundled into Phase 1.
 
+**Visibility rule (2026-08-29).** The known scoring defects, 3.1 and 3.2, stay
+visible here and are never fixed silently — not as a drive-by in a content
+tranche, a pipeline change or a presentation PR. What Blake needs in order to
+decide them is the quantified effect on the "better-fitting mattress" promise:
+for 3.1, the bounded-impact statement below plus the enumerated top-pick
+changes on the regression fixture's scenarios; for 3.2, the six tags named,
+the answers that award them, and whether their absence changes any scenario's
+qualified set or order. Producing that evidence is read-only analysis under the
+standing baseline and moves no mark; acting on it is a separately authorized
+Phase 3 decision.
+
 ### 3.1 — Scoring case-fold defect 🔒
 
 Two quiz tags never match the catalog because the comparison is case-sensitive and
@@ -4753,6 +5140,45 @@ for approved work.
 
 ---
 
+### 3.7 — Accessory-recommendation quality ◐ (added 2026-08-29; the offline audit scheduled by Blake 2026-08-30 — read-only, no engine change)
+
+Item 1.4 makes the Sleep System the primary accessory-conversion experience,
+and the north star asks for *better-matched* accessories — a claim the
+presentation may not make until the engine has been shown to earn it. This
+item is where that is established.
+
+*(2026-08-30 — Blake scheduled the offline audit, which was this item's
+unblock condition; **3.7 moves 🔒 → ◐** by its approver.)*
+
+**Gated** — approver: Blake. What may not ship or merge until his approval of
+the enumerated output-change list on its own PR: any change to the accessory
+engine's selection, ranking, grouping, step order or hero logic, or to any
+accessory fixture that pins them — checkable in a diff as a change to those
+functions or fixtures. Nothing in 1.4 may make such a change meanwhile.
+
+**Proceeds:** steps 1–3 below only — the read-only offline scenario audit, the
+written relevance judgement and the enumerated decision list — as analysis
+documents, without modifying the engine, the fixtures, the catalog or any
+rendered output. **Exit** (excludes step 4): the decision list exists and is
+before Blake.
+
+**Sequence.**
+
+1. **Offline scenario audit** of the current accessory ranking: the Phase 1
+   regression scenarios plus representative partnered / solo, side / back /
+   stomach, snoring / reflux / back-pain, allergy and budget profiles, run
+   through the real engine as extracted (the scoring-isolation pattern),
+   producing per scenario the surfaced accessories, their order, the hero
+   decision and the answer that triggered each.
+2. **Relevance judgement** per scenario — does each surfaced item follow from
+   that customer's answers, and is anything relevant missing? — with the
+   reasoning written down, not a score.
+3. **Enumerate every proposed output change**, scenario by scenario, before
+   and after, as a decision list.
+4. **Blake's approval** of that list on its own PR, with the change pinned by
+   fixtures, before any selection, ranking, grouping or hero-logic change
+   ships. Mattress-fit scoring is not in scope for this item under any outcome.
+
 ## Open decisions register
 
 Everything here is **unresolved**. An item's absence from this list is not
@@ -4767,6 +5193,9 @@ work listed under a ◐ item's Proceeds line.
 | Phase 2.2 price/payment activation | ◐ | Blake + business/legal | Written approval, taken only at the final end-of-project deployment stage immediately before live deployment (owner ruling 2026-08-28). It gates `displayEnabled`, enabled surfaces and live deployment only — its absence does not block dark development, provisional data, internal computation, previews, testing, completion of earlier roadmap items, or non-live 2.2 preparation under 2.2's Proceeds list (disabled implementation, isolated previews, automated tests). Production surfaces stay false until the gate — see 2.2's Gated block for the checkable properties |
 | Scoring case-fold (3.1) | 🔒 | Blake | Approval + enumerated impact |
 | Quiz-tag vocabulary gap (3.2) | 🔒 | Blake | Populate-or-retire decision |
+| **Accessory-recommendation quality (3.7)** — any change to accessory selection, ranking, grouping or hero logic | ◐ | Blake | Audit scheduled 2026-08-30 as read-only offline analysis; the change itself waits on approval of the enumerated output-change list on its own PR *(added 2026-08-29)* |
+| **Cohesion-milestone keep / change / experiment decisions** — per surface, the 1.6 surfaces first; a *change* on a completed slice ships only as a bounded PR against `main` | 🔨 review (opened 2026-08-30) / decisions ❓ until recorded | Blake | The milestone's decision packet with browser evidence per surface *(added 2026-08-29; the review itself may start)* |
+| **Item 1.4 Sleep System workstream — bounded change list** (presentation, narration, state rendering, carry-forward within the existing data contract) | ⏳ | Blake | The step-1 audit and step-2 proposal on the item; approved-English changes need Blake first; clause 8 remains his recorded assessment *(added 2026-08-29)* |
 | Global maxScore / cross-tier ranking / tier merge or removal / threshold, cap, back-fill (3.3) | 🔒 | Blake | Evidence. **Does not gate a preserving Phase 1 tier-navigation change.** *(2026-08-21: a cross-tier "highest-fit" marker — raised as a trust question — is this row, because it changes what the customer is told about fit; see "Tier presentation (trust)" for the presentation-only half.)* |
 | Firmness stops (3.5) | 🔒 | Blake | Evidence |
 | Persistent identity bar (3.6) | ❓ | Blake | A case for it |
@@ -4978,6 +5407,16 @@ document, not here.
     preparation proceeds under 2.2's Proceeds list, and production surfaces
     stay false until the gate.
 12. 🔒 **Structural scoring and tier changes last** — Phase 3.
+13. 🔨 **Guided-selling cohesion and conversion readiness** — the Phase 1
+    milestone added 2026-08-29 by owner direction, after Slice 6 and before
+    2.2 activation (chronologically after 2.1's closure). Its first targets
+    are the 1.6 surfaces; its outputs are keep / change / experiment
+    decisions for Blake. In parallel: the 1.4 Sleep System workstream (⏳,
+    the primary accessory-conversion experience), the 1.3 content tranches
+    (◐), and — before any launch preparation — the pre-floor role-play
+    evidence sessions. The review began 2026-08-30 (read-only); 3.7 is ◐
+    since 2026-08-30, its audit scheduled by Blake as read-only offline
+    analysis.
 
 ---
 
