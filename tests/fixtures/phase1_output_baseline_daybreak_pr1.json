@@ -371,14 +371,14 @@
             ],
             "pillow": [
               {
-                "id": "pillow-gel-memory",
-                "score": 2,
-                "meetsMatchThreshold": true
-              },
-              {
                 "id": "pillow-flow",
                 "score": 1,
                 "meetsMatchThreshold": false
+              },
+              {
+                "id": "pillow-gel-memory",
+                "score": 2,
+                "meetsMatchThreshold": true
               }
             ],
             "protection": [
@@ -401,18 +401,18 @@
           },
           "recommendedAccessories": [
             {
-              "name": "Gel Memory Foam Cool Pillow",
-              "category": "Pillows",
-              "imageUrl": "images/accessories/pillow-gel-memory.jpg",
-              "score": 2,
-              "meetsMatchThreshold": true
-            },
-            {
               "name": "Bedgear Flow 2.0 Performance Pillow",
               "category": "Pillows",
               "imageUrl": "images/accessories/pillow-flow.jpg",
               "score": 1,
               "meetsMatchThreshold": false
+            },
+            {
+              "name": "Gel Memory Foam Cool Pillow",
+              "category": "Pillows",
+              "imageUrl": "images/accessories/pillow-gel-memory.jpg",
+              "score": 2,
+              "meetsMatchThreshold": true
             },
             {
               "name": "Bedgear Dri-Tec Mattress Protector",
@@ -543,14 +543,14 @@
             ],
             "pillow": [
               {
-                "id": "pillow-gel-memory",
-                "score": 2,
-                "meetsMatchThreshold": true
-              },
-              {
                 "id": "pillow-flow",
                 "score": 1,
                 "meetsMatchThreshold": false
+              },
+              {
+                "id": "pillow-gel-memory",
+                "score": 2,
+                "meetsMatchThreshold": true
               }
             ],
             "protection": [
@@ -573,18 +573,18 @@
           },
           "recommendedAccessories": [
             {
-              "name": "Gel Memory Foam Cool Pillow",
-              "category": "Pillows",
-              "imageUrl": "images/accessories/pillow-gel-memory.jpg",
-              "score": 2,
-              "meetsMatchThreshold": true
-            },
-            {
               "name": "Bedgear Flow 2.0 Performance Pillow",
               "category": "Pillows",
               "imageUrl": "images/accessories/pillow-flow.jpg",
               "score": 1,
               "meetsMatchThreshold": false
+            },
+            {
+              "name": "Gel Memory Foam Cool Pillow",
+              "category": "Pillows",
+              "imageUrl": "images/accessories/pillow-gel-memory.jpg",
+              "score": 2,
+              "meetsMatchThreshold": true
             },
             {
               "name": "Bedgear Dri-Tec Mattress Protector",
@@ -3117,14 +3117,14 @@
             ],
             "pillow": [
               {
-                "id": "pillow-gel-memory",
-                "score": 2,
-                "meetsMatchThreshold": true
-              },
-              {
                 "id": "pillow-flow",
                 "score": 1,
                 "meetsMatchThreshold": false
+              },
+              {
+                "id": "pillow-gel-memory",
+                "score": 2,
+                "meetsMatchThreshold": true
               }
             ],
             "protection": [
@@ -3147,18 +3147,18 @@
           },
           "recommendedAccessories": [
             {
-              "name": "Gel Memory Foam Cool Pillow",
-              "category": "Pillows",
-              "imageUrl": "images/accessories/pillow-gel-memory.jpg",
-              "score": 2,
-              "meetsMatchThreshold": true
-            },
-            {
               "name": "Bedgear Flow 2.0 Performance Pillow",
               "category": "Pillows",
               "imageUrl": "images/accessories/pillow-flow.jpg",
               "score": 1,
               "meetsMatchThreshold": false
+            },
+            {
+              "name": "Gel Memory Foam Cool Pillow",
+              "category": "Pillows",
+              "imageUrl": "images/accessories/pillow-gel-memory.jpg",
+              "score": 2,
+              "meetsMatchThreshold": true
             },
             {
               "name": "Bedgear Dri-Tec Mattress Protector",
@@ -3289,14 +3289,14 @@
             ],
             "pillow": [
               {
-                "id": "pillow-gel-memory",
-                "score": 2,
-                "meetsMatchThreshold": true
-              },
-              {
                 "id": "pillow-flow",
                 "score": 1,
                 "meetsMatchThreshold": false
+              },
+              {
+                "id": "pillow-gel-memory",
+                "score": 2,
+                "meetsMatchThreshold": true
               }
             ],
             "protection": [
@@ -3319,18 +3319,18 @@
           },
           "recommendedAccessories": [
             {
-              "name": "Gel Memory Foam Cool Pillow",
-              "category": "Pillows",
-              "imageUrl": "images/accessories/pillow-gel-memory.jpg",
-              "score": 2,
-              "meetsMatchThreshold": true
-            },
-            {
               "name": "Bedgear Flow 2.0 Performance Pillow",
               "category": "Pillows",
               "imageUrl": "images/accessories/pillow-flow.jpg",
               "score": 1,
               "meetsMatchThreshold": false
+            },
+            {
+              "name": "Gel Memory Foam Cool Pillow",
+              "category": "Pillows",
+              "imageUrl": "images/accessories/pillow-gel-memory.jpg",
+              "score": 2,
+              "meetsMatchThreshold": true
             },
             {
               "name": "Bedgear Dri-Tec Mattress Protector",
@@ -6761,6 +6761,641 @@
         "feelWord": {
           "en": "Medium",
           "es": "Medio"
+        },
+        "trialFocusLangStable": true
+      }
+    },
+    "s11_heat_only_via_sleep_issue": {
+      "answers": {
+        "sleep_issues": [
+          "hot"
+        ]
+      },
+      "firmnessResolved": 5,
+      "scores": {
+        "g1": 32,
+        "g2": 32,
+        "g3": 32,
+        "g4": 23,
+        "g5": 55,
+        "g6": 32,
+        "g7": 52,
+        "g8": 22,
+        "g9": 45,
+        "s1": 32,
+        "s2": 22,
+        "s3": 32,
+        "s4": 32,
+        "s5": 35,
+        "s6": 55,
+        "s7": 35,
+        "s8": 32,
+        "s9": 52,
+        "s10": 22,
+        "b1": 30,
+        "b2": 30,
+        "b3": 52,
+        "b4": 32,
+        "b5": 30,
+        "b6": 22,
+        "b7": 50
+      },
+      "matchReasons": {
+        "en": {
+          "g1": [
+            "Close to your preferred firmness"
+          ],
+          "g2": [
+            "Close to your preferred firmness"
+          ],
+          "g3": [
+            "Close to your preferred firmness"
+          ],
+          "g4": [],
+          "g5": [
+            "Matches your firmness preference (5/10)"
+          ],
+          "g6": [
+            "Close to your preferred firmness"
+          ],
+          "g7": [
+            "Matches your firmness preference (5/10)"
+          ],
+          "g8": [],
+          "g9": [
+            "Matches your firmness preference (5/10)"
+          ],
+          "s1": [
+            "Close to your preferred firmness"
+          ],
+          "s2": [],
+          "s3": [
+            "Close to your preferred firmness"
+          ],
+          "s4": [
+            "Close to your preferred firmness"
+          ],
+          "s5": [
+            "Close to your preferred firmness"
+          ],
+          "s6": [
+            "Matches your firmness preference (5/10)"
+          ],
+          "s7": [
+            "Close to your preferred firmness"
+          ],
+          "s8": [
+            "Close to your preferred firmness"
+          ],
+          "s9": [
+            "Matches your firmness preference (5/10)"
+          ],
+          "s10": [],
+          "b1": [
+            "Close to your preferred firmness"
+          ],
+          "b2": [
+            "Close to your preferred firmness"
+          ],
+          "b3": [
+            "Matches your firmness preference (5/10)"
+          ],
+          "b4": [
+            "Close to your preferred firmness"
+          ],
+          "b5": [
+            "Close to your preferred firmness"
+          ],
+          "b6": [],
+          "b7": [
+            "Matches your firmness preference (5/10)"
+          ]
+        },
+        "es": {
+          "g1": [
+            "Cerca de tu firmeza preferida"
+          ],
+          "g2": [
+            "Cerca de tu firmeza preferida"
+          ],
+          "g3": [
+            "Cerca de tu firmeza preferida"
+          ],
+          "g4": [],
+          "g5": [
+            "Coincide con tu preferencia de firmeza (5/10)"
+          ],
+          "g6": [
+            "Cerca de tu firmeza preferida"
+          ],
+          "g7": [
+            "Coincide con tu preferencia de firmeza (5/10)"
+          ],
+          "g8": [],
+          "g9": [
+            "Coincide con tu preferencia de firmeza (5/10)"
+          ],
+          "s1": [
+            "Cerca de tu firmeza preferida"
+          ],
+          "s2": [],
+          "s3": [
+            "Cerca de tu firmeza preferida"
+          ],
+          "s4": [
+            "Cerca de tu firmeza preferida"
+          ],
+          "s5": [
+            "Cerca de tu firmeza preferida"
+          ],
+          "s6": [
+            "Coincide con tu preferencia de firmeza (5/10)"
+          ],
+          "s7": [
+            "Cerca de tu firmeza preferida"
+          ],
+          "s8": [
+            "Cerca de tu firmeza preferida"
+          ],
+          "s9": [
+            "Coincide con tu preferencia de firmeza (5/10)"
+          ],
+          "s10": [],
+          "b1": [
+            "Cerca de tu firmeza preferida"
+          ],
+          "b2": [
+            "Cerca de tu firmeza preferida"
+          ],
+          "b3": [
+            "Coincide con tu preferencia de firmeza (5/10)"
+          ],
+          "b4": [
+            "Cerca de tu firmeza preferida"
+          ],
+          "b5": [
+            "Cerca de tu firmeza preferida"
+          ],
+          "b6": [],
+          "b7": [
+            "Coincide con tu preferencia de firmeza (5/10)"
+          ]
+        }
+      },
+      "results": {
+        "tierData": {
+          "gold": [
+            {
+              "id": "g5",
+              "score": 55,
+              "pct": 100,
+              "meetsMatchThreshold": true
+            },
+            {
+              "id": "g7",
+              "score": 52,
+              "pct": 95,
+              "meetsMatchThreshold": true
+            },
+            {
+              "id": "g9",
+              "score": 45,
+              "pct": 82,
+              "meetsMatchThreshold": true
+            }
+          ],
+          "silver": [
+            {
+              "id": "s6",
+              "score": 55,
+              "pct": 100,
+              "meetsMatchThreshold": true
+            },
+            {
+              "id": "s9",
+              "score": 52,
+              "pct": 95,
+              "meetsMatchThreshold": true
+            },
+            {
+              "id": "s5",
+              "score": 35,
+              "pct": 64,
+              "meetsMatchThreshold": true
+            }
+          ],
+          "bronze": [
+            {
+              "id": "b3",
+              "score": 52,
+              "pct": 100,
+              "meetsMatchThreshold": true
+            },
+            {
+              "id": "b7",
+              "score": 50,
+              "pct": 96,
+              "meetsMatchThreshold": true
+            },
+            {
+              "id": "b4",
+              "score": 32,
+              "pct": 62,
+              "meetsMatchThreshold": true
+            }
+          ]
+        },
+        "topPick": {
+          "name": "Tempur-ProBreeze 2.0 Medium Hybrid",
+          "brand": "Tempur-Pedic",
+          "tier": "gold",
+          "matchPct": 100,
+          "meetsMatchThreshold": true
+        },
+        "allMatches": [
+          {
+            "name": "Tempur-ProBreeze 2.0 Medium Hybrid",
+            "brand": "Tempur-Pedic",
+            "subBrand": "ProBreeze",
+            "matchPct": 100,
+            "meetsMatchThreshold": true,
+            "imageUrl": "images/mattresses/tempur-probreeze 2.0 medium hybrid.jpg"
+          },
+          {
+            "name": "Reserve Mayfair Medium",
+            "brand": "Restonic",
+            "subBrand": "Reserve",
+            "matchPct": 95,
+            "meetsMatchThreshold": true,
+            "imageUrl": "images/mattresses/reserve mayfair medium.jpg"
+          },
+          {
+            "name": "Copper Cushion Firm",
+            "brand": "Spring Air",
+            "subBrand": "Copper",
+            "matchPct": 82,
+            "meetsMatchThreshold": true,
+            "imageUrl": "images/mattresses/copper cushion firm.jpg"
+          }
+        ]
+      },
+      "accessories": {
+        "en": {
+          "ordered": [
+            {
+              "id": "protector-vertex",
+              "score": 7,
+              "matched": true,
+              "reasons": [
+                "You reported sleeping hot"
+              ]
+            },
+            {
+              "id": "pillow-flow",
+              "score": 6,
+              "matched": true,
+              "reasons": [
+                "You reported sleeping hot"
+              ]
+            },
+            {
+              "id": "pillow-gel-memory",
+              "score": 6,
+              "matched": true,
+              "reasons": [
+                "You reported sleeping hot"
+              ]
+            },
+            {
+              "id": "foundation-princess",
+              "score": 2,
+              "matched": false,
+              "reasons": [
+                "A solid option to round out your sleep system"
+              ]
+            },
+            {
+              "id": "protector-dritec",
+              "score": 2,
+              "matched": true,
+              "reasons": [
+                "Addresses your temperature concerns"
+              ]
+            },
+            {
+              "id": "protector-iprotect",
+              "score": 1,
+              "matched": false,
+              "reasons": [
+                "A solid option to round out your sleep system"
+              ]
+            },
+            {
+              "id": "protector-tempur",
+              "score": 1,
+              "matched": false,
+              "reasons": [
+                "A solid option to round out your sleep system"
+              ]
+            },
+            {
+              "id": "base-bt2000",
+              "score": 0,
+              "matched": false,
+              "reasons": [
+                "A solid option to round out your sleep system"
+              ]
+            },
+            {
+              "id": "base-bt3000",
+              "score": 0,
+              "matched": false,
+              "reasons": [
+                "A solid option to round out your sleep system"
+              ]
+            },
+            {
+              "id": "base-tempur-ergo",
+              "score": 0,
+              "matched": false,
+              "reasons": [
+                "A solid option to round out your sleep system"
+              ]
+            }
+          ],
+          "groups": {
+            "support": [
+              {
+                "id": "foundation-princess",
+                "score": 2,
+                "meetsMatchThreshold": true
+              }
+            ],
+            "adjustability": [
+              {
+                "id": "base-bt2000",
+                "score": 0,
+                "meetsMatchThreshold": false
+              },
+              {
+                "id": "base-bt3000",
+                "score": 0,
+                "meetsMatchThreshold": false
+              }
+            ],
+            "pillow": [
+              {
+                "id": "pillow-flow",
+                "score": 6,
+                "meetsMatchThreshold": true
+              },
+              {
+                "id": "pillow-gel-memory",
+                "score": 6,
+                "meetsMatchThreshold": true
+              }
+            ],
+            "protection": [
+              {
+                "id": "protector-vertex",
+                "score": 7,
+                "meetsMatchThreshold": true
+              },
+              {
+                "id": "protector-dritec",
+                "score": 2,
+                "meetsMatchThreshold": false
+              }
+            ]
+          },
+          "recommendedAccessories": [
+            {
+              "name": "Bedgear Flow 2.0 Performance Pillow",
+              "category": "Pillows",
+              "imageUrl": "images/accessories/pillow-flow.jpg",
+              "score": 6,
+              "meetsMatchThreshold": true
+            },
+            {
+              "name": "Gel Memory Foam Cool Pillow",
+              "category": "Pillows",
+              "imageUrl": "images/accessories/pillow-gel-memory.jpg",
+              "score": 6,
+              "meetsMatchThreshold": true
+            },
+            {
+              "name": "Bedgear Ver-Tex Cooling Protector",
+              "category": "Protectors",
+              "imageUrl": "images/accessories/protector-vertex.jpg",
+              "score": 7,
+              "meetsMatchThreshold": true
+            },
+            {
+              "name": "Bedgear Dri-Tec Mattress Protector",
+              "category": "Protectors",
+              "imageUrl": "images/accessories/protector-dritec.jpg",
+              "score": 2,
+              "meetsMatchThreshold": false
+            }
+          ],
+          "finalist": null
+        },
+        "es": {
+          "ordered": [
+            {
+              "id": "protector-vertex",
+              "score": 7,
+              "matched": true,
+              "reasons": [
+                "Reportaste dormir caliente"
+              ]
+            },
+            {
+              "id": "pillow-flow",
+              "score": 6,
+              "matched": true,
+              "reasons": [
+                "Reportaste dormir caliente"
+              ]
+            },
+            {
+              "id": "pillow-gel-memory",
+              "score": 6,
+              "matched": true,
+              "reasons": [
+                "Reportaste dormir caliente"
+              ]
+            },
+            {
+              "id": "foundation-princess",
+              "score": 2,
+              "matched": false,
+              "reasons": [
+                "Una buena opción para completar tu sistema de sueño"
+              ]
+            },
+            {
+              "id": "protector-dritec",
+              "score": 2,
+              "matched": true,
+              "reasons": [
+                "Aborda tus preocupaciones de temperatura"
+              ]
+            },
+            {
+              "id": "protector-iprotect",
+              "score": 1,
+              "matched": false,
+              "reasons": [
+                "Una buena opción para completar tu sistema de sueño"
+              ]
+            },
+            {
+              "id": "protector-tempur",
+              "score": 1,
+              "matched": false,
+              "reasons": [
+                "Una buena opción para completar tu sistema de sueño"
+              ]
+            },
+            {
+              "id": "base-bt2000",
+              "score": 0,
+              "matched": false,
+              "reasons": [
+                "Una buena opción para completar tu sistema de sueño"
+              ]
+            },
+            {
+              "id": "base-bt3000",
+              "score": 0,
+              "matched": false,
+              "reasons": [
+                "Una buena opción para completar tu sistema de sueño"
+              ]
+            },
+            {
+              "id": "base-tempur-ergo",
+              "score": 0,
+              "matched": false,
+              "reasons": [
+                "Una buena opción para completar tu sistema de sueño"
+              ]
+            }
+          ],
+          "groups": {
+            "support": [
+              {
+                "id": "foundation-princess",
+                "score": 2,
+                "meetsMatchThreshold": true
+              }
+            ],
+            "adjustability": [
+              {
+                "id": "base-bt2000",
+                "score": 0,
+                "meetsMatchThreshold": false
+              },
+              {
+                "id": "base-bt3000",
+                "score": 0,
+                "meetsMatchThreshold": false
+              }
+            ],
+            "pillow": [
+              {
+                "id": "pillow-flow",
+                "score": 6,
+                "meetsMatchThreshold": true
+              },
+              {
+                "id": "pillow-gel-memory",
+                "score": 6,
+                "meetsMatchThreshold": true
+              }
+            ],
+            "protection": [
+              {
+                "id": "protector-vertex",
+                "score": 7,
+                "meetsMatchThreshold": true
+              },
+              {
+                "id": "protector-dritec",
+                "score": 2,
+                "meetsMatchThreshold": false
+              }
+            ]
+          },
+          "recommendedAccessories": [
+            {
+              "name": "Bedgear Flow 2.0 Performance Pillow",
+              "category": "Pillows",
+              "imageUrl": "images/accessories/pillow-flow.jpg",
+              "score": 6,
+              "meetsMatchThreshold": true
+            },
+            {
+              "name": "Gel Memory Foam Cool Pillow",
+              "category": "Pillows",
+              "imageUrl": "images/accessories/pillow-gel-memory.jpg",
+              "score": 6,
+              "meetsMatchThreshold": true
+            },
+            {
+              "name": "Bedgear Ver-Tex Cooling Protector",
+              "category": "Protectors",
+              "imageUrl": "images/accessories/protector-vertex.jpg",
+              "score": 7,
+              "meetsMatchThreshold": true
+            },
+            {
+              "name": "Bedgear Dri-Tec Mattress Protector",
+              "category": "Protectors",
+              "imageUrl": "images/accessories/protector-dritec.jpg",
+              "score": 2,
+              "meetsMatchThreshold": false
+            }
+          ],
+          "finalist": null
+        }
+      },
+      "profile": {
+        "trialFocus": [
+          {
+            "en": "Temperature regulation",
+            "es": "Regulación de temperatura",
+            "why": {
+              "en": "Your answers suggest that trapped heat can interrupt comfortable sleep.",
+              "es": "Tus respuestas indican que el calor acumulado puede interrumpir un sueño cómodo."
+            },
+            "test": {
+              "en": "Stay in place for a full minute and notice whether warmth starts building beneath you.",
+              "es": "Permanece un minuto completo y nota si el calor empieza a acumularse debajo de ti."
+            }
+          },
+          {
+            "en": "Balanced comfort",
+            "es": "Comodidad equilibrada",
+            "why": {
+              "en": "You prefer a middle feel that combines cushioning with easy support.",
+              "es": "Prefieres una sensación media que combine amortiguación y soporte."
+            },
+            "test": {
+              "en": "Compare which option feels supportive immediately and still comfortable after one minute.",
+              "es": "Compara cuál opción se siente firme al inicio y cómoda después de un minuto."
+            }
+          }
+        ],
+        "profileName": "The Heat Beater",
+        "profileSubtitleByLang": {
+          "en": "Sleeper",
+          "es": "Durmiente"
+        },
+        "profileBriefByLang": {
+          "en": "Sleep brief · temperature regulation and balanced comfort",
+          "es": "Resumen de sueño · regulación de temperatura y comodidad equilibrada"
         },
         "trialFocusLangStable": true
       }

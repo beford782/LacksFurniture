@@ -363,8 +363,14 @@ if (gate("readSleepSystemGroups", !!READ_SRC) && QUALIFY_SRC && STEP_SRC && CAT_
   check("the accessor writes nothing to analytics", !/analytics\s*\./.test(stripComments(READ_SRC)));
   check("the accessor writes nothing to window state", !/window\.[A-Za-z_$][\w$]*\s*=/.test(stripComments(READ_SRC)));
   check("the accessor does not reach the finalist", !/getSleepSystemFinalist|resolveFinalistState|_favoriteMattressId|_savedPicks/.test(READ_SRC));
-  check("the accessor carries the engine-owned support sub-type sort and NO score re-sort",
-    /groups\.support\.sort\(/.test(READ_SRC) && (stripComments(READ_SRC).match(/\.sort\(/g) || []).length === 1);
+  // 3.7 P3 (owner ruling 2026-08-30) added a second engine-owned sort - the
+  // matched-first pillow rank. The Plan reads the engine's order, so the pin
+  // stays: exactly those two sorts, and neither comparator (nor anything after
+  // qualification) re-sorts on score.
+  check("the accessor carries the engine-owned support sub-type sort and the P3 matched-first pillow sort, and NO score re-sort",
+    /groups\.support\.sort\(/.test(READ_SRC) && /groups\.pillow\.sort\(/.test(READ_SRC)
+    && (stripComments(READ_SRC).match(/\.sort\(/g) || []).length === 2
+    && !/score/.test(stripComments(READ_SRC).slice(stripComments(READ_SRC).indexOf("groups.support.sort("))));
   // A: engine parity. The accessor's groups must equal the fixture-facing
   // view model's groups id-for-id, index-for-index (the fixture pins the
   // latter; this ties the Plan's source to the pinned one).

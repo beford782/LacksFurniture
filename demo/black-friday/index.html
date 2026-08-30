@@ -6864,6 +6864,15 @@
       height: calc(100vh - var(--header-height) - var(--accent-bar-height));
       overflow-y: auto;
       padding: clamp(18px, 3vw, 34px);
+      /* Cohesion C1 (owner ruling 2026-08-30): the fixed session utility bar
+         (top: 8px, 56px tall) covered the top of the Review Sleep Plan
+         control at 1194x748 and the right end of the h1 at 834x1108, in
+         both languages. Reserve the same clearance the Sleep Brief reserves
+         (--session-utility-clearance: the bar, its offset and the focus ring
+         drawn around whatever sits beside it) at EVERY viewport - the bar is
+         present on this screen at every width. Restated in the <=680px rule
+         below, whose padding shorthand would otherwise reset it. */
+      padding-top: calc(var(--session-utility-clearance) + env(safe-area-inset-top, 0px));
       background: #F3EEE5;
       color: #2F271E;
     }
@@ -7756,7 +7765,10 @@
       .sleep-system__demo { grid-template-columns: minmax(190px, 0.72fr) minmax(0, 1.28fr); }
     }
     @media (max-width: 680px) {
-      .sleep-system { padding: 14px; }
+      .sleep-system {
+        padding: 14px;
+        padding-top: calc(var(--session-utility-clearance) + env(safe-area-inset-top, 0px));
+      }
       .sleep-system__header { gap: 12px; }
       .sleep-system__review-top { display: none; }
       .sleep-system__back { grid-column: 1 / -1; }
@@ -17848,6 +17860,13 @@
       const issues = answers.sleep_issues || [];
       const health = answers.health_conditions || [];
       const budget = answers.budget || '';
+      // 3.7 P1 (owner ruling 2026-08-30): the quiz lets a customer say heat
+      // two ways - the temperature answer (`hot`) and the sleep-issues answer
+      // (`hot`). The Sleep Brief, the profile and Results already treat either
+      // as the heat signal; the accessory scorer read only the temperature
+      // answer, so a customer who flagged heat as an issue got no cooling
+      // pillow or protector. One signal, both answers, from here on.
+      const hotSleeper = temp === 'hot' || issues.includes('hot');
       const _es = currentLang === 'es';
       const reasonMap = {
         'position_side': _es ? 'Adaptado a tu posición de dormir de lado' : 'Matched to your side sleeping position',
@@ -17867,8 +17886,8 @@
         let score = a.matchScores.default || 0;
         const reasons = [];
         if (a.matchScores['position_' + position]) { score += a.matchScores['position_' + position]; reasons.push(reasonMap['position_' + position]); }
-        if (temp === 'hot' && a.matchScores.cooling) { score += a.matchScores.cooling; reasons.push(reasonMap.cooling); }
-        if (temp === 'hot' && a.matchScores.hot) { score += a.matchScores.hot; if (!reasons.includes(reasonMap.cooling)) reasons.push(reasonMap.hot); }
+        if (hotSleeper && a.matchScores.cooling) { score += a.matchScores.cooling; reasons.push(reasonMap.cooling); }
+        if (hotSleeper && a.matchScores.hot) { score += a.matchScores.hot; if (!reasons.includes(reasonMap.cooling)) reasons.push(reasonMap.hot); }
         if (issues.includes('back_pain') && a.matchScores.back_pain) { score += a.matchScores.back_pain; reasons.push(reasonMap.back_pain); }
         if (health.includes('snoring') && a.matchScores.snoring) { score += a.matchScores.snoring; reasons.push(reasonMap.snoring); }
         if (health.includes('reflux') && a.matchScores.reflux) { score += a.matchScores.reflux; reasons.push(reasonMap.reflux); }
@@ -18322,6 +18341,18 @@
         var order = { foundation: 0, low_profile: 1, bunkie: 2 };
         return (order[a.subType] == null ? 9 : order[a.subType]) -
           (order[b.subType] == null ? 9 : order[b.subType]);
+      });
+      // 3.7 P3 (owner ruling 2026-08-30): within the pillow group, a pillow
+      // that at least one answer fired for ranks above a pillow carried by
+      // its catalog default score alone. Before this, a non-hot back sleeper
+      // saw the gel pillow (default 2, no reason) as the hero while the only
+      // matched pillow (Flow, position_back 1) sat under "Also compare" - and
+      // the drawer's finalist prompt, which reads the first MATCHED pillow in
+      // scorer order, named the Flow. Stable: score order is kept inside the
+      // matched and unmatched halves; qualification, the cap / back-fill and
+      // the threshold stamp above are untouched. Pillow group only.
+      groups.pillow.sort(function(a, b) {
+        return (b.matched ? 1 : 0) - (a.matched ? 1 : 0);
       });
       return groups;
     }
@@ -18848,8 +18879,10 @@
 
     function getSuggestedProtectionGoal() {
       var health = answers.health_conditions || [];
+      var issues = answers.sleep_issues || [];
       if (health.includes('allergies')) return 'allergens';
-      if (answers.temperature === 'hot') return 'cooling';
+      // 3.7 P1: the same heat signal the accessory scorer uses - either answer.
+      if (answers.temperature === 'hot' || issues.includes('hot')) return 'cooling';
       return 'everyday';
     }
 
@@ -18990,7 +19023,15 @@
                 en: 'Best for ' + sleepSystemText(protectionGoalLabel(window._sleepSystemState.protectionGoal || getSuggestedProtectionGoal())),
                 es: 'Mejor para ' + sleepSystemText(protectionGoalLabel(window._sleepSystemState.protectionGoal || getSuggestedProtectionGoal()))
               })
-          : (primary.meetsMatchThreshold
+          // 3.7 P2 (owner ruling 2026-08-30): "Recommended to try" requires an
+          // ANSWER-DERIVED match. `matched` is true only when at least one
+          // answer-specific reason fired in scoreAccessoriesFromAnswers(); the
+          // relative 60% threshold is stamped against the group's best item,
+          // which an item can be on its catalog default score alone (the gel
+          // pillow's `default: 2` for every non-hot back / stomach / combo
+          // sleeper) - that used to badge a neutral-reason hero as recommended.
+          // Presentation only: ranking, groups and the baseline are untouched.
+          : (primary.matched
             ? sleepSystemText({ en: 'Recommended to try', es: 'Recomendado para probar' })
             : sleepSystemText({ en: 'Worth comparing', es: 'Vale la pena comparar' }));
         var actionHtml;
