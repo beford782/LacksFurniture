@@ -1184,6 +1184,18 @@ const MAIN_LITERALS_AT_DA4F746 = [
   ['Confirm the setup before adding support', 'Confirma la configuración antes de agregar soporte'],
   ['A quick frame and slat check will determine whether the current setup works or whether a foundation is needed.',
     'Una revisión rápida del marco y las tablillas determinara si la configuración actual funciona o si necesita una base.'],
+  // 3.7 P5 option C (owner ruling + implementation approval 2026-08-30): the
+  // neutral no-trigger base-compare block. EN approved; ES provisional.
+  ['Optional base demo', 'Demostración opcional de base'],
+  ['Optional base demo', 'Demostración opcional de base'],
+  ['Try the positions first', 'Prueba las posiciones primero'],
+  ['Your answers do not point to a specific adjustable base. Try the positions, then compare a base only if the movement improves your comfort.',
+    'Tus respuestas no apuntan a una base ajustable en particular. Prueba las posiciones y compara una base solo si el movimiento mejora tu comodidad.'],
+  ['Bases to compare', 'Bases para comparar'],
+  ['Selected', 'Seleccionado'],
+  ['Add to plan', 'Agregar al plan'],
+  ['Ask for a demo', 'Pedir demostración'],
+  ['Decide later', 'Decidir después'],
   ['Specialist notes', 'Notas del especialista']
 ];
 const SECONDARY_LITERALS_AT_DA4F746 = [
@@ -1206,9 +1218,9 @@ const literalsOf = (s) => [...stripComments(s).matchAll(BILINGUAL_LITERAL)].map(
         JSON.stringify(STEP_COPY_AT_DA4F746[step.id]));
   }
   const mainLits = literalsOf(SRC.main);
-  ok('renderSleepSystemMain carries exactly the da4f746 bilingual literals minus the retired eyebrow (order and bytes)',
+  ok('renderSleepSystemMain carries exactly the da4f746 bilingual literals minus the retired eyebrow plus the nine owner-approved P5 pairs (order and bytes)',
     JSON.stringify(mainLits) === JSON.stringify(MAIN_LITERALS_AT_DA4F746),
-    `${mainLits.length} literal pairs (da4f746: 33, one retired)`);
+    `${mainLits.length} literal pairs (da4f746: 33, one retired, nine P5 pairs added 2026-08-30)`);
   ok('sleepSystemSecondaryActions labels are byte-identical to da4f746',
     JSON.stringify(literalsOf(SRC.secondary)) === JSON.stringify(SECONDARY_LITERALS_AT_DA4F746));
   ok('the protection eyebrow prefix ("Best for " / "Mejor para ") is unchanged',
@@ -1281,8 +1293,13 @@ section('3.7 P2 - "Recommended to try" requires an answer-derived match (rendere
     {
       const none = renderStep('adjustability', { answers: NO_TRIGGER, lang });
       const some = renderStep('adjustability', { answers: BACK_PAIN, lang });
-      ok(`[${lang}/adjustability] no trigger -> unmatched base hero badged "${b.worth}"`,
-        none.groups.adjustability[0].matched === false && grab(featuredBody(none.main), 'sleep-system__card-eyebrow') === b.worth);
+      // 3.7 P5 (owner ruling 2026-08-30): a no-trigger customer gets NO hero on
+      // this step at all - the neutral base-compare block renders instead (its
+      // own section below asserts the details). The unmatched-hero badge rule
+      // stays observed through the pillow cases above.
+      ok(`[${lang}/adjustability] no trigger -> no hero card at all; the neutral compare block renders (P5)`,
+        none.groups.adjustability[0].matched === false && featuredBody(none.main) === null &&
+          /sleep-system__bases-compare/.test(none.main));
       ok(`[${lang}/adjustability] back pain -> matched base hero badged "${b.rec}"`,
         some.groups.adjustability[0].matched === true && grab(featuredBody(some.main), 'sleep-system__card-eyebrow') === b.rec);
     }
@@ -1561,6 +1578,78 @@ section('3.7 P9 Option C - copy names only what the catalog holds; the reaction 
       { getAttribute: (k) => (k === 'data-sleep-action' ? 'pillow-reaction' : k === 'data-reaction' ? 'low' : null) });
     ok('negative control: a phantom-id lookup re-offers the same pillow (the assertion above bites)', win._sleepSystemState.pillowCandidateId === first);
   }
+}
+
+// --------------------------------------------- 14f. 3.7 P5 option C
+// Owner ruling + implementation approval 2026-08-30: when no answer points to
+// an adjustable base (no back pain / snoring / reflux - the group's best item
+// is unmatched), the adjustability step keeps the position demo and presents
+// ALL cataloged adjustable bases as a neutral compare list - catalog order,
+// equal prominence, no price, no availability claim, rows add to the plan
+// ("Add to plan"), "Ask for a demo" primary. Trigger customers unchanged.
+section('3.7 P5 option C - no-trigger customers get the demo plus a neutral all-bases compare list, never an unjustified hero');
+{
+  const NO_TRIGGER = { sleep_position: 'back', temperature: 'comfortable', sleep_issues: ['none'], health_conditions: ['none'] };
+  const TRIGGER = { sleep_position: 'side', temperature: 'hot', sleep_issues: ['back_pain'], health_conditions: ['snoring'] };
+  const CATALOG_BASES = ACCESSORIES_JSON.filter((a) => (typeof a.category === 'object' ? a.category.en : a.category) === 'Foundations & Support' && a.subType === 'adjustable').map((a) => a.id);
+  const T = {
+    en: { eyebrow: 'Optional base demo', heading: 'Try the positions first', list: 'Bases to compare', add: 'Add to plan', selectedL: 'Selected', demo: 'Ask for a demo', later: 'Decide later',
+      body: 'Your answers do not point to a specific adjustable base. Try the positions, then compare a base only if the movement improves your comfort.' },
+    es: { eyebrow: 'Demostración opcional de base', heading: 'Prueba las posiciones primero', list: 'Bases para comparar', add: 'Agregar al plan', selectedL: 'Seleccionado', demo: 'Pedir demostración', later: 'Decidir después',
+      body: 'Tus respuestas no apuntan a una base ajustable en particular. Prueba las posiciones y compara una base solo si el movimiento mejora tu comodidad.' }
+  };
+  const rowIds = (html) => [...html.matchAll(/class="sleep-system__alternative sleep-system__base-row">[\s\S]*?data-item-id="([^"]+)"/g)].map((m) => m[1]);
+  for (const lang of ['en', 'es']) {
+    const L = T[lang];
+    const r = renderStep('adjustability', { answers: NO_TRIGGER, lang });
+    ok(`[${lang}/no-trigger] the group's best base is unmatched (the premise holds)`, r.groups.adjustability[0] && r.groups.adjustability[0].matched === false);
+    ok(`[${lang}/no-trigger] no featured product card and no price surface render`,
+      !/class="sleep-system__featured[ "]/.test(r.main) && !/sleep-system__price/.test(r.main));
+    ok(`[${lang}/no-trigger] the position demo still renders`, /sleep-system__demo/.test(r.main));
+    ok(`[${lang}/no-trigger] the neutral block carries the approved eyebrow, heading, body and list heading`,
+      r.main.includes(`<div class="sleep-system__card-eyebrow">${L.eyebrow}</div>`) &&
+      r.main.includes(`<h3 class="sleep-system__featured-name">${L.heading}</h3>`) &&
+      textOf(r.main).includes(L.body) &&
+      r.main.includes(`<div class="sleep-system__alternatives-label">${L.list}</div>`));
+    ok(`[${lang}/no-trigger] ALL cataloged adjustable bases render, in catalog order (not the engine's back-filled group)`,
+      JSON.stringify(rowIds(r.main)) === JSON.stringify(CATALOG_BASES) && CATALOG_BASES.length === 3, JSON.stringify(rowIds(r.main)));
+    ok(`[${lang}/no-trigger] every row's action reads "${L.add}" and adds via select-item (equal prominence, no hero treatment)`,
+      (r.main.match(new RegExp(`data-sleep-action="select-item" data-item-id="[^"]+">${L.add}</button>`, 'g')) || []).length === 3);
+    ok(`[${lang}/no-trigger] "${L.demo}" is the block's primary action and "${L.later}" its secondary`,
+      new RegExp(`sleep-system__action--primary" data-sleep-action="decision" data-status="demo">${L.demo}</button>`).test(r.main) &&
+      new RegExp(`sleep-system__action--secondary" data-sleep-action="decision" data-status="later">${L.later}</button>`).test(r.main));
+    ok(`[${lang}/no-trigger] no availability or floor claim in the block`,
+      !/on the floor|in stock|available today|en la tienda|disponible/i.test(textOf(r.main)));
+    const sel = renderStep('adjustability', { answers: NO_TRIGGER, lang, cart: { 'base-bt3000': { id: 'base-bt3000' } } });
+    ok(`[${lang}/no-trigger] a selected row reads "${L.selectedL}" and offers removal`,
+      new RegExp(`class="is-selected" data-sleep-action="remove-item" data-item-id="base-bt3000">${L.selectedL}</button>`).test(sel.main));
+    const t = renderStep('adjustability', { answers: TRIGGER, lang });
+    ok(`[${lang}/trigger] the triggered flow is unchanged - hero card, price, three controls, no neutral block`,
+      /class="sleep-system__featured[ "]/.test(t.main) && /sleep-system__price/.test(t.main) &&
+      !/sleep-system__bases-compare/.test(t.main) && /data-status="demo"/.test(t.main) && /data-status="later"/.test(t.main) &&
+      (lang !== 'en' || /Keep this base in plan/.test(t.main)));
+  }
+  // Negative controls.
+  const NT = { answers: NO_TRIGGER };
+  const heroBack = renderStep('adjustability', Object.assign({}, NT, {
+    mutate: (s) => {
+      const from = "(supportOutcome || (adjustabilityNoTrigger ? basesCompareHtml : productHtml))";
+      if (!s.includes(from)) throw new Error('P5 negative control: assembly anchor not found');
+      return s.replace(from, '(supportOutcome || productHtml)');
+    }
+  }));
+  ok('negative control: restoring the hero in the assembly re-renders the unjustified product card for a no-trigger customer',
+    /class="sleep-system__featured[ "]/.test(heroBack.main) && /sleep-system__price/.test(heroBack.main));
+  const groupBack = renderStep('adjustability', Object.assign({}, NT, {
+    mutate: (s) => {
+      const from = 'return sleepSystemStepForItem(item) === \'adjustability\';';
+      if (!s.includes(from)) throw new Error('P5 negative control: filter anchor not found');
+      return s.replace('var allBases = (Array.isArray(ACCESSORIES) ? ACCESSORIES : []).filter(function(item) {',
+        'var allBases = items.slice(); void (function(item) {');
+    }
+  }));
+  ok('negative control: sourcing the list from the engine group again drops it to the back-filled two, so the all-bases assertion bites',
+    rowIds(groupBack.main).length === 2, JSON.stringify(rowIds(groupBack.main)));
 }
 
 section('negative controls — the load-bearing assertions bite');
