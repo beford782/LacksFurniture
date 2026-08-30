@@ -18728,8 +18728,8 @@
     }
 
     // 3.7 P9 (owner ruling 2026-08-30): the catalog decides whether a lower
-    // finished bed height is something the app may offer as a CHOICE. Lacks
-    // ships one foundation height, so the actionable "Lower height" choice is
+    // finished bed height is something the app may offer as a CHOICE. This
+    // deployment ships one foundation height, so the actionable "Lower height" choice is
     // withheld and the support notes carry a non-interactive prompt instead;
     // a retailer whose catalog carries a `low_profile` support item gets the
     // choice back without a code change (white-label: data-driven).
@@ -18798,8 +18798,8 @@
       var feedback = window._sleepSystemState.pillowFeedback || '';
       var feedbackCopy = {
         // 3.7 P9 (owner ruling 2026-08-30, Option C): the former lines named an
-        // adjustable-fill and a low-profile pillow the Lacks catalog does not
-        // carry (inherited WG&R template copy). Approved EN; ES provisional.
+        // adjustable-fill and a low-profile pillow this deployment's catalog does
+        // not carry (inherited template copy). Approved EN; ES provisional.
         low: {
           en: 'Try another pillow on this mattress and compare the height, then record the fit again.',
           es: 'Prueba otra almohada en este colchón y compara la altura; luego vuelve a registrar el ajuste.'
@@ -19365,9 +19365,9 @@
         // 3.7 P9 (owner ruling 2026-08-30): the candidates are the engine's
         // pillow group - the list this step renders, in its order - so the
         // "other" pillow is the highest-ranked pillow that is not the current
-        // one. The former lookups named two WG&R products (`pillow-tempur-
-        // proadjust`, `pillow-tempur-breeze-prolo`) that do not exist in the
-        // Lacks catalog, so both reactions silently re-offered the same pillow.
+        // one. The former lookups named two products from the template's
+        // original catalog that do not exist in this deployment's catalog, so
+        // both reactions silently re-offered the same pillow.
         // No product ids in code: the catalog decides.
         var pillowItems = readSleepSystemGroups().pillow;
         if (!currentPillowId && pillowItems[0]) currentPillowId = pillowItems[0].id;
