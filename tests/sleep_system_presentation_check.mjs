@@ -226,6 +226,7 @@ function makeEnv({
     return {
       groups: readSleepSystemGroups,
       scorer: scoreAccessoriesFromAnswers,
+      suggestedGoal: getSuggestedProtectionGoal,
       main: renderSleepSystemMain,
       rail: renderSleepSystemRail,
       plan: renderSleepSystemPlan,
@@ -1383,6 +1384,64 @@ section('3.7 P3 - a matched pillow ranks above an unmatched default-score pillow
   });
   ok('negative control: neutralising the matched-first comparator puts the gel pillow back ahead of the prompt\'s Flow',
     reverted.groups.pillow[0].id === 'pillow-gel-memory' && promptPillowOf(reverted.env) === 'pillow-flow');
+}
+
+// --------------------------------------------- 14d. 3.7 P1 heat parity
+// Owner ruling 2026-08-30 (P1): `sleep_issues` containing `hot` is the same
+// heat signal the accessory scorer and the protection-goal chooser use for
+// `temperature: hot`. Rendered through the real renderer; parity is asserted
+// as identical engine groups for the two ways of saying heat.
+section('3.7 P1 - sleep_issues "hot" is the same heat signal as temperature "hot" (scorer + protection goal)');
+{
+  const ISSUE_ONLY = { sleep_position: 'side', temperature: 'comfortable', sleep_issues: ['hot'], health_conditions: ['none'] };
+  const TEMP_ONLY = { sleep_position: 'side', temperature: 'hot', sleep_issues: ['none'], health_conditions: ['none'] };
+  const BOTH = { sleep_position: 'side', temperature: 'hot', sleep_issues: ['hot'], health_conditions: ['none'] };
+  const NEITHER = { sleep_position: 'side', temperature: 'comfortable', sleep_issues: ['none'], health_conditions: ['none'] };
+  const HEAT_ONLY_DEFAULTS = { sleep_issues: ['hot'] };
+  const slim = (groups) => JSON.stringify(Object.fromEntries(Object.entries(groups).map(([k, v]) => [k, v.map((a) => [a.id, a.score, a.matched, a.meetsMatchThreshold])])));
+  const HOT_REASON = { en: 'You reported sleeping hot', es: 'Reportaste dormir caliente' };
+  const COOL_BADGE = { en: 'Best for cooling', es: 'Mejor para frescura' };
+  for (const lang of ['en', 'es']) {
+    const issue = renderStep('pillow', { answers: ISSUE_ONLY, lang });
+    const temp = renderStep('pillow', { answers: TEMP_ONLY, lang });
+    const both = renderStep('pillow', { answers: BOTH, lang });
+    ok(`[${lang}] parity: heat said only as a sleep issue produces the SAME engine groups as heat said only as the temperature`,
+      slim(issue.groups) === slim(temp.groups), slim(issue.groups));
+    ok(`[${lang}] parity: saying it both ways is not double-counted (groups identical to either alone)`,
+      slim(both.groups) === slim(temp.groups));
+    ok(`[${lang}/pillow/issue-only] the Flow is the hero on the cooling weights with the heat reason present`,
+      issue.groups.pillow[0].id === 'pillow-flow' && issue.groups.pillow[0].score === 7 &&
+        issue.groups.pillow[0].reasons.includes(HOT_REASON[lang]),
+      JSON.stringify(issue.groups.pillow[0].reasons));
+    ok(`[${lang}] the suggested protection goal is cooling for the issue-only customer (same as temperature-only)`,
+      issue.env.api.suggestedGoal() === 'cooling' && temp.env.api.suggestedGoal() === 'cooling');
+    const prot = renderStep('protection', { answers: ISSUE_ONLY, lang });
+    ok(`[${lang}/protection/issue-only] Ver-Tex is the hero, badged "${COOL_BADGE[lang]}"`,
+      prot.groups.protection[0].id === 'protector-vertex' && grab(featuredBody(prot.main), 'sleep-system__card-eyebrow') === COOL_BADGE[lang],
+      JSON.stringify(grab(featuredBody(prot.main), 'sleep-system__card-eyebrow')));
+    const none = renderStep('pillow', { answers: NEITHER, lang });
+    ok(`[${lang}] a customer who says heat neither way is unchanged (gel hero on the side-position weight, everyday goal)`,
+      none.groups.pillow[0].id === 'pillow-gel-memory' && none.groups.pillow[0].score === 3 && none.env.api.suggestedGoal() === 'everyday');
+  }
+  {
+    const d = renderStep('pillow', { answers: HEAT_ONLY_DEFAULTS });
+    ok('the focused heat-only scenario on engine defaults surfaces the cooling pillows (Flow 6, gel 6) and the cooling goal',
+      JSON.stringify(d.groups.pillow.map((a) => [a.id, a.score, a.matched])) === JSON.stringify([['pillow-flow', 6, true], ['pillow-gel-memory', 6, true]])
+        && d.env.api.suggestedGoal() === 'cooling',
+      JSON.stringify(d.groups.pillow.map((a) => [a.id, a.score, a.matched])));
+  }
+  // Negative control: read only the temperature answer again and the
+  // issue-only customer loses the cooling pillow and the cooling goal.
+  const reverted = renderStep('pillow', {
+    answers: ISSUE_ONLY,
+    mutate: (s) => {
+      const from = "const hotSleeper = temp === 'hot' || issues.includes('hot');";
+      if (!s.includes(from)) throw new Error('P1 negative control: anchor not found');
+      return s.replace(from, "const hotSleeper = temp === 'hot';");
+    }
+  });
+  ok('negative control: reading only the temperature answer drops the issue-only customer back to the gel pillow on position alone',
+    reverted.groups.pillow[0].id === 'pillow-gel-memory' && reverted.groups.pillow[0].score === 3);
 }
 
 section('negative controls — the load-bearing assertions bite');
