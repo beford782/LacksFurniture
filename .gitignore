@@ -20,6 +20,8 @@ docs/*
 !docs/guided-selling-cohesion-review-2026-08-30.md
 !docs/guided-selling-cohesion-review-2026-08-30-evidence.sha256
 !docs/guided-selling-cohesion-decisions-2026-08-30.md
+!docs/accessory-recommendation-audit-2026-08-30.md
+!docs/accessory-recommendation-audit-2026-08-30/
 tools/strip-bg.py
 
 # Local scratch / design mockups (kept locally, never committed)

@@ -48,7 +48,28 @@ standing constraints; the work it adds is recorded in the third 2026-08-29
 revision note below and on items 1.3, 1.4 and 1.6, the Phase 1 cohesion
 milestone, the pre-floor evidence plan and Phase 3 item 3.7.
 
-**Last updated:** 2026-08-30, later the same day *(**Cohesion pass-1
+**Last updated:** 2026-08-30, third revision *(**3.7 audit delivered and
+step 4 ruled; decision PR #77 merged.** Documentation only — no application,
+data, test or engine artifact changed; no status moved. PR #77 (the cohesion
+pass-1 decision record) was approved by Blake and merged as `b064527`. The
+item 3.7 offline audit (steps 1–3) is landed on its own docs-only PR —
+`docs/accessory-recommendation-audit-2026-08-30.md` with the reproducible
+harness and structured results beside it — and Blake ruled on its
+decision list: **P1, P2, P3 approved** as separate bounded PRs in the order
+P2 → P3 → P1 (renderer badge rule; matched-over-default pillow ranking with
+drawer-prompt / hero agreement proven; `sleep_issues` heat parity with a
+focused heat-only scenario), each enumerating before / after, preserving
+mattress scoring, no unrelated recommendation change; **P4 deferred** to a
+second tranche after P1–P3 are verified; **P5 option C prototype only**
+(demo kept, unjustified hero removed; not implemented until reviewed);
+**P6 not approved as a fit decision** — the premium-first base ladder is
+recorded as merchandising, not customer-derived relevance; **P7 not
+approved; P8 deferred; P10 recorded only; P9** → a factual catalog / copy
+decision packet with no invented inventory. Cohesion change C1 (Sleep
+System utility-bar / header collision) begins after #77, isolated from all
+3.7 work. No deployment beyond the existing Pages preview, no live service,
+Sleep System clause 8 stays open. The previous revision, earlier on
+2026-08-30, recorded the **Cohesion pass-1
 decisions recorded; governance PR #76 merged.** Documentation only — no
 application, data, test or engine artifact changed; no gate, Gated list,
 Proceeds list or Exit clause moved. PR #76 was approved by Blake and merged
@@ -5194,7 +5215,7 @@ for approved work.
 
 ---
 
-### 3.7 — Accessory-recommendation quality ◐ (added 2026-08-29; the offline audit scheduled by Blake 2026-08-30 — read-only, no engine change)
+### 3.7 — Accessory-recommendation quality ◐ (added 2026-08-29; the offline audit scheduled by Blake 2026-08-30 — read-only, no engine change; steps 1–3 delivered and step 4 ruled 2026-08-30 — P1–P3 approved, nothing merged)
 
 Item 1.4 makes the Sleep System the primary accessory-conversion experience,
 and the north star asks for *better-matched* accessories — a claim the
@@ -5233,6 +5254,34 @@ before Blake.
    fixtures, before any selection, ranking, grouping or hero-logic change
    ships. Mattress-fit scoring is not in scope for this item under any outcome.
 
+*(**Steps 1–3 delivered 2026-08-30** — `docs/accessory-recommendation-audit-2026-08-30.md`,
+with the reproducible harness and structured per-scenario results in
+`docs/accessory-recommendation-audit-2026-08-30/`: 29 scenarios through the
+real extracted engine on `3dac218`, fixture agreement 10/10, EN/ES parity
+29/29, decision list P1–P10. **Step 4 ruling, Blake Ford, 2026-08-30:**
+**P1, P2 and P3 approved for implementation** as separate bounded PRs in the
+order **P2 → P3 → P1** — P2 ("Recommended to try" requires an answer-derived
+match) is renderer / presentation logic and must not move the recommendation
+baseline; P3 (a matched pillow ranks above an unmatched default-score pillow)
+updates only the affected fixture scenarios and must prove the drawer prompt
+and the Sleep System hero agree; P1 (`sleep_issues` containing `hot` is the
+same heat signal for the accessory scorer and the protection goal) adds a
+focused heat-only scenario instead of re-pinning unrelated fixtures. Each PR
+enumerates before / after outputs, preserves mattress scoring, contains no
+unrelated recommendation change, and merges only on per-PR authorization.
+**P4 deferred** to a second approval tranche after P1–P3 are verified.
+**P5: option C prototype only** — keep the adjustability education / demo for
+no-trigger customers, remove the unjustified product hero from the default
+presentation; not implemented until Blake reviews the prototype. **P6 not
+approved as a fit decision** — recorded: the premium-first ordering of the
+three adjustable bases is merchandising, not customer-derived relevance, and
+copy stays "suggested because you mentioned…". **P7 not approved. P8
+deferred. P10 recorded only.** **P9** → a factual catalog / copy decision
+packet: confirm whether the named low-profile, adjustable-fill and support
+alternatives are genuinely in the Lacks assortment; if not, propose copy
+naming only products / categories actually present; no invented inventory.
+The item stays ◐; the Gated list stands for everything not named above.)*
+
 ## Open decisions register
 
 Everything here is **unresolved**. An item's absence from this list is not
@@ -5247,7 +5296,7 @@ work listed under a ◐ item's Proceeds line.
 | Phase 2.2 price/payment activation | ◐ | Blake + business/legal | Written approval, taken only at the final end-of-project deployment stage immediately before live deployment (owner ruling 2026-08-28). It gates `displayEnabled`, enabled surfaces and live deployment only — its absence does not block dark development, provisional data, internal computation, previews, testing, completion of earlier roadmap items, or non-live 2.2 preparation under 2.2's Proceeds list (disabled implementation, isolated previews, automated tests). Production surfaces stay false until the gate — see 2.2's Gated block for the checkable properties |
 | Scoring case-fold (3.1) | 🔒 | Blake | Approval + enumerated impact |
 | Quiz-tag vocabulary gap (3.2) | 🔒 | Blake | Populate-or-retire decision |
-| **Accessory-recommendation quality (3.7)** — any change to accessory selection, ranking, grouping or hero logic | ◐ | Blake | Audit scheduled 2026-08-30 as read-only offline analysis; the change itself waits on approval of the enumerated output-change list on its own PR *(added 2026-08-29)* |
+| **Accessory-recommendation quality (3.7)** — any change to accessory selection, ranking, grouping or hero logic | ◐ | Blake | Audit delivered 2026-08-30 (read-only); step 4 ruled the same day: **P1–P3 approved** as separate PRs in the order P2 → P3 → P1 (merge per PR); P4 deferred; P5 option C prototype only; P6 recorded as merchandising, not fit; P7 not approved; P8 deferred; P10 recorded; P9 catalog / copy packet *(added 2026-08-29; ruled 2026-08-30)* |
 | **Cohesion-milestone keep / change / experiment decisions** — per surface, the 1.6 surfaces first; a *change* on a completed slice ships only as a bounded PR against `main` | 🔨 review (opened 2026-08-30) / decisions ❓ until recorded | Blake | The milestone's decision packet with browser evidence per surface *(added 2026-08-29; the review itself may start)* |
 | **Item 1.4 Sleep System workstream — bounded change list** (presentation, narration, state rendering, carry-forward within the existing data contract) | ⏳ | Blake | The step-1 audit and step-2 proposal on the item; approved-English changes need Blake first; clause 8 remains his recorded assessment *(added 2026-08-29)* |
 | Global maxScore / cross-tier ranking / tier merge or removal / threshold, cap, back-fill (3.3) | 🔒 | Blake | Evidence. **Does not gate a preserving Phase 1 tier-navigation change.** *(2026-08-21: a cross-tier "highest-fit" marker — raised as a trust question — is this row, because it changes what the customer is told about fit; see "Tier presentation (trust)" for the presentation-only half.)* |
@@ -5474,7 +5523,9 @@ document, not here.
     analysis. Pass-1 cohesion decisions were recorded 2026-08-30 in
     `docs/guided-selling-cohesion-decisions-2026-08-30.md` (six bounded
     change PRs scheduled, two experiments, the rest kept); the 3.7 audit
-    began the same day, engine untouched.
+    began the same day, engine untouched; its steps 1–3 were delivered and
+    step 4 ruled later that day (P1–P3 approved as separate PRs, P2 → P3 →
+    P1; see item 3.7). PR #77 merged as `b064527`.
 
 ---
 
