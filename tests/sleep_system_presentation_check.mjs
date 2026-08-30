@@ -225,6 +225,7 @@ function makeEnv({
     src + `
     return {
       groups: readSleepSystemGroups,
+      scorer: scoreAccessoriesFromAnswers,
       main: renderSleepSystemMain,
       rail: renderSleepSystemRail,
       plan: renderSleepSystemPlan,
@@ -1240,7 +1241,11 @@ const literalsOf = (s) => [...stripComments(s).matchAll(BILINGUAL_LITERAL)].map(
 // through the real renderer; ranking and groups are asserted UNCHANGED.
 section('3.7 P2 - "Recommended to try" requires an answer-derived match (rendered)');
 {
-  const BACK_ONLY = { sleep_position: 'back', temperature: 'comfortable', sleep_issues: ['none'], health_conditions: ['none'] };
+  // P3 (stacked on P2) ranks a matched pillow first, so a non-hot BACK sleeper
+  // now heroes the matched Flow; the unmatched-hero cases are the sleepers no
+  // pillow matches - stomach and combo (no position_stomach / position_combo
+  // weight exists in the catalog).
+  const COMBO = { sleep_position: 'combo', temperature: 'comfortable', sleep_issues: ['none'], health_conditions: ['none'] };
   const STOMACH = { sleep_position: 'stomach', temperature: 'comfortable', sleep_issues: ['none'], health_conditions: ['none'] };
   const SIDE_ONLY = { sleep_position: 'side', temperature: 'comfortable', sleep_issues: ['none'], health_conditions: ['none'] };
   const NO_TRIGGER = SIDE_ONLY;
@@ -1251,7 +1256,7 @@ section('3.7 P2 - "Recommended to try" requires an answer-derived match (rendere
   };
   for (const lang of ['en', 'es']) {
     const b = BADGE[lang];
-    for (const [label, answers] of [['back sleeper', BACK_ONLY], ['stomach sleeper', STOMACH]]) {
+    for (const [label, answers] of [['combo sleeper', COMBO], ['stomach sleeper', STOMACH]]) {
       const r = renderStep('pillow', { answers, lang });
       const hero = r.groups.pillow[0];
       const eyebrow = grab(featuredBody(r.main), 'sleep-system__card-eyebrow');
@@ -1283,15 +1288,15 @@ section('3.7 P2 - "Recommended to try" requires an answer-derived match (rendere
   // objects the badge used to read - ids, order, scores and threshold stamps
   // are unchanged by this rule (the Phase 1 output-regression fixture pins
   // them independently; this is the local statement of the same invariant).
-  const back = renderStep('pillow', { answers: BACK_ONLY });
-  ok('P2 moves no ranking: the back sleeper\'s pillow group is still gel (2, T) then Flow (1, f)',
-    JSON.stringify(back.groups.pillow.map((a) => [a.id, a.score, a.meetsMatchThreshold])) ===
-      JSON.stringify([['pillow-gel-memory', 2, true], ['pillow-flow', 1, false]]),
-    JSON.stringify(back.groups.pillow.map((a) => [a.id, a.score, a.meetsMatchThreshold])));
+  const stomach = renderStep('pillow', { answers: STOMACH });
+  ok('P2 moves no ranking: the stomach sleeper\'s pillow group is still gel (2, T) then Flow (0, f)',
+    JSON.stringify(stomach.groups.pillow.map((a) => [a.id, a.score, a.meetsMatchThreshold])) ===
+      JSON.stringify([['pillow-gel-memory', 2, true], ['pillow-flow', 0, false]]),
+    JSON.stringify(stomach.groups.pillow.map((a) => [a.id, a.score, a.meetsMatchThreshold])));
   // Negative control: re-key the badge on the relative threshold (the shipped
   // pre-P2 rule) and the back-sleeper assertion must fail.
   const reverted = renderStep('pillow', {
-    answers: BACK_ONLY,
+    answers: STOMACH,
     mutate: (s) => {
       // The extracted source keeps index.html's own line endings (CRLF on
       // Windows checkouts), so the anchor tolerates either.
@@ -1302,6 +1307,82 @@ section('3.7 P2 - "Recommended to try" requires an answer-derived match (rendere
   });
   ok('negative control: keying the badge on meetsMatchThreshold again re-badges the unmatched hero as recommended',
     grab(featuredBody(reverted.main), 'sleep-system__card-eyebrow') === 'Recommended to try');
+}
+
+// --------------------------------------------- 14c. 3.7 P3 matched-first pillow
+// Owner ruling 2026-08-30 (P3): a matched pillow ranks above an unmatched
+// default-score pillow. The drawer's finalist prompt reads the first MATCHED
+// pillow in scorer order; the Sleep System hero is the pillow group's first
+// item. Before P3 they disagreed for every non-hot back sleeper (prompt Flow,
+// hero gel). Rendered through the real renderer with the real engine groups.
+section('3.7 P3 - a matched pillow ranks above an unmatched default-score pillow (rendered; prompt and hero agree)');
+{
+  const BACK_ONLY = { sleep_position: 'back', temperature: 'comfortable', sleep_issues: ['none'], health_conditions: ['none'] };
+  const BACK_REFLUX = { sleep_position: 'back', temperature: 'comfortable', sleep_issues: ['none'], health_conditions: ['reflux'] };
+  const SIDE_ONLY = { sleep_position: 'side', temperature: 'comfortable', sleep_issues: ['none'], health_conditions: ['none'] };
+  const SIDE_HOT = { sleep_position: 'side', temperature: 'hot', sleep_issues: ['none'], health_conditions: ['none'] };
+  const STOMACH = { sleep_position: 'stomach', temperature: 'comfortable', sleep_issues: ['none'], health_conditions: ['none'] };
+  const promptPillowOf = (env) => {
+    const p = env.api.scorer().find((a) => a.matched && sleepSystemCategoryEn(a) === 'Pillows');
+    return p ? p.id : null;
+  };
+  function sleepSystemCategoryEn(a) { return typeof a.category === 'object' ? a.category.en : a.category; }
+  const REASON = {
+    en: { back: 'Optimized for back sleepers', side: 'Matched to your side sleeping position', rec: 'Recommended to try' },
+    es: { back: 'Optimizado para los que duermen boca arriba', side: 'Adaptado a tu posición de dormir de lado', rec: 'Recomendado para probar' }
+  };
+  for (const lang of ['en', 'es']) {
+    for (const [label, answers] of [['back sleeper', BACK_ONLY], ['back sleeper with reflux', BACK_REFLUX]]) {
+      const r = renderStep('pillow', { answers, lang });
+      const hero = r.groups.pillow[0];
+      const eyebrow = grab(featuredBody(r.main), 'sleep-system__card-eyebrow');
+      const reason = grab(featuredBody(r.main), 'sleep-system__featured-reason');
+      ok(`[${lang}/pillow/${label}] the matched Flow (position_back) is the hero ahead of the default-score gel pillow`,
+        hero && hero.id === 'pillow-flow' && hero.matched === true &&
+          r.groups.pillow[1] && r.groups.pillow[1].id === 'pillow-gel-memory' && r.groups.pillow[1].matched === false,
+        JSON.stringify(r.groups.pillow.map((a) => [a.id, a.score, a.matched, a.meetsMatchThreshold])));
+      ok(`[${lang}/pillow/${label}] the hero card is badged "${REASON[lang].rec}" with the back-sleeper reason (P2 + P3 together)`,
+        eyebrow === REASON[lang].rec && reason === REASON[lang].back, `${JSON.stringify(eyebrow)} ${JSON.stringify(reason)}`);
+      ok(`[${lang}/pillow/${label}] the drawer's finalist-prompt pillow and the Sleep System hero are the SAME pillow`,
+        promptPillowOf(r.env) === hero.id, `prompt=${promptPillowOf(r.env)} hero=${hero.id}`);
+      ok(`[${lang}/pillow/${label}] the threshold stamp is untouched (Flow 1 < 60% of the gel pillow's 2 stays false)`,
+        hero.meetsMatchThreshold === false && r.groups.pillow[1].meetsMatchThreshold === true);
+    }
+    for (const [label, answers, heroId] of [['side sleeper', SIDE_ONLY, 'pillow-gel-memory'], ['hot side sleeper', SIDE_HOT, 'pillow-flow']]) {
+      const r = renderStep('pillow', { answers, lang });
+      ok(`[${lang}/pillow/${label}] unchanged: hero ${heroId} is matched and equals the prompt pillow`,
+        r.groups.pillow[0].id === heroId && r.groups.pillow[0].matched === true && promptPillowOf(r.env) === heroId,
+        `hero=${r.groups.pillow[0].id} prompt=${promptPillowOf(r.env)}`);
+    }
+    {
+      const r = renderStep('pillow', { answers: STOMACH, lang });
+      ok(`[${lang}/pillow/stomach sleeper] no matched pillow -> no prompt, gel stays the (unmatched) hero, order unchanged`,
+        promptPillowOf(r.env) === null && r.groups.pillow[0].id === 'pillow-gel-memory' && r.groups.pillow[0].matched === false);
+    }
+  }
+  // Pillow group only: adjustability, support and protection orders are the
+  // engine's pre-P3 orders for the same answer sets.
+  {
+    const r = renderStep('adjustability', { answers: BACK_REFLUX });
+    ok('P3 touches only the pillow group: the adjustability order for a reflux customer is still Ergo, BT2000, BT3000',
+      JSON.stringify(r.groups.adjustability.map((a) => a.id)) === JSON.stringify(['base-tempur-ergo', 'base-bt2000', 'base-bt3000']),
+      JSON.stringify(r.groups.adjustability.map((a) => a.id)));
+    const p = renderStep('protection', { answers: SIDE_HOT });
+    ok('P3 touches only the pillow group: the hot sleeper\'s protection order is still Ver-Tex, Dri-Tec',
+      JSON.stringify(p.groups.protection.map((a) => a.id)) === JSON.stringify(['protector-vertex', 'protector-dritec']));
+  }
+  // Negative control: neutralise the comparator and the back sleeper's hero
+  // reverts to the gel pillow, disagreeing with the prompt again.
+  const reverted = renderStep('pillow', {
+    answers: BACK_ONLY,
+    mutate: (s) => {
+      const from = 'return (b.matched ? 1 : 0) - (a.matched ? 1 : 0);';
+      if (!s.includes(from)) throw new Error('P3 negative control: anchor not found');
+      return s.replace(from, 'return 0;');
+    }
+  });
+  ok('negative control: neutralising the matched-first comparator puts the gel pillow back ahead of the prompt\'s Flow',
+    reverted.groups.pillow[0].id === 'pillow-gel-memory' && promptPillowOf(reverted.env) === 'pillow-flow');
 }
 
 section('negative controls — the load-bearing assertions bite');

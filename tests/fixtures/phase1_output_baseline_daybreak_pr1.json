@@ -371,14 +371,14 @@
             ],
             "pillow": [
               {
-                "id": "pillow-gel-memory",
-                "score": 2,
-                "meetsMatchThreshold": true
-              },
-              {
                 "id": "pillow-flow",
                 "score": 1,
                 "meetsMatchThreshold": false
+              },
+              {
+                "id": "pillow-gel-memory",
+                "score": 2,
+                "meetsMatchThreshold": true
               }
             ],
             "protection": [
@@ -401,18 +401,18 @@
           },
           "recommendedAccessories": [
             {
-              "name": "Gel Memory Foam Cool Pillow",
-              "category": "Pillows",
-              "imageUrl": "images/accessories/pillow-gel-memory.jpg",
-              "score": 2,
-              "meetsMatchThreshold": true
-            },
-            {
               "name": "Bedgear Flow 2.0 Performance Pillow",
               "category": "Pillows",
               "imageUrl": "images/accessories/pillow-flow.jpg",
               "score": 1,
               "meetsMatchThreshold": false
+            },
+            {
+              "name": "Gel Memory Foam Cool Pillow",
+              "category": "Pillows",
+              "imageUrl": "images/accessories/pillow-gel-memory.jpg",
+              "score": 2,
+              "meetsMatchThreshold": true
             },
             {
               "name": "Bedgear Dri-Tec Mattress Protector",
@@ -543,14 +543,14 @@
             ],
             "pillow": [
               {
-                "id": "pillow-gel-memory",
-                "score": 2,
-                "meetsMatchThreshold": true
-              },
-              {
                 "id": "pillow-flow",
                 "score": 1,
                 "meetsMatchThreshold": false
+              },
+              {
+                "id": "pillow-gel-memory",
+                "score": 2,
+                "meetsMatchThreshold": true
               }
             ],
             "protection": [
@@ -573,18 +573,18 @@
           },
           "recommendedAccessories": [
             {
-              "name": "Gel Memory Foam Cool Pillow",
-              "category": "Pillows",
-              "imageUrl": "images/accessories/pillow-gel-memory.jpg",
-              "score": 2,
-              "meetsMatchThreshold": true
-            },
-            {
               "name": "Bedgear Flow 2.0 Performance Pillow",
               "category": "Pillows",
               "imageUrl": "images/accessories/pillow-flow.jpg",
               "score": 1,
               "meetsMatchThreshold": false
+            },
+            {
+              "name": "Gel Memory Foam Cool Pillow",
+              "category": "Pillows",
+              "imageUrl": "images/accessories/pillow-gel-memory.jpg",
+              "score": 2,
+              "meetsMatchThreshold": true
             },
             {
               "name": "Bedgear Dri-Tec Mattress Protector",
@@ -3117,14 +3117,14 @@
             ],
             "pillow": [
               {
-                "id": "pillow-gel-memory",
-                "score": 2,
-                "meetsMatchThreshold": true
-              },
-              {
                 "id": "pillow-flow",
                 "score": 1,
                 "meetsMatchThreshold": false
+              },
+              {
+                "id": "pillow-gel-memory",
+                "score": 2,
+                "meetsMatchThreshold": true
               }
             ],
             "protection": [
@@ -3147,18 +3147,18 @@
           },
           "recommendedAccessories": [
             {
-              "name": "Gel Memory Foam Cool Pillow",
-              "category": "Pillows",
-              "imageUrl": "images/accessories/pillow-gel-memory.jpg",
-              "score": 2,
-              "meetsMatchThreshold": true
-            },
-            {
               "name": "Bedgear Flow 2.0 Performance Pillow",
               "category": "Pillows",
               "imageUrl": "images/accessories/pillow-flow.jpg",
               "score": 1,
               "meetsMatchThreshold": false
+            },
+            {
+              "name": "Gel Memory Foam Cool Pillow",
+              "category": "Pillows",
+              "imageUrl": "images/accessories/pillow-gel-memory.jpg",
+              "score": 2,
+              "meetsMatchThreshold": true
             },
             {
               "name": "Bedgear Dri-Tec Mattress Protector",
@@ -3289,14 +3289,14 @@
             ],
             "pillow": [
               {
-                "id": "pillow-gel-memory",
-                "score": 2,
-                "meetsMatchThreshold": true
-              },
-              {
                 "id": "pillow-flow",
                 "score": 1,
                 "meetsMatchThreshold": false
+              },
+              {
+                "id": "pillow-gel-memory",
+                "score": 2,
+                "meetsMatchThreshold": true
               }
             ],
             "protection": [
@@ -3319,18 +3319,18 @@
           },
           "recommendedAccessories": [
             {
-              "name": "Gel Memory Foam Cool Pillow",
-              "category": "Pillows",
-              "imageUrl": "images/accessories/pillow-gel-memory.jpg",
-              "score": 2,
-              "meetsMatchThreshold": true
-            },
-            {
               "name": "Bedgear Flow 2.0 Performance Pillow",
               "category": "Pillows",
               "imageUrl": "images/accessories/pillow-flow.jpg",
               "score": 1,
               "meetsMatchThreshold": false
+            },
+            {
+              "name": "Gel Memory Foam Cool Pillow",
+              "category": "Pillows",
+              "imageUrl": "images/accessories/pillow-gel-memory.jpg",
+              "score": 2,
+              "meetsMatchThreshold": true
             },
             {
               "name": "Bedgear Dri-Tec Mattress Protector",

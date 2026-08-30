@@ -18277,6 +18277,18 @@
         return (order[a.subType] == null ? 9 : order[a.subType]) -
           (order[b.subType] == null ? 9 : order[b.subType]);
       });
+      // 3.7 P3 (owner ruling 2026-08-30): within the pillow group, a pillow
+      // that at least one answer fired for ranks above a pillow carried by
+      // its catalog default score alone. Before this, a non-hot back sleeper
+      // saw the gel pillow (default 2, no reason) as the hero while the only
+      // matched pillow (Flow, position_back 1) sat under "Also compare" - and
+      // the drawer's finalist prompt, which reads the first MATCHED pillow in
+      // scorer order, named the Flow. Stable: score order is kept inside the
+      // matched and unmatched halves; qualification, the cap / back-fill and
+      // the threshold stamp above are untouched. Pillow group only.
+      groups.pillow.sort(function(a, b) {
+        return (b.matched ? 1 : 0) - (a.matched ? 1 : 0);
+      });
       return groups;
     }
 
