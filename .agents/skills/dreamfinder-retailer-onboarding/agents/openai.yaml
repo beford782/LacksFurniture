@@ -1,0 +1,4 @@
+interface:
+  display_name: "DreamFinder Retailer Onboarding"
+  short_description: "Validate inputs and build retailer bundles"
+  default_prompt: "Use $dreamfinder-retailer-onboarding to validate these retailer inputs and produce a readiness report."
