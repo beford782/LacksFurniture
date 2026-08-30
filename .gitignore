@@ -17,6 +17,9 @@ docs/*
 !docs/trust-integrity-physical-gate-2026-08-21.md
 !docs/catalog-reason-tranche-1-2026-08-29.md
 !docs/catalog-reason-tranche-2-2026-08-29.md
+!docs/guided-selling-cohesion-review-2026-08-30.md
+!docs/guided-selling-cohesion-review-2026-08-30-evidence.sha256
+!docs/guided-selling-cohesion-decisions-2026-08-30.md
 tools/strip-bg.py
 
 # Local scratch / design mockups (kept locally, never committed)
