@@ -2065,6 +2065,18 @@ const MUTATIONS = [
     "          catalogHasLowProfileSupport()\n            ? sleepSystemText({ en: 'Compare standard and lower bed heights.', es: 'Compara alturas estándar y más bajas.' })",
     "          true\n            ? sleepSystemText({ en: 'Compare standard and lower bed heights.', es: 'Compara alturas estándar y más bajas.' })", SLEEP],
 
+  // 3.7 P5 option C (owner ruling 2026-08-30): the neutral no-trigger base
+  // presentation. Observed by the rendered P5 section.
+  ["sleep system: the unjustified base hero returns for no-trigger customers (P5 assembly reverted)",
+    "          (supportOutcome || (adjustabilityNoTrigger ? basesCompareHtml : productHtml));",
+    "          (supportOutcome || productHtml);", SLEEP],
+  ["sleep system: the neutral compare list drops to the engine's back-filled group (all-bases rule removed)",
+    "          var allBases = (Array.isArray(ACCESSORIES) ? ACCESSORIES : []).filter(function(item) {\n            return sleepSystemStepForItem(item) === 'adjustability';\n          });",
+    "          var allBases = items.slice(0, 2);", SLEEP],
+  ["sleep system: the neutral row action loses its plan wording (Add to plan -> Add)",
+    "sleepSystemText({ en: 'Add to plan', es: 'Agregar al plan' })) +\n                  '</button>' +\n                '</div>';\n              }).join('')",
+    "sleepSystemText({ en: 'Add', es: 'Agregar' })) +\n                  '</button>' +\n                '</div>';\n              }).join('')", SLEEP],
+
 ];
 
 // ---------------------------------------------------------------------------

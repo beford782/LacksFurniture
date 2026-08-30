@@ -19164,12 +19164,66 @@
             '</div>';
         }
 
+        // 3.7 P5 option C (owner ruling 2026-08-30): when no answer points to a
+        // base (the group's best item is unmatched - no back pain, snoring or
+        // reflux), the demo stays and the product hero is replaced by a neutral
+        // compare list of EVERY cataloged adjustable base, in catalog order at
+        // equal prominence - not the engine's qualified / back-filled group.
+        // No price and no availability claim; rows add to the plan directly;
+        // "Ask for a demo" stays the step's primary action. A customer with a
+        // trigger keeps the hero card unchanged. The rows carry an extra class
+        // beside the shared alternative classes so the row template is
+        // distinguishable from the "Also compare" template in source.
+        var adjustabilityNoTrigger = step.id === 'adjustability' && !primary.matched;
+        var basesCompareHtml = '';
+        if (adjustabilityNoTrigger) {
+          var allBases = (Array.isArray(ACCESSORIES) ? ACCESSORIES : []).filter(function(item) {
+            return sleepSystemStepForItem(item) === 'adjustability';
+          });
+          basesCompareHtml =
+            '<section class="sleep-system__alternatives sleep-system__bases-compare" aria-label="' +
+              escapeHtml(sleepSystemText({ en: 'Optional base demo', es: 'Demostración opcional de base' })) + '">' +
+              '<div class="sleep-system__card-eyebrow">' +
+                escapeHtml(sleepSystemText({ en: 'Optional base demo', es: 'Demostración opcional de base' })) +
+              '</div>' +
+              '<h3 class="sleep-system__featured-name">' +
+                escapeHtml(sleepSystemText({ en: 'Try the positions first', es: 'Prueba las posiciones primero' })) +
+              '</h3>' +
+              '<p class="sleep-system__featured-description">' +
+                escapeHtml(sleepSystemText({
+                  en: 'Your answers do not point to a specific adjustable base. Try the positions, then compare a base only if the movement improves your comfort.',
+                  es: 'Tus respuestas no apuntan a una base ajustable en particular. Prueba las posiciones y compara una base solo si el movimiento mejora tu comodidad.'
+                })) +
+              '</p>' +
+              '<div class="sleep-system__alternatives-label">' +
+                escapeHtml(sleepSystemText({ en: 'Bases to compare', es: 'Bases para comparar' })) + '</div>' +
+              allBases.map(function(item) {
+                var itemSelected = !!(window._accCart && window._accCart[item.id]);
+                return '<div class="sleep-system__alternative sleep-system__base-row">' +
+                  (item.image ? '<img src="' + escapeHtml(item.image) + '" alt="">' : '') +
+                  '<div><div class="sleep-system__alternative-name">' + escapeHtml(sleepSystemText(item.name)) + '</div>' +
+                  '<div class="sleep-system__alternative-copy sleep-system__base-row-copy">' + escapeHtml(sleepSystemText(item.description)) + '</div></div>' +
+                  '<button type="button" class="' + (itemSelected ? 'is-selected' : '') + '" data-sleep-action="' +
+                    (itemSelected ? 'remove-item' : 'select-item') + '" data-item-id="' + escapeHtml(item.id) + '">' +
+                    escapeHtml(itemSelected ? sleepSystemText({ en: 'Selected', es: 'Seleccionado' }) : sleepSystemText({ en: 'Add to plan', es: 'Agregar al plan' })) +
+                  '</button>' +
+                '</div>';
+              }).join('') +
+              '<div class="sleep-system__actions">' +
+                '<button type="button" class="sleep-system__action sleep-system__action--primary" data-sleep-action="decision" data-status="demo">' +
+                  escapeHtml(sleepSystemText({ en: 'Ask for a demo', es: 'Pedir demostración' })) + '</button>' +
+                '<button type="button" class="sleep-system__action sleep-system__action--secondary" data-sleep-action="decision" data-status="later">' +
+                  escapeHtml(sleepSystemText({ en: 'Decide later', es: 'Decidir después' })) + '</button>' +
+              '</div>' +
+            '</section>';
+        }
+
         main.innerHTML = sectionHead +
           (step.id === 'adjustability' ? renderAdjustabilityDemo() : '') +
           (step.id === 'support' ? renderSupportGuide() : '') +
           (step.id === 'pillow' ? renderPillowFit(primary) : '') +
           (step.id === 'protection' ? renderProtectionGuide() : '') +
-          (supportOutcome || productHtml);
+          (supportOutcome || (adjustabilityNoTrigger ? basesCompareHtml : productHtml));
       }
 
       var notices = sleepSystemGuidance(step.id, primary);
