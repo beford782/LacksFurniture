@@ -18583,9 +18583,16 @@
       var notices = [];
 
       if (stepId === 'support') {
+        // 3.7 P9 (Option C): while the catalog carries one foundation height,
+        // the height note is a non-interactive specialist prompt (approved EN;
+        // ES provisional) rather than a comparison the floor cannot offer. The
+        // comparison note returns by itself when a low_profile support item
+        // enters the catalog.
         notices = [
           sleepSystemText({ en: 'Confirm frame or platform compatibility.', es: 'Confirma la compatibilidad del marco o plataforma.' }),
-          sleepSystemText({ en: 'Compare standard and lower bed heights.', es: 'Compara alturas estándar y más bajas.' }),
+          catalogHasLowProfileSupport()
+            ? sleepSystemText({ en: 'Compare standard and lower bed heights.', es: 'Compara alturas estándar y más bajas.' })
+            : sleepSystemText({ en: 'If a lower finished bed height matters, ask which foundation heights are available.', es: 'Si importa una altura de cama más baja, pregunta qué alturas de base están disponibles.' }),
           sleepSystemText({ en: 'Verify the final setup before the customer makes a selection.', es: 'Verifica la configuración final antes de que el cliente haga su selección.' })
         ];
       } else if (stepId === 'adjustability') {
@@ -18598,16 +18605,20 @@
         var positionCue = {
           side: { en: 'Check that the customer\'s head fills the shoulder-to-mattress gap.', es: 'Verifica que la cabeza del cliente llene el espacio entre el hombro y el colchón.' },
           back: { en: 'Check that the customer\'s chin stays neutral rather than tipped forward.', es: 'Verifica que la barbilla del cliente se mantenga neutral, sin inclinarse hacia adelante.' },
-          stomach: { en: 'Look for a lower profile that avoids neck strain.', es: 'Busca un perfil bajo que evite tension en el cuello.' }
+          // 3.7 P9: no low-profile pillow exists in the catalog; the cue names
+          // the check, not a product. Approved EN; ES provisional.
+          stomach: { en: 'Check that the neck stays level rather than bending upward.', es: 'Verifica que el cuello se mantenga nivelado y no se doble hacia arriba.' }
         };
         var reactionNote = {
+          // 3.7 P9 (Option C): compare another cataloged pillow; no phantom
+          // adjustable-fill / low-profile product. Approved EN; ES provisional.
           low: {
-            en: 'If the customer says it feels too low, add loft or try adjustable fill, then retest.',
-            es: 'Si el cliente dice que se siente muy baja, agrega altura o prueba relleno ajustable y vuelve a probar.'
+            en: 'If the pillow feels too low, compare another pillow, then retest.',
+            es: 'Si la almohada se siente muy baja, compara otra almohada y vuelve a probar.'
           },
           high: {
-            en: 'If the customer says it feels too high, move to a lower profile, then retest.',
-            es: 'Si el cliente dice que se siente muy alta, cambia a un perfil más bajo y vuelve a probar.'
+            en: 'If the pillow feels too high, compare another pillow, then retest.',
+            es: 'Si la almohada se siente muy alta, compara otra almohada y vuelve a probar.'
           },
           aligned: {
             en: 'If the customer feels aligned, confirm comfort for several minutes before adding the pillow to the plan.',
@@ -18747,6 +18758,18 @@
       return actions[stepId] || [];
     }
 
+    // 3.7 P9 (owner ruling 2026-08-30): the catalog decides whether a lower
+    // finished bed height is something the app may offer as a CHOICE. This
+    // deployment ships one foundation height, so the actionable "Lower height" choice is
+    // withheld and the support notes carry a non-interactive prompt instead;
+    // a retailer whose catalog carries a `low_profile` support item gets the
+    // choice back without a code change (white-label: data-driven).
+    function catalogHasLowProfileSupport() {
+      return Array.isArray(ACCESSORIES) && ACCESSORIES.some(function(item) {
+        return sleepSystemStepForItem(item) === 'support' && item.subType === 'low_profile';
+      });
+    }
+
     function renderSupportGuide() {
       var selected = window._sleepSystemState.supportChoice || '';
       var choices = [
@@ -18771,6 +18794,9 @@
           copy: { en: 'Flag for specialist check', es: 'Revisión del especialista' }
         }
       ];
+      if (!catalogHasLowProfileSupport()) {
+        choices = choices.filter(function(choice) { return choice.id !== 'low'; });
+      }
       return '<section class="sleep-system__support-guide">' +
         '<div class="sleep-system__support-guide-head">' +
           '<div><div class="sleep-system__card-eyebrow">' +
@@ -18802,13 +18828,16 @@
       var reaction = window._sleepSystemState.pillowReaction || '';
       var feedback = window._sleepSystemState.pillowFeedback || '';
       var feedbackCopy = {
+        // 3.7 P9 (owner ruling 2026-08-30, Option C): the former lines named an
+        // adjustable-fill and a low-profile pillow this deployment's catalog does
+        // not carry (inherited template copy). Approved EN; ES provisional.
         low: {
-          en: 'Try the adjustable-fill option next so the specialist can add loft, then record the fit again.',
-          es: 'Prueba la opción de relleno ajustable para agregar altura y vuelve a registrar el ajuste.'
+          en: 'Try another pillow on this mattress and compare the height, then record the fit again.',
+          es: 'Prueba otra almohada en este colchón y compara la altura; luego vuelve a registrar el ajuste.'
         },
         high: {
-          en: 'Try the low-profile option next, then check whether the chin and neck return to neutral.',
-          es: 'Prueba la opción de perfil bajo y revisa si la barbilla y el cuello vuelven a neutral.'
+          en: 'Try another pillow on this mattress, then check whether your chin and neck feel neutral.',
+          es: 'Prueba otra almohada en este colchón y revisa si la barbilla y el cuello se sienten neutrales.'
         },
         aligned: {
           en: 'Good alignment. Keep testing on the finalist mattress, then add it to the plan if comfort holds.',
@@ -19374,10 +19403,16 @@
       } else if (action === 'pillow-reaction') {
         var pillowReaction = control.getAttribute('data-reaction') || '';
         var currentPillowId = window._sleepSystemState.pillowCandidateId;
-        var pillowItems = scoreAccessoriesFromAnswers().filter(function(accessory) {
-          return sleepSystemStepForItem(accessory) === 'pillow';
-        });
+        // 3.7 P9 (owner ruling 2026-08-30): the candidates are the engine's
+        // pillow group - the list this step renders, in its order - so the
+        // "other" pillow is the highest-ranked pillow that is not the current
+        // one. The former lookups named two products from the template's
+        // original catalog that do not exist in this deployment's catalog, so
+        // both reactions silently re-offered the same pillow.
+        // No product ids in code: the catalog decides.
+        var pillowItems = readSleepSystemGroups().pillow;
         if (!currentPillowId && pillowItems[0]) currentPillowId = pillowItems[0].id;
+        var otherPillow = pillowItems.find(function(item) { return item.id !== currentPillowId; });
 
         Object.keys(window._accCart || {}).forEach(function(id) {
           var pillowItem = ACCESSORIES.find(function(accessory) { return accessory.id === id; });
@@ -19385,17 +19420,8 @@
         });
 
         window._sleepSystemState.pillowFeedback = pillowReaction;
-        if (pillowReaction === 'low') {
-          var adjustablePillow = pillowItems.find(function(item) {
-            return item.id === 'pillow-tempur-proadjust';
-          });
-          window._sleepSystemState.pillowCandidateId = adjustablePillow ? adjustablePillow.id : currentPillowId;
-          window._sleepSystemState.pillowReaction = '';
-        } else if (pillowReaction === 'high') {
-          var lowPillow = pillowItems.find(function(item) {
-            return item.id === 'pillow-tempur-breeze-prolo';
-          });
-          window._sleepSystemState.pillowCandidateId = lowPillow ? lowPillow.id : currentPillowId;
+        if (pillowReaction === 'low' || pillowReaction === 'high') {
+          window._sleepSystemState.pillowCandidateId = otherPillow ? otherPillow.id : currentPillowId;
           window._sleepSystemState.pillowReaction = '';
         } else {
           window._sleepSystemState.pillowCandidateId = currentPillowId;

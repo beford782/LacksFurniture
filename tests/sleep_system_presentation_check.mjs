@@ -154,6 +154,7 @@ const SRC = {
   guidance: extractFunction('function sleepSystemGuidance(stepId, primary)'),
   rail: extractFunction('function renderSleepSystemRail()'),
   secondary: extractFunction('function sleepSystemSecondaryActions(stepId)'),
+  catalogLowProfile: extractFunction('function catalogHasLowProfileSupport()'),
   supportGuide: extractFunction('function renderSupportGuide()'),
   pillowFit: extractFunction('function renderPillowFit(primary)'),
   suggestedGoal: extractFunction('function getSuggestedProtectionGoal()'),
@@ -214,7 +215,7 @@ function makeEnv({
   let src = [
     SRC.STEPS, SRC.escapeHtml, SRC.text, SRC.category, SRC.stepFor, SRC.qualify, SRC.scorer,
     SRC.readGroups, SRC.decision, SRC.decisionLabel, SRC.posLabel, SRC.getDemo, SRC.renderDemo,
-    SRC.guidance, SRC.rail, SRC.secondary, SRC.supportGuide, SRC.pillowFit, SRC.suggestedGoal,
+    SRC.catalogLowProfile, SRC.guidance, SRC.rail, SRC.secondary, SRC.supportGuide, SRC.pillowFit, SRC.suggestedGoal,
     SRC.goalLabel, SRC.goalReason, SRC.supportsGoal, SRC.protectionGuide, SRC.main, SRC.plan,
     SRC.footer
   ].join('\n');
@@ -987,12 +988,13 @@ const APPROVED_NOTES = [
   { step: 'pillow', answers: { sleep_position: 'combination' },
     en: 'Check that the customer\'s head stays centered over their shoulders.',
     es: 'Verifica que la cabeza del cliente se mantenga centrada sobre los hombros.' },
+  // 3.7 P9 (owner ruling 2026-08-30, Option C): approved EN; ES provisional.
   { step: 'pillow', state: { pillowFeedback: 'low' },
-    en: 'If the customer says it feels too low, add loft or try adjustable fill, then retest.',
-    es: 'Si el cliente dice que se siente muy baja, agrega altura o prueba relleno ajustable y vuelve a probar.' },
+    en: 'If the pillow feels too low, compare another pillow, then retest.',
+    es: 'Si la almohada se siente muy baja, compara otra almohada y vuelve a probar.' },
   { step: 'pillow', state: { pillowFeedback: 'high' },
-    en: 'If the customer says it feels too high, move to a lower profile, then retest.',
-    es: 'Si el cliente dice que se siente muy alta, cambia a un perfil más bajo y vuelve a probar.' },
+    en: 'If the pillow feels too high, compare another pillow, then retest.',
+    es: 'Si la almohada se siente muy alta, compara otra almohada y vuelve a probar.' },
   { step: 'pillow', state: { pillowFeedback: 'aligned' },
     en: 'If the customer feels aligned, confirm comfort for several minutes before adding the pillow to the plan.',
     es: 'Si el cliente se siente alineado, confirma la comodidad durante varios minutos antes de agregar la almohada al plan.' },
@@ -1442,6 +1444,123 @@ section('3.7 P1 - sleep_issues "hot" is the same heat signal as temperature "hot
   });
   ok('negative control: reading only the temperature answer drops the issue-only customer back to the gel pillow on position alone',
     reverted.groups.pillow[0].id === 'pillow-gel-memory' && reverted.groups.pillow[0].score === 3);
+}
+
+// --------------------------------------------- 14e. 3.7 P9 Option C
+// Owner ruling 2026-08-30: the pillow-fit copy and the support guidance named
+// a low-profile pillow, an adjustable-fill pillow and lower foundation heights
+// the Lacks catalog does not carry (WG&R template artifacts), and the
+// pillow-reaction handler looked up two WG&R product ids that do not exist,
+// so "Too low" / "Too high" re-offered the same pillow. Rendered through the
+// real renderer; the handler is exercised through the real
+// handleSleepSystemAction() with a fake control.
+section('3.7 P9 Option C - copy names only what the catalog holds; the reaction handler offers the other cataloged pillow; the height choice follows the catalog');
+{
+  const APPROVED = {
+    en: {
+      low: 'Try another pillow on this mattress and compare the height, then record the fit again.',
+      high: 'Try another pillow on this mattress, then check whether your chin and neck feel neutral.',
+      stomach: 'Check that the neck stays level rather than bending upward.',
+      heightNote: 'If a lower finished bed height matters, ask which foundation heights are available.',
+      compareNote: 'Compare standard and lower bed heights.'
+    },
+    es: {
+      low: 'Prueba otra almohada en este colchón y compara la altura; luego vuelve a registrar el ajuste.',
+      high: 'Prueba otra almohada en este colchón y revisa si la barbilla y el cuello se sienten neutrales.',
+      stomach: 'Verifica que el cuello se mantenga nivelado y no se doble hacia arriba.',
+      heightNote: 'Si importa una altura de cama más baja, pregunta qué alturas de base están disponibles.',
+      compareNote: 'Compara alturas estándar y más bajas.'
+    }
+  };
+  const STOMACH = Object.assign({}, ANSWERS, { sleep_position: 'stomach' });
+  for (const lang of ['en', 'es']) {
+    const A = APPROVED[lang];
+    for (const fb of ['low', 'high']) {
+      const r = renderStep('pillow', { answers: ANSWERS, lang, state: { pillowFeedback: fb } });
+      const feedback = grab(r.main, 'sleep-system__pillow-feedback');
+      ok(`[${lang}/pillow/too ${fb}] the fit feedback is the approved line and names no product`,
+        feedback === A[fb] && !/adjustable|low-profile|perfil bajo|relleno ajustable/i.test(feedback || ''), JSON.stringify(feedback));
+    }
+    const st = renderStep('pillow', { answers: STOMACH, lang });
+    ok(`[${lang}/pillow/stomach] the position cue is the approved check, not a "lower profile" product`,
+      notesText(st.guidance).includes(A.stomach) && !notesText(st.guidance).some((n) => /lower profile|perfil bajo/i.test(n)),
+      notesText(st.guidance).join(' | ').slice(0, 160));
+    const sup = renderStep('support', { answers: ANSWERS, lang });
+    const choiceIds = [...sup.main.matchAll(/data-support-choice="([^"]+)"/g)].map((m) => m[1]);
+    ok(`[${lang}/support] on a catalog with one foundation height the actionable "Lower height" choice is withheld (current / standard / unsure remain)`,
+      JSON.stringify(choiceIds) === JSON.stringify(['current', 'standard', 'unsure']), JSON.stringify(choiceIds));
+    ok(`[${lang}/support] the specialist notes carry the non-interactive height prompt instead of a comparison the catalog cannot offer`,
+      notesText(sup.guidance).includes(A.heightNote) && !notesText(sup.guidance).includes(A.compareNote),
+      notesText(sup.guidance).join(' | ').slice(0, 160));
+  }
+  // Data-driven: a catalog that carries a low_profile support item gets the
+  // choice and the comparison note back with no code change.
+  {
+    const withLow = ACCESSORIES_JSON.concat([{
+      id: 'foundation-test-lowpro', name: { en: 'Test Low-Profile Foundation', es: 'Base de perfil bajo de prueba' },
+      category: { en: 'Foundations & Support', es: 'Bases y Soportes' }, subType: 'low_profile', price: 1,
+      description: { en: 'test', es: 'prueba' }, image: '', matchTags: ['all'], matchScores: { default: 1 }
+    }]);
+    const sup = renderStep('support', { answers: ANSWERS, accessories: withLow });
+    const choiceIds = [...sup.main.matchAll(/data-support-choice="([^"]+)"/g)].map((m) => m[1]);
+    ok('data-driven: with a low_profile support item in the catalog the "Lower height" choice returns',
+      JSON.stringify(choiceIds) === JSON.stringify(['current', 'standard', 'low', 'unsure']), JSON.stringify(choiceIds));
+    ok('data-driven: and the comparison note returns in place of the height prompt',
+      notesText(sup.guidance).includes(APPROVED.en.compareNote) && !notesText(sup.guidance).includes(APPROVED.en.heightNote));
+  }
+  // The reaction handler: the real handleSleepSystemAction() with a fake
+  // control. "Too low" / "Too high" must move the candidate to the
+  // highest-ranked OTHER cataloged pillow; "aligned" keeps it. No product id
+  // may appear in the handler source.
+  const HANDLER_SRC = extractFunction('function handleSleepSystemAction(control)');
+  ok('the handler source names no product id (the WG&R lookups are gone)',
+    !!HANDLER_SRC && !/pillow-tempur|pillow-flow|pillow-gel/.test(stripComments(HANDLER_SRC)));
+  function reactionRun(reaction, startCandidate) {
+    const win = {
+      _accCart: {},
+      _sleepSystemState: { activeStep: 'pillow', decisions: {}, demoPosition: '', supportChoice: '',
+        pillowCandidateId: startCandidate, pillowReaction: '', pillowFeedback: '', protectionGoal: '' }
+    };
+    const logged = [];
+    const src = [SRC.category, SRC.stepFor, SRC.qualify, SRC.scorer, SRC.readGroups, HANDLER_SRC].join('\n');
+    new Function('window', 'answers', 'currentLang', 'ACCESSORIES', 'analytics', 'control',
+      src + `
+      function syncAccessoryAnalytics() {}
+      function renderSleepSystem() {}
+      handleSleepSystemAction(control);`)(
+      win, ANSWERS, 'en', ACCESSORIES_JSON, { log: (e, d) => logged.push({ e, d }) },
+      { getAttribute: (k) => (k === 'data-sleep-action' ? 'pillow-reaction' : k === 'data-reaction' ? reaction : null) });
+    return { state: win._sleepSystemState, logged };
+  }
+  const groupsNow = makeEnv({ answers: ANSWERS }).api.groups().pillow.map((a) => a.id);
+  ok('control: the shipped catalog carries exactly two pillows in the group for this customer', groupsNow.length === 2, JSON.stringify(groupsNow));
+  const [first, second] = groupsNow;
+  const low = reactionRun('low', first);
+  ok(`"Too low" from the hero (${first}) moves the candidate to the other cataloged pillow (${second})`,
+    low.state.pillowCandidateId === second && low.state.pillowReaction === '' && low.state.pillowFeedback === 'low', JSON.stringify(low.state));
+  const high = reactionRun('high', second);
+  ok(`"Too high" from the alternative (${second}) moves the candidate back to the hero (${first})`,
+    high.state.pillowCandidateId === first && high.state.pillowReaction === '', JSON.stringify(high.state));
+  const noStart = reactionRun('low', '');
+  ok('with no candidate yet, "Too low" starts from the hero and offers the other pillow', noStart.state.pillowCandidateId === second);
+  const aligned = reactionRun('aligned', first);
+  ok('"Feels aligned" keeps the current pillow and records the aligned reaction',
+    aligned.state.pillowCandidateId === first && aligned.state.pillowReaction === 'aligned' && aligned.state.pillowFeedback === 'aligned');
+  ok('the analytics event names the next pillow', low.logged.some((l) => l.e === 'pillow_fit_recorded' && l.d.nextPillowId === second));
+  // Negative control: a hard-coded id lookup returns -> the reaction re-offers the same pillow.
+  {
+    const from = 'window._sleepSystemState.pillowCandidateId = otherPillow ? otherPillow.id : currentPillowId;';
+    if (!HANDLER_SRC.includes(from)) throw new Error('P9 negative control: anchor not found');
+    const mutated = HANDLER_SRC.replace(from, "var phantom = pillowItems.find(function(i) { return i.id === 'pillow-tempur-proadjust'; }); window._sleepSystemState.pillowCandidateId = phantom ? phantom.id : currentPillowId;");
+    const win = { _accCart: {}, _sleepSystemState: { activeStep: 'pillow', decisions: {}, demoPosition: '', supportChoice: '', pillowCandidateId: first, pillowReaction: '', pillowFeedback: '', protectionGoal: '' } };
+    new Function('window', 'answers', 'currentLang', 'ACCESSORIES', 'analytics', 'control',
+      [SRC.category, SRC.stepFor, SRC.qualify, SRC.scorer, SRC.readGroups, mutated].join('\n') + `
+      function syncAccessoryAnalytics() {}
+      function renderSleepSystem() {}
+      handleSleepSystemAction(control);`)(win, ANSWERS, 'en', ACCESSORIES_JSON, { log() {} },
+      { getAttribute: (k) => (k === 'data-sleep-action' ? 'pillow-reaction' : k === 'data-reaction' ? 'low' : null) });
+    ok('negative control: a phantom-id lookup re-offers the same pillow (the assertion above bites)', win._sleepSystemState.pillowCandidateId === first);
+  }
 }
 
 section('negative controls — the load-bearing assertions bite');

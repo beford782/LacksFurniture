@@ -2052,6 +2052,18 @@ const MUTATIONS = [
   ["sleep system: the protection goal reads only the temperature answer again (P1 reverted)",
     "      if (answers.temperature === 'hot' || issues.includes('hot')) return 'cooling';",
     "      if (answers.temperature === 'hot') return 'cooling';", SLEEP],
+  // 3.7 P9 Option C (owner ruling 2026-08-30): the reaction handler offers the
+  // other cataloged pillow (no product ids); the "Lower height" choice and
+  // the height note follow the catalog. Observed by the rendered P9 section.
+  ["sleep system: the pillow reaction re-offers the current pillow (the other-pillow rule is dropped)",
+    "          window._sleepSystemState.pillowCandidateId = otherPillow ? otherPillow.id : currentPillowId;",
+    "          window._sleepSystemState.pillowCandidateId = currentPillowId;", SLEEP],
+  ["sleep system: the \"Lower height\" choice is offered regardless of the catalog",
+    "      if (!catalogHasLowProfileSupport()) {\n        choices = choices.filter(function(choice) { return choice.id !== 'low'; });\n      }",
+    "", SLEEP],
+  ["sleep system: the support height note ignores the catalog (comparison note always shown)",
+    "          catalogHasLowProfileSupport()\n            ? sleepSystemText({ en: 'Compare standard and lower bed heights.', es: 'Compara alturas estándar y más bajas.' })",
+    "          true\n            ? sleepSystemText({ en: 'Compare standard and lower bed heights.', es: 'Compara alturas estándar y más bajas.' })", SLEEP],
 
 ];
 
