@@ -12,20 +12,62 @@ can see a better path.
 ---
 
 ## What DreamFinder Is
-DreamFinder is a store-agnostic single-page tablet kiosk app for mattress showroom floors.
-Customers take a 10-question sleep quiz, get personalized mattress recommendations across
-Gold/Silver/Bronze tiers, browse accessories, and receive results + a discount code by email.
-Salespeople get a handoff screen showing the customer's saved picks.
+DreamFinder is a store-agnostic single-page tablet app for mattress showroom floors,
+run as a **salesperson-operated, customer-visible guided consultation** (see the
+owner direction below and "The permanent operating premise" in
+`docs/rebuild-roadmap.md`). The salesperson leads a 10-question sleep quiz with
+the customer, presents the Sleep Brief and the Gold/Silver/Bronze recommendations,
+compares finalists, builds the Sleep System, and closes on the Consultation
+Summary with a take-home preview of the results.
+
+**Template heritage — not active Lacks behaviour:** the inherited self-service
+kiosk flow (customers quizzing alone, then receiving results plus a discount code
+by email). In this deployment `discount.mode` is `"disabled"` (no code is
+generated, revealed or emailed) and `gasUrl` is blank (preview mode — nothing is
+sent and no lead is logged; the take-home screen is a preview). Neither may be
+enabled without Blake's explicit authorization; live integration is a separately
+owner-gated phase (see the lifecycle note below).
 
 **DreamFinder is a white-label product.** The canonical app has no relationship to any
 specific retailer. Each store gets its own fully customized deployment.
+
+### Owner direction — product north star and current lifecycle
+
+DreamFinder is a **pre-floor prototype** until Blake explicitly says that
+floor-launch preparation has begun. Do not treat preview availability, repository
+readiness, a merged PR, or a successful Pages build as authorization for showroom
+use, live-backend activation, production monitoring, or routine refreshes of
+financing terms and promotion evidence. Time-sensitive claims remain fail-closed;
+re-verify them only when Blake requests it or begins launch preparation.
+
+The primary goal for Claude Code and Codex is to make DreamFinder the most
+visually impressive, persuasive, and useful mattress-selling interface possible.
+It should help salespeople lead a compelling consultation, wow customers, build
+confidence, convert more shoppers into better-fitting mattresses, and attach more
+and better-matched sleep accessories. Visual quality, emotional impact, touch
+polish, clarity, responsiveness, salesperson usefulness, and a premium perceived
+experience are first-class acceptance criteria—not optional finishing work.
+
+Earn conversion through fit, value, explanation, comparison, and a coherent
+sleep-system story. Do not use deceptive urgency, generic or forced upsells,
+unsupported claims, hidden terms, or financing influence on sleep-fit scoring.
+Accessory recommendations should feel personally justified and remain easy to
+understand and decline. When technically valid choices are otherwise comparable,
+prefer the one that creates the stronger in-store demonstration and more memorable
+customer moment without sacrificing speed, accessibility, bilingual parity,
+privacy, or trust.
 
 ---
 
 ## This Repo — Lacks Furniture Deployment
 Deployed (PREVIEW, not production): https://beford782.github.io/LacksFurniture
 Repo: https://github.com/beford782/LacksFurniture (main = Pages branch)
-Local path: `C:\Users\BlakeFord\Documents\GitHub\LacksFurniture`
+Local clones: the primary clone is `C:\Users\BlakeFord\Documents\GitHub\LacksFurniture`;
+task worktrees live under `C:\Users\BlakeFord\Documents\Lacks PROTOTYPE\` (e.g.
+`LacksFurniture-slice6`) and `Documents\GitWorktrees\LacksFurniture\`. Never
+assume the path: confirm the Git root and branch first
+(`git rev-parse --show-toplevel`, `git branch --show-current`), and never treat
+the parent `Lacks PROTOTYPE` folder as the repository.
 Forked from the WGR template (beford782/WGRFurniture) at commit b05e574.
 
 **Lacks Payment Choice**: the primary promotional concept is a financing
@@ -166,10 +208,18 @@ over HTTP (e.g. `python -m http.server 8000`, `npx http-server`, or VS Code's
 Live Server) and open `http://localhost:8000/`.
 
 ### Data files
-- `data/mattresses.csv` — source of truth for mattress lineup, edit this
-- `data/mattresses-es.csv` — Spanish translations for mattress display text (optional per retailer)
-- `data/mattresses.json` — generated file, never edit directly
-- `data/store-config.json` — all store-specific configuration
+- `data/mattresses.csv` — **generated in this repo**, not hand-edited. The
+  canonical mattress data is `incoming/lacks_mattresses.json` →
+  `incoming/build_lacks_workbook.py` → `incoming/Lacks_Store_Data.xlsx` →
+  `tools/convert_store_data.py`, which writes this CSV (and `mattresses-es.csv`)
+  and then runs `build-data.ps1`. CI treats the CSV as a protected artifact and
+  `tests/lineage_check.py` fails on a CSV that does not match its sources.
+  (In the white-label template the CSV is the hand-edited source — template
+  heritage, not this deployment.)
+- `data/mattresses-es.csv` — generated the same way whenever Spanish content exists
+- `data/mattresses.json` — generated by `build-data.ps1` from the CSVs; never edit directly
+- `data/store-config.json` — all store-specific configuration; generated from
+  `incoming/lacks_store_values.json` plus the workbook's Promotions and Quiz envelopes
 - `data/dict-en.json` — English UI dictionary (shared across all retailers)
 - `data/dict-es.json` — Spanish UI dictionary (shared across all retailers)
 
@@ -180,6 +230,10 @@ The app fetches mattresses.json, store-config.json, and the active dictionary at
 .\build-data.ps1
 ```
 Run from repo root. Converts `data\mattresses.csv` → `data\mattresses.json`.
+**In this repo the CSVs are themselves generated** (see Data files above): after
+changing `incoming/`, rebuild the workbook and run the converter, which invokes
+this script for you — `tests/lineage_check.py` re-executes that exact chain in
+CI and is the authoritative statement of the commands and flags.
 If `data\mattresses-es.csv` exists, merges Spanish translations as `tags_es`,
 `highlight_es`, `reasons_es` fields into the JSON.
 Always run this before committing if the CSV was changed.
@@ -236,7 +290,8 @@ by default. Do not treat this as optional or Bel-specific.
   `data/mattresses-es.csv`. The build script merges these into `mattresses.json`.
   If a retailer hasn't provided Spanish product translations, the app falls back
   to English text gracefully.
-- **Email** is sent in the customer's chosen language. The client builds the HTML
+- **Email** (template capability — inactive here while `gasUrl` is blank) is
+  sent in the customer's chosen language. The client builds the HTML
   email body in the active language and sends `lang: currentLang` in the GAS payload.
   `Code.gs` uses this for the subject line and server-side fallback.
 - **Language switching preserves the session.** Changing EN/ES mid-session keeps
@@ -327,6 +382,12 @@ This area has had significant prior tuning.
 
 ## Backend — Google Apps Script
 
+**Inactive in this deployment.** `gasUrl` is blank, so the app runs in preview
+mode (`emailDeliveryLive()` is false: nothing is sent, no lead is logged, the
+take-home screen is a preview) and stays that way until Blake explicitly
+authorizes live activation — a separately gated phase, not a consequence of any
+merge or deployment. What follows describes the template capability.
+
 Email delivery and lead logging use a Google Apps Script (GAS) web app.
 The GAS endpoint URL lives in `data/store-config.json` under `gasUrl`.
 Each retailer deployment has its own GAS script and endpoint.
@@ -362,7 +423,10 @@ significant debugging to get right.
   with animated SVG and personalized benefit cards. Featured top pillow with "Matched to
   Your Profile" badge. "Did You Know?" educational callout for protectors. Sticky cart bar.
   Cart persists to handoff screen.
-- **Discount reveal**: Dramatic animation — DREAM + 3-digit code. 10rem gold glow font.
+- **Discount reveal — template heritage, DISABLED in this deployment**: the
+  DREAM + code animation is a white-label capability gated on `discount.mode`;
+  Lacks ships `"disabled"`, so no code is generated, revealed or emailed. Payment
+  Choice (item 1.5) is the Lacks promotional concept instead.
 - **Handoff screen**: Customer marks "I'm Interested" on mattresses/accessories. Salesperson sees saved picks.
 - **Idle timeout (Gate 1B)**: warning → explicit recovery or wipe. Ordinary
   inactivity never resets destructively. After `SESSION_POLICY.idleWarningMs` a
@@ -428,8 +492,20 @@ git pull --ff-only origin main
 git switch -c <owner>/<short-description>
 # edit, test, commit
 git push -u origin HEAD
-# open a PR targeting main, wait for Full suite (18 checks), then merge
+# run the complete local CI mirror first:
+#   pwsh -File tools/run_full_suite.ps1
+#   (no pwsh? Windows PowerShell 5.1 works: powershell -NoProfile -File tools/run_full_suite.ps1)
+# open a PR targeting main; wait for the required status check — its name,
+# "Full suite (18 checks)", is a legacy label pinned by branch protection, and
+# the job actually runs 48 verification steps, the same 48 the local mirror
+# enumerates — then merge, only when Blake asks
 ```
+
+**Agent boundary (identical to `AGENTS.md`):** no commit, push, PR, merge,
+deployment, live-email activation, promotion activation, or external publication
+unless Blake explicitly requests that action in the current task. A branch push
+is never a deployment; a merged PR, a green CI run, or a Pages build is never
+showroom authorization.
 
 Do not push directly to `main`, and do not use `--force` or the legacy
 `git ship` alias. The versioned pre-push hook rejects direct pushes to `main`;
@@ -463,3 +539,5 @@ PR is merged and the Pages `build` and `deploy` checks succeed on the resulting
 - Edit `data/mattresses.json` directly (always regenerate from CSV)
 - Add store names, colors, or branding anywhere except
   `store-config.json`
+- Commit, push, open or merge a PR, deploy, or activate live email, promotions,
+  or financing applications — none of these without an explicit request

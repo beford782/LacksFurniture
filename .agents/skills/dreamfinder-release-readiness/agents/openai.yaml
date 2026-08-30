@@ -1,0 +1,4 @@
+interface:
+  display_name: "DreamFinder Release Readiness"
+  short_description: "Audit branch, PR, and release evidence"
+  default_prompt: "Use $dreamfinder-release-readiness to audit this branch and tell me whether it is ready to release."
