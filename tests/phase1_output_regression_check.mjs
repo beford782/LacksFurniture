@@ -133,7 +133,27 @@ const BASELINE_PATH = join(root, "tests", "fixtures", "phase1_output_baseline_da
 // bytes (sha 24dad016…). Hash moved in the same reviewed diff; the per-slot
 // removal mutations, M5/M6 probes and the 12-pair non-triviality pins below
 // make this bounded amendment load-bearing.
-const BASELINE_SHA256 = "d973fae2fd4b31d7931ffb955830ebfc21256b8658d43c25522e0afaf23e48a6";
+// 2026-08-30 amendment (owner-authorized item 3.7 step-4 change P3, second of
+// P2 -> P3 -> P1): within the PILLOW group, readSleepSystemGroups() now ranks
+// a pillow that at least one answer fired for (`matched`) above a pillow
+// carried by its catalog default score alone - a stable sort applied after
+// qualification, so the cap / back-fill and the threshold stamp are
+// untouched. On the shipped catalog this reorders the two pillows for
+// exactly the non-hot BACK sleepers (the Flow carries position_back 1; the
+// gel pillow only default 2): fixture scenarios s1 and s5. The ONLY pinned
+// cells that moved are 56 - scenarios.{s1,s5}.accessories.{en,es}.groups
+// .pillow[0..1] and .recommendedAccessories[0..1] (ids, scores, stamps and
+// the projection swap places; no value is new). Every other cell - the
+// full scorer order (`ordered`), every score, rank, pct, tier, threshold,
+// cap, back-fill, resolved firmness, profile and matchReason - is
+// byte-identical. Evidence: the established tool (--write-baseline) run on
+// the pre- and post-change trees in temp copies; the structural path diff
+// lists exactly those 56 cells and nothing else; the patched fixture equals
+// the post-change output minus the retained obsolete feelWord field;
+// reverting only those 56 cells reproduces the previous fixture bytes (sha
+// d973fae2...). Hash moved in the same reviewed diff; the "P3 matched-first
+// pillow rank removed" mutation below makes the amendment load-bearing.
+const BASELINE_SHA256 = "35c1c70e9e37befa67782e54a937cbfe932cea672862c65bf30d4660732f1dce";
 
 const WRITE_MODE = process.argv.includes("--write-baseline");
 
@@ -716,6 +736,12 @@ const MUTATIONS = [
   // is pinned per group item; moving it must diverge.
   // (C3 moved the threshold stamp into readSleepSystemGroups; the mutant
   // keys on that extraction now, proving IT is load-bearing.)
+  // 3.7 P3 (2026-08-30): the matched-first pillow rank. Neutralising the
+  // comparator restores the pre-P3 order (gel default 2 ahead of the matched
+  // Flow for back sleepers) and must diverge from the baseline in s1 / s5.
+  { name: "P3 matched-first pillow rank removed", key: "groupsSrc", src: READGROUPS_FN,
+    find: "return (b.matched ? 1 : 0) - (a.matched ? 1 : 0);",
+    replace: "return 0;" },
   { name: "engine-groups meetsMatchThreshold 0.6 -> 0.9", key: "groupsSrc", src: READGROUPS_FN,
     find: "meetsMatchThreshold: (item.score || 0) >= maxScore * 0.6",
     replace: "meetsMatchThreshold: (item.score || 0) >= maxScore * 0.9" },

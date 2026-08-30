@@ -2034,6 +2034,14 @@ const MUTATIONS = [
     "          : (primary.matched\n            ? sleepSystemText({ en: 'Recommended to try', es: 'Recomendado para probar' })",
     "          : (primary.meetsMatchThreshold\n            ? sleepSystemText({ en: 'Recommended to try', es: 'Recomendado para probar' })", SLEEP],
 
+  // 3.7 P3 (owner ruling 2026-08-30): the matched-first pillow rank inside
+  // readSleepSystemGroups(). Neutralising the comparator restores the pre-P3
+  // order (gel default 2 ahead of the matched Flow for back sleepers) -
+  // observed by the fixture (s1 / s5) and the rendered P3 section.
+  ["sleep system: the matched-first pillow rank is neutralised (P3 reverted)",
+    "        return (b.matched ? 1 : 0) - (a.matched ? 1 : 0);",
+    "        return 0;", ["tests/phase1_output_regression_check.mjs"].concat(SLEEP)],
+
 ];
 
 // ---------------------------------------------------------------------------
