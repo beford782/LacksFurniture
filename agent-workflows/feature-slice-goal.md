@@ -40,4 +40,3 @@ Done when:
 After the plan is accepted, start `/goal` with the refined outcome, constraints,
 and verification criteria. Keep steering in the same task; open a new task only
 when the desired outcome genuinely branches.
-

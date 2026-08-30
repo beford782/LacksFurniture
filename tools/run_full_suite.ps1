@@ -228,6 +228,17 @@ try {
     try {
         Invoke-DreamFinderCheck -Name 'working-tree whitespace check' -Executable $gitExecutable -Arguments @('diff', '--check')
         Invoke-DreamFinderCheck -Name 'staged whitespace check' -Executable $gitExecutable -Arguments @('diff', '--cached', '--check')
+        # CI runs `git diff --check <base> HEAD` (ranged), which inspects the
+        # COMMITTED change; the two checks above are vacuous for anything already
+        # committed. Mirror it against the merge-base with origin/main when that
+        # ref exists (a fresh clone without the remote skips it, and says so).
+        $mergeBase = (& $gitExecutable merge-base HEAD origin/main 2>$null | Select-Object -First 1)
+        if ($LASTEXITCODE -eq 0 -and $mergeBase) {
+            $shortBase = $mergeBase.Substring(0, [Math]::Min(7, $mergeBase.Length))
+            Invoke-DreamFinderCheck -Name "committed-range whitespace check ($shortBase..HEAD, as CI runs it)" -Executable $gitExecutable -Arguments @('diff', '--check', $mergeBase, 'HEAD')
+        } else {
+            Write-Host "`n==> committed-range whitespace check SKIPPED: origin/main is not available in this clone" -ForegroundColor Yellow
+        }
     } catch {
         $failures.Add($_.Exception.Message)
     }

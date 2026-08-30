@@ -45,4 +45,3 @@ recorded owner decision:
 - Then list assumptions, unverified checks, and remaining owner decisions.
 - If there are no findings, say so explicitly and still name residual risks or
   verification gaps.
-

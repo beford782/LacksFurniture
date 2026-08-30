@@ -25,4 +25,3 @@ preferences, and return a compact report to one primary task.
 If implementation must run concurrently, create separate Git worktrees and give
 each task non-overlapping ownership. The primary task reviews and integrates the
 results, then runs the full suite once on the combined state.
-

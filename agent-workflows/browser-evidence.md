@@ -44,4 +44,3 @@ Record:
 
 Store temporary screenshots under `outputs/manual-gates/`; this path is ignored by
 Git. Commit only an explicitly approved evidence record, never customer data.
-
