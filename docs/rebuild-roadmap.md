@@ -48,7 +48,19 @@ standing constraints; the work it adds is recorded in the third 2026-08-29
 revision note below and on items 1.3, 1.4 and 1.6, the Phase 1 cohesion
 milestone, the pre-floor evidence plan and Phase 3 item 3.7.
 
-**Last updated:** 2026-08-30, third revision *(**3.7 audit delivered and
+**Last updated:** 2026-08-30, fourth revision *(**P9 packet and Option C
+ruling recorded; #78 merged.** Documentation only. PR #78 (the 3.7 audit)
+merged as `e584c77`. The P9 catalog / copy packet is landed with Blake's
+Option C ruling — see item 3.7. Also recorded on 2026-08-30 by the same
+rulings: PR #79 (C1) approved to merge after #78; PR #81 (P2) not approved on
+its current head — it must integrate current `main`, rebuild the generated
+demo bundle, re-run the complete suite and sweep and obtain fresh CI; P3 opens
+only after P2 lands and integrates `main`, P1 after P3 the same way; PR #80
+(the P5 option-C prototype) stays draft / DO NOT MERGE with its expected
+prototype CI failure, revised per the owner's wording and three-base ruling;
+an approved implementation would start from updated `main` on a fresh
+bounded branch. The previous revision, the third on 2026-08-30, recorded the
+**3.7 audit delivered and
 step 4 ruled; decision PR #77 merged.** Documentation only — no application,
 data, test or engine artifact changed; no status moved. PR #77 (the cohesion
 pass-1 decision record) was approved by Blake and merged as `b064527`. The
@@ -5281,6 +5293,21 @@ packet: confirm whether the named low-profile, adjustable-fill and support
 alternatives are genuinely in the Lacks assortment; if not, propose copy
 naming only products / categories actually present; no invented inventory.
 The item stays ◐; the Gated list stands for everything not named above.)*
+
+*(**P9 packet delivered and ruled 2026-08-30 — Option C.**
+`docs/accessory-catalog-copy-packet-2026-08-30.md` establishes from repository
+evidence (live site NOT checked) that no low-profile pillow, adjustable-fill
+pillow, low-profile foundation or bunkie board is in the Lacks assortment —
+the copy that names them and the pillow-fit handler's two hard-coded product
+ids are inherited WG&R template artifacts — and Blake ruled: correct the copy
+and the dead template-product behaviour now (approved EN strings in the
+packet; the handler takes the highest-ranked pillow other than the current
+one, no hard-coded ids; the actionable "Lower height" choice is removed while
+the catalog carries one foundation height, with a permitted non-interactive
+specialist note), widen the catalog later only if Lacks confirms the real
+assortment; no products added, no inventory claimed, no live check unless
+separately requested; ES provisional. The packet lands on its own docs PR
+before the bounded implementation PR from updated `main`.)*
 
 ## Open decisions register
 
