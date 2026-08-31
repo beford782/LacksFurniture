@@ -1736,22 +1736,27 @@
       }
     }
 
+    /* PROTOTYPE P-Signature option A ONLY (D10a, 2026-08-31; never merged
+       as such): the stamp becomes a legible ~96px centred mark on Results,
+       the Plan and the Summary. Static - it never animates after arrival. */
     .noct-results-signature {
       margin-bottom: 8px;
       color: var(--accent-ink);
+      text-align: center;
     }
 
     .noct-results-signature .sleep-signature {
-      width: 54px;
+      width: 96px;
     }
 
     .hf2-review-signature {
       margin-bottom: 8px;
       color: var(--accent-ink);
+      text-align: center;
     }
 
     .hf2-review-signature .sleep-signature {
-      width: 48px;
+      width: 96px;
     }
 
     .profile-launch__reflection {
@@ -10759,6 +10764,11 @@
               onclick="window.sleepPlanBack()"
               ontouchend="event.preventDefault();window.sleepPlanBack();"></button>
     </div>
+    <!-- PROTOTYPE P-Signature option A ONLY: the Plan joins Results and the
+         Summary as a stamp carrier (D10a). Same decorative answer-derived
+         figure, same shared class; own id. Customer-derived, so it IS in the
+         wipe inventory (SESSION_CONTENT_IDS). -->
+    <div class="hf2-review-signature" id="sleepPlanSignature"></div>
     <div class="hf2-review-eyebrow" id="sleepPlanEyebrow"></div>
     <h1 class="hf2-review-title" id="sleepPlanTitle"></h1>
 
@@ -19896,6 +19906,11 @@
       if (eyebrow) eyebrow.textContent = t('plan.eyebrow');
       var title = document.getElementById('sleepPlanTitle');
       if (title) title.textContent = t('plan.title');
+      // PROTOTYPE P-Signature option A: stamp only - identical geometry to
+      // the Brief, Results and Summary renders; decorative, aria-hidden baked
+      // into the builder.
+      var planSignature = document.getElementById('sleepPlanSignature');
+      if (planSignature) planSignature.innerHTML = buildSleepSignatureSvg(answers);
       var cont = document.getElementById('sleepPlanContinue');
       if (cont) cont.textContent = t('plan.continue');
       renderSleepPlanFinalist();
@@ -21692,7 +21707,7 @@
       'questionContainer', 'reviewList',
       'profileName', 'profilePriorities', 'profileSignature', 'profileHero',
       'profileReflection', 'profileSecondary', 'profileCta',
-      'resultsSignature', 'hf2Signature',
+      'resultsSignature', 'hf2Signature', 'sleepPlanSignature',
       'resultsHeadline', 'tierTabs', 'tierDescriptor', 'topPickContainer',
       'supportingRow', 'resultsTrialFocus',
       'drawerName', 'drawerDifferentiators', 'dfmConstructionSection', 'drawerTryPrompts', 'drawerPromotionDetail',
