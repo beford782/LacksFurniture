@@ -1470,6 +1470,35 @@
       color: var(--consultation-muted);
     }
 
+    /* PROTOTYPE X7 option B ONLY (owner ruling D9 amendment, 2026-08-31;
+       never merged as such): landscape Next-in-fold via a tighter two-column
+       rhythm - the grid keeps two columns everywhere, and the fold is
+       recovered from cell height and block spacing instead. Landscape CSS
+       only; the emitted column class and the sub-700px collapse are
+       untouched. */
+    @media (orientation: landscape) and (min-width: 900px) {
+      body:has(#questionScreen.active) .noct-quiz-option {
+        min-height: 62px;
+        padding: 12px 16px 12px 13px;
+      }
+      body:has(#questionScreen.active) .noct-quiz-options {
+        gap: 8px;
+        margin-bottom: 20px;
+      }
+      body:has(#questionScreen.active) .noct-quiz-help {
+        margin-bottom: 10px;
+      }
+      body:has(#questionScreen.active) .noct-quiz-nav {
+        padding-top: 14px;
+      }
+      body:has(#questionScreen.active) .noct-slider-value {
+        font-size: 56px;
+      }
+      body:has(#questionScreen.active) .noct-slider-feel {
+        margin-bottom: 16px;
+      }
+    }
+
     @media (hover: hover) {
       body:has(#questionScreen.active) .noct-quiz-back:hover,
       body:has(#reviewScreen.active) .noct-quiz-back:hover {
