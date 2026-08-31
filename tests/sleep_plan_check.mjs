@@ -884,9 +884,15 @@ if (gate("renderSleepPlan", RENDER_SRCS.every(Boolean) && !!FALLBACK_SRC && !!RE
     // composition assertions if this variant is not selected.
     const payOf = (e) => e.hf2StatusPayment ? e.hf2StatusPayment.textContent : "";
 
+    // Re-ruled again for PROTOTYPE P-C3 option B (D3 split): the chosen state
+    // renders finalist.chosen as the eyebrow and the pick text (no period) in
+    // the display-type name node. Restore the sentence assertions if this
+    // variant is not selected.
+    const _pickSplit = "Restonic · Cloud Nine (" + dictEn["results.tier_gold"] + " · " + dictEn["results.match_lead"] + ")";
     let els = makeLeadEnv({ saved: [{ id: "g1", name: "Cloud Nine", brand: "Restonic", tier: "gold" }], fav: "g1", results: RESULTS, financing: false });
-    check("chosen + financing off: the finalist sentence alone, name + tier-and-position",
-      els.hf2LeadLine.textContent === "Finalist ✓ Restonic · Cloud Nine (" + dictEn["results.tier_gold"] + " · " + dictEn["results.match_lead"] + ").");
+    check("chosen + financing off: the split pair alone - finalist.chosen eyebrow + display-type pick text",
+      els.hf2LeadLine.textContent === dictEn["finalist.chosen"]
+      && els.hf2StatusName.textContent === _pickSplit && els.hf2StatusName.hidden === false);
     check("...the label renders from the dictionary", els.hf2LeadLabel.textContent === dictEn["hf2.lead_label"]);
 
     els = makeLeadEnv({ results: RESULTS, payPref: null });
@@ -917,16 +923,17 @@ if (gate("renderSleepPlan", RENDER_SRCS.every(Boolean) && !!FALLBACK_SRC && !!RE
     // C12 (R3 I1): the remaining matrix cells — chosen composes with every
     // payment state, and the none sentence composes too.
     const CHOSEN_CELL = { saved: [{ id: "g1", name: "Cloud Nine", brand: "Restonic", tier: "gold" }], fav: "g1", results: RESULTS };
-    const _pickLine = "Finalist ✓ Restonic · Cloud Nine (" + dictEn["results.tier_gold"] + " · " + dictEn["results.match_lead"] + ").";
+    const _chosenPair = (e) => e.hf2LeadLine.textContent === dictEn["finalist.chosen"]
+      && e.hf2StatusName.textContent === _pickSplit && e.hf2StatusName.hidden === false;
     els = makeLeadEnv(Object.assign({ payPref: "plan-a" }, CHOSEN_CELL));
-    check("chosen x selected path: the finalist sentence pairs with the path label",
-      els.hf2LeadLine.textContent === _pickLine && payOf(els) === "Payment preference: Path A.");
+    check("chosen x selected path: the split pair with the path label",
+      _chosenPair(els) && payOf(els) === "Payment preference: Path A.");
     els = makeLeadEnv(Object.assign({ payPref: "not_now" }, CHOSEN_CELL));
     check("chosen x paused: ...with Not right now",
-      els.hf2LeadLine.textContent === _pickLine && payOf(els) === "Payment preference: Not right now.");
+      _chosenPair(els) && payOf(els) === "Payment preference: Not right now.");
     els = makeLeadEnv(Object.assign({ payPref: null }, CHOSEN_CELL));
     check("chosen x unselected: ...with the Not selected fallback",
-      els.hf2LeadLine.textContent === _pickLine && payOf(els) === "Payment preference: Not selected.");
+      _chosenPair(els) && payOf(els) === "Payment preference: Not selected.");
     els = makeLeadEnv({ results: null, payPref: "plan-a" });
     check("none x selected path: the honest none sentence still pairs with payment state",
       els.hf2LeadLine.textContent === dictEn["hf2.lead_none"] && payOf(els) === "Payment preference: Path A.");
@@ -938,6 +945,10 @@ if (gate("renderSleepPlan", RENDER_SRCS.every(Boolean) && !!FALLBACK_SRC && !!RE
     els = makeLeadEnv({ results: null, financing: false });
     check("P-C3a: financing off hides the empty payment node",
       payOf(els) === "" && els.hf2StatusPayment.hidden === true);
+    // P-C3b: the non-chosen states never leave a stale display-type name.
+    els = makeLeadEnv({ results: RESULTS, payPref: null });
+    check("P-C3b: the recommended state keeps its sentence and hides the name node",
+      els.hf2StatusName.hidden === true && els.hf2StatusName.textContent === "");
 
     check("renderAllFinancingSurfaces refreshes the lead line (typeof-guarded — a payment tap cannot leave it stale)",
       /if \(typeof renderHf2LeadLine === 'function'\) renderHf2LeadLine\(\);/.test(

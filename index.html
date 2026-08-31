@@ -3573,6 +3573,27 @@
     #hf2StatusRoute {
       margin-top: 0.6rem;
     }
+    /* PROTOTYPE P-C3 option B ONLY: hero-band scale. */
+    .hf2-status--hero .hf2-status__thumb {
+      flex-basis: 160px;
+    }
+    .hf2-status__name {
+      font-family: var(--font-serif);
+    }
+    .hf2-status__name {
+      font-size: clamp(1.35rem, 3vw, 1.8rem);
+      line-height: 1.25;
+      color: var(--color-text);
+      margin: 0.1rem 0 0.15rem;
+    }
+    .hf2-lead-line.hf2-status__eyebrow {
+      font-family: var(--font-sans);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent-ink);
+    }
     .hf2-pick .hf2-reaction-chip {
       margin-top: 6px;
     }
@@ -10966,10 +10987,16 @@
            implication rows (trial-verdict reaction chip, "Deferred: ..." line)
            and the Plan's existing choose-a-finalist route when no finalist is
            chosen. All customer-derived nodes are in the wipe inventories. -->
-      <div class="hf2-status__body">
+      <!-- PROTOTYPE P-C3 option B ONLY: hero band. The chosen state renders
+           the approved hf2.lead_chosen SPLIT - the existing finalist.chosen
+           fragment as an eyebrow plus the pick text in display type, dropping
+           exactly one period. No new strings; the other two states keep their
+           sentences verbatim. -->
+      <div class="hf2-status__body hf2-status--hero">
         <div class="hf2-status__thumb" id="hf2StatusThumb" hidden></div>
         <div class="hf2-status__lines">
           <p class="hf2-lead-line" id="hf2LeadLine"></p>
+          <div class="hf2-status__name" id="hf2StatusName" hidden></div>
           <p class="hf2-status__payment" id="hf2StatusPayment" hidden></p>
           <div class="hf2-status__rows" id="hf2StatusRows" hidden></div>
           <div id="hf2StatusRoute" hidden></div>
@@ -20331,8 +20358,25 @@
       // SESSION_TEXT_IDS; a missing node (hostile harness DOM) keeps the old
       // single-line composition so the sentence pair can never be lost.
       var payEl = document.getElementById('hf2StatusPayment');
+      // PROTOTYPE P-C3 option B: the chosen state renders the approved
+      // hf2.lead_chosen SPLIT - the existing finalist.chosen fragment as an
+      // eyebrow line plus the pick text in display type (one period
+      // dropped). The recommended and none states keep their sentences
+      // verbatim. A harness DOM without the new nodes falls back to the
+      // sentence forms unchanged.
+      var nameEl = document.getElementById('hf2StatusName');
       if (payEl) {
-        lineEl.textContent = lead;
+        var heroChosen = finalist.kind === 'chosen' && !!nameEl;
+        if (heroChosen) {
+          lineEl.textContent = t('finalist.chosen');
+          lineEl.className = 'hf2-lead-line hf2-status__eyebrow';
+          nameEl.textContent = pickText(finalist.item);
+          nameEl.hidden = false;
+        } else {
+          lineEl.textContent = lead;
+          lineEl.className = 'hf2-lead-line';
+          if (nameEl) { nameEl.textContent = ''; nameEl.hidden = true; }
+        }
         payEl.textContent = payment;
         payEl.hidden = !payment;
       } else {
@@ -21941,7 +21985,7 @@
       // an answer-derived shortlist surface to wipe. Omission, not a weakened
       // wipe: the remaining answer-derived ids are unchanged.
       'drawerSystemPromptTitle', 'drawerSystemPromptReason',
-      'hf2LeadLine', 'hf2StatusPayment',
+      'hf2LeadLine', 'hf2StatusPayment', 'hf2StatusName',
       'hf2FinancingStatus', 'financingSheetStatus', 'financingSheetAction',
       'sleepPlanFinancingStatus', 'sleepPlanPrioritiesRecoveryText',
       'sessionSafetyLive', 'dataErrorLive',

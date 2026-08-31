@@ -1135,7 +1135,7 @@ const REQUIRED_TEXT_IDS = [
   // overwrites it, so each must be emptied by the wipe.
   // Slice 6: the composed lead+payment sentence carries the finalist name
   // and the payment-preference state — customer-derived, wiped by name.
-  "hf2LeadLine", "hf2StatusPayment",
+  "hf2LeadLine", "hf2StatusPayment", "hf2StatusName",
   "hf2FinancingStatus", "financingSheetStatus", "financingSheetAction",
   "sessionSafetyLive",
   "resultsRevealTitle", "resultsRevealSubtitle",
