@@ -200,7 +200,14 @@ PROBE_JS = r"""
     return { id: c.id || c.className, x: r.x, y: r.y, w: r.width, h: r.height, display: getComputedStyle(c).display };
   });
   out.scrollWidth = doc.scrollWidth; out.clientWidth = doc.clientWidth;
-  out.title = { text: title.textContent, color: getComputedStyle(title).color, bg: bgOf(title), w: title.getBoundingClientRect().width };
+  // `lines` counts the title's line fragments (one text node -> one rect per
+  // line) and `overflows` its clipped width: together they are the "not
+  // squeezed into a sliver" guard. The box width alone stopped being that
+  // guard with cohesion C4 — a focused heading now shrinks its box to its
+  // text on purpose.
+  out.title = { text: title.textContent, color: getComputedStyle(title).color, bg: bgOf(title), w: title.getBoundingClientRect().width,
+                lines: (() => { const rg = document.createRange(); rg.selectNodeContents(title); return rg.getClientRects().length; })(),
+                overflows: title.scrollWidth > title.clientWidth + 1 };
   out.finHead = { text: finHead.textContent, color: getComputedStyle(finHead).color, bg: bgOf(finHead), hidden: finHead.closest('[hidden]') !== null };
   out.continue = { text: cont.textContent, hidden: cont.hidden, display: getComputedStyle(cont).display,
                    x: cb.x, y: cb.y, w: cb.width, h: cb.height, docHeight: doc.scrollHeight,
@@ -445,6 +452,12 @@ def run_forced_colors(browser, port, shots_dir):
     if shots_dir:
         page.screenshot(path=os.path.join(shots_dir, "summary-forced-colors-1194x748.png"))
     check("forced colors: the Summary renders without a page error", not errors)
+    # C4: the focused title keeps a solid ring and drops the halo (the
+    # CanvasText fallback block applied); its text is not invisible.
+    fc = page.evaluate("""() => { const t = document.getElementById('hf2ReviewTitle'); const cs = getComputedStyle(t);
+        return { active: document.activeElement === t, outlineStyle: cs.outlineStyle, outlineWidth: parseFloat(cs.outlineWidth), boxShadow: cs.boxShadow }; }""")
+    check("forced colors: the focused Summary title keeps a solid 3px ring with no halo (C4 fallback applied)",
+          fc["active"] and fc["outlineStyle"] == "solid" and abs(fc["outlineWidth"] - 3) < 0.5 and fc["boxShadow"] == "none", str(fc))
     for label in ("lead", "send"):
         el = r[label]
         fg, bg = parse_rgb(el["color"]), composite(el["bg"])
@@ -475,9 +488,13 @@ def run_viewport(browser, port, name, width, height, shots_dir):
     stacked = all(kids[i]["y"] + kids[i]["h"] <= kids[i + 1]["y"] + 1 for i in range(len(kids) - 1))
     check(f"the {len(kids)} visible blocks stack top-to-bottom in DOM order (no side-by-side columns)", stacked,
           "; ".join(f"{c['id']}@y={c['y']:.0f}" for c in kids))
-    wide = all(c["w"] >= 0.6 * screen_w for c in kids)
-    check("every block spans the screen (>= 60% of the screen's content width)", wide,
-          "; ".join(f"{c['id']}:{c['w']:.0f}/{screen_w:.0f}" for c in kids if c["w"] < 0.6 * screen_w))
+    # The focused title is excluded on purpose: since cohesion C4 a focused
+    # heading shrinks its box to its text (its own guard is the "not squeezed"
+    # title check below). Every other block must still span the column.
+    blocks = [c for c in kids if c["id"] != "sleepPlanTitle"]
+    wide = all(c["w"] >= 0.6 * screen_w for c in blocks)
+    check("every block (the focused title aside) spans the screen (>= 60% of the screen's content width)", wide,
+          "; ".join(f"{c['id']}:{c['w']:.0f}/{screen_w:.0f}" for c in blocks if c["w"] < 0.6 * screen_w))
     inside = all(c["x"] >= -1 and c["x"] + c["w"] <= width + 1 for c in kids)
     check("no block lies outside the viewport horizontally", inside,
           "; ".join(f"{c['id']}:x={c['x']:.0f}..{c['x'] + c['w']:.0f}" for c in kids if not (c["x"] >= -1 and c["x"] + c["w"] <= width + 1)))
@@ -489,9 +506,9 @@ def run_viewport(browser, port, name, width, height, shots_dir):
 
     t_fg, t_bg = parse_rgb(r["title"]["color"]), composite(r["title"]["bg"])
     t_ratio = contrast(t_fg, t_bg) if t_fg and t_bg else 0
-    check(f"the title '{r['title']['text']}' is readable (>= {MIN_CONTRAST}:1, got {t_ratio:.2f}) and not squeezed into a sliver",
-          t_ratio >= MIN_CONTRAST and r["title"]["w"] >= 0.5 * screen_w,
-          f"color={r['title']['color']} bg={r['title']['bg']} width={r['title']['w']:.0f}/{screen_w:.0f}")
+    check(f"the title '{r['title']['text']}' is readable (>= {MIN_CONTRAST}:1, got {t_ratio:.2f}) and not squeezed into a sliver (<= 2 lines, no clipped overflow)",
+          t_ratio >= MIN_CONTRAST and r["title"]["lines"] <= 2 and not r["title"]["overflows"],
+          f"color={r['title']['color']} bg={r['title']['bg']} width={r['title']['w']:.0f}/{screen_w:.0f} lines={r['title']['lines']} overflows={r['title']['overflows']}")
     f_fg, f_bg = parse_rgb(r["finHead"]["color"]), composite(r["finHead"]["bg"])
     f_ratio = contrast(f_fg, f_bg) if f_fg and f_bg else 0
     check(f"the Payment Choice headline is rendered and readable (>= {MIN_CONTRAST}:1, got {f_ratio:.2f})",
@@ -525,6 +542,103 @@ def run_viewport(browser, port, name, width, height, shots_dir):
     page.close()
 
 
+# Cohesion change C4 (owner ruling 2026-08-30): the screen headings that take
+# programmatic focus on every transition wore only the UA `outline: auto` on a
+# display:block h1 - a full-width rectangle up to 3.2x wider than the words
+# (Plan title: 1154px box, 364px of text at 1194x748). The author treatment
+# shrinks the focused heading's box to its text and draws the shared two-ring
+# pair at a 5px offset, on :focus-visible only. This pass reaches the Plan and
+# the Summary through a KEYBOARD activation (Enter on the control that leads
+# there), so :focus-visible is exercised the way a keyboard user exercises
+# it, and proves per language and tablet viewport:
+#   * the destination heading owns focus and matches :focus-visible;
+#   * the author ring is on it (solid 3px outline, offset >= 4px, halo);
+#   * the ring hugs the text: a one-line heading's box is no wider than its
+#     text range (+2px);
+#   * nothing moves: the text's position is identical with the ring and after
+#     blur() removes it (the ring is an overlay on the same layout);
+#   * blur() removes the ring (no persistent decoration).
+HEADING_SETUP_JS = r"""
+async (ARGS) => {
+  if (ARGS.lang === 'es') await switchLanguage('es');
+  for (const k of Object.keys(ARGS.answers)) answers[k] = ARGS.answers[k];
+  showProfileScreen();
+  window.showResults();
+  window.chooseFinalist(_resultsState.tierData.gold[0].id);
+  window.showSleepPlan('results');
+  window.showAccessories();
+  await new Promise((res) => setTimeout(res, 400));
+  return (document.querySelector('.screen.active') || {}).id;
+}
+"""
+
+HEADING_MEASURE_JS = r"""
+() => {
+  const ae = document.activeElement;
+  const box = (el) => { const b = el.getBoundingClientRect(); return { x: b.x, y: b.y, w: b.width, h: b.height }; };
+  const text = (el) => { const rg = document.createRange(); rg.selectNodeContents(el); const b = rg.getBoundingClientRect();
+                         return { x: b.x, y: b.y, w: b.width, h: b.height, lines: rg.getClientRects().length }; };
+  const read = () => { const cs = getComputedStyle(ae); return { box: box(ae), text: text(ae), outlineStyle: cs.outlineStyle,
+                       outlineWidth: parseFloat(cs.outlineWidth), outlineOffset: parseFloat(cs.outlineOffset), boxShadow: cs.boxShadow }; };
+  const focused = read();
+  let fv = null; try { fv = ae.matches(':focus-visible'); } catch (e) {}
+  focused.fv = fv;
+  ae.blur();
+  const blurred = read();
+  ae.focus({ preventScroll: true });
+  return { id: ae.id, screen: (document.querySelector('.screen.active') || {}).id, focused, blurred };
+}
+"""
+
+
+def _check_heading(tag, r, expect_id):
+    f, b = r["focused"], r["blurred"]
+    check(f"[{tag}] the keyboard activation landed on #{expect_id} and it owns focus",
+          r["id"] == expect_id, f"active={r['id']} screen={r['screen']}")
+    check(f"[{tag}] the focused heading matches :focus-visible after a keyboard activation", f["fv"] is True)
+    check(f"[{tag}] the author ring is on it: solid 3px outline at >= 4px offset with the inner halo",
+          f["outlineStyle"] == "solid" and abs(f["outlineWidth"] - 3) < 0.5 and f["outlineOffset"] >= 4 and f["boxShadow"] != "none",
+          f"style={f['outlineStyle']} width={f['outlineWidth']} offset={f['outlineOffset']} shadow={str(f['boxShadow'])[:40]}")
+    hug = (f["box"]["w"] <= f["text"]["w"] + 2) if f["text"]["lines"] == 1 else True
+    check(f"[{tag}] the ring hugs the text: box {f['box']['w']:.0f}px vs text {f['text']['w']:.0f}px ({f['text']['lines']} line(s))", hug)
+    still = abs(f["text"]["x"] - b["text"]["x"]) < 0.5 and abs(f["text"]["y"] - b["text"]["y"]) < 0.5
+    check(f"[{tag}] the text does not move when the ring leaves (same x/y focused and blurred)", still,
+          f"focused=({f['text']['x']:.1f},{f['text']['y']:.1f}) blurred=({b['text']['x']:.1f},{b['text']['y']:.1f})")
+    check(f"[{tag}] blur() removes the ring (no persistent decoration)", b["outlineStyle"] == "none")
+
+
+def run_heading_focus(browser, port, name, width, height, lang, shots_dir):
+    print(f"\n-- HEADING FOCUS (C4) keyboard path {lang} {name} {width}x{height} --")
+    page = browser.new_page(viewport={"width": width, "height": height})
+    errors = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    page.goto(f"http://127.0.0.1:{port}/", wait_until="networkidle")
+    page.wait_for_selector("#startBtn")
+    screen = page.evaluate(HEADING_SETUP_JS, {"answers": ANSWERS, "lang": lang})
+    check(f"[{lang}/{name}] the setup reached the Sleep System without a page error",
+          screen == "accessoriesScreen" and not errors, f"screen={screen} errors={errors[:1]}")
+    # Sleep System -> Plan by keyboard (Enter on the top "Review Sleep Plan" control).
+    page.focus("#sleepSystemReviewTop")
+    page.keyboard.press("Enter")
+    page.wait_for_timeout(400)
+    r = page.evaluate(HEADING_MEASURE_JS)
+    if shots_dir:
+        os.makedirs(shots_dir, exist_ok=True)
+        page.screenshot(path=os.path.join(shots_dir, f"heading-focus-plan-{lang}-{name}-{width}x{height}.png"))
+    _check_heading(f"{lang}/{name}/Plan", r, "sleepPlanTitle")
+    # Plan -> Summary by keyboard (Enter on Continue).
+    page.evaluate("() => document.getElementById('sleepPlanContinue').scrollIntoView({block: 'center'})")
+    page.focus("#sleepPlanContinue")
+    page.keyboard.press("Enter")
+    page.wait_for_timeout(400)
+    r = page.evaluate(HEADING_MEASURE_JS)
+    if shots_dir:
+        page.screenshot(path=os.path.join(shots_dir, f"heading-focus-summary-{lang}-{name}-{width}x{height}.png"))
+    _check_heading(f"{lang}/{name}/Summary", r, "hf2ReviewTitle")
+    check(f"[{lang}/{name}] no page error during the keyboard path", not errors, str(errors)[:120])
+    page.close()
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--screenshots", default="", help="directory to save a PNG per viewport (outside the repo)")
@@ -546,6 +660,9 @@ def main():
                 for name, w, h in VIEWPORTS[:2]:
                     run_sleep_system_header(browser, port, name, w, h, lang, args.screenshots)
             run_compare_label(browser, port, args.screenshots)
+            for lang in ("en", "es"):
+                for name, w, h in VIEWPORTS[:2]:
+                    run_heading_focus(browser, port, name, w, h, lang, args.screenshots)
             run_forced_colors(browser, port, args.screenshots)
             browser.close()
     finally:
