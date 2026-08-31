@@ -9757,13 +9757,42 @@
        the focus block above — contrast_check anchors the file's FIRST
        forced-colors block as the focus one. */
     @media (forced-colors: active) {
-      .noct-tier-tab.active { border: 2px solid CanvasText; }
+      /* X11 (North Star ruling D9, 2026-08-31): a 2px CanvasText border was
+         not a cue — forced colors paints the RESTING tab's reserved 2px
+         `transparent` border CanvasText too, so every tab looked active. The
+         active tab now draws a 3px DOUBLE border (style + width survive
+         forcing; the resting tab stays 2px solid), with the padding
+         compensated by 1px per side so the label does not move. */
+      .noct-tier-tab.active { border: 3px double CanvasText; padding: 9px 19px 9px 23px; }
     }
     /* Slice 5: the chosen finalist keeps its 2px geometry in forced colours
        (fills and author hues are stripped; border-style/width survive). Its
        own block — results_presentation_check pins the tab block's shape. */
     @media (forced-colors: active) {
       .finalist-btn.chosen, .finalist-btn[aria-pressed="true"] { border: 2px solid CanvasText; }
+    }
+    /* X11 (North Star ruling D9, 2026-08-31): two more states that were
+       carried by a fill or a colour-only border and vanished under forced
+       colors, because forcing paints every border CanvasText: the Sleep
+       System rail's active step (resting 1px hairline vs active 1px ink)
+       and the result card's selected Compare / saved Save (resting 0.5px
+       hairline vs a sage fill). Geometry that survives forcing, padding
+       compensated so nothing moves: active step 3px (10/12 -> 8/10), selected
+       card control 2px (8/14 -> 6.5/12.5). Semantics unchanged (aria-pressed
+       on the card controls; the rail's aria-current="step" arrives with X10).
+       Own block, after the anchored first block. */
+    @media (forced-colors: active) {
+      .sleep-system__step.is-active {
+        border-width: 3px;
+        border-color: CanvasText;
+        padding: 8px 10px;
+      }
+      #resultsScreen .compare-btn.selected,
+      #resultsScreen .noct-save-btn.saved {
+        border-width: 2px;
+        border-color: CanvasText;
+        padding: 6.5px 12.5px;
+      }
     }
     /* Quiz option state under forced colors.
 

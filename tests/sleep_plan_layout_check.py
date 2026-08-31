@@ -467,6 +467,80 @@ def run_forced_colors(browser, port, shots_dir):
     page.close()
 
 
+# X11 (North Star ruling D9, 2026-08-31): under forced colors the active tier
+# tab, the active Sleep System rail step and the card's selected Compare /
+# saved Save were indistinguishable from their resting neighbours (fills are
+# stripped and every border — including a reserved `transparent` one — is
+# painted CanvasText). Each state now differs in border geometry. This pass
+# renders Results and the Sleep System under Chromium's forced-colors
+# emulation and compares COMPUTED border width/style between the active and a
+# resting sibling, and proves the compensated padding keeps the boxes equal.
+FORCED_STATES_JS = r"""
+async (ARGS) => {
+  for (const k of Object.keys(ARGS.answers)) answers[k] = ARGS.answers[k];
+  showProfileScreen();
+  window.showResults();
+  const gold = _resultsState.tierData.gold;
+  window.toggleCompare(gold[0].id);
+  window._toggleSavePick(gold[0].id);
+  await new Promise((res) => setTimeout(res, 300));
+  const geo = (el) => { if (!el) return null; const c = getComputedStyle(el); const r = el.getBoundingClientRect();
+    return { bw: parseFloat(c.borderTopWidth), bs: c.borderTopStyle, w: Math.round(r.width), h: Math.round(r.height), pad: [c.paddingTop, c.paddingRight, c.paddingBottom, c.paddingLeft].join(' ') }; };
+  const tabs = Array.from(document.querySelectorAll('.noct-tier-tab'));
+  const activeTab = tabs.find((t) => t.classList.contains('active')), restTab = tabs.find((t) => !t.classList.contains('active'));
+  const cmp = Array.from(document.querySelectorAll('#resultsScreen .compare-btn'));
+  const selCmp = cmp.find((b) => b.classList.contains('selected')), restCmp = cmp.find((b) => !b.classList.contains('selected'));
+  const saves = Array.from(document.querySelectorAll('#resultsScreen .noct-save-btn'));
+  const saved = saves.find((b) => b.classList.contains('saved')), restSave = saves.find((b) => !b.classList.contains('saved'));
+  const results = { activeTab: geo(activeTab), restTab: geo(restTab), selCmp: geo(selCmp), restCmp: geo(restCmp), saved: geo(saved), restSave: geo(restSave),
+                    forced: matchMedia('(forced-colors: active)').matches };
+  window.chooseFinalist(gold[0].id);
+  window.showSleepPlan('results');
+  window.showAccessories();
+  await new Promise((res) => setTimeout(res, 400));
+  const steps = Array.from(document.querySelectorAll('#sleepSystemRail .sleep-system__step'));
+  const activeStep = steps.find((s) => s.classList.contains('is-active')), restStep = steps.find((s) => !s.classList.contains('is-active') && !s.classList.contains('is-complete'));
+  return { results, rail: { activeStep: geo(activeStep), restStep: geo(restStep) } };
+}
+"""
+
+
+def run_forced_colors_states(browser, port, shots_dir):
+    print("\n-- forced-colors state cues (X11) 1194x748 --")
+    page = browser.new_page(viewport={"width": 1194, "height": 748}, forced_colors="active")
+    errors = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    page.goto(f"http://127.0.0.1:{port}/", wait_until="networkidle")
+    page.wait_for_selector("#startBtn")
+    r = page.evaluate(FORCED_STATES_JS, {"answers": ANSWERS})
+    if shots_dir:
+        os.makedirs(shots_dir, exist_ok=True)
+        page.screenshot(path=os.path.join(shots_dir, "forced-colors-states-1194x748.png"))
+    R = r["results"]
+    check("forced colors: emulation active, Results rendered with an active tab, a selected Compare and a saved Save, no page error",
+          R["forced"] and not errors and R["activeTab"] and R["restTab"] and R["selCmp"] and R["restCmp"] and R["saved"] and R["restSave"], str(errors)[:120])
+    if R["activeTab"] and R["restTab"]:
+        check(f"forced colors: the active tier tab differs from a resting tab in border width AND style ({R['activeTab']['bw']}px {R['activeTab']['bs']} vs {R['restTab']['bw']}px {R['restTab']['bs']})",
+              R["activeTab"]["bw"] > R["restTab"]["bw"] and R["activeTab"]["bs"] == "double" and R["restTab"]["bs"] != "double")
+        check("forced colors: the active and resting tabs keep the same height (compensated padding, no reflow)",
+              R["activeTab"]["h"] == R["restTab"]["h"], f"{R['activeTab']['h']} vs {R['restTab']['h']}")
+    if R["selCmp"] and R["restCmp"]:
+        check(f"forced colors: the selected Compare differs from a resting Compare in border width ({R['selCmp']['bw']}px vs {R['restCmp']['bw']}px)",
+              R["selCmp"]["bw"] > R["restCmp"]["bw"] + 0.5)
+        check("forced colors: the selected and resting Compare controls keep the same height", R["selCmp"]["h"] == R["restCmp"]["h"], f"{R['selCmp']['h']} vs {R['restCmp']['h']}")
+    if R["saved"] and R["restSave"]:
+        check(f"forced colors: the saved Save differs from a resting Save in border width ({R['saved']['bw']}px vs {R['restSave']['bw']}px)",
+              R["saved"]["bw"] > R["restSave"]["bw"] + 0.5)
+    S = r["rail"]
+    check("forced colors: the Sleep System rail rendered an active step and a resting step", bool(S["activeStep"] and S["restStep"]))
+    if S["activeStep"] and S["restStep"]:
+        check(f"forced colors: the active rail step differs from a resting step in border width ({S['activeStep']['bw']}px vs {S['restStep']['bw']}px)",
+              S["activeStep"]["bw"] > S["restStep"]["bw"] + 1)
+        check("forced colors: the active and resting rail steps keep the same width (compensated padding)",
+              S["activeStep"]["w"] == S["restStep"]["w"], f"{S['activeStep']['w']} vs {S['restStep']['w']}")
+    page.close()
+
+
 def run_viewport(browser, port, name, width, height, shots_dir):
     print(f"\n-- {name} {width}x{height} --")
     page = browser.new_page(viewport={"width": width, "height": height})
@@ -745,6 +819,7 @@ def main():
                 for name, w, h in VIEWPORTS[:2]:
                     run_compare_tray_pill(browser, port, name, w, h, lang, args.screenshots)
             run_forced_colors(browser, port, args.screenshots)
+            run_forced_colors_states(browser, port, args.screenshots)
             browser.close()
     finally:
         server.shutdown()
