@@ -525,6 +525,78 @@ def run_viewport(browser, port, name, width, height, shots_dir):
     page.close()
 
 
+# X10 (North Star ruling D7, 2026-08-31): every Sleep System decision rebuilds
+# all four regions, and keyboard focus fell to <body> each time — the
+# salesperson lost their place on every decision and step change. The repair
+# restores focus to the control with the SAME data-* identity (the action name
+# flips select-item <-> remove-item), else the step heading. This pass drives
+# three real keyboard activations and reads where focus actually landed.
+SS_FOCUS_SETUP_JS = r"""
+async (ARGS) => {
+  for (const k of Object.keys(ARGS.answers)) answers[k] = ARGS.answers[k];
+  showProfileScreen();
+  window.showResults();
+  window.chooseFinalist(_resultsState.tierData.gold[0].id);
+  window.showSleepPlan('results');
+  window.showAccessories();
+  await new Promise((res) => setTimeout(res, 400));
+  return (document.querySelector('.screen.active') || {}).id;
+}
+"""
+SS_FOCUS_PROBE_JS = r"""
+() => { const ae = document.activeElement; let fv = null; try { fv = ae && ae.matches(':focus-visible'); } catch (e) {}
+  const attr = (a) => (ae && ae.getAttribute) ? ae.getAttribute(a) : null;
+  const current = Array.from(document.querySelectorAll('#sleepSystemRail [aria-current="step"]'));
+  return { tag: ae && ae.tagName, action: attr('data-sleep-action'),
+           identity: attr('data-position') || attr('data-item-id') || attr('data-step') || attr('data-status') || '',
+           fv, ariaCurrentCount: current.length, ariaCurrentStep: current[0] ? current[0].getAttribute('data-step') : null }; }
+"""
+
+
+def run_sleep_system_focus(browser, port, shots_dir):
+    print("\n-- SLEEP SYSTEM keyboard place (X10) 1194x748 --")
+    page = browser.new_page(viewport={"width": 1194, "height": 748})
+    errors = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    page.goto(f"http://127.0.0.1:{port}/", wait_until="networkidle")
+    page.wait_for_selector("#startBtn")
+    screen = page.evaluate(SS_FOCUS_SETUP_JS, {"answers": ANSWERS})
+    check("X10 setup reached the Sleep System without a page error", screen == "accessoriesScreen" and not errors,
+          f"screen={screen} errors={errors[:1]}")
+    # 1. Enter on a demo-position tile: the re-render must hand focus back to
+    #    the SAME tile (identity, not action name).
+    page.focus("#sleepSystemMain [data-sleep-action='demo-position'][data-position='flat']")
+    page.keyboard.press("Enter")
+    page.wait_for_timeout(500)
+    r = page.evaluate(SS_FOCUS_PROBE_JS)
+    check("[demo-position] focus survives the re-render on the same tile, still :focus-visible",
+          r["action"] == "demo-position" and r["identity"] == "flat" and r["fv"] is True, str(r))
+    # 2. Enter on the base's add control: it flips to remove-item with the same
+    #    data-item-id, and focus must follow the identity across the flip.
+    item_id = page.evaluate("() => { const b = document.querySelector(\"#sleepSystemMain [data-sleep-action='select-item']\"); return b && b.getAttribute('data-item-id'); }")
+    check("[select-item] an add control exists on the triggered adjustability step", bool(item_id), str(item_id))
+    if item_id:
+        page.focus(f"#sleepSystemMain [data-sleep-action='select-item'][data-item-id='{item_id}']")
+        page.keyboard.press("Enter")
+        page.wait_for_timeout(500)
+        r2 = page.evaluate(SS_FOCUS_PROBE_JS)
+        check("[select-item] after adding, focus sits on the SAME item's remove control (identity survived the action flip)",
+              r2["action"] == "remove-item" and r2["identity"] == item_id and r2["fv"] is True, str(r2))
+    # 3. Enter on a rail step: the rebuilt rail hands focus to the equivalent
+    #    step control, and aria-current="step" moves with the active step.
+    page.focus("#sleepSystemRail [data-sleep-action='step'][data-step='support']")
+    page.keyboard.press("Enter")
+    page.wait_for_timeout(500)
+    r3 = page.evaluate(SS_FOCUS_PROBE_JS)
+    check("[rail] focus lands on the re-rendered support step and aria-current=\"step\" marks it exactly once",
+          r3["action"] == "step" and r3["identity"] == "support" and r3["ariaCurrentCount"] == 1 and r3["ariaCurrentStep"] == "support", str(r3))
+    if shots_dir:
+        os.makedirs(shots_dir, exist_ok=True)
+        page.screenshot(path=os.path.join(shots_dir, "sleep-system-focus-1194x748.png"))
+    check("X10: no page error during the keyboard path", not errors, str(errors)[:120])
+    page.close()
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--screenshots", default="", help="directory to save a PNG per viewport (outside the repo)")
@@ -546,6 +618,7 @@ def main():
                 for name, w, h in VIEWPORTS[:2]:
                     run_sleep_system_header(browser, port, name, w, h, lang, args.screenshots)
             run_compare_label(browser, port, args.screenshots)
+            run_sleep_system_focus(browser, port, args.screenshots)
             run_forced_colors(browser, port, args.screenshots)
             browser.close()
     finally:
