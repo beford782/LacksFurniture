@@ -1472,6 +1472,22 @@
       color: var(--consultation-muted);
     }
 
+    /* PROTOTYPE X7 option C ONLY (owner ruling D9 amendment, 2026-08-31;
+       never merged as such): landscape Next-in-fold via a sticky nav row -
+       the layout above is untouched and the Back/Next row rides the bottom
+       of the viewport while the tall questions scroll. Landscape CSS only;
+       the consultation ground paints under it so options never show through. */
+    @media (orientation: landscape) and (min-width: 900px) {
+      body:has(#questionScreen.active) .noct-quiz-nav {
+        position: sticky;
+        bottom: 0;
+        z-index: 5;
+        background: var(--consultation-bg);
+        padding-bottom: 14px;
+        box-shadow: 0 -10px 14px -12px rgba(47, 39, 30, 0.35);
+      }
+    }
+
     @media (hover: hover) {
       body:has(#questionScreen.active) .noct-quiz-back:hover,
       body:has(#reviewScreen.active) .noct-quiz-back:hover {
