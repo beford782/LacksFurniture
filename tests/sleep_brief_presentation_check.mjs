@@ -346,11 +346,16 @@ section('hero scale — the Sleep Brief figure is a hero, the stamps stay stamps
   // Device gate 2026-08-15 (second pass): the reveal was visible but the
   // figure still read as a stamp on the mounted iPad. The hero is enlarged;
   // the two stamp placements are deliberately untouched.
-  const heroBase = norm.match(/\.noct-profile-signature \.sleep-signature \{\s*\n\s*width: clamp\((\d+)px, ([\d.]+)vw, (\d+)px\);/);
-  ok('the hero width is located as a clamp', !!heroBase);
+  // PROTOTYPE P-E1 re-rule (owner ruling D5, 2026-08-31; never merged as
+  // such): the landscape hero scales to the panel — clamp 300-380px wrapped
+  // in min(…, 100%) so it can never overflow the identity column. The shipped
+  // ruling on main is clamp 220-260; restore this pin if the prototype is
+  // not selected.
+  const heroBase = norm.match(/\.noct-profile-signature \.sleep-signature \{[\s\S]{0,600}?width: min\(clamp\((\d+)px, ([\d.]+)vw, (\d+)px\), 100%\);/);
+  ok('the hero width is located as a column-capped clamp (PROTOTYPE)', !!heroBase);
   if (heroBase) {
     const [, min, , max] = heroBase.map(Number);
-    ok('landscape/desktop hero sits in the ruled 220-260px band', min >= 220 && max <= 260,
+    ok('landscape/desktop hero sits in the PROTOTYPE 300-420px band (packet O6)', min >= 300 && max <= 420,
       `${min}-${max}px`);
   }
   const portrait = norm.match(/@media \(max-width: 900px\), \(orientation: portrait\) \{[\s\S]*?\n    \}\n/);
@@ -719,8 +724,8 @@ section('session integrity — wipe ownership, timers, engine boundary');
       .every((id) => contentIds.includes(`'${id}'`)));
   ok('the inventory no longer names the removed containers',
     !contentIds.includes("'profileMetaStrip'") && !contentIds.includes("'profileJourneySteps'"));
-  ok('the wipe strips a stale reveal marker from the signature container',
-    /\{ id: 'profileSignature', remove: \['is-entering'\] \}/.test(norm));
+  ok('the wipe strips the stale reveal markers from the signature container (PROTOTYPE: is-predraw joined)',
+    /\{ id: 'profileSignature', remove: \['is-entering', 'is-predraw'\] \}/.test(norm));
   ok('the wipe closes every disclosure and disarms the entry animation',
     /_briefOpenPriority = null;/.test(norm.slice(norm.indexOf('function resetSessionState')))
     && /window\._sleepSignatureEntry = false;/.test(norm.slice(norm.indexOf('function resetSessionState'))));

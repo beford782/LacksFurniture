@@ -1687,8 +1687,24 @@
        field instead of hugging its left edge. The Results and Consultation
        Summary stamps below are deliberately untouched by this change. */
     .noct-profile-signature .sleep-signature {
-      width: clamp(220px, 20vw, 260px);
+      /* PROTOTYPE P-E1 (never merged as such; owner ruling D5, 2026-08-31):
+         the landscape figure scales to the identity panel — the audited
+         composition drew a ~116px polygon inside a 44%-empty fold. Portrait
+         and phone keep their own widths below, pixel-untouched. */
+      width: min(clamp(300px, 36vw, 420px), 100%);
       margin-inline: auto;
+    }
+
+    /* PROTOTYPE P-E1 / X13 (D5): the pre-entry state exists from the SAME
+       render frame, so the finished constellation can never paint before
+       the draw begins (the audited one-frame flash at 837→849ms). Swapped
+       to .is-entering on the second session frame. */
+    .noct-profile-signature.is-predraw .sleep-signature polyline {
+      stroke-dasharray: 1;
+      stroke-dashoffset: 1;
+    }
+    .noct-profile-signature.is-predraw .sleep-signature circle {
+      opacity: 0;
     }
 
     /* The entry reveal performs ONCE, on the quiz-completion entry
@@ -1881,6 +1897,34 @@
       gap: 12px;
       margin-top: auto;
       padding-top: 12px;
+    }
+
+    /* PROTOTYPE P-E1, landscape only (never merged as such; owner ruling D5,
+       2026-08-31): the figure floats centred in the identity panel's
+       leftover height, and the right column's guided-trial group sits as ONE
+       centred block — label, heading, intro, priorities, actions — instead
+       of pinning the actions to the bottom of a 44%-empty column. AFTER the
+       base .profile-launch__actions rule on purpose: `margin-top: auto`
+       would otherwise win the equal-specificity cascade and swallow the
+       centring. Portrait matches the `(max-width:900px), (orientation:
+       portrait)` block and is untouched by construction. */
+    @media (min-width: 901px) and (orientation: landscape) {
+      .noct-profile-signature {
+        display: flex;
+        flex: 1;
+        align-items: center;
+        justify-content: center;
+        margin: 0 0 12px;
+      }
+      .noct-profile-signature .sleep-signature {
+        flex: 0 0 auto;
+      }
+      .profile-launch__brief {
+        justify-content: center;
+      }
+      .profile-launch__actions {
+        margin-top: 18px;
+      }
     }
 
     .noct-profile-cta,
@@ -15239,7 +15283,7 @@
         // immediately — no reveal is scheduled at all.
         var animateSignature = window._sleepSignatureEntry === true && !dfmReducedMotion();
         window._sleepSignatureEntry = false;
-        if (signatureEl.classList) signatureEl.classList.remove('is-entering');
+        if (signatureEl.classList) signatureEl.classList.remove('is-entering', 'is-predraw');
         if (animateSignature) {
           // TWO session-owned frames, deliberately. Adding the class during
           // the render started the reveal before the Sleep Brief was painted,
@@ -15248,10 +15292,17 @@
           // after this render's work, the second after the browser has
           // actually painted the screen. Session-owned (never a raw rAF), so
           // a wipe mid-reveal orphans it with the rest of the session.
+          // PROTOTYPE P-E1 / X13: the pre-draw state is applied IN THIS
+          // RENDER, so the two-frame wait can no longer paint the finished
+          // figure first — the flash the audit measured at 837→849ms.
+          signatureEl.classList.add('is-predraw');
           sessionFrame(function() {
             sessionFrame(function() {
               var el = document.getElementById('profileSignature');
-              if (el && el.classList) el.classList.add('is-entering');
+              if (el && el.classList) {
+                el.classList.remove('is-predraw');
+                el.classList.add('is-entering');
+              }
             });
           });
         }
@@ -21830,7 +21881,7 @@
       { id: 'profileScreen', remove: ['animate'] },
       // Slice 2: a wipe during the Sleep Signature reveal must not leave the
       // marker behind for the next customer's first render to inherit.
-      { id: 'profileSignature', remove: ['is-entering'] },
+      { id: 'profileSignature', remove: ['is-entering', 'is-predraw'] },
       { id: 'dreamCodeBox', hiddenAttr: true, display: 'none' },
       { id: 'financingSheet', hiddenAttr: true },
       { id: 'financingSheetBackdrop', hiddenAttr: true }
