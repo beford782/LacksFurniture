@@ -11032,7 +11032,7 @@
       <!-- Capture view -->
       <div id="emailCaptureView">
         <div class="email-cap-header">
-          <div class="noct-email-eyebrow" id="emailEyebrow">Don't lose your matches</div>
+          <div class="noct-email-eyebrow" id="emailEyebrow">Take your matches home</div>
           <h1 class="noct-email-headline" id="emailHeadline">Save your <span class="accent">Sleep Brief</span></h1>
           <p class="noct-email-subhead" id="emailSubhead">Keep your mattress matches and Sleep System picks together so a sleep specialist can pick up right where you left off.</p>
         </div>
@@ -17275,7 +17275,11 @@
       };
 
       // ----- Capture view -----
-      setText('emailEyebrow', es ? 'No pierdas tus opciones' : "Don't lose your matches");
+      // C6 (cohesion pass-1 ruling, 2026-08-30): the eyebrow invites — it
+      // does not threaten a loss. Dictionary copy in both languages; the
+      // pre-C6 inline pair was the one loss-framed line in the journey, and
+      // tests/trust_integrity_check.mjs (section E) pins the replacement.
+      setText('emailEyebrow', t('email.eyebrow'));
       setHtml('emailHeadline', es
         ? 'Guarda tu <span class="accent">Resumen de Sueño</span> de ' + storeName()
         : 'Save your ' + storeName() + ' <span class="accent">Sleep Brief</span>');
