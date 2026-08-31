@@ -354,6 +354,84 @@ ok('reduced motion disables the slide with animation: none', !!trayReduced);
 ok('the reduced override comes AFTER the base rule (source order wins)',
   !!trayReduced && norm.indexOf(trayReduced[0]) > trayBaseIdx);
 
+// ------------------------------------ X1: the pill lifts above the tray
+// North Star ruling D9 (2026-08-31): in portrait the floating Selections pill
+// (fixed bottom/right 1rem) sat over the tray's "Compare →" once a pick was
+// saved — measured 100×31 of the 104×35 control covered, 6 of 36 tap points
+// reaching it (ES 11/36). While the tray is shown the pill lifts above it by
+// the tray's RENDERED height (the ES slot chips wrap: 89px vs 61px), derived
+// by _updatePicksBadge() from the tray's real display state after
+// updateCompareTray() and showScreen() set it. EXECUTED against a DOM shim.
+section('X1 — the Selections pill lifts above the compare tray while it is shown');
+{
+  const badgeSrc = extractFunction('window._updatePicksBadge = function()');
+  ok('extraction: _updatePicksBadge found', !!badgeSrc);
+  function makeLiftEnv({ trayHeight = 61, saved = 1, selected = ['g2', 'g6'] } = {}) {
+    const els = {};
+    for (const id of ['compareTray', 'compareTraySlots', 'compareTrayCount', 'compareTrayGo', 'compareTrayClear', 'savedPicksBtn', 'savedPicksCount']) {
+      els[id] = makeEl(id);
+    }
+    const props = {};
+    els.savedPicksBtn.style = {
+      setProperty(k, v) { props[k] = v; },
+      removeProperty(k) { delete props[k]; }
+    };
+    Object.defineProperty(els.compareTray, 'offsetHeight', { get() { return els.compareTray.style.display === 'block' ? trayHeight : 0; }, configurable: true });
+    const win = {
+      _savedPicks: Array.from({ length: saved }, (_, i) => ({ id: 'm' + i })), _accCart: {},
+      _compareSelected: selected.slice(),
+      _drawerData: { g2: { m: { name: 'Model G2' } }, g6: { m: { name: 'Model G6' } } }
+    };
+    const doc = { getElementById: (id) => els[id] || null, querySelectorAll: () => [] };
+    const src = badgeSrc + '\n' + updateSrc + '\n' +
+      'return { update: window.updateCompareTray, badge: window._updatePicksBadge };';
+    const api = new Function('window', 'document', 'currentLang', src)(win, doc, 'en');
+    return { win, els, api, props };
+  }
+  if (badgeSrc) {
+    const en = makeLiftEnv({ trayHeight: 61 });
+    en.api.update();
+    ok('two selections + one saved pick: the pill is visible AND lifted, clearance = the tray height (61px)',
+      en.els.savedPicksBtn.classList.contains('noct-picks-pill--visible') &&
+      en.els.savedPicksBtn.classList.contains('noct-picks-pill--lifted') &&
+      en.props['--df-tray-clearance'] === '61px', JSON.stringify(en.props));
+    const es = makeLiftEnv({ trayHeight: 89 });
+    es.api.update();
+    ok('a taller (wrapped, ES) tray lifts the pill further: clearance = 89px (measured, not a constant)',
+      es.props['--df-tray-clearance'] === '89px', JSON.stringify(es.props));
+    en.win._compareSelected = [];
+    en.api.update();
+    ok('clearing the tray drops the pill back: lifted class removed, clearance property removed, pill still visible',
+      !en.els.savedPicksBtn.classList.contains('noct-picks-pill--lifted') &&
+      !('--df-tray-clearance' in en.props) &&
+      en.els.savedPicksBtn.classList.contains('noct-picks-pill--visible'));
+    const none = makeLiftEnv({ saved: 0 });
+    none.api.update();
+    ok('no picks: the pill stays hidden and never lifts (tray shown or not)',
+      !none.els.savedPicksBtn.classList.contains('noct-picks-pill--visible') &&
+      !none.els.savedPicksBtn.classList.contains('noct-picks-pill--lifted'));
+  }
+  // Order of operations: the badge reads the tray state, so both writers set
+  // the tray FIRST. In updateCompareTray() the lift is measured after the
+  // slots render (the ES chips wrap and change the height).
+  const upd = updateSrc || '';
+  ok('updateCompareTray() re-derives the pill after the slots and Go state are written (height measured after render)',
+    upd.lastIndexOf('window._updatePicksBadge()') > upd.indexOf('go.disabled = arr.length < 2;'));
+  ok('updateCompareTray() also re-derives the pill on the empty path (pill drops when the tray hides)',
+    (upd.match(/window\._updatePicksBadge\(\)/g) || []).length >= 2 && upd.indexOf('window._updatePicksBadge()') < upd.indexOf("tray.style.display = 'block'"));
+  const showScreenSrc = extractFunction('window.showScreen = function(id)') || '';
+  ok('showScreen() sets the tray display BEFORE updating the badge',
+    showScreenSrc.indexOf("cmpTray.style.display") > -1 &&
+    showScreenSrc.indexOf("cmpTray.style.display") < showScreenSrc.indexOf('window._updatePicksBadge && window._updatePicksBadge()'));
+  const liftRule = norm.match(/\.noct-picks-pill--lifted\s*\{([^}]*)\}/);
+  ok('the lift rule exists and offsets the pill by the measured clearance (plus a gap) above 1rem',
+    !!liftRule && /bottom:\s*calc\(1rem \+ var\(--df-tray-clearance, \d+px\) \+ \d+px\);/.test(liftRule[1]));
+  ok('the lift rule comes after the base pill rule (equal specificity — source order decides)',
+    !!liftRule && norm.indexOf(liftRule[0]) > norm.indexOf('.noct-picks-pill {'));
+  ok('the wipe registry strips the lifted class with the visibility modifier',
+    /\{ id: 'savedPicksBtn', remove: \['noct-picks-pill--visible', 'noct-picks-pill--lifted'\] \}/.test(norm));
+}
+
 // ------------------------------------------------------ wipe integration
 section('session-wipe integration');
 ok('the wipe resets the selection array with the other per-customer picks',
