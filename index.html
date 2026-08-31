@@ -2211,7 +2211,6 @@
       object-fit: contain !important;
       background: #FFFDF8;
     }
-
     .noct-toppick-body { padding: 32px 40px 36px; }
 
     .noct-toppick-eyebrow {
@@ -2508,6 +2507,54 @@
       flex-wrap: wrap;
       justify-content: flex-end;
       gap: 10px;
+    }
+
+    /* Source-order note: this block must sit AFTER every .noct-toppick-*
+       base rule above - equal specificity, later wins. */
+    /* PROTOTYPE P-C2 option A ONLY (owner ruling D1, 2026-08-31; never
+       merged as such): the landscape hero becomes a two-column card - the
+       photo in a ~46% column at ~3:2 (a 1000x666 source fits uncropped;
+       banner sources still letterbox via the X4 fallback above), the
+       narrative and controls beside it, so the best match's name, feel and
+       controls land inside the 748px landscape fold. Landscape-only:
+       portrait stays pixel-identical. */
+    @media (orientation: landscape) and (min-width: 900px) {
+      .noct-toppick {
+        display: grid;
+        grid-template-columns: 46% 54%;
+        align-items: stretch;
+      }
+      .noct-toppick > .mattress-offer-tab {
+        grid-column: 1 / -1;
+      }
+      .noct-toppick-photo {
+        aspect-ratio: auto;
+        width: 100%;
+        height: 100%;
+        min-height: 330px;
+      }
+      .noct-toppick-body {
+        padding: 26px 34px 28px;
+      }
+      .noct-toppick-name {
+        font-size: 38px;
+      }
+      .noct-toppick-eyebrow {
+        margin-bottom: 8px;
+      }
+      .noct-toppick-name {
+        margin-bottom: 12px;
+      }
+      .noct-toppick-reason {
+        margin-bottom: 12px;
+      }
+      .noct-toppick-firmness-row {
+        margin-bottom: 14px;
+      }
+      .noct-toppick-actions {
+        margin-top: 10px;
+        padding-top: 12px;
+      }
     }
 
     .noct-card-details {
