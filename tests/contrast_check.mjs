@@ -512,5 +512,49 @@ function over(fg, bg, alpha) {
   check(`review audience line (quiz help rule) is at least 15px (got ${reviewSize}px)`, reviewSize >= 15);
 }
 
+// --- cohesion C4: text-hugging heading focus (owner ruling 2026-08-30) ------
+// The five screen headings that take programmatic focus on every transition
+// (Results, Sleep Plan, Sleep System, Summary, take-home) get an author
+// :focus-visible treatment: fit-content width so the ring hugs the words, the
+// shared two-ring token pair at a >= 4px offset, a forced-colors CanvasText
+// fallback in its own block after the anchored first block. Rendered
+// geometry (keyboard path, no layout shift) is proven by
+// tests/sleep_plan_layout_check.py; the static contract and the ring/surface
+// contrast pairs are pinned here.
+{
+  const HEADS = [".noct-results-headline", ".noct-email-headline", ".sleep-system__title", ".hf2-review-title"];
+  const rule = html.match(/\.noct-results-headline:focus-visible,\s*\.noct-email-headline:focus-visible,\s*\.sleep-system__title:focus-visible,\s*\.hf2-review-title:focus-visible\s*\{([^}]*)\}/);
+  check("C4: one author :focus-visible rule covers the four screen-heading classes", !!rule);
+  const body = rule ? rule[1] : "";
+  check("C4: the heading ring uses the semantic two-ring tokens (outer outline + inner halo)",
+    /outline:\s*3px solid var\(--focus-ring-outer\);/.test(body) && /box-shadow:\s*0 0 0 \d+px var\(--focus-ring-inner\);/.test(body));
+  const off = Number((body.match(/outline-offset:\s*(\d+)px/) || [])[1]);
+  const spread = Number((body.match(/box-shadow:\s*0 0 0 (\d+)px/) || [])[1]);
+  check(`C4: the ring offset is at least the ruled 4px (got ${off}px)`, off >= 4);
+  check(`C4: the halo reaches the outer ring (spread ${spread}px >= offset ${off}px + 3px ring)`, spread >= off + 3);
+  check("C4: the focused heading hugs its text (fit-content width, capped at the container)",
+    /width:\s*fit-content;/.test(body) && /max-width:\s*100%;/.test(body));
+  check("C4: centred headings keep their centre (auto inline margins) and the left-aligned Plan title keeps its edge",
+    /margin-inline:\s*auto;/.test(body) && /#sleepPlanScreen \.hf2-review-title:focus-visible\s*\{\s*margin-inline:\s*0;\s*\}/.test(html));
+  check("C4: the heading rule carries no raw colour (tokens only)", !/#[0-9A-Fa-f]{3,6}\b/.test(body));
+  check("C4: no plain :focus variant rings these headings on every touch",
+    !HEADS.some((h) => new RegExp(h.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + ":focus(?!-visible)[\\s,{]").test(html)));
+  // Ring contrast on the surfaces these headings render on: all five sit on
+  // the warm consultation ground (measured rgb(243,238,229) in every context).
+  const outer = "#000000";
+  for (const [where, bg] of [["consultation ground #F3EEE5 (Results, Plan, Summary, Sleep System, take-home)", "#F3EEE5"],
+                             ["consultation paper #F4EFE6", "#F4EFE6"]]) {
+    const rr = ratio(outer, bg);
+    check(`C4: heading ring outer ${outer} on the ${where} >= 3:1 (got ${rr.toFixed(2)}:1)`, rr >= 3);
+  }
+  const fcBlock = html.match(/@media \(forced-colors: active\) \{\s*\.noct-results-headline:focus-visible,\s*\.noct-email-headline:focus-visible,\s*\.sleep-system__title:focus-visible,\s*\.hf2-review-title:focus-visible \{([^}]*)\}\s*\}/);
+  check("C4: a forced-colors fallback exists for the four headings (CanvasText ring, no halo)",
+    !!fcBlock && /outline-color:\s*CanvasText;/.test(fcBlock[1]) && /box-shadow:\s*none;/.test(fcBlock[1]));
+  check("C4: the heading forced-colors block is placed AFTER the anchored first forced-colors block",
+    !!fcBlock && html.indexOf(fcBlock[0]) > html.indexOf(".fin-btn:focus-visible"));
+  check("C4: the consolidated control rule is untouched (the heading classes did not join its pinned selector list)",
+    !!consolidated && !consolidated[0].includes(".hf2-review-title") && !consolidated[0].includes(".noct-results-headline"));
+}
+
 console.log(`\nContrast check: ${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);
