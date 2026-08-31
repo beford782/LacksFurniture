@@ -576,10 +576,16 @@ section('priorities — single-open disclosure carrying BOTH why and test prose'
     /id="briefPriorityToggle-1" aria-expanded="true"/.test(env.get('profilePriorities').innerHTML));
   env.api.reveal();
   const html = env.get('profilePriorities').innerHTML;
-  ok('a revised quiz completion opens the Brief with every disclosure CLOSED',
-    env.api.openPriority() === null
-    && !/aria-expanded="true"/.test(html)
-    && (html.match(/ hidden>/g) || []).length === env.analytics.trialFocus.length);
+  // PROTOTYPE P-E1 variant B re-rule (owner ruling D5, 2026-08-31; never
+  // merged as such): a revised completion arrives with PRIORITY 1 open so
+  // the first trial signal is already readable; the others stay closed.
+  // Variant A and main keep the all-closed arrival — restore the original
+  // assertion (openPriority null, zero aria-expanded true, every panel
+  // hidden) if this variant is not selected.
+  ok('a revised quiz completion opens the Brief with priority 1 open and the rest CLOSED (PROTOTYPE B)',
+    env.api.openPriority() === 0
+    && (html.match(/aria-expanded="true"/g) || []).length === 1
+    && (html.match(/ hidden>/g) || []).length === env.analytics.trialFocus.length - 1);
   ok('...and the entry still reaches the Brief (the reset does not swallow the entry)',
     env.screens.filter((s) => s === 'profileScreen').length === 2);
 }

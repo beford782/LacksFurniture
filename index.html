@@ -17096,7 +17096,12 @@
       // reopen whatever was expanded before. Reset HERE, at the quiz-finish
       // entry only — a language switch re-renders through showProfileScreen()
       // directly and preserves the open row.
-      _briefOpenPriority = null;
+      // PROTOTYPE P-E1 variant B (owner ruling D5, 2026-08-31; never merged
+      // as such): the quiz-finish entry opens PRIORITY 1 by default so the
+      // first trial signal is already readable when the reveal settles.
+      // Everything else about the disclosure contract is unchanged (single
+      // open, toggles, wipe). Variant A keeps the all-closed arrival.
+      _briefOpenPriority = 0;
       // DFM MOTION SPIKE: when the flag resolves enabled, the gather owns
       // this transition; disabled or reduced-motion paths fall through to
       // the staged reveal below completely unchanged.
