@@ -7010,9 +7010,19 @@
       color: #2F271E;
       box-shadow: 0 5px 16px rgba(55,40,28,0.06);
     }
-    .sleep-system__step.is-complete {
+    /* X2 (North Star ruling D7, 2026-08-31): three distinct non-open states,
+       never one shared checkmark. Selected = sage ✓ (something was added);
+       addressed = a neutral filled dash (keep current / demo / specialist
+       check — decided, nothing added); deferred = the step number in a
+       DASHED ring (explicitly postponed, still open — it counts toward
+       nothing). The cue is glyph + geometry, so it survives forced colors. */
+    .sleep-system__step.is-selected {
       border-color: #8B9B84;
       background: #F5F8F3;
+    }
+    .sleep-system__step.is-addressed {
+      border-color: #C9BCAC;
+      background: #FBF8F2;
     }
     .sleep-system__step-num {
       display: inline-flex;
@@ -7030,10 +7040,18 @@
       background: var(--store-primary);
       color: var(--on-store-primary);
     }
-    .sleep-system__step.is-complete .sleep-system__step-num {
+    .sleep-system__step.is-selected .sleep-system__step-num {
       border-color: #63765D;
       background: #63765D;
       color: #FFFFFF;
+    }
+    .sleep-system__step.is-addressed .sleep-system__step-num {
+      border-color: #8A7B69;
+      background: #EEE7DC;
+      color: #4E483C;
+    }
+    .sleep-system__step.is-deferred .sleep-system__step-num {
+      border-style: dashed;
     }
     .sleep-system__step-name {
       display: block;
@@ -7671,10 +7689,28 @@
       color: #8A7B69;
       font: 750 10px/1 var(--font-sans);
     }
-    .sleep-system__plan-item.is-complete .sleep-system__plan-mark {
+    /* X2: the sidecar mirrors the rail's three kinds (see the rail rules). */
+    .sleep-system__plan-item.is-selected .sleep-system__plan-mark {
       border-color: #63765D;
       background: #63765D;
       color: #FFFFFF;
+    }
+    .sleep-system__plan-item.is-addressed .sleep-system__plan-mark {
+      border-color: #8A7B69;
+      background: #EEE7DC;
+      color: #4E483C;
+    }
+    .sleep-system__plan-item.is-deferred .sleep-system__plan-mark {
+      border-style: dashed;
+    }
+    /* X10: the step heading is the focus fallback when a re-render removes
+       the keyboard's control (the pillow gate). Same two-ring pair as every
+       control; under forced colors the halo is stripped automatically and
+       the outline is repainted CanvasText by the UA. */
+    .sleep-system__section-title:focus-visible {
+      outline: 3px solid var(--focus-ring-outer);
+      outline-offset: 3px;
+      box-shadow: 0 0 0 5px var(--focus-ring-inner);
     }
     .sleep-system__plan-item-name {
       display: block;
@@ -17404,9 +17440,12 @@
                     : (recCount + ' recommended · your strongest matches')) },
         { present: selectedAccessories.length > 0,
           title: _esE ? 'Sistema de Sueño' : 'Sleep System picks',
+          // X3 (North Star ruling D7, 2026-08-31): factual customer-action
+          // wording — these are the pieces the customer ADDED, not a match
+          // claim the engine never made. Participles agree with the count.
           detail: selectedAccessories.length
-            ? (_esE ? (selectedAccessories.length + ' piezas · bases, almohadas y protectores para ti')
-                    : (selectedAccessories.length + ' pieces · bases, pillows & protectors matched to you'))
+            ? (_esE ? (selectedAccessories.length + (selectedAccessories.length === 1 ? ' pieza' : ' piezas') + ' · las bases, almohadas o protectores que agregaste')
+                    : (selectedAccessories.length + (selectedAccessories.length === 1 ? ' piece' : ' pieces') + ' · the bases, pillows or protectors you added'))
             : (_esE ? 'Explóralo con tu especialista en la tienda' : 'Explore with your specialist in store') }
       ];
       // Savings Pass row only when the pass is enabled; Payment Choice row
@@ -18719,17 +18758,43 @@
         '</div>';
     }
 
+    // X2 (North Star ruling D7, 2026-08-31): the decision statuses fall into
+    // THREE distinct non-open kinds, and they must never share one checkmark:
+    //   selected  — a product was added (the cart wins in sleepSystemDecision);
+    //   addressed — a real decision that added nothing: keep the current setup
+    //               ('already'), ask for a demo ('demo'), or flag the
+    //               specialist check ('confirm');
+    //   deferred  — 'later' is an explicitly postponed decision. It used to
+    //               render the same ✓ and count toward "4 / 4", claiming a
+    //               deferral as completion — against 1.4's exit wording.
+    // Anything else is open. Both the rail and the plan sidecar read this one
+    // mapping, so the two surfaces can never disagree.
+    function sleepSystemStatusKind(status) {
+      if (status === 'selected') return 'selected';
+      if (status === 'already' || status === 'confirm' || status === 'demo') return 'addressed';
+      if (status === 'later') return 'deferred';
+      return 'open';
+    }
+
     function renderSleepSystemRail() {
       var rail = document.getElementById('sleepSystemRail');
       if (!rail) return;
       rail.innerHTML = SLEEP_SYSTEM_STEPS.map(function(step, index) {
         var decision = sleepSystemDecision(step.id);
         var active = window._sleepSystemState.activeStep === step.id;
-        var complete = decision.status !== 'open';
+        // X2: mark by kind — sage ✓ only for an actual addition; a neutral
+        // dash for an addressed decision; the step number (in a dashed ring,
+        // via CSS) for a deferral; the plain number while open. Glyph and
+        // geometry, not colour alone, so the states survive forced colors.
+        var kind = sleepSystemStatusKind(decision.status);
+        var mark = kind === 'selected' ? '&#10003;' : (kind === 'addressed' ? '&#8211;' : (index + 1));
         return '<button type="button" class="sleep-system__step' +
-          (active ? ' is-active' : '') + (complete ? ' is-complete' : '') +
-          '" data-sleep-action="step" data-step="' + step.id + '">' +
-            '<span class="sleep-system__step-num">' + (complete ? '&#10003;' : (index + 1)) + '</span>' +
+          (active ? ' is-active' : '') + (kind === 'open' ? '' : ' is-' + kind) +
+          '" data-sleep-action="step" data-step="' + step.id + '"' +
+          // X10: the active rail control announces its place (paired with the
+          // is-active class, the roster precedent at renderHf2RsaPanel).
+          (active ? ' aria-current="step"' : '') + '>' +
+            '<span class="sleep-system__step-num">' + mark + '</span>' +
             '<span><span class="sleep-system__step-name">' + escapeHtml(sleepSystemText(step.label)) + '</span>' +
             '<span class="sleep-system__step-status">' + escapeHtml(sleepSystemDecisionLabel(step.id, decision)) + '</span></span>' +
           '</button>';
@@ -18997,7 +19062,9 @@
       var sectionHead =
         '<div class="sleep-system__section-head">' +
           '<div><div class="sleep-system__section-eyebrow">' + escapeHtml(sleepSystemText(step.label)) + '</div>' +
-          '<h2 class="sleep-system__section-title">' + escapeHtml(sleepSystemText(step.title)) + '</h2></div>' +
+          // X10: the step heading is the focus fallback when a re-render
+          // removes the control the keyboard was on (the pillow gate does).
+          '<h2 class="sleep-system__section-title" id="sleepSystemSectionTitle" tabindex="-1">' + escapeHtml(sleepSystemText(step.title)) + '</h2></div>' +
           '<p class="sleep-system__section-copy">' + escapeHtml(sleepSystemText(step.copy)) + '</p>' +
         '</div>';
 
@@ -19019,9 +19086,12 @@
         var badge = step.id === 'support'
           ? sleepSystemText({ en: 'Support option', es: 'Opción de soporte' })
           : step.id === 'protection'
+            // X3 (North Star ruling D7, 2026-08-31): "Suggested for", never
+            // "Best for" — a suggestion is what the goal mapping actually is;
+            // "best" is the superlative 1.4 forbids. ES provisional.
             ? sleepSystemText({
-                en: 'Best for ' + sleepSystemText(protectionGoalLabel(window._sleepSystemState.protectionGoal || getSuggestedProtectionGoal())),
-                es: 'Mejor para ' + sleepSystemText(protectionGoalLabel(window._sleepSystemState.protectionGoal || getSuggestedProtectionGoal()))
+                en: 'Suggested for ' + sleepSystemText(protectionGoalLabel(window._sleepSystemState.protectionGoal || getSuggestedProtectionGoal())),
+                es: 'Sugerido para ' + sleepSystemText(protectionGoalLabel(window._sleepSystemState.protectionGoal || getSuggestedProtectionGoal()))
               })
           // 3.7 P2 (owner ruling 2026-08-30): "Recommended to try" requires an
           // ANSWER-DERIVED match. `matched` is true only when at least one
@@ -19264,18 +19334,30 @@
       var list = document.getElementById('sleepSystemPlanList');
       var count = document.getElementById('sleepSystemPlanCount');
       if (!list || !count) return;
-      var addressed = 0;
+      var added = 0;
+      var addressedCount = 0;
       list.innerHTML = SLEEP_SYSTEM_STEPS.map(function(step) {
         var decision = sleepSystemDecision(step.id);
-        var complete = decision.status !== 'open';
-        if (complete) addressed++;
-        return '<div class="sleep-system__plan-item' + (complete ? ' is-complete' : '') + '">' +
-          '<span class="sleep-system__plan-mark">' + (complete ? '&#10003;' : '') + '</span>' +
+        // X2: the sidecar mirrors the rail's three kinds — sage ✓ for an
+        // addition, a neutral dash for an addressed decision, an empty dashed
+        // ring for a deferral (rendered by CSS), an empty ring while open.
+        var kind = sleepSystemStatusKind(decision.status);
+        if (kind === 'selected') added++;
+        else if (kind === 'addressed') addressedCount++;
+        var mark = kind === 'selected' ? '&#10003;' : (kind === 'addressed' ? '&#8211;' : '');
+        return '<div class="sleep-system__plan-item' + (kind === 'open' ? '' : ' is-' + kind) + '">' +
+          '<span class="sleep-system__plan-mark">' + mark + '</span>' +
           '<span><span class="sleep-system__plan-item-name">' + escapeHtml(sleepSystemText(step.label)) + '</span>' +
           '<span class="sleep-system__plan-item-status">' + escapeHtml(sleepSystemDecisionLabel(step.id, decision)) + '</span></span>' +
         '</div>';
       }).join('');
-      count.textContent = addressed + ' / ' + SLEEP_SYSTEM_STEPS.length;
+      // X2 (ruling D7): a neutral completion phrase. Deferred and open steps
+      // are claimed by neither number — the old "N / 4" counted "Decide
+      // later" toward completion. ES participles agree with their counts
+      // (the C5 rule); ES wording provisional (native review deferred).
+      count.textContent = currentLang === 'es'
+        ? (added + (added === 1 ? ' agregado' : ' agregados') + ' · ' + addressedCount + (addressedCount === 1 ? ' atendido' : ' atendidos'))
+        : (added + ' added · ' + addressedCount + ' addressed');
     }
 
     function renderSleepSystemFooter() {
@@ -19296,6 +19378,59 @@
             sleepSystemText(SLEEP_SYSTEM_STEPS[activeIndex + 1].label);
         }
       }
+    }
+
+    // X10 (North Star ruling D7, 2026-08-31): every Sleep System decision
+    // destroys and rebuilds all four regions, so keyboard focus fell to
+    // <body> after every tap-equivalent — the salesperson lost their place on
+    // each decision and step change. The repair is the Payment Choice
+    // identity idiom (payFocusOrigin/payRestoreFocus), adapted because these
+    // controls carry no ids: identity is the data-* attributes. Both halves
+    // are IDENTITY-gated: capture only when the active element is a
+    // [data-sleep-action] control inside this screen that matches
+    // :focus-visible (a hybrid-iPad touch after preventDefault() leaves the
+    // previously keyboard-focused control active — restoring "whatever was
+    // focused" would be the selectOption() defect); restore synchronously,
+    // preventScroll, to the control with the SAME identity attributes —
+    // never by action name, which flips (select-item <-> remove-item) — else
+    // to the step heading (the pillow gate can remove the successor
+    // entirely), else the screen heading. No timers (the suite forbids them
+    // in these renderers); nothing here runs unless the customer was
+    // keyboard-focused inside the screen.
+    var SLEEP_SYSTEM_IDENTITY_ATTRS = ['data-item-id', 'data-step', 'data-status',
+      'data-position', 'data-reaction', 'data-support-choice', 'data-protection-goal'];
+    function sleepSystemFocusKey() {
+      var active = document.activeElement;
+      var screen = document.getElementById('accessoriesScreen');
+      if (!active || !screen || !screen.contains || !screen.contains(active)) return null;
+      if (!active.matches) return null;
+      try {
+        if (!active.matches('[data-sleep-action]') || !active.matches(':focus-visible')) return null;
+      } catch (err) { return null; }
+      var key = {};
+      var found = false;
+      SLEEP_SYSTEM_IDENTITY_ATTRS.forEach(function(attr) {
+        var value = active.getAttribute(attr);
+        if (value) { key[attr] = value; found = true; }
+      });
+      return found ? key : {};
+    }
+    function sleepSystemRestoreFocus(key) {
+      if (!key) return;
+      var screen = document.getElementById('accessoriesScreen');
+      if (!screen) return;
+      var attrs = Object.keys(key);
+      var successor = null;
+      if (attrs.length) {
+        var selector = '[data-sleep-action]' + attrs.map(function(attr) {
+          return '[' + attr + '="' + String(key[attr]).replace(/"/g, '\\"') + '"]';
+        }).join('');
+        successor = screen.querySelector(selector);
+      }
+      if (!successor) successor = document.getElementById('sleepSystemSectionTitle');
+      if (!successor) successor = document.getElementById('sleepSystemTitle');
+      if (!successor || typeof successor.focus !== 'function') return;
+      try { successor.focus({ preventScroll: true }); } catch (err) { successor.focus(); }
     }
 
     function renderSleepSystem() {
@@ -19343,10 +19478,14 @@
       if (footer) footer.hidden = !hasAccessories;
       if (!hasAccessories) return;
 
+      // X10: capture the keyboard's place before the rebuild, restore it
+      // after — one site covers every decision, step change and selection.
+      var focusKey = sleepSystemFocusKey();
       renderSleepSystemRail();
       renderSleepSystemMain(viewModel);
       renderSleepSystemPlan();
       renderSleepSystemFooter();
+      sleepSystemRestoreFocus(focusKey);
     }
 
     function syncAccessoryAnalytics() {
@@ -21781,6 +21920,10 @@
       'hf2LeadLine',
       'hf2FinancingStatus', 'financingSheetStatus', 'financingSheetAction',
       'sleepPlanFinancingStatus', 'sleepPlanPrioritiesRecoveryText',
+      // X2 (2026-08-31): the plan count is no longer a neutral fraction - it
+      // is a phrase derived from the customers decisions (N added, M
+      // addressed), so it joins the wipe like every other derived surface.
+      'sleepSystemPlanCount',
       'sessionSafetyLive', 'dataErrorLive',
       'resultsRevealTitle', 'resultsRevealSubtitle',
       'revealCertCode', 'revealCertPctNum', 'revealCertScope', 'revealCertExpiry',
