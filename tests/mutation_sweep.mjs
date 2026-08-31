@@ -1163,6 +1163,17 @@ const MUTATIONS = [
   ["trust: the Spanish data-use variant silently becomes English",
     '"privacy.data_use_preview": "Durante esta sesión en la tienda,',
     '"privacy.data_use_preview": "During this showroom session,', TRUST, "data/dict-es.json"],
+  // C6 (cohesion pass-1, 2026-08-30): the take-home eyebrow invites, it does
+  // not threaten a loss — in both languages, from the dictionary.
+  ["C6: the loss-aversion eyebrow returns in English",
+    '"email.eyebrow": "Take your matches home"',
+    '"email.eyebrow": "Don\'t lose your matches"', TRUST, "data/dict-en.json"],
+  ["C6: the Spanish eyebrow regresses to the pressuring line",
+    '"email.eyebrow": "Llévate tus opciones"',
+    '"email.eyebrow": "No pierdas tus opciones"', TRUST, "data/dict-es.json"],
+  ["C6: showEmailCapture() hardcodes the eyebrow again instead of reading the dictionary",
+    "setText('emailEyebrow', t('email.eyebrow'));",
+    "setText('emailEyebrow', es ? 'Guarda tus opciones' : 'Keep your matches');", TRUST],
   ["trust: the validator stops rejecting preview-mode privacy prose under a live gasUrl",
     "    if live_at_runtime:\n        _check_privacy_prose_mode(r, config)",
     "    if False:\n        _check_privacy_prose_mode(r, config)", PAY_VALIDATOR, "tools/validation.py"],

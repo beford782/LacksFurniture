@@ -513,6 +513,33 @@ section("D — the tier-relativity statement is legible and semantically untouch
     /activeTier:\s*'gold'/.test(norm) || /activeTier = 'gold'/.test(norm));
 }
 
+// ================================================================ E — C6
+// Cohesion pass-1 ruling C6 (2026-08-30): the take-home eyebrow was the one
+// line in the journey that pressured rather than invited ("Don't lose your
+// matches" / "No pierdas tus opciones"). It is now dictionary copy in both
+// languages, phrased as an invitation. The EN line is the owner-approved
+// C6 line; the ES line ships provisional (native review deferred). Any other
+// wording is a new owner decision, so the exact strings are pinned here.
+section("E — the take-home invites; it does not threaten a loss (cohesion C6)");
+{
+  const en = dictEn["email.eyebrow"], es = dictEs["email.eyebrow"];
+  ok("both governed dictionaries carry the take-home eyebrow (email.eyebrow)",
+    typeof en === "string" && en.trim().length > 0 && typeof es === "string" && es.trim().length > 0);
+  const lossEn = /\b(don'?t|do not|never)\s+(lose|forget|miss)\b|\bbefore (it'?s|they'?re) gone\b|\blast chance\b|\bhurry\b|\bonly today\b/i;
+  const lossEs = /\bno\s+(pierdas|olvides|te pierdas|dejes)\b|\b[uú]ltima oportunidad\b|\bantes de que\b|\bs[oó]lo hoy\b/i;
+  ok("EN eyebrow carries no loss-aversion or urgency phrasing", !lossEn.test(String(en)), String(en));
+  ok("ES eyebrow carries no loss-aversion or urgency phrasing", !lossEs.test(String(es)), String(es));
+  ok("EN eyebrow is the ruled C6 line — change only with a new owner ruling", en === "Take your matches home");
+  ok("ES eyebrow is the provisional C6 line (native review deferred)", es === "Llévate tus opciones");
+  ok("showEmailCapture() sets the eyebrow from the dictionary key, not an inline bilingual literal",
+    /setText\('emailEyebrow', t\('email\.eyebrow'\)\);/.test(norm) && !/setText\('emailEyebrow', es \?/.test(norm));
+  const retired = /Don't lose your matches|No pierdas tus opciones/;
+  ok("the retired pressuring pair appears nowhere in live code or either dictionary",
+    !retired.test(norm) && !Object.values(dictEn).concat(Object.values(dictEs)).some((v) => retired.test(String(v))));
+  ok("the static markup default is the EN dictionary line (the pre-render frame agrees with the rendered one)",
+    norm.includes('id="emailEyebrow">' + en + '</div>'));
+}
+
 // ================================================================ summary
 console.log(`\n${failures === 0 ? "PASS" : "FAIL"} — ${checks - failures}/${checks} checks passed`);
 process.exit(failures === 0 ? 0 : 1);
