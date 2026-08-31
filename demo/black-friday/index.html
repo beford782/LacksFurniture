@@ -1477,13 +1477,25 @@
        the layout above is untouched and the Back/Next row rides the bottom
        of the viewport while the tall questions scroll. Landscape CSS only;
        the consultation ground paints under it so options never show through. */
+    /* Measured correction (2026-08-31 capture): position:sticky never
+       engaged - the body is the scroll container (overflow-x hidden +
+       overflow-y auto at the body rule), so the nav sat at its static spot
+       below the fold. The row is bottom-PINNED instead: position: fixed to
+       the viewport, full-width on the consultation ground, with matching
+       bottom clearance on the quiz column so no option ever hides under it. */
     @media (orientation: landscape) and (min-width: 900px) {
+      body:has(#questionScreen.active) .noct-quiz {
+        padding-bottom: 110px;
+      }
       body:has(#questionScreen.active) .noct-quiz-nav {
-        position: sticky;
+        position: fixed;
+        left: 0;
+        right: 0;
         bottom: 0;
         z-index: 5;
+        margin: 0;
         background: var(--consultation-bg);
-        padding-bottom: 14px;
+        padding: 14px clamp(28px, 7vw, 76px) calc(14px + env(safe-area-inset-bottom, 0px));
         box-shadow: 0 -10px 14px -12px rgba(47, 39, 30, 0.35);
       }
     }
