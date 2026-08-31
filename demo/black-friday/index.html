@@ -9657,6 +9657,49 @@
         box-shadow: none;
       }
     }
+    /* C4 (cohesion pass-1 ruling, 2026-08-30): the screen headings that take
+       programmatic focus on every transition (0.3 — SCREEN_HEADING_IDS) had
+       only the UA `outline: auto` on a display:block h1, a full-width
+       rectangle up to 3.2x wider than the words (Plan title: 1154px box,
+       364px of text). The author treatment hugs the text instead: on
+       :focus-visible the block shrinks to its content (fit-content; the
+       centred headings keep their centre through auto inline margins, the
+       left-aligned Plan title keeps its edge below), and the SAME two-ring
+       token pair every control uses is drawn at a 5px offset so the italic
+       brass accent and its descenders sit inside the ring (>= 4px ruled).
+       Gated on :focus-visible only — the gate the UA ring already used, so
+       the keyboard path shows it and touch behaviour is unchanged. Focus
+       itself is untouched: showScreen() still moves focus to the heading
+       and the heading text is the announcement. The Brief (#profileName)
+       and quiz headline already sit in the consolidated rule above.
+       Forced-colors fallback in its own block below, AFTER the anchored
+       first block (contrast_check pins the order and these pairs). */
+    .noct-results-headline:focus-visible,
+    .noct-email-headline:focus-visible,
+    .sleep-system__title:focus-visible,
+    .hf2-review-title:focus-visible {
+      width: -webkit-fit-content;
+      width: fit-content;
+      max-width: 100%;
+      margin-inline: auto;
+      outline: 3px solid var(--focus-ring-outer);
+      outline-offset: 5px;
+      box-shadow: 0 0 0 8px var(--focus-ring-inner);
+    }
+    /* The Sleep Plan title is the one left-aligned heading in the set: it
+       keeps its edge, so the text does not move when the ring arrives. */
+    #sleepPlanScreen .hf2-review-title:focus-visible {
+      margin-inline: 0;
+    }
+    @media (forced-colors: active) {
+      .noct-results-headline:focus-visible,
+      .noct-email-headline:focus-visible,
+      .sleep-system__title:focus-visible,
+      .hf2-review-title:focus-visible {
+        outline-color: CanvasText;
+        box-shadow: none;
+      }
+    }
     /* Construction reveal (slices 5a+5b): forced colors strip author hues
        and backgrounds, so the region-to-role correspondence falls back to
        border-style, which forced colors keeps (drawn in CanvasText). Two
