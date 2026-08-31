@@ -780,6 +780,26 @@ const MUTATIONS = [
   ["compare modal: title and price tier regress to root gold (~2.8:1)",
     "body:has(#resultsScreen.active) #compareModalTitle,\n    body:has(#hf2Screen.active) #compareModalTitle {\n      --gold: #7D5B34;\n    }\n    body:has(#resultsScreen.active) .cmp-head-name .price-tier,\n    body:has(#hf2Screen.active) .cmp-head-name .price-tier {\n      color: #7D5B34;\n    }",
     "", CMPE],
+  // X6 (North Star D8, 2026-08-31): the frozen retailer accent stays out of
+  // the drawer $$$, the compare tray and the quiz progress fill.
+  ["X6: the drawer $$$ reads the frozen --gold alias again",
+    "      color: #7D5B34;\n      font-weight: 700;\n      font-size: 0.82em;\n      letter-spacing: 0.5px;",
+    "      color: var(--gold);\n      font-weight: 700;\n      font-size: 0.82em;\n      letter-spacing: 0.5px;",
+    CMPE.concat(["tests/contrast_check.mjs"])],
+  ["X6: the quiz brass token aliases the un-redeclared accent again (orange progress fill)",
+    "      --consultation-brass: #9A7445;",
+    "      --consultation-brass: var(--color-accent);", ["tests/contrast_check.mjs"]],
+  ["X6: the compare tray goes back to the cold navy gradient",
+    "      background: var(--color-surface);\n      border-top: 1px solid var(--color-border);\n      box-shadow: 0 -12px 40px rgba(55,40,28,0.16);",
+    "      background: linear-gradient(135deg, #1a2744, #0d1730);\n      border-top: 2px solid var(--gold);\n      box-shadow: 0 -4px 20px rgba(0,0,0,0.5);",
+    CMPE.concat(["tests/contrast_check.mjs"])],
+  ["X6: the tray's Compare button leaves the store-primary pair for the frozen gold gradient",
+    "      background: var(--store-primary);\n      border: 1px solid var(--accent-ink);\n      color: var(--on-store-primary);",
+    "      background: linear-gradient(180deg, var(--gold-light), var(--gold));\n      border: 2px solid var(--gold-pale);\n      color: var(--navy);",
+    CMPE.concat(["tests/contrast_check.mjs"])],
+  ["X6: the tray count regresses to the frozen accent",
+    "      color: var(--color-accent-hover); /* brass #7D5B34 on Results — informative emphasis */",
+    "      color: var(--gold);", CMPE],
 
   // --- Sleep Brief CTA relabel (owner-authorized 2026-08-10) ---------------
   // The label pair is ruled verbatim and the handler must keep routing to the

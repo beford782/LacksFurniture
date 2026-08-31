@@ -1273,7 +1273,13 @@
       --consultation-subtle: #8B7B67;
       --consultation-rule: rgba(104, 84, 60, 0.28);
       --consultation-red: var(--store-primary);
-      --consultation-brass: var(--color-accent);
+      /* X6 (North Star ruling D8, 2026-08-31): brass by value. This theme
+         never re-declares --color-accent, so the alias resolved to the
+         configured retailer accent (#FF5C36) and the progress fill ran
+         orange through the whole quiz. Same brass the warm screens declare.
+         (Its other reader is the pointer-hover border on an option, which
+         follows.) colors.accent itself is untouched. */
+      --consultation-brass: #9A7445;
       background: var(--consultation-bg);
       color: var(--consultation-ink);
     }
@@ -7917,7 +7923,15 @@
     .price-tier {
       display: inline-block;
       margin-left: 0.3rem;
-      color: var(--gold);
+      /* X6 (North Star ruling D8, 2026-08-31): brass, not the retailer accent.
+         `--gold` is substituted on :root, where applyStoreConfig() writes the
+         configured accent, so it froze at #FF5C36 (3.02:1 on the drawer
+         surface) even though every warm screen re-declares --color-accent
+         as brass on <body>. Only two surfaces render .price-tier — the
+         drawer name and the Compare head — and the Compare head already
+         restates this exact brass below; the base rule now agrees with it.
+         colors.accent itself is untouched (white-label boundary). */
+      color: #7D5B34;
       font-weight: 700;
       font-size: 0.82em;
       letter-spacing: 0.5px;
@@ -7988,13 +8002,22 @@
     }
     .mattress-card { position: relative; }
 
-    /* ===== COMPARE TRAY (fixed bottom) ===== */
+    /* ===== COMPARE TRAY (fixed bottom) =====
+       X6 (North Star ruling D8, 2026-08-31): the tray was the one cold surface
+       in the journey — a navy gradient under a `--gold` border that had frozen
+       at the retailer accent (#FF5C36) on :root. It now sits on the same warm
+       paper, hairline and shadow family as the drawer it neighbours, reads the
+       theme tokens <body> declares for Results (the tray only ever shows
+       there), keeps brass for the informative count, and gives "Compare →"
+       the singular yellow primary treatment the Results CTA uses
+       (store-primary + its computed accessible foreground). Geometry, z-index,
+       the entrance slide and its reduced-motion quiet are unchanged. */
     .compare-tray {
       position: fixed;
       left: 0; right: 0; bottom: 0;
-      background: linear-gradient(135deg, #1a2744, #0d1730);
-      border-top: 2px solid var(--gold);
-      box-shadow: 0 -4px 20px rgba(0,0,0,0.5);
+      background: var(--color-surface);
+      border-top: 1px solid var(--color-border);
+      box-shadow: 0 -12px 40px rgba(55,40,28,0.16);
       padding: 0.75rem 1rem;
       z-index: 60;
       animation: compareTraySlide 0.25s ease-out;
@@ -8012,7 +8035,7 @@
     }
     .compare-tray-count {
       font-size: 0.65rem;
-      color: var(--gold);
+      color: var(--color-accent-hover); /* brass #7D5B34 on Results — informative emphasis */
       text-transform: uppercase;
       letter-spacing: 1.2px;
       font-weight: 700;
@@ -8026,9 +8049,9 @@
       flex-wrap: wrap;
     }
     .compare-tray-slot {
-      background: rgba(255,255,255,0.07);
-      border: 1px solid rgba(255,255,255,0.15);
-      color: var(--cream);
+      background: var(--color-surface-alt);
+      border: 1px solid var(--color-border);
+      color: var(--color-text);
       font-size: 0.72rem;
       padding: 0.35rem 0.6rem;
       border-radius: 8px;
@@ -8056,8 +8079,8 @@
     }
     .compare-tray-clear {
       background: transparent;
-      border: 1px solid rgba(255,255,255,0.15);
-      color: var(--cream-dim);
+      border: 1px solid var(--color-border);
+      color: var(--color-text-muted);
       font-family: inherit;
       font-size: 0.75rem;
       padding: 0.4rem 0.75rem;
@@ -8066,9 +8089,11 @@
       touch-action: manipulation;
     }
     .compare-tray-go {
-      background: linear-gradient(180deg, var(--gold-light), var(--gold));
-      border: 2px solid var(--gold-pale);
-      color: var(--navy);
+      /* The singular primary action of this region: the same pair the
+         Results CTA uses (#resultsScreen .noct-results-cta). */
+      background: var(--store-primary);
+      border: 1px solid var(--accent-ink);
+      color: var(--on-store-primary);
       font-family: inherit;
       font-size: 0.8rem;
       font-weight: 800;
@@ -8076,12 +8101,15 @@
       border-radius: 10px;
       cursor: pointer;
       touch-action: manipulation;
-      box-shadow: 0 3px 0 var(--color-accent-shadow);
+    }
+    .compare-tray-go:hover:not(:disabled) {
+      background: var(--store-primary-light);
+      color: var(--on-store-primary-light);
     }
     .compare-tray-go:disabled {
-      background: rgba(212,168,75,0.25);
-      color: rgba(15,31,51,0.5);
-      border-color: rgba(212,168,75,0.35);
+      background: var(--color-surface-alt);
+      color: var(--color-text-subtle);
+      border-color: var(--color-border);
       box-shadow: none;
       cursor: not-allowed;
     }
