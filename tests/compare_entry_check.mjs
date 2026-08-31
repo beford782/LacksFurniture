@@ -234,8 +234,8 @@ ok('the legacy absolute overlay styling is retired (cluster flow layout)',
 ok('selection is never color alone: .selected class plus aria-pressed plus fill swap',
   norm.includes(".classList.toggle('selected', on);") &&
   norm.includes("btn.setAttribute('aria-pressed', on ? 'true' : 'false');"));
-ok('tray action labels never wrap mid-word',
-  /\.compare-tray-clear, \.compare-tray-go \{ white-space: nowrap; \}/.test(norm));
+ok('tray action labels never wrap mid-word (and carry the X12 44px floor)',
+  /\.compare-tray-clear, \.compare-tray-go \{ white-space: nowrap; min-height: 44px; min-width: 44px; \}/.test(norm));
 ok('the tray forces full rows at phone widths (flex shrinks nowrap content before it wraps)',
   norm.includes('.compare-tray-inner { flex-wrap: wrap; row-gap: 0.5rem; }') &&
   norm.includes('.compare-tray-slots { flex: 1 1 100%; order: 2; }') &&
