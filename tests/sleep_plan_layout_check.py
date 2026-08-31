@@ -525,6 +525,67 @@ def run_viewport(browser, port, name, width, height, shots_dir):
     page.close()
 
 
+# Wave 3 / X4 (North Star ruling D1, 2026-08-31): a product source whose
+# natural aspect ratio exceeds 3 is a banner crop — `cover` showed a blurred
+# upscaled strip of the two Tempur-Pedic Gold sources (4.05:1 / 4.42:1) on
+# every surface. dfTagBannerImage() tags such images at load; CSS letterboxes
+# them on a white mat, outranking even the drawer hero's inline cover style.
+# This pass renders Results, waits for the real image loads, and proves the
+# tagging is exact in both directions, then opens the drawer on the banner
+# mattress and proves the inline style lost.
+BANNER_JS = r"""
+async (ARGS) => {
+  for (const k of Object.keys(ARGS.answers)) answers[k] = ARGS.answers[k];
+  showProfileScreen();
+  window.showResults();
+  await new Promise((res) => setTimeout(res, 250));
+  const settleImg = (i) => (i.complete ? Promise.resolve() : new Promise((res) => {
+    i.addEventListener('load', res, { once: true }); i.addEventListener('error', res, { once: true }); }));
+  await Promise.all(Array.from(document.images).map(settleImg));
+  await new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res)));
+  const info = (i) => ({ src: (i.currentSrc || i.src).split('/').pop(), ar: i.naturalHeight ? +(i.naturalWidth / i.naturalHeight).toFixed(2) : 0,
+                         tagged: i.classList.contains('df-img--banner'), fit: getComputedStyle(i).objectFit });
+  const results = Array.from(document.images).filter((i) => i.naturalWidth).map(info);
+  const banner = _resultsState.tierData.gold.find((m) => {
+    const el = document.querySelector('#resultsScreen [data-id="' + m.id + '"] img');
+    return el && el.naturalHeight && el.naturalWidth / el.naturalHeight > 3;
+  });
+  let drawer = null;
+  if (banner) {
+    openResultCardDrawer(document.querySelector('#resultsScreen [data-id="' + banner.id + '"]'));
+    await new Promise((res) => setTimeout(res, 500));
+    const h = document.querySelector('.drawer-hero img');
+    if (h) { await settleImg(h); await new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res))); drawer = info(h); }
+  }
+  return { results, bannerModel: banner ? banner.name : null, drawer };
+}
+"""
+
+
+def run_banner_fallback(browser, port, shots_dir):
+    print("\n-- BANNER FALLBACK (X4 / Wave 3) 1194x748 --")
+    page = browser.new_page(viewport={"width": 1194, "height": 748})
+    errors = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    page.goto(f"http://127.0.0.1:{port}/", wait_until="networkidle")
+    page.wait_for_selector("#startBtn")
+    r = page.evaluate(BANNER_JS, {"answers": ANSWERS})
+    if shots_dir:
+        os.makedirs(shots_dir, exist_ok=True)
+        page.screenshot(path=os.path.join(shots_dir, "banner-fallback-1194x748.png"))
+    banners = [i for i in r["results"] if i["ar"] > 3]
+    standards = [i for i in r["results"] if 0 < i["ar"] <= 3]
+    check("Results rendered with a banner-crop Gold source present (the re-export gap this fallback covers)",
+          not errors and len(banners) >= 1 and bool(r["bannerModel"]), f"errors={errors[:1]} banner={r['bannerModel']}")
+    check("every banner-crop image (AR > 3) is tagged and letterboxes (computed object-fit: contain)",
+          bool(banners) and all(i["tagged"] and i["fit"] == "contain" for i in banners), str(banners[:4]))
+    check(f"no standard source is tagged ({len(standards)} checked)",
+          all(not i["tagged"] for i in standards), str([i for i in standards if i["tagged"]][:4]))
+    check("the drawer hero on the banner mattress letterboxes despite its inline cover style (!important won)",
+          r["drawer"] is not None and r["drawer"]["tagged"] and r["drawer"]["fit"] == "contain", str(r["drawer"]))
+    page.close()
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--screenshots", default="", help="directory to save a PNG per viewport (outside the repo)")
@@ -546,6 +607,7 @@ def main():
                 for name, w, h in VIEWPORTS[:2]:
                     run_sleep_system_header(browser, port, name, w, h, lang, args.screenshots)
             run_compare_label(browser, port, args.screenshots)
+            run_banner_fallback(browser, port, args.screenshots)
             run_forced_colors(browser, port, args.screenshots)
             browser.close()
     finally:
