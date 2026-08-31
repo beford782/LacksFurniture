@@ -2511,39 +2511,30 @@
 
     /* Source-order note: this block must sit AFTER every .noct-toppick-*
        base rule above - equal specificity, later wins. */
-    /* PROTOTYPE P-C2 option A ONLY (owner ruling D1, 2026-08-31; never
-       merged as such): the landscape hero becomes a two-column card - the
-       photo in a ~46% column at ~3:2 (a 1000x666 source fits uncropped;
-       banner sources still letterbox via the X4 fallback above), the
-       narrative and controls beside it, so the best match's name, feel and
-       controls land inside the 748px landscape fold. Landscape-only:
-       portrait stays pixel-identical. */
+    /* PROTOTYPE P-C2 option B ONLY (owner ruling D1, 2026-08-31; never
+       merged as such): height-capped landscape hero with an identity
+       overlay - the photo stays full-width but is capped at 300px, and the
+       eyebrow/brand/name band is pulled up over its lower edge on a warm
+       scrim, so identity reads on the product and the controls land higher.
+       Banner sources still letterbox via the X4 fallback. Landscape-only:
+       portrait stays pixel-identical to the merged foundation. */
     @media (orientation: landscape) and (min-width: 900px) {
-      .noct-toppick {
-        display: grid;
-        grid-template-columns: 46% 54%;
-        align-items: stretch;
-      }
-      .noct-toppick > .mattress-offer-tab {
-        grid-column: 1 / -1;
-      }
       .noct-toppick-photo {
         aspect-ratio: auto;
-        width: 100%;
-        height: 100%;
-        min-height: 330px;
+        height: 300px;
       }
       .noct-toppick-body {
-        padding: 26px 34px 28px;
+        position: relative;
+        margin-top: -128px;
+        padding: 18px 40px 26px;
+        background: linear-gradient(180deg, rgba(255, 253, 248, 0) 0%, rgba(255, 253, 248, 0.94) 26%, var(--color-surface) 52%);
       }
       .noct-toppick-name {
-        font-size: 38px;
+        font-size: 40px;
+        margin-bottom: 12px;
       }
       .noct-toppick-eyebrow {
-        margin-bottom: 8px;
-      }
-      .noct-toppick-name {
-        margin-bottom: 12px;
+        margin-bottom: 6px;
       }
       .noct-toppick-reason {
         margin-bottom: 12px;
