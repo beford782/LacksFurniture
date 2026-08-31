@@ -556,5 +556,37 @@ function over(fg, bg, alpha) {
     !!consolidated && !consolidated[0].includes(".hf2-review-title") && !consolidated[0].includes(".noct-results-headline"));
 }
 
+// --- X6: the retailer accent no longer leaks through --gold (D8, 2026-08-31)
+// `--gold: var(--color-accent)` is declared on :root, and applyStoreConfig()
+// writes the configured accent (#FF5C36 for this retailer) as an inline
+// custom property on :root — so the alias substitutes THERE and freezes,
+// while every warm screen re-declares --color-accent as brass on <body>.
+// Three consumers were caught with the frozen value: the drawer $$$ band, the
+// compare tray, and the quiz progress fill (its theme never re-declared
+// --color-accent at all). Each consumer is repaired; the alias, the config
+// and colors.accent are untouched (white-label boundary).
+{
+  check("X6: the --gold alias and its :root binding are untouched (consumers were fixed, not the config)",
+    /--gold: var\(--color-accent\);/.test(html) && /root\.style\.setProperty\('--color-accent', STORE_CONFIG\.colors\.accent\)/.test(html));
+  const tier = html.match(/\.price-tier \{[^}]*color: (#[0-9A-Fa-f]{6});[^}]*\}/);
+  check("X6: the drawer $$$ (.price-tier) is brass by value, no --gold", !!tier && !/\.price-tier \{[^}]*var\(--gold\)/.test(html));
+  if (tier) {
+    const rr = ratio(tier[1], "#FFFDF8");
+    check(`X6: drawer $$$ ${tier[1]} on the drawer surface #FFFDF8 >= 4.5:1 (got ${rr.toFixed(2)}:1; was 3.02:1 with the frozen accent)`, rr >= 4.5);
+  }
+  const brass = html.match(/--consultation-brass: (#[0-9A-Fa-f]{6});/);
+  check("X6: the quiz theme's brass token is brass by value (its theme never re-declares --color-accent)", !!brass && !/--consultation-brass: var\(--color-accent\);/.test(html));
+  if (brass) {
+    const consultationPaper = "#F4EFE6"; // --consultation-bg (the quiz/Review ground)
+    const rr = ratio(brass[1], consultationPaper);
+    check(`X6: quiz progress fill ${brass[1]} against the consultation paper >= 3:1 (non-text UI component; got ${rr.toFixed(2)}:1)`, rr >= 3);
+  }
+  const trayRule = html.match(/\n    \.compare-tray \{([^}]*)\}/);
+  check("X6: no compare-tray rule reads the frozen aliases (--gold*, --navy, --cream*) and the tray's navy gradient is gone",
+    !/\.compare-tray[^{]*\{[^}]*var\(--(gold|navy|cream)/.test(html) && !!trayRule && !/1a2744|0d1730|linear-gradient/.test(trayRule[1]));
+  check("X6: the tray's primary uses the store-primary pair whose foreground applyStoreConfig() computes (contrast-safe by construction)",
+    /\.compare-tray-go \{[^}]*background: var\(--store-primary\);[^}]*color: var\(--on-store-primary\);/.test(html));
+}
+
 console.log(`\nContrast check: ${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

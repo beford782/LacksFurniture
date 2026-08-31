@@ -326,14 +326,60 @@ if (modalSurface) {
     const r = ratio(hexToRgb(titleRule[1]), surface);
     ok('the modal title meets 4.5:1 on the light modal surface', r >= 4.5, r.toFixed(2) + ':1');
   }
-  ok('base .price-tier uses var(--gold) (the light restatement is load-bearing)',
-    /\.price-tier \{[^}]*color: var\(--gold\);/.test(norm));
+  // X6 (North Star D8, 2026-08-31): the base .price-tier no longer reads
+  // --gold — that alias is substituted on :root, where applyStoreConfig()
+  // writes the configured accent, so it froze at the retailer orange on the
+  // drawer name (3.02:1). The base rule is now the same brass the Compare
+  // head restates, so the two agree and the restatement is a no-op guard.
+  const baseTier = norm.match(/\.price-tier \{[^}]*color: (#[0-9A-Fa-f]{6});[^}]*\}/);
+  ok('base .price-tier is brass by value (no --gold alias — the frozen retailer accent cannot reach the drawer $$$)',
+    !!baseTier && !/\.price-tier \{[^}]*var\(--gold\)/.test(norm));
   const tierRule = norm.match(
     /body:has\(#resultsScreen\.active\) \.cmp-head-name \.price-tier,\s*body:has\(#hf2Screen\.active\) \.cmp-head-name \.price-tier \{\s*color: (#[0-9A-Fa-f]{6});\s*\}/);
   ok('the head-name price tier is themed for the light modal', !!tierRule);
+  ok('the drawer $$$ and the Compare-head $$$ are the same brass', !!baseTier && !!tierRule && baseTier[1].toUpperCase() === tierRule[1].toUpperCase());
   if (tierRule) {
     const r = ratio(hexToRgb(tierRule[1]), surface);
     ok('the price tier meets 4.5:1 on the light modal surface', r >= 4.5, r.toFixed(2) + ':1');
+  }
+  if (baseTier) {
+    const r = ratio(hexToRgb(baseTier[1]), hexToRgb('#FFFDF8'));
+    ok('the drawer $$$ meets 4.5:1 on the drawer surface #FFFDF8', r >= 4.5, r.toFixed(2) + ':1');
+  }
+}
+
+// ------------------------------ X6: the tray is a warm Results surface
+// North Star D8 (2026-08-31): the tray was the one cold surface in the
+// journey (navy gradient, --gold border frozen at the retailer accent). It
+// now reads the Results theme tokens <body> declares — paper surface,
+// hairline border, brass count, ink chips — and "Compare →" is the singular
+// yellow primary (store-primary + its computed accessible foreground), the
+// pair the Results CTA uses. Geometry and the entrance slide are untouched.
+section('X6 — the compare tray sits on the warm Results surface');
+{
+  const rule = (sel) => (norm.match(new RegExp('\\n    ' + sel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ' \\{([^}]*)\\}')) || [null, ''])[1];
+  const tray = rule('.compare-tray'), count = rule('.compare-tray-count'), slot = rule('.compare-tray-slot'),
+        clear = rule('.compare-tray-clear'), go = rule('.compare-tray-go'), goOff = rule('.compare-tray-go:disabled');
+  ok('the tray surface is the theme paper with a hairline border (no navy gradient, no --gold border)',
+    /background: var\(--color-surface\);/.test(tray) && /border-top: 1px solid var\(--color-border\);/.test(tray) && !/1a2744|0d1730|--gold/.test(tray));
+  ok('the count is brass (informative emphasis), not the frozen accent', /color: var\(--color-accent-hover\);/.test(count) && !/--gold/.test(count));
+  ok('slot chips are ink on the alt surface', /background: var\(--color-surface-alt\);/.test(slot) && /color: var\(--color-text\);/.test(slot) && !/--cream/.test(slot));
+  ok('Clear is muted ink with the hairline border', /color: var\(--color-text-muted\);/.test(clear) && /border: 1px solid var\(--color-border\);/.test(clear) && !/--cream/.test(clear));
+  ok('"Compare →" is the singular primary: store-primary fill with its computed foreground and the ink border (the Results CTA pair)',
+    /background: var\(--store-primary\);/.test(go) && /color: var\(--on-store-primary\);/.test(go) && /border: 1px solid var\(--accent-ink\);/.test(go) && !/--gold|--navy/.test(go));
+  ok('the disabled Go is a quiet alt-surface chip, not a translucent gold wash',
+    /background: var\(--color-surface-alt\);/.test(goOff) && /color: var\(--color-text-subtle\);/.test(goOff) && !/212,168,75/.test(goOff));
+  ok('no compare-tray rule reads the frozen legacy aliases (--gold*, --navy, --cream*)',
+    !/\.compare-tray[^{]*\{[^}]*var\(--(gold|navy|cream)/.test(norm));
+  ok('the tray geometry and entrance are untouched (fixed bottom, z-index 60, 0.25s slide)',
+    /position: fixed;/.test(tray) && /z-index: 60;/.test(tray) && /animation: compareTraySlide 0\.25s ease-out;/.test(tray));
+  // Contrast on the Results theme values (body:has(#resultsScreen.active)).
+  const T = { surface: '#FFFDF8', alt: '#EEE7DC', text: '#2F271E', muted: '#665D54', subtle: '#7A6E61', brass: '#7D5B34' };
+  const pairs = [['count brass on the tray surface', T.brass, T.surface, 4.5], ['slot ink on the alt surface', T.text, T.alt, 4.5],
+                 ['Clear muted ink on the tray surface', T.muted, T.surface, 4.5], ['disabled Go label on the alt surface (1.4.3-exempt, recorded at >= 3:1)', T.subtle, T.alt, 3]];
+  for (const [what, fg, bg, floor] of pairs) {
+    const r = ratio(hexToRgb(fg), hexToRgb(bg));
+    ok(`${what} >= ${floor}:1 (got ${r.toFixed(2)}:1)`, r >= floor);
   }
 }
 // mapping proof: every cream-inked base cmp text class is restated for light
