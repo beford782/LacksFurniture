@@ -639,6 +639,84 @@ def run_heading_focus(browser, port, name, width, height, lang, shots_dir):
     page.close()
 
 
+# X1 (North Star ruling D9, 2026-08-31): in portrait the floating Selections
+# pill covered the compare tray's "Compare →" once a pick was saved (100×31 of
+# the 104×35 control; 6 of 36 tap points reached it in EN, 11/36 in ES — the
+# rest opened the Summary). The pill now lifts above the tray by the tray's
+# rendered height while the tray is shown. This pass renders Results with one
+# saved pick and two compare selections, in EN and ES at both tablet viewports,
+# and proves with a 6×6 elementFromPoint grid that every point on Compare and
+# on Clear reaches its own control, that the pill does not intersect the tray,
+# that the pill itself stays fully tappable, and that clearing the tray drops
+# the pill back to its resting position.
+TRAY_PILL_JS = r"""
+async (ARGS) => {
+  if (ARGS.lang === 'es') await switchLanguage('es');
+  for (const k of Object.keys(ARGS.answers)) answers[k] = ARGS.answers[k];
+  showProfileScreen();
+  window.showResults();
+  const gold = _resultsState.tierData.gold;
+  window._toggleSavePick(gold[0].id);
+  window.toggleCompare(gold[0].id);
+  window.toggleCompare(gold[1].id);
+  // Settle on the REAL animations (the tray's 0.25s entrance slide and the
+  // pill's 0.2s bottom transition), not a fixed sleep: under CI load a fixed
+  // wait left the tray mid-slide, so a row of hit-test points fell below the
+  // viewport and elementFromPoint returned null (measured 30/36).
+  const settle = async () => {
+    const els = [document.getElementById('compareTray'), document.getElementById('savedPicksBtn')];
+    await Promise.all(els.flatMap((el) => el.getAnimations({ subtree: true })).map((a) => a.finished.catch(() => {})));
+    await new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res)));
+  };
+  await settle();
+  const R = (el) => { const b = el.getBoundingClientRect(); return { x: b.x, y: b.y, w: b.width, h: b.height, top: b.top, bottom: b.bottom }; };
+  const inter = (a, b) => !(a.x + a.w <= b.x || b.x + b.w <= a.x || a.y + a.h <= b.y || b.y + b.h <= a.y);
+  const hit = (el) => { const b = el.getBoundingClientRect(); let ok = 0; for (let i = 0; i < 6; i++) for (let j = 0; j < 6; j++) {
+    const t = document.elementFromPoint(b.left + (i + 0.5) * b.width / 6, b.top + (j + 0.5) * b.height / 6); if (t && (t === el || el.contains(t))) ok++; } return ok; };
+  const tray = document.getElementById('compareTray'), go = document.getElementById('compareTrayGo'),
+        clr = document.getElementById('compareTrayClear'), pill = document.getElementById('savedPicksBtn');
+  const shown = { tray: R(tray), go: R(go), clear: R(clr), pill: R(pill), pillOverTray: inter(R(pill), R(tray)), pillOverGo: inter(R(pill), R(go)),
+                  goHit: hit(go), clearHit: hit(clr), pillHit: hit(pill), lifted: pill.classList.contains('noct-picks-pill--lifted'),
+                  clearance: pill.style.getPropertyValue('--df-tray-clearance'), pillBottom: getComputedStyle(pill).bottom };
+  window.clearCompare();
+  await settle();
+  const cleared = { trayDisplay: tray.style.display, lifted: pill.classList.contains('noct-picks-pill--lifted'),
+                    pillBottom: getComputedStyle(pill).bottom, pill: R(pill), pillHit: hit(pill) };
+  return { shown, cleared, vh: window.innerHeight };
+}
+"""
+
+
+def run_compare_tray_pill(browser, port, name, width, height, lang, shots_dir):
+    print(f"\n-- COMPARE TRAY vs Selections pill (X1) {lang} {name} {width}x{height} --")
+    page = browser.new_page(viewport={"width": width, "height": height}, has_touch=True)
+    errors = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    page.goto(f"http://127.0.0.1:{port}/", wait_until="networkidle")
+    page.wait_for_selector("#startBtn")
+    r = page.evaluate(TRAY_PILL_JS, {"answers": ANSWERS, "lang": lang})
+    if shots_dir:
+        os.makedirs(shots_dir, exist_ok=True)
+        page.screenshot(path=os.path.join(shots_dir, f"tray-pill-{lang}-{name}-{width}x{height}.png"))
+    s, c = r["shown"], r["cleared"]
+    tag = f"{lang}/{name}"
+    check(f"[{tag}] Results rendered with the tray shown and the pill visible, no page error",
+          not errors and s["tray"]["h"] > 0 and s["pill"]["h"] > 0, f"errors={errors[:1]} tray={s['tray']} pill={s['pill']}")
+    check(f"[{tag}] the pill is lifted by the tray's rendered height ({s['tray']['h']:.0f}px)",
+          s["lifted"] and s["clearance"] == f"{s['tray']['h']:.0f}px", f"lifted={s['lifted']} clearance={s['clearance']!r}")
+    check(f"[{tag}] the pill does not intersect the tray (pill bottom {s['pill']['bottom']:.0f} <= tray top {s['tray']['top']:.0f})",
+          not s["pillOverTray"] and s["pill"]["bottom"] <= s["tray"]["top"] + 0.5)
+    check(f"[{tag}] every one of 36 points on Compare reaches Compare (was 6/36 EN, 11/36 ES in portrait)",
+          s["goHit"] == 36, f"reached {s['goHit']}/36")
+    check(f"[{tag}] every one of 36 points on Clear reaches Clear", s["clearHit"] == 36, f"reached {s['clearHit']}/36")
+    check(f"[{tag}] the lifted pill itself is fully tappable (36/36) and inside the viewport",
+          s["pillHit"] == 36 and s["pill"]["y"] >= 0 and s["pill"]["bottom"] <= r["vh"] + 0.5, f"reached {s['pillHit']}/36 pill={s['pill']}")
+    check(f"[{tag}] clearing the tray drops the pill back to its resting position (bottom 16px, class removed, still tappable)",
+          c["trayDisplay"] == "none" and not c["lifted"] and c["pillBottom"] == "16px" and c["pillHit"] == 36,
+          f"display={c['trayDisplay']} lifted={c['lifted']} bottom={c['pillBottom']} hit={c['pillHit']}")
+    page.close()
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--screenshots", default="", help="directory to save a PNG per viewport (outside the repo)")
@@ -663,6 +741,9 @@ def main():
             for lang in ("en", "es"):
                 for name, w, h in VIEWPORTS[:2]:
                     run_heading_focus(browser, port, name, w, h, lang, args.screenshots)
+            for lang in ("en", "es"):
+                for name, w, h in VIEWPORTS[:2]:
+                    run_compare_tray_pill(browser, port, name, w, h, lang, args.screenshots)
             run_forced_colors(browser, port, args.screenshots)
             browser.close()
     finally:

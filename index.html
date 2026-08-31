@@ -4114,6 +4114,19 @@
       bottom: calc(1rem + 56px);
     }
 
+    /* X1 (North Star ruling D9, 2026-08-31): in portrait the pill sat over the
+       compare tray's "Compare →" — pill 141×40 at bottom/right 1rem, tray inner
+       row 720px centred, so at 834px the two overlapped by 100×31 and only 6 of
+       36 tap points on Compare reached it (ES: 93×30, 11/36); the rest opened
+       the Summary. While the tray is shown the pill lifts above it — the
+       cart-bar idiom — in BOTH orientations, so the pill has one position
+       relative to the tray. The clearance is the tray's rendered height
+       (measured by _updatePicksBadge(): 61px, or 89px when the ES slot chips
+       wrap), never a guessed constant. */
+    .noct-picks-pill--lifted {
+      bottom: calc(1rem + var(--df-tray-clearance, 64px) + 8px);
+    }
+
     /* 5c-2d-fix: cart bar is now a tappable gateway to handoff. */
     #accCartBar {
       cursor: pointer;
@@ -14425,11 +14438,13 @@
       // screen except Welcome, which keeps its own larger landing toggle.
       const utility = document.getElementById('sessionUtility');
       if (utility) utility.hidden = isWelcome;
-      // Show picks badge only when there are picks and not on welcome
-      if (!isWelcome) window._updatePicksBadge && window._updatePicksBadge();
-      // Hide compare tray when leaving results screen
+      // Hide compare tray when leaving results screen. Set BEFORE the picks
+      // badge below: the badge reads the tray's display state to decide
+      // whether the pill lifts above it (X1).
       var cmpTray = document.getElementById('compareTray');
       if (cmpTray) cmpTray.style.display = (id === 'resultsScreen' && (window._compareSelected || []).length > 0) ? 'block' : 'none';
+      // Show picks badge only when there are picks and not on welcome
+      if (!isWelcome) window._updatePicksBadge && window._updatePicksBadge();
       // Scroll to top on screen change
       window.scrollTo(0, 0);
       document.getElementById(id).scrollTop = 0;
@@ -19695,6 +19710,21 @@
       if (countEl) countEl.textContent = total;
       var labelEl = document.getElementById('savedPicksLabel');
       if (labelEl) labelEl.textContent = window._picksPillLabel(total);
+      // X1: lift the pill above the compare tray while the tray is shown, by
+      // the tray's rendered height (the ES slot chips wrap, so it is not a
+      // constant). Derived from the tray's real display state on every badge
+      // update — showScreen() and updateCompareTray() both call this after
+      // they set that state — so the two never disagree; the wipe strips the
+      // class with the visibility modifier.
+      var tray = document.getElementById('compareTray');
+      var trayShown = !!(tray && tray.style && tray.style.display === 'block' && tray.offsetHeight > 0);
+      if (btn && btn.classList) {
+        btn.classList.toggle('noct-picks-pill--lifted', total > 0 && trayShown);
+        if (btn.style && btn.style.setProperty) {
+          if (trayShown) btn.style.setProperty('--df-tray-clearance', tray.offsetHeight + 'px');
+          else btn.style.removeProperty('--df-tray-clearance');
+        }
+      }
     };
 
     // C5 (cohesion pass-1 ruling C5, 2026-08-30): the pill's noun agrees with
@@ -21839,7 +21869,7 @@
       // next activation and are aria-hidden throughout.
       { id: 'dfmGatherLayer', remove: ['is-active'] },
       { id: 'accCartBar', remove: ['visible'], display: 'none' },
-      { id: 'savedPicksBtn', remove: ['noct-picks-pill--visible'] },
+      { id: 'savedPicksBtn', remove: ['noct-picks-pill--visible', 'noct-picks-pill--lifted'] },
       { id: 'drawerSystemPrompt', remove: ['is-visible'] },
       { id: 'emailConfirmation', remove: ['visible'] },
       { id: 'emailCaptureView', display: '' },
@@ -22212,6 +22242,8 @@
       if (!tray) return;
       if (arr.length === 0) {
         tray.style.display = 'none';
+        // X1: the pill drops back to its resting position with the tray.
+        if (typeof window._updatePicksBadge === 'function') window._updatePicksBadge();
         return;
       }
       tray.style.display = 'block';
@@ -22229,6 +22261,9 @@
         return '<div class="compare-tray-slot">' + name + '</div>';
       }).join('');
       go.disabled = arr.length < 2;
+      // X1: the pill lifts above the shown tray, measured AFTER the slots and
+      // labels render (the ES chips wrap and change the tray's height).
+      if (typeof window._updatePicksBadge === 'function') window._updatePicksBadge();
     };
 
     window.clearCompare = function() {
