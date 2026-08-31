@@ -811,9 +811,14 @@ if (gate("renderSleepPlan", RENDER_SRCS.every(Boolean) && !!FALLBACK_SRC && !!RE
       /t\('hf2\.saved_picks_hint'\)/.test(picksSrc) && !/are sent|se env/i.test(picksSrc));
     check("...Compare enables from two saved picks OR a persisted complete pair (C3)",
       /_compareSelected/.test(picksSrc) && /saved\.length < 2/.test(picksSrc));
-    check("the pick card is compact: Plan-parity model line, no re-derived reason, no reaction row",
+    // Re-ruled for PROTOTYPE P-C3 option A (owner ruling D3, 2026-08-31):
+    // the recorded trial reaction renders as a chip on the pick card -
+    // existing memory-only data via reactionLabel, no new capture surface.
+    // Restore the no-reaction-markup arm if this variant is not selected.
+    check("the pick card is compact: Plan-parity model line, no re-derived reason; the D3 reaction chip is the only addition",
       !!pickSrc && /sleepPlanModelLine/.test(pickSrc)
-      && !/buildMattressPriorities|hf2ReasonFor|_mattressReactions|reactionLabel/.test(pickSrc));
+      && !/buildMattressPriorities|hf2ReasonFor/.test(pickSrc)
+      && /hf2-reaction-chip/.test(pickSrc) && /reactionLabel/.test(pickSrc));
     check("renderHf2Accessories is cart-only: no scorer, no suggestion fill, catalog-resolved names",
       !!accSrc && !/scoreAccessoriesFromAnswers|recommendationCount|Still worth trying/.test(accSrc)
       && /window\._accCart/.test(accSrc) && /ACCESSORIES/.test(accSrc));
@@ -872,6 +877,12 @@ if (gate("renderSleepPlan", RENDER_SRCS.every(Boolean) && !!FALLBACK_SRC && !!RE
       return els;
     }
     const RESULTS = { tierData: { gold: [{ id: "g1", name: "Cloud Nine", brand: "Restonic" }], silver: [], bronze: [] } };
+    // Re-ruled for PROTOTYPE P-C3 option A (owner ruling D3, 2026-08-31): the
+    // lead and the payment sentence are two separate nodes now (hf2LeadLine +
+    // hf2StatusPayment) - same strings, same derivations, composition
+    // unbundled. Every matrix cell asserts the PAIR. Restore the single-node
+    // composition assertions if this variant is not selected.
+    const payOf = (e) => e.hf2StatusPayment ? e.hf2StatusPayment.textContent : "";
 
     let els = makeLeadEnv({ saved: [{ id: "g1", name: "Cloud Nine", brand: "Restonic", tier: "gold" }], fav: "g1", results: RESULTS, financing: false });
     check("chosen + financing off: the finalist sentence alone, name + tier-and-position",
@@ -879,47 +890,54 @@ if (gate("renderSleepPlan", RENDER_SRCS.every(Boolean) && !!FALLBACK_SRC && !!RE
     check("...the label renders from the dictionary", els.hf2LeadLabel.textContent === dictEn["hf2.lead_label"]);
 
     els = makeLeadEnv({ results: RESULTS, payPref: null });
-    check("no finalist + engine pick + nothing selected: recommended sentence composed with 'Not selected'",
-      els.hf2LeadLine.textContent === "No finalist selected yet — Restonic · Cloud Nine (" + dictEn["results.tier_gold"] + " · " + dictEn["results.match_lead"] + ") is the recommended starting point. Payment preference: Not selected.");
+    check("no finalist + engine pick + nothing selected: recommended sentence paired with 'Not selected'",
+      els.hf2LeadLine.textContent === "No finalist selected yet — Restonic · Cloud Nine (" + dictEn["results.tier_gold"] + " · " + dictEn["results.match_lead"] + ") is the recommended starting point."
+      && payOf(els) === "Payment preference: Not selected." && els.hf2StatusPayment.hidden === false);
 
     els = makeLeadEnv({ results: RESULTS, payPref: "not_now" });
     check("...Not right now flows through the SAME derivation the D4 rows use",
-      /Payment preference: Not right now\.$/.test(els.hf2LeadLine.textContent));
+      /^Payment preference: Not right now\.$/.test(payOf(els)));
 
     els = makeLeadEnv({ results: RESULTS, payPref: "plan-a" });
-    check("...a considered path names the path label", /Payment preference: Path A\.$/.test(els.hf2LeadLine.textContent));
+    check("...a considered path names the path label", /^Payment preference: Path A\.$/.test(payOf(els)));
 
     els = makeLeadEnv({ results: RESULTS, payPref: "gone-path" });
     check("...a stale path id falls back to 'Not selected', never a raw token",
-      /Payment preference: Not selected\.$/.test(els.hf2LeadLine.textContent) && !/gone-path/.test(els.hf2LeadLine.textContent));
+      /^Payment preference: Not selected\.$/.test(payOf(els))
+      && !/gone-path/.test(els.hf2LeadLine.textContent + payOf(els)));
 
     els = makeLeadEnv({ results: null, financing: false });
     check("no finalist and no results: the honest none sentence", els.hf2LeadLine.textContent === dictEn["hf2.lead_none"]);
 
     els = makeLeadEnv({ lang: "es", results: RESULTS, payPref: null });
-    check("ES: the composed sentence resolves fully in Spanish",
+    check("ES: the paired sentences resolve fully in Spanish",
       els.hf2LeadLine.textContent.indexOf("Aún no has elegido finalista") === 0
-      && /Preferencia de pago: Sin seleccionar\.$/.test(els.hf2LeadLine.textContent));
+      && /^Preferencia de pago: Sin seleccionar\.$/.test(payOf(els)));
 
     // C12 (R3 I1): the remaining matrix cells — chosen composes with every
     // payment state, and the none sentence composes too.
     const CHOSEN_CELL = { saved: [{ id: "g1", name: "Cloud Nine", brand: "Restonic", tier: "gold" }], fav: "g1", results: RESULTS };
     const _pickLine = "Finalist ✓ Restonic · Cloud Nine (" + dictEn["results.tier_gold"] + " · " + dictEn["results.match_lead"] + ").";
     els = makeLeadEnv(Object.assign({ payPref: "plan-a" }, CHOSEN_CELL));
-    check("chosen x selected path: the finalist sentence composes with the path label",
-      els.hf2LeadLine.textContent === _pickLine + " Payment preference: Path A.");
+    check("chosen x selected path: the finalist sentence pairs with the path label",
+      els.hf2LeadLine.textContent === _pickLine && payOf(els) === "Payment preference: Path A.");
     els = makeLeadEnv(Object.assign({ payPref: "not_now" }, CHOSEN_CELL));
     check("chosen x paused: ...with Not right now",
-      els.hf2LeadLine.textContent === _pickLine + " Payment preference: Not right now.");
+      els.hf2LeadLine.textContent === _pickLine && payOf(els) === "Payment preference: Not right now.");
     els = makeLeadEnv(Object.assign({ payPref: null }, CHOSEN_CELL));
     check("chosen x unselected: ...with the Not selected fallback",
-      els.hf2LeadLine.textContent === _pickLine + " Payment preference: Not selected.");
+      els.hf2LeadLine.textContent === _pickLine && payOf(els) === "Payment preference: Not selected.");
     els = makeLeadEnv({ results: null, payPref: "plan-a" });
-    check("none x selected path: the honest none sentence still composes with payment state",
-      els.hf2LeadLine.textContent === dictEn["hf2.lead_none"] + " Payment preference: Path A.");
+    check("none x selected path: the honest none sentence still pairs with payment state",
+      els.hf2LeadLine.textContent === dictEn["hf2.lead_none"] && payOf(els) === "Payment preference: Path A.");
     els = makeLeadEnv({ results: null, payPref: "not_now" });
     check("none x paused: ...with Not right now",
-      els.hf2LeadLine.textContent === dictEn["hf2.lead_none"] + " Payment preference: Not right now.");
+      els.hf2LeadLine.textContent === dictEn["hf2.lead_none"] && payOf(els) === "Payment preference: Not right now.");
+    // P-C3a split contract: financing-off leaves the payment node empty and
+    // hidden - the lead never carries a phantom payment sentence.
+    els = makeLeadEnv({ results: null, financing: false });
+    check("P-C3a: financing off hides the empty payment node",
+      payOf(els) === "" && els.hf2StatusPayment.hidden === true);
 
     check("renderAllFinancingSurfaces refreshes the lead line (typeof-guarded — a payment tap cannot leave it stale)",
       /if \(typeof renderHf2LeadLine === 'function'\) renderHf2LeadLine\(\);/.test(

@@ -1107,6 +1107,7 @@ const REQUIRED_CONTENT_IDS = [
   "drawerName", "drawerDifferentiators", "drawerTryPrompts", "drawerPromotionDetail",
   "compareCols", "compareTraySlots",
   "hf2PicksList", "hf2AccessoriesList", "hf2BriefWho", "hf2BriefContext",
+  "hf2StatusThumb", "hf2StatusRows", "hf2StatusRoute",
   "hf2BriefProfile", "hf2SleepSystemSection", "hf2Priorities",
   // Slice 4 (D4): the three containers built from Payment Choice state. The
   // sheet cards carry the disclosure panels and the Consider/Clear controls;
@@ -1134,7 +1135,7 @@ const REQUIRED_TEXT_IDS = [
   // overwrites it, so each must be emptied by the wipe.
   // Slice 6: the composed lead+payment sentence carries the finalist name
   // and the payment-preference state — customer-derived, wiped by name.
-  "hf2LeadLine",
+  "hf2LeadLine", "hf2StatusPayment",
   "hf2FinancingStatus", "financingSheetStatus", "financingSheetAction",
   "sessionSafetyLive",
   "resultsRevealTitle", "resultsRevealSubtitle",

@@ -3520,6 +3520,62 @@
       line-height: 1.55;
       color: var(--color-text);
     }
+    /* PROTOTYPE P-C3 option A ONLY: status-block frame. Thumbnail on the
+       white image mat (media-foundation direction); chip is a quiet pill. */
+    .hf2-status__body {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+    }
+    .hf2-status__thumb {
+      flex: 0 0 108px;
+      aspect-ratio: 3 / 2;
+      background: #FFFDF8;
+      border: 1px solid var(--color-border);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .hf2-status__thumb-img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+    .hf2-status__lines {
+      flex: 1;
+      min-width: 0;
+    }
+    .hf2-status__payment {
+      margin: 0.25rem 0 0;
+      font-size: 0.9rem;
+      line-height: 1.5;
+      color: var(--color-text-muted);
+    }
+    .hf2-status__rows {
+      margin-top: 0.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 0.9rem;
+      color: var(--color-text);
+    }
+    .hf2-reaction-chip {
+      display: inline-block;
+      padding: 2px 10px;
+      border: 1px solid var(--color-border);
+      border-radius: 999px;
+      font-family: var(--font-sans);
+      font-size: 0.78rem;
+      letter-spacing: 0.04em;
+      color: var(--accent-ink);
+      background: var(--color-surface);
+    }
+    #hf2StatusRoute {
+      margin-top: 0.6rem;
+    }
+    .hf2-pick .hf2-reaction-chip {
+      margin-top: 6px;
+    }
     .hf2-priorities {
       margin: 8px 0 0;
       padding-left: 1.5em;
@@ -10902,7 +10958,23 @@
          survives a wipe. -->
     <section class="hf2-review-section" id="hf2LeadSection" aria-labelledby="hf2LeadLabel">
       <div class="hf2-review-section__label" id="hf2LeadLabel"></div>
-      <p class="hf2-lead-line" id="hf2LeadLine"></p>
+      <!-- PROTOTYPE P-C3 option A ONLY (owner ruling D3, 2026-08-31; never
+           merged as such): the lead becomes a status BLOCK - the named pick's
+           own thumbnail (D5b: its own photo or nothing), the lead sentence and
+           the payment sentence as two separate lines (same strings, same
+           producers - composition unbundled, never reworded), labelled
+           implication rows (trial-verdict reaction chip, "Deferred: ..." line)
+           and the Plan's existing choose-a-finalist route when no finalist is
+           chosen. All customer-derived nodes are in the wipe inventories. -->
+      <div class="hf2-status__body">
+        <div class="hf2-status__thumb" id="hf2StatusThumb" hidden></div>
+        <div class="hf2-status__lines">
+          <p class="hf2-lead-line" id="hf2LeadLine"></p>
+          <p class="hf2-status__payment" id="hf2StatusPayment" hidden></p>
+          <div class="hf2-status__rows" id="hf2StatusRows" hidden></div>
+          <div id="hf2StatusRoute" hidden></div>
+        </div>
+      </div>
     </section>
 
     <section class="hf2-review-section">
@@ -19851,9 +19923,16 @@
         : kind === 'recommended' ? t('finalist.recommended') : t('finalist.none');
       var html = '';
       if (m) {
+        // PROTOTYPE P-C3 option A (D3): the recorded trial reaction chip on
+        // the Plan's finalist card too - same memory-only data, same label
+        // producer as everywhere else.
+        var planReactions = {};
+        try { planReactions = window._mattressReactions || {}; } catch (err) { planReactions = {}; }
+        var planReaction = m.id ? planReactions[m.id] : '';
         html += '<div class="hf2-pick">'
           + '<div class="hf2-pick__name">' + escapeHtml(m.name || '') + '</div>'
           + '<div class="hf2-pick__tier">' + escapeHtml(sleepPlanModelLine(m)) + '</div>'
+          + (planReaction ? '<span class="hf2-reaction-chip">' + escapeHtml(reactionLabel(planReaction)) + '</span>' : '')
           + '</div>';
       }
       if (kind !== 'chosen') {
@@ -20246,7 +20325,75 @@
         if (!prefLabel) prefLabel = FC('preferenceNone');
         payment = t('hf2.pay_state', { value: prefLabel });
       }
-      lineEl.textContent = payment ? lead + ' ' + payment : lead;
+      // PROTOTYPE P-C3 option A: two-line state. The lead and the payment
+      // sentence are separate nodes now - same strings, same derivations,
+      // composition unbundled (0.6: never reworded). The payment node is in
+      // SESSION_TEXT_IDS; a missing node (hostile harness DOM) keeps the old
+      // single-line composition so the sentence pair can never be lost.
+      var payEl = document.getElementById('hf2StatusPayment');
+      if (payEl) {
+        lineEl.textContent = lead;
+        payEl.textContent = payment;
+        payEl.hidden = !payment;
+      } else {
+        lineEl.textContent = payment ? lead + ' ' + payment : lead;
+      }
+      // typeof-guarded escaper: the lead-line harness declares only a subset
+      // of bindings; the app always has escapeHtml.
+      var esc = typeof escapeHtml === 'function' ? escapeHtml : function(v) { return String(v); };
+      // The pick the lead sentence NAMES (chosen finalist, or the recommended
+      // starting point) - the only mattress whose evidence may render here.
+      var named = finalist.kind === 'chosen' ? finalist.item
+        : (lead === t('hf2.lead_none') ? null : finalistRecommendedFallback());
+      var reactions = {};
+      try { reactions = window._mattressReactions || {}; } catch (err) { reactions = {}; }
+      var thumbEl = document.getElementById('hf2StatusThumb');
+      if (thumbEl) {
+        // D5b provenance: the named pick's own photo or nothing - no
+        // substitute imagery, no placeholder art.
+        var thumbSrc = named && named.imageUrl ? String(named.imageUrl) : '';
+        thumbEl.innerHTML = thumbSrc
+          ? '<img class="hf2-status__thumb-img" src="' + esc(thumbSrc) + '" alt="">'
+          : '';
+        thumbEl.hidden = !thumbSrc;
+      }
+      var rowsEl = document.getElementById('hf2StatusRows');
+      if (rowsEl) {
+        var rows = [];
+        var reaction = named && named.id ? reactions[named.id] : '';
+        if (reaction) {
+          rows.push('<div class="hf2-status__row">' + esc(t('hf2.status_reaction_label'))
+            + ' <span class="hf2-reaction-chip">' + esc(reactionLabel(reaction)) + '</span></div>');
+        }
+        // typeof-guarded: the lead-line extraction harness declares only a
+        // subset of these bindings (same posture as screenTransitionOwnedElsewhere).
+        var deferredNames = [];
+        if (typeof SLEEP_SYSTEM_STEPS !== 'undefined' && typeof sleepSystemDecision === 'function' && typeof sleepSystemText === 'function') {
+          deferredNames = SLEEP_SYSTEM_STEPS.filter(function(step) {
+            return sleepSystemDecision(step.id).status === 'later';
+          }).map(function(step) { return sleepSystemText(step.label); });
+        }
+        if (deferredNames.length) {
+          rows.push('<div class="hf2-status__row">'
+            + esc(t('hf2.status_deferred', { list: deferredNames.join(' · ') })) + '</div>');
+        }
+        rowsEl.innerHTML = rows.join('');
+        rowsEl.hidden = rows.length === 0;
+      }
+      var routeEl = document.getElementById('hf2StatusRoute');
+      if (routeEl) {
+        // D3: the Plan's existing route, mirrored - same producer, same
+        // Results destination (R-1), only when no finalist is chosen.
+        if (finalist.kind !== 'chosen') {
+          routeEl.innerHTML = '<button class="hf2-pick__action" type="button" id="hf2ChooseFinalistRoute"'
+            + ' onclick="window.sleepPlanChooseFinalist()"'
+            + ' ontouchend="event.preventDefault();window.sleepPlanChooseFinalist();">'
+            + esc(t('finalist.choose')) + '</button>';
+        } else {
+          routeEl.innerHTML = '';
+        }
+        routeEl.hidden = finalist.kind === 'chosen';
+      }
     }
 
     // ---- Picks ---------------------------------------------------------------
@@ -20543,6 +20690,18 @@
       name.className = 'hf2-pick__name';
       name.textContent = (m.brand || '') + ' · ' + (m.name || '');
       card.appendChild(name);
+
+      // PROTOTYPE P-C3 option A (D3): the customer's recorded trial reaction
+      // renders as a quiet chip on the saved-pick card - existing memory-only
+      // data, no new capture surface.
+      var pickReactions = {};
+      try { pickReactions = window._mattressReactions || {}; } catch (err) { pickReactions = {}; }
+      if (pickReactions[m.id]) {
+        var chip = document.createElement('span');
+        chip.className = 'hf2-reaction-chip';
+        chip.textContent = reactionLabel(pickReactions[m.id]);
+        card.appendChild(chip);
+      }
 
       var actions = document.createElement('div');
       actions.className = 'hf2-pick__actions';
@@ -21747,6 +21906,7 @@
       'drawerName', 'drawerDifferentiators', 'dfmConstructionSection', 'drawerTryPrompts', 'drawerPromotionDetail',
       'compareCols', 'compareTraySlots',
       'hf2PicksList', 'hf2AccessoriesList', 'hf2BriefWho', 'hf2BriefContext',
+      'hf2StatusThumb', 'hf2StatusRows', 'hf2StatusRoute',
       'hf2BriefProfile', 'hf2SleepSystemSection', 'hf2Priorities',
       // Slice 4 (D4): every financing container built from customer state.
       // The sheet cards carry the disclosure panels and the Consider/Clear
@@ -21781,7 +21941,7 @@
       // an answer-derived shortlist surface to wipe. Omission, not a weakened
       // wipe: the remaining answer-derived ids are unchanged.
       'drawerSystemPromptTitle', 'drawerSystemPromptReason',
-      'hf2LeadLine',
+      'hf2LeadLine', 'hf2StatusPayment',
       'hf2FinancingStatus', 'financingSheetStatus', 'financingSheetAction',
       'sleepPlanFinancingStatus', 'sleepPlanPrioritiesRecoveryText',
       'sessionSafetyLive', 'dataErrorLive',

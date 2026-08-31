@@ -122,6 +122,8 @@
   "hf2.lead_recommended": "Aún no has elegido finalista — {pick} es el punto de partida recomendado.",
   "hf2.lead_none": "Aún no has elegido finalista.",
   "hf2.pay_state": "Preferencia de pago: {value}.",
+  "hf2.status_reaction_label": "Veredicto de la prueba:",
+  "hf2.status_deferred": "Pospuesto: {list}",
   "hf2.review_plan": "Revisar Plan de Sueño",
   "screen.sleep_plan": "Tu Plan de Sueño",
   "plan.eyebrow": "Tu plan para la prueba en la tienda",

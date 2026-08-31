@@ -122,6 +122,8 @@
   "hf2.lead_recommended": "No finalist selected yet — {pick} is the recommended starting point.",
   "hf2.lead_none": "No finalist selected yet.",
   "hf2.pay_state": "Payment preference: {value}.",
+  "hf2.status_reaction_label": "Trial verdict:",
+  "hf2.status_deferred": "Deferred: {list}",
   "hf2.review_plan": "Review Sleep Plan",
   "screen.sleep_plan": "Your Sleep Plan",
   "plan.eyebrow": "Your plan for the in-store trial",
