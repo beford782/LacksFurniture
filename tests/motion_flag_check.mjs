@@ -1147,5 +1147,124 @@ section('construction reveal: reduced motion, missing elements');
   ok('missing drawer host declines without throwing', bare.api.consRender() === false);
 }
 
+// ------------------- X8/X9: the Brief -> Results handoff (D1, 2026-08-31)
+// The old sequence lifted the mask at 300ms and swapped at 520ms (the Brief
+// un-dimmed before the cut), had no reduced-motion branch, and painted a
+// half-decoded hero. Executed here against the real startResultsReveal with
+// a fake clock and a controllable decode promise.
+section('X8/X9 — swap beneath the mask, decode hold capped at 400ms, reduced motion advances directly');
+const resultsRevealSrc = extractFunction('window.startResultsReveal = function()');
+ok('extraction: startResultsReveal found', !!resultsRevealSrc && resultsRevealSrc.includes('_resultsRevealInFlight'));
+
+function makeResultsRevealEnv({ reduced = false, hero = 'pending' } = {}) {
+  const clock = makeClock();
+  const els = {};
+  for (const id of ['resultsRevealOverlay', 'resultsRevealTitle', 'resultsRevealSubtitle', 'profileScreen']) els[id] = makeEl(id);
+  els.profileScreen.classList.add('active');
+  const calls = { showResults: [], open: 0, close: 0, decodeCalls: 0 };
+  let decodeSettle = null;
+  const heroEl = {
+    decode() { calls.decodeCalls++; return new Promise((res, rej) => { decodeSettle = { res, rej }; }); }
+  };
+  const win = {
+    _resultsRevealInFlight: false,
+    showResults() {
+      calls.showResults.push({
+        at: clock.now(),
+        maskUp: els.resultsRevealOverlay.classList.contains('is-visible'),
+        inFlightDuringCall: win._resultsRevealInFlight
+      });
+      els.profileScreen.classList.remove('active');
+    }
+  };
+  const doc = {
+    getElementById: (id) => els[id] || null,
+    querySelector: (sel) => (sel === '#topPickContainer img' && hero !== 'none') ? heroEl : null
+  };
+  const api = new Function('window', 'document', 'sessionTimeout', 'currentLang', 'dfmReducedMotion',
+    'getConsultationRevealElements', 'openConsultationReveal', 'closeConsultationReveal',
+    resultsRevealSrc + '\nreturn { start: window.startResultsReveal };')(
+    win, doc, (fn, ms) => clock.setTimeout(fn, ms), 'en', () => reduced,
+    () => ({ overlay: els.resultsRevealOverlay, title: els.resultsRevealTitle, subtitle: els.resultsRevealSubtitle }),
+    (elements) => { calls.open++; elements.overlay.classList.add('is-visible'); },
+    (elements) => { calls.close++; elements.overlay.classList.remove('is-visible'); });
+  return { clock, els, calls, win, api, settleDecode: (okRes) => { if (decodeSettle) (okRes ? decodeSettle.res : decodeSettle.rej)(); } };
+}
+
+{
+  // Normal path: the swap happens BENEATH the held mask, focus-suppression is
+  // dropped for exactly that call, and the mask waits for the decode.
+  const env = makeResultsRevealEnv();
+  env.api.start();
+  ok('overlay opens once with the swap still pending', env.calls.open === 1 && env.calls.showResults.length === 0);
+  env.clock.advance(279);
+  ok('no swap before the mask peak (280ms)', env.calls.showResults.length === 0);
+  env.clock.advance(1);
+  const swap = env.calls.showResults[0];
+  ok('the screen swaps at 280ms BENEATH the visible mask', env.calls.showResults.length === 1 && swap.maskUp === true);
+  ok('the in-flight flag is dropped for exactly the showResults() call (so showScreen announces and focuses #resultsHeadline) and restored after',
+    swap.inFlightDuringCall === false && env.win._resultsRevealInFlight === true);
+  ok('the mask HOLDS while the hero decode is pending', env.els.resultsRevealOverlay.classList.contains('is-visible') && env.calls.decodeCalls === 1);
+  env.settleDecode(true);
+  await new Promise((res) => setTimeout(res, 0));
+  ok('the decoded hero lifts the mask', !env.els.resultsRevealOverlay.classList.contains('is-visible'));
+  env.clock.advance(260);
+  ok('the overlay closes 260ms after the lift and the flag clears', env.calls.close === 1 && env.win._resultsRevealInFlight === false);
+  env.clock.advance(2000);
+  ok('nothing re-fires afterwards', env.calls.close === 1 && env.calls.showResults.length === 1);
+}
+{
+  // Decode never resolves: the 400ms cap lifts anyway.
+  const env = makeResultsRevealEnv();
+  env.api.start();
+  env.clock.advance(280);
+  env.clock.advance(399);
+  ok('the cap has not fired at 399ms after the swap', env.els.resultsRevealOverlay.classList.contains('is-visible'));
+  env.clock.advance(1);
+  ok('an undecodable hero lifts at the 400ms cap', !env.els.resultsRevealOverlay.classList.contains('is-visible'));
+  env.clock.advance(260);
+  ok('...and still closes cleanly', env.calls.close === 1 && env.win._resultsRevealInFlight === false);
+}
+{
+  // Decode rejection is a lift, not a hang.
+  const env = makeResultsRevealEnv();
+  env.api.start();
+  env.clock.advance(280);
+  env.settleDecode(false);
+  await new Promise((res) => setTimeout(res, 0));
+  ok('a rejected decode lifts the mask (then(lift, lift))', !env.els.resultsRevealOverlay.classList.contains('is-visible'));
+}
+{
+  // No hero rendered (empty imageUrl): lift immediately at the swap tick.
+  const env = makeResultsRevealEnv({ hero: 'none' });
+  env.api.start();
+  env.clock.advance(280);
+  ok('no hero image lifts without waiting', !env.els.resultsRevealOverlay.classList.contains('is-visible'));
+}
+{
+  // Reduced motion: direct advance, no overlay, flag untouched.
+  const env = makeResultsRevealEnv({ reduced: true });
+  env.api.start();
+  ok('reduced motion advances directly to the identical end state (no overlay open, one immediate swap)',
+    env.calls.open === 0 && env.calls.showResults.length === 1 && env.win._resultsRevealInFlight === false);
+}
+{
+  // Re-entry and a wipe mid-flight.
+  const env = makeResultsRevealEnv();
+  env.api.start();
+  env.api.start();
+  ok('a second call during the flight is refused', env.calls.open === 1);
+  env.clock.advance(280);
+  env.win._resultsRevealInFlight = false; // the session wipe's reset (21926)
+  env.settleDecode(true);
+  await new Promise((res) => setTimeout(res, 0));
+  ok('a wipe mid-transition wins: the orphaned decode resolution touches nothing', env.calls.close === 0);
+}
+ok('the ES status-card title carries its accent ("Abriendo tu comparación")',
+  resultsRevealSrc.includes("'Abriendo tu comparación'"));
+ok('static: the reduced-motion branch, the 400ms cap and the flag drop/restore are all present in the shipped source',
+  resultsRevealSrc.includes('dfmReducedMotion()') && resultsRevealSrc.includes('sessionTimeout(lift, 400);')
+  && /window\._resultsRevealInFlight = false;\s*window\.showResults\(\);\s*window\._resultsRevealInFlight = true;/.test(resultsRevealSrc));
+
 console.log(`\n${failures === 0 ? 'PASS' : 'FAIL'} — ${checks - failures}/${checks} checks passed`);
 process.exit(failures === 0 ? 0 : 1);

@@ -17204,8 +17204,38 @@
 
     // Compact profile→results handoff. Mattress scoring remains in showResults();
     // this avoids presenting a second full calculation sequence.
+    //
+    // X8/X9 (North Star ruling D1, 2026-08-31). The old sequence lifted the
+    // mask at 300ms and swapped screens at 520ms, so the customer watched the
+    // Brief un-dim and then hard-cut to Results — and the first Results frame
+    // was half-painted because the hero <img> is created at render with no
+    // decode wait (img.complete 25-50ms after the swap even on loopback).
+    // Under reduced motion the overlay still popped in and out around three
+    // hard cuts. Now:
+    //   * reduced motion advances DIRECTLY to the identical end state (the
+    //     startProfileReveal idiom) — no overlay, one cut;
+    //   * the screen swaps BENEATH the mask at its peak (280ms; the fade-in
+    //     is 240ms), and the mask lifts only after the hero image reports
+    //     decoded — capped at 400ms (X9; decode() is this file's first use,
+    //     and every failure path falls through to the cap);
+    //   * focus still lands on #resultsHeadline: showScreen()'s announce
+    //     path is suppressed while _resultsRevealInFlight (the role="status"
+    //     overlay is already speaking), so the flag is dropped for exactly
+    //     the showResults() call and restored for the lift phase;
+    //   * typical envelope ≈560ms, worst case (slow decode) 940ms — the
+    //     ruled 700ms envelope with the ruled 400ms degradation cap;
+    //   * a session wipe mid-transition still wins: timers are
+    //     session-scoped, the wipe resets the flag and the overlay layer,
+    //     and lift() re-checks the flag before touching the DOM.
+    // The dark status card itself stays pending the P-C2 prototype decision
+    // (D1: retire it only if the selected prototype does not need it). The
+    // ES title also gains its missing accent ("comparación").
     window.startResultsReveal = function() {
       if (window._resultsRevealInFlight) return;
+      if (dfmReducedMotion()) {
+        window.showResults();
+        return;
+      }
       var elements = getConsultationRevealElements();
       if (!elements.overlay || !elements.title || !elements.subtitle) {
         window.showResults();
@@ -17213,20 +17243,38 @@
       }
       window._resultsRevealInFlight = true;
       var es = currentLang === 'es';
-      elements.title.textContent = es ? 'Abriendo tu comparacion' : 'Opening your showroom comparison';
+      elements.title.textContent = es ? 'Abriendo tu comparación' : 'Opening your showroom comparison';
       elements.subtitle.textContent = es ? 'Tus opciones de colchón están listas para comparar.' : 'Your mattress matches are ready to compare.';
       openConsultationReveal(elements, true);
       sessionTimeout(function() {
-        elements.overlay.classList.remove('is-visible');
-      }, 300);
-      sessionTimeout(function() {
-        closeConsultationReveal(elements);
-        window._resultsRevealInFlight = false;
         var profileScreen = document.getElementById('profileScreen');
         if (profileScreen && profileScreen.classList.contains('active')) {
+          // Swap beneath the mask. The flag is cleared for exactly this call
+          // so showScreen() moves focus to #resultsHeadline (its announce
+          // path checks _resultsRevealInFlight), then restored to keep the
+          // re-entry guard until the overlay is gone.
+          window._resultsRevealInFlight = false;
           window.showResults();
+          window._resultsRevealInFlight = true;
         }
-      }, 520);
+        var lifted = false;
+        var lift = function() {
+          if (lifted || !window._resultsRevealInFlight) return;
+          lifted = true;
+          elements.overlay.classList.remove('is-visible');
+          sessionTimeout(function() {
+            closeConsultationReveal(elements);
+            window._resultsRevealInFlight = false;
+          }, 260);
+        };
+        sessionTimeout(lift, 400);
+        var hero = document.querySelector('#topPickContainer img');
+        if (hero && typeof hero.decode === 'function') {
+          hero.decode().then(lift, lift);
+        } else {
+          lift();
+        }
+      }, 280);
     };
 
     window.showResults = function() {
