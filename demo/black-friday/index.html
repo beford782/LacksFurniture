@@ -8143,6 +8143,21 @@
       gap: 0.5rem;
     }
     .compare-col.winner { border-color: var(--gold); box-shadow: 0 0 0 2px rgba(212,168,75,0.2); }
+    /* PROTOTYPE P-Loop option B ONLY: the shared finalist control at column
+       scale - same state rules as the card control, centred in the head
+       cell, dark-surface resting colors (the light contexts re-token it). */
+    .cmp-finalist-btn {
+      width: 100%;
+      justify-content: center;
+      margin-top: 8px;
+      border: 1.5px solid rgba(255, 255, 255, 0.25);
+      color: var(--cream);
+    }
+    body:has(#resultsScreen.active) .cmp-finalist-btn,
+    body:has(#hf2Screen.active) .cmp-finalist-btn {
+      border-color: var(--color-border);
+      color: var(--color-text-subtle);
+    }
     .compare-col-img { width: 100%; aspect-ratio: 3/2; background: rgba(0,0,0,0.3); border-radius: 10px; overflow: hidden; }
     .compare-col-img img { width: 100%; height: 100%; object-fit: cover; }
     .compare-col-name { font-size: 0.95rem; font-weight: 800; color: var(--cream); }
@@ -22251,11 +22266,25 @@
         var d0 = _diffs[0] || {};
         var _retired = _diffs.length === 0;
         var reaction = (window._mattressReactions || {})[m.id];
+        // PROTOTYPE P-Loop option B ONLY (owner ruling D6, 2026-08-31; never
+        // merged as such): the finalist commit per Compare column, where the
+        // verdict row is read. A pure CONSUMER of the one producer: class
+        // finalist-btn routes it through the same delegated click handler
+        // into window.chooseFinalist(); _repaintFinalistControls() repaints
+        // it in place after the tap. Initial state inline so the open never
+        // flashes an unpressed control for the current finalist.
+        var _isChosenCol = m.id === window._favoriteMattressId;
         return {
           head: '<div class="cmp-head" role="columnheader">'
             + (m.imageUrl ? '<div class="cmp-head-img"><img src="' + m.imageUrl + '" alt="' + escapeHtml(m.name) + '"></div>' : '')
             + '<div class="cmp-head-name">' + escapeHtml(m.name) + ' <span class="price-tier">' + priceTierSymbol(data.tier) + '</span></div>'
             + '<div class="cmp-head-brand">' + escapeHtml(m.brand + (m.subBrand ? ' · ' + m.subBrand : '')) + '</div>'
+            + '<button type="button" class="finalist-btn cmp-finalist-btn' + (_isChosenCol ? ' chosen' : '') + '"'
+            + ' data-id="' + escapeHtml(m.id) + '"'
+            + ' aria-pressed="' + (_isChosenCol ? 'true' : 'false') + '"'
+            + ' aria-label="' + escapeHtml(t('finalist.choose_as') + ': ' + m.name) + '">'
+            + (_isChosenCol ? t('finalist.chosen_btn') : t('finalist.choose_as'))
+            + '</button>'
             + '</div>',
           feel: data.firmFeel + ' ' + m.firmness + '/10',
           response: mattressResponseLabel(m),
