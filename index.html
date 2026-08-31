@@ -622,7 +622,17 @@
     body:has(#emailScreen.active) .accent-bar,
     body:has(#emailScreen.active) .header,
     body:has(#accessoriesScreen.active) .accent-bar,
-    body:has(#accessoriesScreen.active) .header {
+    body:has(#accessoriesScreen.active) .header,
+    /* PROTOTYPE P-E2 option A (owner ruling D4, 2026-08-31; never merged as
+       such): the last two dark headers leave — the Plan and the Summary join
+       the light continuity the other seven screens already have. The
+       1.22:1 wordmark and the polarity flip go with them; retailer identity
+       stays in-page (the Summary's attribution line, and the Plan gains the
+       same config-derived line). */
+    body:has(#sleepPlanScreen.active) .accent-bar,
+    body:has(#sleepPlanScreen.active) .header,
+    body:has(#hf2Screen.active) .accent-bar,
+    body:has(#hf2Screen.active) .header {
       display: none;
     }
 
@@ -634,7 +644,9 @@
     body:has(#profileScreen.active) #profileScreen,
     body:has(#resultsScreen.active) #resultsScreen,
     body:has(#emailScreen.active) #emailScreen,
-    body:has(#accessoriesScreen.active) #accessoriesScreen {
+    body:has(#accessoriesScreen.active) #accessoriesScreen,
+    body:has(#sleepPlanScreen.active) #sleepPlanScreen,
+    body:has(#hf2Screen.active) #hf2Screen {
       min-height: 100vh;
       min-height: 100dvh;
     }
@@ -3466,6 +3478,12 @@
     #sleepPlanScreen.active {
       flex-direction: column;
       padding: 1.25rem;
+      /* PROTOTYPE P-E2 option A: with the dark header gone, the fixed
+         session utility card becomes these screens' top-band neighbour —
+         they reserve the same clearance the Sleep System does (C1). One
+         shared rule on purpose: sleep_plan_check pins that the padding rule
+         names both screens together. */
+      padding-top: calc(var(--session-utility-clearance) + env(safe-area-inset-top, 0px));
     }
     .hf2-review-nav {
       display: flex;
@@ -10046,6 +10064,31 @@
       }
     }
 
+    /* PROTOTYPE P-E2 option A (owner ruling D4, 2026-08-31; never merged as
+       such): the one persistent element never flips polarity. Quiz and
+       Review are the two screens whose theme leaves the :root dark tokens
+       in place, so the card inverted at Review → Brief; it is pinned to the
+       light pairing there, and the two cream-tuned literal borders are
+       re-scoped with it, so the card reads identically from the first
+       question to the take-home. */
+    body:has(#questionScreen.active) .session-utility,
+    body:has(#reviewScreen.active) .session-utility {
+      --color-surface: #FFFDF8;
+      --color-text: #2F271E;
+      --color-bg: #F3EEE5;
+      --color-border: #D1C5B6;
+      box-shadow: 0 2px 10px rgba(55, 40, 28, 0.18);
+    }
+    body:has(#questionScreen.active) .session-utility__btn,
+    body:has(#reviewScreen.active) .session-utility__btn {
+      border-color: rgba(47, 39, 30, 0.28);
+    }
+    body:has(#questionScreen.active) .session-utility__restart,
+    body:has(#reviewScreen.active) .session-utility__restart {
+      background: rgba(47, 39, 30, 0.05);
+      border-color: rgba(47, 39, 30, 0.45);
+    }
+
     .session-utility__group {
       display: flex;
       flex-wrap: wrap;
@@ -10759,6 +10802,11 @@
               onclick="window.sleepPlanBack()"
               ontouchend="event.preventDefault();window.sleepPlanBack();"></button>
     </div>
+    <!-- PROTOTYPE P-E2 option A (D4): with the dark header gone the Plan
+         carries the same config-derived retailer attribution the Summary
+         already has — its OWN id and renderer (sleep_plan_check pins the
+         hf2 pair byte-for-byte). Empty config hides it entirely. -->
+    <div class="hf2-review-attribution" id="sleepPlanAttribution" hidden></div>
     <div class="hf2-review-eyebrow" id="sleepPlanEyebrow"></div>
     <h1 class="hf2-review-title" id="sleepPlanTitle"></h1>
 
@@ -19892,6 +19940,18 @@
     function renderSleepPlan() {
       var back = document.getElementById('sleepPlanBack');
       if (back) back.textContent = t('plan.back_to_matches');
+      // PROTOTYPE P-E2 option A (D4): with the dark header gone, the Plan
+      // carries the same config-derived retailer attribution the Summary
+      // renders — its OWN element and block (the hf2 pair is pinned
+      // byte-for-byte by sleep_plan_check). storeName + voice.retailerSubline
+      // only; blank config hides it; never a literal.
+      var planAttribution = document.getElementById('sleepPlanAttribution');
+      if (planAttribution) {
+        var planAttrSub = (localizedConfigBlock('voice') || {}).retailerSubline || '';
+        var planAttrText = storeName() ? (planAttrSub ? storeName() + ' · ' + planAttrSub : storeName()) : '';
+        planAttribution.textContent = planAttrText;
+        planAttribution.hidden = !planAttrText;
+      }
       var eyebrow = document.getElementById('sleepPlanEyebrow');
       if (eyebrow) eyebrow.textContent = t('plan.eyebrow');
       var title = document.getElementById('sleepPlanTitle');
