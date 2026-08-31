@@ -382,9 +382,9 @@ section('hero scale — the Sleep Brief figure is a hero, the stamps stay stamps
   // Results, the Plan and the Summary. Restore the 54px/48px pins if
   // this variant is not selected.
   ok('the Results header stamp is the D10a 96px mark',
-    /\.noct-results-signature \.sleep-signature \{\s*\n\s*width: 96px;\s*\n\s*\}/.test(norm));
+    /\.noct-results-signature \.sleep-signature \{\s*\n\s*width: 96px;\s*\n\s*margin-inline: auto;\s*\n\s*\}/.test(norm));
   ok('the Summary/Plan shared stamp is the D10a 96px mark',
-    /\.hf2-review-signature \.sleep-signature \{\s*\n\s*width: 96px;\s*\n\s*\}/.test(norm));
+    /\.hf2-review-signature \.sleep-signature \{\s*\n\s*width: 96px;\s*\n\s*margin-inline: auto;\s*\n\s*\}/.test(norm));
   ok('both stamp blocks are centred (D10a: centred stamp)',
     /\.noct-results-signature \{[^}]*text-align: center;/.test(norm)
     && /\.hf2-review-signature \{[^}]*text-align: center;/.test(norm));
