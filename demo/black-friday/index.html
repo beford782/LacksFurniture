@@ -1749,6 +1749,7 @@
 
     .noct-results-signature .sleep-signature {
       width: 96px;
+      margin-inline: auto;
     }
 
     .hf2-review-signature {
@@ -1759,6 +1760,7 @@
 
     .hf2-review-signature .sleep-signature {
       width: 96px;
+      margin-inline: auto;
     }
 
     .profile-launch__reflection {
@@ -5952,6 +5954,37 @@
     }
     .results-reveal-overlay.is-quick .results-reveal__title {
       margin-bottom: 0.25rem;
+    }
+
+    /* PROTOTYPE P-Signature option B ONLY: travel layer. Transform-only
+       motion in the approved gather vocabulary (480ms travel, 180ms fade,
+       700ms finish, 1200ms watchdog - timings owned by JS). */
+    #sigTravelLayer {
+      display: none;
+    }
+    #sigTravelLayer.is-active {
+      display: block;
+      position: fixed;
+      inset: 0;
+      z-index: 210;
+      pointer-events: auto;
+      background: transparent;
+    }
+    .sig-travel-ghost {
+      position: fixed;
+      transform-origin: top left;
+      transition: transform 480ms cubic-bezier(0.2, 0.7, 0.2, 1), color 480ms ease, opacity 180ms ease-out;
+      will-change: transform, opacity;
+    }
+    .sig-travel-ghost .sleep-signature {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .sig-travel-ghost {
+        transition: none;
+      }
     }
 
     /* Slot letter tiles (D R E A M) */
@@ -10624,6 +10657,15 @@
        Holds aria-hidden clones of the customer's review rows for the brief
        gather transition; a tap anywhere on it skips to the Sleep Brief. -->
   <div id="dfmGatherLayer" aria-hidden="true"></div>
+
+  <!-- PROTOTYPE P-Signature option B ONLY (D10b, never merged as such): the
+       travel layer for the Brief figure's one-time FLIP into the Results
+       stamp position. Decorative (aria-hidden); a tap anywhere skips to the
+       finished state. Customer-derived clone, so the id IS in the wipe
+       inventory (SESSION_CONTENT_IDS) and the class in the layer roster. -->
+  <div id="sigTravelLayer" aria-hidden="true"
+    onclick="if (window._sigTravelSkip) window._sigTravelSkip();"
+    ontouchend="event.preventDefault(); if (window._sigTravelSkip) window._sigTravelSkip();"></div>
 
   <!-- FINANCING SHEET (Payment Choice) — accessible modal dialog.
        Opened by openFinancingSheet(placement); content rendered from
@@ -17163,31 +17205,79 @@
       }, 1500);
     };
 
-    // Compact profile→results handoff. Mattress scoring remains in showResults();
-    // this avoids presenting a second full calculation sequence.
+    // PROTOTYPE P-Signature option B ONLY (D10b, never merged as such).
+    // The dark status card is REPLACED for this handoff (the Brief reveal
+    // still owns the shared overlay): the Brief hero figure FLIPs once into
+    // the Results stamp position - 480ms transform-only travel in the gather
+    // vocabulary, 180ms cross-fade onto the real stamp, finish at 700ms,
+    // 1200ms watchdog, tap-to-skip. Decorative throughout (aria-hidden
+    // layer); focus and announcement happen via the normal showResults()
+    // path with the in-flight flag dropped for exactly that call, then
+    // restored so the announce gate owns any stray transition until finish.
+    // Reduced motion: direct advance to the identical static end state.
+    // The stamp never animates again after arrival.
     window.startResultsReveal = function() {
       if (window._resultsRevealInFlight) return;
-      var elements = getConsultationRevealElements();
-      if (!elements.overlay || !elements.title || !elements.subtitle) {
+      var src = document.querySelector('#profileSignature .sleep-signature');
+      var layer = document.getElementById('sigTravelLayer');
+      if (dfmReducedMotion() || !src || !layer) {
         window.showResults();
         return;
       }
       window._resultsRevealInFlight = true;
-      var es = currentLang === 'es';
-      elements.title.textContent = es ? 'Abriendo tu comparacion' : 'Opening your showroom comparison';
-      elements.subtitle.textContent = es ? 'Tus opciones de colchón están listas para comparar.' : 'Your mattress matches are ready to compare.';
-      openConsultationReveal(elements, true);
-      sessionTimeout(function() {
-        elements.overlay.classList.remove('is-visible');
-      }, 300);
-      sessionTimeout(function() {
-        closeConsultationReveal(elements);
+      var first = src.getBoundingClientRect();
+      if (!first.width || !first.height) {
         window._resultsRevealInFlight = false;
-        var profileScreen = document.getElementById('profileScreen');
-        if (profileScreen && profileScreen.classList.contains('active')) {
-          window.showResults();
-        }
-      }, 520);
+        window.showResults();
+        return;
+      }
+      var srcColor = getComputedStyle(src).color;
+      layer.innerHTML = '<div class="sig-travel-ghost">' + src.outerHTML + '</div>';
+      var ghost = layer.firstChild;
+      ghost.style.left = first.left + 'px';
+      ghost.style.top = first.top + 'px';
+      ghost.style.width = first.width + 'px';
+      ghost.style.height = first.height + 'px';
+      ghost.style.color = srcColor;
+      layer.classList.add('is-active');
+      // The swap itself: flag down for exactly this call so the screen
+      // transition focuses and announces the Results heading normally.
+      window._resultsRevealInFlight = false;
+      window.showResults();
+      window._resultsRevealInFlight = true;
+      var tgt = document.querySelector('#resultsSignature .sleep-signature');
+      var finished = false;
+      var finish = function() {
+        if (finished) return;
+        finished = true;
+        window._sigTravelSkip = null;
+        if (tgt) tgt.style.visibility = '';
+        layer.classList.remove('is-active');
+        layer.innerHTML = '';
+        window._resultsRevealInFlight = false;
+      };
+      window._sigTravelSkip = finish;
+      if (!tgt) { finish(); return; }
+      tgt.style.visibility = 'hidden';
+      var last = tgt.getBoundingClientRect();
+      var tgtColor = getComputedStyle(tgt).color;
+      sessionFrame(function() {
+        sessionFrame(function() {
+          if (finished) return;
+          var dx = last.left - first.left;
+          var dy = last.top - first.top;
+          var scale = first.width > 0 ? (last.width / first.width) : 1;
+          ghost.style.transform = 'translate(' + dx + 'px, ' + dy + 'px) scale(' + scale + ')';
+          ghost.style.color = tgtColor;
+        });
+      });
+      sessionTimeout(function() {
+        if (finished || !ghost.isConnected) return;
+        if (tgt) tgt.style.visibility = '';
+        ghost.style.opacity = '0';
+      }, 480);
+      sessionTimeout(finish, 700);
+      sessionTimeout(finish, 1200);
     };
 
     window.showResults = function() {
@@ -21753,7 +21843,7 @@
       'questionContainer', 'reviewList',
       'profileName', 'profilePriorities', 'profileSignature', 'profileHero',
       'profileReflection', 'profileSecondary', 'profileCta',
-      'resultsSignature', 'hf2Signature', 'sleepPlanSignature',
+      'resultsSignature', 'hf2Signature', 'sleepPlanSignature', 'sigTravelLayer',
       'resultsHeadline', 'tierTabs', 'tierDescriptor', 'topPickContainer',
       'supportingRow', 'resultsTrialFocus',
       'drawerName', 'drawerDifferentiators', 'dfmConstructionSection', 'drawerTryPrompts', 'drawerPromotionDetail',
@@ -21823,6 +21913,9 @@
       { id: 'revealCert', remove: ['is-visible'] },
       { id: 'resultsRevealOverlay', remove: ['is-visible', 'is-quick'], display: 'none',
         attrs: { 'aria-hidden': 'true', 'aria-busy': 'false' } },
+      // PROTOTYPE P-Signature option B: the travel layer is class-driven;
+      // its clone is customer-derived and cleared via SESSION_CONTENT_IDS.
+      { id: 'sigTravelLayer', remove: ['is-active'] },
       // DFM MOTION SPIKE: the gather layer is class-driven only (no inline
       // display, which would outlive the wipe); its clones are cleared on the
       // next activation and are aria-hidden throughout.
