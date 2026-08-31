@@ -13086,6 +13086,15 @@
           ? 'Ver tus selecciones'
           : 'View your selections');
       }
+      // C5: the pill's noun is count-aware, so it is not a static data-i18n
+      // string. Re-derive it from the rendered count on every translation
+      // pass (a language switch is a copy swap, never a count change).
+      var picksLabel = document.getElementById('savedPicksLabel');
+      if (picksLabel && typeof window._picksPillLabel === 'function') {
+        var picksCountEl = document.getElementById('savedPicksCount');
+        picksLabel.textContent = window._picksPillLabel(
+          parseInt(picksCountEl && picksCountEl.textContent, 10) || 0);
+      }
       var sleepSystemRail = document.getElementById('sleepSystemRail');
       if (sleepSystemRail) {
         sleepSystemRail.setAttribute('aria-label', currentLang === 'es'
@@ -17397,10 +17406,12 @@
           title: savedMattresses.length
             ? (_esE ? 'Selecciones de colchón guardadas' : 'Saved mattress picks')
             : (_esE ? 'Colchones recomendados' : 'Recommended matches'),
+          // C5: the Spanish participle agrees with the count ("1 guardado",
+          // "2 guardados"); the English forms are invariant.
           detail: savedMattresses.length
-            ? (_esE ? (savedMattresses.length + ' guardados · tus opciones más compatibles y para comparar')
+            ? (_esE ? (savedMattresses.length + (savedMattresses.length === 1 ? ' guardado' : ' guardados') + ' · tus opciones más compatibles y para comparar')
                     : (savedMattresses.length + ' saved · your strongest matches and comparison options'))
-            : (_esE ? (recCount + ' recomendados · tus opciones más compatibles')
+            : (_esE ? (recCount + (recCount === 1 ? ' recomendado' : ' recomendados') + ' · tus opciones más compatibles')
                     : (recCount + ' recommended · your strongest matches')) },
         { present: selectedAccessories.length > 0,
           title: _esE ? 'Sistema de Sueño' : 'Sleep System picks',
@@ -19681,6 +19692,20 @@
       if (btn) btn.style.display = '';
       if (btn) btn.classList.toggle('noct-picks-pill--visible', total > 0);
       if (countEl) countEl.textContent = total;
+      var labelEl = document.getElementById('savedPicksLabel');
+      if (labelEl) labelEl.textContent = window._picksPillLabel(total);
+    };
+
+    // C5 (cohesion pass-1 ruling C5, 2026-08-30): the pill's noun agrees with
+    // its count — "1 Selection", "2 Selections" — instead of a live number
+    // beside a static plural. `header.picks` is the plural and
+    // `header.picks_one` the singular in both governed dictionaries; the ES
+    // pair ("Selección" / "Selecciones") also brings the visible label into
+    // agreement with the control's accessible name ("Ver tus selecciones")
+    // and the app's own noun for these picks. applyTranslations() re-derives
+    // the label through this same function on a language switch.
+    window._picksPillLabel = function(total) {
+      return t(total === 1 ? 'header.picks_one' : 'header.picks');
     };
 
     // Salesperson context labels (S6)
@@ -22952,7 +22977,7 @@
           ontouchend="event.preventDefault();window.showSavedPicks();"
           aria-label="View your selections">
     <span class="noct-picks-pill__count" id="savedPicksCount">0</span>
-    <span class="noct-picks-pill__label" data-i18n="header.picks">Selections</span>
+    <span class="noct-picks-pill__label" id="savedPicksLabel">Selections</span>
   </button>
 </body>
 </html>

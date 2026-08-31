@@ -662,5 +662,93 @@ function mustReplace(src, find, replace) {
   }
 }
 
+// ------------------------------------------------ C5: count-aware nouns
+// Cohesion pass-1 ruling C5 (2026-08-30): the floating Selections pill
+// rendered a live number beside a static plural ("1 Selections"); the ES
+// label ("Favoritos") disagreed with the control's accessible name ("Ver
+// tus selecciones"); and the take-home packet concatenated "1 guardados".
+// House style: EXECUTE the real producers against the DOM shim with each
+// governed dictionary; the take-home packet literal is evaluated with the
+// same free variables showEmailCapture() gives it.
+section('C5 — the Selections pill and the take-home saved count agree with their number');
+{
+  const labelSrc = extractFunction('window._picksPillLabel = function(total)');
+  const badgeSrc = extractFunction('window._updatePicksBadge = function()');
+  ok('pill label producer and badge renderer found', !!labelSrc && !!badgeSrc);
+
+  function pillEnv(lang, saved, acc = 0, mutate = null) {
+    const els = new Map();
+    const doc = {
+      getElementById(id) {
+        if (!els.has(id)) {
+          const el = makeEl(id);
+          // the badge renderer uses classList.toggle(cls, force), which the
+          // shared shim does not model
+          el.classList.toggle = (c, force) => {
+            const on = force === undefined ? !el.classList._s.has(c) : !!force;
+            if (on) el.classList._s.add(c); else el.classList._s.delete(c);
+            return on;
+          };
+          els.set(id, el);
+        }
+        return els.get(id);
+      }
+    };
+    const D = lang === 'es' ? dictEs : dictEn;
+    const t = (key) => Object.prototype.hasOwnProperty.call(D, key) ? D[key] : key;
+    const win = { _savedPicks: Array.from({ length: saved }, (_, i) => ({ id: 'm' + i })), _accCart: {} };
+    for (let i = 0; i < acc; i++) win._accCart['a' + i] = true;
+    let src = labelSrc + '\n' + badgeSrc;
+    if (mutate) src = mutate(src);
+    new Function('window', 'document', 't', '"use strict";\n' + src)(win, doc, t);
+    win._updatePicksBadge();
+    return {
+      label: doc.getElementById('savedPicksLabel').textContent,
+      count: String(doc.getElementById('savedPicksCount').textContent),
+      visible: doc.getElementById('savedPicksBtn').classList.contains('noct-picks-pill--visible')
+    };
+  }
+  if (labelSrc && badgeSrc) {
+    const en1 = pillEnv('en', 1), en2 = pillEnv('en', 2), enMixed = pillEnv('en', 1, 1), en0 = pillEnv('en', 0);
+    ok('EN: one saved pick renders "1 Selection"', en1.count === '1' && en1.label === 'Selection', `${en1.count} ${en1.label}`);
+    ok('EN: two saved picks render "2 Selections"', en2.count === '2' && en2.label === 'Selections', `${en2.count} ${en2.label}`);
+    ok('EN: the noun follows the TOTAL (1 mattress + 1 accessory = 2 Selections)', enMixed.count === '2' && enMixed.label === 'Selections');
+    ok('EN: zero picks hides the pill (label stays plural, never "0 Selection")', !en0.visible && en0.label === 'Selections');
+    const es1 = pillEnv('es', 1), es2 = pillEnv('es', 2);
+    ok('ES: one saved pick renders "1 Selección"', es1.label === 'Selección', es1.label);
+    ok('ES: two saved picks render "2 Selecciones"', es2.label === 'Selecciones', es2.label);
+    ok('ES: the pill label no longer reads "Favoritos" (it agrees with its accessible name "Ver tus selecciones")',
+      dictEs['header.picks'] !== 'Favoritos' && norm.includes("'Ver tus selecciones'"));
+    ok('both governed dictionaries carry the singular / plural pair',
+      typeof dictEn['header.picks_one'] === 'string' && typeof dictEs['header.picks_one'] === 'string'
+      && dictEn['header.picks'] !== dictEn['header.picks_one'] && dictEs['header.picks'] !== dictEs['header.picks_one']);
+    ok('the label span is owned by the renderer (id, no static data-i18n plural)',
+      /<span class="noct-picks-pill__label" id="savedPicksLabel">/.test(html)
+      && !/noct-picks-pill__label"[^>]*data-i18n=/.test(html));
+    ok('applyTranslations() re-derives the label through the same producer on a language switch',
+      /var picksLabel = document\.getElementById\('savedPicksLabel'\);[\s\S]{0,400}?window\._picksPillLabel\(\s*parseInt\(picksCountEl && picksCountEl\.textContent, 10\) \|\| 0\)/.test(html));
+    // negative control: an always-plural producer must be caught above
+    const mutated = pillEnv('en', 1, 0, (s) => mustReplace(s, "t(total === 1 ? 'header.picks_one' : 'header.picks')", "t('header.picks')"));
+    ok('negative control: an always-plural producer renders "1 Selections" (so the singular assertion bites)', mutated.label === 'Selections');
+  }
+
+  // ---- take-home packet: ES participles agree with the count -------------
+  const pStart = html.indexOf('var packet = [');
+  const pEnd = pStart === -1 ? -1 : html.indexOf('\n      ];', pStart);
+  ok('take-home packet literal found inside showEmailCapture()', pStart !== -1 && pEnd !== -1 && pStart > html.indexOf('window.showEmailCapture = function()'));
+  if (pStart !== -1 && pEnd !== -1) {
+    const literal = html.slice(pStart + 'var packet = '.length, pEnd + '\n      ]'.length);
+    const build = (es, saved, rec, acc = 0) => new Function('_esE', 'savedMattresses', 'recCount', 'selectedAccessories', '"use strict"; return ' + literal + ';')(
+      es, Array.from({ length: saved }, () => ({})), rec, Array.from({ length: acc }, () => ({})));
+    const detailOf = (rows) => rows.find((r) => /guardad|saved|recomend|recommend/.test(r.detail || '')).detail;
+    ok('ES: one saved pick reads "1 guardado ·"', detailOf(build(true, 1, 3)).startsWith('1 guardado ·'), detailOf(build(true, 1, 3)));
+    ok('ES: two saved picks read "2 guardados ·"', detailOf(build(true, 2, 3)).startsWith('2 guardados ·'));
+    ok('ES: one recommended match (nothing saved) reads "1 recomendado ·"', detailOf(build(true, 0, 1)).startsWith('1 recomendado ·'));
+    ok('ES: three recommended matches read "3 recomendados ·"', detailOf(build(true, 0, 3)).startsWith('3 recomendados ·'));
+    ok('EN: the invariant forms are untouched ("1 saved ·", "2 saved ·", "3 recommended ·")',
+      detailOf(build(false, 1, 3)).startsWith('1 saved ·') && detailOf(build(false, 2, 3)).startsWith('2 saved ·') && detailOf(build(false, 0, 3)).startsWith('3 recommended ·'));
+  }
+}
+
 console.log(`\n${failures === 0 ? 'PASS' : 'FAIL'} — ${checks - failures}/${checks} checks passed`);
 process.exit(failures === 0 ? 0 : 1);
