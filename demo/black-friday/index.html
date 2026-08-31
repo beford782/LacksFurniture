@@ -1472,6 +1472,28 @@
       color: var(--consultation-muted);
     }
 
+    /* PROTOTYPE X7 option A ONLY (owner ruling D9 amendment, 2026-08-31;
+       never merged as such): landscape Next-in-fold. The 6-plus-option
+       questions take three columns and the slider block tightens, so the
+       single next action lands inside the 748px fold. Landscape CSS only -
+       the EMITTED column class is untouched (cols() still never returns
+       cols-3; REPAIR 7 holds), and the min-width guard keeps the sub-700px
+       one-column collapse authoritative on small landscape screens. */
+    @media (orientation: landscape) and (min-width: 900px) {
+      body:has(#questionScreen.active) .noct-quiz-options.cols-2:has(.noct-quiz-option:nth-child(6)) {
+        grid-template-columns: repeat(3, 1fr);
+      }
+      body:has(#questionScreen.active) .noct-slider-value {
+        font-size: 56px;
+      }
+      body:has(#questionScreen.active) .noct-slider-feel {
+        margin-bottom: 16px;
+      }
+      body:has(#questionScreen.active) .noct-slider-wrap {
+        margin-bottom: 20px;
+      }
+    }
+
     @media (hover: hover) {
       body:has(#questionScreen.active) .noct-quiz-back:hover,
       body:has(#reviewScreen.active) .noct-quiz-back:hover {
