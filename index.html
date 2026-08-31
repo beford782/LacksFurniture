@@ -8777,6 +8777,19 @@
     .drawer-tags-row { display:flex; flex-wrap:wrap; gap:0.3rem; margin-bottom:0.85rem; }
     .drawer-tag { background:rgba(212,168,75,0.1); color:var(--gold); padding:0.2rem 0.55rem; border-radius:8px; font-size:0.58rem; font-weight:500; }
     .drawer-cta-row { display:flex; gap:10px; }
+    /* PROTOTYPE P-Loop option A ONLY: the shared finalist control at drawer
+       scale - same state rules (.chosen / aria-pressed) as the card control,
+       drawer-footer proportions and dark-surface resting colors. */
+    .drawer-finalist-btn {
+      flex: 1;
+      justify-content: center;
+      min-height: 52px;
+      padding: 12px 16px;
+      border-radius: 8px;
+      border: 1.5px solid rgba(255, 255, 255, 0.25);
+      color: var(--cream);
+      font-size: 12px;
+    }
     .drawer-btn { flex:1; min-height:52px; padding:12px 16px; border-radius:8px; border:none; font:750 15px/1.2 var(--font-sans); cursor:pointer; touch-action:manipulation; }
     .drawer-btn-primary { background:linear-gradient(180deg,var(--gold-light),var(--gold)); color:var(--navy); box-shadow:0 3px 0 var(--color-accent-shadow); }
     .drawer-btn-secondary { background:rgba(255,255,255,0.07); border:1.5px solid rgba(255,255,255,0.12); color:var(--cream); }
@@ -10725,6 +10738,15 @@
         </div>
         <div class="drawer-cta-row">
           <button id="drawerInterestedBtn" class="drawer-btn drawer-btn-primary" onclick="window.saveDrawerPick()" ontouchend="event.preventDefault();window.saveDrawerPick();">Save for later</button>
+          <!-- PROTOTYPE P-Loop option A ONLY (owner ruling D6, 2026-08-31;
+               never merged as such): the finalist commit beside Save, where
+               the verdict is recorded. A pure CONSUMER of the one producer:
+               class finalist-btn routes it through the same delegated click
+               handler into window.chooseFinalist(), and
+               window._repaintFinalistControls() paints label/aria/state -
+               no second producer, no new state, no ranking effect.
+               data-id is set per drawer open; the wipe resets it. -->
+          <button id="drawerFinalistBtn" class="finalist-btn drawer-finalist-btn" data-id="" aria-pressed="false"></button>
         </div>
         <div class="drawer-system-prompt" id="drawerSystemPrompt" aria-live="polite">
           <div class="drawer-system-prompt__eyebrow" id="drawerSystemPromptEyebrow"></div>
@@ -21777,6 +21799,10 @@
       { id: 'hf2RsaPanel', hiddenAttr: true },
       { id: 'hf2RsaAddRow', hiddenAttr: true },
       { id: 'hf2RsaStripBtn', attrs: { 'aria-expanded': 'false' } },
+      // PROTOTYPE P-Loop option A: the drawer's finalist control is static
+      // markup, so its per-customer binding resets here (the card controls
+      // are re-rendered per render and need no entry).
+      { id: 'drawerFinalistBtn', remove: ['chosen'], attrs: { 'aria-pressed': 'false', 'data-id': '' } },
       // 0.5: the trial-priorities section returns to hidden on wipe, so even a
       // path that showed hf2 without re-rendering could not expose the prior
       // customer's label over a cleared list.
@@ -22595,6 +22621,16 @@
         var alreadySaved = window._savedPicks && window._savedPicks.some(function(p) { return p.id === mattressId; });
         intBtn.textContent = saveButtonLabel(alreadySaved);
         intBtn.style.background = alreadySaved ? 'linear-gradient(180deg,var(--color-match-positive),#4caf6e)' : '';
+      }
+      // PROTOTYPE P-Loop option A: point the drawer's finalist control at the
+      // open mattress, then let the ONE repaint function own its label, class
+      // and aria-pressed - the same call every producer-side change uses.
+      var drawerFinBtn = document.getElementById('drawerFinalistBtn');
+      if (drawerFinBtn) {
+        drawerFinBtn.setAttribute('data-id', mattressId);
+        drawerFinBtn.setAttribute('aria-label',
+          t('finalist.choose_as') + ': ' + (m.name || ''));
+        if (typeof window._repaintFinalistControls === 'function') window._repaintFinalistControls();
       }
       var systemPrompt = document.getElementById('drawerSystemPrompt');
       if (systemPrompt) systemPrompt.classList.remove('is-visible');
