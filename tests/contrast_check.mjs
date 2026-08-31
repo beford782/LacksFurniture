@@ -512,5 +512,45 @@ function over(fg, bg, alpha) {
   check(`review audience line (quiz help rule) is at least 15px (got ${reviewSize}px)`, reviewSize >= 15);
 }
 
+// --- X11: state cues that survive forced colors (D9, 2026-08-31) -----------
+// Forced colors strips fills and paints every border CanvasText, so a state
+// carried by fill or by border COLOUR alone disappears — and a reserved
+// `transparent` border comes back painted. Three states were caught: the
+// active tier tab (2px transparent resting vs 2px solid cue = identical), the
+// active Sleep System rail step (1px hairline vs 1px ink), and the result
+// card's selected Compare / saved Save (0.5px hairline vs a sage fill). Each
+// now differs in border WIDTH (and, for the tab, STYLE), with padding
+// compensated so nothing moves; all in blocks after the anchored first one.
+{
+  const firstIdx = html.indexOf("@media (forced-colors: active)");
+  const anchoredIdx = html.indexOf(".fin-btn:focus-visible");
+  const pad = (s) => s.split(/\s+/).map(Number);
+  const totals = (border, padding) => pad(padding).map((p) => p + border);
+  // tier tab
+  const tabBase = html.match(/\.noct-tier-tab \{[^}]*border: (\d+)px solid transparent;[^}]*padding: ([\d ]+px[\d px]*);/);
+  const tabForced = html.match(/\.noct-tier-tab\.active \{ border: (\d+)px double CanvasText; padding: ([\d px]+); \}/);
+  check("X11: the forced active tier tab is 3px DOUBLE (style + width differ from the 2px solid resting border)",
+    !!tabForced && tabForced[1] === "3" && !!tabBase && tabBase[1] === "2");
+  check("X11: the forced active tab's border+padding totals equal the resting tab's (no reflow)",
+    !!tabBase && !!tabForced && JSON.stringify(totals(2, tabBase[2].replace(/px/g, ""))) === JSON.stringify(totals(3, tabForced[2].replace(/px/g, ""))));
+  check("X11: the tab cue lives after the anchored first forced-colors block",
+    !!tabForced && html.indexOf(tabForced[0]) > anchoredIdx && html.indexOf(tabForced[0]) > firstIdx);
+  // rail step + card controls
+  const block = html.match(/@media \(forced-colors: active\) \{\s*\.sleep-system__step\.is-active \{([^}]*)\}\s*#resultsScreen \.compare-btn\.selected,\s*#resultsScreen \.noct-save-btn\.saved \{([^}]*)\}\s*\}/);
+  check("X11: one forced-colors block carries the rail step and the card-control cues", !!block);
+  const stepBase = html.match(/\.sleep-system__step \{[^}]*padding: (\d+)px (\d+)px;[^}]*border: 1px solid #D1C5B6;/);
+  check("X11: the forced active rail step is 3px CanvasText with padding compensated from the 1px resting step (11/13 totals)",
+    !!block && /border-width: 3px;/.test(block[1]) && /border-color: CanvasText;/.test(block[1]) && /padding: 8px 10px;/.test(block[1])
+    && !!stepBase && Number(stepBase[1]) + 1 === 8 + 3 && Number(stepBase[2]) + 1 === 10 + 3);
+  const cardBase = html.match(/\.compare-btn \{[^}]*border: 0\.5px solid var\(--color-border\);[^}]*padding: 8px 14px;/);
+  check("X11: the forced selected Compare / saved Save are 2px CanvasText with padding compensated from the 0.5px resting hairline (8.5/14.5 totals)",
+    !!block && /border-width: 2px;/.test(block[2]) && /border-color: CanvasText;/.test(block[2]) && /padding: 6\.5px 12\.5px;/.test(block[2]) && !!cardBase);
+  check("X11: the rail/card block lives after the anchored first forced-colors block and after the normal selected rules it must outrank by order",
+    !!block && html.indexOf(block[0]) > anchoredIdx && html.indexOf(block[0]) > html.indexOf("#resultsScreen .compare-btn.selected {")
+    && html.indexOf(block[0]) > html.indexOf(".sleep-system__step.is-active {"));
+  check("X11: the finalist's own 2px forced cue is untouched",
+    /\.finalist-btn\.chosen, \.finalist-btn\[aria-pressed="true"\] \{ border: 2px solid CanvasText; \}/.test(html));
+}
+
 console.log(`\nContrast check: ${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

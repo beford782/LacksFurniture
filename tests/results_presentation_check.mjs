@@ -317,8 +317,18 @@ const firstForced = norm.match(/@media \(forced-colors: active\)\s*\{[\s\S]*?\n 
 ok('tier tab focus joins the first forced-colors block (CanvasText, no halo)',
   !!firstForced && firstForced[0].includes('.noct-tier-tab:focus-visible')
   && firstForced[0].includes('outline-color: CanvasText'));
-ok('forced-colors keeps a non-color selected cue for the active tab',
-  /@media \(forced-colors: active\)\s*\{\s*\.noct-tier-tab\.active \{ border: 2px solid CanvasText; \}\s*\}/.test(norm));
+// X11 (North Star D9, 2026-08-31): forced colors paints the RESTING tab's
+// reserved 2px transparent border CanvasText too, so a 2px solid cue was no
+// cue. The active tab now differs in STYLE and WIDTH (3px double), with the
+// padding compensated so the label does not move between states.
+const tabForced = norm.match(/@media \(forced-colors: active\)\s*\{[^}]*?\.noct-tier-tab\.active \{ border: (\d+)px (double|solid) CanvasText; padding: (\d+)px (\d+)px (\d+)px (\d+)px; \}\s*\}/);
+ok('forced-colors keeps a non-color selected cue for the active tab that differs from the resting tab in style AND width (3px double)',
+  !!tabForced && tabForced[1] === '3' && tabForced[2] === 'double');
+{
+  const base = norm.match(/\.noct-tier-tab \{[^}]*border: (\d+)px solid transparent;[^}]*padding: (\d+)px (\d+)px (\d+)px (\d+)px;/);
+  ok('the forced active tab keeps the resting geometry (border + padding per side identical, so no reflow on a tab switch)',
+    !!base && !!tabForced && [2, 3, 4, 5].every((i) => Number(base[i]) + Number(base[1]) === Number(tabForced[i + 1]) + Number(tabForced[1])));
+}
 
 // ---------------------------------------------------------------- ruled copy
 section('ruled EN/ES copy — governed dictionaries, verbatim');
