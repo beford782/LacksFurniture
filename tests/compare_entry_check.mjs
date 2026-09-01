@@ -74,9 +74,12 @@ for (const [tag, src] of [['top pick', topPickSrc], ['supporting', supportSrc]])
   // Slice 5 C2: the cluster gained the "Choose as finalist" control (R-1)
   // between compare and save. The pin is updated to the new order so the
   // finalist control's position is itself pinned going forward.
-  ok(`${tag}: compare sits inside the action cluster between details and the finalist control, ahead of save`,
-    /detailsBtn\s*'?\s*\+\s*compareBtn\s*\+\s*finalistBtn\s*\+\s*saveBtn/.test(src.replace(/\s+/g, ' ')) ||
-    /\+\s+detailsBtn\s+\+\s+compareBtn\s+\+\s+finalistBtn\s+\+\s+saveBtn/.test(src));
+  // Loop-A2 (owner ruling 2026-09-01): the card's finalist producer is replaced
+  // by "Try this mattress" (opens the trial drawer); compare keeps its place
+  // between details and that trial action, ahead of save.
+  ok(`${tag}: compare sits inside the action cluster between details and the Try control, ahead of save`,
+    /detailsBtn\s*'?\s*\+\s*compareBtn\s*\+\s*tryBtn\s*\+\s*saveBtn/.test(src.replace(/\s+/g, ' ')) ||
+    /\+\s+detailsBtn\s+\+\s+compareBtn\s+\+\s+tryBtn\s+\+\s+saveBtn/.test(src));
   ok(`${tag}: compare control carries NO inline handler (delegated path only)`,
     !/compareBtn = [^;]*onclick/.test(src.replace(/\n/g, ' ')));
 }

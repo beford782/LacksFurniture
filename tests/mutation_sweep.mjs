@@ -748,11 +748,11 @@ const MUTATIONS = [
   // (Slice 5 C2: the clusters gained the finalist control between compare and
   // save; the find-strings follow the new shape.)
   ["compare entry: the top-pick card loses its compare control",
-    "+       detailsBtn\n        +       compareBtn\n        +       finalistBtn\n        +       saveBtn",
-    "+       detailsBtn\n        +       finalistBtn\n        +       saveBtn", CMPE],
+    "+       detailsBtn\n        +       compareBtn\n        +       tryBtn\n        +       saveBtn",
+    "+       detailsBtn\n        +       tryBtn\n        +       saveBtn", CMPE],
   ["compare entry: the supporting cards lose their compare control",
-    "+       detailsBtn\n          +       compareBtn\n          +       finalistBtn\n          +       saveBtn",
-    "+       detailsBtn\n          +       finalistBtn\n          +       saveBtn", CMPE],
+    "+       detailsBtn\n          +       compareBtn\n          +       tryBtn\n          +       saveBtn",
+    "+       detailsBtn\n          +       tryBtn\n          +       saveBtn", CMPE],
   ["compare entry: the tray go label loses its Spanish draft",
     "go.textContent = currentLang === 'es' ? 'Comparar →' : 'Compare →';",
     "go.textContent = 'Compare →';", CMPE],
@@ -1645,9 +1645,13 @@ const MUTATIONS = [
   ["plan: the drawer labels a mere save as a finalist again",
     'ontouchend="event.preventDefault();window.saveDrawerPick();">Save for later</button>',
     'ontouchend="event.preventDefault();window.saveDrawerPick();">Save as Finalist</button>', PLAN],
-  ["plan: the Results finalist control is dropped from the supporting-card cluster",
-    "          +       detailsBtn\n          +       compareBtn\n          +       finalistBtn\n          +       saveBtn",
+  // Loop-A2 (2026-09-01): the card offers the trial, never the finalist.
+  ["Loop-A2: the supporting card loses its Try control",
+    "          +       detailsBtn\n          +       compareBtn\n          +       tryBtn\n          +       saveBtn",
     "          +       detailsBtn\n          +       compareBtn\n          +       saveBtn", PLAN],
+  ["Loop-A2: the producer loses its trial gate (a finalist without a recorded reaction)",
+    "      if (!((window._mattressReactions || {})[mattressId])) return;\n",
+    "", PLAN],
 
   // --- priorities all-or-nothing (R-8) ------------------------------------
   ["plan: the Consultation Summary filters malformed priorities per element again",

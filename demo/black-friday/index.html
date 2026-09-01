@@ -2552,6 +2552,81 @@
       gap: 10px;
     }
 
+    /* "Try this mattress" (Loop-A2): the card's trial action, emphasised
+       within the established control system — same size and 44px floor as
+       its neighbours, filled with the accent ink so the trial reads as the
+       next step without a new primary vocabulary. */
+    .noct-card-try {
+      display: inline-flex;
+      align-items: center;
+      min-height: 44px;
+      background: var(--accent-ink);
+      color: #FFFDF8;
+      border: 1px solid var(--accent-ink);
+      font-family: var(--font-sans);
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      padding: 8px 14px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    .noct-card-try:focus-visible {
+      outline: 3px solid var(--focus-ring-outer);
+      outline-offset: 2px;
+      box-shadow: 0 0 0 6px var(--focus-ring-inner);
+    }
+
+    /* C2-A2 (owner ruling 2026-09-01): the landscape hero is a two-column
+       card — photo in a ~46% column (a 1000x666 source fits uncropped; banner
+       sources letterbox via the X4 fallback), narrative and controls beside
+       it — with the body rhythm tightened through spacing only (type sizes
+       and the 44px floor unchanged) so the essential cluster ends at or above
+       document y=728 in 1194x748. Source order: AFTER every .noct-toppick-*
+       base rule (equal specificity, later wins). Portrait untouched. */
+    @media (orientation: landscape) and (min-width: 900px) {
+      .noct-toppick {
+        display: grid;
+        grid-template-columns: 46% 54%;
+        align-items: stretch;
+      }
+      .noct-toppick > .mattress-offer-tab {
+        grid-column: 1 / -1;
+      }
+      .noct-toppick-photo {
+        aspect-ratio: auto;
+        width: 100%;
+        height: 100%;
+        min-height: 0;
+      }
+      .noct-toppick-body {
+        padding: 18px 30px 18px;
+      }
+      .noct-toppick-eyebrow {
+        margin-bottom: 6px;
+      }
+      .noct-toppick-brand {
+        margin-bottom: 6px;
+      }
+      .noct-toppick-name {
+        margin-bottom: 10px;
+      }
+      .noct-toppick-reason {
+        margin-bottom: 10px;
+      }
+      .noct-toppick-firmness-row {
+        margin-bottom: 10px;
+      }
+      .noct-toppick-actions {
+        margin-top: 6px;
+        padding-top: 8px;
+      }
+      .noct-toppick-actions .noct-card-action-cluster {
+        gap: 8px;
+      }
+    }
+
     .noct-card-details {
       background: transparent;
       color: var(--color-text-subtle);
@@ -8296,6 +8371,17 @@
       gap: 0.5rem;
     }
     .compare-col.winner { border-color: var(--gold); box-shadow: 0 0 0 2px rgba(212,168,75,0.2); }
+    /* Loop-A2: the chosen finalist is reflected in Compare as a quiet sage tag. */
+    .cmp-head-chosen {
+      display: inline-block;
+      margin-top: 6px;
+      padding: 2px 10px;
+      border-radius: 999px;
+      background: #DDE7D9;
+      color: #2F4A2C;
+      font: 700 11px/1.4 var(--font-sans);
+      letter-spacing: 0.06em;
+    }
     .compare-col-img { width: 100%; aspect-ratio: 3/2; background: rgba(0,0,0,0.3); border-radius: 10px; overflow: hidden; }
     .compare-col-img img { width: 100%; height: 100%; object-fit: cover; }
     .compare-col-name { font-size: 0.95rem; font-weight: 800; color: var(--cream); }
@@ -8932,6 +9018,50 @@
     .drawer-tags-row { display:flex; flex-wrap:wrap; gap:0.3rem; margin-bottom:0.85rem; }
     .drawer-tag { background:rgba(212,168,75,0.1); color:var(--gold); padding:0.2rem 0.55rem; border-radius:8px; font-size:0.58rem; font-weight:500; }
     .drawer-cta-row { display:flex; gap:10px; }
+    /* Loop-A2: the drawer's finalist control at footer scale. Disabled until a
+       reaction is recorded (muted, not hidden - the affordance is visible and
+       explained by the hint); enabled = the singular primary (gold, like the
+       old Save primary); chosen = restrained sage "Chosen ✓" (aria-pressed
+       carries the state). */
+    .drawer-finalist-hint {
+      margin: 0 0 8px;
+      font: 500 12px/1.4 var(--font-sans);
+      color: var(--cream-dim, rgba(248,246,241,0.72));
+    }
+    .drawer-finalist-hint[hidden] { display: none; }
+    .drawer-finalist-btn {
+      flex: 1;
+      justify-content: center;
+      min-height: 52px;
+      padding: 12px 16px;
+      border-radius: 8px;
+      border: 1.5px solid rgba(255, 255, 255, 0.25);
+      color: var(--cream);
+      font-size: 12px;
+    }
+    .drawer-finalist-btn:disabled {
+      opacity: 0.55;
+      cursor: default;
+    }
+    .drawer-finalist-btn:not(:disabled):not(.chosen) {
+      background: linear-gradient(180deg, var(--gold-light), var(--gold));
+      color: var(--navy);
+      border-color: transparent;
+      box-shadow: 0 3px 0 var(--color-accent-shadow);
+    }
+    .drawer-finalist-btn.chosen,
+    .drawer-finalist-btn[aria-pressed="true"] {
+      background: #DDE7D9;
+      color: #2F4A2C;
+      border: 2px solid #7F9C79;
+      box-shadow: none;
+    }
+    body:has(#resultsScreen.active) .drawer-finalist-hint { color: #665D54; }
+    body:has(#resultsScreen.active) .drawer-finalist-btn { border-color: var(--color-border); color: var(--color-text-subtle); }
+    body:has(#resultsScreen.active) .drawer-finalist-btn:not(:disabled):not(.chosen) { color: var(--navy); border-color: transparent; }
+    body:has(#resultsScreen.active) .drawer-finalist-btn.chosen,
+    body:has(#resultsScreen.active) .drawer-finalist-btn[aria-pressed="true"] { background: #DDE7D9; color: #2F4A2C; border-color: #7F9C79; }
+
     .drawer-btn { flex:1; min-height:52px; padding:12px 16px; border-radius:8px; border:none; font:750 15px/1.2 var(--font-sans); cursor:pointer; touch-action:manipulation; }
     .drawer-btn-primary { background:linear-gradient(180deg,var(--gold-light),var(--gold)); color:var(--navy); box-shadow:0 3px 0 var(--color-accent-shadow); }
     .drawer-btn-secondary { background:rgba(255,255,255,0.07); border:1.5px solid rgba(255,255,255,0.12); color:var(--cream); }
@@ -9853,6 +9983,16 @@
         outline-color: CanvasText;
         box-shadow: none;
       }
+    }
+    /* Candidate (Loop-A2): forced-colors cues for the new controls, in their
+       own block AFTER the anchored first forced-colors block (contrast_check
+       pins that ordering). The Try button keeps a CanvasText border; the
+       chosen finalist state is carried by geometry (3px double); disabled
+       reads GrayText. */
+    @media (forced-colors: active) {
+      .noct-card-try { border: 2px solid CanvasText; }
+      .drawer-finalist-btn.chosen, .drawer-finalist-btn[aria-pressed="true"] { border: 3px double CanvasText; }
+      .drawer-finalist-btn:disabled { opacity: 1; color: GrayText; border-color: GrayText; }
     }
     /* Construction reveal (slices 5a+5b): forced colors strip author hues
        and backgrounds, so the region-to-role correspondence falls back to
@@ -10999,8 +11139,19 @@
           <button type="button" data-reaction="good" aria-pressed="false" onclick="window.setDrawerReaction('good')" ontouchend="event.preventDefault();window.setDrawerReaction('good');">Good Feel</button>
           <button type="button" data-reaction="firm" aria-pressed="false" onclick="window.setDrawerReaction('firm')" ontouchend="event.preventDefault();window.setDrawerReaction('firm');">Too Firm</button>
         </div>
-        <div class="drawer-cta-row">
-          <button id="drawerInterestedBtn" class="drawer-btn drawer-btn-primary" onclick="window.saveDrawerPick()" ontouchend="event.preventDefault();window.saveDrawerPick();">Save for later</button>
+        <!-- Loop-A2 (owner ruling 2026-09-01): the drawer is the primary,
+             trial-gated finalist producer. Before a recorded reaction the
+             finalist control is unavailable and the reaction row owns the
+             emphasis (hint below); after a reaction "Choose as finalist" is
+             the singular primary and Save becomes secondary. The control is a
+             consumer of the one producer (class finalist-btn -> delegated
+             handler -> window.chooseFinalist(), which itself refuses an
+             unreacted mattress); _repaintFinalistControls() paints its
+             label/state. -->
+        <p class="drawer-finalist-hint" id="drawerFinalistHint"></p>
+        <div class="drawer-cta-row" id="drawerCtaRow">
+          <button id="drawerFinalistBtn" class="finalist-btn drawer-finalist-btn" data-id="" aria-pressed="false" disabled></button>
+          <button id="drawerInterestedBtn" class="drawer-btn drawer-btn-secondary" onclick="window.saveDrawerPick()" ontouchend="event.preventDefault();window.saveDrawerPick();">Save for later</button>
         </div>
         <div class="drawer-system-prompt" id="drawerSystemPrompt" aria-live="polite">
           <div class="drawer-system-prompt__eyebrow" id="drawerSystemPromptEyebrow"></div>
@@ -16516,12 +16667,14 @@
       // from Save. aria-pressed carries the single-finalist state. Routed
       // through the delegated click handler like .compare-btn so the
       // card-tap path never double-fires.
-      var isChosen = m.id === window._favoriteMattressId;
-      var finalistBtn = '<button type="button" class="finalist-btn' + (isChosen ? ' chosen' : '') + '"'
-        + ' data-id="' + escapeHtml(m.id) + '"'
-        + ' aria-pressed="' + (isChosen ? 'true' : 'false') + '"'
-        + ' aria-label="' + escapeHtml(t('finalist.choose_as') + ': ' + m.name) + '">'
-        + finalistButtonLabel(isChosen)
+      // Loop-A2 (owner ruling 2026-09-01): Results may recommend a starting
+      // point but may not create a finalist before a recorded trial reaction.
+      // The card's action is "Try this mattress": no inline handler, so it
+      // bubbles to the card-tap path and opens the trial drawer — the one
+      // place a finalist is chosen, after the reaction row.
+      var tryBtn = '<button type="button" class="noct-card-try"'
+        + ' aria-label="' + escapeHtml(t('results.try_mattress') + ': ' + m.name) + '">'
+        + escapeHtml(t('results.try_mattress'))
         + '</button>';
 
       // Role label is INDEX-ONLY: this renderer receives the engine list's
@@ -16545,7 +16698,7 @@
         +     '<div class="noct-card-action-cluster">'
         +       detailsBtn
         +       compareBtn
-        +       finalistBtn
+        +       tryBtn
         +       saveBtn
         +     '</div>'
         +   '</div>'
@@ -16605,12 +16758,11 @@
           + ' aria-label="' + escapeHtml((es ? 'Comparar' : 'Compare') + ': ' + m.name) + '">'
           + (es ? 'Comparar' : 'Compare')
           + '</button>';
-        var isChosen = m.id === window._favoriteMattressId;
-        var finalistBtn = '<button type="button" class="finalist-btn' + (isChosen ? ' chosen' : '') + '"'
-          + ' data-id="' + escapeHtml(m.id) + '"'
-          + ' aria-pressed="' + (isChosen ? 'true' : 'false') + '"'
-          + ' aria-label="' + escapeHtml(t('finalist.choose_as') + ': ' + m.name) + '">'
-          + finalistButtonLabel(isChosen)
+        // Loop-A2: see the top-pick template — the card offers the trial,
+        // never the finalist.
+        var tryBtn = '<button type="button" class="noct-card-try"'
+          + ' aria-label="' + escapeHtml(t('results.try_mattress') + ': ' + m.name) + '">'
+          + escapeHtml(t('results.try_mattress'))
           + '</button>';
 
         return '<div class="noct-support-card" data-id="' + escapeHtml(m.id) + '" data-tier="' + escapeHtml(tier) + '">'
@@ -16629,7 +16781,7 @@
           +     '<div class="noct-card-action-cluster">'
           +       detailsBtn
           +       compareBtn
-          +       finalistBtn
+          +       tryBtn
           +       saveBtn
           +     '</div>'
           +   '</div>'
@@ -16786,6 +16938,10 @@
     // telemetry for this control.
     window.chooseFinalist = function(mattressId) {
       if (typeof mattressId !== 'string' || mattressId.trim() === '') return;
+      // Loop-A2 trial gate (owner ruling 2026-09-01): a finalist exists only
+      // after a recorded trial reaction. Enforced at the ONE producer so no
+      // consumer (Results, Compare, Summary, keyboard) can bypass the trial.
+      if (!((window._mattressReactions || {})[mattressId])) return;
       var saved = Array.isArray(window._savedPicks) ? window._savedPicks : (window._savedPicks = []);
       var isSaved = saved.some(function(p) { return p && p.id === mattressId; });
       if (!isSaved) {
@@ -21036,7 +21192,13 @@
 
       var actions = document.createElement('div');
       actions.className = 'hf2-pick__actions';
+      // Loop-A2: the Summary reflects the finalist; its control stays a
+      // consumer of chooseFinalist() and is unavailable until a trial reaction
+      // is recorded (the producer refuses anyway - this keeps the affordance
+      // honest).
+      var pickReacted = !!((window._mattressReactions || {})[m.id]);
       actions.innerHTML = '<button class="hf2-pick__action' + (m.id === window._favoriteMattressId ? ' is-selected' : '') + '"'
+            + (pickReacted ? '' : ' disabled aria-disabled="true"')
             + ' onclick="window.toggleFavoriteMattress(\'' + m.id + '\')"'
             + ' ontouchend="event.preventDefault();window.toggleFavoriteMattress(\'' + m.id + '\');">'
             + finalistButtonLabel(m.id === window._favoriteMattressId) + '</button>'
@@ -21082,12 +21244,32 @@
         btn.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
       });
     }
+    // Loop-A2: ONE painter for the drawer footer's finalist gate. Availability
+    // follows the recorded reaction; label/aria-pressed/chosen come from the
+    // shared repaint so the drawer, Compare and Summary can never disagree.
+    window.paintDrawerFinalist = function(mattressId) {
+      var finBtn = document.getElementById('drawerFinalistBtn');
+      var hint = document.getElementById('drawerFinalistHint');
+      if (!finBtn) return;
+      var reacted = !!(mattressId && (window._mattressReactions || {})[mattressId]);
+      finBtn.setAttribute('data-id', mattressId || '');
+      finBtn.disabled = !reacted;
+      finBtn.setAttribute('aria-disabled', reacted ? 'false' : 'true');
+      var m = mattressId && window._drawerData && window._drawerData[mattressId] ? window._drawerData[mattressId].m : null;
+      finBtn.setAttribute('aria-label', t('finalist.choose_as') + (m && m.name ? ': ' + m.name : ''));
+      if (hint) {
+        hint.textContent = t('drawer.finalist_hint');
+        hint.hidden = reacted;
+      }
+      if (typeof window._repaintFinalistControls === 'function') window._repaintFinalistControls();
+    };
     window.setDrawerReaction = function(reaction) {
       var mattressId = window._currentDrawerMattressId;
       if (!mattressId) return;
       window._mattressReactions = window._mattressReactions || {};
       window._mattressReactions[mattressId] = reaction;
       paintDrawerReactions(mattressId);
+      window.paintDrawerFinalist(mattressId);
     };
 
     // The Consultation Summary's finalist control carries the same label as
@@ -22319,6 +22501,9 @@
       { id: 'hf2RsaPanel', hiddenAttr: true },
       { id: 'hf2RsaAddRow', hiddenAttr: true },
       { id: 'hf2RsaStripBtn', attrs: { 'aria-expanded': 'false' } },
+      // Loop-A2: the drawer's finalist control is static markup; reset its
+      // per-customer binding and re-arm the gate.
+      { id: 'drawerFinalistBtn', remove: ['chosen'], attrs: { 'aria-pressed': 'false', 'aria-disabled': 'true', 'data-id': '' } },
       // 0.5: the trial-priorities section returns to hidden on wipe, so even a
       // path that showed hf2 without re-rendering could not expose the prior
       // customer's label over a cleared list.
@@ -22757,6 +22942,9 @@
             + (m.imageUrl ? '<div class="cmp-head-img"><img src="' + m.imageUrl + '" alt="' + escapeHtml(m.name) + '"></div>' : '')
             + '<div class="cmp-head-name">' + escapeHtml(m.name) + ' <span class="price-tier">' + priceTierSymbol(data.tier) + '</span></div>'
             + '<div class="cmp-head-brand">' + escapeHtml(m.brand + (m.subBrand ? ' · ' + m.subBrand : '')) + '</div>'
+            // Loop-A2: Compare REFLECTS the chosen finalist (a text tag) and
+            // offers no producer of its own.
+            + (m.id === window._favoriteMattressId ? '<div class="cmp-head-chosen">' + escapeHtml(t('finalist.chosen')) + '</div>' : '')
             + '</div>',
           feel: data.firmFeel + ' ' + m.firmness + '/10',
           response: mattressResponseLabel(m),
@@ -22935,7 +23123,7 @@
       if (soBtn) { e.preventDefault(); window.requestStartOver(); return; }
 
       // Explicit details button — opens the drawer via the same helper as a card tap.
-      var detailsBtn = e.target.closest('.noct-card-details');
+      var detailsBtn = e.target.closest('.noct-card-details, .noct-card-try');
       if (detailsBtn) {
         e.preventDefault();
         e.stopPropagation();
@@ -23143,6 +23331,8 @@
         intBtn.textContent = saveButtonLabel(alreadySaved);
         intBtn.style.background = alreadySaved ? 'linear-gradient(180deg,var(--color-match-positive),#4caf6e)' : '';
       }
+      // Loop-A2: the finalist gate follows the opened mattress's reaction.
+      if (typeof window.paintDrawerFinalist === 'function') window.paintDrawerFinalist(mattressId);
       var systemPrompt = document.getElementById('drawerSystemPrompt');
       if (systemPrompt) systemPrompt.classList.remove('is-visible');
 

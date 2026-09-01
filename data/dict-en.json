@@ -108,6 +108,8 @@
   "finalist.none": "No finalist selected yet",
   "finalist.choose": "Choose a finalist",
   "finalist.choose_as": "Choose as finalist",
+  "results.try_mattress": "Try this mattress",
+  "drawer.finalist_hint": "Record how it felt to choose it as your finalist.",
   "finalist.chosen_btn": "Chosen ✓",
   "finalist.chosen_prefix": "Finalist ✓ · ",
   "finalist.building_around_finalist": "Building around your finalist",

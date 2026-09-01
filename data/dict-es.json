@@ -108,6 +108,8 @@
   "finalist.none": "Aún no has elegido finalista",
   "finalist.choose": "Elegir finalista",
   "finalist.choose_as": "Elegir como finalista",
+  "results.try_mattress": "Prueba este colchón",
+  "drawer.finalist_hint": "Registra cómo se sintió para elegirlo como finalista.",
   "finalist.chosen_btn": "Elegido ✓",
   "finalist.chosen_prefix": "Finalista ✓ · ",
   "finalist.building_around_finalist": "Construyendo alrededor de tu finalista",
