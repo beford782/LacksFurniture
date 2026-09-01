@@ -7457,6 +7457,13 @@
       font: 500 12px/1.5 var(--font-sans);
       text-align: right;
     }
+    /* A3: the one evidence-typed rationale line inside each step's guide
+       panel ("Trial focus:", "Reported priority:", "Why first:"). */
+    .sleep-system__rationale {
+      margin: 8px 0 0;
+      color: var(--accent-ink);
+      font: 600 12px/1.45 var(--font-sans);
+    }
     .sleep-system__featured {
       display: grid;
       grid-template-columns: minmax(210px, 0.8fr) minmax(0, 1.2fr);
@@ -7555,6 +7562,25 @@
       background: #63765D;
       color: #FFFFFF;
     }
+    /* A3 (owner ruling 2026-09-01): once all four categories are decided the
+       sidecar's Review Sleep Plan is the single journey-level primary — the
+       current step's primary actions demote to the secondary palette. Class
+       only: geometry, enablement and handlers are untouched. */
+    .sleep-system__workspace.is-complete .sleep-system__action--primary:not(.sleep-system__action--selected) {
+      border: 1px solid #C9BCAC;
+      background: #FFFDF8;
+      color: #2F271E;
+    }
+    .sleep-system__footer-primary[hidden] { display: none; }
+    .sleep-system__plan-progress { text-align: right; }
+    .sleep-system__plan-detail {
+      display: block;
+      margin-top: 2px;
+      color: #8B7B67;
+      font: 500 10px/1.3 var(--font-sans);
+      letter-spacing: 0.04em;
+    }
+    .sleep-system__plan-detail[hidden] { display: none; }
     .sleep-system__demo {
       display: grid;
       grid-template-columns: minmax(220px, 0.8fr) minmax(0, 1.2fr);
@@ -11176,7 +11202,7 @@
 
       <div class="noct-results-footer">
         <div class="noct-results-footer-actions">
-          <button class="noct-results-cta" id="buildSystemBtn" onclick="window.showAccessories()" ontouchend="event.preventDefault();window.showAccessories();">Build Your Sleep System →</button>
+          <button class="noct-results-cta" id="buildSystemBtn" onclick="window.showAccessories()" ontouchend="event.preventDefault();window.showAccessories();">Build the sleep setup →</button>
           <button class="noct-results-review-btn" id="reviewWithCustomerBtn" onclick="window.showSleepPlan('results')" ontouchend="event.preventDefault();window.showSleepPlan('results');">Review Sleep Plan →</button>
         </div>
         <div class="noct-results-footer-hint" id="resultsFooterHint"></div>
@@ -11777,9 +11803,9 @@
       <header class="sleep-system__header">
         <button class="sleep-system__back" id="sleepSystemBack" type="button" data-sleep-action="back-to-matches">&larr; Back to mattress matches</button>
         <div class="sleep-system__intro">
-          <div class="sleep-system__eyebrow" id="sleepSystemEyebrow">Optional setup guidance</div>
-          <h1 class="sleep-system__title" id="sleepSystemTitle">Explore Your Sleep Setup</h1>
-          <p class="sleep-system__subtitle" id="sleepSystemSubtitle">Your mattress comes first. These choices help it fit your room, body, and daily routine.</p>
+          <div class="sleep-system__eyebrow" id="sleepSystemEyebrow">Specialist guide</div>
+          <h1 class="sleep-system__title" id="sleepSystemTitle">Build the sleep setup</h1>
+          <p class="sleep-system__subtitle" id="sleepSystemSubtitle">Keep the mattress finalist central. Add only what supports the customer’s needs.</p>
         </div>
         <!-- Sleep System A2 (owner ruling 2026-09-01): ONE responsive review
              control - the sidecar's (landscape: sidecar; portrait: the aside
@@ -11806,10 +11832,17 @@
           <section class="sleep-system__plan">
             <div class="sleep-system__plan-header">
               <div>
-                <div class="sleep-system__plan-eyebrow" id="sleepSystemPlanEyebrow">Your plan</div>
+                <div class="sleep-system__plan-eyebrow" id="sleepSystemPlanEyebrow">Progress</div>
                 <h2 id="sleepSystemPlanTitle">Setup decisions</h2>
               </div>
-              <span class="sleep-system__plan-count" id="sleepSystemPlanCount"></span>
+              <!-- A3: "N of 4 considered" carries the journey truth; the
+                   secondary detail line names what each decision actually was
+                   (added / addressed / deferred), so an all-deferred session
+                   never reads as a contradiction beside a ready Review. -->
+              <div class="sleep-system__plan-progress">
+                <span class="sleep-system__plan-count" id="sleepSystemPlanCount"></span>
+                <span class="sleep-system__plan-detail" id="sleepSystemPlanDetail" hidden></span>
+              </div>
             </div>
             <div class="sleep-system__plan-list" id="sleepSystemPlanList"></div>
             <!-- A2: quiet helper while categories remain open; the ONE primary
@@ -16573,7 +16606,7 @@
       document.getElementById('resultsSubhead').textContent = es
         ? 'Comienza con la primera opción y compara la comodidad en persona.'
         : 'Begin with the first match, then compare comfort in person.';
-      document.getElementById('buildSystemBtn').textContent = es ? 'Crea Tu Sistema de Sueño →' : 'Build Your Sleep System →';
+      document.getElementById('buildSystemBtn').textContent = es ? 'Arma el sistema de sueño →' : 'Build the sleep setup →';
       // Slice 6: the control opens the Sleep Plan screen, so it says so —
       // the same label/destination honesty the Sleep Brief CTA adopted
       // 2026-08-10. Wording mirrors plan.title.
@@ -19244,17 +19277,20 @@
       var health = answers.health_conditions || [];
       var issues = answers.sleep_issues || [];
       var recommended = 'flat';
-      var suggestion = { en: 'Start here to feel the mattress without elevation.', es: 'Empieza aqui para sentir el colchón sin elevación.' };
+      // A3 evidence vocabulary (owner ruling 2026-09-01): the rationale names
+      // its source — a reported quiz answer is "Trial focus: reported …",
+      // never "because you said …" on this specialist surface.
+      var suggestion = { en: 'Why first: the baseline feel, before any elevation.', es: 'Por qué primero: la sensación base, antes de cualquier elevación.' };
 
       if (issues.includes('back_pain')) {
         recommended = 'zero-gravity';
-        suggestion = { en: 'Suggested first because you mentioned back pain.', es: 'Sugerida primero porque mencionaste dolor de espalda.' };
+        suggestion = { en: 'Trial focus: reported lower-back discomfort.', es: 'Enfoque de la prueba: molestia lumbar reportada.' };
       } else if (health.includes('reflux')) {
         recommended = 'zero-gravity';
-        suggestion = { en: 'Suggested first because you mentioned nighttime reflux.', es: 'Sugerida primero porque mencionaste reflujo nocturno.' };
+        suggestion = { en: 'Trial focus: reported nighttime reflux.', es: 'Enfoque de la prueba: reflujo nocturno reportado.' };
       } else if (health.includes('snoring')) {
         recommended = 'anti-snore';
-        suggestion = { en: 'Suggested first because you mentioned snoring.', es: 'Sugerida primero porque mencionaste ronquidos.' };
+        suggestion = { en: 'Trial focus: reported snoring.', es: 'Enfoque de la prueba: ronquidos reportados.' };
       }
 
       if (!window._sleepSystemState.demoPosition) {
@@ -19357,39 +19393,26 @@
     // procedure from the step id and the customer's answers only. That is what
     // keeps the customer-benefit sentence from rendering twice on one screen.
     function sleepSystemGuidance(stepId, primary) {
-      var position = answers.sleep_position || '';
-      var temperature = answers.temperature || '';
-      var health = answers.health_conditions || [];
-      var issues = answers.sleep_issues || [];
-      var notices = [];
-
+      // A3 density correction (owner ruling 2026-09-01, superseding the 1.4
+      // close-out's three-note panel where it repeated the active step): each
+      // step keeps its instruction and rationale IN the step, and this panel
+      // carries exactly ONE compact contextual note — the note the workflow
+      // does not already state. The retained strings are the shipped
+      // owner-approved ones (1.4 close-out / 3.7 P9); the retired notes are
+      // inventoried in the A3 evidence ledger. The `primary` parameter stays
+      // unused by contract (guard 4: no product read can echo the benefit).
+      var notice;
       if (stepId === 'support') {
-        // 3.7 P9 (Option C): while the catalog carries one foundation height,
-        // the height note is a non-interactive specialist prompt (approved EN;
-        // ES provisional) rather than a comparison the floor cannot offer. The
-        // comparison note returns by itself when a low_profile support item
-        // enters the catalog.
-        notices = [
-          sleepSystemText({ en: 'Confirm frame or platform compatibility.', es: 'Confirma la compatibilidad del marco o plataforma.' }),
-          catalogHasLowProfileSupport()
-            ? sleepSystemText({ en: 'Compare standard and lower bed heights.', es: 'Compara alturas estándar y más bajas.' })
-            : sleepSystemText({ en: 'If a lower finished bed height matters, ask which foundation heights are available.', es: 'Si importa una altura de cama más baja, pregunta qué alturas de base están disponibles.' }),
-          sleepSystemText({ en: 'Verify the final setup before the customer makes a selection.', es: 'Verifica la configuración final antes de que el cliente haga su selección.' })
-        ];
+        // 3.7 P9 (Option C): the catalog decides whether a lower bed height
+        // is a choice; with one foundation height the note is the
+        // non-interactive prompt, and the comparison note returns by itself
+        // when a low_profile support item enters the catalog.
+        notice = catalogHasLowProfileSupport()
+          ? sleepSystemText({ en: 'Compare standard and lower bed heights.', es: 'Compara alturas estándar y más bajas.' })
+          : sleepSystemText({ en: 'If a lower finished bed height matters, ask which foundation heights are available.', es: 'Si importa una altura de cama más baja, pregunta qué alturas de base están disponibles.' });
       } else if (stepId === 'adjustability') {
-        notices = [
-          sleepSystemText({ en: 'Begin Flat so every change has a clear baseline.', es: 'Empieza Plana para tener una referencia clara.' }),
-          sleepSystemText({ en: 'Move one position at a time and pause to notice the difference.', es: 'Cambia una posición a la vez y detente para notar la diferencia.' }),
-          sleepSystemText({ en: 'Recommend a base only after the customer tries the positions that matter most to them.', es: 'Recomienda una base solo después de que el cliente pruebe las posiciones que más le importan.' })
-        ];
+        notice = sleepSystemText({ en: 'Recommend a base only after the customer tries the positions that matter most to them.', es: 'Recomienda una base solo después de que el cliente pruebe las posiciones que más le importan.' });
       } else if (stepId === 'pillow') {
-        var positionCue = {
-          side: { en: 'Check that the customer\'s head fills the shoulder-to-mattress gap.', es: 'Verifica que la cabeza del cliente llene el espacio entre el hombro y el colchón.' },
-          back: { en: 'Check that the customer\'s chin stays neutral rather than tipped forward.', es: 'Verifica que la barbilla del cliente se mantenga neutral, sin inclinarse hacia adelante.' },
-          // 3.7 P9: no low-profile pillow exists in the catalog; the cue names
-          // the check, not a product. Approved EN; ES provisional.
-          stomach: { en: 'Check that the neck stays level rather than bending upward.', es: 'Verifica que el cuello se mantenga nivelado y no se doble hacia arriba.' }
-        };
         var reactionNote = {
           // 3.7 P9 (Option C): compare another cataloged pillow; no phantom
           // adjustable-fill / low-profile product. Approved EN; ES provisional.
@@ -19406,53 +19429,21 @@
             es: 'Si el cliente se siente alineado, confirma la comodidad durante varios minutos antes de agregar la almohada al plan.'
           }
         };
-        notices = [
-          // Item 1.4: this slot used to repeat primary.reasons[0] - the exact
-          // sentence the customer card already shows - which both duplicated
-          // the benefit inside the procedure panel and pushed a real specialist
-          // note off the end of the three-item list. The shipped procedure
-          // string is now used unconditionally.
-          sleepSystemText({ en: 'Explain how this pillow addresses the customer\'s priorities.', es: 'Explica cómo esta almohada responde a las prioridades del cliente.' }),
-          sleepSystemText(positionCue[position] || { en: 'Check that the customer\'s head stays centered over their shoulders.', es: 'Verifica que la cabeza del cliente se mantenga centrada sobre los hombros.' }),
-          sleepSystemText(reactionNote[window._sleepSystemState.pillowFeedback] || {
-            en: 'Test it on the finalist mattress and watch the neck line from the side.',
-            es: 'Pruébala en el colchón finalista y observa la línea del cuello de lado.'
-          })
-        ];
+        notice = sleepSystemText(reactionNote[window._sleepSystemState.pillowFeedback] || {
+          en: 'Test it on the finalist mattress and watch the neck line from the side.',
+          es: 'Pruébala en el colchón finalista y observa la línea del cuello de lado.'
+        });
       } else {
         var goal = window._sleepSystemState.protectionGoal || getSuggestedProtectionGoal();
         var goalNotes = {
-          spills: [
-            { en: 'Confirm waterproof coverage without a stiff or noisy feel.', es: 'Confirma cobertura impermeable sin sensación rígida o ruidosa.' },
-            { en: 'Check fitted depth against the finalist mattress height.', es: 'Verifica la profundidad contra la altura del colchón finalista.' }
-          ],
-          allergens: [
-            { en: 'Prioritize an allergen barrier that remains breathable.', es: 'Prioriza una barrera contra alérgenos que sea transpirable.' },
-            { en: 'Ask whether the customer prefers fitted protection or full encasement.', es: 'Pregunta si el cliente prefiere protección ajustada o cobertura completa.' }
-          ],
-          cooling: [
-            { en: 'Check that the protector does not trap extra heat.', es: 'Verifica que el protector no atrape calor adicional.' },
-            { en: 'Compare the mattress surface feel with and without it.', es: 'Compara la sensación del colchón con y sin el protector.' }
-          ],
-          everyday: [
-            { en: 'Keep the mattress feel familiar while adding daily protection.', es: 'Mantén la sensación del colchón mientras agregas protección diaria.' },
-            { en: 'Review washability and routine care.', es: 'Revisa el lavado y cuidado habitual.' }
-          ]
+          spills: { en: 'Confirm waterproof coverage without a stiff or noisy feel.', es: 'Confirma cobertura impermeable sin sensación rígida o ruidosa.' },
+          allergens: { en: 'Prioritize an allergen barrier that remains breathable.', es: 'Prioriza una barrera contra alérgenos que sea transpirable.' },
+          cooling: { en: 'Check that the protector does not trap extra heat.', es: 'Verifica que el protector no atrape calor adicional.' },
+          everyday: { en: 'Keep the mattress feel familiar while adding daily protection.', es: 'Mantén la sensación del colchón mientras agregas protección diaria.' }
         };
-        notices = [
-          sleepSystemText(goalNotes[goal][0]),
-          sleepSystemText(goalNotes[goal][1]),
-          sleepSystemText({ en: 'Review fit and care instructions with the customer.', es: 'Revisa las instrucciones de ajuste y cuidado con el cliente.' })
-        ];
+        notice = sleepSystemText(goalNotes[goal] || goalNotes.everyday);
       }
-
-      // Item 1.4: the adjustability and support panels used to unshift
-      // primary.reasons[0] here, so the customer-benefit sentence rendered
-      // TWICE on screen - once in the card, once at the top of the specialist
-      // panel - and displaced each step's third procedure note through the
-      // slice(0, 3) below. Removing the duplicate restores that note. The
-      // benefit itself is unchanged and still renders, once, on the card.
-      return notices.slice(0, 3);
+      return [notice];
     }
 
     // The engine's top pick, read ONCE here for the recommended-starting-point
@@ -19477,8 +19468,8 @@
       if (!finalist) {
         target.innerHTML =
           '<div>' +
-            '<div class="sleep-system__anchor-label">' + escapeHtml(sleepSystemText({ en: 'Your mattress plan', es: 'Tu plan de colchón' })) + '</div>' +
-            '<div class="sleep-system__anchor-name">' + escapeHtml(sleepSystemText({ en: 'Keep your mattress matches at the center', es: 'Mantén tus colchones recomendados en el centro' })) + '</div>' +
+            '<div class="sleep-system__anchor-label">' + escapeHtml(sleepSystemText({ en: 'Mattress plan', es: 'Plan de colchón' })) + '</div>' +
+            '<div class="sleep-system__anchor-name">' + escapeHtml(sleepSystemText({ en: 'No finalist chosen yet', es: 'Aún no se elige finalista' })) + '</div>' +
           '</div>';
         return;
       }
@@ -19494,10 +19485,9 @@
           '<div class="sleep-system__anchor-label">' + escapeHtml(kind === 'chosen' ? t('finalist.building_around_finalist') : t('finalist.building_around_recommended')) + '</div>' +
           '<div class="sleep-system__anchor-name">' + escapeHtml(finalist.name || '') + '</div>' +
           '<div class="sleep-system__anchor-meta">' + escapeHtml(meta) + '</div>' +
-        '</div>' +
-        '<div class="sleep-system__anchor-note">' +
-          escapeHtml(sleepSystemText({ en: 'Your mattress remains the center of this plan.', es: 'Tu colchón sigue siendo el centro de este plan.' })) +
         '</div>';
+        // A3 density: the "remains the center" note is retired — the header
+        // subtitle already says it once, and once is the budget.
     }
 
     // X2 (North Star ruling D7, 2026-08-31): the decision statuses fall into
@@ -19617,6 +19607,13 @@
               es: 'Esta es una decision de compatibilidad y altura, no un accesorio obligatorio.'
             })) +
           '</p>' +
+          // A3: one rationale line, evidence-typed.
+          '<p class="sleep-system__rationale">' +
+            escapeHtml(sleepSystemText({
+              en: 'Why first: support protects the feel, height, and long-term setup.',
+              es: 'Por qué primero: el soporte protege la sensación, la altura y la configuración.'
+            })) +
+          '</p>' +
         '</div>' +
         '<div class="sleep-system__support-choices">' +
           choices.map(function(choice) {
@@ -19631,6 +19628,30 @@
       '</section>';
     }
 
+    // A3: the pillow rationale is the reported sleep position's cue, stated
+    // as evidence ("Reported priority"), or the neutral centering focus when
+    // no position was reported.
+    function pillowFitRationale() {
+      var cues = {
+        side: {
+          en: 'Reported priority: side sleeper — the head should fill the shoulder-to-mattress gap.',
+          es: 'Prioridad reportada: duerme de lado — la cabeza debe llenar el espacio entre el hombro y el colchón.'
+        },
+        back: {
+          en: 'Reported priority: back sleeper — the chin stays neutral, not tipped forward.',
+          es: 'Prioridad reportada: duerme boca arriba — la barbilla se mantiene neutral, sin inclinarse.'
+        },
+        stomach: {
+          en: 'Reported priority: stomach sleeper — the neck stays level, not bent upward.',
+          es: 'Prioridad reportada: duerme boca abajo — el cuello se mantiene nivelado, sin doblarse.'
+        }
+      };
+      return cues[answers.sleep_position] || {
+        en: 'Trial focus: the head stays centered over the shoulders.',
+        es: 'Enfoque de la prueba: la cabeza centrada sobre los hombros.'
+      };
+    }
+
     function renderPillowFit(primary) {
       var reaction = window._sleepSystemState.pillowReaction || '';
       var feedback = window._sleepSystemState.pillowFeedback || '';
@@ -19643,8 +19664,8 @@
           es: 'Prueba otra almohada en este colchón y compara la altura; luego vuelve a registrar el ajuste.'
         },
         high: {
-          en: 'Try another pillow on this mattress, then check whether your chin and neck feel neutral.',
-          es: 'Prueba otra almohada en este colchón y revisa si la barbilla y el cuello se sienten neutrales.'
+          en: 'Try another pillow on this mattress, then check that the chin and neck stay neutral.',
+          es: 'Prueba otra almohada en este colchón y revisa que la barbilla y el cuello queden neutrales.'
         },
         aligned: {
           en: 'Good alignment. Keep testing on the finalist mattress, then add it to the plan if comfort holds.',
@@ -19658,11 +19679,16 @@
           '</div><h3 class="sleep-system__pillow-fit-title">' +
             escapeHtml(sleepSystemText({ en: 'How does this pillow position the neck?', es: '¿Cómo posiciona esta almohada el cuello?' })) +
           '</h3></div>' +
+          // A3: one operator instruction + one reported-priority rationale
+          // (the position cue moves here from the retired three-note panel).
           '<p class="sleep-system__pillow-fit-copy">' +
             escapeHtml(sleepSystemText({
-              en: 'Lie on the finalist mattress in the normal sleep position before answering.',
-              es: 'Acuéstate en el colchón finalista en tu posición normal antes de responder.'
+              en: 'Record the fit after the customer lies on the finalist mattress in the usual sleep position.',
+              es: 'Registra el ajuste después de que el cliente se acueste en el colchón finalista en su posición habitual.'
             })) +
+          '</p>' +
+          '<p class="sleep-system__rationale">' +
+            escapeHtml(sleepSystemText(pillowFitRationale())) +
           '</p>' +
         '</div>' +
         '<div class="sleep-system__pillow-reactions">' +
@@ -19732,6 +19758,26 @@
       return tags.includes(goal);
     }
 
+    function protectionRationale(selected, suggested) {
+      if (selected === suggested) {
+        if (selected === 'allergens') {
+          return { en: 'Reported priority: allergies.', es: 'Prioridad reportada: alergias.' };
+        }
+        if (selected === 'cooling') {
+          return { en: 'Reported priority: sleeps hot.', es: 'Prioridad reportada: duerme con calor.' };
+        }
+        return {
+          en: 'Why first: everyday care — no spill, allergy or heat concern was reported.',
+          es: 'Por qué primero: cuidado diario — no se reportaron derrames, alergias ni calor.'
+        };
+      }
+      var label = protectionGoalLabel(selected);
+      return {
+        en: 'Selected goal: ' + label.en + '.',
+        es: 'Meta elegida: ' + label.es + '.'
+      };
+    }
+
     function renderProtectionGuide() {
       var suggested = getSuggestedProtectionGoal();
       var selected = window._sleepSystemState.protectionGoal || suggested;
@@ -19753,6 +19799,12 @@
               en: 'Start with the customer goal, then compare the protector that serves it best.',
               es: 'Empieza con la meta del cliente y compara el protector que mejor la cumple.'
             })) +
+          '</p>' +
+          // A3: one rationale line whose evidence type is honest — a
+          // quiz-derived suggestion is "Reported priority", an explicit tap is
+          // "Selected goal", and the default is a plain "Why first".
+          '<p class="sleep-system__rationale">' +
+            escapeHtml(sleepSystemText(protectionRationale(selected, suggested))) +
           '</p>' +
         '</div>' +
         '<div class="sleep-system__protection-goals">' +
@@ -19807,7 +19859,11 @@
           // X10: the step heading is the focus fallback when a re-render
           // removes the control the keyboard was on (the pillow gate does).
           '<h2 class="sleep-system__section-title" id="sleepSystemSectionTitle" tabindex="-1">' + escapeHtml(sleepSystemText(step.title)) + '</h2></div>' +
-          '<p class="sleep-system__section-copy">' + escapeHtml(sleepSystemText(step.copy)) + '</p>' +
+          // A3 density (owner ruling 2026-09-01): the section head is eyebrow
+          // + title only. The step's guide panel carries the ONE instruction
+          // and the ONE rationale; the old right-column paragraph narrated the
+          // same ground a second time. (step.copy stays in the governed table
+          // untouched — the render is what the density budget governs.)
         '</div>';
 
       if (!primary) {
@@ -19959,9 +20015,10 @@
             '<div class="sleep-system__support-outcome">' +
               '<div class="sleep-system__card-eyebrow">' + escapeHtml(sleepSystemText({ en: 'Current setup', es: 'Configuración actual' })) + '</div>' +
               '<h3>' + escapeHtml(sleepSystemText({ en: 'Keep it, then confirm compatibility', es: 'Conservalo y confirma compatibilidad' })) + '</h3>' +
+              // A3: one operator sentence — the heading already says "keep".
               '<p>' + escapeHtml(sleepSystemText({
-                en: 'No new support is being added. Your specialist can confirm that the current frame, platform, or slats meet the mattress requirements.',
-                es: 'No se agregara un soporte nuevo. Tu especialista puede confirmar que el marco, plataforma o tablillas cumplen los requisitos.'
+                en: 'No new support is being added. Confirm that the current frame, platform, or slats meet the mattress requirements.',
+                es: 'No se agregara un soporte nuevo. Confirma que el marco, la plataforma o las tablillas cumplan los requisitos del colchón.'
               })) + '</p>' +
             '</div>';
         } else if (step.id === 'support' && supportChoice === 'unsure') {
@@ -20003,8 +20060,8 @@
               '</h3>' +
               '<p class="sleep-system__featured-description">' +
                 escapeHtml(sleepSystemText({
-                  en: 'Your answers do not point to a specific adjustable base. Try the positions, then compare a base only if the movement improves your comfort.',
-                  es: 'Tus respuestas no apuntan a una base ajustable en particular. Prueba las posiciones y compara una base solo si el movimiento mejora tu comodidad.'
+                  en: 'The answers do not point to a specific adjustable base. Demo the positions, then compare a base only if the movement improves comfort.',
+                  es: 'Las respuestas no apuntan a una base ajustable en particular. Demuestra las posiciones y compara una base solo si el movimiento mejora la comodidad.'
                 })) +
               '</p>' +
               '<div class="sleep-system__alternatives-label">' +
@@ -20057,14 +20114,13 @@
       // so it was not exposed as a region at all - "separate" visually but not
       // semantically. Name it from the label it already renders, re-set on
       // every render so a language switch relabels it too.
-      // Close-out (owner ruling 2026-08-25): the panel addresses the
-      // salesperson on every step, so it carries ONE eyebrow on all four -
-      // the former "During the trial" label is retired.
-      var guidanceKind = sleepSystemText({ en: 'Specialist notes', es: 'Notas del especialista' });
+      // A3 (owner ruling 2026-09-01): the panel is ONE compact contextual
+      // note under a singular eyebrow - the three-card stack and its own h2
+      // repeated the active step's guidance and are retired.
+      var guidanceKind = sleepSystemText({ en: 'Specialist note', es: 'Nota del especialista' });
       guidance.setAttribute('aria-label', guidanceKind);
       guidance.innerHTML =
         '<div class="sleep-system__plan-eyebrow">' + escapeHtml(guidanceKind) + '</div>' +
-        '<h2>' + escapeHtml(sleepSystemText(step.guidanceTitle)) + '</h2>' +
         '<div class="sleep-system__notice-list">' +
           notices.map(function(notice) {
             return '<div class="sleep-system__notice"><span>&#10003;</span><span>' + escapeHtml(notice) + '</span></div>';
@@ -20078,6 +20134,7 @@
       if (!list || !count) return;
       var added = 0;
       var addressedCount = 0;
+      var deferredCount = 0;
       list.innerHTML = SLEEP_SYSTEM_STEPS.map(function(step) {
         var decision = sleepSystemDecision(step.id);
         // X2: the sidecar mirrors the rail's three kinds — sage ✓ for an
@@ -20086,6 +20143,7 @@
         var kind = sleepSystemStatusKind(decision.status);
         if (kind === 'selected') added++;
         else if (kind === 'addressed') addressedCount++;
+        else if (kind === 'deferred') deferredCount++;
         var mark = kind === 'selected' ? '&#10003;' : (kind === 'addressed' ? '&#8211;' : '');
         return '<div class="sleep-system__plan-item' + (kind === 'open' ? '' : ' is-' + kind) + '">' +
           '<span class="sleep-system__plan-mark">' + mark + '</span>' +
@@ -20093,13 +20151,35 @@
           '<span class="sleep-system__plan-item-status">' + escapeHtml(sleepSystemDecisionLabel(step.id, decision)) + '</span></span>' +
         '</div>';
       }).join('');
-      // X2 (ruling D7): a neutral completion phrase. Deferred and open steps
-      // are claimed by neither number — the old "N / 4" counted "Decide
-      // later" toward completion. ES participles agree with their counts
-      // (the C5 rule); ES wording provisional (native review deferred).
+      // A3 progress truth (owner ruling 2026-09-01, building on X2/D7): the
+      // primary phrase counts CONSIDERED categories — a decision of any kind,
+      // deferral included, is a considered decision — which is exactly the
+      // condition that makes Review available, so an all-deferred session
+      // never reads "0 addressed" beside a ready Review. The secondary detail
+      // names what each decision actually was (added / addressed / deferred);
+      // nothing is claimed as completed that was not. ES participles agree
+      // with their counts (the C5 rule); ES wording provisional.
+      var consideredCount = added + addressedCount + deferredCount;
       count.textContent = currentLang === 'es'
-        ? (added + (added === 1 ? ' agregado' : ' agregados') + ' · ' + addressedCount + (addressedCount === 1 ? ' atendido' : ' atendidos'))
-        : (added + ' added · ' + addressedCount + ' addressed');
+        ? (consideredCount + ' de ' + SLEEP_SYSTEM_STEPS.length + ' consideradas')
+        : (consideredCount + ' of ' + SLEEP_SYSTEM_STEPS.length + ' considered');
+      var detail = document.getElementById('sleepSystemPlanDetail');
+      var detailParts = [];
+      if (consideredCount > 0) {
+        detailParts.push(currentLang === 'es'
+          ? (added + (added === 1 ? ' agregado' : ' agregados'))
+          : (added + ' added'));
+        if (addressedCount > 0) detailParts.push(currentLang === 'es'
+          ? (addressedCount + (addressedCount === 1 ? ' atendido' : ' atendidos'))
+          : (addressedCount + ' addressed'));
+        if (deferredCount > 0) detailParts.push(currentLang === 'es'
+          ? (deferredCount + (deferredCount === 1 ? ' aplazado' : ' aplazados'))
+          : (deferredCount + ' deferred'));
+      }
+      if (detail) {
+        detail.textContent = detailParts.join(' · ');
+        detail.hidden = detailParts.length === 0;
+      }
       // Sleep System A2 (owner ruling 2026-09-01): the ONE primary
       // "Review Sleep Plan" control appears only when every category has a
       // recorded decision - added, addressed, or a legitimate deferral (the
@@ -20123,9 +20203,11 @@
       }
       var status = document.getElementById('sleepSystemPlanStatus');
       if (status) {
-        var statusText = count.textContent + (allDecided ? ' · ' + sleepSystemText({
-          en: 'All four decided — Review Sleep Plan is ready',
-          es: 'Las cuatro decididas — Revisar Plan de Sue\u00f1o est\u00e1 listo'
+        var statusText = count.textContent
+          + (detailParts.length ? ' · ' + detailParts.join(' · ') : '')
+          + (allDecided ? ' · ' + sleepSystemText({
+          en: 'All four considered — Review Sleep Plan is ready',
+          es: 'Las cuatro consideradas — Revisar Plan de Sue\u00f1o est\u00e1 listo'
         }) : '');
         if (status.textContent !== statusText) status.textContent = statusText;
       }
@@ -20143,8 +20225,13 @@
       }
       if (next) {
         if (activeIndex >= SLEEP_SYSTEM_STEPS.length - 1) {
-          next.textContent = sleepSystemText({ en: 'Review Sleep Plan', es: 'Revisar Plan de Sueño' });
+          // A3 (owner ruling 2026-09-01): the sidecar's decision-gated Review
+          // is the SINGLE journey-level primary — the footer offers no
+          // competing Review control on the last step.
+          next.hidden = true;
+          next.textContent = '';
         } else {
+          next.hidden = false;
           next.textContent = sleepSystemText({ en: 'Continue to ', es: 'Continuar a ' }) +
             sleepSystemText(SLEEP_SYSTEM_STEPS[activeIndex + 1].label);
         }
@@ -20212,25 +20299,29 @@
       var rail = document.getElementById('sleepSystemRail');
       var footer = document.getElementById('sleepSystemFooter');
 
+      // A3 audience contract (owner ruling 2026-09-01): the Sleep System
+      // is a specialist working surface - the header names the mode and
+      // gives one instruction; the finalist stays central; the sidecar
+      // carries progress.
       var staticCopy = {
         sleepSystemBack: { en: '\u2190 Back to mattress matches', es: '\u2190 Volver a colchones' },
-        sleepSystemEyebrow: { en: 'Optional setup guidance', es: 'Guía opcional de configuración' },
-        sleepSystemTitle: { en: 'Explore Your Sleep Setup', es: 'Explora Tu Sistema de Sueño' },
+        sleepSystemEyebrow: { en: 'Specialist guide', es: 'Guía del especialista' },
+        sleepSystemTitle: { en: 'Build the sleep setup', es: 'Arma el sistema de sueño' },
         sleepSystemSubtitle: {
-          en: 'Your mattress comes first. These choices help it fit your room, body, and daily routine.',
-          es: 'Tu colchón es lo primero. Estas opciones ayudan a adaptarlo a tu espacio, cuerpo y rutina.'
+          en: 'Keep the mattress finalist central. Add only what supports the customer’s needs.',
+          es: 'El colchón finalista es el centro. Agrega solo lo que responda a las necesidades del cliente.'
         },
         sleepSystemReviewTop: { en: 'Review Sleep Plan', es: 'Revisar Plan de Sueño' },
-        sleepSystemPlanEyebrow: { en: 'Your plan', es: 'Tu plan' },
+        sleepSystemPlanEyebrow: { en: 'Progress', es: 'Progreso' },
         sleepSystemPlanTitle: { en: 'Setup decisions', es: 'Decisiones de configuración' },
         sleepSystemPlanReview: { en: 'Review Sleep Plan', es: 'Revisar Plan de Sueño' },
         sleepSystemEmptyTitle: { en: 'Continue with your mattress plan', es: 'Continua con tu plan de colchón' },
         sleepSystemEmptyCopy: savingsPassEnabled() ? {
-          en: 'Accessory recommendations are unavailable right now. Your mattress matches and Savings Pass are still ready to review.',
-          es: 'Las recomendaciones de accesorios no están disponibles ahora. Tus colchones y Pase de Ahorro siguen listos para revisar.'
+          en: 'Accessory recommendations are unavailable right now. The mattress matches and Savings Pass are still ready to review.',
+          es: 'Las recomendaciones de accesorios no están disponibles ahora. Los colchones y el Pase de Ahorro siguen listos para revisar.'
         } : {
-          en: 'Accessory recommendations are unavailable right now. Your mattress matches are still ready to review.',
-          es: 'Las recomendaciones de accesorios no están disponibles ahora. Tus colchones siguen listos para revisar.'
+          en: 'Accessory recommendations are unavailable right now. The mattress matches are still ready to review.',
+          es: 'Las recomendaciones de accesorios no están disponibles ahora. Los colchones siguen listos para revisar.'
         },
         sleepSystemEmptyReview: { en: 'Review Sleep Plan', es: 'Revisar Plan de Sueño' }
       };
@@ -20257,6 +20348,15 @@
       renderSleepSystemPlan();
       renderSleepSystemFooter();
       sleepSystemRestoreFocus(focusKey);
+      // A3: at completion the workspace demotes current-step primaries to the
+      // secondary palette (CSS on is-complete) so the sidecar's Review is the
+      // one journey-level primary. Class only — every control stays enabled.
+      if (workspace && workspace.classList) {
+        var ssOpenCount = SLEEP_SYSTEM_STEPS.filter(function(step) {
+          return sleepSystemStatusKind(sleepSystemDecision(step.id).status) === 'open';
+        }).length;
+        workspace.classList.toggle('is-complete', ssOpenCount === 0);
+      }
     }
 
     function syncAccessoryAnalytics() {
@@ -22873,6 +22973,8 @@
       // is a phrase derived from the customers decisions (N added, M
       // addressed), so it joins the wipe like every other derived surface.
       'sleepSystemPlanCount', 'sleepSystemPlanHelper', 'sleepSystemPlanStatus',
+      // A3: the progress detail line is customer-derived like the count.
+      'sleepSystemPlanDetail',
       // A3: the handoff greeting can carry the take-home first name, so the
       // heading joins the wipe like every other customer-derived surface.
       'tabletHandoffTitle',

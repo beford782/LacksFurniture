@@ -289,8 +289,16 @@ for (const f of Object.keys(FIXTURES)) {
       && els.get("profilePrioritiesIntro").textContent === pin.intro);
     check(`[${f}/${lang}] profileBriefByLang unchanged (both languages)`,
       JSON.stringify(analytics.profileBriefByLang) === JSON.stringify(pin.briefByLang));
-    check(`[${f}/${lang}] results trial-focus derivative unchanged`,
-      els.get("resultsTrialFocus").innerHTML === pin.resultsTrialFocus);
+    // A3 (owner ruling 2026-09-01): the strip's LABEL is chrome, re-worded
+    // for the specialist surface ("Trial focus"); the answer-derived items
+    // stay pinned byte-for-byte to the 572d405 oracle. The fixture is
+    // untouched — the comparison strips the label span from both sides and
+    // separately asserts the A3 label.
+    const stripLabel = (h) => String(h).replace(/<span class="results-trial-focus__label">[^<]*<\/span>/, '');
+    check(`[${f}/${lang}] results trial-focus derivative unchanged (items; label is A3 chrome)`,
+      stripLabel(els.get("resultsTrialFocus").innerHTML) === stripLabel(pin.resultsTrialFocus)
+      && els.get("resultsTrialFocus").innerHTML.indexOf('<span class="results-trial-focus__label">'
+        + (lang === 'es' ? 'Enfoque de la prueba' : 'Trial focus') + '</span>') === 0);
     check(`[${f}/${lang}] retained screen copy unchanged (heading, reflection, plan label, both buttons)`,
       els.get("profileName").textContent === pin.profileName
       && els.get("profileReflection").textContent === pin.reflection

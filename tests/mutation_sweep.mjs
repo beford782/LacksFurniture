@@ -925,9 +925,9 @@ const MUTATIONS = [
   ["X2: every non-open status shares one checkmark again",
     "        var mark = kind === 'selected' ? '&#10003;' : (kind === 'addressed' ? '&#8211;' : (index + 1));",
     "        var mark = kind === 'open' ? (index + 1) : '&#10003;';", SLEEP],
-  ["X2: the neutral count phrase regresses to the completion fraction",
-    "      count.textContent = currentLang === 'es'\n        ? (added + (added === 1 ? ' agregado' : ' agregados') + ' · ' + addressedCount + (addressedCount === 1 ? ' atendido' : ' atendidos'))\n        : (added + ' added · ' + addressedCount + ' addressed');",
-    "      count.textContent = (added + addressedCount) + ' / ' + SLEEP_SYSTEM_STEPS.length;", SLEEP],
+  ["A3: the considered count regresses to the completion fraction",
+    "      var consideredCount = added + addressedCount + deferredCount;\n      count.textContent = currentLang === 'es'\n        ? (consideredCount + ' de ' + SLEEP_SYSTEM_STEPS.length + ' consideradas')\n        : (consideredCount + ' of ' + SLEEP_SYSTEM_STEPS.length + ' considered');",
+    "      var consideredCount = added + addressedCount + deferredCount;\n      count.textContent = (added + addressedCount) + ' / ' + SLEEP_SYSTEM_STEPS.length;", SLEEP],
   ["X3: the protection eyebrow reclaims the forbidden superlative",
     "                en: 'Suggested for ' + sleepSystemText(protectionGoalLabel(window._sleepSystemState.protectionGoal || getSuggestedProtectionGoal())),\n                es: 'Sugerido para ' + sleepSystemText(protectionGoalLabel(window._sleepSystemState.protectionGoal || getSuggestedProtectionGoal()))",
     "                en: 'Best for ' + sleepSystemText(protectionGoalLabel(window._sleepSystemState.protectionGoal || getSuggestedProtectionGoal())),\n                es: 'Mejor para ' + sleepSystemText(protectionGoalLabel(window._sleepSystemState.protectionGoal || getSuggestedProtectionGoal()))", SLEEP],
@@ -1986,16 +1986,16 @@ const MUTATIONS = [
     "      border-left: 3px solid #9A7445;\n      background: #F6EFE4;\n      color: #4F4439;\n      font: 600 14px/1.45 var(--font-sans);",
     "      border-left: 3px solid #9A7445;\n      background: #F6EFE4;\n      color: #4F4439;\n      font: 600 12px/1.45 var(--font-sans);",
     SLEEP],
-  ["1.4: the guidance panel echoes the customer benefit again (adjustability, support)",
-    "      return notices.slice(0, 3);",
-    "      if (primary && primary.reasons && primary.reasons[0]) notices.unshift(primary.reasons[0]);\n      return notices.slice(0, 3);",
+  ["1.4/A3: the guidance panel echoes the customer benefit again",
+    "      return [notice];",
+    "      if (primary && primary.reasons && primary.reasons[0]) return [primary.reasons[0]];\n      return [notice];",
     SLEEP],
-  // Close-out re-point (2026-08-25): the pillow note was reworded to
-  // salesperson voice, so the find string quotes the NEW note; the `\\'`
-  // matches the source's escaped apostrophe byte-for-byte.
-  ["1.4: the pillow specialist note echoes the customer benefit again",
-    "          sleepSystemText({ en: 'Explain how this pillow addresses the customer\\'s priorities.', es: 'Explica c\u00f3mo esta almohada responde a las prioridades del cliente.' }),",
-    "          primary && primary.reasons && primary.reasons[0] ? primary.reasons[0] : sleepSystemText({ en: 'Explain how this pillow addresses the customer\\'s priorities.', es: 'Explica c\u00f3mo esta almohada responde a las prioridades del cliente.' }),",
+  // A3 (owner ruling 2026-09-01): the position cue lives in the step's
+  // rationale line as evidence; a customer-voice regression must trip the
+  // rationale audience pins.
+  ["A3: the pillow rationale reverts to customer voice",
+    "          en: 'Reported priority: side sleeper \u2014 the head should fill the shoulder-to-mattress gap.',",
+    "          en: 'Reported priority: side sleeper \u2014 your head should fill the shoulder-to-mattress gap.',",
     SLEEP],
   ["1.4: the salesperson procedure region loses its accessible name",
     "      guidance.setAttribute('aria-label', guidanceKind);\n",
@@ -2033,20 +2033,31 @@ const MUTATIONS = [
     SLEEP],
   // (6) the two-label eyebrow returns: adjustability and support are named
   //     "During the trial" again instead of "Specialist notes".
-  ["1.4 close-out: the procedure eyebrow goes back to the two-label form",
+  ["1.4 close-out/A3: the procedure eyebrow regresses to the plural three-card label",
+    "      var guidanceKind = sleepSystemText({ en: 'Specialist note', es: 'Nota del especialista' });",
     "      var guidanceKind = sleepSystemText({ en: 'Specialist notes', es: 'Notas del especialista' });",
-    "      var guidanceKind = step.id === 'pillow' || step.id === 'protection'\n        ? sleepSystemText({ en: 'Specialist notes', es: 'Notas del especialista' })\n        : sleepSystemText({ en: 'During the trial', es: 'Durante la prueba' });",
     SLEEP],
-  // (7) one approved note back in customer voice (the side-sleeper cue).
-  ["1.4 close-out: the side-sleeper pillow cue reverts to customer voice",
-    "          side: { en: 'Check that the customer\\'s head fills the shoulder-to-mattress gap.', es: 'Verifica que la cabeza del cliente llene el espacio entre el hombro y el colch\u00f3n.' },",
-    "          side: { en: 'Your head should fill the shoulder-to-mattress gap.', es: 'Tu cabeza debe llenar el espacio entre el hombro y el colch\u00f3n.' },",
+  // (7) the retained aligned note back in customer voice.
+  ["1.4 close-out/A3: the aligned pillow note reverts to customer voice",
+    "            en: 'If the customer feels aligned, confirm comfort for several minutes before adding the pillow to the plan.',",
+    "            en: 'If you feel aligned, confirm comfort for several minutes before adding the pillow to your plan.',",
     SLEEP],
-  // (8) an ES counterpart goes English-only (the support step's third note).
-  ["1.4 close-out: a reworded note's ES value is replaced by its EN value",
-    "es: 'Verifica la configuraci\u00f3n final antes de que el cliente haga su selecci\u00f3n.'",
-    "es: 'Verify the final setup before the customer makes a selection.'",
+  // (8) an ES counterpart goes English-only (the retained adjustability note).
+  ["1.4 close-out/A3: a retained note's ES value is replaced by its EN value",
+    "es: 'Recomienda una base solo despu\u00e9s de que el cliente pruebe las posiciones que m\u00e1s le importan.'",
+    "es: 'Recommend a base only after the customer tries the positions that matter most to them.'",
     SLEEP],
+  // A3 (owner ruling 2026-09-01): the single journey-level primary + wipe.
+  ["A3: the footer regains a competing Review primary at the last step",
+    "          next.hidden = true;\n          next.textContent = '';",
+    "          next.hidden = false;\n          next.textContent = sleepSystemText({ en: 'Review Sleep Plan', es: 'Revisar Plan de Sue\u00f1o' });",
+    SLEEP],
+  ["A3: the completion demotion CSS is dropped",
+    "    .sleep-system__workspace.is-complete .sleep-system__action--primary:not(.sleep-system__action--selected) {\n      border: 1px solid #C9BCAC;\n      background: #FFFDF8;\n      color: #2F271E;\n    }\n",
+    "", SLEEP],
+  ["A3: the progress detail line leaves the wipe inventory",
+    "      'sleepSystemPlanDetail',\n",
+    "", SLEEP],
   // (9) a new, narrower breakpoint is added - the "no breakpoint added" pin
   //     counts @media max-width blocks against the da4f746 count.
   ["1.4 close-out: a new @media (max-width: 600px) block is added",

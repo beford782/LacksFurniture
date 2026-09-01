@@ -157,6 +157,9 @@ const SRC = {
   secondary: extractFunction('function sleepSystemSecondaryActions(stepId)'),
   catalogLowProfile: extractFunction('function catalogHasLowProfileSupport()'),
   supportGuide: extractFunction('function renderSupportGuide()'),
+  // A3 (owner ruling 2026-09-01): the evidence-typed rationale producers.
+  pillowRationale: extractFunction('function pillowFitRationale()'),
+  protRationale: extractFunction('function protectionRationale(selected, suggested)'),
   pillowFit: extractFunction('function renderPillowFit(primary)'),
   suggestedGoal: extractFunction('function getSuggestedProtectionGoal()'),
   goalLabel: extractFunction('function protectionGoalLabel(goal)'),
@@ -216,7 +219,8 @@ function makeEnv({
   let src = [
     SRC.STEPS, SRC.escapeHtml, SRC.text, SRC.category, SRC.stepFor, SRC.qualify, SRC.scorer,
     SRC.readGroups, SRC.decision, SRC.decisionLabel, SRC.statusKind, SRC.posLabel, SRC.getDemo, SRC.renderDemo,
-    SRC.catalogLowProfile, SRC.guidance, SRC.rail, SRC.secondary, SRC.supportGuide, SRC.pillowFit, SRC.suggestedGoal,
+    SRC.catalogLowProfile, SRC.guidance, SRC.rail, SRC.secondary, SRC.supportGuide,
+    SRC.pillowRationale, SRC.protRationale, SRC.pillowFit, SRC.suggestedGoal,
     SRC.goalLabel, SRC.goalReason, SRC.supportsGoal, SRC.protectionGuide, SRC.main, SRC.plan,
     SRC.footer
   ].join('\n');
@@ -373,10 +377,10 @@ for (const lang of ['en', 'es']) {
     ok(`[${lang}/${step}] the customer benefit is NOT repeated in the procedure panel`,
       benefit !== null && !notes.includes(benefit),
       `benefit=${JSON.stringify((benefit || '').slice(0, 46))}`);
-    ok(`[${lang}/${step}] procedure panel renders its full three notes`,
-      notes.length === 3, `${notes.length} notes`);
-    ok(`[${lang}/${step}] the notes are distinct from one another`,
-      new Set(notes).size === notes.length);
+    // A3 (owner ruling 2026-09-01): the panel is ONE compact contextual note —
+    // the step itself carries the instruction and the rationale.
+    ok(`[${lang}/${step}] procedure panel renders exactly ONE compact note (A3)`,
+      notes.length === 1 && notes[0].trim().length > 0, `${notes.length} notes`);
     ok(`[${lang}/${step}] no procedure note is repeated inside the customer card`,
       body !== null && notes.every((n) => !textOf(body).includes(n)));
   }
@@ -439,7 +443,11 @@ section('decision states — selected, keep-current, skipped, undecided');
     /step-status">Not decided</.test(r.rail) && /plan-item-status">Not decided</.test(r.plan));
   // X2 (owner ruling D7, 2026-08-31): the completion fraction is retired —
   // the neutral phrase claims only what happened.
-  ok('undecided: plan count reads "0 added · 0 addressed"', r.planCount === '0 added · 0 addressed', r.planCount);
+  // A3: the primary phrase counts considered categories; nothing considered
+  // yet means the detail line stays empty and hidden.
+  ok('undecided: plan count reads "0 of 4 considered" (A3)', r.planCount === '0 of 4 considered', r.planCount);
+  ok('undecided: the detail line is empty and hidden',
+    r.env.get('sleepSystemPlanDetail').textContent === '' && r.env.get('sleepSystemPlanDetail').hidden === true);
   ok('undecided pillow: the add control is gated behind the physical fit check',
     /sleep-system__pillow-gate/.test(r.main) && !/data-sleep-action="select-item" data-item-id="pillow-/.test(r.main));
 }
@@ -454,7 +462,9 @@ section('decision states — selected, keep-current, skipped, undecided');
   ok('selected: rail and plan name the chosen product, not a generic "selected"',
     /step-status">Bedgear Flow 2\.0 Performance Pillow</.test(r.rail) &&
     /plan-item-status">Bedgear Flow 2\.0 Performance Pillow</.test(r.plan));
-  ok('selected: plan count advances to "1 added · 0 addressed" (X2)', r.planCount === '1 added · 0 addressed', r.planCount);
+  ok('selected: plan count advances to "1 of 4 considered" with detail "1 added" (A3)',
+    r.planCount === '1 of 4 considered' && r.env.get('sleepSystemPlanDetail').textContent === '1 added',
+    r.planCount + ' / ' + r.env.get('sleepSystemPlanDetail').textContent);
 }
 {
   const r = renderStep('support', { answers: ANSWERS, state: { supportChoice: 'current' } });
@@ -481,11 +491,15 @@ section('decision states — selected, keep-current, skipped, undecided');
   });
   ok('skipped: "Decide later" is reported in both the rail and the plan',
     /step-status">Decide later</.test(r.rail) && /plan-item-status">Decide later</.test(r.plan));
-  // X2 (owner ruling D7, 2026-08-31): re-ruled. A deferral used to count as
-  // addressed (1 / 4) — a claimed completion the customer never made. It now
-  // counts toward NOTHING and renders as deferred, not done.
-  ok('skipped: a deferral is claimed by neither number ("0 added · 0 addressed") and renders is-deferred',
-    r.planCount === '0 added · 0 addressed' && /is-deferred/.test(r.rail) && /is-deferred/.test(r.plan), r.planCount);
+  // A3 (owner ruling 2026-09-01, building on X2/D7): a deferral is a
+  // CONSIDERED decision — it counts toward "N of 4 considered" (which is what
+  // legitimately arms Review) while the detail names it as deferred, never as
+  // added or addressed. Nothing is claimed as completed.
+  ok('skipped: a deferral counts as considered, is named deferred in the detail, and renders is-deferred',
+    r.planCount === '1 of 4 considered'
+    && r.env.get('sleepSystemPlanDetail').textContent === '0 added · 1 deferred'
+    && /is-deferred/.test(r.rail) && /is-deferred/.test(r.plan),
+    r.planCount + ' / ' + r.env.get('sleepSystemPlanDetail').textContent);
   const es = renderStep('adjustability', {
     answers: ANSWERS, lang: 'es', state: { decisions: { adjustability: { status: 'later' } } }
   });
@@ -610,14 +624,14 @@ section('language — state survives the swap and the two languages never mix');
   // Curated chrome markers. Product names are catalog data and are checked by
   // the price/hierarchy guards; these are the strings the RENDERER chooses.
   const EN_MARKERS = ['Recommended to try', 'Worth comparing', 'Support option', 'Also compare',
-    'Decide later', 'Specialist notes', 'During the trial', 'Keep current pillow',
+    'Decide later', 'Specialist note', 'During the trial', 'Keep current pillow',
     'Already protected', 'From $', 'Not decided', 'Add to plan', 'Add protector to plan',
-    ' added · ', ' addressed']; // X2 count phrase
+    ' of 4 considered', 'Why first', 'Reported priority', 'Trial focus']; // A3 phrases
   const ES_MARKERS = ['Recomendado para probar', 'Vale la pena comparar', 'Opción de soporte',
-    'También compara', 'Decidir después', 'Notas del especialista', 'Durante la prueba',
+    'También compara', 'Decidir después', 'Nota del especialista', 'Durante la prueba',
     'Conservar almohada actual', 'Ya está protegido', 'Desde $', 'Sin decidir',
     'Agregar al plan', 'Agregar protector al plan',
-    ' agregado', ' atendido']; // X2 count phrase (covers the plurals as substrings)
+    ' de 4 consideradas', 'Por qué primero', 'Prioridad reportada', 'Enfoque de la prueba']; // A3 phrases
   for (const step of STEP_IDS) {
     const en = renderStep(step, { answers: ANSWERS, lang: 'en' });
     const es = renderStep(step, { answers: ANSWERS, lang: 'es' });
@@ -630,8 +644,8 @@ section('language — state survives the swap and the two languages never mix');
     ok(`[${step}] the ES render contains no English chrome`, leakedEn.length === 0, leakedEn.join(' | '));
     // Close-out: ONE eyebrow on every step, so the ES name is exact rather
     // than one of two (the former "Durante la prueba" alternative is retired).
-    ok(`[${step}] the ES procedure region name is exactly "Notas del especialista"`,
-      es.guidanceLabel === 'Notas del especialista', es.guidanceLabel);
+    ok(`[${step}] the ES procedure region name is exactly "Nota del especialista" (A3 singular)`,
+      es.guidanceLabel === 'Nota del especialista', es.guidanceLabel);
   }
 }
 {
@@ -914,13 +928,10 @@ const unescapeHtml = (s) => String(s)
   .replace(/&#39;/g, '\'').replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
 const notesText = (g) => notesOf(g).map(unescapeHtml);
 const h2Of = (g) => { const m = String(g).match(/<h2>([^<]*)<\/h2>/); return m ? unescapeHtml(m[1]) : null; };
-const EYEBROW = { en: 'Specialist notes', es: 'Notas del especialista' };
-const HEADINGS = {
-  adjustability: { en: 'Guide the showroom trial', es: 'Guía la prueba en la tienda' },
-  support: { en: 'Confirm the setup', es: 'Confirma la configuración' },
-  pillow: { en: 'Check alignment', es: 'Revisa la alineación' },
-  protection: { en: 'Match protection to the priority', es: 'Ajusta la protección a la prioridad' }
-};
+// A3 (owner ruling 2026-09-01): the panel is ONE compact note under a
+// singular eyebrow; the per-step guidance h2 is retired (the step head
+// carries the title, the guide panel carries instruction + rationale).
+const EYEBROW = { en: 'Specialist note', es: 'Nota del especialista' };
 // Every state that selects a different note: the pillow step reads the sleep
 // position (side / back / stomach / one with no cue) and the recorded fit
 // (none / low / high / aligned); the protection step reads the goal (the
@@ -951,14 +962,14 @@ function renderMatrix(mutate = null) {
 const MATRIX = renderMatrix();
 const failing = (rows, pred) => rows.filter((row) => !pred(row)).map((row) => row.label);
 {
-  // 14a — ONE eyebrow, on every step, in both languages; the approved heading.
+  // 14a — ONE singular eyebrow, on every step, in both languages; NO h2 (A3).
   for (const lang of ['en', 'es']) {
     for (const step of STEP_IDS) {
       const r = renderStep(step, { answers: ANSWERS, lang });
       ok(`[${lang}/${step}] the procedure region is named exactly "${EYEBROW[lang]}"`,
         r.guidanceLabel === EYEBROW[lang], JSON.stringify(r.guidanceLabel));
-      ok(`[${lang}/${step}] the guidance heading is the approved "${HEADINGS[step][lang]}"`,
-        h2Of(r.guidance) === HEADINGS[step][lang], JSON.stringify(h2Of(r.guidance)));
+      ok(`[${lang}/${step}] the panel renders no heading of its own (A3)`,
+        h2Of(r.guidance) === null, JSON.stringify(h2Of(r.guidance)));
     }
   }
   const offLabel = failing(MATRIX, (row) => row.r.guidanceLabel === EYEBROW[row.lang] &&
@@ -967,36 +978,33 @@ const failing = (rows, pred) => rows.filter((row) => !pred(row)).map((row) => ro
     offLabel.length === 0, offLabel.join(' | '));
   ok('the single eyebrow is one unconditional assignment, not a two-branch label',
     (stripComments(SRC.main).match(
-      /var guidanceKind = sleepSystemText\(\{ en: 'Specialist notes', es: 'Notas del especialista' \}\);/g) || []).length === 1 &&
+      /var guidanceKind = sleepSystemText\(\{ en: 'Specialist note', es: 'Nota del especialista' \}\);/g) || []).length === 1 &&
     !/guidanceKind = step\.id/.test(stripComments(SRC.main)));
-  for (const literal of ['During the trial', 'Durante la prueba']) {
+  // A3: the plural three-card label is retired alongside the old two-label
+  // eyebrow. ("During the trial" now legitimately opens the drawer's trial
+  // label — the retired form here is the standalone eyebrow pair.)
+  for (const literal of ['Durante la prueba\'', 'Specialist notes', 'Notas del especialista']) {
     ok(`retired eyebrow absent from live code: "${literal}"`, !liveHtml.includes(literal));
   }
 }
 
-// 14b — the eleven approved notes, each rendered in the state that selects it.
-// EN strings are the owner-approved text; ES is provisional (native review
-// deferred under roadmap Invariant 12) but must be the ES that shipped, not
-// an English fallback.
+// 14b — the retained contextual notes, each rendered in the state that
+// selects it (A3, owner ruling 2026-09-01: one note per state; the retired
+// notes are inventoried in the A3 evidence ledger — the position cues moved
+// into the step's rationale line, generic notes the workflow already states
+// are gone). EN strings are the owner-approved 1.4-close-out / 3.7-P9 text;
+// ES is provisional (native review deferred under roadmap Invariant 12).
 const APPROVED_NOTES = [
-  { step: 'support',
-    en: 'Verify the final setup before the customer makes a selection.',
-    es: 'Verifica la configuración final antes de que el cliente haga su selección.' },
   { step: 'adjustability',
     en: 'Recommend a base only after the customer tries the positions that matter most to them.',
     es: 'Recomienda una base solo después de que el cliente pruebe las posiciones que más le importan.' },
+  // 3.7 P9 (Option C): this catalog ships one foundation height.
+  { step: 'support',
+    en: 'If a lower finished bed height matters, ask which foundation heights are available.',
+    es: 'Si importa una altura de cama más baja, pregunta qué alturas de base están disponibles.' },
   { step: 'pillow',
-    en: 'Explain how this pillow addresses the customer\'s priorities.',
-    es: 'Explica cómo esta almohada responde a las prioridades del cliente.' },
-  { step: 'pillow', answers: { sleep_position: 'side' },
-    en: 'Check that the customer\'s head fills the shoulder-to-mattress gap.',
-    es: 'Verifica que la cabeza del cliente llene el espacio entre el hombro y el colchón.' },
-  { step: 'pillow', answers: { sleep_position: 'back' },
-    en: 'Check that the customer\'s chin stays neutral rather than tipped forward.',
-    es: 'Verifica que la barbilla del cliente se mantenga neutral, sin inclinarse hacia adelante.' },
-  { step: 'pillow', answers: { sleep_position: 'combination' },
-    en: 'Check that the customer\'s head stays centered over their shoulders.',
-    es: 'Verifica que la cabeza del cliente se mantenga centrada sobre los hombros.' },
+    en: 'Test it on the finalist mattress and watch the neck line from the side.',
+    es: 'Pruébala en el colchón finalista y observa la línea del cuello de lado.' },
   // 3.7 P9 (owner ruling 2026-08-30, Option C): approved EN; ES provisional.
   { step: 'pillow', state: { pillowFeedback: 'low' },
     en: 'If the pillow feels too low, compare another pillow, then retest.',
@@ -1007,12 +1015,18 @@ const APPROVED_NOTES = [
   { step: 'pillow', state: { pillowFeedback: 'aligned' },
     en: 'If the customer feels aligned, confirm comfort for several minutes before adding the pillow to the plan.',
     es: 'Si el cliente se siente alineado, confirma la comodidad durante varios minutos antes de agregar la almohada al plan.' },
+  { step: 'protection', state: { protectionGoal: 'spills' },
+    en: 'Confirm waterproof coverage without a stiff or noisy feel.',
+    es: 'Confirma cobertura impermeable sin sensación rígida o ruidosa.' },
   { step: 'protection', state: { protectionGoal: 'allergens' },
-    en: 'Ask whether the customer prefers fitted protection or full encasement.',
-    es: 'Pregunta si el cliente prefiere protección ajustada o cobertura completa.' },
-  { step: 'protection',
-    en: 'Review fit and care instructions with the customer.',
-    es: 'Revisa las instrucciones de ajuste y cuidado con el cliente.' }
+    en: 'Prioritize an allergen barrier that remains breathable.',
+    es: 'Prioriza una barrera contra alérgenos que sea transpirable.' },
+  { step: 'protection', state: { protectionGoal: 'cooling' },
+    en: 'Check that the protector does not trap extra heat.',
+    es: 'Verifica que el protector no atrape calor adicional.' },
+  { step: 'protection', state: { protectionGoal: 'everyday' },
+    en: 'Keep the mattress feel familiar while adding daily protection.',
+    es: 'Mantén la sensación del colchón mientras agregas protección diaria.' }
 ];
 {
   for (const n of APPROVED_NOTES) {
@@ -1027,10 +1041,10 @@ const APPROVED_NOTES = [
     ok(`[es/${where}] renders its ES counterpart "${n.es.slice(0, 40)}…"`,
       es.includes(n.es), es.join(' | ').slice(0, 140));
   }
-  ok('the approved set is eleven distinct EN notes with eleven distinct ES counterparts',
-    APPROVED_NOTES.length === 11 &&
-    new Set(APPROVED_NOTES.map((n) => n.en)).size === 11 &&
-    new Set(APPROVED_NOTES.map((n) => n.es)).size === 11 &&
+  ok('the retained set is ten distinct EN notes with ten distinct ES counterparts (A3)',
+    APPROVED_NOTES.length === 10 &&
+    new Set(APPROVED_NOTES.map((n) => n.en)).size === 10 &&
+    new Set(APPROVED_NOTES.map((n) => n.es)).size === 10 &&
     APPROVED_NOTES.every((n) => n.en !== n.es));
 }
 
@@ -1101,23 +1115,22 @@ const ES_SECOND_PERSON = /(?<!\p{L})(tu|tus|te|ti|tú|usted|ustedes)(?!\p{L})/iu
   enRows.forEach((en, i) => {
     const es = esRows[i];
     en.notes.forEach((note, k) => { if (es.notes[k] === note) mixed.push(`${es.label}: ${note}`); });
-    if (h2Of(es.r.guidance) === h2Of(en.r.guidance)) mixed.push(`${es.label}: heading`);
   });
-  ok('no ES render repeats an EN note or heading (no English-only fallback in the panel)',
+  ok('no ES render repeats an EN note (no English-only fallback in the panel)',
     enRows.length === esRows.length && mixed.length === 0, mixed.slice(0, 3).join(' | '));
   // Guard 4, extended to the low/high/aligned and every protection-goal
-  // state: the customer benefit stays OUT of the panel, three distinct notes
-  // render, and no note leaks into the customer card.
+  // state: the customer benefit stays OUT of the panel, exactly ONE note
+  // renders (A3), and it never leaks into the customer card.
   const dup = failing(MATRIX, (row) => {
     const body = featuredBody(row.r.main);
     if (!body) return false;
     const benefit = unescapeHtml(grab(body, 'sleep-system__featured-reason') || '');
     const card = unescapeHtml(textOf(body));
     return benefit.length > 0 && !row.notes.includes(benefit) &&
-      row.notes.length === 3 && new Set(row.notes).size === 3 &&
+      row.notes.length === 1 && row.notes[0].trim().length > 0 &&
       row.notes.every((n) => !card.includes(n));
   });
-  ok('in every state: three distinct notes, the benefit not among them, none inside the card',
+  ok('in every state: exactly one note, the benefit not among them, none inside the card (A3)',
     dup.length === 0, dup.join(' | '));
 }
 
@@ -1187,8 +1200,9 @@ const MAIN_LITERALS_AT_DA4F746 = [
   ['Add', 'Agregar'],
   ['Current setup', 'Configuración actual'],
   ['Keep it, then confirm compatibility', 'Conservalo y confirma compatibilidad'],
-  ['No new support is being added. Your specialist can confirm that the current frame, platform, or slats meet the mattress requirements.',
-    'No se agregara un soporte nuevo. Tu especialista puede confirmar que el marco, plataforma o tablillas cumplen los requisitos.'],
+  // A3 (owner ruling 2026-09-01): one operator sentence.
+  ['No new support is being added. Confirm that the current frame, platform, or slats meet the mattress requirements.',
+    'No se agregara un soporte nuevo. Confirma que el marco, la plataforma o las tablillas cumplan los requisitos del colchón.'],
   ['Specialist check', 'Revisión del especialista'],
   ['Confirm the setup before adding support', 'Confirma la configuración antes de agregar soporte'],
   ['A quick frame and slat check will determine whether the current setup works or whether a foundation is needed.',
@@ -1198,14 +1212,15 @@ const MAIN_LITERALS_AT_DA4F746 = [
   ['Optional base demo', 'Demostración opcional de base'],
   ['Optional base demo', 'Demostración opcional de base'],
   ['Try the positions first', 'Prueba las posiciones primero'],
-  ['Your answers do not point to a specific adjustable base. Try the positions, then compare a base only if the movement improves your comfort.',
-    'Tus respuestas no apuntan a una base ajustable en particular. Prueba las posiciones y compara una base solo si el movimiento mejora tu comodidad.'],
+  // A3: neutral operator framing on the specialist surface.
+  ['The answers do not point to a specific adjustable base. Demo the positions, then compare a base only if the movement improves comfort.',
+    'Las respuestas no apuntan a una base ajustable en particular. Demuestra las posiciones y compara una base solo si el movimiento mejora la comodidad.'],
   ['Bases to compare', 'Bases para comparar'],
   ['Selected', 'Seleccionado'],
   ['Add to plan', 'Agregar al plan'],
   ['Ask for a demo', 'Pedir demostración'],
   ['Decide later', 'Decidir después'],
-  ['Specialist notes', 'Notas del especialista']
+  ['Specialist note', 'Nota del especialista']
 ];
 const SECONDARY_LITERALS_AT_DA4F746 = [
   ['Keep current support', 'Conservar soporte actual'],
@@ -1488,15 +1503,21 @@ section('3.7 P9 Option C - copy names only what the catalog holds; the reaction 
   const APPROVED = {
     en: {
       low: 'Try another pillow on this mattress and compare the height, then record the fit again.',
-      high: 'Try another pillow on this mattress, then check whether your chin and neck feel neutral.',
-      stomach: 'Check that the neck stays level rather than bending upward.',
+      // A3 (owner ruling 2026-09-01): operator voice — no "your chin".
+      high: 'Try another pillow on this mattress, then check that the chin and neck stay neutral.',
+      // A3: the position cue moved into the step's rationale line; the panel
+      // note for a stomach sleeper with no recorded fit is the neutral
+      // neck-line note, and the rationale carries the level-neck check.
+      stomach: 'Test it on the finalist mattress and watch the neck line from the side.',
+      stomachRationale: 'Reported priority: stomach sleeper — the neck stays level, not bent upward.',
       heightNote: 'If a lower finished bed height matters, ask which foundation heights are available.',
       compareNote: 'Compare standard and lower bed heights.'
     },
     es: {
       low: 'Prueba otra almohada en este colchón y compara la altura; luego vuelve a registrar el ajuste.',
-      high: 'Prueba otra almohada en este colchón y revisa si la barbilla y el cuello se sienten neutrales.',
-      stomach: 'Verifica que el cuello se mantenga nivelado y no se doble hacia arriba.',
+      high: 'Prueba otra almohada en este colchón y revisa que la barbilla y el cuello queden neutrales.',
+      stomach: 'Pruébala en el colchón finalista y observa la línea del cuello de lado.',
+      stomachRationale: 'Prioridad reportada: duerme boca abajo — el cuello se mantiene nivelado, sin doblarse.',
       heightNote: 'Si importa una altura de cama más baja, pregunta qué alturas de base están disponibles.',
       compareNote: 'Compara alturas estándar y más bajas.'
     }
@@ -1511,8 +1532,10 @@ section('3.7 P9 Option C - copy names only what the catalog holds; the reaction 
         feedback === A[fb] && !/adjustable|low-profile|perfil bajo|relleno ajustable/i.test(feedback || ''), JSON.stringify(feedback));
     }
     const st = renderStep('pillow', { answers: STOMACH, lang });
-    ok(`[${lang}/pillow/stomach] the position cue is the approved check, not a "lower profile" product`,
-      notesText(st.guidance).includes(A.stomach) && !notesText(st.guidance).some((n) => /lower profile|perfil bajo/i.test(n)),
+    ok(`[${lang}/pillow/stomach] the neutral panel note renders and the rationale carries the level-neck check, no "lower profile" product`,
+      notesText(st.guidance).includes(A.stomach)
+      && unescapeHtml(st.main).includes(A.stomachRationale)
+      && !notesText(st.guidance).some((n) => /lower profile|perfil bajo/i.test(n)),
       notesText(st.guidance).join(' | ').slice(0, 160));
     const sup = renderStep('support', { answers: ANSWERS, lang });
     const choiceIds = [...sup.main.matchAll(/data-support-choice="([^"]+)"/g)].map((m) => m[1]);
@@ -1605,10 +1628,12 @@ section('3.7 P5 option C - no-trigger customers get the demo plus a neutral all-
   const TRIGGER = { sleep_position: 'side', temperature: 'hot', sleep_issues: ['back_pain'], health_conditions: ['snoring'] };
   const CATALOG_BASES = ACCESSORIES_JSON.filter((a) => (typeof a.category === 'object' ? a.category.en : a.category) === 'Foundations & Support' && a.subType === 'adjustable').map((a) => a.id);
   const T = {
+    // A3 (owner ruling 2026-09-01): the body is operator-neutral on the
+    // specialist surface — same meaning, no customer second person.
     en: { eyebrow: 'Optional base demo', heading: 'Try the positions first', list: 'Bases to compare', add: 'Add to plan', selectedL: 'Selected', demo: 'Ask for a demo', later: 'Decide later',
-      body: 'Your answers do not point to a specific adjustable base. Try the positions, then compare a base only if the movement improves your comfort.' },
+      body: 'The answers do not point to a specific adjustable base. Demo the positions, then compare a base only if the movement improves comfort.' },
     es: { eyebrow: 'Demostración opcional de base', heading: 'Prueba las posiciones primero', list: 'Bases para comparar', add: 'Agregar al plan', selectedL: 'Seleccionado', demo: 'Pedir demostración', later: 'Decidir después',
-      body: 'Tus respuestas no apuntan a una base ajustable en particular. Prueba las posiciones y compara una base solo si el movimiento mejora tu comodidad.' }
+      body: 'Las respuestas no apuntan a una base ajustable en particular. Demuestra las posiciones y compara una base solo si el movimiento mejora la comodidad.' }
   };
   const rowIds = (html) => [...html.matchAll(/class="sleep-system__alternative sleep-system__base-row">[\s\S]*?data-item-id="([^"]+)"/g)].map((m) => m[1]);
   for (const lang of ['en', 'es']) {
@@ -1683,26 +1708,27 @@ section('negative controls — the load-bearing assertions bite');
     'the hierarchy guard would fail on this tree');
 }
 {
-  // Re-introduce the duplicate and the duplication guard must see it.
+  // Re-introduce the echo (A3 form: the one-note return is replaced by the
+  // benefit) and the duplication guard must see it.
   const dup = renderStep('support', {
     answers: ANSWERS,
     mutate: (s) => s.replace(
-      'return notices.slice(0, 3);',
-      'if (primary && primary.reasons && primary.reasons[0]) notices.unshift(primary.reasons[0]);\nreturn notices.slice(0, 3);')
+      'return [notice];',
+      'if (primary && primary.reasons && primary.reasons[0]) return [primary.reasons[0]];\nreturn [notice];')
   });
   const dupBody = featuredBody(dup.main);
   const dupBenefit = grab(dupBody, 'sleep-system__featured-reason');
-  ok('control: re-introducing the unshift puts the benefit back in the procedure panel',
+  ok('control: re-introducing the echo puts the benefit back in the procedure panel',
     notesOf(dup.guidance).includes(dupBenefit),
     'the duplication guard would fail on this tree');
-  // Close-out: the third support note is now the salesperson-voice string;
+  // A3: the echo also displaces the retained contextual note entirely —
   // the precondition proves the clean tree renders it, so the displacement
   // assertion cannot pass vacuously against a string that never rendered.
-  const THIRD_SUPPORT_NOTE = 'Verify the final setup before the customer makes a selection.';
-  ok('control precondition: the unmutated support panel renders its third note',
-    notesText(renderStep('support', { answers: ANSWERS }).guidance).includes(THIRD_SUPPORT_NOTE));
-  ok('control: and it displaces the third procedure note again',
-    !notesText(dup.guidance).includes(THIRD_SUPPORT_NOTE));
+  const RETAINED_SUPPORT_NOTE = 'If a lower finished bed height matters, ask which foundation heights are available.';
+  ok('control precondition: the unmutated support panel renders its retained note',
+    notesText(renderStep('support', { answers: ANSWERS }).guidance).includes(RETAINED_SUPPORT_NOTE));
+  ok('control: and the echo displaces the retained note',
+    !notesText(dup.guidance).includes(RETAINED_SUPPORT_NOTE));
 }
 {
   // Strip the region name and the labelling guard must fail.
@@ -1761,9 +1787,9 @@ section('negative controls — the load-bearing assertions bite');
   // that goes red. Rendered controls go through `mutate` on the extracted
   // sources; CSS controls run the same audit function against a mutated
   // copy of index.html.
-  const ONE_LABEL = "var guidanceKind = sleepSystemText({ en: 'Specialist notes', es: 'Notas del especialista' });";
+  const ONE_LABEL = "var guidanceKind = sleepSystemText({ en: 'Specialist note', es: 'Nota del especialista' });";
   const TWO_LABEL = "var guidanceKind = step.id === 'pillow' || step.id === 'protection'\n" +
-    "        ? sleepSystemText({ en: 'Specialist notes', es: 'Notas del especialista' })\n" +
+    "        ? sleepSystemText({ en: 'Specialist note', es: 'Nota del especialista' })\n" +
     "        : sleepSystemText({ en: 'During the trial', es: 'Durante la prueba' });";
   const applyOnce = (find, replace) => {
     let hits = null;
@@ -1781,24 +1807,24 @@ section('negative controls — the load-bearing assertions bite');
   ok('control: and the ES support region becomes "Durante la prueba"',
     relabelledEs.guidanceLabel === 'Durante la prueba', 'the exact ES-name pin in guard 9 would fail on this tree');
 
-  // (b) one note back in customer voice -> the second-person pin fails in BOTH
-  //     languages, and a retired fragment renders again.
-  const SIDE_NEW = "side: { en: 'Check that the customer\\'s head fills the shoulder-to-mattress gap.', " +
-    "es: 'Verifica que la cabeza del cliente llene el espacio entre el hombro y el colchón.' },";
-  const SIDE_OLD = "side: { en: 'Your head should fill the shoulder-to-mattress gap.', " +
-    "es: 'Tu cabeza debe llenar el espacio entre el hombro y el colchón.' },";
-  const voice = applyOnce(SIDE_NEW, SIDE_OLD);
-  const sideEn = notesText(renderStep('pillow', {
-    answers: Object.assign({}, ANSWERS, { sleep_position: 'side' }), mutate: voice.mutate }).guidance);
-  const sideEs = notesText(renderStep('pillow', {
-    answers: Object.assign({}, ANSWERS, { sleep_position: 'side' }), lang: 'es', mutate: voice.mutate }).guidance);
-  ok('control: the side-cue find string matches the real source exactly once', voice.hits() === 1, `${voice.hits()}`);
-  ok('control: the customer-voice side cue trips the EN second-person pin',
-    sideEn.some((n) => EN_SECOND_PERSON.test(n)), sideEn.join(' | ').slice(0, 120));
-  ok('control: and trips the ES second-person pin',
-    sideEs.some((n) => ES_SECOND_PERSON.test(n)), sideEs.join(' | ').slice(0, 120));
-  ok('control: and renders a retired fragment again',
-    sideEn.some((n) => n.includes('Your head should fill')) && sideEs.some((n) => n.includes('Tu cabeza debe')));
+  // (b) the retained aligned note back in customer voice -> the second-person
+  //     pin fails, per language (A3: the note set is one contextual note).
+  const ALIGNED_EN_NEW = "en: 'If the customer feels aligned, confirm comfort for several minutes before adding the pillow to the plan.',";
+  const ALIGNED_EN_OLD = "en: 'If you feel aligned, confirm comfort for several minutes before adding the pillow to your plan.',";
+  const ALIGNED_ES_NEW = "es: 'Si el cliente se siente alineado, confirma la comodidad durante varios minutos antes de agregar la almohada al plan.'";
+  const ALIGNED_ES_OLD = "es: 'Si te sientes alineado, confirma la comodidad durante varios minutos antes de agregar la almohada a tu plan.'";
+  const voiceEn = applyOnce(ALIGNED_EN_NEW, ALIGNED_EN_OLD);
+  const alignedEn = notesText(renderStep('pillow', {
+    answers: ANSWERS, state: { pillowFeedback: 'aligned' }, mutate: voiceEn.mutate }).guidance);
+  ok('control: the aligned EN find string matches the real source exactly once', voiceEn.hits() === 1, `${voiceEn.hits()}`);
+  ok('control: a customer-voice aligned note trips the EN second-person pin',
+    alignedEn.some((n) => EN_SECOND_PERSON.test(n)), alignedEn.join(' | ').slice(0, 120));
+  const voiceEs = applyOnce(ALIGNED_ES_NEW, ALIGNED_ES_OLD);
+  const alignedEs = notesText(renderStep('pillow', {
+    answers: ANSWERS, lang: 'es', state: { pillowFeedback: 'aligned' }, mutate: voiceEs.mutate }).guidance);
+  ok('control: the aligned ES find string matches the real source exactly once', voiceEs.hits() === 1, `${voiceEs.hits()}`);
+  ok('control: and the ES revert trips the ES second-person pin',
+    alignedEs.some((n) => ES_SECOND_PERSON.test(n)), alignedEs.join(' | ').slice(0, 120));
   ok('control: the neutral stomach cue does NOT trip either pin (the regex is not over-broad)',
     !EN_SECOND_PERSON.test('Look for a lower profile that avoids neck strain.') &&
     !ES_SECOND_PERSON.test('Busca un perfil bajo que evite tension en el cuello.') &&
@@ -1807,14 +1833,14 @@ section('negative controls — the load-bearing assertions bite');
     ES_SECOND_PERSON.test('Confirma el ajuste y cuidado con tu especialista.'));
 
   // (c) an ES value copied from its EN -> the no-mixed-languages pin fails.
-  const ES_THIRD = "es: 'Verifica la configuración final antes de que el cliente haga su selección.'";
-  const EN_AS_ES = "es: 'Verify the final setup before the customer makes a selection.'";
-  const mix = applyOnce(ES_THIRD, EN_AS_ES);
-  const mixedEs = notesText(renderStep('support', { answers: ANSWERS, lang: 'es', mutate: mix.mutate }).guidance);
-  const cleanEn = notesText(renderStep('support', { answers: ANSWERS, lang: 'en' }).guidance);
-  ok('control: the ES third-note find string matches the real source exactly once', mix.hits() === 1, `${mix.hits()}`);
+  const ES_NOTE = "es: 'Recomienda una base solo después de que el cliente pruebe las posiciones que más le importan.'";
+  const EN_AS_ES = "es: 'Recommend a base only after the customer tries the positions that matter most to them.'";
+  const mix = applyOnce(ES_NOTE, EN_AS_ES);
+  const mixedEs = notesText(renderStep('adjustability', { answers: ANSWERS, lang: 'es', mutate: mix.mutate }).guidance);
+  const cleanEn = notesText(renderStep('adjustability', { answers: ANSWERS, lang: 'en' }).guidance);
+  ok('control: the ES note find string matches the real source exactly once', mix.hits() === 1, `${mix.hits()}`);
   ok('control: an English-only ES value renders the EN note under the ES flag',
-    mixedEs[2] === cleanEn[2] && mixedEs[2] === 'Verify the final setup before the customer makes a selection.',
+    mixedEs[0] === cleanEn[0] && mixedEs[0] === 'Recommend a base only after the customer tries the positions that matter most to them.',
     'the no-mixed-languages pin would fail on this tree');
 
   // (d) each CSS repair reverted on a copy of index.html -> its pin goes red.
@@ -1899,13 +1925,35 @@ section('X2/X3/X10 — three honest states, factual wording, the keyboard\'s pla
     ok('deferred: the sidecar mark stays empty in the dashed ring',
       /plan-item is-deferred"/.test(r.plan) && !/plan-mark">&#10003;|plan-mark">&#8211;/.test(r.plan.split('plan-item-name')[1] ? r.plan.split('sleep-system__plan-item ')[1] : r.plan));
   }
-  // X2: the neutral count phrase in both languages (participles agree — the C5 rule).
+  // A3: the considered count in both languages, with the honest detail line
+  // (participles agree — the C5 rule). This mixed set is also a complete one
+  // (four decisions), so the single Review control must be visible.
   {
     const mixed = { decisions: { adjustability: { status: 'demo' }, support: { status: 'already' }, protection: { status: 'later' } } };
     const en = renderStep('pillow', { answers: ANSWERS, state: Object.assign({ pillowReaction: 'aligned' }, mixed), cart: { 'pillow-flow': { id: 'pillow-flow' } } });
-    ok('count: "1 added · 2 addressed" — the deferral is claimed by neither number', en.planCount === '1 added · 2 addressed', en.planCount);
+    ok('count: "4 of 4 considered" with detail "1 added · 2 addressed · 1 deferred" (A3)',
+      en.planCount === '4 of 4 considered'
+      && en.env.get('sleepSystemPlanDetail').textContent === '1 added · 2 addressed · 1 deferred'
+      && en.env.get('sleepSystemPlanReview').hidden === false,
+      en.planCount + ' / ' + en.env.get('sleepSystemPlanDetail').textContent);
     const es = renderStep('pillow', { answers: ANSWERS, lang: 'es', state: Object.assign({ pillowReaction: 'aligned' }, mixed), cart: { 'pillow-flow': { id: 'pillow-flow' } } });
-    ok('count ES: "1 agregado · 2 atendidos" (singular participle agrees; wording provisional)', es.planCount === '1 agregado · 2 atendidos', es.planCount);
+    ok('count ES: "4 de 4 consideradas" + "1 agregado · 2 atendidos · 1 aplazado" (provisional)',
+      es.planCount === '4 de 4 consideradas'
+      && es.env.get('sleepSystemPlanDetail').textContent === '1 agregado · 2 atendidos · 1 aplazado',
+      es.planCount + ' / ' + es.env.get('sleepSystemPlanDetail').textContent);
+  }
+  // A3: the all-deferred session — the ruling's named contradiction. The
+  // count and the visible Review agree ("considered"), and the detail says
+  // plainly that nothing was added.
+  {
+    const allDef = { decisions: { adjustability: { status: 'later' }, support: { status: 'later' }, pillow: { status: 'later' }, protection: { status: 'later' } } };
+    const r = renderStep('protection', { answers: ANSWERS, state: allDef });
+    ok('A3 all-deferred: "4 of 4 considered", detail "0 added · 4 deferred", Review visible, status announces ready',
+      r.planCount === '4 of 4 considered'
+      && r.env.get('sleepSystemPlanDetail').textContent === '0 added · 4 deferred'
+      && r.env.get('sleepSystemPlanReview').hidden === false
+      && /All four considered/.test(r.env.get('sleepSystemPlanStatus').textContent),
+      r.planCount + ' / ' + r.env.get('sleepSystemPlanDetail').textContent);
   }
   // X10: aria-current="step" on the active rail control alone.
   {
@@ -1966,12 +2014,52 @@ section('X2/X3/X10 — three honest states, factual wording, the keyboard\'s pla
     const env = makeEnv({ answers: ANSWERS, state: { activeStep: 'adjustability', decisions: { adjustability: { status: 'later' } } }, mutate });
     env.api.rail();
     env.api.plan();
-    ok('negative control: reverting the classifier makes a deferral count as addressed again (so the X2 assertions bite)',
-      env.get('sleepSystemPlanCount').textContent === '0 added · 1 addressed'
+    ok('negative control: reverting the classifier renames the deferral as addressed (the A3 detail + class pins bite)',
+      env.get('sleepSystemPlanDetail').textContent === '0 added · 1 addressed'
       && /is-addressed/.test(env.get('sleepSystemRail').innerHTML)
       && !/is-deferred/.test(env.get('sleepSystemRail').innerHTML));
   }
 }
+
+// --------------------------------- 17. A3 — audience voice + single primary
+section('A3 — rationale evidence voice, footer demotion, completion demotion');
+{
+  const r = renderStep('pillow', { answers: ANSWERS });
+  const rat = (r.main.match(/class="sleep-system__rationale">([^<]*)</) || [])[1] || '';
+  ok('A3: the pillow rationale is evidence-typed and operator-voiced',
+    /^(Reported priority|Trial focus):/.test(unescapeHtml(rat)) && !EN_SECOND_PERSON.test(rat), rat);
+  const es = renderStep('pillow', { answers: ANSWERS, lang: 'es' });
+  const ratEs = (es.main.match(/class="sleep-system__rationale">([^<]*)</) || [])[1] || '';
+  ok('A3 ES: the rationale keeps the evidence prefix and no customer pronoun',
+    /^(Prioridad reportada|Enfoque de la prueba):/.test(unescapeHtml(ratEs)) && !ES_SECOND_PERSON.test(ratEs), ratEs);
+  ok('A3: the section head renders no right-column paragraph (density budget)',
+    !/sleep-system__section-copy/.test(r.main));
+  const prot = renderStep('protection', { answers: ANSWERS });
+  const protRat = unescapeHtml((prot.main.match(/class="sleep-system__rationale">([^<]*)</) || [])[1] || '');
+  ok('A3: the protection rationale is honest about its evidence (reported, not diagnosed)',
+    /^Reported priority: sleeps hot\.$/.test(protRat), protRat);
+  const chosen = renderStep('protection', { answers: ANSWERS, state: { protectionGoal: 'spills' } });
+  const chosenRat = unescapeHtml((chosen.main.match(/class="sleep-system__rationale">([^<]*)</) || [])[1] || '');
+  ok('A3: an explicitly tapped goal reads "Selected goal", never a reported claim',
+    /^Selected goal: spills\.$/.test(chosenRat), chosenRat);
+}
+{
+  const env = makeEnv({ answers: ANSWERS, state: { activeStep: 'protection' } });
+  env.api.footer();
+  ok('A3: the footer offers no Review control on the last step (hidden, empty)',
+    env.get('sleepSystemNext').hidden === true && env.get('sleepSystemNext').textContent === '');
+  const mid = makeEnv({ answers: ANSWERS, state: { activeStep: 'support' } });
+  mid.api.footer();
+  ok('A3: mid-journey the footer continues to the next category',
+    mid.get('sleepSystemNext').hidden === false && /^Continue to /.test(mid.get('sleepSystemNext').textContent),
+    mid.get('sleepSystemNext').textContent);
+}
+ok('A3: the completion demotion rule ships (is-complete primaries take the secondary palette)',
+  /\.sleep-system__workspace\.is-complete \.sleep-system__action--primary:not\(\.sleep-system__action--selected\) \{[\s\S]*?background: #FFFDF8;[\s\S]*?\}/.test(html));
+ok('A3: renderSleepSystem toggles is-complete from the same open-count truth',
+  /workspace\.classList\.toggle\('is-complete', ssOpenCount === 0\);/.test(html));
+ok('A3: the detail surface joined the wipe inventory (SESSION_TEXT_IDS)',
+  /var SESSION_TEXT_IDS = \[[\s\S]*?'sleepSystemPlanDetail',[\s\S]*?\];/.test(html));
 
 // ------------------------------------------------------------------- summary
 console.log(`\n${failures === 0 ? 'PASS' : 'FAIL'} — ${checks - failures}/${checks} checks passed`);
