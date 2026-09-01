@@ -488,6 +488,13 @@ jobs:
       - name: sleep system presentation (benefit-first, procedure separation)
         run: node tests/sleep_system_presentation_check.mjs
 
+      # A3 audience contract (owner ruling 2026-09-01): the declared
+      # per-screen audience map, the post-quiz tablet handoff, and the
+      # per-surface voice (specialist evidence vocabulary; shared moments
+      # keep their deliberate second person).
+      - name: audience contract (A3 post-quiz voice)
+        run: node tests/audience_contract_check.mjs
+
       # Trust integrity and transparency gate (Phase 1 cross-cutting,
       # 2026-08-21): the copy <-> engine correspondence document and its
       # pinned inert-tag set, banned claims in quiz help copy, the absence of

@@ -299,12 +299,19 @@ for (const f of Object.keys(FIXTURES)) {
       stripLabel(els.get("resultsTrialFocus").innerHTML) === stripLabel(pin.resultsTrialFocus)
       && els.get("resultsTrialFocus").innerHTML.indexOf('<span class="results-trial-focus__label">'
         + (lang === 'es' ? 'Enfoque de la prueba' : 'Trial focus') + '</span>') === 0);
-    check(`[${f}/${lang}] retained screen copy unchanged (heading, reflection, plan label, both buttons)`,
+    check(`[${f}/${lang}] retained screen copy unchanged (heading, reflection, plan label)`,
       els.get("profileName").textContent === pin.profileName
       && els.get("profileReflection").textContent === pin.reflection
-      && els.get("profilePlanLabel").textContent === pin.planLabel
-      && els.get("profileSecondary").textContent === pin.secondary
-      && (els.get("profileCta").innerHTML || els.get("profileCta").textContent) === pin.cta);
+      && els.get("profilePlanLabel").textContent === pin.planLabel);
+    // A3 (owner ruling 2026-09-01): the two controls are operated by the
+    // specialist on the shared screen — labels drop the first-person "my".
+    // The oracle's customer-facing MEANING (heading/reflection/plan label and
+    // every priority string) stays fixture-pinned above; the button chrome is
+    // pinned here to the A3 labels instead.
+    check(`[${f}/${lang}] the shared-screen controls carry the A3 labels`,
+      els.get("profileSecondary").textContent === (lang === "es" ? "← Editar respuestas" : "← Edit answers")
+      && (els.get("profileCta").innerHTML || els.get("profileCta").textContent)
+         === (lang === "es" ? "Continuar a las opciones →" : "Continue to matches →"));
     // The ruling removed the subtitle from the customer-visible DOM and
     // PRESERVED its computation, analytics fields and email fallback. The
     // oracle proves the computation is byte-for-byte the historical one.
@@ -686,10 +693,14 @@ section("Sleep Brief CTA: ruled label, unchanged handler, honesty invariant");
   const esCta = runProfile(FIXTURES.A, "es").els.get("profileCta");
   const enLabel = enCta.innerHTML || enCta.textContent;
   const esLabel = esCta.innerHTML || esCta.textContent;
-  check("the EN label is exactly the ruled 'See My Matches →'",
-    enLabel === "See My Matches →");
-  check("the ES label is exactly the ruled provisional 'Ver Mis Opciones →'",
-    esLabel === "Ver Mis Opciones →");
+  // A3 (owner ruling 2026-09-01): the shared-screen control is operated by
+  // the specialist — the ruled pair drops the first-person "my". The fixture's
+  // cta fields keep the 2026-08-10 bytes (historical oracle, untouched); the
+  // rendered label is pinned here to the A3 pair instead.
+  check("the EN label is exactly the ruled 'Continue to matches →' (A3)",
+    enLabel === "Continue to matches →");
+  check("the ES label is exactly the ruled provisional 'Continuar a las opciones →' (A3)",
+    esLabel === "Continuar a las opciones →");
   const routesToResults =
     /<button class="noct-profile-cta" id="profileCta" onclick="window\.startResultsReveal\(\)" ontouchend="event\.preventDefault\(\);window\.startResultsReveal\(\);"><\/button>/
       .test(html);

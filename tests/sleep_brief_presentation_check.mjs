@@ -468,11 +468,13 @@ section('D1 composition — heading retained, hero beneath, removed surfaces gon
     env.get('profileSignatureEyebrow').textContent === 'Your sleep signature');
   ok('the reflection sentence renders verbatim from the engine (unchanged by the recomposition)',
     /You are shopping for a Queen, share the bed with a partner/.test(env.get('profileReflection').textContent));
-  ok('the forward CTA keeps its owner-ruled label and Results route',
-    env.get('profileCta').textContent === 'See My Matches →'
+  // A3 (owner ruling 2026-09-01): the specialist operates the shared screen's
+  // controls — the labels drop the first-person "my", the routes are unchanged.
+  ok('the forward CTA keeps its A3 label and Results route',
+    env.get('profileCta').textContent === 'Continue to matches →'
     && /id="profileCta" onclick="window\.startResultsReveal\(\)"/.test(norm));
-  ok('Edit Answers is retained as the subdued secondary action',
-    env.get('profileSecondary').textContent === '← Edit my answers');
+  ok('Edit Answers is retained as the subdued secondary action (A3 label)',
+    env.get('profileSecondary').textContent === '← Edit answers');
   ok('showScreen(profileScreen) is still the render\'s last act (Gate 2A ordering)',
     env.screens.length === 1 && env.screens[0] === 'profileScreen');
 }

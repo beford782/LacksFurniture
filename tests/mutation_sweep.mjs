@@ -141,6 +141,9 @@ const SESSION = ["tests/session_safety_check.mjs"];
 // entry names it EXPLICITLY - none may fall through to DEFAULT_SUITES, which
 // observes data-error recovery and would report a survivor as a pass.
 const SLEEP = ["tests/sleep_system_presentation_check.mjs"];
+// A3 audience-contract observer (owner ruling 2026-09-01): the declared
+// per-screen audience map, the tablet handoff, and the per-surface voice.
+const AUD = ["tests/audience_contract_check.mjs"];
 
 
 // ---------------------------------------------------------------------------
@@ -822,12 +825,12 @@ const MUTATIONS = [
   // results reveal. Anchored on the CTA's own ternary and its own button
   // markup — nothing else in the file shares either string.
   ["sleep brief CTA: the EN label reverts to the pre-relabel Compare claim",
-    "ctaBtn.textContent = es ? 'Ver Mis Opciones →' : 'See My Matches →';",
-    "ctaBtn.textContent = es ? 'Ver Mis Opciones →' : 'Compare My Matches →';",
+    "ctaBtn.textContent = es ? 'Continuar a las opciones →' : 'Continue to matches →';",
+    "ctaBtn.textContent = es ? 'Continuar a las opciones →' : 'Compare My Matches →';",
     PRIORITIES],
   ["sleep brief CTA: the ES label reverts to the pre-relabel Compare claim",
-    "ctaBtn.textContent = es ? 'Ver Mis Opciones →' : 'See My Matches →';",
-    "ctaBtn.textContent = es ? 'Comparar Mis Opciones →' : 'See My Matches →';",
+    "ctaBtn.textContent = es ? 'Continuar a las opciones →' : 'Continue to matches →';",
+    "ctaBtn.textContent = es ? 'Comparar Mis Opciones →' : 'Continue to matches →';",
     PRIORITIES],
   ["sleep brief CTA: the handler repoints at the comparison opener",
     'id="profileCta" onclick="window.startResultsReveal()" ontouchend="event.preventDefault();window.startResultsReveal();"',
@@ -2058,6 +2061,29 @@ const MUTATIONS = [
   ["A3: the progress detail line leaves the wipe inventory",
     "      'sleepSystemPlanDetail',\n",
     "", SLEEP],
+  // --- A3 tablet handoff (owner ruling 2026-09-01) --------------------------
+  ["A3 handoff: the staged completion bypasses the tablet handoff",
+    "        if (reviewScreen && reviewScreen.classList.contains('active')) {\n          // A3: the completion lands on the tablet handoff; the specialist's\n          // \"Begin guided review\" arms the signature entry and opens the Brief.\n          window.showTabletHandoff();\n        }",
+    "        if (reviewScreen && reviewScreen.classList.contains('active')) {\n          window._sleepSignatureEntry = true;\n          window.showProfileScreen();\n        }",
+    AUD],
+  ["A3 handoff: Begin guided review stops arming the signature entry",
+    "    window.beginGuidedReview = function() {\n      window._sleepSignatureEntry = true;\n      window.showProfileScreen();\n    };",
+    "    window.beginGuidedReview = function() {\n      window.showProfileScreen();\n    };",
+    AUD],
+  ["A3 handoff: the screen shows before its copy renders (announce contract broken)",
+    "    window.showTabletHandoff = function() {\n      renderTabletHandoff();\n      showScreen('tabletHandoffScreen');\n    };",
+    "    window.showTabletHandoff = function() {\n      showScreen('tabletHandoffScreen');\n      renderTabletHandoff();\n    };",
+    AUD],
+  ["A3 handoff: a language switch stops relocalising the handoff in place",
+    "      var tabletHandoffScreen = document.getElementById('tabletHandoffScreen');\n      if (tabletHandoffScreen && tabletHandoffScreen.classList.contains('active')) {\n        renderTabletHandoff();\n      }\n",
+    "", AUD],
+  ["A3 handoff: the greeting leaves the wipe text inventory",
+    "      'tabletHandoffTitle',\n",
+    "", AUD],
+  ["A3: a screen loses its audience declaration",
+    "  <div class=\"screen\" id=\"resultsScreen\" role=\"region\" data-audience=\"specialist\">",
+    "  <div class=\"screen\" id=\"resultsScreen\" role=\"region\">",
+    AUD],
   // (9) a new, narrower breakpoint is added - the "no breakpoint added" pin
   //     counts @media max-width blocks against the da4f746 count.
   ["1.4 close-out: a new @media (max-width: 600px) block is added",

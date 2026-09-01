@@ -11144,6 +11144,11 @@
   <div class="screen" id="profileScreen" role="region" data-audience="shared">
     <main class="noct-profile" aria-labelledby="profileName">
       <section class="profile-launch__identity" aria-labelledby="profileName">
+        <!-- A3 (owner ruling 2026-09-01): the restrained shared-moment
+             orientation — the specialist holds the tablet and reviews this
+             screen together with the customer. Dictionary copy; the existing
+             eyebrow style, no new bar or toggle. -->
+        <div class="noct-profile-eyebrow" id="profileAudienceEyebrow">Review together</div>
         <h1 class="noct-profile-name" id="profileName" tabindex="-1"></h1>
         <p class="noct-profile-hero" id="profileHero"></p>
         <div class="noct-profile-eyebrow" id="profileSignatureEyebrow"></div>
@@ -11608,8 +11613,10 @@
     <section class="hf2-review-section">
       <div class="hf2-review-section__header">
         <div>
-          <div class="hf2-review-section__label" id="hf2FinalistsLabel">Your finalists</div>
-          <div class="hf2-review-section__hint" id="hf2FinalistsHint">Review the mattresses the customer chose to keep.</div>
+          <!-- A3: statics aligned to the rendered strings — the shared Summary
+               never flashes a second narrator before renderHf2 runs. -->
+          <div class="hf2-review-section__label" id="hf2FinalistsLabel">Your saved picks</div>
+          <div class="hf2-review-section__hint" id="hf2FinalistsHint">The mattresses you saved, in the order you saved them.</div>
         </div>
         <button class="hf2-compare-finalists" id="hf2CompareBtn" type="button"
                 onclick="window.compareReviewFinalists()"
@@ -11622,7 +11629,7 @@
     <section class="hf2-review-section" id="hf2SleepSystemSection">
       <div class="hf2-review-section__header">
         <div>
-          <div class="hf2-review-section__label" id="hf2SystemLabel">Selected Sleep System</div>
+          <div class="hf2-review-section__label" id="hf2SystemLabel">Your Sleep System</div>
           <div class="hf2-review-section__hint" id="hf2SystemHint">Only the pieces already added to the plan.</div>
         </div>
         <button class="hf2-edit-system" id="hf2EditSystemBtn" type="button"
@@ -11791,7 +11798,7 @@
           <div class="email-preview-card-line" id="emailPreviewModeNote">No email was sent. Live delivery can be connected after the retailer approves the experience.</div>
         </div>
         <button class="noct-email-cta-primary" id="emailConfirmStartOver" onclick="window.startOver()" ontouchend="event.preventDefault();window.startOver();">Start New Customer</button>
-        <button class="noct-email-secondary" id="emailConfirmBackHandoff" onclick="window.showSavedPicks()" ontouchend="event.preventDefault();window.showSavedPicks();">Back to handoff</button>
+        <button class="noct-email-secondary" id="emailConfirmBackHandoff" onclick="window.showSavedPicks()" ontouchend="event.preventDefault();window.showSavedPicks();">Back to the summary</button>
       </div>
 
     </div>
@@ -15908,6 +15915,8 @@
       // replacement for it. The answer-derived subtitle is no longer rendered
       // to the customer (owner ruling 2026-08-15); its computation, analytics
       // fields and email fallback are preserved below, untouched.
+      // A3: the shared-moment eyebrow (dictionary; ES provisional).
+      setProfileText('profileAudienceEyebrow', t('brief.review_together'));
       setProfileText('profileName', t('brief.heading'));
       setProfileText('profileHero', t('brief.hero'));
       setProfileText('profileSignatureEyebrow', t('brief.signature_eyebrow'));
@@ -16258,11 +16267,13 @@
       // uses only a brief handoff into the three mattress directions. Its label
       // must describe that handoff — never a comparison it does not open (the
       // "no first-visit Compare" direction; owner-ruled pair, 2026-08-10).
+      // A3: on the shared screen the specialist operates the controls — the
+      // labels stay customer-comprehensible but drop the first-person "my".
       var secondaryBtn = document.getElementById('profileSecondary');
-      if (secondaryBtn) secondaryBtn.textContent = es ? '← Editar mis respuestas' : '← Edit my answers';
+      if (secondaryBtn) secondaryBtn.textContent = es ? '← Editar respuestas' : '← Edit answers';
       var ctaBtn = document.getElementById('profileCta');
       if (ctaBtn) {
-        ctaBtn.textContent = es ? 'Ver Mis Opciones →' : 'See My Matches →';
+        ctaBtn.textContent = es ? 'Continuar a las opciones →' : 'Continue to matches →';
       }
 
       // Gate 2A: the bespoke sessionFrame() focus that used to follow this
@@ -18156,7 +18167,9 @@
         (es ? 'No se envió ningún correo. ' : 'No email was sent. ') + L(getSavingsPassConfig().demoDeliveryNote));
 
       setText('emailConfirmStartOver', es ? 'Nuevo Cliente' : 'Start New Customer');
-      setText('emailConfirmBackHandoff', es ? 'Volver a las selecciones' : 'Back to handoff');
+      // A3: "handoff" is internal jargon — the route goes to the shared
+      // Consultation Summary and says so.
+      setText('emailConfirmBackHandoff', es ? 'Volver al resumen' : 'Back to the summary');
 
     }
 
@@ -21103,11 +21116,13 @@
         hf2PassLabel: es ? 'Tu consulta está lista para guardar' : 'Your consultation is ready to save',
         // Pass-reveal hint only when the Savings Pass is enabled; otherwise a
         // neutral save prompt (financing has its own module above this one).
+        // A3: the shared close speaks to both people — "save it to take
+        // home", never backstage instruction about "the customer".
         hf2PassHint: savingsPassEnabled()
           ? (es ? 'Revisen el plan juntos y luego revela el Pase de Ahorro de 30 días.'
                 : 'Review the plan together, then reveal the 30-day Savings Pass.')
-          : (es ? 'Revisen el plan juntos y luego guárdalo para el cliente.'
-                : 'Review the plan together, then save it for the customer.')
+          : (es ? 'Revisen el plan juntos y luego guárdenlo para llevar.'
+                : 'Review the plan together, then save it to take home.')
       };
       Object.keys(reviewCopy).forEach(function(id) {
         var el = document.getElementById(id);
