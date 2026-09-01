@@ -1101,7 +1101,6 @@ const REQUIRED_CONTENT_IDS = [
   // them, and each must be owned by the wipe.
   "profileName", "profilePriorities", "profileSignature", "profileHero",
   "profileReflection", "profileSecondary", "profileCta",
-  "resultsSignature", "hf2Signature",
   "resultsHeadline", "tierTabs", "tierDescriptor", "topPickContainer",
   "supportingRow", "resultsTrialFocus",
   "drawerName", "drawerDifferentiators", "drawerTryPrompts", "drawerPromotionDetail",

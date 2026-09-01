@@ -271,8 +271,12 @@ function makeEnv({ lang = 'en', answers = ANSWERS_A, dict = null, reduced = fals
     frames, drainFrames };
 }
 
-// ------------------------------------- cross-surface geometry identity (D2)
-section('constellation geometry is identical on all three surfaces (real paths)');
+// ------------------------------------- the figure lives on the Brief only
+// Signature final ruling (owner, 2026-09-01): the Sleep Signature is a reveal,
+// not a recurring brand system. It renders on the Sleep Brief only; Results,
+// Compare, Sleep System and the Summary carry no stamp. (Supersedes the D2
+// three-surface identity pin; the underlying profile data is untouched.)
+section('the constellation renders on the Sleep Brief only (real paths)');
 for (const [label, answers] of [['A', ANSWERS_A], ['B', ANSWERS_B]]) {
   for (const lang of ['en', 'es']) {
     const env = makeEnv({ lang, answers });
@@ -280,15 +284,19 @@ for (const [label, answers] of [['A', ANSWERS_A], ['B', ANSWERS_B]]) {
     env.api.results();
     env.api.hf2();
     const brief = env.get('profileSignature').innerHTML;
-    const results = env.get('resultsSignature').innerHTML;
-    const hf2 = env.get('hf2Signature').innerHTML;
-    ok(`[${label}/${lang}] Sleep Brief, Results header and Consultation Summary render byte-identical geometry`,
-      brief.length > 0 && brief === results && results === hf2,
-      `${brief.length}b`);
-    ok(`[${label}/${lang}] every rendered stamp is the decorative figure (aria-hidden, no text)`,
-      [brief, results, hf2].every((s) => /^<svg [^>]*aria-hidden="true"/.test(s) && !/<text/.test(s)));
+    ok(`[${label}/${lang}] the Sleep Brief renders the decorative figure (aria-hidden svg, no text)`,
+      brief.length > 0 && /^<svg [^>]*aria-hidden="true"/.test(brief) && !/<text/.test(brief), `${brief.length}b`);
+    const resultsEl = env.get('resultsSignature'), hf2El = env.get('hf2Signature');
+    ok(`[${label}/${lang}] Results and the Summary render NO stamp (no container, nothing written)`,
+      (!resultsEl || !resultsEl.innerHTML) && (!hf2El || !hf2El.innerHTML));
   }
 }
+ok('no stamp container exists outside the Brief (markup)',
+  !/id="resultsSignature"/.test(norm) && !/id="hf2Signature"/.test(norm) && !/id="sleepPlanSignature"/.test(norm));
+ok('the builder has exactly one render consumer: the Sleep Brief',
+  (norm.match(/= buildSleepSignatureSvg\(answers\)/g) || []).length === 1);
+ok('no stamp CSS survives (no results/summary signature rules)',
+  !/noct-results-signature/.test(norm) && !/hf2-review-signature/.test(norm));
 {
   const en = makeEnv({ lang: 'en', answers: ANSWERS_A });
   const es = makeEnv({ lang: 'es', answers: ANSWERS_A });
@@ -346,11 +354,14 @@ section('hero scale — the Sleep Brief figure is a hero, the stamps stay stamps
   // Device gate 2026-08-15 (second pass): the reveal was visible but the
   // figure still read as a stamp on the mounted iPad. The hero is enlarged;
   // the two stamp placements are deliberately untouched.
-  const heroBase = norm.match(/\.noct-profile-signature \.sleep-signature \{\s*\n\s*width: clamp\((\d+)px, ([\d.]+)vw, (\d+)px\);/);
-  ok('the hero width is located as a clamp', !!heroBase);
+  // E1-A (owner ruling 2026-09-01): the landscape figure scales to the
+  // identity panel — min(clamp(300px, 36vw, 420px), 100%). Portrait and phone
+  // keep their own widths (pinned below, unchanged).
+  const heroBase = norm.match(/\.noct-profile-signature \.sleep-signature \{[^}]*width: min\(clamp\((\d+)px, ([\d.]+)vw, (\d+)px\), 100%\);/);
+  ok('the hero width is located as a panel-scaled clamp (E1-A)', !!heroBase);
   if (heroBase) {
     const [, min, , max] = heroBase.map(Number);
-    ok('landscape/desktop hero sits in the ruled 220-260px band', min >= 220 && max <= 260,
+    ok('landscape/desktop hero sits in the E1-A 300-420px band', min >= 300 && max <= 420,
       `${min}-${max}px`);
   }
   const portrait = norm.match(/@media \(max-width: 900px\), \(orientation: portrait\) \{[\s\S]*?\n    \}\n/);
@@ -377,14 +388,15 @@ section('hero scale — the Sleep Brief figure is a hero, the stamps stay stamps
   ok('the hero is placed deliberately in its field, not left clustered in a corner',
     /\.noct-profile-signature \.sleep-signature \{[^}]*margin-inline: auto;/.test(norm)
     || /\.noct-profile-signature \{[^}]*justify-content: center;/.test(norm));
-  // The stamps are NOT part of this change.
-  ok('the Results header stamp keeps its 54px size',
-    /\.noct-results-signature \.sleep-signature \{\s*\n\s*width: 54px;\s*\n\s*\}/.test(norm));
-  ok('the Consultation Summary stamp keeps its 48px size',
-    /\.hf2-review-signature \.sleep-signature \{\s*\n\s*width: 48px;\s*\n\s*\}/.test(norm));
-  ok('neither stamp is resized by a portrait or phone override',
-    !/noct-results-signature \.sleep-signature/.test(pBlock + phBlock)
-    && !/hf2-review-signature \.sleep-signature/.test(pBlock + phBlock));
+  // Signature final ruling (2026-09-01): there are no stamps to size — the
+  // Results and Summary placements are removed (pinned in the Brief-only
+  // section above). The pre-draw state exists from the render frame (X13).
+  ok('the pre-draw state is declared for the Brief figure (no first-paint flash)',
+    /\.noct-profile-signature\.is-predraw \.sleep-signature polyline \{[^}]*stroke-dashoffset: 1;/.test(norm)
+    && /\.noct-profile-signature\.is-predraw \.sleep-signature circle \{[^}]*opacity: 0;/.test(norm));
+  ok('the render applies is-predraw before scheduling the two-frame reveal and the wipe strips it',
+    /signatureEl\.classList\.add\('is-predraw'\);\s*\n\s*sessionFrame\(/.test(norm)
+    && /\{ id: 'profileSignature', remove: \['is-entering', 'is-predraw'\] \}/.test(norm));
   // Sizing stays in CSS: the SVG bytes are answer-derived and must not change.
   ok('the renderer emits no sizing attributes (scale is CSS, the SVG bytes are unchanged)',
     !/\swidth="/.test(sigSrc) && !/\sheight="/.test(sigSrc));
@@ -714,13 +726,16 @@ section('session integrity — wipe ownership, timers, engine boundary');
 {
   const contentIds = (norm.match(/SESSION_CONTENT_IDS = \[[\s\S]*?\]/) || [''])[0];
   ok('the wipe inventory owns every container this slice renders into',
+    // Signature final ruling (2026-09-01): the two stamp containers no longer
+    // exist, so they are no longer part of the inventory (checked absent below).
     ['profileName', 'profilePriorities', 'profileSignature', 'profileHero',
-     'profileReflection', 'resultsSignature', 'hf2Signature']
-      .every((id) => contentIds.includes(`'${id}'`)));
+     'profileReflection']
+      .every((id) => contentIds.includes(`'${id}'`))
+    && !contentIds.includes("'resultsSignature'") && !contentIds.includes("'hf2Signature'"));
   ok('the inventory no longer names the removed containers',
     !contentIds.includes("'profileMetaStrip'") && !contentIds.includes("'profileJourneySteps'"));
-  ok('the wipe strips a stale reveal marker from the signature container',
-    /\{ id: 'profileSignature', remove: \['is-entering'\] \}/.test(norm));
+  ok('the wipe strips the stale reveal AND pre-draw markers from the signature container (E1-A / X13)',
+    /\{ id: 'profileSignature', remove: \['is-entering', 'is-predraw'\] \}/.test(norm));
   ok('the wipe closes every disclosure and disarms the entry animation',
     /_briefOpenPriority = null;/.test(norm.slice(norm.indexOf('function resetSessionState')))
     && /window\._sleepSignatureEntry = false;/.test(norm.slice(norm.indexOf('function resetSessionState'))));
@@ -760,14 +775,15 @@ section('negative controls — the D1 assertions genuinely bite');
     !/priority-why/.test(env.get('profilePriorities').innerHTML));
 }
 {
+  // Signature final ruling (2026-09-01): the Brief is the only render site, so
+  // the negative control now removes THAT render and expects detection.
   const env = makeEnv({
-    mutate: (s) => mustReplace(s, "resultsSignature.innerHTML = buildSleepSignatureSvg(answers)",
-      "resultsSignature.innerHTML = ''")
+    mutate: (s) => mustReplace(s, "signatureEl.innerHTML = buildSleepSignatureSvg(answers)",
+      "signatureEl.innerHTML = ''")
   });
   env.api.brief();
-  env.api.results();
-  ok('control: a Results stamp that stops sharing the geometry is detected',
-    env.get('resultsSignature').innerHTML !== env.get('profileSignature').innerHTML);
+  ok('control: a Sleep Brief that stops rendering the figure is detected (Brief-only ruling)',
+    env.get('profileSignature').innerHTML === '');
 }
 {
   const env = makeEnv({

@@ -628,7 +628,16 @@
     body:has(#emailScreen.active) .accent-bar,
     body:has(#emailScreen.active) .header,
     body:has(#accessoriesScreen.active) .accent-bar,
-    body:has(#accessoriesScreen.active) .header {
+    body:has(#accessoriesScreen.active) .header,
+    /* North Star candidate E2-A (owner ruling 2026-09-01): the last two dark
+       headers leave — the Plan and the Summary join the light continuity the
+       other seven screens already have. Retailer identity stays in-page
+       (the Summary's attribution line; the Plan gains the same
+       config-derived line). No identity strip, pill or replacement bar. */
+    body:has(#sleepPlanScreen.active) .accent-bar,
+    body:has(#sleepPlanScreen.active) .header,
+    body:has(#hf2Screen.active) .accent-bar,
+    body:has(#hf2Screen.active) .header {
       display: none;
     }
 
@@ -640,7 +649,9 @@
     body:has(#profileScreen.active) #profileScreen,
     body:has(#resultsScreen.active) #resultsScreen,
     body:has(#emailScreen.active) #emailScreen,
-    body:has(#accessoriesScreen.active) #accessoriesScreen {
+    body:has(#accessoriesScreen.active) #accessoriesScreen,
+    body:has(#sleepPlanScreen.active) #sleepPlanScreen,
+    body:has(#hf2Screen.active) #hf2Screen {
       min-height: 100vh;
       min-height: 100dvh;
     }
@@ -1682,9 +1693,9 @@
       color: #9A7445;
     }
 
-    .noct-profile-signature .sleep-signature,
-    .noct-results-signature .sleep-signature,
-    .hf2-review-signature .sleep-signature {
+    /* Signature final ruling (2026-09-01): the figure is a reveal, not a
+       recurring brand system — it lives on the Sleep Brief only. */
+    .noct-profile-signature .sleep-signature {
       display: block;
       height: auto;
     }
@@ -1697,8 +1708,20 @@
        field instead of hugging its left edge. The Results and Consultation
        Summary stamps below are deliberately untouched by this change. */
     .noct-profile-signature .sleep-signature {
-      width: clamp(220px, 20vw, 260px);
+      /* E1-A (owner ruling 2026-09-01): the landscape figure scales to the
+         identity panel; portrait and phone keep their own widths below. */
+      width: min(clamp(300px, 36vw, 420px), 100%);
       margin-inline: auto;
+    }
+
+    /* E1-A / X13: the pre-entry state exists from the SAME render frame, so
+       the finished constellation can never paint before the draw begins. */
+    .noct-profile-signature.is-predraw .sleep-signature polyline {
+      stroke-dasharray: 1;
+      stroke-dashoffset: 1;
+    }
+    .noct-profile-signature.is-predraw .sleep-signature circle {
+      opacity: 0;
     }
 
     /* The entry reveal performs ONCE, on the quiz-completion entry
@@ -1746,24 +1769,6 @@
       .noct-profile-signature.is-entering .sleep-signature circle {
         animation: none;
       }
-    }
-
-    .noct-results-signature {
-      margin-bottom: 8px;
-      color: var(--accent-ink);
-    }
-
-    .noct-results-signature .sleep-signature {
-      width: 54px;
-    }
-
-    .hf2-review-signature {
-      margin-bottom: 8px;
-      color: var(--accent-ink);
-    }
-
-    .hf2-review-signature .sleep-signature {
-      width: 48px;
     }
 
     .profile-launch__reflection {
@@ -1891,6 +1896,29 @@
       gap: 12px;
       margin-top: auto;
       padding-top: 12px;
+    }
+
+    /* E1-A, landscape only: the figure floats centred in the identity
+       panel's leftover height and the guided-trial group sits as ONE centred
+       block. AFTER the base .profile-launch__actions rule on purpose
+       (margin-top: auto would otherwise win the cascade). Portrait untouched. */
+    @media (min-width: 901px) and (orientation: landscape) {
+      .noct-profile-signature {
+        display: flex;
+        flex: 1;
+        align-items: center;
+        justify-content: center;
+        margin: 0 0 12px;
+      }
+      .noct-profile-signature .sleep-signature {
+        flex: 0 0 auto;
+      }
+      .profile-launch__brief {
+        justify-content: center;
+      }
+      .profile-launch__actions {
+        margin-top: 18px;
+      }
     }
 
     .noct-profile-cta,
@@ -3492,6 +3520,11 @@
     #sleepPlanScreen.active {
       flex-direction: column;
       padding: 1.25rem;
+      /* E2-A: with the dark header gone, the fixed session utility card is
+         these screens' top-band neighbour — reserve the same clearance the
+         Sleep System does. One shared rule on purpose (sleep_plan_check pins
+         that the padding rule names both screens together). */
+      padding-top: calc(var(--session-utility-clearance) + env(safe-area-inset-top, 0px));
     }
     .hf2-review-nav {
       display: flex;
@@ -10241,6 +10274,28 @@
       }
     }
 
+    /* E2-A: the one persistent element never flips polarity. Quiz and Review
+       leave the :root dark tokens in place, so the card inverted at
+       Review → Brief; pin it to the light pairing there and re-scope the two
+       cream-tuned literal borders with it. */
+    body:has(#questionScreen.active) .session-utility,
+    body:has(#reviewScreen.active) .session-utility {
+      --color-surface: #FFFDF8;
+      --color-text: #2F271E;
+      --color-bg: #F3EEE5;
+      --color-border: #D1C5B6;
+      box-shadow: 0 2px 10px rgba(55, 40, 28, 0.18);
+    }
+    body:has(#questionScreen.active) .session-utility__btn,
+    body:has(#reviewScreen.active) .session-utility__btn {
+      border-color: rgba(47, 39, 30, 0.28);
+    }
+    body:has(#questionScreen.active) .session-utility__restart,
+    body:has(#reviewScreen.active) .session-utility__restart {
+      background: rgba(47, 39, 30, 0.05);
+      border-color: rgba(47, 39, 30, 0.45);
+    }
+
     .session-utility__group {
       display: flex;
       flex-wrap: wrap;
@@ -10726,9 +10781,6 @@
   <!-- SCREEN: Results -->
   <div class="screen" id="resultsScreen" role="region">
     <div class="noct-results">
-      <!-- Sleep Signature stamp (D2, Slice 2): the same answer-derived,
-           decorative figure the Sleep Brief renders, at stamp scale. -->
-      <div class="noct-results-signature" id="resultsSignature"></div>
       <div class="noct-results-eyebrow" id="resultsEyebrow">Your matches</div>
       <h1 class="noct-results-headline" id="resultsHeadline">Your <span class="accent">strongest matches</span> are ready</h1>
       <p class="noct-results-subhead" id="resultsSubhead">Tap any match to see why it fits, then ask your sleep specialist to compare your options.</p>
@@ -10983,6 +11035,11 @@
               onclick="window.sleepPlanBack()"
               ontouchend="event.preventDefault();window.sleepPlanBack();"></button>
     </div>
+    <!-- E2-A: with the dark header gone the Plan carries the same
+         config-derived retailer attribution the Summary already has — its OWN
+         id and renderer (the hf2 pair is pinned byte-for-byte). Empty config
+         hides it entirely. -->
+    <div class="hf2-review-attribution" id="sleepPlanAttribution" hidden></div>
     <div class="hf2-review-eyebrow" id="sleepPlanEyebrow"></div>
     <h1 class="hf2-review-title" id="sleepPlanTitle"></h1>
 
@@ -11077,9 +11134,6 @@
     </div>
 
     <div class="hf2-review-intro">
-      <!-- Sleep Signature stamp (D2, Slice 2). Stamp only: this screen's
-           layout, resolver, rows, priorities and copy are untouched. -->
-      <div class="hf2-review-signature" id="hf2Signature"></div>
       <!-- Store attribution (Slice 6, D5c): storeName + the configured
            consultation subline, config-derived only — never a literal, never
            heritage copy (the Welcome eyebrow owns that). Empty config hides
@@ -15458,7 +15512,7 @@
         // immediately — no reveal is scheduled at all.
         var animateSignature = window._sleepSignatureEntry === true && !dfmReducedMotion();
         window._sleepSignatureEntry = false;
-        if (signatureEl.classList) signatureEl.classList.remove('is-entering');
+        if (signatureEl.classList) signatureEl.classList.remove('is-entering', 'is-predraw');
         if (animateSignature) {
           // TWO session-owned frames, deliberately. Adding the class during
           // the render started the reveal before the Sleep Brief was painted,
@@ -15467,10 +15521,16 @@
           // after this render's work, the second after the browser has
           // actually painted the screen. Session-owned (never a raw rAF), so
           // a wipe mid-reveal orphans it with the rest of the session.
+          // E1-A / X13: the pre-draw state is applied IN THIS RENDER, so the
+          // two-frame wait can no longer paint the finished figure first.
+          signatureEl.classList.add('is-predraw');
           sessionFrame(function() {
             sessionFrame(function() {
               var el = document.getElementById('profileSignature');
-              if (el && el.classList) el.classList.add('is-entering');
+              if (el && el.classList) {
+                el.classList.remove('is-predraw');
+                el.classList.add('is-entering');
+              }
             });
           });
         }
@@ -16127,8 +16187,6 @@
       // D2: the same answer-derived decorative figure the Sleep Brief renders,
       // at stamp scale. Identical geometry by construction — one renderer, one
       // input — and never animated here.
-      var resultsSignature = document.getElementById('resultsSignature');
-      if (resultsSignature) resultsSignature.innerHTML = buildSleepSignatureSvg(answers);
       document.getElementById('resultsEyebrow').textContent = es ? 'Tus opciones' : 'Your matches';
       document.getElementById('resultsHeadline').innerHTML = es
         ? 'Tus opciones <span class="accent">más compatibles</span> están listas'
@@ -20366,6 +20424,15 @@
     function renderSleepPlan() {
       var back = document.getElementById('sleepPlanBack');
       if (back) back.textContent = t('plan.back_to_matches');
+      // E2-A: config-derived attribution (storeName + voice.retailerSubline)
+      // in the Plan's own element; blank config hides it; never a literal.
+      var planAttribution = document.getElementById('sleepPlanAttribution');
+      if (planAttribution) {
+        var planAttrSub = (localizedConfigBlock('voice') || {}).retailerSubline || '';
+        var planAttrText = storeName() ? (planAttrSub ? storeName() + ' · ' + planAttrSub : storeName()) : '';
+        planAttribution.textContent = planAttrText;
+        planAttribution.hidden = !planAttrText;
+      }
       var eyebrow = document.getElementById('sleepPlanEyebrow');
       if (eyebrow) eyebrow.textContent = t('plan.eyebrow');
       var title = document.getElementById('sleepPlanTitle');
@@ -20592,8 +20659,6 @@
       // D2 stamp only: the shared decorative figure, identical geometry to the
       // Sleep Brief and the Results header. This screen's resolver, rows,
       // priorities, layout and copy are deliberately untouched by Slice 2.
-      var hf2Signature = document.getElementById('hf2Signature');
-      if (hf2Signature) hf2Signature.innerHTML = buildSleepSignatureSvg(answers);
       var context = document.getElementById('hf2BriefContext');
       var who = document.getElementById('hf2BriefWho');
       var profile = document.getElementById('hf2BriefProfile');
@@ -22166,7 +22231,6 @@
       'questionContainer', 'reviewList',
       'profileName', 'profilePriorities', 'profileSignature', 'profileHero',
       'profileReflection', 'profileSecondary', 'profileCta',
-      'resultsSignature', 'hf2Signature',
       'resultsHeadline', 'tierTabs', 'tierDescriptor', 'topPickContainer',
       'supportingRow', 'resultsTrialFocus',
       'drawerName', 'drawerDifferentiators', 'dfmConstructionSection', 'drawerTryPrompts', 'drawerPromotionDetail',
@@ -22262,7 +22326,7 @@
       { id: 'profileScreen', remove: ['animate'] },
       // Slice 2: a wipe during the Sleep Signature reveal must not leave the
       // marker behind for the next customer's first render to inherit.
-      { id: 'profileSignature', remove: ['is-entering'] },
+      { id: 'profileSignature', remove: ['is-entering', 'is-predraw'] },
       { id: 'dreamCodeBox', hiddenAttr: true, display: 'none' },
       { id: 'financingSheet', hiddenAttr: true },
       { id: 'financingSheetBackdrop', hiddenAttr: true }
