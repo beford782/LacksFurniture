@@ -190,6 +190,10 @@
 
     .landing-lang-btn {
       padding: 5px 11px;
+      /* X12 (North Star ruling D9, 2026-08-31): 44px touch floor within the
+         restrained Welcome treatment — the box grows, the type does not. */
+      min-height: 44px;
+      min-width: 44px;
       font-family: var(--font-sans);
       font-size: 11px;
       font-weight: 500;
@@ -2465,6 +2469,8 @@
       font-size: 11px;
       letter-spacing: 0.2em;
       text-transform: uppercase;
+      /* X12: the 44px floor its row-mates (Compare, Choose as finalist) already carry. */
+      min-height: 44px;
       padding: 8px 14px;
       border-radius: var(--radius);
       cursor: pointer;
@@ -2923,6 +2929,7 @@
       touch-action: manipulation;
       display: block;
       margin: 0 auto;
+      min-height: 44px; /* X12: 44px touch floor (Start over / Back to handoff) */
       padding: 8px 16px;
       text-align: center;
     }
@@ -3723,7 +3730,7 @@
       margin-top: 0.65rem;
     }
     .hf2-acc-card__action {
-      min-height: 42px;
+      min-height: 44px; /* X12: 44px touch floor */
       padding: 0.5rem 0.7rem;
       border: 1px solid var(--color-border);
       border-radius: 5px;
@@ -3801,7 +3808,7 @@
       margin-top: 0.75rem;
     }
     .hf2-pick__action {
-      min-height: 42px;
+      min-height: 44px; /* X12: 44px touch floor */
       padding: 0.55rem 0.75rem;
       border: 1px solid var(--color-border);
       border-radius: 5px;
@@ -3853,6 +3860,7 @@
       background: transparent;
       border: 1px solid var(--color-border);
       border-radius: 6px;
+      min-height: 44px; /* X12: 44px touch floor */
       padding: 0.45rem 0.8rem;
       color: var(--color-text-muted);
       font-family: inherit;
@@ -3962,6 +3970,7 @@
       align-items: center;
       gap: 0.4rem;
       width: 100%;
+      min-height: 44px; /* X12: 44px touch floor */
       padding: 0.55rem 0.85rem;
       border: 0;
       border-top: 1px solid var(--color-border);
@@ -4064,6 +4073,7 @@
       display: none;
       align-items: center;
       gap: 0.55rem;
+      min-height: 44px; /* X12: 44px touch floor (was 40px) */
       padding: 0.55rem 0.95rem;
       background: var(--color-surface);
       border: 1px solid color-mix(in srgb, var(--color-accent) 45%, transparent);
@@ -8081,7 +8091,7 @@
     @media (prefers-reduced-motion: reduce) {
       .compare-tray { animation: none; }
     }
-    .compare-tray-clear, .compare-tray-go { white-space: nowrap; }
+    .compare-tray-clear, .compare-tray-go { white-space: nowrap; min-height: 44px; min-width: 44px; } /* X12: 44px floor (were 35px tall) */
     /* Compare entry slice: the tray predates any reachable entry point and
        was authored as one nowrap row — at phone widths the action buttons
        crushed into the slot chips (flex SHRINKS nowrap content before it
@@ -8168,6 +8178,14 @@
       font-family: inherit;
       padding: 0 0.4rem;
       touch-action: manipulation;
+      /* X12: 44px touch floor (was 32x29); the glyph stays centred. Its
+         author focus ring lives with the drawer's, after the anchored
+         first forced-colors block. */
+      min-width: 44px;
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
     }
     .compare-cols {
       display: grid;
@@ -8487,7 +8505,7 @@
     }
     .drawer-back-to-results {
       justify-self: start;
-      min-height: 42px;
+      min-height: 44px; /* X12: 44px touch floor */
       padding: 8px 12px;
       border: 1px solid rgba(255,255,255,0.14);
       border-radius: 8px;
@@ -8504,7 +8522,7 @@
       gap: 8px;
     }
     .drawer-nav-btn {
-      min-height: 42px;
+      min-height: 44px; /* X12: 44px touch floor */
       padding: 8px 12px;
       border: 1px solid rgba(255,255,255,0.14);
       border-radius: 8px;
@@ -10271,6 +10289,21 @@
         box-shadow: none;
       }
       .drawer-reaction-row button[aria-pressed="true"] { border-width: 3px; }
+    }
+    /* X12 (North Star ruling D9, 2026-08-31): the Compare dialog's close
+       control had only the UA focus ring. It joins the two-ring treatment,
+       with the CanvasText fallback in its own block — after the anchored
+       first forced-colors block, like the drawer rules above. */
+    .compare-modal-close:focus-visible {
+      outline: 3px solid var(--focus-ring-outer);
+      outline-offset: 2px;
+      box-shadow: 0 0 0 5px var(--focus-ring-inner);
+    }
+    @media (forced-colors: active) {
+      .compare-modal-close:focus-visible {
+        outline-color: CanvasText;
+        box-shadow: none;
+      }
     }
 
     /* 320px CSS px and 200%-zoom reflow: labels stay whole words and never

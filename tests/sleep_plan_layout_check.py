@@ -791,6 +791,85 @@ def run_compare_tray_pill(browser, port, name, width, height, lang, shots_dir):
     page.close()
 
 
+# X12 (North Star ruling D9, 2026-08-31): the swarm measured a dozen controls
+# under the 44px touch floor (Welcome language toggle 40x27, compare tray
+# 104x35 / 53x35, Selections pill x40, "Save for later" x33, Compare close
+# 32x29, drawer Back/Prev/Next x42, Summary pick/accessory actions x42, RSA
+# strip x34, RSA add x37, take-home secondary actions x33/x32). Two were ruled
+# acceptable with reason and stay: the card's "View details" (the card itself
+# opens the drawer) and the inline privacy link (running text). This pass
+# walks Welcome -> Results (tray shown, pill shown) -> drawer -> Compare ->
+# Summary (roster open) -> take-home -> preview confirmation in EN and ES at
+# both tablet viewports and requires every other visible interactive control
+# to be at least 44x44 CSS px.
+TOUCH_FLOOR_JS = r"""
+async (ARGS) => {
+  const vis = (el) => { const c = getComputedStyle(el); if (c.display === 'none' || c.visibility === 'hidden') return false; const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
+  const desc = (el) => el.tagName.toLowerCase() + (el.id ? '#' + el.id : '') + ((typeof el.className === 'string' && el.className.trim()) ? '.' + el.className.trim().split(/\s+/)[0] : '');
+  const small = (label) => { const out = []; for (const el of document.querySelectorAll('button, a[href], input, select, textarea, [role=button], [role=tab], [tabindex]:not([tabindex="-1"])')) {
+      if (!vis(el) || el.closest('[inert]') || el.disabled) continue; const r = el.getBoundingClientRect();
+      if (r.width < 44 || r.height < 44) out.push({ screen: label, desc: desc(el), w: Math.round(r.width), h: Math.round(r.height) }); } return out; };
+  const wait = (ms) => new Promise((res) => setTimeout(res, ms));
+  if (ARGS.lang === 'es') await switchLanguage('es');
+  let found = small('welcome');
+  for (const k of Object.keys(ARGS.answers)) answers[k] = ARGS.answers[k];
+  showProfileScreen();
+  window.showResults();
+  const gold = _resultsState.tierData.gold;
+  window._toggleSavePick(gold[0].id);
+  window.toggleCompare(gold[0].id);
+  window.toggleCompare(gold[1].id);
+  await wait(450);
+  found = found.concat(small('results+tray+pill'));
+  openResultCardDrawer(document.querySelector('#resultsScreen [data-id][data-tier]'));
+  await wait(500);
+  found = found.concat(small('drawer'));
+  window.closeMattressDrawer();
+  await wait(450);
+  window.openCompareModal();
+  await wait(450);
+  found = found.concat(small('compare-modal'));
+  window.closeCompareModal();
+  await wait(400);
+  window.chooseFinalist(gold[0].id);
+  window.showSavedPicks();
+  await wait(400);
+  const strip = document.getElementById('hf2RsaStripBtn'); if (strip) { strip.click(); await wait(250); }
+  found = found.concat(small('summary+roster'));
+  window.showEmailCapture();
+  await wait(400);
+  found = found.concat(small('take-home'));
+  let live = (typeof emailDeliveryLive === 'function') ? emailDeliveryLive() : null;
+  if (live === false) {
+    const input = document.getElementById('emailInput'); if (input) input.value = 'preview@example.com';
+    const send = document.getElementById('emailSendBtn'); if (send) { send.click(); await wait(1200); found = found.concat(small('take-home-confirmation')); }
+  }
+  return { found, live };
+}
+"""
+ALLOWED_SMALL = ("noct-card-details", "emailPrivacyLink")
+
+
+def run_touch_floor(browser, port, name, width, height, lang, shots_dir):
+    print(f"\n-- TOUCH FLOOR sweep (X12) {lang} {name} {width}x{height} --")
+    page = browser.new_page(viewport={"width": width, "height": height}, has_touch=True)
+    errors = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    page.goto(f"http://127.0.0.1:{port}/", wait_until="networkidle")
+    page.wait_for_selector("#startBtn")
+    r = page.evaluate(TOUCH_FLOOR_JS, {"answers": ANSWERS, "lang": lang})
+    if shots_dir:
+        os.makedirs(shots_dir, exist_ok=True)
+        page.screenshot(path=os.path.join(shots_dir, f"touch-floor-end-{lang}-{name}-{width}x{height}.png"))
+    offenders = [o for o in r["found"] if not any(a in o["desc"] for a in ALLOWED_SMALL)]
+    accepted = [o for o in r["found"] if any(a in o["desc"] for a in ALLOWED_SMALL)]
+    check(f"[{lang}/{name}] the sweep reached the preview confirmation without a page error (emailDeliveryLive() === false)",
+          not errors and r["live"] is False, f"errors={errors[:1]} live={r['live']}")
+    check(f"[{lang}/{name}] every visible interactive control on the swept screens is >= 44x44 CSS px, except the two recorded exceptions ({len(accepted)} occurrences of View details / privacy link)",
+          not offenders, "; ".join(f"{o['screen']}:{o['desc']} {o['w']}x{o['h']}" for o in offenders[:14]))
+    page.close()
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--screenshots", default="", help="directory to save a PNG per viewport (outside the repo)")
@@ -818,6 +897,9 @@ def main():
             for lang in ("en", "es"):
                 for name, w, h in VIEWPORTS[:2]:
                     run_compare_tray_pill(browser, port, name, w, h, lang, args.screenshots)
+            for lang in ("en", "es"):
+                for name, w, h in VIEWPORTS[:2]:
+                    run_touch_floor(browser, port, name, w, h, lang, args.screenshots)
             run_forced_colors(browser, port, args.screenshots)
             run_forced_colors_states(browser, port, args.screenshots)
             browser.close()

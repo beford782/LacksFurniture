@@ -760,5 +760,43 @@ section('C5 — the Selections pill and the take-home saved count agree with the
   }
 }
 
+// ------------------------------------------------ X12: 44px touch floor
+// North Star ruling D9 (2026-08-31): one bounded PR for every control the
+// swarm measured under 44 CSS px (Welcome language toggle, compare tray,
+// Selections pill, "Save for later", Compare close, drawer Back/Prev/Next,
+// Summary pick / accessory actions, RSA strip and add, take-home secondary
+// actions). The rendered sweep in tests/sleep_plan_layout_check.py proves
+// the result; these pins keep each declaration in place. Two exceptions are
+// recorded, not repaired: the card's "View details" (the card itself opens
+// the drawer) and the inline privacy link (running text).
+section('X12 — the 44px touch floor is declared on every listed control');
+{
+  const rule = (sel) => (norm.match(new RegExp('\\n    ' + sel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ' \\{([^}]*)\\}')) || [null, ''])[1];
+  const floor = [
+    ['.landing-lang-btn', /min-height: 44px;[\s\S]*min-width: 44px;/],
+    ['.noct-save-btn', /min-height: 44px;/],
+    ['.noct-email-secondary', /min-height: 44px;/],
+    ['.hf2-acc-card__action', /min-height: 44px;/],
+    ['.hf2-pick__action', /min-height: 44px;/],
+    ['.hf2-rsa-strip__btn', /min-height: 44px;/],
+    ['.hf2-rsa-panel__add', /min-height: 44px;/],
+    ['.noct-picks-pill', /min-height: 44px;/],
+    ['.compare-modal-close', /min-width: 44px;[\s\S]*min-height: 44px;/],
+    ['.drawer-back-to-results', /min-height: 44px;/],
+    ['.drawer-nav-btn', /min-height: 44px;/]
+  ];
+  for (const [sel, re] of floor) ok(`${sel} declares the 44px floor`, re.test(rule(sel)), rule(sel).replace(/\s+/g, ' ').slice(0, 70));
+  ok('.compare-tray-clear / .compare-tray-go declare the 44px floor in both dimensions',
+    /\.compare-tray-clear, \.compare-tray-go \{ white-space: nowrap; min-height: 44px; min-width: 44px; \}/.test(norm));
+  ok('no listed control keeps the old 42px floor',
+    !/\.(hf2-pick__action|hf2-acc-card__action|drawer-back-to-results|drawer-nav-btn) \{[^}]*min-height: 42px;/.test(norm));
+  const ring = norm.match(/\.compare-modal-close:focus-visible \{([^}]*)\}/);
+  ok('the Compare close control carries the two-ring author focus indicator',
+    !!ring && /outline: 3px solid var\(--focus-ring-outer\);/.test(ring[1]) && /box-shadow: 0 0 0 5px var\(--focus-ring-inner\);/.test(ring[1]));
+  const fc = norm.match(/@media \(forced-colors: active\) \{\s*\.compare-modal-close:focus-visible \{\s*outline-color: CanvasText;\s*box-shadow: none;\s*\}\s*\}/);
+  ok('...with a CanvasText fallback placed after the anchored first forced-colors block',
+    !!fc && norm.indexOf(fc[0]) > norm.indexOf('.fin-btn:focus-visible'));
+}
+
 console.log(`\n${failures === 0 ? 'PASS' : 'FAIL'} — ${checks - failures}/${checks} checks passed`);
 process.exit(failures === 0 ? 0 : 1);
