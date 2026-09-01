@@ -177,9 +177,22 @@ if (missing.length) { console.log('FAIL — sources missing; aborting'); process
 
 // ------------------------------------------------------------- DOM harness
 function makeEl(id) {
+  const classes = new Set();
   const el = {
     id, attrs: {}, textContent: '', _html: '', disabled: false, hidden: false, style: {},
     dataset: {},
+    // A3-5: the real footer renderer toggles a secondary-styling class, so
+    // the shim models classList minimally (Set-backed, contains-checkable).
+    classList: {
+      add(...cs) { cs.forEach((c) => classes.add(c)); },
+      remove(...cs) { cs.forEach((c) => classes.delete(c)); },
+      contains(c) { return classes.has(c); },
+      toggle(c, force) {
+        const on = force === undefined ? !classes.has(c) : !!force;
+        if (on) classes.add(c); else classes.delete(c);
+        return on;
+      }
+    },
     setAttribute(k, v) { el.attrs[k] = String(v); },
     getAttribute(k) { return Object.prototype.hasOwnProperty.call(el.attrs, k) ? el.attrs[k] : null; },
     removeAttribute(k) { delete el.attrs[k]; },
@@ -2046,16 +2059,24 @@ section('A3 — rationale evidence voice, footer demotion, completion demotion')
 {
   const env = makeEnv({ answers: ANSWERS, state: { activeStep: 'protection' } });
   env.api.footer();
-  ok('A3: the footer offers no Review control on the last step (hidden, empty)',
-    env.get('sleepSystemNext').hidden === true && env.get('sleepSystemNext').textContent === '');
+  ok('A3-5: the last step keeps the skip-to-Plan control, demoted to secondary styling',
+    env.get('sleepSystemNext').hidden === false
+    && env.get('sleepSystemNext').textContent === 'Review Sleep Plan'
+    && env.get('sleepSystemNext').classList.contains('sleep-system__footer-primary--secondary'),
+    env.get('sleepSystemNext').textContent);
   const mid = makeEnv({ answers: ANSWERS, state: { activeStep: 'support' } });
   mid.api.footer();
-  ok('A3: mid-journey the footer continues to the next category',
-    mid.get('sleepSystemNext').hidden === false && /^Continue to /.test(mid.get('sleepSystemNext').textContent),
+  ok('A3: mid-journey the footer continues to the next category (never demoted)',
+    mid.get('sleepSystemNext').hidden === false && /^Continue to /.test(mid.get('sleepSystemNext').textContent)
+    && !mid.get('sleepSystemNext').classList.contains('sleep-system__footer-primary--secondary'),
     mid.get('sleepSystemNext').textContent);
+  ok('A3-5: the demoted footer class ships its secondary palette rule',
+    /\.sleep-system__footer-primary--secondary \{[\s\S]*?background: #FFFDF8;[\s\S]*?\}/.test(html));
 }
 ok('A3: the completion demotion rule ships (is-complete primaries take the secondary palette)',
   /\.sleep-system__workspace\.is-complete \.sleep-system__action--primary:not\(\.sleep-system__action--selected\) \{[\s\S]*?background: #FFFDF8;[\s\S]*?\}/.test(html));
+ok("A3-5: a wipe strips the completion marker declaratively (SESSION_LAYERS entry)",
+  /\{ id: 'sleepSystemWorkspace', remove: \['is-complete'\] \},/.test(html));
 ok('A3: renderSleepSystem toggles is-complete from the same open-count truth',
   /workspace\.classList\.toggle\('is-complete', ssOpenCount === 0\);/.test(html));
 ok('A3: the detail surface joined the wipe inventory (SESSION_TEXT_IDS)',

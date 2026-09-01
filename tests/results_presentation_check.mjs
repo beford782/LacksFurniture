@@ -727,8 +727,8 @@ section('C5 — the Selections pill and the take-home saved count agree with the
     const es1 = pillEnv('es', 1), es2 = pillEnv('es', 2);
     ok('ES: one saved pick renders "1 Selección"', es1.label === 'Selección', es1.label);
     ok('ES: two saved picks render "2 Selecciones"', es2.label === 'Selecciones', es2.label);
-    ok('ES: the pill label no longer reads "Favoritos" (it agrees with its accessible name "Ver tus selecciones")',
-      dictEs['header.picks'] !== 'Favoritos' && norm.includes("'Ver tus selecciones'"));
+    ok('ES: the pill label no longer reads "Favoritos" (it agrees with its accessible name "Ver selecciones", de-possessed by A3-5)',
+      dictEs['header.picks'] !== 'Favoritos' && norm.includes("'Ver selecciones'"));
     ok('both governed dictionaries carry the singular / plural pair',
       typeof dictEn['header.picks_one'] === 'string' && typeof dictEs['header.picks_one'] === 'string'
       && dictEn['header.picks'] !== dictEn['header.picks_one'] && dictEs['header.picks'] !== dictEs['header.picks_one']);

@@ -658,8 +658,8 @@ const MUTATIONS = [
     "          { key: 'fit', label: _esCmp ? 'Por qué está aquí' : 'Why it is here', a: a.fit, b: b.fit },\n          { key: 'feature', label: _esCmp ? 'Característica clave' : 'Key feature', a: a.feature, b: b.feature, emphasis: true },",
     COMPARE],
   ["compare modal: dialog semantics removed",
-    '<div id="compareModal" class="compare-modal" style="display:none;" role="dialog"\n       aria-modal="true" aria-labelledby="compareModalTitle">',
-    '<div id="compareModal" class="compare-modal" style="display:none;">', COMPARE],
+    '<div id="compareModal" class="compare-modal" style="display:none;" role="dialog"\n       aria-modal="true" aria-labelledby="compareModalTitle" data-audience="specialist">',
+    '<div id="compareModal" class="compare-modal" style="display:none;" data-audience="specialist">', COMPARE],
   ["compare modal: initial title focus removed",
     "modal.classList.add('visible');\n      if (title && typeof title.focus === 'function') {",
     "modal.classList.add('visible');\n      if (false) {", COMPARE],
@@ -1060,7 +1060,7 @@ const MUTATIONS = [
     "\"brief.signature_eyebrow\": \"Tu firma de sueño\",",
     "\"brief.signature_eyebrow\": \"Your sleep signature\",", BRIEF, "data/dict-es.json"],
   ["brief: the retained reveal fallback stops honoring reduced motion",
-    "      if (dfmReducedMotion()) {\n        window._sleepSignatureEntry = true;\n        window.showProfileScreen();\n        return;\n      }\n      var elements = getConsultationRevealElements();",
+    "      if (dfmReducedMotion()) {\n        // A3: reduced motion reaches the same handoff state directly — no\n        // overlay, one cut; Begin guided review then opens the Brief.\n        window.showTabletHandoff();\n        return;\n      }\n      var elements = getConsultationRevealElements();",
     "      var elements = getConsultationRevealElements();", MOTION],
 
   // --- Slice 3: Quiz presentation -----------------------------------------
@@ -1973,7 +1973,7 @@ const MUTATIONS = [
     "    var SESSION_CONTACT_INPUT_IDS = ['emailNameInput', 'emailInput', 'emailPhoneInput'];", PLAN],
   // C4: dictionary parity for the new keys (target the ES dictionary).
   ["slice6: a new Summary key goes English-only",
-    "  \"hf2.lead_none\": \"A\u00fan no has elegido finalista.\",",
+    "  \"hf2.lead_none\": \"A\u00fan no se ha elegido finalista.\",",
     "", PLAN_WITH_SESSION, "data/dict-es.json"],
 
   // --- Item 1.4, the Sleep System presentation ------------------------------
@@ -2051,9 +2051,9 @@ const MUTATIONS = [
     "es: 'Recommend a base only after the customer tries the positions that matter most to them.'",
     SLEEP],
   // A3 (owner ruling 2026-09-01): the single journey-level primary + wipe.
-  ["A3: the footer regains a competing Review primary at the last step",
+  ["A3-5: the last-step Review control disappears (the skip-to-Plan route is removed)",
+    "          next.hidden = false;\n          next.classList.add('sleep-system__footer-primary--secondary');\n          next.textContent = sleepSystemText({ en: 'Review Sleep Plan', es: 'Revisar Plan de Sue\u00f1o' });",
     "          next.hidden = true;\n          next.textContent = '';",
-    "          next.hidden = false;\n          next.textContent = sleepSystemText({ en: 'Review Sleep Plan', es: 'Revisar Plan de Sue\u00f1o' });",
     SLEEP],
   ["A3: the completion demotion CSS is dropped",
     "    .sleep-system__workspace.is-complete .sleep-system__action--primary:not(.sleep-system__action--selected) {\n      border: 1px solid #C9BCAC;\n      background: #FFFDF8;\n      color: #2F271E;\n    }\n",
@@ -2254,8 +2254,8 @@ const MUTATIONS = [
     "      if (!catalogHasLowProfileSupport()) {\n        choices = choices.filter(function(choice) { return choice.id !== 'low'; });\n      }",
     "", SLEEP],
   ["sleep system: the support height note ignores the catalog (comparison note always shown)",
-    "          catalogHasLowProfileSupport()\n            ? sleepSystemText({ en: 'Compare standard and lower bed heights.', es: 'Compara alturas estándar y más bajas.' })",
-    "          true\n            ? sleepSystemText({ en: 'Compare standard and lower bed heights.', es: 'Compara alturas estándar y más bajas.' })", SLEEP],
+    "        notice = catalogHasLowProfileSupport()\n          ? sleepSystemText({ en: 'Compare standard and lower bed heights.', es: 'Compara alturas estándar y más bajas.' })",
+    "        notice = true\n          ? sleepSystemText({ en: 'Compare standard and lower bed heights.', es: 'Compara alturas estándar y más bajas.' })", SLEEP],
 
   // 3.7 P5 option C (owner ruling 2026-08-30): the neutral no-trigger base
   // presentation. Observed by the rendered P5 section.

@@ -8137,6 +8137,14 @@
       background: var(--store-primary);
       color: var(--on-store-primary);
     }
+    /* A3-5 (lens 3): the last step keeps its skip-to-Plan control, demoted
+       to the same secondary palette completion applies to step primaries —
+       the sidecar's decision-gated Review stays the single primary. */
+    .sleep-system__footer-primary--secondary {
+      border: 1px solid #C9BCAC;
+      background: #FFFDF8;
+      color: #2F271E;
+    }
     .sleep-system__empty {
       max-width: 620px;
       margin: 54px auto;
@@ -10227,6 +10235,10 @@
          boundaries when author colours are stripped. */
       .handoff-specialist { border: 1px solid CanvasText; }
       .handoff-begin { border: 2px solid CanvasText; }
+      /* A3-5 (lens 5 F1): completion demotes step primaries by colour, which
+         forced colors strips — the promoted sidecar Review keeps a non-colour
+         cue (the X11 double-border idiom) so hierarchy survives. */
+      .sleep-system__workspace.is-complete [data-sleep-action="review-plan"] { border: 3px double CanvasText; }
     }
     /* Construction reveal (slices 5a+5b): forced colors strip author hues
        and backgrounds, so the region-to-role correspondence falls back to
@@ -11843,7 +11855,7 @@
 
       <div class="sleep-system__empty" id="sleepSystemEmpty" hidden>
         <div class="sleep-system__empty-icon">✓</div>
-        <h2 id="sleepSystemEmptyTitle">Continue with your mattress plan</h2>
+        <h2 id="sleepSystemEmptyTitle">Continue with the mattress plan</h2>
         <p id="sleepSystemEmptyCopy">Accessory recommendations are unavailable right now. Your mattress matches are still ready to review.</p>
         <button id="sleepSystemEmptyReview" type="button" data-sleep-action="review-plan">Review Sleep Plan</button>
       </div>
@@ -13800,8 +13812,8 @@
       var picksBtn = document.getElementById('savedPicksBtn');
       if (picksBtn) {
         picksBtn.setAttribute('aria-label', currentLang === 'es'
-          ? 'Ver tus selecciones'
-          : 'View your selections');
+          ? 'Ver selecciones'
+          : 'View selections');
       }
       // C5: the pill's noun is count-aware, so it is not a static data-i18n
       // string. Re-derive it from the rendered count on every translation
@@ -13989,6 +14001,10 @@
       var accessoriesScreen = document.getElementById('accessoriesScreen');
       if (accessoriesScreen && accessoriesScreen.classList.contains('active')) {
         renderSleepSystem();
+        // A3-5 (lens 5 B3): a language switch is a copy swap — blank the
+        // sr-only progress status so the swap never re-announces progress.
+        var planStatusLive = document.getElementById('sleepSystemPlanStatus');
+        if (planStatusLive) planStatusLive.textContent = '';
       }
       var hf2Screen = document.getElementById('hf2Screen');
       if (hf2Screen && hf2Screen.classList.contains('active')) {
@@ -16668,11 +16684,13 @@
       // the same label/destination honesty the Sleep Brief CTA adopted
       // 2026-08-10. Wording mirrors plan.title.
       document.getElementById('reviewWithCustomerBtn').textContent = es ? 'Revisar Plan de Sueño →' : 'Review Sleep Plan →';
-      // Footer hint: fit-first financing line when financing is on, the
-      // Savings Pass line only when the pass is enabled, empty otherwise.
+      // Footer hint: when financing is on, the financing module above
+      // already carries the fit-first sentence — the hint stays empty so
+      // the concern is stated once per viewport (A3-5, ruling rule 6). The
+      // Savings Pass line only when the pass is enabled; empty otherwise.
       var footerHint = document.getElementById('resultsFooterHint');
       if (financingEnabled()) {
-        footerHint.textContent = FC('fitFirst');
+        footerHint.textContent = '';
       } else if (savingsPassEnabled()) {
         footerHint.textContent = es
           ? 'Tu Pase de Ahorro de 30 días aplica a una selección de colchón que califique.'
@@ -20284,13 +20302,16 @@
       }
       if (next) {
         if (activeIndex >= SLEEP_SYSTEM_STEPS.length - 1) {
-          // A3 (owner ruling 2026-09-01): the sidecar's decision-gated Review
-          // is the SINGLE journey-level primary — the footer offers no
-          // competing Review control on the last step.
-          next.hidden = true;
-          next.textContent = '';
+          // A3-5 (owner ruling 2026-09-01 + lens 3): the last step keeps its
+          // forward control — the skip-to-Plan route through
+          // moveSleepSystemStep(1) — demoted to secondary styling so the
+          // sidecar's decision-gated Review stays the single primary.
+          next.hidden = false;
+          next.classList.add('sleep-system__footer-primary--secondary');
+          next.textContent = sleepSystemText({ en: 'Review Sleep Plan', es: 'Revisar Plan de Sueño' });
         } else {
           next.hidden = false;
+          next.classList.remove('sleep-system__footer-primary--secondary');
           next.textContent = sleepSystemText({ en: 'Continue to ', es: 'Continuar a ' }) +
             sleepSystemText(SLEEP_SYSTEM_STEPS[activeIndex + 1].label);
         }
@@ -20374,7 +20395,7 @@
         sleepSystemPlanEyebrow: { en: 'Progress', es: 'Progreso' },
         sleepSystemPlanTitle: { en: 'Setup decisions', es: 'Decisiones de configuración' },
         sleepSystemPlanReview: { en: 'Review Sleep Plan', es: 'Revisar Plan de Sueño' },
-        sleepSystemEmptyTitle: { en: 'Continue with your mattress plan', es: 'Continua con tu plan de colchón' },
+        sleepSystemEmptyTitle: { en: 'Continue with the mattress plan', es: 'Continúa con el plan de colchón' },
         sleepSystemEmptyCopy: savingsPassEnabled() ? {
           en: 'Accessory recommendations are unavailable right now. The mattress matches and Savings Pass are still ready to review.',
           es: 'Las recomendaciones de accesorios no están disponibles ahora. Los colchones y el Pase de Ahorro siguen listos para revisar.'
@@ -20774,7 +20795,7 @@
     // beside a static plural. `header.picks` is the plural and
     // `header.picks_one` the singular in both governed dictionaries; the ES
     // pair ("Selección" / "Selecciones") also brings the visible label into
-    // agreement with the control's accessible name ("Ver tus selecciones")
+    // agreement with the control's accessible name ("Ver selecciones")
     // and the app's own noun for these picks. applyTranslations() re-derives
     // the label through this same function on a language switch.
     window._picksPillLabel = function(total) {
@@ -20952,10 +20973,15 @@
           + '</div>';
       }
       if (kind !== 'chosen') {
-        // The absence is stated plainly and a route BACK to choose one is
-        // offered (roadmap 1.7). It routes to Results (R-1), never to hf2.
-        html += '<p class="hf2-review-section__hint" id="sleepPlanNoFinalistNote">' + escapeHtml(t('finalist.none')) + '</p>'
-          + '<button class="hf2-pick__action" type="button" id="sleepPlanChooseFinalist"'
+        // A route BACK to choose one is offered (roadmap 1.7) and routes to
+        // Results (R-1), never to hf2. The absence is stated plainly beside
+        // the recommended label; in the none state the label itself already
+        // says "No finalist selected yet", so repeating it there was a
+        // same-viewport repetition (A3-5, ruling rule 6).
+        if (kind === 'recommended') {
+          html += '<p class="hf2-review-section__hint" id="sleepPlanNoFinalistNote">' + escapeHtml(t('finalist.none')) + '</p>';
+        }
+        html += '<button class="hf2-pick__action" type="button" id="sleepPlanChooseFinalist"'
           + ' onclick="window.sleepPlanChooseFinalist()"'
           + ' ontouchend="event.preventDefault();window.sleepPlanChooseFinalist();">'
           + escapeHtml(t('finalist.choose')) + '</button>';
@@ -21157,7 +21183,6 @@
         // choosing are separate actions, so saved mattresses are never all
         // "finalists". (External review P2 at 0613805.)
         hf2FinalistsHint: t('hf2.saved_picks_hint'),
-        hf2SystemLabel: es ? 'Sistema de Sueño seleccionado' : 'Selected Sleep System',
         hf2SystemHint: es ? 'Solo las piezas que ya se agregaron al plan.' : 'Only the pieces already added to the plan.',
         hf2PassLabel: es ? 'Tu consulta está lista para guardar' : 'Your consultation is ready to save',
         // Pass-reveal hint only when the Savings Pass is enabled; otherwise a
@@ -22143,7 +22168,7 @@
         if (label) label.textContent = es ? 'ayudando:' : 'helping:';
         if (name) name.textContent = ' ' + current;
       } else {
-        if (label) label.textContent = es ? 'selecciona vendedor' : 'select salesperson';
+        if (label) label.textContent = es ? 'selecciona especialista' : 'select salesperson';
         if (name) name.textContent = '';
       }
       if (chevron) chevron.textContent = '▾';
@@ -22176,12 +22201,12 @@
         listEl.appendChild(li);
       });
       var es = currentLang === 'es';
-      addBtn.textContent = es ? '+ agregar vendedor' : '+ add salesperson';
+      addBtn.textContent = es ? '+ agregar especialista' : '+ add salesperson';
       addBtn.onclick = toggleHf2RsaAddRow;
       addBtn.ontouchend = function(event) { event.preventDefault(); toggleHf2RsaAddRow(); };
       var addInput = document.getElementById('hf2RsaAddInput');
       var addConfirm = document.getElementById('hf2RsaAddConfirm');
-      if (addInput) addInput.setAttribute('aria-label', es ? 'Nombre del vendedor' : 'Salesperson name');
+      if (addInput) addInput.setAttribute('aria-label', es ? 'Nombre del especialista' : 'Salesperson name');
       if (addConfirm) {
         addConfirm.textContent = es ? 'Agregar' : 'Add';
         addConfirm.onclick = confirmHf2RsaAdd;
@@ -23071,6 +23096,10 @@
       // next activation and are aria-hidden throughout.
       { id: 'dfmGatherLayer', remove: ['is-active'] },
       { id: 'accCartBar', remove: ['visible'], display: 'none' },
+      // A3-5 (lens 3): the completion marker is re-derived on every render,
+      // but between a wipe and the next entry it would linger on this
+      // persistent node — strip it declaratively like every other marker.
+      { id: 'sleepSystemWorkspace', remove: ['is-complete'] },
       { id: 'savedPicksBtn', remove: ['noct-picks-pill--visible', 'noct-picks-pill--lifted'] },
       { id: 'drawerSystemPrompt', remove: ['is-visible'] },
       { id: 'emailConfirmation', remove: ['visible'] },
@@ -24227,7 +24256,7 @@
           id="savedPicksBtn"
           onclick="window.showSavedPicks()"
           ontouchend="event.preventDefault();window.showSavedPicks();"
-          aria-label="View your selections">
+          aria-label="View selections">
     <span class="noct-picks-pill__count" id="savedPicksCount">0</span>
     <span class="noct-picks-pill__label" id="savedPicksLabel">Selections</span>
   </button>

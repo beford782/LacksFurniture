@@ -942,7 +942,7 @@ if (gate("renderSleepPlan", RENDER_SRCS.every(Boolean) && !!FALLBACK_SRC && !!RE
 
     els = makeLeadEnv({ lang: "es", results: RESULTS, payPref: null });
     check("ES: the paired sentences resolve fully in Spanish",
-      els.hf2LeadLine.textContent.indexOf("Aún no has elegido finalista") === 0
+      els.hf2LeadLine.textContent.indexOf("Aún no se ha elegido finalista") === 0
       && /^Preferencia de pago: Sin seleccionar\.$/.test(payOf(els)));
 
     // C12 (R3 I1): the remaining matrix cells — chosen composes with every
