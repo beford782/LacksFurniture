@@ -228,7 +228,7 @@ SUMMARY_JS = r"""
   // Real interactions: choose the engine's top pick as the finalist (this
   // auto-saves it), then open the Summary through the chokepoint.
   const top = _resultsState.tierData.gold[0];
-  window.chooseFinalist(top.id);
+  (function(__id) { window._mattressReactions = window._mattressReactions || {}; if (!window._mattressReactions[__id]) window._mattressReactions[__id] = 'good'; window.chooseFinalist(__id); })(top.id);
   window.showSavedPicks();
   const s = document.getElementById('hf2Screen');
   const cs = getComputedStyle(s);
@@ -251,7 +251,7 @@ SUMMARY_JS = r"""
   out.scrollWidth = doc.scrollWidth; out.clientWidth = doc.clientWidth;
   out.activeElement = document.activeElement ? document.activeElement.id : null;
   out.title = title.textContent;
-  out.lead = { text: lead.textContent, color: getComputedStyle(lead).color, bg: bgOf(lead) };
+  out.lead = { text: (lead.textContent + ' ' + ((document.getElementById('hf2StatusName') || {}).textContent || '')).trim(), color: getComputedStyle(lead).color, bg: bgOf(lead) };
   out.tier = tier ? { text: tier.textContent, color: getComputedStyle(tier).color, bg: bgOf(tier) } : null;
   out.send = { text: send.textContent, x: sb.x, w: sb.width, color: getComputedStyle(send).color, bg: bgOf(send) };
   out.attribution = document.getElementById('hf2Attribution').textContent;
@@ -355,7 +355,10 @@ def run_summary(browser, port, name, width, height, shots_dir):
           r["flexDirection"] == "column" and r["scrollWidth"] <= r["clientWidth"],
           f"flex={r['flexDirection']} scrollW={r['scrollWidth']}/{r['clientWidth']}")
     check("the visible title is the Consultation Summary", "Consultation Summary" in r["title"])
-    check("the chosen finalist appears in the lead line with the finalist vocabulary",
+    # C3-A2 (owner ruling 2026-09-01): the chosen state is the approved split -
+    # finalist.chosen as the eyebrow in the lead line and the product name in the
+    # serif display node; the probe reads both together.
+    check("the chosen finalist appears in the status block with the finalist vocabulary (eyebrow + display name)",
           "Finalist" in r["lead"]["text"] and len(r["lead"]["text"]) > 20, r["lead"]["text"][:80])
     l_fg, l_bg = parse_rgb(r["lead"]["color"]), composite(r["lead"]["bg"])
     l_ratio = contrast(l_fg, l_bg) if l_fg and l_bg else 0
@@ -388,7 +391,7 @@ async (ARGS) => {
   for (const k of Object.keys(ANS)) answers[k] = ANS[k];
   showProfileScreen();
   window.showResults();
-  window.chooseFinalist(_resultsState.tierData.gold[0].id);
+  (function(__id) { window._mattressReactions = window._mattressReactions || {}; if (!window._mattressReactions[__id]) window._mattressReactions[__id] = 'good'; window.chooseFinalist(__id); })(_resultsState.tierData.gold[0].id);
   window.showSleepPlan('results');
   window.showAccessories();
   await new Promise((res) => setTimeout(res, 500));
@@ -403,9 +406,15 @@ async (ARGS) => {
   const title = rect(document.getElementById('sleepSystemTitle'));
   const back = rect(document.getElementById('sleepSystemBack'));
   const review = rect(document.getElementById('sleepSystemReviewTop'));
+  const sidecarReview = rect(document.getElementById('sleepSystemPlanReview'));
+  const helper = document.getElementById('sleepSystemPlanHelper');
+  const reviewControls = Array.from(document.querySelectorAll('[data-sleep-action="review-plan"]'))
+    .filter((el) => el.offsetParent !== null || getComputedStyle(el).position === 'fixed').length;
   const doc = document.documentElement;
   return {
-    barVisible: !!bar, title, back, review, bar,
+    barVisible: !!bar, title, back, review, bar, sidecarReview,
+    helperVisible: !!(helper && !helper.hidden && helper.textContent.trim()),
+    visibleReviewControls: reviewControls,
     barOverTitle: inter(bar, title), barOverBack: inter(bar, back), barOverReview: inter(bar, review),
     activeElement: document.activeElement && document.activeElement.id,
     titleText: (document.getElementById('sleepSystemTitle') || {}).textContent || '',
@@ -429,13 +438,21 @@ def run_sleep_system_header(browser, port, name, width, height, lang, shots_dir)
     check("the Sleep System renders without a page error and focuses its title",
           not errors and r["activeElement"] == "sleepSystemTitle", f"active={r['activeElement']} errors={errors[:1]}")
     check("the persistent utility bar is present on the Sleep System", r["barVisible"])
-    check("the title, Back control and top Review control all render", bool(r["title"] and r["back"] and r["review"]),
-          f"title={bool(r['title'])} back={bool(r['back'])} review={bool(r['review'])}")
+    # Sleep System A2 (owner ruling 2026-09-01): the header review control is
+    # retired; before four categories are decided NO review primary renders -
+    # only the progress count and a quiet helper - and the sidecar control is
+    # the single responsive control that appears when all four are decided.
+    check("the title and Back control render; the retired header Review control does not (A2)",
+          bool(r["title"] and r["back"]) and r["review"] is None,
+          f"title={bool(r['title'])} back={bool(r['back'])} review={r['review']}")
+    check("A2: with categories still open, no Review Sleep Plan control is visible and the quiet helper is",
+          r["visibleReviewControls"] == 0 and r["sidecarReview"] is None and r["helperVisible"],
+          f"visibleReviewControls={r['visibleReviewControls']} sidecar={r['sidecarReview']} helper={r['helperVisible']}")
     check("the utility bar does not intersect the h1",
           not r["barOverTitle"], f"bar={r['bar']} title={r['title']}")
     check("the utility bar does not intersect the Back control",
           not r["barOverBack"], f"bar={r['bar']} back={r['back']}")
-    check("the utility bar does not intersect the top Review Sleep Plan control",
+    check("the utility bar intersects no review control (none is rendered before four decisions)",
           not r["barOverReview"], f"bar={r['bar']} review={r['review']}")
     check("no horizontal document scroll", r["scrollWidth"] <= r["clientWidth"], f"{r['scrollWidth']}/{r['clientWidth']}")
     page.close()
@@ -494,7 +511,7 @@ async (ARGS) => {
   const saved = saves.find((b) => b.classList.contains('saved')), restSave = saves.find((b) => !b.classList.contains('saved'));
   const results = { activeTab: geo(activeTab), restTab: geo(restTab), selCmp: geo(selCmp), restCmp: geo(restCmp), saved: geo(saved), restSave: geo(restSave),
                     forced: matchMedia('(forced-colors: active)').matches };
-  window.chooseFinalist(gold[0].id);
+  (function(__id) { window._mattressReactions = window._mattressReactions || {}; if (!window._mattressReactions[__id]) window._mattressReactions[__id] = 'good'; window.chooseFinalist(__id); })(gold[0].id);
   window.showSleepPlan('results');
   window.showAccessories();
   await new Promise((res) => setTimeout(res, 400));
@@ -638,7 +655,7 @@ async (ARGS) => {
   for (const k of Object.keys(ARGS.answers)) answers[k] = ARGS.answers[k];
   showProfileScreen();
   window.showResults();
-  window.chooseFinalist(_resultsState.tierData.gold[0].id);
+  (function(__id) { window._mattressReactions = window._mattressReactions || {}; if (!window._mattressReactions[__id]) window._mattressReactions[__id] = 'good'; window.chooseFinalist(__id); })(_resultsState.tierData.gold[0].id);
   window.showSleepPlan('results');
   window.showAccessories();
   await new Promise((res) => setTimeout(res, 400));
@@ -691,8 +708,25 @@ def run_heading_focus(browser, port, name, width, height, lang, shots_dir):
     screen = page.evaluate(HEADING_SETUP_JS, {"answers": ANSWERS, "lang": lang})
     check(f"[{lang}/{name}] the setup reached the Sleep System without a page error",
           screen == "accessoriesScreen" and not errors, f"screen={screen} errors={errors[:1]}")
-    # Sleep System -> Plan by keyboard (Enter on the top "Review Sleep Plan" control).
-    page.focus("#sleepSystemReviewTop")
+    # Sleep System -> Plan by keyboard. A2: the ONE review control (the sidecar's)
+    # appears only once all four categories are decided; a legitimate deferral is a
+    # decision, so defer the remaining steps first and re-render, then Enter on it.
+    ready = page.evaluate("""() => {
+      SLEEP_SYSTEM_STEPS.forEach((step) => {
+        if (sleepSystemDecision(step.id).status === 'open') {
+          window._sleepSystemState.decisions[step.id] = { status: 'later' };
+        }
+      });
+      renderSleepSystem();
+      const btn = document.getElementById('sleepSystemPlanReview');
+      const top = document.getElementById('sleepSystemReviewTop');
+      return { visible: !!btn && !btn.hidden && btn.offsetParent !== null, topHidden: !!top && top.hidden,
+               controls: Array.from(document.querySelectorAll('[data-sleep-action="review-plan"]')).filter((el) => el.offsetParent !== null).length };
+    }""")
+    check(f"[{lang}/{name}] A2: once all four categories are decided exactly ONE Review Sleep Plan control is visible (the sidecar's)",
+          ready["visible"] and ready["topHidden"] and ready["controls"] == 1, str(ready))
+    page.evaluate("() => document.getElementById('sleepSystemPlanReview').scrollIntoView({block: 'center'})")
+    page.focus("#sleepSystemPlanReview")
     page.keyboard.press("Enter")
     page.wait_for_timeout(400)
     r = page.evaluate(HEADING_MEASURE_JS)
@@ -831,7 +865,7 @@ async (ARGS) => {
   found = found.concat(small('compare-modal'));
   window.closeCompareModal();
   await wait(400);
-  window.chooseFinalist(gold[0].id);
+  (function(__id) { window._mattressReactions = window._mattressReactions || {}; if (!window._mattressReactions[__id]) window._mattressReactions[__id] = 'good'; window.chooseFinalist(__id); })(gold[0].id);
   window.showSavedPicks();
   await wait(400);
   const strip = document.getElementById('hf2RsaStripBtn'); if (strip) { strip.click(); await wait(250); }
@@ -942,7 +976,7 @@ async (ARGS) => {
   for (const k of Object.keys(ARGS.answers)) answers[k] = ARGS.answers[k];
   showProfileScreen();
   window.showResults();
-  window.chooseFinalist(_resultsState.tierData.gold[0].id);
+  (function(__id) { window._mattressReactions = window._mattressReactions || {}; if (!window._mattressReactions[__id]) window._mattressReactions[__id] = 'good'; window.chooseFinalist(__id); })(_resultsState.tierData.gold[0].id);
   window.showSleepPlan('results');
   window.showAccessories();
   await new Promise((res) => setTimeout(res, 400));

@@ -938,7 +938,7 @@ const MUTATIONS = [
     "          (active ? ' aria-current=\"step\"' : '') + '>' +",
     "          '>' +", SLEEP],
   ["X2: the derived count surface leaves the wipe inventory",
-    "      'sleepSystemPlanCount',\n",
+    "      'sleepSystemPlanCount', 'sleepSystemPlanHelper', 'sleepSystemPlanStatus',\n",
     "", SLEEP],
   // X8/X9 (North Star D1, 2026-08-31): the Brief -> Results handoff.
   ["X8: reduced motion loses its direct advance (overlay pops around hard cuts again)",

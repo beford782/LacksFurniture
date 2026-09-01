@@ -7992,6 +7992,14 @@
       color: #7A6E61;
       font: 500 10px/1.3 var(--font-sans);
     }
+    .sleep-system__plan-helper {
+      margin: 6px 0 0;
+      font: 500 12px/1.45 var(--font-sans);
+      color: #665D54;
+    }
+    .sleep-system__plan-helper[hidden] { display: none; }
+    .sleep-system__plan-review[hidden] { display: none; }
+    .sleep-system__review-top[hidden] { display: none; }
     .sleep-system__plan-review {
       width: 100%;
       padding: 10px 13px;
@@ -11655,7 +11663,12 @@
           <h1 class="sleep-system__title" id="sleepSystemTitle">Explore Your Sleep Setup</h1>
           <p class="sleep-system__subtitle" id="sleepSystemSubtitle">Your mattress comes first. These choices help it fit your room, body, and daily routine.</p>
         </div>
-        <button class="sleep-system__review-top" id="sleepSystemReviewTop" type="button" data-sleep-action="review-plan">Review Sleep Plan</button>
+        <!-- Sleep System A2 (owner ruling 2026-09-01): ONE responsive review
+             control - the sidecar's (landscape: sidecar; portrait: the aside
+             stacks after the main pane, so it ends the flow). This header
+             duplicate is retired (kept in markup, hidden, for the wipe/label
+             rosters). -->
+        <button class="sleep-system__review-top" id="sleepSystemReviewTop" type="button" data-sleep-action="review-plan" hidden>Review Sleep Plan</button>
       </header>
 
       <section class="sleep-system__anchor" id="sleepSystemAnchor"></section>
@@ -11681,7 +11694,12 @@
               <span class="sleep-system__plan-count" id="sleepSystemPlanCount"></span>
             </div>
             <div class="sleep-system__plan-list" id="sleepSystemPlanList"></div>
-            <button class="sleep-system__plan-review" id="sleepSystemPlanReview" type="button" data-sleep-action="review-plan">Review Sleep Plan</button>
+            <!-- A2: quiet helper while categories remain open; the ONE primary
+                 review control appears only when all four are decided. The
+                 sr-only status announces progress changes (aria-live). -->
+            <p class="sleep-system__plan-helper" id="sleepSystemPlanHelper" hidden></p>
+            <div class="sr-only" id="sleepSystemPlanStatus" aria-live="polite" aria-atomic="true"></div>
+            <button class="sleep-system__plan-review" id="sleepSystemPlanReview" type="button" data-sleep-action="review-plan" hidden>Review Sleep Plan</button>
           </section>
         </aside>
       </div>
@@ -19914,6 +19932,35 @@
       count.textContent = currentLang === 'es'
         ? (added + (added === 1 ? ' agregado' : ' agregados') + ' · ' + addressedCount + (addressedCount === 1 ? ' atendido' : ' atendidos'))
         : (added + ' added · ' + addressedCount + ' addressed');
+      // Sleep System A2 (owner ruling 2026-09-01): the ONE primary
+      // "Review Sleep Plan" control appears only when every category has a
+      // recorded decision - added, addressed, or a legitimate deferral (the
+      // existing state semantics; nothing is fabricated; the display count
+      // above is unchanged). Until then a quiet helper names how many remain
+      // and the current step keeps the primary emphasis. Progress changes are
+      // announced through the sr-only live status; no animation.
+      var openCount = SLEEP_SYSTEM_STEPS.filter(function(step) {
+        return sleepSystemStatusKind(sleepSystemDecision(step.id).status) === 'open';
+      }).length;
+      var allDecided = openCount === 0;
+      var review = document.getElementById('sleepSystemPlanReview');
+      if (review) review.hidden = !allDecided;
+      var helper = document.getElementById('sleepSystemPlanHelper');
+      if (helper) {
+        helper.textContent = allDecided ? '' : sleepSystemText({
+          en: openCount + ' still open',
+          es: openCount + ' a\u00fan sin decidir'
+        });
+        helper.hidden = allDecided;
+      }
+      var status = document.getElementById('sleepSystemPlanStatus');
+      if (status) {
+        var statusText = count.textContent + (allDecided ? ' · ' + sleepSystemText({
+          en: 'All four decided — Review Sleep Plan is ready',
+          es: 'Las cuatro decididas — Revisar Plan de Sue\u00f1o est\u00e1 listo'
+        }) : '');
+        if (status.textContent !== statusText) status.textContent = statusText;
+      }
     }
 
     function renderSleepSystemFooter() {
@@ -22631,7 +22678,7 @@
       // X2 (2026-08-31): the plan count is no longer a neutral fraction - it
       // is a phrase derived from the customers decisions (N added, M
       // addressed), so it joins the wipe like every other derived surface.
-      'sleepSystemPlanCount',
+      'sleepSystemPlanCount', 'sleepSystemPlanHelper', 'sleepSystemPlanStatus',
       'sessionSafetyLive', 'dataErrorLive',
       'resultsRevealTitle', 'resultsRevealSubtitle',
       'revealCertCode', 'revealCertPctNum', 'revealCertScope', 'revealCertExpiry',
