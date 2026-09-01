@@ -148,6 +148,7 @@ const SRC = {
   readGroups: extractFunction('function readSleepSystemGroups()'),
   decision: extractFunction('function sleepSystemDecision(stepId)'),
   decisionLabel: extractFunction('function sleepSystemDecisionLabel(stepId, decision)'),
+  statusKind: extractFunction('function sleepSystemStatusKind(status)'),
   posLabel: extractFunction('function adjustabilityPositionLabel(positionId)'),
   getDemo: extractFunction('function getAdjustabilityDemo()'),
   renderDemo: extractFunction('function renderAdjustabilityDemo()'),
@@ -214,7 +215,7 @@ function makeEnv({
   const analytics = { logged: [], log(e, d) { this.logged.push({ e, d }); } };
   let src = [
     SRC.STEPS, SRC.escapeHtml, SRC.text, SRC.category, SRC.stepFor, SRC.qualify, SRC.scorer,
-    SRC.readGroups, SRC.decision, SRC.decisionLabel, SRC.posLabel, SRC.getDemo, SRC.renderDemo,
+    SRC.readGroups, SRC.decision, SRC.decisionLabel, SRC.statusKind, SRC.posLabel, SRC.getDemo, SRC.renderDemo,
     SRC.catalogLowProfile, SRC.guidance, SRC.rail, SRC.secondary, SRC.supportGuide, SRC.pillowFit, SRC.suggestedGoal,
     SRC.goalLabel, SRC.goalReason, SRC.supportsGoal, SRC.protectionGuide, SRC.main, SRC.plan,
     SRC.footer
@@ -436,7 +437,9 @@ section('decision states — selected, keep-current, skipped, undecided');
   const r = renderStep('pillow', { answers: ANSWERS });
   ok('undecided: rail and plan both read "Not decided"',
     /step-status">Not decided</.test(r.rail) && /plan-item-status">Not decided</.test(r.plan));
-  ok('undecided: plan count is 0 / 4', r.planCount === '0 / 4', r.planCount);
+  // X2 (owner ruling D7, 2026-08-31): the completion fraction is retired —
+  // the neutral phrase claims only what happened.
+  ok('undecided: plan count reads "0 added · 0 addressed"', r.planCount === '0 added · 0 addressed', r.planCount);
   ok('undecided pillow: the add control is gated behind the physical fit check',
     /sleep-system__pillow-gate/.test(r.main) && !/data-sleep-action="select-item" data-item-id="pillow-/.test(r.main));
 }
@@ -451,7 +454,7 @@ section('decision states — selected, keep-current, skipped, undecided');
   ok('selected: rail and plan name the chosen product, not a generic "selected"',
     /step-status">Bedgear Flow 2\.0 Performance Pillow</.test(r.rail) &&
     /plan-item-status">Bedgear Flow 2\.0 Performance Pillow</.test(r.plan));
-  ok('selected: plan count advances to 1 / 4', r.planCount === '1 / 4', r.planCount);
+  ok('selected: plan count advances to "1 added · 0 addressed" (X2)', r.planCount === '1 added · 0 addressed', r.planCount);
 }
 {
   const r = renderStep('support', { answers: ANSWERS, state: { supportChoice: 'current' } });
@@ -478,8 +481,11 @@ section('decision states — selected, keep-current, skipped, undecided');
   });
   ok('skipped: "Decide later" is reported in both the rail and the plan',
     /step-status">Decide later</.test(r.rail) && /plan-item-status">Decide later</.test(r.plan));
-  ok('skipped: the step still counts as addressed (1 / 4), not as done-and-bought',
-    r.planCount === '1 / 4', r.planCount);
+  // X2 (owner ruling D7, 2026-08-31): re-ruled. A deferral used to count as
+  // addressed (1 / 4) — a claimed completion the customer never made. It now
+  // counts toward NOTHING and renders as deferred, not done.
+  ok('skipped: a deferral is claimed by neither number ("0 added · 0 addressed") and renders is-deferred',
+    r.planCount === '0 added · 0 addressed' && /is-deferred/.test(r.rail) && /is-deferred/.test(r.plan), r.planCount);
   const es = renderStep('adjustability', {
     answers: ANSWERS, lang: 'es', state: { decisions: { adjustability: { status: 'later' } } }
   });
@@ -605,16 +611,19 @@ section('language — state survives the swap and the two languages never mix');
   // the price/hierarchy guards; these are the strings the RENDERER chooses.
   const EN_MARKERS = ['Recommended to try', 'Worth comparing', 'Support option', 'Also compare',
     'Decide later', 'Specialist notes', 'During the trial', 'Keep current pillow',
-    'Already protected', 'From $', 'Not decided', 'Add to plan', 'Add protector to plan'];
+    'Already protected', 'From $', 'Not decided', 'Add to plan', 'Add protector to plan',
+    ' added · ', ' addressed']; // X2 count phrase
   const ES_MARKERS = ['Recomendado para probar', 'Vale la pena comparar', 'Opción de soporte',
     'También compara', 'Decidir después', 'Notas del especialista', 'Durante la prueba',
     'Conservar almohada actual', 'Ya está protegido', 'Desde $', 'Sin decidir',
-    'Agregar al plan', 'Agregar protector al plan'];
+    'Agregar al plan', 'Agregar protector al plan',
+    ' agregado', ' atendido']; // X2 count phrase (covers the plurals as substrings)
   for (const step of STEP_IDS) {
     const en = renderStep(step, { answers: ANSWERS, lang: 'en' });
     const es = renderStep(step, { answers: ANSWERS, lang: 'es' });
-    const enAll = textOf(en.main) + ' ' + textOf(en.guidance) + ' ' + textOf(en.rail) + ' ' + textOf(en.plan);
-    const esAll = textOf(es.main) + ' ' + textOf(es.guidance) + ' ' + textOf(es.rail) + ' ' + textOf(es.plan);
+    // X2: the count phrase joined the derived surfaces, so it joins the leak check.
+    const enAll = textOf(en.main) + ' ' + textOf(en.guidance) + ' ' + textOf(en.rail) + ' ' + textOf(en.plan) + ' ' + en.planCount;
+    const esAll = textOf(es.main) + ' ' + textOf(es.guidance) + ' ' + textOf(es.rail) + ' ' + textOf(es.plan) + ' ' + es.planCount;
     const leakedEs = ES_MARKERS.filter((m) => enAll.includes(m));
     const leakedEn = EN_MARKERS.filter((m) => esAll.includes(m));
     ok(`[${step}] the EN render contains no Spanish chrome`, leakedEs.length === 0, leakedEs.join(' | '));
@@ -1223,13 +1232,16 @@ const literalsOf = (s) => [...stripComments(s).matchAll(BILINGUAL_LITERAL)].map(
     `${mainLits.length} literal pairs (da4f746: 33, one retired, nine P5 pairs added 2026-08-30)`);
   ok('sleepSystemSecondaryActions labels are byte-identical to da4f746',
     JSON.stringify(literalsOf(SRC.secondary)) === JSON.stringify(SECONDARY_LITERALS_AT_DA4F746));
-  ok('the protection eyebrow prefix ("Best for " / "Mejor para ") is unchanged',
-    /en: 'Best for ' \+ sleepSystemText\(protectionGoalLabel/.test(stripComments(SRC.main)) &&
-    /es: 'Mejor para ' \+ sleepSystemText\(protectionGoalLabel/.test(stripComments(SRC.main)));
+  // X3 (owner ruling D7, 2026-08-31): re-ruled from "Best for" — the
+  // superlative 1.4 forbids — to "Suggested for" / "Sugerido para"
+  // (ES provisional).
+  ok('the protection eyebrow prefix is the ruled "Suggested for " / "Sugerido para " (X3)',
+    /en: 'Suggested for ' \+ sleepSystemText\(protectionGoalLabel/.test(stripComments(SRC.main)) &&
+    /es: 'Sugerido para ' \+ sleepSystemText\(protectionGoalLabel/.test(stripComments(SRC.main)));
   // And rendered, so the pin is on output as well as source.
   const EYEBROWS = {
-    en: { adjustability: /^(Recommended to try|Worth comparing)$/, support: /^Support option$/, protection: /^Best for .+$/ },
-    es: { adjustability: /^(Recomendado para probar|Vale la pena comparar)$/, support: /^Opción de soporte$/, protection: /^Mejor para .+$/ }
+    en: { adjustability: /^(Recommended to try|Worth comparing)$/, support: /^Support option$/, protection: /^Suggested for .+$/ },
+    es: { adjustability: /^(Recomendado para probar|Vale la pena comparar)$/, support: /^Opción de soporte$/, protection: /^Sugerido para .+$/ }
   };
   const COMPARE = { en: 'Also compare', es: 'También compara' };
   for (const lang of ['en', 'es']) {
@@ -1419,7 +1431,7 @@ section('3.7 P1 - sleep_issues "hot" is the same heat signal as temperature "hot
   const HEAT_ONLY_DEFAULTS = { sleep_issues: ['hot'] };
   const slim = (groups) => JSON.stringify(Object.fromEntries(Object.entries(groups).map(([k, v]) => [k, v.map((a) => [a.id, a.score, a.matched, a.meetsMatchThreshold])])));
   const HOT_REASON = { en: 'You reported sleeping hot', es: 'Reportaste dormir caliente' };
-  const COOL_BADGE = { en: 'Best for cooling', es: 'Mejor para frescura' };
+  const COOL_BADGE = { en: 'Suggested for cooling', es: 'Sugerido para frescura' }; // X3 re-rule
   for (const lang of ['en', 'es']) {
     const issue = renderStep('pillow', { answers: ISSUE_ONLY, lang });
     const temp = renderStep('pillow', { answers: TEMP_ONLY, lang });
@@ -1857,6 +1869,107 @@ section('negative controls — the load-bearing assertions bite');
         cleanAudit.get(p) === true && audit.get(p) === false,
         audit.has(p) ? '' : 'pin name not found in the audit');
     }
+  }
+}
+
+// --------------------------------- 16. X2/X3/X10 (North Star ruling D7, 2026-08-31)
+section('X2/X3/X10 — three honest states, factual wording, the keyboard\'s place');
+{
+  // X2: executed per status kind. The dash (&#8211;) marks an ADDRESSED
+  // decision; the sage checkmark belongs to an actual addition alone.
+  {
+    const r = renderStep('adjustability', { answers: ANSWERS, state: { demoPosition: 'reading', decisions: { adjustability: { status: 'demo' } } } });
+    ok('demo: the rail chip is is-addressed with the neutral dash — never the checkmark, never is-complete',
+      /class="sleep-system__step is-active is-addressed"/.test(r.rail) && /step-num">&#8211;</.test(r.rail)
+      && !/is-complete/.test(r.rail) && !/&#10003;/.test(r.rail));
+    ok('demo: the sidecar row mirrors it (is-addressed, dash mark)',
+      /plan-item is-addressed"/.test(r.plan) && /plan-mark">&#8211;</.test(r.plan));
+  }
+  {
+    const r = renderStep('pillow', { answers: ANSWERS, state: { pillowReaction: 'aligned' }, cart: { 'pillow-flow': { id: 'pillow-flow' } } });
+    ok('selected: the sage checkmark marks the actual addition on both surfaces',
+      /is-selected"/.test(r.rail) && /step-num">&#10003;</.test(r.rail)
+      && /plan-item is-selected"/.test(r.plan) && /plan-mark">&#10003;</.test(r.plan));
+  }
+  {
+    const r = renderStep('adjustability', { answers: ANSWERS, state: { decisions: { adjustability: { status: 'later' } } } });
+    const firstChip = r.rail.split('data-step="support"')[0];
+    ok('deferred: the chip keeps its NUMBER inside the dashed ring (is-deferred) — a deferral is not completion',
+      /is-deferred"/.test(firstChip) && /step-num">1</.test(firstChip) && !/&#10003;|&#8211;/.test(firstChip));
+    ok('deferred: the sidecar mark stays empty in the dashed ring',
+      /plan-item is-deferred"/.test(r.plan) && !/plan-mark">&#10003;|plan-mark">&#8211;/.test(r.plan.split('plan-item-name')[1] ? r.plan.split('sleep-system__plan-item ')[1] : r.plan));
+  }
+  // X2: the neutral count phrase in both languages (participles agree — the C5 rule).
+  {
+    const mixed = { decisions: { adjustability: { status: 'demo' }, support: { status: 'already' }, protection: { status: 'later' } } };
+    const en = renderStep('pillow', { answers: ANSWERS, state: Object.assign({ pillowReaction: 'aligned' }, mixed), cart: { 'pillow-flow': { id: 'pillow-flow' } } });
+    ok('count: "1 added · 2 addressed" — the deferral is claimed by neither number', en.planCount === '1 added · 2 addressed', en.planCount);
+    const es = renderStep('pillow', { answers: ANSWERS, lang: 'es', state: Object.assign({ pillowReaction: 'aligned' }, mixed), cart: { 'pillow-flow': { id: 'pillow-flow' } } });
+    ok('count ES: "1 agregado · 2 atendidos" (singular participle agrees; wording provisional)', es.planCount === '1 agregado · 2 atendidos', es.planCount);
+  }
+  // X10: aria-current="step" on the active rail control alone.
+  {
+    const r = renderStep('support', { answers: ANSWERS });
+    ok('the active rail step carries aria-current="step" and it appears exactly once',
+      (r.rail.match(/aria-current="step"/g) || []).length === 1
+      && r.rail.includes('data-step="support" aria-current="step"'));
+  }
+  // X10: the capture/restore pair, static against the shipped source.
+  ok('X10: renderSleepSystem() captures before the four regions rebuild and restores after (one site, no timer)',
+    /var focusKey = sleepSystemFocusKey\(\);\s*renderSleepSystemRail\(\);[\s\S]{0,120}renderSleepSystemFooter\(\);\s*sleepSystemRestoreFocus\(focusKey\);/.test(html));
+  ok('X10: the capture half is identity-gated — a [data-sleep-action] control inside this screen matching :focus-visible',
+    /function sleepSystemFocusKey\(\)[\s\S]{0,900}\[data-sleep-action\]'\) \|\| !active\.matches\(':focus-visible'\)/.test(html));
+  ok('X10: the restore half is synchronous with preventScroll and falls back to the step heading, then the screen heading',
+    /function sleepSystemRestoreFocus\(key\)[\s\S]{0,1200}sleepSystemSectionTitle[\s\S]{0,300}sleepSystemTitle[\s\S]{0,400}preventScroll: true/.test(html)
+    && !/function sleepSystemRestoreFocus\(key\)[\s\S]{0,1200}setTimeout/.test(html));
+  ok('X10: identity is the data-* attribute set, never the action name (select-item flips to remove-item)',
+    /SLEEP_SYSTEM_IDENTITY_ATTRS = \['data-item-id', 'data-step', 'data-status',\s*'data-position', 'data-reaction', 'data-support-choice', 'data-protection-goal'\]/.test(html));
+  ok('X10: the step-heading fallback is rendered focusable',
+    SRC.main.includes('id="sleepSystemSectionTitle" tabindex="-1"'));
+  // X3: the forbidden claims are gone from the live renderers.
+  ok('X3: "Best for" / "Mejor para" appear nowhere in the live Sleep System main renderer',
+    !stripComments(SRC.main).includes("'Best for '") && !stripComments(SRC.main).includes("'Mejor para '"));
+  // X3: the take-home packet line is factual customer action, evaluated for real.
+  {
+    const pStart = html.indexOf('var packet = [');
+    const pEnd = html.indexOf('\n      ];', pStart);
+    ok('X3: the take-home packet literal located', pStart !== -1 && pEnd !== -1);
+    if (pStart !== -1 && pEnd !== -1) {
+      const literal = html.slice(pStart + 'var packet = '.length, pEnd + '\n      ]'.length);
+      const build = (es, acc) => new Function('_esE', 'savedMattresses', 'recCount', 'selectedAccessories',
+        '"use strict"; return ' + literal + ';')(es, [], 3, Array.from({ length: acc }, () => ({})));
+      const row = (rows) => rows.find((entry) => /piece|pieza/.test(entry.detail || ''));
+      ok('X3: one added piece reads "1 piece · the bases, pillows or protectors you added"',
+        row(build(false, 1)).detail === '1 piece · the bases, pillows or protectors you added', row(build(false, 1)).detail);
+      ok('X3: two pieces pluralize with the same factual wording',
+        row(build(false, 2)).detail === '2 pieces · the bases, pillows or protectors you added');
+      ok('X3 ES: "1 pieza / 2 piezas · las bases, almohadas o protectores que agregaste" (provisional)',
+        row(build(true, 1)).detail === '1 pieza · las bases, almohadas o protectores que agregaste'
+        && row(build(true, 2)).detail === '2 piezas · las bases, almohadas o protectores que agregaste');
+      ok('X3: "matched to you" / "para ti" appear nowhere in the packet literal',
+        !/matched to you|para ti\b/.test(literal));
+    }
+  }
+  // X2: the count phrase is now customer-derived, so its surface joins the
+  // authoritative wipe (the session suite seeds every implementation-listed
+  // id; this pin makes its removal observable).
+  ok('X2: the derived count surface joined the wipe inventory (SESSION_TEXT_IDS)',
+    /var SESSION_TEXT_IDS = \[[\s\S]*?'sleepSystemPlanCount'[\s\S]*?\];/.test(html));
+  // Negative control (guard-15 convention): reverting the classifier must
+  // flip the deferred assertions, proving they bite.
+  {
+    const mutate = (src) => {
+      const out = src.replace("if (status === 'later') return 'deferred';", "if (status === 'later') return 'addressed';");
+      if (out === src) throw new Error('negative-control mutation did not apply');
+      return out;
+    };
+    const env = makeEnv({ answers: ANSWERS, state: { activeStep: 'adjustability', decisions: { adjustability: { status: 'later' } } }, mutate });
+    env.api.rail();
+    env.api.plan();
+    ok('negative control: reverting the classifier makes a deferral count as addressed again (so the X2 assertions bite)',
+      env.get('sleepSystemPlanCount').textContent === '0 added · 1 addressed'
+      && /is-addressed/.test(env.get('sleepSystemRail').innerHTML)
+      && !/is-deferred/.test(env.get('sleepSystemRail').innerHTML));
   }
 }
 
