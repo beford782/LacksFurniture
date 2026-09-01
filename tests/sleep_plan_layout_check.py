@@ -200,7 +200,14 @@ PROBE_JS = r"""
     return { id: c.id || c.className, x: r.x, y: r.y, w: r.width, h: r.height, display: getComputedStyle(c).display };
   });
   out.scrollWidth = doc.scrollWidth; out.clientWidth = doc.clientWidth;
-  out.title = { text: title.textContent, color: getComputedStyle(title).color, bg: bgOf(title), w: title.getBoundingClientRect().width };
+  // `lines` counts the title's line fragments (one text node -> one rect per
+  // line) and `overflows` its clipped width: together they are the "not
+  // squeezed into a sliver" guard. The box width alone stopped being that
+  // guard with cohesion C4 — a focused heading now shrinks its box to its
+  // text on purpose.
+  out.title = { text: title.textContent, color: getComputedStyle(title).color, bg: bgOf(title), w: title.getBoundingClientRect().width,
+                lines: (() => { const rg = document.createRange(); rg.selectNodeContents(title); return rg.getClientRects().length; })(),
+                overflows: title.scrollWidth > title.clientWidth + 1 };
   out.finHead = { text: finHead.textContent, color: getComputedStyle(finHead).color, bg: bgOf(finHead), hidden: finHead.closest('[hidden]') !== null };
   out.continue = { text: cont.textContent, hidden: cont.hidden, display: getComputedStyle(cont).display,
                    x: cb.x, y: cb.y, w: cb.width, h: cb.height, docHeight: doc.scrollHeight,
@@ -445,12 +452,92 @@ def run_forced_colors(browser, port, shots_dir):
     if shots_dir:
         page.screenshot(path=os.path.join(shots_dir, "summary-forced-colors-1194x748.png"))
     check("forced colors: the Summary renders without a page error", not errors)
+    # C4: the focused title keeps a solid ring and drops the halo (the
+    # CanvasText fallback block applied); its text is not invisible.
+    fc = page.evaluate("""() => { const t = document.getElementById('hf2ReviewTitle'); const cs = getComputedStyle(t);
+        return { active: document.activeElement === t, outlineStyle: cs.outlineStyle, outlineWidth: parseFloat(cs.outlineWidth), boxShadow: cs.boxShadow }; }""")
+    check("forced colors: the focused Summary title keeps a solid 3px ring with no halo (C4 fallback applied)",
+          fc["active"] and fc["outlineStyle"] == "solid" and abs(fc["outlineWidth"] - 3) < 0.5 and fc["boxShadow"] == "none", str(fc))
     for label in ("lead", "send"):
         el = r[label]
         fg, bg = parse_rgb(el["color"]), composite(el["bg"])
         ok = fg is not None and bg is not None and fg != bg
         check(f"forced colors: the {label} text is not invisible (fg != bg)", ok,
               f"color={el['color']} bg={el['bg']}")
+    page.close()
+
+
+# X11 (North Star ruling D9, 2026-08-31): under forced colors the active tier
+# tab, the active Sleep System rail step and the card's selected Compare /
+# saved Save were indistinguishable from their resting neighbours (fills are
+# stripped and every border — including a reserved `transparent` one — is
+# painted CanvasText). Each state now differs in border geometry. This pass
+# renders Results and the Sleep System under Chromium's forced-colors
+# emulation and compares COMPUTED border width/style between the active and a
+# resting sibling, and proves the compensated padding keeps the boxes equal.
+FORCED_STATES_JS = r"""
+async (ARGS) => {
+  for (const k of Object.keys(ARGS.answers)) answers[k] = ARGS.answers[k];
+  showProfileScreen();
+  window.showResults();
+  const gold = _resultsState.tierData.gold;
+  window.toggleCompare(gold[0].id);
+  window._toggleSavePick(gold[0].id);
+  await new Promise((res) => setTimeout(res, 300));
+  const geo = (el) => { if (!el) return null; const c = getComputedStyle(el); const r = el.getBoundingClientRect();
+    return { bw: parseFloat(c.borderTopWidth), bs: c.borderTopStyle, w: Math.round(r.width), h: Math.round(r.height), pad: [c.paddingTop, c.paddingRight, c.paddingBottom, c.paddingLeft].join(' ') }; };
+  const tabs = Array.from(document.querySelectorAll('.noct-tier-tab'));
+  const activeTab = tabs.find((t) => t.classList.contains('active')), restTab = tabs.find((t) => !t.classList.contains('active'));
+  const cmp = Array.from(document.querySelectorAll('#resultsScreen .compare-btn'));
+  const selCmp = cmp.find((b) => b.classList.contains('selected')), restCmp = cmp.find((b) => !b.classList.contains('selected'));
+  const saves = Array.from(document.querySelectorAll('#resultsScreen .noct-save-btn'));
+  const saved = saves.find((b) => b.classList.contains('saved')), restSave = saves.find((b) => !b.classList.contains('saved'));
+  const results = { activeTab: geo(activeTab), restTab: geo(restTab), selCmp: geo(selCmp), restCmp: geo(restCmp), saved: geo(saved), restSave: geo(restSave),
+                    forced: matchMedia('(forced-colors: active)').matches };
+  window.chooseFinalist(gold[0].id);
+  window.showSleepPlan('results');
+  window.showAccessories();
+  await new Promise((res) => setTimeout(res, 400));
+  const steps = Array.from(document.querySelectorAll('#sleepSystemRail .sleep-system__step'));
+  const activeStep = steps.find((s) => s.classList.contains('is-active')), restStep = steps.find((s) => !s.classList.contains('is-active') && !s.classList.contains('is-complete'));
+  return { results, rail: { activeStep: geo(activeStep), restStep: geo(restStep) } };
+}
+"""
+
+
+def run_forced_colors_states(browser, port, shots_dir):
+    print("\n-- forced-colors state cues (X11) 1194x748 --")
+    page = browser.new_page(viewport={"width": 1194, "height": 748}, forced_colors="active")
+    errors = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    page.goto(f"http://127.0.0.1:{port}/", wait_until="networkidle")
+    page.wait_for_selector("#startBtn")
+    r = page.evaluate(FORCED_STATES_JS, {"answers": ANSWERS})
+    if shots_dir:
+        os.makedirs(shots_dir, exist_ok=True)
+        page.screenshot(path=os.path.join(shots_dir, "forced-colors-states-1194x748.png"))
+    R = r["results"]
+    check("forced colors: emulation active, Results rendered with an active tab, a selected Compare and a saved Save, no page error",
+          R["forced"] and not errors and R["activeTab"] and R["restTab"] and R["selCmp"] and R["restCmp"] and R["saved"] and R["restSave"], str(errors)[:120])
+    if R["activeTab"] and R["restTab"]:
+        check(f"forced colors: the active tier tab differs from a resting tab in border width AND style ({R['activeTab']['bw']}px {R['activeTab']['bs']} vs {R['restTab']['bw']}px {R['restTab']['bs']})",
+              R["activeTab"]["bw"] > R["restTab"]["bw"] and R["activeTab"]["bs"] == "double" and R["restTab"]["bs"] != "double")
+        check("forced colors: the active and resting tabs keep the same height (compensated padding, no reflow)",
+              R["activeTab"]["h"] == R["restTab"]["h"], f"{R['activeTab']['h']} vs {R['restTab']['h']}")
+    if R["selCmp"] and R["restCmp"]:
+        check(f"forced colors: the selected Compare differs from a resting Compare in border width ({R['selCmp']['bw']}px vs {R['restCmp']['bw']}px)",
+              R["selCmp"]["bw"] > R["restCmp"]["bw"] + 0.5)
+        check("forced colors: the selected and resting Compare controls keep the same height", R["selCmp"]["h"] == R["restCmp"]["h"], f"{R['selCmp']['h']} vs {R['restCmp']['h']}")
+    if R["saved"] and R["restSave"]:
+        check(f"forced colors: the saved Save differs from a resting Save in border width ({R['saved']['bw']}px vs {R['restSave']['bw']}px)",
+              R["saved"]["bw"] > R["restSave"]["bw"] + 0.5)
+    S = r["rail"]
+    check("forced colors: the Sleep System rail rendered an active step and a resting step", bool(S["activeStep"] and S["restStep"]))
+    if S["activeStep"] and S["restStep"]:
+        check(f"forced colors: the active rail step differs from a resting step in border width ({S['activeStep']['bw']}px vs {S['restStep']['bw']}px)",
+              S["activeStep"]["bw"] > S["restStep"]["bw"] + 1)
+        check("forced colors: the active and resting rail steps keep the same width (compensated padding)",
+              S["activeStep"]["w"] == S["restStep"]["w"], f"{S['activeStep']['w']} vs {S['restStep']['w']}")
     page.close()
 
 
@@ -475,9 +562,13 @@ def run_viewport(browser, port, name, width, height, shots_dir):
     stacked = all(kids[i]["y"] + kids[i]["h"] <= kids[i + 1]["y"] + 1 for i in range(len(kids) - 1))
     check(f"the {len(kids)} visible blocks stack top-to-bottom in DOM order (no side-by-side columns)", stacked,
           "; ".join(f"{c['id']}@y={c['y']:.0f}" for c in kids))
-    wide = all(c["w"] >= 0.6 * screen_w for c in kids)
-    check("every block spans the screen (>= 60% of the screen's content width)", wide,
-          "; ".join(f"{c['id']}:{c['w']:.0f}/{screen_w:.0f}" for c in kids if c["w"] < 0.6 * screen_w))
+    # The focused title is excluded on purpose: since cohesion C4 a focused
+    # heading shrinks its box to its text (its own guard is the "not squeezed"
+    # title check below). Every other block must still span the column.
+    blocks = [c for c in kids if c["id"] != "sleepPlanTitle"]
+    wide = all(c["w"] >= 0.6 * screen_w for c in blocks)
+    check("every block (the focused title aside) spans the screen (>= 60% of the screen's content width)", wide,
+          "; ".join(f"{c['id']}:{c['w']:.0f}/{screen_w:.0f}" for c in blocks if c["w"] < 0.6 * screen_w))
     inside = all(c["x"] >= -1 and c["x"] + c["w"] <= width + 1 for c in kids)
     check("no block lies outside the viewport horizontally", inside,
           "; ".join(f"{c['id']}:x={c['x']:.0f}..{c['x'] + c['w']:.0f}" for c in kids if not (c["x"] >= -1 and c["x"] + c["w"] <= width + 1)))
@@ -489,9 +580,9 @@ def run_viewport(browser, port, name, width, height, shots_dir):
 
     t_fg, t_bg = parse_rgb(r["title"]["color"]), composite(r["title"]["bg"])
     t_ratio = contrast(t_fg, t_bg) if t_fg and t_bg else 0
-    check(f"the title '{r['title']['text']}' is readable (>= {MIN_CONTRAST}:1, got {t_ratio:.2f}) and not squeezed into a sliver",
-          t_ratio >= MIN_CONTRAST and r["title"]["w"] >= 0.5 * screen_w,
-          f"color={r['title']['color']} bg={r['title']['bg']} width={r['title']['w']:.0f}/{screen_w:.0f}")
+    check(f"the title '{r['title']['text']}' is readable (>= {MIN_CONTRAST}:1, got {t_ratio:.2f}) and not squeezed into a sliver (<= 2 lines, no clipped overflow)",
+          t_ratio >= MIN_CONTRAST and r["title"]["lines"] <= 2 and not r["title"]["overflows"],
+          f"color={r['title']['color']} bg={r['title']['bg']} width={r['title']['w']:.0f}/{screen_w:.0f} lines={r['title']['lines']} overflows={r['title']['overflows']}")
     f_fg, f_bg = parse_rgb(r["finHead"]["color"]), composite(r["finHead"]["bg"])
     f_ratio = contrast(f_fg, f_bg) if f_fg and f_bg else 0
     check(f"the Payment Choice headline is rendered and readable (>= {MIN_CONTRAST}:1, got {f_ratio:.2f})",
@@ -525,6 +616,393 @@ def run_viewport(browser, port, name, width, height, shots_dir):
     page.close()
 
 
+# Cohesion change C4 (owner ruling 2026-08-30): the screen headings that take
+# programmatic focus on every transition wore only the UA `outline: auto` on a
+# display:block h1 - a full-width rectangle up to 3.2x wider than the words
+# (Plan title: 1154px box, 364px of text at 1194x748). The author treatment
+# shrinks the focused heading's box to its text and draws the shared two-ring
+# pair at a 5px offset, on :focus-visible only. This pass reaches the Plan and
+# the Summary through a KEYBOARD activation (Enter on the control that leads
+# there), so :focus-visible is exercised the way a keyboard user exercises
+# it, and proves per language and tablet viewport:
+#   * the destination heading owns focus and matches :focus-visible;
+#   * the author ring is on it (solid 3px outline, offset >= 4px, halo);
+#   * the ring hugs the text: a one-line heading's box is no wider than its
+#     text range (+2px);
+#   * nothing moves: the text's position is identical with the ring and after
+#     blur() removes it (the ring is an overlay on the same layout);
+#   * blur() removes the ring (no persistent decoration).
+HEADING_SETUP_JS = r"""
+async (ARGS) => {
+  if (ARGS.lang === 'es') await switchLanguage('es');
+  for (const k of Object.keys(ARGS.answers)) answers[k] = ARGS.answers[k];
+  showProfileScreen();
+  window.showResults();
+  window.chooseFinalist(_resultsState.tierData.gold[0].id);
+  window.showSleepPlan('results');
+  window.showAccessories();
+  await new Promise((res) => setTimeout(res, 400));
+  return (document.querySelector('.screen.active') || {}).id;
+}
+"""
+
+HEADING_MEASURE_JS = r"""
+() => {
+  const ae = document.activeElement;
+  const box = (el) => { const b = el.getBoundingClientRect(); return { x: b.x, y: b.y, w: b.width, h: b.height }; };
+  const text = (el) => { const rg = document.createRange(); rg.selectNodeContents(el); const b = rg.getBoundingClientRect();
+                         return { x: b.x, y: b.y, w: b.width, h: b.height, lines: rg.getClientRects().length }; };
+  const read = () => { const cs = getComputedStyle(ae); return { box: box(ae), text: text(ae), outlineStyle: cs.outlineStyle,
+                       outlineWidth: parseFloat(cs.outlineWidth), outlineOffset: parseFloat(cs.outlineOffset), boxShadow: cs.boxShadow }; };
+  const focused = read();
+  let fv = null; try { fv = ae.matches(':focus-visible'); } catch (e) {}
+  focused.fv = fv;
+  ae.blur();
+  const blurred = read();
+  ae.focus({ preventScroll: true });
+  return { id: ae.id, screen: (document.querySelector('.screen.active') || {}).id, focused, blurred };
+}
+"""
+
+
+def _check_heading(tag, r, expect_id):
+    f, b = r["focused"], r["blurred"]
+    check(f"[{tag}] the keyboard activation landed on #{expect_id} and it owns focus",
+          r["id"] == expect_id, f"active={r['id']} screen={r['screen']}")
+    check(f"[{tag}] the focused heading matches :focus-visible after a keyboard activation", f["fv"] is True)
+    check(f"[{tag}] the author ring is on it: solid 3px outline at >= 4px offset with the inner halo",
+          f["outlineStyle"] == "solid" and abs(f["outlineWidth"] - 3) < 0.5 and f["outlineOffset"] >= 4 and f["boxShadow"] != "none",
+          f"style={f['outlineStyle']} width={f['outlineWidth']} offset={f['outlineOffset']} shadow={str(f['boxShadow'])[:40]}")
+    hug = (f["box"]["w"] <= f["text"]["w"] + 2) if f["text"]["lines"] == 1 else True
+    check(f"[{tag}] the ring hugs the text: box {f['box']['w']:.0f}px vs text {f['text']['w']:.0f}px ({f['text']['lines']} line(s))", hug)
+    still = abs(f["text"]["x"] - b["text"]["x"]) < 0.5 and abs(f["text"]["y"] - b["text"]["y"]) < 0.5
+    check(f"[{tag}] the text does not move when the ring leaves (same x/y focused and blurred)", still,
+          f"focused=({f['text']['x']:.1f},{f['text']['y']:.1f}) blurred=({b['text']['x']:.1f},{b['text']['y']:.1f})")
+    check(f"[{tag}] blur() removes the ring (no persistent decoration)", b["outlineStyle"] == "none")
+
+
+def run_heading_focus(browser, port, name, width, height, lang, shots_dir):
+    print(f"\n-- HEADING FOCUS (C4) keyboard path {lang} {name} {width}x{height} --")
+    page = browser.new_page(viewport={"width": width, "height": height})
+    errors = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    page.goto(f"http://127.0.0.1:{port}/", wait_until="networkidle")
+    page.wait_for_selector("#startBtn")
+    screen = page.evaluate(HEADING_SETUP_JS, {"answers": ANSWERS, "lang": lang})
+    check(f"[{lang}/{name}] the setup reached the Sleep System without a page error",
+          screen == "accessoriesScreen" and not errors, f"screen={screen} errors={errors[:1]}")
+    # Sleep System -> Plan by keyboard (Enter on the top "Review Sleep Plan" control).
+    page.focus("#sleepSystemReviewTop")
+    page.keyboard.press("Enter")
+    page.wait_for_timeout(400)
+    r = page.evaluate(HEADING_MEASURE_JS)
+    if shots_dir:
+        os.makedirs(shots_dir, exist_ok=True)
+        page.screenshot(path=os.path.join(shots_dir, f"heading-focus-plan-{lang}-{name}-{width}x{height}.png"))
+    _check_heading(f"{lang}/{name}/Plan", r, "sleepPlanTitle")
+    # Plan -> Summary by keyboard (Enter on Continue).
+    page.evaluate("() => document.getElementById('sleepPlanContinue').scrollIntoView({block: 'center'})")
+    page.focus("#sleepPlanContinue")
+    page.keyboard.press("Enter")
+    page.wait_for_timeout(400)
+    r = page.evaluate(HEADING_MEASURE_JS)
+    if shots_dir:
+        page.screenshot(path=os.path.join(shots_dir, f"heading-focus-summary-{lang}-{name}-{width}x{height}.png"))
+    _check_heading(f"{lang}/{name}/Summary", r, "hf2ReviewTitle")
+    check(f"[{lang}/{name}] no page error during the keyboard path", not errors, str(errors)[:120])
+    page.close()
+
+
+# X1 (North Star ruling D9, 2026-08-31): in portrait the floating Selections
+# pill covered the compare tray's "Compare →" once a pick was saved (100×31 of
+# the 104×35 control; 6 of 36 tap points reached it in EN, 11/36 in ES — the
+# rest opened the Summary). The pill now lifts above the tray by the tray's
+# rendered height while the tray is shown. This pass renders Results with one
+# saved pick and two compare selections, in EN and ES at both tablet viewports,
+# and proves with a 6×6 elementFromPoint grid that every point on Compare and
+# on Clear reaches its own control, that the pill does not intersect the tray,
+# that the pill itself stays fully tappable, and that clearing the tray drops
+# the pill back to its resting position.
+TRAY_PILL_JS = r"""
+async (ARGS) => {
+  if (ARGS.lang === 'es') await switchLanguage('es');
+  for (const k of Object.keys(ARGS.answers)) answers[k] = ARGS.answers[k];
+  showProfileScreen();
+  window.showResults();
+  const gold = _resultsState.tierData.gold;
+  window._toggleSavePick(gold[0].id);
+  window.toggleCompare(gold[0].id);
+  window.toggleCompare(gold[1].id);
+  // Settle on the REAL animations (the tray's 0.25s entrance slide and the
+  // pill's 0.2s bottom transition), not a fixed sleep: under CI load a fixed
+  // wait left the tray mid-slide, so a row of hit-test points fell below the
+  // viewport and elementFromPoint returned null (measured 30/36).
+  const settle = async () => {
+    const els = [document.getElementById('compareTray'), document.getElementById('savedPicksBtn')];
+    await Promise.all(els.flatMap((el) => el.getAnimations({ subtree: true })).map((a) => a.finished.catch(() => {})));
+    await new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res)));
+  };
+  await settle();
+  const R = (el) => { const b = el.getBoundingClientRect(); return { x: b.x, y: b.y, w: b.width, h: b.height, top: b.top, bottom: b.bottom }; };
+  const inter = (a, b) => !(a.x + a.w <= b.x || b.x + b.w <= a.x || a.y + a.h <= b.y || b.y + b.h <= a.y);
+  const hit = (el) => { const b = el.getBoundingClientRect(); let ok = 0; for (let i = 0; i < 6; i++) for (let j = 0; j < 6; j++) {
+    const t = document.elementFromPoint(b.left + (i + 0.5) * b.width / 6, b.top + (j + 0.5) * b.height / 6); if (t && (t === el || el.contains(t))) ok++; } return ok; };
+  const tray = document.getElementById('compareTray'), go = document.getElementById('compareTrayGo'),
+        clr = document.getElementById('compareTrayClear'), pill = document.getElementById('savedPicksBtn');
+  const shown = { tray: R(tray), go: R(go), clear: R(clr), pill: R(pill), pillOverTray: inter(R(pill), R(tray)), pillOverGo: inter(R(pill), R(go)),
+                  goHit: hit(go), clearHit: hit(clr), pillHit: hit(pill), lifted: pill.classList.contains('noct-picks-pill--lifted'),
+                  clearance: pill.style.getPropertyValue('--df-tray-clearance'), pillBottom: getComputedStyle(pill).bottom };
+  window.clearCompare();
+  await settle();
+  const cleared = { trayDisplay: tray.style.display, lifted: pill.classList.contains('noct-picks-pill--lifted'),
+                    pillBottom: getComputedStyle(pill).bottom, pill: R(pill), pillHit: hit(pill) };
+  return { shown, cleared, vh: window.innerHeight };
+}
+"""
+
+
+def run_compare_tray_pill(browser, port, name, width, height, lang, shots_dir):
+    print(f"\n-- COMPARE TRAY vs Selections pill (X1) {lang} {name} {width}x{height} --")
+    page = browser.new_page(viewport={"width": width, "height": height}, has_touch=True)
+    errors = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    page.goto(f"http://127.0.0.1:{port}/", wait_until="networkidle")
+    page.wait_for_selector("#startBtn")
+    r = page.evaluate(TRAY_PILL_JS, {"answers": ANSWERS, "lang": lang})
+    if shots_dir:
+        os.makedirs(shots_dir, exist_ok=True)
+        page.screenshot(path=os.path.join(shots_dir, f"tray-pill-{lang}-{name}-{width}x{height}.png"))
+    s, c = r["shown"], r["cleared"]
+    tag = f"{lang}/{name}"
+    check(f"[{tag}] Results rendered with the tray shown and the pill visible, no page error",
+          not errors and s["tray"]["h"] > 0 and s["pill"]["h"] > 0, f"errors={errors[:1]} tray={s['tray']} pill={s['pill']}")
+    check(f"[{tag}] the pill is lifted by the tray's rendered height ({s['tray']['h']:.0f}px)",
+          s["lifted"] and s["clearance"] == f"{s['tray']['h']:.0f}px", f"lifted={s['lifted']} clearance={s['clearance']!r}")
+    check(f"[{tag}] the pill does not intersect the tray (pill bottom {s['pill']['bottom']:.0f} <= tray top {s['tray']['top']:.0f})",
+          not s["pillOverTray"] and s["pill"]["bottom"] <= s["tray"]["top"] + 0.5)
+    check(f"[{tag}] every one of 36 points on Compare reaches Compare (was 6/36 EN, 11/36 ES in portrait)",
+          s["goHit"] == 36, f"reached {s['goHit']}/36")
+    check(f"[{tag}] every one of 36 points on Clear reaches Clear", s["clearHit"] == 36, f"reached {s['clearHit']}/36")
+    check(f"[{tag}] the lifted pill itself is fully tappable (36/36) and inside the viewport",
+          s["pillHit"] == 36 and s["pill"]["y"] >= 0 and s["pill"]["bottom"] <= r["vh"] + 0.5, f"reached {s['pillHit']}/36 pill={s['pill']}")
+    check(f"[{tag}] clearing the tray drops the pill back to its resting position (bottom 16px, class removed, still tappable)",
+          c["trayDisplay"] == "none" and not c["lifted"] and c["pillBottom"] == "16px" and c["pillHit"] == 36,
+          f"display={c['trayDisplay']} lifted={c['lifted']} bottom={c['pillBottom']} hit={c['pillHit']}")
+    page.close()
+
+
+# X12 (North Star ruling D9, 2026-08-31): the swarm measured a dozen controls
+# under the 44px touch floor (Welcome language toggle 40x27, compare tray
+# 104x35 / 53x35, Selections pill x40, "Save for later" x33, Compare close
+# 32x29, drawer Back/Prev/Next x42, Summary pick/accessory actions x42, RSA
+# strip x34, RSA add x37, take-home secondary actions x33/x32). Two were ruled
+# acceptable with reason and stay: the card's "View details" (the card itself
+# opens the drawer) and the inline privacy link (running text). This pass
+# walks Welcome -> Results (tray shown, pill shown) -> drawer -> Compare ->
+# Summary (roster open) -> take-home -> preview confirmation in EN and ES at
+# both tablet viewports and requires every other visible interactive control
+# to be at least 44x44 CSS px.
+TOUCH_FLOOR_JS = r"""
+async (ARGS) => {
+  const vis = (el) => { const c = getComputedStyle(el); if (c.display === 'none' || c.visibility === 'hidden') return false; const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
+  const desc = (el) => el.tagName.toLowerCase() + (el.id ? '#' + el.id : '') + ((typeof el.className === 'string' && el.className.trim()) ? '.' + el.className.trim().split(/\s+/)[0] : '');
+  const small = (label) => { const out = []; for (const el of document.querySelectorAll('button, a[href], input, select, textarea, [role=button], [role=tab], [tabindex]:not([tabindex="-1"])')) {
+      if (!vis(el) || el.closest('[inert]') || el.disabled) continue; const r = el.getBoundingClientRect();
+      if (r.width < 44 || r.height < 44) out.push({ screen: label, desc: desc(el), w: Math.round(r.width), h: Math.round(r.height) }); } return out; };
+  const wait = (ms) => new Promise((res) => setTimeout(res, ms));
+  if (ARGS.lang === 'es') await switchLanguage('es');
+  let found = small('welcome');
+  for (const k of Object.keys(ARGS.answers)) answers[k] = ARGS.answers[k];
+  showProfileScreen();
+  window.showResults();
+  const gold = _resultsState.tierData.gold;
+  window._toggleSavePick(gold[0].id);
+  window.toggleCompare(gold[0].id);
+  window.toggleCompare(gold[1].id);
+  await wait(450);
+  found = found.concat(small('results+tray+pill'));
+  openResultCardDrawer(document.querySelector('#resultsScreen [data-id][data-tier]'));
+  await wait(500);
+  found = found.concat(small('drawer'));
+  window.closeMattressDrawer();
+  await wait(450);
+  window.openCompareModal();
+  await wait(450);
+  found = found.concat(small('compare-modal'));
+  window.closeCompareModal();
+  await wait(400);
+  window.chooseFinalist(gold[0].id);
+  window.showSavedPicks();
+  await wait(400);
+  const strip = document.getElementById('hf2RsaStripBtn'); if (strip) { strip.click(); await wait(250); }
+  found = found.concat(small('summary+roster'));
+  window.showEmailCapture();
+  await wait(400);
+  found = found.concat(small('take-home'));
+  let live = (typeof emailDeliveryLive === 'function') ? emailDeliveryLive() : null;
+  if (live === false) {
+    const input = document.getElementById('emailInput'); if (input) input.value = 'preview@example.com';
+    const send = document.getElementById('emailSendBtn'); if (send) { send.click(); await wait(1200); found = found.concat(small('take-home-confirmation')); }
+  }
+  return { found, live };
+}
+"""
+ALLOWED_SMALL = ("noct-card-details", "emailPrivacyLink")
+
+
+def run_touch_floor(browser, port, name, width, height, lang, shots_dir):
+    print(f"\n-- TOUCH FLOOR sweep (X12) {lang} {name} {width}x{height} --")
+    page = browser.new_page(viewport={"width": width, "height": height}, has_touch=True)
+    errors = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    page.goto(f"http://127.0.0.1:{port}/", wait_until="networkidle")
+    page.wait_for_selector("#startBtn")
+    r = page.evaluate(TOUCH_FLOOR_JS, {"answers": ANSWERS, "lang": lang})
+    if shots_dir:
+        os.makedirs(shots_dir, exist_ok=True)
+        page.screenshot(path=os.path.join(shots_dir, f"touch-floor-end-{lang}-{name}-{width}x{height}.png"))
+    offenders = [o for o in r["found"] if not any(a in o["desc"] for a in ALLOWED_SMALL)]
+    accepted = [o for o in r["found"] if any(a in o["desc"] for a in ALLOWED_SMALL)]
+    check(f"[{lang}/{name}] the sweep reached the preview confirmation without a page error (emailDeliveryLive() === false)",
+          not errors and r["live"] is False, f"errors={errors[:1]} live={r['live']}")
+    check(f"[{lang}/{name}] every visible interactive control on the swept screens is >= 44x44 CSS px, except the two recorded exceptions ({len(accepted)} occurrences of View details / privacy link)",
+          not offenders, "; ".join(f"{o['screen']}:{o['desc']} {o['w']}x{o['h']}" for o in offenders[:14]))
+    page.close()
+
+
+# Wave 3 / X4 (North Star ruling D1, 2026-08-31): a product source whose
+# natural aspect ratio exceeds 3 is a banner crop — `cover` showed a blurred
+# upscaled strip of the two Tempur-Pedic Gold sources (4.05:1 / 4.42:1) on
+# every surface. dfTagBannerImage() tags such images at load; CSS letterboxes
+# them on a white mat, outranking even the drawer hero's inline cover style.
+# This pass renders Results, waits for the real image loads, and proves the
+# tagging is exact in both directions, then opens the drawer on the banner
+# mattress and proves the inline style lost.
+BANNER_JS = r"""
+async (ARGS) => {
+  for (const k of Object.keys(ARGS.answers)) answers[k] = ARGS.answers[k];
+  showProfileScreen();
+  window.showResults();
+  await new Promise((res) => setTimeout(res, 250));
+  const settleImg = (i) => (i.complete ? Promise.resolve() : new Promise((res) => {
+    i.addEventListener('load', res, { once: true }); i.addEventListener('error', res, { once: true }); }));
+  await Promise.all(Array.from(document.images).map(settleImg));
+  await new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res)));
+  const info = (i) => ({ src: (i.currentSrc || i.src).split('/').pop(), ar: i.naturalHeight ? +(i.naturalWidth / i.naturalHeight).toFixed(2) : 0,
+                         tagged: i.classList.contains('df-img--banner'), fit: getComputedStyle(i).objectFit });
+  const results = Array.from(document.images).filter((i) => i.naturalWidth).map(info);
+  const banner = _resultsState.tierData.gold.find((m) => {
+    const el = document.querySelector('#resultsScreen [data-id="' + m.id + '"] img');
+    return el && el.naturalHeight && el.naturalWidth / el.naturalHeight > 3;
+  });
+  let drawer = null;
+  if (banner) {
+    openResultCardDrawer(document.querySelector('#resultsScreen [data-id="' + banner.id + '"]'));
+    await new Promise((res) => setTimeout(res, 500));
+    const h = document.querySelector('.drawer-hero img');
+    if (h) { await settleImg(h); await new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res))); drawer = info(h); }
+  }
+  return { results, bannerModel: banner ? banner.name : null, drawer };
+}
+"""
+
+
+def run_banner_fallback(browser, port, shots_dir):
+    print("\n-- BANNER FALLBACK (X4 / Wave 3) 1194x748 --")
+    page = browser.new_page(viewport={"width": 1194, "height": 748})
+    errors = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    page.goto(f"http://127.0.0.1:{port}/", wait_until="networkidle")
+    page.wait_for_selector("#startBtn")
+    r = page.evaluate(BANNER_JS, {"answers": ANSWERS})
+    if shots_dir:
+        os.makedirs(shots_dir, exist_ok=True)
+        page.screenshot(path=os.path.join(shots_dir, "banner-fallback-1194x748.png"))
+    banners = [i for i in r["results"] if i["ar"] > 3]
+    standards = [i for i in r["results"] if 0 < i["ar"] <= 3]
+    check("Results rendered with a banner-crop Gold source present (the re-export gap this fallback covers)",
+          not errors and len(banners) >= 1 and bool(r["bannerModel"]), f"errors={errors[:1]} banner={r['bannerModel']}")
+    check("every banner-crop image (AR > 3) is tagged and letterboxes (computed object-fit: contain)",
+          bool(banners) and all(i["tagged"] and i["fit"] == "contain" for i in banners), str(banners[:4]))
+    check(f"no standard source is tagged ({len(standards)} checked)",
+          all(not i["tagged"] for i in standards), str([i for i in standards if i["tagged"]][:4]))
+    check("the drawer hero on the banner mattress letterboxes despite its inline cover style (!important won)",
+          r["drawer"] is not None and r["drawer"]["tagged"] and r["drawer"]["fit"] == "contain", str(r["drawer"]))
+    page.close()
+
+
+# X10 (North Star ruling D7, 2026-08-31): every Sleep System decision rebuilds
+# all four regions, and keyboard focus fell to <body> each time — the
+# salesperson lost their place on every decision and step change. The repair
+# restores focus to the control with the SAME data-* identity (the action name
+# flips select-item <-> remove-item), else the step heading. This pass drives
+# three real keyboard activations and reads where focus actually landed.
+SS_FOCUS_SETUP_JS = r"""
+async (ARGS) => {
+  for (const k of Object.keys(ARGS.answers)) answers[k] = ARGS.answers[k];
+  showProfileScreen();
+  window.showResults();
+  window.chooseFinalist(_resultsState.tierData.gold[0].id);
+  window.showSleepPlan('results');
+  window.showAccessories();
+  await new Promise((res) => setTimeout(res, 400));
+  return (document.querySelector('.screen.active') || {}).id;
+}
+"""
+SS_FOCUS_PROBE_JS = r"""
+() => { const ae = document.activeElement; let fv = null; try { fv = ae && ae.matches(':focus-visible'); } catch (e) {}
+  const attr = (a) => (ae && ae.getAttribute) ? ae.getAttribute(a) : null;
+  const current = Array.from(document.querySelectorAll('#sleepSystemRail [aria-current="step"]'));
+  return { tag: ae && ae.tagName, action: attr('data-sleep-action'),
+           identity: attr('data-position') || attr('data-item-id') || attr('data-step') || attr('data-status') || '',
+           fv, ariaCurrentCount: current.length, ariaCurrentStep: current[0] ? current[0].getAttribute('data-step') : null }; }
+"""
+
+
+def run_sleep_system_focus(browser, port, shots_dir):
+    print("\n-- SLEEP SYSTEM keyboard place (X10) 1194x748 --")
+    page = browser.new_page(viewport={"width": 1194, "height": 748})
+    errors = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    page.goto(f"http://127.0.0.1:{port}/", wait_until="networkidle")
+    page.wait_for_selector("#startBtn")
+    screen = page.evaluate(SS_FOCUS_SETUP_JS, {"answers": ANSWERS})
+    check("X10 setup reached the Sleep System without a page error", screen == "accessoriesScreen" and not errors,
+          f"screen={screen} errors={errors[:1]}")
+    # 1. Enter on a demo-position tile: the re-render must hand focus back to
+    #    the SAME tile (identity, not action name).
+    page.focus("#sleepSystemMain [data-sleep-action='demo-position'][data-position='flat']")
+    page.keyboard.press("Enter")
+    page.wait_for_timeout(500)
+    r = page.evaluate(SS_FOCUS_PROBE_JS)
+    check("[demo-position] focus survives the re-render on the same tile, still :focus-visible",
+          r["action"] == "demo-position" and r["identity"] == "flat" and r["fv"] is True, str(r))
+    # 2. Enter on the base's add control: it flips to remove-item with the same
+    #    data-item-id, and focus must follow the identity across the flip.
+    item_id = page.evaluate("() => { const b = document.querySelector(\"#sleepSystemMain [data-sleep-action='select-item']\"); return b && b.getAttribute('data-item-id'); }")
+    check("[select-item] an add control exists on the triggered adjustability step", bool(item_id), str(item_id))
+    if item_id:
+        page.focus(f"#sleepSystemMain [data-sleep-action='select-item'][data-item-id='{item_id}']")
+        page.keyboard.press("Enter")
+        page.wait_for_timeout(500)
+        r2 = page.evaluate(SS_FOCUS_PROBE_JS)
+        check("[select-item] after adding, focus sits on the SAME item's remove control (identity survived the action flip)",
+              r2["action"] == "remove-item" and r2["identity"] == item_id and r2["fv"] is True, str(r2))
+    # 3. Enter on a rail step: the rebuilt rail hands focus to the equivalent
+    #    step control, and aria-current="step" moves with the active step.
+    page.focus("#sleepSystemRail [data-sleep-action='step'][data-step='support']")
+    page.keyboard.press("Enter")
+    page.wait_for_timeout(500)
+    r3 = page.evaluate(SS_FOCUS_PROBE_JS)
+    check("[rail] focus lands on the re-rendered support step and aria-current=\"step\" marks it exactly once",
+          r3["action"] == "step" and r3["identity"] == "support" and r3["ariaCurrentCount"] == 1 and r3["ariaCurrentStep"] == "support", str(r3))
+    if shots_dir:
+        os.makedirs(shots_dir, exist_ok=True)
+        page.screenshot(path=os.path.join(shots_dir, "sleep-system-focus-1194x748.png"))
+    check("X10: no page error during the keyboard path", not errors, str(errors)[:120])
+    page.close()
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--screenshots", default="", help="directory to save a PNG per viewport (outside the repo)")
@@ -546,7 +1024,19 @@ def main():
                 for name, w, h in VIEWPORTS[:2]:
                     run_sleep_system_header(browser, port, name, w, h, lang, args.screenshots)
             run_compare_label(browser, port, args.screenshots)
+            for lang in ("en", "es"):
+                for name, w, h in VIEWPORTS[:2]:
+                    run_heading_focus(browser, port, name, w, h, lang, args.screenshots)
+            for lang in ("en", "es"):
+                for name, w, h in VIEWPORTS[:2]:
+                    run_compare_tray_pill(browser, port, name, w, h, lang, args.screenshots)
+            for lang in ("en", "es"):
+                for name, w, h in VIEWPORTS[:2]:
+                    run_touch_floor(browser, port, name, w, h, lang, args.screenshots)
+            run_banner_fallback(browser, port, args.screenshots)
+            run_sleep_system_focus(browser, port, args.screenshots)
             run_forced_colors(browser, port, args.screenshots)
+            run_forced_colors_states(browser, port, args.screenshots)
             browser.close()
     finally:
         server.shutdown()

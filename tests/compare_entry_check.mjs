@@ -234,8 +234,8 @@ ok('the legacy absolute overlay styling is retired (cluster flow layout)',
 ok('selection is never color alone: .selected class plus aria-pressed plus fill swap',
   norm.includes(".classList.toggle('selected', on);") &&
   norm.includes("btn.setAttribute('aria-pressed', on ? 'true' : 'false');"));
-ok('tray action labels never wrap mid-word',
-  /\.compare-tray-clear, \.compare-tray-go \{ white-space: nowrap; \}/.test(norm));
+ok('tray action labels never wrap mid-word (and carry the X12 44px floor)',
+  /\.compare-tray-clear, \.compare-tray-go \{ white-space: nowrap; min-height: 44px; min-width: 44px; \}/.test(norm));
 ok('the tray forces full rows at phone widths (flex shrinks nowrap content before it wraps)',
   norm.includes('.compare-tray-inner { flex-wrap: wrap; row-gap: 0.5rem; }') &&
   norm.includes('.compare-tray-slots { flex: 1 1 100%; order: 2; }') &&
@@ -326,14 +326,60 @@ if (modalSurface) {
     const r = ratio(hexToRgb(titleRule[1]), surface);
     ok('the modal title meets 4.5:1 on the light modal surface', r >= 4.5, r.toFixed(2) + ':1');
   }
-  ok('base .price-tier uses var(--gold) (the light restatement is load-bearing)',
-    /\.price-tier \{[^}]*color: var\(--gold\);/.test(norm));
+  // X6 (North Star D8, 2026-08-31): the base .price-tier no longer reads
+  // --gold — that alias is substituted on :root, where applyStoreConfig()
+  // writes the configured accent, so it froze at the retailer orange on the
+  // drawer name (3.02:1). The base rule is now the same brass the Compare
+  // head restates, so the two agree and the restatement is a no-op guard.
+  const baseTier = norm.match(/\.price-tier \{[^}]*color: (#[0-9A-Fa-f]{6});[^}]*\}/);
+  ok('base .price-tier is brass by value (no --gold alias — the frozen retailer accent cannot reach the drawer $$$)',
+    !!baseTier && !/\.price-tier \{[^}]*var\(--gold\)/.test(norm));
   const tierRule = norm.match(
     /body:has\(#resultsScreen\.active\) \.cmp-head-name \.price-tier,\s*body:has\(#hf2Screen\.active\) \.cmp-head-name \.price-tier \{\s*color: (#[0-9A-Fa-f]{6});\s*\}/);
   ok('the head-name price tier is themed for the light modal', !!tierRule);
+  ok('the drawer $$$ and the Compare-head $$$ are the same brass', !!baseTier && !!tierRule && baseTier[1].toUpperCase() === tierRule[1].toUpperCase());
   if (tierRule) {
     const r = ratio(hexToRgb(tierRule[1]), surface);
     ok('the price tier meets 4.5:1 on the light modal surface', r >= 4.5, r.toFixed(2) + ':1');
+  }
+  if (baseTier) {
+    const r = ratio(hexToRgb(baseTier[1]), hexToRgb('#FFFDF8'));
+    ok('the drawer $$$ meets 4.5:1 on the drawer surface #FFFDF8', r >= 4.5, r.toFixed(2) + ':1');
+  }
+}
+
+// ------------------------------ X6: the tray is a warm Results surface
+// North Star D8 (2026-08-31): the tray was the one cold surface in the
+// journey (navy gradient, --gold border frozen at the retailer accent). It
+// now reads the Results theme tokens <body> declares — paper surface,
+// hairline border, brass count, ink chips — and "Compare →" is the singular
+// yellow primary (store-primary + its computed accessible foreground), the
+// pair the Results CTA uses. Geometry and the entrance slide are untouched.
+section('X6 — the compare tray sits on the warm Results surface');
+{
+  const rule = (sel) => (norm.match(new RegExp('\\n    ' + sel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ' \\{([^}]*)\\}')) || [null, ''])[1];
+  const tray = rule('.compare-tray'), count = rule('.compare-tray-count'), slot = rule('.compare-tray-slot'),
+        clear = rule('.compare-tray-clear'), go = rule('.compare-tray-go'), goOff = rule('.compare-tray-go:disabled');
+  ok('the tray surface is the theme paper with a hairline border (no navy gradient, no --gold border)',
+    /background: var\(--color-surface\);/.test(tray) && /border-top: 1px solid var\(--color-border\);/.test(tray) && !/1a2744|0d1730|--gold/.test(tray));
+  ok('the count is brass (informative emphasis), not the frozen accent', /color: var\(--color-accent-hover\);/.test(count) && !/--gold/.test(count));
+  ok('slot chips are ink on the alt surface', /background: var\(--color-surface-alt\);/.test(slot) && /color: var\(--color-text\);/.test(slot) && !/--cream/.test(slot));
+  ok('Clear is muted ink with the hairline border', /color: var\(--color-text-muted\);/.test(clear) && /border: 1px solid var\(--color-border\);/.test(clear) && !/--cream/.test(clear));
+  ok('"Compare →" is the singular primary: store-primary fill with its computed foreground and the ink border (the Results CTA pair)',
+    /background: var\(--store-primary\);/.test(go) && /color: var\(--on-store-primary\);/.test(go) && /border: 1px solid var\(--accent-ink\);/.test(go) && !/--gold|--navy/.test(go));
+  ok('the disabled Go is a quiet alt-surface chip, not a translucent gold wash',
+    /background: var\(--color-surface-alt\);/.test(goOff) && /color: var\(--color-text-subtle\);/.test(goOff) && !/212,168,75/.test(goOff));
+  ok('no compare-tray rule reads the frozen legacy aliases (--gold*, --navy, --cream*)',
+    !/\.compare-tray[^{]*\{[^}]*var\(--(gold|navy|cream)/.test(norm));
+  ok('the tray geometry and entrance are untouched (fixed bottom, z-index 60, 0.25s slide)',
+    /position: fixed;/.test(tray) && /z-index: 60;/.test(tray) && /animation: compareTraySlide 0\.25s ease-out;/.test(tray));
+  // Contrast on the Results theme values (body:has(#resultsScreen.active)).
+  const T = { surface: '#FFFDF8', alt: '#EEE7DC', text: '#2F271E', muted: '#665D54', subtle: '#7A6E61', brass: '#7D5B34' };
+  const pairs = [['count brass on the tray surface', T.brass, T.surface, 4.5], ['slot ink on the alt surface', T.text, T.alt, 4.5],
+                 ['Clear muted ink on the tray surface', T.muted, T.surface, 4.5], ['disabled Go label on the alt surface (1.4.3-exempt, recorded at >= 3:1)', T.subtle, T.alt, 3]];
+  for (const [what, fg, bg, floor] of pairs) {
+    const r = ratio(hexToRgb(fg), hexToRgb(bg));
+    ok(`${what} >= ${floor}:1 (got ${r.toFixed(2)}:1)`, r >= floor);
   }
 }
 // mapping proof: every cream-inked base cmp text class is restated for light
@@ -353,6 +399,101 @@ const trayReduced = norm.match(/@media \(prefers-reduced-motion: reduce\) \{\s*\
 ok('reduced motion disables the slide with animation: none', !!trayReduced);
 ok('the reduced override comes AFTER the base rule (source order wins)',
   !!trayReduced && norm.indexOf(trayReduced[0]) > trayBaseIdx);
+
+// ------------------------------------ X1: the pill lifts above the tray
+// North Star ruling D9 (2026-08-31): in portrait the floating Selections pill
+// (fixed bottom/right 1rem) sat over the tray's "Compare →" once a pick was
+// saved — measured 100×31 of the 104×35 control covered, 6 of 36 tap points
+// reaching it (ES 11/36). While the tray is shown the pill lifts above it by
+// the tray's RENDERED height (the ES slot chips wrap: 89px vs 61px), derived
+// by _updatePicksBadge() from the tray's real display state after
+// updateCompareTray() and showScreen() set it. EXECUTED against a DOM shim.
+section('X1 — the Selections pill lifts above the compare tray while it is shown');
+{
+  const badgeSrc = extractFunction('window._updatePicksBadge = function()');
+  ok('extraction: _updatePicksBadge found', !!badgeSrc);
+  // r2 replacement-train reconciliation (owner ruling 2026-08-31): X1 was
+  // replayed onto a main that already carries C5, and both edit this ONE
+  // function. The landed C5 label set and X1's lift must coexist in the same
+  // body - a semantic keep-both, never ours/theirs.
+  ok('r2 reconciliation: _updatePicksBadge carries C5\'s label set AND X1\'s tray lift in one body',
+    !!badgeSrc && /savedPicksLabel/.test(badgeSrc) && /window\._picksPillLabel\(total\)/.test(badgeSrc)
+    && /noct-picks-pill--lifted/.test(badgeSrc) && /--df-tray-clearance/.test(badgeSrc));
+  function makeLiftEnv({ trayHeight = 61, saved = 1, selected = ['g2', 'g6'] } = {}) {
+    const els = {};
+    for (const id of ['compareTray', 'compareTraySlots', 'compareTrayCount', 'compareTrayGo', 'compareTrayClear', 'savedPicksBtn', 'savedPicksCount']) {
+      els[id] = makeEl(id);
+    }
+    const props = {};
+    els.savedPicksBtn.style = {
+      setProperty(k, v) { props[k] = v; },
+      removeProperty(k) { delete props[k]; }
+    };
+    Object.defineProperty(els.compareTray, 'offsetHeight', { get() { return els.compareTray.style.display === 'block' ? trayHeight : 0; }, configurable: true });
+    const win = {
+      _savedPicks: Array.from({ length: saved }, (_, i) => ({ id: 'm' + i })), _accCart: {},
+      _compareSelected: selected.slice(),
+      _drawerData: { g2: { m: { name: 'Model G2' } }, g6: { m: { name: 'Model G6' } } }
+    };
+    const doc = { getElementById: (id) => els[id] || null, querySelectorAll: () => [] };
+    const src = badgeSrc + '\n' + updateSrc + '\n' +
+      'return { update: window.updateCompareTray, badge: window._updatePicksBadge };';
+    const api = new Function('window', 'document', 'currentLang', src)(win, doc, 'en');
+    return { win, els, api, props };
+  }
+  if (badgeSrc) {
+    // r2 reconciliation, EXECUTED: one badge update on one DOM sets C5's
+    // count-aware label AND applies X1's lift with the measured clearance.
+    const both = makeLiftEnv({ trayHeight: 61, saved: 1 });
+    both.els.savedPicksLabel = makeEl('savedPicksLabel');
+    both.win._picksPillLabel = (n) => (n === 1 ? 'Selection' : 'Selections');
+    both.api.update();
+    ok('r2 reconciliation (executed): C5 label "Selection" and X1 lift (61px clearance) land from the same update',
+      both.els.savedPicksLabel.textContent === 'Selection'
+      && both.els.savedPicksBtn.classList.contains('noct-picks-pill--lifted')
+      && both.props['--df-tray-clearance'] === '61px', JSON.stringify(both.props));
+    const en = makeLiftEnv({ trayHeight: 61 });
+    en.api.update();
+    ok('two selections + one saved pick: the pill is visible AND lifted, clearance = the tray height (61px)',
+      en.els.savedPicksBtn.classList.contains('noct-picks-pill--visible') &&
+      en.els.savedPicksBtn.classList.contains('noct-picks-pill--lifted') &&
+      en.props['--df-tray-clearance'] === '61px', JSON.stringify(en.props));
+    const es = makeLiftEnv({ trayHeight: 89 });
+    es.api.update();
+    ok('a taller (wrapped, ES) tray lifts the pill further: clearance = 89px (measured, not a constant)',
+      es.props['--df-tray-clearance'] === '89px', JSON.stringify(es.props));
+    en.win._compareSelected = [];
+    en.api.update();
+    ok('clearing the tray drops the pill back: lifted class removed, clearance property removed, pill still visible',
+      !en.els.savedPicksBtn.classList.contains('noct-picks-pill--lifted') &&
+      !('--df-tray-clearance' in en.props) &&
+      en.els.savedPicksBtn.classList.contains('noct-picks-pill--visible'));
+    const none = makeLiftEnv({ saved: 0 });
+    none.api.update();
+    ok('no picks: the pill stays hidden and never lifts (tray shown or not)',
+      !none.els.savedPicksBtn.classList.contains('noct-picks-pill--visible') &&
+      !none.els.savedPicksBtn.classList.contains('noct-picks-pill--lifted'));
+  }
+  // Order of operations: the badge reads the tray state, so both writers set
+  // the tray FIRST. In updateCompareTray() the lift is measured after the
+  // slots render (the ES chips wrap and change the height).
+  const upd = updateSrc || '';
+  ok('updateCompareTray() re-derives the pill after the slots and Go state are written (height measured after render)',
+    upd.lastIndexOf('window._updatePicksBadge()') > upd.indexOf('go.disabled = arr.length < 2;'));
+  ok('updateCompareTray() also re-derives the pill on the empty path (pill drops when the tray hides)',
+    (upd.match(/window\._updatePicksBadge\(\)/g) || []).length >= 2 && upd.indexOf('window._updatePicksBadge()') < upd.indexOf("tray.style.display = 'block'"));
+  const showScreenSrc = extractFunction('window.showScreen = function(id)') || '';
+  ok('showScreen() sets the tray display BEFORE updating the badge',
+    showScreenSrc.indexOf("cmpTray.style.display") > -1 &&
+    showScreenSrc.indexOf("cmpTray.style.display") < showScreenSrc.indexOf('window._updatePicksBadge && window._updatePicksBadge()'));
+  const liftRule = norm.match(/\.noct-picks-pill--lifted\s*\{([^}]*)\}/);
+  ok('the lift rule exists and offsets the pill by the measured clearance (plus a gap) above 1rem',
+    !!liftRule && /bottom:\s*calc\(1rem \+ var\(--df-tray-clearance, \d+px\) \+ \d+px\);/.test(liftRule[1]));
+  ok('the lift rule comes after the base pill rule (equal specificity — source order decides)',
+    !!liftRule && norm.indexOf(liftRule[0]) > norm.indexOf('.noct-picks-pill {'));
+  ok('the wipe registry strips the lifted class with the visibility modifier',
+    /\{ id: 'savedPicksBtn', remove: \['noct-picks-pill--visible', 'noct-picks-pill--lifted'\] \}/.test(norm));
+}
 
 // ------------------------------------------------------ wipe integration
 section('session-wipe integration');

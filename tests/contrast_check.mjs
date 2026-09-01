@@ -512,5 +512,121 @@ function over(fg, bg, alpha) {
   check(`review audience line (quiz help rule) is at least 15px (got ${reviewSize}px)`, reviewSize >= 15);
 }
 
+// --- cohesion C4: text-hugging heading focus (owner ruling 2026-08-30) ------
+// The five screen headings that take programmatic focus on every transition
+// (Results, Sleep Plan, Sleep System, Summary, take-home) get an author
+// :focus-visible treatment: fit-content width so the ring hugs the words, the
+// shared two-ring token pair at a >= 4px offset, a forced-colors CanvasText
+// fallback in its own block after the anchored first block. Rendered
+// geometry (keyboard path, no layout shift) is proven by
+// tests/sleep_plan_layout_check.py; the static contract and the ring/surface
+// contrast pairs are pinned here.
+{
+  const HEADS = [".noct-results-headline", ".noct-email-headline", ".sleep-system__title", ".hf2-review-title"];
+  const rule = html.match(/\.noct-results-headline:focus-visible,\s*\.noct-email-headline:focus-visible,\s*\.sleep-system__title:focus-visible,\s*\.hf2-review-title:focus-visible\s*\{([^}]*)\}/);
+  check("C4: one author :focus-visible rule covers the four screen-heading classes", !!rule);
+  const body = rule ? rule[1] : "";
+  check("C4: the heading ring uses the semantic two-ring tokens (outer outline + inner halo)",
+    /outline:\s*3px solid var\(--focus-ring-outer\);/.test(body) && /box-shadow:\s*0 0 0 \d+px var\(--focus-ring-inner\);/.test(body));
+  const off = Number((body.match(/outline-offset:\s*(\d+)px/) || [])[1]);
+  const spread = Number((body.match(/box-shadow:\s*0 0 0 (\d+)px/) || [])[1]);
+  check(`C4: the ring offset is at least the ruled 4px (got ${off}px)`, off >= 4);
+  check(`C4: the halo reaches the outer ring (spread ${spread}px >= offset ${off}px + 3px ring)`, spread >= off + 3);
+  check("C4: the focused heading hugs its text (fit-content width, capped at the container)",
+    /width:\s*fit-content;/.test(body) && /max-width:\s*100%;/.test(body));
+  check("C4: centred headings keep their centre (auto inline margins) and the left-aligned Plan title keeps its edge",
+    /margin-inline:\s*auto;/.test(body) && /#sleepPlanScreen \.hf2-review-title:focus-visible\s*\{\s*margin-inline:\s*0;\s*\}/.test(html));
+  check("C4: the heading rule carries no raw colour (tokens only)", !/#[0-9A-Fa-f]{3,6}\b/.test(body));
+  check("C4: no plain :focus variant rings these headings on every touch",
+    !HEADS.some((h) => new RegExp(h.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + ":focus(?!-visible)[\\s,{]").test(html)));
+  // Ring contrast on the surfaces these headings render on: all five sit on
+  // the warm consultation ground (measured rgb(243,238,229) in every context).
+  const outer = "#000000";
+  for (const [where, bg] of [["consultation ground #F3EEE5 (Results, Plan, Summary, Sleep System, take-home)", "#F3EEE5"],
+                             ["consultation paper #F4EFE6", "#F4EFE6"]]) {
+    const rr = ratio(outer, bg);
+    check(`C4: heading ring outer ${outer} on the ${where} >= 3:1 (got ${rr.toFixed(2)}:1)`, rr >= 3);
+  }
+  const fcBlock = html.match(/@media \(forced-colors: active\) \{\s*\.noct-results-headline:focus-visible,\s*\.noct-email-headline:focus-visible,\s*\.sleep-system__title:focus-visible,\s*\.hf2-review-title:focus-visible \{([^}]*)\}\s*\}/);
+  check("C4: a forced-colors fallback exists for the four headings (CanvasText ring, no halo)",
+    !!fcBlock && /outline-color:\s*CanvasText;/.test(fcBlock[1]) && /box-shadow:\s*none;/.test(fcBlock[1]));
+  check("C4: the heading forced-colors block is placed AFTER the anchored first forced-colors block",
+    !!fcBlock && html.indexOf(fcBlock[0]) > html.indexOf(".fin-btn:focus-visible"));
+  check("C4: the consolidated control rule is untouched (the heading classes did not join its pinned selector list)",
+    !!consolidated && !consolidated[0].includes(".hf2-review-title") && !consolidated[0].includes(".noct-results-headline"));
+}
+
+// --- X6: the retailer accent no longer leaks through --gold (D8, 2026-08-31)
+// `--gold: var(--color-accent)` is declared on :root, and applyStoreConfig()
+// writes the configured accent (#FF5C36 for this retailer) as an inline
+// custom property on :root — so the alias substitutes THERE and freezes,
+// while every warm screen re-declares --color-accent as brass on <body>.
+// Three consumers were caught with the frozen value: the drawer $$$ band, the
+// compare tray, and the quiz progress fill (its theme never re-declared
+// --color-accent at all). Each consumer is repaired; the alias, the config
+// and colors.accent are untouched (white-label boundary).
+{
+  check("X6: the --gold alias and its :root binding are untouched (consumers were fixed, not the config)",
+    /--gold: var\(--color-accent\);/.test(html) && /root\.style\.setProperty\('--color-accent', STORE_CONFIG\.colors\.accent\)/.test(html));
+  const tier = html.match(/\.price-tier \{[^}]*color: (#[0-9A-Fa-f]{6});[^}]*\}/);
+  check("X6: the drawer $$$ (.price-tier) is brass by value, no --gold", !!tier && !/\.price-tier \{[^}]*var\(--gold\)/.test(html));
+  if (tier) {
+    const rr = ratio(tier[1], "#FFFDF8");
+    check(`X6: drawer $$$ ${tier[1]} on the drawer surface #FFFDF8 >= 4.5:1 (got ${rr.toFixed(2)}:1; was 3.02:1 with the frozen accent)`, rr >= 4.5);
+  }
+  const brass = html.match(/--consultation-brass: (#[0-9A-Fa-f]{6});/);
+  check("X6: the quiz theme's brass token is brass by value (its theme never re-declares --color-accent)", !!brass && !/--consultation-brass: var\(--color-accent\);/.test(html));
+  if (brass) {
+    const consultationPaper = "#F4EFE6"; // --consultation-bg (the quiz/Review ground)
+    const rr = ratio(brass[1], consultationPaper);
+    check(`X6: quiz progress fill ${brass[1]} against the consultation paper >= 3:1 (non-text UI component; got ${rr.toFixed(2)}:1)`, rr >= 3);
+  }
+  const trayRule = html.match(/\n    \.compare-tray \{([^}]*)\}/);
+  check("X6: no compare-tray rule reads the frozen aliases (--gold*, --navy, --cream*) and the tray's navy gradient is gone",
+    !/\.compare-tray[^{]*\{[^}]*var\(--(gold|navy|cream)/.test(html) && !!trayRule && !/1a2744|0d1730|linear-gradient/.test(trayRule[1]));
+  check("X6: the tray's primary uses the store-primary pair whose foreground applyStoreConfig() computes (contrast-safe by construction)",
+    /\.compare-tray-go \{[^}]*background: var\(--store-primary\);[^}]*color: var\(--on-store-primary\);/.test(html));
+}
+
+// --- X11: state cues that survive forced colors (D9, 2026-08-31) -----------
+// Forced colors strips fills and paints every border CanvasText, so a state
+// carried by fill or by border COLOUR alone disappears — and a reserved
+// `transparent` border comes back painted. Three states were caught: the
+// active tier tab (2px transparent resting vs 2px solid cue = identical), the
+// active Sleep System rail step (1px hairline vs 1px ink), and the result
+// card's selected Compare / saved Save (0.5px hairline vs a sage fill). Each
+// now differs in border WIDTH (and, for the tab, STYLE), with padding
+// compensated so nothing moves; all in blocks after the anchored first one.
+{
+  const firstIdx = html.indexOf("@media (forced-colors: active)");
+  const anchoredIdx = html.indexOf(".fin-btn:focus-visible");
+  const pad = (s) => s.split(/\s+/).map(Number);
+  const totals = (border, padding) => pad(padding).map((p) => p + border);
+  // tier tab
+  const tabBase = html.match(/\.noct-tier-tab \{[^}]*border: (\d+)px solid transparent;[^}]*padding: ([\d ]+px[\d px]*);/);
+  const tabForced = html.match(/\.noct-tier-tab\.active \{ border: (\d+)px double CanvasText; padding: ([\d px]+); \}/);
+  check("X11: the forced active tier tab is 3px DOUBLE (style + width differ from the 2px solid resting border)",
+    !!tabForced && tabForced[1] === "3" && !!tabBase && tabBase[1] === "2");
+  check("X11: the forced active tab's border+padding totals equal the resting tab's (no reflow)",
+    !!tabBase && !!tabForced && JSON.stringify(totals(2, tabBase[2].replace(/px/g, ""))) === JSON.stringify(totals(3, tabForced[2].replace(/px/g, ""))));
+  check("X11: the tab cue lives after the anchored first forced-colors block",
+    !!tabForced && html.indexOf(tabForced[0]) > anchoredIdx && html.indexOf(tabForced[0]) > firstIdx);
+  // rail step + card controls
+  const block = html.match(/@media \(forced-colors: active\) \{\s*\.sleep-system__step\.is-active \{([^}]*)\}\s*#resultsScreen \.compare-btn\.selected,\s*#resultsScreen \.noct-save-btn\.saved \{([^}]*)\}\s*\}/);
+  check("X11: one forced-colors block carries the rail step and the card-control cues", !!block);
+  const stepBase = html.match(/\.sleep-system__step \{[^}]*padding: (\d+)px (\d+)px;[^}]*border: 1px solid #D1C5B6;/);
+  check("X11: the forced active rail step is 3px CanvasText with padding compensated from the 1px resting step (11/13 totals)",
+    !!block && /border-width: 3px;/.test(block[1]) && /border-color: CanvasText;/.test(block[1]) && /padding: 8px 10px;/.test(block[1])
+    && !!stepBase && Number(stepBase[1]) + 1 === 8 + 3 && Number(stepBase[2]) + 1 === 10 + 3);
+  const cardBase = html.match(/\.compare-btn \{[^}]*border: 0\.5px solid var\(--color-border\);[^}]*padding: 8px 14px;/);
+  check("X11: the forced selected Compare / saved Save are 2px CanvasText with padding compensated from the 0.5px resting hairline (8.5/14.5 totals)",
+    !!block && /border-width: 2px;/.test(block[2]) && /border-color: CanvasText;/.test(block[2]) && /padding: 6\.5px 12\.5px;/.test(block[2]) && !!cardBase);
+  check("X11: the rail/card block lives after the anchored first forced-colors block and after the normal selected rules it must outrank by order",
+    !!block && html.indexOf(block[0]) > anchoredIdx && html.indexOf(block[0]) > html.indexOf("#resultsScreen .compare-btn.selected {")
+    && html.indexOf(block[0]) > html.indexOf(".sleep-system__step.is-active {"));
+  check("X11: the finalist's own 2px forced cue is untouched",
+    /\.finalist-btn\.chosen, \.finalist-btn\[aria-pressed="true"\] \{ border: 2px solid CanvasText; \}/.test(html));
+}
+
 console.log(`\nContrast check: ${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

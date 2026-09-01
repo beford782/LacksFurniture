@@ -317,8 +317,18 @@ const firstForced = norm.match(/@media \(forced-colors: active\)\s*\{[\s\S]*?\n 
 ok('tier tab focus joins the first forced-colors block (CanvasText, no halo)',
   !!firstForced && firstForced[0].includes('.noct-tier-tab:focus-visible')
   && firstForced[0].includes('outline-color: CanvasText'));
-ok('forced-colors keeps a non-color selected cue for the active tab',
-  /@media \(forced-colors: active\)\s*\{\s*\.noct-tier-tab\.active \{ border: 2px solid CanvasText; \}\s*\}/.test(norm));
+// X11 (North Star D9, 2026-08-31): forced colors paints the RESTING tab's
+// reserved 2px transparent border CanvasText too, so a 2px solid cue was no
+// cue. The active tab now differs in STYLE and WIDTH (3px double), with the
+// padding compensated so the label does not move between states.
+const tabForced = norm.match(/@media \(forced-colors: active\)\s*\{[^}]*?\.noct-tier-tab\.active \{ border: (\d+)px (double|solid) CanvasText; padding: (\d+)px (\d+)px (\d+)px (\d+)px; \}\s*\}/);
+ok('forced-colors keeps a non-color selected cue for the active tab that differs from the resting tab in style AND width (3px double)',
+  !!tabForced && tabForced[1] === '3' && tabForced[2] === 'double');
+{
+  const base = norm.match(/\.noct-tier-tab \{[^}]*border: (\d+)px solid transparent;[^}]*padding: (\d+)px (\d+)px (\d+)px (\d+)px;/);
+  ok('the forced active tab keeps the resting geometry (border + padding per side identical, so no reflow on a tab switch)',
+    !!base && !!tabForced && [2, 3, 4, 5].every((i) => Number(base[i]) + Number(base[1]) === Number(tabForced[i + 1]) + Number(tabForced[1])));
+}
 
 // ---------------------------------------------------------------- ruled copy
 section('ruled EN/ES copy — governed dictionaries, verbatim');
@@ -748,6 +758,78 @@ section('C5 — the Selections pill and the take-home saved count agree with the
     ok('EN: the invariant forms are untouched ("1 saved ·", "2 saved ·", "3 recommended ·")',
       detailOf(build(false, 1, 3)).startsWith('1 saved ·') && detailOf(build(false, 2, 3)).startsWith('2 saved ·') && detailOf(build(false, 0, 3)).startsWith('3 recommended ·'));
   }
+}
+
+// ------------------------------------------------ X12: 44px touch floor
+// North Star ruling D9 (2026-08-31): one bounded PR for every control the
+// swarm measured under 44 CSS px (Welcome language toggle, compare tray,
+// Selections pill, "Save for later", Compare close, drawer Back/Prev/Next,
+// Summary pick / accessory actions, RSA strip and add, take-home secondary
+// actions). The rendered sweep in tests/sleep_plan_layout_check.py proves
+// the result; these pins keep each declaration in place. Two exceptions are
+// recorded, not repaired: the card's "View details" (the card itself opens
+// the drawer) and the inline privacy link (running text).
+section('X12 — the 44px touch floor is declared on every listed control');
+{
+  const rule = (sel) => (norm.match(new RegExp('\\n    ' + sel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ' \\{([^}]*)\\}')) || [null, ''])[1];
+  const floor = [
+    ['.landing-lang-btn', /min-height: 44px;[\s\S]*min-width: 44px;/],
+    ['.noct-save-btn', /min-height: 44px;/],
+    ['.noct-email-secondary', /min-height: 44px;/],
+    ['.hf2-acc-card__action', /min-height: 44px;/],
+    ['.hf2-pick__action', /min-height: 44px;/],
+    ['.hf2-rsa-strip__btn', /min-height: 44px;/],
+    ['.hf2-rsa-panel__add', /min-height: 44px;/],
+    ['.noct-picks-pill', /min-height: 44px;/],
+    ['.compare-modal-close', /min-width: 44px;[\s\S]*min-height: 44px;/],
+    ['.drawer-back-to-results', /min-height: 44px;/],
+    ['.drawer-nav-btn', /min-height: 44px;/]
+  ];
+  for (const [sel, re] of floor) ok(`${sel} declares the 44px floor`, re.test(rule(sel)), rule(sel).replace(/\s+/g, ' ').slice(0, 70));
+  ok('.compare-tray-clear / .compare-tray-go declare the 44px floor in both dimensions',
+    /\.compare-tray-clear, \.compare-tray-go \{ white-space: nowrap; min-height: 44px; min-width: 44px; \}/.test(norm));
+  ok('no listed control keeps the old 42px floor',
+    !/\.(hf2-pick__action|hf2-acc-card__action|drawer-back-to-results|drawer-nav-btn) \{[^}]*min-height: 42px;/.test(norm));
+  const ring = norm.match(/\.compare-modal-close:focus-visible \{([^}]*)\}/);
+  ok('the Compare close control carries the two-ring author focus indicator',
+    !!ring && /outline: 3px solid var\(--focus-ring-outer\);/.test(ring[1]) && /box-shadow: 0 0 0 5px var\(--focus-ring-inner\);/.test(ring[1]));
+  const fc = norm.match(/@media \(forced-colors: active\) \{\s*\.compare-modal-close:focus-visible \{\s*outline-color: CanvasText;\s*box-shadow: none;\s*\}\s*\}/);
+  ok('...with a CanvasText fallback placed after the anchored first forced-colors block',
+    !!fc && norm.indexOf(fc[0]) > norm.indexOf('.fin-btn:focus-visible'));
+}
+
+// ------------------------------------------ Wave 3: media foundation
+// North Star ruling 2026-08-31 (D1/D2 route, Wave 3): a source whose natural
+// aspect ratio exceeds 3 is a banner crop (the two Tempur-Pedic Gold sources
+// ship at 4.05:1 / 4.42:1) — it letterboxes on a white mat instead of being
+// cropped and upscaled by `cover`; and every product frame sits on the white
+// image mat. The rendered proof is tests/sleep_plan_layout_check.py's banner
+// pass; the static contract is pinned here. The re-export request itself is
+// docs/asset-request-north-star-2026-08-31.md (owner-supplied data — code
+// must not pretend to fix it).
+section('Wave 3 — banner fallback and white image mats (X4/X5)');
+{
+  ok('the banner tagger exists with the ruled threshold (natural AR > 3)',
+    /function dfTagBannerImage\(img\)/.test(norm) && /var DF_BANNER_AR = 3;/.test(norm)
+    && /img\.naturalWidth \/ img\.naturalHeight > DF_BANNER_AR/.test(norm));
+  ok('one CAPTURE-phase load listener feeds it (load does not bubble; registered before any product markup renders)',
+    /document\.addEventListener\('load', function\(e\) \{\s*dfTagBannerImage\(e\.target\);\s*\}, true\);/.test(norm));
+  const bannerRule = (norm.match(/\.df-img--banner \{([^}]*)\}/) || [null, ''])[1];
+  ok('the fallback rule letterboxes on the white mat and outranks the drawer hero inline style (!important is load-bearing)',
+    /object-fit: contain !important;/.test(bannerRule) && /background: #FFFDF8;/.test(bannerRule));
+  const rule = (sel) => (norm.match(new RegExp('\\n    ' + sel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ' \\{([^}]*)\\}')) || [null, ''])[1];
+  const mats = [
+    ['.noct-toppick-photo', /background: #FFFDF8;/],
+    ['.noct-support-photo', /background: #FFFDF8;/],
+    ['.sleep-system__featured-image', /aspect-ratio: 2 \/ 1;[\s\S]*background: #FFFDF8;/],
+    ['.sleep-system__anchor-image', /aspect-ratio: 3 \/ 2;[\s\S]*background: #FFFDF8;/],
+    ['.sleep-system__alternative img', /background: #FFFDF8;/]
+  ];
+  for (const [sel, re] of mats) ok(`${sel} sits on the white image mat (frame contract kept)`, re.test(rule(sel)), rule(sel).replace(/\s+/g, ' ').slice(0, 70));
+  ok('the Compare head light override is the white mat with a hairline',
+    /body:has\(#resultsScreen\.active\) \.cmp-head-img,\s*body:has\(#hf2Screen\.active\) \.cmp-head-img \{\s*background: #FFFDF8;[^}]*border: 1px solid #D1C5B6;\s*\}/.test(norm));
+  ok('no results product frame keeps the beige mat token',
+    !/\.noct-(toppick|support)-photo \{[^}]*var\(--color-surface-alt\)/.test(norm));
 }
 
 console.log(`\n${failures === 0 ? 'PASS' : 'FAIL'} — ${checks - failures}/${checks} checks passed`);
