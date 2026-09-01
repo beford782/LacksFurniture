@@ -99,8 +99,10 @@ ok('reveal branch is guarded and falls through',
   /if \(window\.dfmStartGather && window\.dfmStartGather\(\)\) return;/.test(html));
 // Codex finding 1: reduced motion must OWN the transition (direct advance),
 // never bounce enabled users into the legacy 1500 ms overlay
-ok('reduced-motion fast path advances directly (source)',
-  /dfmReducedMotion\(\)\)\s*\{[\s\S]{0,600}?window\.showProfileScreen\(\);\s*return true;/.test(spikeSrc));
+// A3 (owner ruling 2026-09-01): every quiz-completion path lands on the
+// tablet handoff; the Brief opens from its "Begin guided review" control.
+ok('reduced-motion fast path advances directly to the tablet handoff (A3)',
+  /dfmReducedMotion\(\)\)\s*\{[\s\S]{0,600}?window\.showTabletHandoff\(\);\s*return true;/.test(spikeSrc));
 // Codex finding 2: the styling hook is withheld under reduced motion, and a
 // defensive CSS override kills the literal-duration settle if the preference
 // changes after load
@@ -244,7 +246,7 @@ function makeEnv({ hostname, search, reduced = false, lang = 'en', flagOff = fal
     row.appendChild(edit);
     els.reviewList.appendChild(row);
   });
-  const calls = { showProfile: [], overlayOpen: 0, overlayClose: 0 };
+  const calls = { showProfile: [], handoff: [], overlayOpen: 0, overlayClose: 0 };
   const bodyEl = makeEl('body');
   const sandbox = {
     window: {
@@ -252,7 +254,9 @@ function makeEnv({ hostname, search, reduced = false, lang = 'en', flagOff = fal
       matchMedia: () => ({ matches: reduced }),
       innerWidth: 1024,
       innerHeight: 768,
-      showProfileScreen: () => calls.showProfile.push(clock.now())
+      showProfileScreen: () => calls.showProfile.push(clock.now()),
+      // A3: the completion destination is the tablet handoff screen.
+      showTabletHandoff: () => calls.handoff.push(clock.now())
     },
     document: {
       body: bodyEl,
@@ -324,10 +328,10 @@ section('disabled path (ROLLBACK state): legacy staged reveal, unchanged behavio
   ok('no gather layer activation', !env.els.dfmGatherLayer.classList.contains('is-active'));
   ok('no clones created', env.els.dfmGatherLayer.children.length === 0);
   env.clock.advance(1499);
-  ok('no advance before legacy 1500 ms', env.calls.showProfile.length === 0);
+  ok('no advance before legacy 1500 ms', env.calls.handoff.length === 0);
   env.clock.advance(1);
-  ok('advance at exactly the legacy 1500 ms (no added delay)',
-    env.calls.showProfile.length === 1 && env.calls.showProfile[0] === 1500);
+  ok('advance to the tablet handoff at exactly the legacy 1500 ms (A3, no added delay)',
+    env.calls.handoff.length === 1 && env.calls.handoff[0] === 1500);
   ok('in-flight flag cleared', env.sandbox.window._profileRevealInFlight === false);
   ok('no dfm transforms on any element', env.els.reviewList.children.every((r) => !r.style.transform));
 }
@@ -361,15 +365,15 @@ section('enabled path: gather owns the transition, then the existing Sleep Brief
     clones.every((c) => c.style.opacity === '0'));
   env.clock.advance(199);
   ok('no advance before 700 ms; clones still present through their fade',
-    env.calls.showProfile.length === 0 && env.els.dfmGatherLayer.children.length === 3);
+    env.calls.handoff.length === 0 && env.els.dfmGatherLayer.children.length === 3);
   env.clock.advance(1);
-  ok('advance into existing Sleep Brief at 700 ms', env.calls.showProfile.length === 1);
+  ok('advance into the tablet handoff at 700 ms (A3)', env.calls.handoff.length === 1);
   ok('layer deactivated and emptied',
     !env.els.dfmGatherLayer.classList.contains('is-active') &&
     env.els.dfmGatherLayer.children.length === 0);
   ok('in-flight flag cleared', env.sandbox.window._profileRevealInFlight === false);
   env.clock.advance(2000);
-  ok('watchdog after completion is a no-op (single advance)', env.calls.showProfile.length === 1);
+  ok('watchdog after completion is a no-op (single advance)', env.calls.handoff.length === 1);
 }
 
 // ----------------------------------------------------- interruption + spam
@@ -382,11 +386,11 @@ section('interruption, spam, and cleanup');
     env.els.dfmGatherLayer.children.length === 3);
   env.clock.advance(100);
   env.els.dfmGatherLayer.fire('click');
-  ok('tap-to-skip advances immediately', env.calls.showProfile.length === 1);
+  ok('tap-to-skip advances immediately', env.calls.handoff.length === 1);
   ok('skip cleans the layer', env.els.dfmGatherLayer.children.length === 0 &&
     !env.els.dfmGatherLayer.classList.contains('is-active'));
   env.clock.advance(3000);
-  ok('orphaned timers after skip are no-ops', env.calls.showProfile.length === 1);
+  ok('orphaned timers after skip are no-ops', env.calls.handoff.length === 1);
 }
 {
   const env = makeEnv({ hostname: 'localhost', search: '?motion=1' });
@@ -410,7 +414,7 @@ section('reduced motion: enabled preview OWNS the transition — immediate, zero
   env.api.startProfileReveal();
   ok('reduced motion: legacy staged overlay is NOT opened', env.calls.overlayOpen === 0);
   ok('reduced motion: advance happens IMMEDIATELY at time zero',
-    env.calls.showProfile.length === 1 && env.calls.showProfile[0] === 0);
+    env.calls.handoff.length === 1 && env.calls.handoff[0] === 0);
   ok('reduced motion: zero clones, layer never activated',
     env.els.dfmGatherLayer.children.length === 0 &&
     !env.els.dfmGatherLayer.classList.contains('is-active'));
@@ -418,7 +422,7 @@ section('reduced motion: enabled preview OWNS the transition — immediate, zero
     env.sandbox.window._profileRevealInFlight !== true);
   env.clock.advance(3000);
   ok('reduced motion: no delayed second advance (single destination arrival)',
-    env.calls.showProfile.length === 1);
+    env.calls.handoff.length === 1);
 }
 {
   // Flag OFF (rollback state) + reduced motion. Slice 2 HARDENED this
@@ -432,12 +436,12 @@ section('reduced motion: enabled preview OWNS the transition — immediate, zero
   ok('disabled + reduced: the staged overlay is NOT opened (hardened fallback)',
     env.calls.overlayOpen === 0);
   ok('disabled + reduced: advance happens IMMEDIATELY at time zero',
-    env.calls.showProfile.length === 1 && env.calls.showProfile[0] === 0);
+    env.calls.handoff.length === 1 && env.calls.handoff[0] === 0);
   ok('disabled + reduced: no in-flight flag left behind',
     env.sandbox.window._profileRevealInFlight !== true);
   env.clock.advance(3000);
   ok('disabled + reduced: no delayed second advance (single destination arrival)',
-    env.calls.showProfile.length === 1);
+    env.calls.handoff.length === 1);
 }
 {
   // The non-reduced rollback path is untouched: staged overlay, 1500 ms.
@@ -445,8 +449,8 @@ section('reduced motion: enabled preview OWNS the transition — immediate, zero
   env.api.startProfileReveal();
   ok('disabled + full motion: legacy overlay path runs unchanged', env.calls.overlayOpen === 1);
   env.clock.advance(1500);
-  ok('disabled + full motion: legacy 1500 ms arrival preserved',
-    env.calls.showProfile.length === 1 && env.calls.showProfile[0] === 1500);
+  ok('disabled + full motion: legacy 1500 ms arrival preserved (to the handoff, A3)',
+    env.calls.handoff.length === 1 && env.calls.handoff[0] === 1500);
 }
 {
   const env = makeEnv({ hostname: 'localhost', search: '?motion=1', reduced: false });
@@ -459,7 +463,7 @@ section('reduced motion: enabled preview OWNS the transition — immediate, zero
   ok('Spanish session: gather uses the same rendered (localized) rows',
     env.els.dfmGatherLayer.children.length === 3);
   env.clock.advance(800);
-  ok('Spanish session completes into Sleep Brief', env.calls.showProfile.length === 1);
+  ok('Spanish session completes into the tablet handoff (A3)', env.calls.handoff.length === 1);
 }
 
 // ------------------------------------------------------ fallback mappings

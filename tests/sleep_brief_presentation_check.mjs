@@ -173,6 +173,14 @@ const toggleSrc = extractFunction('window._toggleBriefPriority = function(index)
 const chromeSrc = extractFunction('function renderResultsChrome()');
 const hf2BriefSrc = extractFunction('function renderHf2Brief()');
 const revealSrc = extractFunction('window.startProfileReveal = function()');
+// A3 (owner ruling 2026-09-01): the quiz-completion entry lands on the tablet
+// handoff; the REAL handoff renderer and Begin control are extracted so the
+// revised-completion test executes the shipped path, not a stand-in.
+const handoffRenderSrc = extractFunction('function renderTabletHandoff()');
+const handoffShowSrc = extractFunction('window.showTabletHandoff = function()');
+const handoffBeginSrc = extractFunction('window.beginGuidedReview = function()');
+ok('A3: the tablet-handoff renderer, show and Begin sources found',
+  !!handoffRenderSrc && !!handoffShowSrc && !!handoffBeginSrc);
 section('extraction — the real rendering and entry paths');
 ok('showProfileScreen, the disclosure toggle, renderResultsChrome, renderHf2Brief and startProfileReveal all found',
   !!profileSrc && !!toggleSrc && !!chromeSrc && !!hf2BriefSrc && !!revealSrc);
@@ -225,7 +233,8 @@ function makeEnv({ lang = 'en', answers = ANSWERS_A, dict = null, reduced = fals
   const analytics = { trialFocus: [], tierViews: {}, logged: [], log(ev, d) { this.logged.push({ ev, d }); } };
   const screens = [];
   let src = sigSrc + '\n' + profileSrc + '\n' + toggleSrc + '\n' + chromeSrc + '\n'
-    + hf2BriefSrc + '\n' + revealSrc + '\n';
+    + hf2BriefSrc + '\n' + revealSrc + '\n'
+    + handoffRenderSrc + '\n' + handoffShowSrc + '\n' + handoffBeginSrc + '\n';
   if (mutate) src = mutate(src);
   const api = new Function(
     'document', 'window', 'answers', 'currentLang', 'analytics', 'D', 'escapeHtml',
@@ -245,6 +254,8 @@ function makeEnv({ lang = 'en', answers = ANSWERS_A, dict = null, reduced = fals
       results: renderResultsChrome,
       hf2: renderHf2Brief,
       reveal: function() { return window.startProfileReveal(); },
+      // A3: the specialist continuation off the tablet handoff.
+      begin: function() { return window.beginGuidedReview(); },
       openPriority: function() { return _briefOpenPriority; }
     };`
   )(
@@ -573,19 +584,23 @@ section('priorities — single-open disclosure carrying BOTH why and test prose'
 }
 {
   // Edit Answers → revised completion. The customer leaves the Brief with a
-  // row open, edits an answer, and finishes the quiz again: the rebuilt Brief
-  // must open with every disclosure closed. Executed through the REAL entry
-  // path (startProfileReveal), whose reduced-motion branch lands directly on
-  // the real showProfileScreen.
+  // row open, edits an answer, and finishes the quiz again. A3 (owner ruling
+  // 2026-09-01): the REAL entry path (startProfileReveal, reduced-motion
+  // branch) now lands on the tablet handoff, and the REAL Begin control arms
+  // the signature entry and opens the rebuilt Brief with every disclosure
+  // closed.
   const env = makeEnv({ openPriority: 1, reduced: true });
   env.api.brief();
   ok('precondition: the returning customer\'s row is open before the revision',
     /id="briefPriorityToggle-1" aria-expanded="true"/.test(env.get('profilePriorities').innerHTML));
   env.api.reveal();
-  const html = env.get('profilePriorities').innerHTML;
-  ok('a revised quiz completion opens the Brief with every disclosure CLOSED',
+  ok('a revised quiz completion lands on the tablet handoff with the disclosure reset armed (A3)',
     env.api.openPriority() === null
-    && !/aria-expanded="true"/.test(html)
+    && env.screens[env.screens.length - 1] === 'tabletHandoffScreen');
+  env.api.begin();
+  const html = env.get('profilePriorities').innerHTML;
+  ok('Begin guided review opens the rebuilt Brief with every disclosure CLOSED',
+    !/aria-expanded="true"/.test(html)
     && (html.match(/ hidden>/g) || []).length === env.analytics.trialFocus.length);
   ok('...and the entry still reaches the Brief (the reset does not swallow the entry)',
     env.screens.filter((s) => s === 'profileScreen').length === 2);
@@ -742,8 +757,8 @@ section('session integrity — wipe ownership, timers, engine boundary');
 }
 ok('no raw timers or animation frames entered any Slice 2 render path',
   !/setTimeout|setInterval|requestAnimationFrame/.test(sigSrc + profileSrc + toggleSrc + chromeSrc + hf2BriefSrc));
-ok('the retained legacy reveal fallback honors reduced motion before staging',
-  /if \(dfmReducedMotion\(\)\) \{\s*\n\s*window\._sleepSignatureEntry = true;\s*\n\s*window\.showProfileScreen\(\);\s*\n\s*return;/
+ok('the retained legacy reveal fallback honors reduced motion before staging (A3: direct to the handoff)',
+  /if \(dfmReducedMotion\(\)\) \{\s*\n(\s*\/\/[^\n]*\n)*\s*window\.showTabletHandoff\(\);\s*\n\s*return;/
     .test(norm.slice(norm.indexOf('window.startProfileReveal = function'))));
 ok('the constellation is never an engine input (absent from the scoring path)',
   !/buildSleepSignatureSvg|sleepSignature/.test(extractFunction('function calculateScores()') || ''));

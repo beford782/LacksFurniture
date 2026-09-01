@@ -621,6 +621,11 @@
     body:has(#questionScreen.active) .header,
     body:has(#reviewScreen.active) .accent-bar,
     body:has(#reviewScreen.active) .header,
+    /* A3 audience contract (owner ruling 2026-09-01): the post-quiz tablet
+       handoff sits on the same light consultation ground as the Review
+       screen it follows. */
+    body:has(#tabletHandoffScreen.active) .accent-bar,
+    body:has(#tabletHandoffScreen.active) .header,
     body:has(#profileScreen.active) .accent-bar,
     body:has(#profileScreen.active) .header,
     body:has(#resultsScreen.active) .accent-bar,
@@ -646,6 +651,7 @@
     body:has(#welcomeScreen.active) #welcomeScreen.main,
     body:has(#questionScreen.active) #questionScreen,
     body:has(#reviewScreen.active) #reviewScreen,
+    body:has(#tabletHandoffScreen.active) #tabletHandoffScreen,
     body:has(#profileScreen.active) #profileScreen,
     body:has(#resultsScreen.active) #resultsScreen,
     body:has(#emailScreen.active) #emailScreen,
@@ -1493,6 +1499,87 @@
       color: var(--consultation-muted);
     }
 
+    /* A3 post-quiz handoff (owner ruling 2026-09-01): the explicit
+       customer -> specialist device transition between the quiz and the
+       shared Sleep Brief. Same consultation ground as the Review screen it
+       follows; the customer line is the h1 (the focus/announce target), the
+       specialist continuation is a separately LABELLED block so the operator
+       change never depends on colour alone. */
+    body:has(#tabletHandoffScreen.active) {
+      --consultation-bg: #F4EFE6;
+      --consultation-paper: #FBF7EF;
+      --consultation-ink: #2F271E;
+      --consultation-muted: #685C4D;
+      --consultation-rule: rgba(104, 84, 60, 0.28);
+      background: var(--consultation-bg);
+      color: var(--consultation-ink);
+    }
+    body:has(#tabletHandoffScreen.active) #tabletHandoffScreen {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--consultation-bg);
+      color: var(--consultation-ink);
+    }
+    .handoff-stage {
+      max-width: 680px;
+      width: 100%;
+      margin: 0 auto;
+      padding: clamp(32px, 5vw, 58px) clamp(28px, 7vw, 76px) 40px;
+      text-align: center;
+      font-family: var(--font-serif);
+    }
+    .handoff-eyebrow {
+      font-family: var(--font-sans);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      color: var(--consultation-ink);
+      margin-bottom: 18px;
+    }
+    .handoff-title {
+      color: var(--consultation-ink);
+      font-size: clamp(30px, 4vw, 44px);
+      font-weight: 400;
+      line-height: 1.12;
+      margin: 0 0 30px;
+    }
+    .handoff-specialist {
+      display: inline-block;
+      padding: 18px 22px 20px;
+      border: 1px solid var(--consultation-rule);
+      border-radius: 12px;
+      background: var(--consultation-paper);
+    }
+    .handoff-specialist-label {
+      font-family: var(--font-sans);
+      font-size: 11px;
+      font-weight: 750;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--accent-ink);
+      margin-bottom: 12px;
+    }
+    .handoff-begin {
+      min-width: 138px;
+      min-height: 44px;
+      background: var(--consultation-red, var(--store-primary));
+      border: 1px solid var(--accent-ink);
+      border-radius: var(--radius);
+      color: var(--on-store-primary);
+      font-family: var(--font-sans);
+      font-size: 19px;
+      font-weight: 700;
+      padding: 15px 28px;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    .handoff-begin:focus-visible {
+      outline: 3px solid var(--focus-ring-outer);
+      outline-offset: 2px;
+      box-shadow: 0 0 0 6px var(--focus-ring-inner);
+    }
     /* X7-B2 (owner ruling 2026-09-01): landscape Next-in-fold through a
        compact two-column rhythm only - no pinned or sticky chrome, no
        internal scroll. The grid keeps two columns; cell height, block
@@ -10110,6 +10197,10 @@
       .noct-card-try { border: 2px solid CanvasText; }
       .drawer-finalist-btn.chosen, .drawer-finalist-btn[aria-pressed="true"] { border: 3px double CanvasText; }
       .drawer-finalist-btn:disabled { opacity: 1; color: GrayText; border-color: GrayText; }
+      /* A3: the handoff's specialist block and continuation keep non-colour
+         boundaries when author colours are stripped. */
+      .handoff-specialist { border: 1px solid CanvasText; }
+      .handoff-begin { border: 2px solid CanvasText; }
     }
     /* Construction reveal (slices 5a+5b): forced colors strip author hues
        and backgrounds, so the region-to-role correspondence falls back to
@@ -10536,7 +10627,8 @@
        Review → Brief; pin it to the light pairing there and re-scope the two
        cream-tuned literal borders with it. */
     body:has(#questionScreen.active) .session-utility,
-    body:has(#reviewScreen.active) .session-utility {
+    body:has(#reviewScreen.active) .session-utility,
+    body:has(#tabletHandoffScreen.active) .session-utility {
       --color-surface: #FFFDF8;
       --color-text: #2F271E;
       --color-bg: #F3EEE5;
@@ -10544,11 +10636,13 @@
       box-shadow: 0 2px 10px rgba(55, 40, 28, 0.18);
     }
     body:has(#questionScreen.active) .session-utility__btn,
-    body:has(#reviewScreen.active) .session-utility__btn {
+    body:has(#reviewScreen.active) .session-utility__btn,
+    body:has(#tabletHandoffScreen.active) .session-utility__btn {
       border-color: rgba(47, 39, 30, 0.28);
     }
     body:has(#questionScreen.active) .session-utility__restart,
-    body:has(#reviewScreen.active) .session-utility__restart {
+    body:has(#reviewScreen.active) .session-utility__restart,
+    body:has(#tabletHandoffScreen.active) .session-utility__restart {
       background: rgba(47, 39, 30, 0.05);
       border-color: rgba(47, 39, 30, 0.45);
     }
@@ -10899,7 +10993,7 @@
   </div>
 
   <!-- SCREEN: Welcome / Landing -->
-  <main class="main screen active" id="welcomeScreen" style="position:relative;">
+  <main class="main screen active" id="welcomeScreen" data-audience="customer" style="position:relative;">
 
     <div class="nocturnal-landing">
 
@@ -10992,14 +11086,14 @@
        silently anonymous. role="region" is the smallest role that permits the
        bilingual name applied in applyTranslations(). #welcomeScreen is the one
        exception and needs no role: it is a <main>, already nameable. -->
-  <div class="question-screen screen" id="questionScreen" role="region">
+  <div class="question-screen screen" id="questionScreen" role="region" data-audience="customer">
     <div class="noct-quiz">
       <div id="questionContainer"></div>
     </div>
   </div>
 
   <!-- SCREEN: Review Answers (before profile reveal) -->
-  <div class="screen" id="reviewScreen" role="region">
+  <div class="screen" id="reviewScreen" role="region" data-audience="customer">
     <div class="noct-quiz">
       <div class="noct-quiz-eyebrow" id="reviewEyebrow">Almost there</div>
       <h2 class="noct-quiz-headline" id="reviewHeadline">Quick <span class="accent">review</span></h2>
@@ -11012,8 +11106,32 @@
     </div>
   </div>
 
+  <!-- SCREEN: Tablet handoff (A3 audience contract, owner ruling 2026-09-01).
+       The explicit physical transition between the customer-held quiz and the
+       specialist-led review — the staged review->Brief reveal lands HERE,
+       the customer hands the tablet back, and the specialist's "Begin guided
+       review" opens the shared Sleep Brief (arming the one-time signature
+       entry). Rendered by renderTabletHandoff() BEFORE showScreen so the h1
+       is the focus/announce target (SCREEN_HEADING_IDS contract); the h1 text
+       can carry the take-home first name when one exists, so it is in the
+       wipe's text inventory. Deliberately no Back control: Restart stays
+       available in the utility card, and answer edits run Brief -> Edit
+       answers -> Review, which replays this handoff on re-completion. -->
+  <div class="screen" id="tabletHandoffScreen" role="region" data-audience="shared">
+    <div class="handoff-stage">
+      <div class="handoff-eyebrow" id="tabletHandoffEyebrow">Quiz complete</div>
+      <h1 class="handoff-title" id="tabletHandoffTitle" tabindex="-1">Thanks. Please hand the tablet back to your sleep specialist.</h1>
+      <div class="handoff-specialist">
+        <div class="handoff-specialist-label" id="tabletHandoffSpecialistLabel">For the sleep specialist</div>
+        <button type="button" class="handoff-begin" id="tabletHandoffBegin"
+                onclick="window.beginGuidedReview()"
+                ontouchend="event.preventDefault();window.beginGuidedReview();">Begin guided review</button>
+      </div>
+    </div>
+  </div>
+
   <!-- SCREEN: Profile Summary -->
-  <div class="screen" id="profileScreen" role="region">
+  <div class="screen" id="profileScreen" role="region" data-audience="shared">
     <main class="noct-profile" aria-labelledby="profileName">
       <section class="profile-launch__identity" aria-labelledby="profileName">
         <h1 class="noct-profile-name" id="profileName" tabindex="-1"></h1>
@@ -11036,7 +11154,7 @@
   </div>
 
   <!-- SCREEN: Results -->
-  <div class="screen" id="resultsScreen" role="region">
+  <div class="screen" id="resultsScreen" role="region" data-audience="specialist">
     <div class="noct-results">
       <div class="noct-results-eyebrow" id="resultsEyebrow">Your matches</div>
       <h1 class="noct-results-headline" id="resultsHeadline">Your <span class="accent">strongest matches</span> are ready</h1>
@@ -11193,7 +11311,7 @@
        accessibility tree by `visibility` + `inert` while closed rather than by
        the `hidden` attribute, which would kill the transform transition. -->
   <div class="mattress-drawer" id="mattressDrawer" role="dialog" aria-modal="true"
-       aria-labelledby="drawerName" inert aria-hidden="true">
+       aria-labelledby="drawerName" data-audience="specialist" inert aria-hidden="true">
     <div class="drawer-handle-bar" onclick="window.closeMattressDrawer()"></div>
     <div class="drawer-toolbar">
       <button class="drawer-back-to-results" onclick="window.closeMattressDrawer()"
@@ -11297,7 +11415,7 @@
        derived screen roster, the heading map and the wipe inventories can
        see it; renderSleepPlan() fills the blocks and runs BEFORE
        showScreen('sleepPlanScreen') so the heading is the 0.3 focus target. -->
-  <div class="screen" id="sleepPlanScreen" role="region">
+  <div class="screen" id="sleepPlanScreen" role="region" data-audience="shared">
     <div class="hf2-review-nav">
       <button class="hf2-back-btn" id="sleepPlanBack" type="button"
               onclick="window.sleepPlanBack()"
@@ -11363,7 +11481,7 @@
 
   <!-- SCREEN: Handoff v2 (the live RSA handoff screen). -->
   <!-- No .active class so it's invisible by default. Preview via showScreen('hf2Screen'). -->
-  <div class="screen" id="hf2Screen" role="region">
+  <div class="screen" id="hf2Screen" role="region" data-audience="shared">
 
     <div class="hf2-review-nav">
       <button class="hf2-back-btn" id="hf2BackToMatches" type="button"
@@ -11575,7 +11693,7 @@
   </div>
 
   <!-- SCREEN: Save Sleep Brief / lead capture -->
-  <div class="screen email-screen" id="emailScreen" role="region">
+  <div class="screen email-screen" id="emailScreen" role="region" data-audience="customer">
     <div class="noct-email">
 
       <!-- Capture view -->
@@ -11670,7 +11788,7 @@
   </div>
 
   <!-- SCREEN: Guided Sleep System workspace -->
-  <div class="screen sleep-system" id="accessoriesScreen" role="region">
+  <div class="screen sleep-system" id="accessoriesScreen" role="region" data-audience="specialist">
     <div class="sleep-system__shell">
       <header class="sleep-system__header">
         <button class="sleep-system__back" id="sleepSystemBack" type="button" data-sleep-action="back-to-matches">&larr; Back to mattress matches</button>
@@ -13798,6 +13916,12 @@
       var reviewScreen = document.getElementById('reviewScreen');
       if (reviewScreen && reviewScreen.classList.contains('active')) {
         window.renderReview();
+      }
+      // A3: the tablet handoff relocalises in place — a copy swap only, no
+      // showScreen, no focus move, no entrance replay.
+      var tabletHandoffScreen = document.getElementById('tabletHandoffScreen');
+      if (tabletHandoffScreen && tabletHandoffScreen.classList.contains('active')) {
+        renderTabletHandoff();
       }
       // If profile screen is the active screen, re-run its render to localise
       var profileScreen = document.getElementById('profileScreen');
@@ -17260,8 +17384,8 @@
       window._profileRevealInFlight = false;
       var reviewScreen = document.getElementById('reviewScreen');
       if (reviewScreen && reviewScreen.classList.contains('active')) {
-        window._sleepSignatureEntry = true;
-        window.showProfileScreen();
+        // A3: the gather, too, lands on the tablet handoff.
+        window.showTabletHandoff();
       }
     }
     // The gather: clones of the customer's ACTUAL rendered review rows (their
@@ -17274,13 +17398,10 @@
       if (dfmReducedMotion()) {
         // Reduced motion OWNS the transition when the preview is enabled:
         // zero animations, zero clones, no legacy overlay, no 1500 ms wait —
-        // a direct synchronous advance to the same Sleep Brief destination
-        // (showProfileScreen moves focus exactly as it does today). Nothing
-        // is async here, so the in-flight flag is never needed. The Sleep
-        // Signature entry is still marked: the render gates the animation on
-        // reduced motion itself, so this path draws the figure statically.
-        window._sleepSignatureEntry = true;
-        window.showProfileScreen();
+        // a direct synchronous advance to the tablet handoff (A3). Begin
+        // guided review then arms the signature entry; the figure draws
+        // statically under reduced motion either way.
+        window.showTabletHandoff();
         return true;
       }
       var list = document.getElementById('reviewList');
@@ -17682,6 +17803,45 @@
     }
     // ===== DFM MOTION SPIKE (end) =====
 
+    // ----- A3 POST-QUIZ TABLET HANDOFF (owner ruling 2026-09-01) -----------
+    // The audience contract's explicit device transition: every quiz
+    // completion lands here (staged reveal, gather, reduced motion, missing
+    // overlay), the customer is asked to hand the tablet back, and the
+    // specialist's continuation opens the shared Sleep Brief. Re-renders and
+    // return navigation never reopen it. Dictionary copy throughout; the
+    // greeting consumes the take-home first name ONLY when one already exists
+    // in this session (the email screen's optional field is the sole
+    // supported source — no new capture, no new identity concept).
+    function renderTabletHandoff() {
+      var eyebrow = document.getElementById('tabletHandoffEyebrow');
+      if (eyebrow) eyebrow.textContent = t('handoff2.eyebrow');
+      var title = document.getElementById('tabletHandoffTitle');
+      if (title) {
+        var nameInput = document.getElementById('emailNameInput');
+        var firstName = nameInput && typeof nameInput.value === 'string' ? nameInput.value.trim() : '';
+        title.textContent = firstName
+          ? t('handoff2.title_named', { name: firstName })
+          : t('handoff2.title');
+      }
+      var label = document.getElementById('tabletHandoffSpecialistLabel');
+      if (label) label.textContent = t('handoff2.specialist_label');
+      var begin = document.getElementById('tabletHandoffBegin');
+      if (begin) begin.textContent = t('handoff2.begin');
+    }
+    // Render FIRST, then transition: the h1 is the focus/announce target
+    // (SCREEN_HEADING_IDS contract — the heading text IS the announcement).
+    window.showTabletHandoff = function() {
+      renderTabletHandoff();
+      showScreen('tabletHandoffScreen');
+    };
+    // The specialist continuation: arm the one-time Sleep Signature entry
+    // (the same flag every pre-A3 completion path armed) and open the shared
+    // Brief. showScreen() moves focus to #profileName from the shared policy.
+    window.beginGuidedReview = function() {
+      window._sleepSignatureEntry = true;
+      window.showProfileScreen();
+    };
+
     // Staged review→profile calculation. The copy describes work the app
     // genuinely performs: interpreting answers, prioritizing needs, and
     // preparing the consultation starting point.
@@ -17702,14 +17862,14 @@
       // ownership, reduced motion must not be handed the 1500 ms staged
       // overlay the gather would have skipped. Same destination, no staging.
       if (dfmReducedMotion()) {
-        window._sleepSignatureEntry = true;
-        window.showProfileScreen();
+        // A3: reduced motion reaches the same handoff state directly — no
+        // overlay, one cut; Begin guided review then opens the Brief.
+        window.showTabletHandoff();
         return;
       }
       var elements = getConsultationRevealElements();
       if (!elements.overlay || !elements.title || !elements.subtitle) {
-        window._sleepSignatureEntry = true;
-        window.showProfileScreen();
+        window.showTabletHandoff();
         return;
       }
       window._profileRevealInFlight = true;
@@ -17749,8 +17909,9 @@
         window._profileRevealInFlight = false;
         var reviewScreen = document.getElementById('reviewScreen');
         if (reviewScreen && reviewScreen.classList.contains('active')) {
-          window._sleepSignatureEntry = true;
-          window.showProfileScreen();
+          // A3: the completion lands on the tablet handoff; the specialist's
+          // "Begin guided review" arms the signature entry and opens the Brief.
+          window.showTabletHandoff();
         }
       }, 1500);
     };
@@ -22395,6 +22556,9 @@
     // English string. Focusing either would announce the wrong thing, so they
     // fall back to the named container. No heading is invented to avoid this.
     var SCREEN_HEADING_IDS = {
+      // A3: renderTabletHandoff() runs before showScreen('tabletHandoffScreen'),
+      // so the customer-facing handoff line is the announced heading.
+      tabletHandoffScreen: 'tabletHandoffTitle',
       profileScreen: 'profileName',
       resultsScreen: 'resultsHeadline',
       hf2Screen: 'hf2ReviewTitle',
@@ -22413,12 +22577,35 @@
       welcomeScreen: 'screen.welcome',
       questionScreen: 'screen.question',
       reviewScreen: 'screen.review',
+      tabletHandoffScreen: 'screen.tablet_handoff',
       profileScreen: 'screen.profile',
       resultsScreen: 'screen.results',
       hf2Screen: 'screen.handoff',
       emailScreen: 'screen.email',
       accessoriesScreen: 'screen.sleep_system',
       sleepPlanScreen: 'screen.sleep_plan'
+    };
+
+    // A3 audience contract (owner ruling 2026-09-01): one declared primary
+    // audience per screen — `customer` (the customer holds and operates),
+    // `specialist` (the salesperson operates; copy is neutral operator
+    // guidance, safe to show briefly), `shared` (the salesperson holds and
+    // deliberately reviews together with the customer). Mirrored on each
+    // screen container as data-audience so the contract is inspectable in
+    // markup; tests/audience_contract_check.mjs holds the two to set
+    // equality. sleepPlanScreen is `shared` per roadmap 1.7 ("the customer's
+    // plan for the in-store trial, presented by the salesperson").
+    var SCREEN_AUDIENCE = {
+      welcomeScreen: 'customer',
+      questionScreen: 'customer',
+      reviewScreen: 'customer',
+      tabletHandoffScreen: 'shared',
+      profileScreen: 'shared',
+      resultsScreen: 'specialist',
+      hf2Screen: 'shared',
+      emailScreen: 'customer',
+      accessoriesScreen: 'specialist',
+      sleepPlanScreen: 'shared'
     };
 
     // Refusal gate. Every predicate answers one question: is some other layer
@@ -22725,6 +22912,9 @@
       // is a phrase derived from the customers decisions (N added, M
       // addressed), so it joins the wipe like every other derived surface.
       'sleepSystemPlanCount', 'sleepSystemPlanHelper', 'sleepSystemPlanStatus',
+      // A3: the handoff greeting can carry the take-home first name, so the
+      // heading joins the wipe like every other customer-derived surface.
+      'tabletHandoffTitle',
       'sessionSafetyLive', 'dataErrorLive',
       'resultsRevealTitle', 'resultsRevealSubtitle',
       'revealCertCode', 'revealCertPctNum', 'revealCertScope', 'revealCertExpiry',
@@ -23425,7 +23615,7 @@
        tabindex="-1" title, Tab containment + Escape on a keydown bound once,
        focus returned to the exact opener on close. -->
   <div id="compareModal" class="compare-modal" style="display:none;" role="dialog"
-       aria-modal="true" aria-labelledby="compareModalTitle">
+       aria-modal="true" aria-labelledby="compareModalTitle" data-audience="specialist">
     <div class="compare-modal-inner">
       <div class="compare-modal-header">
         <div id="compareModalTitle" tabindex="-1" style="font-size:0.65rem; text-transform:uppercase; letter-spacing:2px; color:var(--gold); font-weight:700;" data-i18n="compare.modal_title">Compare your selections</div>

@@ -1997,7 +1997,8 @@ check("[Gate 2A] container names are applied as aria-label from the dictionary",
   // prohibited there, and the aria-label would be discarded — leaving this
   // path silently anonymous while every behavioural assertion still passed.
   check("[Gate 2A] ...and the fallback container has a role that permits a name",
-    /<div class="screen" id="profileScreen" role="region">/.test(html));
+    // A3 (owner ruling 2026-09-01): the container also declares its audience.
+    /<div class="screen" id="profileScreen" role="region" data-audience="shared">/.test(html));
 }
 
 // -- F4b: EVERY container that can be a focus destination is nameable -------
@@ -2087,8 +2088,8 @@ function deriveScreenRoster(markup) {
   // with extra steps. The injected tag writes id BEFORE class deliberately —
   // every shipped screen writes class first, so attribute-order independence
   // is otherwise unobservable.
-  const injected = html.replace('<div class="screen" id="reviewScreen" role="region">',
-    '<div id="sentinelScreen" role="region" class="screen"></div>\n<div class="screen" id="reviewScreen" role="region">');
+  const injected = html.replace('<div class="screen" id="reviewScreen" role="region" data-audience="customer">',
+    '<div id="sentinelScreen" role="region" class="screen"></div>\n<div class="screen" id="reviewScreen" role="region" data-audience="customer">');
   const injRoster = deriveScreenRoster(injected).map((s) => s.id);
   check("[Gate 2A][non-vacuity] an injected ninth screen with id BEFORE class is found by the derived roster",
     injRoster.includes("sentinelScreen") && injRoster.length === roster.length + 1);
