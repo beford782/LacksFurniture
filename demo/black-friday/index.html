@@ -1493,6 +1493,51 @@
       color: var(--consultation-muted);
     }
 
+    /* X7-B2 (owner ruling 2026-09-01): landscape Next-in-fold through a
+       compact two-column rhythm only - no pinned or sticky chrome, no
+       internal scroll. The grid keeps two columns; cell height, block
+       spacing, heading leading and navigation proximity recover the fold.
+       44px targets kept (cells >= 56px). Landscape-only; portrait untouched. */
+    @media (orientation: landscape) and (min-width: 900px) {
+      body:has(#questionScreen.active) .noct-quiz {
+        padding-top: 30px;
+        padding-bottom: 24px;
+      }
+      body:has(#questionScreen.active) .noct-quiz-progress-row {
+        margin-bottom: 14px;
+      }
+      body:has(#questionScreen.active) .noct-quiz-headline {
+        line-height: 1.05;
+        margin-bottom: 8px;
+      }
+      body:has(#questionScreen.active) .noct-quiz-help {
+        margin-bottom: 8px;
+      }
+      body:has(#questionScreen.active) .noct-quiz-multi-note {
+        margin-bottom: 8px;
+      }
+      body:has(#questionScreen.active) .noct-quiz-option {
+        min-height: 56px;
+        padding: 10px 16px 10px 13px;
+      }
+      body:has(#questionScreen.active) .noct-quiz-options {
+        gap: 8px;
+        margin-bottom: 14px;
+      }
+      body:has(#questionScreen.active) .noct-quiz-nav {
+        padding-top: 12px;
+      }
+      body:has(#questionScreen.active) .noct-slider-value {
+        font-size: 56px;
+      }
+      body:has(#questionScreen.active) .noct-slider-feel {
+        margin-bottom: 16px;
+      }
+      body:has(#questionScreen.active) .noct-slider-wrap {
+        margin-bottom: 20px;
+      }
+    }
+
     @media (hover: hover) {
       body:has(#questionScreen.active) .noct-quiz-back:hover,
       body:has(#reviewScreen.active) .noct-quiz-back:hover {
@@ -3643,6 +3688,70 @@
       line-height: 1.55;
       color: var(--color-text);
     }
+    /* C3-A2 status block: thumbnail on the white image mat, serif display name,
+       quiet metadata, prominent verdict chip, second-order payment line. */
+    .hf2-status__body { display: flex; align-items: flex-start; gap: 16px; }
+    .hf2-status__thumb {
+      flex: 0 0 108px;
+      aspect-ratio: 3 / 2;
+      background: #FFFDF8;
+      border: 1px solid var(--color-border);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    @media (orientation: landscape) and (min-width: 900px) {
+      .hf2-status__thumb { flex-basis: 160px; }
+    }
+    .hf2-status__thumb-img { display: block; width: 100%; height: 100%; object-fit: contain; }
+    .hf2-status__lines { flex: 1; min-width: 0; }
+    .hf2-lead-line.hf2-status__eyebrow {
+      font-family: var(--font-sans);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent-ink);
+    }
+    .hf2-status__name {
+      font-family: var(--font-serif);
+      font-size: clamp(1.35rem, 3vw, 1.8rem);
+      line-height: 1.25;
+      color: var(--color-text);
+      margin: 0.1rem 0 0.15rem;
+    }
+    .hf2-status__meta {
+      font-family: var(--font-sans);
+      font-size: 0.78rem;
+      letter-spacing: 0.06em;
+      color: var(--color-text-muted);
+    }
+    .hf2-status__rows {
+      margin-top: 0.55rem;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 0.95rem;
+      color: var(--color-text);
+    }
+    .hf2-reaction-chip {
+      display: inline-block;
+      padding: 2px 10px;
+      border: 1px solid #7F9C79;
+      border-radius: 999px;
+      font-family: var(--font-sans);
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: #2F4A2C;
+      background: #DDE7D9;
+    }
+    .hf2-status__payment {
+      margin: 0.45rem 0 0;
+      font-size: 0.85rem;
+      line-height: 1.5;
+      color: var(--color-text-muted);
+    }
+    #hf2StatusRoute { margin-top: 0.6rem; }
     .hf2-priorities {
       margin: 8px 0 0;
       padding-left: 1.5em;
@@ -11305,7 +11414,26 @@
          survives a wipe. -->
     <section class="hf2-review-section" id="hf2LeadSection" aria-labelledby="hf2LeadLabel">
       <div class="hf2-review-section__label" id="hf2LeadLabel"></div>
-      <p class="hf2-lead-line" id="hf2LeadLine"></p>
+      <!-- C3-A2 (owner ruling 2026-09-01): the lead is a compact three-state
+           status BLOCK with a restrained product hierarchy - the named pick's
+           own thumbnail (D5b: its own photo or nothing; ~160px landscape),
+           the product name as the separate serif display element in the
+           chosen state, brand/collection/tier as quiet metadata, the trial
+           verdict prominent, payment second-order, "Still open" only for
+           genuinely unresolved Sleep System steps, and a route back to the
+           trial when no finalist is chosen. Strings: the approved
+           hf2.lead_chosen split; the other two state sentences verbatim. -->
+      <div class="hf2-status__body">
+        <div class="hf2-status__thumb" id="hf2StatusThumb" hidden></div>
+        <div class="hf2-status__lines">
+          <p class="hf2-lead-line" id="hf2LeadLine"></p>
+          <div class="hf2-status__name" id="hf2StatusName" hidden></div>
+          <div class="hf2-status__meta" id="hf2StatusMeta" hidden></div>
+          <div class="hf2-status__rows" id="hf2StatusRows" hidden></div>
+          <p class="hf2-status__payment" id="hf2StatusPayment" hidden></p>
+          <div id="hf2StatusRoute" hidden></div>
+        </div>
+      </div>
     </section>
 
     <section class="hf2-review-section">
@@ -20631,7 +20759,7 @@
       _renderResults();
       showScreen('resultsScreen');
       sessionTimeout(function() {
-        var ctl = document.querySelector('.finalist-btn');
+        var ctl = document.querySelector('.noct-card-try') || document.querySelector('.finalist-btn');
         if (ctl && typeof ctl.focus === 'function') {
           try { ctl.focus({ preventScroll: false }); } catch (err) { ctl.focus(); }
           if (ctl.scrollIntoView) ctl.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -20892,7 +21020,86 @@
         if (!prefLabel) prefLabel = FC('preferenceNone');
         payment = t('hf2.pay_state', { value: prefLabel });
       }
-      lineEl.textContent = payment ? lead + ' ' + payment : lead;
+      // C3-A2 (owner ruling 2026-09-01): compact three-state status block.
+      // Chosen: the approved hf2.lead_chosen split - finalist.chosen as the
+      // eyebrow, the product NAME as the separate serif display element and
+      // brand/collection/tier as quiet metadata. Recommended / none: the two
+      // state sentences verbatim. Payment is a second-order line; the trial
+      // verdict is a prominent chip; "Still open" names only genuinely
+      // unresolved Sleep System steps; an incomplete consultation is routed
+      // back to the trial (never a fabricated completion). A harness DOM
+      // without the new nodes keeps the single-line composition.
+      var esc = typeof escapeHtml === 'function' ? escapeHtml : function(v) { return String(v); };
+      var payEl = document.getElementById('hf2StatusPayment');
+      var nameEl = document.getElementById('hf2StatusName');
+      var metaEl = document.getElementById('hf2StatusMeta');
+      var named = finalist.kind === 'chosen' ? finalist.item
+        : (lead === t('hf2.lead_none') ? null : finalistRecommendedFallback());
+      if (payEl) {
+        if (finalist.kind === 'chosen' && nameEl) {
+          var chosenBrand = String(finalist.item.brand || '')
+            + (finalist.item.subBrand && String(finalist.item.brand || '').indexOf(' · ') === -1 ? ' · ' + finalist.item.subBrand : '');
+          var chosenLine = sleepPlanModelLine(finalist.item) || sleepPlanTierLabel(finalist.item.tier) || '';
+          lineEl.textContent = t('finalist.chosen');
+          lineEl.className = 'hf2-lead-line hf2-status__eyebrow';
+          nameEl.textContent = finalist.item.name || '';
+          nameEl.hidden = !nameEl.textContent;
+          if (metaEl) {
+            metaEl.textContent = [chosenBrand, chosenLine].filter(Boolean).join(' · ');
+            metaEl.hidden = !metaEl.textContent;
+          }
+        } else {
+          lineEl.textContent = lead;
+          lineEl.className = 'hf2-lead-line';
+          if (nameEl) { nameEl.textContent = ''; nameEl.hidden = true; }
+          if (metaEl) { metaEl.textContent = ''; metaEl.hidden = true; }
+        }
+        payEl.textContent = payment;
+        payEl.hidden = !payment;
+      } else {
+        lineEl.textContent = payment ? lead + ' ' + payment : lead;
+      }
+      var reactions = {};
+      try { reactions = window._mattressReactions || {}; } catch (err) { reactions = {}; }
+      var thumbEl = document.getElementById('hf2StatusThumb');
+      if (thumbEl) {
+        var thumbSrc = named && named.imageUrl ? String(named.imageUrl) : '';
+        thumbEl.innerHTML = thumbSrc ? '<img class="hf2-status__thumb-img" src="' + esc(thumbSrc) + '" alt="">' : '';
+        thumbEl.hidden = !thumbSrc;
+      }
+      var rowsEl = document.getElementById('hf2StatusRows');
+      if (rowsEl) {
+        var rows = [];
+        var reaction = named && named.id ? reactions[named.id] : '';
+        if (reaction) {
+          rows.push('<div class="hf2-status__row">' + esc(t('hf2.status_reaction_label'))
+            + ' <span class="hf2-reaction-chip">' + esc(reactionLabel(reaction)) + '</span></div>');
+        }
+        var openNames = [];
+        if (typeof SLEEP_SYSTEM_STEPS !== 'undefined' && typeof sleepSystemDecision === 'function' && typeof sleepSystemText === 'function') {
+          openNames = SLEEP_SYSTEM_STEPS.filter(function(step) {
+            var st = sleepSystemDecision(step.id).status;
+            return st === 'later' || st === 'open';
+          }).map(function(step) { return sleepSystemText(step.label); });
+        }
+        if (openNames.length) {
+          rows.push('<div class="hf2-status__row">' + esc(t('hf2.status_open', { list: openNames.join(' · ') })) + '</div>');
+        }
+        rowsEl.innerHTML = rows.join('');
+        rowsEl.hidden = rows.length === 0;
+      }
+      var routeEl = document.getElementById('hf2StatusRoute');
+      if (routeEl) {
+        if (finalist.kind !== 'chosen') {
+          routeEl.innerHTML = '<button class="hf2-pick__action" type="button" id="hf2RouteTrial"'
+            + ' onclick="window.sleepPlanChooseFinalist()"'
+            + ' ontouchend="event.preventDefault();window.sleepPlanChooseFinalist();">'
+            + esc(t('hf2.route_trial')) + '</button>';
+        } else {
+          routeEl.innerHTML = '';
+        }
+        routeEl.hidden = finalist.kind === 'chosen';
+      }
     }
 
     // ---- Picks ---------------------------------------------------------------
@@ -21189,6 +21396,17 @@
       name.className = 'hf2-pick__name';
       name.textContent = (m.brand || '') + ' · ' + (m.name || '');
       card.appendChild(name);
+
+      // C3-A2 (D3): the recorded trial reaction renders as a quiet chip on the
+      // saved-pick card - existing memory-only data, no new capture surface.
+      var pickReactions = {};
+      try { pickReactions = window._mattressReactions || {}; } catch (err) { pickReactions = {}; }
+      if (pickReactions[m.id]) {
+        var chip = document.createElement('span');
+        chip.className = 'hf2-reaction-chip';
+        chip.textContent = reactionLabel(pickReactions[m.id]);
+        card.appendChild(chip);
+      }
 
       var actions = document.createElement('div');
       actions.className = 'hf2-pick__actions';
@@ -22418,6 +22636,7 @@
       'drawerName', 'drawerDifferentiators', 'dfmConstructionSection', 'drawerTryPrompts', 'drawerPromotionDetail',
       'compareCols', 'compareTraySlots',
       'hf2PicksList', 'hf2AccessoriesList', 'hf2BriefWho', 'hf2BriefContext',
+      'hf2StatusThumb', 'hf2StatusRows', 'hf2StatusRoute',
       'hf2BriefProfile', 'hf2SleepSystemSection', 'hf2Priorities',
       // Slice 4 (D4): every financing container built from customer state.
       // The sheet cards carry the disclosure panels and the Consider/Clear
@@ -22452,7 +22671,7 @@
       // an answer-derived shortlist surface to wipe. Omission, not a weakened
       // wipe: the remaining answer-derived ids are unchanged.
       'drawerSystemPromptTitle', 'drawerSystemPromptReason',
-      'hf2LeadLine',
+      'hf2LeadLine', 'hf2StatusPayment', 'hf2StatusName', 'hf2StatusMeta',
       'hf2FinancingStatus', 'financingSheetStatus', 'financingSheetAction',
       'sleepPlanFinancingStatus', 'sleepPlanPrioritiesRecoveryText',
       // X2 (2026-08-31): the plan count is no longer a neutral fraction - it

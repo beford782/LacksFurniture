@@ -1846,7 +1846,7 @@ const MUTATIONS = [
     "      if (typeof renderHf2LeadLine === 'function') renderHf2LeadLine();",
     "", PLAN],
   ["slice6: the lead line leaves the wipe's text inventory",
-    "      'hf2LeadLine',\n      'hf2FinancingStatus', 'financingSheetStatus', 'financingSheetAction',",
+    "      'hf2LeadLine', 'hf2StatusPayment', 'hf2StatusName', 'hf2StatusMeta',\n      'hf2FinancingStatus', 'financingSheetStatus', 'financingSheetAction',",
     "      'hf2FinancingStatus', 'financingSheetStatus', 'financingSheetAction',", PLAN_WITH_SESSION],
   // C3: comparison persistence.
   ["slice6: closing the review-origin modal clears the selection again",
