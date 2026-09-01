@@ -2209,8 +2209,19 @@
       width: 100%;
       aspect-ratio: 16 / 9;
       object-fit: cover;
-      background: var(--color-surface-alt);
+      background: #FFFDF8; /* Wave 3: white image mat everywhere */
       display: block;
+    }
+
+    /* X4 (North Star ruling D1, Wave 3): banner-crop sources (natural aspect
+       ratio > 3 — tagged by dfTagBannerImage() beside escapeHtml()) letterbox
+       on the white mat instead of cropping most of the product away. The
+       !important is load-bearing for exactly one consumer: the drawer hero's
+       sizing is an inline style attribute (object-fit: cover), and an author
+       !important outranks a non-important inline declaration. */
+    .df-img--banner {
+      object-fit: contain !important;
+      background: #FFFDF8;
     }
 
     .noct-toppick-body { padding: 32px 40px 36px; }
@@ -2352,7 +2363,7 @@
       width: 100%;
       aspect-ratio: 16 / 9;
       object-fit: cover;
-      background: var(--color-surface-alt);
+      background: #FFFDF8; /* Wave 3: white image mat everywhere */
       display: block;
     }
 
@@ -6983,10 +6994,14 @@
       box-shadow: 0 7px 22px rgba(55,40,28,0.055);
     }
     .sleep-system__anchor-image {
+      /* X5 (North Star D7, via Wave 3): the finalist's thumb takes the same
+         3:2 product frame Compare uses, on the white mat. */
       width: 88px;
-      height: 68px;
+      aspect-ratio: 3 / 2;
+      height: auto;
       border-radius: 7px;
-      background: #F2ECE3;
+      border: 1px solid #E1D7CA;
+      background: #FFFDF8;
       object-fit: contain;
     }
     .sleep-system__anchor-label {
@@ -7136,18 +7151,22 @@
       border-left-color: #63765D;
       background: #F7FAF5;
     }
+    /* X5 (North Star ruling D7, via Wave 3): white mat, and the featured
+       accessory takes the ruled ~2:1 frame instead of a fixed 250/210px
+       box (the accessory sources run 1.2:1-2.76:1 and letterbox here). */
     .sleep-system__featured-image {
       display: flex;
       align-items: center;
       justify-content: center;
-      min-height: 250px;
+      aspect-ratio: 2 / 1;
+      min-height: 210px;
       padding: 20px;
       border-right: 1px solid #E1D7CA;
-      background: #F5F0E8;
+      background: #FFFDF8;
     }
     .sleep-system__featured-image img {
       width: 100%;
-      height: 210px;
+      height: 100%;
       object-fit: contain;
     }
     .sleep-system__featured-body {
@@ -7595,8 +7614,14 @@
       border-top: 1px solid #E1D7CA;
     }
     .sleep-system__alternative img {
+      /* X5 via Wave 3: white mat + the panel's hairline and radius. The
+         class stays on the IMG — the row div's class attribute is pinned
+         verbatim by tests/sleep_system_presentation_check.mjs. */
       width: 76px;
       height: 62px;
+      border: 1px solid #E1D7CA;
+      border-radius: 6px;
+      background: #FFFDF8;
       object-fit: contain;
     }
     .sleep-system__alternative-name {
@@ -7804,7 +7829,7 @@
       .sleep-system__anchor {
         grid-template-columns: 68px minmax(0, 1fr);
       }
-      .sleep-system__anchor-image { width: 68px; height: 56px; }
+      .sleep-system__anchor-image { width: 68px; } /* height follows the base rule's 3:2 */
       .sleep-system__anchor-note { display: none; }
       /* Item 1.4 close-out (owner ruling 2026-08-25, option B): the four
          112px chips left ~44px for a label, so "Adjustability" /
@@ -9219,7 +9244,8 @@
     }
     body:has(#resultsScreen.active) .cmp-head-img,
     body:has(#hf2Screen.active) .cmp-head-img {
-      background: #EEE7DC;
+      background: #FFFDF8; /* Wave 3: white image mat everywhere */
+      border: 1px solid #D1C5B6;
     }
     body:has(#resultsScreen.active) .cmp-row--key,
     body:has(#hf2Screen.active) .cmp-row--key {
@@ -15900,6 +15926,29 @@
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
     }
+
+    // X4 (North Star ruling D1, Wave 3 media foundation): a source whose
+    // natural aspect ratio exceeds 3 is a banner crop, not a product
+    // photograph — `cover` shows a blurred, heavily upscaled strip of it.
+    // The moment an <img>'s intrinsic size is known it is tagged with
+    // .df-img--banner, and CSS letterboxes it on a white mat inside whatever
+    // frame it sits (Results 16:9, drawer hero, Compare 3:2, Sleep System).
+    // One CAPTURE-phase listener covers every current and future <img> on the
+    // page — `load` does not bubble, and the listener registers before any
+    // product markup renders, so innerHTML-inserted images are always caught.
+    // Presentation only: no scoring, ordering or data read; a failed load
+    // simply never tags. The data itself cannot be repaired from code — the
+    // owner re-export request is docs/asset-request-north-star-2026-08-31.md.
+    var DF_BANNER_AR = 3;
+    function dfTagBannerImage(img) {
+      if (!img || img.tagName !== 'IMG' || !img.naturalWidth || !img.naturalHeight) return;
+      if (img.naturalWidth / img.naturalHeight > DF_BANNER_AR) {
+        img.classList.add('df-img--banner');
+      }
+    }
+    document.addEventListener('load', function(e) {
+      dfTagBannerImage(e.target);
+    }, true);
 
     function firmnessFeel(score) {
       var es = currentLang === 'es';

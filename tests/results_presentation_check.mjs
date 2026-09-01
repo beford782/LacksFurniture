@@ -798,5 +798,39 @@ section('X12 — the 44px touch floor is declared on every listed control');
     !!fc && norm.indexOf(fc[0]) > norm.indexOf('.fin-btn:focus-visible'));
 }
 
+// ------------------------------------------ Wave 3: media foundation
+// North Star ruling 2026-08-31 (D1/D2 route, Wave 3): a source whose natural
+// aspect ratio exceeds 3 is a banner crop (the two Tempur-Pedic Gold sources
+// ship at 4.05:1 / 4.42:1) — it letterboxes on a white mat instead of being
+// cropped and upscaled by `cover`; and every product frame sits on the white
+// image mat. The rendered proof is tests/sleep_plan_layout_check.py's banner
+// pass; the static contract is pinned here. The re-export request itself is
+// docs/asset-request-north-star-2026-08-31.md (owner-supplied data — code
+// must not pretend to fix it).
+section('Wave 3 — banner fallback and white image mats (X4/X5)');
+{
+  ok('the banner tagger exists with the ruled threshold (natural AR > 3)',
+    /function dfTagBannerImage\(img\)/.test(norm) && /var DF_BANNER_AR = 3;/.test(norm)
+    && /img\.naturalWidth \/ img\.naturalHeight > DF_BANNER_AR/.test(norm));
+  ok('one CAPTURE-phase load listener feeds it (load does not bubble; registered before any product markup renders)',
+    /document\.addEventListener\('load', function\(e\) \{\s*dfTagBannerImage\(e\.target\);\s*\}, true\);/.test(norm));
+  const bannerRule = (norm.match(/\.df-img--banner \{([^}]*)\}/) || [null, ''])[1];
+  ok('the fallback rule letterboxes on the white mat and outranks the drawer hero inline style (!important is load-bearing)',
+    /object-fit: contain !important;/.test(bannerRule) && /background: #FFFDF8;/.test(bannerRule));
+  const rule = (sel) => (norm.match(new RegExp('\\n    ' + sel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ' \\{([^}]*)\\}')) || [null, ''])[1];
+  const mats = [
+    ['.noct-toppick-photo', /background: #FFFDF8;/],
+    ['.noct-support-photo', /background: #FFFDF8;/],
+    ['.sleep-system__featured-image', /aspect-ratio: 2 \/ 1;[\s\S]*background: #FFFDF8;/],
+    ['.sleep-system__anchor-image', /aspect-ratio: 3 \/ 2;[\s\S]*background: #FFFDF8;/],
+    ['.sleep-system__alternative img', /background: #FFFDF8;/]
+  ];
+  for (const [sel, re] of mats) ok(`${sel} sits on the white image mat (frame contract kept)`, re.test(rule(sel)), rule(sel).replace(/\s+/g, ' ').slice(0, 70));
+  ok('the Compare head light override is the white mat with a hairline',
+    /body:has\(#resultsScreen\.active\) \.cmp-head-img,\s*body:has\(#hf2Screen\.active\) \.cmp-head-img \{\s*background: #FFFDF8;[^}]*border: 1px solid #D1C5B6;\s*\}/.test(norm));
+  ok('no results product frame keeps the beige mat token',
+    !/\.noct-(toppick|support)-photo \{[^}]*var\(--color-surface-alt\)/.test(norm));
+}
+
 console.log(`\n${failures === 0 ? 'PASS' : 'FAIL'} — ${checks - failures}/${checks} checks passed`);
 process.exit(failures === 0 ? 0 : 1);
