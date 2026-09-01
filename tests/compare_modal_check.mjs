@@ -364,7 +364,9 @@ function tableChecks(out, tag, labels) {
   env.focusOpener();
   env.api.open();
   tableChecks(env.els.compareCols.innerHTML, 'EN',
-    ['Feel', 'Response', 'Tier', 'Key feature', 'Why it helps', 'Your reaction']);
+    // A3 (owner ruling 2026-09-01): the reaction row reports observed trial
+    // evidence to the operator.
+    ['Feel', 'Response', 'Tier', 'Key feature', 'Why it helps', 'Observed reaction']);
   env.api.close();
 }
 {
@@ -372,7 +374,7 @@ function tableChecks(out, tag, labels) {
   es.focusOpener();
   es.api.open();
   tableChecks(es.els.compareCols.innerHTML, 'ES',
-    ['Sensación', 'Respuesta', 'Nivel', 'Característica clave', 'En qué ayuda', 'Tu reacción']);
+    ['Sensación', 'Respuesta', 'Nivel', 'Característica clave', 'En qué ayuda', 'Reacción observada']);
   es.api.close();
 }
 

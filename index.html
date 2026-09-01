@@ -11140,9 +11140,9 @@
   <!-- SCREEN: Results -->
   <div class="screen" id="resultsScreen" role="region" data-audience="specialist">
     <div class="noct-results">
-      <div class="noct-results-eyebrow" id="resultsEyebrow">Your matches</div>
-      <h1 class="noct-results-headline" id="resultsHeadline">Your <span class="accent">strongest matches</span> are ready</h1>
-      <p class="noct-results-subhead" id="resultsSubhead">Tap any match to see why it fits, then ask your sleep specialist to compare your options.</p>
+      <div class="noct-results-eyebrow" id="resultsEyebrow">Specialist guide</div>
+      <h1 class="noct-results-headline" id="resultsHeadline">Recommended <span class="accent">starting points</span></h1>
+      <p class="noct-results-subhead" id="resultsSubhead">Begin with the first match, then compare comfort in person.</p>
       <div class="results-trial-focus" id="resultsTrialFocus"></div>
 
       <div class="noct-tier-tabs" id="tierTabs"></div>
@@ -11350,9 +11350,9 @@
           <div class="drawer-promotion__headline" id="drawerPromotionHeadline"></div>
           <div class="drawer-promotion__detail" id="drawerPromotionDetail"></div>
         </div>
-        <div class="drawer-section-label" id="drawerNoticeLabel">As you try it, notice...</div>
+        <div class="drawer-section-label" id="drawerNoticeLabel">During the trial, notice...</div>
         <div class="drawer-try-prompts" id="drawerTryPrompts"></div>
-        <div class="drawer-section-label" id="drawerReactionLabel">How did it feel?</div>
+        <div class="drawer-section-label" id="drawerReactionLabel">Record the customer’s reaction — ask: “How did this mattress feel?”</div>
         <div class="drawer-reaction-row" id="drawerReactionRow">
           <button type="button" data-reaction="soft" aria-pressed="false" onclick="window.setDrawerReaction('soft')" ontouchend="event.preventDefault();window.setDrawerReaction('soft');">Too Soft</button>
           <button type="button" data-reaction="good" aria-pressed="false" onclick="window.setDrawerReaction('good')" ontouchend="event.preventDefault();window.setDrawerReaction('good');">Good Feel</button>
@@ -16562,13 +16562,17 @@
       // D2: the same answer-derived decorative figure the Sleep Brief renders,
       // at stamp scale. Identical geometry by construction — one renderer, one
       // input — and never animated here.
-      document.getElementById('resultsEyebrow').textContent = es ? 'Tus opciones' : 'Your matches';
+      // A3 audience contract (owner ruling 2026-09-01): Results is a
+      // specialist working surface — the eyebrow names the mode, the title
+      // frames the matches as recommended starting points for the guided
+      // trial, and the support line is one concise operator instruction.
+      document.getElementById('resultsEyebrow').textContent = es ? 'Guía del especialista' : 'Specialist guide';
       document.getElementById('resultsHeadline').innerHTML = es
-        ? 'Tus opciones <span class="accent">más compatibles</span> están listas'
-        : 'Your <span class="accent">strongest matches</span> are ready';
+        ? 'Puntos de partida <span class="accent">recomendados</span>'
+        : 'Recommended <span class="accent">starting points</span>';
       document.getElementById('resultsSubhead').textContent = es
-        ? 'Empieza con la primera opción y compara cómo se sienten las demás. Tu comodidad decide cuál permanece.'
-        : 'Start with the first option, then compare how the others feel. Your comfort decides what stays.';
+        ? 'Comienza con la primera opción y compara la comodidad en persona.'
+        : 'Begin with the first match, then compare comfort in person.';
       document.getElementById('buildSystemBtn').textContent = es ? 'Crea Tu Sistema de Sueño →' : 'Build Your Sleep System →';
       // Slice 6: the control opens the Sleep Plan screen, so it says so —
       // the same label/destination honesty the Sleep Brief CTA adopted
@@ -16602,7 +16606,7 @@
       }
       var es = currentLang === 'es';
       el.innerHTML = '<span class="results-trial-focus__label">'
-        + (es ? 'Enfoque de la prueba' : 'Your trial focus')
+        + (es ? 'Enfoque de la prueba' : 'Trial focus')
         + '</span><span>' + escapeHtml(focus.join(' · ')) + '</span>';
       el.classList.add('is-visible');
     }
@@ -16835,9 +16839,10 @@
           ? count + ' de estas opciones tienen ofertas actuales de ' + storeName() + '.'
           : count + ' of these matches have current ' + storeName() + ' offers.';
       } else {
+        // A3: no "ask your specialist" on the specialist's own surface.
         cue.textContent = currentLang === 'es'
-          ? 'Hay ofertas de ' + storeName() + ' en toda la tienda — pregunta a tu especialista.'
-          : storeName() + ' store-wide offers are available — ask your specialist.';
+          ? 'Hay ofertas de ' + storeName() + ' en toda la tienda.'
+          : storeName() + ' store-wide offers are available.';
       }
       cue.setAttribute('data-label', currentLang === 'es' ? 'OFERTA' : 'OFFER');
       cue.classList.add('is-visible');
@@ -17911,8 +17916,10 @@
       }
       window._resultsRevealInFlight = true;
       var es = currentLang === 'es';
-      elements.title.textContent = es ? 'Abriendo tu comparación' : 'Opening your showroom comparison';
-      elements.subtitle.textContent = es ? 'Tus opciones de colchón están listas para comparar.' : 'Your mattress matches are ready to compare.';
+      // A3: this transition hands the journey to the specialist surface, so
+      // the status card narrates neutrally instead of addressing the customer.
+      elements.title.textContent = es ? 'Abriendo la comparación en tienda' : 'Opening the showroom comparison';
+      elements.subtitle.textContent = es ? 'Las opciones de colchón están listas para comparar.' : 'The mattress matches are ready to compare.';
       openConsultationReveal(elements, true);
       sessionTimeout(function() {
         var profileScreen = document.getElementById('profileScreen');
@@ -23378,7 +23385,8 @@
           // around it are untouched, so the table has no gap and no empty row.
           { key: 'feature', label: _esCmp ? 'Característica clave' : 'Key feature', a: a.feature, b: b.feature, emphasis: true },
           { key: 'benefit', label: _esCmp ? 'En qué ayuda' : 'Why it helps', a: a.benefit, b: b.benefit, emphasis: true },
-          { key: 'reaction', label: _esCmp ? 'Tu reacción' : 'Your reaction', a: a.reaction, b: b.reaction }
+          // A3: the row reports what was OBSERVED in the trial, to the operator.
+          { key: 'reaction', label: _esCmp ? 'Reacción observada' : 'Observed reaction', a: a.reaction, b: b.reaction }
         ];
         // Claim retirement (2026-08-12): retired vs retired has no
         // differentiator content on either side — omit both rows entirely
@@ -23572,7 +23580,7 @@
        aria-modal="true" aria-labelledby="compareModalTitle" data-audience="specialist">
     <div class="compare-modal-inner">
       <div class="compare-modal-header">
-        <div id="compareModalTitle" tabindex="-1" style="font-size:0.65rem; text-transform:uppercase; letter-spacing:2px; color:var(--gold); font-weight:700;" data-i18n="compare.modal_title">Compare your selections</div>
+        <div id="compareModalTitle" tabindex="-1" style="font-size:0.65rem; text-transform:uppercase; letter-spacing:2px; color:var(--gold); font-weight:700;" data-i18n="compare.modal_title">Compare shortlisted mattresses</div>
         <button class="compare-modal-close" id="compareModalClose" onclick="window.closeCompareModal()"
           ontouchend="event.preventDefault();window.closeCompareModal();">&times;</button>
       </div>
@@ -23847,11 +23855,16 @@
         promotionEl.classList.remove('is-visible');
       }
 
-      document.getElementById('drawerNoticeLabel').textContent = currentLang === 'es' ? 'Mientras lo pruebas, nota...' : 'As you try it, notice...';
+      // A3 audience contract: the drawer is the specialist's trial worksheet.
+      // The prompts below stay spoken lines for the customer on the mattress;
+      // the labels name the operator's job (guide, then record).
+      document.getElementById('drawerNoticeLabel').textContent = currentLang === 'es' ? 'Durante la prueba, observa...' : 'During the trial, notice...';
       document.getElementById('drawerTryPrompts').innerHTML = getMattressTrialPrompts(m).map(function(prompt) {
         return '<div class="drawer-try-prompt">' + escapeHtml(prompt) + '</div>';
       }).join('');
-      document.getElementById('drawerReactionLabel').textContent = currentLang === 'es' ? '¿Cómo se sintió?' : 'How did it feel?';
+      document.getElementById('drawerReactionLabel').textContent = currentLang === 'es'
+        ? 'Registra la reacción del cliente — pregunta: “¿Cómo se sintió este colchón?”'
+        : 'Record the customer’s reaction — ask: “How did this mattress feel?”';
       paintDrawerReactions(mattressId);
 
       // opts.contentOnly — relocalise an ALREADY-OPEN drawer without touching

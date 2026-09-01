@@ -1264,8 +1264,9 @@ function makeResultsRevealEnv({ reduced = false, hero = 'pending' } = {}) {
   await new Promise((res) => setTimeout(res, 0));
   ok('a wipe mid-transition wins: the orphaned decode resolution touches nothing', env.calls.close === 0);
 }
-ok('the ES status-card title carries its accent ("Abriendo tu comparación")',
-  resultsRevealSrc.includes("'Abriendo tu comparación'"));
+// A3 (owner ruling 2026-09-01): the transition narrates neutrally.
+ok('the ES status-card title carries its accent ("Abriendo la comparación en tienda")',
+  resultsRevealSrc.includes("'Abriendo la comparación en tienda'"));
 ok('static: the reduced-motion branch, the 400ms cap and the flag drop/restore are all present in the shipped source',
   resultsRevealSrc.includes('dfmReducedMotion()') && resultsRevealSrc.includes('sessionTimeout(lift, 400);')
   && /window\._resultsRevealInFlight = false;\s*window\.showResults\(\);\s*window\._resultsRevealInFlight = true;/.test(resultsRevealSrc));
