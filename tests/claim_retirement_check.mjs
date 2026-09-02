@@ -53,7 +53,7 @@ function grab(re, what) {
 // ---------- extractions ------------------------------------------------------
 section("extraction");
 const DIFFS_FN = grab(/function mattressDifferentiators\(m\) \{[\s\S]*?\r?\n    \}/, "mattressDifferentiators()");
-const DRAWER_BLOCK = grab(/var _diffItems = mattressDifferentiators\(m\);[\s\S]*?\.join\(''\);/, "the drawer differentiator render block");
+const OPEN_DRAWER = grab(/window\.openMattressDrawer = function\(mattressId, orderList, opts\) \{[\s\S]*?\r?\n    \};/, "openMattressDrawer()");
 const SIDEDATA_FN = grab(/function sideData\(data\) \{[\s\S]*?\r?\n      \}/, "sideData()");
 const ROWSHTML_FN = grab(/function rowsHtml\(d1, d2\) \{[\s\S]*?\r?\n      \}/, "rowsHtml()");
 const PRIORITIES_FN = grab(/function buildMattressPriorities\(m\) \{[\s\S]*?\r?\n    \}/, "buildMattressPriorities()");
@@ -81,23 +81,6 @@ function makeDiffs(lang, src = DIFFS_FN) {
     return mattressDifferentiators;`)(lang);
 }
 
-function runDrawer(m, lang, blockSrc = DRAWER_BLOCK) {
-  const els = new Map();
-  const make = (id) => ({ id, hidden: undefined, textContent: "", innerHTML: "" });
-  const doc = { getElementById: (id) => { if (!els.has(id)) els.set(id, make(id)); return els.get(id); } };
-  new Function("document", "m", "currentLang", `"use strict";
-    ${L_FN}
-    ${ESCAPE_FN}
-    ${RESPONSE_FN}
-    ${DIFFTEXT_FN}
-    function topPickReasonText(mm) {
-      if (!mm.topPickReason) return '';
-      return mm.topPickReason[currentLang] || mm.topPickReason.en || '';
-    }
-    ${DIFFS_FN}
-    ${blockSrc}`)(doc, JSON.parse(JSON.stringify(m)), lang);
-  return { label: els.get("drawerDifferentiatorsLabel"), list: els.get("drawerDifferentiators") };
-}
 
 function makeCompare(lang, { sideSrc = SIDEDATA_FN, rowsSrc = ROWSHTML_FN } = {}) {
   return new Function("currentLang", "window", `"use strict";
@@ -147,26 +130,18 @@ for (const lang of ["en", "es"]) {
     authored.length === 2 && authored[0].title.length > 0 && authored[0].detail.length > 0);
 }
 
-// ---------- 2. drawer: total omission, no empty markup ------------------------
+// ---------- 2. drawer: the differentiator component no longer renders --------
+// Product-proof drawer (owner-approved revision 2026-09-02): the drawer shows
+// model-specific distinctions as canonical "What to notice" demonstrations
+// (paintDrawerProductProof); the differentiator pairs keep their Compare
+// consumer only. Total omission is therefore structural for EVERY model: no
+// heading, no container and no fallback string can reach the drawer.
 section("drawer omission");
-for (const lang of ["en", "es"]) {
-  for (const id of RETIRED) {
-    const { label, list } = runDrawer(byId(id), lang);
-    check(`[${lang}] ${id}: heading and container hidden, zero markup`,
-      label.hidden === true && list.hidden === true && list.innerHTML === "");
-  }
-  const { label, list } = runDrawer(byId("g1"), lang);
-  check(`[${lang}] control g1: section visible with authored content`,
-    label.hidden === false && list.hidden === false
-    && list.innerHTML.includes("drawer-differentiator-title")
-    && !list.innerHTML.includes('class="drawer-differentiator-detail"></div>'.replace(">", ">X")));
-}
-{
-  const { list } = runDrawer(byId("g6"), "en");
-  check("retired drawer emits no hardcoded or generic fallback strings",
-    !list.innerHTML.includes("Its defining character")
-    && !list.innerHTML.includes("How it feels different"));
-}
+check("the drawer painter no longer calls mattressDifferentiators or writes a Key features section",
+  !OPEN_DRAWER.includes("mattressDifferentiators(") && !OPEN_DRAWER.includes("drawerDifferentiators")
+  && OPEN_DRAWER.includes("paintDrawerProductProof(m);"));
+check("no drawer element carries the retired differentiator ids",
+  !html.includes('id="drawerDifferentiatorsLabel"') && !html.includes('id="drawerDifferentiators"'));
 
 // ---------- 3. compare semantics ----------------------------------------------
 section("compare modal");
@@ -275,14 +250,12 @@ const MUTATIONS = [
     }
   },
   {
-    name: "drawer hidden-toggle removed (empty section renders)",
+    name: "drawer painter resurrects the differentiator cards",
     run() {
-      const src = DRAWER_BLOCK
-        .replace("_diffLabelEl.hidden = _diffItems.length === 0;", "_diffLabelEl.hidden = false;")
-        .replace("_diffListEl.hidden = _diffItems.length === 0;", "_diffListEl.hidden = false;");
-      if (src === DRAWER_BLOCK) return "find-string missing";
-      const { label } = runDrawer(byId("g6"), "en", src);
-      return label.hidden === true ? "NOT CAUGHT" : "caught";
+      const src = OPEN_DRAWER.replace("paintDrawerProductProof(m);",
+        "paintDrawerProductProof(m); var _d = mattressDifferentiators(m);");
+      if (src === OPEN_DRAWER) return "find-string missing";
+      return src.includes("mattressDifferentiators(") ? "caught" : "NOT CAUGHT";
     }
   },
   {

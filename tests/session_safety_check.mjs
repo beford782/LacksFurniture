@@ -1102,7 +1102,7 @@ const REQUIRED_CONTENT_IDS = [
   "profileReflection", "profileSecondary", "profileCta",
   "resultsHeadline", "tierTabs", "tierDescriptor", "topPickContainer",
   "supportingRow", "resultsTrialFocus",
-  "drawerName", "drawerDifferentiators", "drawerTryPrompts", "drawerPromotionDetail",
+  "drawerName", "drawerProofs", "drawerInside", "drawerTryPrompts", "drawerPromotionDetail",
   "compareCols", "compareTraySlots",
   "hf2PicksList", "hf2AccessoriesList", "hf2BriefWho", "hf2BriefContext",
   "hf2BriefProfile", "hf2SleepSystemSection", "hf2Priorities",
@@ -1126,6 +1126,9 @@ const REQUIRED_TEXT_IDS = [
   // no longer an answer-derived shortlist surface to wipe. The remaining
   // answer-derived drawer regions are unchanged and still required.
   "drawerSystemPromptTitle", "drawerSystemPromptReason",
+  // Product-proof drawer (2026-09-02): the story block names the last model
+  // a customer opened.
+  "drawerStoryHeadline", "drawerStoryBody",
   // Three separate financing regions on purpose: freshness, the sheet's
   // Consider/Clear announcement (new in Slice 4), and the handoff's
   // Not-right-now announcement. Each keeps its last utterance until something

@@ -925,16 +925,19 @@ ok('markup and render live inside the spike fences',
 ok('markup is gate-guarded (declines to empty when motion is inactive)',
   /dfmConstructionMarkup = function\(\) \{\s*if \(!dfmMotionActive\(\)\) return '';/.test(cssNorm));
 ok('drawer hook is guarded and single-sited',
-  html.includes('if (window.dfmConstructionRender) window.dfmConstructionRender();') &&
+  html.includes('if (window.dfmConstructionRender) schematic = window.dfmConstructionRender() === true;') &&
   (html.match(/dfmConstructionRender/g) || []).length === 3);
 ok('the panel is inserted as a SIBLING after the differentiators, never inside them',
   spikeSrc.includes("host.insertAdjacentHTML('afterend', markup);") &&
   !spikeSrc.includes("insertAdjacentHTML('beforeend'"));
 ok('render dedupes BEFORE the gate — no duplicates, and rollback clears leftovers',
   /var existing = document\.getElementById\('dfmConstructionSection'\);\s*if \(existing && existing\.parentNode\) existing\.parentNode\.removeChild\(existing\);\s*var markup = window\.dfmConstructionMarkup\(\);/.test(cssNorm));
-ok('the section carries a visible heading reusing the chip wording only',
-  spikeSrc.includes("es ? 'Demostración de construcción' : 'Construction demonstration'") &&
-  spikeSrc.includes('drawer-section-label'));
+// Product-proof drawer (2026-09-02): the section carries no heading of its
+// own - "See what is inside" is painted with the canonical construction
+// labels by the drawer painter, and the generic schematic follows them.
+ok('the section carries no heading of its own; the drawer painter owns "See what is inside"',
+  !spikeSrc.includes('drawer-section-label') && !spikeSrc.includes('Construction demonstration') &&
+  html.includes("(es ? 'Mira qué hay dentro' : 'See what is inside')"));
 ok('the section is in the authoritative session-wipe inventory',
   /var SESSION_CONTENT_IDS = \[[\s\S]*?'dfmConstructionSection'[\s\S]*?\];/.test(cssNorm));
 ok('the scene has no JS animation machinery (no frames, no timers in its code)',
@@ -964,7 +967,7 @@ ok('lab button labels preserved in both languages',
     .every((l) => spikeSrc.includes("'" + l + "'")));
 ok('new strings carry no quantities and no condition/performance language',
   ['Comfort', 'The part you feel first.', 'Support', 'The deeper structure that holds you up.',
-   'Separate the layers', 'Reassemble the layers', 'Construction demonstration',
+   'Separate the layers', 'Reassemble the layers',
    'Exact materials and construction vary by model.']
     .every((t) => !/\d/.test(t) && !/coil count|inch|cm|percent|%|degree|patent|antimicrobial|snor|apnea|reflux|pain|circulat/i.test(t)));
 ok('the stack is fully generic — markup takes no mattress input and reads no product data',
@@ -1002,7 +1005,7 @@ function makeConsEnv({ hostname, search, reduced = false, lang = 'en', withHost 
   const calls = { frames: 0, timers: 0, inserted: '' };
   if (withHost) {
     const parent = makeEl('drawerScrollParent');
-    const host = makeEl('drawerDifferentiators');
+    const host = makeEl('drawerInside');
     parent.appendChild(host);
     host.insertAdjacentHTML = (pos, htmlStr) => {
       calls.inserted = htmlStr;
@@ -1022,7 +1025,7 @@ function makeConsEnv({ hostname, search, reduced = false, lang = 'en', withHost 
         els.dfmConstructionPanel.appendChild(els.dfmConsToggle);
       }
     };
-    els.drawerDifferentiators = host;
+    els.drawerInside = host;
     els.drawerScrollParent = parent;
   }
   const bodyEl = makeEl('body');
@@ -1057,19 +1060,19 @@ section('construction reveal: gate behavior and honest placement');
   const active = makeConsEnv({ hostname: 'localhost', search: '?motion=1' });
   const m = active.api.consMarkup();
   ok('active markup renders the section, heading, chip at rest, and EN roles',
-    m.includes('dfmConstructionSection') && m.includes('Construction demonstration</div>') &&
+    m.includes('dfmConstructionSection') && !m.includes('drawer-section-label') &&
     m.includes('dfm-cons-chip') && m.includes('<dt><span class="dfm-cons-swatch dfm-cons-fill--comfort" aria-hidden="true"></span>Comfort</dt>') &&
     m.includes('Separate the layers'));
-  ok('render places the section as a sibling AFTER the differentiators, not inside',
+  ok('render places the section as a sibling AFTER the canonical inside labels (#drawerInside), not inside',
     active.api.consRender() === true &&
     active.els.dfmConstructionSection.parentNode === active.els.drawerScrollParent &&
-    active.els.drawerDifferentiators.children.length === 0);
-  ok('the model-specific differentiators container stays byte-correct',
-    active.els.drawerDifferentiators.children.length === 0 &&
-    (active.els.drawerDifferentiators.innerHTML || '') === '');
+    active.els.drawerInside.children.length === 0);
+  ok('the canonical labels host stays byte-correct',
+    active.els.drawerInside.children.length === 0 &&
+    (active.els.drawerInside.innerHTML || '') === '');
   const es = makeConsEnv({ hostname: 'localhost', search: '?motion=1', lang: 'es' });
   ok('Spanish session renders the ES heading and provisional ES role strings',
-    es.api.consMarkup().includes('Demostración de construcción</div>') &&
+    !es.api.consMarkup().includes('drawer-section-label') &&
     es.api.consMarkup().includes('>Confort</dt>') &&
     es.api.consMarkup().includes('La parte que sientes primero.') &&
     es.api.consMarkup().includes('Separar las capas'));
@@ -1098,7 +1101,7 @@ section('construction reveal: dedupe across rerenders, models, and languages');
   es.api.consRender(); // language-change re-render path
   ok('exactly one section exists after a language rerender, carrying ES markup',
     consSections(es).length === 1 &&
-    es.els.dfmConstructionSection._markup.includes('Demostración de construcción'));
+    es.els.dfmConstructionSection._markup.includes('Separar las capas'));
   // wipe simulation: the section is emptied by the SESSION_CONTENT_IDS wipe
   // (membership statically asserted above); the next drawer render dedupes
   // the emptied shell and replaces it fresh

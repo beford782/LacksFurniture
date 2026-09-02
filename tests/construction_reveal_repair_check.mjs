@@ -305,7 +305,7 @@ function makeConsEnv({ hostname = 'localhost', search = '?motion=1', reduced = f
   const calls = { frames: 0, timers: 0, inserted: '' };
   if (withHost) {
     const parent = makeEl('drawerScrollParent');
-    const host = makeEl('drawerDifferentiators');
+    const host = makeEl('drawerInside');
     parent.appendChild(host);
     host.insertAdjacentHTML = (pos, htmlStr) => {
       calls.inserted = htmlStr;
@@ -325,7 +325,7 @@ function makeConsEnv({ hostname = 'localhost', search = '?motion=1', reduced = f
         els.dfmConstructionPanel.appendChild(els.dfmConsToggle);
       }
     };
-    els.drawerDifferentiators = host;
+    els.drawerInside = host;
     els.drawerScrollParent = parent;
   }
   const bodyEl = makeEl('body');
@@ -389,10 +389,13 @@ for (const [markup, roles, tag] of [[markupEn, EN_ROLES, 'EN'], [markupEs, ES_RO
 
 // -------------------------------------------------- wording byte-identity
 section('customer-facing wording — byte-identical to the ruled strings');
-const EXPECTED_EN = 'Construction demonstration' + 'Separate the layers' +
+// Product-proof drawer (2026-09-02): the section label ("See what is inside")
+// is painted by the drawer painter with the canonical construction labels;
+// the generic schematic itself carries no heading.
+const EXPECTED_EN = 'Separate the layers' +
   'Comfort The part you feel first.' + 'Support The deeper structure that holds you up.' +
   'Exact materials and construction vary by model.';
-const EXPECTED_ES = 'Demostración de construcción' + 'Separar las capas' +
+const EXPECTED_ES = 'Separar las capas' +
   'Confort La parte que sientes primero.' + 'Soporte La estructura más profunda que te sostiene.' +
   'Los materiales y la construcción exactos varían según el modelo.';
 ok('EN rendered text is byte-identical to the ruled string set',
@@ -478,7 +481,7 @@ section('lifecycle — fresh collapsed per render; reduced expanded; rollback');
   es.api.consRender(); // language-change re-render path
   ok('language re-render carries ES markup in ONE fresh section',
     es.els.drawerScrollParent.children.filter((c) => c.id === 'dfmConstructionSection').length === 1 &&
-    es.els.dfmConstructionSection._markup.includes('Demostración de construcción'));
+    es.els.dfmConstructionSection._markup.includes('Separar las capas'));
 }
 {
   const reduced = makeConsEnv({ reduced: true });

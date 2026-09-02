@@ -9120,40 +9120,89 @@
       color: var(--cream);
       font: 500 14px/1.45 var(--font-sans);
     }
-    .drawer-differentiators {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px;
-      margin-bottom: 14px;
-    }
-    .drawer-differentiator {
-      padding: 11px 12px;
-      border: 1px solid rgba(255,255,255,0.13);
-      border-radius: 8px;
-      background: rgba(255,255,255,0.045);
-    }
-    .drawer-differentiator-title {
+    /* Product-proof drawer (2026-09-02): the story reads as the model's
+       one-line thesis over a single supporting sentence; the trial prompt is
+       one compact line; the proofs are quiet cards with a restrained glyph;
+       the inside labels are a term/label list under their own section label.
+       The differentiator cards left the drawer (their CSS with them). */
+    .drawer-story { margin: 0 0 16px; }
+    .drawer-story__headline {
       color: var(--cream);
-      font: 750 14px/1.3 var(--font-sans);
+      font: 700 clamp(17px, 2vw, 20px)/1.25 var(--font-serif);
+      letter-spacing: 0.005em;
+      text-wrap: balance;
     }
-    .drawer-differentiator-detail {
-      margin-top: 4px;
+    .drawer-story__body {
+      margin: 6px 0 0;
+      max-width: 62ch;
       color: var(--cream-dim);
-      font: 500 13px/1.4 var(--font-sans);
+      font: 500 14px/1.5 var(--font-sans);
     }
     .drawer-try-prompts {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: 1fr;
       gap: 10px;
-      margin-bottom: 14px;
+      margin-bottom: 16px;
     }
     .drawer-try-prompt {
       padding: 11px 12px;
       border-left: 3px solid var(--gold);
       background: rgba(255,255,255,0.035);
       color: var(--cream);
-      font: 550 13px/1.42 var(--font-sans);
+      font: 550 14px/1.42 var(--font-sans);
     }
+    .drawer-proof-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+      gap: 16px 18px;
+      align-items: start;
+      margin-bottom: 16px;
+    }
+    .drawer-proof-grid[hidden],
+    .drawer-proof-block[hidden],
+    .drawer-inside-block[hidden],
+    .drawer-story[hidden] { display: none; }
+    .drawer-proofs { display: grid; gap: 10px; }
+    .drawer-proof {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px 13px;
+      border: 1px solid rgba(255,255,255,0.13);
+      border-radius: 8px;
+      background: rgba(255,255,255,0.045);
+    }
+    .drawer-proof__icon {
+      flex: 0 0 auto;
+      display: grid;
+      place-items: center;
+      width: 30px;
+      height: 30px;
+      border: 1px solid rgba(212,168,75,0.45);
+      border-radius: 50%;
+      color: var(--gold);
+    }
+    .drawer-proof__icon svg { display: block; width: 16px; height: 16px; }
+    .drawer-proof__body { min-width: 0; }
+    .drawer-proof__title {
+      color: var(--cream);
+      font: 750 14px/1.3 var(--font-sans);
+    }
+    .drawer-proof__cue {
+      margin-top: 3px;
+      color: var(--cream-dim);
+      font: 500 13px/1.45 var(--font-sans);
+    }
+    .drawer-inside-labels {
+      display: grid;
+      gap: 5px;
+      margin: 0 0 4px;
+      color: var(--cream);
+      font: 500 13px/1.45 var(--font-sans);
+    }
+    .drawer-inside-label { display: flex; align-items: baseline; gap: 8px; }
+    .drawer-inside-label dt { flex: 0 0 auto; font-weight: 750; letter-spacing: 0.02em; }
+    .drawer-inside-label dd { margin: 0; color: var(--cream-dim); }
     .drawer-difference {
       margin-bottom: 0.9rem;
       padding: 0.65rem 0.75rem;
@@ -9446,13 +9495,14 @@
       }
       .drawer-scroll { padding:16px 18px 20px; }
       .drawer-mattress-name { font-size:26px; }
+      /* Product-proof drawer: proofs above the inside labels in portrait. */
+      .drawer-proof-grid { grid-template-columns: 1fr; }
     }
     @media (max-width: 560px) {
       .drawer-toolbar { gap:8px; }
       .drawer-back-to-results { max-width:126px; }
       .drawer-hero { height:140px; min-height:140px; }
       .drawer-scroll { padding:14px 16px 18px; }
-      .drawer-differentiators,
       .drawer-try-prompts { grid-template-columns:1fr; }
       .drawer-mattress-name { font-size:24px; }
       /* Synthesis (change 4): the three priority markers stack on phones. */
@@ -9585,7 +9635,9 @@
     }
     body:has(#resultsScreen.active) .drawer-nav-label,
     body:has(#resultsScreen.active) .drawer-mattress-sub,
-    body:has(#resultsScreen.active) .drawer-differentiator-detail,
+    body:has(#resultsScreen.active) .drawer-story__body,
+    body:has(#resultsScreen.active) .drawer-proof__cue,
+    body:has(#resultsScreen.active) .drawer-inside-label dd,
     body:has(#resultsScreen.active) .drawer-pitch-summary,
     body:has(#resultsScreen.active) .drawer-brand-box .noct-handoff-brand-panel__story {
       color: #665D54;
@@ -9603,7 +9655,9 @@
       color: var(--accent-ink);
     }
     body:has(#resultsScreen.active) .drawer-mattress-name,
-    body:has(#resultsScreen.active) .drawer-differentiator-title,
+    body:has(#resultsScreen.active) .drawer-story__headline,
+    body:has(#resultsScreen.active) .drawer-proof__title,
+    body:has(#resultsScreen.active) .drawer-inside-labels,
     body:has(#resultsScreen.active) .drawer-trial-feel,
     body:has(#resultsScreen.active) .drawer-shortlist-fit,
     body:has(#resultsScreen.active) .drawer-try-prompt {
@@ -9622,10 +9676,14 @@
       border-left-color: var(--accent-ink);
       background: rgba(177,45,21,0.055);
     }
-    body:has(#resultsScreen.active) .drawer-differentiator {
+    body:has(#resultsScreen.active) .drawer-proof {
       border-color: #D8CCBD;
       background: #FFFDF8;
       box-shadow: 0 3px 12px rgba(55,40,28,0.04);
+    }
+    body:has(#resultsScreen.active) .drawer-proof__icon {
+      border-color: rgba(154,116,69,0.5);
+      color: #7D5B34;
     }
     body:has(#resultsScreen.active) .drawer-try-prompt {
       border-left-color: #48647A;
@@ -10354,6 +10412,12 @@
       .dfm-cons-region, .dfm-cons-swatch { border-width: 3px; }
       .dfm-cons-fill--comfort { border-style: solid; }
       .dfm-cons-fill--support { border-style: double; }
+    }
+    /* Product-proof drawer: the proof cards and their glyph rings keep a
+       CanvasText boundary when author colours are stripped. */
+    @media (forced-colors: active) {
+      .drawer-proof { border: 1px solid CanvasText; }
+      .drawer-proof__icon { border: 1px solid CanvasText; color: CanvasText; }
     }
     /* Tier-tab selected state under forced colors: the pill's background
        fill is stripped, so the active tab keeps a non-color cue via a
@@ -11486,12 +11550,41 @@
           <div class="drawer-match-badge" id="drawerMatch"></div>
         </div>
         <div class="drawer-trial-feel" id="drawerFeelAnchor"></div>
-        <!-- Product-proof drawer (owner decisions 2026-09-02): the trial is
-             ONE compact spoken prompt. Nothing is recorded - the salesperson
-             is in the room and remembers the customer's reaction - so there
-             is no reaction row, no numbered workflow and no gate. -->
+        <!-- Product-proof drawer (owner decisions 2026-09-02): the premium
+             product story is canonical Lacks content (storyHeadline /
+             storyNarrative in data/mattresses.json, from
+             incoming/lacks_mattresses.json); the block collapses when a
+             model carries none. -->
+        <div class="drawer-story" id="drawerStory" hidden>
+          <div class="drawer-story__headline" id="drawerStoryHeadline"></div>
+          <p class="drawer-story__body" id="drawerStoryBody"></p>
+        </div>
+        <!-- The trial is ONE compact physical prompt: the model's canonical
+             trialCue, falling back to the rule engine's first line. Nothing
+             is recorded - the salesperson is in the room and remembers the
+             customer's reaction - so there is no reaction row, no numbered
+             workflow and no gate. -->
         <div class="drawer-section-label" id="drawerNoticeLabel">Try</div>
         <div class="drawer-try-prompts" id="drawerTryPrompts"></div>
+        <!-- "What to notice" (up to two canonical proofs: a title and a
+             physical demonstration cue, never a claim) beside "See what is
+             inside" (the canonical construction labels, then the generic 5b
+             schematic that the schematic renderer inserts after #drawerInside).
+             Either half collapses when its source content is missing; the
+             grid hides when both are empty. The "Key features" cards left the
+             drawer: the proofs carry its model-specific distinctions as
+             demonstrations (the differentiator pairs keep their Compare
+             consumer). Landscape sets the halves side by side; portrait
+             stacks them. -->
+        <div class="drawer-proof-grid" id="drawerProofGrid" hidden>
+          <div class="drawer-proof-block" id="drawerProofBlock" hidden>
+            <div class="drawer-section-label" id="drawerProofsLabel">What to notice</div>
+            <div class="drawer-proofs" id="drawerProofs"></div>
+          </div>
+          <div class="drawer-inside-block" id="drawerInsideBlock" hidden>
+            <div class="drawer-inside" id="drawerInside"></div>
+          </div>
+        </div>
         <!-- Product actions (owner decisions 4-12, 2026-09-02): a mattress
              can become the finalist immediately. The finalist control is a
              reversible toggle ("Make finalist" / "Finalist ✓" - clearing
@@ -11538,9 +11631,11 @@
              the gate fails closed by OMISSION. Both the heading and the
              container are gone, so no stranded label, empty box or
              accessibility-tree remnant survives. Nothing here is narrowed -
-             the reason-led redesign remains gated and unauthorized. -->
-        <div class="drawer-section-label" id="drawerDifferentiatorsLabel">Key features</div>
-        <div class="drawer-differentiators" id="drawerDifferentiators"></div>
+             the reason-led redesign remains gated and unauthorized.
+             Product-proof drawer (2026-09-02): the "Key features"
+             differentiator cards left the drawer as well - the proofs above
+             carry the model-specific distinctions as demonstrations, and
+             the differentiator pairs keep their Compare consumer. -->
         <!-- Ways to bring it home (Payment Choice) — sleep fit first,
              payment second. Rendered by renderDrawerFinancing(); hidden keeps it
              out of the accessibility tree when financing is disabled. -->
@@ -17973,10 +18068,10 @@
       var chip = es
         ? 'Los materiales y la construcción exactos varían según el modelo.'
         : 'Exact materials and construction vary by model.';
-      // The section is a SIBLING of the model-specific differentiators,
-      // never their child: the generic demonstration must not sit under
-      // the model-specific "Key features" label.
-      var heading = es ? 'Demostración de construcción' : 'Construction demonstration';
+      // The section is a SIBLING of #drawerInside (the canonical
+      // construction labels the drawer painter renders under its own
+      // "See what is inside" label), never their child: the generic
+      // demonstration reads no product data and carries no label of its own.
       // Each region and its role entry wear the SAME fill class — the
       // region-to-role correspondence is one paint in two places, never a
       // number or a hue lookup. Swatches are decoration (aria-hidden); the
@@ -17985,7 +18080,6 @@
       // content leaves the accessibility tree via the CSS visibility rules.
       var keys = ['comfort', 'support'];
       return '<div class="dfm-cons-section" id="dfmConstructionSection">' +
-        '<div class="drawer-section-label">' + heading + '</div>' +
         '<div class="dfm-cons" id="dfmConstructionPanel">' +
         '<button type="button" class="dfm-cons-btn" id="dfmConsToggle" aria-expanded="false" aria-controls="dfmConsRoles">' + openLabel + '</button>' +
         '<div class="dfm-cons-stage" aria-hidden="true">' +
@@ -18005,7 +18099,7 @@
         '</div>';
     };
     window.dfmConstructionRender = function() {
-      var host = document.getElementById('drawerDifferentiators');
+      var host = document.getElementById('drawerInside');
       if (!host) return false;
       // Dedupe FIRST, before the gate: repeated renders, model changes and
       // language changes must never stack panels — and a rollback flip
@@ -23386,7 +23480,7 @@
       'profileReflection', 'profileSecondary', 'profileCta',
       'resultsHeadline', 'tierTabs', 'tierDescriptor', 'topPickContainer',
       'supportingRow', 'resultsTrialFocus',
-      'drawerName', 'drawerDifferentiators', 'dfmConstructionSection', 'drawerTryPrompts', 'drawerPromotionDetail',
+      'drawerName', 'drawerProofs', 'drawerInside', 'dfmConstructionSection', 'drawerTryPrompts', 'drawerPromotionDetail',
       'compareCols', 'compareTraySlots',
       'hf2PicksList', 'hf2AccessoriesList', 'hf2BriefWho', 'hf2BriefContext',
       'hf2StatusThumb', 'hf2StatusRows', 'hf2StatusRoute',
@@ -23427,6 +23521,8 @@
       // Product-proof drawer: the replacement notice and the live region name
       // the mattress a customer chose.
       'drawerFinalistNoteText', 'drawerFinalistLive',
+      // Product-proof drawer: the story block holds the last opened model.
+      'drawerStoryHeadline', 'drawerStoryBody',
       'hf2LeadLine', 'hf2StatusPayment', 'hf2StatusName', 'hf2StatusMeta', 'hf2StatusNext',
       'hf2FinancingStatus', 'financingSheetStatus', 'financingSheetAction',
       'sleepPlanFinancingStatus', 'sleepPlanPrioritiesRecoveryText',
@@ -23492,6 +23588,12 @@
       { id: 'drawerInterestedBtn', remove: ['saved'], attrs: { 'aria-pressed': 'false' } },
       { id: 'drawerFinalistNote', hiddenAttr: true },
       { id: 'drawerFinalistUndoBtn', hiddenAttr: true },
+      // Product-proof drawer: the story and the proof / inside blocks return
+      // to their collapsed rest state.
+      { id: 'drawerStory', hiddenAttr: true },
+      { id: 'drawerProofGrid', hiddenAttr: true },
+      { id: 'drawerProofBlock', hiddenAttr: true },
+      { id: 'drawerInsideBlock', hiddenAttr: true },
       // 0.5: the trial-priorities section returns to hidden on wipe, so even a
       // path that showed hf2 without re-rendering could not expose the prior
       // customer's label over a cleared list.
@@ -24299,6 +24401,107 @@
     window._drawerOrder = []; // ordered list of mattress ids in current tier
     window._drawerCurrentIndex = 0;
 
+    // ---- Product-proof drawer painter (owner decisions 2026-09-02) --------
+    // Canonical Lacks content only (data/mattresses.json <- incoming/
+    // lacks_mattresses.json): storyHeadline / storyNarrative, trialCue,
+    // proofs [{title, cue}] (two at most), construction {comfort, support}.
+    // Every section collapses cleanly when its source is blank. Nothing here
+    // is derived from quiz tags or answers, and the generic 5b schematic
+    // that follows the labels reads no product data at all.
+    function mattressProofs(m) {
+      var list = Array.isArray(m && m.proofs) ? m.proofs : [];
+      return list.map(function(p) {
+        return {
+          title: L(p && p.title),
+          cue: L(p && p.cue),
+          glyph: proofGlyphKey(p && p.cue && p.cue.en)
+        };
+      }).filter(function(p) { return p.title && p.cue; }).slice(0, 2);
+    }
+    function mattressConstructionLabels(m) {
+      var c = (m && m.construction) || {};
+      return { comfort: L(c.comfort), support: L(c.support) };
+    }
+    // A restrained decorative glyph keyed to the cue's opening action (the
+    // EN source line, so both languages carry the same mark). aria-hidden -
+    // the title and the cue are the content; the glyph is rhythm only.
+    function proofGlyphKey(cueEn) {
+      var verb = String(cueEn || '').trim().split(/\s+/)[0].toLowerCase();
+      if (/^(touch|press|place|feel|point|identify)$/.test(verb)) return 'touch';
+      if (/^(lie|settle|remain|stay|try|sit|let)$/.test(verb)) return 'rest';
+      if (/^(roll|move|change|test)$/.test(verb)) return 'move';
+      return 'notice';
+    }
+    var PROOF_GLYPHS = {
+      touch: '<circle cx="8" cy="8" r="2.4"/><path d="M8 1.5v2.6M8 11.9v2.6M1.5 8h2.6M11.9 8h2.6"/>',
+      rest: '<path d="M2 11.5h12"/><path d="M4.2 8.6c1.6-3.2 6-3.2 7.6 0"/>',
+      move: '<path d="M3 4.5l3.5 3.5L3 11.5M9.5 4.5L13 8l-3.5 3.5"/>',
+      notice: '<path d="M1.5 8c2-3.6 11-3.6 13 0c-2 3.6-11 3.6-13 0z"/><circle cx="8" cy="8" r="1.9"/>'
+    };
+    function proofGlyphSvg(key) {
+      return '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" focusable="false" aria-hidden="true">'
+        + (PROOF_GLYPHS[key] || PROOF_GLYPHS.notice) + '</svg>';
+    }
+    function paintDrawerProductProof(m) {
+      var es = currentLang === 'es';
+      // 1. The premium product story sits with the identity block.
+      var storyEl = document.getElementById('drawerStory');
+      var storyHead = L(m.storyHeadline || '');
+      var storyBody = L(m.storyNarrative || '');
+      if (storyEl) {
+        document.getElementById('drawerStoryHeadline').textContent = storyHead;
+        document.getElementById('drawerStoryBody').textContent = storyBody;
+        storyEl.hidden = !(storyHead || storyBody);
+      }
+      // 2. ONE compact physical trial prompt: the canonical cue, else the
+      //    rule engine's model-specific first line. Nothing is recorded.
+      var trialCue = L(m.trialCue || '') || getMattressTrialPrompts(m)[0] || '';
+      document.getElementById('drawerNoticeLabel').textContent = currentLang === 'es' ? 'Probar' : 'Try';
+      document.getElementById('drawerTryPrompts').innerHTML = trialCue
+        ? '<div class="drawer-try-prompt">' + escapeHtml(trialCue) + '</div>'
+        : '';
+      // 3. "What to notice": up to two proofs, each a title and a cue.
+      var proofs = mattressProofs(m);
+      var proofBlock = document.getElementById('drawerProofBlock');
+      document.getElementById('drawerProofsLabel').textContent = es ? 'Qué notar' : 'What to notice';
+      document.getElementById('drawerProofs').innerHTML = proofs.map(function(p) {
+        return '<div class="drawer-proof">'
+          + '<span class="drawer-proof__icon" aria-hidden="true">' + proofGlyphSvg(p.glyph) + '</span>'
+          + '<div class="drawer-proof__body">'
+          + '<div class="drawer-proof__title">' + escapeHtml(p.title) + '</div>'
+          + '<div class="drawer-proof__cue">' + escapeHtml(p.cue) + '</div>'
+          + '</div></div>';
+      }).join('');
+      if (proofBlock) proofBlock.hidden = proofs.length === 0;
+      // 4. "See what is inside": the canonical construction labels at rest
+      //    (only the roles the approved story names), then the generic
+      //    schematic, which the schematic renderer inserts after #drawerInside
+      //    under the motion flag. The block collapses when neither exists.
+      var labels = mattressConstructionLabels(m);
+      var roleTerms = es ? ['Confort', 'Soporte'] : ['Comfort', 'Support'];
+      var rows = [];
+      if (labels.comfort) rows.push([roleTerms[0], labels.comfort]);
+      if (labels.support) rows.push([roleTerms[1], labels.support]);
+      var insideHtml = '<div class="drawer-section-label" id="drawerInsideLabel">'
+        + (es ? 'Mira qué hay dentro' : 'See what is inside') + '</div>';
+      if (rows.length) {
+        insideHtml += '<dl class="drawer-inside-labels" id="drawerInsideLabels">' + rows.map(function(r) {
+          return '<div class="drawer-inside-label"><dt>' + escapeHtml(r[0]) + '</dt><dd>' + escapeHtml(r[1]) + '</dd></div>';
+        }).join('') + '</dl>';
+      }
+      var inside = document.getElementById('drawerInside');
+      var insideBlock = document.getElementById('drawerInsideBlock');
+      var schematic = false;
+      if (inside) {
+        inside.innerHTML = insideHtml;
+        if (window.dfmConstructionRender) schematic = window.dfmConstructionRender() === true;
+      }
+      if (insideBlock) insideBlock.hidden = !(rows.length || schematic);
+      var grid = document.getElementById('drawerProofGrid');
+      if (grid) grid.hidden = !(proofs.length || rows.length || schematic);
+    }
+    // ---- end product-proof painter ----------------------------------------
+
     window.openMattressDrawer = function(mattressId, orderList, opts) {
       var d = window._drawerData && window._drawerData[mattressId];
       // The id is the lookup key this diagnostic is about; the _drawerData map
@@ -24383,27 +24586,14 @@
       // language switch, so removing the writes here closes the restore path
       // too. mattressShortlistFitText() is intentionally retained but now has
       // no rendered consumer; tests/compare_modal_check.mjs pins that.
-      // Claim retirement (2026-08-12): a fully retired model has no
-      // differentiator content — hide the heading AND the container so the
-      // drawer shows no empty section, no gap, no stranded label. Elements
-      // are hidden rather than removed: the construction reveal inserts as a
-      // sibling of #drawerDifferentiators and its anchor must survive.
-      var _diffItems = mattressDifferentiators(m);
-      var _diffLabelEl = document.getElementById('drawerDifferentiatorsLabel');
-      var _diffListEl = document.getElementById('drawerDifferentiators');
-      _diffLabelEl.hidden = _diffItems.length === 0;
-      _diffListEl.hidden = _diffItems.length === 0;
-      // A3.1: a label, not a sentence - the Compare row's own vocabulary.
-      _diffLabelEl.textContent = currentLang === 'es'
-        ? 'Características clave'
-        : 'Key features';
-      _diffListEl.innerHTML = _diffItems.map(function(item) {
-        return '<div class="drawer-differentiator">'
-          + '<div class="drawer-differentiator-title">' + escapeHtml(item.title) + '</div>'
-          + '<div class="drawer-differentiator-detail">' + escapeHtml(item.detail) + '</div>'
-          + '</div>';
-      }).join('');
-      if (window.dfmConstructionRender) window.dfmConstructionRender();
+      // Product-proof drawer (owner decisions 2026-09-02): the story, the
+      // canonical trial cue, the "What to notice" proofs and the "See what is
+      // inside" construction labels are ONE painter fed by canonical data
+      // only (paintDrawerProductProof); it also renders the generic 5b
+      // schematic after the labels. The "Key features" differentiator cards
+      // no longer render here - mattressDifferentiators keeps its Compare
+      // consumer, and the drawer shows distinctions as demonstrations.
+      paintDrawerProductProof(m);
 
       // Ways to bring it home (Payment Choice) — after the fit content.
       renderDrawerFinancing();
@@ -24428,13 +24618,9 @@
         promotionEl.classList.remove('is-visible');
       }
 
-      // A3 audience contract: the drawer is the specialist's trial worksheet.
-      // Product-proof drawer: ONE spoken prompt (the engine's model-specific
-      // first line; the function still produces two). Nothing is recorded.
-      document.getElementById('drawerNoticeLabel').textContent = currentLang === 'es' ? 'Probar' : 'Try';
-      document.getElementById('drawerTryPrompts').innerHTML = getMattressTrialPrompts(m).slice(0, 1).map(function(prompt) {
-        return '<div class="drawer-try-prompt">' + escapeHtml(prompt) + '</div>';
-      }).join('');
+      // A3 audience contract: the drawer is the specialist's trial worksheet;
+      // the single spoken trial prompt is painted by paintDrawerProductProof
+      // above (canonical trialCue, engine fallback). Nothing is recorded.
 
       // opts.contentOnly — relocalise an ALREADY-OPEN drawer without touching
       // the dialog lifecycle. A language switch must not re-run focus entry,
