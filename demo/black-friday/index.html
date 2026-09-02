@@ -8010,6 +8010,19 @@
       color: #857768;
       font: 500 9px/1.35 var(--font-sans);
     }
+    /* Synthesis (owner counterprompt 2026-09-02, change 3): compact goal
+       glyphs - the customer's selected protection GOAL (a spill, airborne
+       particles, airflow, the everyday calendar), never a product feature, an
+       efficacy claim, a construction or a medical outcome. Code-native SVG in
+       currentColor (survives forced colors), aria-hidden, always above the
+       visible label and its governed copy. */
+    .sleep-system__goal-glyph {
+      display: block;
+      width: 22px;
+      height: 22px;
+      margin-bottom: 6px;
+    }
+    .sleep-system__goal-glyph svg { display: block; width: 100%; height: 100%; }
     .sleep-system__protection-goal.is-active {
       border-color: var(--accent-ink);
       background: color-mix(in srgb, var(--store-primary) 7%, #FFFDF8);
@@ -20085,6 +20098,27 @@
       };
     }
 
+    // Synthesis (owner counterprompt 2026-09-02, change 3): the four GENERIC
+    // goal glyphs, one per customer goal - a drop (spills), three particles
+    // (allergens), two airflow waves (cooling), a calendar (everyday care).
+    // They depict the GOAL the customer named, never the protector: no
+    // product feature, efficacy, construction or medical outcome is drawn or
+    // read. currentColor keeps the contrast under forced colors; aria-hidden
+    // because the visible label and its copy carry the meaning.
+    function goalGlyph(id) {
+      var shapes = {
+        spills: '<path d="M10 3.2C10 3.2 5.2 8.6 5.2 12.2a4.8 4.8 0 0 0 9.6 0C14.8 8.6 10 3.2 10 3.2Z"></path>',
+        allergens: '<circle cx="6.2" cy="7.2" r="2.1"></circle><circle cx="13.6" cy="6.2" r="2.1"></circle><circle cx="10.4" cy="13.4" r="2.1"></circle>',
+        cooling: '<path d="M3.2 7.6c2.3-2.6 4.5-2.6 6.8 0s4.5 2.6 6.8 0"></path><path d="M3.2 13c2.3-2.6 4.5-2.6 6.8 0s4.5 2.6 6.8 0"></path>',
+        everyday: '<rect x="3.4" y="5" width="13.2" height="11.6" rx="2"></rect><path d="M3.4 9.2h13.2M7.2 3.2v3.4M12.8 3.2v3.4"></path>'
+      };
+      var shape = shapes[id] || shapes.everyday;
+      return '<span class="sleep-system__goal-glyph" data-goal-glyph="' + id + '" aria-hidden="true">' +
+        '<svg viewBox="0 0 20 20" focusable="false" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">' +
+          shape +
+        '</svg></span>';
+    }
+
     function renderProtectionGuide() {
       var suggested = getSuggestedProtectionGoal();
       var selected = window._sleepSystemState.protectionGoal || suggested;
@@ -20111,14 +20145,23 @@
             escapeHtml(sleepSystemText(protectionRationale(selected, suggested))) +
           '</p></div>' +
         '</div>' +
-        '<div class="sleep-system__protection-goals">' +
+        // Synthesis (owner counterprompt 2026-09-02, change 3): every goal
+        // button carries its compact glyph (goalGlyph) above the visible
+        // label and the governed copy; the group is named for assistive
+        // technology; aria-pressed exposes the selected goal. The selection
+        // and recommendation logic (data-sleep-action / data-protection-goal,
+        // the suggested goal, protectorSupportsGoal) is untouched.
+        '<div class="sleep-system__protection-goals" role="group" aria-label="' +
+          escapeHtml(sleepSystemText({ en: 'Protection goal', es: 'Meta de protección' })) + '">' +
           goals.map(function(goal) {
             return '<button type="button" class="sleep-system__protection-goal' +
               (selected === goal.id ? ' is-active' : '') +
+              '" aria-pressed="' + (selected === goal.id ? 'true' : 'false') +
               '" data-sleep-action="protection-goal" data-protection-goal="' + goal.id + '">' +
                 (suggested === goal.id
                   ? '<span class="sleep-system__goal-badge">' + escapeHtml(sleepSystemText({ en: 'Suggested', es: 'Sugerida' })) + '</span>'
                   : '') +
+                goalGlyph(goal.id) +
                 escapeHtml(sleepSystemText(goal.label)) +
                 '<small>' + escapeHtml(sleepSystemText(goal.copy)) + '</small>' +
               '</button>';

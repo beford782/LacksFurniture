@@ -168,6 +168,9 @@ const SRC = {
   goalLabel: extractFunction('function protectionGoalLabel(goal)'),
   goalReason: extractFunction('function protectionGoalReason(goal)'),
   supportsGoal: extractFunction('function protectorSupportsGoal(item, goal)'),
+  // A3.1 synthesis (owner counterprompt 2026-09-02, change 3): the goal glyph
+  // builder the protection guide calls.
+  goalGlyph: extractFunction('function goalGlyph(id)'),
   protectionGuide: extractFunction('function renderProtectionGuide()'),
   // A3.1 (owner ruling 3, 2026-09-01): the key-keyed specialist reason
   // adapter and its two maps — the featured card's benefit line renders
@@ -243,7 +246,7 @@ function makeEnv({
     SRC.readGroups, SRC.decision, SRC.decisionLabel, SRC.statusKind, SRC.posLabel, SRC.getDemo, SRC.renderDemo,
     SRC.catalogLowProfile, SRC.guidance, SRC.rail, SRC.secondary, SRC.supportGuide,
     SRC.pillowRationale, SRC.protRationale, SRC.fitMark, SRC.pillowFit, SRC.suggestedGoal,
-    SRC.goalLabel, SRC.goalReason, SRC.supportsGoal, SRC.protectionGuide,
+    SRC.goalLabel, SRC.goalReason, SRC.supportsGoal, SRC.goalGlyph, SRC.protectionGuide,
     SRC.reasonPrefix, SRC.reasonNouns, SRC.reasonAdapter, SRC.main, SRC.plan,
     SRC.footer
   ].join('\n');

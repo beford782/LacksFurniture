@@ -690,6 +690,64 @@ section('Pillow fit — three generic fit-response marks, paired with their labe
   ok('negative control: a mark that loses aria-hidden is detected', !/data-fit-response="low" aria-hidden="true"/.test(exposed));
 }
 
+// ============================================ 11. Protection goals - compact goal glyphs (A3.1 synthesis, change 3)
+section('Protection goals — four compact goal glyphs, paired with their labels, depicting the customer\'s goal only');
+{
+  const glyphSrc = extractFunction('function goalGlyph(id)');
+  const guideSrc = extractFunction('function renderProtectionGuide()');
+  ok('protection sources extracted', !!glyphSrc && !!guideSrc);
+  ok('naming + semantics: the glyph is a goal glyph (class, data attribute, builder), decorative (aria-hidden), code-native SVG in currentColor, and reads no product',
+    !!glyphSrc && guideSrc.includes('goalGlyph(goal.id)') && glyphSrc.includes(`data-goal-glyph="' + id + '" aria-hidden="true">`)
+    && glyphSrc.includes('<svg viewBox="0 0 20 20" focusable="false" fill="none" stroke="currentColor"')
+    && !/<img|url\(|primary\.|item\.|matchTags|waterproof|barrier|breathable|protect/i.test(glyphSrc.replace(/\/\/[^\n]*/g, '')));
+  ok('the four glyphs are distinct shapes keyed by the four goal ids',
+    ['spills:', 'allergens:', 'cooling:', 'everyday:'].every((k) => glyphSrc.includes(k))
+    && glyphSrc.includes('<path d="M10 3.2') && (glyphSrc.match(/<circle /g) || []).length === 3
+    && glyphSrc.includes('<rect x="3.4"') && glyphSrc.includes("var shape = shapes[id] || shapes.everyday;"));
+  ok('every goal button keeps its visible label AND the governed copy line beside the glyph (the glyph never replaces text)',
+    guideSrc.includes("{ id: 'spills', label: { en: 'Spills', es: 'Derrames' }, copy: { en: 'Waterproof coverage', es: 'Cobertura impermeable' } }")
+    && guideSrc.includes("{ id: 'everyday', label: { en: 'Everyday care', es: 'Cuidado diario' }, copy: { en: 'Simple daily protection', es: 'Protección diaria sencilla' } }")
+    && guideSrc.includes(`goalGlyph(goal.id) +\n                escapeHtml(sleepSystemText(goal.label)) +\n                '<small>' + escapeHtml(sleepSystemText(goal.copy)) + '</small>' +`));
+  ok('the goal group is named for assistive technology (EN + ES) and every button exposes aria-pressed; the 44px floor holds (72px)',
+    guideSrc.includes("{ en: 'Protection goal', es: 'Meta de protección' }") && guideSrc.includes(`role="group" aria-label="' +`)
+    && guideSrc.includes(`'" aria-pressed="' + (selected === goal.id ? 'true' : 'false') +`)
+    && /\.sleep-system__protection-goal \{\s*min-height: 72px;/.test(norm));
+  ok('the selection contract is untouched: data-sleep-action="protection-goal" + data-protection-goal identity, the suggested-goal badge, the suggested/selected derivation',
+    guideSrc.includes(`data-sleep-action="protection-goal" data-protection-goal="' + goal.id + '"`)
+    && guideSrc.includes("var suggested = getSuggestedProtectionGoal();") && guideSrc.includes("var selected = window._sleepSystemState.protectionGoal || suggested;")
+    && guideSrc.includes(`'<span class="sleep-system__goal-badge">' + escapeHtml(sleepSystemText({ en: 'Suggested', es: 'Sugerida' })) + '</span>'`));
+
+  // EXECUTED: the guide in both languages, suggested vs selected.
+  const esc = (v) => String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  function runGuide(lang, selectedGoal, suggested = 'everyday', src = glyphSrc + '\n' + guideSrc) {
+    const win = { _sleepSystemState: { protectionGoal: selectedGoal } };
+    return new Function('window', 'escapeHtml', 'sleepSystemText', 'sleepSystemGuidance', 'getSuggestedProtectionGoal', 'protectionRationale', 'protectionGoalLabel',
+      '"use strict";' + src + '\nreturn renderProtectionGuide();')(
+      win, esc, (o) => (typeof o === 'string' ? o : (o[lang] || o.en)), () => ['guide line'], () => suggested, () => ({ en: 'rationale', es: 'razón' }), () => ({ en: 'x', es: 'x' }));
+  }
+  const text = (html) => html.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+  const en = runGuide('en', '');
+  const glyphs = [...en.matchAll(/data-goal-glyph="([a-z]+)" aria-hidden="true"/g)].map((m) => m[1]);
+  ok('executed: exactly four glyphs render, in goal order, each aria-hidden', JSON.stringify(glyphs) === '["spills","allergens","cooling","everyday"]');
+  const buttons = [...en.matchAll(/<button type="button" class="sleep-system__protection-goal[^"]*" aria-pressed="(true|false)" data-sleep-action="protection-goal" data-protection-goal="([a-z]+)">([\s\S]*?)<\/button>/g)];
+  ok('executed: every button pairs its own glyph with its visible label and copy; the glyph itself carries no text',
+    buttons.length === 4 && buttons.every((b) => b[3].includes(`data-goal-glyph="${b[2]}"`))
+    && buttons.map((b) => text(b[3]).replace(/^Suggested ?/, '')).join('|') === 'SpillsWaterproof coverage|AllergensBarrier or encasement|CoolingBreathable surface|Everyday careSimple daily protection'
+    && [...en.matchAll(/<span class="sleep-system__goal-glyph"[\s\S]*?<\/span>/g)].every((m) => text(m[0]) === ''));
+  const pressed = (html) => [...html.matchAll(/aria-pressed="(true|false)" data-sleep-action="protection-goal" data-protection-goal="([a-z]+)"/g)].map((m) => m[2] + ':' + m[1]).join(',');
+  ok('executed: with nothing tapped the suggested goal is the pressed one; a tapped goal presses exactly its button; the Suggested badge stays on the suggested goal',
+    pressed(en) === 'spills:false,allergens:false,cooling:false,everyday:true'
+    && pressed(runGuide('en', 'spills', 'cooling')) === 'spills:true,allergens:false,cooling:false,everyday:false'
+    && /data-protection-goal="cooling"><span class="sleep-system__goal-badge">Suggested<\/span><span class="sleep-system__goal-glyph" data-goal-glyph="cooling"/.test(runGuide('en', 'spills', 'cooling')));
+  const shapeOf = (html, id) => (html.match(new RegExp(`data-goal-glyph="${id}" aria-hidden="true"><svg[^>]*>([\\s\\S]*?)</svg>`)) || [])[1];
+  ok('executed: the four glyph shapes differ', new Set(['spills', 'allergens', 'cooling', 'everyday'].map((id) => shapeOf(en, id))).size === 4);
+  ok('executed: ES renders the same four glyphs beside the Spanish labels and the Spanish group name',
+    JSON.stringify([...runGuide('es', '').matchAll(/data-goal-glyph="([a-z]+)"/g)].map((m) => m[1])) === '["spills","allergens","cooling","everyday"]'
+    && runGuide('es', '').includes('aria-label="Meta de protección">') && runGuide('es', '').includes('Derrames<small>Cobertura impermeable</small>'));
+  const exposed = runGuide('en', '', 'everyday', mustReplace(glyphSrc, `aria-hidden="true">`, '>') + '\n' + guideSrc);
+  ok('negative control: a glyph that loses aria-hidden is detected', !/data-goal-glyph="spills" aria-hidden="true"/.test(exposed));
+}
+
 // ------------------------------------------------------------------- summary
 console.log(`\n${failures === 0 ? 'PASS' : 'FAIL'} — ${checks - failures}/${checks} checks passed`);
 process.exit(failures === 0 ? 0 : 1);
