@@ -63,7 +63,51 @@
                      "topPickReason":  {
                                            "en":  "Handcrafted natural-fiber luxury with firm, breathable coil-on-coil support.",
                                            "es":  "Lujo artesanal de fibras naturales con soporte firme de doble resorte que respira."
-                                       }
+                                       },
+                     "storyHeadline":  {
+                                           "en":  "Natural materials, architectural support.",
+                                           "es":  "Materiales naturales, soporte arquitectónico."
+                                       },
+                     "storyNarrative":  {
+                                            "en":  "Merino wool, camel hair, cashmere and graphite latex create a tailored natural-fiber experience over layered coils.",
+                                            "es":  "Lana Merino, pelo de camello, cachemira y látex de grafito crean una experiencia a medida de fibras naturales sobre capas de resortes."
+                                        },
+                     "trialCue":  {
+                                      "en":  "Lie on your back and notice how the surface supports you before it gives.",
+                                      "es":  "Acuéstate boca arriba y nota cómo la superficie te sostiene antes de ceder."
+                                  },
+                     "proofs":  [
+                                    {
+                                        "title":  {
+                                                      "en":  "Natural-fiber comfort",
+                                                      "es":  "Confort de fibras naturales"
+                                                  },
+                                        "cue":  {
+                                                    "en":  "Reveal the wool, camel hair and cashmere comfort materials.",
+                                                    "es":  "Muestra los materiales de confort: lana, pelo de camello y cachemira."
+                                                }
+                                    },
+                                    {
+                                        "title":  {
+                                                      "en":  "Responsive layered support",
+                                                      "es":  "Soporte receptivo en capas"
+                                                  },
+                                        "cue":  {
+                                                    "en":  "Roll once and feel the buoyant response of latex over multiple coil layers.",
+                                                    "es":  "Gira una vez y siente la respuesta elástica del látex sobre varias capas de resortes."
+                                                }
+                                    }
+                                ],
+                     "construction":  {
+                                          "comfort":  {
+                                                          "en":  "Merino wool, camel hair, cashmere and graphite latex",
+                                                          "es":  "Lana Merino, pelo de camello, cachemira y látex de grafito"
+                                                      },
+                                          "support":  {
+                                                          "en":  "Multiple coil layers",
+                                                          "es":  "Varias capas de resortes"
+                                                      }
+                                      }
                  },
                  {
                      "id":  "g2",
@@ -123,7 +167,51 @@
                                                                 "es":  "La lana y la cachemira mantienen las capas suaves más frescas que los pillow-tops de espuma densa."
                                                             }
                                              }
-                                         ]
+                                         ],
+                     "storyHeadline":  {
+                                           "en":  "Natural-fiber indulgence.",
+                                           "es":  "Indulgencia en fibras naturales."
+                                       },
+                     "storyNarrative":  {
+                                            "en":  "A deep plush euro-top turns wool and cashmere into a softer, enveloping expression of handcrafted comfort.",
+                                            "es":  "Un euro-top mullido y profundo convierte la lana y la cachemira en una expresión más suave y envolvente del confort artesanal."
+                                        },
+                     "trialCue":  {
+                                      "en":  "Settle in slowly and let the euro-top take your shoulder and hip.",
+                                      "es":  "Acomódate despacio y deja que el euro-top reciba tu hombro y tu cadera."
+                                  },
+                     "proofs":  [
+                                    {
+                                        "title":  {
+                                                      "en":  "Deep plush euro-top",
+                                                      "es":  "Euro-top mullido y profundo"
+                                                  },
+                                        "cue":  {
+                                                    "en":  "Settle into the generously cushioned surface.",
+                                                    "es":  "Acomódate en la superficie generosamente acolchada."
+                                                }
+                                    },
+                                    {
+                                        "title":  {
+                                                      "en":  "Breathable natural fill",
+                                                      "es":  "Relleno natural transpirable"
+                                                  },
+                                        "cue":  {
+                                                    "en":  "Reveal the wool and cashmere beneath the plush finish.",
+                                                    "es":  "Muestra la lana y la cachemira bajo el acabado mullido."
+                                                }
+                                    }
+                                ],
+                     "construction":  {
+                                          "comfort":  {
+                                                          "en":  "Deep plush euro-top with wool and cashmere",
+                                                          "es":  "Euro-top mullido y profundo con lana y cachemira"
+                                                      },
+                                          "support":  {
+                                                          "en":  "",
+                                                          "es":  ""
+                                                      }
+                                      }
                  },
                  {
                      "id":  "g3",
@@ -187,7 +275,51 @@
                      "topPickReason":  {
                                            "en":  "Massive 4,294-coil count with hand-tufted craftsmanship for firm, lasting alignment.",
                                            "es":  "Enorme cantidad de 4,294 resortes con artesanía copetuda a mano para una alineación firme y duradera."
-                                       }
+                                       },
+                     "storyHeadline":  {
+                                           "en":  "Craft you can see.",
+                                           "es":  "Artesanía a la vista."
+                                       },
+                     "storyNarrative":  {
+                                            "en":  "Hand tufting and 4,294 coils make construction, not decoration, the luxury story.",
+                                            "es":  "El acolchado a mano y 4,294 resortes hacen de la construcción, no de la decoración, la historia de lujo."
+                                        },
+                     "trialCue":  {
+                                      "en":  "Lie across the surface and notice how evenly it holds you.",
+                                      "es":  "Acuéstate a lo ancho y nota lo uniforme que te sostiene."
+                                  },
+                     "proofs":  [
+                                    {
+                                        "title":  {
+                                                      "en":  "Hand-tufted construction",
+                                                      "es":  "Construcción acolchada a mano"
+                                                  },
+                                        "cue":  {
+                                                    "en":  "Point out the visible tufting that holds the comfort layers together.",
+                                                    "es":  "Señala el acolchado visible que mantiene unidas las capas de confort."
+                                                }
+                                    },
+                                    {
+                                        "title":  {
+                                                      "en":  "Fine-grained coil support",
+                                                      "es":  "Soporte de resortes de grano fino"
+                                                  },
+                                        "cue":  {
+                                                    "en":  "Lie across the surface and feel the composed firm response.",
+                                                    "es":  "Acuéstate a lo ancho y siente la respuesta firme y serena."
+                                                }
+                                    }
+                                ],
+                     "construction":  {
+                                          "comfort":  {
+                                                          "en":  "Hand-tufted comfort layers",
+                                                          "es":  "Capas de confort acolchadas a mano"
+                                                      },
+                                          "support":  {
+                                                          "en":  "4,294 coils",
+                                                          "es":  "4,294 resortes"
+                                                      }
+                                      }
                  },
                  {
                      "id":  "g4",
@@ -237,7 +369,51 @@
                                                                 "es":  "Se acomoda lentamente alrededor de los puntos de presión en lugar de empujar como los resortes."
                                                             }
                                              }
-                                         ]
+                                         ],
+                     "storyHeadline":  {
+                                           "en":  "Cool, slow-settling comfort.",
+                                           "es":  "Confort fresco que se asienta despacio."
+                                       },
+                     "storyNarrative":  {
+                                            "en":  "Cooling materials temper the deeply conforming character of soft TEMPUR material.",
+                                            "es":  "Los materiales frescos moderan el carácter profundamente adaptable del material TEMPUR suave."
+                                        },
+                     "trialCue":  {
+                                      "en":  "Stay still for a full minute and feel the material settle around you.",
+                                      "es":  "Quédate quieto un minuto completo y siente cómo el material se asienta a tu alrededor."
+                                  },
+                     "proofs":  [
+                                    {
+                                        "title":  {
+                                                      "en":  "Cooling surface",
+                                                      "es":  "Superficie fresca"
+                                                  },
+                                        "cue":  {
+                                                    "en":  "Touch the cover before lying down.",
+                                                    "es":  "Toca la funda antes de acostarte."
+                                                }
+                                    },
+                                    {
+                                        "title":  {
+                                                      "en":  "Soft TEMPUR contour",
+                                                      "es":  "Contorno suave TEMPUR"
+                                                  },
+                                        "cue":  {
+                                                    "en":  "Remain still long enough to feel the material gradually settle around the body.",
+                                                    "es":  "Quédate quieto lo suficiente para sentir cómo el material se asienta gradualmente alrededor del cuerpo."
+                                                }
+                                    }
+                                ],
+                     "construction":  {
+                                          "comfort":  {
+                                                          "en":  "Cooling cover over soft TEMPUR material",
+                                                          "es":  "Funda fresca sobre material TEMPUR suave"
+                                                      },
+                                          "support":  {
+                                                          "en":  "",
+                                                          "es":  ""
+                                                      }
+                                      }
                  },
                  {
                      "id":  "g5",
@@ -297,7 +473,51 @@
                                                                 "es":  "Agrega ventilación y un toque de respuesta bajo la espuma viscoelástica."
                                                             }
                                              }
-                                         ]
+                                         ],
+                     "storyHeadline":  {
+                                           "en":  "Cooling with responsive lift.",
+                                           "es":  "Frescura con elevación receptiva."
+                                       },
+                     "storyNarrative":  {
+                                            "en":  "The Breeze surface and TEMPUR pressure relief sit over a responsive hybrid foundation.",
+                                            "es":  "La superficie Breeze y el alivio de presión TEMPUR descansan sobre una base híbrida receptiva."
+                                        },
+                     "trialCue":  {
+                                      "en":  "Roll over once and notice how easily you move.",
+                                      "es":  "Gira una vez y nota lo fácil que te mueves."
+                                  },
+                     "proofs":  [
+                                    {
+                                        "title":  {
+                                                      "en":  "Cool-to-touch Breeze cover",
+                                                      "es":  "Funda Breeze fresca al tacto"
+                                                  },
+                                        "cue":  {
+                                                    "en":  "Place a hand on the surface and notice the immediate cool feel.",
+                                                    "es":  "Coloca una mano sobre la superficie y nota la sensación fresca inmediata."
+                                                }
+                                    },
+                                    {
+                                        "title":  {
+                                                      "en":  "Hybrid coil response",
+                                                      "es":  "Respuesta de resortes híbrida"
+                                                  },
+                                        "cue":  {
+                                                    "en":  "Roll or sit up and notice the coil-assisted movement.",
+                                                    "es":  "Gira o siéntate y nota el movimiento asistido por los resortes."
+                                                }
+                                    }
+                                ],
+                     "construction":  {
+                                          "comfort":  {
+                                                          "en":  "Breeze cover over TEMPUR material",
+                                                          "es":  "Funda Breeze sobre material TEMPUR"
+                                                      },
+                                          "support":  {
+                                                          "en":  "Hybrid coil base",
+                                                          "es":  "Base híbrida de resortes"
+                                                      }
+                                      }
                  },
                  {
                      "id":  "g6",
@@ -334,7 +554,51 @@
                                     },
                      "differentiators":  [
 
-                                         ]
+                                         ],
+                     "storyHeadline":  {
+                                           "en":  "Hand-built natural luxury with a plush finish.",
+                                           "es":  "Lujo natural hecho a mano con acabado mullido."
+                                       },
+                     "storyNarrative":  {
+                                            "en":  "The Mayfair\u0027s natural and responsive comfort stack is presented with a deeply cushioned plush feel.",
+                                            "es":  "La capa de confort natural y receptiva del Mayfair se presenta con una sensación mullida y profundamente acolchada."
+                                        },
+                     "trialCue":  {
+                                      "en":  "Settle into the plush surface, then move and feel it recover.",
+                                      "es":  "Acomódate en la superficie mullida, luego muévete y siente cómo se recupera."
+                                  },
+                     "proofs":  [
+                                    {
+                                        "title":  {
+                                                      "en":  "Hand-tufted cooling surface",
+                                                      "es":  "Superficie fresca acolchada a mano"
+                                                  },
+                                        "cue":  {
+                                                    "en":  "Touch the Tencel cover and notice the smooth, cool first contact.",
+                                                    "es":  "Toca la funda de Tencel y nota el primer contacto suave y fresco."
+                                                }
+                                    },
+                                    {
+                                        "title":  {
+                                                      "en":  "Natural responsive comfort",
+                                                      "es":  "Confort natural y receptivo"
+                                                  },
+                                        "cue":  {
+                                                    "en":  "Press and release the wool, latex and microcoil comfort stack to feel its quick recovery.",
+                                                    "es":  "Presiona y suelta la capa de lana, látex y microrresortes para sentir su rápida recuperación."
+                                                }
+                                    }
+                                ],
+                     "construction":  {
+                                          "comfort":  {
+                                                          "en":  "Hand-tufted Tencel cover over wool, latex and microcoils",
+                                                          "es":  "Funda de Tencel acolchada a mano sobre lana, látex y microrresortes"
+                                                      },
+                                          "support":  {
+                                                          "en":  "Zoned coils",
+                                                          "es":  "Resortes por zonas"
+                                                      }
+                                      }
                  },
                  {
                      "id":  "g7",
@@ -371,7 +635,51 @@
                                     },
                      "differentiators":  [
 
-                                         ]
+                                         ],
+                     "storyHeadline":  {
+                                           "en":  "Hand-tufted balance in natural materials.",
+                                           "es":  "Equilibrio acolchado a mano en materiales naturales."
+                                       },
+                     "storyNarrative":  {
+                                            "en":  "Wool, latex, specialty foams, microcoils and zoned coils create a composed medium feel.",
+                                            "es":  "Lana, látex, espumas especiales, microrresortes y resortes por zonas crean una sensación media y serena."
+                                        },
+                     "trialCue":  {
+                                      "en":  "Lie on your side and notice the balanced give and quick recovery.",
+                                      "es":  "Acuéstate de lado y nota la cesión equilibrada y la rápida recuperación."
+                                  },
+                     "proofs":  [
+                                    {
+                                        "title":  {
+                                                      "en":  "Hand-tufted cooling surface",
+                                                      "es":  "Superficie fresca acolchada a mano"
+                                                  },
+                                        "cue":  {
+                                                    "en":  "Touch the Tencel cover and notice the smooth, cool first contact.",
+                                                    "es":  "Toca la funda de Tencel y nota el primer contacto suave y fresco."
+                                                }
+                                    },
+                                    {
+                                        "title":  {
+                                                      "en":  "Natural responsive comfort",
+                                                      "es":  "Confort natural y receptivo"
+                                                  },
+                                        "cue":  {
+                                                    "en":  "Press and release the wool, latex and microcoil comfort stack to feel its quick recovery.",
+                                                    "es":  "Presiona y suelta la capa de lana, látex y microrresortes para sentir su rápida recuperación."
+                                                }
+                                    }
+                                ],
+                     "construction":  {
+                                          "comfort":  {
+                                                          "en":  "Hand-tufted Tencel cover over wool, latex and microcoils",
+                                                          "es":  "Funda de Tencel acolchada a mano sobre lana, látex y microrresortes"
+                                                      },
+                                          "support":  {
+                                                          "en":  "Zoned coils",
+                                                          "es":  "Resortes por zonas"
+                                                      }
+                                      }
                  },
                  {
                      "id":  "g8",
@@ -407,7 +715,51 @@
                                     },
                      "differentiators":  [
 
-                                         ]
+                                         ],
+                     "storyHeadline":  {
+                                           "en":  "Natural luxury with an uncompromising foundation.",
+                                           "es":  "Lujo natural con una base sin concesiones."
+                                       },
+                     "storyNarrative":  {
+                                            "en":  "A hand-tufted cooling surface, wool, latex and microcoils dress an assertively firm support system.",
+                                            "es":  "Una superficie fresca acolchada a mano, lana, látex y microrresortes visten un sistema de soporte decididamente firme."
+                                        },
+                     "trialCue":  {
+                                      "en":  "Lie on your back and feel how little the surface gives.",
+                                      "es":  "Acuéstate boca arriba y siente lo poco que cede la superficie."
+                                  },
+                     "proofs":  [
+                                    {
+                                        "title":  {
+                                                      "en":  "Hand-tufted natural comfort",
+                                                      "es":  "Confort natural acolchado a mano"
+                                                  },
+                                        "cue":  {
+                                                    "en":  "Touch the cooling surface and reveal the wool and latex beneath it.",
+                                                    "es":  "Toca la superficie fresca y muestra la lana y el látex debajo."
+                                                }
+                                    },
+                                    {
+                                        "title":  {
+                                                      "en":  "Reinforced extra-firm support",
+                                                      "es":  "Soporte extra firme reforzado"
+                                                  },
+                                        "cue":  {
+                                                    "en":  "Lie through the center and feel the restrained surface over zoned coils.",
+                                                    "es":  "Acuéstate por el centro y siente la superficie contenida sobre los resortes por zonas."
+                                                }
+                                    }
+                                ],
+                     "construction":  {
+                                          "comfort":  {
+                                                          "en":  "Hand-tufted cooling surface over wool, latex and microcoils",
+                                                          "es":  "Superficie fresca acolchada a mano sobre lana, látex y microrresortes"
+                                                      },
+                                          "support":  {
+                                                          "en":  "Zoned coils, extra-firm",
+                                                          "es":  "Resortes por zonas, extra firmes"
+                                                      }
+                                      }
                  },
                  {
                      "id":  "g9",
@@ -444,7 +796,51 @@
                                     },
                      "differentiators":  [
 
-                                         ]
+                                         ],
+                     "storyHeadline":  {
+                                           "en":  "Copper from surface to comfort core.",
+                                           "es":  "Cobre desde la superficie hasta el núcleo de confort."
+                                       },
+                     "storyNarrative":  {
+                                            "en":  "Copper fabric and copper-infused comfort materials give this cushion-firm hybrid a distinctive material identity.",
+                                            "es":  "La tela de cobre y los materiales de confort infundidos con cobre dan a este híbrido cushion-firm una identidad material distintiva."
+                                        },
+                     "trialCue":  {
+                                      "en":  "Press a hand into the surface, then lie down and feel the cushion over the firm core.",
+                                      "es":  "Presiona la superficie con la mano, luego acuéstate y siente el acolchado sobre el núcleo firme."
+                                  },
+                     "proofs":  [
+                                    {
+                                        "title":  {
+                                                      "en":  "Copper textile",
+                                                      "es":  "Textil de cobre"
+                                                  },
+                                        "cue":  {
+                                                    "en":  "Identify the copper-bearing surface fabric.",
+                                                    "es":  "Identifica la tela superficial con cobre."
+                                                }
+                                    },
+                                    {
+                                        "title":  {
+                                                      "en":  "Copper-infused comfort",
+                                                      "es":  "Confort infundido con cobre"
+                                                  },
+                                        "cue":  {
+                                                    "en":  "Reveal how the copper story continues through the comfort materials.",
+                                                    "es":  "Muestra cómo la historia del cobre continúa en los materiales de confort."
+                                                }
+                                    }
+                                ],
+                     "construction":  {
+                                          "comfort":  {
+                                                          "en":  "Copper fabric and copper-infused comfort materials",
+                                                          "es":  "Tela de cobre y materiales de confort infundidos con cobre"
+                                                      },
+                                          "support":  {
+                                                          "en":  "Hybrid coils",
+                                                          "es":  "Resortes híbridos"
+                                                      }
+                                      }
                  }
              ],
     "silver":  [
@@ -512,7 +908,51 @@
                        "topPickReason":  {
                                              "en":  "Luxury box-top comfort with firm, zoned center-third support.",
                                              "es":  "Confort box-top de lujo con soporte firme zonificado en el centro."
-                                         }
+                                         },
+                       "storyHeadline":  {
+                                             "en":  "A grand box-top with a disciplined center.",
+                                             "es":  "Un gran box-top con un centro disciplinado."
+                                         },
+                       "storyNarrative":  {
+                                              "en":  "The tall tailored profile delivers surface refinement while center zoning supplies the underlying structure.",
+                                              "es":  "El perfil alto y a medida ofrece refinamiento en la superficie mientras las zonas centrales aportan la estructura de fondo."
+                                          },
+                       "trialCue":  {
+                                        "en":  "Lie through the center and feel the firm support under the tailored top.",
+                                        "es":  "Acuéstate por el centro y siente el soporte firme bajo la capa superior a medida."
+                                    },
+                       "proofs":  [
+                                      {
+                                          "title":  {
+                                                        "en":  "Tailored box-top",
+                                                        "es":  "Box-top a medida"
+                                                    },
+                                          "cue":  {
+                                                      "en":  "Notice the finished comfort profile before settling into the firm core.",
+                                                      "es":  "Nota el perfil de confort terminado antes de asentarte en el núcleo firme."
+                                                  }
+                                      },
+                                      {
+                                          "title":  {
+                                                        "en":  "Marvelous Middle zoning",
+                                                        "es":  "Zonas Marvelous Middle"
+                                                    },
+                                          "cue":  {
+                                                      "en":  "Lie through the center and feel the reinforced support beneath the hips.",
+                                                      "es":  "Acuéstate por el centro y siente el soporte reforzado bajo las caderas."
+                                                  }
+                                      }
+                                  ],
+                       "construction":  {
+                                            "comfort":  {
+                                                            "en":  "Tall tailored box-top",
+                                                            "es":  "Box-top alto y a medida"
+                                                        },
+                                            "support":  {
+                                                            "en":  "Marvelous Middle center zoning",
+                                                            "es":  "Zonas centrales Marvelous Middle"
+                                                        }
+                                        }
                    },
                    {
                        "id":  "s2",
@@ -577,7 +1017,51 @@
                        "topPickReason":  {
                                              "en":  "The firmest Platinum — extra-firm zoned support in a luxury build.",
                                              "es":  "El Platinum más firme — soporte extra firme zonificado en construcción de lujo."
-                                         }
+                                         },
+                       "storyHeadline":  {
+                                             "en":  "Extra-firm support dressed in rich layers.",
+                                             "es":  "Soporte extra firme vestido con capas ricas."
+                                         },
+                       "storyNarrative":  {
+                                              "en":  "Natural and temperature-conscious comfort layers add refinement without softening the mattress\u0027s decisive stance.",
+                                              "es":  "Las capas de confort naturales y atentas a la temperatura añaden refinamiento sin suavizar el carácter decidido del colchón."
+                                          },
+                       "trialCue":  {
+                                        "en":  "Lie on your back and notice the limited give above the support.",
+                                        "es":  "Acuéstate boca arriba y nota lo poco que cede sobre el soporte."
+                                    },
+                       "proofs":  [
+                                      {
+                                          "title":  {
+                                                        "en":  "Rich comfort stack",
+                                                        "es":  "Capa de confort rica"
+                                                    },
+                                          "cue":  {
+                                                      "en":  "Reveal the natural and cooling materials above the support system.",
+                                                      "es":  "Muestra los materiales naturales y frescos sobre el sistema de soporte."
+                                                  }
+                                      },
+                                      {
+                                          "title":  {
+                                                        "en":  "Reinforced center and edge",
+                                                        "es":  "Centro y borde reforzados"
+                                                    },
+                                          "cue":  {
+                                                      "en":  "Test the center and perimeter while noticing the limited surface give.",
+                                                      "es":  "Prueba el centro y el perímetro mientras notas la cesión limitada de la superficie."
+                                                  }
+                                      }
+                                  ],
+                       "construction":  {
+                                            "comfort":  {
+                                                            "en":  "Natural and cooling comfort layers",
+                                                            "es":  "Capas de confort naturales y frescas"
+                                                        },
+                                            "support":  {
+                                                            "en":  "Reinforced center and edge",
+                                                            "es":  "Centro y borde reforzados"
+                                                        }
+                                        }
                    },
                    {
                        "id":  "s3",
@@ -615,7 +1099,51 @@
                                       },
                        "differentiators":  [
 
-                                           ]
+                                           ],
+                       "storyHeadline":  {
+                                             "en":  "Plush above, structured beneath.",
+                                             "es":  "Mullido arriba, estructurado debajo."
+                                         },
+                       "storyNarrative":  {
+                                              "en":  "Cooling comfort layers create the welcome while zoned wrapped coils and edge encasement provide hidden discipline.",
+                                              "es":  "Las capas de confort frescas dan la bienvenida mientras los resortes envueltos por zonas y el borde reforzado aportan una disciplina oculta."
+                                          },
+                       "trialCue":  {
+                                        "en":  "Lie on your side and let the shoulder settle before you judge the support.",
+                                        "es":  "Acuéstate de lado y deja que el hombro se asiente antes de juzgar el soporte."
+                                    },
+                       "proofs":  [
+                                      {
+                                          "title":  {
+                                                        "en":  "Plush box-top comfort",
+                                                        "es":  "Confort de box-top mullido"
+                                                    },
+                                          "cue":  {
+                                                      "en":  "Try a normal side-sleeping position and let the shoulder settle.",
+                                                      "es":  "Prueba una posición normal de lado y deja que el hombro se asiente."
+                                                  }
+                                      },
+                                      {
+                                          "title":  {
+                                                        "en":  "Zoned edge-to-edge structure",
+                                                        "es":  "Estructura por zonas de borde a borde"
+                                                    },
+                                          "cue":  {
+                                                      "en":  "Move toward the perimeter and feel the supported edge.",
+                                                      "es":  "Muévete hacia el perímetro y siente el borde con soporte."
+                                                  }
+                                      }
+                                  ],
+                       "construction":  {
+                                            "comfort":  {
+                                                            "en":  "Cooling comfort layers, plush box-top",
+                                                            "es":  "Capas de confort frescas, box-top mullido"
+                                                        },
+                                            "support":  {
+                                                            "en":  "Zoned wrapped coils with edge encasement",
+                                                            "es":  "Resortes envueltos por zonas con borde reforzado"
+                                                        }
+                                        }
                    },
                    {
                        "id":  "s4",
@@ -679,7 +1207,51 @@
                        "topPickReason":  {
                                              "en":  "Firm zoned support in a box-top build with lasting edge-to-edge comfort.",
                                              "es":  "Soporte firme zonificado en construcción box-top con confort de borde a borde."
-                                         }
+                                         },
+                       "storyHeadline":  {
+                                             "en":  "Firm, finished, edge-to-edge.",
+                                             "es":  "Firme, terminado, de borde a borde."
+                                         },
+                       "storyNarrative":  {
+                                              "en":  "A tailored box-top takes the severity out of firm support while the encased perimeter preserves the surface.",
+                                              "es":  "Un box-top a medida quita la severidad al soporte firme mientras el perímetro reforzado conserva la superficie."
+                                          },
+                       "trialCue":  {
+                                        "en":  "Lie down, then sit near the edge and notice the supported surface.",
+                                        "es":  "Acuéstate y luego siéntate cerca del borde y nota la superficie con soporte."
+                                    },
+                       "proofs":  [
+                                      {
+                                          "title":  {
+                                                        "en":  "Finished firm surface",
+                                                        "es":  "Superficie firme y terminada"
+                                                    },
+                                          "cue":  {
+                                                      "en":  "Feel the tailored top before reaching the firmer support underneath.",
+                                                      "es":  "Siente la capa superior a medida antes de llegar al soporte más firme debajo."
+                                                  }
+                                      },
+                                      {
+                                          "title":  {
+                                                        "en":  "Supported perimeter",
+                                                        "es":  "Perímetro con soporte"
+                                                    },
+                                          "cue":  {
+                                                      "en":  "Sit or lie near the edge and notice the usable surface.",
+                                                      "es":  "Siéntate o acuéstate cerca del borde y nota la superficie aprovechable."
+                                                  }
+                                      }
+                                  ],
+                       "construction":  {
+                                            "comfort":  {
+                                                            "en":  "Tailored box-top",
+                                                            "es":  "Box-top a medida"
+                                                        },
+                                            "support":  {
+                                                            "en":  "Firm support with an encased perimeter",
+                                                            "es":  "Soporte firme con perímetro reforzado"
+                                                        }
+                                        }
                    },
                    {
                        "id":  "s5",
@@ -745,7 +1317,51 @@
                        "topPickReason":  {
                                              "en":  "Firm hybrid support topped with cooling gel memory foam.",
                                              "es":  "Soporte híbrido firme coronado con espuma viscoelástica de gel fresco."
-                                         }
+                                         },
+                       "storyHeadline":  {
+                                             "en":  "Cool comfort over a decisive core.",
+                                             "es":  "Confort fresco sobre un núcleo decidido."
+                                         },
+                       "storyNarrative":  {
+                                              "en":  "The Summit construction presents its cooling comfort layers over a firm hybrid foundation.",
+                                              "es":  "La construcción Summit presenta sus capas de confort frescas sobre una base híbrida firme."
+                                          },
+                       "trialCue":  {
+                                        "en":  "Lie on your back and feel for the stable firm support beneath the comfort layer.",
+                                        "es":  "Acuéstate boca arriba y busca el soporte firme y estable bajo la capa de confort."
+                                    },
+                       "proofs":  [
+                                      {
+                                          "title":  {
+                                                        "en":  "Cooling comfort layers",
+                                                        "es":  "Capas de confort frescas"
+                                                    },
+                                          "cue":  {
+                                                      "en":  "Touch the cooling cover, then settle into the breathable comfort foam beneath it.",
+                                                      "es":  "Toca la funda fresca y luego acomódate en la espuma de confort transpirable debajo."
+                                                  }
+                                      },
+                                      {
+                                          "title":  {
+                                                        "en":  "Pocketed zoned support",
+                                                        "es":  "Soporte de resortes por zonas"
+                                                    },
+                                          "cue":  {
+                                                      "en":  "Change positions and feel the coil system respond beneath the surface.",
+                                                      "es":  "Cambia de posición y siente cómo responde el sistema de resortes bajo la superficie."
+                                                  }
+                                      }
+                                  ],
+                       "construction":  {
+                                            "comfort":  {
+                                                            "en":  "Cooling cover over breathable comfort foam",
+                                                            "es":  "Funda fresca sobre espuma de confort transpirable"
+                                                        },
+                                            "support":  {
+                                                            "en":  "Pocketed zoned coils",
+                                                            "es":  "Resortes ensacados por zonas"
+                                                        }
+                                        }
                    },
                    {
                        "id":  "s6",
@@ -793,7 +1409,51 @@
                                                                   "es":  "La sensación en la que la mayoría de las parejas están de acuerdo — equilibrio entre suavidad y soporte."
                                                               }
                                                }
-                                           ]
+                                           ],
+                       "storyHeadline":  {
+                                             "en":  "Temperature-conscious balance.",
+                                             "es":  "Equilibrio atento a la temperatura."
+                                         },
+                       "storyNarrative":  {
+                                              "en":  "Cooling comfort and pocketed support create an approachable medium hybrid.",
+                                              "es":  "El confort fresco y el soporte ensacado crean un híbrido medio y accesible."
+                                          },
+                       "trialCue":  {
+                                        "en":  "Change positions once and notice the balanced give and easy movement.",
+                                        "es":  "Cambia de posición una vez y nota la cesión equilibrada y el movimiento fácil."
+                                    },
+                       "proofs":  [
+                                      {
+                                          "title":  {
+                                                        "en":  "Cooling comfort layers",
+                                                        "es":  "Capas de confort frescas"
+                                                    },
+                                          "cue":  {
+                                                      "en":  "Touch the cooling cover, then settle into the breathable comfort foam beneath it.",
+                                                      "es":  "Toca la funda fresca y luego acomódate en la espuma de confort transpirable debajo."
+                                                  }
+                                      },
+                                      {
+                                          "title":  {
+                                                        "en":  "Pocketed zoned support",
+                                                        "es":  "Soporte de resortes por zonas"
+                                                    },
+                                          "cue":  {
+                                                      "en":  "Change positions and feel the coil system respond beneath the surface.",
+                                                      "es":  "Cambia de posición y siente cómo responde el sistema de resortes bajo la superficie."
+                                                  }
+                                      }
+                                  ],
+                       "construction":  {
+                                            "comfort":  {
+                                                            "en":  "Cooling cover over breathable comfort foam",
+                                                            "es":  "Funda fresca sobre espuma de confort transpirable"
+                                                        },
+                                            "support":  {
+                                                            "en":  "Pocketed zoned coils",
+                                                            "es":  "Resortes ensacados por zonas"
+                                                        }
+                                        }
                    },
                    {
                        "id":  "s7",
@@ -841,7 +1501,51 @@
                                                                   "es":  ""
                                                               }
                                                }
-                                           ]
+                                           ],
+                       "storyHeadline":  {
+                                             "en":  "Cooling comfort with a softer welcome.",
+                                             "es":  "Confort fresco con una bienvenida más suave."
+                                         },
+                       "storyNarrative":  {
+                                              "en":  "The Summit construction is expressed through a plush surface while retaining its pocketed support beneath.",
+                                              "es":  "La construcción Summit se expresa a través de una superficie mullida mientras conserva su soporte ensacado debajo."
+                                          },
+                       "trialCue":  {
+                                        "en":  "Settle into the plush comfort, then change position and feel the support respond.",
+                                        "es":  "Acomódate en el confort mullido, luego cambia de posición y siente cómo responde el soporte."
+                                    },
+                       "proofs":  [
+                                      {
+                                          "title":  {
+                                                        "en":  "Cooling comfort layers",
+                                                        "es":  "Capas de confort frescas"
+                                                    },
+                                          "cue":  {
+                                                      "en":  "Touch the cooling cover, then settle into the breathable comfort foam beneath it.",
+                                                      "es":  "Toca la funda fresca y luego acomódate en la espuma de confort transpirable debajo."
+                                                  }
+                                      },
+                                      {
+                                          "title":  {
+                                                        "en":  "Pocketed zoned support",
+                                                        "es":  "Soporte de resortes por zonas"
+                                                    },
+                                          "cue":  {
+                                                      "en":  "Change positions and feel the coil system respond beneath the surface.",
+                                                      "es":  "Cambia de posición y siente cómo responde el sistema de resortes bajo la superficie."
+                                                  }
+                                      }
+                                  ],
+                       "construction":  {
+                                            "comfort":  {
+                                                            "en":  "Cooling cover over breathable comfort foam",
+                                                            "es":  "Funda fresca sobre espuma de confort transpirable"
+                                                        },
+                                            "support":  {
+                                                            "en":  "Pocketed zoned coils",
+                                                            "es":  "Resortes ensacados por zonas"
+                                                        }
+                                        }
                    },
                    {
                        "id":  "s8",
@@ -904,7 +1608,51 @@
                        "topPickReason":  {
                                              "en":  "Zoned firm support with a euro-top finish — firm without feeling bare.",
                                              "es":  "Soporte firme zonificado con acabado euro-top — firme sin sentirse desnudo."
-                                         }
+                                         },
+                       "storyHeadline":  {
+                                             "en":  "A cushioned finish over purposeful support.",
+                                             "es":  "Un acabado acolchado sobre un soporte con propósito."
+                                         },
+                       "storyNarrative":  {
+                                              "en":  "The euro-top softens first contact while center-third zoning maintains the mattress\u0027s firm identity.",
+                                              "es":  "El euro-top suaviza el primer contacto mientras las zonas del tercio central mantienen la identidad firme del colchón."
+                                          },
+                       "trialCue":  {
+                                        "en":  "Feel the cushion first, then lie through the center for the firmer structure.",
+                                        "es":  "Siente primero el acolchado y luego acuéstate por el centro para la estructura más firme."
+                                    },
+                       "proofs":  [
+                                      {
+                                          "title":  {
+                                                        "en":  "Cushioned euro-top",
+                                                        "es":  "Euro-top acolchado"
+                                                    },
+                                          "cue":  {
+                                                      "en":  "Feel the initial cushion at the surface.",
+                                                      "es":  "Siente el acolchado inicial en la superficie."
+                                                  }
+                                      },
+                                      {
+                                          "title":  {
+                                                        "en":  "Center-third support",
+                                                        "es":  "Soporte del tercio central"
+                                                    },
+                                          "cue":  {
+                                                      "en":  "Lie through the center and find the firmer structure underneath.",
+                                                      "es":  "Acuéstate por el centro y encuentra la estructura más firme debajo."
+                                                  }
+                                      }
+                                  ],
+                       "construction":  {
+                                            "comfort":  {
+                                                            "en":  "Euro-top",
+                                                            "es":  "Euro-top"
+                                                        },
+                                            "support":  {
+                                                            "en":  "Center-third zoning",
+                                                            "es":  "Zonas del tercio central"
+                                                        }
+                                        }
                    },
                    {
                        "id":  "s9",
@@ -964,7 +1712,51 @@
                                                                   "es":  "Las capas de espuma se contornean sin el hundimiento profundo de las camas viscoelásticas."
                                                               }
                                                }
-                                           ]
+                                           ],
+                       "storyHeadline":  {
+                                             "en":  "Quiet comfort for two.",
+                                             "es":  "Confort tranquilo para dos."
+                                         },
+                       "storyNarrative":  {
+                                              "en":  "Conforming foam and independently wrapped coils create a calm medium surface designed to limit transferred movement.",
+                                              "es":  "La espuma adaptable y los resortes envueltos de forma independiente crean una superficie media y serena diseñada para limitar el movimiento transferido."
+                                          },
+                       "trialCue":  {
+                                        "en":  "Lie on your side, then ask your partner to move and notice what reaches you.",
+                                        "es":  "Acuéstate de lado, luego pide a tu pareja que se mueva y nota lo que llega hasta ti."
+                                    },
+                       "proofs":  [
+                                      {
+                                          "title":  {
+                                                        "en":  "Controlled contour",
+                                                        "es":  "Contorno controlado"
+                                                    },
+                                          "cue":  {
+                                                      "en":  "Settle into the comfort layers without a deep foam sink.",
+                                                      "es":  "Acomódate en las capas de confort sin un hundimiento profundo en la espuma."
+                                                  }
+                                      },
+                                      {
+                                          "title":  {
+                                                        "en":  "Independently wrapped coils",
+                                                        "es":  "Resortes envueltos de forma independiente"
+                                                    },
+                                          "cue":  {
+                                                      "en":  "Let one person change position while the other remains still.",
+                                                      "es":  "Deja que una persona cambie de posición mientras la otra permanece quieta."
+                                                  }
+                                      }
+                                  ],
+                       "construction":  {
+                                            "comfort":  {
+                                                            "en":  "Conforming foam",
+                                                            "es":  "Espuma adaptable"
+                                                        },
+                                            "support":  {
+                                                            "en":  "Independently wrapped coils",
+                                                            "es":  "Resortes envueltos de forma independiente"
+                                                        }
+                                        }
                    },
                    {
                        "id":  "s10",
@@ -1024,7 +1816,51 @@
                                                                   "es":  "Resortes centrales más gruesos protegen la firmeza de las marcas corporales tempranas."
                                                               }
                                                }
-                                           ]
+                                           ],
+                       "storyHeadline":  {
+                                             "en":  "Structured support with a cooling surface.",
+                                             "es":  "Soporte estructurado con superficie fresca."
+                                         },
+                       "storyNarrative":  {
+                                              "en":  "Cooling comfort materials sit above an extra-firm tight-top with reinforced center and perimeter support.",
+                                              "es":  "Los materiales de confort frescos descansan sobre un tight-top extra firme con soporte reforzado en el centro y el perímetro."
+                                          },
+                       "trialCue":  {
+                                        "en":  "Touch the cover, then lie on your back and feel the limited give.",
+                                        "es":  "Toca la funda, luego acuéstate boca arriba y siente la cesión limitada."
+                                    },
+                       "proofs":  [
+                                      {
+                                          "title":  {
+                                                        "en":  "Cooling surface",
+                                                        "es":  "Superficie fresca"
+                                                    },
+                                          "cue":  {
+                                                      "en":  "Touch the cover before lying down.",
+                                                      "es":  "Toca la funda antes de acostarte."
+                                                  }
+                                      },
+                                      {
+                                          "title":  {
+                                                        "en":  "Reinforced structure",
+                                                        "es":  "Estructura reforzada"
+                                                    },
+                                          "cue":  {
+                                                      "en":  "Test the center and edge while noticing the limited surface give.",
+                                                      "es":  "Prueba el centro y el borde mientras notas la cesión limitada de la superficie."
+                                                  }
+                                      }
+                                  ],
+                       "construction":  {
+                                            "comfort":  {
+                                                            "en":  "Cooling comfort materials, tight-top",
+                                                            "es":  "Materiales de confort frescos, tight-top"
+                                                        },
+                                            "support":  {
+                                                            "en":  "Reinforced center and perimeter",
+                                                            "es":  "Centro y perímetro reforzados"
+                                                        }
+                                        }
                    }
                ],
     "bronze":  [
@@ -1084,7 +1920,51 @@
                                                                   "es":  "Calidad Restonic sin el precio Platinum."
                                                               }
                                                }
-                                           ]
+                                           ],
+                       "storyHeadline":  {
+                                             "en":  "A cool, generous welcome.",
+                                             "es":  "Una bienvenida fresca y generosa."
+                                         },
+                       "storyNarrative":  {
+                                              "en":  "A cool-to-touch surface and plush memory foam create the first impression, with pocketed zoned coils underneath.",
+                                              "es":  "Una superficie fresca al tacto y espuma viscoelástica mullida crean la primera impresión, con resortes ensacados por zonas debajo."
+                                          },
+                       "trialCue":  {
+                                        "en":  "Touch the cover, then lie on your side and let the shoulder settle.",
+                                        "es":  "Toca la funda, luego acuéstate de lado y deja que el hombro se asiente."
+                                    },
+                       "proofs":  [
+                                      {
+                                          "title":  {
+                                                        "en":  "Cool plush surface",
+                                                        "es":  "Superficie mullida y fresca"
+                                                    },
+                                          "cue":  {
+                                                      "en":  "Touch the cover, then let the shoulder and hip settle into the smooth comfort layer.",
+                                                      "es":  "Toca la funda y luego deja que el hombro y la cadera se asienten en la suave capa de confort."
+                                                  }
+                                      },
+                                      {
+                                          "title":  {
+                                                        "en":  "Zoned pocketed support",
+                                                        "es":  "Soporte ensacado por zonas"
+                                                    },
+                                          "cue":  {
+                                                      "en":  "Change positions and feel the support beneath the plush surface.",
+                                                      "es":  "Cambia de posición y siente el soporte bajo la superficie mullida."
+                                                  }
+                                      }
+                                  ],
+                       "construction":  {
+                                            "comfort":  {
+                                                            "en":  "Cool-to-touch surface over plush memory foam",
+                                                            "es":  "Superficie fresca al tacto sobre espuma viscoelástica mullida"
+                                                        },
+                                            "support":  {
+                                                            "en":  "Pocketed zoned coils",
+                                                            "es":  "Resortes ensacados por zonas"
+                                                        }
+                                        }
                    },
                    {
                        "id":  "b2",
@@ -1148,7 +2028,51 @@
                        "topPickReason":  {
                                              "en":  "Dependable firm alignment at an everyday price.",
                                              "es":  "Alineación firme confiable a precio cotidiano."
-                                         }
+                                         },
+                       "storyHeadline":  {
+                                             "en":  "Clean firmness with thoughtful engineering.",
+                                             "es":  "Firmeza limpia con ingeniería cuidada."
+                                         },
+                       "storyNarrative":  {
+                                              "en":  "A cooling surface and pocketed center-zoned coils elevate a straightforward firm mattress.",
+                                              "es":  "Una superficie fresca y resortes ensacados con zona central elevan un colchón firme y directo."
+                                          },
+                       "trialCue":  {
+                                        "en":  "Lie through the center and notice the restrained surface.",
+                                        "es":  "Acuéstate por el centro y nota la superficie contenida."
+                                    },
+                       "proofs":  [
+                                      {
+                                          "title":  {
+                                                        "en":  "Cooling first contact",
+                                                        "es":  "Primer contacto fresco"
+                                                    },
+                                          "cue":  {
+                                                      "en":  "Touch the cover before lying down.",
+                                                      "es":  "Toca la funda antes de acostarte."
+                                                  }
+                                      },
+                                      {
+                                          "title":  {
+                                                        "en":  "Center-zoned firm support",
+                                                        "es":  "Soporte firme con zona central"
+                                                    },
+                                          "cue":  {
+                                                      "en":  "Lie through the center and notice the restrained surface.",
+                                                      "es":  "Acuéstate por el centro y nota la superficie contenida."
+                                                  }
+                                      }
+                                  ],
+                       "construction":  {
+                                            "comfort":  {
+                                                            "en":  "Cooling surface",
+                                                            "es":  "Superficie fresca"
+                                                        },
+                                            "support":  {
+                                                            "en":  "Pocketed center-zoned coils",
+                                                            "es":  "Resortes ensacados con zona central"
+                                                        }
+                                        }
                    },
                    {
                        "id":  "b3",
@@ -1212,7 +2136,51 @@
                        "topPickReason":  {
                                              "en":  "A family-company euro-top hybrid built to take years of real life.",
                                              "es":  "Un híbrido euro-top de empresa familiar hecho para aguantar años de vida real."
-                                         }
+                                         },
+                       "storyHeadline":  {
+                                             "en":  "Family-built American comfort.",
+                                             "es":  "Confort americano de una empresa familiar."
+                                         },
+                       "storyNarrative":  {
+                                              "en":  "A family company\u0027s hybrid foundation receives a relaxed euro-top finish.",
+                                              "es":  "La base híbrida de una empresa familiar recibe un acabado euro-top relajado."
+                                          },
+                       "trialCue":  {
+                                        "en":  "Roll once and feel the coils respond under the cushioned top.",
+                                        "es":  "Gira una vez y siente cómo responden los resortes bajo la capa acolchada."
+                                    },
+                       "proofs":  [
+                                      {
+                                          "title":  {
+                                                        "en":  "Cushioned euro-top",
+                                                        "es":  "Euro-top acolchado"
+                                                    },
+                                          "cue":  {
+                                                      "en":  "Feel the additional comfort at first contact.",
+                                                      "es":  "Siente el confort adicional en el primer contacto."
+                                                  }
+                                      },
+                                      {
+                                          "title":  {
+                                                        "en":  "Responsive hybrid foundation",
+                                                        "es":  "Base híbrida receptiva"
+                                                    },
+                                          "cue":  {
+                                                      "en":  "Roll once and feel the coil response beneath the cushion.",
+                                                      "es":  "Gira una vez y siente la respuesta de los resortes bajo el acolchado."
+                                                  }
+                                      }
+                                  ],
+                       "construction":  {
+                                            "comfort":  {
+                                                            "en":  "Euro-top",
+                                                            "es":  "Euro-top"
+                                                        },
+                                            "support":  {
+                                                            "en":  "Hybrid coil foundation",
+                                                            "es":  "Base híbrida de resortes"
+                                                        }
+                                        }
                    },
                    {
                        "id":  "b4",
@@ -1277,7 +2245,51 @@
                        "topPickReason":  {
                                              "en":  "Firm hybrid support, family-built and priced to make sense.",
                                              "es":  "Soporte híbrido firme, de empresa familiar y a un precio razonable."
-                                         }
+                                         },
+                       "storyHeadline":  {
+                                             "en":  "American-engineered response without excess.",
+                                             "es":  "Respuesta de ingeniería americana sin excesos."
+                                         },
+                       "storyNarrative":  {
+                                              "en":  "A direct firm hybrid focuses on immediate coil response and an uncomplicated surface.",
+                                              "es":  "Un híbrido firme y directo se centra en la respuesta inmediata de los resortes y una superficie sin complicaciones."
+                                          },
+                       "trialCue":  {
+                                        "en":  "Press the top, then roll or rise and feel the immediate response.",
+                                        "es":  "Presiona la parte superior, luego gira o levántate y siente la respuesta inmediata."
+                                    },
+                       "proofs":  [
+                                      {
+                                          "title":  {
+                                                        "en":  "Direct firm surface",
+                                                        "es":  "Superficie firme y directa"
+                                                    },
+                                          "cue":  {
+                                                      "en":  "Press the top and notice its limited give.",
+                                                      "es":  "Presiona la parte superior y nota su cesión limitada."
+                                                  }
+                                      },
+                                      {
+                                          "title":  {
+                                                        "en":  "Responsive hybrid support",
+                                                        "es":  "Soporte híbrido receptivo"
+                                                    },
+                                          "cue":  {
+                                                      "en":  "Roll or rise and feel the mattress respond immediately.",
+                                                      "es":  "Gira o levántate y siente cómo el colchón responde de inmediato."
+                                                  }
+                                      }
+                                  ],
+                       "construction":  {
+                                            "comfort":  {
+                                                            "en":  "Firm surface",
+                                                            "es":  "Superficie firme"
+                                                        },
+                                            "support":  {
+                                                            "en":  "Hybrid coils",
+                                                            "es":  "Resortes híbridos"
+                                                        }
+                                        }
                    },
                    {
                        "id":  "b5",
@@ -1326,7 +2338,51 @@
                                                                   "es":  "Rieles de espuma de alta densidad dan más superficie útil que las camas suaves de valor."
                                                               }
                                                }
-                                           ]
+                                           ],
+                       "storyHeadline":  {
+                                             "en":  "Side-sleeper softness with hidden structure.",
+                                             "es":  "Suavidad para dormir de lado con estructura oculta."
+                                         },
+                       "storyNarrative":  {
+                                              "en":  "A plush surface welcomes the shoulder and hip while a reinforced center and encased edge provide structure.",
+                                              "es":  "Una superficie mullida recibe el hombro y la cadera mientras un centro reforzado y un borde encapsulado aportan estructura."
+                                          },
+                       "trialCue":  {
+                                        "en":  "Lie on your side and let the shoulder settle, then move toward the edge.",
+                                        "es":  "Acuéstate de lado y deja que el hombro se asiente, luego muévete hacia el borde."
+                                    },
+                       "proofs":  [
+                                      {
+                                          "title":  {
+                                                        "en":  "Plush pressure-conscious surface",
+                                                        "es":  "Superficie mullida y atenta a la presión"
+                                                    },
+                                          "cue":  {
+                                                      "en":  "Try a normal side-sleeping position and let the shoulder settle naturally.",
+                                                      "es":  "Prueba una posición normal de lado y deja que el hombro se asiente de forma natural."
+                                                  }
+                                      },
+                                      {
+                                          "title":  {
+                                                        "en":  "Center and edge support",
+                                                        "es":  "Soporte en el centro y el borde"
+                                                    },
+                                          "cue":  {
+                                                      "en":  "Move toward the perimeter and feel the supported edge.",
+                                                      "es":  "Muévete hacia el perímetro y siente el borde con soporte."
+                                                  }
+                                      }
+                                  ],
+                       "construction":  {
+                                            "comfort":  {
+                                                            "en":  "Plush surface",
+                                                            "es":  "Superficie mullida"
+                                                        },
+                                            "support":  {
+                                                            "en":  "Reinforced center with an encased edge",
+                                                            "es":  "Centro reforzado con borde encapsulado"
+                                                        }
+                                        }
                    },
                    {
                        "id":  "b6",
@@ -1389,7 +2445,51 @@
                        "topPickReason":  {
                                              "en":  "The value path to real extra-firm zoned support.",
                                              "es":  "El camino de valor al verdadero soporte extra firme zonificado."
-                                         }
+                                         },
+                       "storyHeadline":  {
+                                             "en":  "Compact, extra-firm control.",
+                                             "es":  "Control compacto y extra firme."
+                                         },
+                       "storyNarrative":  {
+                                              "en":  "A restrained tight-top places reinforced center support and perimeter structure ahead of decorative cushioning.",
+                                              "es":  "Un tight-top contenido pone el soporte central reforzado y la estructura del perímetro por delante del acolchado decorativo."
+                                          },
+                       "trialCue":  {
+                                        "en":  "Press the top, then lie down and test the center and the edge.",
+                                        "es":  "Presiona la parte superior, luego acuéstate y prueba el centro y el borde."
+                                    },
+                       "proofs":  [
+                                      {
+                                          "title":  {
+                                                        "en":  "Extra-firm surface",
+                                                        "es":  "Superficie extra firme"
+                                                    },
+                                          "cue":  {
+                                                      "en":  "Press the top and notice its limited give.",
+                                                      "es":  "Presiona la parte superior y nota su cesión limitada."
+                                                  }
+                                      },
+                                      {
+                                          "title":  {
+                                                        "en":  "Reinforced center and edge",
+                                                        "es":  "Centro y borde reforzados"
+                                                    },
+                                          "cue":  {
+                                                      "en":  "Test the middle and perimeter of the mattress.",
+                                                      "es":  "Prueba el centro y el perímetro del colchón."
+                                                  }
+                                      }
+                                  ],
+                       "construction":  {
+                                            "comfort":  {
+                                                            "en":  "Restrained tight-top",
+                                                            "es":  "Tight-top contenido"
+                                                        },
+                                            "support":  {
+                                                            "en":  "Reinforced center and perimeter",
+                                                            "es":  "Centro y perímetro reforzados"
+                                                        }
+                                        }
                    },
                    {
                        "id":  "b7",
@@ -1454,7 +2554,51 @@
                        "topPickReason":  {
                                              "en":  "Easy balanced comfort with zoned support — the smart starter pick.",
                                              "es":  "Confort equilibrado fácil con soporte zonificado — la elección inteligente para empezar."
-                                         }
+                                         },
+                       "storyHeadline":  {
+                                             "en":  "Classic innerspring character, thoughtfully reinforced.",
+                                             "es":  "Carácter clásico de resortes, reforzado con cuidado."
+                                         },
+                       "storyNarrative":  {
+                                              "en":  "Traditional coil response is paired with a stronger center, supportive perimeter and cooling cover.",
+                                              "es":  "La respuesta tradicional de los resortes se combina con un centro más fuerte, un perímetro con soporte y una funda fresca."
+                                          },
+                       "trialCue":  {
+                                        "en":  "Roll once and feel the familiar spring response, then sit near the edge.",
+                                        "es":  "Gira una vez y siente la respuesta familiar de los resortes, luego siéntate cerca del borde."
+                                    },
+                       "proofs":  [
+                                      {
+                                          "title":  {
+                                                        "en":  "Classic responsive feel",
+                                                        "es":  "Sensación clásica y receptiva"
+                                                    },
+                                          "cue":  {
+                                                      "en":  "Roll once and feel the familiar spring response.",
+                                                      "es":  "Gira una vez y siente la respuesta familiar de los resortes."
+                                                  }
+                                      },
+                                      {
+                                          "title":  {
+                                                        "en":  "Reinforced sleep surface",
+                                                        "es":  "Superficie de descanso reforzada"
+                                                    },
+                                          "cue":  {
+                                                      "en":  "Test the center and then sit near the supported edge.",
+                                                      "es":  "Prueba el centro y luego siéntate cerca del borde con soporte."
+                                                  }
+                                      }
+                                  ],
+                       "construction":  {
+                                            "comfort":  {
+                                                            "en":  "Cooling cover",
+                                                            "es":  "Funda fresca"
+                                                        },
+                                            "support":  {
+                                                            "en":  "Innerspring coils with a reinforced center and perimeter",
+                                                            "es":  "Resortes tradicionales con centro y perímetro reforzados"
+                                                        }
+                                        }
                    }
                ]
 }

@@ -19,6 +19,11 @@
 //      on anything unmapped, and is consumed by exactly the two specialist
 //      surfaces (Sleep System featured card, drawer finalist-pillow prompt).
 //      EXECUTED scorer and adapter, plus negative controls.
+//   Product-proof drawer (owner-approved revision 2026-09-02): the trial
+//      drawer section covers the reversible finalist / Save model; the
+//      product-proof content section pins the explicit nine-column schema
+//      extension, 26-model coverage, family sharing, canonical lineage and
+//      the copy rules (A31_PP_ROOT runs it against another tree).
 //
 // House style: readFileSync + extract-and-execute against a DOM shim. Writes
 // nothing; exit 0 = pass.
@@ -897,6 +902,126 @@ section('Consultation Summary — first-fold order, one NEXT cue in the status b
     noCue.els.get('hf2StatusNext').textContent === '' && noCue.els.get('hf2StatusNext').hidden === true);
   const dropped = makeLeadEnv({ decisions: mixed, mutate: (s) => 'function consultationNextCue() { return "Next: x"; }\n' + mustReplace(s, "nextEl.textContent = cue;", "nextEl.textContent = '';") });
   ok('negative control: a renderer that drops the cue is detected', dropped.els.get('hf2StatusNext').textContent === '');
+}
+
+section('Product-proof content — explicit schema extension, 26-model coverage, family sharing, canonical lineage, copy rules');
+{
+  // Owner-approved A3.1 mattress-drawer revision (2026-09-02), slice 2: the
+  // premium story, the compact trial cue, up to two "What to notice" proofs
+  // and the construction labels are canonical Lacks content in
+  // incoming/lacks_mattresses.json, carried through the workbook -> CSV ->
+  // JSON pipeline as NINE explicit new columns (nothing repurposed). Set
+  // A31_PP_ROOT to run this section against another tree.
+  const ppRoot = process.env.A31_PP_ROOT || root;
+  const read = (rel) => readFileSync(join(ppRoot, ...rel.split('/')), 'utf8').replace(/\r\n/g, '\n');
+  const safe = (fn) => { try { return fn(); } catch (e) { return false; } };
+  const schemaPy = read('tools/workbook_schema.py');
+  const builderPy = read('incoming/build_lacks_workbook.py');
+  const buildPs1 = read('build-data.ps1');
+  const validationPy = read('tools/validation.py');
+  const canonical = JSON.parse(read('incoming/lacks_mattresses.json'));
+  const generated = JSON.parse(read('data/mattresses.json'));
+  const csvHead = read('data/mattresses.csv').split('\n')[0].split(',');
+  const csvEsHead = read('data/mattresses-es.csv').split('\n')[0].split(',');
+  const FIELDS = ['storyHeadline', 'storyNarrative', 'trialCue', 'proof1Title', 'proof1Cue', 'proof2Title', 'proof2Cue', 'constructionComfort', 'constructionSupport'];
+  const all = ['gold', 'silver', 'bronze'].flatMap((t) => generated[t] || []);
+  const byId = new Map(all.map((m) => [m.id, m]));
+  const bi = (o) => !!o && typeof o === 'object' && typeof o.en === 'string' && typeof o.es === 'string';
+  const filled = (o) => bi(o) && o.en.trim() !== '' && o.es.trim() !== '';
+  const blank = (o) => bi(o) && o.en.trim() === '' && o.es.trim() === '';
+  const J = (v) => JSON.stringify(v);
+
+  // ---- pipeline: an explicit schema extension, never a repurposed field
+  ok('workbook schema declares the nine product-proof columns and their (ES) twins',
+    FIELDS.every((f) => schemaPy.includes(`col("${f}",`) && schemaPy.includes(`col("${f} (ES)", "${f}_es", lang="es"`)));
+  ok('the ES CSV contract lists the nine columns after differentiator2Detail',
+    FIELDS.every((f) => new RegExp(`"differentiator2Detail",[\\s\\S]*?"${f}",`).test(schemaPy)));
+  ok('the workbook builder carries the nine keys in both its EN column list and its ES key list',
+    (builderPy.match(/"constructionComfort", "constructionSupport",/g) || []).length === 2
+    && (builderPy.match(/"storyHeadline", "storyNarrative", "trialCue",/g) || []).length === 2);
+  ok('build-data.ps1 emits bilingual story / trial cue / construction objects only when populated, and proofs as an ordered array',
+    /\$mattress\["proofs"\] = \$proofs/.test(buildPs1)
+    && /if \(\$null -ne \$construction\) \{ \$mattress\["construction"\] = \$construction \}/.test(buildPs1)
+    && /if \(\$null -ne \$storyHeadline\) \{ \$mattress\["storyHeadline"\] = \$storyHeadline \}/.test(buildPs1)
+    && /if \(\$null -ne \$storyNarrative\) \{ \$mattress\["storyNarrative"\] = \$storyNarrative \}/.test(buildPs1)
+    && /if \(\$null -ne \$trialCue\) \{ \$mattress\["trialCue"\] = \$trialCue \}/.test(buildPs1));
+  ok('the validator treats each proof as one bilingual component, refuses a proof title without its cue, and fills proofs in order',
+    /\("proof1", \("proof1Title", "proof1Cue"\)\)/.test(validationPy) && /\("proof2", \("proof2Title", "proof2Cue"\)\)/.test(validationPy)
+    && /without proof\{n\}Cue/.test(validationPy) && /proofs fill in order/.test(validationPy)
+    && /"storyHeadline", "storyNarrative", "trialCue",\s*"constructionComfort", "constructionSupport"\):/.test(validationPy));
+  ok('the generated CSVs carry the nine columns (EN) and the nine (ES) columns',
+    FIELDS.every((f) => csvHead.includes(f) && csvEsHead.includes(f)));
+  ok('the differentiator pairs still exist as their own columns (Compare keeps its "Why it helps"; nothing was repurposed)',
+    ['differentiator1Title', 'differentiator1Detail', 'differentiator2Title', 'differentiator2Detail'].every((c) => csvHead.includes(c) && csvEsHead.includes(c)));
+
+  // ---- coverage: 26 models, story + cue + construction everywhere, one or two proofs
+  ok('26 generated mattresses, every canonical id present',
+    all.length === 26 && canonical.length === 26 && canonical.every((c) => byId.has(c.id)));
+  ok('every model carries a bilingual story headline, story narrative and trial cue',
+    all.every((m) => filled(m.storyHeadline) && filled(m.storyNarrative) && filled(m.trialCue)));
+  ok('every model carries one or two proofs, each a bilingual title + cue pair (a proof is never a bare title)',
+    all.every((m) => Array.isArray(m.proofs) && m.proofs.length >= 1 && m.proofs.length <= 2 && m.proofs.every((p) => filled(p.title) && filled(p.cue))));
+  ok('every model carries a construction object with a bilingual comfort label and a bilingual support slot',
+    all.every((m) => !!m.construction && filled(m.construction.comfort) && bi(m.construction.support)));
+  ok('support labels are blank only where the approved story names no support layer (g2, g4) and filled everywhere else',
+    safe(() => all.every((m) => (['g2', 'g4'].includes(m.id) ? blank(m.construction.support) : filled(m.construction.support)))));
+
+  // ---- canonical lineage: generated objects equal the canonical EN / ES cells
+  ok('generated values equal the canonical incoming/lacks_mattresses.json cells for all nine fields in both languages',
+    safe(() => canonical.every((c) => {
+      const m = byId.get(c.id); const es = c.es || {};
+      const same = (o, f) => o.en === (c[f] || '') && o.es === (es[f] || '');
+      const p = m.proofs || [];
+      const proofsOk = ['1', '2'].every((n) => {
+        const t = c[`proof${n}Title`] || '', cue = c[`proof${n}Cue`] || '';
+        const te = es[`proof${n}Title`] || '', ce = es[`proof${n}Cue`] || '';
+        const idx = Number(n) - 1;
+        if (!t && !cue && !te && !ce) return p.length <= idx;
+        return !!p[idx] && p[idx].title.en === t && p[idx].cue.en === cue && p[idx].title.es === te && p[idx].cue.es === ce;
+      });
+      return same(m.storyHeadline, 'storyHeadline') && same(m.storyNarrative, 'storyNarrative') && same(m.trialCue, 'trialCue')
+        && same(m.construction.comfort, 'constructionComfort') && same(m.construction.support, 'constructionSupport') && proofsOk;
+    })));
+
+  // ---- the mattress-family rule (owner): shared proofs, distinct stories
+  const mayfair = ['g6', 'g7'].map((id) => byId.get(id));
+  const summit = ['s5', 's6', 's7'].map((id) => byId.get(id));
+  ok('Reserve Mayfair Plush and Medium share identical proofs and construction labels',
+    safe(() => mayfair.every((m) => m.name.startsWith('Reserve Mayfair')) && J(mayfair[0].proofs) === J(mayfair[1].proofs) && J(mayfair[0].construction) === J(mayfair[1].construction)));
+  ok('the Mayfair proofs are the owner-approved pair, verbatim',
+    safe(() => mayfair[0].proofs[0].title.en === 'Hand-tufted cooling surface'
+      && mayfair[0].proofs[0].cue.en === 'Touch the Tencel cover and notice the smooth, cool first contact.'
+      && mayfair[0].proofs[1].title.en === 'Natural responsive comfort'
+      && mayfair[0].proofs[1].cue.en === 'Press and release the wool, latex and microcoil comfort stack to feel its quick recovery.'));
+  ok('Platinum Summit Firm, Medium and Plush share identical proofs and construction labels',
+    safe(() => summit.every((m) => m.name.startsWith('Platinum Summit')) && summit.every((m) => J(m.proofs) === J(summit[0].proofs) && J(m.construction) === J(summit[0].construction))));
+  ok('the Summit proofs are the owner-approved pair, verbatim',
+    safe(() => summit[0].proofs[0].title.en === 'Cooling comfort layers'
+      && summit[0].proofs[0].cue.en === 'Touch the cooling cover, then settle into the breathable comfort foam beneath it.'
+      && summit[0].proofs[1].title.en === 'Pocketed zoned support'
+      && summit[0].proofs[1].cue.en === 'Change positions and feel the coil system respond beneath the surface.'));
+  ok('family members keep their own story headline and trial cue (shared proofs, distinct stories)',
+    safe(() => mayfair[0].storyHeadline.en !== mayfair[1].storyHeadline.en && mayfair[0].trialCue.en !== mayfair[1].trialCue.en
+      && new Set(summit.map((m) => m.storyHeadline.en)).size === 3 && new Set(summit.map((m) => m.trialCue.en)).size === 3));
+
+  // ---- copy rules: demonstrations, never claims; no comparisons, prices or terms
+  const texts = (m) => [m.storyHeadline, m.storyNarrative, m.trialCue, m.construction.comfort, m.construction.support, ...m.proofs.flatMap((p) => [p.title, p.cue])];
+  const enText = safe(() => all.flatMap((m) => texts(m).map((o) => o.en))) || [];
+  const esText = safe(() => all.flatMap((m) => texts(m).map((o) => o.es))) || [];
+  const bannedEn = /\b(best|better|superior|coolest|healthier|healthy|decades|prevents?|eliminates?|cures?|medical|delivery|in stock|warranty|guarantee|versus|vs\.?|compared to|month(ly)?)\b|\$/i;
+  const bannedEs = /\b(mejor|saludable|previene|elimina|décadas|garantía|entrega|en existencia|cura|médico|versus|vs\.?|comparado con|mensual)\b|\$/i;
+  ok('no EN product-proof text carries a superiority, health, durability, price, delivery, warranty or comparison claim',
+    enText.length === 26 * 9 && enText.every((t) => !bannedEn.test(t)));
+  ok('no ES product-proof text carries such a claim (provisional Spanish, same rules)',
+    esText.length === 26 * 9 && esText.every((t) => !bannedEs.test(t)));
+  ok('proof cues are demonstration instructions: every EN cue opens with an action verb',
+    safe(() => all.every((m) => m.proofs.every((p) => /^(Touch|Reveal|Press|Roll|Settle|Point|Lie|Remain|Place|Identify|Notice|Try|Move|Test|Sit|Let|Change|Feel|Stay)\b/.test(p.cue.en)))));
+  ok('every EN trial cue is one compact sentence (a single terminal period, under 110 characters)',
+    safe(() => all.every((m) => (m.trialCue.en.match(/[.!?]/g) || []).length === 1 && m.trialCue.en.length < 110)));
+  ok('proof titles stay short so two fit beside the construction demonstration (EN < 45, ES < 60 characters)',
+    safe(() => all.every((m) => m.proofs.every((p) => p.title.en.length < 45 && p.title.es.length < 60))));
+  ok('product names are preserved exactly: no story or proof text renames a model',
+    safe(() => all.every((m) => texts(m).every((o) => !/\bMayfair Firm\b|\bSummit Soft\b|Tempur ?Pedic\b/.test(o.en)))));
 }
 
 // ------------------------------------------------------------------- summary

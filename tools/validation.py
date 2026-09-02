@@ -4400,7 +4400,10 @@ def validate_mattresses(raw_tabs, *, source_images=None, skip_images=False,
             for col in ("highlight", "topPickReason", "reason_cooling",
                         "reason_pressureRelief", "reason_motionIsolation",
                         "reason_support", "reason_plush", "reason_medium",
-                        "reason_firm", "reason_durability", "reason_default"):
+                        "reason_firm", "reason_durability", "reason_default",
+                        # product-proof drawer content (2026-09-02)
+                        "storyHeadline", "storyNarrative", "trialCue",
+                        "constructionComfort", "constructionSupport"):
                 en_p, es_p = _has(col), _has(f"{col} (ES)")
                 if en_p != es_p:
                     r.add_error(f"Mattresses {tag}: {col} present in "
@@ -4409,13 +4412,30 @@ def validate_mattresses(raw_tabs, *, source_images=None, skip_images=False,
             for label, pair in (("differentiator1",
                                  ("differentiator1Title", "differentiator1Detail")),
                                 ("differentiator2",
-                                 ("differentiator2Title", "differentiator2Detail"))):
+                                 ("differentiator2Title", "differentiator2Detail")),
+                                # product-proof "What to notice" pairs (2026-09-02)
+                                ("proof1", ("proof1Title", "proof1Cue")),
+                                ("proof2", ("proof2Title", "proof2Cue"))):
                 en_p = _has(*pair)
                 es_p = _has(*(f"{c} (ES)" for c in pair))
                 if en_p != es_p:
                     r.add_error(f"Mattresses {tag}: {label} pair present in "
                                 f"{'EN' if en_p else 'ES'} only — the pair is one "
                                 f"component and needs both languages or neither")
+            # A proof is a physical demonstration cue, never a bare claim: a
+            # proof title without its cue is an error in either language, and
+            # the two proofs fill in order (proof2 never stands alone).
+            for suffix in ("", " (ES)"):
+                lang_tag = "ES" if suffix else "EN"
+                for n in ("1", "2"):
+                    if _has(f"proof{n}Title{suffix}") and not _has(f"proof{n}Cue{suffix}"):
+                        r.add_error(f"Mattresses {tag}: proof{n}Title ({lang_tag}) filled "
+                                    f"without proof{n}Cue — a proof needs its "
+                                    f"demonstration cue")
+                if (_has(f"proof2Title{suffix}", f"proof2Cue{suffix}")
+                        and not _has(f"proof1Title{suffix}", f"proof1Cue{suffix}")):
+                    r.add_error(f"Mattresses {tag}: proof2 ({lang_tag}) filled while "
+                                f"proof1 is blank — proofs fill in order")
             def _badge_count(col):
                 raw = row.get(col)
                 raw = "" if raw is None else str(raw)
@@ -5720,6 +5740,46 @@ def _self_test() -> int:
     rr = validate_mattresses(t, languages=langs)
     check("differentiator pair present on both sides -> valid",
           not any("differentiator1 pair" in e for e in rr.errors))
+    # Product-proof drawer content (2026-09-02): the single components and the
+    # proof pairs obey the same both-or-neither rule; a proof title without
+    # its cue is an error; proof2 never stands alone.
+    t = _good_tabs()
+    t["Mattresses"][1][0]["storyHeadline"] = "Only English"
+    rr = validate_mattresses(t, languages=langs)
+    check("product-proof: storyHeadline one-sided (EN only) -> error",
+          any("storyHeadline present in EN only" in e for e in rr.errors))
+    t = _good_tabs()
+    t["Mattresses"][1][0]["constructionSupport (ES)"] = "Solo espanol"
+    rr = validate_mattresses(t, languages=langs)
+    check("product-proof: constructionSupport one-sided (ES only) -> error",
+          any("constructionSupport present in ES only" in e for e in rr.errors))
+    t = _good_tabs()
+    t["Mattresses"][1][0].update({"proof1Title": "Cool surface", "proof1Cue": "Touch the cover."})
+    rr = validate_mattresses(t, languages=langs)
+    check("product-proof: proof1 pair one-sided (EN only) -> error",
+          any("proof1 pair present in EN only" in e for e in rr.errors))
+    t["Mattresses"][1][0].update({"proof1Title (ES)": "Superficie fresca",
+                                  "proof1Cue (ES)": "Toca la funda."})
+    rr = validate_mattresses(t, languages=langs)
+    check("product-proof: proof1 pair present on both sides -> valid",
+          rr.ok and not any("proof1" in e for e in rr.errors))
+    t = _good_tabs()
+    t["Mattresses"][1][0].update({"proof1Title": "Cool surface", "proof1Title (ES)": "Superficie fresca"})
+    rr = validate_mattresses(t, languages=langs)
+    check("product-proof: proof title without its cue -> error (both languages named)",
+          any("proof1Title (EN) filled without proof1Cue" in e for e in rr.errors)
+          and any("proof1Title (ES) filled without proof1Cue" in e for e in rr.errors))
+    t = _good_tabs()
+    t["Mattresses"][1][0].update({"proof2Title": "Zoned support", "proof2Cue": "Change positions.",
+                                  "proof2Title (ES)": "Soporte por zonas", "proof2Cue (ES)": "Cambia de posicion."})
+    rr = validate_mattresses(t, languages=langs)
+    check("product-proof: proof2 without proof1 -> error",
+          any("proof2 (EN) filled while proof1 is blank" in e for e in rr.errors))
+    t = _good_tabs()
+    t["Mattresses"][1][0].update({"storyHeadline": "", "storyHeadline (ES)": "",
+                                  "proof1Title": "", "proof1Cue": "", "proof1Title (ES)": "", "proof1Cue (ES)": ""})
+    rr = validate_mattresses(t, languages=langs)
+    check("product-proof: bilateral absence -> valid, no warning", rr.ok and not rr.warnings)
     # Badges: one-sided and count-mismatch are both errors; equal counts pass.
     t = _good_tabs()
     t["Mattresses"][1][0]["displayBadges"] = "Only EN"

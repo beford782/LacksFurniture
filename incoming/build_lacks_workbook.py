@@ -86,6 +86,11 @@ MATT_EN_COLS = [
     "reason_motionIsolation", "reason_support", "reason_plush", "reason_medium",
     "reason_firm", "reason_durability", "reason_default", "topPickReason",
     "differentiator1Title", "differentiator1Detail", "differentiator2Title", "differentiator2Detail",
+    # Product-proof drawer content (2026-09-02): story, trial cue, up to two
+    # proofs, construction labels. Language-paired like the differentiators.
+    "storyHeadline", "storyNarrative", "trialCue",
+    "proof1Title", "proof1Cue", "proof2Title", "proof2Cue",
+    "constructionComfort", "constructionSupport",
 ]
 # Every ES key the workbook schema defines for a mattress row. The eight
 # per-feature reason keys were added 2026-08-29 (item 1.3 first dark tranche):
@@ -97,6 +102,11 @@ MATT_ES_KEYS = [
     "reason_plush", "reason_medium", "reason_firm", "reason_durability",
     "reason_default", "topPickReason",
     "differentiator1Title", "differentiator1Detail", "differentiator2Title", "differentiator2Detail",
+    # Product-proof drawer content (2026-09-02): story, trial cue, up to two
+    # proofs, construction labels. Language-paired like the differentiators.
+    "storyHeadline", "storyNarrative", "trialCue",
+    "proof1Title", "proof1Cue", "proof2Title", "proof2Cue",
+    "constructionComfort", "constructionSupport",
 ]
 
 

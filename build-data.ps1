@@ -129,6 +129,19 @@ foreach ($row in $rows) {
             detail = if ($row.differentiator2Detail) { $row.differentiator2Detail.Trim() } else { "" }
         }
     )
+    # Product-proof drawer content (2026-09-02): story, trial cue, up to two
+    # proofs and the construction labels. Columns may be absent in a retailer
+    # CSV that predates them - a missing column reads as blank, and blank
+    # components are never emitted.
+    $proofKeys = @("storyHeadline", "storyNarrative", "trialCue",
+                   "proof1Title", "proof1Cue", "proof2Title", "proof2Cue",
+                   "constructionComfort", "constructionSupport")
+    $proofEn = @{}
+    $proofEs = @{}
+    foreach ($pk in $proofKeys) {
+        $proofEn[$pk] = if ($row.$pk) { $row.$pk.Trim() } else { "" }
+        $proofEs[$pk] = ""
+    }
 
     # Auto-resolve image URL from images/mattresses/ folder
     $imageUrl = ""
@@ -188,6 +201,11 @@ foreach ($row in $rows) {
                 detail = if ($esRow.differentiator2Detail) { $esRow.differentiator2Detail.Trim() } else { "" }
             }
         )
+
+        # Spanish product-proof content (same keys as the EN columns)
+        foreach ($pk in $proofKeys) {
+            $proofEs[$pk] = if ($esRow.$pk) { $esRow.$pk.Trim() } else { "" }
+        }
     }
 
     # Assemble bilingual {en, es} object. Only emit if at least one language is populated.
@@ -210,6 +228,45 @@ foreach ($row in $rows) {
                 title = [ordered]@{ en = $enTitle; es = $esTitle }
                 detail = [ordered]@{ en = $enDetail; es = $esDetail }
             })
+        }
+    }
+
+    # Product-proof components: each single field becomes a bilingual object
+    # only when at least one language is populated; proofs are an ordered
+    # array of up to two {title, cue} pairs (a pair is emitted when any of its
+    # four cells is populated); construction is emitted only when a label
+    # exists. Everything else collapses - the app renders nothing for it.
+    $storyHeadline = $null
+    if ($proofEn["storyHeadline"] -or $proofEs["storyHeadline"]) {
+        $storyHeadline = [ordered]@{ en = $proofEn["storyHeadline"]; es = $proofEs["storyHeadline"] }
+    }
+    $storyNarrative = $null
+    if ($proofEn["storyNarrative"] -or $proofEs["storyNarrative"]) {
+        $storyNarrative = [ordered]@{ en = $proofEn["storyNarrative"]; es = $proofEs["storyNarrative"] }
+    }
+    $trialCue = $null
+    if ($proofEn["trialCue"] -or $proofEs["trialCue"]) {
+        $trialCue = [ordered]@{ en = $proofEn["trialCue"]; es = $proofEs["trialCue"] }
+    }
+    $proofs = @()
+    foreach ($n in @("1", "2")) {
+        $tEn = $proofEn["proof${n}Title"]
+        $cEn = $proofEn["proof${n}Cue"]
+        $tEs = $proofEs["proof${n}Title"]
+        $cEs = $proofEs["proof${n}Cue"]
+        if ($tEn -or $cEn -or $tEs -or $cEs) {
+            $proofs += ,([ordered]@{
+                title = [ordered]@{ en = $tEn; es = $tEs }
+                cue = [ordered]@{ en = $cEn; es = $cEs }
+            })
+        }
+    }
+    $construction = $null
+    if ($proofEn["constructionComfort"] -or $proofEs["constructionComfort"] -or
+        $proofEn["constructionSupport"] -or $proofEs["constructionSupport"]) {
+        $construction = [ordered]@{
+            comfort = [ordered]@{ en = $proofEn["constructionComfort"]; es = $proofEs["constructionComfort"] }
+            support = [ordered]@{ en = $proofEn["constructionSupport"]; es = $proofEs["constructionSupport"] }
         }
     }
 
@@ -237,6 +294,11 @@ foreach ($row in $rows) {
     if ($null -ne $topPickReason) {
         $mattress["topPickReason"] = $topPickReason
     }
+    if ($null -ne $storyHeadline) { $mattress["storyHeadline"] = $storyHeadline }
+    if ($null -ne $storyNarrative) { $mattress["storyNarrative"] = $storyNarrative }
+    if ($null -ne $trialCue) { $mattress["trialCue"] = $trialCue }
+    $mattress["proofs"] = $proofs
+    if ($null -ne $construction) { $mattress["construction"] = $construction }
 
     $result[$tier] += $mattress
 }

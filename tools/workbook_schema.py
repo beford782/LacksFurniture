@@ -271,6 +271,21 @@ MATTRESSES = Tab(
         col("differentiator2Title", note="second model-specific trial distinction title; blank = withdrawn copy"),
         col("differentiator2Detail", note="second plain-language felt or functional difference; blank = withdrawn copy"),
 
+        # Product-proof drawer content (owner-approved A3.1 mattress-drawer
+        # revision, 2026-09-02). Every column is optional and language-paired
+        # under the per-component parity rule; the app collapses whatever is
+        # blank. Proof cues are physical trial instructions, never claims, and
+        # construction labels name only what the approved product story names.
+        col("storyHeadline", note="one-line premium product story headline; blank = none"),
+        col("storyNarrative", note="one-sentence product story (materials / construction identity); blank = none"),
+        col("trialCue", note="one compact physical trial prompt for this model; blank = rule-based fallback"),
+        col("proof1Title", note="first 'What to notice' proof title; blank = no proof"),
+        col("proof1Cue", note="first proof demonstration cue (required when proof1Title is filled)"),
+        col("proof2Title", note="second 'What to notice' proof title; blank = single proof"),
+        col("proof2Cue", note="second proof demonstration cue (required when proof2Title is filled)"),
+        col("constructionComfort", note="construction demo comfort-layer label from the approved story; blank = generic role"),
+        col("constructionSupport", note="construction demo support-layer label from the approved story; blank = generic role"),
+
         # Spanish — feed mattresses-es.csv (plain header given in note), keyed by `id`.
         col("displayBadges (ES)", "displayBadges_es", lang="es", note="-> mattresses-es.csv displayBadges"),
         col("highlight (ES)", "highlight_es", lang="es", note="-> mattresses-es.csv highlight"),
@@ -288,6 +303,15 @@ MATTRESSES = Tab(
         col("differentiator1Detail (ES)", "differentiator1Detail_es", lang="es", note="-> mattresses-es.csv differentiator1Detail"),
         col("differentiator2Title (ES)", "differentiator2Title_es", lang="es", note="-> mattresses-es.csv differentiator2Title"),
         col("differentiator2Detail (ES)", "differentiator2Detail_es", lang="es", note="-> mattresses-es.csv differentiator2Detail"),
+        col("storyHeadline (ES)", "storyHeadline_es", lang="es", note="-> mattresses-es.csv storyHeadline"),
+        col("storyNarrative (ES)", "storyNarrative_es", lang="es", note="-> mattresses-es.csv storyNarrative"),
+        col("trialCue (ES)", "trialCue_es", lang="es", note="-> mattresses-es.csv trialCue"),
+        col("proof1Title (ES)", "proof1Title_es", lang="es", note="-> mattresses-es.csv proof1Title"),
+        col("proof1Cue (ES)", "proof1Cue_es", lang="es", note="-> mattresses-es.csv proof1Cue"),
+        col("proof2Title (ES)", "proof2Title_es", lang="es", note="-> mattresses-es.csv proof2Title"),
+        col("proof2Cue (ES)", "proof2Cue_es", lang="es", note="-> mattresses-es.csv proof2Cue"),
+        col("constructionComfort (ES)", "constructionComfort_es", lang="es", note="-> mattresses-es.csv constructionComfort"),
+        col("constructionSupport (ES)", "constructionSupport_es", lang="es", note="-> mattresses-es.csv constructionSupport"),
     ),
 )
 
@@ -311,6 +335,15 @@ MATTRESSES_ES_CSV_COLUMNS: Tuple[str, ...] = (
     "differentiator1Detail",
     "differentiator2Title",
     "differentiator2Detail",
+    "storyHeadline",
+    "storyNarrative",
+    "trialCue",
+    "proof1Title",
+    "proof1Cue",
+    "proof2Title",
+    "proof2Cue",
+    "constructionComfort",
+    "constructionSupport",
 )
 
 
