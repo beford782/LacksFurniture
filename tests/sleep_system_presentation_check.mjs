@@ -160,6 +160,9 @@ const SRC = {
   // A3 (owner ruling 2026-09-01): the evidence-typed rationale producers.
   pillowRationale: extractFunction('function pillowFitRationale()'),
   protRationale: extractFunction('function protectionRationale(selected, suggested)'),
+  // A3.1 synthesis (owner counterprompt 2026-09-02, change 2): the generic
+  // fit-response mark builder the pillow renderer calls.
+  fitMark: extractFunction('function fitResponseMark(id)'),
   pillowFit: extractFunction('function renderPillowFit(primary)'),
   suggestedGoal: extractFunction('function getSuggestedProtectionGoal()'),
   goalLabel: extractFunction('function protectionGoalLabel(goal)'),
@@ -239,7 +242,7 @@ function makeEnv({
     SRC.STEPS, SRC.escapeHtml, SRC.text, SRC.category, SRC.stepFor, SRC.qualify, SRC.scorer,
     SRC.readGroups, SRC.decision, SRC.decisionLabel, SRC.statusKind, SRC.posLabel, SRC.getDemo, SRC.renderDemo,
     SRC.catalogLowProfile, SRC.guidance, SRC.rail, SRC.secondary, SRC.supportGuide,
-    SRC.pillowRationale, SRC.protRationale, SRC.pillowFit, SRC.suggestedGoal,
+    SRC.pillowRationale, SRC.protRationale, SRC.fitMark, SRC.pillowFit, SRC.suggestedGoal,
     SRC.goalLabel, SRC.goalReason, SRC.supportsGoal, SRC.protectionGuide,
     SRC.reasonPrefix, SRC.reasonNouns, SRC.reasonAdapter, SRC.main, SRC.plan,
     SRC.footer

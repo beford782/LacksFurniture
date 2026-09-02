@@ -626,6 +626,70 @@ section('Results photos — the width/height attributes reserve the ratio; the C
     && /\.cmp-head-img img \{[^}]*height: 100%/.test(norm));
 }
 
+// ============================================ 10. Pillow fit - generic fit-response marks (A3.1 synthesis, change 2)
+section('Pillow fit — three generic fit-response marks, paired with their labels, never the pillow\'s loft');
+{
+  const markSrc = extractFunction('function fitResponseMark(id)');
+  const fitSrc = extractFunction('function renderPillowFit(primary)');
+  ok('pillow sources extracted', !!markSrc && !!fitSrc);
+  const fitCss = (norm.match(/\.sleep-system__fit-response \{[^}]*\}/) || [''])[0];
+  ok('naming: the mark is a fit RESPONSE in class, data attribute and builder; no loft/height vocabulary anywhere in the mark, the renderer or its CSS',
+    !!markSrc && fitSrc.includes('fitResponseMark(option.id)') && markSrc.includes('data-fit-response="')
+    && !/loft/i.test(markSrc.replace(/\/\/[^\n]*/g, '')) && !/loft/i.test(fitSrc.replace(/\/\/[^\n]*/g, ''))
+    && !/loft/i.test(fitCss) && !/loft/i.test(norm.slice(norm.indexOf('.sleep-system__fit-response {'), norm.indexOf('.sleep-system__pillow-reaction.is-active {'))));
+  ok('the mark is decorative (aria-hidden) and code-native (inline SVG in currentColor; no raster, no product dimension read)',
+    markSrc.includes(`aria-hidden="true">`) && markSrc.includes('<svg viewBox="0 0 30 20" focusable="false">')
+    && (markSrc.match(/currentColor/g) || []).length >= 3 && !/<img|url\(|primary\.|loft|height/i.test(markSrc.replace(/\/\/[^\n]*/g, '')));
+  ok('the three marks differ by the head\'s position against the neutral line (below / level / above)',
+    markSrc.includes("var headY = id === 'low' ? 15 : (id === 'high' ? 5 : 10);"));
+  ok('the note under the buttons states the distinction in both languages',
+    fitSrc.includes("{ en: 'The marks show the reported fit, not this pillow’s height.', es: 'Las marcas muestran el ajuste reportado, no la altura de esta almohada.' }"));
+  ok('the response group is named for assistive technology (EN + ES) and every button exposes aria-pressed',
+    fitSrc.includes(`role="group" aria-label="' +`) && fitSrc.includes("{ en: 'Customer fit response', es: 'Respuesta de ajuste del cliente' }")
+    && fitSrc.includes(`'" aria-pressed="' + (reaction === option.id ? 'true' : 'false') +`));
+  ok('forced colors: the pressed fit-response button is drawn by border in the candidate block (state never colour alone); the 44px floor holds (52px)',
+    /@media \(forced-colors: active\) \{[^}]*\.sleep-system__position\[aria-pressed="true"\][^}]*\}[\s\S]{0,400}\.sleep-system__pillow-reaction\[aria-pressed="true"\],\s*\.sleep-system__protection-goal\[aria-pressed="true"\] \{ border: 3px double CanvasText; \}/.test(norm)
+    && /\.sleep-system__pillow-reaction \{\s*min-height: 52px;/.test(norm));
+  ok('the handler contract is untouched: data-sleep-action="pillow-reaction" + data-reaction identity, the P9 candidate swap and the feedback copy',
+    fitSrc.includes(`data-sleep-action="pillow-reaction" data-reaction="' + option.id + '"`)
+    && fitSrc.includes("var feedback = window._sleepSystemState.pillowFeedback || '';")
+    && fitSrc.includes("Try another pillow on this mattress and compare the height, then record the fit again."));
+
+  // EXECUTED: the renderer in both languages and every response state.
+  const esc = (v) => String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  function runFit(lang, reaction, feedback = '', src = markSrc + '\n' + fitSrc) {
+    const win = { _sleepSystemState: { pillowReaction: reaction, pillowFeedback: feedback } };
+    return new Function('window', 'escapeHtml', 'sleepSystemText', 'sleepSystemGuidance', 'pillowFitRationale', 'answers',
+      '"use strict";' + src + '\nreturn renderPillowFit({});')(
+      win, esc, (o) => (typeof o === 'string' ? o : (o[lang] || o.en)), () => ['guide line'], () => ({ en: 'rationale', es: 'razón' }), {});
+  }
+  const text = (html) => html.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+  const en = runFit('en', '');
+  const marks = [...en.matchAll(/data-fit-response="([a-z]+)" aria-hidden="true"/g)].map((m) => m[1]);
+  ok('executed: exactly three marks render, in order low / aligned / high, each aria-hidden', JSON.stringify(marks) === '["low","aligned","high"]');
+  const buttons = [...en.matchAll(/<button type="button" class="sleep-system__pillow-reaction[^"]*" aria-pressed="(true|false)" data-sleep-action="pillow-reaction" data-reaction="([a-z]+)">([\s\S]*?)<\/button>/g)];
+  ok('executed: every button pairs its mark with its own visible label (the mark carries no text of its own)',
+    buttons.length === 3
+    && buttons.every((b) => b[3].includes(`data-fit-response="${b[2]}"`))
+    && buttons.map((b) => text(b[3])).join('|') === 'Too low|Feels aligned|Too high'
+    && [...en.matchAll(/<span class="sleep-system__fit-response"[\s\S]*?<\/span>/g)].every((m) => text(m[0]) === ''));
+  ok('executed: nothing recorded -> no button is pressed; a recorded response presses exactly its button',
+    buttons.every((b) => b[1] === 'false')
+    && [...runFit('en', 'low').matchAll(/aria-pressed="(true|false)" data-sleep-action="pillow-reaction" data-reaction="([a-z]+)"/g)].map((m) => m[2] + ':' + m[1]).join(',') === 'low:true,aligned:false,high:false'
+    && [...runFit('en', 'high').matchAll(/aria-pressed="(true|false)" data-sleep-action="pillow-reaction" data-reaction="([a-z]+)"/g)].map((m) => m[2] + ':' + m[1]).join(',') === 'low:false,aligned:false,high:true');
+  const headYOf = (html, id) => (html.match(new RegExp(`data-fit-response="${id}"[\\s\\S]*?<circle cx="6" cy="(\\d+)"`)) || [])[1];
+  ok('executed: the low mark sits below the line, aligned on it, high above it (distinct silhouettes)',
+    headYOf(en, 'low') === '15' && headYOf(en, 'aligned') === '10' && headYOf(en, 'high') === '5');
+  ok('executed: the note renders in EN and ES beneath the group; the group carries its bilingual name',
+    en.includes('<p class="sleep-system__fit-response-note">The marks show the reported fit, not this pillow’s height.</p>')
+    && runFit('es', '').includes('<p class="sleep-system__fit-response-note">Las marcas muestran el ajuste reportado, no la altura de esta almohada.</p>')
+    && en.includes('role="group" aria-label="Customer fit response">') && runFit('es', '').includes('aria-label="Respuesta de ajuste del cliente">'));
+  ok('executed: the feedback line still renders after a recorded response (behaviour preserved)',
+    runFit('en', 'low', 'low').includes('<div class="sleep-system__pillow-feedback">Try another pillow on this mattress and compare the height, then record the fit again.</div>'));
+  const exposed = runFit('en', '', '', mustReplace(markSrc, `aria-hidden="true">`, '>') + '\n' + fitSrc);
+  ok('negative control: a mark that loses aria-hidden is detected', !/data-fit-response="low" aria-hidden="true"/.test(exposed));
+}
+
 // ------------------------------------------------------------------- summary
 console.log(`\n${failures === 0 ? 'PASS' : 'FAIL'} — ${checks - failures}/${checks} checks passed`);
 process.exit(failures === 0 ? 0 : 1);

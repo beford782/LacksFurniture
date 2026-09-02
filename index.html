@@ -7924,6 +7924,24 @@
       cursor: pointer;
       touch-action: manipulation;
     }
+    /* Synthesis (owner counterprompt 2026-09-02, change 2): three compact
+       GENERIC fit-response marks - the customer's reported alignment (head
+       below / level with / above the neutral line), NOT a depiction of this
+       pillow's loft or geometry. Code-native SVG in currentColor so the mark
+       keeps its contrast under forced colors; aria-hidden, always paired with
+       the visible text label beneath it. */
+    .sleep-system__fit-response {
+      display: block;
+      width: 30px;
+      height: 20px;
+      margin: 0 auto 5px;
+    }
+    .sleep-system__fit-response svg { display: block; width: 100%; height: 100%; overflow: visible; }
+    .sleep-system__fit-response-note {
+      margin: 8px 0 0;
+      color: #6C6054;
+      font: 500 11px/1.4 var(--font-sans);
+    }
     .sleep-system__pillow-reaction.is-active {
       border-color: #63765D;
       background: #F0F5ED;
@@ -10386,6 +10404,10 @@
        block, after the X11 block whose shape contrast_check pins. */
     @media (forced-colors: active) {
       .sleep-system__position[aria-pressed="true"] { border: 3px double CanvasText; padding: 6px 8px; }
+      /* Synthesis: the fit-response and protection-goal buttons expose the
+         same pressed state the same way (state by border, never colour). */
+      .sleep-system__pillow-reaction[aria-pressed="true"],
+      .sleep-system__protection-goal[aria-pressed="true"] { border: 3px double CanvasText; }
       .sleep-system__plan-item.is-check .sleep-system__plan-mark,
       .sleep-system__step.is-check .sleep-system__step-num { border: 3px double CanvasText; }
       .sleep-system__bed-ghost { border-color: CanvasText; opacity: 1; }
@@ -19868,6 +19890,24 @@
       };
     }
 
+    // Synthesis (owner counterprompt 2026-09-02, change 2): the three GENERIC
+    // fit-response marks. Each is a stick silhouette - the neutral line (the
+    // torso axis) and a head sitting below, level with, or above it: the
+    // customer's reported alignment, never this pillow's loft or geometry (no
+    // product dimension is read or implied; the note under the buttons says
+    // so). currentColor so the mark keeps its contrast under forced colors;
+    // aria-hidden because the visible label beside it carries the meaning.
+    function fitResponseMark(id) {
+      var headY = id === 'low' ? 15 : (id === 'high' ? 5 : 10);
+      var dash = id === 'aligned' ? '' : ' stroke-dasharray="2.4 2.2"';
+      return '<span class="sleep-system__fit-response" data-fit-response="' + id + '" aria-hidden="true">' +
+        '<svg viewBox="0 0 30 20" focusable="false">' +
+          '<line x1="11" y1="10" x2="29" y2="10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"' + dash + '></line>' +
+          '<line x1="9" y1="' + headY + '" x2="12" y2="10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></line>' +
+          '<circle cx="6" cy="' + headY + '" r="3.6" fill="currentColor"></circle>' +
+        '</svg></span>';
+    }
+
     function renderPillowFit(primary) {
       var reaction = window._sleepSystemState.pillowReaction || '';
       var feedback = window._sleepSystemState.pillowFeedback || '';
@@ -19900,7 +19940,14 @@
             escapeHtml(sleepSystemText(pillowFitRationale())) +
           '</p></div>' +
         '</div>' +
-        '<div class="sleep-system__pillow-reactions">' +
+        // Synthesis (owner counterprompt 2026-09-02, change 2): each response
+        // carries a compact GENERIC fit-response mark (fitResponseMark) - the
+        // reported alignment, never this pillow's loft - aria-hidden and
+        // paired with the visible label; the group is named for assistive
+        // technology; aria-pressed exposes the recorded response. The
+        // handler, the P9 candidate swap and the feedback line are untouched.
+        '<div class="sleep-system__pillow-reactions" role="group" aria-label="' +
+          escapeHtml(sleepSystemText({ en: 'Customer fit response', es: 'Respuesta de ajuste del cliente' })) + '">' +
           [
             { id: 'low', label: { en: 'Too low', es: 'Muy baja' } },
             { id: 'aligned', label: { en: 'Feels aligned', es: 'Se siente alineada' } },
@@ -19908,11 +19955,16 @@
           ].map(function(option) {
             return '<button type="button" class="sleep-system__pillow-reaction' +
               (reaction === option.id ? ' is-active' : '') +
+              '" aria-pressed="' + (reaction === option.id ? 'true' : 'false') +
               '" data-sleep-action="pillow-reaction" data-reaction="' + option.id + '">' +
+              fitResponseMark(option.id) +
               escapeHtml(sleepSystemText(option.label)) +
             '</button>';
           }).join('') +
         '</div>' +
+        '<p class="sleep-system__fit-response-note">' +
+          escapeHtml(sleepSystemText({ en: 'The marks show the reported fit, not this pillow’s height.', es: 'Las marcas muestran el ajuste reportado, no la altura de esta almohada.' })) +
+        '</p>' +
         (feedback
           ? '<div class="sleep-system__pillow-feedback">' + escapeHtml(sleepSystemText(feedbackCopy[feedback])) + '</div>'
           : '') +
