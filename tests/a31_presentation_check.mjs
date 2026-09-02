@@ -786,7 +786,7 @@ section('Consultation Summary — first-fold order, one NEXT cue in the status b
   ok('the priorities are three horizontal ordered markers (grid, compact cards >= 44px), stacked only on narrow screens; the ordinal ring and the bare <ol> semantics stay',
     /\.hf2-priorities \{\s*display: grid;\s*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);[^}]*list-style: none;/.test(norm)
     && /\.hf2-priorities__item \{[^}]*min-height: 44px;[^}]*border-radius: 8px;/.test(norm)
-    && /@media \(max-width: 560px\) \{\s*\.hf2-priorities \{ grid-template-columns: 1fr; \}/.test(norm)
+    && /@media \(max-width: 560px\) \{[^@]*\.hf2-priorities \{ grid-template-columns: 1fr; \}/.test(norm)
     && /<ol class="hf2-priorities" id="hf2Priorities"><\/ol>/.test(norm));
   ok('the store attribution and the salesperson strip are not first-fold content: both sit after the Sleep System section and before the payment module and the save; the intro carries no attribution',
     at('id="hf2SleepSystemSection"') < at('id="hf2Attribution"') && at('id="hf2Attribution"') < at('id="hf2RsaStripBtn"')

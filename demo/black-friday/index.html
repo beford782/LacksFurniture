@@ -3887,9 +3887,8 @@
       background: #FFFDF8;
       line-height: 1.3;
     }
-    @media (max-width: 560px) {
-      .hf2-priorities { grid-template-columns: 1fr; }
-    }
+    /* (The narrow-screen stacking rule for .hf2-priorities lives in the
+       existing 560px block below the drawer rules - no new breakpoint.) */
     .hf2-ordinal {
       flex: none;
       display: inline-flex;
@@ -9485,6 +9484,8 @@
       .drawer-differentiators,
       .drawer-try-prompts { grid-template-columns:1fr; }
       .drawer-mattress-name { font-size:24px; }
+      /* Synthesis (change 4): the three priority markers stack on phones. */
+      .hf2-priorities { grid-template-columns: 1fr; }
     }
 
     /* ===== SURGICAL SHOWROOM WORK THEME =====
