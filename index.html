@@ -9274,7 +9274,9 @@
       margin-top: 0.8rem;
     }
     .drawer-system-prompt__actions button {
-      min-height: 42px;
+      /* X12 touch floor: the prompt now follows the first save in the
+         product-proof drawer, so its two controls are in the trial flow. */
+      min-height: 44px;
       padding: 0.6rem 0.85rem;
       border-radius: 7px;
       font: 700 12px/1.2 var(--font-sans);
@@ -11553,10 +11555,10 @@
         </div>
         <div class="drawer-trial-feel" id="drawerFeelAnchor"></div>
         <!-- Product-proof drawer (owner decisions 2026-09-02): the premium
-             product story is canonical Lacks content (storyHeadline /
-             storyNarrative in data/mattresses.json, from
-             incoming/lacks_mattresses.json); the block collapses when a
-             model carries none. -->
+             product story is canonical retailer content (storyHeadline /
+             storyNarrative in data/mattresses.json, generated from the
+             retailer's canonical source); the block collapses when a model
+             carries none. -->
         <div class="drawer-story" id="drawerStory" hidden>
           <div class="drawer-story__headline" id="drawerStoryHeadline"></div>
           <p class="drawer-story__body" id="drawerStoryBody"></p>
@@ -24404,8 +24406,8 @@
     window._drawerCurrentIndex = 0;
 
     // ---- Product-proof drawer painter (owner decisions 2026-09-02) --------
-    // Canonical Lacks content only (data/mattresses.json <- incoming/
-    // lacks_mattresses.json): storyHeadline / storyNarrative, trialCue,
+    // Canonical retailer content only (data/mattresses.json, generated from
+    // the retailer's canonical source): storyHeadline / storyNarrative, trialCue,
     // proofs [{title, cue}] (two at most), construction {comfort, support}.
     // Every section collapses cleanly when its source is blank. Nothing here
     // is derived from quiz tags or answers, and the generic 5b schematic

@@ -1149,6 +1149,10 @@ section('Product-proof drawer painter — story, canonical cue with fallback, pr
   ok('the drawer carries no Key features cards, no comparison entry and no versus language',
     !drawerHtml.includes('drawerDifferentiators') && !/openCompare|compare-btn|versus|\bvs\b/i.test(drawerHtml)
     && !painterSrc.includes('versus'));
+  ok('every drawer control in the product-proof flow meets the 44px touch floor (finalist 52, Undo 44, schematic toggle 44, pillow-prompt buttons 44)',
+    /\.drawer-finalist-btn \{[^}]*min-height: 52px;/.test(norm) && /\.drawer-undo-btn \{[^}]*min-height: 44px;/.test(norm)
+    && /\.dfm-cons-btn \{[^}]*min-height: 44px;/.test(norm)
+    && /\.drawer-system-prompt__actions button \{[^}]*min-height: 44px;/.test(norm));
   ok('the story, proof and inside blocks start collapsed in the static markup',
     drawerHtml.includes('<div class="drawer-story" id="drawerStory" hidden>')
     && drawerHtml.includes('<div class="drawer-proof-grid" id="drawerProofGrid" hidden>')
