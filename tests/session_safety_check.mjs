@@ -1036,7 +1036,6 @@ check("seeded: the preference is one of the explored paths, as the app enforces"
 
 // window state
 win._savedPicks = [{ id: "g1", name: SENTINEL }];
-win._mattressReactions = { g1: "firm" };
 win._favoriteMattressId = "g1";
 win._compareSelected = ["g1", "g2"];
 win._compareOrigin = "review";
@@ -1243,7 +1242,7 @@ check("the sheet's stale-terms flag cleared", probe().finSheetStale === false);
 
 section("wipe matrix: window state");
 check("saved picks cleared", win._savedPicks.length === 0);
-check("mattress reactions cleared", Object.keys(win._mattressReactions).length === 0);
+check("no reaction state exists to clear (product-proof slice 1): the wipe blanks the undo record instead", win._mattressReactions === undefined && win._finalistUndo === null);
 check("favorite/finalist id cleared", win._favoriteMattressId === "");
 check("comparison selection cleared", win._compareSelected.length === 0);
 check("comparison origin cleared", win._compareOrigin === "");

@@ -502,7 +502,7 @@ section('X1 — the Selections pill lifts above the compare tray while it is sho
 // ------------------------------------------------------ wipe integration
 section('session-wipe integration');
 ok('the wipe resets the selection array with the other per-customer picks',
-  /window\._savedPicks = \[\];\s*window\._mattressReactions = \{\};\s*window\._favoriteMattressId = '';\s*window\._compareSelected = \[\];/.test(norm));
+  /window\._savedPicks = \[\];\s*window\._favoriteMattressId = '';\s*window\._finalistUndo = null;\s*window\._compareSelected = \[\];/.test(norm));
 ok('the wipe registry hides the tray and empties its slots',
   /\{ id: 'compareTray', display: 'none' \}/.test(norm) &&
   /var SESSION_CONTENT_IDS = \[[\s\S]*?'compareTraySlots'[\s\S]*?\];/.test(norm));

@@ -189,8 +189,9 @@ for (const lang of ["en", "es"]) {
   // Item 1.3 containment (2026-08-24): the gated "fit" row is omitted for
   // every pairing, so it is no longer in the preserved set. The rows that
   // remain must still all render - containment must not have collapsed them.
-  check(`[${lang}] retired×retired: feel/response/tier/reaction rows preserved`,
-    ["feel", "response", "tier", "reaction"].every((k) => rrHtml.includes(`data-cmp="${k}"`)));
+  // Product-proof slice 1 (2026-09-02): the observed-reaction row is gone.
+  check(`[${lang}] retired×retired: feel/response/tier rows preserved (no reaction row)`,
+    ["feel", "response", "tier"].every((k) => rrHtml.includes(`data-cmp="${k}"`)) && !rrHtml.includes('data-cmp="reaction"'));
   check(`[${lang}] retired×retired: the contained why-fit row is absent`,
     !rrHtml.includes('data-cmp="fit"'));
 }

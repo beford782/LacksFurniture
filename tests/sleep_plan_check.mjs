@@ -222,17 +222,20 @@ if (gate("resolveFinalistState", !!RESOLVER_SRC)) {
 
 section("contract / chooseFinalist() producer + atomic clears (R-1)");
 const CHOOSE_SRC = extractFunction("window.chooseFinalist = function(mattressId)");
+const CLEAR_SRC = extractFunction("window.clearFinalist = function(mattressId)");
+const TOGGLE_FIN_SRC = extractFunction("window.toggleFinalist = function(mattressId)");
+const NAME_SRC = extractFunction("function mattressNameById(mattressId)");
+const ANNOUNCE_SRC = extractFunction("function announceFinalist(text)");
 const TOGGLE_SAVE_SRC = extractFunction("window._toggleSavePick = function(mattressId)");
 const REMOVE_SRC = extractFunction("window.removeReviewMattress = function(mattressId)");
 const HF2_TOGGLE_SRC = extractFunction("window.toggleFavoriteMattress = function(mattressId)");
-if (gate("chooseFinalist", !!CHOOSE_SRC && !!TOGGLE_SAVE_SRC && !!REMOVE_SRC && !!HF2_TOGGLE_SRC)) {
+if (gate("chooseFinalist", !!CHOOSE_SRC && !!CLEAR_SRC && !!TOGGLE_FIN_SRC && !!NAME_SRC && !!ANNOUNCE_SRC && !!TOGGLE_SAVE_SRC && !!REMOVE_SRC && !!HF2_TOGGLE_SRC)) {
   // Minimal executable environment: a results state with two gold mattresses,
   // a DOM stub that records button repaints, an analytics recorder.
-  // Loop-A2 (owner ruling 2026-09-01): a finalist exists only after a recorded
-  // trial reaction, enforced at the ONE producer. The matrix below exercises
-  // producer semantics WITH reactions recorded; the gate itself is proven by
-  // the no-reaction environment after it.
-  const mk = (reactions = { g5: "good", g6: "firm" }) => {
+  // Product-proof slice 1 (owner decisions 2026-09-02): no reaction gate. A
+  // mattress can become the finalist immediately; the producer stays
+  // set-only and idempotent; the reversible control (toggleFinalist) clears.
+  const mk = () => {
     const events = [];
     const buttons = {};
     const doc = {
@@ -244,12 +247,16 @@ if (gate("chooseFinalist", !!CHOOSE_SRC && !!TOGGLE_SAVE_SRC && !!REMOVE_SRC && 
       setAttribute(k, v) { this.attrs[k] = v; }, getAttribute(k) { return k in this.attrs ? this.attrs[k] : (k === "data-id" ? id.replace(/^fin-/, "") : null); } });
     btn("save-g5", "noct-save-btn"); btn("save-g6", "noct-save-btn");
     btn("fin-g5", "finalist-btn"); btn("fin-g6", "finalist-btn");
-    const win = { _savedPicks: [], _favoriteMattressId: "", _updatePicksBadge: () => {}, _mattressReactions: reactions };
+    const win = { _savedPicks: [], _favoriteMattressId: "", _finalistUndo: null, _updatePicksBadge: () => {} };
     const resultsState = { tierData: { gold: [{ id: "g5", name: "G5", brand: "B", firmness: 5 }, { id: "g6", name: "G6", brand: "B", firmness: 6 }], silver: [], bronze: [] } };
-    new Function("window", "document", "_resultsState", "analytics", "t", "saveButtonLabel", "firmnessFeel", "renderHf2", "_renderResults",
+    new Function("window", "document", "_resultsState", "analytics", "t", "saveButtonLabel", "firmnessFeel", "renderHf2", "_renderResults", "showFinalistSleepSystemPrompt",
       `"use strict";
        ${TOGGLE_SAVE_SRC}
        ${CHOOSE_SRC}
+${CLEAR_SRC}
+${TOGGLE_FIN_SRC}
+${NAME_SRC}
+${ANNOUNCE_SRC}
        function finalistButtonLabel(c) { return c ? 'CHOSEN' : 'CHOOSE'; }
        window._repaintFinalistControls = function() {
          document.querySelectorAll('.finalist-btn').forEach(function(btn) {
@@ -259,7 +266,7 @@ if (gate("chooseFinalist", !!CHOOSE_SRC && !!TOGGLE_SAVE_SRC && !!REMOVE_SRC && 
        };
        ${REMOVE_SRC}
        ${HF2_TOGGLE_SRC}`)(
-      win, doc, resultsState, { log: (e, d) => events.push({ e, d }) }, (k) => k, (s) => (s ? "SAVED" : "SAVE"), () => "FEEL", () => {}, () => {});
+      win, doc, resultsState, { log: (e, d) => events.push({ e, d }) }, (k) => k, (s) => (s ? "SAVED" : "SAVE"), () => "FEEL", () => {}, () => {}, () => {});
     return { win, events, buttons };
   };
   {
@@ -272,25 +279,30 @@ if (gate("chooseFinalist", !!CHOOSE_SRC && !!TOGGLE_SAVE_SRC && !!REMOVE_SRC && 
       win._favoriteMattressId === "g6" && win._savedPicks.some((p) => p.id === "g6") && win._savedPicks.some((p) => p.id === "g5"));
     const before = win._favoriteMattressId;
     win.chooseFinalist("g6");
-    check("re-choosing the current finalist is an idempotent no-op (never a toggle off)", win._favoriteMattressId === before && before === "g6");
+    check("re-choosing the current finalist through the producer is an idempotent no-op (the producer is set-only)", win._favoriteMattressId === before && before === "g6");
+    check("the producer records the one-step undo (previous -> current) on a replacement", win._finalistUndo && win._finalistUndo.previous === "g5" && win._finalistUndo.current === "g6");
   }
   {
-    // The Consultation Summary's control carries the SAME "Chosen ✓" label as
-    // the Results producer (finalistButtonLabel) and must mean the same thing:
-    // activating it on the current finalist keeps the finalist and keeps the
-    // pick saved. Unsetting belongs to the adjacent Remove control. (External
-    // review P2 at eb7b124: the hf2 control toggled the finalist OFF, so the
-    // next Plan render silently fell back to the recommended starting point.)
+    // Product-proof slice 1 (owner decision 10): the Consultation Summary's
+    // control carries the SAME "Finalist ✓" label as the drawer and means the
+    // same thing - it TOGGLES through window.toggleFinalist(): on the current
+    // finalist it clears finalist status (the pick stays saved, announced
+    // through the drawer's live region), otherwise it chooses and replaces.
     const { win } = mk();
     win.toggleFavoriteMattress("g5");
     check("hf2 control on an unchosen saved pick SETS it as finalist through the producer (saves + chooses)",
       win._favoriteMattressId === "g5" && win._savedPicks.some((p) => p.id === "g5"));
     win.toggleFavoriteMattress("g5");
-    check("hf2 control on the CURRENT finalist is idempotent — finalist kept, pick still saved (never a toggle off)",
-      win._favoriteMattressId === "g5" && win._savedPicks.some((p) => p.id === "g5"));
-    win.toggleFavoriteMattress("g6");
+    check("hf2 control on the CURRENT finalist CLEARS finalist status - the pick stays saved (reversible, owner decision 10)",
+      win._favoriteMattressId === "" && win._savedPicks.some((p) => p.id === "g5"));
+    win.toggleFavoriteMattress("g5"); win.toggleFavoriteMattress("g6");
     check("hf2 control on another pick REPLACES the finalist (single finalist), both picks stay saved",
       win._favoriteMattressId === "g6" && win._savedPicks.some((p) => p.id === "g5") && win._savedPicks.some((p) => p.id === "g6"));
+    win.clearFinalist("g5");
+    check("clearFinalist on a non-finalist is a no-op", win._favoriteMattressId === "g6");
+    win.clearFinalist("g6");
+    check("clearFinalist on the finalist blanks the id, keeps the pick saved and drops the undo record",
+      win._favoriteMattressId === "" && win._savedPicks.some((p) => p.id === "g6") && win._finalistUndo === null);
   }
   {
     const { win } = mk();
@@ -326,19 +338,17 @@ if (gate("chooseFinalist", !!CHOOSE_SRC && !!TOGGLE_SAVE_SRC && !!REMOVE_SRC && 
         w._favoriteMattressId === "" && !w._savedPicks.some((p) => p && p.id === bad));
     }
   }
-  // Loop-A2 (owner ruling 2026-09-01): Results may not create a finalist. The
-  // two card templates emit "Try this mattress" (opens the trial drawer) and
-  // define NO finalist producer; the drawer's control is static markup routed
-  // through the same delegated handler into the one producer.
+  // Product-proof slice 1 (owner decisions 2 and 4): no reaction gate. Results
+  // still may not create a finalist (the trial happens in the drawer); the
+  // drawer's control is static markup routed through the delegated handler
+  // into the reversible toggle.
   {
-    const { win } = mk({});
+    const { win } = mk();
     win.chooseFinalist("g5");
-    check("Loop-A2 gate: choosing a mattress with NO recorded reaction is refused - no finalist, no stray save",
-      win._favoriteMattressId === "" && win._savedPicks.length === 0);
-    const withReaction = mk({ g5: "good" }).win;
-    withReaction.chooseFinalist("g5");
-    check("Loop-A2 gate: the same call succeeds once a reaction is recorded",
-      withReaction._favoriteMattressId === "g5" && withReaction._savedPicks.some((p) => p.id === "g5"));
+    check("no gate: a mattress becomes the finalist with no prior input (saved + chosen in one call)",
+      win._favoriteMattressId === "g5" && win._savedPicks.some((p) => p.id === "g5"));
+    check("no reaction guard exists anywhere in the producer",
+      !/_mattressReactions|reaction/.test(CHOOSE_SRC));
   }
   check("Loop-A2: the Results card templates define NO finalist producer",
     countOccurrences(norm, "class=\"finalist-btn'") === 0);
@@ -347,15 +357,14 @@ if (gate("chooseFinalist", !!CHOOSE_SRC && !!TOGGLE_SAVE_SRC && !!REMOVE_SRC && 
     // cluster reads compare -> Try -> save in both templates.
     (norm.match(/\+\s+compareBtn\s+\+\s+tryBtn\s+\+\s+saveBtn/g) || []).length === 2
     && countOccurrences(norm, 'class="noct-card-try"') === 2);
-  check("Loop-A2: the producer carries the trial gate (refuses an unreacted mattress before any save)",
-    /if \(!\(\(window\._mattressReactions \|\| \{\}\)\[mattressId\]\)\) return;/.test(norm)
-    && norm.indexOf("(window._mattressReactions || {})[mattressId]") < norm.indexOf("window._toggleSavePick(mattressId);"));
-  check("Loop-A2: the drawer footer control is disabled until a reaction and repainted on reaction and on open",
-    /id="drawerFinalistBtn" class="finalist-btn drawer-finalist-btn" data-id="" aria-pressed="false" disabled/.test(norm)
-    && /paintDrawerReactions\(mattressId\);\s*\n\s*window\.paintDrawerFinalist\(mattressId\);/.test(norm)
+  check("product-proof: the producer carries NO reaction guard and no reaction state exists in the app",
+    !/_mattressReactions/.test(norm) && !/reactionLabel\(/.test(norm));
+  check("product-proof: the drawer footer control is never disabled and is repainted on open",
+    /id="drawerFinalistBtn" class="finalist-btn drawer-finalist-btn" data-id="" aria-pressed="false"><\/button>/.test(norm)
+    && !/drawerFinalistBtn[^\n]*disabled/.test(norm)
     && /if \(typeof window\.paintDrawerFinalist === 'function'\) window\.paintDrawerFinalist\(mattressId\);/.test(norm));
-  check("the finalist control is routed through the delegated click handler before the card-tap path",
-    /closest\('\.finalist-btn'\)[\s\S]{0,200}chooseFinalist\(/.test(norm)
+  check("the finalist control is routed through the delegated click handler (reversible toggle) before the card-tap path",
+    /closest\('\.finalist-btn'\)[\s\S]{0,200}toggleFinalist\(/.test(norm)
     && norm.indexOf("closest('.finalist-btn')") < norm.indexOf("closest('.noct-toppick, .noct-support-card')"));
   check("the drawer's save control no longer says 'Save as Finalist' (labels a save as a save)",
     !/Save as Finalist|Guardar como finalista|Finalist saved|Finalista guardado/.test(norm));
@@ -380,7 +389,7 @@ if (gate("chooseFinalist", !!CHOOSE_SRC && !!TOGGLE_SAVE_SRC && !!REMOVE_SRC && 
     && !/finalist/i.test(dictEn["hf2.saved_picks_hint"]) && !/finalista/i.test(dictEs["hf2.saved_picks_hint"]));
   check("the governed EN strings are exact", dictEn["finalist.chosen"] === "Finalist ✓" && dictEn["finalist.recommended"] === "Recommended starting point"
     && dictEn["finalist.none"] === "No finalist selected yet" && dictEn["finalist.choose"] === "Choose a finalist"
-    && dictEn["finalist.choose_as"] === "Choose as finalist" && dictEn["finalist.chosen_btn"] === "Chosen ✓");
+    && dictEn["finalist.choose_as"] === "Make finalist" && dictEn["finalist.chosen_btn"] === "Finalist ✓");
 }
 
 section("contract / readSleepSystemGroups() — side-effect-free Plan accessor");
@@ -843,9 +852,10 @@ if (gate("renderSleepPlan", RENDER_SRCS.every(Boolean) && !!FALLBACK_SRC && !!RE
     // gates the Summary control on the recorded reaction and C3-A2 (D3) renders
     // the reaction as a chip - existing memory-only data via reactionLabel, no
     // re-derived reason prose. The compactness arms stay.
-    check("the pick card is compact: Plan-parity model line, no re-derived reason; reaction reads only as the D3 chip / Loop-A2 gate",
+    check("the pick card is compact: Plan-parity model line, no re-derived reason, no reaction chip, no gated control (product-proof slice 1)",
       !!pickSrc && /sleepPlanModelLine/.test(pickSrc)
-      && !/buildMattressPriorities|hf2ReasonFor/.test(pickSrc));
+      && !/buildMattressPriorities|hf2ReasonFor|_mattressReactions|reactionLabel|aria-disabled/.test(pickSrc)
+      && /aria-pressed/.test(pickSrc));
     check("renderHf2Accessories is cart-only: no scorer, no suggestion fill, catalog-resolved names",
       !!accSrc && !/scoreAccessoriesFromAnswers|recommendationCount|Still worth trying/.test(accSrc)
       && /window\._accCart/.test(accSrc) && /ACCESSORIES/.test(accSrc));

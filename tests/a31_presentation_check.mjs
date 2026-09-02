@@ -336,101 +336,186 @@ section('Results — copy budget, product hero, image attributes, decode hold');
     norm.includes("elements.subtitle.textContent = '';") && /'resultsRevealTitle', 'resultsRevealSubtitle'/.test(norm));
 }
 
-// ======================================================== 5. Drawer (A3.1 c2)
-section('Trial drawer — three numbered steps, one prompt, hero frame, retired duplicates');
+// ======================================================== 5. Drawer (product-proof slice 1)
+section('Trial drawer — one prompt, no reaction capture, no gate; reversible finalist, Undo, Save toggle');
 {
   const openSrc = extractFunction('window.openMattressDrawer = function(mattressId, orderList, opts)');
-  const stepsSrc = extractFunction('function paintDrawerSteps(mattressId)');
-  const gateSrc = extractFunction('window.paintDrawerFinalist = function(mattressId)');
+  const chooseSrc = extractFunction('window.chooseFinalist = function(mattressId)');
+  const clearSrc = extractFunction('window.clearFinalist = function(mattressId)');
+  const toggleSrc = extractFunction('window.toggleFinalist = function(mattressId)');
+  const undoSrc = extractFunction('window.undoFinalistReplacement = function()');
+  const nameSrc = extractFunction('function mattressNameById(mattressId)');
+  const announceSrc = extractFunction('function announceFinalist(text)');
+  const labelSrc = extractFunction('function finalistButtonLabel(isChosen)');
+  const paintBtnSrc = extractFunction('function paintFinalistButton(btn)');
   const repaintSrc = extractFunction('window._repaintFinalistControls = function()');
-  ok('drawer sources extracted', !!openSrc && !!stepsSrc && !!gateSrc && !!repaintSrc);
-  const iTry = norm.indexOf('id="drawerNoticeLabel" data-step="1"');
-  const iAsk = norm.indexOf('id="drawerReactionLabel" data-step="2"');
-  const iChoose = norm.indexOf('id="drawerFinalistLabel" data-step="3"');
-  const iCta = norm.indexOf('id="drawerCtaRow"');
-  ok('the three step labels are numbered 1-2-3 in source order and precede the finalist control',
-    iTry > -1 && iAsk > iTry && iChoose > iAsk && iCta > iChoose
-    && /class="drawer-section-label drawer-step" id="drawerNoticeLabel" data-step="1">Try</.test(norm)
-    && /class="drawer-section-label drawer-step" id="drawerFinalistLabel" data-step="3">Choose a finalist</.test(norm));
-  // Synthesis (owner counterprompt 2026-09-02, change 1): the whole workflow -
-  // Try, Ask, Choose, the finalist control and its follow-up prompt - precedes
-  // the Key features label, so the construction demonstration (inserted after
-  // #drawerDifferentiators) can never sit above the first trial action; the
-  // identity header and the feel line still come first.
-  const iKeyFeatures = norm.indexOf('id="drawerDifferentiatorsLabel"');
-  const iPrompt = norm.indexOf('id="drawerSystemPrompt"');
-  const iFeel = norm.indexOf('id="drawerFeelAnchor"');
-  ok('synthesis: the Try/Ask/Choose workflow (through the finalist control and its follow-up prompt) precedes Key features and the construction host; the identity header precedes the workflow',
-    iKeyFeatures > -1 && iFeel > -1 && iFeel < iTry && iPrompt > iCta && iPrompt < iKeyFeatures,
-    JSON.stringify({ iFeel, iTry, iCta, iPrompt, iKeyFeatures }));
-  ok('the renderer writes the step labels in both languages (question kept explicit; no "record" narration)',
-    openSrc.includes("currentLang === 'es' ? 'Probar' : 'Try'")
-    && openSrc.includes("? 'Pregunta: “¿Cómo se sintió este colchón?”'") && openSrc.includes(": 'Ask: “How did this mattress feel?”'")
-    && openSrc.includes("currentLang === 'es' ? 'Elegir finalista' : 'Choose a finalist'")
-    && !openSrc.includes('Record the customer') && !openSrc.includes('During the trial'));
-  ok('exactly one spoken trial prompt renders (the engine still produces two; the render takes the model-specific first line)',
-    openSrc.includes('getMattressTrialPrompts(m).slice(0, 1).map(')
-    && /return prompts\.slice\(0, 2\);/.test(norm));
-  ok('the finalist hint is the ruled short line in both dictionaries',
-    dictEn['drawer.finalist_hint'] === 'Record a reaction before choosing a finalist.'
-    && dictEs['drawer.finalist_hint'] === 'Registra una reacción antes de elegir un finalista.');
-  ok('the drawer name carries no price-tier glyph and the duplicate sub line is retired (hidden, empty)',
-    openSrc.includes("document.getElementById('drawerName').textContent = m.name;")
-    && openSrc.includes("drawerSubEl.textContent = ''; drawerSubEl.hidden = true;")
-    && !openSrc.includes('priceTierSymbol('));
-  ok('priceTierSymbol keeps its Compare consumer',
-    (norm.match(/priceTierSymbol\(/g) || []).length >= 2);
-  ok('the drawer hero is the one drawer image: mat frame (contain), reserved, decorative; the hidden thumb fetches nothing',
-    openSrc.includes(`heroEl.innerHTML = '<img src="' + escapeHtml(imgSrc) + '" width="1500" height="1000" alt="">';`)
-    && openSrc.includes("imgEl.innerHTML = '';")
-    && /\.drawer-hero img \{ width:100%; height:100%; object-fit:contain; display:block; \}/.test(norm)
-    && /\.drawer-hero \{[^}]*aspect-ratio: 3 \/ 2;/.test(norm));
-  ok('the differentiators label is a label, in the Compare row\'s vocabulary (EN + ES + static)',
-    openSrc.includes("? 'Características clave'") && openSrc.includes(": 'Key features'")
-    && /id="drawerDifferentiatorsLabel">Key features</.test(norm) && !liveHtml.includes('What makes this one different'));
-  ok('the drawer Back control reuses the Plan/Summary dictionary pair (one string, three consumers)',
-    /data-i18n="plan\.back_to_matches">← Back to matches<\/button>/.test(norm) && dictEn['plan.back_to_matches'] === '← Back to matches');
-  ok('the construction chip keeps the honesty statement and drops the customer-directed clause (EN + ES)',
-    /\? 'Los materiales y la construcción exactos varían según el modelo\.'\n        : 'Exact materials and construction vary by model\.';/.test(norm)
-    && !liveHtml.includes('Ask your specialist about the model'));
-  ok('the step rings are painted from the gate (paintDrawerFinalist) and from every finalist repaint',
-    gateSrc.includes('paintDrawerSteps(mattressId);') && repaintSrc.includes('paintDrawerSteps(window._currentDrawerMattressId);'));
-  ok('the step rings join the wipe (persistent nodes, state classes stripped)',
-    /\{ id: 'drawerNoticeLabel', remove: \['is-done', 'is-current'\] \},\s*\{ id: 'drawerReactionLabel', remove: \['is-done', 'is-current'\] \},\s*\{ id: 'drawerFinalistLabel', remove: \['is-done', 'is-current'\] \},/.test(norm));
-  ok('the ring is a border + glyph (never colour alone): numeral by attribute, check when done, heavier ring when current',
-    /\.drawer-step::before \{[^}]*content: attr\(data-step\);[^}]*border:1\.5px solid currentColor;/.test(norm)
-    && /\.drawer-step\.is-done::before \{ content:'\\2713'; \}/.test(norm)
-    && /\.drawer-step\.is-current::before \{ border-width:2\.5px; \}/.test(norm));
+  const toggleSaveSrc = extractFunction('window._toggleSavePick = function(mattressId)');
+  const saveDrawerSrc = extractFunction('window.saveDrawerPick = function()');
+  const paintSaveSrc = extractFunction('function paintDrawerSaveButton(mattressId)');
+  const paintFinSrc = extractFunction('window.paintDrawerFinalist = function(mattressId)');
+  const noticeSrc = extractFunction('function paintDrawerFinalistNotice(mattressId)');
+  const hf2ToggleSrc = extractFunction('window.toggleFavoriteMattress = function(mattressId)');
+  ok('drawer sources extracted', [openSrc, chooseSrc, clearSrc, toggleSrc, undoSrc, nameSrc, announceSrc, labelSrc, paintBtnSrc, repaintSrc, toggleSaveSrc, saveDrawerSrc, paintSaveSrc, paintFinSrc, noticeSrc, hf2ToggleSrc].every(Boolean));
 
-  // EXECUTED: the step painter across the three gate states + a control.
-  function runSteps({ reactions = {}, fav = '', id = 'g5', mutate = null } = {}) {
+  // ---- reaction capture is gone everywhere (owner decisions 1-3)
+  ok('no reaction controls render: no reaction row, no data-reaction buttons in the drawer markup, no reaction painter',
+    !norm.includes('id="drawerReactionRow"') && !norm.includes('data-reaction="soft"') && !norm.includes('paintDrawerReactions')
+    && !norm.includes('setDrawerReaction') && !norm.includes('drawerReactionLabel'));
+  ok('no reaction gate remains: the producer has no reaction guard and the drawer finalist button is never disabled',
+    !/_mattressReactions/.test(chooseSrc) && !/disabled/.test(paintFinSrc)
+    && /id="drawerFinalistBtn" class="finalist-btn drawer-finalist-btn" data-id="" aria-pressed="false"><\/button>/.test(norm)
+    && !norm.includes('drawerFinalistHint') && !norm.includes("t('drawer.finalist_hint')"));
+  ok('no reaction state survives in session code (no map, no wipe line, no reactionLabel)',
+    !norm.includes('_mattressReactions') && !norm.includes('reactionLabel(') && !norm.includes('setMattressReaction'));
+  ok('no Summary reaction chip, no Compare reaction row, no Sleep System reaction text',
+    !norm.includes('hf2-reaction-chip') && !norm.includes("hf2.status_reaction_label") && !norm.includes("'Observed reaction'")
+    && !norm.includes("'Reacción observada'") && !norm.includes('Not recorded yet') && !norm.includes('reactionText'));
+  ok('the removed dictionary keys have no consumers and are gone from both dictionaries',
+    !('drawer.finalist_hint' in dictEn) && !('drawer.finalist_hint' in dictEs)
+    && !('hf2.status_reaction_label' in dictEn) && !('hf2.status_reaction_label' in dictEs)
+    && !norm.includes('drawer.finalist_hint') && !norm.includes('hf2.status_reaction_label'));
+  ok('the drawer step rings and the numbered workflow are retired (no data-step, no .drawer-step rule)',
+    !norm.includes('data-step="1"') && !norm.includes('.drawer-step::before') && !norm.includes('paintDrawerSteps'));
+  ok('no "nothing to record" explanation was added in either language',
+    !liveHtml.includes('No response to record') && !liveHtml.includes('nothing to record') && !liveHtml.includes('Nada que registrar'));
+
+  // ---- statics: labels, pressed grammar, notice, live region, focus, wipe
+  ok('the finalist labels are the reversible pair in both dictionaries',
+    dictEn['finalist.choose_as'] === 'Make finalist' && dictEn['finalist.chosen_btn'] === 'Finalist ✓'
+    && dictEs['finalist.choose_as'] === 'Hacer finalista' && dictEs['finalist.chosen_btn'] === 'Finalista ✓');
+  ok('the notice / Undo / live-region strings exist in both languages with their slots',
+    ['drawer.undo', 'drawer.finalist_replaces', 'drawer.finalist_replaced', 'drawer.finalist_live_set', 'drawer.finalist_live_replaced', 'drawer.finalist_live_restored', 'drawer.finalist_live_cleared']
+      .every((k) => typeof dictEn[k] === 'string' && dictEn[k] && typeof dictEs[k] === 'string' && dictEs[k] && dictEn[k] !== dictEs[k])
+    && dictEn['drawer.finalist_replaces'] === 'Choosing this replaces {name} as finalist.' && dictEs['drawer.finalist_replaces'].includes('{name}')
+    && dictEn['drawer.finalist_live_replaced'].includes('{previous}') && dictEs['drawer.finalist_live_replaced'].includes('{previous}'));
+  ok('the Save control is a pressed-state toggle in the markup and the notice, Undo and live region ship hidden/empty',
+    /id="drawerInterestedBtn" class="drawer-btn drawer-btn-secondary" aria-pressed="false"/.test(norm)
+    && /<div class="drawer-finalist-note" id="drawerFinalistNote" hidden>/.test(norm)
+    && /id="drawerFinalistUndoBtn" hidden/.test(norm)
+    && /<div class="sr-only" id="drawerFinalistLive" role="status" aria-live="polite" aria-atomic="true"><\/div>/.test(norm));
+  ok('the delegated handler routes every finalist control through the reversible toggle; the Summary control agrees',
+    /closest\('\.finalist-btn'\)[\s\S]{0,200}window\.toggleFinalist\(finBtn\.getAttribute\('data-id'\)\)/.test(norm)
+    && hf2ToggleSrc.includes('window.toggleFinalist(mattressId);'));
+  ok('the finalist button and Undo take the two-ring focus treatment with the CanvasText fallback; the pressed Save reads by geometry',
+    /\.drawer-finalist-btn:focus-visible,\s*\n\s*\.drawer-undo-btn:focus-visible,\s*\n\s*\.drawer-btn:focus-visible \{\s*\n\s*outline: 3px solid var\(--focus-ring-outer\);/.test(norm)
+    && /@media \(forced-colors: active\) \{\s*\n\s*\.drawer-back-to-results:focus-visible,\s*\n\s*\.drawer-nav-btn:focus-visible,\s*\n\s*\.drawer-finalist-btn:focus-visible,/.test(norm)
+    && /\.drawer-btn-secondary\[aria-pressed="true"\] \{ border: 3px double CanvasText; \}/.test(norm)
+    && /\.drawer-undo-btn \{\s*\n\s*min-height: 44px;/.test(norm));
+  ok('the wipe resets both controls, closes the notice and Undo, clears the undo record, and empties the notice + live text',
+    /\{ id: 'drawerFinalistBtn', remove: \['chosen'\], attrs: \{ 'aria-pressed': 'false', 'data-id': '' \} \},/.test(norm)
+    && /\{ id: 'drawerInterestedBtn', remove: \['saved'\], attrs: \{ 'aria-pressed': 'false' \} \},/.test(norm)
+    && /\{ id: 'drawerFinalistNote', hiddenAttr: true \},\s*\n\s*\{ id: 'drawerFinalistUndoBtn', hiddenAttr: true \},/.test(norm)
+    && /'drawerFinalistNoteText', 'drawerFinalistLive',/.test(norm)
+    && /window\._favoriteMattressId = '';\s*\n\s*window\._finalistUndo = null;/.test(norm));
+  ok('closing the drawer ends the Undo window; the pillow prompt follows the first save (Save or Choose) once per session',
+    /drawer\.classList\.remove\('drawer-open'\);\s*\n\s*\/\/[^\n]*\n\s*window\._finalistUndo = null;/.test(norm)
+    && toggleSrc.includes("if (mattressId === window._currentDrawerMattressId && typeof showFinalistSleepSystemPrompt === 'function') showFinalistSleepSystemPrompt();")
+    && saveDrawerSrc.includes('showFinalistSleepSystemPrompt();'));
+  ok('exactly one spoken trial prompt renders; the renderer writes no reaction or step labels',
+    openSrc.includes('getMattressTrialPrompts(m).slice(0, 1).map(') && !openSrc.includes('drawerReactionLabel') && !openSrc.includes('drawerFinalistLabel'));
+
+  // ---- EXECUTED: the finalist / save state model against the real producers
+  function makeDrawerEnv({ lang = 'en', opened = 'g5', saved = [], fav = '', promptSpy = null } = {}) {
+    const D = lang === 'es' ? dictEs : dictEn;
+    const t = (k, repl) => { let v = Object.prototype.hasOwnProperty.call(D, k) ? D[k] : k; if (repl) Object.keys(repl).forEach((r) => { v = v.split('{' + r + '}').join(repl[r]); }); return v; };
     const els = new Map();
-    const el = (eid) => { const set = new Set(); return { id: eid, classList: {
-      toggle(c, force) { const on = force === undefined ? !set.has(c) : !!force; if (on) set.add(c); else set.delete(c); return on; },
-      contains(c) { return set.has(c); } } }; };
-    const doc = { getElementById(eid) { if (!els.has(eid)) els.set(eid, el(eid)); return els.get(eid); } };
-    let src = stepsSrc + '\nout.run = function() { paintDrawerSteps(id); };';
-    if (mutate) src = mutate(src);
+    const el = (id, cls = '') => { const set = new Set(); const attrs = {}; return { id, className: cls, textContent: '', hidden: false, attrs,
+      classList: { toggle(c, force) { const on = force === undefined ? !set.has(c) : !!force; if (on) set.add(c); else set.delete(c); return on; }, add(c) { set.add(c); }, remove(c) { set.delete(c); }, contains(c) { return set.has(c); } },
+      setAttribute(k, v) { attrs[k] = String(v); }, getAttribute(k) { return k in attrs ? attrs[k] : null; } }; };
+    const get = (id) => { if (!els.has(id)) els.set(id, el(id)); return els.get(id); };
+    const fin = get('drawerFinalistBtn'); fin.className = 'finalist-btn drawer-finalist-btn'; fin.attrs['data-id'] = '';
+    const cardFin = el('fin-g6', 'finalist-btn'); cardFin.attrs['data-id'] = 'g6'; els.set('fin-g6', cardFin);
+    const doc = { getElementById: (id) => get(id), querySelectorAll: (sel) => (sel === '.finalist-btn' ? [fin, cardFin] : []) };
+    const tierData = { gold: [{ id: 'g5', name: 'Five', brand: 'B', firmness: 5 }, { id: 'g6', name: 'Six', brand: 'B', firmness: 6 }, { id: 'g7', name: 'Seven', brand: 'B', firmness: 7 }], silver: [], bronze: [] };
+    const win = { _savedPicks: saved.map((id) => ({ id, name: tierData.gold.find((m) => m.id === id).name })), _favoriteMattressId: fav, _finalistUndo: null,
+      _currentDrawerMattressId: opened, _drawerData: { g5: { m: tierData.gold[0] }, g6: { m: tierData.gold[1] }, g7: { m: tierData.gold[2] } }, _updatePicksBadge: () => {} };
+    const prompts = { n: 0 };
+    const src = [chooseSrc, clearSrc, toggleSrc, undoSrc, nameSrc, announceSrc, labelSrc, paintBtnSrc, repaintSrc, toggleSaveSrc, saveDrawerSrc, paintSaveSrc, paintFinSrc, noticeSrc, hf2ToggleSrc].join('\n')
+      + '\nout.api = { choose: window.chooseFinalist, clear: window.clearFinalist, toggle: window.toggleFinalist, undo: window.undoFinalistReplacement, save: window.saveDrawerPick, paint: window.paintDrawerFinalist, hf2: window.toggleFavoriteMattress, toggleSave: window._toggleSavePick };';
     const out = {};
-    new Function('window', 'document', 'id', 'out', '"use strict";' + src)({ _mattressReactions: reactions, _favoriteMattressId: fav }, doc, id, out);
-    out.run();
-    const state = (eid) => { const c = els.get(eid).classList; return c.contains('is-done') ? 'done' : (c.contains('is-current') ? 'current' : 'plain'); };
-    return { try: state('drawerNoticeLabel'), ask: state('drawerReactionLabel'), choose: state('drawerFinalistLabel') };
+    new Function('window', 'document', 't', '_resultsState', 'analytics', 'saveButtonLabel', 'firmnessFeel', 'renderHf2', '_renderResults', 'showFinalistSleepSystemPrompt', 'out',
+      '"use strict";' + src)(win, doc, t, { tierData }, { log() {} }, (s) => (s ? 'Saved ✓' : 'Save'), () => 'Feel', () => {}, () => {}, () => { prompts.n++; if (promptSpy) promptSpy(); }, out);
+    out.api.paint(opened);
+    const savedIds = () => win._savedPicks.map((p) => p.id);
+    return { win, els: get, api: out.api, savedIds, prompts, fin, cardFin, note: get('drawerFinalistNote'), noteText: get('drawerFinalistNoteText'), undo: get('drawerFinalistUndoBtn'), live: get('drawerFinalistLive'), saveBtn: get('drawerInterestedBtn') };
   }
-  const before = runSteps();
-  ok('before a reaction: every ring is a plain numeral (the trial is under way; nothing is claimed done)',
-    before.try === 'plain' && before.ask === 'plain' && before.choose === 'plain', JSON.stringify(before));
-  const after = runSteps({ reactions: { g5: 'good' } });
-  ok('after a reaction: Try and Ask are done, Choose is current',
-    after.try === 'done' && after.ask === 'done' && after.choose === 'current', JSON.stringify(after));
-  const chosen = runSteps({ reactions: { g5: 'good' }, fav: 'g5' });
-  ok('after choosing this mattress: all three done',
-    chosen.try === 'done' && chosen.ask === 'done' && chosen.choose === 'done', JSON.stringify(chosen));
-  const other = runSteps({ reactions: { g5: 'good' }, fav: 'g7' });
-  ok('a finalist chosen elsewhere does not mark this mattress\'s Choose step done',
-    other.choose === 'current', JSON.stringify(other));
-  const control = runSteps({ reactions: { g5: 'good' }, mutate: (s) => mustReplace(s, "var reacted = !!(mattressId && (window._mattressReactions || {})[mattressId]);", 'var reacted = false;') });
-  ok('control: a painter that ignores the reaction is detected', control.try === 'plain' && control.choose === 'plain', JSON.stringify(control));
+  {
+    const e = makeDrawerEnv();
+    ok('executed: a fresh drawer shows "Make finalist" (unpressed, never disabled), Save unpressed, no notice, empty live region',
+      e.fin.textContent === 'Make finalist' && e.fin.getAttribute('aria-pressed') === 'false' && e.fin.getAttribute('disabled') === null
+      && e.saveBtn.textContent === 'Save' && e.saveBtn.getAttribute('aria-pressed') === 'false' && e.note.hidden === true && e.live.textContent === '');
+    e.api.toggle('g5');
+    ok('executed: a mattress becomes the finalist with no prior input; it is force-saved; the button reads "Finalist ✓" pressed; announced once',
+      e.win._favoriteMattressId === 'g5' && e.savedIds().includes('g5') && e.fin.textContent === 'Finalist ✓' && e.fin.getAttribute('aria-pressed') === 'true'
+      && e.saveBtn.getAttribute('aria-pressed') === 'true' && e.live.textContent === 'Finalist: Five.' && e.note.hidden === true);
+    ok('executed: the pillow prompt fires on the first save made by choosing (once per session guard is the prompt\'s own)', e.prompts.n === 1);
+    e.api.toggle('g5');
+    ok('executed: tapping "Finalist ✓" clears finalist status but keeps the mattress saved; announced',
+      e.win._favoriteMattressId === '' && e.savedIds().includes('g5') && e.fin.textContent === 'Make finalist' && e.fin.getAttribute('aria-pressed') === 'false'
+      && e.saveBtn.getAttribute('aria-pressed') === 'true' && e.live.textContent === 'No finalist selected.');
+    e.api.toggle('g5'); e.api.toggle('g5'); e.api.toggle('g5');
+    ok('executed: repeated toggles are idempotent per state (set, clear, set)', e.win._favoriteMattressId === 'g5' && e.savedIds().filter((x) => x === 'g5').length === 1);
+  }
+  {
+    // Replacement + Undo, from the drawer of the replacing mattress.
+    const e = makeDrawerEnv({ opened: 'g6', saved: ['g5'], fav: 'g5' });
+    ok('executed: with a different finalist the notice names it ("Choosing this replaces Five as finalist.") and Undo is hidden',
+      e.note.hidden === false && e.noteText.textContent === 'Choosing this replaces Five as finalist.' && e.undo.hidden === true);
+    e.api.toggle('g6');
+    ok('executed: choosing replaces the finalist; the previous finalist stays saved; the notice offers Undo; announced with both names',
+      e.win._favoriteMattressId === 'g6' && e.savedIds().includes('g5') && e.savedIds().includes('g6')
+      && e.note.hidden === false && e.noteText.textContent === 'Now the finalist. Replaced Five.' && e.undo.hidden === false && e.undo.textContent === 'Undo'
+      && e.live.textContent === 'Finalist: Six. Replaced Five.' && e.cardFin.getAttribute('aria-pressed') === 'true');
+    e.api.undo();
+    ok('executed: Undo restores the previous finalist, both stay saved, the notice returns to the replacement warning, announced',
+      e.win._favoriteMattressId === 'g5' && e.savedIds().includes('g5') && e.savedIds().includes('g6') && e.win._finalistUndo === null
+      && e.noteText.textContent === 'Choosing this replaces Five as finalist.' && e.undo.hidden === true && e.live.textContent === 'Finalist restored: Five.');
+    e.api.undo();
+    ok('executed: a second Undo is a no-op', e.win._favoriteMattressId === 'g5' && e.live.textContent === 'Finalist restored: Five.');
+  }
+  {
+    // Undo when the previous finalist was un-saved in between: the invariant holds (chooseFinalist re-saves).
+    const e = makeDrawerEnv({ opened: 'g6', saved: ['g5'], fav: 'g5' });
+    e.api.toggle('g6');
+    e.api.toggleSave('g5');
+    ok('executed: un-saving the previous finalist hides Undo (nothing to restore to) and leaves the current finalist intact',
+      e.win._favoriteMattressId === 'g6' && !e.savedIds().includes('g5') && (e.api.paint('g6'), e.undo.hidden === true));
+    e.api.undo();
+    ok('executed: Undo after that still cannot break the finalist-implies-saved invariant',
+      (e.win._favoriteMattressId === '' || e.savedIds().includes(e.win._favoriteMattressId)));
+  }
+  {
+    // Save toggle in the drawer.
+    const e = makeDrawerEnv();
+    e.api.save();
+    ok('executed: drawer Save saves (pressed, "Saved ✓"), never chooses, and fires the pillow prompt once',
+      e.savedIds().includes('g5') && e.win._favoriteMattressId === '' && e.saveBtn.textContent === 'Saved ✓' && e.saveBtn.getAttribute('aria-pressed') === 'true' && e.prompts.n === 1);
+    e.api.save();
+    ok('executed: drawer Save un-saves on the second tap (a real toggle)', !e.savedIds().includes('g5') && e.saveBtn.getAttribute('aria-pressed') === 'false' && e.saveBtn.textContent === 'Save');
+    e.api.toggle('g5'); e.api.save();
+    ok('executed: un-saving the current finalist from the drawer clears finalist status atomically (invariant) and announces it',
+      !e.savedIds().includes('g5') && e.win._favoriteMattressId === '' && e.live.textContent === 'No finalist selected.' && e.fin.getAttribute('aria-pressed') === 'false');
+    ok('executed: the prompt fired once for two saves (once-per-session is the prompt\'s own guard here: the spy counts calls)', e.prompts.n >= 2);
+  }
+  {
+    // Summary control agreement + ES.
+    const e = makeDrawerEnv({ lang: 'es', opened: 'g6', saved: ['g5'], fav: 'g5' });
+    ok('executed (ES): the notice and labels resolve in Spanish', e.noteText.textContent === 'Elegirlo reemplaza a Five como finalista.' && e.fin.textContent === 'Hacer finalista');
+    e.api.hf2('g6');
+    ok('executed (ES): the Summary control replaces through the same toggle and the live text is Spanish',
+      e.win._favoriteMattressId === 'g6' && e.live.textContent === 'Finalista: Six. Reemplazó a Five.');
+    e.api.hf2('g6');
+    ok('executed (ES): the Summary control on the current finalist clears it (agreeing with the drawer) and keeps it saved',
+      e.win._favoriteMattressId === '' && e.savedIds().includes('g6') && e.live.textContent === 'No hay finalista seleccionado.');
+  }
+  {
+    const e = makeDrawerEnv({ opened: 'g6', saved: ['g5'], fav: 'g5' });
+    const broken = mustReplace(noticeSrc, "text.textContent = t('drawer.finalist_replaces', { name: mattressNameById(fav) });", "text.textContent = '';");
+    const out = {};
+    new Function('window', 'document', 't', 'mattressNameById', 'out', '"use strict";' + broken + '\nout.run = function(id) { paintDrawerFinalistNotice(id); };')(e.win, { getElementById: (id) => e.els(id) }, (k, r) => (dictEn[k] || k).replace('{name}', (r || {}).name || ''), () => 'Five', out);
+    out.run('g6');
+    ok('negative control: a notice that stops naming the finalist is detected', e.noteText.textContent === '');
+  }
 }
 
 // ======================================================== 6. Compare (A3.1 c2)
@@ -555,9 +640,9 @@ section('Consultation Summary — recap rows, names-only priorities with ordinal
     norm.includes(`'<span class="hf2-ordinal" aria-hidden="true">' + (i + 1) + '</span>'`)
     && !/brief\.try_this|item\.why\[|item\.test\[/.test(extractFunction('function renderHf2Priorities()'))
     && /\.hf2-ordinal \{[^}]*border-radius: 50%;/.test(norm) && /\.hf2-priorities \{[^}]*list-style: none;/.test(norm));
-  ok('the status block: the metadata line is retired (node kept, hidden) and the verdict chip keeps its label sr-only',
+  ok('the status block: the metadata line is retired (node kept, hidden); no verdict chip exists (product-proof slice 1)',
     norm.includes("if (metaEl) { metaEl.textContent = ''; metaEl.hidden = true; }")
-    && norm.includes(`'<div class="hf2-status__row"><span class="sr-only">' + esc(t('hf2.status_reaction_label'))`));
+    && !norm.includes('hf2.status_reaction_label') && !norm.includes('hf2-reaction-chip'));
   ok('the saved-picks and Sleep System hints ship hidden (keys stay written; ruling 7), the empty state is the short line',
     /id="hf2FinalistsHint" hidden>/.test(norm) && /id="hf2SystemHint" hidden>/.test(norm)
     && dictEn['hf2.no_system_items'] === 'Nothing added yet.' && dictEs['hf2.no_system_items'] === 'Aún no se ha agregado nada.');
@@ -765,7 +850,7 @@ section('Protection goals — four compact goal glyphs, paired with their labels
 section('Consultation Summary — first-fold order, one NEXT cue in the status block, payment out of the card, Visit focus vs Priorities, attribution below the fold');
 {
   const at = (m) => norm.indexOf(m);
-  ok('status block order: thumbnail -> finalist eyebrow -> name -> rows (verdict, Still open) -> NEXT cue -> (payment node, never rendered) -> route',
+  ok('status block order: thumbnail -> finalist eyebrow -> name -> rows (Still open) -> NEXT cue -> (payment node, never rendered) -> route',
     at('id="hf2StatusThumb"') < at('id="hf2LeadLine"') && at('id="hf2LeadLine"') < at('id="hf2StatusName"')
     && at('id="hf2StatusName"') < at('id="hf2StatusRows"') && at('id="hf2StatusRows"') < at('id="hf2StatusNext"')
     && at('id="hf2StatusNext"') < at('id="hf2StatusPayment"') && at('id="hf2StatusPayment"') < at('id="hf2StatusRoute"')

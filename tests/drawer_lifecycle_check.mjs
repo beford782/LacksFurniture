@@ -269,15 +269,16 @@ console.log("\n-- Slice 6 C7: drawer control accessibility --");
   check("...and the single-item branch disables BOTH (the stale-style leak is closed)",
     /navLabel\.textContent = '';\s*\n\s*prevBtn\.disabled = true;\s*\n\s*nextBtn\.disabled = true;/.test(norm)
     && /\.drawer-nav-btn:disabled \{/.test(norm));
-  check("ONE reaction painter serves both call sites, with aria-pressed and a non-colour check-mark cue",
-    (norm.match(/paintDrawerReactions\(/g) || []).length === 3
-    && /btn\.setAttribute\('aria-pressed', isSelected \? 'true' : 'false'\);/.test(norm)
-    && norm.includes("btn.textContent = (isSelected ? '\\u2713 ' : '') + labels[reaction];"));
-  check("the static reaction buttons declare aria-pressed from first paint",
-    (norm.match(/data-reaction="(soft|good|firm)" aria-pressed="false"/g) || []).length === 3);
+  // Product-proof slice 1 (owner decisions 2026-09-02): reaction capture is
+  // gone; the two product controls carry aria-pressed from first paint.
+  check("no reaction painter or reaction row remains in the drawer",
+    !norm.includes("paintDrawerReactions(") && !norm.includes('id="drawerReactionRow"') && !norm.includes('data-reaction="soft"'));
+  check("the finalist and Save controls declare aria-pressed from first paint and neither is disabled",
+    /id="drawerFinalistBtn" class="finalist-btn drawer-finalist-btn" data-id="" aria-pressed="false"><\/button>/.test(norm)
+    && /id="drawerInterestedBtn" class="drawer-btn drawer-btn-secondary" aria-pressed="false"/.test(norm));
   check("drawer controls have a real focus indicator and its forced-colors counterpart, in a NEW block after the anchored ones",
-    /\.drawer-nav-btn:focus-visible,\s*\n\s*\.drawer-reaction-row button:focus-visible,\s*\n\s*\.drawer-btn:focus-visible \{/.test(norm)
-    && /\.drawer-reaction-row button\[aria-pressed="true"\] \{ border-width: 3px; \}/.test(norm));
+    /\.drawer-nav-btn:focus-visible,\s*\n\s*\.drawer-finalist-btn:focus-visible,\s*\n\s*\.drawer-undo-btn:focus-visible,\s*\n\s*\.drawer-btn:focus-visible \{/.test(norm)
+    && /\.drawer-btn-secondary\[aria-pressed="true"\] \{ border: 3px double CanvasText; \}/.test(norm));
   check("the drawer promo kicker and system-prompt eyebrow rose to a usable 12px",
     (() => {
       const flat = norm.split("\n").join(" ");

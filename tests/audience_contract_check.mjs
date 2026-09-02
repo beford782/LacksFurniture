@@ -223,18 +223,16 @@ section('specialist surfaces — A3 evidence vocabulary, no customer second pers
     && /id="resultsSubhead" hidden><\/p>/.test(norm));
   ok('the trial-focus label is neutral evidence ("Trial focus", not "Your trial focus")',
     norm.includes("(es ? 'Enfoque de la prueba' : 'Trial focus')"));
-  // A3.1: three numbered steps - Try, Ask, Choose - replace the three
-  // narrations of one trial; the spoken question stays explicit.
-  ok('the drawer steps name the operator’s job in three numbered labels; the spoken question is explicit',
-    norm.includes("? 'Pregunta: “¿Cómo se sintió este colchón?”'")
-    && norm.includes(": 'Ask: “How did this mattress feel?”'")
-    && norm.includes("currentLang === 'es' ? 'Probar' : 'Try'")
-    && norm.includes("currentLang === 'es' ? 'Elegir finalista' : 'Choose a finalist'"));
-  ok('the drawer finalist hint is operator voice in both dictionaries',
-    dictEn['drawer.finalist_hint'] === 'Record a reaction before choosing a finalist.'
-    && dictEs['drawer.finalist_hint'] === 'Registra una reacción antes de elegir un finalista.');
-  ok('Compare reports observed trial evidence',
-    norm.includes("label: _esCmp ? 'Reacción observada' : 'Observed reaction'")
+  // Product-proof slice 1 (owner decisions 2026-09-02): the drawer names the
+  // trial once and asks the operator to record nothing.
+  ok('the drawer names the trial once; no spoken-question label and no recording instruction remain',
+    norm.includes("currentLang === 'es' ? 'Probar' : 'Try'")
+    && !norm.includes("'Ask: “How did this mattress feel?”'") && !norm.includes("'Pregunta: “¿Cómo se sintió este colchón?”'")
+    && !norm.includes("'Elegir finalista' : 'Choose a finalist'"));
+  ok('the reaction-gate hint is retired from both dictionaries',
+    !('drawer.finalist_hint' in dictEn) && !('drawer.finalist_hint' in dictEs));
+  ok('Compare reports catalog facts only (no observed-reaction row)',
+    !norm.includes("'Observed reaction'") && !norm.includes("'Reacción observada'")
     && dictEn['compare.modal_title'] === 'Compare shortlisted mattresses');
   ok('the Brief->Results status card narrates neutrally, in one sentence (A3.1 retired the subtitle)',
     norm.includes("es ? 'Abriendo la comparación en tienda' : 'Opening the showroom comparison'")

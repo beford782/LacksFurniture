@@ -68,7 +68,7 @@ ok('WIPE ORDERING: the stored opener is nulled BEFORE the wipe closes the modal'
   /window\._compareOrigin = '';\s*(?:\/\/[^\n]*\s*)*window\._compareReturnFocus = null;\s*if \(typeof window\.closeCompareModal === 'function'\) window\.closeCompareModal\(\);/.test(norm));
 
 // --------------------------------------------------------------- harness
-function makeEnv({ lang = 'en', diffs = null, priorities = null, reactions = null } = {}) {
+function makeEnv({ lang = 'en', diffs = null, priorities = null } = {}) {
   let active = null;
   const els = {};
   function makeEl(id) {
@@ -104,7 +104,6 @@ function makeEnv({ lang = 'en', diffs = null, priorities = null, reactions = nul
       g2: { m: { id: 'g2', name: 'A', brand: 'B', firmness: 5, imageUrl: '' }, tier: 'gold', firmFeel: 'Medium' },
       g6: { m: { id: 'g6', name: 'C', brand: 'D', firmness: 7, imageUrl: '' }, tier: 'gold', firmFeel: 'Firm' }
     },
-    _mattressReactions: reactions || {},
     _compareOrigin: '',
     clearCompare: () => { win._clearCalls = (win._clearCalls || 0) + 1; }
   };
@@ -252,8 +251,9 @@ section('aligned comparison: executed rows, EN');
   const order = [...out.matchAll(/data-cmp="([a-z]+)"/g)].map((m) => m[1]).join(',');
   // Item 1.3 containment (owner ruling 2026-08-24): the gated "Why it is
   // here" row is omitted, so the scan order closes over it with no gap.
-  ok('rows appear in the scan order: feel, response, tier, feature, benefit, reaction',
-    order === 'feel,response,tier,feature,benefit,reaction');
+  // Product-proof slice 1 (owner decision 3): no observed-reaction row.
+  ok('rows appear in the scan order: feel, response, tier, feature, benefit',
+    order === 'feel,response,tier,feature,benefit');
   ok('the contained why-fit row does not render',
     !out.includes('data-cmp="fit"'));
   ok('no contained why-fit label renders in either language',
@@ -276,8 +276,8 @@ section('aligned comparison: executed rows, EN');
     !out.includes('P-g2 — d-g2') && !out.includes('P-g6 — d-g6'));
   ok('no stranded empty row survives the omission',
     !/data-cmp="fit"/.test(out) && !/<div class="cmp-row[^"]*" role="row"><div class="cmp-label" role="rowheader"><\/div>/.test(out));
-  ok('a missing reaction falls back to the vetted placeholder on its side only',
-    /data-cmp="reaction"[\s\S]*?ok[\s\S]*?Not recorded yet/.test(out));
+  ok('no reaction row or placeholder renders (product-proof slice 1)',
+    !out.includes('data-cmp="reaction"') && !out.includes('Not recorded yet'));
   env.api.close();
 }
 
@@ -298,8 +298,8 @@ section('aligned comparison: Spanish and missing-data fallbacks');
   ok('ES: the contained why-fit label is absent',
     !out.includes('Por qué está aquí'));
   ok('ES same-tag renders (Igual en ambos)', out.includes('Igual en ambos'));
-  ok('ES missing reaction falls back to the vetted ES placeholder',
-    out.includes('Aún no registrada'));
+  ok('ES: no reaction row or placeholder renders either',
+    !out.includes('Aún no registrada') && !out.includes('Reacción observada'));
   es.api.close();
 }
 {
@@ -318,7 +318,7 @@ section('aligned comparison: Spanish and missing-data fallbacks');
     !out.includes('data-cmp="feature"') && !out.includes('data-cmp="benefit"'));
   ok('retired both sides: the remaining rows still render',
     out.includes('data-cmp="feel"') && out.includes('data-cmp="response"') &&
-    out.includes('data-cmp="tier"') && out.includes('data-cmp="reaction"'));
+    out.includes('data-cmp="tier"') && !out.includes('data-cmp="reaction"'));
   ok('retired both sides: the contained why-fit row is absent too',
     !out.includes('data-cmp="fit"'));
   ok('dialog lifecycle unchanged through the aligned render (focus on title)',
@@ -337,12 +337,13 @@ function tableChecks(out, tag, labels) {
   ok(tag + ': the head row holds three column headers (corner + both mattresses)',
     /cmp-head-row" role="row"/.test(out) &&
     (out.match(/role="columnheader"/g) || []).length === 3);
-  // Item 1.3 containment (2026-08-24): six attribute rows, not seven - the
-  // gated why-fit row is omitted, and the accessibility tree must show no
-  // remnant of it (no extra row, no empty rowheader).
+  // Item 1.3 containment (2026-08-24): the gated why-fit row is omitted, and
+  // the accessibility tree must show no remnant of it (no extra row, no empty
+  // rowheader). Product-proof slice 1 (2026-09-02): the observed-reaction row
+  // is gone too - five attribute rows.
   ok(tag + ': every attribute row is a role row with a rowheader label',
-    (out.match(/class="cmp-row[^"]*" role="row"/g) || []).length === 6 &&
-    (out.match(/role="rowheader"/g) || []).length === 6);
+    (out.match(/class="cmp-row[^"]*" role="row"/g) || []).length === 5 &&
+    (out.match(/role="rowheader"/g) || []).length === 5);
   ok(tag + ': differing rows expose two plain cells under the mattress columns',
     [...out.matchAll(/cmp-row--diff" role="row" data-cmp="[a-z]+">([\s\S]*?)<\/div><\/div>/g)]
       .every((m) => (m[0].match(/role="cell"(?! aria-colspan)/g) || []).length === 2));
@@ -358,15 +359,13 @@ function tableChecks(out, tag, labels) {
 }
 {
   const env = makeEnv({
-    diffs: (m) => [{ title: 'KF-' + m.id, detail: 'WB-' + m.id }],
-    reactions: { g2: 'good' }
+    diffs: (m) => [{ title: 'KF-' + m.id, detail: 'WB-' + m.id }]
   });
   env.focusOpener();
   env.api.open();
   tableChecks(env.els.compareCols.innerHTML, 'EN',
-    // A3 (owner ruling 2026-09-01): the reaction row reports observed trial
-    // evidence to the operator.
-    ['Feel', 'Response', 'Tier', 'Key feature', 'Why it helps', 'Observed reaction']);
+    // Product-proof slice 1: catalog facts only - no observed-reaction row.
+    ['Feel', 'Response', 'Tier', 'Key feature', 'Why it helps']);
   env.api.close();
 }
 {
@@ -374,7 +373,7 @@ function tableChecks(out, tag, labels) {
   es.focusOpener();
   es.api.open();
   tableChecks(es.els.compareCols.innerHTML, 'ES',
-    ['Sensación', 'Respuesta', 'Nivel', 'Característica clave', 'En qué ayuda', 'Reacción observada']);
+    ['Sensación', 'Respuesta', 'Nivel', 'Característica clave', 'En qué ayuda']);
   es.api.close();
 }
 

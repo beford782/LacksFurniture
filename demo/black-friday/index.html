@@ -3832,18 +3832,6 @@
       font-size: 0.95rem;
       color: var(--color-text);
     }
-    .hf2-reaction-chip {
-      display: inline-block;
-      padding: 2px 10px;
-      border: 1px solid #7F9C79;
-      border-radius: 999px;
-      font-family: var(--font-sans);
-      font-size: 0.8rem;
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      color: #2F4A2C;
-      background: #DDE7D9;
-    }
     .hf2-status__payment {
       margin: 0.45rem 0 0;
       font-size: 0.85rem;
@@ -9097,19 +9085,6 @@
       border-bottom: 1px solid rgba(255,255,255,0.1);
     }
     .drawer-hero img { width:100%; height:100%; object-fit:contain; display:block; }
-    /* A3.1 step labels: numbered rings by border, state by glyph + border
-       width (never colour alone); the numeral is decorative - the label text
-       names the step. */
-    .drawer-step { display:flex; align-items:center; gap:9px; }
-    .drawer-step::before {
-      content: attr(data-step);
-      display:inline-flex; align-items:center; justify-content:center;
-      width:22px; height:22px; border-radius:50%; flex-shrink:0;
-      border:1.5px solid currentColor;
-      font:700 11px/1 var(--font-sans); letter-spacing:0; text-transform:none;
-    }
-    .drawer-step.is-done::before { content:'\2713'; }
-    .drawer-step.is-current::before { border-width:2.5px; }
     .drawer-scroll { overflow-y:auto; padding:20px 22px 22px; flex:1; }
     .drawer-scroll::-webkit-scrollbar { display:none; }
     .drawer-mattress-header { display:flex; align-items:flex-start; gap:14px; padding:0 0 14px; border-bottom:1px solid rgba(255,255,255,0.1); margin-bottom:14px; }
@@ -9267,27 +9242,6 @@
       background: transparent;
       color: #665D54;
     }
-    .drawer-reaction-row {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 10px;
-      margin-bottom: 12px;
-    }
-    .drawer-reaction-row button {
-      min-height: 52px;
-      border: 1px solid rgba(255,255,255,0.18);
-      border-radius: 8px;
-      background: rgba(255,255,255,0.055);
-      color: var(--cream);
-      font: 700 14px/1.2 var(--font-sans);
-      cursor: pointer;
-      touch-action: manipulation;
-    }
-    .drawer-reaction-row button.is-selected {
-      border-color: var(--gold);
-      background: rgba(212,168,75,0.18);
-      color: var(--gold-light);
-    }
     /* "What's in it" — per-feature reason bullets surfaced from m.reasons*.
        Visual matches .drawer-reason-box (same surface, border, radius, padding)
        so the section reads as a sibling to the customer-friendly summary above. */
@@ -9397,17 +9351,12 @@
     .drawer-tags-row { display:flex; flex-wrap:wrap; gap:0.3rem; margin-bottom:0.85rem; }
     .drawer-tag { background:rgba(212,168,75,0.1); color:var(--gold); padding:0.2rem 0.55rem; border-radius:8px; font-size:0.58rem; font-weight:500; }
     .drawer-cta-row { display:flex; gap:10px; }
-    /* Loop-A2: the drawer's finalist control at footer scale. Disabled until a
-       reaction is recorded (muted, not hidden - the affordance is visible and
-       explained by the hint); enabled = the singular primary (gold, like the
-       old Save primary); chosen = restrained sage "Chosen ✓" (aria-pressed
-       carries the state). */
-    .drawer-finalist-hint {
-      margin: 0 0 8px;
-      font: 500 12px/1.4 var(--font-sans);
-      color: var(--cream-dim, rgba(248,246,241,0.72));
-    }
-    .drawer-finalist-hint[hidden] { display: none; }
+    /* Product-proof drawer: the finalist control is never disabled - it is
+       the singular primary (gold) until this mattress is the finalist, then
+       the restrained sage "Finalist ✓" (aria-pressed carries the state; a
+       second tap clears it). The Save toggle mirrors the same pressed
+       grammar. The replacement notice sits under the controls with its
+       Undo control; the live region is sr-only. */
     .drawer-finalist-btn {
       flex: 1;
       justify-content: center;
@@ -9418,11 +9367,34 @@
       color: var(--cream);
       font-size: 12px;
     }
-    .drawer-finalist-btn:disabled {
-      opacity: 0.55;
-      cursor: default;
+    .drawer-finalist-note {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px 12px;
+      margin: 10px 0 0;
+      font: 500 13px/1.45 var(--font-sans);
+      color: var(--cream-dim, rgba(248,246,241,0.72));
     }
-    .drawer-finalist-btn:not(:disabled):not(.chosen) {
+    .drawer-finalist-note[hidden] { display: none; }
+    .drawer-undo-btn {
+      min-height: 44px;
+      padding: 8px 14px;
+      border: 1px solid rgba(255,255,255,0.28);
+      border-radius: 7px;
+      background: transparent;
+      color: var(--cream);
+      font: 700 12px/1.2 var(--font-sans);
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    .drawer-undo-btn[hidden] { display: none; }
+    .drawer-btn-secondary[aria-pressed="true"] {
+      background: #DDE7D9;
+      color: #2F4A2C;
+      border: 2px solid #7F9C79;
+    }
+    .drawer-finalist-btn:not(.chosen) {
       background: linear-gradient(180deg, var(--gold-light), var(--gold));
       color: var(--navy);
       border-color: transparent;
@@ -9435,9 +9407,10 @@
       border: 2px solid #7F9C79;
       box-shadow: none;
     }
-    body:has(#resultsScreen.active) .drawer-finalist-hint { color: #665D54; }
+    body:has(#resultsScreen.active) .drawer-finalist-note { color: #665D54; }
+    body:has(#resultsScreen.active) .drawer-undo-btn { border-color: var(--color-border); color: var(--color-text); }
     body:has(#resultsScreen.active) .drawer-finalist-btn { border-color: var(--color-border); color: var(--color-text-subtle); }
-    body:has(#resultsScreen.active) .drawer-finalist-btn:not(:disabled):not(.chosen) { color: var(--navy); border-color: transparent; }
+    body:has(#resultsScreen.active) .drawer-finalist-btn:not(.chosen) { color: var(--navy); border-color: transparent; }
     body:has(#resultsScreen.active) .drawer-finalist-btn.chosen,
     body:has(#resultsScreen.active) .drawer-finalist-btn[aria-pressed="true"] { background: #DDE7D9; color: #2F4A2C; border-color: #7F9C79; }
 
@@ -9635,8 +9608,7 @@
     body:has(#resultsScreen.active) .drawer-differentiator-title,
     body:has(#resultsScreen.active) .drawer-trial-feel,
     body:has(#resultsScreen.active) .drawer-shortlist-fit,
-    body:has(#resultsScreen.active) .drawer-try-prompt,
-    body:has(#resultsScreen.active) .drawer-reaction-row button {
+    body:has(#resultsScreen.active) .drawer-try-prompt {
       color: #2F271E;
     }
     body:has(#resultsScreen.active) .drawer-match-badge {
@@ -9660,15 +9632,6 @@
     body:has(#resultsScreen.active) .drawer-try-prompt {
       border-left-color: #48647A;
       background: #EEF2F4;
-    }
-    body:has(#resultsScreen.active) .drawer-reaction-row button {
-      border-color: #C9BCAC;
-      background: #FFFDF8;
-    }
-    body:has(#resultsScreen.active) .drawer-reaction-row button.is-selected {
-      border-color: var(--accent-ink);
-      background: rgba(177,45,21,0.09);
-      color: var(--accent-ink);
     }
     body:has(#resultsScreen.active) .drawer-pitch-toggle {
       border-color: rgba(154,116,69,0.5);
@@ -10369,12 +10332,10 @@
     /* Candidate (Loop-A2): forced-colors cues for the new controls, in their
        own block AFTER the anchored first forced-colors block (contrast_check
        pins that ordering). The Try button keeps a CanvasText border; the
-       chosen finalist state is carried by geometry (3px double); disabled
-       reads GrayText. */
+       chosen finalist state is carried by geometry (3px double). */
     @media (forced-colors: active) {
       .noct-card-try { border: 2px solid CanvasText; }
       .drawer-finalist-btn.chosen, .drawer-finalist-btn[aria-pressed="true"] { border: 3px double CanvasText; }
-      .drawer-finalist-btn:disabled { opacity: 1; color: GrayText; border-color: GrayText; }
       /* A3: the handoff's specialist block and continuation keep non-colour
          boundaries when author colours are stripped. */
       .handoff-specialist { border: 1px solid CanvasText; }
@@ -10938,7 +10899,8 @@
     }
     .drawer-back-to-results:focus-visible,
     .drawer-nav-btn:focus-visible,
-    .drawer-reaction-row button:focus-visible,
+    .drawer-finalist-btn:focus-visible,
+    .drawer-undo-btn:focus-visible,
     .drawer-btn:focus-visible {
       outline: 3px solid var(--focus-ring-outer);
       outline-offset: 2px;
@@ -10947,12 +10909,14 @@
     @media (forced-colors: active) {
       .drawer-back-to-results:focus-visible,
       .drawer-nav-btn:focus-visible,
-      .drawer-reaction-row button:focus-visible,
+      .drawer-finalist-btn:focus-visible,
+      .drawer-undo-btn:focus-visible,
       .drawer-btn:focus-visible {
         outline-color: CanvasText;
         box-shadow: none;
       }
-      .drawer-reaction-row button[aria-pressed="true"] { border-width: 3px; }
+      .drawer-btn-secondary[aria-pressed="true"] { border: 3px double CanvasText; }
+      .drawer-undo-btn { border: 1px solid CanvasText; }
     }
     /* X12 (North Star ruling D9, 2026-08-31): the Compare dialog's close
        control had only the UA focus ring. It joins the two-ring treatment,
@@ -11538,39 +11502,34 @@
           <div class="drawer-match-badge" id="drawerMatch"></div>
         </div>
         <div class="drawer-trial-feel" id="drawerFeelAnchor"></div>
-        <!-- A3.1 (owner directive 2026-09-01): the drawer is a three-step
-             sequence - Try, Ask, Choose - carried by numbered step labels
-             (data-step rendered as a ring by CSS; state by glyph and border,
-             never colour alone; paintDrawerSteps mirrors the gate).
-             Synthesis (owner counterprompt 2026-09-02, change 1): the whole
-             workflow sits directly under the identity header, ABOVE Key
-             features and the construction demonstration, so the first
-             physical trial action is in the landscape first fold. The
-             reaction-before-finalist gate, the lifecycle, the governed facts
-             and the construction gating are untouched - only the order. -->
-        <div class="drawer-section-label drawer-step" id="drawerNoticeLabel" data-step="1">Try</div>
+        <!-- Product-proof drawer (owner decisions 2026-09-02): the trial is
+             ONE compact spoken prompt. Nothing is recorded - the salesperson
+             is in the room and remembers the customer's reaction - so there
+             is no reaction row, no numbered workflow and no gate. -->
+        <div class="drawer-section-label" id="drawerNoticeLabel">Try</div>
         <div class="drawer-try-prompts" id="drawerTryPrompts"></div>
-        <div class="drawer-section-label drawer-step" id="drawerReactionLabel" data-step="2">Ask: “How did this mattress feel?”</div>
-        <div class="drawer-reaction-row" id="drawerReactionRow">
-          <button type="button" data-reaction="soft" aria-pressed="false" onclick="window.setDrawerReaction('soft')" ontouchend="event.preventDefault();window.setDrawerReaction('soft');">Too Soft</button>
-          <button type="button" data-reaction="good" aria-pressed="false" onclick="window.setDrawerReaction('good')" ontouchend="event.preventDefault();window.setDrawerReaction('good');">Good Feel</button>
-          <button type="button" data-reaction="firm" aria-pressed="false" onclick="window.setDrawerReaction('firm')" ontouchend="event.preventDefault();window.setDrawerReaction('firm');">Too Firm</button>
-        </div>
-        <!-- Loop-A2 (owner ruling 2026-09-01): the drawer is the primary,
-             trial-gated finalist producer. Before a recorded reaction the
-             finalist control is unavailable and the reaction row owns the
-             emphasis (hint below); after a reaction "Choose as finalist" is
-             the singular primary and Save becomes secondary. The control is a
-             consumer of the one producer (class finalist-btn -> delegated
-             handler -> window.chooseFinalist(), which itself refuses an
-             unreacted mattress); _repaintFinalistControls() paints its
-             label/state. -->
-        <div class="drawer-section-label drawer-step" id="drawerFinalistLabel" data-step="3">Choose a finalist</div>
-        <p class="drawer-finalist-hint" id="drawerFinalistHint"></p>
+        <!-- Product actions (owner decisions 4-12, 2026-09-02): a mattress
+             can become the finalist immediately. The finalist control is a
+             reversible toggle ("Make finalist" / "Finalist ✓" - clearing
+             it never un-saves); choosing force-saves and replaces any other
+             finalist, which stays saved; the notice names what a choice
+             replaces, and Undo restores the previous finalist while it is
+             still saved. Save is a real toggle on the shared saved-pick path.
+             Both controls carry aria-pressed; one polite live region
+             announces finalist changes once. The control is a consumer of
+             the one producer (class finalist-btn -> delegated handler ->
+             window.toggleFinalist()). -->
         <div class="drawer-cta-row" id="drawerCtaRow">
-          <button id="drawerFinalistBtn" class="finalist-btn drawer-finalist-btn" data-id="" aria-pressed="false" disabled></button>
-          <button id="drawerInterestedBtn" class="drawer-btn drawer-btn-secondary" onclick="window.saveDrawerPick()" ontouchend="event.preventDefault();window.saveDrawerPick();">Save for later</button>
+          <button id="drawerFinalistBtn" class="finalist-btn drawer-finalist-btn" data-id="" aria-pressed="false"></button>
+          <button id="drawerInterestedBtn" class="drawer-btn drawer-btn-secondary" aria-pressed="false" onclick="window.saveDrawerPick()" ontouchend="event.preventDefault();window.saveDrawerPick();">Save for later</button>
         </div>
+        <div class="drawer-finalist-note" id="drawerFinalistNote" hidden>
+          <span id="drawerFinalistNoteText"></span>
+          <button type="button" class="drawer-undo-btn" id="drawerFinalistUndoBtn" hidden
+                  onclick="window.undoFinalistReplacement()"
+                  ontouchend="event.preventDefault();window.undoFinalistReplacement();"></button>
+        </div>
+        <div class="sr-only" id="drawerFinalistLive" role="status" aria-live="polite" aria-atomic="true"></div>
         <div class="drawer-system-prompt" id="drawerSystemPrompt" aria-live="polite">
           <div class="drawer-system-prompt__eyebrow" id="drawerSystemPromptEyebrow"></div>
           <div class="drawer-system-prompt__title" id="drawerSystemPromptTitle"></div>
@@ -17469,12 +17428,12 @@
     // idempotent no-op (Remove/un-save is the way to unset it). Saving alone
     // NEVER chooses. No analytics event: D4's posture, and the owner added no
     // telemetry for this control.
+    // Product-proof drawer (owner decisions 2026-09-02): no reaction gate. A
+    // mattress can become the finalist immediately; choosing still saves it
+    // and replaces any other finalist, which stays saved. The one-step undo
+    // record is kept here (producer level) so the drawer can offer Undo.
     window.chooseFinalist = function(mattressId) {
       if (typeof mattressId !== 'string' || mattressId.trim() === '') return;
-      // Loop-A2 trial gate (owner ruling 2026-09-01): a finalist exists only
-      // after a recorded trial reaction. Enforced at the ONE producer so no
-      // consumer (Results, Compare, Summary, keyboard) can bypass the trial.
-      if (!((window._mattressReactions || {})[mattressId])) return;
       var saved = Array.isArray(window._savedPicks) ? window._savedPicks : (window._savedPicks = []);
       var isSaved = saved.some(function(p) { return p && p.id === mattressId; });
       if (!isSaved) {
@@ -17483,23 +17442,84 @@
         if (!saved.some(function(p) { return p && p.id === mattressId; })) return; // unknown id: nothing to choose
       }
       if (window._favoriteMattressId === mattressId) return;
+      var previous = window._favoriteMattressId || '';
       window._favoriteMattressId = mattressId;
+      window._finalistUndo = previous ? { previous: previous, current: mattressId } : null;
       if (typeof window._repaintFinalistControls === 'function') window._repaintFinalistControls();
     };
+    // Clearing finalist status never un-saves (owner decision 10): the pick
+    // stays in _savedPicks; only the single finalist id is blanked.
+    window.clearFinalist = function(mattressId) {
+      if (typeof mattressId !== 'string' || mattressId.trim() === '') return;
+      if (window._favoriteMattressId !== mattressId) return;
+      window._favoriteMattressId = '';
+      window._finalistUndo = null;
+      if (typeof window._repaintFinalistControls === 'function') window._repaintFinalistControls();
+    };
+    // The reversible control every finalist button routes through: on the
+    // current finalist it clears, otherwise it chooses (and replaces).
+    // Announced once through the drawer's polite live region.
+    window.toggleFinalist = function(mattressId) {
+      if (typeof mattressId !== 'string' || mattressId.trim() === '') return;
+      if (window._favoriteMattressId === mattressId) {
+        window.clearFinalist(mattressId);
+        announceFinalist(t('drawer.finalist_live_cleared'));
+        return;
+      }
+      var previous = window._favoriteMattressId || '';
+      window.chooseFinalist(mattressId);
+      if (window._favoriteMattressId !== mattressId) return; // unknown id: nothing changed
+      var name = mattressNameById(mattressId);
+      announceFinalist(previous
+        ? t('drawer.finalist_live_replaced', { name: name, previous: mattressNameById(previous) })
+        : t('drawer.finalist_live_set', { name: name }));
+      // The pillow prompt follows the first SAVE of a mattress in the drawer
+      // (owner decision review 2026-09-02): choosing force-saves, so it is a
+      // first save too. The prompt guards itself to once per session.
+      if (mattressId === window._currentDrawerMattressId && typeof showFinalistSleepSystemPrompt === 'function') showFinalistSleepSystemPrompt();
+    };
+    // Undo after a replacement (owner decision 9): restores the previous
+    // finalist while it is still saved (the invariant "a finalist is saved"
+    // is preserved because chooseFinalist re-saves if needed).
+    window.undoFinalistReplacement = function() {
+      var u = window._finalistUndo;
+      if (!u || !u.previous) return;
+      window._finalistUndo = null;
+      window.chooseFinalist(u.previous);
+      window._finalistUndo = null;
+      if (typeof window._repaintFinalistControls === 'function') window._repaintFinalistControls();
+      announceFinalist(t('drawer.finalist_live_restored', { name: mattressNameById(u.previous) }));
+    };
+    function mattressNameById(mattressId) {
+      var d = window._drawerData && window._drawerData[mattressId];
+      if (d && d.m && d.m.name) return d.m.name;
+      var pick = (window._savedPicks || []).find(function(p) { return p && p.id === mattressId; });
+      return pick && pick.name ? pick.name : '';
+    }
+    function announceFinalist(text) {
+      var live = document.getElementById('drawerFinalistLive');
+      if (!live) return;
+      live.textContent = '';
+      live.textContent = text || '';
+    }
     function finalistButtonLabel(isChosen) {
       return isChosen ? t('finalist.chosen_btn') : t('finalist.choose_as');
     }
-    // Repaint every Results "Choose as finalist" control in place (no full
-    // re-render) so the single-finalist invariant is visible immediately.
+    function paintFinalistButton(btn) {
+      var on = btn.getAttribute('data-id') === window._favoriteMattressId;
+      btn.classList.toggle('chosen', on);
+      btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+      btn.textContent = finalistButtonLabel(on);
+    }
+    // Repaint every finalist control in place (no full re-render) so the
+    // single-finalist invariant is visible immediately, then the drawer's
+    // replacement notice.
     window._repaintFinalistControls = function() {
-      document.querySelectorAll('.finalist-btn').forEach(function(btn) {
-        var on = btn.getAttribute('data-id') === window._favoriteMattressId;
-        btn.classList.toggle('chosen', on);
-        btn.setAttribute('aria-pressed', on ? 'true' : 'false');
-        btn.textContent = finalistButtonLabel(on);
-      });
-      // A3.1: the drawer's step rings follow the finalist state too.
-      if (typeof paintDrawerSteps === 'function') paintDrawerSteps(window._currentDrawerMattressId);
+      document.querySelectorAll('.finalist-btn').forEach(paintFinalistButton);
+      // Choosing force-saves and un-saving can clear the finalist, so the
+      // drawer's Save toggle and its notice follow every repaint.
+      if (typeof paintDrawerSaveButton === 'function') paintDrawerSaveButton(window._currentDrawerMattressId);
+      if (typeof paintDrawerFinalistNotice === 'function') paintDrawerFinalistNotice(window._currentDrawerMattressId);
     };
 
     // Premium pass reveal. RSA-tap-triggered on the review screen and populated
@@ -19827,9 +19847,7 @@
       var image = finalist.imageUrl || finalist.image || '';
       var brand = finalist.brand || finalist.manufacturerBrand || finalist.subBrand || '';
       var feel = finalist.firmFeel || finalist.firmnessLabel || '';
-      var reaction = finalist.id && window._mattressReactions ? window._mattressReactions[finalist.id] : '';
-      var reactionText = reaction ? reactionLabel(reaction) : '';
-      var meta = [brand, feel, reactionText].filter(Boolean).join(' | ');
+      var meta = [brand, feel].filter(Boolean).join(' | ');
       target.innerHTML =
         (image ? '<img class="sleep-system__anchor-image" src="' + escapeHtml(image) + '" alt="">' : '') +
         '<div>' +
@@ -21009,38 +21027,36 @@
     window._savedPicks = [];
     window._finalistAccessoryPromptShown = false;
 
+    // Product-proof drawer (owner decision 11): a REAL Save/Saved toggle on
+    // the shared saved-pick path (_toggleSavePick), so the drawer, the
+    // Results cards and the Summary can never disagree. Un-saving the current
+    // finalist clears the finalist atomically (the shared path's invariant)
+    // and says so once.
     window.saveDrawerPick = function() {
       var mattressId = window._currentDrawerMattressId;
       if (!mattressId) return;
       var d = window._drawerData && window._drawerData[mattressId];
       if (!d) return;
-      // Check if already saved
-      var alreadySaved = window._savedPicks.some(function(p) { return p.id === mattressId; });
-      if (!alreadySaved) {
-        window._savedPicks.push({
-          id: mattressId,
-          name: d.m.name,
-          brand: d.m.brand + (d.m.subBrand ? ' · ' + d.m.subBrand : ''),  // display
-          manufacturerBrand: d.m.brand,           // 5d: BRAND_NOTES key + brand-panel dedupe
-          subBrand: d.m.subBrand || '',           // 5d: SUBBRAND_NOTES fallback
-          pitchKey: d.m.pitchKey || '',           // 5d: SUBBRAND_NOTES primary lookup
-          pct: d.pct,
-          meetsMatchThreshold: d.meetsMatchThreshold,
-          firmFeel: d.firmFeel,
-          imageUrl: d.m.imageUrl || '',
-          tier: d.tier || ''
-        });
+      var wasFinalist = window._favoriteMattressId === mattressId;
+      window._toggleSavePick(mattressId);
+      var nowSaved = (window._savedPicks || []).some(function(p) { return p && p.id === mattressId; });
+      if (nowSaved) {
         showFinalistSleepSystemPrompt();
+      } else if (wasFinalist) {
+        window._finalistUndo = null;
+        announceFinalist(t('drawer.finalist_live_cleared'));
       }
-      // Update button state
-      var btn = document.getElementById('drawerInterestedBtn');
-      if (btn) {
-        btn.textContent = saveButtonLabel(true);
-        btn.style.background = 'linear-gradient(180deg,var(--color-match-positive),#4caf6e)';
-      }
-      // Update picks badge
-      window._updatePicksBadge();
+      paintDrawerSaveButton(mattressId);
+      if (typeof paintDrawerFinalistNotice === 'function') paintDrawerFinalistNotice(mattressId);
     };
+    function paintDrawerSaveButton(mattressId) {
+      var btn = document.getElementById('drawerInterestedBtn');
+      if (!btn) return;
+      var saved = !!mattressId && (window._savedPicks || []).some(function(p) { return p && p.id === mattressId; });
+      btn.textContent = saveButtonLabel(saved);
+      btn.setAttribute('aria-pressed', saved ? 'true' : 'false');
+      btn.classList.toggle('saved', saved);
+    }
 
     function showFinalistSleepSystemPrompt() {
       if (window._finalistAccessoryPromptShown) return;
@@ -21828,8 +21844,6 @@
       } else {
         lineEl.textContent = lead;
       }
-      var reactions = {};
-      try { reactions = window._mattressReactions || {}; } catch (err) { reactions = {}; }
       var thumbEl = document.getElementById('hf2StatusThumb');
       if (thumbEl) {
         var thumbSrc = named && named.imageUrl ? String(named.imageUrl) : '';
@@ -21839,13 +21853,8 @@
       var rowsEl = document.getElementById('hf2StatusRows');
       if (rowsEl) {
         var rows = [];
-        var reaction = named && named.id ? reactions[named.id] : '';
-        if (reaction) {
-          // A3.1: the verdict chip is the evidence tag; its label stays for
-          // assistive technology (sr-only) rather than as a visible prefix.
-          rows.push('<div class="hf2-status__row"><span class="sr-only">' + esc(t('hf2.status_reaction_label'))
-            + ' </span><span class="hf2-reaction-chip">' + esc(reactionLabel(reaction)) + '</span></div>');
-        }
+        // Product-proof (owner decision 3): no trial verdict is recorded, so
+        // the status block carries only the genuinely open decisions.
         var openNames = [];
         if (typeof SLEEP_SYSTEM_STEPS !== 'undefined' && typeof sleepSystemDecision === 'function' && typeof sleepSystemText === 'function') {
           // A3.1 (owner ruling 5, 2026-09-01): a `confirm` decision — the
@@ -21900,8 +21909,8 @@
     // re-sort, no re-derived reason prose, no reaction row (reactions are
     // drawer-only). The finalist story belongs to the lead line above, not
     // to an ordering of this list.
-    window._mattressReactions = window._mattressReactions || {};
     window._favoriteMattressId = window._favoriteMattressId || '';
+    window._finalistUndo = window._finalistUndo || null;
 
     function renderHf2Picks() {
       var list = document.getElementById('hf2PicksList');
@@ -22190,24 +22199,14 @@
 
       // C3-A2 (D3): the recorded trial reaction renders as a quiet chip on the
       // saved-pick card - existing memory-only data, no new capture surface.
-      var pickReactions = {};
-      try { pickReactions = window._mattressReactions || {}; } catch (err) { pickReactions = {}; }
-      if (pickReactions[m.id]) {
-        var chip = document.createElement('span');
-        chip.className = 'hf2-reaction-chip';
-        chip.textContent = reactionLabel(pickReactions[m.id]);
-        card.appendChild(chip);
-      }
 
       var actions = document.createElement('div');
       actions.className = 'hf2-pick__actions';
-      // Loop-A2: the Summary reflects the finalist; its control stays a
-      // consumer of chooseFinalist() and is unavailable until a trial reaction
-      // is recorded (the producer refuses anyway - this keeps the affordance
-      // honest).
-      var pickReacted = !!((window._mattressReactions || {})[m.id]);
+      // Product-proof (owner decisions 3, 10): no reaction chip and no gate -
+      // the control toggles finalist status (window.toggleFinalist) and is
+      // never disabled; aria-pressed carries the finalist state.
       actions.innerHTML = '<button class="hf2-pick__action' + (m.id === window._favoriteMattressId ? ' is-selected' : '') + '"'
-            + (pickReacted ? '' : ' disabled aria-disabled="true"')
+            + ' aria-pressed="' + (m.id === window._favoriteMattressId ? 'true' : 'false') + '"'
             + ' onclick="window.toggleFavoriteMattress(\'' + m.id + '\')"'
             + ' ontouchend="event.preventDefault();window.toggleFavoriteMattress(\'' + m.id + '\');">'
             + finalistButtonLabel(m.id === window._favoriteMattressId) + '</button>'
@@ -22223,92 +22222,55 @@
       return card;
     }
 
-    function reactionLabel(reaction) {
-      var labels = currentLang === 'es'
-        ? { soft: 'Muy suave', good: 'Buena sensación', firm: 'Muy firme' }
-        : { soft: 'Too soft', good: 'Good feel', firm: 'Too firm' };
-      return labels[reaction] || reaction;
-    }
-
-    window.setMattressReaction = function(mattressId, reaction) {
-      window._mattressReactions = window._mattressReactions || {};
-      window._mattressReactions[mattressId] = reaction;
-      renderHf2();
-    };
-
-    // Slice 6 a11y repair: ONE painter for the reaction row, called from the
-    // drawer-open path and from the tap handler, so the two can never drift.
-    // Selected state is announced (aria-pressed) and carried by a non-colour
-    // cue (the check mark) in addition to the colour treatment.
-    function paintDrawerReactions(mattressId) {
-      var labels = currentLang === 'es'
-        ? { soft: 'Muy Suave', good: 'Buena Sensación', firm: 'Muy Firme' }
-        : { soft: 'Too Soft', good: 'Good Feel', firm: 'Too Firm' };
-      var selected = (window._mattressReactions || {})[mattressId];
-      document.querySelectorAll('#drawerReactionRow button').forEach(function(btn) {
-        var reaction = btn.getAttribute('data-reaction');
-        var isSelected = selected === reaction;
-        btn.textContent = (isSelected ? '\u2713 ' : '') + labels[reaction];
-        btn.classList.toggle('is-selected', isSelected);
-        btn.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
-      });
-    }
-    // A3.1 (owner directive 2026-09-01): the drawer's three-step sequence -
-    // Try, Ask, Choose - is carried by numbered step labels whose rings report
-    // state by glyph and border, never colour alone: plain numerals while the
-    // trial is under way, a check on Try and Ask once a reaction is recorded,
-    // Choose current (heavier ring) until this mattress is the finalist, then
-    // a check. The gate itself is untouched (chooseFinalist and
-    // paintDrawerFinalist own it); this only mirrors their state.
-    function paintDrawerSteps(mattressId) {
-      var reacted = !!(mattressId && (window._mattressReactions || {})[mattressId]);
-      var chosenHere = !!(mattressId && window._favoriteMattressId === mattressId);
-      [['drawerNoticeLabel', reacted ? 'done' : 'plain'],
-       ['drawerReactionLabel', reacted ? 'done' : 'plain'],
-       ['drawerFinalistLabel', chosenHere ? 'done' : (reacted ? 'current' : 'plain')]].forEach(function(pair) {
-        var el = document.getElementById(pair[0]);
-        if (!el || !el.classList) return;
-        el.classList.toggle('is-done', pair[1] === 'done');
-        el.classList.toggle('is-current', pair[1] === 'current');
-      });
-    }
-    // Loop-A2: ONE painter for the drawer footer's finalist gate. Availability
-    // follows the recorded reaction; label/aria-pressed/chosen come from the
-    // shared repaint so the drawer, Compare and Summary can never disagree.
+    // Product-proof drawer: ONE painter for the drawer's product actions.
+    // The finalist button is never disabled; its data-id binds the open
+    // mattress, its label/pressed state come from the shared repaint, and
+    // the replacement notice + Undo follow the finalist record.
     window.paintDrawerFinalist = function(mattressId) {
       var finBtn = document.getElementById('drawerFinalistBtn');
-      var hint = document.getElementById('drawerFinalistHint');
       if (!finBtn) return;
-      var reacted = !!(mattressId && (window._mattressReactions || {})[mattressId]);
       finBtn.setAttribute('data-id', mattressId || '');
-      finBtn.disabled = !reacted;
-      finBtn.setAttribute('aria-disabled', reacted ? 'false' : 'true');
       var m = mattressId && window._drawerData && window._drawerData[mattressId] ? window._drawerData[mattressId].m : null;
       finBtn.setAttribute('aria-label', t('finalist.choose_as') + (m && m.name ? ': ' + m.name : ''));
-      if (hint) {
-        hint.textContent = t('drawer.finalist_hint');
-        hint.hidden = reacted;
+      paintFinalistButton(finBtn);
+      paintDrawerSaveButton(mattressId);
+      paintDrawerFinalistNotice(mattressId);
+    };
+    // Selection-state clarity, not a comparison (owner decision 8): when a
+    // DIFFERENT finalist exists the notice names what choosing would replace;
+    // right after a replacement made from this drawer it names what was
+    // replaced and offers Undo. Otherwise it is hidden.
+    function paintDrawerFinalistNotice(mattressId) {
+      var note = document.getElementById('drawerFinalistNote');
+      var text = document.getElementById('drawerFinalistNoteText');
+      var undo = document.getElementById('drawerFinalistUndoBtn');
+      if (!note || !text || !undo) return;
+      var fav = window._favoriteMattressId || '';
+      var u = window._finalistUndo;
+      undo.textContent = t('drawer.undo');
+      if (mattressId && fav && fav !== mattressId) {
+        text.textContent = t('drawer.finalist_replaces', { name: mattressNameById(fav) });
+        undo.hidden = true;
+        note.hidden = false;
+      } else if (mattressId && u && u.current === mattressId && u.previous
+                 && (window._savedPicks || []).some(function(p) { return p && p.id === u.previous; })) {
+        text.textContent = t('drawer.finalist_replaced', { name: mattressNameById(u.previous) });
+        undo.hidden = false;
+        note.hidden = false;
+      } else {
+        text.textContent = '';
+        undo.hidden = true;
+        note.hidden = true;
       }
-      paintDrawerSteps(mattressId);
-      if (typeof window._repaintFinalistControls === 'function') window._repaintFinalistControls();
-    };
-    window.setDrawerReaction = function(reaction) {
-      var mattressId = window._currentDrawerMattressId;
-      if (!mattressId) return;
-      window._mattressReactions = window._mattressReactions || {};
-      window._mattressReactions[mattressId] = reaction;
-      paintDrawerReactions(mattressId);
-      window.paintDrawerFinalist(mattressId);
-    };
+    }
 
     // The Consultation Summary's finalist control carries the same label as
-    // the Results producer ("Choose as finalist" / "Chosen ✓") and means the
-    // same thing: it SETS the finalist through chooseFinalist(), which is
-    // idempotent on the current finalist. Unsetting is the adjacent Remove
-    // control's job — a toggle-off here left the pick saved and made the next
-    // Plan render fall back to the recommended starting point unannounced.
+    // the drawer's ("Make finalist" / "Finalist ✓") and means the same thing:
+    // it toggles through window.toggleFinalist() - on the current finalist
+    // it clears finalist status (the pick stays saved, announced), otherwise
+    // it chooses and replaces.
     window.toggleFavoriteMattress = function(mattressId) {
-      window.chooseFinalist(mattressId);
+      window.toggleFinalist(mattressId);
       renderHf2();
     };
 
@@ -23508,6 +23470,9 @@
       // an answer-derived shortlist surface to wipe. Omission, not a weakened
       // wipe: the remaining answer-derived ids are unchanged.
       'drawerSystemPromptTitle', 'drawerSystemPromptReason',
+      // Product-proof drawer: the replacement notice and the live region name
+      // the mattress a customer chose.
+      'drawerFinalistNoteText', 'drawerFinalistLive',
       'hf2LeadLine', 'hf2StatusPayment', 'hf2StatusName', 'hf2StatusMeta', 'hf2StatusNext',
       'hf2FinancingStatus', 'financingSheetStatus', 'financingSheetAction',
       'sleepPlanFinancingStatus', 'sleepPlanPrioritiesRecoveryText',
@@ -23566,13 +23531,13 @@
       { id: 'hf2RsaPanel', hiddenAttr: true },
       { id: 'hf2RsaAddRow', hiddenAttr: true },
       { id: 'hf2RsaStripBtn', attrs: { 'aria-expanded': 'false' } },
-      // Loop-A2: the drawer's finalist control is static markup; reset its
-      // per-customer binding and re-arm the gate.
-      { id: 'drawerFinalistBtn', remove: ['chosen'], attrs: { 'aria-pressed': 'false', 'aria-disabled': 'true', 'data-id': '' } },
-      // A3.1: the drawer's step rings are state markers on persistent nodes.
-      { id: 'drawerNoticeLabel', remove: ['is-done', 'is-current'] },
-      { id: 'drawerReactionLabel', remove: ['is-done', 'is-current'] },
-      { id: 'drawerFinalistLabel', remove: ['is-done', 'is-current'] },
+      // Product-proof drawer: the finalist and Save controls are static
+      // markup; reset their per-customer binding and pressed state, and
+      // close the replacement notice + Undo.
+      { id: 'drawerFinalistBtn', remove: ['chosen'], attrs: { 'aria-pressed': 'false', 'data-id': '' } },
+      { id: 'drawerInterestedBtn', remove: ['saved'], attrs: { 'aria-pressed': 'false' } },
+      { id: 'drawerFinalistNote', hiddenAttr: true },
+      { id: 'drawerFinalistUndoBtn', hiddenAttr: true },
       // 0.5: the trial-priorities section returns to hidden on wipe, so even a
       // path that showed hf2 without re-rendering could not expose the prior
       // customer's label over a cleared list.
@@ -23742,8 +23707,8 @@
 
         // --- 4. product / picks / sleep-system state ----------------------
         window._savedPicks = [];
-        window._mattressReactions = {};
         window._favoriteMattressId = '';
+        window._finalistUndo = null;
         window._compareSelected = [];
         window._accCart = {};
         window._finalistAccessoryPromptShown = false;
@@ -24005,7 +23970,6 @@
         var _diffs = mattressDifferentiators(m);
         var d0 = _diffs[0] || {};
         var _retired = _diffs.length === 0;
-        var reaction = (window._mattressReactions || {})[m.id];
         return {
           head: '<div class="cmp-head" role="columnheader">'
             + (m.imageUrl ? '<div class="cmp-head-img"><img src="' + escapeHtml(m.imageUrl) + '" width="1500" height="1000" alt="" decoding="async"></div>' : '')
@@ -24020,8 +23984,7 @@
           tier: _tierNames[data.tier] || data.tier,
           retired: _retired,
           feature: _retired ? '—' : (d0.title || mattressResponseLabel(m)),
-          benefit: _retired ? '—' : (d0.detail || mattressDifferenceText(m)),
-          reaction: reaction ? reactionLabel(reaction) : (_esCmp ? 'Aún no registrada' : 'Not recorded yet')
+          benefit: _retired ? '—' : (d0.detail || mattressDifferenceText(m))
         };
       }
       function rowsHtml(d1, d2) {
@@ -24036,9 +23999,9 @@
           // "Por qué está aquí" row is omitted in BOTH languages. The rows
           // around it are untouched, so the table has no gap and no empty row.
           { key: 'feature', label: _esCmp ? 'Característica clave' : 'Key feature', a: a.feature, b: b.feature, emphasis: true },
-          { key: 'benefit', label: _esCmp ? 'En qué ayuda' : 'Why it helps', a: a.benefit, b: b.benefit, emphasis: true },
-          // A3: the row reports what was OBSERVED in the trial, to the operator.
-          { key: 'reaction', label: _esCmp ? 'Reacción observada' : 'Observed reaction', a: a.reaction, b: b.reaction }
+          // Product-proof (owner decision 3): no observed-reaction row - the
+          // table reports catalog facts only.
+          { key: 'benefit', label: _esCmp ? 'En qué ayuda' : 'Why it helps', a: a.benefit, b: b.benefit, emphasis: true }
         ];
         // Claim retirement (2026-08-12): retired vs retired has no
         // differentiator content on either side — omit both rows entirely
@@ -24176,7 +24139,7 @@
       if (finBtn) {
         e.preventDefault();
         e.stopPropagation();
-        window.chooseFinalist(finBtn.getAttribute('data-id'));
+        window.toggleFinalist(finBtn.getAttribute('data-id'));
         return;
       }
       var cmpBtn = e.target.closest('.compare-btn');
@@ -24395,14 +24358,8 @@
       window._drawerCurrentIndex = window._drawerOrder.indexOf(mattressId);
       window._currentDrawerMattressId = mattressId;
 
-      // Reset interested button state
-      var intBtn = document.getElementById('drawerInterestedBtn');
-      if (intBtn) {
-        var alreadySaved = window._savedPicks && window._savedPicks.some(function(p) { return p.id === mattressId; });
-        intBtn.textContent = saveButtonLabel(alreadySaved);
-        intBtn.style.background = alreadySaved ? 'linear-gradient(180deg,var(--color-match-positive),#4caf6e)' : '';
-      }
-      // Loop-A2: the finalist gate follows the opened mattress's reaction.
+      // Product actions follow the opened mattress: Save toggle state,
+      // finalist binding + label, replacement notice.
       if (typeof window.paintDrawerFinalist === 'function') window.paintDrawerFinalist(mattressId);
       var systemPrompt = document.getElementById('drawerSystemPrompt');
       if (systemPrompt) systemPrompt.classList.remove('is-visible');
@@ -24518,21 +24475,12 @@
       }
 
       // A3 audience contract: the drawer is the specialist's trial worksheet.
-      // A3.1 (owner directive 2026-09-01): three numbered steps - Try, Ask,
-      // Choose - instead of three narrations of one trial. ONE spoken prompt
-      // (the engine's model-specific first line; the function still produces
-      // two); the reaction buttons ARE the recording, so step 2 is the
-      // question alone.
+      // Product-proof drawer: ONE spoken prompt (the engine's model-specific
+      // first line; the function still produces two). Nothing is recorded.
       document.getElementById('drawerNoticeLabel').textContent = currentLang === 'es' ? 'Probar' : 'Try';
       document.getElementById('drawerTryPrompts').innerHTML = getMattressTrialPrompts(m).slice(0, 1).map(function(prompt) {
         return '<div class="drawer-try-prompt">' + escapeHtml(prompt) + '</div>';
       }).join('');
-      document.getElementById('drawerReactionLabel').textContent = currentLang === 'es'
-        ? 'Pregunta: “¿Cómo se sintió este colchón?”'
-        : 'Ask: “How did this mattress feel?”';
-      var drawerFinalistLabel = document.getElementById('drawerFinalistLabel');
-      if (drawerFinalistLabel) drawerFinalistLabel.textContent = currentLang === 'es' ? 'Elegir finalista' : 'Choose a finalist';
-      paintDrawerReactions(mattressId);
 
       // opts.contentOnly — relocalise an ALREADY-OPEN drawer without touching
       // the dialog lifecycle. A language switch must not re-run focus entry,
@@ -24607,6 +24555,8 @@
 
       if (backdrop) backdrop.classList.remove('open');
       drawer.classList.remove('drawer-open');
+      // The one-step Undo lives with the open drawer; closing it ends the window.
+      window._finalistUndo = null;
       // inert + aria-hidden immediately: the a11y guarantee must not wait for
       // an animation, and must hold even on the reset path.
       drawer.setAttribute('inert', '');

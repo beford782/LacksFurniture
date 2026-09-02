@@ -193,7 +193,7 @@ if (primaryAsText.length) primaryAsText.forEach((r) => console.log(`        ${r.
 // --- D2b: essential boundaries (state, selection, tabs, thumbs) ---
 // Decorative accent bands (border-left/-top on cards) may keep the brand
 // colour; a boundary that communicates STATE may not.
-const ESSENTIAL = /\.selected|\.is-selected|\.is-active|\.active|tier-tab|range-thumb|slider-thumb|quiz-option|reaction-row|lang-btn|step-num|chip/i;
+const ESSENTIAL = /\.selected|\.is-selected|\.is-active|\.active|tier-tab|range-thumb|slider-thumb|quiz-option|drawer-btn-secondary|drawer-finalist-btn|lang-btn|step-num|chip/i;
 const primaryStateBorder = cssRules.filter((r) =>
   ESSENTIAL.test(r.sel) &&
   decls(r.body).some((x) => /^(border|outline)[a-z-]*\s*:/.test(x) && PRIMARY_REF.test(x)));

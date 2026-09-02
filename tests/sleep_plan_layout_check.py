@@ -228,7 +228,7 @@ SUMMARY_JS = r"""
   // Real interactions: choose the engine's top pick as the finalist (this
   // auto-saves it), then open the Summary through the chokepoint.
   const top = _resultsState.tierData.gold[0];
-  (function(__id) { window._mattressReactions = window._mattressReactions || {}; if (!window._mattressReactions[__id]) window._mattressReactions[__id] = 'good'; window.chooseFinalist(__id); })(top.id);
+  (function(__id) { window.chooseFinalist(__id); })(top.id);
   window.showSavedPicks();
   const s = document.getElementById('hf2Screen');
   const cs = getComputedStyle(s);
@@ -392,7 +392,7 @@ async (ARGS) => {
   for (const k of Object.keys(ANS)) answers[k] = ANS[k];
   showProfileScreen();
   window.showResults();
-  (function(__id) { window._mattressReactions = window._mattressReactions || {}; if (!window._mattressReactions[__id]) window._mattressReactions[__id] = 'good'; window.chooseFinalist(__id); })(_resultsState.tierData.gold[0].id);
+  (function(__id) { window.chooseFinalist(__id); })(_resultsState.tierData.gold[0].id);
   window.showSleepPlan('results');
   window.showAccessories();
   await new Promise((res) => setTimeout(res, 500));
@@ -512,7 +512,7 @@ async (ARGS) => {
   const saved = saves.find((b) => b.classList.contains('saved')), restSave = saves.find((b) => !b.classList.contains('saved'));
   const results = { activeTab: geo(activeTab), restTab: geo(restTab), selCmp: geo(selCmp), restCmp: geo(restCmp), saved: geo(saved), restSave: geo(restSave),
                     forced: matchMedia('(forced-colors: active)').matches };
-  (function(__id) { window._mattressReactions = window._mattressReactions || {}; if (!window._mattressReactions[__id]) window._mattressReactions[__id] = 'good'; window.chooseFinalist(__id); })(gold[0].id);
+  (function(__id) { window.chooseFinalist(__id); })(gold[0].id);
   window.showSleepPlan('results');
   window.showAccessories();
   await new Promise((res) => setTimeout(res, 400));
@@ -656,7 +656,7 @@ async (ARGS) => {
   for (const k of Object.keys(ARGS.answers)) answers[k] = ARGS.answers[k];
   showProfileScreen();
   window.showResults();
-  (function(__id) { window._mattressReactions = window._mattressReactions || {}; if (!window._mattressReactions[__id]) window._mattressReactions[__id] = 'good'; window.chooseFinalist(__id); })(_resultsState.tierData.gold[0].id);
+  (function(__id) { window.chooseFinalist(__id); })(_resultsState.tierData.gold[0].id);
   window.showSleepPlan('results');
   window.showAccessories();
   await new Promise((res) => setTimeout(res, 400));
@@ -866,7 +866,7 @@ async (ARGS) => {
   found = found.concat(small('compare-modal'));
   window.closeCompareModal();
   await wait(400);
-  (function(__id) { window._mattressReactions = window._mattressReactions || {}; if (!window._mattressReactions[__id]) window._mattressReactions[__id] = 'good'; window.chooseFinalist(__id); })(gold[0].id);
+  (function(__id) { window.chooseFinalist(__id); })(gold[0].id);
   window.showSavedPicks();
   await wait(400);
   const strip = document.getElementById('hf2RsaStripBtn'); if (strip) { strip.click(); await wait(250); }
@@ -977,7 +977,7 @@ async (ARGS) => {
   for (const k of Object.keys(ARGS.answers)) answers[k] = ARGS.answers[k];
   showProfileScreen();
   window.showResults();
-  (function(__id) { window._mattressReactions = window._mattressReactions || {}; if (!window._mattressReactions[__id]) window._mattressReactions[__id] = 'good'; window.chooseFinalist(__id); })(_resultsState.tierData.gold[0].id);
+  (function(__id) { window.chooseFinalist(__id); })(_resultsState.tierData.gold[0].id);
   window.showSleepPlan('results');
   window.showAccessories();
   await new Promise((res) => setTimeout(res, 400));
