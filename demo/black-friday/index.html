@@ -9165,6 +9165,8 @@
     .drawer-inside-block[hidden],
     .drawer-story[hidden] { display: none; }
     .drawer-proofs { display: grid; gap: 10px; }
+    /* A collapsed proof half hands its column to the inside half. */
+    .drawer-proof-block[hidden] + .drawer-inside-block { grid-column: 1 / -1; }
     .drawer-proof {
       display: flex;
       align-items: flex-start;

@@ -1162,7 +1162,8 @@ section('Product-proof drawer painter — story, canonical cue with fallback, pr
   ok('CSS: landscape sets proofs beside the inside labels; the existing portrait block stacks them (no new breakpoint); hidden blocks do not paint',
     /\.drawer-proof-grid \{\s*display: grid;\s*grid-template-columns: minmax\(0, 1\.1fr\) minmax\(0, 1fr\);/.test(norm)
     && /\.drawer-mattress-name \{ font-size:26px; \}\s*\n\s*\/\*[^\n]*\*\/\s*\n\s*\.drawer-proof-grid \{ grid-template-columns: 1fr; \}\s*\n\s*\}/.test(norm)
-    && norm.includes('.drawer-proof-grid[hidden],\n    .drawer-proof-block[hidden],\n    .drawer-inside-block[hidden],\n    .drawer-story[hidden] { display: none; }'));
+    && norm.includes('.drawer-proof-grid[hidden],\n    .drawer-proof-block[hidden],\n    .drawer-inside-block[hidden],\n    .drawer-story[hidden] { display: none; }')
+    && norm.includes('.drawer-proof-block[hidden] + .drawer-inside-block { grid-column: 1 / -1; }'));
   ok('CSS: the light drawer restates story, proof and inside inks; forced colors keep a CanvasText boundary on the cards and glyph rings',
     /body:has\(#resultsScreen\.active\) \.drawer-story__headline,/.test(norm) && /body:has\(#resultsScreen\.active\) \.drawer-proof__cue,/.test(norm)
     && /body:has\(#resultsScreen\.active\) \.drawer-proof \{\s*border-color: #D8CCBD;/.test(norm)
