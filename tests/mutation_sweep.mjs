@@ -2507,7 +2507,10 @@ for (const d of ["tests", "data", "docs", "tools", "incoming", "demo", ".github"
 }
 // CLAUDE.md joins the copy set because the trust suite pins that it carries no
 // paragraph legitimizing retailer prose in the quiz contract.
-for (const f of ["index.html", "Code.gs", "CLAUDE.md"]) cpSync(join(root, f), join(sandbox, f));
+// build-data.ps1 joins the copy set because the a31 product-proof content
+// section pins the bilingual emission rules of the generated mattress JSON
+// (story / trial cue / proofs / construction) at their source.
+for (const f of ["index.html", "Code.gs", "CLAUDE.md", "build-data.ps1"]) cpSync(join(root, f), join(sandbox, f));
 
 // Per-target pristine sources. Entries name their target with a fifth field;
 // index.html is the default. Every mutated target is restored before the next
