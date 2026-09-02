@@ -602,6 +602,18 @@ section('Consultation Summary — recap rows, names-only priorities with ordinal
     && norm.includes("return fin && fin.kind === 'chosen' && fin.item && fin.item.imageUrl ? String(fin.item.imageUrl) : '';")
     && norm.includes(`'<img class="email-save-thumb" src="' + escapeHtml(r.thumb) + '" alt="" width="60" height="40" decoding="async">'`)
     && /\.email-save-thumb \{[^}]*object-fit: contain;[^}]*background: #FFFDF8;/.test(norm));
+  // Take-home preview honesty (synthesis change 5 + ruling 6).
+  ok('take-home: exactly one concise preview disclosure, the owner-specified wording, static + both runtime branches (ES provisional); the old "Preview mode: live…" line is gone',
+    /id="emailPreviewNote">Preview: email delivery isn’t connected yet\.<\/div>/.test(norm)
+    && norm.includes(`: "Preview: email delivery isn’t connected yet.";`)
+    && norm.includes("? 'Vista previa: el envío por correo aún no está conectado.'")
+    && !liveHtml.includes('Preview mode: live email delivery') && !liveHtml.includes('Modo de vista previa: la entrega de correo en vivo')
+    && norm.includes("noteEl.style.display = isDemoMode ? '' : 'none';"));
+  ok('take-home: the confirmation states the delivery fact alone; the config suffix (demoDeliveryNote) is retired from render and no longer read anywhere',
+    norm.includes("setText('emailPreviewModeNote', es ? 'No se envió ningún correo.' : 'No email was sent.');")
+    && !/getSavingsPassConfig\(\)\.demoDeliveryNote/.test(norm)
+    && !/setText\('emailPreviewModeNote'[^\n]*demoDeliveryNote/.test(norm)
+    && (norm.match(/demoDeliveryNote/g) || []).length === 3);
   // Brief ordinals.
   ok('Brief: every priority row carries the shared ordinal ring before its title, hidden from assistive technology; the title keeps the accessible name',
     norm.includes(`+ '<span class="noct-profile-priority-ordinal" aria-hidden="true">' + (i + 1) + '</span>'\n            + '<span class="noct-profile-priority-title">'`)

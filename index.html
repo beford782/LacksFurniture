@@ -11982,7 +11982,7 @@
                 </div>
               </form>
               <button class="noct-email-send-btn" id="emailSendBtn" onclick="sendResults()" ontouchend="event.preventDefault();sendResults();">Save My Sleep Brief &rarr;</button>
-              <div class="email-preview-note" id="emailPreviewNote">Preview mode: live email delivery isn't connected yet.</div>
+              <div class="email-preview-note" id="emailPreviewNote">Preview: email delivery isn’t connected yet.</div>
               <div class="noct-email-privacy" id="emailPrivacy">
                 <span id="emailPrivacyLead" data-store="email-privacy"></span>
                 <a href="#" onclick="event.preventDefault();document.getElementById('privacyOverlay').classList.add('visible');" id="emailPrivacyLink">Privacy &amp; Terms</a>
@@ -18362,12 +18362,15 @@
       // gate; a retailer with no configured line shows no line.
       setText('emailPrivacyLead', localizedConfigBlock('text').emailPrivacy || '');
 
-      // Preview-mode note under the CTA — shown only while live email is not wired.
+      // Preview note under the CTA — shown only while live email is not wired.
+      // Synthesis (owner counterprompt 2026-09-02, change 5 + ruling 6): the
+      // ONE concise preview disclosure, owner-specified wording (ES
+      // provisional). Delivery-state behaviour (isDemoMode gate) unchanged.
       var noteEl = document.getElementById('emailPreviewNote');
       if (noteEl) {
         noteEl.textContent = es
-          ? 'Modo de vista previa: la entrega de correo en vivo aún no está conectada.'
-          : "Preview mode: live email delivery isn't connected yet.";
+          ? 'Vista previa: el envío por correo aún no está conectado.'
+          : "Preview: email delivery isn’t connected yet.";
         noteEl.style.display = isDemoMode ? '' : 'none';
       }
 
@@ -18385,13 +18388,15 @@
         ? (es ? ('Llévalo a un especialista de sueño de ' + storeName() + ' para continuar donde lo dejaste.') : ('Bring this to a ' + storeName() + ' sleep specialist to pick up where you left off.'))
         : (es ? 'Revisa tu bandeja de entrada para ver tus resultados personalizados.' : 'Check your inbox for your personalized results.'));
 
-      // Preview-mode honesty card (demo only). Uses the retailer-approved
-      // demoDeliveryNote from store-config so the wording stays config-driven.
+      // Preview-mode honesty card (demo only): the delivery-state fact alone.
+      // Synthesis (owner counterprompt 2026-09-02, change 5 + ruling 6): the
+      // config suffix that explained live delivery could be connected later
+      // (discount.demoDeliveryNote) is retired from render - the field stays
+      // in the config chain untouched (dead-key cleanup is a separate task).
       var pmCard = document.getElementById('emailPreviewModeCard');
       if (pmCard) pmCard.style.display = isDemoMode ? '' : 'none';
       setText('emailPreviewModeLabel', es ? 'Modo de vista previa' : 'Preview mode');
-      setText('emailPreviewModeNote',
-        (es ? 'No se envió ningún correo. ' : 'No email was sent. ') + L(getSavingsPassConfig().demoDeliveryNote));
+      setText('emailPreviewModeNote', es ? 'No se envió ningún correo.' : 'No email was sent.');
 
       setText('emailConfirmStartOver', es ? 'Nuevo Cliente' : 'Start New Customer');
       // A3: "handoff" is internal jargon — the route goes to the shared
