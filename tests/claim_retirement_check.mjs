@@ -139,7 +139,7 @@ for (const lang of ["en", "es"]) {
 section("drawer omission");
 check("the drawer painter no longer calls mattressDifferentiators or writes a Key features section",
   !OPEN_DRAWER.includes("mattressDifferentiators(") && !OPEN_DRAWER.includes("drawerDifferentiators")
-  && OPEN_DRAWER.includes("paintDrawerProductProof(m);"));
+  && /^\s*paintDrawerProductProof\(m\);/m.test(OPEN_DRAWER));
 check("no drawer element carries the retired differentiator ids",
   !html.includes('id="drawerDifferentiatorsLabel"') && !html.includes('id="drawerDifferentiators"'));
 

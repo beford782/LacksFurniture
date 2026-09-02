@@ -698,8 +698,8 @@ const MUTATIONS = [
     "feature: _retired ? '—' : (d0.title || mattressResponseLabel(m)),",
     "feature: _retired ? '—' : (d0.detail || mattressResponseLabel(m)),", COMPARE],
   ["compare alignment: the practical benefit is dropped",
-    "benefit: _retired ? '—' : (d0.detail || mattressDifferenceText(m)),",
-    "benefit: _retired ? '—' : (mattressDifferenceText(m)),", COMPARE],
+    "benefit: _retired ? '—' : (d0.detail || mattressDifferenceText(m))",
+    "benefit: _retired ? '—' : (mattressDifferenceText(m))", COMPARE],
   ["compare alignment: identical values no longer merge",
     "if (r.a === r.b) {", "if (false) {", COMPARE],
   ["compare alignment: difference emphasis removed",
@@ -796,8 +796,8 @@ const MUTATIONS = [
     "var cmpBtn = e.target.closest('.compare-btn');",
     "var cmpBtn = null;", CMPE],
   ["compare entry: the session wipe keeps the previous customer's selection",
-    "window._favoriteMattressId = '';\n        window._compareSelected = [];",
-    "window._favoriteMattressId = '';", CMPE],
+    "window._favoriteMattressId = '';\n        window._finalistUndo = null;\n        window._compareSelected = [];",
+    "window._favoriteMattressId = '';\n        window._finalistUndo = null;", CMPE],
   ["compare modal: the aligned table loses its light theme (cream on cream)",
     "body:has(#resultsScreen.active) .cmp-head-name,\n    body:has(#hf2Screen.active) .cmp-head-name,\n    body:has(#resultsScreen.active) .cmp-val,\n    body:has(#hf2Screen.active) .cmp-val {\n      color: #2F271E;\n    }",
     "", CMPE],
@@ -1781,9 +1781,13 @@ const MUTATIONS = [
   ["plan: the recommended fallback stamps the tier onto the engine's shared entry (mutates tierData)",
     "        return Object.assign({}, _resultsState.tierData.gold[0], { tier: 'gold' });",
     "        _resultsState.tierData.gold[0].tier = 'gold'; return _resultsState.tierData.gold[0];", PLAN],
-  ["plan: the Consultation Summary's finalist control toggles the current finalist OFF again",
-    "    window.toggleFavoriteMattress = function(mattressId) {\n      window.chooseFinalist(mattressId);",
-    "    window.toggleFavoriteMattress = function(mattressId) {\n      if (window._favoriteMattressId === mattressId) { window._favoriteMattressId = ''; } else window.chooseFinalist(mattressId);", PLAN],
+  // Product-proof (owner decisions 5-8, 2026-09-02): the finalist control IS
+  // reversible now, so the former "toggles OFF again" entry is inverted - a
+  // control that can no longer clear the current finalist must be caught.
+  ["plan: the finalist control can no longer clear the current finalist (reversibility lost)",
+    "      if (window._favoriteMattressId === mattressId) {\n        window.clearFinalist(mattressId);\n        announceFinalist(t('drawer.finalist_live_cleared'));\n        return;\n      }",
+    "      if (window._favoriteMattressId === mattressId) { return; }",
+    PLAN.concat(A31)],
   // Owner ruling 2026-08-23 (C10): neutral trial-priority prose. Observed by the
   // Plan suite's no-finalist honesty checks, the Sleep Brief pin and the Phase 1
   // output fixture (the prose is engine output).

@@ -417,8 +417,10 @@ section('Trial drawer — one prompt, no reaction capture, no gate; reversible f
     && toggleSrc.includes("if (mattressId === window._currentDrawerMattressId && typeof showFinalistSleepSystemPrompt === 'function') showFinalistSleepSystemPrompt();")
     && saveDrawerSrc.includes('showFinalistSleepSystemPrompt();'));
   const proofSrcStatic = extractFunction('function paintDrawerProductProof(m)') || '';
+  ok('the drawer name is written as text only - no price-tier glyph returns beside it (A3.1 retirement kept)',
+    openSrc.includes("document.getElementById('drawerName').textContent = m.name;") && !openSrc.includes('price-tier'));
   ok('exactly one physical trial prompt renders (the canonical cue, else the engine line); the renderer writes no reaction or step labels',
-    openSrc.includes('paintDrawerProductProof(m);') && !openSrc.includes('getMattressTrialPrompts(')
+    /^\s*paintDrawerProductProof\(m\);/m.test(openSrc) && !openSrc.includes('getMattressTrialPrompts(')
     && proofSrcStatic.includes("var trialCue = L(m.trialCue || '') || getMattressTrialPrompts(m)[0] || '';")
     && !openSrc.includes('drawerReactionLabel') && !openSrc.includes('drawerFinalistLabel'));
 
