@@ -259,11 +259,13 @@ section('shared and customer surfaces — deliberate second person, marked momen
   ok('the Brief’s shared-screen controls drop the first person (specialist operates)',
     norm.includes("es ? '← Editar respuestas' : '← Edit answers'")
     && norm.includes("es ? 'Continuar a las opciones →' : 'Continue to matches →'"));
-  ok('the Summary keeps the shared orientation and title',
+  ok('the Summary keeps the shared orientation and the directive title (A3.1)',
     /id="hf2ReviewEyebrow">Review with the customer</.test(norm)
-    && /hf2ReviewTitle: es \? 'Tu Resumen de Consulta' : 'Your Consultation Summary',/.test(norm));
-  ok('the Summary close speaks to both people (take home, not "for the customer")',
-    norm.includes(": 'Review the plan together, then save it to take home.'"));
+    && /hf2ReviewTitle: es \? 'Resumen de la consulta' : 'Consultation summary',/.test(norm));
+  ok('the Summary close is ONE state-derived NEXT cue (never backstage instruction about "the customer")',
+    norm.includes("pick('Next: save to take home', 'Siguiente: guardar para llevar')")
+    && norm.includes(': consultationNextCue()')
+    && !norm.includes("'Review the plan together, then save it to take home.'"));
   ok('the take-home returns to customer voice and drops the internal "handoff" jargon',
     dictEn['email.eyebrow'] === 'Take your matches home'
     && norm.includes("es ? 'Volver al resumen' : 'Back to the summary'")

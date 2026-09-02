@@ -54,6 +54,13 @@ section("extraction");
 const IMPLICATION_FN = grab(/function consultImplication\(questionId, optionId\) \{[\s\S]*?\n    \}/, "consultImplication()");
 const RESOLVER_FN = grab(/function resolveConsultationSummary\(\) \{[\s\S]*?\n    \}/, "resolveConsultationSummary()");
 const RENDER_FN = grab(/function renderHf2Brief\(\) \{[\s\S]*?\n    \}/, "renderHf2Brief()");
+// A3.1 (owner ruling 4, 2026-09-01): the on-screen rows are the RECAP
+// projection (the approved implication with its imperative removed), gated
+// on the approved implication existing; the payload keeps the resolver.
+const RECAP_MAP = grab(/var CONSULT_RECAP = \{[\s\S]*?\n    \};/, "CONSULT_RECAP");
+const RECAP_LOOKUP_FN = grab(/function consultRecap\(questionId, optionId\) \{[\s\S]*?\n    \}/, "consultRecap()");
+const RECAP_FN = grab(/function resolveConsultationRecap\(\) \{[\s\S]*?\n    \}/, "resolveConsultationRecap()");
+const frags = (s) => (s ? s.split(" · ").length : 0);
 // Slice 2 stamp: renderHf2Brief() draws the shared decorative Sleep Signature
 // before the rows. Executed for real here so this suite keeps proving that
 // the stamp is the ONLY change to this screen — the resolver, rows, copy and
@@ -107,9 +114,13 @@ function run(answers, lang, opts) {
     ${ANSWER_LABEL_FN}
     ${IMPLICATION_FN}
     ${RESOLVER_FN}
+    ${RECAP_MAP}
+    ${RECAP_LOOKUP_FN}
+    ${RECAP_FN}
     ${SIGNATURE_FN}
     ${RENDER_FN}
     out.resolve = resolveConsultationSummary;
+    out.recap = resolveConsultationRecap;
     out.render = renderHf2Brief;
     out.implication = consultImplication;
     out.firmnessFeel = firmnessFeel;
@@ -245,12 +256,22 @@ section("resolution: EN content is implication copy, size and firmness intact");
       + " · compare cooling covers and airflow");
   check("the firmness value is the computed feel + score, unchanged",
     vm.profile.includes(out.firmnessFeel(6) + " 6/10"));
-  check("the DOM rows carry exactly the resolved strings",
-    els.get("hf2BriefContext").textContent === vm.context
-    && els.get("hf2BriefWho").textContent === vm.who
-    && els.get("hf2BriefProfile").textContent === vm.profile);
-  check("no clinical-style quiz label reaches any row",
-    CLINICAL.every((s) => !(vm.context + vm.who + vm.profile).includes(s)));
+  const recap = out.recap();
+  check("the DOM rows carry exactly the RECAP projection (A3.1 ruling 4)",
+    els.get("hf2BriefContext").textContent === recap.context
+    && els.get("hf2BriefWho").textContent === recap.who
+    && els.get("hf2BriefProfile").textContent === recap.profile);
+  check("recap EN: the same rows, the same order, every fact kept, the staff imperatives removed",
+    recap.context === "Comfort problem"
+    && recap.who === "Queen · Lower-back support · Temperature control"
+    && recap.profile === "Shoulder and hip cushioning · Head-of-bed elevation · Gentle, even pressure relief · Firm 6/10 · Cooling covers and airflow");
+  check("two projections of ONE answer set: fragment-for-fragment correspondence with the payload resolver",
+    frags(recap.context) === frags(vm.context) && frags(recap.who) === frags(vm.who) && frags(recap.profile) === frags(vm.profile));
+  check("no clinical-style quiz label reaches any row (resolver or recap)",
+    CLINICAL.every((s) => !(vm.context + vm.who + vm.profile + recap.context + recap.who + recap.profile).includes(s)));
+  check("no recap fragment opens with a staff imperative",
+    !(recap.context + " · " + recap.who + " · " + recap.profile).split(" · ")
+      .some((f) => /^(test|prioritize|compare|notice|look|keep|check|try|ask|focus)\b/i.test(f)));
 }
 
 section("resolution: Spanish re-renders the same answers with ES copy (exit 3)");
@@ -270,8 +291,13 @@ section("resolution: Spanish re-renders the same answers with ES copy (exit 3)")
   check("[es] no EN implication string leaks into the Spanish render",
     !vm.profile.includes("prioritize") && !vm.who.includes("test lower-back")
     && !vm.context.includes("aiming"));
-  check("[es] the rows re-render from the same answer state",
-    els.get("hf2BriefWho").textContent === vm.who
+  const recapEs = out.recap();
+  check("[es] the rows re-render from the same answer state (recap projection, Spanish end to end)",
+    els.get("hf2BriefWho").textContent === recapEs.who
+    && recapEs.who === "Queen · Soporte lumbar · Control de temperatura"
+    && recapEs.context === "Problema de comodidad"
+    && recapEs.profile.includes("Acolchado de hombros y caderas") && recapEs.profile.includes("Firme 6/10")
+    && !/Lower-back|Temperature control|Comfort problem|cushioning/.test(recapEs.context + recapEs.who + recapEs.profile)
     && en.who !== vm.who);
 }
 
@@ -359,10 +385,12 @@ section("missing / malformed / untranslated mappings omit the fragment");
   check("[en] whitespace-only entries omit their fragments exactly",
     vm.context === ""
     && vm.who === "Queen · prioritize temperature control");
-  check("[en] the DOM rows and payload carry the same omission — no orphan separators",
-    els.get("hf2BriefWho").textContent === vm.who
+  const recapWs = out.recap();
+  check("[en] the DOM rows (recap) and payload carry the same omission — no orphan separators, gated on the approved implication",
+    els.get("hf2BriefWho").textContent === recapWs.who
+    && recapWs.who === "Queen · Temperature control" && recapWs.context === ""
     && pay.who === vm.who && pay.context === vm.context
-    && ![vm.context, vm.who, vm.profile].some((s) =>
+    && ![vm.context, vm.who, vm.profile, recapWs.context, recapWs.who, recapWs.profile].some((s) =>
       /·\s*·/.test(s) || /^\s*·/.test(s) || /·\s*$/.test(s)));
   const wsEs = JSON.parse(JSON.stringify(CONFIG.salesNotes_es.consultationImplications));
   wsEs.sleep_issues.back_pain = "   ";
@@ -432,17 +460,47 @@ for (const q of SENTINEL_QUESTIONS) {
 // ===========================================================================
 // 5. ONE VIEW-MODEL — DOM and payload cannot drift
 // ===========================================================================
-section("the DOM rows and the payload carry the SAME resolved strings");
+section("A3.1 recap map — complete against the real config, bilingual, never an imperative");
+{
+  const RECAP = new Function(RECAP_MAP + "\nreturn CONSULT_RECAP;")();
+  const impl = CONFIG.salesNotes.consultationImplications;
+  const missing = [];
+  for (const q of CONSUMED) {
+    for (const opt of Object.keys(impl[q] || {})) {
+      const approved = String(impl[q][opt] || "").trim();
+      if (!approved) continue;
+      const en = RECAP.en[q] && RECAP.en[q][opt];
+      const es = RECAP.es[q] && RECAP.es[q][opt];
+      if (typeof en !== "string" || !en.trim() || typeof es !== "string" || !es.trim() || en === es) missing.push(q + "." + opt);
+    }
+  }
+  check("every approved implication has a non-blank EN recap and a distinct ES recap", missing.length === 0, missing.join(", "));
+  const allEn = CONSUMED.flatMap((q) => Object.values(RECAP.en[q] || {})).filter(Boolean);
+  check("no EN recap opens with a staff imperative",
+    !allEn.some((f) => /^(test|prioritize|compare|notice|look|keep|check|try|ask|focus)\b/i.test(f)));
+  check("no recap carries a clinical-style quiz label", allEn.every((f) => CLINICAL.every((c) => !f.includes(c))));
+  // Fail-closed: an unknown option, a blank approved implication, an unknown question.
+  const vmU = run(Object.assign({}, ANSWERS_A, { sleep_position: "bogus_pos" }), "en").out.recap();
+  check("an unknown option omits its recap fragment (never the id, never the label)",
+    !vmU.profile.includes("bogus") && vmU.profile.indexOf("Head-of-bed elevation") === 0);
+}
+
+section("the DOM rows (recap) and the payload (implications) are two projections of ONE answer set");
 for (const lang of ["en", "es"]) {
   const { els, out } = run(ANSWERS_A, lang);
   out.render();
   const pay = out.payload();
-  check(`[${lang}] payload === DOM for context/who/profile`,
+  const vm = out.resolve();
+  const recap = out.recap();
+  check(`[${lang}] payload === resolver output (the email keeps the approved implications verbatim)`,
     pay && typeof pay === "object"
-    && pay.context === els.get("hf2BriefContext").textContent
-    && pay.who === els.get("hf2BriefWho").textContent
-    && pay.profile === els.get("hf2BriefProfile").textContent
+    && pay.context === vm.context && pay.who === vm.who && pay.profile === vm.profile
     && pay.who.length > 0);
+  check(`[${lang}] DOM === recap projection, fragment for fragment with the payload`,
+    els.get("hf2BriefContext").textContent === recap.context
+    && els.get("hf2BriefWho").textContent === recap.who
+    && els.get("hf2BriefProfile").textContent === recap.profile
+    && frags(recap.context) === frags(pay.context) && frags(recap.who) === frags(pay.who) && frags(recap.profile) === frags(pay.profile));
   check(`[${lang}] the payload carries exactly context/who/profile`,
     JSON.stringify(Object.keys(pay).sort()) === JSON.stringify(["context", "profile", "who"]));
 }

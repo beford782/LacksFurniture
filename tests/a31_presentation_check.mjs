@@ -503,6 +503,97 @@ section('Sleep System — retired note panel, in-step lines, trial diagram, F1 f
     norm.includes("en: 'Add only what supports the customer’s needs.'") && /id="sleepSystemSubtitle">Add only what supports the customer’s needs\.</.test(norm));
 }
 
+// ============================================ 8. Summary / take-home / Brief (A3.1 c4)
+section('Consultation Summary — recap rows, names-only priorities with ordinal rings, NEXT cue, trims; take-home lighter; Brief ordinals');
+{
+  const cueSrc = extractFunction('function consultationNextCue()');
+  const recapLookup = extractFunction('function consultRecap(questionId, optionId)');
+  const recapMap = (norm.match(/var CONSULT_RECAP = \{[\s\S]*?\n    \};/) || [''])[0];
+  ok('Summary sources extracted', !!cueSrc && !!recapLookup && recapMap.length > 200);
+  ok('the title is the directive\'s ("Consultation summary" / "Resumen de la consulta") and the subtitle is retired (element kept, empty, hidden)',
+    /id="hf2ReviewTitle">Consultation summary<\/h1>/.test(norm)
+    && /<p class="hf2-review-subtitle" id="hf2ReviewSubtitle" hidden><\/p>/.test(norm)
+    && norm.includes("hf2ReviewTitle: es ? 'Resumen de la consulta' : 'Consultation summary',")
+    && !liveHtml.includes('A quick recap of what matters') && !liveHtml.includes('hf2ReviewSubtitle: es'));
+  ok('"Consultation status" stays the region name but leaves the visible page (sr-only), still written from the dictionary',
+    /<div class="hf2-review-section__label sr-only" id="hf2LeadLabel"><\/div>/.test(norm)
+    && norm.includes("label.textContent = t('hf2.lead_label');"));
+  ok('the implication rows are labelled "Priorities" / "Prioridades" and render the recap projection',
+    /id="hf2NeedsLabel">Priorities</.test(norm) && norm.includes("hf2NeedsLabel: es ? 'Prioridades' : 'Priorities',")
+    && norm.includes('var vm = resolveConsultationRecap();') && !liveHtml.includes('What we set out to solve'));
+  ok('the recap map is bilingual, id-keyed on the five consumed questions, and gated on the approved implication',
+    ['trigger', 'sleep_issues', 'sleep_position', 'health_conditions', 'temperature'].every((q) => recapMap.includes(q + ': {'))
+    && recapMap.includes('en: {') && recapMap.includes('es: {')
+    && recapLookup.includes("var approved = consultImplication(questionId, optionId);") && recapLookup.includes("if (!approved) return '';"));
+  {
+    // Executed: fail-closed on every path.
+    const env = new Function('currentLang', 'consultImplication', recapMap + '\n' + recapLookup + '\nreturn consultRecap;');
+    const withApproved = env('en', () => 'approved text');
+    const blank = env('en', () => '');
+    const es = env('es', () => 'x');
+    ok('executed: a known option renders its noun; a blank approved implication renders nothing; unknown ids render nothing',
+      withApproved('sleep_issues', 'back_pain') === 'Lower-back support'
+      && blank('sleep_issues', 'back_pain') === ''
+      && withApproved('sleep_issues', 'nope') === '' && withApproved('nope', 'x') === '' && withApproved('', 'x') === ''
+      && es('sleep_issues', 'back_pain') === 'Soporte lumbar');
+  }
+  ok('the priorities render as NAMES with the ordinal ring; the reason and Try prose stay on the Brief/Plan/email',
+    norm.includes(`'<span class="hf2-ordinal" aria-hidden="true">' + (i + 1) + '</span>'`)
+    && !/brief\.try_this|item\.why\[|item\.test\[/.test(extractFunction('function renderHf2Priorities()'))
+    && /\.hf2-ordinal \{[^}]*border-radius: 50%;/.test(norm) && /\.hf2-priorities \{[^}]*list-style: none;/.test(norm));
+  ok('the status block: the metadata line is retired (node kept, hidden) and the verdict chip keeps its label sr-only',
+    norm.includes("if (metaEl) { metaEl.textContent = ''; metaEl.hidden = true; }")
+    && norm.includes(`'<div class="hf2-status__row"><span class="sr-only">' + esc(t('hf2.status_reaction_label'))`));
+  ok('the saved-picks and Sleep System hints ship hidden (keys stay written; ruling 7), the empty state is the short line',
+    /id="hf2FinalistsHint" hidden>/.test(norm) && /id="hf2SystemHint" hidden>/.test(norm)
+    && dictEn['hf2.no_system_items'] === 'Nothing added yet.' && dictEs['hf2.no_system_items'] === 'Aún no se ha agregado nada.');
+  ok('the finale reads "Ready to save" and its hint is the state-derived NEXT cue (Savings Pass branch config-gated)',
+    /id="hf2PassLabel">Ready to save</.test(norm) && norm.includes("hf2PassLabel: es ? 'Listo para guardar' : 'Ready to save',")
+    && norm.includes(': consultationNextCue()'));
+  {
+    // Executed NEXT cue: finalist first, then the first open step in rail
+    // order, then a pending specialist check, then the save. Payment never.
+    const STEPS = [{ id: 'adjustability', label: { en: 'Adjustability', es: 'Ajustabilidad' } }, { id: 'support', label: { en: 'Support', es: 'Soporte' } },
+      { id: 'pillow', label: { en: 'Pillow', es: 'Almohada' } }, { id: 'protection', label: { en: 'Protection', es: 'Protección' } }];
+    const run = (lang, kind, statuses, src = cueSrc) => new Function('currentLang', 'resolveFinalistState', 'SLEEP_SYSTEM_STEPS', 'sleepSystemDecision', 'sleepSystemText',
+      src + '\nreturn consultationNextCue();')(lang, () => ({ kind }), STEPS, (id) => ({ status: statuses[id] || 'open' }), (o) => o[lang]);
+    ok('executed: no finalist -> choose a finalist (EN + ES)',
+      run('en', 'none', {}) === 'Next: choose a finalist' && run('es', 'recommended', {}) === 'Siguiente: elegir un finalista');
+    ok('executed: the first open step in rail order names the cue',
+      run('en', 'chosen', { adjustability: 'open' }) === 'Next: compare adjustable-base positions'
+      && run('en', 'chosen', { adjustability: 'demo', support: 'later' }) === 'Next: confirm what sits under the mattress'
+      && run('en', 'chosen', { adjustability: 'demo', support: 'already', pillow: 'open' }) === 'Next: check pillow fit on the finalist'
+      && run('es', 'chosen', { adjustability: 'demo', support: 'already', pillow: 'added', protection: 'open' }) === 'Siguiente: elegir la prioridad de protección');
+    ok('executed: a pending specialist check is the cue only when nothing is open; nothing open -> save',
+      run('en', 'chosen', { adjustability: 'demo', support: 'confirm', pillow: 'added', protection: 'added' }) === 'Next: specialist check on support'
+      && run('en', 'chosen', { adjustability: 'demo', support: 'confirm', pillow: 'open', protection: 'added' }) === 'Next: check pillow fit on the finalist'
+      && run('en', 'chosen', { adjustability: 'demo', support: 'already', pillow: 'added', protection: 'added' }) === 'Next: save to take home'
+      && run('es', 'chosen', { adjustability: 'demo', support: 'already', pillow: 'added', protection: 'added' }) === 'Siguiente: guardar para llevar');
+    ok('executed: the cue never names payment', !/pay|pago/i.test(cueSrc.replace(/\/\/[^\n]*/g, '').replace(/1\.5 surface[^\n]*/g, '')));
+    const broken = cueSrc.replace("if ((st === 'open' || st === 'later') && cues[step.id]) return cues[step.id];", '');
+    ok('negative control: dropping the open-step read makes an open step report "save" (the cue pin would fail)',
+      broken !== cueSrc && run('en', 'chosen', { adjustability: 'open' }, broken) === 'Next: save to take home');
+  }
+  // Take-home.
+  ok('take-home: the subhead keeps only its purpose clause (static + both runtime branches)',
+    /id="emailSubhead">So a sleep specialist can pick up where you left off\.<\/p>/.test(norm)
+    && norm.includes("'So a ' + storeName() + ' sleep specialist can pick up where you left off.'")
+    && norm.includes("'Para que un especialista de sueño de ' + storeName() + ' continúe donde lo dejaste.'")
+    && !liveHtml.includes('Keep your mattress matches'));
+  ok('take-home: the packet counts stand alone ("1 saved"), the empty Sleep System row is factual, the finalist\'s own photo (or nothing) joins the row',
+    norm.includes("(savedMattresses.length + ' saved'))") && norm.includes("(recCount + ' recommended'))")
+    && !liveHtml.includes('· your strongest matches') && !liveHtml.includes('Explore with your specialist in store')
+    && norm.includes("(_esE ? 'Nada agregado aún' : 'Nothing added yet') }")
+    && norm.includes("return fin && fin.kind === 'chosen' && fin.item && fin.item.imageUrl ? String(fin.item.imageUrl) : '';")
+    && norm.includes(`'<img class="email-save-thumb" src="' + escapeHtml(r.thumb) + '" alt="" width="60" height="40" decoding="async">'`)
+    && /\.email-save-thumb \{[^}]*object-fit: contain;[^}]*background: #FFFDF8;/.test(norm));
+  // Brief ordinals.
+  ok('Brief: every priority row carries the shared ordinal ring before its title, hidden from assistive technology; the title keeps the accessible name',
+    norm.includes(`+ '<span class="noct-profile-priority-ordinal" aria-hidden="true">' + (i + 1) + '</span>'\n            + '<span class="noct-profile-priority-title">'`)
+    && /\.noct-profile-priority-ordinal \{[^}]*border: 1\.5px solid var\(--accent-ink\);[^}]*border-radius: 50%;/.test(norm)
+    && /\.noct-profile-priority-title \{\s*flex: 1;/.test(norm));
+}
+
 // ------------------------------------------------------------------- summary
 console.log(`\n${failures === 0 ? 'PASS' : 'FAIL'} — ${checks - failures}/${checks} checks passed`);
 process.exit(failures === 0 ? 0 : 1);

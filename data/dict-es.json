@@ -127,7 +127,7 @@
   "hf2.saved_picks_hint": "Los colchones que guardaste, en el orden en que los guardaste.",
   "hf2.no_saved_picks": "Aún no se han guardado colchones — guarda opciones desde los resultados para crear esta lista.",
   "hf2.system_hint": "Solo las piezas agregadas al plan aparecen aquí.",
-  "hf2.no_system_items": "Aún no se ha agregado nada al Sistema de Sueño.",
+  "hf2.no_system_items": "Aún no se ha agregado nada.",
   "hf2.lead_label": "Estado de la consulta",
   "hf2.lead_chosen": "Finalista ✓ {pick}.",
   "hf2.lead_recommended": "Aún no se ha elegido finalista — {pick} es el punto de partida recomendado.",

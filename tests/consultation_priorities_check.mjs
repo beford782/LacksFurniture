@@ -392,17 +392,23 @@ section("hf2: ordered render from stored state, both languages, no recompute");
     JSON.stringify(en.names) === JSON.stringify(state.map((t) => t.en)));
   check("the renderer writes <li> only — the <ol> itself stays the static one",
     !/<ol/.test(en.list.innerHTML) && /^<li /.test(en.list.innerHTML));
-  check("each row carries the reason and the testing prompt",
-    state.every((t) => en.list.innerHTML.includes(t.why.en))
-    && state.every((t) => en.list.innerHTML.includes(t.test.en)));
-  check("the EN render uses the EN testing label", en.list.innerHTML.includes("Try this: ")
-    && !en.list.innerHTML.includes("Pruébalo: "));
+  // A3.1 (owner directive 2026-09-01): on the shared close the rows are
+  // NAMES with the shared ordinal ring; the reason and the testing prose
+  // stay on the Brief, the Plan and in the take-home (email_priorities_check).
+  check("each row is the priority NAME only — no reason, no testing prompt (A3.1)",
+    state.every((t) => !en.list.innerHTML.includes(t.why.en))
+    && state.every((t) => !en.list.innerHTML.includes(t.test.en)));
+  check("the EN render carries no testing label in either language",
+    !en.list.innerHTML.includes("Try this: ") && !en.list.innerHTML.includes("Pruébalo: "));
+  check("every row carries its ordinal ring, 1..n in engine order, hidden from assistive technology (the <ol> keeps the order)",
+    [...en.list.innerHTML.matchAll(/<span class="hf2-ordinal" aria-hidden="true">(\d)<\/span><strong>/g)].map((m) => m[1]).join("")
+      === state.map((_, i) => String(i + 1)).join(""));
 
   const es = runHf2(state, "es");
   check("the SAME stored state renders Spanish",
     JSON.stringify(es.names) === JSON.stringify(state.map((t) => t.es)));
-  check("the ES render uses the ES testing label", es.list.innerHTML.includes("Pruébalo: ")
-    && !es.list.innerHTML.includes("Try this: "));
+  check("the ES render carries no testing label either",
+    !es.list.innerHTML.includes("Pruébalo: ") && !es.list.innerHTML.includes("Try this: "));
   // Cross-language leakage, both directions, all three fields.
   check("no Spanish leaks into the EN render",
     state.every((t) => !en.list.innerHTML.includes(t.es))
@@ -564,9 +570,12 @@ section("hf2: ordered render from stored state, both languages, no recompute");
     if (field === "name") { entry.en = payload; }
     else entry[field] = { en: payload, es: "x" };
     const r = runHf2([entry], "en");
+    // A3.1: why/test no longer render on the Summary at all - the hostile
+    // payload must be absent entirely (neither live nor escaped); the name
+    // still renders escaped.
     check(`hostile ${field}: no live tag in the hf2 render`,
       !r.list.innerHTML.includes("<script>") && !r.list.innerHTML.includes("<img ")
-      && r.list.innerHTML.includes("&lt;script&gt;"));
+      && (field === "name" ? r.list.innerHTML.includes("&lt;script&gt;") : !r.list.innerHTML.includes("&lt;script&gt;")));
   }
 }
 
@@ -643,10 +652,12 @@ check("the section's class set is exactly the section pattern + the priorities c
     const classes = [...m[0].matchAll(/class="([^"]+)"/g)].flatMap((c) => c[1].split(/\s+/));
     return classes.length > 0 && classes.every((c) => ["hf2-review-section", "hf2-review-section__label", "hf2-priorities"].includes(c));
   })());
-check("the rendered items carry the component classes (li + try label)",
-  /'<li class="hf2-priorities__item">'/.test(html) && /class="hf2-priorities__try"/.test(html));
-check("the testing label resolves through the dictionary (brief.try_this — the Plan's key)",
-  /escapeHtml\(t\('brief\.try_this'\)\)/.test((html.match(/function renderHf2Priorities\(\)[\s\S]*?\n    \}/) || [""])[0]));
+check("the rendered items carry the component classes (li + ordinal ring) (A3.1)",
+  /'<li class="hf2-priorities__item">'/.test(html) && /'<span class="hf2-ordinal" aria-hidden="true">' \+ \(i \+ 1\) \+ '<\/span>'/.test(html)
+  && /\.hf2-ordinal \{/.test(html));
+check("the Summary render no longer carries the testing label; the Brief still resolves it through the dictionary (brief.try_this)",
+  !/brief\.try_this/.test((html.match(/function renderHf2Priorities\(\)[\s\S]*?\n    \}/) || [""])[0])
+  && /escapeHtml\(t\('brief\.try_this'\)\)/.test(html));
 check("the label is written by renderHf2's copy map, bilingually",
   /hf2PrioritiesLabel: es \? 'Lo que probaremos juntos' : 'What we will test together',/.test(html));
 check("renderHf2 renders priorities between the brief and the picks (lead line precedes the triple)",

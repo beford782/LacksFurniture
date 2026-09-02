@@ -1975,7 +1975,25 @@
       touch-action: manipulation;
     }
 
+    /* A3.1: the shared ordinal ring - the engine order is the cross-screen
+       key (Brief rows, Results trial focus, Summary priorities). The <ol>
+       carries the order for assistive technology; the ring is aria-hidden. */
+    .noct-profile-priority-ordinal {
+      flex: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      border: 1.5px solid var(--accent-ink);
+      border-radius: 50%;
+      font-family: var(--font-serif);
+      font-size: 13px;
+      color: var(--accent-ink);
+      background: #FFFDF8;
+    }
     .noct-profile-priority-title {
+      flex: 1;
       font-size: 17px;
       line-height: 1.2;
     }
@@ -3221,6 +3239,8 @@
     .email-save-row.is-empty .email-save-mark { color: var(--color-text-subtle); }
     .email-save-title { font-family: var(--font-serif); font-size: 17px; color: var(--color-text); line-height: 1.25; }
     .email-save-detail { font-family: var(--font-sans); font-size: 12.5px; color: var(--color-text-muted); line-height: 1.4; margin-top: 2px; }
+    /* A3.1: the chosen finalist's own photo in the packet row - 3:2 contain on the white mat. */
+    .email-save-thumb { flex: none; width: 60px; height: 40px; object-fit: contain; background: #FFFDF8; border: 1px solid var(--color-border); border-radius: 4px; }
 
     /* Form card + solid showroom-red CTA */
     #emailScreen .noct-email-form { margin-bottom: 18px; }
@@ -3823,13 +3843,33 @@
       color: var(--color-text-muted);
     }
     #hf2StatusRoute { margin-top: 0.6rem; }
+    /* A3.1: names-only rows with the shared ordinal ring (the <ol> keeps the
+       order for assistive technology; the ring is aria-hidden). */
     .hf2-priorities {
       margin: 8px 0 0;
-      padding-left: 1.5em;
+      padding-left: 0;
+      list-style: none;
     }
     .hf2-priorities__item {
-      margin-bottom: 10px;
-      line-height: 1.55;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+      line-height: 1.4;
+    }
+    .hf2-ordinal {
+      flex: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      border: 1.5px solid var(--accent-ink);
+      border-radius: 50%;
+      font-family: var(--font-serif);
+      font-size: 0.82rem;
+      color: var(--accent-ink);
+      background: #FFFDF8;
     }
     .hf2-priorities__try {
       font-style: italic;
@@ -11609,8 +11649,11 @@
            it entirely. Not customer-derived, so not in the wipe inventory. -->
       <div class="hf2-review-attribution" id="hf2Attribution" hidden></div>
       <div class="hf2-review-eyebrow" id="hf2ReviewEyebrow">Review with the customer</div>
-      <h1 class="hf2-review-title" id="hf2ReviewTitle">Your Consultation Summary</h1>
-      <p class="hf2-review-subtitle" id="hf2ReviewSubtitle">A quick recap of what matters, what felt best, and what to keep on the shortlist.</p>
+      <!-- A3.1 (owner directive 2026-09-01): the shared close is titled for
+           both people; the explanatory subtitle is retired (the status block
+           and the recap rows say it). The element stays, empty and hidden. -->
+      <h1 class="hf2-review-title" id="hf2ReviewTitle">Consultation summary</h1>
+      <p class="hf2-review-subtitle" id="hf2ReviewSubtitle" hidden></p>
     </div>
 
     <!-- Lead status line (Slice 6, D5b/D5c): the explicit finalist state
@@ -11622,7 +11665,10 @@
          label is dictionary-only ("Consultation status") and correctly
          survives a wipe. -->
     <section class="hf2-review-section" id="hf2LeadSection" aria-labelledby="hf2LeadLabel">
-      <div class="hf2-review-section__label" id="hf2LeadLabel"></div>
+      <!-- A3.1: "Consultation status" stays the region's accessible name
+           (aria-labelledby) but leaves the visible page - the FINALIST
+           eyebrow is the block's own visible label. -->
+      <div class="hf2-review-section__label sr-only" id="hf2LeadLabel"></div>
       <!-- C3-A2 (owner ruling 2026-09-01): the lead is a compact three-state
            status BLOCK with a restrained product hierarchy - the named pick's
            own thumbnail (D5b: its own photo or nothing; ~160px landscape),
@@ -11646,7 +11692,12 @@
     </section>
 
     <section class="hf2-review-section">
-      <div class="hf2-review-section__label" id="hf2NeedsLabel">What we set out to solve</div>
+      <!-- A3.1 (owner ruling 4): the three rows render the RECAP projection
+           of the same answers (CONSULT_RECAP, presentation layer) - the
+           approved implications with their staff imperatives removed. The
+           email payload keeps consuming resolveConsultationSummary() as
+           before; the two are projections of ONE answer set. -->
+      <div class="hf2-review-section__label" id="hf2NeedsLabel">Priorities</div>
       <div class="hf2-brief">
         <div class="hf2-brief__row" id="hf2BriefContext"></div>
         <div class="hf2-brief__row" id="hf2BriefWho"></div>
@@ -11684,7 +11735,7 @@
           <!-- A3: statics aligned to the rendered strings — the shared Summary
                never flashes a second narrator before renderHf2 runs. -->
           <div class="hf2-review-section__label" id="hf2FinalistsLabel">Your saved picks</div>
-          <div class="hf2-review-section__hint" id="hf2FinalistsHint">The mattresses you saved, in the order you saved them.</div>
+          <div class="hf2-review-section__hint" id="hf2FinalistsHint" hidden>The mattresses you saved, in the order you saved them.</div>
         </div>
         <button class="hf2-compare-finalists" id="hf2CompareBtn" type="button"
                 onclick="window.compareReviewFinalists()"
@@ -11698,7 +11749,7 @@
       <div class="hf2-review-section__header">
         <div>
           <div class="hf2-review-section__label" id="hf2SystemLabel">Your Sleep System</div>
-          <div class="hf2-review-section__hint" id="hf2SystemHint">Only the pieces already added to the plan.</div>
+          <div class="hf2-review-section__hint" id="hf2SystemHint" hidden>Only the pieces already added to the plan.</div>
         </div>
         <button class="hf2-edit-system" id="hf2EditSystemBtn" type="button"
                 onclick="window.showAccessories()"
@@ -11760,7 +11811,7 @@
     </section>
 
     <section class="hf2-review-section hf2-review-finale">
-      <div class="hf2-review-section__label" id="hf2PassLabel">Your consultation is ready to save</div>
+      <div class="hf2-review-section__label" id="hf2PassLabel">Ready to save</div>
       <p class="hf2-review-section__hint" id="hf2PassHint"></p>
       <button class="hf2-discount-btn" id="hf2DiscountBtn" type="button" hidden>
         <span>Savings Pass</span>
@@ -11786,7 +11837,7 @@
         <div class="email-cap-header">
           <div class="noct-email-eyebrow" id="emailEyebrow">Take your matches home</div>
           <h1 class="noct-email-headline" id="emailHeadline">Save your <span class="accent">Sleep Brief</span></h1>
-          <p class="noct-email-subhead" id="emailSubhead">Keep your mattress matches and Sleep System picks together so a sleep specialist can pick up right where you left off.</p>
+          <p class="noct-email-subhead" id="emailSubhead">So a sleep specialist can pick up where you left off.</p>
         </div>
 
         <div class="email-cap-grid">
@@ -16323,6 +16374,7 @@
             + ' aria-controls="briefPriorityPanel-' + i + '"'
             + ' onclick="window._toggleBriefPriority(' + i + ')"'
             + ' ontouchend="event.preventDefault();window._toggleBriefPriority(' + i + ');">'
+            + '<span class="noct-profile-priority-ordinal" aria-hidden="true">' + (i + 1) + '</span>'
             + '<span class="noct-profile-priority-title">' + escapeHtml(p.name) + '</span>'
             + '<span class="noct-profile-priority-chevron" aria-hidden="true"></span>'
             + '</button>'
@@ -18183,13 +18235,15 @@
       setHtml('emailHeadline', es
         ? 'Guarda tu <span class="accent">Resumen de Sueño</span> de ' + storeName()
         : 'Save your ' + storeName() + ' <span class="accent">Sleep Brief</span>');
+      // A3.1 (owner directive 2026-09-01, take-home lighter): the packet
+      // below lists what is kept, so the sentence keeps its purpose clause.
       setText('emailSubhead', savingsPassEnabled()
         ? (es
-          ? 'Guardaremos tus opciones de colchón, tu Sistema de Sueño y tu Pase de Ahorro juntos para que un especialista de sueño de ' + storeName() + ' pueda continuar justo donde lo dejaste.'
-          : 'Keep your mattress matches, Sleep System picks, and Savings Pass together so a ' + storeName() + ' sleep specialist can pick up right where you left off.')
+          ? 'Con tu Pase de Ahorro, para que un especialista de sueño de ' + storeName() + ' continúe donde lo dejaste.'
+          : 'With your Savings Pass, so a ' + storeName() + ' sleep specialist can pick up where you left off.')
         : (es
-          ? 'Guardaremos tus opciones de colchón y tu Sistema de Sueño juntos para que un especialista de sueño de ' + storeName() + ' pueda continuar justo donde lo dejaste.'
-          : 'Keep your mattress matches and Sleep System picks together so a ' + storeName() + ' sleep specialist can pick up right where you left off.'));
+          ? 'Para que un especialista de sueño de ' + storeName() + ' continúe donde lo dejaste.'
+          : 'So a ' + storeName() + ' sleep specialist can pick up where you left off.'));
       setText('emailPreviewLabel', es ? 'Lo que vas a guardar' : "What you'll save");
       setText('emailFormTitle', es ? '¿Dónde lo guardamos?' : 'Where should we save it?');
 
@@ -18305,11 +18359,19 @@
             : (_esE ? 'Colchones recomendados' : 'Recommended matches'),
           // C5: the Spanish participle agrees with the count ("1 guardado",
           // "2 guardados"); the English forms are invariant.
+          // A3.1: the count alone - the old trailing claim clause read oddly
+          // at a count of one. The C5 participle rule stays.
           detail: savedMattresses.length
-            ? (_esE ? (savedMattresses.length + (savedMattresses.length === 1 ? ' guardado' : ' guardados') + ' · tus opciones más compatibles y para comparar')
-                    : (savedMattresses.length + ' saved · your strongest matches and comparison options'))
-            : (_esE ? (recCount + (recCount === 1 ? ' recomendado' : ' recomendados') + ' · tus opciones más compatibles')
-                    : (recCount + ' recommended · your strongest matches')) },
+            ? (_esE ? (savedMattresses.length + (savedMattresses.length === 1 ? ' guardado' : ' guardados'))
+                    : (savedMattresses.length + ' saved'))
+            : (_esE ? (recCount + (recCount === 1 ? ' recomendado' : ' recomendados'))
+                    : (recCount + ' recommended')),
+          // A3.1 (shared recap visual): the chosen finalist's own photo, or
+          // nothing - never a stand-in.
+          thumb: (function() {
+            var fin = (typeof resolveFinalistState === 'function') ? resolveFinalistState() : null;
+            return fin && fin.kind === 'chosen' && fin.item && fin.item.imageUrl ? String(fin.item.imageUrl) : '';
+          })() },
         { present: selectedAccessories.length > 0,
           title: _esE ? 'Sistema de Sueño' : 'Sleep System picks',
           // X3 (North Star ruling D7, 2026-08-31): factual customer-action
@@ -18318,7 +18380,7 @@
           detail: selectedAccessories.length
             ? (_esE ? (selectedAccessories.length + (selectedAccessories.length === 1 ? ' pieza' : ' piezas') + ' · las bases, almohadas o protectores que agregaste')
                     : (selectedAccessories.length + (selectedAccessories.length === 1 ? ' piece' : ' pieces') + ' · the bases, pillows or protectors you added'))
-            : (_esE ? 'Explóralo con tu especialista en la tienda' : 'Explore with your specialist in store') }
+            : (_esE ? 'Nada agregado aún' : 'Nothing added yet') }
       ];
       // Savings Pass row only when the pass is enabled; Payment Choice row
       // (no rates, no approval language) when financing is enabled.
@@ -18338,6 +18400,7 @@
       if (summaryEl) summaryEl.innerHTML = packet.map(function(r) {
         return '<div class="email-save-row' + (r.present ? '' : ' is-empty') + '">'
           + '<span class="email-save-mark">' + (r.present ? '✓' : '○') + '</span>'
+          + (r.thumb ? '<img class="email-save-thumb" src="' + escapeHtml(r.thumb) + '" alt="" width="60" height="40" decoding="async">' : '')
           + '<div><div class="email-save-title">' + r.title + '</div>'
           + '<div class="email-save-detail">' + r.detail + '</div></div>'
           + '</div>';
@@ -20941,15 +21004,16 @@
       }
       var valid = stored;
       // Slice 6 (resolving 0.5's provisional presentation): a classed ordered
-      // component. Same content, same engine order and wording, same
-      // all-or-nothing posture; "Try this" now comes from the dictionary —
-      // the same key the Sleep Plan renders (brief.try_this), one fork fewer.
-      list.innerHTML = valid.map(function(item) {
+      // component. Same engine order and wording, same all-or-nothing posture.
+      // A3.1 (owner directive 2026-09-01): on the shared close the three
+      // priorities are NAMES with the shared ordinal marker (the Brief's
+      // rows and the Results trial-focus order carry the same key); the
+      // reason and the testing prose stay on the Brief, the Plan and in the
+      // take-home. Same all-or-nothing posture, same engine order.
+      list.innerHTML = valid.map(function(item, i) {
         return '<li class="hf2-priorities__item">'
-          + '<strong>' + escapeHtml(L(item)) + '</strong> — '
-          + escapeHtml(item.why[currentLang] || item.why.en)
-          + '<br><em class="hf2-priorities__try">' + escapeHtml(t('brief.try_this')) + '</em>'
-          + escapeHtml(item.test[currentLang] || item.test.en)
+          + '<span class="hf2-ordinal" aria-hidden="true">' + (i + 1) + '</span>'
+          + '<strong>' + escapeHtml(L(item)) + '</strong>'
           + '</li>';
       }).join('');
       section.style.display = '';
@@ -21230,11 +21294,10 @@
         // Slice 6 retitle: the screen's visible name now matches its spoken
         // name (screen.handoff) and no longer collides with the Sleep Plan
         // screen's own title.
-        hf2ReviewTitle: es ? 'Tu Resumen de Consulta' : 'Your Consultation Summary',
-        hf2ReviewSubtitle: es
-          ? 'Un resumen rápido de lo que importa, lo que se sintió mejor y lo que debe quedar en la lista.'
-          : 'A quick recap of what matters, what felt best, and what to keep on the shortlist.',
-        hf2NeedsLabel: es ? 'Lo que queríamos resolver' : 'What we set out to solve',
+        // A3.1 (owner directive 2026-09-01): the shared close carries the
+        // directive's title; the subtitle is retired (element kept hidden).
+        hf2ReviewTitle: es ? 'Resumen de la consulta' : 'Consultation summary',
+        hf2NeedsLabel: es ? 'Prioridades' : 'Priorities',
         // Reuses the Sleep Brief's approved heading pair verbatim — same
         // content, same name, zero invented copy (0.5).
         hf2PrioritiesLabel: es ? 'Lo que probaremos juntos' : 'What we will test together',
@@ -21244,16 +21307,14 @@
         // "finalists". (External review P2 at 0613805.)
         hf2FinalistsHint: t('hf2.saved_picks_hint'),
         hf2SystemHint: es ? 'Solo las piezas que ya se agregaron al plan.' : 'Only the pieces already added to the plan.',
-        hf2PassLabel: es ? 'Tu consulta está lista para guardar' : 'Your consultation is ready to save',
-        // Pass-reveal hint only when the Savings Pass is enabled; otherwise a
-        // neutral save prompt (financing has its own module above this one).
-        // A3: the shared close speaks to both people — "save it to take
-        // home", never backstage instruction about "the customer".
+        hf2PassLabel: es ? 'Listo para guardar' : 'Ready to save',
+        // Pass-reveal hint only when the Savings Pass is enabled; otherwise
+        // A3.1: ONE state-derived NEXT cue (consultationNextCue) instead of a
+        // third statement of the shared moment. Payment is never the cue.
         hf2PassHint: savingsPassEnabled()
           ? (es ? 'Revisen el plan juntos y luego revela el Pase de Ahorro de 30 días.'
                 : 'Review the plan together, then reveal the 30-day Savings Pass.')
-          : (es ? 'Revisen el plan juntos y luego guárdenlo para llevar.'
-                : 'Review the plan together, then save it to take home.')
+          : consultationNextCue()
       };
       Object.keys(reviewCopy).forEach(function(id) {
         var el = document.getElementById(id);
@@ -21315,6 +21376,93 @@
       return (typeof v === 'string') ? v.trim() : '';
     }
 
+    // A3.1 (owner ruling 4, 2026-09-01): the Summary's implication rows are
+    // rewritten AT THE PRESENTATION LAYER. This id-keyed map is the approved
+    // implication with its staff imperative removed - same (question, option)
+    // mapping, same facts, no verb addressed at the specialist. App-level:
+    // the quiz ids are an app contract and these nouns are generic option
+    // semantics (a shipping PR may move it to salesNotes.consultationRecap).
+    // Fail-closed like consultImplication: unknown id -> '' (never the quiz
+    // label, never the id, never the other language). ES provisional.
+    var CONSULT_RECAP = {
+      en: {
+        trigger: { pain: 'Comfort problem', worn_out: 'Replacing an old mattress', moving: 'New space', upgrade: 'Upgrade', browsing: 'Exploring options' },
+        sleep_issues: { back_pain: 'Lower-back support', hip_pain: 'Hip and shoulder pressure relief', hot: 'Temperature control', tossing: 'Easy settling', stiff: 'Alignment and morning comfort', sagging: 'Durable, consistent support', too_soft: 'Firmer, more supportive feel', none: '' },
+        sleep_position: { side: 'Shoulder and hip cushioning', back: 'Even lumbar support', stomach: 'Midsection support', combo: 'Ease of movement between positions', no_idea: 'A few different feels to compare' },
+        health_conditions: { nerve_pain: 'Gentle, even pressure relief', allergies: 'Washable, protective covers', snoring: 'Head-of-bed elevation', reflux: 'Raised upper body', extra_support: 'Reinforced, sturdy support', getting_older: 'Easy in and out of bed', none: '' },
+        temperature: { hot: 'Cooling covers and airflow', comfortable: '', cold: 'Warmth and cozier surfaces', opposite: 'Temperature balance for two sleepers' }
+      },
+      es: {
+        trigger: { pain: 'Problema de comodidad', worn_out: 'Reemplazo de un colchón viejo', moving: 'Espacio nuevo', upgrade: 'Mejora', browsing: 'Explorando opciones' },
+        sleep_issues: { back_pain: 'Soporte lumbar', hip_pain: 'Alivio de presión en caderas y hombros', hot: 'Control de temperatura', tossing: 'Facilidad para acomodarse', stiff: 'Alineación y comodidad al despertar', sagging: 'Soporte duradero y consistente', too_soft: 'Sensación más firme y con más soporte', none: '' },
+        sleep_position: { side: 'Acolchado de hombros y caderas', back: 'Soporte lumbar uniforme', stomach: 'Soporte de la zona media', combo: 'Facilidad para cambiar de posición', no_idea: 'Varias sensaciones para comparar' },
+        health_conditions: { nerve_pain: 'Alivio de presión suave y uniforme', allergies: 'Fundas lavables y protectoras', snoring: 'Elevación de la cabecera', reflux: 'Torso elevado', extra_support: 'Soporte reforzado y resistente', getting_older: 'Facilidad para acostarse y levantarse', none: '' },
+        temperature: { hot: 'Fundas frescas y ventilación', comfortable: '', cold: 'Calidez y superficies más acogedoras', opposite: 'Equilibrio de temperatura para dos personas' }
+      }
+    };
+    function consultRecap(questionId, optionId) {
+      if (!questionId || !optionId) return '';
+      // Gate: the recap is a PRESENTATION of an approved implication - where
+      // the retailer's config carries none (blank, missing), nothing renders,
+      // so the screen and the payload keep the same fragment set.
+      var approved = consultImplication(questionId, optionId);
+      if (!approved) return '';
+      var map = CONSULT_RECAP[currentLang === 'es' ? 'es' : 'en'];
+      var q = map && map[questionId];
+      if (!q || typeof q !== 'object') return '';
+      var v = q[optionId];
+      return (typeof v === 'string') ? v.trim() : '';
+    }
+    // The same three rows, the same order and the same fragment set as
+    // resolveConsultationSummary() - projected through the recap map. The
+    // size identity and the computed firmness value are shared verbatim.
+    function resolveConsultationRecap() {
+      var nonEmpty = function(p) { return p && p.length; };
+      var ctxParts = [consultRecap('trigger', answers.trigger)].filter(nonEmpty);
+      var size = answerLabelFor('mattress_size', answers.mattress_size);
+      var issues = (answers.sleep_issues || []).map(function(id) { return consultRecap('sleep_issues', id); });
+      var whoParts = [size].concat(issues).filter(nonEmpty);
+      var position = consultRecap('sleep_position', answers.sleep_position);
+      var conditions = (answers.health_conditions || []).map(function(id) { return consultRecap('health_conditions', id); });
+      var firmnessScore = Number(answers.firmness);
+      var firmness = (answers.firmness != null && answers.firmness !== '' && Number.isFinite(firmnessScore))
+        ? firmnessFeel(firmnessScore) + ' ' + firmnessScore + '/10'
+        : '';
+      var temperature = consultRecap('temperature', answers.temperature);
+      var profileParts = [position].concat(conditions, [firmness, temperature]).filter(nonEmpty);
+      return { context: ctxParts.join(' · '), who: whoParts.join(' · '), profile: profileParts.join(' · ') };
+    }
+    // A3.1: the Summary's finale cue - ONE state-derived line. Finalist first,
+    // then the first Sleep System step still open in rail order, then a
+    // pending specialist check, then the save. Payment is deliberately never
+    // the cue (1.5 surface: named in the Still-open row, never steered here).
+    function consultationNextCue() {
+      var es = currentLang === 'es';
+      var pick = function(en, esText) { return es ? esText : en; };
+      var finalist = (typeof resolveFinalistState === 'function') ? resolveFinalistState() : { kind: 'none' };
+      if (!finalist || finalist.kind !== 'chosen') return pick('Next: choose a finalist', 'Siguiente: elegir un finalista');
+      var cues = {
+        adjustability: pick('Next: compare adjustable-base positions', 'Siguiente: comparar posiciones de base ajustable'),
+        support: pick('Next: confirm what sits under the mattress', 'Siguiente: confirmar qué va debajo del colchón'),
+        pillow: pick('Next: check pillow fit on the finalist', 'Siguiente: revisar el ajuste de la almohada en el finalista'),
+        protection: pick('Next: choose the protection priority', 'Siguiente: elegir la prioridad de protección')
+      };
+      if (typeof SLEEP_SYSTEM_STEPS !== 'undefined' && typeof sleepSystemDecision === 'function') {
+        var confirmStep = null;
+        for (var i = 0; i < SLEEP_SYSTEM_STEPS.length; i++) {
+          var step = SLEEP_SYSTEM_STEPS[i];
+          var st = sleepSystemDecision(step.id).status;
+          if ((st === 'open' || st === 'later') && cues[step.id]) return cues[step.id];
+          if (st === 'confirm' && !confirmStep) confirmStep = step;
+        }
+        if (confirmStep) {
+          var label = (typeof sleepSystemText === 'function') ? sleepSystemText(confirmStep.label) : '';
+          return pick('Next: specialist check on ', 'Siguiente: revisión del especialista de ') + String(label).toLowerCase();
+        }
+      }
+      return pick('Next: save to take home', 'Siguiente: guardar para llevar');
+    }
+
     function resolveConsultationSummary() {
       var nonEmpty = function(p) { return p && p.length; };
       // Context row: the non-scoring opener (trigger). sleep_quality was
@@ -21361,7 +21509,10 @@
       var context = document.getElementById('hf2BriefContext');
       var who = document.getElementById('hf2BriefWho');
       var profile = document.getElementById('hf2BriefProfile');
-      var vm = resolveConsultationSummary();
+      // A3.1 (owner ruling 4): the on-screen rows are the recap projection;
+      // the payload keeps resolveConsultationSummary() (one answer set, two
+      // projections - tests pin the fragment-for-fragment correspondence).
+      var vm = resolveConsultationRecap();
       if (context) {
         context.textContent = vm.context;
         context.style.display = vm.context ? '' : 'none';
@@ -21459,10 +21610,12 @@
           lineEl.className = 'hf2-lead-line hf2-status__eyebrow';
           nameEl.textContent = finalist.item.name || '';
           nameEl.hidden = !nameEl.textContent;
-          if (metaEl) {
-            metaEl.textContent = [chosenBrand, chosenLine].filter(Boolean).join(' · ');
-            metaEl.hidden = !metaEl.textContent;
-          }
+          // A3.1: the brand/tier metadata line leaves the status block - the
+          // saved-pick card below keeps "Finalist · Gold · Best match" (tier
+          // honesty stays on the screen) and the thumbnail + name identify
+          // the pick. The node stays (wipe roster), empty and hidden.
+          void chosenBrand; void chosenLine;
+          if (metaEl) { metaEl.textContent = ''; metaEl.hidden = true; }
         } else {
           lineEl.textContent = lead;
           lineEl.className = 'hf2-lead-line';
@@ -21487,8 +21640,10 @@
         var rows = [];
         var reaction = named && named.id ? reactions[named.id] : '';
         if (reaction) {
-          rows.push('<div class="hf2-status__row">' + esc(t('hf2.status_reaction_label'))
-            + ' <span class="hf2-reaction-chip">' + esc(reactionLabel(reaction)) + '</span></div>');
+          // A3.1: the verdict chip is the evidence tag; its label stays for
+          // assistive technology (sr-only) rather than as a visible prefix.
+          rows.push('<div class="hf2-status__row"><span class="sr-only">' + esc(t('hf2.status_reaction_label'))
+            + ' </span><span class="hf2-reaction-chip">' + esc(reactionLabel(reaction)) + '</span></div>');
         }
         var openNames = [];
         if (typeof SLEEP_SYSTEM_STEPS !== 'undefined' && typeof sleepSystemDecision === 'function' && typeof sleepSystemText === 'function') {

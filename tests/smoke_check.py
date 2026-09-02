@@ -395,7 +395,7 @@ def main():
           "Sleep System Picks · Savings Pass'" not in html
           and "Pase de ahorro'" not in html)
     check("no Savings Pass promise in static email subhead",
-          'id="emailSubhead">Keep your mattress matches and Sleep System picks together' in html)
+          'id="emailSubhead">So a sleep specialist can pick up where you left off.' in html)
     check("runtime future-verifiedAt rejection present (clock-skew gate)",
           "FINANCING_CLOCK_SKEW_MS" in html and "is in the future" in html)
     check("Code.gs hard-blocks send until CAN-SPAM approved",

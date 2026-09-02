@@ -753,12 +753,17 @@ section('C5 — the Selections pill and the take-home saved count agree with the
     const build = (es, saved, rec, acc = 0) => new Function('_esE', 'savedMattresses', 'recCount', 'selectedAccessories', '"use strict"; return ' + literal + ';')(
       es, Array.from({ length: saved }, () => ({})), rec, Array.from({ length: acc }, () => ({})));
     const detailOf = (rows) => rows.find((r) => /guardad|saved|recomend|recommend/.test(r.detail || '')).detail;
-    ok('ES: one saved pick reads "1 guardado ·"', detailOf(build(true, 1, 3)).startsWith('1 guardado ·'), detailOf(build(true, 1, 3)));
-    ok('ES: two saved picks read "2 guardados ·"', detailOf(build(true, 2, 3)).startsWith('2 guardados ·'));
-    ok('ES: one recommended match (nothing saved) reads "1 recomendado ·"', detailOf(build(true, 0, 1)).startsWith('1 recomendado ·'));
-    ok('ES: three recommended matches read "3 recomendados ·"', detailOf(build(true, 0, 3)).startsWith('3 recomendados ·'));
-    ok('EN: the invariant forms are untouched ("1 saved ·", "2 saved ·", "3 recommended ·")',
-      detailOf(build(false, 1, 3)).startsWith('1 saved ·') && detailOf(build(false, 2, 3)).startsWith('2 saved ·') && detailOf(build(false, 0, 3)).startsWith('3 recommended ·'));
+    // A3.1 (owner directive 2026-09-01, take-home lighter): the count stands
+    // alone - the "your strongest matches ..." clause is retired - so the
+    // participle IS the whole detail (exact equality, not a prefix).
+    ok('ES: one saved pick reads exactly "1 guardado"', detailOf(build(true, 1, 3)) === '1 guardado', detailOf(build(true, 1, 3)));
+    ok('ES: two saved picks read exactly "2 guardados"', detailOf(build(true, 2, 3)) === '2 guardados');
+    ok('ES: one recommended match (nothing saved) reads exactly "1 recomendado"', detailOf(build(true, 0, 1)) === '1 recomendado');
+    ok('ES: three recommended matches read exactly "3 recomendados"', detailOf(build(true, 0, 3)) === '3 recomendados');
+    ok('EN: the invariant forms are untouched ("1 saved", "2 saved", "3 recommended")',
+      detailOf(build(false, 1, 3)) === '1 saved' && detailOf(build(false, 2, 3)) === '2 saved' && detailOf(build(false, 0, 3)) === '3 recommended');
+    ok('the retired claim clause is gone from the packet in both languages',
+      !/strongest matches|opciones más compatibles/.test(literal));
   }
 }
 

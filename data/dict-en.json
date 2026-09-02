@@ -127,7 +127,7 @@
   "hf2.saved_picks_hint": "The mattresses you saved, in the order you saved them.",
   "hf2.no_saved_picks": "No mattresses saved yet — save picks from your matches to build this list.",
   "hf2.system_hint": "Only the pieces added to the plan appear here.",
-  "hf2.no_system_items": "Nothing added to the Sleep System yet.",
+  "hf2.no_system_items": "Nothing added yet.",
   "hf2.lead_label": "Consultation status",
   "hf2.lead_chosen": "Finalist ✓ {pick}.",
   "hf2.lead_recommended": "No finalist selected yet — {pick} is the recommended starting point.",

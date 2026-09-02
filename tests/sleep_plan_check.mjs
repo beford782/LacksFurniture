@@ -912,10 +912,12 @@ if (gate("renderSleepPlan", RENDER_SRCS.every(Boolean) && !!FALLBACK_SRC && !!RE
     // The recommended and none sentences are verbatim. Every cell asserts the
     // pair; nothing is dropped.
     const payOf = (e) => e.hf2StatusPayment ? e.hf2StatusPayment.textContent : "";
-    const _metaLine = "Restonic · " + dictEn["results.tier_gold"] + " · " + dictEn["results.match_lead"];
+    // A3.1 (owner directive 2026-09-01): the brand/tier metadata line leaves
+    // the status block (the saved-pick card keeps the tier honesty); the node
+    // stays, empty and hidden.
     const _chosenPair = (e) => e.hf2LeadLine.textContent === dictEn["finalist.chosen"]
       && e.hf2StatusName.textContent === "Cloud Nine" && e.hf2StatusName.hidden === false
-      && e.hf2StatusMeta.textContent === _metaLine && e.hf2StatusMeta.hidden === false;
+      && e.hf2StatusMeta.textContent === "" && e.hf2StatusMeta.hidden === true;
 
     let els = makeLeadEnv({ saved: [{ id: "g1", name: "Cloud Nine", brand: "Restonic", tier: "gold" }], fav: "g1", results: RESULTS, financing: false });
     check("chosen + financing off: the C3-A2 hierarchy alone - eyebrow, serif name, quiet metadata, no payment node",
@@ -1199,9 +1201,10 @@ if (gate("renderSleepPlan", RENDER_SRCS.every(Boolean) && !!FALLBACK_SRC && !!RE
   check("the Results CTA names its destination: 'Review Sleep Plan' in both languages (runtime writer)",
     /reviewWithCustomerBtn'\)\.textContent = es \? 'Revisar Plan de Sueño →' : 'Review Sleep Plan →';/.test(norm));
   check("...and the static fallback label matches", /window\.showSleepPlan\('results'\);">Review Sleep Plan →<\/button>/.test(norm));
-  check("the Summary's visible title is 'Your Consultation Summary' / 'Tu Resumen de Consulta' (no longer the Plan's name)",
-    /hf2ReviewTitle: es \? 'Tu Resumen de Consulta' : 'Your Consultation Summary',/.test(norm)
-    && /id="hf2ReviewTitle">Your Consultation Summary<\/h1>/.test(norm)
+  // A3.1: the directive's title for the shared close.
+  check("the Summary's visible title is 'Consultation summary' / 'Resumen de la consulta' (no longer the Plan's name)",
+    /hf2ReviewTitle: es \? 'Resumen de la consulta' : 'Consultation summary',/.test(norm)
+    && /id="hf2ReviewTitle">Consultation summary<\/h1>/.test(norm)
     && !/Review Your Sleep Plan/.test(norm));
   check("the Summary's back control uses the SAME dictionary pair as the Plan's (plan.back_to_matches) — no inline fork",
     /backBtn\.textContent = t\('plan\.back_to_matches'\);/.test(norm)

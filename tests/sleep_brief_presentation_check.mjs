@@ -238,7 +238,7 @@ function makeEnv({ lang = 'en', answers = ANSWERS_A, dict = null, reduced = fals
   if (mutate) src = mutate(src);
   const api = new Function(
     'document', 'window', 'answers', 'currentLang', 'analytics', 'D', 'escapeHtml',
-    'dfmReducedMotion', 'resolveConsultationSummary', 'financingEnabled',
+    'dfmReducedMotion', 'resolveConsultationSummary', 'resolveConsultationRecap', 'financingEnabled',
     'savingsPassEnabled', 'FC', 'renderResultsFinancing', 'showScreen', 'sessionFrame',
     '__open',
     `"use strict";
@@ -261,6 +261,7 @@ function makeEnv({ lang = 'en', answers = ANSWERS_A, dict = null, reduced = fals
   )(
     doc, win, JSON.parse(JSON.stringify(answers)), lang, analytics, D, esc,
     () => reduced,
+    () => ({ context: 'ctx', who: 'who', profile: 'prof' }),
     () => ({ context: 'ctx', who: 'who', profile: 'prof' }),
     () => false, () => false, () => '', () => {},
     (id) => screens.push(id),

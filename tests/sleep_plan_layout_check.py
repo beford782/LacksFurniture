@@ -354,7 +354,8 @@ def run_summary(browser, port, name, width, height, shots_dir):
     check("the Summary is a flex COLUMN with no horizontal document scroll",
           r["flexDirection"] == "column" and r["scrollWidth"] <= r["clientWidth"],
           f"flex={r['flexDirection']} scrollW={r['scrollWidth']}/{r['clientWidth']}")
-    check("the visible title is the Consultation Summary", "Consultation Summary" in r["title"])
+    # A3.1 (owner directive 2026-09-01): the shared close is titled "Consultation summary".
+    check("the visible title is the Consultation summary", "Consultation summary" in r["title"])
     # C3-A2 (owner ruling 2026-09-01): the chosen state is the approved split -
     # finalist.chosen as the eyebrow in the lead line and the product name in the
     # serif display node; the probe reads both together.
