@@ -7451,6 +7451,14 @@
       color: var(--accent-ink);
       font: 600 12px/1.45 var(--font-sans);
     }
+    /* A3.1: the one contextual line inside each step (relocated from the
+       retired note panel) - the instruction the specialist reads. */
+    .sleep-system__guide-line {
+      margin: 8px 0 0;
+      max-width: 560px;
+      color: #4F4439;
+      font: 500 13px/1.45 var(--font-sans);
+    }
     .sleep-system__featured {
       display: grid;
       grid-template-columns: minmax(210px, 0.8fr) minmax(0, 1.2fr);
@@ -7473,7 +7481,11 @@
       align-items: center;
       justify-content: center;
       aspect-ratio: 2 / 1;
-      min-height: 210px;
+      /* A3.1 (F1): no min-height beside the ratio - a definite minimum
+         transfers across the ratio into a min-WIDTH that overflowed the
+         ~300px portrait column (CSS Sizing 4 s4.4); the frame now shrinks
+         with its track. */
+      min-width: 0;
       padding: 20px;
       border-right: 1px solid #E1D7CA;
       background: #FFFDF8;
@@ -7563,8 +7575,8 @@
     .sleep-system__plan-detail {
       display: block;
       margin-top: 2px;
-      color: #8B7B67;
-      font: 500 10px/1.3 var(--font-sans);
+      color: #6C6054; /* A3.1: >= 4.5:1 (was 4.03:1 at 10px) */
+      font: 500 11px/1.3 var(--font-sans);
       letter-spacing: 0.04em;
     }
     .sleep-system__plan-detail[hidden] { display: none; }
@@ -7576,7 +7588,7 @@
       padding: 18px;
       border: 1px solid #D8CCBD;
       border-radius: 10px;
-      background: linear-gradient(135deg, #F7F0E6 0%, #FFFDF8 68%);
+      background: #FFFDF8; /* A3.1: the mat, not a decorative gradient */
     }
     .sleep-system__demo-stage {
       display: flex;
@@ -7600,16 +7612,32 @@
       bottom: 22px;
       height: 8px;
       border-radius: 4px;
+      border: 1px solid #66584A; /* A3.1: survives forced colors */
       background: #66584A;
       box-shadow: 0 8px 0 -2px #B29F89;
     }
+    /* A3.1 trial diagram: the Flat ghost - three outline panels at the flat
+       geometry behind the articulated set (dashed, decorative, never
+       animated) so "vs Flat" is drawn rather than described. */
+    .sleep-system__bed-ghost {
+      position: absolute;
+      bottom: 31px;
+      height: 28px;
+      border: 1px dashed #8B7B67;
+      border-radius: 3px;
+      background: transparent;
+      opacity: 0.6;
+    }
+    .sleep-system__bed-ghost--head { left: 6%; width: 42%; border-radius: 8px 3px 3px 8px; }
+    .sleep-system__bed-ghost--middle { left: 48%; width: 17%; border-radius: 2px; }
+    .sleep-system__bed-ghost--foot { left: 65%; width: 30%; border-radius: 3px 8px 8px 3px; }
     .sleep-system__bed-head,
     .sleep-system__bed-middle,
     .sleep-system__bed-foot {
       position: absolute;
       bottom: 31px;
       height: 28px;
-      border: 1px solid #BDAE9C;
+      border: 1px solid #8B7B67; /* A3.1: >= 3:1 on the stage (was 1.68:1) */
       background: #FFFDF8;
       box-shadow: 0 7px 13px rgba(55,40,28,0.11);
       transition: transform 420ms ease, bottom 420ms ease;
@@ -7638,6 +7666,7 @@
       width: 42px;
       height: 17px;
       border-radius: 50%;
+      border: 1px solid #8B7B67; /* A3.1: survives forced colors */
       background: #DDD1C2;
       transition: transform 420ms ease, bottom 420ms ease, left 420ms ease;
     }
@@ -7718,8 +7747,8 @@
     .sleep-system__position small {
       display: block;
       margin-top: 3px;
-      color: #857768;
-      font: 500 9px/1.2 var(--font-sans);
+      color: #6C6054; /* A3.1: >= 4.5:1 (was 4.27:1 at 9px) */
+      font: 500 10px/1.2 var(--font-sans);
     }
     .sleep-system__position.is-active {
       border-color: var(--accent-ink);
@@ -8036,23 +8065,25 @@
       color: #63765D;
       font: 750 11px/1.2 var(--font-sans);
     }
+    /* A3.1: the sidecar list is a four-cell mark strip (the rail carries the
+       names); the name/status pair stays sr-only for assistive technology. */
     .sleep-system__plan-list {
       display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 8px;
       padding: 12px 0;
     }
     .sleep-system__plan-item {
-      display: grid;
-      grid-template-columns: 22px minmax(0, 1fr);
-      gap: 8px;
-      align-items: start;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     .sleep-system__plan-mark {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      width: 20px;
-      height: 20px;
+      width: 26px;
+      height: 26px;
       border: 1px solid #C9BCAC;
       border-radius: 50%;
       color: #8A7B69;
@@ -8071,6 +8102,13 @@
     }
     .sleep-system__plan-item.is-deferred .sleep-system__plan-mark {
       border-style: dashed;
+    }
+    /* A3.1: the specialist-check mark ("?") keeps the addressed palette and
+       a double ring so the state is geometry + glyph, never colour alone. */
+    .sleep-system__plan-item.is-check .sleep-system__plan-mark,
+    .sleep-system__step.is-check .sleep-system__step-num {
+      border-style: double;
+      border-width: 3px;
     }
     /* X10: the step heading is the focus fallback when a re-render removes
        the keyboard's control (the pillow gate). Same two-ring pair as every
@@ -8240,11 +8278,9 @@
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
       .sleep-system__featured-image {
-        min-height: 180px;
         border-right: 0;
         border-bottom: 1px solid #E1D7CA;
       }
-      .sleep-system__featured-image img { height: 155px; }
       .sleep-system__aside { grid-template-columns: 1fr; }
       .sleep-system__alternative {
         grid-template-columns: 62px minmax(0, 1fr);
@@ -10300,6 +10336,16 @@
         padding: 6.5px 12.5px;
       }
     }
+    /* A3.1 (trial diagram + decision state): the pressed position chip and
+       the specialist-check mark keep non-colour geometry under forced colors
+       (fills and author hues are stripped; border style/width survive). Own
+       block, after the X11 block whose shape contrast_check pins. */
+    @media (forced-colors: active) {
+      .sleep-system__position[aria-pressed="true"] { border: 3px double CanvasText; padding: 6px 8px; }
+      .sleep-system__plan-item.is-check .sleep-system__plan-mark,
+      .sleep-system__step.is-check .sleep-system__step-num { border: 3px double CanvasText; }
+      .sleep-system__bed-ghost { border-color: CanvasText; opacity: 1; }
+    }
     /* Quiz option state under forced colors.
 
        Two things the previous version got wrong, both found in review:
@@ -11850,7 +11896,7 @@
         <div class="sleep-system__intro">
           <div class="sleep-system__eyebrow" id="sleepSystemEyebrow">Specialist guide</div>
           <h1 class="sleep-system__title" id="sleepSystemTitle">Build the sleep setup</h1>
-          <p class="sleep-system__subtitle" id="sleepSystemSubtitle">Keep the mattress finalist central. Add only what supports the customer’s needs.</p>
+          <p class="sleep-system__subtitle" id="sleepSystemSubtitle">Add only what supports the customer’s needs.</p>
         </div>
         <!-- Sleep System A2 (owner ruling 2026-09-01): ONE responsive review
              control - the sidecar's (landscape: sidecar; portrait: the aside
@@ -19497,18 +19543,29 @@
         escapeHtml(sleepSystemText({ en: 'Adjustable base position demo', es: 'Demostración de posiciones de base ajustable' })) + '">' +
           '<div class="sleep-system__demo-stage">' +
             '<div class="sleep-system__bed" id="dfmSleepBed" data-position="' + escapeHtml(selected.id) + '" aria-hidden="true">' +
+              // A3.1 trial diagram: a dashed Flat ghost sits behind the
+              // articulated panels whenever the selected position is not
+              // Flat, so the comparison the instruction names is drawn, not
+              // described. Never animated; decorative (the stage label and
+              // the position title are the text equivalent).
+              (selected.id !== 'flat'
+                ? '<span class="sleep-system__bed-ghost sleep-system__bed-ghost--head"></span><span class="sleep-system__bed-ghost sleep-system__bed-ghost--middle"></span><span class="sleep-system__bed-ghost sleep-system__bed-ghost--foot"></span>'
+                : '') +
               '<span class="sleep-system__bed-frame"></span>' +
               '<span class="sleep-system__bed-head"></span>' +
               '<span class="sleep-system__bed-middle"></span>' +
               '<span class="sleep-system__bed-foot"></span>' +
               '<span class="sleep-system__bed-pillow"></span>' +
             '</div>' +
-            '<div class="sleep-system__demo-stage-label">' + escapeHtml(sleepSystemText(selected.label)) + '</div>' +
+            '<div class="sleep-system__demo-stage-label">' + escapeHtml(sleepSystemText(selected.label)) +
+              (selected.id !== 'flat' ? escapeHtml(sleepSystemText({ en: ' vs Flat', es: ' vs Plana' })) : '') + '</div>' +
           '</div>' +
           '<div class="sleep-system__demo-content">' +
-            '<div class="sleep-system__card-eyebrow">' + escapeHtml(sleepSystemText({ en: 'Showroom position demo', es: 'Demostración en tienda' })) + '</div>' +
+            // A3.1: the position title is the section's one instruction; the
+            // eyebrow and the sentence that described the lift are retired
+            // (the diagram and the chip captions show it). The demo table's
+            // `copy` stays governed and unrendered.
             '<h3 class="sleep-system__demo-title">' + escapeHtml(sleepSystemText(selected.title)) + '</h3>' +
-            '<p class="sleep-system__demo-copy">' + escapeHtml(sleepSystemText(selected.copy)) + '</p>' +
             (selected.id === demo.recommended
               ? '<div class="sleep-system__demo-reason">' + escapeHtml(sleepSystemText(demo.suggestion)) + '</div>'
               : '') +
@@ -19516,7 +19573,8 @@
               demo.positions.map(function(position) {
                 return '<button type="button" class="sleep-system__position' +
                   (position.id === selected.id ? ' is-active' : '') +
-                  '" data-sleep-action="demo-position" data-position="' + escapeHtml(position.id) + '">' +
+                  '" aria-pressed="' + (position.id === selected.id ? 'true' : 'false') + '"' +
+                  ' data-sleep-action="demo-position" data-position="' + escapeHtml(position.id) + '">' +
                     (position.id === demo.recommended
                       ? '<span class="sleep-system__position-badge">' + escapeHtml(sleepSystemText({ en: 'Suggested', es: 'Sugerida' })) + '</span>'
                       : '') +
@@ -19553,25 +19611,18 @@
           ? sleepSystemText({ en: 'Compare standard and lower bed heights.', es: 'Compara alturas estándar y más bajas.' })
           : sleepSystemText({ en: 'If a lower finished bed height matters, ask which foundation heights are available.', es: 'Si importa una altura de cama más baja, pregunta qué alturas de base están disponibles.' });
       } else if (stepId === 'adjustability') {
-        notice = sleepSystemText({ en: 'Recommend a base only after the customer tries the positions that matter most to them.', es: 'Recomienda una base solo después de que el cliente pruebe las posiciones que más le importan.' });
+        // A3.1 (owner directive 2026-09-01): the 2026-08-25 note "Recommend a
+        // base only after the customer tries the positions..." restated the
+        // sequence the layout already enforces (demo first, "Ask for a demo"
+        // primary, finalist gate) - retired from render, inventoried in the
+        // A3.1 ledger. The adjustability step carries no contextual line.
+        notice = '';
       } else if (stepId === 'pillow') {
-        var reactionNote = {
-          // 3.7 P9 (Option C): compare another cataloged pillow; no phantom
-          // adjustable-fill / low-profile product. Approved EN; ES provisional.
-          low: {
-            en: 'If the pillow feels too low, compare another pillow, then retest.',
-            es: 'Si la almohada se siente muy baja, compara otra almohada y vuelve a probar.'
-          },
-          high: {
-            en: 'If the pillow feels too high, compare another pillow, then retest.',
-            es: 'Si la almohada se siente muy alta, compara otra almohada y vuelve a probar.'
-          },
-          aligned: {
-            en: 'If the customer feels aligned, confirm comfort for several minutes before adding the pillow to the plan.',
-            es: 'Si el cliente se siente alineado, confirma la comodidad durante varios minutos antes de agregar la almohada al plan.'
-          }
-        };
-        notice = sleepSystemText(reactionNote[window._sleepSystemState.pillowFeedback] || {
+        // A3.1 (owner ruling 2): the three P9 reaction notes duplicated the
+        // in-section feedback line word for word and are retired from render
+        // (inventoried); the 1.4-approved technique note is the step's one
+        // instruction, rendered in-step.
+        notice = sleepSystemText({
           en: 'Test it on the finalist mattress and watch the neck line from the side.',
           es: 'Pruébala en el colchón finalista y observa la línea del cuello de lado.'
         });
@@ -19662,8 +19713,12 @@
         // geometry, not colour alone, so the states survive forced colors.
         var kind = sleepSystemStatusKind(decision.status);
         var mark = kind === 'selected' ? '&#10003;' : (kind === 'addressed' ? '&#8211;' : (index + 1));
+        // A3.1: a specialist check is drawn as its own mark ("?") while it
+        // keeps counting as addressed - ruling 5's deliberate split.
+        var checkNeeded = decision.status === 'confirm';
+        if (checkNeeded) mark = '?';
         return '<button type="button" class="sleep-system__step' +
-          (active ? ' is-active' : '') + (kind === 'open' ? '' : ' is-' + kind) +
+          (active ? ' is-active' : '') + (kind === 'open' ? '' : ' is-' + kind) + (checkNeeded ? ' is-check' : '') +
           '" data-sleep-action="step" data-step="' + step.id + '"' +
           // X10: the active rail control announces its place (paired with the
           // is-active class, the roster precedent at renderHf2RsaPanel).
@@ -19738,24 +19793,14 @@
       }
       return '<section class="sleep-system__support-guide">' +
         '<div class="sleep-system__support-guide-head">' +
-          '<div><div class="sleep-system__card-eyebrow">' +
-            escapeHtml(sleepSystemText({ en: 'Start with the setup', es: 'Empieza con la configuración' })) +
-          '</div><h3 class="sleep-system__support-guide-title">' +
+          '<div><h3 class="sleep-system__support-guide-title">' +
             escapeHtml(sleepSystemText({ en: 'What should sit under the mattress?', es: '¿Qué debe ir debajo del colchón?' })) +
-          '</h3></div>' +
-          '<p class="sleep-system__support-guide-copy">' +
-            escapeHtml(sleepSystemText({
-              en: 'This is a compatibility and bed-height decision, not a required add-on.',
-              es: 'Esta es una decision de compatibilidad y altura, no un accesorio obligatorio.'
-            })) +
-          '</p>' +
-          // A3: one rationale line, evidence-typed.
-          '<p class="sleep-system__rationale">' +
-            escapeHtml(sleepSystemText({
-              en: 'Why first: support protects the feel, height, and long-term setup.',
-              es: 'Por qué primero: el soporte protege la sensación, la altura y la configuración.'
-            })) +
-          '</p>' +
+          '</h3>' +
+          // A3.1 (owner directive 2026-09-01): the section's ONE contextual
+          // line is the P9 height prompt relocated verbatim from the retired
+          // note panel (same producer, sleepSystemGuidance). The eyebrow, the
+          // framing sentence and the answer-free "Why first" line are retired.
+          '<p class="sleep-system__guide-line">' + escapeHtml(sleepSystemGuidance('support')[0] || '') + '</p></div>' +
         '</div>' +
         '<div class="sleep-system__support-choices">' +
           choices.map(function(choice) {
@@ -19816,22 +19861,15 @@
       };
       return '<section class="sleep-system__pillow-fit">' +
         '<div class="sleep-system__pillow-fit-head">' +
-          '<div><div class="sleep-system__card-eyebrow">' +
-            escapeHtml(sleepSystemText({ en: 'Physical fit check', es: 'Prueba física de ajuste' })) +
-          '</div><h3 class="sleep-system__pillow-fit-title">' +
-            escapeHtml(sleepSystemText({ en: 'How does this pillow position the neck?', es: '¿Cómo posiciona esta almohada el cuello?' })) +
-          '</h3></div>' +
-          // A3: one operator instruction + one reported-priority rationale
-          // (the position cue moves here from the retired three-note panel).
-          '<p class="sleep-system__pillow-fit-copy">' +
-            escapeHtml(sleepSystemText({
-              en: 'Record the fit after the customer lies on the finalist mattress in the usual sleep position.',
-              es: 'Registra el ajuste después de que el cliente se acueste en el colchón finalista en su posición habitual.'
-            })) +
-          '</p>' +
+          // A3.1 (owner directive 2026-09-01): the section opens with its ONE
+          // instruction - the 1.4-approved technique note relocated from the
+          // retired note panel (same producer) - and its one evidence-typed
+          // rationale; the eyebrow, the question and the A3 instruction
+          // sentence are retired.
+          '<div><p class="sleep-system__guide-line">' + escapeHtml(sleepSystemGuidance('pillow')[0] || '') + '</p>' +
           '<p class="sleep-system__rationale">' +
             escapeHtml(sleepSystemText(pillowFitRationale())) +
-          '</p>' +
+          '</p></div>' +
         '</div>' +
         '<div class="sleep-system__pillow-reactions">' +
           [
@@ -19931,23 +19969,20 @@
       ];
       return '<section class="sleep-system__protection-guide">' +
         '<div class="sleep-system__protection-guide-head">' +
-          '<div><div class="sleep-system__card-eyebrow">' +
-            escapeHtml(sleepSystemText({ en: 'Choose the priority', es: 'Elige la prioridad' })) +
-          '</div><h3 class="sleep-system__protection-guide-title">' +
+          '<div><h3 class="sleep-system__protection-guide-title">' +
             escapeHtml(sleepSystemText({ en: 'What matters most to protect against?', es: '¿Qué es lo más importante proteger?' })) +
-          '</h3></div>' +
-          '<p class="sleep-system__protection-guide-copy">' +
-            escapeHtml(sleepSystemText({
-              en: 'Start with the customer goal, then compare the protector that serves it best.',
-              es: 'Empieza con la meta del cliente y compara el protector que mejor la cumple.'
-            })) +
-          '</p>' +
+          '</h3>' +
+          // A3.1 (owner directive 2026-09-01): the selected goal's approved
+          // check (relocated from the retired note panel, same producer) is
+          // the section's one instruction; the eyebrow and the framing
+          // sentence are retired.
+          '<p class="sleep-system__guide-line">' + escapeHtml(sleepSystemGuidance('protection')[0] || '') + '</p>' +
           // A3: one rationale line whose evidence type is honest — a
           // quiz-derived suggestion is "Reported priority", an explicit tap is
           // "Selected goal", and the default is a plain "Why first".
           '<p class="sleep-system__rationale">' +
             escapeHtml(sleepSystemText(protectionRationale(selected, suggested))) +
-          '</p>' +
+          '</p></div>' +
         '</div>' +
         '<div class="sleep-system__protection-goals">' +
           goals.map(function(goal) {
@@ -19997,10 +20032,13 @@
 
       var sectionHead =
         '<div class="sleep-system__section-head">' +
-          '<div><div class="sleep-system__section-eyebrow">' + escapeHtml(sleepSystemText(step.label)) + '</div>' +
+          // A3.1 (owner directive 2026-09-01): the section opens with the
+          // category name alone - the step's `title` stays in the governed
+          // table, unrendered, exactly as A3 treated its `copy`; the guide
+          // beneath carries the one instruction and the one rationale.
           // X10: the step heading is the focus fallback when a re-render
           // removes the control the keyboard was on (the pillow gate does).
-          '<h2 class="sleep-system__section-title" id="sleepSystemSectionTitle" tabindex="-1">' + escapeHtml(sleepSystemText(step.title)) + '</h2></div>' +
+          '<div><h2 class="sleep-system__section-title" id="sleepSystemSectionTitle" tabindex="-1">' + escapeHtml(sleepSystemText(step.label)) + '</h2></div>' +
           // A3 density (owner ruling 2026-09-01): the section head is eyebrow
           // + title only. The step's guide panel carries the ONE instruction
           // and the ONE rationale; the old right-column paragraph narrated the
@@ -20020,9 +20058,11 @@
         var price = Number(primary.price) > 0
           ? sleepSystemText({ en: 'From $', es: 'Desde $' }) + Number(primary.price).toLocaleString()
           : '';
-        var reason = step.id === 'protection'
-          ? sleepSystemText(protectionGoalReason(window._sleepSystemState.protectionGoal || getSuggestedProtectionGoal()))
-          : specialistReasonLabel(primary.reasonKeys, primary.reasons && primary.reasons[0] ? primary.reasons[0] : '');
+        // A3.1: every step's card carries the same evidence tag (ruling 3
+        // adapter) - the protection goal sentence duplicated the guide's
+        // rationale and is retired from the card (protectionGoalReason stays
+        // in source, unrendered).
+        var reason = specialistReasonLabel(primary.reasonKeys, primary.reasons && primary.reasons[0] ? primary.reasons[0] : '');
         var badge = step.id === 'support'
           ? sleepSystemText({ en: 'Support option', es: 'Opción de soporte' })
           : step.id === 'protection'
@@ -20054,7 +20094,7 @@
               '" data-sleep-action="' + (selected ? 'remove-item' : 'select-item') + '" data-item-id="' + escapeHtml(primary.id) + '">' +
               escapeHtml(selected
                 ? sleepSystemText({ en: 'Remove base from plan', es: 'Quitar base del plan' })
-                : sleepSystemText({ en: 'Keep this base in plan', es: 'Guardar esta base en el plan' })) +
+                : sleepSystemText({ en: 'Keep in plan', es: 'Guardar en el plan' })) +
             '</button>' +
             '<button type="button" class="sleep-system__action sleep-system__action--secondary" data-sleep-action="decision" data-status="later">' +
               escapeHtml(sleepSystemText({ en: 'Decide later', es: 'Decidir después' })) +
@@ -20077,8 +20117,8 @@
               '</button>'
             : '<div class="sleep-system__pillow-gate">' +
                 escapeHtml(sleepSystemText({
-                  en: 'Record the physical fit above before adding this pillow.',
-                  es: 'Registra el ajuste físico arriba antes de agregar esta almohada.'
+                  en: 'Record the fit first.',
+                  es: 'Registra el ajuste primero.'
                 })) +
               '</div>';
           actionHtml +=
@@ -20120,8 +20160,10 @@
                 var itemSelected = !!(window._accCart && window._accCart[item.id]);
                 return '<div class="sleep-system__alternative">' +
                   (item.image ? '<img src="' + escapeHtml(item.image) + '" alt="">' : '') +
-                  '<div><div class="sleep-system__alternative-name">' + escapeHtml(sleepSystemText(item.name)) + '</div>' +
-                  '<div class="sleep-system__alternative-copy">' + escapeHtml(sleepSystemText(item.description)) + '</div></div>' +
+                  // A3.1: name only - the alternative's marketing sentence is
+                  // retired from this row (photo + name identify it; the
+                  // featured card keeps the catalog description).
+                  '<div><div class="sleep-system__alternative-name">' + escapeHtml(sleepSystemText(item.name)) + '</div></div>' +
                   '<button type="button" class="' + (itemSelected ? 'is-selected' : '') + '" data-sleep-action="' +
                     (step.id === 'pillow' ? 'try-pillow' : (itemSelected ? 'remove-item' : 'select-item')) +
                     '" data-item-id="' + escapeHtml(item.id) + '">' +
@@ -20158,20 +20200,19 @@
               '<div class="sleep-system__card-eyebrow">' + escapeHtml(sleepSystemText({ en: 'Current setup', es: 'Configuración actual' })) + '</div>' +
               '<h3>' + escapeHtml(sleepSystemText({ en: 'Keep it, then confirm compatibility', es: 'Conservalo y confirma compatibilidad' })) + '</h3>' +
               // A3: one operator sentence — the heading already says "keep".
+              // A3.1: the heading already says "keep it"; one instruction.
               '<p>' + escapeHtml(sleepSystemText({
-                en: 'No new support is being added. Confirm that the current frame, platform, or slats meet the mattress requirements.',
-                es: 'No se agregara un soporte nuevo. Confirma que el marco, la plataforma o las tablillas cumplan los requisitos del colchón.'
+                en: 'Confirm the current frame, platform, or slats meet the mattress requirements.',
+                es: 'Confirma que el marco, la plataforma o las tablillas cumplan los requisitos del colchón.'
               })) + '</p>' +
             '</div>';
         } else if (step.id === 'support' && supportChoice === 'unsure') {
           supportOutcome =
             '<div class="sleep-system__support-outcome is-check">' +
               '<div class="sleep-system__card-eyebrow">' + escapeHtml(sleepSystemText({ en: 'Specialist check', es: 'Revisión del especialista' })) + '</div>' +
+              // A3.1: the heading is the instruction; the explanatory
+              // sentence is retired.
               '<h3>' + escapeHtml(sleepSystemText({ en: 'Confirm the setup before adding support', es: 'Confirma la configuración antes de agregar soporte' })) + '</h3>' +
-              '<p>' + escapeHtml(sleepSystemText({
-                en: 'A quick frame and slat check will determine whether the current setup works or whether a foundation is needed.',
-                es: 'Una revisión rápida del marco y las tablillas determinara si la configuración actual funciona o si necesita una base.'
-              })) + '</p>' +
             '</div>';
         }
 
@@ -20237,7 +20278,12 @@
           (supportOutcome || (adjustabilityNoTrigger ? basesCompareHtml : productHtml));
       }
 
-      var notices = sleepSystemGuidance(step.id, primary);
+      // A3.1 (owner directive 2026-09-01): the persistent "Specialist note"
+      // panel is retired - every retained contextual line renders INSIDE its
+      // step through the same producer (sleepSystemGuidance) and the
+      // redundant notes are inventoried in the A3.1 ledger under ruling 2.
+      // The region element stays for the wipe roster and carries only the
+      // config-gated financing block; with none, it is empty and hidden.
       // Payment Choice guidance: fit first, then a specialist review of the
       // complete plan. NEVER a subtotal, an accessory-only payment, or any
       // "add $X to unlock" math — mattress prices are intentionally absent at
@@ -20252,22 +20298,10 @@
               escapeHtml(FC('cta')) + '</button>' +
           '</div>'
         : '';
-      // Item 1.4: the procedure panel is a <section> with no accessible name,
-      // so it was not exposed as a region at all - "separate" visually but not
-      // semantically. Name it from the label it already renders, re-set on
-      // every render so a language switch relabels it too.
-      // A3 (owner ruling 2026-09-01): the panel is ONE compact contextual
-      // note under a singular eyebrow - the three-card stack and its own h2
-      // repeated the active step's guidance and are retired.
-      var guidanceKind = sleepSystemText({ en: 'Specialist note', es: 'Nota del especialista' });
-      guidance.setAttribute('aria-label', guidanceKind);
-      guidance.innerHTML =
-        '<div class="sleep-system__plan-eyebrow">' + escapeHtml(guidanceKind) + '</div>' +
-        '<div class="sleep-system__notice-list">' +
-          notices.map(function(notice) {
-            return '<div class="sleep-system__notice"><span>&#10003;</span><span>' + escapeHtml(notice) + '</span></div>';
-          }).join('') +
-        '</div>' + financingBlock;
+      guidance.innerHTML = financingBlock;
+      guidance.hidden = !financingBlock;
+      if (financingBlock) guidance.setAttribute('aria-label', FC('eyebrow'));
+      else guidance.removeAttribute('aria-label');
     }
 
     function renderSleepSystemPlan() {
@@ -20287,9 +20321,14 @@
         else if (kind === 'addressed') addressedCount++;
         else if (kind === 'deferred') deferredCount++;
         var mark = kind === 'selected' ? '&#10003;' : (kind === 'addressed' ? '&#8211;' : '');
-        return '<div class="sleep-system__plan-item' + (kind === 'open' ? '' : ' is-' + kind) + '">' +
+        // A3.1: the sidecar is a four-cell mark strip - the rail already
+        // names every category and its status in the same fold, so the
+        // name/status pair stays for assistive technology only (sr-only).
+        var checkNeeded = decision.status === 'confirm';
+        if (checkNeeded) mark = '?';
+        return '<div class="sleep-system__plan-item' + (kind === 'open' ? '' : ' is-' + kind) + (checkNeeded ? ' is-check' : '') + '">' +
           '<span class="sleep-system__plan-mark">' + mark + '</span>' +
-          '<span><span class="sleep-system__plan-item-name">' + escapeHtml(sleepSystemText(step.label)) + '</span>' +
+          '<span class="sr-only"><span class="sleep-system__plan-item-name">' + escapeHtml(sleepSystemText(step.label)) + '</span>' +
           '<span class="sleep-system__plan-item-status">' + escapeHtml(sleepSystemDecisionLabel(step.id, decision)) + '</span></span>' +
         '</div>';
       }).join('');
@@ -20452,9 +20491,11 @@
         sleepSystemBack: { en: '\u2190 Back to mattress matches', es: '\u2190 Volver a colchones' },
         sleepSystemEyebrow: { en: 'Specialist guide', es: 'Guía del especialista' },
         sleepSystemTitle: { en: 'Build the sleep setup', es: 'Arma el sistema de sueño' },
+        // A3.1: one support sentence - the finalist anchor beneath already
+        // says the mattress is central.
         sleepSystemSubtitle: {
-          en: 'Keep the mattress finalist central. Add only what supports the customer’s needs.',
-          es: 'El colchón finalista es el centro. Agrega solo lo que responda a las necesidades del cliente.'
+          en: 'Add only what supports the customer’s needs.',
+          es: 'Agrega solo lo que responda a las necesidades del cliente.'
         },
         sleepSystemReviewTop: { en: 'Review Sleep Plan', es: 'Revisar Plan de Sueño' },
         sleepSystemPlanEyebrow: { en: 'Progress', es: 'Progreso' },

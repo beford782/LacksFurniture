@@ -243,7 +243,7 @@ section('specialist surfaces — A3 evidence vocabulary, no customer second pers
   ok('the Sleep System header is the ruled specialist frame (EN + ES)',
     norm.includes("sleepSystemEyebrow: { en: 'Specialist guide', es: 'Guía del especialista' }")
     && norm.includes("sleepSystemTitle: { en: 'Build the sleep setup', es: 'Arma el sistema de sueño' }")
-    && norm.includes("en: 'Keep the mattress finalist central. Add only what supports the customer’s needs.'"));
+    && norm.includes("en: 'Add only what supports the customer’s needs.'"));
   ok('screen names for the two specialist working surfaces carry no customer possessive',
     !/\byour\b/i.test(dictEn['screen.results']) && !/\byour\b/i.test(dictEn['screen.sleep_system'])
     && !/\btus?\b/i.test(dictEs['screen.results']) && !/\btus?\b/i.test(dictEs['screen.sleep_system']));

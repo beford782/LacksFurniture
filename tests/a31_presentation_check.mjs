@@ -429,6 +429,80 @@ section('Compare — column head image attributes');
     norm.includes(`'<div class="cmp-head-img"><img src="' + escapeHtml(m.imageUrl) + '" width="1500" height="1000" alt="" decoding="async"></div>'`));
 }
 
+// ==================================================== 7. Sleep System (A3.1 c3)
+section('Sleep System — retired note panel, in-step lines, trial diagram, F1 frame, sidecar strip, specialist-check mark');
+{
+  const mainSrc = extractFunction('function renderSleepSystemMain(viewModel)');
+  const demoSrc = extractFunction('function renderAdjustabilityDemo()');
+  const guideSrc = extractFunction('function sleepSystemGuidance(stepId, primary)');
+  const railSrc = extractFunction('function renderSleepSystemRail()');
+  const planSrc = extractFunction('function renderSleepSystemPlan()');
+  ok('Sleep System sources extracted', !!mainSrc && !!demoSrc && !!guideSrc && !!railSrc && !!planSrc);
+  ok('the note panel is retired: it carries only the config-gated financing block and hides otherwise',
+    mainSrc.includes("guidance.innerHTML = financingBlock;") && mainSrc.includes("guidance.hidden = !financingBlock;")
+    && !mainSrc.includes('sleep-system__notice-list') && !liveHtml.includes("'Specialist note'"));
+  ok('the three retained contextual lines render in-step through the ONE producer (sleepSystemGuidance)',
+    norm.includes("escapeHtml(sleepSystemGuidance('support')[0] || '')")
+    && norm.includes("escapeHtml(sleepSystemGuidance('pillow')[0] || '')")
+    && norm.includes("escapeHtml(sleepSystemGuidance('protection')[0] || '')")
+    && guideSrc.includes('return [notice];'));
+  ok('the adjustability note and the three pillow reaction notes are retired from live code (ruling 2 + lead justification)',
+    ['Recommend a base only after the customer tries', 'If the pillow feels too low', 'If the pillow feels too high', 'If the customer feels aligned']
+      .every((lit) => !liveHtml.includes(lit)));
+  ok('the retired framing copy is gone from the step guides and header',
+    ['Showroom position demo', 'Start with the setup', 'Physical fit check', 'Choose the priority',
+     'This is a compatibility and bed-height decision', 'Why first: support protects', 'Record the fit after the customer lies',
+     'Start with the customer goal', 'Keep the mattress finalist central', 'A quick frame and slat check', 'No new support is being added',
+     'Record the physical fit above', 'How does this pillow position the neck']
+      .every((lit) => !liveHtml.includes(lit)));
+  ok('the section opens with the category name; the governed step titles stay in the table unrendered',
+    mainSrc.includes("tabindex=\"-1\">' + escapeHtml(sleepSystemText(step.label)) + '</h2>")
+    && !mainSrc.includes('sleepSystemText(step.title)') && /title: \{ en: 'Explore adjustable comfort'/.test(norm));
+  ok('the featured card renders the ruling-3 evidence tag on every step (the protection goal sentence is retired from the card)',
+    mainSrc.includes("var reason = specialistReasonLabel(primary.reasonKeys, primary.reasons && primary.reasons[0] ? primary.reasons[0] : '');")
+    && !mainSrc.includes('protectionGoalReason('));
+  ok('the base decision reads "Keep in plan" (EN) / "Guardar en el plan" (ES, provisional)',
+    mainSrc.includes("{ en: 'Keep in plan', es: 'Guardar en el plan' }"));
+  ok('"Also compare" rows carry name only; the P5 neutral base rows keep their distinguishing copy',
+    !/alternative-name">' \+ escapeHtml\(sleepSystemText\(item\.name\)\) \+ '<\/div>' \+\n\s*'<div class="sleep-system__alternative-copy">'/.test(mainSrc)
+    && mainSrc.includes('sleep-system__base-row-copy'));
+  // Trial diagram.
+  ok('the Flat ghost is drawn behind the articulated panels whenever the position is not Flat, and the stage label names the comparison',
+    demoSrc.includes("(selected.id !== 'flat'") && demoSrc.includes('sleep-system__bed-ghost--head')
+    && demoSrc.includes("sleepSystemText({ en: ' vs Flat', es: ' vs Plana' })")
+    && /\.sleep-system__bed-ghost \{[^}]*border: 1px dashed #8B7B67;/.test(norm));
+  ok('the demo eyebrow and the lift sentence are retired; the position title is the one instruction',
+    !demoSrc.includes('sleep-system__demo-copy') && demoSrc.includes('sleep-system__demo-title'));
+  ok('every position chip carries aria-pressed and a forced-colors pressed rule exists in its own block',
+    demoSrc.includes(`aria-pressed="' + (position.id === selected.id ? 'true' : 'false') + '"`)
+    && /@media \(forced-colors: active\) \{\s*\.sleep-system__position\[aria-pressed="true"\] \{ border: 3px double CanvasText;/.test(norm));
+  ok('the bed frame and pillow carry borders (survive forced colors) and the piece stroke is >= 3:1 on the stage',
+    /\.sleep-system__bed-frame \{[^}]*border: 1px solid #66584A;/.test(norm)
+    && /\.sleep-system__bed-pillow \{[^}]*border: 1px solid #8B7B67;/.test(norm)
+    && /\.sleep-system__bed-head,\s*\.sleep-system__bed-middle,\s*\.sleep-system__bed-foot \{[^}]*border: 1px solid #8B7B67;/.test(norm));
+  ok('the demo card sits on the mat, not a decorative gradient',
+    /\.sleep-system__demo \{[^}]*background: #FFFDF8;/.test(norm) && !/\.sleep-system__demo \{[^}]*linear-gradient/.test(norm));
+  // F1.
+  ok('F1: the featured frame keeps its 2:1 ratio and mat with min-width: 0 and NO competing min-height',
+    /\.sleep-system__featured-image \{[^}]*aspect-ratio: 2 \/ 1;[^}]*min-width: 0;[^}]*background: #FFFDF8;/.test(norm)
+    && !/\.sleep-system__featured-image \{[^}]*min-height\s*:/.test(norm));
+  // Type floor.
+  ok('the position caption and the plan detail meet the 4.5:1 floor at >= 10px',
+    /\.sleep-system__position small \{[^}]*color: #6C6054;[^}]*font: 500 10px/.test(norm)
+    && /\.sleep-system__plan-detail \{[^}]*color: #6C6054;[^}]*font: 500 11px/.test(norm));
+  // Sidecar strip + specialist-check mark.
+  ok('the sidecar is a four-cell mark strip; the name/status pair stays for assistive technology (sr-only)',
+    planSrc.includes(`'<span class="sr-only"><span class="sleep-system__plan-item-name">'`)
+    && /\.sleep-system__plan-list \{[^}]*grid-template-columns: repeat\(4, minmax\(0, 1fr\)\);/.test(norm));
+  ok('a specialist check is drawn as its own "?" mark on the rail and the sidecar while it still counts as addressed',
+    (norm.match(/if \(checkNeeded\) mark = '\?';/g) || []).length === 2
+    && railSrc.includes("(checkNeeded ? ' is-check' : '')") && planSrc.includes("(checkNeeded ? ' is-check' : '')")
+    && /if \(status === 'already' \|\| status === 'confirm' \|\| status === 'demo'\) return 'addressed';/.test(norm)
+    && /\.sleep-system__step\.is-check \.sleep-system__step-num \{[^}]*border-style: double;/.test(norm));
+  ok('the header keeps one support sentence',
+    norm.includes("en: 'Add only what supports the customer’s needs.'") && /id="sleepSystemSubtitle">Add only what supports the customer’s needs\.</.test(norm));
+}
+
 // ------------------------------------------------------------------- summary
 console.log(`\n${failures === 0 ? 'PASS' : 'FAIL'} — ${checks - failures}/${checks} checks passed`);
 process.exit(failures === 0 ? 0 : 1);
