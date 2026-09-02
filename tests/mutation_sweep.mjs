@@ -2171,6 +2171,13 @@ const MUTATIONS = [
   ["A3.1: the take-home packet loses the finalist's photo",
     "          + (r.thumb ? '<img class=\"email-save-thumb\" src=\"' + escapeHtml(r.thumb) + '\" alt=\"\" width=\"60\" height=\"40\" decoding=\"async\">' : '')\n",
     "", A31],
+  ["A3.1: the top-pick photo loses its height reset (the attribute height stretches the portrait card)",
+    "      height: auto;\n      aspect-ratio: 16 / 9;\n      object-fit: cover;",
+    "      aspect-ratio: 16 / 9;\n      object-fit: cover;",
+    A31],
+  ["A3.1: the support photo loses its height reset (900px-tall support cards return)",
+    "      height: auto; /* A3.1 (Phase 7): see .noct-toppick-photo */\n",
+    "", A31],
   // --- A3 tablet handoff (owner ruling 2026-09-01) --------------------------
   ["A3 handoff: the staged completion bypasses the tablet handoff",
     "        if (reviewScreen && reviewScreen.classList.contains('active')) {\n          // A3: the completion lands on the tablet handoff; the specialist's\n          // \"Begin guided review\" arms the signature entry and opens the Brief.\n          window.showTabletHandoff();\n        }",

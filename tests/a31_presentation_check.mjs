@@ -597,6 +597,24 @@ section('Consultation Summary — recap rows, names-only priorities with ordinal
     && /\.noct-profile-priority-title \{\s*flex: 1;/.test(norm));
 }
 
+// ============================================ 9. Reserved image size never defeats the CSS frame (A3.1 c6)
+section('Results photos — the width/height attributes reserve the ratio; the CSS frame governs the box in every orientation');
+{
+  // The b44c891 capture run showed the top-pick hero at 736x1000 in portrait
+  // and both support photos 900px tall in every orientation: a definite
+  // attribute height defeats aspect-ratio unless the rule resets it.
+  ok('the top-pick photo base rule resets the attribute height before its 16:9 frame (portrait keeps the fold)',
+    /\.noct-toppick-photo \{\s*\n\s*width: 100%;\s*\n(?:\s*\/\*[\s\S]*?\*\/\s*\n)?\s*height: auto;\s*\n\s*aspect-ratio: 16 \/ 9;/.test(norm));
+  ok('the support photo rule resets the attribute height before its 16:9 frame',
+    /\.noct-support-photo \{\s*\n\s*width: 100%;\s*\n\s*height: auto;[^\n]*\n\s*aspect-ratio: 16 \/ 9;/.test(norm));
+  ok('the landscape 3:2 hero override keeps height: auto too',
+    /\.noct-toppick-photo \{\s*\n\s*aspect-ratio: 3 \/ 2;\s*\n\s*width: 100%;\s*\n\s*height: auto;/.test(norm));
+  ok('every reserved Results/drawer/Compare photo pairs its attributes with a CSS frame that owns the height',
+    norm.includes('width="1500" height="1000" alt="">') && norm.includes('width="1600" height="900" alt="" decoding="async">')
+    && /\.drawer-hero img \{ width:100%; height:100%; object-fit:contain; display:block; \}/.test(norm)
+    && /\.cmp-head-img img \{[^}]*height: 100%/.test(norm));
+}
+
 // ------------------------------------------------------------------- summary
 console.log(`\n${failures === 0 ? 'PASS' : 'FAIL'} — ${checks - failures}/${checks} checks passed`);
 process.exit(failures === 0 ? 0 : 1);

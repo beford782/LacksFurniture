@@ -2385,6 +2385,11 @@
 
     .noct-toppick-photo {
       width: 100%;
+      /* A3.1 (Phase 7): the reserved width/height attributes describe the
+         source ratio only - `height: auto` hands the box back to the CSS
+         frame in every orientation (a definite attribute height would
+         otherwise defeat aspect-ratio and stretch the card). */
+      height: auto;
       aspect-ratio: 16 / 9;
       object-fit: cover;
       background: #FFFDF8; /* Wave 3: white image mat everywhere */
@@ -2539,6 +2544,7 @@
 
     .noct-support-photo {
       width: 100%;
+      height: auto; /* A3.1 (Phase 7): see .noct-toppick-photo */
       aspect-ratio: 16 / 9;
       object-fit: cover;
       background: #FFFDF8; /* Wave 3: white image mat everywhere */
