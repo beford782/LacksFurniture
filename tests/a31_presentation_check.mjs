@@ -352,6 +352,17 @@ section('Trial drawer — three numbered steps, one prompt, hero frame, retired 
     iTry > -1 && iAsk > iTry && iChoose > iAsk && iCta > iChoose
     && /class="drawer-section-label drawer-step" id="drawerNoticeLabel" data-step="1">Try</.test(norm)
     && /class="drawer-section-label drawer-step" id="drawerFinalistLabel" data-step="3">Choose a finalist</.test(norm));
+  // Synthesis (owner counterprompt 2026-09-02, change 1): the whole workflow -
+  // Try, Ask, Choose, the finalist control and its follow-up prompt - precedes
+  // the Key features label, so the construction demonstration (inserted after
+  // #drawerDifferentiators) can never sit above the first trial action; the
+  // identity header and the feel line still come first.
+  const iKeyFeatures = norm.indexOf('id="drawerDifferentiatorsLabel"');
+  const iPrompt = norm.indexOf('id="drawerSystemPrompt"');
+  const iFeel = norm.indexOf('id="drawerFeelAnchor"');
+  ok('synthesis: the Try/Ask/Choose workflow (through the finalist control and its follow-up prompt) precedes Key features and the construction host; the identity header precedes the workflow',
+    iKeyFeatures > -1 && iFeel > -1 && iFeel < iTry && iPrompt > iCta && iPrompt < iKeyFeatures,
+    JSON.stringify({ iFeel, iTry, iCta, iPrompt, iKeyFeatures }));
   ok('the renderer writes the step labels in both languages (question kept explicit; no "record" narration)',
     openSrc.includes("currentLang === 'es' ? 'Probar' : 'Try'")
     && openSrc.includes("? 'Pregunta: “¿Cómo se sintió este colchón?”'") && openSrc.includes(": 'Ask: “How did this mattress feel?”'")

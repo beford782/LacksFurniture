@@ -11461,39 +11461,16 @@
           <div class="drawer-match-badge" id="drawerMatch"></div>
         </div>
         <div class="drawer-trial-feel" id="drawerFeelAnchor"></div>
-        <!-- Item 1.3 reason-gate containment (owner ruling 2026-08-24): the
-             inherited "Why it made your shortlist" heading and its
-             answer-derived sentence were a rendered per-model,
-             per-customer why-fit output, which is exactly this item's gated
-             output. They predate the gate (2da6fef, before fc3329b), so their
-             history is not a breach, but they are not grandfathered either:
-             the gate fails closed by OMISSION. Both the heading and the
-             container are gone, so no stranded label, empty box or
-             accessibility-tree remnant survives. Nothing here is narrowed -
-             the reason-led redesign remains gated and unauthorized. -->
-        <div class="drawer-section-label" id="drawerDifferentiatorsLabel">Key features</div>
-        <div class="drawer-differentiators" id="drawerDifferentiators"></div>
-        <!-- Ways to bring it home (Payment Choice) — sleep fit first,
-             payment second. Rendered by renderDrawerFinancing(); hidden keeps it
-             out of the accessibility tree when financing is disabled. -->
-        <div class="drawer-financing" id="drawerFinancing" hidden>
-          <div class="drawer-section-label" id="drawerFinancingLabel"></div>
-          <p class="drawer-financing__body" id="drawerFinancingBody"></p>
-          <div class="fin-actions">
-            <button type="button" class="fin-btn fin-btn-secondary" id="drawerFinancingExplore"
-                    onclick="window.openFinancingSheet('drawer')"
-                    ontouchend="event.preventDefault();window.openFinancingSheet('drawer');"></button>
-          </div>
-        </div>
-        <div class="drawer-promotion" id="drawerPromotion">
-          <div class="drawer-promotion__kicker" id="drawerPromotionKicker"></div>
-          <div class="drawer-promotion__headline" id="drawerPromotionHeadline"></div>
-          <div class="drawer-promotion__detail" id="drawerPromotionDetail"></div>
-        </div>
         <!-- A3.1 (owner directive 2026-09-01): the drawer is a three-step
              sequence - Try, Ask, Choose - carried by numbered step labels
              (data-step rendered as a ring by CSS; state by glyph and border,
-             never colour alone; paintDrawerSteps mirrors the gate). -->
+             never colour alone; paintDrawerSteps mirrors the gate).
+             Synthesis (owner counterprompt 2026-09-02, change 1): the whole
+             workflow sits directly under the identity header, ABOVE Key
+             features and the construction demonstration, so the first
+             physical trial action is in the landscape first fold. The
+             reaction-before-finalist gate, the lifecycle, the governed facts
+             and the construction gating are untouched - only the order. -->
         <div class="drawer-section-label drawer-step" id="drawerNoticeLabel" data-step="1">Try</div>
         <div class="drawer-try-prompts" id="drawerTryPrompts"></div>
         <div class="drawer-section-label drawer-step" id="drawerReactionLabel" data-step="2">Ask: “How did this mattress feel?”</div>
@@ -11531,6 +11508,35 @@
                     ontouchend="event.preventDefault();window.dismissFinalistSleepSystemPrompt();"
                     id="drawerSystemPromptSecondary"></button>
           </div>
+        </div>
+        <!-- Item 1.3 reason-gate containment (owner ruling 2026-08-24): the
+             inherited "Why it made your shortlist" heading and its
+             answer-derived sentence were a rendered per-model,
+             per-customer why-fit output, which is exactly this item's gated
+             output. They predate the gate (2da6fef, before fc3329b), so their
+             history is not a breach, but they are not grandfathered either:
+             the gate fails closed by OMISSION. Both the heading and the
+             container are gone, so no stranded label, empty box or
+             accessibility-tree remnant survives. Nothing here is narrowed -
+             the reason-led redesign remains gated and unauthorized. -->
+        <div class="drawer-section-label" id="drawerDifferentiatorsLabel">Key features</div>
+        <div class="drawer-differentiators" id="drawerDifferentiators"></div>
+        <!-- Ways to bring it home (Payment Choice) — sleep fit first,
+             payment second. Rendered by renderDrawerFinancing(); hidden keeps it
+             out of the accessibility tree when financing is disabled. -->
+        <div class="drawer-financing" id="drawerFinancing" hidden>
+          <div class="drawer-section-label" id="drawerFinancingLabel"></div>
+          <p class="drawer-financing__body" id="drawerFinancingBody"></p>
+          <div class="fin-actions">
+            <button type="button" class="fin-btn fin-btn-secondary" id="drawerFinancingExplore"
+                    onclick="window.openFinancingSheet('drawer')"
+                    ontouchend="event.preventDefault();window.openFinancingSheet('drawer');"></button>
+          </div>
+        </div>
+        <div class="drawer-promotion" id="drawerPromotion">
+          <div class="drawer-promotion__kicker" id="drawerPromotionKicker"></div>
+          <div class="drawer-promotion__headline" id="drawerPromotionHeadline"></div>
+          <div class="drawer-promotion__detail" id="drawerPromotionDetail"></div>
         </div>
       </div>
     </div>
