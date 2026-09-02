@@ -11123,7 +11123,7 @@
       <div class="noct-review-list" id="reviewList"></div>
       <div class="noct-quiz-nav">
         <button class="noct-quiz-back" onclick="prevQuestion()" ontouchend="event.preventDefault();prevQuestion();" id="reviewBackBtn">&larr; Back</button>
-        <button class="noct-quiz-next" onclick="window.startProfileReveal()" ontouchend="event.preventDefault();window.startProfileReveal();" id="reviewNextBtn">See my sleep signature</button>
+        <button class="noct-quiz-next" onclick="window.startProfileReveal()" ontouchend="event.preventDefault();window.startProfileReveal();" id="reviewNextBtn">Finish and review together</button>
       </div>
     </div>
   </div>
@@ -18699,6 +18699,50 @@
     // as module-scope globals to match existing style. Hoisted out of the
     // inline showAccessories body byte-for-byte — no behavior change,
     // verified via two-profile screenshot diff in commit verification.
+    // A3.1 (owner ruling 3, 2026-09-01): the accessory engine's reason strings
+    // stay byte-stable in engine output, the phase-1 fixture and the customer's
+    // take-home payload — they are customer-voiced by design there. A
+    // SPECIALIST-operated surface renders the same reasons through THIS
+    // explicit key-keyed map as neutral evidence ("Reported priority: …"),
+    // never through string replacement. The scorer records the reason KEY
+    // beside each string (reasonKeys, parallel to reasons); every matched key
+    // is named so the tag lists all the evidence the engine used; an unmapped
+    // or missing key falls back to the engine string so a card never renders
+    // blank. Consumers: the Sleep System featured card and the drawer's
+    // finalist pillow prompt. The Summary accessory card and the take-home
+    // keep the engine string (shared / customer surfaces).
+    var SPECIALIST_REASON_PREFIX = {
+      reported: { en: 'Reported priority: ', es: 'Prioridad reportada: ' },
+      profile: { en: 'Profile match: ', es: 'Coincidencia de perfil: ' },
+      catalog: { en: 'Catalog option', es: 'Opci\u00f3n del cat\u00e1logo' }
+    };
+    var SPECIALIST_REASON_NOUNS = {
+      position_side: { en: 'side sleeping', es: 'dormir de lado' },
+      position_back: { en: 'back sleeping', es: 'dormir boca arriba' },
+      position_stomach: { en: 'stomach sleeping', es: 'dormir boca abajo' },
+      cooling: { en: 'sleeps hot', es: 'duerme con calor' },
+      hot: { en: 'temperature', es: 'temperatura' },
+      back_pain: { en: 'lower-back discomfort', es: 'molestia lumbar' },
+      snoring: { en: 'snoring', es: 'ronquidos' },
+      reflux: { en: 'nighttime reflux', es: 'reflujo nocturno' },
+      allergies: { en: 'allergies', es: 'alergias' },
+      premium: { en: 'premium comfort', es: 'comodidad premium' }
+    };
+    function specialistReasonLabel(keys, fallback) {
+      var list = Array.isArray(keys) ? keys : [];
+      var lang = currentLang === 'es' ? 'es' : 'en';
+      if (!list.length) return fallback || '';
+      if (list[0] === 'standard') return SPECIALIST_REASON_PREFIX.catalog[lang];
+      if (list[0] === 'default') return SPECIALIST_REASON_PREFIX.profile[lang] + (lang === 'es' ? 'respuestas del cuestionario' : 'quiz answers');
+      var nouns = [];
+      for (var i = 0; i < list.length; i++) {
+        var n = Object.prototype.hasOwnProperty.call(SPECIALIST_REASON_NOUNS, list[i]) ? SPECIALIST_REASON_NOUNS[list[i]] : null;
+        if (!n) return fallback || '';
+        nouns.push(n[lang]);
+      }
+      return SPECIALIST_REASON_PREFIX.reported[lang] + nouns.join(' \u00b7 ');
+    }
+
     function scoreAccessoriesFromAnswers() {
       const position = answers.sleep_position || '';
       const temp = answers.temperature || '';
@@ -18730,14 +18774,15 @@
       const accessoryData = ACCESSORIES.map(a => {
         let score = a.matchScores.default || 0;
         const reasons = [];
-        if (a.matchScores['position_' + position]) { score += a.matchScores['position_' + position]; reasons.push(reasonMap['position_' + position]); }
-        if (hotSleeper && a.matchScores.cooling) { score += a.matchScores.cooling; reasons.push(reasonMap.cooling); }
-        if (hotSleeper && a.matchScores.hot) { score += a.matchScores.hot; if (!reasons.includes(reasonMap.cooling)) reasons.push(reasonMap.hot); }
-        if (issues.includes('back_pain') && a.matchScores.back_pain) { score += a.matchScores.back_pain; reasons.push(reasonMap.back_pain); }
-        if (health.includes('snoring') && a.matchScores.snoring) { score += a.matchScores.snoring; reasons.push(reasonMap.snoring); }
-        if (health.includes('reflux') && a.matchScores.reflux) { score += a.matchScores.reflux; reasons.push(reasonMap.reflux); }
-        if (health.includes('allergies') && a.matchScores.allergies) { score += a.matchScores.allergies; reasons.push(reasonMap.allergies); }
-        if (budget === 'premium' && a.matchScores.premium) { score += a.matchScores.premium; reasons.push(reasonMap.premium); }
+        const reasonKeys = [];
+        if (a.matchScores['position_' + position]) { score += a.matchScores['position_' + position]; reasons.push(reasonMap['position_' + position]); reasonKeys.push('position_' + position); }
+        if (hotSleeper && a.matchScores.cooling) { score += a.matchScores.cooling; reasons.push(reasonMap.cooling); reasonKeys.push('cooling'); }
+        if (hotSleeper && a.matchScores.hot) { score += a.matchScores.hot; if (!reasons.includes(reasonMap.cooling)) { reasons.push(reasonMap.hot); reasonKeys.push('hot'); } }
+        if (issues.includes('back_pain') && a.matchScores.back_pain) { score += a.matchScores.back_pain; reasons.push(reasonMap.back_pain); reasonKeys.push('back_pain'); }
+        if (health.includes('snoring') && a.matchScores.snoring) { score += a.matchScores.snoring; reasons.push(reasonMap.snoring); reasonKeys.push('snoring'); }
+        if (health.includes('reflux') && a.matchScores.reflux) { score += a.matchScores.reflux; reasons.push(reasonMap.reflux); reasonKeys.push('reflux'); }
+        if (health.includes('allergies') && a.matchScores.allergies) { score += a.matchScores.allergies; reasons.push(reasonMap.allergies); reasonKeys.push('allergies'); }
+        if (budget === 'premium' && a.matchScores.premium) { score += a.matchScores.premium; reasons.push(reasonMap.premium); reasonKeys.push('premium'); }
         // A genuine match means at least one answer-specific reason fired; the
         // baseline default score alone does not count. Only matched items earn the
         // "Recommended based on your answers" treatment (e.g. an adjustable base when
@@ -18745,8 +18790,8 @@
         // catalog items (plain foundations, bunkie, unmatched pillows/protectors) show
         // a neutral line and are never badged recommended.
         const matched = reasons.length > 0;
-        if (!matched) reasons.push(reasonMap.standard);
-        return { ...a, score, matched, reasons };
+        if (!matched) { reasons.push(reasonMap.standard); reasonKeys.push('standard'); }
+        return { ...a, score, matched, reasons, reasonKeys };
       });
       accessoryData.sort((a, b) => b.score - a.score);
       return accessoryData;
@@ -19911,7 +19956,7 @@
           : '';
         var reason = step.id === 'protection'
           ? sleepSystemText(protectionGoalReason(window._sleepSystemState.protectionGoal || getSuggestedProtectionGoal()))
-          : (primary.reasons && primary.reasons[0] ? primary.reasons[0] : '');
+          : specialistReasonLabel(primary.reasonKeys, primary.reasons && primary.reasons[0] ? primary.reasons[0] : '');
         var badge = step.id === 'support'
           ? sleepSystemText({ en: 'Support option', es: 'Opción de soporte' })
           : step.id === 'protection'
@@ -20687,7 +20732,7 @@
         currentLang === 'es' ? 'Completa esta configuraci\u00f3n' : 'Complete this setup';
       document.getElementById('drawerSystemPromptTitle').textContent =
         (currentLang === 'es' ? 'Prueba esta almohada: ' : 'Try this pillow: ') + L(pillow.name);
-      document.getElementById('drawerSystemPromptReason').textContent = pillow.reasons[0] || '';
+      document.getElementById('drawerSystemPromptReason').textContent = specialistReasonLabel(pillow.reasonKeys, pillow.reasons[0] || '');
       document.getElementById('drawerSystemPromptPrimary').textContent =
         currentLang === 'es' ? 'Ver Sistema de Sue\u00f1o' : 'View Sleep System';
       document.getElementById('drawerSystemPromptSecondary').textContent =
@@ -21386,10 +21431,21 @@
         }
         var openNames = [];
         if (typeof SLEEP_SYSTEM_STEPS !== 'undefined' && typeof sleepSystemDecision === 'function' && typeof sleepSystemText === 'function') {
+          // A3.1 (owner ruling 5, 2026-09-01): a `confirm` decision — the
+          // specialist check the customer asked for — is genuinely unresolved
+          // on the shared close, so it joins the Still-open list qualified by
+          // its state. It still counts as considered on the specialist
+          // workspace (sleepSystemStatusKind is untouched); that split is
+          // deliberate and honest.
           openNames = SLEEP_SYSTEM_STEPS.filter(function(step) {
             var st = sleepSystemDecision(step.id).status;
-            return st === 'later' || st === 'open';
-          }).map(function(step) { return sleepSystemText(step.label); });
+            return st === 'later' || st === 'open' || st === 'confirm';
+          }).map(function(step) {
+            var label = sleepSystemText(step.label);
+            return sleepSystemDecision(step.id).status === 'confirm'
+              ? t('hf2.status_open_check', { step: label })
+              : label;
+          });
         }
         if (openNames.length) {
           rows.push('<div class="hf2-status__row">' + esc(t('hf2.status_open', { list: openNames.join(' · ') })) + '</div>');

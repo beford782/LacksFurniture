@@ -144,6 +144,10 @@ const SLEEP = ["tests/sleep_system_presentation_check.mjs"];
 // A3 audience-contract observer (owner ruling 2026-09-01): the declared
 // per-screen audience map, the tablet handoff, and the per-surface voice.
 const AUD = ["tests/audience_contract_check.mjs"];
+// A3.1 observer (owner directive 2026-09-01, evening): the presentation suite
+// owns the ruled completion label, the still-open confirm state and the
+// specialist reason adapter.
+const A31 = ["tests/a31_presentation_check.mjs"];
 
 
 // ---------------------------------------------------------------------------
@@ -1989,9 +1993,11 @@ const MUTATIONS = [
     "      border-left: 3px solid #9A7445;\n      background: #F6EFE4;\n      color: #4F4439;\n      font: 600 14px/1.45 var(--font-sans);",
     "      border-left: 3px solid #9A7445;\n      background: #F6EFE4;\n      color: #4F4439;\n      font: 600 12px/1.45 var(--font-sans);",
     SLEEP],
+  // A3.1 (ruling 3): the card renders the adapter label, so the echo that
+  // the duplication guard must catch is that label.
   ["1.4/A3: the guidance panel echoes the customer benefit again",
     "      return [notice];",
-    "      if (primary && primary.reasons && primary.reasons[0]) return [primary.reasons[0]];\n      return [notice];",
+    "      if (primary && primary.reasons && primary.reasons[0]) return [specialistReasonLabel(primary.reasonKeys, primary.reasons[0])];\n      return [notice];",
     SLEEP],
   // A3 (owner ruling 2026-09-01): the position cue lives in the step's
   // rationale line as evidence; a customer-voice regression must trip the
@@ -2061,6 +2067,27 @@ const MUTATIONS = [
   ["A3: the progress detail line leaves the wipe inventory",
     "      'sleepSystemPlanDetail',\n",
     "", SLEEP],
+  // --- A3.1 presentation corrections (owner directive 2026-09-01, evening) --
+  ["A3.1 ruling 6: the quiz completion label reverts to the signature promise",
+    "  \"brief.quiz_finish\": \"Finish and review together\",",
+    "  \"brief.quiz_finish\": \"See my sleep signature\",",
+    A31, "data/dict-en.json"],
+  ["A3.1 ruling 5: the Summary still-open list drops the specialist-check state",
+    "            return st === 'later' || st === 'open' || st === 'confirm';",
+    "            return st === 'later' || st === 'open';",
+    A31],
+  ["A3.1 ruling 3: the specialist reason adapter passes the customer-voiced engine string through",
+    "      if (!list.length) return fallback || '';",
+    "      return fallback || '';",
+    A31],
+  ["A3.1 ruling 3: a reason key stops being recorded beside its string",
+    "reasons.push(reasonMap.snoring); reasonKeys.push('snoring'); }",
+    "reasons.push(reasonMap.snoring); }",
+    A31],
+  ["A3.1 ruling 3: the featured card renders the engine string instead of the adapter",
+    "          : specialistReasonLabel(primary.reasonKeys, primary.reasons && primary.reasons[0] ? primary.reasons[0] : '');",
+    "          : (primary.reasons && primary.reasons[0] ? primary.reasons[0] : '');",
+    A31.concat(SLEEP)],
   // --- A3 tablet handoff (owner ruling 2026-09-01) --------------------------
   ["A3 handoff: the staged completion bypasses the tablet handoff",
     "        if (reviewScreen && reviewScreen.classList.contains('active')) {\n          // A3: the completion lands on the tablet handoff; the specialist's\n          // \"Begin guided review\" arms the signature entry and opens the Brief.\n          window.showTabletHandoff();\n        }",

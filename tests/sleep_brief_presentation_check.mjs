@@ -623,12 +623,14 @@ ok('EN dict carries the ruled D1 strings verbatim',
   dictEn['brief.heading'] === 'Your Sleep Brief'
   && dictEn['brief.hero'] === 'Made from your answers'
   && dictEn['brief.signature_eyebrow'] === 'Your sleep signature'
-  && dictEn['brief.quiz_finish'] === 'See my sleep signature');
+  // A3.1 (owner ruling 6, 2026-09-01): the D1 completion label is re-ruled to
+  // the shared-review action; the other three D1 strings stand.
+  && dictEn['brief.quiz_finish'] === 'Finish and review together');
 ok('ES dict carries the ruled D1 strings verbatim',
   dictEs['brief.heading'] === 'Tu Resumen de Sueño'
   && dictEs['brief.hero'] === 'Creada con tus respuestas'
   && dictEs['brief.signature_eyebrow'] === 'Tu firma de sueño'
-  && dictEs['brief.quiz_finish'] === 'Ver mi firma de sueño');
+  && dictEs['brief.quiz_finish'] === 'Terminar y revisar juntos');
 ok('dict parity: every brief.* key exists in both languages with distinct values',
   Object.keys(dictEn).filter((k) => k.startsWith('brief.'))
     .every((k) => k in dictEs && dictEn[k] !== dictEs[k])
@@ -637,9 +639,9 @@ ok('dict parity: every brief.* key exists in both languages with distinct values
 ok('the quiz finish control is relabeled through the dictionary, not a literal',
   /nextBtn\.textContent = t\('brief\.quiz_finish'\)/.test(norm)
   && !/Looks good/.test(norm));
-ok('the quiz finish label is the ruled D1 wording exactly — no decorative arrow',
+ok('the quiz finish label is the ruled wording exactly (A3.1 ruling 6) — no decorative arrow',
   !/→|&rarr;/.test(dictEn['brief.quiz_finish'] + dictEs['brief.quiz_finish'])
-  && /id="reviewNextBtn">See my sleep signature<\/button>/.test(norm));
+  && /id="reviewNextBtn">Finish and review together<\/button>/.test(norm));
 {
   const env = makeEnv({ dict: {} });
   env.api.brief();

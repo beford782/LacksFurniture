@@ -143,6 +143,7 @@ $checks = @(
     @{ Name = 'quiz presentation'; Exe = $nodeExecutable; Args = @('tests/quiz_presentation_check.mjs') },
     @{ Name = 'sleep system presentation'; Exe = $nodeExecutable; Args = @('tests/sleep_system_presentation_check.mjs') },
     @{ Name = 'audience contract (A3 post-quiz voice)'; Exe = $nodeExecutable; Args = @('tests/audience_contract_check.mjs') },
+    @{ Name = 'A3.1 presentation (CTA, still-open confirm, reason adapter)'; Exe = $nodeExecutable; Args = @('tests/a31_presentation_check.mjs') },
     @{ Name = 'trust integrity'; Exe = $nodeExecutable; Args = @('tests/trust_integrity_check.mjs') },
     @{ Name = 'daybreak contract'; Exe = $pythonExecutable; Args = @('tests/daybreak_contract_check.py') },
     @{ Name = 'pricing contract (dark shipped-state lock)'; Exe = $pythonExecutable; Args = @('tests/pricing_contract_check.py') },

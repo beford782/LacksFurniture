@@ -166,6 +166,12 @@ const SRC = {
   goalReason: extractFunction('function protectionGoalReason(goal)'),
   supportsGoal: extractFunction('function protectorSupportsGoal(item, goal)'),
   protectionGuide: extractFunction('function renderProtectionGuide()'),
+  // A3.1 (owner ruling 3, 2026-09-01): the key-keyed specialist reason
+  // adapter and its two maps — the featured card's benefit line renders
+  // through it on this specialist surface.
+  reasonPrefix: extractFunction('var SPECIALIST_REASON_PREFIX ='),
+  reasonNouns: extractFunction('var SPECIALIST_REASON_NOUNS ='),
+  reasonAdapter: extractFunction('function specialistReasonLabel(keys, fallback)'),
   main: extractFunction('function renderSleepSystemMain(viewModel)'),
   plan: extractFunction('function renderSleepSystemPlan()'),
   footer: extractFunction('function renderSleepSystemFooter()')
@@ -234,7 +240,8 @@ function makeEnv({
     SRC.readGroups, SRC.decision, SRC.decisionLabel, SRC.statusKind, SRC.posLabel, SRC.getDemo, SRC.renderDemo,
     SRC.catalogLowProfile, SRC.guidance, SRC.rail, SRC.secondary, SRC.supportGuide,
     SRC.pillowRationale, SRC.protRationale, SRC.pillowFit, SRC.suggestedGoal,
-    SRC.goalLabel, SRC.goalReason, SRC.supportsGoal, SRC.protectionGuide, SRC.main, SRC.plan,
+    SRC.goalLabel, SRC.goalReason, SRC.supportsGoal, SRC.protectionGuide,
+    SRC.reasonPrefix, SRC.reasonNouns, SRC.reasonAdapter, SRC.main, SRC.plan,
     SRC.footer
   ].join('\n');
   if (mutate) src = mutate(src);
@@ -1306,8 +1313,12 @@ section('3.7 P2 - "Recommended to try" requires an answer-derived match (rendere
   const NO_TRIGGER = SIDE_ONLY;
   const BACK_PAIN = { sleep_position: 'side', temperature: 'comfortable', sleep_issues: ['back_pain'], health_conditions: ['none'] };
   const BADGE = {
-    en: { rec: 'Recommended to try', worth: 'Worth comparing', neutral: 'A solid option to round out your sleep system' },
-    es: { rec: 'Recomendado para probar', worth: 'Vale la pena comparar', neutral: 'Una buena opción para completar tu sistema de sueño' }
+    // A3.1 (owner ruling 3, 2026-09-01): on this specialist surface the
+    // engine's neutral string renders through the key-keyed adapter as the
+    // catalog tag; the engine string itself is unchanged (pinned by the
+    // phase-1 fixture and tests/a31_presentation_check.mjs).
+    en: { rec: 'Recommended to try', worth: 'Worth comparing', neutral: 'Catalog option' },
+    es: { rec: 'Recomendado para probar', worth: 'Vale la pena comparar', neutral: 'Opción del catálogo' }
   };
   for (const lang of ['en', 'es']) {
     const b = BADGE[lang];
@@ -1320,7 +1331,7 @@ section('3.7 P2 - "Recommended to try" requires an answer-derived match (rendere
         hero && hero.matched === false && hero.meetsMatchThreshold === true, hero && `${hero.id} matched=${hero.matched} T=${hero.meetsMatchThreshold}`);
       ok(`[${lang}/pillow/${label}] an unmatched hero is badged "${b.worth}", never "${b.rec}"`,
         eyebrow === b.worth, JSON.stringify(eyebrow));
-      ok(`[${lang}/pillow/${label}] its reason line is the neutral one (the badge and the reason agree)`,
+      ok(`[${lang}/pillow/${label}] its reason line is the neutral catalog tag (the badge and the reason agree; A3.1 adapter)`,
         reason === b.neutral, JSON.stringify(reason));
     }
     {
@@ -1388,8 +1399,10 @@ section('3.7 P3 - a matched pillow ranks above an unmatched default-score pillow
   };
   function sleepSystemCategoryEn(a) { return typeof a.category === 'object' ? a.category.en : a.category; }
   const REASON = {
-    en: { back: 'Optimized for back sleepers', side: 'Matched to your side sleeping position', rec: 'Recommended to try' },
-    es: { back: 'Optimizado para los que duermen boca arriba', side: 'Adaptado a tu posición de dormir de lado', rec: 'Recomendado para probar' }
+    // A3.1 (owner ruling 3): rendered through the specialist reason adapter
+    // (key -> neutral evidence tag); the engine strings are unchanged.
+    en: { back: 'Reported priority: back sleeping', side: 'Reported priority: side sleeping', rec: 'Recommended to try' },
+    es: { back: 'Prioridad reportada: dormir boca arriba', side: 'Prioridad reportada: dormir de lado', rec: 'Recomendado para probar' }
   };
   for (const lang of ['en', 'es']) {
     for (const [label, answers] of [['back sleeper', BACK_ONLY], ['back sleeper with reflux', BACK_REFLUX]]) {
@@ -1401,7 +1414,7 @@ section('3.7 P3 - a matched pillow ranks above an unmatched default-score pillow
         hero && hero.id === 'pillow-flow' && hero.matched === true &&
           r.groups.pillow[1] && r.groups.pillow[1].id === 'pillow-gel-memory' && r.groups.pillow[1].matched === false,
         JSON.stringify(r.groups.pillow.map((a) => [a.id, a.score, a.matched, a.meetsMatchThreshold])));
-      ok(`[${lang}/pillow/${label}] the hero card is badged "${REASON[lang].rec}" with the back-sleeper reason (P2 + P3 together)`,
+      ok(`[${lang}/pillow/${label}] the hero card is badged "${REASON[lang].rec}" with the back-sleeper evidence tag (P2 + P3 + A3.1 adapter)`,
         eyebrow === REASON[lang].rec && reason === REASON[lang].back, `${JSON.stringify(eyebrow)} ${JSON.stringify(reason)}`);
       ok(`[${lang}/pillow/${label}] the drawer's finalist-prompt pillow and the Sleep System hero are the SAME pillow`,
         promptPillowOf(r.env) === hero.id, `prompt=${promptPillowOf(r.env)} hero=${hero.id}`);
@@ -1727,7 +1740,9 @@ section('negative controls — the load-bearing assertions bite');
     answers: ANSWERS,
     mutate: (s) => s.replace(
       'return [notice];',
-      'if (primary && primary.reasons && primary.reasons[0]) return [primary.reasons[0]];\nreturn [notice];')
+      // A3.1 (ruling 3): the card's benefit line is the adapter label, so the
+      // echo control reproduces exactly that.
+      'if (primary && primary.reasons && primary.reasons[0]) return [specialistReasonLabel(primary.reasonKeys, primary.reasons[0])];\nreturn [notice];')
   });
   const dupBody = featuredBody(dup.main);
   const dupBenefit = grab(dupBody, 'sleep-system__featured-reason');

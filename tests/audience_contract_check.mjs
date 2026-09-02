@@ -262,9 +262,13 @@ section('shared and customer surfaces — deliberate second person, marked momen
     dictEn['email.eyebrow'] === 'Take your matches home'
     && norm.includes("es ? 'Volver al resumen' : 'Back to the summary'")
     && /id="emailConfirmBackHandoff"[^>]*>Back to the summary</.test(norm));
-  ok('the quiz keeps direct customer language (completion label untouched)',
-    dictEn['brief.quiz_finish'] === 'See my sleep signature'
-    && dictEs['brief.quiz_finish'] === 'Ver mi firma de sueño');
+  // A3.1 (owner ruling 6, 2026-09-01): the completion action names the shared
+  // review that follows the tablet handoff and no longer promises the
+  // signature (which appears one screen later, after Begin). Customer
+  // language, first-person-free; ES provisional.
+  ok('the quiz completion label is the ruled shared-review action (A3.1 ruling 6)',
+    dictEn['brief.quiz_finish'] === 'Finish and review together'
+    && dictEs['brief.quiz_finish'] === 'Terminar y revisar juntos');
 }
 
 // ------------------------------------------------------- 4. negative controls

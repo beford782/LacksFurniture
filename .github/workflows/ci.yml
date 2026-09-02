@@ -495,6 +495,13 @@ jobs:
       - name: audience contract (A3 post-quiz voice)
         run: node tests/audience_contract_check.mjs
 
+      # A3.1 presentation corrections (owner directive 2026-09-01, evening):
+      # the ruled quiz-completion label, the specialist-check state under the
+      # Summary's Still-open list, and the key-keyed specialist reason adapter
+      # beside byte-stable engine reason strings.
+      - name: A3.1 presentation (CTA, still-open confirm, reason adapter)
+        run: node tests/a31_presentation_check.mjs
+
       # Trust integrity and transparency gate (Phase 1 cross-cutting,
       # 2026-08-21): the copy <-> engine correspondence document and its
       # pinned inert-tag set, banned claims in quiz help copy, the absence of
