@@ -343,7 +343,9 @@ if (gate("chooseFinalist", !!CHOOSE_SRC && !!TOGGLE_SAVE_SRC && !!REMOVE_SRC && 
   check("Loop-A2: the Results card templates define NO finalist producer",
     countOccurrences(norm, "class=\"finalist-btn'") === 0);
   check("Loop-A2: both card templates EMIT the Try control between compare and save",
-    (norm.match(/\+\s+detailsBtn\s+\+\s+compareBtn\s+\+\s+tryBtn\s+\+\s+saveBtn/g) || []).length === 2
+    // A3.1 (owner directive 2026-09-01): the details cue is retired; the
+    // cluster reads compare -> Try -> save in both templates.
+    (norm.match(/\+\s+compareBtn\s+\+\s+tryBtn\s+\+\s+saveBtn/g) || []).length === 2
     && countOccurrences(norm, 'class="noct-card-try"') === 2);
   check("Loop-A2: the producer carries the trial gate (refuses an unreacted mattress before any save)",
     /if \(!\(\(window\._mattressReactions \|\| \{\}\)\[mattressId\]\)\) return;/.test(norm)

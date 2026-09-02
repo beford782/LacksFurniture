@@ -391,10 +391,10 @@ for (const [markup, roles, tag] of [[markupEn, EN_ROLES, 'EN'], [markupEs, ES_RO
 section('customer-facing wording — byte-identical to the ruled strings');
 const EXPECTED_EN = 'Construction demonstration' + 'Separate the layers' +
   'Comfort The part you feel first.' + 'Support The deeper structure that holds you up.' +
-  'Exact materials and construction vary by model. Ask your specialist about the model you’re trying.';
+  'Exact materials and construction vary by model.';
 const EXPECTED_ES = 'Demostración de construcción' + 'Separar las capas' +
   'Confort La parte que sientes primero.' + 'Soporte La estructura más profunda que te sostiene.' +
-  'Los materiales y la construcción exactos varían según el modelo. Pregúntale a tu especialista sobre el modelo que estás probando.';
+  'Los materiales y la construcción exactos varían según el modelo.';
 ok('EN rendered text is byte-identical to the ruled string set',
   markupEn.replace(/<[^>]+>/g, '') === EXPECTED_EN);
 ok('ES rendered text is byte-identical to the ruled string set (PROVISIONAL, gate open)',

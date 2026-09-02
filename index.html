@@ -2724,11 +2724,17 @@
       .noct-toppick > .mattress-offer-tab {
         grid-column: 1 / -1;
       }
+      /* A3.1 product hero: the landscape photo column is a 3:2 frame on the
+         white mat with the whole product visible (contain) instead of a
+         column-stretched cover crop that lost ~16% of every standard source
+         and resized with the card's copy. Banner sources letterbox as before. */
       .noct-toppick-photo {
-        aspect-ratio: auto;
+        aspect-ratio: 3 / 2;
         width: 100%;
-        height: 100%;
+        height: auto;
         min-height: 0;
+        align-self: center;
+        object-fit: contain;
       }
       .noct-toppick-body {
         padding: 18px 30px 18px;
@@ -2757,26 +2763,6 @@
       }
     }
 
-    .noct-card-details {
-      background: transparent;
-      color: var(--color-text-subtle);
-      border: none;
-      font-family: var(--font-sans);
-      font-size: 11px;
-      letter-spacing: 0.05em;
-      padding: 8px 4px;
-      cursor: pointer;
-      touch-action: manipulation;
-      transition: color 0.15s ease;
-    }
-    .noct-card-details:hover {
-      color: var(--color-accent);
-    }
-    .noct-card-details:focus-visible {
-      outline: 2px solid var(--color-accent);
-      outline-offset: 2px;
-      color: var(--color-accent);
-    }
     .review-return-highlight {
       animation: reviewReturnPulse 1.4s ease;
     }
@@ -6201,8 +6187,7 @@
         transform: none !important;
       }
       .noct-toppick,
-      .noct-support-card,
-      .noct-card-details {
+      .noct-support-card {
         transition: none !important;
       }
       .noct-toppick:active,
@@ -8960,13 +8945,32 @@
       grid-template-columns: minmax(260px, 34%) minmax(0, 1fr);
       flex: 1;
     }
+    /* A3.1 product hero: a 3:2 frame at the top of the photo column showing
+       the whole product (contain) instead of a full-height cover crop that
+       showed a third of every standard photo. */
     .drawer-hero {
       min-height: 0;
+      align-self: start;
+      aspect-ratio: 3 / 2;
       background: var(--navy-light);
       overflow: hidden;
       border-right: 1px solid rgba(255,255,255,0.1);
+      border-bottom: 1px solid rgba(255,255,255,0.1);
     }
-    .drawer-hero img { width:100%; height:100%; object-fit:cover; display:block; }
+    .drawer-hero img { width:100%; height:100%; object-fit:contain; display:block; }
+    /* A3.1 step labels: numbered rings by border, state by glyph + border
+       width (never colour alone); the numeral is decorative - the label text
+       names the step. */
+    .drawer-step { display:flex; align-items:center; gap:9px; }
+    .drawer-step::before {
+      content: attr(data-step);
+      display:inline-flex; align-items:center; justify-content:center;
+      width:22px; height:22px; border-radius:50%; flex-shrink:0;
+      border:1.5px solid currentColor;
+      font:700 11px/1 var(--font-sans); letter-spacing:0; text-transform:none;
+    }
+    .drawer-step.is-done::before { content:'\2713'; }
+    .drawer-step.is-current::before { border-width:2.5px; }
     .drawer-scroll { overflow-y:auto; padding:20px 22px 22px; flex:1; }
     .drawer-scroll::-webkit-scrollbar { display:none; }
     .drawer-mattress-header { display:flex; align-items:flex-start; gap:14px; padding:0 0 14px; border-bottom:1px solid rgba(255,255,255,0.1); margin-bottom:14px; }
@@ -9323,8 +9327,9 @@
         min-height: 0;
       }
       .drawer-hero {
-        min-height: 128px;
-        height: 128px;
+        min-height: 168px;
+        height: 168px;
+        aspect-ratio: auto;
         border-right: 0;
         border-bottom: 1px solid rgba(255,255,255,0.1);
         flex-shrink: 0;
@@ -9335,7 +9340,7 @@
     @media (max-width: 560px) {
       .drawer-toolbar { gap:8px; }
       .drawer-back-to-results { max-width:126px; }
-      .drawer-hero { height:108px; min-height:108px; }
+      .drawer-hero { height:140px; min-height:140px; }
       .drawer-scroll { padding:14px 16px 18px; }
       .drawer-differentiators,
       .drawer-try-prompts { grid-template-columns:1fr; }
@@ -9475,7 +9480,7 @@
     }
     body:has(#resultsScreen.active) .drawer-hero {
       border-color: #D1C5B6;
-      background: #EEE7DC;
+      background: #FFFDF8; /* A3.1: the white image mat, like every product frame */
     }
     body:has(#resultsScreen.active) .drawer-mattress-header,
     body:has(#resultsScreen.active) #drawerBrandSection {
@@ -11185,7 +11190,7 @@
     <div class="noct-results">
       <div class="noct-results-eyebrow" id="resultsEyebrow">Specialist guide</div>
       <h1 class="noct-results-headline" id="resultsHeadline">Recommended <span class="accent">starting points</span></h1>
-      <p class="noct-results-subhead" id="resultsSubhead">Begin with the first match, then compare comfort in person.</p>
+      <p class="noct-results-subhead" id="resultsSubhead" hidden></p>
       <div class="results-trial-focus" id="resultsTrialFocus"></div>
 
       <div class="noct-tier-tabs" id="tierTabs"></div>
@@ -11342,7 +11347,7 @@
     <div class="drawer-handle-bar" onclick="window.closeMattressDrawer()"></div>
     <div class="drawer-toolbar">
       <button class="drawer-back-to-results" onclick="window.closeMattressDrawer()"
-        ontouchend="event.preventDefault();window.closeMattressDrawer();" data-i18n="results.back_to_results">← Back to all matches</button>
+        ontouchend="event.preventDefault();window.closeMattressDrawer();" data-i18n="plan.back_to_matches">← Back to matches</button>
       <div class="drawer-navigation">
         <button class="drawer-nav-btn" id="drawerPrevBtn" onclick="window.drawerNav(-1)"
           ontouchend="event.preventDefault();window.drawerNav(-1);" data-i18n="drawer.prev">← Prev</button>
@@ -11374,7 +11379,7 @@
              container are gone, so no stranded label, empty box or
              accessibility-tree remnant survives. Nothing here is narrowed -
              the reason-led redesign remains gated and unauthorized. -->
-        <div class="drawer-section-label" id="drawerDifferentiatorsLabel">What makes this one different</div>
+        <div class="drawer-section-label" id="drawerDifferentiatorsLabel">Key features</div>
         <div class="drawer-differentiators" id="drawerDifferentiators"></div>
         <!-- Ways to bring it home (Payment Choice) — sleep fit first,
              payment second. Rendered by renderDrawerFinancing(); hidden keeps it
@@ -11393,9 +11398,13 @@
           <div class="drawer-promotion__headline" id="drawerPromotionHeadline"></div>
           <div class="drawer-promotion__detail" id="drawerPromotionDetail"></div>
         </div>
-        <div class="drawer-section-label" id="drawerNoticeLabel">During the trial, notice...</div>
+        <!-- A3.1 (owner directive 2026-09-01): the drawer is a three-step
+             sequence - Try, Ask, Choose - carried by numbered step labels
+             (data-step rendered as a ring by CSS; state by glyph and border,
+             never colour alone; paintDrawerSteps mirrors the gate). -->
+        <div class="drawer-section-label drawer-step" id="drawerNoticeLabel" data-step="1">Try</div>
         <div class="drawer-try-prompts" id="drawerTryPrompts"></div>
-        <div class="drawer-section-label" id="drawerReactionLabel">Record the customer’s reaction — ask: “How did this mattress feel?”</div>
+        <div class="drawer-section-label drawer-step" id="drawerReactionLabel" data-step="2">Ask: “How did this mattress feel?”</div>
         <div class="drawer-reaction-row" id="drawerReactionRow">
           <button type="button" data-reaction="soft" aria-pressed="false" onclick="window.setDrawerReaction('soft')" ontouchend="event.preventDefault();window.setDrawerReaction('soft');">Too Soft</button>
           <button type="button" data-reaction="good" aria-pressed="false" onclick="window.setDrawerReaction('good')" ontouchend="event.preventDefault();window.setDrawerReaction('good');">Good Feel</button>
@@ -11410,6 +11419,7 @@
              handler -> window.chooseFinalist(), which itself refuses an
              unreacted mattress); _repaintFinalistControls() paints its
              label/state. -->
+        <div class="drawer-section-label drawer-step" id="drawerFinalistLabel" data-step="3">Choose a finalist</div>
         <p class="drawer-finalist-hint" id="drawerFinalistHint"></p>
         <div class="drawer-cta-row" id="drawerCtaRow">
           <button id="drawerFinalistBtn" class="finalist-btn drawer-finalist-btn" data-id="" aria-pressed="false" disabled></button>
@@ -16623,16 +16633,20 @@
       // at stamp scale. Identical geometry by construction — one renderer, one
       // input — and never animated here.
       // A3 audience contract (owner ruling 2026-09-01): Results is a
-      // specialist working surface — the eyebrow names the mode, the title
+      // specialist working surface — the eyebrow names the mode and the title
       // frames the matches as recommended starting points for the guided
-      // trial, and the support line is one concise operator instruction.
+      // trial. (A3.1 retired the support line - see below.)
       document.getElementById('resultsEyebrow').textContent = es ? 'Guía del especialista' : 'Specialist guide';
       document.getElementById('resultsHeadline').innerHTML = es
         ? 'Puntos de partida <span class="accent">recomendados</span>'
         : 'Recommended <span class="accent">starting points</span>';
-      document.getElementById('resultsSubhead').textContent = es
-        ? 'Comienza con la primera opción y compara la comodidad en persona.'
-        : 'Begin with the first match, then compare comfort in person.';
+      // A3.1 (owner directive 2026-09-01, Results budget): the support line
+      // restated what the title, the "Best match" eyebrow and the card's own
+      // "Try this mattress" control already say - retired from render. The
+      // element stays (empty, hidden) for the language switch and the
+      // heading contract.
+      var resultsSubhead = document.getElementById('resultsSubhead');
+      if (resultsSubhead) { resultsSubhead.textContent = ''; resultsSubhead.hidden = true; }
       document.getElementById('buildSystemBtn').textContent = es ? 'Arma el sistema de sueño →' : 'Build the sleep setup →';
       // Slice 6: the control opens the Sleep Plan screen, so it says so —
       // the same label/destination honesty the Sleep Brief CTA adopted
@@ -16918,7 +16932,10 @@
       var promotion = getMattressPromotion(m);
 
       var img = m.imageUrl
-        ? '<img class="noct-toppick-photo" src="' + escapeHtml(m.imageUrl) + '" alt="' + escapeHtml(m.name) + '">'
+        // A3.1: the product name is the adjacent display text, so the photo
+        // is decorative (alt=""); width/height reserve the frame before load.
+        // No loading/decoding hints: the X9 decode hold awaits this image.
+        ? '<img class="noct-toppick-photo" src="' + escapeHtml(m.imageUrl) + '" width="1500" height="1000" alt="">'
         : '<div class="noct-toppick-photo"></div>';
 
       var reasonHtml = reason
@@ -16933,14 +16950,10 @@
         + escapeHtml(saveButtonLabel(isSaved))
         + '</button>';
 
-      // Secondary affordance — the entire card is tappable via the delegated
-      // document-level click handler (see "Mattress result cards → open drawer"
-      // at the bottom of this script). The details button has no inline
-      // handler; clicks bubble through and the card-tap path opens the drawer.
-      // Visual cue only — save remains the primary action.
-      var detailsBtn = '<button type="button" class="noct-card-details">'
-        + (es ? 'Ver detalles →' : 'View match details →')
-        + '</button>';
+      // A3.1 (owner directive 2026-09-01): the "View match details" cue is
+      // retired - the whole card opens the drawer through the delegated
+      // handler and "Try this mattress" names that action; it was also the
+      // one Results control under the 44px floor.
 
       // Compare entry: no inline handler — the delegated handler routes
       // .compare-btn BEFORE the card-open path. State renders from
@@ -16987,7 +17000,6 @@
         +   '</div>'
         +   '<div class="noct-toppick-actions">'
         +     '<div class="noct-card-action-cluster">'
-        +       detailsBtn
         +       compareBtn
         +       tryBtn
         +       saveBtn
@@ -17021,7 +17033,7 @@
           : '';
 
         var img = m.imageUrl
-          ? '<img class="noct-support-photo" src="' + escapeHtml(m.imageUrl) + '" alt="' + escapeHtml(m.name) + '">'
+          ? '<img class="noct-support-photo" src="' + escapeHtml(m.imageUrl) + '" width="1600" height="900" alt="" decoding="async">'
           : '<div class="noct-support-photo"></div>';
 
         var reasonHtml = reason
@@ -17034,10 +17046,6 @@
           + ' onclick="window._toggleSavePick(\'' + escapeHtml(m.id) + '\')"'
           + ' ontouchend="event.preventDefault();window._toggleSavePick(\'' + escapeHtml(m.id) + '\');">'
           + escapeHtml(saveButtonLabel(isSaved))
-          + '</button>';
-
-        var detailsBtn = '<button type="button" class="noct-card-details">'
-          + (es ? 'Ver detalles →' : 'View details →')
           + '</button>';
 
         // Compare entry: same contract as the top pick — delegated handler,
@@ -17070,7 +17078,6 @@
           +   '</div>'
           +   '<div class="noct-support-actions">'
           +     '<div class="noct-card-action-cluster">'
-          +       detailsBtn
           +       compareBtn
           +       tryBtn
           +       saveBtn
@@ -17140,9 +17147,10 @@
       var supports = list.slice(1);
       // A one-entry tier renders no support heading — the heading must not
       // strand above an empty grid.
-      document.getElementById('resultsSupportingHeading').textContent = supports.length === 0
-        ? ''
-        : (currentLang === 'es' ? 'Más opciones para comparar' : 'More directions to compare');
+      // A3.1: the heading over the supporting grid is retired - the cards'
+      // own index-only role labels ("Second match" / "Third match")
+      // structure the row; the element stays for the roster.
+      document.getElementById('resultsSupportingHeading').textContent = '';
       renderSupportingCards(supports, tier);
     }
 
@@ -17256,6 +17264,8 @@
         btn.setAttribute('aria-pressed', on ? 'true' : 'false');
         btn.textContent = finalistButtonLabel(on);
       });
+      // A3.1: the drawer's step rings follow the finalist state too.
+      if (typeof paintDrawerSteps === 'function') paintDrawerSteps(window._currentDrawerMattressId);
     };
 
     // Premium pass reveal. RSA-tap-triggered on the review screen and populated
@@ -17742,17 +17752,22 @@
       // Owner-supplied wording (slice 5b ruling) — do not revise without a
       // reported proposal. Roles are category-level functions of any
       // mattress, never materials, quantities, or model claims.
+      // A3.1 (owner directive 2026-09-01, audience corrections - the
+      // reported proposal): the chip's second sentence addressed the customer
+      // ("Ask your specialist ...") on the specialist's own worksheet; it is
+      // retired and the honesty statement stands alone. Reversible in one
+      // line if the owner prefers the 5b bytes.
       var roles = es
         ? [['Confort', 'La parte que sientes primero.'],
            ['Soporte', 'La estructura más profunda que te sostiene.']]
         : [['Comfort', 'The part you feel first.'],
            ['Support', 'The deeper structure that holds you up.']];
       var chip = es
-        ? 'Los materiales y la construcción exactos varían según el modelo. Pregúntale a tu especialista sobre el modelo que estás probando.'
-        : 'Exact materials and construction vary by model. Ask your specialist about the model you’re trying.';
+        ? 'Los materiales y la construcción exactos varían según el modelo.'
+        : 'Exact materials and construction vary by model.';
       // The section is a SIBLING of the model-specific differentiators,
       // never their child: the generic demonstration must not sit under
-      // "What makes this one different".
+      // the model-specific "Key features" label.
       var heading = es ? 'Demostración de construcción' : 'Construction demonstration';
       // Each region and its role entry wear the SAME fill class — the
       // region-to-role correspondence is one paint in two places, never a
@@ -17981,7 +17996,10 @@
       // A3: this transition hands the journey to the specialist surface, so
       // the status card narrates neutrally instead of addressing the customer.
       elements.title.textContent = es ? 'Abriendo la comparación en tienda' : 'Opening the showroom comparison';
-      elements.subtitle.textContent = es ? 'Las opciones de colchón están listas para comparar.' : 'The mattress matches are ready to compare.';
+      // A3.1: the status card speaks one sentence (the title); the subtitle
+      // restated it inside the same 1.5s card and is retired (element kept
+      // for the roster; the role=status region announces the title alone).
+      elements.subtitle.textContent = '';
       openConsultationReveal(elements, true);
       sessionTimeout(function() {
         var profileScreen = document.getElementById('profileScreen');
@@ -18005,7 +18023,9 @@
           }, 260);
         };
         sessionTimeout(lift, 400);
-        var hero = document.querySelector('#topPickContainer img');
+        // A3.1: bound to the hero photo itself, so no other image that a
+        // future card layout inserts before it can retarget the hold.
+        var hero = document.querySelector('#topPickContainer img.noct-toppick-photo');
         if (hero && typeof hero.decode === 'function') {
           hero.decode().then(lift, lift);
         } else {
@@ -21827,6 +21847,25 @@
         btn.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
       });
     }
+    // A3.1 (owner directive 2026-09-01): the drawer's three-step sequence -
+    // Try, Ask, Choose - is carried by numbered step labels whose rings report
+    // state by glyph and border, never colour alone: plain numerals while the
+    // trial is under way, a check on Try and Ask once a reaction is recorded,
+    // Choose current (heavier ring) until this mattress is the finalist, then
+    // a check. The gate itself is untouched (chooseFinalist and
+    // paintDrawerFinalist own it); this only mirrors their state.
+    function paintDrawerSteps(mattressId) {
+      var reacted = !!(mattressId && (window._mattressReactions || {})[mattressId]);
+      var chosenHere = !!(mattressId && window._favoriteMattressId === mattressId);
+      [['drawerNoticeLabel', reacted ? 'done' : 'plain'],
+       ['drawerReactionLabel', reacted ? 'done' : 'plain'],
+       ['drawerFinalistLabel', chosenHere ? 'done' : (reacted ? 'current' : 'plain')]].forEach(function(pair) {
+        var el = document.getElementById(pair[0]);
+        if (!el || !el.classList) return;
+        el.classList.toggle('is-done', pair[1] === 'done');
+        el.classList.toggle('is-current', pair[1] === 'current');
+      });
+    }
     // Loop-A2: ONE painter for the drawer footer's finalist gate. Availability
     // follows the recorded reaction; label/aria-pressed/chosen come from the
     // shared repaint so the drawer, Compare and Summary can never disagree.
@@ -21844,6 +21883,7 @@
         hint.textContent = t('drawer.finalist_hint');
         hint.hidden = reacted;
       }
+      paintDrawerSteps(mattressId);
       if (typeof window._repaintFinalistControls === 'function') window._repaintFinalistControls();
     };
     window.setDrawerReaction = function(reaction) {
@@ -23123,6 +23163,10 @@
       // Loop-A2: the drawer's finalist control is static markup; reset its
       // per-customer binding and re-arm the gate.
       { id: 'drawerFinalistBtn', remove: ['chosen'], attrs: { 'aria-pressed': 'false', 'aria-disabled': 'true', 'data-id': '' } },
+      // A3.1: the drawer's step rings are state markers on persistent nodes.
+      { id: 'drawerNoticeLabel', remove: ['is-done', 'is-current'] },
+      { id: 'drawerReactionLabel', remove: ['is-done', 'is-current'] },
+      { id: 'drawerFinalistLabel', remove: ['is-done', 'is-current'] },
       // 0.5: the trial-priorities section returns to hidden on wipe, so even a
       // path that showed hf2 without re-rendering could not expose the prior
       // customer's label over a cleared list.
@@ -23558,7 +23602,7 @@
         var reaction = (window._mattressReactions || {})[m.id];
         return {
           head: '<div class="cmp-head" role="columnheader">'
-            + (m.imageUrl ? '<div class="cmp-head-img"><img src="' + m.imageUrl + '" alt="' + escapeHtml(m.name) + '"></div>' : '')
+            + (m.imageUrl ? '<div class="cmp-head-img"><img src="' + escapeHtml(m.imageUrl) + '" width="1500" height="1000" alt="" decoding="async"></div>' : '')
             + '<div class="cmp-head-name">' + escapeHtml(m.name) + ' <span class="price-tier">' + priceTierSymbol(data.tier) + '</span></div>'
             + '<div class="cmp-head-brand">' + escapeHtml(m.brand + (m.subBrand ? ' · ' + m.subBrand : '')) + '</div>'
             // Loop-A2: Compare REFLECTS the chosen finalist (a text tag) and
@@ -23742,12 +23786,13 @@
       var soBtn = e.target.closest('.js-start-over');
       if (soBtn) { e.preventDefault(); window.requestStartOver(); return; }
 
-      // Explicit details button — opens the drawer via the same helper as a card tap.
-      var detailsBtn = e.target.closest('.noct-card-details, .noct-card-try');
-      if (detailsBtn) {
+      // Explicit "Try this mattress" control — opens the drawer via the same
+      // helper as a card tap (the details cue was retired by A3.1).
+      var tryCtl = e.target.closest('.noct-card-try');
+      if (tryCtl) {
         e.preventDefault();
         e.stopPropagation();
-        openResultCardDrawer(detailsBtn.closest('.noct-toppick, .noct-support-card'));
+        openResultCardDrawer(tryCtl.closest('.noct-toppick, .noct-support-card'));
         return;
       }
 
@@ -23986,9 +24031,13 @@
       var heroEl = document.getElementById('drawerHeroImg');
       var imgSrc = m.imageUrl;
       if (imgSrc) {
-        imgEl.innerHTML = '<img src="'+imgSrc+'" alt="'+m.name+'">';
+        // A3.1: one drawer image - the hero, on the white mat, whole product
+        // visible (CSS contain), frame reserved by width/height, alt empty
+        // because #drawerName is the dialog's accessible name. The hidden
+        // header thumb no longer fetches a duplicate.
+        imgEl.innerHTML = '';
         imgEl.className = 'drawer-mattress-img';
-        heroEl.innerHTML = '<img src="'+imgSrc+'" alt="'+m.name+'" style="width:100%;height:100%;object-fit:cover;display:block;">';
+        heroEl.innerHTML = '<img src="' + escapeHtml(imgSrc) + '" width="1500" height="1000" alt="">';
       } else {
         imgEl.textContent = 'bed';
         imgEl.className = 'drawer-mattress-img no-img';
@@ -23996,9 +24045,13 @@
       }
 
       document.getElementById('drawerBrand').textContent = m.brand + (m.subBrand ? ' - ' + m.subBrand : '');
-      var priceSym = priceTierSymbol(d.tier || '');
-      document.getElementById('drawerName').innerHTML = m.name + (priceSym ? ' <span class="price-tier">' + priceSym + '</span>' : '');
-      document.getElementById('drawerSub').textContent = d.firmFeel + ' · ' + mattressResponseLabel(m);
+      // A3.1: the tier-derived "$$$" glyph read as a price badge beside the
+      // "Gold" chip that already carries the tier - retired from the drawer
+      // (priceTierSymbol keeps its Compare consumer); the sub line repeated
+      // the feel anchor two lines below - retired, element kept hidden.
+      document.getElementById('drawerName').textContent = m.name;
+      var drawerSubEl = document.getElementById('drawerSub');
+      if (drawerSubEl) { drawerSubEl.textContent = ''; drawerSubEl.hidden = true; }
       var tierNames = currentLang === 'es'
         ? { gold: 'Oro', silver: 'Plata', bronze: 'Bronce' }
         : { gold: 'Gold', silver: 'Silver', bronze: 'Bronze' };
@@ -24023,9 +24076,10 @@
       var _diffListEl = document.getElementById('drawerDifferentiators');
       _diffLabelEl.hidden = _diffItems.length === 0;
       _diffListEl.hidden = _diffItems.length === 0;
+      // A3.1: a label, not a sentence - the Compare row's own vocabulary.
       _diffLabelEl.textContent = currentLang === 'es'
-        ? 'Lo que hace diferente a este'
-        : 'What makes this one different';
+        ? 'Características clave'
+        : 'Key features';
       _diffListEl.innerHTML = _diffItems.map(function(item) {
         return '<div class="drawer-differentiator">'
           + '<div class="drawer-differentiator-title">' + escapeHtml(item.title) + '</div>'
@@ -24058,15 +24112,20 @@
       }
 
       // A3 audience contract: the drawer is the specialist's trial worksheet.
-      // The prompts below stay spoken lines for the customer on the mattress;
-      // the labels name the operator's job (guide, then record).
-      document.getElementById('drawerNoticeLabel').textContent = currentLang === 'es' ? 'Durante la prueba, observa...' : 'During the trial, notice...';
-      document.getElementById('drawerTryPrompts').innerHTML = getMattressTrialPrompts(m).map(function(prompt) {
+      // A3.1 (owner directive 2026-09-01): three numbered steps - Try, Ask,
+      // Choose - instead of three narrations of one trial. ONE spoken prompt
+      // (the engine's model-specific first line; the function still produces
+      // two); the reaction buttons ARE the recording, so step 2 is the
+      // question alone.
+      document.getElementById('drawerNoticeLabel').textContent = currentLang === 'es' ? 'Probar' : 'Try';
+      document.getElementById('drawerTryPrompts').innerHTML = getMattressTrialPrompts(m).slice(0, 1).map(function(prompt) {
         return '<div class="drawer-try-prompt">' + escapeHtml(prompt) + '</div>';
       }).join('');
       document.getElementById('drawerReactionLabel').textContent = currentLang === 'es'
-        ? 'Registra la reacción del cliente — pregunta: “¿Cómo se sintió este colchón?”'
-        : 'Record the customer’s reaction — ask: “How did this mattress feel?”';
+        ? 'Pregunta: “¿Cómo se sintió este colchón?”'
+        : 'Ask: “How did this mattress feel?”';
+      var drawerFinalistLabel = document.getElementById('drawerFinalistLabel');
+      if (drawerFinalistLabel) drawerFinalistLabel.textContent = currentLang === 'es' ? 'Elegir finalista' : 'Choose a finalist';
       paintDrawerReactions(mattressId);
 
       // opts.contentOnly — relocalise an ALREADY-OPEN drawer without touching

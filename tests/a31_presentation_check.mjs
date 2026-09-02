@@ -80,6 +80,9 @@ function mustReplace(src, find, replace) {
   if (out === src) throw new Error('control mutation did not apply: ' + String(find).slice(0, 60));
   return out;
 }
+// LIVE SOURCE: index.html with HTML comments and full-line JS comments
+// removed, so a retired literal is judged on code that can execute or render.
+const liveHtml = norm.replace(/<!--[\s\S]*?-->/g, '').split('\n').filter((l) => !/^\s*\/\//.test(l)).join('\n');
 const SECOND_PERSON_EN = /\b(you|your|yours|yourself)\b/i;
 const SECOND_PERSON_ES = /(?<!\p{L})(tu|tus|te|ti|tú|usted|ustedes)(?!\p{L})/iu;
 
@@ -293,6 +296,137 @@ const PERSONA = { trigger: 'pain', mattress_size: 'queen', partner_sleep: 'partn
     (s) => mustReplace(s, "      if (!list.length) return fallback || '';", "      return fallback || '';"));
   ok('control: an adapter that stops mapping is detected (the customer-voiced engine string would leak to the specialist card)',
     passthrough === 'Targets the back pain you mentioned');
+}
+
+// ======================================================= 4. Results (A3.1 c2)
+section('Results — copy budget, product hero, image attributes, decode hold');
+{
+  const topSrc = extractFunction('function renderTopPickCard(m, tier)');
+  const supSrc = extractFunction('function renderSupportingCards(mattresses, tier)');
+  const chromeSrc = extractFunction('function renderResultsChrome()');
+  const renderSrc = extractFunction('function _renderResults()');
+  ok('Results sources extracted', !!topSrc && !!supSrc && !!chromeSrc && !!renderSrc);
+  ok('the support sentence is retired: renderer empties + hides #resultsSubhead; static is hidden and empty',
+    chromeSrc.includes("resultsSubhead.textContent = ''; resultsSubhead.hidden = true;")
+    && /id="resultsSubhead" hidden><\/p>/.test(norm)
+    && !norm.includes('Begin with the first match, then compare comfort in person.'));
+  ok('the supporting-grid heading is retired (the index-only role labels structure the row)',
+    renderSrc.includes("document.getElementById('resultsSupportingHeading').textContent = '';")
+    && !norm.includes('More directions to compare'));
+  ok('no card template renders the "View match details" cue (retired: the card and Try open the drawer)',
+    !topSrc.includes('noct-card-details') && !supSrc.includes('noct-card-details')
+    && !/\.noct-card-details \{/.test(norm));
+  ok('the action cluster reads compare -> Try -> save in both templates',
+    /\+\s+compareBtn\s+\+\s+tryBtn\s+\+\s+saveBtn/.test(topSrc) && /\+\s+compareBtn\s+\+\s+tryBtn\s+\+\s+saveBtn/.test(supSrc));
+  ok('the delegated handler routes the Try control (and no details selector) to the drawer',
+    norm.includes("var tryCtl = e.target.closest('.noct-card-try');") && !norm.includes(".closest('.noct-card-details"));
+  ok('the hero photo is decorative beside its name and reserves its frame (alt="", width/height), with no loading/decoding hint (the X9 hold awaits it)',
+    topSrc.includes('<img class="noct-toppick-photo" src="\' + escapeHtml(m.imageUrl) + \'" width="1500" height="1000" alt="">')
+    && !/noct-toppick-photo[^>]*loading=/.test(topSrc) && !/noct-toppick-photo[^>]*decoding=/.test(topSrc));
+  ok('the support photos are decorative, reserved and decoded off the main path',
+    supSrc.includes('<img class="noct-support-photo" src="\' + escapeHtml(m.imageUrl) + \'" width="1600" height="900" alt="" decoding="async">'));
+  ok('no product image anywhere is lazy-loaded (first-fold identity never waits)',
+    !/loading="lazy"/.test(norm));
+  ok('the landscape hero frame is a 3:2 uncropped frame on the mat (contain), not a column-stretched cover crop',
+    /\.noct-toppick-photo \{\s*aspect-ratio: 3 \/ 2;\s*width: 100%;\s*height: auto;\s*min-height: 0;\s*align-self: center;\s*object-fit: contain;\s*\}/.test(norm));
+  ok('the X9 decode hold awaits the hero photo itself, never "the first img in the container"',
+    norm.includes("document.querySelector('#topPickContainer img.noct-toppick-photo')")
+    && !norm.includes("document.querySelector('#topPickContainer img')"));
+  ok('the Brief->Results status card speaks one sentence (subtitle emptied, element kept)',
+    norm.includes("elements.subtitle.textContent = '';") && /'resultsRevealTitle', 'resultsRevealSubtitle'/.test(norm));
+}
+
+// ======================================================== 5. Drawer (A3.1 c2)
+section('Trial drawer — three numbered steps, one prompt, hero frame, retired duplicates');
+{
+  const openSrc = extractFunction('window.openMattressDrawer = function(mattressId, orderList, opts)');
+  const stepsSrc = extractFunction('function paintDrawerSteps(mattressId)');
+  const gateSrc = extractFunction('window.paintDrawerFinalist = function(mattressId)');
+  const repaintSrc = extractFunction('window._repaintFinalistControls = function()');
+  ok('drawer sources extracted', !!openSrc && !!stepsSrc && !!gateSrc && !!repaintSrc);
+  const iTry = norm.indexOf('id="drawerNoticeLabel" data-step="1"');
+  const iAsk = norm.indexOf('id="drawerReactionLabel" data-step="2"');
+  const iChoose = norm.indexOf('id="drawerFinalistLabel" data-step="3"');
+  const iCta = norm.indexOf('id="drawerCtaRow"');
+  ok('the three step labels are numbered 1-2-3 in source order and precede the finalist control',
+    iTry > -1 && iAsk > iTry && iChoose > iAsk && iCta > iChoose
+    && /class="drawer-section-label drawer-step" id="drawerNoticeLabel" data-step="1">Try</.test(norm)
+    && /class="drawer-section-label drawer-step" id="drawerFinalistLabel" data-step="3">Choose a finalist</.test(norm));
+  ok('the renderer writes the step labels in both languages (question kept explicit; no "record" narration)',
+    openSrc.includes("currentLang === 'es' ? 'Probar' : 'Try'")
+    && openSrc.includes("? 'Pregunta: “¿Cómo se sintió este colchón?”'") && openSrc.includes(": 'Ask: “How did this mattress feel?”'")
+    && openSrc.includes("currentLang === 'es' ? 'Elegir finalista' : 'Choose a finalist'")
+    && !openSrc.includes('Record the customer') && !openSrc.includes('During the trial'));
+  ok('exactly one spoken trial prompt renders (the engine still produces two; the render takes the model-specific first line)',
+    openSrc.includes('getMattressTrialPrompts(m).slice(0, 1).map(')
+    && /return prompts\.slice\(0, 2\);/.test(norm));
+  ok('the finalist hint is the ruled short line in both dictionaries',
+    dictEn['drawer.finalist_hint'] === 'Record a reaction before choosing a finalist.'
+    && dictEs['drawer.finalist_hint'] === 'Registra una reacción antes de elegir un finalista.');
+  ok('the drawer name carries no price-tier glyph and the duplicate sub line is retired (hidden, empty)',
+    openSrc.includes("document.getElementById('drawerName').textContent = m.name;")
+    && openSrc.includes("drawerSubEl.textContent = ''; drawerSubEl.hidden = true;")
+    && !openSrc.includes('priceTierSymbol('));
+  ok('priceTierSymbol keeps its Compare consumer',
+    (norm.match(/priceTierSymbol\(/g) || []).length >= 2);
+  ok('the drawer hero is the one drawer image: mat frame (contain), reserved, decorative; the hidden thumb fetches nothing',
+    openSrc.includes(`heroEl.innerHTML = '<img src="' + escapeHtml(imgSrc) + '" width="1500" height="1000" alt="">';`)
+    && openSrc.includes("imgEl.innerHTML = '';")
+    && /\.drawer-hero img \{ width:100%; height:100%; object-fit:contain; display:block; \}/.test(norm)
+    && /\.drawer-hero \{[^}]*aspect-ratio: 3 \/ 2;/.test(norm));
+  ok('the differentiators label is a label, in the Compare row\'s vocabulary (EN + ES + static)',
+    openSrc.includes("? 'Características clave'") && openSrc.includes(": 'Key features'")
+    && /id="drawerDifferentiatorsLabel">Key features</.test(norm) && !liveHtml.includes('What makes this one different'));
+  ok('the drawer Back control reuses the Plan/Summary dictionary pair (one string, three consumers)',
+    /data-i18n="plan\.back_to_matches">← Back to matches<\/button>/.test(norm) && dictEn['plan.back_to_matches'] === '← Back to matches');
+  ok('the construction chip keeps the honesty statement and drops the customer-directed clause (EN + ES)',
+    /\? 'Los materiales y la construcción exactos varían según el modelo\.'\n        : 'Exact materials and construction vary by model\.';/.test(norm)
+    && !liveHtml.includes('Ask your specialist about the model'));
+  ok('the step rings are painted from the gate (paintDrawerFinalist) and from every finalist repaint',
+    gateSrc.includes('paintDrawerSteps(mattressId);') && repaintSrc.includes('paintDrawerSteps(window._currentDrawerMattressId);'));
+  ok('the step rings join the wipe (persistent nodes, state classes stripped)',
+    /\{ id: 'drawerNoticeLabel', remove: \['is-done', 'is-current'\] \},\s*\{ id: 'drawerReactionLabel', remove: \['is-done', 'is-current'\] \},\s*\{ id: 'drawerFinalistLabel', remove: \['is-done', 'is-current'\] \},/.test(norm));
+  ok('the ring is a border + glyph (never colour alone): numeral by attribute, check when done, heavier ring when current',
+    /\.drawer-step::before \{[^}]*content: attr\(data-step\);[^}]*border:1\.5px solid currentColor;/.test(norm)
+    && /\.drawer-step\.is-done::before \{ content:'\\2713'; \}/.test(norm)
+    && /\.drawer-step\.is-current::before \{ border-width:2\.5px; \}/.test(norm));
+
+  // EXECUTED: the step painter across the three gate states + a control.
+  function runSteps({ reactions = {}, fav = '', id = 'g5', mutate = null } = {}) {
+    const els = new Map();
+    const el = (eid) => { const set = new Set(); return { id: eid, classList: {
+      toggle(c, force) { const on = force === undefined ? !set.has(c) : !!force; if (on) set.add(c); else set.delete(c); return on; },
+      contains(c) { return set.has(c); } } }; };
+    const doc = { getElementById(eid) { if (!els.has(eid)) els.set(eid, el(eid)); return els.get(eid); } };
+    let src = stepsSrc + '\nout.run = function() { paintDrawerSteps(id); };';
+    if (mutate) src = mutate(src);
+    const out = {};
+    new Function('window', 'document', 'id', 'out', '"use strict";' + src)({ _mattressReactions: reactions, _favoriteMattressId: fav }, doc, id, out);
+    out.run();
+    const state = (eid) => { const c = els.get(eid).classList; return c.contains('is-done') ? 'done' : (c.contains('is-current') ? 'current' : 'plain'); };
+    return { try: state('drawerNoticeLabel'), ask: state('drawerReactionLabel'), choose: state('drawerFinalistLabel') };
+  }
+  const before = runSteps();
+  ok('before a reaction: every ring is a plain numeral (the trial is under way; nothing is claimed done)',
+    before.try === 'plain' && before.ask === 'plain' && before.choose === 'plain', JSON.stringify(before));
+  const after = runSteps({ reactions: { g5: 'good' } });
+  ok('after a reaction: Try and Ask are done, Choose is current',
+    after.try === 'done' && after.ask === 'done' && after.choose === 'current', JSON.stringify(after));
+  const chosen = runSteps({ reactions: { g5: 'good' }, fav: 'g5' });
+  ok('after choosing this mattress: all three done',
+    chosen.try === 'done' && chosen.ask === 'done' && chosen.choose === 'done', JSON.stringify(chosen));
+  const other = runSteps({ reactions: { g5: 'good' }, fav: 'g7' });
+  ok('a finalist chosen elsewhere does not mark this mattress\'s Choose step done',
+    other.choose === 'current', JSON.stringify(other));
+  const control = runSteps({ reactions: { g5: 'good' }, mutate: (s) => mustReplace(s, "var reacted = !!(mattressId && (window._mattressReactions || {})[mattressId]);", 'var reacted = false;') });
+  ok('control: a painter that ignores the reaction is detected', control.try === 'plain' && control.choose === 'plain', JSON.stringify(control));
+}
+
+// ======================================================== 6. Compare (A3.1 c2)
+section('Compare — column head image attributes');
+{
+  ok('the Compare column-head photo is decorative beside its name, reserved, decoded async, and its src is escaped',
+    norm.includes(`'<div class="cmp-head-img"><img src="' + escapeHtml(m.imageUrl) + '" width="1500" height="1000" alt="" decoding="async"></div>'`));
 }
 
 // ------------------------------------------------------------------- summary

@@ -77,9 +77,10 @@ for (const [tag, src] of [['top pick', topPickSrc], ['supporting', supportSrc]])
   // Loop-A2 (owner ruling 2026-09-01): the card's finalist producer is replaced
   // by "Try this mattress" (opens the trial drawer); compare keeps its place
   // between details and that trial action, ahead of save.
-  ok(`${tag}: compare sits inside the action cluster between details and the Try control, ahead of save`,
-    /detailsBtn\s*'?\s*\+\s*compareBtn\s*\+\s*tryBtn\s*\+\s*saveBtn/.test(src.replace(/\s+/g, ' ')) ||
-    /\+\s+detailsBtn\s+\+\s+compareBtn\s+\+\s+tryBtn\s+\+\s+saveBtn/.test(src));
+  // A3.1 (owner directive 2026-09-01): the details cue is retired; compare
+  // opens the cluster, ahead of the Try control and save.
+  ok(`${tag}: compare opens the action cluster, ahead of the Try control and save (no details cue)`,
+    /\+\s+compareBtn\s+\+\s+tryBtn\s+\+\s+saveBtn/.test(src) && !/detailsBtn/.test(src));
   ok(`${tag}: compare control carries NO inline handler (delegated path only)`,
     !/compareBtn = [^;]*onclick/.test(src.replace(/\n/g, ' ')));
 }

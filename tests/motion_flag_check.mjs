@@ -946,8 +946,11 @@ ok('the scene has no JS animation machinery (no frames, no timers in its code)',
     return !/sessionFrame\s*\(|sessionTimeout\s*\(|setInterval|requestAnimationFrame/.test(src);
   })());
 ok('owner-ruled variance chip preserved verbatim in both languages (5b)',
-  spikeSrc.includes('Exact materials and construction vary by model. Ask your specialist about the model you’re trying.') &&
-  spikeSrc.includes('Los materiales y la construcción exactos varían según el modelo. Pregúntale a tu especialista sobre el modelo que estás probando.'));
+  spikeSrc.includes('Exact materials and construction vary by model.') &&
+  // A3.1 (owner directive 2026-09-01, audience corrections): the chip's
+  // customer-directed second sentence is retired in both languages.
+  spikeSrc.includes('Los materiales y la construcción exactos varían según el modelo.') &&
+  !spikeSrc.includes('Ask your specialist about the model'));
 ok('owner-ruled two-role wording preserved verbatim in both languages (5b)',
   ['Comfort', 'The part you feel first.', 'Support', 'The deeper structure that holds you up.',
    'Confort', 'La parte que sientes primero.', 'Soporte', 'La estructura más profunda que te sostiene.']
@@ -962,7 +965,7 @@ ok('lab button labels preserved in both languages',
 ok('new strings carry no quantities and no condition/performance language',
   ['Comfort', 'The part you feel first.', 'Support', 'The deeper structure that holds you up.',
    'Separate the layers', 'Reassemble the layers', 'Construction demonstration',
-   'Exact materials and construction vary by model. Ask your specialist about the model you’re trying.']
+   'Exact materials and construction vary by model.']
     .every((t) => !/\d/.test(t) && !/coil count|inch|cm|percent|%|degree|patent|antimicrobial|snor|apnea|reflux|pain|circulat/i.test(t)));
 ok('the stack is fully generic — markup takes no mattress input and reads no product data',
   /dfmConstructionMarkup = function\(\)/.test(spikeSrc) &&
@@ -1183,7 +1186,8 @@ function makeResultsRevealEnv({ reduced = false, hero = 'pending' } = {}) {
   };
   const doc = {
     getElementById: (id) => els[id] || null,
-    querySelector: (sel) => (sel === '#topPickContainer img' && hero !== 'none') ? heroEl : null
+    // A3.1: the hold binds to the hero photo itself (img.noct-toppick-photo).
+    querySelector: (sel) => (sel === '#topPickContainer img.noct-toppick-photo' && hero !== 'none') ? heroEl : null
   };
   const api = new Function('window', 'document', 'sessionTimeout', 'currentLang', 'dfmReducedMotion',
     'getConsultationRevealElements', 'openConsultationReveal', 'closeConsultationReveal',

@@ -209,31 +209,37 @@ function makeHandoffEnv({ lang = 'en', name = '', mutate = null } = {}) {
 section('specialist surfaces — A3 evidence vocabulary, no customer second person');
 {
   const chrome = extractFunction('function renderResultsChrome()');
-  ok('Results: eyebrow / title / support carry the ruled specialist framing (EN + ES)',
+  // A3.1 (owner directive 2026-09-01): the support sentence is retired - the
+  // title, the "Best match" eyebrow and "Try this mattress" already say it.
+  ok('Results: eyebrow / title carry the ruled specialist framing (EN + ES); the support line is retired',
     chrome.includes("es ? 'Guía del especialista' : 'Specialist guide'")
     && chrome.includes("'Recommended <span class=\"accent\">starting points</span>'")
-    && chrome.includes("'Begin with the first match, then compare comfort in person.'")
     && chrome.includes("'Puntos de partida <span class=\"accent\">recomendados</span>'")
-    && chrome.includes("'Comienza con la primera opción y compara la comodidad en persona.'"));
+    && chrome.includes("resultsSubhead.textContent = ''; resultsSubhead.hidden = true;")
+    && !chrome.includes('Begin with the first match'));
   ok('Results statics match the rendered strings (no two-narrator flash)',
     /id="resultsEyebrow">Specialist guide</.test(norm)
     && /id="resultsHeadline">Recommended <span class="accent">starting points<\/span></.test(norm)
-    && /id="resultsSubhead">Begin with the first match, then compare comfort in person\.</.test(norm));
+    && /id="resultsSubhead" hidden><\/p>/.test(norm));
   ok('the trial-focus label is neutral evidence ("Trial focus", not "Your trial focus")',
     norm.includes("(es ? 'Enfoque de la prueba' : 'Trial focus')"));
-  ok('the drawer labels name the operator’s job; the spoken question is explicit',
-    norm.includes("? 'Registra la reacción del cliente — pregunta: “¿Cómo se sintió este colchón?”'")
-    && norm.includes(": 'Record the customer’s reaction — ask: “How did this mattress feel?”'")
-    && norm.includes("? 'Durante la prueba, observa...' : 'During the trial, notice...'"));
+  // A3.1: three numbered steps - Try, Ask, Choose - replace the three
+  // narrations of one trial; the spoken question stays explicit.
+  ok('the drawer steps name the operator’s job in three numbered labels; the spoken question is explicit',
+    norm.includes("? 'Pregunta: “¿Cómo se sintió este colchón?”'")
+    && norm.includes(": 'Ask: “How did this mattress feel?”'")
+    && norm.includes("currentLang === 'es' ? 'Probar' : 'Try'")
+    && norm.includes("currentLang === 'es' ? 'Elegir finalista' : 'Choose a finalist'"));
   ok('the drawer finalist hint is operator voice in both dictionaries',
-    dictEn['drawer.finalist_hint'] === 'Record a reaction to choose this mattress as the finalist.'
-    && dictEs['drawer.finalist_hint'] === 'Registra una reacción para elegir este colchón como finalista.');
+    dictEn['drawer.finalist_hint'] === 'Record a reaction before choosing a finalist.'
+    && dictEs['drawer.finalist_hint'] === 'Registra una reacción antes de elegir un finalista.');
   ok('Compare reports observed trial evidence',
     norm.includes("label: _esCmp ? 'Reacción observada' : 'Observed reaction'")
     && dictEn['compare.modal_title'] === 'Compare shortlisted mattresses');
-  ok('the Brief->Results status card narrates neutrally',
+  ok('the Brief->Results status card narrates neutrally, in one sentence (A3.1 retired the subtitle)',
     norm.includes("es ? 'Abriendo la comparación en tienda' : 'Opening the showroom comparison'")
-    && norm.includes("es ? 'Las opciones de colchón están listas para comparar.' : 'The mattress matches are ready to compare.'"));
+    && norm.includes("elements.subtitle.textContent = '';")
+    && !norm.includes('The mattress matches are ready to compare.'));
   ok('the Sleep System header is the ruled specialist frame (EN + ES)',
     norm.includes("sleepSystemEyebrow: { en: 'Specialist guide', es: 'Guía del especialista' }")
     && norm.includes("sleepSystemTitle: { en: 'Build the sleep setup', es: 'Arma el sistema de sueño' }")

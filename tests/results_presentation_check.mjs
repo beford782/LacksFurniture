@@ -201,8 +201,10 @@ section('hierarchy — hero is list[0], supports are list.slice(1), no presentat
     && (supports.match(/noct-support-role/g) || []).length === 2);
   ok('promotion cue receives the FULL engine list (not a slice)',
     env.offerCue.calls.length === 1 && env.offerCue.calls[0].length === 4);
-  ok('support heading renders when supports exist',
-    env.get('resultsSupportingHeading').textContent.length > 0);
+  // A3.1 (owner directive 2026-09-01): the heading over the supporting grid
+  // is retired - the index-only role labels structure the row.
+  ok('support heading is retired even when supports exist (A3.1)',
+    env.get('resultsSupportingHeading').textContent === '');
 }
 {
   const env = makeResultsEnv({ list: [M('solo')] });
