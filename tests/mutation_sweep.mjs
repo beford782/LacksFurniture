@@ -388,8 +388,8 @@ const MUTATIONS = [
 
   // --- the Consultation Summary render -------------------------------------
   ["the hf2 render reverses the stored order",
-    "list.innerHTML = valid.map(function(item) {",
-    "list.innerHTML = valid.slice().reverse().map(function(item) {", PRIORITIES],
+    "list.innerHTML = valid.map(function(item, i) {",
+    "list.innerHTML = valid.slice().reverse().map(function(item, i) {", PRIORITIES],
   ["the hf2 section never hides on empty state",
     "list.innerHTML = '';\n        section.style.display = 'none';\n        return;",
     "list.innerHTML = '';\n        section.style.display = '';\n        return;", PRIORITIES],
@@ -564,8 +564,9 @@ const MUTATIONS = [
     "consultation: resolveConsultationSummary(),",
     "consultation: (function(vm) { vm.who = vm.who + '.'; return vm; })(resolveConsultationSummary()),",
     CONSULT],
+  // A3.1 (ruling 4): the rows render the recap projection.
   ["the hf2 rows stop rendering the resolved strings",
-    "var vm = resolveConsultationSummary();",
+    "var vm = resolveConsultationRecap();",
     "var vm = { context: '', who: '', profile: '' };",
     CONSULT],
 
@@ -756,12 +757,13 @@ const MUTATIONS = [
   // --- compare entry point (owner-authorized slice) ------------------------
   // (Slice 5 C2: the clusters gained the finalist control between compare and
   // save; the find-strings follow the new shape.)
+  // A3.1 (c2): the details cue is retired; the cluster reads compare -> Try -> save.
   ["compare entry: the top-pick card loses its compare control",
-    "+       detailsBtn\n        +       compareBtn\n        +       tryBtn\n        +       saveBtn",
-    "+       detailsBtn\n        +       tryBtn\n        +       saveBtn", CMPE],
+    "+       compareBtn\n        +       tryBtn\n        +       saveBtn",
+    "+       tryBtn\n        +       saveBtn", CMPE],
   ["compare entry: the supporting cards lose their compare control",
-    "+       detailsBtn\n          +       compareBtn\n          +       tryBtn\n          +       saveBtn",
-    "+       detailsBtn\n          +       tryBtn\n          +       saveBtn", CMPE],
+    "+       compareBtn\n          +       tryBtn\n          +       saveBtn",
+    "+       tryBtn\n          +       saveBtn", CMPE],
   ["compare entry: the tray go label loses its Spanish draft",
     "go.textContent = currentLang === 'es' ? 'Comparar →' : 'Compare →';",
     "go.textContent = 'Compare →';", CMPE],
@@ -2008,9 +2010,12 @@ const MUTATIONS = [
     "          en: 'Reported priority: side sleeper \u2014 the head should fill the shoulder-to-mattress gap.',",
     "          en: 'Reported priority: side sleeper \u2014 your head should fill the shoulder-to-mattress gap.',",
     SLEEP],
-  ["1.4: the salesperson procedure region loses its accessible name",
-    "      guidance.setAttribute('aria-label', guidanceKind);\n",
-    "", SLEEP],
+  // A3.1 (c3): the panel is retired - it must stay unnamed while empty; an
+  // accessible name on an empty region is the regression the pins catch.
+  ["A3.1: the retired procedure region regains an accessible name while empty",
+    "      else guidance.removeAttribute('aria-label');\n",
+    "      else guidance.setAttribute('aria-label', 'note');\n",
+    SLEEP],
 
   // --- Item 1.4 close-out (owner ruling 2026-08-25) -------------------------
   // Three CSS-only repairs and one copy repair. Each entry reverts exactly
@@ -2089,8 +2094,8 @@ const MUTATIONS = [
     "reasons.push(reasonMap.snoring); }",
     A31],
   ["A3.1 ruling 3: the featured card renders the engine string instead of the adapter",
-    "          : specialistReasonLabel(primary.reasonKeys, primary.reasons && primary.reasons[0] ? primary.reasons[0] : '');",
-    "          : (primary.reasons && primary.reasons[0] ? primary.reasons[0] : '');",
+    "        var reason = specialistReasonLabel(primary.reasonKeys, primary.reasons && primary.reasons[0] ? primary.reasons[0] : '');",
+    "        var reason = (primary.reasons && primary.reasons[0] ? primary.reasons[0] : '');",
     A31.concat(SLEEP)],
   ["A3.1 Results: the support sentence returns to the specialist screen",
     "      if (resultsSubhead) { resultsSubhead.textContent = ''; resultsSubhead.hidden = true; }",

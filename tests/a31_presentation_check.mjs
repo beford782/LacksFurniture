@@ -468,7 +468,10 @@ section('Sleep System — retired note panel, in-step lines, trial diagram, F1 f
     && mainSrc.includes('sleep-system__base-row-copy'));
   // Trial diagram.
   ok('the Flat ghost is drawn behind the articulated panels whenever the position is not Flat, and the stage label names the comparison',
-    demoSrc.includes("(selected.id !== 'flat'") && demoSrc.includes('sleep-system__bed-ghost--head')
+    // The ghost markup must sit directly under its own Flat gate (a sweep
+    // survivor showed the stage-label ternary alone satisfied a looser test).
+    /\(selected\.id !== 'flat'\s*\n\s*\? '<span class="sleep-system__bed-ghost sleep-system__bed-ghost--head"><\/span>/.test(demoSrc)
+    && !/\(false\s*\n\s*\? '<span class="sleep-system__bed-ghost/.test(demoSrc)
     && demoSrc.includes("sleepSystemText({ en: ' vs Flat', es: ' vs Plana' })")
     && /\.sleep-system__bed-ghost \{[^}]*border: 1px dashed #8B7B67;/.test(norm));
   ok('the demo eyebrow and the lift sentence are retired; the position title is the one instruction',
