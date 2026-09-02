@@ -912,6 +912,15 @@ if (gate("renderSleepPlan", RENDER_SRCS.every(Boolean) && !!FALLBACK_SRC && !!RE
     // The recommended and none sentences are verbatim. Every cell asserts the
     // pair; nothing is dropped.
     const payOf = (e) => e.hf2StatusPayment ? e.hf2StatusPayment.textContent : "";
+    // A3.1 synthesis (owner counterprompt 2026-09-02, ruling 5 + change 4): the
+    // payment preference is no longer composed into the status block at all -
+    // the financing module's preference row is the one payment surface. Every
+    // former "pairs with payment" cell now asserts the node is empty and
+    // hidden in that state (the lead sentence assertions are unchanged).
+    check("synthesis: the lead renderer derives no payment sentence (no hf2.pay_state, no payment-path read)",
+      !/hf2\.pay_state|finPaymentPaths\(\)|FC\('preference/.test(leadSrc));
+    check("synthesis: the financing module keeps the preference row (handoff + sheet)",
+      (norm.match(/FC\('paymentPreferenceLabel'\)/g) || []).length === 2);
     // A3.1 (owner directive 2026-09-01): the brand/tier metadata line leaves
     // the status block (the saved-pick card keeps the tier honesty); the node
     // stays, empty and hidden.
@@ -927,19 +936,19 @@ if (gate("renderSleepPlan", RENDER_SRCS.every(Boolean) && !!FALLBACK_SRC && !!RE
     els = makeLeadEnv({ results: RESULTS, payPref: null });
     check("no finalist + engine pick + nothing selected: recommended sentence (verbatim) paired with 'Not selected'",
       els.hf2LeadLine.textContent === "No finalist selected yet — Restonic · Cloud Nine (" + dictEn["results.tier_gold"] + " · " + dictEn["results.match_lead"] + ") is the recommended starting point."
-      && payOf(els) === "Payment preference: Not selected." && els.hf2StatusPayment.hidden === false
+      && payOf(els) === "" && els.hf2StatusPayment.hidden === true
       && els.hf2StatusName.hidden === true && els.hf2StatusName.textContent === "");
 
     els = makeLeadEnv({ results: RESULTS, payPref: "not_now" });
-    check("...Not right now flows through the SAME derivation the D4 rows use",
-      /^Payment preference: Not right now\.$/.test(payOf(els)));
+    check("...Not right now never reaches the status block (synthesis: the module's preference row is the one payment surface)",
+      payOf(els) === "" && els.hf2StatusPayment.hidden === true);
 
     els = makeLeadEnv({ results: RESULTS, payPref: "plan-a" });
-    check("...a considered path names the path label", /^Payment preference: Path A\.$/.test(payOf(els)));
+    check("...a considered path never reaches the status block either", payOf(els) === "" && els.hf2StatusPayment.hidden === true);
 
     els = makeLeadEnv({ results: RESULTS, payPref: "gone-path" });
     check("...a stale path id falls back to 'Not selected', never a raw token",
-      /^Payment preference: Not selected\.$/.test(payOf(els)) && !/gone-path/.test(els.hf2LeadLine.textContent + payOf(els)));
+      payOf(els) === "" && !/gone-path/.test(els.hf2LeadLine.textContent + payOf(els)));
 
     els = makeLeadEnv({ results: null, financing: false });
     check("no finalist and no results: the honest none sentence", els.hf2LeadLine.textContent === dictEn["hf2.lead_none"]);
@@ -947,27 +956,27 @@ if (gate("renderSleepPlan", RENDER_SRCS.every(Boolean) && !!FALLBACK_SRC && !!RE
     els = makeLeadEnv({ lang: "es", results: RESULTS, payPref: null });
     check("ES: the paired sentences resolve fully in Spanish",
       els.hf2LeadLine.textContent.indexOf("Aún no se ha elegido finalista") === 0
-      && /^Preferencia de pago: Sin seleccionar\.$/.test(payOf(els)));
+      && payOf(els) === "" && els.hf2StatusPayment.hidden === true);
 
     // C12 (R3 I1): the remaining matrix cells — chosen composes with every
     // payment state, and the none sentence composes too.
     const CHOSEN_CELL = { saved: [{ id: "g1", name: "Cloud Nine", brand: "Restonic", tier: "gold" }], fav: "g1", results: RESULTS };
     els = makeLeadEnv(Object.assign({ payPref: "plan-a" }, CHOSEN_CELL));
-    check("chosen x selected path: the C3-A2 hierarchy pairs with the path label",
-      _chosenPair(els) && payOf(els) === "Payment preference: Path A.");
+    check("chosen x selected path: the C3-A2 hierarchy, no payment text in the block",
+      _chosenPair(els) && payOf(els) === "" && els.hf2StatusPayment.hidden === true);
     els = makeLeadEnv(Object.assign({ payPref: "not_now" }, CHOSEN_CELL));
-    check("chosen x paused: ...with Not right now",
-      _chosenPair(els) && payOf(els) === "Payment preference: Not right now.");
+    check("chosen x paused: ...still no payment text",
+      _chosenPair(els) && payOf(els) === "" && els.hf2StatusPayment.hidden === true);
     els = makeLeadEnv(Object.assign({ payPref: null }, CHOSEN_CELL));
-    check("chosen x unselected: ...with the Not selected fallback",
-      _chosenPair(els) && payOf(els) === "Payment preference: Not selected.");
+    check("chosen x unselected: ...still no payment text",
+      _chosenPair(els) && payOf(els) === "" && els.hf2StatusPayment.hidden === true);
     els = makeLeadEnv({ results: null, payPref: "plan-a" });
-    check("none x selected path: the honest none sentence (verbatim) still pairs with payment state",
-      els.hf2LeadLine.textContent === dictEn["hf2.lead_none"] && payOf(els) === "Payment preference: Path A."
+    check("none x selected path: the honest none sentence (verbatim), no payment text",
+      els.hf2LeadLine.textContent === dictEn["hf2.lead_none"] && payOf(els) === "" && els.hf2StatusPayment.hidden === true
       && els.hf2StatusName.hidden === true);
     els = makeLeadEnv({ results: null, payPref: "not_now" });
-    check("none x paused: ...with Not right now",
-      els.hf2LeadLine.textContent === dictEn["hf2.lead_none"] && payOf(els) === "Payment preference: Not right now.");
+    check("none x paused: ...no payment text",
+      els.hf2LeadLine.textContent === dictEn["hf2.lead_none"] && payOf(els) === "" && els.hf2StatusPayment.hidden === true);
     // C3-A2 route: an incomplete consultation is routed back to the trial, never
     // shown as complete; the chosen state offers no route.
     els = makeLeadEnv({ results: null, payPref: "not_now" });

@@ -658,8 +658,12 @@ check("the rendered items carry the component classes (li + ordinal ring) (A3.1)
 check("the Summary render no longer carries the testing label; the Brief still resolves it through the dictionary (brief.try_this)",
   !/brief\.try_this/.test((html.match(/function renderHf2Priorities\(\)[\s\S]*?\n    \}/) || [""])[0])
   && /escapeHtml\(t\('brief\.try_this'\)\)/.test(html));
+// A3.1 synthesis (owner counterprompt 2026-09-02, change 4): the Summary's
+// ordered markers are labelled "Priorities"; the recap rows above them are
+// "Visit focus" - one concept per visual system. The Brief keeps the
+// approved "What we will test together" heading; the email keeps its own.
 check("the label is written by renderHf2's copy map, bilingually",
-  /hf2PrioritiesLabel: es \? 'Lo que probaremos juntos' : 'What we will test together',/.test(html));
+  /hf2PrioritiesLabel: es \? 'Prioridades' : 'Priorities',/.test(html));
 check("renderHf2 renders priorities between the brief and the picks (lead line precedes the triple)",
   /renderHf2LeadLine\(\);\s*renderHf2Brief\(\);\s*renderHf2Priorities\(\);\s*renderHf2Picks\(\);/.test(html));
 check("the list is in the wipe's content inventory",

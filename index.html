@@ -3848,10 +3848,27 @@
       line-height: 1.5;
       color: var(--color-text-muted);
     }
+    /* Synthesis (owner counterprompt 2026-09-02, change 4): the ONE
+       state-derived NEXT cue closes the status block. */
+    .hf2-status__next {
+      margin: 0.55rem 0 0;
+      font-family: var(--font-sans);
+      font-size: 0.88rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      color: var(--accent-ink);
+    }
     #hf2StatusRoute { margin-top: 0.6rem; }
     /* A3.1: names-only rows with the shared ordinal ring (the <ol> keeps the
        order for assistive technology; the ring is aria-hidden). */
+    /* Synthesis (owner counterprompt 2026-09-02, change 4): three horizontal
+       ordered priority markers - one row of compact cards, the name beside
+       the shared ordinal ring; stacked only on narrow screens. The <ol> keeps
+       the order for assistive technology; the ring stays aria-hidden. */
     .hf2-priorities {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
       margin: 8px 0 0;
       padding-left: 0;
       list-style: none;
@@ -3860,8 +3877,16 @@
       display: flex;
       align-items: center;
       gap: 10px;
-      margin-bottom: 8px;
-      line-height: 1.4;
+      min-height: 44px;
+      margin: 0;
+      padding: 8px 10px;
+      border: 1px solid var(--color-border);
+      border-radius: 8px;
+      background: #FFFDF8;
+      line-height: 1.3;
+    }
+    @media (max-width: 560px) {
+      .hf2-priorities { grid-template-columns: 1fr; }
     }
     .hf2-ordinal {
       flex: none;
@@ -11658,43 +11683,14 @@
               onclick="window.backToResultsFromReview()"
               ontouchend="event.preventDefault();window.backToResultsFromReview();">← Back to matches</button>
 
-    <!-- 1. RSA attribution strip + closed picker panel. Renderer (renderHf2RsaStrip
-         / renderHf2RsaPanel) populates label/name/list; click toggles the `hidden`
-         attribute on the panel. event.stopPropagation prevents the document-level
-         outside-click listener from immediately closing the panel on the same tap. -->
-    <div class="hf2-rsa-strip">
-      <button class="hf2-rsa-strip__btn" id="hf2RsaStripBtn" type="button"
-              aria-expanded="false" aria-controls="hf2RsaPanel"
-              onclick="event.stopPropagation(); toggleHf2RsaPanel();"
-              ontouchend="event.preventDefault(); event.stopPropagation(); toggleHf2RsaPanel();">
-        <span class="hf2-rsa-strip__label"></span>
-        <span class="hf2-rsa-strip__name"></span>
-        <span class="hf2-rsa-strip__chevron">▾</span>
-      </button>
-      <div class="hf2-rsa-panel" id="hf2RsaPanel" hidden>
-        <ul class="hf2-rsa-panel__list"></ul>
-        <button class="hf2-rsa-panel__add" type="button"></button>
-        <!-- Slice 6: inline add row replaces window.prompt() — a native
-             dialog is untranslatable, unstyleable and blocks the kiosk.
-             Deliberately NOT a <form> (the app's single form is pinned).
-             The input's value is customer-typed text: it is cleared by the
-             session wipe (SESSION_CONTACT_INPUT_IDS) and the row closes
-             through SESSION_LAYERS. -->
-        <div class="hf2-rsa-panel__addrow" id="hf2RsaAddRow" hidden>
-          <input type="text" class="hf2-rsa-panel__input" id="hf2RsaAddInput"
-                 autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false">
-          <button class="hf2-rsa-panel__confirm" id="hf2RsaAddConfirm" type="button"></button>
-        </div>
-      </div>
-    </div>
     </div>
 
     <div class="hf2-review-intro">
-      <!-- Store attribution (Slice 6, D5c): storeName + the configured
-           consultation subline, config-derived only — never a literal, never
-           heritage copy (the Welcome eyebrow owns that). Empty config hides
-           it entirely. Not customer-derived, so not in the wipe inventory. -->
-      <div class="hf2-review-attribution" id="hf2Attribution" hidden></div>
+      <!-- Synthesis (owner counterprompt 2026-09-02, change 4 + ruling 5): the
+           store attribution and the salesperson strip are no longer first-fold
+           visual content - both render in the consultation record line below
+           the Sleep System section (same ids, same renderers, same wipe
+           entries, same payload). -->
       <div class="hf2-review-eyebrow" id="hf2ReviewEyebrow">Review with the customer</div>
       <!-- A3.1 (owner directive 2026-09-01): the shared close is titled for
            both people; the explanatory subtitle is retired (the status block
@@ -11732,6 +11728,11 @@
           <div class="hf2-status__name" id="hf2StatusName" hidden></div>
           <div class="hf2-status__meta" id="hf2StatusMeta" hidden></div>
           <div class="hf2-status__rows" id="hf2StatusRows" hidden></div>
+          <!-- Synthesis (change 4): the ONE state-derived NEXT cue, after the
+               Still-open row. The payment node below stays for the wipe
+               roster but never renders here again (ruling 5: the financing
+               module's preference row is the one payment surface). -->
+          <p class="hf2-status__next" id="hf2StatusNext" hidden></p>
           <p class="hf2-status__payment" id="hf2StatusPayment" hidden></p>
           <div id="hf2StatusRoute" hidden></div>
         </div>
@@ -11744,7 +11745,7 @@
            approved implications with their staff imperatives removed. The
            email payload keeps consuming resolveConsultationSummary() as
            before; the two are projections of ONE answer set. -->
-      <div class="hf2-review-section__label" id="hf2NeedsLabel">Priorities</div>
+      <div class="hf2-review-section__label" id="hf2NeedsLabel">Visit focus</div>
       <div class="hf2-brief">
         <div class="hf2-brief__row" id="hf2BriefContext"></div>
         <div class="hf2-brief__row" id="hf2BriefWho"></div>
@@ -11772,7 +11773,7 @@
          owns display and still hides the WHOLE section (label included) on
          any incomplete collection (R-8). -->
     <section class="hf2-review-section" id="hf2PrioritiesSection" style="display:none">
-      <div class="hf2-review-section__label" id="hf2PrioritiesLabel">What we will test together</div>
+      <div class="hf2-review-section__label" id="hf2PrioritiesLabel">Priorities</div>
       <ol class="hf2-priorities" id="hf2Priorities"></ol>
     </section>
 
@@ -11805,6 +11806,47 @@
       <div id="hf2AccessoriesList"></div>
       <p class="hf2-review-section__hint" id="hf2SystemEmpty" hidden></p>
     </section>
+
+    <!-- Synthesis (owner counterprompt 2026-09-02, change 4 + ruling 5): the
+         consultation RECORD line - the store attribution (Slice 6 D5c:
+         storeName + the configured consultation subline, config-derived only,
+         empty config hides it; not customer-derived, so not in the wipe
+         inventory) and the salesperson strip + picker panel (unchanged
+         renderers, disclosure semantics and wipe entries) - sits below the
+         fold, above the payment module and the save. Neither is first-fold
+         visual content; both reach the governed payload exactly as before. -->
+    <div class="hf2-review-nav hf2-review-nav--record">
+      <div class="hf2-review-attribution" id="hf2Attribution" hidden></div>
+    <!-- 1. RSA attribution strip + closed picker panel. Renderer (renderHf2RsaStrip
+         / renderHf2RsaPanel) populates label/name/list; click toggles the `hidden`
+         attribute on the panel. event.stopPropagation prevents the document-level
+         outside-click listener from immediately closing the panel on the same tap. -->
+    <div class="hf2-rsa-strip">
+      <button class="hf2-rsa-strip__btn" id="hf2RsaStripBtn" type="button"
+              aria-expanded="false" aria-controls="hf2RsaPanel"
+              onclick="event.stopPropagation(); toggleHf2RsaPanel();"
+              ontouchend="event.preventDefault(); event.stopPropagation(); toggleHf2RsaPanel();">
+        <span class="hf2-rsa-strip__label"></span>
+        <span class="hf2-rsa-strip__name"></span>
+        <span class="hf2-rsa-strip__chevron">▾</span>
+      </button>
+      <div class="hf2-rsa-panel" id="hf2RsaPanel" hidden>
+        <ul class="hf2-rsa-panel__list"></ul>
+        <button class="hf2-rsa-panel__add" type="button"></button>
+        <!-- Slice 6: inline add row replaces window.prompt() — a native
+             dialog is untranslatable, unstyleable and blocks the kiosk.
+             Deliberately NOT a <form> (the app's single form is pinned).
+             The input's value is customer-typed text: it is cleared by the
+             session wipe (SESSION_CONTACT_INPUT_IDS) and the row closes
+             through SESSION_LAYERS. -->
+        <div class="hf2-rsa-panel__addrow" id="hf2RsaAddRow" hidden>
+          <input type="text" class="hf2-rsa-panel__input" id="hf2RsaAddInput"
+                 autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false">
+          <button class="hf2-rsa-panel__confirm" id="hf2RsaAddConfirm" type="button"></button>
+        </div>
+      </div>
+    </div>
+    </div>
 
     <!-- Payment Choices handoff module (Payment Choice) — the strongest
          financing surface, immediately before the final save/send action.
@@ -21404,10 +21446,14 @@
         // A3.1 (owner directive 2026-09-01): the shared close carries the
         // directive's title; the subtitle is retired (element kept hidden).
         hf2ReviewTitle: es ? 'Resumen de la consulta' : 'Consultation summary',
-        hf2NeedsLabel: es ? 'Prioridades' : 'Priorities',
-        // Reuses the Sleep Brief's approved heading pair verbatim — same
-        // content, same name, zero invented copy (0.5).
-        hf2PrioritiesLabel: es ? 'Lo que probaremos juntos' : 'What we will test together',
+        // Synthesis (owner counterprompt 2026-09-02, change 4): the recap rows
+        // are the compact VISIT FOCUS projection and the three ordered markers
+        // below are the PRIORITIES - one concept per visual system, so the
+        // first fold never repeats the same priority concepts in two lists.
+        // (The Brief keeps its approved "What we will test together" heading;
+        // the email keeps its own.)
+        hf2NeedsLabel: es ? 'Enfoque de la visita' : 'Visit focus',
+        hf2PrioritiesLabel: es ? 'Prioridades' : 'Priorities',
         hf2FinalistsLabel: t('hf2.saved_picks_label'),
         // Saved-pick terminology, paired with hf2.saved_picks_label: saving and
         // choosing are separate actions, so saved mattresses are never all
@@ -21415,18 +21461,21 @@
         hf2FinalistsHint: t('hf2.saved_picks_hint'),
         hf2SystemHint: es ? 'Solo las piezas que ya se agregaron al plan.' : 'Only the pieces already added to the plan.',
         hf2PassLabel: es ? 'Listo para guardar' : 'Ready to save',
-        // Pass-reveal hint only when the Savings Pass is enabled; otherwise
-        // A3.1: ONE state-derived NEXT cue (consultationNextCue) instead of a
-        // third statement of the shared moment. Payment is never the cue.
+        // Pass-reveal hint only when the Savings Pass is enabled. Synthesis
+        // (change 4): the ONE state-derived NEXT cue now renders in the
+        // status block (renderHf2LeadLine -> #hf2StatusNext), so the finale
+        // carries no second cue - the hint is blank and hidden otherwise.
         hf2PassHint: savingsPassEnabled()
           ? (es ? 'Revisen el plan juntos y luego revela el Pase de Ahorro de 30 días.'
                 : 'Review the plan together, then reveal the 30-day Savings Pass.')
-          : consultationNextCue()
+          : ''
       };
       Object.keys(reviewCopy).forEach(function(id) {
         var el = document.getElementById(id);
         if (el) el.textContent = reviewCopy[id];
       });
+      var passHint = document.getElementById('hf2PassHint');
+      if (passHint) passHint.hidden = !passHint.textContent;
       // Store attribution: config-derived only (storeName + the consultation
       // subline). Blank config hides the element — never a fallback literal.
       var attribution = document.getElementById('hf2Attribution');
@@ -21681,18 +21730,11 @@
         var rec = finalistRecommendedFallback();
         lead = rec ? t('hf2.lead_recommended', { pick: pickText(rec) }) : t('hf2.lead_none');
       }
-      var payment = '';
-      if (financingEnabled()) {
-        var paths = finPaymentPaths();
-        var labelFor = function(id) {
-          for (var i = 0; i < paths.length; i++) if (paths[i].id === id) return paths[i].label;
-          return '';
-        };
-        var notNow = payPref === PAY_NOT_NOW;
-        var prefLabel = notNow ? FC('preferenceNotNow') : (payPref ? labelFor(payPref) : '');
-        if (!prefLabel) prefLabel = FC('preferenceNone');
-        payment = t('hf2.pay_state', { value: prefLabel });
-      }
+      // Synthesis (owner counterprompt 2026-09-02, ruling 5 + change 4): the
+      // payment preference is no longer composed into the status block. The
+      // financing module's own preference row (renderHandoffFinancing) is the
+      // one payment surface on this screen; the status node stays for the
+      // wipe roster, always empty and hidden. Sleep fit first.
       // C3-A2 (owner ruling 2026-09-01): compact three-state status block.
       // Chosen: the approved hf2.lead_chosen split - finalist.chosen as the
       // eyebrow, the product NAME as the separate serif display element and
@@ -21729,10 +21771,10 @@
           if (nameEl) { nameEl.textContent = ''; nameEl.hidden = true; }
           if (metaEl) { metaEl.textContent = ''; metaEl.hidden = true; }
         }
-        payEl.textContent = payment;
-        payEl.hidden = !payment;
+        payEl.textContent = '';
+        payEl.hidden = true;
       } else {
-        lineEl.textContent = payment ? lead + ' ' + payment : lead;
+        lineEl.textContent = lead;
       }
       var reactions = {};
       try { reactions = window._mattressReactions || {}; } catch (err) { reactions = {}; }
@@ -21775,6 +21817,15 @@
         }
         rowsEl.innerHTML = rows.join('');
         rowsEl.hidden = rows.length === 0;
+      }
+      // Synthesis (change 4): the ONE state-derived NEXT cue closes the status
+      // block - finalist, then the first open step, then a pending specialist
+      // check, then the save; payment is never the cue (consultationNextCue).
+      var nextEl = document.getElementById('hf2StatusNext');
+      if (nextEl) {
+        var cue = (typeof consultationNextCue === 'function') ? consultationNextCue() : '';
+        nextEl.textContent = cue;
+        nextEl.hidden = !cue;
       }
       var routeEl = document.getElementById('hf2StatusRoute');
       if (routeEl) {
@@ -23405,7 +23456,7 @@
       // an answer-derived shortlist surface to wipe. Omission, not a weakened
       // wipe: the remaining answer-derived ids are unchanged.
       'drawerSystemPromptTitle', 'drawerSystemPromptReason',
-      'hf2LeadLine', 'hf2StatusPayment', 'hf2StatusName', 'hf2StatusMeta',
+      'hf2LeadLine', 'hf2StatusPayment', 'hf2StatusName', 'hf2StatusMeta', 'hf2StatusNext',
       'hf2FinancingStatus', 'financingSheetStatus', 'financingSheetAction',
       'sleepPlanFinancingStatus', 'sleepPlanPrioritiesRecoveryText',
       // X2 (2026-08-31): the plan count is no longer a neutral fraction - it

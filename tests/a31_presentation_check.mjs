@@ -532,8 +532,8 @@ section('Consultation Summary — recap rows, names-only priorities with ordinal
   ok('"Consultation status" stays the region name but leaves the visible page (sr-only), still written from the dictionary',
     /<div class="hf2-review-section__label sr-only" id="hf2LeadLabel"><\/div>/.test(norm)
     && norm.includes("label.textContent = t('hf2.lead_label');"));
-  ok('the implication rows are labelled "Priorities" / "Prioridades" and render the recap projection',
-    /id="hf2NeedsLabel">Priorities</.test(norm) && norm.includes("hf2NeedsLabel: es ? 'Prioridades' : 'Priorities',")
+  ok('the implication rows are the compact "Visit focus" / "Enfoque de la visita" projection (synthesis change 4) and render the recap projection',
+    /id="hf2NeedsLabel">Visit focus</.test(norm) && norm.includes("hf2NeedsLabel: es ? 'Enfoque de la visita' : 'Visit focus',")
     && norm.includes('var vm = resolveConsultationRecap();') && !liveHtml.includes('What we set out to solve'));
   ok('the recap map is bilingual, id-keyed on the five consumed questions, and gated on the approved implication',
     ['trigger', 'sleep_issues', 'sleep_position', 'health_conditions', 'temperature'].every((q) => recapMap.includes(q + ': {'))
@@ -561,9 +561,10 @@ section('Consultation Summary — recap rows, names-only priorities with ordinal
   ok('the saved-picks and Sleep System hints ship hidden (keys stay written; ruling 7), the empty state is the short line',
     /id="hf2FinalistsHint" hidden>/.test(norm) && /id="hf2SystemHint" hidden>/.test(norm)
     && dictEn['hf2.no_system_items'] === 'Nothing added yet.' && dictEs['hf2.no_system_items'] === 'Aún no se ha agregado nada.');
-  ok('the finale reads "Ready to save" and its hint is the state-derived NEXT cue (Savings Pass branch config-gated)',
+  ok('the finale reads "Ready to save"; its hint is blank and hidden unless the config-gated Savings Pass branch applies - the ONE NEXT cue renders in the status block (synthesis change 4)',
     /id="hf2PassLabel">Ready to save</.test(norm) && norm.includes("hf2PassLabel: es ? 'Listo para guardar' : 'Ready to save',")
-    && norm.includes(': consultationNextCue()'));
+    && !norm.includes(': consultationNextCue()') && norm.includes("? consultationNextCue() : '';")
+    && norm.includes("if (passHint) passHint.hidden = !passHint.textContent;"));
   {
     // Executed NEXT cue: finalist first, then the first open step in rail
     // order, then a pending specialist check, then the save. Payment never.
@@ -746,6 +747,59 @@ section('Protection goals — four compact goal glyphs, paired with their labels
     && runGuide('es', '').includes('aria-label="Meta de protección">') && runGuide('es', '').includes('Derrames<small>Cobertura impermeable</small>'));
   const exposed = runGuide('en', '', 'everyday', mustReplace(glyphSrc, `aria-hidden="true">`, '>') + '\n' + guideSrc);
   ok('negative control: a glyph that loses aria-hidden is detected', !/data-goal-glyph="spills" aria-hidden="true"/.test(exposed));
+}
+
+// ============================================ 12. Consultation Summary composition (A3.1 synthesis, change 4 + ruling 5)
+section('Consultation Summary — first-fold order, one NEXT cue in the status block, payment out of the card, Visit focus vs Priorities, attribution below the fold');
+{
+  const at = (m) => norm.indexOf(m);
+  ok('status block order: thumbnail -> finalist eyebrow -> name -> rows (verdict, Still open) -> NEXT cue -> (payment node, never rendered) -> route',
+    at('id="hf2StatusThumb"') < at('id="hf2LeadLine"') && at('id="hf2LeadLine"') < at('id="hf2StatusName"')
+    && at('id="hf2StatusName"') < at('id="hf2StatusRows"') && at('id="hf2StatusRows"') < at('id="hf2StatusNext"')
+    && at('id="hf2StatusNext"') < at('id="hf2StatusPayment"') && at('id="hf2StatusPayment"') < at('id="hf2StatusRoute"')
+    && /<p class="hf2-status__next" id="hf2StatusNext" hidden><\/p>/.test(norm));
+  ok('the lead renderer no longer derives a payment sentence (no hf2.pay_state, no payment-path read); the status payment node is always empty and hidden',
+    !/hf2\.pay_state|finPaymentPaths\(\)|FC\('preference/.test(leadSrc)
+    && leadSrc.includes("        payEl.textContent = '';\n        payEl.hidden = true;") && leadSrc.includes('lineEl.textContent = lead;'));
+  ok('the financing module keeps its preference row - the one payment surface on the screen (handoff + sheet)',
+    (norm.match(/FC\('paymentPreferenceLabel'\)/g) || []).length === 2 && /function renderHandoffFinancing\(\)/.test(norm));
+  ok('exactly one NEXT cue call site (the status block); the finale hint no longer calls it',
+    (norm.match(/(?<!function )consultationNextCue\(\)/g) || []).length === 1
+    && leadSrc.includes("var cue = (typeof consultationNextCue === 'function') ? consultationNextCue() : '';"));
+  ok('the NEXT cue node joins the wipe\'s text inventory', /'hf2StatusMeta', 'hf2StatusNext',/.test(norm));
+  ok('Visit focus (the recap rows) and Priorities (the ordered markers) are two labels, two concepts - static and rendered, EN + ES',
+    /id="hf2NeedsLabel">Visit focus</.test(norm) && /id="hf2PrioritiesLabel">Priorities</.test(norm)
+    && norm.includes("hf2NeedsLabel: es ? 'Enfoque de la visita' : 'Visit focus',") && norm.includes("hf2PrioritiesLabel: es ? 'Prioridades' : 'Priorities',")
+    && !liveHtml.includes("hf2PrioritiesLabel: es ? 'Lo que probaremos juntos'"));
+  ok('the priorities are three horizontal ordered markers (grid, compact cards >= 44px), stacked only on narrow screens; the ordinal ring and the bare <ol> semantics stay',
+    /\.hf2-priorities \{\s*display: grid;\s*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);[^}]*list-style: none;/.test(norm)
+    && /\.hf2-priorities__item \{[^}]*min-height: 44px;[^}]*border-radius: 8px;/.test(norm)
+    && /@media \(max-width: 560px\) \{\s*\.hf2-priorities \{ grid-template-columns: 1fr; \}/.test(norm)
+    && /<ol class="hf2-priorities" id="hf2Priorities"><\/ol>/.test(norm));
+  ok('the store attribution and the salesperson strip are not first-fold content: both sit after the Sleep System section and before the payment module and the save; the intro carries no attribution',
+    at('id="hf2SleepSystemSection"') < at('id="hf2Attribution"') && at('id="hf2Attribution"') < at('id="hf2RsaStripBtn"')
+    && at('id="hf2RsaStripBtn"') < at('id="hf2Financing"') && at('id="hf2Financing"') < at('id="hf2PassLabel"')
+    && !/<div class="hf2-review-intro">[\s\S]*?id="hf2Attribution"[\s\S]*?id="hf2ReviewTitle"/.test(norm)
+    && /<div class="hf2-review-nav hf2-review-nav--record">\s*<div class="hf2-review-attribution" id="hf2Attribution" hidden><\/div>/.test(norm));
+  ok('the attribution renderer and the salesperson picker are untouched (config-derived line; disclosure button; wipe entries)',
+    /storeName\(\) \? \(attrSub \? storeName\(\) \+ ' · ' \+ attrSub : storeName\(\)\) : '';/.test(norm)
+    && /id="hf2RsaStripBtn" type="button"\s*\n\s*aria-expanded="false" aria-controls="hf2RsaPanel"/.test(norm)
+    && /\{ id: 'hf2RsaPanel', hiddenAttr: true \},/.test(norm) && /'emailNameInput', 'emailInput', 'emailPhoneInput', 'hf2RsaAddInput'/.test(norm));
+
+  // EXECUTED: the status block renders the cue once, the payment node never.
+  const mixed = { support: { status: 'confirm' }, pillow: { status: 'later' }, adjustability: { status: 'demo', position: 'flat' }, protection: { status: 'already' } };
+  const withCue = makeLeadEnv({ decisions: mixed, mutate: (s) => 'function consultationNextCue() { return "Next: check pillow fit on the finalist"; }\n' + s });
+  const next = withCue.els.get('hf2StatusNext');
+  const pay = withCue.els.get('hf2StatusPayment');
+  ok('executed: the status block carries the cue after the Still-open row, and no payment text',
+    next.textContent === 'Next: check pillow fit on the finalist' && next.hidden === false
+    && pay.textContent === '' && pay.hidden === true
+    && withCue.rows.innerHTML.includes('Support (specialist check needed)'));
+  const noCue = makeLeadEnv({ decisions: mixed });
+  ok('executed: without a cue producer the node stays empty and hidden (never a stale line)',
+    noCue.els.get('hf2StatusNext').textContent === '' && noCue.els.get('hf2StatusNext').hidden === true);
+  const dropped = makeLeadEnv({ decisions: mixed, mutate: (s) => 'function consultationNextCue() { return "Next: x"; }\n' + mustReplace(s, "nextEl.textContent = cue;", "nextEl.textContent = '';") });
+  ok('negative control: a renderer that drops the cue is detected', dropped.els.get('hf2StatusNext').textContent === '');
 }
 
 // ------------------------------------------------------------------- summary

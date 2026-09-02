@@ -264,7 +264,8 @@ section('shared and customer surfaces — deliberate second person, marked momen
     && /hf2ReviewTitle: es \? 'Resumen de la consulta' : 'Consultation summary',/.test(norm));
   ok('the Summary close is ONE state-derived NEXT cue (never backstage instruction about "the customer")',
     norm.includes("pick('Next: save to take home', 'Siguiente: guardar para llevar')")
-    && norm.includes(': consultationNextCue()')
+    // A3.1 synthesis (change 4): the cue renders once, in the status block.
+    && norm.includes("? consultationNextCue() : '';") && !norm.includes(': consultationNextCue()')
     && !norm.includes("'Review the plan together, then save it to take home.'"));
   ok('the take-home returns to customer voice and drops the internal "handoff" jargon',
     dictEn['email.eyebrow'] === 'Take your matches home'

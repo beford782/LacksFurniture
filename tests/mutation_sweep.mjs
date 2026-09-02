@@ -408,8 +408,8 @@ const MUTATIONS = [
   // (the label is written by renderHf2's copy loop, which the suite does not
   // execute). The email suite covers the ES label behaviorally.
   ["the hf2 label loses its Spanish (static contract)",
-    "hf2PrioritiesLabel: es ? 'Lo que probaremos juntos' : 'What we will test together',",
-    "hf2PrioritiesLabel: 'What we will test together',", PRIORITIES],
+    "hf2PrioritiesLabel: es ? 'Prioridades' : 'Priorities',",
+    "hf2PrioritiesLabel: 'Priorities',", PRIORITIES],
 
   // --- the payload projection ----------------------------------------------
   // Reversal INSIDE the projection body, so the suite's extraction still
@@ -1850,14 +1850,17 @@ const MUTATIONS = [
   ["slice6: the lead line claims a finalist for the recommended state",
     "        lead = rec ? t('hf2.lead_recommended', { pick: pickText(rec) }) : t('hf2.lead_none');",
     "        lead = rec ? t('hf2.lead_chosen', { pick: pickText(rec) }) : t('hf2.lead_none');", PLAN],
-  ["slice6: the lead line's payment fragment stops mirroring the D4 derivation (stale ids leak)",
-    "        if (!prefLabel) prefLabel = FC('preferenceNone');\n        payment = t('hf2.pay_state', { value: prefLabel });",
-    "        payment = t('hf2.pay_state', { value: payPref || FC('preferenceNone') });", PLAN],
+  // A3.1 synthesis (ruling 5): the payment sentence left the status block, so
+  // the D4-derivation entry above is replaced by the reverse mutation - the
+  // block rendering a payment line again.
+  ["A3.1 synthesis (ruling 5): the payment preference returns to the Summary status block",
+    "        payEl.textContent = '';\n        payEl.hidden = true;",
+    "        payEl.textContent = t('hf2.pay_state', { value: FC('preferenceNone') });\n        payEl.hidden = false;", PLAN],
   ["slice6: a payment tap leaves the lead line stale (the financing-surfaces hook is dropped)",
     "      if (typeof renderHf2LeadLine === 'function') renderHf2LeadLine();",
     "", PLAN],
   ["slice6: the lead line leaves the wipe's text inventory",
-    "      'hf2LeadLine', 'hf2StatusPayment', 'hf2StatusName', 'hf2StatusMeta',\n      'hf2FinancingStatus', 'financingSheetStatus', 'financingSheetAction',",
+    "      'hf2LeadLine', 'hf2StatusPayment', 'hf2StatusName', 'hf2StatusMeta', 'hf2StatusNext',\n      'hf2FinancingStatus', 'financingSheetStatus', 'financingSheetAction',",
     "      'hf2FinancingStatus', 'financingSheetStatus', 'financingSheetAction',", PLAN_WITH_SESSION],
   // C3: comparison persistence.
   ["slice6: closing the review-origin modal clears the selection again",
@@ -2109,6 +2112,18 @@ const MUTATIONS = [
     "                goalGlyph(goal.id) +\n                escapeHtml(sleepSystemText(goal.label)) +\n                '<small>' + escapeHtml(sleepSystemText(goal.copy)) + '</small>' +",
     "                goalGlyph(goal.id) +\n                escapeHtml(sleepSystemText(goal.label)) +",
     A31.concat(SLEEP)],
+  ["A3.1 synthesis: the NEXT cue leaves the status block (the shared close loses its one next step)",
+    "        nextEl.textContent = cue;\n        nextEl.hidden = !cue;",
+    "        nextEl.textContent = '';\n        nextEl.hidden = true;",
+    A31],
+  ["A3.1 synthesis: a second NEXT cue returns to the finale hint",
+    "                : 'Review the plan together, then reveal the 30-day Savings Pass.')\n          : ''",
+    "                : 'Review the plan together, then reveal the 30-day Savings Pass.')\n          : consultationNextCue()",
+    A31.concat(AUD)],
+  ["A3.1 synthesis: the Summary's two lists share one concept name again (Visit focus label reverts to Priorities)",
+    "        hf2NeedsLabel: es ? 'Enfoque de la visita' : 'Visit focus',",
+    "        hf2NeedsLabel: es ? 'Prioridades' : 'Priorities',",
+    A31],
   ["A3.1 ruling 3: the specialist reason adapter passes the customer-voiced engine string through",
     "      if (!list.length) return fallback || '';",
     "      return fallback || '';",
