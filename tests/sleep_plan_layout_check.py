@@ -1060,8 +1060,12 @@ def run_drawer_footer(browser, port, name, width, height, lang, shots_dir):
 # programmatic focus on every open, and the branded ring must appear ONLY for a
 # keyboard entry. The app records the last real input (capture-phase keydown /
 # pointerdown / mousedown / touchstart) and stamps data-focus-entry on the
-# drawer at every open; a pointer entry suppresses the title's decorative ring
-# through a conditional rule. Rendered proof: a real mouse click and a real
+# drawer at every open. Corrective pass 3: the ring is driven by that attribute
+# through :focus - NOT by the browser's :focus-visible heuristic, which answers
+# a scripted focus after a real tap differently in Chromium and WebKit. The
+# decisive rendered proof is the attribute flip below: with focus untouched and
+# no new user input, flipping data-focus-entry paints and unpaints the ring, so
+# the ring cannot be coming from the heuristic. Rendered proof: a real mouse click and a real
 # touch tap on the result card (after a touch on non-focusable page content)
 # focus the title with NO ring; Enter and Space on the card's Try button focus
 # it WITH the ring; the sequence pointer -> keyboard -> pointer -> keyboard ->
@@ -1095,6 +1099,34 @@ DRAWER_TITLE_PROBE_JS = r"""
 }
 """
 TRY_SEL = "#resultsScreen [data-id][data-tier] .noct-card-try"
+
+# Corrective pass 3: set (or remove) data-focus-entry on the OPEN drawer without
+# touching focus or firing any input, then read the title's ring back. Chromium's
+# :focus-visible state cannot change across this call, so any change in the ring
+# is attributable to the modality attribute alone.
+FLIP_JS = r"""
+(entry) => {
+  const title = document.getElementById('drawerName'), drawer = document.getElementById('mattressDrawer');
+  if (entry === null) drawer.removeAttribute('data-focus-entry');
+  else drawer.setAttribute('data-focus-entry', entry);
+  const cs = getComputedStyle(title);
+  return { entry: drawer.getAttribute('data-focus-entry'), focused: document.activeElement === title,
+    focusVisible: title.matches(':focus-visible'), focusMatch: title.matches(':focus'),
+    outlineStyle: cs.outlineStyle, outlineWidth: cs.outlineWidth, outlineOffset: cs.outlineOffset,
+    outlineColor: cs.outlineColor, boxShadow: cs.boxShadow };
+}
+"""
+
+# Corrective pass 3: the real wipe must leave the attribute ABSENT, not blank.
+WIPE_JS = r"""
+() => {
+  const drawer = document.getElementById('mattressDrawer');
+  const before = drawer.getAttribute('data-focus-entry');
+  window.startOver();
+  return { before: before, has: drawer.hasAttribute('data-focus-entry'),
+    after: drawer.getAttribute('data-focus-entry'), open: drawer.classList.contains('drawer-open') };
+}
+"""
 
 
 def run_drawer_title_focus(browser, port, name, width, height, shots_dir, forced=False):
@@ -1157,14 +1189,42 @@ def run_drawer_title_focus(browser, port, name, width, height, shots_dir, forced
         else:
             ring_ok = r["outlineStyle"] == "solid" and r["outlineWidth"] == "3px" and r["outlineOffset"] == "5px" and (r["outlineColor"] not in ("rgba(0, 0, 0, 0)", "transparent"))
             halo_ok = True if forced else (r["boxShadow"] != "none")
-            check(f"{tag} {n}: the drawer records a keyboard entry and the title matches :focus-visible with the branded ring (3px solid at a 5px offset{', CanvasText, no halo' if forced else ' with the halo'})",
-                  r["entry"] == "keyboard" and r["focusVisible"] and ring_ok and halo_ok,
+            check(f"{tag} {n}: the drawer records a keyboard entry and the title carries the branded ring (3px solid at a 5px offset{', CanvasText, no halo' if forced else ' with the halo'}) - required WITHOUT relying on :focus-visible, which is only reported here",
+                  r["entry"] == "keyboard" and ring_ok and halo_ok,
                   f"entry={r['entry']} focusVisible={r['focusVisible']} outline={r['outlineStyle']} {r['outlineWidth']} offset={r['outlineOffset']} color={r['outlineColor']} shadow={r['boxShadow'][:40]}")
             check(f"{tag} {n}: the ring hugs the title text and clears the brand line (title top {r['titleTop']:.1f} - 8 >= brand bottom {r['brandBottom']:.1f})",
                   r["titleW"] <= r["infoW"] and r["brandBottom"] is not None and r["titleTop"] - 8 >= r["brandBottom"] - 0.5,
                   f"titleW={r['titleW']} infoW={r['infoW']} titleTop={r['titleTop']} brandBottom={r['brandBottom']}")
     check(f"{tag} after a keyboard entry real Tabs walk the drawer's order and reach Make finalist in the docked footer within six presses (visited: {' > '.join(str(t) for t in tabs)})",
           "drawerFinalistBtn" in tabs, " > ".join(str(t) for t in tabs))
+
+    # ---- CORRECTIVE PASS 3: the ring follows the ATTRIBUTE, not the heuristic.
+    # Open by pointer (no ring), then flip the attribute with no new input at all.
+    base = pointer_open(False)
+    check(f"{tag} flip baseline: a pointer opening leaves the title focused with no ring",
+          base["entry"] == "pointer" and base["focused"] and base["outlineStyle"] == "none" and base["boxShadow"] == "none",
+          f"entry={base['entry']} outline={base['outlineStyle']} shadow={base['boxShadow'][:30]}")
+    kb = page.evaluate(FLIP_JS, "keyboard")
+    ring_kb = kb["outlineStyle"] == "solid" and kb["outlineWidth"] == "3px" and kb["outlineOffset"] == "5px" and kb["outlineColor"] not in ("rgba(0, 0, 0, 0)", "transparent")
+    check(f"{tag} flip to keyboard: the branded ring appears with focus untouched and NO new user input - the ring is modality-driven, not :focus-visible-driven (:focus-visible reads {kb['focusVisible']}, :focus reads {kb['focusMatch']})",
+          kb["focused"] and kb["focusMatch"] and ring_kb and (kb["boxShadow"] != "none" or forced),
+          f"outline={kb['outlineStyle']} {kb['outlineWidth']} offset={kb['outlineOffset']} color={kb['outlineColor']} shadow={kb['boxShadow'][:30]}")
+    absent = page.evaluate(FLIP_JS, None)
+    ring_absent = absent["outlineStyle"] == "solid" and absent["outlineWidth"] == "3px" and absent["outlineOffset"] == "5px"
+    check(f"{tag} flip to absent: an unknown modality fails VISIBLE in CSS too (:not([data-focus-entry=\"pointer\"]) still paints the ring)",
+          absent["entry"] is None and ring_absent,
+          f"entry={absent['entry']} outline={absent['outlineStyle']} {absent['outlineWidth']}")
+    back = page.evaluate(FLIP_JS, "pointer")
+    check(f"{tag} flip back to pointer: the ring and the halo disappear again (no leak in either direction, still the same focus)",
+          back["focused"] and back["outlineStyle"] == "none" and back["boxShadow"] == "none",
+          f"outline={back['outlineStyle']} shadow={back['boxShadow'][:30]}")
+
+    # ---- CORRECTIVE PASS 3: the real wipe REMOVES the attribute (executed in the real DOM)
+    w = page.evaluate(WIPE_JS)
+    check(f"{tag} the real wipe (window.startOver -> resetSessionState) closes the drawer and REMOVES data-focus-entry - hasAttribute is false, not an empty string (was {w['before']!r})",
+          w["before"] == "pointer" and w["has"] is False and w["after"] is None and w["open"] is False,
+          f"before={w['before']!r} has={w['has']} after={w['after']!r} open={w['open']}")
+    check(f"{tag} the wipe ran without a page error", not errors, f"errors={errors[:1]}")
     page.close(); ctx.close()
 
 

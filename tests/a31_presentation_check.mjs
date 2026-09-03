@@ -1208,7 +1208,7 @@ section('Product-proof drawer painter — "Try this mattress" (0/1/2 demonstrati
   ok('negative control: an unguarded renderer call is detected', unguarded.renders.n === 1);
 
   // ---- markup order and boundaries (statics)
-  ok('drawer order: identity, story, "Try this mattress", pillow prompt, financing, promotion, then the sticky action footer (actions, notice, live region) as the last element',
+  ok('drawer order: identity, story, "Try this mattress", pillow prompt, financing, promotion, then the docked action footer (actions, notice, live region) as the last element',
     at('id="drawerFeelAnchor"') < at('id="drawerStory"') && at('id="drawerStory"') < at('id="drawerTry"')
     && at('id="drawerTry"') < at('id="drawerTryLabel"') && at('id="drawerTryLabel"') < at('id="drawerProofs"')
     && at('id="drawerProofs"') < at('id="drawerSystemPrompt"') && at('id="drawerSystemPrompt"') < at('id="drawerFinancing"')
@@ -1355,31 +1355,39 @@ section('Docked product-action footer — a sibling below the scroll viewport in
   ok('negative control: an overlay footer (position: absolute / sticky) or a spacer would be detected by the rule pins', !/position:/.test(footerRule) && !/scroll-padding/.test(scrollRule));
 }
 
-section('Drawer title focus — programmatic focus on every open; the branded ring for keyboard entry only (input-modality attribute); forced colors; no unconditional suppression');
+section('Drawer title focus — programmatic focus on every open; the branded ring driven by the ENTRY MODALITY through :focus (no :focus-visible dependency); forced colors; no unconditional suppression');
 {
   const openSrc = extractFunction('window.openMattressDrawer = function(mattressId, orderList, opts)') || '';
   const closeSrc = extractFunction('window.closeMattressDrawer = function(opts)') || '';
   const keySrc = extractFunction('function drawerKeydown(e)') || '';
   const wipeSrc = extractFunction('function resetSessionState(opts)') || '';
-  const ruleM = norm.match(/\n    \.drawer-mattress-name:focus-visible \{([^}]*)\}/);
+  const wipeLayerSrc = extractFunction('function wipeLayer(spec)') || '';
+  const POS_SEL = '.mattress-drawer:not([data-focus-entry="pointer"]) .drawer-mattress-name:focus';
+  const PTR_SEL = '.mattress-drawer[data-focus-entry="pointer"] .drawer-mattress-name:focus';
+  const ruleM = norm.match(/\n    \.mattress-drawer:not\(\[data-focus-entry="pointer"\]\) \.drawer-mattress-name:focus \{([^}]*)\}/);
   const body = ruleM ? ruleM[1] : '';
-  const condM = norm.match(/\n    \.mattress-drawer\[data-focus-entry="pointer"\] \.drawer-mattress-name:focus-visible \{([^}]*)\}/);
+  const condM = norm.match(/\n    \.mattress-drawer\[data-focus-entry="pointer"\] \.drawer-mattress-name:focus \{([^}]*)\}/);
   const cond = condM ? condM[1] : '';
-  const fcM = norm.match(/@media \(forced-colors: active\) \{\s*\.drawer-mattress-name:focus-visible \{([^}]*)\}\s*\}/);
+  const fcM = norm.match(/@media \(forced-colors: active\) \{\s*\.mattress-drawer:not\(\[data-focus-entry="pointer"\]\) \.drawer-mattress-name:focus \{([^}]*)\}\s*\}/);
   const fc = fcM ? fcM[1] : '';
   ok('focus entry is unchanged: the title stays focusable (tabindex -1, attribute order pinned by smoke) and openMattressDrawer moves focus to it',
     norm.includes('<div class="drawer-mattress-name" id="drawerName" tabindex="-1"></div>')
     && openSrc.includes("var title = document.getElementById('drawerName');\n      if (title && typeof title.focus === 'function') title.focus();"));
-  ok('the keyboard ring rule (unconditional selector) keeps the shared two-ring tokens at the ruled 5px offset, hugging the text, left-aligned, tokens only, and never outline: none',
+  // ---- the ring no longer asks the browser whether the focus was "visible"
+  ok('CORRECTIVE PASS 3: the title\'s ring is modality-driven, NOT heuristic-driven - every title focus rule keys on :focus, and the string ".drawer-mattress-name:focus-visible" no longer exists anywhere in the file',
+    !/drawer-mattress-name:focus-visible/.test(norm)
+    && (norm.match(/\.drawer-mattress-name:focus \{/g) || []).length === 3
+    && norm.includes(POS_SEL + ' {') && norm.includes(PTR_SEL + ' {'));
+  ok('the POSITIVE rule paints for keyboard AND for an absent attribute (:not([data-focus-entry="pointer"]) = fail-visible in CSS too), keeping the shared two-ring tokens at the ruled 5px offset, hugging the text, tokens only, never outline: none',
     !!ruleM && /outline:\s*3px solid var\(--focus-ring-outer\);/.test(body) && /outline-offset:\s*5px;/.test(body)
     && /box-shadow:\s*0 0 0 8px var\(--focus-ring-inner\);/.test(body) && /width:\s*fit-content;/.test(body) && /max-width:\s*100%;/.test(body)
     && !/margin-inline:\s*auto/.test(body) && !/#[0-9A-Fa-f]{3,6}\b/.test(body) && !/outline:\s*none/.test(body));
-  ok('the ONLY suppression is the conditional pointer-entry rule (data-focus-entry="pointer" on the drawer), placed after the keyboard rule and before the forced-colors counterpart',
+  ok('the ONLY suppression is the pointer-entry rule, which now also has to defeat the UA outline (:focus, not :focus-visible), placed after the positive rule and before the forced-colors counterpart',
     !!condM && /outline:\s*none;/.test(cond) && /box-shadow:\s*none;/.test(cond)
     && norm.indexOf(ruleM ? ruleM[0] : 'x') < norm.indexOf(condM ? condM[0] : 'y') && norm.indexOf(condM ? condM[0] : 'y') < norm.indexOf(fcM ? fcM[0] : 'z')
-    && !/\.mattress-drawer \.drawer-mattress-name:focus-visible/.test(norm) && !/\.drawer-mattress-name:focus(?!-visible)[\s,{]/.test(norm)
-    && (norm.match(/drawer-mattress-name:focus-visible \{/g) || []).length === 3);
-  ok('the forced-colors counterpart keeps a CanvasText ring with no halo for keyboard entry, after the anchored first forced-colors block and after the heading block',
+    && !/\.mattress-drawer \.drawer-mattress-name:focus[\s,{]/.test(norm)
+    && !/\n    \.drawer-mattress-name:focus[\s,{]/.test(norm));
+  ok('the forced-colors counterpart carries the SAME modality gate and keeps a CanvasText ring with no halo, after the anchored first forced-colors block and after the heading block',
     !!fcM && /outline-color:\s*CanvasText;/.test(fc) && /box-shadow:\s*none;/.test(fc) && !/outline:\s*none/.test(fc)
     && norm.indexOf(fcM[0]) > norm.indexOf('.fin-btn:focus-visible')
     && norm.indexOf(fcM[0]) > norm.indexOf('.hf2-review-title:focus-visible {\n        outline-color: CanvasText;'));
@@ -1423,17 +1431,42 @@ section('Drawer title focus — programmatic focus on every open; the branded ri
     && openSrc.indexOf(setLine) > openSrc.indexOf("drawer.classList.add('drawer-open');")
     && openSrc.indexOf(setLine) < openSrc.indexOf('// ---- dialog lifecycle') && openSrc.indexOf(setLine) < openSrc.indexOf('title.focus();')
     && !/if \(.*\)\s*drawer\.setAttribute\('data-focus-entry'/.test(openSrc));
-  ok('closeMattressDrawer clears the attribute (an opening never inherits the previous one); the wipe closes the drawer, resets the tracker and declares the attribute in SESSION_LAYERS',
+  ok('closeMattressDrawer clears the attribute (an opening never inherits the previous one) and the wipe resets the tracker',
     closeSrc.includes("      drawer.removeAttribute('data-focus-entry');")
-    && wipeSrc.includes('window._drawerInputModality = null;')
-    && norm.includes("{ id: 'mattressDrawer', attrs: { 'data-focus-entry': '' } },"));
+    && wipeSrc.includes('window._drawerInputModality = null;'));
+  // ---- CORRECTIVE PASS 3: the wipe must REMOVE the attribute, not blank it
+  ok('CORRECTIVE PASS 3: SESSION_LAYERS declares the attribute through a REMOVAL facility (removeAttrs), not through attrs - a blanked data-focus-entry would still match neither gate and would outlive the customer',
+    norm.includes("{ id: 'mattressDrawer', removeAttrs: ['data-focus-entry'] },")
+    && !/attrs: \{ 'data-focus-entry'/.test(norm));
+  ok('CORRECTIVE PASS 3: wipeLayer implements removeAttrs with removeAttribute (guarded like every other facility), and keeps attrs/setAttribute for the specs that set values',
+    /if \(spec\.removeAttrs && el\.removeAttribute\) \{\s*spec\.removeAttrs\.forEach\(function\(a\) \{ el\.removeAttribute\(a\); \}\);\s*\}/.test(wipeLayerSrc)
+    && /if \(spec\.attrs && el\.setAttribute\) \{/.test(wipeLayerSrc));
+  {
+    // executed: the extracted wipeLayer against a minimal element, so the removal is proved by
+    // behaviour and not by source matching (the browser-level proof is in the rendered suite and
+    // the real-wipe proof in session_safety_check).
+    const attrs = new Map();
+    const el = { classList: { add() {}, remove() {} }, style: {},
+      setAttribute: (k, v) => attrs.set(k, String(v)), removeAttribute: (k) => attrs.delete(k),
+      hasAttribute: (k) => attrs.has(k), getAttribute: (k) => (attrs.has(k) ? attrs.get(k) : null) };
+    const run = new Function('document', wipeLayerSrc + '\nreturn wipeLayer;')({ getElementById: () => el });
+    el.setAttribute('data-focus-entry', 'pointer');
+    run({ id: 'mattressDrawer', removeAttrs: ['data-focus-entry'] });
+    const removed = !el.hasAttribute('data-focus-entry');
+    run({ id: 'x', attrs: { 'aria-pressed': 'false' } });
+    ok('executed: wipeLayer({ removeAttrs }) leaves hasAttribute("data-focus-entry") false (not an empty string), and attrs still sets values',
+      removed && el.getAttribute('aria-pressed') === 'false');
+    const blanked = { setAttribute: el.setAttribute, removeAttribute: el.removeAttribute, hasAttribute: el.hasAttribute };
+    blanked.setAttribute('data-focus-entry', '');
+    ok('negative control: the old attrs form (setAttribute to "") leaves the attribute PRESENT - which is what this pass fixes', blanked.hasAttribute('data-focus-entry'));
+  }
   ok('any key pressed inside the open drawer flips the entry to keyboard before the Escape / Tab handling, so normal visible keyboard focus follows',
     /^\s*function drawerKeydown\(e\) \{\s*\n\s*\/\/[^\n]*\n\s*\/\/[^\n]*\n\s*var drawer = document\.getElementById\('mattressDrawer'\);\s*\n\s*if \(drawer\) drawer\.setAttribute\('data-focus-entry', 'keyboard'\);/.test(keySrc)
     && keySrc.indexOf("'keyboard'") < keySrc.indexOf("e.key === 'Escape'"));
   ok('the name keeps the ring\'s reach clear of the brand line above it: a 10px top margin, the brand rule unchanged',
     /\.drawer-mattress-name \{ font:800 clamp\(24px,3vw,34px\)\/1\.08 var\(--font-serif\); color:var\(--cream\); margin:10px 0 6px; \}/.test(norm)
     && /\.drawer-mattress-brand \{ font:700 12px\/1\.2 var\(--font-sans\); text-transform:uppercase; letter-spacing:1\.4px; color:var\(--gold\); \}/.test(norm));
-  ok('the pinned control and heading focus lists are untouched (the title has its own rules, placed after the heading block)',
+  ok('the ordinary control and heading focus rules are untouched - they keep :focus-visible; only the programmatically focused title moved to :focus',
     /\.drawer-nav-btn:focus-visible,\n\s*\.drawer-finalist-btn:focus-visible,\n\s*\.drawer-undo-btn:focus-visible,\n\s*\.drawer-btn:focus-visible \{/.test(norm)
     && /\.noct-results-headline:focus-visible,\s*\.noct-email-headline:focus-visible,\s*\.sleep-system__title:focus-visible,\s*\.hf2-review-title:focus-visible\s*\{/.test(norm)
     && !/\.hf2-review-title:focus-visible,\s*\.drawer-mattress-name/.test(norm)
@@ -1444,8 +1477,12 @@ section('Drawer title focus — programmatic focus on every open; the branded ri
   ok('negative control: a tracker that stops seeing the keyboard leaks a pointer entry into a keyboard opening - detected', blind.resolve() !== 'keyboard');
   ok('negative control: a guarded (inherited) entry attribute is detected by the recompute pin',
     /if \(.*\)\s*drawer\.setAttribute\('data-focus-entry'/.test(mustReplace(openSrc, setLine, "      if (!drawer.hasAttribute('data-focus-entry')) " + setLine.trim())));
+  ok('negative control: reverting the POSITIVE rule to :focus-visible (the heuristic dependency this pass removed) is detected',
+    /drawer-mattress-name:focus-visible/.test(mustReplace(norm, POS_SEL + ' {', POS_SEL + '-visible {')));
   ok('negative control: an unconditional suppression (selector without the pointer attribute) is detected',
-    /\.mattress-drawer \.drawer-mattress-name:focus-visible/.test(mustReplace(norm, '.mattress-drawer[data-focus-entry="pointer"] .drawer-mattress-name:focus-visible {', '.mattress-drawer .drawer-mattress-name:focus-visible {')));
+    /\.mattress-drawer \.drawer-mattress-name:focus[\s,{]/.test(mustReplace(norm, PTR_SEL + ' {', '.mattress-drawer .drawer-mattress-name:focus {')));
+  ok('negative control: converting the reset back to a blanking setAttribute is detected',
+    /attrs: \{ 'data-focus-entry'/.test(mustReplace(norm, "{ id: 'mattressDrawer', removeAttrs: ['data-focus-entry'] },", "{ id: 'mattressDrawer', attrs: { 'data-focus-entry': '' } },")));
 }
 
 // ------------------------------------------------------------------- summary

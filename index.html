@@ -10408,11 +10408,28 @@
        title.focus()) and showed only the UA rectangle. It takes the heading
        treatment above as its OWN rule (the pinned heading list is untouched):
        text-hugging fit-content, the same two-ring token pair at the ruled 5px
-       offset, left-aligned like the Plan title (no auto inline margins),
-       gated on :focus-visible so a pointer or touch opening draws nothing and
-       the keyboard path keeps a WCAG ring. Never outline: none. The
-       forced-colors counterpart follows, after the anchored first block. */
-    .drawer-mattress-name:focus-visible {
+       offset, left-aligned like the Plan title (no auto inline margins).
+       Never outline: none.
+
+       Corrective pass 3 (2026-09-03): the ring is gated on the ENTRY MODALITY
+       through :focus, NOT on :focus-visible. Whether a browser calls a
+       SCRIPTED focus "visible" after a real tap is a heuristic that Chromium
+       and WebKit answer differently and that nothing in the app controls - so
+       the previous rules could suppress the ring reliably but could not
+       guarantee it. These three rules read only data-focus-entry, which
+       openMattressDrawer stamps from the last real input on every open:
+
+         - :not([data-focus-entry="pointer"]) paints the ring, so a keyboard
+           entry AND an absent / unknown attribute both stay visible (the
+           resolver's fail-visible rule, restated in CSS);
+         - [data-focus-entry="pointer"] suppresses the author halo AND the UA
+           outline for that entry only - the reason the pointer rule also had
+           to move to :focus;
+         - the forced-colors counterpart carries the same gate.
+
+       Ordinary controls and headings are untouched: they keep :focus-visible,
+       because they are focused by real user action, never by script. */
+    .mattress-drawer:not([data-focus-entry="pointer"]) .drawer-mattress-name:focus {
       width: -webkit-fit-content;
       width: fit-content;
       max-width: 100%;
@@ -10420,18 +10437,12 @@
       outline-offset: 5px;
       box-shadow: 0 0 0 8px var(--focus-ring-inner);
     }
-    /* Corrective pass: a pointer / touch entry (data-focus-entry="pointer",
-       stamped by openMattressDrawer from the last real input) suppresses the
-       title's decorative ring for that entry only; a keyboard entry keeps it,
-       and a key pressed inside the drawer flips the attribute (drawerKeydown).
-       Conditional by design - never an unconditional outline: none on the
-       title. */
-    .mattress-drawer[data-focus-entry="pointer"] .drawer-mattress-name:focus-visible {
+    .mattress-drawer[data-focus-entry="pointer"] .drawer-mattress-name:focus {
       outline: none;
       box-shadow: none;
     }
     @media (forced-colors: active) {
-      .drawer-mattress-name:focus-visible {
+      .mattress-drawer:not([data-focus-entry="pointer"]) .drawer-mattress-name:focus {
         outline-color: CanvasText;
         box-shadow: none;
       }
@@ -10470,7 +10481,7 @@
       .drawer-proof { border: 1px solid CanvasText; }
       .drawer-proof__icon { border: 1px solid CanvasText; color: CanvasText; }
     }
-    /* Consolidation pass: the sticky action footer keeps its divider when
+    /* Consolidation pass: the docked action footer keeps its divider when
        author colours are stripped. */
     @media (forced-colors: active) {
       .drawer-action-footer { border-top: 1px solid CanvasText; }
@@ -23660,8 +23671,10 @@
       { id: 'drawerFinalistUndoBtn', hiddenAttr: true },
       // Corrective pass: the title's focus-entry modality never survives a
       // customer (the wipe closes the drawer, which clears it; this is the
-      // declarative twin).
-      { id: 'mattressDrawer', attrs: { 'data-focus-entry': '' } },
+      // declarative twin). It must be REMOVED, not blanked: an empty value
+      // matches neither modality gate, but it would still outlive the
+      // customer on a persistent node.
+      { id: 'mattressDrawer', removeAttrs: ['data-focus-entry'] },
       // Product-proof drawer: the story and the "Try this mattress" section
       // return to their collapsed rest state (the pair marker with them).
       { id: 'drawerStory', hiddenAttr: true },
@@ -23686,6 +23699,13 @@
       if (spec.add && el.classList) spec.add.forEach(function(c) { el.classList.add(c); });
       if (spec.attrs && el.setAttribute) {
         Object.keys(spec.attrs).forEach(function(k) { el.setAttribute(k, spec.attrs[k]); });
+      }
+      // Corrective pass 3: `attrs` can only SET, and an attribute whose right
+      // reset value is "absent" (data-focus-entry) was therefore left present
+      // with an empty value by the wipe. removeAttrs is the removal twin -
+      // same guarded shape, one job.
+      if (spec.removeAttrs && el.removeAttribute) {
+        spec.removeAttrs.forEach(function(a) { el.removeAttribute(a); });
       }
       if (spec.hiddenAttr === true) el.hidden = true;
       if (typeof spec.display === 'string' && el.style) el.style.display = spec.display;

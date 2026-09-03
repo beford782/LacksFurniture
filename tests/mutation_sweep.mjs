@@ -149,7 +149,7 @@ const AUD = ["tests/audience_contract_check.mjs"];
 // specialist reason adapter.
 const A31 = ["tests/a31_presentation_check.mjs"];
 // Consolidation pass (2026-09-02): the rendered layout suite (Playwright)
-// observes the sticky footer's geometry beside the a31 statics.
+// observes the docked footer's geometry beside the a31 statics.
 const LAYOUT = ["tests/sleep_plan_layout_check.py"];
 const A31_LAYOUT = A31.concat(LAYOUT);
 
@@ -2258,26 +2258,31 @@ const MUTATIONS = [
     '          </div>\n          <div class="drawer-finalist-note" id="drawerFinalistNote" hidden>',
     '          </div>\n        </div>\n        <div class="drawer-finalist-orphan">\n          <div class="drawer-finalist-note" id="drawerFinalistNote" hidden>',
     A31],
-  // --- Corrective pass (owner ruling 2026-09-02): input-modality-aware title focus
+  // --- Corrective pass (owner ruling 2026-09-02): input-modality-aware title focus.
+  // Corrective pass 3 (2026-09-03): the title's three rules key on :focus and read only
+  // data-focus-entry, so these FINDs follow the rewritten selectors; the five entries at
+  // the end pin the review findings (the heuristic reinstated on either rule, the
+  // forced-colors gate dropped, the reset blanked instead of removed, the removal
+  // facility deleted).
   ["title focus: the drawer title's author ring is removed (the UA rectangle returns on keyboard entry)",
-    "    .drawer-mattress-name:focus-visible {\n      width: -webkit-fit-content;\n      width: fit-content;\n      max-width: 100%;\n      outline: 3px solid var(--focus-ring-outer);\n      outline-offset: 5px;\n      box-shadow: 0 0 0 8px var(--focus-ring-inner);\n    }\n",
+    "    .mattress-drawer:not([data-focus-entry=\"pointer\"]) .drawer-mattress-name:focus {\n      width: -webkit-fit-content;\n      width: fit-content;\n      max-width: 100%;\n      outline: 3px solid var(--focus-ring-outer);\n      outline-offset: 5px;\n      box-shadow: 0 0 0 8px var(--focus-ring-inner);\n    }\n",
     "",
     A31_LAYOUT],
-  ["title focus: the keyboard ring is suppressed outright (outline: none on the unconditional rule)",
-    "      outline-offset: 5px;\n      box-shadow: 0 0 0 8px var(--focus-ring-inner);\n    }\n    /* Corrective pass: a pointer / touch entry",
-    "      outline-offset: 5px;\n      box-shadow: none;\n      outline: none;\n    }\n    /* Corrective pass: a pointer / touch entry",
+  ["title focus: the keyboard ring is suppressed outright (outline: none on the positive rule)",
+    "      outline-offset: 5px;\n      box-shadow: 0 0 0 8px var(--focus-ring-inner);\n    }\n    .mattress-drawer[data-focus-entry=\"pointer\"] .drawer-mattress-name:focus {",
+    "      outline-offset: 5px;\n      box-shadow: none;\n      outline: none;\n    }\n    .mattress-drawer[data-focus-entry=\"pointer\"] .drawer-mattress-name:focus {",
     A31_LAYOUT],
   ["title focus: the name loses its clearance above (the ring crosses the brand line)",
     "color:var(--cream); margin:10px 0 6px; }",
     "color:var(--cream); margin:4px 0 6px; }",
     A31_LAYOUT],
-  ["title focus: a pointer opening displays the ring (the conditional suppression is removed)",
-    "    .mattress-drawer[data-focus-entry=\"pointer\"] .drawer-mattress-name:focus-visible {\n      outline: none;\n      box-shadow: none;\n    }\n",
+  ["title focus: a pointer opening displays the ring (the pointer suppression rule is REMOVED)",
+    "    .mattress-drawer[data-focus-entry=\"pointer\"] .drawer-mattress-name:focus {\n      outline: none;\n      box-shadow: none;\n    }\n",
     "",
     A31_LAYOUT],
   ["title focus: a keyboard opening suppresses the ring (the suppression goes unconditional)",
-    "    .mattress-drawer[data-focus-entry=\"pointer\"] .drawer-mattress-name:focus-visible {",
-    "    .mattress-drawer .drawer-mattress-name:focus-visible {",
+    "    .mattress-drawer[data-focus-entry=\"pointer\"] .drawer-mattress-name:focus {",
+    "    .mattress-drawer .drawer-mattress-name:focus {",
     A31_LAYOUT],
   ["title focus: the tracker stops seeing the keyboard (a pointer entry leaks into a later keyboard opening)",
     "    document.addEventListener('keydown', function() { window._drawerInputModality = 'keyboard'; }, true);\n",
@@ -2296,9 +2301,29 @@ const MUTATIONS = [
     "      var title = document.getElementById('drawerName');",
     A31_LAYOUT],
   ["title focus: forced-colors keyboard focus is lost",
-    "      .drawer-mattress-name:focus-visible {\n        outline-color: CanvasText;\n        box-shadow: none;\n      }",
-    "      .drawer-mattress-name:focus-visible {\n        outline: none;\n        box-shadow: none;\n      }",
+    "      .mattress-drawer:not([data-focus-entry=\"pointer\"]) .drawer-mattress-name:focus {\n        outline-color: CanvasText;\n        box-shadow: none;\n      }",
+    "      .mattress-drawer:not([data-focus-entry=\"pointer\"]) .drawer-mattress-name:focus {\n        outline: none;\n        box-shadow: none;\n      }",
     A31_LAYOUT],
+  ["title focus: the POSITIVE rule goes back to the browser's :focus-visible heuristic (review finding: a programmatically focused title is then not guaranteed a ring)",
+    "    .mattress-drawer:not([data-focus-entry=\"pointer\"]) .drawer-mattress-name:focus {\n      width: -webkit-fit-content;",
+    "    .mattress-drawer:not([data-focus-entry=\"pointer\"]) .drawer-mattress-name:focus-visible {\n      width: -webkit-fit-content;",
+    A31_LAYOUT],
+  ["title focus: the pointer suppression goes back to :focus-visible (the UA outline can then paint on a tap opening)",
+    "    .mattress-drawer[data-focus-entry=\"pointer\"] .drawer-mattress-name:focus {\n      outline: none;",
+    "    .mattress-drawer[data-focus-entry=\"pointer\"] .drawer-mattress-name:focus-visible {\n      outline: none;",
+    A31],
+  ["title focus: the forced-colors ring loses its modality gate (a tap opening paints a CanvasText ring)",
+    "      .mattress-drawer:not([data-focus-entry=\"pointer\"]) .drawer-mattress-name:focus {\n        outline-color: CanvasText;",
+    "      .drawer-mattress-name:focus {\n        outline-color: CanvasText;",
+    A31],
+  ["title focus: the wipe BLANKS the entry attribute instead of removing it (setAttribute to '' leaves it present on a persistent node)",
+    "      { id: 'mattressDrawer', removeAttrs: ['data-focus-entry'] },",
+    "      { id: 'mattressDrawer', attrs: { 'data-focus-entry': '' } },",
+    A31.concat(SESSION)],
+  ["title focus: wipeLayer loses its attribute-REMOVAL facility (every removeAttrs spec becomes a no-op)",
+    "      if (spec.removeAttrs && el.removeAttribute) {\n        spec.removeAttrs.forEach(function(a) { el.removeAttribute(a); });\n      }\n",
+    "",
+    A31.concat(SESSION)],
   ["A3.1 drawer: the price-tier glyph returns to the drawer name",
     "      document.getElementById('drawerName').textContent = m.name;",
     "      document.getElementById('drawerName').innerHTML = m.name + ' <span class=\"price-tier\">$$$</span>';",

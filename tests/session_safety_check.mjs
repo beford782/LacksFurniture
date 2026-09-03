@@ -1052,6 +1052,17 @@ win._sleepSystemState = {
 };
 win._profileRevealInFlight = true;
 win._resultsRevealInFlight = true;
+// Corrective pass 3: a departing customer who opened the drawer by tapping
+// leaves BOTH halves of the focus-entry modality dirty - the tracker value and
+// the attribute the open stamped on the drawer. The attribute is the one that
+// used to survive: SESSION_LAYERS declared it through `attrs`, and wipeLayer
+// implements attrs with setAttribute, so the wipe blanked it instead of
+// removing it. Seed it as the app would, then assert removal below.
+win._drawerInputModality = "pointer";
+el("mattressDrawer").setAttribute("data-focus-entry", "pointer");
+check("seeded: the drawer carries a pointer focus-entry attribute and the tracker is dirty",
+  el("mattressDrawer").getAttribute("data-focus-entry") === "pointer"
+  && win._drawerInputModality === "pointer");
 
 // analytics
 const A = outer.analytics;
@@ -1306,6 +1317,15 @@ check("financing sheet hidden", el("financingSheet").hidden === true);
 check("discount reveal state on the handoff button cleared",
   !el("hf2DiscountBtn").classList.contains("hf2-discount-btn--revealed"));
 check("profile animate class cleared", !el("profileScreen").classList.contains("animate"));
+// EXECUTED (not source-matched): after the real wipe the attribute must be
+// ABSENT. `attrs: { 'data-focus-entry': '' }` would leave it present with an
+// empty value - which matches neither modality gate but does outlive the
+// customer, and is exactly what a genuine removal path prevents.
+check("Corrective pass 3: the drawer's focus-entry attribute is REMOVED by the wipe, not blanked",
+  !el("mattressDrawer").hasAttribute("data-focus-entry"),
+  `getAttribute=${JSON.stringify(el("mattressDrawer").getAttribute("data-focus-entry"))}`);
+check("Corrective pass 3: the focus-entry tracker is reset with it",
+  win._drawerInputModality === null);
 check("data-error overlay closed, aria-hidden RESTORED, and no longer busy",
   !el("dataErrorOverlay").classList.contains("visible")
   && el("dataErrorOverlay").getAttribute("aria-hidden") === "true"
