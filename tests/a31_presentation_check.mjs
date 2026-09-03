@@ -1342,6 +1342,9 @@ section('Drawer title focus — the accessible name keeps programmatic focus on 
     !!fc && /outline-color:\s*CanvasText;/.test(fc[1]) && /box-shadow:\s*none;/.test(fc[1])
     && norm.indexOf(fc[0]) > norm.indexOf('.fin-btn:focus-visible')
     && norm.indexOf(fc[0]) > norm.indexOf('.hf2-review-title:focus-visible {\n        outline-color: CanvasText;'));
+  ok('the name keeps the ring\'s reach clear of the brand line above it: a 10px top margin (>= the 5px offset + 3px ring + 1px), the header row otherwise unchanged',
+    /\.drawer-mattress-name \{ font:800 clamp\(24px,3vw,34px\)\/1\.08 var\(--font-serif\); color:var\(--cream\); margin:10px 0 6px; \}/.test(norm)
+    && /\.drawer-mattress-brand \{ font:700 12px\/1\.2 var\(--font-sans\); text-transform:uppercase; letter-spacing:1\.4px; color:var\(--gold\); \}/.test(norm));
   ok('the pinned control and heading focus lists are untouched (the title has its own rule, placed after the heading block)',
     /\.drawer-nav-btn:focus-visible,\n\s*\.drawer-finalist-btn:focus-visible,\n\s*\.drawer-undo-btn:focus-visible,\n\s*\.drawer-btn:focus-visible \{/.test(norm)
     && /\.noct-results-headline:focus-visible,\s*\.noct-email-headline:focus-visible,\s*\.sleep-system__title:focus-visible,\s*\.hf2-review-title:focus-visible\s*\{/.test(norm)

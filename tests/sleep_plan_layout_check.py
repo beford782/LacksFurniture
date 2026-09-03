@@ -1015,11 +1015,15 @@ def run_drawer_footer(browser, port, name, width, height, lang, shots_dir):
 # Rendered proof: on the KEYBOARD path (a Tab precedes the open) the title
 # matches :focus-visible and draws the author ring (3px solid outline at a
 # 5px offset with the halo) hugging its text; on the POINTER path (a real
-# click on the result card opens the drawer) the title is focused and never
-# draws the browser-default `auto` ring - Chromium's heuristic may still
-# match :focus-visible after a script focus() (it did in every earlier
-# capture, which is where the UA rectangle came from), in which case the
-# author ring is what appears. Focus entry itself is unchanged in both paths.
+# touch on non-focusable page content, then a real tap on the result card,
+# opens the drawer) the title is focused and never draws the browser-default
+# `auto` ring. Measured: headless Chromium 151 still matches :focus-visible
+# on the script-focused title after that pointer sequence, so the author
+# ring appears there too (this is where every earlier capture's UA
+# rectangle came from); what the app controls is the ring's style, so the
+# pointer check pins "never `auto`: no ring or the 3px author ring".
+# Whether a mounted iPad draws it on a tap-open is unverified (device
+# checks remain waived). Focus entry itself is unchanged in both paths.
 DRAWER_TITLE_SETUP_JS = r"""
 async (ARGS) => {
   const wait = (ms) => new Promise((res) => setTimeout(res, ms));
@@ -1029,7 +1033,8 @@ async (ARGS) => {
   await wait(400);
   const card = document.querySelector('#resultsScreen [data-id][data-tier]');
   const r = card.getBoundingClientRect();
-  return { x: r.left + Math.min(40, r.width / 4), y: r.top + Math.min(40, r.height / 4) };
+  const h = document.querySelector('.noct-results-eyebrow').getBoundingClientRect();
+  return { x: r.left + Math.min(40, r.width / 4), y: r.top + Math.min(40, r.height / 4), hx: h.left + h.width / 2, hy: h.top + h.height / 2 };
 }
 """
 DRAWER_TITLE_PROBE_JS = r"""
@@ -1040,7 +1045,8 @@ DRAWER_TITLE_PROBE_JS = r"""
   const r = title.getBoundingClientRect();
   return { open: document.getElementById('mattressDrawer').classList.contains('drawer-open'), focused: document.activeElement === title,
     focusVisible: title.matches(':focus-visible'), outlineStyle: cs.outlineStyle, outlineWidth: cs.outlineWidth, outlineOffset: cs.outlineOffset,
-    boxShadow: cs.boxShadow, titleW: Math.round(r.width), infoW: Math.round(info.width), text: (title.textContent || '').trim() };
+    boxShadow: cs.boxShadow, titleW: Math.round(r.width), infoW: Math.round(info.width), text: (title.textContent || '').trim(),
+    titleTop: r.top, brandBottom: title.previousElementSibling ? title.previousElementSibling.getBoundingClientRect().bottom : null };
 }
 """
 
@@ -1058,6 +1064,10 @@ def run_drawer_title_focus(browser, port, name, width, height, shots_dir):
             page.keyboard.press("Tab")
             page.evaluate("() => openResultCardDrawer(document.querySelector('#resultsScreen [data-id][data-tier]'))")
         else:
+            # the device path: a real touch lands on non-focusable page content (the eyebrow) before the card
+            # is tapped, blurring the heading's keyboard-style script focus so the title inherits none
+            page.mouse.click(pt["hx"], pt["hy"])
+            page.wait_for_timeout(200)
             page.mouse.click(pt["x"], pt["y"])
         page.wait_for_timeout(800)
         r = page.evaluate(DRAWER_TITLE_PROBE_JS)
@@ -1071,12 +1081,15 @@ def run_drawer_title_focus(browser, port, name, width, height, shots_dir):
             check(f"{tag} the title matches :focus-visible and draws the author ring - 3px solid outline at a 5px offset with the halo, not the UA rectangle",
                   r["focusVisible"] and r["outlineStyle"] == "solid" and r["outlineWidth"] == "3px" and r["outlineOffset"] == "5px" and r["boxShadow"] != "none",
                   f"focusVisible={r['focusVisible']} outline={r['outlineStyle']} {r['outlineWidth']} offset={r['outlineOffset']} shadow={r['boxShadow'][:40]}")
+            check(f"{tag} the ring's reach (5px offset + 3px) clears the brand line above the name (title top {r['titleTop']:.1f} - 8 >= brand bottom {r['brandBottom']:.1f})",
+                  r["brandBottom"] is not None and r["titleTop"] - 8 >= r["brandBottom"] - 0.5,
+                  f"titleTop={r['titleTop']} brandBottom={r['brandBottom']}")
             short = len(r["text"]) <= 22
             check(f"{tag} the ring hugs the title text (fit-content narrower than its column{'' if short else '; long name wraps, width capped'})",
                   (r["titleW"] < r["infoW"] - 24) if short else (r["titleW"] <= r["infoW"]),
                   f"titleW={r['titleW']} infoW={r['infoW']} text={r['text']!r}")
         else:
-            check(f"{tag} a pointer opening never draws the browser-default ring: either no ring (no :focus-visible match) or the author ring (3px solid with the halo)",
+            check(f"{tag} a pointer opening (a touch on the page, then the card) never draws the browser-default ring: either no ring (no :focus-visible match) or the 3px author ring with the halo",
                   r["outlineStyle"] in ("none", "solid") and (r["outlineStyle"] == "none" or (r["outlineWidth"] == "3px" and r["boxShadow"] != "none")),
                   f"focusVisible={r['focusVisible']} outline={r['outlineStyle']} {r['outlineWidth']} shadow={r['boxShadow'][:40]}")
         page.close()

@@ -9097,7 +9097,9 @@
     .drawer-mattress-img { display:none; }
     .drawer-mattress-info { flex:1; min-width:0; }
     .drawer-mattress-brand { font:700 12px/1.2 var(--font-sans); text-transform:uppercase; letter-spacing:1.4px; color:var(--gold); }
-    .drawer-mattress-name { font:800 clamp(24px,3vw,34px)/1.08 var(--font-serif); color:var(--cream); margin:4px 0 6px; }
+    /* Consolidation pass: 10px above the name (was 4px) so the title's 5px-offset
+       focus ring (3px) never crosses the brand line; nothing else in the row moves. */
+    .drawer-mattress-name { font:800 clamp(24px,3vw,34px)/1.08 var(--font-serif); color:var(--cream); margin:10px 0 6px; }
     .drawer-mattress-sub { font:500 14px/1.3 var(--font-sans); color:var(--cream-dim); }
     .drawer-match-badge { font:800 13px/1.2 var(--font-sans); color:#8ed9ad; background:rgba(76,175,80,0.14); border:1px solid rgba(110,207,154,0.35); padding:8px 12px; border-radius:8px; flex-shrink:0; } /* Material green 500 — see header note */
     .drawer-section-label { font:750 12px/1.2 var(--font-sans); text-transform:uppercase; letter-spacing:1.3px; color:var(--gold); margin-bottom:7px; opacity:1; }
