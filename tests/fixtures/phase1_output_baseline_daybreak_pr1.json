@@ -677,29 +677,29 @@
       "firmnessResolved": 4,
       "scores": {
         "g1": 31,
-        "g2": 48,
+        "g2": 50,
         "g3": 31,
-        "g4": 38,
-        "g5": 55,
-        "g6": 48,
-        "g7": 50,
+        "g4": 45,
+        "g5": 57,
+        "g6": 50,
+        "g7": 52,
         "g8": -1,
         "g9": 45,
         "s1": 31,
         "s2": 1,
-        "s3": 50,
+        "s3": 57,
         "s4": 31,
-        "s5": 34,
-        "s6": 55,
-        "s7": 53,
+        "s5": 36,
+        "s6": 57,
+        "s7": 55,
         "s8": 31,
-        "s9": 50,
+        "s9": 57,
         "s10": 1,
-        "b1": 43,
+        "b1": 45,
         "b2": 24,
-        "b3": 50,
+        "b3": 52,
         "b4": 29,
-        "b5": 45,
+        "b5": 47,
         "b6": 1,
         "b7": 47
       },
@@ -862,59 +862,59 @@
           "gold": [
             {
               "id": "g5",
-              "score": 55,
+              "score": 57,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
               "id": "g7",
-              "score": 50,
+              "score": 52,
               "pct": 91,
               "meetsMatchThreshold": true
             },
             {
               "id": "g2",
-              "score": 48,
-              "pct": 87,
+              "score": 50,
+              "pct": 88,
               "meetsMatchThreshold": true
             }
           ],
           "silver": [
             {
-              "id": "s6",
-              "score": 55,
+              "id": "s3",
+              "score": 57,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
-              "id": "s7",
-              "score": 53,
-              "pct": 96,
+              "id": "s6",
+              "score": 57,
+              "pct": 100,
               "meetsMatchThreshold": true
             },
             {
-              "id": "s3",
-              "score": 50,
-              "pct": 91,
+              "id": "s9",
+              "score": 57,
+              "pct": 100,
               "meetsMatchThreshold": true
             }
           ],
           "bronze": [
             {
               "id": "b3",
-              "score": 50,
+              "score": 52,
               "pct": 100,
+              "meetsMatchThreshold": true
+            },
+            {
+              "id": "b5",
+              "score": 47,
+              "pct": 90,
               "meetsMatchThreshold": true
             },
             {
               "id": "b7",
               "score": 47,
-              "pct": 94,
-              "meetsMatchThreshold": true
-            },
-            {
-              "id": "b5",
-              "score": 45,
               "pct": 90,
               "meetsMatchThreshold": true
             }
@@ -948,7 +948,7 @@
             "name": "The Saint Pierre",
             "brand": "Chattam & Wells",
             "subBrand": "Saint Pierre",
-            "matchPct": 87,
+            "matchPct": 88,
             "meetsMatchThreshold": true,
             "imageUrl": "images/mattresses/the saint pierre.jpg"
           }
@@ -1374,29 +1374,29 @@
       "firmnessResolved": 2,
       "scores": {
         "g1": -4,
-        "g2": 52,
+        "g2": 55,
         "g3": -6,
-        "g4": 53,
-        "g5": 29,
-        "g6": 52,
-        "g7": 34,
+        "g4": 60,
+        "g5": 32,
+        "g6": 55,
+        "g7": 37,
         "g8": -6,
         "g9": 1,
         "s1": -6,
         "s2": -11,
-        "s3": 47,
+        "s3": 54,
         "s4": -6,
-        "s5": -11,
-        "s6": 29,
-        "s7": 47,
+        "s5": -8,
+        "s6": 32,
+        "s7": 50,
         "s8": -11,
-        "s9": 29,
+        "s9": 36,
         "s10": -6,
-        "b1": 43,
+        "b1": 46,
         "b2": -10,
-        "b3": 34,
+        "b3": 37,
         "b4": -6,
-        "b5": 43,
+        "b5": 46,
         "b6": -11,
         "b7": 27
       },
@@ -1535,60 +1535,60 @@
           "gold": [
             {
               "id": "g4",
-              "score": 53,
+              "score": 60,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
               "id": "g2",
-              "score": 52,
-              "pct": 98,
+              "score": 55,
+              "pct": 92,
               "meetsMatchThreshold": true
             },
             {
               "id": "g6",
-              "score": 52,
-              "pct": 98,
+              "score": 55,
+              "pct": 92,
               "meetsMatchThreshold": true
             }
           ],
           "silver": [
             {
               "id": "s3",
-              "score": 47,
+              "score": 54,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
               "id": "s7",
-              "score": 47,
-              "pct": 100,
+              "score": 50,
+              "pct": 93,
               "meetsMatchThreshold": true
             },
             {
-              "id": "s6",
-              "score": 29,
-              "pct": 62,
+              "id": "s9",
+              "score": 36,
+              "pct": 67,
               "meetsMatchThreshold": true
             }
           ],
           "bronze": [
             {
               "id": "b1",
-              "score": 43,
+              "score": 46,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
               "id": "b5",
-              "score": 43,
+              "score": 46,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
               "id": "b3",
-              "score": 34,
-              "pct": 79,
+              "score": 37,
+              "pct": 80,
               "meetsMatchThreshold": true
             }
           ]
@@ -1613,7 +1613,7 @@
             "name": "The Saint Pierre",
             "brand": "Chattam & Wells",
             "subBrand": "Saint Pierre",
-            "matchPct": 98,
+            "matchPct": 92,
             "meetsMatchThreshold": true,
             "imageUrl": "images/mattresses/the saint pierre.jpg"
           },
@@ -1621,7 +1621,7 @@
             "name": "Reserve Mayfair Plush",
             "brand": "Restonic",
             "subBrand": "Reserve",
-            "matchPct": 98,
+            "matchPct": 92,
             "meetsMatchThreshold": true,
             "imageUrl": "images/mattresses/reserve mayfair plush.jpg"
           }
@@ -2060,7 +2060,7 @@
         "g1": 48,
         "g2": -14,
         "g3": 48,
-        "g4": -19,
+        "g4": -14,
         "g5": 26,
         "g6": -14,
         "g7": 28,
@@ -2068,13 +2068,13 @@
         "g9": 36,
         "s1": 48,
         "s2": 56,
-        "s3": -16,
+        "s3": -11,
         "s4": 48,
         "s5": 46,
         "s6": 26,
         "s7": -16,
         "s8": 46,
-        "s9": 26,
+        "s9": 31,
         "s10": 58,
         "b1": -19,
         "b2": 45,
@@ -2748,7 +2748,7 @@
         "g1": 36,
         "g2": 33,
         "g3": 36,
-        "g4": 20,
+        "g4": 25,
         "g5": 60,
         "g6": 33,
         "g7": 60,
@@ -2756,13 +2756,13 @@
         "g9": 50,
         "s1": 36,
         "s2": 26,
-        "s3": 34,
+        "s3": 39,
         "s4": 36,
         "s5": 35,
         "s6": 60,
         "s7": 33,
         "s8": 36,
-        "s9": 60,
+        "s9": 65,
         "s10": 26,
         "b1": 30,
         "b2": 32,
@@ -2944,20 +2944,20 @@
           ],
           "silver": [
             {
+              "id": "s9",
+              "score": 65,
+              "pct": 100,
+              "meetsMatchThreshold": true
+            },
+            {
               "id": "s6",
               "score": 60,
-              "pct": 100,
+              "pct": 92,
               "meetsMatchThreshold": true
             },
             {
-              "id": "s9",
-              "score": 60,
-              "pct": 100,
-              "meetsMatchThreshold": true
-            },
-            {
-              "id": "s1",
-              "score": 36,
+              "id": "s3",
+              "score": 39,
               "pct": 60,
               "meetsMatchThreshold": true
             }
@@ -3435,29 +3435,29 @@
       "firmnessResolved": 3,
       "scores": {
         "g1": 1,
-        "g2": 57,
+        "g2": 62,
         "g3": 1,
-        "g4": 47,
-        "g5": 35,
-        "g6": 57,
-        "g7": 35,
+        "g4": 52,
+        "g5": 40,
+        "g6": 62,
+        "g7": 40,
         "g8": -11,
         "g9": 25,
         "s1": 1,
         "s2": -9,
-        "s3": 59,
+        "s3": 64,
         "s4": 1,
-        "s5": -1,
-        "s6": 35,
-        "s7": 57,
+        "s5": 4,
+        "s6": 40,
+        "s7": 62,
         "s8": 1,
-        "s9": 35,
+        "s9": 40,
         "s10": -9,
-        "b1": 57,
+        "b1": 62,
         "b2": -1,
-        "b3": 35,
+        "b3": 40,
         "b4": -1,
-        "b5": 59,
+        "b5": 64,
         "b6": -9,
         "b7": 37
       },
@@ -3612,53 +3612,59 @@
           "gold": [
             {
               "id": "g2",
-              "score": 57,
+              "score": 62,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
               "id": "g6",
-              "score": 57,
+              "score": 62,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
               "id": "g4",
-              "score": 47,
-              "pct": 82,
+              "score": 52,
+              "pct": 84,
               "meetsMatchThreshold": true
             }
           ],
           "silver": [
             {
               "id": "s3",
-              "score": 59,
+              "score": 64,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
               "id": "s7",
-              "score": 57,
+              "score": 62,
               "pct": 97,
+              "meetsMatchThreshold": true
+            },
+            {
+              "id": "s6",
+              "score": 40,
+              "pct": 63,
               "meetsMatchThreshold": true
             }
           ],
           "bronze": [
             {
               "id": "b5",
-              "score": 59,
+              "score": 64,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
               "id": "b1",
-              "score": 57,
+              "score": 62,
               "pct": 97,
               "meetsMatchThreshold": true
             },
             {
-              "id": "b7",
-              "score": 37,
+              "id": "b3",
+              "score": 40,
               "pct": 63,
               "meetsMatchThreshold": true
             }
@@ -3692,7 +3698,7 @@
             "name": "Tempur-LuxeBreeze 2.0 Soft",
             "brand": "Tempur-Pedic",
             "subBrand": "LuxeBreeze",
-            "matchPct": 82,
+            "matchPct": 84,
             "meetsMatchThreshold": true,
             "imageUrl": "images/mattresses/tempur-luxebreeze 2.0 soft.jpg"
           }
@@ -4123,7 +4129,7 @@
         "g1": 49,
         "g2": 21,
         "g3": 47,
-        "g4": -8,
+        "g4": -3,
         "g5": 50,
         "g6": 21,
         "g7": 48,
@@ -4131,13 +4137,13 @@
         "g9": 62,
         "s1": 47,
         "s2": 37,
-        "s3": 21,
+        "s3": 26,
         "s4": 47,
         "s5": 49,
         "s6": 50,
         "s7": 23,
         "s8": 47,
-        "s9": 48,
+        "s9": 53,
         "s10": 37,
         "b1": 20,
         "b2": 46,
@@ -4325,21 +4331,21 @@
           ],
           "silver": [
             {
+              "id": "s9",
+              "score": 53,
+              "pct": 100,
+              "meetsMatchThreshold": true
+            },
+            {
               "id": "s6",
               "score": 50,
-              "pct": 100,
+              "pct": 94,
               "meetsMatchThreshold": true
             },
             {
               "id": "s5",
               "score": 49,
-              "pct": 98,
-              "meetsMatchThreshold": true
-            },
-            {
-              "id": "s9",
-              "score": 48,
-              "pct": 96,
+              "pct": 92,
               "meetsMatchThreshold": true
             }
           ],
@@ -4821,29 +4827,29 @@
       "firmnessResolved": 5,
       "scores": {
         "g1": 38,
-        "g2": 34,
+        "g2": 35,
         "g3": 36,
-        "g4": 25,
-        "g5": 66,
-        "g6": 34,
-        "g7": 61,
+        "g4": 26,
+        "g5": 67,
+        "g6": 35,
+        "g7": 62,
         "g8": 26,
         "g9": 58,
         "s1": 36,
         "s2": 26,
-        "s3": 34,
+        "s3": 35,
         "s4": 36,
-        "s5": 41,
-        "s6": 66,
-        "s7": 39,
+        "s5": 42,
+        "s6": 67,
+        "s7": 40,
         "s8": 36,
-        "s9": 61,
+        "s9": 62,
         "s10": 26,
-        "b1": 30,
+        "b1": 31,
         "b2": 32,
-        "b3": 61,
+        "b3": 62,
         "b4": 36,
-        "b5": 30,
+        "b5": 31,
         "b6": 26,
         "b7": 59
       },
@@ -5000,54 +5006,54 @@
           "gold": [
             {
               "id": "g5",
-              "score": 66,
+              "score": 67,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
               "id": "g7",
-              "score": 61,
-              "pct": 92,
+              "score": 62,
+              "pct": 93,
               "meetsMatchThreshold": true
             },
             {
               "id": "g9",
               "score": 58,
-              "pct": 88,
+              "pct": 87,
               "meetsMatchThreshold": true
             }
           ],
           "silver": [
             {
               "id": "s6",
-              "score": 66,
+              "score": 67,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
               "id": "s9",
-              "score": 61,
-              "pct": 92,
+              "score": 62,
+              "pct": 93,
               "meetsMatchThreshold": true
             },
             {
               "id": "s5",
-              "score": 41,
-              "pct": 62,
+              "score": 42,
+              "pct": 63,
               "meetsMatchThreshold": true
             }
           ],
           "bronze": [
             {
               "id": "b3",
-              "score": 61,
+              "score": 62,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
               "id": "b7",
               "score": 59,
-              "pct": 97,
+              "pct": 95,
               "meetsMatchThreshold": true
             }
           ]
@@ -5072,7 +5078,7 @@
             "name": "Reserve Mayfair Medium",
             "brand": "Restonic",
             "subBrand": "Reserve",
-            "matchPct": 92,
+            "matchPct": 93,
             "meetsMatchThreshold": true,
             "imageUrl": "images/mattresses/reserve mayfair medium.jpg"
           },
@@ -5080,7 +5086,7 @@
             "name": "Copper Cushion Firm",
             "brand": "Spring Air",
             "subBrand": "Copper",
-            "matchPct": 88,
+            "matchPct": 87,
             "meetsMatchThreshold": true,
             "imageUrl": "images/mattresses/copper cushion firm.jpg"
           }
@@ -5484,29 +5490,29 @@
       "firmnessResolved": 4,
       "scores": {
         "g1": 20,
-        "g2": 43,
+        "g2": 45,
         "g3": 20,
-        "g4": 33,
-        "g5": 42,
-        "g6": 43,
-        "g7": 42,
+        "g4": 35,
+        "g5": 44,
+        "g6": 45,
+        "g7": 44,
         "g8": -10,
         "g9": 32,
         "s1": 20,
         "s2": -10,
-        "s3": 43,
+        "s3": 45,
         "s4": 20,
-        "s5": 20,
-        "s6": 42,
-        "s7": 43,
+        "s5": 22,
+        "s6": 44,
+        "s7": 45,
         "s8": 20,
-        "s9": 42,
+        "s9": 44,
         "s10": -10,
-        "b1": 43,
+        "b1": 45,
         "b2": 20,
-        "b3": 42,
+        "b3": 44,
         "b4": 20,
-        "b5": 43,
+        "b5": 45,
         "b6": -10,
         "b7": 42
       },
@@ -5637,19 +5643,19 @@
           "gold": [
             {
               "id": "g2",
-              "score": 43,
+              "score": 45,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
               "id": "g6",
-              "score": 43,
+              "score": 45,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
               "id": "g5",
-              "score": 42,
+              "score": 44,
               "pct": 98,
               "meetsMatchThreshold": true
             }
@@ -5657,19 +5663,19 @@
           "silver": [
             {
               "id": "s3",
-              "score": 43,
+              "score": 45,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
               "id": "s7",
-              "score": 43,
+              "score": 45,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
               "id": "s6",
-              "score": 42,
+              "score": 44,
               "pct": 98,
               "meetsMatchThreshold": true
             }
@@ -5677,19 +5683,19 @@
           "bronze": [
             {
               "id": "b1",
-              "score": 43,
+              "score": 45,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
               "id": "b5",
-              "score": 43,
+              "score": 45,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
               "id": "b3",
-              "score": 42,
+              "score": 44,
               "pct": 98,
               "meetsMatchThreshold": true
             }

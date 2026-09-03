@@ -136,6 +136,10 @@ $checks = @(
     @{ Name = 'construction reveal repair'; Exe = $nodeExecutable; Args = @('tests/construction_reveal_repair_check.mjs') },
     @{ Name = 'compare entry point'; Exe = $nodeExecutable; Args = @('tests/compare_entry_check.mjs') },
     @{ Name = 'phase 1 output regression'; Exe = $nodeExecutable; Args = @('tests/phase1_output_regression_check.mjs') },
+    # A4.1 (roadmap 3.1): the feature-key contract between the catalog's
+    # scoring tags and the quiz's scoring keys, the reachability table, and
+    # the 57-scenario golden ranking matrix that makes the repair auditable.
+    @{ Name = 'scoring key contract'; Exe = $nodeExecutable; Args = @('tests/scoring_key_contract_check.mjs') },
     @{ Name = 'claim retirement'; Exe = $nodeExecutable; Args = @('tests/claim_retirement_check.mjs') },
     @{ Name = 'integrity repairs'; Exe = $nodeExecutable; Args = @('tests/integrity_repairs_check.mjs') },
     @{ Name = 'results presentation'; Exe = $nodeExecutable; Args = @('tests/results_presentation_check.mjs') },

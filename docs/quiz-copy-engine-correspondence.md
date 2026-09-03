@@ -39,17 +39,31 @@ Two facts constrain what the copy may claim:
 - **Zero-scoring questions.** `trigger` and `mattress_size` carry `scores: {}`
   on every option. They never touch the ranking.
 - **Inert tags in this deployment.** The shipped catalog's `features` vocabulary
-  is `cooling, durability, firm, hybrid, medium, motionisolation, plush,
-  pressurerelief, responsive, soft, support, zoned`. Eight quiz tags therefore
-  never add a point here: `motionIsolation` and `pressureRelief` (case-fold
-  mismatch — roadmap item 3.1 🔒) and `adjustable, comfort, durable,
-  hypoallergenic, memory, quality` (absent from the catalog — item 3.2 🔒).
-  Copy must not name an inert mechanism as if it ranked mattresses. Both items
-  are locked scoring decisions for Blake; **this document is not a request to
-  change them**, and the test that pins the inert set exists so that when either
-  ships, every line below is re-audited.
+  is `cooling, durability, firm, hybrid, medium, motionIsolation, plush,
+  pressureRelief, responsive, soft, support, zoned`. Six quiz tags never add a
+  point here: `adjustable, comfort, durable, hypoallergenic, memory, quality`,
+  absent from the catalog in any casing — roadmap item 3.2 🔒, still a locked
+  decision for Blake (populate the vocabulary or retire the tags). Copy must not
+  name an inert mechanism as if it ranked mattresses. **This document is not a
+  request to change 3.2**, and the test that pins the inert set exists so that
+  when it ships, every line below is re-audited.
 
-  `Inert tags: adjustable, comfort, durable, hypoallergenic, memory, motionIsolation, pressureRelief, quality`
+  **A4.1, 2026-09-03 — item 3.1 shipped, and this list shrank by two.**
+  `motionIsolation` and `pressureRelief` were inert here for a generator reason,
+  not a catalog one: `build-data.ps1` lowercased the catalog's camelCase tags,
+  so the case-sensitive match could never succeed. The generator was repaired
+  under the owner's direction and both tags are now live, carried by 3 and 13
+  models. The re-audit this pin exists to force was performed, and it found
+  copy that the repair makes TRUE rather than copy that must change: the
+  `sleep_position` help line ("This helps us favor pressure relief, support, or
+  a responsive feel") and the `partner_disturbance` line about movement both
+  named mechanisms that could not rank a mattress; both now can. **No customer
+  copy is changed in this pass** — A4.1 was scoped to the key contract, and the
+  wording decisions this unlocks (below, per question) are the owner's. Weights,
+  question count and wording, tier rules and the 5-point per-tag cap are
+  untouched; `index.html` is byte-identical.
+
+  `Inert tags: adjustable, comfort, durable, hypoallergenic, memory, quality`
 
 Other consumers the copy may describe (all consume answers, none re-rank):
 
@@ -120,7 +134,7 @@ Sleep System / base suggestions.
 - **Previous ES:** Esto determina qué características importan más
 - **Current EN:** This shapes the questions that follow and what we suggest testing together.
 - **Current ES (provisional):** Esto define las preguntas que siguen y lo que sugerimos probar juntos.
-- **Ranks:** partially — `family` → `durability: 2` (live); `partner` → `motionIsolation: 2` (inert here); `solo` → nothing. **Firmness:** no. **Display:** yes — profile wording. **Summary:** no (not in the implications map). **Accessories:** no. **Flow:** `skipIf` on `partner_disturbance`, `hideIf` on `body_type/different` and `temperature/opposite`, the `body_type` copy variant; the "Motion control" Sleep Brief priority and the couple trial prompt.
+- **Ranks:** partially — `family` → `durability: 2` (live); `partner` → `motionIsolation: 2` (**live since A4.1**; inert before it); `solo` → nothing. **Firmness:** no. **Display:** yes — profile wording. **Summary:** no (not in the implications map). **Accessories:** no. **Flow:** `skipIf` on `partner_disturbance`, `hideIf` on `body_type/different` and `temperature/opposite`, the `body_type` copy variant; the "Motion control" Sleep Brief priority and the couple trial prompt.
 - **Cited tags:** durability, motionIsolation.
 - **Mechanism the copy describes:** question flow and testing guidance — both live for every answer.
 - **Must not say:** "matter most" (the partner answer ranks nothing here).
@@ -133,13 +147,13 @@ Sleep System / base suggestions.
 - **Previous ES:** El aislamiento de movimiento es una de las mayores mejoras en un colchón nuevo
 - **Current EN:** The more movement wakes you, the more it shapes your matches and what we suggest testing.
 - **Current ES (provisional):** Cuanto más te despierte el movimiento, más influye en tus opciones y en lo que sugerimos probar.
-- **Ranks:** yes, graded — `yes_often` → `motionIsolation: 4, hybrid: 3, memory: 2`; `sometimes` → `motionIsolation: 3, hybrid: 2`; `rarely` → `motionIsolation: 1`; `not_applicable` → nothing. Live effect here is `hybrid` 3 / 2 / 0 (motionIsolation and memory are inert). **Firmness:** no. **Display:** yes — profile naming. **Summary:** no. **Accessories:** no. **Priorities:** the "Motion control" Sleep Brief priority at a higher rank when this is `yes_often`/`sometimes`; the couple trial prompt.
+- **Ranks:** yes, graded — `yes_often` → `motionIsolation: 4, hybrid: 3, memory: 2`; `sometimes` → `motionIsolation: 3, hybrid: 2`; `rarely` → `motionIsolation: 1`; `not_applicable` → nothing. Live effect here is `motionIsolation` 4 / 3 / 1 and `hybrid` 3 / 2 / 0 (**A4.1 made motionIsolation live**; `memory` remains inert under 3.2). The graded shape the copy describes is now delivered by the tag the copy is about. **Firmness:** no. **Display:** yes — profile naming. **Summary:** no. **Accessories:** no. **Priorities:** the "Motion control" Sleep Brief priority at a higher rank when this is `yes_often`/`sometimes`; the couple trial prompt.
 - **Cited tags:** motionIsolation, hybrid, memory.
 - **Mechanism the copy describes:** a graded effect on the ranking and on the testing guidance — true of the live tags and the priorities.
-- **Owner note:** the owner's preferred line — "The more movement wakes you, the more we favor motion isolation." — is true of the engine **rule** but not of this deployment's **output** until item 3.1 (case-fold) ships, because the `motionIsolation` tag never matches the catalog's `motionisolation`. The adapted line above is code-true today. The preferred line may be proposed for adoption once 3.1
+- **Owner note (updated by A4.1, 2026-09-03 — OPEN DECISION):** the owner's preferred line — "The more movement wakes you, the more we favor motion isolation." — was true of the engine **rule** but not of this deployment's **output**, because the `motionIsolation` tag never matched the catalog's lowercased `motionisolation`. **Item 3.1 has now shipped, so that line is code-true.** Adopting it is a copy decision this pass did not take: the shipped line is unchanged and remains code-true. The preferred line may be proposed for adoption once 3.1
   ships — it is not pre-approved and is not to be implemented before then; like
   every help line it needs Blake's sign-off at that time.
-- **Must not say:** a benefit promise ("you'll feel"), or that motion isolation is favored in the ranking while the tag is inert.
+- **Must not say:** a benefit promise ("you'll feel"). The second prohibition — claiming motion isolation is favored in the ranking — **lapsed with A4.1**: three models carry the tag and the graded awards now land. Any new line still needs the usual proof that what it claims is what the engine does.
 - **Verdict on the previous line:** BENEFIT CLAIM in both languages.
 
 ### 5. sleep_position
@@ -149,7 +163,7 @@ Sleep System / base suggestions.
 - **Previous ES:** Piensa en cómo terminas naturalmente
 - **Current EN:** This helps us favor pressure relief, support, or a responsive feel.
 - **Current ES (provisional):** Esto nos ayuda a priorizar alivio de presión, soporte o una sensación con más respuesta.
-- **Ranks:** yes — `side` → `plush: 2, pressureRelief: 2, soft: 1`; `back` → `support: 2, medium: 2, zoned: 1`; `stomach` → `firm: 2, support: 1`; `combo` / `no_idea` → `medium: 2, responsive: 2`. (`pressureRelief` is inert; the side sleeper's live tags are `plush`/`soft`, which is what "pressure relief" means in plain language, and the Sleep Brief carries a pressure-relief priority for side sleepers.) **Firmness:** no. **Display:** yes — profile wording, reflection, signature. **Summary:** yes — the profile row's position implication. **Accessories:** yes — position-matched pillows.
+- **Ranks:** yes — `side` → `plush: 2, pressureRelief: 2, soft: 1`; `back` → `support: 2, medium: 2, zoned: 1`; `stomach` → `firm: 2, support: 1`; `combo` / `no_idea` → `medium: 2, responsive: 2`. (**A4.1 made `pressureRelief` live** — 13 models carry it — so the side sleeper's award is now `plush`/`soft`/`pressureRelief` together, and the help line's "favor pressure relief" is delivered by the tag of that name as well as by the plain-language equivalents. Before A4.1 only `plush`/`soft` landed.) **Firmness:** no. **Display:** yes — profile wording, reflection, signature. **Summary:** yes — the profile row's position implication. **Accessories:** yes — position-matched pillows.
 - **Cited tags:** plush, pressureRelief, soft, support, medium, zoned, firm, responsive.
 - **Mechanism the copy describes:** which feel/feature family is favored — live.
 - **Must not say:** "the biggest clue" (a ≤5-point tag against a 50-point firmness term).
@@ -195,7 +209,7 @@ Sleep System / base suggestions.
 - **Previous ES:** Toca las que apliquen
 - **Current EN:** Tap anything you've noticed. These shape which features we favor and what we suggest testing.
 - **Current ES (provisional):** Toca lo que hayas notado. Esto define qué características priorizamos y qué sugerimos probar.
-- **Ranks:** yes — `back_pain` → `support: 3, zoned: 2, firm: 1`; `hip_pain` → `pressureRelief: 3, plush: 2`; `hot` → `cooling: 3, hybrid: 2`; `tossing` → `comfort: 2, medium: 1`; `stiff` → `pressureRelief: 2, comfort: 2` (all inert); `sagging` → `durability: 2, quality: 2`; `too_soft` → `firm: 3, support: 2`; `none` → `comfort: 1, quality: 1, durable: 1` (all inert). **Firmness:** no. **Display:** yes — profile wording, signature. **Summary:** yes — each selected issue's implication in the "who" row. **Accessories:** yes — `back_pain` raises adjustable-base scoring and sets the base demo to zero-gravity.
+- **Ranks:** yes — `back_pain` → `support: 3, zoned: 2, firm: 1`; `hip_pain` → `pressureRelief: 3, plush: 2` (both live since A4.1; before it only `plush` landed); `hot` → `cooling: 3, hybrid: 2`; `tossing` → `comfort: 2, medium: 1`; `stiff` → `pressureRelief: 2, comfort: 2` (`pressureRelief` **live since A4.1**; `comfort` inert under 3.2); `sagging` → `durability: 2, quality: 2`; `too_soft` → `firm: 3, support: 2`; `none` → `comfort: 1, quality: 1, durable: 1` (all inert). **Firmness:** no. **Display:** yes — profile wording, signature. **Summary:** yes — each selected issue's implication in the "who" row. **Accessories:** yes — `back_pain` raises adjustable-base scoring and sets the base demo to zero-gravity.
 - **Cited tags:** support, zoned, firm, pressureRelief, plush, cooling, hybrid, comfort, medium, durability, quality, durable.
 - **Mechanism the copy describes:** features favored + testing guidance — true in aggregate; "what we suggest testing" keeps the line true for `stiff`/`none`, which rank nothing here.
 - **Must not say:** "a fix" (outcome claim).
@@ -208,7 +222,7 @@ Sleep System / base suggestions.
 - **Previous ES:** Toca las que apliquen
 - **Current EN:** Tap any that apply. Some shape your matches; some change what we suggest trying, like an adjustable base or a mattress protector.
 - **Current ES (provisional):** Toca lo que aplique. Algunas influyen en tus opciones; otras cambian lo que sugerimos probar, como una base ajustable o un protector de colchón.
-- **Ranks:** yes for some — `nerve_pain` → `support: 3, firm: 2, zoned: 2`; `extra_support` → `support: 3, firm: 2, durable: 3`; `getting_older` → `support: 2, comfort: 2, pressureRelief: 1`; `allergies` → `hypoallergenic: 3` (inert); `snoring` / `reflux` → `adjustable: 3` (inert); `none` → nothing. **Firmness:** no. **Display:** yes — profile wording, signature. **Summary:** yes — each selected condition's implication in the profile row (e.g. head-of-bed elevation for snoring). **Accessories:** yes — `snoring`/`reflux` raise adjustable-base scoring and set the demo position (anti-snore / zero-gravity); `allergies` sets the protector goal.
+- **Ranks:** yes for some — `nerve_pain` → `support: 3, firm: 2, zoned: 2`; `extra_support` → `support: 3, firm: 2, durable: 3`; `getting_older` → `support: 2, comfort: 2, pressureRelief: 1` (`comfort` inert under 3.2; `pressureRelief` live since A4.1); `allergies` → `hypoallergenic: 3` (inert); `snoring` / `reflux` → `adjustable: 3` (inert); `none` → nothing. **Firmness:** no. **Display:** yes — profile wording, signature. **Summary:** yes — each selected condition's implication in the profile row (e.g. head-of-bed elevation for snoring). **Accessories:** yes — `snoring`/`reflux` raise adjustable-base scoring and set the demo position (anti-snore / zero-gravity); `allergies` sets the protector goal.
 - **Cited tags:** support, firm, zoned, durable, comfort, pressureRelief, hypoallergenic, adjustable.
 - **Mechanism the copy describes:** some answers shape the ranking; some change what is suggested to try (base, protector) — both live, with no condition→product pairing stated as a treatment.
 - **Must not say:** that a mattress or base treats snoring, reflux, pain or any condition; no health outcome.

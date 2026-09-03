@@ -152,6 +152,12 @@ const A31 = ["tests/a31_presentation_check.mjs"];
 // observes the docked footer's geometry beside the a31 statics.
 const LAYOUT = ["tests/sleep_plan_layout_check.py"];
 const A31_LAYOUT = A31.concat(LAYOUT);
+// A4.1 observers (roadmap 3.1): the feature-key contract suite owns the key
+// vocabulary, the reachability table and the golden ranking matrix; a mutated
+// CATALOG spelling also moves the Phase 1 recommendation fixture and the
+// scoring-isolation golden pins, so those two observe the data entries.
+const SCORING_KEYS = ["tests/scoring_key_contract_check.mjs"];
+const SCORING_KEYS_DATA = SCORING_KEYS.concat(["tests/phase1_output_regression_check.mjs", "tests/scoring_isolation_check.mjs"]);
 
 
 // ---------------------------------------------------------------------------
@@ -2258,6 +2264,24 @@ const MUTATIONS = [
     '          </div>\n          <div class="drawer-finalist-note" id="drawerFinalistNote" hidden>',
     '          </div>\n        </div>\n        <div class="drawer-finalist-orphan">\n          <div class="drawer-finalist-note" id="drawerFinalistNote" hidden>',
     A31],
+  // --- A4.1 (owner-directed, roadmap 3.1): the scoring feature-key contract.
+  // calculateScores() matches quiz scoring keys to catalog feature tags by exact
+  // array membership, so a single lowercased tag silently kills every rule that
+  // awards it. The generator is the site of the old defect; the two spellings it
+  // now preserves are the payload. All three are observed by the contract suite,
+  // which also holds the 57-scenario golden ranking matrix.
+  ["scoring keys: the generator lowercases every tag again (the roadmap 3.1 case-fold defect returns)",
+    "            $tag = $_.Trim()\n",
+    "            $tag = $_.Trim().ToLower()\n",
+    SCORING_KEYS, "build-data.ps1"],
+  ["scoring keys: a catalog pressureRelief tag is lowercased (four scoring rules across three questions go dead)",
+    "                                      \"soft\",\n                                      \"pressureRelief\",\n                                      \"durability\",",
+    "                                      \"soft\",\n                                      \"pressurerelief\",\n                                      \"durability\",",
+    SCORING_KEYS_DATA, "data/mattresses.json"],
+  ["scoring keys: the catalog motionIsolation tag is lowercased (six scoring rules across three questions go dead)",
+    "                                      \"pressureRelief\",\n                                      \"motionIsolation\"\n",
+    "                                      \"pressureRelief\",\n                                      \"motionisolation\"\n",
+    SCORING_KEYS_DATA, "data/mattresses.json"],
   // --- Corrective pass (owner ruling 2026-09-02): input-modality-aware title focus.
   // Corrective pass 3 (2026-09-03): the title's three rules key on :focus and read only
   // data-focus-entry, so these FINDs follow the rewritten selectors; the five entries at
@@ -2648,6 +2672,11 @@ const PRISTINE_BY_FILE = {
   "data/quiz.json": readFileSync(join(sandbox, "data", "quiz.json"), "utf8"),
   "docs/quiz-copy-engine-correspondence.md":
     readFileSync(join(sandbox, "docs", "quiz-copy-engine-correspondence.md"), "utf8"),
+  // A4.1 (roadmap 3.1): the two halves of the scoring feature-key contract -
+  // the generator that normalizes catalog tags, and the generated catalog whose
+  // spellings the engine matches by exact membership.
+  "build-data.ps1": readFileSync(join(sandbox, "build-data.ps1"), "utf8"),
+  "data/mattresses.json": readFileSync(join(sandbox, "data", "mattresses.json"), "utf8"),
 };
 
 // Observers are node suites by default. The validator's self-test is the one

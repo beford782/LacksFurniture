@@ -56,10 +56,14 @@ jobs:
     # "Full suite (18 checks)") — renaming it here without updating the
     # protection rule in the same change would leave every PR waiting on a
     # check that never reports. The name is a LEGACY LABEL and its number has
-    # been wrong for many slices: the workflow now invokes 48 verification
-    # steps (43 `run: node|python tests/...` steps, three `tools/*.py
+    # been wrong for many slices: the workflow now invokes 51 verification
+    # steps (46 `run: node|python tests/...` steps, three `tools/*.py
     # --self-test` steps, the workbook validation and the QR committed-asset
-    # check), Phase 2.1b's pricing resolver suite being the newest.
+    # check), A4.1's scoring key contract suite being the newest.
+    # A4.1 re-derived this rather than incrementing it: the previous revision
+    # said 48/43, but the tree already carried 45 test steps before this pass
+    # added one, so the stated figure had drifted by two. Re-derive with
+    #   grep -cE '^ *run: (node|python) tests/' .github/workflows/ci.yml
     # The count is stated with its own definition so it can be re-derived
     # rather than trusted; renaming name+protection together is an operator
     # (Blake) action, tracked in the 0.6 PR notes.
@@ -422,6 +426,17 @@ jobs:
       # phase1_output_baseline_daybreak_pr1.json in the same change.)
       - name: phase 1 output regression (recommendations pinned)
         run: node tests/phase1_output_regression_check.mjs
+
+      # A4.1 (roadmap 3.1, the scoring case-fold defect): the catalog's scoring
+      # tags and the quiz's scoring keys must agree byte for byte, because
+      # calculateScores() compares them by exact array membership. Pins the key
+      # contract (no tag may differ from a key by case alone), the reachability
+      # table (the keys that match nothing must stay exactly the six roadmap 3.2
+      # vocabulary-gap keys), the repaired generator, and a 57-scenario golden
+      # ranking matrix produced by the real engine — with the pre-repair matrix
+      # kept beside it, so the repair's whole effect stays auditable.
+      - name: scoring key contract (feature keys + golden rankings)
+        run: node tests/scoring_key_contract_check.mjs
 
       # Claim retirement (owner ruling 2026-08-12): executes the real
       # mattressDifferentiators, drawer differentiator block, compare

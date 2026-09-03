@@ -170,7 +170,37 @@ const BASELINE_PATH = join(root, "tests", "fixtures", "phase1_output_baseline_da
 // fixture (sha 35c1c70e...), which removing s11 reproduces. Hash moved in
 // the same reviewed diff; the "P1 heat parity removed" mutation below
 // diverges in s11 alone, keeping the addition load-bearing.
-const BASELINE_SHA256 = "4ae5c964beb4ef1085e75f229f3cb72809f100bcdc35c89042ca6fcc9e812462";
+// 2026-09-03 amendment (A4.1, the owner-directed roadmap 3.1 repair — the
+// FIRST approved change to what this engine recommends since the Daybreak
+// ruling, and exactly the case the header's "Phase 3 change" clause describes).
+// The generator, not the engine, was repaired: build-data.ps1 lowercased every
+// feature tag before restoring capitals after a hyphen, so the catalog's
+// camelCase `pressureRelief` / `motionIsolation` reached the engine lowercased
+// and could never match the quiz keys of the same name. All ten scoring rules
+// that award those two keys — partner_sleep.partner/family,
+// partner_disturbance.yes_often/sometimes/rarely, body_type.different,
+// sleep_position.side, sleep_issues.hip_pain/stiff and
+// health_conditions.getting_older — were dead and are now live. index.html is
+// byte-identical; data/mattresses.json changed on 16 lines (13 pressureRelief,
+// 3 motionIsolation) and nothing else.
+// EXACTLY 155 pinned cells moved, in the eight scenarios whose answers award
+// one of those keys: scores (74) and results (81) only — s2 31, s3 30, s4 3,
+// s5 9, s6 23, s7 11, s8 26, s10 22. s1_solo_back_firm_no_issues,
+// s9_empty_defaults and s11_heat_only_via_sleep_issue are byte-identical, as
+// are every profile, matchReasons, accessory, firmnessResolved and priority
+// cell in all eleven scenarios. No gold top pick changed in any scenario here
+// or in the wider 57-scenario A4.1 matrix; the movement is within-tier order
+// and qualified-set membership, concentrated in Silver.
+// Evidence: tests/scoring_key_contract_check.mjs holds the whole effect in two
+// fixtures — the post-repair matrix and the pre-repair matrix — and proves that
+// lowercasing ONLY those two tags in memory reproduces the pre-repair bytes
+// exactly, so nothing else moved; it also reconciles all 1482 per-model score
+// deltas against an independent model of the awards and the per-feature cap.
+// The pre-repair capture taken on the unrepaired tree at f605582 is
+// byte-identical to that second fixture (sha b66454d7…). Hash moved in the same
+// reviewed diff; the retained obsolete `profile.feelWord` cells were preserved
+// from the previous fixture rather than dropped by the regenerator.
+const BASELINE_SHA256 = "eaecbd162d3b1d9cf076549928f2d37f64fe1bdb5d882b1f0048c070138cfc28";
 
 const WRITE_MODE = process.argv.includes("--write-baseline");
 
