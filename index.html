@@ -10398,6 +10398,29 @@
         box-shadow: none;
       }
     }
+    /* Consolidation pass (owner ruling 2026-09-02): the drawer's accessible
+       name takes programmatic focus on open (openMattressDrawer ->
+       title.focus()) and showed only the UA rectangle. It takes the heading
+       treatment above as its OWN rule (the pinned heading list is untouched):
+       text-hugging fit-content, the same two-ring token pair at the ruled 5px
+       offset, left-aligned like the Plan title (no auto inline margins),
+       gated on :focus-visible so a pointer or touch opening draws nothing and
+       the keyboard path keeps a WCAG ring. Never outline: none. The
+       forced-colors counterpart follows, after the anchored first block. */
+    .drawer-mattress-name:focus-visible {
+      width: -webkit-fit-content;
+      width: fit-content;
+      max-width: 100%;
+      outline: 3px solid var(--focus-ring-outer);
+      outline-offset: 5px;
+      box-shadow: 0 0 0 8px var(--focus-ring-inner);
+    }
+    @media (forced-colors: active) {
+      .drawer-mattress-name:focus-visible {
+        outline-color: CanvasText;
+        box-shadow: none;
+      }
+    }
     /* Candidate (Loop-A2): forced-colors cues for the new controls, in their
        own block AFTER the anchored first forced-colors block (contrast_check
        pins that ordering). The Try button keeps a CanvasText border; the

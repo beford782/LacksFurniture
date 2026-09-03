@@ -1322,6 +1322,33 @@ section('Sticky product-action footer — actions, notice, Undo and live region 
   ok('negative control: a footer that stops sticking is detected', !/\.drawer-action-footer \{\s*position: static;/.test(norm) && /\.drawer-action-footer \{\s*position: sticky;/.test(norm));
 }
 
+section('Drawer title focus — the accessible name keeps programmatic focus on open and takes the branded text-hugging ring');
+{
+  const openSrc = extractFunction('window.openMattressDrawer = function(mattressId, orderList, opts)') || '';
+  const rule = norm.match(/\.drawer-mattress-name:focus-visible \{([^}]*)\}/);
+  const body = rule ? rule[1] : '';
+  ok('focus entry is unchanged: the title stays focusable (tabindex -1, attribute order pinned by smoke) and openMattressDrawer moves focus to it',
+    norm.includes('<div class="drawer-mattress-name" id="drawerName" tabindex="-1"></div>')
+    && openSrc.includes("var title = document.getElementById('drawerName');\n      if (title && typeof title.focus === 'function') title.focus();"));
+  ok('one author :focus-visible rule rings the drawer title with the shared two-ring tokens at the ruled 5px offset, hugging the text (fit-content, capped), left-aligned (no auto margins), tokens only',
+    !!rule && /outline:\s*3px solid var\(--focus-ring-outer\);/.test(body) && /outline-offset:\s*5px;/.test(body)
+    && /box-shadow:\s*0 0 0 8px var\(--focus-ring-inner\);/.test(body) && /width:\s*fit-content;/.test(body) && /max-width:\s*100%;/.test(body)
+    && !/margin-inline:\s*auto/.test(body) && !/#[0-9A-Fa-f]{3,6}\b/.test(body));
+  ok('the ring is gated on :focus-visible only: no plain :focus rule, no outline: none, no unconditional suppression on the title',
+    !/\.drawer-mattress-name:focus(?!-visible)[\s,{]/.test(norm) && !/\.drawer-mattress-name:focus-visible \{[^}]*outline:\s*none/.test(norm)
+    && !/\.drawer-mattress-name \{[^}]*outline/.test(norm));
+  const fc = norm.match(/@media \(forced-colors: active\) \{\s*\.drawer-mattress-name:focus-visible \{([^}]*)\}\s*\}/);
+  ok('a forced-colors counterpart keeps a CanvasText ring with no halo, placed after the anchored first forced-colors block and after the heading block',
+    !!fc && /outline-color:\s*CanvasText;/.test(fc[1]) && /box-shadow:\s*none;/.test(fc[1])
+    && norm.indexOf(fc[0]) > norm.indexOf('.fin-btn:focus-visible')
+    && norm.indexOf(fc[0]) > norm.indexOf('.hf2-review-title:focus-visible {\n        outline-color: CanvasText;'));
+  ok('the pinned control and heading focus lists are untouched (the title has its own rule, placed after the heading block)',
+    /\.drawer-nav-btn:focus-visible,\n\s*\.drawer-finalist-btn:focus-visible,\n\s*\.drawer-undo-btn:focus-visible,\n\s*\.drawer-btn:focus-visible \{/.test(norm)
+    && /\.noct-results-headline:focus-visible,\s*\.noct-email-headline:focus-visible,\s*\.sleep-system__title:focus-visible,\s*\.hf2-review-title:focus-visible\s*\{/.test(norm)
+    && !/\.hf2-review-title:focus-visible,\s*\.drawer-mattress-name/.test(norm)
+    && (rule ? norm.indexOf(rule[0]) > norm.indexOf('#sleepPlanScreen .hf2-review-title:focus-visible') : false));
+}
+
 // ------------------------------------------------------------------- summary
 console.log(`\n${failures === 0 ? 'PASS' : 'FAIL'} — ${checks - failures}/${checks} checks passed`);
 process.exit(failures === 0 ? 0 : 1);

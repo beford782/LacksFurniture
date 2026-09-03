@@ -1010,6 +1010,78 @@ def run_drawer_footer(browser, port, name, width, height, lang, shots_dir):
     page.close()
 
 
+# Consolidation pass (owner ruling 2026-09-02): the drawer's accessible name
+# takes programmatic focus on open and used to show only the UA rectangle.
+# Rendered proof: on the KEYBOARD path (a Tab precedes the open) the title
+# matches :focus-visible and draws the author ring (3px solid outline at a
+# 5px offset with the halo) hugging its text; on the POINTER path (a real
+# click on the result card opens the drawer) the title is focused and never
+# draws the browser-default `auto` ring - Chromium's heuristic may still
+# match :focus-visible after a script focus() (it did in every earlier
+# capture, which is where the UA rectangle came from), in which case the
+# author ring is what appears. Focus entry itself is unchanged in both paths.
+DRAWER_TITLE_SETUP_JS = r"""
+async (ARGS) => {
+  const wait = (ms) => new Promise((res) => setTimeout(res, ms));
+  for (const k of Object.keys(ARGS.answers)) answers[k] = ARGS.answers[k];
+  showProfileScreen();
+  window.showResults();
+  await wait(400);
+  const card = document.querySelector('#resultsScreen [data-id][data-tier]');
+  const r = card.getBoundingClientRect();
+  return { x: r.left + Math.min(40, r.width / 4), y: r.top + Math.min(40, r.height / 4) };
+}
+"""
+DRAWER_TITLE_PROBE_JS = r"""
+() => {
+  const title = document.getElementById('drawerName');
+  const cs = getComputedStyle(title);
+  const info = title.parentElement.getBoundingClientRect();
+  const r = title.getBoundingClientRect();
+  return { open: document.getElementById('mattressDrawer').classList.contains('drawer-open'), focused: document.activeElement === title,
+    focusVisible: title.matches(':focus-visible'), outlineStyle: cs.outlineStyle, outlineWidth: cs.outlineWidth, outlineOffset: cs.outlineOffset,
+    boxShadow: cs.boxShadow, titleW: Math.round(r.width), infoW: Math.round(info.width), text: (title.textContent || '').trim() };
+}
+"""
+
+
+def run_drawer_title_focus(browser, port, name, width, height, shots_dir):
+    print(f"\n-- DRAWER TITLE FOCUS (consolidation pass) en {name} {width}x{height} --")
+    for mode in ("keyboard", "pointer"):
+        page = browser.new_page(viewport={"width": width, "height": height}, has_touch=(mode == "pointer"))
+        errors = []
+        page.on("pageerror", lambda e: errors.append(str(e)))
+        page.goto(f"http://127.0.0.1:{port}/", wait_until="networkidle")
+        page.wait_for_selector("#startBtn")
+        pt = page.evaluate(DRAWER_TITLE_SETUP_JS, {"answers": ANSWERS})
+        if mode == "keyboard":
+            page.keyboard.press("Tab")
+            page.evaluate("() => openResultCardDrawer(document.querySelector('#resultsScreen [data-id][data-tier]'))")
+        else:
+            page.mouse.click(pt["x"], pt["y"])
+        page.wait_for_timeout(800)
+        r = page.evaluate(DRAWER_TITLE_PROBE_JS)
+        if shots_dir:
+            os.makedirs(shots_dir, exist_ok=True)
+            page.screenshot(path=os.path.join(shots_dir, f"drawer-title-focus-{mode}-{name}-{width}x{height}.png"))
+        tag = f"[en/{name}/{mode}]"
+        check(f"{tag} the drawer opened without a page error and the title holds focus (focus entry unchanged)",
+              not errors and r["open"] and r["focused"], f"errors={errors[:1]} open={r['open']} focused={r['focused']} text={r['text']!r}")
+        if mode == "keyboard":
+            check(f"{tag} the title matches :focus-visible and draws the author ring - 3px solid outline at a 5px offset with the halo, not the UA rectangle",
+                  r["focusVisible"] and r["outlineStyle"] == "solid" and r["outlineWidth"] == "3px" and r["outlineOffset"] == "5px" and r["boxShadow"] != "none",
+                  f"focusVisible={r['focusVisible']} outline={r['outlineStyle']} {r['outlineWidth']} offset={r['outlineOffset']} shadow={r['boxShadow'][:40]}")
+            short = len(r["text"]) <= 22
+            check(f"{tag} the ring hugs the title text (fit-content narrower than its column{'' if short else '; long name wraps, width capped'})",
+                  (r["titleW"] < r["infoW"] - 24) if short else (r["titleW"] <= r["infoW"]),
+                  f"titleW={r['titleW']} infoW={r['infoW']} text={r['text']!r}")
+        else:
+            check(f"{tag} a pointer opening never draws the browser-default ring: either no ring (no :focus-visible match) or the author ring (3px solid with the halo)",
+                  r["outlineStyle"] in ("none", "solid") and (r["outlineStyle"] == "none" or (r["outlineWidth"] == "3px" and r["boxShadow"] != "none")),
+                  f"focusVisible={r['focusVisible']} outline={r['outlineStyle']} {r['outlineWidth']} shadow={r['boxShadow'][:40]}")
+        page.close()
+
+
 # Wave 3 / X4 (North Star ruling D1, 2026-08-31): a product source whose
 # natural aspect ratio exceeds 3 is a banner crop — `cover` showed a blurred
 # upscaled strip of the two Tempur-Pedic Gold sources (4.05:1 / 4.42:1) on
@@ -1176,6 +1248,8 @@ def main():
             for lang in ("en", "es"):
                 for name, w, h in VIEWPORTS[:3]:
                     run_drawer_footer(browser, port, name, w, h, lang, args.screenshots)
+            for name, w, h in VIEWPORTS[:2]:
+                run_drawer_title_focus(browser, port, name, w, h, args.screenshots)
             run_banner_fallback(browser, port, args.screenshots)
             run_sleep_system_focus(browser, port, args.screenshots)
             run_forced_colors(browser, port, args.screenshots)
