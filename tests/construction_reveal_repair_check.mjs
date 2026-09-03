@@ -305,7 +305,7 @@ function makeConsEnv({ hostname = 'localhost', search = '?motion=1', reduced = f
   const calls = { frames: 0, timers: 0, inserted: '' };
   if (withHost) {
     const parent = makeEl('drawerScrollParent');
-    const host = makeEl('drawerInside');
+    const host = makeEl('drawerTry');
     parent.appendChild(host);
     host.insertAdjacentHTML = (pos, htmlStr) => {
       calls.inserted = htmlStr;
@@ -325,7 +325,7 @@ function makeConsEnv({ hostname = 'localhost', search = '?motion=1', reduced = f
         els.dfmConstructionPanel.appendChild(els.dfmConsToggle);
       }
     };
-    els.drawerInside = host;
+    els.drawerTry = host;
     els.drawerScrollParent = parent;
   }
   const bodyEl = makeEl('body');
@@ -389,9 +389,10 @@ for (const [markup, roles, tag] of [[markupEn, EN_ROLES, 'EN'], [markupEs, ES_RO
 
 // -------------------------------------------------- wording byte-identity
 section('customer-facing wording — byte-identical to the ruled strings');
-// Product-proof drawer (2026-09-02): the section label ("See what is inside")
-// is painted by the drawer painter with the canonical construction labels;
-// the generic schematic itself carries no heading.
+// Product-proof consolidation (2026-09-02): the schematic is dormant behind the
+// drawer painter's fail-closed gate (constructionSchematicAvailable) and carries
+// no heading of its own; its wording stays byte-identical for the day
+// trustworthy model-level diagram data exists.
 const EXPECTED_EN = 'Separate the layers' +
   'Comfort The part you feel first.' + 'Support The deeper structure that holds you up.' +
   'Exact materials and construction vary by model.';

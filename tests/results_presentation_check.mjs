@@ -644,10 +644,11 @@ function mustReplace(src, find, replace) {
   }
 
   // ---- preserved drawer content must still be written ----------------------
-  // Product-proof drawer (2026-09-02): the Key features cards left the
-  // drawer; the story, the proofs and the inside labels are its content now.
-  for (const id of ['drawerFeelAnchor', 'drawerStory', 'drawerProofsLabel',
-                    'drawerProofs', 'drawerInside']) {
+  // Product-proof drawer (2026-09-02, consolidated): the Key features cards
+  // left the drawer; the story and the "Try this mattress" demonstrations
+  // (with their Comfort / Support bases) are its content now.
+  for (const id of ['drawerFeelAnchor', 'drawerStory', 'drawerTry',
+                    'drawerTryLabel', 'drawerProofs']) {
     ok(`preserved drawer surface still present: ${id}`, norm.includes(`id="${id}"`));
   }
 

@@ -223,10 +223,11 @@ section('specialist surfaces — A3 evidence vocabulary, no customer second pers
     && /id="resultsSubhead" hidden><\/p>/.test(norm));
   ok('the trial-focus label is neutral evidence ("Trial focus", not "Your trial focus")',
     norm.includes("(es ? 'Enfoque de la prueba' : 'Trial focus')"));
-  // Product-proof slice 1 (owner decisions 2026-09-02): the drawer names the
-  // trial once and asks the operator to record nothing.
+  // Product-proof consolidation (owner ruling 2026-09-02): the drawer names
+  // the trial once, as the "Try this mattress" section label from the
+  // dictionaries, and asks the operator to record nothing.
   ok('the drawer names the trial once; no spoken-question label and no recording instruction remain',
-    norm.includes("currentLang === 'es' ? 'Probar' : 'Try'")
+    norm.includes("t('drawer.try_section')") && dictEn['drawer.try_section'] === 'Try this mattress' && dictEs['drawer.try_section'] === 'Prueba este colchón'
     && !norm.includes("'Ask: “How did this mattress feel?”'") && !norm.includes("'Pregunta: “¿Cómo se sintió este colchón?”'")
     && !norm.includes("'Elegir finalista' : 'Choose a finalist'"));
   ok('the reaction-gate hint is retired from both dictionaries',

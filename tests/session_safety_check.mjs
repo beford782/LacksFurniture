@@ -1102,7 +1102,9 @@ const REQUIRED_CONTENT_IDS = [
   "profileReflection", "profileSecondary", "profileCta",
   "resultsHeadline", "tierTabs", "tierDescriptor", "topPickContainer",
   "supportingRow", "resultsTrialFocus",
-  "drawerName", "drawerProofs", "drawerInside", "drawerTryPrompts", "drawerPromotionDetail",
+  // Product-proof consolidation (2026-09-02): the standalone Try line and the
+  // inside list are retired; the demonstrations container is the region.
+  "drawerName", "drawerProofs", "drawerPromotionDetail",
   "compareCols", "compareTraySlots",
   "hf2PicksList", "hf2AccessoriesList", "hf2BriefWho", "hf2BriefContext",
   "hf2BriefProfile", "hf2SleepSystemSection", "hf2Priorities",

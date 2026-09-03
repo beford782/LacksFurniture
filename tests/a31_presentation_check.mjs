@@ -342,7 +342,7 @@ section('Results — copy budget, product hero, image attributes, decode hold');
 }
 
 // ======================================================== 5. Drawer (product-proof slice 1)
-section('Trial drawer — one prompt, no reaction capture, no gate; reversible finalist, Undo, Save toggle');
+section('Trial drawer — no standalone prompt, no reaction capture, no gate; reversible finalist, Undo, Save toggle');
 {
   const openSrc = extractFunction('window.openMattressDrawer = function(mattressId, orderList, opts)');
   const chooseSrc = extractFunction('window.chooseFinalist = function(mattressId)');
@@ -419,10 +419,10 @@ section('Trial drawer — one prompt, no reaction capture, no gate; reversible f
   const proofSrcStatic = extractFunction('function paintDrawerProductProof(m)') || '';
   ok('the drawer name is written as text only - no price-tier glyph returns beside it (A3.1 retirement kept)',
     openSrc.includes("document.getElementById('drawerName').textContent = m.name;") && !openSrc.includes('price-tier'));
-  ok('exactly one physical trial prompt renders (the canonical cue, else the engine line); the renderer writes no reaction or step labels',
-    /^\s*paintDrawerProductProof\(m\);/m.test(openSrc) && !openSrc.includes('getMattressTrialPrompts(')
-    && proofSrcStatic.includes("var trialCue = L(m.trialCue || '') || getMattressTrialPrompts(m)[0] || '';")
-    && !openSrc.includes('drawerReactionLabel') && !openSrc.includes('drawerFinalistLabel'));
+  ok('the drawer opener paints the product proof once and writes no trial prompt, reaction or step labels of its own (the standalone Try block is retired; the consolidated section is the painter\'s)',
+    /^\s*paintDrawerProductProof\(m\);/m.test(openSrc) && !openSrc.includes('getMattressTrialPrompts(') && !openSrc.includes('trialCue')
+    && !proofSrcStatic.replace(/\/\/[^\n]*/g, '').includes('trialCue') && !proofSrcStatic.includes('getMattressTrialPrompts(')
+    && !openSrc.includes('drawerReactionLabel') && !openSrc.includes('drawerFinalistLabel') && !openSrc.includes('drawerNoticeLabel'));
 
   // ---- EXECUTED: the finalist / save state model against the real producers
   function makeDrawerEnv({ lang = 'en', opened = 'g5', saved = [], fav = '', promptSpy = null } = {}) {
@@ -1029,149 +1029,222 @@ section('Product-proof content — explicit schema extension, 26-model coverage,
     safe(() => all.every((m) => texts(m).every((o) => !/\bMayfair Firm\b|\bSummit Soft\b|Tempur ?Pedic\b/.test(o.en)))));
 }
 
-section('Product-proof drawer painter — story, canonical cue with fallback, proofs (0/1/2), inside labels, collapse, ES, glyphs, order');
+section('Product-proof drawer painter — "Try this mattress" (0/1/2 demonstrations with Comfort / Support bases), no standalone Try, dormant schematic gate, ES, order');
 {
   const pStart = norm.indexOf('    // ---- Product-proof drawer painter (owner decisions 2026-09-02)');
   const pStop = norm.indexOf('    // ---- end product-proof painter');
   const painterSrc = pStart !== -1 && pStop !== -1 ? norm.slice(pStart, pStop) : '';
-  ok('the painter block is fenced and extractable', painterSrc.includes('function paintDrawerProductProof(m)'));
+  const painterCode = painterSrc.replace(/\/\/[^\n]*/g, '');
+  const dStart = norm.indexOf('id="mattressDrawer"');
+  const dStop = norm.indexOf('<!-- SCREEN: Saved Picks');
+  const drawerHtml = norm.slice(dStart, dStop);
+  const at = (s) => drawerHtml.indexOf(s);
+  ok('the painter block is fenced and extractable, with the fail-closed schematic gate inside it',
+    painterSrc.includes('function paintDrawerProductProof(m)') && painterSrc.includes('function constructionSchematicAvailable(m)')
+    && painterSrc.includes('window.constructionSchematicAvailable = constructionSchematicAvailable;'));
   ok('the painter reads canonical fields only - never answers, quiz tags or features (construction is never inferred)',
-    painterSrc.length > 0 && !/answers|\.features|\.tags|quizTags|archetype/.test(painterSrc.replace(/\/\/[^\n]*/g, ''))
-    && /m\.storyHeadline/.test(painterSrc) && /m\.trialCue/.test(painterSrc) && /m\.proofs/.test(painterSrc) && /m\.construction/.test(painterSrc));
+    painterCode.length > 0 && !/answers|\.features|\.tags|quizTags|archetype/.test(painterCode)
+    && /m\.storyHeadline/.test(painterCode) && /m\.proofs/.test(painterCode) && /m\.construction\b/.test(painterCode));
+  ok('the standalone Try consumer is gone: the painter no longer reads trialCue, and the engine prompt has no drawer consumer',
+    !/trialCue/.test(painterCode) && !/getMattressTrialPrompts/.test(painterCode));
   const MATT = JSON.parse(readFileSync(join(root, 'data', 'mattresses.json'), 'utf8'));
   const ALLM = ['gold', 'silver', 'bronze'].flatMap((t) => MATT[t] || []);
   const findM = (id) => ALLM.find((m) => m.id === id);
-  function runPainter(m, { lang = 'en', schematic = true, mutate = null } = {}) {
+  ok('trialCue stays intact and unrendered: present for all 26 models in both languages in the generated JSON and the canonical source, named by the schema and the build script',
+    ALLM.length === 26 && ALLM.every((m) => m.trialCue && m.trialCue.en && m.trialCue.es)
+    && (readFileSync(join(root, 'incoming', 'lacks_mattresses.json'), 'utf8').split('"trialCue"').length - 1) >= 26
+    && readFileSync(join(root, 'tools', 'workbook_schema.py'), 'utf8').includes('trialCue')
+    && readFileSync(join(root, 'build-data.ps1'), 'utf8').includes('trialCue'));
+  function runPainter(m, { lang = 'en', mutate = null, config = undefined, stale = false } = {}) {
     const els = new Map();
-    const mk = (id) => ({ id, hidden: undefined, textContent: '', innerHTML: '' });
-    const doc = { getElementById: (id) => { if (!els.has(id)) els.set(id, mk(id)); return els.get(id); } };
-    const win = { dfmConstructionRender: schematic ? () => true : undefined };
-    const src = (mutate ? mutate(painterSrc) : painterSrc) + '\nreturn paintDrawerProductProof;';
-    const fn = new Function('document', 'window', 'currentLang', 'L', 'escapeHtml', 'getMattressTrialPrompts', src);
+    const mk = (id) => { const set = new Set(); return { id, hidden: undefined, textContent: '', innerHTML: '', parentNode: null,
+      classList: { toggle(c, f) { const on = f === undefined ? !set.has(c) : !!f; if (on) set.add(c); else set.delete(c); return on; }, contains(c) { return set.has(c); }, add(c) { set.add(c); }, remove(c) { set.delete(c); } } }; };
+    const removed = [];
+    if (stale) { const s = mk('dfmConstructionSection'); s.parentNode = { removeChild(c) { removed.push(c.id); } }; els.set('dfmConstructionSection', s); }
+    const doc = { getElementById: (id) => { if (id === 'dfmConstructionSection' && !els.has(id)) return null; if (!els.has(id)) els.set(id, mk(id)); return els.get(id); } };
+    const renders = { n: 0 };
+    const win = { dfmConstructionRender: () => { renders.n++; return true; } };
+    const D = lang === 'es' ? dictEs : dictEn;
+    const t = (k) => (Object.prototype.hasOwnProperty.call(D, k) ? D[k] : k);
+    const src = (mutate ? mutate(painterSrc) : painterSrc) + '\nreturn { paint: paintDrawerProductProof, gate: constructionSchematicAvailable };';
+    const fn = new Function('document', 'window', 'currentLang', 'L', 'escapeHtml', 't', 'STORE_CONFIG', src);
     const Lx = (o) => (o && typeof o === 'object') ? (o[lang] || o.en || '') : (typeof o === 'string' ? o : '');
     const esc = (v) => String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-    const paint = fn(doc, win, lang, Lx, esc, () => ['ENGINE FALLBACK PROMPT', 'second engine line']);
-    paint(JSON.parse(JSON.stringify(m)));
-    return { get: (id) => els.get(id) || mk(id) };
+    const api = fn(doc, win, lang, Lx, esc, t, config);
+    api.paint(JSON.parse(JSON.stringify(m)));
+    return { get: (id) => els.get(id) || mk(id), renders, removed, gate: api.gate };
   }
   const count = (html, needle) => (html.split(needle).length - 1);
+  const basisOf = (html, i) => { const cards = html.split('<div class="drawer-proof">').slice(1); const c = cards[i] || ''; const mm = c.match(/<div class="drawer-proof__basis">([\s\S]*?)<\/div>/); return mm ? mm[1] : null; };
+  const role = (r) => '<span class="drawer-proof__basis-role">' + r + '</span> · ';
 
   // ---- Mayfair Plush (two proofs, both labels), English
   const g6 = findM('g6');
   const r6 = runPainter(g6);
+  const try6 = r6.get('drawerTry');
+  const proofs6 = r6.get('drawerProofs').innerHTML;
   ok('story: headline and narrative render from the canonical fields and the block shows',
     r6.get('drawerStory').hidden === false && r6.get('drawerStoryHeadline').textContent === g6.storyHeadline.en
     && r6.get('drawerStoryBody').textContent === g6.storyNarrative.en);
-  ok('trial prompt: exactly one line, the canonical cue (the engine line is not used when a cue exists)',
-    count(r6.get('drawerTryPrompts').innerHTML, 'drawer-try-prompt"') === 1
-    && r6.get('drawerTryPrompts').innerHTML.includes(g6.trialCue.en) && !r6.get('drawerTryPrompts').innerHTML.includes('ENGINE FALLBACK')
-    && r6.get('drawerNoticeLabel').textContent === 'Try');
-  const proofs6 = r6.get('drawerProofs').innerHTML;
-  ok('proofs: two cards, each with a title, a cue and one aria-hidden glyph; the label reads "What to notice"',
-    count(proofs6, '<div class="drawer-proof">') === 2 && count(proofs6, 'class="drawer-proof__icon" aria-hidden="true"') === 2
-    && count(proofs6, '<svg ') === 2 && count(proofs6, 'aria-hidden="true"') === 4
-    && proofs6.includes('Hand-tufted cooling surface') && proofs6.includes('Touch the Tencel cover and notice the smooth, cool first contact.')
-    && proofs6.includes('Natural responsive comfort') && r6.get('drawerProofsLabel').textContent === 'What to notice'
-    && r6.get('drawerProofBlock').hidden === false);
-  const inside6 = r6.get('drawerInside').innerHTML;
-  ok('inside: the "See what is inside" label, then Comfort and Support rows carrying the canonical labels; the schematic render is invoked',
-    inside6.startsWith('<div class="drawer-section-label" id="drawerInsideLabel">See what is inside</div>')
-    && count(inside6, '<div class="drawer-inside-label">') === 2
-    && inside6.includes('<dt>Comfort</dt><dd>' + g6.construction.comfort.en + '</dd>')
-    && inside6.includes('<dt>Support</dt><dd>' + g6.construction.support.en + '</dd>')
-    && r6.get('drawerInsideBlock').hidden === false && r6.get('drawerProofGrid').hidden === false);
+  ok('"Try this mattress" is the single post-story section: dictionary label, shown, paired, two cards, no standalone Try line and no trial-cue text anywhere in it',
+    r6.get('drawerTryLabel').textContent === 'Try this mattress' && try6.hidden === false && try6.classList.contains('is-pair')
+    && count(proofs6, '<div class="drawer-proof">') === 2 && !proofs6.includes('drawer-try-prompt') && !proofs6.includes(g6.trialCue.en)
+    && !/drawer-try-prompt|drawerTryPrompts|drawerNoticeLabel|drawerProofGrid|drawerProofsLabel|drawerInside\b|drawerInsideBlock/.test(painterSrc));
+  ok('each demonstration is a title, a physical cue and one aria-hidden glyph (the canonical proof strings, verbatim)',
+    count(proofs6, 'class="drawer-proof__icon" aria-hidden="true"') === 2 && count(proofs6, '<svg ') === 2 && count(proofs6, 'aria-hidden="true"') === 4
+    && proofs6.includes('<div class="drawer-proof__title">Hand-tufted cooling surface</div>')
+    && proofs6.includes('<div class="drawer-proof__cue">Touch the Tencel cover and notice the smooth, cool first contact.</div>')
+    && proofs6.includes('<div class="drawer-proof__title">Natural responsive comfort</div>'));
+  ok('the Comfort basis attaches to proof 1 and the Support basis to proof 2, as "Role · label" from the canonical construction fields, escaped',
+    basisOf(proofs6, 0) === role('Comfort') + g6.construction.comfort.en
+    && basisOf(proofs6, 1) === role('Support') + g6.construction.support.en
+    && count(proofs6, 'drawer-proof__basis"') === 2 && painterSrc.includes("escapeHtml(basis.role) + '</span> · ' + escapeHtml(basis.text)"));
+  ok('no separate inside list, no "See what is inside" / "What to notice" label, no schematic call and no disclaimer for a catalog model',
+    !proofs6.includes('drawer-inside') && !/See what is inside|What to notice|Mira qué hay dentro|Qué notar/.test(painterSrc)
+    && r6.renders.n === 0 && !proofs6.includes('vary by model'));
   ok('glyphs follow the EN cue verb: Touch/Press -> touch mark; Reveal -> notice mark; Change -> move mark',
     count(proofs6, 'r="2.4"') === 2
     && runPainter(findM('g1')).get('drawerProofs').innerHTML.includes('c2-3.6 11-3.6 13 0')
     && runPainter(findM('s5')).get('drawerProofs').innerHTML.includes('M3 4.5l3.5 3.5L3 11.5'));
 
-  // ---- Saint Pierre: the story names no support layer -> one row only
+  // ---- Saint Pierre: the story names no support layer -> proof 2 carries no basis
   const r2 = runPainter(findM('g2'));
-  ok('inside: a blank support label is simply not listed (no invented layer)',
-    count(r2.get('drawerInside').innerHTML, '<div class="drawer-inside-label">') === 1
-    && r2.get('drawerInside').innerHTML.includes('<dt>Comfort</dt>') && !r2.get('drawerInside').innerHTML.includes('<dt>Support</dt>'));
+  const p2 = r2.get('drawerProofs').innerHTML;
+  ok('a blank Support label leaves proof 2 without a basis - no placeholder, no empty wrapper, no synthesized layer',
+    count(p2, '<div class="drawer-proof">') === 2 && count(p2, 'drawer-proof__basis"') === 1
+    && basisOf(p2, 0) !== null && basisOf(p2, 0).startsWith(role('Comfort')) && basisOf(p2, 1) === null
+    && !p2.includes('>Support<') && !p2.includes('drawer-proof__basis"></div>'));
+  const supportOnly = JSON.parse(JSON.stringify(g6)); supportOnly.construction = { comfort: { en: '', es: '' }, support: g6.construction.support };
+  const ps = runPainter(supportOnly).get('drawerProofs').innerHTML;
+  ok('a blank Comfort label leaves proof 1 without a basis while proof 2 keeps its Support basis (bases never shift between demonstrations)',
+    basisOf(ps, 0) === null && basisOf(ps, 1) === role('Support') + g6.construction.support.en);
 
-  // ---- Spanish session: provisional Spanish strings, same glyphs (keyed to the EN cue)
-  const r6es = runPainter(g6, { lang: 'es' });
-  ok('ES: labels, story, cue, proofs and inside rows render in Spanish; glyphs are unchanged',
-    r6es.get('drawerNoticeLabel').textContent === 'Probar' && r6es.get('drawerProofsLabel').textContent === 'Qué notar'
-    && r6es.get('drawerInside').innerHTML.includes('>Mira qué hay dentro</div>')
-    && r6es.get('drawerStoryHeadline').textContent === g6.storyHeadline.es
-    && r6es.get('drawerTryPrompts').innerHTML.includes(g6.trialCue.es)
-    && r6es.get('drawerProofs').innerHTML.includes(g6.proofs[0].title.es) && r6es.get('drawerProofs').innerHTML.includes(g6.proofs[0].cue.es)
-    && r6es.get('drawerInside').innerHTML.includes('<dt>Confort</dt>') && r6es.get('drawerInside').innerHTML.includes('<dt>Soporte</dt>')
-    && count(r6es.get('drawerProofs').innerHTML, 'r="2.4"') === 2);
-
-  // ---- collapse: a model with no product-proof content
-  const bare = { id: 'x1', name: 'Bare', features: ['hybrid'], tags: ['Cooling'] };
-  const rb = runPainter(bare);
-  ok('collapse: no story -> block hidden and empty; no cue -> the engine fallback line renders once',
-    rb.get('drawerStory').hidden === true && rb.get('drawerStoryHeadline').textContent === '' && rb.get('drawerStoryBody').textContent === ''
-    && count(rb.get('drawerTryPrompts').innerHTML, 'drawer-try-prompt"') === 1 && rb.get('drawerTryPrompts').innerHTML.includes('ENGINE FALLBACK PROMPT')
-    && !rb.get('drawerTryPrompts').innerHTML.includes('second engine line'));
-  ok('collapse: no proofs -> the proof block hides with empty markup; no labels -> the inside label alone over the schematic',
-    rb.get('drawerProofBlock').hidden === true && rb.get('drawerProofs').innerHTML === ''
-    && rb.get('drawerInsideBlock').hidden === false && !rb.get('drawerInside').innerHTML.includes('drawer-inside-labels')
-    && rb.get('drawerProofGrid').hidden === false);
-  const rbNoSchematic = runPainter(bare, { schematic: false });
-  ok('collapse: without labels and without the schematic (motion flag off) the inside block and the whole grid hide',
-    rbNoSchematic.get('drawerInsideBlock').hidden === true && rbNoSchematic.get('drawerProofGrid').hidden === true);
-  const labelsOnly = { id: 'x2', name: 'Labels', construction: { comfort: { en: 'Cooling cover', es: 'Funda fresca' }, support: { en: '', es: '' } } };
-  ok('labels without the schematic still show (canonical content is not gated by the motion flag)',
-    runPainter(labelsOnly, { schematic: false }).get('drawerInsideBlock').hidden === false);
-
-  // ---- proof count: one, two at most, a bare title never renders
+  // ---- proof counts: one, zero, three (capped), a bare title
   const one = JSON.parse(JSON.stringify(g6)); one.proofs = one.proofs.slice(0, 1);
+  const r1 = runPainter(one);
+  const p1 = r1.get('drawerProofs').innerHTML;
+  ok('one proof: one card with its Comfort basis, no Support basis anywhere, the section shown but not paired',
+    count(p1, '<div class="drawer-proof">') === 1 && count(p1, 'drawer-proof__basis"') === 1 && !p1.includes('>Support<')
+    && r1.get('drawerTry').hidden === false && !r1.get('drawerTry').classList.contains('is-pair'));
+  const zero = JSON.parse(JSON.stringify(g6)); zero.proofs = [];
+  const r0 = runPainter(zero);
+  ok('zero proofs: the whole section collapses (hidden, empty card list, not paired) - no label stands over nothing and no basis is orphaned',
+    r0.get('drawerTry').hidden === true && r0.get('drawerProofs').innerHTML === '' && !r0.get('drawerTry').classList.contains('is-pair'));
   const three = JSON.parse(JSON.stringify(g6)); three.proofs = three.proofs.concat([{ title: { en: 'Third', es: 'Tercero' }, cue: { en: 'Try it.', es: 'Pruébalo.' } }]);
   const bareTitle = JSON.parse(JSON.stringify(g6)); bareTitle.proofs[1].cue = { en: '', es: '' };
-  ok('one proof renders as one card; three are capped at two; a title without its cue is dropped',
-    count(runPainter(one).get('drawerProofs').innerHTML, '<div class="drawer-proof">') === 1
-    && count(runPainter(three).get('drawerProofs').innerHTML, '<div class="drawer-proof">') === 2
-    && count(runPainter(bareTitle).get('drawerProofs').innerHTML, '<div class="drawer-proof">') === 1);
+  ok('three proofs are capped at two; a title without its cue is dropped (and its basis with it)',
+    count(runPainter(three).get('drawerProofs').innerHTML, '<div class="drawer-proof">') === 2
+    && count(runPainter(bareTitle).get('drawerProofs').innerHTML, '<div class="drawer-proof">') === 1
+    && count(runPainter(bareTitle).get('drawerProofs').innerHTML, 'drawer-proof__basis"') === 1);
+
+  // ---- Spanish session: provisional strings, same glyphs (keyed to the EN cue)
+  const r6es = runPainter(g6, { lang: 'es' });
+  const pes = r6es.get('drawerProofs').innerHTML;
+  ok('ES: the section label, the role terms, the story and the proofs render in Spanish (provisional); glyphs unchanged',
+    r6es.get('drawerTryLabel').textContent === 'Prueba este colchón' && r6es.get('drawerStoryHeadline').textContent === g6.storyHeadline.es
+    && pes.includes(g6.proofs[0].title.es) && pes.includes(g6.proofs[0].cue.es)
+    && basisOf(pes, 0) === role('Confort') + g6.construction.comfort.es
+    && basisOf(pes, 1) === role('Soporte') + g6.construction.support.es
+    && count(pes, 'r="2.4"') === 2);
+  ok('the three new dictionary strings exist in both languages, differ, and carry the ruled English',
+    ['drawer.try_section', 'drawer.basis_comfort', 'drawer.basis_support'].every((k) => typeof dictEn[k] === 'string' && dictEn[k] && typeof dictEs[k] === 'string' && dictEs[k] && dictEn[k] !== dictEs[k])
+    && dictEn['drawer.try_section'] === 'Try this mattress' && dictEn['drawer.basis_comfort'] === 'Comfort' && dictEn['drawer.basis_support'] === 'Support'
+    && dictEs['drawer.try_section'] === 'Prueba este colchón');
+
+  // ---- collapse: a model with no product-proof content, and labels without proofs
+  const bare = { id: 'x1', name: 'Bare', features: ['hybrid'], tags: ['Cooling'] };
+  const rb = runPainter(bare);
+  ok('collapse: a model with no product-proof content hides the story and the Try section and renders nothing else - no engine prompt, no labels, no schematic',
+    rb.get('drawerStory').hidden === true && rb.get('drawerStoryHeadline').textContent === '' && rb.get('drawerTry').hidden === true
+    && rb.get('drawerProofs').innerHTML === '' && rb.renders.n === 0);
+  const labelsOnly = { id: 'x2', name: 'Labels', construction: { comfort: { en: 'Cooling cover', es: 'Funda fresca' }, support: { en: 'Coils', es: 'Resortes' } } };
+  const rl = runPainter(labelsOnly);
+  ok('labels without proofs render nothing: a basis exists only on a demonstration (no free-standing Comfort / Support list, no schematic)',
+    rl.get('drawerTry').hidden === true && rl.get('drawerProofs').innerHTML === '' && rl.renders.n === 0);
+
+  // ---- the dormant schematic gate (executed)
+  ok('gate: closed for every catalog model with no retailer enablement (26 / 26)',
+    ALLM.every((m) => runPainter(m).gate(m) === false));
+  const enabled = { constructionSchematic: true };
+  ok('gate: retailer enablement alone opens nothing - the Comfort / Support labels are not diagram data (26 / 26 still closed)',
+    ALLM.every((m) => runPainter(m, { config: enabled }).gate(m) === false));
+  const diag = JSON.parse(JSON.stringify(g6)); diag.constructionDiagram = [{ role: 'comfort' }, { role: 'support' }];
+  ok('gate: model-level diagram data alone opens nothing (no enablement)', runPainter(diag).gate(diag) === false);
+  ok('gate: opens only with BOTH the enablement and non-empty model-level diagram data; an empty array stays closed',
+    runPainter(diag, { config: enabled }).gate(diag) === true
+    && (() => { const e = JSON.parse(JSON.stringify(diag)); e.constructionDiagram = []; return runPainter(e, { config: enabled }).gate(e) === false; })());
+  ok('executed: with the gate closed the painter never calls the schematic renderer, and it removes a panel a previous render left behind',
+    r6.renders.n === 0 && runPainter(g6, { stale: true }).removed.includes('dfmConstructionSection'));
+  ok('executed: with the gate open the painter calls the renderer exactly once', runPainter(diag, { config: enabled }).renders.n === 1);
+  ok('statics: the renderer call site sits inside the gate and is the only call; the dormant renderer targets #drawerTry as its sibling host',
+    painterSrc.includes("      if (constructionSchematicAvailable(m)) {\n        if (window.dfmConstructionRender) window.dfmConstructionRender();\n      }")
+    && (norm.match(/dfmConstructionRender\(\)/g) || []).length === 1
+    && norm.includes("var host = document.getElementById('drawerTry');"));
+  ok('statics: nothing in the store configuration or the catalog enables the schematic today (fail closed by absence)',
+    !readFileSync(join(root, 'data', 'store-config.json'), 'utf8').includes('constructionSchematic')
+    && ALLM.every((m) => !('constructionDiagram' in m)));
+  ok('statics: the schematic strings (the layer control, the legend, the disclaimer) live only in the dormant renderer - never in the painter or the static drawer markup',
+    !painterSrc.includes('Separate the layers') && !painterSrc.includes('vary by model') && !painterSrc.includes('dfm-cons')
+    && !drawerHtml.includes('dfm-cons') && !drawerHtml.includes('Separate the layers') && !drawerHtml.includes('vary by model'));
 
   // ---- negative controls
+  const tryBack = runPainter(g6, { mutate: (src) => mustReplace(src, "}).join('');\n      if (section) {", "}).join('');\n      document.getElementById('drawerProofs').innerHTML = '<div class=\"drawer-try-prompt\">' + escapeHtml(L(m.trialCue || '')) + '</div>' + document.getElementById('drawerProofs').innerHTML;\n      if (section) {") });
+  ok('negative control: a painter that restores the standalone Try line is detected', tryBack.get('drawerProofs').innerHTML.includes(g6.trialCue.en));
   const noCollapse = runPainter(bare, { mutate: (src) => mustReplace(src, 'storyEl.hidden = !(storyHead || storyBody);', 'storyEl.hidden = false;') });
   ok('negative control: a painter that never collapses the story is detected', noCollapse.get('drawerStory').hidden === false);
+  const noCollapseTry = runPainter(zero, { mutate: (src) => mustReplace(src, 'section.hidden = proofs.length === 0;', 'section.hidden = false;') });
+  ok('negative control: a painter that leaves the Try section open over zero proofs is detected', noCollapseTry.get('drawerTry').hidden === false);
   const noCap = runPainter(three, { mutate: (src) => mustReplace(src, '.slice(0, 2);', '.slice(0, 3);') });
   ok('negative control: a painter that renders a third proof is detected', count(noCap.get('drawerProofs').innerHTML, '<div class="drawer-proof">') === 3);
-  const invented = runPainter(bare, { schematic: false, mutate: (src) => mustReplace(src, 'return { comfort: L(c.comfort), support: L(c.support) };', "return { comfort: L(c.comfort) || (m.features || []).join(' '), support: L(c.support) };") });
-  ok('negative control: a painter that invents a label from quiz features is detected', invented.get('drawerInsideBlock').hidden === false);
+  const synth = runPainter(findM('g2'), { mutate: (src) => mustReplace(src, "labels.support ? { role: t('drawer.basis_support'), text: labels.support } : null", "{ role: t('drawer.basis_support'), text: labels.support || 'Support core' }") });
+  ok('negative control: a painter that synthesizes a Support basis is detected', basisOf(synth.get('drawerProofs').innerHTML, 1) !== null);
+  const swapped = runPainter(g6, { mutate: (src) => mustReplace(src, 'var basis = bases[i];', 'var basis = bases[1 - i];') });
+  ok('negative control: bases that swap demonstrations are detected', basisOf(swapped.get('drawerProofs').innerHTML, 0) !== role('Comfort') + g6.construction.comfort.en);
+  const invented = runPainter(supportOnly, { mutate: (src) => mustReplace(src, 'return { comfort: L(c.comfort), support: L(c.support) };', "return { comfort: L(c.comfort) || (m.features || []).join(' '), support: L(c.support) };") });
+  ok('negative control: a painter that invents a basis from quiz features is detected', basisOf(invented.get('drawerProofs').innerHTML, 0) !== null);
+  const openGate = runPainter(g6, { mutate: (src) => mustReplace(src, 'return enabled && diagram;', 'return true;') });
+  ok('negative control: a gate that opens by default is detected', openGate.renders.n === 1);
+  const unguarded = runPainter(g6, { mutate: (src) => mustReplace(src, 'if (constructionSchematicAvailable(m)) {', 'if (true) {') });
+  ok('negative control: an unguarded renderer call is detected', unguarded.renders.n === 1);
 
   // ---- markup order and boundaries (statics)
-  const dStart = norm.indexOf('id="mattressDrawer"');
-  const dStop = norm.indexOf('<!-- SCREEN: Saved Picks');
-  const drawerHtml = norm.slice(dStart, dStop);
-  const at = (s) => drawerHtml.indexOf(s);
-  ok('drawer order: identity, story, Try, proofs beside inside, actions + notice, pillow prompt, financing, promotion',
-    at('id="drawerFeelAnchor"') < at('id="drawerStory"') && at('id="drawerStory"') < at('id="drawerNoticeLabel"')
-    && at('id="drawerNoticeLabel"') < at('id="drawerTryPrompts"') && at('id="drawerTryPrompts"') < at('id="drawerProofGrid"')
-    && at('id="drawerProofBlock"') < at('id="drawerInsideBlock"') && at('id="drawerInside"') < at('id="drawerCtaRow"')
-    && at('id="drawerCtaRow"') < at('id="drawerFinalistNote"') && at('id="drawerFinalistNote"') < at('id="drawerSystemPrompt"')
+  ok('drawer order: identity, story, "Try this mattress", actions + notice + live region, pillow prompt, financing, promotion',
+    at('id="drawerFeelAnchor"') < at('id="drawerStory"') && at('id="drawerStory"') < at('id="drawerTry"')
+    && at('id="drawerTry"') < at('id="drawerTryLabel"') && at('id="drawerTryLabel"') < at('id="drawerProofs"')
+    && at('id="drawerProofs"') < at('id="drawerCtaRow"') && at('id="drawerCtaRow"') < at('id="drawerFinalistNote"')
+    && at('id="drawerFinalistNote"') < at('id="drawerFinalistLive"') && at('id="drawerFinalistLive"') < at('id="drawerSystemPrompt"')
     && at('id="drawerSystemPrompt"') < at('id="drawerFinancing"') && at('id="drawerFinancing"') < at('id="drawerPromotion"'));
+  ok('the retired drawer elements are gone from the markup and the live source (no standalone Try, no proof grid, no inside list, no stranded label)',
+    ['drawerNoticeLabel', 'drawerTryPrompts', 'drawerProofGrid', 'drawerProofBlock', 'drawerProofsLabel', 'drawerInsideBlock', 'drawerInside', 'drawerInsideLabel', 'drawerInsideLabels']
+      .every((id) => !norm.includes('id="' + id + '"') && !norm.includes("'" + id + "'"))
+    && !liveHtml.includes('drawer-try-prompt') && !liveHtml.includes('drawer-inside') && !liveHtml.includes('drawer-proof-grid') && !liveHtml.includes('drawer-proof-block'));
   ok('the drawer carries no Key features cards, no comparison entry and no versus language',
     !drawerHtml.includes('drawerDifferentiators') && !/openCompare|compare-btn|versus|\bvs\b/i.test(drawerHtml)
     && !painterSrc.includes('versus'));
-  ok('every drawer control in the product-proof flow meets the 44px touch floor (finalist 52, Undo 44, schematic toggle 44, pillow-prompt buttons 44)',
+  ok('every drawer control in the product-proof flow meets the 44px touch floor (finalist 52, Undo 44, pillow-prompt buttons 44; the dormant toggle keeps 44)',
     /\.drawer-finalist-btn \{[^}]*min-height: 52px;/.test(norm) && /\.drawer-undo-btn \{[^}]*min-height: 44px;/.test(norm)
     && /\.dfm-cons-btn \{[^}]*min-height: 44px;/.test(norm)
     && /\.drawer-system-prompt__actions button \{[^}]*min-height: 44px;/.test(norm));
-  ok('the story, proof and inside blocks start collapsed in the static markup',
+  ok('the story and the Try section start collapsed in the static markup, with an empty label and an empty card list',
     drawerHtml.includes('<div class="drawer-story" id="drawerStory" hidden>')
-    && drawerHtml.includes('<div class="drawer-proof-grid" id="drawerProofGrid" hidden>')
-    && drawerHtml.includes('<div class="drawer-proof-block" id="drawerProofBlock" hidden>')
-    && drawerHtml.includes('<div class="drawer-inside-block" id="drawerInsideBlock" hidden>'));
-  ok('the wipe owns the new regions (content, text and collapsed rest state)',
-    /var SESSION_CONTENT_IDS = \[[\s\S]*?'drawerProofs', 'drawerInside',[\s\S]*?\];/.test(norm)
+    && drawerHtml.includes('<div class="drawer-try" id="drawerTry" hidden>\n          <div class="drawer-section-label" id="drawerTryLabel"></div>\n          <div class="drawer-proofs" id="drawerProofs"></div>\n        </div>'));
+  ok('the wipe owns the regions (content, text and collapsed rest state) and no longer names retired ids',
+    /var SESSION_CONTENT_IDS = \[[\s\S]*?'drawerProofs', 'dfmConstructionSection',[\s\S]*?\];/.test(norm)
+    && !/var SESSION_CONTENT_IDS = \[[\s\S]*?'drawer(Inside|TryPrompts)'[\s\S]*?\];/.test(norm)
     && /'drawerStoryHeadline', 'drawerStoryBody',/.test(norm)
-    && ["{ id: 'drawerStory', hiddenAttr: true }", "{ id: 'drawerProofGrid', hiddenAttr: true }",
-        "{ id: 'drawerProofBlock', hiddenAttr: true }", "{ id: 'drawerInsideBlock', hiddenAttr: true }"].every((l) => norm.includes(l)));
-  ok('CSS: landscape sets proofs beside the inside labels; the existing portrait block stacks them (no new breakpoint); hidden blocks do not paint',
-    /\.drawer-proof-grid \{\s*display: grid;\s*grid-template-columns: minmax\(0, 1\.1fr\) minmax\(0, 1fr\);/.test(norm)
-    && /\.drawer-mattress-name \{ font-size:26px; \}\s*\n\s*\/\*[^\n]*\*\/\s*\n\s*\.drawer-proof-grid \{ grid-template-columns: 1fr; \}\s*\n\s*\}/.test(norm)
-    && norm.includes('.drawer-proof-grid[hidden],\n    .drawer-proof-block[hidden],\n    .drawer-inside-block[hidden],\n    .drawer-story[hidden] { display: none; }')
-    && norm.includes('.drawer-proof-block[hidden] + .drawer-inside-block { grid-column: 1 / -1; }'));
-  ok('CSS: the light drawer restates story, proof and inside inks; forced colors keep a CanvasText boundary on the cards and glyph rings',
-    /body:has\(#resultsScreen\.active\) \.drawer-story__headline,/.test(norm) && /body:has\(#resultsScreen\.active\) \.drawer-proof__cue,/.test(norm)
+    && norm.includes("{ id: 'drawerStory', hiddenAttr: true }") && norm.includes("{ id: 'drawerTry', hiddenAttr: true, remove: ['is-pair'] }")
+    && !norm.includes("{ id: 'drawerProofGrid'") && !norm.includes("{ id: 'drawerProofBlock'") && !norm.includes("{ id: 'drawerInsideBlock'"));
+  ok('CSS: a pair of demonstrations sits side by side on tablets and stacks on phones (inside the existing 560px block, no new breakpoint); hidden blocks do not paint; the retired rules are gone',
+    norm.includes('.drawer-try.is-pair .drawer-proofs { grid-template-columns: repeat(2, minmax(0, 1fr)); }')
+    && /@media \(max-width: 560px\) \{[\s\S]*?\.drawer-try\.is-pair \.drawer-proofs \{ grid-template-columns: 1fr; \}[\s\S]*?\n    \}/.test(norm)
+    && norm.includes('.drawer-try[hidden],\n    .drawer-story[hidden] { display: none; }')
+    && !/\.drawer-proof-grid|\.drawer-inside|\.drawer-try-prompt/.test(norm));
+  ok('CSS: the basis line is quiet (muted 12px) under a small-caps brass role; the light drawer restates the basis inks; forced colors keep the CanvasText boundary on the cards',
+    /\.drawer-proof__basis \{\s*margin-top: 7px;\s*color: var\(--cream-dim\);\s*font: 500 12px\/1\.4 var\(--font-sans\);/.test(norm)
+    && /\.drawer-proof__basis-role \{\s*color: var\(--gold\);[\s\S]{0,160}?text-transform: uppercase;/.test(norm)
+    && /body:has\(#resultsScreen\.active\) \.drawer-story__headline,/.test(norm) && /body:has\(#resultsScreen\.active\) \.drawer-proof__cue,/.test(norm)
+    && /body:has\(#resultsScreen\.active\) \.drawer-proof__basis,/.test(norm)
+    && norm.includes('body:has(#resultsScreen.active) .drawer-proof__basis-role { color: var(--accent-ink); }')
     && /body:has\(#resultsScreen\.active\) \.drawer-proof \{\s*border-color: #D8CCBD;/.test(norm)
     && /@media \(forced-colors: active\) \{\s*\.drawer-proof \{ border: 1px solid CanvasText; \}\s*\.drawer-proof__icon \{ border: 1px solid CanvasText; color: CanvasText; \}\s*\}/.test(norm));
 }

@@ -154,5 +154,8 @@
   "drawer.finalist_live_set": "Finalista: {name}.",
   "drawer.finalist_live_replaced": "Finalista: {name}. Reemplazó a {previous}.",
   "drawer.finalist_live_restored": "Finalista restaurado: {name}.",
-  "drawer.finalist_live_cleared": "No hay finalista seleccionado."
+  "drawer.finalist_live_cleared": "No hay finalista seleccionado.",
+  "drawer.try_section": "Prueba este colchón",
+  "drawer.basis_comfort": "Confort",
+  "drawer.basis_support": "Soporte"
 }

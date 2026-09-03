@@ -154,5 +154,8 @@
   "drawer.finalist_live_set": "Finalist: {name}.",
   "drawer.finalist_live_replaced": "Finalist: {name}. Replaced {previous}.",
   "drawer.finalist_live_restored": "Finalist restored: {name}.",
-  "drawer.finalist_live_cleared": "No finalist selected."
+  "drawer.finalist_live_cleared": "No finalist selected.",
+  "drawer.try_section": "Try this mattress",
+  "drawer.basis_comfort": "Comfort",
+  "drawer.basis_support": "Support"
 }

@@ -924,20 +924,24 @@ ok('markup and render live inside the spike fences',
   /window\.dfmConstructionRender = function/.test(spikeSrc));
 ok('markup is gate-guarded (declines to empty when motion is inactive)',
   /dfmConstructionMarkup = function\(\) \{\s*if \(!dfmMotionActive\(\)\) return '';/.test(cssNorm));
-ok('drawer hook is guarded and single-sited',
-  html.includes('if (window.dfmConstructionRender) schematic = window.dfmConstructionRender() === true;') &&
+// Product-proof consolidation (owner ruling 2026-09-02): the schematic is
+// DORMANT. Its single call site sits behind constructionSchematicAvailable(),
+// which fails closed (retailer enablement AND model-level diagram data, both
+// absent today); the renderer itself is unchanged.
+ok('drawer hook is guarded by the fail-closed gate and single-sited',
+  cssNorm.includes("if (constructionSchematicAvailable(m)) {\n        if (window.dfmConstructionRender) window.dfmConstructionRender();") &&
   (html.match(/dfmConstructionRender/g) || []).length === 3);
 ok('the panel is inserted as a SIBLING after the differentiators, never inside them',
   spikeSrc.includes("host.insertAdjacentHTML('afterend', markup);") &&
   !spikeSrc.includes("insertAdjacentHTML('beforeend'"));
 ok('render dedupes BEFORE the gate — no duplicates, and rollback clears leftovers',
   /var existing = document\.getElementById\('dfmConstructionSection'\);\s*if \(existing && existing\.parentNode\) existing\.parentNode\.removeChild\(existing\);\s*var markup = window\.dfmConstructionMarkup\(\);/.test(cssNorm));
-// Product-proof drawer (2026-09-02): the section carries no heading of its
-// own - "See what is inside" is painted with the canonical construction
-// labels by the drawer painter, and the generic schematic follows them.
-ok('the section carries no heading of its own; the drawer painter owns "See what is inside"',
+// Product-proof consolidation (2026-09-02): the section carries no heading of
+// its own, and the separate "See what is inside" list is retired - the
+// Comfort / Support facts ride on the "Try this mattress" demonstrations.
+ok('the section carries no heading of its own; no "See what is inside" label exists anywhere any more',
   !spikeSrc.includes('drawer-section-label') && !spikeSrc.includes('Construction demonstration') &&
-  html.includes("(es ? 'Mira qué hay dentro' : 'See what is inside')"));
+  !html.includes("'See what is inside'") && !html.includes("'Mira qué hay dentro'"));
 ok('the section is in the authoritative session-wipe inventory',
   /var SESSION_CONTENT_IDS = \[[\s\S]*?'dfmConstructionSection'[\s\S]*?\];/.test(cssNorm));
 ok('the scene has no JS animation machinery (no frames, no timers in its code)',
@@ -1005,7 +1009,7 @@ function makeConsEnv({ hostname, search, reduced = false, lang = 'en', withHost 
   const calls = { frames: 0, timers: 0, inserted: '' };
   if (withHost) {
     const parent = makeEl('drawerScrollParent');
-    const host = makeEl('drawerInside');
+    const host = makeEl('drawerTry');
     parent.appendChild(host);
     host.insertAdjacentHTML = (pos, htmlStr) => {
       calls.inserted = htmlStr;
@@ -1025,7 +1029,7 @@ function makeConsEnv({ hostname, search, reduced = false, lang = 'en', withHost 
         els.dfmConstructionPanel.appendChild(els.dfmConsToggle);
       }
     };
-    els.drawerInside = host;
+    els.drawerTry = host;
     els.drawerScrollParent = parent;
   }
   const bodyEl = makeEl('body');
@@ -1063,13 +1067,13 @@ section('construction reveal: gate behavior and honest placement');
     m.includes('dfmConstructionSection') && !m.includes('drawer-section-label') &&
     m.includes('dfm-cons-chip') && m.includes('<dt><span class="dfm-cons-swatch dfm-cons-fill--comfort" aria-hidden="true"></span>Comfort</dt>') &&
     m.includes('Separate the layers'));
-  ok('render places the section as a sibling AFTER the canonical inside labels (#drawerInside), not inside',
+  ok('render places the section as a sibling AFTER the "Try this mattress" demonstrations (#drawerTry), not inside',
     active.api.consRender() === true &&
     active.els.dfmConstructionSection.parentNode === active.els.drawerScrollParent &&
-    active.els.drawerInside.children.length === 0);
-  ok('the canonical labels host stays byte-correct',
-    active.els.drawerInside.children.length === 0 &&
-    (active.els.drawerInside.innerHTML || '') === '');
+    active.els.drawerTry.children.length === 0);
+  ok('the demonstrations host stays byte-correct',
+    active.els.drawerTry.children.length === 0 &&
+    (active.els.drawerTry.innerHTML || '') === '');
   const es = makeConsEnv({ hostname: 'localhost', search: '?motion=1', lang: 'es' });
   ok('Spanish session renders the ES heading and provisional ES role strings',
     !es.api.consMarkup().includes('drawer-section-label') &&
