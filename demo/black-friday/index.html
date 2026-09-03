@@ -9085,13 +9085,15 @@
       border-bottom: 1px solid rgba(255,255,255,0.1);
     }
     .drawer-hero img { width:100%; height:100%; object-fit:contain; display:block; }
-    /* Consolidation pass (2026-09-02): the column owns its horizontal padding
-       as a variable (the sticky footer bleeds through it), ends flush at the
-       footer, lays out as a flex column so a short story still puts the
-       footer on the bottom edge (margin-top: auto), and keeps 150px of
-       terminal scroll padding so keyboard-scrolled targets land above it. */
-    .drawer-scroll { --drawer-pad-x: 22px; overflow-y:auto; padding:20px var(--drawer-pad-x) 0; flex:1; display:flex; flex-direction:column; scroll-padding-bottom: 150px; }
-    .drawer-scroll > :not(.drawer-action-footer) { flex-shrink: 0; }
+    /* Corrective pass (owner ruling 2026-09-02): the detail column is a vertical
+       flex container beside the photo (grid) or under it (portrait / phone): the
+       scroll viewport (flex: 1, min-height: 0, its own bottom padding) and then
+       the DOCKED action footer as a sibling, so the footer takes its own row and
+       can never overlay product content at any scroll position - no sticky
+       overlay, no guessed spacer, no scroll-padding. The column owns the
+       horizontal padding variable both children use. */
+    .drawer-detail { --drawer-pad-x: 22px; display:flex; flex-direction:column; min-height:0; min-width:0; }
+    .drawer-scroll { overflow-y:auto; padding:20px var(--drawer-pad-x) 20px; flex:1; min-height:0; }
     .drawer-scroll::-webkit-scrollbar { display:none; }
     .drawer-mattress-header { display:flex; align-items:flex-start; gap:14px; padding:0 0 14px; border-bottom:1px solid rgba(255,255,255,0.1); margin-bottom:14px; }
     .drawer-mattress-img { display:none; }
@@ -9395,21 +9397,15 @@
     .drawer-firm-feel { font-size:0.6rem; font-weight:600; color:var(--cream); white-space:nowrap; }
     .drawer-tags-row { display:flex; flex-wrap:wrap; gap:0.3rem; margin-bottom:0.85rem; }
     .drawer-tag { background:rgba(212,168,75,0.1); color:var(--gold); padding:0.2rem 0.55rem; border-radius:8px; font-size:0.58rem; font-weight:500; }
-    /* Sticky product-action footer (owner consolidation ruling 2026-09-02):
-       the LAST child of the scroll column, sticky against the column's
-       bottom edge, so the finalist and Save controls stay reachable while
-       the story scrolls beneath and settle in flow after the final content
-       when the column is scrolled to its end (nothing can end up under it).
-       margin-top: auto pins it to the bottom edge when the story is shorter
-       than the column. It bleeds to the column's edges through the padding
-       variable, takes the drawer's solid lower ground, one divider line and
-       a soft lift, and pads the safe area. Not a card: no radius, no side
-       borders. */
+    /* Docked product-action footer (owner ruling 2026-09-02, corrective pass):
+       a flex-shrink: 0 sibling BELOW the scroll viewport in the detail column -
+       it takes its own row, so the finalist and Save controls stay reachable
+       while the story scrolls above and nothing can ever sit underneath it.
+       It spans the column, takes the drawer's solid lower ground, one divider
+       line and a soft lift, and pads the safe area. Not a card: no radius, no
+       side borders. */
     .drawer-action-footer {
-      position: sticky;
-      bottom: 0;
-      z-index: 2;
-      margin: auto calc(-1 * var(--drawer-pad-x)) 0;
+      flex-shrink: 0;
       padding: 10px var(--drawer-pad-x) calc(12px + env(safe-area-inset-bottom, 0px));
       background: #0d1f3c;
       border-top: 1px solid rgba(255,255,255,0.14);
@@ -9437,13 +9433,18 @@
       flex-wrap: wrap;
       align-items: center;
       gap: 6px 12px;
-      margin: 10px 0 0;
-      font: 500 13px/1.45 var(--font-sans);
+      margin: 8px 0 0;
+      font: 500 13px/1.4 var(--font-sans);
       color: var(--cream-dim, rgba(248,246,241,0.72));
     }
     .drawer-finalist-note[hidden] { display: none; }
+    /* Corrective pass: the notice text flexes beside Undo and wraps cleanly
+       (never truncated - the mattress name stays whole in the accessible
+       text); Undo keeps its floor and never stretches. */
+    .drawer-finalist-note > span { flex: 1 1 220px; min-width: 0; overflow-wrap: anywhere; }
     .drawer-undo-btn {
       min-height: 44px;
+      flex: 0 0 auto;
       padding: 8px 14px;
       border: 1px solid rgba(255,255,255,0.28);
       border-radius: 7px;
@@ -9511,14 +9512,16 @@
         border-bottom: 1px solid rgba(255,255,255,0.1);
         flex-shrink: 0;
       }
-      .drawer-scroll { --drawer-pad-x: 18px; padding-top:16px; }
+      .drawer-detail { flex:1; min-height:0; --drawer-pad-x: 18px; }
+      .drawer-scroll { padding-top:16px; }
       .drawer-mattress-name { font-size:26px; }
     }
     @media (max-width: 560px) {
       .drawer-toolbar { gap:8px; }
       .drawer-back-to-results { max-width:126px; }
       .drawer-hero { height:140px; min-height:140px; }
-      .drawer-scroll { --drawer-pad-x: 16px; padding-top:14px; }
+      .drawer-detail { --drawer-pad-x: 16px; }
+      .drawer-scroll { padding-top:14px; }
       /* Product-proof drawer: a pair of demonstrations stacks on phones. */
       .drawer-try.is-pair .drawer-proofs { grid-template-columns: 1fr; }
       .drawer-mattress-name { font-size:24px; }
@@ -11598,115 +11601,118 @@
     </div>
     <div class="drawer-workspace">
       <div class="drawer-hero" id="drawerHeroImg"></div>
-      <div class="drawer-scroll" id="drawerScroll">
-        <div class="drawer-mattress-header">
-          <div class="drawer-mattress-img" id="drawerImg"></div>
-          <div class="drawer-mattress-info">
-            <div class="drawer-mattress-brand" id="drawerBrand"></div>
-            <div class="drawer-mattress-name" id="drawerName" tabindex="-1"></div>
-            <div class="drawer-mattress-sub" id="drawerSub"></div>
+      <div class="drawer-detail" id="drawerDetail">
+        <div class="drawer-scroll" id="drawerScroll">
+          <div class="drawer-mattress-header">
+            <div class="drawer-mattress-img" id="drawerImg"></div>
+            <div class="drawer-mattress-info">
+              <div class="drawer-mattress-brand" id="drawerBrand"></div>
+              <div class="drawer-mattress-name" id="drawerName" tabindex="-1"></div>
+              <div class="drawer-mattress-sub" id="drawerSub"></div>
+            </div>
+            <div class="drawer-match-badge" id="drawerMatch"></div>
           </div>
-          <div class="drawer-match-badge" id="drawerMatch"></div>
-        </div>
-        <div class="drawer-trial-feel" id="drawerFeelAnchor"></div>
-        <!-- Product-proof drawer (owner decisions 2026-09-02): the premium
-             product story is canonical retailer content (storyHeadline /
-             storyNarrative in data/mattresses.json, generated from the
-             retailer's canonical source); the block collapses when a model
-             carries none. -->
-        <div class="drawer-story" id="drawerStory" hidden>
-          <div class="drawer-story__headline" id="drawerStoryHeadline"></div>
-          <p class="drawer-story__body" id="drawerStoryBody"></p>
-        </div>
-        <!-- "Try this mattress" (owner consolidation ruling 2026-09-02): ONE
-             section of up to two canonical proof demonstrations. Each card is
-             a title, a physical demonstration cue (never a claim) and an
-             optional quiet construction basis - proof 1 carries the canonical
-             Comfort label, proof 2 the canonical Support label; an absent
-             label leaves no basis, never a placeholder, and nothing is
-             synthesized. The standalone Try block is retired: the canonical
-             trialCue summarised the demonstrations it now yields to, so it is
-             no longer rendered anywhere (the field and its pipeline columns
-             are intact). The separate "See what is inside" list is retired
-             with it - its facts live on the demonstrations. The generic 5b
-             schematic is DORMANT (constructionSchematicAvailable(), fail
-             closed). Zero proofs collapse the whole section: no label, no
-             empty wrapper. Nothing is recorded - the salesperson is in the
-             room and remembers the customer's reaction - so there is no
-             reaction row, no numbered workflow and no gate. The "Key
-             features" cards left the drawer earlier (the differentiator
-             pairs keep their Compare consumer). -->
-        <div class="drawer-try" id="drawerTry" hidden>
-          <div class="drawer-section-label" id="drawerTryLabel"></div>
-          <div class="drawer-proofs" id="drawerProofs"></div>
-        </div>
-        <div class="drawer-system-prompt" id="drawerSystemPrompt" aria-live="polite">
-          <div class="drawer-system-prompt__eyebrow" id="drawerSystemPromptEyebrow"></div>
-          <div class="drawer-system-prompt__title" id="drawerSystemPromptTitle"></div>
-          <div class="drawer-system-prompt__reason" id="drawerSystemPromptReason"></div>
-          <div class="drawer-system-prompt__actions">
-            <button type="button" class="drawer-system-prompt__primary"
-                    onclick="window.openFinalistSleepSystem()"
-                    ontouchend="event.preventDefault();window.openFinalistSleepSystem();"
-                    id="drawerSystemPromptPrimary"></button>
-            <button type="button" class="drawer-system-prompt__secondary"
-                    onclick="window.dismissFinalistSleepSystemPrompt()"
-                    ontouchend="event.preventDefault();window.dismissFinalistSleepSystemPrompt();"
-                    id="drawerSystemPromptSecondary"></button>
+          <div class="drawer-trial-feel" id="drawerFeelAnchor"></div>
+          <!-- Product-proof drawer (owner decisions 2026-09-02): the premium
+               product story is canonical retailer content (storyHeadline /
+               storyNarrative in data/mattresses.json, generated from the
+               retailer's canonical source); the block collapses when a model
+               carries none. -->
+          <div class="drawer-story" id="drawerStory" hidden>
+            <div class="drawer-story__headline" id="drawerStoryHeadline"></div>
+            <p class="drawer-story__body" id="drawerStoryBody"></p>
+          </div>
+          <!-- "Try this mattress" (owner consolidation ruling 2026-09-02): ONE
+               section of up to two canonical proof demonstrations. Each card is
+               a title, a physical demonstration cue (never a claim) and an
+               optional quiet construction basis - proof 1 carries the canonical
+               Comfort label, proof 2 the canonical Support label; an absent
+               label leaves no basis, never a placeholder, and nothing is
+               synthesized. The standalone Try block is retired: the canonical
+               trialCue summarised the demonstrations it now yields to, so it is
+               no longer rendered anywhere (the field and its pipeline columns
+               are intact). The separate "See what is inside" list is retired
+               with it - its facts live on the demonstrations. The generic 5b
+               schematic is DORMANT (constructionSchematicAvailable(), fail
+               closed). Zero proofs collapse the whole section: no label, no
+               empty wrapper. Nothing is recorded - the salesperson is in the
+               room and remembers the customer's reaction - so there is no
+               reaction row, no numbered workflow and no gate. The "Key
+               features" cards left the drawer earlier (the differentiator
+               pairs keep their Compare consumer). -->
+          <div class="drawer-try" id="drawerTry" hidden>
+            <div class="drawer-section-label" id="drawerTryLabel"></div>
+            <div class="drawer-proofs" id="drawerProofs"></div>
+          </div>
+          <div class="drawer-system-prompt" id="drawerSystemPrompt" aria-live="polite">
+            <div class="drawer-system-prompt__eyebrow" id="drawerSystemPromptEyebrow"></div>
+            <div class="drawer-system-prompt__title" id="drawerSystemPromptTitle"></div>
+            <div class="drawer-system-prompt__reason" id="drawerSystemPromptReason"></div>
+            <div class="drawer-system-prompt__actions">
+              <button type="button" class="drawer-system-prompt__primary"
+                      onclick="window.openFinalistSleepSystem()"
+                      ontouchend="event.preventDefault();window.openFinalistSleepSystem();"
+                      id="drawerSystemPromptPrimary"></button>
+              <button type="button" class="drawer-system-prompt__secondary"
+                      onclick="window.dismissFinalistSleepSystemPrompt()"
+                      ontouchend="event.preventDefault();window.dismissFinalistSleepSystemPrompt();"
+                      id="drawerSystemPromptSecondary"></button>
+            </div>
+          </div>
+          <!-- Item 1.3 reason-gate containment (owner ruling 2026-08-24): the
+               inherited "Why it made your shortlist" heading and its
+               answer-derived sentence were a rendered per-model,
+               per-customer why-fit output, which is exactly this item's gated
+               output. They predate the gate (2da6fef, before fc3329b), so their
+               history is not a breach, but they are not grandfathered either:
+               the gate fails closed by OMISSION. Both the heading and the
+               container are gone, so no stranded label, empty box or
+               accessibility-tree remnant survives. Nothing here is narrowed -
+               the reason-led redesign remains gated and unauthorized.
+               Product-proof drawer (2026-09-02): the "Key features"
+               differentiator cards left the drawer as well - the proofs above
+               carry the model-specific distinctions as demonstrations, and
+               the differentiator pairs keep their Compare consumer. -->
+          <!-- Ways to bring it home (Payment Choice) — sleep fit first,
+               payment second. Rendered by renderDrawerFinancing(); hidden keeps it
+               out of the accessibility tree when financing is disabled. -->
+          <div class="drawer-financing" id="drawerFinancing" hidden>
+            <div class="drawer-section-label" id="drawerFinancingLabel"></div>
+            <p class="drawer-financing__body" id="drawerFinancingBody"></p>
+            <div class="fin-actions">
+              <button type="button" class="fin-btn fin-btn-secondary" id="drawerFinancingExplore"
+                      onclick="window.openFinancingSheet('drawer')"
+                      ontouchend="event.preventDefault();window.openFinancingSheet('drawer');"></button>
+            </div>
+          </div>
+          <div class="drawer-promotion" id="drawerPromotion">
+            <div class="drawer-promotion__kicker" id="drawerPromotionKicker"></div>
+            <div class="drawer-promotion__headline" id="drawerPromotionHeadline"></div>
+            <div class="drawer-promotion__detail" id="drawerPromotionDetail"></div>
           </div>
         </div>
-        <!-- Item 1.3 reason-gate containment (owner ruling 2026-08-24): the
-             inherited "Why it made your shortlist" heading and its
-             answer-derived sentence were a rendered per-model,
-             per-customer why-fit output, which is exactly this item's gated
-             output. They predate the gate (2da6fef, before fc3329b), so their
-             history is not a breach, but they are not grandfathered either:
-             the gate fails closed by OMISSION. Both the heading and the
-             container are gone, so no stranded label, empty box or
-             accessibility-tree remnant survives. Nothing here is narrowed -
-             the reason-led redesign remains gated and unauthorized.
-             Product-proof drawer (2026-09-02): the "Key features"
-             differentiator cards left the drawer as well - the proofs above
-             carry the model-specific distinctions as demonstrations, and
-             the differentiator pairs keep their Compare consumer. -->
-        <!-- Ways to bring it home (Payment Choice) — sleep fit first,
-             payment second. Rendered by renderDrawerFinancing(); hidden keeps it
-             out of the accessibility tree when financing is disabled. -->
-        <div class="drawer-financing" id="drawerFinancing" hidden>
-          <div class="drawer-section-label" id="drawerFinancingLabel"></div>
-          <p class="drawer-financing__body" id="drawerFinancingBody"></p>
-          <div class="fin-actions">
-            <button type="button" class="fin-btn fin-btn-secondary" id="drawerFinancingExplore"
-                    onclick="window.openFinancingSheet('drawer')"
-                    ontouchend="event.preventDefault();window.openFinancingSheet('drawer');"></button>
-          </div>
-        </div>
-        <div class="drawer-promotion" id="drawerPromotion">
-          <div class="drawer-promotion__kicker" id="drawerPromotionKicker"></div>
-          <div class="drawer-promotion__headline" id="drawerPromotionHeadline"></div>
-          <div class="drawer-promotion__detail" id="drawerPromotionDetail"></div>
-        </div>
-        <!-- Sticky product-action footer (owner consolidation ruling
-             2026-09-02): the finalist and Save controls stay available at the
-             bottom of the story column while the salesperson and customer
-             explore the mattress - off the photo column in landscape, in both
-             orientations. It is the LAST element of the scroll column (sticky
-             to the column's bottom edge, in flow after the final content when
-             the column is scrolled to its end), so it can never cover the
-             final scroll-flow content. The replacement notice, Undo and the
-             polite live region travel with the actions so an announcement
-             stays with its control; the pillow prompt stays in the scroll
-             flow above. Behaviour is unchanged (owner decisions 4-12): a
-             mattress can become the finalist immediately; the finalist
-             control is a reversible toggle ("Make finalist" / "Finalist ✓" -
-             clearing it never un-saves); choosing force-saves and replaces
-             any other finalist, which stays saved; the notice names what a
-             choice replaces, and Undo restores the previous finalist while it
-             is still saved. Save is a real toggle on the shared saved-pick
-             path. Both controls carry aria-pressed; one polite live region
-             announces finalist changes once. The control is a consumer of the
-             one producer (class finalist-btn -> delegated handler ->
-             window.toggleFinalist()). -->
+        <!-- Docked product-action footer (owner ruling 2026-09-02, corrective
+             pass): the finalist and Save controls sit in a footer that is a
+             SIBLING below the scroll viewport inside the detail column - it
+             takes its own row of the column, so it stays persistently visible
+             without ever overlaying or occupying the viewport, at any scroll
+             position and in every state (the replacement notice and Undo make
+             it taller; the viewport simply gets shorter). Off the photo column
+             in landscape; under the photo in portrait and on phones with the
+             same viewport / footer relationship. The replacement notice, Undo
+             and the polite live region travel with the actions so an
+             announcement stays with its control; the pillow prompt stays in
+             the scroll flow above. Behaviour is unchanged (owner decisions
+             4-12): a mattress can become the finalist immediately; the
+             finalist control is a reversible toggle ("Make finalist" /
+             "Finalist ✓" - clearing it never un-saves); choosing force-saves
+             and replaces any other finalist, which stays saved; the notice
+             names what a choice replaces, and Undo restores the previous
+             finalist while it is still saved. Save is a real toggle on the
+             shared saved-pick path. Both controls carry aria-pressed; one
+             polite live region announces finalist changes once. The control
+             is a consumer of the one producer (class finalist-btn ->
+             delegated handler -> window.toggleFinalist()). -->
         <div class="drawer-action-footer" id="drawerActionFooter">
           <div class="drawer-cta-row" id="drawerCtaRow">
             <button id="drawerFinalistBtn" class="finalist-btn drawer-finalist-btn" data-id="" aria-pressed="false"></button>

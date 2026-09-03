@@ -1228,7 +1228,7 @@ section('Product-proof drawer painter — "Try this mattress" (0/1/2 demonstrati
     && /\.drawer-system-prompt__actions button \{[^}]*min-height: 44px;/.test(norm));
   ok('the story and the Try section start collapsed in the static markup, with an empty label and an empty card list',
     drawerHtml.includes('<div class="drawer-story" id="drawerStory" hidden>')
-    && drawerHtml.includes('<div class="drawer-try" id="drawerTry" hidden>\n          <div class="drawer-section-label" id="drawerTryLabel"></div>\n          <div class="drawer-proofs" id="drawerProofs"></div>\n        </div>'));
+    && drawerHtml.includes('<div class="drawer-try" id="drawerTry" hidden>\n            <div class="drawer-section-label" id="drawerTryLabel"></div>\n            <div class="drawer-proofs" id="drawerProofs"></div>\n          </div>'));
   ok('the wipe owns the regions (content, text and collapsed rest state) and no longer names retired ids',
     /var SESSION_CONTENT_IDS = \[[\s\S]*?'drawerProofs', 'dfmConstructionSection',[\s\S]*?\];/.test(norm)
     && !/var SESSION_CONTENT_IDS = \[[\s\S]*?'drawer(Inside|TryPrompts)'[\s\S]*?\];/.test(norm)
@@ -1250,13 +1250,12 @@ section('Product-proof drawer painter — "Try this mattress" (0/1/2 demonstrati
     && /@media \(forced-colors: active\) \{\s*\.drawer-proof \{ border: 1px solid CanvasText; \}\s*\.drawer-proof__icon \{ border: 1px solid CanvasText; color: CanvasText; \}\s*\}/.test(norm));
 }
 
-section('Sticky product-action footer — actions, notice, Undo and live region at the bottom of the story column; pillow prompt in flow; terminal padding');
+section('Docked product-action footer — a sibling below the scroll viewport inside the detail column; never over content; compact expanded state');
 {
   const dStart = norm.indexOf('id="mattressDrawer"');
   const dStop = norm.indexOf('<!-- SCREEN: Saved Picks');
   const drawerHtml = norm.slice(dStart, dStop);
   const at = (s) => drawerHtml.indexOf(s);
-  // The markup segment of the element whose opening tag contains `marker`, up to and including its matching close.
   function segmentOf(html, marker) {
     const open = html.indexOf(marker);
     if (open === -1) return null;
@@ -1273,53 +1272,87 @@ section('Sticky product-action footer — actions, notice, Undo and live region 
     }
     return null;
   }
-  const footer = segmentOf(drawerHtml, 'id="drawerActionFooter"');
-  const scrollCol = segmentOf(drawerHtml, 'id="drawerScroll"');
-  ok('the footer exists as one element at the END of the scroll column (nothing but whitespace or comments follows it before the column closes)',
-    !!footer && !!scrollCol && scrollCol.endsWith(footer + '\n      </div>')
-    && /^\s*(?:<!--[\s\S]*?-->\s*)*$/.test(scrollCol.slice(scrollCol.indexOf(footer) + footer.length, scrollCol.length - '</div>'.length)));
+  const workspace = segmentOf(drawerHtml, 'class="drawer-workspace"') || '';
+  const detail = segmentOf(drawerHtml, 'id="drawerDetail"') || '';
+  const scrollCol = segmentOf(drawerHtml, 'id="drawerScroll"') || '';
+  const footer = segmentOf(drawerHtml, 'id="drawerActionFooter"') || '';
+  const hero = segmentOf(drawerHtml, 'id="drawerHeroImg"') || '';
+  ok('the workspace holds the photo column and ONE detail column; the detail column holds the scroll viewport and then the footer as SIBLINGS (the footer is not inside the scroll viewport, and not in the photo column)',
+    !!workspace && !!detail && !!scrollCol && !!footer && !!hero
+    && workspace.includes(detail) && workspace.includes(hero) && !hero.includes('drawerActionFooter')
+    && detail.includes(scrollCol) && detail.includes(footer) && !scrollCol.includes('drawerActionFooter')
+    && detail.indexOf('id="drawerScroll"') < detail.indexOf('id="drawerActionFooter"')
+    && workspace.indexOf('id="drawerHeroImg"') < workspace.indexOf('id="drawerDetail"'));
+  ok('the footer is the LAST element of the detail column (nothing but whitespace or comments between the scroll viewport, the footer and the column\'s close)',
+    !!detail && /^\s*(?:<!--[\s\S]*?-->\s*)*$/.test(detail.slice(detail.indexOf(scrollCol) + scrollCol.length, detail.indexOf(footer)))
+    && /^\s*(?:<!--[\s\S]*?-->\s*)*<\/div>\s*$/.test(detail.slice(detail.indexOf(footer) + footer.length)));
+  ok('the scroll viewport keeps the whole content order: identity, Feel, story, "Try this mattress", pillow prompt, financing, promotion - and nothing else',
+    at('id="drawerName"') < at('id="drawerFeelAnchor"') && at('id="drawerFeelAnchor"') < at('id="drawerStory"') && at('id="drawerStory"') < at('id="drawerTry"')
+    && at('id="drawerTry"') < at('id="drawerSystemPrompt"') && at('id="drawerSystemPrompt"') < at('id="drawerFinancing"') && at('id="drawerFinancing"') < at('id="drawerPromotion"')
+    && at('id="drawerPromotion"') < at('id="drawerActionFooter"')
+    && ['drawerName', 'drawerFeelAnchor', 'drawerStory', 'drawerTry', 'drawerSystemPrompt', 'drawerFinancing', 'drawerPromotion'].every((id) => scrollCol.includes('id="' + id + '"'))
+    && ['drawerCtaRow', 'drawerFinalistBtn', 'drawerInterestedBtn', 'drawerFinalistNote', 'drawerFinalistUndoBtn', 'drawerFinalistLive'].every((id) => !scrollCol.includes('id="' + id + '"')));
   const FOOTER_IDS = ['drawerCtaRow', 'drawerFinalistBtn', 'drawerInterestedBtn', 'drawerFinalistNote', 'drawerFinalistNoteText', 'drawerFinalistUndoBtn', 'drawerFinalistLive'];
-  ok('the footer holds both actions, the replacement notice, Undo and the finalist live region - in that order, the live region last',
-    !!footer && FOOTER_IDS.every((id) => footer.includes('id="' + id + '"'))
+  ok('the footer holds both actions, the replacement notice, Undo and the finalist live region - in that order, the live region last, the prompt / financing / promotion never inside',
+    FOOTER_IDS.every((id) => footer.includes('id="' + id + '"'))
     && FOOTER_IDS.map((id) => footer.indexOf('id="' + id + '"')).every((v, i, a) => i === 0 || v > a[i - 1])
-    && footer.lastIndexOf('<div') === footer.lastIndexOf('<div class="sr-only" id="drawerFinalistLive"'));
-  ok('the pillow prompt, financing and promotion stay in the scroll flow ABOVE the footer, never inside it',
-    !!footer && ['drawerSystemPrompt', 'drawerFinancing', 'drawerPromotion', 'drawerTry', 'drawerStory'].every((id) => !footer.includes(id))
-    && at('id="drawerTry"') < at('id="drawerSystemPrompt"') && at('id="drawerSystemPrompt"') < at('id="drawerFinancing"')
-    && at('id="drawerFinancing"') < at('id="drawerPromotion"') && at('id="drawerPromotion"') < at('id="drawerActionFooter"'));
-  ok('the two action buttons keep their verbatim markup (labels, pressed grammar, the shared Save path, the one finalist producer)',
-    !!footer && footer.includes('<button id="drawerFinalistBtn" class="finalist-btn drawer-finalist-btn" data-id="" aria-pressed="false"></button>')
+    && footer.lastIndexOf('<div') === footer.lastIndexOf('<div class="sr-only" id="drawerFinalistLive"')
+    && ['drawerSystemPrompt', 'drawerFinancing', 'drawerPromotion', 'drawerTry', 'drawerStory'].every((id) => !footer.includes(id)));
+  ok('the two action buttons keep their verbatim markup and the notice / live region their pinned shapes',
+    footer.includes('<button id="drawerFinalistBtn" class="finalist-btn drawer-finalist-btn" data-id="" aria-pressed="false"></button>')
     && footer.includes('<button id="drawerInterestedBtn" class="drawer-btn drawer-btn-secondary" aria-pressed="false" onclick="window.saveDrawerPick()" ontouchend="event.preventDefault();window.saveDrawerPick();">Save for later</button>')
     && footer.includes('<div class="drawer-finalist-note" id="drawerFinalistNote" hidden>')
     && footer.includes('<div class="sr-only" id="drawerFinalistLive" role="status" aria-live="polite" aria-atomic="true"></div>'));
   const promptSrc = extractFunction('function showFinalistSleepSystemPrompt()') || '';
   const dismissSrc = extractFunction('window.dismissFinalistSleepSystemPrompt = function()') || '';
-  ok('the pillow prompt keeps its trigger, its once-per-session guard, its dismissal and its live announcement, and never relocates itself into the footer',
+  ok('the pillow prompt keeps its trigger, guard, dismissal and announcement, and never relocates itself into the footer',
     promptSrc.includes('if (window._finalistAccessoryPromptShown) return;') && promptSrc.includes("prompt.classList.add('is-visible');")
     && dismissSrc.includes("prompt.classList.remove('is-visible');")
     && !/drawerActionFooter|appendChild|insertAdjacentElement|insertBefore|scrollIntoView/.test(promptSrc)
     && /<div class="drawer-system-prompt" id="drawerSystemPrompt" aria-live="polite">/.test(drawerHtml));
-  ok('CSS: the footer is sticky to the column bottom, above the flow, bleeds to the column edges through the padding variable, pads the safe area, and reads as a surface (solid drawer ground, one divider, a soft lift) - not a card',
-    /\.drawer-action-footer \{\s*position: sticky;\s*bottom: 0;\s*z-index: 2;\s*margin: auto calc\(-1 \* var\(--drawer-pad-x\)\) 0;\s*padding: 10px var\(--drawer-pad-x\) calc\(12px \+ env\(safe-area-inset-bottom, 0px\)\);\s*background: #0d1f3c;\s*border-top: 1px solid rgba\(255,255,255,0\.14\);\s*box-shadow: 0 -10px 24px rgba\(0,0,0,0\.28\);\s*\}/.test(norm)
-    && !/\.drawer-action-footer \{[^}]*border-radius/.test(norm));
-  ok('CSS: the scroll column owns the padding variable in every breakpoint, ends flush at the footer, and keeps keyboard-scrolled targets above it (scroll-padding-bottom)',
-    norm.includes('.drawer-scroll { --drawer-pad-x: 22px; overflow-y:auto; padding:20px var(--drawer-pad-x) 0; flex:1; display:flex; flex-direction:column; scroll-padding-bottom: 150px; }')
-    && /@media \(max-width: 760px\), \(orientation: portrait\) \{[\s\S]*?\.drawer-scroll \{ --drawer-pad-x: 18px; padding-top:16px; \}/.test(norm)
-    && /@media \(max-width: 560px\) \{[\s\S]*?\.drawer-scroll \{ --drawer-pad-x: 16px; padding-top:14px; \}/.test(norm));
-  ok('CSS: the light drawer restates the footer surface; forced colors keep a CanvasText divider; the action targets keep their floors (finalist 52, Save 52, Undo 44)',
-    /body:has\(#resultsScreen\.active\) \.drawer-action-footer \{\s*background: #FFFDF8;\s*border-top-color: #D1C5B6;\s*box-shadow: 0 -10px 24px rgba\(55,40,28,0\.12\);\s*\}/.test(norm)
-    && /@media \(forced-colors: active\) \{\s*\.drawer-action-footer \{ border-top: 1px solid CanvasText; \}\s*\}/.test(norm)
-    && /\.drawer-finalist-btn \{[^}]*min-height: 52px;/.test(norm) && /\.drawer-btn \{[^}]*min-height:52px;/.test(norm) && /\.drawer-undo-btn \{[^}]*min-height: 44px;/.test(norm));
-  ok('the wipe still resets the relocated controls and closes the relocated notice (rosters unchanged by the move)',
-    /\{ id: 'drawerFinalistBtn', remove: \['chosen'\], attrs: \{ 'aria-pressed': 'false', 'data-id': '' \} \},/.test(norm)
+  // ---- CSS: the detail column, the scroll viewport, the docked footer
+  const detailRule = (norm.match(/\n    \.drawer-detail \{([^}]*)\}/) || [])[1] || '';
+  const scrollRule = (norm.match(/\n    \.drawer-scroll \{([^}]*)\}/) || [])[1] || '';
+  const footerRule = (norm.match(/\n    \.drawer-action-footer \{([^}]*)\}/) || [])[1] || '';
+  ok('CSS: the detail column is a vertical flex container with min-height: 0 that owns the horizontal padding variable; the scroll viewport is flex: 1 / min-height: 0 / overflow-y: auto with its own bottom padding; the footer is a flex-shrink: 0 sibling',
+    /display:\s*flex;/.test(detailRule) && /flex-direction:\s*column;/.test(detailRule) && /min-height:\s*0;/.test(detailRule) && /--drawer-pad-x:\s*22px;/.test(detailRule)
+    && /overflow-y:\s*auto;/.test(scrollRule) && /flex:\s*1;/.test(scrollRule) && /min-height:\s*0;/.test(scrollRule) && /padding:\s*20px var\(--drawer-pad-x\) 20px;/.test(scrollRule)
+    && /flex-shrink:\s*0;/.test(footerRule));
+  ok('CSS: no overlay compensation survives - the footer has no position, no auto or negative margins; the scroll viewport has no scroll-padding, no flex-column workaround and no spacer padding; no spacer rule exists',
+    !/position:/.test(footerRule) && !/margin/.test(footerRule)
+    && !/scroll-padding/.test(scrollRule) && !/display:\s*flex/.test(scrollRule)
+    && !/\.drawer-scroll > :not\(\.drawer-action-footer\)/.test(norm) && !/drawer-scroll-spacer|drawer-footer-spacer/.test(norm)
+    && (() => { const m = scrollRule.match(/padding:\s*\d+px var\(--drawer-pad-x\) (\d+)px/); return !!m && Number(m[1]) <= 24; })());
+  ok('CSS: the scroll viewport is the only vertical scroller in the column (the detail column and the footer declare no overflow)',
+    !/overflow/.test(detailRule) && !/overflow/.test(footerRule) && /overflow-y:\s*auto;/.test(scrollRule));
+  ok('CSS: the footer keeps its surface (solid lower ground, one divider, soft lift, safe-area padding through the shared variable), no radius',
+    /padding:\s*10px var\(--drawer-pad-x\) calc\(12px \+ env\(safe-area-inset-bottom, 0px\)\);/.test(footerRule)
+    && /background:\s*#0d1f3c;/.test(footerRule) && /border-top:\s*1px solid rgba\(255,255,255,0\.14\);/.test(footerRule)
+    && /box-shadow:\s*0 -10px 24px rgba\(0,0,0,0\.28\);/.test(footerRule) && !/border-radius/.test(footerRule));
+  ok('CSS: the portrait and phone blocks keep the photo above the detail column and the same scroll / footer relationship (the column flexes, the variable narrows, the top padding tightens)',
+    /@media \(max-width: 760px\), \(orientation: portrait\) \{[\s\S]*?\.drawer-workspace \{\s*display: flex;\s*flex-direction: column;\s*min-height: 0;\s*\}[\s\S]*?\.drawer-detail \{ flex:1; min-height:0; --drawer-pad-x: 18px; \}[\s\S]*?\.drawer-scroll \{ padding-top:16px; \}/.test(norm)
+    && /@media \(max-width: 560px\) \{[\s\S]*?\.drawer-detail \{ --drawer-pad-x: 16px; \}[\s\S]*?\.drawer-scroll \{ padding-top:14px; \}/.test(norm));
+  ok('CSS: the expanded replacement state is one compact row where width permits - the text flexes beside Undo, wraps cleanly (min-width 0, overflow-wrap) and is never truncated; Undo keeps its 44px floor and does not stretch',
+    /\.drawer-finalist-note \{\s*display: flex;\s*flex-wrap: wrap;\s*align-items: center;\s*gap: 6px 12px;\s*margin: 8px 0 0;/.test(norm)
+    && norm.includes('.drawer-finalist-note > span { flex: 1 1 220px; min-width: 0; overflow-wrap: anywhere; }')
+    && /\.drawer-undo-btn \{\s*min-height: 44px;\s*flex: 0 0 auto;/.test(norm)
+    && !/\.drawer-finalist-note[^}]*text-overflow/.test(norm) && !/\.drawer-finalist-note[^}]*white-space:\s*nowrap/.test(norm)
+    && /\.drawer-finalist-btn \{[^}]*min-height: 52px;/.test(norm) && /\.drawer-btn \{[^}]*min-height:52px;/.test(norm));
+  ok('CSS: the light drawer restates the footer surface; forced colors keep a CanvasText divider',
+    /body:has\(#resultsScreen\.active\) \.drawer-action-footer \{\s*background: #FFFDF8;\s*border-top-color: #D1C5B6;/.test(norm)
+    && /@media \(forced-colors: active\) \{\s*\.drawer-action-footer \{ border-top: 1px solid CanvasText; \}\s*\}/.test(norm));
+  ok('the open and nav paths still reset the scroll viewport (not the column), and the wipe still resets the relocated controls and notice',
+    /document\.getElementById\('drawerScroll'\)\.scrollTop = 0;/.test(norm)
+    && /\{ id: 'drawerFinalistBtn', remove: \['chosen'\], attrs: \{ 'aria-pressed': 'false', 'data-id': '' \} \},/.test(norm)
     && /\{ id: 'drawerFinalistNote', hiddenAttr: true \},\s*\n\s*\{ id: 'drawerFinalistUndoBtn', hiddenAttr: true \},/.test(norm)
     && /'drawerFinalistNoteText', 'drawerFinalistLive',/.test(norm));
-  // ---- negative controls on the segment logic (a copied prompt, a split-out notice, a static footer)
-  const copied = drawerHtml.replace('<div class="drawer-action-footer" id="drawerActionFooter">', '<div class="drawer-action-footer" id="drawerActionFooter"><div class="drawer-system-prompt" id="drawerSystemPrompt" aria-live="polite"></div>');
-  ok('negative control: a prompt copied into the footer is detected', (segmentOf(copied, 'id="drawerActionFooter"') || '').includes('drawerSystemPrompt'));
+  // ---- negative controls on the structure logic
+  const backInside = drawerHtml.replace('        </div>\n        <!-- Docked product-action footer', '        <!-- Docked product-action footer'); // drop the viewport's own close: the footer falls inside it
+  const insideSeg = segmentOf(backInside, 'id="drawerScroll"') || '';
+  ok('negative control: a footer that falls back inside the scroll viewport is detected', insideSeg.includes('drawerActionFooter'));
   const split = drawerHtml.replace('          </div>\n          <div class="drawer-finalist-note" id="drawerFinalistNote" hidden>', '          </div>\n        </div>\n        <div class="drawer-finalist-orphan">\n          <div class="drawer-finalist-note" id="drawerFinalistNote" hidden>');
   ok('negative control: a notice split out of the footer is detected', split !== drawerHtml && !(segmentOf(split, 'id="drawerActionFooter"') || '').includes('drawerFinalistNote'));
-  ok('negative control: a footer that stops sticking is detected', !/\.drawer-action-footer \{\s*position: static;/.test(norm) && /\.drawer-action-footer \{\s*position: sticky;/.test(norm));
+  ok('negative control: an overlay footer (position: absolute / sticky) or a spacer would be detected by the rule pins', !/position:/.test(footerRule) && !/scroll-padding/.test(scrollRule));
 }
 
 section('Drawer title focus — the accessible name keeps programmatic focus on open and takes the branded text-hugging ring');

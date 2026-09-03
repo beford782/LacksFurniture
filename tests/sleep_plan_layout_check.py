@@ -905,53 +905,85 @@ def run_touch_floor(browser, port, name, width, height, lang, shots_dir):
     page.close()
 
 
-# Consolidation pass (owner ruling 2026-09-02): the drawer's finalist and Save
-# controls live in a STICKY footer at the bottom of the scrollable story
-# column. Rendered proof per viewport and language: the footer is position:
-# sticky on the column's bottom edge at the top, middle and end of the scroll
-# range; at the end of the range the last scroll-flow content clears it (it is
-# the column's last in-flow element); both actions are visible without
-# scrolling and keep their targets; in landscape the footer stays off the
-# photo column; the first-save pillow prompt stays in the flow, outside the
-# footer, and scrolls clear of it (scroll-padding); choosing from the footer
-# works and announces through the live region that travels with it.
+# Corrective pass (owner ruling 2026-09-02, after the 08e2648 capture review): the
+# finalist / Save controls live in a footer DOCKED below the scroll viewport - a
+# sibling of `.drawer-scroll` inside the detail column - so a persistent control
+# surface can never cover product content. Rendered proof per viewport and
+# language: the footer is not inside the scroll viewport, sits inside the detail
+# column (off the photo in landscape) and never intersects the viewport in the
+# compact OR the expanded (replacement notice + Undo, longest catalog name)
+# state at the top, middle and end of the scroll range; the viewport is the
+# column's only scroller; the last scroll-flow content is fully visible at the
+# end of the range with no artificial blank region; both actions keep their
+# floors; the pillow prompt stays in flow above; zero / one / two-proof renders
+# keep the footer reachable; choosing from the footer works and announces.
 DRAWER_FOOTER_JS = r"""
 async (ARGS) => {
   const wait = (ms) => new Promise((res) => setTimeout(res, ms));
   const q = (id) => document.getElementById(id);
   const rect = (el) => { if (!el) return null; const r = el.getBoundingClientRect(); return { l: r.left, t: r.top, r: r.right, b: r.bottom, w: r.width, h: r.height }; };
-  const vis = (el) => { const c = getComputedStyle(el); if (c.display === 'none' || c.visibility === 'hidden') return false; const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
+  const vis = (el) => { if (!el) return false; const c = getComputedStyle(el); if (c.display === 'none' || c.visibility === 'hidden') return false; const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
   if (ARGS.lang === 'es') await switchLanguage('es');
   for (const k of Object.keys(ARGS.answers)) answers[k] = ARGS.answers[k];
   showProfileScreen();
   window.showResults();
   await wait(300);
+  // seed the two models the expanded-state check needs (the longest catalog name and a Mayfair), like the harness does
+  const data = await (await fetch('data/mattresses.json', { cache: 'no-store' })).json();
+  const all = [].concat(data.gold.map((m) => [m, 'gold']), data.silver.map((m) => [m, 'silver']), data.bronze.map((m) => [m, 'bronze']));
+  window._drawerData = window._drawerData || {};
+  for (const [m, tier] of all) { if (!window._drawerData[m.id]) window._drawerData[m.id] = { m: m, tier: tier, pct: 0, meetsMatchThreshold: false, feats: [], firmFeel: firmnessFeel(m.firmness), seeded: true }; }
+  // the replacement pair comes from the RENDERED results (the save path only knows results models): the longest
+  // name among them for the notice, and another results model to choose from
+  const inResults = ['gold', 'silver', 'bronze'].flatMap((t) => (_resultsState.tierData[t] || []));
+  const longest = inResults.slice().sort((a, b) => b.name.length - a.name.length)[0];
   openResultCardDrawer(document.querySelector('#resultsScreen [data-id][data-tier]'));
   await wait(700);
-  const scroll = q('drawerScroll'), footer = q('drawerActionFooter'), hero = q('drawerHeroImg');
-  const fin = q('drawerFinalistBtn'), save = q('drawerInterestedBtn'), prompt = q('drawerSystemPrompt'), live = q('drawerFinalistLive');
-  if (!footer) return { drawerOpen: q('mattressDrawer').classList.contains('drawer-open'), position: null };
-  const lastFlow = () => { const kids = Array.from(scroll.children).filter((c) => c !== footer && vis(c)); const k = kids[kids.length - 1]; return k ? { id: k.id, rect: rect(k) } : null; };
-  const snap = () => ({ scrollTop: Math.round(scroll.scrollTop), scrollMax: Math.round(scroll.scrollHeight - scroll.clientHeight), scroll: rect(scroll), footer: rect(footer), fin: rect(fin), save: rect(save), hero: rect(hero), last: lastFlow() });
-  const out = { landscape: innerWidth > innerHeight, drawerOpen: q('mattressDrawer').classList.contains('drawer-open'),
-    position: getComputedStyle(footer).position, scrollPaddingBottom: getComputedStyle(scroll).scrollPaddingBottom,
-    footerBg: getComputedStyle(footer).backgroundColor, footerRadius: getComputedStyle(footer).borderTopLeftRadius,
-    overflowX: scroll.scrollWidth > scroll.clientWidth + 1, docOverflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1 };
-  out.top = snap();
-  scroll.scrollTop = Math.round((scroll.scrollHeight - scroll.clientHeight) / 2); await wait(150); out.mid = snap();
-  scroll.scrollTop = scroll.scrollHeight; await wait(150); out.end = snap();
-  scroll.scrollTop = 0; await wait(120);
-  save.click(); await wait(500);
+  const scroll = q('drawerScroll'), footer = q('drawerActionFooter'), detail = q('drawerDetail'), hero = q('drawerHeroImg'), drawer = q('mattressDrawer');
+  const fin = q('drawerFinalistBtn'), save = q('drawerInterestedBtn'), prompt = q('drawerSystemPrompt'), live = q('drawerFinalistLive'), note = q('drawerFinalistNote'), undo = q('drawerFinalistUndoBtn');
+  if (!footer || !detail) return { drawerOpen: !!drawer && drawer.classList.contains('drawer-open'), structure: null };
+  const lastFlow = () => { const kids = Array.from(scroll.children).filter(vis); const k = kids[kids.length - 1]; return k ? { id: k.id, rect: rect(k), offsetBottom: k.offsetTop + k.offsetHeight } : null; };
+  const geo = () => { const s = rect(scroll), f = rect(footer); return { scrollTop: Math.round(scroll.scrollTop), scrollMax: Math.round(scroll.scrollHeight - scroll.clientHeight), scroll: s, footer: f, overlap: f.t < s.b - 0.5 && f.b > s.t + 0.5, last: lastFlow(),
+    footerInsideDetail: detail.contains(footer), footerInsideScroll: scroll.contains(footer), footerInsideHero: hero.contains(footer), detailRect: rect(detail), heroRect: rect(hero), drawerRect: rect(drawer),
+    footerH: f.h, noteVisible: vis(note), noteText: (note.textContent || '').trim(), noteBox: rect(note), undoBox: rect(undo), finBox: rect(fin), saveBox: rect(save),
+    footerScrollW: footer.scrollWidth, footerClientW: footer.clientWidth, footerScrollH: footer.scrollHeight, footerClientH: footer.clientHeight,
+    detailScrollH: detail.scrollHeight, detailClientH: detail.clientHeight, detailOverflowY: getComputedStyle(detail).overflowY, footerOverflowY: getComputedStyle(footer).overflowY, scrollOverflowY: getComputedStyle(scroll).overflowY,
+    blankTail: scroll.scrollHeight - ((lastFlow() || { offsetBottom: 0 }).offsetBottom) }; };
+  const out = { landscape: innerWidth > innerHeight, drawerOpen: drawer.classList.contains('drawer-open'), position: getComputedStyle(footer).position, scrollPaddingBottom: getComputedStyle(scroll).scrollPaddingBottom, longest: longest.name };
+  out.compactTop = geo();
+  scroll.scrollTop = Math.round((scroll.scrollHeight - scroll.clientHeight) / 2); await wait(120); out.compactMid = geo();
+  scroll.scrollTop = scroll.scrollHeight; await wait(120); out.compactEnd = geo();
+  scroll.scrollTop = 0; await wait(80);
+  // first save -> the pillow prompt in flow, then scroll it into view
+  save.click(); await wait(450);
   out.savePressed = save.getAttribute('aria-pressed');
-  out.promptVisible = prompt.classList.contains('is-visible') && vis(prompt);
-  out.promptInFooter = footer.contains(prompt);
-  prompt.scrollIntoView({ block: 'nearest' }); await wait(150);
-  out.prompt = rect(prompt); out.footerAfterPrompt = rect(footer);
-  fin.click(); await wait(400);
-  out.finPressed = fin.getAttribute('aria-pressed');
-  out.finInFooter = footer.contains(fin) && footer.contains(save) && footer.contains(live) && footer.contains(q('drawerFinalistNote'));
-  out.live = (live.textContent || '').trim();
-  out.favoriteIsOpen = window._favoriteMattressId === window._currentDrawerMattressId;
+  out.promptVisible = prompt.classList.contains('is-visible') && vis(prompt); out.promptInFooter = footer.contains(prompt);
+  prompt.scrollIntoView({ block: 'nearest' }); await wait(120);
+  out.promptGeo = geo(); out.promptRect = rect(prompt);
+  // expanded state with the LONGEST catalog name: make it the finalist, open another model, choose -> notice + Undo
+  window.chooseFinalist(longest.id); await wait(120);
+  const other = inResults.find((m) => m.id !== longest.id) || inResults[0];
+  window.openMattressDrawer(other.id, [other.id]); await wait(600);
+  out.replaceNoticeGeo = geo();
+  fin.click(); await wait(450);
+  out.expandedTop = geo();
+  out.expandedTop.finPressed = fin.getAttribute('aria-pressed'); out.expandedTop.live = (live.textContent || '').trim(); out.expandedTop.favorite = window._favoriteMattressId; out.expandedTop.saved = (window._savedPicks || []).map((p) => p.id);
+  scroll.scrollTop = Math.round((scroll.scrollHeight - scroll.clientHeight) / 2); await wait(120); out.expandedMid = geo();
+  scroll.scrollTop = scroll.scrollHeight; await wait(120); out.expandedEnd = geo();
+  // the second demonstration fully readable with the expanded footer
+  const cards = document.querySelectorAll('#drawerProofs .drawer-proof');
+  if (cards.length > 1) { cards[1].scrollIntoView({ block: 'end' }); await wait(120); out.secondCard = { card: rect(cards[1]), geo: geo() }; }
+  undo.click(); await wait(400);
+  out.afterUndo = { favorite: window._favoriteMattressId, saved: (window._savedPicks || []).map((p) => p.id), live: (live.textContent || '').trim(), geo: geo() };
+  // zero / one proof renders keep the footer reachable (SYNTHETIC in-page copies, like the harness)
+  const g1 = window._drawerData['g1']; const keep = g1 ? g1.m : null;
+  const synth = {};
+  if (g1) {
+    g1.m = JSON.parse(JSON.stringify(keep)); g1.m.proofs = g1.m.proofs.slice(0, 1); window.openMattressDrawer('g1', ['g1']); await wait(500); synth.one = geo();
+    g1.m = JSON.parse(JSON.stringify(keep)); g1.m.proofs = []; window.openMattressDrawer('g1', ['g1']); await wait(500); synth.zero = geo();
+    g1.m = keep;
+  }
+  out.synth = synth;
   window.closeMattressDrawer(); await wait(300);
   return out;
 }
@@ -959,7 +991,7 @@ async (ARGS) => {
 
 
 def run_drawer_footer(browser, port, name, width, height, lang, shots_dir):
-    print(f"\n-- DRAWER FOOTER (consolidation pass) {lang} {name} {width}x{height} --")
+    print(f"\n-- DRAWER FOOTER (docked; corrective pass) {lang} {name} {width}x{height} --")
     page = browser.new_page(viewport={"width": width, "height": height}, has_touch=True)
     errors = []
     page.on("pageerror", lambda e: errors.append(str(e)))
@@ -970,43 +1002,57 @@ def run_drawer_footer(browser, port, name, width, height, lang, shots_dir):
         os.makedirs(shots_dir, exist_ok=True)
         page.screenshot(path=os.path.join(shots_dir, f"drawer-footer-end-{lang}-{name}-{width}x{height}.png"))
     tag = f"[{lang}/{name}]"
-    near = lambda a, b, tol=1.5: abs(a - b) <= tol
-    check(f"{tag} the drawer opened without a page error; the footer is position: sticky and the column keeps 150px of terminal scroll padding",
-          not errors and r.get("drawerOpen") and r.get("position") == "sticky" and r.get("scrollPaddingBottom") == "150px",
-          f"errors={errors[:1]} open={r.get('drawerOpen')} position={r.get('position')} scrollPadding={r.get('scrollPaddingBottom')}")
-    if r.get("position") != "sticky":
-        for _ in range(7):
-            check(f"{tag} (footer absent) rendered footer geometry could not be measured", False, "no #drawerActionFooter")
+    if r.get("compactTop") is None:
+        for _ in range(12):
+            check(f"{tag} (docked footer / detail column absent) rendered footer geometry could not be measured", False, str(r)[:120])
         page.close()
         return
-    for label in ("top", "mid", "end"):
-        s = r[label]
-        check(f"{tag} {label} of the scroll range: the footer sits on the column's bottom edge, inside the column",
-              near(s["footer"]["b"], s["scroll"]["b"]) and s["footer"]["l"] >= s["scroll"]["l"] - 1 and s["footer"]["r"] <= s["scroll"]["r"] + 1
-              and s["footer"]["t"] >= s["scroll"]["t"],
-              f"footer={s['footer']} scroll={s['scroll']} scrollTop={s['scrollTop']}/{s['scrollMax']}")
-    t = r["top"]
-    check(f"{tag} both actions are visible without scrolling and keep their targets (finalist >= 52 tall, Save >= 52 tall, both >= 44 wide)",
-          t["fin"]["h"] >= 52 and t["save"]["h"] >= 52 and t["fin"]["w"] >= 44 and t["save"]["w"] >= 44
-          and t["fin"]["t"] >= t["scroll"]["t"] and t["fin"]["b"] <= t["scroll"]["b"] + 1 and t["save"]["b"] <= t["scroll"]["b"] + 1,
-          f"fin={t['fin']} save={t['save']} scroll={t['scroll']}")
-    e = r["end"]
-    check(f"{tag} at the end of the scroll range the last scroll-flow content clears the footer (nothing rests underneath it)",
-          e["last"] is not None and e["last"]["rect"]["b"] <= e["footer"]["t"] + 0.5 and (e["scrollMax"] == 0 or e["scrollTop"] >= e["scrollMax"] - 1),
-          f"last={e['last']} footer={e['footer']} scrollTop={e['scrollTop']}/{e['scrollMax']}")
+    c = r["compactTop"]
+    check(f"{tag} the drawer opened without a page error; the footer is a docked sibling (inside the detail column, not inside the scroll viewport, not in the photo column), statically positioned, no scroll-padding",
+          not errors and r["drawerOpen"] and c["footerInsideDetail"] and not c["footerInsideScroll"] and not c["footerInsideHero"] and r["position"] == "static" and r["scrollPaddingBottom"] in ("auto", "0px"),
+          f"errors={errors[:1]} inDetail={c['footerInsideDetail']} inScroll={c['footerInsideScroll']} inHero={c['footerInsideHero']} position={r['position']} scrollPadding={r['scrollPaddingBottom']}")
+    check(f"{tag} the scroll viewport is the column's only vertical scroller (the detail column and the footer do not scroll or overflow)",
+          c["scrollOverflowY"] == "auto" and c["detailOverflowY"] == "visible" and c["footerOverflowY"] == "visible" and c["detailScrollH"] <= c["detailClientH"] + 1 and c["footerScrollH"] <= c["footerClientH"] + 1,
+          f"scroll={c['scrollOverflowY']} detail={c['detailOverflowY']} {c['detailScrollH']}/{c['detailClientH']} footer={c['footerOverflowY']} {c['footerScrollH']}/{c['footerClientH']}")
+    for label in ("compactTop", "compactMid", "compactEnd", "replaceNoticeGeo", "expandedTop", "expandedMid", "expandedEnd", "promptGeo"):
+        g = r[label]
+        check(f"{tag} {label}: the footer never intersects the scroll viewport (footer top {g['footer']['t']:.1f} >= viewport bottom {g['scroll']['b']:.1f}) and stays inside the detail column",
+              not g["overlap"] and g["footer"]["t"] >= g["scroll"]["b"] - 0.5 and g["footer"]["l"] >= g["detailRect"]["l"] - 1 and g["footer"]["r"] <= g["detailRect"]["r"] + 1 and g["footer"]["b"] <= g["drawerRect"]["b"] + 0.5,
+              f"footer={g['footer']} scroll={g['scroll']} detail={g['detailRect']} scrollTop={g['scrollTop']}/{g['scrollMax']}")
+    for label in ("compactEnd", "expandedEnd"):
+        g = r[label]
+        check(f"{tag} {label}: at the end of the range the last scroll-flow content is fully visible inside the viewport with no artificial blank tail (tail {g['blankTail']:.0f}px <= 32)",
+              g["last"] is not None and g["last"]["rect"]["b"] <= g["scroll"]["b"] + 0.5 and g["blankTail"] <= 32 and (g["scrollMax"] == 0 or g["scrollTop"] >= g["scrollMax"] - 1),
+              f"last={g['last']} scroll={g['scroll']} tail={g['blankTail']} scrollTop={g['scrollTop']}/{g['scrollMax']}")
+    check(f"{tag} both actions are visible without scrolling at their floors (finalist >= 52, Save >= 52, both >= 44 wide) inside the drawer",
+          c["finBox"]["h"] >= 52 and c["saveBox"]["h"] >= 52 and c["finBox"]["w"] >= 44 and c["saveBox"]["w"] >= 44 and c["finBox"]["b"] <= c["drawerRect"]["b"] + 0.5 and c["finBox"]["t"] >= c["drawerRect"]["t"],
+          f"fin={c['finBox']} save={c['saveBox']} drawer={c['drawerRect']}")
     if r["landscape"]:
-        check(f"{tag} landscape: the footer stays inside the story column, off the photo column",
-              t["footer"]["l"] >= t["hero"]["r"] - 1, f"footer.l={t['footer']['l']} hero.r={t['hero']['r']}")
-    check(f"{tag} no horizontal overflow in the column or the document; the footer is a surface, not a card (no radius)",
-          not r["overflowX"] and not r["docOverflow"] and r["footerRadius"] in ("0px", "0"),
-          f"overflowX={r['overflowX']} doc={r['docOverflow']} radius={r['footerRadius']}")
-    check(f"{tag} the first save from the footer shows the pillow prompt in the scroll flow, outside the footer, and it scrolls clear of the footer",
-          r["savePressed"] == "true" and r["promptVisible"] and not r["promptInFooter"]
-          and r["prompt"]["b"] <= r["footerAfterPrompt"]["t"] + 0.5,
-          f"save={r['savePressed']} visible={r['promptVisible']} inFooter={r['promptInFooter']} prompt={r['prompt']} footer={r['footerAfterPrompt']}")
-    check(f"{tag} choosing from the footer makes the open mattress the finalist (pressed) and announces through the live region that travels with the actions",
-          r["finPressed"] == "true" and r["favoriteIsOpen"] and r["finInFooter"] and len(r["live"]) > 0,
-          f"pressed={r['finPressed']} inFooter={r['finInFooter']} live={r['live'][:60]!r}")
+        check(f"{tag} landscape: the footer stays inside the detail column, off the photo column",
+              c["footer"]["l"] >= c["heroRect"]["r"] - 1, f"footer.l={c['footer']['l']} hero.r={c['heroRect']['r']}")
+    e = r["expandedTop"]
+    check(f"{tag} expanded state: the replacement notice names the longest catalog name in full beside Undo (44px floor), with no horizontal overflow in the footer, and the footer grew only by the notice row (compact {c['footerH']:.0f}px -> expanded {e['footerH']:.0f}px)",
+          e["noteVisible"] and r["longest"] in e["noteText"] and e["undoBox"]["h"] >= 44 and e["undoBox"]["w"] >= 44 and e["footerScrollW"] <= e["footerClientW"] + 1
+          and e["noteBox"]["t"] >= e["footer"]["t"] and e["noteBox"]["b"] <= e["footer"]["b"] + 0.5 and e["undoBox"]["b"] <= e["footer"]["b"] + 0.5 and e["footerH"] > c["footerH"] and e["footerH"] - c["footerH"] <= 96,
+          f"note={e['noteText'][:70]!r} noteBox={e['noteBox']} undo={e['undoBox']} footerW={e['footerScrollW']}/{e['footerClientW']} footerH={c['footerH']}->{e['footerH']}")
+    check(f"{tag} expanded state on this viewport keeps a reasonable share: the footer is <= 34% of the drawer's height",
+          e["footerH"] <= 0.34 * e["drawerRect"]["h"], f"footerH={e['footerH']} drawerH={e['drawerRect']['h']}")
+    if r.get("secondCard"):
+        sc = r["secondCard"]
+        check(f"{tag} with the expanded footer the second demonstration can be read in full (card bottom {sc['card']['b']:.1f} <= viewport bottom {sc['geo']['scroll']['b']:.1f}, card top inside the viewport)",
+              sc["card"]["b"] <= sc["geo"]["scroll"]["b"] + 0.5 and sc["card"]["t"] >= sc["geo"]["scroll"]["t"] - 0.5 and not sc["geo"]["overlap"],
+              f"card={sc['card']} scroll={sc['geo']['scroll']}")
+    check(f"{tag} state parity: choosing from the footer replaced the finalist and kept the previous one saved; Undo restored it and both stay saved; announced",
+          e["finPressed"] == "true" and e["favorite"] != r["longest"] and (r["afterUndo"]["favorite"] and r["afterUndo"]["favorite"] != e["favorite"]) and e["favorite"] in r["afterUndo"]["saved"] and r["afterUndo"]["favorite"] in r["afterUndo"]["saved"] and len(e["live"]) > 0 and len(r["afterUndo"]["live"]) > 0,
+          f"expanded fav={e['favorite']} saved={e['saved']} | after undo fav={r['afterUndo']['favorite']} saved={r['afterUndo']['saved']}")
+    check(f"{tag} the first save shows the pillow prompt in the scroll flow, outside the footer, fully inside the viewport after scrolling (never behind the footer)",
+          r["savePressed"] == "true" and r["promptVisible"] and not r["promptInFooter"] and r["promptRect"]["b"] <= r["promptGeo"]["scroll"]["b"] + 0.5 and r["promptRect"]["b"] <= r["promptGeo"]["footer"]["t"] + 0.5,
+          f"save={r['savePressed']} visible={r['promptVisible']} inFooter={r['promptInFooter']} prompt={r['promptRect']} scroll={r['promptGeo']['scroll']} footer={r['promptGeo']['footer']}")
+    for k in ("one", "zero"):
+        g = r["synth"].get(k)
+        check(f"{tag} SYNTHETIC {k}-proof render: the footer stays docked, visible and clear of the viewport",
+              g is not None and not g["overlap"] and g["footer"]["h"] > 0 and g["footer"]["b"] <= g["drawerRect"]["b"] + 0.5 and g["footerInsideDetail"],
+              str(g)[:160] if g else "no synthetic render")
     page.close()
 
 
