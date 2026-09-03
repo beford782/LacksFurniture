@@ -1355,34 +1355,97 @@ section('Docked product-action footer — a sibling below the scroll viewport in
   ok('negative control: an overlay footer (position: absolute / sticky) or a spacer would be detected by the rule pins', !/position:/.test(footerRule) && !/scroll-padding/.test(scrollRule));
 }
 
-section('Drawer title focus — the accessible name keeps programmatic focus on open and takes the branded text-hugging ring');
+section('Drawer title focus — programmatic focus on every open; the branded ring for keyboard entry only (input-modality attribute); forced colors; no unconditional suppression');
 {
   const openSrc = extractFunction('window.openMattressDrawer = function(mattressId, orderList, opts)') || '';
-  const rule = norm.match(/\.drawer-mattress-name:focus-visible \{([^}]*)\}/);
-  const body = rule ? rule[1] : '';
+  const closeSrc = extractFunction('window.closeMattressDrawer = function(opts)') || '';
+  const keySrc = extractFunction('function drawerKeydown(e)') || '';
+  const wipeSrc = extractFunction('function resetSessionState(opts)') || '';
+  const ruleM = norm.match(/\n    \.drawer-mattress-name:focus-visible \{([^}]*)\}/);
+  const body = ruleM ? ruleM[1] : '';
+  const condM = norm.match(/\n    \.mattress-drawer\[data-focus-entry="pointer"\] \.drawer-mattress-name:focus-visible \{([^}]*)\}/);
+  const cond = condM ? condM[1] : '';
+  const fcM = norm.match(/@media \(forced-colors: active\) \{\s*\.drawer-mattress-name:focus-visible \{([^}]*)\}\s*\}/);
+  const fc = fcM ? fcM[1] : '';
   ok('focus entry is unchanged: the title stays focusable (tabindex -1, attribute order pinned by smoke) and openMattressDrawer moves focus to it',
     norm.includes('<div class="drawer-mattress-name" id="drawerName" tabindex="-1"></div>')
     && openSrc.includes("var title = document.getElementById('drawerName');\n      if (title && typeof title.focus === 'function') title.focus();"));
-  ok('one author :focus-visible rule rings the drawer title with the shared two-ring tokens at the ruled 5px offset, hugging the text (fit-content, capped), left-aligned (no auto margins), tokens only',
-    !!rule && /outline:\s*3px solid var\(--focus-ring-outer\);/.test(body) && /outline-offset:\s*5px;/.test(body)
+  ok('the keyboard ring rule (unconditional selector) keeps the shared two-ring tokens at the ruled 5px offset, hugging the text, left-aligned, tokens only, and never outline: none',
+    !!ruleM && /outline:\s*3px solid var\(--focus-ring-outer\);/.test(body) && /outline-offset:\s*5px;/.test(body)
     && /box-shadow:\s*0 0 0 8px var\(--focus-ring-inner\);/.test(body) && /width:\s*fit-content;/.test(body) && /max-width:\s*100%;/.test(body)
-    && !/margin-inline:\s*auto/.test(body) && !/#[0-9A-Fa-f]{3,6}\b/.test(body));
-  ok('the ring is gated on :focus-visible only: no plain :focus rule, no outline: none, no unconditional suppression on the title',
-    !/\.drawer-mattress-name:focus(?!-visible)[\s,{]/.test(norm) && !/\.drawer-mattress-name:focus-visible \{[^}]*outline:\s*none/.test(norm)
-    && !/\.drawer-mattress-name \{[^}]*outline/.test(norm));
-  const fc = norm.match(/@media \(forced-colors: active\) \{\s*\.drawer-mattress-name:focus-visible \{([^}]*)\}\s*\}/);
-  ok('a forced-colors counterpart keeps a CanvasText ring with no halo, placed after the anchored first forced-colors block and after the heading block',
-    !!fc && /outline-color:\s*CanvasText;/.test(fc[1]) && /box-shadow:\s*none;/.test(fc[1])
-    && norm.indexOf(fc[0]) > norm.indexOf('.fin-btn:focus-visible')
-    && norm.indexOf(fc[0]) > norm.indexOf('.hf2-review-title:focus-visible {\n        outline-color: CanvasText;'));
-  ok('the name keeps the ring\'s reach clear of the brand line above it: a 10px top margin (>= the 5px offset + 3px ring + 1px), the header row otherwise unchanged',
+    && !/margin-inline:\s*auto/.test(body) && !/#[0-9A-Fa-f]{3,6}\b/.test(body) && !/outline:\s*none/.test(body));
+  ok('the ONLY suppression is the conditional pointer-entry rule (data-focus-entry="pointer" on the drawer), placed after the keyboard rule and before the forced-colors counterpart',
+    !!condM && /outline:\s*none;/.test(cond) && /box-shadow:\s*none;/.test(cond)
+    && norm.indexOf(ruleM ? ruleM[0] : 'x') < norm.indexOf(condM ? condM[0] : 'y') && norm.indexOf(condM ? condM[0] : 'y') < norm.indexOf(fcM ? fcM[0] : 'z')
+    && !/\.mattress-drawer \.drawer-mattress-name:focus-visible/.test(norm) && !/\.drawer-mattress-name:focus(?!-visible)[\s,{]/.test(norm)
+    && (norm.match(/drawer-mattress-name:focus-visible \{/g) || []).length === 3);
+  ok('the forced-colors counterpart keeps a CanvasText ring with no halo for keyboard entry, after the anchored first forced-colors block and after the heading block',
+    !!fcM && /outline-color:\s*CanvasText;/.test(fc) && /box-shadow:\s*none;/.test(fc) && !/outline:\s*none/.test(fc)
+    && norm.indexOf(fcM[0]) > norm.indexOf('.fin-btn:focus-visible')
+    && norm.indexOf(fcM[0]) > norm.indexOf('.hf2-review-title:focus-visible {\n        outline-color: CanvasText;'));
+  // ---- the tracker (fenced, executed)
+  const tStart = norm.indexOf('    // ---- Drawer focus-entry modality (owner ruling 2026-09-02, corrective pass)');
+  const tStop = norm.indexOf('    // ---- end focus-entry modality');
+  const trackerSrc = tStart !== -1 && tStop !== -1 ? norm.slice(tStart, tStop) : '';
+  ok('the tracker is fenced and drawer-scoped: capture-phase listeners for keydown, pointerdown, mousedown and touchstart on the document, one resolver, no other modality system in the file',
+    trackerSrc.includes("document.addEventListener('keydown', function() { window._drawerInputModality = 'keyboard'; }, true);")
+    && trackerSrc.includes("document.addEventListener('pointerdown', function() { window._drawerInputModality = 'pointer'; }, true);")
+    && trackerSrc.includes("document.addEventListener('mousedown', function() { window._drawerInputModality = 'pointer'; }, true);")
+    && trackerSrc.includes("document.addEventListener('touchstart', function() { window._drawerInputModality = 'pointer'; }, { capture: true, passive: true });")
+    && trackerSrc.includes('function drawerFocusEntryModality()') && trackerSrc.includes('window.drawerFocusEntryModality = drawerFocusEntryModality;')
+    && (norm.match(/_drawerInputModality/g) || []).length === 7);
+  function runTracker(mutate) {
+    const listeners = [];
+    const doc = { addEventListener: (type, fn, opts) => listeners.push({ type, fn, opts }) };
+    const win = {};
+    const src = (mutate ? mutate(trackerSrc) : trackerSrc) + '\nreturn drawerFocusEntryModality;';
+    const resolve = new Function('window', 'document', src)(win, doc);
+    const fire = (type) => listeners.filter((l) => l.type === type).forEach((l) => l.fn({ type }));
+    return { resolve, fire, listeners, win };
+  }
+  const tr = runTracker();
+  ok('executed: every listener is capture-phase (it must see the input before any handler opens the drawer); unknown input fails visible (keyboard)',
+    tr.listeners.length === 4 && tr.listeners.every((l) => l.opts === true || (l.opts && l.opts.capture === true)) && tr.resolve() === 'keyboard');
+  const seq = [];
+  tr.fire('pointerdown'); seq.push(tr.resolve());
+  tr.fire('keydown'); seq.push(tr.resolve());
+  tr.fire('pointerdown'); seq.push(tr.resolve());
+  tr.fire('touchstart'); seq.push(tr.resolve());
+  tr.fire('keydown'); seq.push(tr.resolve());
+  tr.fire('mousedown'); seq.push(tr.resolve());
+  tr.fire('keydown'); seq.push(tr.resolve());
+  ok('executed: pointer -> keyboard -> pointer -> touch -> keyboard -> mouse -> keyboard resolves correctly at every step (no leak in either direction; Enter / Space are keydowns)',
+    seq.join(',') === 'pointer,keyboard,pointer,pointer,keyboard,pointer,keyboard');
+  // ---- the open / close / keydown / wipe contract (statics on the real sources)
+  const setLine = "      drawer.setAttribute('data-focus-entry', typeof drawerFocusEntryModality === 'function' ? drawerFocusEntryModality() : 'keyboard');";
+  ok('openMattressDrawer recomputes the entry attribute unconditionally on EVERY open - after the drawer opens, before the lifecycle block moves focus to the title',
+    openSrc.includes(setLine) && (openSrc.match(/data-focus-entry/g) || []).length === 1
+    && openSrc.indexOf(setLine) > openSrc.indexOf("drawer.classList.add('drawer-open');")
+    && openSrc.indexOf(setLine) < openSrc.indexOf('// ---- dialog lifecycle') && openSrc.indexOf(setLine) < openSrc.indexOf('title.focus();')
+    && !/if \(.*\)\s*drawer\.setAttribute\('data-focus-entry'/.test(openSrc));
+  ok('closeMattressDrawer clears the attribute (an opening never inherits the previous one); the wipe closes the drawer, resets the tracker and declares the attribute in SESSION_LAYERS',
+    closeSrc.includes("      drawer.removeAttribute('data-focus-entry');")
+    && wipeSrc.includes('window._drawerInputModality = null;')
+    && norm.includes("{ id: 'mattressDrawer', attrs: { 'data-focus-entry': '' } },"));
+  ok('any key pressed inside the open drawer flips the entry to keyboard before the Escape / Tab handling, so normal visible keyboard focus follows',
+    /^\s*function drawerKeydown\(e\) \{\s*\n\s*\/\/[^\n]*\n\s*\/\/[^\n]*\n\s*var drawer = document\.getElementById\('mattressDrawer'\);\s*\n\s*if \(drawer\) drawer\.setAttribute\('data-focus-entry', 'keyboard'\);/.test(keySrc)
+    && keySrc.indexOf("'keyboard'") < keySrc.indexOf("e.key === 'Escape'"));
+  ok('the name keeps the ring\'s reach clear of the brand line above it: a 10px top margin, the brand rule unchanged',
     /\.drawer-mattress-name \{ font:800 clamp\(24px,3vw,34px\)\/1\.08 var\(--font-serif\); color:var\(--cream\); margin:10px 0 6px; \}/.test(norm)
     && /\.drawer-mattress-brand \{ font:700 12px\/1\.2 var\(--font-sans\); text-transform:uppercase; letter-spacing:1\.4px; color:var\(--gold\); \}/.test(norm));
-  ok('the pinned control and heading focus lists are untouched (the title has its own rule, placed after the heading block)',
+  ok('the pinned control and heading focus lists are untouched (the title has its own rules, placed after the heading block)',
     /\.drawer-nav-btn:focus-visible,\n\s*\.drawer-finalist-btn:focus-visible,\n\s*\.drawer-undo-btn:focus-visible,\n\s*\.drawer-btn:focus-visible \{/.test(norm)
     && /\.noct-results-headline:focus-visible,\s*\.noct-email-headline:focus-visible,\s*\.sleep-system__title:focus-visible,\s*\.hf2-review-title:focus-visible\s*\{/.test(norm)
     && !/\.hf2-review-title:focus-visible,\s*\.drawer-mattress-name/.test(norm)
-    && (rule ? norm.indexOf(rule[0]) > norm.indexOf('#sleepPlanScreen .hf2-review-title:focus-visible') : false));
+    && (ruleM ? norm.indexOf(ruleM[0]) > norm.indexOf('#sleepPlanScreen .hf2-review-title:focus-visible') : false));
+  // ---- negative controls
+  const blind = runTracker((src) => mustReplace(src, "document.addEventListener('keydown', function() { window._drawerInputModality = 'keyboard'; }, true);", ''));
+  blind.fire('pointerdown'); blind.fire('keydown');
+  ok('negative control: a tracker that stops seeing the keyboard leaks a pointer entry into a keyboard opening - detected', blind.resolve() !== 'keyboard');
+  ok('negative control: a guarded (inherited) entry attribute is detected by the recompute pin',
+    /if \(.*\)\s*drawer\.setAttribute\('data-focus-entry'/.test(mustReplace(openSrc, setLine, "      if (!drawer.hasAttribute('data-focus-entry')) " + setLine.trim())));
+  ok('negative control: an unconditional suppression (selector without the pointer attribute) is detected',
+    /\.mattress-drawer \.drawer-mattress-name:focus-visible/.test(mustReplace(norm, '.mattress-drawer[data-focus-entry="pointer"] .drawer-mattress-name:focus-visible {', '.mattress-drawer .drawer-mattress-name:focus-visible {')));
 }
 
 // ------------------------------------------------------------------- summary

@@ -1056,20 +1056,18 @@ def run_drawer_footer(browser, port, name, width, height, lang, shots_dir):
     page.close()
 
 
-# Consolidation pass (owner ruling 2026-09-02): the drawer's accessible name
-# takes programmatic focus on open and used to show only the UA rectangle.
-# Rendered proof: on the KEYBOARD path (a Tab precedes the open) the title
-# matches :focus-visible and draws the author ring (3px solid outline at a
-# 5px offset with the halo) hugging its text; on the POINTER path (a real
-# touch on non-focusable page content, then a real tap on the result card,
-# opens the drawer) the title is focused and never draws the browser-default
-# `auto` ring. Measured: headless Chromium 151 still matches :focus-visible
-# on the script-focused title after that pointer sequence, so the author
-# ring appears there too (this is where every earlier capture's UA
-# rectangle came from); what the app controls is the ring's style, so the
-# pointer check pins "never `auto`: no ring or the 3px author ring".
-# Whether a mounted iPad draws it on a tap-open is unverified (device
-# checks remain waived). Focus entry itself is unchanged in both paths.
+# Corrective pass (owner ruling 2026-09-02): the drawer's accessible name takes
+# programmatic focus on every open, and the branded ring must appear ONLY for a
+# keyboard entry. The app records the last real input (capture-phase keydown /
+# pointerdown / mousedown / touchstart) and stamps data-focus-entry on the
+# drawer at every open; a pointer entry suppresses the title's decorative ring
+# through a conditional rule. Rendered proof: a real mouse click and a real
+# touch tap on the result card (after a touch on non-focusable page content)
+# focus the title with NO ring; Enter and Space on the card's Try button focus
+# it WITH the ring; the sequence pointer -> keyboard -> pointer -> keyboard ->
+# touch across repeated openings resolves correctly every time; after a
+# keyboard entry real Tabs walk into the docked footer; in forced colors the
+# keyboard entry keeps a visible CanvasText ring.
 DRAWER_TITLE_SETUP_JS = r"""
 async (ARGS) => {
   const wait = (ms) => new Promise((res) => setTimeout(res, ms));
@@ -1080,65 +1078,94 @@ async (ARGS) => {
   const card = document.querySelector('#resultsScreen [data-id][data-tier]');
   const r = card.getBoundingClientRect();
   const h = document.querySelector('.noct-results-eyebrow').getBoundingClientRect();
-  return { x: r.left + Math.min(40, r.width / 4), y: r.top + Math.min(40, r.height / 4), hx: h.left + h.width / 2, hy: h.top + h.height / 2 };
+  const tryBtn = card.querySelector('.noct-card-try');
+  return { x: r.left + Math.min(40, r.width / 4), y: r.top + Math.min(40, r.height / 4), hx: h.left + h.width / 2, hy: h.top + h.height / 2, hasTry: !!tryBtn };
 }
 """
 DRAWER_TITLE_PROBE_JS = r"""
 () => {
-  const title = document.getElementById('drawerName');
+  const title = document.getElementById('drawerName'), drawer = document.getElementById('mattressDrawer');
   const cs = getComputedStyle(title);
   const info = title.parentElement.getBoundingClientRect();
   const r = title.getBoundingClientRect();
-  return { open: document.getElementById('mattressDrawer').classList.contains('drawer-open'), focused: document.activeElement === title,
-    focusVisible: title.matches(':focus-visible'), outlineStyle: cs.outlineStyle, outlineWidth: cs.outlineWidth, outlineOffset: cs.outlineOffset,
+  return { open: drawer.classList.contains('drawer-open'), focused: document.activeElement === title, entry: drawer.getAttribute('data-focus-entry'),
+    focusVisible: title.matches(':focus-visible'), outlineStyle: cs.outlineStyle, outlineWidth: cs.outlineWidth, outlineOffset: cs.outlineOffset, outlineColor: cs.outlineColor,
     boxShadow: cs.boxShadow, titleW: Math.round(r.width), infoW: Math.round(info.width), text: (title.textContent || '').trim(),
     titleTop: r.top, brandBottom: title.previousElementSibling ? title.previousElementSibling.getBoundingClientRect().bottom : null };
 }
 """
+TRY_SEL = "#resultsScreen [data-id][data-tier] .noct-card-try"
 
 
-def run_drawer_title_focus(browser, port, name, width, height, shots_dir):
-    print(f"\n-- DRAWER TITLE FOCUS (consolidation pass) en {name} {width}x{height} --")
-    for mode in ("keyboard", "pointer"):
-        page = browser.new_page(viewport={"width": width, "height": height}, has_touch=(mode == "pointer"))
-        errors = []
-        page.on("pageerror", lambda e: errors.append(str(e)))
-        page.goto(f"http://127.0.0.1:{port}/", wait_until="networkidle")
-        page.wait_for_selector("#startBtn")
-        pt = page.evaluate(DRAWER_TITLE_SETUP_JS, {"answers": ANSWERS})
-        if mode == "keyboard":
-            page.keyboard.press("Tab")
-            page.evaluate("() => openResultCardDrawer(document.querySelector('#resultsScreen [data-id][data-tier]'))")
+def run_drawer_title_focus(browser, port, name, width, height, shots_dir, forced=False):
+    mode_tag = "forced-colors" if forced else "en"
+    print(f"\n-- DRAWER TITLE FOCUS (input modality; corrective pass) {mode_tag} {name} {width}x{height} --")
+    ctx = browser.new_context(viewport={"width": width, "height": height}, has_touch=True, forced_colors=("active" if forced else "none"))
+    page = ctx.new_page()
+    errors = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    page.goto(f"http://127.0.0.1:{port}/", wait_until="networkidle")
+    page.wait_for_selector("#startBtn")
+    pt = page.evaluate(DRAWER_TITLE_SETUP_JS, {"answers": ANSWERS})
+    tag = f"[{mode_tag}/{name}]"
+    check(f"{tag} the Results card carries a keyboard-activatable opener (the Try button)", pt["hasTry"])
+
+    def probe():
+        return page.evaluate(DRAWER_TITLE_PROBE_JS)
+
+    def close():
+        page.evaluate("() => window.closeMattressDrawer()")
+        page.wait_for_timeout(450)
+
+    def pointer_open(touch=False):
+        if touch:
+            page.touchscreen.tap(pt["hx"], pt["hy"]); page.wait_for_timeout(150); page.touchscreen.tap(pt["x"], pt["y"])
         else:
-            # the device path: a real touch lands on non-focusable page content (the eyebrow) before the card
-            # is tapped, blurring the heading's keyboard-style script focus so the title inherits none
-            page.mouse.click(pt["hx"], pt["hy"])
-            page.wait_for_timeout(200)
-            page.mouse.click(pt["x"], pt["y"])
-        page.wait_for_timeout(800)
-        r = page.evaluate(DRAWER_TITLE_PROBE_JS)
-        if shots_dir:
-            os.makedirs(shots_dir, exist_ok=True)
-            page.screenshot(path=os.path.join(shots_dir, f"drawer-title-focus-{mode}-{name}-{width}x{height}.png"))
-        tag = f"[en/{name}/{mode}]"
-        check(f"{tag} the drawer opened without a page error and the title holds focus (focus entry unchanged)",
-              not errors and r["open"] and r["focused"], f"errors={errors[:1]} open={r['open']} focused={r['focused']} text={r['text']!r}")
-        if mode == "keyboard":
-            check(f"{tag} the title matches :focus-visible and draws the author ring - 3px solid outline at a 5px offset with the halo, not the UA rectangle",
-                  r["focusVisible"] and r["outlineStyle"] == "solid" and r["outlineWidth"] == "3px" and r["outlineOffset"] == "5px" and r["boxShadow"] != "none",
-                  f"focusVisible={r['focusVisible']} outline={r['outlineStyle']} {r['outlineWidth']} offset={r['outlineOffset']} shadow={r['boxShadow'][:40]}")
-            check(f"{tag} the ring's reach (5px offset + 3px) clears the brand line above the name (title top {r['titleTop']:.1f} - 8 >= brand bottom {r['brandBottom']:.1f})",
-                  r["brandBottom"] is not None and r["titleTop"] - 8 >= r["brandBottom"] - 0.5,
-                  f"titleTop={r['titleTop']} brandBottom={r['brandBottom']}")
-            short = len(r["text"]) <= 22
-            check(f"{tag} the ring hugs the title text (fit-content narrower than its column{'' if short else '; long name wraps, width capped'})",
-                  (r["titleW"] < r["infoW"] - 24) if short else (r["titleW"] <= r["infoW"]),
-                  f"titleW={r['titleW']} infoW={r['infoW']} text={r['text']!r}")
+            page.mouse.click(pt["hx"], pt["hy"]); page.wait_for_timeout(150); page.mouse.click(pt["x"], pt["y"])
+        page.wait_for_timeout(700)
+        return probe()
+
+    def keyboard_open(key):
+        page.focus(TRY_SEL); page.wait_for_timeout(100); page.keyboard.press(key)
+        page.wait_for_timeout(700)
+        return probe()
+
+    steps = []
+    steps.append(("pointer (mouse)", pointer_open(False))); close()
+    steps.append(("keyboard (Enter)", keyboard_open("Enter")))
+    # from the keyboard-opened title, real Tabs must walk into the docked footer
+    tabs = []
+    for _ in range(6):
+        page.keyboard.press("Tab"); page.wait_for_timeout(120)
+        tabs.append(page.evaluate("() => document.activeElement ? (document.activeElement.id || document.activeElement.className.split(' ')[0]) : null"))
+        if tabs[-1] == "drawerFinalistBtn":
+            break
+    close()
+    steps.append(("pointer (mouse) again", pointer_open(False))); close()
+    steps.append(("keyboard (Space)", keyboard_open("Space"))); close()
+    steps.append(("touch tap", pointer_open(True))); close()
+    if shots_dir:
+        os.makedirs(shots_dir, exist_ok=True)
+        page.screenshot(path=os.path.join(shots_dir, f"drawer-title-focus-{mode_tag}-{name}-{width}x{height}.png"))
+    check(f"{tag} every opening ran without a page error, opened the drawer and left the title focused (focus entry unchanged in both modalities)",
+          not errors and all(r["open"] and r["focused"] for _, r in steps), f"errors={errors[:1]} " + "; ".join(f"{n}: open={r['open']} focused={r['focused']}" for n, r in steps))
+    for n, r in steps:
+        if n.startswith("pointer") or n.startswith("touch"):
+            check(f"{tag} {n}: the drawer records a pointer entry and the title draws NO ring (no outline, no halo) even though focus is programmatic",
+                  r["entry"] == "pointer" and r["outlineStyle"] == "none" and r["boxShadow"] == "none",
+                  f"entry={r['entry']} focusVisible={r['focusVisible']} outline={r['outlineStyle']} {r['outlineWidth']} shadow={r['boxShadow'][:40]}")
         else:
-            check(f"{tag} a pointer opening (a touch on the page, then the card) never draws the browser-default ring: either no ring (no :focus-visible match) or the 3px author ring with the halo",
-                  r["outlineStyle"] in ("none", "solid") and (r["outlineStyle"] == "none" or (r["outlineWidth"] == "3px" and r["boxShadow"] != "none")),
-                  f"focusVisible={r['focusVisible']} outline={r['outlineStyle']} {r['outlineWidth']} shadow={r['boxShadow'][:40]}")
-        page.close()
+            ring_ok = r["outlineStyle"] == "solid" and r["outlineWidth"] == "3px" and r["outlineOffset"] == "5px" and (r["outlineColor"] not in ("rgba(0, 0, 0, 0)", "transparent"))
+            halo_ok = True if forced else (r["boxShadow"] != "none")
+            check(f"{tag} {n}: the drawer records a keyboard entry and the title matches :focus-visible with the branded ring (3px solid at a 5px offset{', CanvasText, no halo' if forced else ' with the halo'})",
+                  r["entry"] == "keyboard" and r["focusVisible"] and ring_ok and halo_ok,
+                  f"entry={r['entry']} focusVisible={r['focusVisible']} outline={r['outlineStyle']} {r['outlineWidth']} offset={r['outlineOffset']} color={r['outlineColor']} shadow={r['boxShadow'][:40]}")
+            check(f"{tag} {n}: the ring hugs the title text and clears the brand line (title top {r['titleTop']:.1f} - 8 >= brand bottom {r['brandBottom']:.1f})",
+                  r["titleW"] <= r["infoW"] and r["brandBottom"] is not None and r["titleTop"] - 8 >= r["brandBottom"] - 0.5,
+                  f"titleW={r['titleW']} infoW={r['infoW']} titleTop={r['titleTop']} brandBottom={r['brandBottom']}")
+    check(f"{tag} after a keyboard entry real Tabs walk the drawer's order and reach Make finalist in the docked footer within six presses (visited: {' > '.join(str(t) for t in tabs)})",
+          "drawerFinalistBtn" in tabs, " > ".join(str(t) for t in tabs))
+    page.close(); ctx.close()
 
 
 # Wave 3 / X4 (North Star ruling D1, 2026-08-31): a product source whose
@@ -1307,8 +1334,9 @@ def main():
             for lang in ("en", "es"):
                 for name, w, h in VIEWPORTS[:3]:
                     run_drawer_footer(browser, port, name, w, h, lang, args.screenshots)
-            for name, w, h in VIEWPORTS[:2]:
+            for name, w, h in VIEWPORTS[:3]:
                 run_drawer_title_focus(browser, port, name, w, h, args.screenshots)
+            run_drawer_title_focus(browser, port, VIEWPORTS[0][0], VIEWPORTS[0][1], VIEWPORTS[0][2], args.screenshots, forced=True)
             run_banner_fallback(browser, port, args.screenshots)
             run_sleep_system_focus(browser, port, args.screenshots)
             run_forced_colors(browser, port, args.screenshots)

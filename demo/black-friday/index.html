@@ -10422,6 +10422,16 @@
       outline-offset: 5px;
       box-shadow: 0 0 0 8px var(--focus-ring-inner);
     }
+    /* Corrective pass: a pointer / touch entry (data-focus-entry="pointer",
+       stamped by openMattressDrawer from the last real input) suppresses the
+       title's decorative ring for that entry only; a keyboard entry keeps it,
+       and a key pressed inside the drawer flips the attribute (drawerKeydown).
+       Conditional by design - never an unconditional outline: none on the
+       title. */
+    .mattress-drawer[data-focus-entry="pointer"] .drawer-mattress-name:focus-visible {
+      outline: none;
+      box-shadow: none;
+    }
     @media (forced-colors: active) {
       .drawer-mattress-name:focus-visible {
         outline-color: CanvasText;
@@ -23694,6 +23704,10 @@
       { id: 'drawerInterestedBtn', remove: ['saved'], attrs: { 'aria-pressed': 'false' } },
       { id: 'drawerFinalistNote', hiddenAttr: true },
       { id: 'drawerFinalistUndoBtn', hiddenAttr: true },
+      // Corrective pass: the title's focus-entry modality never survives a
+      // customer (the wipe closes the drawer, which clears it; this is the
+      // declarative twin).
+      { id: 'mattressDrawer', attrs: { 'data-focus-entry': '' } },
       // Product-proof drawer: the story and the "Try this mattress" section
       // return to their collapsed rest state (the pair marker with them).
       { id: 'drawerStory', hiddenAttr: true },
@@ -23845,6 +23859,8 @@
         clearSessionTimers();
         window._profileRevealInFlight = false;
         window._resultsRevealInFlight = false;
+        // Corrective pass: the drawer's input-modality tracker is per customer.
+        window._drawerInputModality = null;
         // Slice 2: the next customer opens the Sleep Brief with every trial
         // priority closed, and their own first entry — not this session's —
         // decides whether the Sleep Signature animates.
@@ -24505,6 +24521,30 @@
     window._drawerOrder = []; // ordered list of mattress ids in current tier
     window._drawerCurrentIndex = 0;
 
+    // ---- Drawer focus-entry modality (owner ruling 2026-09-02, corrective pass)
+    // The drawer's accessible name takes programmatic focus on every open so
+    // the change is announced; Chromium matched :focus-visible on that script
+    // focus after a tap and painted the ring for touch users. The last REAL
+    // input event decides the entry modality: keyboard (keydown) keeps the
+    // branded ring; pointer / touch (pointerdown, mousedown, touchstart)
+    // suppresses it for that entry only, through the drawer's
+    // data-focus-entry attribute - recomputed on every open, cleared on every
+    // close (the session wipe closes the drawer and also clears the tracker),
+    // and flipped to keyboard by any key pressed inside the open drawer so
+    // normal visible keyboard focus follows. No other modality system exists
+    // in this file; this tracker is drawer-scoped and its only consumer is
+    // the title ring. Unknown (no input yet) fails visible: keyboard.
+    window._drawerInputModality = null;
+    document.addEventListener('keydown', function() { window._drawerInputModality = 'keyboard'; }, true);
+    document.addEventListener('pointerdown', function() { window._drawerInputModality = 'pointer'; }, true);
+    document.addEventListener('mousedown', function() { window._drawerInputModality = 'pointer'; }, true);
+    document.addEventListener('touchstart', function() { window._drawerInputModality = 'pointer'; }, { capture: true, passive: true });
+    function drawerFocusEntryModality() {
+      return window._drawerInputModality === 'pointer' ? 'pointer' : 'keyboard';
+    }
+    window.drawerFocusEntryModality = drawerFocusEntryModality;
+    // ---- end focus-entry modality ------------------------------------------
+
     // ---- Product-proof drawer painter (owner decisions 2026-09-02) --------
     // Canonical retailer content only (data/mattresses.json, generated from
     // the retailer's canonical source): storyHeadline / storyNarrative,
@@ -24747,6 +24787,11 @@
       document.getElementById('drawerScroll').scrollTop = 0;
       document.getElementById('drawerBackdrop').classList.add('open');
       drawer.classList.add('drawer-open');
+      // Entry modality for the title ring (corrective pass): recomputed on
+      // EVERY open from the last real input, never inherited from the
+      // previous opening (the close path clears it). typeof-guarded so the
+      // extracted-module test sandboxes stay runnable.
+      drawer.setAttribute('data-focus-entry', typeof drawerFocusEntryModality === 'function' ? drawerFocusEntryModality() : 'keyboard');
 
       // ---- dialog lifecycle (mirrors openFinancingSheet) ----------------
       // Remember the opener so focus can return to the exact card that was
@@ -24812,6 +24857,8 @@
       drawer.classList.remove('drawer-open');
       // The one-step Undo lives with the open drawer; closing it ends the window.
       window._finalistUndo = null;
+      // The title's entry modality dies with the opening (never inherited).
+      drawer.removeAttribute('data-focus-entry');
       // inert + aria-hidden immediately: the a11y guarantee must not wait for
       // an animation, and must hold even on the reset path.
       drawer.setAttribute('inert', '');
@@ -24867,9 +24914,12 @@
     var _drawerInertedScreen = null;
 
     function drawerKeydown(e) {
+      // Any key inside the open drawer is keyboard modality: the title's
+      // entry ring may return if focus ever moves back to it.
+      var drawer = document.getElementById('mattressDrawer');
+      if (drawer) drawer.setAttribute('data-focus-entry', 'keyboard');
       if (e.key === 'Escape') { e.preventDefault(); window.closeMattressDrawer(); return; }
       if (e.key !== 'Tab') return;
-      var drawer = document.getElementById('mattressDrawer');
       var list = Array.prototype.filter.call(
         drawer.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'),
         function(el) { return el.offsetParent !== null && !el.disabled; });
