@@ -905,6 +905,111 @@ def run_touch_floor(browser, port, name, width, height, lang, shots_dir):
     page.close()
 
 
+# Consolidation pass (owner ruling 2026-09-02): the drawer's finalist and Save
+# controls live in a STICKY footer at the bottom of the scrollable story
+# column. Rendered proof per viewport and language: the footer is position:
+# sticky on the column's bottom edge at the top, middle and end of the scroll
+# range; at the end of the range the last scroll-flow content clears it (it is
+# the column's last in-flow element); both actions are visible without
+# scrolling and keep their targets; in landscape the footer stays off the
+# photo column; the first-save pillow prompt stays in the flow, outside the
+# footer, and scrolls clear of it (scroll-padding); choosing from the footer
+# works and announces through the live region that travels with it.
+DRAWER_FOOTER_JS = r"""
+async (ARGS) => {
+  const wait = (ms) => new Promise((res) => setTimeout(res, ms));
+  const q = (id) => document.getElementById(id);
+  const rect = (el) => { if (!el) return null; const r = el.getBoundingClientRect(); return { l: r.left, t: r.top, r: r.right, b: r.bottom, w: r.width, h: r.height }; };
+  const vis = (el) => { const c = getComputedStyle(el); if (c.display === 'none' || c.visibility === 'hidden') return false; const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
+  if (ARGS.lang === 'es') await switchLanguage('es');
+  for (const k of Object.keys(ARGS.answers)) answers[k] = ARGS.answers[k];
+  showProfileScreen();
+  window.showResults();
+  await wait(300);
+  openResultCardDrawer(document.querySelector('#resultsScreen [data-id][data-tier]'));
+  await wait(700);
+  const scroll = q('drawerScroll'), footer = q('drawerActionFooter'), hero = q('drawerHeroImg');
+  const fin = q('drawerFinalistBtn'), save = q('drawerInterestedBtn'), prompt = q('drawerSystemPrompt'), live = q('drawerFinalistLive');
+  if (!footer) return { drawerOpen: q('mattressDrawer').classList.contains('drawer-open'), position: null };
+  const lastFlow = () => { const kids = Array.from(scroll.children).filter((c) => c !== footer && vis(c)); const k = kids[kids.length - 1]; return k ? { id: k.id, rect: rect(k) } : null; };
+  const snap = () => ({ scrollTop: Math.round(scroll.scrollTop), scrollMax: Math.round(scroll.scrollHeight - scroll.clientHeight), scroll: rect(scroll), footer: rect(footer), fin: rect(fin), save: rect(save), hero: rect(hero), last: lastFlow() });
+  const out = { landscape: innerWidth > innerHeight, drawerOpen: q('mattressDrawer').classList.contains('drawer-open'),
+    position: getComputedStyle(footer).position, scrollPaddingBottom: getComputedStyle(scroll).scrollPaddingBottom,
+    footerBg: getComputedStyle(footer).backgroundColor, footerRadius: getComputedStyle(footer).borderTopLeftRadius,
+    overflowX: scroll.scrollWidth > scroll.clientWidth + 1, docOverflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1 };
+  out.top = snap();
+  scroll.scrollTop = Math.round((scroll.scrollHeight - scroll.clientHeight) / 2); await wait(150); out.mid = snap();
+  scroll.scrollTop = scroll.scrollHeight; await wait(150); out.end = snap();
+  scroll.scrollTop = 0; await wait(120);
+  save.click(); await wait(500);
+  out.savePressed = save.getAttribute('aria-pressed');
+  out.promptVisible = prompt.classList.contains('is-visible') && vis(prompt);
+  out.promptInFooter = footer.contains(prompt);
+  prompt.scrollIntoView({ block: 'nearest' }); await wait(150);
+  out.prompt = rect(prompt); out.footerAfterPrompt = rect(footer);
+  fin.click(); await wait(400);
+  out.finPressed = fin.getAttribute('aria-pressed');
+  out.finInFooter = footer.contains(fin) && footer.contains(save) && footer.contains(live) && footer.contains(q('drawerFinalistNote'));
+  out.live = (live.textContent || '').trim();
+  out.favoriteIsOpen = window._favoriteMattressId === window._currentDrawerMattressId;
+  window.closeMattressDrawer(); await wait(300);
+  return out;
+}
+"""
+
+
+def run_drawer_footer(browser, port, name, width, height, lang, shots_dir):
+    print(f"\n-- DRAWER FOOTER (consolidation pass) {lang} {name} {width}x{height} --")
+    page = browser.new_page(viewport={"width": width, "height": height}, has_touch=True)
+    errors = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    page.goto(f"http://127.0.0.1:{port}/", wait_until="networkidle")
+    page.wait_for_selector("#startBtn")
+    r = page.evaluate(DRAWER_FOOTER_JS, {"answers": ANSWERS, "lang": lang})
+    if shots_dir:
+        os.makedirs(shots_dir, exist_ok=True)
+        page.screenshot(path=os.path.join(shots_dir, f"drawer-footer-end-{lang}-{name}-{width}x{height}.png"))
+    tag = f"[{lang}/{name}]"
+    near = lambda a, b, tol=1.5: abs(a - b) <= tol
+    check(f"{tag} the drawer opened without a page error; the footer is position: sticky and the column keeps 150px of terminal scroll padding",
+          not errors and r.get("drawerOpen") and r.get("position") == "sticky" and r.get("scrollPaddingBottom") == "150px",
+          f"errors={errors[:1]} open={r.get('drawerOpen')} position={r.get('position')} scrollPadding={r.get('scrollPaddingBottom')}")
+    if r.get("position") != "sticky":
+        for _ in range(7):
+            check(f"{tag} (footer absent) rendered footer geometry could not be measured", False, "no #drawerActionFooter")
+        page.close()
+        return
+    for label in ("top", "mid", "end"):
+        s = r[label]
+        check(f"{tag} {label} of the scroll range: the footer sits on the column's bottom edge, inside the column",
+              near(s["footer"]["b"], s["scroll"]["b"]) and s["footer"]["l"] >= s["scroll"]["l"] - 1 and s["footer"]["r"] <= s["scroll"]["r"] + 1
+              and s["footer"]["t"] >= s["scroll"]["t"],
+              f"footer={s['footer']} scroll={s['scroll']} scrollTop={s['scrollTop']}/{s['scrollMax']}")
+    t = r["top"]
+    check(f"{tag} both actions are visible without scrolling and keep their targets (finalist >= 52 tall, Save >= 52 tall, both >= 44 wide)",
+          t["fin"]["h"] >= 52 and t["save"]["h"] >= 52 and t["fin"]["w"] >= 44 and t["save"]["w"] >= 44
+          and t["fin"]["t"] >= t["scroll"]["t"] and t["fin"]["b"] <= t["scroll"]["b"] + 1 and t["save"]["b"] <= t["scroll"]["b"] + 1,
+          f"fin={t['fin']} save={t['save']} scroll={t['scroll']}")
+    e = r["end"]
+    check(f"{tag} at the end of the scroll range the last scroll-flow content clears the footer (nothing rests underneath it)",
+          e["last"] is not None and e["last"]["rect"]["b"] <= e["footer"]["t"] + 0.5 and (e["scrollMax"] == 0 or e["scrollTop"] >= e["scrollMax"] - 1),
+          f"last={e['last']} footer={e['footer']} scrollTop={e['scrollTop']}/{e['scrollMax']}")
+    if r["landscape"]:
+        check(f"{tag} landscape: the footer stays inside the story column, off the photo column",
+              t["footer"]["l"] >= t["hero"]["r"] - 1, f"footer.l={t['footer']['l']} hero.r={t['hero']['r']}")
+    check(f"{tag} no horizontal overflow in the column or the document; the footer is a surface, not a card (no radius)",
+          not r["overflowX"] and not r["docOverflow"] and r["footerRadius"] in ("0px", "0"),
+          f"overflowX={r['overflowX']} doc={r['docOverflow']} radius={r['footerRadius']}")
+    check(f"{tag} the first save from the footer shows the pillow prompt in the scroll flow, outside the footer, and it scrolls clear of the footer",
+          r["savePressed"] == "true" and r["promptVisible"] and not r["promptInFooter"]
+          and r["prompt"]["b"] <= r["footerAfterPrompt"]["t"] + 0.5,
+          f"save={r['savePressed']} visible={r['promptVisible']} inFooter={r['promptInFooter']} prompt={r['prompt']} footer={r['footerAfterPrompt']}")
+    check(f"{tag} choosing from the footer makes the open mattress the finalist (pressed) and announces through the live region that travels with the actions",
+          r["finPressed"] == "true" and r["favoriteIsOpen"] and r["finInFooter"] and len(r["live"]) > 0,
+          f"pressed={r['finPressed']} inFooter={r['finInFooter']} live={r['live'][:60]!r}")
+    page.close()
+
+
 # Wave 3 / X4 (North Star ruling D1, 2026-08-31): a product source whose
 # natural aspect ratio exceeds 3 is a banner crop — `cover` showed a blurred
 # upscaled strip of the two Tempur-Pedic Gold sources (4.05:1 / 4.42:1) on
@@ -1068,6 +1173,9 @@ def main():
             for lang in ("en", "es"):
                 for name, w, h in VIEWPORTS[:2]:
                     run_touch_floor(browser, port, name, w, h, lang, args.screenshots)
+            for lang in ("en", "es"):
+                for name, w, h in VIEWPORTS[:3]:
+                    run_drawer_footer(browser, port, name, w, h, lang, args.screenshots)
             run_banner_fallback(browser, port, args.screenshots)
             run_sleep_system_focus(browser, port, args.screenshots)
             run_forced_colors(browser, port, args.screenshots)

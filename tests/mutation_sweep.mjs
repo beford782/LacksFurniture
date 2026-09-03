@@ -148,6 +148,10 @@ const AUD = ["tests/audience_contract_check.mjs"];
 // owns the ruled completion label, the still-open confirm state and the
 // specialist reason adapter.
 const A31 = ["tests/a31_presentation_check.mjs"];
+// Consolidation pass (2026-09-02): the rendered layout suite (Playwright)
+// observes the sticky footer's geometry beside the a31 statics.
+const LAYOUT = ["tests/sleep_plan_layout_check.py"];
+const A31_LAYOUT = A31.concat(LAYOUT);
 
 
 // ---------------------------------------------------------------------------
@@ -2224,6 +2228,31 @@ const MUTATIONS = [
     "      if (constructionSchematicAvailable(m)) {\n        if (window.dfmConstructionRender) window.dfmConstructionRender();",
     "      if (true) {\n        if (window.dfmConstructionRender) window.dfmConstructionRender();",
     A31],
+  // --- Consolidation pass: the sticky product-action footer ------------------
+  ["product-proof footer: the pillow prompt is copied into the sticky footer",
+    '        <div class="drawer-action-footer" id="drawerActionFooter">\n          <div class="drawer-cta-row" id="drawerCtaRow">',
+    '        <div class="drawer-action-footer" id="drawerActionFooter">\n          <div class="drawer-system-prompt" id="drawerSystemPrompt" aria-live="polite"></div>\n          <div class="drawer-cta-row" id="drawerCtaRow">',
+    A31],
+  ["product-proof footer: the pillow prompt relocates itself into the footer when it fires",
+    "      prompt.classList.add('is-visible');\n      analytics.log('finalist_sleep_system_prompt_shown'",
+    "      document.getElementById('drawerActionFooter').appendChild(prompt);\n      prompt.classList.add('is-visible');\n      analytics.log('finalist_sleep_system_prompt_shown'",
+    A31_LAYOUT],
+  ["product-proof footer: the replacement notice, Undo and the live region leave the footer",
+    '          </div>\n          <div class="drawer-finalist-note" id="drawerFinalistNote" hidden>',
+    '          </div>\n        </div>\n        <div class="drawer-finalist-orphan">\n          <div class="drawer-finalist-note" id="drawerFinalistNote" hidden>',
+    A31],
+  ["product-proof footer: the footer stops sticking (it scrolls away with the story)",
+    "    .drawer-action-footer {\n      position: sticky;",
+    "    .drawer-action-footer {\n      position: static;",
+    A31_LAYOUT],
+  ["product-proof footer: the footer leaves the flow (position: fixed) and can cover the final content",
+    "    .drawer-action-footer {\n      position: sticky;\n      bottom: 0;",
+    "    .drawer-action-footer {\n      position: fixed;\n      bottom: 0;",
+    A31_LAYOUT],
+  ["product-proof footer: the column loses its terminal scroll padding (keyboard-scrolled targets land under the footer)",
+    "flex-direction:column; scroll-padding-bottom: 150px; }",
+    "flex-direction:column; }",
+    A31_LAYOUT],
   ["product-proof: the proof glyph loses aria-hidden",
     "          + '<span class=\"drawer-proof__icon\" aria-hidden=\"true\">' + proofGlyphSvg(p.glyph) + '</span>'",
     "          + '<span class=\"drawer-proof__icon\">' + proofGlyphSvg(p.glyph) + '</span>'",
@@ -2513,7 +2542,10 @@ process.on("exit", () => { try { rmSync(sandbox, { recursive: true, force: true 
 // demo would otherwise be unreachable from this sandbox.
 // `.github` joins the copy set because the pricing contract suite pins that
 // CI's operating-state lock names pricing.displayEnabled.
-for (const d of ["tests", "data", "docs", "tools", "incoming", "demo", ".github"]) {
+// `images` joins the copy set because the rendered layout suite (a
+// consolidation-pass observer) serves the sandbox over HTTP and letterboxes
+// the banner-crop sources.
+for (const d of ["tests", "data", "docs", "tools", "incoming", "demo", ".github", "images"]) {
   cpSync(join(root, d), join(sandbox, d), { recursive: true });
 }
 // CLAUDE.md joins the copy set because the trust suite pins that it carries no
@@ -2568,7 +2600,9 @@ function runSuites(suites) {
     const py = argv[0].endsWith(".py");
     try {
       execFileSync(py ? "python" : "node", argv,
-                   { cwd: sandbox, stdio: "pipe", timeout: 180000 });
+                   // A Python observer may be the rendered layout suite (Playwright,
+                   // several minutes); node suites keep the tight cap.
+                   { cwd: sandbox, stdio: "pipe", timeout: py ? 600000 : 180000 });
     } catch {
       red.push(argv[0].replace("tests/", "").replace("tools/", "")
                       .replace("_check.mjs", "").replace(".py", ""));

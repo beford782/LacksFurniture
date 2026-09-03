@@ -1208,12 +1208,13 @@ section('Product-proof drawer painter — "Try this mattress" (0/1/2 demonstrati
   ok('negative control: an unguarded renderer call is detected', unguarded.renders.n === 1);
 
   // ---- markup order and boundaries (statics)
-  ok('drawer order: identity, story, "Try this mattress", actions + notice + live region, pillow prompt, financing, promotion',
+  ok('drawer order: identity, story, "Try this mattress", pillow prompt, financing, promotion, then the sticky action footer (actions, notice, live region) as the last element',
     at('id="drawerFeelAnchor"') < at('id="drawerStory"') && at('id="drawerStory"') < at('id="drawerTry"')
     && at('id="drawerTry"') < at('id="drawerTryLabel"') && at('id="drawerTryLabel"') < at('id="drawerProofs"')
-    && at('id="drawerProofs"') < at('id="drawerCtaRow"') && at('id="drawerCtaRow"') < at('id="drawerFinalistNote"')
-    && at('id="drawerFinalistNote"') < at('id="drawerFinalistLive"') && at('id="drawerFinalistLive"') < at('id="drawerSystemPrompt"')
-    && at('id="drawerSystemPrompt"') < at('id="drawerFinancing"') && at('id="drawerFinancing"') < at('id="drawerPromotion"'));
+    && at('id="drawerProofs"') < at('id="drawerSystemPrompt"') && at('id="drawerSystemPrompt"') < at('id="drawerFinancing"')
+    && at('id="drawerFinancing"') < at('id="drawerPromotion"') && at('id="drawerPromotion"') < at('id="drawerActionFooter"')
+    && at('id="drawerActionFooter"') < at('id="drawerCtaRow"') && at('id="drawerCtaRow"') < at('id="drawerFinalistNote"')
+    && at('id="drawerFinalistNote"') < at('id="drawerFinalistLive"'));
   ok('the retired drawer elements are gone from the markup and the live source (no standalone Try, no proof grid, no inside list, no stranded label)',
     ['drawerNoticeLabel', 'drawerTryPrompts', 'drawerProofGrid', 'drawerProofBlock', 'drawerProofsLabel', 'drawerInsideBlock', 'drawerInside', 'drawerInsideLabel', 'drawerInsideLabels']
       .every((id) => !norm.includes('id="' + id + '"') && !norm.includes("'" + id + "'"))
@@ -1247,6 +1248,78 @@ section('Product-proof drawer painter — "Try this mattress" (0/1/2 demonstrati
     && norm.includes('body:has(#resultsScreen.active) .drawer-proof__basis-role { color: var(--accent-ink); }')
     && /body:has\(#resultsScreen\.active\) \.drawer-proof \{\s*border-color: #D8CCBD;/.test(norm)
     && /@media \(forced-colors: active\) \{\s*\.drawer-proof \{ border: 1px solid CanvasText; \}\s*\.drawer-proof__icon \{ border: 1px solid CanvasText; color: CanvasText; \}\s*\}/.test(norm));
+}
+
+section('Sticky product-action footer — actions, notice, Undo and live region at the bottom of the story column; pillow prompt in flow; terminal padding');
+{
+  const dStart = norm.indexOf('id="mattressDrawer"');
+  const dStop = norm.indexOf('<!-- SCREEN: Saved Picks');
+  const drawerHtml = norm.slice(dStart, dStop);
+  const at = (s) => drawerHtml.indexOf(s);
+  // The markup segment of the element whose opening tag contains `marker`, up to and including its matching close.
+  function segmentOf(html, marker) {
+    const open = html.indexOf(marker);
+    if (open === -1) return null;
+    const start = html.lastIndexOf('<', open);
+    const re = /<(\/?)([a-zA-Z][\w-]*)\b[^>]*?(\/?)>/g;
+    re.lastIndex = start;
+    let depth = 0, m;
+    while ((m = re.exec(html))) {
+      const closing = m[1] === '/', selfClosing = m[3] === '/' || /^(br|hr|img|input|meta|link)$/i.test(m[2]);
+      if (m[0].startsWith('<!--')) continue;
+      if (selfClosing) continue;
+      depth += closing ? -1 : 1;
+      if (depth === 0) return html.slice(start, m.index + m[0].length);
+    }
+    return null;
+  }
+  const footer = segmentOf(drawerHtml, 'id="drawerActionFooter"');
+  const scrollCol = segmentOf(drawerHtml, 'id="drawerScroll"');
+  ok('the footer exists as one element at the END of the scroll column (nothing but whitespace or comments follows it before the column closes)',
+    !!footer && !!scrollCol && scrollCol.endsWith(footer + '\n      </div>')
+    && /^\s*(?:<!--[\s\S]*?-->\s*)*$/.test(scrollCol.slice(scrollCol.indexOf(footer) + footer.length, scrollCol.length - '</div>'.length)));
+  const FOOTER_IDS = ['drawerCtaRow', 'drawerFinalistBtn', 'drawerInterestedBtn', 'drawerFinalistNote', 'drawerFinalistNoteText', 'drawerFinalistUndoBtn', 'drawerFinalistLive'];
+  ok('the footer holds both actions, the replacement notice, Undo and the finalist live region - in that order, the live region last',
+    !!footer && FOOTER_IDS.every((id) => footer.includes('id="' + id + '"'))
+    && FOOTER_IDS.map((id) => footer.indexOf('id="' + id + '"')).every((v, i, a) => i === 0 || v > a[i - 1])
+    && footer.lastIndexOf('<div') === footer.lastIndexOf('<div class="sr-only" id="drawerFinalistLive"'));
+  ok('the pillow prompt, financing and promotion stay in the scroll flow ABOVE the footer, never inside it',
+    !!footer && ['drawerSystemPrompt', 'drawerFinancing', 'drawerPromotion', 'drawerTry', 'drawerStory'].every((id) => !footer.includes(id))
+    && at('id="drawerTry"') < at('id="drawerSystemPrompt"') && at('id="drawerSystemPrompt"') < at('id="drawerFinancing"')
+    && at('id="drawerFinancing"') < at('id="drawerPromotion"') && at('id="drawerPromotion"') < at('id="drawerActionFooter"'));
+  ok('the two action buttons keep their verbatim markup (labels, pressed grammar, the shared Save path, the one finalist producer)',
+    !!footer && footer.includes('<button id="drawerFinalistBtn" class="finalist-btn drawer-finalist-btn" data-id="" aria-pressed="false"></button>')
+    && footer.includes('<button id="drawerInterestedBtn" class="drawer-btn drawer-btn-secondary" aria-pressed="false" onclick="window.saveDrawerPick()" ontouchend="event.preventDefault();window.saveDrawerPick();">Save for later</button>')
+    && footer.includes('<div class="drawer-finalist-note" id="drawerFinalistNote" hidden>')
+    && footer.includes('<div class="sr-only" id="drawerFinalistLive" role="status" aria-live="polite" aria-atomic="true"></div>'));
+  const promptSrc = extractFunction('function showFinalistSleepSystemPrompt()') || '';
+  const dismissSrc = extractFunction('window.dismissFinalistSleepSystemPrompt = function()') || '';
+  ok('the pillow prompt keeps its trigger, its once-per-session guard, its dismissal and its live announcement, and never relocates itself into the footer',
+    promptSrc.includes('if (window._finalistAccessoryPromptShown) return;') && promptSrc.includes("prompt.classList.add('is-visible');")
+    && dismissSrc.includes("prompt.classList.remove('is-visible');")
+    && !/drawerActionFooter|appendChild|insertAdjacentElement|insertBefore|scrollIntoView/.test(promptSrc)
+    && /<div class="drawer-system-prompt" id="drawerSystemPrompt" aria-live="polite">/.test(drawerHtml));
+  ok('CSS: the footer is sticky to the column bottom, above the flow, bleeds to the column edges through the padding variable, pads the safe area, and reads as a surface (solid drawer ground, one divider, a soft lift) - not a card',
+    /\.drawer-action-footer \{\s*position: sticky;\s*bottom: 0;\s*z-index: 2;\s*margin: auto calc\(-1 \* var\(--drawer-pad-x\)\) 0;\s*padding: 10px var\(--drawer-pad-x\) calc\(12px \+ env\(safe-area-inset-bottom, 0px\)\);\s*background: #0d1f3c;\s*border-top: 1px solid rgba\(255,255,255,0\.14\);\s*box-shadow: 0 -10px 24px rgba\(0,0,0,0\.28\);\s*\}/.test(norm)
+    && !/\.drawer-action-footer \{[^}]*border-radius/.test(norm));
+  ok('CSS: the scroll column owns the padding variable in every breakpoint, ends flush at the footer, and keeps keyboard-scrolled targets above it (scroll-padding-bottom)',
+    norm.includes('.drawer-scroll { --drawer-pad-x: 22px; overflow-y:auto; padding:20px var(--drawer-pad-x) 0; flex:1; display:flex; flex-direction:column; scroll-padding-bottom: 150px; }')
+    && /@media \(max-width: 760px\), \(orientation: portrait\) \{[\s\S]*?\.drawer-scroll \{ --drawer-pad-x: 18px; padding-top:16px; \}/.test(norm)
+    && /@media \(max-width: 560px\) \{[\s\S]*?\.drawer-scroll \{ --drawer-pad-x: 16px; padding-top:14px; \}/.test(norm));
+  ok('CSS: the light drawer restates the footer surface; forced colors keep a CanvasText divider; the action targets keep their floors (finalist 52, Save 52, Undo 44)',
+    /body:has\(#resultsScreen\.active\) \.drawer-action-footer \{\s*background: #FFFDF8;\s*border-top-color: #D1C5B6;\s*box-shadow: 0 -10px 24px rgba\(55,40,28,0\.12\);\s*\}/.test(norm)
+    && /@media \(forced-colors: active\) \{\s*\.drawer-action-footer \{ border-top: 1px solid CanvasText; \}\s*\}/.test(norm)
+    && /\.drawer-finalist-btn \{[^}]*min-height: 52px;/.test(norm) && /\.drawer-btn \{[^}]*min-height:52px;/.test(norm) && /\.drawer-undo-btn \{[^}]*min-height: 44px;/.test(norm));
+  ok('the wipe still resets the relocated controls and closes the relocated notice (rosters unchanged by the move)',
+    /\{ id: 'drawerFinalistBtn', remove: \['chosen'\], attrs: \{ 'aria-pressed': 'false', 'data-id': '' \} \},/.test(norm)
+    && /\{ id: 'drawerFinalistNote', hiddenAttr: true \},\s*\n\s*\{ id: 'drawerFinalistUndoBtn', hiddenAttr: true \},/.test(norm)
+    && /'drawerFinalistNoteText', 'drawerFinalistLive',/.test(norm));
+  // ---- negative controls on the segment logic (a copied prompt, a split-out notice, a static footer)
+  const copied = drawerHtml.replace('<div class="drawer-action-footer" id="drawerActionFooter">', '<div class="drawer-action-footer" id="drawerActionFooter"><div class="drawer-system-prompt" id="drawerSystemPrompt" aria-live="polite"></div>');
+  ok('negative control: a prompt copied into the footer is detected', (segmentOf(copied, 'id="drawerActionFooter"') || '').includes('drawerSystemPrompt'));
+  const split = drawerHtml.replace('          </div>\n          <div class="drawer-finalist-note" id="drawerFinalistNote" hidden>', '          </div>\n        </div>\n        <div class="drawer-finalist-orphan">\n          <div class="drawer-finalist-note" id="drawerFinalistNote" hidden>');
+  ok('negative control: a notice split out of the footer is detected', split !== drawerHtml && !(segmentOf(split, 'id="drawerActionFooter"') || '').includes('drawerFinalistNote'));
+  ok('negative control: a footer that stops sticking is detected', !/\.drawer-action-footer \{\s*position: static;/.test(norm) && /\.drawer-action-footer \{\s*position: sticky;/.test(norm));
 }
 
 // ------------------------------------------------------------------- summary
