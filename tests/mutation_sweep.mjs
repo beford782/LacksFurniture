@@ -158,6 +158,11 @@ const A31_LAYOUT = A31.concat(LAYOUT);
 // scoring-isolation golden pins, so those two observe the data entries.
 const SCORING_KEYS = ["tests/scoring_key_contract_check.mjs"];
 const SCORING_KEYS_DATA = SCORING_KEYS.concat(["tests/phase1_output_regression_check.mjs", "tests/scoring_isolation_check.mjs"]);
+// A4.2 observers (roadmap 3.2): the vocabulary suite owns the dormant-key
+// declaration, the reachable-or-governed contract and the before/after matrix;
+// a corrupted CATALOG or QUIZ spelling also moves the recommendation fixtures.
+const VOCAB = ["tests/scoring_vocabulary_check.mjs"];
+const VOCAB_RANKING = VOCAB.concat(["tests/phase1_output_regression_check.mjs", "tests/scoring_isolation_check.mjs", "tests/scoring_key_contract_check.mjs"]);
 
 
 // ---------------------------------------------------------------------------
@@ -2282,6 +2287,27 @@ const MUTATIONS = [
     "                                      \"pressureRelief\",\n                                      \"motionIsolation\"\n",
     "                                      \"pressureRelief\",\n                                      \"motionisolation\"\n",
     SCORING_KEYS_DATA, "data/mattresses.json"],
+  // --- A4.2 (owner-directed, roadmap 3.2): the scoring VOCABULARY contract.
+  // One key was a spelling variant of a canonical catalog feature and was
+  // corrected; five are governed dormant. These four entries are the ways that
+  // governance can be undone: revert the correction, alias a dormant key onto a
+  // live one, activate a dormant key in the catalog, or delete a declaration.
+  ["vocabulary: the `durable` spelling variant is reinstated in the quiz (two options award a key no mattress carries)",
+    "            \"firm\": 2,\n            \"durability\": 3",
+    "            \"firm\": 2,\n            \"durable\": 3",
+    VOCAB_RANKING, "data/quiz.json"],
+  ["vocabulary: a dormant key is aliased onto a live one (comfort mapped to medium - the broad-synonym mistake)",
+    "            \"comfort\": 2,\n            \"medium\": 1",
+    "            \"medium\": 2,\n            \"medium\": 1",
+    VOCAB, "data/quiz.json"],
+  ["vocabulary: a governed dormant key is silently activated in the catalog (memory attached to a model)",
+    "                                      \"pressureRelief\",\n                                      \"motionIsolation\"\n",
+    "                                      \"pressureRelief\",\n                                      \"motionIsolation\",\n                                      \"memory\"\n",
+    VOCAB, "data/mattresses.json"],
+  ["vocabulary: a dormant-key declaration is deleted (hypoallergenic loses its governance record)",
+    '    "hypoallergenic": ("B",',
+    '    "_hypoallergenic_removed": ("B",',
+    VOCAB, "tools/validation.py"],
   // --- Corrective pass (owner ruling 2026-09-02): input-modality-aware title focus.
   // Corrective pass 3 (2026-09-03): the title's three rules key on :focus and read only
   // data-focus-entry, so these FINDs follow the rewritten selectors; the five entries at

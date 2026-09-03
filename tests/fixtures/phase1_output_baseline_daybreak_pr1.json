@@ -21,29 +21,29 @@
       },
       "firmnessResolved": 8,
       "scores": {
-        "g1": 46,
-        "g2": -20,
-        "g3": 45,
+        "g1": 47,
+        "g2": -19,
+        "g3": 46,
         "g4": -20,
         "g5": 27,
-        "g6": -20,
-        "g7": 27,
-        "g8": 54,
+        "g6": -19,
+        "g7": 28,
+        "g8": 55,
         "g9": 38,
-        "s1": 45,
+        "s1": 46,
         "s2": 55,
         "s3": -19,
-        "s4": 45,
+        "s4": 46,
         "s5": 44,
         "s6": 27,
         "s7": -20,
         "s8": 45,
         "s9": 27,
-        "s10": 55,
+        "s10": 56,
         "b1": -20,
-        "b2": 44,
-        "b3": 27,
-        "b4": 44,
+        "b2": 45,
+        "b3": 28,
+        "b4": 45,
         "b5": -19,
         "b6": 55,
         "b7": 29
@@ -173,39 +173,39 @@
           "gold": [
             {
               "id": "g8",
-              "score": 54,
+              "score": 55,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
               "id": "g1",
-              "score": 46,
+              "score": 47,
               "pct": 85,
               "meetsMatchThreshold": true
             },
             {
               "id": "g3",
-              "score": 45,
-              "pct": 83,
+              "score": 46,
+              "pct": 84,
               "meetsMatchThreshold": true
             }
           ],
           "silver": [
             {
-              "id": "s2",
-              "score": 55,
+              "id": "s10",
+              "score": 56,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
-              "id": "s10",
+              "id": "s2",
               "score": 55,
-              "pct": 100,
+              "pct": 98,
               "meetsMatchThreshold": true
             },
             {
               "id": "s1",
-              "score": 45,
+              "score": 46,
               "pct": 82,
               "meetsMatchThreshold": true
             }
@@ -219,14 +219,14 @@
             },
             {
               "id": "b2",
-              "score": 44,
-              "pct": 80,
+              "score": 45,
+              "pct": 82,
               "meetsMatchThreshold": true
             },
             {
               "id": "b4",
-              "score": 44,
-              "pct": 80,
+              "score": 45,
+              "pct": 82,
               "meetsMatchThreshold": true
             }
           ]
@@ -259,7 +259,7 @@
             "name": "The Palermo",
             "brand": "Chattam & Wells",
             "subBrand": "Palermo",
-            "matchPct": 83,
+            "matchPct": 84,
             "meetsMatchThreshold": true,
             "imageUrl": "images/mattresses/the palermo.jpg"
           }
@@ -3434,29 +3434,29 @@
       },
       "firmnessResolved": 3,
       "scores": {
-        "g1": 1,
-        "g2": 62,
-        "g3": 1,
+        "g1": 4,
+        "g2": 65,
+        "g3": 4,
         "g4": 52,
         "g5": 40,
-        "g6": 62,
-        "g7": 40,
-        "g8": -11,
+        "g6": 65,
+        "g7": 43,
+        "g8": -8,
         "g9": 25,
-        "s1": 1,
+        "s1": 4,
         "s2": -9,
         "s3": 64,
-        "s4": 1,
+        "s4": 4,
         "s5": 4,
         "s6": 40,
         "s7": 62,
         "s8": 1,
         "s9": 40,
-        "s10": -9,
+        "s10": -6,
         "b1": 62,
-        "b2": -1,
-        "b3": 40,
-        "b4": -1,
+        "b2": 2,
+        "b3": 43,
+        "b4": 2,
         "b5": 64,
         "b6": -9,
         "b7": 37
@@ -3612,20 +3612,20 @@
           "gold": [
             {
               "id": "g2",
-              "score": 62,
+              "score": 65,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
               "id": "g6",
-              "score": 62,
+              "score": 65,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
               "id": "g4",
               "score": 52,
-              "pct": 84,
+              "pct": 80,
               "meetsMatchThreshold": true
             }
           ],
@@ -3664,8 +3664,8 @@
             },
             {
               "id": "b3",
-              "score": 40,
-              "pct": 63,
+              "score": 43,
+              "pct": 67,
               "meetsMatchThreshold": true
             }
           ]
@@ -3698,7 +3698,7 @@
             "name": "Tempur-LuxeBreeze 2.0 Soft",
             "brand": "Tempur-Pedic",
             "subBrand": "LuxeBreeze",
-            "matchPct": 84,
+            "matchPct": 80,
             "meetsMatchThreshold": true,
             "imageUrl": "images/mattresses/tempur-luxebreeze 2.0 soft.jpg"
           }
@@ -5489,29 +5489,29 @@
       },
       "firmnessResolved": 4,
       "scores": {
-        "g1": 20,
-        "g2": 45,
-        "g3": 20,
+        "g1": 21,
+        "g2": 46,
+        "g3": 21,
         "g4": 35,
         "g5": 44,
-        "g6": 45,
-        "g7": 44,
-        "g8": -10,
+        "g6": 46,
+        "g7": 45,
+        "g8": -9,
         "g9": 32,
-        "s1": 20,
+        "s1": 21,
         "s2": -10,
         "s3": 45,
-        "s4": 20,
+        "s4": 21,
         "s5": 22,
         "s6": 44,
         "s7": 45,
         "s8": 20,
         "s9": 44,
-        "s10": -10,
+        "s10": -9,
         "b1": 45,
-        "b2": 20,
-        "b3": 44,
-        "b4": 20,
+        "b2": 21,
+        "b3": 45,
+        "b4": 21,
         "b5": 45,
         "b6": -10,
         "b7": 42
@@ -5643,19 +5643,19 @@
           "gold": [
             {
               "id": "g2",
-              "score": 45,
+              "score": 46,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
               "id": "g6",
-              "score": 45,
+              "score": 46,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
-              "id": "g5",
-              "score": 44,
+              "id": "g7",
+              "score": 45,
               "pct": 98,
               "meetsMatchThreshold": true
             }
@@ -5688,15 +5688,15 @@
               "meetsMatchThreshold": true
             },
             {
-              "id": "b5",
+              "id": "b3",
               "score": 45,
               "pct": 100,
               "meetsMatchThreshold": true
             },
             {
-              "id": "b3",
-              "score": 44,
-              "pct": 98,
+              "id": "b5",
+              "score": 45,
+              "pct": 100,
               "meetsMatchThreshold": true
             }
           ]
@@ -5726,12 +5726,12 @@
             "imageUrl": "images/mattresses/reserve mayfair plush.jpg"
           },
           {
-            "name": "Tempur-ProBreeze 2.0 Medium Hybrid",
-            "brand": "Tempur-Pedic",
-            "subBrand": "ProBreeze",
+            "name": "Reserve Mayfair Medium",
+            "brand": "Restonic",
+            "subBrand": "Reserve",
             "matchPct": 98,
             "meetsMatchThreshold": true,
-            "imageUrl": "images/mattresses/tempur-probreeze 2.0 medium hybrid.jpg"
+            "imageUrl": "images/mattresses/reserve mayfair medium.jpg"
           }
         ]
       },

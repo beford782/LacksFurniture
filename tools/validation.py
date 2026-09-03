@@ -4188,11 +4188,36 @@ QUIZ_CANONICAL = (
 # of every option's scores keys; matches the app's quizTags vocabulary. An
 # unknown tag is an error (a typo'd tag silently awards nothing).
 QUIZ_SCORE_TAGS = frozenset((
-    "adjustable", "comfort", "cooling", "durability", "durable", "firm",
+    "adjustable", "comfort", "cooling", "durability", "firm",
     "hybrid", "hypoallergenic", "medium", "memory", "motionIsolation",
     "plush", "pressureRelief", "quality", "responsive", "soft", "support",
     "zoned",
 ))
+# A4.2: `durable` was removed here, not merely corrected in the quiz - it was
+# a spelling variant of the catalog's canonical `durability` (the workbook's
+# per-feature reason column is reason_durability, and no catalog axis
+# distinguishes the two), so re-introducing it is now a validation error.
+# A4.2 (roadmap 3.2, owner-directed): quiz scoring keys that no catalog model
+# can match. A4.1 corrected the two keys that were unreachable for a GENERATOR
+# reason; these five are unreachable for a DATA reason, and dormancy is now
+# declared rather than discovered. Every entry is (classification, why it stays
+# dormant, the owner dependency that would resolve it):
+#   B = a legitimate, discriminating concept whose authoritative catalog data is
+#       absent. Populating it changes what is recommended and is Blake's call.
+#   C = a generic, non-discriminating concept that should not rank mattresses.
+#       Retiring the award is also Blake's call; A4.2 proved it changes nothing
+#       today (tests/scoring_vocabulary_check.mjs strips every dormant award and
+#       re-runs the ranking matrix).
+# An unreachable key that is NOT declared here is a build error: that is how a
+# typo'd or invented tag stops silently awarding nothing.
+QUIZ_DORMANT_TAGS = {
+    "adjustable": ("B", "Awarded by health_conditions.snoring and .reflux for an ADJUSTABLE BASE - a sleep-system product, not a mattress property. No model carries base-compatibility data (0 of 26), and the app already routes both answers to the adjustable-base accessories and the base demo, so the mattress award adds nothing today.", "Blake: authoritative per-model adjustable-base compatibility from the manufacturers, AND a ruling on whether compatibility should rank mattresses at all rather than stay in the sleep-system layer."),
+    "hypoallergenic": ("B", "Awarded by health_conditions.allergies. No model carries hypoallergenic, antimicrobial or allergen data of any kind (0 of 26 across every field), and the concept is a factual claim about materials or certification, so it cannot be inferred from prose.", "Blake: authoritative per-model certification or material data, cleared under the repository's claim governance before any scoring or display use."),
+    "memory": ("B", "Awarded by partner_disturbance.yes_often and temperature.cold for memory-foam behaviour. The catalog names memory foam only in prose, inconsistently (archetype and badges for g4; construction and story for g5 and b1; highlight for s5) - and g1's prose mentions it to say the model is NOT that, so scraping the text would mis-tag the catalog.", "Blake: a canonical comfort-material field authored per model at the workbook, not derived from marketing prose."),
+    "comfort": ("C", "Awarded by four options (sleep_issues.tossing/.stiff/.none, health_conditions.getting_older). Every mattress in the catalog is sold as comfortable, so no factual axis could discriminate; 'comfort' elsewhere in the app is a construction-layer label and a profile icon key, which are different namespaces, not evidence of a scoring feature.", "Blake: retire the award, or name a specific discriminating property it should mean."),
+    "quality": ("C", "Awarded by sleep_issues.sagging and .none. A marketing-grade adjective rather than a product fact; the discriminating half of the sagging answer is already carried by the live `durability` tag, which the same option awards.", "Blake: retire the award, or name a specific discriminating property it should mean."),
+}
+
 
 # The scoring engine caps per-mattress-per-feature accumulation at 5
 # (FEATURE_CAP in index.html); a single-option award beyond the cap is
@@ -4222,10 +4247,18 @@ def _quiz_condition_ok(r, tag, cond, earlier_options):
                     f"{qid!r}")
 
 
-def validate_quiz(quiz) -> ValidationReport:
+def validate_quiz(quiz, catalog_features=None) -> ValidationReport:
     """Validate the quiz payload (structure contract + copy + scores).
 
-    No-op when quiz is None (workbooks without a Quiz payload)."""
+    No-op when quiz is None (workbooks without a Quiz payload).
+
+    A4.2: when `catalog_features` is supplied (the converter passes the
+    Mattresses tab's feature vocabulary), every scoring key must be either
+    reachable in that catalog or declared in QUIZ_DORMANT_TAGS. An
+    unreachable, undeclared key awards points no mattress can ever receive -
+    exactly the roadmap 3.1/3.2 failure mode - so it is an error, and a
+    declaration that has become reachable is an error too (it would hide a
+    live signal behind a dormancy note)."""
     r = ValidationReport()
     if quiz is None:
         return r
@@ -4329,6 +4362,31 @@ def validate_quiz(quiz) -> ValidationReport:
                     r.add_error(f"{ctag}: {key} missing EN or ES")
 
         earlier_options[qid] = set(opt_ids)
+
+    # A4.2 vocabulary contract (see QUIZ_DORMANT_TAGS above). Reachability is
+    # checked only when the caller supplies the catalog's feature vocabulary;
+    # the converter does, so the build gate sees it.
+    if catalog_features is not None:
+        reachable = {str(f).strip() for f in catalog_features if str(f).strip()}
+        awarded = set()
+        for q in questions:
+            if not isinstance(q, dict):
+                continue
+            for o in (q.get("options") or []):
+                if isinstance(o, dict) and isinstance(o.get("scores"), dict):
+                    awarded.update(o["scores"].keys())
+        for tag in sorted(awarded - reachable):
+            if tag not in QUIZ_DORMANT_TAGS:
+                r.add_error(
+                    f"quiz scores: {tag!r} matches no catalog feature and is not "
+                    f"declared in QUIZ_DORMANT_TAGS - it would award points no "
+                    f"mattress can receive (roadmap 3.1/3.2)")
+        for tag in sorted(QUIZ_DORMANT_TAGS):
+            if tag in reachable:
+                r.add_error(
+                    f"quiz scores: {tag!r} is declared dormant but the catalog "
+                    f"now carries it - remove the declaration in the same change "
+                    f"that populates the data")
     return r
 
 

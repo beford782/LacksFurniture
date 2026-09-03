@@ -807,7 +807,7 @@
           "scores": {
             "comfort": 1,
             "quality": 1,
-            "durable": 1
+            "durability": 1
           }
         }
       ]
@@ -904,7 +904,7 @@
           "scores": {
             "support": 3,
             "firm": 2,
-            "durable": 3
+            "durability": 3
           }
         },
         {

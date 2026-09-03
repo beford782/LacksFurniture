@@ -3624,25 +3624,25 @@
   }
  },
  "need_issue_none": {
-  "topPick": "Reserve Mayfair Medium",
+  "topPick": "Tempur-ProBreeze 2.0 Medium Hybrid",
   "tiers": {
    "gold": [
     {
-     "id": "g7",
-     "score": 51,
+     "id": "g5",
+     "score": 50,
      "pct": 100,
      "meets": true
     },
     {
-     "id": "g5",
+     "id": "g7",
      "score": 50,
-     "pct": 98,
+     "pct": 100,
      "meets": true
     },
     {
      "id": "g9",
      "score": 40,
-     "pct": 78,
+     "pct": 80,
      "meets": true
     }
    ],
@@ -3661,56 +3661,56 @@
     },
     {
      "id": "s1",
-     "score": 31,
-     "pct": 62,
+     "score": 30,
+     "pct": 60,
      "meets": true
     }
    ],
    "bronze": [
     {
      "id": "b3",
-     "score": 51,
+     "score": 50,
      "pct": 100,
      "meets": true
     },
     {
      "id": "b7",
      "score": 50,
-     "pct": 98,
+     "pct": 100,
      "meets": true
     },
     {
-     "id": "b2",
-     "score": 31,
-     "pct": 61,
+     "id": "b1",
+     "score": 30,
+     "pct": 60,
      "meets": true
     }
    ]
   },
   "scores": {
-   "g1": 31,
-   "g2": 31,
-   "g3": 31,
+   "g1": 30,
+   "g2": 30,
+   "g3": 30,
    "g4": 20,
    "g5": 50,
-   "g6": 31,
-   "g7": 51,
-   "g8": 21,
+   "g6": 30,
+   "g7": 50,
+   "g8": 20,
    "g9": 40,
-   "s1": 31,
+   "s1": 30,
    "s2": 20,
    "s3": 30,
-   "s4": 31,
+   "s4": 30,
    "s5": 30,
    "s6": 50,
    "s7": 30,
    "s8": 30,
    "s9": 50,
-   "s10": 21,
+   "s10": 20,
    "b1": 30,
-   "b2": 31,
-   "b3": 51,
-   "b4": 31,
+   "b2": 30,
+   "b3": 50,
+   "b4": 30,
    "b5": 30,
    "b6": 20,
    "b7": 50
@@ -4089,25 +4089,25 @@
   }
  },
  "need_health_extra_support": {
-  "topPick": "Reserve Mayfair Medium",
+  "topPick": "Tempur-ProBreeze 2.0 Medium Hybrid",
   "tiers": {
    "gold": [
     {
-     "id": "g7",
-     "score": 56,
+     "id": "g5",
+     "score": 53,
      "pct": 100,
      "meets": true
     },
     {
-     "id": "g5",
+     "id": "g7",
      "score": 53,
-     "pct": 95,
+     "pct": 100,
      "meets": true
     },
     {
      "id": "g9",
      "score": 43,
-     "pct": 77,
+     "pct": 81,
      "meets": true
     }
    ],
@@ -4126,56 +4126,56 @@
     },
     {
      "id": "s1",
-     "score": 38,
-     "pct": 72,
+     "score": 35,
+     "pct": 66,
      "meets": true
     }
    ],
    "bronze": [
     {
      "id": "b3",
-     "score": 56,
+     "score": 53,
      "pct": 100,
      "meets": true
     },
     {
      "id": "b7",
      "score": 53,
-     "pct": 95,
+     "pct": 100,
      "meets": true
     },
     {
      "id": "b2",
-     "score": 38,
-     "pct": 68,
+     "score": 35,
+     "pct": 66,
      "meets": true
     }
    ]
   },
   "scores": {
-   "g1": 38,
-   "g2": 33,
-   "g3": 38,
+   "g1": 35,
+   "g2": 30,
+   "g3": 35,
    "g4": 20,
    "g5": 53,
-   "g6": 33,
-   "g7": 56,
-   "g8": 28,
+   "g6": 30,
+   "g7": 53,
+   "g8": 25,
    "g9": 43,
-   "s1": 38,
+   "s1": 35,
    "s2": 25,
    "s3": 30,
-   "s4": 38,
+   "s4": 35,
    "s5": 35,
    "s6": 53,
    "s7": 30,
    "s8": 35,
    "s9": 53,
-   "s10": 28,
+   "s10": 25,
    "b1": 30,
-   "b2": 38,
-   "b3": 56,
-   "b4": 38,
+   "b2": 35,
+   "b3": 53,
+   "b4": 35,
    "b5": 30,
    "b6": 25,
    "b7": 53
@@ -4461,25 +4461,25 @@
   }
  },
  "fallback_all_none": {
-  "topPick": "Reserve Mayfair Medium",
+  "topPick": "Tempur-ProBreeze 2.0 Medium Hybrid",
   "tiers": {
    "gold": [
     {
-     "id": "g7",
-     "score": 51,
+     "id": "g5",
+     "score": 50,
      "pct": 100,
      "meets": true
     },
     {
-     "id": "g5",
+     "id": "g7",
      "score": 50,
-     "pct": 98,
+     "pct": 100,
      "meets": true
     },
     {
      "id": "g9",
      "score": 40,
-     "pct": 78,
+     "pct": 80,
      "meets": true
     }
    ],
@@ -4498,56 +4498,56 @@
     },
     {
      "id": "s1",
-     "score": 31,
-     "pct": 62,
+     "score": 30,
+     "pct": 60,
      "meets": true
     }
    ],
    "bronze": [
     {
      "id": "b3",
-     "score": 51,
+     "score": 50,
      "pct": 100,
      "meets": true
     },
     {
      "id": "b7",
      "score": 50,
-     "pct": 98,
+     "pct": 100,
      "meets": true
     },
     {
-     "id": "b2",
-     "score": 31,
-     "pct": 61,
+     "id": "b1",
+     "score": 30,
+     "pct": 60,
      "meets": true
     }
    ]
   },
   "scores": {
-   "g1": 31,
-   "g2": 31,
-   "g3": 31,
+   "g1": 30,
+   "g2": 30,
+   "g3": 30,
    "g4": 20,
    "g5": 50,
-   "g6": 31,
-   "g7": 51,
-   "g8": 21,
+   "g6": 30,
+   "g7": 50,
+   "g8": 20,
    "g9": 40,
-   "s1": 31,
+   "s1": 30,
    "s2": 20,
    "s3": 30,
-   "s4": 31,
+   "s4": 30,
    "s5": 30,
    "s6": 50,
    "s7": 30,
    "s8": 30,
    "s9": 50,
-   "s10": 21,
+   "s10": 20,
    "b1": 30,
-   "b2": 31,
-   "b3": 51,
-   "b4": 31,
+   "b2": 30,
+   "b3": 50,
+   "b4": 30,
    "b5": 30,
    "b6": 20,
    "b7": 50
@@ -5006,20 +5006,20 @@
    "gold": [
     {
      "id": "g2",
-     "score": 65,
+     "score": 62,
      "pct": 100,
      "meets": true
     },
     {
      "id": "g6",
-     "score": 65,
+     "score": 62,
      "pct": 100,
      "meets": true
     },
     {
      "id": "g4",
      "score": 52,
-     "pct": 80,
+     "pct": 84,
      "meets": true
     }
    ],
@@ -5058,36 +5058,36 @@
     },
     {
      "id": "b3",
-     "score": 43,
-     "pct": 67,
+     "score": 40,
+     "pct": 63,
      "meets": true
     }
    ]
   },
   "scores": {
-   "g1": 4,
-   "g2": 65,
-   "g3": 4,
+   "g1": 1,
+   "g2": 62,
+   "g3": 1,
    "g4": 52,
    "g5": 40,
-   "g6": 65,
-   "g7": 43,
-   "g8": -8,
+   "g6": 62,
+   "g7": 40,
+   "g8": -11,
    "g9": 25,
-   "s1": 4,
+   "s1": 1,
    "s2": -9,
    "s3": 64,
-   "s4": 4,
+   "s4": 1,
    "s5": 4,
    "s6": 40,
    "s7": 62,
    "s8": 1,
    "s9": 40,
-   "s10": -6,
+   "s10": -9,
    "b1": 62,
-   "b2": 2,
-   "b3": 43,
-   "b4": 2,
+   "b2": -1,
+   "b3": 40,
+   "b4": -1,
    "b5": 64,
    "b6": -9,
    "b7": 37

@@ -927,7 +927,14 @@ def main(argv=None) -> int:
             accessory_ids=[a.get("id") for a in accessories]))
         # Quiz definition — structural contract (pinned ids/types/options) plus
         # bilingual copy and score-tag checks; no-op when the tab is empty.
-        report.merge(validation.validate_quiz(quiz))
+        # A4.2: the catalog's feature vocabulary rides along so the quiz's
+        # scoring keys can be checked for reachability at build time.
+        _quiz_features = set()
+        for _row in m_rows:
+            for _tag in str(_row.get("features") or "").split("|"):
+                if _tag.strip():
+                    _quiz_features.add(_tag.strip())
+        report.merge(validation.validate_quiz(quiz, catalog_features=_quiz_features))
         print(report.summary())
         blocking = report.blocking(warnings_as_errors=args.warnings_as_errors)
         if args.validate_only:

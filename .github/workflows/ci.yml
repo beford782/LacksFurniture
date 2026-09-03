@@ -56,10 +56,10 @@ jobs:
     # "Full suite (18 checks)") — renaming it here without updating the
     # protection rule in the same change would leave every PR waiting on a
     # check that never reports. The name is a LEGACY LABEL and its number has
-    # been wrong for many slices: the workflow now invokes 51 verification
-    # steps (46 `run: node|python tests/...` steps, three `tools/*.py
+    # been wrong for many slices: the workflow now invokes 52 verification
+    # steps (47 `run: node|python tests/...` steps, three `tools/*.py
     # --self-test` steps, the workbook validation and the QR committed-asset
-    # check), A4.1's scoring key contract suite being the newest.
+    # check), A4.2's scoring vocabulary suite being the newest.
     # A4.1 re-derived this rather than incrementing it: the previous revision
     # said 48/43, but the tree already carried 45 test steps before this pass
     # added one, so the stated figure had drifted by two. Re-derive with
@@ -437,6 +437,14 @@ jobs:
       # kept beside it, so the repair's whole effect stays auditable.
       - name: scoring key contract (feature keys + golden rankings)
         run: node tests/scoring_key_contract_check.mjs
+
+      # A4.2 (roadmap 3.2): every quiz scoring key must be a reachable catalog
+      # feature or a dormant key declared in QUIZ_DORMANT_TAGS with a reason and an
+      # owner dependency. Dormancy is proved by execution, and the durable ->
+      # durability correction's whole ranking effect is pinned against the
+      # pre-correction matrix.
+      - name: scoring vocabulary (reachable-or-governed keys)
+        run: node tests/scoring_vocabulary_check.mjs
 
       # Claim retirement (owner ruling 2026-08-12): executes the real
       # mattressDifferentiators, drawer differentiator block, compare
