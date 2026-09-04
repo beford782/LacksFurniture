@@ -10413,10 +10413,10 @@
 
        Corrective pass 3 (2026-09-03): the ring is gated on the ENTRY MODALITY
        through :focus, NOT on :focus-visible. Whether a browser calls a
-       SCRIPTED focus "visible" after a real tap is a heuristic that Chromium
-       and WebKit answer differently and that nothing in the app controls - so
-       the previous rules could suppress the ring reliably but could not
-       guarantee it. These three rules read only data-focus-entry, which
+       SCRIPTED focus "visible" after a real tap is a heuristic whose result
+       can vary across engines, versions and contexts, and that nothing in the
+       app controls - so the previous rules could suppress the ring reliably
+       but could not guarantee it. These three rules read only data-focus-entry, which
        openMattressDrawer stamps from the last real input on every open:
 
          - :not([data-focus-entry="pointer"]) paints the ring, so a keyboard

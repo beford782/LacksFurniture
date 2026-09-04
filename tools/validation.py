@@ -4239,10 +4239,14 @@ def normalize_feature_tag(tag):
         subsequent NON-EMPTY segment with its first character upper-cased and
         the remainder untouched.
 
-    Normalization is not validation: an unknown tag normalizes to itself and is
-    rejected afterwards, by reachability. The function is idempotent - its
-    output never contains a hyphen - so normalizing an already-normalized
-    vocabulary is safe.
+    Normalization is not validation, and the contract runs one way only: an
+    unknown QUIZ SCORING KEY - one no catalog feature matches and no dormancy
+    declaration covers - is rejected, while an extra CATALOG FEATURE that no
+    quiz rule references is allowed and simply ignored by scoring (it awards
+    nothing, so it cannot mis-rank anything). An unknown tag therefore
+    normalizes to itself and is judged, if at all, on that basis. The function
+    is idempotent - its output never contains a hyphen - so normalizing an
+    already-normalized vocabulary is safe.
     """
     text = "" if tag is None else str(tag).strip()
     parts = text.split("-")

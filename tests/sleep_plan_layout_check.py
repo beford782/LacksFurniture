@@ -1061,8 +1061,9 @@ def run_drawer_footer(browser, port, name, width, height, lang, shots_dir):
 # keyboard entry. The app records the last real input (capture-phase keydown /
 # pointerdown / mousedown / touchstart) and stamps data-focus-entry on the
 # drawer at every open. Corrective pass 3: the ring is driven by that attribute
-# through :focus - NOT by the browser's :focus-visible heuristic, which answers
-# a scripted focus after a real tap differently in Chromium and WebKit. The
+# through :focus - NOT by the browser's :focus-visible heuristic, whose result
+# for a scripted focus after a real tap can vary across engines, versions and
+# contexts. The
 # decisive rendered proof is the attribute flip below: with focus untouched and
 # no new user input, flipping data-focus-entry paints and unpaints the ring, so
 # the ring cannot be coming from the heuristic. Rendered proof: a real mouse click and a real

@@ -15,9 +15,11 @@
 #     path, extracted from the shipped script and run in a real PowerShell, so
 #     it is the same bytes the build executes.
 # Disagreement between them fails, whichever side is wrong. The table also
-# carries the validator's contract cases (an unknown tag, a genuinely
-# unreachable key, a dormant key that becomes reachable), executed against the
-# real validate_quiz() with the shipped quiz.
+# carries the validator's contract cases, executed against the real
+# validate_quiz() with the shipped quiz. The contract runs ONE WAY: an unknown
+# quiz scoring key (no catalog match, no dormancy declaration) is rejected,
+# while an extra catalog feature that no quiz rule references is allowed and
+# ignored by scoring - it awards nothing, so it cannot mis-rank anything.
 #
 #   python tests/feature_tag_normalization_check.py
 

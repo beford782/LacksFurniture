@@ -26,7 +26,7 @@
   { "input": "Cooling", "expected": "Cooling", "note": "a hyphen-free tag is NOT lowercased; if the catalog authors it this way it stays unreachable and the validator says so" },
   { "input": "cooling", "expected": "cooling", "note": "the shipped canonical spelling" },
   { "input": "zoned-support-extra", "expected": "zonedSupportExtra", "note": "three segments" },
-  { "input": "unknownTag", "expected": "unknownTag", "note": "normalization is not validation - an unknown tag normalizes to itself and is rejected later, by reachability" }
+  { "input": "unknownTag", "expected": "unknownTag", "note": "normalization is not validation - an unknown tag normalizes to itself; whether it matters depends on WHICH side it is on (an unknown quiz scoring key is rejected; an extra catalog feature no quiz rule references is allowed and ignored by scoring)" }
  ],
  "validator_contract_cases": {
   "unknown_tag": {
