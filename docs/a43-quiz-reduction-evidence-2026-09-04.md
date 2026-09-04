@@ -192,6 +192,42 @@ this package is 2386 files / 2277 PNG captures / 273.8 MiB, so the durable recor
    is answered) → 37.5% → 50% → 62.5% → 75% → 87.5% → 100%. The behaviour is correct; the
    summary of it was not.
 
+### The manifest was regenerated once, after an integrity failure of its own
+
+The first manifest committed with this pass (in `215f562`) was **stale in three of its 2386
+entries**. Independent review found 2383 exact matches and three size/hash mismatches:
+`corrective-2026-09-04/A43-CORRECTIVE-2026-09-04.md`, `corrective-2026-09-04/mirror.log` and
+`corrective-2026-09-04/mirror.err.log`.
+
+**Root cause, established from file timestamps rather than recollection.** The manifest was
+generated in the *middle* of the evidence-production sequence instead of as its final frozen
+step, and two later steps wrote into the directory it had already hashed:
+
+| Time | Event |
+|---|---|
+| 13:37:28 | the evidence record is written |
+| **13:37:30** | **the manifest is generated — hashes frozen here** |
+| 13:40:48 / 13:40:50 | a further CI-mirror run on the staged tree **rewrites `mirror.err.log` and `mirror.log`**, which live inside the hashed directory |
+| 13:41:10 | commit `215f562` |
+| 13:41:19 | the retained record copy is **stamped with the commit SHA**, necessarily after the commit and so after the manifest |
+
+Both writes were mine and both were legitimate acts performed in the wrong order. The
+`A43-CORRECTIVE-2026-09-04.md` delta of exactly -4 bytes is the placeholder
+`(recorded in the commit that adds this file)` (44 characters) becoming the 40-character SHA;
+the two mirror logs differ because a second, later mirror run truncated and rewrote them.
+
+**The repair.** Every evidence-report edit — including the commit-SHA stamp, in *both* copies
+— was completed first; no process writing reports or logs was left running; the evidence
+directory was then frozen and the manifest regenerated **in full** from it, not hand-patched.
+The generator was run twice and its two outputs compared byte-for-byte to prove the path
+ordering is deterministic. A verifier that shares no code with the generator then re-derived
+the file set from the filesystem and re-hashed every file, checking uniqueness, parseability,
+set equality in both directions, byte sizes and digests. The earlier full-suite and mutation
+logs are unchanged, still present, and verify against the corrected manifest.
+
+Nothing in the application, the state machine, scoring, presentation or any test changed for
+this correction; the repaired behaviour in `215f562` stands exactly as reviewed.
+
 ---
 
 ## 6. Verification performed
@@ -203,7 +239,7 @@ this package is 2386 files / 2277 PNG captures / 273.8 MiB, so the durable recor
 | Repository | `C:\Users\BlakeFord\Documents\GitWorktrees\LacksFurniture\a43-quiz` |
 | Branch | `claude/north-star-candidate-a43-quiz-reduction` |
 | Parent commit | `af7282e04782d12fd6f78690af8d789d4963c52e` |
-| Corrective commit | `(recorded in the commit that adds this file)` |
+| Corrective commit | `215f562b529476618a90df7f217004d03c29aabd` |
 | `index.html` sha256 | `191d921af183f1d18fd933512bb6abc4569d9e5d3fde8ef3e8b874b2c0e34b2b` |
 | Python | `3.14.2` (`C:\Users\BlakeFord\AppData\Local\Microsoft\WindowsApps\python.exe`), openpyxl `3.1.5`, Pillow `12.1.1`, qrcode `8.2` |
 | Node | `v24.13.0` |
