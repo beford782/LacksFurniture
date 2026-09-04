@@ -419,9 +419,10 @@ rollback command was `git push origin 4c8d3df:main`.)
 Open the Pages URL on a desktop browser AND on an iPad. Run the full flow:
 
 - [ ] Welcome screen shows the retailer's name, colors, trust signal, badge
-- [ ] Quiz runs all 10 questions (9 on the solo path); skip-logic works for solo sleepers; multi-select cap of 3 enforced
+- [ ] Quiz runs all 9 questions (8 on the solo path); skip-logic works for solo sleepers; multi-select cap of 3 enforced
+- [ ] Edit `Who shares the bed` on the Review screen in BOTH directions: switching to solo must not leave the movement answer behind, and switching to partner/family must ask the movement question again before the Review returns
 - [ ] Review screen shows current answers; Edit returns to that question
-- [ ] Profile screen shows the personalized opener (uses `trigger` — `current_mattress_age` and `sleep_quality` were removed from the quiz by owner ruling 2026-08-12)
+- [ ] Profile screen shows the personalized opener (derived from `sleep_position`, `temperature`, `firmness`, `sleep_issues`, `health_conditions` and the partner answers; `current_mattress_age` and `sleep_quality` were removed by owner ruling 2026-08-12 and `trigger` by the owner-approved reduction of 2026-09-03)
 - [ ] Confidence pill + social proof show
 - [ ] Theme accent colors look right per profile archetype
 - [ ] Results page: Gold/Silver/Bronze tabs work; tier explainer reads correctly; $/$$/$$$ price markers visible
@@ -444,7 +445,7 @@ Open the Pages URL on a desktop browser AND on an iPad. Run the full flow:
 - [ ] Idle timer (2 min) returns to welcome
 - [ ] **Spanish toggle (EN/ES) visible on welcome screen**
 - [ ] **Tap ES — entire welcome screen switches to Spanish**
-- [ ] **Complete quiz in Spanish — all 10 questions, labels, sublabels in Spanish**
+- [ ] **Complete quiz in Spanish — all 9 questions, labels, sublabels in Spanish**
 - [ ] **Profile, results, drawer, accessories all render in Spanish**
 - [ ] **Submit email in Spanish mode — email arrives with Spanish subject, body, labels**
 - [ ] **Tap EN — reverts to English cleanly**

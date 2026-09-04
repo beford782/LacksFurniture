@@ -890,8 +890,10 @@ sleep-fit independence remain constraints on the experience, not tradeable costs
 
 This premise supersedes any older self-service framing, including the
 "customers take a sleep quiz" self-service description in CLAUDE.md, which
-predates it. *(That description said "12-question" until 2026-08-12; the
-quiz is 10 questions since the owner-ruled removal recorded under 1.2.)* Where the two conflict, this premise governs product direction;
+predates it. *(That description said "12-question" until 2026-08-12 and
+"10-question" until 2026-09-03; the quiz is 9 questions / 42 options — 8
+displayed steps on the solo path, 9 on the partner and family paths — since
+the owner-approved removal of `trigger` recorded under A4.3.)* Where the two conflict, this premise governs product direction;
 CLAUDE.md continues to govern architecture, i18n and the generated-artifact
 pipeline.
 
@@ -2018,7 +2020,9 @@ the solo path).** Blake ruled after a full consumer audit: `sleep_quality`
 and `current_mattress_age` removed. Both carried zero score tags;
 `current_mattress_age` had no consumer of any kind (its answer was collected
 and discarded), and `sleep_quality` fed only the Consultation Summary's
-context row, which now builds from `trigger` alone. Removal is **not** a
+context row, which then built from `trigger` alone. *(Superseded 2026-09-03:
+`trigger` was itself removed under the owner-approved A4.3 reduction, and the
+context row went with it — the Summary now renders two rows.)* Removal is **not** a
 scoring change: the engine ignores unknown answer ids, and the Phase 1
 output-regression fixture is **byte-identical across the change** — the
 executable proof that recommendations did not move. Changed together, per
@@ -5564,7 +5568,7 @@ described behaviour is the durable anchor.
 
 | # | Finding |
 |---|---|
-| 1 | Quiz: 10 questions, exactly 47 options — so "review all 47 icons" is a bounded task. *(As originally recorded: 12 questions / 56 options; reduced 2026-08-12 by the owner-ruled removal of sleep_quality and current_mattress_age — see 1.2)* |
+| 1 | Quiz: 9 questions, exactly 42 options — so "review all 42 icons" is a bounded task. *(As originally recorded: 12 questions / 56 options; reduced 2026-08-12 by the owner-ruled removal of sleep_quality and current_mattress_age to 10 / 47 — see 1.2 — and again 2026-09-03 by the owner-approved removal of trigger — see A4.3)* |
 | 2 | The engine already computes the top three priorities with name, reason, testing prompt and kind; there is no rank field, and ordering is by an unrendered score |
 | 3 | A next-step rail already exists on the Sleep Brief, rendering three steps as plain divs |
 | 4 | The "Try this:" testing prompt is currently fully visible on the Sleep Brief, not behind disclosure |

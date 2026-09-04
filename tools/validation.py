@@ -4170,6 +4170,10 @@ def validate_pricing(config, *, allowed_source_hosts=None, financing_source_host
 # only the consultation context row (which now builds from trigger alone).
 # 12 -> 10 questions; recommendations provably unchanged (the Phase 1
 # output-regression fixture is byte-identical across the change).
+# 2026-09-03 (owner-approved, A4.3): `trigger` removed the same way — its only
+# consumer was the Consultation Summary's context row, which is retired with
+# it. 10 -> 9 questions, 42 options; 8 displayed steps on the solo path, 9 on
+# the partner and family paths. Recommendations again provably unchanged.
 QUIZ_CANONICAL = (
     ("mattress_size", "single",
      ("twin", "twin_xl", "full", "queen", "king", "cal_king")),

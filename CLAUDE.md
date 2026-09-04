@@ -15,8 +15,9 @@ can see a better path.
 DreamFinder is a store-agnostic single-page tablet app for mattress showroom floors,
 run as a **salesperson-operated, customer-visible guided consultation** (see the
 owner direction below and "The permanent operating premise" in
-`docs/rebuild-roadmap.md`). The salesperson leads a 10-question sleep quiz with
-the customer, presents the Sleep Brief and the Gold/Silver/Bronze recommendations,
+`docs/rebuild-roadmap.md`). The salesperson leads a 9-question sleep quiz with
+the customer (8 displayed steps for a solo sleeper), presents the Sleep Brief and
+the Gold/Silver/Bronze recommendations,
 compares finalists, builds the Sleep System, and closes on the Consultation
 Summary with a take-home preview of the results.
 
@@ -166,7 +167,8 @@ If you find yourself writing a store name or brand color into the HTML, stop —
 it belongs in config.
 
 ### Quiz questions are config-driven (data/quiz.json)
-The 10 quiz questions live in `incoming/dreamfinder_quiz.json` → workbook
+The 9 quiz questions (42 options; 8 displayed steps for a solo sleeper, 9 for
+partner and family) live in `incoming/dreamfinder_quiz.json` → workbook
 Quiz tab (JSON envelope, same channel as the Promotions financing envelope)
 → `data/quiz.json` (generated — never edit directly; rebuild via
 build_lacks_workbook.py + convert_store_data.py). The app fetches it at load
@@ -416,7 +418,8 @@ significant debugging to get right.
 
 ## Key App Flows (Don't Break These)
 
-- **Quiz → Results**: 10 questions (solo sleepers see 9 — `partner_disturbance` has a `skipIf` for solo; was 12 until the 2026-08-12 owner-ruled removal of the two zero-scoring questions `sleep_quality` and `current_mattress_age`) → scoring engine → Gold/Silver/Bronze tier tabs → top pick badge
+- **Quiz → Results**: 9 questions, 42 options (solo sleepers see 8 — `partner_disturbance` has a `skipIf` for solo; was 12 until the 2026-08-12 owner-ruled removal of `sleep_quality` and `current_mattress_age`, then 10 until the 2026-09-03 owner-approved removal of `trigger`) → scoring engine → Gold/Silver/Bronze tier tabs → top pick badge
+- **Conditional answers reconcile in one place**: `partner_disturbance` is skipped for a solo sleeper, and two options (`body_type.different`, `temperature.opposite`) are offered only to a shared bed. Because Review lets the customer edit `partner_sleep` afterwards, the quiz state machine — not any individual consumer — owns the rule: a not-asked question carries the `not_applicable` sentinel, a question that becomes asked loses that sentinel and is asked, a withdrawn option stops being the answer, and the Review screen is unreachable until every asked conditional question has one. See the invariant block above `visibleQuestions()` in `index.html`; pinned by `tests/quiz_reduction_check.mjs` section 7.
 - **Mattress drawer**: Opens on card tap. Prev/next navigation between results. Firmness bar, match reasons, features.
 - **Accessories / Sleep System**: Framed as "Build Your Sleep System" (not add-ons).
   Conditional adjustable base hero (shown when quiz flags snoring, reflux, or back pain)
@@ -497,8 +500,8 @@ git push -u origin HEAD
 #   (no pwsh? Windows PowerShell 5.1 works: powershell -NoProfile -File tools/run_full_suite.ps1)
 # open a PR targeting main; wait for the required status check — its name,
 # "Full suite (18 checks)", is a legacy label pinned by branch protection, and
-# the job actually runs 48 verification steps, the same 48 the local mirror
-# enumerates — then merge, only when Blake asks
+# the job actually runs 54 verification steps, the same 54 the local mirror
+# enumerates (53 suites plus the mutation sweep) — then merge, only when Blake asks
 ```
 
 **Agent boundary (identical to `AGENTS.md`):** no commit, push, PR, merge,

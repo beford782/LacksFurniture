@@ -77,6 +77,13 @@ const SOURCES = {
   applyAccent: 'function applyQuestionAccent(qId, text, lang)',
   cols: 'function quizColsClass(n)',
   visible: 'function visibleQuestions()',
+  // The conditional-answer invariant (one rule, three functions): the
+  // condition snapshot, the reconciler that writes/clears the sentinel and
+  // withdraws hidden options, and the outstanding-question probe that makes
+  // the review unreachable while an asked question has no answer.
+  conditions: 'function conditionalConditionsHold()',
+  reconcile: 'function reconcileConditionalAnswers(before)',
+  pending: 'function pendingConditionalIndex()',
   resolveCopy: 'function resolveQuizCopy(q)',
   render: 'window.renderQuestion = function()',
   feel: 'function getFirmnessLabel(val)',
@@ -95,7 +102,7 @@ for (const [key, anchor] of Object.entries(SOURCES)) {
   src[key] = extractFunction(anchor);
   if (!src[key]) missing.push(key);
 }
-ok('all sixteen production quiz sources found', missing.length === 0, missing.join(','));
+ok('all nineteen production quiz sources found', missing.length === 0, missing.join(','));
 if (missing.length) { console.log('FAIL — sources missing'); process.exit(1); }
 // Trust-integrity gate (2026-08-21): the question-change scroll/focus helpers.
 // Extracted OPTIONALLY so that REPAIR 9 below reports its own failures on a
@@ -201,6 +208,7 @@ function makeQuizEnv({ lang = 'en', answers = {}, at = 0, mutate = null, active 
 
   let body = [
     src.L, src.accents, src.applyAccent, src.cols, src.visible, src.resolveCopy,
+    src.conditions, src.reconcile, src.pending,
     src.feel, src.render, src.select, src.next, src.prev, src.review,
     src.formatAnswer, src.reviewChrome, src.renderReview, src.edit,
     src.entered || '', src.afterChange || '',
@@ -557,7 +565,13 @@ section('CHARACTERIZATION — Review rows, order, and the Edit round trip');
     && (solo.get('reviewList').innerHTML.match(/noct-review-row"/g) || []).length === 8);
 }
 {
-  const env = makeQuizEnv({ answers: { partner_sleep: 'partner' }, active: 'reviewScreen' });
+  // A partner session that has REACHED the review has answered every
+  // CONDITIONAL question — the movement question and the two that carry a
+  // partner-only option. The conditional-answer invariant makes any other
+  // state unreachable, so the fixture states the session it stands in.
+  const env = makeQuizEnv({ active: 'reviewScreen',
+    answers: { partner_sleep: 'partner', partner_disturbance: 'sometimes',
+      body_type: 'average', temperature: 'cold' } });
   env.api.review();
   const idx = QID('temperature');
   env.api.edit(idx);
@@ -576,7 +590,13 @@ section('CHARACTERIZATION — Review rows, order, and the Edit round trip');
     env.get('reviewList').innerHTML.includes(QUIZ.questions[idx].options[0].label.en));
 }
 {
-  const env = makeQuizEnv({ answers: { partner_sleep: 'partner' }, active: 'reviewScreen' });
+  // A partner session that has REACHED the review has answered every
+  // CONDITIONAL question — the movement question and the two that carry a
+  // partner-only option. The conditional-answer invariant makes any other
+  // state unreachable, so the fixture states the session it stands in.
+  const env = makeQuizEnv({ active: 'reviewScreen',
+    answers: { partner_sleep: 'partner', partner_disturbance: 'sometimes',
+      body_type: 'average', temperature: 'cold' } });
   env.api.review();
   env.api.edit(QID('body_type'));
   env.api.prev();
@@ -1231,7 +1251,7 @@ function walkNext(env, label) {
   ok(`${label}: every Next transition resets scroll then focuses the new headline`, failures.length === 0, failures.join(' | '));
 }
 {
-  // Partner path: all ten questions, entered the way startQuiz() enters —
+  // Partner path: all nine questions, entered the way startQuiz() enters —
   // showScreen('questionScreen') then renderQuestion().
   const env = makeQuizEnv({ at: 0, answers: {}, active: 'welcomeScreen' });
   env.api.entered(); // the production showScreen() does this on a true transition
@@ -1258,7 +1278,7 @@ function walkNext(env, label) {
       bad.push(`${q.id}: scrolls +${partnerEnv.scrollCalls.length - before}, focus ${h._focusCount}`);
     }
   }
-  ok('partner path: nine Next transitions across all ten questions, each scrolled once and focused once',
+  ok('partner path: eight Next transitions across all nine questions, each scrolled once and focused once',
     transitions === 8 && seen.length === 9 && bad.length === 0, `transitions=${transitions} seen=${seen.join(',')} ${bad.join(' | ')}`);
   ok('partner path: no transition re-entered the screen (the repair is same-screen, not a showScreen call)',
     partnerEnv.screenCalls.filter((s) => s === 'questionScreen').length === 0);

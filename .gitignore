@@ -24,6 +24,8 @@ docs/*
 !docs/accessory-recommendation-audit-2026-08-30/
 !docs/accessory-catalog-copy-packet-2026-08-30.md
 !docs/asset-request-north-star-2026-08-31.md
+!docs/a43-quiz-reduction-evidence-2026-09-04.md
+!docs/a43-quiz-reduction-evidence-2026-09-04.sha256
 tools/strip-bg.py
 
 # Local scratch / design mockups (kept locally, never committed)

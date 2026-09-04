@@ -97,7 +97,7 @@ check("evergreen headline+detail render with no freshness gate",
 const chipIdx = html.indexOf("var seenKinds = {};");
 const chips = html.slice(chipIdx, chipIdx + 1100);
 check("handoff chips label non-promotional plans from plan.headline",
-  chips.includes("L(p.headline)") && !/Fresh/.test(chips));
+  chips.includes("L(p.headline)") && !/Fresh\b/.test(chips));
 check("handoff chips exclude scenario AND unclassified plans by GROUP",
   /var chipGroup = finPlanGroup\(p\);/.test(chips)
   && /chipGroup !== 'promotional'/.test(chips) && /chipGroup !== 'evergreen'/.test(chips));
@@ -243,7 +243,17 @@ for (const legacyId of ["lacks-in-house", "lease-to-own", "build-my-credit", "me
 check("renderer has no byId lookup in the financing sheet at all",
   !sheet.includes("byId["));
 check("renderer no longer reads the retired separatePath flag",
-  !/p\.separatePath/.test(html) && !/separatePath/.test(sheet));
+  !/\bp\.separatePath\b/.test(html) && !/separatePath/.test(sheet));
+// Both observers above once carried a literal U+0008 backspace byte where a
+// regex word boundary was meant (repaired 2026-09-04, alongside the identical
+// defect in tests/quiz_reduction_check.mjs). A control byte makes the half it
+// sits in match nothing and pass on every tree, so the observers are checked
+// here for what they are made of and for still firing on the thing they name.
+check("the two word-boundary observers contain no control byte",
+  !/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(String(/Fresh\b/) + String(/\bp\.separatePath\b/)));
+check("control: they still fire on the text they exist to forbid",
+  /Fresh\b/.test("label = 'Fresh Start';")
+  && /\bp\.separatePath\b/.test("if (p.separatePath) {"));
 check("_RENDERER_ROLE_IDS is gone from validation.py", !/_RENDERER_ROLE_IDS/.test(py));
 check("validation.py no longer has a separatePath boolean contract",
   !/isinstance\(plan\.get\("separatePath"\), bool\)/.test(py));

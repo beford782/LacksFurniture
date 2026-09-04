@@ -15543,6 +15543,116 @@
       );
     }
 
+    // ---- THE CONDITIONAL-ANSWER INVARIANT --------------------------------
+    // Two things in this quiz are conditional on partner_sleep: the movement
+    // question is SKIPPED for a solo sleeper (its `skipIf`), and two options —
+    // body_type "Different weight ranges" and temperature "We're opposite" —
+    // are only offered to a shared bed (their `hideIf`). Neither condition is
+    // decided once. The review screen lets the customer edit partner_sleep
+    // AFTER the dependent question has already been answered, so a condition
+    // can flip in either direction at any point in the session.
+    //
+    // Left alone, the stored answer outlives the condition that made it
+    // askable, and every reader inherits it: calculateScores() iterates
+    // `answers`, not the visible questions, so a movement answer kept after a
+    // change to "solo" keeps awarding motionIsolation/hybrid; the Sleep Brief
+    // priorities, the accessory scorer, the Consultation Summary, the
+    // analytics answer copy and the handoff payload all read the same ghost,
+    // and the screen shows a solo consultation built on a partner's answer.
+    // The opposite direction is just as wrong: a question that BECOMES asked
+    // must not keep the sentinel the machine wrote while it was hidden.
+    //
+    // The repair is ONE rule owned by the state machine, not a partner_sleep
+    // guard bolted onto each reader:
+    //
+    //   (a) A question whose skipIf condition holds is NOT being asked, so its
+    //       answer is the sentinel — written the moment the condition becomes
+    //       true, not whenever the walk happens to step past it.
+    //   (b) A question that STOPS being skipped loses that sentinel, because
+    //       the customer never chose it; that makes it unanswered, and (d)
+    //       keeps the flow on it. A customer who IS asked and taps "Doesn't
+    //       Apply" keeps that answer: only a sentinel that was standing while
+    //       the question was hidden is cleared. (A solo round trip therefore
+    //       re-asks a question the customer had explicitly marked "Doesn't
+    //       Apply" — the invariant deliberately errs toward asking again
+    //       rather than toward keeping a value it can no longer attribute.)
+    //   (c) An option withdrawn by hideIf cannot remain the stored answer. The
+    //       answer is cleared, which arms the Next control's existing
+    //       empty-answer gate: a visible option must be chosen. A multi-select
+    //       is filtered instead of cleared — an empty multi-select is already
+    //       a valid state ("None of these").
+    //   (d) The review screen is unreachable while a CONDITIONAL question that
+    //       IS being asked has no answer (enforced in goToReview(), the single
+    //       door). The scope is exactly the questions this rule can invalidate
+    //       — the ones carrying a skipIf or owning a hideIf option. Every other
+    //       question is answered on the forward walk under the Next control's
+    //       own empty-answer gate, which this rule neither weakens nor
+    //       duplicates.
+    //
+    // Called on every answer change and at every navigation transition, so
+    // there is no path that can carry a stale conditional answer forward.
+    // Every skipIf condition as it stands right now, one boolean per
+    // conditional question. Only skipIf needs a snapshot: rule (c) is absolute
+    // (a withdrawn option is never a stored answer, whenever it was withdrawn),
+    // while rule (b) has to know whether the question was hidden a moment ago.
+    function conditionalConditionsHold() {
+      var state = {};
+      QUESTIONS.forEach(function(q) {
+        if (q.skipIf) state[q.id] = answers[q.skipIf.question] === q.skipIf.answer;
+      });
+      return state;
+    }
+
+    // `before` is the conditionalConditionsHold() snapshot taken immediately
+    // before the answer change being reconciled. It is what distinguishes a
+    // machine-written sentinel from a customer's own "Doesn't Apply", so (b)
+    // only fires when the question genuinely was hidden a moment ago. Called
+    // without it, this re-asserts (a) and (c) and leaves (b) alone.
+    function reconcileConditionalAnswers(before) {
+      var wasHidden = before || {};
+      QUESTIONS.forEach(function(q) {
+        if (q.skipIf) {
+          if (answers[q.skipIf.question] === q.skipIf.answer) {
+            // (a) The one place in the app that writes the not-asked sentinel.
+            answers[q.id] = 'not_applicable';
+          } else if (wasHidden[q.id] === true && answers[q.id] === 'not_applicable') {
+            delete answers[q.id]; // (b)
+          }
+        }
+        (q.options || []).forEach(function(opt) {
+          if (!opt.hideIf) return;
+          if (answers[opt.hideIf.question] !== opt.hideIf.answer) return;
+          var val = answers[q.id]; // (c)
+          if (Array.isArray(val)) {
+            if (val.indexOf(opt.id) > -1) {
+              answers[q.id] = val.filter(function(x) { return x !== opt.id; });
+            }
+          } else if (val === opt.id) {
+            delete answers[q.id];
+          }
+        });
+      });
+    }
+
+    // (d) The first CONDITIONAL question that is being asked and has no
+    // answer, or -1. Sliders resolve their own default and multi-selects may
+    // legitimately be empty, so only single-choice questions can be
+    // outstanding — which is also exactly the set whose Next control is gated
+    // on having an answer, so the two agree by construction.
+    function pendingConditionalIndex() {
+      for (var i = 0; i < QUESTIONS.length; i++) {
+        var q = QUESTIONS[i];
+        if (q.type !== 'single') continue;
+        var conditional = !!q.skipIf
+          || (q.options || []).some(function(opt) { return !!opt.hideIf; });
+        if (!conditional) continue;
+        if (q.skipIf && answers[q.skipIf.question] === q.skipIf.answer) continue;
+        var val = answers[q.id];
+        if (val === undefined || val === null || val === '') return i;
+      }
+      return -1;
+    }
+
     // Answer-aware copy variants (declarative config; replaced the old
     // dynamicCopy function, which could not ship in data/quiz.json). First
     // variant whose `when` condition matches the current answers wins:
@@ -15819,6 +15929,10 @@
           restoreId = active.id;
         }
       } catch (err) { restoreId = null; }
+      // The conditional-answer invariant is evaluated ACROSS this change: the
+      // before-snapshot is what tells a machine-written sentinel apart from a
+      // customer's own answer once the change has landed.
+      var conditionsBefore = conditionalConditionsHold();
       if (isMulti) {
         if (!answers[qId]) answers[qId] = [];
         if (optId === 'none') {
@@ -15837,6 +15951,7 @@
       } else {
         answers[qId] = optId;
       }
+      reconcileConditionalAnswers(conditionsBefore);
       renderQuestion();
       if (restoreId) {
         var replacement = document.getElementById(restoreId);
@@ -15852,17 +15967,21 @@
     var editingFromReview = false;
 
     window.nextQuestion = function() {
+      reconcileConditionalAnswers();
       if (editingFromReview) {
-        editingFromReview = false;
+        // goToReview() owns the edit-mode exit AND invariant (d): if this edit
+        // opened a follow-up question, it routes there instead and edit mode
+        // stays on, so answering the follow-up still returns to the review.
         goToReview();
         return;
       }
       if (currentQuestion < QUESTIONS.length - 1) {
         currentQuestion++;
-        // Skip question if skipIf condition is met
+        // Skip question if skipIf condition is met. The sentinel is NOT written
+        // here: invariant (a) has already written it, at the moment the
+        // condition became true, and one writer is the whole point.
         const q = QUESTIONS[currentQuestion];
         if (q.skipIf && answers[q.skipIf.question] === q.skipIf.answer) {
-          answers[q.id] = 'not_applicable';
           if (currentQuestion < QUESTIONS.length - 1) {
             currentQuestion++;
           } else {
@@ -15877,6 +15996,7 @@
     }
 
     window.prevQuestion = function() {
+      reconcileConditionalAnswers();
       // If we're on the review screen, go back to the last visible question.
       const reviewEl = document.getElementById('reviewScreen');
       if (reviewEl && reviewEl.classList.contains('active')) {
@@ -15887,8 +16007,13 @@
         renderQuestion();
         return;
       }
-      if (editingFromReview) {
-        editingFromReview = false;
+      // Back leaves an edit for the review only when nothing is outstanding.
+      // While a follow-up this edit opened is still unanswered, Back is
+      // ordinary back navigation — which walks to the question that opened the
+      // follow-up, so the customer can undo the branch instead of being held.
+      // It never smuggles them past invariant (d): goToReview() is the only
+      // way to the review, and it re-checks.
+      if (editingFromReview && pendingConditionalIndex() < 0) {
         goToReview();
         return;
       }
@@ -15907,6 +16032,21 @@
 
     // ----- REVIEW SCREEN -----
     function goToReview() {
+      // The single door into the review, and where the conditional-answer
+      // invariant is enforced. (a) and (c) are re-asserted here so nothing can
+      // put a stale conditional answer in front of the customer even if it
+      // reached `answers` without passing through selectOption(); (d) then
+      // holds the flow on the first question that IS asked and has no answer,
+      // keeping edit mode on so answering it returns straight here.
+      reconcileConditionalAnswers();
+      var pending = pendingConditionalIndex();
+      if (pending >= 0) {
+        currentQuestion = pending;
+        showScreen('questionScreen');
+        renderQuestion();
+        return;
+      }
+      editingFromReview = false;
       showScreen('reviewScreen');
       renderReview();
     }

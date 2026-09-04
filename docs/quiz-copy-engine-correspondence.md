@@ -1,4 +1,4 @@
-# Quiz copy ↔ engine correspondence — the ten `helpText` lines and what they may claim
+# Quiz copy ↔ engine correspondence — the nine `helpText` lines and what they may claim
 
 **Status:** governing record for the per-question help copy (Phase 1 cross-cutting
 gate — Trust integrity and transparency, 2026-08-21). Pinned by
@@ -100,9 +100,11 @@ Other consumers the copy may describe (all consume answers, none re-rank):
   `getAdjustabilityDemo()`): pillow, protector and adjustable-base suggestions,
   and the base demo position.
 - **Consultation Summary** (`resolveConsultationSummary()` with
-  `salesNotes.consultationImplications`): the three rows the specialist reads —
-  context (trigger), who (size + sleep-issue implications), profile (position,
-  health implications, firmness feel + value, temperature implication).
+  `salesNotes.consultationImplications`): the two rows the specialist reads —
+  who (size + sleep-issue implications) and profile (position, health
+  implications, firmness feel + value, temperature implication). The context
+  row was retired with `trigger` on 2026-09-03; `consultation.context` is
+  emitted as an explicit empty string and no replacement may be inferred.
 - **Display only**: Sleep Brief reflection, decorative Sleep Signature,
   review rows, email payload (`mattressSize` label only).
 
