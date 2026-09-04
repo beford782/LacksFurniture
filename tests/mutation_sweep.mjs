@@ -164,6 +164,12 @@ const SCORING_KEYS_DATA = SCORING_KEYS.concat(["tests/phase1_output_regression_c
 const VOCAB = ["tests/scoring_vocabulary_check.mjs"];
 const NORM = ["tests/feature_tag_normalization_check.py"];
 const NORM_PLUS = NORM.concat(["tests/scoring_vocabulary_check.mjs"]);
+// A4.3 observers: the reduction suite owns the counts, the absence and the
+// Summary retirement; the quiz-presentation suite owns navigation and progress;
+// the consultation suite owns the Summary rows and the payload.
+const A43 = ["tests/quiz_reduction_check.mjs"];
+const A43_QUIZ = A43.concat(["tests/quiz_presentation_check.mjs"]);
+const A43_SUMMARY = A43.concat(["tests/consultation_summary_check.mjs"]);
 const VOCAB_RANKING = VOCAB.concat(["tests/phase1_output_regression_check.mjs", "tests/scoring_isolation_check.mjs", "tests/scoring_key_contract_check.mjs"]);
 
 
@@ -1243,7 +1249,7 @@ const MUTATIONS = [
     '"en": "This helps us favor pressure relief, support, or a responsive feel."',
     '"en": "This helps us favor pressure relief, support, or a responsive feel, and more."', TRUST, "data/quiz.json"],
   ["trust: a question loses its correspondence section",
-    "### 2. mattress_size", "### 2. mattress_sizes", TRUST, "docs/quiz-copy-engine-correspondence.md"],
+    "### 1. mattress_size", "### 1. mattress_sizes", TRUST, "docs/quiz-copy-engine-correspondence.md"],
   ["trust: the documented inert-tag set drifts from the shipped catalog",
     "`Inert tags: adjustable, comfort,", "`Inert tags: comfort,", TRUST, "docs/quiz-copy-engine-correspondence.md"],
   ["trust: the document cites a mechanism the question does not score",
@@ -2292,6 +2298,44 @@ const MUTATIONS = [
     "                                      \"pressureRelief\",\n                                      \"motionIsolation\"\n",
     "                                      \"pressureRelief\",\n                                      \"motionisolation\"\n",
     SCORING_KEYS_DATA, "data/mattresses.json"],
+  // --- A4.3 (owner-approved 2026-09-03): the reduced nine-question quiz. The
+  // visit trigger is gone, and with it the Summary's context row. These entries
+  // are the ways the reduction can rot: the question creeping back, a hidden
+  // default, a stale answer restoring the row, an inferred replacement, a blank
+  // row in its place, wrong per-path totals, broken conditional navigation, and
+  // EN/ES drift in the question set.
+  ["quiz reduction: the removed visit-trigger question is reintroduced into the shipped quiz",
+    '      "id": "mattress_size",',
+    '      "id": "trigger",\n      "category": { "en": "Visit", "es": "Visita" },\n      "question": { "en": "What brings you in?", "es": "\u00bfQu\u00e9 te trae?" },\n      "type": "single",\n      "options": [{ "id": "pain", "label": { "en": "Pain", "es": "Dolor" }, "scores": {} }]\n    },\n    {\n      "id": "mattress_size",',
+    A43, "data/quiz.json"],
+  ["quiz reduction: a hidden default supplies the removed answer in state",
+    "      currentQuestion = 0;\n      answers = {};",
+    "      currentQuestion = 0;\n      answers = { trigger: 'browsing' };",
+    A43],
+  ["quiz reduction: a stale answers.trigger is read back into the Summary payload",
+    "      var ctxParts = [];\n      // Who row: neutral mattress-size identity",
+    "      var ctxParts = [consultImplication('trigger', answers.trigger)].filter(nonEmpty);\n      // Who row: neutral mattress-size identity",
+    A43_SUMMARY],
+  ["quiz reduction: a replacement context is INFERRED from the remaining answers",
+    "      // A4.3: the context row is retired with the visit-trigger question; the\n      // screen omits the row entirely rather than rendering an empty one.\n      var ctxParts = [];",
+    "      var ctxParts = [consultRecap('sleep_issues', (answers.sleep_issues || [])[0])].filter(nonEmpty);",
+    A43_SUMMARY],
+  ["quiz reduction: a blank context row is rendered in the retired row's place",
+    '        <!-- A4.3: the context row\'s element is REMOVED, not hidden - an empty\n             row would still occupy the flex gap and read as a missing value. -->\n        <div class="hf2-brief__row" id="hf2BriefWho"></div>',
+    '        <div class="hf2-brief__row" id="hf2BriefContext"></div>\n        <div class="hf2-brief__row" id="hf2BriefWho"></div>',
+    A43_SUMMARY],
+  ["quiz reduction: the conditional question stops being skipped, so solo sleepers see nine steps",
+    '      "skipIf": {\n        "question": "partner_sleep",\n        "answer": "solo"\n      },',
+    "",
+    A43_QUIZ, "data/quiz.json"],
+  ["quiz reduction: Back stops resolving through visibleQuestions(), so it re-enters the skipped question",
+    "        const vis = visibleQuestions();",
+    "        const vis = QUESTIONS;",
+    A43_QUIZ],
+  ["quiz reduction: a retained question loses its Spanish copy (EN/ES drift at the reduced count)",
+    '        "es": "\u00bfQu\u00e9 tama\u00f1o de colch\u00f3n buscas?"',
+    '        "es": 12345',
+    A43, "data/quiz.json"],
   // --- A4.2 corrective pass: the feature-tag normalization contract. The A4.2
   // reachability gate compared RAW CSV spellings to camelCase quiz keys, so a
   // kebab-case source the generator normalizes correctly read as unreachable.

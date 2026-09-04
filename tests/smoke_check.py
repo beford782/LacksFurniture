@@ -176,7 +176,7 @@ def main():
     questions = quiz.get("questions") or []
     # 10 since 2026-08-12 (owner ruling): sleep_quality and current_mattress_age
     # removed — zero score tags, no remaining consumers.
-    check("10 quiz questions shipped", len(questions) == 10,
+    check("9 quiz questions shipped (A4.3 removed the visit trigger)", len(questions) == 9,
           f"got {len(questions)}")
     check("shipped quiz deep-equals incoming source (rebuild after editing)",
           quiz == src_quiz)

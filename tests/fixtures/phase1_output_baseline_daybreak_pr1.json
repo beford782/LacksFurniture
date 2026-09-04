@@ -4,7 +4,6 @@
     "s1_solo_back_firm_no_issues": {
       "answers": {
         "sleep_quality": "well",
-        "trigger": "upgrade",
         "mattress_size": "king",
         "partner_sleep": "solo",
         "sleep_position": "back",
@@ -657,7 +656,6 @@
     "s2_partner_side_hot_backpain_snoring": {
       "answers": {
         "sleep_quality": "poor",
-        "trigger": "pain",
         "mattress_size": "queen",
         "partner_sleep": "partner",
         "partner_disturbance": "yes_often",
@@ -1354,7 +1352,6 @@
     "s3_family_combo_cold_plush_reflux_plus": {
       "answers": {
         "sleep_quality": "fair",
-        "trigger": "worn_out",
         "mattress_size": "full",
         "partner_sleep": "family",
         "partner_disturbance": "sometimes",
@@ -2041,7 +2038,6 @@
     "s4_partner_stomach_cold_firm_sagging": {
       "answers": {
         "sleep_quality": "okay",
-        "trigger": "moving",
         "mattress_size": "king",
         "partner_sleep": "partner",
         "partner_disturbance": "yes_often",
@@ -2727,7 +2723,6 @@
     "s5_motion_dominant_tossing": {
       "answers": {
         "sleep_quality": "fair",
-        "trigger": "browsing",
         "mattress_size": "queen",
         "partner_sleep": "partner",
         "partner_disturbance": "yes_often",
@@ -3415,7 +3410,6 @@
     "s6_solo_side_pressure_relief": {
       "answers": {
         "sleep_quality": "poor",
-        "trigger": "pain",
         "mattress_size": "twin_xl",
         "partner_sleep": "solo",
         "sleep_position": "side",
@@ -4108,7 +4102,6 @@
     "s7_partner_combo_opposite_allergies": {
       "answers": {
         "sleep_quality": "okay",
-        "trigger": "upgrade",
         "mattress_size": "cal_king",
         "partner_sleep": "partner",
         "partner_disturbance": "rarely",
@@ -4808,7 +4801,6 @@
     "s8_no_idea_hot_aging": {
       "answers": {
         "sleep_quality": "fair",
-        "trigger": "worn_out",
         "mattress_size": "full",
         "partner_sleep": "solo",
         "sleep_position": "no_idea",
@@ -5472,7 +5464,6 @@
     "s10_solo_goldilocks_medium": {
       "answers": {
         "sleep_quality": "okay",
-        "trigger": "browsing",
         "mattress_size": "queen",
         "partner_sleep": "solo",
         "sleep_position": "side",

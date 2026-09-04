@@ -192,7 +192,12 @@ SALESNOTE_FORMATS = {"full", "coaching"}
 # resolveConsultationSummary() — change the two together. mattress_size is
 # deliberately absent (the neutral size identity renders as its own label) and
 # firmness renders as the computed score; neither goes through this mapping.
-CONSULTATION_QUESTIONS = ("trigger", "sleep_issues",
+# A4.3 (owner-approved 2026-09-03): `trigger` left this tuple with the
+# question. The Consultation Summary's context row had no other source, so
+# the row is gone from the screen and `consultation.context` is emitted as an
+# explicit empty string for schema consumers. No replacement context may be
+# inferred from the remaining answers.
+CONSULTATION_QUESTIONS = ("sleep_issues",
                           "sleep_position", "health_conditions", "temperature")
 
 
@@ -4166,7 +4171,6 @@ def validate_pricing(config, *, allowed_source_hosts=None, financing_source_host
 # 12 -> 10 questions; recommendations provably unchanged (the Phase 1
 # output-regression fixture is byte-identical across the change).
 QUIZ_CANONICAL = (
-    ("trigger", "single", ("pain", "worn_out", "moving", "upgrade", "browsing")),
     ("mattress_size", "single",
      ("twin", "twin_xl", "full", "queen", "king", "cal_king")),
     ("partner_sleep", "single", ("solo", "partner", "family")),
@@ -5725,7 +5729,7 @@ def _self_test() -> int:
     def _consult_tabs(quiz_payload):
         tc = _good_tabs()
         tc["SalesNotes"][1].append({
-            "Type": "consultation", "Key": "trigger.pain",
+            "Type": "consultation", "Key": "temperature.hot",
             "Implication": "copy", "Implication (ES)": "copia"})
         tc["Quiz"] = (tc["Quiz"][0], [{"Quiz JSON": quiz_payload}])
         return tc
@@ -5734,8 +5738,8 @@ def _self_test() -> int:
         check(f"inner quiz envelope as {label} -> controlled error, no throw",
               any("no parseable Quiz tab" in e for e in rep.errors))
     rep = validate_sales_notes(_consult_tabs(
-        '{"quiz": {"questions": [{"id": "trigger", '
-        '"options": [{"id": "pain"}]}]}}'))
+        '{"quiz": {"questions": [{"id": "temperature", '
+        '"options": [{"id": "hot"}]}]}}'))
     check("inner quiz envelope as a real object -> completeness engages, 0 errors",
           rep.ok)
 
@@ -8475,7 +8479,7 @@ def _self_test() -> int:
           any("canonical id/type sequence" in e for e in
               validate_quiz(qswap).errors))
 
-    qopt = _gq(); _q(qopt, "trigger")["options"][0]["id"] = "renamed"
+    qopt = _gq(); _q(qopt, "mattress_size")["options"][0]["id"] = "renamed"
     check("quiz renamed option id -> error",
           any("option ids must be exactly" in e for e in
               validate_quiz(qopt).errors))
@@ -8488,7 +8492,7 @@ def _self_test() -> int:
     check("quiz score beyond FEATURE_CAP -> error",
           any("1..5" in e for e in validate_quiz(qpts).errors))
 
-    qes = _gq(); _q(qes, "trigger")["options"][0]["label"] = {"en": "only-EN"}
+    qes = _gq(); _q(qes, "mattress_size")["options"][0]["label"] = {"en": "only-EN"}
     check("quiz option label missing ES -> error",
           any("label missing EN or ES" in e for e in validate_quiz(qes).errors))
 

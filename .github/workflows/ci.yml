@@ -56,10 +56,10 @@ jobs:
     # "Full suite (18 checks)") — renaming it here without updating the
     # protection rule in the same change would leave every PR waiting on a
     # check that never reports. The name is a LEGACY LABEL and its number has
-    # been wrong for many slices: the workflow now invokes 53 verification
-    # steps (48 `run: node|python tests/...` steps, three `tools/*.py
+    # been wrong for many slices: the workflow now invokes 54 verification
+    # steps (49 `run: node|python tests/...` steps, three `tools/*.py
     # --self-test` steps, the workbook validation and the QR committed-asset
-    # check), A4.2's feature-tag normalization suite being the newest.
+    # check), A4.3's quiz-reduction suite being the newest.
     # A4.1 re-derived this rather than incrementing it: the previous revision
     # said 48/43, but the tree already carried 45 test steps before this pass
     # added one, so the stated figure had drifted by two. Re-derive with
@@ -452,6 +452,13 @@ jobs:
       # against the Python validator AND the PowerShell generator.
       - name: feature tag normalization (validator == generator)
         run: python tests/feature_tag_normalization_check.py
+
+      # A4.3 (owner-approved 2026-09-03): nine defined questions, eight displayed
+      # steps for solo sleepers and nine for partner/family, nothing left of the
+      # removed visit trigger, and a Summary context row that neither a stale
+      # answer nor an inference can bring back.
+      - name: quiz reduction (nine questions, retired context row)
+        run: node tests/quiz_reduction_check.mjs
 
       # Claim retirement (owner ruling 2026-08-12): executes the real
       # mattressDifferentiators, drawer differentiator block, compare

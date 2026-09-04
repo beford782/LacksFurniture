@@ -287,9 +287,9 @@ const QID = (id) => QUIZ.questions.findIndex((q) => q.id === id);
 // implementation; the regression net for everything the slice must not move.
 
 section('CHARACTERIZATION — governed structure (data/quiz.json is the contract)');
-ok('exactly 10 questions', QUIZ.questions.length === 10, `got ${QUIZ.questions.length}`);
+ok('exactly 9 questions', QUIZ.questions.length === 9, `got ${QUIZ.questions.length}`);
 const allOptions = QUIZ.questions.reduce((n, q) => n + (q.options ? q.options.length : 0), 0);
-ok('exactly 47 configured options', allOptions === 47, `got ${allOptions}`);
+ok('exactly 42 configured options', allOptions === 42, `got ${allOptions}`);
 const cardinalities = QUIZ.questions.filter((q) => q.options).map((q) => q.options.length);
 [3, 4, 5, 6, 7, 8].forEach((n) => {
   ok(`the governed set still contains a ${n}-option question (this suite exercises every cardinality)`,
@@ -306,8 +306,8 @@ section('CHARACTERIZATION — zero option icons reach the customer UI (owner rul
 // pre-approval to render an icon later.
 const iconFields = QUIZ.questions.reduce(
   (n, q) => n + (q.options ? q.options.filter((o) => typeof o.icon === 'string' && o.icon.length).length : 0), 0);
-ok('all 47 configured option-icon fields remain in the governed data (dormant, not deleted)',
-  iconFields === 47, `icon fields: ${iconFields}`);
+ok('all 42 configured option-icon fields remain in the governed data (dormant, not deleted)',
+  iconFields === 42, `icon fields: ${iconFields}`);
 ok('the live option renderer never calls icon(opt.icon)',
   !/icon\(\s*opt\.icon\s*\)/.test(src.render) && !/opt\.icon/.test(src.render));
 {
@@ -331,8 +331,8 @@ section('CHARACTERIZATION — visible-question set and skip semantics');
 {
   const solo = makeQuizEnv({ answers: { partner_sleep: 'solo' } });
   const shared = makeQuizEnv({ answers: { partner_sleep: 'partner' } });
-  ok('solo path shows 9 questions', solo.api.visible().length === 9, `got ${solo.api.visible().length}`);
-  ok('shared path shows 10 questions', shared.api.visible().length === 10, `got ${shared.api.visible().length}`);
+  ok('solo path shows 8 questions', solo.api.visible().length === 8, `got ${solo.api.visible().length}`);
+  ok('shared path shows 9 questions', shared.api.visible().length === 9, `got ${shared.api.visible().length}`);
   ok('partner_disturbance is the omitted one on the solo path',
     !solo.api.visible().some((q) => q.id === 'partner_disturbance')
     && shared.api.visible().some((q) => q.id === 'partner_disturbance'));
@@ -395,15 +395,15 @@ section('CHARACTERIZATION — selection semantics (manual advance, cap, exclusiv
 ok('selectOption never advances: no nextQuestion/goToReview call in its body',
   !/nextQuestion\s*\(/.test(src.select) && !/goToReview\s*\(/.test(src.select));
 {
-  const env = makeQuizEnv({ at: QID('trigger'), answers: {} });
+  const env = makeQuizEnv({ at: QID('mattress_size'), answers: {} });
   env.api.render();
-  env.api.select('trigger', QUIZ.questions[QID('trigger')].options[0].id, false);
+  env.api.select('mattress_size', QUIZ.questions[QID('mattress_size')].options[0].id, false);
   ok('single-select stores the option and stays on the same question (no auto-advance)',
-    env.api.answers().trigger === QUIZ.questions[QID('trigger')].options[0].id
-    && env.api.at() === QID('trigger'));
-  env.api.select('trigger', QUIZ.questions[QID('trigger')].options[2].id, false);
+    env.api.answers().mattress_size === QUIZ.questions[QID('mattress_size')].options[0].id
+    && env.api.at() === QID('mattress_size'));
+  env.api.select('mattress_size', QUIZ.questions[QID('mattress_size')].options[2].id, false);
   ok('single-select REPLACES the previous answer (never accumulates)',
-    env.api.answers().trigger === QUIZ.questions[QID('trigger')].options[2].id);
+    env.api.answers().mattress_size === QUIZ.questions[QID('mattress_size')].options[2].id);
   const marked = optionsOf(env.get('questionContainer').innerHTML).filter((o) => o.selected);
   ok('exactly one option carries the selected class after a single-select', marked.length === 1);
 }
@@ -512,7 +512,7 @@ section('CHARACTERIZATION — EN/ES structural parity and language preservation'
     after.filter((o) => o.selected).map((o) => o.optId).join(',')
       === QUIZ.questions[QID('sleep_position')].options[1].id);
   ok('a language switch re-renders the copy in the new language',
-    env.get('questionContainer').innerHTML.includes('Pregunta 5'));
+    env.get('questionContainer').innerHTML.includes('Pregunta 4'));
 }
 ok('switchLanguage re-renders the ACTIVE question so its copy follows the language',
   /questionScreen\.classList\.contains\('active'\)\)\s*\{\s*window\.renderQuestion\(\);/.test(norm.replace(/\n\s*/g, ' ').replace(/if \(questionScreen && /, 'if (questionScreen'))
@@ -536,16 +536,16 @@ ok('the hint is cleared by the wipe, so one customer\'s option cannot be refocus
 section('CHARACTERIZATION — Review rows, order, and the Edit round trip');
 {
   const answers = {
-    trigger: QUIZ.questions[QID('trigger')].options[0].id,
+    mattress_size: QUIZ.questions[QID('mattress_size')].options[0].id,
     partner_sleep: 'partner', firmness: 7
   };
   const env = makeQuizEnv({ at: 0, answers, active: 'reviewScreen' });
   env.api.review();
   const rows = [...env.get('reviewList').innerHTML.matchAll(/noct-review-question">([\s\S]*?)</g)].map((m) => m[1]);
   ok('Review lists every visible question, in question order',
-    rows.length === 10 && rows[0] === QUIZ.questions[0].question.en);
+    rows.length === 9 && rows[0] === QUIZ.questions[0].question.en);
   ok('Review renders one Edit control per row',
-    (env.get('reviewList').innerHTML.match(/noct-review-edit/g) || []).length === 10);
+    (env.get('reviewList').innerHTML.match(/noct-review-edit/g) || []).length === 9);
   ok('Review renders the firmness answer as value + feel word',
     env.get('reviewList').innerHTML.includes('7/10 · Medium Firm to Firm'));
 }
@@ -554,7 +554,7 @@ section('CHARACTERIZATION — Review rows, order, and the Edit round trip');
   solo.api.review();
   ok('Review omits partner_disturbance on the solo path',
     !solo.get('reviewList').innerHTML.includes(QUIZ.questions[QID('partner_disturbance')].question.en)
-    && (solo.get('reviewList').innerHTML.match(/noct-review-row"/g) || []).length === 9);
+    && (solo.get('reviewList').innerHTML.match(/noct-review-row"/g) || []).length === 8);
 }
 {
   const env = makeQuizEnv({ answers: { partner_sleep: 'partner' }, active: 'reviewScreen' });
@@ -618,7 +618,7 @@ ok('the wipe resets currentQuestion, answers and the edit flag',
     && Object.keys(env.api.answers()).length === 0 && env.api.at() === 0);
   env.api.review();
   ok('post-wipe: Review shows no stale answers (every row reads the em-dash placeholder)',
-    (env.get('reviewList').innerHTML.match(/noct-review-answer">—</g) || []).length >= 9);
+    (env.get('reviewList').innerHTML.match(/noct-review-answer">—</g) || []).length >= 8);
 }
 
 // ================================================================ REPAIR
@@ -1054,19 +1054,19 @@ ok('options carry stable ids derived from question id + option id',
   // A, still focus-visible. A guard that only asks "is some focus-visible
   // option active" restores A — putting the ring on an answer the customer did
   // not choose. Restoration must be gated on the option actually activated.
-  const q = QUIZ.questions[QID('trigger')];
+  const q = QUIZ.questions[QID('mattress_size')];
   const A = q.options[0].id;
   const B = q.options[1].id;
-  const env = makeQuizEnv({ at: QID('trigger'), answers: {} });
+  const env = makeQuizEnv({ at: QID('mattress_size'), answers: {} });
   env.api.render();
 
   // 1. keyboard-activate A; it keeps focus and :focus-visible
-  const a1 = env.get(`qopt-trigger-${A}`);
+  const a1 = env.get(`qopt-mattress_size-${A}`);
   a1.classList.add('noct-quiz-option');
   a1._focusVisible = true;
   env.doc.activeElement = a1;
-  env.api.select('trigger', A, false);
-  const aAfter = env.get(`qopt-trigger-${A}`);
+  env.api.select('mattress_size', A, false);
+  const aAfter = env.get(`qopt-mattress_size-${A}`);
   ok('hybrid precondition: keyboard activation of A restores focus to A',
     aAfter._focusCount === 1);
   aAfter.classList.add('noct-quiz-option');
@@ -1074,17 +1074,17 @@ ok('options carry stable ids derived from question id + option id',
   env.doc.activeElement = aAfter;
 
   // 2. touch-activate B — preventDefault means focus never leaves A
-  env.api.select('trigger', B, false);
+  env.api.select('mattress_size', B, false);
 
   // 3. the stored answer is B
-  ok('hybrid: tapping B stores B, not A', env.api.answers().trigger === B, env.api.answers().trigger);
+  ok('hybrid: tapping B stores B, not A', env.api.answers().mattress_size === B, env.api.answers().mattress_size);
   // 4. focus is NOT restored to the stale option A
   ok('hybrid: focus is not restored to the stale keyboard-focused option A',
-    env.get(`qopt-trigger-${A}`)._focusCount === 0,
-    `A focus calls after tapping B: ${env.get(`qopt-trigger-${A}`)._focusCount}`);
+    env.get(`qopt-mattress_size-${A}`)._focusCount === 0,
+    `A focus calls after tapping B: ${env.get(`qopt-mattress_size-${A}`)._focusCount}`);
   // 5. and B, which never held focus, is not given a ring either
   ok('hybrid: B is not given a focus ring it never had (touch grants no focus)',
-    env.get(`qopt-trigger-${B}`)._focusCount === 0);
+    env.get(`qopt-mattress_size-${B}`)._focusCount === 0);
   const marked = optionsOf(env.get('questionContainer').innerHTML).filter((o) => o.selected);
   ok('hybrid: exactly one option is marked selected, and it is B',
     marked.length === 1 && marked[0].optId === B);
@@ -1259,14 +1259,14 @@ function walkNext(env, label) {
     }
   }
   ok('partner path: nine Next transitions across all ten questions, each scrolled once and focused once',
-    transitions === 9 && seen.length === 10 && bad.length === 0, `transitions=${transitions} seen=${seen.join(',')} ${bad.join(' | ')}`);
+    transitions === 8 && seen.length === 9 && bad.length === 0, `transitions=${transitions} seen=${seen.join(',')} ${bad.join(' | ')}`);
   ok('partner path: no transition re-entered the screen (the repair is same-screen, not a showScreen call)',
     partnerEnv.screenCalls.filter((s) => s === 'questionScreen').length === 0);
 }
 {
   // Solo path: partner_disturbance is skipped by nextQuestion(); the skip is
   // ONE question change, scrolled and focused once, landing on sleep_position.
-  const env = makeQuizEnv({ at: QID('partner_sleep'), answers: { trigger: 'pain', mattress_size: 'queen' } });
+  const env = makeQuizEnv({ at: QID('partner_sleep'), answers: { mattress_size: 'queen' } });
   env.api.entered(); env.api.render();
   env.api.select('partner_sleep', 'solo', false);
   env.api.next();
@@ -1279,7 +1279,7 @@ function walkNext(env, label) {
   // Back from every question, including backwards over the solo skip, and the
   // tall-question pairs the defect was measured on.
   const env = makeQuizEnv({ at: QID('health_conditions'),
-    answers: { trigger: 'pain', mattress_size: 'queen', partner_sleep: 'solo', partner_disturbance: 'not_applicable',
+    answers: { mattress_size: 'queen', partner_sleep: 'solo', partner_disturbance: 'not_applicable',
       sleep_position: 'side', body_type: 'average', temperature: 'hot', firmness: 6, sleep_issues: ['back_pain'] } });
   env.api.entered(); env.api.render();
   const failures = [];
@@ -1297,15 +1297,15 @@ function walkNext(env, label) {
     }
   }
   ok('Back from every question (solo path, skipping backwards over partner_disturbance) resets scroll and focuses the headline',
-    failures.length === 0 && steps === 8, failures.join(',') + ` steps=${steps}`);
+    failures.length === 0 && steps === 7, failures.join(',') + ` steps=${steps}`);
   ok('Back skipped over partner_disturbance as one change (never rendered it)',
-    !visited.includes('partner_disturbance') && visited[0] === 'sleep_issues' && visited[visited.length - 1] === 'trigger');
+    !visited.includes('partner_disturbance') && visited[0] === 'sleep_issues' && visited[visited.length - 1] === 'mattress_size');
 }
 {
   // Review → Edit and Review → Back go through showScreen(): the screen owns
   // the transition, the helper stays silent.
   const env = makeQuizEnv({ at: QID('health_conditions'), active: 'reviewScreen',
-    answers: { trigger: 'pain', mattress_size: 'queen', partner_sleep: 'partner', partner_disturbance: 'sometimes',
+    answers: { mattress_size: 'queen', partner_sleep: 'partner', partner_disturbance: 'sometimes',
       sleep_position: 'side', body_type: 'average', temperature: 'hot', firmness: 6, sleep_issues: ['back_pain'], health_conditions: ['none'] } });
   env.api.review();
   env.api.edit(QID('temperature'));
@@ -1353,9 +1353,8 @@ function walkNext(env, label) {
   // Answer taps on a question reached by NEXT: the tracker follows the
   // question, so a tap on the current question is still not a change. (A
   // tracker frozen at the first id would scroll and steal focus here.)
-  const env = makeQuizEnv({ at: QID('trigger'), answers: {} });
+  const env = makeQuizEnv({ at: QID('mattress_size'), answers: {} });
   env.api.entered(); env.api.render();
-  env.api.select('trigger', 'pain', false); env.api.next();
   env.api.select('mattress_size', 'queen', false); env.api.next();
   env.api.select('partner_sleep', 'partner', false); env.api.next();
   const scrollsAfterNav = env.scrollCalls.length;
@@ -1389,56 +1388,56 @@ function walkNext(env, label) {
   env.api.showScreen('questionScreen');                // startQuiz → showScreen('questionScreen')
   env.api.render();                                    // → renderQuestion() of the first question
   ok('real showScreen: the new customer\'s first render after the true transition is screen-owned (no headline focus)',
-    env.api.at() === QID('trigger') && env.get('questionHeadline')._focusCount === 0 && !env.log.includes('focus:questionHeadline'));
-  env.api.select('trigger', 'pain', false); env.api.next();
+    env.api.at() === QID('mattress_size') && env.get('questionHeadline')._focusCount === 0 && !env.log.includes('focus:questionHeadline'));
+  env.api.select('mattress_size', 'queen', false); env.api.next();
   ok('...and the next genuine change is repaired', env.get('questionHeadline')._focusCount === 1);
   // A same-screen showScreen('questionScreen') (a re-render, as switchLanguage
   // does) does NOT hand the next render to the screen: the record survives.
   const logBefore = env.log.length;
   env.api.showScreen('questionScreen');
-  env.api.select('mattress_size', 'queen', false); env.api.next();
+  env.api.select('partner_sleep', 'partner', false); env.api.next();
   ok('real showScreen: a same-screen call keeps the record, so the following change is still repaired',
-    env.api.at() === QID('partner_sleep') && env.get('questionHeadline')._focusCount === 1 && env.log.slice(logBefore).includes('focus:questionHeadline'));
+    env.api.at() === QID('partner_disturbance') && env.get('questionHeadline')._focusCount === 1 && env.log.slice(logBefore).includes('focus:questionHeadline'));
 }
 {
   // The refusal gate releases: one gated transition, then a normal one.
   let gated = true;
-  const env = makeQuizEnv({ at: QID('trigger'), answers: {}, gate: function() { return gated; } });
+  const env = makeQuizEnv({ at: QID('mattress_size'), answers: {}, gate: function() { return gated; } });
   env.api.entered(); env.api.render();
-  env.api.select('trigger', 'pain', false); env.api.next();
+  env.api.select('mattress_size', 'queen', false); env.api.next();
   ok('gated transition: nothing moved', env.scrollCalls.length === 0 && env.get('questionHeadline')._focusCount === 0);
   gated = false;
   env.api.prev();
-  ok('once the gate releases, the next change is repaired', env.api.at() === QID('trigger') && env.scrollCalls.length === 1 && env.get('questionHeadline')._focusCount === 1);
+  ok('once the gate releases, the next change is repaired', env.api.at() === QID('mattress_size') && env.scrollCalls.length === 1 && env.get('questionHeadline')._focusCount === 1);
 }
 {
   // A render while the question screen is NOT the active screen (another
   // screen owns the page) never scrolls or focuses.
-  const env = makeQuizEnv({ at: QID('trigger'), answers: {}, active: 'reviewScreen' });
+  const env = makeQuizEnv({ at: QID('mattress_size'), answers: {}, active: 'reviewScreen' });
   env.api.entered(); env.api.render();
-  env.api.select('trigger', 'pain', false); env.api.next();
+  env.api.select('mattress_size', 'queen', false); env.api.next();
   ok('a question change while the question screen is inactive moves neither scroll nor focus',
-    env.api.at() === QID('mattress_size') && env.scrollCalls.length === 0 && env.get('questionHeadline')._focusCount === 0);
+    env.api.at() === QID('partner_sleep') && env.scrollCalls.length === 0 && env.get('questionHeadline')._focusCount === 0);
 }
 {
   // The isFocusRestorable gate: a headline the gate refuses is not focused,
   // though the scroll reset still happens (the page is still the quiz).
-  const env = makeQuizEnv({ at: QID('trigger'), answers: {},
+  const env = makeQuizEnv({ at: QID('mattress_size'), answers: {},
     mutate: (s) => s.replace('function afterQuestionChange() {', 'function isFocusRestorable() { return false; }\nfunction afterQuestionChange() {') });
   env.api.entered(); env.api.render();
-  env.api.select('trigger', 'pain', false); env.api.next();
+  env.api.select('mattress_size', 'queen', false); env.api.next();
   ok('a headline isFocusRestorable() refuses is not focused; the scroll reset still runs',
     env.scrollCalls.length === 1 && env.get('questionHeadline')._focusCount === 0);
 }
 {
   // The refusal gate: when another layer owns focus, a question change moves
   // neither scroll nor focus.
-  const env = makeQuizEnv({ at: QID('trigger'), answers: {}, gate: function() { return true; } });
+  const env = makeQuizEnv({ at: QID('mattress_size'), answers: {}, gate: function() { return true; } });
   env.api.entered(); env.api.render();
-  env.api.select('trigger', 'pain', false);
+  env.api.select('mattress_size', 'queen', false);
   env.api.next();
   ok('refusal gate open: a question change moves neither scroll nor focus',
-    env.api.at() === QID('mattress_size') && env.scrollCalls.length === 0 && env.get('questionHeadline')._focusCount === 0);
+    env.api.at() === QID('partner_sleep') && env.scrollCalls.length === 0 && env.get('questionHeadline')._focusCount === 0);
 }
 {
   // A wipe followed by a new customer: the screen transition nulls the record
@@ -1549,13 +1548,13 @@ section('negative controls — the load-bearing assertions fail on a broken tree
 }
 {
   const env = makeQuizEnv({
-    at: QID('trigger'), answers: {},
+    at: QID('mattress_size'), answers: {},
     mutate: (s) => s.replace('      renderQuestion();\n      if (restoreId) {',
       '      renderQuestion();\n      window.nextQuestion();\n      if (restoreId) {')
   });
   env.api.render();
-  env.api.select('trigger', QUIZ.questions[QID('trigger')].options[0].id, false);
-  ok('control: an auto-advance injected into selectOption is detected', env.api.at() !== QID('trigger'));
+  env.api.select('mattress_size', QUIZ.questions[QID('mattress_size')].options[0].id, false);
+  ok('control: an auto-advance injected into selectOption is detected', env.api.at() !== QID('mattress_size'));
 }
 {
   const env = makeQuizEnv({
@@ -1570,7 +1569,7 @@ section('negative controls — the load-bearing assertions fail on a broken tree
 }
 {
   const env = makeQuizEnv({
-    at: QID('trigger'), answers: {},
+    at: QID('mattress_size'), answers: {},
     mutate: (s) => s.replace('id="qopt-${q.id}-${opt.id}"', '')
   });
   env.api.render();
@@ -1580,18 +1579,18 @@ section('negative controls — the load-bearing assertions fail on a broken tree
 
 {
   const env = makeQuizEnv({
-    at: QID('trigger'), answers: {},
+    at: QID('mattress_size'), answers: {},
     mutate: (s) => s.replace('window.scrollTo(0, 0);', '')
   });
   env.api.entered(); env.api.render();
-  env.api.select('trigger', 'pain', false);
+  env.api.select('mattress_size', 'queen', false);
   env.api.next();
   ok('harness control: with the scroll reset removed the harness records no scroll (the sweep entry is the regression guard)',
-    env.scrollCalls.length === 0 && env.api.at() === QID('mattress_size'));
+    env.scrollCalls.length === 0 && env.api.at() === QID('partner_sleep'));
 }
 {
   const env = makeQuizEnv({
-    at: QID('trigger'), answers: {},
+    at: QID('mattress_size'), answers: {},
     mutate: (s) => s.replace('_renderedQuestionId !== null && ', '')
   });
   env.api.entered(); env.api.render();
@@ -1610,11 +1609,11 @@ section('negative controls — the load-bearing assertions fail on a broken tree
 }
 {
   const env = makeQuizEnv({
-    at: QID('trigger'), answers: {},
+    at: QID('mattress_size'), answers: {},
     mutate: (s) => s.replace('      _renderedQuestionId = q.id;', '      if (_renderedQuestionId === null) _renderedQuestionId = q.id;')
   });
   env.api.entered(); env.api.render();
-  env.api.select('trigger', 'pain', false); env.api.next();
+  env.api.select('mattress_size', 'queen', false); env.api.next();
   const scrolls = env.scrollCalls.length;
   env.doc.activeElement = null;
   env.api.select('mattress_size', 'queen', false);
@@ -1623,29 +1622,29 @@ section('negative controls — the load-bearing assertions fail on a broken tree
 }
 {
   const env = makeQuizEnv({
-    at: QID('trigger'), answers: {},
+    at: QID('mattress_size'), answers: {},
     mutate: (s) => s.replace('_renderedQuestionId !== null && _renderedQuestionId !== q.id', 'true')
   });
   env.api.entered(); env.api.render();
   env.doc.activeElement = null;
-  env.api.select('trigger', 'pain', false);
+  env.api.select('mattress_size', 'queen', false);
   ok('control: treating an answer-tap re-render as a change is detected (focus would jump to the headline)',
     env.get('questionHeadline')._focusCount >= 1);
 }
 {
   const env = makeQuizEnv({
-    at: QID('trigger'), answers: {}, gate: function() { return true; },
+    at: QID('mattress_size'), answers: {}, gate: function() { return true; },
     mutate: (s) => s.replace("if (typeof screenTransitionOwnedElsewhere === 'function' && screenTransitionOwnedElsewhere()) return;", '')
   });
   env.api.entered(); env.api.render();
-  env.api.select('trigger', 'pain', false);
+  env.api.select('mattress_size', 'queen', false);
   env.api.next();
   ok('control: dropping the refusal gate is detected (a dialog would lose focus to the headline)',
     env.get('questionHeadline')._focusCount === 1);
 }
 {
   const env = makeQuizEnv({
-    at: QID('trigger'), answers: {},
+    at: QID('mattress_size'), answers: {},
     mutate: (s) => s.split('id="questionHeadline" tabindex="-1"').join('id="questionHeadline" tabindex="0"')
   });
   env.api.render();

@@ -630,8 +630,9 @@ section('Consultation Summary — recap rows, names-only priorities with ordinal
   ok('the implication rows are the compact "Visit focus" / "Enfoque de la visita" projection (synthesis change 4) and render the recap projection',
     /id="hf2NeedsLabel">Visit focus</.test(norm) && norm.includes("hf2NeedsLabel: es ? 'Enfoque de la visita' : 'Visit focus',")
     && norm.includes('var vm = resolveConsultationRecap();') && !liveHtml.includes('What we set out to solve'));
-  ok('the recap map is bilingual, id-keyed on the five consumed questions, and gated on the approved implication',
-    ['trigger', 'sleep_issues', 'sleep_position', 'health_conditions', 'temperature'].every((q) => recapMap.includes(q + ': {'))
+  ok('the recap map is bilingual, id-keyed on the four consumed questions (A4.3 retired the trigger row), and gated on the approved implication',
+    ['sleep_issues', 'sleep_position', 'health_conditions', 'temperature'].every((q) => recapMap.includes(q + ': {'))
+    && !recapMap.includes('trigger: {')
     && recapMap.includes('en: {') && recapMap.includes('es: {')
     && recapLookup.includes("var approved = consultImplication(questionId, optionId);") && recapLookup.includes("if (!approved) return '';"));
   {

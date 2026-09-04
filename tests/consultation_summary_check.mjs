@@ -42,11 +42,13 @@ function grab(re, what) {
   return m ? m[0] : "";
 }
 
-// The five questions the resolver consumes — MIRRORS index.html's
+// The four questions the resolver consumes — MIRRORS index.html's
 // resolveConsultationSummary() and tools/validation.py CONSULTATION_QUESTIONS.
-// (sleep_quality was removed from the quiz 2026-08-12, owner ruling; the
-// context row now builds from trigger alone.)
-const CONSUMED = ["trigger", "sleep_issues",
+// sleep_quality was removed from the quiz 2026-08-12 (owner ruling) and the
+// visit trigger with A4.3 (owner-approved 2026-09-03). The context row had no
+// other source, so it is RETIRED: the screen omits the row and the payload
+// keeps `context` as an explicit empty string. Nothing infers a replacement.
+const CONSUMED = ["sleep_issues",
   "sleep_position", "health_conditions", "temperature"];
 
 // ---------- extractions ------------------------------------------------------
@@ -133,12 +135,12 @@ function run(answers, lang, opts) {
 // question no longer exists: a stale answer for a removed question must be
 // ignored by the resolver, never resurface on any surface.
 const ANSWERS_A = {
-  sleep_quality: "poor", trigger: "pain", mattress_size: "queen",
+  mattress_size: "queen",
   sleep_position: "side", temperature: "hot", firmness: 6,
   sleep_issues: ["back_pain", "hot"], health_conditions: ["snoring", "nerve_pain"],
 };
 const ANSWERS_NONE = {
-  sleep_quality: "well", trigger: "browsing", mattress_size: "king",
+  mattress_size: "king",
   sleep_position: "back", temperature: "comfortable", firmness: 4,
   sleep_issues: ["none"], health_conditions: ["none"],
 };
@@ -160,19 +162,23 @@ section("real config: hydration and mapping completeness");
     out.en = CONSULT_IMPLICATIONS; out.es = CONSULT_IMPLICATIONS_ES;
     `)(CONFIG, out);
   check("the real hydration lines populate both maps from store-config.json",
-    Object.keys(out.en).length === 5 && Object.keys(out.es).length === 5);
+    Object.keys(out.en).length === 4 && Object.keys(out.es).length === 4);
   // Content, not just shape: each map must carry ITS OWN language — a
   // swapped pair of hydration lines ships Spanish copy to English kiosks
   // (and vice versa) while both maps still count five questions.
   check("the EN map is the config's EN copy and the ES map the ES copy",
-    out.en.trigger.pain === CONFIG.salesNotes.consultationImplications.trigger.pain
-    && out.es.trigger.pain === CONFIG.salesNotes_es.consultationImplications.trigger.pain
-    && out.en.trigger.pain !== out.es.trigger.pain);
+    out.en.temperature.hot === CONFIG.salesNotes.consultationImplications.temperature.hot
+    && out.es.temperature.hot === CONFIG.salesNotes_es.consultationImplications.temperature.hot
+    && out.en.temperature.hot !== out.es.temperature.hot);
+  check("A4.3: no trigger implication survives in either map or in the config",
+    !("trigger" in out.en) && !("trigger" in out.es)
+    && !("trigger" in CONFIG.salesNotes.consultationImplications)
+    && !("trigger" in CONFIG.salesNotes_es.consultationImplications));
   const quizOptions = {};
   for (const q of QUIZ.questions) {
     if (CONSUMED.includes(q.id)) quizOptions[q.id] = q.options.map((o) => o.id);
   }
-  check("all five consumed questions exist in the quiz", Object.keys(quizOptions).length === 5);
+  check("all four consumed questions exist in the quiz", Object.keys(quizOptions).length === 4);
   let missing = [], lopsided = 0, entries = 0, omissions = [];
   for (const qid of CONSUMED) {
     for (const oid of quizOptions[qid]) {
@@ -184,10 +190,11 @@ section("real config: hydration and mapping completeness");
       if (en.trim() === "" && es.trim() === "") omissions.push(`${qid}.${oid}`);
     }
   }
-  // 29 = trigger 5 + sleep_issues 8 + sleep_position 5 + health_conditions 7
-  // + temperature 4 (the five-question surface since sleep_quality's removal).
+  // 24 = sleep_issues 8 + sleep_position 5 + health_conditions 7 + temperature 4
+  // (the four-question surface after A4.3 retired the visit trigger; it was 29
+  // with the trigger's five options).
   check(`every consumed option id is mapped in BOTH languages (${entries} pairs, 0 missing)`,
-    missing.length === 0 && entries >= 29);
+    missing.length === 0 && entries >= 24);
   check("no lopsided pair (EN empty XOR ES empty)", lopsided === 0);
   check("intentional omissions exist and are represented as entries, not holes",
     omissions.length >= 1 && omissions.includes("sleep_issues.none")
@@ -228,85 +235,16 @@ section("real config: hydration and mapping completeness");
 // ===========================================================================
 // 1. THE THREE ROWS — markup order, render, content (exits 2 and 4)
 // ===========================================================================
-section("static markup: the three rows keep their ids and order");
+section("static markup: the two rows keep their ids and order (A4.3 retired the context row)");
 {
-  const ctx = html.indexOf('id="hf2BriefContext"');
   const who = html.indexOf('id="hf2BriefWho"');
   const prof = html.indexOf('id="hf2BriefProfile"');
-  check("hf2BriefContext, hf2BriefWho, hf2BriefProfile exist in order",
-    ctx !== -1 && who !== -1 && prof !== -1 && ctx < who && who < prof);
-  check("all three keep the existing row class (no new component class)",
-    (html.match(/class="hf2-brief__row" id="hf2Brief(Context|Who|Profile)"/g) || []).length === 3);
-}
-
-section("resolution: EN content is implication copy, size and firmness intact");
-{
-  const { els, out } = run(ANSWERS_A, "en");
-  out.render();
-  const vm = out.resolve();
-  check("context row: the opener resolves through the mapping (stale sleep_quality ignored)",
-    vm.context === "here to solve a comfort problem");
-  check("who row: neutral size identity leads, then issue implications in answer order",
-    vm.who === "Queen · test lower-back support carefully · prioritize temperature control");
-  check("profile row: position, conditions, firmness value, temperature — in order",
-    vm.profile === "prioritize shoulder and hip cushioning"
-      + " · test head-of-bed elevation on an adjustable base"
-      + " · compare gentle, even pressure relief"
-      + " · Firm 6/10"
-      + " · compare cooling covers and airflow");
-  check("the firmness value is the computed feel + score, unchanged",
-    vm.profile.includes(out.firmnessFeel(6) + " 6/10"));
-  const recap = out.recap();
-  check("the DOM rows carry exactly the RECAP projection (A3.1 ruling 4)",
-    els.get("hf2BriefContext").textContent === recap.context
-    && els.get("hf2BriefWho").textContent === recap.who
-    && els.get("hf2BriefProfile").textContent === recap.profile);
-  check("recap EN: the same rows, the same order, every fact kept, the staff imperatives removed",
-    recap.context === "Comfort problem"
-    && recap.who === "Queen · Lower-back support · Temperature control"
-    && recap.profile === "Shoulder and hip cushioning · Head-of-bed elevation · Gentle, even pressure relief · Firm 6/10 · Cooling covers and airflow");
-  check("two projections of ONE answer set: fragment-for-fragment correspondence with the payload resolver",
-    frags(recap.context) === frags(vm.context) && frags(recap.who) === frags(vm.who) && frags(recap.profile) === frags(vm.profile));
-  check("no clinical-style quiz label reaches any row (resolver or recap)",
-    CLINICAL.every((s) => !(vm.context + vm.who + vm.profile + recap.context + recap.who + recap.profile).includes(s)));
-  check("no recap fragment opens with a staff imperative",
-    !(recap.context + " · " + recap.who + " · " + recap.profile).split(" · ")
-      .some((f) => /^(test|prioritize|compare|notice|look|keep|check|try|ask|focus)\b/i.test(f)));
-}
-
-section("resolution: Spanish re-renders the same answers with ES copy (exit 3)");
-{
-  const en = run(ANSWERS_A, "en").out.resolve();
-  const { els, out } = run(ANSWERS_A, "es");
-  out.render();
-  const vm = out.resolve();
-  check("[es] context uses Spanish implication copy",
-    vm.context === "aquí para resolver un problema de comodidad");
-  check("[es] who keeps the neutral size and uses Spanish implications",
-    vm.who === "Queen · probar con cuidado el soporte lumbar · priorizar el control de temperatura");
-  check("[es] profile is Spanish end to end (firmness feel included)",
-    vm.profile.includes("priorizar el acolchado de hombros y caderas")
-    && vm.profile.includes("Firme 6/10")
-    && vm.profile.includes("comparar fundas frescas y ventilación"));
-  check("[es] no EN implication string leaks into the Spanish render",
-    !vm.profile.includes("prioritize") && !vm.who.includes("test lower-back")
-    && !vm.context.includes("aiming"));
-  const recapEs = out.recap();
-  check("[es] the rows re-render from the same answer state (recap projection, Spanish end to end)",
-    els.get("hf2BriefWho").textContent === recapEs.who
-    && recapEs.who === "Queen · Soporte lumbar · Control de temperatura"
-    && recapEs.context === "Problema de comodidad"
-    && recapEs.profile.includes("Acolchado de hombros y caderas") && recapEs.profile.includes("Firme 6/10")
-    && !/Lower-back|Temperature control|Comfort problem|cushioning/.test(recapEs.context + recapEs.who + recapEs.profile)
-    && en.who !== vm.who);
-}
-
-section("'none' answers resolve to intentional omissions");
-{
-  const vm = run(ANSWERS_NONE, "en").out.resolve();
-  check("who row is just the size when the only issue is 'none'", vm.who === "King");
-  check("profile row omits the comfortable-temperature fragment",
-    vm.profile === "look for even lumbar support · Medium 4/10");
+  check("hf2BriefWho and hf2BriefProfile exist, in order", who > 0 && prof > who);
+  check("A4.3: the context row's ELEMENT is gone from the markup, not merely hidden",
+    !html.includes('id="hf2BriefContext"'),
+    "an empty row would still occupy the flex gap and read as a missing value");
+  check("A4.3: nothing renders a context row (no getElementById, no textContent assignment)",
+    !html.includes("getElementById('hf2BriefContext')"));
 }
 
 // ===========================================================================
@@ -377,7 +315,7 @@ section("missing / malformed / untranslated mappings omit the fragment");
   // join as an orphan " · " fragment on any surface.
   const wsEn = JSON.parse(JSON.stringify(CONFIG.salesNotes.consultationImplications));
   wsEn.sleep_issues.back_pain = "   ";
-  wsEn.trigger.pain = "\t\n ";
+  wsEn.temperature.hot = "\t\n ";
   const { els, out } = run(ANSWERS_A, "en", { implEn: wsEn });
   out.render();
   const vm = out.resolve();
@@ -497,8 +435,7 @@ for (const lang of ["en", "es"]) {
     && pay.context === vm.context && pay.who === vm.who && pay.profile === vm.profile
     && pay.who.length > 0);
   check(`[${lang}] DOM === recap projection, fragment for fragment with the payload`,
-    els.get("hf2BriefContext").textContent === recap.context
-    && els.get("hf2BriefWho").textContent === recap.who
+     els.get("hf2BriefWho").textContent === recap.who
     && els.get("hf2BriefProfile").textContent === recap.profile
     && frags(recap.context) === frags(pay.context) && frags(recap.who) === frags(pay.who) && frags(recap.profile) === frags(pay.profile));
   check(`[${lang}] the payload carries exactly context/who/profile`,
@@ -748,7 +685,6 @@ for (const [label, bad] of [["a string", "zzz"], ["a number", 7], ["null", null]
 section("the consumed quiz surface is pinned (ids unchanged from main)");
 {
   const want = {
-    trigger: ["pain", "worn_out", "moving", "upgrade", "browsing"],
     sleep_issues: ["back_pain", "hip_pain", "hot", "tossing", "stiff", "sagging", "too_soft", "none"],
     sleep_position: ["side", "back", "stomach", "combo", "no_idea"],
     health_conditions: ["nerve_pain", "allergies", "snoring", "reflux", "extra_support", "getting_older", "none"],

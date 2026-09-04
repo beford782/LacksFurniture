@@ -52,8 +52,8 @@ section("A — copy <-> engine correspondence (docs/quiz-copy-engine-corresponde
 
 const questions = QUIZ.questions;
 const canonical = CANON.quiz.questions;
-ok("the generated quiz and its canonical source carry the same ten ids in the same order",
-  questions.length === 10 && canonical.length === 10
+ok("the generated quiz and its canonical source carry the same nine ids in the same order",
+  questions.length === 9 && canonical.length === 9
   && questions.every((q, i) => q.id === canonical[i].id));
 
 // One heading per canonical question, numbered by position, and nothing else.
@@ -96,10 +96,10 @@ for (const q of questions) {
 
 // Zero-scoring questions are named as such.
 const zeroScoring = questions.filter((q) => q.type !== "slider" && tagsOf(q).size === 0).map((q) => q.id);
-ok("the two zero-scoring questions are trigger and mattress_size (engine fact)",
-  zeroScoring.join(",") === "trigger,mattress_size");
+ok("the one remaining zero-scoring question is mattress_size (engine fact; A4.3 removed the visit trigger)",
+  zeroScoring.join(",") === "mattress_size");
 ok("the document names the zero-scoring questions in its engine section",
-  /\*\*Zero-scoring questions\.\*\*\s*`trigger` and `mattress_size`/.test(DOC));
+  /\*\*Zero-scoring question\.\*\*\s*`mattress_size`/.test(DOC));
 
 // The inert-tag set recorded in the document equals the set computed from the
 // shipped catalog. When 3.1 (case-fold) or 3.2 (vocabulary) ships, this fails

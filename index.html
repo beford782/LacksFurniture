@@ -11880,7 +11880,8 @@
            before; the two are projections of ONE answer set. -->
       <div class="hf2-review-section__label" id="hf2NeedsLabel">Visit focus</div>
       <div class="hf2-brief">
-        <div class="hf2-brief__row" id="hf2BriefContext"></div>
+        <!-- A4.3: the context row's element is REMOVED, not hidden - an empty
+             row would still occupy the flex gap and read as a missing value. -->
         <div class="hf2-brief__row" id="hf2BriefWho"></div>
         <div class="hf2-brief__row" id="hf2BriefProfile"></div>
       </div>
@@ -15559,7 +15560,7 @@
     }
 
     // Italic-brass emphasis word per question (Nocturnal v1). Keyed by question id.
-    // 'trigger' (now Q2) intentionally omitted — short copy reads better without emphasis.
+    // The visit-trigger question left the quiz with A4.3 (owner-approved 2026-09-03).
     const QUESTION_ACCENTS = {
       mattress_size:        { en: 'size',           es: 'tamaño' },
       sleep_position:       { en: 'sleep',          es: 'duermes' },
@@ -21739,14 +21740,12 @@
     // label, never the id, never the other language). ES provisional.
     var CONSULT_RECAP = {
       en: {
-        trigger: { pain: 'Comfort problem', worn_out: 'Replacing an old mattress', moving: 'New space', upgrade: 'Upgrade', browsing: 'Exploring options' },
         sleep_issues: { back_pain: 'Lower-back support', hip_pain: 'Hip and shoulder pressure relief', hot: 'Temperature control', tossing: 'Easy settling', stiff: 'Alignment and morning comfort', sagging: 'Durable, consistent support', too_soft: 'Firmer, more supportive feel', none: '' },
         sleep_position: { side: 'Shoulder and hip cushioning', back: 'Even lumbar support', stomach: 'Midsection support', combo: 'Ease of movement between positions', no_idea: 'A few different feels to compare' },
         health_conditions: { nerve_pain: 'Gentle, even pressure relief', allergies: 'Washable, protective covers', snoring: 'Head-of-bed elevation', reflux: 'Raised upper body', extra_support: 'Reinforced, sturdy support', getting_older: 'Easy in and out of bed', none: '' },
         temperature: { hot: 'Cooling covers and airflow', comfortable: '', cold: 'Warmth and cozier surfaces', opposite: 'Temperature balance for two sleepers' }
       },
       es: {
-        trigger: { pain: 'Problema de comodidad', worn_out: 'Reemplazo de un colchón viejo', moving: 'Espacio nuevo', upgrade: 'Mejora', browsing: 'Explorando opciones' },
         sleep_issues: { back_pain: 'Soporte lumbar', hip_pain: 'Alivio de presión en caderas y hombros', hot: 'Control de temperatura', tossing: 'Facilidad para acomodarse', stiff: 'Alineación y comodidad al despertar', sagging: 'Soporte duradero y consistente', too_soft: 'Sensación más firme y con más soporte', none: '' },
         sleep_position: { side: 'Acolchado de hombros y caderas', back: 'Soporte lumbar uniforme', stomach: 'Soporte de la zona media', combo: 'Facilidad para cambiar de posición', no_idea: 'Varias sensaciones para comparar' },
         health_conditions: { nerve_pain: 'Alivio de presión suave y uniforme', allergies: 'Fundas lavables y protectoras', snoring: 'Elevación de la cabecera', reflux: 'Torso elevado', extra_support: 'Soporte reforzado y resistente', getting_older: 'Facilidad para acostarse y levantarse', none: '' },
@@ -21771,7 +21770,9 @@
     // size identity and the computed firmness value are shared verbatim.
     function resolveConsultationRecap() {
       var nonEmpty = function(p) { return p && p.length; };
-      var ctxParts = [consultRecap('trigger', answers.trigger)].filter(nonEmpty);
+      // A4.3: the context row is retired with the visit-trigger question; the
+      // screen omits the row entirely rather than rendering an empty one.
+      var ctxParts = [];
       var size = answerLabelFor('mattress_size', answers.mattress_size);
       var issues = (answers.sleep_issues || []).map(function(id) { return consultRecap('sleep_issues', id); });
       var whoParts = [size].concat(issues).filter(nonEmpty);
@@ -21818,12 +21819,14 @@
 
     function resolveConsultationSummary() {
       var nonEmpty = function(p) { return p && p.length; };
-      // Context row: the non-scoring opener (trigger). sleep_quality was
-      // removed from the quiz 2026-08-12 (owner ruling) — the row now builds
-      // from the visit trigger alone.
-      var ctxParts = [
-        consultImplication('trigger', answers.trigger)
-      ].filter(nonEmpty);
+      // Context row: RETIRED. sleep_quality left the quiz 2026-08-12 and the
+      // visit trigger left it with A4.3 (owner-approved 2026-09-03), so the row
+      // has no collected source at all. The payload KEY stays — schema
+      // consumers still read consultation.context — and is an explicit empty
+      // string. Nothing may infer a replacement from the remaining answers:
+      // the customer was never asked, and a derived phrase would be a claim
+      // about their visit that no answer supports.
+      var ctxParts = [];
       // Who row: neutral mattress-size identity, then what each reported
       // issue means for testing. Empty issues → just the size.
       var size = answerLabelFor('mattress_size', answers.mattress_size);
@@ -21859,17 +21862,12 @@
       // D2 stamp only: the shared decorative figure, identical geometry to the
       // Sleep Brief and the Results header. This screen's resolver, rows,
       // priorities, layout and copy are deliberately untouched by Slice 2.
-      var context = document.getElementById('hf2BriefContext');
       var who = document.getElementById('hf2BriefWho');
       var profile = document.getElementById('hf2BriefProfile');
       // A3.1 (owner ruling 4): the on-screen rows are the recap projection;
       // the payload keeps resolveConsultationSummary() (one answer set, two
       // projections - tests pin the fragment-for-fragment correspondence).
       var vm = resolveConsultationRecap();
-      if (context) {
-        context.textContent = vm.context;
-        context.style.display = vm.context ? '' : 'none';
-      }
       if (who) who.textContent = vm.who;
       if (profile) profile.textContent = vm.profile;
     }
@@ -23563,7 +23561,7 @@
       'supportingRow', 'resultsTrialFocus',
       'drawerName', 'drawerProofs', 'dfmConstructionSection', 'drawerPromotionDetail',
       'compareCols', 'compareTraySlots',
-      'hf2PicksList', 'hf2AccessoriesList', 'hf2BriefWho', 'hf2BriefContext',
+      'hf2PicksList', 'hf2AccessoriesList', 'hf2BriefWho',
       'hf2StatusThumb', 'hf2StatusRows', 'hf2StatusRoute',
       'hf2BriefProfile', 'hf2SleepSystemSection', 'hf2Priorities',
       // Slice 4 (D4): every financing container built from customer state.
