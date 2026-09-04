@@ -56,10 +56,10 @@ jobs:
     # "Full suite (18 checks)") — renaming it here without updating the
     # protection rule in the same change would leave every PR waiting on a
     # check that never reports. The name is a LEGACY LABEL and its number has
-    # been wrong for many slices: the workflow now invokes 52 verification
-    # steps (47 `run: node|python tests/...` steps, three `tools/*.py
+    # been wrong for many slices: the workflow now invokes 53 verification
+    # steps (48 `run: node|python tests/...` steps, three `tools/*.py
     # --self-test` steps, the workbook validation and the QR committed-asset
-    # check), A4.2's scoring vocabulary suite being the newest.
+    # check), A4.2's feature-tag normalization suite being the newest.
     # A4.1 re-derived this rather than incrementing it: the previous revision
     # said 48/43, but the tree already carried 45 test steps before this pass
     # added one, so the stated figure had drifted by two. Re-derive with
@@ -445,6 +445,13 @@ jobs:
       # pre-correction matrix.
       - name: scoring vocabulary (reachable-or-governed keys)
         run: node tests/scoring_vocabulary_check.mjs
+
+      # A4.2 corrective pass: build-data.ps1 normalizes kebab-case feature tags
+      # to camelCase, so the reachability validator must compare the RUNTIME
+      # vocabulary, not raw source spellings. One shared case table is executed
+      # against the Python validator AND the PowerShell generator.
+      - name: feature tag normalization (validator == generator)
+        run: python tests/feature_tag_normalization_check.py
 
       # Claim retirement (owner ruling 2026-08-12): executes the real
       # mattressDifferentiators, drawer differentiator block, compare

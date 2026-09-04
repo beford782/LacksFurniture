@@ -1,0 +1,48 @@
+{
+ "_meta": {
+  "purpose": "The ONE feature-tag normalization case table. Two implementations exist - build-data.ps1's Convert-FeatureTag (which builds data/mattresses.json) and tools/validation.py's normalize_feature_tag (which decides whether a quiz scoring key is reachable) - and tests/feature_tag_normalization_check.py executes BOTH against this table so they cannot drift.",
+  "defect_this_exists_for": "A4.2 shipped a reachability validator that compared RAW CSV spellings to camelCase quiz keys. build-data.ps1 normalizes kebab-case to camelCase, so a source vocabulary the generator accepts (pressure-relief, motion-isolation) was reported unreachable by the validator - a false build failure on supported input.",
+  "contract": [
+   "trim surrounding whitespace",
+   "a tag with no hyphen is preserved VERBATIM (case included) - the CSV is the authority on its own spelling",
+   "a hyphenated tag lowercases its FIRST segment, then appends each subsequent NON-EMPTY segment with its first character upper-cased and the remainder untouched"
+  ],
+  "ascii_only": "Tags are ASCII. .NET ToUpper() and Python str.upper() agree there; a non-ASCII tag is out of contract and would need its own ruling."
+ },
+ "cases": [
+  { "input": "pressureRelief", "expected": "pressureRelief", "note": "already canonical - hyphen-free, preserved verbatim" },
+  { "input": "pressure-relief", "expected": "pressureRelief", "note": "the kebab source the generator supports and the validator used to reject" },
+  { "input": "PRESSURE-Relief", "expected": "pressureRelief", "note": "first segment lowercased, second keeps its own capital" },
+  { "input": "motionIsolation", "expected": "motionIsolation", "note": "already canonical" },
+  { "input": "motion-isolation", "expected": "motionIsolation", "note": "the second repaired key in kebab form" },
+  { "input": "  pressure-relief  ", "expected": "pressureRelief", "note": "whitespace around a hyphenated tag" },
+  { "input": " motionIsolation ", "expected": "motionIsolation", "note": "whitespace around a canonical tag" },
+  { "input": "pressure--relief", "expected": "pressureRelief", "note": "empty middle segment is skipped, not capitalized" },
+  { "input": "pressure-", "expected": "pressure", "note": "trailing empty segment contributes nothing" },
+  { "input": "-relief", "expected": "Relief", "note": "empty FIRST segment: the second segment still gets its capital" },
+  { "input": "", "expected": "", "note": "empty tag normalizes to empty; callers drop it" },
+  { "input": "   ", "expected": "", "note": "whitespace-only tag normalizes to empty" },
+  { "input": "pressure-RELIEF", "expected": "pressureRELIEF", "note": "the REST of a segment is never re-cased - this is deliberate, and it is why a mis-authored tag stays visible instead of being silently coerced" },
+  { "input": "Cooling", "expected": "Cooling", "note": "a hyphen-free tag is NOT lowercased; if the catalog authors it this way it stays unreachable and the validator says so" },
+  { "input": "cooling", "expected": "cooling", "note": "the shipped canonical spelling" },
+  { "input": "zoned-support-extra", "expected": "zonedSupportExtra", "note": "three segments" },
+  { "input": "unknownTag", "expected": "unknownTag", "note": "normalization is not validation - an unknown tag normalizes to itself and is rejected later, by reachability" }
+ ],
+ "validator_contract_cases": {
+  "unknown_tag": {
+   "catalog_features": ["cooling", "durability", "firm", "hybrid", "medium", "motionIsolation", "plush", "pressureRelief", "responsive", "soft", "support", "zoned", "sparkleFactor"],
+   "expect": "ok",
+   "note": "an EXTRA catalog tag no quiz option awards is not an error - the contract runs quiz -> catalog, not catalog -> quiz"
+  },
+  "unreachable_quiz_key": {
+   "drop_from_catalog": "pressureRelief",
+   "expect": "error_mentions:pressureRelief",
+   "note": "a quiz key with no carrier and no dormancy declaration is a build error"
+  },
+  "dormant_becoming_reachable": {
+   "add_to_catalog": "memory",
+   "expect": "error_mentions:memory",
+   "note": "a declared-dormant key that the catalog starts carrying must have its declaration removed in the same change"
+  }
+ }
+}

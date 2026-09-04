@@ -144,6 +144,10 @@ $checks = @(
     # reachable catalog feature or a governed dormant key, dormancy proved by
     # execution, and the before/after matrix of the durable -> durability fix.
     @{ Name = 'scoring vocabulary'; Exe = $nodeExecutable; Args = @('tests/scoring_vocabulary_check.mjs') },
+    # A4.2 corrective pass: the feature-tag normalization contract, executed
+    # against BOTH the Python validator and the PowerShell generator from one
+    # shared case table, so the two cannot drift apart again.
+    @{ Name = 'feature tag normalization'; Exe = $pythonExecutable; Args = @('tests/feature_tag_normalization_check.py') },
     @{ Name = 'claim retirement'; Exe = $nodeExecutable; Args = @('tests/claim_retirement_check.mjs') },
     @{ Name = 'integrity repairs'; Exe = $nodeExecutable; Args = @('tests/integrity_repairs_check.mjs') },
     @{ Name = 'results presentation'; Exe = $nodeExecutable; Args = @('tests/results_presentation_check.mjs') },

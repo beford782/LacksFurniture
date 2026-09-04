@@ -162,6 +162,8 @@ const SCORING_KEYS_DATA = SCORING_KEYS.concat(["tests/phase1_output_regression_c
 // declaration, the reachable-or-governed contract and the before/after matrix;
 // a corrupted CATALOG or QUIZ spelling also moves the recommendation fixtures.
 const VOCAB = ["tests/scoring_vocabulary_check.mjs"];
+const NORM = ["tests/feature_tag_normalization_check.py"];
+const NORM_PLUS = NORM.concat(["tests/scoring_vocabulary_check.mjs"]);
 const VOCAB_RANKING = VOCAB.concat(["tests/phase1_output_regression_check.mjs", "tests/scoring_isolation_check.mjs", "tests/scoring_key_contract_check.mjs"]);
 
 
@@ -2275,10 +2277,13 @@ const MUTATIONS = [
   // awards it. The generator is the site of the old defect; the two spellings it
   // now preserves are the payload. All three are observed by the contract suite,
   // which also holds the 57-scenario golden ranking matrix.
+  // A4.2 corrective pass re-pointed this entry: the normalizer moved into
+  // Convert-FeatureTag, so the old inline FIND no longer applied and the entry
+  // was silently contributing nothing.
   ["scoring keys: the generator lowercases every tag again (the roadmap 3.1 case-fold defect returns)",
-    "            $tag = $_.Trim()\n",
-    "            $tag = $_.Trim().ToLower()\n",
-    SCORING_KEYS, "build-data.ps1"],
+    "    $tag = if ($null -eq $Tag) { '' } else { $Tag.Trim() }",
+    "    $tag = if ($null -eq $Tag) { '' } else { $Tag.Trim().ToLower() }",
+    SCORING_KEYS.concat(NORM), "build-data.ps1"],
   ["scoring keys: a catalog pressureRelief tag is lowercased (four scoring rules across three questions go dead)",
     "                                      \"soft\",\n                                      \"pressureRelief\",\n                                      \"durability\",",
     "                                      \"soft\",\n                                      \"pressurerelief\",\n                                      \"durability\",",
@@ -2287,6 +2292,35 @@ const MUTATIONS = [
     "                                      \"pressureRelief\",\n                                      \"motionIsolation\"\n",
     "                                      \"pressureRelief\",\n                                      \"motionisolation\"\n",
     SCORING_KEYS_DATA, "data/mattresses.json"],
+  // --- A4.2 corrective pass: the feature-tag normalization contract. The A4.2
+  // reachability gate compared RAW CSV spellings to camelCase quiz keys, so a
+  // kebab-case source the generator normalizes correctly read as unreachable.
+  // One contract, two implementations, one shared case table - these five
+  // entries are the ways the two can drift apart again.
+  ["normalization: the validator stops normalizing (raw CSV spellings compared to camelCase quiz keys - the A4.2 defect returns)",
+    "        reachable = {t for t in (normalize_feature_tag(f) for f in catalog_features) if t}",
+    "        reachable = {str(f).strip() for f in catalog_features if str(f).strip()}",
+    NORM, "tools/validation.py"],
+  ["normalization: the validator lowercases every tag instead of following the contract",
+    "    text = \"\" if tag is None else str(tag).strip()",
+    "    text = \"\" if tag is None else str(tag).strip().lower()",
+    NORM, "tools/validation.py"],
+  ["normalization: only the first repaired key is normalized (a one-key special case instead of the contract)",
+    "    parts = text.split(\"-\")",
+    "    parts = text.split(\"-\") if text.startswith(\"pressure\") else [text]",
+    NORM, "tools/validation.py"],
+  ["normalization: an unknown, unreachable quiz key is allowed through (the reachability gate goes silent)",
+    "            if tag not in QUIZ_DORMANT_TAGS:",
+    "            if False and tag not in QUIZ_DORMANT_TAGS:",
+    NORM_PLUS, "tools/validation.py"],
+  ["normalization: a dormant key that became reachable is concealed (the stale-declaration gate goes silent)",
+    "            if tag in reachable:",
+    "            if False and tag in reachable:",
+    NORM_PLUS, "tools/validation.py"],
+  ["normalization: the generator's own normalizer is bypassed (build-data.ps1 emits raw source spellings)",
+    "        $features = $row.features.Split('|') | ForEach-Object { Convert-FeatureTag $_ }",
+    "        $features = $row.features.Split('|') | ForEach-Object { $_.Trim() }",
+    NORM, "build-data.ps1"],
   // --- A4.2 (owner-directed, roadmap 3.2): the scoring VOCABULARY contract.
   // One key was a spelling variant of a canonical catalog feature and was
   // corrected; five are governed dormant. These four entries are the ways that

@@ -19,9 +19,11 @@
 //      defect class itself, not just its two known instances).
 //   2. Reachability: for every quiz key, how many catalog models can match it,
 //      pinned as a table. The keys that match nothing are enumerated and must
-//      equal exactly the six roadmap 3.2 vocabulary-gap keys — no more (a
+//      equal exactly the FIVE roadmap 3.2 vocabulary-gap keys that remain after
+//      A4.2 corrected `durable` to the canonical `durability` — no more (a
 //      regression would add one) and no fewer (silently "fixing" 3.2 is an
-//      owner decision, not a drive-by).
+//      owner decision, not a drive-by; the five are governed dormant in
+//      tools/validation.py QUIZ_DORMANT_TAGS, and tests/scoring_vocabulary_check.mjs owns them).
 //   3. The golden ranking matrix: 57 scenarios across feels, couples, needs,
 //      ties, fallbacks and the composites the Phase 1 fixture already uses,
 //      each producing the REAL engine's per-tier ordered results (id, score,
@@ -234,7 +236,7 @@ const dead = Object.entries(reach).filter(([, n]) => n === 0).map(([k]) => k).so
 // source, so the dead set is five; the remaining keys are governed dormant in
 // tools/validation.py QUIZ_DORMANT_TAGS (tests/scoring_vocabulary_check.mjs).
 const EXPECTED_DEAD = ["adjustable", "comfort", "hypoallergenic", "memory", "quality"];
-check("the keys that match NO catalog model are exactly the six roadmap 3.2 vocabulary-gap keys — this pass neither adds to them nor silently populates them",
+check("the keys that match NO catalog model are exactly the five roadmap 3.2 vocabulary-gap keys that remain after A4.2 corrected `durable` — this pass neither adds to them nor silently populates them",
   JSON.stringify(dead) === JSON.stringify(EXPECTED_DEAD), `dead: ${JSON.stringify(dead)}`);
 // The ten repaired rules, enumerated from the quiz itself.
 const repairedRules = [];
@@ -304,8 +306,15 @@ check("the engine reproduces the golden matrix exactly", driftNow.length === 0,
 
 // ---------- 4. the generator's normalizer ------------------------------------
 section("4. the generator (build-data.ps1) — the repair's actual site");
+// A4.2 corrective pass: the normalizer now lives in a named function,
+// Convert-FeatureTag, so tests/feature_tag_normalization_check.py can execute
+// the generator's own bytes against the shared case table. Same behaviour, same
+// property pinned here: the whole tag is never lowercased.
+const FEATURE_FN = (BUILD_PS1.match(/function Convert-FeatureTag \{[\s\S]*?\n\}/) || [""])[0];
 check("the tag normalizer no longer lowercases the whole tag before camelizing",
-  !/\$tag = \$_\.Trim\(\)\.ToLower\(\)/.test(BUILD_PS1) && /\$tag = \$_\.Trim\(\)/.test(BUILD_PS1));
+  !!FEATURE_FN && !/Trim\(\)\.ToLower\(\)/.test(FEATURE_FN)
+  && /\$tag = if \(\$null -eq \$Tag\) \{ '' \} else \{ \$Tag\.Trim\(\) \}/.test(FEATURE_FN)
+  && /ForEach-Object \{ Convert-FeatureTag \$_ \}/.test(BUILD_PS1));
 check("kebab-case input is still converted to camelCase (the documented contract is kept, not dropped)",
   /\$parts = \$tag\.Split\('-'\)/.test(BUILD_PS1) && /Substring\(0,1\)\.ToUpper\(\)/.test(BUILD_PS1));
 check("the first kebab segment is still lowered, so PRESSURE-relief style input still normalizes",

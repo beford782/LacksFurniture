@@ -4219,6 +4219,42 @@ QUIZ_DORMANT_TAGS = {
 }
 
 
+def normalize_feature_tag(tag):
+    """Normalize a catalog feature tag the way build-data.ps1 does.
+
+    A4.2 corrective pass. The A4.2 reachability check compared RAW CSV
+    spellings to the quiz's camelCase keys, so a kebab-case source vocabulary
+    that build-data.ps1 normalizes correctly - `pressure-relief`,
+    `motion-isolation` - was reported unreachable: the generator accepted a
+    vocabulary the validator rejected.
+
+    The contract, identical to Convert-FeatureTag in build-data.ps1 and pinned
+    for both implementations by tests/fixtures/feature_tag_normalization_cases
+    .json (executed against BOTH by tests/feature_tag_normalization_check.py):
+
+      * trim surrounding whitespace;
+      * a tag with no hyphen is preserved VERBATIM, case included - the CSV,
+        generated from the workbook, is the authority on its own spelling;
+      * a hyphenated tag lowercases its FIRST segment, then appends each
+        subsequent NON-EMPTY segment with its first character upper-cased and
+        the remainder untouched.
+
+    Normalization is not validation: an unknown tag normalizes to itself and is
+    rejected afterwards, by reachability. The function is idempotent - its
+    output never contains a hyphen - so normalizing an already-normalized
+    vocabulary is safe.
+    """
+    text = "" if tag is None else str(tag).strip()
+    parts = text.split("-")
+    if len(parts) == 1:
+        return text
+    camel = parts[0].lower()
+    for segment in parts[1:]:
+        if segment:
+            camel += segment[0].upper() + segment[1:]
+    return camel
+
+
 # The scoring engine caps per-mattress-per-feature accumulation at 5
 # (FEATURE_CAP in index.html); a single-option award beyond the cap is
 # unreachable and therefore a config mistake.
@@ -4367,7 +4403,14 @@ def validate_quiz(quiz, catalog_features=None) -> ValidationReport:
     # checked only when the caller supplies the catalog's feature vocabulary;
     # the converter does, so the build gate sees it.
     if catalog_features is not None:
-        reachable = {str(f).strip() for f in catalog_features if str(f).strip()}
+        # A4.2 corrective pass: NORMALIZE before comparing. The catalog may
+        # author a tag in the kebab form build-data.ps1 supports, and the quiz
+        # keys are the camelCase forms that generator emits; comparing raw
+        # source spellings to runtime keys reported supported input as
+        # unreachable. normalize_feature_tag() is the same contract the
+        # generator applies, pinned for both by
+        # tests/fixtures/feature_tag_normalization_cases.json.
+        reachable = {t for t in (normalize_feature_tag(f) for f in catalog_features) if t}
         awarded = set()
         for q in questions:
             if not isinstance(q, dict):
