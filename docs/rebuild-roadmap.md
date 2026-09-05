@@ -69,10 +69,12 @@ based on `5a43b25`, never merged, no PR — distinguished from the foundation
 on `main`; **A4.1 and A4.2 candidate-complete** (roadmap 3.1 and 3.2) and
 awaiting Blake's explicit adoption and merge decisions, their 🔒 marks
 unmoved; **A4.3 owner-approved 2026-09-03 and candidate-verified at
-`62aadd9`, not merged** — `main` still ships ten questions; its clean PR is
-cut from then-current `main`, not from the candidate; one consolidated
-current-state role-play kit owed before any visual candidate ships (the
-three historical kits preserved with supersession notices); the financing
+`62aadd9`, not merged** — `main` still ships ten questions; its clean PR must
+be cut from then-current `main`, not from the candidate (no clean A4.3
+branch or PR exists yet); one consolidated
+current-state role-play kit owed before any visual candidate ships (this
+roadmap records the three historical kits as historical; the external kit
+files were not changed); the financing
 copy-policy observer repair (three literal U+0008 bytes making regex halves
 vacuous) scheduled as a standalone test-hardening PR, not part of A4.3 (see
 0.7); suite accounting stated once: `main` runs 47 checks with
@@ -1442,7 +1444,9 @@ shipped CI assertions match nothing and pass on every tree. A pre-existing
 defect, found during the A4.3 corrective pass. It ships as its own bounded
 test-hardening PR from then-current `main`: the repaired regexes plus
 controls proving the observers contain no control byte and still fire on the
-text they forbid. It must not be bundled into the A4.3 PR. Suite accounting,
+text they forbid. It must not be bundled into the A4.3 PR. This maintenance
+follow-up does not reopen item 0.7 or Phase 0: both remain closed and
+complete, and their ✅ marks stand. Suite accounting,
 for reference: `main` runs 47 checks with `-SkipMutationSweep` and the
 mutation sweep is the 48th; adding the A4.3 quiz-reduction suite makes 48
 without the sweep and 49 with it.)*
@@ -4473,16 +4477,18 @@ roadmap 3.1) → A4.2 (`c781137`, roadmap 3.2) → A4.3 (`62aadd9`, **frozen**;
 the owner-approved quiz reduction). The foundation on `main` and this stack
 are different things: the first is shipped, the second is design and scoring
 evidence awaiting explicit decisions, and nothing in it ships as a merge of
-the stack — each adopted piece is re-cut as a bounded PR from then-current
+the stack — each adopted piece must be re-cut as a bounded PR from then-current
 `main` (A4.3 is proven separable: its reduction and its conditional-answer
 invariant reconstruct from `main` without A4.1 or A4.2). E1 and E2 were
 prototyped on `proto-e1-*` / `proto-e2-*` branches and remain experiments.
 **Role-play:** three kits were prepared for the A2, A3 and A3.1 candidates
-and none was conducted; they are preserved as history with supersession
-notices (they reference reaction capture and the trial-verdict chip, both
-removed on the product-proof branch), and **one consolidated current-state
-kit targeting the final candidate is owed before any visual candidate
-ships**. The milestone stays 🔨: pass 2 is still owed and the candidate
+and none was conducted. This roadmap records all three as historical; the
+external kit files were not changed — only the A2 kit carries a global
+superseded notice, the A3 kit carries none, and the A3.1 kit has internal
+superseded rows but no global replacement notice (the kits reference
+reaction capture or the trial-verdict chip, both removed on the
+product-proof branch). **One consolidated current-state kit targeting the
+final candidate remains owed before any visual candidate ships**. The milestone stays 🔨: pass 2 is still owed and the candidate
 decisions are Blake's. Evidence root outside the repository:
 `Documents\DreamFinder-manual-gates\north-star-program-2026-08-31\`.
 
@@ -4546,7 +4552,10 @@ pre-showroom accessibility matrix.
 
 *(Recorded 2026-09-04: the three candidate role-play kits prepared under the
 North Star program — for the A2, A3 and A3.1 candidates — were never
-conducted and are kept as history with supersession notices. When the final
+conducted and are recorded here as historical; the external kit files were
+not changed (only the A2 kit carries a global superseded notice, the A3 kit
+carries none, and the A3.1 kit has internal superseded rows but no global
+replacement notice). When the final
 candidate is fixed, ONE consolidated current-state kit is written against it,
 not three refreshed overlapping kits, and that kit is owed before any visual
 candidate ships. Any session runs on the tree that is the actual merge
@@ -5292,8 +5301,11 @@ the generator repair and the enumerated impact this item asks for: a
 moved, gold top pick changed in 0 of 57, gold order and membership
 unchanged, silver 16 reordered / 12 qualified-set changes, bronze 2 / 1, no
 model losing a point; `index.html` byte-identical; tables in the
-`candidate-a41` evidence folder. Its dry run against `main` applies cleanly;
-the fixtures are re-captured on `main` when it ships. **Awaiting Blake's
+`candidate-a41` evidence folder. Measured dry run against `main`: 11 of 12
+files apply verbatim; `tests/mutation_sweep.mjs` does not apply, because its
+anchor / context comes from A3.1, so the complete patch does not pass
+`git apply --check`. Fixtures must still be re-captured on then-current
+`main`. **Awaiting Blake's
 explicit adoption and merge decision.** An adopted repair ships as its own PR
 cut from then-current `main`, never as a merge of the candidate. Mark
 unchanged — 🔒 is Blake's to move.)*
