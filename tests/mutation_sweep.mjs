@@ -1576,6 +1576,20 @@ const MUTATIONS = [
     "      finPromotionalByProvider(groups.promotional).forEach(function(grp) {\n        var provider = grp.provider;\n        paths.push({",
     "      groups.promotional.forEach(function(grp) {\n        var provider = grp.provider;\n        paths.push({", PAY_RENDER],
 
+  // Copy-policy observer repair (2026-09-05). Two regex halves in the copy
+  // suite carried a literal U+0008 byte where the word boundary `\b` was meant,
+  // so they matched nothing and passed on every tree. Each entry below
+  // reintroduces exactly the text one repaired half forbids, on a line no other
+  // assertion in that suite pins, so only the repaired half can observe it.
+  // Both entries SURVIVED against the pre-repair suite; they are the sweep-level
+  // proof that the repair is load-bearing.
+  ["payment: the handoff chips grow a freshness gate (repaired /Fresh\\b/ half)",
+    "        if (label) chips.push('<span class=\"fin-chip\">' + finEsc(label) + '</span>');",
+    "        if (label && financingPlanFresh(p)) chips.push('<span class=\"fin-chip\">' + finEsc(label) + '</span>');", PAY_COPY],
+  ["payment: the retired separatePath flag is read again outside the financing sheet (repaired /\\bp\\.separatePath\\b/ half)",
+    "        if (seenKinds[p.kind]) return;",
+    "        if (seenKinds[p.kind] || p.separatePath) return;", PAY_COPY],
+
   // ---- Slice 4 / D4: per-surface placement (item 1.5) ----------------------
   // Config-DISABLING rather than deleting only means something if the flag is
   // actually consulted, if a MISSING flag still means enabled, and if the

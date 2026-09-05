@@ -96,8 +96,16 @@ check("evergreen headline+detail render with no freshness gate",
 // --- handoff chips use non-promotional headlines ungated ---
 const chipIdx = html.indexOf("var seenKinds = {};");
 const chips = html.slice(chipIdx, chipIdx + 1100);
+// Trailing word boundary: the chips block may not consult any freshness
+// identifier (ihFresh, mxFresh, financingPlanFresh, financingTermsFresh). The
+// pattern and the predicate are named so the OBSERVER INTEGRITY block at the
+// end of this file can pin the pattern's text and exercise the predicate on
+// planted text — see the 2026-09-05 repair note there.
+const CHIP_FRESH_RX = /Fresh\b/;
+const chipsLabelFromHeadlineUngated = (src) =>
+  src.includes("L(p.headline)") && !CHIP_FRESH_RX.test(src);
 check("handoff chips label non-promotional plans from plan.headline",
-  chips.includes("L(p.headline)") && !/Fresh/.test(chips));
+  chipsLabelFromHeadlineUngated(chips));
 check("handoff chips exclude scenario AND unclassified plans by GROUP",
   /var chipGroup = finPlanGroup\(p\);/.test(chips)
   && /chipGroup !== 'promotional'/.test(chips) && /chipGroup !== 'evergreen'/.test(chips));
@@ -242,8 +250,13 @@ for (const legacyId of ["lacks-in-house", "lease-to-own", "build-my-credit", "me
 }
 check("renderer has no byId lookup in the financing sheet at all",
   !sheet.includes("byId["));
+// Whole-word `p.separatePath` anywhere in the app, plus any `separatePath`
+// inside the extracted sheet. Named for the OBSERVER INTEGRITY block below.
+const SEPARATE_PATH_RX = /\bp\.separatePath\b/;
+const separatePathRetired = (app, sheetSrc) =>
+  !SEPARATE_PATH_RX.test(app) && !/separatePath/.test(sheetSrc);
 check("renderer no longer reads the retired separatePath flag",
-  !/p\.separatePath/.test(html) && !/separatePath/.test(sheet));
+  separatePathRetired(html, sheet));
 check("_RENDERER_ROLE_IDS is gone from validation.py", !/_RENDERER_ROLE_IDS/.test(py));
 check("validation.py no longer has a separatePath boolean contract",
   !/isinstance\(plan\.get\("separatePath"\), bool\)/.test(py));
@@ -534,6 +547,82 @@ check(`shipped ungated copy trips no unit marker (offenders: ${JSON.stringify(sh
     prodFin.copy.paymentPreferenceLabel.en === "Payment preference");
   check("the adopted ES payment-preference label is exact",
     prodFin.copy.paymentPreferenceLabel.es === "Preferencia de pago");
+}
+
+// ---------------------------------------------------------------------------
+// OBSERVER INTEGRITY — repair of 2026-09-05.
+//
+// At 5a43b25 this file carried three literal U+0008 (BACKSPACE) bytes where
+// the regex word boundary `\b` was meant: `/Fresh<BS>/` in the handoff-chips
+// assertion and `/<BS>p\.separatePath<BS>/` in the retired-flag assertion. A
+// regex containing a raw BACKSPACE matches only text that contains a raw
+// BACKSPACE, which index.html never does, so both halves were vacuous: they
+// passed on every tree, including one that restored the very thing they
+// forbid. The controls below make that failure mode observable.
+//
+//   (a) the observer's own source carries no control byte;
+//   (b) each repaired pattern is pinned to its intended text and is clean on
+//       the shipped production source;
+//   (c) each observer predicate FAILS on planted text carrying exactly what
+//       its repaired half forbids — and the pre-repair form, rebuilt here with
+//       a raw BACKSPACE, is shown NOT to fail on that same text.
+//
+// The planted text is appended to in-memory copies only; the shipped tree is
+// never touched. tests/mutation_sweep.mjs carries the sweep-level counterpart:
+// two entries that reintroduce the forbidden text into index.html and require
+// this suite to go red.
+// ---------------------------------------------------------------------------
+{
+  // Built from a code point, never written as an escape, so no shell or
+  // templating step can collapse it back into a raw byte in this source.
+  const BS = String.fromCharCode(8);
+  const selfSrc = readFileSync(fileURLToPath(import.meta.url), "utf8");
+
+  // (a) no control byte in the observer source.
+  check("observer source carries no U+0008 control byte (a raw BACKSPACE where \\b was meant)",
+    !selfSrc.includes(BS));
+  check("observer source carries no other C0 control byte outside TAB / LF / CR",
+    !/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/.test(selfSrc));
+
+  // (b) the repaired patterns read exactly as intended and are clean on the
+  // shipped production source.
+  check("chips freshness pattern is exactly /Fresh\\b/",
+    CHIP_FRESH_RX.source === "Fresh\\b");
+  check("retired-flag pattern is exactly /\\bp\\.separatePath\\b/",
+    SEPARATE_PATH_RX.source === "\\bp\\.separatePath\\b");
+  check("production handoff-chips block is located and clean under the repaired freshness pattern",
+    chipIdx > 0 && chips.includes("L(p.headline)") && !CHIP_FRESH_RX.test(chips));
+  check("production app source is clean under the repaired retired-flag pattern",
+    !SEPARATE_PATH_RX.test(html));
+  // The boundary is live: a bare substring test would fire on these; `\b` does not.
+  check("chips freshness pattern is a word-boundary test, not a bare substring test",
+    !CHIP_FRESH_RX.test("Freshness") && /Fresh/.test("Freshness"));
+  check("retired-flag pattern is a word-boundary test, not a bare substring test",
+    !SEPARATE_PATH_RX.test("p.separatePathLegacy") && /p\.separatePath/.test("p.separatePathLegacy"));
+
+  // (c) each observer predicate fails on the text its repaired half forbids.
+  const plantedChips = chips + "\n        if (!financingPlanFresh(p)) return;";
+  check("chips observer FAILS when the chips block consults a freshness gate",
+    !chipsLabelFromHeadlineUngated(plantedChips));
+  for (const id of ["ihFresh", "mxFresh", "financingPlanFresh", "financingTermsFresh"]) {
+    check(`chips freshness pattern fires on the shipped freshness identifier ${id}`,
+      CHIP_FRESH_RX.test(`if (${id}) { }`));
+  }
+  // The sheet is passed unmodified so only the html-wide (repaired) half can
+  // observe the planted read.
+  const plantedHtml = html + "\n    if (p.separatePath) { }";
+  check("separatePath observer FAILS when p.separatePath is read outside the financing sheet",
+    !separatePathRetired(plantedHtml, sheet));
+
+  // The defect, reproduced deliberately: the same patterns with a raw BACKSPACE
+  // in place of each `\b` stay silent on the planted text. This is what made
+  // the two halves vacuous, and it is why the repair is load-bearing.
+  const brokenFresh = new RegExp("Fresh" + BS);
+  const brokenSeparate = new RegExp(BS + "p\\.separatePath" + BS);
+  check("pre-repair /Fresh<BS>/ is vacuous: silent on the planted freshness gate",
+    !brokenFresh.test(plantedChips));
+  check("pre-repair /<BS>p\\.separatePath<BS>/ is vacuous: silent on the planted flag read",
+    !brokenSeparate.test(plantedHtml));
 }
 
 console.log(`\nFinancing copy policy check: ${passed} passed, ${failed} failed`);
