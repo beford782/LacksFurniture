@@ -48,7 +48,40 @@ standing constraints; the work it adds is recorded in the third 2026-08-29
 revision note below and on items 1.3, 1.4 and 1.6, the Phase 1 cohesion
 milestone, the pre-floor evidence plan and Phase 3 item 3.7.
 
-**Last updated:** 2026-08-30, fourth revision *(**P9 packet and Option C
+**Last updated:** 2026-09-04 *(**Roadmap reconciled with `main` through PR #97.**
+Documentation only — no application, data, test, fixture, generated artifact,
+external evidence package or role-play file changed; no owner-controlled mark
+moved except where a statement is corrected to an already-merged fact. State
+of `main` = `5a43b25` (the PR #97 merge, 2026-09-01), verified against
+`origin/main` and the PR list. Recorded: the 3.7 outcomes **P2, P3, P1, P9
+and P5 merged 2026-08-30** — PR #81 → `446fa39`, #84 → `69fbb50`, #85 →
+`3bdc9e8`, #83 → `e027e38` (P9 Option C; packet docs #82 → `3bd45e2`), #86 →
+`e446551` (P5 Option C; the prototype PR #80 closed unmerged) — with P4/P8
+deferred, P6/P7 not approved and P10 recorded only, so 3.7 stays ◐; the
+cohesion change items C1 (#79 → `cff363f`) and C5 (#87 → `9275dbe`) merged,
+and the **North Star objective foundation merged 2026-09-01 via PR #97 →
+`5a43b25`** (nine provenance commits re-landing C6, C4, X1, X6, X11, X12, the
+media foundation, the Sleep System states X2/X3/X10 and the X8/X9 transition;
+originals #88–#96 closed as superseded), recorded on the cohesion milestone;
+the **unmerged 43-commit evidence stack** A2 → A3 → A3.1 → A3.1 product-proof
+(`f605582`, frozen) → A4.1 → A4.2 → A4.3 (`62aadd9`, frozen), every commit
+based on `5a43b25`, never merged, no PR — distinguished from the foundation
+on `main`; **A4.1 and A4.2 candidate-complete** (roadmap 3.1 and 3.2) and
+awaiting Blake's explicit adoption and merge decisions, their 🔒 marks
+unmoved; **A4.3 owner-approved 2026-09-03 and candidate-verified at
+`62aadd9`, not merged** — `main` still ships ten questions; its clean PR must
+be cut from then-current `main`, not from the candidate (no clean A4.3
+branch or PR exists yet); one consolidated
+current-state role-play kit owed before any visual candidate ships (this
+roadmap records the three historical kits as historical; the external kit
+files were not changed); the financing
+copy-policy observer repair (three literal U+0008 bytes making regex halves
+vacuous) scheduled as a standalone test-hardening PR, not part of A4.3 (see
+0.7); suite accounting stated once: `main` runs 47 checks with
+`-SkipMutationSweep` and the mutation sweep is the 48th. Phase 0, Phase 1,
+Phase 2 and the showroom / activation gates are unchanged. The stale 3.7
+register and revision-history statements are corrected below. The previous
+revision, the fourth on 2026-08-30, recorded the **P9 packet and Option C
 ruling recorded; #78 merged.** Documentation only. PR #78 (the 3.7 audit)
 merged as `e584c77`. The P9 catalog / copy packet is landed with Blake's
 Option C ruling — see item 3.7. Also recorded on 2026-08-30 by the same
@@ -59,7 +92,9 @@ only after P2 lands and integrates `main`, P1 after P3 the same way; PR #80
 (the P5 option-C prototype) stays draft / DO NOT MERGE with its expected
 prototype CI failure, revised per the owner's wording and three-base ruling;
 an approved implementation would start from updated `main` on a fresh
-bounded branch. The previous revision, the third on 2026-08-30, recorded the
+bounded branch. *(Superseded the same day: those conditions were met and P2,
+P3, P1, P9 and P5 all merged 2026-08-30 — see the 2026-09-04 entry above.)*
+The previous revision, the third on 2026-08-30, recorded the
 **3.7 audit delivered and
 step 4 ruled; decision PR #77 merged.** Documentation only — no application,
 data, test or engine artifact changed; no status moved. PR #77 (the cohesion
@@ -891,7 +926,10 @@ sleep-fit independence remain constraints on the experience, not tradeable costs
 This premise supersedes any older self-service framing, including the
 "customers take a sleep quiz" self-service description in CLAUDE.md, which
 predates it. *(That description said "12-question" until 2026-08-12; the
-quiz is 10 questions since the owner-ruled removal recorded under 1.2.)* Where the two conflict, this premise governs product direction;
+quiz is 10 questions since the owner-ruled removal recorded under 1.2. The
+A4.3 candidate — owner-approved 2026-09-03, candidate-verified at `62aadd9`,
+NOT merged — reduces it to 9 by removing `trigger`; `main` ships 10 until that
+PR lands.)* Where the two conflict, this premise governs product direction;
 CLAUDE.md continues to govern architecture, i18n and the generated-artifact
 pipeline.
 
@@ -1397,6 +1435,21 @@ work.
 privacy, session safety, data-error recovery, financing totality, validation and
 quiz validation, the QR suite, workbook validation and the strict golden bundle —
 and `git diff --check` is clean.
+
+*(**Scheduled 2026-09-04 — standalone test hardening, not part of A4.3.**
+`tests/financing_copy_policy_check.mjs` carries three literal U+0008 bytes
+where regex word boundaries (`\b`) were meant — at `5a43b25`, line 100 in
+`/Fresh…/` and line 246 in `/…p\.separatePath…/` — so those halves of two
+shipped CI assertions match nothing and pass on every tree. A pre-existing
+defect, found during the A4.3 corrective pass. It ships as its own bounded
+test-hardening PR from then-current `main`: the repaired regexes plus
+controls proving the observers contain no control byte and still fire on the
+text they forbid. It must not be bundled into the A4.3 PR. This maintenance
+follow-up does not reopen item 0.7 or Phase 0: both remain closed and
+complete, and their ✅ marks stand. Suite accounting,
+for reference: `main` runs 47 checks with `-SkipMutationSweep` and the
+mutation sweep is the 48th; adding the A4.3 quiz-reduction suite makes 48
+without the sweep and 49 with it.)*
 
 ---
 
@@ -2018,7 +2071,10 @@ the solo path).** Blake ruled after a full consumer audit: `sleep_quality`
 and `current_mattress_age` removed. Both carried zero score tags;
 `current_mattress_age` had no consumer of any kind (its answer was collected
 and discarded), and `sleep_quality` fed only the Consultation Summary's
-context row, which now builds from `trigger` alone. Removal is **not** a
+context row, which now builds from `trigger` alone *(the A4.3 candidate,
+owner-approved 2026-09-03 and candidate-verified at `62aadd9` but NOT
+merged, removes `trigger` too and retires the row; `main` still carries both
+until that PR lands)*. Removal is **not** a
 scoring change: the engine ignores unknown answer ids, and the Phase 1
 output-regression fixture is **byte-identical across the change** — the
 executable proof that recommendations did not move. Changed together, per
@@ -4313,7 +4369,7 @@ no Spanish approval and nothing for PR #53. **Merged and verified:** PR #54 merg
 
 ---
 
-### Phase 1 milestone — Guided-selling cohesion and conversion readiness 🔨 (added 2026-08-29 by owner direction; review opened 2026-08-30 as a read-only evidence and proposal phase; after Slice 6, before 2.2 activation; pass-1 decisions recorded 2026-08-30)
+### Phase 1 milestone — Guided-selling cohesion and conversion readiness 🔨 (added 2026-08-29 by owner direction; review opened 2026-08-30 as a read-only evidence and proposal phase; after Slice 6, before 2.2 activation; pass-1 decisions recorded 2026-08-30; C1, C5, C6 and C4 merged and the North Star objective foundation merged 2026-09-01 via PR #97 — recorded 2026-09-04)
 
 **What it is.** The first review of the whole experience as one guided sales
 presentation rather than seven slices. It sits after every Phase 1 slice has
@@ -4394,6 +4450,48 @@ stays 🔨: pass 2 (in-app browser, mounted device) is owed and the change items
 are scheduled, not shipped. Reason content on Results and Compare remains
 item 1.3.
 
+**North Star program — recorded 2026-09-04, state of `main` `5a43b25`.** On
+2026-08-31 Blake ruled on the read-only six-lens visual audit of `main`
+`e446551` (`Documents\DreamFinder-manual-gates\north-star-visual-swarm-2026-08-30\OWNER-DECISION-PACKET.md`,
+rulings D1–D10) and set an execution sequence: cohesion PRs, objective
+corrections, a media foundation, prototype branches, then one integrated
+candidate. **Merged on `main`:** C1 (PR #79 → `cff363f`), C5 (PR #87 →
+`9275dbe`), and — after strict branch protection left the remaining approved
+heads un-mergeable at their exact SHAs — the **objective-foundation
+replacement train, PR #97 → `5a43b25` (2026-09-01)**: nine provenance
+commits re-landing C6 (the take-home eyebrow; EN "Take your matches home"
+approved, ES provisional), C4 (text-hugging heading focus), X1 (the portrait
+Selections pill over Compare), X6 (the accent leaking through `--gold`), X11
+(forced-colors state cues), X12 (the 44px touch floor), the media foundation
+(banner letterboxing and white mats), the Sleep System three-state rendering
+(X2/X3/X10) and the Brief-to-Results transition (X8/X9); the originals
+#88–#96 were closed as superseded. **Not merged — the evidence stack:** the
+integrated candidate and its descendants form one 43-commit chain, every
+commit based on `5a43b25`, no PR on any of them, all marked never-merge:
+A2 (`c81af41`; C2 and C3 carried here as C2-A2 / C3-A2 rather than shipped,
+with E1-A, E2-A, the Brief-only signature, the compact landscape quiz and
+the Sleep System review control) → A3 audience contract (`b28c29f`) → A3.1
+copy-and-visual synthesis (`310aa0d`) → A3.1 product-proof drawer
+(`f605582`, **frozen** as the immutable design checkpoint) → A4.1 (`dcb63e5`,
+roadmap 3.1) → A4.2 (`c781137`, roadmap 3.2) → A4.3 (`62aadd9`, **frozen**;
+the owner-approved quiz reduction). The foundation on `main` and this stack
+are different things: the first is shipped, the second is design and scoring
+evidence awaiting explicit decisions, and nothing in it ships as a merge of
+the stack — each adopted piece must be re-cut as a bounded PR from then-current
+`main` (A4.3 is proven separable: its reduction and its conditional-answer
+invariant reconstruct from `main` without A4.1 or A4.2). E1 and E2 were
+prototyped on `proto-e1-*` / `proto-e2-*` branches and remain experiments.
+**Role-play:** three kits were prepared for the A2, A3 and A3.1 candidates
+and none was conducted. This roadmap records all three as historical; the
+external kit files were not changed — only the A2 kit carries a global
+superseded notice, the A3 kit carries none, and the A3.1 kit has internal
+superseded rows but no global replacement notice (the kits reference
+reaction capture or the trial-verdict chip, both removed on the
+product-proof branch). **One consolidated current-state kit targeting the
+final candidate remains owed before any visual candidate ships**. The milestone stays 🔨: pass 2 is still owed and the candidate
+decisions are Blake's. Evidence root outside the repository:
+`Documents\DreamFinder-manual-gates\north-star-program-2026-08-31\`.
+
 ---
 
 ## Accessibility and showroom acceptance criteria
@@ -4451,6 +4549,18 @@ personal detail. Scheduling and the stand-in participants are Blake's; the
 sessions feed the cohesion milestone's decision packet and item 1.4's evidence,
 and they are not a substitute for the physical-device merge gate or the
 pre-showroom accessibility matrix.
+
+*(Recorded 2026-09-04: the three candidate role-play kits prepared under the
+North Star program — for the A2, A3 and A3.1 candidates — were never
+conducted and are recorded here as historical; the external kit files were
+not changed (only the A2 kit carries a global superseded notice, the A3 kit
+carries none, and the A3.1 kit has internal superseded rows but no global
+replacement notice). When the final
+candidate is fixed, ONE consolidated current-state kit is written against it,
+not three refreshed overlapping kits, and that kit is owed before any visual
+candidate ships. Any session runs on the tree that is the actual merge
+candidate. The kits and session records live outside the repository under
+the manual-gates evidence root.)*
 
 ### Phase 1 merge gate — the device matrix
 
@@ -5183,10 +5293,46 @@ side-sleeper / hip-pain population the tags exist to serve.
 Unblocked by: Blake's explicit approval, on its own PR, with the changed top picks
 enumerated as evidence. **Not a drive-by fix.**
 
+*(**Candidate-complete 2026-09-03, recorded 2026-09-04 — not adopted, not
+merged.** A4.1, branch `claude/north-star-candidate-a41-scoring-integrity`
+head `dcb63e5`, an isolated descendant of the frozen A3.1 checkpoint, carries
+the generator repair and the enumerated impact this item asks for: a
+57-scenario golden matrix through the real engine — 39 byte-identical, 18
+moved, gold top pick changed in 0 of 57, gold order and membership
+unchanged, silver 16 reordered / 12 qualified-set changes, bronze 2 / 1, no
+model losing a point; `index.html` byte-identical; tables in the
+`candidate-a41` evidence folder. Measured dry run against `main`: 11 of 12
+files apply verbatim; `tests/mutation_sweep.mjs` does not apply, because its
+anchor / context comes from A3.1, so the complete patch does not pass
+`git apply --check`. Fixtures must still be re-captured on then-current
+`main`. **Awaiting Blake's
+explicit adoption and merge decision.** An adopted repair ships as its own PR
+cut from then-current `main`, never as a merge of the candidate. Mark
+unchanged — 🔒 is Blake's to move.)*
+
 ### 3.2 — Unmatched quiz-tag vocabulary 🔒
 
 Six quiz tags match no catalog feature in any casing. Separate from 3.1 and needs
 its own decision: populate the catalog vocabulary, or retire the tags.
+
+*(**Candidate-complete 2026-09-03, recorded 2026-09-04 — not adopted, not
+merged.** A4.2, branch `claude/north-star-candidate-a42-scoring-vocabulary`
+head `c781137` (`f3d6095` plus a corrective), classified all six. `durable`
+is a spelling variant of the catalog's canonical `durability` and is
+corrected at source on the candidate — 53 of 57 scenarios byte-identical, 4
+moved, gold top pick changed in 3 (`need_issue_none`,
+`need_health_extra_support`, `fallback_all_none`, each a g5 / g7 tie broken
+toward the `durability` carrier), no model losing a point. `adjustable`,
+`memory` and `hypoallergenic` are real concepts with no authoritative data
+(exact data requests written, nothing populated); `comfort` and `quality` are
+generic. Those five stay governed and dormant on the candidate — declared
+with reasons and owner dependencies and guarded by a validator gate; zero
+ranking effect, proved by execution. The gate presumes 3.1's repair has
+landed, so the governance half follows 3.1; the `durable` correction is
+independent. A shipping implementation goes through the canonical source
+pipeline with the workbook, generated data, demo artifacts, fixtures, hashes
+and lineage regenerated and verified — never a two-file change. **Awaiting
+Blake's explicit adoption and merge decisions.** Mark unchanged.)*
 
 ### 3.3 — Global maximum score and tier structure 🔒
 
@@ -5227,7 +5373,7 @@ for approved work.
 
 ---
 
-### 3.7 — Accessory-recommendation quality ◐ (added 2026-08-29; the offline audit scheduled by Blake 2026-08-30 — read-only, no engine change; steps 1–3 delivered and step 4 ruled 2026-08-30 — P1–P3 approved, nothing merged)
+### 3.7 — Accessory-recommendation quality ◐ (added 2026-08-29; the offline audit scheduled by Blake 2026-08-30 — read-only, no engine change; steps 1–3 delivered and step 4 ruled 2026-08-30; P2, P3, P1, P9 and P5 merged 2026-08-30 — recorded 2026-09-04; P4/P8 deferred, P6/P7 not approved, P10 recorded)
 
 Item 1.4 makes the Sleep System the primary accessory-conversion experience,
 and the north star asks for *better-matched* accessories — a claim the
@@ -5309,6 +5455,18 @@ assortment; no products added, no inventory claimed, no live check unless
 separately requested; ES provisional. The packet lands on its own docs PR
 before the bounded implementation PR from updated `main`.)*
 
+*(**Merged 2026-08-30 — recorded 2026-09-04.** Every approved 3.7 output is
+on `main`, each on per-PR authorization with CI and the local suite green:
+P2 PR #81 → `446fa39`; P3 PR #84 → `69fbb50`; P1 PR #85 → `3bdc9e8`; the P9
+packet PR #82 → `3bd45e2` and its Option C implementation PR #83 →
+`e027e38`; the P5 Option C implementation PR #86 → `e446551` (customers
+without an adjustable-base trigger keep the adjustability demo and get a
+neutral all-bases compare list; the prototype PR #80 closed unmerged).
+Still standing, unchanged: **P4 and P8 deferred** to a second approval
+tranche; **P6 and P7 not approved**; **P10 recorded only**. The item stays
+◐, the Gated list stands for everything not named, and mattress-fit scoring
+was not touched by any of the five.)*
+
 ## Open decisions register
 
 Everything here is **unresolved**. An item's absence from this list is not
@@ -5321,15 +5479,15 @@ work listed under a ◐ item's Proceeds line.
 | Auto-advance | 🔒 | Blake | Observed sessions |
 | Review-screen compression or removal | 🔒 | Blake | Observed sessions. Review otherwise stays as it is; this does not hold 1.6 open |
 | Phase 2.2 price/payment activation | ◐ | Blake + business/legal | Written approval, taken only at the final end-of-project deployment stage immediately before live deployment (owner ruling 2026-08-28). It gates `displayEnabled`, enabled surfaces and live deployment only — its absence does not block dark development, provisional data, internal computation, previews, testing, completion of earlier roadmap items, or non-live 2.2 preparation under 2.2's Proceeds list (disabled implementation, isolated previews, automated tests). Production surfaces stay false until the gate — see 2.2's Gated block for the checkable properties |
-| Scoring case-fold (3.1) | 🔒 | Blake | Approval + enumerated impact |
-| Quiz-tag vocabulary gap (3.2) | 🔒 | Blake | Populate-or-retire decision |
-| **Accessory-recommendation quality (3.7)** — any change to accessory selection, ranking, grouping or hero logic | ◐ | Blake | Audit delivered 2026-08-30 (read-only); step 4 ruled the same day: **P1–P3 approved** as separate PRs in the order P2 → P3 → P1 (merge per PR); P4 deferred; P5 option C prototype only; P6 recorded as merchandising, not fit; P7 not approved; P8 deferred; P10 recorded; P9 catalog / copy packet *(added 2026-08-29; ruled 2026-08-30)* |
-| **Cohesion-milestone keep / change / experiment decisions** — per surface, the 1.6 surfaces first; a *change* on a completed slice ships only as a bounded PR against `main` | 🔨 review (opened 2026-08-30) / decisions ❓ until recorded | Blake | The milestone's decision packet with browser evidence per surface *(added 2026-08-29; the review itself may start)* |
+| Scoring case-fold (3.1) | 🔒 | Blake | Approval + enumerated impact *(candidate A4.1 `dcb63e5` complete 2026-09-03 with the enumerated 57-scenario impact — gold top pick 0 of 57; adoption and merge decision pending; see item 3.1)* |
+| Quiz-tag vocabulary gap (3.2) | 🔒 | Blake | Populate-or-retire decision *(candidate A4.2 `c781137` complete 2026-09-03: the `durable` → `durability` correction plus five governed-dormant keys; adoption and merge decisions pending; the governance half follows 3.1; see item 3.2)* |
+| **Accessory-recommendation quality (3.7)** — any change to accessory selection, ranking, grouping or hero logic | ◐ | Blake | Audit delivered 2026-08-30 (read-only); step 4 ruled the same day and **P2, P3, P1, P9 (Option C) and P5 (Option C) merged 2026-08-30** — PRs #81, #84, #85, #83, #86 (recorded 2026-09-04). Still open here: P4 deferred; P8 deferred; P6 recorded as merchandising, not fit; P7 not approved; P10 recorded; the Gated list stands for everything not named *(added 2026-08-29; ruled 2026-08-30)* |
+| **Cohesion-milestone keep / change / experiment decisions** — per surface, the 1.6 surfaces first; a *change* on a completed slice ships only as a bounded PR against `main` | 🔨 review (opened 2026-08-30) / decisions ❓ until recorded | Blake | The milestone's decision packet with browser evidence per surface *(added 2026-08-29; the review itself may start; pass-1 decisions recorded 2026-08-30, pass 2 owed)* |
 | **Item 1.4 Sleep System workstream — bounded change list** (presentation, narration, state rendering, carry-forward within the existing data contract) | ⏳ | Blake | The step-1 audit and step-2 proposal on the item; approved-English changes need Blake first; clause 8 remains his recorded assessment *(added 2026-08-29)* |
 | Global maxScore / cross-tier ranking / tier merge or removal / threshold, cap, back-fill (3.3) | 🔒 | Blake | Evidence. **Does not gate a preserving Phase 1 tier-navigation change.** *(2026-08-21: a cross-tier "highest-fit" marker — raised as a trust question — is this row, because it changes what the customer is told about fit; see "Tier presentation (trust)" for the presentation-only half.)* |
 | Firmness stops (3.5) | 🔒 | Blake | Evidence |
 | Persistent identity bar (3.6) | ❓ | Blake | A case for it |
-| **Cohesion pass-1 change items C1–C6 and experiments E1–E2** — each shipped only on its own bounded PR / prototype branch | 🔨 | Blake | Rulings recorded 2026-08-30 in `docs/guided-selling-cohesion-decisions-2026-08-30.md`; approval of each PR is per PR; E2 does not open 3.6 *(added 2026-08-30)* |
+| **Cohesion pass-1 change items C1–C6 and experiments E1–E2** — each shipped only on its own bounded PR / prototype branch | 🔨 | Blake | Rulings recorded 2026-08-30 in `docs/guided-selling-cohesion-decisions-2026-08-30.md`; approval of each PR is per PR; E2 does not open 3.6 *(added 2026-08-30)*. **State 2026-09-04:** C1 merged (PR #79), C5 merged (PR #87), C6 and C4 merged via the PR #97 train; C2 and C3 prototyped and carried into the unmerged A2 candidate, not shipped; E1 and E2 prototyped on `proto-e1-*` / `proto-e2-*`, never merged |
 | Dormant nickname-code cleanup | ❓ | Blake | Analytics review — see below |
 | Visible stale-financing status band (production) | ❓ | Blake | A case for it plus review sign-off. Prototype-only today (D6); if pursued, production gets its own dedicated governed key — not a reuse of `staleAnnouncement` |
 | Customer-recorded trial reactions | ❓ | Blake | A case for it. The Nocturne prototype's own candidate next revision; deliberately not built (D6) |
@@ -5552,7 +5710,15 @@ document, not here.
     change PRs scheduled, two experiments, the rest kept); the 3.7 audit
     began the same day, engine untouched; its steps 1–3 were delivered and
     step 4 ruled later that day (P1–P3 approved as separate PRs, P2 → P3 →
-    P1; see item 3.7). PR #77 merged as `b064527`.
+    P1; see item 3.7). PR #77 merged as `b064527`. *(State 2026-09-04, `main`
+    `5a43b25`: the 3.7 outputs P2, P3, P1, P9 and P5 merged 2026-08-30 (PRs
+    #81, #84, #85, #83, #86); C1 (#79), C5 (#87) and the North Star
+    objective-foundation train (#97, 2026-09-01) merged; the 43-commit
+    A2 / A3 / A3.1 / A4 candidate stack is unmerged evidence with no PR; A4.3
+    is owner-approved and candidate-verified at `62aadd9`, not merged; A4.1
+    and A4.2 are candidate-complete with adoption and merge decisions
+    pending; one consolidated role-play kit is owed before any visual
+    candidate ships; the milestone stays 🔨.)*
 
 ---
 
