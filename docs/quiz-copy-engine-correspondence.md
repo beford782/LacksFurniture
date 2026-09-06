@@ -1,4 +1,4 @@
-# Quiz copy ↔ engine correspondence — the ten `helpText` lines and what they may claim
+# Quiz copy ↔ engine correspondence — the nine `helpText` lines and what they may claim
 
 **Status:** governing record for the per-question help copy (Phase 1 cross-cutting
 gate — Trust integrity and transparency, 2026-08-21). Pinned by
@@ -36,8 +36,9 @@ The sleep-fit ranking is `calculateScores()` in `index.html`:
 
 Two facts constrain what the copy may claim:
 
-- **Zero-scoring questions.** `trigger` and `mattress_size` carry `scores: {}`
-  on every option. They never touch the ranking.
+- **Zero-scoring question.** `mattress_size` carries `scores: {}` on every
+  option. It never touches the ranking. (`trigger` was the other one until A4.3
+  removed the question entirely — owner-approved 2026-09-03.)
 - **Inert tags in this deployment.** The shipped catalog's `features` vocabulary
   is `cooling, durability, firm, hybrid, medium, motionisolation, plush,
   pressurerelief, responsive, soft, support, zoned`. Eight quiz tags therefore
@@ -59,9 +60,11 @@ Other consumers the copy may describe (all consume answers, none re-rank):
   `getAdjustabilityDemo()`): pillow, protector and adjustable-base suggestions,
   and the base demo position.
 - **Consultation Summary** (`resolveConsultationSummary()` with
-  `salesNotes.consultationImplications`): the three rows the specialist reads —
-  context (trigger), who (size + sleep-issue implications), profile (position,
-  health implications, firmness feel + value, temperature implication).
+  `salesNotes.consultationImplications`): the two rows the specialist reads —
+  who (size + sleep-issue implications) and profile (position, health
+  implications, firmness feel + value, temperature implication). The context
+  row was retired with `trigger` on 2026-09-03; `consultation.context` is
+  emitted as an explicit empty string and no replacement may be inferred.
 - **Display only**: Sleep Brief reflection, decorative Sleep Signature,
   review rows, email payload (`mattressSize` label only).
 
@@ -80,27 +83,14 @@ the exact weights change while the mechanism remains.
 
 ---
 
-## The ten questions
+## The nine questions
 
 Column key — **Ranks:** affects the sleep-fit ranking (via which live tags).
 **Firmness:** sets the firmness target. **Display:** display only.
 **Summary:** feeds the specialist's Consultation Summary. **Accessories:** feeds
 Sleep System / base suggestions.
 
-### 1. trigger
-
-- **Question:** What can we help you with today?
-- **Previous EN:** No pressure — this just helps your specialist focus on what matters to you.
-- **Previous ES:** Sin presión — esto ayuda a tu especialista a enfocarse en lo que te importa.
-- **Current EN:** This doesn't change your sleep-fit ranking. It helps your specialist focus on what matters to you.
-- **Current ES (provisional):** Esto no cambia el orden de tus opciones. Ayuda a tu especialista a enfocarse en lo que te importa.
-- **Ranks:** no — every option `scores: {}`. **Firmness:** no. **Display:** no. **Summary:** yes — the context row (`consultImplication('trigger', …)`). **Accessories:** no.
-- **Cited tags:** none.
-- **Mechanism the copy describes:** zero scoring; consultation context only.
-- **Must not say:** anything implying the answer changes matches. ("No pressure" was dropped here because the Welcome screen already says it — net reassurance held flat.)
-- **Verdict on the previous line:** true but did not state the non-scoring fact.
-
-### 2. mattress_size
+### 1. mattress_size
 
 - **Question:** What size mattress are you looking for?
 - **Previous EN:** So every mattress we show actually fits your space.
@@ -113,7 +103,7 @@ Sleep System / base suggestions.
 - **Must not say:** that displayed mattresses fit or are available in that size.
 - **Verdict on the previous line:** OVERCLAIM (no filtering, no availability) in both languages.
 
-### 3. partner_sleep
+### 2. partner_sleep
 
 - **Question:** Who's sharing the bed with you?
 - **Previous EN:** Who shares your bed shapes which features matter most.
@@ -126,7 +116,7 @@ Sleep System / base suggestions.
 - **Must not say:** "matter most" (the partner answer ranks nothing here).
 - **Verdict on the previous line:** VAGUE / overstated ("matter most"); ES "determina" stronger still.
 
-### 4. partner_disturbance
+### 3. partner_disturbance
 
 - **Question:** Does your partner's movement wake you up?
 - **Previous EN:** Motion isolation is one of the first upgrades you'll feel.
@@ -142,7 +132,7 @@ Sleep System / base suggestions.
 - **Must not say:** a benefit promise ("you'll feel"), or that motion isolation is favored in the ranking while the tag is inert.
 - **Verdict on the previous line:** BENEFIT CLAIM in both languages.
 
-### 5. sleep_position
+### 4. sleep_position
 
 - **Question:** How do you usually sleep?
 - **Previous EN:** Your sleep position is the biggest clue to the support you need.
@@ -155,7 +145,7 @@ Sleep System / base suggestions.
 - **Must not say:** "the biggest clue" (a ≤5-point tag against a 50-point firmness term).
 - **Verdict on the previous line:** OVERCLAIM (EN); ES was not a translation and named no mechanism.
 
-### 6. body_type
+### 5. body_type
 
 - **Question:** What weight range should this mattress support? (couples variant: "…for the sleeper who needs more support?")
 - **Current EN (unchanged):** This helps us account for cushioning, support, and durability.
@@ -165,7 +155,7 @@ Sleep System / base suggestions.
 - **Cited tags:** plush, soft, medium, support, responsive, firm, hybrid, durability, motionIsolation.
 - **Verdict:** TRUE — kept.
 
-### 7. temperature
+### 6. temperature
 
 - **Question:** How do you sleep temperature-wise?
 - **Previous EN:** Sleeping hot or cold is an easy fix with the right materials.
@@ -178,7 +168,7 @@ Sleep System / base suggestions.
 - **Must not say:** "easy fix", or that materials solve a temperature problem; no health/"deep sleep" claim.
 - **Verdict on the previous line:** BENEFIT CLAIM (EN); ES made a different, health-adjacent claim.
 
-### 8. firmness
+### 7. firmness
 
 - **Question:** What firmness level do you prefer?
 - **Previous EN:** No wrong answer here, just slide to what feels best.
@@ -188,7 +178,7 @@ Sleep System / base suggestions.
 - **Cited tags:** none (slider, no `scores`).
 - **Verdict:** TRUE; "feels best" was the customer's own feel, not a product claim, but "best" is on the banned list, so the EN line now says "the feel you prefer" (ES already did). A mechanism line ("ranked closest to this setting first") was considered and rejected because feature points can legitimately reorder a one-step neighbour.
 
-### 9. sleep_issues
+### 8. sleep_issues
 
 - **Question:** Any issues with your current mattress?
 - **Previous EN:** Tap anything you've noticed. Each one points us toward a fix.
@@ -201,7 +191,7 @@ Sleep System / base suggestions.
 - **Must not say:** "a fix" (outcome claim).
 - **Verdict on the previous line:** mild OUTCOME CLAIM (EN); ES vague.
 
-### 10. health_conditions
+### 9. health_conditions
 
 - **Question:** Anything else going on that affects your sleep?
 - **Previous EN:** Tap any that apply. A few of these change what we'd suggest.
@@ -218,6 +208,8 @@ Sleep System / base suggestions.
 
 ## Copy inventory for the consolidated native-Spanish pass
 
-Eight ES lines changed (questions 1, 2, 3, 4, 5, 7, 9, 10 above) — all provisional.
-Two ES lines unchanged (6, 8); question 8 changed in EN only. The ES `copyVariants` help line on `body_type` is
+Eight ES lines changed at the 2026-08-21 gate (the then-questions 1, 2, 3, 4, 5, 7, 9 and 10;
+then-question 1, `trigger`, has since left the quiz with A4.3 — owner-approved
+2026-09-03 — so seven of those lines remain above, as questions 1, 2, 3, 4, 6, 8 and 9) — all provisional.
+Two ES lines unchanged (then 6 and 8, now 5 and 7); the firmness question changed in EN only. The ES `copyVariants` help line on `body_type` is
 unchanged.

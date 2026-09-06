@@ -170,7 +170,26 @@ const BASELINE_PATH = join(root, "tests", "fixtures", "phase1_output_baseline_da
 // fixture (sha 35c1c70e...), which removing s11 reproduces. Hash moved in
 // the same reviewed diff; the "P1 heat parity removed" mutation below
 // diverges in s11 alone, keeping the addition load-bearing.
-const BASELINE_SHA256 = "4ae5c964beb4ef1085e75f229f3cb72809f100bcdc35c89042ca6fcc9e812462";
+//
+// 2026-09-06 amendment (A4.3, the owner-approved quiz reduction, recut from
+// main ceb7fab). The visit-trigger question was removed from the authoritative
+// source and every derived artifact regenerated through the pipeline; the
+// scenarios above no longer carry a `trigger` answer, because a reduced
+// session never collects one. The fixture is the previous fixture (sha
+// 4ae5c964...) with EXACTLY 9 lines removed, all nine the echoed
+// `scenarios.*.answers.trigger` INPUT - a plain line diff between the two
+// files shows 9 removals and 0 additions. Every computed output is
+// byte-identical: scores, tier order, qualification, pct, threshold stamps,
+// gold top pick, allMatches, per-language matchReasons, Brief priorities,
+// profileName, subtitle, brief, resolved firmness, the accessory scorer's full
+// ordered list with matched flags and reasons, the Sleep System groups and
+// recommendedAccessories; the retained obsolete `profile.feelWord` cells were
+// preserved from the previous fixture as before. The Consultation Summary's
+// context row - `trigger`'s only consumer - is retired by the same ruling; it
+// is not pinned here (this fixture holds recommendation state) and is covered
+// by tests/quiz_reduction_check.mjs and tests/consultation_summary_check.mjs.
+// Hash moved in the same reviewed diff.
+const BASELINE_SHA256 = "d716dc843e140ab885d853fa25440e890520f5f206ff56096db15c55bf4ea79f";
 
 const WRITE_MODE = process.argv.includes("--write-baseline");
 
@@ -229,54 +248,54 @@ check("extracted the firmness resolution line", !!FIRM_LINE);
 // left unexercised rather than pinned through an impossible input.
 const SCENARIOS = {
   s1_solo_back_firm_no_issues: {
-    sleep_quality: "well", trigger: "upgrade", mattress_size: "king",
+    sleep_quality: "well", mattress_size: "king",
     partner_sleep: "solo", sleep_position: "back", body_type: "athletic",
     temperature: "comfortable", firmness: 8, current_mattress_age: "under_2",
     sleep_issues: ["none"], health_conditions: ["none"]
   },
   s2_partner_side_hot_backpain_snoring: {
-    sleep_quality: "poor", trigger: "pain", mattress_size: "queen",
+    sleep_quality: "poor", mattress_size: "queen",
     partner_sleep: "partner", partner_disturbance: "yes_often",
     sleep_position: "side", body_type: "average", temperature: "hot",
     firmness: 4, current_mattress_age: "eight_fifteen",
     sleep_issues: ["back_pain", "hot"], health_conditions: ["snoring"]
   },
   s3_family_combo_cold_plush_reflux_plus: {
-    sleep_quality: "fair", trigger: "worn_out", mattress_size: "full",
+    sleep_quality: "fair", mattress_size: "full",
     partner_sleep: "family", partner_disturbance: "sometimes",
     sleep_position: "combo", body_type: "plus", temperature: "cold",
     firmness: 2, current_mattress_age: "fifteen_plus",
     sleep_issues: ["hip_pain", "sagging"], health_conditions: ["reflux"]
   },
   s4_partner_stomach_cold_firm_sagging: {
-    sleep_quality: "okay", trigger: "moving", mattress_size: "king",
+    sleep_quality: "okay", mattress_size: "king",
     partner_sleep: "partner", partner_disturbance: "yes_often",
     sleep_position: "stomach", body_type: "average", temperature: "cold",
     firmness: 8, current_mattress_age: "three_seven",
     sleep_issues: ["sagging"], health_conditions: []
   },
   s5_motion_dominant_tossing: {
-    sleep_quality: "fair", trigger: "browsing", mattress_size: "queen",
+    sleep_quality: "fair", mattress_size: "queen",
     partner_sleep: "partner", partner_disturbance: "yes_often",
     sleep_position: "back", body_type: "average", temperature: "comfortable",
     firmness: 5, current_mattress_age: "not_sure",
     sleep_issues: ["tossing"], health_conditions: ["none"]
   },
   s6_solo_side_pressure_relief: {
-    sleep_quality: "poor", trigger: "pain", mattress_size: "twin_xl",
+    sleep_quality: "poor", mattress_size: "twin_xl",
     partner_sleep: "solo", sleep_position: "side", body_type: "petite",
     temperature: "comfortable", firmness: 3, current_mattress_age: "eight_fifteen",
     sleep_issues: ["hip_pain", "stiff"], health_conditions: ["nerve_pain", "extra_support"]
   },
   s7_partner_combo_opposite_allergies: {
-    sleep_quality: "okay", trigger: "upgrade", mattress_size: "cal_king",
+    sleep_quality: "okay", mattress_size: "cal_king",
     partner_sleep: "partner", partner_disturbance: "rarely",
     sleep_position: "combo", body_type: "different", temperature: "opposite",
     firmness: 6, current_mattress_age: "three_seven",
     sleep_issues: ["too_soft"], health_conditions: ["allergies"]
   },
   s8_no_idea_hot_aging: {
-    sleep_quality: "fair", trigger: "worn_out", mattress_size: "full",
+    sleep_quality: "fair", mattress_size: "full",
     partner_sleep: "solo", sleep_position: "no_idea", body_type: "average",
     temperature: "hot", firmness: 5, current_mattress_age: "fifteen_plus",
     sleep_issues: ["hot", "tossing"], health_conditions: ["getting_older"]
@@ -286,7 +305,7 @@ const SCENARIOS = {
   // Exists so the isPlush/isMedium boundaries are load-bearing for the
   // 16-type profile assignment (the plush-boundary mutation flips this one).
   s10_solo_goldilocks_medium: {
-    sleep_quality: "okay", trigger: "browsing", mattress_size: "queen",
+    sleep_quality: "okay", mattress_size: "queen",
     partner_sleep: "solo", sleep_position: "side", body_type: "average",
     temperature: "comfortable", firmness: 4, current_mattress_age: "three_seven",
     sleep_issues: ["none"], health_conditions: ["none"]

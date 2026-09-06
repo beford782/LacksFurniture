@@ -70,13 +70,6 @@
   "voice_es.outcomeLabel": "Tu consulta crea",
   "voice_es.outcomeItems": "Resumen de Sueño · Opciones de Colchón · Sistema de Sueño · Opciones de Pago",
   "salesNotes.consultationImplications": {
-    "trigger": {
-      "pain": { "en": "here to solve a comfort problem", "es": "aquí para resolver un problema de comodidad" },
-      "worn_out": { "en": "replacing an old mattress", "es": "reemplazando un colchón viejo" },
-      "moving": { "en": "furnishing a new space", "es": "amueblando un espacio nuevo" },
-      "upgrade": { "en": "ready for an upgrade", "es": "buscando una mejora" },
-      "browsing": { "en": "exploring options today", "es": "explorando opciones hoy" }
-    },
     "sleep_issues": {
       "back_pain": { "en": "test lower-back support carefully", "es": "probar con cuidado el soporte lumbar" },
       "hip_pain": { "en": "focus on pressure relief at hips and shoulders", "es": "enfocarse en aliviar la presión en caderas y hombros" },

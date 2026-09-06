@@ -572,13 +572,6 @@
       }
     },
     "consultationImplications": {
-      "trigger": {
-        "pain": "here to solve a comfort problem",
-        "worn_out": "replacing an old mattress",
-        "moving": "furnishing a new space",
-        "upgrade": "ready for an upgrade",
-        "browsing": "exploring options today"
-      },
       "sleep_issues": {
         "back_pain": "test lower-back support carefully",
         "hip_pain": "focus on pressure relief at hips and shoulders",
@@ -633,13 +626,6 @@
       }
     },
     "consultationImplications": {
-      "trigger": {
-        "pain": "aquí para resolver un problema de comodidad",
-        "worn_out": "reemplazando un colchón viejo",
-        "moving": "amueblando un espacio nuevo",
-        "upgrade": "buscando una mejora",
-        "browsing": "explorando opciones hoy"
-      },
       "sleep_issues": {
         "back_pain": "probar con cuidado el soporte lumbar",
         "hip_pain": "enfocarse en aliviar la presión en caderas y hombros",

