@@ -48,10 +48,37 @@ standing constraints; the work it adds is recorded in the third 2026-08-29
 revision note below and on items 1.3, 1.4 and 1.6, the Phase 1 cohesion
 milestone, the pre-floor evidence plan and Phase 3 item 3.7.
 
-**Last updated:** 2026-09-04 *(**Roadmap reconciled with `main` through PR #97.**
+**Last updated:** 2026-09-06 *(**Roadmap reconciled with `main` through PR #100.**
 Documentation only — no application, data, test, fixture, generated artifact,
 external evidence package or role-play file changed; no owner-controlled mark
 moved except where a statement is corrected to an already-merged fact. State
+of `main` = `1e4e092` (the PR #100 merge, 2026-09-06 22:37Z), verified against
+`origin/main` and the PR list; post-merge CI and the Pages build succeeded at
+that commit — a preview, never showroom authorization. Recorded: **the
+standalone financing copy-policy observer hardening merged 2026-09-06 via
+PR #99 → `ceb7fab`** (head `c7d6dd4`; the three literal U+0008 bytes replaced
+by real regex word boundaries, an observer-integrity block proving the suite
+carries no control byte and fires on the text it forbids, and two sweep
+entries that survived the pre-repair suite — scheduled under 0.7 on
+2026-09-04, now complete; 0.7 and Phase 0 stay closed); **A4.3, the
+owner-approved nine-question reduction, merged 2026-09-06 via PR #100 →
+`1e4e092`** (head `48fae5b`, the clean re-cut from then-current `main`
+`ceb7fab` — not the frozen candidate `62aadd9`, which remains unmerged
+evidence): `main` now ships 9 questions / 42 options (8 displayed steps for a
+solo sleeper, 9 shared), `trigger` removed, the Summary context row retired,
+the conditional-answer invariant and the quiz-reduction suite on `main`; suite
+accounting stated once: `main` runs 48 checks with `-SkipMutationSweep` and
+the mutation sweep is the 49th. Unchanged: **A4.1 and A4.2 remain
+candidate-complete** (roadmap 3.1 and 3.2) with adoption and merge decisions
+Blake's to make and their 🔒 marks unmoved; the rest of the 43-commit
+evidence stack stays unmerged evidence with no PR; one consolidated
+current-state role-play kit is still owed before any visual candidate ships;
+Phase 0, Phase 1, Phase 2 and the showroom / activation gates are unchanged.
+The previous revision, 2026-09-04, recorded the **Roadmap reconciled with
+`main` through PR #97.** Documentation only — no application, data, test,
+fixture, generated artifact, external evidence package or role-play file
+changed; no owner-controlled mark moved except where a statement is corrected
+to an already-merged fact. State
 of `main` = `5a43b25` (the PR #97 merge, 2026-09-01), verified against
 `origin/main` and the PR list. Recorded: the 3.7 outcomes **P2, P3, P1, P9
 and P5 merged 2026-08-30** — PR #81 → `446fa39`, #84 → `69fbb50`, #85 →
@@ -80,7 +107,10 @@ vacuous) scheduled as a standalone test-hardening PR, not part of A4.3 (see
 0.7); suite accounting stated once: `main` runs 47 checks with
 `-SkipMutationSweep` and the mutation sweep is the 48th. Phase 0, Phase 1,
 Phase 2 and the showroom / activation gates are unchanged. The stale 3.7
-register and revision-history statements are corrected below. The previous
+register and revision-history statements are corrected below. *(Superseded
+2026-09-06 on two points: the copy-policy observer repair merged as PR #99 and
+the clean A4.3 PR was cut from `ceb7fab` and merged as PR #100, so `main` no
+longer ships ten questions — see the 2026-09-06 entry above.)* The previous
 revision, the fourth on 2026-08-30, recorded the **P9 packet and Option C
 ruling recorded; #78 merged.** Documentation only. PR #78 (the 3.7 audit)
 merged as `e584c77`. The P9 catalog / copy packet is landed with Blake's
@@ -925,11 +955,11 @@ sleep-fit independence remain constraints on the experience, not tradeable costs
 
 This premise supersedes any older self-service framing, including the
 "customers take a sleep quiz" self-service description in CLAUDE.md, which
-predates it. *(That description said "12-question" until 2026-08-12; the
-quiz is 10 questions since the owner-ruled removal recorded under 1.2. The
-A4.3 candidate — owner-approved 2026-09-03, candidate-verified at `62aadd9`,
-NOT merged — reduces it to 9 by removing `trigger`; `main` ships 10 until that
-PR lands.)* Where the two conflict, this premise governs product direction;
+predates it. *(That description said "12-question" until 2026-08-12, then 10
+questions from the owner-ruled removal recorded under 1.2; the quiz is 9
+questions since A4.3 — owner-approved 2026-09-03, candidate-verified at
+`62aadd9`, re-cut from `main` and merged 2026-09-06 as PR #100 → `1e4e092` —
+removed `trigger`.)* Where the two conflict, this premise governs product direction;
 CLAUDE.md continues to govern architecture, i18n and the generated-artifact
 pipeline.
 
@@ -1436,20 +1466,27 @@ privacy, session safety, data-error recovery, financing totality, validation and
 quiz validation, the QR suite, workbook validation and the strict golden bundle —
 and `git diff --check` is clean.
 
-*(**Scheduled 2026-09-04 — standalone test hardening, not part of A4.3.**
-`tests/financing_copy_policy_check.mjs` carries three literal U+0008 bytes
-where regex word boundaries (`\b`) were meant — at `5a43b25`, line 100 in
-`/Fresh…/` and line 246 in `/…p\.separatePath…/` — so those halves of two
-shipped CI assertions match nothing and pass on every tree. A pre-existing
-defect, found during the A4.3 corrective pass. It ships as its own bounded
-test-hardening PR from then-current `main`: the repaired regexes plus
-controls proving the observers contain no control byte and still fire on the
-text they forbid. It must not be bundled into the A4.3 PR. This maintenance
-follow-up does not reopen item 0.7 or Phase 0: both remain closed and
-complete, and their ✅ marks stand. Suite accounting,
-for reference: `main` runs 47 checks with `-SkipMutationSweep` and the
-mutation sweep is the 48th; adding the A4.3 quiz-reduction suite makes 48
-without the sweep and 49 with it.)*
+*(**Scheduled 2026-09-04, complete 2026-09-06 — standalone test hardening,
+not part of A4.3.** `tests/financing_copy_policy_check.mjs` carried three
+literal U+0008 bytes where regex word boundaries were meant — at `5a43b25`,
+line 100 in `/Fresh…/` and line 246 in `/…p\.separatePath…/` — so those
+halves of two shipped CI assertions matched nothing and passed on every tree.
+A pre-existing defect, found during the A4.3 corrective pass. It shipped as
+its own bounded test-hardening PR from then-current `main`, **PR #99 →
+`ceb7fab` (head `c7d6dd4`, merged 2026-09-06 00:38Z)**, before and separate
+from the A4.3 PR: the two regexes repaired to real word boundaries; an
+observer-integrity block proving the suite's own source carries no U+0008 and
+no other C0 control byte, pinning each repaired pattern to its exact text,
+showing it clean on the shipped source and failing on planted text carrying
+the forbidden freshness gate or `p.separatePath` read, and demonstrating the
+pre-repair patterns vacuous on that same text; and two mutation-sweep entries
+that reintroduce exactly the forbidden text and were recorded as survivors
+against the pre-repair suite. Post-merge CI at `1e4e092` runs both the suite
+and the sweep green. This maintenance follow-up did not reopen item 0.7 or
+Phase 0: both remain closed and complete, and their ✅ marks stand. Suite
+accounting, for reference: since PR #100 landed the A4.3 quiz-reduction
+suite, `main` runs 48 checks with `-SkipMutationSweep` and the mutation sweep
+is the 49th.)*
 
 ---
 
@@ -2071,10 +2108,11 @@ the solo path).** Blake ruled after a full consumer audit: `sleep_quality`
 and `current_mattress_age` removed. Both carried zero score tags;
 `current_mattress_age` had no consumer of any kind (its answer was collected
 and discarded), and `sleep_quality` fed only the Consultation Summary's
-context row, which now builds from `trigger` alone *(the A4.3 candidate,
-owner-approved 2026-09-03 and candidate-verified at `62aadd9` but NOT
-merged, removes `trigger` too and retires the row; `main` still carries both
-until that PR lands)*. Removal is **not** a
+context row, which then built from `trigger` alone *(A4.3 — owner-approved
+2026-09-03, candidate-verified at `62aadd9`, re-cut from `main` and merged
+2026-09-06 as PR #100 → `1e4e092` — removed `trigger` too and retired the
+row; `main` has carried neither since that merge: 9 questions / 42 options)*.
+Removal is **not** a
 scoring change: the engine ignores unknown answer ids, and the Phase 1
 output-regression fixture is **byte-identical across the change** — the
 executable proof that recommendations did not move. Changed together, per
@@ -4467,19 +4505,23 @@ Selections pill over Compare), X6 (the accent leaking through `--gold`), X11
 (X2/X3/X10) and the Brief-to-Results transition (X8/X9); the originals
 #88–#96 were closed as superseded. **Not merged — the evidence stack:** the
 integrated candidate and its descendants form one 43-commit chain, every
-commit based on `5a43b25`, no PR on any of them, all marked never-merge:
+commit based on `5a43b25`, no PR on any of them, all marked never-merge
+(A4.3's content was adopted by a clean re-cut, PR #100, not by merging the
+candidate commit, which stays in this stack as evidence):
 A2 (`c81af41`; C2 and C3 carried here as C2-A2 / C3-A2 rather than shipped,
 with E1-A, E2-A, the Brief-only signature, the compact landscape quiz and
 the Sleep System review control) → A3 audience contract (`b28c29f`) → A3.1
 copy-and-visual synthesis (`310aa0d`) → A3.1 product-proof drawer
 (`f605582`, **frozen** as the immutable design checkpoint) → A4.1 (`dcb63e5`,
 roadmap 3.1) → A4.2 (`c781137`, roadmap 3.2) → A4.3 (`62aadd9`, **frozen**;
-the owner-approved quiz reduction). The foundation on `main` and this stack
+the owner-approved quiz reduction, **adopted 2026-09-06** as the re-cut PR
+#100 → `1e4e092`). The foundation on `main` and this stack
 are different things: the first is shipped, the second is design and scoring
 evidence awaiting explicit decisions, and nothing in it ships as a merge of
 the stack — each adopted piece must be re-cut as a bounded PR from then-current
-`main` (A4.3 is proven separable: its reduction and its conditional-answer
-invariant reconstruct from `main` without A4.1 or A4.2). E1 and E2 were
+`main` (A4.3 proved the rule: its reduction and its conditional-answer
+invariant were reconstructed from `main` `ceb7fab` without A4.1 or A4.2 and
+merged as PR #100; A4.1 and A4.2 still await Blake's decisions). E1 and E2 were
 prototyped on `proto-e1-*` / `proto-e2-*` branches and remain experiments.
 **Role-play:** three kits were prepared for the A2, A3 and A3.1 candidates
 and none was conducted. This roadmap records all three as historical; the
@@ -5718,7 +5760,13 @@ document, not here.
     is owner-approved and candidate-verified at `62aadd9`, not merged; A4.1
     and A4.2 are candidate-complete with adoption and merge decisions
     pending; one consolidated role-play kit is owed before any visual
-    candidate ships; the milestone stays 🔨.)*
+    candidate ships; the milestone stays 🔨.)* *(State 2026-09-06, `main`
+    `1e4e092`: PR #99 (the copy-policy observer hardening, `ceb7fab`) and
+    PR #100 (A4.3's nine-question reduction, re-cut from `ceb7fab`) merged;
+    A4.1 and A4.2 remain candidate-complete with adoption and merge
+    decisions pending; the rest of the candidate stack stays unmerged
+    evidence with no PR; the consolidated role-play kit is still owed before
+    any visual candidate ships; the milestone stays 🔨.)*
 
 ---
 
@@ -5730,7 +5778,7 @@ described behaviour is the durable anchor.
 
 | # | Finding |
 |---|---|
-| 1 | Quiz: 10 questions, exactly 47 options — so "review all 47 icons" is a bounded task. *(As originally recorded: 12 questions / 56 options; reduced 2026-08-12 by the owner-ruled removal of sleep_quality and current_mattress_age — see 1.2)* |
+| 1 | Quiz: 9 questions, exactly 42 options since A4.3 (PR #100, 2026-09-06). *(As originally recorded: 12 questions / 56 options; reduced 2026-08-12 to 10 / 47 by the owner-ruled removal of sleep_quality and current_mattress_age — at which point "review all 47 icons" was the bounded task; reduced to 9 / 42 by A4.3's removal of `trigger` — see 1.2)* |
 | 2 | The engine already computes the top three priorities with name, reason, testing prompt and kind; there is no rank field, and ordering is by an unrendered score |
 | 3 | A next-step rail already exists on the Sleep Brief, rendering three steps as plain divs |
 | 4 | The "Try this:" testing prompt is currently fully visible on the Sleep Brief, not behind disclosure |
