@@ -1106,7 +1106,7 @@ const REQUIRED_CONTENT_IDS = [
   "supportingRow", "resultsTrialFocus",
   "drawerName", "drawerDifferentiators", "drawerTryPrompts", "drawerPromotionDetail",
   "compareCols", "compareTraySlots",
-  "hf2PicksList", "hf2AccessoriesList", "hf2BriefWho", "hf2BriefContext",
+  "hf2PicksList", "hf2AccessoriesList", "hf2BriefWho",
   "hf2BriefProfile", "hf2SleepSystemSection", "hf2Priorities",
   // Slice 4 (D4): the three containers built from Payment Choice state. The
   // sheet cards carry the disclosure panels and the Consider/Clear controls;
