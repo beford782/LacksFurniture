@@ -48,7 +48,34 @@ standing constraints; the work it adds is recorded in the third 2026-08-29
 revision note below and on items 1.3, 1.4 and 1.6, the Phase 1 cohesion
 milestone, the pre-floor evidence plan and Phase 3 item 3.7.
 
-**Last updated:** 2026-09-06 *(**Roadmap reconciled with `main` through PR #100.**
+**Last updated:** 2026-09-06 *(**Owner direction recorded — one complete
+end-state candidate before any human-facing validation.** Documentation only
+— no application, test, data, generated artifact, AGENTS.md or CLAUDE.md
+change; no owner-controlled mark moved; the PR #99 / #100 / #101 facts
+recorded the same day stand. Blake's direction, dated 2026-09-06: DreamFinder
+is built as **one complete, visually captivating end-state candidate** before
+any human-facing validation. During construction the automated protections
+stay on — CI, the mutation sweep, the integrity guards, generated-artifact
+validation and the regression checks — because they protect contracts; they
+are **not** design-acceptance evidence. **All human-facing acceptance testing
+is deferred** — the browser matrix, mounted-device verification, moderated
+role-play and every other human-facing pass — to **one final, non-live
+validation pass against the complete integrated candidate**. Not authorized:
+live customer evidence, production analytics, deployment, activation, showroom
+use, or iterative interim validation. **Interim visual work is candidate-only
+and must not merge or ship independently.** Reconciled below, and only where
+a passage conflicted: the 1.4 sequence (its evidence and close steps move to
+the final pass), the guided-selling cohesion milestone (pass 2, the remaining
+change and experiment items and every visual candidate fold into the one
+candidate; the consolidated role-play kit is owed at the final pass, since no
+visual candidate ships before it), the pre-floor evidence plan (one final
+pass, not interim sessions), the Phase 1 merge-gate note, the open-decisions
+rows and the sequence of record. Standing and untouched: 2.2's activation
+gate; the 3.1 / 3.2 owner decisions (A4.1 / A4.2 still pending); 3.7's
+limits; Invariant 12's consolidated Spanish pass; the privacy,
+scoring-isolation and live-backend constraints; showroom NO; preview is never
+showroom authorization.)* The previous revision, earlier on 2026-09-06,
+recorded the **Roadmap reconciled with `main` through PR #100.**
 Documentation only — no application, data, test, fixture, generated artifact,
 external evidence package or role-play file changed; no owner-controlled mark
 moved except where a statement is corrected to an already-merged fact. State
@@ -2736,7 +2763,9 @@ display is omitted from the cards entirely for now.)*
   product.
 - Keep sleep fit visually dominant over financing.
 - Prototype and verify at the real device matrix — see the accessibility and
-  showroom section, and note the matrix is an open dependency.
+  showroom section, and note the matrix is an open dependency. *(2026-09-06:
+  the device-matrix verification happens at the final non-live validation
+  pass against the complete candidate; interim card work is candidate-only.)*
 
 **The reason content is catalog authoring for Lacks, not engineering.** It should
 start early because it gates the most valuable part of this redesign. Reasons must
@@ -2851,7 +2880,14 @@ gate (the development/preview mounted-device waiver applies per PR and is never
 a pass). Status stays ⏳ until clauses 7 and 8 close; the workstream adds exit
 criteria, it does not replace the eight. *(2026-08-30 — Blake: clause 8 stays
 open for his later visual assessment; the native-Spanish reviewer decision is
-deferred.)*
+deferred.)* *(2026-09-06 — **owner direction:** this workstream is built into
+the one complete end-state candidate. Its browser evidence, mounted-device
+verification and the role-play accessory questions move to the final
+non-live validation pass against the complete integrated candidate; no
+interim Sleep System visual change merges or ships independently; the
+automated suites keep protecting the contracts meanwhile and are not design
+acceptance. Steps 3–5 of the sequence and the browser-matrix line of the Exit
+are read accordingly; clauses 7 and 8 close only at that pass.)*
 
 **Scope — what the screen must do under the north star.**
 
@@ -2907,11 +2943,15 @@ grouping or hero logic is 3.7 and needs Blake's approval first.
    approved English goes to Blake first.
 3. **Implement** on a branch, one PR per coherent change; focused tests extend
    `tests/sleep_system_presentation_check.mjs` and the sweep manifest; the
-   output-regression fixture must not move.
+   output-regression fixture must not move. *(2026-09-06: implemented on the
+   end-state candidate as coherent commits, not as independently merged PRs;
+   the focused tests, the sweep and the fixture rule still apply there.)*
 4. **Evidence** per `agent-workflows/browser-evidence.md`, plus the accessory
    questions of the pre-floor role-play plan (relevance felt? declining
-   comfortable?).
+   comfortable?). *(2026-09-06: gathered once, at the final non-live
+   validation pass against the complete integrated candidate.)*
 5. **Close** — clause 7 in full; clause 8 by Blake's recorded assessment.
+   *(2026-09-06: at that final pass.)*
 
 **Exit — additions to clauses 1–8:** every surfaced accessory shows its
 answer-derived reason in both languages; suggested / selected / declined are
@@ -4448,7 +4488,10 @@ memory-only sessions.
 
 **Evidence.** The browser matrix in `agent-workflows/browser-evidence.md` in
 EN and ES at both device orientations; the pre-floor role-play plan (below)
-for the questions a screenshot cannot answer; no analytics.
+for the questions a screenshot cannot answer; no analytics. *(2026-09-06:
+both are gathered at the final non-live validation pass against the complete
+integrated candidate, not per interim step — see the owner direction at the
+end of this milestone.)*
 
 **Approver and status.** The review may start without further approval (⬜ →
 🔨 by whoever does it). *(Started 2026-08-30 on Blake's instruction as a
@@ -4484,7 +4527,9 @@ remove the isolated headers versus a slim unified identity treatment (3.6
 stays ❓). **Deferred:** the optional Welcome motif. Not ruled, not
 scheduled: the drawer price-band colour, the larger Results continuity mark,
 and every pass-2 item the packet could not judge statically. The milestone
-stays 🔨: pass 2 (in-app browser, mounted device) is owed and the change items
+stays 🔨: pass 2 (in-app browser, mounted device) is owed *(2026-09-06:
+deferred to the final validation pass — see the owner direction at the end of
+this milestone)* and the change items
 are scheduled, not shipped. Reason content on Results and Compare remains
 item 1.3.
 
@@ -4530,9 +4575,32 @@ superseded notice, the A3 kit carries none, and the A3.1 kit has internal
 superseded rows but no global replacement notice (the kits reference
 reaction capture or the trial-verdict chip, both removed on the
 product-proof branch). **One consolidated current-state kit targeting the
-final candidate remains owed before any visual candidate ships**. The milestone stays 🔨: pass 2 is still owed and the candidate
+final candidate remains owed before any visual candidate ships** *(2026-09-06:
+owed at the final validation pass against the complete candidate — no visual
+candidate ships before it; see the owner direction below)*. The milestone stays 🔨: pass 2 is still owed and the candidate
 decisions are Blake's. Evidence root outside the repository:
 `Documents\DreamFinder-manual-gates\north-star-program-2026-08-31\`.
+
+**Owner direction — 2026-09-06.** DreamFinder is built as **one complete,
+visually captivating end-state candidate** before any human-facing
+validation. For this milestone that means: pass 2 (in-app browser, mounted
+device) is not run as an interim step — it is absorbed into **one final,
+non-live validation pass against the complete integrated candidate**, together
+with the browser matrix, the mounted-device verification and the moderated
+role-play sessions; the remaining change items (C2, C3), the experiments (E1,
+E2) and every visual candidate in the evidence stack are **candidate-only** —
+built into the one end-state candidate and never merged or shipped
+independently (the per-PR approval model applies to that candidate's eventual
+adoption, on Blake's decision); the consolidated role-play kit is written
+against the complete candidate and conducted at that final pass. During
+construction the automated protections stay on — CI, the mutation sweep, the
+integrity guards, generated-artifact validation, the output-regression and
+scoring-isolation fixtures — as contract guards, **not** as design-acceptance
+evidence. Not authorized: live customer evidence, production analytics,
+deployment, activation, showroom use, or iterative interim validation.
+Untouched by this direction: 2.2's activation gate, the 3.1 / 3.2 owner
+decisions (A4.1 / A4.2 pending), 3.7's limits, Invariant 12, the privacy,
+scoring-isolation and live-backend constraints. The milestone stays 🔨.
 
 ---
 
@@ -4600,9 +4668,24 @@ carries none, and the A3.1 kit has internal superseded rows but no global
 replacement notice). When the final
 candidate is fixed, ONE consolidated current-state kit is written against it,
 not three refreshed overlapping kits, and that kit is owed before any visual
-candidate ships. Any session runs on the tree that is the actual merge
+candidate ships *(superseded in timing 2026-09-06: owed at the final
+validation pass — see below)*. Any session runs on the tree that is the actual merge
 candidate. The kits and session records live outside the repository under
 the manual-gates evidence root.)*
+
+*(**Owner direction — 2026-09-06.** The sessions run **once**, as part of the
+final non-live validation pass against the complete integrated end-state
+candidate — not iteratively against interim candidates, and not before the
+candidate is complete. The consolidated kit is written against that complete
+candidate. Every other human-facing acceptance pass — the browser matrix, the
+mounted-device verification, the pre-showroom accessibility matrix — is
+deferred to the same final pass. Until then the only evidence gathered is
+automated (CI, the mutation sweep, the integrity guards, generated-artifact
+validation, the regression checks), which protects contracts and is not
+design acceptance. No live customer evidence or production analytics, then or
+now; the memory-only session and the data-use sentence stand. This direction
+does not authorize deployment, activation or showroom use — the pass is
+non-live and preview is never showroom authorization.)*
 
 ### Phase 1 merge gate — the device matrix
 
@@ -4622,7 +4705,12 @@ source in this repository identifies the showroom device, its viewport or its
 orientation, so "real iPad dimensions" is not yet a checkable acceptance
 criterion. **No Phase 1 change merges without verification on the confirmed
 hardware.** *(The hardware was confirmed and the matrix recorded 2026-08-12 —
-see below. The merge requirement stands unchanged.)*
+see below. The merge requirement stands unchanged.)* *(2026-09-06 — owner
+direction: verification on the confirmed hardware is consolidated into the
+final non-live validation pass against the complete integrated candidate.
+Until then no interim visual work merges or ships independently, so this gate
+is not exercised by visual work; the 2026-08-23 per-PR development/preview
+waiver continues to apply to non-visual merges and remains never a pass.)*
 
 **Device matrix — recorded 2026-08-12, owner-confirmed on the mounted device**
 (full session record: `docs/kiosk-device-hardening.md`, *Device identity and
@@ -5524,12 +5612,12 @@ work listed under a ◐ item's Proceeds line.
 | Scoring case-fold (3.1) | 🔒 | Blake | Approval + enumerated impact *(candidate A4.1 `dcb63e5` complete 2026-09-03 with the enumerated 57-scenario impact — gold top pick 0 of 57; adoption and merge decision pending; see item 3.1)* |
 | Quiz-tag vocabulary gap (3.2) | 🔒 | Blake | Populate-or-retire decision *(candidate A4.2 `c781137` complete 2026-09-03: the `durable` → `durability` correction plus five governed-dormant keys; adoption and merge decisions pending; the governance half follows 3.1; see item 3.2)* |
 | **Accessory-recommendation quality (3.7)** — any change to accessory selection, ranking, grouping or hero logic | ◐ | Blake | Audit delivered 2026-08-30 (read-only); step 4 ruled the same day and **P2, P3, P1, P9 (Option C) and P5 (Option C) merged 2026-08-30** — PRs #81, #84, #85, #83, #86 (recorded 2026-09-04). Still open here: P4 deferred; P8 deferred; P6 recorded as merchandising, not fit; P7 not approved; P10 recorded; the Gated list stands for everything not named *(added 2026-08-29; ruled 2026-08-30)* |
-| **Cohesion-milestone keep / change / experiment decisions** — per surface, the 1.6 surfaces first; a *change* on a completed slice ships only as a bounded PR against `main` | 🔨 review (opened 2026-08-30) / decisions ❓ until recorded | Blake | The milestone's decision packet with browser evidence per surface *(added 2026-08-29; the review itself may start; pass-1 decisions recorded 2026-08-30, pass 2 owed)* |
-| **Item 1.4 Sleep System workstream — bounded change list** (presentation, narration, state rendering, carry-forward within the existing data contract) | ⏳ | Blake | The step-1 audit and step-2 proposal on the item; approved-English changes need Blake first; clause 8 remains his recorded assessment *(added 2026-08-29)* |
+| **Cohesion-milestone keep / change / experiment decisions** — per surface, the 1.6 surfaces first; a *change* on a completed slice ships only as a bounded PR against `main` | 🔨 review (opened 2026-08-30) / decisions ❓ until recorded | Blake | The milestone's decision packet with browser evidence per surface *(added 2026-08-29; the review itself may start; pass-1 decisions recorded 2026-08-30, pass 2 owed)* *(2026-09-06: pass 2 deferred to the final non-live validation pass against the complete candidate; interim visual changes are candidate-only and do not ship independently)* |
+| **Item 1.4 Sleep System workstream — bounded change list** (presentation, narration, state rendering, carry-forward within the existing data contract) | ⏳ | Blake | The step-1 audit and step-2 proposal on the item; approved-English changes need Blake first; clause 8 remains his recorded assessment *(added 2026-08-29)* *(2026-09-06: built into the end-state candidate; its evidence and clauses 7–8 close at the final validation pass)* |
 | Global maxScore / cross-tier ranking / tier merge or removal / threshold, cap, back-fill (3.3) | 🔒 | Blake | Evidence. **Does not gate a preserving Phase 1 tier-navigation change.** *(2026-08-21: a cross-tier "highest-fit" marker — raised as a trust question — is this row, because it changes what the customer is told about fit; see "Tier presentation (trust)" for the presentation-only half.)* |
 | Firmness stops (3.5) | 🔒 | Blake | Evidence |
 | Persistent identity bar (3.6) | ❓ | Blake | A case for it |
-| **Cohesion pass-1 change items C1–C6 and experiments E1–E2** — each shipped only on its own bounded PR / prototype branch | 🔨 | Blake | Rulings recorded 2026-08-30 in `docs/guided-selling-cohesion-decisions-2026-08-30.md`; approval of each PR is per PR; E2 does not open 3.6 *(added 2026-08-30)*. **State 2026-09-04:** C1 merged (PR #79), C5 merged (PR #87), C6 and C4 merged via the PR #97 train; C2 and C3 prototyped and carried into the unmerged A2 candidate, not shipped; E1 and E2 prototyped on `proto-e1-*` / `proto-e2-*`, never merged |
+| **Cohesion pass-1 change items C1–C6 and experiments E1–E2** — each shipped only on its own bounded PR / prototype branch | 🔨 | Blake | Rulings recorded 2026-08-30 in `docs/guided-selling-cohesion-decisions-2026-08-30.md`; approval of each PR is per PR; E2 does not open 3.6 *(added 2026-08-30)*. **State 2026-09-04:** C1 merged (PR #79), C5 merged (PR #87), C6 and C4 merged via the PR #97 train; C2 and C3 prototyped and carried into the unmerged A2 candidate, not shipped; E1 and E2 prototyped on `proto-e1-*` / `proto-e2-*`, never merged. **2026-09-06 direction:** C2, C3, E1, E2 and any further visual work are candidate-only — built into the one complete end-state candidate, never shipped as independent PRs; their evidence is the final validation pass |
 | Dormant nickname-code cleanup | ❓ | Blake | Analytics review — see below |
 | Visible stale-financing status band (production) | ❓ | Blake | A case for it plus review sign-off. Prototype-only today (D6); if pursued, production gets its own dedicated governed key — not a reuse of `staleAnnouncement` |
 | Customer-recorded trial reactions | ❓ | Blake | A case for it. The Nocturne prototype's own candidate next revision; deliberately not built (D6) |
@@ -5766,7 +5854,18 @@ document, not here.
     A4.1 and A4.2 remain candidate-complete with adoption and merge
     decisions pending; the rest of the candidate stack stays unmerged
     evidence with no PR; the consolidated role-play kit is still owed before
-    any visual candidate ships; the milestone stays 🔨.)*
+    any visual candidate ships; the milestone stays 🔨.)* *(Owner direction
+    2026-09-06: DreamFinder is built as one complete, visually captivating
+    end-state candidate before any human-facing validation; the browser
+    matrix, mounted-device verification, moderated role-play and every other
+    human-facing acceptance pass are deferred to one final, non-live
+    validation pass against the complete integrated candidate; interim
+    visual work is candidate-only and never merges or ships independently;
+    the automated protections stay on as contract guards, not design
+    acceptance; no live evidence, analytics, deployment, activation, showroom
+    use or interim validation is authorized; 2.2, the 3.1 / 3.2 decisions,
+    3.7's limits and the Spanish, privacy, scoring and live-backend
+    constraints are untouched; the milestone stays 🔨.)*
 
 ---
 
