@@ -18419,7 +18419,7 @@
           name: source ? sleepSystemText(source.name) : (selected.name || ''),
           category: source ? sleepSystemText(source.category) : (selected.category || ''),
           imageUrl: source ? (source.image || '') : (selected.imageUrl || ''),
-          reason: selected.reasons && selected.reasons[0] ? selected.reasons[0] : ''
+          reason: selected.reasonKeys && selected.reasonKeys[0] ? accessoryReasonText(selected.reasonKeys[0]) : ''
         };
       });
     }
@@ -18896,6 +18896,50 @@
         sessionTimeout(showSuccess, 1200);
       }
     };
+
+    // Accessory reason copy, KEYED. The scorer below keeps its own localized
+    // `reasonMap` literal: its ordered output is fixture-pinned and seven suites
+    // execute it self-contained, so it is not refactored. This table carries the
+    // same twelve lines in both languages and is the render-time source for
+    // every surface that shows a SELECTED accessory's rationale later: the
+    // Consultation Summary, the Sleep Plan / take-home packet and analytics.
+    // The cart stores reason KEYS (semantic state), never one language's text,
+    // so a language switch after selection re-localizes the line the same way
+    // the catalog name and category already do. tests/sleep_system_presentation
+    // _check.mjs pins this table equal to the scorer's reasonMap in both
+    // languages so the two cannot drift apart.
+    var ACCESSORY_REASON_COPY = {
+      'position_side': { en: 'Matched to your side sleeping position', es: 'Adaptado a tu posici\u00f3n de dormir de lado' },
+      'position_back': { en: 'Optimized for back sleepers', es: 'Optimizado para los que duermen boca arriba' },
+      'position_stomach': { en: 'Designed for stomach sleepers', es: 'Dise\u00f1ado para los que duermen boca abajo' },
+      'cooling': { en: 'You reported sleeping hot', es: 'Reportaste dormir caliente' },
+      'hot': { en: 'Addresses your temperature concerns', es: 'Aborda tus preocupaciones de temperatura' },
+      'back_pain': { en: 'Targets the back pain you mentioned', es: 'Se enfoca en el dolor de espalda que mencionaste' },
+      'snoring': { en: 'Helps with the snoring you reported', es: 'Ayuda con los ronquidos que reportaste' },
+      'reflux': { en: 'You mentioned nighttime reflux', es: 'Mencionaste reflujo nocturno' },
+      'allergies': { en: 'Protects against the allergies you noted', es: 'Protege contra las alergias que mencionaste' },
+      'premium': { en: 'Matches your comfort preferences', es: 'Coincide con tus preferencias de comodidad' },
+      'default': { en: 'Recommended based on your answers', es: 'Recomendado seg\u00fan tus respuestas' },
+      'standard': { en: 'A solid option to round out your sleep system', es: 'Una buena opci\u00f3n para completar tu sistema de sue\u00f1o' }
+    };
+    // The current-language line for a reason key ('' for an unknown key).
+    function accessoryReasonText(key, lang) {
+      var copy = ACCESSORY_REASON_COPY[key];
+      if (!copy) return '';
+      var l = lang || currentLang;
+      return copy[l] || copy.en;
+    }
+    // The key behind a scorer-produced line, in either language ('' if none).
+    // Used once, at selection time, to turn the scorer's localized strings into
+    // the keys the cart stores.
+    function accessoryReasonKey(text) {
+      var keys = Object.keys(ACCESSORY_REASON_COPY);
+      for (var i = 0; i < keys.length; i++) {
+        var copy = ACCESSORY_REASON_COPY[keys[i]];
+        if (copy.en === text || copy.es === text) return keys[i];
+      }
+      return '';
+    }
 
     // Score every accessory in ACCESSORIES against the customer's quiz answers
     // and return the ranked list (descending by score). Each result is the
@@ -20556,7 +20600,7 @@
           name: item.name,
           category: item.category,
           imageUrl: item.imageUrl || '',
-          reason: item.reasons && item.reasons[0] ? item.reasons[0] : ''
+          reason: item.reasonKeys && item.reasonKeys[0] ? accessoryReasonText(item.reasonKeys[0]) : ''
         };
       });
       if (window._updatePicksBadge) window._updatePicksBadge();
@@ -20581,7 +20625,12 @@
           name: typeof item.name === 'object' ? item.name.en : item.name,
           category: sleepSystemCategory(item),
           imageUrl: item.image || '',
-          reasons: scored ? scored.reasons.slice(0, 2) : []
+          // Semantic state: the reason KEYS, never a language's text. The
+          // scorer localizes at scoring time; storing its strings here left
+          // the Summary's rationale in the selection-time language after a
+          // switch (2026-09-08 deployed-preview review). Surfaces resolve the
+          // keys through accessoryReasonText() in the current language.
+          reasonKeys: scored ? scored.reasons.slice(0, 2).map(accessoryReasonKey).filter(Boolean) : []
         };
         window._sleepSystemState.decisions[stepId] = { status: 'selected', itemId: itemId };
         analytics.log('sleep_system_item_selected', { itemId: itemId, step: stepId });
@@ -21960,11 +22009,16 @@
       var cartIds = new Set(Object.keys(cart));
       // Names and categories resolve through the catalog (bilingual objects),
       // never the cart snapshot — the snapshot's name is the language it was
-      // added in, and a language switch must re-localize.
+      // added in, and a language switch must re-localize. The rationale line
+      // resolves the same way: the cart holds reason KEYS and the line is the
+      // current-language text for the key, so a switch after selection never
+      // shows a stale language.
       var cartItems = (typeof ACCESSORIES !== 'undefined' ? ACCESSORIES : []).filter(function(a) {
         return cartIds.has(a.id);
       }).map(function(a) {
-        return Object.assign({}, a, { reasons: cart[a.id].reasons || [] });
+        return Object.assign({}, a, {
+          reasons: (cart[a.id].reasonKeys || []).map(function(key) { return accessoryReasonText(key); })
+        });
       });
 
       var section = document.getElementById('hf2SleepSystemSection');

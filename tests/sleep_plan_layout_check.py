@@ -1439,6 +1439,90 @@ def run_results_hover_states(browser, port, lang, forced):
     check(f"{tag} the hover roster renders without a page error", not errors, str(errors[:1]))
     page.close()
 
+# Accessory rationale follows the language (deployed-preview review, 2026-09-08):
+# the real app, English, choose a finalist, compare two, save one, add the
+# recommended base and the Dri-Tec protector in the Sleep System, open the
+# Consultation Summary, switch to Spanish and back. The two rationale lines
+# must follow the language each time. The SETUP is proven before the switch
+# (finalist, the ordered comparison pair, the saved pick, the cart's reason
+# keys, the two Sleep System decisions), and the complete semantic snapshot
+# (finalist, window._compareSelected, saved picks, cart, decisions) must be
+# byte-identical at all three points: EN before, ES after the first switch,
+# EN after switching back. A negative control clears the comparison pair and
+# the saved picks in the Spanish state and requires the predicate to reject.
+# Analytics is NOT part of this contract: syncAccessoryAnalytics() resolves
+# the reason keys in the language active when a selection happens, and
+# switchLanguage() does not re-run it; no consumer asked for live-language
+# analytics, so the assertion is on the customer-facing surfaces only.
+L10N_JS = r"""
+async (A) => {
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  startQuiz(); await wait(200);
+  for (const k of Object.keys(A)) answers[k] = A[k];
+  window.showResults(); await wait(400);
+  const gold = _resultsState.tierData.gold;
+  const ids = { finalist: gold[0].id, compare: [gold[0].id, gold[1].id], saved: gold[1].id };
+  window.chooseFinalist(gold[0].id); window.toggleCompare(gold[0].id); window.toggleCompare(gold[1].id); window._toggleSavePick(gold[1].id); await wait(200);
+  window.showAccessories(); await wait(400);
+  setSleepSystemItem('base-tempur-ergo', true); setSleepSystemItem('protector-dritec', true); await wait(200);
+  const snapshot = () => ({ finalist: window._favoriteMattressId, compare: (window._compareSelected || []).slice(),
+    saved: (window._savedPicks || []).map((p) => p.id), cart: window._accCart, decisions: window._sleepSystemState.decisions });
+  const state = () => JSON.stringify(snapshot());
+  const lines = () => Array.from(document.querySelectorAll('#hf2AccessoriesList .hf2-acc-card__reason')).map((e) => e.textContent);
+  const out = { ids, setup: snapshot() };
+  window.showSavedPicks(); await wait(400);
+  out.en1 = lines(); out.s1 = state(); out.planEn = getSelectedAccessoryPlan().map((a) => a.reason);
+  await switchLanguage('es'); await wait(400);
+  out.es = lines(); out.s2 = state(); out.planEs = getSelectedAccessoryPlan().map((a) => a.reason); out.lang2 = currentLang;
+  // negative control of the preservation predicate: a Spanish state whose comparison pair and
+  // saved picks were cleared must NOT equal the English snapshot (computed on a copy, the app is untouched)
+  const cleared = snapshot(); cleared.compare = []; cleared.saved = []; out.sCleared = JSON.stringify(cleared);
+  await switchLanguage('en'); await wait(400);
+  out.en2 = lines(); out.s3 = state(); out.lang3 = currentLang;
+  return out;
+}
+"""
+
+
+def run_accessory_reason_language(browser, port, name, width, height, shots_dir):
+    print(f"\n-- accessory rationale follows the language (EN -> ES -> EN on the Summary) {name} {width}x{height} --")
+    page = browser.new_page(viewport={"width": width, "height": height})
+    errors = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    page.goto(f"http://127.0.0.1:{port}/", wait_until="networkidle")
+    page.wait_for_selector("#startBtn")
+    r = page.evaluate(L10N_JS, ANSWERS)
+    EN = ["Addresses your temperature concerns", "Targets the back pain you mentioned"]
+    ES = ["Aborda tus preocupaciones de temperatura", "Se enfoca en el dolor de espalda que mencionaste"]
+    ids, setup = r["ids"], r["setup"]
+    check(f"[{name}] the journey renders without a page error", not errors, str(errors[:1]))
+    # setup proof, before any switch
+    check(f"[{name}] setup: the finalist is the chosen first Gold mattress", setup["finalist"] == ids["finalist"], f"{setup['finalist']} vs {ids['finalist']}")
+    check(f"[{name}] setup: window._compareSelected holds the two Gold ids in order", setup["compare"] == ids["compare"], f"{setup['compare']} vs {ids['compare']}")
+    check(f"[{name}] setup: the saved picks contain the saved Gold mattress", ids["saved"] in setup["saved"], str(setup["saved"]))
+    cart = setup["cart"]
+    check(f"[{name}] setup: the cart holds the base and the Dri-Tec protector with their reason keys (back_pain then snoring; hot)",
+          set(cart.keys()) == {"base-tempur-ergo", "protector-dritec"} and cart["base-tempur-ergo"].get("reasonKeys") == ["back_pain", "snoring"]
+          and cart["protector-dritec"].get("reasonKeys") == ["hot"] and "reasons" not in cart["base-tempur-ergo"] and "reasons" not in cart["protector-dritec"],
+          str({k: v.get("reasonKeys") for k, v in cart.items()}))
+    dec = setup["decisions"]
+    check(f"[{name}] setup: the Sleep System decisions record both selected components",
+          dec.get("adjustability", {}).get("status") == "selected" and dec.get("adjustability", {}).get("itemId") == "base-tempur-ergo"
+          and dec.get("protection", {}).get("status") == "selected" and dec.get("protection", {}).get("itemId") == "protector-dritec", str(dec))
+    # the lines follow the language
+    check(f"[{name}] EN Summary: the two rationale lines are English", sorted(r["en1"]) == EN, str(r["en1"]))
+    check(f"[{name}] EN plan / take-home projection carries the two English lines", sorted(r["planEn"]) == EN, str(r["planEn"]))
+    check(f"[{name}] ES Summary after switchLanguage('es'): both lines are Spanish (the reported defect)", r["lang2"] == "es" and sorted(r["es"]) == ES, str(r["es"]))
+    check(f"[{name}] ES Summary: no English rationale survives the switch", not any(l in EN for l in r["es"]))
+    check(f"[{name}] ES plan / take-home projection follows the switch", sorted(r["planEs"]) == ES, str(r["planEs"]))
+    check(f"[{name}] EN again after switchLanguage('en'): the lines return to English", r["lang3"] == "en" and sorted(r["en2"]) == EN, str(r["en2"]))
+    # complete semantic snapshot, byte-identical at all three points
+    check(f"[{name}] the complete semantic snapshot (finalist, comparison pair, saved picks, cart, decisions) is byte-identical EN -> ES", r["s1"] == r["s2"],
+          "" if r["s1"] == r["s2"] else f"before={r['s1'][:160]} ... after={r['s2'][:160]}")
+    check(f"[{name}] ...and byte-identical again after switching back to EN", r["s1"] == r["s3"])
+    check(f"[{name}] negative control: a Spanish state with the comparison pair and saved picks cleared is rejected by the same predicate", r["s1"] != r["sCleared"])
+    page.close()
+
 def run_banner_fallback(browser, port, shots_dir):
     print("\n-- BANNER FALLBACK (X4 / Wave 3) 1194x748 --")
     page = browser.new_page(viewport={"width": 1194, "height": 748})
@@ -1579,6 +1663,8 @@ def main():
             for lang in ("en", "es"):
                 run_results_hover_states(browser, port, lang, forced=False)
                 run_results_hover_states(browser, port, lang, forced=True)
+            for name, w, h in VIEWPORTS[:2]:
+                run_accessory_reason_language(browser, port, name, w, h, args.screenshots)
             run_banner_fallback(browser, port, args.screenshots)
             run_sleep_system_focus(browser, port, args.screenshots)
             run_forced_colors(browser, port, args.screenshots)

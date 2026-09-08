@@ -2562,6 +2562,27 @@ const MUTATIONS = [
     "    .compare-tray-go:hover:not(:disabled) {\n      background: var(--store-primary-light);\n      color: var(--on-store-primary-light);\n    }\n",
     "    .compare-tray-go:hover:not(:disabled) {\n      background: var(--store-primary-light);\n      color: var(--on-store-primary);\n    }\n", ["tests/contrast_check.mjs"]],
 
+
+  // --- accessory rationale follows the language (2026-09-08) --------------
+  // The cart stores reason KEYS; the Summary, the Plan / take-home projection
+  // and analytics resolve them in the current language. Each reversal below
+  // re-opens the deployed-preview defect (English rationale under Spanish).
+  ["accessory reasons: the Summary renderer reads the cart's cached text again",
+    "          reasons: (cart[a.id].reasonKeys || []).map(function(key) { return accessoryReasonText(key); })\n",
+    "          reasons: cart[a.id].reasons || []\n", SLEEP],
+  ["accessory reasons: the cart writer snapshots the scorer's localized strings instead of keys",
+    "          reasonKeys: scored ? scored.reasons.slice(0, 2).map(accessoryReasonKey).filter(Boolean) : []\n",
+    "          reasons: scored ? scored.reasons.slice(0, 2) : []\n", SLEEP],
+  ["accessory reasons: the plan / take-home projection reads cached text",
+    "          reason: selected.reasonKeys && selected.reasonKeys[0] ? accessoryReasonText(selected.reasonKeys[0]) : ''\n",
+    "          reason: selected.reasons && selected.reasons[0] ? selected.reasons[0] : ''\n", SLEEP],
+  ["accessory reasons: the resolver ignores the language and always answers in English",
+    "      var l = lang || currentLang;\n      return copy[l] || copy.en;\n",
+    "      return copy.en;\n", SLEEP],
+  ["accessory reasons: the keyed table drifts from the scorer's Spanish line",
+    "      'hot': { en: 'Addresses your temperature concerns', es: 'Aborda tus preocupaciones de temperatura' },\n",
+    "      'hot': { en: 'Addresses your temperature concerns', es: 'Aborda tus preocupaciones de temperatura.' },\n", SLEEP],
+
 ];
 
 // ---------------------------------------------------------------------------
