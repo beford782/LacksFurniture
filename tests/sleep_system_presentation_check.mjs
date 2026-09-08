@@ -762,6 +762,136 @@ section('item 1.3 containment — the contained outputs cannot return via 1.4');
     !/\.reasons_es\b/.test(stripComments(SRC.scorer)));
 }
 
+// ------------------------------------- 14. accessory rationale follows the language
+// Deployed-preview review (2026-09-08): add the recommended base and the
+// Dri-Tec protector in English, open the Consultation Summary, switch to
+// Spanish - the two rationale lines stayed English. Cause: setSleepSystemItem
+// snapshotted the scorer's already-localized strings into the cart and
+// renderHf2Accessories re-used them. The cart now stores reason KEYS and every
+// surface resolves them in the current language through ACCESSORY_REASON_COPY.
+// Executed here against the REAL extracted sources: the scorer (unchanged and
+// fixture-pinned), the cart writer, the Summary renderer, the Plan / take-home
+// projection and the resolvers, with a switchable currentLang.
+section('accessory rationale follows the language (cart stores keys, surfaces resolve at read time)');
+{
+  const grab = (anchor) => { const s = extractFunction(anchor); if (!s) throw new Error('missing ' + anchor); return s; };
+  const tableSrc = (() => {
+    const start = html.indexOf('var ACCESSORY_REASON_COPY = {');
+    const end = html.indexOf('\n    };', start);
+    return start > 0 && end > start ? html.slice(start, end + '\n    };'.length) : null;
+  })();
+  ok('the keyed bilingual reason table exists once', !!tableSrc && (html.match(/var ACCESSORY_REASON_COPY = \{/g) || []).length === 1);
+  const SRC_L10N = [
+    tableSrc, grab('function accessoryReasonText(key, lang)'), grab('function accessoryReasonKey(text)'),
+    SRC.STEPS, SRC.text, SRC.category, SRC.stepFor, SRC.qualify, SRC.scorer,
+    grab('function setSleepSystemItem(itemId, shouldSelect)'), grab('function getSelectedAccessoryPlan()'),
+    grab('function syncAccessoryAnalytics()'), grab('function renderHf2Accessories()'),
+    grab('function renderHf2AccBlock(headingText, items, secondary)'), grab('function renderHf2AccCard(item, secondary)')
+  ].join('\n');
+  const makeL10nEnv = (mutate) => {
+    // A tiny DOM: createElement / appendChild / textContent / className / innerHTML, enough for the card renderer.
+    // innerHTML = '' must clear the children, as the real renderer relies on it to repaint.
+    const mkEl = (tag) => { const el = { tag, className: '', textContent: '', _html: '', hidden: false, style: {}, children: [],
+      appendChild(c) { this.children.push(c); return c; }, setAttribute() {}, getAttribute() { return null; },
+      querySelectorAll(sel) { const out = []; const cls = sel.replace(/^\./, ''); const walk = (n) => { n.children.forEach((c) => { if ((c.className || '').split(' ').includes(cls)) out.push(c); walk(c); }); }; walk(this); return out; } };
+      Object.defineProperty(el, 'innerHTML', { get() { return this._html; }, set(v) { this._html = v; if (v === '') this.children = []; } });
+      return el; };
+    const els = new Map();
+    const doc = { getElementById(id) { if (!els.has(id)) { const e = mkEl('div'); e.id = id; els.set(id, e); } return els.get(id); }, createElement: mkEl };
+    doc.getElementById('hf2AccessoriesList').innerHTML = '';
+    const win = { _accCart: {}, _sleepSystemState: { activeStep: 'adjustability', decisions: {}, demoPosition: '', supportChoice: '', pillowCandidateId: '', pillowReaction: '', pillowFeedback: '', protectionGoal: '' }, _updatePicksBadge: null };
+    const analytics = { selectedAccessories: [], logged: [], log(e, d) { this.logged.push({ e, d }); } };
+    let src = SRC_L10N;
+    if (mutate) src = mutate(src);
+    const api = new Function('document', 'window', 'answers', 'ACCESSORIES', 'analytics', 't', 'escapeHtml', 'renderSleepSystem',
+      'var currentLang = "en";\n' + src + `
+      return { setLang(l) { currentLang = l; }, setItem: setSleepSystemItem, render: renderHf2Accessories, plan: getSelectedAccessoryPlan,
+               text: accessoryReasonText, key: accessoryReasonKey, table: ACCESSORY_REASON_COPY, scorer: scoreAccessoriesFromAnswers, analytics };`)(
+      doc, win, { sleep_position: 'side', sleep_issues: ['back_pain'], health_conditions: ['snoring'], temperature: 'hot', firmness: 5, partner_sleep: 'partner', body_type: 'average', mattress_size: 'queen' },
+      ACCESSORIES_JSON, analytics, (k) => k, (s) => s, () => {});
+    const lines = () => doc.getElementById('hf2AccessoriesList').querySelectorAll('.hf2-acc-card__reason').map((e) => e.textContent);
+    return { api, win, doc, lines, analytics };
+  };
+  const EN = { back: 'Targets the back pain you mentioned', hot: 'Addresses your temperature concerns' };
+  const ES = { back: 'Se enfoca en el dolor de espalda que mencionaste', hot: 'Aborda tus preocupaciones de temperatura' };
+
+  // parity: the scorer's reasonMap and the keyed table carry the same twelve lines in both languages
+  {
+    const literal = stripComments(SRC.scorer).match(/const reasonMap = \{([\s\S]*?)\n\s*\};/);
+    ok('the scorer still carries its own literal reasonMap (fixture-pinned, self-contained)', !!literal);
+    const pairs = [...(literal ? literal[1] : '').matchAll(/'([a-z_]+)':\s*_es \? '((?:[^'\\]|\\.)*)' : '((?:[^'\\]|\\.)*)'/g)]
+      .map((m) => [m[1], m[3].replace(/\\'/g, "'"), m[2].replace(/\\'/g, "'")]);
+    const env0 = makeL10nEnv();
+    const table = env0.api.table;
+    ok('the scorer map and the keyed table have the same twelve keys',
+      pairs.length === 12 && Object.keys(table).length === 12 && pairs.every(([k]) => k in table), pairs.map((p) => p[0]).join(','));
+    ok('every English line matches between the scorer map and the keyed table', pairs.every(([k, en]) => table[k] && table[k].en === en),
+      pairs.filter(([k, en]) => !table[k] || table[k].en !== en).map(([k]) => k).join(','));
+    ok('every Spanish line matches between the scorer map and the keyed table', pairs.every(([k, , es]) => table[k] && table[k].es === es),
+      pairs.filter(([k, , es]) => !table[k] || table[k].es !== es).map(([k]) => k).join(','));
+    const texts = Object.values(table).flatMap((c) => [c.en, c.es]);
+    ok('no two keys share a line in either language (the selection-time reverse lookup is unambiguous)', new Set(texts).size === texts.length);
+    ok('accessoryReasonKey() recovers the key from either language and returns "" for unknown text',
+      env0.api.key(EN.back) === 'back_pain' && env0.api.key(ES.back) === 'back_pain' && env0.api.key(ES.hot) === 'hot' && env0.api.key('not a reason') === '');
+    ok('accessoryReasonText() resolves the current language and falls back to English for an unknown language',
+      env0.api.text('hot') === EN.hot && env0.api.text('hot', 'es') === ES.hot && env0.api.text('hot', 'xx') === EN.hot && env0.api.text('nope') === '');
+  }
+
+  // the journey: add in EN, read the Summary, switch to ES, switch back
+  {
+    const env = makeL10nEnv();
+    env.api.setItem('base-tempur-ergo', true);
+    env.api.setItem('protector-dritec', true);
+    const cart = env.win._accCart;
+    ok('the cart stores reason KEYS for the base (back pain, then snoring from the health answer) and the protector (hot), not a language\'s text',
+      JSON.stringify(cart['base-tempur-ergo'].reasonKeys) === '["back_pain","snoring"]' && JSON.stringify(cart['protector-dritec'].reasonKeys) === '["hot"]'
+      && !('reasons' in cart['base-tempur-ergo']) && !('reasons' in cart['protector-dritec']),
+      JSON.stringify({ base: cart['base-tempur-ergo'].reasonKeys, protector: cart['protector-dritec'].reasonKeys }));
+    const state = () => JSON.stringify({ cart: env.win._accCart, decisions: env.win._sleepSystemState.decisions });
+    const s0 = state();
+    env.api.render();
+    ok('EN Summary: the two rationale lines are the English lines', JSON.stringify(env.lines().sort()) === JSON.stringify([EN.hot, EN.back].sort()), JSON.stringify(env.lines()));
+    ok('EN plan / take-home projection carries the English lines', JSON.stringify(env.api.plan().map((a) => a.reason).sort()) === JSON.stringify([EN.hot, EN.back].sort()));
+    env.api.setLang('es');
+    env.api.render();
+    ok('ES Summary after the switch: both rationale lines are Spanish (the reported defect)', JSON.stringify(env.lines().sort()) === JSON.stringify([ES.hot, ES.back].sort()), JSON.stringify(env.lines()));
+    ok('ES Summary: no English rationale survives the switch', !env.lines().some((l) => l === EN.back || l === EN.hot));
+    ok('ES plan / take-home projection follows the switch', JSON.stringify(env.api.plan().map((a) => a.reason).sort()) === JSON.stringify([ES.hot, ES.back].sort()));
+    env.api.setLang('en');
+    env.api.render();
+    ok('EN again: the lines return to English', JSON.stringify(env.lines().sort()) === JSON.stringify([EN.hot, EN.back].sort()));
+    ok('the cart and the Sleep System decisions are byte-identical across EN -> ES -> EN', state() === s0);
+  }
+
+  // hostile negative control: a cart entry poisoned with cached English text must not leak
+  {
+    const env = makeL10nEnv();
+    env.win._accCart['base-tempur-ergo'] = { id: 'base-tempur-ergo', name: 'TEMPUR-Ergo 3.0 Power Base', category: 'Foundations & Support', imageUrl: '', reasons: [EN.back], reasonKeys: ['back_pain'] };
+    env.win._accCart['protector-dritec'] = { id: 'protector-dritec', name: 'Bedgear Dri-Tec Mattress Protector', category: 'Protectors', imageUrl: '', reasons: [EN.hot], reasonKeys: ['hot'] };
+    env.api.setLang('es');
+    env.api.render();
+    ok('hostile: cached English text on the cart entry is ignored - the Spanish Summary renders Spanish from the keys',
+      JSON.stringify(env.lines().sort()) === JSON.stringify([ES.hot, ES.back].sort()) && !env.lines().some((l) => /you mentioned|your temperature/.test(l)), JSON.stringify(env.lines()));
+    ok('hostile: the plan projection ignores the cached text too', env.api.plan().every((a) => a.reason === ES.back || a.reason === ES.hot));
+    // negative control of the detector: the OLD renderer (cart[a.id].reasons) would show the stale English
+    const old = makeL10nEnv((src) => src.replace(
+      "reasons: (cart[a.id].reasonKeys || []).map(function(key) { return accessoryReasonText(key); })",
+      'reasons: cart[a.id].reasons || []'));
+    old.win._accCart['base-tempur-ergo'] = { id: 'base-tempur-ergo', reasons: [EN.back], reasonKeys: ['back_pain'] };
+    old.api.setLang('es');
+    old.api.render();
+    ok('negative control: the pre-fix renderer is detected (it shows the cached English line under Spanish)', old.lines()[0] === EN.back, JSON.stringify(old.lines()));
+    // negative control: a writer that stores strings instead of keys leaves the Summary without a line
+    const strWriter = makeL10nEnv((src) => src.replace(
+      'reasonKeys: scored ? scored.reasons.slice(0, 2).map(accessoryReasonKey).filter(Boolean) : []',
+      'reasons: scored ? scored.reasons.slice(0, 2) : []'));
+    strWriter.api.setItem('base-tempur-ergo', true);
+    strWriter.api.setLang('es');
+    strWriter.api.render();
+    ok('negative control: a cart writer that stores localized strings is detected (no rationale line renders)', strWriter.lines().length === 0, JSON.stringify(strWriter.lines()));
+  }
+}
+
 // ------------------------------------------- 13. close-out: the CSS repairs
 section('close-out CSS — rail wraps 2x2 without a scroller, notes 15px, statuses 12px');
 // Item 1.4 close-out (owner ruling 2026-08-25). Three CSS-only repairs, each
