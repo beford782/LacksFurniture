@@ -1672,5 +1672,120 @@ section('negative controls — the load-bearing assertions fail on a broken tree
     env.get('questionContainer').innerHTML.includes('tabindex="0"'));
 }
 
+section('X7-B2 -- the compact landscape quiz block is additive, gated, scoped and bounded');
+{
+  // The file carries one landscape idiom (the Sleep Brief E1 and Results C2
+  // blocks use the same gate); the quiz block is the one that restyles the
+  // option cell. Everything here is CSS text: the landscape quiz has no
+  // rendered pass in CI, so the cascade is proven by arithmetic instead.
+  const gate = '@media (min-width: 901px) and (orientation: landscape) {';
+  const quizBlocks = (src) => [...src.matchAll(/@media \(min-width: 901px\) and \(orientation: landscape\) \{[\s\S]*?\n    \}\n/g)]
+    .map((m) => m[0]).filter((b) => b.includes('body:has(#questionScreen.active) .noct-quiz-option {'));
+  const block = quizBlocks(norm)[0] || '';
+  ok('exactly one landscape-gated block restyles the quiz option cell', block.length > 0 && quizBlocks(norm).length === 1);
+  const selBase = norm.indexOf('body:has(#questionScreen.active) .noct-quiz-option.selected {');
+  ok('it sits after the consultation selected rule and before the narrow-width quiz block (source order carries the cascade)',
+    selBase > 0 && norm.indexOf(block) > selBase && norm.indexOf(block) < norm.indexOf('@media (max-width: 700px) {'));
+  const selectorsOf = (src) => [...src.matchAll(/\n\s+([^\n{}]+?)\s*\{/g)].map((m) => m[1].trim()).filter((sel) => !sel.startsWith('@media'));
+  const selectors = selectorsOf(block);
+  ok('every selector in the block is scoped to the question screen (Review keeps its base rhythm)',
+    selectors.length >= 12 && selectors.every((sel) => sel.startsWith('body:has(#questionScreen.active) .')), `${selectors.length} selectors`);
+  ok('the grid stays two columns: the block sets no column template (the measured three-column variant A is not carried)',
+    !/grid-template-columns|cols-3/.test(block));
+  ok('no pinned or sticky chrome and no internal scroller: the nav row stays in the document flow',
+    !/position:|overflow|max-height|[\s;{]height:/.test(block));
+  ok('the block hides nothing, reorders nothing, writes no copy and paints no colour',
+    !/display|visibility|[\s;{]order:|[\s;{]content:|pointer-events|color|background|border-color|box-shadow|opacity/.test(block));
+  ok('the block lowers no touch floor (option cell stays >= 56px, above the 44px floor)',
+    !/min-height: (?:[0-4]?\d|5[0-5])px/.test(block) && /\.noct-quiz-option \{\s*min-height: 56px;/.test(block));
+  const rule = (sel) => (block.match(new RegExp(sel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ' \\{([^}]*)\\}')) || [null, ''])[1];
+  ok('the recorded B2 rhythm: header padding, progress, headline leading, help and multi-note spacing',
+    /padding: 38px 64px 24px;/.test(rule('body:has(#questionScreen.active) .noct-quiz'))
+    && /margin-bottom: 14px;/.test(rule('body:has(#questionScreen.active) .noct-quiz-progress-row'))
+    && /line-height: 1\.05;\s*margin-bottom: 8px;/.test(rule('body:has(#questionScreen.active) .noct-quiz-headline'))
+    && /margin-bottom: 8px;/.test(rule('body:has(#questionScreen.active) .noct-quiz-help'))
+    && /margin-bottom: 8px;/.test(rule('body:has(#questionScreen.active) .noct-quiz-multi-note')));
+  ok('the recorded B2 option grid: 56px cells, 10/16/10/13 padding, 8px gap, 14px grid margin',
+    /min-height: 56px;\s*padding: 10px 16px 10px 13px;/.test(rule('body:has(#questionScreen.active) .noct-quiz-option'))
+    && /gap: 8px;\s*margin-bottom: 14px;/.test(rule('body:has(#questionScreen.active) .noct-quiz-options')));
+  ok('the recorded B2 slider block (c81af41 form) and navigation row',
+    /font-size: 56px;/.test(rule('body:has(#questionScreen.active) .noct-slider-value'))
+    && /margin-bottom: 12px;/.test(rule('body:has(#questionScreen.active) .noct-slider-feel'))
+    && /margin-bottom: 10px;/.test(rule('body:has(#questionScreen.active) .noct-slider-wrap'))
+    && /padding-top: 12px;/.test(rule('body:has(#questionScreen.active) .noct-quiz-nav')));
+  // The one addition to the recorded block. The selected rule at (1,3,1) wins
+  // over the landscape resting rule at (1,2,1) even inside the media query, so
+  // without a landscape .selected override the base 19/21/19/17 compensation
+  // (written for a 20/22/20/17 cell) grows a selected cell by 20px and moves
+  // its label 10px down and 4px right.
+  const lRest = sides(rule('body:has(#questionScreen.active) .noct-quiz-option'), { all: 1, left: 6 });
+  const lSel = sides(rule('body:has(#questionScreen.active) .noct-quiz-option.selected'), { all: 2, left: 6 });
+  ok('landscape: selected and resting share border+padding on every side (no reflow on selection)',
+    eq(lRest, lSel), `resting ${show(lRest)} vs selected ${show(lSel)}`);
+  ok('landscape: the per-side totals are the compact 11/17/11/19, not the wide 21/23/21/23',
+    lRest && lRest.top === 11 && lRest.right === 17 && lRest.bottom === 11 && lRest.left === 19, show(lRest));
+  // Base rules keep their shape: the block is additive, never a rewrite.
+  ok('the base consultation rules keep their shape (58px-clamp frame, 88px cell, 20/22/20/17 padding, 22px nav)',
+    /padding: clamp\(32px, 5vw, 58px\) clamp\(28px, 7vw, 76px\) 36px;/.test(norm)
+    && /padding:\s*20px 22px 20px 17px;/.test(optBaseCss) && /min-height:\s*88px;/.test(optBaseCss)
+    && /border-top: 1px solid var\(--consultation-rule\);\s*padding-top: 22px;/.test(norm));
+  ok('the narrow-width quiz block keeps its own resting/selected pair (76px cell)',
+    /@media \(max-width: 700px\)[\s\S]*?\.noct-quiz-option \{\s*min-height: 76px;/.test(norm));
+  // negative controls
+  ok('negative control: an ungated quiz block is caught by the gate assertion',
+    quizBlocks(norm.replace(block, block.replace(gate, '@media (min-width: 901px) {'))).length === 0);
+  ok('negative control: dropping the landscape selected compensation is caught (the totals diverge)',
+    !eq(lRest, sides('padding: 19px 21px 19px 17px;', { all: 2, left: 6 })));
+  ok('negative control: a Review-scoped selector inside the block is caught',
+    !selectorsOf(block.replace('body:has(#questionScreen.active) .noct-quiz-nav', 'body:has(#reviewScreen.active) .noct-quiz-nav'))
+      .every((sel) => sel.startsWith('body:has(#questionScreen.active) .')));
+
+  // --- round 2: the three residual defects the inclusion audit reported ------
+  // (1) forced colors: the unconditioned forced-colors option rule is (1,2,1),
+  // equal to the landscape resting rule and ~8,800 lines later, so it won the
+  // cascade inside the landscape query and restored the 93px cell (Next back
+  // below the fold at 755 / 777). A landscape-gated forced-colors counterpart,
+  // padding only, placed after the narrow one, keeps the compact geometry.
+  const forcedLand = (cssNorm.match(/@media \(forced-colors: active\) and \(min-width: 901px\) and \(orientation: landscape\) \{[\s\S]*?\n    \}/) || [''])[0];
+  ok('forced colors: a landscape-gated counterpart of the quiz option geometry exists',
+    forcedLand.length > 0);
+  ok('forced colors, landscape: it is placed AFTER the narrow forced block (equal specificity - order decides)',
+    forcedLand.length > 0 && cssNorm.indexOf(forcedLand) > cssNorm.indexOf('@media (forced-colors: active) and (max-width: 700px)'));
+  ok('forced colors, landscape: padding only - colour, boundary and ring are inherited from the wide block',
+    forcedLand.length > 0 && !/color|border|outline|min-height|display/.test(forcedLand.slice(forcedLand.indexOf('{') + 1)));
+  const flRest = sides(ruleIn(forcedLand, SEL_FORCED_RESTING), { all: 1, left: 1 });
+  const flSel = sides(ruleIn(forcedLand, SEL_FORCED_SELECTED), { all: 3, left: 6 });
+  ok('forced colors, landscape: resting keeps the SAME per-side totals as the landscape normal state (nothing moves entering forced colors)',
+    eq(flRest, lRest), `forced ${show(flRest)} vs normal ${show(lRest)}`);
+  ok('forced colors, landscape: selecting does not move the text or grow the box (1px -> 3px + 6px rail compensated)',
+    eq(flSel, flRest), `selected ${show(flSel)} vs resting ${show(flRest)}`);
+  ok('forced colors, landscape: the selected cue keeps its distinct geometry (the wide rule still declares 3px + 6px)',
+    /border-width:\s*3px;/.test(ruleIn(forcedWideBlock, SEL_FORCED_SELECTED) || '')
+    && /border-left-width:\s*6px;/.test(ruleIn(forcedWideBlock, SEL_FORCED_SELECTED) || '')
+    && !/border-width/.test(forcedLand));
+  // (2) the English firmness headline measured 833px on one line against the
+  // 828px column the base 76px inline padding leaves at 1194 wide; it wrapped,
+  // grew the screen 57px and scrolled the document 5px past the fold. The
+  // landscape frame gives the column 852px instead; the type scale is untouched.
+  ok('landscape frame: inline padding is 64px (852px column at 1194 - the English firmness headline fits on one line)',
+    /padding: 38px 64px 24px;/.test(rule('body:has(#questionScreen.active) .noct-quiz')));
+  ok('landscape frame: the headline type scale is untouched by the block (no font-size, no letter-spacing)',
+    !/font-size|letter-spacing|font-family/.test(rule('body:has(#questionScreen.active) .noct-quiz-headline')));
+  // (3) Next's 44px was emergent (padding + line box). It is now declared in
+  // the base rule; every breakpoint's computed height already exceeded it.
+  ok('Next declares its 44px interaction floor in the base rule',
+    /min-height:\s*44px;/.test(cssBlock('.noct-quiz-next')));
+  ok('the declared floor never enlarges Next: padding + line box clears 44px at every breakpoint on its own',
+    [cssBlock('.noct-quiz-next'), (norm.match(/body:has\(#questionScreen\.active\) \.noct-quiz-next,[\s\S]*?\{([^}]*)\}/) || [null, ''])[1]]
+      .every((css) => 2 * parseFloat((css.match(/padding:\s*([\d.]+)px/) || [])[1] ?? '0') + parseFloat((css.match(/font-size:\s*([\d.]+)px/) || [])[1] ?? '17') * 1.2 >= 44));
+  // negative controls for the round-2 pins
+  ok('negative control: dropping the landscape forced-colors selected compensation is caught',
+    !eq(flRest, sides('padding: 18px 20px 18px 17px;', { all: 3, left: 6 })));
+  ok('negative control: a forced-colors landscape block that restates the wide 20px 22px cell is caught',
+    !eq(sides('padding: 20px 22px;', { all: 1, left: 1 }), lRest));
+  ok('negative control: a landscape frame that keeps the base 76px inline padding is caught',
+    !/padding: 38px 64px 24px;/.test(block.replace('padding: 38px 64px 24px;', 'padding: 38px 76px 24px;')));
+}
+
 console.log(`\n${failures === 0 ? 'PASS' : 'FAIL'} — ${checks - failures}/${checks} checks passed`);
 process.exit(failures === 0 ? 0 : 1);

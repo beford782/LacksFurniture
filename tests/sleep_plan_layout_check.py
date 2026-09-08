@@ -46,12 +46,17 @@ Run: python tests/sleep_plan_layout_check.py
 import argparse
 import functools
 import http.server
+import json
 import os
 import re
 import sys
 import threading
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# The deployment's configured retailer name (data/store-config.json); the E2-A
+# chrome pass proves the Plan's config-derived attribution renders it.
+with open(os.path.join(REPO, "data", "store-config.json"), encoding="utf-8") as _cfg:
+    STORE_NAME = json.load(_cfg).get("storeName", "")
 
 VIEWPORTS = [
     ("tablet-landscape", 1194, 748),   # confirmed mounted iPad Pro 11" landscape
@@ -441,6 +446,118 @@ def run_sleep_system_header(browser, port, name, width, height, lang, shots_dir)
     page.close()
 
 
+# E2-A chrome normalisation (cohesion experiment E2 alternative (a), ruled
+# 2026-08-30; candidate-only under the 2026-09-06 direction): the last two dark
+# page headers (Plan, Summary) are hidden like every other screen's, which
+# makes the fixed session utility card their top-band neighbour, and the card
+# is pinned to one light pairing on the quiz and Review so the persistent
+# element never flips polarity. This pass renders the quiz, the Plan and the
+# Summary in EN and ES at both mounted tablet viewports and proves: no header
+# is displayed on any of them; the card's computed surface is the same light
+# surface on all three; the card's box intersects neither the heading nor the
+# Back control on the Plan and the Summary; the heading still takes focus; the
+# Plan's config-derived attribution renders; no horizontal scroll.
+CHROME_JS = r"""
+async (ARGS) => {
+  const ANS = ARGS.answers;
+  if (ARGS.lang === 'es') await switchLanguage('es');
+  for (const k of Object.keys(ANS)) answers[k] = ANS[k];
+  const wait = (ms) => new Promise((res) => setTimeout(res, ms));
+  const rect = (el) => {
+    if (!el) return null;
+    const b = el.getBoundingClientRect();
+    if (b.width === 0 && b.height === 0) return null;
+    return { x: b.x, y: b.y, w: b.width, h: b.height };
+  };
+  const inter = (a, b) => !!(a && b && !(a.x + a.w <= b.x || b.x + b.w <= a.x || a.y + a.h <= b.y || b.y + b.h <= a.y));
+  const snap = (titleId, backId) => {
+    const header = document.querySelector('.header');
+    const bar = document.querySelector('.session-utility');
+    const doc = document.documentElement;
+    const barRect = rect(bar);
+    const backRect = backId ? rect(document.getElementById(backId)) : null;
+    // Control boundaries on the card: the resting (unpressed) language pill
+    // and Restart, as the browser actually resolves them.
+    const resting = document.querySelector('.session-utility__btn[aria-pressed="false"]');
+    const restart = document.querySelector('.session-utility__restart');
+    return {
+      headerDisplay: header ? getComputedStyle(header).display : 'missing',
+      barBg: bar ? getComputedStyle(bar).backgroundColor : null,
+      restingBorder: resting ? getComputedStyle(resting).borderTopColor : null,
+      restartBorder: restart ? getComputedStyle(restart).borderTopColor : null,
+      restartFill: restart ? getComputedStyle(restart).backgroundColor : null,
+      barOverTitle: inter(barRect, rect(document.getElementById(titleId))),
+      barOverBack: backId ? inter(barRect, backRect) : false,
+      barBottom: barRect ? barRect.y + barRect.h : null,
+      backTop: backRect ? backRect.y : null,
+      activeElement: document.activeElement && document.activeElement.id,
+      scrollWidth: doc.scrollWidth, clientWidth: doc.clientWidth,
+    };
+  };
+  const out = {};
+  startQuiz(); await wait(250); out.quiz = snap('questionHeadline', null);
+  showProfileScreen();
+  window.showResults();
+  window.chooseFinalist(_resultsState.tierData.gold[0].id);
+  window.showSleepPlan('results'); await wait(300);
+  out.plan = snap('sleepPlanTitle', 'sleepPlanBack');
+  const attr = document.getElementById('sleepPlanAttribution');
+  out.planAttribution = attr ? { hidden: attr.hidden, text: attr.textContent } : null;
+  window.showSavedPicks(); await wait(300);
+  out.summary = snap('hf2ReviewTitle', 'hf2BackToMatches');
+  return out;
+}
+"""
+
+
+def run_chrome_normalisation(browser, port, name, width, height, lang, shots_dir):
+    print(f"\n-- E2-A chrome: headers hidden, utility card light, clear of Plan/Summary headings {lang} {name} {width}x{height} --")
+    page = browser.new_page(viewport={"width": width, "height": height})
+    errors = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    page.goto(f"http://127.0.0.1:{port}/", wait_until="networkidle")
+    page.wait_for_selector("#startBtn")
+    r = page.evaluate(CHROME_JS, {"answers": ANSWERS, "lang": lang})
+    if shots_dir:
+        os.makedirs(shots_dir, exist_ok=True)
+        page.screenshot(path=os.path.join(shots_dir, f"chrome-summary-{lang}-{name}-{width}x{height}.png"))
+    check("quiz, Plan and Summary render without a page error", not errors, str(errors[:1]))
+    for screen in ("quiz", "plan", "summary"):
+        check(f"{screen}: no page header is displayed", r[screen]["headerDisplay"] == "none", r[screen]["headerDisplay"])
+    check("the utility card keeps ONE light surface on the quiz, the Plan and the Summary (no polarity flip)",
+          r["quiz"]["barBg"] == r["plan"]["barBg"] == r["summary"]["barBg"] == "rgb(255, 253, 248)",
+          f"quiz={r['quiz']['barBg']} plan={r['plan']['barBg']} summary={r['summary']['barBg']}")
+    # WCAG 1.4.11: a control boundary that identifies the control is non-text
+    # UI and needs 3:1 against its immediate background. Measured from the
+    # computed colours the browser resolves on each screen (rgb(...) strings,
+    # so any alpha would surface as rgba and fail the parse).
+    for screen in ("quiz", "plan", "summary"):
+        s = r[screen]
+        rb, rf, sb, sf = parse_rgb(s["restingBorder"]), parse_rgb(s["barBg"]), parse_rgb(s["restartBorder"]), parse_rgb(s["restartFill"])
+        ok_parse = all(v is not None for v in (rb, rf, sb, sf))
+        check(f"{screen}: the resting language pill's boundary clears 3:1 on the card surface (computed)",
+              ok_parse and contrast(rb, rf) >= 3.0, f"{s['restingBorder']} on {s['barBg']}" + (f" = {contrast(rb, rf):.2f}:1" if ok_parse else ""))
+        check(f"{screen}: the Restart boundary clears 3:1 on the card surface and against its own fill (computed)",
+              ok_parse and contrast(sb, rf) >= 3.0 and contrast(sb, sf) >= 3.0,
+              f"{s['restartBorder']} on {s['barBg']} / {s['restartFill']}" + (f" = {contrast(sb, rf):.2f}:1 / {contrast(sb, sf):.2f}:1" if ok_parse else ""))
+    for screen, title in (("plan", "sleepPlanTitle"), ("summary", "hf2ReviewTitle")):
+        check(f"{screen}: the heading takes focus", r[screen]["activeElement"] == title, f"active={r[screen]['activeElement']}")
+        check(f"{screen}: the utility card does not intersect the h1", not r[screen]["barOverTitle"])
+        check(f"{screen}: the utility card does not intersect the Back control", not r[screen]["barOverBack"])
+        # The card sits top-right and the Back control top-left, so a box
+        # intersection alone cannot prove the clearance; the Back control's
+        # top edge must clear the card's bottom edge (the reserved band).
+        check(f"{screen}: the Back control starts below the utility card's bottom edge (clearance reserved)",
+              r[screen]["backTop"] is not None and r[screen]["barBottom"] is not None and r[screen]["backTop"] >= r[screen]["barBottom"],
+              f"backTop={r[screen]['backTop']} barBottom={r[screen]['barBottom']}")
+        check(f"{screen}: no horizontal document scroll", r[screen]["scrollWidth"] <= r[screen]["clientWidth"],
+              f"{r[screen]['scrollWidth']}/{r[screen]['clientWidth']}")
+    check("the Plan renders its config-derived attribution (storeName present in this deployment)",
+          bool(r["planAttribution"]) and not r["planAttribution"]["hidden"] and STORE_NAME in r["planAttribution"]["text"],
+          str(r["planAttribution"]))
+    page.close()
+
+
 def run_forced_colors(browser, port, shots_dir):
     print("\n-- forced-colors (Chromium emulation) 1194x748 --")
     page = browser.new_page(viewport={"width": 1194, "height": 748}, forced_colors="active")
@@ -810,6 +927,10 @@ async (ARGS) => {
       if (!vis(el) || el.closest('[inert]') || el.disabled) continue; const r = el.getBoundingClientRect();
       if (r.width < 44 || r.height < 44) out.push({ screen: label, desc: desc(el), w: Math.round(r.width), h: Math.round(r.height) }); } return out; };
   const wait = (ms) => new Promise((res) => setTimeout(res, ms));
+  // 2026-09-08 floor slice: the three controls this slice raised are reported
+  // by geometry, so the pass proves they were walked, not merely not flagged.
+  const box = (el) => { if (!el) return null; const r = el.getBoundingClientRect(); return { w: Math.round(r.width), h: Math.round(r.height), minH: getComputedStyle(el).minHeight }; };
+  const walked = {};
   if (ARGS.lang === 'es') await switchLanguage('es');
   let found = small('welcome');
   for (const k of Object.keys(ARGS.answers)) answers[k] = ARGS.answers[k];
@@ -821,6 +942,7 @@ async (ARGS) => {
   window.toggleCompare(gold[1].id);
   await wait(450);
   found = found.concat(small('results+tray+pill'));
+  walked.details = box(document.querySelector('.noct-toppick .noct-card-details'));
   openResultCardDrawer(document.querySelector('#resultsScreen [data-id][data-tier]'));
   await wait(500);
   found = found.concat(small('drawer'));
@@ -836,6 +958,12 @@ async (ARGS) => {
   await wait(400);
   const strip = document.getElementById('hf2RsaStripBtn'); if (strip) { strip.click(); await wait(250); }
   found = found.concat(small('summary+roster'));
+  // The roster's add row (name input + confirm) renders only after the
+  // panel's add control is tapped; walk it too (2026-09-08 floor slice).
+  const rosterAdd = document.querySelector('.hf2-rsa-panel__add'); if (rosterAdd) { rosterAdd.click(); await wait(250); }
+  found = found.concat(small('summary+roster+addrow'));
+  const rowInput = document.getElementById('hf2RsaAddInput'), rowConfirm = document.getElementById('hf2RsaAddConfirm');
+  walked.rosterInput = box(rowInput); walked.rosterConfirm = box(rowConfirm);
   window.showEmailCapture();
   await wait(400);
   found = found.concat(small('take-home'));
@@ -844,10 +972,13 @@ async (ARGS) => {
     const input = document.getElementById('emailInput'); if (input) input.value = 'preview@example.com';
     const send = document.getElementById('emailSendBtn'); if (send) { send.click(); await wait(1200); found = found.concat(small('take-home-confirmation')); }
   }
-  return { found, live };
+  return { found, live, walked };
 }
 """
-ALLOWED_SMALL = ("noct-card-details", "emailPrivacyLink")
+# The details control left this list in the 2026-09-08 accessibility-floor
+# slice (candidate): it now declares the floor and is measured like its
+# three 44px row-mates.
+ALLOWED_SMALL = ("emailPrivacyLink",)
 
 
 def run_touch_floor(browser, port, name, width, height, lang, shots_dir):
@@ -865,8 +996,15 @@ def run_touch_floor(browser, port, name, width, height, lang, shots_dir):
     accepted = [o for o in r["found"] if any(a in o["desc"] for a in ALLOWED_SMALL)]
     check(f"[{lang}/{name}] the sweep reached the preview confirmation without a page error (emailDeliveryLive() === false)",
           not errors and r["live"] is False, f"errors={errors[:1]} live={r['live']}")
-    check(f"[{lang}/{name}] every visible interactive control on the swept screens is >= 44x44 CSS px, except the two recorded exceptions ({len(accepted)} occurrences of View details / privacy link)",
+    check(f"[{lang}/{name}] every visible interactive control on the swept screens is >= 44x44 CSS px, except the one recorded exception ({len(accepted)} occurrences of the privacy link)",
           not offenders, "; ".join(f"{o['screen']}:{o['desc']} {o['w']}x{o['h']}" for o in offenders[:14]))
+    w = r["walked"]
+    check(f"[{lang}/{name}] the Results details control was walked and clears the floor by declaration and by render (was 31px, a recorded exception)",
+          bool(w.get("details")) and w["details"]["h"] >= 44 and w["details"]["minH"] == "44px", str(w.get("details")))
+    check(f"[{lang}/{name}] the roster add row was opened and its name input clears the floor (was 40px, never walked)",
+          bool(w.get("rosterInput")) and w["rosterInput"]["h"] >= 44 and w["rosterInput"]["minH"] == "44px", str(w.get("rosterInput")))
+    check(f"[{lang}/{name}] the roster add row's confirm clears the floor in both axes (was 40px tall)",
+          bool(w.get("rosterConfirm")) and w["rosterConfirm"]["h"] >= 44 and w["rosterConfirm"]["w"] >= 44 and w["rosterConfirm"]["minH"] == "44px", str(w.get("rosterConfirm")))
     page.close()
 
 
@@ -906,6 +1044,388 @@ async (ARGS) => {
 }
 """
 
+
+# X7-B2 (candidate, 2026-09-07): the compact landscape quiz. The landscape
+# quiz had no rendered check at all - the fold harness that measured the block
+# never selected an option and never ran forced colors, which is how a
+# forced-colors cascade defeat and a selected-state reflow both shipped
+# unseen in the A2 evidence. This pass renders the slider and the two longest
+# multi-select questions (plus the first question for the header geometry) at
+# the mounted landscape viewport and the 1024x768 / 901px gate-floor controls,
+# in both languages, and asserts: the single next action inside the fold with
+# and without three selections; no document overflow on either axis for the
+# English firmness layout; option cells at or above the 44px floor and
+# geometrically identical resting vs selected; Next's declared 44px floor at
+# its unchanged computed size; the utility card one row tall and clear of the
+# eyebrow, the progress count and the headline by the card's own 8px inset;
+# the same clearance under an emulated 24px safe-area inset (the body shifts
+# with the card); and, under forced colors, the compact cell geometry kept
+# with the selected cue's distinct boundary and readable native colours.
+QUIZ_LANDSCAPE_JS = r"""
+async (ARGS) => {
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  const f = (v) => Math.round(v * 10) / 10;
+  const R = (el) => { if (!el) return null; const r = el.getBoundingClientRect();
+    return { top: f(r.top), bottom: f(r.bottom), left: f(r.left), right: f(r.right), w: f(r.width), h: f(r.height) }; };
+  const T = (el) => { if (!el || !el.firstChild) return null; const rg = document.createRange(); rg.selectNodeContents(el);
+    const r = rg.getBoundingClientRect(); return { top: f(r.top), bottom: f(r.bottom), left: f(r.left), right: f(r.right), w: f(r.width), h: f(r.height) }; };
+  const hit = (a, b) => !!(a && b && a.w > 0 && b.w > 0 && a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom);
+  if (ARGS.lang === 'es') { await switchLanguage('es'); }
+  startQuiz();
+  await wait(300);
+  answers['partner_sleep'] = 'partner';
+  const vh = window.innerHeight;
+  const envTop = (() => { const d = document.createElement('div'); d.style.paddingTop = 'env(safe-area-inset-top, 0px)';
+    document.body.appendChild(d); const v = getComputedStyle(d).paddingTop; d.remove(); return v; })();
+  const snap = () => {
+    window.scrollTo(0, 0);
+    const bar = document.querySelector('.session-utility');
+    const eyebrow = document.querySelector('.noct-quiz-eyebrow');
+    const pct = document.querySelector('.noct-quiz-progress-pct');
+    const head = document.querySelector('#questionHeadline');
+    const next = document.querySelector('.noct-quiz-next');
+    const opts = Array.from(document.querySelectorAll('.noct-quiz-option'));
+    const b = R(bar);
+    return {
+      barH: b ? b.h : null, barBottom: b ? b.bottom : null,
+      nextBottom: next ? R(next).bottom : null, nextH: next ? R(next).h : null, nextMinH: next ? getComputedStyle(next).minHeight : null,
+      docH: document.documentElement.scrollHeight, scrollW: document.documentElement.scrollWidth, clientW: document.documentElement.clientWidth,
+      minOptH: opts.length ? Math.min(...opts.map((o) => R(o).h)) : null,
+      barHitsEyebrow: hit(b, T(eyebrow)), barHitsPct: hit(b, T(pct)), barHitsHeadline: hit(b, R(head)),
+      clrPct: (b && pct) ? f(T(pct).top - b.bottom) : null,
+    };
+  };
+  const out = { vh, envTop, questions: [] };
+  for (const q of visibleQuestions()) {
+    if (!ARGS.questions.includes(q.id)) continue;
+    currentQuestion = QUESTIONS.indexOf(q);
+    renderQuestion();
+    await wait(120);
+    const rest = snap();
+    let sel = null;
+    if (q.type !== 'slider') {
+      const isMulti = q.type === 'multiple';
+      const ids = q.options.map((o) => o.id);
+      const b0 = document.getElementById('qopt-' + q.id + '-' + ids[0]);
+      const before = { label: R(b0.querySelector('.opt-label')), box: R(b0) };
+      const pick = isMulti ? [ids[0], ids[2], ids[4]] : [ids[0]];
+      for (const id of pick) { selectOption(q.id, id, isMulti); await wait(60); }
+      await wait(120);
+      const b1 = document.getElementById('qopt-' + q.id + '-' + ids[0]);
+      // The motion flag settles a selected option through a 200ms scaleY animation; a
+      // read inside its tail shows a sub-pixel height and label offset that is the
+      // animation, not a reflow. Measure only once every running animation has finished.
+      await Promise.all(b1.getAnimations({ subtree: true }).map((a) => a.finished.catch(() => {})));
+      const b2 = document.getElementById('qopt-' + q.id + '-' + ids[1]);
+      const cs1 = getComputedStyle(b1), cs2 = getComputedStyle(b2);
+      b1.focus({ preventScroll: true });
+      sel = Object.assign(snap(), {
+        labelMovedX: f(R(b1.querySelector('.opt-label')).left - before.label.left),
+        labelMovedY: f(R(b1.querySelector('.opt-label')).top - before.label.top),
+        boxGrew: f(R(b1).h - before.box.h),
+        selBorder: [cs1.borderTopWidth, cs1.borderLeftWidth].join('/'), restBorder: [cs2.borderTopWidth, cs2.borderLeftWidth].join('/'),
+        selFg: cs1.color, selBg: cs1.backgroundColor, ringStyle: getComputedStyle(b1).outlineStyle, ringWidth: getComputedStyle(b1).outlineWidth,
+      });
+    }
+    out.questions.push({ q: q.id, type: q.type, resting: rest, selected: sel });
+  }
+  return out;
+}
+"""
+
+QUIZ_LANDSCAPE_QUESTIONS = ["mattress_size", "firmness", "sleep_issues", "health_conditions"]
+
+
+def run_quiz_landscape(browser, port, name, width, height, lang, shots_dir, forced=False, inset=0, reference=None):
+    mode = "forced colors" if forced else (f"safe-area inset {inset}px" if inset else "normal")
+    print(f"\n-- X7-B2 landscape quiz: fold, cells, Next floor, utility clearance [{mode}] {lang} {name} {width}x{height} --")
+    kw = {"viewport": {"width": width, "height": height}}
+    if forced:
+        kw["forced_colors"] = "active"
+    page = browser.new_page(**kw)
+    errors = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    if inset:
+        cdp = page.context.new_cdp_session(page)
+        cdp.send("Emulation.setSafeAreaInsetsOverride", {"insets": {"top": inset, "left": 0, "bottom": 0, "right": 0}})
+    page.goto(f"http://127.0.0.1:{port}/", wait_until="networkidle")
+    page.wait_for_selector("#startBtn")
+    r = page.evaluate(QUIZ_LANDSCAPE_JS, {"lang": lang, "questions": QUIZ_LANDSCAPE_QUESTIONS})
+    if shots_dir:
+        os.makedirs(shots_dir, exist_ok=True)
+        page.screenshot(path=os.path.join(shots_dir, f"quiz-landscape-{mode.split()[0]}-{lang}-{name}-{width}x{height}.png"))
+    tag = f"[{mode}] {lang} {name}"
+    check(f"{tag}: the quiz renders without a page error", not errors, str(errors[:1]))
+    if inset:
+        check(f"{tag}: the emulated safe-area inset reaches env() (the scenario is real, not a no-op)", r["envTop"] == f"{inset}px", r["envTop"])
+    by = {q["q"]: q for q in r["questions"]}
+    vh = r["vh"]
+    for qid in ("firmness", "sleep_issues", "health_conditions"):
+        q = by[qid]
+        check(f"{tag}: {qid} - the single next action ends inside the fold (resting)",
+              q["resting"]["nextBottom"] is not None and q["resting"]["nextBottom"] <= vh, f"nextBottom={q['resting']['nextBottom']} vh={vh}")
+        if q["selected"]:
+            check(f"{tag}: {qid} - Next stays inside the fold with three selections in three rows",
+                  q["selected"]["nextBottom"] <= vh, f"nextBottom={q['selected']['nextBottom']} vh={vh}")
+    fm = by["firmness"]["resting"]
+    check(f"{tag}: firmness - no horizontal document overflow", fm["scrollW"] <= fm["clientW"], f"{fm['scrollW']}/{fm['clientW']}")
+    if not inset:
+        check(f"{tag}: firmness - no vertical document overflow either (the headline fits its column)", fm["docH"] <= vh, f"docH={fm['docH']} vh={vh}")
+    for qid in ("mattress_size", "sleep_issues", "health_conditions"):
+        q = by[qid]
+        check(f"{tag}: {qid} - every option cell clears the 44px floor", q["resting"]["minOptH"] is not None and q["resting"]["minOptH"] >= 44, str(q["resting"]["minOptH"]))
+        s = q["selected"]
+        check(f"{tag}: {qid} - selecting moves no label and grows no cell",
+              s["labelMovedX"] == 0 and s["labelMovedY"] == 0 and s["boxGrew"] == 0, f"moved=({s['labelMovedX']},{s['labelMovedY']}) grew={s['boxGrew']}")
+        if forced:
+            check(f"{tag}: {qid} - the selected cue keeps a distinct boundary from its resting neighbour (geometry, not colour)",
+                  s["selBorder"] != s["restBorder"], f"selected {s['selBorder']} vs resting {s['restBorder']}")
+            check(f"{tag}: {qid} - the selected option's text is readable (system fg != bg)",
+                  parse_rgb(s["selFg"]) is not None and parse_rgb(s["selBg"]) is not None and parse_rgb(s["selFg"]) != parse_rgb(s["selBg"]),
+                  f"{s['selFg']} on {s['selBg']}")
+            check(f"{tag}: {qid} - the focused option keeps a solid ring of at least 2px", s["ringStyle"] == "solid" and float(s["ringWidth"].replace("px", "")) >= 2, f"{s['ringStyle']} {s['ringWidth']}")
+            if reference is not None:
+                check(f"{tag}: {qid} - forced colors keeps the compact cell height of the normal landscape state",
+                      abs(q["resting"]["minOptH"] - reference[qid]) < 1, f"forced {q['resting']['minOptH']} vs normal {reference[qid]}")
+    nx = by["mattress_size"]["resting"]
+    check(f"{tag}: Next declares its 44px floor and keeps its computed size above it", nx["nextMinH"] == "44px" and nx["nextH"] >= 44, f"min-height={nx['nextMinH']} h={nx['nextH']}")
+    ms = by["mattress_size"]["resting"]
+    check(f"{tag}: the utility card renders one row (the shipped labels cannot wrap it at this width)", ms["barH"] is not None and ms["barH"] <= 70, str(ms["barH"]))
+    check(f"{tag}: the utility card does not intersect the eyebrow, the progress count or the headline",
+          not ms["barHitsEyebrow"] and not ms["barHitsPct"] and not ms["barHitsHeadline"])
+    check(f"{tag}: the progress count clears the card's bottom edge by at least the card's own 8px inset",
+          ms["clrPct"] is not None and ms["clrPct"] >= 8, f"clearance={ms['clrPct']}")
+    page.close()
+    return {qid: by[qid]["resting"]["minOptH"] for qid in ("mattress_size", "sleep_issues", "health_conditions")}
+
+
+# X6 hover consumer class (candidate, 2026-09-08; roster form after the Codex
+# review of the same day): every Results control whose hover, focus-visible or
+# stateful paint changes its text or boundary colour, rendered and driven with
+# a real pointer, in both languages and both colour modes. The roster below is
+# the contract: every (control, state) pair it names must be OBSERVED, or the
+# pass fails - a minimum count would not notice an omitted state. States are
+# reached through the app itself, on one page per context, in an order that
+# only ever adds state: resting controls first, then one comparison selection
+# (the tray's Compare is disabled with one, its Clear is live), then a second
+# selection (Compare enabled), then a save (saved Save, the picks pill), then
+# a chosen finalist. Normal colours: text >= 4.5:1 on the surface it actually
+# sits on and any PAINTED hover boundary >= 3:1 (a reserved border whose
+# computed alpha is zero, the tier tabs' forced-colors idiom, is not a painted
+# boundary and is skipped for exactly that reason). Forced colors: text and
+# fill stay native (fg != bg) and stateful variants keep a boundary geometry
+# distinct from their resting neighbour. The details control's focus-visible
+# is reached by a real keyboard Tab, and the pass asserts the element MATCHES
+# :focus-visible before it measures the text and the ring; a disabled tray
+# Compare under an attempted pointer hover must keep its disabled paint.
+RESULTS_HOVER_ROSTER = [
+    # (key, selector, prep, states)  prep runs once, before the first read of that key
+    ("details", ".noct-toppick .noct-card-details", "", ("resting", "hover", "focus-visible")),
+    ("compare", ".noct-toppick .compare-btn", "", ("resting", "hover")),
+    ("save", ".noct-toppick .noct-save-btn", "", ("resting", "hover")),
+    ("finalist", ".noct-toppick .finalist-btn", "", ("resting", "hover")),
+    ("tier tab", "#resultsScreen .noct-tier-tab:not(.active)", "", ("resting", "hover")),
+    ("tier tab active", "#resultsScreen .noct-tier-tab.active", "", ("resting", "hover")),
+    ("review back", "#resultsScreen .noct-results-review-btn", "", ("resting", "hover")),
+    ("results CTA", "#resultsScreen .noct-results-cta", "", ("resting", "hover")),
+    ("compare selected", ".noct-toppick .compare-btn.selected", "compare-1", ("resting", "hover")),
+    ("tray Compare disabled", ".compare-tray-go:disabled", "", ("resting", "hover")),
+    ("tray Clear", ".compare-tray-clear", "", ("resting", "hover")),
+    ("tray Compare", ".compare-tray-go:not(:disabled)", "compare-2", ("resting", "hover")),
+    ("save saved", ".noct-toppick .noct-save-btn.saved", "save", ("resting", "hover")),
+    ("picks pill", ".noct-picks-pill", "", ("resting", "hover")),
+    ("finalist chosen", ".noct-toppick .finalist-btn.chosen", "finalist", ("resting", "hover")),
+]
+RESULTS_HOVER_STATEFUL = {"compare selected": "compare", "save saved": "save", "finalist chosen": "finalist", "tier tab active": "tier tab"}
+RESULTS_HOVER_OPEN_JS = r"""
+async (ARGS) => {
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  if (ARGS.lang === 'es') await switchLanguage('es');
+  for (const k of Object.keys(ARGS.answers)) answers[k] = ARGS.answers[k];
+  startQuiz(); await wait(200); window.showResults(); await wait(500);
+  return true;
+}
+"""
+RESULTS_HOVER_PREP_JS = r"""
+async (prep) => {
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  const gold = _resultsState.tierData.gold;
+  if (prep === 'compare-1') window.toggleCompare(gold[0].id);
+  if (prep === 'compare-2') window.toggleCompare(gold[1].id);
+  if (prep === 'save') window._toggleSavePick(gold[0].id);
+  if (prep === 'finalist') window.chooseFinalist(gold[0].id);
+  await wait(450);
+  return { compared: (typeof _compareSelection !== 'undefined' && _compareSelection) ? _compareSelection.length : null };
+}
+"""
+RESULTS_HOVER_LOCATE_JS = r"""
+async (sel) => {
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  const el = document.querySelector(sel);
+  if (!el) return null;
+  el.scrollIntoView({ block: 'center' }); await wait(150);
+  const r = el.getBoundingClientRect();
+  return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+}
+"""
+RESULTS_HOVER_READ_JS = r"""
+(sel) => {
+  const b = document.querySelector(sel); if (!b) return null;
+  const cs = getComputedStyle(b);
+  const parse = (c) => { const m = c.match(/[\d.]+/g); return m ? m.map(Number) : null; };
+  const alpha = (c) => { const m = parse(c); return m ? (m.length < 4 ? 1 : m[3]) : null; };
+  let el = b.parentElement, backdrop = null;
+  while (el) { const bg = getComputedStyle(el).backgroundColor; if (alpha(bg) > 0) { backdrop = bg; break; } el = el.parentElement; }
+  const effBg = alpha(cs.backgroundColor) > 0 ? cs.backgroundColor : backdrop;
+  return { fg: cs.color, bg: cs.backgroundColor, effBg, backdrop, borderW: parseFloat(cs.borderTopWidth), borderStyle: cs.borderTopStyle,
+    borderColor: cs.borderTopColor, borderAlpha: alpha(cs.borderTopColor), outline: cs.outlineStyle + ' ' + cs.outlineWidth + ' ' + cs.outlineColor,
+    outlineColor: cs.outlineColor, outlineWidth: parseFloat(cs.outlineWidth), outlineStyle: cs.outlineStyle,
+    hover: b.matches(':hover'), focusVisible: b.matches(':focus-visible'), active: document.activeElement === b, disabled: b.disabled === true,
+    text: (b.textContent || '').trim().slice(0, 24) };
+}
+"""
+RESULTS_HOVER_KEYBOARD_JS = r"""
+() => {
+  // Park keyboard focus on the tier tab strip, the nearest focusable BEFORE the
+  // hero cluster in tab order, so a real Tab sequence reaches the details control.
+  const tab = document.querySelector('#resultsScreen .noct-tier-tab');
+  if (tab) tab.focus({ preventScroll: true });
+  return !!tab;
+}
+"""
+
+
+def run_results_hover_states(browser, port, lang, forced):
+    mode = "forced colors" if forced else "normal colours"
+    tag = f"[{mode}] {lang}"
+    print(f"\n-- X6 hover consumer class, rendered roster {tag} tablet-landscape 1194x748 --")
+    kw = {"viewport": {"width": 1194, "height": 748}}
+    if forced:
+        kw["forced_colors"] = "active"
+    page = browser.new_page(**kw)
+    errors = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    page.goto(f"http://127.0.0.1:{port}/", wait_until="networkidle")
+    page.wait_for_selector("#startBtn")
+    page.evaluate(RESULTS_HOVER_OPEN_JS, {"answers": ANSWERS, "lang": lang})
+    observed = set()
+    resting_border = {}
+
+    def judge(key, state, r, rest=None):
+        observed.add((key, state))
+        fg, bg = parse_rgb(r["fg"]), (parse_rgb(r["effBg"]) if r["effBg"] else None)
+        if forced:
+            check(f"{tag} {key} {state}: text stays native and readable (fg != bg)", fg is not None and bg is not None and fg != bg, f"{r['fg']} on {r['effBg']}")
+        else:
+            ok_parse = fg is not None and bg is not None
+            floor = 4.5
+            if r["disabled"]:
+                # An inactive control is exempt from the text floor; the assertion is that it is still legible ink on its fill.
+                check(f"{tag} {key} {state}: disabled paint is measured (WCAG-exempt from 4.5:1) and stays legible >= 3:1",
+                      ok_parse and contrast(fg, bg) >= 3, f"{r['fg']} on {r['effBg']}" + (f" = {contrast(fg, bg):.2f}:1" if ok_parse else ""))
+            else:
+                check(f"{tag} {key} {state}: text >= {floor}:1 on the surface it sits on", ok_parse and contrast(fg, bg) >= floor,
+                      f"{r['fg']} on {r['effBg']}" + (f" = {contrast(fg, bg):.2f}:1" if ok_parse else ""))
+            if state == "hover" and r["borderW"] > 0 and r["borderStyle"] != "none" and r["backdrop"] and not r["disabled"]:
+                if rest is not None and r["borderColor"] == rest["borderColor"] and r["borderW"] == rest["borderW"]:
+                    # Hover did not touch the boundary: it is the resting hairline, not a hover cue.
+                    # Asserted unchanged and reported; the resting hairline's own ratio is a separate,
+                    # pre-existing design question outside the hover consumer class.
+                    bd, back = parse_rgb(r["borderColor"]), parse_rgb(r["backdrop"])
+                    check(f"{tag} {key} hover: the boundary is the unchanged resting hairline, not a hover cue (observed {contrast(bd, back):.2f}:1)" if bd and back else f"{tag} {key} hover: the boundary is the unchanged resting hairline",
+                          True)
+                elif r["borderAlpha"] == 0:
+                    check(f"{tag} {key} hover: a reserved transparent border (computed alpha 0) is excluded from the boundary floor, and only for that reason",
+                          r["borderAlpha"] == 0, r["borderColor"])
+                else:
+                    bd, back = parse_rgb(r["borderColor"]), parse_rgb(r["backdrop"])
+                    check(f"{tag} {key} hover: the painted boundary >= 3:1 on its backdrop", bd is not None and back is not None and contrast(bd, back) >= 3,
+                          f"{r['borderColor']} on {r['backdrop']}" + (f" = {contrast(bd, back):.2f}:1" if bd and back else ""))
+
+    for key, sel, prep, states in RESULTS_HOVER_ROSTER:
+        if prep:
+            info = page.evaluate(RESULTS_HOVER_PREP_JS, prep)
+            if prep == "compare-1":
+                check(f"{tag} the first comparison selection was made through the app (tray Compare disabled with one)", info.get("compared") in (1, None), str(info))
+            if prep == "compare-2":
+                check(f"{tag} the second comparison selection was made through the app (tray Compare enabled with two)", info.get("compared") in (2, None), str(info))
+        c = page.evaluate(RESULTS_HOVER_LOCATE_JS, sel)
+        check(f"{tag} {key}: the control renders on Results in this state", bool(c), sel)
+        if not c:
+            continue
+        page.mouse.move(2, 2)
+        page.wait_for_timeout(120)
+        rest = page.evaluate(RESULTS_HOVER_READ_JS, sel)
+        if "resting" in states:
+            judge(key, "resting", rest)
+        if key == "tray Compare disabled":
+            check(f"{tag} tray Compare disabled: the control is really disabled after one selection", rest["disabled"], str(rest["disabled"]))
+        if key == "tray Compare":
+            check(f"{tag} tray Compare: the control is enabled after two selections", not rest["disabled"], str(rest["disabled"]))
+        if "hover" in states:
+            page.mouse.move(c["x"], c["y"])
+            page.wait_for_timeout(250)
+            hov = page.evaluate(RESULTS_HOVER_READ_JS, sel)
+            check(f"{tag} {key} hover: the pointer is over the control (the state is real, not assumed)", bool(hov) and hov["hover"])
+            if hov:
+                judge(key, "hover", hov, rest)
+                if key == "tray Compare disabled":
+                    check(f"{tag} tray Compare disabled: an attempted pointer hover leaves the disabled paint unchanged",
+                          hov["fg"] == rest["fg"] and hov["bg"] == rest["bg"] and hov["borderColor"] == rest["borderColor"],
+                          f"resting {rest['fg']}/{rest['bg']} vs hover {hov['fg']}/{hov['bg']}")
+            page.mouse.move(2, 2)
+            page.wait_for_timeout(150)
+        if "focus-visible" in states:
+            parked = page.evaluate(RESULTS_HOVER_KEYBOARD_JS)
+            reached = None
+            for _ in range(24):
+                page.keyboard.press("Tab")
+                st = page.evaluate(RESULTS_HOVER_READ_JS, sel)
+                if st and st["active"]:
+                    reached = st
+                    break
+            check(f"{tag} {key} focus-visible: a real keyboard Tab sequence from the tier strip reaches the control", parked and reached is not None)
+            if reached:
+                check(f"{tag} {key} focus-visible: the element MATCHES :focus-visible under keyboard modality", reached["focusVisible"], str(reached["focusVisible"]))
+                judge(key, "focus-visible", reached)
+                if not forced:
+                    ring, back = parse_rgb(reached["outlineColor"]), parse_rgb(reached["backdrop"] or reached["effBg"])
+                    check(f"{tag} {key} focus-visible: a solid ring >= 2px is painted and clears 3:1 on the backdrop",
+                          reached["outlineStyle"] == "solid" and reached["outlineWidth"] >= 2 and ring is not None and back is not None and contrast(ring, back) >= 3,
+                          reached["outline"] + (f" = {contrast(ring, back):.2f}:1" if ring and back else ""))
+                else:
+                    check(f"{tag} {key} focus-visible: the ring stays a solid native outline under forced colors", reached["outlineStyle"] == "solid" and reached["outlineWidth"] >= 2, reached["outline"])
+            page.evaluate("() => { if (document.activeElement) document.activeElement.blur(); }")
+        if forced:
+            if key in RESULTS_HOVER_STATEFUL:
+                base = RESULTS_HOVER_STATEFUL[key]
+                if base in resting_border:
+                    rw_, rs_ = resting_border[base]
+                    check(f"{tag} {key}: keeps a boundary geometry distinct from the resting {base} (width or style)",
+                          (rest["borderW"], rest["borderStyle"]) != (rw_, rs_), f"resting {rw_}px {rs_} vs {rest['borderW']}px {rest['borderStyle']}")
+            else:
+                resting_border[key] = (rest["borderW"], rest["borderStyle"])
+    # Modality negative control, run LAST because it toggles a support-card comparison: a real
+    # pointer click focuses that Compare button WITHOUT matching :focus-visible, and the next
+    # keyboard Tab lands on a control that DOES match. If the browser ever blurred that line,
+    # the keyboard assertion on the details control above would prove nothing.
+    pc = page.evaluate(RESULTS_HOVER_LOCATE_JS, ".noct-support-card .compare-btn")
+    check(f"{tag} modality control: a support-card Compare renders for the pointer click", bool(pc))
+    if pc:
+        page.mouse.click(pc["x"], pc["y"])
+        page.wait_for_timeout(400)
+        clicked = page.evaluate(RESULTS_HOVER_READ_JS, ".noct-support-card .compare-btn")
+        check(f"{tag} modality negative control: pointer-initiated focus does not match :focus-visible",
+              bool(clicked) and clicked["active"] and not clicked["focusVisible"], str(clicked and (clicked["active"], clicked["focusVisible"])))
+        page.keyboard.press("Tab")
+        page.wait_for_timeout(120)
+        tabbed = page.evaluate("() => { const a = document.activeElement; return a ? a.matches(':focus-visible') : null; }")
+        check(f"{tag} modality positive control: the next keyboard Tab lands on a control that matches :focus-visible", tabbed is True, str(tabbed))
+    expected = {(key, state) for key, _sel, _prep, states in RESULTS_HOVER_ROSTER for state in states}
+    missing = sorted(expected - observed)
+    check(f"{tag} every named control/state in the roster was observed ({len(observed)} of {len(expected)})", not missing, "; ".join(f"{k}:{s}" for k, s in missing))
+    check(f"{tag} the hover roster renders without a page error", not errors, str(errors[:1]))
+    page.close()
 
 def run_banner_fallback(browser, port, shots_dir):
     print("\n-- BANNER FALLBACK (X4 / Wave 3) 1194x748 --")
@@ -1023,6 +1543,9 @@ def main():
             for lang in ("en", "es"):
                 for name, w, h in VIEWPORTS[:2]:
                     run_sleep_system_header(browser, port, name, w, h, lang, args.screenshots)
+            for lang in ("en", "es"):
+                for name, w, h in VIEWPORTS[:2]:
+                    run_chrome_normalisation(browser, port, name, w, h, lang, args.screenshots)
             run_compare_label(browser, port, args.screenshots)
             for lang in ("en", "es"):
                 for name, w, h in VIEWPORTS[:2]:
@@ -1033,6 +1556,17 @@ def main():
             for lang in ("en", "es"):
                 for name, w, h in VIEWPORTS[:2]:
                     run_touch_floor(browser, port, name, w, h, lang, args.screenshots)
+            for lang in ("en", "es"):
+                ref = None
+                for name, w, h in (("tablet-landscape", 1194, 748), ("landscape-1024", 1024, 768), ("landscape-gate-floor", 901, 748)):
+                    cells = run_quiz_landscape(browser, port, name, w, h, lang, args.screenshots)
+                    if name == "tablet-landscape":
+                        ref = cells
+                run_quiz_landscape(browser, port, "tablet-landscape", 1194, 748, lang, args.screenshots, forced=True, reference=ref)
+                run_quiz_landscape(browser, port, "tablet-landscape", 1194, 748, lang, args.screenshots, inset=24)
+            for lang in ("en", "es"):
+                run_results_hover_states(browser, port, lang, forced=False)
+                run_results_hover_states(browser, port, lang, forced=True)
             run_banner_fallback(browser, port, args.screenshots)
             run_sleep_system_focus(browser, port, args.screenshots)
             run_forced_colors(browser, port, args.screenshots)

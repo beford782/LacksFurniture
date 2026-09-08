@@ -766,9 +766,14 @@ section('C5 — the Selections pill and the take-home saved count agree with the
 // Selections pill, "Save for later", Compare close, drawer Back/Prev/Next,
 // Summary pick / accessory actions, RSA strip and add, take-home secondary
 // actions). The rendered sweep in tests/sleep_plan_layout_check.py proves
-// the result; these pins keep each declaration in place. Two exceptions are
-// recorded, not repaired: the card's "View details" (the card itself opens
-// the drawer) and the inline privacy link (running text).
+// the result; these pins keep each declaration in place. One exception is
+// recorded, not repaired: the inline privacy link (running text). The card's
+// "View details" was the other recorded exception until the 2026-09-08
+// accessibility-floor slice (candidate): it rendered 31px beside three 44px
+// siblings and a tap 21px off its centre missed it, so it now declares the
+// floor too, as do the Summary roster panel's add-row input and confirm
+// (40px until then, and never walked by the rendered sweep because the
+// row only renders after the panel's add control is tapped).
 section('X12 — the 44px touch floor is declared on every listed control');
 {
   const rule = (sel) => (norm.match(new RegExp('\\n    ' + sel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ' \\{([^}]*)\\}')) || [null, ''])[1];
@@ -783,13 +788,22 @@ section('X12 — the 44px touch floor is declared on every listed control');
     ['.noct-picks-pill', /min-height: 44px;/],
     ['.compare-modal-close', /min-width: 44px;[\s\S]*min-height: 44px;/],
     ['.drawer-back-to-results', /min-height: 44px;/],
-    ['.drawer-nav-btn', /min-height: 44px;/]
+    ['.drawer-nav-btn', /min-height: 44px;/],
+    ['.noct-card-details', /display: inline-flex;[\s\S]*align-items: center;[\s\S]*min-height: 44px;/],
+    ['.hf2-rsa-panel__input', /min-height: 44px;/],
+    ['.hf2-rsa-panel__confirm', /min-height: 44px;/]
   ];
   for (const [sel, re] of floor) ok(`${sel} declares the 44px floor`, re.test(rule(sel)), rule(sel).replace(/\s+/g, ' ').slice(0, 70));
   ok('.compare-tray-clear / .compare-tray-go declare the 44px floor in both dimensions',
     /\.compare-tray-clear, \.compare-tray-go \{ white-space: nowrap; min-height: 44px; min-width: 44px; \}/.test(norm));
   ok('no listed control keeps the old 42px floor',
     !/\.(hf2-pick__action|hf2-acc-card__action|drawer-back-to-results|drawer-nav-btn) \{[^}]*min-height: 42px;/.test(norm));
+  ok('the roster add row keeps no 40px floor and the details control keeps its type, label colour and padding',
+    !/\.hf2-rsa-panel__(input|confirm) \{[^}]*min-height: 40px;/.test(norm)
+    && /font-size: 11px;[\s\S]*letter-spacing: 0\.05em;[\s\S]*padding: 8px 4px;/.test(rule('.noct-card-details'))
+    && /color: var\(--color-text-subtle\);/.test(rule('.noct-card-details')));
+  ok('negative control: a details rule without the declared floor is caught',
+    !/min-height: 44px;/.test(rule('.noct-card-details').replace('min-height: 44px;', '')));
   const ring = norm.match(/\.compare-modal-close:focus-visible \{([^}]*)\}/);
   ok('the Compare close control carries the two-ring author focus indicator',
     !!ring && /outline: 3px solid var\(--focus-ring-outer\);/.test(ring[1]) && /box-shadow: 0 0 0 5px var\(--focus-ring-inner\);/.test(ring[1]));
@@ -830,6 +844,57 @@ section('Wave 3 — banner fallback and white image mats (X4/X5)');
     /body:has\(#resultsScreen\.active\) \.cmp-head-img,\s*body:has\(#hf2Screen\.active\) \.cmp-head-img \{\s*background: #FFFDF8;[^}]*border: 1px solid #D1C5B6;\s*\}/.test(norm));
   ok('no results product frame keeps the beige mat token',
     !/\.noct-(toppick|support)-photo \{[^}]*var\(--color-surface-alt\)/.test(norm));
+}
+
+// ------------------------------- C2: the Results landscape first fold
+// Cohesion ruling C2 (2026-08-30), built candidate-only under the 2026-09-06
+// direction. The landscape hero is a two-column card so the Best Match
+// identity lands inside the 748px fold at 1194x748; the Brief's stamp and the
+// trial-focus line sit on the centred axis at body size. The contract is
+// that the pass is ADDITIVE and LANDSCAPE-GATED: one media block, placed
+// after the narrow-width block, that never redeclares a base rule (the
+// regexes above parse those by shape), never sizes the ruled 54px stamp,
+// never touches the tier band C2 preserves (tabs, descriptor, relativity
+// line), the support cards or the headline, hides nothing, reorders nothing
+// and writes no copy. Portrait viewports never enter it. Geometry itself is
+// measured by the final validation pass, not here.
+section('C2 — the landscape first-fold block is additive, gated and bounded');
+{
+  const gate = '@media (min-width: 901px) and (orientation: landscape) {';
+  // The file carries one landscape idiom (the same gate serves the Sleep
+  // Brief's E1 block); the Results block is the one that restyles the hero.
+  const heroBlocks = (src) => [...src.matchAll(/@media \(min-width: 901px\) and \(orientation: landscape\) \{[\s\S]*?\n    \}\n/g)]
+    .map((m) => m[0]).filter((b) => b.includes('.noct-toppick {'));
+  const block = heroBlocks(norm)[0] || '';
+  ok('exactly one landscape-gated block restyles the hero', block.length > 0 && heroBlocks(norm).length === 1);
+  ok('it sits after the narrow-width Results block (later wins at equal specificity)',
+    norm.indexOf(block) > norm.indexOf('@media (max-width: 820px) {\n      .noct-supporting-row { grid-template-columns: 1fr; }'));
+  ok('the hero becomes a two-column grid there, photo column first',
+    /\.noct-toppick \{\s*display: grid;\s*grid-template-columns: minmax\(0, 46fr\) minmax\(0, 54fr\);/.test(block));
+  ok('the hero photo fills its column instead of the 16:9 band',
+    /\.noct-toppick-photo \{\s*aspect-ratio: auto;\s*height: 100%;/.test(block));
+  ok('the stamp is re-seated on the centred axis, never re-sized',
+    /\.noct-results-signature \{\s*display: flex;\s*justify-content: center;\s*\}/.test(block)
+    && !/noct-results-signature \.sleep-signature/.test(block) && !/[\s;{]width: \d+px/.test(block));
+  ok('the trial-focus line reaches body size (the relativity-line precedent)',
+    /\.results-trial-focus \{\s*font-size: 15px;/.test(block));
+  ok('the tier band C2 preserves is untouched by the block',
+    !/noct-tier-tab|noct-tier-descriptor|tier-relativity/.test(block));
+  ok('the support cards, the headline and the eyebrow are untouched by the block',
+    !/noct-support-|noct-results-headline|noct-results-eyebrow|noct-results-subhead/.test(block));
+  ok('the block hides nothing, reorders nothing and writes no copy',
+    !/display: none|visibility|[\s;{]order:|[\s;{]content:|pointer-events/.test(block));
+  ok('the block lowers no touch floor',
+    !/min-height: (?:[0-3]?\d|4[0-3])px/.test(block));
+  const base = (sel) => (norm.match(new RegExp('\\n    ' + sel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ' \\{([^}]*)\\}')) || [null, ''])[1];
+  ok('the base hero rules keep their shape (16:9 photo, 48px name, block body)',
+    /aspect-ratio: 16 \/ 9;/.test(base('.noct-toppick-photo')) && /font-size: 48px;/.test(base('.noct-toppick-name'))
+    && /padding: 32px 40px 36px;/.test(base('.noct-toppick-body')));
+  ok('the base stamp rule keeps the ruled 54px',
+    /\.noct-results-signature \.sleep-signature \{\s*\n\s*width: 54px;\s*\n\s*\}/.test(norm));
+  // negative control: the gate is what keeps portrait out
+  ok('negative control: an ungated hero block is caught by the gate assertion',
+    heroBlocks(norm.replace(block, block.replace(gate, '@media (min-width: 901px) {'))).length === 0);
 }
 
 console.log(`\n${failures === 0 ? 'PASS' : 'FAIL'} — ${checks - failures}/${checks} checks passed`);

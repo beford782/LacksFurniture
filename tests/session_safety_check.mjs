@@ -92,7 +92,7 @@ check("a separate polite region exists for the single late reminder",
 // -- persistent utility controls --------------------------------------------
 check("persistent utility bar exists", /id="sessionUtility"/.test(html));
 check("utility bar is a SIBLING of <header>, not a child (the header is "
-  + "display:none on every screen but handoff)",
+  + "display:none on every screen - the Plan and the Summary joined the hide list under E2-A)",
   html.indexOf('id="sessionUtility"') > html.indexOf("</header>"));
 const langGroupTag = html.match(/<div[^>]*id="sessionLangGroup"[^>]*>/);
 check("language control group is a labelled group",
@@ -233,6 +233,32 @@ for (const k of ["safety.restart_confirm", "safety.timeout_continue"]) {
   check(`unselected control on the bar is ${ratio(text, surface).toFixed(2)}:1 (>= 4.5)`, ratio(text, surface) >= 4.5);
   check(`--color-accent IS retailer-configurable, which is why it is avoided here`,
     /setProperty\('--color-accent'/.test(html));
+
+  // The safety dialog's secondary action ("Start new customer" / the timeout
+  // confirm) is identified by its boundary alone: transparent fill, 1px
+  // border. Non-text UI needs 3:1 (WCAG 1.4.11) against the panel surface in
+  // BOTH themes the dialog inherits — the :root midnight tokens (quiz, Review)
+  // and the warm work-theme group (every other screen). The border must be a
+  // resolved token, never an alpha literal (the former cream literal measured
+  // 1.07:1 on the warm surface).
+  {
+    const confirmRule = (cssBlock.match(/\.safety-dialog__btn--confirm \{[^}]*\}/) || [""])[0];
+    const borderTok = (confirmRule.match(/border: 1px solid var\((--[a-z-]+)\);/) || [])[1];
+    check("the dialog's confirm boundary is a resolved token (no literal, no alpha)", !!borderTok, confirmRule.replace(/\s+/g, " "));
+    const warm = (html.match(/body:has\(#profileScreen\.active\),[\s\S]{0,400}?\{([^}]*)\}/) || [, ""])[1];
+    const warmTok = (name) => (warm.match(new RegExp(`${name}:\\s*(#[0-9a-fA-F]{6})`)) || [, ""])[1];
+    const darkBorder = borderTok ? tok(borderTok) : "", warmBorder = borderTok ? warmTok(borderTok) : "", warmSurface = warmTok("--color-surface");
+    check(`confirm boundary on the midnight panel is ${darkBorder && surface ? ratio(darkBorder, surface).toFixed(2) : "?"}:1 (>= 3)`,
+      !!darkBorder && !!surface && ratio(darkBorder, surface) >= 3);
+    check(`confirm boundary on the warm panel is ${warmBorder && warmSurface ? ratio(warmBorder, warmSurface).toFixed(2) : "?"}:1 (>= 3)`,
+      !!warmBorder && !!warmSurface && ratio(warmBorder, warmSurface) >= 3);
+    check("the keep action keeps a text-token boundary and fill (14:1 class) in both themes",
+      /\.safety-dialog__btn--keep \{[^}]*border: 1px solid var\(--color-text\);/.test(cssBlock));
+    // negative control: the retired cream literal is unresolvable and is caught
+    const mutated = cssBlock.replace("border: 1px solid var(--color-text-muted);", "border: 1px solid rgba(245, 239, 228, 0.55);");
+    check("negative control: an alpha literal on the confirm boundary is caught",
+      mutated !== cssBlock && !/\.safety-dialog__btn--confirm \{[^}]*border: 1px solid var\(--[a-z-]+\);/.test(mutated));
+  }
 }
 
 // -- policy is centralised and provisional ----------------------------------
@@ -1412,7 +1438,7 @@ const showScreenSrc = grabFn(/window\.showScreen = function\(id\) \{[\s\S]*?\n  
 // functions use, plus a fetch we can resolve OUT OF ORDER.
 const ldoc = makeDocument();
 const SCREENS = ["welcomeScreen", "questionScreen", "reviewScreen", "profileScreen",
-  "resultsScreen", "hf2Screen", "emailScreen", "accessoriesScreen"];
+  "resultsScreen", "sleepPlanScreen", "hf2Screen", "emailScreen", "accessoriesScreen"];
 SCREENS.forEach(id => { ldoc.getElementById(id).classList.add("screen"); });
 const langBtns = ["sessionLangEn", "sessionLangEs"].map((id, i) => {
   const b = ldoc.getElementById(id);
@@ -1570,7 +1596,7 @@ for (const id of SCREENS) {
     utilityEl.hidden === !shouldShow);
   check(`${id}: the active screen is ${id}`, ldoc.getElementById(id).classList.contains("active"));
 }
-check("REGRESSION: EN/ES and Restart are reachable on all 7 non-Welcome screens",
+check("REGRESSION: EN/ES and Restart are reachable on all 8 non-Welcome screens (the Plan included - under E2-A the card is its only chrome)",
   SCREENS.filter(id => id !== "welcomeScreen").every(id => {
     lout.showScreen(id);
     return utilityEl.hidden === false;

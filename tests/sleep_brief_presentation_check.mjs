@@ -350,7 +350,10 @@ section('hero scale — the Sleep Brief figure is a hero, the stamps stay stamps
   ok('the hero width is located as a clamp', !!heroBase);
   if (heroBase) {
     const [, min, , max] = heroBase.map(Number);
-    ok('landscape/desktop hero sits in the ruled 220-260px band', min >= 220 && max <= 260,
+    // The base rule governs every viewport the E1 landscape block (asserted
+    // in its own section below) does not claim: desktop-narrow widths above
+    // 560px that are neither portrait nor landscape-wide.
+    ok('the base hero rule keeps the ruled 220-260px band (the landscape figure is asserted separately)', min >= 220 && max <= 260,
       `${min}-${max}px`);
   }
   const portrait = norm.match(/@media \(max-width: 900px\), \(orientation: portrait\) \{[\s\S]*?\n    \}\n/);
@@ -388,6 +391,61 @@ section('hero scale — the Sleep Brief figure is a hero, the stamps stay stamps
   // Sizing stays in CSS: the SVG bytes are answer-derived and must not change.
   ok('the renderer emits no sizing attributes (scale is CSS, the SVG bytes are unchanged)',
     !/\swidth="/.test(sigSrc) && !/\sheight="/.test(sigSrc));
+}
+
+// E1 (cohesion experiment ruled 2026-08-30: "larger signature panel; the
+// three priorities given more presence; no content change; portrait
+// untouched"; built candidate-only under the 2026-09-06 direction). The
+// landscape composition is ONE additive block gated on the negation of the
+// file's portrait convention: each column centres its own content, the
+// figure scales to the identity panel but stays capped under the Spanish
+// fold ceiling (the two-line ES heading plus the three-line reflection fit
+// beside a 320px figure at 1194x748; the E1-A prototype's 420px pushed the
+// ES document 31px past the fold), the priority rows and the reflection gain
+// presence, and the route into Results travels with the priorities. The
+// block never redeclares a base rule, never sizes a stamp, hides or reorders
+// nothing and writes no copy. Geometry itself is measured at the final
+// validation pass, not here.
+section('E1 — the landscape composition block is additive, gated and bounded');
+{
+  const gate = '@media (min-width: 901px) and (orientation: landscape) {';
+  const briefBlocks = (src) => [...src.matchAll(/@media \(min-width: 901px\) and \(orientation: landscape\) \{[\s\S]*?\n    \}\n/g)]
+    .map((m) => m[0]).filter((b) => b.includes('.profile-launch__brief {'));
+  const block = briefBlocks(norm)[0] || '';
+  ok('exactly one landscape-gated block composes the Brief', block.length > 0 && briefBlocks(norm).length === 1);
+  ok('it sits after the base actions rule and the shared control floor (later wins at equal specificity)',
+    norm.indexOf(block) > norm.indexOf('.profile-launch__actions {\n      display: flex;')
+    && norm.indexOf(block) > norm.indexOf('.noct-profile-cta,\n    .noct-profile-secondary {'));
+  ok('it precedes the portrait block, which stays the file\'s first of its kind',
+    norm.indexOf(block) < norm.indexOf('@media (max-width: 900px), (orientation: portrait) {'));
+  ok('both columns centre their own content', /\.profile-launch__identity \{\s*justify-content: center;\s*\}/.test(block)
+    && /\.profile-launch__brief \{\s*justify-content: center;\s*\}/.test(block));
+  const fig = block.match(/\.noct-profile-signature \.sleep-signature \{\s*width: min\(clamp\((\d+)px, ([\d.]+)vw, (\d+)px\), 100%\);\s*\}/);
+  ok('the landscape figure is a column-capped clamp', !!fig);
+  if (fig) {
+    const [, min, , max] = fig.map(Number);
+    ok('...larger than the base band (E1: "larger signature panel")', min >= 260 && max > 260, `${min}-${max}px`);
+    ok('...and capped under the Spanish fold ceiling at 1194x748 (the prototype\'s 420px overflowed)', max <= 340, `${max}px`);
+  }
+  const actions = block.match(/\.profile-launch__actions \{\s*margin-top: (\d+)px;/);
+  ok('the route into Results travels with the priorities (a real margin, not the column floor)', !!actions && !/margin-top: auto/.test(block));
+  ok('the priority rows gain presence without losing the 44px floor',
+    /\.noct-profile-priority-toggle \{\s*min-height: (\d+)px/.test(block)
+    && Number(block.match(/\.noct-profile-priority-toggle \{\s*min-height: (\d+)px/)[1]) >= 44);
+  ok('the CTA only rises above its 48px floor', !/\.noct-profile-cta \{[^}]*min-height: (?:[0-3]?\d|4[0-7])px/.test(block));
+  ok('the block never sizes either stamp',
+    !/noct-results-signature|hf2-review-signature/.test(block));
+  ok('the block hides nothing, reorders nothing and writes no copy',
+    !/display: none|visibility|[\s;{]order:|[\s;{]content:|pointer-events|flex-direction/.test(block));
+  ok('the block adds no motion the reduced-motion backstop does not cover', !/animation|transition/.test(block));
+  ok('the base figure, actions and control rules keep their shape',
+    /\.noct-profile-signature \.sleep-signature \{\s*\n\s*width: clamp\(220px, 20vw, 260px\);\s*\n\s*margin-inline: auto;\s*\n\s*\}/.test(norm)
+    && /\.profile-launch__actions \{\s*display: flex;\s*align-items: center;\s*gap: 12px;\s*margin-top: auto;\s*padding-top: 12px;\s*\}/.test(norm));
+  // negative controls
+  ok('negative control: an ungated Brief block is not located',
+    briefBlocks(norm.replace(block, block.replace(gate, '@media (min-width: 901px) {'))).length === 0);
+  ok('negative control: a stamp sized inside the block is caught',
+    /noct-results-signature/.test(block.replace('.profile-launch__brief {', '.noct-results-signature .sleep-signature { width: 96px; }\n      .profile-launch__brief {')));
 }
 
 section('the reveal is perceptible: a line draw, then the nodes');

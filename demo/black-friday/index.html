@@ -612,9 +612,12 @@
       }
     }
 
-    /* Hide legacy header on Nocturnal-rebuilt screens only.
-       Remaining screens (profile, results, accessories, email, handoff)
-       still render the header for navigation context until they're rebuilt. */
+    /* Hide the legacy header and accent bar per screen. Every screen in the
+       journey is in this list (the Plan and the Summary joined it under
+       E2-A, below), so the dark chrome no longer renders anywhere; the
+       <header> element stays in the DOM because the persistent session
+       utility card is positioned relative to it in source order
+       (session_safety_check pins that the card follows </header>). */
     body:has(#welcomeScreen.active) .accent-bar,
     body:has(#welcomeScreen.active) .header,
     body:has(#questionScreen.active) .accent-bar,
@@ -628,7 +631,20 @@
     body:has(#emailScreen.active) .accent-bar,
     body:has(#emailScreen.active) .header,
     body:has(#accessoriesScreen.active) .accent-bar,
-    body:has(#accessoriesScreen.active) .header {
+    body:has(#accessoriesScreen.active) .header,
+    /* E2-A chrome normalisation (cohesion experiment E2 alternative (a),
+       ruled 2026-08-30, carried by the A2 candidate 2026-09-01; built
+       candidate-only under the 2026-09-06 direction): the last two dark
+       headers leave. The Sleep Plan and the Consultation Summary join the
+       light continuity the other seven screens already have; the 1.22:1
+       wordmark and the polarity flip on the way into the Plan go with them.
+       Retailer identity stays in-page: the Summary's config-derived
+       attribution line, and the Plan gains the same line (below). No
+       identity strip, pill or replacement bar - item 3.6 stays open. */
+    body:has(#sleepPlanScreen.active) .accent-bar,
+    body:has(#sleepPlanScreen.active) .header,
+    body:has(#hf2Screen.active) .accent-bar,
+    body:has(#hf2Screen.active) .header {
       display: none;
     }
 
@@ -640,7 +656,9 @@
     body:has(#profileScreen.active) #profileScreen,
     body:has(#resultsScreen.active) #resultsScreen,
     body:has(#emailScreen.active) #emailScreen,
-    body:has(#accessoriesScreen.active) #accessoriesScreen {
+    body:has(#accessoriesScreen.active) #accessoriesScreen,
+    body:has(#sleepPlanScreen.active) #sleepPlanScreen,
+    body:has(#hf2Screen.active) #hf2Screen {
       min-height: 100vh;
       min-height: 100dvh;
     }
@@ -1175,6 +1193,10 @@
       background: transparent;
       color: var(--color-text);
       border: 0.5px solid var(--color-accent);
+      /* The 44px interaction floor, declared. Every breakpoint's padding +
+         line box already exceeds it (base ~57px, consultation ~54px), so
+         this changes no rendered size; it stops the floor being emergent. */
+      min-height: 44px;
       padding: 16px 32px;
       font-family: var(--font-serif);
       font-size: 17px;
@@ -1480,6 +1502,66 @@
     body:has(#questionScreen.active) .noct-quiz-back,
     body:has(#reviewScreen.active) .noct-quiz-back {
       color: var(--consultation-muted);
+    }
+
+    /* X7-B2 (compact landscape quiz; candidate-only under the 2026-09-06
+       one-end-state direction). Swarm finding X7 (D9, 2026-08-31): in
+       landscape the single next action fell below the 748px fold on the
+       slider and the two multi-select questions. D9's literal words named
+       the three-column grid (variant A); measured, A still left Next out of
+       the fold (791-848), so the 2026-08-31 packet recommended the tighter
+       two-column rhythm (B), carried into the A2 candidate as B2. This is
+       that block re-cut onto the candidate: no pinned or sticky chrome, no
+       internal scroll, no column change - the grid stays two columns; cell
+       height, block spacing, heading leading and navigation proximity
+       recover the fold. 44px targets kept (cells >= 56px). Landscape-only
+       through the file's 901px idiom (the negation of the portrait
+       convention `(max-width: 900px), (orientation: portrait)`), so portrait
+       is untouched by construction. Scoped to the question screen only;
+       Review keeps its base rhythm. The selected-state override is the one
+       addition to the recorded block: the base rule compensates its 2px
+       boundary with 19/21/19/17 padding against a 20/22/20/17 resting cell,
+       so the compact 10/16/10/13 resting cell needs 9/15/9/13 to keep the
+       no-reflow-on-selection invariant (per-side border+padding totals
+       11/17/11/19 in both states). One measured deviation from the
+       recorded values: header padding-top is 38px, not 30px. At 30px the
+       progress row (and its right-aligned count, which sits under the
+       fixed utility card's x-range) landed flush against the card's
+       bottom edge (0px); 38px restores an 8px clearance, the card's own
+       inset, and Next still ends inside the fold on every question.
+       Inline padding is 64px (the base clamp resolves to 76px here): at
+       1194 wide the English firmness headline measures 833px on one line
+       against the 828px column the 76px padding leaves, so it wrapped,
+       grew the screen 57px and scrolled the document 5px past the fold.
+       852px of column holds it (19px slack); the type scale is untouched.
+       The forced-colors counterpart of the cell geometry lives with the
+       other forced-colors quiz blocks, after the narrow one. */
+    @media (min-width: 901px) and (orientation: landscape) {
+      body:has(#questionScreen.active) .noct-quiz {
+        padding: 38px 64px 24px;
+      }
+      body:has(#questionScreen.active) .noct-quiz-progress-row { margin-bottom: 14px; }
+      body:has(#questionScreen.active) .noct-quiz-headline {
+        line-height: 1.05;
+        margin-bottom: 8px;
+      }
+      body:has(#questionScreen.active) .noct-quiz-help { margin-bottom: 8px; }
+      body:has(#questionScreen.active) .noct-quiz-multi-note { margin-bottom: 8px; }
+      body:has(#questionScreen.active) .noct-quiz-option {
+        min-height: 56px;
+        padding: 10px 16px 10px 13px;
+      }
+      body:has(#questionScreen.active) .noct-quiz-option.selected {
+        padding: 9px 15px 9px 13px;
+      }
+      body:has(#questionScreen.active) .noct-quiz-options {
+        gap: 8px;
+        margin-bottom: 14px;
+      }
+      body:has(#questionScreen.active) .noct-quiz-nav { padding-top: 12px; }
+      body:has(#questionScreen.active) .noct-slider-value { font-size: 56px; }
+      body:has(#questionScreen.active) .noct-slider-feel { margin-bottom: 12px; }
+      body:has(#questionScreen.active) .noct-slider-wrap { margin-bottom: 10px; }
     }
 
     @media (hover: hover) {
@@ -1932,6 +2014,63 @@
       border-color: #D1C5B6;
       background: #F3EEE5;
       color: #2F271E;
+    }
+
+    /* Sleep Brief landscape composition (cohesion experiment E1, ruled
+       2026-08-30: "larger signature panel; the three priorities given more
+       presence; no content change; portrait untouched"; built candidate-only
+       under the 2026-09-06 direction). At 1194x748 the right column pinned
+       its action row to the column floor, leaving a 316px dead band between
+       the last priority and the route into Results, and the identity column
+       trailed ~140px below the reflection: the first wow beat read as a
+       sparse settings page. In landscape each column gathers its content on
+       its own centre; the figure scales to the identity panel but stays
+       capped so the Spanish heading (two lines) and reflection (three lines)
+       still fit inside the 748px fold; the priority rows and the need
+       narrative gain presence; the route into Results travels with the
+       priorities as one group and stands a step taller. Additive and
+       landscape-gated: every base rule above keeps its exact shape (the
+       suites parse them by regex), the figure's base clamp still governs
+       every other viewport, no portrait viewport enters this block (it is
+       the negation of the file's portrait convention, `(max-width: 900px),
+       (orientation: portrait)`), and nothing below touches DOM, copy,
+       disclosure semantics, priority order, the Results or Summary stamps,
+       or the entry reveal. Placed AFTER the base actions and control rules
+       on purpose: `margin-top: auto` and the 48px control floor would
+       otherwise win the equal-specificity cascade. */
+    @media (min-width: 901px) and (orientation: landscape) {
+      .profile-launch__identity {
+        justify-content: center;
+      }
+      .noct-profile-signature .sleep-signature {
+        width: min(clamp(280px, 27vw, 320px), 100%);
+      }
+      .profile-launch__reflection {
+        color: #4F463E;
+        font-size: 15px;
+        line-height: 1.5;
+      }
+      .profile-launch__brief {
+        justify-content: center;
+      }
+      .noct-profile-priorities {
+        gap: 10px;
+      }
+      .noct-profile-priority-toggle {
+        min-height: 58px;
+        padding: 15px 18px;
+      }
+      .noct-profile-priority-title {
+        font-size: 19px;
+      }
+      .profile-launch__actions {
+        margin-top: 24px;
+        padding-top: 16px;
+      }
+      .noct-profile-cta {
+        min-height: 52px;
+        font-size: 16px;
+      }
     }
 
     @media (max-width: 900px), (orientation: portrait) {
@@ -2525,6 +2664,17 @@
     }
 
     .noct-card-details {
+      /* X12 floor, declared (2026-09-08): the control rendered 31px (8px
+         padding + one 11px line) beside three 44px siblings in the same
+         row, and a tap 21px above or below its centre landed on the
+         cluster, not the button. It was the one recorded X12 exception;
+         the owner-directed accessibility-floor slice retires it. The
+         box grows to the row's existing 44px, so the cluster's row
+         height, wrap and the C2 fold are unchanged; type, label, handler
+         and colour are untouched. */
+      display: inline-flex;
+      align-items: center;
+      min-height: 44px;
       background: transparent;
       color: var(--color-text-subtle);
       border: none;
@@ -2613,6 +2763,74 @@
       .noct-supporting-row { grid-template-columns: 1fr; }
       .noct-toppick-body { padding: 26px 28px 28px; }
       .noct-toppick-name { font-size: 40px; }
+    }
+
+    /* Results landscape first fold (cohesion ruling C2, 2026-08-30; built
+       candidate-only under the 2026-09-06 direction). At 1194x748 the Best
+       Match name sat at document y=1081, below the 748px fold, because the
+       hero photograph alone is 552px tall in the 984px column: the first
+       five seconds showed a headline and a fabric texture. In landscape the
+       hero becomes a two-column card, photograph beside the identity block,
+       so rank, brand, model, feel and the card's controls all land inside the
+       fold with the photograph still the largest thing on the screen; and the
+       starting context carried over from the Sleep Brief, the signature stamp
+       and the trial-focus line, sits on the same centred axis as the headline
+       at body size (the same arm's-length reading the trust gate applied to
+       the relativity line). Additive and landscape-gated: every base rule
+       above keeps its exact shape (the suites parse them by regex), copy, DOM,
+       JS, ordering, the tier band and the stamp's ruled 54px are untouched,
+       and no portrait viewport enters this block (it is the negation of the
+       file's portrait convention, `(max-width: 900px), (orientation:
+       portrait)`). The offer flag moves with the photograph so it keeps
+       reading as a flag on the product. */
+    @media (min-width: 901px) and (orientation: landscape) {
+      .noct-results-signature {
+        display: flex;
+        justify-content: center;
+      }
+      .results-trial-focus {
+        font-size: 15px;
+        padding: 9px 18px;
+      }
+      .results-trial-focus__label {
+        font-size: 11px;
+      }
+      .noct-toppick {
+        display: grid;
+        grid-template-columns: minmax(0, 46fr) minmax(0, 54fr);
+        align-items: stretch;
+        min-height: 300px;
+      }
+      .noct-toppick > .mattress-offer-tab {
+        right: auto;
+        left: 0;
+        padding: 9px 15px 9px 13px;
+        border-radius: 0 5px 5px 0;
+      }
+      .noct-toppick-photo {
+        aspect-ratio: auto;
+        height: 100%;
+        min-height: 0;
+      }
+      /* The body column is ~470px of content, so the four-control cluster
+         wraps to two rows (it is flex-wrap already) and the longest model
+         name to two lines; the rhythm below is tightened so both still end
+         inside the fold when the hero carries no reason line. Type sizes
+         other than the name stay as declared above; the 44px floors on every
+         control are untouched. */
+      .noct-toppick-body {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        padding: 18px 30px 16px;
+      }
+      .noct-toppick-eyebrow { margin-bottom: 6px; }
+      .noct-toppick-brand { margin-bottom: 4px; }
+      .noct-toppick-name { font-size: 38px; margin-bottom: 10px; }
+      .noct-toppick-reason { margin-bottom: 12px; }
+      .noct-toppick-firmness-row { padding: 6px 0; }
+      .noct-toppick-actions { padding-top: 6px; }
+      .noct-toppick-actions .noct-card-action-cluster { gap: 8px; }
     }
 
     /* ===== NOCTURNAL EMAIL (v1) ===== */
@@ -3493,6 +3711,16 @@
       flex-direction: column;
       padding: 1.25rem;
     }
+    /* E2-A: with the dark header gone, the fixed session utility card is
+       the Plan's top-band neighbour, so the Plan reserves the same clearance
+       the Sleep Brief (portrait), the Sleep System (C1) and the Summary's nav
+       (the candidate's C3 pass, `.hf2-review-nav--summary`) already reserve.
+       Its own rule, AFTER the shared one: the shared rule above must keep
+       naming both screens with one padding (sleep_plan_check pins it), and
+       the Summary already carries its clearance on the nav. */
+    #sleepPlanScreen.active {
+      padding-top: calc(var(--session-utility-clearance) + env(safe-area-inset-top, 0px));
+    }
     .hf2-review-nav {
       display: flex;
       align-items: center;
@@ -3922,7 +4150,9 @@
     }
     .hf2-rsa-panel__input {
       flex: 1;
-      min-height: 40px;
+      /* X12 floor (2026-09-08): the add row's input and confirm were the
+         two 40px controls left beside the 44px add button. */
+      min-height: 44px;
       padding: 0.3rem 0.5rem;
       border: 1px solid var(--color-border);
       border-radius: 5px;
@@ -3931,7 +4161,8 @@
       font: inherit;
     }
     .hf2-rsa-panel__confirm {
-      min-height: 40px;
+      min-height: 44px;
+      min-width: 44px;
       padding: 0.3rem 0.7rem;
       border: 1px solid var(--color-border);
       border-radius: 5px;
@@ -7205,13 +7436,59 @@
        under the name and is no longer SMALLER than the product distinction
        beneath it (14px semibold over the description's 13px). Colour, accent
        rule and wording are unchanged. */
+    /* Candidate 2026-09-06 (item 1.4): the benefit line is the line the
+       salesperson says aloud, so it is the card's spoken line - 16px against
+       the 13px distinction beneath it. Colour, rule, ground and wording are
+       unchanged; only the weight of the hierarchy moves. */
     .sleep-system__featured-reason {
       margin: 0 0 12px;
-      padding: 11px 12px;
+      padding: 12px 14px;
       border-left: 3px solid #9A7445;
       background: #F6EFE4;
       color: #4F4439;
-      font: 600 14px/1.45 var(--font-sans);
+      font: 600 16px/1.45 var(--font-sans);
+    }
+    /* Candidate 2026-09-06 (item 1.4): the card states its own decision. The
+       decision line reuses the rail's addressed palette (neutral, decided,
+       nothing added) and the deferred dashed geometry, so the three kinds
+       read the same on the card, the rail and the sidecar. Glyph-free: the
+       text is the cue, the border style the second cue. */
+    .sleep-system__decision {
+      align-self: flex-start;
+      margin: 0 0 10px;
+      padding: 7px 10px;
+      border: 1px solid #8A7B69;
+      border-radius: 6px;
+      background: #EEE7DC;
+      color: #4E483C;
+      font: 700 12px/1.2 var(--font-sans);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .sleep-system__decision.is-deferred {
+      border-style: dashed;
+      border-color: #9A8A75;
+      background: transparent;
+      color: #5D5145;
+    }
+    .sleep-system__featured.is-addressed {
+      border-left-color: #8A7B69;
+      background: #FBF8F2;
+    }
+    .sleep-system__featured.is-deferred {
+      border-style: dashed;
+      border-left-style: solid;
+      border-color: #B9A894;
+      border-left-color: #9A8A75;
+    }
+    /* The recorded decision is a pressed control (aria-pressed, the finalist
+       and Compare precedent); pressing it again reopens the step. Neutral
+       ink and ground - a decision is not an addition, so never the sage. */
+    .sleep-system__action[aria-pressed="true"] {
+      border-color: #8A7B69;
+      background: #EEE7DC;
+      color: #4E483C;
+      box-shadow: inset 0 0 0 1px #8A7B69;
     }
     .sleep-system__price {
       margin-top: auto;
@@ -7400,11 +7677,14 @@
       cursor: pointer;
       touch-action: manipulation;
     }
+    /* Candidate 2026-09-06: the choice captions rendered at 9px in #857768;
+       11px in #6C6054 (4.5:1 on the cream) on this and the two rules below,
+       badges 8px -> 10px. Geometry of the controls is unchanged. */
     .sleep-system__position small {
       display: block;
       margin-top: 3px;
-      color: #857768;
-      font: 500 9px/1.2 var(--font-sans);
+      color: #6C6054;
+      font: 500 11px/1.25 var(--font-sans);
     }
     .sleep-system__position.is-active {
       border-color: var(--accent-ink);
@@ -7414,7 +7694,7 @@
     .sleep-system__position-badge {
       float: right;
       color: #8B4B35;
-      font-size: 8px;
+      font-size: 10px;
       letter-spacing: 0.08em;
       text-transform: uppercase;
     }
@@ -7464,8 +7744,8 @@
     .sleep-system__support-choice small {
       display: block;
       margin-top: 5px;
-      color: #857768;
-      font: 500 9px/1.35 var(--font-sans);
+      color: #6C6054;
+      font: 500 11px/1.35 var(--font-sans);
     }
     .sleep-system__support-choice.is-active {
       border-color: var(--accent-ink);
@@ -7599,8 +7879,8 @@
     .sleep-system__protection-goal small {
       display: block;
       margin-top: 5px;
-      color: #857768;
-      font: 500 9px/1.35 var(--font-sans);
+      color: #6C6054;
+      font: 500 11px/1.35 var(--font-sans);
     }
     .sleep-system__protection-goal.is-active {
       border-color: var(--accent-ink);
@@ -7610,7 +7890,7 @@
     .sleep-system__goal-badge {
       float: right;
       color: #8B4B35;
-      font-size: 8px;
+      font-size: 10px;
       letter-spacing: 0.08em;
       text-transform: uppercase;
     }
@@ -7835,6 +8115,15 @@
     .sleep-system [data-sleep-action].is-pressed {
       transform: scale(0.985);
     }
+    /* Candidate 2026-09-06: a state change re-renders the card, so the card
+       (not the whole panel, which keeps its own step-in) settles in with the
+       same 220ms rise - a decision is answered with movement, and the
+       reduced-motion block below removes it with the rest. */
+    .sleep-system__featured,
+    .sleep-system__support-outcome,
+    .sleep-system__bases-compare {
+      animation: sleepSystemStepIn 220ms ease-out;
+    }
     @media (max-width: 900px), (orientation: portrait) {
       .sleep-system__header {
         grid-template-columns: 1fr auto;
@@ -7937,6 +8226,9 @@
     @media (prefers-reduced-motion: reduce) {
       .sleep-system__main { animation: none; }
       .sleep-system [data-sleep-action] { transition: none !important; }
+      .sleep-system__featured,
+      .sleep-system__support-outcome,
+      .sleep-system__bases-compare { animation: none; }
     }
 
     /* Mattress cards - Compact carousel */
@@ -9005,12 +9297,61 @@
       color: #342A23;
       font-style: normal;
     }
+    /* X6 consumer class, the hover ink (candidate, 2026-09-08). Every
+       Results control whose hover changes its text reads the theme accent:
+       Compare and Save hover on var(--color-accent), the details control's
+       hover and focus-visible on the same, and (fixed below) the finalist
+       hover on the frozen var(--gold). On the hero and support cards these
+       controls sit on the card surface #FFFDF8, where the brass accent
+       #9A7445 is 4.17:1 on 11px uppercase text (3.67:1 on the paper) and
+       the accent #FF5C36 is 3.02:1. The class takes one hover ink, the
+       theme's own --color-accent-hover value #7D5B34 written literally so
+       tests/contrast_check.mjs can measure it: 6.04:1 on the card, 5.32:1
+       on the paper, 6.04:1 as a hairline. Resting, selected, saved and
+       chosen states are untouched; these hover rules sit BEFORE the
+       selected / saved / chosen rules at equal (1,2,0) specificity so a
+       hovered selected control keeps white on sage. Base rules and the
+       tokens are not edited (consumers, never the config). */
+    #resultsScreen .compare-btn:hover,
+    #resultsScreen .noct-save-btn:hover {
+      border-color: #7D5B34;
+      color: #7D5B34;
+    }
+    #resultsScreen .noct-card-details:hover,
+    #resultsScreen .noct-card-details:focus-visible {
+      color: #7D5B34;
+    }
     #resultsScreen .compare-btn.selected {
       border-color: #63765D;
       background: #63765D;
       color: #FFFFFF;
     }
     #resultsScreen .noct-save-btn.saved {
+      border-color: #63765D;
+      background: #63765D;
+      color: #FFFFFF;
+    }
+    /* X6 consumer fix, fourth borrower (2026-09-08): .finalist-btn.chosen
+       still read var(--gold), which applyStoreConfig() freezes at the
+       retailer accent, under color: var(--color-bg) - about 2.9:1 on 11px
+       uppercase text. Same sage pair as the selected Compare and saved
+       Save beside it (white on #63765D, ~7:1). The 2px boundary, the
+       aria-pressed semantics, the "Chosen" label and the forced-colors
+       CanvasText cue are untouched; the base .finalist-btn rule and
+       --gold itself are not edited (consumers, never the config).
+       The resting control's hover is the same borrower: .finalist-btn:hover
+       paints var(--gold) text and hairline, 3.02:1 on the hero card surface
+       #FFFDF8 (2.66:1 on the paper). The Compare / Save hovers use the brass
+       accent, 4.17:1 here, so this hover takes the Results theme's own
+       hover value #7D5B34 (6.04:1 on the card, 5.32:1 on the paper) for
+       both text and hairline. Placed BEFORE the chosen rule below at equal
+       (1,2,0) specificity so a hovered chosen control keeps white on sage. */
+    #resultsScreen .finalist-btn:hover {
+      border-color: #7D5B34;
+      color: #7D5B34;
+    }
+    #resultsScreen .finalist-btn.chosen,
+    #resultsScreen .finalist-btn[aria-pressed="true"] {
       border-color: #63765D;
       background: #63765D;
       color: #FFFFFF;
@@ -9199,6 +9540,160 @@
     #sleepPlanScreen .hf2-send-btn {
       background: var(--store-primary);
       color: var(--on-store-primary);
+    }
+
+    /* ===== Candidate 2026-09-06 (item 1.6 cohesion, ruling C3): the
+       Consultation Summary as a culmination, not a report. Additive rules
+       only - no pinned rule, id, class name, DOM order or renderer line is
+       changed; every selector below is Summary-only (an id, a Summary-only
+       modifier class, or a compound selector), so the Plan's theme parity
+       is untouched. ===== */
+    /* The Summary's nav sits under the fixed session utility bar (top 8px,
+       56px tall); reserve the clearance the Sleep System reserves, minus the
+       screen's own 1.25rem padding. */
+    #hf2Screen .hf2-review-nav--summary {
+      padding-top: calc(var(--session-utility-clearance) - 1.25rem + env(safe-area-inset-top, 0px));
+    }
+    /* The finalist moment. Three states, each a rule colour PLUS a border
+       style: chosen = the store primary, solid; recommended starting point =
+       brass, dashed; none = dashed all round. The eyebrow text carries the
+       state on its own. */
+    #hf2LeadSection {
+      padding: 1.4rem 1.4rem 1.2rem;
+      border-left: 4px solid var(--color-border);
+    }
+    #hf2LeadSection[data-finalist="chosen"] {
+      border-left-color: var(--store-primary);
+    }
+    #hf2LeadSection[data-finalist="recommended"] {
+      border-left-style: dashed;
+      border-left-color: #9A8A75;
+    }
+    #hf2LeadSection[data-finalist="none"] {
+      border-style: dashed;
+      border-color: #B9A894;
+    }
+    .hf2-finalist-hero {
+      display: grid;
+      grid-template-columns: 160px minmax(0, 1fr);
+      align-items: center;
+      gap: 1.1rem;
+      margin-bottom: 0.9rem;
+      padding-bottom: 0.9rem;
+      border-bottom: 1px solid var(--color-border);
+      /* The settle-in idiom (X8/X9): duration and easing from the --dfm-*
+         tokens, which collapse to 0.01ms under prefers-reduced-motion, so
+         the reduced end state is identical and immediate. */
+      animation: hf2HeroIn var(--dfm-settle) var(--dfm-e-settle) both;
+    }
+    .hf2-finalist-hero:empty { display: none; }
+    .hf2-finalist-hero--bare { grid-template-columns: minmax(0, 1fr); }
+    .hf2-finalist-hero__image {
+      width: 160px;
+      aspect-ratio: 3 / 2;
+      height: auto;
+      padding: 6px;
+      border: 1px solid var(--color-border);
+      border-radius: 8px;
+      background: #FFFDF8;
+      object-fit: contain;
+    }
+    .hf2-finalist-hero__eyebrow {
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--accent-ink);
+    }
+    .hf2-finalist-hero__name {
+      margin-top: 0.3rem;
+      font-family: var(--font-serif);
+      font-size: clamp(1.35rem, 3vw, 1.8rem);
+      line-height: 1.15;
+      color: var(--color-text);
+    }
+    .hf2-finalist-hero__meta {
+      margin-top: 0.35rem;
+      font-family: var(--font-serif);
+      font-size: 0.7rem;
+      letter-spacing: 0.18em;
+      color: var(--accent-ink);
+    }
+    @keyframes hf2HeroIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: none; }
+    }
+    /* The composed status sentence stays verbatim beneath the moment. */
+    #hf2LeadSection .hf2-lead-line {
+      font-size: 0.95rem;
+    }
+    /* "What we set out to solve": the implication rows read as sentences
+       (a leading mark, sentence case, the screen's ink), not muted fragments.
+       Text content is untouched. */
+    #hf2Screen .hf2-brief__row {
+      position: relative;
+      padding-left: 1rem;
+      font-size: 0.95rem;
+      line-height: 1.5;
+      color: var(--color-text);
+    }
+    #hf2Screen .hf2-brief__row::first-letter { text-transform: uppercase; }
+    #hf2Screen .hf2-brief__row::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0.62em;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--store-primary);
+    }
+    #hf2Screen .hf2-brief__row:empty { display: none; }
+    /* "What we will test together": serif ordinal markers and a hairline
+       rhythm between the engine's priorities. Markup untouched. */
+    #hf2Screen .hf2-priorities__item {
+      padding: 0.25rem 0 0.55rem;
+    }
+    #hf2Screen .hf2-priorities__item + .hf2-priorities__item {
+      padding-top: 0.7rem;
+      border-top: 1px solid var(--color-border);
+    }
+    #hf2Screen .hf2-priorities__item::marker {
+      font-family: var(--font-serif);
+      font-weight: 700;
+      color: var(--accent-ink);
+    }
+    /* Saved picks: the chosen finalist's card carries the moment's rule. */
+    #hf2Screen .hf2-pick.hf2-pick--finalist {
+      border-color: var(--store-primary);
+      border-left: 4px solid var(--store-primary);
+      background: #FBF8F2;
+    }
+    /* The close: one filled action (Save picks, already on the store primary
+       and pinned) at full weight; the plan route demoted beneath it. */
+    #hf2Screen .hf2-review-finale {
+      display: grid;
+      justify-items: center;
+      gap: 0.35rem;
+    }
+    #hf2Screen .hf2-review-finale .hf2-discount-btn { order: 1; }
+    #hf2Screen .hf2-review-finale button.hf2-send-btn {
+      order: 2;
+      min-width: min(320px, 100%);
+      min-height: 52px;
+      margin-top: 1rem;
+      font-size: 1.05rem;
+    }
+    #hf2Screen .hf2-review-finale .hf2-back-btn {
+      order: 3;
+      margin-top: 0.35rem;
+      font-size: 0.8rem;
+    }
+    /* Portrait (834x1108): the moment keeps the smaller frame. No new
+       max-width block (that count is pinned). */
+    @media (orientation: portrait) {
+      .hf2-finalist-hero { grid-template-columns: 108px minmax(0, 1fr); gap: 0.9rem; }
+      .hf2-finalist-hero__image { width: 108px; }
     }
 
     body:has(#resultsScreen.active) .compare-modal,
@@ -9989,6 +10484,26 @@
       }
     }
 
+    /* X7-B2 landscape needs the same treatment for the same reason: the
+       forced-colors resting rule above is (1,2,1), equal to the compact
+       landscape resting rule far earlier in the file, so by source order it
+       restored the 20px 22px cell in forced colors, grew every option cell
+       from 73px back to 93px and pushed Next below the fold on the two
+       multi-select questions (measured 755 / 777 against 748). Padding
+       only: colour, the CanvasText boundary, the 1px resting / 3px + 6px
+       rail selected geometry and the focus ring are inherited from the
+       blocks above. Totals 11/17/11/19 on both states, matching the
+       landscape normal state exactly. Must stay AFTER the narrow block. */
+    @media (forced-colors: active) and (min-width: 901px) and (orientation: landscape) {
+      body:has(#questionScreen.active) .noct-quiz-option {
+        padding: 10px 16px 10px 18px;
+      }
+
+      body:has(#questionScreen.active) .noct-quiz-option.selected[aria-pressed="true"] {
+        padding: 8px 14px 8px 13px;
+      }
+    }
+
     /* Sheet (modal dialog) */
     .fin-sheet-backdrop {
       position: fixed; inset: 0; z-index: 340;
@@ -10205,17 +10720,19 @@
     }
 
     /* ===== GATE 1B: PERSISTENT SESSION UTILITY BAR =======================
-       The header is display:none on every screen except handoff (the
-       body:has(...) rule near the top of this stylesheet), so language and
-       restart controls cannot live inside it and still be persistent. This
-       is a top-level fixed layer instead, hidden only on Welcome — which
-       keeps its own larger landing toggle.
+       The header is display:none on every screen (the body:has(...) rule
+       near the top of this stylesheet; the Plan and the Summary joined the
+       list under E2-A), so language and restart controls cannot live inside
+       it and still be persistent. This is a top-level fixed layer instead,
+       hidden only on Welcome — which keeps its own larger landing toggle.
 
        It carries its own opaque surface on purpose: the screens underneath
-       alternate between light (welcome, sleep system, financing sheet) and
-       dark (quiz, results, handoff), so a transparent bar could not
-       guarantee contrast on both. Every pairing below is measured against
-       --color-surface, not against the screen. */
+       alternate between light (welcome, Brief, Results, Plan, Summary,
+       Sleep System, financing sheet) and dark (quiz, Review), so a
+       transparent bar could not guarantee contrast on both. Every pairing
+       below is measured against --color-surface, not against the screen;
+       under E2-A the card resolves the same light tokens on the two dark
+       screens too (the scoped block after the forced-colors rules). */
     .session-utility {
       position: fixed;
       top: 8px;
@@ -10261,7 +10778,13 @@
       white-space: nowrap;
       color: var(--color-text);              /* 14.6:1 on --color-surface */
       background: transparent;
-      border: 1px solid rgba(245, 239, 228, 0.38);
+      /* The control boundary is non-text UI and must clear 3:1 against the
+         card surface (WCAG 1.4.11). The subtle ink token measures 4.88:1 on
+         the light surface (#7A6E61 on #FFFDF8); under E2-A the card is light
+         on every screen, and the quiz/Review scope below supplies the same
+         token, so the former cream literal (1.04:1 on a light surface) is
+         retired. The pressed pill keeps its own --color-text border. */
+      border: 1px solid var(--color-text-subtle);
       border-radius: 8px;
       cursor: pointer;
       touch-action: manipulation;
@@ -10292,10 +10815,14 @@
     }
 
     /* Restart is not a language choice and must never read as the third
-       option in the pair: separator, icon, filled well, heavier border. */
+       option in the pair: separator, icon, filled well, heavier border. The
+       well is the alt surface token and the heavier border the muted ink
+       token: 6.34:1 on the card surface and 5.25:1 against its own fill
+       (#665D54 on #FFFDF8 / #EEE7DC), so the boundary identifies the control
+       at 3:1 or better wherever the light card renders. */
     .session-utility__restart {
-      background: rgba(245, 239, 228, 0.07);
-      border-color: rgba(245, 239, 228, 0.55);
+      background: var(--color-surface-alt);
+      border-color: var(--color-text-muted);
     }
 
     .session-utility__restart-icon {
@@ -10321,6 +10848,30 @@
       /* aria-pressed is exposed natively in forced-colors, but the fill is
          not — keep a non-colour cue. */
       .session-utility__btn[aria-pressed="true"] { border-width: 3px; }
+    }
+
+    /* E2-A chrome normalisation: the one persistent element never flips
+       polarity. The quiz and Review are the two screens whose theme leaves
+       the :root dark tokens in place, so the card inverted at Review -> Brief;
+       it is pinned to the light pairing there: the same surface / ink /
+       border / alt-surface / muted / subtle tokens every warm screen
+       resolves, so the card - and the control boundaries the base rules
+       above draw from those tokens - read identically from the first
+       question to the take-home. No per-screen border override: the base
+       rules own the boundaries (3:1 or better on the light surface, see
+       them), the pressed pill keeps its --color-text border everywhere, and
+       the pressed inversion (--color-text on --color-bg), the 44px floors
+       and the forced-colors cues above are inherited unchanged. */
+    body:has(#questionScreen.active) .session-utility,
+    body:has(#reviewScreen.active) .session-utility {
+      --color-surface: #FFFDF8;
+      --color-surface-alt: #EEE7DC;
+      --color-text: #2F271E;
+      --color-text-muted: #665D54;
+      --color-text-subtle: #7A6E61;
+      --color-bg: #F3EEE5;
+      --color-border: #D1C5B6;
+      box-shadow: 0 2px 10px rgba(55, 40, 28, 0.18);
     }
 
     /* ===== Slice 6: drawer control accessibility ==========================
@@ -10366,6 +10917,45 @@
         outline-color: CanvasText;
         box-shadow: none;
       }
+    }
+    /* Candidate 2026-09-06 (item 1.4): a recorded decision and an active
+       setup choice are pressed controls whose tint and ink vanish under
+       forced colors. The cue is geometry - 3px CanvasText, padding
+       compensated so nothing moves (action 9/13 -> 7/11, position 8/10 ->
+       6/8, support and goal 10 -> 8, pillow 9/11 -> 7/9) - and the card's
+       decision line keeps its dashed-vs-solid distinction. Own block, LAST in
+       the forced-colors sequence, so no suite that finds a block by position or
+       by its first aria-pressed geometry sees this one first. */
+    @media (forced-colors: active) {
+      .sleep-system__action[aria-pressed="true"] {
+        border-width: 3px;
+        border-color: CanvasText;
+        padding: 7px 11px;
+      }
+      .sleep-system__position[aria-pressed="true"] {
+        border-width: 3px;
+        border-color: CanvasText;
+        padding: 6px 8px;
+      }
+      .sleep-system__support-choice[aria-pressed="true"],
+      .sleep-system__protection-goal[aria-pressed="true"] {
+        border-width: 3px;
+        border-color: CanvasText;
+        padding: 8px;
+      }
+      .sleep-system__pillow-reaction[aria-pressed="true"] {
+        border-width: 3px;
+        border-color: CanvasText;
+        padding: 7px 9px;
+      }
+      .sleep-system__decision { border: 1px solid CanvasText; }
+      .sleep-system__decision.is-deferred { border-style: dashed; }
+      .sleep-system__featured.is-deferred { border-style: dashed; border-left-style: solid; }
+      /* The Summary's finalist moment: chosen = the app's double-border cue,
+         none = dashed; the eyebrow text carries the state regardless. */
+      #hf2LeadSection[data-finalist="chosen"] { border-left-style: double; border-left-width: 6px; }
+      #hf2LeadSection[data-finalist="none"] { border-style: dashed; }
+      #hf2Screen .hf2-pick.hf2-pick--finalist { border-left-style: double; border-left-width: 6px; }
     }
 
     /* 320px CSS px and 200%-zoom reflow: labels stay whole words and never
@@ -10494,10 +11084,16 @@
       border: 1px solid var(--color-text);
     }
 
+    /* Secondary action. The boundary is non-text UI and must clear 3:1 on
+       the panel surface in BOTH themes the dialog inherits: the muted ink
+       token measures 6.34:1 on the warm surface (#665D54 on #FFFDF8) and
+       6.66:1 on the midnight surface (#A8A39A on #1A1E25). The former cream
+       literal composited to 1.07:1 on the warm surface every screen except
+       the quiz and Review now uses. */
     .safety-dialog__btn--confirm {
       color: var(--color-text);
       background: transparent;
-      border: 1px solid rgba(245, 239, 228, 0.55);
+      border: 1px solid var(--color-text-muted);
     }
   </style>
   <style id="daybreak-demo-overrides">
@@ -10561,9 +11157,10 @@
 
   <!-- Persistent customer utility controls (Gate 1B).
        Deliberately a sibling of <header>, not a child: the header is
-       display:none on every screen except handoff, so a control inside it
-       would not be persistent. Hidden on Welcome, which keeps the larger
-       landing toggle. showScreen() owns the hidden attribute. -->
+       display:none on every screen (the Plan and the Summary joined the hide
+       list under E2-A), so a control inside it would not be persistent.
+       Hidden on Welcome, which keeps the larger landing toggle. showScreen()
+       owns the hidden attribute. -->
   <div class="session-utility" id="sessionUtility" hidden>
     <div class="session-utility__group" role="group" id="sessionLangGroup" aria-label="Language">
       <button type="button" class="session-utility__btn session-utility__lang" id="sessionLangEn"
@@ -10983,6 +11580,13 @@
               onclick="window.sleepPlanBack()"
               ontouchend="event.preventDefault();window.sleepPlanBack();"></button>
     </div>
+    <!-- E2-A: with the dark header gone the Plan carries the same
+         config-derived retailer attribution the Summary already has
+         (storeName + voice.retailerSubline) - its OWN id and renderer,
+         because sleep_plan_check pins the Summary pair byte-for-byte.
+         Empty config hides it entirely. Not customer-derived, so not in the
+         wipe inventory. -->
+    <div class="hf2-review-attribution" id="sleepPlanAttribution" hidden></div>
     <div class="hf2-review-eyebrow" id="sleepPlanEyebrow"></div>
     <h1 class="hf2-review-title" id="sleepPlanTitle"></h1>
 
@@ -11040,7 +11644,7 @@
   <!-- No .active class so it's invisible by default. Preview via showScreen('hf2Screen'). -->
   <div class="screen" id="hf2Screen" role="region">
 
-    <div class="hf2-review-nav">
+    <div class="hf2-review-nav hf2-review-nav--summary">
       <button class="hf2-back-btn" id="hf2BackToMatches" type="button"
               onclick="window.backToResultsFromReview()"
               ontouchend="event.preventDefault();window.backToResultsFromReview();">← Back to matches</button>
@@ -11099,6 +11703,12 @@
          label is dictionary-only ("Consultation status") and correctly
          survives a wipe. -->
     <section class="hf2-review-section" id="hf2LeadSection" aria-labelledby="hf2LeadLabel">
+      <!-- Candidate 2026-09-06 (1.6 cohesion, ruling C3): the finalist MOMENT.
+           Rendered by renderHf2FinalistHero() from the same resolver reads the
+           lead line makes, labelled with the dictionary's existing finalist
+           strings; customer-derived, so it sits in SESSION_CONTENT_IDS. The
+           section's data-finalist attribute carries the state to CSS. -->
+      <div class="hf2-finalist-hero" id="hf2FinalistHero"></div>
       <div class="hf2-review-section__label" id="hf2LeadLabel"></div>
       <p class="hf2-lead-line" id="hf2LeadLine"></p>
     </section>
@@ -18999,7 +19609,8 @@
               demo.positions.map(function(position) {
                 return '<button type="button" class="sleep-system__position' +
                   (position.id === selected.id ? ' is-active' : '') +
-                  '" data-sleep-action="demo-position" data-position="' + escapeHtml(position.id) + '">' +
+                  '"' + sleepSystemChoiceAttrs(position.id === selected.id) +
+                  ' data-sleep-action="demo-position" data-position="' + escapeHtml(position.id) + '">' +
                     (position.id === demo.recommended
                       ? '<span class="sleep-system__position-badge">' + escapeHtml(sleepSystemText({ en: 'Suggested', es: 'Sugerida' })) + '</span>'
                       : '') +
@@ -19226,6 +19837,34 @@
       return actions[stepId] || [];
     }
 
+    // Candidate 2026-09-06 (item 1.4, "three states, unmistakable" and "every
+    // choice reversible"). Three presentation helpers, no new copy: the
+    // labels they surface are the ones the rail and the plan sidecar already
+    // render through sleepSystemDecisionLabel.
+    //   - a decision control is a pressed toggle (aria-pressed, the finalist /
+    //     Compare precedent) while its status is the step's recorded decision;
+    //     pressing it again reopens the step (handleSleepSystemAction);
+    //   - the card itself states an addressed or deferred decision in a
+    //     decision line, so the product is shown as not being added, never as
+    //     lost, and the rail is not the only place the state lives;
+    //   - the setup choices (positions, support, pillow fit, protection goal)
+    //     expose their active member as pressed instead of by class alone.
+    function sleepSystemDecisionAttrs(decision, status) {
+      var pressed = !!decision && decision.status === status;
+      return ' aria-pressed="' + (pressed ? 'true' : 'false') + '"';
+    }
+
+    function sleepSystemDecisionBanner(stepId, decision) {
+      var kind = sleepSystemStatusKind(decision ? decision.status : 'open');
+      if (kind !== 'addressed' && kind !== 'deferred') return '';
+      return '<div class="sleep-system__decision is-' + kind + '">' +
+        escapeHtml(sleepSystemDecisionLabel(stepId, decision)) + '</div>';
+    }
+
+    function sleepSystemChoiceAttrs(active) {
+      return ' aria-pressed="' + (active ? 'true' : 'false') + '"';
+    }
+
     // 3.7 P9 (owner ruling 2026-08-30): the catalog decides whether a lower
     // finished bed height is something the app may offer as a CHOICE. This
     // deployment ships one foundation height, so the actionable "Lower height" choice is
@@ -19283,7 +19922,8 @@
           choices.map(function(choice) {
             return '<button type="button" class="sleep-system__support-choice' +
               (selected === choice.id ? ' is-active' : '') +
-              '" data-sleep-action="support-choice" data-support-choice="' + choice.id + '">' +
+              '"' + sleepSystemChoiceAttrs(selected === choice.id) +
+              ' data-sleep-action="support-choice" data-support-choice="' + choice.id + '">' +
                 escapeHtml(sleepSystemText(choice.label)) +
                 '<small>' + escapeHtml(sleepSystemText(choice.copy)) + '</small>' +
               '</button>';
@@ -19334,7 +19974,8 @@
           ].map(function(option) {
             return '<button type="button" class="sleep-system__pillow-reaction' +
               (reaction === option.id ? ' is-active' : '') +
-              '" data-sleep-action="pillow-reaction" data-reaction="' + option.id + '">' +
+              '"' + sleepSystemChoiceAttrs(reaction === option.id) +
+              ' data-sleep-action="pillow-reaction" data-reaction="' + option.id + '">' +
               escapeHtml(sleepSystemText(option.label)) +
             '</button>';
           }).join('') +
@@ -19420,7 +20061,8 @@
           goals.map(function(goal) {
             return '<button type="button" class="sleep-system__protection-goal' +
               (selected === goal.id ? ' is-active' : '') +
-              '" data-sleep-action="protection-goal" data-protection-goal="' + goal.id + '">' +
+              '"' + sleepSystemChoiceAttrs(selected === goal.id) +
+              ' data-sleep-action="protection-goal" data-protection-goal="' + goal.id + '">' +
                 (suggested === goal.id
                   ? '<span class="sleep-system__goal-badge">' + escapeHtml(sleepSystemText({ en: 'Suggested', es: 'Sugerida' })) + '</span>'
                   : '') +
@@ -19458,6 +20100,11 @@
       }
       var primary = items[0];
       var alternatives = items.slice(1, 3);
+      // Candidate 2026-09-06: the step's recorded decision, read once through
+      // the same resolver the rail and sidecar use (the cart wins), so the
+      // card, its controls and the rail can never disagree.
+      var decision = sleepSystemDecision(step.id);
+      var decisionKind = sleepSystemStatusKind(decision.status);
       var main = document.getElementById('sleepSystemMain');
       var guidance = document.getElementById('sleepSystemGuidance');
       if (!main || !guidance) return;
@@ -19510,7 +20157,7 @@
         var actionHtml;
         if (step.id === 'adjustability') {
           actionHtml =
-            '<button type="button" class="sleep-system__action sleep-system__action--primary" data-sleep-action="decision" data-status="demo">' +
+            '<button type="button"' + sleepSystemDecisionAttrs(decision, 'demo') + ' class="sleep-system__action sleep-system__action--primary" data-sleep-action="decision" data-status="demo">' +
               escapeHtml(sleepSystemText({ en: 'Ask for a demo', es: 'Pedir demostración' })) +
             '</button>' +
             '<button type="button" class="sleep-system__action sleep-system__action--secondary' + (selected ? ' sleep-system__action--selected' : '') +
@@ -19519,7 +20166,7 @@
                 ? sleepSystemText({ en: 'Remove base from plan', es: 'Quitar base del plan' })
                 : sleepSystemText({ en: 'Keep this base in plan', es: 'Guardar esta base en el plan' })) +
             '</button>' +
-            '<button type="button" class="sleep-system__action sleep-system__action--secondary" data-sleep-action="decision" data-status="later">' +
+            '<button type="button"' + sleepSystemDecisionAttrs(decision, 'later') + ' class="sleep-system__action sleep-system__action--secondary" data-sleep-action="decision" data-status="later">' +
               escapeHtml(sleepSystemText({ en: 'Decide later', es: 'Decidir después' })) +
             '</button>';
         } else if (step.id === 'support') {
@@ -19545,16 +20192,16 @@
                 })) +
               '</div>';
           actionHtml +=
-            '<button type="button" class="sleep-system__action sleep-system__action--secondary" data-sleep-action="decision" data-status="already">' +
+            '<button type="button"' + sleepSystemDecisionAttrs(decision, 'already') + ' class="sleep-system__action sleep-system__action--secondary" data-sleep-action="decision" data-status="already">' +
               escapeHtml(sleepSystemText({ en: 'Keep current pillow', es: 'Conservar almohada actual' })) +
             '</button>' +
-            '<button type="button" class="sleep-system__action sleep-system__action--secondary" data-sleep-action="decision" data-status="later">' +
+            '<button type="button"' + sleepSystemDecisionAttrs(decision, 'later') + ' class="sleep-system__action sleep-system__action--secondary" data-sleep-action="decision" data-status="later">' +
               escapeHtml(sleepSystemText({ en: 'Decide later', es: 'Decidir después' })) +
             '</button>';
         } else if (step.id === 'protection') {
           var protectionSecondary = sleepSystemSecondaryActions(step.id).map(function(action) {
-            return '<button type="button" class="sleep-system__action sleep-system__action--secondary" data-sleep-action="decision" data-status="' +
-              action.status + '">' + escapeHtml(sleepSystemText(action.label)) + '</button>';
+            return '<button type="button"' + sleepSystemDecisionAttrs(decision, action.status) +
+              ' class="sleep-system__action sleep-system__action--secondary" data-sleep-action="decision" data-status="' + action.status + '">' + escapeHtml(sleepSystemText(action.label)) + '</button>';
           }).join('');
           actionHtml =
             '<button type="button" class="sleep-system__action sleep-system__action--primary' + (selected ? ' sleep-system__action--selected' : '') +
@@ -19565,8 +20212,8 @@
             '</button>' + protectionSecondary;
         } else {
           var secondary = sleepSystemSecondaryActions(step.id).map(function(action) {
-            return '<button type="button" class="sleep-system__action sleep-system__action--secondary" data-sleep-action="decision" data-status="' +
-              action.status + '">' + escapeHtml(sleepSystemText(action.label)) + '</button>';
+            return '<button type="button"' + sleepSystemDecisionAttrs(decision, action.status) +
+              ' class="sleep-system__action sleep-system__action--secondary" data-sleep-action="decision" data-status="' + action.status + '">' + escapeHtml(sleepSystemText(action.label)) + '</button>';
           }).join('');
           actionHtml =
             '<button type="button" class="sleep-system__action sleep-system__action--primary' + (selected ? ' sleep-system__action--selected' : '') +
@@ -19597,12 +20244,19 @@
             '</div>'
           : '';
 
+        // Candidate 2026-09-06: the card carries the step's decision kind as
+        // a class (is-selected stays the cart's mark; is-addressed /
+        // is-deferred are the rail's other two kinds) and opens with the
+        // decision line when something other than an addition was recorded.
+        var cardState = selected ? ' is-selected'
+          : (decisionKind === 'addressed' || decisionKind === 'deferred' ? ' is-' + decisionKind : '');
         var productHtml =
-          '<article class="sleep-system__featured' + (selected ? ' is-selected' : '') + '">' +
+          '<article class="sleep-system__featured' + cardState + '">' +
             '<div class="sleep-system__featured-image">' +
               (primary.image ? '<img src="' + escapeHtml(primary.image) + '" alt="' + escapeHtml(sleepSystemText(primary.name)) + '">' : '') +
             '</div>' +
             '<div class="sleep-system__featured-body">' +
+              sleepSystemDecisionBanner(step.id, decision) +
               '<div class="sleep-system__card-eyebrow">' + escapeHtml(badge) + '</div>' +
               '<h3 class="sleep-system__featured-name">' + escapeHtml(sleepSystemText(primary.name)) + '</h3>' +
               // Item 1.4: customer benefit FIRST, product distinction SECOND.
@@ -19653,7 +20307,10 @@
           var allBases = (Array.isArray(ACCESSORIES) ? ACCESSORIES : []).filter(function(item) {
             return sleepSystemStepForItem(item) === 'adjustability';
           });
-          basesCompareHtml =
+          // Candidate 2026-09-06: the no-trigger block has no product card, so
+          // it states a recorded decision the same way the card does, ahead
+          // of the compare list.
+          basesCompareHtml = sleepSystemDecisionBanner(step.id, decision) +
             '<section class="sleep-system__alternatives sleep-system__bases-compare" aria-label="' +
               escapeHtml(sleepSystemText({ en: 'Optional base demo', es: 'Demostración opcional de base' })) + '">' +
               '<div class="sleep-system__card-eyebrow">' +
@@ -19683,9 +20340,9 @@
                 '</div>';
               }).join('') +
               '<div class="sleep-system__actions">' +
-                '<button type="button" class="sleep-system__action sleep-system__action--primary" data-sleep-action="decision" data-status="demo">' +
+                '<button type="button"' + sleepSystemDecisionAttrs(decision, 'demo') + ' class="sleep-system__action sleep-system__action--primary" data-sleep-action="decision" data-status="demo">' +
                   escapeHtml(sleepSystemText({ en: 'Ask for a demo', es: 'Pedir demostración' })) + '</button>' +
-                '<button type="button" class="sleep-system__action sleep-system__action--secondary" data-sleep-action="decision" data-status="later">' +
+                '<button type="button"' + sleepSystemDecisionAttrs(decision, 'later') + ' class="sleep-system__action sleep-system__action--secondary" data-sleep-action="decision" data-status="later">' +
                   escapeHtml(sleepSystemText({ en: 'Decide later', es: 'Decidir después' })) + '</button>' +
               '</div>' +
             '</section>';
@@ -19981,6 +20638,10 @@
         if (window.dfmBaseDemoFlip) window.dfmBaseDemoFlip(dfmPrevPose);
       } else if (action === 'support-choice') {
         var supportChoice = control.getAttribute('data-support-choice') || '';
+        // Candidate 2026-09-06: the setup choice is reversible with the same
+        // touch that made it - pressing the active choice again clears it and
+        // the step falls back to open (the product card returns).
+        if (window._sleepSystemState.supportChoice === supportChoice) supportChoice = '';
         window._sleepSystemState.supportChoice = supportChoice;
         Object.keys(window._accCart || {}).forEach(function(id) {
           var supportItem = ACCESSORIES.find(function(accessory) { return accessory.id === id; });
@@ -20065,12 +20726,21 @@
         setSleepSystemItem(control.getAttribute('data-item-id'), false);
       } else if (action === 'decision') {
         var stepId = window._sleepSystemState.activeStep;
+        var requestedStatus = control.getAttribute('data-status') || 'later';
+        var currentDecision = sleepSystemDecision(stepId);
+        // Candidate 2026-09-06 (1.4: every choice optional and reversible):
+        // pressing the recorded decision again reopens the step - one touch,
+        // no confirm. A demo request at a NEW position updates the position
+        // instead of cancelling the request.
+        var reopening = currentDecision.status === requestedStatus &&
+          (requestedStatus !== 'demo' ||
+            (currentDecision.position || '') === (window._sleepSystemState.demoPosition || ''));
         Object.keys(window._accCart || {}).forEach(function(id) {
           var item = ACCESSORIES.find(function(accessory) { return accessory.id === id; });
           if (item && sleepSystemStepForItem(item) === stepId) delete window._accCart[id];
         });
-        window._sleepSystemState.decisions[stepId] = {
-          status: control.getAttribute('data-status') || 'later',
+        window._sleepSystemState.decisions[stepId] = reopening ? { status: 'open' } : {
+          status: requestedStatus,
           position: stepId === 'adjustability' ? window._sleepSystemState.demoPosition : ''
         };
         analytics.log('sleep_system_decision_recorded', {
@@ -20509,6 +21179,18 @@
     function renderSleepPlan() {
       var back = document.getElementById('sleepPlanBack');
       if (back) back.textContent = t('plan.back_to_matches');
+      // E2-A: with the dark header gone, the Plan carries the same
+      // config-derived retailer attribution the Summary renders - its OWN
+      // element and block (the Summary pair is pinned byte-for-byte by
+      // sleep_plan_check). storeName + voice.retailerSubline only; blank
+      // config hides it; never a literal.
+      var planAttribution = document.getElementById('sleepPlanAttribution');
+      if (planAttribution) {
+        var planAttrSub = (localizedConfigBlock('voice') || {}).retailerSubline || '';
+        var planAttrText = storeName() ? (planAttrSub ? storeName() + ' · ' + planAttrSub : storeName()) : '';
+        planAttribution.textContent = planAttrText;
+        planAttribution.hidden = !planAttrText;
+      }
       var eyebrow = document.getElementById('sleepPlanEyebrow');
       if (eyebrow) eyebrow.textContent = t('plan.eyebrow');
       var title = document.getElementById('sleepPlanTitle');
@@ -20656,6 +21338,7 @@
       if (compareBtn) compareBtn.textContent = t('hf2.compare_saved');
       var editSystemBtn = document.getElementById('hf2EditSystemBtn');
       if (editSystemBtn) editSystemBtn.textContent = es ? 'Editar Sistema de Sueño' : 'Edit Sleep System';
+      renderHf2FinalistHero();
       renderHf2LeadLine();
       renderHf2Brief();
       renderHf2Priorities();
@@ -20814,6 +21497,51 @@
         payment = t('hf2.pay_state', { value: prefLabel });
       }
       lineEl.textContent = payment ? lead + ' ' + payment : lead;
+    }
+
+    // ---- Finalist moment (candidate 2026-09-06; cohesion ruling C3) ---------
+    // The status card leads with the mattress itself. The three states are
+    // the ones the lead line composes - chosen / recommended starting point /
+    // none - read through the SAME resolver (resolveFinalistState) and the
+    // SAME caller-owned engine read (finalistRecommendedFallback), never a
+    // third derivation; the eyebrow is the dictionary's existing finalist
+    // string for that state, so the engine's top pick is only ever named a
+    // recommended starting point (D5b). The composed status sentence beneath
+    // stays verbatim, so the payment state stays visible (D5c). No new copy,
+    // no new control: the container is customer-derived and sits in
+    // SESSION_CONTENT_IDS; the section's data-finalist attribute carries the
+    // state to CSS as rule colour PLUS border style, never colour alone.
+    function renderHf2FinalistHero() {
+      var section = document.getElementById('hf2LeadSection');
+      var hero = document.getElementById('hf2FinalistHero');
+      if (!section || !hero) return;
+      var state = resolveFinalistState();
+      var recommended = state.kind === 'chosen' ? null : finalistRecommendedFallback();
+      var kind = state.kind === 'chosen' ? 'chosen' : (recommended ? 'recommended' : 'none');
+      var item = kind === 'chosen' ? state.item : recommended;
+      section.setAttribute('data-finalist', kind);
+      var eyebrow = kind === 'chosen' ? t('finalist.chosen')
+        : (kind === 'recommended' ? t('finalist.recommended') : t('finalist.none'));
+      if (!item) {
+        hero.className = 'hf2-finalist-hero hf2-finalist-hero--bare';
+        hero.innerHTML = '<div class="hf2-finalist-hero__eyebrow">' + escapeHtml(eyebrow) + '</div>';
+        return;
+      }
+      // The same name composition the lead line uses (brand carries the
+      // sub-brand already on a saved pick; the engine's entry does not).
+      var brandText = String(item.brand || '')
+        + (item.subBrand && String(item.brand || '').indexOf(' \u00b7 ') === -1 ? ' \u00b7 ' + item.subBrand : '');
+      var name = (brandText ? brandText + ' \u00b7 ' : '') + (item.name || '');
+      var line = sleepPlanModelLine(item) || sleepPlanTierLabel(item.tier) || '';
+      var image = item.imageUrl || item.image || '';
+      hero.className = 'hf2-finalist-hero' + (image ? '' : ' hf2-finalist-hero--bare');
+      hero.innerHTML =
+        (image ? '<img class="hf2-finalist-hero__image" src="' + escapeHtml(image) + '" alt="">' : '') +
+        '<div class="hf2-finalist-hero__body">' +
+          '<div class="hf2-finalist-hero__eyebrow">' + escapeHtml(eyebrow) + '</div>' +
+          '<div class="hf2-finalist-hero__name">' + escapeHtml(name) + '</div>' +
+          (line ? '<div class="hf2-finalist-hero__meta">' + escapeHtml(line) + '</div>' : '') +
+        '</div>';
     }
 
     // ---- Picks ---------------------------------------------------------------
@@ -21098,6 +21826,10 @@
       // and in the drawer; reactions are drawer-only by owner ruling.
       var card = document.createElement('div');
       card.className = 'hf2-pick' + (tier === 'gold' ? ' hf2-pick--gold' : '') + ' hf2-pick--saved';
+      // Candidate 2026-09-06: the chosen finalist's card carries the same
+      // rule as the finalist moment above (the gold rule means tier, not
+      // choice). Class only; the control and its label are unchanged.
+      if (m.id === window._favoriteMattressId) card.className += ' hf2-pick--finalist';
 
       var tierTag = document.createElement('div');
       tierTag.className = 'hf2-pick__tier';
@@ -22308,7 +23040,7 @@
       'questionContainer', 'reviewList',
       'profileName', 'profilePriorities', 'profileSignature', 'profileHero',
       'profileReflection', 'profileSecondary', 'profileCta',
-      'resultsSignature', 'hf2Signature',
+      'resultsSignature', 'hf2Signature', 'hf2FinalistHero',
       'resultsHeadline', 'tierTabs', 'tierDescriptor', 'topPickContainer',
       'supportingRow', 'resultsTrialFocus',
       'drawerName', 'drawerDifferentiators', 'dfmConstructionSection', 'drawerTryPrompts', 'drawerPromotionDetail',

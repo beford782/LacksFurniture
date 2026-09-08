@@ -1001,6 +1001,80 @@ const MUTATIONS = [
     "      var tab = document.getElementById('tierTab-' + tier);\n      if (tab) { try { tab.focus({ preventScroll: true }); } catch (err) { tab.focus(); } }\n",
     "", RESULTS],
 
+  // --- C2: the Results landscape first fold (candidate, 2026-09-07) --------
+  // The pass is one additive, landscape-gated media block. Losing the gate
+  // lets portrait enter it (C2: "portrait unchanged"); sizing the stamp or
+  // touching the tier band inside it breaks the bound the ruling preserves.
+  ["results C2: the landscape block loses its orientation gate",
+    "    @media (min-width: 901px) and (orientation: landscape) {\n      .noct-results-signature {",
+    "    @media (min-width: 901px) {\n      .noct-results-signature {", RESULTS],
+  ["results C2: the landscape block resizes the ruled 54px stamp",
+    "      .noct-results-signature {\n        display: flex;\n        justify-content: center;\n      }\n",
+    "      .noct-results-signature {\n        display: flex;\n        justify-content: center;\n      }\n      .noct-results-signature .sleep-signature { width: 96px; }\n", RESULTS],
+  ["results C2: the landscape block tightens the preserved tier band",
+    "      .noct-toppick-actions .noct-card-action-cluster { gap: 8px; }\n    }\n",
+    "      .noct-toppick-actions .noct-card-action-cluster { gap: 8px; }\n      .noct-tier-descriptor { margin-bottom: 12px; }\n    }\n", RESULTS],
+  ["results C2: the hero photo goes back to the 16:9 band in landscape",
+    "      .noct-toppick-photo {\n        aspect-ratio: auto;\n        height: 100%;\n        min-height: 0;\n      }\n",
+    "", RESULTS],
+
+  // --- E1: the Sleep Brief landscape composition (candidate, 2026-09-07) ---
+  // One additive, landscape-gated block. Losing the gate lets portrait enter
+  // it (E1: "portrait untouched"); dropping the figure override or restoring
+  // `margin-top: auto` inside it undoes the ruled rebalance; sizing a stamp
+  // there escapes the portrait/phone-only stamp scan.
+  ["brief E1: the landscape block loses its orientation gate",
+    "    @media (min-width: 901px) and (orientation: landscape) {\n      .profile-launch__identity {",
+    "    @media (min-width: 901px) {\n      .profile-launch__identity {", BRIEF],
+  ["brief E1: the landscape figure override is dropped (the panel figure shrinks back to the stamp band)",
+    "      .noct-profile-signature .sleep-signature {\n        width: min(clamp(280px, 27vw, 320px), 100%);\n      }\n",
+    "", BRIEF],
+  ["brief E1: the landscape figure outgrows the Spanish fold ceiling",
+    "        width: min(clamp(280px, 27vw, 320px), 100%);",
+    "        width: min(clamp(320px, 36vw, 420px), 100%);", BRIEF],
+  ["brief E1: the route into Results is pinned back to the column floor",
+    "      .profile-launch__actions {\n        margin-top: 24px;\n        padding-top: 16px;\n      }\n",
+    "      .profile-launch__actions {\n        margin-top: auto;\n        padding-top: 16px;\n      }\n", BRIEF],
+  ["brief E1: the landscape block resizes the Results stamp",
+    "      .noct-profile-cta {\n        min-height: 52px;\n        font-size: 16px;\n      }\n    }\n",
+    "      .noct-profile-cta {\n        min-height: 52px;\n        font-size: 16px;\n      }\n      .noct-results-signature .sleep-signature { width: 96px; }\n    }\n", BRIEF],
+
+  // --- E2-A: chrome normalisation (candidate, 2026-09-07) ------------------
+  // The last two dark headers leave, the Plan reserves the utility card's
+  // clearance and carries the config-derived attribution, and the card is
+  // pinned light on the two dark-themed screens. Each reversal below undoes
+  // one of those four moves.
+  ["chrome E2-A: the Plan's header comes back (the hide list drops it)",
+    "    body:has(#sleepPlanScreen.active) .accent-bar,\n    body:has(#sleepPlanScreen.active) .header,\n    body:has(#hf2Screen.active) .accent-bar,\n    body:has(#hf2Screen.active) .header {\n      display: none;\n    }",
+    "    body:has(#hf2Screen.active) .accent-bar,\n    body:has(#hf2Screen.active) .header {\n      display: none;\n    }", PLAN],
+  ["chrome E2-A: the Plan stops reserving the utility-card clearance",
+    "    #sleepPlanScreen.active {\n      padding-top: calc(var(--session-utility-clearance) + env(safe-area-inset-top, 0px));\n    }\n",
+    "", PLAN],
+  ["chrome E2-A: the Plan attribution falls back to a literal instead of hiding",
+    "        var planAttrText = storeName() ? (planAttrSub ? storeName() + ' · ' + planAttrSub : storeName()) : '';",
+    "        var planAttrText = storeName() ? (planAttrSub ? storeName() + ' · ' + planAttrSub : storeName()) : 'Lacks Furniture';", PLAN],
+  ["chrome E2-A: the utility card flips back to the dark pairing on the quiz and Review",
+    "    body:has(#questionScreen.active) .session-utility,\n    body:has(#reviewScreen.active) .session-utility {\n      --color-surface: #FFFDF8;\n      --color-surface-alt: #EEE7DC;\n      --color-text: #2F271E;\n      --color-text-muted: #665D54;\n      --color-text-subtle: #7A6E61;\n      --color-bg: #F3EEE5;\n      --color-border: #D1C5B6;\n      box-shadow: 0 2px 10px rgba(55, 40, 28, 0.18);\n    }\n",
+    "", PLAN],
+  // Light-card control boundaries (WCAG 1.4.11): the pill border is the subtle
+  // ink token; dropping it to the hairline colour (1.67:1) or back to the
+  // retired cream literal must be caught by the resolved-ratio pins.
+  ["chrome E2-A: the language pill boundary falls to the hairline colour on the light card",
+    "      --color-text-subtle: #7A6E61;\n      --color-bg: #F3EEE5;",
+    "      --color-text-subtle: #D1C5B6;\n      --color-bg: #F3EEE5;", PLAN],
+  ["chrome E2-A: the language pill boundary reverts to the cream literal",
+    "      border: 1px solid var(--color-text-subtle);\n      border-radius: 8px;",
+    "      border: 1px solid rgba(245, 239, 228, 0.38);\n      border-radius: 8px;", PLAN],
+  ["chrome E2-A: the Restart well and boundary revert to the cream literals",
+    "      background: var(--color-surface-alt);\n      border-color: var(--color-text-muted);",
+    "      background: rgba(245, 239, 228, 0.07);\n      border-color: rgba(245, 239, 228, 0.55);", PLAN],
+  // Safety dialog (Restart / idle-timeout confirmation): the secondary action's
+  // boundary is a resolved muted-ink token in both themes; the cream literal it
+  // replaced measured 1.07:1 on the warm panel.
+  ["safety dialog: the confirm boundary reverts to the cream literal (1.07:1 on the warm panel)",
+    "      background: transparent;\n      border: 1px solid var(--color-text-muted);\n    }",
+    "      background: transparent;\n      border: 1px solid rgba(245, 239, 228, 0.55);\n    }", SESSION],
+
   // --- Slice 2: the Sleep Signature constellation (D2) ---------------------
   ["constellation: the geometry goes nondeterministic",
     "        var angle = (Math.PI * 2 * i) / dims.length - Math.PI / 2;",
@@ -2008,8 +2082,10 @@ const MUTATIONS = [
     SLEEP],
   // DOM order alone is not the hierarchy: a benefit rendered smaller than the
   // distinction under it is first in the tree and second on the screen.
+  // Candidate 2026-09-06 re-point: the spoken line is 16px; the mutant still
+  // shrinks it below the 13px distinction.
   ["1.4: the benefit block shrinks below the product distinction again",
-    "      border-left: 3px solid #9A7445;\n      background: #F6EFE4;\n      color: #4F4439;\n      font: 600 14px/1.45 var(--font-sans);",
+    "      border-left: 3px solid #9A7445;\n      background: #F6EFE4;\n      color: #4F4439;\n      font: 600 16px/1.45 var(--font-sans);",
     "      border-left: 3px solid #9A7445;\n      background: #F6EFE4;\n      color: #4F4439;\n      font: 600 12px/1.45 var(--font-sans);",
     SLEEP],
   ["1.4: the guidance panel echoes the customer benefit again (adjustability, support)",
@@ -2091,6 +2167,56 @@ const MUTATIONS = [
     "      min-width: 44px;\n      min-height: 44px;\n      padding: 8px 11px;",
     "      min-height: 44px;\n      padding: 8px 11px;",
     SLEEP],
+
+  // --- Candidate 2026-09-06: three states on the card, reversible ----------
+  // Each entry removes exactly one of the candidate's safety properties; the
+  // sleep-system suite's section 17 is the observer. Find strings are pinned
+  // to match exactly once by that section.
+  ["candidate 1.4: pressing the recorded decision again no longer reopens the step",
+    "var reopening = currentDecision.status === requestedStatus &&",
+    "var reopening = false && currentDecision.status === requestedStatus &&",
+    SLEEP],
+  ["candidate 1.4: pressing the active setup choice again no longer clears it",
+    "if (window._sleepSystemState.supportChoice === supportChoice) supportChoice = '';",
+    "if (false) supportChoice = '';",
+    SLEEP],
+  ["candidate 1.4: the recorded decision control loses its pressed state",
+    "return ' aria-pressed=\"' + (pressed ? 'true' : 'false') + '\"';",
+    "return ' aria-pressed=\"false\"';",
+    SLEEP],
+  ["candidate 1.4: the card no longer states an addressed or deferred decision",
+    "if (kind !== 'addressed' && kind !== 'deferred') return '';",
+    "if (kind !== 'never') return '';",
+    SLEEP],
+  ["candidate 1.4: the setup choices lose their pressed state",
+    "return ' aria-pressed=\"' + (active ? 'true' : 'false') + '\"';",
+    "return '';",
+    SLEEP],
+  ["candidate 1.4: the pressed decision cue vanishes under forced colors",
+    ".sleep-system__action[aria-pressed=\"true\"] {\n        border-width: 3px;\n        border-color: CanvasText;\n        padding: 7px 11px;\n      }",
+    "",
+    SLEEP],
+
+  // --- Candidate 2026-09-06: the Consultation Summary's finalist moment ------
+  // Each entry removes one property of the hero; the consultation-summary
+  // suite's section 10 is the observer. Find strings are pinned to match
+  // exactly once by that section.
+  ["candidate 1.6: the status card no longer carries the finalist state",
+    "      section.setAttribute('data-finalist', kind);",
+    "",
+    CONSULT],
+  ["candidate 1.6: a recommended starting point is labelled as the finalist",
+    "        : (kind === 'recommended' ? t('finalist.recommended') : t('finalist.none'));",
+    "        : t('finalist.chosen');",
+    CONSULT],
+  ["candidate 1.6: the chosen finalist's saved-pick card loses its mark",
+    "      if (m.id === window._favoriteMattressId) card.className += ' hf2-pick--finalist';",
+    "",
+    CONSULT],
+  ["candidate 1.6: the finalist moment leaves the wipe's content inventory",
+    "      'resultsSignature', 'hf2Signature', 'hf2FinalistHero',",
+    "      'resultsSignature', 'hf2Signature',",
+    CONSULT],
 
   // --- Phase 2.1a: the dark pricing framework's admission gate ---------------
   // Focused on the critical properties (Codex review 2026-08-27, correction
@@ -2339,6 +2465,102 @@ const MUTATIONS = [
     "The 9 quiz questions (42 options;",
     "The 10 quiz questions (47 options;",
     A43, "CLAUDE.md"],
+
+
+  // --- X7-B2: the compact landscape quiz (candidate, 2026-09-07) ----------
+  // One additive, landscape-gated block scoped to the question screen. Losing
+  // the gate lets portrait enter it; a column template restores the measured
+  // three-column variant A; pinned chrome is the variant C the ruling did not
+  // take; a Review-scoped selector leaks the rhythm off the question screen;
+  // dropping the selected compensation reopens the 20px landscape reflow.
+  ["quiz X7-B2: the landscape block loses its orientation gate",
+    "    @media (min-width: 901px) and (orientation: landscape) {\n      body:has(#questionScreen.active) .noct-quiz {",
+    "    @media (min-width: 901px) {\n      body:has(#questionScreen.active) .noct-quiz {", QUIZ],
+  ["quiz X7-B2: the landscape grid goes to three columns (variant A comes back)",
+    "      body:has(#questionScreen.active) .noct-quiz-options {\n        gap: 8px;\n        margin-bottom: 14px;\n      }\n",
+    "      body:has(#questionScreen.active) .noct-quiz-options {\n        gap: 8px;\n        margin-bottom: 14px;\n        grid-template-columns: repeat(3, 1fr);\n      }\n", QUIZ],
+  ["quiz X7-B2: the navigation row is pinned to the viewport (variant C chrome)",
+    "      body:has(#questionScreen.active) .noct-quiz-nav { padding-top: 12px; }\n",
+    "      body:has(#questionScreen.active) .noct-quiz-nav { padding-top: 12px; position: fixed; bottom: 0; }\n", QUIZ],
+  ["quiz X7-B2: the compact option cell drops below the 44px floor",
+    "      body:has(#questionScreen.active) .noct-quiz-option {\n        min-height: 56px;\n        padding: 10px 16px 10px 13px;\n      }\n",
+    "      body:has(#questionScreen.active) .noct-quiz-option {\n        min-height: 40px;\n        padding: 10px 16px 10px 13px;\n      }\n", QUIZ],
+  ["quiz X7-B2: the landscape selected compensation is dropped (a selected cell grows 20px)",
+    "      body:has(#questionScreen.active) .noct-quiz-option.selected {\n        padding: 9px 15px 9px 13px;\n      }\n",
+    "", QUIZ],
+  ["quiz X7-B2: the landscape rhythm leaks onto the Review screen",
+    "      body:has(#questionScreen.active) .noct-quiz-help { margin-bottom: 8px; }\n",
+    "      body:has(#reviewScreen.active) .noct-quiz-help { margin-bottom: 8px; }\n", QUIZ],
+  ["quiz X7-B2: the forced-colors landscape counterpart loses its gate (it would then restate the compact cell everywhere in forced colors)",
+    "    @media (forced-colors: active) and (min-width: 901px) and (orientation: landscape) {\n",
+    "    @media (forced-colors: active) and (min-width: 901px) {\n", QUIZ],
+  ["quiz X7-B2: the forced-colors landscape counterpart is removed (forced colors restores the 93px cell and the fold regression)",
+    "      body:has(#questionScreen.active) .noct-quiz-option {\n        padding: 10px 16px 10px 18px;\n      }\n",
+    "", QUIZ],
+  ["quiz X7-B2: the forced-colors landscape selected compensation is dropped (a selected cell grows 4px and its text shifts)",
+    "      body:has(#questionScreen.active) .noct-quiz-option.selected[aria-pressed=\"true\"] {\n        padding: 8px 14px 8px 13px;\n      }\n",
+    "", QUIZ],
+  ["quiz X7-B2: the landscape frame goes back to the 76px inline padding (the English firmness headline wraps and the document scrolls past the fold)",
+    "        padding: 38px 64px 24px;",
+    "        padding: 38px 76px 24px;", QUIZ],
+  ["quiz X7-B2: Next's declared 44px floor is removed (the floor becomes emergent again)",
+    "      min-height: 44px;\n      padding: 16px 32px;",
+    "      padding: 16px 32px;", QUIZ],
+  // --- accessibility-floor slice (candidate, 2026-09-08): A4 + A6 ---------
+  // The Results details control and the Summary roster add row declare the
+  // 44px floor; the Results Chosen finalist gets the fourth --gold consumer
+  // fix. Each reversal below re-opens the measured defect.
+  ["X12: the Results details control drops back to its 31px box (floor and centring removed)",
+    "      display: inline-flex;\n      align-items: center;\n      min-height: 44px;\n      background: transparent;\n      color: var(--color-text-subtle);\n      border: none;\n",
+    "      background: transparent;\n      color: var(--color-text-subtle);\n      border: none;\n", RESULTS],
+  ["X12: the roster add-row input returns to the 40px floor",
+    "    .hf2-rsa-panel__input {\n      flex: 1;\n      /* X12 floor (2026-09-08): the add row's input and confirm were the\n         two 40px controls left beside the 44px add button. */\n      min-height: 44px;\n",
+    "    .hf2-rsa-panel__input {\n      flex: 1;\n      min-height: 40px;\n", RESULTS],
+  ["X12: the roster add-row confirm returns to the 40px floor",
+    "    .hf2-rsa-panel__confirm {\n      min-height: 44px;\n",
+    "    .hf2-rsa-panel__confirm {\n      min-height: 40px;\n", RESULTS],
+  ["X6: the Results Chosen consumer fix is removed (paper on the frozen accent, 2.66:1)",
+    "    #resultsScreen .finalist-btn.chosen,\n    #resultsScreen .finalist-btn[aria-pressed=\"true\"] {\n      border-color: #63765D;\n      background: #63765D;\n      color: #FFFFFF;\n    }\n",
+    "", ["tests/contrast_check.mjs"]],
+  ["X6: the Results Chosen fix reads --gold again (the alias re-freezes to the retailer accent)",
+    "    #resultsScreen .finalist-btn[aria-pressed=\"true\"] {\n      border-color: #63765D;\n      background: #63765D;\n      color: #FFFFFF;\n    }\n",
+    "    #resultsScreen .finalist-btn[aria-pressed=\"true\"] {\n      border-color: var(--gold);\n      background: var(--gold);\n      color: #FFFFFF;\n    }\n", ["tests/contrast_check.mjs"]],
+  ["X6: the Results resting-finalist hover fix is removed (gold text on the card surface, 3.02:1)",
+    "    #resultsScreen .finalist-btn:hover {\n      border-color: #7D5B34;\n      color: #7D5B34;\n    }\n",
+    "", ["tests/contrast_check.mjs"]],
+  ["X6: the Results hover fix reads --gold again (the alias re-freezes to the retailer accent)",
+    "    #resultsScreen .finalist-btn:hover {\n      border-color: #7D5B34;\n      color: #7D5B34;\n    }\n",
+    "    #resultsScreen .finalist-btn:hover {\n      border-color: var(--gold);\n      color: var(--gold);\n    }\n", ["tests/contrast_check.mjs"]],
+  ["X6: the hover fix slips after the chosen fix (a hovered chosen control loses white-on-sage)",
+    "    #resultsScreen .finalist-btn:hover {\n      border-color: #7D5B34;\n      color: #7D5B34;\n    }\n    #resultsScreen .finalist-btn.chosen,\n    #resultsScreen .finalist-btn[aria-pressed=\"true\"] {\n      border-color: #63765D;\n      background: #63765D;\n      color: #FFFFFF;\n    }\n",
+    "    #resultsScreen .finalist-btn.chosen,\n    #resultsScreen .finalist-btn[aria-pressed=\"true\"] {\n      border-color: #63765D;\n      background: #63765D;\n      color: #FFFFFF;\n    }\n    #resultsScreen .finalist-btn:hover {\n      border-color: #7D5B34;\n      color: #7D5B34;\n    }\n", ["tests/contrast_check.mjs"]],
+  ["X6 hover class: the Compare / Save hover override is removed (brass at 4.17:1 on the card)",
+    "    #resultsScreen .compare-btn:hover,\n    #resultsScreen .noct-save-btn:hover {\n      border-color: #7D5B34;\n      color: #7D5B34;\n    }\n",
+    "", ["tests/contrast_check.mjs"]],
+  ["X6 hover class: the Compare / Save hover override reads the brass accent again",
+    "    #resultsScreen .compare-btn:hover,\n    #resultsScreen .noct-save-btn:hover {\n      border-color: #7D5B34;\n      color: #7D5B34;\n    }\n",
+    "    #resultsScreen .compare-btn:hover,\n    #resultsScreen .noct-save-btn:hover {\n      border-color: var(--color-accent);\n      color: var(--color-accent);\n    }\n", ["tests/contrast_check.mjs"]],
+  ["X6 hover class: the details hover / focus-visible override is removed (brass on the card)",
+    "    #resultsScreen .noct-card-details:hover,\n    #resultsScreen .noct-card-details:focus-visible {\n      color: #7D5B34;\n    }\n",
+    "", ["tests/contrast_check.mjs"]],
+  ["X6 hover class: the Compare / Save hover override slips after the selected rule (a hovered selected Compare loses white on sage)",
+    "    #resultsScreen .compare-btn:hover,\n    #resultsScreen .noct-save-btn:hover {\n      border-color: #7D5B34;\n      color: #7D5B34;\n    }\n    #resultsScreen .noct-card-details:hover,\n    #resultsScreen .noct-card-details:focus-visible {\n      color: #7D5B34;\n    }\n    #resultsScreen .compare-btn.selected {\n      border-color: #63765D;\n      background: #63765D;\n      color: #FFFFFF;\n    }\n",
+    "    #resultsScreen .noct-card-details:hover,\n    #resultsScreen .noct-card-details:focus-visible {\n      color: #7D5B34;\n    }\n    #resultsScreen .compare-btn.selected {\n      border-color: #63765D;\n      background: #63765D;\n      color: #FFFFFF;\n    }\n    #resultsScreen .compare-btn:hover,\n    #resultsScreen .noct-save-btn:hover {\n      border-color: #7D5B34;\n      color: #7D5B34;\n    }\n", ["tests/contrast_check.mjs"]],
+  ["X6 hover class: the Results CTA hover foreground falls back to the theme ground over the computed light fill",
+    "    #resultsScreen .noct-results-cta:hover {\n      border-color: var(--accent-ink);\n      background: var(--store-primary-light);\n      color: var(--on-store-primary-light);\n    }\n",
+    "    #resultsScreen .noct-results-cta:hover {\n      border-color: var(--accent-ink);\n      background: var(--store-primary-light);\n      color: var(--color-bg);\n    }\n", ["tests/contrast_check.mjs"]],
+  ["X6 hover class: the compare tray's Compare hover loses its computed foreground",
+    "    .compare-tray-go:hover:not(:disabled) {\n      background: var(--store-primary-light);\n      color: var(--on-store-primary-light);\n    }\n",
+    "    .compare-tray-go:hover:not(:disabled) {\n      background: var(--store-primary-light);\n      color: var(--color-bg);\n    }\n", ["tests/contrast_check.mjs"]],
+  ["X6 hover class: the details focus-visible ink is dropped from the Results rule (hover keeps it, keyboard focus falls back to brass)",
+    "    #resultsScreen .noct-card-details:hover,\n    #resultsScreen .noct-card-details:focus-visible {\n      color: #7D5B34;\n    }\n",
+    "    #resultsScreen .noct-card-details:hover {\n      color: #7D5B34;\n    }\n", ["tests/contrast_check.mjs"]],
+  ["X6 hover class: the Results CTA hover foreground is cross-wired to the primary's partner over the light fill",
+    "    #resultsScreen .noct-results-cta:hover {\n      border-color: var(--accent-ink);\n      background: var(--store-primary-light);\n      color: var(--on-store-primary-light);\n    }\n",
+    "    #resultsScreen .noct-results-cta:hover {\n      border-color: var(--accent-ink);\n      background: var(--store-primary-light);\n      color: var(--on-store-primary);\n    }\n", ["tests/contrast_check.mjs"]],
+  ["X6 hover class: the enabled tray Compare hover foreground is cross-wired to the primary's partner over the light fill",
+    "    .compare-tray-go:hover:not(:disabled) {\n      background: var(--store-primary-light);\n      color: var(--on-store-primary-light);\n    }\n",
+    "    .compare-tray-go:hover:not(:disabled) {\n      background: var(--store-primary-light);\n      color: var(--on-store-primary);\n    }\n", ["tests/contrast_check.mjs"]],
 
 ];
 
