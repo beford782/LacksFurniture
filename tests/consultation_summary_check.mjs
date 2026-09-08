@@ -741,5 +741,138 @@ section("the Python and JS consumed-question lists cannot drift");
 }
 
 // ===========================================================================
+// 10. Candidate 2026-09-06 (item 1.6 cohesion, ruling C3): the finalist MOMENT.
+//     The status card leads with the mattress itself, in the three states the
+//     lead line already composes, labelled with the dictionary's existing
+//     finalist strings. Executed for real: the renderer runs against stubbed
+//     resolver reads and a fake document, so the state attribute, the eyebrow,
+//     the name composition and the image rule are observed, not inferred.
+// ===========================================================================
+section("candidate 2026-09-06: the finalist moment (three states, existing strings, no new control)");
+const HERO_FN = grab(/function renderHf2FinalistHero\(\) \{[\s\S]*?\n    \}/, "renderHf2FinalistHero()");
+const ESCAPE_FN = grab(/function escapeHtml\([\s\S]*?\n    \}/, "escapeHtml()");
+const DICT = { en: JSON.parse(readFileSync(join(root, "data", "dict-en.json"), "utf8")),
+  es: JSON.parse(readFileSync(join(root, "data", "dict-es.json"), "utf8")) };
+function runHero(opts) {
+  const els = new Map();
+  const make = (id) => ({ id, innerHTML: "", textContent: "", className: "", attrs: {},
+    setAttribute(k, v) { this.attrs[k] = String(v); } });
+  const doc = { getElementById: (id) => { if (!els.has(id)) els.set(id, make(id)); return els.get(id); } };
+  const lang = opts.lang || "en";
+  new Function("document", "t", "resolveFinalistState", "finalistRecommendedFallback",
+    "sleepPlanModelLine", "sleepPlanTierLabel",
+    `"use strict";
+    ${ESCAPE_FN}
+    ${HERO_FN}
+    renderHf2FinalistHero();`)(
+    doc,
+    (key) => DICT[lang][key],
+    () => opts.state,
+    () => opts.recommended || null,
+    (m) => (m && m.tier ? m.tier.toUpperCase() + " LINE" : ""),
+    (tier) => (tier ? tier + " label" : ""));
+  return { section: els.get("hf2LeadSection"), hero: els.get("hf2FinalistHero") };
+}
+const CHOSEN = { id: "g1", name: "Cloud Nine", brand: "Restonic · Comfort Care", subBrand: "Comfort Care", tier: "gold", imageUrl: "images/mattresses/cloud-nine.jpg" };
+{
+  const r = runHero({ state: { kind: "chosen", item: CHOSEN } });
+  check("chosen: the status card carries data-finalist=\"chosen\"", r.section.attrs["data-finalist"] === "chosen");
+  check("chosen: the eyebrow is the dictionary's finalist string (“Finalist ✓”), not new copy",
+    r.hero.innerHTML.includes('<div class="hf2-finalist-hero__eyebrow">Finalist ✓</div>'));
+  check("chosen: the name composes brand · name without doubling a sub-brand the saved pick already carries",
+    r.hero.innerHTML.includes('<div class="hf2-finalist-hero__name">Restonic · Comfort Care · Cloud Nine</div>')
+    && !r.hero.innerHTML.includes("Comfort Care · Comfort Care"));
+  check("chosen: the meta line is the Plan-parity model line", r.hero.innerHTML.includes('<div class="hf2-finalist-hero__meta">GOLD LINE</div>'));
+  check("chosen: the image is the pick's own, decorative (alt=\"\"), on the white mat class",
+    /<img class="hf2-finalist-hero__image" src="images\/mattresses\/cloud-nine\.jpg" alt="">/.test(r.hero.innerHTML)
+    && r.hero.className === "hf2-finalist-hero");
+  check("chosen: nothing in the hero is a control (no button, no link, no handler)",
+    !/<button|<a |onclick|ontouchend/.test(r.hero.innerHTML));
+}
+{
+  const REC = { id: "g2", name: "Lakeview", brand: "Restonic", subBrand: "Comfort Care", tier: "gold", imageUrl: "" };
+  const r = runHero({ state: { kind: "none", item: null }, recommended: REC });
+  check("recommended: data-finalist=\"recommended\" and the eyebrow says “Recommended starting point”, never “Finalist” (D5b)",
+    r.section.attrs["data-finalist"] === "recommended"
+    && r.hero.innerHTML.includes('<div class="hf2-finalist-hero__eyebrow">Recommended starting point</div>')
+    && !/Finalist/.test(r.hero.innerHTML));
+  check("recommended: the engine entry's sub-brand is joined once (brand · sub-brand · name)",
+    r.hero.innerHTML.includes('<div class="hf2-finalist-hero__name">Restonic · Comfort Care · Lakeview</div>'));
+  check("recommended: with no image the hero is bare (single column) and renders no <img>",
+    r.hero.className === "hf2-finalist-hero hf2-finalist-hero--bare" && !/<img/.test(r.hero.innerHTML));
+}
+{
+  const r = runHero({ state: { kind: "none", item: null }, recommended: null });
+  check("none: data-finalist=\"none\", the eyebrow alone (“No finalist selected yet”), bare, no name, no image",
+    r.section.attrs["data-finalist"] === "none"
+    && r.hero.innerHTML === '<div class="hf2-finalist-hero__eyebrow">No finalist selected yet</div>'
+    && r.hero.className === "hf2-finalist-hero hf2-finalist-hero--bare");
+}
+{
+  const r = runHero({ state: { kind: "chosen", item: CHOSEN }, lang: "es" });
+  check("[es] the eyebrow is the Spanish finalist string (“Finalista ✓”)",
+    r.hero.innerHTML.includes('<div class="hf2-finalist-hero__eyebrow">Finalista ✓</div>'));
+  const n = runHero({ state: { kind: "none", item: null }, lang: "es" });
+  check("[es] the none state reads “Aún no has elegido finalista”", n.hero.innerHTML.includes("Aún no has elegido finalista"));
+}
+{
+  // Static contract: the hero is the status card's first child; the pinned
+  // label and lead line follow it; it renders before the (pinned) lead-line
+  // sequence; it sits in the wipe's content inventory; the chosen card's
+  // modifier is class-only.
+  const leadSection = (html.match(/<section class="hf2-review-section" id="hf2LeadSection" aria-labelledby="hf2LeadLabel">[\s\S]*?<\/section>/) || [""])[0];
+  check("markup: the hero container is inside the status card, before the label and the lead line",
+    leadSection.indexOf('id="hf2FinalistHero"') > -1
+    && leadSection.indexOf('id="hf2FinalistHero"') < leadSection.indexOf('id="hf2LeadLabel"')
+    && leadSection.indexOf('id="hf2LeadLabel"') < leadSection.indexOf('id="hf2LeadLine"'));
+  check("markup: the status card keeps its aria-labelledby and the lead line stays a <p id=\"hf2LeadLine\">",
+    /<p class="hf2-lead-line" id="hf2LeadLine"><\/p>/.test(html));
+  check("renderHf2: the hero renders immediately before the pinned lead-line sequence",
+    /renderHf2FinalistHero\(\);\r?\n\s*renderHf2LeadLine\(\);\r?\n\s*renderHf2Brief\(\);\r?\n\s*renderHf2Priorities\(\);\r?\n\s*renderHf2Picks\(\);/.test(html));
+  check("wipe: the hero container is in SESSION_CONTENT_IDS (customer-derived)",
+    /var SESSION_CONTENT_IDS = \[[\s\S]*?'hf2FinalistHero'[\s\S]*?\];/.test(html));
+  check("picks: the chosen finalist's card gains hf2-pick--finalist by class only (control and label untouched)",
+    html.includes("if (m.id === window._favoriteMattressId) card.className += ' hf2-pick--finalist';")
+    && /finalistButtonLabel\(m\.id === window\._favoriteMattressId\)/.test(html));
+  check("nav: the Summary's nav carries the clearance modifier and the Plan's nav does not",
+    html.includes('<div class="hf2-review-nav hf2-review-nav--summary">')
+    && (html.match(/class="hf2-review-nav hf2-review-nav--summary"/g) || []).length === 1);
+  const css = [...html.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)].map((m) => m[1]).join("\n").replace(/\/\*[\s\S]*?\*\//g, "");
+  const rule = (sel) => { const m = css.match(new RegExp(sel.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + " \\{[\\s\\S]*?\\}")); return m ? m[0] : ""; };
+  check("css: the three states differ in border STYLE, not colour alone (chosen solid, recommended dashed rule, none dashed all round)",
+    /border-left-color:\s*var\(--store-primary\)/.test(rule('#hf2LeadSection[data-finalist="chosen"]'))
+    && /border-left-style:\s*dashed/.test(rule('#hf2LeadSection[data-finalist="recommended"]'))
+    && /border-style:\s*dashed/.test(rule('#hf2LeadSection[data-finalist="none"]')));
+  check("css: the eyebrow and meta use --accent-ink (the pinned 4.5:1 ink), the name the screen's text ink",
+    /color:\s*var\(--accent-ink\)/.test(rule(".hf2-finalist-hero__eyebrow"))
+    && /color:\s*var\(--accent-ink\)/.test(rule(".hf2-finalist-hero__meta"))
+    && /color:\s*var\(--color-text\)/.test(rule(".hf2-finalist-hero__name")));
+  check("css: the hero animates through the --dfm-* tokens (collapsed under reduced motion), never a fixed duration",
+    /animation:\s*hf2HeroIn var\(--dfm-settle\) var\(--dfm-e-settle\) both/.test(rule(".hf2-finalist-hero")));
+  check("css: the Summary nav reserves the session-utility clearance", /var\(--session-utility-clearance\)/.test(rule("#hf2Screen .hf2-review-nav--summary")));
+  check("css: no new max-width media block was added for the portrait hero (orientation query only)",
+    /@media \(orientation: portrait\) \{\s*\.hf2-finalist-hero \{/.test(css));
+  const fcBlocks = [...css.matchAll(/@media \(forced-colors: active\) \{[\s\S]*?\n    \}/g)].map((m) => m[0]);
+  const fc = fcBlocks.find((b) => b.includes("#hf2LeadSection")) || "";
+  check("forced colors: chosen is the double-border cue and none dashed, in a block that is not the anchored first one",
+    /#hf2LeadSection\[data-finalist="chosen"\] \{ border-left-style: double;/.test(fc)
+    && /#hf2LeadSection\[data-finalist="none"\] \{ border-style: dashed; \}/.test(fc)
+    && fcBlocks.indexOf(fc) > 0);
+  check("no new customer-facing copy: every hero string is a dictionary key (finalist.chosen / recommended / none)",
+    HERO_FN.includes("t('finalist.chosen')") && HERO_FN.includes("t('finalist.recommended')") && HERO_FN.includes("t('finalist.none')")
+    && !/\{\s*en:/.test(HERO_FN));
+  // Guard-15 convention: the sweep entries targeting this candidate must match
+  // the tree exactly once, so a stale entry is observable here.
+  const FINDS = [
+    "      section.setAttribute('data-finalist', kind);",
+    "        : (kind === 'recommended' ? t('finalist.recommended') : t('finalist.none'));",
+    "      if (m.id === window._favoriteMattressId) card.className += ' hf2-pick--finalist';",
+    "      'resultsSignature', 'hf2Signature', 'hf2FinalistHero',",
+  ];
+  const lf = html.replace(/\r\n/g, "\n");
+  for (const f of FINDS) check(`candidate sweep find matches exactly once: ${JSON.stringify(f.trim().slice(0, 52))}…`, lf.split(f).length - 1 === 1);
+}
+
+// ===========================================================================
 console.log(`\nConsultation summary check: ${passed} passed, ${failed} failed`);
 process.exit(failed === 0 ? 0 : 1);

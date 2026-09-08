@@ -586,6 +586,49 @@ function over(fg, bg, alpha) {
     !/\.compare-tray[^{]*\{[^}]*var\(--(gold|navy|cream)/.test(html) && !!trayRule && !/1a2744|0d1730|linear-gradient/.test(trayRule[1]));
   check("X6: the tray's primary uses the store-primary pair whose foreground applyStoreConfig() computes (contrast-safe by construction)",
     /\.compare-tray-go \{[^}]*background: var\(--store-primary\);[^}]*color: var\(--on-store-primary\);/.test(html));
+  // Fourth consumer (candidate, 2026-09-08): the Results "Chosen" finalist
+  // button read var(--gold) under color: var(--color-bg) - the Results paper
+  // #F3EEE5 on the frozen #FF5C36, 2.66:1 on 11px uppercase text. Repaired
+  // the way the selected Compare and saved Save beside it were: a
+  // Results-scoped rule painting the sage pair, base rule and alias untouched.
+  const chosen = html.match(/\r?\n    #resultsScreen \.finalist-btn\.chosen,\r?\n    #resultsScreen \.finalist-btn\[aria-pressed="true"\] \{([^}]*)\}/);
+  check("X6: the Results Chosen finalist has its own consumer fix beside the Compare / Save repairs",
+    !!chosen && html.indexOf(chosen[0]) > html.indexOf("#resultsScreen .noct-save-btn.saved {"));
+  const chosenBg = chosen && (chosen[1].match(/background: (#[0-9A-Fa-f]{6});/) || [])[1];
+  const chosenFg = chosen && (chosen[1].match(/(?<!-)color: (#[0-9A-Fa-f]{6});/) || [])[1];
+  check("X6: the Chosen fix paints literal values (no --gold, no --color-bg) and its boundary follows the fill",
+    !!chosen && !!chosenBg && !!chosenFg && !/var\(--gold\)|var\(--color-bg\)/.test(chosen[1]) && chosen[1].includes(`border-color: ${chosenBg};`));
+  if (chosenBg && chosenFg) {
+    const rr = ratio(chosenFg, chosenBg);
+    check(`X6: Chosen text ${chosenFg} on ${chosenBg} >= 4.5:1 (got ${rr.toFixed(2)}:1; was 2.66:1 with the frozen accent)`, rr >= 4.5);
+    check("X6: the Chosen fill also separates from the Results paper at >= 3:1 (non-text boundary)", ratio(chosenBg, "#F3EEE5") >= 3);
+  }
+  check("X6: the base .finalist-btn.chosen rule and --gold are untouched (consumers, never the config)",
+    /\.finalist-btn\.chosen, \.finalist-btn\[aria-pressed="true"\] \{\s*background: var\(--gold\);\s*color: var\(--color-bg\);\s*border: 2px solid var\(--gold\);\s*\}/.test(html));
+  check("X6 negative control: the frozen-accent pairing the fix replaces fails the same floor", ratio("#F3EEE5", "#FF5C36") < 4.5);
+  // The resting control's hover (candidate, 2026-09-08): .finalist-btn:hover
+  // reads var(--gold) for text and hairline, 3.02:1 on the hero card surface
+  // #FFFDF8 the control sits on. Results-scoped override, literal value,
+  // ordered before the chosen rule so chosen + hover stays white on sage.
+  const hoverFix = html.match(/\r?\n    #resultsScreen \.finalist-btn:hover \{([^}]*)\}/);
+  check("X6: the Results resting finalist's hover has its own consumer fix", !!hoverFix);
+  const hoverFg = hoverFix && (hoverFix[1].match(/(?<!-)color: (#[0-9A-Fa-f]{6});/) || [])[1];
+  const hoverBd = hoverFix && (hoverFix[1].match(/border-color: (#[0-9A-Fa-f]{6});/) || [])[1];
+  check("X6: the hover fix paints literal values for text and hairline (no --gold, no --color-accent)",
+    !!hoverFg && !!hoverBd && !/var\(/.test(hoverFix[1]));
+  if (hoverFg && hoverBd) {
+    const onCard = ratio(hoverFg, "#FFFDF8"), onPaper = ratio(hoverFg, "#F3EEE5");
+    check(`X6: hover text ${hoverFg} on the hero card surface #FFFDF8 >= 4.5:1 (got ${onCard.toFixed(2)}:1; was 3.02:1 with the frozen accent)`, onCard >= 4.5);
+    check(`X6: hover text ${hoverFg} also clears 4.5:1 on the Results paper #F3EEE5 (got ${onPaper.toFixed(2)}:1; the support cards' ground)`, onPaper >= 4.5);
+    check("X6: the hover hairline clears 3:1 on the card surface (non-text boundary)", ratio(hoverBd, "#FFFDF8") >= 3);
+  }
+  check("X6: the hover fix precedes the chosen fix, so a hovered chosen control keeps white on sage (equal specificity, order decides)",
+    !!hoverFix && html.indexOf(hoverFix[0]) < html.indexOf("#resultsScreen .finalist-btn.chosen,")
+    && html.indexOf(hoverFix[0]) > html.indexOf("#resultsScreen .noct-save-btn.saved {"));
+  check("X6: the base .finalist-btn:hover rule is untouched (consumers, never the config)",
+    /\.finalist-btn:hover \{ border-color: var\(--gold\); color: var\(--gold\); \}/.test(html));
+  check("X6 negative control: the frozen-accent hover pairing fails the same floor on the card surface", ratio("#FF5C36", "#FFFDF8") < 4.5);
+  check("X6 negative control: the brass accent the Compare / Save hovers use would not clear the floor here either", ratio("#9A7445", "#FFFDF8") < 4.5);
 }
 
 // --- X11: state cues that survive forced colors (D9, 2026-08-31) -----------
@@ -626,6 +669,118 @@ function over(fg, bg, alpha) {
     && html.indexOf(block[0]) > html.indexOf(".sleep-system__step.is-active {"));
   check("X11: the finalist's own 2px forced cue is untouched",
     /\.finalist-btn\.chosen, \.finalist-btn\[aria-pressed="true"\] \{ border: 2px solid CanvasText; \}/.test(html));
+}
+
+// --- Results hover consumer class (candidate, 2026-09-08) -------------------
+// Enumerated, not pinned one by one: every base :hover / :focus-visible rule
+// of the Results control family in the first style block is a consumer. For
+// each one that sets a text colour or a boundary colour, the value that wins
+// on Results (a #resultsScreen override if one exists, else the base value,
+// resolved through the Results theme tokens and the frozen --gold alias) must
+// clear 4.5:1 for text and 3:1 for the boundary on BOTH Results surfaces: the
+// card #FFFDF8 the action clusters sit on and the paper #F3EEE5. Values that
+// applyStoreConfig() computes at runtime (--store-primary-light and its
+// foreground) are contrast-safe by construction and pinned above; they are
+// reported, not measured here.
+{
+  const nhtml = html.replace(/\r\n/g, '\n');
+  const firstStyle = (nhtml.match(/<style>[\s\S]*?<\/style>/) || [''])[0].replace(/\/\*[\s\S]*?\*\//g, '');
+  const themeBody = (nhtml.match(/body:has\(#resultsScreen\.active\),[\s\S]*?\{([^}]*)\}/) || [null, ''])[1];
+  const tokens = {};
+  for (const d of themeBody.matchAll(/(--[a-z-]+):\s*(#[0-9A-Fa-f]{6});/g)) tokens[d[1]] = d[2];
+  tokens['--accent-ink'] = (nhtml.match(/--accent-ink:\s*(#[0-9A-Fa-f]{6});/) || [])[1];
+  // --gold is aliased to --color-accent on :root, where applyStoreConfig() writes the retailer accent.
+  tokens['--gold'] = cfg.colors.accent;
+  check("Results hover class: the theme tokens and the frozen --gold resolved", !!tokens['--color-accent'] && !!tokens['--color-accent-hover'] && /^#[0-9A-Fa-f]{6}$/.test(tokens['--gold'] || ''));
+  const resolve = (v) => { if (!v) return null; const hex = v.match(/#[0-9A-Fa-f]{6}/); if (hex) return hex[0]; const m = v.match(/var\((--[a-z-]+)\)/); return m ? (tokens[m[1]] || null) : null; };
+  const FAMILY = 'noct-tier-tab|noct-card-details|compare-btn|noct-save-btn|finalist-btn|noct-results-cta|noct-results-review-btn|noct-picks-pill|compare-tray-go|compare-tray-clear';
+  const consumers = [...firstStyle.matchAll(new RegExp('\\n    (\\.(?:' + FAMILY + ')(?:[^{\\n]*?):(?:hover|focus-visible)[^{\\n]*?)\\s*\\{([^}]*)\\}', 'g'))]
+    .map((m) => ({ sel: m[1].trim(), body: m[2] }));
+  check(`Results hover class: the family enumerates at least nine hover / focus-visible consumers (found ${consumers.length})`, consumers.length >= 9);
+  const decl = (body, prop) => (body.match(new RegExp('(?<![-a-z])' + prop + ':\\s*([^;]+);')) || [])[1];
+  // Exact partner mapping for the two fills applyStoreConfig() computes.
+  const configPair = (bgDecl, textDecl) => {
+    const fill = ((bgDecl || '').match(/var\((--store-primary(?:-light)?)\)/) || [])[1] || null;
+    const fg = ((textDecl || '').match(/var\((--on-store-primary(?:-light)?)\)/) || [])[1] || null;
+    const partner = fill ? '--on-' + fill.slice(2) : null;
+    return { fill, fg, partner, ok: !!fill && !!fg && fg === partner };
+  };
+  const SURFACES = [['card #FFFDF8', '#FFFDF8'], ['paper #F3EEE5', '#F3EEE5']];
+  let measuredText = 0, measuredBoundary = 0, computedByConfig = 0;
+  for (const c of consumers) {
+    const override = (nhtml.match(new RegExp('\n    #resultsScreen ' + c.sel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?:,\\n    #resultsScreen [^{\\n]*)?\\s*\\{([^}]*)\\}')) || [null, ''])[1]
+      || (nhtml.match(new RegExp('\n    #resultsScreen [^{\n]*,\\n    #resultsScreen ' + c.sel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*\\{([^}]*)\\}')) || [null, ''])[1];
+    const text = decl(override, 'color') || decl(c.body, 'color');
+    const bg = decl(override, 'background') || decl(c.body, 'background');
+    const boundary = decl(override, 'border-color') || decl(c.body, 'border-color') || ((decl(override, 'border') || decl(c.body, 'border') || '').match(/var\([^)]+\)|#[0-9A-Fa-f]{6}/) || [])[0];
+    if (text) {
+      const fg = resolve(text);
+      const fill = bg ? resolve(bg) : null;
+      if (!fg || (bg && !fill)) {
+        // A fill applyStoreConfig() computes at runtime is only contrast-safe when its
+        // foreground is EXACTLY the partner the same function computes for that fill:
+        // --store-primary pairs with --on-store-primary, --store-primary-light with
+        // --on-store-primary-light. Either/either is not enough - a retailer whose
+        // primary is dark and whose light tint is pale would render the cross-wired
+        // pair (white partner over the pale tint) as white on white.
+        computedByConfig++;
+        const pairing = configPair(bg, text);
+        check(`Results hover class: ${c.sel} paints the config-computed fill ${pairing.fill || '?'} under exactly its computed partner ${pairing.partner || '?'} (got ${pairing.fg || 'none'})`, pairing.ok);
+      }
+      else if (fill) { measuredText++; const rr = ratio(fg, fill); check(`Results hover class: ${c.sel} text ${fg} on its own fill ${fill} >= 4.5:1 (got ${rr.toFixed(2)}:1)`, rr >= 4.5); }
+      else { for (const [name, hex] of SURFACES) { measuredText++; const rr = ratio(fg, hex); check(`Results hover class: ${c.sel} text ${fg} on the ${name} >= 4.5:1 (got ${rr.toFixed(2)}:1)`, rr >= 4.5); } }
+    }
+    if (boundary && !bg) {
+      const bd = resolve(boundary);
+      if (!bd) { computedByConfig++; }
+      else { for (const [name, hex] of SURFACES) { measuredBoundary++; const rr = ratio(bd, hex); check(`Results hover class: ${c.sel} boundary ${bd} on the ${name} >= 3:1 (got ${rr.toFixed(2)}:1)`, rr >= 3); } }
+    }
+  }
+  check(`Results hover class: the enumeration measured text and boundary pairs, not only presence (text ${measuredText}, boundary ${measuredBoundary}, config-computed ${computedByConfig})`, measuredText >= 6 && measuredBoundary >= 4);
+  // The class's Results overrides must sit BEFORE the selected / saved / chosen rules
+  // (equal specificity, order decides) so a hovered stateful control keeps white on sage.
+  const hoverIdx = nhtml.indexOf('\n    #resultsScreen .compare-btn:hover,');
+  check("Results hover class: the Compare / Save hover override precedes the selected / saved rules", hoverIdx > 0 && hoverIdx < nhtml.indexOf('#resultsScreen .compare-btn.selected {') && hoverIdx < nhtml.indexOf('#resultsScreen .noct-save-btn.saved {'));
+  check("Results hover class: the details hover and focus-visible share the same ink in one Results rule",
+    /\n    #resultsScreen \.noct-card-details:hover,\n    #resultsScreen \.noct-card-details:focus-visible \{\s*color: #7D5B34;\s*\}/.test(html.replace(/\r\n/g, '\n')));
+  check("Results hover class: the base hover rules are untouched (consumers, never the config)",
+    /\.compare-btn:hover \{\s*border-color: var\(--color-accent\);\s*color: var\(--color-accent\);\s*\}/.test(nhtml)
+    && /\.noct-save-btn:hover \{\s*border-color: var\(--color-accent\);\s*color: var\(--color-accent\);\s*\}/.test(nhtml)
+    && /\.noct-card-details:hover \{\s*color: var\(--color-accent\);\s*\}/.test(nhtml));
+  // Forced colors: native colours, geometry-distinct states. The rail/card X11
+  // block and the finalist cue are pinned above; a hover override may never
+  // introduce forced-color-adjust or a forced-colors colour of its own.
+  check("Results hover class: no override reaches into forced colors (no forced-color-adjust, no Results hover rule inside a forced-colors block)",
+    !/forced-color-adjust\s*:\s*none/.test(nhtml) && !/@media \(forced-colors: active\) \{[^}]*#resultsScreen [^{}]*:hover/.test(nhtml));
+  // Negative controls: the two retired values both fail the same enumeration.
+  check("Results hover class negative control: the frozen accent resolves and fails the text floor on the card", resolve('var(--gold)') === cfg.colors.accent && ratio(resolve('var(--gold)'), '#FFFDF8') < 4.5);
+  check("Results hover class negative control: the brass accent resolves and fails the text floor on the card", resolve('var(--color-accent)') === '#9A7445' && ratio('#9A7445', '#FFFDF8') < 4.5);
+  check("Results hover class negative control: a theme token painted over a config-computed fill is rejected (not waved through as config-safe)",
+    !configPair('var(--store-primary-light)', 'var(--color-bg)').ok);
+  check("Results hover class: the shipped pairings are accepted only in their exact form (primary/on-primary, light/on-light)",
+    configPair('var(--store-primary)', 'var(--on-store-primary)').ok && configPair('var(--store-primary-light)', 'var(--on-store-primary-light)').ok);
+  check("Results hover class negative control: --store-primary-light under --on-store-primary (cross-wired) is rejected",
+    !configPair('var(--store-primary-light)', 'var(--on-store-primary)').ok);
+  check("Results hover class negative control: --store-primary under --on-store-primary-light (cross-wired) is rejected",
+    !configPair('var(--store-primary)', 'var(--on-store-primary-light)').ok);
+  // Why the exact mapping matters, on computed colours where the two partners differ: a
+  // retailer with a dark primary and a pale light tint. pick() is the app's own
+  // pickAccessibleForeground(), extracted above. This deployment's pair (#FABD0F / #FFD24D)
+  // happens to pick black for both, which is exactly why the either/either rule looked safe.
+  {
+    const hostile = { storePrimary: '#1B1B1B', storePrimaryLight: '#F4F4F4' };
+    const onPrimary = pick(hostile.storePrimary), onLight = pick(hostile.storePrimaryLight);
+    check(`Results hover class negative control: the hostile pair computes DIFFERENT partners (${onPrimary} for ${hostile.storePrimary}, ${onLight} for ${hostile.storePrimaryLight})`,
+      !!onPrimary && !!onLight && onPrimary.toUpperCase() !== onLight.toUpperCase());
+    check(`Results hover class negative control: cross-wired light fill under the primary's partner is unreadable (${onPrimary} on ${hostile.storePrimaryLight} = ${ratio(onPrimary, hostile.storePrimaryLight).toFixed(2)}:1)`,
+      ratio(onPrimary, hostile.storePrimaryLight) < 4.5);
+    check(`Results hover class negative control: cross-wired primary fill under the light's partner is unreadable (${onLight} on ${hostile.storePrimary} = ${ratio(onLight, hostile.storePrimary).toFixed(2)}:1)`,
+      ratio(onLight, hostile.storePrimary) < 4.5);
+    check("Results hover class: the exact partners clear 4.5:1 on that same hostile pair (the mapping the enumeration now demands)",
+      ratio(onPrimary, hostile.storePrimary) >= 4.5 && ratio(onLight, hostile.storePrimaryLight) >= 4.5);
+  }
+  check("Results hover class negative control: a Compare hover left on the base brass would be enumerated and fail",
+    (() => { const fg = resolve(decl('      border-color: var(--color-accent);\n      color: var(--color-accent);\n', 'color')); return !!fg && ratio(fg, '#FFFDF8') < 4.5; })());
 }
 
 console.log(`\nContrast check: ${passed} passed, ${failed} failed`);

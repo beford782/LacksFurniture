@@ -784,7 +784,7 @@ if (gate("renderSleepPlan", RENDER_SRCS.every(Boolean) && !!FALLBACK_SRC && !!RE
     // Negative control: strip the Plan's selector from the layout rule and the
     // derivation must turn red for the Plan alone.
     const stripped = rules.map((r) => ({ sel: r.sel.filter((x) => x !== "#sleepPlanScreen.active"), body: r.body }));
-    check("negative control — without its selector in the column rule the Plan (9 children) is flagged and hf2 is not",
+    check("negative control — without its selector in the column rule the Plan (10 children, the E2-A attribution included) is flagged and hf2 is not",
       !hasColumnRule("sleepPlanScreen", [], stripped) && hasColumnRule("hf2Screen", [], stripped) && directChildren("sleepPlanScreen") > 1);
   }
 
@@ -1168,6 +1168,123 @@ if (gate("renderSleepPlan", RENDER_SRCS.every(Boolean) && !!FALLBACK_SRC && !!RE
   check("the Plan's generated containers are in the content/text wipe inventories",
     ["sleepPlanFinalist", "sleepPlanPriorities", "sleepPlanCompared", "sleepPlanSystem", "sleepPlanFinancingInterest"].every((id) => new RegExp(`'${id}'`).test((norm.match(/var SESSION_CONTENT_IDS = \[[\s\S]*?\];/) || [""])[0]))
     && /'sleepPlanFinancingStatus', 'sleepPlanPrioritiesRecoveryText'/.test(norm));
+}
+
+// E2-A chrome normalisation (cohesion experiment E2 alternative (a), ruled
+// 2026-08-30; carried by the A2 candidate 2026-09-01; built candidate-only
+// under the 2026-09-06 direction). The last two dark page headers (Plan,
+// Summary) join the hide list every other screen already uses; both screens
+// join the full-viewport group; the Plan reserves the fixed utility card's
+// clearance in its OWN rule (the shared column/padding rule above stays as
+// pinned, and the Summary already reserves it on its nav); the Plan carries
+// the same config-derived attribution line the Summary has, through its OWN
+// id and renderer (the Summary pair stays byte-pinned above); and the
+// persistent utility card is pinned to the light pairing on the two
+// dark-themed screens so it never flips polarity. No identity strip, pill or
+// replacement bar (3.6 stays open), no new string, no new control.
+{
+  section("E2-A — chrome normalisation: headers leave, the utility card never flips");
+  const hide = (norm.match(/body:has\(#welcomeScreen\.active\) \.accent-bar,[\s\S]*?\{\s*display: none;\s*\}/) || [""])[0];
+  check("the header hide list still exists and names the seven prior screens",
+    ["welcomeScreen", "questionScreen", "reviewScreen", "profileScreen", "resultsScreen", "emailScreen", "accessoriesScreen"]
+      .every((id) => hide.includes(`body:has(#${id}.active) .header`) && hide.includes(`body:has(#${id}.active) .accent-bar`)));
+  check("the Plan and the Summary join it (header AND accent bar, both screens)",
+    ["sleepPlanScreen", "hf2Screen"].every((id) => hide.includes(`body:has(#${id}.active) .header`) && hide.includes(`body:has(#${id}.active) .accent-bar`)));
+  const dvh = (norm.match(/body:has\(#welcomeScreen\.active\) #welcomeScreen\.main,[\s\S]*?\{\s*min-height: 100vh;\s*min-height: 100dvh;\s*\}/) || [""])[0];
+  check("both screens join the full-viewport (100dvh) group",
+    dvh.includes("body:has(#sleepPlanScreen.active) #sleepPlanScreen") && dvh.includes("body:has(#hf2Screen.active) #hf2Screen"));
+  const planPad = norm.match(/\n    #sleepPlanScreen\.active \{\s*padding-top: calc\(var\(--session-utility-clearance\) \+ env\(safe-area-inset-top, 0px\)\);\s*\}/);
+  check("the Plan reserves the utility-card clearance in its own rule, placed after the shared column/padding rule",
+    !!planPad && norm.indexOf(planPad[0]) > norm.indexOf("#hf2Screen.active,\n    #sleepPlanScreen.active {\n      flex-direction: column;\n      padding: 1.25rem;"));
+  check("the Summary keeps its own clearance on the nav (the candidate's C3 pass), so neither screen double-reserves",
+    /#hf2Screen \.hf2-review-nav--summary \{\s*padding-top: calc\(var\(--session-utility-clearance\)/.test(norm)
+    && !/#hf2Screen\.active \{[^}]*session-utility-clearance/.test(norm));
+  check("the Plan's attribution element exists, hidden by default, before the eyebrow, with the Summary's class",
+    /<div class="hf2-review-attribution" id="sleepPlanAttribution" hidden><\/div>\s*\n\s*<div class="hf2-review-eyebrow" id="sleepPlanEyebrow">/.test(norm));
+  const planSrc = extractFunction("function renderSleepPlan()") || "";
+  check("renderSleepPlan() fills it from config only (storeName + voice.retailerSubline) and hides it when blank — no literal fallback",
+    /var planAttribution = document\.getElementById\('sleepPlanAttribution'\);/.test(planSrc)
+    && /var planAttrSub = \(localizedConfigBlock\('voice'\) \|\| \{\}\)\.retailerSubline \|\| '';/.test(planSrc)
+    && /var planAttrText = storeName\(\) \? \(planAttrSub \? storeName\(\) \+ ' · ' \+ planAttrSub : storeName\(\)\) : '';/.test(planSrc)
+    && /planAttribution\.hidden = !planAttrText;/.test(planSrc)
+    && !/planAttrText = [^;\n]*\|\| '[^']+'/.test(planSrc));
+  check("the Summary pair is untouched (its own variable names, byte-pinned above, and exactly one hf2Attribution getter)",
+    (norm.match(/getElementById\('hf2Attribution'\)/g) || []).length === 1
+    && (norm.match(/getElementById\('sleepPlanAttribution'\)/g) || []).length === 1);
+  check("neither attribution is customer-derived, so neither enters the wipe inventory",
+    !/'hf2Attribution'/.test((norm.match(/var SESSION_CONTENT_IDS = \[[\s\S]*?\];/) || [""])[0])
+    && !/'sleepPlanAttribution'/.test((norm.match(/var SESSION_CONTENT_IDS = \[[\s\S]*?\];/) || [""])[0]));
+  const light = norm.match(/body:has\(#questionScreen\.active\) \.session-utility,\s*body:has\(#reviewScreen\.active\) \.session-utility \{([^}]*)\}/);
+  check("the utility card is pinned to the light pairing on the quiz and Review (the two dark-themed screens)",
+    !!light && /--color-surface: #FFFDF8;/.test(light[1]) && /--color-text: #2F271E;/.test(light[1])
+    && /--color-bg: #F3EEE5;/.test(light[1]) && /--color-border: #D1C5B6;/.test(light[1]));
+  check("...and the scope supplies the alt-surface, muted and subtle tokens the control boundaries draw from",
+    !!light && /--color-surface-alt: #EEE7DC;/.test(light[1]) && /--color-text-muted: #665D54;/.test(light[1])
+    && /--color-text-subtle: #7A6E61;/.test(light[1]));
+  check("no per-screen border override remains (the base rules own every boundary, so the pressed pill keeps its --color-text border everywhere)",
+    !/body:has\(#(?:questionScreen|reviewScreen)\.active\) \.session-utility__(?:btn|restart)\b/.test(norm));
+  // Non-text boundary contrast (WCAG 1.4.11, 3:1): every control whose border
+  // identifies it on the light card, resolved through the tokens the scoped
+  // rule declares (the same values the warm screens resolve on body).
+  {
+    const hexRgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+    const lum = (rgb) => { const f = (c) => { c /= 255; return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); }; const [r, g, b] = rgb.map(f); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+    const ratio = (a, b) => { const [hi, lo] = [lum(hexRgb(a)), lum(hexRgb(b))].sort((x, y) => y - x); return (hi + 0.05) / (lo + 0.05); };
+    const resolve = (block, value) => { const m = value && value.match(/^var\((--[a-z-]+)\)$/); if (!m) return null; const t = block.match(new RegExp(m[1] + ": (#[0-9A-Fa-f]{6});")); return t ? t[1] : null; };
+    const boundaryCheck = (scope) => {
+      const btn = (norm.match(/\n    \.session-utility__btn \{([^}]*)\}/) || [null, ''])[1];
+      const restart = (norm.match(/\n    \.session-utility__restart \{([^}]*)\}/) || [null, ''])[1];
+      const pressed = (norm.match(/\n    \.session-utility__btn\[aria-pressed="true"\] \{([^}]*)\}/) || [null, ''])[1];
+      const surface = resolve(scope, 'var(--color-surface)');
+      const btnBorder = resolve(scope, (btn.match(/border: 1px solid (var\(--[a-z-]+\));/) || [])[1]);
+      const restartBorder = resolve(scope, (restart.match(/border-color: (var\(--[a-z-]+\));/) || [])[1]);
+      const restartFill = resolve(scope, (restart.match(/background: (var\(--[a-z-]+\));/) || [])[1]);
+      const pressedBorder = resolve(scope, (pressed.match(/border-color: (var\(--[a-z-]+\));/) || [])[1]);
+      const all = [surface, btnBorder, restartBorder, restartFill, pressedBorder].every(Boolean);
+      return { all, surface,
+        btn: all ? ratio(btnBorder, surface) : 0,
+        restart: all ? ratio(restartBorder, surface) : 0,
+        restartFill: all ? ratio(restartBorder, restartFill) : 0,
+        pressed: all ? ratio(pressedBorder, surface) : 0 };
+    };
+    const r = boundaryCheck(light ? light[1] : '');
+    check("light card: the language pill boundary is a resolved token (no literal, no alpha) and clears 3:1 on the card surface",
+      r.all && r.btn >= 3, r.all ? r.btn.toFixed(2) + ":1" : "unresolved token");
+    check("light card: the Restart boundary clears 3:1 on the card surface AND against its own filled well",
+      r.all && r.restart >= 3 && r.restartFill >= 3, r.all ? `${r.restart.toFixed(2)}:1 / ${r.restartFill.toFixed(2)}:1` : "unresolved token");
+    check("light card: the pressed pill's border (--color-text) clears 3:1 on the card surface",
+      r.all && r.pressed >= 3, r.all ? r.pressed.toFixed(2) + ":1" : "unresolved token");
+    check("negative control: a subtle token at the hairline border colour (#D1C5B6) drops the pill boundary below 3:1 and is caught",
+      light ? boundaryCheck(light[1].replace("--color-text-subtle: #7A6E61;", "--color-text-subtle: #D1C5B6;")).btn < 3 : false);
+    check("negative control: a border literal (alpha ink) back in the base rule is unresolvable and is caught",
+      !/border: 1px solid (var\(--[a-z-]+\));/.test(
+        (norm.replace("border: 1px solid var(--color-text-subtle);", "border: 1px solid rgba(47, 39, 30, 0.28);")
+          .match(/\n    \.session-utility__btn \{([^}]*)\}/) || [null, ''])[1]));
+  }
+  check("the light pairing sits after the card's base rules and its forced-colors block (cascade and the anchored block order)",
+    !!light && norm.indexOf(light[0]) > norm.indexOf(".session-utility__btn[aria-pressed=\"true\"] { border-width: 3px; }"));
+  check("nothing hides the card, adds an identity strip or a replacement bar (3.6 stays open)",
+    !/\.session-utility \{[^}]*display: none/.test(norm) && !/identity-strip|identity-bar|hf2-identity/.test(norm));
+  // The light pairing's own contrast, measured from the literals the scoped
+  // rule declares (the session suite's arithmetic reads the :root dark tokens,
+  // which the card no longer shows anywhere): resting ink on the card surface,
+  // and the pressed inversion (--color-bg ink on a --color-text fill).
+  {
+    const hexRgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+    const lum = (rgb) => { const f = (c) => { c /= 255; return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); }; const [r, g, b] = rgb.map(f); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+    const ratio = (a, b) => { const [hi, lo] = [lum(hexRgb(a)), lum(hexRgb(b))].sort((x, y) => y - x); return (hi + 0.05) / (lo + 0.05); };
+    const tok = (name) => (light ? (light[1].match(new RegExp(name + ": (#[0-9A-Fa-f]{6});")) || [])[1] : null);
+    const surface = tok("--color-surface"), text = tok("--color-text"), bg = tok("--color-bg");
+    check("light pairing: resting ink clears 4.5:1 on the card surface", !!surface && !!text && ratio(text, surface) >= 4.5,
+      surface && text ? ratio(text, surface).toFixed(2) + ":1" : "tokens missing");
+    check("light pairing: the pressed inversion (--color-bg on --color-text) clears 4.5:1", !!bg && !!text && ratio(bg, text) >= 4.5,
+      bg && text ? ratio(bg, text).toFixed(2) + ":1" : "tokens missing");
+  }
+  // negative controls
+  check("negative control: a hide list without the Plan is caught",
+    !["sleepPlanScreen", "hf2Screen"].every((id) => hide.replace("body:has(#sleepPlanScreen.active) .header", "").includes(`body:has(#${id}.active) .header`)));
+  check("negative control: a literal fallback in the Plan attribution is caught",
+    /planAttrText = [^;\n]*\|\| '[^']+'/.test(planSrc.replace("planAttrText = storeName()", "planAttrText = storeName() || 'Lacks' ")));
 }
 
 console.log(`\nSleep Plan check: ${passed} passed, ${failed} failed`);

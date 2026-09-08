@@ -155,6 +155,12 @@ const SRC = {
   guidance: extractFunction('function sleepSystemGuidance(stepId, primary)'),
   rail: extractFunction('function renderSleepSystemRail()'),
   secondary: extractFunction('function sleepSystemSecondaryActions(stepId)'),
+  // Candidate 2026-09-06: the three-state helpers the card and the setup
+  // choices call (see section 17).
+  decisionAttrs: extractFunction('function sleepSystemDecisionAttrs(decision, status)'),
+  decisionBanner: extractFunction('function sleepSystemDecisionBanner(stepId, decision)'),
+  choiceAttrs: extractFunction('function sleepSystemChoiceAttrs(active)'),
+  handler: extractFunction('function handleSleepSystemAction(control)'),
   catalogLowProfile: extractFunction('function catalogHasLowProfileSupport()'),
   supportGuide: extractFunction('function renderSupportGuide()'),
   pillowFit: extractFunction('function renderPillowFit(primary)'),
@@ -216,7 +222,8 @@ function makeEnv({
   let src = [
     SRC.STEPS, SRC.escapeHtml, SRC.text, SRC.category, SRC.stepFor, SRC.qualify, SRC.scorer,
     SRC.readGroups, SRC.decision, SRC.decisionLabel, SRC.statusKind, SRC.posLabel, SRC.getDemo, SRC.renderDemo,
-    SRC.catalogLowProfile, SRC.guidance, SRC.rail, SRC.secondary, SRC.supportGuide, SRC.pillowFit, SRC.suggestedGoal,
+    SRC.catalogLowProfile, SRC.guidance, SRC.rail, SRC.secondary, SRC.decisionAttrs, SRC.decisionBanner, SRC.choiceAttrs,
+    SRC.supportGuide, SRC.pillowFit, SRC.suggestedGoal,
     SRC.goalLabel, SRC.goalReason, SRC.supportsGoal, SRC.protectionGuide, SRC.main, SRC.plan,
     SRC.footer
   ].join('\n');
@@ -1970,6 +1977,227 @@ section('X2/X3/X10 — three honest states, factual wording, the keyboard\'s pla
       env.get('sleepSystemPlanCount').textContent === '0 added · 1 addressed'
       && /is-addressed/.test(env.get('sleepSystemRail').innerHTML)
       && !/is-deferred/.test(env.get('sleepSystemRail').innerHTML));
+  }
+}
+
+// ------------- 17. Candidate 2026-09-06: three states on the card, reversible
+// Item 1.4 scope: "suggested / selected / declined - unmistakable ... every
+// choice optional and reversible; declining is one obvious touch with no
+// confirm-to-decline friction". Before this candidate the card marked only
+// the selected state; keep-current / demo / decide-later lived on the rail
+// alone, and no recorded decision could be undone except by making another.
+// No new copy: every string asserted below is one the rail already renders.
+section('candidate 2026-09-06 — the card states its decision, the control is pressed, one touch reopens');
+const pressedOf = (main) => (main.match(/aria-pressed="true" class="[^"]*" data-sleep-action="decision"/g) || []).length;
+const bannerOf = (main) => grab(main, 'sleep-system__decision is-addressed') || grab(main, 'sleep-system__decision is-deferred');
+{
+  const r = renderStep('adjustability', { answers: ANSWERS, state: { decisions: { adjustability: { status: 'later' } } } });
+  const body = featuredBody(r.main);
+  ok('deferred: the card carries the decision line "Decide later" (the rail\'s own label) inside its body',
+    body !== null && bannerOf(body) === 'Decide later', JSON.stringify(bannerOf(body)));
+  ok('deferred: the card is marked is-deferred (dashed, like the rail ring) - not is-selected',
+    /class="sleep-system__featured is-deferred"/.test(r.main) && !/featured is-selected/.test(r.main));
+  ok('deferred: exactly the "Decide later" control is pressed (aria-pressed="true") and the demo control is not',
+    pressedOf(r.main) === 1 &&
+    /aria-pressed="true" class="[^"]*" data-sleep-action="decision" data-status="later">Decide later<\/button>/.test(r.main) &&
+    /aria-pressed="false" class="[^"]*" data-sleep-action="decision" data-status="demo">Ask for a demo<\/button>/.test(r.main));
+  ok('deferred: the decision line precedes the eyebrow, the name still leads the benefit',
+    body !== null && body.indexOf('sleep-system__decision') < body.indexOf('sleep-system__card-eyebrow') &&
+    nodeAt(body, 'sleep-system__featured-name') < nodeAt(body, 'sleep-system__featured-reason'));
+  ok('deferred: the card keeps its single price surface (a deferral is not a removal of the product)',
+    (r.main.match(/class="sleep-system__price"/g) || []).length === 1);
+}
+{
+  const r = renderStep('adjustability', { answers: ANSWERS, state: { demoPosition: 'reading', decisions: { adjustability: { status: 'demo' } } } });
+  ok('addressed (demo): the card states "Demo: Reading" and is marked is-addressed',
+    bannerOf(featuredBody(r.main) || '') === 'Demo: Reading' && /class="sleep-system__featured is-addressed"/.test(r.main));
+  ok('addressed (demo): the primary "Ask for a demo" control is the pressed one',
+    /aria-pressed="true" class="[^"]*" data-sleep-action="decision" data-status="demo">Ask for a demo<\/button>/.test(r.main) && pressedOf(r.main) === 1);
+}
+{
+  const r = renderStep('pillow', { answers: ANSWERS, state: { decisions: { pillow: { status: 'already' } } } });
+  ok('addressed (keep current pillow): the card states "Using current setup" and presses "Keep current pillow"',
+    bannerOf(featuredBody(r.main) || '') === 'Using current setup' &&
+    /aria-pressed="true" class="[^"]*" data-sleep-action="decision" data-status="already">Keep current pillow<\/button>/.test(r.main) && pressedOf(r.main) === 1);
+  ok('addressed: the pillow add gate is untouched by the decision line (fit still recorded first)',
+    /sleep-system__pillow-gate/.test(r.main));
+}
+{
+  const es = renderStep('protection', { answers: ANSWERS, lang: 'es', state: { decisions: { protection: { status: 'later' } } } });
+  ok('ES deferred: the decision line reads "Decidir después" and presses the ES control',
+    bannerOf(featuredBody(es.main) || '') === 'Decidir después' &&
+    /aria-pressed="true" class="[^"]*" data-sleep-action="decision" data-status="later">Decidir después<\/button>/.test(es.main));
+  const en = renderStep('protection', { answers: ANSWERS, state: { decisions: { protection: { status: 'already' } } } });
+  ok('addressed (already protected): "Using current setup" on the card, "Already protected" pressed',
+    bannerOf(featuredBody(en.main) || '') === 'Using current setup' &&
+    /aria-pressed="true" class="[^"]*" data-sleep-action="decision" data-status="already">Already protected<\/button>/.test(en.main));
+}
+{
+  const r = renderStep('adjustability', { answers: ANSWERS });
+  ok('open: no decision line, no pressed decision control, the card class is exactly the shipped one',
+    !/sleep-system__decision/.test(r.main) && pressedOf(r.main) === 0 && /class="sleep-system__featured"/.test(r.main));
+  ok('open: every decision control still carries an explicit aria-pressed="false" (a toggle, not a one-way action)',
+    (r.main.match(/aria-pressed="false" class="[^"]*" data-sleep-action="decision"/g) || []).length === 2);
+  const sel = renderStep('pillow', { answers: ANSWERS, state: { pillowReaction: 'aligned' }, cart: { 'pillow-flow': { id: 'pillow-flow' } } });
+  ok('selected: the cart wins - no decision line, no pressed decision, is-selected alone',
+    !/sleep-system__decision/.test(sel.main) && pressedOf(sel.main) === 0 && /class="sleep-system__featured is-selected"/.test(sel.main));
+  ok('selected: the add/remove primary never carries aria-pressed (its label flips, so it is not a toggle)',
+    !/aria-pressed="[^"]*" class="[^"]*" data-sleep-action="(select-item|remove-item)"/.test(sel.main));
+}
+{
+  // The no-trigger base block has no card; it states the decision the same way.
+  const NO_TRIGGER = { sleep_position: 'side', temperature: 'cool', sleep_issues: [], health_conditions: [], budget: 'mid' };
+  const r = renderStep('adjustability', { answers: NO_TRIGGER, state: { decisions: { adjustability: { status: 'later' } } } });
+  ok('no-trigger block: the deferred decision line renders ahead of the base compare block and "Decide later" is pressed',
+    /sleep-system__bases-compare/.test(r.main) && bannerOf(r.main) === 'Decide later' &&
+    r.main.indexOf('sleep-system__decision') < r.main.indexOf('sleep-system__bases-compare') &&
+    /aria-pressed="true" class="[^"]*" data-sleep-action="decision" data-status="later">Decide later<\/button>/.test(r.main));
+}
+// The setup choices expose their active member as pressed (aria-pressed, the
+// finalist / Compare / quiz-option precedent), never by class alone.
+{
+  const pressedChoices = (html, cls) => (html.match(new RegExp(`class="${cls}[^"]*" aria-pressed="true"`, 'g')) || []).length;
+  const allChoices = (html, cls) => (html.match(new RegExp(`class="${cls}[^"]*" aria-pressed="(true|false)"`, 'g')) || []).length;
+  const a = renderStep('adjustability', { answers: ANSWERS });
+  ok('positions: the suggested position is the one pressed member; every position declares aria-pressed',
+    pressedChoices(a.main, 'sleep-system__position') === 1 && allChoices(a.main, 'sleep-system__position') === 4 &&
+    /is-active" aria-pressed="true" data-sleep-action="demo-position" data-position="zero-gravity"/.test(a.main));
+  const s = renderStep('support', { answers: ANSWERS, state: { supportChoice: 'standard' } });
+  ok('support choices: the active choice is pressed, the others declare false',
+    pressedChoices(s.main, 'sleep-system__support-choice') === 1 && allChoices(s.main, 'sleep-system__support-choice') === 3);
+  const s0 = renderStep('support', { answers: ANSWERS });
+  ok('support choices: with no choice made, none is pressed', pressedChoices(s0.main, 'sleep-system__support-choice') === 0);
+  const p = renderStep('pillow', { answers: ANSWERS, state: { pillowReaction: 'aligned' } });
+  ok('pillow fit: "Feels aligned" is pressed once recorded, the other two declare false',
+    pressedChoices(p.main, 'sleep-system__pillow-reaction') === 1 && allChoices(p.main, 'sleep-system__pillow-reaction') === 3 &&
+    /aria-pressed="true" data-sleep-action="pillow-reaction" data-reaction="aligned"/.test(p.main));
+  const g = renderStep('protection', { answers: ANSWERS });
+  ok('protection goals: the suggested goal (cooling for a hot sleeper) is pressed by default, all four declare aria-pressed',
+    pressedChoices(g.main, 'sleep-system__protection-goal') === 1 && allChoices(g.main, 'sleep-system__protection-goal') === 4 &&
+    /aria-pressed="true" data-sleep-action="protection-goal" data-protection-goal="cooling"/.test(g.main));
+}
+// One touch reopens: the delegated handler, executed against the real
+// extracted source with the renderers stubbed (the state is the subject).
+{
+  const runHandler = (actions, seed = {}) => {
+    const win = {
+      _accCart: seed.cart || {},
+      _sleepSystemState: Object.assign({
+        activeStep: 'adjustability', decisions: {}, demoPosition: '', supportChoice: '',
+        pillowCandidateId: '', pillowReaction: '', pillowFeedback: '', protectionGoal: ''
+      }, seed.state || {}),
+      showSleepPlan() { win._planShown = true; },
+      backToResultsFromReview() {}
+    };
+    const analytics = { logged: [], log(e, d) { this.logged.push({ e, d }); } };
+    const renders = { count: 0 };
+    const src = [SRC.STEPS, SRC.text, SRC.category, SRC.stepFor, SRC.decision, SRC.handler].join('\n');
+    const handle = new Function(
+      'window', 'analytics', 'ACCESSORIES', 'answers', 'currentLang', 'document',
+      'setSleepSystemItem', 'moveSleepSystemStep', 'renderSleepSystem', 'syncAccessoryAnalytics',
+      'getSuggestedProtectionGoal', 'readSleepSystemGroups', 'escapeHtml',
+      src + '\nreturn handleSleepSystemAction;'
+    )(win, analytics, ACCESSORIES_JSON, ANSWERS, 'en', { getElementById() { return null; } },
+      () => {}, () => {}, () => { renders.count++; }, () => {}, () => 'everyday', () => ({ pillow: [] }), (s) => s);
+    for (const attrs of actions) handle({ getAttribute(k) { return Object.prototype.hasOwnProperty.call(attrs, k) ? attrs[k] : null; } });
+    return { win, analytics, renders };
+  };
+  const later = { 'data-sleep-action': 'decision', 'data-status': 'later' };
+  const demo = { 'data-sleep-action': 'decision', 'data-status': 'demo' };
+  const one = runHandler([later]);
+  ok('handler: one press records "later"', one.win._sleepSystemState.decisions.adjustability.status === 'later');
+  const two = runHandler([later, later]);
+  ok('handler: pressing "Decide later" again REOPENS the step (status open) - one touch, no confirm',
+    two.win._sleepSystemState.decisions.adjustability.status === 'open' && two.renders.count === 2);
+  ok('handler: the reopen is recorded as a decision event with status "open" (no new event name, no new field)',
+    two.analytics.logged.every((l) => l.e === 'sleep_system_decision_recorded') &&
+    two.analytics.logged[1].d.status === 'open' && Object.keys(two.analytics.logged[1].d).sort().join(',') === 'status,step');
+  const swap = runHandler([later, demo]);
+  ok('handler: a different decision replaces rather than reopens', swap.win._sleepSystemState.decisions.adjustability.status === 'demo');
+  const demoTwice = runHandler([demo, demo], { state: { demoPosition: 'reading' } });
+  ok('handler: pressing "Ask for a demo" again at the same position cancels the request (open)',
+    demoTwice.win._sleepSystemState.decisions.adjustability.status === 'open');
+  const demoMoved = runHandler([demo, { 'data-sleep-action': 'demo-position', 'data-position': 'flat' }, demo], { state: { demoPosition: 'reading' } });
+  ok('handler: pressing "Ask for a demo" after moving the demo position UPDATES the recorded position instead of cancelling',
+    demoMoved.win._sleepSystemState.decisions.adjustability.status === 'demo' &&
+    demoMoved.win._sleepSystemState.decisions.adjustability.position === 'flat');
+  const pillowAlready = runHandler([{ 'data-sleep-action': 'decision', 'data-status': 'already' }, { 'data-sleep-action': 'decision', 'data-status': 'already' }],
+    { state: { activeStep: 'pillow' } });
+  ok('handler: "Keep current pillow" twice reopens the pillow step', pillowAlready.win._sleepSystemState.decisions.pillow.status === 'open');
+  const current = { 'data-sleep-action': 'support-choice', 'data-support-choice': 'current' };
+  const keep = runHandler([current], { state: { activeStep: 'support' } });
+  ok('handler: choosing "Keep current support" records the choice and the already status',
+    keep.win._sleepSystemState.supportChoice === 'current' && keep.win._sleepSystemState.decisions.support.status === 'already');
+  const keepTwice = runHandler([current, current], { state: { activeStep: 'support' } });
+  ok('handler: pressing the active setup choice again CLEARS it and reopens the support step (the product card returns)',
+    keepTwice.win._sleepSystemState.supportChoice === '' && keepTwice.win._sleepSystemState.decisions.support.status === 'open');
+  const selectedThenLater = runHandler([later], { cart: { 'base-bt3000': { id: 'base-bt3000' } } });
+  ok('handler: a decision on a step with an added product evicts the product and records the decision (unchanged behaviour)',
+    !selectedThenLater.win._accCart['base-bt3000'] && selectedThenLater.win._sleepSystemState.decisions.adjustability.status === 'later');
+}
+// The stylesheet: the decision line, the card kinds, the pressed cue, the
+// legible captions, the settle-in motion and its reduced-motion removal, and
+// the forced-colors geometry - each pinned at the declaration.
+{
+  const css = [...html.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)].map((m) => m[1]).join('\n').replace(/\/\*[\s\S]*?\*\//g, '');
+  const rule = (sel) => cssRule(css, sel);
+  const reason = fontOf(rule('.sleep-system__featured-reason'));
+  ok('spoken line: the benefit block is 16px semibold (the loudest line under the name), rule and ground unchanged',
+    reason !== null && reason.px === 16 && reason.weight === 600 &&
+    /border-left:\s*3px solid #9A7445/.test(rule('.sleep-system__featured-reason')) && /background:\s*#F6EFE4/.test(rule('.sleep-system__featured-reason')));
+  ok('decision line: declared, uppercase, neutral addressed palette (#EEE7DC / #4E483C / #8A7B69 - the rail\'s addressed kind)',
+    /text-transform:\s*uppercase/.test(rule('.sleep-system__decision')) && /background:\s*#EEE7DC/.test(rule('.sleep-system__decision')) &&
+    /color:\s*#4E483C/.test(rule('.sleep-system__decision')) && /border:\s*1px solid #8A7B69/.test(rule('.sleep-system__decision')));
+  ok('decision line: the deferred variant is dashed with no fill (a deferral is not a decision made)',
+    /border-style:\s*dashed/.test(rule('.sleep-system__decision.is-deferred')) && /background:\s*transparent/.test(rule('.sleep-system__decision.is-deferred')));
+  ok('card kinds: is-deferred dashes the card border but keeps the solid left rule; is-addressed takes the addressed left rule',
+    /border-style:\s*dashed/.test(rule('.sleep-system__featured.is-deferred')) && /border-left-style:\s*solid/.test(rule('.sleep-system__featured.is-deferred')) &&
+    /border-left-color:\s*#8A7B69/.test(rule('.sleep-system__featured.is-addressed')));
+  ok('pressed decision control: neutral ground and ink with an inset ring - never the sage of an addition',
+    /background:\s*#EEE7DC/.test(rule('.sleep-system__action[aria-pressed="true"]')) &&
+    /box-shadow:\s*inset 0 0 0 1px #8A7B69/.test(rule('.sleep-system__action[aria-pressed="true"]')) &&
+    !/#63765D/.test(rule('.sleep-system__action[aria-pressed="true"]')));
+  const capPx = (sel) => { const f = fontOf(rule(sel)); return f ? f.px : null; };
+  ok('captions: the position, support-choice and protection-goal captions are 11px in #6C6054 (were 9px #857768)',
+    [capPx('.sleep-system__position small'), capPx('.sleep-system__support-choice small'), capPx('.sleep-system__protection-goal small')].every((px) => px !== null && px >= 11) &&
+    ['.sleep-system__position small', '.sleep-system__support-choice small', '.sleep-system__protection-goal small'].every((s) => /color:\s*#6C6054/.test(rule(s))));
+  const badgePx = (sel) => { const m = rule(sel).match(/font-size:\s*(\d+)px/); return m ? Number(m[1]) : null; };
+  ok('badges: the "Suggested" badges are at least 10px (were 8px)',
+    badgePx('.sleep-system__position-badge') >= 10 && badgePx('.sleep-system__goal-badge') >= 10);
+  ok('motion: the card, the outcome card and the base block settle in with the existing step-in keyframe',
+    /\.sleep-system__featured,\s*\.sleep-system__support-outcome,\s*\.sleep-system__bases-compare \{\s*animation: sleepSystemStepIn 220ms ease-out;\s*\}/.test(css));
+  const reducedAt = css.search(/@media \(prefers-reduced-motion: reduce\) \{\s*\.sleep-system__main \{ animation: none; \}/);
+  const reduced = reducedAt === -1 ? '' : braceBlock(css.slice(reducedAt), '@media (prefers-reduced-motion: reduce) {');
+  ok('reduced motion: the same block that stills the panel stills the card settle-in',
+    /\.sleep-system__featured,\s*\.sleep-system__support-outcome,\s*\.sleep-system__bases-compare \{ animation: none; \}/.test(reduced));
+  const fcBlocks = [...css.matchAll(/@media \(forced-colors: active\) \{/g)].map((m) => braceBlock(css.slice(m.index), '@media (forced-colors: active) {'));
+  const fc = fcBlocks.find((b) => b.includes('.sleep-system__action[aria-pressed="true"]')) || '';
+  ok('forced colors: the pressed decision control gets 3px CanvasText with padding compensated (9/13 -> 7/11)',
+    /\.sleep-system__action\[aria-pressed="true"\] \{\s*border-width: 3px;\s*border-color: CanvasText;\s*padding: 7px 11px;\s*\}/.test(fc));
+  ok('forced colors: every setup-choice group carries the same geometry cue when pressed',
+    ['.sleep-system__position[aria-pressed="true"]', '.sleep-system__support-choice[aria-pressed="true"]', '.sleep-system__protection-goal[aria-pressed="true"]', '.sleep-system__pillow-reaction[aria-pressed="true"]']
+      .every((s) => fc.includes(s)) && (fc.match(/border-color: CanvasText;/g) || []).length >= 4);
+  ok('forced colors: the decision line keeps its dashed-vs-solid distinction and the deferred card its dashed border',
+    /\.sleep-system__decision \{ border: 1px solid CanvasText; \}/.test(fc) && /\.sleep-system__decision\.is-deferred \{ border-style: dashed; \}/.test(fc) &&
+    /\.sleep-system__featured\.is-deferred \{ border-style: dashed; border-left-style: solid; \}/.test(fc));
+  ok('forced colors: the anchored first block and the rail block are untouched (own block, after them)',
+    fcBlocks.length >= 3 && fcBlocks.indexOf(fc) > fcBlocks.findIndex((b) => b.includes('.sleep-system__step.is-active')));
+}
+// Guard-15 convention: the sweep entries that target this candidate must
+// match the tree exactly once, so a stale entry is observable here.
+{
+  const CANDIDATE_FINDS = [
+    "var reopening = currentDecision.status === requestedStatus &&",
+    "if (window._sleepSystemState.supportChoice === supportChoice) supportChoice = '';",
+    "return ' aria-pressed=\"' + (pressed ? 'true' : 'false') + '\"';",
+    "if (kind !== 'addressed' && kind !== 'deferred') return '';",
+    "return ' aria-pressed=\"' + (active ? 'true' : 'false') + '\"';",
+    ".sleep-system__action[aria-pressed=\"true\"] {\n        border-width: 3px;\n        border-color: CanvasText;\n        padding: 7px 11px;\n      }"
+  ];
+  const lf = html.replace(/\r\n/g, '\n');
+  for (const find of CANDIDATE_FINDS) {
+    const n = lf.split(find).length - 1;
+    ok(`candidate sweep find matches exactly once: ${JSON.stringify(find.slice(0, 56))}…`, n === 1, `count=${n}`);
   }
 }
 
