@@ -1196,11 +1196,15 @@ def run_quiz_landscape(browser, port, name, width, height, lang, shots_dir, forc
     check(f"{tag}: the utility card does not intersect the eyebrow, the progress count or the headline",
           not ms["barHitsEyebrow"] and not ms["barHitsPct"] and not ms["barHitsHeadline"])
     # Visible-ink clearance below the fixed utility card, measured from the progress count's text
-    # Range bounding box. 6px is the cross-platform minimum: the target showroom rendering (Segoe UI
-    # on the mounted iPad reference and this repo's Windows mirror) measures 8px, the card's own
-    # inset; Linux CI's sans-serif fallback measures 6px because glyph bounds vary by platform font
-    # metrics. The intersection checks above are the collision contract; this one is the margin.
-    check(f"{tag}: the progress count keeps at least the 6px cross-platform minimum visible-ink clearance below the card (8px on the Segoe UI target rendering; glyph bounds vary by platform font metrics)",
+    # Range bounding box, which varies with the OS font that -apple-system / system-ui resolves to:
+    #   Windows / Segoe UI mirror: 8px (the card's own inset);
+    #   Linux CI sans-serif fallback: 6px.
+    # 6px is therefore the AUTOMATED cross-platform minimum. The emulated 1194x748 viewport matches
+    # the mounted iPad Pro's dimensions but is Chromium with the host font, not a physical-iPad /
+    # Safari font measurement (Apple's system font there is not Segoe UI); that measurement belongs
+    # to the deferred final device pass. The intersection checks above are the collision contract;
+    # this one is the margin.
+    check(f"{tag}: the progress count keeps at least the 6px automated cross-platform minimum visible-ink clearance below the card (Windows/Segoe UI mirror 8px, Linux CI sans-serif fallback 6px; the emulated viewport is not a physical-iPad font measurement)",
           ms["clrPct"] is not None and ms["clrPct"] >= 6,
           f"barBottom={ms['barBottom']} textTop={ms['pctTextTop']} clearance={ms['clrPct']} font-family={ms['pctFont']} font-size={ms['pctFontSize']} line-height={ms['pctLineHeight']}")
     page.close()
