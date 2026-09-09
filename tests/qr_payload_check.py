@@ -920,6 +920,124 @@ def main():
         check("generation is deterministic (identical bytes across runs)", a == b)
         check("committed SVG matches a fresh generation of the configured target", a == svg)
 
+    print("Serializer independence (stdlib xml.etree vs lxml empty-element syntax):")
+    # qrcode 8.2 serialises through lxml when it is importable and through the
+    # stdlib otherwise. The two differ in ONE byte of this document: the stdlib
+    # closes the single empty <path> as `" />`, lxml as `"/>`. The bundled Codex
+    # runtime (lxml present) therefore failed the byte-identity assertion above
+    # while system Python passed it. build_svg() now canonicalises that one
+    # token to the committed spelling. These checks are stdlib-only and run in
+    # EVERY environment, so the sweep observes them under either serializer.
+    lxml_style = svg.replace('" />', '"/>')
+    check("fixture: the lxml-style variant differs from the committed bytes by exactly one byte",
+          lxml_style != svg and len(svg) - len(lxml_style) == 1 and svg.count('" />') == 1)
+    check("fixture: the lxml-style variant is the same QR (decodes to the shipped url)",
+          G.decode_svg(lxml_style)[0] == url)
+    check("the pre-fix defect: an lxml-style serialization fails byte identity with the committed asset",
+          lxml_style != svg)
+    canon = G.canonicalize_svg_serialization
+    check("canonicalisation maps the lxml-style variant onto the committed bytes", canon(lxml_style) == svg)
+    check("canonicalisation leaves the committed (stdlib-style) bytes unchanged", canon(svg) == svg)
+    check("canonicalisation is idempotent", canon(canon(lxml_style)) == svg)
+    check("canonicalisation inserts exactly one byte and only before the quote-adjacent close",
+          canon(lxml_style).replace('" />', '"/>') == lxml_style
+          and G.serializer_name() in ("lxml.etree", "xml.etree.ElementTree", None))
+    # EVERY OTHER byte difference must survive canonicalisation, i.e. still fail
+    # identity. This is what keeps the normalisation from hiding a real change.
+    real_d = svg.split('d="')[1].split('"')[0]
+    other_diffs = [
+        ("two spaces before the close", svg.replace('" />', '"  />', 1)),
+        ("a newline before the close", svg.replace('" />', '"\n/>', 1)),
+        ("a tab before the close", svg.replace('" />', '"\t/>', 1)),
+        ("a trailing newline", svg + "\n"),
+        ("a CRLF after the declaration", svg.replace("?>\n", "?>\r\n", 1)),
+        ("a double-quoted declaration",
+         svg.replace("<?xml version='1.0' encoding='UTF-8'?>", '<?xml version="1.0" encoding="UTF-8"?>', 1)),
+        ("reordered root attributes", svg.replace('width="33mm" height="33mm"', 'height="33mm" width="33mm"', 1)),
+        ("a second space between attributes", svg.replace(' id="qr-path"', '  id="qr-path"', 1)),
+        ("a removed module (path data)", svg.replace("M20,20H21V21H20z", "", 1)),
+        ("an added module (path data)", svg.replace('d="', 'd="M2,2H3V3H2z', 1)),
+        ("a changed fill", svg.replace('fill="#000000"', 'fill="#000001"', 1)),
+        ("a changed fill-opacity", svg.replace('fill-opacity="1"', 'fill-opacity="0.99"', 1)),
+        ("a changed namespace", svg.replace("http://www.w3.org/2000/svg", "http://www.w3.org/2000/svg2", 1)),
+        ("a changed width", svg.replace('width="33mm"', 'width="34mm"', 1)),
+        ("a changed viewBox", svg.replace('viewBox="0 0 33 33"', 'viewBox="0 0 34 34"', 1)),
+        ("a changed path id", svg.replace('id="qr-path"', 'id="qr-path2"', 1)),
+        ("an extra attribute", svg.replace('<path ', '<path data-x="1" ', 1)),
+        ("a second (empty) element", svg.replace("</svg>", '<rect width="1" height="1"/></svg>', 1)),
+        ("the whole path data replaced", svg.replace(real_d, "M2,2H3V3H2z", 1)),
+    ]
+    for label, variant in other_diffs:
+        if variant == svg:
+            check(f"{label} still fails byte identity after canonicalisation", False,
+                  "fixture no-op: the variant equals the committed bytes")
+            continue
+        c = canon(variant)
+        check(f"{label} still fails byte identity after canonicalisation", c != svg)
+        check(f"{label}: canonicalisation touched nothing but a quote-adjacent close",
+              c.replace('" />', '"/>') == variant.replace('" />', '"/>'))
+        # and the SAME difference in lxml spelling is not absorbed either
+        check(f"{label} in lxml spelling still fails byte identity after canonicalisation",
+              canon(variant.replace('" />', '"/>')) != svg)
+    if not HAVE_QRCODE:
+        skip("this interpreter's raw serializer output is one of the two known forms", NO_QR)
+        skip("build_svg equals the canonicalisation of this interpreter's raw serializer output", NO_QR)
+        skip("fixture: a simulated lxml-style serializer emits bytes that differ from the committed asset", NO_QR)
+        skip("build_svg over a simulated lxml-style serializer returns the committed bytes", NO_QR)
+        skip("build_svg over a simulated stdlib-style serializer returns the committed bytes", NO_QR)
+        skip("build_svg over a serializer that ALSO drops the declaration newline does not reach the committed bytes", NO_QR)
+        skip("the serializer simulation is fully restored", NO_QR)
+    else:
+        import qrcode.image.svg as QS
+        from qrcode.util import QRData as _QRData, MODE_8BIT_BYTE as _M8
+
+        def raw_svg():
+            """The serializer's UNcanonicalised output for the shipped url."""
+            q = qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_M, border=G.QR_BORDER)
+            q.add_data(_QRData(url.encode("utf-8"), mode=_M8))
+            q.make(fit=True)
+            buf = io.BytesIO()
+            q.make_image(image_factory=QS.SvgPathImage).save(buf)
+            return buf.getvalue().decode("utf-8")
+
+        this_raw = raw_svg()
+        check("this interpreter's raw serializer output is one of the two known forms",
+              this_raw in (svg, lxml_style), f"serializer {G.serializer_name()}: unknown form")
+        check("build_svg equals the canonicalisation of this interpreter's raw serializer output",
+              G.build_svg(url) == canon(this_raw))
+        # Simulate the OTHER serializer's spelling through the REAL build_svg, so
+        # both branches are exercised in every environment (and the sweep, which
+        # runs under one interpreter, observes a removed canonicalisation).
+        had_own = "_write" in QS.SvgPathImage.__dict__
+        orig_write = QS.SvgPathImage._write
+
+        def with_serializer(transform):
+            def _write(self, stream):
+                b = io.BytesIO()
+                orig_write(self, b)
+                stream.write(transform(b.getvalue()))
+            QS.SvgPathImage._write = _write
+            try:
+                return G.build_svg(url)
+            finally:
+                if had_own:
+                    QS.SvgPathImage._write = orig_write
+                else:
+                    del QS.SvgPathImage._write
+
+        to_lxml = lambda b: b.replace(b'" />', b'"/>')          # noqa: E731
+        to_stdlib = lambda b: b.replace(b'"/>', b'" />')        # noqa: E731
+        check("fixture: a simulated lxml-style serializer emits bytes that differ from the committed asset",
+              to_lxml(this_raw.encode("utf-8")).decode("utf-8") != svg)
+        check("build_svg over a simulated lxml-style serializer returns the committed bytes",
+              with_serializer(to_lxml) == svg)
+        check("build_svg over a simulated stdlib-style serializer returns the committed bytes",
+              with_serializer(to_stdlib) == svg)
+        check("build_svg over a serializer that ALSO drops the declaration newline does not reach the committed bytes",
+              with_serializer(lambda b: to_lxml(b).replace(b"?>\n", b"?>", 1)) != svg)
+        check("the serializer simulation is fully restored",
+              ("_write" in QS.SvgPathImage.__dict__) == had_own and G.build_svg(url) == svg)
+
     print("Runtime wiring:")
     html = io.open(os.path.join(REPO, "index.html"), encoding="utf-8").read()
     check("runtime still references images/qr-financing.svg", "qr-financing.svg" in html)
@@ -935,7 +1053,7 @@ def main():
           "a generating test omitted --output and ran against the real config")
 
     env = f"python {sys.version.split()[0]}"
-    env += f", qrcode {QRCODE_VERSION}" if HAVE_QRCODE else ", qrcode ABSENT"
+    env += f", qrcode {QRCODE_VERSION}, serializer {G.serializer_name()}" if HAVE_QRCODE else ", qrcode ABSENT"
     print(f"\nQR payload check: {passed} passed, {failed} failed, {skipped} skipped  [{env}]")
     return 1 if failed else 0
 
