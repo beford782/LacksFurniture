@@ -19,7 +19,8 @@
 //      defect class itself, not just its two known instances).
 //   2. Reachability: for every quiz key, how many catalog models can match it,
 //      pinned as a table. The keys that match nothing are enumerated and must
-//      equal exactly the six roadmap 3.2 vocabulary-gap keys — no more (a
+//      equal exactly the FIVE roadmap 3.2 vocabulary-gap keys that remain after
+//      A4.2 corrected `durable` to the canonical `durability` — no more (a
 //      regression would add one) and no fewer (silently "fixing" 3.2 is an
 //      owner decision, not a drive-by).
 //   3. The golden ranking matrix: 57 scenarios across feels, couples, needs,
@@ -58,8 +59,8 @@ const QUIZ = JSON.parse(readFileSync(join(root, "data", "quiz.json"), "utf8"));
 
 const GOLDEN_PATH = join(root, "tests", "fixtures", "a41_scoring_golden.json");
 const CASEFOLD_PATH = join(root, "tests", "fixtures", "a41_scoring_golden_casefold.json");
-const GOLDEN_SHA256 = "1ceecf198a25dd1c996ba74f9889aaa85abd91e197bcb10ce8bdc43f5c2ce703";
-const CASEFOLD_SHA256 = "b66454d7183a2f454e798b9299b86d81f366ba996c15de5d450ac7373c4771ce";
+const GOLDEN_SHA256 = "4b9cee5267ed336826c948609d4e4e4c8e2eda5f74eb93eb8612c79efd8b127b";
+const CASEFOLD_SHA256 = "ef1fd91f5138c9fd6596d1c54b52bf1690d99ef8fbeebbf0a3ca44c9afa490ee";
 
 const WRITE_MODE = process.argv.includes("--write-golden");
 
@@ -230,7 +231,10 @@ for (const [k, n] of Object.entries(reach)) console.log(`     ${k.padEnd(16)} ${
 check("pressureRelief is reachable (half the catalog carries it)", reach.pressureRelief === 13, `got ${reach.pressureRelief}`);
 check("motionIsolation is reachable (three models carry it)", reach.motionIsolation === 3, `got ${reach.motionIsolation}`);
 const dead = Object.entries(reach).filter(([, n]) => n === 0).map(([k]) => k).sort();
-const EXPECTED_DEAD = ["adjustable", "comfort", "durable", "hypoallergenic", "memory", "quality"];
+// A4.2 corrected `durable` to the canonical `durability` at the authoritative
+// source, so the dead set is five; the remaining keys are governed dormant in
+// tools/validation.py QUIZ_DORMANT_TAGS (tests/scoring_vocabulary_check.mjs).
+const EXPECTED_DEAD = ["adjustable", "comfort", "hypoallergenic", "memory", "quality"];
 check("the keys that match NO catalog model are exactly the six roadmap 3.2 vocabulary-gap keys — this pass neither adds to them nor silently populates them",
   JSON.stringify(dead) === JSON.stringify(EXPECTED_DEAD), `dead: ${JSON.stringify(dead)}`);
 // The ten repaired rules, enumerated from the quiz itself.
@@ -301,8 +305,15 @@ check("the engine reproduces the golden matrix exactly", driftNow.length === 0,
 
 // ---------- 4. the generator's normalizer ------------------------------------
 section("4. the generator (build-data.ps1) — the repair's actual site");
+// A4.2 corrective pass: the normalizer now lives in a named function,
+// Convert-FeatureTag, so tests/feature_tag_normalization_check.py can execute
+// the generator's own bytes against the shared case table. Same behaviour, same
+// property pinned here: the whole tag is never lowercased.
+const FEATURE_FN = (BUILD_PS1.match(/function Convert-FeatureTag \{[\s\S]*?\n\}/) || [""])[0];
 check("the tag normalizer no longer lowercases the whole tag before camelizing",
-  !/\$tag = \$_\.Trim\(\)\.ToLower\(\)/.test(BUILD_PS1) && /\$tag = \$_\.Trim\(\)/.test(BUILD_PS1));
+  !!FEATURE_FN && !/Trim\(\)\.ToLower\(\)/.test(FEATURE_FN)
+  && /\$tag = if \(\$null -eq \$Tag\) \{ '' \} else \{ \$Tag\.Trim\(\) \}/.test(FEATURE_FN)
+  && /ForEach-Object \{ Convert-FeatureTag \$_ \}/.test(BUILD_PS1));
 check("kebab-case input is still converted to camelCase (the documented contract is kept, not dropped)",
   /\$parts = \$tag\.Split\('-'\)/.test(BUILD_PS1) && /Substring\(0,1\)\.ToUpper\(\)/.test(BUILD_PS1));
 check("the first kebab segment is still lowered, so PRESSURE-relief style input still normalizes",

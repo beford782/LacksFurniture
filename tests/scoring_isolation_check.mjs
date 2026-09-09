@@ -383,12 +383,26 @@ console.log("The per-feature cap caps:");
 //     repair does not move scores it should not touch.
 // The full 57-scenario before/after matrix is pinned in
 // tests/scoring_key_contract_check.mjs.
+// Regenerated 2026-09-03 again, alongside the owner-directed A4.2 vocabulary
+// pass (roadmap 3.2): the quiz awarded `durable` where the catalog's canonical
+// feature is `durability`, so the two options that used the variant spelling -
+// sleep_issues.none (+1) and health_conditions.extra_support (+3) - awarded
+// nothing. The correction was made at the authoritative source and regenerated
+// through the pipeline; no weight, cap, threshold or engine line changed. ONE
+// set moved:
+//   "solo, firm, no issues" (sleep_issues: ["none"]): every `durability` carrier
+//     gains 1. s10 carries it and b6 does not, so the 55-point tie that catalog
+//     order used to settle now resolves 56 -> s10; g8 rises 54 -> 55 into the
+//     tie and g1 46 -> 47. The qualified set stays 13.
+//   The other two sets are byte-identical to their A4.1 values: neither answers
+//     `none` nor `extra_support`, which are the only options the correction
+//     touched.
 const GOLDEN = {
   "side sleeper, hot, back pain": {
     top5: [["g5", 57], ["s3", 57], ["s6", 57], ["s9", 57], ["s7", 55]], qualified: 15
   },
   "solo, firm, no issues": {
-    top5: [["b6", 55], ["s10", 55], ["s2", 55], ["g8", 54], ["g1", 46]], qualified: 13
+    top5: [["s10", 56], ["b6", 55], ["g8", 55], ["s2", 55], ["g1", 47]], qualified: 13
   },
   "plus body, plush, reflux": {
     top5: [["g4", 60], ["g2", 55], ["g6", 55], ["s3", 54], ["s7", 50]], qualified: 10

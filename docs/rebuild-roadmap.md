@@ -5797,6 +5797,44 @@ decision is waited for, and Blake reviews both enumerations at the final
 combined gate. ⬜ approves the build inside the candidate; nothing is
 activated.
 
+*(**Re-cut built 2026-09-09 on the engineering-verified A4.1 result, branch
+`claude/a42-vocabulary-recut` — the nine-question impact newly measured.**
+Both halves of the candidate carried in their order. **The correction:**
+`durable` was a spelling variant of the catalog's canonical `durability`
+(the workbook's per-feature reason column is `reason_durability`; no
+catalog axis distinguishes the two) and is corrected at the authoritative
+source — `incoming/dreamfinder_quiz.json` → the workbook Quiz tab →
+`data/quiz.json`, two lines — and removed from the validator's allowed
+vocabulary, so re-introducing it is a build error. **The governance:** the
+five keys that still match no catalog model in any casing — `adjustable`,
+`hypoallergenic`, `memory` (real concepts whose authoritative data is
+absent) and `comfort`, `quality` (generic) — are declared dormant in
+`tools/validation.py` with a classification, the reason and the owner
+dependency that would resolve each; the build gate refuses any
+unreachable key that is not declared and any declaration whose key has
+become reachable, comparing the catalog's RUNTIME vocabulary through the
+same normaliser the generator applies (`Convert-FeatureTag` in
+`build-data.ps1` and `normalize_feature_tag` in the validator, executed
+against one shared case table by `tests/feature_tag_normalization_check.py`
+so the two cannot drift). Dormancy is proved by execution:
+`tests/scoring_vocabulary_check.mjs` strips every dormant award and re-runs
+the ranking matrix, which does not move. **Nine-question impact of the
+correction, 57 scenarios through the real engine:** 53 byte-identical, 4
+moved (the two corrected options and the composites that use them);
+**gold top pick changed in 3** — `need_issue_none`,
+`need_health_extra_support` and `fallback_all_none`, each a g5 / g7 tie on
+score that catalog order had settled toward g5 and the corrected signal
+now breaks toward g7, the `durability` carrier; gold reordered in those 3,
+bronze qualified-set changed in 2, silver untouched; 13 model scores rise,
+none fall. `index.html` byte-identical; `data/mattresses.json` unchanged.
+The Phase 1 output fixture moved on exactly 68 cells in three scenarios
+(s1 26, s6 18, s10 24). Guards: the vocabulary suite (51), the
+normalization suite (61), the contract suite's dead set pinned to the five,
+ten sweep entries, the correspondence document re-audited (no customer
+copy changes). Resolving any dormant key — populating data or retiring an
+award — stays an owner decision on this item. Merge on Blake's request,
+after the A4.1 re-cut; the mark stays ⬜ until then.)*
+
 *(**Candidate-complete 2026-09-03, recorded 2026-09-04 — not adopted, not
 merged.** A4.2, branch `claude/north-star-candidate-a42-scoring-vocabulary`
 head `c781137` (`f3d6095` plus a corrective), classified all six. `durable`

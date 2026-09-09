@@ -216,7 +216,35 @@ const BASELINE_PATH = join(root, "tests", "fixtures", "phase1_output_baseline_da
 // (--write-baseline) from the pre-change tree; the retained obsolete
 // `profile.feelWord` cells were preserved from the previous fixture rather
 // than dropped by the regenerator. Hash moved in the same reviewed diff.
-const BASELINE_SHA256 = "6258fff00f6255dad29c692c318bf515df4ac97667577d8650f4ae34f743a2a6";
+// 2026-09-09 amendment (A4.2 re-cut, the roadmap 3.2 vocabulary pass, built on
+// the engineering-verified A4.1 result under the owner build direction - the
+// SECOND change to what this engine recommends since the Daybreak ruling).
+// The quiz awarded `durable` in two options while the catalog's canonical
+// feature - and the workbook's per-feature reason column - is `durability`; no
+// catalog axis distinguishes the two, and the same question already awarded
+// `durability` for "Mattress Sagging". The variant spelling was corrected at
+// the authoritative source (incoming/dreamfinder_quiz.json -> workbook Quiz
+// tab -> data/quiz.json) and removed from the validator's allowed vocabulary,
+// so sleep_issues.none (+1) and health_conditions.extra_support (+3) now award
+// the live tag. index.html is byte-identical; data/quiz.json changed on two
+// lines; data/mattresses.json did not change at all. Measured on the
+// nine-question quiz: EXACTLY 68 pinned cells moved, in the three scenarios
+// whose answers use one of the two corrected options -
+// s1_solo_back_firm_no_issues 26, s6_solo_side_pressure_relief 18,
+// s10_solo_goldilocks_medium 24 - scores (36) and results (32) only. The other
+// eight scenarios are byte-identical, as is every profile, matchReasons,
+// accessory, firmnessResolved and priority cell. Evidence:
+// tests/scoring_vocabulary_check.mjs pins the pre-correction 57-scenario
+// matrix beside the current one: only the four scenarios using a corrected
+// option moved, every score change landed on a `durability` carrier, nothing
+// lost points, and the three gold top-pick changes are g5 / g7 ties (level on
+// score, settled by catalog order) that the corrected signal broke toward the
+// carrier. The five keys that remain unreachable are governed dormant in
+// tools/validation.py QUIZ_DORMANT_TAGS. Regenerated with the established tool
+// (--write-baseline) from the pre-change tree; the retained obsolete
+// `profile.feelWord` cells were preserved from the previous fixture. Hash
+// moved in the same reviewed diff.
+const BASELINE_SHA256 = "570ff7b0a2b72fa96cbf50b14c5c171b925e2e0290e42c8b9c5ccde58d90cc8a";
 
 const WRITE_MODE = process.argv.includes("--write-baseline");
 
