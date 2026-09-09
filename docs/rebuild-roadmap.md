@@ -3998,7 +3998,7 @@ confirm 40 → 44px) are on `main` since the end-state candidate merged
 2026-09-08 via PR #103 → `6e71dfb`; the Summary's selected-accessory
 rationale follows the current language since PR #104 → `57dbb5e` (see 1.4).
 Item 1.6 stays ✅ and its exit is not amended; the 2026-08-23 pick-card tier
-line debt recorded below is untouched by these merges and stays open.)*
+line debt recorded below was closed by Slice 6 C5 — PR #58, `3f92241`, 2026-08-24 — exactly as that note records; nothing here reopens it. A 2026-09-09 sentence in this paragraph previously called it "still open" and was wrong: corrected the same day in the production-readiness gap enumeration.)*
 
 **The Review screen stays complete and fully editable.** That is the approved
 default, not a pending question, and it does not hold this item open. Compressing
@@ -6217,7 +6217,16 @@ document, not here.
     the combined browser, mounted-iPad/Safari, accessibility, native-Spanish,
     moderated role-play, business/legal, backend and activation review. Until
     that decision, automated engineering safeguards continue but every live
-    output and service remains off.
+    output and service remains off. *(State 2026-09-09, later the same day:
+    the 2.2 disabled implementation (2.2a–2.2d), the accessory-price
+    provenance behaviour, the payload minimisation and the A4.1 / A4.2
+    re-cuts are built as construction PRs awaiting Codex review and merge in
+    order; the remaining gaps are enumerated as a written list in
+    `docs/production-readiness-gaps-2026-09-09.md` — each gap saying what is
+    code and what is a final-gate input — with G1 found already closed by
+    Slice 6 C5, G5 (converter line-ending churn) and G6 (the CLAUDE.md
+    step-count drift) built in the same PR as the list, and G4, G2 and G7
+    next as their own bounded PRs.)*
 
 ---
 
