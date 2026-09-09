@@ -250,6 +250,8 @@ MATTRESSES = Tab(
         col("displayBadges", note="pipe-delimited -> JSON tags[]"),
         col("highlight", note="card hero line"),
         col("locally-made", note="yes|no — +25 scoring bonus when yes"),
+        col("skus", note="Phase 2.2 price identity: pipe-delimited size:SKU pairs (queen:SKU|king:SKU) "
+                         "-> JSON skus{} only when populated; blank = none (ships blank; governed data at the final gate)"),
         col("features", required=True, note="pipe-delimited scoring tags -> JSON features[]"),
         col("reason_cooling", note="per-match reason"),
         col("reason_pressureRelief", note="per-match reason"),
@@ -328,6 +330,8 @@ ACCESSORIES = Tab(
         col("Category", "category.en", required=True, note="Foundations & Support|Pillows|Protectors -> category.en"),
         col("Category (ES)", "category.es", lang="es", note="-> category.es"),
         col("Sub-Type", "subType", note="adjustable|foundation|low_profile|bunkie|blank"),
+        col("SKU", "sku", note="Phase 2.2 price identity: the exact retailer SKU a governed price resolves for "
+                               "-> JSON sku only when populated; blank = none (ships blank; governed data at the final gate)"),
         col("Price", "price", required=True, note="number"),
         col("Description", "description.en", required=True, note="-> description.en"),
         col("Description (ES)", "description.es", lang="es", note="-> description.es"),

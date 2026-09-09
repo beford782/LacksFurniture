@@ -113,6 +113,18 @@ const PRICING_VALIDATOR = ["tools/validation.py --self-test", "tests/pricing_con
 // not by grep. Payload/render leaks are observed by the email-gating and
 // sleep-system suites, which own those surfaces' pins.
 const PRICING_RESOLVER = ["tests/pricing_resolver_check.mjs"];
+// Phase 2.2a: the price presentation gate — the resolver's one consumer — is
+// observed by its own suite, which executes the REAL gate over the shipped
+// configuration (every surface OFF) and over the governed NON-SHIPPING
+// fixture opened in memory (the consumption contract: off / price-unavailable
+// / available, the executed stale refusal, eligibility withheld, catalog SKU
+// identity, the drawer renderer). The contract suite pins each find string
+// exactly once.
+const PRICING_GATE = ["tests/pricing_presentation_check.mjs"];
+// Accessory-price provenance: the harness check is the second observer — it
+// drives the real page over the opened drill state and proves the governed
+// slot REPLACES the legacy catalog "From $" line rather than joining it.
+const PRICING_GATE_RENDERED = ["tests/pricing_presentation_check.mjs", "tests/pricing_harness_check.py"];
 // Trust integrity gate observer (2026-08-21): the trust suite owns the copy <->
 // engine correspondence (document sections, cited tags, the inert-tag set,
 // shipped-vs-documented help lines, banned claims), the absence of the
@@ -2312,6 +2324,75 @@ const MUTATIONS = [
     "          threshold = txn >= minMinor ? 'met' : 'not-met';",
     "          threshold = txn >= plan.minimumPurchase ? 'met' : 'not-met';",
     PRICING_RESOLVER, "index.html"],
+  // --- Phase 2.2a: the price presentation gate (index.html) -----------------
+  ["2.2a: the gate ignores displayEnabled (the activation switch becomes decorative)",
+    "      if (!p || p.enabled !== true || p.displayEnabled !== true || !pricingSurfaceEnabled(surface)) return off;",
+    "      if (!p || p.enabled !== true || !pricingSurfaceEnabled(surface)) return off;",
+    PRICING_GATE, "index.html"],
+  ["2.2a: the gate ignores the per-surface flag",
+    "      if (!p || p.enabled !== true || p.displayEnabled !== true || !pricingSurfaceEnabled(surface)) return off;",
+    "      if (!p || p.enabled !== true || p.displayEnabled !== true) return off;",
+    PRICING_GATE, "index.html"],
+  ["2.2a: the gate ignores emergency disable (enabled false still renders)",
+    "      if (!p || p.enabled !== true || p.displayEnabled !== true || !pricingSurfaceEnabled(surface)) return off;",
+    "      if (!p || p.displayEnabled !== true || !pricingSurfaceEnabled(surface)) return off;",
+    PRICING_GATE, "index.html"],
+  ["2.2a: the gate admits a STALE price (the inert internal number reaches a surface)",
+    "      var admitted = !!(r && r.price && r.price.status === 'resolved'\n        && r.freshness && r.freshness.status === 'fresh'\n        && r.eligibility && r.eligibility.status === 'eligible');",
+    "      var admitted = !!(r && r.price && r.price.status === 'resolved'\n        && r.eligibility && r.eligibility.status === 'eligible');",
+    PRICING_GATE, "index.html"],
+  ["2.2a: the gate admits an activation-unapproved price (eligibility ignored)",
+    "      var admitted = !!(r && r.price && r.price.status === 'resolved'\n        && r.freshness && r.freshness.status === 'fresh'\n        && r.eligibility && r.eligibility.status === 'eligible');",
+    "      var admitted = !!(r && r.price && r.price.status === 'resolved'\n        && r.freshness && r.freshness.status === 'fresh');",
+    PRICING_GATE, "index.html"],
+  ["2.2a: the drawer renderer prints while the gate is OFF",
+    "      if (pres.state === 'off' || !pres.text) {",
+    "      if (false) {",
+    PRICING_GATE, "index.html"],
+  ["2.2a: the SKU is forged instead of read from the catalog record",
+    "      var sku = pricingSkuFor(m, size);",
+    "      var sku = 'FIXTURE-0001';",
+    PRICING_GATE, "index.html"],
+  ["2.2a: the surface helper defaults OPEN like the financing helper",
+    "      if (!s || typeof s !== 'object') return false;",
+    "      if (!s || typeof s !== 'object') return true;",
+    PRICING_GATE, "index.html"],
+  // --- Phase 2.2b: the slot builder the four remaining surfaces consume ----
+  ["2.2b: the slot builder ignores OFF (a price box appears in production)",
+    "      if (pres.state === 'off' || !pres.text) return '';",
+    "      if (false) return '';",
+    PRICING_GATE, "index.html"],
+  ["2.2b: the slot size is a constant instead of the customer's answer",
+    "      return (typeof answers === 'object' && answers) ? answers.mattress_size : undefined;",
+    "      return 'queen';",
+    PRICING_GATE, "index.html"],
+  // --- Phase 2.2c: the catalog-record fallback for projections ------------
+  ["2.2c: the catalog-record lookup stops checking the record's id (a SKU borrowed across ids)",
+    "      return (hit && typeof hit === 'object' && hit.id === m.id) ? hit : null;",
+    "      return (hit && typeof hit === 'object') ? hit : null;",
+    PRICING_GATE, "index.html"],
+  // --- Accessory-price provenance (index.html) --------------------------------
+  ["provenance: the accessory query carries the mattress size (a sized accessory entry never resolves)",
+    "        size: accessory ? undefined : size,",
+    "        size: size,",
+    PRICING_GATE, "index.html"],
+  ["provenance: the accessory sku grammar is dropped (an untrimmed sku resolves)",
+    "        return rec.sku.replace(/\\s+/g, '').length > 0 && rec.sku === rec.sku.trim() ? rec.sku : null;",
+    "        return rec.sku;",
+    PRICING_GATE, "index.html"],
+  ["provenance: the legacy 'From $' line renders BESIDE the governed slot (two prices on one card)",
+    "        if (governedPrice) price = '';",
+    "        if (false) price = '';",
+    PRICING_GATE_RENDERED, "index.html"],
+  // --- Phase 2.2d: plan status copy beside Payment Choice --------------------
+  ["2.2d: the status copy ignores the price state (copy beside a plan with no available price)",
+    "      if (pres.state !== 'available') return '';",
+    "      if (false) return '';",
+    PRICING_GATE, "index.html"],
+  ["2.2d: the threshold line stops requiring a published minimum purchase",
+    "      if (pres.threshold === 'unknown' && plan && typeof plan.minimumPurchase === 'number') {",
+    "      if (pres.threshold === 'unknown') {",
+    PRICING_GATE, "index.html"],
   // Codex exact-head review of PR #71 (2026-08-28): one entry per finding.
   ["2.1b review: the SKU identity check is gone (a price resolves without its SKU)",
     "          if (!isStr(q.sku) || !nonBlank(q.sku) || e.sku !== q.sku) continue;",

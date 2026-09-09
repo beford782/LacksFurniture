@@ -17,8 +17,11 @@
 //     makes that refusal contract non-vacuous);
 //   * activation-unapproved (case a): approvals stripped -> the price still
 //     resolves numerically, eligibility reports not-eligible, and nothing
-//     ships or renders (containment + zero live call sites, pinned here and
-//     in tests/pricing_contract_check.py);
+//     ships or renders (containment: since slice 2.2a the resolver has
+//     exactly ONE call site, inside the marked Phase 2.2 gate block, and
+//     the shipped pricing config is read from exactly one line in that
+//     block — pinned here, in tests/pricing_contract_check.py and in
+//     tests/pricing_presentation_check.mjs, which owns the gate's behaviour);
 //   * threshold: EXPLICIT runtime transaction amount in MINOR units; absent
 //     or invalid -> unknown; plan minimums are MAJOR units — the * 100
 //     conversion is proven at the $499/$600-vs-$500 boundary;
@@ -124,8 +127,10 @@ function balancedBlock(src, from) {
 // ===========================================================================
 section("Extraction, containment and purity");
 // ===========================================================================
-const START = "// ═══ PHASE 2.1B DARK RESOLVER (definition only — zero live call sites) ═══";
+const START = "// ═══ PHASE 2.1B DARK RESOLVER (definition only — called only through the 2.2 gate) ═══";
 const END = "// ═══ END PHASE 2.1B DARK RESOLVER ═══";
+const GATE_START = "// ═══ PHASE 2.2 PRICE PRESENTATION GATE (disabled implementation — production renders nothing) ═══";
+const GATE_END = "// ═══ END PHASE 2.2 PRICE PRESENTATION GATE ═══";
 check("resolver markers appear exactly once each",
   html.split(START).length === 2 && html.split(END).length === 2);
 const blockStart = html.indexOf(START), blockEnd = html.indexOf(END);
@@ -142,15 +147,28 @@ check("resolver source extracted verbatim", fnSrc.startsWith("function resolveDa
 const fnCode = stripComments(fnSrc);
 const htmlCode = stripComments(html);
 
-// Zero live call sites: the name appears exactly once (its declaration) in
-// the whole file's executable code.
-check("resolveDarkPricing has ZERO live call sites (declaration only)",
-  (htmlCode.match(/resolveDarkPricing\s*\(/g) || []).length === 1);
-check("nothing anywhere reads the shipped pricing config (no STORE_CONFIG.pricing)",
-  !/STORE_CONFIG\s*\.\s*pricing\b/.test(htmlCode) && !htmlCode.includes("getPricingConfig"));
+// One live call site (slice 2.2a): the name appears exactly twice in the
+// whole file's executable code — its declaration, and the single call inside
+// the Phase 2.2 gate block. The shipped pricing config is read from exactly
+// one line, getPricingConfig(), which lives inside that same block.
+check("gate markers appear exactly once each, after the resolver block",
+  html.split(GATE_START).length === 2 && html.split(GATE_END).length === 2
+  && html.indexOf(GATE_START) > blockEnd && html.indexOf(GATE_END) > html.indexOf(GATE_START));
+const gateCode = stripComments(html.slice(html.indexOf(GATE_START), html.indexOf(GATE_END)));
+check("resolveDarkPricing has exactly ONE live call site, inside the 2.2 gate block",
+  (htmlCode.match(/resolveDarkPricing\s*\(/g) || []).length === 2
+  && (gateCode.match(/resolveDarkPricing\s*\(/g) || []).length === 1
+  && !/function\s+resolveDarkPricing/.test(gateCode));
+check("the shipped pricing config is read from exactly one line, inside the 2.2 gate block",
+  (htmlCode.match(/STORE_CONFIG\s*\.\s*pricing\b/g) || []).length === 1
+  && (gateCode.match(/STORE_CONFIG\s*\.\s*pricing\b/g) || []).length === 1
+  && (htmlCode.match(/function\s+getPricingConfig\s*\(/g) || []).length === 1
+  && (gateCode.match(/function\s+getPricingConfig\s*\(/g) || []).length === 1);
 
 // Escape-hardened containment (round-2 test audit R2): outside the resolver
-// block, executable code never names `pricing` at all. Two scans close the
+// block AND the 2.2 gate block, executable code never names `pricing` at
+// all (the drawer reaches the gate through renderDrawerPrice, which carries
+// no such token). Two scans close the
 // substring lock's escapes: (A) the bare word over string-BLANKED code
 // catches destructured ({pricing}), aliased (C.pricing) and identifier
 // reads while sparing legitimate copy strings ("Final pricing, ...");
@@ -165,14 +183,16 @@ function blankStrings(src) {
 const demoHtml = readFileSync(join(root, "demo", "black-friday", "index.html"), "utf8");
 for (const [pageName, page] of [["index.html", html], ["demo/black-friday/index.html", demoHtml]]) {
   const s = page.indexOf(START), e = page.indexOf(END);
-  check(`${pageName}: resolver markers present for the containment scan`, s !== -1 && e > s);
-  const outside = page.slice(0, s) + page.slice(e + END.length);
+  const gs = page.indexOf(GATE_START), ge = page.indexOf(GATE_END);
+  check(`${pageName}: resolver and gate markers present for the containment scan`,
+    s !== -1 && e > s && gs > e && ge > gs);
+  const outside = page.slice(0, s) + page.slice(e + END.length, gs) + page.slice(ge + GATE_END.length);
   const outsideCode = stripComments(outside);
   const hitA = blankStrings(outsideCode).match(/[^\n]{0,40}\bpricing\b[^\n]{0,40}/);
-  check(`${pageName}: the bare word 'pricing' never appears in executable code outside the block`,
+  check(`${pageName}: the bare word 'pricing' never appears in executable code outside the two blocks`,
     hitA === null, hitA ? hitA[0] : "");
   const hitB = outsideCode.match(/[^\n]{0,30}\[\s*['"`]pricing['"`]\s*\][^\n]{0,30}/);
-  check(`${pageName}: no bracketed ['pricing'] access outside the block`,
+  check(`${pageName}: no bracketed ['pricing'] access outside the two blocks`,
     hitB === null, hitB ? hitB[0] : "");
 }
 check("...scan A fires on planted destructured and aliased reads",

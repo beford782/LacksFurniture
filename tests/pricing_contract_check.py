@@ -121,17 +121,20 @@ DARK = {
 NO_SHIP_STRINGS = ('"amountMinor"', '"transactionAmountMinor"', '"transactionAmount"',
                    '"monthlyPayment"', '"perMonth"', '"estimatedPayment"',
                    '"publishedPaymentFactor"', "FIXTURE")
-# DOM silence, Phase 2.1b form. ABSENT tokens may appear NOWHERE in the app:
-# nothing reads the shipped contract (no STORE_CONFIG.pricing read exists) and
-# no accessor or legacy resolver name was introduced. CONTAINED tokens exist
-# ONLY inside the marked resolver-definition block — the one pricing artifact
-# index.html carries, a pure function with zero live call sites.
-DOM_ABSENT = ("STORE_CONFIG.pricing", "getPricingConfig", "resolvePrice",
-              "pricing.presentation", "purchaseAssessment")
+# DOM silence, Phase 2.2a form. ABSENT tokens may appear NOWHERE in the app:
+# no legacy resolver name and no runtime read of the purchase-assessment
+# policy. CONTAINED tokens exist ONLY inside the two marked blocks — the
+# resolver definition (2.1b) and the price presentation gate (2.2a), the one
+# consumer, which reads the shipped contract from exactly one line
+# (getPricingConfig) and calls the resolver from exactly one line.
+DOM_ABSENT = ("resolvePrice", "purchaseAssessment")
 DOM_CONTAINED = ("resolveDarkPricing", "displayEnabled", "amountMinor",
-                 "transactionAmountMinor", "minimumPurchase", "sourcePolicy")
-RESOLVER_START = "// ═══ PHASE 2.1B DARK RESOLVER (definition only — zero live call sites) ═══"
+                 "transactionAmountMinor", "minimumPurchase", "sourcePolicy",
+                 "STORE_CONFIG.pricing", "getPricingConfig")
+RESOLVER_START = "// ═══ PHASE 2.1B DARK RESOLVER (definition only — called only through the 2.2 gate) ═══"
 RESOLVER_END = "// ═══ END PHASE 2.1B DARK RESOLVER ═══"
+GATE_START = "// ═══ PHASE 2.2 PRICE PRESENTATION GATE (disabled implementation — production renders nothing) ═══"
+GATE_END = "// ═══ END PHASE 2.2 PRICE PRESENTATION GATE ═══"
 
 # ---- production artifacts ---------------------------------------------------
 print("Production shipped-state lock (dark until Phase 2.2):")
@@ -174,30 +177,36 @@ check("shipped contract carries no combined ES/legal flag and no catalog-wide cl
 check("shipped purchase-threshold policy is runtime-transaction-amount only",
       pr.get("purchaseAssessment") == {"policy": "runtime-transaction-amount"})
 
-# DOM silence (2.1b containment form): nothing reads the shipped contract, and
-# every pricing token lives inside the marked resolver definition. The demo
-# bundle is a copy of index.html and gets the identical scan.
+# DOM silence (2.2a containment form): the shipped contract is read only by
+# the gate, and every pricing token lives inside the two marked blocks. The
+# demo bundle is a copy of index.html and gets the identical scan.
 for page in ("index.html", "demo/black-friday/index.html"):
     root = _read(page)
-    s_count, e_count = root.count(RESOLVER_START), root.count(RESOLVER_END)
-    check(f"{page}: resolver markers appear exactly once each", s_count == 1 and e_count == 1,
-          f"start={s_count} end={e_count}")
-    if s_count == 1 and e_count == 1:
+    counts = {m: root.count(m) for m in (RESOLVER_START, RESOLVER_END, GATE_START, GATE_END)}
+    check(f"{page}: resolver and gate markers appear exactly once each",
+          all(v == 1 for v in counts.values()), str(counts))
+    if all(v == 1 for v in counts.values()):
         s_idx, e_idx = root.index(RESOLVER_START), root.index(RESOLVER_END)
-        check(f"{page}: resolver block is well-formed (start before end)", s_idx < e_idx)
+        g_idx, h_idx = root.index(GATE_START), root.index(GATE_END)
+        check(f"{page}: blocks are well-formed and ordered (resolver, then gate)",
+              s_idx < e_idx < g_idx < h_idx)
         block = root[s_idx:e_idx + len(RESOLVER_END)]
+        gate = root[g_idx:h_idx + len(GATE_END)]
         for tok in DOM_ABSENT:
-            check(f"{page}: token absent everywhere (nothing reads the contract): {tok!r}",
-                  tok not in root)
+            check(f"{page}: token absent everywhere: {tok!r}", tok not in root)
         for tok in DOM_CONTAINED:
-            n_all, n_block = root.count(tok), block.count(tok)
-            check(f"{page}: token {tok!r} appears only inside the resolver block",
-                  n_block >= 1 and n_all == n_block, f"file={n_all} block={n_block}")
-        # Zero live call sites: the resolver NAME appears exactly once as its
-        # own declaration (plus marker-comment mentions inside the block).
-        check(f"{page}: resolveDarkPricing is declared once and never called",
+            n_all, n_in = root.count(tok), block.count(tok) + gate.count(tok)
+            check(f"{page}: token {tok!r} appears only inside the resolver or gate block",
+                  n_in >= 1 and n_all == n_in, f"file={n_all} blocks={n_in}")
+        # One live call site: the resolver NAME appears as its declaration
+        # (inside the resolver block) and as exactly one call, inside the gate.
+        check(f"{page}: resolveDarkPricing is declared once and called exactly once, inside the gate",
               root.count("function resolveDarkPricing(") == 1
-              and root.count("resolveDarkPricing(") == 1)
+              and root.count("resolveDarkPricing(") == 2
+              and gate.count("resolveDarkPricing(") == 1
+              and gate.count("function resolveDarkPricing(") == 0)
+        check(f"{page}: the shipped contract is read from exactly one line, inside the gate",
+              root.count("STORE_CONFIG.pricing") == 1 and gate.count("STORE_CONFIG.pricing") == 1)
 root = _read("index.html")
 
 # The workbook: its own tab, chunked envelope, Daybreak envelope untouched.
@@ -250,6 +259,9 @@ check("shipped pricing validates clean under the real clock (no errors, no warni
 ci = _lf(_read(".github/workflows/ci.yml"))
 check("CI operating-state lock names pricing.displayEnabled",
       "pricing ships dark" in ci and "displayEnabled" in ci)
+check("CI runs the 2.2a presentation suite (the gate's behavioural observer)",
+      "tests/pricing_presentation_check.mjs" in _read(".github/workflows/ci.yml")
+      and "tests/pricing_presentation_check.mjs" in _read("tools/run_full_suite.ps1"))
 check("CI runs this suite, the pricing totality suite and the 2.1b resolver suite",
       "tests/pricing_contract_check.py" in ci and "tests/pricing_totality_check.py" in ci
       and "tests/pricing_resolver_check.mjs" in ci)
@@ -508,6 +520,35 @@ SWEEP_FINDS = [
      "          && allowedHost(fin.sourceUrl, fin.allowedSourceHosts);"),
     ("index.html",
      "      const payload = {\n        storeName: (STORE_CONFIG && STORE_CONFIG.storeName) || '',"),
+    # ---- Phase 2.2a gate anchors (index.html) -------------------------------
+    ("index.html",
+     "      if (!p || p.enabled !== true || p.displayEnabled !== true || !pricingSurfaceEnabled(surface)) return off;"),
+    ("index.html",
+     "      var admitted = !!(r && r.price && r.price.status === 'resolved'\n"
+     "        && r.freshness && r.freshness.status === 'fresh'\n"
+     "        && r.eligibility && r.eligibility.status === 'eligible');"),
+    ("index.html",
+     "      if (pres.state === 'off' || !pres.text) {"),
+    ("index.html",
+     "      var sku = pricingSkuFor(m, size);"),
+    ("index.html",
+     "      if (!s || typeof s !== 'object') return false;"),
+    ("index.html",
+     "      if (pres.state === 'off' || !pres.text) return '';"),
+    ("index.html",
+     "      return (typeof answers === 'object' && answers) ? answers.mattress_size : undefined;"),
+    ("index.html",
+     "      return (hit && typeof hit === 'object' && hit.id === m.id) ? hit : null;"),
+    ("index.html",
+     "      if (pres.state !== 'available') return '';"),
+    ("index.html",
+     "        size: accessory ? undefined : size,"),
+    ("index.html",
+     "        return rec.sku.replace(/\\s+/g, '').length > 0 && rec.sku === rec.sku.trim() ? rec.sku : null;"),
+    ("index.html",
+     "        if (governedPrice) price = '';"),
+    ("index.html",
+     "      if (pres.threshold === 'unknown' && plan && typeof plan.minimumPurchase === 'number') {"),
     ("index.html",
      "        var price = Number(primary.price) > 0\n"
      "          ? sleepSystemText({ en: 'From $', es: 'Desde $' }) + Number(primary.price).toLocaleString()"),
