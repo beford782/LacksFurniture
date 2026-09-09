@@ -495,7 +495,13 @@ git pull --ff-only origin main
 git switch -c <owner>/<short-description>
 # edit, test, commit
 git push -u origin HEAD
-# run the complete local CI mirror first:
+# run the complete local CI mirror first. One-time setup for the Python it will
+# use (3.12 through 3.14, the verified range - 3.15+ is refused; the runner
+# refuses an unprovisioned or out-of-range interpreter before any suite runs
+# and prints the exact fix):
+#   python -m pip install -r tools/requirements-suite.txt
+#   python -m playwright install chromium
+# then:
 #   pwsh -File tools/run_full_suite.ps1
 #   (no pwsh? Windows PowerShell 5.1 works: powershell -NoProfile -File tools/run_full_suite.ps1)
 # open a PR targeting main; wait for the required status check — its name,
