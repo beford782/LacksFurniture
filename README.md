@@ -93,7 +93,7 @@ and CI proves it.
    changed, run `.\build-data.ps1` and commit the regenerated JSON with it.
 3. Push the feature branch and open a pull request targeting `main`.
 4. Wait for the required `Full suite (18 checks)` status check to pass (a
-   legacy label pinned by branch protection; the job runs the same 50 checks
+   legacy label pinned by branch protection; the job runs the same 57 checks
    as `pwsh -File tools/run_full_suite.ps1`).
 5. Merge the pull request. GitHub Pages deploys the merged `main` branch
    automatically; verify the Pages `build` and `deploy` checks afterward.
