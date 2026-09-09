@@ -151,7 +151,12 @@ $checks = @(
     @{ Name = 'pricing contract (dark shipped-state lock)'; Exe = $pythonExecutable; Args = @('tests/pricing_contract_check.py') },
     @{ Name = 'pricing resolver (2.1b five-axis contract)'; Exe = $nodeExecutable; Args = @('tests/pricing_resolver_check.mjs') },
     @{ Name = 'daybreak demo server'; Exe = $pythonExecutable; Args = @('tests/daybreak_server_check.py') },
-    @{ Name = 'daybreak demo runtime'; Exe = $nodeExecutable; Args = @('tests/daybreak_demo_runtime_check.mjs') }
+    @{ Name = 'daybreak demo runtime'; Exe = $nodeExecutable; Args = @('tests/daybreak_demo_runtime_check.mjs') },
+    # G2 (readiness gaps 2026-09-09): the send-nothing delivery path - the real
+    # page through Chromium over the loopback harness in shipped and live
+    # modes, every failure path, and Code.gs replayed against the recorded
+    # payload. Rendered; needs the same playwright Chromium as the layout check.
+    @{ Name = 'delivery harness (send-nothing live path, rendered)'; Exe = $pythonExecutable; Args = @('tests/delivery_harness_check.py') }
 )
 if (-not $SkipMutationSweep) {
     $checks += @{ Name = 'mutation sweep'; Exe = $nodeExecutable; Args = @('tests/mutation_sweep.mjs') }

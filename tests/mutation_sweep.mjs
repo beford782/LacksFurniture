@@ -157,6 +157,13 @@ const A43_SUMMARY = A43.concat(["tests/consultation_summary_check.mjs"]);
 // so a removed canonicalisation is observed under whichever serializer this
 // interpreter selects.
 const QR = ["tests/qr_payload_check.py"];
+// G2 (readiness gaps 2026-09-09): the send-nothing delivery path. The
+// delivery harness check drives the REAL page through Chromium over the
+// loopback harness in shipped and live modes, every failure path, and
+// replays the recorded payload through Code.gs - so a mutation of the send
+// path, the diagnostic classifiers, the mode-aware chrome, Code.gs's
+// CAN-SPAM block or the harness's own guarantees is observed by it.
+const DELIVERY = ["tests/delivery_harness_check.py"];
 
 
 // ---------------------------------------------------------------------------
@@ -2615,6 +2622,40 @@ const MUTATIONS = [
   ["QR: the canonical spelling flips to lxml's (the committed stdlib form would no longer be reproduced)",
     "_CANONICAL_EMPTY_ELEMENT_CLOSE = ' />'",
     "_CANONICAL_EMPTY_ELEMENT_CLOSE = '/>'", QR, "incoming/generate_financing_qr.py"],
+  // --- G2: the send-nothing delivery path (index.html, Code.gs, the harness) --
+  ["live mode never POSTs (the send gate is closed)",
+    "if (gasUrl && !scenarioBlocksEmail) {",
+    "if (false && gasUrl && !scenarioBlocksEmail) {", DELIVERY],
+  ["a non-2xx response is read as a document instead of thrown as http_<status>",
+    "if (!res.ok) throw new Error('http_' + res.status);",
+    "if (false) throw new Error('http_' + res.status);", DELIVERY],
+  ["the server's own error string is logged verbatim (an echoing endpoint puts the address in the console)",
+    "console.error('[DreamFinder] send failed:', emailFailureCode(data && data.error));",
+    "console.error('[DreamFinder] send failed:', data && data.error);", DELIVERY],
+  ["the transport error object is logged verbatim instead of its closed-set code",
+    "console.error('[DreamFinder] send failed:', transportFailureCode(err));",
+    "console.error('[DreamFinder] send failed:', err);", DELIVERY],
+  ["preview mode POSTs the payload anyway",
+    "console.log('[DreamFinder] Email preview (payload suppressed):',",
+    "fetch('data/store-config.json', { method: 'POST', body: JSON.stringify(payload) }); console.log('[DreamFinder] Email preview (payload suppressed):',", DELIVERY],
+  ["the preview note stays visible in live mode",
+    "noteEl.style.display = isDemoMode ? '' : 'none';",
+    "noteEl.style.display = '';", DELIVERY],
+  ["the preview-mode honesty card stays visible in live mode",
+    "if (pmCard) pmCard.style.display = isDemoMode ? '' : 'none';",
+    "if (pmCard) pmCard.style.display = '';", DELIVERY],
+  ["the send path judges preview by a constant (live mode says Saved, not Sent)",
+    "const isEmailPreview = !gasUrl || scenarioBlocksEmail;",
+    "const isEmailPreview = true;", DELIVERY],
+  ["Code.gs sends while the CAN-SPAM values are still sentinels",
+    "if (!_canSpamConfigured()) {",
+    "if (false) {", DELIVERY, "Code.gs"],
+  ["the stub endpoint stops answering with the CORS header a web app deployed \"Anyone\" carries",
+    "            self.send_header(\"Cache-Control\", \"no-store\")\n            self.send_header(\"Access-Control-Allow-Origin\", \"*\")",
+    "            self.send_header(\"Cache-Control\", \"no-store\")", DELIVERY, "tools/serve_delivery_preview.py"],
+  ["the harness accepts a public bind address",
+    "        if not _loopback(bind):\n            raise ValueError(f\"{bind!r} is not a loopback address\")",
+    "        if False:\n            raise ValueError(f\"{bind!r} is not a loopback address\")", DELIVERY, "tools/serve_delivery_preview.py"],
 ];
 
 // ---------------------------------------------------------------------------
@@ -2680,6 +2721,9 @@ const PRISTINE_BY_FILE = {
   // governs it. Mutating each proves the suite compares them rather than
   // trusting either.
   "data/quiz.json": readFileSync(join(sandbox, "data", "quiz.json"), "utf8"),
+  // G2: the delivery harness the delivery check executes (copied with tools/).
+  "tools/serve_delivery_preview.py":
+    readFileSync(join(sandbox, "tools", "serve_delivery_preview.py"), "utf8"),
   "docs/quiz-copy-engine-correspondence.md":
     readFileSync(join(sandbox, "docs", "quiz-copy-engine-correspondence.md"), "utf8"),
   // QR generator: the serializer canonicalisation lives here.
