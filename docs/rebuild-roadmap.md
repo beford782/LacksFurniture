@@ -5853,6 +5853,38 @@ merges stay requested rather than assumed under the agent boundary, which is
 traceability, not an acceptance gate. The repair touches no financing,
 presentation or `index.html` surface; the scoring-isolation guard stays pinned.
 
+*(**Re-cut built 2026-09-09 on `main` `e76890c`, branch
+`claude/a41-case-fold-recut` — the nine-question impact newly measured.**
+The candidate's one-line generator rule is carried verbatim (a tag with no
+hyphen is preserved as authored; a kebab-case tag is still lowered and
+camelized), `index.html` is byte-identical, and `data/mattresses.json`
+changed on exactly 16 lines — 13 `pressureRelief`, 3 `motionIsolation`.
+The pre-repair matrix was captured FIRST, on the unrepaired nine-question
+tree, with the ported contract suite; the post-repair matrix was captured
+after the repair; the suite's own case-fold reconstruction (the matrix
+re-run over an in-memory lowercased catalog) is byte-identical to that true
+pre-repair capture, so the only thing that changed is the case of two tags.
+**Nine-question impact, 57 scenarios through the real engine:** 39
+byte-identical, 18 moved; **gold top pick changed in 0 of 57**; gold order
+and membership unchanged in every scenario; silver 4 reordered and 12
+qualified-set changes; bronze 1 and 1; no model loses a point. The moved
+scenarios are exactly the partnered couples (every disturbance answer),
+side sleepers, the differing-body-type answer, hip pain, stiffness, getting
+older and the five composites that combine them — the population the two
+tags exist to serve. The figures equal the candidate's ten-question
+measurement, as they must: the removed question awarded nothing. The
+Phase 1 output fixture was regenerated from the pre-change tree: 156 pinned
+cells moved (scores 74, results 82) across eight scenarios, none in
+`s1_solo_back_firm_no_issues`, `s9_empty_defaults` or
+`s11_heat_only_via_sleep_issue`; the scoring-isolation golden pins moved on
+the same two answer sets the candidate recorded. Guards: the ported
+`tests/scoring_key_contract_check.mjs` (27 checks: the key contract, the
+reachability table pinned to exactly the six 3.2 keys, the generator's
+normaliser source, both sha-pinned matrices), a new CI and mirror step,
+three sweep entries, the correspondence document re-audited. **This is the
+engineering-verified result 3.2 builds on.** Merge stays on Blake's request
+in the roadmap's order; the mark stays ⬜ until then.)*
+
 *(**Candidate-complete 2026-09-03, recorded 2026-09-04 — not adopted, not
 merged.** A4.1, branch `claude/north-star-candidate-a41-scoring-integrity`
 head `dcb63e5`, an isolated descendant of the frozen A3.1 checkpoint, carries
@@ -5884,6 +5916,44 @@ enumerated in its commit / PR; no intermediate owner acceptance or merge
 decision is waited for, and Blake reviews both enumerations at the final
 combined gate. ⬜ approves the build inside the candidate; nothing is
 activated.
+
+*(**Re-cut built 2026-09-09 on the engineering-verified A4.1 result, branch
+`claude/a42-vocabulary-recut` — the nine-question impact newly measured.**
+Both halves of the candidate carried in their order. **The correction:**
+`durable` was a spelling variant of the catalog's canonical `durability`
+(the workbook's per-feature reason column is `reason_durability`; no
+catalog axis distinguishes the two) and is corrected at the authoritative
+source — `incoming/dreamfinder_quiz.json` → the workbook Quiz tab →
+`data/quiz.json`, two lines — and removed from the validator's allowed
+vocabulary, so re-introducing it is a build error. **The governance:** the
+five keys that still match no catalog model in any casing — `adjustable`,
+`hypoallergenic`, `memory` (real concepts whose authoritative data is
+absent) and `comfort`, `quality` (generic) — are declared dormant in
+`tools/validation.py` with a classification, the reason and the owner
+dependency that would resolve each; the build gate refuses any
+unreachable key that is not declared and any declaration whose key has
+become reachable, comparing the catalog's RUNTIME vocabulary through the
+same normaliser the generator applies (`Convert-FeatureTag` in
+`build-data.ps1` and `normalize_feature_tag` in the validator, executed
+against one shared case table by `tests/feature_tag_normalization_check.py`
+so the two cannot drift). Dormancy is proved by execution:
+`tests/scoring_vocabulary_check.mjs` strips every dormant award and re-runs
+the ranking matrix, which does not move. **Nine-question impact of the
+correction, 57 scenarios through the real engine:** 53 byte-identical, 4
+moved (the two corrected options and the composites that use them);
+**gold top pick changed in 3** — `need_issue_none`,
+`need_health_extra_support` and `fallback_all_none`, each a g5 / g7 tie on
+score that catalog order had settled toward g5 and the corrected signal
+now breaks toward g7, the `durability` carrier; gold reordered in those 3,
+bronze qualified-set changed in 2, silver untouched; 13 model scores rise,
+none fall. `index.html` byte-identical; `data/mattresses.json` unchanged.
+The Phase 1 output fixture moved on exactly 68 cells in three scenarios
+(s1 26, s6 18, s10 24). Guards: the vocabulary suite (51), the
+normalization suite (61), the contract suite's dead set pinned to the five,
+ten sweep entries, the correspondence document re-audited (no customer
+copy changes). Resolving any dormant key — populating data or retiring an
+award — stays an owner decision on this item. Merge on Blake's request,
+after the A4.1 re-cut; the mark stays ⬜ until then.)*
 
 *(**Candidate-complete 2026-09-03, recorded 2026-09-04 — not adopted, not
 merged.** A4.2, branch `claude/north-star-candidate-a42-scoring-vocabulary`

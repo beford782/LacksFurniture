@@ -25,6 +25,40 @@ if (Test-Path $esCsvPath) {
     Write-Host "No Spanish CSV found at $esCsvPath - skipping Spanish fields"
 }
 
+# ---- THE FEATURE-TAG NORMALIZATION CONTRACT (A4.2 corrective pass) -----------
+# One definition, executed by the build and by
+# tests/feature_tag_normalization_check.py, which runs it against
+# tests/fixtures/feature_tag_normalization_cases.json - the same table that
+# drives tools/validation.py's normalize_feature_tag(). Two implementations
+# exist (PowerShell builds, Python validates); the table is what stops them
+# drifting, and the drift it was written for was real: the A4.2 reachability
+# validator compared RAW CSV spellings to camelCase quiz keys, so a kebab-case
+# source the generator normalizes correctly was reported unreachable.
+#
+# The contract:
+#   * trim surrounding whitespace;
+#   * a tag with no hyphen is already canonical and is preserved VERBATIM
+#     (the CSV, generated from the workbook, is the authority on its own
+#     spelling - this script may not invent case);
+#   * a hyphenated tag lowercases its FIRST segment, then appends each
+#     subsequent NON-EMPTY segment with its first character upper-cased and the
+#     remainder untouched, so `pressure-relief` and `PRESSURE-Relief` both
+#     normalize to `pressureRelief` while `pressure-RELIEF` stays
+#     `pressureRELIEF` (the rest of a segment is never re-cased).
+function Convert-FeatureTag {
+    param([string]$Tag)
+    $tag = if ($null -eq $Tag) { '' } else { $Tag.Trim() }
+    $parts = $tag.Split('-')
+    if ($parts.Length -eq 1) { return $tag }
+    $camel = $parts[0].ToLower()
+    for ($i = 1; $i -lt $parts.Length; $i++) {
+        if ($parts[$i].Length -gt 0) {
+            $camel += $parts[$i].Substring(0,1).ToUpper() + $parts[$i].Substring(1)
+        }
+    }
+    return $camel
+}
+
 $result = @{ gold = @(); silver = @(); bronze = @() }
 
 foreach ($row in $rows) {
@@ -35,21 +69,29 @@ foreach ($row in $rows) {
     }
 
     # Build features array from pipe-delimited features column (scoring tags)
-    # Convert kebab-case to camelCase to match quiz score keys
+    # Convert kebab-case to camelCase to match quiz score keys.
+    #
+    # A4.1 (roadmap 3.1, the scoring case-fold defect): this block used to run
+    # $_.Trim().ToLower() FIRST and then restore capitals only after a hyphen.
+    # A tag the CSV already authored in camelCase has no hyphen to restore
+    # from, so `pressureRelief` and `motionIsolation` reached the engine as
+    # `pressurerelief` / `motionisolation`. calculateScores() compares feature
+    # keys to the quiz's scoring keys by exact array membership, so all ten
+    # scoring rules that award those two keys - across six questions,
+    # including the strongest partner-disturbance answer and hip pain - could
+    # never fire. The catalog and the app were both correct; only this
+    # normalizer disagreed with them.
+    #
+    # The rule now: a tag with no hyphen is already canonical and is preserved
+    # VERBATIM (the CSV, generated from the workbook, is the authority on its
+    # own spelling - this script may not invent case); a kebab-case tag is
+    # still lowered and camelized exactly as before, so `pressure-relief` and
+    # `PRESSURE-Relief` both normalize to `pressureRelief`. Any drift between
+    # a catalog tag and a quiz key - in either direction - is caught by
+    # tests/scoring_key_contract_check.mjs, which also pins this block.
     $features = @()
     if ($row.features -and $row.features.Trim()) {
-        $features = $row.features.Split('|') | ForEach-Object {
-            $tag = $_.Trim().ToLower()
-            # kebab-case to camelCase: split on hyphens, capitalize subsequent parts
-            $parts = $tag.Split('-')
-            $camel = $parts[0]
-            for ($i = 1; $i -lt $parts.Length; $i++) {
-                if ($parts[$i].Length -gt 0) {
-                    $camel += $parts[$i].Substring(0,1).ToUpper() + $parts[$i].Substring(1)
-                }
-            }
-            $camel
-        }
+        $features = $row.features.Split('|') | ForEach-Object { Convert-FeatureTag $_ }
     }
 
     # Phase 2.2 (slice 2.2b): optional per-size SKU map, `queen:SKU|king:SKU`.

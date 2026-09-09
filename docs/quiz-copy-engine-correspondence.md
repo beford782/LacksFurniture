@@ -40,17 +40,61 @@ Two facts constrain what the copy may claim:
   option. It never touches the ranking. (`trigger` was the other one until A4.3
   removed the question entirely — owner-approved 2026-09-03.)
 - **Inert tags in this deployment.** The shipped catalog's `features` vocabulary
-  is `cooling, durability, firm, hybrid, medium, motionisolation, plush,
-  pressurerelief, responsive, soft, support, zoned`. Eight quiz tags therefore
-  never add a point here: `motionIsolation` and `pressureRelief` (case-fold
-  mismatch — roadmap item 3.1 🔒) and `adjustable, comfort, durable,
-  hypoallergenic, memory, quality` (absent from the catalog — item 3.2 🔒).
-  Copy must not name an inert mechanism as if it ranked mattresses. Both items
-  are locked scoring decisions for Blake; **this document is not a request to
-  change them**, and the test that pins the inert set exists so that when either
-  ships, every line below is re-audited.
+  is `cooling, durability, firm, hybrid, medium, motionIsolation, plush,
+  pressureRelief, responsive, soft, support, zoned`. Five quiz tags never add a
+  point here: `adjustable, comfort, hypoallergenic, memory, quality`. Copy must
+  not name an inert mechanism as if it ranked mattresses, and the test that pins
+  the inert set exists so that when one is resolved, every line below is
+  re-audited.
 
-  `Inert tags: adjustable, comfort, durable, hypoallergenic, memory, motionIsolation, pressureRelief, quality`
+  **A4.2 re-cut, 2026-09-09 — dormancy is now DECLARED, not discovered.** Each
+  of the five is governed in `tools/validation.py`'s `QUIZ_DORMANT_TAGS` with a
+  classification, the reason it stays dormant and the owner dependency that
+  would resolve it; the build gate refuses any unreachable key that is not
+  declared, and refuses a declaration whose key has become reachable.
+  `tests/scoring_vocabulary_check.mjs` re-proves dormancy by execution — it
+  strips every dormant award from the quiz in memory and re-runs the ranking
+  matrix, which does not move. Resolving any of them (populating the data, or
+  retiring the award) stays an owner decision under roadmap item 3.2.
+
+  | Tag | Class | Why it is dormant | Owner dependency |
+  |---|---|---|---|
+  | `adjustable` | B — real concept, data absent | Awarded by `snoring` / `reflux` for an adjustable BASE, a sleep-system product; no model carries base-compatibility data (0 of 26) | Governed adjustable-base compatibility data per model, or retire the award |
+  | `hypoallergenic` | B — real concept, data absent | Awarded by `allergies`; no model carries hypoallergenic, antimicrobial or allergen data in any field (0 of 26) | Governed allergen data per model, or retire the award |
+  | `memory` | B — real concept, data absent | Awarded by `yes_often` / `cold` for memory-foam behaviour; the catalog names memory foam only in prose and inconsistently | A governed construction axis per model, or retire the award |
+  | `comfort` | C — generic | Awarded by four options; every mattress here is sold as comfortable, so no factual axis discriminates | Retire the award, or name a discriminating axis |
+  | `quality` | C — generic | Awarded by `sagging` / `none`; a marketing-grade adjective rather than a product fact, and the discriminating half of `sagging` is already carried by the live `durability` | Retire the award |
+
+  **`durable` is gone.** It was not a sixth dormant concept but a spelling
+  variant of the catalog's canonical `durability`: the workbook's per-feature
+  reason column is `reason_durability`, no catalog axis distinguishes the two,
+  and the same question already awarded `durability` for "Mattress Sagging"
+  while awarding `durable` for "Need Extra Support" and "No Major Issues". The
+  A4.2 re-cut corrected it at the authoritative source
+  (`incoming/dreamfinder_quiz.json` → workbook Quiz tab → `data/quiz.json`)
+  and removed it from the validator's allowed vocabulary, so re-introducing it
+  is now a build error. Those two options now award the live `durability` tag,
+  which **does** change rankings — the enumerated nine-question effect is on
+  roadmap item 3.2 and in `tests/scoring_vocabulary_check.mjs`, which pins the
+  pre-correction matrix beside the current one.
+
+  **A4.1 re-cut, 2026-09-09 — item 3.1's repair built on `main`, and this
+  list shrank by two.** `motionIsolation` and `pressureRelief` were inert
+  here for a generator reason, not a catalog one: `build-data.ps1` lowercased
+  the catalog's camelCase tags, so the case-sensitive match could never
+  succeed. The generator was repaired under the owner build direction and
+  both tags are now live, carried by 3 and 13 models. The re-audit this pin
+  exists to force was performed, and it found copy that the repair makes
+  TRUE rather than copy that must change: the `sleep_position` help line
+  ("This helps us favor pressure relief, support, or a responsive feel") and
+  the `partner_disturbance` line about movement both named mechanisms that
+  could not rank a mattress; both now can. **No customer copy is changed in
+  this pass** — the re-cut is scoped to the key contract, and the wording
+  decisions this unlocks are the owner's. Weights, question count and
+  wording, tier rules and the 5-point per-tag cap are untouched;
+  `index.html` is byte-identical.
+
+  `Inert tags: adjustable, comfort, hypoallergenic, memory, quality`
 
 Other consumers the copy may describe (all consume answers, none re-rank):
 
@@ -186,7 +230,7 @@ Sleep System / base suggestions.
 - **Current EN:** Tap anything you've noticed. These shape which features we favor and what we suggest testing.
 - **Current ES (provisional):** Toca lo que hayas notado. Esto define qué características priorizamos y qué sugerimos probar.
 - **Ranks:** yes — `back_pain` → `support: 3, zoned: 2, firm: 1`; `hip_pain` → `pressureRelief: 3, plush: 2`; `hot` → `cooling: 3, hybrid: 2`; `tossing` → `comfort: 2, medium: 1`; `stiff` → `pressureRelief: 2, comfort: 2` (all inert); `sagging` → `durability: 2, quality: 2`; `too_soft` → `firm: 3, support: 2`; `none` → `comfort: 1, quality: 1, durable: 1` (all inert). **Firmness:** no. **Display:** yes — profile wording, signature. **Summary:** yes — each selected issue's implication in the "who" row. **Accessories:** yes — `back_pain` raises adjustable-base scoring and sets the base demo to zero-gravity.
-- **Cited tags:** support, zoned, firm, pressureRelief, plush, cooling, hybrid, comfort, medium, durability, quality, durable.
+- **Cited tags:** support, zoned, firm, pressureRelief, plush, cooling, hybrid, comfort, medium, durability, quality.
 - **Mechanism the copy describes:** features favored + testing guidance — true in aggregate; "what we suggest testing" keeps the line true for `stiff`/`none`, which rank nothing here.
 - **Must not say:** "a fix" (outcome claim).
 - **Verdict on the previous line:** mild OUTCOME CLAIM (EN); ES vague.
@@ -198,8 +242,8 @@ Sleep System / base suggestions.
 - **Previous ES:** Toca las que apliquen
 - **Current EN:** Tap any that apply. Some shape your matches; some change what we suggest trying, like an adjustable base or a mattress protector.
 - **Current ES (provisional):** Toca lo que aplique. Algunas influyen en tus opciones; otras cambian lo que sugerimos probar, como una base ajustable o un protector de colchón.
-- **Ranks:** yes for some — `nerve_pain` → `support: 3, firm: 2, zoned: 2`; `extra_support` → `support: 3, firm: 2, durable: 3`; `getting_older` → `support: 2, comfort: 2, pressureRelief: 1`; `allergies` → `hypoallergenic: 3` (inert); `snoring` / `reflux` → `adjustable: 3` (inert); `none` → nothing. **Firmness:** no. **Display:** yes — profile wording, signature. **Summary:** yes — each selected condition's implication in the profile row (e.g. head-of-bed elevation for snoring). **Accessories:** yes — `snoring`/`reflux` raise adjustable-base scoring and set the demo position (anti-snore / zero-gravity); `allergies` sets the protector goal.
-- **Cited tags:** support, firm, zoned, durable, comfort, pressureRelief, hypoallergenic, adjustable.
+- **Ranks:** yes for some — `nerve_pain` → `support: 3, firm: 2, zoned: 2`; `extra_support` → `support: 3, firm: 2, durability: 3` (**`durable` corrected to the canonical `durability` by the A4.2 re-cut**); `getting_older` → `support: 2, comfort: 2, pressureRelief: 1`; `allergies` → `hypoallergenic: 3` (inert); `snoring` / `reflux` → `adjustable: 3` (inert); `none` → nothing. **Firmness:** no. **Display:** yes — profile wording, signature. **Summary:** yes — each selected condition's implication in the profile row (e.g. head-of-bed elevation for snoring). **Accessories:** yes — `snoring`/`reflux` raise adjustable-base scoring and set the demo position (anti-snore / zero-gravity); `allergies` sets the protector goal.
+- **Cited tags:** support, firm, zoned, durability, comfort, pressureRelief, hypoallergenic, adjustable.
 - **Mechanism the copy describes:** some answers shape the ranking; some change what is suggested to try (base, protector) — both live, with no condition→product pairing stated as a treatment.
 - **Must not say:** that a mattress or base treats snoring, reflux, pain or any condition; no health outcome.
 - **Verdict on the previous line:** TRUE but incomplete (EN); ES dropped the second sentence.

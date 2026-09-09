@@ -189,7 +189,62 @@ const BASELINE_PATH = join(root, "tests", "fixtures", "phase1_output_baseline_da
 // is not pinned here (this fixture holds recommendation state) and is covered
 // by tests/quiz_reduction_check.mjs and tests/consultation_summary_check.mjs.
 // Hash moved in the same reviewed diff.
-const BASELINE_SHA256 = "d716dc843e140ab885d853fa25440e890520f5f206ff56096db15c55bf4ea79f";
+// 2026-09-09 amendment (A4.1 re-cut, the roadmap 3.1 case-fold repair, built
+// under the owner build direction of 2026-09-09 as a clean re-cut from main
+// e76890c - the FIRST change to what this engine recommends since the Daybreak
+// ruling, exactly the case the header's "Phase 3 change" clause describes).
+// The generator, not the engine, was repaired: build-data.ps1 lowercased every
+// feature tag before restoring capitals after a hyphen, so the catalog's
+// camelCase `pressureRelief` / `motionIsolation` reached the engine lowercased
+// and could never match the quiz keys of the same name. All ten scoring rules
+// that award those two keys - partner_sleep.partner/family,
+// partner_disturbance.yes_often/sometimes/rarely, body_type.different,
+// sleep_position.side, sleep_issues.hip_pain/stiff and
+// health_conditions.getting_older - were dead and are now live. index.html is
+// byte-identical; data/mattresses.json changed on 16 lines (13 pressureRelief,
+// 3 motionIsolation) and nothing else. Measured on the nine-question quiz:
+// EXACTLY 156 pinned cells moved, in the eight scenarios whose answers award
+// one of those keys - scores (74) and results (82) only - s2 31, s3 30, s4 3,
+// s5 9, s6 24, s7 11, s8 26, s10 22; s6's silver qualified set grew by one
+// row. s1_solo_back_firm_no_issues, s9_empty_defaults and
+// s11_heat_only_via_sleep_issue are byte-identical, as are every profile,
+// matchReasons, accessory, firmnessResolved and priority cell in all eleven
+// scenarios. No gold top pick changed in any scenario here or in the wider
+// 57-scenario matrix (tests/scoring_key_contract_check.mjs holds the
+// post-repair and the true pre-repair matrix, captured on the unrepaired
+// nine-question tree). Regenerated with the established tool
+// (--write-baseline) from the pre-change tree; the retained obsolete
+// `profile.feelWord` cells were preserved from the previous fixture rather
+// than dropped by the regenerator. Hash moved in the same reviewed diff.
+// 2026-09-09 amendment (A4.2 re-cut, the roadmap 3.2 vocabulary pass, built on
+// the engineering-verified A4.1 result under the owner build direction - the
+// SECOND change to what this engine recommends since the Daybreak ruling).
+// The quiz awarded `durable` in two options while the catalog's canonical
+// feature - and the workbook's per-feature reason column - is `durability`; no
+// catalog axis distinguishes the two, and the same question already awarded
+// `durability` for "Mattress Sagging". The variant spelling was corrected at
+// the authoritative source (incoming/dreamfinder_quiz.json -> workbook Quiz
+// tab -> data/quiz.json) and removed from the validator's allowed vocabulary,
+// so sleep_issues.none (+1) and health_conditions.extra_support (+3) now award
+// the live tag. index.html is byte-identical; data/quiz.json changed on two
+// lines; data/mattresses.json did not change at all. Measured on the
+// nine-question quiz: EXACTLY 68 pinned cells moved, in the three scenarios
+// whose answers use one of the two corrected options -
+// s1_solo_back_firm_no_issues 26, s6_solo_side_pressure_relief 18,
+// s10_solo_goldilocks_medium 24 - scores (36) and results (32) only. The other
+// eight scenarios are byte-identical, as is every profile, matchReasons,
+// accessory, firmnessResolved and priority cell. Evidence:
+// tests/scoring_vocabulary_check.mjs pins the pre-correction 57-scenario
+// matrix beside the current one: only the four scenarios using a corrected
+// option moved, every score change landed on a `durability` carrier, nothing
+// lost points, and the three gold top-pick changes are g5 / g7 ties (level on
+// score, settled by catalog order) that the corrected signal broke toward the
+// carrier. The five keys that remain unreachable are governed dormant in
+// tools/validation.py QUIZ_DORMANT_TAGS. Regenerated with the established tool
+// (--write-baseline) from the pre-change tree; the retained obsolete
+// `profile.feelWord` cells were preserved from the previous fixture. Hash
+// moved in the same reviewed diff.
+const BASELINE_SHA256 = "570ff7b0a2b72fa96cbf50b14c5c171b925e2e0290e42c8b9c5ccde58d90cc8a";
 
 const WRITE_MODE = process.argv.includes("--write-baseline");
 

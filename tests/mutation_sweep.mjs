@@ -128,6 +128,19 @@ const PRICING_GATE_RENDERED = ["tests/pricing_presentation_check.mjs", "tests/pr
 // Payload minimisation (2026-09-09): the email-gating suite executes the real
 // accessory projection over a priced catalog record and pins its exact keys.
 const EMAIL_PACKET = ["tests/email_gating_check.mjs"];
+// A4.1 observers (roadmap 3.1): the feature-key contract suite owns the key
+// vocabulary, the reachability table and the golden ranking matrix; a mutated
+// CATALOG spelling also moves the Phase 1 recommendation fixture and the
+// scoring-isolation golden pins, so those two observe the data entries.
+const SCORING_KEYS = ["tests/scoring_key_contract_check.mjs"];
+const SCORING_KEYS_DATA = SCORING_KEYS.concat(["tests/phase1_output_regression_check.mjs", "tests/scoring_isolation_check.mjs"]);
+// A4.2 observers (roadmap 3.2): the vocabulary suite owns the dormant-key
+// declaration, the reachable-or-governed contract and the before/after matrix;
+// a corrupted CATALOG or QUIZ spelling also moves the recommendation fixtures.
+const VOCAB = ["tests/scoring_vocabulary_check.mjs"];
+const NORM = ["tests/feature_tag_normalization_check.py"];
+const NORM_PLUS = NORM.concat(["tests/scoring_vocabulary_check.mjs"]);
+const VOCAB_RANKING = VOCAB.concat(["tests/phase1_output_regression_check.mjs", "tests/scoring_isolation_check.mjs", "tests/scoring_key_contract_check.mjs"]);
 // Trust integrity gate observer (2026-08-21): the trust suite owns the copy <->
 // engine correspondence (document sections, cited tags, the inert-tag set,
 // shipped-vs-documented help lines, banned claims), the absence of the
@@ -2312,6 +2325,76 @@ const MUTATIONS = [
     "        name: a.name,\n        category: a.category,\n        imageUrl: toAbsoluteImageUrl(a.imageUrl)\n      }));",
     "        id: a.id,\n        name: a.name,\n        category: a.category,\n        imageUrl: toAbsoluteImageUrl(a.imageUrl)\n      }));",
     EMAIL_PACKET, "index.html"],
+  // --- A4.1 (roadmap 3.1, re-cut 2026-09-09): the scoring feature-key contract.
+  // calculateScores() matches quiz scoring keys to catalog feature tags by exact
+  // array membership, so a single lowercased tag silently kills every rule that
+  // awards it. The generator is the site of the old defect; the two spellings it
+  // now preserves are the payload. All three are observed by the contract suite,
+  // which also holds the 57-scenario golden ranking matrix.
+  // A4.2 corrective pass re-pointed this entry: the normalizer moved into
+  // Convert-FeatureTag, so the old inline FIND no longer applies.
+  ["scoring keys: the generator lowercases every tag again (the roadmap 3.1 case-fold defect returns)",
+    "    $tag = if ($null -eq $Tag) { '' } else { $Tag.Trim() }",
+    "    $tag = if ($null -eq $Tag) { '' } else { $Tag.Trim().ToLower() }",
+    SCORING_KEYS.concat(NORM), "build-data.ps1"],
+  // --- A4.2 corrective pass: the feature-tag normalization contract. The A4.2
+  // reachability gate compared RAW CSV spellings to camelCase quiz keys, so a
+  // kebab-case source the generator normalizes correctly read as unreachable.
+  // One contract, two implementations, one shared case table - these entries
+  // are the ways the two can drift apart again.
+  ["normalization: the validator stops normalizing (raw CSV spellings compared to camelCase quiz keys - the A4.2 defect returns)",
+    "        reachable = {t for t in (normalize_feature_tag(f) for f in catalog_features) if t}",
+    "        reachable = {str(f).strip() for f in catalog_features if str(f).strip()}",
+    NORM, "tools/validation.py"],
+  ["normalization: the validator lowercases every tag instead of following the contract",
+    "    text = \"\" if tag is None else str(tag).strip()",
+    "    text = \"\" if tag is None else str(tag).strip().lower()",
+    NORM, "tools/validation.py"],
+  ["normalization: only the first repaired key is normalized (a one-key special case instead of the contract)",
+    "    parts = text.split(\"-\")",
+    "    parts = text.split(\"-\") if text.startswith(\"pressure\") else [text]",
+    NORM, "tools/validation.py"],
+  ["normalization: an unknown, unreachable quiz key is allowed through (the reachability gate goes silent)",
+    "            if tag not in QUIZ_DORMANT_TAGS:",
+    "            if False and tag not in QUIZ_DORMANT_TAGS:",
+    NORM_PLUS, "tools/validation.py"],
+  ["normalization: a dormant key that became reachable is concealed (the stale-declaration gate goes silent)",
+    "            if tag in reachable:",
+    "            if False and tag in reachable:",
+    NORM_PLUS, "tools/validation.py"],
+  ["normalization: the generator's own normalizer is bypassed (build-data.ps1 emits raw source spellings)",
+    "        $features = $row.features.Split('|') | ForEach-Object { Convert-FeatureTag $_ }",
+    "        $features = $row.features.Split('|') | ForEach-Object { $_.Trim() }",
+    NORM, "build-data.ps1"],
+  // --- A4.2 (roadmap 3.2, re-cut 2026-09-09): the scoring VOCABULARY contract.
+  // One key was a spelling variant of a canonical catalog feature and was
+  // corrected; five are governed dormant. These entries are the ways that
+  // governance can be undone: revert the correction, alias a dormant key onto a
+  // live one, activate a dormant key in the catalog, or delete a declaration.
+  ["vocabulary: the `durable` spelling variant is reinstated in the quiz (two options award a key no mattress carries)",
+    "            \"firm\": 2,\n            \"durability\": 3",
+    "            \"firm\": 2,\n            \"durable\": 3",
+    VOCAB_RANKING, "data/quiz.json"],
+  ["vocabulary: a dormant key is aliased onto a live one (comfort mapped to medium - the broad-synonym mistake)",
+    "            \"comfort\": 2,\n            \"medium\": 1",
+    "            \"medium\": 2,\n            \"medium\": 1",
+    VOCAB, "data/quiz.json"],
+  ["vocabulary: a governed dormant key is silently activated in the catalog (memory attached to a model)",
+    "                                      \"pressureRelief\",\n                                      \"motionIsolation\"\n",
+    "                                      \"pressureRelief\",\n                                      \"motionIsolation\",\n                                      \"memory\"\n",
+    VOCAB, "data/mattresses.json"],
+  ["vocabulary: a dormant-key declaration is deleted (hypoallergenic loses its governance record)",
+    '    "hypoallergenic": ("B",',
+    '    "_hypoallergenic_removed": ("B",',
+    VOCAB, "tools/validation.py"],
+  ["scoring keys: a catalog pressureRelief tag is lowercased (four scoring rules across three questions go dead)",
+    "                                      \"soft\",\n                                      \"pressureRelief\",\n                                      \"durability\",",
+    "                                      \"soft\",\n                                      \"pressurerelief\",\n                                      \"durability\",",
+    SCORING_KEYS_DATA, "data/mattresses.json"],
+  ["scoring keys: the catalog motionIsolation tag is lowercased (six scoring rules across three questions go dead)",
+    "                                      \"pressureRelief\",\n                                      \"motionIsolation\"\n",
+    "                                      \"pressureRelief\",\n                                      \"motionisolation\"\n",
+    SCORING_KEYS_DATA, "data/mattresses.json"],
   // --- Phase 2.1b: the dark resolver (index.html) --------------------------
   // Each entry mutates the REAL resolver source; the resolver suite executes
   // the mutated function and the specific five-axis probe fails. Find strings
@@ -2733,7 +2816,9 @@ for (const d of ["tests", "data", "docs", "tools", "incoming", "demo", ".github"
 // paragraph legitimizing retailer prose in the quiz contract.
 // README.md joins the copy set for the same reason as onboarding: the A4.3
 // living-contract section reads the counts it states.
-for (const f of ["index.html", "Code.gs", "CLAUDE.md", "README.md"]) cpSync(join(root, f), join(sandbox, f));
+// build-data.ps1 joins the copy set because the A4.1 scoring-key entries
+// mutate the generator's normaliser and the contract suite reads it.
+for (const f of ["index.html", "Code.gs", "CLAUDE.md", "README.md", "build-data.ps1"]) cpSync(join(root, f), join(sandbox, f));
 // The committed QR asset joins the copy set (alone, not the whole images
 // tree) because the QR payload suite decodes it and compares a fresh
 // generation against it byte for byte; the sandbox copy is what the suite
@@ -2773,6 +2858,11 @@ const PRISTINE_BY_FILE = {
   // governs it. Mutating each proves the suite compares them rather than
   // trusting either.
   "data/quiz.json": readFileSync(join(sandbox, "data", "quiz.json"), "utf8"),
+  // A4.1 (roadmap 3.1): the two halves of the scoring feature-key contract -
+  // the generator that normalizes catalog tags, and the generated catalog whose
+  // spellings the engine matches by exact membership.
+  "build-data.ps1": readFileSync(join(sandbox, "build-data.ps1"), "utf8"),
+  "data/mattresses.json": readFileSync(join(sandbox, "data", "mattresses.json"), "utf8"),
   "docs/quiz-copy-engine-correspondence.md":
     readFileSync(join(sandbox, "docs", "quiz-copy-engine-correspondence.md"), "utf8"),
   // QR generator: the serializer canonicalisation lives here.
