@@ -10653,14 +10653,14 @@
     /* Phase 2.2d: plan status copy beside Payment Choice (absent in every production state). */
     .fin-offer__price-status { font-size: 0.82rem; line-height: 1.5; color: var(--color-text-muted); margin: 0.35rem 0 0; }
     /* Phase 2.2 slots on the four remaining surfaces (absent in every production state). */
-    .noct-card-price, .sleep-system__anchor-price, .hf2-finalist-hero__price, .hf2-pick__price { margin: 0.45rem 0 0; }
-    .noct-card-price__label, .sleep-system__anchor-price__label, .hf2-finalist-hero__price__label, .hf2-pick__price__label {
+    .noct-card-price, .sleep-system__anchor-price, .hf2-finalist-hero__price, .hf2-pick__price, .sleep-system__governed-price { margin: 0.45rem 0 0; }
+    .noct-card-price__label, .sleep-system__anchor-price__label, .hf2-finalist-hero__price__label, .hf2-pick__price__label, .sleep-system__governed-price__label {
       font: 750 11px/1.2 var(--font-sans); text-transform: uppercase; letter-spacing: 0.08em; color: var(--color-text-muted);
     }
-    .noct-card-price__amount, .sleep-system__anchor-price__amount, .hf2-finalist-hero__price__amount, .hf2-pick__price__amount {
+    .noct-card-price__amount, .sleep-system__anchor-price__amount, .hf2-finalist-hero__price__amount, .hf2-pick__price__amount, .sleep-system__governed-price__amount {
       font: 700 1.15rem/1.2 var(--font-sans); color: var(--color-text);
     }
-    .noct-card-price__note, .sleep-system__anchor-price__note, .hf2-finalist-hero__price__note, .hf2-pick__price__note {
+    .noct-card-price__note, .sleep-system__anchor-price__note, .hf2-finalist-hero__price__note, .hf2-pick__price__note, .sleep-system__governed-price__note {
       font-size: 0.78rem; line-height: 1.45; color: var(--color-text-muted); margin: 0.2rem 0 0;
     }
     .drawer-financing .fin-btn-secondary {
@@ -12673,13 +12673,26 @@
     function pricingCatalogRecord(m) {
       if (!m || typeof m !== 'object' || typeof m.id !== 'string') return null;
       if (m.skus && typeof m.skus === 'object') return m;
+      // An accessory record carries a single string `sku` (no sizes); the
+      // Sleep System hands the gate the catalog record itself.
+      if (typeof m.sku === 'string') return m;
       var index = (typeof window === 'object' && window && window._drawerData) ? window._drawerData : null;
       var hit = index && index[m.id] && index[m.id].m;
       return (hit && typeof hit === 'object' && hit.id === m.id) ? hit : null;
     }
+    // A record is an ACCESSORY for pricing purposes when it carries a string
+    // `sku` and no per-size map; its price resolves with no size at all (the
+    // resolver refuses an accessory entry that names one).
+    function pricingIsAccessory(rec) {
+      return !!(rec && typeof rec.sku === 'string' && !(rec.skus && typeof rec.skus === 'object'));
+    }
     function pricingSkuFor(m, size) {
       var rec = pricingCatalogRecord(m);
-      if (!rec || !rec.skus || typeof rec.skus !== 'object') return null;
+      if (!rec) return null;
+      if (pricingIsAccessory(rec)) {
+        return rec.sku.replace(/\s+/g, '').length > 0 && rec.sku === rec.sku.trim() ? rec.sku : null;
+      }
+      if (!rec.skus || typeof rec.skus !== 'object') return null;
       if (typeof size !== 'string' || !size) return null;
       var sku = rec.skus[size];
       return (typeof sku === 'string' && sku.replace(/\s+/g, '').length > 0) ? sku : null;
@@ -12729,11 +12742,12 @@
       if (!m || typeof m !== 'object' || typeof m.id !== 'string') return off;
       var o = (opts && typeof opts === 'object') ? opts : {};
       var sku = pricingSkuFor(m, size);
+      var accessory = pricingIsAccessory(pricingCatalogRecord(m));
       var r = resolveDarkPricing(p, getFinancingConfig(), {
         nowMs: Date.now(),
         productId: m.id,
         sku: sku,
-        size: size,
+        size: accessory ? undefined : size,
         planId: (typeof o.planId === 'string') ? o.planId : null,
         transactionAmountMinor: o.transactionAmountMinor
       });
@@ -20396,6 +20410,16 @@
         var price = Number(primary.price) > 0
           ? sleepSystemText({ en: 'From $', es: 'Desde $' }) + Number(primary.price).toLocaleString()
           : '';
+        // Accessory-price provenance (owner build direction 2026-09-09; Codex
+        // ruling: no standalone withdrawal, no degraded main). When the
+        // governed price resolves for this item on the sleepSystem surface it
+        // REPLACES the catalog "From $" line, so an ungoverned figure never
+        // renders beside a governed one; while the gate is off — every
+        // production state — the legacy line renders exactly as shipped. The
+        // legacy line therefore leaves only at activation, together with the
+        // attested price that replaces it.
+        var governedPrice = (typeof priceSlotFor === 'function' ? priceSlotFor('sleepSystem', primary, 'sleep-system__governed-price') : '');
+        if (governedPrice) price = '';
         var reason = step.id === 'protection'
           ? sleepSystemText(protectionGoalReason(window._sleepSystemState.protectionGoal || getSuggestedProtectionGoal()))
           : (primary.reasons && primary.reasons[0] ? primary.reasons[0] : '');
@@ -20530,7 +20554,7 @@
               // surface already rendered, in the same language resolution.
               '<div class="sleep-system__featured-reason">' + escapeHtml(reason) + '</div>' +
               '<p class="sleep-system__featured-description">' + escapeHtml(sleepSystemText(primary.description)) + '</p>' +
-              (price ? '<div class="sleep-system__price">' + escapeHtml(price) + '</div>' : '') +
+              (governedPrice || (price ? '<div class="sleep-system__price">' + escapeHtml(price) + '</div>' : '')) +
               '<div class="sleep-system__actions">' + actionHtml + '</div>' +
             '</div>' +
           '</article>' + alternativesHtml;

@@ -74,7 +74,7 @@ STORE_CONFIG_KEY_ORDER = [
 
 # Per-accessory key order (committed Bel order) - readability only.
 ACCESSORY_KEY_ORDER = [
-    "id", "name", "category", "price", "image", "description",
+    "id", "sku", "name", "category", "price", "image", "description",
     "subType", "matchTags", "matchScores",
 ]
 
@@ -451,6 +451,12 @@ def build_accessories(wb):
             elif key == "subType":
                 if not _blank(cell):
                     acc["subType"] = cell
+            elif key == "sku":
+                # Phase 2.2 price identity: emitted ONLY when populated so the
+                # shipped catalog (blank) stays byte-identical; the validator
+                # owns the grammar.
+                if not _blank(cell):
+                    acc["sku"] = _s(cell)
             elif key == "price":
                 acc["price"] = cell  # numeric preserved
             elif key == "id":

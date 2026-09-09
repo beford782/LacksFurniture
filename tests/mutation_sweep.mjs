@@ -121,6 +121,10 @@ const PRICING_RESOLVER = ["tests/pricing_resolver_check.mjs"];
 // identity, the drawer renderer). The contract suite pins each find string
 // exactly once.
 const PRICING_GATE = ["tests/pricing_presentation_check.mjs"];
+// Accessory-price provenance: the harness check is the second observer — it
+// drives the real page over the opened drill state and proves the governed
+// slot REPLACES the legacy catalog "From $" line rather than joining it.
+const PRICING_GATE_RENDERED = ["tests/pricing_presentation_check.mjs", "tests/pricing_harness_check.py"];
 // Trust integrity gate observer (2026-08-21): the trust suite owns the copy <->
 // engine correspondence (document sections, cited tags, the inert-tag set,
 // shipped-vs-documented help lines, banned claims), the absence of the
@@ -2367,6 +2371,19 @@ const MUTATIONS = [
     "      return (hit && typeof hit === 'object' && hit.id === m.id) ? hit : null;",
     "      return (hit && typeof hit === 'object') ? hit : null;",
     PRICING_GATE, "index.html"],
+  // --- Accessory-price provenance (index.html) --------------------------------
+  ["provenance: the accessory query carries the mattress size (a sized accessory entry never resolves)",
+    "        size: accessory ? undefined : size,",
+    "        size: size,",
+    PRICING_GATE, "index.html"],
+  ["provenance: the accessory sku grammar is dropped (an untrimmed sku resolves)",
+    "        return rec.sku.replace(/\\s+/g, '').length > 0 && rec.sku === rec.sku.trim() ? rec.sku : null;",
+    "        return rec.sku;",
+    PRICING_GATE, "index.html"],
+  ["provenance: the legacy 'From $' line renders BESIDE the governed slot (two prices on one card)",
+    "        if (governedPrice) price = '';",
+    "        if (false) price = '';",
+    PRICING_GATE_RENDERED, "index.html"],
   // --- Phase 2.2d: plan status copy beside Payment Choice --------------------
   ["2.2d: the status copy ignores the price state (copy beside a plan with no available price)",
     "      if (pres.state !== 'available') return '';",

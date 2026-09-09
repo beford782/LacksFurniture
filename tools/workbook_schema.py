@@ -330,6 +330,8 @@ ACCESSORIES = Tab(
         col("Category", "category.en", required=True, note="Foundations & Support|Pillows|Protectors -> category.en"),
         col("Category (ES)", "category.es", lang="es", note="-> category.es"),
         col("Sub-Type", "subType", note="adjustable|foundation|low_profile|bunkie|blank"),
+        col("SKU", "sku", note="Phase 2.2 price identity: the exact retailer SKU a governed price resolves for "
+                               "-> JSON sku only when populated; blank = none (ships blank; governed data at the final gate)"),
         col("Price", "price", required=True, note="number"),
         col("Description", "description.en", required=True, note="-> description.en"),
         col("Description (ES)", "description.es", lang="es", note="-> description.es"),

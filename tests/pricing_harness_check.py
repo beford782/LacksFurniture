@@ -78,14 +78,28 @@ with open(os.path.join(REPO, "data", "mattresses.json"), encoding="utf-8") as f:
 with open(srv.FIXTURE, encoding="utf-8") as f:
     FX = json.load(f)
 ALL_IDS = [m["id"] for tier in srv.TIER_ORDER for m in CATALOG.get(tier, [])]
+with open(os.path.join(REPO, "data", "accessories.json"), encoding="utf-8") as f:
+    ACCESSORIES = json.load(f)
+ACC_IDS = [a["id"] for a in ACCESSORIES]
 START = datetime(2026, 9, 9, 12, 0, 0, tzinfo=timezone(timedelta(hours=-5)))
 
 # ---- drill states -------------------------------------------------------------
 print("Drill states:")
 built = {}
 for state in srv.STATES:
-    cfg, cat, v = srv.build_injected(state, START)
-    built[state] = (cfg, cat, v)
+    cfg, cat, v, acc = srv.build_injected(state, START)
+    built[state] = (cfg, cat, v, acc)
+    mattress_entries = [e for e in cfg["pricing"]["products"] if e["productKind"] == "mattress"]
+    accessory_entries = [e for e in cfg["pricing"]["products"] if e["productKind"] == "accessory"]
+    check(f"{state}: one FIXTURE price per shipped accessory (productKind accessory, no size), SKUs matching the injected accessory catalog",
+          [e["productId"] for e in accessory_entries] == ACC_IDS
+          and all(e["size"] is None and e["sku"] == srv.fixture_sku(e["productId"])
+                  and e["clearance"]["scope"]["productKind"] == "accessory" and e["clearance"]["scope"]["size"] is None
+                  and e["clearance"]["scope"]["sku"] == e["sku"] for e in accessory_entries)
+          and [a["id"] for a in acc] == ACC_IDS and all(a["sku"] == srv.fixture_sku(a["id"]) for a in acc))
+    check(f"{state}: the injected accessory catalog differs from production ONLY by the sku",
+          all({k: v_ for k, v_ in a.items() if k != "sku"} == p for a, p in zip(acc, ACCESSORIES))
+          and all("sku" not in p for p in ACCESSORIES))
     check(f"{state}: financing validates clean (stamps shifted, exact-term output OFF)",
           v["financing_ok"] and cfg["financing"]["exactPromotionsEnabled"] is False,
           "; ".join(v["financing_errors"][:2]))
@@ -108,11 +122,11 @@ for state in srv.STATES:
               cfg["pricing"]["displayEnabled"] is True
               and all(x is True for x in cfg["pricing"]["surfaces"].values()))
     check(f"{state}: one queen price per shipped mattress, ids and SKUs matching the injected catalog",
-          [e["productId"] for e in cfg["pricing"]["products"]] == ALL_IDS
+          [e["productId"] for e in mattress_entries] == ALL_IDS
           and all(e["size"] == "queen" and e["sku"] == srv.fixture_sku(e["productId"])
                   and e["clearance"]["scope"]["sku"] == e["sku"]
                   and e["clearance"]["scope"]["amountMinor"] == e["price"]["amountMinor"]
-                  for e in cfg["pricing"]["products"])
+                  for e in mattress_entries)
           and all(m["skus"] == {"queen": srv.fixture_sku(m["id"])}
                   for tier in srv.TIER_ORDER for m in cat.get(tier, [])))
     check(f"{state}: every attestation, approval and verification string is a FIXTURE placeholder",
@@ -158,8 +172,8 @@ check("loopback helper accepts 127.0.0.1, localhost and ::1",
 
 # ---- live loopback server -----------------------------------------------------
 def serve(state):
-    cfg, cat, _ = built[state]
-    server = ThreadingHTTPServer(("127.0.0.1", 0), srv.make_handler(srv.encode(cfg), srv.encode(cat)))
+    cfg, cat, _, acc = built[state]
+    server = ThreadingHTTPServer(("127.0.0.1", 0), srv.make_handler(srv.encode(cfg), srv.encode(cat), srv.encode(acc)))
     t = threading.Thread(target=server.serve_forever, daemon=True)
     t.start()
     return server, server.server_address[1]
@@ -202,6 +216,10 @@ try:
     check("intercepted catalog: 200, JSON, no-store, skus injected",
           st2 == 200 and hd2.get("Cache-Control") == "no-store"
           and all("skus" in m for tier in srv.TIER_ORDER for m in cat_served.get(tier, [])))
+    st5, hd5, body5 = get("/data/accessories.json")
+    acc_served = json.loads(body5.decode("utf-8"))
+    check("intercepted accessories: 200, JSON, no-store, sku injected on every accessory",
+          st5 == 200 and hd5.get("Cache-Control") == "no-store" and all("sku" in a for a in acc_served))
     st3, _, body3 = get("/index.html")
     with open(os.path.join(REPO, "index.html"), "rb") as f:
         check("every other path is served from disk unchanged (index.html byte-equal)", st3 == 200 and body3 == f.read())
@@ -251,6 +269,13 @@ async (ARGS) => {
   const anchor = document.getElementById('sleepSystemAnchor');
   out.anchor = { slots: anchor ? anchor.querySelectorAll('.sleep-system__anchor-price').length : -1,
                  text: anchor ? anchor.textContent : '' };
+  // Accessory-price provenance: the featured accessory card on this step —
+  // the legacy catalog "From $" line and the governed slot never coexist.
+  const ss = document.getElementById('accessoriesScreen');
+  out.featured = { legacy: ss ? ss.querySelectorAll('.sleep-system__price').length : -1,
+                   governed: ss ? ss.querySelectorAll('.sleep-system__governed-price').length : -1,
+                   governedText: ss ? Array.from(ss.querySelectorAll('.sleep-system__governed-price')).map((e) => e.textContent).join(' | ') : '',
+                   legacyText: ss ? Array.from(ss.querySelectorAll('.sleep-system__price')).map((e) => e.textContent).join(' | ') : '' };
   // Consultation Summary hero
   window.showSavedPicks();
   await wait(150);
@@ -285,6 +310,10 @@ async (ARGS) => {
 }
 """
 VIEWPORTS = [("tablet-landscape", 1194, 748), ("tablet-portrait", 834, 1108)]
+
+
+def noNumeric_py(s):
+    return re.search(r"\$\s?\d", s) is None and re.search(r"\d[.,]\d{3}", s) is None
 UNAVAIL = {"en": FX["pricing"]["presentation"]["states"]["price-unavailable"]["en"],
            "es": FX["pricing"]["presentation"]["states"]["price-unavailable"]["es"]}
 ASSUMPTION = {"en": FX["pricing"]["presentation"]["assumptions"][0]["en"],
@@ -318,6 +347,9 @@ def expect_sheet_silent(tag, r):
 def expect_off(tag, r):
     expect_sheet_silent(tag, r)
     check(f"{tag}: no page error", not r["errors"], "; ".join(r["errors"][:2]))
+    check(f"{tag}: the Sleep System featured card shows the catalog 'From $' line exactly as shipped and no governed slot",
+          r["featured"]["legacy"] == 1 and r["featured"]["governed"] == 0 and re.search(r"(From|Desde) \$\s?\d", r["featured"]["legacyText"]) is not None,
+          f"legacy={r['featured']['legacy']} governed={r['featured']['governed']}")
     check(f"{tag}: Results cards carry no price slot", r["resultsSlots"] == 0)
     check(f"{tag}: drawer price slot hidden and empty", r["drawer"]["hidden"] is True and r["drawer"]["text"] == "" and r["drawer"]["state"] is None)
     check(f"{tag}: Sleep System anchor, Summary hero and Sleep Plan finalist carry no slot",
@@ -329,6 +361,10 @@ def expect_off(tag, r):
 def expect_unavailable(tag, r, lang):
     expect_sheet_silent(tag, r)
     check(f"{tag}: no page error", not r["errors"], "; ".join(r["errors"][:2]))
+    check(f"{tag}: the Sleep System featured card shows the governed unavailable copy and NOT the legacy catalog line",
+          r["featured"]["legacy"] == 0 and r["featured"]["governed"] == 1
+          and UNAVAIL[lang] in r["featured"]["governedText"] and noNumeric_py(r["featured"]["governedText"]),
+          f"legacy={r['featured']['legacy']} governed={r['featured']['governed']}")
     check(f"{tag}: every surface shows the governed unavailable copy and no number",
           r["resultsSlots"] >= 1 and all(s == "price-unavailable" for s in r["resultsStates"])
           and UNAVAIL[lang] in r["resultsText"] and r["drawer"]["state"] == "price-unavailable"
@@ -347,8 +383,12 @@ def expect_available(tag, r, lang):
           and r["plan"]["slots"] == 1 and ASSUMPTION[lang] in r["plan"]["text"]
           and len(r["dollarDigits"]) >= 4,
           f"slots={r['resultsSlots']}/{r['activeCards']} states={r['resultsStates']} drawer={r['drawer']['state']} dollars={len(r['dollarDigits'])}")
-    check(f"{tag}: the accessory 'From $' lines are still the catalog's own (excluded from the count, present on the walk)",
-          r["accessoryFrom"] >= 1)
+    check(f"{tag}: the Sleep System featured card shows the governed FIXTURE amount with the assumption beside it and NOT the legacy catalog line",
+          r["featured"]["legacy"] == 0 and r["featured"]["governed"] == 1
+          and re.search(r"\$\s?\d", r["featured"]["governedText"]) is not None and ASSUMPTION[lang] in r["featured"]["governedText"],
+          f"legacy={r['featured']['legacy']} governed={r['featured']['governed']} text={r['featured']['governedText'][:80]}")
+    check(f"{tag}: with the governed slot in place no catalog 'From $' line remains anywhere on the walk",
+          r["accessoryFrom"] == 0)
     check(f"{tag}: no per-period payment text anywhere (V1 invariant)", r["perPeriod"] == 0)
     # 2.2d: the sheet opened from the Sleep Plan (its surface is open in
     # this state) shows the governed quote-only copy beside every plan card
@@ -395,9 +435,13 @@ def rendered():
                             expect_available(tag, r, lang)
                 if state == "available":
                     r = walk(browser, port, "en", "king", 1194, 748)
-                    check("available, king answered (queen priced): every surface shows the unavailable copy, no number",
-                          r["drawer"]["state"] == "price-unavailable" and r["dollarDigits"] == []
-                          and all(x == "price-unavailable" for x in r["resultsStates"]))
+                    # Accessory prices carry no size, so the featured accessory's governed
+                    # amount is the ONE dollar figure that legitimately remains on this walk.
+                    check("available, king answered (queen priced): every mattress surface shows the unavailable copy; the only figure is the sizeless governed accessory amount",
+                          r["drawer"]["state"] == "price-unavailable" and len(r["dollarDigits"]) == 1
+                          and r["featured"]["governed"] == 1 and r["featured"]["legacy"] == 0
+                          and all(x == "price-unavailable" for x in r["resultsStates"]),
+                          f"drawer={r['drawer']['state']} dollars={r['dollarDigits']} featured={r['featured']}")
             finally:
                 s.shutdown(); s.server_close()
         browser.close()

@@ -122,6 +122,9 @@ const CONSUMERS = [
   ["sleep system anchor", "priceSlotFor('sleepSystem', finalist, 'sleep-system__anchor-price')", "renderSleepSystemAnchor(finalistState, recommended)"],
   ["consultation summary hero", "priceSlotFor('handoff', item, 'hf2-finalist-hero__price')", "renderHf2FinalistHero()"],
   ["sleep plan finalist", "priceSlotFor('sleepPlan', m, 'hf2-pick__price')", "renderSleepPlanFinalist()"],
+  // Accessory-price provenance: the Sleep System featured card asks the same
+  // gate for the ACCESSORY record; a governed slot replaces the legacy line.
+  ["sleep system featured accessory", "priceSlotFor('sleepSystem', primary, 'sleep-system__governed-price')", "renderSleepSystemMain(viewModel)"],
 ];
 function fnBody(sig) {
   const at = html.indexOf("function " + sig);
@@ -137,14 +140,20 @@ function fnBody(sig) {
   const resultsCalls = html.split("priceSlotFor('results', m, 'noct-card-price')").length - 1;
   check("results: exactly two priceSlotFor calls (top pick + supporting), no other 'results' consumer", resultsCalls === 2);
   for (const [label, call, fn] of CONSUMERS) {
-    const body = fnBody(fn);
+    const body = fnBody(fn).replace(/\s+/g, " ");
     const guarded = "(typeof priceSlotFor === 'function' ? " + call + " : '')";
     check(`${label}: its renderer carries the guarded call exactly once`,
       body.length > 0 && body.split(guarded).length === 2, body.length ? "" : "renderer not found");
   }
   const totalCalls = (html.match(/priceSlotFor\s*\(/g) || []).length;
   const declared = (html.match(/function\s+priceSlotFor\s*\(/g) || []).length;
-  check("priceSlotFor: declaration + exactly five consumer calls in the whole file", declared === 1 && totalCalls === 6, `calls=${totalCalls}`);
+  check("priceSlotFor: declaration + exactly six consumer calls in the whole file", declared === 1 && totalCalls === 7, `calls=${totalCalls}`);
+  // The legacy catalog line yields to the governed slot and never renders beside it.
+  const ssMain = fnBody("renderSleepSystemMain(viewModel)");
+  check("Sleep System card: the governed slot REPLACES the legacy 'From $' line (never beside it), and the legacy line is otherwise untouched",
+    ssMain.includes("if (governedPrice) price = '';")
+    && ssMain.includes("(governedPrice || (price ? '<div class=\"sleep-system__price\">' + escapeHtml(price) + '</div>' : ''))")
+    && ssMain.includes("sleepSystemText({ en: 'From $', es: 'Desde $' }) + Number(primary.price).toLocaleString()"));
   check("no consumer supplies its own size (priceSizeAnswer is the only size source, read only inside the gate block)",
     (html.match(/priceSizeAnswer\s*\(/g) || []).length === 3 /* decl + priceSlotFor + priceStatusHtmlFor */
     && (gateBlock.match(/priceSizeAnswer\s*\(/g) || []).length === 3);
@@ -471,6 +480,45 @@ section("Slot builder (slice 2.2b): the four remaining surfaces");
 }
 
 // ---------------------------------------------------------------------------
+section("Accessory records (provenance): a string sku, no size, the same gate");
+// ---------------------------------------------------------------------------
+{
+  // An accessory pricing entry: productKind accessory, size null, the fixture's evidence and clearance.
+  const ACC_ID = "protector-dritec", ACC_SKU = "FIXTURE-DRITEC";
+  const withAccessory = (over = {}) => {
+    const p = ACTIVE(Object.assign({ surfaces: { sleepSystem: true } }, over));
+    const e = JSON.parse(JSON.stringify(p.products[0]));
+    e.productId = ACC_ID; e.productKind = "accessory"; e.sku = ACC_SKU; e.size = null;
+    e.price.amountMinor = 14900;
+    Object.assign(e.clearance.scope, { productId: ACC_ID, productKind: "accessory", sku: ACC_SKU, size: null, amountMinor: 14900 });
+    p.products.push(e);
+    return p;
+  };
+  const ACC = (over = {}) => Object.assign({ id: ACC_ID, name: "Dri-Tec", price: 149, sku: ACC_SKU }, over);
+  const env = makeEnv({ pricing: withAccessory(), financing: F() });
+  check("accessory with its catalog sku: available with the amount and notes (no size involved)",
+    (() => { const h = env.api.slot("sleepSystem", ACC(), "sleep-system__governed-price");
+      return h.indexOf('data-price-state="available"') !== -1 && h.indexOf("$149") !== -1 && (h.match(/__note/g) || []).length === 2; })());
+  check("accessory: the customer's mattress size is ignored (king answered, still available)",
+    makeEnv({ pricing: withAccessory(), financing: F(), answers: { mattress_size: "king" } }).api.slot("sleepSystem", ACC(), "x").indexOf('data-price-state="available"') !== -1);
+  check("accessory without a sku -> unavailable copy only (the catalog ships none)",
+    env.api.slot("sleepSystem", ACC({ sku: undefined }), "x").indexOf('data-price-state="price-unavailable"') !== -1);
+  check("accessory with a mismatched sku -> unavailable", env.api.slot("sleepSystem", ACC({ sku: "OTHER" }), "x").indexOf('data-price-state="price-unavailable"') !== -1);
+  check("accessory with a blank or untrimmed sku -> unavailable",
+    env.api.slot("sleepSystem", ACC({ sku: "  " }), "x").indexOf('data-price-state="price-unavailable"') !== -1
+    && env.api.slot("sleepSystem", ACC({ sku: " " + ACC_SKU }), "x").indexOf('data-price-state="price-unavailable"') !== -1);
+  check("accessory on a surface whose flag is off -> ''", env.api.slot("results", ACC(), "x") === "");
+  check("shipped config: every shipped accessory -> '' on the sleepSystem surface",
+    (() => { const e = makeEnv({ pricing: shipped.pricing, financing: shipped.financing });
+      const cat = JSON.parse(readFileSync(join(root, "data", "accessories.json"), "utf8"));
+      return cat.length > 0 && cat.every((a) => !("sku" in a) && e.api.slot("sleepSystem", a, "x") === ""); })());
+  check("a mattress record is never treated as an accessory (the skus map wins over a stray sku string)",
+    env.api.gate("sleepSystem", M({ sku: ACC_SKU, skus: { queen: "WRONG" } }), "queen", null).state === "price-unavailable"
+    && makeEnv({ pricing: ACTIVE({ surfaces: { sleepSystem: true } }), financing: F() }).api.gate("sleepSystem", M({ sku: "x" }), "queen", null).state === "available");
+  globalThis.__ACC = { withAccessory, ACC, ACC_SKU };
+}
+
+// ---------------------------------------------------------------------------
 section("Plan status copy beside Payment Choice (slice 2.2d): status only, never a figure");
 // ---------------------------------------------------------------------------
 {
@@ -653,6 +701,24 @@ function mutate(find, replace) {
       mutate: withLf(mutate("      if (pres.threshold === 'unknown' && plan && typeof plan.minimumPurchase === 'number') {", "      if (pres.threshold === 'unknown') {")) });
     check("M13 threshold line without a published minimum -> the no-minimum probe FAILS on the mutant",
       e.api.status("results", "lacks-in-house", { id: "lacks-in-house", minimumPurchase: null }).indexOf(fx.pricing.presentation.states["threshold-unknown"].en) !== -1);
+  }
+  // MA1: the accessory query carries the mattress size (the resolver refuses a sized accessory entry).
+  {
+    const { withAccessory, ACC } = globalThis.__ACC;
+    const e = makeEnv({ pricing: withAccessory(), financing: F(),
+      mutate: withLf(mutate("        size: accessory ? undefined : size,", "        size: size,")) });
+    check("MA1 accessory query carries the mattress size -> the accessory-available probe FAILS on the mutant",
+      e.api.slot("sleepSystem", ACC(), "x").indexOf('data-price-state="available"') === -1);
+  }
+  // MA2: the accessory sku grammar is dropped (an untrimmed sku resolves when the entry is equally untrimmed).
+  {
+    const { withAccessory, ACC, ACC_SKU } = globalThis.__ACC;
+    const p = withAccessory(); const last = p.products[p.products.length - 1];
+    last.sku = " " + ACC_SKU; last.clearance.scope.sku = " " + ACC_SKU;
+    const e = makeEnv({ pricing: p, financing: F(),
+      mutate: withLf(mutate("        return rec.sku.replace(/\\s+/g, '').length > 0 && rec.sku === rec.sku.trim() ? rec.sku : null;", "        return rec.sku;")) });
+    check("MA2 accessory sku grammar dropped -> the untrimmed-sku probe FAILS on the mutant",
+      e.api.slot("sleepSystem", ACC({ sku: " " + ACC_SKU }), "x").indexOf('data-price-state="available"') !== -1);
   }
   // M8: the surface helper defaults open like the financing helper.
   {

@@ -71,6 +71,7 @@ import validation  # noqa: E402
 FIXTURE = os.path.join(REPO, "tests", "fixtures", "pricing_populated_fixture.json")
 INTERCEPT_CONFIG = "/data/store-config.json"
 INTERCEPT_CATALOG = "/data/mattresses.json"
+INTERCEPT_ACCESSORIES = "/data/accessories.json"
 STATES = ("dark", "available", "stale", "unapproved", "disabled")
 TIER_ORDER = ("gold", "silver", "bronze")
 # Every drill price is queen-only: the harness answers `mattress_size: queen`
@@ -115,6 +116,10 @@ def catalog_ids():
 
 def fixture_sku(mattress_id: str) -> str:
     return "FIXTURE-" + mattress_id.upper()
+
+
+def accessory_ids():
+    return [a["id"] for a in _load(os.path.join(REPO, "data", "accessories.json"))]
 
 
 def build_injected(state: str, start: datetime):
@@ -175,6 +180,27 @@ def build_injected(state: str, start: datetime):
         scope["amountMinor"] = e["price"]["amountMinor"]
         scope["evidenceVerifiedAt"] = e["evidence"]["verifiedAt"]
         products.append(e)
+    # Accessory-price provenance: one FIXTURE price per shipped accessory —
+    # productKind accessory, no size — so the Sleep System's governed slot can
+    # replace the legacy catalog "From $" line in the opened states.
+    base_index = len(products)
+    for j, aid in enumerate(accessory_ids()):
+        e = copy.deepcopy(template)
+        e["productId"] = aid
+        e["productKind"] = "accessory"
+        e["sku"] = fixture_sku(aid)
+        e["size"] = None
+        e["price"]["amountMinor"] = 4900 + 5000 * j
+        e["evidence"]["verifiedAt"] = _shift(template["evidence"]["verifiedAt"], evidence_delta)
+        e["clearance"]["attestedAt"] = _shift(template["clearance"]["attestedAt"], delta)
+        scope = e["clearance"]["scope"]
+        scope["productId"] = aid
+        scope["productKind"] = "accessory"
+        scope["sku"] = e["sku"]
+        scope["size"] = None
+        scope["amountMinor"] = e["price"]["amountMinor"]
+        scope["evidenceVerifiedAt"] = e["evidence"]["verifiedAt"]
+        products.append(e)
     pr["products"] = products
 
     # The DARK form is what the validators see: displayEnabled false, every
@@ -203,12 +229,15 @@ def build_injected(state: str, start: datetime):
     for tier in TIER_ORDER:
         for m in catalog.get(tier, []):
             m["skus"] = {DRILL_SIZE: fixture_sku(m["id"])}
+    accessories = _load(os.path.join(REPO, "data", "accessories.json"))
+    for a in accessories:
+        a["sku"] = fixture_sku(a["id"])
 
     # ---- verdicts -----------------------------------------------------------
     hosts = _load(os.path.join(REPO, "tools", "source_hosts.json"))
     kw = dict(allowed_source_hosts=hosts["priceSourceHosts"],
               financing_source_hosts=hosts["financingSourceHosts"],
-              mattress_ids=set(catalog_ids()), accessory_ids=set())
+              mattress_ids=set(catalog_ids()), accessory_ids=set(accessory_ids()))
     dark_cfg = copy.deepcopy(config)
     dark_cfg["pricing"] = dark
     fin_rep = validation.validate_financing(dark_cfg, allowed_source_hosts=hosts["financingSourceHosts"])
@@ -228,7 +257,7 @@ def build_injected(state: str, start: datetime):
         "served_refused": not served_rep.ok,
         "served_errors": list(served_rep.errors),
     }
-    return config, catalog, verdicts
+    return config, catalog, verdicts, accessories
 
 
 def dark_form_acceptable(state: str, verdicts: dict) -> bool:
@@ -238,7 +267,7 @@ def dark_form_acceptable(state: str, verdicts: dict) -> bool:
     return verdicts["financing_ok"] and verdicts["dark_ok"]
 
 
-def make_handler(config_bytes: bytes, catalog_bytes: bytes):
+def make_handler(config_bytes: bytes, catalog_bytes: bytes, accessories_bytes: bytes = None):
     class PreviewHandler(SimpleHTTPRequestHandler):
         def __init__(self, *args, **kwargs):
             super().__init__(*args, directory=REPO, **kwargs)
@@ -249,6 +278,8 @@ def make_handler(config_bytes: bytes, catalog_bytes: bytes):
                 return config_bytes
             if path == INTERCEPT_CATALOG:
                 return catalog_bytes
+            if path == INTERCEPT_ACCESSORIES and accessories_bytes is not None:
+                return accessories_bytes
             return None
 
         def _send_json_headers(self, body):
@@ -298,7 +329,7 @@ def main(argv=None):
         return 2
 
     start = datetime.now(timezone.utc).astimezone()
-    config, catalog, verdicts = build_injected(args.state, start)
+    config, catalog, verdicts, accessories = build_injected(args.state, start)
     if not dark_form_acceptable(args.state, verdicts):
         print("REFUSED: the drill state's dark form does not validate as its state requires:")
         for e in verdicts["financing_errors"] + verdicts["dark_errors"]:
@@ -310,7 +341,7 @@ def main(argv=None):
         return 3
 
     server = ThreadingHTTPServer((args.bind, args.port),
-                                 make_handler(encode(config), encode(catalog)))
+                                 make_handler(encode(config), encode(catalog), encode(accessories)))
     url = f"http://{args.bind}:{args.port}/"
     print("=" * 72)
     print(f"PHASE 2.2 PRICING PREVIEW HARNESS — NON-SHIPPING — state: {args.state}")

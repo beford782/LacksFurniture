@@ -542,6 +542,12 @@ SWEEP_FINDS = [
     ("index.html",
      "      if (pres.state !== 'available') return '';"),
     ("index.html",
+     "        size: accessory ? undefined : size,"),
+    ("index.html",
+     "        return rec.sku.replace(/\\s+/g, '').length > 0 && rec.sku === rec.sku.trim() ? rec.sku : null;"),
+    ("index.html",
+     "        if (governedPrice) price = '';"),
+    ("index.html",
      "      if (pres.threshold === 'unknown' && plan && typeof plan.minimumPurchase === 'number') {"),
     ("index.html",
      "        var price = Number(primary.price) > 0\n"

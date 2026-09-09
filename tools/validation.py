@@ -4516,6 +4516,17 @@ def validate_accessories(raw_tabs, *, source_images=None, skip_images=False,
                 float(str(price))
             except ValueError:
                 r.add_error(f"Accessories {tag}: price {price!r} is not numeric")
+        # Phase 2.2 price identity (accessories): blank means none; otherwise
+        # the pricing contract's SKU grammar, so a governed accessory price can
+        # only resolve for the exact SKU the catalog names.
+        sku_cell = row.get("SKU")
+        sku_raw = _s(sku_cell)
+        if sku_raw:
+            untrimmed = isinstance(sku_cell, str) and sku_cell != sku_cell.strip()
+            if (untrimmed or len(sku_raw) > PRICING_SKU_MAX
+                    or not _SKU_GRAMMAR.fullmatch(sku_raw)):
+                r.add_error(f"Accessories {tag}: SKU {sku_raw!r} must be a trimmed identifier "
+                            f"of at most {PRICING_SKU_MAX} chars ([A-Za-z0-9._-])")
         if _blank(img):
             r.add_error(f"Accessories {tag}: Image File Name is empty")
         else:
@@ -5598,6 +5609,16 @@ def _self_test() -> int:
     t = _good_tabs(); t["Accessories"][1][0]["Category"] = "widgets"
     check("invalid accessory category -> error",
           any("category 'widgets'" in e for e in validate_accessories(t, languages=langs).errors))
+
+    # Phase 2.2 price identity: the optional accessory SKU column
+    def _asku_errs(value):
+        tt = _good_tabs(); tt["Accessories"][1][0]["SKU"] = value
+        return [e for e in validate_accessories(tt, languages=langs).errors if "SKU" in e]
+    check("accessory SKU blank -> no error", _asku_errs("") == [] and _asku_errs(None) == [])
+    check("accessory SKU well-formed -> no error", _asku_errs("ACC-SKU_1.0") == [])
+    check("accessory SKU with a space -> error", any("must be a trimmed identifier" in e for e in _asku_errs("bad sku")))
+    check("accessory SKU untrimmed -> error", any("must be a trimmed identifier" in e for e in _asku_errs(" SKU1")))
+    check("accessory SKU over-long -> error", any("must be a trimmed identifier" in e for e in _asku_errs("X" * 65)))
 
     # accessory image basename != id is accepted when the cell is a full
     # images/accessories/<file>.jpg path

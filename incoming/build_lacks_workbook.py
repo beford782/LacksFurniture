@@ -118,7 +118,7 @@ A = _load("lacks_accessories.json")
 
 def accessory_row(a):
     row = {"ID": a["id"], "Name": a["name"], "Category": a["cat"],
-           "Sub-Type": a.get("subType", ""), "Price": a["price"],
+           "Sub-Type": a.get("subType", ""), "SKU": a.get("sku", ""), "Price": a["price"],
            "Description": a["desc"], "Image File Name": a["image"],
            "Match Tags": a.get("tags", "")}
     es = a.get("es", {})
