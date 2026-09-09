@@ -2664,7 +2664,9 @@ for (const d of ["tests", "data", "docs", "tools", "incoming", "demo", ".github"
 // paragraph legitimizing retailer prose in the quiz contract.
 // README.md joins the copy set for the same reason as onboarding: the A4.3
 // living-contract section reads the counts it states.
-for (const f of ["index.html", "Code.gs", "CLAUDE.md", "README.md"]) cpSync(join(root, f), join(sandbox, f));
+// build-data.ps1 joins the copy set because the A4.1 scoring-key entries
+// mutate the generator's normaliser and the contract suite reads it.
+for (const f of ["index.html", "Code.gs", "CLAUDE.md", "README.md", "build-data.ps1"]) cpSync(join(root, f), join(sandbox, f));
 // The committed QR asset joins the copy set (alone, not the whole images
 // tree) because the QR payload suite decodes it and compares a fresh
 // generation against it byte for byte; the sandbox copy is what the suite
