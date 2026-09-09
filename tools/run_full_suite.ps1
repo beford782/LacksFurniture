@@ -151,6 +151,11 @@ $checks = @(
     @{ Name = 'pricing contract (dark shipped-state lock)'; Exe = $pythonExecutable; Args = @('tests/pricing_contract_check.py') },
     @{ Name = 'pricing resolver (2.1b five-axis contract)'; Exe = $nodeExecutable; Args = @('tests/pricing_resolver_check.mjs') },
     @{ Name = 'daybreak demo server'; Exe = $pythonExecutable; Args = @('tests/daybreak_server_check.py') },
+    # G7 (readiness gaps 2026-09-09): the drawer promotion block's ink - the
+    # three .drawer-promotion tokens pinned in source and every rendered line's
+    # contrast measured through Chromium with the illustrative scenario
+    # injected (root page and the committed demo bundle). Rendered.
+    @{ Name = 'promo muted lines (drawer promotion ink, rendered)'; Exe = $pythonExecutable; Args = @('tests/promo_muted_lines_check.py') },
     @{ Name = 'daybreak demo runtime'; Exe = $nodeExecutable; Args = @('tests/daybreak_demo_runtime_check.mjs') }
 )
 if (-not $SkipMutationSweep) {

@@ -56,10 +56,10 @@ jobs:
     # "Full suite (18 checks)") — renaming it here without updating the
     # protection rule in the same change would leave every PR waiting on a
     # check that never reports. The name is a LEGACY LABEL and its number has
-    # been wrong for many slices: the workflow now invokes 49 verification
-    # steps (44 `run: node|python tests/...` steps, three `tools/*.py
+    # been wrong for many slices: the workflow now invokes 50 verification
+    # steps (45 `run: node|python tests/...` steps, three `tools/*.py
     # --self-test` steps, the workbook validation and the QR committed-asset
-    # check), A4.3's quiz-reduction suite being the newest.
+    # check), the promo-ink rendered check (G7, 2026-09-09) being the newest.
     # The count is stated with its own definition so it can be re-derived
     # rather than trusted; renaming name+protection together is an operator
     # (Blake) action, tracked in the 0.6 PR notes.
@@ -539,6 +539,14 @@ jobs:
       # launch+72h window, untouched committed files.
       - name: daybreak demo server (loopback interception)
         run: python tests/daybreak_server_check.py
+
+      # G7 (readiness gaps 2026-09-09): the drawer promotion block's ink. The
+      # dormant block styled its lines warm white for the old navy shell and
+      # rendered invisible on the cream panel; its colours now resolve through
+      # tokens on .drawer-promotion. Pinned in source and measured rendered
+      # (Chromium, illustrative scenario injected in memory; root and demo).
+      - name: promo muted lines (drawer promotion ink, rendered)
+        run: python tests/promo_muted_lines_check.py
 
       # Executes the real promotion helpers with the injected demo
       # configuration and the real catalog: qualification, Sample/Ejemplo

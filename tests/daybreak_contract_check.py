@@ -151,11 +151,18 @@ check("demo index references the demo manifest",
 check("demo index contains no second copy of the application logic",
       demo_idx.count("function calculateScores()") == 1
       and demo_idx.count("window.showResults = function") == 1)
-check("demo index corrects the drawer promo muted color for the light surface (T5)",
-      demo_idx.count("var muted = 'color:rgba(74,63,48,0.78);';") == 1
-      and "var muted = 'color:rgba(248,246,241,0.6);';" not in demo_idx)
-check("the root page keeps its original muted literal (T5 never leaks back)",
-      root.count("var muted = 'color:rgba(248,246,241,0.6);';") == 1)
+# T5 retired 2026-09-09 (readiness gap G7): the root page's promo block now
+# resolves its colours through tokens on .drawer-promotion, so the demo page
+# inherits the correction instead of patching its own copy.
+check("root and demo promo blocks resolve the muted lines through --drawer-promo-muted (T5 retired)",
+      root.count("var muted = 'color:var(--drawer-promo-muted);';") == 1
+      and demo_idx.count("var muted = 'color:var(--drawer-promo-muted);';") == 1)
+check("neither page carries a warm-white or hand-blended promo literal any more",
+      "rgba(248,246,241,0.6)" not in root and "rgba(74,63,48,0.78)" not in demo_idx
+      and "rgba(248,246,241,0.6)" not in demo_idx)
+check("the drawer-promotion block declares the three promo ink tokens",
+      all(tok in root for tok in ("--drawer-promo-accent: var(--accent-ink);",
+                                  "--drawer-promo-muted: #665D54;", "--drawer-promo-note: #7A7168;")))
 
 # ---- amend repairs: whitespace, terminology, touch targets, typography ------
 print("Amend repairs (whitespace / terminology / iPad CSS / typography):")

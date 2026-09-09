@@ -157,6 +157,11 @@ const A43_SUMMARY = A43.concat(["tests/consultation_summary_check.mjs"]);
 // so a removed canonicalisation is observed under whichever serializer this
 // interpreter selects.
 const QR = ["tests/qr_payload_check.py"];
+// G7 (readiness gaps 2026-09-09): the drawer promotion block's ink. The
+// check pins the three .drawer-promotion tokens and the absence of the old
+// literals in source, and measures the rendered contrast of every line in
+// the block through Chromium with the illustrative scenario injected.
+const PROMO = ["tests/promo_muted_lines_check.py"];
 
 
 // ---------------------------------------------------------------------------
@@ -2615,6 +2620,25 @@ const MUTATIONS = [
   ["QR: the canonical spelling flips to lxml's (the committed stdlib form would no longer be reproduced)",
     "_CANONICAL_EMPTY_ELEMENT_CLOSE = ' />'",
     "_CANONICAL_EMPTY_ELEMENT_CLOSE = '/>'", QR, "incoming/generate_financing_qr.py"],
+  // --- G7: the drawer promotion block's ink (index.html, the demo builder) ---
+  ["the promo muted lines return to the warm-white literal (invisible on the cream panel)",
+    "var muted = 'color:var(--drawer-promo-muted);';",
+    "var muted = 'color:rgba(248,246,241,0.6);';", PROMO],
+  ["the muted token resolves to a translucent warm white",
+    "--drawer-promo-muted: #665D54;",
+    "--drawer-promo-muted: rgba(248,246,241,0.6);", PROMO],
+  ["the accent token resolves to the bright gold (about 2:1 on the panel)",
+    "--drawer-promo-accent: var(--accent-ink);",
+    "--drawer-promo-accent: var(--color-gold-bright);", PROMO],
+  ["the note token lightens below the text floor",
+    "--drawer-promo-note: #7A7168;",
+    "--drawer-promo-note: #B5ADA3;", PROMO],
+  ["the provenance line returns to its warm-white literal",
+    "font-style:italic; color:var(--drawer-promo-note); margin-top:0.2rem; line-height:1.4;",
+    "font-style:italic; color:rgba(248,246,241,0.45); margin-top:0.2rem; line-height:1.4;", PROMO],
+  ["the demo builder stops refusing the retired warm-white literal",
+    "    _expect(out, \"rgba(248,246,241,0.6)\", 0, \"the retired warm-white promo literal (T5)\")\n",
+    "", PROMO, "tools/build_black_friday_demo.py"],
 ];
 
 // ---------------------------------------------------------------------------
@@ -2680,6 +2704,9 @@ const PRISTINE_BY_FILE = {
   // governs it. Mutating each proves the suite compares them rather than
   // trusting either.
   "data/quiz.json": readFileSync(join(sandbox, "data", "quiz.json"), "utf8"),
+  // G7: the demo builder the promo-ink check pins (copied with tools/).
+  "tools/build_black_friday_demo.py":
+    readFileSync(join(sandbox, "tools", "build_black_friday_demo.py"), "utf8"),
   "docs/quiz-copy-engine-correspondence.md":
     readFileSync(join(sandbox, "docs", "quiz-copy-engine-correspondence.md"), "utf8"),
   // QR generator: the serializer canonicalisation lives here.
