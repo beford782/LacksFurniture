@@ -76,7 +76,11 @@ function grab(re, what) {
   return m ? m[0] : "";
 }
 const clone = (x) => JSON.parse(JSON.stringify(x));
-const sha = (s) => createHash("sha256").update(s).digest("hex");
+// LF-normalized, like tests/phase1_output_regression_check.mjs: the repo checks
+// these fixtures out with CRLF on Windows, so a raw-byte digest would pin the
+// checkout's line endings rather than the content and go red in any fresh
+// Windows worktree (the trap the A4.2 candidate's corrective pass recorded).
+const sha = (s) => createHash("sha256").update(String(s).split("\r\n").join("\n")).digest("hex");
 
 // ---------- extraction (verbatim engine source) ------------------------------
 section("extraction");
