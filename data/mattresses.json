@@ -79,7 +79,7 @@
                      "features":  [
                                       "plush",
                                       "soft",
-                                      "pressurerelief",
+                                      "pressureRelief",
                                       "durability",
                                       "hybrid"
                                   ],
@@ -204,8 +204,8 @@
                                       "cooling",
                                       "soft",
                                       "plush",
-                                      "pressurerelief",
-                                      "motionisolation"
+                                      "pressureRelief",
+                                      "motionIsolation"
                                   ],
                      "tags":  [
                                   "Cooling",
@@ -254,7 +254,7 @@
                                       "cooling",
                                       "medium",
                                       "hybrid",
-                                      "pressurerelief",
+                                      "pressureRelief",
                                       "support"
                                   ],
                      "tags":  [
@@ -313,7 +313,7 @@
                      "features":  [
                                       "plush",
                                       "soft",
-                                      "pressurerelief",
+                                      "pressureRelief",
                                       "hybrid",
                                       "durability"
                                   ],
@@ -352,7 +352,7 @@
                                       "support",
                                       "hybrid",
                                       "durability",
-                                      "pressurerelief"
+                                      "pressureRelief"
                                   ],
                      "tags":  [
                                   "Medium"
@@ -593,10 +593,10 @@
                        "features":  [
                                         "plush",
                                         "soft",
-                                        "pressurerelief",
+                                        "pressureRelief",
                                         "zoned",
                                         "hybrid",
-                                        "motionisolation"
+                                        "motionIsolation"
                                     ],
                        "tags":  [
                                     "Plush Box Top"
@@ -697,7 +697,7 @@
                                         "cooling",
                                         "support",
                                         "hybrid",
-                                        "pressurerelief"
+                                        "pressureRelief"
                                     ],
                        "tags":  [
                                     "Cool Gel",
@@ -761,7 +761,7 @@
                        "features":  [
                                         "medium",
                                         "cooling",
-                                        "pressurerelief",
+                                        "pressureRelief",
                                         "hybrid",
                                         "support"
                                     ],
@@ -810,7 +810,7 @@
                                         "plush",
                                         "soft",
                                         "cooling",
-                                        "pressurerelief",
+                                        "pressureRelief",
                                         "hybrid"
                                     ],
                        "tags":  [
@@ -919,8 +919,8 @@
                        "locallyMade":  true,
                        "features":  [
                                         "medium",
-                                        "motionisolation",
-                                        "pressurerelief",
+                                        "motionIsolation",
+                                        "pressureRelief",
                                         "hybrid",
                                         "support"
                                     ],
@@ -1042,7 +1042,7 @@
                        "features":  [
                                         "plush",
                                         "soft",
-                                        "pressurerelief"
+                                        "pressureRelief"
                                     ],
                        "tags":  [
                                     "Plush",
@@ -1166,7 +1166,7 @@
                                         "hybrid",
                                         "support",
                                         "durability",
-                                        "pressurerelief"
+                                        "pressureRelief"
                                     ],
                        "tags":  [
                                     "Hybrid",
@@ -1293,7 +1293,7 @@
                        "features":  [
                                         "plush",
                                         "soft",
-                                        "pressurerelief",
+                                        "pressureRelief",
                                         "zoned"
                                     ],
                        "tags":  [

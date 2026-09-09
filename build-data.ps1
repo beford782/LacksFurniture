@@ -35,20 +35,42 @@ foreach ($row in $rows) {
     }
 
     # Build features array from pipe-delimited features column (scoring tags)
-    # Convert kebab-case to camelCase to match quiz score keys
+    # Convert kebab-case to camelCase to match quiz score keys.
+    #
+    # A4.1 (roadmap 3.1, the scoring case-fold defect): this block used to run
+    # $_.Trim().ToLower() FIRST and then restore capitals only after a hyphen.
+    # A tag the CSV already authored in camelCase has no hyphen to restore
+    # from, so `pressureRelief` and `motionIsolation` reached the engine as
+    # `pressurerelief` / `motionisolation`. calculateScores() compares feature
+    # keys to the quiz's scoring keys by exact array membership, so all ten
+    # scoring rules that award those two keys - across six questions,
+    # including the strongest partner-disturbance answer and hip pain - could
+    # never fire. The catalog and the app were both correct; only this
+    # normalizer disagreed with them.
+    #
+    # The rule now: a tag with no hyphen is already canonical and is preserved
+    # VERBATIM (the CSV, generated from the workbook, is the authority on its
+    # own spelling - this script may not invent case); a kebab-case tag is
+    # still lowered and camelized exactly as before, so `pressure-relief` and
+    # `PRESSURE-Relief` both normalize to `pressureRelief`. Any drift between
+    # a catalog tag and a quiz key - in either direction - is caught by
+    # tests/scoring_key_contract_check.mjs, which also pins this block.
     $features = @()
     if ($row.features -and $row.features.Trim()) {
         $features = $row.features.Split('|') | ForEach-Object {
-            $tag = $_.Trim().ToLower()
-            # kebab-case to camelCase: split on hyphens, capitalize subsequent parts
+            $tag = $_.Trim()
             $parts = $tag.Split('-')
-            $camel = $parts[0]
-            for ($i = 1; $i -lt $parts.Length; $i++) {
-                if ($parts[$i].Length -gt 0) {
-                    $camel += $parts[$i].Substring(0,1).ToUpper() + $parts[$i].Substring(1)
+            if ($parts.Length -eq 1) {
+                $tag
+            } else {
+                $camel = $parts[0].ToLower()
+                for ($i = 1; $i -lt $parts.Length; $i++) {
+                    if ($parts[$i].Length -gt 0) {
+                        $camel += $parts[$i].Substring(0,1).ToUpper() + $parts[$i].Substring(1)
+                    }
                 }
+                $camel
             }
-            $camel
         }
     }
 

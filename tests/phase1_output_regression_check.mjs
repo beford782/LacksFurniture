@@ -189,7 +189,34 @@ const BASELINE_PATH = join(root, "tests", "fixtures", "phase1_output_baseline_da
 // is not pinned here (this fixture holds recommendation state) and is covered
 // by tests/quiz_reduction_check.mjs and tests/consultation_summary_check.mjs.
 // Hash moved in the same reviewed diff.
-const BASELINE_SHA256 = "d716dc843e140ab885d853fa25440e890520f5f206ff56096db15c55bf4ea79f";
+// 2026-09-09 amendment (A4.1 re-cut, the roadmap 3.1 case-fold repair, built
+// under the owner build direction of 2026-09-09 as a clean re-cut from main
+// e76890c - the FIRST change to what this engine recommends since the Daybreak
+// ruling, exactly the case the header's "Phase 3 change" clause describes).
+// The generator, not the engine, was repaired: build-data.ps1 lowercased every
+// feature tag before restoring capitals after a hyphen, so the catalog's
+// camelCase `pressureRelief` / `motionIsolation` reached the engine lowercased
+// and could never match the quiz keys of the same name. All ten scoring rules
+// that award those two keys - partner_sleep.partner/family,
+// partner_disturbance.yes_often/sometimes/rarely, body_type.different,
+// sleep_position.side, sleep_issues.hip_pain/stiff and
+// health_conditions.getting_older - were dead and are now live. index.html is
+// byte-identical; data/mattresses.json changed on 16 lines (13 pressureRelief,
+// 3 motionIsolation) and nothing else. Measured on the nine-question quiz:
+// EXACTLY 156 pinned cells moved, in the eight scenarios whose answers award
+// one of those keys - scores (74) and results (82) only - s2 31, s3 30, s4 3,
+// s5 9, s6 24, s7 11, s8 26, s10 22; s6's silver qualified set grew by one
+// row. s1_solo_back_firm_no_issues, s9_empty_defaults and
+// s11_heat_only_via_sleep_issue are byte-identical, as are every profile,
+// matchReasons, accessory, firmnessResolved and priority cell in all eleven
+// scenarios. No gold top pick changed in any scenario here or in the wider
+// 57-scenario matrix (tests/scoring_key_contract_check.mjs holds the
+// post-repair and the true pre-repair matrix, captured on the unrepaired
+// nine-question tree). Regenerated with the established tool
+// (--write-baseline) from the pre-change tree; the retained obsolete
+// `profile.feelWord` cells were preserved from the previous fixture rather
+// than dropped by the regenerator. Hash moved in the same reviewed diff.
+const BASELINE_SHA256 = "6258fff00f6255dad29c692c318bf515df4ac97667577d8650f4ae34f743a2a6";
 
 const WRITE_MODE = process.argv.includes("--write-baseline");
 

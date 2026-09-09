@@ -113,6 +113,12 @@ const PRICING_VALIDATOR = ["tools/validation.py --self-test", "tests/pricing_con
 // not by grep. Payload/render leaks are observed by the email-gating and
 // sleep-system suites, which own those surfaces' pins.
 const PRICING_RESOLVER = ["tests/pricing_resolver_check.mjs"];
+// A4.1 observers (roadmap 3.1): the feature-key contract suite owns the key
+// vocabulary, the reachability table and the golden ranking matrix; a mutated
+// CATALOG spelling also moves the Phase 1 recommendation fixture and the
+// scoring-isolation golden pins, so those two observe the data entries.
+const SCORING_KEYS = ["tests/scoring_key_contract_check.mjs"];
+const SCORING_KEYS_DATA = SCORING_KEYS.concat(["tests/phase1_output_regression_check.mjs", "tests/scoring_isolation_check.mjs"]);
 // Trust integrity gate observer (2026-08-21): the trust suite owns the copy <->
 // engine correspondence (document sections, cited tags, the inert-tag set,
 // shipped-vs-documented help lines, banned claims), the absence of the
@@ -2288,6 +2294,24 @@ const MUTATIONS = [
     "                            \"size\": scope.get(\"size\"),",
     PRICING_VALIDATOR, "tools/validation.py"],
 
+  // --- A4.1 (roadmap 3.1, re-cut 2026-09-09): the scoring feature-key contract.
+  // calculateScores() matches quiz scoring keys to catalog feature tags by exact
+  // array membership, so a single lowercased tag silently kills every rule that
+  // awards it. The generator is the site of the old defect; the two spellings it
+  // now preserves are the payload. All three are observed by the contract suite,
+  // which also holds the 57-scenario golden ranking matrix.
+  ["scoring keys: the generator lowercases every tag again (the roadmap 3.1 case-fold defect returns)",
+    "            $tag = $_.Trim()\n",
+    "            $tag = $_.Trim().ToLower()\n",
+    SCORING_KEYS, "build-data.ps1"],
+  ["scoring keys: a catalog pressureRelief tag is lowercased (four scoring rules across three questions go dead)",
+    "                                      \"soft\",\n                                      \"pressureRelief\",\n                                      \"durability\",",
+    "                                      \"soft\",\n                                      \"pressurerelief\",\n                                      \"durability\",",
+    SCORING_KEYS_DATA, "data/mattresses.json"],
+  ["scoring keys: the catalog motionIsolation tag is lowercased (six scoring rules across three questions go dead)",
+    "                                      \"pressureRelief\",\n                                      \"motionIsolation\"\n",
+    "                                      \"pressureRelief\",\n                                      \"motionisolation\"\n",
+    SCORING_KEYS_DATA, "data/mattresses.json"],
   // --- Phase 2.1b: the dark resolver (index.html) --------------------------
   // Each entry mutates the REAL resolver source; the resolver suite executes
   // the mutated function and the specific five-axis probe fails. Find strings
@@ -2680,6 +2704,11 @@ const PRISTINE_BY_FILE = {
   // governs it. Mutating each proves the suite compares them rather than
   // trusting either.
   "data/quiz.json": readFileSync(join(sandbox, "data", "quiz.json"), "utf8"),
+  // A4.1 (roadmap 3.1): the two halves of the scoring feature-key contract -
+  // the generator that normalizes catalog tags, and the generated catalog whose
+  // spellings the engine matches by exact membership.
+  "build-data.ps1": readFileSync(join(sandbox, "build-data.ps1"), "utf8"),
+  "data/mattresses.json": readFileSync(join(sandbox, "data", "mattresses.json"), "utf8"),
   "docs/quiz-copy-engine-correspondence.md":
     readFileSync(join(sandbox, "docs", "quiz-copy-engine-correspondence.md"), "utf8"),
   // QR generator: the serializer canonicalisation lives here.

@@ -40,17 +40,33 @@ Two facts constrain what the copy may claim:
   option. It never touches the ranking. (`trigger` was the other one until A4.3
   removed the question entirely — owner-approved 2026-09-03.)
 - **Inert tags in this deployment.** The shipped catalog's `features` vocabulary
-  is `cooling, durability, firm, hybrid, medium, motionisolation, plush,
-  pressurerelief, responsive, soft, support, zoned`. Eight quiz tags therefore
-  never add a point here: `motionIsolation` and `pressureRelief` (case-fold
-  mismatch — roadmap item 3.1 🔒) and `adjustable, comfort, durable,
-  hypoallergenic, memory, quality` (absent from the catalog — item 3.2 🔒).
-  Copy must not name an inert mechanism as if it ranked mattresses. Both items
-  are locked scoring decisions for Blake; **this document is not a request to
-  change them**, and the test that pins the inert set exists so that when either
-  ships, every line below is re-audited.
+  is `cooling, durability, firm, hybrid, medium, motionIsolation, plush,
+  pressureRelief, responsive, soft, support, zoned`. Six quiz tags never add a
+  point here: `adjustable, comfort, durable, hypoallergenic, memory, quality`,
+  absent from the catalog in any casing — roadmap item 3.2, approved to build
+  after 3.1 under the 2026-09-09 direction and still an owner decision on
+  its merge (populate the vocabulary or retire the tags). Copy must not name
+  an inert mechanism as if it ranked mattresses. **This document is not a
+  request to change 3.2**, and the test that pins the inert set exists so
+  that when it ships, every line below is re-audited.
 
-  `Inert tags: adjustable, comfort, durable, hypoallergenic, memory, motionIsolation, pressureRelief, quality`
+  **A4.1 re-cut, 2026-09-09 — item 3.1's repair built on `main`, and this
+  list shrank by two.** `motionIsolation` and `pressureRelief` were inert
+  here for a generator reason, not a catalog one: `build-data.ps1` lowercased
+  the catalog's camelCase tags, so the case-sensitive match could never
+  succeed. The generator was repaired under the owner build direction and
+  both tags are now live, carried by 3 and 13 models. The re-audit this pin
+  exists to force was performed, and it found copy that the repair makes
+  TRUE rather than copy that must change: the `sleep_position` help line
+  ("This helps us favor pressure relief, support, or a responsive feel") and
+  the `partner_disturbance` line about movement both named mechanisms that
+  could not rank a mattress; both now can. **No customer copy is changed in
+  this pass** — the re-cut is scoped to the key contract, and the wording
+  decisions this unlocks are the owner's. Weights, question count and
+  wording, tier rules and the 5-point per-tag cap are untouched;
+  `index.html` is byte-identical.
+
+  `Inert tags: adjustable, comfort, durable, hypoallergenic, memory, quality`
 
 Other consumers the copy may describe (all consume answers, none re-rank):
 

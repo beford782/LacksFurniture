@@ -5733,6 +5733,38 @@ merges stay requested rather than assumed under the agent boundary, which is
 traceability, not an acceptance gate. The repair touches no financing,
 presentation or `index.html` surface; the scoring-isolation guard stays pinned.
 
+*(**Re-cut built 2026-09-09 on `main` `e76890c`, branch
+`claude/a41-case-fold-recut` — the nine-question impact newly measured.**
+The candidate's one-line generator rule is carried verbatim (a tag with no
+hyphen is preserved as authored; a kebab-case tag is still lowered and
+camelized), `index.html` is byte-identical, and `data/mattresses.json`
+changed on exactly 16 lines — 13 `pressureRelief`, 3 `motionIsolation`.
+The pre-repair matrix was captured FIRST, on the unrepaired nine-question
+tree, with the ported contract suite; the post-repair matrix was captured
+after the repair; the suite's own case-fold reconstruction (the matrix
+re-run over an in-memory lowercased catalog) is byte-identical to that true
+pre-repair capture, so the only thing that changed is the case of two tags.
+**Nine-question impact, 57 scenarios through the real engine:** 39
+byte-identical, 18 moved; **gold top pick changed in 0 of 57**; gold order
+and membership unchanged in every scenario; silver 4 reordered and 12
+qualified-set changes; bronze 1 and 1; no model loses a point. The moved
+scenarios are exactly the partnered couples (every disturbance answer),
+side sleepers, the differing-body-type answer, hip pain, stiffness, getting
+older and the five composites that combine them — the population the two
+tags exist to serve. The figures equal the candidate's ten-question
+measurement, as they must: the removed question awarded nothing. The
+Phase 1 output fixture was regenerated from the pre-change tree: 156 pinned
+cells moved (scores 74, results 82) across eight scenarios, none in
+`s1_solo_back_firm_no_issues`, `s9_empty_defaults` or
+`s11_heat_only_via_sleep_issue`; the scoring-isolation golden pins moved on
+the same two answer sets the candidate recorded. Guards: the ported
+`tests/scoring_key_contract_check.mjs` (27 checks: the key contract, the
+reachability table pinned to exactly the six 3.2 keys, the generator's
+normaliser source, both sha-pinned matrices), a new CI and mirror step,
+three sweep entries, the correspondence document re-audited. **This is the
+engineering-verified result 3.2 builds on.** Merge stays on Blake's request
+in the roadmap's order; the mark stays ⬜ until then.)*
+
 *(**Candidate-complete 2026-09-03, recorded 2026-09-04 — not adopted, not
 merged.** A4.1, branch `claude/north-star-candidate-a41-scoring-integrity`
 head `dcb63e5`, an isolated descendant of the frozen A3.1 checkpoint, carries
