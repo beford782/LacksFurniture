@@ -52,6 +52,27 @@ foreach ($row in $rows) {
         }
     }
 
+    # Phase 2.2 (slice 2.2b): optional per-size SKU map, `queen:SKU|king:SKU`.
+    # Emitted ONLY when populated (exactly like topPickReason below), so the
+    # shipped catalog — which carries none — stays byte-identical, and the
+    # runtime gate treats an absent map and an empty map the same. The values
+    # are governed final-gate data; the validator owns their grammar. A CSV
+    # without the column (template heritage) parses as none.
+    $skus = [ordered]@{}
+    if ($row.PSObject.Properties['skus'] -and $row.skus -and $row.skus.Trim()) {
+        foreach ($pair in $row.skus.Split('|')) {
+            $p = $pair.Trim()
+            if (-not $p) { continue }
+            $idx = $p.IndexOf(':')
+            if ($idx -lt 1 -or $idx -ge ($p.Length - 1)) { throw "mattress $($row.id): skus entry '$p' must be size:SKU" }
+            $size = $p.Substring(0, $idx).Trim()
+            $sku = $p.Substring($idx + 1).Trim()
+            if (-not $size -or -not $sku) { throw "mattress $($row.id): skus entry '$p' must be size:SKU" }
+            if ($skus.Contains($size)) { throw "mattress $($row.id): duplicate skus size '$size'" }
+            $skus[$size] = $sku
+        }
+    }
+
     # Build tags array from pipe-delimited displayBadges (display chips).
     # @(...) so a SINGLE badge stays an ARRAY: a bare PS 5.1 pipeline unrolls
     # one item to a scalar, which serializes as a JSON string and breaks every
@@ -236,6 +257,9 @@ foreach ($row in $rows) {
     }
     if ($null -ne $topPickReason) {
         $mattress["topPickReason"] = $topPickReason
+    }
+    if ($skus.Count -gt 0) {
+        $mattress["skus"] = $skus
     }
 
     $result[$tier] += $mattress

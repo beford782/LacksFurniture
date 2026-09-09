@@ -534,6 +534,10 @@ SWEEP_FINDS = [
     ("index.html",
      "      if (!s || typeof s !== 'object') return false;"),
     ("index.html",
+     "      if (pres.state === 'off' || !pres.text) return '';"),
+    ("index.html",
+     "      return (typeof answers === 'object' && answers) ? answers.mattress_size : undefined;"),
+    ("index.html",
      "        var price = Number(primary.price) > 0\n"
      "          ? sleepSystemText({ en: 'From $', es: 'Desde $' }) + Number(primary.price).toLocaleString()"),
 ]

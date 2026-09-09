@@ -4342,6 +4342,40 @@ def validate_quiz(quiz) -> ValidationReport:
 
 # -- V2: catalog validation (raw tabs) ----------------------------------------
 
+# Phase 2.2 (slice 2.2b): the optional per-size SKU column. The six size ids
+# are the quiz's own `mattress_size` options (QUIZ_CANONICAL); the SKU grammar
+# is the pricing contract's (a price resolves only for an exact SKU match, so
+# the two must agree). Blank means none; the shipped catalog ships blank.
+_MATTRESS_SIZE_IDS = next(opts for (qid, _kind, opts) in QUIZ_CANONICAL if qid == "mattress_size")
+_SKU_GRAMMAR = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
+
+
+def _validate_mattress_skus(r, tag, raw):
+    text = _s(raw)
+    if not text:
+        return
+    seen = set()
+    for part in text.split("|"):
+        p = part.strip()
+        if not p:
+            continue
+        if ":" not in p:
+            r.add_error(f"Mattresses {tag}: skus entry {p!r} must be size:SKU")
+            continue
+        size, sku = p.split(":", 1)
+        size, sku = size.strip(), sku.strip()
+        if size not in _MATTRESS_SIZE_IDS:
+            r.add_error(f"Mattresses {tag}: skus size {size!r} is not a mattress_size id "
+                        f"{list(_MATTRESS_SIZE_IDS)}")
+        elif size in seen:
+            r.add_error(f"Mattresses {tag}: skus duplicate size {size!r}")
+        else:
+            seen.add(size)
+        if not sku or len(sku) > PRICING_SKU_MAX or not _SKU_GRAMMAR.fullmatch(sku):
+            r.add_error(f"Mattresses {tag}: skus value {sku!r} for {size!r} must be an "
+                        f"identifier of at most {PRICING_SKU_MAX} chars ([A-Za-z0-9._-])")
+
+
 def validate_mattresses(raw_tabs, *, source_images=None, skip_images=False,
                         languages=None) -> ValidationReport:
     r = ValidationReport()
@@ -4383,6 +4417,7 @@ def validate_mattresses(raw_tabs, *, source_images=None, skip_images=False,
                     r.add_error(f"Mattresses {tag}: firmnessScore {fs!r} not in 1-10")
             except (ValueError, TypeError):
                 r.add_error(f"Mattresses {tag}: firmnessScore {fs!r} is not an integer")
+        _validate_mattress_skus(r, tag, row.get("skus"))
         if name:
             key = name.lower()
             if key in seen_names:
@@ -5522,6 +5557,20 @@ def _self_test() -> int:
     t = _good_tabs(); t["Mattresses"][1][0]["brand"] = "Nope"
     check("brand not in Brands tab -> error",
           any("not in the Brands tab" in e for e in validate_mattresses(t, languages=langs).errors))
+
+    # Phase 2.2b: the optional per-size skus column
+    def _sku_errs(value):
+        tt = _good_tabs(); tt["Mattresses"][1][0]["skus"] = value
+        return [e for e in validate_mattresses(tt, languages=langs).errors if "skus" in e]
+    check("skus blank -> no error", _sku_errs("") == [] and _sku_errs(None) == [])
+    check("skus well-formed pairs -> no error", _sku_errs("queen:SKU-1|king:SKU.2|cal_king:SKU_3") == [])
+    check("skus unknown size -> error names the size",
+          any("not a mattress_size id" in e for e in _sku_errs("jumbo:SKU-1")))
+    check("skus duplicate size -> error", any("duplicate size" in e for e in _sku_errs("queen:A|queen:B")))
+    check("skus entry without a colon -> error", any("must be size:SKU" in e for e in _sku_errs("queenSKU")))
+    check("skus value with a space -> error", any("must be an identifier" in e for e in _sku_errs("queen:bad sku")))
+    check("skus blank value -> error", any("must be an identifier" in e for e in _sku_errs("queen:")))
+    check("skus over-long value -> error", any("must be an identifier" in e for e in _sku_errs("queen:" + "X" * 65)))
 
     # duplicate lower(name) image collision
     t = _good_tabs(); h, rows = t["Mattresses"]

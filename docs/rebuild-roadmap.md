@@ -5660,6 +5660,36 @@ remaining surfaces, status copy beside Payment Choice, the empty `skus`
 pipeline column) and 2.2c (operational controls and the localhost
 non-shipping harness with a rendered pass) follow in the same workstream.)*
 
+*(**Slice 2.2b built 2026-09-09 — the four remaining surfaces, disabled.**
+Branch `claude/phase2-2b-surfaces`, stacked on the 2.2a commit (PR #107)
+without waiting for its review or merge, per the direction's no-interim-gate
+rule; re-cut if that review changes the gate. The Results top-pick and
+supporting cards, the Sleep System finalist anchor, the Consultation Summary
+finalist hero and the Sleep Plan finalist each concatenate one slot string
+from a single builder in the gate block (`priceSlotFor`), which returns
+nothing whenever the gate is off or the state copy is blank — so in every
+production state those templates emit exactly what they emitted before, and
+the presentation suite proves it over the whole shipped catalog. The size is
+always the customer's own answer; a consumer never supplies one; a surface
+flag governs exactly the surface it names. Consumers reach the builder
+through the sandbox typeof guard the codebase already uses, which can only
+remove a slot, never add one. Calculation / threshold status copy beside
+Payment Choice moves to 2.2c, where the harness can exercise it. Guards:
++24 presentation checks (100), two sweep entries (650), two find strings
+pinned; every existing renderer suite green unchanged. Nothing activated,
+no mark moved, 2.2 stays ◐. **Second half, the same day:** the `skus`
+catalog column through the canonical pipeline — workbook schema and builder,
+the converter (header-driven, unchanged), `build-data.ps1` (parses
+`queen:SKU|king:SKU` and emits the JSON key ONLY when populated, like
+`topPickReason`) and a validator shape check in `validate_mattresses`
+(size ids = the quiz's `mattress_size` options; SKU grammar = the pricing
+contract's; eight self-test cases). The workbook, CSV and JSON were
+regenerated through the exact lineage chain: the CSV gained the column,
+blank on all 26 rows; `data/mattresses.json` is byte-identical
+(SHA-256 `d5e3d7b1…` before and after); strict golden bundle, lineage,
+scoring-isolation and Phase 1 output-regression checks unchanged and green.
+The presentation suite pins the column present and blank on every row.)*
+
 *(Mark rationale, 2026-08-28. 🔒 reads "no part of this item may start,"
 which contradicted the ruling-derived allowance for non-live preparation.
 Under the legend's own model the correct mark is ◐ — a gated production

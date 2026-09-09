@@ -82,7 +82,7 @@ M = _load("lacks_mattresses.json")
 MATT_EN_COLS = [
     "tier", "id", "name", "brand", "subBrand", "pitchKey", "archetype", "displayPriority",
     "firmnessScore", "firmnessLabel", "price", "quizTags", "displayBadges", "highlight",
-    "locally-made", "features", "reason_cooling", "reason_pressureRelief",
+    "locally-made", "skus", "features", "reason_cooling", "reason_pressureRelief",
     "reason_motionIsolation", "reason_support", "reason_plush", "reason_medium",
     "reason_firm", "reason_durability", "reason_default", "topPickReason",
     "differentiator1Title", "differentiator1Detail", "differentiator2Title", "differentiator2Detail",

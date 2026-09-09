@@ -98,7 +98,8 @@ const readRe = /STORE_CONFIG\s*\.\s*pricing\b/g;
 check("STORE_CONFIG.pricing is read exactly once in the whole file, inside the gate block",
   (html.match(readRe) || []).length === 1 && (gateBlock.match(readRe) || []).length === 1);
 for (const name of ["getPricingConfig", "pricingSurfaceEnabled", "pricingSkuFor", "pricingStateCopy",
-                    "pricingCopyList", "formatPriceAmount", "pricePresentationFor", "renderDrawerPrice"]) {
+                    "pricingCopyList", "formatPriceAmount", "pricePresentationFor", "renderDrawerPrice",
+                    "priceSizeAnswer", "priceSlotFor"]) {
   const d = new RegExp(`function\\s+${name}\\s*\\(`, "g");
   check(`${name} is declared exactly once, inside the gate block`,
     (html.match(d) || []).length === 1 && (gateBlock.match(d) || []).length === 1);
@@ -111,6 +112,42 @@ check("the drawer calls renderDrawerPrice with the customer's size answer, once,
      < html.indexOf("renderDrawerFinancing();\n\n      var drawerPromos"));
 check("the drawer carries the price slot, hidden by default, directly above Payment Choice",
   /<div class="drawer-price" id="drawerPrice" hidden><\/div>\r?\n\s*<!-- Ways to bring it home/.test(html));
+// Slice 2.2b: the four remaining surfaces reach the gate ONLY through
+// priceSlotFor, each exactly once, each behind the sandbox typeof guard, and
+// each naming its own surface key — so a surface flag governs exactly the
+// surface it names.
+const CONSUMERS = [
+  ["results top pick", "priceSlotFor('results', m, 'noct-card-price')", "renderTopPickCard(m, tier)"],
+  ["results supporting", "priceSlotFor('results', m, 'noct-card-price')", "renderSupportingCards(mattresses, tier)"],
+  ["sleep system anchor", "priceSlotFor('sleepSystem', finalist, 'sleep-system__anchor-price')", "renderSleepSystemAnchor(finalistState, recommended)"],
+  ["consultation summary hero", "priceSlotFor('handoff', item, 'hf2-finalist-hero__price')", "renderHf2FinalistHero()"],
+  ["sleep plan finalist", "priceSlotFor('sleepPlan', m, 'hf2-pick__price')", "renderSleepPlanFinalist()"],
+];
+function fnBody(sig) {
+  const at = html.indexOf("function " + sig);
+  if (at === -1) return "";
+  let depth = 0, i = html.indexOf("{", at);
+  for (; i < html.length; i++) {
+    if (html[i] === "{") depth++;
+    else if (html[i] === "}") { depth--; if (depth === 0) return html.slice(at, i + 1); }
+  }
+  return "";
+}
+{
+  const resultsCalls = html.split("priceSlotFor('results', m, 'noct-card-price')").length - 1;
+  check("results: exactly two priceSlotFor calls (top pick + supporting), no other 'results' consumer", resultsCalls === 2);
+  for (const [label, call, fn] of CONSUMERS) {
+    const body = fnBody(fn);
+    const guarded = "(typeof priceSlotFor === 'function' ? " + call + " : '')";
+    check(`${label}: its renderer carries the guarded call exactly once`,
+      body.length > 0 && body.split(guarded).length === 2, body.length ? "" : "renderer not found");
+  }
+  const totalCalls = (html.match(/priceSlotFor\s*\(/g) || []).length;
+  const declared = (html.match(/function\s+priceSlotFor\s*\(/g) || []).length;
+  check("priceSlotFor: declaration + exactly five consumer calls in the whole file", declared === 1 && totalCalls === 6, `calls=${totalCalls}`);
+  check("no consumer supplies its own size (priceSizeAnswer is the only size source for slots)",
+    (html.match(/priceSizeAnswer\s*\(/g) || []).length === 2 /* decl + the one call in priceSlotFor */);
+}
 check("the drawer price label exists in both dictionaries",
   typeof dictEn["drawer.price_label"] === "string" && dictEn["drawer.price_label"].length > 0
   && typeof dictEs["drawer.price_label"] === "string" && dictEs["drawer.price_label"].length > 0
@@ -132,7 +169,7 @@ function makeEl(id) {
 const CLOCK = Date.parse(fx._meta.clock);
 check("fixture clock parses", Number.isFinite(CLOCK));
 
-function makeEnv({ pricing, financing, lang = "en", nowMs = CLOCK, mutate = null } = {}) {
+function makeEnv({ pricing, financing, lang = "en", nowMs = CLOCK, mutate = null, answers = { mattress_size: "queen" } } = {}) {
   const els = new Map();
   const doc = { getElementById(id) { if (!els.has(id)) els.set(id, makeEl(id)); return els.get(id); } };
   const STORE_CONFIG = { pricing, financing };
@@ -142,10 +179,11 @@ function makeEnv({ pricing, financing, lang = "en", nowMs = CLOCK, mutate = null
   const api = new Function(
     "document", "STORE_CONFIG", "currentLang", "getFinancingConfig", "t", "Date",
     "window", "localStorage", "sessionStorage", "fetch", "analytics",
+    "answers",
     `"use strict";\n${src}\nreturn { gate: pricePresentationFor, render: renderDrawerPrice,
-       surface: pricingSurfaceEnabled, sku: pricingSkuFor, fmt: formatPriceAmount };`)(
+       surface: pricingSurfaceEnabled, sku: pricingSkuFor, fmt: formatPriceAmount, slot: priceSlotFor };`)(
     doc, STORE_CONFIG, lang, () => STORE_CONFIG.financing, (k) => "DICT:" + k, DATE_SHIM,
-    undefined, undefined, undefined, undefined, undefined);
+    undefined, undefined, undefined, undefined, undefined, answers);
   return { api, doc, el: (id) => doc.getElementById(id) };
 }
 const P = () => JSON.parse(JSON.stringify(fx.pricing));
@@ -182,6 +220,34 @@ section("Production: every surface is OFF for every shipped mattress and size");
   check(`shipped catalog: ${all} surface×mattress×size combinations, all OFF`, all > 0 && off === all, `off=${off}`);
   check("shipped catalog carries no skus map on any mattress (nothing could resolve even if opened)",
     Object.values(catalog).flat().every((m) => !("skus" in m)));
+  // Slice 2.2b: the `skus` column exists in the generated CSV (the pipeline
+  // can carry governed values at the final gate) and ships BLANK on every
+  // row; build-data.ps1 emits the JSON key only when populated, which is why
+  // the shipped catalog above carries no map at all.
+  {
+    const csvText = readFileSync(join(root, "data", "mattresses.csv"), "utf8");
+    const lines = csvText.split(/\r?\n/).filter((l) => l.trim().length > 0);
+    const header = lines[0].split(",");
+    const idx = header.indexOf("skus");
+    check("generated CSV carries the skus column, between locally-made and features",
+      idx !== -1 && header[idx - 1] === "locally-made" && header[idx + 1] === "features");
+    // Rows may contain quoted commas; a blank skus cell is the empty field at
+    // its position only when the row parses to the header width, so parse.
+    const parseRow = (line) => {
+      const out = []; let cur = "", q = false;
+      for (let i = 0; i < line.length; i++) {
+        const c = line[i];
+        if (q) { if (c === '"') { if (line[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += c; }
+        else if (c === '"') q = true;
+        else if (c === ",") { out.push(cur); cur = ""; }
+        else cur += c;
+      }
+      out.push(cur); return out;
+    };
+    const rows = lines.slice(1).map(parseRow);
+    check(`every one of the ${rows.length} shipped CSV rows has a BLANK skus cell`,
+      rows.length > 0 && rows.every((r) => r.length === header.length && (r[idx] || "").trim() === ""));
+  }
   // Even a mattress that WOULD resolve under the fixture is off under shipped config.
   check("shipped config: a fixture-shaped mattress with a SKU is still OFF", isOff(env.api.gate("drawer", M(), "queen", null)));
   // The renderer over the shipped config: hidden, empty, no attribute, no digit.
@@ -346,6 +412,43 @@ section("Drawer renderer: what actually lands in the slot");
 }
 
 // ---------------------------------------------------------------------------
+section("Slot builder (slice 2.2b): the four remaining surfaces");
+// ---------------------------------------------------------------------------
+{
+  const SLOT_SURFACES = ["results", "sleepSystem", "handoff", "sleepPlan"];
+  const env = makeEnv({ pricing: shipped.pricing, financing: shipped.financing });
+  let all = 0, empty = 0;
+  for (const tier of Object.keys(catalog)) for (const m of catalog[tier]) for (const s of SLOT_SURFACES) {
+    all++; if (env.api.slot(s, m, "noct-card-price") === "") empty++;
+  }
+  check(`shipped catalog: priceSlotFor returns '' for all ${all} surface×mattress combinations`, all > 0 && empty === all);
+  const dark = makeEnv({ pricing: P(), financing: F() });
+  check("fixture dark: '' on every surface", SLOT_SURFACES.every((s) => dark.api.slot(s, M(), "x") === ""));
+  const on = makeEnv({ pricing: ACTIVE({ surfaces: { drawer: false, results: true, sleepSystem: true, handoff: true, sleepPlan: true } }), financing: F() });
+  for (const s of SLOT_SURFACES) {
+    const h = on.api.slot(s, M(), "noct-card-price");
+    check(`${s} on: slot carries the label, the amount, both notes and the state attribute`,
+      h.indexOf('data-price-state="available"') !== -1 && h.indexOf("DICT:drawer.price_label") !== -1
+      && h.indexOf("$3,699") !== -1 && (h.match(/noct-card-price__note/g) || []).length === 2);
+  }
+  check("only the named surface opens: results on, sleepPlan off -> sleepPlan slot ''",
+    makeEnv({ pricing: ACTIVE({ surfaces: { results: true } }), financing: F() }).api.slot("sleepPlan", M(), "x") === "");
+  check("the size comes from the customer's answer: no answer -> unavailable copy only, never a number, even with the gate open",
+    (() => { const h = makeEnv({ pricing: ACTIVE({ surfaces: { results: true } }), financing: F(), answers: {} }).api.slot("results", M(), "x");
+      return h.indexOf('data-price-state="price-unavailable"') !== -1 && noNumeric(h); })());
+  check("the size comes from the customer's answer: king answered, queen priced -> '' (unavailable copy only, no number)",
+    (() => { const h = makeEnv({ pricing: ACTIVE({ surfaces: { results: true } }), financing: F(), answers: { mattress_size: "king" } }).api.slot("results", M(), "x");
+      return h.indexOf('data-price-state="price-unavailable"') !== -1 && noNumeric(h); })());
+  check("a hostile class name falls back to the default base", on.api.slot("results", M(), "x\" onmouseover=\"y").indexOf('class="price-slot"') !== -1);
+  check("stale on an open surface: unavailable copy only, no number",
+    (() => { const h = makeEnv({ pricing: ACTIVE({ surfaces: { results: true } }), financing: F(), nowMs: CLOCK + 30 * 86400000 }).api.slot("results", M(), "x");
+      return h.indexOf(fx.pricing.presentation.states["price-unavailable"].en) !== -1 && noNumeric(h) && h.indexOf("__note") === -1; })());
+  check("blank state copy on an open surface -> '' (never an empty box)",
+    (() => { const p = ACTIVE({ surfaces: { results: true } }); p.presentation.states = {};
+      return makeEnv({ pricing: p, financing: F(), nowMs: CLOCK + 30 * 86400000 }).api.slot("results", M(), "x") === ""; })());
+}
+
+// ---------------------------------------------------------------------------
 section("Totality: hostile inputs never throw and never admit a number");
 // ---------------------------------------------------------------------------
 {
@@ -427,6 +530,19 @@ function mutate(find, replace) {
     const e = makeEnv({ pricing: ACTIVE(), financing: F(),
       mutate: withLf(mutate("      var sku = pricingSkuFor(m, size);", "      var sku = 'FIXTURE-0001';")) });
     check("M7 SKU forged -> the no-skus probe FAILS on the mutant", e.api.gate("drawer", M({ skus: undefined }), "queen", null).state === "available");
+  }
+  // M9: the slot builder ignores OFF (emits a box in production).
+  {
+    const e = makeEnv({ pricing: shipped.pricing, financing: shipped.financing,
+      mutate: withLf(mutate("      if (pres.state === 'off' || !pres.text) return '';", "      if (false) return '';")) });
+    check("M9 slot builder ignores OFF -> the shipped-catalog '' probe FAILS on the mutant", e.api.slot("results", catalog.gold[0], "x") !== "");
+  }
+  // M10: the slot size is a constant instead of the customer's answer.
+  {
+    const e = makeEnv({ pricing: ACTIVE({ surfaces: { results: true } }), financing: F(), answers: {},
+      mutate: withLf(mutate("      return (typeof answers === 'object' && answers) ? answers.mattress_size : undefined;", "      return 'queen';")) });
+    check("M10 slot size forged -> the no-answer unavailable probe FAILS on the mutant (a number appears)",
+      e.api.slot("results", M(), "x").indexOf('data-price-state="available"') !== -1);
   }
   // M8: the surface helper defaults open like the financing helper.
   {

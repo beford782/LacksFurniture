@@ -10650,6 +10650,17 @@
     .drawer-price { margin: 1.1rem 0 0; }
     .drawer-price__amount { font: 700 1.5rem/1.2 var(--font-sans); color: var(--color-text); margin: 0.3rem 0 0.2rem; }
     .drawer-price__note { font-size: 0.8rem; line-height: 1.5; color: var(--color-text-muted); margin: 0.2rem 0 0; }
+    /* Phase 2.2 slots on the four remaining surfaces (absent in every production state). */
+    .noct-card-price, .sleep-system__anchor-price, .hf2-finalist-hero__price, .hf2-pick__price { margin: 0.45rem 0 0; }
+    .noct-card-price__label, .sleep-system__anchor-price__label, .hf2-finalist-hero__price__label, .hf2-pick__price__label {
+      font: 750 11px/1.2 var(--font-sans); text-transform: uppercase; letter-spacing: 0.08em; color: var(--color-text-muted);
+    }
+    .noct-card-price__amount, .sleep-system__anchor-price__amount, .hf2-finalist-hero__price__amount, .hf2-pick__price__amount {
+      font: 700 1.15rem/1.2 var(--font-sans); color: var(--color-text);
+    }
+    .noct-card-price__note, .sleep-system__anchor-price__note, .hf2-finalist-hero__price__note, .hf2-pick__price__note {
+      font-size: 0.78rem; line-height: 1.45; color: var(--color-text-muted); margin: 0.2rem 0 0;
+    }
     .drawer-financing .fin-btn-secondary {
       color: var(--color-text); border-color: var(--color-border);
     }
@@ -12753,6 +12764,31 @@
       box.innerHTML = html;
       box.setAttribute('data-price-state', pres.state);
       box.hidden = false;
+    }
+
+    // Slice 2.2b — the four remaining surfaces (results cards, the Sleep
+    // System finalist anchor, the Consultation Summary finalist hero, the
+    // Sleep Plan finalist) concatenate ONE slot string built here. It is ''
+    // whenever the gate is off or the state copy is blank, so in every
+    // production state those templates emit exactly what they emitted before.
+    // The size is the customer's own answer; a consumer never supplies one.
+    // Consumers call this through a typeof guard so the extracted-module
+    // test sandboxes that compile them in isolation stay runnable — the
+    // guard can only remove the slot, never add one.
+    function priceSizeAnswer() {
+      return (typeof answers === 'object' && answers) ? answers.mattress_size : undefined;
+    }
+    function priceSlotFor(surface, m, cls) {
+      var pres = pricePresentationFor(surface, m, priceSizeAnswer(), null);
+      if (pres.state === 'off' || !pres.text) return '';
+      var base = (typeof cls === 'string' && /^[a-z0-9_-]+$/i.test(cls)) ? cls : 'price-slot';
+      var html = '<div class="' + base + '" data-price-state="' + escapeHtml(pres.state) + '">'
+        + '<span class="' + base + '__label">' + escapeHtml(t('drawer.price_label')) + '</span> '
+        + '<span class="' + base + '__amount">' + escapeHtml(pres.text) + '</span>';
+      for (var i = 0; i < pres.notes.length; i++) {
+        html += '<p class="' + base + '__note">' + escapeHtml(pres.notes[i]) + '</p>';
+      }
+      return html + '</div>';
     }
     // ═══ END PHASE 2.2 PRICE PRESENTATION GATE ═══
 
@@ -17354,6 +17390,8 @@
         +     '<div class="noct-toppick-firmness-value">' + m.firmness + '/10</div>'
         +     '<div class="noct-toppick-firmness-label">' + escapeHtml(feel) + '</div>'
         +   '</div>'
+        // Phase 2.2 price slot ('' in every production state).
+        +   (typeof priceSlotFor === 'function' ? priceSlotFor('results', m, 'noct-card-price') : '')
         +   '<div class="noct-toppick-actions">'
         +     '<div class="noct-card-action-cluster">'
         +       detailsBtn
@@ -17438,6 +17476,8 @@
           +   '<div class="noct-support-meta">'
           +     '<span class="firm-value">' + m.firmness + '/10</span>' + escapeHtml(feel)
           +   '</div>'
+          // Phase 2.2 price slot ('' in every production state).
+          +   (typeof priceSlotFor === 'function' ? priceSlotFor('results', m, 'noct-card-price') : '')
           +   '<div class="noct-support-actions">'
           +     '<div class="noct-card-action-cluster">'
           +       detailsBtn
@@ -19928,6 +19968,8 @@
           '<div class="sleep-system__anchor-label">' + escapeHtml(kind === 'chosen' ? t('finalist.building_around_finalist') : t('finalist.building_around_recommended')) + '</div>' +
           '<div class="sleep-system__anchor-name">' + escapeHtml(finalist.name || '') + '</div>' +
           '<div class="sleep-system__anchor-meta">' + escapeHtml(meta) + '</div>' +
+          // Phase 2.2 price slot ('' in every production state).
+          (typeof priceSlotFor === 'function' ? priceSlotFor('sleepSystem', finalist, 'sleep-system__anchor-price') : '') +
         '</div>' +
         '<div class="sleep-system__anchor-note">' +
           escapeHtml(sleepSystemText({ en: 'Your mattress remains the center of this plan.', es: 'Tu colchón sigue siendo el centro de este plan.' })) +
@@ -21259,6 +21301,8 @@
         html += '<div class="hf2-pick">'
           + '<div class="hf2-pick__name">' + escapeHtml(m.name || '') + '</div>'
           + '<div class="hf2-pick__tier">' + escapeHtml(sleepPlanModelLine(m)) + '</div>'
+          // Phase 2.2 price slot ('' in every production state).
+          + (typeof priceSlotFor === 'function' ? priceSlotFor('sleepPlan', m, 'hf2-pick__price') : '')
           + '</div>';
       }
       if (kind !== 'chosen') {
@@ -21708,6 +21752,8 @@
           '<div class="hf2-finalist-hero__eyebrow">' + escapeHtml(eyebrow) + '</div>' +
           '<div class="hf2-finalist-hero__name">' + escapeHtml(name) + '</div>' +
           (line ? '<div class="hf2-finalist-hero__meta">' + escapeHtml(line) + '</div>' : '') +
+          // Phase 2.2 price slot ('' in every production state).
+          (typeof priceSlotFor === 'function' ? priceSlotFor('handoff', item, 'hf2-finalist-hero__price') : '') +
         '</div>';
     }
 

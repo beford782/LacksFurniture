@@ -2353,6 +2353,15 @@ const MUTATIONS = [
     "      if (!s || typeof s !== 'object') return false;",
     "      if (!s || typeof s !== 'object') return true;",
     PRICING_GATE, "index.html"],
+  // --- Phase 2.2b: the slot builder the four remaining surfaces consume ----
+  ["2.2b: the slot builder ignores OFF (a price box appears in production)",
+    "      if (pres.state === 'off' || !pres.text) return '';",
+    "      if (false) return '';",
+    PRICING_GATE, "index.html"],
+  ["2.2b: the slot size is a constant instead of the customer's answer",
+    "      return (typeof answers === 'object' && answers) ? answers.mattress_size : undefined;",
+    "      return 'queen';",
+    PRICING_GATE, "index.html"],
   // Codex exact-head review of PR #71 (2026-08-28): one entry per finding.
   ["2.1b review: the SKU identity check is gone (a price resolves without its SKU)",
     "          if (!isStr(q.sku) || !nonBlank(q.sku) || e.sku !== q.sku) continue;",
