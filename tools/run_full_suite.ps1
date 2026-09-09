@@ -273,6 +273,11 @@ $checks = @(
     # modes, every failure path, and Code.gs replayed against the recorded
     # payload. Rendered; needs the same playwright Chromium as the layout check.
     @{ Name = 'delivery harness (send-nothing live path, rendered)'; Exe = $pythonExecutable; Args = @('tests/delivery_harness_check.py') }
+    # G7 (readiness gaps 2026-09-09): the drawer promotion block's ink - the
+    # three .drawer-promotion tokens pinned in source and every rendered line's
+    # contrast measured through Chromium with the illustrative scenario
+    # injected (root page and the committed demo bundle). Rendered.
+    @{ Name = 'promo muted lines (drawer promotion ink, rendered)'; Exe = $pythonExecutable; Args = @('tests/promo_muted_lines_check.py') },
 )
 if (-not $SkipMutationSweep) {
     $checks += @{ Name = 'mutation sweep'; Exe = $nodeExecutable; Args = @('tests/mutation_sweep.mjs') }

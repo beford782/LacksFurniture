@@ -34,14 +34,15 @@ whitespace normalization:
         because the scenario is explicitly illustrative, carries no
         authorization or evidence, and cannot be redeemed; the production
         current-event system must never copy this clock behavior.
-    T5  the drawer promo detail block's muted-line color is corrected for the
-        light drawer surface. The dormant production block styles its detail
-        and expiry lines rgba(248,246,241,.6) — warm white, authored for a
-        navy surface — but the production drawer renders LIGHT, so the demo
-        deadline was invisible. Production renders no promotions today, so
-        the latent defect is repaired in the derived page only; the root page
-        stays byte-identical, and the production repair belongs to the
-        governed Daybreak presentation work (reported, not slipped in).
+    T5  RETIRED 2026-09-09 (readiness gap G7). It corrected the drawer promo
+        block's muted-line color for the light surface in the derived page
+        only, because the dormant production block styled its lines
+        rgba(248,246,241,.6) — warm white, authored for a navy surface. The
+        root page now resolves every colour in that block through tokens on
+        .drawer-promotion (--drawer-promo-accent / -muted / -note), measured
+        rendered by tests/promo_muted_lines_check.py, so there is nothing
+        left for the derived page to patch. The slot is kept so T6–T8 keep
+        their names in the contract check.
     T6  illustrative terminology. The root page's disclosed-scenario surfaces
         say "Historical Promo" / "(Historical Demo)" / "Details confirmed by
         your <store> specialist" — correct for the legacy historical
@@ -307,10 +308,11 @@ def build_demo_index(fx):
     _expect(out, anchor, 1, "the STORE_CONFIG assignment (T4 anchor)")
     out = out.replace(anchor, anchor + _demo_runtime_block(fx))
 
-    # T5 — drawer promo legibility (see the module docstring).
-    muted = "var muted = 'color:rgba(248,246,241,0.6);';"
-    _expect(out, muted, 1, "the drawer promo muted-color literal (T5)")
-    out = out.replace(muted, "var muted = 'color:rgba(74,63,48,0.78);';")
+    # T5 — retired (see the module docstring): the root page's promo block
+    # resolves its colours through .drawer-promotion tokens; the derived page
+    # inherits them and patches nothing. The former warm-white literal must
+    # not have returned to the root page.
+    _expect(out, "rgba(248,246,241,0.6)", 0, "the retired warm-white promo literal (T5)")
 
     # T6 — illustrative terminology (see the module docstring). The root page
     # keeps its legacy historical-demo strings; the demo page renders only the

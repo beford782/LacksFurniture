@@ -603,6 +603,14 @@ jobs:
       - name: daybreak demo server (loopback interception)
         run: python tests/daybreak_server_check.py
 
+      # G7 (readiness gaps 2026-09-09): the drawer promotion block's ink. The
+      # dormant block styled its lines warm white for the old navy shell and
+      # rendered invisible on the cream panel; its colours now resolve through
+      # tokens on .drawer-promotion. Pinned in source and measured rendered
+      # (Chromium, illustrative scenario injected in memory; root and demo).
+      - name: promo muted lines (drawer promotion ink, rendered)
+        run: python tests/promo_muted_lines_check.py
+
       # Executes the real promotion helpers with the injected demo
       # configuration and the real catalog: qualification, Sample/Ejemplo
       # badges, disclosure-first cue/drawer, expiry rendering, and the
