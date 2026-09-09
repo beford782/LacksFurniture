@@ -5635,6 +5635,31 @@ output above is unchanged: no production price data, surface flag, approval
 state, payment figure or live service turns on before the single final readiness
 and activation decision.)*
 
+*(**Slice 2.2a built 2026-09-09 — the price presentation gate and the drawer
+surface, disabled.** Branch `claude/phase2-2-disabled-incorporation` from
+`main` `e76890c`; design and slice plan in
+`docs/phase2-2-disabled-incorporation.md`. One marked block after the
+resolver is now the resolver's only caller and the only reader of the shipped
+pricing config, and it consumes fail-closed: off (pricing absent, emergency
+disable, display disabled, or the surface flag not strictly true — every
+production state), price-unavailable (price axis not resolved, freshness not
+fresh — the executed stale refusal 2.1 left as a breadcrumb — or eligibility
+not eligible; governed state copy only, never a number), available (the
+localized amount with the governed assumptions and disclosures adjacent).
+Calculation and threshold pass through as status only; no payment figure
+exists. SKU identity comes from an optional catalog `skus` map, which the
+shipped catalog does not carry. The drawer slot sits directly above Payment
+Choice and is hidden and emptied when off. Guards: a new presentation suite
+executes the real gate over the whole shipped catalog (every surface off,
+every render silent) and over the non-shipping fixture opened in memory;
+the resolver and contract suites' containment pins are re-bound from "zero
+consumers" to "one call site and one config read, both inside the gate";
+eight sweep entries; the shipped-state and operating-state locks are
+untouched. Nothing activated, no mark moved, 2.2 stays ◐; 2.2b (the four
+remaining surfaces, status copy beside Payment Choice, the empty `skus`
+pipeline column) and 2.2c (operational controls and the localhost
+non-shipping harness with a rendered pass) follow in the same workstream.)*
+
 *(Mark rationale, 2026-08-28. 🔒 reads "no part of this item may start,"
 which contradicted the ruling-derived allowance for non-live preparation.
 Under the legend's own model the correct mark is ◐ — a gated production

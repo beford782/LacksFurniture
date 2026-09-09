@@ -10648,6 +10648,10 @@
       border: 1px solid var(--color-border); border-radius: var(--radius);
     }
     .drawer-financing__body { font-size: 0.88rem; line-height: 1.55; margin: 0.4rem 0 0.9rem; }
+    /* Phase 2.2 price slot (hidden in every production state). */
+    .drawer-price { margin: 1.1rem 0 0; }
+    .drawer-price__amount { font: 700 1.5rem/1.2 var(--font-sans); color: var(--color-text); margin: 0.3rem 0 0.2rem; }
+    .drawer-price__note { font-size: 0.8rem; line-height: 1.5; color: var(--color-text-muted); margin: 0.2rem 0 0; }
     .drawer-financing .fin-btn-secondary {
       color: var(--color-text); border-color: var(--color-border);
     }
@@ -11519,6 +11523,12 @@
              the reason-led redesign remains gated and unauthorized. -->
         <div class="drawer-section-label" id="drawerDifferentiatorsLabel">What makes this one different</div>
         <div class="drawer-differentiators" id="drawerDifferentiators"></div>
+        <!-- Price (Phase 2.2, disabled implementation). Rendered by
+             renderDrawerPrice() through the price presentation gate; hidden and
+             empty whenever the gate is off — which is every production state
+             until the final activation decision. Grounded on the same screen
+             as Payment Choice, directly above it, never inside it. -->
+        <div class="drawer-price" id="drawerPrice" hidden></div>
         <!-- Ways to bring it home (Payment Choice) — sleep fit first,
              payment second. Rendered by renderDrawerFinancing(); hidden keeps it
              out of the accessibility tree when financing is disabled. -->
@@ -12311,12 +12321,13 @@
       return financingSourceAllowed(p.sourceUrl);
     }
 
-    // ═══ PHASE 2.1B DARK RESOLVER (definition only — zero live call sites) ═══
+    // ═══ PHASE 2.1B DARK RESOLVER (definition only — called only through the 2.2 gate) ═══
     // Owner ruling 2026-08-28 (roadmap §2.1, slice 2.1b): a PURE, DETERMINISTIC
-    // resolver. Nothing in this file calls it, and no code anywhere reads the
-    // shipped pricing config — tests/pricing_resolver_check.mjs extracts and
-    // exercises it against governed NON-SHIPPING fixtures, and the containment
-    // pins hold every pricing token inside this block. It returns FIVE
+    // resolver. Since slice 2.2a only the Phase 2.2 price presentation gate
+    // below calls it, and only that gate reads the shipped pricing config —
+    // tests/pricing_resolver_check.mjs extracts and exercises it against
+    // governed NON-SHIPPING fixtures, and the containment pins hold every
+    // pricing token inside this block and the gate block. It returns FIVE
     // INDEPENDENT AXES and never renders anything:
     //   price        resolved | unavailable — the ONLY axis carrying a number.
     //                Technically invalid data (missing, unverified,
@@ -12607,6 +12618,159 @@
       };
     }
     // ═══ END PHASE 2.1B DARK RESOLVER ═══
+
+    // ═══ PHASE 2.2 PRICE PRESENTATION GATE (disabled implementation — production renders nothing) ═══
+    // Roadmap item 2.2, Proceeds (owner build direction 2026-09-09): the ONE
+    // fail-closed consumer of the 2.1b resolver. Every price surface asks this
+    // gate and nothing else; the resolver is called from exactly one line in
+    // this block, and the shipped pricing config is read from exactly one line
+    // in this block (tests/pricing_presentation_check.mjs,
+    // tests/pricing_resolver_check.mjs and tests/pricing_contract_check.py pin
+    // both). Consumption rules, in order, each one fail-closed:
+    //   off               pricing absent, `enabled` false (emergency disable),
+    //                     `displayEnabled` false, or this surface's flag false
+    //                     -> the surface renders NOTHING (hidden, empty).
+    //                     Production ships all three false, so every surface
+    //                     is off on every screen; CI's operating-state lock
+    //                     keeps it that way until the final activation gate.
+    //   price-unavailable the resolver's price axis is not 'resolved', OR its
+    //                     freshness axis is not 'fresh' (stale / not-judgeable
+    //                     data is inert internal data and is REFUSED here —
+    //                     the executed stale-refusal contract 2.1 left as a
+    //                     breadcrumb), OR its eligibility axis is not
+    //                     'eligible' -> no numeric anywhere; only the governed
+    //                     state copy may show, and only while the surface is on.
+    //   available         a number is admitted: the resolved amount, formatted
+    //                     for the active language, with the governed
+    //                     assumptions and disclosures adjacent to it.
+    // No payment figure is ever computed or shown (V1 invariant): the
+    // calculation and threshold axes are carried through as STATUS only for
+    // later Payment Choice alignment (slice 2.2b) and never become a number.
+    // The gate is stateless: nothing here is stored, persisted, e-mailed or
+    // logged, so the session wipe has nothing to clear.
+    function getPricingConfig() {
+      return (STORE_CONFIG && STORE_CONFIG.pricing) || null;
+    }
+
+    // Strict === true: an absent surfaces map, or any value other than the
+    // boolean true, means OFF (the financing helper defaults open; this one
+    // does not — a price surface is opt-in per surface at activation).
+    function pricingSurfaceEnabled(name) {
+      var p = getPricingConfig();
+      var s = p && p.surfaces;
+      if (!s || typeof s !== 'object') return false;
+      return s[name] === true;
+    }
+
+    // The SKU the resolver must match comes from the CATALOG record, never
+    // from the pricing entry itself, so a price can only attach to the exact
+    // product-size the app is showing. `skus` is an optional per-size map on
+    // the mattress record ({ queen: 'SKU', ... }); the shipped catalog carries
+    // none, so nothing resolves in production even with the gate open.
+    function pricingSkuFor(m, size) {
+      if (!m || typeof m !== 'object' || !m.skus || typeof m.skus !== 'object') return null;
+      if (typeof size !== 'string' || !size) return null;
+      var sku = m.skus[size];
+      return (typeof sku === 'string' && sku.replace(/\s+/g, '').length > 0) ? sku : null;
+    }
+
+    // Governed, bilingual presentation copy from the pricing contract. Blank
+    // when the key is missing — the renderer then shows nothing.
+    function pricingStateCopy(key) {
+      var p = getPricingConfig();
+      var st = p && p.presentation && p.presentation.states;
+      return (st && st[key]) ? L(st[key]) : '';
+    }
+    function pricingCopyList(kind) {
+      var p = getPricingConfig();
+      var list = p && p.presentation && p.presentation[kind];
+      if (!Array.isArray(list)) return [];
+      return list.map(function (item) { return item ? L(item) : ''; })
+        .filter(function (s) { return typeof s === 'string' && s.length > 0; });
+    }
+
+    // Minor units -> a localized currency string. Whole-dollar amounts drop
+    // the cents; anything the formatter cannot express fails closed to ''.
+    function formatPriceAmount(amountMinor, currency) {
+      if (typeof amountMinor !== 'number' || !isFinite(amountMinor) || amountMinor <= 0) return '';
+      if (typeof currency !== 'string' || !currency) return '';
+      var whole = amountMinor % 100 === 0;
+      try {
+        var f = new Intl.NumberFormat(currentLang === 'es' ? 'es-US' : 'en-US', {
+          style: 'currency', currency: currency,
+          minimumFractionDigits: whole ? 0 : 2, maximumFractionDigits: 2
+        });
+        var out = f.format(amountMinor / 100);
+        return typeof out === 'string' ? out : '';
+      } catch (e) {
+        return '';
+      }
+    }
+
+    // The gate. Returns a closed presentation record:
+    //   { state: 'off' | 'price-unavailable' | 'available',
+    //     amountMinor, currency, kind, text, notes, calculation, threshold }
+    function pricePresentationFor(surface, m, size, opts) {
+      var off = { state: 'off', amountMinor: null, currency: null, kind: null,
+                  text: '', notes: [], calculation: 'unavailable', threshold: 'unknown' };
+      var p = getPricingConfig();
+      if (!p || p.enabled !== true || p.displayEnabled !== true || !pricingSurfaceEnabled(surface)) return off;
+      if (!m || typeof m !== 'object' || typeof m.id !== 'string') return off;
+      var o = (opts && typeof opts === 'object') ? opts : {};
+      var sku = pricingSkuFor(m, size);
+      var r = resolveDarkPricing(p, getFinancingConfig(), {
+        nowMs: Date.now(),
+        productId: m.id,
+        sku: sku,
+        size: size,
+        planId: (typeof o.planId === 'string') ? o.planId : null,
+        transactionAmountMinor: o.transactionAmountMinor
+      });
+      var calc = (r && r.calculation && r.calculation.status) || 'unavailable';
+      var thr = (r && r.threshold && r.threshold.status) || 'unknown';
+      var admitted = !!(r && r.price && r.price.status === 'resolved'
+        && r.freshness && r.freshness.status === 'fresh'
+        && r.eligibility && r.eligibility.status === 'eligible');
+      if (!admitted) {
+        return { state: 'price-unavailable', amountMinor: null, currency: null, kind: null,
+                 text: pricingStateCopy('price-unavailable'), notes: [],
+                 calculation: calc, threshold: thr };
+      }
+      var text = formatPriceAmount(r.price.amountMinor, r.price.currency);
+      if (!text) {
+        return { state: 'price-unavailable', amountMinor: null, currency: null, kind: null,
+                 text: pricingStateCopy('price-unavailable'), notes: [],
+                 calculation: calc, threshold: thr };
+      }
+      return { state: 'available', amountMinor: r.price.amountMinor, currency: r.price.currency,
+               kind: r.price.kind, text: text,
+               notes: pricingCopyList('assumptions').concat(pricingCopyList('disclosures')),
+               calculation: calc, threshold: thr };
+    }
+
+    // Drawer surface (the first consumer; slice 2.2a). Off -> hidden and
+    // empty, exactly like the disabled financing box beneath it. Text is
+    // escaped; nothing here reads or writes any other state.
+    function renderDrawerPrice(m, size) {
+      var box = document.getElementById('drawerPrice');
+      if (!box) return;
+      var pres = pricePresentationFor('drawer', m, size, null);
+      if (pres.state === 'off' || !pres.text) {
+        box.hidden = true;
+        box.innerHTML = '';
+        box.removeAttribute('data-price-state');
+        return;
+      }
+      var html = '<div class="drawer-section-label">' + escapeHtml(t('drawer.price_label')) + '</div>'
+        + '<div class="drawer-price__amount">' + escapeHtml(pres.text) + '</div>';
+      for (var i = 0; i < pres.notes.length; i++) {
+        html += '<p class="drawer-price__note">' + escapeHtml(pres.notes[i]) + '</p>';
+      }
+      box.innerHTML = html;
+      box.setAttribute('data-price-state', pres.state);
+      box.hidden = false;
+    }
+    // ═══ END PHASE 2.2 PRICE PRESENTATION GATE ═══
 
     // Financing copy accessor (config copy block, language-aware).
     function FC(key) {
@@ -24088,6 +24252,9 @@
       }).join('');
       if (window.dfmConstructionRender) window.dfmConstructionRender();
 
+      // Price (Phase 2.2 gate; off in production) then Payment Choice — both
+      // after the fit content: sleep fit first, price and payment second.
+      renderDrawerPrice(m, answers && answers.mattress_size);
       // Ways to bring it home (Payment Choice) — after the fit content.
       renderDrawerFinancing();
 

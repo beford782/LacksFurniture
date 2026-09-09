@@ -534,6 +534,15 @@ jobs:
       - name: pricing resolver (2.1b dark resolver, five-axis contract)
         run: node tests/pricing_resolver_check.mjs
 
+      # Phase 2.2a: the price presentation gate — the resolver's ONE consumer
+      # — executed over the shipped configuration (every surface OFF for the
+      # whole catalog) and over the governed non-shipping fixture opened in
+      # memory: off / price-unavailable / available, the executed stale
+      # refusal, eligibility withheld, catalog SKU identity, the drawer
+      # renderer, both languages, hostile totality, planted mutants rejected.
+      - name: pricing presentation (2.2a gate + drawer surface)
+        run: node tests/pricing_presentation_check.mjs
+
       # Executes the real localhost demo server against a live loopback
       # socket: loopback-only bind, narrow store-config interception, the
       # launch+72h window, untouched committed files.
