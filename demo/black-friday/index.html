@@ -10652,6 +10652,8 @@
     .drawer-price { margin: 1.1rem 0 0; }
     .drawer-price__amount { font: 700 1.5rem/1.2 var(--font-sans); color: var(--color-text); margin: 0.3rem 0 0.2rem; }
     .drawer-price__note { font-size: 0.8rem; line-height: 1.5; color: var(--color-text-muted); margin: 0.2rem 0 0; }
+    /* Phase 2.2d: plan status copy beside Payment Choice (absent in every production state). */
+    .fin-offer__price-status { font-size: 0.82rem; line-height: 1.5; color: var(--color-text-muted); margin: 0.35rem 0 0; }
     /* Phase 2.2 slots on the four remaining surfaces (absent in every production state). */
     .noct-card-price, .sleep-system__anchor-price, .hf2-finalist-hero__price, .hf2-pick__price { margin: 0.45rem 0 0; }
     .noct-card-price__label, .sleep-system__anchor-price__label, .hf2-finalist-hero__price__label, .hf2-pick__price__label {
@@ -12820,6 +12822,42 @@
       }
       return html + '</div>';
     }
+
+    // Slice 2.2d — calculation / threshold STATUS copy beside Payment Choice.
+    // Payment Choice is where a plan is in view, and the price is grounded on
+    // the same screen (the surface the sheet was opened from). For each plan
+    // card the sheet shows, and only for the customer's CHOSEN finalist, this
+    // returns the governed status copy: 'quote-only' when the plan carries no
+    // approved formula (a price exists; no payment can be computed) and
+    // 'threshold-unknown' when the plan publishes a minimum purchase and no
+    // runtime transaction amount exists. Status only — never a figure, never
+    // a payment, never when the price itself is not 'available' — and '' in
+    // every production state, so the Payment Choice §25 currency-amount ban
+    // on the D4 surfaces is untouched.
+    var PRICE_PLACEMENT_SURFACE = { results: 'results', drawer: 'drawer', handoff: 'handoff',
+                                    'sleep-plan': 'sleepPlan', 'sleep-system': 'sleepSystem' };
+    function priceStatusHtmlFor(placement, planId, plan) {
+      var surface = (typeof placement === 'string'
+        && Object.prototype.hasOwnProperty.call(PRICE_PLACEMENT_SURFACE, placement))
+        ? PRICE_PLACEMENT_SURFACE[placement] : null;
+      if (!surface || typeof planId !== 'string' || !planId) return '';
+      if (typeof resolveFinalistState !== 'function') return '';
+      var st = resolveFinalistState();
+      var finalist = (st && st.kind === 'chosen') ? st.item : null;
+      if (!finalist) return '';
+      var pres = pricePresentationFor(surface, finalist, priceSizeAnswer(), { planId: planId });
+      if (pres.state !== 'available') return '';
+      var lines = [];
+      if (pres.calculation === 'quote-only') lines.push(pricingStateCopy('quote-only'));
+      if (pres.threshold === 'unknown' && plan && typeof plan.minimumPurchase === 'number') {
+        lines.push(pricingStateCopy('threshold-unknown'));
+      }
+      var html = '';
+      for (var i = 0; i < lines.length; i++) {
+        if (lines[i]) html += '<p class="fin-offer__price-status">' + escapeHtml(lines[i]) + '</p>';
+      }
+      return html;
+    }
     // ═══ END PHASE 2.2 PRICE PRESENTATION GATE ═══
 
     // Financing copy accessor (config copy block, language-aware).
@@ -12898,6 +12936,10 @@
     // True when the last renderFinancingSheet() swapped any path's exact
     // terms for the generic staleNotice — drives the sheet's freshness region.
     var _finSheetStale = false;
+    // Slice 2.2d: the placement the sheet was opened from (the price surface
+    // the plan status copy is grounded on). Module state, memory only,
+    // cleared on close and by the session wipe; never logged or e-mailed.
+    var _finSheetPlacement = '';
     // Queued preference-action announcement work. ONE slot, deliberately.
     //
     // All four announcement strings describe the SAME variable. The sheet's
@@ -13395,6 +13437,7 @@
       var backdrop = document.getElementById('financingSheetBackdrop');
       if (!sheet || !backdrop) return;
       _financeReturnFocus = document.activeElement;
+      _finSheetPlacement = (typeof placement === 'string') ? placement : '';
       renderFinancingSheet();
       backdrop.hidden = false;
       sheet.hidden = false;
@@ -13425,6 +13468,7 @@
       if (!sheet || sheet.hidden) return;
       sheet.hidden = true;
       backdrop.hidden = true;
+      _finSheetPlacement = '';
       // Clear so the next open re-announces (a repeat of identical text is
       // not a mutation and would stay silent). BOTH sheet regions, plus any
       // queued action announcement — otherwise the departing text is still
@@ -13567,6 +13611,7 @@
               + '<h4 class="fin-offer__headline">' + finEsc(L(p.headline)) + '</h4>'
               + '<p class="fin-offer__detail">' + finEsc(L(p.detail)) + '</p>'
               + '<p class="fin-offer__disclosure">' + finEsc(L(p.disclosure)) + '</p>'
+              + (typeof priceStatusHtmlFor === 'function' && typeof _finSheetPlacement === 'string' ? priceStatusHtmlFor(_finSheetPlacement, p.id, p) : '')
               + '</div>';
           }).join('');
         } else {
@@ -13602,7 +13647,8 @@
               (ihFresh
                 ? '<p class="fin-offer__detail">' + finEsc(L(ih.detail)) + '</p>'
                 : '<p class="fin-offer__detail">' + finEsc(FC('staleNotice')) + '</p>')
-              + (ih.disclosure ? '<p class="fin-offer__disclosure">' + finEsc(L(ih.disclosure)) + '</p>' : ''))
+              + (ih.disclosure ? '<p class="fin-offer__disclosure">' + finEsc(L(ih.disclosure)) + '</p>' : '')
+              + (typeof priceStatusHtmlFor === 'function' && typeof _finSheetPlacement === 'string' ? priceStatusHtmlFor(_finSheetPlacement, ih.id, ih) : ''))
           + '</article>');
       });
 
@@ -13617,7 +13663,8 @@
               + '<p class="fin-offer__disclosure">'
               + (es ? 'Hay opciones adicionales disponibles. Los detalles del programa, costos, elegibilidad y términos de propiedad se confirman en tienda.'
                     : 'Additional options are available. Program details, costs, eligibility, and ownership terms are confirmed in store.')
-              + '</p>')
+              + '</p>'
+              + (typeof priceStatusHtmlFor === 'function' && typeof _finSheetPlacement === 'string' ? priceStatusHtmlFor(_finSheetPlacement, p.id, p) : ''))
           + '</article>');
       });
 
@@ -13659,6 +13706,7 @@
                       ? '<p class="fin-offer__detail fin-offer__example">' + finEsc(L(mx.representativeExample)) + '</p>' : '')
                 : '<p class="fin-offer__detail">' + finEsc(FC('staleNotice')) + '</p>')
               + (mx.disclosure ? '<p class="fin-offer__disclosure">' + finEsc(L(mx.disclosure)) + '</p>' : '')
+              + (typeof priceStatusHtmlFor === 'function' && typeof _finSheetPlacement === 'string' ? priceStatusHtmlFor(_finSheetPlacement, mx.id, mx) : '')
               + (mxLink
                   ? '<a class="fin-official-link" href="' + finEsc(mxLink) + '" target="_blank" rel="noopener noreferrer" '
                     + 'onclick="window.logMexicoFinancingOpen()">'
@@ -23617,6 +23665,7 @@
         payPref = null;
         payOpen = {};
         _finSheetStale = false;
+        _finSheetPlacement = '';
         _financeReturnFocus = null;
         _finModuleImpressionLogged = false;
 

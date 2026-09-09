@@ -442,6 +442,7 @@ const harness = new Function(
   var payPref = null;
   var payOpen = {};
   var _finSheetStale = false;
+  var _finSheetPlacement = '';   // slice 2.2d: the sheet's opening placement, cleared by name in the wipe
   var _finModuleImpressionLogged = false;
   var _financeReturnFocus = null;
   var _langFocusHintId = null;
@@ -484,6 +485,7 @@ const harness = new Function(
       currentLang: currentLang,
       payExplored: payExplored, payPref: payPref, payOpen: payOpen,
       finSheetStale: _finSheetStale,
+      finSheetPlacement: _finSheetPlacement,
       finImpression: _finModuleImpressionLogged,
       financeReturnFocus: _financeReturnFocus,
       analytics: analytics
@@ -499,6 +501,7 @@ const harness = new Function(
     if ('payPref' in state) payPref = state.payPref;
     if ('payOpen' in state) payOpen = state.payOpen;
     if ('finSheetStale' in state) _finSheetStale = state.finSheetStale;
+    if ('finSheetPlacement' in state) _finSheetPlacement = state.finSheetPlacement;
     if ('finImpression' in state) _finModuleImpressionLogged = state.finImpression;
     if ('financeReturnFocus' in state) _financeReturnFocus = state.financeReturnFocus;
   };
@@ -1051,6 +1054,7 @@ outer.seed({
   payPref: "plan-lacks-in-house",
   payOpen: PAY_SEED_OPEN,
   finSheetStale: true,
+  finSheetPlacement: 'results',
   finImpression: true,
   financeReturnFocus: el("someResultCard"),
 });
@@ -1267,6 +1271,8 @@ check("the preference is cleared, not merely replaced", probe().payPref === null
 check("no disclosure panel survives", Object.keys(probe().payOpen).length === 0);
 check("...and payOpen is a FRESH object", probe().payOpen !== PAY_SEED_OPEN);
 check("the sheet's stale-terms flag cleared", probe().finSheetStale === false);
+check("the sheet's opening placement cleared (2.2d: the plan status copy's surface never outlives the session)",
+      probe().finSheetPlacement === '');
 
 section("wipe matrix: window state");
 check("saved picks cleared", win._savedPicks.length === 0);

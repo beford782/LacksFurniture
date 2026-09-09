@@ -5726,6 +5726,35 @@ the catalog lacks) — pinned by four presentation checks and one sweep entry
 beside Payment Choice (`quote-only`, `threshold-unknown`), exercised
 through this harness. Nothing activated, no mark moved, 2.2 stays ◐.)*
 
+*(**Slice 2.2d built 2026-09-09 — plan status copy beside Payment Choice,
+disabled; the disabled implementation is complete.** Branch
+`claude/phase2-2d-status-copy`, stacked on 2.2c. Payment Choice is where a
+plan is in view, and the price is grounded on the same screen: the sheet
+now records the placement it was opened from (memory only, cleared on
+close and by the session wipe by name) and every plan card asks the gate
+for the customer's CHOSEN finalist on that placement's surface. Only when
+that price is `available` does a card carry status copy — the governed
+`quote-only` line when the plan has no approved formula (a price exists; no
+payment can be computed) and the governed `threshold-unknown` line when the
+plan publishes a minimum purchase and no runtime transaction amount exists.
+Status only: never a figure, never a payment, so the Payment Choice §25
+currency-amount ban on the D4 surfaces stands untouched, and `''` in every
+production state. Guards: +20 presentation checks (128) including two
+planted mutants, two sweep entries (653), two find strings; the session
+wipe clears the placement (session safety 568); the harness walk opens the
+sheet from the Sleep Plan in every state — silent in shipped, dark, stale,
+unapproved and disabled; in `available` the quote-only line on the four
+formula-less plans and no currency amount (harness 165). The threshold
+line lives inside the promotional exact-offer block, which the harness can
+never open because `exactPromotionsEnabled` stays false in every state
+(Invariant 11); the unit suite owns that line. Every existing financing
+suite green unchanged. **With 2.2a–2.2d the disabled implementation named
+by the 2026-09-09 direction is complete for this item — code,
+configuration model, UI consumers, failure states, operational controls
+and the staging / live-like verification path — and waits for the final
+gate.** Nothing activated, no mark moved, 2.2 stays ◐; per the Exit's
+exclusion none of it closes the item.)*
+
 *(Mark rationale, 2026-08-28. 🔒 reads "no part of this item may start,"
 which contradicted the ruling-derived allowance for non-live preparation.
 Under the legend's own model the correct mark is ◐ — a gated production

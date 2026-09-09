@@ -2367,6 +2367,15 @@ const MUTATIONS = [
     "      return (hit && typeof hit === 'object' && hit.id === m.id) ? hit : null;",
     "      return (hit && typeof hit === 'object') ? hit : null;",
     PRICING_GATE, "index.html"],
+  // --- Phase 2.2d: plan status copy beside Payment Choice --------------------
+  ["2.2d: the status copy ignores the price state (copy beside a plan with no available price)",
+    "      if (pres.state !== 'available') return '';",
+    "      if (false) return '';",
+    PRICING_GATE, "index.html"],
+  ["2.2d: the threshold line stops requiring a published minimum purchase",
+    "      if (pres.threshold === 'unknown' && plan && typeof plan.minimumPurchase === 'number') {",
+    "      if (pres.threshold === 'unknown') {",
+    PRICING_GATE, "index.html"],
   // Codex exact-head review of PR #71 (2026-08-28): one entry per finding.
   ["2.1b review: the SKU identity check is gone (a price resolves without its SKU)",
     "          if (!isStr(q.sku) || !nonBlank(q.sku) || e.sku !== q.sku) continue;",

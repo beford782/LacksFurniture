@@ -540,6 +540,10 @@ SWEEP_FINDS = [
     ("index.html",
      "      return (hit && typeof hit === 'object' && hit.id === m.id) ? hit : null;"),
     ("index.html",
+     "      if (pres.state !== 'available') return '';"),
+    ("index.html",
+     "      if (pres.threshold === 'unknown' && plan && typeof plan.minimumPurchase === 'number') {"),
+    ("index.html",
      "        var price = Number(primary.price) > 0\n"
      "          ? sleepSystemText({ en: 'From $', es: 'Desde $' }) + Number(primary.price).toLocaleString()"),
 ]

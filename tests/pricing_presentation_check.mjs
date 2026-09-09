@@ -145,8 +145,9 @@ function fnBody(sig) {
   const totalCalls = (html.match(/priceSlotFor\s*\(/g) || []).length;
   const declared = (html.match(/function\s+priceSlotFor\s*\(/g) || []).length;
   check("priceSlotFor: declaration + exactly five consumer calls in the whole file", declared === 1 && totalCalls === 6, `calls=${totalCalls}`);
-  check("no consumer supplies its own size (priceSizeAnswer is the only size source for slots)",
-    (html.match(/priceSizeAnswer\s*\(/g) || []).length === 2 /* decl + the one call in priceSlotFor */);
+  check("no consumer supplies its own size (priceSizeAnswer is the only size source, read only inside the gate block)",
+    (html.match(/priceSizeAnswer\s*\(/g) || []).length === 3 /* decl + priceSlotFor + priceStatusHtmlFor */
+    && (gateBlock.match(/priceSizeAnswer\s*\(/g) || []).length === 3);
 }
 check("the drawer price label exists in both dictionaries",
   typeof dictEn["drawer.price_label"] === "string" && dictEn["drawer.price_label"].length > 0
@@ -169,7 +170,7 @@ function makeEl(id) {
 const CLOCK = Date.parse(fx._meta.clock);
 check("fixture clock parses", Number.isFinite(CLOCK));
 
-function makeEnv({ pricing, financing, lang = "en", nowMs = CLOCK, mutate = null, answers = { mattress_size: "queen" }, win = undefined } = {}) {
+function makeEnv({ pricing, financing, lang = "en", nowMs = CLOCK, mutate = null, answers = { mattress_size: "queen" }, win = undefined, finalist = undefined } = {}) {
   const els = new Map();
   const doc = { getElementById(id) { if (!els.has(id)) els.set(id, makeEl(id)); return els.get(id); } };
   const STORE_CONFIG = { pricing, financing };
@@ -179,11 +180,13 @@ function makeEnv({ pricing, financing, lang = "en", nowMs = CLOCK, mutate = null
   const api = new Function(
     "document", "STORE_CONFIG", "currentLang", "getFinancingConfig", "t", "Date",
     "window", "localStorage", "sessionStorage", "fetch", "analytics",
-    "answers",
+    "answers", "resolveFinalistState",
     `"use strict";\n${src}\nreturn { gate: pricePresentationFor, render: renderDrawerPrice,
-       surface: pricingSurfaceEnabled, sku: pricingSkuFor, fmt: formatPriceAmount, slot: priceSlotFor };`)(
+       surface: pricingSurfaceEnabled, sku: pricingSkuFor, fmt: formatPriceAmount, slot: priceSlotFor,
+       status: priceStatusHtmlFor };`)(
     doc, STORE_CONFIG, lang, () => STORE_CONFIG.financing, (k) => "DICT:" + k, DATE_SHIM,
-    win, undefined, undefined, undefined, undefined, answers);
+    win, undefined, undefined, undefined, undefined, answers,
+    finalist === undefined ? undefined : () => finalist);
   return { api, doc, el: (id) => doc.getElementById(id) };
 }
 const P = () => JSON.parse(JSON.stringify(fx.pricing));
@@ -468,6 +471,72 @@ section("Slot builder (slice 2.2b): the four remaining surfaces");
 }
 
 // ---------------------------------------------------------------------------
+section("Plan status copy beside Payment Choice (slice 2.2d): status only, never a figure");
+// ---------------------------------------------------------------------------
+{
+  const CHOSEN = { kind: "chosen", item: M() };
+  const PLAN_FORMULA = { id: "synchrony-9-99-72", minimumPurchase: 500 };   // the fixture's formula plan
+  const PLAN_QUOTE = { id: "synchrony-0-48", minimumPurchase: 4200 };       // published plan, no formula
+  const PLAN_NOMIN = { id: "lacks-in-house", minimumPurchase: null };
+  const QUOTE = FX_STATE("quote-only"), THRESH = FX_STATE("threshold-unknown");
+  function FX_STATE(k) { return { en: fx.pricing.presentation.states[k].en, es: fx.pricing.presentation.states[k].es }; }
+  // Production: '' for every placement and plan, chosen finalist or not.
+  {
+    const e = makeEnv({ pricing: shipped.pricing, financing: shipped.financing, finalist: CHOSEN });
+    check("shipped: '' for every placement and every shipped plan",
+      ["results", "drawer", "handoff", "sleep-plan", "sleep-system", "sheet", "mexico", ""].every((pl) =>
+        (shipped.financing.plans || []).every((p) => e.api.status(pl, p.id, p) === "")));
+  }
+  // Fixture dark: '' (the gate is off).
+  check("fixture dark: ''", makeEnv({ pricing: P(), financing: F(), finalist: CHOSEN }).api.status("results", PLAN_QUOTE.id, PLAN_QUOTE) === "");
+  const on = makeEnv({ pricing: ACTIVE({ surfaces: { results: true } }), financing: F(), finalist: CHOSEN });
+  check("opened, chosen finalist, plan without a formula but with a minimum -> quote-only AND threshold-unknown copy, in that order, no digit",
+    (() => { const h = on.api.status("results", PLAN_QUOTE.id, PLAN_QUOTE);
+      return h.indexOf(QUOTE.en) !== -1 && h.indexOf(THRESH.en) !== -1 && h.indexOf(QUOTE.en) < h.indexOf(THRESH.en)
+        && (h.match(/fin-offer__price-status/g) || []).length === 2 && noNumeric(h); })());
+  check("opened, plan WITH the fixture formula -> no quote-only copy; threshold-unknown only (minimum published, no runtime amount)",
+    (() => { const h = on.api.status("results", PLAN_FORMULA.id, PLAN_FORMULA);
+      return h.indexOf(QUOTE.en) === -1 && h.indexOf(THRESH.en) !== -1 && (h.match(/fin-offer__price-status/g) || []).length === 1; })());
+  check("opened, plan without a published minimum -> quote-only copy only (no threshold line)",
+    (() => { const h = on.api.status("results", PLAN_NOMIN.id, PLAN_NOMIN);
+      return h.indexOf(QUOTE.en) !== -1 && h.indexOf(THRESH.en) === -1; })());
+  check("placement -> surface: the sheet opened from the drawer reads the DRAWER flag (results open, drawer off -> '')",
+    makeEnv({ pricing: ACTIVE({ surfaces: { drawer: false, results: true } }), financing: F(), finalist: CHOSEN }).api.status("drawer", PLAN_QUOTE.id, PLAN_QUOTE) === ""
+    && makeEnv({ pricing: ACTIVE({ surfaces: { drawer: true, results: false } }), financing: F(), finalist: CHOSEN }).api.status("drawer", PLAN_QUOTE.id, PLAN_QUOTE) !== "");
+  check("unmapped placements ('sheet', 'mexico', '', 7) -> ''",
+    ["sheet", "mexico", "", 7, null].every((pl) => on.api.status(pl, PLAN_QUOTE.id, PLAN_QUOTE) === ""));
+  check("no plan id -> ''", on.api.status("results", "", PLAN_QUOTE) === "" && on.api.status("results", null, PLAN_QUOTE) === "");
+  check("no chosen finalist (kind none) -> ''",
+    makeEnv({ pricing: ACTIVE({ surfaces: { results: true } }), financing: F(), finalist: { kind: "none", item: null } }).api.status("results", PLAN_QUOTE.id, PLAN_QUOTE) === "");
+  check("no finalist resolver in scope (sandbox) -> ''",
+    makeEnv({ pricing: ACTIVE({ surfaces: { results: true } }), financing: F() }).api.status("results", PLAN_QUOTE.id, PLAN_QUOTE) === "");
+  check("stale price -> '' (status copy never appears without an available price)",
+    makeEnv({ pricing: ACTIVE({ surfaces: { results: true } }), financing: F(), finalist: CHOSEN, nowMs: CLOCK + 30 * 86400000 }).api.status("results", PLAN_QUOTE.id, PLAN_QUOTE) === "");
+  check("eligibility withheld -> ''",
+    (() => { const p = ACTIVE({ surfaces: { results: true } }); p.presentation.approvals.legal = { status: "unapproved", by: "", at: null };
+      return makeEnv({ pricing: p, financing: F(), finalist: CHOSEN }).api.status("results", PLAN_QUOTE.id, PLAN_QUOTE) === ""; })());
+  check("es: the Spanish governed copy",
+    makeEnv({ pricing: ACTIVE({ surfaces: { results: true } }), financing: F(), finalist: CHOSEN, lang: "es" }).api.status("results", PLAN_QUOTE.id, PLAN_QUOTE).indexOf(QUOTE.es) !== -1);
+  check("blank governed copy -> nothing rendered for that line",
+    (() => { const p = ACTIVE({ surfaces: { results: true } }); p.presentation.states = { "price-unavailable": p.presentation.states["price-unavailable"] };
+      return makeEnv({ pricing: p, financing: F(), finalist: CHOSEN }).api.status("results", PLAN_QUOTE.id, PLAN_QUOTE) === ""; })());
+  check("copy is HTML-escaped",
+    (() => { const p = ACTIVE({ surfaces: { results: true } }); p.presentation.states["quote-only"].en = "<img src=x onerror=y>";
+      const h = makeEnv({ pricing: p, financing: F(), finalist: CHOSEN }).api.status("results", PLAN_QUOTE.id, PLAN_QUOTE);
+      return h.indexOf("<img") === -1 && h.indexOf("&lt;img") !== -1; })());
+  // Source pins: every plan card in the sheet carries the guarded call; the sheet records and clears its placement.
+  const sheet = fnBody("renderFinancingSheet()");
+  check("renderFinancingSheet: four guarded status calls (promotional per plan, installment, evergreen, Mexico)",
+    (sheet.match(/typeof priceStatusHtmlFor === 'function' && typeof _finSheetPlacement === 'string' \? priceStatusHtmlFor\(_finSheetPlacement, /g) || []).length === 4);
+  check("priceStatusHtmlFor: declaration + exactly four calls in the whole file",
+    (html.match(/function\s+priceStatusHtmlFor\s*\(/g) || []).length === 1 && (html.match(/priceStatusHtmlFor\s*\(/g) || []).length === 5);
+  check("the sheet records its opening placement before rendering and clears it on close and in the wipe",
+    /_finSheetPlacement = \(typeof placement === 'string'\) \? placement : '';\r?\n\s*renderFinancingSheet\(\);/.test(html)
+    && (html.match(/_finSheetPlacement = '';/g) || []).length === 3 /* declaration + close + wipe */
+    && (html.match(/var _finSheetPlacement = '';/g) || []).length === 1);
+}
+
+// ---------------------------------------------------------------------------
 section("Totality: hostile inputs never throw and never admit a number");
 // ---------------------------------------------------------------------------
 {
@@ -570,6 +639,20 @@ function mutate(find, replace) {
       mutate: withLf(mutate("      return (hit && typeof hit === 'object' && hit.id === m.id) ? hit : null;", "      return (hit && typeof hit === 'object') ? hit : null;")) });
     check("M11 index id check dropped -> the cross-id probe FAILS on the mutant",
       e.api.slot("sleepSystem", { id: "g6" }, "x").indexOf('data-price-state="available"') !== -1);
+  }
+  // M12: the status copy ignores the price state (copy beside a plan with no available price).
+  {
+    const e = makeEnv({ pricing: ACTIVE({ surfaces: { results: true } }), financing: F(), finalist: { kind: "chosen", item: M() }, nowMs: CLOCK + 30 * 86400000,
+      mutate: withLf(mutate("      if (pres.state !== 'available') return '';", "      if (false) return '';")) });
+    check("M12 status copy ignores the price state -> the stale '' probe FAILS on the mutant",
+      e.api.status("results", "synchrony-0-48", { id: "synchrony-0-48", minimumPurchase: 4200 }) !== "");
+  }
+  // M13: the threshold line stops requiring a published minimum.
+  {
+    const e = makeEnv({ pricing: ACTIVE({ surfaces: { results: true } }), financing: F(), finalist: { kind: "chosen", item: M() },
+      mutate: withLf(mutate("      if (pres.threshold === 'unknown' && plan && typeof plan.minimumPurchase === 'number') {", "      if (pres.threshold === 'unknown') {")) });
+    check("M13 threshold line without a published minimum -> the no-minimum probe FAILS on the mutant",
+      e.api.status("results", "lacks-in-house", { id: "lacks-in-house", minimumPurchase: null }).indexOf(fx.pricing.presentation.states["threshold-unknown"].en) !== -1);
   }
   // M8: the surface helper defaults open like the financing helper.
   {

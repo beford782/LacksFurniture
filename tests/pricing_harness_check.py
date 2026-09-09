@@ -261,6 +261,16 @@ async (ARGS) => {
   await wait(150);
   const plan = document.getElementById('sleepPlanFinalist');
   out.plan = { slots: plan ? plan.querySelectorAll('.hf2-pick__price').length : -1, text: plan ? plan.textContent : '' };
+  // Payment Choice sheet opened from the Sleep Plan (slice 2.2d): plan status
+  // copy beside the cards — status only, never a currency amount.
+  window.openFinancingSheet('sleep-plan');
+  await wait(200);
+  const cards = document.getElementById('financingSheetCards');
+  out.sheet = { statusLines: cards ? cards.querySelectorAll('.fin-offer__price-status').length : -1,
+                text: cards ? cards.textContent : '',
+                dollars: cards ? (cards.textContent.match(/\$\s?\d/g) || []).length : -1,
+                cardCount: cards ? cards.querySelectorAll('.fin-card').length : -1 };
+  if (typeof window.closeFinancingSheet === 'function') window.closeFinancingSheet();
   // Whole-document silence probe
   out.anySlot = document.querySelectorAll('[data-price-state]').length;
   // Every screen's text (hidden screens included — textContent, not innerText,
@@ -293,7 +303,20 @@ def walk(browser, port, lang, size, width, height):
     return r
 
 
+QUOTE = {"en": FX["pricing"]["presentation"]["states"]["quote-only"]["en"],
+         "es": FX["pricing"]["presentation"]["states"]["quote-only"]["es"]}
+THRESH = {"en": FX["pricing"]["presentation"]["states"]["threshold-unknown"]["en"],
+          "es": FX["pricing"]["presentation"]["states"]["threshold-unknown"]["es"]}
+
+
+def expect_sheet_silent(tag, r):
+    check(f"{tag}: Payment Choice sheet carries no plan status copy and no currency amount",
+          r["sheet"]["cardCount"] >= 1 and r["sheet"]["statusLines"] == 0 and r["sheet"]["dollars"] == 0,
+          f"cards={r['sheet']['cardCount']} status={r['sheet']['statusLines']} dollars={r['sheet']['dollars']}")
+
+
 def expect_off(tag, r):
+    expect_sheet_silent(tag, r)
     check(f"{tag}: no page error", not r["errors"], "; ".join(r["errors"][:2]))
     check(f"{tag}: Results cards carry no price slot", r["resultsSlots"] == 0)
     check(f"{tag}: drawer price slot hidden and empty", r["drawer"]["hidden"] is True and r["drawer"]["text"] == "" and r["drawer"]["state"] is None)
@@ -304,6 +327,7 @@ def expect_off(tag, r):
 
 
 def expect_unavailable(tag, r, lang):
+    expect_sheet_silent(tag, r)
     check(f"{tag}: no page error", not r["errors"], "; ".join(r["errors"][:2]))
     check(f"{tag}: every surface shows the governed unavailable copy and no number",
           r["resultsSlots"] >= 1 and all(s == "price-unavailable" for s in r["resultsStates"])
@@ -326,6 +350,17 @@ def expect_available(tag, r, lang):
     check(f"{tag}: the accessory 'From $' lines are still the catalog's own (excluded from the count, present on the walk)",
           r["accessoryFrom"] >= 1)
     check(f"{tag}: no per-period payment text anywhere (V1 invariant)", r["perPeriod"] == 0)
+    # 2.2d: the sheet opened from the Sleep Plan (its surface is open in
+    # this state) shows the governed quote-only copy beside every plan card
+    # that carries no formula (the four non-promotional plans) and never an
+    # amount. The threshold line lives inside the promotional exact-offer
+    # block, which the harness can never open: exactPromotionsEnabled stays
+    # false in every state (Invariant 11), so those cards show the generic
+    # stale notice and no per-plan block — the unit suite owns that line.
+    check(f"{tag}: Payment Choice sheet shows the quote-only status copy on the four formula-less plans and no currency amount",
+          r["sheet"]["cardCount"] >= 1 and r["sheet"]["statusLines"] == 4
+          and QUOTE[lang] in r["sheet"]["text"] and THRESH[lang] not in r["sheet"]["text"] and r["sheet"]["dollars"] == 0,
+          f"cards={r['sheet']['cardCount']} status={r['sheet']['statusLines']} dollars={r['sheet']['dollars']}")
 
 
 def rendered():
