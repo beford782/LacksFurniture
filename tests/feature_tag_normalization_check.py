@@ -24,6 +24,7 @@
 import io
 import json
 import os
+import shutil
 import subprocess
 import sys
 
@@ -104,7 +105,12 @@ if func_src:
         + "foreach ($i in $inputs) { $out += ,(Convert-FeatureTag $i) }\n"
         + "ConvertTo-Json -InputObject $out -Compress\n"
     )
-    exe = "powershell.exe"
+    # pwsh where PowerShell 7 is installed (Linux CI, and the mutation sweep's
+    # sandbox there), Windows PowerShell otherwise: the same choice
+    # tools/convert_store_data.py makes before it runs build-data.ps1. The
+    # first CI run of this suite went red in the sweep baseline because this
+    # line named powershell.exe unconditionally (2026-09-09).
+    exe = shutil.which("pwsh") or shutil.which("powershell") or "powershell.exe"
     proc = subprocess.run([exe, "-NoProfile", "-NonInteractive", "-Command", script],
                           capture_output=True, text=True)
     check("the extracted function executed in PowerShell", proc.returncode == 0,

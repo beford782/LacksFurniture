@@ -56,10 +56,10 @@ jobs:
     # "Full suite (18 checks)") — renaming it here without updating the
     # protection rule in the same change would leave every PR waiting on a
     # check that never reports. The name is a LEGACY LABEL and its number has
-    # been wrong for many slices: the workflow now invokes 50 verification
-    # steps (44 `run: node|python tests/...` steps, three `tools/*.py
+    # been wrong for many slices: the workflow now invokes 52 verification
+    # steps (47 `run: node|python tests/...` steps, three `tools/*.py
     # --self-test` steps, the workbook validation and the QR committed-asset
-    # check), A4.3's quiz-reduction suite being the newest.
+    # check), A4.2's two scoring suites being the newest.
     # The count is stated with its own definition so it can be re-derived
     # rather than trusted; renaming name+protection together is an operator
     # (Blake) action, tracked in the 0.6 PR notes.
@@ -260,6 +260,19 @@ jobs:
       # stays auditable.
       - name: scoring key contract (feature keys + golden rankings)
         run: node tests/scoring_key_contract_check.mjs
+
+      # A4.2 (roadmap 3.2): the vocabulary contract - every quiz scoring key is
+      # a reachable catalog feature or a governed dormant key, dormancy proved
+      # by execution, and the before/after matrix of the durable -> durability
+      # fix. Same order as the local mirror (tools/run_full_suite.ps1).
+      - name: scoring vocabulary (reachable or governed dormant keys)
+        run: node tests/scoring_vocabulary_check.mjs
+
+      # A4.2 corrective pass: the feature-tag normalization contract executed
+      # against BOTH the Python validator and the PowerShell generator from one
+      # shared case table, so the two cannot drift apart again.
+      - name: feature tag normalization (validator and generator agree)
+        run: python tests/feature_tag_normalization_check.py
 
       # Replaces the retired "handoff interest" suite, which tested the
       # salesperson-marked discussion agenda that Slice 4 (decision D4) removed.
