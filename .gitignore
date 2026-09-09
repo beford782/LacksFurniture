@@ -27,6 +27,7 @@ docs/*
 !docs/phase2-2-disabled-incorporation.md
 !docs/production-readiness-gaps-2026-09-09.md
 !docs/daybreak-promo-muted-lines-2026-09-09.md
+!docs/production-readiness-candidate-2026-09-09.md
 tools/strip-bg.py
 
 # Local scratch / design mockups (kept locally, never committed)

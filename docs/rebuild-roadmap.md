@@ -6416,7 +6416,7 @@ document, not here.
     code and what is a final-gate input — with G1 found already closed by
     Slice 6 C5, G5 (converter line-ending churn) and G6 (the CLAUDE.md
     step-count drift) built in the same PR as the list, and G4, G2 and G7
-    next as their own bounded PRs.)*
+    next as their own bounded PRs.)* *(Later still, 2026-09-09: G4, G2 and G7 built as PRs #116–#118; the integrated candidate assembled as `claude/integrated-candidate-2026-09-09` (PR #119), seven `--no-ff` merges of the construction tips plus one integration commit; the automated final combined validation is recorded in `docs/production-readiness-candidate-2026-09-09.md` — local mirror 56/56, mutation sweep 695/695 caught, 0 survived, 0 did not apply, CI Full suite pass (16m36s, Linux sweep included); activation decision: NOT activated, every invariant verified on the shipped data. The single human pass listed there remains the gate. No owner mark moves.)*
 
 ---
 
