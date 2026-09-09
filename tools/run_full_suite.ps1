@@ -95,7 +95,7 @@ $powerShellExecutable = Resolve-DreamFinderProgram -Candidates @(
     'powershell'
 ) -Label 'PowerShell (pwsh preferred; the Codex-bundled pwsh or Windows PowerShell 5.1 accepted)'
 
-# Mirror of the `verify` job in .github/workflows/ci.yml, in CI order: 49 checks
+# Mirror of the `verify` job in .github/workflows/ci.yml, in CI order: 50 checks
 # plus the mutation sweep = 49. (The CI job's display name, "Full suite (18
 # checks)", is a legacy label pinned by branch protection; do not trust its
 # number.) When ci.yml gains or loses a `run: node|python ...` step, change
@@ -151,6 +151,7 @@ $checks = @(
     @{ Name = 'pricing contract (dark shipped-state lock)'; Exe = $pythonExecutable; Args = @('tests/pricing_contract_check.py') },
     @{ Name = 'pricing resolver (2.1b five-axis contract)'; Exe = $nodeExecutable; Args = @('tests/pricing_resolver_check.mjs') },
     @{ Name = 'pricing presentation (2.2a gate + drawer surface)'; Exe = $nodeExecutable; Args = @('tests/pricing_presentation_check.mjs') },
+    @{ Name = 'pricing harness (2.2c localhost non-shipping preview + rendered pass)'; Exe = $pythonExecutable; Args = @('tests/pricing_harness_check.py') },
     @{ Name = 'daybreak demo server'; Exe = $pythonExecutable; Args = @('tests/daybreak_server_check.py') },
     @{ Name = 'daybreak demo runtime'; Exe = $nodeExecutable; Args = @('tests/daybreak_demo_runtime_check.mjs') }
 )

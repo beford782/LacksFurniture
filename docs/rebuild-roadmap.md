@@ -5690,6 +5690,42 @@ blank on all 26 rows; `data/mattresses.json` is byte-identical
 scoring-isolation and Phase 1 output-regression checks unchanged and green.
 The presentation suite pins the column present and blank on every row.)*
 
+*(**Slice 2.2c built 2026-09-09 — the staging / live-like verification path,
+and a repair the path found.** Branch `claude/phase2-2c-harness`, stacked on
+2.2b. `tools/serve_pricing_preview.py` is a localhost-only, NON-SHIPPING
+harness: it serves the repository and intercepts only the store-config and
+catalog documents, returning in-memory drill states derived from the
+governed non-shipping fixture — expanded to one FIXTURE queen price per
+shipped mattress, stamps shifted to the server's start so the runtime gate
+judges them on the real clock, a FIXTURE SKU injected per mattress. Five
+states: dark (the fixture as committed: everything off), available (opened
+in memory), stale (evidence thirty days old: the executed stale refusal),
+unapproved (eligibility withheld), disabled (the emergency-off drill).
+Before serving, the production validators judge each state's dark form —
+clean, except the stale drill, which they refuse for exactly its staleness
+— and refuse every opened form, because `displayEnabled: true` can never
+ship; the harness therefore proves the runtime gate alone.
+`exactPromotionsEnabled` stays false in every state (Invariant 11) and no
+committed file is written. `tests/pricing_harness_check.py` (142 checks, a
+new CI and mirror step, 49 → 50 checks plus the sweep) executes the real
+builder and handler against a live loopback server, then drives the real
+page through headless Chromium for the shipped configuration and every
+drill state, in both languages and both tablet orientations: shipped and
+dark silent on every surface, available with FIXTURE amounts and the
+adjacent assumption and disclosure on all five surfaces, stale and
+unapproved with the governed copy only and no number, disabled silent
+again, no page errors, no per-period text, committed files byte-identical.
+**The repair:** the first rendered walk showed the Sleep System anchor, the
+Consultation Summary hero and the Sleep Plan finalist could never resolve —
+they hand the gate a saved-pick *projection* that carries no `skus`. The
+gate now reads the SKU from the catalog record of the same id in the
+results-time index, and from nowhere else (an index entry whose id
+disagrees is ignored; a projection can never supply a SKU for a product
+the catalog lacks) — pinned by four presentation checks and one sweep entry
+(651). Still owed inside 2.2: the calculation / threshold status copy
+beside Payment Choice (`quote-only`, `threshold-unknown`), exercised
+through this harness. Nothing activated, no mark moved, 2.2 stays ◐.)*
+
 *(Mark rationale, 2026-08-28. 🔒 reads "no part of this item may start,"
 which contradicted the ruling-derived allowance for non-live preparation.
 Under the legend's own model the correct mark is ◐ — a gated production

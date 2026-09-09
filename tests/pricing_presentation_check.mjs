@@ -97,7 +97,7 @@ check("resolveDarkPricing is CALLED exactly once in the whole file, inside the g
 const readRe = /STORE_CONFIG\s*\.\s*pricing\b/g;
 check("STORE_CONFIG.pricing is read exactly once in the whole file, inside the gate block",
   (html.match(readRe) || []).length === 1 && (gateBlock.match(readRe) || []).length === 1);
-for (const name of ["getPricingConfig", "pricingSurfaceEnabled", "pricingSkuFor", "pricingStateCopy",
+for (const name of ["getPricingConfig", "pricingSurfaceEnabled", "pricingCatalogRecord", "pricingSkuFor", "pricingStateCopy",
                     "pricingCopyList", "formatPriceAmount", "pricePresentationFor", "renderDrawerPrice",
                     "priceSizeAnswer", "priceSlotFor"]) {
   const d = new RegExp(`function\\s+${name}\\s*\\(`, "g");
@@ -169,7 +169,7 @@ function makeEl(id) {
 const CLOCK = Date.parse(fx._meta.clock);
 check("fixture clock parses", Number.isFinite(CLOCK));
 
-function makeEnv({ pricing, financing, lang = "en", nowMs = CLOCK, mutate = null, answers = { mattress_size: "queen" } } = {}) {
+function makeEnv({ pricing, financing, lang = "en", nowMs = CLOCK, mutate = null, answers = { mattress_size: "queen" }, win = undefined } = {}) {
   const els = new Map();
   const doc = { getElementById(id) { if (!els.has(id)) els.set(id, makeEl(id)); return els.get(id); } };
   const STORE_CONFIG = { pricing, financing };
@@ -183,7 +183,7 @@ function makeEnv({ pricing, financing, lang = "en", nowMs = CLOCK, mutate = null
     `"use strict";\n${src}\nreturn { gate: pricePresentationFor, render: renderDrawerPrice,
        surface: pricingSurfaceEnabled, sku: pricingSkuFor, fmt: formatPriceAmount, slot: priceSlotFor };`)(
     doc, STORE_CONFIG, lang, () => STORE_CONFIG.financing, (k) => "DICT:" + k, DATE_SHIM,
-    undefined, undefined, undefined, undefined, undefined, answers);
+    win, undefined, undefined, undefined, undefined, answers);
   return { api, doc, el: (id) => doc.getElementById(id) };
 }
 const P = () => JSON.parse(JSON.stringify(fx.pricing));
@@ -440,6 +440,25 @@ section("Slot builder (slice 2.2b): the four remaining surfaces");
     (() => { const h = makeEnv({ pricing: ACTIVE({ surfaces: { results: true } }), financing: F(), answers: { mattress_size: "king" } }).api.slot("results", M(), "x");
       return h.indexOf('data-price-state="price-unavailable"') !== -1 && noNumeric(h); })());
   check("a hostile class name falls back to the default base", on.api.slot("results", M(), "x\" onmouseover=\"y").indexOf('class="price-slot"') !== -1);
+  // Slice 2.2c repair: the finalist surfaces hand the gate a PROJECTION (a
+  // saved pick carries no skus); the SKU is read from the catalog record of
+  // the same id in the results-time index, and from nowhere else.
+  {
+    const projection = { id: "g6", name: "Fixture Six" };           // no skus, like a saved pick
+    const index = { g6: { m: M() }, g7: { m: M({ id: "g7", skus: { queen: "OTHER" } }) } };
+    const withIndex = makeEnv({ pricing: ACTIVE({ surfaces: { sleepSystem: true } }), financing: F(), win: { _drawerData: index } });
+    check("projection without skus resolves through the catalog record of the same id",
+      withIndex.api.slot("sleepSystem", projection, "x").indexOf('data-price-state="available"') !== -1);
+    const noIndex = makeEnv({ pricing: ACTIVE({ surfaces: { sleepSystem: true } }), financing: F(), win: { _drawerData: null } });
+    check("projection without skus and no catalog index -> unavailable copy only",
+      noIndex.api.slot("sleepSystem", projection, "x").indexOf('data-price-state="price-unavailable"') !== -1);
+    const wrongId = makeEnv({ pricing: ACTIVE({ surfaces: { sleepSystem: true } }), financing: F(), win: { _drawerData: { g6: { m: M({ id: "g7" }) } } } });
+    check("an index entry whose record id disagrees is ignored (no SKU borrowed across ids)",
+      wrongId.api.slot("sleepSystem", projection, "x").indexOf('data-price-state="price-unavailable"') !== -1);
+    check("a projection that carries its own skus map is used as-is (index not consulted)",
+      makeEnv({ pricing: ACTIVE({ surfaces: { sleepSystem: true } }), financing: F(), win: { _drawerData: { g6: { m: M({ skus: { queen: "OTHER" } }) } } } })
+        .api.slot("sleepSystem", M(), "x").indexOf('data-price-state="available"') !== -1);
+  }
   check("stale on an open surface: unavailable copy only, no number",
     (() => { const h = makeEnv({ pricing: ACTIVE({ surfaces: { results: true } }), financing: F(), nowMs: CLOCK + 30 * 86400000 }).api.slot("results", M(), "x");
       return h.indexOf(fx.pricing.presentation.states["price-unavailable"].en) !== -1 && noNumeric(h) && h.indexOf("__note") === -1; })());
@@ -543,6 +562,14 @@ function mutate(find, replace) {
       mutate: withLf(mutate("      return (typeof answers === 'object' && answers) ? answers.mattress_size : undefined;", "      return 'queen';")) });
     check("M10 slot size forged -> the no-answer unavailable probe FAILS on the mutant (a number appears)",
       e.api.slot("results", M(), "x").indexOf('data-price-state="available"') !== -1);
+  }
+  // M11: the catalog-record lookup stops checking the record's id.
+  {
+    const e = makeEnv({ pricing: ACTIVE({ surfaces: { sleepSystem: true } }), financing: F(),
+      win: { _drawerData: { g6: { m: M({ id: "g7" }) } } },
+      mutate: withLf(mutate("      return (hit && typeof hit === 'object' && hit.id === m.id) ? hit : null;", "      return (hit && typeof hit === 'object') ? hit : null;")) });
+    check("M11 index id check dropped -> the cross-id probe FAILS on the mutant",
+      e.api.slot("sleepSystem", { id: "g6" }, "x").indexOf('data-price-state="available"') !== -1);
   }
   // M8: the surface helper defaults open like the financing helper.
   {

@@ -538,6 +538,8 @@ SWEEP_FINDS = [
     ("index.html",
      "      return (typeof answers === 'object' && answers) ? answers.mattress_size : undefined;"),
     ("index.html",
+     "      return (hit && typeof hit === 'object' && hit.id === m.id) ? hit : null;"),
+    ("index.html",
      "        var price = Number(primary.price) > 0\n"
      "          ? sleepSystemText({ en: 'From $', es: 'Desde $' }) + Number(primary.price).toLocaleString()"),
 ]

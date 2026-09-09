@@ -2362,6 +2362,11 @@ const MUTATIONS = [
     "      return (typeof answers === 'object' && answers) ? answers.mattress_size : undefined;",
     "      return 'queen';",
     PRICING_GATE, "index.html"],
+  // --- Phase 2.2c: the catalog-record fallback for projections ------------
+  ["2.2c: the catalog-record lookup stops checking the record's id (a SKU borrowed across ids)",
+    "      return (hit && typeof hit === 'object' && hit.id === m.id) ? hit : null;",
+    "      return (hit && typeof hit === 'object') ? hit : null;",
+    PRICING_GATE, "index.html"],
   // Codex exact-head review of PR #71 (2026-08-28): one entry per finding.
   ["2.1b review: the SKU identity check is gone (a price resolves without its SKU)",
     "          if (!isStr(q.sku) || !nonBlank(q.sku) || e.sku !== q.sku) continue;",

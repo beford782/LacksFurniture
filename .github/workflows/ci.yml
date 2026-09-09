@@ -543,6 +543,21 @@ jobs:
       - name: pricing presentation (2.2a gate + drawer surface)
         run: node tests/pricing_presentation_check.mjs
 
+      # Phase 2.2c: the staging / live-like verification path — the REAL
+      # localhost-only harness (tools/serve_pricing_preview.py) builds every
+      # drill state from the governed non-shipping fixture in memory, the
+      # production validators judge each state's dark form (clean; the stale
+      # drill refused for staleness) and refuse every opened form
+      # (displayEnabled true can never ship), a live loopback server proves
+      # the two narrow interceptions and the no-store policy, and headless
+      # Chromium walks the real page for every state in both languages and
+      # both tablet orientations: shipped and dark silent everywhere,
+      # available with FIXTURE amounts and adjacent disclosures, stale and
+      # unapproved with the governed copy only, disabled silent again; no
+      # committed file changes.
+      - name: pricing harness (2.2c localhost non-shipping preview + rendered pass)
+        run: python tests/pricing_harness_check.py
+
       # Executes the real localhost demo server against a live loopback
       # socket: loopback-only bind, narrow store-config interception, the
       # launch+72h window, untouched committed files.

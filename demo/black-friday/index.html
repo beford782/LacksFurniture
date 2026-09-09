@@ -12678,10 +12678,24 @@
     // product-size the app is showing. `skus` is an optional per-size map on
     // the mattress record ({ queen: 'SKU', ... }); the shipped catalog carries
     // none, so nothing resolves in production even with the gate open.
+    // A surface may hand the gate a PROJECTION of the product (a saved pick,
+    // the finalist record) rather than the catalog record; the SKU map is
+    // read from the catalog record of the same id when the projection has
+    // none. The results-time lookup is the only catalog index the app keeps,
+    // and it is keyed by the same id the projection carries — a projection
+    // can never supply a SKU of its own for a product the catalog lacks.
+    function pricingCatalogRecord(m) {
+      if (!m || typeof m !== 'object' || typeof m.id !== 'string') return null;
+      if (m.skus && typeof m.skus === 'object') return m;
+      var index = (typeof window === 'object' && window && window._drawerData) ? window._drawerData : null;
+      var hit = index && index[m.id] && index[m.id].m;
+      return (hit && typeof hit === 'object' && hit.id === m.id) ? hit : null;
+    }
     function pricingSkuFor(m, size) {
-      if (!m || typeof m !== 'object' || !m.skus || typeof m.skus !== 'object') return null;
+      var rec = pricingCatalogRecord(m);
+      if (!rec || !rec.skus || typeof rec.skus !== 'object') return null;
       if (typeof size !== 'string' || !size) return null;
-      var sku = m.skus[size];
+      var sku = rec.skus[size];
       return (typeof sku === 'string' && sku.replace(/\s+/g, '').length > 0) ? sku : null;
     }
 
