@@ -125,6 +125,9 @@ const PRICING_GATE = ["tests/pricing_presentation_check.mjs"];
 // drives the real page over the opened drill state and proves the governed
 // slot REPLACES the legacy catalog "From $" line rather than joining it.
 const PRICING_GATE_RENDERED = ["tests/pricing_presentation_check.mjs", "tests/pricing_harness_check.py"];
+// Payload minimisation (2026-09-09): the email-gating suite executes the real
+// accessory projection over a priced catalog record and pins its exact keys.
+const EMAIL_PACKET = ["tests/email_gating_check.mjs"];
 // Trust integrity gate observer (2026-08-21): the trust suite owns the copy <->
 // engine correspondence (document sections, cited tags, the inert-tag set,
 // shipped-vs-documented help lines, banned claims), the absence of the
@@ -2300,6 +2303,15 @@ const MUTATIONS = [
     "                            \"size\": scope.get(\"size\"),",
     PRICING_VALIDATOR, "tools/validation.py"],
 
+  // --- Payload minimisation: the accessory packet (index.html) ---------------
+  ["email packet: the accessory projection becomes a spread again (id, reason and any future field leak)",
+    "      const accList = getSelectedAccessoryPlan().map(a => ({\n        name: a.name,\n        category: a.category,\n        imageUrl: toAbsoluteImageUrl(a.imageUrl)\n      }));",
+    "      const accList = getSelectedAccessoryPlan().map(a => Object.assign({}, a, { imageUrl: toAbsoluteImageUrl(a.imageUrl) }));",
+    EMAIL_PACKET, "index.html"],
+  ["email packet: the accessory projection gains the plan entry's id",
+    "        name: a.name,\n        category: a.category,\n        imageUrl: toAbsoluteImageUrl(a.imageUrl)\n      }));",
+    "        id: a.id,\n        name: a.name,\n        category: a.category,\n        imageUrl: toAbsoluteImageUrl(a.imageUrl)\n      }));",
+    EMAIL_PACKET, "index.html"],
   // --- Phase 2.1b: the dark resolver (index.html) --------------------------
   // Each entry mutates the REAL resolver source; the resolver suite executes
   // the mutated function and the specific five-axis probe fails. Find strings
