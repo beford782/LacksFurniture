@@ -16,9 +16,15 @@ immediately before live deployment and does not block dark development,
 provisional data, internal computation, previews, testing, or completion of
 earlier roadmap items; the governance model recorded under that ruling gates
 live output on it (see 2.1). Phase 2.2's activation output is gated ◐ to that
-final stage (Gated and Proceeds under 2.2); Phase 3 remains a plan of intent,
-not a grant of approval — see the open-decisions register. Device hardening
-remains BLOCKING for showroom use.**
+final stage (Gated and Proceeds under 2.2), and by the owner build direction of
+2026-09-09 its disabled, non-live implementation is the next construction
+workstream under that Proceeds list; Phase 3 remains a plan of intent, not a
+grant of approval — see the open-decisions register — except 3.1 and 3.2,
+approved to build 2026-09-09 as sequential re-cuts inside the uninterrupted
+production-readiness candidate (⬜: permission to build, 3.2 on the
+engineering-verified 3.1 result with no intermediate owner acceptance gate,
+nothing activated).
+Device hardening remains BLOCKING for showroom use.**
 
 **Owner product direction — 2026-08-29.** DreamFinder remains a pre-floor
 prototype until Blake explicitly begins launch preparation. Routine financing-
@@ -48,8 +54,84 @@ standing constraints; the work it adds is recorded in the third 2026-08-29
 revision note below and on items 1.3, 1.4 and 1.6, the Phase 1 cohesion
 milestone, the pre-floor evidence plan and Phase 3 item 3.7.
 
-**Last updated:** 2026-09-06 *(**Owner direction recorded — one complete
-end-state candidate before any human-facing validation.** Documentation only
+**Owner build direction — 2026-09-09.** Continue from the complete visual
+candidate as **one uninterrupted production-readiness build**, then run one
+final readiness gate against the complete application. There are no interim
+human-facing, browser, mounted-device, role-play, native-Spanish, business,
+legal, showroom or activation acceptance gates during construction. Those
+checks are **consolidated, not waived**: each remains owed at the final gate,
+and no missing approval or evidence may be represented as complete meanwhile.
+Engineering protections remain continuous — focused regressions, the full CI
+mirror, mutation sweep, integrity and lineage checks, generated-artifact
+verification, privacy and scoring-isolation guards, and independent code review
+are construction safeguards, not acceptance gates.
+
+"Production ready" in this build means that the production code, configuration
+model, guarded UI consumers, fail-closed states, operational controls and a
+controlled staging/live-like verification path are complete. It does **not**
+mean production-active: throughout construction `gasUrl` stays blank,
+`pricing.displayEnabled` and every production pricing surface stay false,
+production pricing products and formulas stay empty until governed real data
+exists, `exactPromotionsEnabled` stays false, and no lead, email, application,
+unapproved price or provisional claim becomes live. The sequence authorized by
+Blake is: (1) Phase 2.2 disabled pricing incorporation; (2) accessory-price
+provenance and payload minimisation; (3) a clean current-`main` A4.1 case-fold
+repair with the nine-question impact re-measured; (4) A4.2 separately on the
+engineering-verified A4.1 result; (5) the remaining production-readiness gaps; (6) one
+integrated candidate; and only then (7) the combined final validation and
+activation decision. This approves 3.1 and 3.2 to build in that order; it does
+not authorize another Phase 3 change, any factual price, any approval status,
+or any live output.
+
+**Last updated:** 2026-09-09 *(**Roadmap reconciled with `main` through PR #105.**
+Documentation only — no application, data, test, fixture, generated artifact,
+external evidence package or role-play file changed. The owner direction
+immediately above moves 3.1 and 3.2 from 🔒 to ⬜, and the two accessory-price
+register rows from ❓ to ⬜ on their build portion only (the values stay at the
+final gate); no other owner-controlled mark moves except where a statement is
+corrected to an already-merged fact. Reconciled for that direction: the status
+block, item 2.2, the Phase 3 header and items 3.1 / 3.2, the cohesion
+milestone, the pre-floor evidence plan, the Phase 1 merge-gate note, the
+register and sequence items 11–14. State
+of `main` = `63f745b` (the PR #105 merge, 2026-09-09 01:42Z), verified against
+`origin/main` and the PR list; post-merge CI and the Pages build succeeded at
+each of the three merges below — a preview, never showroom authorization.
+Recorded: **the frozen end-state candidate merged 2026-09-08 via PR #103 →
+`6e71dfb`** (head `a0e6522`; three commits from base `7439921`: the packaged
+candidate `a9367d2`, a test-only clearance-pin follow-up `fefaa14`, a
+documentation-only wording follow-up `a0e6522`), on Blake's explicit adoption
+and merge authorization after a clean Codex re-review — Sleep System 1.4
+reversible decisions and card states, Consultation Summary C3, Results C2
+landscape first fold, Sleep Brief E1-A landscape composition, chrome E2-A,
+the X7-B2 compact landscape quiz (stated deviation: D9 named variant A; A
+measured unsuitable on the 748px fold, so B2 is carried) and the A4 / A6
+accessibility floors (44px Results details and Summary roster controls; the
+whole Results hover consumer class at or above 4.5:1 text and 3:1 hover
+boundaries); **the accessory-rationale localization fix merged 2026-09-08
+via PR #104 → `57dbb5e`** (head `81bd347`; the cart stores semantic reason
+keys and the Consultation Summary and Sleep Plan / take-home projection
+resolve current-language copy at render time — a defect found by Codex's
+deployed-preview review, not by any human-facing pass; scorer and fixtures
+unchanged); **the QR SVG serializer normalization merged 2026-09-09 via
+PR #105 → `63f745b`** (head `a74a352`; toolchain determinism only — the
+generator canonicalises the one lxml-versus-stdlib empty-element spelling,
+the committed asset, payload and destination unchanged; recorded under 0.7,
+which stays closed). Unchanged: **item 1.4 stays ⏳** (clauses 7 and 8 close
+only at the final non-live validation pass), 1.3 stays ◐ on content, the
+cohesion milestone stays 🔨 (pass 2, the browser matrix, mounted-device
+verification and the consolidated role-play kit are still owed at that one
+final pass, which has not run), A4.1 / A4.2 remain candidate-complete evidence
+and are approved to be re-cut from current `main` in sequence after disabled
+Phase 2.2 incorporation, the rest of the evidence stack stays unmerged, and
+the mounted-device verification for every one of these merges is recorded
+NOT PERFORMED under the 2026-08-23 development/preview waiver — never a
+pass. Suite accounting stated once: `main` still runs 48 checks with
+`-SkipMutationSweep` and the mutation sweep is the 49th; the sweep manifest
+is 640 entries, the rendered layout suite 897 checks, the QR suite 259.
+Phase 0, Phase 2 and the showroom / activation gates are unchanged.)* The
+previous revision, 2026-09-06, recorded the **Owner direction recorded — one
+complete end-state candidate before any human-facing validation.**
+Documentation only
 — no application, test, data, generated artifact, AGENTS.md or CLAUDE.md
 change; no owner-controlled mark moved; the PR #99 / #100 / #101 facts
 recorded the same day stand. Blake's direction, dated 2026-09-06: DreamFinder
@@ -1515,6 +1597,38 @@ accounting, for reference: since PR #100 landed the A4.3 quiz-reduction
 suite, `main` runs 48 checks with `-SkipMutationSweep` and the mutation sweep
 is the 49th.)*
 
+*(**Toolchain determinism, complete 2026-09-09 — the QR SVG serializer
+normalization, PR #105 → `63f745b` (head `a74a352`, merged 2026-09-09
+01:42Z).** The pinned qrcode 8.2 serialises through `lxml.etree` when lxml
+is importable and `xml.etree.ElementTree` otherwise; for the financing QR
+the two differ in exactly one byte — the stdlib closes the single empty
+`<path>` as `" />`, lxml as `"/>` (raw stdlib output 6553 bytes, SHA-256
+`37314f9d…`, identical to the committed blob; raw lxml output 6552 bytes,
+SHA-256 `eeae6790…`) — so the QR suite's byte-identity assertion failed
+under the bundled Codex Python runtime (Python 3.12, lxml 6.1.1) while
+passing under system Python. Recorded as a follow-up on 2026-09-08 and
+excluded from PR #103 by owner ruling. The generator now canonicalises
+only a quote-adjacent `/>` to `" />`, the committed spelling, and nothing
+else: no general whitespace, XML-declaration, attribute-order, path-data or
+trailing-newline normalisation, so every other byte difference still fails
+the assertion, which is not weakened. The committed `images/qr-financing.svg`
+(blob `e231e054`), its payload, the financing destination and the runtime
+reference are unchanged; the single explicit byte-mode segment and the
+`qrcode==8.2` pin are preserved. Guards: a serializer-independence section
+in `tests/qr_payload_check.py` (188 → 259 checks: the lxml-style variant
+fails identity yet decodes to the same URL, canonicalisation maps it onto
+the committed bytes and is idempotent, nineteen negative-control variants in
+both spellings still fail identity, and the real `build_svg` is driven
+through simulated lxml-style and stdlib-style serializers), and six
+mutation-sweep entries with the QR suite as the second Python observer
+(manifest 634 → 640). Verified 259/259 with zero skips under both system
+Python / `xml.etree` and the bundled Codex Python / `lxml`, `--check` clean
+under both, regeneration to a scratch output byte-equal to the committed
+blob under both; the served preview at `63f745b` returns the asset
+byte-identical and it decodes to the configured financing URL. This did
+not reopen item 0.7 or Phase 0: both remain closed and their ✅ marks
+stand; the suite count is unchanged at 48 plus the sweep.)*
+
 ---
 
 ## Phase 1 — the visible redesign
@@ -1977,6 +2091,14 @@ changes Slice 5's scope or exit.)*
 
 ### 1.1 — Sleep Brief ✅ (merged 2026-08-16, `b05d47f`; PR #46 head `a9a01e1`; the exit's hardware verification passed at `5dede84`, recorded on the item 2026-08-24)
 
+*(2026-09-09 — the Sleep Brief landscape composition, ruled an *experiment*
+on 2026-08-30 (E1) and built into the end-state candidate as E1-A (one
+additive block gated `(min-width: 901px) and (orientation: landscape)`,
+portrait unchanged), is on `main` since the candidate merged 2026-09-08 via
+PR #103 → `6e71dfb`. Item 1.1 stays ✅; the merge is preview only and its
+human-facing evidence is owed at the final non-live validation pass — see
+the cohesion milestone.)*
+
 **Slice 2 merged 2026-08-16 (PR #46, merge `b05d47f`)** — the D1 recomposition
 plus the D2 Sleep Signature. The status mark above still reads ⬜ ("approved to
 build, not started"), which this merge contradicts; moving it is the owner's
@@ -2122,6 +2244,20 @@ by shipping prototypes; the 2026-08-14 approval opens implementation, it does
 not close the item.
 
 ### 1.2 — Quiz ✅ (Slice 3 merged 2026-08-17, `5436deaea432ec87eb6b4d9f06cd82a85fb1910c`, PR #47; icon programme complete under the 2026-08-16 zero-icons ruling; closed on the item 2026-08-24)
+
+*(2026-09-09 — the compact landscape quiz, X7, is on `main` since the
+end-state candidate merged 2026-09-08 via PR #103 → `6e71dfb`, as variant
+**B2** with a stated deviation: ruling D9's literal words named variant A,
+which measured unsuitable on the 748px landscape fold (the Next control at
+755–812px against 748 on three of four questions), so B2 is carried —
+header padding 38px for utility-card clearance with compensating
+selected-option padding (no reflow on selection), a forced-colors landscape
+counterpart, 64px landscape inline padding, and the Next control declaring
+its 44px floor. Portrait is unchanged. The utility-card clearance pin was
+relaxed to a 6px cross-platform visible-ink minimum (`fefaa14`, test-only)
+after CI measured 6px on Linux fonts against 8px on the Windows mirror; no
+claim is made about the mounted iPad's font metrics until measured there.
+Item 1.2 stays ✅; no question, option, order or score changed.)*
 
 - Review all option icons for meaning **before** introducing any (47 since
   2026-08-12; 56 before the removal below). Suppress
@@ -2374,6 +2510,18 @@ copy-only through the canonical pipeline and moves no score tag.)*
 list: ❓ means do not implement, while Proceeds authorises implementation. The
 document already says globally that named components are proposals unless an item
 says otherwise, so the second mark added nothing but the conflict.)*
+
+*(2026-09-09 — presentation only, content untouched: the Results landscape
+first fold (cohesion item C2 — mattress identity and useful starting context
+visible at 1194×748, one additive landscape block, portrait identical) and
+the A4 / A6 accessibility floors on the Results cards (the details control
+31 → 44px; every Results hover consumer — Compare, Save, details, the
+finalist controls — at or above 4.5:1 text and 3:1 hover boundaries in every
+normal-colour state, the Chosen finalist 2.66 → 4.91:1; forced colors native
+and geometry-distinct) are on `main` since the end-state candidate merged
+2026-09-08 via PR #103 → `6e71dfb`. **Item 1.3 stays ◐ on content**: no
+reason text, catalog field, fixture or scoring input changed, and the reason
+surfaces stay omitted under PR #63.)*
 
 *(2026-08-29 — **owner direction: catalog differentiation becomes a scheduled
 content workstream.** **Item 1.3 stays ◐**; the Gated, Proceeds and Exit lists
@@ -2887,7 +3035,26 @@ non-live validation pass against the complete integrated candidate; no
 interim Sleep System visual change merges or ships independently; the
 automated suites keep protecting the contracts meanwhile and are not design
 acceptance. Steps 3–5 of the sequence and the browser-matrix line of the Exit
-are read accordingly; clauses 7 and 8 close only at that pass.)*
+are read accordingly; clauses 7 and 8 close only at that pass.)* *(2026-09-09
+— **the candidate's Sleep System work is on `main`.** The complete end-state
+candidate merged 2026-09-08 via PR #103 → `6e71dfb` on Blake's explicit
+adoption and merge authorization — not as an interim visual PR but as the
+one candidate the 2026-09-06 direction described, adopted on his decision:
+reversible suggested / selected / declined decisions and their card states
+on this screen, and the Consultation Summary finalist-moment cohesion (C3)
+that carries the system choices forward. Then **PR #104 → `57dbb5e`
+(2026-09-08)** repaired a localization defect Codex found reviewing the
+deployed preview at iPad size: the selected-accessory rationale lines on the
+Consultation Summary stayed in the selection-time language after an EN/ES
+switch because the cart cached the scorer's localized strings; the cart now
+stores semantic reason keys and the Summary and the Sleep Plan / take-home
+projection resolve the current language at render time, with the finalist,
+comparison pair, saved picks, cart and Sleep System decisions proven
+byte-identical across EN → ES → EN. The accessory scorer and its ordered
+fixture are unchanged; no new copy was authored. **Item 1.4 stays ⏳**: these
+merges are preview only, the browser matrix and mounted-device verification
+are recorded NOT PERFORMED under the 2026-08-23 waiver, and clauses 7 and 8
+still close only at the final non-live validation pass.)*
 
 **Scope — what the screen must do under the north star.**
 
@@ -3824,6 +3991,15 @@ named worktree/branch, `codex/nocturne-slice6-consultation` cut from
 commits and no application change — and this note supersedes any statement
 that Slice 6 was "in progress" on that date.)*
 
+*(2026-09-09 — cohesion change C3, the Consultation Summary finalist hero /
+status block and finalist-moment cohesion with approved meaning unchanged,
+and the A4 floor on the Summary's saved-picks roster add row (input and
+confirm 40 → 44px) are on `main` since the end-state candidate merged
+2026-09-08 via PR #103 → `6e71dfb`; the Summary's selected-accessory
+rationale follows the current language since PR #104 → `57dbb5e` (see 1.4).
+Item 1.6 stays ✅ and its exit is not amended; the 2026-08-23 pick-card tier
+line debt recorded below is untouched by these merges and stays open.)*
+
 **The Review screen stays complete and fully editable.** That is the approved
 default, not a pending question, and it does not hold this item open. Compressing
 or removing it is a separate locked decision (see the register) that only Blake
@@ -4447,7 +4623,7 @@ no Spanish approval and nothing for PR #53. **Merged and verified:** PR #54 merg
 
 ---
 
-### Phase 1 milestone — Guided-selling cohesion and conversion readiness 🔨 (added 2026-08-29 by owner direction; review opened 2026-08-30 as a read-only evidence and proposal phase; after Slice 6, before 2.2 activation; pass-1 decisions recorded 2026-08-30; C1, C5, C6 and C4 merged and the North Star objective foundation merged 2026-09-01 via PR #97 — recorded 2026-09-04)
+### Phase 1 milestone — Guided-selling cohesion and conversion readiness 🔨 (added 2026-08-29 by owner direction; review opened 2026-08-30 as a read-only evidence and proposal phase; after Slice 6, before 2.2 activation; pass-1 decisions recorded 2026-08-30; C1, C5, C6 and C4 merged and the North Star objective foundation merged 2026-09-01 via PR #97 — recorded 2026-09-04; the frozen end-state candidate merged 2026-09-08 via PR #103 — recorded 2026-09-09)
 
 **What it is.** The first review of the whole experience as one guided sales
 presentation rather than seven slices. It sits after every Phase 1 slice has
@@ -4602,6 +4778,84 @@ Untouched by this direction: 2.2's activation gate, the 3.1 / 3.2 owner
 decisions (A4.1 / A4.2 pending), 3.7's limits, Invariant 12, the privacy,
 scoring-isolation and live-backend constraints. The milestone stays 🔨.
 
+**State 2026-09-09, `main` `63f745b`.** **The one end-state candidate is on
+`main`.** Built on branch `claude/final-candidate-sleep-system` from `main`
+`7439921` as candidate-only commits, frozen after the Codex re-review of its
+last slice (A6C) returned no findings, accepted by Blake for disposition
+and merged on his explicit authorization **2026-09-08 via PR #103 →
+`6e71dfb`** (a merge commit pinned to head `a0e6522`; three commits: the
+packaged tree `a9367d2`, twelve files, then the test-only `fefaa14` and the
+documentation-only `a0e6522`, both on the X7 clearance pin's wording and
+floor). What it carries: **Sleep System 1.4** reversible decisions and card
+states; **Consultation Summary C3**; **Results C2** landscape first fold and
+**Sleep Brief E1-A** landscape composition, each one additive block gated
+`(min-width: 901px) and (orientation: landscape)`; **chrome E2-A** (Plan and
+Summary headers hidden, Plan clearance and config-derived attribution, the
+utility card pinned light on quiz and Review with token boundaries, the
+safety-dialog confirm border tokenised — 3.6 stays ❓); **X7-B2**, the
+compact landscape quiz re-cut from the A2 stack with the stated D9 deviation
+(A named, B2 carried, see 1.2); and the **A4 / A6 accessibility floors**
+(Results details 31 → 44px; Summary roster add-row input and confirm 40 →
+44px; the entire Results hover consumer class at or above 4.5:1 text and
+3:1 hover boundaries in every normal-colour state — Chosen finalist 2.66 →
+4.91:1, Compare, Save, details and finalist hover on the theme's own hover
+ink; forced colors native and geometry-distinct). No scoring,
+recommendation, copy, dictionary, data, financing, privacy, i18n, touch or
+activation contract changed. Guards on `main`: enumerating contrast checks
+with exact config-partner mapping and negative controls, a named rendered
+hover roster in EN and ES across normal and forced colors, X12 static floors
+plus a rendered sweep of the roster add row, landscape-quiz, forced-colors
+and fold pins, and sweep entries for every repaired path. Post-merge CI at
+`6e71dfb`: contrast 184, rendered layout 867, sweep 629/629; Pages and the
+served bytes verified. Two follow-ups then merged on the same authority
+model: **PR #104 → `57dbb5e`** (2026-09-08; the accessory-rationale
+localization fix found by Codex's deployed-preview iPad-size review — the
+cart stores reason keys, the Summary and Plan resolve the current language;
+rendered layout 867 → 897, sweep 634) and **PR #105 → `63f745b`**
+(2026-09-09; the QR serializer normalization, toolchain determinism only —
+see 0.7; QR suite 188 → 259, sweep 640). **What this does and does not
+change.** C2, C3, E1 and E2 are no longer candidate-only or prototype-only:
+C2, C3, E1-A and E2-A shipped inside the candidate on Blake's adoption
+decision, exactly the per-PR approval the 2026-09-06 direction reserved for
+"that candidate's eventual adoption"; the `proto-e1-*` / `proto-e2-*`
+branches remain historical experiments. The 43-commit A2 / A3 / A3.1 / A4
+evidence stack is still unmerged evidence with no PR — the candidate re-cut
+what it adopted (X7, C2, E1-A, E2-A) from `main`, as A4.3 did — and A4.1 /
+A4.2 remain candidate-complete evidence; Blake's 2026-09-09 direction now
+approves clean current-`main` re-cuts after the disabled Phase 2.2 work, 3.1
+first and 3.2 separately on its accepted result.
+**Not done, and not implied by any merge:** pass 2, the browser matrix, the
+mounted-device (iPad Pro / Safari) verification, the pre-showroom
+accessibility matrix and the consolidated role-play kit and sessions — all
+still owed at the one final non-live validation pass against the complete
+candidate, which has not run; every one of these three merges records its
+mounted-device verification as NOT PERFORMED under the 2026-08-23 waiver.
+Codex's deployed-preview review is a reviewer pass at iPad viewport sizes,
+not verification on the mounted device. Preview is never showroom
+authorization; `gasUrl` stays blank, `discount.mode` stays disabled,
+promotion `scenarios` stay `{}`. The milestone stays 🔨.
+
+**Owner build direction — 2026-09-09.** With the end-state candidate on
+`main`, DreamFinder proceeds as one uninterrupted production-readiness build —
+Phase 2.2's disabled pricing incorporation, accessory-price provenance and
+payload minimisation, the clean A4.1 re-cut with the nine-question impact
+re-measured, A4.2 on the engineering-verified A4.1 result, then the remaining
+production-readiness gaps — traceable commits and PRs under the automated
+protections and Codex review, with no intermediate owner acceptance gate
+between them, converging on one integrated
+candidate and one combined final validation and activation decision (sequence
+of record, item 14). For this milestone: pass 2, the browser matrix, the
+mounted-device verification, the pre-showroom accessibility matrix, the
+consolidated role-play kit and sessions, the native-Spanish pass and the
+business / legal approvals are consolidated, not waived, into that one final
+readiness gate; construction does not stop for them. Construction merges are
+not the interim visual PRs the 2026-09-06 direction forbade — they are the
+workstreams this direction schedules — and each records its mounted-device
+verification NOT PERFORMED under the 2026-08-23 waiver. Nothing here claims a
+deferred approval has passed, activates pricing, financing terms, backend
+delivery or showroom use, or moves this milestone's mark: it stays 🔨 until
+the final gate.
+
 ---
 
 ## Accessibility and showroom acceptance criteria
@@ -4687,6 +4941,16 @@ now; the memory-only session and the data-use sentence stand. This direction
 does not authorize deployment, activation or showroom use — the pass is
 non-live and preview is never showroom authorization.)*
 
+*(**Owner build direction — 2026-09-09.** Unchanged in substance, re-timed
+once more: the final non-live validation pass is the one final readiness gate
+of the continuous production-readiness build, run against the complete
+integrated candidate — after the disabled Phase 2.2 incorporation, the
+accessory-price work, the 3.1 / 3.2 re-cuts and the remaining gaps — together
+with the activation decision. The sessions run once, there, on the exact
+candidate commit; the consolidated kit is written against that commit.
+Consolidated is not waived: the pass has not run, and the questions above
+remain unanswered.)*
+
 ### Phase 1 merge gate — the device matrix
 
 A phase-wide **merge gate**, not an item status. Recorded here only — item Exit
@@ -4711,6 +4975,21 @@ final non-live validation pass against the complete integrated candidate.
 Until then no interim visual work merges or ships independently, so this gate
 is not exercised by visual work; the 2026-08-23 per-PR development/preview
 waiver continues to apply to non-visual merges and remains never a pass.)*
+*(2026-09-09 — the complete end-state candidate merged 2026-09-08 via PR
+#103 on Blake's adoption decision, followed by PR #104 and PR #105; each
+records verification on the confirmed hardware as **NOT PERFORMED** under
+the 2026-08-23 waiver, and the automated evidence behind them — CI, the
+rendered Chromium layout suite at 834×1108 and 1194×748, Codex's
+deployed-preview review at those viewport sizes — is not verification on the
+mounted iPad Pro / Safari. That verification remains owed at the final
+non-live validation pass and still blocks showroom use.)*
+*(2026-09-09 — the owner build direction consolidates this gate, for every
+construction merge that follows — the disabled Phase 2.2 incorporation, the
+accessory-price work, the 3.1 / 3.2 re-cuts, the remaining gaps — into the one
+final readiness gate against the complete integrated candidate. Consolidated,
+not waived: each such merge records verification on the confirmed hardware as
+NOT PERFORMED, the 2026-08-23 waiver stays a development / preview waiver and
+never a pass, and showroom use stays blocked until the gate runs.)*
 
 **Device matrix — recorded 2026-08-12, owner-confirmed on the mounted device**
 (full session record: `docs/kiosk-device-hardening.md`, *Device identity and
@@ -5343,6 +5622,19 @@ the 2.1 model. Per the legend's guards on ◐, none of it may encode the
 activation outcome, ship placeholder content standing in for it, or weaken a
 shipped fail-closed guarantee; production surfaces stay false throughout.
 
+*(**Owner direction 2026-09-09 — construction starts here next.** Phase 2.2's
+Proceeds work is the next production-readiness workstream: complete the guarded
+price presentation and its consumers behind the false production flags; prove
+every valid, stale, invalid, unapproved, disabled and emergency-off state with
+governed non-shipping fixtures; align price and Payment Choice without allowing
+payment to affect sleep fit; narrow the accessory email payload to fields the
+backend reads; and make accessory-price provenance fail closed pending governed
+facts. Do this as part of the continuous integrated build, without an interim
+human, device, native-language, business or legal acceptance stop. The **Gated**
+output above is unchanged: no production price data, surface flag, approval
+state, payment figure or live service turns on before the single final readiness
+and activation decision.)*
+
 *(Mark rationale, 2026-08-28. 🔒 reads "no part of this item may start,"
 which contradicted the ruling-derived allowance for non-live preparation.
 Under the legend's own model the correct mark is ◐ — a gated production
@@ -5380,7 +5672,9 @@ however complete, advances or closes 2.2.
 ## Phase 3 — structural changes requiring evidence
 
 Every item here changes what is recommended or how the journey works. **Approver
-for all of them: Blake.** None may be bundled into Phase 1.
+for all of them: Blake.** None may be bundled into Phase 1. Blake's 2026-09-09
+direction approves only 3.1 and 3.2 to build, in that order, inside the continuous
+production-readiness program; every other Phase 3 mark and dependency stands.
 
 **Visibility rule (2026-08-29).** The known scoring defects, 3.1 and 3.2, stay
 visible here and are never fixed silently — not as a drive-by in a content
@@ -5393,7 +5687,7 @@ qualified set or order. Producing that evidence is read-only analysis under the
 standing baseline and moves no mark; acting on it is a separately authorized
 Phase 3 decision.
 
-### 3.1 — Scoring case-fold defect 🔒
+### 3.1 — Scoring case-fold defect ⬜
 
 Two quiz tags never match the catalog because the comparison is case-sensitive and
 the catalog spellings are lowercase. **Ten scoring rules across six questions**
@@ -5420,8 +5714,24 @@ partner-disturbance question and the differing-body-type option are both skipped
 for them — so the reordering concentrates on partnered sleepers and on the
 side-sleeper / hip-pain population the tags exist to serve.
 
-Unblocked by: Blake's explicit approval, on its own PR, with the changed top picks
-enumerated as evidence. **Not a drive-by fix.**
+**Approved to build by Blake, 2026-09-09**, after the disabled Phase 2.2
+incorporation, as a clean re-cut from then-current `main`. The changed top picks,
+qualified sets and within-tier orders must be re-enumerated against the shipped
+nine-question journey; the ten-question candidate's 57-scenario figures are
+historical evidence, not accepted output. **Not a drive-by fix and not permission
+for another scoring or tier change.** ⬜ approves the build inside the
+uninterrupted production-readiness candidate. "The engineering-verified A4.1 result" —
+the base 3.2 builds on — is the **engineering-verified** result: the re-cut
+commit with its nine-question impact enumerated, fixtures re-captured, the
+focused suite, full CI mirror and mutation sweep green, and Codex review
+clean, carried with commit / PR traceability. It is **not an owner acceptance
+or merge decision**: by the 2026-09-09 direction no intermediate owner gate
+sits between 3.1 and 3.2, so 3.2 is built on that verified result — stacked
+on the 3.1 commits if they have not yet merged — as part of the same
+candidate. Blake reviews the enumerated impact at the final combined gate;
+merges stay requested rather than assumed under the agent boundary, which is
+traceability, not an acceptance gate. The repair touches no financing,
+presentation or `index.html` surface; the scoring-isolation guard stays pinned.
 
 *(**Candidate-complete 2026-09-03, recorded 2026-09-04 — not adopted, not
 merged.** A4.1, branch `claude/north-star-candidate-a41-scoring-integrity`
@@ -5435,15 +5745,25 @@ model losing a point; `index.html` byte-identical; tables in the
 files apply verbatim; `tests/mutation_sweep.mjs` does not apply, because its
 anchor / context comes from A3.1, so the complete patch does not pass
 `git apply --check`. Fixtures must still be re-captured on then-current
-`main`. **Awaiting Blake's
-explicit adoption and merge decision.** An adopted repair ships as its own PR
-cut from then-current `main`, never as a merge of the candidate. Mark
-unchanged — 🔒 is Blake's to move.)*
+`main`. **Superseded in decision status 2026-09-09:** Blake approved a clean
+current-`main` re-cut inside the continuous production-readiness build; this
+candidate remains evidence and is never merged. The new impact is re-measured
+before the integrated candidate is called complete.)*
 
-### 3.2 — Unmatched quiz-tag vocabulary 🔒
+### 3.2 — Unmatched quiz-tag vocabulary ⬜
 
-Six quiz tags match no catalog feature in any casing. Separate from 3.1 and needs
-its own decision: populate the catalog vocabulary, or retire the tags.
+Six quiz tags match no catalog feature in any casing. Separate from 3.1. Blake's
+2026-09-09 direction approves the candidate's bounded disposition to build only
+after 3.1: correct `durable` to the catalog's canonical `durability`; keep
+`adjustable`, `memory`, `hypoallergenic`, `comfort` and `quality` governed and
+dormant until authoritative catalog facts support them. No product attribute is
+invented and no dormant tag may score. "After 3.1" means on the
+engineering-verified 3.1 result (see 3.1) — stacked on the 3.1 commits if they
+have not yet merged — with 3.2's own nine-question impact re-measured and
+enumerated in its commit / PR; no intermediate owner acceptance or merge
+decision is waited for, and Blake reviews both enumerations at the final
+combined gate. ⬜ approves the build inside the candidate; nothing is
+activated.
 
 *(**Candidate-complete 2026-09-03, recorded 2026-09-04 — not adopted, not
 merged.** A4.2, branch `claude/north-star-candidate-a42-scoring-vocabulary`
@@ -5461,8 +5781,10 @@ ranking effect, proved by execution. The gate presumes 3.1's repair has
 landed, so the governance half follows 3.1; the `durable` correction is
 independent. A shipping implementation goes through the canonical source
 pipeline with the workbook, generated data, demo artifacts, fixtures, hashes
-and lineage regenerated and verified — never a two-file change. **Awaiting
-Blake's explicit adoption and merge decisions.** Mark unchanged.)*
+and lineage regenerated and verified — never a two-file change. **Superseded
+in decision status 2026-09-09:** that bounded disposition is approved to be
+re-cut after the accepted 3.1 result inside the continuous production-readiness
+build; the old candidate remains evidence and is never merged.)*
 
 ### 3.3 — Global maximum score and tier structure 🔒
 
@@ -5608,21 +5930,19 @@ work listed under a ◐ item's Proceeds line.
 |---|---|---|---|
 | Auto-advance | 🔒 | Blake | Observed sessions |
 | Review-screen compression or removal | 🔒 | Blake | Observed sessions. Review otherwise stays as it is; this does not hold 1.6 open |
-| Phase 2.2 price/payment activation | ◐ | Blake + business/legal | Written approval, taken only at the final end-of-project deployment stage immediately before live deployment (owner ruling 2026-08-28). It gates `displayEnabled`, enabled surfaces and live deployment only — its absence does not block dark development, provisional data, internal computation, previews, testing, completion of earlier roadmap items, or non-live 2.2 preparation under 2.2's Proceeds list (disabled implementation, isolated previews, automated tests). Production surfaces stay false until the gate — see 2.2's Gated block for the checkable properties |
-| Scoring case-fold (3.1) | 🔒 | Blake | Approval + enumerated impact *(candidate A4.1 `dcb63e5` complete 2026-09-03 with the enumerated 57-scenario impact — gold top pick 0 of 57; adoption and merge decision pending; see item 3.1)* |
-| Quiz-tag vocabulary gap (3.2) | 🔒 | Blake | Populate-or-retire decision *(candidate A4.2 `c781137` complete 2026-09-03: the `durable` → `durability` correction plus five governed-dormant keys; adoption and merge decisions pending; the governance half follows 3.1; see item 3.2)* |
+| Phase 2.2 price/payment activation | ◐ | Blake + business/legal | Written approval, taken only at the final end-of-project deployment stage immediately before live deployment (owner ruling 2026-08-28). It gates `displayEnabled`, enabled surfaces and live deployment only — its absence does not block dark development, provisional data, internal computation, previews, testing, completion of earlier roadmap items, or non-live 2.2 preparation under 2.2's Proceeds list (disabled implementation, isolated previews, automated tests). Production surfaces stay false until the gate — see 2.2's Gated block for the checkable properties *(2026-09-09: by the owner build direction the disabled, non-live implementation is the next construction workstream under 2.2's Proceeds — permission to build, not to activate; this row's gate and the flag / surface / data properties it names are unchanged)* |
 | **Accessory-recommendation quality (3.7)** — any change to accessory selection, ranking, grouping or hero logic | ◐ | Blake | Audit delivered 2026-08-30 (read-only); step 4 ruled the same day and **P2, P3, P1, P9 (Option C) and P5 (Option C) merged 2026-08-30** — PRs #81, #84, #85, #83, #86 (recorded 2026-09-04). Still open here: P4 deferred; P8 deferred; P6 recorded as merchandising, not fit; P7 not approved; P10 recorded; the Gated list stands for everything not named *(added 2026-08-29; ruled 2026-08-30)* |
 | **Cohesion-milestone keep / change / experiment decisions** — per surface, the 1.6 surfaces first; a *change* on a completed slice ships only as a bounded PR against `main` | 🔨 review (opened 2026-08-30) / decisions ❓ until recorded | Blake | The milestone's decision packet with browser evidence per surface *(added 2026-08-29; the review itself may start; pass-1 decisions recorded 2026-08-30, pass 2 owed)* *(2026-09-06: pass 2 deferred to the final non-live validation pass against the complete candidate; interim visual changes are candidate-only and do not ship independently)* |
-| **Item 1.4 Sleep System workstream — bounded change list** (presentation, narration, state rendering, carry-forward within the existing data contract) | ⏳ | Blake | The step-1 audit and step-2 proposal on the item; approved-English changes need Blake first; clause 8 remains his recorded assessment *(added 2026-08-29)* *(2026-09-06: built into the end-state candidate; its evidence and clauses 7–8 close at the final validation pass)* |
+| **Item 1.4 Sleep System workstream — bounded change list** (presentation, narration, state rendering, carry-forward within the existing data contract) | ⏳ | Blake | The step-1 audit and step-2 proposal on the item; approved-English changes need Blake first; clause 8 remains his recorded assessment *(added 2026-08-29)* *(2026-09-06: built into the end-state candidate; its evidence and clauses 7–8 close at the final validation pass)* *(2026-09-09: the candidate's Sleep System work is on `main` via PR #103, and the rationale-localization repair via PR #104; still ⏳ — clauses 7–8 close only at the final validation pass, which has not run)* |
 | Global maxScore / cross-tier ranking / tier merge or removal / threshold, cap, back-fill (3.3) | 🔒 | Blake | Evidence. **Does not gate a preserving Phase 1 tier-navigation change.** *(2026-08-21: a cross-tier "highest-fit" marker — raised as a trust question — is this row, because it changes what the customer is told about fit; see "Tier presentation (trust)" for the presentation-only half.)* |
 | Firmness stops (3.5) | 🔒 | Blake | Evidence |
 | Persistent identity bar (3.6) | ❓ | Blake | A case for it |
-| **Cohesion pass-1 change items C1–C6 and experiments E1–E2** — each shipped only on its own bounded PR / prototype branch | 🔨 | Blake | Rulings recorded 2026-08-30 in `docs/guided-selling-cohesion-decisions-2026-08-30.md`; approval of each PR is per PR; E2 does not open 3.6 *(added 2026-08-30)*. **State 2026-09-04:** C1 merged (PR #79), C5 merged (PR #87), C6 and C4 merged via the PR #97 train; C2 and C3 prototyped and carried into the unmerged A2 candidate, not shipped; E1 and E2 prototyped on `proto-e1-*` / `proto-e2-*`, never merged. **2026-09-06 direction:** C2, C3, E1, E2 and any further visual work are candidate-only — built into the one complete end-state candidate, never shipped as independent PRs; their evidence is the final validation pass |
+| **Cohesion pass-1 change items C1–C6 and experiments E1–E2** — each shipped only on its own bounded PR / prototype branch | 🔨 | Blake | Rulings recorded 2026-08-30 in `docs/guided-selling-cohesion-decisions-2026-08-30.md`; approval of each PR is per PR; E2 does not open 3.6 *(added 2026-08-30)*. **State 2026-09-04:** C1 merged (PR #79), C5 merged (PR #87), C6 and C4 merged via the PR #97 train; C2 and C3 prototyped and carried into the unmerged A2 candidate, not shipped; E1 and E2 prototyped on `proto-e1-*` / `proto-e2-*`, never merged. **2026-09-06 direction:** C2, C3, E1, E2 and any further visual work are candidate-only — built into the one complete end-state candidate, never shipped as independent PRs; their evidence is the final validation pass. **State 2026-09-09:** C2, C3, E1-A and E2-A shipped inside the complete candidate, merged 2026-09-08 via PR #103 → `6e71dfb` on Blake's adoption decision; the `proto-e1-*` / `proto-e2-*` branches stay historical; their human-facing evidence is still the final validation pass, not yet run |
 | Dormant nickname-code cleanup | ❓ | Blake | Analytics review — see below |
 | Visible stale-financing status band (production) | ❓ | Blake | A case for it plus review sign-off. Prototype-only today (D6); if pursued, production gets its own dedicated governed key — not a reuse of `staleAnnouncement` |
 | Customer-recorded trial reactions | ❓ | Blake | A case for it. The Nocturne prototype's own candidate next revision; deliberately not built (D6) |
-| **Accessory price provenance** — the shipped accessory prices (the one live "From $" surface) drift from `incoming/lacks_catalog_selection.json`: four are cent-truncated about $1 BELOW the observed catalog price (Dri-Tec 149.95→149, iProtect 89.95→89, Ver-Tex 249.95→249, gel memory pillow 99.95→99) and `foundation-princess` $499 has no recorded source anywhere; none carries `verifiedAt`, a source URL or an owner | ❓ | Blake | Correct as data after confirming the values with Lacks, and/or bring accessories under the 2.1 contract (they would then fail "verified" and stop rendering until attested). Found by the 2026-08-27 Phase 2.1 discovery; deliberately NOT changed by slice 2.1a |
-| **Accessory `price` in the email payload** — the GAS packet spreads whole accessory objects (`index.html:17225–17227` → `:17309`), so `price` is transmitted although `Code.gs` never reads it | ❓ | Blake | Narrow the spread to the fields `Code.gs` reads, as its own small reviewed PR; not bundled into 2.1. Found by the 2026-08-27 discovery |
+| **Accessory price provenance** — the shipped accessory prices (the one live "From $" surface) drift from `incoming/lacks_catalog_selection.json`: four are cent-truncated about $1 BELOW the observed catalog price (Dri-Tec 149.95→149, iProtect 89.95→89, Ver-Tex 249.95→249, gel memory pillow 99.95→99) and `foundation-princess` $499 has no recorded source anywhere; none carries `verifiedAt`, a source URL or an owner | ⬜ build / final gate for the values | Blake | *(2026-09-09: scheduled by the owner build direction as workstream (2), inside the 2.2 construction note — ❓ → ⬜ on the build portion only.)* **Build now, inside the integrated candidate:** bring the accessory prices under a governed provenance contract modelled on 2.1 — per-entry `verifiedAt`, allowlisted `sourceUrl`, owner and freshness — with the fail-closed behaviour and its tests. **Not pre-authorized:** a standalone merge that withdraws the today-displayed "From $" surface without a replacement, which would breach the no-degraded-`main` rule; any customer-visible suppression or replacement merges together with governed, attested pricing in the complete candidate, unless Blake separately orders an immediate safety removal. **Final gate:** confirming the values with Lacks, correcting the data, and any representation of an accessory price as approved. Found by the 2026-08-27 Phase 2.1 discovery; deliberately NOT changed by slice 2.1a |
+| **Accessory `price` in the email payload** — the GAS packet spreads whole accessory objects (`index.html:17225–17227` → `:17309`), so `price` is transmitted although `Code.gs` never reads it | ⬜ | Blake | *(2026-09-09: scheduled by the owner build direction as workstream (2) — ❓ → ⬜.)* Narrow the spread to the fields `Code.gs` reads, as its own small Codex-reviewed PR — approved engineering work, not another owner gate; not bundled into 2.1. Payload minimisation is a property of the packet builder and is verified without any delivery — `gasUrl` stays blank and nothing is sent. Found by the 2026-08-27 discovery |
 | Presenter mode — shipping mechanism | ❓ | Blake + kiosk hardening review | The hardening review decides the mechanism; the prototype's query parameter is rehearsal tooling, not a shipped design (D6) |
 | **Tier presentation (trust)** — a neutral initial tier choice or another presentation control, versus the shipped Gold-first initial tier with the within-tier model | ❓ | Blake | *(Ruled for this cycle, 2026-08-21: the shipped Gold-first / within-tier presentation is retained with the 15px relativity note; a neutral initial tier (B) and any other control (D) are DEFERRED to a later owner/research decision; this is not a permanent endorsement of Gold-first.)* Any future change is presentation only — it must preserve tier identity and membership, within-tier order, the threshold, cap and back-fill. A cross-tier highest-fit marker or any global best-match computation is the 3.3 row above (NOT AUTHORIZED), not this one. The legible within-tier relativity note is NOT this decision |
 | **Heritage content** — Welcome only (current), an optional moderated-research condition, or no additional heritage | ❓ | Blake | *(Ruled for this cycle, 2026-08-21: the restrained Welcome treatment stays; no per-question rail, no anniversary count, no store counts, awards, testimonials, QR codes, community claims or anecdotes in the quiz; the research prototype is preserved separately; historical content may be tested later as an optional research condition — that later test is what stays open here.)* Any future fact beyond the Welcome line needs governance modelled on financing (freshness, allowlisted source, approval, ES review) |
@@ -5633,7 +5953,12 @@ work listed under a ◐ item's Proceeds line.
 | **Trust measurement** — moderated current-vs-process-transparency sessions; whether a restrained heritage condition is retained as a third research condition; any aggregate local measurement store (which must record no answers and no identity, or the data-use sentence becomes false) | ❓ | Blake | Approval of the study design; the store is designed before anything is promised |
 | **VoiceOver sanity pass on the trust copy** — the owner's 2026-08-21 ruling (R7) requires a one-time sanity pass on the mounted iPad (new headline focus, the Welcome and Review lines in reading order, no duplicate announcement) before PR #54 leaves draft | ✅ | Blake | PASS by Blake's 2026-08-22 all-tests-pass attestation for `f748f59`; compact VO-01…04 and VO-ES-01 covered. No transcript/export supplied; evidence limitation recorded in `docs/trust-integrity-physical-gate-2026-08-21.md` §15. Screen-reader functionality itself stays out of scope by the 2026-08-12 permanent ruling. |
 
-*(Resolved and removed from the table: "Phase 1 scoring-fixture exit gate" —
+*(Resolved and removed from the table: "Scoring case-fold (3.1)" and
+"Quiz-tag vocabulary gap (3.2)" — approved by Blake's 2026-09-09 continuous
+build direction as bounded sequential current-`main` re-cuts after disabled
+Phase 2.2 incorporation; the old candidates stay evidence and the nine-question
+impact is re-measured; this resolves permission to build, not the final
+acceptance or activation gate. "Phase 1 scoring-fixture exit gate" —
 approved by owner directive 2026-08-12 and built the same day; see the Phase 1
 exit gate block under Standing Phase 1 constraints. "Tier navigation
 presentation — adopting a replacement" — resolved for this cycle 2026-08-14:
@@ -5824,8 +6149,13 @@ document, not here.
     to the final end-of-project deployment stage, its approval — written
     business and legal — taken there (owner ruling 2026-08-28); non-live
     preparation proceeds under 2.2's Proceeds list, and production surfaces
-    stay false until the gate.
-12. 🔒 **Structural scoring and tier changes last** — Phase 3.
+    stay false until the gate. *(Owner direction 2026-09-09: that disabled
+    preparation is the next construction workstream and runs without an
+    interim acceptance stop; the activation output remains gated.)*
+12. ⬜ **Approved scoring-integrity corrections after disabled pricing** —
+    3.1, then 3.2 on its accepted result, each re-cut from current `main` and
+    re-measured against the nine-question journey. Every other Phase 3 item
+    remains locked or proposed exactly as marked.
 13. 🔨 **Guided-selling cohesion and conversion readiness** — the Phase 1
     milestone added 2026-08-29 by owner direction, after Slice 6 and before
     2.2 activation (chronologically after 2.1's closure). Its first targets
@@ -5865,7 +6195,29 @@ document, not here.
     acceptance; no live evidence, analytics, deployment, activation, showroom
     use or interim validation is authorized; 2.2, the 3.1 / 3.2 decisions,
     3.7's limits and the Spanish, privacy, scoring and live-backend
-    constraints are untouched; the milestone stays 🔨.)*
+    constraints are untouched; the milestone stays 🔨.)* *(State 2026-09-09,
+    `main` `63f745b`: the complete end-state candidate merged 2026-09-08 via
+    PR #103 → `6e71dfb` on Blake's explicit adoption and merge authorization
+    (Sleep System 1.4 decisions and card states, Summary C3, Results C2,
+    Brief E1-A, chrome E2-A, the X7-B2 compact landscape quiz, the A4 / A6
+    accessibility floors); the accessory-rationale localization fix merged
+    via PR #104 → `57dbb5e`; the QR serializer normalization merged via
+    PR #105 → `63f745b` (0.7 stays closed). Item 1.4 stays ⏳, 1.3 stays ◐
+    on content, A4.1 / A4.2 remain candidate-complete evidence and are
+    approved for clean sequential re-cuts after disabled Phase 2.2 work, the
+    rest of the evidence stack stays unmerged with no PR; pass
+    2, the browser matrix, mounted-device verification and the consolidated
+    role-play kit are still owed at the one final non-live validation pass,
+    which has not run; every merge is preview only with mounted-device
+    verification recorded NOT PERFORMED; the milestone stays 🔨.)*
+14. ⬜ **Complete one production-readiness candidate, then gate once** — owner
+    direction 2026-09-09. After disabled Phase 2.2 incorporation, accessory
+    price provenance and payload minimisation, 3.1, 3.2 and the remaining
+    production-readiness gaps, assemble one integrated candidate. Only then run
+    the combined browser, mounted-iPad/Safari, accessibility, native-Spanish,
+    moderated role-play, business/legal, backend and activation review. Until
+    that decision, automated engineering safeguards continue but every live
+    output and service remains off.
 
 ---
 
