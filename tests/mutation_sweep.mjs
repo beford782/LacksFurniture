@@ -148,6 +148,15 @@ const SLEEP = ["tests/sleep_system_presentation_check.mjs"];
 const A43 = ["tests/quiz_reduction_check.mjs"];
 const A43_QUIZ = A43.concat(["tests/quiz_presentation_check.mjs"]);
 const A43_SUMMARY = A43.concat(["tests/consultation_summary_check.mjs"]);
+// QR serializer independence (2026-09-08): the QR payload suite is the second
+// PYTHON observer. It owns the byte identity of the committed asset with a
+// fresh generation and the one-token serializer canonicalisation (lxml `"/>`
+// vs stdlib `" />`), including the negative controls that keep the
+// canonicalisation from absorbing any other byte difference. Its
+// serializer-simulation checks run the REAL build_svg under both spellings,
+// so a removed canonicalisation is observed under whichever serializer this
+// interpreter selects.
+const QR = ["tests/qr_payload_check.py"];
 
 
 // ---------------------------------------------------------------------------
@@ -2583,6 +2592,29 @@ const MUTATIONS = [
     "      'hot': { en: 'Addresses your temperature concerns', es: 'Aborda tus preocupaciones de temperatura' },\n",
     "      'hot': { en: 'Addresses your temperature concerns', es: 'Aborda tus preocupaciones de temperatura.' },\n", SLEEP],
 
+  // --- QR serializer independence (2026-09-08) -----------------------------
+  // Each mutant either removes the one-token canonicalisation (the bundled
+  // lxml runtime would then fail byte identity again) or broadens it so that
+  // a real byte difference would be absorbed. All are observed by the QR
+  // payload suite under whichever serializer the sweep's interpreter selects.
+  ["QR: build_svg returns the raw serializer output (canonicalisation removed)",
+    "    return canonicalize_svg_serialization(raw)",
+    "    return raw", QR, "incoming/generate_financing_qr.py"],
+  ["QR: the canonicaliser becomes the identity",
+    "    return _EMPTY_ELEMENT_CLOSE_UNSPACED.sub(_CANONICAL_EMPTY_ELEMENT_CLOSE, svg_text)",
+    "    return svg_text", QR, "incoming/generate_financing_qr.py"],
+  ["QR: the canonicaliser is broadened to ANY whitespace before the close (a two-space or newline close would be absorbed)",
+    "_EMPTY_ELEMENT_CLOSE_UNSPACED = re.compile(r'(?<=\")/>')",
+    "_EMPTY_ELEMENT_CLOSE_UNSPACED = re.compile(r'(?<=\")\\s*/>')", QR, "incoming/generate_financing_qr.py"],
+  ["QR: the canonicaliser is broadened to strip a trailing newline",
+    "    return _EMPTY_ELEMENT_CLOSE_UNSPACED.sub(_CANONICAL_EMPTY_ELEMENT_CLOSE, svg_text)",
+    "    return _EMPTY_ELEMENT_CLOSE_UNSPACED.sub(_CANONICAL_EMPTY_ELEMENT_CLOSE, svg_text).rstrip(\"\\n\")", QR, "incoming/generate_financing_qr.py"],
+  ["QR: the canonicaliser is broadened to normalise the declaration's quoting",
+    "    return _EMPTY_ELEMENT_CLOSE_UNSPACED.sub(_CANONICAL_EMPTY_ELEMENT_CLOSE, svg_text)",
+    "    return _EMPTY_ELEMENT_CLOSE_UNSPACED.sub(_CANONICAL_EMPTY_ELEMENT_CLOSE, svg_text).replace(\"'\", '\"')", QR, "incoming/generate_financing_qr.py"],
+  ["QR: the canonical spelling flips to lxml's (the committed stdlib form would no longer be reproduced)",
+    "_CANONICAL_EMPTY_ELEMENT_CLOSE = ' />'",
+    "_CANONICAL_EMPTY_ELEMENT_CLOSE = '/>'", QR, "incoming/generate_financing_qr.py"],
 ];
 
 // ---------------------------------------------------------------------------
@@ -2609,6 +2641,12 @@ for (const d of ["tests", "data", "docs", "tools", "incoming", "demo", ".github"
 // README.md joins the copy set for the same reason as onboarding: the A4.3
 // living-contract section reads the counts it states.
 for (const f of ["index.html", "Code.gs", "CLAUDE.md", "README.md"]) cpSync(join(root, f), join(sandbox, f));
+// The committed QR asset joins the copy set (alone, not the whole images
+// tree) because the QR payload suite decodes it and compares a fresh
+// generation against it byte for byte; the sandbox copy is what the suite
+// reads, so the real asset is never touched by a mutation run.
+mkdirSync(join(sandbox, "images"), { recursive: true });
+cpSync(join(root, "images", "qr-financing.svg"), join(sandbox, "images", "qr-financing.svg"));
 
 // Per-target pristine sources. Entries name their target with a fifth field;
 // index.html is the default. Every mutated target is restored before the next
@@ -2644,6 +2682,9 @@ const PRISTINE_BY_FILE = {
   "data/quiz.json": readFileSync(join(sandbox, "data", "quiz.json"), "utf8"),
   "docs/quiz-copy-engine-correspondence.md":
     readFileSync(join(sandbox, "docs", "quiz-copy-engine-correspondence.md"), "utf8"),
+  // QR generator: the serializer canonicalisation lives here.
+  "incoming/generate_financing_qr.py":
+    readFileSync(join(sandbox, "incoming", "generate_financing_qr.py"), "utf8"),
 };
 
 // Observers are node suites by default. The validator's self-test is the one

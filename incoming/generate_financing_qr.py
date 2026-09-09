@@ -68,6 +68,15 @@ into a terminal or a log.
 
 --check and the decoder are stdlib-only. GENERATION needs the pinned qrcode
 package: python -m pip install -r incoming/requirements-qr.txt
+
+SERIALIZER INDEPENDENCE. qrcode 8.2 serialises through qrcode.compat.etree.ET,
+which is lxml.etree when lxml is importable and xml.etree.ElementTree
+otherwise. For this document the two differ in exactly one byte: the stdlib
+closes the single empty <path> element as `" />`, lxml as `"/>`. The committed
+asset is the canonical byte output, so build_svg() canonicalises that one
+token to the committed spelling and NOTHING else (see
+canonicalize_svg_serialization). Every other byte difference still fails the
+suite's byte-identity assertion.
 """
 import argparse
 import hashlib
@@ -198,6 +207,45 @@ def validate_target(config, target):
 
 # ------------------------------------------------------------- generation ----
 
+# SERIALIZER CANONICALISATION. qrcode 8.2 serialises through
+# qrcode.compat.etree.ET: lxml.etree when lxml is importable, otherwise
+# xml.etree.ElementTree. Measured 2026-09-08 on the same pinned qrcode 8.2:
+# system Python 3.14 (no lxml) reproduced the committed asset byte for byte;
+# the bundled Codex runtime (Python 3.12, lxml 6.1.1) produced the same bytes
+# minus ONE: the space before the empty-element close of the single <path>
+# (`stroke="none" />` vs `stroke="none"/>`). The committed asset is the
+# canonical byte output, so generation canonicalises TO the stdlib spelling:
+#   * only a `/>` immediately preceded by an attribute's closing quote is
+#     touched, and exactly one space is inserted before it;
+#   * an already-canonical document is returned unchanged (idempotent);
+#   * NOTHING else is normalised - not other whitespace (a two-space, tab or
+#     newline-separated close, a trailing newline, a CRLF), not the
+#     declaration's quoting, not attribute order or values, not the
+#     namespace, not path data, not dimensions. Those still differ from the
+#     committed bytes and still fail tests/qr_payload_check.py's byte-identity
+#     assertion, which is deliberately NOT weakened.
+# This is not an XML canonicaliser (no parsing, no C14N): it is a one-token
+# rewrite of the only known serializer-specific difference.
+_EMPTY_ELEMENT_CLOSE_UNSPACED = re.compile(r'(?<=")/>')
+_CANONICAL_EMPTY_ELEMENT_CLOSE = ' />'
+
+
+def canonicalize_svg_serialization(svg_text):
+    """Return `svg_text` with every quote-adjacent `/>` spelled `" />` - the
+    committed (stdlib ElementTree) form. No other byte is touched."""
+    return _EMPTY_ELEMENT_CLOSE_UNSPACED.sub(_CANONICAL_EMPTY_ELEMENT_CLOSE, svg_text)
+
+
+def serializer_name():
+    """Diagnostic only: the XML serializer qrcode will use in THIS interpreter
+    ('lxml.etree' or 'xml.etree.ElementTree'), or None without qrcode."""
+    try:
+        from qrcode.compat.etree import ET
+    except ImportError:
+        return None
+    return ET.__name__
+
+
 def build_svg(target):
     """Deterministic local SVG for `target`, as EXACTLY ONE byte-mode segment.
 
@@ -233,7 +281,10 @@ def build_svg(target):
     img = qr.make_image(image_factory=qrcode.image.svg.SvgPathImage)
     buf = io.BytesIO()
     img.save(buf)
-    return buf.getvalue().decode("utf-8")
+    raw = buf.getvalue().decode("utf-8")
+    # Serializer independence: lxml and the stdlib spell the one empty-element
+    # close differently; the committed asset is canonical (see above).
+    return canonicalize_svg_serialization(raw)
 
 
 def write_svg(svg, output_path=DEFAULT_OUTPUT):
@@ -932,7 +983,8 @@ def main(argv=None):
                 "Configured target: %s"
                 % (_payload_fingerprint(decoded), sanitize_url_for_error(target)))
         write_svg(svg, args.output)
-        print(f"Wrote {args.output} -> {target} ({len(svg)} bytes)")
+        print(f"Wrote {args.output} -> {target} ({len(svg)} bytes; serializer "
+              f"{serializer_name()}, canonicalised)")
         return 0
     except (QrTargetError, QrUnsupportedError, QrPayloadMismatch) as e:
         print(f"FAIL {type(e).__name__}: {e}", file=sys.stderr)
