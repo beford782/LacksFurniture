@@ -610,6 +610,16 @@ jobs:
       - name: daybreak demo runtime (real helpers, injected config)
         run: node tests/daybreak_demo_runtime_check.mjs
 
+      # G2 (readiness gaps 2026-09-09): the send-nothing verification path for
+      # email and lead delivery. The real page through headless Chromium over a
+      # loopback harness (an in-memory live gasUrl naming a stub endpoint on a
+      # second loopback origin) in shipped and live modes, every failure path,
+      # and Code.gs replayed against the recorded payload. Nothing is sent or
+      # stored; the committed gasUrl stays blank. Uses the Chromium installed
+      # for the rendered layout check above.
+      - name: delivery harness (send-nothing live path, rendered)
+        run: python tests/delivery_harness_check.py
+
       # One level up from the suites: for each safety property in the manifest,
       # delete it from a COPY of the tree and require a suite to go red. A
       # survivor is a property with no effective test, and a mutation that fails
