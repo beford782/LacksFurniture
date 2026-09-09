@@ -93,7 +93,7 @@ and CI proves it.
    changed, run `.\build-data.ps1` and commit the regenerated JSON with it.
 3. Push the feature branch and open a pull request targeting `main`.
 4. Wait for the required `Full suite (18 checks)` status check to pass (a
-   legacy label pinned by branch protection; the job runs the same 48 checks
+   legacy label pinned by branch protection; the job runs the same 50 checks
    as `pwsh -File tools/run_full_suite.ps1`).
 5. Merge the pull request. GitHub Pages deploys the merged `main` branch
    automatically; verify the Pages `build` and `deploy` checks afterward.
@@ -112,7 +112,12 @@ or VS Code Live Server. `file://` is not supported (CORS + domain lock).
 - Start with [`AGENTS.md`](AGENTS.md). It is the durable agent entry point and
   links the detailed project guide, review contract, Goal template, and browser
   evidence requirements.
-- Run the complete local CI mirror with:
+- Run the complete local CI mirror. It needs a Python 3.12 through 3.14
+  (the verified range; 3.15+ is refused, not assumed) provisioned once with
+  `python -m pip install -r tools/requirements-suite.txt` and
+  `python -m playwright install chromium`. The runner refuses any other
+  interpreter before running a suite and prints the exact command, or the
+  range, that fixes it:
 
       pwsh -File tools/run_full_suite.ps1
 

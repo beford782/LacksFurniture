@@ -39,6 +39,89 @@ function Resolve-DreamFinderProgram {
     throw "$Label was not found. Pass its executable path explicitly."
 }
 
+# Admission test for a Python interpreter: tools/suite_python_preflight.py,
+# run against each candidate BEFORE any suite. It proves the exact pins of
+# tools/requirements-suite.txt (CI installs that same file) are installed and
+# import, and that a headless Chromium actually LAUNCHES through that
+# interpreter's Playwright - the package importing while no browser was ever
+# installed for it is the case that used to fail the one rendered check after
+# every static suite had passed. A `python` first on PATH that was never
+# provisioned for this repository (a system install, an agent's bundled
+# runtime) is skipped in favour of the next candidate; if none passes, the
+# failure names each interpreter tried, what it lacks, and the exact command
+# that repairs it - the preflight prints those FIX lines with the
+# interpreter's own path, so the remediation is copy-pasteable.
+$pythonRequirementsFile = 'tools/requirements-suite.txt'
+$pythonPreflight = Join-Path $PSScriptRoot 'suite_python_preflight.py'
+
+function Get-DreamFinderPythonVerdict {
+    param([string]$Executable)
+
+    try {
+        $lines = @(& $Executable $pythonPreflight)
+        $code = $LASTEXITCODE
+    } catch {
+        return @{ Ok = $false; Lines = @('GAP the interpreter could not be started: ' + $_.Exception.Message) }
+    }
+    if ($code -eq 0) {
+        return @{ Ok = $true; Lines = $lines }
+    }
+    if ($code -eq 2) {
+        return @{ Ok = $false; Lines = @($lines | Where-Object { $_ -match '^(GAP|FIX) ' }) }
+    }
+    $last = [string]($lines | Select-Object -Last 1)
+    return @{ Ok = $false; Lines = @("GAP the preflight itself could not run (exit $code): $last") }
+}
+
+function Resolve-DreamFinderPython {
+    param(
+        [string]$Explicit,
+        [string[]]$Candidates
+    )
+
+    if ($Explicit) {
+        $path = Resolve-DreamFinderProgram -Explicit $Explicit -Candidates @() -Label 'Python (-Python)'
+        $verdict = Get-DreamFinderPythonVerdict -Executable $path
+        if ($verdict.Ok) {
+            return $path
+        }
+        throw ("The Python passed with -Python is not provisioned for the suite ($pythonRequirementsFile); nothing was run.`n  " +
+            $path + "`n" + (($verdict.Lines | ForEach-Object { '    ' + $_ }) -join "`n") +
+            "`nRun the FIX command(s) above, then rerun with the same -Python.")
+    }
+
+    $tried = @()
+    foreach ($candidate in $Candidates) {
+        if (-not $candidate) {
+            continue
+        }
+        $path = $null
+        if (Test-Path -LiteralPath $candidate -PathType Leaf) {
+            $path = (Resolve-Path -LiteralPath $candidate).Path
+        } else {
+            $resolved = Get-Command $candidate -ErrorAction SilentlyContinue
+            if ($resolved) {
+                $path = $resolved.Source
+            }
+        }
+        if (-not $path) {
+            continue
+        }
+        $verdict = Get-DreamFinderPythonVerdict -Executable $path
+        if ($verdict.Ok) {
+            return $path
+        }
+        $tried += ('  ' + $path)
+        $tried += @($verdict.Lines | ForEach-Object { '    ' + $_ })
+    }
+    if ($tried.Count -eq 0) {
+        throw 'Python was not found. Pass its executable path with -Python.'
+    }
+    throw ("No Python on this machine is provisioned for the suite ($pythonRequirementsFile); nothing was run. Tried:`n" +
+        ($tried -join "`n") +
+        "`nRun the FIX command(s) listed under the interpreter you want to use, then pass it with -Python <that path>.")
+}
+
 function Invoke-DreamFinderCheck {
     param(
         [string]$Name,
@@ -79,15 +162,30 @@ $bundledPwsh = if ($env:USERPROFILE) {
     $null
 }
 
-$pythonExecutable = Resolve-DreamFinderProgram -Explicit $Python -Candidates @(
-    'python',
-    'python3',
-    $bundledPython
-) -Label 'Python'
+# An admission failure is printed ONCE, verbatim, and ends the run before any
+# suite: PowerShell's own rendering of an uncaught throw repeats the message
+# inside a wrapped error record, which mangles the copy-pasteable FIX lines.
+try {
+    $pythonExecutable = Resolve-DreamFinderPython -Explicit $Python -Candidates @(
+        'python',
+        'python3',
+        $bundledPython
+    )
+} catch {
+    Write-Host $_.Exception.Message -ForegroundColor Red
+    exit 1
+}
 $nodeExecutable = Resolve-DreamFinderProgram -Explicit $Node -Candidates @(
     'node',
     $bundledNode
 ) -Label 'Node.js'
+# Some suites shell out to a bare `python` / `node` (the mutation sweep runs
+# its Python observers that way, and every Python check spawns siblings via
+# sys.executable). Put the ACCEPTED interpreters first on PATH for this process
+# and its children, so `-Python`/`-Node` and the auto-resolved choice govern the
+# whole run rather than only the top-level invocations.
+$env:PATH = (Split-Path -Parent $pythonExecutable) + [System.IO.Path]::PathSeparator +
+    (Split-Path -Parent $nodeExecutable) + [System.IO.Path]::PathSeparator + $env:PATH
 $gitExecutable = Resolve-DreamFinderProgram -Candidates @('git') -Label 'Git'
 $powerShellExecutable = Resolve-DreamFinderProgram -Candidates @(
     'pwsh',
@@ -95,12 +193,16 @@ $powerShellExecutable = Resolve-DreamFinderProgram -Candidates @(
     'powershell'
 ) -Label 'PowerShell (pwsh preferred; the Codex-bundled pwsh or Windows PowerShell 5.1 accepted)'
 
-# Mirror of the `verify` job in .github/workflows/ci.yml, in CI order: 48 checks
-# plus the mutation sweep = 49. (The CI job's display name, "Full suite (18
+# Mirror of the `verify` job in .github/workflows/ci.yml, in CI order: 49 checks
+# plus the mutation sweep = 50. (The CI job's display name, "Full suite (18
 # checks)", is a legacy label pinned by branch protection; do not trust its
 # number.) When ci.yml gains or loses a `run: node|python ...` step, change
 # this list in the same PR so the local mirror stays complete.
 $checks = @(
+    # The admission gate above, proven non-vacuous: an interpreter whose
+    # packages import but whose Chromium is absent must be refused before any
+    # suite, in both the -Python and the auto-selected path.
+    @{ Name = 'suite preflight'; Exe = $pythonExecutable; Args = @('tests/suite_preflight_check.py') },
     @{ Name = 'validation self-test'; Exe = $pythonExecutable; Args = @('tools/validation.py', '--self-test') },
     @{ Name = 'financing totality'; Exe = $pythonExecutable; Args = @('tests/financing_totality_check.py') },
     @{ Name = 'pricing totality'; Exe = $pythonExecutable; Args = @('tests/pricing_totality_check.py') },
@@ -159,6 +261,8 @@ if (-not $SkipMutationSweep) {
 
 if ($ListOnly) {
     Write-Host "DreamFinder local full suite: $($checks.Count) checks"
+    Write-Host "Python:  $pythonExecutable"
+    Write-Host "Node.js: $nodeExecutable"
     $checks | ForEach-Object { Write-Host "- $($_.Name)" }
     exit 0
 }
@@ -196,10 +300,13 @@ try {
     Write-Host 'DreamFinder local CI mirror' -ForegroundColor Yellow
     Write-Host "Repository: $repoRoot"
     Write-Host "Checks:     $($checks.Count)"
-    Invoke-DreamFinderCheck -Name 'Python toolchain' -Executable $pythonExecutable -Arguments @(
-        '-c',
-        "import openpyxl, PIL, qrcode; print('Python dependencies OK:', openpyxl.__version__, PIL.__version__)"
-    )
+    Write-Host "Python:     $pythonExecutable"
+    Write-Host "Node.js:    $nodeExecutable"
+    # The admission test the resolver already passed, run once more in the
+    # log: interpreter path and version, every pinned distribution's installed
+    # version, and the Chromium that launched - so a log always says which
+    # Python and which browser ran the suite.
+    Invoke-DreamFinderCheck -Name 'Python toolchain (suite preflight)' -Executable $pythonExecutable -Arguments @($pythonPreflight)
     Invoke-DreamFinderCheck -Name 'Node.js toolchain' -Executable $nodeExecutable -Arguments @('--version')
     Invoke-DreamFinderCheck -Name 'PowerShell toolchain' -Executable $powerShellExecutable -Arguments @('-NoProfile', '-Command', '$PSVersionTable.PSVersion.ToString()')
 

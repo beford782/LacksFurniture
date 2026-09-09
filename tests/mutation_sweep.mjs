@@ -113,6 +113,11 @@ const PRICING_VALIDATOR = ["tools/validation.py --self-test", "tests/pricing_con
 // not by grep. Payload/render leaks are observed by the email-gating and
 // sleep-system suites, which own those surfaces' pins.
 const PRICING_RESOLVER = ["tests/pricing_resolver_check.mjs"];
+// The mirror's interpreter admission gate (built 2026-09-06, re-cut
+// 2026-09-09): the preflight suite drives tools/suite_python_preflight.py
+// directly and the runner through PowerShell (-ListOnly), so a mutation of
+// either target is observed by it.
+const PREFLIGHT = ["tests/suite_preflight_check.py"];
 // Trust integrity gate observer (2026-08-21): the trust suite owns the copy <->
 // engine correspondence (document sections, cited tags, the inert-tag set,
 // shipped-vs-documented help lines, banned claims), the absence of the
@@ -2288,6 +2293,42 @@ const MUTATIONS = [
     "                            \"size\": scope.get(\"size\"),",
     PRICING_VALIDATOR, "tools/validation.py"],
 
+  // --- the mirror's interpreter admission gate ------------------------------
+  // "Modules import but browser absent": the preflight reports a launched
+  // Chromium even when the launch failed.
+  ["the preflight treats a failed Chromium launch as a present browser",
+    "        return None, browser_gap_text(exc)",
+    "        return \"Chromium (unverified) launched headless\", None",
+    PREFLIGHT, "tools/suite_python_preflight.py"],
+  // A distribution that is not installed is reported as provisioned.
+  ["the preflight ignores a missing distribution",
+    "        return f\"{dist} is not installed (pinned {dist}=={pinned})\"",
+    "        return None",
+    PREFLIGHT, "tools/suite_python_preflight.py"],
+  // A distribution installed at the pinned version but raising on import (a
+  // broken install, a shadowing package) is reported as provisioned.
+  ["the preflight no longer imports a pinned distribution",
+    "        importlib.import_module(module)",
+    "        pass",
+    PREFLIGHT, "tools/suite_python_preflight.py"],
+  // The runner accepts an interpreter the preflight rejected.
+  ["the runner accepts an interpreter the preflight rejected",
+    "    if ($code -eq 0) {\n        return @{ Ok = $true; Lines = $lines }\n    }",
+    "    if ($true) {\n        return @{ Ok = $true; Lines = $lines }\n    }",
+    PREFLIGHT, "tools/run_full_suite.ps1"],
+  // The verified range (3.12 through 3.14) widens silently.
+  ["the preflight admits a Python newer than the verified range",
+    "    if v > PYTHON_CEILING:",
+    "    if False:",
+    PREFLIGHT, "tools/suite_python_preflight.py"],
+  ["the requirements file routes every Python 3.14+ to the 3.14 Pillow pin",
+    'Pillow==12.1.1; python_version == "3.14"',
+    'Pillow==12.1.1; python_version >= "3.14"',
+    PREFLIGHT, "tools/requirements-suite.txt"],
+  ["a principal guide states a wider Python range than the preflight enforces",
+    "It needs a Python 3.12 through 3.14",
+    "It needs a Python 3.12 through 3.15",
+    PREFLIGHT, "README.md"],
   // --- Phase 2.1b: the dark resolver (index.html) --------------------------
   // Each entry mutates the REAL resolver source; the resolver suite executes
   // the mutated function and the specific five-axis probe fails. Find strings
@@ -2640,7 +2681,9 @@ for (const d of ["tests", "data", "docs", "tools", "incoming", "demo", ".github"
 // paragraph legitimizing retailer prose in the quiz contract.
 // README.md joins the copy set for the same reason as onboarding: the A4.3
 // living-contract section reads the counts it states.
-for (const f of ["index.html", "Code.gs", "CLAUDE.md", "README.md"]) cpSync(join(root, f), join(sandbox, f));
+// AGENTS.md joins the copy set because the suite-preflight check pins the
+// verified Python range every principal guide states.
+for (const f of ["index.html", "Code.gs", "CLAUDE.md", "README.md", "AGENTS.md"]) cpSync(join(root, f), join(sandbox, f));
 // The committed QR asset joins the copy set (alone, not the whole images
 // tree) because the QR payload suite decodes it and compares a fresh
 // generation against it byte for byte; the sandbox copy is what the suite
@@ -2680,6 +2723,19 @@ const PRISTINE_BY_FILE = {
   // governs it. Mutating each proves the suite compares them rather than
   // trusting either.
   "data/quiz.json": readFileSync(join(sandbox, "data", "quiz.json"), "utf8"),
+  // The mirror's interpreter admission gate: the preflight the runner executes
+  // against each candidate Python, and the runner's reading of its verdict.
+  // Both are copied into the sandbox with tools/, and the preflight suite
+  // drives the SANDBOX copies through their own paths.
+  "tools/suite_python_preflight.py":
+    readFileSync(join(sandbox, "tools", "suite_python_preflight.py"), "utf8"),
+  "tools/run_full_suite.ps1":
+    readFileSync(join(sandbox, "tools", "run_full_suite.ps1"), "utf8"),
+  // The pinned requirements the preflight evaluates (its Pillow markers close
+  // the verified range at 3.14) and the README statement of that range.
+  "tools/requirements-suite.txt":
+    readFileSync(join(sandbox, "tools", "requirements-suite.txt"), "utf8"),
+  "README.md": readFileSync(join(sandbox, "README.md"), "utf8"),
   "docs/quiz-copy-engine-correspondence.md":
     readFileSync(join(sandbox, "docs", "quiz-copy-engine-correspondence.md"), "utf8"),
   // QR generator: the serializer canonicalisation lives here.

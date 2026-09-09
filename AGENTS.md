@@ -106,8 +106,33 @@ It applies to the whole tree.
   pwsh -File tools/run_full_suite.ps1
   ```
 
-- In a Codex desktop environment without `python` on `PATH`, load the bundled
-  workspace dependencies and pass its Python executable with `-Python`.
+- The mirror needs a Python provisioned from `tools/requirements-suite.txt`
+  (openpyxl, Pillow, qrcode and playwright at exact pins) with Playwright's
+  Chromium installed for it. Python 3.12 through 3.14 is the verified range
+  (3.12 is CI's interpreter); the file's environment markers choose the Pillow
+  build for each (11.0.0 below 3.14, 12.1.1 on 3.14), so the two commands are
+  the same on every supported version. An older or a newer Python (3.15+) is
+  refused before any suite runs, with the range and the `-Python` remedy
+  named: no pin is verified for it, and supporting it means pinning and
+  verifying its requirements in that file and raising the ceiling in
+  `tools/suite_python_preflight.py` in the same change. Provision the
+  interpreter you intend to use once:
+
+  ```powershell
+  python -m pip install -r tools/requirements-suite.txt
+  python -m playwright install chromium
+  ```
+
+- The runner admits an interpreter only after `tools/suite_python_preflight.py`
+  passes on it: the exact pins present and importing, and a headless Chromium
+  actually launched (a `playwright` package that imports with no browser
+  installed for it is refused). It skips any `python` on `PATH` that fails
+  and, if none passes, fails BEFORE any suite runs, listing each interpreter
+  tried, what it lacks, and the exact command that repairs it. Pass a specific
+  interpreter with `-Python`; the same gate applies to it.
+- In a Codex desktop environment, an agent's bundled workspace runtime is NOT
+  provisioned for this repository until those two commands have been run into
+  it; after that, pass its executable with `-Python`.
 - On a Windows machine without PowerShell 7 (`pwsh`),
   `powershell -NoProfile -File tools/run_full_suite.ps1` runs the same mirror
   under Windows PowerShell 5.1; the runner accepts either.
