@@ -18629,7 +18629,15 @@
           }));
       // Suggestions shown on the shared review remain comparison options until
       // explicitly added. Only the authoritative cart is included in the email.
-      const accList = getSelectedAccessoryPlan().map(a => Object.assign({}, a, {
+      // Payload minimisation (owner build direction 2026-09-09, roadmap item
+      // 14 step 2): each accessory travels as exactly the three fields
+      // Code.gs reads — name, category, imageUrl — projected onto a fresh
+      // literal. Nothing else on the plan entry (its id, its rationale key,
+      // and never a catalog price or any pricing-derived value) can reach
+      // the packet, because nothing else is named here.
+      const accList = getSelectedAccessoryPlan().map(a => ({
+        name: a.name,
+        category: a.category,
         imageUrl: toAbsoluteImageUrl(a.imageUrl)
       }));
       // Slice 6: the lead is a CLOSED contract (chosen / recommended / none)
