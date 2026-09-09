@@ -500,8 +500,12 @@ git push -u origin HEAD
 #   (no pwsh? Windows PowerShell 5.1 works: powershell -NoProfile -File tools/run_full_suite.ps1)
 # open a PR targeting main; wait for the required status check — its name,
 # "Full suite (18 checks)", is a legacy label pinned by branch protection, and
-# the job actually runs 49 verification steps, the same 49 the local mirror
-# enumerates (48 suites plus the mutation sweep) — then merge, only when Blake asks
+# the job actually runs every `run: node|python tests/...` step in ci.yml plus
+# the tool steps and the mutation sweep — the same list the local mirror
+# enumerates (`powershell -NoProfile -File tools/run_full_suite.ps1 -ListOnly`;
+# re-derive the count with `grep -cE '^ *run: (node|python) tests/'
+# .github/workflows/ci.yml` rather than trusting a number written here, which
+# has drifted with every added suite) — then merge, only when Blake asks
 ```
 
 **Agent boundary (identical to `AGENTS.md`):** no commit, push, PR, merge,

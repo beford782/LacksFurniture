@@ -25,6 +25,7 @@ docs/*
 !docs/accessory-catalog-copy-packet-2026-08-30.md
 !docs/asset-request-north-star-2026-08-31.md
 !docs/phase2-2-disabled-incorporation.md
+!docs/production-readiness-gaps-2026-09-09.md
 tools/strip-bg.py
 
 # Local scratch / design mockups (kept locally, never committed)
