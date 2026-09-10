@@ -3998,7 +3998,7 @@ confirm 40 → 44px) are on `main` since the end-state candidate merged
 2026-09-08 via PR #103 → `6e71dfb`; the Summary's selected-accessory
 rationale follows the current language since PR #104 → `57dbb5e` (see 1.4).
 Item 1.6 stays ✅ and its exit is not amended; the 2026-08-23 pick-card tier
-line debt recorded below is untouched by these merges and stays open.)*
+line debt recorded below was closed by Slice 6 C5 — PR #58, `3f92241`, 2026-08-24 — exactly as that note records; nothing here reopens it. A 2026-09-09 sentence in this paragraph previously called it "still open" and was wrong: corrected the same day in the production-readiness gap enumeration.)*
 
 **The Review screen stays complete and fully editable.** That is the approved
 default, not a pending question, and it does not hold this item open. Compressing
@@ -5635,6 +5635,146 @@ output above is unchanged: no production price data, surface flag, approval
 state, payment figure or live service turns on before the single final readiness
 and activation decision.)*
 
+*(**Slice 2.2a built 2026-09-09 — the price presentation gate and the drawer
+surface, disabled.** Branch `claude/phase2-2-disabled-incorporation` from
+`main` `e76890c`; design and slice plan in
+`docs/phase2-2-disabled-incorporation.md`. One marked block after the
+resolver is now the resolver's only caller and the only reader of the shipped
+pricing config, and it consumes fail-closed: off (pricing absent, emergency
+disable, display disabled, or the surface flag not strictly true — every
+production state), price-unavailable (price axis not resolved, freshness not
+fresh — the executed stale refusal 2.1 left as a breadcrumb — or eligibility
+not eligible; governed state copy only, never a number), available (the
+localized amount with the governed assumptions and disclosures adjacent).
+*(Corrected under Codex review of the integrated candidate, 2026-09-09: that
+mapping contradicted this item's own state table above — stale is "nothing a
+customer can see", activation-unapproved "nothing on any shipped/live
+customer surface". The restored contract: off also when no catalog
+record/SKU applies, whenever freshness is absent or not fresh (stale,
+not-judgeable) and whenever eligibility is absent or not eligible;
+price-unavailable only for fresh + eligible data whose admitted price fails
+the runtime money admission — safe-integer minor units, positive, at most the
+governed 1,000,000,000 maximum, currency exactly USD; `Intl.NumberFormat` is
+formatting only — or cannot be formatted; available only for resolved +
+fresh + eligible + admitted data. The presentation suite, the rendered
+harness, the sweep manifest and its negative controls were re-cut to the
+restored contract on the candidate branch.)*
+Calculation and threshold pass through as status only; no payment figure
+exists. SKU identity comes from an optional catalog `skus` map, which the
+shipped catalog does not carry. The drawer slot sits directly above Payment
+Choice and is hidden and emptied when off. Guards: a new presentation suite
+executes the real gate over the whole shipped catalog (every surface off,
+every render silent) and over the non-shipping fixture opened in memory;
+the resolver and contract suites' containment pins are re-bound from "zero
+consumers" to "one call site and one config read, both inside the gate";
+eight sweep entries; the shipped-state and operating-state locks are
+untouched. Nothing activated, no mark moved, 2.2 stays ◐; 2.2b (the four
+remaining surfaces, status copy beside Payment Choice, the empty `skus`
+pipeline column) and 2.2c (operational controls and the localhost
+non-shipping harness with a rendered pass) follow in the same workstream.)*
+
+*(**Slice 2.2b built 2026-09-09 — the four remaining surfaces, disabled.**
+Branch `claude/phase2-2b-surfaces`, stacked on the 2.2a commit (PR #107)
+without waiting for its review or merge, per the direction's no-interim-gate
+rule; re-cut if that review changes the gate. The Results top-pick and
+supporting cards, the Sleep System finalist anchor, the Consultation Summary
+finalist hero and the Sleep Plan finalist each concatenate one slot string
+from a single builder in the gate block (`priceSlotFor`), which returns
+nothing whenever the gate is off or the state copy is blank — so in every
+production state those templates emit exactly what they emitted before, and
+the presentation suite proves it over the whole shipped catalog. The size is
+always the customer's own answer; a consumer never supplies one; a surface
+flag governs exactly the surface it names. Consumers reach the builder
+through the sandbox typeof guard the codebase already uses, which can only
+remove a slot, never add one. Calculation / threshold status copy beside
+Payment Choice moves to 2.2c, where the harness can exercise it. Guards:
++24 presentation checks (100), two sweep entries (650), two find strings
+pinned; every existing renderer suite green unchanged. Nothing activated,
+no mark moved, 2.2 stays ◐. **Second half, the same day:** the `skus`
+catalog column through the canonical pipeline — workbook schema and builder,
+the converter (header-driven, unchanged), `build-data.ps1` (parses
+`queen:SKU|king:SKU` and emits the JSON key ONLY when populated, like
+`topPickReason`) and a validator shape check in `validate_mattresses`
+(size ids = the quiz's `mattress_size` options; SKU grammar = the pricing
+contract's; eight self-test cases). The workbook, CSV and JSON were
+regenerated through the exact lineage chain: the CSV gained the column,
+blank on all 26 rows; `data/mattresses.json` is byte-identical
+(SHA-256 `d5e3d7b1…` before and after); strict golden bundle, lineage,
+scoring-isolation and Phase 1 output-regression checks unchanged and green.
+The presentation suite pins the column present and blank on every row.)*
+
+*(**Slice 2.2c built 2026-09-09 — the staging / live-like verification path,
+and a repair the path found.** Branch `claude/phase2-2c-harness`, stacked on
+2.2b. `tools/serve_pricing_preview.py` is a localhost-only, NON-SHIPPING
+harness: it serves the repository and intercepts only the store-config and
+catalog documents, returning in-memory drill states derived from the
+governed non-shipping fixture — expanded to one FIXTURE queen price per
+shipped mattress, stamps shifted to the server's start so the runtime gate
+judges them on the real clock, a FIXTURE SKU injected per mattress. Five
+states: dark (the fixture as committed: everything off), available (opened
+in memory), stale (evidence thirty days old: the executed stale refusal),
+unapproved (eligibility withheld), disabled (the emergency-off drill).
+Before serving, the production validators judge each state's dark form —
+clean, except the stale drill, which they refuse for exactly its staleness
+— and refuse every opened form, because `displayEnabled: true` can never
+ship; the harness therefore proves the runtime gate alone.
+`exactPromotionsEnabled` stays false in every state (Invariant 11) and no
+committed file is written. `tests/pricing_harness_check.py` (142 checks, a
+new CI and mirror step, 49 → 50 checks plus the sweep) executes the real
+builder and handler against a live loopback server, then drives the real
+page through headless Chromium for the shipped configuration and every
+drill state, in both languages and both tablet orientations: shipped and
+dark silent on every surface, available with FIXTURE amounts and the
+adjacent assumption and disclosure on all five surfaces, stale and
+unapproved with the governed copy only and no number, disabled silent
+again, no page errors, no per-period text, committed files byte-identical.
+*(Re-cut 2026-09-09 under Codex review of the integrated candidate, with the
+restored contract: a sixth drill state, unavailable — fresh and eligible,
+every price in currency XXX, refused by the gate's runtime money admission
+while `Intl.NumberFormat` would have formatted it — is the one state that
+shows the governed copy; stale and unapproved render nothing on any surface,
+exactly like dark and disabled; the unavailable drill's dark form is refused
+at build time for its currency as the stale drill's is for its age.)*
+**The repair:** the first rendered walk showed the Sleep System anchor, the
+Consultation Summary hero and the Sleep Plan finalist could never resolve —
+they hand the gate a saved-pick *projection* that carries no `skus`. The
+gate now reads the SKU from the catalog record of the same id in the
+results-time index, and from nowhere else (an index entry whose id
+disagrees is ignored; a projection can never supply a SKU for a product
+the catalog lacks) — pinned by four presentation checks and one sweep entry
+(651). Still owed inside 2.2: the calculation / threshold status copy
+beside Payment Choice (`quote-only`, `threshold-unknown`), exercised
+through this harness. Nothing activated, no mark moved, 2.2 stays ◐.)*
+
+*(**Slice 2.2d built 2026-09-09 — plan status copy beside Payment Choice,
+disabled; the disabled implementation is complete.** Branch
+`claude/phase2-2d-status-copy`, stacked on 2.2c. Payment Choice is where a
+plan is in view, and the price is grounded on the same screen: the sheet
+now records the placement it was opened from (memory only, cleared on
+close and by the session wipe by name) and every plan card asks the gate
+for the customer's CHOSEN finalist on that placement's surface. Only when
+that price is `available` does a card carry status copy — the governed
+`quote-only` line when the plan has no approved formula (a price exists; no
+payment can be computed) and the governed `threshold-unknown` line when the
+plan publishes a minimum purchase and no runtime transaction amount exists.
+Status only: never a figure, never a payment, so the Payment Choice §25
+currency-amount ban on the D4 surfaces stands untouched, and `''` in every
+production state. Guards: +20 presentation checks (128) including two
+planted mutants, two sweep entries (653), two find strings; the session
+wipe clears the placement (session safety 568); the harness walk opens the
+sheet from the Sleep Plan in every state — silent in shipped, dark, stale,
+unapproved and disabled; in `available` the quote-only line on the four
+formula-less plans and no currency amount (harness 165). The threshold
+line lives inside the promotional exact-offer block, which the harness can
+never open because `exactPromotionsEnabled` stays false in every state
+(Invariant 11); the unit suite owns that line. Every existing financing
+suite green unchanged. **With 2.2a–2.2d the disabled implementation named
+by the 2026-09-09 direction is complete for this item — code,
+configuration model, UI consumers, failure states, operational controls
+and the staging / live-like verification path — and waits for the final
+gate.** Nothing activated, no mark moved, 2.2 stays ◐; per the Exit's
+exclusion none of it closes the item.)*
+
 *(Mark rationale, 2026-08-28. 🔒 reads "no part of this item may start,"
 which contradicted the ruling-derived allowance for non-live preparation.
 Under the legend's own model the correct mark is ◐ — a gated production
@@ -5733,6 +5873,38 @@ merges stay requested rather than assumed under the agent boundary, which is
 traceability, not an acceptance gate. The repair touches no financing,
 presentation or `index.html` surface; the scoring-isolation guard stays pinned.
 
+*(**Re-cut built 2026-09-09 on `main` `e76890c`, branch
+`claude/a41-case-fold-recut` — the nine-question impact newly measured.**
+The candidate's one-line generator rule is carried verbatim (a tag with no
+hyphen is preserved as authored; a kebab-case tag is still lowered and
+camelized), `index.html` is byte-identical, and `data/mattresses.json`
+changed on exactly 16 lines — 13 `pressureRelief`, 3 `motionIsolation`.
+The pre-repair matrix was captured FIRST, on the unrepaired nine-question
+tree, with the ported contract suite; the post-repair matrix was captured
+after the repair; the suite's own case-fold reconstruction (the matrix
+re-run over an in-memory lowercased catalog) is byte-identical to that true
+pre-repair capture, so the only thing that changed is the case of two tags.
+**Nine-question impact, 57 scenarios through the real engine:** 39
+byte-identical, 18 moved; **gold top pick changed in 0 of 57**; gold order
+and membership unchanged in every scenario; silver 4 reordered and 12
+qualified-set changes; bronze 1 and 1; no model loses a point. The moved
+scenarios are exactly the partnered couples (every disturbance answer),
+side sleepers, the differing-body-type answer, hip pain, stiffness, getting
+older and the five composites that combine them — the population the two
+tags exist to serve. The figures equal the candidate's ten-question
+measurement, as they must: the removed question awarded nothing. The
+Phase 1 output fixture was regenerated from the pre-change tree: 156 pinned
+cells moved (scores 74, results 82) across eight scenarios, none in
+`s1_solo_back_firm_no_issues`, `s9_empty_defaults` or
+`s11_heat_only_via_sleep_issue`; the scoring-isolation golden pins moved on
+the same two answer sets the candidate recorded. Guards: the ported
+`tests/scoring_key_contract_check.mjs` (27 checks: the key contract, the
+reachability table pinned to exactly the six 3.2 keys, the generator's
+normaliser source, both sha-pinned matrices), a new CI and mirror step,
+three sweep entries, the correspondence document re-audited. **This is the
+engineering-verified result 3.2 builds on.** Merge stays on Blake's request
+in the roadmap's order; the mark stays ⬜ until then.)*
+
 *(**Candidate-complete 2026-09-03, recorded 2026-09-04 — not adopted, not
 merged.** A4.1, branch `claude/north-star-candidate-a41-scoring-integrity`
 head `dcb63e5`, an isolated descendant of the frozen A3.1 checkpoint, carries
@@ -5764,6 +5936,44 @@ enumerated in its commit / PR; no intermediate owner acceptance or merge
 decision is waited for, and Blake reviews both enumerations at the final
 combined gate. ⬜ approves the build inside the candidate; nothing is
 activated.
+
+*(**Re-cut built 2026-09-09 on the engineering-verified A4.1 result, branch
+`claude/a42-vocabulary-recut` — the nine-question impact newly measured.**
+Both halves of the candidate carried in their order. **The correction:**
+`durable` was a spelling variant of the catalog's canonical `durability`
+(the workbook's per-feature reason column is `reason_durability`; no
+catalog axis distinguishes the two) and is corrected at the authoritative
+source — `incoming/dreamfinder_quiz.json` → the workbook Quiz tab →
+`data/quiz.json`, two lines — and removed from the validator's allowed
+vocabulary, so re-introducing it is a build error. **The governance:** the
+five keys that still match no catalog model in any casing — `adjustable`,
+`hypoallergenic`, `memory` (real concepts whose authoritative data is
+absent) and `comfort`, `quality` (generic) — are declared dormant in
+`tools/validation.py` with a classification, the reason and the owner
+dependency that would resolve each; the build gate refuses any
+unreachable key that is not declared and any declaration whose key has
+become reachable, comparing the catalog's RUNTIME vocabulary through the
+same normaliser the generator applies (`Convert-FeatureTag` in
+`build-data.ps1` and `normalize_feature_tag` in the validator, executed
+against one shared case table by `tests/feature_tag_normalization_check.py`
+so the two cannot drift). Dormancy is proved by execution:
+`tests/scoring_vocabulary_check.mjs` strips every dormant award and re-runs
+the ranking matrix, which does not move. **Nine-question impact of the
+correction, 57 scenarios through the real engine:** 53 byte-identical, 4
+moved (the two corrected options and the composites that use them);
+**gold top pick changed in 3** — `need_issue_none`,
+`need_health_extra_support` and `fallback_all_none`, each a g5 / g7 tie on
+score that catalog order had settled toward g5 and the corrected signal
+now breaks toward g7, the `durability` carrier; gold reordered in those 3,
+bronze qualified-set changed in 2, silver untouched; 13 model scores rise,
+none fall. `index.html` byte-identical; `data/mattresses.json` unchanged.
+The Phase 1 output fixture moved on exactly 68 cells in three scenarios
+(s1 26, s6 18, s10 24). Guards: the vocabulary suite (51), the
+normalization suite (61), the contract suite's dead set pinned to the five,
+ten sweep entries, the correspondence document re-audited (no customer
+copy changes). Resolving any dormant key — populating data or retiring an
+award — stays an owner decision on this item. Merge on Blake's request,
+after the A4.1 re-cut; the mark stays ⬜ until then.)*
 
 *(**Candidate-complete 2026-09-03, recorded 2026-09-04 — not adopted, not
 merged.** A4.2, branch `claude/north-star-candidate-a42-scoring-vocabulary`
@@ -5941,8 +6151,8 @@ work listed under a ◐ item's Proceeds line.
 | Dormant nickname-code cleanup | ❓ | Blake | Analytics review — see below |
 | Visible stale-financing status band (production) | ❓ | Blake | A case for it plus review sign-off. Prototype-only today (D6); if pursued, production gets its own dedicated governed key — not a reuse of `staleAnnouncement` |
 | Customer-recorded trial reactions | ❓ | Blake | A case for it. The Nocturne prototype's own candidate next revision; deliberately not built (D6) |
-| **Accessory price provenance** — the shipped accessory prices (the one live "From $" surface) drift from `incoming/lacks_catalog_selection.json`: four are cent-truncated about $1 BELOW the observed catalog price (Dri-Tec 149.95→149, iProtect 89.95→89, Ver-Tex 249.95→249, gel memory pillow 99.95→99) and `foundation-princess` $499 has no recorded source anywhere; none carries `verifiedAt`, a source URL or an owner | ⬜ build / final gate for the values | Blake | *(2026-09-09: scheduled by the owner build direction as workstream (2), inside the 2.2 construction note — ❓ → ⬜ on the build portion only.)* **Build now, inside the integrated candidate:** bring the accessory prices under a governed provenance contract modelled on 2.1 — per-entry `verifiedAt`, allowlisted `sourceUrl`, owner and freshness — with the fail-closed behaviour and its tests. **Not pre-authorized:** a standalone merge that withdraws the today-displayed "From $" surface without a replacement, which would breach the no-degraded-`main` rule; any customer-visible suppression or replacement merges together with governed, attested pricing in the complete candidate, unless Blake separately orders an immediate safety removal. **Final gate:** confirming the values with Lacks, correcting the data, and any representation of an accessory price as approved. Found by the 2026-08-27 Phase 2.1 discovery; deliberately NOT changed by slice 2.1a |
-| **Accessory `price` in the email payload** — the GAS packet spreads whole accessory objects (`index.html:17225–17227` → `:17309`), so `price` is transmitted although `Code.gs` never reads it | ⬜ | Blake | *(2026-09-09: scheduled by the owner build direction as workstream (2) — ❓ → ⬜.)* Narrow the spread to the fields `Code.gs` reads, as its own small Codex-reviewed PR — approved engineering work, not another owner gate; not bundled into 2.1. Payload minimisation is a property of the packet builder and is verified without any delivery — `gasUrl` stays blank and nothing is sent. Found by the 2026-08-27 discovery |
+| **Accessory price provenance** — the shipped accessory prices (the one live "From $" surface) drift from `incoming/lacks_catalog_selection.json`: four are cent-truncated about $1 BELOW the observed catalog price (Dri-Tec 149.95→149, iProtect 89.95→89, Ver-Tex 249.95→249, gel memory pillow 99.95→99) and `foundation-princess` $499 has no recorded source anywhere; none carries `verifiedAt`, a source URL or an owner | ⬜ build / final gate for the values | Blake | *(2026-09-09: scheduled by the owner build direction as workstream (2), inside the 2.2 construction note — ❓ → ⬜ on the build portion only.)* **Build now, inside the integrated candidate:** bring the accessory prices under a governed provenance contract modelled on 2.1 — per-entry `verifiedAt`, allowlisted `sourceUrl`, owner and freshness — with the fail-closed behaviour and its tests. **Not pre-authorized:** a standalone merge that withdraws the today-displayed "From $" surface without a replacement, which would breach the no-degraded-`main` rule; any customer-visible suppression or replacement merges together with governed, attested pricing in the complete candidate, unless Blake separately orders an immediate safety removal. **Final gate:** confirming the values with Lacks, correcting the data, and any representation of an accessory price as approved. Found by the 2026-08-27 Phase 2.1 discovery; deliberately NOT changed by slice 2.1a. **Built 2026-09-09** on branch `claude/accessory-price-provenance`, stacked on the 2.2 slices, exactly under the ruling: accessories come under the 2.1 pricing contract through the same gate — an optional `SKU` column on the workbook's Accessories tab flows through the builder, the converter (JSON key only when populated) and a validator grammar check, shipping blank so `data/accessories.json` is byte-identical; the gate resolves an accessory record by its single string `sku` with no size; the Sleep System featured card asks the gate for its item and the governed slot **replaces** the catalog "From $" line when it resolves, so an ungoverned figure never renders beside a governed one — while the gate is off (every production state) the legacy line renders exactly as shipped, and it leaves only at activation together with the attested price that replaces it (no standalone withdrawal, no degraded `main`). Guards: presentation suite +12 with two planted mutants, three sweep entries (the harness check is the rendered observer for the replacement rule), validator self-tests, the harness drilling one FIXTURE accessory price per shipped accessory and the rendered walk proving shipped and dark show the catalog line and no governed slot while the opened states show the governed slot and no catalog line. The values, their confirmation with Lacks and any approved representation stay at the final gate |
+| **Accessory packet projection in the email payload** — since PR #104 (2026-09-08) the cart and plan entries are projections (id, name, category, imageUrl, rationale key) and carry no catalog `price`; the packet builder still spread that whole projection, so `id` and the rationale key travelled although `Code.gs` reads only name, category and imageUrl | 🔨 | Blake | *(History corrected 2026-09-09 under Codex review: an earlier version of this row said the packet transmitted the accessory `price`; that had already stopped being true with PR #104's projection, before this work began.)* Narrow the spread to the fields `Code.gs` reads, as its own small Codex-reviewed PR — approved engineering work, not another owner gate; not bundled into 2.1. Payload minimisation is a property of the packet builder and is verified without any delivery — `gasUrl` stays blank and nothing is sent. **Built 2026-09-09** on branch `claude/accessory-payload-minimisation` from `main` `e76890c` (PR #111): the packet is now a fresh three-field literal (name, category, imageUrl), proved by source and by executing the real builder over a priced catalog record (email gating +8, two sweep entries); the integrated candidate's delivery harness records the live packet and pins the same fields. Moves to ✅ when its PR merges |
 | Presenter mode — shipping mechanism | ❓ | Blake + kiosk hardening review | The hardening review decides the mechanism; the prototype's query parameter is rehearsal tooling, not a shipped design (D6) |
 | **Tier presentation (trust)** — a neutral initial tier choice or another presentation control, versus the shipped Gold-first initial tier with the within-tier model | ❓ | Blake | *(Ruled for this cycle, 2026-08-21: the shipped Gold-first / within-tier presentation is retained with the 15px relativity note; a neutral initial tier (B) and any other control (D) are DEFERRED to a later owner/research decision; this is not a permanent endorsement of Gold-first.)* Any future change is presentation only — it must preserve tier identity and membership, within-tier order, the threshold, cap and back-fill. A cross-tier highest-fit marker or any global best-match computation is the 3.3 row above (NOT AUTHORIZED), not this one. The legible within-tier relativity note is NOT this decision |
 | **Heritage content** — Welcome only (current), an optional moderated-research condition, or no additional heritage | ❓ | Blake | *(Ruled for this cycle, 2026-08-21: the restrained Welcome treatment stays; no per-question rail, no anniversary count, no store counts, awards, testimonials, QR codes, community claims or anecdotes in the quiz; the research prototype is preserved separately; historical content may be tested later as an optional research condition — that later test is what stays open here.)* Any future fact beyond the Welcome line needs governance modelled on financing (freshness, allowlisted source, approval, ES review) |
@@ -6217,7 +6427,16 @@ document, not here.
     the combined browser, mounted-iPad/Safari, accessibility, native-Spanish,
     moderated role-play, business/legal, backend and activation review. Until
     that decision, automated engineering safeguards continue but every live
-    output and service remains off.
+    output and service remains off. *(State 2026-09-09, later the same day:
+    the 2.2 disabled implementation (2.2a–2.2d), the accessory-price
+    provenance behaviour, the payload minimisation and the A4.1 / A4.2
+    re-cuts are built as construction PRs awaiting Codex review and merge in
+    order; the remaining gaps are enumerated as a written list in
+    `docs/production-readiness-gaps-2026-09-09.md` — each gap saying what is
+    code and what is a final-gate input — with G1 found already closed by
+    Slice 6 C5, G5 (converter line-ending churn) and G6 (the CLAUDE.md
+    step-count drift) built in the same PR as the list, and G4, G2 and G7
+    next as their own bounded PRs.)* *(Later still, 2026-09-09: G4, G2 and G7 built as PRs #116–#118; the integrated candidate assembled as `claude/integrated-candidate-2026-09-09` (PR #119), seven `--no-ff` merges of the construction tips plus one integration commit; step 6 candidate assembly and the AUTOMATED candidate verification are complete and recorded in `docs/production-readiness-candidate-2026-09-09.md`; step 7 — the final combined human validation and the activation decision — has NOT been run: mounted iPad/Safari, native Spanish, role-play, business/legal approval, governed real values and showroom/backend activation all remain pending in that single final gate. The candidate's inactive configuration is a safety posture, not an activation decision. Codex review of the candidate (2026-09-09) returned NOT READY and its corrections were applied on the same branch as additive commits (the restored presentation contract, runtime money admission, this row's history, these status words, the device-accessible rehearsal path). No owner mark moves.)*
 
 ---
 

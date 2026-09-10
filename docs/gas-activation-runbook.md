@@ -22,6 +22,29 @@ Everything else in the UI already branches off that value.
    Anyone*. Authorize the Gmail + Sheets scopes when prompted.
 6. Copy the **`/exec` Web App URL**.
 
+## Phase B½ — Send-nothing rehearsal in the repository (no deployment, no inbox)
+Built 2026-09-09 (readiness gap G2). Before any test deployment exists, the
+live-mode client path is rehearsed on one machine with nothing sent:
+
+```
+python tools/serve_delivery_preview.py --respond success --port 8000
+```
+
+serves the app with an **in-memory** `gasUrl` naming a stub endpoint on a
+second loopback port; the stub records what the page POSTs and answers like
+`Code.gs` (`--respond canspam_not_configured` is what the shipped `Code.gs`
+answers today; `invalid_email`, `send_failed`, `echo`, `http_500`, `malformed`
+and `--unreachable` drive each failure path). The recorded POSTs are readable
+at the URL the banner prints; the console shows only their shape. Nothing is
+deployed, sent or stored and the committed `gasUrl` stays blank.
+`tests/delivery_harness_check.py` runs the whole rehearsal headless in CI:
+shipped and live modes in EN and ES, the payload contract, every failure
+path with its copy and closed-set diagnostic, and the recorded payload
+replayed through the real `doPost`. Phase C's error-path and shape-only-log
+items are therefore proved here first and re-verified against the real
+deployment in Phase C; what Phase C alone can prove is the deployed `/exec`,
+the Sheet row, the delivered email's rendering and the BCC copy.
+
 ## Phase C — Test deployment with a seed inbox (no live change)
 1. Point a **local, uncommitted** `gasUrl` at the test `/exec`.
 2. Submit the flow in **EN and ES** with a seed email you control. Verify:

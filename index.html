@@ -8985,6 +8985,18 @@
     }
 
     .drawer-promotion {
+      /* G7 (readiness gaps 2026-09-09): the promotion lines inside this block
+         are inline-styled by promotionDetailBlockHtml() and
+         promotionDrawerDetailHtml(); their colours resolve through these three
+         tokens so the block's LIGHT surface owns its ink. The former literals -
+         warm white at .6/.5/.45 and the bright gold - were authored for the
+         navy drawer shell and rendered invisible (or at ~2:1) on this cream
+         panel; production shipped no scenario, so the defect stayed latent and
+         the Black Friday demo page patched only its own copy (T5, retired).
+         tests/promo_muted_lines_check.py measures the rendered contrast. */
+      --drawer-promo-accent: var(--accent-ink);
+      --drawer-promo-muted: #665D54;
+      --drawer-promo-note: #7A7168;
       display: none;
       margin: 0 0 1rem;
       padding: 1.15rem 1.25rem;
@@ -10646,6 +10658,23 @@
       border: 1px solid var(--color-border); border-radius: var(--radius);
     }
     .drawer-financing__body { font-size: 0.88rem; line-height: 1.55; margin: 0.4rem 0 0.9rem; }
+    /* Phase 2.2 price slot (hidden in every production state). */
+    .drawer-price { margin: 1.1rem 0 0; }
+    .drawer-price__amount { font: 700 1.5rem/1.2 var(--font-sans); color: var(--color-text); margin: 0.3rem 0 0.2rem; }
+    .drawer-price__note { font-size: 0.8rem; line-height: 1.5; color: var(--color-text-muted); margin: 0.2rem 0 0; }
+    /* Phase 2.2d: plan status copy beside Payment Choice (absent in every production state). */
+    .fin-offer__price-status { font-size: 0.82rem; line-height: 1.5; color: var(--color-text-muted); margin: 0.35rem 0 0; }
+    /* Phase 2.2 slots on the four remaining surfaces (absent in every production state). */
+    .noct-card-price, .sleep-system__anchor-price, .hf2-finalist-hero__price, .hf2-pick__price, .sleep-system__governed-price { margin: 0.45rem 0 0; }
+    .noct-card-price__label, .sleep-system__anchor-price__label, .hf2-finalist-hero__price__label, .hf2-pick__price__label, .sleep-system__governed-price__label {
+      font: 750 11px/1.2 var(--font-sans); text-transform: uppercase; letter-spacing: 0.08em; color: var(--color-text-muted);
+    }
+    .noct-card-price__amount, .sleep-system__anchor-price__amount, .hf2-finalist-hero__price__amount, .hf2-pick__price__amount, .sleep-system__governed-price__amount {
+      font: 700 1.15rem/1.2 var(--font-sans); color: var(--color-text);
+    }
+    .noct-card-price__note, .sleep-system__anchor-price__note, .hf2-finalist-hero__price__note, .hf2-pick__price__note, .sleep-system__governed-price__note {
+      font-size: 0.78rem; line-height: 1.45; color: var(--color-text-muted); margin: 0.2rem 0 0;
+    }
     .drawer-financing .fin-btn-secondary {
       color: var(--color-text); border-color: var(--color-border);
     }
@@ -11503,6 +11532,12 @@
              the reason-led redesign remains gated and unauthorized. -->
         <div class="drawer-section-label" id="drawerDifferentiatorsLabel">What makes this one different</div>
         <div class="drawer-differentiators" id="drawerDifferentiators"></div>
+        <!-- Price (Phase 2.2, disabled implementation). Rendered by
+             renderDrawerPrice() through the price presentation gate; hidden and
+             empty whenever the gate is off — which is every production state
+             until the final activation decision. Grounded on the same screen
+             as Payment Choice, directly above it, never inside it. -->
+        <div class="drawer-price" id="drawerPrice" hidden></div>
         <!-- Ways to bring it home (Payment Choice) — sleep fit first,
              payment second. Rendered by renderDrawerFinancing(); hidden keeps it
              out of the accessibility tree when financing is disabled. -->
@@ -12295,12 +12330,13 @@
       return financingSourceAllowed(p.sourceUrl);
     }
 
-    // ═══ PHASE 2.1B DARK RESOLVER (definition only — zero live call sites) ═══
+    // ═══ PHASE 2.1B DARK RESOLVER (definition only — called only through the 2.2 gate) ═══
     // Owner ruling 2026-08-28 (roadmap §2.1, slice 2.1b): a PURE, DETERMINISTIC
-    // resolver. Nothing in this file calls it, and no code anywhere reads the
-    // shipped pricing config — tests/pricing_resolver_check.mjs extracts and
-    // exercises it against governed NON-SHIPPING fixtures, and the containment
-    // pins hold every pricing token inside this block. It returns FIVE
+    // resolver. Since slice 2.2a only the Phase 2.2 price presentation gate
+    // below calls it, and only that gate reads the shipped pricing config —
+    // tests/pricing_resolver_check.mjs extracts and exercises it against
+    // governed NON-SHIPPING fixtures, and the containment pins hold every
+    // pricing token inside this block and the gate block. It returns FIVE
     // INDEPENDENT AXES and never renders anything:
     //   price        resolved | unavailable — the ONLY axis carrying a number.
     //                Technically invalid data (missing, unverified,
@@ -12592,6 +12628,282 @@
     }
     // ═══ END PHASE 2.1B DARK RESOLVER ═══
 
+    // ═══ PHASE 2.2 PRICE PRESENTATION GATE (disabled implementation — production renders nothing) ═══
+    // Roadmap item 2.2, Proceeds (owner build direction 2026-09-09): the ONE
+    // fail-closed consumer of the 2.1b resolver. Every price surface asks this
+    // gate and nothing else; the resolver is called from exactly one line in
+    // this block, and the shipped pricing config is read from exactly one line
+    // in this block (tests/pricing_presentation_check.mjs,
+    // tests/pricing_resolver_check.mjs and tests/pricing_contract_check.py pin
+    // both). Consumption rules, in order, each one fail-closed:
+    //   off               pricing absent, `enabled` false (emergency disable),
+    //                     `displayEnabled` false, or this surface's flag false
+    //                     -> the surface renders NOTHING (hidden, empty).
+    //                     Production ships all three false, so every surface
+    //                     is off on every screen; CI's operating-state lock
+    //                     keeps it that way until the final activation gate.
+    //                     ALSO off (Codex correction, 2026-09-09 — the
+    //                     roadmap's state table, restored): no applicable
+    //                     catalog record or SKU for this product-size; the
+    //                     resolver's freshness axis absent or not 'fresh'
+    //                     (stale, not-judgeable); its eligibility axis absent
+    //                     or not 'eligible' (activation-unapproved). Stale and
+    //                     unapproved data stays inert INTERNAL data: no slot,
+    //                     no state copy, no number, no email material, no
+    //                     analytics, no persistence — nothing a customer can
+    //                     see or that could be read as "approved but hidden".
+    //   price-unavailable ONLY when freshness is 'fresh' AND eligibility is
+    //                     'eligible' but the admitted price cannot be resolved
+    //                     or safely formatted — it fails the runtime money
+    //                     admission below (safe-integer minor units, positive,
+    //                     within the governed maximum, currency exactly USD)
+    //                     or the localized formatter cannot express it -> no
+    //                     numeric anywhere; only the governed state copy may
+    //                     show, and only while the surface is on.
+    //   available         a number is admitted: resolved + fresh + eligible
+    //                     AND it passes the runtime money admission: the
+    //                     amount, formatted for the active language, with the
+    //                     governed assumptions and disclosures adjacent to it.
+    // No payment figure is ever computed or shown (V1 invariant): the
+    // calculation and threshold axes are carried through as STATUS only for
+    // later Payment Choice alignment (slice 2.2b) and never become a number.
+    // The gate is stateless: nothing here is stored, persisted, e-mailed or
+    // logged, so the session wipe has nothing to clear.
+    function getPricingConfig() {
+      return (STORE_CONFIG && STORE_CONFIG.pricing) || null;
+    }
+
+    // Strict === true: an absent surfaces map, or any value other than the
+    // boolean true, means OFF (the financing helper defaults open; this one
+    // does not — a price surface is opt-in per surface at activation).
+    function pricingSurfaceEnabled(name) {
+      var p = getPricingConfig();
+      var s = p && p.surfaces;
+      if (!s || typeof s !== 'object') return false;
+      return s[name] === true;
+    }
+
+    // The SKU the resolver must match comes from the CATALOG record, never
+    // from the pricing entry itself, so a price can only attach to the exact
+    // product-size the app is showing. `skus` is an optional per-size map on
+    // the mattress record ({ queen: 'SKU', ... }); the shipped catalog carries
+    // none, so nothing resolves in production even with the gate open.
+    // A surface may hand the gate a PROJECTION of the product (a saved pick,
+    // the finalist record) rather than the catalog record; the SKU map is
+    // read from the catalog record of the same id when the projection has
+    // none. The results-time lookup is the only catalog index the app keeps,
+    // and it is keyed by the same id the projection carries — a projection
+    // can never supply a SKU of its own for a product the catalog lacks.
+    function pricingCatalogRecord(m) {
+      if (!m || typeof m !== 'object' || typeof m.id !== 'string') return null;
+      if (m.skus && typeof m.skus === 'object') return m;
+      // An accessory record carries a single string `sku` (no sizes); the
+      // Sleep System hands the gate the catalog record itself.
+      if (typeof m.sku === 'string') return m;
+      var index = (typeof window === 'object' && window && window._drawerData) ? window._drawerData : null;
+      var hit = index && index[m.id] && index[m.id].m;
+      return (hit && typeof hit === 'object' && hit.id === m.id) ? hit : null;
+    }
+    // A record is an ACCESSORY for pricing purposes when it carries a string
+    // `sku` and no per-size map; its price resolves with no size at all (the
+    // resolver refuses an accessory entry that names one).
+    function pricingIsAccessory(rec) {
+      return !!(rec && typeof rec.sku === 'string' && !(rec.skus && typeof rec.skus === 'object'));
+    }
+    function pricingSkuFor(m, size) {
+      var rec = pricingCatalogRecord(m);
+      if (!rec) return null;
+      if (pricingIsAccessory(rec)) {
+        return rec.sku.replace(/\s+/g, '').length > 0 && rec.sku === rec.sku.trim() ? rec.sku : null;
+      }
+      if (!rec.skus || typeof rec.skus !== 'object') return null;
+      if (typeof size !== 'string' || !size) return null;
+      var sku = rec.skus[size];
+      return (typeof sku === 'string' && sku.replace(/\s+/g, '').length > 0) ? sku : null;
+    }
+
+    // Governed, bilingual presentation copy from the pricing contract. Blank
+    // when the key is missing — the renderer then shows nothing.
+    function pricingStateCopy(key) {
+      var p = getPricingConfig();
+      var st = p && p.presentation && p.presentation.states;
+      return (st && st[key]) ? L(st[key]) : '';
+    }
+    function pricingCopyList(kind) {
+      var p = getPricingConfig();
+      var list = p && p.presentation && p.presentation[kind];
+      if (!Array.isArray(list)) return [];
+      return list.map(function (item) { return item ? L(item) : ''; })
+        .filter(function (s) { return typeof s === 'string' && s.length > 0; });
+    }
+
+    // Runtime money admission (Codex correction, 2026-09-09) — the exact
+    // mirror of tools/validation.py validate_pricing's price rules, applied
+    // BEFORE any formatting or presentation admission: amountMinor is a safe
+    // integer of minor units, strictly positive, at most the governed maximum
+    // PRICING_AMOUNT_MINOR_MAX (1,000,000,000 minor units), and the currency
+    // is exactly one of the governed codes (USD). Intl.NumberFormat below is
+    // FORMATTING only — it accepts codes such as 'XXX' and formats them —
+    // so it can never stand in for this check.
+    var PRICE_AMOUNT_MINOR_MAX = 1000000000;
+    var PRICE_CURRENCIES = ['USD'];
+    function priceMoneyValid(amountMinor, currency) {
+      if (!Number.isSafeInteger(amountMinor)) return false;
+      if (amountMinor <= 0 || amountMinor > PRICE_AMOUNT_MINOR_MAX) return false;
+      if (typeof currency !== 'string' || PRICE_CURRENCIES.indexOf(currency) === -1) return false;
+      return true;
+    }
+
+    // Minor units -> a localized currency string. Admission first (above);
+    // whole-dollar amounts drop the cents; anything the formatter cannot
+    // express fails closed to ''.
+    function formatPriceAmount(amountMinor, currency) {
+      if (!priceMoneyValid(amountMinor, currency)) return '';
+      var whole = amountMinor % 100 === 0;
+      try {
+        var f = new Intl.NumberFormat(currentLang === 'es' ? 'es-US' : 'en-US', {
+          style: 'currency', currency: currency,
+          minimumFractionDigits: whole ? 0 : 2, maximumFractionDigits: 2
+        });
+        var out = f.format(amountMinor / 100);
+        return typeof out === 'string' ? out : '';
+      } catch (e) {
+        return '';
+      }
+    }
+
+    // The gate. Returns a closed presentation record:
+    //   { state: 'off' | 'price-unavailable' | 'available',
+    //     amountMinor, currency, kind, text, notes, calculation, threshold }
+    function pricePresentationFor(surface, m, size, opts) {
+      var off = { state: 'off', amountMinor: null, currency: null, kind: null,
+                  text: '', notes: [], calculation: 'unavailable', threshold: 'unknown' };
+      var p = getPricingConfig();
+      if (!p || p.enabled !== true || p.displayEnabled !== true || !pricingSurfaceEnabled(surface)) return off;
+      if (!m || typeof m !== 'object' || typeof m.id !== 'string') return off;
+      var o = (opts && typeof opts === 'object') ? opts : {};
+      var sku = pricingSkuFor(m, size);
+      // No applicable catalog record / SKU for this product-size: nothing to
+      // ask the resolver about, and nothing to show.
+      if (!sku) return off;
+      var accessory = pricingIsAccessory(pricingCatalogRecord(m));
+      var r = resolveDarkPricing(p, getFinancingConfig(), {
+        nowMs: Date.now(),
+        productId: m.id,
+        sku: sku,
+        size: accessory ? undefined : size,
+        planId: (typeof o.planId === 'string') ? o.planId : null,
+        transactionAmountMinor: o.transactionAmountMinor
+      });
+      var calc = (r && r.calculation && r.calculation.status) || 'unavailable';
+      var thr = (r && r.threshold && r.threshold.status) || 'unknown';
+      // Freshness and eligibility gate VISIBILITY: anything but fresh AND
+      // eligible is inert internal data and renders nothing (off) — the
+      // roadmap's state table for stale ("nothing a customer can see") and
+      // for activation-unapproved ("nothing on any shipped/live surface").
+      var fresh = !!(r && r.freshness && r.freshness.status === 'fresh');
+      var eligible = !!(r && r.eligibility && r.eligibility.status === 'eligible');
+      if (!fresh || !eligible) return off;
+      // Fresh and eligible: the price is either admitted, or the surface may
+      // say only that a price is unavailable — never a number.
+      var resolved = !!(r && r.price && r.price.status === 'resolved');
+      var text = resolved ? formatPriceAmount(r.price.amountMinor, r.price.currency) : '';
+      if (!text) {
+        return { state: 'price-unavailable', amountMinor: null, currency: null, kind: null,
+                 text: pricingStateCopy('price-unavailable'), notes: [],
+                 calculation: calc, threshold: thr };
+      }
+      return { state: 'available', amountMinor: r.price.amountMinor, currency: r.price.currency,
+               kind: r.price.kind, text: text,
+               notes: pricingCopyList('assumptions').concat(pricingCopyList('disclosures')),
+               calculation: calc, threshold: thr };
+    }
+
+    // Drawer surface (the first consumer; slice 2.2a). Off -> hidden and
+    // empty, exactly like the disabled financing box beneath it. Text is
+    // escaped; nothing here reads or writes any other state.
+    function renderDrawerPrice(m, size) {
+      var box = document.getElementById('drawerPrice');
+      if (!box) return;
+      var pres = pricePresentationFor('drawer', m, size, null);
+      if (pres.state === 'off' || !pres.text) {
+        box.hidden = true;
+        box.innerHTML = '';
+        box.removeAttribute('data-price-state');
+        return;
+      }
+      var html = '<div class="drawer-section-label">' + escapeHtml(t('drawer.price_label')) + '</div>'
+        + '<div class="drawer-price__amount">' + escapeHtml(pres.text) + '</div>';
+      for (var i = 0; i < pres.notes.length; i++) {
+        html += '<p class="drawer-price__note">' + escapeHtml(pres.notes[i]) + '</p>';
+      }
+      box.innerHTML = html;
+      box.setAttribute('data-price-state', pres.state);
+      box.hidden = false;
+    }
+
+    // Slice 2.2b — the four remaining surfaces (results cards, the Sleep
+    // System finalist anchor, the Consultation Summary finalist hero, the
+    // Sleep Plan finalist) concatenate ONE slot string built here. It is ''
+    // whenever the gate is off or the state copy is blank, so in every
+    // production state those templates emit exactly what they emitted before.
+    // The size is the customer's own answer; a consumer never supplies one.
+    // Consumers call this through a typeof guard so the extracted-module
+    // test sandboxes that compile them in isolation stay runnable — the
+    // guard can only remove the slot, never add one.
+    function priceSizeAnswer() {
+      return (typeof answers === 'object' && answers) ? answers.mattress_size : undefined;
+    }
+    function priceSlotFor(surface, m, cls) {
+      var pres = pricePresentationFor(surface, m, priceSizeAnswer(), null);
+      if (pres.state === 'off' || !pres.text) return '';
+      var base = (typeof cls === 'string' && /^[a-z0-9_-]+$/i.test(cls)) ? cls : 'price-slot';
+      var html = '<div class="' + base + '" data-price-state="' + escapeHtml(pres.state) + '">'
+        + '<span class="' + base + '__label">' + escapeHtml(t('drawer.price_label')) + '</span> '
+        + '<span class="' + base + '__amount">' + escapeHtml(pres.text) + '</span>';
+      for (var i = 0; i < pres.notes.length; i++) {
+        html += '<p class="' + base + '__note">' + escapeHtml(pres.notes[i]) + '</p>';
+      }
+      return html + '</div>';
+    }
+
+    // Slice 2.2d — calculation / threshold STATUS copy beside Payment Choice.
+    // Payment Choice is where a plan is in view, and the price is grounded on
+    // the same screen (the surface the sheet was opened from). For each plan
+    // card the sheet shows, and only for the customer's CHOSEN finalist, this
+    // returns the governed status copy: 'quote-only' when the plan carries no
+    // approved formula (a price exists; no payment can be computed) and
+    // 'threshold-unknown' when the plan publishes a minimum purchase and no
+    // runtime transaction amount exists. Status only — never a figure, never
+    // a payment, never when the price itself is not 'available' — and '' in
+    // every production state, so the Payment Choice §25 currency-amount ban
+    // on the D4 surfaces is untouched.
+    var PRICE_PLACEMENT_SURFACE = { results: 'results', drawer: 'drawer', handoff: 'handoff',
+                                    'sleep-plan': 'sleepPlan', 'sleep-system': 'sleepSystem' };
+    function priceStatusHtmlFor(placement, planId, plan) {
+      var surface = (typeof placement === 'string'
+        && Object.prototype.hasOwnProperty.call(PRICE_PLACEMENT_SURFACE, placement))
+        ? PRICE_PLACEMENT_SURFACE[placement] : null;
+      if (!surface || typeof planId !== 'string' || !planId) return '';
+      if (typeof resolveFinalistState !== 'function') return '';
+      var st = resolveFinalistState();
+      var finalist = (st && st.kind === 'chosen') ? st.item : null;
+      if (!finalist) return '';
+      var pres = pricePresentationFor(surface, finalist, priceSizeAnswer(), { planId: planId });
+      if (pres.state !== 'available') return '';
+      var lines = [];
+      if (pres.calculation === 'quote-only') lines.push(pricingStateCopy('quote-only'));
+      if (pres.threshold === 'unknown' && plan && typeof plan.minimumPurchase === 'number') {
+        lines.push(pricingStateCopy('threshold-unknown'));
+      }
+      var html = '';
+      for (var i = 0; i < lines.length; i++) {
+        if (lines[i]) html += '<p class="fin-offer__price-status">' + escapeHtml(lines[i]) + '</p>';
+      }
+      return html;
+    }
+    // ═══ END PHASE 2.2 PRICE PRESENTATION GATE ═══
+
     // Financing copy accessor (config copy block, language-aware).
     function FC(key) {
       var f = getFinancingConfig();
@@ -12668,6 +12980,10 @@
     // True when the last renderFinancingSheet() swapped any path's exact
     // terms for the generic staleNotice — drives the sheet's freshness region.
     var _finSheetStale = false;
+    // Slice 2.2d: the placement the sheet was opened from (the price surface
+    // the plan status copy is grounded on). Module state, memory only,
+    // cleared on close and by the session wipe; never logged or e-mailed.
+    var _finSheetPlacement = '';
     // Queued preference-action announcement work. ONE slot, deliberately.
     //
     // All four announcement strings describe the SAME variable. The sheet's
@@ -13165,6 +13481,7 @@
       var backdrop = document.getElementById('financingSheetBackdrop');
       if (!sheet || !backdrop) return;
       _financeReturnFocus = document.activeElement;
+      _finSheetPlacement = (typeof placement === 'string') ? placement : '';
       renderFinancingSheet();
       backdrop.hidden = false;
       sheet.hidden = false;
@@ -13195,6 +13512,7 @@
       if (!sheet || sheet.hidden) return;
       sheet.hidden = true;
       backdrop.hidden = true;
+      _finSheetPlacement = '';
       // Clear so the next open re-announces (a repeat of identical text is
       // not a mutation and would stay silent). BOTH sheet regions, plus any
       // queued action announcement — otherwise the departing text is still
@@ -13337,6 +13655,7 @@
               + '<h4 class="fin-offer__headline">' + finEsc(L(p.headline)) + '</h4>'
               + '<p class="fin-offer__detail">' + finEsc(L(p.detail)) + '</p>'
               + '<p class="fin-offer__disclosure">' + finEsc(L(p.disclosure)) + '</p>'
+              + (typeof priceStatusHtmlFor === 'function' && typeof _finSheetPlacement === 'string' ? priceStatusHtmlFor(_finSheetPlacement, p.id, p) : '')
               + '</div>';
           }).join('');
         } else {
@@ -13372,7 +13691,8 @@
               (ihFresh
                 ? '<p class="fin-offer__detail">' + finEsc(L(ih.detail)) + '</p>'
                 : '<p class="fin-offer__detail">' + finEsc(FC('staleNotice')) + '</p>')
-              + (ih.disclosure ? '<p class="fin-offer__disclosure">' + finEsc(L(ih.disclosure)) + '</p>' : ''))
+              + (ih.disclosure ? '<p class="fin-offer__disclosure">' + finEsc(L(ih.disclosure)) + '</p>' : '')
+              + (typeof priceStatusHtmlFor === 'function' && typeof _finSheetPlacement === 'string' ? priceStatusHtmlFor(_finSheetPlacement, ih.id, ih) : ''))
           + '</article>');
       });
 
@@ -13387,7 +13707,8 @@
               + '<p class="fin-offer__disclosure">'
               + (es ? 'Hay opciones adicionales disponibles. Los detalles del programa, costos, elegibilidad y términos de propiedad se confirman en tienda.'
                     : 'Additional options are available. Program details, costs, eligibility, and ownership terms are confirmed in store.')
-              + '</p>')
+              + '</p>'
+              + (typeof priceStatusHtmlFor === 'function' && typeof _finSheetPlacement === 'string' ? priceStatusHtmlFor(_finSheetPlacement, p.id, p) : ''))
           + '</article>');
       });
 
@@ -13429,6 +13750,7 @@
                       ? '<p class="fin-offer__detail fin-offer__example">' + finEsc(L(mx.representativeExample)) + '</p>' : '')
                 : '<p class="fin-offer__detail">' + finEsc(FC('staleNotice')) + '</p>')
               + (mx.disclosure ? '<p class="fin-offer__disclosure">' + finEsc(L(mx.disclosure)) + '</p>' : '')
+              + (typeof priceStatusHtmlFor === 'function' && typeof _finSheetPlacement === 'string' ? priceStatusHtmlFor(_finSheetPlacement, mx.id, mx) : '')
               + (mxLink
                   ? '<a class="fin-official-link" href="' + finEsc(mxLink) + '" target="_blank" rel="noopener noreferrer" '
                     + 'onclick="window.logMexicoFinancingOpen()">'
@@ -17037,18 +17359,18 @@
     // Full promotion block (drawer / details surface) with disclosure + source.
     function promotionDetailBlockHtml(p) {
       var es = currentLang === 'es';
-      var muted = 'color:rgba(248,246,241,0.6);';
+      var muted = 'color:var(--drawer-promo-muted);';
       var html = '<div style="margin:0.5rem 0 0.15rem; padding-top:0.5rem; border-top:1px solid rgba(212,168,75,0.18);">';
-      html += '<div style="font-weight:700; color:var(--color-gold-bright); font-size:0.7rem; letter-spacing:0.5px;">' + escapeHtml(promotionBadgeLabel(p)) + '</div>';
+      html += '<div style="font-weight:700; color:var(--drawer-promo-accent); font-size:0.7rem; letter-spacing:0.5px;">' + escapeHtml(promotionBadgeLabel(p)) + '</div>';
       html += '<div style="font-size:0.82rem; margin-top:0.15rem; line-height:1.4;">' + escapeHtml(L(p.headline)) + '</div>';
       if (L(p.detail)) html += '<div style="font-size:0.7rem; ' + muted + ' margin-top:0.2rem; line-height:1.5;">' + escapeHtml(L(p.detail)) + '</div>';
       if (p.disclosure && L(p.disclosure)) html += '<div style="font-size:0.64rem; ' + muted + ' margin-top:0.2rem; line-height:1.45;">' + escapeHtml(L(p.disclosure)) + '</div>';
       // Evidence provenance (reconstructed / prior-research-observation historical
       // promos). Bilingual via L() — accepts {en,es} or a legacy plain string.
-      if (p.evidenceProvenance && L(p.evidenceProvenance)) html += '<div style="font-size:0.6rem; font-style:italic; color:rgba(248,246,241,0.45); margin-top:0.2rem; line-height:1.4;">' + escapeHtml(L(p.evidenceProvenance)) + '</div>';
+      if (p.evidenceProvenance && L(p.evidenceProvenance)) html += '<div style="font-size:0.6rem; font-style:italic; color:var(--drawer-promo-note); margin-top:0.2rem; line-height:1.4;">' + escapeHtml(L(p.evidenceProvenance)) + '</div>';
       html += '<div style="font-size:0.62rem; ' + muted + ' margin-top:0.2rem;">' + escapeHtml(promotionExpiryText(p)) + '</div>';
       if (p.sourceUrl) {
-        html += '<div style="font-size:0.62rem; margin-top:0.15rem;"><a href="' + escapeHtml(p.sourceUrl) + '" target="_blank" rel="noopener" style="color:var(--color-gold-bright);">'
+        html += '<div style="font-size:0.62rem; margin-top:0.15rem;"><a href="' + escapeHtml(p.sourceUrl) + '" target="_blank" rel="noopener" style="color:var(--drawer-promo-accent); text-decoration:underline;">'
           + (es ? ('Ver en el sitio de ' + storeName()) : ('View on ' + storeName() + "'s site")) + '</a></div>';
       }
       html += '</div>';
@@ -17066,14 +17388,14 @@
       // Persistent scenario disclosure (e.g. historical-demo "not current offers").
       var disc = getScenarioDisclosure();
       if (disc) {
-        parts.push('<div style="font-size:0.66rem; font-weight:600; color:var(--color-gold-bright); background:rgba(212,168,75,0.08); border:1px solid rgba(212,168,75,0.25); border-radius:6px; padding:0.5rem 0.6rem; line-height:1.45;">' + escapeHtml(L(disc)) + '</div>');
+        parts.push('<div style="font-size:0.66rem; font-weight:600; color:var(--drawer-promo-accent); background:rgba(212,168,75,0.12); border:1px solid rgba(212,168,75,0.35); border-radius:6px; padding:0.5rem 0.6rem; line-height:1.45;">' + escapeHtml(L(disc)) + '</div>');
       }
       if (es && sc.spanishStatus === 'draft' && sc.spanishDraftNote && L(sc.spanishDraftNote)) {
-        parts.push('<div style="font-size:0.62rem; font-style:italic; color:rgba(248,246,241,0.45);">' + escapeHtml(L(sc.spanishDraftNote)) + '</div>');
+        parts.push('<div style="font-size:0.62rem; font-style:italic; color:var(--drawer-promo-note);">' + escapeHtml(L(sc.spanishDraftNote)) + '</div>');
       }
       promos.forEach(function(p) { parts.push(promotionDetailBlockHtml(p)); });
       if (storewide.length) {
-        parts.push('<div style="font-size:0.62rem; letter-spacing:1px; text-transform:uppercase; color:rgba(248,246,241,0.5); margin-top:0.7rem;">' + (es ? ('Ofertas en toda la tienda ' + storeName()) : (storeName() + ' store-wide offers')) + '</div>');
+        parts.push('<div style="font-size:0.62rem; letter-spacing:1px; text-transform:uppercase; color:var(--drawer-promo-note); margin-top:0.7rem;">' + (es ? ('Ofertas en toda la tienda ' + storeName()) : (storeName() + ' store-wide offers')) + '</div>');
         storewide.forEach(function(p) { parts.push(promotionDetailBlockHtml(p)); });
       }
       return parts.join('');
@@ -17190,6 +17512,8 @@
         +     '<div class="noct-toppick-firmness-value">' + m.firmness + '/10</div>'
         +     '<div class="noct-toppick-firmness-label">' + escapeHtml(feel) + '</div>'
         +   '</div>'
+        // Phase 2.2 price slot ('' in every production state).
+        +   (typeof priceSlotFor === 'function' ? priceSlotFor('results', m, 'noct-card-price') : '')
         +   '<div class="noct-toppick-actions">'
         +     '<div class="noct-card-action-cluster">'
         +       detailsBtn
@@ -17274,6 +17598,8 @@
           +   '<div class="noct-support-meta">'
           +     '<span class="firm-value">' + m.firmness + '/10</span>' + escapeHtml(feel)
           +   '</div>'
+          // Phase 2.2 price slot ('' in every production state).
+          +   (typeof priceSlotFor === 'function' ? priceSlotFor('results', m, 'noct-card-price') : '')
           +   '<div class="noct-support-actions">'
           +     '<div class="noct-card-action-cluster">'
           +       detailsBtn
@@ -18583,7 +18909,15 @@
           }));
       // Suggestions shown on the shared review remain comparison options until
       // explicitly added. Only the authoritative cart is included in the email.
-      const accList = getSelectedAccessoryPlan().map(a => Object.assign({}, a, {
+      // Payload minimisation (owner build direction 2026-09-09, roadmap item
+      // 14 step 2): each accessory travels as exactly the three fields
+      // Code.gs reads — name, category, imageUrl — projected onto a fresh
+      // literal. Nothing else on the plan entry (its id, its rationale key,
+      // and never a catalog price or any pricing-derived value) can reach
+      // the packet, because nothing else is named here.
+      const accList = getSelectedAccessoryPlan().map(a => ({
+        name: a.name,
+        category: a.category,
         imageUrl: toAbsoluteImageUrl(a.imageUrl)
       }));
       // Slice 6: the lead is a CLOSED contract (chosen / recommended / none)
@@ -19764,6 +20098,8 @@
           '<div class="sleep-system__anchor-label">' + escapeHtml(kind === 'chosen' ? t('finalist.building_around_finalist') : t('finalist.building_around_recommended')) + '</div>' +
           '<div class="sleep-system__anchor-name">' + escapeHtml(finalist.name || '') + '</div>' +
           '<div class="sleep-system__anchor-meta">' + escapeHtml(meta) + '</div>' +
+          // Phase 2.2 price slot ('' in every production state).
+          (typeof priceSlotFor === 'function' ? priceSlotFor('sleepSystem', finalist, 'sleep-system__anchor-price') : '') +
         '</div>' +
         '<div class="sleep-system__anchor-note">' +
           escapeHtml(sleepSystemText({ en: 'Your mattress remains the center of this plan.', es: 'Tu colchón sigue siendo el centro de este plan.' })) +
@@ -20128,6 +20464,16 @@
         var price = Number(primary.price) > 0
           ? sleepSystemText({ en: 'From $', es: 'Desde $' }) + Number(primary.price).toLocaleString()
           : '';
+        // Accessory-price provenance (owner build direction 2026-09-09; Codex
+        // ruling: no standalone withdrawal, no degraded main). When the
+        // governed price resolves for this item on the sleepSystem surface it
+        // REPLACES the catalog "From $" line, so an ungoverned figure never
+        // renders beside a governed one; while the gate is off — every
+        // production state — the legacy line renders exactly as shipped. The
+        // legacy line therefore leaves only at activation, together with the
+        // attested price that replaces it.
+        var governedPrice = (typeof priceSlotFor === 'function' ? priceSlotFor('sleepSystem', primary, 'sleep-system__governed-price') : '');
+        if (governedPrice) price = '';
         var reason = step.id === 'protection'
           ? sleepSystemText(protectionGoalReason(window._sleepSystemState.protectionGoal || getSuggestedProtectionGoal()))
           : (primary.reasons && primary.reasons[0] ? primary.reasons[0] : '');
@@ -20262,7 +20608,7 @@
               // surface already rendered, in the same language resolution.
               '<div class="sleep-system__featured-reason">' + escapeHtml(reason) + '</div>' +
               '<p class="sleep-system__featured-description">' + escapeHtml(sleepSystemText(primary.description)) + '</p>' +
-              (price ? '<div class="sleep-system__price">' + escapeHtml(price) + '</div>' : '') +
+              (governedPrice || (price ? '<div class="sleep-system__price">' + escapeHtml(price) + '</div>' : '')) +
               '<div class="sleep-system__actions">' + actionHtml + '</div>' +
             '</div>' +
           '</article>' + alternativesHtml;
@@ -21095,6 +21441,8 @@
         html += '<div class="hf2-pick">'
           + '<div class="hf2-pick__name">' + escapeHtml(m.name || '') + '</div>'
           + '<div class="hf2-pick__tier">' + escapeHtml(sleepPlanModelLine(m)) + '</div>'
+          // Phase 2.2 price slot ('' in every production state).
+          + (typeof priceSlotFor === 'function' ? priceSlotFor('sleepPlan', m, 'hf2-pick__price') : '')
           + '</div>';
       }
       if (kind !== 'chosen') {
@@ -21544,6 +21892,8 @@
           '<div class="hf2-finalist-hero__eyebrow">' + escapeHtml(eyebrow) + '</div>' +
           '<div class="hf2-finalist-hero__name">' + escapeHtml(name) + '</div>' +
           (line ? '<div class="hf2-finalist-hero__meta">' + escapeHtml(line) + '</div>' : '') +
+          // Phase 2.2 price slot ('' in every production state).
+          (typeof priceSlotFor === 'function' ? priceSlotFor('handoff', item, 'hf2-finalist-hero__price') : '') +
         '</div>';
     }
 
@@ -23347,6 +23697,7 @@
         payPref = null;
         payOpen = {};
         _finSheetStale = false;
+        _finSheetPlacement = '';
         _financeReturnFocus = null;
         _finModuleImpressionLogged = false;
 
@@ -24042,6 +24393,9 @@
       }).join('');
       if (window.dfmConstructionRender) window.dfmConstructionRender();
 
+      // Price (Phase 2.2 gate; off in production) then Payment Choice — both
+      // after the fit content: sleep fit first, price and payment second.
+      renderDrawerPrice(m, answers && answers.mattress_size);
       // Ways to bring it home (Payment Choice) — after the fit content.
       renderDrawerFinancing();
 

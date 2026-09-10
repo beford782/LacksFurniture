@@ -29,7 +29,7 @@ port (the domain lock accepts 127.0.0.1); headless Chromium loads the app and
 reaches the Plan through the app's own public functions (answers -> Sleep
 Brief -> Results -> showSleepPlan('results')). No repository file is written.
 Requires the `playwright` package with Chromium installed
-(`python -m pip install playwright && python -m playwright install chromium`).
+(`python -m pip install -r tools/requirements-suite.txt && python -m playwright install chromium`).
 
 Slice 6 extends the same run with a CONSULTATION SUMMARY pass (the redesign
 would otherwise ship with zero rendered verification - the exact blind spot
@@ -1626,7 +1626,7 @@ def main():
     try:
         from playwright.sync_api import sync_playwright
     except ImportError:
-        print("playwright is not installed: python -m pip install playwright && python -m playwright install chromium")
+        print("playwright is not installed: python -m pip install -r tools/requirements-suite.txt && python -m playwright install chromium")
         return 2
     server, port = start_server()
     try:

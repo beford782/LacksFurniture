@@ -559,14 +559,74 @@ check("...and the same scan flags a planted payPref field",
   [...plantedFields].some((k) => PAY_DERIVED_NAME.test(k)));
 
 // ===========================================================================
+section("Exclusion: the accessory packet is minimised to what Code.gs reads");
+// ===========================================================================
+// Payload minimisation (2026-09-09): each accessory entry is projected onto a
+// fresh literal naming exactly the three fields Code.gs reads (name,
+// category, imageUrl). This is proved two ways — the projection's source,
+// and the projection EXECUTED over a cart whose catalog record carries a
+// price, an id and a rationale — so a future spread, an added key, or a
+// leaked catalog field fails here rather than shipping.
+const ACC_PROJECTION_SRC = "const accList = getSelectedAccessoryPlan().map(a => ({\n        name: a.name,\n        category: a.category,\n        imageUrl: toAbsoluteImageUrl(a.imageUrl)\n      }));";
+check("the accessory packet is a fresh three-field literal (name, category, imageUrl), not a spread",
+  html.replace(/\r\n/g, "\n").includes(ACC_PROJECTION_SRC));
+check("no Object.assign or spread over a plan entry remains in the payload builder",
+  !/accList = getSelectedAccessoryPlan\(\)\.map\([^)]*Object\.assign/.test(htmlCode)
+  && !/accList = getSelectedAccessoryPlan\(\)\.map\([^)]*\.\.\.a\b/.test(htmlCode));
+const GS_ACC_FIELDS = (() => {
+  // The fields Code.gs actually reads off an accessory entry, in every consumer.
+  const m = gsCode.match(/a && a\.(\w+)/g) || [];
+  const direct = gsCode.match(/\ba\.(name|category|imageUrl|price|id|reason|reasons|description)\b/g) || [];
+  return new Set([...m.map((s) => s.replace(/^a && a\./, "")), ...direct.map((s) => s.slice(2))]);
+})();
+check("Code.gs reads only name, category and imageUrl from an accessory entry",
+  [...GS_ACC_FIELDS].every((f) => ["name", "category", "imageUrl"].includes(f)) && GS_ACC_FIELDS.size === 3,
+  [...GS_ACC_FIELDS].join(", "));
+{
+  // Execute the real plan builder + the real projection over a cart whose
+  // catalog record carries a price, an id and rationale keys.
+  const planIdx = htmlCode.indexOf("function getSelectedAccessoryPlan()");
+  const planSrc = planIdx === -1 ? "" : "function getSelectedAccessoryPlan()" + balancedBlock(htmlCode, planIdx);
+  check("getSelectedAccessoryPlan() extracted", planSrc.length > 0);
+  const projIdx = htmlCode.indexOf("const accList = getSelectedAccessoryPlan()");
+  const projEnd = htmlCode.indexOf("}));", projIdx);
+  const projSrc = projIdx === -1 || projEnd === -1 ? "" : htmlCode.slice(projIdx, projEnd + 4);
+  check("the accessory projection extracted", projSrc.length > 0);
+  let built = null, threw = null;
+  try {
+    built = new Function("window", "ACCESSORIES", "sleepSystemText", "toAbsoluteImageUrl",
+      `"use strict";\n${planSrc}\n${projSrc}\nreturn accList;`)(
+      { _accCart: { "acc-1": { id: "acc-1", name: "Cart Name", category: "Cart Cat", imageUrl: "x.jpg", reasons: ["reason.key.one", "reason.key.two"] } } },
+      [{ id: "acc-1", name: { en: "Catalog Pillow", es: "Almohada" }, category: { en: "Pillow", es: "Almohada" }, image: "images/accessories/p.jpg", price: 99, matchTags: ["x"] }],
+      (v) => (v && typeof v === "object") ? v.en : v,
+      (u) => "https://example.test/" + u);
+  } catch (e) { threw = String(e); }
+  check("the projection executes over a priced catalog record", built !== null, threw || "");
+  check("each packet entry carries exactly name, category and imageUrl — no id, reason, price or catalog field",
+    Array.isArray(built) && built.length === 1
+    && JSON.stringify(Object.keys(built[0]).sort()) === JSON.stringify(["category", "imageUrl", "name"])
+    && built[0].name === "Catalog Pillow" && built[0].category === "Pillow"
+    && built[0].imageUrl === "https://example.test/images/accessories/p.jpg",
+    built ? JSON.stringify(built[0]) : "");
+  // Planted counter-example: the previous spread leaks id, reason (and would leak anything else on the entry).
+  const spread = "const accList = getSelectedAccessoryPlan().map(a => Object.assign({}, a, { imageUrl: toAbsoluteImageUrl(a.imageUrl) }));";
+  const leaked = new Function("window", "ACCESSORIES", "sleepSystemText", "toAbsoluteImageUrl",
+    `"use strict";\n${planSrc}\n${spread}\nreturn accList;`)(
+    { _accCart: { "acc-1": { id: "acc-1", reasons: ["k"] } } },
+    [{ id: "acc-1", name: "N", category: "C", image: "i.jpg", price: 99 }],
+    (v) => v, (u) => u);
+  check("...and the planted spread would leak id and reason (the key check is non-vacuous)",
+    leaked.length === 1 && "id" in leaked[0] && "reason" in leaked[0]);
+}
+
+// ===========================================================================
 section("Exclusion: pricing (Phase 2.1b — resolver/contract data never ships)");
 // ===========================================================================
 // The dark resolver's vocabulary. Bare `price` is deliberately NOT in this
-// lexicon: the payload's accessory spread already carries a catalog `price`
-// field (an open owner-register row, deliberately unchanged by 2.1b) and the
-// Sleep System's one "From $" line is the pinned live surface — what 2.1b
-// bans from email, analytics and persistence is the pricing CONTRACT and
-// RESOLVER vocabulary, provisional material included.
+// lexicon: the Sleep System's one "From $" line is the pinned live catalog
+// surface — what 2.1b bans from email, analytics and persistence is the
+// pricing CONTRACT and RESOLVER vocabulary, provisional material included.
+// (The accessory packet itself is minimised to name/category/imageUrl above.)
 const PRICING_SYMBOL = new RegExp(
   "\\b(?:resolveDarkPricing|amountMinor|transactionAmountMinor|purchaseAssessment"
   + "|displayEnabled|minimumPurchase)\\b");

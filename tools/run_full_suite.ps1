@@ -39,6 +39,89 @@ function Resolve-DreamFinderProgram {
     throw "$Label was not found. Pass its executable path explicitly."
 }
 
+# Admission test for a Python interpreter: tools/suite_python_preflight.py,
+# run against each candidate BEFORE any suite. It proves the exact pins of
+# tools/requirements-suite.txt (CI installs that same file) are installed and
+# import, and that a headless Chromium actually LAUNCHES through that
+# interpreter's Playwright - the package importing while no browser was ever
+# installed for it is the case that used to fail the one rendered check after
+# every static suite had passed. A `python` first on PATH that was never
+# provisioned for this repository (a system install, an agent's bundled
+# runtime) is skipped in favour of the next candidate; if none passes, the
+# failure names each interpreter tried, what it lacks, and the exact command
+# that repairs it - the preflight prints those FIX lines with the
+# interpreter's own path, so the remediation is copy-pasteable.
+$pythonRequirementsFile = 'tools/requirements-suite.txt'
+$pythonPreflight = Join-Path $PSScriptRoot 'suite_python_preflight.py'
+
+function Get-DreamFinderPythonVerdict {
+    param([string]$Executable)
+
+    try {
+        $lines = @(& $Executable $pythonPreflight)
+        $code = $LASTEXITCODE
+    } catch {
+        return @{ Ok = $false; Lines = @('GAP the interpreter could not be started: ' + $_.Exception.Message) }
+    }
+    if ($code -eq 0) {
+        return @{ Ok = $true; Lines = $lines }
+    }
+    if ($code -eq 2) {
+        return @{ Ok = $false; Lines = @($lines | Where-Object { $_ -match '^(GAP|FIX) ' }) }
+    }
+    $last = [string]($lines | Select-Object -Last 1)
+    return @{ Ok = $false; Lines = @("GAP the preflight itself could not run (exit $code): $last") }
+}
+
+function Resolve-DreamFinderPython {
+    param(
+        [string]$Explicit,
+        [string[]]$Candidates
+    )
+
+    if ($Explicit) {
+        $path = Resolve-DreamFinderProgram -Explicit $Explicit -Candidates @() -Label 'Python (-Python)'
+        $verdict = Get-DreamFinderPythonVerdict -Executable $path
+        if ($verdict.Ok) {
+            return $path
+        }
+        throw ("The Python passed with -Python is not provisioned for the suite ($pythonRequirementsFile); nothing was run.`n  " +
+            $path + "`n" + (($verdict.Lines | ForEach-Object { '    ' + $_ }) -join "`n") +
+            "`nRun the FIX command(s) above, then rerun with the same -Python.")
+    }
+
+    $tried = @()
+    foreach ($candidate in $Candidates) {
+        if (-not $candidate) {
+            continue
+        }
+        $path = $null
+        if (Test-Path -LiteralPath $candidate -PathType Leaf) {
+            $path = (Resolve-Path -LiteralPath $candidate).Path
+        } else {
+            $resolved = Get-Command $candidate -ErrorAction SilentlyContinue
+            if ($resolved) {
+                $path = $resolved.Source
+            }
+        }
+        if (-not $path) {
+            continue
+        }
+        $verdict = Get-DreamFinderPythonVerdict -Executable $path
+        if ($verdict.Ok) {
+            return $path
+        }
+        $tried += ('  ' + $path)
+        $tried += @($verdict.Lines | ForEach-Object { '    ' + $_ })
+    }
+    if ($tried.Count -eq 0) {
+        throw 'Python was not found. Pass its executable path with -Python.'
+    }
+    throw ("No Python on this machine is provisioned for the suite ($pythonRequirementsFile); nothing was run. Tried:`n" +
+        ($tried -join "`n") +
+        "`nRun the FIX command(s) listed under the interpreter you want to use, then pass it with -Python <that path>.")
+}
+
 function Invoke-DreamFinderCheck {
     param(
         [string]$Name,
@@ -79,15 +162,30 @@ $bundledPwsh = if ($env:USERPROFILE) {
     $null
 }
 
-$pythonExecutable = Resolve-DreamFinderProgram -Explicit $Python -Candidates @(
-    'python',
-    'python3',
-    $bundledPython
-) -Label 'Python'
+# An admission failure is printed ONCE, verbatim, and ends the run before any
+# suite: PowerShell's own rendering of an uncaught throw repeats the message
+# inside a wrapped error record, which mangles the copy-pasteable FIX lines.
+try {
+    $pythonExecutable = Resolve-DreamFinderPython -Explicit $Python -Candidates @(
+        'python',
+        'python3',
+        $bundledPython
+    )
+} catch {
+    Write-Host $_.Exception.Message -ForegroundColor Red
+    exit 1
+}
 $nodeExecutable = Resolve-DreamFinderProgram -Explicit $Node -Candidates @(
     'node',
     $bundledNode
 ) -Label 'Node.js'
+# Some suites shell out to a bare `python` / `node` (the mutation sweep runs
+# its Python observers that way, and every Python check spawns siblings via
+# sys.executable). Put the ACCEPTED interpreters first on PATH for this process
+# and its children, so `-Python`/`-Node` and the auto-resolved choice govern the
+# whole run rather than only the top-level invocations.
+$env:PATH = (Split-Path -Parent $pythonExecutable) + [System.IO.Path]::PathSeparator +
+    (Split-Path -Parent $nodeExecutable) + [System.IO.Path]::PathSeparator + $env:PATH
 $gitExecutable = Resolve-DreamFinderProgram -Candidates @('git') -Label 'Git'
 $powerShellExecutable = Resolve-DreamFinderProgram -Candidates @(
     'pwsh',
@@ -95,12 +193,16 @@ $powerShellExecutable = Resolve-DreamFinderProgram -Candidates @(
     'powershell'
 ) -Label 'PowerShell (pwsh preferred; the Codex-bundled pwsh or Windows PowerShell 5.1 accepted)'
 
-# Mirror of the `verify` job in .github/workflows/ci.yml, in CI order: 48 checks
-# plus the mutation sweep = 49. (The CI job's display name, "Full suite (18
+# Mirror of the `verify` job in .github/workflows/ci.yml, in CI order: 56 checks
+# plus the mutation sweep = 57. (The CI job's display name, "Full suite (18
 # checks)", is a legacy label pinned by branch protection; do not trust its
 # number.) When ci.yml gains or loses a `run: node|python ...` step, change
 # this list in the same PR so the local mirror stays complete.
 $checks = @(
+    # The admission gate above, proven non-vacuous: an interpreter whose
+    # packages import but whose Chromium is absent must be refused before any
+    # suite, in both the -Python and the auto-selected path.
+    @{ Name = 'suite preflight'; Exe = $pythonExecutable; Args = @('tests/suite_preflight_check.py') },
     @{ Name = 'validation self-test'; Exe = $pythonExecutable; Args = @('tools/validation.py', '--self-test') },
     @{ Name = 'financing totality'; Exe = $pythonExecutable; Args = @('tests/financing_totality_check.py') },
     @{ Name = 'pricing totality'; Exe = $pythonExecutable; Args = @('tests/pricing_totality_check.py') },
@@ -136,6 +238,18 @@ $checks = @(
     @{ Name = 'construction reveal repair'; Exe = $nodeExecutable; Args = @('tests/construction_reveal_repair_check.mjs') },
     @{ Name = 'compare entry point'; Exe = $nodeExecutable; Args = @('tests/compare_entry_check.mjs') },
     @{ Name = 'phase 1 output regression'; Exe = $nodeExecutable; Args = @('tests/phase1_output_regression_check.mjs') },
+    # A4.1 (roadmap 3.1): the feature-key contract between the catalog's
+    # scoring tags and the quiz's scoring keys, the reachability table, and
+    # the 57-scenario golden ranking matrix that makes the repair auditable.
+    @{ Name = 'scoring key contract'; Exe = $nodeExecutable; Args = @('tests/scoring_key_contract_check.mjs') },
+    # A4.2 (roadmap 3.2): the vocabulary contract - every quiz scoring key is a
+    # reachable catalog feature or a governed dormant key, dormancy proved by
+    # execution, and the before/after matrix of the durable -> durability fix.
+    @{ Name = 'scoring vocabulary'; Exe = $nodeExecutable; Args = @('tests/scoring_vocabulary_check.mjs') },
+    # A4.2 corrective pass: the feature-tag normalization contract, executed
+    # against BOTH the Python validator and the PowerShell generator from one
+    # shared case table, so the two cannot drift apart again.
+    @{ Name = 'feature tag normalization'; Exe = $pythonExecutable; Args = @('tests/feature_tag_normalization_check.py') },
     @{ Name = 'claim retirement'; Exe = $nodeExecutable; Args = @('tests/claim_retirement_check.mjs') },
     @{ Name = 'integrity repairs'; Exe = $nodeExecutable; Args = @('tests/integrity_repairs_check.mjs') },
     @{ Name = 'results presentation'; Exe = $nodeExecutable; Args = @('tests/results_presentation_check.mjs') },
@@ -150,8 +264,20 @@ $checks = @(
     @{ Name = 'daybreak contract'; Exe = $pythonExecutable; Args = @('tests/daybreak_contract_check.py') },
     @{ Name = 'pricing contract (dark shipped-state lock)'; Exe = $pythonExecutable; Args = @('tests/pricing_contract_check.py') },
     @{ Name = 'pricing resolver (2.1b five-axis contract)'; Exe = $nodeExecutable; Args = @('tests/pricing_resolver_check.mjs') },
+    @{ Name = 'pricing presentation (2.2a gate + drawer surface)'; Exe = $nodeExecutable; Args = @('tests/pricing_presentation_check.mjs') },
+    @{ Name = 'pricing harness (2.2c localhost non-shipping preview + rendered pass)'; Exe = $pythonExecutable; Args = @('tests/pricing_harness_check.py') },
     @{ Name = 'daybreak demo server'; Exe = $pythonExecutable; Args = @('tests/daybreak_server_check.py') },
-    @{ Name = 'daybreak demo runtime'; Exe = $nodeExecutable; Args = @('tests/daybreak_demo_runtime_check.mjs') }
+    @{ Name = 'daybreak demo runtime'; Exe = $nodeExecutable; Args = @('tests/daybreak_demo_runtime_check.mjs') },
+    # G2 (readiness gaps 2026-09-09): the send-nothing delivery path - the real
+    # page through Chromium over the loopback harness in shipped and live
+    # modes, every failure path, and Code.gs replayed against the recorded
+    # payload. Rendered; needs the same playwright Chromium as the layout check.
+    @{ Name = 'delivery harness (send-nothing live path, rendered)'; Exe = $pythonExecutable; Args = @('tests/delivery_harness_check.py') },
+    # G7 (readiness gaps 2026-09-09): the drawer promotion block's ink - the
+    # three .drawer-promotion tokens pinned in source and every rendered line's
+    # contrast measured through Chromium with the illustrative scenario
+    # injected (root page and the committed demo bundle). Rendered.
+    @{ Name = 'promo muted lines (drawer promotion ink, rendered)'; Exe = $pythonExecutable; Args = @('tests/promo_muted_lines_check.py') }
 )
 if (-not $SkipMutationSweep) {
     $checks += @{ Name = 'mutation sweep'; Exe = $nodeExecutable; Args = @('tests/mutation_sweep.mjs') }
@@ -159,6 +285,8 @@ if (-not $SkipMutationSweep) {
 
 if ($ListOnly) {
     Write-Host "DreamFinder local full suite: $($checks.Count) checks"
+    Write-Host "Python:  $pythonExecutable"
+    Write-Host "Node.js: $nodeExecutable"
     $checks | ForEach-Object { Write-Host "- $($_.Name)" }
     exit 0
 }
@@ -184,6 +312,7 @@ $protectedFiles = @(
     'incoming/dreamfinder_quiz.json',
     'incoming/Lacks_Store_Data.xlsx',
     'incoming/lacks_promotions.json',
+    'incoming/lacks_pricing.json',
     'tools/source_hosts.json',
     'demo/daybreak-black-friday.json',
     'demo/black-friday/index.html',
@@ -196,10 +325,13 @@ try {
     Write-Host 'DreamFinder local CI mirror' -ForegroundColor Yellow
     Write-Host "Repository: $repoRoot"
     Write-Host "Checks:     $($checks.Count)"
-    Invoke-DreamFinderCheck -Name 'Python toolchain' -Executable $pythonExecutable -Arguments @(
-        '-c',
-        "import openpyxl, PIL, qrcode; print('Python dependencies OK:', openpyxl.__version__, PIL.__version__)"
-    )
+    Write-Host "Python:     $pythonExecutable"
+    Write-Host "Node.js:    $nodeExecutable"
+    # The admission test the resolver already passed, run once more in the
+    # log: interpreter path and version, every pinned distribution's installed
+    # version, and the Chromium that launched - so a log always says which
+    # Python and which browser ran the suite.
+    Invoke-DreamFinderCheck -Name 'Python toolchain (suite preflight)' -Executable $pythonExecutable -Arguments @($pythonPreflight)
     Invoke-DreamFinderCheck -Name 'Node.js toolchain' -Executable $nodeExecutable -Arguments @('--version')
     Invoke-DreamFinderCheck -Name 'PowerShell toolchain' -Executable $powerShellExecutable -Arguments @('-NoProfile', '-Command', '$PSVersionTable.PSVersion.ToString()')
 

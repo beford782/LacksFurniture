@@ -363,15 +363,49 @@ console.log("The per-feature cap caps:");
 // Regenerated 2026-08-13 alongside the owner-approved retirement of the
 // locally-made +25 bonus (Daybreak PR 1) — the previous pins carried the
 // bonus inside every locally-made model's score.
+// Regenerated 2026-09-03 alongside the owner-directed A4.1 repair of the
+// roadmap 3.1 case-fold defect: build-data.ps1 lowercased the catalog's
+// camelCase scoring tags, so every pressureRelief and motionIsolation award
+// was dead. Nothing in this engine changed — index.html is byte-identical and
+// no weight, cap, threshold or tie-break moved; the catalog now spells those
+// two tags as the quiz does. TWO of the three sets moved, and only in the
+// direction a newly reachable signal can move them (up):
+//   "side sleeper, hot, back pain" (side +2 pressureRelief; partner +2 and
+//     yes_often +4 motionIsolation, capped at 5): winner 55 -> 57; s3 and s9
+//     (both motionIsolation carriers) join the top five; the qualified set
+//     stays 15.
+//   "plus body, plush, reflux" (hip_pain +3 pressureRelief; family +1 and
+//     sometimes +3 motionIsolation): winner 53 -> 60 on g4, which carries
+//     BOTH tags (+5 and +2); the qualified set grows 9 -> 10 because the
+//     higher top score does not lift the 60% line past the tenth model.
+//   "solo, firm, no issues" is BYTE-IDENTICAL: solo skips the partner
+//     questions, back/athletic award neither tag — the control that shows the
+//     repair does not move scores it should not touch.
+// The full 57-scenario before/after matrix is pinned in
+// tests/scoring_key_contract_check.mjs.
+// Regenerated 2026-09-03 again, alongside the owner-directed A4.2 vocabulary
+// pass (roadmap 3.2): the quiz awarded `durable` where the catalog's canonical
+// feature is `durability`, so the two options that used the variant spelling -
+// sleep_issues.none (+1) and health_conditions.extra_support (+3) - awarded
+// nothing. The correction was made at the authoritative source and regenerated
+// through the pipeline; no weight, cap, threshold or engine line changed. ONE
+// set moved:
+//   "solo, firm, no issues" (sleep_issues: ["none"]): every `durability` carrier
+//     gains 1. s10 carries it and b6 does not, so the 55-point tie that catalog
+//     order used to settle now resolves 56 -> s10; g8 rises 54 -> 55 into the
+//     tie and g1 46 -> 47. The qualified set stays 13.
+//   The other two sets are byte-identical to their A4.1 values: neither answers
+//     `none` nor `extra_support`, which are the only options the correction
+//     touched.
 const GOLDEN = {
   "side sleeper, hot, back pain": {
-    top5: [["g5", 55], ["s6", 55], ["s7", 53], ["b3", 50], ["g7", 50]], qualified: 15
+    top5: [["g5", 57], ["s3", 57], ["s6", 57], ["s9", 57], ["s7", 55]], qualified: 15
   },
   "solo, firm, no issues": {
-    top5: [["b6", 55], ["s10", 55], ["s2", 55], ["g8", 54], ["g1", 46]], qualified: 13
+    top5: [["s10", 56], ["b6", 55], ["g8", 55], ["s2", 55], ["g1", 47]], qualified: 13
   },
   "plus body, plush, reflux": {
-    top5: [["g4", 53], ["g2", 52], ["g6", 52], ["s3", 47], ["s7", 47]], qualified: 9
+    top5: [["g4", 60], ["g2", 55], ["g6", 55], ["s3", 54], ["s7", 50]], qualified: 10
   }
 };
 console.log("Golden pins on the shipped catalogue:");

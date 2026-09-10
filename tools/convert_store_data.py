@@ -74,7 +74,7 @@ STORE_CONFIG_KEY_ORDER = [
 
 # Per-accessory key order (committed Bel order) - readability only.
 ACCESSORY_KEY_ORDER = [
-    "id", "name", "category", "price", "image", "description",
+    "id", "sku", "name", "category", "price", "image", "description",
     "subType", "matchTags", "matchScores",
 ]
 
@@ -147,6 +147,27 @@ def read_tab(wb, name):
 
 
 # -- Mattresses (S2) ----------------------------------------------------------
+
+def _existing_eol(path):
+    """The line ending an existing output file already uses, so a regeneration
+    that changes no content leaves the tree clean (G5, 2026-09-09): the
+    committed generated files carry CRLF on this repository's Windows
+    checkouts, and writing LF unconditionally dirtied five files the converter
+    had not changed on every run. A new file is written LF."""
+    try:
+        with open(path, "rb") as f:
+            head = f.read(65536)
+    except OSError:
+        return "\n"
+    return "\r\n" if b"\r\n" in head else "\n"
+
+
+def _write_text(path, text):
+    """Write text with the file's existing line ending (see _existing_eol)."""
+    eol = _existing_eol(path)
+    with open(path, "w", encoding="utf-8", newline="") as f:
+        f.write(text.replace("\r\n", "\n").replace("\n", eol))
+
 
 def write_csv(path, fieldnames, rows):
     with open(path, "w", encoding="utf-8", newline="") as f:
@@ -451,6 +472,12 @@ def build_accessories(wb):
             elif key == "subType":
                 if not _blank(cell):
                     acc["subType"] = cell
+            elif key == "sku":
+                # Phase 2.2 price identity: emitted ONLY when populated so the
+                # shipped catalog (blank) stays byte-identical; the validator
+                # owns the grammar.
+                if not _blank(cell):
+                    acc["sku"] = _s(cell)
             elif key == "price":
                 acc["price"] = cell  # numeric preserved
             elif key == "id":
@@ -465,17 +492,14 @@ def build_accessories(wb):
 
 
 def write_json(path, obj):
-    with open(path, "w", encoding="utf-8", newline="") as f:
-        json.dump(obj, f, indent=2, ensure_ascii=False)
-        f.write("\n")
+    _write_text(path, json.dumps(obj, indent=2, ensure_ascii=False) + "\n")
 
 
 def write_allowed_hosts_js(path, hosts):
     """Project store-config.allowedHosts into the M1 domain-lock allowlist JS
     (loaded synchronously by index.html before the main script). JSON serialization
     keeps the array JS-safe; trailing semicolon + newline."""
-    with open(path, "w", encoding="utf-8", newline="") as f:
-        f.write("window.__DF_ALLOWED_HOSTS = " + json.dumps(hosts) + ";\n")
+    _write_text(path, "window.__DF_ALLOWED_HOSTS = " + json.dumps(hosts) + ";\n")
 
 
 # -- image normalization (S4) -------------------------------------------------
@@ -927,7 +951,19 @@ def main(argv=None) -> int:
             accessory_ids=[a.get("id") for a in accessories]))
         # Quiz definition — structural contract (pinned ids/types/options) plus
         # bilingual copy and score-tag checks; no-op when the tab is empty.
-        report.merge(validation.validate_quiz(quiz))
+        # A4.2: the catalog's feature vocabulary rides along so the quiz's
+        # scoring keys can be checked for reachability at build time.
+        _quiz_features = set()
+        for _row in m_rows:
+            for _tag in str(_row.get("features") or "").split("|"):
+                # A4.2 corrective pass: the CSV may author a tag in the
+                # kebab form build-data.ps1 normalizes (pressure-relief ->
+                # pressureRelief). Compare the RUNTIME vocabulary, not the
+                # source spelling, or a supported source reads as unreachable.
+                _norm = validation.normalize_feature_tag(_tag)
+                if _norm:
+                    _quiz_features.add(_norm)
+        report.merge(validation.validate_quiz(quiz, catalog_features=_quiz_features))
         print(report.summary())
         blocking = report.blocking(warnings_as_errors=args.warnings_as_errors)
         if args.validate_only:

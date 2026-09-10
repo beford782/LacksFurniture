@@ -113,6 +113,44 @@ const PRICING_VALIDATOR = ["tools/validation.py --self-test", "tests/pricing_con
 // not by grep. Payload/render leaks are observed by the email-gating and
 // sleep-system suites, which own those surfaces' pins.
 const PRICING_RESOLVER = ["tests/pricing_resolver_check.mjs"];
+// Phase 2.2a: the price presentation gate — the resolver's one consumer — is
+// observed by its own suite, which executes the REAL gate over the shipped
+// configuration (every surface OFF) and over the governed NON-SHIPPING
+// fixture opened in memory (the consumption contract: off / price-unavailable
+// / available; stale, not-judgeable and activation-unapproved OFF — the
+// Codex-restored contract — the fresh + eligible + unadmitted price-unavailable
+// state, the runtime money admission, catalog SKU identity, the drawer
+// renderer). The contract suite pins each find string exactly once.
+const PRICING_GATE = ["tests/pricing_presentation_check.mjs"];
+// Accessory-price provenance: the harness check is the second observer — it
+// drives the real page over the opened drill state and proves the governed
+// slot REPLACES the legacy catalog "From $" line rather than joining it.
+const PRICING_GATE_RENDERED = ["tests/pricing_presentation_check.mjs", "tests/pricing_harness_check.py"];
+// The harness itself (device rehearsal mode, Codex correction 2026-09-09):
+// its bind policy, in-memory allowlist and banner are observed by the harness
+// check alone, which drives the real server on a private address of the host.
+const PRICING_HARNESS = ["tests/pricing_harness_check.py"];
+// Payload minimisation (2026-09-09): the email-gating suite executes the real
+// accessory projection over a priced catalog record and pins its exact keys.
+const EMAIL_PACKET = ["tests/email_gating_check.mjs"];
+// A4.1 observers (roadmap 3.1): the feature-key contract suite owns the key
+// vocabulary, the reachability table and the golden ranking matrix; a mutated
+// CATALOG spelling also moves the Phase 1 recommendation fixture and the
+// scoring-isolation golden pins, so those two observe the data entries.
+const SCORING_KEYS = ["tests/scoring_key_contract_check.mjs"];
+const SCORING_KEYS_DATA = SCORING_KEYS.concat(["tests/phase1_output_regression_check.mjs", "tests/scoring_isolation_check.mjs"]);
+// A4.2 observers (roadmap 3.2): the vocabulary suite owns the dormant-key
+// declaration, the reachable-or-governed contract and the before/after matrix;
+// a corrupted CATALOG or QUIZ spelling also moves the recommendation fixtures.
+const VOCAB = ["tests/scoring_vocabulary_check.mjs"];
+const NORM = ["tests/feature_tag_normalization_check.py"];
+const NORM_PLUS = NORM.concat(["tests/scoring_vocabulary_check.mjs"]);
+const VOCAB_RANKING = VOCAB.concat(["tests/phase1_output_regression_check.mjs", "tests/scoring_isolation_check.mjs", "tests/scoring_key_contract_check.mjs"]);
+// The mirror's interpreter admission gate (built 2026-09-06, re-cut
+// 2026-09-09): the preflight suite drives tools/suite_python_preflight.py
+// directly and the runner through PowerShell (-ListOnly), so a mutation of
+// either target is observed by it.
+const PREFLIGHT = ["tests/suite_preflight_check.py"];
 // Trust integrity gate observer (2026-08-21): the trust suite owns the copy <->
 // engine correspondence (document sections, cited tags, the inert-tag set,
 // shipped-vs-documented help lines, banned claims), the absence of the
@@ -157,6 +195,18 @@ const A43_SUMMARY = A43.concat(["tests/consultation_summary_check.mjs"]);
 // so a removed canonicalisation is observed under whichever serializer this
 // interpreter selects.
 const QR = ["tests/qr_payload_check.py"];
+// G2 (readiness gaps 2026-09-09): the send-nothing delivery path. The
+// delivery harness check drives the REAL page through Chromium over the
+// loopback harness in shipped and live modes, every failure path, and
+// replays the recorded payload through Code.gs - so a mutation of the send
+// path, the diagnostic classifiers, the mode-aware chrome, Code.gs's
+// CAN-SPAM block or the harness's own guarantees is observed by it.
+const DELIVERY = ["tests/delivery_harness_check.py"];
+// G7 (readiness gaps 2026-09-09): the drawer promotion block's ink. The
+// check pins the three .drawer-promotion tokens and the absence of the old
+// literals in source, and measures the rendered contrast of every line in
+// the block through Chromium with the illustrative scenario injected.
+const PROMO = ["tests/promo_muted_lines_check.py"];
 
 
 // ---------------------------------------------------------------------------
@@ -2288,6 +2338,121 @@ const MUTATIONS = [
     "                            \"size\": scope.get(\"size\"),",
     PRICING_VALIDATOR, "tools/validation.py"],
 
+  // --- Payload minimisation: the accessory packet (index.html) ---------------
+  ["email packet: the accessory projection becomes a spread again (id, reason and any future field leak)",
+    "      const accList = getSelectedAccessoryPlan().map(a => ({\n        name: a.name,\n        category: a.category,\n        imageUrl: toAbsoluteImageUrl(a.imageUrl)\n      }));",
+    "      const accList = getSelectedAccessoryPlan().map(a => Object.assign({}, a, { imageUrl: toAbsoluteImageUrl(a.imageUrl) }));",
+    EMAIL_PACKET, "index.html"],
+  ["email packet: the accessory projection gains the plan entry's id",
+    "        name: a.name,\n        category: a.category,\n        imageUrl: toAbsoluteImageUrl(a.imageUrl)\n      }));",
+    "        id: a.id,\n        name: a.name,\n        category: a.category,\n        imageUrl: toAbsoluteImageUrl(a.imageUrl)\n      }));",
+    EMAIL_PACKET, "index.html"],
+  // --- A4.1 (roadmap 3.1, re-cut 2026-09-09): the scoring feature-key contract.
+  // calculateScores() matches quiz scoring keys to catalog feature tags by exact
+  // array membership, so a single lowercased tag silently kills every rule that
+  // awards it. The generator is the site of the old defect; the two spellings it
+  // now preserves are the payload. All three are observed by the contract suite,
+  // which also holds the 57-scenario golden ranking matrix.
+  // A4.2 corrective pass re-pointed this entry: the normalizer moved into
+  // Convert-FeatureTag, so the old inline FIND no longer applies.
+  ["scoring keys: the generator lowercases every tag again (the roadmap 3.1 case-fold defect returns)",
+    "    $tag = if ($null -eq $Tag) { '' } else { $Tag.Trim() }",
+    "    $tag = if ($null -eq $Tag) { '' } else { $Tag.Trim().ToLower() }",
+    SCORING_KEYS.concat(NORM), "build-data.ps1"],
+  // --- A4.2 corrective pass: the feature-tag normalization contract. The A4.2
+  // reachability gate compared RAW CSV spellings to camelCase quiz keys, so a
+  // kebab-case source the generator normalizes correctly read as unreachable.
+  // One contract, two implementations, one shared case table - these entries
+  // are the ways the two can drift apart again.
+  ["normalization: the validator stops normalizing (raw CSV spellings compared to camelCase quiz keys - the A4.2 defect returns)",
+    "        reachable = {t for t in (normalize_feature_tag(f) for f in catalog_features) if t}",
+    "        reachable = {str(f).strip() for f in catalog_features if str(f).strip()}",
+    NORM, "tools/validation.py"],
+  ["normalization: the validator lowercases every tag instead of following the contract",
+    "    text = \"\" if tag is None else str(tag).strip()",
+    "    text = \"\" if tag is None else str(tag).strip().lower()",
+    NORM, "tools/validation.py"],
+  ["normalization: only the first repaired key is normalized (a one-key special case instead of the contract)",
+    "    parts = text.split(\"-\")",
+    "    parts = text.split(\"-\") if text.startswith(\"pressure\") else [text]",
+    NORM, "tools/validation.py"],
+  ["normalization: an unknown, unreachable quiz key is allowed through (the reachability gate goes silent)",
+    "            if tag not in QUIZ_DORMANT_TAGS:",
+    "            if False and tag not in QUIZ_DORMANT_TAGS:",
+    NORM_PLUS, "tools/validation.py"],
+  ["normalization: a dormant key that became reachable is concealed (the stale-declaration gate goes silent)",
+    "            if tag in reachable:",
+    "            if False and tag in reachable:",
+    NORM_PLUS, "tools/validation.py"],
+  ["normalization: the generator's own normalizer is bypassed (build-data.ps1 emits raw source spellings)",
+    "        $features = $row.features.Split('|') | ForEach-Object { Convert-FeatureTag $_ }",
+    "        $features = $row.features.Split('|') | ForEach-Object { $_.Trim() }",
+    NORM, "build-data.ps1"],
+  // --- A4.2 (roadmap 3.2, re-cut 2026-09-09): the scoring VOCABULARY contract.
+  // One key was a spelling variant of a canonical catalog feature and was
+  // corrected; five are governed dormant. These entries are the ways that
+  // governance can be undone: revert the correction, alias a dormant key onto a
+  // live one, activate a dormant key in the catalog, or delete a declaration.
+  ["vocabulary: the `durable` spelling variant is reinstated in the quiz (two options award a key no mattress carries)",
+    "            \"firm\": 2,\n            \"durability\": 3",
+    "            \"firm\": 2,\n            \"durable\": 3",
+    VOCAB_RANKING, "data/quiz.json"],
+  ["vocabulary: a dormant key is aliased onto a live one (comfort mapped to medium - the broad-synonym mistake)",
+    "            \"comfort\": 2,\n            \"medium\": 1",
+    "            \"medium\": 2,\n            \"medium\": 1",
+    VOCAB, "data/quiz.json"],
+  ["vocabulary: a governed dormant key is silently activated in the catalog (memory attached to a model)",
+    "                                      \"pressureRelief\",\n                                      \"motionIsolation\"\n",
+    "                                      \"pressureRelief\",\n                                      \"motionIsolation\",\n                                      \"memory\"\n",
+    VOCAB, "data/mattresses.json"],
+  ["vocabulary: a dormant-key declaration is deleted (hypoallergenic loses its governance record)",
+    '    "hypoallergenic": ("B",',
+    '    "_hypoallergenic_removed": ("B",',
+    VOCAB, "tools/validation.py"],
+  ["scoring keys: a catalog pressureRelief tag is lowercased (four scoring rules across three questions go dead)",
+    "                                      \"soft\",\n                                      \"pressureRelief\",\n                                      \"durability\",",
+    "                                      \"soft\",\n                                      \"pressurerelief\",\n                                      \"durability\",",
+    SCORING_KEYS_DATA, "data/mattresses.json"],
+  ["scoring keys: the catalog motionIsolation tag is lowercased (six scoring rules across three questions go dead)",
+    "                                      \"pressureRelief\",\n                                      \"motionIsolation\"\n",
+    "                                      \"pressureRelief\",\n                                      \"motionisolation\"\n",
+    SCORING_KEYS_DATA, "data/mattresses.json"],
+  // --- the mirror's interpreter admission gate ------------------------------
+  // "Modules import but browser absent": the preflight reports a launched
+  // Chromium even when the launch failed.
+  ["the preflight treats a failed Chromium launch as a present browser",
+    "        return None, browser_gap_text(exc)",
+    "        return \"Chromium (unverified) launched headless\", None",
+    PREFLIGHT, "tools/suite_python_preflight.py"],
+  // A distribution that is not installed is reported as provisioned.
+  ["the preflight ignores a missing distribution",
+    "        return f\"{dist} is not installed (pinned {dist}=={pinned})\"",
+    "        return None",
+    PREFLIGHT, "tools/suite_python_preflight.py"],
+  // A distribution installed at the pinned version but raising on import (a
+  // broken install, a shadowing package) is reported as provisioned.
+  ["the preflight no longer imports a pinned distribution",
+    "        importlib.import_module(module)",
+    "        pass",
+    PREFLIGHT, "tools/suite_python_preflight.py"],
+  // The runner accepts an interpreter the preflight rejected.
+  ["the runner accepts an interpreter the preflight rejected",
+    "    if ($code -eq 0) {\n        return @{ Ok = $true; Lines = $lines }\n    }",
+    "    if ($true) {\n        return @{ Ok = $true; Lines = $lines }\n    }",
+    PREFLIGHT, "tools/run_full_suite.ps1"],
+  // The verified range (3.12 through 3.14) widens silently.
+  ["the preflight admits a Python newer than the verified range",
+    "    if v > PYTHON_CEILING:",
+    "    if False:",
+    PREFLIGHT, "tools/suite_python_preflight.py"],
+  ["the requirements file routes every Python 3.14+ to the 3.14 Pillow pin",
+    'Pillow==12.1.1; python_version == "3.14"',
+    'Pillow==12.1.1; python_version >= "3.14"',
+    PREFLIGHT, "tools/requirements-suite.txt"],
+  ["a principal guide states a wider Python range than the preflight enforces",
+    "It needs a Python 3.12 through 3.14",
+    "It needs a Python 3.12 through 3.15",
+    PREFLIGHT, "README.md"],
   // --- Phase 2.1b: the dark resolver (index.html) --------------------------
   // Each entry mutates the REAL resolver source; the resolver suite executes
   // the mutated function and the specific five-axis probe fails. Find strings
@@ -2312,6 +2477,108 @@ const MUTATIONS = [
     "          threshold = txn >= minMinor ? 'met' : 'not-met';",
     "          threshold = txn >= plan.minimumPurchase ? 'met' : 'not-met';",
     PRICING_RESOLVER, "index.html"],
+  // --- Phase 2.2a: the price presentation gate (index.html) -----------------
+  // Masked behaviourally since the Codex correction (the resolver's own
+  // eligibility axis withholds while displayEnabled is false and the restored
+  // contract turns that into OFF): the contract check's source pin observes it.
+  ["2.2a: the gate ignores displayEnabled (the activation switch becomes decorative)",
+    "      if (!p || p.enabled !== true || p.displayEnabled !== true || !pricingSurfaceEnabled(surface)) return off;",
+    "      if (!p || p.enabled !== true || !pricingSurfaceEnabled(surface)) return off;",
+    PRICING_GATE.concat(PRICING), "index.html"],
+  ["2.2a: the gate ignores the per-surface flag",
+    "      if (!p || p.enabled !== true || p.displayEnabled !== true || !pricingSurfaceEnabled(surface)) return off;",
+    "      if (!p || p.enabled !== true || p.displayEnabled !== true) return off;",
+    PRICING_GATE, "index.html"],
+  // Masked like the displayEnabled entry (emergency disable is also the
+  // resolver's pricingOn): source-pinned.
+  ["2.2a: the gate ignores emergency disable (enabled false still renders)",
+    "      if (!p || p.enabled !== true || p.displayEnabled !== true || !pricingSurfaceEnabled(surface)) return off;",
+    "      if (!p || p.displayEnabled !== true || !pricingSurfaceEnabled(surface)) return off;",
+    PRICING_GATE.concat(PRICING), "index.html"],
+  // Codex correction 2026-09-09: freshness and eligibility gate VISIBILITY —
+  // stale and activation-unapproved are OFF, never a message. The rendered
+  // harness observes both as well (its stale/unapproved drills expect OFF).
+  ["2.2 contract: a STALE price reaches a surface (freshness no longer gates visibility)",
+    "      if (!fresh || !eligible) return off;",
+    "      if (!eligible) return off;",
+    PRICING_GATE_RENDERED, "index.html"],
+  ["2.2 contract: an activation-unapproved price reaches a surface (eligibility no longer gates visibility)",
+    "      if (!fresh || !eligible) return off;",
+    "      if (!fresh) return off;",
+    PRICING_GATE_RENDERED, "index.html"],
+  // Codex correction 2026-09-09: the runtime money admission mirrors the
+  // governed validator; Intl.NumberFormat is formatting only.
+  ["2.2 money: the runtime admission is dropped (Intl formats currency XXX as a price)",
+    "      if (!priceMoneyValid(amountMinor, currency)) return '';",
+    "      if (false) return '';",
+    PRICING_GATE_RENDERED, "index.html"],
+  ["2.2 money: the governed maximum is widened",
+    "      if (amountMinor <= 0 || amountMinor > PRICE_AMOUNT_MINOR_MAX) return false;",
+    "      if (amountMinor <= 0) return false;",
+    PRICING_GATE, "index.html"],
+  ["2.2 money: the currency list opens (any string is a currency)",
+    "      if (typeof currency !== 'string' || PRICE_CURRENCIES.indexOf(currency) === -1) return false;",
+    "      if (typeof currency !== 'string') return false;",
+    PRICING_GATE, "index.html"],
+  ["2.2 money: the safe-integer rule weakens to 'a number' (fractional minor units admitted)",
+    "      if (!Number.isSafeInteger(amountMinor)) return false;",
+    "      if (typeof amountMinor !== 'number') return false;",
+    PRICING_GATE, "index.html"],
+  // The no-record OFF rule is behaviourally masked by the resolver (an absent
+  // SKU resolves nothing -> not-judgeable -> OFF), so the contract check's
+  // source pin is its observer, like the two masked 2.2a entries above.
+  ["2.2 contract: the no-record OFF rule is dropped (defence in depth; source-pinned)",
+    "      if (!sku) return off;",
+    "      if (false) return off;",
+    PRICING_GATE.concat(PRICING), "index.html"],
+  ["2.2a: the drawer renderer prints while the gate is OFF",
+    "      if (pres.state === 'off' || !pres.text) {",
+    "      if (false) {",
+    PRICING_GATE, "index.html"],
+  ["2.2a: the SKU is forged instead of read from the catalog record",
+    "      var sku = pricingSkuFor(m, size);",
+    "      var sku = 'FIXTURE-0001';",
+    PRICING_GATE, "index.html"],
+  ["2.2a: the surface helper defaults OPEN like the financing helper",
+    "      if (!s || typeof s !== 'object') return false;",
+    "      if (!s || typeof s !== 'object') return true;",
+    PRICING_GATE, "index.html"],
+  // --- Phase 2.2b: the slot builder the four remaining surfaces consume ----
+  ["2.2b: the slot builder ignores OFF (a price box appears in production)",
+    "      if (pres.state === 'off' || !pres.text) return '';",
+    "      if (false) return '';",
+    PRICING_GATE, "index.html"],
+  ["2.2b: the slot size is a constant instead of the customer's answer",
+    "      return (typeof answers === 'object' && answers) ? answers.mattress_size : undefined;",
+    "      return 'queen';",
+    PRICING_GATE, "index.html"],
+  // --- Phase 2.2c: the catalog-record fallback for projections ------------
+  ["2.2c: the catalog-record lookup stops checking the record's id (a SKU borrowed across ids)",
+    "      return (hit && typeof hit === 'object' && hit.id === m.id) ? hit : null;",
+    "      return (hit && typeof hit === 'object') ? hit : null;",
+    PRICING_GATE, "index.html"],
+  // --- Accessory-price provenance (index.html) --------------------------------
+  ["provenance: the accessory query carries the mattress size (a sized accessory entry never resolves)",
+    "        size: accessory ? undefined : size,",
+    "        size: size,",
+    PRICING_GATE, "index.html"],
+  ["provenance: the accessory sku grammar is dropped (an untrimmed sku resolves)",
+    "        return rec.sku.replace(/\\s+/g, '').length > 0 && rec.sku === rec.sku.trim() ? rec.sku : null;",
+    "        return rec.sku;",
+    PRICING_GATE, "index.html"],
+  ["provenance: the legacy 'From $' line renders BESIDE the governed slot (two prices on one card)",
+    "        if (governedPrice) price = '';",
+    "        if (false) price = '';",
+    PRICING_GATE_RENDERED, "index.html"],
+  // --- Phase 2.2d: plan status copy beside Payment Choice --------------------
+  ["2.2d: the status copy ignores the price state (copy beside a plan with no available price)",
+    "      if (pres.state !== 'available') return '';",
+    "      if (false) return '';",
+    PRICING_GATE, "index.html"],
+  ["2.2d: the threshold line stops requiring a published minimum purchase",
+    "      if (pres.threshold === 'unknown' && plan && typeof plan.minimumPurchase === 'number') {",
+    "      if (pres.threshold === 'unknown') {",
+    PRICING_GATE, "index.html"],
   // Codex exact-head review of PR #71 (2026-08-28): one entry per finding.
   ["2.1b review: the SKU identity check is gone (a price resolves without its SKU)",
     "          if (!isStr(q.sku) || !nonBlank(q.sku) || e.sku !== q.sku) continue;",
@@ -2615,6 +2882,100 @@ const MUTATIONS = [
   ["QR: the canonical spelling flips to lxml's (the committed stdlib form would no longer be reproduced)",
     "_CANONICAL_EMPTY_ELEMENT_CLOSE = ' />'",
     "_CANONICAL_EMPTY_ELEMENT_CLOSE = '/>'", QR, "incoming/generate_financing_qr.py"],
+  // --- G2: the send-nothing delivery path (index.html, Code.gs, the harness) --
+  ["live mode never POSTs (the send gate is closed)",
+    "if (gasUrl && !scenarioBlocksEmail) {",
+    "if (false && gasUrl && !scenarioBlocksEmail) {", DELIVERY],
+  ["a non-2xx response is read as a document instead of thrown as http_<status>",
+    "if (!res.ok) throw new Error('http_' + res.status);",
+    "if (false) throw new Error('http_' + res.status);", DELIVERY],
+  ["the server's own error string is logged verbatim (an echoing endpoint puts the address in the console)",
+    "console.error('[DreamFinder] send failed:', emailFailureCode(data && data.error));",
+    "console.error('[DreamFinder] send failed:', data && data.error);", DELIVERY],
+  ["the transport error object is logged verbatim instead of its closed-set code",
+    "console.error('[DreamFinder] send failed:', transportFailureCode(err));",
+    "console.error('[DreamFinder] send failed:', err);", DELIVERY],
+  ["preview mode POSTs the payload anyway",
+    "console.log('[DreamFinder] Email preview (payload suppressed):',",
+    "fetch('data/store-config.json', { method: 'POST', body: JSON.stringify(payload) }); console.log('[DreamFinder] Email preview (payload suppressed):',", DELIVERY],
+  ["the preview note stays visible in live mode",
+    "noteEl.style.display = isDemoMode ? '' : 'none';",
+    "noteEl.style.display = '';", DELIVERY],
+  ["the preview-mode honesty card stays visible in live mode",
+    "if (pmCard) pmCard.style.display = isDemoMode ? '' : 'none';",
+    "if (pmCard) pmCard.style.display = '';", DELIVERY],
+  ["the send path judges preview by a constant (live mode says Saved, not Sent)",
+    "const isEmailPreview = !gasUrl || scenarioBlocksEmail;",
+    "const isEmailPreview = true;", DELIVERY],
+  ["Code.gs sends while the CAN-SPAM values are still sentinels",
+    "if (!_canSpamConfigured()) {",
+    "if (false) {", DELIVERY, "Code.gs"],
+  ["the stub endpoint stops answering with the CORS header a web app deployed \"Anyone\" carries",
+    "            self.send_header(\"Cache-Control\", \"no-store\")\n            self.send_header(\"Access-Control-Allow-Origin\", \"*\")",
+    "            self.send_header(\"Cache-Control\", \"no-store\")", DELIVERY, "tools/serve_delivery_preview.py"],
+  ["the harness accepts a public bind address",
+    "        if not _loopback(bind):\n            raise ValueError(f\"{bind!r} is not a loopback address\")",
+    "        if False:\n            raise ValueError(f\"{bind!r} is not a loopback address\")", DELIVERY, "tools/serve_delivery_preview.py"],
+  // --- G7: the drawer promotion block's ink (index.html, the demo builder) ---
+  ["the promo muted lines return to the warm-white literal (invisible on the cream panel)",
+    "var muted = 'color:var(--drawer-promo-muted);';",
+    "var muted = 'color:rgba(248,246,241,0.6);';", PROMO],
+  ["the muted token resolves to a translucent warm white",
+    "--drawer-promo-muted: #665D54;",
+    "--drawer-promo-muted: rgba(248,246,241,0.6);", PROMO],
+  ["the accent token resolves to the bright gold (about 2:1 on the panel)",
+    "--drawer-promo-accent: var(--accent-ink);",
+    "--drawer-promo-accent: var(--color-gold-bright);", PROMO],
+  ["the note token lightens below the text floor",
+    "--drawer-promo-note: #7A7168;",
+    "--drawer-promo-note: #B5ADA3;", PROMO],
+  ["the provenance line returns to its warm-white literal",
+    "font-style:italic; color:var(--drawer-promo-note); margin-top:0.2rem; line-height:1.4;",
+    "font-style:italic; color:rgba(248,246,241,0.45); margin-top:0.2rem; line-height:1.4;", PROMO],
+  ["the demo builder stops refusing the retired warm-white literal",
+    "    _expect(out, \"rgba(248,246,241,0.6)\", 0, \"the retired warm-white promo literal (T5)\")\n",
+    "", PROMO, "tools/build_black_friday_demo.py"],
+  // --- Device rehearsal mode of the pricing harness (tools/serve_pricing_preview.py)
+  ["device rehearsal: a public address is accepted as a device bind (RFC 1918 membership dropped)",
+    "    if not any(ip in net for net in RFC1918):",
+    "    if False:",
+    PRICING_HARNESS, "tools/serve_pricing_preview.py"],
+  ["device rehearsal: 0.0.0.0 is accepted as a device bind (every interface)",
+    "    if ip.is_unspecified:",
+    "    if False:",
+    PRICING_HARNESS, "tools/serve_pricing_preview.py"],
+  ["device rehearsal: the in-memory allowlist widens beyond the bind address",
+    "    return (\"window.__DF_ALLOWED_HOSTS = \" + json.dumps([addr]) + \";\\n\").encode(\"utf-8\")",
+    "    return (\"window.__DF_ALLOWED_HOSTS = \" + json.dumps([addr, \"0.0.0.0\"]) + \";\\n\").encode(\"utf-8\")",
+    PRICING_HARNESS, "tools/serve_pricing_preview.py"],
+  ["device rehearsal: the page is served without the NON-SHIPPING banner",
+    "    head, sep, tail = raw.rpartition(b\"</body>\")\n    if not sep:\n        return raw + banner\n    return head + banner + sep + tail",
+    "    return raw",
+    PRICING_HARNESS, "tools/serve_pricing_preview.py"],
+  ["device rehearsal: a served store-config with a live gasUrl is not refused",
+    "        if config.get(\"gasUrl\"):\n            print(\"REFUSED: the served store-config carries a non-blank gasUrl; the device \"",
+    "        if False:\n            print(\"REFUSED: the served store-config carries a non-blank gasUrl; the device \"",
+    PRICING_HARNESS, "tools/serve_pricing_preview.py"],
+  // Device audit 2026-09-09: the harness serves the whole repository; the path
+  // allowlist is what keeps a device rehearsal from publishing docs/, incoming/,
+  // tools/ and the .git pointer to the store network. (The autoindex override
+  // is defence in depth behind it and is not separately observable.)
+  ["device rehearsal: the path allowlist is dropped (the repository is served to the network)",
+    "    return decoded if device_path_allowed(decoded) else None",
+    "    return decoded",
+    PRICING_HARNESS, "tools/serve_pricing_preview.py"],
+  // Codex re-review blocker (2026-09-10): the allowlist judged the raw request
+  // path while the stdlib decoded and normalised it before serving. The
+  // canonical grammar is THE control; the harness check's live GET/HEAD
+  // matrix (percent-encoded traversal and friends) observes it.
+  ["device rehearsal: the canonical-path grammar is dropped (percent-encoded traversal serves the repository)",
+    "    if not DEVICE_CANONICAL_RE.fullmatch(decoded):\n        return None\n",
+    "",
+    PRICING_HARNESS, "tools/serve_pricing_preview.py"],
+  ["device rehearsal: robots.txt stops disallowing the rehearsal",
+    "ROBOTS_TXT = b\"User-agent: *\\nDisallow: /\\n\"",
+    "ROBOTS_TXT = b\"User-agent: *\\nDisallow:\\n\"",
+    PRICING_HARNESS, "tools/serve_pricing_preview.py"],
 ];
 
 // ---------------------------------------------------------------------------
@@ -2640,7 +3001,13 @@ for (const d of ["tests", "data", "docs", "tools", "incoming", "demo", ".github"
 // paragraph legitimizing retailer prose in the quiz contract.
 // README.md joins the copy set for the same reason as onboarding: the A4.3
 // living-contract section reads the counts it states.
-for (const f of ["index.html", "Code.gs", "CLAUDE.md", "README.md"]) cpSync(join(root, f), join(sandbox, f));
+// build-data.ps1 joins the copy set because the A4.1 scoring-key entries
+// mutate the generator's normaliser and the contract suite reads it.
+// AGENTS.md joins the copy set because the suite-preflight check pins the
+// verified Python range every principal guide states.
+// manifest.json joins the copy set because the pricing harness check watches it
+// (the device rehearsal serves it) and hashes it before and after its cycle.
+for (const f of ["index.html", "Code.gs", "CLAUDE.md", "README.md", "build-data.ps1", "AGENTS.md", "manifest.json"]) cpSync(join(root, f), join(sandbox, f));
 // The committed QR asset joins the copy set (alone, not the whole images
 // tree) because the QR payload suite decodes it and compares a fresh
 // generation against it byte for byte; the sandbox copy is what the suite
@@ -2680,6 +3047,33 @@ const PRISTINE_BY_FILE = {
   // governs it. Mutating each proves the suite compares them rather than
   // trusting either.
   "data/quiz.json": readFileSync(join(sandbox, "data", "quiz.json"), "utf8"),
+  // The pricing harness (device rehearsal entries; copied with tools/).
+  "tools/serve_pricing_preview.py":
+    readFileSync(join(sandbox, "tools", "serve_pricing_preview.py"), "utf8"),
+  // A4.1 (roadmap 3.1): the two halves of the scoring feature-key contract -
+  // the generator that normalizes catalog tags, and the generated catalog whose
+  // spellings the engine matches by exact membership.
+  "build-data.ps1": readFileSync(join(sandbox, "build-data.ps1"), "utf8"),
+  "data/mattresses.json": readFileSync(join(sandbox, "data", "mattresses.json"), "utf8"),
+  // The mirror's interpreter admission gate: the preflight the runner executes
+  // against each candidate Python, and the runner's reading of its verdict.
+  // Both are copied into the sandbox with tools/, and the preflight suite
+  // drives the SANDBOX copies through their own paths.
+  "tools/suite_python_preflight.py":
+    readFileSync(join(sandbox, "tools", "suite_python_preflight.py"), "utf8"),
+  "tools/run_full_suite.ps1":
+    readFileSync(join(sandbox, "tools", "run_full_suite.ps1"), "utf8"),
+  // The pinned requirements the preflight evaluates (its Pillow markers close
+  // the verified range at 3.14) and the README statement of that range.
+  "tools/requirements-suite.txt":
+    readFileSync(join(sandbox, "tools", "requirements-suite.txt"), "utf8"),
+  "README.md": readFileSync(join(sandbox, "README.md"), "utf8"),
+  // G2: the delivery harness the delivery check executes (copied with tools/).
+  "tools/serve_delivery_preview.py":
+    readFileSync(join(sandbox, "tools", "serve_delivery_preview.py"), "utf8"),
+  // G7: the demo builder the promo-ink check pins (copied with tools/).
+  "tools/build_black_friday_demo.py":
+    readFileSync(join(sandbox, "tools", "build_black_friday_demo.py"), "utf8"),
   "docs/quiz-copy-engine-correspondence.md":
     readFileSync(join(sandbox, "docs", "quiz-copy-engine-correspondence.md"), "utf8"),
   // QR generator: the serializer canonicalisation lives here.
