@@ -1,0 +1,554 @@
+/* Sleep Brief — Alternative A (need-led hero). PROTOTYPE ONLY.
+   Owns only this variant's presentation; the shared harness owns the review
+   bar. Palette echoes the production Sleep Brief family (warm paper, dark
+   ink, rust accent, blue-gray compare tint) without importing production CSS.
+
+   All breakpoints below are CONTENT-DRIVEN samples chosen where this
+   composition itself breaks (label wrap, column fit) — they are NOT showroom
+   hardware claims; the device matrix is unconfirmed (Phase 0.4 pending).
+
+   Two-tier reading model: customer-glanceable anchors (hero title, badges,
+   firmness word, priority titles, journey steps) are sized large and set at
+   7:1-class contrast; operator detail (test prompts, captions) stays at
+   conventional reading size. */
+
+/* Lead fix (post-build review): the hidden attribute must win over any
+   later display rule. Mirrors the production guard at index.html:8925.
+   Without it an empty [hidden] element with display:inline-block still
+   paints (found on .tier-descriptor-alt in the tabs variant). */
+[hidden] { display: none !important; }
+
+
+:root {
+  --sba-paper: #f7f2e9;
+  --sba-card: #fffdf8;
+  --sba-ink: #241e17;        /* ~13.9:1 on paper */
+  --sba-muted: #4f463e;      /* production brief body tone; ~8.6:1 on card */
+  --sba-line: #d9cec0;
+  --sba-line-soft: #e3d9cd;
+  --sba-accent: #8c2413;     /* rust family; 8:1+ with white */
+  --sba-accent-soft: #f6e7e2;
+  --sba-blue: #35506b;
+  --sba-blue-soft: #e8eef2;
+  --sba-badge-bg: #efe9dc;
+  --sba-badge-line: #c9bea9;
+  --sba-focus-outer: #14110d;
+  --sba-focus-inner: #ffffff;
+  /* A1: safe OVER-estimate of the sticky action bar's tallest rendering
+     (three stacked buttons + wrapped caption at narrow widths / 200% text).
+     Content is padded clear of the bar by this much, so nothing can sit
+     under it. */
+  --sba-actions-h: 15rem;
+  --sba-serif: Georgia, "Times New Roman", serif;
+  --sba-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--sba-paper);
+  color: var(--sba-ink);
+  font: 400 1rem/1.55 var(--sba-sans);
+  /* wide content scrolls in its own container; the page never scrolls sideways */
+  overflow-x: hidden;
+}
+
+/* Visible focus: dual ring (dark outline + white inner ring), never removed. */
+button:focus-visible,
+a:focus-visible,
+[tabindex="-1"]:focus-visible {
+  outline: 3px solid var(--sba-focus-outer);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px var(--sba-focus-inner);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  margin: -1px; padding: 0; border: 0;
+  clip: rect(0 0 0 0); clip-path: inset(50%);
+  overflow: hidden; white-space: nowrap;
+}
+
+.sba {
+  max-width: 1080px;              /* per-surface max-width, echoing production */
+  margin: 0 auto;
+  padding: clamp(1rem, 3vw, 2.25rem) clamp(1rem, 4vw, 2.5rem) 0;
+}
+
+/* ============================== Hero ============================== */
+
+.sba-hero {
+  padding-bottom: clamp(1rem, 2.5vw, 1.75rem);
+  border-bottom: 1px solid var(--sba-line);
+}
+
+.sba-eyebrow {
+  margin: 0 0 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--sba-muted);
+}
+
+.sba-hero__title {
+  margin: 0;
+  font-family: var(--sba-serif);
+  font-weight: 600;
+  /* customer-glanceable at 0.5-1 m: dominant type, tolerant of long ES titles */
+  font-size: clamp(2rem, 5.5vw, 3.4rem);
+  line-height: 1.08;
+  letter-spacing: -0.01em;
+  max-width: 22ch;                 /* keeps the measure readable when ES runs long */
+}
+
+.sba-hero__lede {
+  margin: 0.6rem 0 0;
+  font-size: clamp(1.05rem, 2.2vw, 1.3rem);
+  line-height: 1.45;
+  color: var(--sba-muted);
+  max-width: 52ch;
+}
+
+/* Signal badges: inert status tags. Deliberately NOT pill-shaped and NOT
+   shadowed so they cannot be mistaken for the (rounded) buttons or the
+   (uppercase pill) kind tags — nothing about them affords tapping. */
+.sba-badges {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 1.1rem 0 0;
+  padding: 0;
+}
+
+.sba-badges li {
+  padding: 0.45rem 0.7rem;
+  background: var(--sba-badge-bg);
+  border: 1px solid var(--sba-badge-line);
+  border-radius: 6px;
+  font-size: 1rem;                 /* larger than web-chip default: two-viewer distance */
+  font-weight: 600;
+  color: #33302b;                  /* ~9.6:1 on the badge fill */
+}
+
+/* Firmness strip */
+.sba-firm { margin-top: 1rem; }
+
+.sba-firm__visible {
+  display: flex;
+  flex-wrap: wrap;                 /* content-driven: wraps before it clips at ~320px */
+  align-items: center;
+  gap: 0.6rem 0.9rem;
+}
+
+.sba-firm__label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--sba-muted);
+}
+
+.sba-firm__strip {
+  display: flex;
+  gap: 3px;
+}
+
+.sba-firm__seg {
+  width: clamp(14px, 2.2vw, 22px);
+  height: 14px;
+  border: 1px solid #a4988a;       /* >=3:1 boundary against paper and fill */
+  border-radius: 2px;
+  background: #eee7d9;
+}
+
+.sba-firm__seg.is-filled {
+  background: #3e3227;             /* luminance difference, not hue-only */
+  border-color: #3e3227;
+}
+
+.sba-firm__value {
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+/* ============================== Columns ============================== */
+
+.sba-columns {
+  display: grid;
+  /* A2: minmax(0,1fr), exactly as the >=920px rule below — a plain 1fr
+     track's auto minimum let nowrap content blow the track out at 200%
+     text. */
+  grid-template-columns: minmax(0, 1fr); /* stacked by default (portrait-first) */
+  gap: clamp(1.25rem, 3vw, 2.5rem);
+  /* A1: bottom padding >= the sticky action bar's height so no content can
+     sit under the bar at any scroll position. */
+  padding: clamp(1.25rem, 3vw, 2rem) 0
+           calc(var(--sba-actions-h) + env(safe-area-inset-bottom, 0px));
+}
+
+/* Content-driven sample: at ~920px of viewport the priority cards hold a
+   full test sentence beside the journey rail without squeezing; below that
+   the two sections stack (mirrors production's portrait stacking rule). */
+@media (min-width: 920px) {
+  .sba-columns {
+    grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+    align-items: start;
+  }
+}
+
+.sba-h2 {
+  margin: 0 0 0.35rem;
+  font-family: var(--sba-serif);
+  font-weight: 600;
+  font-size: clamp(1.35rem, 3vw, 1.75rem);
+  line-height: 1.2;
+}
+
+.sba-basis {
+  margin: 0 0 1rem;
+  font-size: 0.95rem;
+  color: var(--sba-muted);
+}
+
+/* ============================== Priority cards ============================== */
+
+.sba-priority-list {
+  list-style: none;                /* semantics preserved via <ol>; visible ordinal below */
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.9rem;
+}
+
+.sba-priority {
+  background: var(--sba-card);
+  border: 1px solid var(--sba-line-soft);
+  border-radius: 12px;
+  padding: 1rem 1.1rem;
+}
+
+.sba-priority__head {
+  display: flex;
+  flex-wrap: wrap;                 /* content-driven: pill drops under long ES titles */
+  align-items: baseline;
+  gap: 0.35rem 0.7rem;
+}
+
+.sba-priority__ordinal {
+  font-family: var(--sba-serif);
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--sba-muted);
+  min-width: 1.2ch;
+}
+
+.sba-priority__title {
+  margin: 0;
+  font-family: var(--sba-serif);
+  font-weight: 600;
+  font-size: clamp(1.15rem, 2.4vw, 1.45rem);
+  line-height: 1.25;
+}
+
+/* Kind pills. Production defines tag-key and tag-high; tag-preference has NO
+   production CSS rule (known gap, flagged in VARIANT-NOTES) — all three
+   states are styled here. Sized up from production's 8px for shared viewing. */
+.sba-tag {
+  align-self: center;
+  padding: 0.3rem 0.65rem;
+  border: 1px solid var(--sba-badge-line);
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  /* A2: no white-space:nowrap — pills wrap at narrow widths / 200% text
+     instead of blowing out the grid track. */
+  color: var(--sba-muted);
+}
+
+.sba-tag.tag-key {
+  border-color: rgba(140, 36, 19, 0.35);
+  background: var(--sba-accent-soft);
+  color: var(--sba-accent);
+}
+
+.sba-tag.tag-high {
+  border-color: rgba(53, 80, 107, 0.35);
+  background: var(--sba-blue-soft);
+  color: var(--sba-blue);
+}
+
+.sba-tag.tag-preference {
+  border-color: #b3a98e;
+  background: #efebdd;
+  color: #55503c;
+}
+
+.sba-priority__desc {
+  margin: 0.5rem 0 0.75rem;
+  color: var(--sba-muted);
+  max-width: 58ch;
+}
+
+/* Disclosure (W3C APG pattern). NOTE: w2-progressive-disclosure recommends
+   AGAINST hiding this content; Alternative A implements the roadmap-proposed
+   disclosure anyway so both directions can be judged (see VARIANT-NOTES). */
+.sba-disclose {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 48px;
+  padding: 0.5rem 0.9rem;
+  border: 1px solid var(--sba-line);
+  border-radius: 10px;
+  background: var(--sba-paper);
+  font: 700 0.85rem/1 var(--sba-sans);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--sba-ink);
+  cursor: pointer;
+  touch-action: manipulation;
+  /* A1 belt-and-braces: any scroll-into-view (e.g. on focus) lands the
+     button clear of the sticky action bar. */
+  scroll-margin-bottom: calc(var(--sba-actions-h) + env(safe-area-inset-bottom, 0px));
+}
+
+.sba-disclose .sba-chev {
+  font-size: 0.8rem;
+  transition: transform 0.15s ease;
+}
+
+.sba-disclose[aria-expanded="true"] .sba-chev { transform: rotate(180deg); }
+
+@media (prefers-reduced-motion: reduce) {
+  .sba-disclose .sba-chev { transition: none; }
+}
+
+.sba-priority__test {
+  margin: 0.6rem 0 0;
+  padding: 0.7rem 0.9rem;
+  border-left: 3px solid var(--sba-badge-line);
+  background: #fbf8f1;
+  border-radius: 0 8px 8px 0;
+  color: var(--sba-muted);
+  max-width: 58ch;
+}
+
+.sba-priority__test p { margin: 0; }
+
+.sba-reassure {
+  margin: 1.1rem 0 0;
+  font-size: 0.95rem;
+  color: var(--sba-muted);
+  max-width: 58ch;
+}
+
+/* ============================== Journey rail ============================== */
+
+.sba-journey-list {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.6rem;
+  counter-reset: sba-step;
+}
+
+.sba-journey-list li {
+  counter-increment: sba-step;
+  position: relative;
+  padding: 0.8rem 0.9rem 0.8rem 2.6rem;
+  background: #f3eee5;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 1.05rem;
+}
+
+.sba-journey-list li::before {
+  content: counter(sba-step);
+  position: absolute;
+  left: 0.8rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: var(--sba-serif);
+  font-size: 1.15rem;
+  color: var(--sba-muted);
+}
+
+.sba-journey-copy {
+  margin: 0.9rem 0 0;
+  font-size: 0.95rem;
+  color: var(--sba-muted);
+}
+
+/* ============================== Actions ============================== */
+
+.sba-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;                     /* A1: explicit, and BELOW the dialog (40/50) */
+  margin: 0 calc(-1 * clamp(1rem, 4vw, 2.5rem));
+  padding: 0.75rem clamp(1rem, 4vw, 2.5rem)
+           calc(0.75rem + env(safe-area-inset-bottom, 0px));
+  background: var(--sba-paper);
+  border-top: 1px solid var(--sba-line);
+}
+
+.sba-actions__row {
+  display: flex;
+  flex-wrap: wrap;                 /* content-driven: three labels stack near ~480px */
+  gap: 0.6rem;
+}
+
+.sba-btn {
+  min-height: 48px;
+  padding: 0.6rem 1.2rem;
+  border-radius: 12px;
+  font: 700 1rem/1.2 var(--sba-sans);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.sba-btn--ghost {
+  background: var(--sba-card);
+  border: 1.5px solid var(--sba-muted);
+  color: var(--sba-ink);
+}
+
+.sba-btn--primary {
+  background: var(--sba-accent);
+  border: 1.5px solid var(--sba-accent);
+  color: #ffffff;
+  margin-left: auto;               /* DOM order = visual order preserved (row flows L->R) */
+}
+
+@media (max-width: 559px) {
+  /* content-driven: below ~560px the three labels no longer share a row */
+  .sba-actions__row { flex-direction: column; }
+  .sba-btn--primary { margin-left: 0; }
+}
+
+.sba-sim-caption {
+  margin: 0.5rem 0 0;
+  font-size: 0.8rem;
+  color: var(--sba-muted);
+}
+
+.sba-sim-caption.is-flash {
+  outline: 2px solid var(--sba-accent);
+  outline-offset: 3px;
+  color: var(--sba-accent);
+}
+
+/* ============================== Compare dialog ============================== */
+
+.sba-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(36, 30, 23, 0.5);
+  z-index: 40;
+}
+
+.sba-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.sba-dialog[hidden], .sba-dialog-backdrop[hidden] { display: none; }
+
+.sba-dialog__panel {
+  background: var(--sba-card);
+  border: 1px solid var(--sba-line);
+  border-radius: 14px;
+  max-width: 860px;
+  width: 100%;
+  max-height: 85vh;                /* wide/tall content scrolls inside the panel */
+  max-height: 85dvh;
+  overflow-y: auto;
+  padding: 1.1rem 1.25rem 1.4rem;
+}
+
+.sba-dialog__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.sba-dialog__title {
+  margin: 0;
+  font-family: var(--sba-serif);
+  font-weight: 600;
+  font-size: clamp(1.3rem, 3vw, 1.7rem);
+}
+
+.sba-sim-banner {
+  margin: 0.6rem 0 0.9rem;
+  padding: 0.5rem 0.7rem;
+  border: 1.5px dashed var(--sba-blue);
+  border-radius: 8px;
+  background: var(--sba-blue-soft);
+  color: var(--sba-blue);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.sba-compare-cols {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.9rem;
+}
+
+/* content-driven: two finalist columns hold a readable measure from ~560px */
+@media (min-width: 560px) {
+  .sba-compare-cols { grid-template-columns: 1fr 1fr; }
+}
+
+.sba-compare-col {
+  border: 1px solid var(--sba-line-soft);
+  border-radius: 10px;
+  padding: 0.9rem 1rem;
+  background: #fffef9;              /* equal treatment: identical anatomy per column */
+}
+
+.sba-compare-col h3 {
+  margin: 0;
+  font-family: var(--sba-serif);
+  font-weight: 600;
+  font-size: 1.2rem;
+}
+
+.sba-compare-col .sba-compare-brand {
+  margin: 0.15rem 0 0.6rem;
+  font-size: 0.9rem;
+  color: var(--sba-muted);
+}
+
+.sba-compare-col dl { margin: 0; }
+
+.sba-compare-col dt {
+  margin-top: 0.6rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--sba-muted);
+}
+
+.sba-compare-col dd {
+  margin: 0.15rem 0 0;
+  font-size: 0.98rem;
+}
+
+.sba-price-tier { color: var(--sba-muted); font-weight: 400; }
