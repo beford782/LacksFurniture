@@ -1078,7 +1078,7 @@ win._currentDrawerMattressId = "g3";
 win._drawerData = { g1: { reasons: [SENTINEL] } };
 win._sleepSystemState = {
   activeStep: "protection", decisions: { adjustability: SENTINEL },
-  demoPosition: SENTINEL, supportChoice: SENTINEL, pillowCandidateId: SENTINEL,
+  demoPosition: SENTINEL, supportChoice: SENTINEL, pillowCandidateId: SENTINEL, viewCandidateId: SENTINEL,
   pillowReaction: SENTINEL, pillowFeedback: SENTINEL, protectionGoal: SENTINEL,
 };
 win._profileRevealInFlight = true;
@@ -1289,7 +1289,7 @@ check("per-customer drawer match data cleared", Object.keys(win._drawerData).len
 check("every Sleep System decision field cleared",
   win._sleepSystemState.activeStep === "adjustability"
   && Object.keys(win._sleepSystemState.decisions).length === 0
-  && ["demoPosition", "supportChoice", "pillowCandidateId", "pillowReaction",
+  && ["demoPosition", "supportChoice", "pillowCandidateId", "viewCandidateId", "pillowReaction",
       "pillowFeedback", "protectionGoal"].every(k => win._sleepSystemState[k] === ""));
 check("reveal in-flight flags cleared",
   win._profileRevealInFlight === false && win._resultsRevealInFlight === false);

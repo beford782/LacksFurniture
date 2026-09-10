@@ -17,7 +17,7 @@
 // Run: node tests/mutation_sweep.mjs
 //      node tests/mutation_sweep.mjs --list     (print the manifest, run nothing)
 
-import { readFileSync, writeFileSync, mkdirSync, mkdtempSync, cpSync, rmSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdtempSync, cpSync, rmSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -179,6 +179,8 @@ const SESSION = ["tests/session_safety_check.mjs"];
 // entry names it EXPLICITLY - none may fall through to DEFAULT_SUITES, which
 // observes data-error recovery and would report a survivor as a pass.
 const SLEEP = ["tests/sleep_system_presentation_check.mjs"];
+// The rendered layout check (Chromium) - the observer of geometry.
+const LAYOUT = ["tests/sleep_plan_layout_check.py"];
 // A4.3 observers: the reduction suite owns the counts, the absence, the
 // Summary retirement and the conditional-answer invariant; the
 // quiz-presentation suite owns navigation and progress; the consultation
@@ -2613,9 +2615,11 @@ const MUTATIONS = [
   // match. Re-keying it on the relative threshold re-badges the gel pillow
   // (best on its catalog default alone) as "Recommended to try" for a back
   // sleeper - observed by the rendered P2 section of the presentation suite.
+  // (The `&& !viewing` clause is F2's, 2026-09-10: the anchor follows the
+  // shipped line.)
   ["sleep system: the hero badge keys on meetsMatchThreshold instead of matched (P2 reverted)",
-    "          : (primary.matched\n            ? sleepSystemText({ en: 'Recommended to try', es: 'Recomendado para probar' })",
-    "          : (primary.meetsMatchThreshold\n            ? sleepSystemText({ en: 'Recommended to try', es: 'Recomendado para probar' })", SLEEP],
+    "          : (primary.matched && !viewing\n            ? sleepSystemText({ en: 'Recommended to try', es: 'Recomendado para probar' })",
+    "          : (primary.meetsMatchThreshold && !viewing\n            ? sleepSystemText({ en: 'Recommended to try', es: 'Recomendado para probar' })", SLEEP],
 
   // 3.7 P3 (owner ruling 2026-08-30): the matched-first pillow rank inside
   // readSleepSystemGroups(). Neutralising the comparator restores the pre-P3
@@ -2935,6 +2939,34 @@ const MUTATIONS = [
   ["the demo builder stops refusing the retired warm-white literal",
     "    _expect(out, \"rgba(248,246,241,0.6)\", 0, \"the retired warm-white promo literal (T5)\")\n",
     "", PROMO, "tools/build_black_friday_demo.py"],
+  // --- Final-gate findings F1/F2 (Blake, mounted iPad, 2026-09-10) ----------
+  // F1: the featured image box's aspect-ratio + min-height made it 420px wide
+  // whatever its grid column measured; the layout check pins the geometry.
+  ["F1: the featured image box regains the min-height that overflowed its column (picture over text)",
+    "      width: 100%;\n      min-width: 0;\n      padding: 20px;",
+    "      min-height: 210px;\n      padding: 20px;",
+    LAYOUT, "index.html"],
+  // F2: viewing a non-recommended option.
+  ["F2: the Details control is dropped from the alternative rows",
+    "                var detailsButton = step.id === 'pillow' ? '' :",
+    "                var detailsButton = true ? '' :",
+    SLEEP, "index.html"],
+  ["F2: a view leaks into the pillow step (the Try-this model is doubled)",
+    "      var viewId = step.id !== 'pillow' ? (window._sleepSystemState.viewCandidateId || '') : '';",
+    "      var viewId = (window._sleepSystemState.viewCandidateId || '');",
+    SLEEP, "index.html"],
+  ["F2: the viewed card claims 'Recommended to try' (3.7 P2 honesty)",
+    "          : (primary.matched && !viewing",
+    "          : (primary.matched",
+    SLEEP, "index.html"],
+  ["F2: a rail step change keeps the previous step's view",
+    "        window._sleepSystemState.viewCandidateId = '';   // F2: a view is per step\n        analytics.log('sleep_system_step_viewed'",
+    "        analytics.log('sleep_system_step_viewed'",
+    SLEEP, "index.html"],
+  ["F2: the wipe forgets the view",
+    "          viewCandidateId: '',\n          pillowReaction: '',\n",
+    "          pillowReaction: '',\n",
+    SESSION.concat(SLEEP), "index.html"],
   // --- Device rehearsal mode of the pricing harness (tools/serve_pricing_preview.py)
   ["device rehearsal: a public address is accepted as a device bind (RFC 1918 membership dropped)",
     "    if not any(ip in net for net in RFC1918):",
@@ -3008,12 +3040,14 @@ for (const d of ["tests", "data", "docs", "tools", "incoming", "demo", ".github"
 // manifest.json joins the copy set because the pricing harness check watches it
 // (the device rehearsal serves it) and hashes it before and after its cycle.
 for (const f of ["index.html", "Code.gs", "CLAUDE.md", "README.md", "build-data.ps1", "AGENTS.md", "manifest.json"]) cpSync(join(root, f), join(sandbox, f));
-// The committed QR asset joins the copy set (alone, not the whole images
-// tree) because the QR payload suite decodes it and compares a fresh
-// generation against it byte for byte; the sandbox copy is what the suite
-// reads, so the real asset is never touched by a mutation run.
-mkdirSync(join(sandbox, "images"), { recursive: true });
-cpSync(join(root, "images", "qr-financing.svg"), join(sandbox, "images", "qr-financing.svg"));
+// The images tree (about 3 MB) joins the copy set: the QR payload suite
+// decodes the committed QR asset and compares a fresh generation against
+// it byte for byte, and the rendered layout check (the LAYOUT observer of
+// the F1 geometry entry, 2026-09-10) loads the mattress and accessory
+// photographs for its banner-crop and featured-card pins. The sandbox
+// copies are what the suites read, so no real asset is ever touched by a
+// mutation run.
+cpSync(join(root, "images"), join(sandbox, "images"), { recursive: true });
 
 // Per-target pristine sources. Entries name their target with a fifth field;
 // index.html is the default. Every mutated target is restored before the next

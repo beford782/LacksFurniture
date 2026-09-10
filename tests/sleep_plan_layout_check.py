@@ -409,9 +409,19 @@ async (ARGS) => {
   const back = rect(document.getElementById('sleepSystemBack'));
   const review = rect(document.getElementById('sleepSystemReviewTop'));
   const doc = document.documentElement;
+  // Final-gate finding F1 (Blake, mounted iPad landscape, 2026-09-10): the
+  // featured card's picture ran under its text. The image box and the body are
+  // grid neighbours; the box (and the img inside it) must end before the body
+  // starts, and the box must stay inside the card.
+  const card = document.querySelector('#sleepSystemMain .sleep-system__featured');
+  const box = card && card.querySelector('.sleep-system__featured-image');
+  const img = box && box.querySelector('img');
+  const body = card && card.querySelector('.sleep-system__featured-body');
+  const featured = card ? { card: rect(card), box: rect(box), img: rect(img), body: rect(body) } : null;
   return {
     barVisible: !!bar, title, back, review, bar,
     barOverTitle: inter(bar, title), barOverBack: inter(bar, back), barOverReview: inter(bar, review),
+    featured,
     activeElement: document.activeElement && document.activeElement.id,
     titleText: (document.getElementById('sleepSystemTitle') || {}).textContent || '',
     scrollWidth: doc.scrollWidth, clientWidth: doc.clientWidth,
@@ -443,6 +453,19 @@ def run_sleep_system_header(browser, port, name, width, height, lang, shots_dir)
     check("the utility bar does not intersect the top Review Sleep Plan control",
           not r["barOverReview"], f"bar={r['bar']} review={r['review']}")
     check("no horizontal document scroll", r["scrollWidth"] <= r["clientWidth"], f"{r['scrollWidth']}/{r['clientWidth']}")
+    f = r.get("featured")
+    check("F1: the featured card renders with an image box, an image and a body",
+          bool(f and f["card"] and f["box"] and f["img"] and f["body"]), str(f)[:160])
+    if f and f["box"] and f["img"] and f["body"] and f["card"]:
+        check("F1: the image box ends before the body column starts (no picture over text)",
+              f["box"]["x"] + f["box"]["w"] <= f["body"]["x"] + 0.5,
+              f"box right={f['box']['x'] + f['box']['w']:.0f} body left={f['body']['x']:.0f}")
+        check("F1: the image itself stays inside its box and before the body",
+              f["img"]["x"] + f["img"]["w"] <= f["body"]["x"] + 0.5 and f["img"]["x"] >= f["box"]["x"] - 0.5,
+              f"img right={f['img']['x'] + f['img']['w']:.0f} body left={f['body']['x']:.0f}")
+        check("F1: the image box stays inside the card",
+              f["box"]["x"] + f["box"]["w"] <= f["card"]["x"] + f["card"]["w"] + 0.5,
+              f"box right={f['box']['x'] + f['box']['w']:.0f} card right={f['card']['x'] + f['card']['w']:.0f}")
     page.close()
 
 
