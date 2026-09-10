@@ -13,15 +13,23 @@
 //
 //   * off: pricing absent / emergency-disabled / display-disabled / surface
 //     flag false -> hidden, empty, no attribute — on every surface;
-//   * price-unavailable: price axis not resolved, freshness axis not 'fresh'
-//     (the EXECUTED stale-refusal contract — stale resolves numerically in
-//     the resolver and is refused here), or eligibility not 'eligible' -> no
-//     numeric anywhere, only the governed state copy;
-//   * available: the resolved amount, localized, with the governed
-//     assumptions and disclosures adjacent; calculation and threshold carried
-//     as STATUS only — no payment figure, no per-period text, ever;
+//   * off ALSO (Codex correction 2026-09-09, the roadmap's state table
+//     restored): no applicable catalog record / SKU; freshness not 'fresh'
+//     (stale, not-judgeable); eligibility not 'eligible' (activation-
+//     unapproved). Stale and unapproved data stays inert internal data —
+//     no slot, no copy, no number: the EXECUTED stale-refusal contract now
+//     refuses the surface, not merely the number;
+//   * price-unavailable: ONLY fresh AND eligible data whose admitted price
+//     fails the runtime money admission (safe-integer minor units, positive,
+//     at most the governed maximum, currency exactly USD — Intl.NumberFormat
+//     is formatting, never validation: it accepts 'XXX') or cannot be
+//     formatted -> no numeric anywhere, only the governed state copy;
+//   * available: resolved + fresh + eligible + admitted, localized, with the
+//     governed assumptions and disclosures adjacent; calculation and
+//     threshold carried as STATUS only — no payment figure, no per-period
+//     text, ever;
 //   * SKU identity comes from the CATALOG record (m.skus[size]); no skus, a
-//     wrong size or a mismatched SKU resolves nothing;
+//     wrong size or a mismatched SKU is OFF (nothing to ask);
 //   * containment: the resolver is called from exactly one line, inside the
 //     marked gate block; the shipped pricing config is read from exactly one
 //     line, inside the gate block; nothing outside the two marked blocks
@@ -191,7 +199,7 @@ function makeEnv({ pricing, financing, lang = "en", nowMs = CLOCK, mutate = null
     "window", "localStorage", "sessionStorage", "fetch", "analytics",
     "answers", "resolveFinalistState",
     `"use strict";\n${src}\nreturn { gate: pricePresentationFor, render: renderDrawerPrice,
-       surface: pricingSurfaceEnabled, sku: pricingSkuFor, fmt: formatPriceAmount, slot: priceSlotFor,
+       surface: pricingSurfaceEnabled, sku: pricingSkuFor, fmt: formatPriceAmount, money: priceMoneyValid, slot: priceSlotFor,
        status: priceStatusHtmlFor };`)(
     doc, STORE_CONFIG, lang, () => STORE_CONFIG.financing, (k) => "DICT:" + k, DATE_SHIM,
     win, undefined, undefined, undefined, undefined, answers,
@@ -208,6 +216,13 @@ const ACTIVE = (over = {}) => {
   return p;
 };
 const M = (over = {}) => Object.assign({ id: "g6", name: "Fixture Six", skus: { queen: "FIXTURE-0001" } }, over);
+// The independently demonstrated price-unavailable fixture: everything the
+// resolver judges is valid, fresh and eligible, but the currency is 'XXX' —
+// an ISO 4217 code Intl.NumberFormat formats happily and the governed
+// validator refuses (pricing.currency must be USD). The resolver resolves it
+// (it only requires entry currency === pricing currency); the gate's runtime
+// money admission refuses it; the surface may then say only "unavailable".
+const UNADMITTED = (over = {}) => { const p = ACTIVE(over); p.currency = "XXX"; for (const e of p.products) e.price.currency = "XXX"; return p; };
 const SURFACES = ["drawer", "sleepSystem", "results", "handoff", "sleepPlan"];
 const SIZES = ["twin", "twin_xl", "full", "queen", "king", "cal_king"];
 const isOff = (r) => r && r.state === "off" && r.amountMinor === null && r.text === "" && r.notes.length === 0;
@@ -324,43 +339,110 @@ section("Fixture, opened in memory: the consumption contract");
     e3.api.render(M(), "queen");
     return isOff(e3.api.gate("drawer", M(), "queen", null)) && e3.el("drawerPrice").hidden === true;
   })());
-  // The executed stale-refusal contract.
+  // The executed stale-refusal contract: stale is INERT — off, not a message.
   const stale = makeEnv({ pricing: ACTIVE(), financing: F(), nowMs: CLOCK + 30 * 86400000 });
   const rs_ = stale.api.gate("drawer", M(), "queen", null);
-  check("STALE (clock +30d): price-unavailable — the number the resolver still carries is REFUSED here",
-    rs_.state === "price-unavailable" && rs_.amountMinor === null && rs_.text === fx.pricing.presentation.states["price-unavailable"].en);
+  check("STALE (clock +30d): OFF — the number the resolver still carries reaches no surface, and neither does any copy",
+    isOff(rs_));
   const limit = CLOCK + fx.pricing.freshness.maxAgeDays * 86400000 - (CLOCK - Date.parse(fx.pricing.products[0].evidence.verifiedAt));
-  check("boundary: at the freshness limit -> available; one second past -> price-unavailable",
+  check("boundary: at the freshness limit -> available; one second past -> OFF",
     makeEnv({ pricing: ACTIVE(), financing: F(), nowMs: limit }).api.gate("drawer", M(), "queen", null).state === "available"
-    && makeEnv({ pricing: ACTIVE(), financing: F(), nowMs: limit + 1000 }).api.gate("drawer", M(), "queen", null).state === "price-unavailable");
-  // Eligibility withheld.
+    && isOff(makeEnv({ pricing: ACTIVE(), financing: F(), nowMs: limit + 1000 }).api.gate("drawer", M(), "queen", null)));
+  check("not-judgeable (no governed cadence) -> OFF",
+    (() => { const p = ACTIVE(); p.freshness.maxAgeDays = null; return isOff(makeEnv({ pricing: p, financing: F() }).api.gate("drawer", M(), "queen", null)); })());
+  // Eligibility withheld: activation-unapproved is INERT — off, not a message.
   const notEligible = ACTIVE();
   notEligible.presentation.approvals.legal = { status: "unapproved", by: "", at: null };
   const rn = makeEnv({ pricing: notEligible, financing: F() }).api.gate("drawer", M(), "queen", null);
-  check("eligibility withheld (legal approval missing) -> price-unavailable, no numeric",
-    rn.state === "price-unavailable" && rn.amountMinor === null && noNumeric(rn.text));
+  check("eligibility withheld (legal approval missing) -> OFF, no copy, no numeric", isOff(rn));
   const noClear = ACTIVE();
   noClear.products[0].clearance = { status: "not-cleared", attestedBy: "", attestedAt: null, scope: null };
-  check("eligibility withheld (clearance not attested) -> price-unavailable",
-    makeEnv({ pricing: noClear, financing: F() }).api.gate("drawer", M(), "queen", null).state === "price-unavailable");
-  // SKU identity from the catalog.
-  check("no skus map on the mattress -> price-unavailable", env.api.gate("drawer", M({ skus: undefined }), "queen", null).state === "price-unavailable");
-  check("wrong size (king asked, queen priced) -> price-unavailable", env.api.gate("drawer", M(), "king", null).state === "price-unavailable");
-  check("size absent -> price-unavailable", env.api.gate("drawer", M(), undefined, null).state === "price-unavailable");
-  check("mismatched SKU -> price-unavailable", env.api.gate("drawer", M({ skus: { queen: "OTHER-SKU" } }), "queen", null).state === "price-unavailable");
-  check("blank SKU -> price-unavailable", env.api.gate("drawer", M({ skus: { queen: "   " } }), "queen", null).state === "price-unavailable");
-  check("different product id -> price-unavailable", env.api.gate("drawer", M({ id: "g7" }), "queen", null).state === "price-unavailable");
+  check("eligibility withheld (clearance not attested) -> OFF",
+    isOff(makeEnv({ pricing: noClear, financing: F() }).api.gate("drawer", M(), "queen", null)));
+  // SKU identity from the catalog: no applicable record -> OFF (nothing to ask).
+  check("no skus map on the mattress -> OFF", isOff(env.api.gate("drawer", M({ skus: undefined }), "queen", null)));
+  check("wrong size (king asked, queen priced) -> OFF", isOff(env.api.gate("drawer", M(), "king", null)));
+  check("size absent -> OFF", isOff(env.api.gate("drawer", M(), undefined, null)));
+  check("mismatched SKU -> OFF", isOff(env.api.gate("drawer", M({ skus: { queen: "OTHER-SKU" } }), "queen", null)));
+  check("blank SKU -> OFF", isOff(env.api.gate("drawer", M({ skus: { queen: "   " } }), "queen", null)));
+  check("different product id -> OFF", isOff(env.api.gate("drawer", M({ id: "g7" }), "queen", null)));
   check("a mattress without an id -> OFF (nothing to ask)", isOff(env.api.gate("drawer", M({ id: undefined }), "queen", null)));
-  // Currency formatting fails closed.
-  check("formatter: whole dollars drop cents; cents kept; non-positive and bad currency -> ''",
-    env.api.fmt(369900, "USD") === "$3,699" && env.api.fmt(369950, "USD") === "$3,699.50"
-    && env.api.fmt(0, "USD") === "" && env.api.fmt(100, "") === "" && env.api.fmt(100, "NOT-A-CODE") === "");
-  // "US" is not an ISO 4217 code: Intl throws, the formatter returns '', and
-  // the gate fails closed even though the resolver resolved a number.
+  // The independently demonstrated price-unavailable state: fresh + eligible,
+  // resolved by the resolver, refused by the runtime money admission.
+  const ru = makeEnv({ pricing: UNADMITTED(), financing: F() }).api.gate("drawer", M(), "queen", null);
+  check("fresh + eligible + resolved but currency 'XXX' (Intl formats it; the governed validator refuses it) -> price-unavailable: governed copy, no number",
+    ru.state === "price-unavailable" && ru.amountMinor === null && ru.currency === null
+    && ru.text === fx.pricing.presentation.states["price-unavailable"].en && noNumeric(ru.text) && ru.notes.length === 0);
+  check("the same document, stale as well -> OFF (freshness gates visibility before admission is judged)",
+    isOff(makeEnv({ pricing: UNADMITTED(), financing: F(), nowMs: CLOCK + 30 * 86400000 }).api.gate("drawer", M(), "queen", null)));
+  check("the same document, unapproved as well -> OFF",
+    (() => { const p = UNADMITTED(); p.presentation.approvals.legal = { status: "unapproved", by: "", at: null };
+      return isOff(makeEnv({ pricing: p, financing: F() }).api.gate("drawer", M(), "queen", null)); })());
+  // "US" is not an ISO 4217 code at all: Intl would throw; the admission
+  // refuses it first. Fresh + eligible -> price-unavailable.
   const badCur = ACTIVE(); badCur.currency = "US"; badCur.products[0].price.currency = "US";
   const bc = makeEnv({ pricing: badCur, financing: F() }).api.gate("drawer", M(), "queen", null);
-  check("an unformattable currency resolves in the resolver but the gate reports price-unavailable",
+  check("a malformed currency ('US') resolves in the resolver but the gate reports price-unavailable",
     bc.state === "price-unavailable" && bc.amountMinor === null);
+}
+
+// ---------------------------------------------------------------------------
+section("Runtime money admission (Codex correction 2026-09-09): the validator's rules, at the gate");
+// ---------------------------------------------------------------------------
+{
+  const env = makeEnv({ pricing: ACTIVE(), financing: F() });
+  const ok = (a, c) => env.api.money(a, c) === true;
+  const no = (a, c) => env.api.money(a, c) === false;
+  check("admits: 1, 369900, exactly the governed maximum 1,000,000,000 minor units, USD",
+    ok(1, "USD") && ok(369900, "USD") && ok(1000000000, "USD"));
+  check("refuses: one minor unit above the maximum", no(1000000001, "USD"));
+  check("refuses: zero and negative", no(0, "USD") && no(-1, "USD") && no(-369900, "USD"));
+  check("refuses: fractional minor units (1234.5, 0.5, 369900.0001)", no(1234.5, "USD") && no(0.5, "USD") && no(369900.0001, "USD"));
+  check("refuses: non-safe integers, Infinity, NaN, numeric strings, booleans, null",
+    no(9007199254740992, "USD") && no(Infinity, "USD") && no(NaN, "USD") && no("369900", "USD") && no(true, "USD") && no(null, "USD"));
+  check("refuses: currency 'XXX' and 'XTS' (Intl accepts both), 'usd', 'US$', 'EUR', 'MXN', '', null, an object",
+    no(369900, "XXX") && no(369900, "XTS") && no(369900, "usd") && no(369900, "US$") && no(369900, "EUR") && no(369900, "MXN")
+    && no(369900, "") && no(369900, null) && no(369900, { toString: () => "USD" }));
+  check("Intl.NumberFormat alone would format 'XXX' — the admission, not the formatter, is the currency check",
+    (() => { try { return /3,699/.test(new Intl.NumberFormat("en-US", { style: "currency", currency: "XXX" }).format(3699)); } catch (e) { return false; } })()
+    && env.api.fmt(369900, "XXX") === "");
+  check("formatter: every refused case returns '' (no digit ever formatted)",
+    [[1234.5, "USD"], [1000000001, "USD"], [0, "USD"], [-100, "USD"], [369900, "XXX"], [369900, "usd"], ["369900", "USD"]]
+      .every(([a, c]) => env.api.fmt(a, c) === ""));
+  // Hostile documents through the WHOLE gate: fresh + eligible everywhere,
+  // the price mutated. The resolver's own bounds refuse most of these
+  // (unresolved -> not-judgeable -> OFF); the currency cases resolve and the
+  // admission refuses them (price-unavailable). Every case: no number.
+  const hostile = (mut) => { const p = ACTIVE(); mut(p.products[0].price, p); return makeEnv({ pricing: p, financing: F() }).api.gate("drawer", M(), "queen", null); };
+  const closed = (r) => r && r.state !== "available" && r.amountMinor === null && noNumeric(r.text || "") && (r.notes || []).length === 0;
+  const cases = [
+    ["fractional minor units", (pr) => { pr.amountMinor = 369900.5; }],
+    ["one above the maximum", (pr) => { pr.amountMinor = 1000000001; }],
+    ["zero", (pr) => { pr.amountMinor = 0; }],
+    ["negative", (pr) => { pr.amountMinor = -369900; }],
+    ["a numeric string", (pr) => { pr.amountMinor = "369900"; }],
+    ["a non-safe integer", (pr) => { pr.amountMinor = 9007199254740992; }],
+    ["currency XXX on the entry only (mismatch with pricing.currency)", (pr) => { pr.currency = "XXX"; }],
+    ["currency XXX on both", (pr, p) => { pr.currency = "XXX"; p.currency = "XXX"; }],
+    ["currency lower-case usd on both", (pr, p) => { pr.currency = "usd"; p.currency = "usd"; }],
+    ["currency EUR on both", (pr, p) => { pr.currency = "EUR"; p.currency = "EUR"; }],
+    ["currency malformed US$ on both", (pr, p) => { pr.currency = "US$"; p.currency = "US$"; }],
+  ];
+  for (const [label, mut] of cases) {
+    const r = hostile(mut);
+    check(`hostile price (${label}): fails closed — state ${r.state}, no amount, no digit`, closed(r), JSON.stringify(r));
+  }
+  check("the currency cases are the price-unavailable ones (fresh + eligible + resolved, admission refused); the amount cases are OFF (unresolved)",
+    hostile((pr, p) => { pr.currency = "XXX"; p.currency = "XXX"; }).state === "price-unavailable"
+    && hostile((pr, p) => { pr.currency = "EUR"; p.currency = "EUR"; }).state === "price-unavailable"
+    && isOff(hostile((pr) => { pr.amountMinor = 1000000001; })) && isOff(hostile((pr) => { pr.amountMinor = 369900.5; })));
+  check("the governed maximum is exactly the validator's PRICING_AMOUNT_MINOR_MAX and USD the validator's only currency",
+    (() => { const v = readFileSync(join(root, "tools", "validation.py"), "utf8");
+      return /PRICING_AMOUNT_MINOR_MAX\s*=\s*10 \*\* 9(?![0-9])/.test(v) && /PRICING_CURRENCIES\s*=\s*frozenset\(\{"USD"\}\)/.test(v)
+        && gateBlock.includes("var PRICE_AMOUNT_MINOR_MAX = 1000000000;") && gateBlock.includes("var PRICE_CURRENCIES = ['USD'];"); })());
+  check("a price at the maximum with the fixture otherwise intact -> available ($10,000,000)",
+    (() => { const p = ACTIVE(); p.products[0].price.amountMinor = 1000000000; p.products[0].clearance.scope.amountMinor = 1000000000;
+      const r = makeEnv({ pricing: p, financing: F() }).api.gate("drawer", M(), "queen", null); return r.state === "available" && r.text === "$10,000,000"; })());
 }
 
 // ---------------------------------------------------------------------------
@@ -372,9 +454,11 @@ section("Spanish: copy and formatting follow the active language");
   check("es: amount localized (3,699 grouped) without cents or a per-period suffix", /3[.,]699/.test(r.text) && noNumeric(r.notes.join(" ")));
   check("es: assumptions and disclosures in Spanish",
     r.notes[0] === fx.pricing.presentation.assumptions[0].es && r.notes[1] === fx.pricing.presentation.disclosures[0].es);
-  const esStale = makeEnv({ pricing: ACTIVE(), financing: F(), lang: "es", nowMs: CLOCK + 30 * 86400000 });
+  const esUnadmitted = makeEnv({ pricing: UNADMITTED(), financing: F(), lang: "es" });
   check("es: the unavailable state copy is the Spanish governed string",
-    esStale.api.gate("drawer", M(), "queen", null).text === fx.pricing.presentation.states["price-unavailable"].es);
+    esUnadmitted.api.gate("drawer", M(), "queen", null).text === fx.pricing.presentation.states["price-unavailable"].es);
+  check("es: stale and unapproved are OFF in Spanish too (no copy in either language)",
+    isOff(makeEnv({ pricing: ACTIVE(), financing: F(), lang: "es", nowMs: CLOCK + 30 * 86400000 }).api.gate("drawer", M(), "queen", null)));
 }
 
 // ---------------------------------------------------------------------------
@@ -395,8 +479,17 @@ section("Drawer renderer: what actually lands in the slot");
   dark.api.render(M(), "queen");
   const b2 = dark.el("drawerPrice");
   check("off: hidden, EMPTY, no state attribute", b2.hidden === true && b2.innerHTML === "" && b2.getAttribute("data-price-state") === null);
-  // Unavailable: copy only, no digit.
-  const stale = makeEnv({ pricing: ACTIVE(), financing: F(), nowMs: CLOCK + 30 * 86400000 });
+  // Stale after available: the slot is cleared, not merely hidden (inert).
+  const staleR = makeEnv({ pricing: ACTIVE(), financing: F(), nowMs: CLOCK + 30 * 86400000 });
+  staleR.api.render(M(), "queen");
+  check("stale: hidden, EMPTY, no state attribute (nothing a customer can see)",
+    staleR.el("drawerPrice").hidden === true && staleR.el("drawerPrice").innerHTML === "" && staleR.el("drawerPrice").getAttribute("data-price-state") === null);
+  const unappR = (() => { const p = ACTIVE(); p.presentation.approvals.legal = { status: "unapproved", by: "", at: null }; return makeEnv({ pricing: p, financing: F() }); })();
+  unappR.api.render(M(), "queen");
+  check("activation-unapproved: hidden, EMPTY, no state attribute",
+    unappR.el("drawerPrice").hidden === true && unappR.el("drawerPrice").innerHTML === "");
+  // Unavailable (fresh + eligible, admission refused): copy only, no digit.
+  const stale = makeEnv({ pricing: UNADMITTED(), financing: F() });
   stale.api.render(M(), "queen");
   const b3 = stale.el("drawerPrice");
   check("price-unavailable: visible with the governed copy only, no numeric, no notes",
@@ -404,8 +497,8 @@ section("Drawer renderer: what actually lands in the slot");
     && b3.innerHTML.indexOf(fx.pricing.presentation.states["price-unavailable"].en) !== -1
     && noNumeric(b3.innerHTML) && b3.innerHTML.indexOf("drawer-price__note") === -1);
   // Unavailable with NO governed copy: nothing renders (blank copy fails closed).
-  const noCopy = ACTIVE(); noCopy.presentation.states = {};
-  const nc = makeEnv({ pricing: noCopy, financing: F(), nowMs: CLOCK + 30 * 86400000 });
+  const noCopy = UNADMITTED(); noCopy.presentation.states = {};
+  const nc = makeEnv({ pricing: noCopy, financing: F() });
   nc.api.render(M(), "queen");
   check("price-unavailable with blank state copy -> hidden and empty (never a blank box)",
     nc.el("drawerPrice").hidden === true && nc.el("drawerPrice").innerHTML === "");
@@ -445,12 +538,13 @@ section("Slot builder (slice 2.2b): the four remaining surfaces");
   }
   check("only the named surface opens: results on, sleepPlan off -> sleepPlan slot ''",
     makeEnv({ pricing: ACTIVE({ surfaces: { results: true } }), financing: F() }).api.slot("sleepPlan", M(), "x") === "");
-  check("the size comes from the customer's answer: no answer -> unavailable copy only, never a number, even with the gate open",
-    (() => { const h = makeEnv({ pricing: ACTIVE({ surfaces: { results: true } }), financing: F(), answers: {} }).api.slot("results", M(), "x");
-      return h.indexOf('data-price-state="price-unavailable"') !== -1 && noNumeric(h); })());
-  check("the size comes from the customer's answer: king answered, queen priced -> '' (unavailable copy only, no number)",
-    (() => { const h = makeEnv({ pricing: ACTIVE({ surfaces: { results: true } }), financing: F(), answers: { mattress_size: "king" } }).api.slot("results", M(), "x");
-      return h.indexOf('data-price-state="price-unavailable"') !== -1 && noNumeric(h); })());
+  check("the size comes from the customer's answer: no answer -> '' (no applicable SKU: OFF, never a number), even with the gate open",
+    makeEnv({ pricing: ACTIVE({ surfaces: { results: true } }), financing: F(), answers: {} }).api.slot("results", M(), "x") === "");
+  check("the size comes from the customer's answer: king answered, queen priced -> '' (OFF)",
+    makeEnv({ pricing: ACTIVE({ surfaces: { results: true } }), financing: F(), answers: { mattress_size: "king" } }).api.slot("results", M(), "x") === "");
+  check("the slot carries the governed copy ONLY in the price-unavailable state (fresh + eligible, admission refused)",
+    (() => { const h = makeEnv({ pricing: UNADMITTED({ surfaces: { results: true } }), financing: F() }).api.slot("results", M(), "x");
+      return h.indexOf('data-price-state="price-unavailable"') !== -1 && h.indexOf(fx.pricing.presentation.states["price-unavailable"].en) !== -1 && noNumeric(h) && h.indexOf("__note") === -1; })());
   check("a hostile class name falls back to the default base", on.api.slot("results", M(), "x\" onmouseover=\"y").indexOf('class="price-slot"') !== -1);
   // Slice 2.2c repair: the finalist surfaces hand the gate a PROJECTION (a
   // saved pick carries no skus); the SKU is read from the catalog record of
@@ -462,21 +556,23 @@ section("Slot builder (slice 2.2b): the four remaining surfaces");
     check("projection without skus resolves through the catalog record of the same id",
       withIndex.api.slot("sleepSystem", projection, "x").indexOf('data-price-state="available"') !== -1);
     const noIndex = makeEnv({ pricing: ACTIVE({ surfaces: { sleepSystem: true } }), financing: F(), win: { _drawerData: null } });
-    check("projection without skus and no catalog index -> unavailable copy only",
-      noIndex.api.slot("sleepSystem", projection, "x").indexOf('data-price-state="price-unavailable"') !== -1);
+    check("projection without skus and no catalog index -> '' (OFF)",
+      noIndex.api.slot("sleepSystem", projection, "x") === "");
     const wrongId = makeEnv({ pricing: ACTIVE({ surfaces: { sleepSystem: true } }), financing: F(), win: { _drawerData: { g6: { m: M({ id: "g7" }) } } } });
-    check("an index entry whose record id disagrees is ignored (no SKU borrowed across ids)",
-      wrongId.api.slot("sleepSystem", projection, "x").indexOf('data-price-state="price-unavailable"') !== -1);
+    check("an index entry whose record id disagrees is ignored (no SKU borrowed across ids) -> ''",
+      wrongId.api.slot("sleepSystem", projection, "x") === "");
     check("a projection that carries its own skus map is used as-is (index not consulted)",
       makeEnv({ pricing: ACTIVE({ surfaces: { sleepSystem: true } }), financing: F(), win: { _drawerData: { g6: { m: M({ skus: { queen: "OTHER" } }) } } } })
         .api.slot("sleepSystem", M(), "x").indexOf('data-price-state="available"') !== -1);
   }
-  check("stale on an open surface: unavailable copy only, no number",
-    (() => { const h = makeEnv({ pricing: ACTIVE({ surfaces: { results: true } }), financing: F(), nowMs: CLOCK + 30 * 86400000 }).api.slot("results", M(), "x");
-      return h.indexOf(fx.pricing.presentation.states["price-unavailable"].en) !== -1 && noNumeric(h) && h.indexOf("__note") === -1; })());
-  check("blank state copy on an open surface -> '' (never an empty box)",
-    (() => { const p = ACTIVE({ surfaces: { results: true } }); p.presentation.states = {};
-      return makeEnv({ pricing: p, financing: F(), nowMs: CLOCK + 30 * 86400000 }).api.slot("results", M(), "x") === ""; })());
+  check("stale on an open surface: '' (inert — no copy, no number, no box)",
+    makeEnv({ pricing: ACTIVE({ surfaces: { results: true } }), financing: F(), nowMs: CLOCK + 30 * 86400000 }).api.slot("results", M(), "x") === "");
+  check("activation-unapproved on an open surface: ''",
+    (() => { const p = ACTIVE({ surfaces: { results: true } }); p.presentation.approvals.legal = { status: "unapproved", by: "", at: null };
+      return makeEnv({ pricing: p, financing: F() }).api.slot("results", M(), "x") === ""; })());
+  check("blank state copy on an open surface (price-unavailable) -> '' (never an empty box)",
+    (() => { const p = UNADMITTED({ surfaces: { results: true } }); p.presentation.states = {};
+      return makeEnv({ pricing: p, financing: F() }).api.slot("results", M(), "x") === ""; })());
 }
 
 // ---------------------------------------------------------------------------
@@ -501,19 +597,22 @@ section("Accessory records (provenance): a string sku, no size, the same gate");
       return h.indexOf('data-price-state="available"') !== -1 && h.indexOf("$149") !== -1 && (h.match(/__note/g) || []).length === 2; })());
   check("accessory: the customer's mattress size is ignored (king answered, still available)",
     makeEnv({ pricing: withAccessory(), financing: F(), answers: { mattress_size: "king" } }).api.slot("sleepSystem", ACC(), "x").indexOf('data-price-state="available"') !== -1);
-  check("accessory without a sku -> unavailable copy only (the catalog ships none)",
-    env.api.slot("sleepSystem", ACC({ sku: undefined }), "x").indexOf('data-price-state="price-unavailable"') !== -1);
-  check("accessory with a mismatched sku -> unavailable", env.api.slot("sleepSystem", ACC({ sku: "OTHER" }), "x").indexOf('data-price-state="price-unavailable"') !== -1);
-  check("accessory with a blank or untrimmed sku -> unavailable",
-    env.api.slot("sleepSystem", ACC({ sku: "  " }), "x").indexOf('data-price-state="price-unavailable"') !== -1
-    && env.api.slot("sleepSystem", ACC({ sku: " " + ACC_SKU }), "x").indexOf('data-price-state="price-unavailable"') !== -1);
+  check("accessory without a sku -> '' (OFF: the catalog ships none, so nothing renders and the legacy line stays)",
+    env.api.slot("sleepSystem", ACC({ sku: undefined }), "x") === "");
+  check("accessory with a mismatched sku -> ''", env.api.slot("sleepSystem", ACC({ sku: "OTHER" }), "x") === "");
+  check("accessory with a blank or untrimmed sku -> ''",
+    env.api.slot("sleepSystem", ACC({ sku: "  " }), "x") === "" && env.api.slot("sleepSystem", ACC({ sku: " " + ACC_SKU }), "x") === "");
+  check("accessory, fresh + eligible, currency XXX -> the governed unavailable copy (the one state that shows it), no number",
+    (() => { const p = withAccessory(); p.currency = "XXX"; for (const e of p.products) e.price.currency = "XXX";
+      const h = makeEnv({ pricing: p, financing: F() }).api.slot("sleepSystem", ACC(), "x");
+      return h.indexOf('data-price-state="price-unavailable"') !== -1 && noNumeric(h); })());
   check("accessory on a surface whose flag is off -> ''", env.api.slot("results", ACC(), "x") === "");
   check("shipped config: every shipped accessory -> '' on the sleepSystem surface",
     (() => { const e = makeEnv({ pricing: shipped.pricing, financing: shipped.financing });
       const cat = JSON.parse(readFileSync(join(root, "data", "accessories.json"), "utf8"));
       return cat.length > 0 && cat.every((a) => !("sku" in a) && e.api.slot("sleepSystem", a, "x") === ""); })());
   check("a mattress record is never treated as an accessory (the skus map wins over a stray sku string)",
-    env.api.gate("sleepSystem", M({ sku: ACC_SKU, skus: { queen: "WRONG" } }), "queen", null).state === "price-unavailable"
+    isOff(env.api.gate("sleepSystem", M({ sku: ACC_SKU, skus: { queen: "WRONG" } }), "queen", null))
     && makeEnv({ pricing: ACTIVE({ surfaces: { sleepSystem: true } }), financing: F() }).api.gate("sleepSystem", M({ sku: "x" }), "queen", null).state === "available");
   globalThis.__ACC = { withAccessory, ACC, ACC_SKU };
 }
@@ -598,8 +697,8 @@ section("Totality: hostile inputs never throw and never admit a number");
   }
   check("hostile mattress/size/opts: every call returns a non-available record without throwing", ok === hostile.length * 4);
   const hostileCfg = makeEnv({ pricing: { enabled: true, displayEnabled: true, surfaces: { drawer: true }, presentation: 5, products: "nope" }, financing: F() });
-  check("hostile pricing config: price-unavailable, no throw",
-    (() => { try { return hostileCfg.api.gate("drawer", M(), "queen", null).state === "price-unavailable"; } catch (e) { return false; } })());
+  check("hostile pricing config: OFF (nothing resolves, nothing is judgeable), no throw",
+    (() => { try { return isOff(hostileCfg.api.gate("drawer", M(), "queen", null)); } catch (e) { return false; } })());
 }
 
 // ---------------------------------------------------------------------------
@@ -614,7 +713,8 @@ function mutate(find, replace) {
 }
 {
   const GATE_OFF = "      if (!p || p.enabled !== true || p.displayEnabled !== true || !pricingSurfaceEnabled(surface)) return off;";
-  const ADMIT = "      var admitted = !!(r && r.price && r.price.status === 'resolved'\n        && r.freshness && r.freshness.status === 'fresh'\n        && r.eligibility && r.eligibility.status === 'eligible');";
+  const VISIBLE = "      if (!fresh || !eligible) return off;";
+  const ADMISSION = "      if (!priceMoneyValid(amountMinor, currency)) return '';";
   const lf = (s) => s.replace(/\r\n/g, "\n");
   const withLf = (m) => (src) => m(lf(src));
   // M1: displayEnabled ignored -> the dark fixture becomes available.
@@ -622,12 +722,14 @@ function mutate(find, replace) {
     const e = makeEnv({ pricing: (() => { const p = P(); p.surfaces.drawer = true; return p; })(), financing: F(),
       mutate: withLf(mutate(GATE_OFF, "      if (!p || p.enabled !== true || !pricingSurfaceEnabled(surface)) return off;")) });
     // Defence in depth: even with the gate's own displayEnabled check gone,
-    // the resolver's eligibility axis refuses the number (not-eligible while
-    // displayEnabled is false) — the mutant leaves OFF but never reaches
-    // 'available'. Both facts are asserted: the OFF probe fails, and no number.
+    // the resolver's eligibility axis withholds (not-eligible while
+    // displayEnabled is false) and the restored contract turns that into OFF
+    // — the mutant is behaviourally masked. It is observed by the contract
+    // check's source pin instead (tests/pricing_contract_check.py names the
+    // sweep's find strings once each), which the sweep entry also names.
     const m1 = e.api.gate("drawer", M(), "queen", null);
-    check("M1 displayEnabled ignored -> the dark-fixture OFF probe FAILS on the mutant (and the resolver still withholds the number)",
-      m1.state === "price-unavailable" && m1.amountMinor === null);
+    check("M1 displayEnabled ignored -> still OFF through the resolver's eligibility axis (defence in depth; the sweep observes this mutant by source pin)",
+      isOff(m1));
   }
   // M2: surface flag ignored.
   {
@@ -639,20 +741,63 @@ function mutate(find, replace) {
   {
     const e = makeEnv({ pricing: ACTIVE({ enabled: false }), financing: F(),
       mutate: withLf(mutate(GATE_OFF, "      if (!p || p.displayEnabled !== true || !pricingSurfaceEnabled(surface)) return off;")) });
-    check("M3 emergency disable ignored -> the enabled-false OFF probe FAILS on the mutant", !isOff(e.api.gate("drawer", M(), "queen", null)));
+    // Emergency disable is ALSO the resolver's pricingOn: nothing resolves,
+    // freshness is not-judgeable, the restored contract says OFF — masked
+    // like M1, observed by the contract check's source pin.
+    check("M3 emergency disable ignored -> still OFF through the resolver's own emergency axis (defence in depth; source-pinned for the sweep)",
+      isOff(e.api.gate("drawer", M(), "queen", null)));
   }
-  // M4: stale admitted.
+  // M4: stale reaches a surface (freshness no longer gates visibility).
   {
     const e = makeEnv({ pricing: ACTIVE(), financing: F(), nowMs: CLOCK + 30 * 86400000,
-      mutate: withLf(mutate(ADMIT, "      var admitted = !!(r && r.price && r.price.status === 'resolved'\n        && r.eligibility && r.eligibility.status === 'eligible');")) });
-    check("M4 stale admitted -> the stale-refusal probe FAILS on the mutant", e.api.gate("drawer", M(), "queen", null).state === "available");
+      mutate: withLf(mutate(VISIBLE, "      if (!eligible) return off;")) });
+    check("M4 stale visible -> the stale OFF probe FAILS on the mutant (a number appears)", e.api.gate("drawer", M(), "queen", null).state === "available");
   }
-  // M5: eligibility ignored.
+  // M5: activation-unapproved reaches a surface (eligibility no longer gates visibility).
   {
     const ne = ACTIVE(); ne.presentation.approvals.legal = { status: "unapproved", by: "", at: null };
     const e = makeEnv({ pricing: ne, financing: F(),
-      mutate: withLf(mutate(ADMIT, "      var admitted = !!(r && r.price && r.price.status === 'resolved'\n        && r.freshness && r.freshness.status === 'fresh');")) });
-    check("M5 eligibility ignored -> the eligibility-withheld probe FAILS on the mutant", e.api.gate("drawer", M(), "queen", null).state === "available");
+      mutate: withLf(mutate(VISIBLE, "      if (!fresh) return off;")) });
+    check("M5 unapproved visible -> the eligibility OFF probe FAILS on the mutant (a number appears)", e.api.gate("drawer", M(), "queen", null).state === "available");
+  }
+  // M14: the runtime money admission is dropped (Intl formats 'XXX').
+  {
+    const e = makeEnv({ pricing: UNADMITTED(), financing: F(),
+      mutate: withLf(mutate(ADMISSION, "      if (false) return '';")) });
+    const r = e.api.gate("drawer", M(), "queen", null);
+    check("M14 money admission dropped -> the XXX price-unavailable probe FAILS on the mutant (a formatted figure appears)",
+      r.state === "available" && /3,699/.test(r.text));
+  }
+  // M15: the governed maximum is widened.
+  {
+    const p = ACTIVE(); p.products[0].price.amountMinor = 1000000001; p.products[0].clearance.scope.amountMinor = 1000000001;
+    const e = makeEnv({ pricing: p, financing: F(),
+      mutate: withLf(mutate("      if (amountMinor <= 0 || amountMinor > PRICE_AMOUNT_MINOR_MAX) return false;", "      if (amountMinor <= 0) return false;")) });
+    check("M15 maximum widened -> the one-above-maximum admission probe FAILS on the mutant",
+      e.api.money(1000000001, "USD") === true);
+  }
+  // M16: the currency list opens (any string formats).
+  {
+    const e = makeEnv({ pricing: UNADMITTED(), financing: F(),
+      mutate: withLf(mutate("      if (typeof currency !== 'string' || PRICE_CURRENCIES.indexOf(currency) === -1) return false;", "      if (typeof currency !== 'string') return false;")) });
+    check("M16 currency list opened -> the XXX admission probe FAILS on the mutant",
+      e.api.money(369900, "XXX") === true && e.api.gate("drawer", M(), "queen", null).state === "available");
+  }
+  // M17: safe-integer admission dropped (fractional minor units pass the gate's own check).
+  {
+    const e = makeEnv({ pricing: ACTIVE(), financing: F(),
+      mutate: withLf(mutate("      if (!Number.isSafeInteger(amountMinor)) return false;", "      if (typeof amountMinor !== 'number') return false;")) });
+    check("M17 safe-integer admission dropped -> the fractional admission probe FAILS on the mutant",
+      e.api.money(1234.5, "USD") === true && e.api.money(0.5, "USD") === true);
+  }
+  // M18: the no-record OFF rule dropped: masked by the resolver (an absent SKU
+  // resolves nothing -> not-judgeable -> OFF), so it is source-pinned for the
+  // sweep like M1/M3; asserted here as defence in depth.
+  {
+    const e = makeEnv({ pricing: ACTIVE(), financing: F(),
+      mutate: withLf(mutate("      if (!sku) return off;", "      if (false) return off;")) });
+    check("M18 no-record OFF rule dropped -> still OFF through the resolver (defence in depth; source-pinned for the sweep)",
+      isOff(e.api.gate("drawer", M({ skus: undefined }), "queen", null)));
   }
   // M6: the renderer prints while off.
   {
@@ -665,7 +810,8 @@ function mutate(find, replace) {
   {
     const e = makeEnv({ pricing: ACTIVE(), financing: F(),
       mutate: withLf(mutate("      var sku = pricingSkuFor(m, size);", "      var sku = 'FIXTURE-0001';")) });
-    check("M7 SKU forged -> the no-skus probe FAILS on the mutant", e.api.gate("drawer", M({ skus: undefined }), "queen", null).state === "available");
+    // The forged SKU also defeats the no-record OFF rule (the forged value is truthy).
+    check("M7 SKU forged -> the no-skus OFF probe FAILS on the mutant (a number appears)", e.api.gate("drawer", M({ skus: undefined }), "queen", null).state === "available");
   }
   // M9: the slot builder ignores OFF (emits a box in production).
   {
@@ -692,6 +838,7 @@ function mutate(find, replace) {
   {
     const e = makeEnv({ pricing: ACTIVE({ surfaces: { results: true } }), financing: F(), finalist: { kind: "chosen", item: M() }, nowMs: CLOCK + 30 * 86400000,
       mutate: withLf(mutate("      if (pres.state !== 'available') return '';", "      if (false) return '';")) });
+    // Stale is OFF now; the mutant still emits status copy beside a plan with no available price.
     check("M12 status copy ignores the price state -> the stale '' probe FAILS on the mutant",
       e.api.status("results", "synchrony-0-48", { id: "synchrony-0-48", minimumPurchase: 4200 }) !== "");
   }

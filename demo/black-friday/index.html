@@ -12658,16 +12658,28 @@
     //                     Production ships all three false, so every surface
     //                     is off on every screen; CI's operating-state lock
     //                     keeps it that way until the final activation gate.
-    //   price-unavailable the resolver's price axis is not 'resolved', OR its
-    //                     freshness axis is not 'fresh' (stale / not-judgeable
-    //                     data is inert internal data and is REFUSED here —
-    //                     the executed stale-refusal contract 2.1 left as a
-    //                     breadcrumb), OR its eligibility axis is not
-    //                     'eligible' -> no numeric anywhere; only the governed
-    //                     state copy may show, and only while the surface is on.
-    //   available         a number is admitted: the resolved amount, formatted
-    //                     for the active language, with the governed
-    //                     assumptions and disclosures adjacent to it.
+    //                     ALSO off (Codex correction, 2026-09-09 — the
+    //                     roadmap's state table, restored): no applicable
+    //                     catalog record or SKU for this product-size; the
+    //                     resolver's freshness axis absent or not 'fresh'
+    //                     (stale, not-judgeable); its eligibility axis absent
+    //                     or not 'eligible' (activation-unapproved). Stale and
+    //                     unapproved data stays inert INTERNAL data: no slot,
+    //                     no state copy, no number, no email material, no
+    //                     analytics, no persistence — nothing a customer can
+    //                     see or that could be read as "approved but hidden".
+    //   price-unavailable ONLY when freshness is 'fresh' AND eligibility is
+    //                     'eligible' but the admitted price cannot be resolved
+    //                     or safely formatted — it fails the runtime money
+    //                     admission below (safe-integer minor units, positive,
+    //                     within the governed maximum, currency exactly USD)
+    //                     or the localized formatter cannot express it -> no
+    //                     numeric anywhere; only the governed state copy may
+    //                     show, and only while the surface is on.
+    //   available         a number is admitted: resolved + fresh + eligible
+    //                     AND it passes the runtime money admission: the
+    //                     amount, formatted for the active language, with the
+    //                     governed assumptions and disclosures adjacent to it.
     // No payment figure is ever computed or shown (V1 invariant): the
     // calculation and threshold axes are carried through as STATUS only for
     // later Payment Choice alignment (slice 2.2b) and never become a number.
@@ -12741,11 +12753,28 @@
         .filter(function (s) { return typeof s === 'string' && s.length > 0; });
     }
 
-    // Minor units -> a localized currency string. Whole-dollar amounts drop
-    // the cents; anything the formatter cannot express fails closed to ''.
+    // Runtime money admission (Codex correction, 2026-09-09) — the exact
+    // mirror of tools/validation.py validate_pricing's price rules, applied
+    // BEFORE any formatting or presentation admission: amountMinor is a safe
+    // integer of minor units, strictly positive, at most the governed maximum
+    // PRICING_AMOUNT_MINOR_MAX (1,000,000,000 minor units), and the currency
+    // is exactly one of the governed codes (USD). Intl.NumberFormat below is
+    // FORMATTING only — it accepts codes such as 'XXX' and formats them —
+    // so it can never stand in for this check.
+    var PRICE_AMOUNT_MINOR_MAX = 1000000000;
+    var PRICE_CURRENCIES = ['USD'];
+    function priceMoneyValid(amountMinor, currency) {
+      if (!Number.isSafeInteger(amountMinor)) return false;
+      if (amountMinor <= 0 || amountMinor > PRICE_AMOUNT_MINOR_MAX) return false;
+      if (typeof currency !== 'string' || PRICE_CURRENCIES.indexOf(currency) === -1) return false;
+      return true;
+    }
+
+    // Minor units -> a localized currency string. Admission first (above);
+    // whole-dollar amounts drop the cents; anything the formatter cannot
+    // express fails closed to ''.
     function formatPriceAmount(amountMinor, currency) {
-      if (typeof amountMinor !== 'number' || !isFinite(amountMinor) || amountMinor <= 0) return '';
-      if (typeof currency !== 'string' || !currency) return '';
+      if (!priceMoneyValid(amountMinor, currency)) return '';
       var whole = amountMinor % 100 === 0;
       try {
         var f = new Intl.NumberFormat(currentLang === 'es' ? 'es-US' : 'en-US', {
@@ -12770,6 +12799,9 @@
       if (!m || typeof m !== 'object' || typeof m.id !== 'string') return off;
       var o = (opts && typeof opts === 'object') ? opts : {};
       var sku = pricingSkuFor(m, size);
+      // No applicable catalog record / SKU for this product-size: nothing to
+      // ask the resolver about, and nothing to show.
+      if (!sku) return off;
       var accessory = pricingIsAccessory(pricingCatalogRecord(m));
       var r = resolveDarkPricing(p, getFinancingConfig(), {
         nowMs: Date.now(),
@@ -12781,15 +12813,17 @@
       });
       var calc = (r && r.calculation && r.calculation.status) || 'unavailable';
       var thr = (r && r.threshold && r.threshold.status) || 'unknown';
-      var admitted = !!(r && r.price && r.price.status === 'resolved'
-        && r.freshness && r.freshness.status === 'fresh'
-        && r.eligibility && r.eligibility.status === 'eligible');
-      if (!admitted) {
-        return { state: 'price-unavailable', amountMinor: null, currency: null, kind: null,
-                 text: pricingStateCopy('price-unavailable'), notes: [],
-                 calculation: calc, threshold: thr };
-      }
-      var text = formatPriceAmount(r.price.amountMinor, r.price.currency);
+      // Freshness and eligibility gate VISIBILITY: anything but fresh AND
+      // eligible is inert internal data and renders nothing (off) — the
+      // roadmap's state table for stale ("nothing a customer can see") and
+      // for activation-unapproved ("nothing on any shipped/live surface").
+      var fresh = !!(r && r.freshness && r.freshness.status === 'fresh');
+      var eligible = !!(r && r.eligibility && r.eligibility.status === 'eligible');
+      if (!fresh || !eligible) return off;
+      // Fresh and eligible: the price is either admitted, or the surface may
+      // say only that a price is unavailable — never a number.
+      var resolved = !!(r && r.price && r.price.status === 'resolved');
+      var text = resolved ? formatPriceAmount(r.price.amountMinor, r.price.currency) : '';
       if (!text) {
         return { state: 'price-unavailable', amountMinor: null, currency: null, kind: null,
                  text: pricingStateCopy('price-unavailable'), notes: [],

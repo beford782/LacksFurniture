@@ -117,14 +117,19 @@ const PRICING_RESOLVER = ["tests/pricing_resolver_check.mjs"];
 // observed by its own suite, which executes the REAL gate over the shipped
 // configuration (every surface OFF) and over the governed NON-SHIPPING
 // fixture opened in memory (the consumption contract: off / price-unavailable
-// / available, the executed stale refusal, eligibility withheld, catalog SKU
-// identity, the drawer renderer). The contract suite pins each find string
-// exactly once.
+// / available; stale, not-judgeable and activation-unapproved OFF — the
+// Codex-restored contract — the fresh + eligible + unadmitted price-unavailable
+// state, the runtime money admission, catalog SKU identity, the drawer
+// renderer). The contract suite pins each find string exactly once.
 const PRICING_GATE = ["tests/pricing_presentation_check.mjs"];
 // Accessory-price provenance: the harness check is the second observer — it
 // drives the real page over the opened drill state and proves the governed
 // slot REPLACES the legacy catalog "From $" line rather than joining it.
 const PRICING_GATE_RENDERED = ["tests/pricing_presentation_check.mjs", "tests/pricing_harness_check.py"];
+// The harness itself (device rehearsal mode, Codex correction 2026-09-09):
+// its bind policy, in-memory allowlist and banner are observed by the harness
+// check alone, which drives the real server on a private address of the host.
+const PRICING_HARNESS = ["tests/pricing_harness_check.py"];
 // Payload minimisation (2026-09-09): the email-gating suite executes the real
 // accessory projection over a priced catalog record and pins its exact keys.
 const EMAIL_PACKET = ["tests/email_gating_check.mjs"];
@@ -2473,26 +2478,59 @@ const MUTATIONS = [
     "          threshold = txn >= plan.minimumPurchase ? 'met' : 'not-met';",
     PRICING_RESOLVER, "index.html"],
   // --- Phase 2.2a: the price presentation gate (index.html) -----------------
+  // Masked behaviourally since the Codex correction (the resolver's own
+  // eligibility axis withholds while displayEnabled is false and the restored
+  // contract turns that into OFF): the contract check's source pin observes it.
   ["2.2a: the gate ignores displayEnabled (the activation switch becomes decorative)",
     "      if (!p || p.enabled !== true || p.displayEnabled !== true || !pricingSurfaceEnabled(surface)) return off;",
     "      if (!p || p.enabled !== true || !pricingSurfaceEnabled(surface)) return off;",
-    PRICING_GATE, "index.html"],
+    PRICING_GATE.concat(PRICING), "index.html"],
   ["2.2a: the gate ignores the per-surface flag",
     "      if (!p || p.enabled !== true || p.displayEnabled !== true || !pricingSurfaceEnabled(surface)) return off;",
     "      if (!p || p.enabled !== true || p.displayEnabled !== true) return off;",
     PRICING_GATE, "index.html"],
+  // Masked like the displayEnabled entry (emergency disable is also the
+  // resolver's pricingOn): source-pinned.
   ["2.2a: the gate ignores emergency disable (enabled false still renders)",
     "      if (!p || p.enabled !== true || p.displayEnabled !== true || !pricingSurfaceEnabled(surface)) return off;",
     "      if (!p || p.displayEnabled !== true || !pricingSurfaceEnabled(surface)) return off;",
+    PRICING_GATE.concat(PRICING), "index.html"],
+  // Codex correction 2026-09-09: freshness and eligibility gate VISIBILITY —
+  // stale and activation-unapproved are OFF, never a message. The rendered
+  // harness observes both as well (its stale/unapproved drills expect OFF).
+  ["2.2 contract: a STALE price reaches a surface (freshness no longer gates visibility)",
+    "      if (!fresh || !eligible) return off;",
+    "      if (!eligible) return off;",
+    PRICING_GATE_RENDERED, "index.html"],
+  ["2.2 contract: an activation-unapproved price reaches a surface (eligibility no longer gates visibility)",
+    "      if (!fresh || !eligible) return off;",
+    "      if (!fresh) return off;",
+    PRICING_GATE_RENDERED, "index.html"],
+  // Codex correction 2026-09-09: the runtime money admission mirrors the
+  // governed validator; Intl.NumberFormat is formatting only.
+  ["2.2 money: the runtime admission is dropped (Intl formats currency XXX as a price)",
+    "      if (!priceMoneyValid(amountMinor, currency)) return '';",
+    "      if (false) return '';",
+    PRICING_GATE_RENDERED, "index.html"],
+  ["2.2 money: the governed maximum is widened",
+    "      if (amountMinor <= 0 || amountMinor > PRICE_AMOUNT_MINOR_MAX) return false;",
+    "      if (amountMinor <= 0) return false;",
     PRICING_GATE, "index.html"],
-  ["2.2a: the gate admits a STALE price (the inert internal number reaches a surface)",
-    "      var admitted = !!(r && r.price && r.price.status === 'resolved'\n        && r.freshness && r.freshness.status === 'fresh'\n        && r.eligibility && r.eligibility.status === 'eligible');",
-    "      var admitted = !!(r && r.price && r.price.status === 'resolved'\n        && r.eligibility && r.eligibility.status === 'eligible');",
+  ["2.2 money: the currency list opens (any string is a currency)",
+    "      if (typeof currency !== 'string' || PRICE_CURRENCIES.indexOf(currency) === -1) return false;",
+    "      if (typeof currency !== 'string') return false;",
     PRICING_GATE, "index.html"],
-  ["2.2a: the gate admits an activation-unapproved price (eligibility ignored)",
-    "      var admitted = !!(r && r.price && r.price.status === 'resolved'\n        && r.freshness && r.freshness.status === 'fresh'\n        && r.eligibility && r.eligibility.status === 'eligible');",
-    "      var admitted = !!(r && r.price && r.price.status === 'resolved'\n        && r.freshness && r.freshness.status === 'fresh');",
+  ["2.2 money: the safe-integer rule weakens to 'a number' (fractional minor units admitted)",
+    "      if (!Number.isSafeInteger(amountMinor)) return false;",
+    "      if (typeof amountMinor !== 'number') return false;",
     PRICING_GATE, "index.html"],
+  // The no-record OFF rule is behaviourally masked by the resolver (an absent
+  // SKU resolves nothing -> not-judgeable -> OFF), so the contract check's
+  // source pin is its observer, like the two masked 2.2a entries above.
+  ["2.2 contract: the no-record OFF rule is dropped (defence in depth; source-pinned)",
+    "      if (!sku) return off;",
+    "      if (false) return off;",
+    PRICING_GATE.concat(PRICING), "index.html"],
   ["2.2a: the drawer renderer prints while the gate is OFF",
     "      if (pres.state === 'off' || !pres.text) {",
     "      if (false) {",
@@ -2897,6 +2935,39 @@ const MUTATIONS = [
   ["the demo builder stops refusing the retired warm-white literal",
     "    _expect(out, \"rgba(248,246,241,0.6)\", 0, \"the retired warm-white promo literal (T5)\")\n",
     "", PROMO, "tools/build_black_friday_demo.py"],
+  // --- Device rehearsal mode of the pricing harness (tools/serve_pricing_preview.py)
+  ["device rehearsal: a public address is accepted as a device bind (RFC 1918 membership dropped)",
+    "    if not any(ip in net for net in RFC1918):",
+    "    if False:",
+    PRICING_HARNESS, "tools/serve_pricing_preview.py"],
+  ["device rehearsal: 0.0.0.0 is accepted as a device bind (every interface)",
+    "    if ip.is_unspecified:",
+    "    if False:",
+    PRICING_HARNESS, "tools/serve_pricing_preview.py"],
+  ["device rehearsal: the in-memory allowlist widens beyond the bind address",
+    "    return (\"window.__DF_ALLOWED_HOSTS = \" + json.dumps([addr]) + \";\\n\").encode(\"utf-8\")",
+    "    return (\"window.__DF_ALLOWED_HOSTS = \" + json.dumps([addr, \"0.0.0.0\"]) + \";\\n\").encode(\"utf-8\")",
+    PRICING_HARNESS, "tools/serve_pricing_preview.py"],
+  ["device rehearsal: the page is served without the NON-SHIPPING banner",
+    "    head, sep, tail = raw.rpartition(b\"</body>\")\n    if not sep:\n        return raw + banner\n    return head + banner + sep + tail",
+    "    return raw",
+    PRICING_HARNESS, "tools/serve_pricing_preview.py"],
+  ["device rehearsal: a served store-config with a live gasUrl is not refused",
+    "        if config.get(\"gasUrl\"):\n            print(\"REFUSED: the served store-config carries a non-blank gasUrl; the device \"",
+    "        if False:\n            print(\"REFUSED: the served store-config carries a non-blank gasUrl; the device \"",
+    PRICING_HARNESS, "tools/serve_pricing_preview.py"],
+  // Device audit 2026-09-09: the harness serves the whole repository; the path
+  // allowlist is what keeps a device rehearsal from publishing docs/, incoming/,
+  // tools/ and the .git pointer to the store network. (The autoindex override
+  // is defence in depth behind it and is not separately observable.)
+  ["device rehearsal: the path allowlist is dropped (the repository is served to the network)",
+    "            if device is not None and not device_path_allowed(self._path()):",
+    "            if False:",
+    PRICING_HARNESS, "tools/serve_pricing_preview.py"],
+  ["device rehearsal: robots.txt stops disallowing the rehearsal",
+    "ROBOTS_TXT = b\"User-agent: *\\nDisallow: /\\n\"",
+    "ROBOTS_TXT = b\"User-agent: *\\nDisallow:\\n\"",
+    PRICING_HARNESS, "tools/serve_pricing_preview.py"],
 ];
 
 // ---------------------------------------------------------------------------
@@ -2926,7 +2997,9 @@ for (const d of ["tests", "data", "docs", "tools", "incoming", "demo", ".github"
 // mutate the generator's normaliser and the contract suite reads it.
 // AGENTS.md joins the copy set because the suite-preflight check pins the
 // verified Python range every principal guide states.
-for (const f of ["index.html", "Code.gs", "CLAUDE.md", "README.md", "build-data.ps1", "AGENTS.md"]) cpSync(join(root, f), join(sandbox, f));
+// manifest.json joins the copy set because the pricing harness check watches it
+// (the device rehearsal serves it) and hashes it before and after its cycle.
+for (const f of ["index.html", "Code.gs", "CLAUDE.md", "README.md", "build-data.ps1", "AGENTS.md", "manifest.json"]) cpSync(join(root, f), join(sandbox, f));
 // The committed QR asset joins the copy set (alone, not the whole images
 // tree) because the QR payload suite decodes it and compares a fresh
 // generation against it byte for byte; the sandbox copy is what the suite
@@ -2966,6 +3039,9 @@ const PRISTINE_BY_FILE = {
   // governs it. Mutating each proves the suite compares them rather than
   // trusting either.
   "data/quiz.json": readFileSync(join(sandbox, "data", "quiz.json"), "utf8"),
+  // The pricing harness (device rehearsal entries; copied with tools/).
+  "tools/serve_pricing_preview.py":
+    readFileSync(join(sandbox, "tools", "serve_pricing_preview.py"), "utf8"),
   // A4.1 (roadmap 3.1): the two halves of the scoring feature-key contract -
   // the generator that normalizes catalog tags, and the generated catalog whose
   // spellings the engine matches by exact membership.

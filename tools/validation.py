@@ -3168,10 +3168,13 @@ def validate_financing(config: dict, *, allowed_source_hosts=None) -> Validation
 # incoming/lacks_pricing.json and carried by the workbook Pricing tab. Phase
 # 2.1 ships the mechanism with `products` and `formulas` EMPTY, both operating
 # switches false, and every business policy explicitly UNAPPROVED; nothing
-# renders, and index.html carries only the Phase 2.1b resolver DEFINITION —
-# a pure function with zero live call sites — so nothing reads the contract
-# at runtime. This validator is the build-time admission gate for whatever a
-# retailer later populates. Same contract as validate_financing: TOTAL over
+# renders. index.html carries the Phase 2.1b resolver DEFINITION — a pure
+# function — and, since Phase 2.2 (2026-09-09), exactly one caller: the price
+# presentation gate, which mirrors this validator's money rules at runtime
+# (safe-integer minor units, positive, at most PRICING_AMOUNT_MINOR_MAX,
+# currency in PRICING_CURRENCIES) before it formats anything, and renders
+# nothing while the operating switches are false. This validator is the
+# build-time admission gate for whatever a retailer later populates. Same contract as validate_financing: TOTAL over
 # JSON, never raises, never mutates.
 #
 # Gate split (owner ruling 2026-08-28, roadmap §2.1 — the derived governance

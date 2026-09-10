@@ -22,7 +22,10 @@ orientations. It proves:
     Sleep System anchor, Consultation Summary hero, Sleep Plan finalist);
     in state `dark` likewise; in `available` every surface shows the
     FIXTURE amount with the FIXTURE assumption and disclosure beside it, in
-    EN and ES; in `stale` and `unapproved` every surface shows only the
+    EN and ES; in `stale` and `unapproved` every surface is OFF — inert, no
+    copy, no number (the Codex-restored contract of 2026-09-09); in
+    `unavailable` (fresh and eligible, every price in currency XXX, which
+    the runtime money admission refuses) every surface shows only the
     governed unavailable copy and no number; in `disabled` (emergency off)
     every surface is gone again. No page errors on any walk.
 
@@ -35,11 +38,14 @@ Run: python tests/pricing_harness_check.py
 """
 
 import hashlib
+import ipaddress
 import json
 import os
 import re
+import socket
 import sys
 import threading
+import urllib.error
 import urllib.request
 from datetime import datetime, timedelta, timezone
 from http.server import ThreadingHTTPServer
@@ -68,7 +74,8 @@ def sha(path):
 
 WATCHED = ["data/store-config.json", "data/mattresses.json", "data/mattresses.csv",
            "incoming/Lacks_Store_Data.xlsx", "incoming/lacks_pricing.json",
-           "tests/fixtures/pricing_populated_fixture.json", "index.html"]
+           "tests/fixtures/pricing_populated_fixture.json", "index.html",
+           "data/allowed-hosts.js", "manifest.json"]
 before = {p: sha(p) for p in WATCHED}
 
 with open(os.path.join(REPO, "data", "store-config.json"), encoding="utf-8") as f:
@@ -106,6 +113,12 @@ for state in srv.STATES:
     if state == "stale":
         check("stale: the DARK form is REFUSED at build time naming the aged evidence (the build-gate half of the rule)",
               v["dark_stale_named"] and srv.dark_form_acceptable(state, v), "; ".join(v["dark_errors"][:2]))
+    elif state == "unavailable":
+        check("unavailable: the DARK form is REFUSED at build time naming the currency (XXX can never ship; the runtime admission is its mirror)",
+              v["dark_currency_named"] and srv.dark_form_acceptable(state, v), "; ".join(v["dark_errors"][:2]))
+        check("unavailable: pricing.currency and every product price carry XXX",
+              cfg["pricing"]["currency"] == srv.UNAVAILABLE_CURRENCY
+              and all(e["price"]["currency"] == srv.UNAVAILABLE_CURRENCY for e in cfg["pricing"]["products"]))
     else:
         check(f"{state}: the DARK form validates clean under the shifted clock (no errors, no warnings)",
               v["dark_ok"] and not v["dark_warnings"] and srv.dark_form_acceptable(state, v),
@@ -169,6 +182,163 @@ check("public bind attempt is refused (192.168.1.10)", srv.main(["--bind", "192.
 check("loopback helper accepts 127.0.0.1, localhost and ::1",
       srv._loopback("127.0.0.1") and srv._loopback("localhost") and srv._loopback("::1"))
 
+# ---- device rehearsal mode (Codex correction 2026-09-09) ----------------------
+print("Device rehearsal mode:")
+REFUSED = ["0.0.0.0", "127.0.0.1", "::1", "8.8.8.8", "203.0.113.7", "169.254.1.1", "224.0.0.1", "240.0.0.1",
+           "2001:db8::1", "fe80::1", "fd00::1", "example.com", "localhost", "192.168.1", "", "10.0.0.1/8"]
+check("device address verdict refuses every unspecified, loopback, public, link-local, multicast, reserved, IPv6, hostname and malformed value",
+      all(srv.device_address_verdict(a) for a in REFUSED), str([a for a in REFUSED if not srv.device_address_verdict(a)]))
+check("device address verdict accepts RFC 1918 IPv4 literals only (10/8, 172.16/12, 192.168/16)",
+      all(srv.device_address_verdict(a) == "" for a in ("10.0.0.1", "10.255.255.254", "172.16.0.1", "172.31.255.254", "192.168.0.1", "192.168.255.254"))
+      and srv.device_address_verdict("172.32.0.1") and srv.device_address_verdict("100.64.0.1"))
+check("--device with a public address is refused by the command line (exit 2)", srv.main(["--device", "8.8.8.8", "--port", "0"]) == 2)
+check("--device 0.0.0.0 is refused (exit 2)", srv.main(["--device", "0.0.0.0", "--port", "0"]) == 2)
+check("--device with an IPv6 address is refused (exit 2)", srv.main(["--device", "fd00::1", "--port", "0"]) == 2)
+check("--device with a hostname is refused (exit 2)", srv.main(["--device", "localhost", "--port", "0"]) == 2)
+check("--device and --bind together are refused (exit 2)", srv.main(["--device", "10.0.0.1", "--bind", "127.0.0.1", "--port", "0"]) == 2)
+check("--device with a private address this machine does not own is refused at the bind (exit 2)",
+      srv.main(["--device", "192.168.250.250", "--port", "0"]) == 2)
+_real_load = srv._load
+
+
+def _live_committed(path):
+    doc = _real_load(path)
+    if path.endswith("store-config.json"):
+        doc = dict(doc, gasUrl="https://script.google.com/macros/s/EXAMPLE/exec")
+    return doc
+
+
+srv._load = _live_committed
+try:
+    check("--device refuses to serve a store-config whose gasUrl is live (exit 3, before any bind)",
+          srv.main(["--device", "10.0.0.1", "--port", "0"]) == 3)
+finally:
+    srv._load = _real_load
+check("the in-memory allowlist names exactly the device address",
+      srv.allowed_hosts_js("192.168.1.20") == b'window.__DF_ALLOWED_HOSTS = ["192.168.1.20"];\n')
+check("0.0.0.0 is refused by its own rule (every interface), not merely by RFC 1918 membership",
+      "every interface" in srv.device_address_verdict("0.0.0.0"))
+try:
+    srv.device_bundle("8.8.8.8", "available")
+    check("device_bundle refuses a public address at construction (a test cannot build an unsafe device server)", False)
+except ValueError:
+    check("device_bundle refuses a public address at construction (a test cannot build an unsafe device server)", True)
+try:
+    srv.device_bundle("10.0.0.1", "bogus")
+    check("device_bundle refuses an unknown state", False)
+except ValueError:
+    check("device_bundle refuses an unknown state", True)
+check("the device path allowlist admits only the app: /, /index.html, /manifest.json, /robots.txt, files under /data/ and /images/",
+      all(srv.device_path_allowed(p) for p in ("/", "/index.html", "/manifest.json", "/robots.txt", "/data/quiz.json", "/data/store-config.json", "/images/mattresses/x.jpg"))
+      and not any(srv.device_path_allowed(p) for p in ("/docs/", "/docs/rebuild-roadmap.md", "/tools/serve_pricing_preview.py", "/incoming/lacks_financing.json",
+                                                        "/tests/fixtures/pricing_populated_fixture.json", "/.git", "/.git/config", "/data/", "/images/", "/data/../index.html",
+                                                        "/data/.hidden", "/README.md", "/CLAUDE.md", "/Code.gs", "/demo/black-friday/index.html")))
+_page = srv.rehearsal_page("stale", "192.168.1.20")
+with open(os.path.join(REPO, "index.html"), "rb") as _f:
+    _disk = _f.read()
+check("the rehearsal page is index.html plus ONE banner before the page's own </body> (the domain lock's inline </body> untouched)",
+      _page.count(b'id="' + srv.BANNER_ID.encode() + b'"') == 1 and _page.count(b"</body>") == _disk.count(b"</body>")
+      and _page.rpartition(b"</body>")[0].endswith(b"</div>\n") and _page.index(b'id="' + srv.BANNER_ID.encode() + b'"') > _page.index(b"Unauthorized domain")
+      and _page.replace(_page[_page.index(b'<div id="' + srv.BANNER_ID.encode()):_page.rpartition(b"</body>")[0].__len__()], b"") == _disk)
+check("the banner names the state, the address, FIXTURE and non-shipping, and that nothing is sent",
+      all(s in _page for s in (b"state: stale", b"192.168.1.20", b"FIXTURE PRICES ONLY", b"NON-SHIPPING REHEARSAL", b"nothing is sent")))
+
+
+def private_ipv4_of_this_host():
+    seen = []
+    try:
+        for info in socket.getaddrinfo(socket.gethostname(), None, socket.AF_INET):
+            a = info[4][0]
+            ip = ipaddress.ip_address(a)
+            if ip.is_private and not ip.is_loopback and not ip.is_link_local and a not in seen:
+                seen.append(a)
+    except OSError:
+        pass
+    return seen[0] if seen else None
+
+
+DEVICE_IP = private_ipv4_of_this_host()
+# A real private-address bind is exercised when this host has one; the
+# rendered proof below never depends on it (host-resolver-rules maps a name
+# onto loopback), so CI is not gated on network topology.
+print(f"  [note] private IPv4 of this host for the real-bind walk: {DEVICE_IP or 'none (real-bind checks skipped, name-mapped checks still run)'}")
+
+
+def serve_device(state, addr, bind=None):
+    """A device-mode server. `bind` defaults to `addr`; the name-mapped rendered
+    proof binds loopback while the served allowlist names `addr`."""
+    cfg, cat, _, acc = built[state]
+    device = srv.device_bundle(addr, state) if bind is None else \
+        {"address": addr, "allowed_hosts": srv.allowed_hosts_js(addr), "page": srv.rehearsal_page(state, addr)}
+    server = ThreadingHTTPServer((bind or addr, 0), srv.make_handler(srv.encode(cfg), srv.encode(cat), srv.encode(acc), device))
+    t = threading.Thread(target=server.serve_forever, daemon=True)
+    t.start()
+    return server, server.server_address[1]
+
+
+# Device-mode documents and the path allowlist, over a loopback-bound device
+# server (topology-independent); the served allowlist names the test address.
+TEST_ADDR = "192.168.77.20"
+dsrv, dport = serve_device("available", TEST_ADDR, bind="127.0.0.1")
+dbase = f"http://127.0.0.1:{dport}"
+try:
+    def dget(path, method="GET"):
+        req = urllib.request.Request(dbase + path, method=method)
+        try:
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                return resp.status, dict(resp.headers), resp.read()
+        except urllib.error.HTTPError as e:
+            return e.code, dict(e.headers), e.read()
+    st, hd, body = dget("/data/allowed-hosts.js")
+    check("device: /data/allowed-hosts.js is served in memory naming the device address only, JavaScript, no-store, noindex",
+          st == 200 and body == srv.allowed_hosts_js(TEST_ADDR) and hd.get("Cache-Control") == "no-store"
+          and "noindex" in hd.get("X-Robots-Tag", "") and hd.get("Content-Type", "").startswith("text/javascript"))
+    st, hd, body = dget("/")
+    check("device: / is the banner-bearing page (HTML, no-store, noindex)",
+          st == 200 and body == srv.rehearsal_page("available", TEST_ADDR) and hd.get("Content-Type", "").startswith("text/html")
+          and hd.get("Cache-Control") == "no-store" and "noindex" in hd.get("X-Robots-Tag", ""))
+    st, _, body = dget("/index.html")
+    check("device: /index.html is the same banner-bearing page", st == 200 and body == srv.rehearsal_page("available", TEST_ADDR))
+    st, hd, body = dget("/robots.txt")
+    check("device: /robots.txt is served from memory and disallows everything (asserted against the literal, not the harness's own constant)",
+          st == 200 and body == b"User-agent: *" + bytes([10]) + b"Disallow: /" + bytes([10]) and hd.get("Cache-Control") == "no-store")
+    st, hd, body = dget("/data/quiz.json")
+    with open(os.path.join(REPO, "data", "quiz.json"), "rb") as f:
+        check("device: a disk-served data document is byte-equal to disk and still marked no-store / noindex",
+              st == 200 and body == f.read() and hd.get("Cache-Control") == "no-store" and "noindex" in hd.get("X-Robots-Tag", ""))
+    st, _, body = dget("/data/store-config.json")
+    check("device: the served store-config keeps the committed blank gasUrl and the production allowedHosts (nothing can send; the config is not widened)",
+          st == 200 and json.loads(body.decode("utf-8")).get("gasUrl") == "" and json.loads(body.decode("utf-8")).get("allowedHosts") == PROD.get("allowedHosts"))
+    st, hd, _ = dget("/", method="HEAD")
+    check("device: HEAD on the page carries the same headers", st == 200 and hd.get("Cache-Control") == "no-store")
+    exposed = {}
+    for p in ("/tools/serve_pricing_preview.py", "/incoming/lacks_financing.json", "/docs/rebuild-roadmap.md",
+              "/tests/fixtures/pricing_populated_fixture.json", "/.git", "/.git/HEAD", "/docs/", "/tools/", "/data/", "/images/",
+              "/README.md", "/Code.gs", "/demo/black-friday/index.html", "/data/../tools/serve_pricing_preview.py"):
+        st, hd, body = dget(p)
+        exposed[p] = (st, b"Directory listing" in body or b"<title>Directory listing" in body)
+    check("device: the repository is NOT exposed — every path outside the app is 404 and no directory is listed",
+          all(st == 404 and not listing for st, listing in exposed.values()), str({p: v for p, v in exposed.items() if v[0] != 404 or v[1]}))
+    st, hd, body = dget("/tools/", method="HEAD")
+    check("device: HEAD outside the app is 404 too", st == 404)
+    check("the committed allowlist on disk is untouched by the device server",
+          open(os.path.join(REPO, "data", "allowed-hosts.js"), "rb").read().count(b"beford782.github.io") == 1
+          and TEST_ADDR.encode() not in open(os.path.join(REPO, "data", "allowed-hosts.js"), "rb").read())
+finally:
+    dsrv.shutdown()
+    dsrv.server_close()
+
+
+if DEVICE_IP:
+    dsrv, dport = serve_device("available", DEVICE_IP)
+    try:
+        with urllib.request.urlopen(f"http://{DEVICE_IP}:{dport}/data/allowed-hosts.js", timeout=10) as resp:
+            check(f"real bind: a device server on this host's private address {DEVICE_IP} answers with its own address in the allowlist",
+                  resp.status == 200 and resp.read() == srv.allowed_hosts_js(DEVICE_IP))
+    finally:
+        dsrv.shutdown()
+        dsrv.server_close()
+
 
 # ---- live loopback server -----------------------------------------------------
 def serve(state):
@@ -226,6 +396,12 @@ try:
     st4, _, body4 = get("/data/quiz.json")
     with open(os.path.join(REPO, "data", "quiz.json"), "rb") as f:
         check("data/quiz.json is not intercepted (byte-equal to disk)", st4 == 200 and body4 == f.read())
+    st6, hd6, body6 = get("/data/allowed-hosts.js")
+    with open(os.path.join(REPO, "data", "allowed-hosts.js"), "rb") as f:
+        check("default (loopback) mode: /data/allowed-hosts.js is served from disk unchanged, no banner, no noindex (the device mode changes nothing here)",
+              st6 == 200 and body6 == f.read() and "X-Robots-Tag" not in hd6)
+    st7, _, body7 = get("/tools/serve_pricing_preview.py")
+    check("default (loopback) mode: the repository is served as before (a tools/ file is reachable on loopback)", st7 == 200 and len(body7) > 0)
     req = urllib.request.Request(base + "/data/store-config.json", method="HEAD")
     with urllib.request.urlopen(req, timeout=10) as resp:
         check("HEAD on the intercepted path carries the same headers", resp.status == 200 and resp.headers.get("Cache-Control") == "no-store")
@@ -427,9 +603,13 @@ def rendered():
                     for lang in ("en", "es"):
                         tag = f"{state} {name} {lang}"
                         r = walk(browser, port, lang, "queen", w, h)
-                        if state in ("dark", "disabled"):
+                        # The restored contract (Codex correction 2026-09-09):
+                        # stale and activation-unapproved are INERT — every
+                        # surface OFF, exactly like dark and disabled; only the
+                        # fresh + eligible + unadmitted drill shows the copy.
+                        if state in ("dark", "disabled", "stale", "unapproved"):
                             expect_off(tag, r)
-                        elif state in ("stale", "unapproved"):
+                        elif state == "unavailable":
                             expect_unavailable(tag, r, lang)
                         else:
                             expect_available(tag, r, lang)
@@ -437,13 +617,95 @@ def rendered():
                     r = walk(browser, port, "en", "king", 1194, 748)
                     # Accessory prices carry no size, so the featured accessory's governed
                     # amount is the ONE dollar figure that legitimately remains on this walk.
-                    check("available, king answered (queen priced): every mattress surface shows the unavailable copy; the only figure is the sizeless governed accessory amount",
-                          r["drawer"]["state"] == "price-unavailable" and len(r["dollarDigits"]) == 1
-                          and r["featured"]["governed"] == 1 and r["featured"]["legacy"] == 0
-                          and all(x == "price-unavailable" for x in r["resultsStates"]),
-                          f"drawer={r['drawer']['state']} dollars={r['dollarDigits']} featured={r['featured']}")
+                    check("available, king answered (queen priced): every mattress surface is OFF (no applicable SKU: no slot, no copy); the only figure is the sizeless governed accessory amount",
+                          r["drawer"]["state"] is None and r["drawer"]["hidden"] is True and r["resultsSlots"] == 0
+                          and r["anchor"]["slots"] == 0 and r["hero"]["slots"] == 0 and r["plan"]["slots"] == 0
+                          and len(r["dollarDigits"]) == 1 and r["featured"]["governed"] == 1 and r["featured"]["legacy"] == 0,
+                          f"drawer={r['drawer']['state']} results={r['resultsSlots']} dollars={r['dollarDigits']} featured={r['featured']}")
             finally:
                 s.shutdown(); s.server_close()
+        # Device rehearsal: the SAME page over a private address of this
+        # machine passes the domain lock through the in-memory allowlist,
+        # shows the NON-SHIPPING banner, and walks the states exactly as the
+        # loopback harness does. Two states here (the unit walks above cover
+        # all six on loopback): available renders FIXTURE amounts; stale is OFF.
+        # Topology-independent: Chromium maps a NAME onto loopback, so the page's
+        # own hostname is genuinely non-loopback while every socket stays local
+        # (device audit 2026-09-09). Control first: the SHIPPED allowlist blanks
+        # that host; then device mode admits it and walks two states.
+        NAME = "df-device.test"
+        mapped = p.chromium.launch(args=[f"--host-resolver-rules=MAP {NAME} 127.0.0.1"])
+        s, port = serve_plain()
+        try:
+            page = mapped.new_page(viewport={"width": 1194, "height": 748})
+            errs = []
+            page.on("pageerror", lambda e: errs.append(str(e)))
+            page.goto(f"http://{NAME}:{port}/", wait_until="load")
+            blank = page.evaluate("() => ({ start: !!document.getElementById('startBtn'), text: document.body ? document.body.textContent : '' })")
+            check("control: the SHIPPED allowlist blanks a non-loopback host (no #startBtn, the lock's error text, 'Domain not authorized')",
+                  not blank["start"] and "Unauthorized domain" in blank["text"] and any("Domain not authorized" in e for e in errs))
+            page.close()
+        finally:
+            s.shutdown(); s.server_close()
+        for state, expect in (("available", expect_available), ("stale", expect_off)):
+            # The served allowlist must name the page's host: build the device
+            # documents for the mapped NAME directly (the verdict is for the
+            # command line; the documents are what the lock reads).
+            cfg_, cat_, _, acc_ = built[state]
+            device_docs = {"address": NAME, "allowed_hosts": srv.allowed_hosts_js(NAME), "page": srv.rehearsal_page(state, NAME)}
+            s = ThreadingHTTPServer(("127.0.0.1", 0), srv.make_handler(srv.encode(cfg_), srv.encode(cat_), srv.encode(acc_), device_docs))
+            threading.Thread(target=s.serve_forever, daemon=True).start()
+            dport = s.server_address[1]
+            try:
+                page = mapped.new_page(viewport={"width": 1194, "height": 748})
+                errors = []
+                page.on("pageerror", lambda e: errors.append(str(e)))
+                page.goto(f"http://{NAME}:{dport}/", wait_until="networkidle")
+                page.wait_for_selector("#startBtn")
+                probe = page.evaluate("() => ({ banner: !!document.getElementById('" + srv.BANNER_ID + "'), "
+                                      "bannerText: (document.getElementById('" + srv.BANNER_ID + "') || {}).textContent || '', "
+                                      "blanked: !document.getElementById('startBtn') || document.querySelectorAll('.screen').length === 0, "
+                                      "hosts: window.__DF_ALLOWED_HOSTS, host: location.hostname, "
+                                      "policy: (typeof window.__dfSetSessionPolicy === 'function') ? window.__dfSetSessionPolicy({ tickMs: 500 }) : 'absent' })")
+                check(f"name-mapped device {state}: the domain lock admits the non-loopback host through the in-memory allowlist (page not blanked)",
+                      probe["blanked"] is False and probe["hosts"] == [NAME] and probe["host"] == NAME and not errors, str(probe) + "; ".join(errors[:1]))
+                check(f"name-mapped device {state}: the NON-SHIPPING banner is on the page and names the state",
+                      probe["banner"] and ("state: " + state) in probe["bannerText"] and "FIXTURE" in probe["bannerText"])
+                check(f"name-mapped device {state}: the session-policy override refuses a non-loopback host (the idle window cannot be shortened on a device)",
+                      probe["policy"] is False)
+                r = page.evaluate(WALK_JS, {"lang": "en", "size": "queen"})
+                r["errors"] = errors
+                page.close()
+                expect(f"name-mapped device {state} tablet-landscape en", r) if expect is expect_off else expect(f"name-mapped device {state} tablet-landscape en", r, "en")
+            finally:
+                s.shutdown(); s.server_close()
+        mapped.close()
+        if DEVICE_IP:
+            for state, expect in (("available", expect_available), ("stale", expect_off)):
+                s, dport = serve_device(state, DEVICE_IP)
+                try:
+                    page = browser.new_page(viewport={"width": 1194, "height": 748})
+                    errors = []
+                    page.on("pageerror", lambda e: errors.append(str(e)))
+                    page.goto(f"http://{DEVICE_IP}:{dport}/", wait_until="networkidle")
+                    page.wait_for_selector("#startBtn")
+                    # "Blanked" = the domain lock replaced the document with its error
+                    # page (no #startBtn, no app). The lock's own source text lives in
+                    # the page, so its wording is not the probe.
+                    probe = page.evaluate("() => ({ banner: !!document.getElementById('" + srv.BANNER_ID + "'), "
+                                          "bannerText: (document.getElementById('" + srv.BANNER_ID + "') || {}).textContent || '', "
+                                          "blanked: !document.getElementById('startBtn') || document.querySelectorAll('.screen').length === 0, "
+                                          "hosts: window.__DF_ALLOWED_HOSTS, host: location.hostname })")
+                    check(f"device {state}: the domain lock admits the private address through the in-memory allowlist (page not blanked)",
+                          probe["blanked"] is False and probe["hosts"] == [DEVICE_IP] and probe["host"] == DEVICE_IP and not errors, str(probe) + "; ".join(errors[:1]))
+                    check(f"device {state}: the NON-SHIPPING banner is on the page and names the state",
+                          probe["banner"] and ("state: " + state) in probe["bannerText"] and "FIXTURE" in probe["bannerText"])
+                    r = page.evaluate(WALK_JS, {"lang": "en", "size": "queen"})
+                    r["errors"] = errors
+                    page.close()
+                    expect(f"device {state} tablet-landscape en", r) if expect is expect_off else expect(f"device {state} tablet-landscape en", r, "en")
+                finally:
+                    s.shutdown(); s.server_close()
         browser.close()
 
 
