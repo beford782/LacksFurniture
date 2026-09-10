@@ -79,7 +79,10 @@ was discarded before G5 was merged.
    refused, the loopback default byte-for-byte unchanged, and — the device
    audit's load-bearing finding — only the app's own paths served (the
    loopback default serves the whole repository, listings and the `.git`
-   pointer included; in device mode everything else is 404) — so mounted
+   pointer included; in device mode everything else is 404, and — after the
+   Codex re-review reproduced `/data/%2e%2e/CLAUDE.md` → 200 — the request
+   path is percent-decoded once into one canonical grammar that is both
+   authorised and served, so encoded traversal is 404 too) — so mounted
    Safari can walk available, stale, unapproved, unavailable and disabled.
    Pinned by the harness check (refusal matrix, path allowlist, allowlist and
    banner probes, a name-mapped Chromium proof that needs no LAN, and a real
@@ -122,8 +125,8 @@ run on the **exact final head** of PR #119 after this document is committed,
 and its results are recorded in the PR's evidence comment, which names that
 head. A docs-only commit after those runs would move the head, so the numbers
 live there, not here. Suite sizes on the corrected candidate: pricing
-presentation 176, pricing harness 316, pricing contract 158, resolver 235;
-sweep manifest 707; lineage 10/10; demo bundle `--check` matches a fresh
+presentation 176, pricing harness 324, pricing contract 158, resolver 235;
+sweep manifest 708; lineage 10/10; demo bundle `--check` matches a fresh
 rebuild; every pricing-gate and device-rehearsal sweep entry was also run
 against its observers in an isolated sandbox before the full sweep (all
 caught).

@@ -46,6 +46,7 @@ import socket
 import sys
 import threading
 import urllib.error
+import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta, timezone
 from http.server import ThreadingHTTPServer
@@ -228,11 +229,22 @@ try:
     check("device_bundle refuses an unknown state", False)
 except ValueError:
     check("device_bundle refuses an unknown state", True)
+HOSTILE_PATHS = ['/data/%2e%2e/CLAUDE.md', '/data/%2E%2E/tools/serve_pricing_preview.py', '/data/%2e%2e/%2egit/HEAD', '/data/../CLAUDE.md', '/data/..%2fCLAUDE.md', '/data/%2fCLAUDE.md', '/data/%5c..%5cCLAUDE.md', '/data/..\\\\CLAUDE.md', '/data/%252e%252e/CLAUDE.md', '/data/%c0%ae%c0%ae/CLAUDE.md', '/data/quiz.json%00', '/data//quiz.json', '/data/./quiz.json', '/images/../CLAUDE.md', '/%2e%2e/CLAUDE.md', '/data/%zz/quiz.json', '/data/%2e/quiz.json', '/data/.quiz.json', '/data/quiz.json/', '/data', '/images', '/DATA/../CLAUDE.md', '/incoming/lacks_financing.json', '/tools/serve_pricing_preview.py', '/.git/HEAD', '/manifest.json/../CLAUDE.md']
+check("device_canonical_path refuses every traversal, encoded-separator, double-encoded, overlong, NUL, dot-segment, dotfile, directory and out-of-app path",
+      all(srv.device_canonical_path(p) is None for p in HOSTILE_PATHS), str([p for p in HOSTILE_PATHS if srv.device_canonical_path(p) is not None]))
+check("device_canonical_path admits the app's own paths once decoded (spaces in legacy image names included) and drops query and fragment",
+      srv.device_canonical_path("/") == "/" and srv.device_canonical_path("/index.html") == "/index.html"
+      and srv.device_canonical_path("/manifest.json") == "/manifest.json" and srv.device_canonical_path("/robots.txt") == "/robots.txt"
+      and srv.device_canonical_path("/data/quiz.json?nocache=1") == "/data/quiz.json"
+      and srv.device_canonical_path("/images/mattresses/copper%20cushion%20firm.jpg#x") == "/images/mattresses/copper cushion firm.jpg"
+      and srv.device_canonical_path("/data/store-config.json") == "/data/store-config.json")
 check("the device path allowlist admits only the app: /, /index.html, /manifest.json, /robots.txt, files under /data/ and /images/",
       all(srv.device_path_allowed(p) for p in ("/", "/index.html", "/manifest.json", "/robots.txt", "/data/quiz.json", "/data/store-config.json", "/images/mattresses/x.jpg"))
       and not any(srv.device_path_allowed(p) for p in ("/docs/", "/docs/rebuild-roadmap.md", "/tools/serve_pricing_preview.py", "/incoming/lacks_financing.json",
-                                                        "/tests/fixtures/pricing_populated_fixture.json", "/.git", "/.git/config", "/data/", "/images/", "/data/../index.html",
-                                                        "/data/.hidden", "/README.md", "/CLAUDE.md", "/Code.gs", "/demo/black-friday/index.html")))
+                                                        "/tests/fixtures/pricing_populated_fixture.json", "/.git", "/.git/config", "/data/", "/images/",
+                                                        "/README.md", "/CLAUDE.md", "/Code.gs", "/demo/black-friday/index.html")))
+check("a query string or fragment on a permitted path is dropped, never smuggled (the path served is the canonical one)",
+      srv.device_canonical_path("/data/quiz.json?x=../CLAUDE.md#../") == "/data/quiz.json")
 _page = srv.rehearsal_page("stale", "192.168.1.20")
 with open(os.path.join(REPO, "index.html"), "rb") as _f:
     _disk = _f.read()
@@ -321,6 +333,35 @@ try:
           all(st == 404 and not listing for st, listing in exposed.values()), str({p: v for p, v in exposed.items() if v[0] != 404 or v[1]}))
     st, hd, body = dget("/tools/", method="HEAD")
     check("device: HEAD outside the app is 404 too", st == 404)
+    # Codex re-review blocker (2026-09-10): percent-encoded traversal. Every
+    # hostile spelling is 404 for GET AND HEAD, and no body is repository
+    # content; the permitted files still serve byte-equal, decoded once.
+    with open(os.path.join(REPO, "CLAUDE.md"), "rb") as f:
+        _claude = f.read()
+    leaks = {}
+    for p in HOSTILE_PATHS:
+        for method in ("GET", "HEAD"):
+            st, hd, body = dget(p, method=method)
+            if st != 404 or (method == "GET" and (body == _claude or b"DreamFinder" in body[:400] and b"Not served" not in body)):
+                leaks[method + " " + p] = st
+    check("device: every percent-encoded / traversal / separator / double-encoded / overlong / NUL / dot-segment spelling is 404 on GET and HEAD and leaks nothing",
+          not leaks, str(leaks))
+    permitted = [("data/quiz.json", "/data/quiz.json"), ("manifest.json", "/manifest.json"), ("images/qr-financing.svg", "/images/qr-financing.svg")]
+    # A legacy image whose name carries spaces proves the once-decoded path
+    # serves; the mutation sweep's sandbox copies only the QR asset from
+    # images/, so this leg runs where such a file exists and says so otherwise.
+    _spaced = sorted(f for f in (os.listdir(os.path.join(REPO, "images", "mattresses")) if os.path.isdir(os.path.join(REPO, "images", "mattresses")) else []) if " " in f)
+    if _spaced:
+        permitted.append(("images/mattresses/" + _spaced[0], "/images/mattresses/" + urllib.parse.quote(_spaced[0])))
+    else:
+        print("  [note] no legacy image with spaces in its name in this tree; the live spaced-name leg is skipped (the unit case still pins the decoding)")
+    for rel, url in permitted:
+        with open(os.path.join(REPO, rel), "rb") as f:
+            disk = f.read()
+        st, hd, body = dget(url)
+        st2, hd2, _ = dget(url, method="HEAD")
+        check(f"device: permitted file {url} still serves byte-equal on GET (and 200 on HEAD) through the canonical path",
+              st == 200 and body == disk and st2 == 200 and hd.get("Cache-Control") == "no-store", f"GET {st} HEAD {st2} bytes {len(body)}/{len(disk)}")
     check("the committed allowlist on disk is untouched by the device server",
           open(os.path.join(REPO, "data", "allowed-hosts.js"), "rb").read().count(b"beford782.github.io") == 1
           and TEST_ADDR.encode() not in open(os.path.join(REPO, "data", "allowed-hosts.js"), "rb").read())

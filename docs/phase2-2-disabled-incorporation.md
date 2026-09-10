@@ -194,7 +194,12 @@ mode serves **only the app** (`/`, `index.html`, `manifest.json`, an in-memory
 default serves the whole repository with directory listings, `docs/`,
 `incoming/`, `tools/`, `tests/` and the `.git` pointer, which is fine on
 loopback and a disclosure on a shared network, so in device mode every other
-path is 404 and no directory is ever listed. The check proves the domain lock
+path is 404 and no directory is ever listed — judged on ONE percent-decoded,
+canonical request path that is also exactly the path served (the Codex
+re-review of 2026-09-10 reproduced `/data/%2e%2e/CLAUDE.md` → 200 while the
+allowlist still judged the raw path; the harness check now drives encoded
+traversal, encoded separators, double encoding, overlong UTF-8, NUL and dot
+segments on GET and HEAD against a live device server). The check proves the domain lock
 without a real LAN bind (Chromium's host-resolver rules map a name onto
 loopback: the shipped allowlist blanks it, device mode admits it) and adds a
 real private-address bind when the host has one. Measured limits an operator

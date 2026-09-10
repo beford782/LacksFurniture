@@ -2961,8 +2961,16 @@ const MUTATIONS = [
   // tools/ and the .git pointer to the store network. (The autoindex override
   // is defence in depth behind it and is not separately observable.)
   ["device rehearsal: the path allowlist is dropped (the repository is served to the network)",
-    "            if device is not None and not device_path_allowed(self._path()):",
-    "            if False:",
+    "    return decoded if device_path_allowed(decoded) else None",
+    "    return decoded",
+    PRICING_HARNESS, "tools/serve_pricing_preview.py"],
+  // Codex re-review blocker (2026-09-10): the allowlist judged the raw request
+  // path while the stdlib decoded and normalised it before serving. The
+  // canonical grammar is THE control; the harness check's live GET/HEAD
+  // matrix (percent-encoded traversal and friends) observes it.
+  ["device rehearsal: the canonical-path grammar is dropped (percent-encoded traversal serves the repository)",
+    "    if not DEVICE_CANONICAL_RE.fullmatch(decoded):\n        return None\n",
+    "",
     PRICING_HARNESS, "tools/serve_pricing_preview.py"],
   ["device rehearsal: robots.txt stops disallowing the rehearsal",
     "ROBOTS_TXT = b\"User-agent: *\\nDisallow: /\\n\"",

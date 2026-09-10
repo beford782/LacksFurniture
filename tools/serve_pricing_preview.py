@@ -123,7 +123,9 @@ import copy
 import ipaddress
 import json
 import os
+import re
 import sys
+import urllib.parse
 from datetime import datetime, timedelta, timezone
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
@@ -144,15 +146,45 @@ DEVICE_PREFIXES = ("/data/", "/images/")
 ROBOTS_TXT = b"User-agent: *\nDisallow: /\n"
 
 
+# The ONE canonical grammar a device-mode request path must satisfy after
+# percent-decoding: absolute, non-empty segments, every segment starting with
+# a letter or digit and made of letters, digits, spaces, dots, hyphens and
+# underscores — the character set the app's own data and image files use.
+# By construction this excludes dot segments ("." / ".."), dotfiles, empty
+# segments ("//", a trailing slash), backslashes, NUL and control characters,
+# any percent sign left after ONE decoding (double encoding, malformed
+# escapes), and every character outside that set. Codex re-review of the
+# integrated candidate (2026-09-10): the allowlist used to judge the RAW
+# request path while the stdlib handler decoded and normalised it before
+# serving, so /data/%2e%2e/CLAUDE.md was served. Authorisation and serving
+# now share this single decoded path.
+DEVICE_SEGMENT = r"[A-Za-z0-9][A-Za-z0-9 ._-]*"
+DEVICE_CANONICAL_RE = re.compile(r"^/(?:" + DEVICE_SEGMENT + r"/)*" + DEVICE_SEGMENT + r"$")
+
+
+def device_canonical_path(raw_path):
+    """The decoded, canonical request path a device rehearsal may serve, or
+    None (fail closed). Query string and fragment are dropped first; the path
+    is percent-decoded exactly once; the result must match the canonical
+    grammar above; then it must be on the app-only allowlist."""
+    if not isinstance(raw_path, str):
+        return None
+    path = raw_path.split("?", 1)[0].split("#", 1)[0]
+    if path == "/":
+        return "/"
+    decoded = urllib.parse.unquote(path, errors="replace")
+    if not DEVICE_CANONICAL_RE.fullmatch(decoded):
+        return None
+    return decoded if device_path_allowed(decoded) else None
+
+
 def device_path_allowed(path: str) -> bool:
+    """The app-only allowlist, judged on a CANONICAL path (see
+    device_canonical_path, which is the only caller that matters): the four
+    named paths, or a file path below /data/ or /images/."""
     if path in DEVICE_PATHS:
         return True
-    if any(path.startswith(p) for p in DEVICE_PREFIXES):
-        # Only files under the two data roots, never a directory, never a
-        # parent traversal, never a dotfile.
-        rest = path.split("/", 2)[2] if path.count("/") >= 2 else ""
-        return bool(rest) and not path.endswith("/") and ".." not in path and not any(seg.startswith(".") for seg in path.split("/"))
-    return False
+    return any(path.startswith(p) and len(path) > len(p) for p in DEVICE_PREFIXES)
 INTERCEPT_ACCESSORIES = "/data/accessories.json"
 STATES = ("dark", "available", "stale", "unapproved", "unavailable", "disabled")
 TIER_ORDER = ("gold", "silver", "bronze")
@@ -472,11 +504,30 @@ def make_handler(config_bytes: bytes, catalog_bytes: bytes, accessories_bytes: b
             return self.path.split("?", 1)[0].split("#", 1)[0]
 
         def _device_refuses(self):
-            # Device mode: everything outside the app's own paths is 404.
-            if device is not None and not device_path_allowed(self._path()):
+            # Device mode: the request path is decoded and canonicalised ONCE;
+            # the result is what is authorised and (below) what is served.
+            # Everything outside the app's own paths is 404.
+            if device is None:
+                return False
+            canon = device_canonical_path(self.path)
+            if canon is None:
                 self.send_error(404, "Not served in device rehearsal mode")
                 return True
+            self._df_canonical = canon
             return False
+
+        def translate_path(self, path):
+            # Device mode serves EXACTLY the path that was authorised: the
+            # canonical decoded segments joined under the repository root,
+            # never the stdlib's own second decoding of self.path. (The
+            # canonical grammar already excludes traversal; this keeps the
+            # two semantics one and the same.) Loopback mode is unchanged.
+            if device is None:
+                return super().translate_path(path)
+            canon = getattr(self, "_df_canonical", None)
+            if not canon or canon == "/":
+                return os.path.join(REPO, "index.html")
+            return os.path.join(REPO, *canon.split("/")[1:])
 
         def list_directory(self, path):
             # Never an autoindex in device mode; the loopback default keeps
