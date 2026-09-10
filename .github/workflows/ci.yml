@@ -65,9 +65,15 @@ jobs:
     # (Blake) action, tracked in the 0.6 PR notes.
     name: Full suite (18 checks)
     runs-on: ubuntu-24.04
-    # Raised from 20 for the mutation sweep, which re-runs the suites once per
-    # manifest entry and takes ~7 minutes locally. The rest of the job is ~3.
-    timeout-minutes: 30
+    # Raised from 20 to 30 for the mutation sweep, and from 30 to 60 on the
+    # 2026-09-09 integrated candidate: the sweep re-runs each entry's observer
+    # suites, and the rendered observers (the pricing harness with its device
+    # rehearsal walks, the presentation suite, the delivery and promo checks)
+    # now sit behind a dozen entries, so the sweep alone runs ~25 minutes on
+    # the runner (it ran 24m35s before the 30-minute cap cancelled the job at
+    # head d000bfa). The rest of the job is ~7 minutes. This is a cap, not a
+    # budget: a run that needs it is expected to finish well inside it.
+    timeout-minutes: 60
     steps:
       - name: Check out the tree
         uses: actions/checkout@v4
