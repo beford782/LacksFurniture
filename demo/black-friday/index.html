@@ -7407,8 +7407,18 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      /* Final-gate finding F1 (Blake, iPad landscape, 2026-09-10): the picture
+         ran under the text on the adjustable-base and pillow cards. This box
+         declared aspect-ratio 2/1 WITH min-height 210px; the definite height
+         transferred through the ratio into a 420px width whatever the grid
+         column measured (~270px at 1194x748, ~265px in portrait), and the
+         picture overflowed into the body column by 128-135px. The box now
+         follows its column (width 100%, min-width 0, no minimum height), so
+         the 2:1 frame ruled in X5 keeps its shape without leaving its column;
+         tests/sleep_plan_layout_check.py pins the geometry. */
       aspect-ratio: 2 / 1;
-      min-height: 210px;
+      width: 100%;
+      min-width: 0;
       padding: 20px;
       border-right: 1px solid #E1D7CA;
       background: #FFFDF8;
@@ -7951,6 +7961,43 @@
       background: #63765D;
       color: #FFFFFF;
     }
+    /* F2 (final-gate finding, 2026-09-10): the row's two controls (Details,
+       Add) stack in the row's third column; the displaced recommendation's
+       tag sits under its copy; the featured card names the viewing state and
+       offers the way back. Every control keeps the 44px floor. */
+    .sleep-system__alternative-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .sleep-system__alternative-tag {
+      margin-top: 4px;
+      color: #795A35;
+      font: 750 10px/1.2 var(--font-sans);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+    .sleep-system__viewing {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 0 0 10px;
+      color: #665D54;
+      font: 600 12px/1.3 var(--font-sans);
+    }
+    .sleep-system__viewing button {
+      min-width: 44px;
+      min-height: 44px;
+      padding: 8px 12px;
+      border: 1px solid #B9A894;
+      border-radius: 7px;
+      background: #FFFDF8;
+      color: #5B4936;
+      font: 700 12px/1.2 var(--font-sans);
+      cursor: pointer;
+      touch-action: manipulation;
+    }
     .sleep-system__aside {
       display: flex;
       flex-direction: column;
@@ -8208,9 +8255,10 @@
         grid-template-columns: 62px minmax(0, 1fr);
       }
       .sleep-system__alternative img { width: 62px; height: 52px; }
-      .sleep-system__alternative button {
+      .sleep-system__alternative-actions {
         grid-column: 2;
         justify-self: start;
+        flex-direction: row;
       }
       .sleep-system__footer {
         position: sticky;
@@ -19684,6 +19732,9 @@
       demoPosition: '',
       supportChoice: '',
       pillowCandidateId: '',
+      // F2 (final-gate finding, 2026-09-10): the alternative being VIEWED on
+      // the active non-pillow step - presentation only, never a decision.
+      viewCandidateId: '',
       pillowReaction: '',
       pillowFeedback: '',
       protectionGoal: ''
@@ -20470,12 +20521,34 @@
             (b.id === window._sleepSystemState.pillowCandidateId ? -1 : 0);
         });
       }
+      // Codex review of PR #120 (2026-09-11): the active protection goal is
+      // resolved ONCE here and reused by the ordering, the card badge, the
+      // rationale and the displaced pick's tag below.
+      var protectionGoal = step.id === 'protection'
+        ? (window._sleepSystemState.protectionGoal || getSuggestedProtectionGoal())
+        : '';
       if (step.id === 'protection') {
-        var protectionGoal = window._sleepSystemState.protectionGoal || getSuggestedProtectionGoal();
         items = items.slice().sort(function(a, b) {
           var aGoal = protectorSupportsGoal(a, protectionGoal) ? 1 : 0;
           var bGoal = protectorSupportsGoal(b, protectionGoal) ? 1 : 0;
           return bGoal - aGoal;
+        });
+      }
+      // Final-gate finding F2 (Blake, mounted iPad, 2026-09-10): "see more
+      // details of the other adjustable and pillow options". A VIEWED
+      // alternative takes the featured card - the same promotion the pillow
+      // step's "Try this" performs - so its image, benefit line, distinction,
+      // price and controls render with the card's full treatment. Viewing
+      // decides nothing: the step's recorded decision and the cart are
+      // untouched, the engine's order is kept in `engineTop`, the displaced
+      // recommendation stays in the list with its own honest tag (3.7 P2), and
+      // "Back to recommended" restores the order. Pillows keep "Try this".
+      var engineTop = items[0];
+      var viewId = step.id !== 'pillow' ? (window._sleepSystemState.viewCandidateId || '') : '';
+      var viewing = !!viewId && viewId !== (engineTop && engineTop.id) && items.some(function(item) { return item.id === viewId; });
+      if (viewing) {
+        items = items.slice().sort(function(a, b) {
+          return (a.id === viewId ? -1 : 0) - (b.id === viewId ? -1 : 0);
         });
       }
       var primary = items[0];
@@ -20520,19 +20593,30 @@
         // attested price that replaces it.
         var governedPrice = (typeof priceSlotFor === 'function' ? priceSlotFor('sleepSystem', primary, 'sleep-system__governed-price') : '');
         if (governedPrice) price = '';
-        var reason = step.id === 'protection'
-          ? sleepSystemText(protectionGoalReason(window._sleepSystemState.protectionGoal || getSuggestedProtectionGoal()))
+        // Codex review of PR #120 (2026-09-11): the goal badge and the goal
+        // rationale are claims about THIS protector, so they render only when
+        // it supports the active goal (the same test that orders the group).
+        // The engine's first pick always does; a VIEWED alternative may not
+        // (Dri-Tec or iProtect under the cooling goal), and then the card
+        // carries the neutral "Worth comparing" badge and the item's own
+        // reason line - never "Suggested for <goal>" it does not support.
+        var goalSupported = step.id === 'protection' && protectorSupportsGoal(primary, protectionGoal);
+        // X3 (North Star ruling D7, 2026-08-31): "Suggested for", never
+        // "Best for" — a suggestion is what the goal mapping actually is;
+        // "best" is the superlative 1.4 forbids. ES provisional.
+        var goalBadge = step.id === 'protection'
+          ? sleepSystemText({
+              en: 'Suggested for ' + sleepSystemText(protectionGoalLabel(protectionGoal)),
+              es: 'Sugerido para ' + sleepSystemText(protectionGoalLabel(protectionGoal))
+            })
+          : '';
+        var reason = goalSupported
+          ? sleepSystemText(protectionGoalReason(protectionGoal))
           : (primary.reasons && primary.reasons[0] ? primary.reasons[0] : '');
         var badge = step.id === 'support'
           ? sleepSystemText({ en: 'Support option', es: 'Opción de soporte' })
-          : step.id === 'protection'
-            // X3 (North Star ruling D7, 2026-08-31): "Suggested for", never
-            // "Best for" — a suggestion is what the goal mapping actually is;
-            // "best" is the superlative 1.4 forbids. ES provisional.
-            ? sleepSystemText({
-                en: 'Suggested for ' + sleepSystemText(protectionGoalLabel(window._sleepSystemState.protectionGoal || getSuggestedProtectionGoal())),
-                es: 'Sugerido para ' + sleepSystemText(protectionGoalLabel(window._sleepSystemState.protectionGoal || getSuggestedProtectionGoal()))
-              })
+          : goalSupported
+            ? goalBadge
           // 3.7 P2 (owner ruling 2026-08-30): "Recommended to try" requires an
           // ANSWER-DERIVED match. `matched` is true only when at least one
           // answer-specific reason fired in scoreAccessoriesFromAnswers(); the
@@ -20541,7 +20625,10 @@
           // pillow's `default: 2` for every non-hot back / stomach / combo
           // sleeper) - that used to badge a neutral-reason hero as recommended.
           // Presentation only: ranking, groups and the baseline are untouched.
-          : (primary.matched
+          // F2: a VIEWED alternative is being compared, so its card says so
+          // even when its own answers matched - "Recommended to try" stays
+          // with the engine's first pick (tagged in the list below).
+          : (primary.matched && !viewing
             ? sleepSystemText({ en: 'Recommended to try', es: 'Recomendado para probar' })
             : sleepSystemText({ en: 'Worth comparing', es: 'Vale la pena comparar' }));
         var actionHtml;
@@ -20618,17 +20705,35 @@
               escapeHtml(sleepSystemText({ en: 'Also compare', es: 'También compara' })) + '</div>' +
               alternatives.map(function(item) {
                 var itemSelected = !!(window._accCart && window._accCart[item.id]);
+                // F2: while an alternative is viewed, the engine's own first
+                // pick sits in this list; its tag is the eyebrow it would carry
+                // as the card (answer-derived match or not - 3.7 P2), never a
+                // bare "recommended" the answers did not earn.
+                var displaced = viewing && engineTop && item.id === engineTop.id;
+                var tag = displaced
+                  ? (step.id === 'protection' && protectorSupportsGoal(engineTop, protectionGoal)
+                      ? goalBadge
+                      : engineTop.matched
+                        ? sleepSystemText({ en: 'Recommended to try', es: 'Recomendado para probar' })
+                        : sleepSystemText({ en: 'Worth comparing', es: 'Vale la pena comparar' }))
+                  : '';
+                var detailsButton = step.id === 'pillow' ? '' :
+                  '<button type="button" class="sleep-system__alternative-view" data-sleep-action="view-item" data-item-id="' + escapeHtml(item.id) + '">' +
+                    escapeHtml(sleepSystemText({ en: 'Details', es: 'Ver detalles' })) +
+                  '</button>';
                 return '<div class="sleep-system__alternative">' +
                   (item.image ? '<img src="' + escapeHtml(item.image) + '" alt="">' : '') +
                   '<div><div class="sleep-system__alternative-name">' + escapeHtml(sleepSystemText(item.name)) + '</div>' +
-                  '<div class="sleep-system__alternative-copy">' + escapeHtml(sleepSystemText(item.description)) + '</div></div>' +
+                  '<div class="sleep-system__alternative-copy">' + escapeHtml(sleepSystemText(item.description)) + '</div>' +
+                  (tag ? '<div class="sleep-system__alternative-tag">' + escapeHtml(tag) + '</div>' : '') + '</div>' +
+                  '<div class="sleep-system__alternative-actions">' + detailsButton +
                   '<button type="button" class="' + (itemSelected ? 'is-selected' : '') + '" data-sleep-action="' +
                     (step.id === 'pillow' ? 'try-pillow' : (itemSelected ? 'remove-item' : 'select-item')) +
                     '" data-item-id="' + escapeHtml(item.id) + '">' +
                     escapeHtml(step.id === 'pillow'
                       ? sleepSystemText({ en: 'Try this', es: 'Probar esta' })
                       : (itemSelected ? sleepSystemText({ en: 'Selected', es: 'Seleccionado' }) : sleepSystemText({ en: 'Add', es: 'Agregar' }))) +
-                  '</button>' +
+                  '</button></div>' +
                 '</div>';
               }).join('') +
             '</div>'
@@ -20647,6 +20752,10 @@
             '</div>' +
             '<div class="sleep-system__featured-body">' +
               sleepSystemDecisionBanner(step.id, decision) +
+              (viewing
+                ? '<div class="sleep-system__viewing"><span>' + escapeHtml(sleepSystemText({ en: 'Viewing an alternative', es: 'Viendo una alternativa' })) + '</span>' +
+                  '<button type="button" data-sleep-action="view-recommended">' + escapeHtml(sleepSystemText({ en: 'Back to recommended', es: 'Volver a la recomendada' })) + '</button></div>'
+                : '') +
               '<div class="sleep-system__card-eyebrow">' + escapeHtml(badge) + '</div>' +
               '<h3 class="sleep-system__featured-name">' + escapeHtml(sleepSystemText(primary.name)) + '</h3>' +
               // Item 1.4: customer benefit FIRST, product distinction SECOND.
@@ -20999,6 +21108,7 @@
       }
       if (nextIndex < 0) return;
       window._sleepSystemState.activeStep = SLEEP_SYSTEM_STEPS[nextIndex].id;
+      window._sleepSystemState.viewCandidateId = '';   // F2: a view is per step
       analytics.log('sleep_system_step_viewed', { step: window._sleepSystemState.activeStep });
       renderSleepSystem();
       var screen = document.getElementById('accessoriesScreen');
@@ -21017,7 +21127,16 @@
         window.showSleepPlan('sleep-system');
       } else if (action === 'step') {
         window._sleepSystemState.activeStep = control.getAttribute('data-step') || 'adjustability';
+        window._sleepSystemState.viewCandidateId = '';   // F2: a view is per step
         analytics.log('sleep_system_step_viewed', { step: window._sleepSystemState.activeStep });
+        renderSleepSystem();
+      } else if (action === 'view-item') {
+        // F2: view an alternative with the card's full treatment. Presentation
+        // only - no decision, no cart change, no analytics field.
+        window._sleepSystemState.viewCandidateId = control.getAttribute('data-item-id') || '';
+        renderSleepSystem();
+      } else if (action === 'view-recommended') {
+        window._sleepSystemState.viewCandidateId = '';
         renderSleepSystem();
       } else if (action === 'previous-step') {
         moveSleepSystemStep(-1);
@@ -23719,6 +23838,7 @@
           demoPosition: '',
           supportChoice: '',
           pillowCandidateId: '',
+          viewCandidateId: '',
           pillowReaction: '',
           pillowFeedback: '',
           protectionGoal: ''

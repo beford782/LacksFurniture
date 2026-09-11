@@ -1319,30 +1319,30 @@ const MAIN_LITERALS_AT_DA4F746 = [
   ['Remove from plan', 'Quitar del plan'],
   ['Add to plan', 'Agregar al plan'],
   ['Also compare', 'También compara'],
+  ['Recommended to try', 'Recomendado para probar'],
+  ['Worth comparing', 'Vale la pena comparar'],
+  ['Details', 'Ver detalles'],
   ['Try this', 'Probar esta'],
   ['Selected', 'Seleccionado'],
   ['Add', 'Agregar'],
+  ['Viewing an alternative', 'Viendo una alternativa'],
+  ['Back to recommended', 'Volver a la recomendada'],
   ['Current setup', 'Configuración actual'],
   ['Keep it, then confirm compatibility', 'Conservalo y confirma compatibilidad'],
-  ['No new support is being added. Your specialist can confirm that the current frame, platform, or slats meet the mattress requirements.',
-    'No se agregara un soporte nuevo. Tu especialista puede confirmar que el marco, plataforma o tablillas cumplen los requisitos.'],
+  ['No new support is being added. Your specialist can confirm that the current frame, platform, or slats meet the mattress requirements.', 'No se agregara un soporte nuevo. Tu especialista puede confirmar que el marco, plataforma o tablillas cumplen los requisitos.'],
   ['Specialist check', 'Revisión del especialista'],
   ['Confirm the setup before adding support', 'Confirma la configuración antes de agregar soporte'],
-  ['A quick frame and slat check will determine whether the current setup works or whether a foundation is needed.',
-    'Una revisión rápida del marco y las tablillas determinara si la configuración actual funciona o si necesita una base.'],
-  // 3.7 P5 option C (owner ruling + implementation approval 2026-08-30): the
-  // neutral no-trigger base-compare block. EN approved; ES provisional.
+  ['A quick frame and slat check will determine whether the current setup works or whether a foundation is needed.', 'Una revisión rápida del marco y las tablillas determinara si la configuración actual funciona o si necesita una base.'],
   ['Optional base demo', 'Demostración opcional de base'],
   ['Optional base demo', 'Demostración opcional de base'],
   ['Try the positions first', 'Prueba las posiciones primero'],
-  ['Your answers do not point to a specific adjustable base. Try the positions, then compare a base only if the movement improves your comfort.',
-    'Tus respuestas no apuntan a una base ajustable en particular. Prueba las posiciones y compara una base solo si el movimiento mejora tu comodidad.'],
+  ['Your answers do not point to a specific adjustable base. Try the positions, then compare a base only if the movement improves your comfort.', 'Tus respuestas no apuntan a una base ajustable en particular. Prueba las posiciones y compara una base solo si el movimiento mejora tu comodidad.'],
   ['Bases to compare', 'Bases para comparar'],
   ['Selected', 'Seleccionado'],
   ['Add to plan', 'Agregar al plan'],
   ['Ask for a demo', 'Pedir demostración'],
   ['Decide later', 'Decidir después'],
-  ['Specialist notes', 'Notas del especialista']
+  ['Specialist notes', 'Notas del especialista'],
 ];
 const SECONDARY_LITERALS_AT_DA4F746 = [
   ['Keep current support', 'Conservar soporte actual'],
@@ -1364,9 +1364,13 @@ const literalsOf = (s) => [...stripComments(s).matchAll(BILINGUAL_LITERAL)].map(
         JSON.stringify(STEP_COPY_AT_DA4F746[step.id]));
   }
   const mainLits = literalsOf(SRC.main);
-  ok('renderSleepSystemMain carries exactly the da4f746 bilingual literals minus the retired eyebrow plus the nine owner-approved P5 pairs (order and bytes)',
+  // F2 (final-gate finding, Blake, 2026-09-10): five pairs added - the
+  // displaced recommendation's tag reuses the two eyebrow pairs, plus Details,
+  // Viewing an alternative, Back to recommended. Owner-requested; ES provisional
+  // (Invariant 12) until the native review.
+  ok('renderSleepSystemMain carries exactly the da4f746 bilingual literals minus the retired eyebrow plus the nine owner-approved P5 pairs plus the five F2 pairs (order and bytes)',
     JSON.stringify(mainLits) === JSON.stringify(MAIN_LITERALS_AT_DA4F746),
-    `${mainLits.length} literal pairs (da4f746: 33, one retired, nine P5 pairs added 2026-08-30)`);
+    `${mainLits.length} literal pairs (da4f746: 33, one retired, nine P5 pairs added 2026-08-30, five F2 pairs added 2026-09-10)`);
   ok('sleepSystemSecondaryActions labels are byte-identical to da4f746',
     JSON.stringify(literalsOf(SRC.secondary)) === JSON.stringify(SECONDARY_LITERALS_AT_DA4F746));
   // X3 (owner ruling D7, 2026-08-31): re-ruled from "Best for" — the
@@ -1392,6 +1396,163 @@ const literalsOf = (s) => [...stripComments(s).matchAll(BILINGUAL_LITERAL)].map(
     ok(`[${lang}] the alternatives label still reads "${COMPARE[lang]}"`,
       r.main.includes(`<div class="sleep-system__alternatives-label">${COMPARE[lang]}</div>`));
   }
+}
+
+// ------------------------------- 14c-pre. protection goal gate (Codex, PR #120)
+// Codex review of PR #120 at 30d13de: with F2 a viewed protector becomes the
+// card, and the goal badge + rationale were applied unconditionally, so
+// Dri-Tec / iProtect (no cooling / hot_sleeper tag) could claim "Suggested for
+// cooling". The badge and rationale now require protectorSupportsGoal(primary,
+// goal); an unsupported viewed protector carries "Worth comparing" and its own
+// reason; the displaced Ver-Tex keeps the goal badge as its list tag.
+section('protection goal gate - a viewed protector claims only the goal it supports');
+{
+  const NON_HOT = { sleep_position: 'side', temperature: 'comfortable', sleep_issues: ['none'], health_conditions: ['none'] };
+  const COOL_BADGE = { en: 'Suggested for cooling', es: 'Sugerido para frescura' };
+  const COOL_REASON = { en: 'Prioritizes breathable protection for a customer who sleeps hot.', es: 'Prioriza protección transpirable para quien duerme con calor.' };
+  const SPILL_BADGE = { en: 'Suggested for spills', es: 'Sugerido para derrames' };
+  const SPILL_REASON = { en: 'Prioritizes waterproof coverage while preserving the mattress feel.', es: 'Prioriza cobertura impermeable mientras conserva la sensación del colchón.' };
+  const NEUTRAL = { en: 'Worth comparing', es: 'Vale la pena comparar' };
+  const STANDARD = { en: 'A solid option to round out your sleep system', es: 'Una buena opción para completar tu sistema de sueño' };
+  const goalWords = /Suggested for|Sugerido para|sleeps hot|duerme con calor/;
+  for (const lang of ['en', 'es']) {
+    const top = renderStep('protection', { answers: NON_HOT, lang, state: { protectionGoal: 'cooling' } });
+    const topBody = featuredBody(top.main);
+    ok(`[${lang}] control: the non-hot customer's suggested goal is everyday, cooling was chosen by hand, and the renderer puts Ver-Tex on the card`,
+      top.env.api.suggestedGoal() === 'everyday' && top.groups.protection.some((a) => a.id === 'protector-vertex')
+      && (grab(topBody, 'sleep-system__featured-name') || '').includes('Ver-Tex'));
+    ok(`[${lang}] 1. the supported protector (Ver-Tex) keeps "${COOL_BADGE[lang]}" and the cooling rationale`,
+      grab(topBody, 'sleep-system__card-eyebrow') === COOL_BADGE[lang] && grab(topBody, 'sleep-system__featured-reason') === COOL_REASON[lang],
+      JSON.stringify([grab(topBody, 'sleep-system__card-eyebrow'), grab(topBody, 'sleep-system__featured-reason')]));
+    for (const id of ['protector-dritec', 'protector-iprotect']) {
+      const viewed = renderStep('protection', { answers: NON_HOT, lang, state: { protectionGoal: 'cooling', viewCandidateId: id } });
+      const body = featuredBody(viewed.main);
+      const item = viewed.groups.protection.find((a) => a.id === id);
+      ok(`[${lang}/${id}] control: the viewed protector is the card and carries no cooling / hot_sleeper tag`,
+        viewed.main.includes('sleep-system__viewing') && item && !item.matchTags.includes('cooling') && !item.matchTags.includes('hot_sleeper')
+        && body.includes('sleep-system__featured-name">' + (lang === 'es' ? item.name.es : item.name.en).replace(/&/g, '&amp;')));
+      ok(`[${lang}/${id}] 2. the unsupported viewed protector carries neither the cooling badge nor its rationale`,
+        !goalWords.test(body), JSON.stringify([grab(body, 'sleep-system__card-eyebrow'), grab(body, 'sleep-system__featured-reason')]));
+      ok(`[${lang}/${id}] 2. it uses the neutral treatment: "${NEUTRAL[lang]}" and its own existing reason line`,
+        grab(body, 'sleep-system__card-eyebrow') === NEUTRAL[lang]
+        && grab(body, 'sleep-system__featured-reason') === STANDARD[lang]
+        && item.reasons[0] === STANDARD[lang]);
+      ok(`[${lang}/${id}] 3. viewing changed no decision and no cart state`,
+        Object.keys(viewed.env.win._sleepSystemState.decisions).length === 0 && Object.keys(viewed.env.win._accCart).length === 0);
+      const blocks = viewed.main.match(/sleep-system__alternative">[\s\S]*?<\/div><\/div>/g) || [];
+      const vertexRow = blocks.find((b) => b.includes('protector-vertex.jpg'));
+      ok(`[${lang}/${id}] the displaced Ver-Tex is listed with the goal badge as its tag (the eyebrow it would carry)`,
+        !!vertexRow && vertexRow.includes('sleep-system__alternative-tag">' + COOL_BADGE[lang] + '<')
+        && blocks.filter((b) => b.includes('sleep-system__alternative-tag')).length === 1,
+        JSON.stringify(blocks.map((b) => (b.match(/alternative-tag">([^<]*)</) || [])[1] || '')));
+      ok(`[${lang}/${id}] the single price surface still renders on the viewed card`,
+        (viewed.main.match(/class="sleep-system__price"/g) || []).length === 1);
+    }
+    // A supported alternative keeps the goal treatment: every protector
+    // supports spills (engine order Dri-Tec, iProtect, Ver-Tex), so a viewed
+    // iProtect under spills is still suggested.
+    const spills = renderStep('protection', { answers: NON_HOT, lang, state: { protectionGoal: 'spills', viewCandidateId: 'protector-iprotect' } });
+    const spillBody = featuredBody(spills.main);
+    ok(`[${lang}] a viewed protector that DOES support the goal keeps "${SPILL_BADGE[lang]}" and the spills rationale`,
+      spills.main.includes('sleep-system__viewing') && grab(spillBody, 'sleep-system__card-eyebrow') === SPILL_BADGE[lang]
+      && grab(spillBody, 'sleep-system__featured-reason') === SPILL_REASON[lang]);
+  }
+  // Negative control: invert the gate and the unsupported viewed protector
+  // claims the cooling badge again.
+  const inverted = renderStep('protection', {
+    answers: NON_HOT, lang: 'en', state: { protectionGoal: 'cooling', viewCandidateId: 'protector-dritec' },
+    mutate: (s) => {
+      const from = "var goalSupported = step.id === 'protection' && protectorSupportsGoal(primary, protectionGoal);";
+      if (!s.includes(from)) throw new Error('goal-gate negative control: anchor not found');
+      return s.replace(from, "var goalSupported = step.id === 'protection' && !protectorSupportsGoal(primary, protectionGoal);");
+    }
+  });
+  ok('negative control: inverting the support gate re-badges the unsupported viewed protector "Suggested for cooling"',
+    grab(featuredBody(inverted.main), 'sleep-system__card-eyebrow') === 'Suggested for cooling');
+}
+
+// --------------------------------------- 14c. F2: viewing a non-recommended option
+// Final-gate finding F2 (Blake, mounted iPad, 2026-09-10): "see more details of
+// the other adjustable and pillow options". A viewed alternative takes the
+// featured card with its full treatment; viewing decides nothing; the engine's
+// first pick stays in the list with its honest tag; "Back to recommended"
+// restores the order; a view is per step and is wiped. Pillows keep "Try this".
+section('F2 - viewing a non-recommended option');
+{
+  // The rendered name, as the renderer escapes it (Chattam & Wells -> &amp;).
+  const sleepSystemName = (item, lang) => {
+    const raw = (item.name && typeof item.name === 'object') ? (item.name[lang] || item.name.en) : item.name;
+    return String(raw).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  };
+  for (const lang of ['en', 'es']) {
+    for (const step of ['adjustability', 'support', 'protection']) {
+      const base = renderStep(step, { answers: ANSWERS, lang });
+      const [top, ...rest] = base.groups[step];
+      if (!rest.length) {
+        // A single-item group (support under the harness answers) has nothing
+        // to view: no Details control renders and a view id is ignored.
+        const lone = renderStep(step, { answers: ANSWERS, lang, state: { viewCandidateId: top.id } });
+        ok(`[${lang}/${step}] a single-item group offers no Details control and ignores a view id`,
+          !base.main.includes('data-sleep-action="view-item"') && !lone.main.includes('sleep-system__viewing')
+          && grab(featuredBody(lone.main), 'sleep-system__featured-name') === sleepSystemName(top, lang));
+        continue;
+      }
+      const details = (base.main.match(/data-sleep-action="view-item"/g) || []).length;
+      const rows = (base.main.match(/class="sleep-system__alternative"/g) || []).length;
+      ok(`[${lang}/${step}] every alternative row carries a Details control and no viewing line shows`,
+        details === rows && rows >= 1 && !base.main.includes('sleep-system__viewing'), `${details}/${rows}`);
+      const viewed = renderStep(step, { answers: ANSWERS, lang, state: { viewCandidateId: rest[0].id } });
+      const body = featuredBody(viewed.main);
+      ok(`[${lang}/${step}] the viewed alternative takes the featured card (name, image, benefit line, price)`,
+        grab(body, 'sleep-system__featured-name') === sleepSystemName(rest[0], lang)
+        && (viewed.main.match(/class="sleep-system__price"/g) || []).length === 1);
+      ok(`[${lang}/${step}] the card names the viewing state and offers the way back`,
+        viewed.main.includes('sleep-system__viewing') && viewed.main.includes('data-sleep-action="view-recommended"'));
+      const eyebrow = grab(body, 'sleep-system__card-eyebrow') || '';
+      ok(`[${lang}/${step}] the viewed card never claims "Recommended to try" (3.7 P2 stays with the engine's first pick)`,
+        !/Recommended to try|Recomendado para probar/.test(eyebrow), eyebrow);
+      const alts = [...viewed.main.matchAll(/alternative-name">([^<]*)<\/div><div class="sleep-system__alternative-copy">([^<]*)</g)].map((m) => m[1]);
+      ok(`[${lang}/${step}] the engine's first pick is now in the list, tagged, and no alternative carries an eyebrow or a price`,
+        alts.includes(sleepSystemName(top, lang)) && viewed.main.includes('sleep-system__alternative-tag')
+        && !/sleep-system__alternative[\s\S]*sleep-system__card-eyebrow/.test(viewed.main)
+        && !/sleep-system__alternative[\s\S]*?sleep-system__price/.test(viewed.main));
+      ok(`[${lang}/${step}] viewing decides nothing (no decision recorded, cart untouched)`,
+        Object.keys(viewed.env.win._sleepSystemState.decisions).length === 0 && Object.keys(viewed.env.win._accCart).length === 0);
+      const unknown = renderStep(step, { answers: ANSWERS, lang, state: { viewCandidateId: 'no-such-item' } });
+      ok(`[${lang}/${step}] an unknown view id changes nothing`, grab(featuredBody(unknown.main), 'sleep-system__featured-name') === sleepSystemName(top, lang)
+        && !unknown.main.includes('sleep-system__viewing'));
+    }
+    const pillow = renderStep('pillow', { answers: ANSWERS, lang });
+    const pillowAlt = pillow.groups.pillow[1];
+    const pillowViewed = pillowAlt ? renderStep('pillow', { answers: ANSWERS, lang, state: { viewCandidateId: pillowAlt.id } }) : pillow;
+    ok(`[${lang}] the pillow step keeps "Try this" and ignores a view id (no Details control, no viewing line)`,
+      !pillow.main.includes('data-sleep-action="view-item"') && !pillowViewed.main.includes('sleep-system__viewing')
+      && grab(featuredBody(pillowViewed.main), 'sleep-system__featured-name') === sleepSystemName(pillow.groups.pillow[0], lang));
+  }
+  // The handler: view-item sets the id, view-recommended clears it, a step change clears it.
+  const HANDLER = extractFunction('function handleSleepSystemAction(control)');
+  const MOVE = extractFunction('function moveSleepSystemStep(direction)');
+  function drive(action, attrs, state) {
+    const win = { _accCart: {}, _sleepSystemState: Object.assign({ activeStep: 'adjustability', decisions: {}, demoPosition: '', supportChoice: '',
+      pillowCandidateId: '', viewCandidateId: '', pillowReaction: '', pillowFeedback: '', protectionGoal: '' }, state || {}) };
+    const src = [SRC.category, SRC.stepFor, SRC.qualify, SRC.scorer, SRC.readGroups, HANDLER, MOVE].join('\n');
+    new Function('window', 'answers', 'currentLang', 'ACCESSORIES', 'analytics', 'control', 'SLEEP_SYSTEM_STEPS', 'document',
+      src + `
+      function syncAccessoryAnalytics() {}
+      function renderSleepSystem() {}
+      handleSleepSystemAction(control);`)(
+      win, ANSWERS, 'en', ACCESSORIES_JSON, { log() {} },
+      { getAttribute: (k) => (k === 'data-sleep-action' ? action : (attrs || {})[k] || null) },
+      makeEnv({ answers: ANSWERS }).api.STEPS, { getElementById: () => null });
+    return win._sleepSystemState;
+  }
+  ok('view-item records the viewed id and nothing else', (() => { const s = drive('view-item', { 'data-item-id': 'base-x' }); return s.viewCandidateId === 'base-x' && Object.keys(s.decisions).length === 0; })());
+  ok('view-recommended clears it', drive('view-recommended', {}, { viewCandidateId: 'base-x' }).viewCandidateId === '');
+  ok('a rail step change clears it', drive('step', { 'data-step': 'support' }, { viewCandidateId: 'base-x' }).viewCandidateId === '');
+  ok('next-step clears it', drive('next-step', {}, { viewCandidateId: 'base-x' }).viewCandidateId === '');
+  ok('the initial Sleep System state declares viewCandidateId and the wipe resets it',
+    /viewCandidateId: '',/.test(html.slice(html.indexOf('window._sleepSystemState = {'), html.indexOf('window._sleepSystemState = {') + 1200))
+    && (html.match(/viewCandidateId: '',/g) || []).length === 2);
 }
 
 // ------------------------------------------------------ 15. negative controls
@@ -1469,9 +1630,11 @@ section('3.7 P2 - "Recommended to try" requires an answer-derived match (rendere
     mutate: (s) => {
       // The extracted source keeps index.html's own line endings (CRLF on
       // Windows checkouts), so the anchor tolerates either.
-      const from = /: \(primary\.matched(\r?\n)/;
+      // F2 (2026-09-10) added `&& !viewing` to the badge condition; the anchor
+      // follows the shipped line.
+      const from = /: \(primary\.matched && !viewing(\r?\n)/;
       if (!from.test(s)) throw new Error('P2 negative control: anchor not found');
-      return s.replace(from, ': (primary.meetsMatchThreshold$1');
+      return s.replace(from, ': (primary.meetsMatchThreshold && !viewing$1');
     }
   });
   ok('negative control: keying the badge on meetsMatchThreshold again re-badges the unmatched hero as recommended',
