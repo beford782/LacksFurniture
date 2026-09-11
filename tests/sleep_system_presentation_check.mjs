@@ -1398,6 +1398,79 @@ const literalsOf = (s) => [...stripComments(s).matchAll(BILINGUAL_LITERAL)].map(
   }
 }
 
+// ------------------------------- 14c-pre. protection goal gate (Codex, PR #120)
+// Codex review of PR #120 at 30d13de: with F2 a viewed protector becomes the
+// card, and the goal badge + rationale were applied unconditionally, so
+// Dri-Tec / iProtect (no cooling / hot_sleeper tag) could claim "Suggested for
+// cooling". The badge and rationale now require protectorSupportsGoal(primary,
+// goal); an unsupported viewed protector carries "Worth comparing" and its own
+// reason; the displaced Ver-Tex keeps the goal badge as its list tag.
+section('protection goal gate - a viewed protector claims only the goal it supports');
+{
+  const NON_HOT = { sleep_position: 'side', temperature: 'comfortable', sleep_issues: ['none'], health_conditions: ['none'] };
+  const COOL_BADGE = { en: 'Suggested for cooling', es: 'Sugerido para frescura' };
+  const COOL_REASON = { en: 'Prioritizes breathable protection for a customer who sleeps hot.', es: 'Prioriza protección transpirable para quien duerme con calor.' };
+  const SPILL_BADGE = { en: 'Suggested for spills', es: 'Sugerido para derrames' };
+  const SPILL_REASON = { en: 'Prioritizes waterproof coverage while preserving the mattress feel.', es: 'Prioriza cobertura impermeable mientras conserva la sensación del colchón.' };
+  const NEUTRAL = { en: 'Worth comparing', es: 'Vale la pena comparar' };
+  const STANDARD = { en: 'A solid option to round out your sleep system', es: 'Una buena opción para completar tu sistema de sueño' };
+  const goalWords = /Suggested for|Sugerido para|sleeps hot|duerme con calor/;
+  for (const lang of ['en', 'es']) {
+    const top = renderStep('protection', { answers: NON_HOT, lang, state: { protectionGoal: 'cooling' } });
+    const topBody = featuredBody(top.main);
+    ok(`[${lang}] control: the non-hot customer's suggested goal is everyday, cooling was chosen by hand, and the renderer puts Ver-Tex on the card`,
+      top.env.api.suggestedGoal() === 'everyday' && top.groups.protection.some((a) => a.id === 'protector-vertex')
+      && (grab(topBody, 'sleep-system__featured-name') || '').includes('Ver-Tex'));
+    ok(`[${lang}] 1. the supported protector (Ver-Tex) keeps "${COOL_BADGE[lang]}" and the cooling rationale`,
+      grab(topBody, 'sleep-system__card-eyebrow') === COOL_BADGE[lang] && grab(topBody, 'sleep-system__featured-reason') === COOL_REASON[lang],
+      JSON.stringify([grab(topBody, 'sleep-system__card-eyebrow'), grab(topBody, 'sleep-system__featured-reason')]));
+    for (const id of ['protector-dritec', 'protector-iprotect']) {
+      const viewed = renderStep('protection', { answers: NON_HOT, lang, state: { protectionGoal: 'cooling', viewCandidateId: id } });
+      const body = featuredBody(viewed.main);
+      const item = viewed.groups.protection.find((a) => a.id === id);
+      ok(`[${lang}/${id}] control: the viewed protector is the card and carries no cooling / hot_sleeper tag`,
+        viewed.main.includes('sleep-system__viewing') && item && !item.matchTags.includes('cooling') && !item.matchTags.includes('hot_sleeper')
+        && body.includes('sleep-system__featured-name">' + (lang === 'es' ? item.name.es : item.name.en).replace(/&/g, '&amp;')));
+      ok(`[${lang}/${id}] 2. the unsupported viewed protector carries neither the cooling badge nor its rationale`,
+        !goalWords.test(body), JSON.stringify([grab(body, 'sleep-system__card-eyebrow'), grab(body, 'sleep-system__featured-reason')]));
+      ok(`[${lang}/${id}] 2. it uses the neutral treatment: "${NEUTRAL[lang]}" and its own existing reason line`,
+        grab(body, 'sleep-system__card-eyebrow') === NEUTRAL[lang]
+        && grab(body, 'sleep-system__featured-reason') === STANDARD[lang]
+        && item.reasons[0] === STANDARD[lang]);
+      ok(`[${lang}/${id}] 3. viewing changed no decision and no cart state`,
+        Object.keys(viewed.env.win._sleepSystemState.decisions).length === 0 && Object.keys(viewed.env.win._accCart).length === 0);
+      const blocks = viewed.main.match(/sleep-system__alternative">[\s\S]*?<\/div><\/div>/g) || [];
+      const vertexRow = blocks.find((b) => b.includes('protector-vertex.jpg'));
+      ok(`[${lang}/${id}] the displaced Ver-Tex is listed with the goal badge as its tag (the eyebrow it would carry)`,
+        !!vertexRow && vertexRow.includes('sleep-system__alternative-tag">' + COOL_BADGE[lang] + '<')
+        && blocks.filter((b) => b.includes('sleep-system__alternative-tag')).length === 1,
+        JSON.stringify(blocks.map((b) => (b.match(/alternative-tag">([^<]*)</) || [])[1] || '')));
+      ok(`[${lang}/${id}] the single price surface still renders on the viewed card`,
+        (viewed.main.match(/class="sleep-system__price"/g) || []).length === 1);
+    }
+    // A supported alternative keeps the goal treatment: every protector
+    // supports spills (engine order Dri-Tec, iProtect, Ver-Tex), so a viewed
+    // iProtect under spills is still suggested.
+    const spills = renderStep('protection', { answers: NON_HOT, lang, state: { protectionGoal: 'spills', viewCandidateId: 'protector-iprotect' } });
+    const spillBody = featuredBody(spills.main);
+    ok(`[${lang}] a viewed protector that DOES support the goal keeps "${SPILL_BADGE[lang]}" and the spills rationale`,
+      spills.main.includes('sleep-system__viewing') && grab(spillBody, 'sleep-system__card-eyebrow') === SPILL_BADGE[lang]
+      && grab(spillBody, 'sleep-system__featured-reason') === SPILL_REASON[lang]);
+  }
+  // Negative control: invert the gate and the unsupported viewed protector
+  // claims the cooling badge again.
+  const inverted = renderStep('protection', {
+    answers: NON_HOT, lang: 'en', state: { protectionGoal: 'cooling', viewCandidateId: 'protector-dritec' },
+    mutate: (s) => {
+      const from = "var goalSupported = step.id === 'protection' && protectorSupportsGoal(primary, protectionGoal);";
+      if (!s.includes(from)) throw new Error('goal-gate negative control: anchor not found');
+      return s.replace(from, "var goalSupported = step.id === 'protection' && !protectorSupportsGoal(primary, protectionGoal);");
+    }
+  });
+  ok('negative control: inverting the support gate re-badges the unsupported viewed protector "Suggested for cooling"',
+    grab(featuredBody(inverted.main), 'sleep-system__card-eyebrow') === 'Suggested for cooling');
+}
+
 // --------------------------------------- 14c. F2: viewing a non-recommended option
 // Final-gate finding F2 (Blake, mounted iPad, 2026-09-10): "see more details of
 // the other adjustable and pillow options". A viewed alternative takes the
