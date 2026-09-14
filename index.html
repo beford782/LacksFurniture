@@ -21087,9 +21087,17 @@
       var item = ACCESSORIES.find(function(accessory) { return accessory.id === itemId; });
       if (!item) return;
       var stepId = sleepSystemStepIdForItem(item);
+      // The setup guide's height choice and the base-step product are ONE
+      // decision: a foundation records its height, and an adjustable base
+      // clears whatever foundation choice was pressed before it, as the two
+      // cannot coexist under the mattress (PR #122 audit repair, 2026-09-14:
+      // the eviction below removed the foundation but left "Standard height"
+      // pressed beside the adjustable base on rerender).
       if (sleepSystemStepForItem(item) === 'support' && shouldSelect) {
         window._sleepSystemState.supportChoice =
           item.subType === 'low_profile' ? 'low' : 'standard';
+      } else if (stepId === 'base' && shouldSelect) {
+        window._sleepSystemState.supportChoice = '';
       }
       // One product per STEP: on the combined base step an adjustable base
       // and a foundation now displace each other, as they share the one

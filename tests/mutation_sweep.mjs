@@ -2707,6 +2707,16 @@ const MUTATIONS = [
   ["combined base: the analytics step enum drops the base step (every base-step event field is redacted away)",
     "        step: ['base', 'pillow', 'protection'],",
     "        step: ['pillow', 'protection'],", ["tests/session_async_check.mjs"]],
+  // PR #122 audit repair (2026-09-14): selecting an adjustable base must clear
+  // the foundation height choice it evicts, or the rerendered setup guide
+  // presses "Standard height" beside the adjustable base. Two ways to rot:
+  // the clearing branch is disabled, or it clears nothing.
+  ["combined base: an adjustable base leaves the evicted foundation's height choice pressed (the clearing branch is disabled)",
+    "      } else if (stepId === 'base' && shouldSelect) {\n        window._sleepSystemState.supportChoice = '';",
+    "      } else if (false) {\n        window._sleepSystemState.supportChoice = '';", SLEEP],
+  ["combined base: the adjustable-base branch re-records the foundation's choice instead of clearing it",
+    "      } else if (stepId === 'base' && shouldSelect) {\n        window._sleepSystemState.supportChoice = '';",
+    "      } else if (stepId === 'base' && shouldSelect) {\n        window._sleepSystemState.supportChoice = 'standard';", SLEEP],
 
   // --- A4.3 (owner-approved 2026-09-03): the reduced nine-question quiz. The
   // visit trigger is gone, and with it the Summary's context row. These entries

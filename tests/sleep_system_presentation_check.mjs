@@ -2754,6 +2754,74 @@ section('combined base step — one slot under the mattress, composed over the e
     });
     ok('negative control: keying the position on the retired step id loses it (the assertion bites)',
       demoedOld.win._sleepSystemState.decisions.base.position === '');
+
+    // (i) State integrity across the two base transitions (PR #122 audit
+    // repair, 2026-09-14). The setup guide's pressed height choice and the
+    // base-step product are ONE decision, so the real cart writer runs
+    // through the handler and the real renderers then read the resulting
+    // state: exactly one product, the decision names it, and the guide
+    // presses only a choice that can coexist with it. The defect: a
+    // foundation recorded supportChoice 'standard', the adjustable base
+    // evicted the foundation but left the choice behind, and the rerender
+    // showed "Standard height" pressed beside an adjustable base.
+    const unsure = { 'data-sleep-action': 'support-choice', 'data-support-choice': 'unsure' };
+    const pressedChoices = (main) =>
+      [...main.matchAll(/aria-pressed="true" data-sleep-action="support-choice" data-support-choice="([a-z]+)"/g)].map((m) => m[1]);
+    const rendered = (run) => {
+      const r = renderStep('base', { answers: BACK_PAIN, cart: run.win._accCart, state: run.win._sleepSystemState });
+      return Object.assign(r, { pressed: pressedChoices(r.main), win: run.win });
+    };
+    const namesOnRail = (r, id) => r.rail.includes('sleep-system__step-status">' + nameOf(id, 'en') + '<');
+    const namesOnPlan = (r, id) => r.plan.includes('plan-item-status">' + nameOf(id, 'en') + '<');
+
+    const toBase = rendered(runCart([select(FOUNDATION), select('base-bt2000')]));
+    ok('foundation -> adjustable: exactly one base-step product remains and decisions.base names the adjustable base',
+      JSON.stringify(baseIds(toBase.win)) === JSON.stringify(['base-bt2000']) &&
+      toBase.win._sleepSystemState.decisions.base.status === 'selected' && toBase.win._sleepSystemState.decisions.base.itemId === 'base-bt2000',
+      JSON.stringify({ cart: Object.keys(toBase.win._accCart), decision: toBase.win._sleepSystemState.decisions.base }));
+    ok('foundation -> adjustable: no stale foundation height choice survives in state (supportChoice is cleared)',
+      toBase.win._sleepSystemState.supportChoice === '', JSON.stringify(toBase.win._sleepSystemState.supportChoice));
+    ok('foundation -> adjustable: the rerendered setup guide presses NO choice while the rail and the sidecar name the adjustable base',
+      toBase.pressed.length === 0 && namesOnRail(toBase, 'base-bt2000') && namesOnPlan(toBase, 'base-bt2000'),
+      JSON.stringify({ pressed: toBase.pressed, rail: namesOnRail(toBase, 'base-bt2000'), plan: namesOnPlan(toBase, 'base-bt2000') }));
+    ok('foundation -> adjustable: the demo position is untouched by the transition',
+      rendered(runCart([select(FOUNDATION), select('base-bt2000')], { state: { demoPosition: 'reading' } })).win._sleepSystemState.demoPosition === 'reading');
+
+    const toFoundation = rendered(runCart([select('base-bt2000'), select(FOUNDATION)]));
+    ok('adjustable -> foundation: exactly one base-step product remains and decisions.base names the foundation',
+      JSON.stringify(baseIds(toFoundation.win)) === JSON.stringify([FOUNDATION]) &&
+      toFoundation.win._sleepSystemState.decisions.base.status === 'selected' && toFoundation.win._sleepSystemState.decisions.base.itemId === FOUNDATION,
+      JSON.stringify({ cart: Object.keys(toFoundation.win._accCart), decision: toFoundation.win._sleepSystemState.decisions.base }));
+    ok('adjustable -> foundation: the rerendered setup guide presses exactly the foundation\'s height choice ("Standard height") and the rail names the foundation',
+      JSON.stringify(toFoundation.pressed) === JSON.stringify(['standard']) && toFoundation.win._sleepSystemState.supportChoice === 'standard' &&
+      namesOnRail(toFoundation, FOUNDATION) && namesOnPlan(toFoundation, FOUNDATION),
+      JSON.stringify({ pressed: toFoundation.pressed, supportChoice: toFoundation.win._sleepSystemState.supportChoice }));
+
+    // Keep-current and not-sure after a foundation OR an adjustable base still
+    // evict every base-step product and press only their own choice.
+    const keptAfterFoundation = rendered(runCart([select(FOUNDATION), current]));
+    ok('foundation -> keep current: every base-step product is gone, the decision is already, only "Keep current support" is pressed',
+      baseIds(keptAfterFoundation.win).length === 0 && keptAfterFoundation.win._sleepSystemState.decisions.base.status === 'already' &&
+      JSON.stringify(keptAfterFoundation.pressed) === JSON.stringify(['current']), JSON.stringify(keptAfterFoundation.pressed));
+    const unsureAfterBase = rendered(runCart([select('base-bt2000'), unsure]));
+    ok('adjustable -> not sure: every base-step product is gone, the decision is confirm, only "Not sure" is pressed',
+      baseIds(unsureAfterBase.win).length === 0 && unsureAfterBase.win._sleepSystemState.decisions.base.status === 'confirm' &&
+      JSON.stringify(unsureAfterBase.pressed) === JSON.stringify(['unsure']), JSON.stringify(unsureAfterBase.pressed));
+
+    // Negative control: removing the repair (the adjustable-base branch that
+    // clears the choice) reproduces the defect exactly - the foundation is
+    // evicted, the base is named, and "Standard height" is still pressed.
+    const unrepaired = rendered(runCart([select(FOUNDATION), select('base-bt2000')], {
+      mutate: (s) => {
+        const from = "} else if (stepId === 'base' && shouldSelect) {";
+        if (!s.includes(from)) throw new Error('combined-base negative control: repair anchor not found');
+        return s.replace(from, '} else if (false) {');
+      }
+    }));
+    ok('negative control: without the repair the adjustable base is in the cart AND "Standard height" is still pressed (the integrity assertion bites)',
+      JSON.stringify(baseIds(unrepaired.win)) === JSON.stringify(['base-bt2000']) && unrepaired.win._sleepSystemState.supportChoice === 'standard' &&
+      JSON.stringify(unrepaired.pressed) === JSON.stringify(['standard']) && namesOnRail(unrepaired, 'base-bt2000'),
+      JSON.stringify({ pressed: unrepaired.pressed, supportChoice: unrepaired.win._sleepSystemState.supportChoice }));
   }
 
   // Rendered negative controls for the composition itself.
