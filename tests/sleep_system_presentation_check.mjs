@@ -2882,6 +2882,32 @@ section('combined base step — one slot under the mattress, composed over the e
       baseIds(staleLater.win).length === 0 && staleLater.win._sleepSystemState.supportChoice === 'standard' &&
       JSON.stringify(staleLater.pressed) === JSON.stringify(['standard']) && JSON.stringify(pressedDecisions(staleLater.main)) === JSON.stringify(['later']),
       decisionState(staleLater));
+
+    // (k) OWNER RULING (Blake, 2026-09-14, PR #122 option 1): removing a
+    // selected foundation with its own Remove control PRESERVES the
+    // customer's height preference - the cart empties and the Base decision
+    // reopens, but "Standard height" stays pressed so the next foundation (or
+    // the specialist) still sees it. The alternative (reopen the whole Base
+    // choice) was NOT chosen. This is the shipped behaviour, pinned so it
+    // cannot drift into the repaired paths' clearing.
+    const remove = (id) => ({ 'data-sleep-action': 'remove-item', 'data-item-id': id });
+    const removed = rendered(runCart([select(FOUNDATION), remove(FOUNDATION)], { state: { demoPosition: 'reading' } }));
+    ok('owner ruling (option 1): removing the foundation empties the base step and reopens the decision (no product, no decision pressed)',
+      baseIds(removed.win).length === 0 && removed.win._sleepSystemState.decisions.base.status === 'open' &&
+      pressedDecisions(removed.main).length === 0 && !namesOnRail(removed, FOUNDATION), decisionState(removed));
+    ok('owner ruling (option 1): the height preference SURVIVES the removal - supportChoice stays standard and "Standard height" stays pressed',
+      removed.win._sleepSystemState.supportChoice === 'standard' && JSON.stringify(removed.pressed) === JSON.stringify(['standard']) &&
+      removed.win._sleepSystemState.demoPosition === 'reading', decisionState(removed));
+    // negative control: a removal that reopens the whole Base choice (option 2) is detected
+    const reopenAll = rendered(runCart([select(FOUNDATION), remove(FOUNDATION)], {
+      mutate: (s) => {
+        const from = "window._sleepSystemState.decisions[stepId] = { status: 'open' };";
+        if (!s.includes(from) || s.split(from).length !== 2) throw new Error('owner-ruling negative control: removal anchor not found once');
+        return s.replace(from, from + " window._sleepSystemState.supportChoice = '';");
+      }
+    }));
+    ok('negative control: a removal that also clears the height choice (the rejected option 2) is detected - nothing pressed after the removal',
+      reopenAll.win._sleepSystemState.supportChoice === '' && reopenAll.pressed.length === 0, decisionState(reopenAll));
   }
 
   // Rendered negative controls for the composition itself.

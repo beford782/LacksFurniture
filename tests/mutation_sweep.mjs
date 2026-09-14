@@ -2727,6 +2727,12 @@ const MUTATIONS = [
   ["combined base: the decision-path clearing covers the demo request only (a deferral keeps the stale height choice)",
     "        if (stepId === 'base' && !reopening && (requestedStatus === 'demo' || requestedStatus === 'later') &&",
     "        if (stepId === 'base' && !reopening && requestedStatus === 'demo' &&", SLEEP],
+  // Owner ruling (Blake, 2026-09-14, PR #122 option 1): removing a selected
+  // foundation PRESERVES the customer's height preference. The rejected
+  // option 2 (reopen the whole Base choice) must not creep in.
+  ["combined base: removing the foundation also clears the height preference (the rejected option 2)",
+    "        window._sleepSystemState.decisions[stepId] = { status: 'open' };",
+    "        window._sleepSystemState.decisions[stepId] = { status: 'open' };\n        window._sleepSystemState.supportChoice = '';", SLEEP],
 
   // --- A4.3 (owner-approved 2026-09-03): the reduced nine-question quiz. The
   // visit trigger is gone, and with it the Summary's context row. These entries
