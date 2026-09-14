@@ -2205,10 +2205,11 @@ const MUTATIONS = [
     "          side: { en: 'Check that the customer\\'s head fills the shoulder-to-mattress gap.', es: 'Verifica que la cabeza del cliente llene el espacio entre el hombro y el colch\u00f3n.' },",
     "          side: { en: 'Your head should fill the shoulder-to-mattress gap.', es: 'Tu cabeza debe llenar el espacio entre el hombro y el colch\u00f3n.' },",
     SLEEP],
-  // (8) an ES counterpart goes English-only (the support step's third note).
+  // (8) an ES counterpart goes English-only (the base step's third note - the
+  //     Flat baseline, since the combined base step of 2026-09-14).
   ["1.4 close-out: a reworded note's ES value is replaced by its EN value",
-    "es: 'Verifica la configuraci\u00f3n final antes de que el cliente haga su selecci\u00f3n.'",
-    "es: 'Verify the final setup before the customer makes a selection.'",
+    "es: 'Empieza Plana para tener una referencia clara.'",
+    "es: 'Begin Flat so every change has a clear baseline.'",
     SLEEP],
   // (9) a new, narrower breakpoint is added - the "no breakpoint added" pin
   //     counts @media max-width blocks against the da4f746 count.
@@ -2655,7 +2656,7 @@ const MUTATIONS = [
   // 3.7 P5 option C (owner ruling 2026-08-30): the neutral no-trigger base
   // presentation. Observed by the rendered P5 section.
   ["sleep system: the unjustified base hero returns for no-trigger customers (P5 assembly reverted)",
-    "          (supportOutcome || (adjustabilityNoTrigger ? basesCompareHtml : productHtml));",
+    "          (supportOutcome || (adjustabilityNoTrigger\n            ? (basesCompareStandsAlone ? basesCompareHtml : productHtml + basesCompareHtml)\n            : productHtml));",
     "          (supportOutcome || productHtml);", SLEEP],
   ["sleep system: the neutral compare list drops to the engine's back-filled group (all-bases rule removed)",
     "          var allBases = (Array.isArray(ACCESSORIES) ? ACCESSORIES : []).filter(function(item) {\n            return sleepSystemStepForItem(item) === 'adjustability';\n          });",
@@ -2663,6 +2664,49 @@ const MUTATIONS = [
   ["sleep system: the neutral row action loses its plan wording (Add to plan -> Add)",
     "sleepSystemText({ en: 'Add to plan', es: 'Agregar al plan' })) +\n                  '</button>' +\n                '</div>';\n              }).join('')",
     "sleepSystemText({ en: 'Add', es: 'Agregar' })) +\n                  '</button>' +\n                '</div>';\n              }).join('')", SLEEP],
+
+  // --- Combined base step (owner-approved three-step design, 2026-09-14):
+  // base -> pillow -> protection. The engine's four groups and the Phase 1
+  // fixture are untouched; these entries are the ways the VIEW-layer
+  // composition can rot. Observed by the presentation suite's combined-base
+  // section (foundation leads without a trigger, one product per step, the
+  // setup choice decides the base step, the demo keeps its position).
+  ["combined base: the step table grows the retired support step back",
+    "      {\n        id: 'pillow',\n        label: { en: 'Pillow', es: 'Almohada' },",
+    "      {\n        id: 'support',\n        label: { en: 'Support', es: 'Soporte' },\n        title: { en: 'Set the right support', es: 'Elige el soporte correcto' },\n        copy: { en: 'x', es: 'x' },\n        guidanceTitle: { en: 'x', es: 'x' }\n      },\n      {\n        id: 'pillow',\n        label: { en: 'Pillow', es: 'Almohada' },", SLEEP],
+  ["combined base: the adjustable bases lead even when no answer fired (the foundation no longer leads)",
+    "      return bases[0] && bases[0].matched ? bases.concat(support) : support.concat(bases);",
+    "      return bases.concat(support);", SLEEP],
+  ["combined base: the foundation is dropped from the base step (engine partition used as the step)",
+    "      if (stepId !== 'base') return groups[stepId] || [];\n      var bases = groups.adjustability || [];",
+    "      if (stepId !== 'base') return groups[stepId] || [];\n      var bases = groups.adjustability || [];\n      return bases;", SLEEP],
+  ["combined base: an adjustable base and a foundation coexist in the plan again (eviction by engine group, not by step)",
+    "        if (existing && sleepSystemStepIdForItem(existing) === stepId) delete window._accCart[id];",
+    "        if (existing && sleepSystemStepForItem(existing) === sleepSystemStepForItem(item)) delete window._accCart[id];", SLEEP],
+  ["combined base: the setup choice records its decision on the retired support key",
+    "          window._sleepSystemState.decisions.base = { status: 'already' };",
+    "          window._sleepSystemState.decisions.support = { status: 'already' };", SLEEP],
+  ["combined base: the setup choice clears only the foundation, leaving an adjustable base in the plan",
+    "          if (supportItem && sleepSystemStepIdForItem(supportItem) === 'base') delete window._accCart[id];",
+    "          if (supportItem && sleepSystemStepForItem(supportItem) === 'support') delete window._accCart[id];", SLEEP],
+  ["combined base: the neutral base list is dropped beneath the foundation card",
+    "            ? (basesCompareStandsAlone ? basesCompareHtml : productHtml + basesCompareHtml)",
+    "            ? (basesCompareStandsAlone ? basesCompareHtml : productHtml)", SLEEP],
+  ["combined base: the adjustable bases reappear under Also compare beside the neutral list (every base listed twice)",
+    "      if (baseNoTrigger) {\n        alternatives = alternatives.filter(function(item) { return item.subType !== 'adjustable'; });\n      }",
+    "", SLEEP],
+  ["combined base: the demo decision forgets its position",
+    "          position: stepId === 'base' ? window._sleepSystemState.demoPosition : ''",
+    "          position: ''", SLEEP],
+  ["combined base: the rail decision resolver reads the engine group instead of the step (a chosen base never marks the step)",
+    "        return item && sleepSystemStepIdForItem(item) === stepId;",
+    "        return item && sleepSystemStepForItem(item) === stepId;", SLEEP],
+  ["combined base: the wipe returns the customer to a step that no longer exists",
+    "        window._sleepSystemState = {\n          activeStep: 'base',",
+    "        window._sleepSystemState = {\n          activeStep: 'adjustability',", SESSION],
+  ["combined base: the analytics step enum drops the base step (every base-step event field is redacted away)",
+    "        step: ['base', 'pillow', 'protection'],",
+    "        step: ['pillow', 'protection'],", ["tests/session_async_check.mjs"]],
 
   // --- A4.3 (owner-approved 2026-09-03): the reduced nine-question quiz. The
   // visit trigger is gone, and with it the Summary's context row. These entries

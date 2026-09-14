@@ -1,5 +1,16 @@
 // sleep_system_presentation_check.mjs — item 1.4, the Sleep System presentation.
 //
+// COMBINED BASE STEP (owner-approved three-step design, 2026-09-14). The
+// former 'adjustability' and 'support' steps are one 'base' step: the
+// customer walks base -> pillow -> protection. The ENGINE is untouched -
+// readSleepSystemGroups() still returns its four groups and
+// sleepSystemStepForItem() still partitions the catalog (fixture-pinned);
+// the step composes over both groups in the view layer
+// (sleepSystemGroupsForStep) and every decision, cart eviction and rail read
+// resolves the step through sleepSystemStepIdForItem(). Guard 18 (at the end)
+// covers the combined step; every four-step pin below was re-cut to three.
+// Pillow and protection assertions are unchanged in intent.
+//
 // WHAT THIS ITEM CHANGED, AND WHAT IT DELIBERATELY DID NOT. The inherited
 // Sleep System entered at `db46d4b` already implementing the four-step model
 // (adjustability, support, pillow, protection) with a step rail, a plan
@@ -45,7 +56,8 @@
 //
 // Guards, in order:
 //   1.  extraction (abort hard if any source is missing)
-//   2.  the governed four-step order and its single definition
+//   2.  the governed three-step order (base, pillow, protection since
+//       2026-09-14) and its single definition
 //   3.  benefit-first / distinction-second, all four steps, EN and ES
 //   4.  the procedure region: separately labelled, and never a duplicate of
 //       the customer-benefit block
@@ -143,6 +155,11 @@ const SRC = {
   text: extractFunction('function sleepSystemText(value)'),
   category: extractFunction('function sleepSystemCategory(item)'),
   stepFor: extractFunction('function sleepSystemStepForItem(item)'),
+  // Combined base step (2026-09-14): the view-layer group -> step table, the
+  // per-item step resolver and the base step's composed ranked list.
+  groupStepMap: extractFunction('var SLEEP_SYSTEM_GROUP_STEP ='),
+  groupStep: extractFunction('function sleepSystemStepIdForItem(item)'),
+  groupsForStep: extractFunction('function sleepSystemGroupsForStep(groups, stepId)'),
   qualify: extractFunction('function qualifyRankedChoices(sorted, scoreForItem)'),
   scorer: extractFunction('function scoreAccessoriesFromAnswers()'),
   readGroups: extractFunction('function readSleepSystemGroups()'),
@@ -214,13 +231,14 @@ function makeEnv({
   const win = {
     _accCart: cart,
     _sleepSystemState: Object.assign({
-      activeStep: 'adjustability', decisions: {}, demoPosition: '', supportChoice: '',
+      activeStep: 'base', decisions: {}, demoPosition: '', supportChoice: '',
       pillowCandidateId: '', pillowReaction: '', pillowFeedback: '', protectionGoal: ''
     }, state)
   };
   const analytics = { logged: [], log(e, d) { this.logged.push({ e, d }); } };
   let src = [
-    SRC.STEPS, SRC.escapeHtml, SRC.text, SRC.category, SRC.stepFor, SRC.qualify, SRC.scorer,
+    SRC.STEPS, SRC.escapeHtml, SRC.text, SRC.category, SRC.stepFor, SRC.groupStepMap, SRC.groupStep, SRC.groupsForStep,
+    SRC.qualify, SRC.scorer,
     SRC.readGroups, SRC.decision, SRC.decisionLabel, SRC.statusKind, SRC.posLabel, SRC.getDemo, SRC.renderDemo,
     SRC.catalogLowProfile, SRC.guidance, SRC.rail, SRC.secondary, SRC.decisionAttrs, SRC.decisionBanner, SRC.choiceAttrs,
     SRC.supportGuide, SRC.pillowFit, SRC.suggestedGoal,
@@ -243,6 +261,8 @@ function makeEnv({
       guidance: sleepSystemGuidance,
       decision: sleepSystemDecision,
       decisionLabel: sleepSystemDecisionLabel,
+      stepIdFor: sleepSystemStepIdForItem,
+      groupsForStep: sleepSystemGroupsForStep,
       STEPS: SLEEP_SYSTEM_STEPS
     };`
   )(
@@ -275,7 +295,13 @@ function renderStep(step, opts = {}) {
   };
 }
 
-const STEP_IDS = ['adjustability', 'support', 'pillow', 'protection'];
+const STEP_IDS = ['base', 'pillow', 'protection'];
+// The engine's group keys are NOT the step ids: the base step composes over
+// the first two. Every assertion about engine output walks these.
+const ENGINE_GROUP_KEYS = ['support', 'adjustability', 'pillow', 'protection'];
+// The step's ranked list as the renderer sees it (the composed list for base,
+// the group itself for pillow and protection).
+const stepItems = (r, step) => r.env.api.groupsForStep(r.groups, step);
 // A customer whose answers fire an answer-specific reason on every step, so the
 // benefit line is genuinely populated rather than the neutral fallback.
 const ANSWERS = {
@@ -295,12 +321,12 @@ const grab = (body, cls) => {
 };
 
 // ------------------------------------------------ 2. the governed step order
-section('step model — four steps, governed order, defined once');
+section('step model — three steps, governed order, defined once');
 {
   const env = makeEnv({ answers: ANSWERS });
   const ids = env.api.STEPS.map((s) => s.id);
-  ok('exactly four steps', ids.length === 4, ids.join(','));
-  ok('order is adjustability -> support -> pillow -> protection',
+  ok('exactly three steps', ids.length === 3, ids.join(','));
+  ok('order is base -> pillow -> protection',
     ids.join(',') === STEP_IDS.join(','), ids.join(','));
   ok('every step carries EN and ES label, title, copy and guidance title',
     env.api.STEPS.every((s) =>
@@ -316,17 +342,19 @@ section('step model — four steps, governed order, defined once');
     /SLEEP_SYSTEM_STEPS\[activeIndex \+ 1\]/.test(stripComments(SRC.footer)));
 }
 {
-  const r = renderStep('adjustability', { answers: ANSWERS });
+  const r = renderStep('base', { answers: ANSWERS });
   const railNames = [...r.rail.matchAll(/step-name">([^<]*)</g)].map((m) => m[1]);
-  ok('rail renders the four steps in governed order (EN)',
-    railNames.join(',') === 'Adjustability,Support,Pillow,Protection', railNames.join(','));
+  ok('rail renders the three steps in governed order (EN)',
+    railNames.join(',') === 'Base,Pillow,Protection', railNames.join(','));
   const planNames = [...r.plan.matchAll(/plan-item-name">([^<]*)</g)].map((m) => m[1]);
-  ok('plan summary lists the same four steps in the same order',
+  ok('plan summary lists the same three steps in the same order',
     planNames.join(',') === railNames.join(','), planNames.join(','));
-  const es = renderStep('adjustability', { answers: ANSWERS, lang: 'es' });
+  const es = renderStep('base', { answers: ANSWERS, lang: 'es' });
   const esNames = [...es.rail.matchAll(/step-name">([^<]*)</g)].map((m) => m[1]);
   ok('rail order is identical in ES (translation does not reorder)',
-    esNames.join(',') === 'Ajustabilidad,Soporte,Almohada,Protección', esNames.join(','));
+    esNames.join(',') === 'Base,Almohada,Protección', esNames.join(','));
+  ok('no rail chip names the retired adjustability or support step in either language',
+    !/Adjustability|Ajustabilidad|>Support<|>Soporte</.test(r.rail + es.rail));
 }
 
 // ------------------------------- 3. benefit first, product distinction second
@@ -407,7 +435,7 @@ for (const lang of ['en', 'es']) {
 // --------------------------- 5. primary and alternatives stay distinguishable
 section('distinguishability — primary vs alternatives, and between alternatives');
 for (const lang of ['en', 'es']) {
-  for (const step of ['adjustability', 'protection']) {
+  for (const step of ['base', 'protection']) {
     const r = renderStep(step, { answers: ANSWERS, lang });
     const alts = [...r.main.matchAll(
       /alternative-name">([^<]*)<\/div><div class="sleep-system__alternative-copy">([^<]*)</g)];
@@ -429,7 +457,7 @@ for (const lang of ['en', 'es']) {
 {
   // Materially different products must not collapse into one row: the three
   // bases differ in name and description in the real catalog.
-  const r = renderStep('adjustability', { answers: ANSWERS });
+  const r = renderStep('base', { answers: ANSWERS });
   const ids = r.groups.adjustability.map((i) => i.id);
   ok('all three adjustable bases survive into the rendered group',
     ids.length === 3 && new Set(ids).size === 3, ids.join(','));
@@ -464,7 +492,7 @@ section('decision states — selected, keep-current, skipped, undecided');
   ok('selected: plan count advances to "1 added · 0 addressed" (X2)', r.planCount === '1 added · 0 addressed', r.planCount);
 }
 {
-  const r = renderStep('support', { answers: ANSWERS, state: { supportChoice: 'current' } });
+  const r = renderStep('base', { answers: ANSWERS, state: { supportChoice: 'current' } });
   ok('keep-current: the product card is replaced by the current-setup outcome',
     /sleep-system__support-outcome/.test(r.main) && !/sleep-system__featured"/.test(r.main));
   ok('keep-current: it states plainly that no new support is being added',
@@ -473,18 +501,18 @@ section('decision states — selected, keep-current, skipped, undecided');
     !/sleep-system__price/.test(r.main));
 }
 {
-  const r = renderStep('support', { answers: ANSWERS, state: { supportChoice: 'unsure' } });
+  const r = renderStep('base', { answers: ANSWERS, state: { supportChoice: 'unsure' } });
   ok('unsure: renders the specialist-check outcome rather than a recommendation',
     /sleep-system__support-outcome is-check/.test(r.main) && !/sleep-system__featured"/.test(r.main));
-  const rd = renderStep('support', {
-    answers: ANSWERS, state: { decisions: { support: { status: 'confirm' } } }
+  const rd = renderStep('base', {
+    answers: ANSWERS, state: { decisions: { base: { status: 'confirm' } } }
   });
   ok('unsure: the rail reports it as a specialist check, not as a completed choice',
     /step-status">Specialist check needed</.test(rd.rail));
 }
 {
-  const r = renderStep('adjustability', {
-    answers: ANSWERS, state: { decisions: { adjustability: { status: 'later' } } }
+  const r = renderStep('base', {
+    answers: ANSWERS, state: { decisions: { base: { status: 'later' } } }
   });
   ok('skipped: "Decide later" is reported in both the rail and the plan',
     /step-status">Decide later</.test(r.rail) && /plan-item-status">Decide later</.test(r.plan));
@@ -493,14 +521,14 @@ section('decision states — selected, keep-current, skipped, undecided');
   // counts toward NOTHING and renders as deferred, not done.
   ok('skipped: a deferral is claimed by neither number ("0 added · 0 addressed") and renders is-deferred',
     r.planCount === '0 added · 0 addressed' && /is-deferred/.test(r.rail) && /is-deferred/.test(r.plan), r.planCount);
-  const es = renderStep('adjustability', {
-    answers: ANSWERS, lang: 'es', state: { decisions: { adjustability: { status: 'later' } } }
+  const es = renderStep('base', {
+    answers: ANSWERS, lang: 'es', state: { decisions: { base: { status: 'later' } } }
   });
   ok('skipped: ES reports "Decidir después"', /step-status">Decidir después</.test(es.rail));
 }
 {
-  const r = renderStep('adjustability', {
-    answers: ANSWERS, state: { demoPosition: 'reading', decisions: { adjustability: { status: 'demo' } } }
+  const r = renderStep('base', {
+    answers: ANSWERS, state: { demoPosition: 'reading', decisions: { base: { status: 'demo' } } }
   });
   ok('demo request: the recorded position is named, not merely "demo"',
     /step-status">Demo: Reading</.test(r.rail), textOf(r.rail).slice(0, 80));
@@ -514,8 +542,10 @@ section('empty data — fails closed, and never reaches the mattress results');
   let groups = null;
   try { groups = env.api.groups(); } catch (e) { threw = e; }
   ok('an empty catalog raises nothing', threw === null, threw ? String(threw) : '');
-  ok('every step group is empty rather than back-filled with something else',
-    groups && STEP_IDS.every((s) => Array.isArray(groups[s]) && groups[s].length === 0));
+  ok('every engine group is empty rather than back-filled with something else',
+    groups && ENGINE_GROUP_KEYS.every((s) => Array.isArray(groups[s]) && groups[s].length === 0));
+  ok('the composed base list is empty too',
+    groups && env.api.groupsForStep(groups, 'base').length === 0);
   env.api.main({ groups, finalist: null });
   const main = env.get('sleepSystemMain').innerHTML;
   ok('the step renders an explicit unavailable state, not a blank panel',
@@ -563,7 +593,7 @@ section('prices — the catalog\'s own, exactly one surface, none added');
       const r = renderStep(step, { answers: ANSWERS, lang });
       const body = featuredBody(r.main);
       const shown = grab(body, 'sleep-system__price');
-      const primaryId = r.groups[step][0].id;
+      const primaryId = stepItems(r, step)[0].id;
       const expected = (lang === 'es' ? 'Desde $' : 'From $') + priceOf(primaryId).toLocaleString();
       ok(`[${lang}/${step}] the displayed price is the catalog price, formatted`,
         shown === expected, `${shown} vs ${expected}`);
@@ -597,7 +627,7 @@ section('language — state survives the swap and the two languages never mix');
   const shared = {
     activeStep: 'pillow', pillowReaction: 'aligned', pillowFeedback: 'aligned',
     supportChoice: 'standard', demoPosition: 'reading', protectionGoal: 'spills',
-    decisions: { adjustability: { status: 'later' } }
+    decisions: { base: { status: 'later' } }
   };
   const cart = { 'pillow-flow': { id: 'pillow-flow' } };
   const en = makeEnv({ answers: ANSWERS, lang: 'en', state: shared, cart });
@@ -666,7 +696,7 @@ section('interaction — button semantics, 44px floor, handler pair, focus');
     controls.every((a) => /data-sleep-action="[a-z-]+"/.test(a)));
   const railBtns = [...r.rail.matchAll(/<button([^>]*)>/g)].map((m) => m[1]);
   ok('rail steps are buttons with type and a step id',
-    railBtns.length === 4 && railBtns.every((a) => /type="button"/.test(a) && /data-step="/.test(a)));
+    railBtns.length === 3 && railBtns.every((a) => /type="button"/.test(a) && /data-step="/.test(a)));
 }
 {
   ok('the action control keeps a 44px minimum height',
@@ -707,7 +737,7 @@ section('financing — config-disabled on the Sleep System for Lacks');
   ok('store-config disables the drawer financing surface too (item 1.5 state)',
     surfaces.drawer === false);
   for (const lang of ['en', 'es']) {
-    const r = renderStep('support', { answers: ANSWERS, lang });
+    const r = renderStep('base', { answers: ANSWERS, lang });
     ok(`[${lang}] no financing block renders in the procedure panel`,
       !/sleep-system__financing/.test(r.guidance) && !/FINANCING-COPY-SENTINEL/.test(r.guidance));
     ok(`[${lang}] no financing control is reachable from this surface`,
@@ -716,12 +746,12 @@ section('financing — config-disabled on the Sleep System for Lacks');
   // Positive control: the assertion above must be able to fail. With the
   // surface enabled the block DOES render — so its absence is the config
   // being honoured, not a dead branch.
-  const on = renderStep('support', {
+  const on = renderStep('base', {
     answers: ANSWERS, finSurfaces: { drawer: false, sleepSystem: true }
   });
   ok('positive control: enabling the surface does render the block (the gate is live)',
     /sleep-system__financing/.test(on.guidance) && /FINANCING-COPY-SENTINEL/.test(on.guidance));
-  const off = renderStep('support', {
+  const off = renderStep('base', {
     answers: ANSWERS, finEnabled: false, finSurfaces: { drawer: true, sleepSystem: true }
   });
   ok('financingEnabled() alone also suppresses the block',
@@ -783,7 +813,7 @@ section('accessory rationale follows the language (cart stores keys, surfaces re
   ok('the keyed bilingual reason table exists once', !!tableSrc && (html.match(/var ACCESSORY_REASON_COPY = \{/g) || []).length === 1);
   const SRC_L10N = [
     tableSrc, grab('function accessoryReasonText(key, lang)'), grab('function accessoryReasonKey(text)'),
-    SRC.STEPS, SRC.text, SRC.category, SRC.stepFor, SRC.qualify, SRC.scorer,
+    SRC.STEPS, SRC.text, SRC.category, SRC.stepFor, SRC.groupStepMap, SRC.groupStep, SRC.qualify, SRC.scorer,
     grab('function setSleepSystemItem(itemId, shouldSelect)'), grab('function getSelectedAccessoryPlan()'),
     grab('function syncAccessoryAnalytics()'), grab('function renderHf2Accessories()'),
     grab('function renderHf2AccBlock(headingText, items, secondary)'), grab('function renderHf2AccCard(item, secondary)')
@@ -799,7 +829,7 @@ section('accessory rationale follows the language (cart stores keys, surfaces re
     const els = new Map();
     const doc = { getElementById(id) { if (!els.has(id)) { const e = mkEl('div'); e.id = id; els.set(id, e); } return els.get(id); }, createElement: mkEl };
     doc.getElementById('hf2AccessoriesList').innerHTML = '';
-    const win = { _accCart: {}, _sleepSystemState: { activeStep: 'adjustability', decisions: {}, demoPosition: '', supportChoice: '', pillowCandidateId: '', pillowReaction: '', pillowFeedback: '', protectionGoal: '' }, _updatePicksBadge: null };
+    const win = { _accCart: {}, _sleepSystemState: { activeStep: 'base', decisions: {}, demoPosition: '', supportChoice: '', pillowCandidateId: '', pillowReaction: '', pillowFeedback: '', protectionGoal: '' }, _updatePicksBadge: null };
     const analytics = { selectedAccessories: [], logged: [], log(e, d) { this.logged.push({ e, d }); } };
     let src = SRC_L10N;
     if (mutate) src = mutate(src);
@@ -973,8 +1003,8 @@ function auditCloseoutCss(src) {
     /grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\);/.test(railNarrow), flat(railNarrow));
   pin('C1: the <=680px rail rule declares no overflow and no padding-bottom (no sideways scroller)',
     railNarrow !== '' && !/overflow/.test(railNarrow) && !/padding-bottom/.test(railNarrow), flat(railNarrow));
-  pin('C1: the base rail rule still lays the four steps in four columns',
-    /grid-template-columns:\s*repeat\(4, minmax\(0, 1fr\)\);/.test(railBase), flat(railBase));
+  pin('C1: the base rail rule lays the three steps in three columns (combined base step, 2026-09-14)',
+    /grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\);/.test(railBase), flat(railBase));
   pin('C1: the rail is declared exactly twice (base + narrow) and neither uses the 112px scroll geometry',
     railRules.length === 2 && railRules.every((r) => !/minmax\(112px/.test(r) && !/overflow-x/.test(r)),
     `${railRules.length} rail rule(s)`);
@@ -1053,8 +1083,9 @@ const notesText = (g) => notesOf(g).map(unescapeHtml);
 const h2Of = (g) => { const m = String(g).match(/<h2>([^<]*)<\/h2>/); return m ? unescapeHtml(m[1]) : null; };
 const EYEBROW = { en: 'Specialist notes', es: 'Notas del especialista' };
 const HEADINGS = {
-  adjustability: { en: 'Guide the showroom trial', es: 'Guía la prueba en la tienda' },
-  support: { en: 'Confirm the setup', es: 'Confirma la configuración' },
+  // Combined base step (2026-09-14): one heading for the setup and the trial.
+  // ES provisional (2c pending).
+  base: { en: 'Guide the setup and the trial', es: 'Guía la configuración y la prueba' },
   pillow: { en: 'Check alignment', es: 'Revisa la alineación' },
   protection: { en: 'Match protection to the priority', es: 'Ajusta la protección a la prioridad' }
 };
@@ -1073,8 +1104,7 @@ function renderMatrix(mutate = null) {
     rows.push({ step, lang, r, notes: notesText(r.guidance), label: `${lang}/${step}${tag}` });
   };
   for (const lang of ['en', 'es']) {
-    push('adjustability', lang, ANSWERS, {}, '');
-    push('support', lang, ANSWERS, {}, '');
+    push('base', lang, ANSWERS, {}, '');
     for (const p of POSITIONS) {
       for (const f of FEEDBACK) {
         push('pillow', lang, Object.assign({}, ANSWERS, { sleep_position: p }),
@@ -1115,13 +1145,18 @@ const failing = (rows, pred) => rows.filter((row) => !pred(row)).map((row) => ro
 // EN strings are the owner-approved text; ES is provisional (native review
 // deferred under roadmap Invariant 12) but must be the ES that shipped, not
 // an English fallback.
+// Combined base step (2026-09-14): the base panel carries the compatibility
+// check, the P9 height prompt (pinned in guard 14e) and the Flat baseline;
+// the former third support note ("Verify the final setup...") and the
+// former third adjustability note ("Recommend a base only after...") no
+// longer render on any step and are pinned absent from live code below.
 const APPROVED_NOTES = [
-  { step: 'support',
-    en: 'Verify the final setup before the customer makes a selection.',
-    es: 'Verifica la configuración final antes de que el cliente haga su selección.' },
-  { step: 'adjustability',
-    en: 'Recommend a base only after the customer tries the positions that matter most to them.',
-    es: 'Recomienda una base solo después de que el cliente pruebe las posiciones que más le importan.' },
+  { step: 'base',
+    en: 'Confirm frame or platform compatibility.',
+    es: 'Confirma la compatibilidad del marco o plataforma.' },
+  { step: 'base',
+    en: 'Begin Flat so every change has a clear baseline.',
+    es: 'Empieza Plana para tener una referencia clara.' },
   { step: 'pillow',
     en: 'Explain how this pillow addresses the customer\'s priorities.',
     es: 'Explica cómo esta almohada responde a las prioridades del cliente.' },
@@ -1169,6 +1204,19 @@ const APPROVED_NOTES = [
     new Set(APPROVED_NOTES.map((n) => n.en)).size === 11 &&
     new Set(APPROVED_NOTES.map((n) => n.es)).size === 11 &&
     APPROVED_NOTES.every((n) => n.en !== n.es));
+  // The two notes the combined base step retired render nowhere and are gone
+  // from live code (they were the former steps' third notes).
+  for (const gone of ['Verify the final setup before the customer makes a selection.',
+    'Recommend a base only after the customer tries the positions that matter most to them.',
+    'Move one position at a time and pause to notice the difference.']) {
+    ok(`retired procedure note absent from live code: "${gone.slice(0, 40)}…"`, !liveHtml.includes(gone));
+  }
+  ok('the base panel renders exactly its three notes, in order: compatibility, the height prompt, the Flat baseline',
+    JSON.stringify(notesText(renderStep('base', { answers: ANSWERS }).guidance)) === JSON.stringify([
+      'Confirm frame or platform compatibility.',
+      'If a lower finished bed height matters, ask which foundation heights are available.',
+      'Begin Flat so every change has a clear baseline.']),
+    notesText(renderStep('base', { answers: ANSWERS }).guidance).join(' | '));
 }
 
 // 14c — the retired customer-voice strings: gone from live code, and never
@@ -1263,20 +1311,15 @@ const ES_SECOND_PERSON = /(?<!\p{L})(tu|tus|te|ti|tú|usted|ustedes)(?!\p{L})/iu
 // renderer carried 33 bilingual literals there, and exactly one — the retired
 // "During the trial" eyebrow pair — is gone.
 const STEP_COPY_AT_DA4F746 = {
-  adjustability: {
-    label: { en: 'Adjustability', es: 'Ajustabilidad' },
-    title: { en: 'Explore adjustable comfort', es: 'Explora la comodidad ajustable' },
+  // Combined base step (2026-09-14): the base step's label, title and copy
+  // are the owner-approved three-step design's (ES provisional, 2c pending);
+  // pillow and protection stay byte-identical to da4f746.
+  base: {
+    label: { en: 'Base', es: 'Base' },
+    title: { en: 'Choose what goes under the mattress', es: 'Elige qué va debajo del colchón' },
     copy: {
-      en: 'A base can change how the whole bed works for reading, relaxing, and certain sleep concerns. A showroom demo is the best test.',
-      es: 'Una base puede cambiar cómo funciona toda la cama para leer, relajarse y ciertas necesidades de sueño. Una demostración es la mejor prueba.'
-    }
-  },
-  support: {
-    label: { en: 'Support', es: 'Soporte' },
-    title: { en: 'Set the right support', es: 'Elige el soporte correcto' },
-    copy: {
-      en: 'Start with what will sit under the mattress. The right support protects the feel, height, and long-term setup.',
-      es: 'Empieza con lo que irá debajo del colchón. El soporte correcto protege la sensación, la altura y la configuración.'
+      en: 'A foundation or an adjustable base sets the height and feel, and can change how the whole bed works for reading, relaxing, and certain sleep concerns. A showroom demo is the best test.',
+      es: 'Una base tradicional o ajustable define la altura y la sensación, y puede cambiar cómo funciona toda la cama para leer, relajarse y ciertas necesidades de sueño. Una demostración es la mejor prueba.'
     }
   },
   pillow: {
@@ -1344,9 +1387,10 @@ const MAIN_LITERALS_AT_DA4F746 = [
   ['Decide later', 'Decidir después'],
   ['Specialist notes', 'Notas del especialista'],
 ];
+// Combined base step (2026-09-14): the base step's secondary actions are the
+// former adjustability pair; "Keep current support" / "Ask a specialist" live
+// in the setup guide (renderSupportGuide) and are no longer a secondary pair.
 const SECONDARY_LITERALS_AT_DA4F746 = [
-  ['Keep current support', 'Conservar soporte actual'],
-  ['Ask a specialist', 'Preguntar a un especialista'],
   ['Ask for a demo', 'Pedir demostración'],
   ['Decide later', 'Decidir después'],
   ['Keep current pillow', 'Conservar almohada actual'],
@@ -1359,7 +1403,7 @@ const literalsOf = (s) => [...stripComments(s).matchAll(BILINGUAL_LITERAL)].map(
 {
   const env = makeEnv({ answers: ANSWERS });
   for (const step of env.api.STEPS) {
-    ok(`[${step.id}] label, title and customer copy are byte-identical to da4f746`,
+    ok(`[${step.id}] label, title and customer copy are byte-identical to ${step.id === 'base' ? 'the 2026-09-14 three-step design' : 'da4f746'}`,
       JSON.stringify({ label: step.label, title: step.title, copy: step.copy }) ===
         JSON.stringify(STEP_COPY_AT_DA4F746[step.id]));
   }
@@ -1371,7 +1415,7 @@ const literalsOf = (s) => [...stripComments(s).matchAll(BILINGUAL_LITERAL)].map(
   ok('renderSleepSystemMain carries exactly the da4f746 bilingual literals minus the retired eyebrow plus the nine owner-approved P5 pairs plus the five F2 pairs (order and bytes)',
     JSON.stringify(mainLits) === JSON.stringify(MAIN_LITERALS_AT_DA4F746),
     `${mainLits.length} literal pairs (da4f746: 33, one retired, nine P5 pairs added 2026-08-30, five F2 pairs added 2026-09-10)`);
-  ok('sleepSystemSecondaryActions labels are byte-identical to da4f746',
+  ok('sleepSystemSecondaryActions labels are the da4f746 pairs minus the retired support pair (combined base step)',
     JSON.stringify(literalsOf(SRC.secondary)) === JSON.stringify(SECONDARY_LITERALS_AT_DA4F746));
   // X3 (owner ruling D7, 2026-08-31): re-ruled from "Best for" — the
   // superlative 1.4 forbids — to "Suggested for" / "Sugerido para"
@@ -1380,19 +1424,22 @@ const literalsOf = (s) => [...stripComments(s).matchAll(BILINGUAL_LITERAL)].map(
     /en: 'Suggested for ' \+ sleepSystemText\(protectionGoalLabel/.test(stripComments(SRC.main)) &&
     /es: 'Sugerido para ' \+ sleepSystemText\(protectionGoalLabel/.test(stripComments(SRC.main)));
   // And rendered, so the pin is on output as well as source.
+  // Combined base step: the harness answers fire for an adjustable base, so
+  // the base card carries the P2 pair; the foundation's "Support option"
+  // eyebrow is pinned on the no-trigger card in guard 18.
   const EYEBROWS = {
-    en: { adjustability: /^(Recommended to try|Worth comparing)$/, support: /^Support option$/, protection: /^Suggested for .+$/ },
-    es: { adjustability: /^(Recomendado para probar|Vale la pena comparar)$/, support: /^Opción de soporte$/, protection: /^Sugerido para .+$/ }
+    en: { base: /^(Recommended to try|Worth comparing)$/, protection: /^Suggested for .+$/ },
+    es: { base: /^(Recomendado para probar|Vale la pena comparar)$/, protection: /^Sugerido para .+$/ }
   };
   const COMPARE = { en: 'Also compare', es: 'También compara' };
   for (const lang of ['en', 'es']) {
-    for (const step of ['adjustability', 'support', 'protection']) {
+    for (const step of ['base', 'protection']) {
       const r = renderStep(step, { answers: ANSWERS, lang });
       const eyebrow = grab(featuredBody(r.main), 'sleep-system__card-eyebrow') || '';
       ok(`[${lang}/${step}] the customer card eyebrow is the shipped one`,
         EYEBROWS[lang][step].test(eyebrow), JSON.stringify(eyebrow));
     }
-    const r = renderStep('adjustability', { answers: ANSWERS, lang });
+    const r = renderStep('base', { answers: ANSWERS, lang });
     ok(`[${lang}] the alternatives label still reads "${COMPARE[lang]}"`,
       r.main.includes(`<div class="sleep-system__alternatives-label">${COMPARE[lang]}</div>`));
   }
@@ -1485,9 +1532,9 @@ section('F2 - viewing a non-recommended option');
     return String(raw).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   };
   for (const lang of ['en', 'es']) {
-    for (const step of ['adjustability', 'support', 'protection']) {
+    for (const step of ['base', 'protection']) {
       const base = renderStep(step, { answers: ANSWERS, lang });
-      const [top, ...rest] = base.groups[step];
+      const [top, ...rest] = stepItems(base, step);
       if (!rest.length) {
         // A single-item group (support under the harness answers) has nothing
         // to view: no Details control renders and a view id is ignored.
@@ -1533,9 +1580,9 @@ section('F2 - viewing a non-recommended option');
   const HANDLER = extractFunction('function handleSleepSystemAction(control)');
   const MOVE = extractFunction('function moveSleepSystemStep(direction)');
   function drive(action, attrs, state) {
-    const win = { _accCart: {}, _sleepSystemState: Object.assign({ activeStep: 'adjustability', decisions: {}, demoPosition: '', supportChoice: '',
+    const win = { _accCart: {}, _sleepSystemState: Object.assign({ activeStep: 'base', decisions: {}, demoPosition: '', supportChoice: '',
       pillowCandidateId: '', viewCandidateId: '', pillowReaction: '', pillowFeedback: '', protectionGoal: '' }, state || {}) };
-    const src = [SRC.category, SRC.stepFor, SRC.qualify, SRC.scorer, SRC.readGroups, HANDLER, MOVE].join('\n');
+    const src = [SRC.category, SRC.stepFor, SRC.groupStepMap, SRC.groupStep, SRC.qualify, SRC.scorer, SRC.readGroups, HANDLER, MOVE].join('\n');
     new Function('window', 'answers', 'currentLang', 'ACCESSORIES', 'analytics', 'control', 'SLEEP_SYSTEM_STEPS', 'document',
       src + `
       function syncAccessoryAnalytics() {}
@@ -1548,7 +1595,7 @@ section('F2 - viewing a non-recommended option');
   }
   ok('view-item records the viewed id and nothing else', (() => { const s = drive('view-item', { 'data-item-id': 'base-x' }); return s.viewCandidateId === 'base-x' && Object.keys(s.decisions).length === 0; })());
   ok('view-recommended clears it', drive('view-recommended', {}, { viewCandidateId: 'base-x' }).viewCandidateId === '');
-  ok('a rail step change clears it', drive('step', { 'data-step': 'support' }, { viewCandidateId: 'base-x' }).viewCandidateId === '');
+  ok('a rail step change clears it', drive('step', { 'data-step': 'pillow' }, { viewCandidateId: 'base-x' }).viewCandidateId === '');
   ok('next-step clears it', drive('next-step', {}, { viewCandidateId: 'base-x' }).viewCandidateId === '');
   ok('the initial Sleep System state declares viewCandidateId and the wipe resets it',
     /viewCandidateId: '',/.test(html.slice(html.indexOf('window._sleepSystemState = {'), html.indexOf('window._sleepSystemState = {') + 1200))
@@ -1576,8 +1623,8 @@ section('3.7 P2 - "Recommended to try" requires an answer-derived match (rendere
   const NO_TRIGGER = SIDE_ONLY;
   const BACK_PAIN = { sleep_position: 'side', temperature: 'comfortable', sleep_issues: ['back_pain'], health_conditions: ['none'] };
   const BADGE = {
-    en: { rec: 'Recommended to try', worth: 'Worth comparing', neutral: 'A solid option to round out your sleep system' },
-    es: { rec: 'Recomendado para probar', worth: 'Vale la pena comparar', neutral: 'Una buena opción para completar tu sistema de sueño' }
+    en: { rec: 'Recommended to try', worth: 'Worth comparing', neutral: 'A solid option to round out your sleep system', support: 'Support option' },
+    es: { rec: 'Recomendado para probar', worth: 'Vale la pena comparar', neutral: 'Una buena opción para completar tu sistema de sueño', support: 'Opción de soporte' }
   };
   for (const lang of ['en', 'es']) {
     const b = BADGE[lang];
@@ -1601,16 +1648,18 @@ section('3.7 P2 - "Recommended to try" requires an answer-derived match (rendere
         hero && hero.matched === true && eyebrow === b.rec, `${hero && hero.id} ${JSON.stringify(eyebrow)}`);
     }
     {
-      const none = renderStep('adjustability', { answers: NO_TRIGGER, lang });
-      const some = renderStep('adjustability', { answers: BACK_PAIN, lang });
-      // 3.7 P5 (owner ruling 2026-08-30): a no-trigger customer gets NO hero on
-      // this step at all - the neutral base-compare block renders instead (its
-      // own section below asserts the details). The unmatched-hero badge rule
-      // stays observed through the pillow cases above.
-      ok(`[${lang}/adjustability] no trigger -> no hero card at all; the neutral compare block renders (P5)`,
-        none.groups.adjustability[0].matched === false && featuredBody(none.main) === null &&
+      const none = renderStep('base', { answers: NO_TRIGGER, lang });
+      const some = renderStep('base', { answers: BACK_PAIN, lang });
+      // 3.7 P5 (owner ruling 2026-08-30) under the combined base step
+      // (2026-09-14): a no-trigger customer gets NO adjustable-base hero - the
+      // foundation leads with its honest "Support option" eyebrow and the
+      // neutral base-compare block renders beneath it (its own section below
+      // asserts the details). The unmatched-hero badge rule stays observed
+      // through the pillow cases above.
+      ok(`[${lang}/base] no trigger -> no adjustable hero; the foundation card ("${b.support}") and the neutral compare block render (P5)`,
+        none.groups.adjustability[0].matched === false && grab(featuredBody(none.main), 'sleep-system__card-eyebrow') === b.support &&
           /sleep-system__bases-compare/.test(none.main));
-      ok(`[${lang}/adjustability] back pain -> matched base hero badged "${b.rec}"`,
+      ok(`[${lang}/base] back pain -> matched base hero badged "${b.rec}"`,
         some.groups.adjustability[0].matched === true && grab(featuredBody(some.main), 'sleep-system__card-eyebrow') === b.rec);
     }
   }
@@ -1695,7 +1744,7 @@ section('3.7 P3 - a matched pillow ranks above an unmatched default-score pillow
   // Pillow group only: adjustability, support and protection orders are the
   // engine's pre-P3 orders for the same answer sets.
   {
-    const r = renderStep('adjustability', { answers: BACK_REFLUX });
+    const r = renderStep('base', { answers: BACK_REFLUX });
     ok('P3 touches only the pillow group: the adjustability order for a reflux customer is still Ergo, BT2000, BT3000',
       JSON.stringify(r.groups.adjustability.map((a) => a.id)) === JSON.stringify(['base-tempur-ergo', 'base-bt2000', 'base-bt3000']),
       JSON.stringify(r.groups.adjustability.map((a) => a.id)));
@@ -1814,11 +1863,11 @@ section('3.7 P9 Option C - copy names only what the catalog holds; the reaction 
     ok(`[${lang}/pillow/stomach] the position cue is the approved check, not a "lower profile" product`,
       notesText(st.guidance).includes(A.stomach) && !notesText(st.guidance).some((n) => /lower profile|perfil bajo/i.test(n)),
       notesText(st.guidance).join(' | ').slice(0, 160));
-    const sup = renderStep('support', { answers: ANSWERS, lang });
+    const sup = renderStep('base', { answers: ANSWERS, lang });
     const choiceIds = [...sup.main.matchAll(/data-support-choice="([^"]+)"/g)].map((m) => m[1]);
-    ok(`[${lang}/support] on a catalog with one foundation height the actionable "Lower height" choice is withheld (current / standard / unsure remain)`,
+    ok(`[${lang}/base] on a catalog with one foundation height the actionable "Lower height" choice is withheld (current / standard / unsure remain)`,
       JSON.stringify(choiceIds) === JSON.stringify(['current', 'standard', 'unsure']), JSON.stringify(choiceIds));
-    ok(`[${lang}/support] the specialist notes carry the non-interactive height prompt instead of a comparison the catalog cannot offer`,
+    ok(`[${lang}/base] the specialist notes carry the non-interactive height prompt instead of a comparison the catalog cannot offer`,
       notesText(sup.guidance).includes(A.heightNote) && !notesText(sup.guidance).includes(A.compareNote),
       notesText(sup.guidance).join(' | ').slice(0, 160));
   }
@@ -1830,7 +1879,7 @@ section('3.7 P9 Option C - copy names only what the catalog holds; the reaction 
       category: { en: 'Foundations & Support', es: 'Bases y Soportes' }, subType: 'low_profile', price: 1,
       description: { en: 'test', es: 'prueba' }, image: '', matchTags: ['all'], matchScores: { default: 1 }
     }]);
-    const sup = renderStep('support', { answers: ANSWERS, accessories: withLow });
+    const sup = renderStep('base', { answers: ANSWERS, accessories: withLow });
     const choiceIds = [...sup.main.matchAll(/data-support-choice="([^"]+)"/g)].map((m) => m[1]);
     ok('data-driven: with a low_profile support item in the catalog the "Lower height" choice returns',
       JSON.stringify(choiceIds) === JSON.stringify(['current', 'standard', 'low', 'unsure']), JSON.stringify(choiceIds));
@@ -1913,10 +1962,17 @@ section('3.7 P5 option C - no-trigger customers get the demo plus a neutral all-
   const rowIds = (html) => [...html.matchAll(/class="sleep-system__alternative sleep-system__base-row">[\s\S]*?data-item-id="([^"]+)"/g)].map((m) => m[1]);
   for (const lang of ['en', 'es']) {
     const L = T[lang];
-    const r = renderStep('adjustability', { answers: NO_TRIGGER, lang });
+    const r = renderStep('base', { answers: NO_TRIGGER, lang });
     ok(`[${lang}/no-trigger] the group's best base is unmatched (the premise holds)`, r.groups.adjustability[0] && r.groups.adjustability[0].matched === false);
-    ok(`[${lang}/no-trigger] no featured product card and no price surface render`,
-      !/class="sleep-system__featured[ "]/.test(r.main) && !/sleep-system__price/.test(r.main));
+    // Combined base step (2026-09-14): the foundation leads the step, so ONE
+    // card (the foundation's, "Support option") and its single price surface
+    // render, and the neutral all-bases block sits BENEATH that card. No
+    // adjustable base takes the card.
+    ok(`[${lang}/no-trigger] the only featured card is the foundation's and the neutral block renders beneath it`,
+      (r.main.match(/class="sleep-system__featured[ "]/g) || []).length === 1 &&
+      grab(featuredBody(r.main), 'sleep-system__card-eyebrow') === (lang === 'es' ? 'Opción de soporte' : 'Support option') &&
+      (r.main.match(/class="sleep-system__price"/g) || []).length === 1 &&
+      r.main.indexOf('class="sleep-system__featured') < r.main.indexOf('sleep-system__bases-compare'));
     ok(`[${lang}/no-trigger] the position demo still renders`, /sleep-system__demo/.test(r.main));
     ok(`[${lang}/no-trigger] the neutral block carries the approved eyebrow, heading, body and list heading`,
       r.main.includes(`<div class="sleep-system__card-eyebrow">${L.eyebrow}</div>`) &&
@@ -1932,10 +1988,10 @@ section('3.7 P5 option C - no-trigger customers get the demo plus a neutral all-
       new RegExp(`sleep-system__action--secondary" data-sleep-action="decision" data-status="later">${L.later}</button>`).test(r.main));
     ok(`[${lang}/no-trigger] no availability or floor claim in the block`,
       !/on the floor|in stock|available today|en la tienda|disponible/i.test(textOf(r.main)));
-    const sel = renderStep('adjustability', { answers: NO_TRIGGER, lang, cart: { 'base-bt3000': { id: 'base-bt3000' } } });
+    const sel = renderStep('base', { answers: NO_TRIGGER, lang, cart: { 'base-bt3000': { id: 'base-bt3000' } } });
     ok(`[${lang}/no-trigger] a selected row reads "${L.selectedL}" and offers removal`,
       new RegExp(`class="is-selected" data-sleep-action="remove-item" data-item-id="base-bt3000">${L.selectedL}</button>`).test(sel.main));
-    const t = renderStep('adjustability', { answers: TRIGGER, lang });
+    const t = renderStep('base', { answers: TRIGGER, lang });
     ok(`[${lang}/trigger] the triggered flow is unchanged - hero card, price, three controls, no neutral block`,
       /class="sleep-system__featured[ "]/.test(t.main) && /sleep-system__price/.test(t.main) &&
       !/sleep-system__bases-compare/.test(t.main) && /data-status="demo"/.test(t.main) && /data-status="later"/.test(t.main) &&
@@ -1943,21 +1999,25 @@ section('3.7 P5 option C - no-trigger customers get the demo plus a neutral all-
   }
   // Negative controls.
   const NT = { answers: NO_TRIGGER };
-  const heroBack = renderStep('adjustability', Object.assign({}, NT, {
+  // Combined base step: the trigger gate is `baseNoTrigger`, read from the
+  // engine's adjustability group. Dropping it removes the neutral all-bases
+  // block and lists the back-filled bases as ordinary "Also compare" rows -
+  // the assertions above would fail on this tree.
+  const heroBack = renderStep('base', Object.assign({}, NT, {
     mutate: (s) => {
-      const from = "(supportOutcome || (adjustabilityNoTrigger ? basesCompareHtml : productHtml))";
-      if (!s.includes(from)) throw new Error('P5 negative control: assembly anchor not found');
-      return s.replace(from, '(supportOutcome || productHtml)');
+      const from = "var baseNoTrigger = step.id === 'base' &&";
+      if (!s.includes(from)) throw new Error('P5 negative control: gate anchor not found');
+      return s.replace(from, "var baseNoTrigger = false && step.id === 'base' &&");
     }
   }));
-  ok('negative control: restoring the hero in the assembly re-renders the unjustified product card for a no-trigger customer',
-    /class="sleep-system__featured[ "]/.test(heroBack.main) && /sleep-system__price/.test(heroBack.main));
-  const groupBack = renderStep('adjustability', Object.assign({}, NT, {
+  ok('negative control: dropping the no-trigger gate removes the neutral block and lists the engine\'s back-filled bases as ordinary alternatives',
+    !/sleep-system__bases-compare/.test(heroBack.main) && /data-sleep-action="view-item" data-item-id="base-/.test(heroBack.main));
+  const groupBack = renderStep('base', Object.assign({}, NT, {
     mutate: (s) => {
       const from = 'return sleepSystemStepForItem(item) === \'adjustability\';';
       if (!s.includes(from)) throw new Error('P5 negative control: filter anchor not found');
       return s.replace('var allBases = (Array.isArray(ACCESSORIES) ? ACCESSORIES : []).filter(function(item) {',
-        'var allBases = items.slice(); void (function(item) {');
+        "var allBases = items.filter(function(i) { return i.subType === 'adjustable'; }); void (function(item) {");
     }
   }));
   ok('negative control: sourcing the list from the engine group again drops it to the back-filled two, so the all-bases assertion bites',
@@ -1984,7 +2044,7 @@ section('negative controls — the load-bearing assertions bite');
 }
 {
   // Re-introduce the duplicate and the duplication guard must see it.
-  const dup = renderStep('support', {
+  const dup = renderStep('base', {
     answers: ANSWERS,
     mutate: (s) => s.replace(
       'return notices.slice(0, 3);',
@@ -1995,12 +2055,12 @@ section('negative controls — the load-bearing assertions bite');
   ok('control: re-introducing the unshift puts the benefit back in the procedure panel',
     notesOf(dup.guidance).includes(dupBenefit),
     'the duplication guard would fail on this tree');
-  // Close-out: the third support note is now the salesperson-voice string;
-  // the precondition proves the clean tree renders it, so the displacement
+  // Combined base step: the third base note is the Flat baseline; the
+  // precondition proves the clean tree renders it, so the displacement
   // assertion cannot pass vacuously against a string that never rendered.
-  const THIRD_SUPPORT_NOTE = 'Verify the final setup before the customer makes a selection.';
-  ok('control precondition: the unmutated support panel renders its third note',
-    notesText(renderStep('support', { answers: ANSWERS }).guidance).includes(THIRD_SUPPORT_NOTE));
+  const THIRD_SUPPORT_NOTE = 'Begin Flat so every change has a clear baseline.';
+  ok('control precondition: the unmutated base panel renders its third note',
+    notesText(renderStep('base', { answers: ANSWERS }).guidance).includes(THIRD_SUPPORT_NOTE));
   ok('control: and it displaces the third procedure note again',
     !notesText(dup.guidance).includes(THIRD_SUPPORT_NOTE));
 }
@@ -2073,12 +2133,12 @@ section('negative controls — the load-bearing assertions bite');
 
   // (a) the two-label eyebrow returns -> the exact-name pin fails on adjustability.
   const twoLabel = applyOnce(ONE_LABEL, TWO_LABEL);
-  const relabelled = renderStep('adjustability', { answers: ANSWERS, mutate: twoLabel.mutate });
+  const relabelled = renderStep('base', { answers: ANSWERS, mutate: twoLabel.mutate });
   ok('control: the one-label find string matches the real source exactly once', twoLabel.hits() === 1, `${twoLabel.hits()}`);
-  ok('control: restoring the two-label eyebrow renames the adjustability region "During the trial"',
+  ok('control: restoring the two-label eyebrow renames the base region "During the trial"',
     relabelled.guidanceLabel === 'During the trial', 'the exact-eyebrow pin would fail on this tree');
-  const relabelledEs = renderStep('support', { answers: ANSWERS, lang: 'es', mutate: twoLabel.mutate });
-  ok('control: and the ES support region becomes "Durante la prueba"',
+  const relabelledEs = renderStep('base', { answers: ANSWERS, lang: 'es', mutate: twoLabel.mutate });
+  ok('control: and the ES base region becomes "Durante la prueba"',
     relabelledEs.guidanceLabel === 'Durante la prueba', 'the exact ES-name pin in guard 9 would fail on this tree');
 
   // (b) one note back in customer voice -> the second-person pin fails in BOTH
@@ -2107,14 +2167,14 @@ section('negative controls — the load-bearing assertions bite');
     ES_SECOND_PERSON.test('Confirma el ajuste y cuidado con tu especialista.'));
 
   // (c) an ES value copied from its EN -> the no-mixed-languages pin fails.
-  const ES_THIRD = "es: 'Verifica la configuración final antes de que el cliente haga su selección.'";
-  const EN_AS_ES = "es: 'Verify the final setup before the customer makes a selection.'";
+  const ES_THIRD = "es: 'Empieza Plana para tener una referencia clara.'";
+  const EN_AS_ES = "es: 'Begin Flat so every change has a clear baseline.'";
   const mix = applyOnce(ES_THIRD, EN_AS_ES);
-  const mixedEs = notesText(renderStep('support', { answers: ANSWERS, lang: 'es', mutate: mix.mutate }).guidance);
-  const cleanEn = notesText(renderStep('support', { answers: ANSWERS, lang: 'en' }).guidance);
+  const mixedEs = notesText(renderStep('base', { answers: ANSWERS, lang: 'es', mutate: mix.mutate }).guidance);
+  const cleanEn = notesText(renderStep('base', { answers: ANSWERS, lang: 'en' }).guidance);
   ok('control: the ES third-note find string matches the real source exactly once', mix.hits() === 1, `${mix.hits()}`);
   ok('control: an English-only ES value renders the EN note under the ES flag',
-    mixedEs[2] === cleanEn[2] && mixedEs[2] === 'Verify the final setup before the customer makes a selection.',
+    mixedEs[2] === cleanEn[2] && mixedEs[2] === 'Begin Flat so every change has a clear baseline.',
     'the no-mixed-languages pin would fail on this tree');
 
   // (d) each CSS repair reverted on a copy of index.html -> its pin goes red.
@@ -2178,7 +2238,7 @@ section('X2/X3/X10 — three honest states, factual wording, the keyboard\'s pla
   // X2: executed per status kind. The dash (&#8211;) marks an ADDRESSED
   // decision; the sage checkmark belongs to an actual addition alone.
   {
-    const r = renderStep('adjustability', { answers: ANSWERS, state: { demoPosition: 'reading', decisions: { adjustability: { status: 'demo' } } } });
+    const r = renderStep('base', { answers: ANSWERS, state: { demoPosition: 'reading', decisions: { base: { status: 'demo' } } } });
     ok('demo: the rail chip is is-addressed with the neutral dash — never the checkmark, never is-complete',
       /class="sleep-system__step is-active is-addressed"/.test(r.rail) && /step-num">&#8211;</.test(r.rail)
       && !/is-complete/.test(r.rail) && !/&#10003;/.test(r.rail));
@@ -2192,8 +2252,8 @@ section('X2/X3/X10 — three honest states, factual wording, the keyboard\'s pla
       && /plan-item is-selected"/.test(r.plan) && /plan-mark">&#10003;</.test(r.plan));
   }
   {
-    const r = renderStep('adjustability', { answers: ANSWERS, state: { decisions: { adjustability: { status: 'later' } } } });
-    const firstChip = r.rail.split('data-step="support"')[0];
+    const r = renderStep('base', { answers: ANSWERS, state: { decisions: { base: { status: 'later' } } } });
+    const firstChip = r.rail.split('data-step="pillow"')[0];
     ok('deferred: the chip keeps its NUMBER inside the dashed ring (is-deferred) — a deferral is not completion',
       /is-deferred"/.test(firstChip) && /step-num">1</.test(firstChip) && !/&#10003;|&#8211;/.test(firstChip));
     ok('deferred: the sidecar mark stays empty in the dashed ring',
@@ -2201,18 +2261,23 @@ section('X2/X3/X10 — three honest states, factual wording, the keyboard\'s pla
   }
   // X2: the neutral count phrase in both languages (participles agree — the C5 rule).
   {
-    const mixed = { decisions: { adjustability: { status: 'demo' }, support: { status: 'already' }, protection: { status: 'later' } } };
+    // Combined base step: one base decision, so the two addressed decisions
+    // are base (demo) and protection (already); the deferral moves to the
+    // count's other side through a second render below.
+    const mixed = { decisions: { base: { status: 'demo' }, protection: { status: 'already' } } };
     const en = renderStep('pillow', { answers: ANSWERS, state: Object.assign({ pillowReaction: 'aligned' }, mixed), cart: { 'pillow-flow': { id: 'pillow-flow' } } });
-    ok('count: "1 added · 2 addressed" — the deferral is claimed by neither number', en.planCount === '1 added · 2 addressed', en.planCount);
+    ok('count: "1 added · 2 addressed" — an addition and two addressed decisions', en.planCount === '1 added · 2 addressed', en.planCount);
+    const deferred = renderStep('pillow', { answers: ANSWERS, state: { pillowReaction: 'aligned', decisions: { base: { status: 'demo' }, protection: { status: 'later' } } }, cart: { 'pillow-flow': { id: 'pillow-flow' } } });
+    ok('count: "1 added · 1 addressed" — the deferral is claimed by neither number', deferred.planCount === '1 added · 1 addressed', deferred.planCount);
     const es = renderStep('pillow', { answers: ANSWERS, lang: 'es', state: Object.assign({ pillowReaction: 'aligned' }, mixed), cart: { 'pillow-flow': { id: 'pillow-flow' } } });
     ok('count ES: "1 agregado · 2 atendidos" (singular participle agrees; wording provisional)', es.planCount === '1 agregado · 2 atendidos', es.planCount);
   }
   // X10: aria-current="step" on the active rail control alone.
   {
-    const r = renderStep('support', { answers: ANSWERS });
+    const r = renderStep('base', { answers: ANSWERS });
     ok('the active rail step carries aria-current="step" and it appears exactly once',
       (r.rail.match(/aria-current="step"/g) || []).length === 1
-      && r.rail.includes('data-step="support" aria-current="step"'));
+      && r.rail.includes('data-step="base" aria-current="step"'));
   }
   // X10: the capture/restore pair, static against the shipped source.
   ok('X10: renderSleepSystem() captures before the four regions rebuild and restores after (one site, no timer)',
@@ -2263,7 +2328,7 @@ section('X2/X3/X10 — three honest states, factual wording, the keyboard\'s pla
       if (out === src) throw new Error('negative-control mutation did not apply');
       return out;
     };
-    const env = makeEnv({ answers: ANSWERS, state: { activeStep: 'adjustability', decisions: { adjustability: { status: 'later' } } }, mutate });
+    const env = makeEnv({ answers: ANSWERS, state: { activeStep: 'base', decisions: { base: { status: 'later' } } }, mutate });
     env.api.rail();
     env.api.plan();
     ok('negative control: reverting the classifier makes a deferral count as addressed again (so the X2 assertions bite)',
@@ -2284,7 +2349,7 @@ section('candidate 2026-09-06 — the card states its decision, the control is p
 const pressedOf = (main) => (main.match(/aria-pressed="true" class="[^"]*" data-sleep-action="decision"/g) || []).length;
 const bannerOf = (main) => grab(main, 'sleep-system__decision is-addressed') || grab(main, 'sleep-system__decision is-deferred');
 {
-  const r = renderStep('adjustability', { answers: ANSWERS, state: { decisions: { adjustability: { status: 'later' } } } });
+  const r = renderStep('base', { answers: ANSWERS, state: { decisions: { base: { status: 'later' } } } });
   const body = featuredBody(r.main);
   ok('deferred: the card carries the decision line "Decide later" (the rail\'s own label) inside its body',
     body !== null && bannerOf(body) === 'Decide later', JSON.stringify(bannerOf(body)));
@@ -2301,7 +2366,7 @@ const bannerOf = (main) => grab(main, 'sleep-system__decision is-addressed') || 
     (r.main.match(/class="sleep-system__price"/g) || []).length === 1);
 }
 {
-  const r = renderStep('adjustability', { answers: ANSWERS, state: { demoPosition: 'reading', decisions: { adjustability: { status: 'demo' } } } });
+  const r = renderStep('base', { answers: ANSWERS, state: { demoPosition: 'reading', decisions: { base: { status: 'demo' } } } });
   ok('addressed (demo): the card states "Demo: Reading" and is marked is-addressed',
     bannerOf(featuredBody(r.main) || '') === 'Demo: Reading' && /class="sleep-system__featured is-addressed"/.test(r.main));
   ok('addressed (demo): the primary "Ask for a demo" control is the pressed one',
@@ -2326,7 +2391,7 @@ const bannerOf = (main) => grab(main, 'sleep-system__decision is-addressed') || 
     /aria-pressed="true" class="[^"]*" data-sleep-action="decision" data-status="already">Already protected<\/button>/.test(en.main));
 }
 {
-  const r = renderStep('adjustability', { answers: ANSWERS });
+  const r = renderStep('base', { answers: ANSWERS });
   ok('open: no decision line, no pressed decision control, the card class is exactly the shipped one',
     !/sleep-system__decision/.test(r.main) && pressedOf(r.main) === 0 && /class="sleep-system__featured"/.test(r.main));
   ok('open: every decision control still carries an explicit aria-pressed="false" (a toggle, not a one-way action)',
@@ -2340,7 +2405,9 @@ const bannerOf = (main) => grab(main, 'sleep-system__decision is-addressed') || 
 {
   // The no-trigger base block has no card; it states the decision the same way.
   const NO_TRIGGER = { sleep_position: 'side', temperature: 'cool', sleep_issues: [], health_conditions: [], budget: 'mid' };
-  const r = renderStep('adjustability', { answers: NO_TRIGGER, state: { decisions: { adjustability: { status: 'later' } } } });
+  const r = renderStep('base', { answers: NO_TRIGGER, state: { decisions: { base: { status: 'later' } } } });
+  // Combined base step: the foundation card carries the decision line and the
+  // neutral block beneath it repeats nothing (guard 18 counts the line).
   ok('no-trigger block: the deferred decision line renders ahead of the base compare block and "Decide later" is pressed',
     /sleep-system__bases-compare/.test(r.main) && bannerOf(r.main) === 'Decide later' &&
     r.main.indexOf('sleep-system__decision') < r.main.indexOf('sleep-system__bases-compare') &&
@@ -2351,14 +2418,14 @@ const bannerOf = (main) => grab(main, 'sleep-system__decision is-addressed') || 
 {
   const pressedChoices = (html, cls) => (html.match(new RegExp(`class="${cls}[^"]*" aria-pressed="true"`, 'g')) || []).length;
   const allChoices = (html, cls) => (html.match(new RegExp(`class="${cls}[^"]*" aria-pressed="(true|false)"`, 'g')) || []).length;
-  const a = renderStep('adjustability', { answers: ANSWERS });
+  const a = renderStep('base', { answers: ANSWERS });
   ok('positions: the suggested position is the one pressed member; every position declares aria-pressed',
     pressedChoices(a.main, 'sleep-system__position') === 1 && allChoices(a.main, 'sleep-system__position') === 4 &&
     /is-active" aria-pressed="true" data-sleep-action="demo-position" data-position="zero-gravity"/.test(a.main));
-  const s = renderStep('support', { answers: ANSWERS, state: { supportChoice: 'standard' } });
+  const s = renderStep('base', { answers: ANSWERS, state: { supportChoice: 'standard' } });
   ok('support choices: the active choice is pressed, the others declare false',
     pressedChoices(s.main, 'sleep-system__support-choice') === 1 && allChoices(s.main, 'sleep-system__support-choice') === 3);
-  const s0 = renderStep('support', { answers: ANSWERS });
+  const s0 = renderStep('base', { answers: ANSWERS });
   ok('support choices: with no choice made, none is pressed', pressedChoices(s0.main, 'sleep-system__support-choice') === 0);
   const p = renderStep('pillow', { answers: ANSWERS, state: { pillowReaction: 'aligned' } });
   ok('pillow fit: "Feels aligned" is pressed once recorded, the other two declare false',
@@ -2376,7 +2443,7 @@ const bannerOf = (main) => grab(main, 'sleep-system__decision is-addressed') || 
     const win = {
       _accCart: seed.cart || {},
       _sleepSystemState: Object.assign({
-        activeStep: 'adjustability', decisions: {}, demoPosition: '', supportChoice: '',
+        activeStep: 'base', decisions: {}, demoPosition: '', supportChoice: '',
         pillowCandidateId: '', pillowReaction: '', pillowFeedback: '', protectionGoal: ''
       }, seed.state || {}),
       showSleepPlan() { win._planShown = true; },
@@ -2384,7 +2451,8 @@ const bannerOf = (main) => grab(main, 'sleep-system__decision is-addressed') || 
     };
     const analytics = { logged: [], log(e, d) { this.logged.push({ e, d }); } };
     const renders = { count: 0 };
-    const src = [SRC.STEPS, SRC.text, SRC.category, SRC.stepFor, SRC.decision, SRC.handler].join('\n');
+    let src = [SRC.STEPS, SRC.text, SRC.category, SRC.stepFor, SRC.groupStepMap, SRC.groupStep, SRC.decision, SRC.handler].join('\n');
+    if (seed.mutate) src = seed.mutate(src);
     const handle = new Function(
       'window', 'analytics', 'ACCESSORIES', 'answers', 'currentLang', 'document',
       'setSleepSystemItem', 'moveSleepSystemStep', 'renderSleepSystem', 'syncAccessoryAnalytics',
@@ -2398,35 +2466,35 @@ const bannerOf = (main) => grab(main, 'sleep-system__decision is-addressed') || 
   const later = { 'data-sleep-action': 'decision', 'data-status': 'later' };
   const demo = { 'data-sleep-action': 'decision', 'data-status': 'demo' };
   const one = runHandler([later]);
-  ok('handler: one press records "later"', one.win._sleepSystemState.decisions.adjustability.status === 'later');
+  ok('handler: one press records "later"', one.win._sleepSystemState.decisions.base.status === 'later');
   const two = runHandler([later, later]);
   ok('handler: pressing "Decide later" again REOPENS the step (status open) - one touch, no confirm',
-    two.win._sleepSystemState.decisions.adjustability.status === 'open' && two.renders.count === 2);
+    two.win._sleepSystemState.decisions.base.status === 'open' && two.renders.count === 2);
   ok('handler: the reopen is recorded as a decision event with status "open" (no new event name, no new field)',
     two.analytics.logged.every((l) => l.e === 'sleep_system_decision_recorded') &&
     two.analytics.logged[1].d.status === 'open' && Object.keys(two.analytics.logged[1].d).sort().join(',') === 'status,step');
   const swap = runHandler([later, demo]);
-  ok('handler: a different decision replaces rather than reopens', swap.win._sleepSystemState.decisions.adjustability.status === 'demo');
+  ok('handler: a different decision replaces rather than reopens', swap.win._sleepSystemState.decisions.base.status === 'demo');
   const demoTwice = runHandler([demo, demo], { state: { demoPosition: 'reading' } });
   ok('handler: pressing "Ask for a demo" again at the same position cancels the request (open)',
-    demoTwice.win._sleepSystemState.decisions.adjustability.status === 'open');
+    demoTwice.win._sleepSystemState.decisions.base.status === 'open');
   const demoMoved = runHandler([demo, { 'data-sleep-action': 'demo-position', 'data-position': 'flat' }, demo], { state: { demoPosition: 'reading' } });
   ok('handler: pressing "Ask for a demo" after moving the demo position UPDATES the recorded position instead of cancelling',
-    demoMoved.win._sleepSystemState.decisions.adjustability.status === 'demo' &&
-    demoMoved.win._sleepSystemState.decisions.adjustability.position === 'flat');
+    demoMoved.win._sleepSystemState.decisions.base.status === 'demo' &&
+    demoMoved.win._sleepSystemState.decisions.base.position === 'flat');
   const pillowAlready = runHandler([{ 'data-sleep-action': 'decision', 'data-status': 'already' }, { 'data-sleep-action': 'decision', 'data-status': 'already' }],
     { state: { activeStep: 'pillow' } });
   ok('handler: "Keep current pillow" twice reopens the pillow step', pillowAlready.win._sleepSystemState.decisions.pillow.status === 'open');
   const current = { 'data-sleep-action': 'support-choice', 'data-support-choice': 'current' };
-  const keep = runHandler([current], { state: { activeStep: 'support' } });
-  ok('handler: choosing "Keep current support" records the choice and the already status',
-    keep.win._sleepSystemState.supportChoice === 'current' && keep.win._sleepSystemState.decisions.support.status === 'already');
-  const keepTwice = runHandler([current, current], { state: { activeStep: 'support' } });
-  ok('handler: pressing the active setup choice again CLEARS it and reopens the support step (the product card returns)',
-    keepTwice.win._sleepSystemState.supportChoice === '' && keepTwice.win._sleepSystemState.decisions.support.status === 'open');
+  const keep = runHandler([current], { state: { activeStep: 'base' } });
+  ok('handler: choosing "Keep current support" records the choice and the already status on the base step',
+    keep.win._sleepSystemState.supportChoice === 'current' && keep.win._sleepSystemState.decisions.base.status === 'already');
+  const keepTwice = runHandler([current, current], { state: { activeStep: 'base' } });
+  ok('handler: pressing the active setup choice again CLEARS it and reopens the base step (the product card returns)',
+    keepTwice.win._sleepSystemState.supportChoice === '' && keepTwice.win._sleepSystemState.decisions.base.status === 'open');
   const selectedThenLater = runHandler([later], { cart: { 'base-bt3000': { id: 'base-bt3000' } } });
   ok('handler: a decision on a step with an added product evicts the product and records the decision (unchanged behaviour)',
-    !selectedThenLater.win._accCart['base-bt3000'] && selectedThenLater.win._sleepSystemState.decisions.adjustability.status === 'later');
+    !selectedThenLater.win._accCart['base-bt3000'] && selectedThenLater.win._sleepSystemState.decisions.base.status === 'later');
 }
 // The stylesheet: the decision line, the card kinds, the pressed cue, the
 // legible captions, the settle-in motion and its reduced-motion removal, and
@@ -2491,6 +2559,267 @@ const bannerOf = (main) => grab(main, 'sleep-system__decision is-addressed') || 
   for (const find of CANDIDATE_FINDS) {
     const n = lf.split(find).length - 1;
     ok(`candidate sweep find matches exactly once: ${JSON.stringify(find.slice(0, 56))}…`, n === 1, `count=${n}`);
+  }
+}
+
+
+// ------------------------- 18. the combined base step (owner-approved, 2026-09-14)
+// One 'base' step replaces 'adjustability' and 'support': one physical slot
+// under the mattress, one reversible decision. The engine is untouched (the
+// four groups above are still produced and fixture-pinned); the step composes
+// the adjustability and support groups in the view layer. Rendered through the
+// real renderer; the handler and the cart writer are executed for real.
+section('combined base step — one slot under the mattress, composed over the engine\'s two groups');
+{
+  const BACK_PAIN = { sleep_position: 'side', temperature: 'comfortable', sleep_issues: ['back_pain'], health_conditions: ['none'] };
+  const NO_TRIGGER = { sleep_position: 'back', temperature: 'comfortable', sleep_issues: ['none'], health_conditions: ['none'] };
+  const FOUNDATION = 'foundation-princess';
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const nameOf = (id, lang) => { const a = ACCESSORIES_JSON.find((x) => x.id === id); return esc(lang === 'es' ? a.name.es : a.name.en); };
+  const altBlocks = (main) => main.match(/class="sleep-system__alternative">[\s\S]*?<\/div><\/div>/g) || [];
+
+  // (e) the view-layer step resolver and the untouched engine partition
+  {
+    const env = makeEnv({ answers: ANSWERS });
+    const fs = ACCESSORIES_JSON.filter((a) => (typeof a.category === 'object' ? a.category.en : a.category) === 'Foundations & Support');
+    ok('control: the shipped catalog carries three adjustable bases and one foundation under Foundations & Support',
+      fs.length === 4 && fs.filter((a) => a.subType === 'adjustable').length === 3 && fs.some((a) => a.id === FOUNDATION));
+    ok('every Foundations & Support item resolves to the base step, pillows and protectors to their own',
+      ACCESSORIES_JSON.every((a) => {
+        const cat = typeof a.category === 'object' ? a.category.en : a.category;
+        const expected = cat === 'Foundations & Support' ? 'base' : cat === 'Pillows' ? 'pillow' : cat === 'Protectors' ? 'protection' : '';
+        return env.api.stepIdFor(a) === expected;
+      }));
+    const groups = env.api.groups();
+    ok('the engine still produces its four groups under their original keys (adjustability and support are not merged in the engine)',
+      JSON.stringify(Object.keys(groups).sort()) === JSON.stringify(ENGINE_GROUP_KEYS.slice().sort()) &&
+      groups.adjustability.every((a) => a.subType === 'adjustable') && groups.support.every((a) => a.subType !== 'adjustable'));
+    ok('the engine partition is byte-identical (adjustability / support by subType) and the step table maps both to base',
+      /return item\.subType === 'adjustable' \? 'adjustability' : 'support';/.test(stripComments(SRC.stepFor)) &&
+      /adjustability: 'base',\s*support: 'base',\s*pillow: 'pillow',\s*protection: 'protection'/.test(stripComments(SRC.groupStepMap)));
+    const composed = env.api.groupsForStep(groups, 'base');
+    ok('the composed base list is the two engine groups concatenated, never re-scored (same objects, same order within each group)',
+      composed.length === groups.adjustability.length + groups.support.length &&
+      groups.adjustability.every((a, i) => composed.indexOf(a) === (groups.adjustability[0].matched ? i : groups.support.length + i)) &&
+      groups.support.every((a, i) => composed.indexOf(a) === (groups.adjustability[0].matched ? groups.adjustability.length + i : i)));
+    ok('pillow and protection pass through the composer untouched (same array)',
+      env.api.groupsForStep(groups, 'pillow') === groups.pillow && env.api.groupsForStep(groups, 'protection') === groups.protection);
+  }
+
+  for (const lang of ['en', 'es']) {
+    const L = lang === 'es'
+      ? { support: 'Opción de soporte', rec: 'Recomendado para probar', details: 'Ver detalles', next: 'Continuar a Almohada', nextProt: 'Continuar a Protección', review: 'Revisar Plan de Sueño', using: 'Usando configuración actual' }
+      : { support: 'Support option', rec: 'Recommended to try', details: 'Details', next: 'Continue to Pillow', nextProt: 'Continue to Protection', review: 'Review Sleep Plan', using: 'Using current setup' };
+
+    // (a) trigger: the adjustable base leads; the foundation is an "Also compare" row with Details
+    {
+      const r = renderStep('base', { answers: BACK_PAIN, lang });
+      const items = stepItems(r, 'base');
+      const body = featuredBody(r.main);
+      ok(`[${lang}/trigger] the matched adjustable base leads the composed list and takes the card ("${L.rec}")`,
+        items[0].subType === 'adjustable' && items[0].matched === true &&
+        grab(body, 'sleep-system__featured-name') === nameOf(items[0].id, lang) && grab(body, 'sleep-system__card-eyebrow') === L.rec);
+      ok(`[${lang}/trigger] the foundation is listed under "Also compare" with a Details control`,
+        new RegExp(`data-sleep-action="view-item" data-item-id="${FOUNDATION}">${L.details}</button>`).test(r.main) &&
+        altBlocks(r.main).some((b) => b.includes(`alternative-name">${nameOf(FOUNDATION, lang)}<`)));
+      ok(`[${lang}/trigger] every remaining base AND the foundation are rows (the base step lists up to three alternatives)`,
+        altBlocks(r.main).length === items.length - 1 && items.length === 4);
+      ok(`[${lang}/trigger] the setup guide and the position demo both render above the card, in that order`,
+        r.main.indexOf('sleep-system__support-guide') < r.main.indexOf('sleep-system__demo') &&
+        r.main.indexOf('sleep-system__demo') < r.main.indexOf('class="sleep-system__featured'));
+      ok(`[${lang}/trigger] no neutral all-bases block renders (no base appears twice)`, !/sleep-system__bases-compare/.test(r.main));
+      // Viewing the foundation through Details gives it the foundation's own controls and eyebrow.
+      const viewed = renderStep('base', { answers: BACK_PAIN, lang, state: { viewCandidateId: FOUNDATION } });
+      const vBody = featuredBody(viewed.main);
+      ok(`[${lang}/trigger] a viewed foundation takes the card with "${L.support}" and the add-support control, and the base's controls leave the card`,
+        grab(vBody, 'sleep-system__featured-name') === nameOf(FOUNDATION, lang) && grab(vBody, 'sleep-system__card-eyebrow') === L.support &&
+        new RegExp(`data-sleep-action="select-item" data-item-id="${FOUNDATION}"`).test(viewed.main) &&
+        !/data-status="demo"/.test(viewed.main) && viewed.main.includes('sleep-system__viewing'));
+    }
+
+    // (b) no trigger: the foundation leads; the neutral block sits beneath; nothing twice; one decision line
+    {
+      const r = renderStep('base', { answers: NO_TRIGGER, lang, state: { decisions: { base: { status: 'later' } } } });
+      const body = featuredBody(r.main);
+      ok(`[${lang}/no-trigger] the foundation takes the card with "${L.support}"`,
+        grab(body, 'sleep-system__featured-name') === nameOf(FOUNDATION, lang) && grab(body, 'sleep-system__card-eyebrow') === L.support);
+      ok(`[${lang}/no-trigger] the neutral all-bases block renders beneath the card`,
+        /sleep-system__bases-compare/.test(r.main) && r.main.indexOf('class="sleep-system__featured') < r.main.indexOf('sleep-system__bases-compare'));
+      ok(`[${lang}/no-trigger] no adjustable base appears as an "Also compare" row (nothing renders twice)`,
+        !/data-sleep-action="view-item" data-item-id="base-/.test(r.main) && altBlocks(r.main).length === 0);
+      ok(`[${lang}/no-trigger] the decision line renders exactly once, on the card`,
+        (r.main.match(/class="sleep-system__decision /g) || []).length === 1 && body.includes('sleep-system__decision'));
+      // featuredBody() stops at the actions row, so the card's controls are
+      // read from the whole <article>.
+      const card = (r.main.match(/<article class="sleep-system__featured[\s\S]*?<\/article>/) || [''])[0];
+      ok(`[${lang}/no-trigger] the foundation card carries the add-support control, not the demo request; the neutral block carries the demo request`,
+        card.includes('data-sleep-action="select-item" data-item-id="' + FOUNDATION + '"') && !card.includes('data-status="demo"') &&
+        /sleep-system__bases-compare[\s\S]*data-status="demo"/.test(r.main));
+    }
+
+    // (c) keep current setup: no card, no neutral block, the sidecar and rail say so
+    {
+      const r = renderStep('base', { answers: BACK_PAIN, lang, state: { supportChoice: 'current', decisions: { base: { status: 'already' } } } });
+      ok(`[${lang}/keep-current] the card and the neutral block give way to the current-setup outcome`,
+        /sleep-system__support-outcome/.test(r.main) && !/class="sleep-system__featured[ "]/.test(r.main) && !/sleep-system__bases-compare/.test(r.main));
+      ok(`[${lang}/keep-current] the plan sidecar and the rail read "${L.using}" for the base step`,
+        r.plan.includes(`plan-item-status">${L.using}<`) && r.rail.includes(`step-status">${L.using}<`));
+    }
+
+    // (d) the footer walks base -> pillow -> protection -> the Plan
+    {
+      const nextOf = (step) => { const env = makeEnv({ answers: ANSWERS, lang, state: { activeStep: step } }); env.api.footer(); return { next: env.get('sleepSystemNext').textContent, prevDisabled: env.doc.querySelector('[data-sleep-action="previous-step"]').disabled }; };
+      ok(`[${lang}] on base the footer reads "${L.next}" and Previous is disabled`, nextOf('base').next === L.next && nextOf('base').prevDisabled === true);
+      ok(`[${lang}] on pillow the footer reads "${L.nextProt}" and Previous is enabled`, nextOf('pillow').next === L.nextProt && nextOf('pillow').prevDisabled === false);
+      ok(`[${lang}] on protection the footer reads "${L.review}"`, nextOf('protection').next === L.review);
+    }
+  }
+
+  // (f)(g)(h) the handler and the cart writer, executed for real
+  {
+    const SET_ITEM = extractFunction('function setSleepSystemItem(itemId, shouldSelect)');
+    const runCart = (actions, seed = {}) => {
+      const win = {
+        _accCart: seed.cart || {},
+        _sleepSystemState: Object.assign({
+          activeStep: 'base', decisions: {}, demoPosition: '', supportChoice: '',
+          pillowCandidateId: '', viewCandidateId: '', pillowReaction: '', pillowFeedback: '', protectionGoal: ''
+        }, seed.state || {})
+      };
+      const analytics = { logged: [], log(e, d) { this.logged.push({ e, d }); } };
+      let src = [SRC.STEPS, SRC.text, SRC.category, SRC.stepFor, SRC.groupStepMap, SRC.groupStep, SRC.qualify, SRC.scorer,
+        SRC.readGroups, SRC.decision, SRC.handler, SET_ITEM].join('\n');
+      if (seed.mutate) src = seed.mutate(src);
+      const handle = new Function(
+        'window', 'analytics', 'ACCESSORIES', 'answers', 'currentLang', 'document',
+        'moveSleepSystemStep', 'renderSleepSystem', 'syncAccessoryAnalytics', 'getSuggestedProtectionGoal', 'escapeHtml', 'accessoryReasonKey',
+        src + '\nreturn handleSleepSystemAction;'
+      )(win, analytics, ACCESSORIES_JSON, ANSWERS, 'en', { getElementById() { return null; } },
+        () => {}, () => {}, () => {}, () => 'everyday', (s) => s, (s) => s);
+      for (const attrs of actions) handle({ getAttribute(k) { return Object.prototype.hasOwnProperty.call(attrs, k) ? attrs[k] : null; } });
+      return { win, analytics };
+    };
+    const select = (id) => ({ 'data-sleep-action': 'select-item', 'data-item-id': id });
+    const current = { 'data-sleep-action': 'support-choice', 'data-support-choice': 'current' };
+    const demo = { 'data-sleep-action': 'decision', 'data-status': 'demo' };
+    const baseIds = (win) => Object.keys(win._accCart).filter((id) => id.startsWith('base-') || id === FOUNDATION);
+
+    // (f) one product per step: a foundation and an adjustable base displace each other
+    const both = runCart([select(FOUNDATION), select('base-bt2000')]);
+    ok('cart: adding a foundation and then an adjustable base leaves exactly ONE base-step product (the base)',
+      JSON.stringify(baseIds(both.win)) === JSON.stringify(['base-bt2000']) && both.win._sleepSystemState.decisions.base.itemId === 'base-bt2000',
+      JSON.stringify(Object.keys(both.win._accCart)));
+    const back = runCart([select('base-bt2000'), select(FOUNDATION)]);
+    ok('cart: and the other way round (the foundation displaces the base)',
+      JSON.stringify(baseIds(back.win)) === JSON.stringify([FOUNDATION]) && back.win._sleepSystemState.supportChoice === 'standard');
+    const withPillow = runCart([select('base-bt2000'), select(FOUNDATION)], { cart: { 'pillow-flow': { id: 'pillow-flow' } } });
+    ok('cart: a pillow in the cart is untouched by base-step evictions', !!withPillow.win._accCart['pillow-flow']);
+    ok('cart: the analytics events name the base step', both.analytics.logged.filter((l) => l.e === 'sleep_system_item_selected').every((l) => l.d.step === 'base'));
+    // negative control: evicting by the ENGINE group again lets both coexist
+    const coexist = runCart([select(FOUNDATION), select('base-bt2000')], {
+      mutate: (s) => {
+        const from = 'if (existing && sleepSystemStepIdForItem(existing) === stepId) delete window._accCart[id];';
+        if (!s.includes(from)) throw new Error('combined-base negative control: eviction anchor not found');
+        return s.replace(from, 'if (existing && sleepSystemStepForItem(existing) === sleepSystemStepForItem(item)) delete window._accCart[id];');
+      }
+    });
+    ok('negative control: evicting by the engine group again lets the foundation and the base coexist (the one-per-step assertion bites)',
+      baseIds(coexist.win).length === 2);
+
+    // (g) "Keep current support" clears an adjustable base from the cart and records already
+    const kept = runCart([current], { cart: { 'base-bt2000': { id: 'base-bt2000' } } });
+    ok('setup choice: "Keep current support" clears the adjustable base from the cart and records the base decision as already',
+      !kept.win._accCart['base-bt2000'] && kept.win._sleepSystemState.decisions.base.status === 'already' && kept.win._sleepSystemState.supportChoice === 'current');
+    const keptOld = runCart([current], {
+      cart: { 'base-bt2000': { id: 'base-bt2000' } },
+      mutate: (s) => {
+        const from = "if (supportItem && sleepSystemStepIdForItem(supportItem) === 'base') delete window._accCart[id];";
+        if (!s.includes(from)) throw new Error('combined-base negative control: support-choice anchor not found');
+        return s.replace(from, "if (supportItem && sleepSystemStepForItem(supportItem) === 'support') delete window._accCart[id];");
+      }
+    });
+    ok('negative control: evicting only the support group leaves the adjustable base in the cart (the assertion bites)',
+      !!keptOld.win._accCart['base-bt2000']);
+
+    // (h) the demo decision stores the position on the base step
+    const demoed = runCart([demo], { state: { demoPosition: 'reading' } });
+    ok('decision: "Ask for a demo" on the base step stores the demo position', demoed.win._sleepSystemState.decisions.base.position === 'reading');
+    const demoedOld = runCart([demo], {
+      state: { demoPosition: 'reading' },
+      mutate: (s) => {
+        const from = "position: stepId === 'base' ? window._sleepSystemState.demoPosition : ''";
+        if (!s.includes(from)) throw new Error('combined-base negative control: position anchor not found');
+        return s.replace(from, "position: stepId === 'adjustability' ? window._sleepSystemState.demoPosition : ''");
+      }
+    });
+    ok('negative control: keying the position on the retired step id loses it (the assertion bites)',
+      demoedOld.win._sleepSystemState.decisions.base.position === '');
+  }
+
+  // Rendered negative controls for the composition itself.
+  {
+    const orderBack = renderStep('base', {
+      answers: BACK_PAIN,
+      mutate: (s) => {
+        const from = 'return bases[0] && bases[0].matched ? bases.concat(support) : support.concat(bases);';
+        if (!s.includes(from)) throw new Error('combined-base negative control: composer anchor not found');
+        return s.replace(from, 'return support.concat(bases);');
+      }
+    });
+    ok('negative control: a foundation-first composer puts the foundation on the card for a triggered customer (the trigger assertion bites)',
+      grab(featuredBody(orderBack.main), 'sleep-system__card-eyebrow') === 'Support option');
+    const capBack = renderStep('base', {
+      answers: BACK_PAIN,
+      mutate: (s) => {
+        const from = "var alternatives = items.slice(1, step.id === 'base' ? 4 : 3);";
+        if (!s.includes(from)) throw new Error('combined-base negative control: cap anchor not found');
+        return s.replace(from, 'var alternatives = items.slice(1, 3);');
+      }
+    });
+    ok('negative control: the old two-row cap drops the foundation from "Also compare" (the Details assertion bites)',
+      !new RegExp(`data-sleep-action="view-item" data-item-id="${FOUNDATION}"`).test(capBack.main));
+    const bannerTwice = renderStep('base', {
+      answers: NO_TRIGGER, state: { decisions: { base: { status: 'later' } } },
+      mutate: (s) => {
+        const from = "(basesCompareStandsAlone ? sleepSystemDecisionBanner(step.id, decision) : '')";
+        if (!s.includes(from)) throw new Error('combined-base negative control: banner anchor not found');
+        return s.replace(from, 'sleepSystemDecisionBanner(step.id, decision)');
+      }
+    });
+    ok('negative control: an unconditional banner in the neutral block renders the decision line twice (the once-only assertion bites)',
+      (bannerTwice.main.match(/class="sleep-system__decision /g) || []).length === 2);
+  }
+  // The cart wins in sleepSystemDecision: a base-step product in the cart
+  // marks the base step selected on the rail and the sidecar even when no
+  // decision was recorded (the resolver must read the STEP of the item, not
+  // its engine group - sweep survivor 2026-09-14).
+  {
+    for (const id of ['base-tempur-ergo', FOUNDATION]) {
+      const r = renderStep('base', { answers: BACK_PAIN, cart: { [id]: { id } } });
+      ok(`cart-wins: ${id} in the cart alone marks the base rail chip selected and names the product`,
+        /class="sleep-system__step is-active is-selected"[^>]*data-step="base"/.test(r.rail) &&
+        r.rail.includes('sleep-system__step-status">' + nameOf(id, 'en') + '<'), r.rail.slice(0, 200));
+      ok(`cart-wins: ${id} in the cart alone marks the sidecar row selected and counts 1 added`,
+        /class="sleep-system__plan-item is-selected"/.test(r.plan) && r.planCount === '1 added · 0 addressed', r.planCount);
+    }
+    const byGroup = renderStep('base', {
+      answers: BACK_PAIN, cart: { 'base-tempur-ergo': { id: 'base-tempur-ergo' } },
+      mutate: (s) => {
+        const from = 'return item && sleepSystemStepIdForItem(item) === stepId;';
+        if (!s.includes(from)) throw new Error('combined-base negative control: resolver anchor not found');
+        return s.replace(from, 'return item && sleepSystemStepForItem(item) === stepId;');
+      }
+    });
+    ok('negative control: a resolver that compares the engine group never marks the base step from the cart (the cart-wins assertion bites)',
+      !/is-selected"[^>]*data-step="base"/.test(byGroup.rail) && byGroup.planCount === '0 added · 0 addressed', byGroup.planCount);
+  }
+  // The retired step ids are gone from the live step table, state defaults and
+  // the analytics enum; the rail CSS lays three columns.
+  {
+    const live = stripComments(SRC.STEPS + SRC.handler + SRC.secondary + SRC.guidance);
+    ok('no live Sleep System source keys a step on the retired ids', !/'adjustability'\s*[:)]|'support'\s*[:)]|=== 'adjustability'|=== 'support'/.test(live.replace(/sleepSystemStepForItem\(item\) === 'support'/g, '')));
+    ok('the initial state and the wipe both default activeStep to base', (html.match(/activeStep: 'base',/g) || []).length === 2 && !/activeStep: 'adjustability'/.test(html));
+    ok('the analytics step enum carries exactly the three step ids', /step: \['base', 'pillow', 'protection'\],/.test(html));
   }
 }
 
