@@ -2822,6 +2822,66 @@ section('combined base step — one slot under the mattress, composed over the e
       JSON.stringify(baseIds(unrepaired.win)) === JSON.stringify(['base-bt2000']) && unrepaired.win._sleepSystemState.supportChoice === 'standard' &&
       JSON.stringify(unrepaired.pressed) === JSON.stringify(['standard']) && namesOnRail(unrepaired, 'base-bt2000'),
       JSON.stringify({ pressed: unrepaired.pressed, supportChoice: unrepaired.win._sleepSystemState.supportChoice }));
+
+    // (j) The same contradiction through the DECISION path (PR #122 audit
+    // repair 2, 2026-09-14): a foundation recorded 'standard', then "Ask for
+    // a demo" or "Decide later" evicted the foundation and recorded the
+    // decision but left the choice behind, so the rerender pressed "Standard
+    // height" beside the demo / deferral. Real handler, then real renderers.
+    const later = { 'data-sleep-action': 'decision', 'data-status': 'later' };
+    const pressedDecisions = (main) =>
+      [...main.matchAll(/aria-pressed="true" class="sleep-system__action[^"]*" data-sleep-action="decision" data-status="([a-z]+)"/g)].map((m) => m[1]);
+    const statusOnRail = (r, text) => r.rail.includes('sleep-system__step-status">' + text + '<');
+    const statusOnPlan = (r, text) => r.plan.includes('plan-item-status">' + text + '<');
+    const decisionState = (r) => JSON.stringify({
+      cart: Object.keys(r.win._accCart), decision: r.win._sleepSystemState.decisions.base,
+      supportChoice: r.win._sleepSystemState.supportChoice, demoPosition: r.win._sleepSystemState.demoPosition,
+      pressedChoices: r.pressed, pressedDecisions: pressedDecisions(r.main)
+    });
+
+    const toDemo = rendered(runCart([select(FOUNDATION), demo], { state: { demoPosition: 'reading' } }));
+    ok('foundation -> demo: no base-step product remains and decisions.base is demo at the selected demo position (demoPosition preserved)',
+      baseIds(toDemo.win).length === 0 && toDemo.win._sleepSystemState.decisions.base.status === 'demo' &&
+      toDemo.win._sleepSystemState.decisions.base.position === 'reading' && toDemo.win._sleepSystemState.demoPosition === 'reading', decisionState(toDemo));
+    ok('foundation -> demo: supportChoice is clear and the rerendered setup guide presses NO choice',
+      toDemo.win._sleepSystemState.supportChoice === '' && toDemo.pressed.length === 0, decisionState(toDemo));
+    ok('foundation -> demo: exactly the demo decision is pressed and the rail + sidecar report "Demo: Reading"',
+      JSON.stringify(pressedDecisions(toDemo.main)) === JSON.stringify(['demo']) && statusOnRail(toDemo, 'Demo: Reading') && statusOnPlan(toDemo, 'Demo: Reading'),
+      decisionState(toDemo));
+
+    const toLater = rendered(runCart([select(FOUNDATION), later], { state: { demoPosition: 'reading' } }));
+    ok('foundation -> later: no base-step product remains and decisions.base is later',
+      baseIds(toLater.win).length === 0 && toLater.win._sleepSystemState.decisions.base.status === 'later', decisionState(toLater));
+    ok('foundation -> later: supportChoice is clear and the rerendered setup guide presses NO choice',
+      toLater.win._sleepSystemState.supportChoice === '' && toLater.pressed.length === 0, decisionState(toLater));
+    ok('foundation -> later: exactly the deferral is pressed and the rail + sidecar report "Decide later"',
+      JSON.stringify(pressedDecisions(toLater.main)) === JSON.stringify(['later']) && statusOnRail(toLater, 'Decide later') && statusOnPlan(toLater, 'Decide later'),
+      decisionState(toLater));
+
+    // Pillow and protection decisions are not the base step's business: a
+    // deferral recorded on the pillow step leaves the base height choice alone.
+    const pillowLater = runCart([later], { state: { activeStep: 'pillow', supportChoice: 'standard' }, cart: { [FOUNDATION]: { id: FOUNDATION } } });
+    ok('a "Decide later" on the PILLOW step leaves the foundation in the cart and its height choice untouched (no pillow/protection change)',
+      !!pillowLater.win._accCart[FOUNDATION] && pillowLater.win._sleepSystemState.supportChoice === 'standard' &&
+      pillowLater.win._sleepSystemState.decisions.pillow.status === 'later' && !pillowLater.win._sleepSystemState.decisions.base);
+
+    // Negative controls: with the clearing disabled, both paths reproduce the
+    // stale "Standard height" cue beside the demo / deferral.
+    const disableClearing = (s) => {
+      const from = "if (stepId === 'base' && !reopening && (requestedStatus === 'demo' || requestedStatus === 'later') &&";
+      if (!s.includes(from)) throw new Error('combined-base negative control: decision-clearing anchor not found');
+      return s.replace(from, 'if (false &&');
+    };
+    const staleDemo = rendered(runCart([select(FOUNDATION), demo], { state: { demoPosition: 'reading' }, mutate: disableClearing }));
+    ok('negative control: without the decision-path clearing, demo is pressed AND "Standard height" is still pressed (the demo assertion bites)',
+      baseIds(staleDemo.win).length === 0 && staleDemo.win._sleepSystemState.supportChoice === 'standard' &&
+      JSON.stringify(staleDemo.pressed) === JSON.stringify(['standard']) && JSON.stringify(pressedDecisions(staleDemo.main)) === JSON.stringify(['demo']),
+      decisionState(staleDemo));
+    const staleLater = rendered(runCart([select(FOUNDATION), later], { state: { demoPosition: 'reading' }, mutate: disableClearing }));
+    ok('negative control: without the decision-path clearing, later is pressed AND "Standard height" is still pressed (the deferral assertion bites)',
+      baseIds(staleLater.win).length === 0 && staleLater.win._sleepSystemState.supportChoice === 'standard' &&
+      JSON.stringify(staleLater.pressed) === JSON.stringify(['standard']) && JSON.stringify(pressedDecisions(staleLater.main)) === JSON.stringify(['later']),
+      decisionState(staleLater));
   }
 
   // Rendered negative controls for the composition itself.

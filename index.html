@@ -21288,6 +21288,15 @@
           var item = ACCESSORIES.find(function(accessory) { return accessory.id === id; });
           if (item && sleepSystemStepIdForItem(item) === stepId) delete window._accCart[id];
         });
+        // A demo request or a deferral on the base step replaces the
+        // foundation it just evicted, so the height choice that foundation
+        // recorded cannot stay pressed beside it (PR #122 audit repair 2,
+        // 2026-09-14). Only the foundation's own choices are cleared; the
+        // demo position is read below exactly as before.
+        if (stepId === 'base' && !reopening && (requestedStatus === 'demo' || requestedStatus === 'later') &&
+            (window._sleepSystemState.supportChoice === 'standard' || window._sleepSystemState.supportChoice === 'low')) {
+          window._sleepSystemState.supportChoice = '';
+        }
         window._sleepSystemState.decisions[stepId] = reopening ? { status: 'open' } : {
           status: requestedStatus,
           position: stepId === 'base' ? window._sleepSystemState.demoPosition : ''

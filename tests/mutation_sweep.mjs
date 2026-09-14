@@ -2717,6 +2717,16 @@ const MUTATIONS = [
   ["combined base: the adjustable-base branch re-records the foundation's choice instead of clearing it",
     "      } else if (stepId === 'base' && shouldSelect) {\n        window._sleepSystemState.supportChoice = '';",
     "      } else if (stepId === 'base' && shouldSelect) {\n        window._sleepSystemState.supportChoice = 'standard';", SLEEP],
+  // PR #122 audit repair 2 (2026-09-14): the DECISION path. "Ask for a demo"
+  // or "Decide later" on the base step evicts the foundation and must clear
+  // the height choice it recorded; otherwise the rerender presses "Standard
+  // height" beside the demo / deferral.
+  ["combined base: a demo request or a deferral leaves the evicted foundation's height choice pressed (the decision-path clearing is disabled)",
+    "        if (stepId === 'base' && !reopening && (requestedStatus === 'demo' || requestedStatus === 'later') &&",
+    "        if (false &&", SLEEP],
+  ["combined base: the decision-path clearing covers the demo request only (a deferral keeps the stale height choice)",
+    "        if (stepId === 'base' && !reopening && (requestedStatus === 'demo' || requestedStatus === 'later') &&",
+    "        if (stepId === 'base' && !reopening && requestedStatus === 'demo' &&", SLEEP],
 
   // --- A4.3 (owner-approved 2026-09-03): the reduced nine-question quiz. The
   // visit trigger is gone, and with it the Summary's context row. These entries
