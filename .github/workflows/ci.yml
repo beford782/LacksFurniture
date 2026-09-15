@@ -529,7 +529,8 @@ jobs:
       # step table, group reader, card/rail/plan/footer renderers and the
       # per-step guides against a DOM shim, driven by the real accessories
       # catalog and the real store-config financing block. Pins the governed
-      # four-step order; the benefit-first / distinction-second card hierarchy
+      # three-step order (base, pillow, protection); the combined Base step's
+      # one reversible decision; the benefit-first / distinction-second card hierarchy
       # in DOM order AND in relative type size; the separately NAMED salesperson
       # procedure region and its freedom from the customer-benefit sentence;
       # primary-vs-alternative distinguishability; the selected, keep-current,
