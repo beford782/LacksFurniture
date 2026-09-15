@@ -1004,6 +1004,12 @@ section("diagnostic privacy: string values are enum-validated, not merely key-ap
     ["tier_view", "tier", "gold", true],
     ["tier_view", "tier", SENTINEL_ANSWER, false],
     ["sleep_system_step_viewed", "step", "pillow", true],
+    // Combined base step (2026-09-14): the new step id survives redaction;
+    // the retired four-step ids are unknown values and are dropped.
+    ["sleep_system_step_viewed", "step", "base", true],
+    ["sleep_system_step_viewed", "step", "adjustability", false],
+    ["sleep_system_step_viewed", "step", "support", false],
+    ["accessories_viewed", "entryStep", "base", true],
     ["sleep_system_step_viewed", "step", SENTINEL_ANSWER, false],
     ["sleep_system_decision_recorded", "status", "confirm", true],
     ["sleep_system_decision_recorded", "status", SENTINEL_ANSWER, false],

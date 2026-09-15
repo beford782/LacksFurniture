@@ -7260,7 +7260,9 @@
     }
     .sleep-system__rail {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      /* Combined base step (2026-09-14): three steps, base / pillow /
+         protection, walked from SLEEP_SYSTEM_STEPS. */
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 8px;
       margin-bottom: 16px;
     }
@@ -8209,7 +8211,8 @@
          rail scrolled sideways - scrolling never revealed them. Wrap to two
          columns instead: every label fits at 390, 417 (834 @ 200%) and 597
          (1194 @ 200%), and the horizontal scroll goes away. DOM order, and
-         therefore reading and Tab order, is unchanged: 1 2 / 3 4. */
+         therefore reading and Tab order, is unchanged: 1 2 / 3 4 - and,
+         since the combined base step (2026-09-14), 1 2 / 3. */
       .sleep-system__rail {
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
@@ -16989,7 +16992,12 @@
       ENUMS: {
         tier: ['gold', 'silver', 'bronze'],
         lang: ['en', 'es'],
-        step: ['adjustability', 'support', 'pillow', 'protection'],
+        // Combined base step (owner-approved three-step design, 2026-09-14):
+        // the Sleep System walks base -> pillow -> protection. The engine
+        // still partitions 'Foundations & Support' into its adjustability /
+        // support groups (fixture-pinned); only the STEP the customer walks
+        // is combined, so the enum carries the step ids, not the group keys.
+        step: ['base', 'pillow', 'protection'],
         decisionStatus: ['already', 'confirm', 'demo', 'later', 'open', 'selected'],
         placement: ['results', 'drawer', 'handoff', 'sheet', 'mexico', 'sleep-system', 'sleep-plan'],
         layout: ['tablet', 'desktop'],
@@ -19681,26 +19689,28 @@
       }, 1600);
     };
 
+    // Combined base step (owner-approved three-step design, 2026-09-14). The
+    // former 'adjustability' and 'support' steps asked ONE physical question
+    // twice - what sits under the mattress - so a customer could record
+    // "keep current support" on one step and "ask for a demo" on the other.
+    // They are now a single 'base' step with a single reversible decision:
+    // add an adjustable base or a foundation, keep the current setup, ask for
+    // a demo, flag a specialist check, or decide later. The ENGINE is
+    // untouched: readSleepSystemGroups() still returns its four groups
+    // (fixture-pinned), sleepSystemStepForItem() still partitions the
+    // catalog into adjustability / support, and the step composes over both
+    // groups in the view layer (sleepSystemGroupsForStep). Pillow and
+    // protection render exactly as before. ES copy provisional (2c pending).
     const SLEEP_SYSTEM_STEPS = [
       {
-        id: 'adjustability',
-        label: { en: 'Adjustability', es: 'Ajustabilidad' },
-        title: { en: 'Explore adjustable comfort', es: 'Explora la comodidad ajustable' },
+        id: 'base',
+        label: { en: 'Base', es: 'Base' },
+        title: { en: 'Choose what goes under the mattress', es: 'Elige qué va debajo del colchón' },
         copy: {
-          en: 'A base can change how the whole bed works for reading, relaxing, and certain sleep concerns. A showroom demo is the best test.',
-          es: 'Una base puede cambiar cómo funciona toda la cama para leer, relajarse y ciertas necesidades de sueño. Una demostración es la mejor prueba.'
+          en: 'A foundation or an adjustable base sets the height and feel, and can change how the whole bed works for reading, relaxing, and certain sleep concerns. A showroom demo is the best test.',
+          es: 'Una base tradicional o ajustable define la altura y la sensación, y puede cambiar cómo funciona toda la cama para leer, relajarse y ciertas necesidades de sueño. Una demostración es la mejor prueba.'
         },
-        guidanceTitle: { en: 'Guide the showroom trial', es: 'Guía la prueba en la tienda' }
-      },
-      {
-        id: 'support',
-        label: { en: 'Support', es: 'Soporte' },
-        title: { en: 'Set the right support', es: 'Elige el soporte correcto' },
-        copy: {
-          en: 'Start with what will sit under the mattress. The right support protects the feel, height, and long-term setup.',
-          es: 'Empieza con lo que irá debajo del colchón. El soporte correcto protege la sensación, la altura y la configuración.'
-        },
-        guidanceTitle: { en: 'Confirm the setup', es: 'Confirma la configuración' }
+        guidanceTitle: { en: 'Guide the setup and the trial', es: 'Guía la configuración y la prueba' }
       },
       {
         id: 'pillow',
@@ -19727,7 +19737,7 @@
     // Slice 5: the Plan's own state (see resetSessionState for the contract).
     window._sleepPlanState = window._sleepPlanState || { prioritiesInvalid: false, origin: '' };
     window._sleepSystemState = {
-      activeStep: 'adjustability',
+      activeStep: 'base',
       decisions: {},
       demoPosition: '',
       supportChoice: '',
@@ -19759,6 +19769,32 @@
         return item.subType === 'adjustable' ? 'adjustability' : 'support';
       }
       return '';
+    }
+
+    // The VIEW-layer mapping from the engine's four group keys to the three
+    // steps the customer walks (combined base step, 2026-09-14). Every
+    // decision, cart-eviction and rail read goes through this; the engine's
+    // partition above is untouched so the Phase 1 fixture stays byte-identical.
+    var SLEEP_SYSTEM_GROUP_STEP = {
+      adjustability: 'base',
+      support: 'base',
+      pillow: 'pillow',
+      protection: 'protection'
+    };
+    function sleepSystemStepIdForItem(item) {
+      return SLEEP_SYSTEM_GROUP_STEP[sleepSystemStepForItem(item)] || '';
+    }
+    // The base step's ranked list, composed from the engine's two groups in
+    // their engine order and never re-scored: when the answers fired for an
+    // adjustable base (back pain, snoring or reflux - the adjustability
+    // group's first item is `matched`), the bases lead and the foundation
+    // follows; otherwise the foundation leads and the bases follow. Each
+    // group keeps its own qualification, cap and threshold stamps.
+    function sleepSystemGroupsForStep(groups, stepId) {
+      if (stepId !== 'base') return groups[stepId] || [];
+      var bases = groups.adjustability || [];
+      var support = groups.support || [];
+      return bases[0] && bases[0].matched ? bases.concat(support) : support.concat(bases);
     }
 
     function qualifyRankedChoices(sorted, scoreForItem) {
@@ -19905,7 +19941,7 @@
     function sleepSystemDecision(stepId) {
       var selectedId = Object.keys(window._accCart || {}).find(function(id) {
         var item = ACCESSORIES.find(function(accessory) { return accessory.id === id; });
-        return item && sleepSystemStepForItem(item) === stepId;
+        return item && sleepSystemStepIdForItem(item) === stepId;
       });
       if (selectedId) return { status: 'selected', itemId: selectedId };
       return window._sleepSystemState.decisions[stepId] || { status: 'open' };
@@ -20064,24 +20100,20 @@
       var issues = answers.sleep_issues || [];
       var notices = [];
 
-      if (stepId === 'support') {
-        // 3.7 P9 (Option C): while the catalog carries one foundation height,
-        // the height note is a non-interactive specialist prompt (approved EN;
-        // ES provisional) rather than a comparison the floor cannot offer. The
-        // comparison note returns by itself when a low_profile support item
-        // enters the catalog.
+      if (stepId === 'base') {
+        // Combined base step (2026-09-14): the three notes are the former
+        // support and adjustability procedures, kept verbatim - the
+        // compatibility check, the 3.7 P9 (Option C) height prompt (a
+        // non-interactive specialist prompt while the catalog carries one
+        // foundation height; the comparison note returns by itself when a
+        // low_profile support item enters the catalog), and the Flat
+        // baseline for the position demo. Three notes, like every step.
         notices = [
           sleepSystemText({ en: 'Confirm frame or platform compatibility.', es: 'Confirma la compatibilidad del marco o plataforma.' }),
           catalogHasLowProfileSupport()
             ? sleepSystemText({ en: 'Compare standard and lower bed heights.', es: 'Compara alturas estándar y más bajas.' })
             : sleepSystemText({ en: 'If a lower finished bed height matters, ask which foundation heights are available.', es: 'Si importa una altura de cama más baja, pregunta qué alturas de base están disponibles.' }),
-          sleepSystemText({ en: 'Verify the final setup before the customer makes a selection.', es: 'Verifica la configuración final antes de que el cliente haga su selección.' })
-        ];
-      } else if (stepId === 'adjustability') {
-        notices = [
-          sleepSystemText({ en: 'Begin Flat so every change has a clear baseline.', es: 'Empieza Plana para tener una referencia clara.' }),
-          sleepSystemText({ en: 'Move one position at a time and pause to notice the difference.', es: 'Cambia una posición a la vez y detente para notar la diferencia.' }),
-          sleepSystemText({ en: 'Recommend a base only after the customer tries the positions that matter most to them.', es: 'Recomienda una base solo después de que el cliente pruebe las posiciones que más le importan.' })
+          sleepSystemText({ en: 'Begin Flat so every change has a clear baseline.', es: 'Empieza Plana para tener una referencia clara.' })
         ];
       } else if (stepId === 'pillow') {
         var positionCue = {
@@ -20248,11 +20280,7 @@
 
     function sleepSystemSecondaryActions(stepId) {
       var actions = {
-        support: [
-          { status: 'already', label: { en: 'Keep current support', es: 'Conservar soporte actual' } },
-          { status: 'confirm', label: { en: 'Ask a specialist', es: 'Preguntar a un especialista' } }
-        ],
-        adjustability: [
+        base: [
           { status: 'demo', label: { en: 'Ask for a demo', es: 'Pedir demostración' } },
           { status: 'later', label: { en: 'Decide later', es: 'Decidir después' } }
         ],
@@ -20509,8 +20537,11 @@
       var step = SLEEP_SYSTEM_STEPS.find(function(item) {
         return item.id === window._sleepSystemState.activeStep;
       }) || SLEEP_SYSTEM_STEPS[0];
-      var items = viewModel.groups[step.id] || [];
-      if (step.id === 'support' && window._sleepSystemState.supportChoice === 'low') {
+      // Combined base step: the engine's adjustability and support groups,
+      // composed in the view layer (sleepSystemGroupsForStep); the other
+      // steps read their own group exactly as before.
+      var items = sleepSystemGroupsForStep(viewModel.groups, step.id);
+      if (step.id === 'base' && window._sleepSystemState.supportChoice === 'low') {
         items = items.slice().sort(function(a, b) {
           return (a.subType === 'low_profile' ? -1 : 0) - (b.subType === 'low_profile' ? -1 : 0);
         });
@@ -20552,7 +20583,19 @@
         });
       }
       var primary = items[0];
-      var alternatives = items.slice(1, 3);
+      // The base step lists every remaining qualified base AND the foundation
+      // under "Also compare" (the engine caps each group at three, so at most
+      // three rows); pillow and protection keep their two-row list.
+      var alternatives = items.slice(1, step.id === 'base' ? 4 : 3);
+      // Combined base step, no answer trigger (3.7 P5 option C): the
+      // foundation leads (sleepSystemGroupsForStep) and the adjustable bases
+      // render as the neutral compare list below the card instead of as
+      // "Also compare" rows, so no base appears twice on one screen.
+      var baseNoTrigger = step.id === 'base' &&
+        !((viewModel.groups.adjustability || [])[0] && viewModel.groups.adjustability[0].matched);
+      if (baseNoTrigger) {
+        alternatives = alternatives.filter(function(item) { return item.subType !== 'adjustable'; });
+      }
       // Candidate 2026-09-06: the step's recorded decision, read once through
       // the same resolver the rail and sidecar use (the cart wins), so the
       // card, its controls and the rail can never disagree.
@@ -20613,7 +20656,11 @@
         var reason = goalSupported
           ? sleepSystemText(protectionGoalReason(protectionGoal))
           : (primary.reasons && primary.reasons[0] ? primary.reasons[0] : '');
-        var badge = step.id === 'support'
+        // Combined base step: a foundation on the card keeps its honest
+        // "Support option" eyebrow (it is never an answer-derived match); an
+        // adjustable base takes the 3.7 P2 rule below like every other item.
+        var primaryIsFoundation = step.id === 'base' && primary.subType !== 'adjustable';
+        var badge = primaryIsFoundation
           ? sleepSystemText({ en: 'Support option', es: 'Opción de soporte' })
           : goalSupported
             ? goalBadge
@@ -20632,7 +20679,13 @@
             ? sleepSystemText({ en: 'Recommended to try', es: 'Recomendado para probar' })
             : sleepSystemText({ en: 'Worth comparing', es: 'Vale la pena comparar' }));
         var actionHtml;
-        if (step.id === 'adjustability') {
+        // Combined base step: the controls follow the PRODUCT on the card -
+        // an adjustable base carries the demo request, the keep-in-plan
+        // toggle and the deferral (the former adjustability card); a
+        // foundation carries its add-to-plan toggle (the former support
+        // card). Keep-current-setup and the specialist check stay in the
+        // setup guide above the card, as they were.
+        if (step.id === 'base' && primary.subType === 'adjustable') {
           actionHtml =
             '<button type="button"' + sleepSystemDecisionAttrs(decision, 'demo') + ' class="sleep-system__action sleep-system__action--primary" data-sleep-action="decision" data-status="demo">' +
               escapeHtml(sleepSystemText({ en: 'Ask for a demo', es: 'Pedir demostración' })) +
@@ -20646,7 +20699,7 @@
             '<button type="button"' + sleepSystemDecisionAttrs(decision, 'later') + ' class="sleep-system__action sleep-system__action--secondary" data-sleep-action="decision" data-status="later">' +
               escapeHtml(sleepSystemText({ en: 'Decide later', es: 'Decidir después' })) +
             '</button>';
-        } else if (step.id === 'support') {
+        } else if (step.id === 'base') {
           actionHtml =
             '<button type="button" class="sleep-system__action sleep-system__action--primary' + (selected ? ' sleep-system__action--selected' : '') +
               '" data-sleep-action="' + (selected ? 'remove-item' : 'select-item') + '" data-item-id="' + escapeHtml(primary.id) + '">' +
@@ -20768,7 +20821,7 @@
             '</div>' +
           '</article>' + alternativesHtml;
         var supportOutcome = '';
-        if (step.id === 'support' && supportChoice === 'current') {
+        if (step.id === 'base' && supportChoice === 'current') {
           supportOutcome =
             '<div class="sleep-system__support-outcome">' +
               '<div class="sleep-system__card-eyebrow">' + escapeHtml(sleepSystemText({ en: 'Current setup', es: 'Configuración actual' })) + '</div>' +
@@ -20778,7 +20831,7 @@
                 es: 'No se agregara un soporte nuevo. Tu especialista puede confirmar que el marco, plataforma o tablillas cumplen los requisitos.'
               })) + '</p>' +
             '</div>';
-        } else if (step.id === 'support' && supportChoice === 'unsure') {
+        } else if (step.id === 'base' && supportChoice === 'unsure') {
           supportOutcome =
             '<div class="sleep-system__support-outcome is-check">' +
               '<div class="sleep-system__card-eyebrow">' + escapeHtml(sleepSystemText({ en: 'Specialist check', es: 'Revisión del especialista' })) + '</div>' +
@@ -20800,7 +20853,13 @@
         // trigger keeps the hero card unchanged. The rows carry an extra class
         // beside the shared alternative classes so the row template is
         // distinguishable from the "Also compare" template in source.
-        var adjustabilityNoTrigger = step.id === 'adjustability' && !primary.matched;
+        // Combined base step (2026-09-14): the trigger is read from the
+        // engine's adjustability group (baseNoTrigger above), because the
+        // card now leads with the foundation when no answer fired. The
+        // neutral list renders BELOW the foundation card; it stands alone
+        // only when the catalog carries no foundation to feature.
+        var adjustabilityNoTrigger = baseNoTrigger;
+        var basesCompareStandsAlone = adjustabilityNoTrigger && primary.subType === 'adjustable';
         var basesCompareHtml = '';
         if (adjustabilityNoTrigger) {
           var allBases = (Array.isArray(ACCESSORIES) ? ACCESSORIES : []).filter(function(item) {
@@ -20809,7 +20868,9 @@
           // Candidate 2026-09-06: the no-trigger block has no product card, so
           // it states a recorded decision the same way the card does, ahead
           // of the compare list.
-          basesCompareHtml = sleepSystemDecisionBanner(step.id, decision) +
+          // The decision line renders once per screen: on the card when the
+          // foundation leads, here only when this block stands alone.
+          basesCompareHtml = (basesCompareStandsAlone ? sleepSystemDecisionBanner(step.id, decision) : '') +
             '<section class="sleep-system__alternatives sleep-system__bases-compare" aria-label="' +
               escapeHtml(sleepSystemText({ en: 'Optional base demo', es: 'Demostración opcional de base' })) + '">' +
               '<div class="sleep-system__card-eyebrow">' +
@@ -20847,12 +20908,19 @@
             '</section>';
         }
 
+        // Combined base step order: the setup question first (what sits
+        // under the mattress today), the position demo second (the showroom
+        // moment), then the product card - or the current-setup / specialist
+        // outcome in its place - with the neutral base list beneath the
+        // foundation card when no answer fired.
         main.innerHTML = sectionHead +
-          (step.id === 'adjustability' ? renderAdjustabilityDemo() : '') +
-          (step.id === 'support' ? renderSupportGuide() : '') +
+          (step.id === 'base' ? renderSupportGuide() : '') +
+          (step.id === 'base' ? renderAdjustabilityDemo() : '') +
           (step.id === 'pillow' ? renderPillowFit(primary) : '') +
           (step.id === 'protection' ? renderProtectionGuide() : '') +
-          (supportOutcome || (adjustabilityNoTrigger ? basesCompareHtml : productHtml));
+          (supportOutcome || (adjustabilityNoTrigger
+            ? (basesCompareStandsAlone ? basesCompareHtml : productHtml + basesCompareHtml)
+            : productHtml));
       }
 
       var notices = sleepSystemGuidance(step.id, primary);
@@ -21064,14 +21132,25 @@
     function setSleepSystemItem(itemId, shouldSelect) {
       var item = ACCESSORIES.find(function(accessory) { return accessory.id === itemId; });
       if (!item) return;
-      var stepId = sleepSystemStepForItem(item);
-      if (stepId === 'support' && shouldSelect) {
+      var stepId = sleepSystemStepIdForItem(item);
+      // The setup guide's height choice and the base-step product are ONE
+      // decision: a foundation records its height, and an adjustable base
+      // clears whatever foundation choice was pressed before it, as the two
+      // cannot coexist under the mattress (PR #122 audit repair, 2026-09-14:
+      // the eviction below removed the foundation but left "Standard height"
+      // pressed beside the adjustable base on rerender).
+      if (sleepSystemStepForItem(item) === 'support' && shouldSelect) {
         window._sleepSystemState.supportChoice =
           item.subType === 'low_profile' ? 'low' : 'standard';
+      } else if (stepId === 'base' && shouldSelect) {
+        window._sleepSystemState.supportChoice = '';
       }
+      // One product per STEP: on the combined base step an adjustable base
+      // and a foundation now displace each other, as they share the one
+      // physical slot under the mattress.
       Object.keys(window._accCart || {}).forEach(function(id) {
         var existing = ACCESSORIES.find(function(accessory) { return accessory.id === id; });
-        if (existing && sleepSystemStepForItem(existing) === stepId) delete window._accCart[id];
+        if (existing && sleepSystemStepIdForItem(existing) === stepId) delete window._accCart[id];
       });
       if (shouldSelect) {
         var scored = scoreAccessoriesFromAnswers().find(function(accessory) { return accessory.id === itemId; });
@@ -21126,7 +21205,7 @@
         // produced length, which is then empty.)
         window.showSleepPlan('sleep-system');
       } else if (action === 'step') {
-        window._sleepSystemState.activeStep = control.getAttribute('data-step') || 'adjustability';
+        window._sleepSystemState.activeStep = control.getAttribute('data-step') || 'base';
         window._sleepSystemState.viewCandidateId = '';   // F2: a view is per step
         analytics.log('sleep_system_step_viewed', { step: window._sleepSystemState.activeStep });
         renderSleepSystem();
@@ -21157,16 +21236,18 @@
         // the step falls back to open (the product card returns).
         if (window._sleepSystemState.supportChoice === supportChoice) supportChoice = '';
         window._sleepSystemState.supportChoice = supportChoice;
+        // Combined base step: the setup choice is the base step's decision,
+        // so it clears every base-step product (adjustable or foundation).
         Object.keys(window._accCart || {}).forEach(function(id) {
           var supportItem = ACCESSORIES.find(function(accessory) { return accessory.id === id; });
-          if (supportItem && sleepSystemStepForItem(supportItem) === 'support') delete window._accCart[id];
+          if (supportItem && sleepSystemStepIdForItem(supportItem) === 'base') delete window._accCart[id];
         });
         if (supportChoice === 'current') {
-          window._sleepSystemState.decisions.support = { status: 'already' };
+          window._sleepSystemState.decisions.base = { status: 'already' };
         } else if (supportChoice === 'unsure') {
-          window._sleepSystemState.decisions.support = { status: 'confirm' };
+          window._sleepSystemState.decisions.base = { status: 'confirm' };
         } else {
-          window._sleepSystemState.decisions.support = { status: 'open' };
+          window._sleepSystemState.decisions.base = { status: 'open' };
         }
         analytics.log('support_setup_selected', { choice: supportChoice });
         syncAccessoryAnalytics();
@@ -21251,11 +21332,20 @@
             (currentDecision.position || '') === (window._sleepSystemState.demoPosition || ''));
         Object.keys(window._accCart || {}).forEach(function(id) {
           var item = ACCESSORIES.find(function(accessory) { return accessory.id === id; });
-          if (item && sleepSystemStepForItem(item) === stepId) delete window._accCart[id];
+          if (item && sleepSystemStepIdForItem(item) === stepId) delete window._accCart[id];
         });
+        // A demo request or a deferral on the base step replaces the
+        // foundation it just evicted, so the height choice that foundation
+        // recorded cannot stay pressed beside it (PR #122 audit repair 2,
+        // 2026-09-14). Only the foundation's own choices are cleared; the
+        // demo position is read below exactly as before.
+        if (stepId === 'base' && !reopening && (requestedStatus === 'demo' || requestedStatus === 'later') &&
+            (window._sleepSystemState.supportChoice === 'standard' || window._sleepSystemState.supportChoice === 'low')) {
+          window._sleepSystemState.supportChoice = '';
+        }
         window._sleepSystemState.decisions[stepId] = reopening ? { status: 'open' } : {
           status: requestedStatus,
-          position: stepId === 'adjustability' ? window._sleepSystemState.demoPosition : ''
+          position: stepId === 'base' ? window._sleepSystemState.demoPosition : ''
         };
         analytics.log('sleep_system_decision_recorded', {
           step: stepId,
@@ -23833,7 +23923,7 @@
         // _renderResults() for the next customer.
         window._drawerData = {};
         window._sleepSystemState = {
-          activeStep: 'adjustability',
+          activeStep: 'base',
           decisions: {},
           demoPosition: '',
           supportChoice: '',

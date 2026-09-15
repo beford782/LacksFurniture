@@ -1530,7 +1530,7 @@ def run_accessory_reason_language(browser, port, name, width, height, shots_dir)
           str({k: v.get("reasonKeys") for k, v in cart.items()}))
     dec = setup["decisions"]
     check(f"[{name}] setup: the Sleep System decisions record both selected components",
-          dec.get("adjustability", {}).get("status") == "selected" and dec.get("adjustability", {}).get("itemId") == "base-tempur-ergo"
+          dec.get("base", {}).get("status") == "selected" and dec.get("base", {}).get("itemId") == "base-tempur-ergo"
           and dec.get("protection", {}).get("status") == "selected" and dec.get("protection", {}).get("itemId") == "protector-dritec", str(dec))
     # the lines follow the language
     check(f"[{name}] EN Summary: the two rationale lines are English", sorted(r["en1"]) == EN, str(r["en1"]))
@@ -1619,7 +1619,7 @@ def run_sleep_system_focus(browser, port, shots_dir):
     # 2. Enter on the base's add control: it flips to remove-item with the same
     #    data-item-id, and focus must follow the identity across the flip.
     item_id = page.evaluate("() => { const b = document.querySelector(\"#sleepSystemMain [data-sleep-action='select-item']\"); return b && b.getAttribute('data-item-id'); }")
-    check("[select-item] an add control exists on the triggered adjustability step", bool(item_id), str(item_id))
+    check("[select-item] an add control exists on the triggered base step", bool(item_id), str(item_id))
     if item_id:
         page.focus(f"#sleepSystemMain [data-sleep-action='select-item'][data-item-id='{item_id}']")
         page.keyboard.press("Enter")
@@ -1629,12 +1629,12 @@ def run_sleep_system_focus(browser, port, shots_dir):
               r2["action"] == "remove-item" and r2["identity"] == item_id and r2["fv"] is True, str(r2))
     # 3. Enter on a rail step: the rebuilt rail hands focus to the equivalent
     #    step control, and aria-current="step" moves with the active step.
-    page.focus("#sleepSystemRail [data-sleep-action='step'][data-step='support']")
+    page.focus("#sleepSystemRail [data-sleep-action='step'][data-step='pillow']")
     page.keyboard.press("Enter")
     page.wait_for_timeout(500)
     r3 = page.evaluate(SS_FOCUS_PROBE_JS)
-    check("[rail] focus lands on the re-rendered support step and aria-current=\"step\" marks it exactly once",
-          r3["action"] == "step" and r3["identity"] == "support" and r3["ariaCurrentCount"] == 1 and r3["ariaCurrentStep"] == "support", str(r3))
+    check("[rail] focus lands on the re-rendered pillow step and aria-current=\"step\" marks it exactly once",
+          r3["action"] == "step" and r3["identity"] == "pillow" and r3["ariaCurrentCount"] == 1 and r3["ariaCurrentStep"] == "pillow", str(r3))
     if shots_dir:
         os.makedirs(shots_dir, exist_ok=True)
         page.screenshot(path=os.path.join(shots_dir, "sleep-system-focus-1194x748.png"))
