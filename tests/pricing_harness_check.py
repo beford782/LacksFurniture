@@ -27,7 +27,13 @@ orientations. It proves:
     `unavailable` (fresh and eligible, every price in currency XXX, which
     the runtime money admission refuses) every surface shows only the
     governed unavailable copy and no number; in `disabled` (emergency off)
-    every surface is gone again. No page errors on any walk.
+    every surface is gone again. No page errors on any walk;
+  * every rendered page's wall clock is FROZEN to START (Playwright's clock,
+    Date only - timers and animation frames keep running), so the runtime's
+    freshness judgement meets the shifted fixture stamps at the instant they
+    were shifted to, whatever today's date is; a negative control proves that
+    an unfrozen, post-expiry clock loses every governed surface (the
+    post-merge CI failure of 2026-09-15, run 35027281265).
 
 Requires the `playwright` package with Chromium installed for the rendered
 pass (`python -m pip install playwright && python -m playwright install
@@ -90,6 +96,16 @@ with open(os.path.join(REPO, "data", "accessories.json"), encoding="utf-8") as f
     ACCESSORIES = json.load(f)
 ACC_IDS = [a["id"] for a in ACCESSORIES]
 START = datetime(2026, 9, 9, 12, 0, 0, tzinfo=timezone(timedelta(hours=-5)))
+# The rendered pass freezes every page's wall clock to START (see open_page).
+# build_injected shifts every fixture stamp to sit an hour behind START, and the
+# runtime judges freshness (evidence verifiedAt + maxAgeDays) through the page's
+# own Date.now(); left to Chromium's REAL clock, the available state's evidence
+# aged past maxAgeDays at 2026-09-15T19:00Z and post-merge CI run 35027281265
+# lost every governed surface on an unchanged tree (291 passed / 33 failed).
+# Frozen, every walk is judged at the instant the stamps were shifted to,
+# whatever today's date is. Playwright's clock.set_fixed_time freezes Date only:
+# timers, intervals, animation frames and the walk's awaited delays keep running.
+FROZEN_MS = int(START.timestamp() * 1000)
 
 # ---- drill states -------------------------------------------------------------
 print("Drill states:")
@@ -160,6 +176,23 @@ check("stale: evidence stamps sit 30 days behind the available state's",
       all(datetime.fromisoformat(a["evidence"]["verifiedAt"]) - datetime.fromisoformat(s["evidence"]["verifiedAt"])
           == timedelta(days=srv.STALE_DAYS)
           for a, s in zip(cfg_avail["pricing"]["products"], cfg_stale["pricing"]["products"])))
+
+
+def freshness_limit(cfg):
+    """The instant the runtime stops treating a served state's evidence as
+    fresh: the OLDEST evidence stamp plus that state's maxAgeDays."""
+    days = cfg["pricing"]["freshness"]["maxAgeDays"]
+    return min(datetime.fromisoformat(e["evidence"]["verifiedAt"]) for e in cfg["pricing"]["products"]) + timedelta(days=days)
+
+
+AVAILABLE_LIMIT = freshness_limit(cfg_avail)
+AVAILABLE_LIMIT_MS = int(AVAILABLE_LIMIT.timestamp() * 1000)
+STALE_LIMIT = freshness_limit(cfg_stale)
+check("available: judged at the frozen clock START, every evidence stamp is in the past and inside maxAgeDays (fresh by construction, whatever today's date)",
+      all(datetime.fromisoformat(e["evidence"]["verifiedAt"]) < START for e in cfg_avail["pricing"]["products"]) and START < AVAILABLE_LIMIT,
+      f"START={START.isoformat()} limit={AVAILABLE_LIMIT.isoformat()}")
+check("stale: judged at the frozen clock START, every evidence stamp is past maxAgeDays (stale by construction, whatever today's date)",
+      STALE_LIMIT < START, f"START={START.isoformat()} limit={STALE_LIMIT.isoformat()}")
 check("disabled: enabled false and formulas empty (emergency off)",
       built["disabled"][0]["pricing"]["enabled"] is False and built["disabled"][0]["pricing"]["formulas"] == [])
 check("unapproved: legal approval stripped and presentation unapproved",
@@ -461,7 +494,7 @@ async (ARGS) => {
                 "body_type": "average", "mattress_size": ARGS.size };
   for (const k of Object.keys(ANS)) answers[k] = ANS[k];
   if (ARGS.lang === 'es') { await switchLanguage('es'); await wait(200); }
-  const out = { errors: [] };
+  const out = { errors: [], clockAtStart: Date.now() };
   showProfileScreen();
   window.showResults();
   await wait(150);
@@ -523,6 +556,8 @@ async (ARGS) => {
   out.dollarDigits = screenText.match(/(?<!From |Desde )\$\s?\d[\d,]*/g) || [];
   out.accessoryFrom = (screenText.match(/(From|Desde) \$\s?\d/g) || []).length;
   out.perPeriod = (screenText.match(/\/\s*(mo|month|mes)\b/gi) || []).length;
+  out.clockAtEnd = Date.now();
+  out.clockIso = new Date().toISOString();
   return out;
 }
 """
@@ -537,16 +572,36 @@ ASSUMPTION = {"en": FX["pricing"]["presentation"]["assumptions"][0]["en"],
               "es": FX["pricing"]["presentation"]["assumptions"][0]["es"]}
 
 
-def walk(browser, port, lang, size, width, height):
+def open_page(browser, url, width=1194, height=748, wait_until="networkidle", expect_app=True, clock=START):
+    """The ONE way the rendered pass opens a Chromium page: its wall clock is
+    frozen to `clock` BEFORE navigation (START for every walk; the negative
+    control passes an explicit instant, or None for Chromium's real clock),
+    page errors are collected, and the app's start control is awaited unless
+    the caller expects a blanked page. browser.new_page gives every page its
+    own context, so a clock never leaks from one page to the next."""
     page = browser.new_page(viewport={"width": width, "height": height})
     errors = []
     page.on("pageerror", lambda e: errors.append(str(e)))
-    page.goto(f"http://127.0.0.1:{port}/", wait_until="networkidle")
-    page.wait_for_selector("#startBtn")
+    if clock is not None:
+        page.clock.set_fixed_time(clock)
+    page.goto(url, wait_until=wait_until)
+    if expect_app:
+        page.wait_for_selector("#startBtn")
+    return page, errors
+
+
+def walk(browser, port, lang, size, width, height, clock=START):
+    page, errors = open_page(browser, f"http://127.0.0.1:{port}/", width, height, clock=clock)
     r = page.evaluate(WALK_JS, {"lang": lang, "size": size})
     r["errors"] = errors
     page.close()
     return r
+
+
+def expect_frozen(tag, r, at_ms=FROZEN_MS):
+    check(f"{tag}: the page's wall clock read the frozen instant at the start and the end of the walk (its awaited delays still ran)",
+          r.get("clockAtStart") == at_ms and r.get("clockAtEnd") == at_ms,
+          f"start={r.get('clockAtStart')} end={r.get('clockAtEnd')} expected={at_ms} ({r.get('clockIso')})")
 
 
 QUOTE = {"en": FX["pricing"]["presentation"]["states"]["quote-only"]["en"],
@@ -562,6 +617,7 @@ def expect_sheet_silent(tag, r):
 
 
 def expect_off(tag, r):
+    expect_frozen(tag, r)
     expect_sheet_silent(tag, r)
     check(f"{tag}: no page error", not r["errors"], "; ".join(r["errors"][:2]))
     check(f"{tag}: the Sleep System featured card shows the catalog 'From $' line exactly as shipped and no governed slot",
@@ -576,6 +632,7 @@ def expect_off(tag, r):
 
 
 def expect_unavailable(tag, r, lang):
+    expect_frozen(tag, r)
     expect_sheet_silent(tag, r)
     check(f"{tag}: no page error", not r["errors"], "; ".join(r["errors"][:2]))
     check(f"{tag}: the Sleep System featured card shows the governed unavailable copy and NOT the legacy catalog line",
@@ -591,6 +648,7 @@ def expect_unavailable(tag, r, lang):
 
 
 def expect_available(tag, r, lang):
+    expect_frozen(tag, r)
     check(f"{tag}: no page error", not r["errors"], "; ".join(r["errors"][:2]))
     check(f"{tag}: every rendered Results card, the drawer, the anchor, the hero and the Plan show a FIXTURE amount with the assumption beside it",
           r["activeCards"] >= 1 and r["resultsSlots"] == r["activeCards"] and all(s == "available" for s in r["resultsStates"])
@@ -656,6 +714,7 @@ def rendered():
                             expect_available(tag, r, lang)
                 if state == "available":
                     r = walk(browser, port, "en", "king", 1194, 748)
+                    expect_frozen("available, king answered (queen priced)", r)
                     # Accessory prices carry no size, so the featured accessory's governed
                     # amount is the ONE dollar figure that legitimately remains on this walk.
                     check("available, king answered (queen priced): every mattress surface is OFF (no applicable SKU: no slot, no copy); the only figure is the sizeless governed accessory amount",
@@ -665,6 +724,35 @@ def rendered():
                           f"drawer={r['drawer']['state']} results={r['resultsSlots']} dollars={r['dollarDigits']} featured={r['featured']}")
             finally:
                 s.shutdown(); s.server_close()
+        # ---- negative control: the defect the frozen clock repairs -----------
+        # Chromium's REAL clock is past the available state's freshness limit
+        # (2026-09-15T19:00Z; post-merge CI run 35027281265). An unfrozen page
+        # must reproduce that run's loss - every governed surface OFF and the
+        # legacy catalog line back - and a page frozen ONE MINUTE past the
+        # limit must lose them the same way: the limit decides, not the
+        # machine's date. The frozen-START walks above keep every surface.
+        def governed_off(r, errors):
+            return (r["resultsSlots"] == 0 and r["anySlot"] == 0 and r["drawer"]["state"] is None
+                    and r["featured"]["governed"] == 0 and r["featured"]["legacy"] == 1 and not errors)
+        s, port = serve("available")
+        try:
+            page, errors = open_page(browser, f"http://127.0.0.1:{port}/", clock=None)
+            r = page.evaluate(WALK_JS, {"lang": "en", "size": "queen"})
+            page.close()
+            check("negative control: an UNFROZEN page reads Chromium's real clock, past the available state's freshness limit",
+                  r["clockAtStart"] != FROZEN_MS and r["clockAtStart"] > AVAILABLE_LIMIT_MS,
+                  f"now={r['clockAtStart']} limit={AVAILABLE_LIMIT_MS}")
+            check("negative control: under the unfrozen post-expiry clock every governed surface is OFF and the legacy line is back (CI run 35027281265 reproduced)",
+                  governed_off(r, errors),
+                  f"slots={r['resultsSlots']} any={r['anySlot']} featured legacy/governed={r['featured']['legacy']}/{r['featured']['governed']} errors={errors[:1]}")
+            past = AVAILABLE_LIMIT + timedelta(minutes=1)
+            r = walk(browser, port, "en", "queen", 1194, 748, clock=past)
+            expect_frozen("negative control, frozen one minute past the limit", r, int(past.timestamp() * 1000))
+            check("negative control: frozen one minute past the limit every governed surface is OFF too (the limit decides, not the machine's date)",
+                  governed_off(r, r["errors"]),
+                  f"slots={r['resultsSlots']} any={r['anySlot']} featured legacy/governed={r['featured']['legacy']}/{r['featured']['governed']}")
+        finally:
+            s.shutdown(); s.server_close()
         # Device rehearsal: the SAME page over a private address of this
         # machine passes the domain lock through the in-memory allowlist,
         # shows the NON-SHIPPING banner, and walks the states exactly as the
@@ -678,13 +766,12 @@ def rendered():
         mapped = p.chromium.launch(args=[f"--host-resolver-rules=MAP {NAME} 127.0.0.1"])
         s, port = serve_plain()
         try:
-            page = mapped.new_page(viewport={"width": 1194, "height": 748})
-            errs = []
-            page.on("pageerror", lambda e: errs.append(str(e)))
-            page.goto(f"http://{NAME}:{port}/", wait_until="load")
-            blank = page.evaluate("() => ({ start: !!document.getElementById('startBtn'), text: document.body ? document.body.textContent : '' })")
+            page, errs = open_page(mapped, f"http://{NAME}:{port}/", wait_until="load", expect_app=False)
+            blank = page.evaluate("() => ({ start: !!document.getElementById('startBtn'), text: document.body ? document.body.textContent : '', now: Date.now() })")
             check("control: the SHIPPED allowlist blanks a non-loopback host (no #startBtn, the lock's error text, 'Domain not authorized')",
                   not blank["start"] and "Unauthorized domain" in blank["text"] and any("Domain not authorized" in e for e in errs))
+            check("control: the blanked page's wall clock is frozen at START too (every page the harness opens is)",
+                  blank["now"] == FROZEN_MS, f"now={blank['now']} expected={FROZEN_MS}")
             page.close()
         finally:
             s.shutdown(); s.server_close()
@@ -698,11 +785,7 @@ def rendered():
             threading.Thread(target=s.serve_forever, daemon=True).start()
             dport = s.server_address[1]
             try:
-                page = mapped.new_page(viewport={"width": 1194, "height": 748})
-                errors = []
-                page.on("pageerror", lambda e: errors.append(str(e)))
-                page.goto(f"http://{NAME}:{dport}/", wait_until="networkidle")
-                page.wait_for_selector("#startBtn")
+                page, errors = open_page(mapped, f"http://{NAME}:{dport}/")
                 probe = page.evaluate("() => ({ banner: !!document.getElementById('" + srv.BANNER_ID + "'), "
                                       "bannerText: (document.getElementById('" + srv.BANNER_ID + "') || {}).textContent || '', "
                                       "blanked: !document.getElementById('startBtn') || document.querySelectorAll('.screen').length === 0, "
@@ -725,11 +808,7 @@ def rendered():
             for state, expect in (("available", expect_available), ("stale", expect_off)):
                 s, dport = serve_device(state, DEVICE_IP)
                 try:
-                    page = browser.new_page(viewport={"width": 1194, "height": 748})
-                    errors = []
-                    page.on("pageerror", lambda e: errors.append(str(e)))
-                    page.goto(f"http://{DEVICE_IP}:{dport}/", wait_until="networkidle")
-                    page.wait_for_selector("#startBtn")
+                    page, errors = open_page(browser, f"http://{DEVICE_IP}:{dport}/")
                     # "Blanked" = the domain lock replaced the document with its error
                     # page (no #startBtn, no app). The lock's own source text lives in
                     # the page, so its wording is not the probe.
