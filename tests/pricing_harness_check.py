@@ -33,7 +33,16 @@ orientations. It proves:
     freshness judgement meets the shifted fixture stamps at the instant they
     were shifted to, whatever today's date is; a negative control proves that
     an unfrozen, post-expiry clock loses every governed surface (the
-    post-merge CI failure of 2026-09-15, run 35027281265).
+    post-merge CI failure of 2026-09-15, run 35027281265);
+  * every rendered page waits, bounded, for the APP'S OWN readiness
+    (appStartReady() plus the accessory hydration the Sleep System render
+    depends on) before its walk begins - #startBtn is static markup and
+    "network idle" can fire before the boot fetches are applied - and every
+    walk asserts it inspected the Sleep System price surface only with the
+    featured card rendered; readiness controls reproduce the old gap
+    (the repaired-tree 362/1 "shipped tablet-portrait en" failure) and prove
+    the assertions detect it, and that a failed accessory load is reported
+    by name.
 
 Requires the `playwright` package with Chromium installed for the rendered
 pass (`python -m pip install playwright && python -m playwright install
@@ -51,6 +60,7 @@ import re
 import socket
 import sys
 import threading
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -106,6 +116,29 @@ START = datetime(2026, 9, 9, 12, 0, 0, tzinfo=timezone(timedelta(hours=-5)))
 # whatever today's date is. Playwright's clock.set_fixed_time freezes Date only:
 # timers, intervals, animation frames and the walk's awaited delays keep running.
 FROZEN_MS = int(START.timestamp() * 1000)
+
+# ---- app readiness -------------------------------------------------------------
+# The rendered walks used to begin on "network idle + #startBtn present", but
+# #startBtn is static markup and the app boots asynchronously behind it: four
+# data fetches, each APPLIED as it lands (accessories last in source order and
+# non-core), then the dictionary, then the appliers (appStartReady()). Under
+# load that signal fires early - measured on 2026-09-15: at 20x CPU throttling
+# 7 of 8 walks began with appStartReady() false - and a walk that reaches
+# showAccessories() before data/accessories.json has been applied renders the
+# Sleep System's EMPTY state: no featured card, legacy=0 governed=0, which is
+# the repaired-tree 362/1 "shipped tablet-portrait en" failure. Every page now
+# waits, bounded, for the app's own readiness AND the accessory hydration the
+# Sleep System render depends on, and reports the app's state if it never
+# arrives. The bound sits above the app's own 12 s data deadline so a failed
+# load reports itself (console warning) before the wait gives up.
+APP_READY_JS = ("() => typeof appStartReady === 'function' && appStartReady() === true"
+                " && typeof _dataLoaded === 'object' && _dataLoaded.accessories === true")
+CORE_READY_JS = "() => typeof coreDataReady === 'function' && coreDataReady() === true"
+APP_READY_DIAG_JS = ("() => ({ ready: (typeof appStartReady === 'function') ? appStartReady() : 'absent',"
+                     " loaded: (typeof _dataLoaded === 'object') ? Object.assign({}, _dataLoaded) : 'absent',"
+                     " accessories: (typeof ACCESSORIES !== 'undefined' && Array.isArray(ACCESSORIES)) ? ACCESSORIES.length : 'absent',"
+                     " readyState: document.readyState, startBtn: !!document.getElementById('startBtn') })")
+APP_READY_TIMEOUT_MS = 15000
 
 # ---- drill states -------------------------------------------------------------
 print("Drill states:")
@@ -423,7 +456,11 @@ def serve(state):
     return server, server.server_address[1]
 
 
-def serve_plain():
+def serve_plain(hold_accessories_ms=0, fail_accessories=False):
+    """The SHIPPED page over the stdlib file server. The two keyword arguments
+    exist for the readiness controls only: hold the data/accessories.json
+    response for a while (the boot gap, made deterministic) or answer it with
+    503 (a failed non-core load the app tolerates with an empty list)."""
     import http.server
     handler = lambda *a, **k: http.server.SimpleHTTPRequestHandler(*a, directory=REPO, **k)  # noqa: E731
 
@@ -433,7 +470,26 @@ def serve_plain():
 
         def log_message(self, *_):
             pass
-    server = ThreadingHTTPServer(("127.0.0.1", 0), Quiet)
+
+        def do_GET(self):
+            if self.path.split("?", 1)[0] == "/data/accessories.json":
+                if fail_accessories:
+                    self.send_error(503, "accessories withheld by the readiness control")
+                    return
+                if hold_accessories_ms:
+                    time.sleep(hold_accessories_ms / 1000.0)
+            super().do_GET()
+
+    class QuietServer(ThreadingHTTPServer):
+        # A page closed while a held response is still being written (the
+        # ungated readiness control does exactly that) aborts the socket; the
+        # stdlib would print a traceback for it. Only connection aborts are
+        # swallowed - any other handler error still reports itself.
+        def handle_error(self, request, client_address):
+            if isinstance(sys.exc_info()[1], (ConnectionAbortedError, ConnectionResetError, BrokenPipeError)):
+                return
+            super().handle_error(request, client_address)
+    server = QuietServer(("127.0.0.1", 0), Quiet)
     t = threading.Thread(target=server.serve_forever, daemon=True)
     t.start()
     return server, server.server_address[1]
@@ -495,6 +551,11 @@ async (ARGS) => {
   for (const k of Object.keys(ANS)) answers[k] = ANS[k];
   if (ARGS.lang === 'es') { await switchLanguage('es'); await wait(200); }
   const out = { errors: [], clockAtStart: Date.now() };
+  // Readiness as the walk saw it: the app's own boot flag and the accessory
+  // hydration the Sleep System render depends on (expect_ready pins both).
+  const readiness = () => ({ ready: (typeof appStartReady === 'function') ? appStartReady() : 'absent',
+                             accessoriesLoaded: (typeof _dataLoaded === 'object') ? _dataLoaded.accessories === true : 'absent' });
+  out.readyAtStart = readiness();
   showProfileScreen();
   window.showResults();
   await wait(150);
@@ -522,6 +583,12 @@ async (ARGS) => {
   // Accessory-price provenance: the featured accessory card on this step —
   // the legacy catalog "From $" line and the governed slot never coexist.
   const ss = document.getElementById('accessoriesScreen');
+  // The Sleep System price surface is inspected only here; record what the
+  // render had to work with at this exact moment.
+  const ws = document.getElementById('sleepSystemWorkspace');
+  out.sleepSystemReady = Object.assign(readiness(), {
+    workspaceShown: !!ws && !ws.hidden,
+    featuredCards: ss ? ss.querySelectorAll('.sleep-system__featured').length : -1 });
   out.featured = { legacy: ss ? ss.querySelectorAll('.sleep-system__price').length : -1,
                    governed: ss ? ss.querySelectorAll('.sleep-system__governed-price').length : -1,
                    governedText: ss ? Array.from(ss.querySelectorAll('.sleep-system__governed-price')).map((e) => e.textContent).join(' | ') : '',
@@ -572,30 +639,64 @@ ASSUMPTION = {"en": FX["pricing"]["presentation"]["assumptions"][0]["en"],
               "es": FX["pricing"]["presentation"]["assumptions"][0]["es"]}
 
 
-def open_page(browser, url, width=1194, height=748, wait_until="networkidle", expect_app=True, clock=START):
+def open_page(browser, url, width=1194, height=748, wait_until="networkidle", expect_app=True, clock=START,
+              ready=APP_READY_JS, ready_timeout_ms=APP_READY_TIMEOUT_MS):
     """The ONE way the rendered pass opens a Chromium page: its wall clock is
     frozen to `clock` BEFORE navigation (START for every walk; the negative
     control passes an explicit instant, or None for Chromium's real clock),
-    page errors are collected, and the app's start control is awaited unless
-    the caller expects a blanked page. browser.new_page gives every page its
-    own context, so a clock never leaks from one page to the next."""
+    page errors and console warnings/errors are collected, the app's start
+    control is awaited unless the caller expects a blanked page, and then the
+    page waits - bounded - for the app's OWN readiness predicate `ready`
+    (APP_READY_JS for every walk; a readiness control passes CORE_READY_JS or
+    None). browser.new_page gives every page its own context, so a clock
+    never leaks from one page to the next. Returns (page, errors, boot):
+    boot["waitMs"] is how long the readiness wait took, boot["error"] is None
+    or the diagnostic of a wait that gave up (the app's state and its last
+    console lines), boot["console"] the captured console."""
     page = browser.new_page(viewport={"width": width, "height": height})
     errors = []
+    console = []
     page.on("pageerror", lambda e: errors.append(str(e)))
+    page.on("console", lambda m: console.append(m.type + ": " + m.text) if m.type in ("warning", "error") else None)
     if clock is not None:
         page.clock.set_fixed_time(clock)
     page.goto(url, wait_until=wait_until)
+    boot = {"waitMs": 0, "error": None, "console": console}
     if expect_app:
         page.wait_for_selector("#startBtn")
-    return page, errors
+        if ready is not None:
+            t0 = time.perf_counter()
+            try:
+                page.wait_for_function(ready, timeout=ready_timeout_ms)
+            except Exception as exc:  # playwright's TimeoutError; anything else is a harness bug and propagates
+                if type(exc).__name__ != "TimeoutError":
+                    raise
+                boot["error"] = (f"app not ready within {ready_timeout_ms} ms: {page.evaluate(APP_READY_DIAG_JS)};"
+                                 f" console: {console[-3:]}")
+            boot["waitMs"] = int((time.perf_counter() - t0) * 1000)
+    return page, errors, boot
 
 
-def walk(browser, port, lang, size, width, height, clock=START):
-    page, errors = open_page(browser, f"http://127.0.0.1:{port}/", width, height, clock=clock)
+def walk(browser, port, lang, size, width, height, clock=START, wait_until="networkidle",
+         ready=APP_READY_JS, ready_timeout_ms=APP_READY_TIMEOUT_MS):
+    page, errors, boot = open_page(browser, f"http://127.0.0.1:{port}/", width, height, wait_until=wait_until,
+                                   clock=clock, ready=ready, ready_timeout_ms=ready_timeout_ms)
     r = page.evaluate(WALK_JS, {"lang": lang, "size": size})
     r["errors"] = errors
+    r["boot"] = boot
     page.close()
     return r
+
+
+def expect_ready(tag, r):
+    boot = r.get("boot") or {}
+    start = r.get("readyAtStart") or {}
+    check(f"{tag}: the walk began only after the app's own readiness (appStartReady + accessories hydrated), inside the bounded wait",
+          boot.get("error") is None and start.get("ready") is True and start.get("accessoriesLoaded") is True,
+          f"boot={boot.get('error')} readyAtStart={start} waitMs={boot.get('waitMs')}")
+    ss = r.get("sleepSystemReady") or {}
+    check(f"{tag}: the Sleep System price surface was inspected only with accessories hydrated, the workspace shown and ONE featured card rendered",
+          ss.get("accessoriesLoaded") is True and ss.get("workspaceShown") is True and ss.get("featuredCards") == 1, str(ss))
 
 
 def expect_frozen(tag, r, at_ms=FROZEN_MS):
@@ -618,6 +719,7 @@ def expect_sheet_silent(tag, r):
 
 def expect_off(tag, r):
     expect_frozen(tag, r)
+    expect_ready(tag, r)
     expect_sheet_silent(tag, r)
     check(f"{tag}: no page error", not r["errors"], "; ".join(r["errors"][:2]))
     check(f"{tag}: the Sleep System featured card shows the catalog 'From $' line exactly as shipped and no governed slot",
@@ -633,6 +735,7 @@ def expect_off(tag, r):
 
 def expect_unavailable(tag, r, lang):
     expect_frozen(tag, r)
+    expect_ready(tag, r)
     expect_sheet_silent(tag, r)
     check(f"{tag}: no page error", not r["errors"], "; ".join(r["errors"][:2]))
     check(f"{tag}: the Sleep System featured card shows the governed unavailable copy and NOT the legacy catalog line",
@@ -649,6 +752,7 @@ def expect_unavailable(tag, r, lang):
 
 def expect_available(tag, r, lang):
     expect_frozen(tag, r)
+    expect_ready(tag, r)
     check(f"{tag}: no page error", not r["errors"], "; ".join(r["errors"][:2]))
     check(f"{tag}: every rendered Results card, the drawer, the anchor, the hero and the Plan show a FIXTURE amount with the assumption beside it",
           r["activeCards"] >= 1 and r["resultsSlots"] == r["activeCards"] and all(s == "available" for s in r["resultsStates"])
@@ -715,6 +819,7 @@ def rendered():
                 if state == "available":
                     r = walk(browser, port, "en", "king", 1194, 748)
                     expect_frozen("available, king answered (queen priced)", r)
+                    expect_ready("available, king answered (queen priced)", r)
                     # Accessory prices carry no size, so the featured accessory's governed
                     # amount is the ONE dollar figure that legitimately remains on this walk.
                     check("available, king answered (queen priced): every mattress surface is OFF (no applicable SKU: no slot, no copy); the only figure is the sizeless governed accessory amount",
@@ -736,7 +841,7 @@ def rendered():
                     and r["featured"]["governed"] == 0 and r["featured"]["legacy"] == 1 and not errors)
         s, port = serve("available")
         try:
-            page, errors = open_page(browser, f"http://127.0.0.1:{port}/", clock=None)
+            page, errors, _ = open_page(browser, f"http://127.0.0.1:{port}/", clock=None)
             r = page.evaluate(WALK_JS, {"lang": "en", "size": "queen"})
             page.close()
             check("negative control: an UNFROZEN page reads Chromium's real clock, past the available state's freshness limit",
@@ -753,6 +858,48 @@ def rendered():
                   f"slots={r['resultsSlots']} any={r['anySlot']} featured legacy/governed={r['featured']['legacy']}/{r['featured']['governed']}")
         finally:
             s.shutdown(); s.server_close()
+        # ---- readiness controls: the boot gap the bounded wait closes ---------
+        # The repaired-tree run of 2026-09-15 (362/1) found no featured card on
+        # "shipped tablet-portrait en": the walk had begun before
+        # data/accessories.json was applied. The gap is made deterministic
+        # here by holding that ONE response back on the SHIPPED page and
+        # starting from the page's "load" event (before the boot fetches
+        # settle), which is where the old sequence could begin under load.
+        #  - gated: open_page waits through the hold; the walk then finds the
+        #    featured card and its legacy line - the repair;
+        #  - ungated (core data in, boot not finished - the old start): the walk
+        #    runs inside the gap, expect_ready's two conditions are both FALSE
+        #    (they would have failed the walk), and the original symptom is
+        #    reproduced: no featured card, legacy=0 governed=0;
+        #  - failed load: the app continues with an empty list, and the bounded
+        #    wait gives up naming accessories with the app's own warning.
+        HOLD_MS = 2500
+        s, port = serve_plain(hold_accessories_ms=HOLD_MS)
+        try:
+            r = walk(browser, port, "en", "queen", 834, 1108, wait_until="load")
+            check("readiness control (gated): with accessories.json held back the boot wait actually waited, then the walk found the featured card and its legacy line",
+                  r["boot"]["error"] is None and r["boot"]["waitMs"] >= HOLD_MS // 2 and r["readyAtStart"]["ready"] is True
+                  and r["sleepSystemReady"]["featuredCards"] == 1 and r["featured"]["legacy"] == 1 and r["featured"]["governed"] == 0 and not r["errors"],
+                  f"boot={r['boot']['error']} waitMs={r['boot']['waitMs']} ready={r['readyAtStart']} ss={r['sleepSystemReady']} featured={r['featured']}")
+            r = walk(browser, port, "en", "queen", 834, 1108, wait_until="load", ready=CORE_READY_JS)
+            check("readiness control (ungated - the old start, core data in but boot unfinished): the walk ran inside the gap and expect_ready's conditions are both false (it would have failed the walk)",
+                  r["readyAtStart"]["ready"] is False and r["readyAtStart"]["accessoriesLoaded"] is False
+                  and r["sleepSystemReady"]["accessoriesLoaded"] is False and r["sleepSystemReady"]["featuredCards"] != 1,
+                  f"ready={r['readyAtStart']} ss={r['sleepSystemReady']}")
+            check("readiness control (ungated): the original symptom reappears - no featured card, legacy=0, governed=0 (the 362/1 failure reproduced), with no page error",
+                  r["sleepSystemReady"]["featuredCards"] == 0 and r["featured"]["legacy"] == 0 and r["featured"]["governed"] == 0 and not r["errors"],
+                  f"ss={r['sleepSystemReady']} featured={r['featured']} errors={r['errors'][:1]}")
+        finally:
+            s.shutdown(); s.server_close()
+        s, port = serve_plain(fail_accessories=True)
+        try:
+            r = walk(browser, port, "en", "queen", 1194, 748, ready_timeout_ms=3000)
+            check("readiness control (failed load): the bounded wait gives up naming accessories - the app's flag false, its list empty, its own warning in the diagnostic",
+                  r["boot"]["error"] is not None and "'accessories': False" in r["boot"]["error"] and "'accessories': 0" in r["boot"]["error"]
+                  and any("accessories.json" in line for line in r["boot"]["console"]),
+                  f"boot={r['boot']['error']} console={r['boot']['console'][-2:]}")
+        finally:
+            s.shutdown(); s.server_close()
         # Device rehearsal: the SAME page over a private address of this
         # machine passes the domain lock through the in-memory allowlist,
         # shows the NON-SHIPPING banner, and walks the states exactly as the
@@ -766,7 +913,7 @@ def rendered():
         mapped = p.chromium.launch(args=[f"--host-resolver-rules=MAP {NAME} 127.0.0.1"])
         s, port = serve_plain()
         try:
-            page, errs = open_page(mapped, f"http://{NAME}:{port}/", wait_until="load", expect_app=False)
+            page, errs, _ = open_page(mapped, f"http://{NAME}:{port}/", wait_until="load", expect_app=False)
             blank = page.evaluate("() => ({ start: !!document.getElementById('startBtn'), text: document.body ? document.body.textContent : '', now: Date.now() })")
             check("control: the SHIPPED allowlist blanks a non-loopback host (no #startBtn, the lock's error text, 'Domain not authorized')",
                   not blank["start"] and "Unauthorized domain" in blank["text"] and any("Domain not authorized" in e for e in errs))
@@ -785,7 +932,7 @@ def rendered():
             threading.Thread(target=s.serve_forever, daemon=True).start()
             dport = s.server_address[1]
             try:
-                page, errors = open_page(mapped, f"http://{NAME}:{dport}/")
+                page, errors, boot = open_page(mapped, f"http://{NAME}:{dport}/")
                 probe = page.evaluate("() => ({ banner: !!document.getElementById('" + srv.BANNER_ID + "'), "
                                       "bannerText: (document.getElementById('" + srv.BANNER_ID + "') || {}).textContent || '', "
                                       "blanked: !document.getElementById('startBtn') || document.querySelectorAll('.screen').length === 0, "
@@ -799,6 +946,7 @@ def rendered():
                       probe["policy"] is False)
                 r = page.evaluate(WALK_JS, {"lang": "en", "size": "queen"})
                 r["errors"] = errors
+                r["boot"] = boot
                 page.close()
                 expect(f"name-mapped device {state} tablet-landscape en", r) if expect is expect_off else expect(f"name-mapped device {state} tablet-landscape en", r, "en")
             finally:
@@ -808,7 +956,7 @@ def rendered():
             for state, expect in (("available", expect_available), ("stale", expect_off)):
                 s, dport = serve_device(state, DEVICE_IP)
                 try:
-                    page, errors = open_page(browser, f"http://{DEVICE_IP}:{dport}/")
+                    page, errors, boot = open_page(browser, f"http://{DEVICE_IP}:{dport}/")
                     # "Blanked" = the domain lock replaced the document with its error
                     # page (no #startBtn, no app). The lock's own source text lives in
                     # the page, so its wording is not the probe.
@@ -822,6 +970,7 @@ def rendered():
                           probe["banner"] and ("state: " + state) in probe["bannerText"] and "FIXTURE" in probe["bannerText"])
                     r = page.evaluate(WALK_JS, {"lang": "en", "size": "queen"})
                     r["errors"] = errors
+                    r["boot"] = boot
                     page.close()
                     expect(f"device {state} tablet-landscape en", r) if expect is expect_off else expect(f"device {state} tablet-landscape en", r, "en")
                 finally:
