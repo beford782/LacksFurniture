@@ -1077,7 +1077,7 @@ win._drawerCurrentIndex = 2;
 win._currentDrawerMattressId = "g3";
 win._drawerData = { g1: { reasons: [SENTINEL] } };
 win._sleepSystemState = {
-  activeStep: "protection", decisions: { adjustability: SENTINEL },
+  activeStep: "protection", decisions: { base: SENTINEL },
   demoPosition: SENTINEL, supportChoice: SENTINEL, pillowCandidateId: SENTINEL, viewCandidateId: SENTINEL,
   pillowReaction: SENTINEL, pillowFeedback: SENTINEL, protectionGoal: SENTINEL,
 };
@@ -1287,7 +1287,7 @@ check("drawer index cleared", win._drawerCurrentIndex === 0);
 check("current drawer mattress cleared", win._currentDrawerMattressId === "");
 check("per-customer drawer match data cleared", Object.keys(win._drawerData).length === 0);
 check("every Sleep System decision field cleared",
-  win._sleepSystemState.activeStep === "adjustability"
+  win._sleepSystemState.activeStep === "base"
   && Object.keys(win._sleepSystemState.decisions).length === 0
   && ["demoPosition", "supportChoice", "pillowCandidateId", "viewCandidateId", "pillowReaction",
       "pillowFeedback", "protectionGoal"].every(k => win._sleepSystemState[k] === ""));
