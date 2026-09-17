@@ -286,5 +286,44 @@ console.log("\n-- Slice 6 C7: drawer control accessibility --");
     })());
 }
 
+// ---------- T1 (packet A1 / N1, R02): ES trial verdicts are verdicts, not praise ----
+// EN records a verdict ("Too soft" / "Too firm", "Too low" / "Too high"). Before this
+// pin the ES maps rendered "Muy suave" / "Muy firme" and "Muy baja" / "Muy alta"
+// ("very X", which reads as a description or praise); "Muy Suave" is also the
+// slider-scale label for "Very Soft". The verdict form is "Demasiado ..." at all
+// three sites. Copy only: the EN maps, the positive middle options and the slider
+// scale must not move. Executes the real reactionLabel() in both languages and reads
+// the paintDrawerReactions map and the pillow option labels from the real source.
+console.log("\n-- T1: ES trial verdicts (R02) --");
+{
+  const norm = html.replace(/\r\n/g, "\n");
+  const labelFn = norm.match(/function reactionLabel\(reaction\) \{[\s\S]*?\n    \}/);
+  check("extracted reactionLabel() from index.html", !!labelFn);
+  const run = (lang, r) => new Function("currentLang", `"use strict"; ${labelFn ? labelFn[0] : ""} return reactionLabel(${JSON.stringify(r)});`)(lang);
+  check("ES reactionLabel: soft / firm are verdicts (\"Demasiado suave\" / \"Demasiado firme\"), the middle option is untouched",
+    run("es", "soft") === "Demasiado suave"
+    && run("es", "firm") === "Demasiado firme"
+    && run("es", "good") === "Buena sensación");
+  check("EN reactionLabel is unchanged (\"Too soft\" / \"Good feel\" / \"Too firm\")",
+    run("en", "soft") === "Too soft" && run("en", "good") === "Good feel" && run("en", "firm") === "Too firm");
+  const painter = norm.match(/function paintDrawerReactions\(mattressId\) \{[\s\S]*?\n    \}/);
+  check("extracted paintDrawerReactions() from index.html", !!painter);
+  check("drawer reaction row (ES): the same verdict form in the row's own casing, EN row untouched",
+    !!painter
+    && painter[0].includes("{ soft: 'Demasiado Suave', good: 'Buena Sensación', firm: 'Demasiado Firme' }")
+    && painter[0].includes("{ soft: 'Too Soft', good: 'Good Feel', firm: 'Too Firm' }"));
+  check("pillow physical-fit options (ES): \"Demasiado baja\" / \"Demasiado alta\"; \"Se siente alineada\" and EN untouched",
+    norm.includes("{ id: 'low', label: { en: 'Too low', es: 'Demasiado baja' } }")
+    && norm.includes("{ id: 'aligned', label: { en: 'Feels aligned', es: 'Se siente alineada' } }")
+    && norm.includes("{ id: 'high', label: { en: 'Too high', es: 'Demasiado alta' } }"));
+  check("no \"Muy\" verdict survives at any site; \"Muy Suave\" remains ONLY as the slider-scale label",
+    !/'Muy (suave|firme|Firme|baja|alta)'/.test(norm)
+    && (norm.match(/'Muy Suave'/g) || []).length === 1
+    && /if \(val <= 2\) return 'Muy Suave';/.test(norm));
+  check("every verdict consumer still reads the label through reactionLabel() (no literal ES verdict elsewhere)",
+    (norm.match(/reactionLabel\(reaction\)/g) || []).length >= 2
+    && !/Demasiado (suave|firme)[^']*'\s*[:,]/.test(norm.replace(labelFn ? labelFn[0] : "", "").replace(painter ? painter[0] : "", "")));
+}
+
 console.log(`\nDrawer lifecycle check: ${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

@@ -20427,9 +20427,9 @@
         '</div>' +
         '<div class="sleep-system__pillow-reactions">' +
           [
-            { id: 'low', label: { en: 'Too low', es: 'Muy baja' } },
+            { id: 'low', label: { en: 'Too low', es: 'Demasiado baja' } },
             { id: 'aligned', label: { en: 'Feels aligned', es: 'Se siente alineada' } },
-            { id: 'high', label: { en: 'Too high', es: 'Muy alta' } }
+            { id: 'high', label: { en: 'Too high', es: 'Demasiado alta' } }
           ].map(function(option) {
             return '<button type="button" class="sleep-system__pillow-reaction' +
               (reaction === option.id ? ' is-active' : '') +
@@ -22471,7 +22471,7 @@
 
     function reactionLabel(reaction) {
       var labels = currentLang === 'es'
-        ? { soft: 'Muy suave', good: 'Buena sensación', firm: 'Muy firme' }
+        ? { soft: 'Demasiado suave', good: 'Buena sensación', firm: 'Demasiado firme' }
         : { soft: 'Too soft', good: 'Good feel', firm: 'Too firm' };
       return labels[reaction] || reaction;
     }
@@ -22488,7 +22488,7 @@
     // cue (the check mark) in addition to the colour treatment.
     function paintDrawerReactions(mattressId) {
       var labels = currentLang === 'es'
-        ? { soft: 'Muy Suave', good: 'Buena Sensación', firm: 'Muy Firme' }
+        ? { soft: 'Demasiado Suave', good: 'Buena Sensación', firm: 'Demasiado Firme' }
         : { soft: 'Too Soft', good: 'Good Feel', firm: 'Too Firm' };
       var selected = (window._mattressReactions || {})[mattressId];
       document.querySelectorAll('#drawerReactionRow button').forEach(function(btn) {
