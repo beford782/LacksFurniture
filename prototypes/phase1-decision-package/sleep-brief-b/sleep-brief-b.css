@@ -1,0 +1,433 @@
+/* Sleep Brief — Alternative B ("conservative hierarchy"). PROTOTYPE ONLY.
+ *
+ * Two-tier reading model (w2-tablet-shared-viewing): customer-glanceable
+ * anchors (h1, conversation lead, badge values, priority titles, journey
+ * steps) are sized large and kept at 7:1-class contrast; operator detail
+ * (reasons, "Try this:" prompts, captions) is conventional size but still
+ * >= 7:1 against the page background.
+ *
+ * All breakpoints below are CONTENT-DRIVEN samples (320 / 480 / 768x1024
+ * portrait / 1024x768 landscape / 1180+). They are NOT device claims — the
+ * showroom device matrix is unconfirmed (Phase 0.4 pending).
+ */
+
+/* Lead fix (post-build review): the hidden attribute must win over any
+   later display rule. Mirrors the production guard at index.html:8925.
+   Without it an empty [hidden] element with display:inline-block still
+   paints (found on .tier-descriptor-alt in the tabs variant). */
+[hidden] { display: none !important; }
+
+
+:root {
+  --sb-ink: #211c14;        /* ~15.3:1 on --sb-paper */
+  --sb-ink-soft: #4c4536;   /* ~8.2:1 on --sb-paper — operator detail */
+  --sb-paper: #faf8f3;
+  --sb-card: #ffffff;
+  --sb-line: #d8d2c4;
+  --sb-accent-deep: #6d5316; /* segment fill; ~6.6:1 vs white, >3:1 vs track */
+  --sb-seg-border: #857a60;  /* unfilled segment border; >=3:1 vs white (1.4.11) */
+
+  /* Kind pills — light fill + dark text (GOV.UK tag posture; never button-like) */
+  --sb-key-bg: #f3e9d3;  --sb-key-ink: #5d4400;   /* tag-key: ~7.1:1 */
+  --sb-high-bg: #e6edf2; --sb-high-ink: #27424f;  /* tag-high: ~8.6:1 */
+  --sb-pref-bg: #efece5; --sb-pref-ink: #4c4536;  /* tag-preference: base pill —
+                                                     production has NO CSS rule
+                                                     for it; neutral base mirrors
+                                                     the shipped render */
+
+  /* Dual-ring focus tokens (echoes production's --focus-ring-* pattern) */
+  --sb-focus-outer: #1a1a1a;
+  --sb-focus-inner: #ffffff;
+}
+
+html { box-sizing: border-box; }
+*, *::before, *::after { box-sizing: inherit; }
+
+body {
+  margin: 0;
+  background: var(--sb-paper);
+  color: var(--sb-ink);
+  font: 400 1rem/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-text-size-adjust: 100%;
+  /* Body never scrolls horizontally; anything wide scrolls in its own box. */
+  overflow-x: hidden;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Visible focus — dual ring, never suppressed. */
+button:focus-visible {
+  outline: 3px solid var(--sb-focus-outer);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px var(--sb-focus-inner);
+}
+
+/* Per-surface max-width, echoing the production system's column discipline.
+   680px is a content measure (comfortable line length), not a device claim. */
+.sb-wrap {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 1.5rem clamp(1rem, 4vw, 2rem) 4rem;
+}
+
+.sb-eyebrow {
+  margin: 0 0 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--sb-ink-soft);
+}
+
+/* ===== 1. IDENTITY ===================================================== */
+
+/* h1 retained as the top of the visual hierarchy — the conversation lead
+   sits beneath it, prominent but subordinate. */
+.sb-title {
+  margin: 0 0 1rem;
+  font-size: clamp(1.75rem, 5vw, 2.4rem);
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
+.sb-lead {
+  margin: 0 0 1.25rem;
+  padding: 0.9rem 1.1rem;
+  background: var(--sb-card);
+  border: 1px solid var(--sb-line);
+  border-left: 5px solid var(--sb-accent-deep);
+  border-radius: 10px;
+}
+.sb-lead-label {
+  margin: 0 0 0.2rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--sb-key-ink);
+}
+/* Customer-glanceable anchor: large noun phrase the salesperson narrates. */
+.sb-lead-title {
+  margin: 0 0 0.25rem;
+  font-size: clamp(1.35rem, 4vw, 1.85rem);
+  font-weight: 700;
+  line-height: 1.2;
+}
+.sb-lead-reason {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--sb-ink-soft);
+}
+
+/* Signal badges — inert status tags in one fixed-order row (wraps freely;
+   Spanish labels get 30%+ growth headroom because widths are intrinsic). */
+.sb-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 1rem;
+}
+.sb-badge {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: 0.5rem 0.8rem;
+  background: var(--sb-card);
+  border: 1px solid var(--sb-line);
+  border-radius: 8px;
+}
+.sb-badge-label {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sb-ink-soft);
+}
+.sb-badge-value {
+  margin: 0;
+  font-size: 1.1rem;   /* sized for two-person glance distance, not chip-size */
+  font-weight: 600;
+}
+/* The Feel badge carries the firmness treatment and may take a full row. */
+.sb-badge--firmness { flex: 1 1 100%; }
+
+/* Firmness: 10 discrete segments, N filled — never a continuous bar. */
+.sb-firmness { display: block; }
+.sb-firmness-visible {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+.sb-firmness-word { font-size: 1.1rem; font-weight: 600; }
+.sb-firmness-num { font-size: 0.9rem; font-weight: 600; color: var(--sb-ink-soft); }
+.sb-firmness-strip {
+  display: flex;
+  gap: 3px;
+  margin-top: 0.35rem;
+  max-width: 260px;
+}
+.sb-firmness-seg {
+  flex: 1 1 0;
+  height: 12px;
+  border-radius: 3px;
+  background: var(--sb-card);
+  border: 1px solid var(--sb-seg-border); /* not hue-alone: border + luminance */
+}
+.sb-firmness-seg.is-filled {
+  background: var(--sb-accent-deep);
+  border-color: var(--sb-accent-deep);
+}
+
+.sb-reassurance {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--sb-ink-soft);
+}
+
+/* ===== 2. WHAT WE WILL TEST TOGETHER =================================== */
+
+.sb-test { margin-top: 2rem; }
+
+.sb-h2 {
+  margin: 0 0 0.5rem;
+  font-size: clamp(1.3rem, 3.5vw, 1.6rem);
+  line-height: 1.2;
+}
+
+.sb-intro {
+  margin: 0 0 1rem;
+  font-size: 0.9rem;
+  color: var(--sb-ink-soft);
+}
+
+.sb-priorities {
+  list-style: none; /* role="list" set in markup restores semantics */
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.sb-priority {
+  padding: 0.9rem 1.1rem;
+  background: var(--sb-card);
+  border: 1px solid var(--sb-line);
+  border-radius: 10px;
+}
+.sb-priority-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+.sb-priority-num {
+  flex: none;
+  width: 1.9rem;
+  height: 1.9rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--sb-ink);
+  color: var(--sb-paper);
+  font-size: 1rem;
+  font-weight: 700;
+}
+/* Customer-glanceable anchor. */
+.sb-priority-title {
+  font-size: clamp(1.15rem, 3vw, 1.35rem);
+  font-weight: 700;
+  line-height: 1.25;
+}
+.sb-pill {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: var(--sb-pref-bg);  /* neutral base = production's un-styled pill */
+  color: var(--sb-pref-ink);
+}
+.sb-pill.tag-key { background: var(--sb-key-bg); color: var(--sb-key-ink); }
+.sb-pill.tag-high { background: var(--sb-high-bg); color: var(--sb-high-ink); }
+/* .tag-preference intentionally has no rule — base pill, mirroring production. */
+
+.sb-priority-desc {
+  margin: 0.45rem 0 0;
+  font-size: 0.95rem;
+  color: var(--sb-ink-soft);
+}
+
+/* "Try this:" — fully visible, typographically subordinated: smaller,
+   indented, consistent last position in every row (B's contrast with A). */
+.sb-priority-test {
+  margin: 0.55rem 0 0;
+  padding-left: 0.85rem;
+  border-left: 3px solid var(--sb-line);
+  font-size: 0.88rem;
+  color: var(--sb-ink-soft);
+}
+.sb-priority-test strong { color: var(--sb-ink); }
+
+/* ===== 3. JOURNEY ====================================================== */
+
+.sb-journey { margin-top: 2rem; }
+
+.sb-journey-steps {
+  list-style: none; /* role="list" set in markup */
+  margin: 0.75rem 0 0.75rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.sb-journey-step {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  /* B5: as a >=640px row flex item, allow compression below the flex-basis
+     auto minimum so long ES strings reflow instead of overflowing. */
+  min-width: 0;
+}
+.sb-journey-num {
+  flex: none;
+  width: 1.7rem;
+  height: 1.7rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 2px solid var(--sb-ink);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+.sb-journey-text { font-size: 1.05rem; font-weight: 600; }
+
+.sb-journey-copy {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--sb-ink-soft);
+}
+
+/* Content-driven: once the column is comfortably wide the three steps read
+   as one horizontal rail (a width the content earns, not a device claim). */
+@media (min-width: 640px) {
+  .sb-journey-steps { flex-direction: row; gap: 1.25rem; }
+}
+
+/* ===== 4. ACTIONS ====================================================== */
+
+.sb-actions {
+  margin-top: 2rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--sb-line);
+}
+.sb-actions-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.sb-btn {
+  min-height: 48px;               /* >= 44px customer-tappable target */
+  padding: 0.6rem 1.2rem;
+  border-radius: 10px;
+  font: 600 1rem/1.2 inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.sb-btn--primary {
+  background: var(--sb-ink);
+  color: var(--sb-paper);
+  border: 2px solid var(--sb-ink);
+}
+.sb-btn--secondary {
+  background: var(--sb-card);
+  color: var(--sb-ink);
+  border: 2px solid var(--sb-ink);
+}
+.sb-chevron {
+  display: inline-block;
+  margin-left: 0.4rem;
+  transition: transform 120ms ease;
+}
+.sb-btn--compare[aria-expanded="true"] .sb-chevron { transform: rotate(180deg); }
+
+.sb-sim-note {
+  margin: 0.75rem 0 0;
+  font-size: 0.8rem;
+  font-style: italic;
+  color: var(--sb-ink-soft);
+}
+.sb-sim-note.is-flash { animation: sb-flash 900ms ease; }
+@keyframes sb-flash {
+  0% { background: var(--sb-key-bg); }
+  100% { background: transparent; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sb-sim-note.is-flash { animation: none; }
+  .sb-chevron { transition: none; }
+}
+
+/* ---- Simulated 2-up compare panel ---- */
+
+.sb-compare-panel {
+  margin-top: 1rem;
+  padding: 1rem 1.1rem;
+  background: var(--sb-card);
+  border: 1px solid var(--sb-line);
+  border-radius: 10px;
+}
+.sb-h3 {
+  margin: 0.35rem 0 0.75rem;
+  font-size: 1.2rem;
+}
+.sb-compare-cols {
+  list-style: none; /* role="list" set in markup */
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr; /* stacks until the content earns two columns */
+  gap: 0.75rem;
+}
+/* Content-driven: two columns only when each keeps a readable measure. */
+@media (min-width: 560px) {
+  .sb-compare-cols { grid-template-columns: 1fr 1fr; }
+}
+.sb-compare-col {
+  padding: 0.8rem 0.9rem;
+  border: 1px solid var(--sb-line);
+  border-radius: 8px;
+}
+.sb-compare-name {
+  margin: 0 0 0.1rem;
+  font-size: 1.1rem;
+  line-height: 1.25;
+}
+.sb-price-tier { color: var(--sb-ink-soft); font-weight: 600; }
+.sb-compare-brand {
+  margin: 0 0 0.6rem;
+  font-size: 0.85rem;
+  color: var(--sb-ink-soft);
+}
+.sb-stat { margin-top: 0.55rem; }
+.sb-stat-label {
+  display: block;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sb-ink-soft);
+}
+.sb-stat-val { display: block; font-size: 0.95rem; }
+.sb-stat-val .sb-firmness-strip { max-width: 200px; }
