@@ -1310,6 +1310,8 @@ const ES_SECOND_PERSON = /(?<!\p{L})(tu|tus|te|ti|tú|usted|ustedes)(?!\p{L})/iu
 // below were taken from `git show da4f746:index.html` once, by hand; the main
 // renderer carried 33 bilingual literals there, and exactly one — the retired
 // "During the trial" eyebrow pair — is gone.
+// ES accent fix (2026-09-14, copy only): según, Consérvalo, agregará and
+// determinará replace their unaccented da4f746 spellings below; EN unchanged.
 const STEP_COPY_AT_DA4F746 = {
   // Combined base step (2026-09-14): the base step's label, title and copy
   // are the owner-approved three-step design's (ES provisional, 2c pending);
@@ -1335,7 +1337,7 @@ const STEP_COPY_AT_DA4F746 = {
     title: { en: 'Protect without masking the feel', es: 'Protege sin ocultar la sensación' },
     copy: {
       en: 'Choose protection around the goal that matters most: spills, allergens, cooling, or everyday care.',
-      es: 'Elige protección segun la meta más importante: derrames, alérgenos, frescura o cuidado diario.'
+      es: 'Elige protección según la meta más importante: derrames, alérgenos, frescura o cuidado diario.'
     }
   }
 };
@@ -1371,11 +1373,11 @@ const MAIN_LITERALS_AT_DA4F746 = [
   ['Viewing an alternative', 'Viendo una alternativa'],
   ['Back to recommended', 'Volver a la recomendada'],
   ['Current setup', 'Configuración actual'],
-  ['Keep it, then confirm compatibility', 'Conservalo y confirma compatibilidad'],
-  ['No new support is being added. Your specialist can confirm that the current frame, platform, or slats meet the mattress requirements.', 'No se agregara un soporte nuevo. Tu especialista puede confirmar que el marco, plataforma o tablillas cumplen los requisitos.'],
+  ['Keep it, then confirm compatibility', 'Consérvalo y confirma compatibilidad'],
+  ['No new support is being added. Your specialist can confirm that the current frame, platform, or slats meet the mattress requirements.', 'No se agregará un soporte nuevo. Tu especialista puede confirmar que el marco, plataforma o tablillas cumplen los requisitos.'],
   ['Specialist check', 'Revisión del especialista'],
   ['Confirm the setup before adding support', 'Confirma la configuración antes de agregar soporte'],
-  ['A quick frame and slat check will determine whether the current setup works or whether a foundation is needed.', 'Una revisión rápida del marco y las tablillas determinara si la configuración actual funciona o si necesita una base.'],
+  ['A quick frame and slat check will determine whether the current setup works or whether a foundation is needed.', 'Una revisión rápida del marco y las tablillas determinará si la configuración actual funciona o si necesita una base.'],
   ['Optional base demo', 'Demostración opcional de base'],
   ['Optional base demo', 'Demostración opcional de base'],
   ['Try the positions first', 'Prueba las posiciones primero'],
