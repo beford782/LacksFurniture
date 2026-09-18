@@ -3016,10 +3016,18 @@
       cursor: not-allowed;
     }
 
-    /* Privacy text */
+    /* Privacy text. T5 (packet B4 / N8, R20; 2026-09-17): the take-home
+       privacy entry is the only privacy-policy link and it sat at 11px in the
+       accent colour (4.17:1 on the card) with a 0.5px rule, under the 4.5:1
+       normal-text floor, and its hit area was the recorded X12 exception.
+       Now >= 13px; the link is --accent-ink (14.45:1 on #FFFDF8) with a 1px
+       underline, accent on hover / focus-visible only, and a 44px hit area
+       (padding pulled back by negative margin so the line box does not move).
+       CSS only: the lead stays retailer config-or-nothing (text.emailPrivacy);
+       no copy, markup or handler change. */
     .noct-email-privacy {
       font-family: var(--font-sans);
-      font-size: 11px;
+      font-size: 13px;
       color: var(--color-text-subtle);
       line-height: 1.5;
       text-align: center;
@@ -3027,9 +3035,26 @@
     }
 
     .noct-email-privacy a {
-      color: var(--color-accent);
+      display: inline-block;
+      min-height: 44px;
+      box-sizing: border-box;
+      padding: 12px 8px;
+      margin: -12px 0;
+      color: var(--accent-ink);
       text-decoration: none;
-      border-bottom: 0.5px solid var(--color-accent);
+      border-bottom: 1px solid var(--accent-ink);
+      touch-action: manipulation;
+    }
+
+    .noct-email-privacy a:hover,
+    .noct-email-privacy a:focus-visible {
+      color: var(--color-accent);
+      border-bottom-color: var(--color-accent);
+    }
+
+    .noct-email-privacy a:focus-visible {
+      outline: 2px solid var(--color-accent);
+      outline-offset: 2px;
     }
 
     /* DREAM code box — Savings Pass certificate frame.

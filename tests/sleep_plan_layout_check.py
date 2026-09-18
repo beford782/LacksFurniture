@@ -1000,8 +1000,10 @@ async (ARGS) => {
 """
 # The details control left this list in the 2026-09-08 accessibility-floor
 # slice (candidate): it now declares the floor and is measured like its
-# three 44px row-mates.
-ALLOWED_SMALL = ("emailPrivacyLink",)
+# three 44px row-mates. The take-home privacy link (#emailPrivacyLink, the
+# last recorded X12 exception) left it in T5 (2026-09-17): it now declares a
+# 44px hit area and is measured like every other control. Nothing is exempt.
+ALLOWED_SMALL = ()
 
 
 def run_touch_floor(browser, port, name, width, height, lang, shots_dir):
@@ -1019,7 +1021,7 @@ def run_touch_floor(browser, port, name, width, height, lang, shots_dir):
     accepted = [o for o in r["found"] if any(a in o["desc"] for a in ALLOWED_SMALL)]
     check(f"[{lang}/{name}] the sweep reached the preview confirmation without a page error (emailDeliveryLive() === false)",
           not errors and r["live"] is False, f"errors={errors[:1]} live={r['live']}")
-    check(f"[{lang}/{name}] every visible interactive control on the swept screens is >= 44x44 CSS px, except the one recorded exception ({len(accepted)} occurrences of the privacy link)",
+    check(f"[{lang}/{name}] every visible interactive control on the swept screens is >= 44x44 CSS px, with no recorded exception left (T5 closed the last one, #emailPrivacyLink)",
           not offenders, "; ".join(f"{o['screen']}:{o['desc']} {o['w']}x{o['h']}" for o in offenders[:14]))
     w = r["walked"]
     check(f"[{lang}/{name}] the Results details control was walked and clears the floor by declaration and by render (was 31px, a recorded exception)",
