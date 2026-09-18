@@ -469,6 +469,75 @@ def run_sleep_system_header(browser, port, name, width, height, lang, shots_dir)
     page.close()
 
 
+# Packet T3 (R18 / A3 / N3 option (a), approved 2026-09-18): the drawer's
+# Prev / Next sat in fixed 96px (landscape) / 74px (portrait) grid columns, so
+# ES "← Anterior" / "Siguiente →" wrapped the arrow onto a second line and the
+# header grew taller than the Back control beside it, in both orientations.
+# The columns are now content-sized and the labels nowrap; the 44px floor and
+# the onclick / ontouchend pair are unchanged. This pass opens the drawer in
+# EN and ES at both mounted tablet viewports and proves each label renders on
+# ONE line, is not clipped, keeps the floor, and that Back / Prev / count /
+# Next stay in order without overlapping inside the toolbar.
+DRAWER_NAV_JS = r"""
+async (ARGS) => {
+  if (ARGS.lang === 'es') await switchLanguage('es');
+  for (const k of Object.keys(ARGS.answers)) answers[k] = ARGS.answers[k];
+  showProfileScreen();
+  window.showResults();
+  openResultCardDrawer(document.querySelector('#resultsScreen [data-id][data-tier]'));
+  await new Promise((res) => setTimeout(res, 500));
+  const rect = (el) => { if (!el) return null; const b = el.getBoundingClientRect(); return { x: b.x, y: b.y, w: b.width, h: b.height, r: b.right }; };
+  const lines = (el) => { const rg = document.createRange(); rg.selectNodeContents(el); const tops = new Set(); for (const q of rg.getClientRects()) if (q.width > 0) tops.add(Math.round(q.top)); return tops.size; };
+  const btn = (id) => { const el = document.getElementById(id); return el && { box: rect(el), lines: lines(el), text: el.textContent.trim(), scrollW: el.scrollWidth, clientW: el.clientWidth, minH: getComputedStyle(el).minHeight }; };
+  const doc = document.documentElement;
+  return {
+    open: document.getElementById('mattressDrawer').classList.contains('drawer-open'),
+    toolbar: rect(document.querySelector('.drawer-toolbar')),
+    back: rect(document.querySelector('.drawer-back-to-results')),
+    label: rect(document.getElementById('drawerNavLabel')),
+    labelText: (document.getElementById('drawerNavLabel') || {}).textContent || '',
+    prev: btn('drawerPrevBtn'), next: btn('drawerNextBtn'),
+    scrollWidth: doc.scrollWidth, clientWidth: doc.clientWidth,
+  };
+}
+"""
+
+
+def run_drawer_nav(browser, port, name, width, height, lang, shots_dir):
+    print(f"\n-- DRAWER Prev / Next (T3) {lang} {name} {width}x{height} --")
+    page = browser.new_page(viewport={"width": width, "height": height})
+    errors = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    page.goto(f"http://127.0.0.1:{port}/", wait_until="networkidle")
+    page.wait_for_selector("#startBtn")
+    r = page.evaluate(DRAWER_NAV_JS, {"answers": ANSWERS, "lang": lang})
+    if shots_dir:
+        os.makedirs(shots_dir, exist_ok=True)
+        page.screenshot(path=os.path.join(shots_dir, f"drawer-nav-{lang}-{name}-{width}x{height}.png"))
+    tag = f"T3 {lang} {name}"
+    prev, nxt = r["prev"], r["next"]
+    check(f"[{tag}] the drawer opens without a page error and renders Back, Prev, the count and Next",
+          not errors and r["open"] and bool(prev and nxt and r["back"] and r["label"]) and r["labelText"].strip() != "",
+          f"open={r['open']} label={r['labelText']!a} errors={ascii(errors[:1])}")
+    if not (prev and nxt and r["back"] and r["label"] and r["toolbar"]):
+        page.close()
+        return
+    for key, b in (("Prev", prev), ("Next", nxt)):
+        check(f"[{tag}] {key} ({b['text']!a}) renders on one line", b["lines"] == 1, f"lines={b['lines']} box={b['box']}")
+        check(f"[{tag}] {key} is not clipped (content fits its box)", b["scrollW"] <= b["clientW"], f"{b['scrollW']}/{b['clientW']}")
+        check(f"[{tag}] {key} keeps the declared 44px floor and does not grow past it",
+              b["minH"] == "44px" and 43.5 <= b["box"]["h"] <= 44.5, f"minH={b['minH']} h={b['box']['h']:.1f}")
+    back, label, t = r["back"], r["label"], r["toolbar"]
+    check(f"[{tag}] Back, Prev, the count and Next sit left to right without overlapping",
+          back["r"] <= prev["box"]["x"] + 0.5 and prev["box"]["r"] <= label["x"] + 0.5 and label["r"] <= nxt["box"]["x"] + 0.5,
+          f"back.r={back['r']:.0f} prev={prev['box']['x']:.0f}-{prev['box']['r']:.0f} label={label['x']:.0f}-{label['r']:.0f} next.x={nxt['box']['x']:.0f}")
+    check(f"[{tag}] the navigation stays inside the toolbar and the viewport",
+          prev["box"]["x"] >= t["x"] - 0.5 and nxt["box"]["r"] <= t["r"] + 0.5 and nxt["box"]["r"] <= width + 0.5,
+          f"toolbar={t['x']:.0f}-{t['r']:.0f} next.r={nxt['box']['r']:.0f} vw={width}")
+    check(f"[{tag}] no horizontal document scroll", r["scrollWidth"] <= r["clientWidth"], f"{r['scrollWidth']}/{r['clientWidth']}")
+    page.close()
+
+
 # E2-A chrome normalisation (cohesion experiment E2 alternative (a), ruled
 # 2026-08-30; candidate-only under the 2026-09-06 direction): the last two dark
 # page headers (Plan, Summary) are hidden like every other screen's, which
@@ -1664,6 +1733,9 @@ def main():
             for lang in ("en", "es"):
                 for name, w, h in VIEWPORTS[:2]:
                     run_sleep_system_header(browser, port, name, w, h, lang, args.screenshots)
+            for lang in ("en", "es"):
+                for name, w, h in VIEWPORTS[:2]:
+                    run_drawer_nav(browser, port, name, w, h, lang, args.screenshots)
             for lang in ("en", "es"):
                 for name, w, h in VIEWPORTS[:2]:
                     run_chrome_normalisation(browser, port, name, w, h, lang, args.screenshots)
