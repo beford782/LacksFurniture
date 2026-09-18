@@ -3016,10 +3016,20 @@
       cursor: not-allowed;
     }
 
-    /* Privacy text */
+    /* Privacy text. T5 (packet B4 / N8, R20; 2026-09-17): the take-home
+       privacy entry is the only privacy-policy link and it sat at 11px in the
+       accent colour (4.17:1 on the card) with a 0.5px rule, under the 4.5:1
+       normal-text floor, and its hit area was the recorded X12 exception.
+       Now >= 13px; the link is --accent-ink (14.45:1 on #FFFDF8) with a 1px
+       text underline that hugs the text, an accent underline / ring on hover /
+       focus-visible only (the text stays ink in every state),
+       and a 44px hit area (padding pulled back by negative margin so the line
+       box does not move; the focus ring is offset inward to frame the text).
+       CSS only: the lead stays retailer config-or-nothing (text.emailPrivacy);
+       no copy, markup or handler change. */
     .noct-email-privacy {
       font-family: var(--font-sans);
-      font-size: 11px;
+      font-size: 13px;
       color: var(--color-text-subtle);
       line-height: 1.5;
       text-align: center;
@@ -3027,9 +3037,30 @@
     }
 
     .noct-email-privacy a {
-      color: var(--color-accent);
-      text-decoration: none;
-      border-bottom: 0.5px solid var(--color-accent);
+      display: inline-block;
+      min-height: 44px;
+      box-sizing: border-box;
+      padding: 12px;
+      margin: -12px 0;
+      color: var(--accent-ink);
+      text-decoration: underline;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 2px;
+      touch-action: manipulation;
+    }
+
+    /* Hover / focus-visible: the accent moves to the underline (and the ring
+       below); the text stays --accent-ink in every state so the 4.5:1 floor
+       holds while hovered or focused too (the accent alone is 4.17:1 here). */
+    .noct-email-privacy a:hover,
+    .noct-email-privacy a:focus-visible {
+      text-decoration-color: var(--color-accent);
+    }
+
+    /* The ring hugs the text (12px padding minus 9px), not the 44px hit box. */
+    .noct-email-privacy a:focus-visible {
+      outline: 2px solid var(--color-accent);
+      outline-offset: -9px;
     }
 
     /* DREAM code box — Savings Pass certificate frame.
