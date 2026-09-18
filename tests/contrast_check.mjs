@@ -803,16 +803,17 @@ console.log("\n-- T5: take-home privacy entry (R20) --");
   const lb = line[0] ? line[0].body : "", kb = link[0] ? link[0].body : "";
   check("T5: the privacy line is >= 13px (was 11px) and still reads the subtle token",
     px(lb, "font-size") !== null && px(lb, "font-size") >= 13 && has(lb, "color: var(--color-text-subtle)"));
-  check("T5: the link is --accent-ink with a 1px underline (was --color-accent with a 0.5px rule)",
-    has(kb, "color: var(--accent-ink)") && has(kb, "border-bottom: 1px solid var(--accent-ink)") && !/0\.5px/.test(kb));
+  check("T5: the link is --accent-ink with a 1px text underline that hugs the text (was --color-accent with a 0.5px border rule at the bottom of the box)",
+    has(kb, "color: var(--accent-ink)") && has(kb, "text-decoration: underline") && has(kb, "text-decoration-thickness: 1px")
+    && has(kb, "text-underline-offset: 2px") && !/border-bottom/.test(kb) && !/0\.5px/.test(kb));
   check("T5: the link declares a 44px hit area that does not move the line (inline-block, min-height 44px, padding pulled back by the same negative margin)",
-    has(kb, "display: inline-block") && px(kb, "min-height") === 44 && px(kb, "padding") === 12 && px(kb, "margin") === -12
+    has(kb, "display: inline-block") && px(kb, "min-height") === 44 && has(kb, "padding: 12px") && px(kb, "margin") === -12
     && has(kb, "box-sizing: border-box") && has(kb, "touch-action: manipulation"));
   const hover = cssRules.filter((r) => r.sel.replace(/\s+/g, " ") === ".noct-email-privacy a:hover, .noct-email-privacy a:focus-visible");
   const focus = ruleFor(".noct-email-privacy a:focus-visible");
-  check("T5: the accent appears on hover / focus-visible only, and keyboard focus gets a visible ring",
-    hover.length === 1 && has(hover[0].body, "color: var(--color-accent)") && has(hover[0].body, "border-bottom-color: var(--color-accent)")
-    && focus.some((r) => !r.sel.includes(",") && has(r.body, "outline: 2px solid var(--color-accent)")));
+  check("T5: the accent appears on hover / focus-visible only, and keyboard focus gets a visible ring that frames the text, not the hit box",
+    hover.length === 1 && has(hover[0].body, "color: var(--color-accent)") && has(hover[0].body, "text-decoration-color: var(--color-accent)")
+    && focus.some((r) => !r.sel.includes(",") && has(r.body, "outline: 2px solid var(--color-accent)") && has(r.body, "outline-offset: -9px")));
   // Tokens as the email screen resolves them: the light-scope block.
   const light = styleBlock.match(/body:has\(#emailScreen\.active\)\s*\{([^}]*)\}/);
   const lv = (name) => { const m = light ? light[1].match(new RegExp(name + ":\\s*(#[0-9a-fA-F]{6})")) : null; return m ? m[1].toUpperCase() : null; };

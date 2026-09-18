@@ -3021,8 +3021,9 @@
        accent colour (4.17:1 on the card) with a 0.5px rule, under the 4.5:1
        normal-text floor, and its hit area was the recorded X12 exception.
        Now >= 13px; the link is --accent-ink (14.45:1 on #FFFDF8) with a 1px
-       underline, accent on hover / focus-visible only, and a 44px hit area
-       (padding pulled back by negative margin so the line box does not move).
+       text underline that hugs the text, accent on hover / focus-visible only,
+       and a 44px hit area (padding pulled back by negative margin so the line
+       box does not move; the focus ring is offset inward to frame the text).
        CSS only: the lead stays retailer config-or-nothing (text.emailPrivacy);
        no copy, markup or handler change. */
     .noct-email-privacy {
@@ -3038,23 +3039,25 @@
       display: inline-block;
       min-height: 44px;
       box-sizing: border-box;
-      padding: 12px 8px;
+      padding: 12px;
       margin: -12px 0;
       color: var(--accent-ink);
-      text-decoration: none;
-      border-bottom: 1px solid var(--accent-ink);
+      text-decoration: underline;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 2px;
       touch-action: manipulation;
     }
 
     .noct-email-privacy a:hover,
     .noct-email-privacy a:focus-visible {
       color: var(--color-accent);
-      border-bottom-color: var(--color-accent);
+      text-decoration-color: var(--color-accent);
     }
 
+    /* The ring hugs the text (12px padding minus 9px), not the 44px hit box. */
     .noct-email-privacy a:focus-visible {
       outline: 2px solid var(--color-accent);
-      outline-offset: 2px;
+      outline-offset: -9px;
     }
 
     /* DREAM code box — Savings Pass certificate frame.
