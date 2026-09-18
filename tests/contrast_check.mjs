@@ -811,9 +811,9 @@ console.log("\n-- T5: take-home privacy entry (R20) --");
     && has(kb, "box-sizing: border-box") && has(kb, "touch-action: manipulation"));
   const hover = cssRules.filter((r) => r.sel.replace(/\s+/g, " ") === ".noct-email-privacy a:hover, .noct-email-privacy a:focus-visible");
   const focus = ruleFor(".noct-email-privacy a:focus-visible");
-  check("T5: the accent appears on hover / focus-visible only, and keyboard focus gets a visible ring that frames the text, not the hit box",
-    hover.length === 1 && has(hover[0].body, "color: var(--color-accent)") && has(hover[0].body, "text-decoration-color: var(--color-accent)")
-    && focus.some((r) => !r.sel.includes(",") && has(r.body, "outline: 2px solid var(--color-accent)") && has(r.body, "outline-offset: -9px")));
+  check("T5: hover / focus-visible move the accent to the underline only (no text colour override), and keyboard focus gets a visible ring that frames the text, not the hit box",
+    hover.length === 1 && has(hover[0].body, "text-decoration-color: var(--color-accent)") && !/(^|;)\s*color\s*:/.test(hover[0].body)
+    && focus.some((r) => !r.sel.includes(",") && has(r.body, "outline: 2px solid var(--color-accent)") && has(r.body, "outline-offset: -9px") && !/(^|;)\s*color\s*:/.test(r.body)));
   // Tokens as the email screen resolves them: the light-scope block.
   const light = styleBlock.match(/body:has\(#emailScreen\.active\)\s*\{([^}]*)\}/);
   const lv = (name) => { const m = light ? light[1].match(new RegExp(name + ":\\s*(#[0-9a-fA-F]{6})")) : null; return m ? m[1].toUpperCase() : null; };
@@ -822,6 +822,17 @@ console.log("\n-- T5: take-home privacy entry (R20) --");
     surface === "#FFFDF8" && !!subtle && !!accent);
   check("T5: the link colour clears 4.5:1 on the card by a wide margin (accent-ink on the surface)",
     !!surface && ratio(accentInk, surface) >= 7);
+  // Resolve the text colour per state the way the cascade does: the base rule sets
+  // it; a state rule overrides only if it declares `color:` itself.
+  const tokenOf = (v) => v === "var(--accent-ink)" ? accentInk : v === "var(--color-accent)" ? accent : v;
+  const colorDecl = (body) => { const m = body.match(/(?:^|;)\s*color\s*:\s*([^;]+)/); return m ? m[1].trim() : null; };
+  const resolveState = (stateBody) => tokenOf(colorDecl(stateBody) || colorDecl(kb) || "");
+  const focusOnly = focus.find((r) => !r.sel.includes(","));
+  const states = { resting: resolveState(""), hover: resolveState(hover[0] ? hover[0].body : ""), focusVisible: resolveState((hover[0] ? hover[0].body : "") + ";" + (focusOnly ? focusOnly.body : "")) };
+  check("T5: the link TEXT resolves to accent-ink and clears 4.5:1 on the card in the resting, hover AND focus-visible states",
+    !!surface && Object.values(states).every((c) => c === accentInk && ratio(c, surface) >= 4.5));
+  check("T5: negative control - reintroducing `color: var(--color-accent)` on the hover / focus rule would resolve the hovered text to the accent and FAIL the floor (4.17:1)",
+    !!surface && !!accent && (() => { const mutated = (hover[0] ? hover[0].body : "") + "; color: var(--color-accent)"; const c = resolveState(mutated); return c === accent && ratio(c, surface) < 4.5; })());
   check("T5: the 13px lead clears the 4.5:1 normal-text floor on the card (the size raise did not trade a small-text allowance for a failing one)",
     !!surface && !!subtle && ratio(subtle, surface) >= 4.5);
   check("T5: control - the previous accent-coloured link would NOT have cleared 4.5:1 on the card (the defect this section pins)",
