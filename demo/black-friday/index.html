@@ -24279,17 +24279,25 @@
       if (!bottomObs.length) return 0;
       var topObs = resultsTopOverlayRects().map(grow);
       var obstacles = bottomObs.concat(topObs);
-      var rows = Array.prototype.slice.call(
-        document.querySelectorAll('#resultsScreen .noct-card-action-cluster')
-      ).filter(function(el) { return el.offsetWidth > 0; }).map(function(el) {
+      var boxOf = function(el) {
         var r = el.getBoundingClientRect();
         return { el: el, left: r.left, right: r.right, top: r.top - base, bottom: r.bottom - base };
-      });
+      };
+      var rows = Array.prototype.slice.call(
+        document.querySelectorAll('#resultsScreen .noct-card-action-cluster')
+      ).filter(function(el) { return el.offsetWidth > 0; }).map(boxOf);
+      // The top-bar constraint covers EVERY Results control (tier tabs, the
+      // Payment Choice button, the footer CTAs...), not only the card rows: a
+      // correction must never leave any control's edge under the bar.
+      var controls = Array.prototype.slice.call(
+        document.querySelectorAll('#resultsScreen button, #resultsScreen a[href]')
+      ).filter(function(el) { return el.offsetWidth > 0 && !el.closest('.noct-card-action-cluster'); })
+        .map(boxOf).concat(rows);
       var scrollEl = document.scrollingElement || document.documentElement;
       var cur = window.pageYOffset + base;
       var maxScroll = Math.max(0, scrollEl.scrollHeight - vh);
-      function blockedAt(d, obs) {
-        return rows.some(function(r) {
+      function blockedAt(d, obs, set) {
+        return (set || rows).some(function(r) {
           var top = r.top - d, bottom = r.bottom - d;
           if (bottom <= 0 || top >= vh) return false; // off screen: not visible, not obstructed
           return obs.some(function(o) {
@@ -24302,28 +24310,38 @@
         var p = rows.find(function(r) { return r.el === priorityRow; });
         return !p || (p.top - d >= 0 && p.bottom - d <= vh);
       }
+      window._resultsClearanceLastMode = 'clear';
       if (!blockedAt(0, bottomObs) && priorityOk(0)) return 0;
       var candidates = [];
-      rows.forEach(function(r) {
+      controls.forEach(function(r) {
         obstacles.forEach(function(o) {
           candidates.push(Math.ceil(r.bottom - o.top), Math.floor(r.top - o.bottom));
         });
         candidates.push(Math.ceil(r.bottom), Math.floor(r.top - vh));
       });
-      // Smallest move that clears every overlay; failing that (a row the
-      // customer had already scrolled under the top bar), the smallest move
-      // that clears the bottom overlays and keeps the priority row visible.
-      function pick(obs) {
+      // A candidate must clear the card rows of the bottom overlays, keep the
+      // priority row visible, and leave NO control under the top bar.
+      function valid(d, strictTop) {
+        if (d === 0 || cur + d < 0 || cur + d > maxScroll) return false;
+        if (blockedAt(d, bottomObs) || !priorityOk(d)) return false;
+        return !strictTop || !blockedAt(d, topObs, controls);
+      }
+      function pick(strictTop) {
         var best = null;
         candidates.forEach(function(d) {
-          if (d === 0 || cur + d < 0 || cur + d > maxScroll) return;
-          if (blockedAt(d, obs) || !priorityOk(d)) return;
+          if (!valid(d, strictTop)) return;
           if (best === null || Math.abs(d) < Math.abs(best)) best = d;
         });
         return best;
       }
-      var best = pick(obstacles);
-      return best !== null ? best : pick(bottomObs);
+      var best = pick(true);
+      if (best !== null) { window._resultsClearanceLastMode = 'corrected'; return best; }
+      // No single scroll satisfies both edges (not observed at the tablet
+      // viewports - see the DR-01 evidence survey): clear the bottom overlays
+      // anyway, and say so, rather than leave the tapped row under the tray.
+      best = pick(false);
+      window._resultsClearanceLastMode = best !== null ? 'bottom-only' : 'none';
+      return best;
     }
     function resultsModalOpen() {
       var drawer = document.getElementById('mattressDrawer');

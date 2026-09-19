@@ -22,7 +22,8 @@ WHAT IT PROVES, per EN/ES x tablet landscape 1194x748 / tablet portrait
          Save, the WHOLE row of the tapped control is clear, measured after
          the tray and the pill have settled, and the correction is at most
          ONE programmatic scroll (window.scrollTo is counted);
-  AC-02b the correction never parks a row under the top utility bar;
+  AC-02b a correction never leaves ANY Results control (tier tabs, card
+         actions, CTAs) within 16 px of the top utility bar - Gold and Silver;
   AC-03  reachability - at the page end no action row is covered;
   AC-04  the tray's own actions sit >= 16 px inside its top edge, and a fine
          stopped-scroll sweep (2 px steps across the tray's top-edge band)
@@ -142,6 +143,16 @@ PROBE_JS = r"""
 }
 """
 
+# Every visible Results control (tier tabs, card actions, footer CTAs...) that a
+# correction could have parked within the separation of the top utility bar.
+TOPBAR_JS = r"""
+(M) => { const u = document.getElementById('sessionUtility'); if (!u || u.hidden || !u.offsetWidth) return [];
+  const q = u.getBoundingClientRect(); const vh = innerHeight;
+  return [...document.querySelectorAll('#resultsScreen button, #resultsScreen a[href]')].filter(e => e.offsetWidth).map(e => [e, e.getBoundingClientRect()])
+    .filter(([e, r]) => r.bottom > 0 && r.top < vh && r.top < q.bottom + M && r.bottom > q.top - M && r.left < q.right + M && r.right > q.left - M)
+    .map(([e, r]) => (e.innerText || '').trim().slice(0, 20) + ' @' + Math.round(r.top)); }
+"""
+
 COUNT_SCROLLS_JS = r"""
 () => {
   if (!window.__dr01Scrolls) {
@@ -218,8 +229,9 @@ def run_context(browser, base, lang, oname, w, h):
     row_ok = page.evaluate(PROBE_JS.replace("rows.forEach((row, ri) => {", "rows.filter(r => r.querySelector('.compare-btn[data-id=\"%s\"]')).forEach((row, ri) => {" % second), MARGIN)
     check(f"{key} AC-02 second Compare (tray at two): the tapped card's whole row is clear", row_ok["badCount"] == 0, json.dumps(row_ok["bad"][:3]))
     check(f"{key} AC-02 second Compare: at most one corrective scroll", len(s) <= 1, str(s))
-    check(f"{key} AC-02b a correction ({len(s)} scroll) parks no visible row under the utility bar",
-          len(s) == 0 or p["utilBadCount"] == 0, json.dumps(p["utilBad"][:3]))
+    tb = page.evaluate(TOPBAR_JS, MARGIN)
+    check(f"{key} AC-02b a correction ({len(s)} scroll) parks no Results control within {MARGIN}px of the utility bar",
+          len(s) == 0 or not tb, json.dumps(tb[:3]))
     page.evaluate(COUNT_SCROLLS_JS)
     page.evaluate("() => { document.scrollingElement.scrollTop = 0; }")
     tap(f"#resultsScreen .finalist-btn[data-id='{best}']")
@@ -229,21 +241,23 @@ def run_context(browser, base, lang, oname, w, h):
     check(f"{key} AC-02 Choose as finalist (tray showing): the chosen card's whole row is clear", not [b for b in p["bad"] if b["top"]], json.dumps(p["bad"][:3]))
     check(f"{key} AC-02 Choose: at most one corrective scroll", len(s) <= 1, str(s))
 
-    # --- AC-01: landing positions ----------------------------------------------
-    page.evaluate(COUNT_SCROLLS_JS)
-    page.evaluate("() => { window.showSavedPicks(); }")
-    settle(300)
-    page.evaluate(COUNT_SCROLLS_JS)
-    tap("#hf2BackToMatches")
-    settle()
-    p = probe()
-    s = [x for x in scrolls() if x != 0]
-    ctxrep["entryDisplacementPx"] = p["scrollY"]
-    ctxrep["trayHeightPx"] = p["trayH"]
-    print(f"  [info] {key} entry displacement after 'Back to matches': {p['scrollY']} px (tray {p['trayH']} px)")
-    check(f"{key} AC-01 Back to matches: no visible action-row control covered or within {MARGIN}px of an overlay", p["badCount"] == 0, json.dumps(p["bad"][:3]))
-    check(f"{key} AC-01 Back to matches: the best match's row is fully visible", p["bestVisible"] is True, str(p["bestVisible"]))
-    check(f"{key} AC-01 Back to matches: at most one corrective scroll", len(s) <= 1, str(s))
+    # --- AC-01: landing positions (Gold, the default view, and Silver) --------
+    for tier in ("silver", "gold"):
+        page.evaluate("(t) => { window._setActiveResultsTier(t); window.showSavedPicks(); }", tier)
+        settle(300)
+        page.evaluate(COUNT_SCROLLS_JS)
+        tap("#hf2BackToMatches")
+        settle()
+        p = probe()
+        s = [x for x in scrolls() if x != 0]
+        tb = page.evaluate(TOPBAR_JS, MARGIN)
+        ctxrep[f"entryDisplacementPx_{tier}"] = p["scrollY"]
+        ctxrep["trayHeightPx"] = p["trayH"]
+        print(f"  [info] {key} entry displacement after 'Back to matches' ({tier}): {p['scrollY']} px (tray {p['trayH']} px)")
+        check(f"{key} AC-01 Back to matches ({tier}): no visible action-row control covered or within {MARGIN}px of the tray / pill", p["badCount"] == 0, json.dumps(p["bad"][:3]))
+        check(f"{key} AC-01 Back to matches ({tier}): the best match's row is fully visible", p["bestVisible"] is True, str(p["bestVisible"]))
+        check(f"{key} AC-01 Back to matches ({tier}): at most one corrective scroll", len(s) <= 1, str(s))
+        check(f"{key} AC-02b Back to matches ({tier}): no Results control within {MARGIN}px of the utility bar", not tb, json.dumps(tb[:3]))
 
     # View in matches (Summary -> a saved pick's own route) - one smooth scroll only
     page.evaluate("() => { window.showSavedPicks(); }")
