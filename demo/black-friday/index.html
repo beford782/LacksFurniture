@@ -8952,12 +8952,14 @@
     }
     .drawer-navigation {
       display: grid;
-      grid-template-columns: 96px minmax(54px, auto) 96px;
+      /* T3 (R18): content-sized so the ES labels never wrap the arrow. */
+      grid-template-columns: max-content minmax(54px, auto) max-content;
       align-items: center;
       gap: 8px;
     }
     .drawer-nav-btn {
       min-height: 44px; /* X12: 44px touch floor */
+      white-space: nowrap;
       padding: 8px 12px;
       border: 1px solid rgba(255,255,255,0.14);
       border-radius: 8px;
@@ -9300,7 +9302,7 @@
       }
       .drawer-navigation {
         justify-self: end;
-        grid-template-columns: 74px minmax(48px, auto) 74px;
+        grid-template-columns: max-content minmax(48px, auto) max-content;
       }
       .drawer-back-to-results,
       .drawer-nav-btn { font-size:13px; padding:8px 9px; }
