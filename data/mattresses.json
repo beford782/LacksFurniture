@@ -279,16 +279,6 @@
                      "differentiators":  [
                                              {
                                                  "title":  {
-                                                               "en":  "Cool-to-touch Breeze cover",
-                                                               "es":  "Funda Breeze fresca al tacto"
-                                                           },
-                                                 "detail":  {
-                                                                "en":  "Noticeably cooler on contact than standard TEMPUR models.",
-                                                                "es":  "Notablemente más fresco al contacto que los modelos TEMPUR estándar."
-                                                            }
-                                             },
-                                             {
-                                                 "title":  {
                                                                "en":  "Hybrid coil base",
                                                                "es":  "Base híbrida de resortes"
                                                            },
@@ -1298,14 +1288,12 @@
                                     ],
                        "tags":  [
                                     "Marvelous Middle",
-                                    "Plush",
-                                    "Side Sleeper"
+                                    "Plush"
                                 ],
                        "highlight":  "",
                        "tags_es":  [
                                        "Marvelous Middle",
-                                       "Suave",
-                                       "Para Dormir de Lado"
+                                       "Suave"
                                    ],
                        "highlight_es":  "",
                        "imageUrl":  "images/mattresses/angelina plush.jpg",
@@ -1322,8 +1310,8 @@
                                                                  "es":  "Encasado de borde de 3 pulgadas"
                                                              },
                                                    "detail":  {
-                                                                  "en":  "High-density foam rails give a bigger usable sleep surface than value plush beds.",
-                                                                  "es":  "Rieles de espuma de alta densidad dan más superficie útil que las camas suaves de valor."
+                                                                  "en":  "High-density foam rails reinforce the mattress perimeter.",
+                                                                  "es":  "Rieles de espuma de alta densidad refuerzan el perímetro del colchón."
                                                               }
                                                }
                                            ]
