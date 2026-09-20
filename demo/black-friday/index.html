@@ -23754,6 +23754,25 @@
       // and a container the previous render still fills is not cleared.
       // (Found by the privacy audit; measured after a confirmed Restart.)
       'sleepSystemMain', 'sleepSystemGuidance', 'sleepSystemRail', 'sleepSystemPlanList',
+      // Completion of that same 2026-08-21 audit (2026-09-19), measured after a
+      // confirmed Restart, after window.startOver and after idle expiry: the
+      // FIFTH Sleep System container is the only one outside the workspace and
+      // was missed. renderSleepSystemAnchor writes the finalist name, the brand
+      // and feel line and the PRODUCT PHOTOGRAPH into it - and renders the
+      // engine recommended starting point there even when no finalist was
+      // chosen, so every customer who opens this screen once fills it.
+      // renderSleepSystem rebuilds it before the screen can be seen again
+      // (showAccessories renders, then shows), which is exactly the contract of
+      // this list. No quote characters in this comment: the session suite
+      // parses the quoted ids from this block.
+      'sleepSystemAnchor',
+      // Same audit, the drawer identity header: drawerName is already above and
+      // these are the two IMAGE containers of that same header, both rewritten
+      // by renderDrawer on every open. Deliberately NOT drawerReactionRow -
+      // paintDrawerReactions only repaints buttons that already exist and never
+      // recreates them, so emptying that container here would permanently
+      // destroy the three reaction controls on the first wipe.
+      'drawerImg', 'drawerHeroImg',
       // Slice 5: every generated container on the Sleep Plan.
       'sleepPlanFinalist', 'sleepPlanPriorities', 'sleepPlanCompared', 'sleepPlanSystem',
       'sleepPlanFinancingInterest'
@@ -23773,6 +23792,15 @@
       // an answer-derived shortlist surface to wipe. Omission, not a weakened
       // wipe: the remaining answer-derived ids are unchanged.
       'drawerSystemPromptTitle', 'drawerSystemPromptReason',
+      // Wipe-inventory completion (2026-09-19): the rest of the drawer identity
+      // header, every one of them written with textContent by renderDrawer on
+      // every open - brand and sub-brand, the feel and response line, the tier
+      // badge and the trial feel line. drawerName was in the content inventory
+      // while these four, in the SAME header of the SAME element, were not; the
+      // inventory was internally inconsistent about one element. Each is
+      // written through textContent by the renderer, so the wipe clears them
+      // through the same channel.
+      'drawerBrand', 'drawerSub', 'drawerMatch', 'drawerFeelAnchor',
       'hf2LeadLine',
       'hf2FinancingStatus', 'financingSheetStatus', 'financingSheetAction',
       'sleepPlanFinancingStatus', 'sleepPlanPrioritiesRecoveryText',
