@@ -75,6 +75,11 @@ const BRIEF = ["tests/sleep_brief_presentation_check.mjs"];
 // The motion suite owns the review→Sleep Brief transition paths, including
 // the reduced-motion hardening of the retained legacy fallback (Slice 2).
 const MOTION = ["tests/motion_flag_check.mjs"];
+// g5 total omission (2026-09-20). The guard is claim_retirement_check.mjs
+// section 1b. Total omission is NOT the 2026-08-12 retirement: these entries
+// restore each of the two inputs that would resurrect an archetype-fallback
+// pair on g5, and prove the new pin is load-bearing rather than vacuous.
+const OMISSION = ["tests/claim_retirement_check.mjs"];
 // Quiz presentation observer (Slice 3, item 1.2): the quiz suite owns the
 // zero-icon ruling, the two-column grid cap, option order/skip/hide semantics,
 // selection and cap/exclusivity behaviour, the aria-pressed state contract,
@@ -2420,6 +2425,14 @@ const MUTATIONS = [
     "                                      \"pressureRelief\",\n                                      \"motionIsolation\"\n",
     "                                      \"pressureRelief\",\n                                      \"motionIsolation\",\n                                      \"memory\"\n",
     VOCAB, "data/mattresses.json"],
+  ["g5 omission: the archetype is restored (the fallback pair resurrects, putting the cooling archetype back as a differentiator TITLE)",
+    "\"subBrand\":  \"ProBreeze\",\n                     \"pitchKey\":  \"\",\n                     \"archetype\":  \"\",",
+    "\"subBrand\":  \"ProBreeze\",\n                     \"pitchKey\":  \"\",\n                     \"archetype\":  \"Cooling adaptive hybrid\",",
+    OMISSION, "data/mattresses.json"],
+  ["g5 omission: an authored differentiator pair is restored (the model stops being omitted)",
+    "\"default\":  \"Una construcci\u00f3n h\u00edbrida.\"\n                                    },\n                     \"differentiators\":  [\n\n                                         ]",
+    "\"default\":  \"Una construcci\u00f3n h\u00edbrida.\"\n                                    },\n                     \"differentiators\":  [\n                                             {\n                                                 \"title\":  {\n                                                               \"en\":  \"Hybrid coil base\",\n                                                               \"es\":  \"Base h\u00edbrida de resortes\"\n                                                           },\n                                                 \"detail\":  {\n                                                                \"en\":  \"Adds airflow.\",\n                                                                \"es\":  \"Agrega ventilaci\u00f3n.\"\n                                                            }\n                                             }\n                                         ]",
+    OMISSION, "data/mattresses.json"],
   ["vocabulary: a dormant-key declaration is deleted (hypoallergenic loses its governance record)",
     '    "hypoallergenic": ("B",',
     '    "_hypoallergenic_removed": ("B",',
