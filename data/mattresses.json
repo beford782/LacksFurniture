@@ -245,7 +245,7 @@
                      "brand":  "Tempur-Pedic",
                      "subBrand":  "ProBreeze",
                      "pitchKey":  "",
-                     "archetype":  "Cooling adaptive hybrid",
+                     "archetype":  "",
                      "displayPriority":  1,
                      "firmness":  5,
                      "firmnessLabel":  "Medium",
@@ -271,22 +271,13 @@
                      "highlight_es":  "",
                      "imageUrl":  "images/mattresses/tempur-probreeze 2.0 medium hybrid.jpg",
                      "reasons":  {
-                                     "default":  "Cool-to-the-touch Breeze cover and Pure Cool material over a hybrid coil base — cooling plus true TEMPUR pressure relief."
+                                     "default":  "A hybrid build."
                                  },
                      "reasons_es":  {
-                                        "default":  "Funda Breeze fresca al tacto y material Pure Cool sobre una base híbrida de resortes — frescura más el verdadero alivio de presión TEMPUR."
+                                        "default":  "Una construcción híbrida."
                                     },
                      "differentiators":  [
-                                             {
-                                                 "title":  {
-                                                               "en":  "Hybrid coil base",
-                                                               "es":  "Base híbrida de resortes"
-                                                           },
-                                                 "detail":  {
-                                                                "en":  "Adds airflow and a touch of responsiveness under the memory foam.",
-                                                                "es":  "Agrega ventilación y un toque de respuesta bajo la espuma viscoelástica."
-                                                            }
-                                             }
+
                                          ]
                  },
                  {
