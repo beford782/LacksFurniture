@@ -1149,6 +1149,17 @@ const REQUIRED_CONTENT_IDS = [
   // answer-derived prose; "Restart clears them" must be true of the DOM, not
   // only of the visible surfaces.
   "sleepSystemMain", "sleepSystemGuidance", "sleepSystemRail", "sleepSystemPlanList",
+  // Completion of that audit (2026-09-19). The fifth Sleep System container
+  // sits outside the workspace and was missed: renderSleepSystemAnchor writes
+  // the finalist's name, brand/feel line AND its product photograph there, and
+  // renders the engine's recommended starting point when no finalist was
+  // chosen — so it is filled by every customer who opens the screen once, not
+  // only by the ones who committed. The two drawer image containers are the
+  // rest of the drawer header whose "drawerName" is already required above.
+  // drawerReactionRow is deliberately absent: paintDrawerReactions repaints
+  // existing buttons and never recreates them, so requiring it here would
+  // demand a wipe that destroys the controls.
+  "sleepSystemAnchor", "drawerImg", "drawerHeroImg",
 ];
 const REQUIRED_TEXT_IDS = [
   "dreamCodeValue", "dreamCodePct", "emailError", "drawerNavLabel", "accStatus",
@@ -1170,6 +1181,12 @@ const REQUIRED_TEXT_IDS = [
   "resultsRevealTitle", "resultsRevealSubtitle",
   "revealCertCode", "revealCertPctNum", "revealCertScope", "revealCertExpiry",
   "revealCertTerms",
+  // Wipe-inventory completion (2026-09-19): the textContent half of the drawer
+  // identity header — brand and sub-brand, the feel/response line, the tier
+  // badge and the trial feel line. renderDrawer writes each of these with
+  // textContent on every open, so they are required in the TEXT inventory
+  // while the two image containers are required in the CONTENT one.
+  "drawerBrand", "drawerSub", "drawerMatch", "drawerFeelAnchor",
 ];
 // Also seed anything the implementation lists beyond the required set, so a
 // LARGER inventory is exercised too — but never a smaller expectation.

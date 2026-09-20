@@ -1399,6 +1399,18 @@ const MUTATIONS = [
   // live again rather than a stale manifest row that silently tests nothing.
   ["trust: the drawer's answer-derived text leaves the wipe inventory",
     "'drawerSystemPromptTitle', 'drawerSystemPromptReason',", "", TRUST.concat(["tests/session_safety_check.mjs"])],
+  // Wipe-inventory completion (2026-09-19). Both entries below are on their OWN
+  // lines precisely so the two entries above keep their find strings
+  // byte-identical and stay APPLIED. The anchor is the fifth Sleep System
+  // container (finalist name, brand/feel AND product photograph, filled even
+  // from the recommended fallback); the drawer line is the rest of the drawer
+  // identity header whose drawerName was already owned.
+  ["trust: the Sleep System anchor leaves the wipe inventory (the previous customer's finalist name and photo survive Restart)",
+    "      'sleepSystemAnchor',", "", SESSION],
+  ["trust: the drawer identity header leaves the wipe inventory (brand, feel, tier and both images survive Restart)",
+    "      'drawerBrand', 'drawerSub', 'drawerMatch', 'drawerFeelAnchor',", "", SESSION],
+  ["trust: the drawer image containers leave the wipe inventory (the previous customer's product photo survives Restart)",
+    "      'drawerImg', 'drawerHeroImg',", "", SESSION],
   ["trust: the Welcome renderer stops calling the data-use renderer (the line never renders)",
     "      renderDataUseStatement();", "      if (false) renderDataUseStatement();", TRUST],
   ["trust: the welcome data-use line ignores deployment mode (always the preview sentence)",
