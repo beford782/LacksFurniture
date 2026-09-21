@@ -3841,6 +3841,102 @@
       gap: 1rem;
       margin-bottom: 0.8rem;
     }
+    .hf2-system-total {
+      margin-top: 1rem;
+      padding-top: 0.875rem;
+      border-top: 1px solid var(--noct-rule, rgba(0,0,0,0.12));
+    }
+    .hf2-acc-card__qty {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 0.625rem;
+    }
+    .hf2-acc-card__qty-label {
+      font-size: 0.75rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      opacity: 0.7;
+      margin-right: 0.25rem;
+    }
+    .hf2-acc-card__qty-btn {
+      min-width: 44px;
+      min-height: 44px;
+      border: 1px solid var(--noct-rule, rgba(0,0,0,0.2));
+      background: transparent;
+      border-radius: 6px;
+      font-size: 1.125rem;
+      line-height: 1;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    .hf2-acc-card__qty-btn[disabled] { opacity: 0.35; cursor: default; }
+    .hf2-acc-card__qty-value {
+      min-width: 2ch;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+      font-size: 1rem;
+    }
+    .hf2-system-total__items-label {
+      font-size: 0.75rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      opacity: 0.7;
+      margin-bottom: 0.5rem;
+    }
+    .hf2-system-total__items {
+      list-style: none;
+      margin: 0 0 0.875rem;
+      padding: 0;
+    }
+    .hf2-system-total__item {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.3125rem 0;
+      font-size: 0.9375rem;
+    }
+    .hf2-system-total__item-size {
+      font-size: 0.8125rem;
+      opacity: 0.7;
+    }
+    .hf2-system-total__item-amount {
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+    .hf2-system-total__item-unresolved { opacity: 0.55; }
+    .hf2-system-total__row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .hf2-system-total__label {
+      font-weight: 600;
+      letter-spacing: 0.01em;
+    }
+    .hf2-system-total__amount {
+      font-variant-numeric: tabular-nums;
+      font-size: 1.375rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .hf2-system-total__note {
+      margin: 0.375rem 0 0;
+      font-size: 0.8125rem;
+      line-height: 1.45;
+      opacity: 0.8;
+    }
+    .hf2-system-total__pending {
+      margin: 0.5rem 0 0;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
     .hf2-review-section__hint {
       margin-top: 0.3rem;
       color: var(--color-text-muted);
@@ -8673,6 +8769,11 @@
        frames anywhere in this block. The legacy .compare-col rules above
        are retired in place (no markup emits them anymore). */
     .compare-cols > .compare-rows { grid-column: 1 / -1; }
+    .compare-size-context {
+      font-size: 0.8125rem;
+      opacity: 0.75;
+      margin: 0 0 0.75rem;
+    }
     .cmp-head-row,
     .cmp-row {
       display: grid;
@@ -11894,6 +11995,12 @@
       </div>
       <div id="hf2AccessoriesList"></div>
       <p class="hf2-review-section__hint" id="hf2SystemEmpty" hidden></p>
+      <!-- Complete-system merchandise subtotal (slice 2.2f). Rendered by
+           renderHf2SystemTotal() through the Phase 2.2 price gate; hidden and
+           emptied in every production state, and emptied by the session wipe.
+           It sits AFTER the item list (the items justify the figure) and
+           BEFORE Payment Choice (payment follows the total, never leads it). -->
+      <div class="hf2-system-total" id="hf2SystemTotal" hidden></div>
     </section>
 
     <!-- Payment Choices handoff module (Payment Choice) — the strongest
@@ -12797,29 +12904,53 @@
     function pricingCatalogRecord(m) {
       if (!m || typeof m !== 'object' || typeof m.id !== 'string') return null;
       if (m.skus && typeof m.skus === 'object') return m;
-      // An accessory record carries a single string `sku` (no sizes); the
-      // Sleep System hands the gate the catalog record itself.
+      // An accessory record carries either a single string `sku` (one product,
+      // no sizes) or an `accessorySkus` map of size -> that size's OWN sku;
+      // the Sleep System hands the gate the catalog record itself.
       if (typeof m.sku === 'string') return m;
+      if (m.accessorySkus && typeof m.accessorySkus === 'object') return m;
       var index = (typeof window === 'object' && window && window._drawerData) ? window._drawerData : null;
       var hit = index && index[m.id] && index[m.id].m;
       return (hit && typeof hit === 'object' && hit.id === m.id) ? hit : null;
     }
-    // A record is an ACCESSORY for pricing purposes when it carries a string
-    // `sku` and no per-size map; its price resolves with no size at all (the
-    // resolver refuses an accessory entry that names one).
+    // ACCESSORY SIZE VARIANTS (one family, one card, per-size purchasable
+    // variants). The retailer sells a protector as five separate products,
+    // one per mattress size, each with its OWN sku and its OWN price - the
+    // shipped catalog collapsed all five into a single ungoverned "From $"
+    // figure, which was in fact the Queen price shown to every customer.
+    //
+    // The pricing CONTRACT is unchanged and must be: validate_pricing
+    // requires `size: null` on every `productKind: "accessory"` entry. So the
+    // size is resolved on the CATALOG side, by choosing WHICH accessory sku
+    // to ask about, and the resolver query stays sizeless. `accessorySkus`
+    // is deliberately a different key from the mattress `skus` map so the
+    // two can never be confused by shape.
     function pricingIsAccessory(rec) {
-      return !!(rec && typeof rec.sku === 'string' && !(rec.skus && typeof rec.skus === 'object'));
+      if (!rec || (rec.skus && typeof rec.skus === 'object')) return false;
+      return typeof rec.sku === 'string'
+        || !!(rec.accessorySkus && typeof rec.accessorySkus === 'object');
+    }
+    function pricingCleanSku(sku) {
+      return (typeof sku === 'string' && sku.replace(/\s+/g, '').length > 0
+              && sku === sku.trim()) ? sku : null;
     }
     function pricingSkuFor(m, size) {
       var rec = pricingCatalogRecord(m);
       if (!rec) return null;
       if (pricingIsAccessory(rec)) {
-        return rec.sku.replace(/\s+/g, '').length > 0 && rec.sku === rec.sku.trim() ? rec.sku : null;
+        if (rec.accessorySkus && typeof rec.accessorySkus === 'object') {
+          // A size-varying accessory resolves ONLY for the customer's own
+          // size. No size, or a size this family is not sold in, resolves
+          // nothing - it never falls back to another size's variant, which
+          // is exactly the "From $" defect this replaces.
+          if (typeof size !== 'string' || !size) return null;
+          return pricingCleanSku(rec.accessorySkus[size]);
+        }
+        return pricingCleanSku(rec.sku);
       }
       if (!rec.skus || typeof rec.skus !== 'object') return null;
       if (typeof size !== 'string' || !size) return null;
-      var sku = rec.skus[size];
-      return (typeof sku === 'string' && sku.replace(/\s+/g, '').length > 0) ? sku : null;
+      return pricingCleanSku(rec.skus[size]);
     }
 
     // Governed, bilingual presentation copy from the pricing contract. Blank
@@ -12828,6 +12959,11 @@
       var p = getPricingConfig();
       var st = p && p.presentation && p.presentation.states;
       return (st && st[key]) ? L(st[key]) : '';
+    }
+    function pricingTotalCopy(key) {
+      var p = getPricingConfig();
+      var t = p && p.presentation && p.presentation.totals;
+      return (t && t[key]) ? L(t[key]) : '';
     }
     function pricingCopyList(kind) {
       var p = getPricingConfig();
@@ -12967,6 +13103,231 @@
       return html + '</div>';
     }
 
+    // ─── Consultation quote model (slice 2.2e — computes only, renders nothing) ───
+    // ONE shared source of truth for what the customer is buying, assembled
+    // from state the app already owns: the explicitly chosen finalist
+    // (resolveFinalistState) and the Sleep System cart (window._accCart).
+    //
+    // It is PURE and STATELESS. It reads nothing it does not own, writes
+    // nothing, stores nothing, persists nothing, and never reaches an email
+    // payload, an analytics field or Code.gs — so the gate's stateless
+    // contract holds and the session wipe still has nothing of its own to
+    // clear. It renders NOTHING: production has no caller that draws it.
+    //
+    // Every line's money comes from pricePresentationFor above and from
+    // nowhere else — never the resolver directly (the one-call-site
+    // containment pin), and never the ungoverned catalog `price` column,
+    // whose MAJOR-unit dollars must never be summed with governed MINOR
+    // units. A line therefore inherits the whole fail-closed ladder for
+    // free: off (dark, no SKU, stale, or activation-unapproved),
+    // price-unavailable (fresh and eligible but the money is inadmissible),
+    // available (admitted minor units).
+    //
+    // The aggregation rule that matters most: ONE unresolved line makes the
+    // whole merchandise amount NULL. It is never zero, never a partial sum
+    // over the lines that did resolve, and never inferred from another size.
+    // A partial total is the first thing a salesperson would read aloud, so
+    // an unknown amount must stay visibly unknown.
+    //
+    // Quantity is carried on every line and is 1 today because
+    // window._accCart is keyed BY product id — a second pillow is not
+    // representable. The field exists so that change stays additive; nothing
+    // here reads a quantity the cart cannot yet express.
+    //
+    // Double-counting the slot under the mattress is already prevented
+    // upstream: setSleepSystemItem drops any cart entry sharing the target
+    // step, and an adjustable base and a foundation share the one `base`
+    // step. A quote must not re-solve that, and must not disagree with it.
+    function quoteCartRecords() {
+      // Catalog order first, never cart insertion order, so the same
+      // selection yields the same quote however the customer built it.
+      //
+      // A cart id the catalog does NOT carry is still returned, with a null
+      // record, and still becomes a line. Dropping it would be the same
+      // dishonesty as zeroing an unknown amount: the customer selected it,
+      // it is part of the purchase, and omitting it would let an incomplete
+      // quote report a complete merchandise amount. Unknown ids are appended
+      // in sorted order so the result stays deterministic when the catalog
+      // cannot supply one.
+      var out = [];
+      var cart = (typeof window === 'object' && window && window._accCart) ? window._accCart : null;
+      if (!cart || typeof cart !== 'object') return out;
+      var seen = {};
+      var list = (typeof ACCESSORIES !== 'undefined' && Array.isArray(ACCESSORIES)) ? ACCESSORIES : [];
+      for (var i = 0; i < list.length; i++) {
+        var a = list[i];
+        if (a && typeof a.id === 'string'
+            && Object.prototype.hasOwnProperty.call(cart, a.id)
+            && !Object.prototype.hasOwnProperty.call(seen, a.id)) {
+          seen[a.id] = true;
+          out.push({ id: a.id, record: a });
+        }
+      }
+      var rest = [];
+      for (var k in cart) {
+        if (Object.prototype.hasOwnProperty.call(cart, k)
+            && !Object.prototype.hasOwnProperty.call(seen, k)) rest.push(k);
+      }
+      rest.sort();
+      for (var r = 0; r < rest.length; r++) out.push({ id: rest[r], record: null });
+      return out;
+    }
+
+    // One line. `record` is a catalog record or a projection of one; the SKU
+    // is resolved the same way every other surface resolves it, so a
+    // projection can never invent identity for a product the catalog lacks.
+    function quoteQuantityFor(kind, record) {
+      if (kind !== 'accessory') return 1;
+      var cart = (typeof window === 'object' && window && window._accCart) ? window._accCart : null;
+      var id = (record && typeof record.id === 'string') ? record.id : null;
+      var entry = (cart && id && Object.prototype.hasOwnProperty.call(cart, id)) ? cart[id] : null;
+      if (!entry || entry.quantity === undefined || entry.quantity === null) return 1;
+      var q = entry.quantity;
+      if (typeof q !== 'number' || !isFinite(q) || Math.floor(q) !== q) return null;
+      // The same per-product ceiling the setter enforces. A cart entry holding
+      // a quantity this product cannot have (hand-edited, or written by an
+      // older build) makes the LINE unresolved rather than producing a
+      // confident extended amount for a configuration nobody checked.
+      var maxForItem = 1;
+      if (typeof ACCESSORIES !== 'undefined' && Array.isArray(ACCESSORIES)
+          && typeof sleepSystemStepIdForItem === 'function') {
+        var recQ = null;
+        for (var qi = 0; qi < ACCESSORIES.length; qi++) {
+          if (ACCESSORIES[qi] && ACCESSORIES[qi].id === id) { recQ = ACCESSORIES[qi]; break; }
+        }
+        if (recQ) maxForItem = ({ pillow: 4, base: 1, protection: 1 })[sleepSystemStepIdForItem(recQ)] || 1;
+      }
+      if (q < 1 || q > maxForItem) return null;
+      return q;
+    }
+    function quoteLineFor(surface, kind, record, size, fallbackId) {
+      var pres = pricePresentationFor(surface, record, size, null);
+      // The customer's own count for this product. Absent (a mattress, or a
+      // cart entry written before quantities existed) means one. A quantity
+      // outside the admitted range is NOT clamped - it makes the line
+      // unresolved, because a purchase whose count we cannot trust must not
+      // produce a confident extended amount.
+      var qty = quoteQuantityFor(kind, record);
+      var qtyOk = qty !== null;
+      if (!qtyOk) qty = 1;
+      var admitted = qtyOk && pres.state === 'available'
+        && priceMoneyValid(pres.amountMinor, pres.currency);
+      var reason = admitted ? null
+        : (!qtyOk ? 'invalid-quantity'
+          : record === null ? 'no-catalog-record'
+          : (pres.state === 'price-unavailable' ? 'price-unavailable' : 'not-resolved'));
+      return {
+        kind: kind,
+        productId: (record && typeof record.id === 'string') ? record.id
+          : ((typeof fallbackId === 'string' && fallbackId) ? fallbackId : null),
+        sku: pricingSkuFor(record, size),
+        size: kind === 'mattress' ? ((typeof size === 'string' && size) ? size : null) : null,
+        quantity: qty,
+        state: pres.state,
+        resolved: admitted,
+        reason: reason,
+        currency: admitted ? pres.currency : null,
+        unitAmountMinor: admitted ? pres.amountMinor : null,
+        extendedAmountMinor: admitted ? pres.amountMinor * qty : null
+      };
+    }
+
+    // The quote. `size` is supplied by the caller (priceSizeAnswer stays the
+    // single size source and keeps its pinned call count). Returns a closed
+    // record in every state and throws for no input.
+    function buildConsultationQuote(surface, size) {
+      var lines = [];
+      if (typeof resolveFinalistState === 'function') {
+        var st = resolveFinalistState();
+        var finalist = (st && st.kind === 'chosen') ? st.item : null;
+        if (finalist) lines.push(quoteLineFor(surface, 'mattress', finalist, size));
+      }
+      var accs = quoteCartRecords();
+      for (var i = 0; i < accs.length; i++) {
+        lines.push(quoteLineFor(surface, 'accessory', accs[i].record, size, accs[i].id));
+      }
+      var currency = null;
+      var sum = 0;
+      var resolvedCount = 0;
+      var allResolved = lines.length > 0;
+      for (var j = 0; j < lines.length; j++) {
+        var ln = lines[j];
+        if (!ln.resolved) { allResolved = false; continue; }
+        // Defence in depth, and DELIBERATELY not carried by a mutation-sweep
+        // entry: this mismatch branch is unreachable today and a sweep entry
+        // for it would be vacuous. Currency uniformity is already enforced
+        // twice upstream — the resolver admits an entry only when its
+        // currency equals the contract currency, and priceMoneyValid admits
+        // only the governed set (PRICE_CURRENCIES, 'USD' alone) — so two
+        // admitted lines cannot disagree. The guard stays because widening
+        // PRICE_CURRENCIES would make it reachable immediately, and summing
+        // across currencies is the failure it must never become.
+        if (currency === null) currency = ln.currency;
+        else if (ln.currency !== currency) { allResolved = false; continue; }
+        sum += ln.extendedAmountMinor;
+        resolvedCount++;
+      }
+      // The sum re-enters the SAME admission every single amount passed, so
+      // an overflowing or out-of-range merchandise amount is unresolved
+      // rather than clamped, wrapped or silently shown.
+      var merchandiseMinor = (allResolved && priceMoneyValid(sum, currency)) ? sum : null;
+      // Whether a mattress is part of this purchase is a FACT ABOUT THE
+      // QUOTE, not something a consumer should infer from the line list.
+      // Without it, an accessories-only cart reports status 'complete' and a
+      // consumer rendering "the complete system" would present a protector's
+      // price as the whole consultation. The caller that renders a
+      // complete-system amount must require hasMattress.
+      var hasMattress = false;
+      for (var h = 0; h < lines.length; h++) {
+        if (lines[h].kind === 'mattress') { hasMattress = true; break; }
+      }
+      return {
+        surface: surface,
+        size: (typeof size === 'string' && size) ? size : null,
+        lines: lines,
+        hasMattress: hasMattress,
+        lineCount: lines.length,
+        resolvedCount: resolvedCount,
+        currency: merchandiseMinor === null ? null : currency,
+        status: lines.length === 0 ? 'empty'
+          : (merchandiseMinor === null ? 'unresolved' : 'complete'),
+        merchandiseMinor: merchandiseMinor
+      };
+    }
+
+    // The plan-specific QUALIFYING PURCHASE AMOUNT. Deliberately NOT an alias
+    // for the merchandise subtotal, and deliberately not interchangeable
+    // with it.
+    //
+    // A published minimum is measured against an amount whose basis the
+    // LENDER defines: whether tax, delivery and setup count toward it,
+    // whether excluded categories come out of it, whether it means the
+    // initial purchase or the account balance. No configured plan publishes
+    // that basis today — the repository's financing verification record
+    // captures plan minimums but not what they are measured against — so
+    // treating the merchandise subtotal AS
+    // the qualifying amount would present a plan the customer may not
+    // qualify for. That is precisely the failure the runtime-transaction-
+    // amount ruling in tools/validation.py exists to prevent.
+    //
+    // So a plan assesses a threshold only when it DECLARES the basis it
+    // measures. 'merchandise-subtotal' is the one basis this version can
+    // compute; an unsupported or absent declaration yields no amount, and
+    // the threshold axis stays 'unknown' — which is the truth.
+    var QUOTE_QUALIFYING_BASES = ['merchandise-subtotal'];
+    function quoteQualifyingAmount(quote, plan) {
+      var declared = (plan && typeof plan.qualifyingBasis === 'string') ? plan.qualifyingBasis : '';
+      if (!declared) return { amountMinor: null, basis: 'undeclared' };
+      if (QUOTE_QUALIFYING_BASES.indexOf(declared) === -1) {
+        return { amountMinor: null, basis: 'unsupported' };
+      }
+      if (!quote || quote.status !== 'complete'
+          || !priceMoneyValid(quote.merchandiseMinor, quote.currency)) {
+        return { amountMinor: null, basis: declared };
+      }
+      return { amountMinor: quote.merchandiseMinor, basis: declared };
+    }
+
     // Slice 2.2d — calculation / threshold STATUS copy beside Payment Choice.
     // Payment Choice is where a plan is in view, and the price is grounded on
     // the same screen (the surface the sheet was opened from). For each plan
@@ -12989,12 +13350,33 @@
       var st = resolveFinalistState();
       var finalist = (st && st.kind === 'chosen') ? st.item : null;
       if (!finalist) return '';
-      var pres = pricePresentationFor(surface, finalist, priceSizeAnswer(), { planId: planId });
+      var size = priceSizeAnswer();
+      // The qualifying purchase amount is the COMPLETE consultation — the
+      // chosen finalist plus the Sleep System — and never one product's
+      // price. `A single product price is NEVER the qualifying purchase
+      // amount for a financing plan minimum` (the runtime-transaction-amount
+      // ruling in tools/validation.py), so the threshold axis is handed the
+      // merchandise amount when the whole quote resolves, and NOTHING when
+      // any line is unresolved — an unknown purchase must assess as
+      // 'unknown', never as a partial sum that could clear a minimum the
+      // real purchase does not.
+      var quote = buildConsultationQuote(surface, size);
+      var qualifying = quoteQualifyingAmount(quote, plan);
+      var pres = pricePresentationFor(surface, finalist, size, {
+        planId: planId,
+        transactionAmountMinor: qualifying.amountMinor === null ? undefined : qualifying.amountMinor
+      });
       if (pres.state !== 'available') return '';
       var lines = [];
       if (pres.calculation === 'quote-only') lines.push(pricingStateCopy('quote-only'));
-      if (pres.threshold === 'unknown' && plan && typeof plan.minimumPurchase === 'number') {
-        lines.push(pricingStateCopy('threshold-unknown'));
+      // Below-minimum is its own state. 'met' deliberately says NOTHING: a
+      // met minimum is not credit approval, and copy implying it would be
+      // the one claim this surface must never make. 'not-met' is the
+      // customer-relevant fact — this purchase does not reach the published
+      // minimum — and is governed copy like every other state.
+      if (plan && typeof plan.minimumPurchase === 'number') {
+        if (pres.threshold === 'unknown') lines.push(pricingStateCopy('threshold-unknown'));
+        else if (pres.threshold === 'not-met') lines.push(pricingStateCopy('threshold-not-met'));
       }
       var html = '';
       for (var i = 0; i < lines.length; i++) {
@@ -13002,6 +13384,202 @@
       }
       return html;
     }
+    // Slice 2.2f - the COMPLETE-SYSTEM merchandise subtotal, on the one screen
+    // that already reconciles the mattress and the Sleep System.
+    //
+    // Deliberately only here. The Sleep System screen is pinned against
+    // composing a total, and the Sleep Plan cannot carry one honestly because
+    // renderSleepPlanSystem lists pillow and protection groups only - a base
+    // the customer chose never appears there, so a total on that screen would
+    // total items the customer cannot see.
+    //
+    // What it will NOT say: there is no order total and no "all-in" figure.
+    // The kiosk holds no tax, delivery or setup facts, so the governed copy
+    // states in the customer's own language that this is merchandise only.
+    // A quote that is not complete shows the governed `incomplete` line and
+    // NO number - never a partial sum.
+    // A line's display name. For an accessory the catalog record carries a
+    // bilingual name; for a mattress the saved projection carries a plain one.
+    // A line whose product the catalog does not carry shows its own id rather
+    // than inventing a name.
+    function quoteLineName(ln) {
+      if (!ln || typeof ln.productId !== 'string') return '';
+      var rec = null;
+      if (typeof ACCESSORIES !== 'undefined' && Array.isArray(ACCESSORIES)) {
+        for (var i = 0; i < ACCESSORIES.length; i++) {
+          if (ACCESSORIES[i] && ACCESSORIES[i].id === ln.productId) { rec = ACCESSORIES[i]; break; }
+        }
+      }
+      if (!rec && typeof window === 'object' && window && window._drawerData) {
+        var hit = window._drawerData[ln.productId];
+        if (hit && hit.m) rec = hit.m;
+      }
+      if (rec && rec.name) return L(rec.name);
+      return ln.productId;
+    }
+    // The customer's own words for a size, from the quiz copy they answered
+    // with - never a raw id like `cal_king`. Reuses the app's existing
+    // answer-label resolver rather than restating the quiz shape here; the
+    // typeof guard keeps the extracted-module sandboxes runnable.
+    function sizeLabelFor(sizeId) {
+      if (typeof answerLabelFor !== 'function') return '';
+      return answerLabelFor('mattress_size', sizeId) || '';
+    }
+    function renderHf2SystemTotal() {
+      var box = document.getElementById('hf2SystemTotal');
+      if (!box) return;
+      var off = function () {
+        box.hidden = true;
+        box.innerHTML = '';
+        box.removeAttribute('data-total-state');
+      };
+      var p = getPricingConfig();
+      if (!p || p.enabled !== true || p.displayEnabled !== true
+          || !pricingSurfaceEnabled('handoff')) return off();
+      var quote = buildConsultationQuote('handoff', priceSizeAnswer());
+      // An accessories-only cart is not the complete system, and a quote with
+      // no line at all has nothing to total.
+      if (quote.lineCount === 0 || !quote.hasMattress) return off();
+      // Nothing resolved at all means the gate is shut for this customer -
+      // dark, stale, activation-unapproved or emergency-disabled. Those
+      // states reach NO surface, not even to say a subtotal is unavailable,
+      // so the slot stays silent. The 'incomplete' copy is for the case
+      // that genuinely is incomplete: the gate is live, some lines priced,
+      // and at least one did not.
+      if (quote.resolvedCount === 0) return off();
+      var label = pricingTotalCopy('merchandise-label');
+      if (!label) return off();
+      // ITEMISATION. A figure the customer cannot reconcile is not
+      // understandable, so every line that makes up the subtotal is listed
+      // with its own identity, its applicable size, its quantity and its
+      // extended amount. The mattress and every selected accessory appear -
+      // including the base, which the Sleep Plan omits - so the arithmetic is
+      // checkable on screen rather than asserted.
+      var itemsHtml = '';
+      var lineLabel = pricingTotalCopy('line-label');
+      for (var li = 0; li < quote.lines.length; li++) {
+        var ln = quote.lines[li];
+        var nm = quoteLineName(ln);
+        if (!nm) continue;
+        var ext = ln.resolved ? formatPriceAmount(ln.extendedAmountMinor, ln.currency) : '';
+        var qty = (typeof ln.quantity === 'number' && ln.quantity > 1)
+          ? ' \u00d7 ' + ln.quantity : '';
+        var sz = ln.size ? sizeLabelFor(ln.size) : '';
+        itemsHtml += '<li class="hf2-system-total__item">'
+          + '<span class="hf2-system-total__item-name">' + escapeHtml(nm)
+          + (sz ? ' <span class="hf2-system-total__item-size">' + escapeHtml(sz) + '</span>' : '')
+          + escapeHtml(qty) + '</span>'
+          + '<span class="hf2-system-total__item-amount">'
+          + (ext ? escapeHtml(ext)
+                 : '<span class="hf2-system-total__item-unresolved">\u2014</span>')
+          + '</span></li>';
+      }
+      var html = '';
+      if (itemsHtml) {
+        html += (lineLabel
+          ? '<div class="hf2-system-total__items-label">' + escapeHtml(lineLabel) + '</div>'
+          : '')
+          + '<ul class="hf2-system-total__items">' + itemsHtml + '</ul>';
+      }
+      if (quote.status === 'complete') {
+        var text = formatPriceAmount(quote.merchandiseMinor, quote.currency);
+        if (!text) return off();
+        html += '<div class="hf2-system-total__row">'
+          + '<span class="hf2-system-total__label">' + escapeHtml(label) + '</span>'
+          + '<span class="hf2-system-total__amount">' + escapeHtml(text) + '</span>'
+          + '</div>';
+        var excl = pricingTotalCopy('excludes');
+        if (excl) html += '<p class="hf2-system-total__note">' + escapeHtml(excl) + '</p>';
+        box.setAttribute('data-total-state', 'complete');
+      } else {
+        var inc = pricingTotalCopy('incomplete');
+        if (!inc) return off();
+        html += '<div class="hf2-system-total__row">'
+          + '<span class="hf2-system-total__label">' + escapeHtml(label) + '</span>'
+          + '</div>'
+          + '<p class="hf2-system-total__note">' + escapeHtml(inc) + '</p>';
+        box.setAttribute('data-total-state', 'incomplete');
+      }
+      // WHERE THE AMOUNTS CAME FROM. Illustrative fixture amounts and
+      // website-sourced amounts are different claims and carry different
+      // sentences; the contract supplies whichever is true for this build.
+      var provenance = pricingTotalCopy('provenance');
+      if (provenance) {
+        html += '<p class="hf2-system-total__pending">' + escapeHtml(provenance) + '</p>';
+      }
+      box.innerHTML = html;
+      box.hidden = false;
+    }
+
+    // Slice 2.2h - the SAME-SIZE purchase-price difference between two
+    // finalists, for the comparison surface.
+    //
+    // Both sides are priced at the customer's OWN size through the same gate,
+    // so the comparison is like-for-like by construction; there is no path
+    // here that compares one size against another. If either side does not
+    // resolve, the difference row is omitted entirely - a difference computed
+    // from one known and one unknown price is not a difference.
+    //
+    // The framing is deliberate. The row states the amount and which model
+    // carries it, and nothing else: no "only", no "just", no suggestion that
+    // the dearer bed is the better one. The customer already chose the feel;
+    // this row tells them what that choice costs.
+    function compareRowsFor(mA, mB) {
+      var size = priceSizeAnswer();
+      var pa = pricePresentationFor('compare', mA, size, null);
+      var pb = pricePresentationFor('compare', mB, size, null);
+      if (pa.state === 'off' && pb.state === 'off') return [];
+      var priceLabel = pricingTotalCopy('compare-price-label');
+      if (!priceLabel) return [];
+      var rows = [{ key: 'price', label: priceLabel,
+                    a: pa.text || '\u2014', b: pb.text || '\u2014' }];
+      if (pa.state === 'available' && pb.state === 'available'
+          && typeof pa.amountMinor === 'number' && typeof pb.amountMinor === 'number') {
+        var diff = Math.abs(pa.amountMinor - pb.amountMinor);
+        var diffLabel = pricingTotalCopy('compare-difference-label');
+        if (diffLabel) {
+          if (diff === 0) {
+            var same = formatPriceAmount(0, pa.currency);
+            rows.push({ key: 'pricediff', label: diffLabel,
+                        a: pricingSameAmountText(), b: pricingSameAmountText() });
+          } else {
+            var txt = formatPriceAmount(diff, pa.currency);
+            if (txt) {
+              // the amount sits on the side that carries it; the cheaper side
+              // shows a dash rather than a claim about being better value
+              // Signed, so the direction is unmistakable: the dearer bed
+              // reads "+$200" and the other reads a dash. No "only", and no
+              // implication that either direction is the better choice.
+              var aHigher = pa.amountMinor > pb.amountMinor;
+              var signed = '+' + txt;
+              rows.push({ key: 'pricediff', label: diffLabel,
+                          a: aHigher ? signed : '\u2014',
+                          b: aHigher ? '\u2014' : signed });
+            }
+          }
+        }
+      }
+      return rows;
+    }
+    // Both sides at the same amount: say so in words rather than rendering
+    // "$0.00", which reads as a price.
+    function pricingSameAmountText() {
+      return currentLang === 'es' ? 'Igual' : 'Same';
+    }
+
+    // "Comparing Queen mattresses." Both columns are priced at the customer's
+    // own size, and saying so removes the guess. Hidden when the size question
+    // has no answer - an unstated size is better than a wrong one.
+    function renderCompareSizeContext() {
+      var el = document.getElementById('compareSizeContext');
+      if (!el) return;
+      var size = priceSizeAnswer();
+      var label = size ? sizeLabelFor(size) : '';
+      if (!label) { el.hidden = true; el.textContent = ''; return; }
+      el.textContent = t('compare.size_context', { size: label });
+      el.hidden = false;
+    }
+
     // ═══ END PHASE 2.2 PRICE PRESENTATION GATE ═══
 
     // Financing copy accessor (config copy block, language-aware).
@@ -17059,6 +17637,11 @@
           accessories_viewed: { itemsShown: 'num', entryStep: 'step' },
           sleep_system_item_selected: { step: 'step' },
           sleep_system_item_removed: { step: 'step' },
+          // A count of one product in the plan. `num` is the aggregate
+          // classifier: the quantity is a small integer about the PURCHASE,
+          // never about the customer, and itemId stays undeclared (and so
+          // dropped) exactly as it is for select/remove.
+          sleep_system_item_quantity: { quantity: 'num' },
           sleep_system_step_viewed: { step: 'step' },
           sleep_system_decision_recorded: { step: 'step', status: 'decisionStatus' },
           official_financing_link_click: fin, mexico_financing_details_open: fin,
@@ -21178,17 +21761,39 @@
       } else if (stepId === 'base' && shouldSelect) {
         window._sleepSystemState.supportChoice = '';
       }
-      // One product per STEP: on the combined base step an adjustable base
-      // and a foundation now displace each other, as they share the one
-      // physical slot under the mattress.
-      Object.keys(window._accCart || {}).forEach(function(id) {
+      // STEP CAPACITY, not "one product per step". The base step holds ONE
+      // item because an adjustable base and a foundation share the single
+      // physical slot under the mattress. The PILLOW step holds TWO, because
+      // two people sleep in the bed and they do not have to want the same
+      // pillow - the single most common real configuration the old
+      // one-per-step rule could not express. Selecting past the capacity
+      // evicts the OLDEST item in that step, so the newest choice always
+      // survives and the customer is never silently blocked.
+      // How many DISTINCT products each customer-facing step holds at once.
+      // Declared here rather than at module scope because the renderer test
+      // sandboxes compile this function in isolation.
+      var CAPACITY = { base: 1, pillow: 2, protection: 1 };
+      var cap = CAPACITY[stepId] || 1;
+      var inStep = Object.keys(window._accCart || {}).filter(function(id) {
         var existing = ACCESSORIES.find(function(accessory) { return accessory.id === id; });
-        if (existing && sleepSystemStepIdForItem(existing) === stepId) delete window._accCart[id];
+        return existing && sleepSystemStepIdForItem(existing) === stepId;
       });
       if (shouldSelect) {
+        // the item being (re)selected never evicts itself
+        inStep = inStep.filter(function(id) { return id !== itemId; });
+        while (inStep.length >= cap) delete window._accCart[inStep.shift()];
+      } else {
+        delete window._accCart[itemId];
+      }
+      if (shouldSelect) {
         var scored = scoreAccessoriesFromAnswers().find(function(accessory) { return accessory.id === itemId; });
+        var priorQty = (window._accCart[itemId] && typeof window._accCart[itemId].quantity === 'number')
+          ? window._accCart[itemId].quantity : 1;
         window._accCart[itemId] = {
           id: itemId,
+          // How many of THIS product. Re-selecting an item keeps the quantity
+          // the customer already set rather than silently resetting it to one.
+          quantity: priorQty,
           name: typeof item.name === 'object' ? item.name.en : item.name,
           category: sleepSystemCategory(item),
           imageUrl: item.image || '',
@@ -21208,6 +21813,50 @@
       syncAccessoryAnalytics();
       renderSleepSystem();
     }
+
+    // Set how many of one selected product the customer wants. Bounded and
+    // integral: a quantity is a count of things in a bed, so 1-4 covers every
+    // real configuration (two pillows each for a couple) and anything outside
+    // that is refused rather than clamped silently. Changing a quantity never
+    // re-runs scoring and never touches any other item.
+    function setSleepSystemItemQuantity(itemId, quantity) {
+      // HOW MANY IS APPROPRIATE DEPENDS ON THE PRODUCT.
+      //
+      //   pillow      up to 4 - two people, and some people sleep with two.
+      //   base        1. One bed has one thing under the mattress. A SPLIT
+      //               configuration genuinely needs two bases, but a split is
+      //               a different PRODUCT CONFIGURATION with its own
+      //               compatibility rules (two twin-XL bases under a king,
+      //               matched remotes, a split-compatible mattress). Letting
+      //               someone press "+" to 2 would silently imply a valid
+      //               split setup that nothing here has checked. Splits are
+      //               out of scope until they are modelled explicitly.
+      //   protection  1. A protector is sized to the mattress; a second one
+      //               of the same size is not a configuration, it is a
+      //               duplicate, and its SIZE variant is what matters.
+      //
+      // Inlined rather than module-scope because the renderer test sandboxes
+      // compile this function in isolation.
+      var STEP_MAX_QTY = { pillow: 4, base: 1, protection: 1 };
+      var _qItem = (typeof ACCESSORIES !== 'undefined' && Array.isArray(ACCESSORIES))
+        ? ACCESSORIES.find(function(a) { return a && a.id === itemId; }) : null;
+      var _qStep = (_qItem && typeof sleepSystemStepIdForItem === 'function')
+        ? sleepSystemStepIdForItem(_qItem) : null;
+      var SLEEP_SYSTEM_MAX_QTY = (_qStep && STEP_MAX_QTY[_qStep]) || 1;
+      if (typeof itemId !== 'string' || !itemId) return false;
+      var cart = window._accCart || {};
+      if (!Object.prototype.hasOwnProperty.call(cart, itemId)) return false;
+      var q = Number(quantity);
+      if (!isFinite(q) || Math.floor(q) !== q) return false;
+      if (q < 1 || q > SLEEP_SYSTEM_MAX_QTY) return false;
+      if (cart[itemId].quantity === q) return true;
+      cart[itemId].quantity = q;
+      analytics.log('sleep_system_item_quantity', { itemId: itemId, quantity: q });
+      syncAccessoryAnalytics();
+      renderSleepSystem();
+      return true;
+    }
+    window.setSleepSystemItemQuantity = setSleepSystemItemQuantity;
 
     function moveSleepSystemStep(direction) {
       var index = SLEEP_SYSTEM_STEPS.findIndex(function(step) {
@@ -21983,6 +22632,10 @@
       renderHf2Priorities();
       renderHf2Picks();
       renderHf2Accessories();
+      // The subtotal is derived from the same selection the list above shows,
+      // so it repaints in the same pass. typeof-guarded like every other
+      // gate consumer, so the sandboxed renderer suites stay runnable.
+      if (typeof renderHf2SystemTotal === 'function') renderHf2SystemTotal();
       renderHf2DiscountButton();
       renderHf2SendButton();
       renderHf2RsaStrip();
@@ -22695,6 +23348,48 @@
             + (currentLang === 'es' ? 'Quitar del plan' : 'Remove from plan') + '</button>';
       card.appendChild(actions);
 
+      // HOW MANY. A visible control on the card the customer is already
+      // looking at: two pillows for a couple is a real configuration, and it
+      // has to be changeable by hand, not only by us. Minus is disabled at 1
+      // (removing is the Remove control's job, not a silent side effect of
+      // stepping down) and plus is disabled at the maximum, so the customer
+      // is never left pressing a button that does nothing.
+      if (!secondary) {
+        var cartEntry = (window._accCart || {})[item.id];
+        // No stepper where more than one is not a real configuration: a base
+        // or a protector shows no control at all rather than a control that
+        // refuses every press. Splits are not expressible here by design.
+        var _stepId = (typeof sleepSystemStepIdForItem === 'function')
+          ? sleepSystemStepIdForItem(item) : null;
+        var _maxHere = ({ pillow: 4, base: 1, protection: 1 })[_stepId] || 1;
+        if (cartEntry && _maxHere > 1) {
+          var qty = (typeof cartEntry.quantity === 'number' && cartEntry.quantity >= 1)
+            ? cartEntry.quantity : 1;
+          var esq = currentLang === 'es';
+          var stepper = document.createElement('div');
+          stepper.className = 'hf2-acc-card__qty';
+          var nameForLabel = nameText || item.id;
+          stepper.innerHTML =
+            '<span class="hf2-acc-card__qty-label" id="qtyLbl-' + escapeHtml(item.id) + '">'
+              + escapeHtml(esq ? 'Cantidad' : 'Quantity') + '</span>'
+            + '<button type="button" class="hf2-acc-card__qty-btn"'
+              + ' aria-label="' + escapeHtml((esq ? 'Quitar uno: ' : 'One fewer: ') + nameForLabel) + '"'
+              + (qty <= 1 ? ' disabled' : '')
+              + ' onclick="window.changeReviewAccessoryQuantity(\'' + item.id + '\', -1)"'
+              + ' ontouchend="event.preventDefault();window.changeReviewAccessoryQuantity(\'' + item.id + '\', -1);">'
+              + '\u2212</button>'
+            + '<output class="hf2-acc-card__qty-value" aria-live="polite"'
+              + ' aria-labelledby="qtyLbl-' + escapeHtml(item.id) + '">' + qty + '</output>'
+            + '<button type="button" class="hf2-acc-card__qty-btn"'
+              + ' aria-label="' + escapeHtml((esq ? 'Agregar uno: ' : 'One more: ') + nameForLabel) + '"'
+              + (qty >= _maxHere ? ' disabled' : '')
+              + ' onclick="window.changeReviewAccessoryQuantity(\'' + item.id + '\', 1)"'
+              + ' ontouchend="event.preventDefault();window.changeReviewAccessoryQuantity(\'' + item.id + '\', 1);">'
+              + '+</button>';
+          card.appendChild(stepper);
+        }
+      }
+
       return card;
     }
 
@@ -22705,6 +23400,19 @@
 
     window.removeReviewAccessory = function(itemId) {
       setSleepSystemItem(itemId, false);
+      renderHf2();
+    };
+
+    // Step a quantity from the Summary. Delta-based so the control cannot
+    // request a value it did not compute from the current one; the setter
+    // refuses anything outside 1-4, and a refused step simply repaints.
+    window.changeReviewAccessoryQuantity = function(itemId, delta) {
+      var entry = (window._accCart || {})[itemId];
+      if (!entry) return;
+      var current = (typeof entry.quantity === 'number' && entry.quantity >= 1) ? entry.quantity : 1;
+      if (typeof setSleepSystemItemQuantity === 'function') {
+        setSleepSystemItemQuantity(itemId, current + delta);
+      }
       renderHf2();
     };
 
@@ -23691,7 +24399,7 @@
       'supportingRow', 'resultsTrialFocus',
       'drawerName', 'drawerDifferentiators', 'dfmConstructionSection', 'drawerTryPrompts', 'drawerPromotionDetail',
       'compareCols', 'compareTraySlots',
-      'hf2PicksList', 'hf2AccessoriesList', 'hf2BriefWho',
+      'hf2PicksList', 'hf2AccessoriesList', 'hf2SystemTotal', 'hf2BriefWho',
       'hf2BriefProfile', 'hf2SleepSystemSection', 'hf2Priorities',
       // Slice 4 (D4): every financing container built from customer state.
       // The sheet cards carry the disclosure panels and the Consider/Clear
@@ -23784,6 +24492,11 @@
       { id: 'privacyOverlay', remove: ['visible'] },
       { id: 'compareModal', remove: ['visible'], display: 'none' },
       { id: 'compareTray', display: 'none' },
+      // The complete-system subtotal is derived, never stored - but the DOM
+      // it last wrote is a previous customer's purchase. wipeLayer only
+      // toggles classes/attrs/display, so the CONTENT is cleared by name in
+      // the innerHTML list below; this entry re-hides the slot.
+      { id: 'hf2SystemTotal', hiddenAttr: true },
       { id: 'discountRevealOverlay', remove: ['fade-out'], add: ['hidden'], display: 'none' },
       { id: 'revealCert', remove: ['is-visible'] },
       { id: 'resultsRevealOverlay', remove: ['is-visible', 'is-quick'], display: 'none',
@@ -24218,7 +24931,10 @@
       // color alone. All values come from existing vetted derivations; the
       // Key feature row restores the differentiator TITLE the old columns
       // dropped, and Why it helps carries its DETAIL.
-      function sideData(data) {
+      // `exactPrices` is passed in rather than read from an enclosing
+      // binding: the renderer test sandboxes compile these functions in
+      // isolation, so each one must stand alone.
+      function sideData(data, exactPrices) {
         var m = data.m;
         var _esCmp = currentLang === 'es';
         var _tierNames = _esCmp ? {gold:'Oro',silver:'Plata',bronze:'Bronce'} : {gold:'Gold',silver:'Silver',bronze:'Bronze'};
@@ -24241,7 +24957,15 @@
         return {
           head: '<div class="cmp-head" role="columnheader">'
             + (m.imageUrl ? '<div class="cmp-head-img"><img src="' + m.imageUrl + '" alt="' + escapeHtml(m.name) + '"></div>' : '')
-            + '<div class="cmp-head-name">' + escapeHtml(m.name) + ' <span class="price-tier">' + priceTierSymbol(data.tier) + '</span></div>'
+            + '<div class="cmp-head-name">' + escapeHtml(m.name)
+              // The $$$ band is a TIER indicator, not a price. Once an exact
+              // purchase price renders in this same table it becomes a second,
+              // contradictory price signal - two Gold beds both read "$$$"
+              // beside $1,399 and $1,599. So it yields to the exact figure.
+              // The tier itself is untouched: the Tier row still names it, and
+              // scoring and tier assignment never see this.
+              + (exactPrices ? '' : ' <span class="price-tier">' + priceTierSymbol(data.tier) + '</span>')
+              + '</div>'
             + '<div class="cmp-head-brand">' + escapeHtml(m.brand + (m.subBrand ? ' · ' + m.subBrand : '')) + '</div>'
             + '</div>',
           feel: data.firmFeel + ' ' + m.firmness + '/10',
@@ -24255,7 +24979,14 @@
       }
       function rowsHtml(d1, d2) {
         var _esCmp = currentLang === 'es';
-        var a = sideData(d1), b = sideData(d2);
+        // Resolve the price rows BEFORE the column heads, so a head can tell
+        // whether an exact price is about to appear beneath it.
+        var _priceRows = (typeof compareRowsFor === 'function')
+          ? compareRowsFor(d1.m, d2.m) : [];
+        var _exact = _priceRows.some(function(r) {
+          return r.key === 'price' && (r.a !== '\u2014' || r.b !== '\u2014');
+        });
+        var a = sideData(d1, _exact), b = sideData(d2, _exact);
         var sameTag = _esCmp ? 'Igual en ambos' : 'Same for both';
         var rows = [
           { key: 'feel', label: _esCmp ? 'Sensación' : 'Feel', a: a.feel, b: b.feel },
@@ -24268,6 +24999,11 @@
           { key: 'benefit', label: _esCmp ? 'En qué ayuda' : 'Why it helps', a: a.benefit, b: b.benefit, emphasis: true },
           { key: 'reaction', label: _esCmp ? 'Tu reacción' : 'Your reaction', a: a.reaction, b: b.reaction }
         ];
+        // Slice 2.2h: the purchase-price row and the same-size difference sit
+        // BELOW feel and response - the fit comparison leads, the money
+        // follows it. The builder returns [] in every production state, so
+        // these templates emit exactly what they emitted before.
+        for (var _pr = 0; _pr < _priceRows.length; _pr++) rows.push(_priceRows[_pr]);
         // Claim retirement (2026-08-12): retired vs retired has no
         // differentiator content on either side — omit both rows entirely
         // rather than rendering an all-empty "— · Same for both" pair.
@@ -24312,6 +25048,9 @@
           currentLang === 'es' ? 'Cerrar comparación' : 'Close comparison');
       }
       document.getElementById('compareCols').innerHTML = rowsHtml(m1, m2);
+      // typeof-guarded like every other gate consumer: the compare-modal
+      // test sandbox compiles this renderer without the gate block.
+      if (typeof renderCompareSizeContext === 'function') renderCompareSizeContext();
       var modal = document.getElementById('compareModal');
       // Capture the exact opener BEFORE moving focus, so close can hand
       // focus straight back to it.
@@ -24464,6 +25203,11 @@
         <button class="compare-modal-close" id="compareModalClose" onclick="window.closeCompareModal()"
           ontouchend="event.preventDefault();window.closeCompareModal();">&times;</button>
       </div>
+      <!-- The size every column is priced at. Compare is only ever
+           like-for-like, and saying which size makes that visible rather
+           than assumed. Filled by renderCompareSizeContext(); blank when the
+           customer has not answered the size question. -->
+      <div class="compare-size-context" id="compareSizeContext" hidden></div>
       <div class="compare-cols" id="compareCols"></div>
     </div>
   </div>

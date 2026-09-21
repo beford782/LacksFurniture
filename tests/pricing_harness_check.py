@@ -148,15 +148,18 @@ for state in srv.STATES:
     built[state] = (cfg, cat, v, acc)
     mattress_entries = [e for e in cfg["pricing"]["products"] if e["productKind"] == "mattress"]
     accessory_entries = [e for e in cfg["pricing"]["products"] if e["productKind"] == "accessory"]
+    FIXTURE_DRILL = state != "website"
     check(f"{state}: one FIXTURE price per shipped accessory (productKind accessory, no size), SKUs matching the injected accessory catalog",
+          True if not FIXTURE_DRILL else
           [e["productId"] for e in accessory_entries] == ACC_IDS
           and all(e["size"] is None and e["sku"] == srv.fixture_sku(e["productId"])
                   and e["clearance"]["scope"]["productKind"] == "accessory" and e["clearance"]["scope"]["size"] is None
                   and e["clearance"]["scope"]["sku"] == e["sku"] for e in accessory_entries)
           and [a["id"] for a in acc] == ACC_IDS and all(a["sku"] == srv.fixture_sku(a["id"]) for a in acc))
     check(f"{state}: the injected accessory catalog differs from production ONLY by the sku",
-          all({k: v_ for k, v_ in a.items() if k != "sku"} == p for a, p in zip(acc, ACCESSORIES))
-          and all("sku" not in p for p in ACCESSORIES))
+          True if not FIXTURE_DRILL else
+          (all({k: v_ for k, v_ in a.items() if k != "sku"} == p for a, p in zip(acc, ACCESSORIES))
+           and all("sku" not in p for p in ACCESSORIES)))
     check(f"{state}: financing validates clean (stamps shifted, exact-term output OFF)",
           v["financing_ok"] and cfg["financing"]["exactPromotionsEnabled"] is False,
           "; ".join(v["financing_errors"][:2]))
@@ -185,6 +188,7 @@ for state in srv.STATES:
               cfg["pricing"]["displayEnabled"] is True
               and all(x is True for x in cfg["pricing"]["surfaces"].values()))
     check(f"{state}: one queen price per shipped mattress, ids and SKUs matching the injected catalog",
+          True if not FIXTURE_DRILL else
           [e["productId"] for e in mattress_entries] == ALL_IDS
           and all(e["size"] == "queen" and e["sku"] == srv.fixture_sku(e["productId"])
                   and e["clearance"]["scope"]["sku"] == e["sku"]
@@ -193,10 +197,62 @@ for state in srv.STATES:
           and all(m["skus"] == {"queen": srv.fixture_sku(m["id"])}
                   for tier in srv.TIER_ORDER for m in cat.get(tier, [])))
     check(f"{state}: every attestation, approval and verification string is a FIXTURE placeholder",
+          True if not FIXTURE_DRILL else
           all("FIXTURE" in e["evidence"]["verifiedBy"] and "FIXTURE" in e["clearance"]["attestedBy"]
               for e in cfg["pricing"]["products"])
           and all("FIXTURE" in a["by"] for a in cfg["pricing"]["presentation"]["approvals"].values()
                   if a["status"] == "approved"))
+    if state == "website":
+        import urllib.parse as _up
+        hosts = srv._load(os.path.join(srv.REPO, "tools", "source_hosts.json"))["priceSourceHosts"]
+        prods = cfg["pricing"]["products"]
+        check("website: at least one real extracted price is served",
+              len(prods) > 0, f"{len(prods)} products")
+        # The PRICES and the CUSTOMER-FACING COPY must carry no fixture
+        # placeholder - they are real extracted money and real sentences. The
+        # GOVERNANCE approvals must still say they are placeholders, because
+        # they are: nobody has approved anything. Conflating the two would
+        # either label real prices as fixture data or dress a placeholder
+        # approval up as a real one.
+        pres = cfg["pricing"]["presentation"]
+        customer_facing = json.dumps([cfg["pricing"]["products"], pres["totals"],
+                                      pres["states"], pres["assumptions"],
+                                      pres["disclosures"]])
+        check("website: no FIXTURE placeholder in the prices or the customer-facing copy",
+              "FIXTURE" not in customer_facing,
+              "a FIXTURE string leaked into website-sourced material")
+        approvals = [a["by"] for a in pres["approvals"].values()] + [
+            cfg["pricing"]["authority"]["owner"],
+            cfg["pricing"]["freshness"]["approvedBy"],
+            cfg["pricing"]["sourcePolicy"]["approvedBy"]]
+        check("website: every GOVERNANCE approval still declares itself a placeholder",
+              all("FIXTURE" in a or "placeholder" in a.lower() for a in approvals if a),
+              "; ".join(a for a in approvals if a)[:140])
+        check("website: every price cites a real product page on an allowlisted host",
+              all(e["evidence"]["sourceUrl"].startswith("https://")
+                  and (_up.urlparse(e["evidence"]["sourceUrl"]).hostname or "").lower() in hosts
+                  and "/product/" in e["evidence"]["sourceUrl"] for e in prods))
+        check("website: every attestation says the verification is PENDING, never claims one",
+              all("PENDING OWNER VERIFICATION" in e["evidence"]["verifiedBy"]
+                  and "PENDING OWNER VERIFICATION" in e["clearance"]["attestedBy"] for e in prods))
+        check("website: the provenance copy names the website and the pending status",
+              "Website prices" in cfg["pricing"]["presentation"]["totals"]["provenance"]["en"]
+              and "pending verification" in cfg["pricing"]["presentation"]["totals"]["provenance"]["en"])
+        check("website: every served sku traces to a catalog record that names it",
+              all(any(m.get("skus", {}).get(e["size"]) == e["sku"]
+                      for t in srv.TIER_ORDER for m in cat.get(t, []))
+                  for e in prods if e["productKind"] == "mattress"))
+        check("website: NO accessory carries a fixture sku (a total may never mix sources)",
+              all("sku" not in a or not str(a.get("sku", "")).startswith("FIXTURE") for a in acc))
+        check("website: every amount is a positive integer in USD minor units",
+              all(isinstance(e["price"]["amountMinor"], int)
+                  and e["price"]["amountMinor"] > 0
+                  and e["price"]["currency"] == "USD" for e in prods))
+        cov = v.get("websiteCoverage") or {}
+        check("website: the drill reports its own coverage, including what it rejected",
+              isinstance(cov.get("mattressSizes"), list)
+              and isinstance(cov.get("mattressRejected"), list))
+
     strip = lambda c: {k: v_ for k, v_ in c.items() if k not in ("pricing", "financing")}
     check(f"{state}: every non-pricing, non-financing key deep-equals production", strip(cfg) == strip(PROD))
     check(f"{state}: catalog differs from production ONLY by the injected skus maps",
@@ -806,6 +862,20 @@ def rendered():
                     for lang in ("en", "es"):
                         tag = f"{state} {name} {lang}"
                         r = walk(browser, port, lang, "queen", w, h)
+                        if state == "website":
+                            # The website drill prices only the subset with
+                            # sufficient evidence, so the fixture walk's
+                            # "every card shows an amount" contract does not
+                            # apply. Its own contract: real money renders, no
+                            # FIXTURE text anywhere, and the page is clean.
+                            blob = json.dumps(r)
+                            check(f"{tag}: at least one REAL extracted price renders",
+                                  (r.get("resultsSlots") or 0) > 0 or "$" in blob, blob[:160])
+                            check(f"{tag}: no FIXTURE placeholder renders anywhere on the walk",
+                                  "FIXTURE" not in blob)
+                            check(f"{tag}: no page errors", not r.get("errors"),
+                                  "; ".join(r.get("errors", [])[:2]))
+                            continue
                         # The restored contract (Codex correction 2026-09-09):
                         # stale and activation-unapproved are INERT — every
                         # surface OFF, exactly like dark and disabled; only the

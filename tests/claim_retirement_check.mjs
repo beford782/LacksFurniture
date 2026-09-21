@@ -54,7 +54,7 @@ function grab(re, what) {
 section("extraction");
 const DIFFS_FN = grab(/function mattressDifferentiators\(m\) \{[\s\S]*?\r?\n    \}/, "mattressDifferentiators()");
 const DRAWER_BLOCK = grab(/var _diffItems = mattressDifferentiators\(m\);[\s\S]*?\.join\(''\);/, "the drawer differentiator render block");
-const SIDEDATA_FN = grab(/function sideData\(data\) \{[\s\S]*?\r?\n      \}/, "sideData()");
+const SIDEDATA_FN = grab(/function sideData\(data, exactPrices\) \{[\s\S]*?\r?\n      \}/, "sideData()");
 const ROWSHTML_FN = grab(/function rowsHtml\(d1, d2\) \{[\s\S]*?\r?\n      \}/, "rowsHtml()");
 const PRIORITIES_FN = grab(/function buildMattressPriorities\(m\) \{[\s\S]*?\r?\n    \}/, "buildMattressPriorities()");
 const HF2_LABELS = grab(/var HF2_ARCHETYPE_LABELS = \{[\s\S]*?\};/, "HF2_ARCHETYPE_LABELS");

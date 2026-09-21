@@ -25,6 +25,7 @@ docs/*
 !docs/accessory-catalog-copy-packet-2026-08-30.md
 !docs/asset-request-north-star-2026-08-31.md
 !docs/phase2-2-disabled-incorporation.md
+!docs/phase2-2e-quote-model.md
 !docs/production-readiness-gaps-2026-09-09.md
 !docs/daybreak-promo-muted-lines-2026-09-09.md
 !docs/production-readiness-candidate-2026-09-09.md
@@ -39,3 +40,5 @@ __pycache__/
 
 # Manual-gate evidence (screenshots from the physical iPad / Windows passes) - never committed
 outputs/manual-gates/
+demo/price-snapshot/.cache/
+demo/price-snapshot/snapshot.partial.json

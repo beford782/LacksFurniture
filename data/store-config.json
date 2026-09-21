@@ -442,7 +442,8 @@
       "sleepSystem": false,
       "results": false,
       "handoff": false,
-      "sleepPlan": false
+      "sleepPlan": false,
+      "compare": false
     },
     "presentation": {
       "status": "unapproved",
