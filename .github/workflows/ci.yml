@@ -385,6 +385,17 @@ jobs:
       - name: rendered layout (Plan four viewports + Summary + forced-colors)
         run: python tests/sleep_plan_layout_check.py
 
+      # DR-01 (design review 2026-09-18, owner decision 2026-09-19). The
+      # compare tray is fixed to the viewport bottom and used to hide the best
+      # match's whole action row on every Results entry with two models
+      # selected (a tap on "Compare" landed on the tray's "Clear"). Rendered,
+      # EN/ES x both tablet orientations: landing positions and commit moments
+      # clear of the tray and lifted pill (one correction at most), page end
+      # reachable, the tray's actions 16px inside its top edge, and a 2px
+      # stopped-scroll sweep across that edge.
+      - name: compare tray clearance (rendered, EN/ES x both orientations)
+        run: python tests/compare_tray_clearance_check.py
+
       # Phase 0.5, server side. The first suite to EXECUTE Code.gs (whole-file
       # load, four recorder stubs): safeData projection, HTML email order and
       # escaping, the full plain-text body on BOTH sends (the normal email's

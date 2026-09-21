@@ -186,6 +186,9 @@ const SESSION = ["tests/session_safety_check.mjs"];
 const SLEEP = ["tests/sleep_system_presentation_check.mjs"];
 // The rendered layout check (Chromium) - the observer of geometry.
 const LAYOUT = ["tests/sleep_plan_layout_check.py"];
+// DR-01: the rendered compare-tray clearance check (Chromium) - the observer
+// of the tray / pill / action-row geometry on every Results path.
+const TRAY = ["tests/compare_tray_clearance_check.py"];
 // A4.3 observers: the reduction suite owns the counts, the absence, the
 // Summary retirement and the conditional-answer invariant; the
 // quiz-presentation suite owns navigation and progress; the consultation
@@ -3117,6 +3120,30 @@ const MUTATIONS = [
     "ROBOTS_TXT = b\"User-agent: *\\nDisallow: /\\n\"",
     "ROBOTS_TXT = b\"User-agent: *\\nDisallow:\\n\"",
     PRICING_HARNESS, "tools/serve_pricing_preview.py"],
+  // --- DR-01 (design review 2026-09-18, owner decision 2026-09-19) ----------
+  // The compare tray must never hide the best match's action row. Each
+  // protected path has its own mutation; the rendered clearance check is the
+  // only observer that renders a tray, so it is named explicitly.
+  ["DR-01: Results entry stops checking tray clearance (Back to matches lands under the tray)",
+    "      if (id === 'resultsScreen' && typeof window._ensureResultsClearance === 'function') {",
+    "      if (false && id === 'resultsScreen' && typeof window._ensureResultsClearance === 'function') {",
+    TRAY, "index.html"],
+  ["DR-01: the Compare commit moment stops clearing the tapped row",
+    "        window._ensureResultsClearance(window._resultsActionRowFor('.compare-btn[data-id=\"' + mattressId + '\"]'));",
+    "        void 0;",
+    TRAY, "index.html"],
+  ["DR-01: closing the drawer stops re-checking clearance",
+    "      if (wasOpen && !immediate && typeof window._ensureResultsClearance === 'function') {",
+    "      if (false && wasOpen && !immediate && typeof window._ensureResultsClearance === 'function') {",
+    TRAY, "index.html"],
+  ["DR-01: the top-bar constraint covers card rows only (a correction can park a tier tab under the bar)",
+    "        .map(boxOf).concat(rows);",
+    "        .map(boxOf).filter(function() { return false; }).concat(rows);",
+    TRAY, "index.html"],
+  ["DR-01: the tray's actions drop back to 13px inside its top edge (no fingertip dead margin)",
+    "      padding: 1rem 1rem 0.75rem;\n      z-index: 60;",
+    "      padding: 0.75rem 1rem;\n      z-index: 60;",
+    TRAY, "index.html"],
 ];
 
 // ---------------------------------------------------------------------------

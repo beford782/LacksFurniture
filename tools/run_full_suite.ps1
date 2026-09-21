@@ -193,8 +193,8 @@ $powerShellExecutable = Resolve-DreamFinderProgram -Candidates @(
     'powershell'
 ) -Label 'PowerShell (pwsh preferred; the Codex-bundled pwsh or Windows PowerShell 5.1 accepted)'
 
-# Mirror of the `verify` job in .github/workflows/ci.yml, in CI order: 56 checks
-# plus the mutation sweep = 57. (The CI job's display name, "Full suite (18
+# Mirror of the `verify` job in .github/workflows/ci.yml, in CI order: 57 checks
+# plus the mutation sweep = 58. (The CI job's display name, "Full suite (18
 # checks)", is a legacy label pinned by branch protection; do not trust its
 # number.) When ci.yml gains or loses a `run: node|python ...` step, change
 # this list in the same PR so the local mirror stays complete.
@@ -231,6 +231,7 @@ $checks = @(
     @{ Name = 'consultation priorities'; Exe = $nodeExecutable; Args = @('tests/consultation_priorities_check.mjs') },
     @{ Name = 'sleep plan'; Exe = $nodeExecutable; Args = @('tests/sleep_plan_check.mjs') },
     @{ Name = 'rendered layout (Plan four viewports + Summary + forced-colors)'; Exe = $pythonExecutable; Args = @('tests/sleep_plan_layout_check.py') },
+    @{ Name = 'compare tray clearance (rendered, EN/ES x both orientations)'; Exe = $pythonExecutable; Args = @('tests/compare_tray_clearance_check.py') },
     @{ Name = 'email priorities'; Exe = $nodeExecutable; Args = @('tests/email_priorities_check.mjs') },
     @{ Name = 'consultation summary'; Exe = $nodeExecutable; Args = @('tests/consultation_summary_check.mjs') },
     @{ Name = 'motion spike flag gate and gather'; Exe = $nodeExecutable; Args = @('tests/motion_flag_check.mjs') },

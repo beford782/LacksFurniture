@@ -8478,7 +8478,12 @@
       background: var(--color-surface);
       border-top: 1px solid var(--color-border);
       box-shadow: 0 -12px 40px rgba(55,40,28,0.16);
-      padding: 0.75rem 1rem;
+      /* DR-01 (AC-04): Results cards scroll beneath this top edge, so the
+         tray's own actions (Clear, Compare ->) sit at least 16px inside it -
+         a finger aimed at a half-covered card button just above the tray
+         lands on inert tray padding, never on Clear. Was 0.75rem (12px + the
+         1px border = 13px). Bottom padding unchanged. */
+      padding: 1rem 1rem 0.75rem;
       z-index: 60;
       animation: compareTraySlide 0.25s ease-out;
     }
@@ -15681,6 +15686,19 @@
       // A true screen transition owns the first question render that follows
       // it (startQuiz, Review -> Edit, Review -> Back); see afterQuestionChange.
       if (!sameScreen && typeof noteQuestionScreenEntered === 'function') noteQuestionScreenEntered();
+      // DR-01: an entry to Results (first arrival, "Back to matches", "View in
+      // matches") with the compare tray showing gets ONE clearance check,
+      // AFTER scroll and focus so nothing later undoes it. The best match is
+      // the row that must end fully visible. Guarded like the helpers above:
+      // session_safety_check.mjs runs this function in a bare sandbox.
+      // A pending "View in matches" scroll belongs to Results only: any other
+      // destination (including the new-customer wipe, which also clears the
+      // timer that would have released it) drops the flag.
+      if (id !== 'resultsScreen') window._resultsScrollTargetPending = false;
+      if (id === 'resultsScreen' && typeof window._ensureResultsClearance === 'function') {
+        window._ensureResultsClearance(typeof window._resultsActionRowFor === 'function'
+          ? window._resultsActionRowFor('#topPickContainer .compare-btn') : null);
+      }
     }
 
     // ----- START QUIZ -----
@@ -17811,6 +17829,12 @@
         ? ''
         : (currentLang === 'es' ? 'Más opciones para comparar' : 'More directions to compare');
       renderSupportingCards(supports, tier);
+      // DR-01: a re-render IN PLACE (tier switch, language switch - ES labels
+      // wrap and the tray's chips can grow) keeps the customer's scroll when
+      // clearance passes and corrects it once when it does not. A render made
+      // before showScreen() is a no-op here (Results not yet active); the
+      // entry check in showScreen() covers that path.
+      if (typeof window._ensureResultsClearance === 'function') window._ensureResultsClearance(null);
     }
 
     window._setActiveResultsTier = function(tier) {
@@ -17885,6 +17909,11 @@
 
       if (typeof window._updatePicksBadge === 'function') window._updatePicksBadge();
       if (analytics) analytics.log('save_pick_toggle', { mattressId: mattressId, tier: foundTier, saved: willBeSaved });
+      // DR-01 commit moment (AC-02). A no-op while the drawer is open (its
+      // own Save path) - the drawer's close re-checks Results instead.
+      if (typeof window._ensureResultsClearance === 'function' && typeof window._resultsActionRowFor === 'function') {
+        window._ensureResultsClearance(window._resultsActionRowFor('#save-' + mattressId));
+      }
     };
 
     // ---- "Choose as finalist" — the explicit finalist PRODUCER (R-1) -------
@@ -17906,6 +17935,10 @@
       if (window._favoriteMattressId === mattressId) return;
       window._favoriteMattressId = mattressId;
       if (typeof window._repaintFinalistControls === 'function') window._repaintFinalistControls();
+      // DR-01 commit moment (AC-02): the chosen card's whole action row.
+      if (typeof window._ensureResultsClearance === 'function') {
+        window._ensureResultsClearance(window._resultsActionRowFor('.finalist-btn[data-id="' + mattressId + '"]'));
+      }
     };
     function finalistButtonLabel(isChosen) {
       return isChosen ? t('finalist.chosen_btn') : t('finalist.choose_as');
@@ -21906,13 +21939,27 @@
       if (!_resultsState || !mattressId || !tier) return;
       _resultsState.activeTier = tier;
       _renderResults();
+      // DR-01: this path makes its own (single, smooth) scroll to the card, so
+      // the entry check in showScreen() stands down and the clearance is
+      // folded INTO that one scroll below - never a second jump.
+      window._resultsScrollTargetPending = true;
       showScreen('resultsScreen');
       sessionTimeout(function() {
+        window._resultsScrollTargetPending = false;
         var card = document.querySelector(
           '.noct-toppick[data-id="' + mattressId + '"], .noct-support-card[data-id="' + mattressId + '"]'
         );
         if (!card) return;
-        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Same target scrollIntoView({block: 'center'}) chose, plus whatever
+        // correction keeps this card's action row clear of the tray.
+        var cr = card.getBoundingClientRect();
+        var scrollEl = document.scrollingElement || document.documentElement;
+        var maxY = Math.max(0, scrollEl.scrollHeight - window.innerHeight);
+        var target = Math.min(maxY, Math.max(0, Math.round(window.pageYOffset + cr.top + cr.height / 2 - window.innerHeight / 2)));
+        var row = card.querySelector('.noct-card-action-cluster');
+        var extra = (typeof window._resultsClearanceDelta === 'function')
+          ? window._resultsClearanceDelta(row, target - window.pageYOffset) : 0;
+        window.scrollTo({ top: Math.min(maxY, Math.max(0, target + (extra || 0))), behavior: 'smooth' });
         card.classList.add('review-return-highlight');
         sessionTimeout(function() { card.classList.remove('review-return-highlight'); }, 1400);
       }, 80);
@@ -24157,6 +24204,12 @@
         btn.setAttribute('aria-pressed', on ? 'true' : 'false');
       });
       window.updateCompareTray();
+      // DR-01 commit moment (AC-02): measured only now, after the tray AND the
+      // pill (lifted by _updatePicksBadge inside updateCompareTray) have
+      // settled their layout; the whole row just tapped must stay clear.
+      if (typeof window._ensureResultsClearance === 'function') {
+        window._ensureResultsClearance(window._resultsActionRowFor('.compare-btn[data-id="' + mattressId + '"]'));
+      }
     };
 
     window.updateCompareTray = function() {
@@ -24191,6 +24244,162 @@
       // labels render (the ES chips wrap and change the tray's height).
       if (typeof window._updatePicksBadge === 'function') window._updatePicksBadge();
     };
+
+    // DR-01 (design review 2026-09-18, packet v2.1 AC-01/AC-02, owner decision
+    // 2026-09-19): the compare tray is fixed to the bottom of the viewport and
+    // the C2 first fold puts the best match's action row in the last ~57px of
+    // a landscape tablet (at the fold line in portrait), so every entry to
+    // Results with two models selected - including "Back to matches" - hid the
+    // whole row, and a tap from memory landed on the tray's Clear. Rather than
+    // recompose C2, Results keeps its layout and, after any path that can leave
+    // it with a bottom overlay showing, makes ONE instant scroll correction if
+    // (and only if) a visible action row is obstructed. Clearance passing ->
+    // nothing moves, so an existing scroll position is preserved.
+    //
+    // Geometry is read from LAYOUT, never from the in-flight animation: the
+    // tray slides in with a transform and the lifted pill transitions its
+    // `bottom`, so getBoundingClientRect() at a commit moment would report
+    // where they are mid-animation, not where they come to rest.
+    var RESULTS_OVERLAY_MARGIN = 16; // proposed fingertip allowance; provisional until the iPad pass
+    function resultsBottomOverlayRects() {
+      var vw = document.documentElement.clientWidth || window.innerWidth;
+      var vh = window.innerHeight;
+      var rects = [];
+      var tray = document.getElementById('compareTray');
+      var trayH = (tray && tray.style.display === 'block') ? tray.offsetHeight : 0;
+      if (trayH > 0) rects.push({ left: 0, right: vw, top: vh - trayH, bottom: vh });
+      // The Selections pill counts only while it is LIFTED above the tray
+      // (X1); its resting-position overlap with the card row is DR-02's lane
+      // change. Its resting place mirrors the CSS exactly:
+      // .noct-picks-pill { right: 1rem } and .noct-picks-pill--lifted
+      // { bottom: calc(1rem + var(--df-tray-clearance) + 8px) }.
+      var pill = document.getElementById('savedPicksBtn');
+      if (trayH > 0 && pill && pill.classList.contains('noct-picks-pill--lifted') && pill.offsetWidth > 0) {
+        var rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+        var pBottom = vh - (rem + trayH + 8);
+        var pRight = vw - rem;
+        rects.push({ left: pRight - pill.offsetWidth, right: pRight, top: pBottom - pill.offsetHeight, bottom: pBottom });
+      }
+      return rects;
+    }
+    function resultsTopOverlayRects() {
+      var u = document.getElementById('sessionUtility');
+      if (!u || u.hidden || u.offsetWidth === 0) return [];
+      var r = u.getBoundingClientRect();
+      return [{ left: r.left, right: r.right, top: r.top, bottom: r.bottom }];
+    }
+    // The scroll correction (in px, positive = page scrolls down) that leaves
+    // no VISIBLE action row within RESULTS_OVERLAY_MARGIN of any overlay, at
+    // a hypothetical extra offset `base` from the current position. A
+    // `priorityRow` (the row just tapped, or the best match on entry) must
+    // additionally end fully inside the viewport. Returns 0 when clearance
+    // already passes, or null when no single correction can satisfy it.
+    // Only the BOTTOM overlays (tray, lifted pill) can trigger a correction -
+    // that is DR-01's scope. The top utility bar is a CONSTRAINT: a correction
+    // must not park a row under it (AC-02b), but a row that scrolled under it
+    // on its own is DR-03's concern and never moves the page here.
+    function resultsClearanceDelta(priorityRow, base) {
+      base = base || 0;
+      var vh = window.innerHeight;
+      var m = RESULTS_OVERLAY_MARGIN;
+      var grow = function(o) { return { left: o.left - m, right: o.right + m, top: o.top - m, bottom: o.bottom + m }; };
+      var bottomObs = resultsBottomOverlayRects().map(grow);
+      if (!bottomObs.length) return 0;
+      var topObs = resultsTopOverlayRects().map(grow);
+      var obstacles = bottomObs.concat(topObs);
+      var boxOf = function(el) {
+        var r = el.getBoundingClientRect();
+        return { el: el, left: r.left, right: r.right, top: r.top - base, bottom: r.bottom - base };
+      };
+      var rows = Array.prototype.slice.call(
+        document.querySelectorAll('#resultsScreen .noct-card-action-cluster')
+      ).filter(function(el) { return el.offsetWidth > 0; }).map(boxOf);
+      // The top-bar constraint covers EVERY Results control (tier tabs, the
+      // Payment Choice button, the footer CTAs...), not only the card rows: a
+      // correction must never leave any control's edge under the bar.
+      var controls = Array.prototype.slice.call(
+        document.querySelectorAll('#resultsScreen button, #resultsScreen a[href]')
+      ).filter(function(el) { return el.offsetWidth > 0 && !el.closest('.noct-card-action-cluster'); })
+        .map(boxOf).concat(rows);
+      var scrollEl = document.scrollingElement || document.documentElement;
+      var cur = window.pageYOffset + base;
+      var maxScroll = Math.max(0, scrollEl.scrollHeight - vh);
+      function blockedAt(d, obs, set) {
+        return (set || rows).some(function(r) {
+          var top = r.top - d, bottom = r.bottom - d;
+          if (bottom <= 0 || top >= vh) return false; // off screen: not visible, not obstructed
+          return obs.some(function(o) {
+            return top < o.bottom && bottom > o.top && r.left < o.right && r.right > o.left;
+          });
+        });
+      }
+      function priorityOk(d) {
+        if (!priorityRow) return true;
+        var p = rows.find(function(r) { return r.el === priorityRow; });
+        return !p || (p.top - d >= 0 && p.bottom - d <= vh);
+      }
+      window._resultsClearanceLastMode = 'clear';
+      if (!blockedAt(0, bottomObs) && priorityOk(0)) return 0;
+      var candidates = [];
+      controls.forEach(function(r) {
+        obstacles.forEach(function(o) {
+          candidates.push(Math.ceil(r.bottom - o.top), Math.floor(r.top - o.bottom));
+        });
+        candidates.push(Math.ceil(r.bottom), Math.floor(r.top - vh));
+      });
+      // A candidate must clear the card rows of the bottom overlays, keep the
+      // priority row visible, and leave NO control under the top bar.
+      function valid(d, strictTop) {
+        if (d === 0 || cur + d < 0 || cur + d > maxScroll) return false;
+        if (blockedAt(d, bottomObs) || !priorityOk(d)) return false;
+        return !strictTop || !blockedAt(d, topObs, controls);
+      }
+      function pick(strictTop) {
+        var best = null;
+        candidates.forEach(function(d) {
+          if (!valid(d, strictTop)) return;
+          if (best === null || Math.abs(d) < Math.abs(best)) best = d;
+        });
+        return best;
+      }
+      var best = pick(true);
+      if (best !== null) { window._resultsClearanceLastMode = 'corrected'; return best; }
+      // No single scroll satisfies both edges (not observed at the tablet
+      // viewports - see the DR-01 evidence survey): clear the bottom overlays
+      // anyway, and say so, rather than leave the tapped row under the tray.
+      best = pick(false);
+      window._resultsClearanceLastMode = best !== null ? 'bottom-only' : 'none';
+      return best;
+    }
+    function resultsModalOpen() {
+      var drawer = document.getElementById('mattressDrawer');
+      var cmp = document.getElementById('compareModal');
+      var fin = document.getElementById('financingSheet');
+      var safety = document.getElementById('sessionSafetyDialog');
+      return !!((drawer && drawer.classList.contains('drawer-open'))
+        || (cmp && cmp.style.display !== 'none' && cmp.offsetWidth > 0)
+        || (fin && !fin.hidden)
+        || (safety && !safety.hidden));
+    }
+    // One correction per call, instant (no smooth scroll, so reduced motion is
+    // unaffected); a second call finds clearance passing and does nothing, so
+    // coalesced hooks can never produce a second jump.
+    window._ensureResultsClearance = function(priorityRow) {
+      var screen = document.getElementById('resultsScreen');
+      if (!screen || !screen.classList.contains('active')) return 0;
+      if (resultsModalOpen()) return 0;
+      if (window._resultsScrollTargetPending) return 0; // "View in matches" owns its own single scroll
+      var d = resultsClearanceDelta(priorityRow || null, 0);
+      if (!d) return 0;
+      window.scrollTo(0, window.pageYOffset + d);
+      return d;
+    };
+    window._resultsClearanceDelta = resultsClearanceDelta;
+    function resultsActionRowFor(selector) {
+      var btn = document.querySelector('#resultsScreen ' + selector);
+      return btn ? btn.closest('.noct-card-action-cluster') : null;
+    }
+    window._resultsActionRowFor = resultsActionRowFor;
 
     window.clearCompare = function() {
       window._compareSelected = [];
@@ -24861,6 +25070,13 @@
         // now inert and hidden. Blur back to the document rather than pulling
         // focus into the Results card being torn down.
         document.activeElement.blur();
+      }
+      // DR-01: closing the drawer keeps the exact Results scroll when
+      // clearance passes (D-S3) and corrects it once when the kept position
+      // leaves a visible action row under the tray. Not on the reset path
+      // (immediate), which is leaving Results altogether.
+      if (wasOpen && !immediate && typeof window._ensureResultsClearance === 'function') {
+        window._ensureResultsClearance(null);
       }
     };
 
