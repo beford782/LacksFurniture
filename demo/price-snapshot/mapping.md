@@ -6,7 +6,7 @@ Identity evidence, owner verification and production activation are three separa
 
 > **SKU evidence:** The app catalog ships no SKU. The 2026-07-30 discovery file supplies a QUEEN SKU per product as a LEAD; where that exact SKU is still present in the current snapshot it is recorded as a direct identity link. Historical prices are never reused and no other size's SKU is ever inferred.
 
-Prices observed 2026-09-20T23:27:23+00:00 -> 2026-09-20T23:29:07+00:00; this mapping generated 2026-09-21T01:01:04+00:00. Owner-verified rows loaded: 0.
+Prices observed 2026-09-20T23:27:23+00:00 -> 2026-09-21T22:40:22+00:00; this mapping generated 2026-09-21T22:58:27+00:00. Owner-verified rows loaded: 0.
 
 | status | meaning |
 |---|---|
@@ -33,16 +33,16 @@ Prices observed 2026-09-20T23:27:23+00:00 -> 2026-09-20T23:29:07+00:00; this map
 
 ### g2 — The Saint Pierre (Chattam & Wells / Saint Pierre, Plush)
 
-⚠️ 5, 🔎 1
+⚠️ 4, 🔎 2
 
 | size | status | sku | selling | website name | evidence |
 |---|---|---|---|---|---|
-| twin | ⚠️ 5 | | |  | website SKU 1748187 is claimed by 5 app products (g2:twin, g2:twin_xl, g2:full, g2:king, g2:cal_king); one SKU identifies one product-size, so none of them is resolved |
-| twin_xl | ⚠️ 5 | | |  | website SKU 1748187 is claimed by 5 app products (g2:twin, g2:twin_xl, g2:full, g2:king, g2:cal_king); one SKU identifies one product-size, so none of them is resolved |
-| full | ⚠️ 5 | | |  | website SKU 1748187 is claimed by 5 app products (g2:twin, g2:twin_xl, g2:full, g2:king, g2:cal_king); one SKU identifies one product-size, so none of them is resolved |
+| twin | ⚠️ 2 | | | Chattam & Wells™ Princess Saint Pierre; Chattam & Wells™ Princess Saint Pierre |  |
+| twin_xl | ⚠️ 2 | | | Chattam & Wells™ Princess Saint Pierre; Chattam & Wells™ Princess Saint Pierre |  |
+| full | ⚠️ 2 | | | Chattam & Wells™ Princess Saint Pierre; Chattam & Wells™ Princess Saint Pierre |  |
 | queen | 🔎 | `2031583` | $5,999.00 | Chattam & Wells™ The Saint Pierre 16.5" Plush Euro-Top Queen Mattress | [product-page](https://www.lacks.com/product/chattam-wells-the-saint-pierre-165-plush-euro-top-queen-mattress-1606-302-mz877sa50-2031583) |
-| king | ⚠️ 5 | | |  | website SKU 1748187 is claimed by 5 app products (g2:twin, g2:twin_xl, g2:full, g2:king, g2:cal_king); one SKU identifies one product-size, so none of them is resolved |
-| cal_king | ⚠️ 5 | | |  | website SKU 1748187 is claimed by 5 app products (g2:twin, g2:twin_xl, g2:full, g2:king, g2:cal_king); one SKU identifies one product-size, so none of them is resolved |
+| king | 🔎 | `1748187` | $9,599.99 | Chattam & Wells™ Princess Saint Pierre 16.5" Wrapped Coil Ultra Plush Euro Top King Mattress | [product-page](https://www.lacks.com/product/chattam-wells-princess-saint-pierre-165-wrapped-coil-ultra-plush-euro-top-queen-mattress-m2064c-1748187) |
+| cal_king | ⚠️ 2 | | | Chattam & Wells™ Princess Saint Pierre; Chattam & Wells™ Princess Saint Pierre |  |
 
 ### g3 — The Palermo (Chattam & Wells / Palermo, Firm)
 
@@ -50,9 +50,9 @@ Prices observed 2026-09-20T23:27:23+00:00 -> 2026-09-20T23:29:07+00:00; this map
 
 | size | status | sku | selling | website name | evidence |
 |---|---|---|---|---|---|
-| twin | ⚠️ 2 | | | Chattam & Wells™ Princess Palermo 14" ; Chattam & Wells™ Princess Palermo 14"  |  |
-| twin_xl | ⚠️ 2 | | | Chattam & Wells™ Princess Palermo 14" ; Chattam & Wells™ Princess Palermo 14"  |  |
-| full | ⚠️ 2 | | | Chattam & Wells™ Princess Palermo 14" ; Chattam & Wells™ Princess Palermo 14"  |  |
+| twin | ⚠️ 3 | | | Chattam & Wells™ Princess Palermo 14" ; Chattam & Wells™ Princess Palermo 14" ; Chattam & Wells™ Princess Palermo 14"  |  |
+| twin_xl | ⚠️ 4 | | | Chattam & Wells™ Princess Palermo 14" ; Chattam & Wells™ Princess Palermo 14" ; Chattam & Wells™ Princess Palermo 14"  |  |
+| full | ⚠️ 4 | | | Chattam & Wells™ Princess Palermo 14" ; Chattam & Wells™ Princess Palermo 14" ; Chattam & Wells™ Princess Palermo 14"  |  |
 | queen | 🔎 | `2031248` | $4,999.00 | Restonic® Chattam & Wells The Palermo Firm Pillowtop Queen Mattress | [product-page](https://www.lacks.com/product/chattam-wells-the-palermo-14-firm-pillowtop-queen-mattress-1606-102-mz674sa50-2031248) |
 | king | ⚠️ 2 | | | Chattam & Wells™ Princess Palermo 14" ; Chattam & Wells™ Princess Palermo 14"  |  |
 | cal_king | ⚠️ 2 | | | Chattam & Wells™ Princess Palermo 14" ; Chattam & Wells™ Princess Palermo 14"  |  |
@@ -360,11 +360,25 @@ Prices observed 2026-09-20T23:27:23+00:00 -> 2026-09-20T23:29:07+00:00; this map
 
 ### base-bt2000 — BedTech BT2000 Adjustable Base (app price $899, expected type `base`)
 
-— **unresolved** — no candidate of the expected product type with a matching brand and model token
+🔎 **preview-eligible**
+
+| size | sku | selling | evidence |
+|---|---|---|---|
+| king | `283087` | $1,199.00 | [configurable-parent-page](https://www.lacks.com/product/bedtech-bt2000-queen-adjustable-base-bt2000-284920) |
+| queen | `283083` | $899.00 | [product-page](https://www.lacks.com/product/bedtech-queen-adjustable-base-with-head-foot-motion-bt2000qn-283083) |
+
+The app's single ungoverned `price: 899` corresponds to: **queen**.
 
 ### base-bt3000 — BedTech BT3000 Massage Base (app price $1099, expected type `base`)
 
-— **unresolved** — no candidate of the expected product type with a matching brand and model token
+🔎 **preview-eligible**
+
+| size | sku | selling | evidence |
+|---|---|---|---|
+| cal_king | `283120` | $1,899.00 | [configurable-parent-page](https://www.lacks.com/product/bedtech-bt3000-queen-adjustable-base-bt3000-284927) |
+| king | `283119` | $1,899.00 | [configurable-parent-page](https://www.lacks.com/product/bedtech-bt3000-queen-adjustable-base-bt3000-284927) |
+
+The app's single ungoverned `price: 1099` corresponds to: _no size exactly_.
 
 ### base-tempur-ergo — TEMPUR-Ergo 3.0 Power Base (app price $1599, expected type `base`)
 
@@ -384,14 +398,13 @@ Prices observed 2026-09-20T23:27:23+00:00 -> 2026-09-20T23:29:07+00:00; this map
 
 ### protector-dritec — Bedgear Dri-Tec Mattress Protector (app price $149, expected type `protector`)
 
-⛔ **variant-conflict**
-
-- ⛔ size `queen`: SKUs ['170991', '833804'] at [14995] — two variants claim one size; nothing chosen
+🔎 **preview-eligible**
 
 | size | sku | selling | evidence |
 |---|---|---|---|
 | full | `170988` | $109.95 | [category-listing](https://www.lacks.com/catalog/mattress-accessories?display_mode=products) |
 | king | `170993` | $179.95 | [category-listing](https://www.lacks.com/catalog/mattress-accessories?display_mode=products) |
+| queen | `170991` | $149.95 | [category-listing](https://www.lacks.com/catalog/mattress-accessories?display_mode=products) |
 | twin | `170984` | $99.95 | [category-listing](https://www.lacks.com/catalog/mattress-accessories?display_mode=products) |
 | twin_xl | `170986` | $104.95 | [category-listing](https://www.lacks.com/catalog/mattress-accessories?display_mode=products) |
 
@@ -399,28 +412,26 @@ The app's single ungoverned `price: 149` corresponds to: _no size exactly_.
 
 ### protector-iprotect — Bedgear iProtect Mattress Protector (app price $89, expected type `protector`)
 
-⛔ **variant-conflict**
-
-- ⛔ size `queen`: SKUs ['170881', '833806'] at [8995] — two variants claim one size; nothing chosen
+🔎 **preview-eligible**
 
 | size | sku | selling | evidence |
 |---|---|---|---|
 | full | `170871` | $69.95 | [category-listing](https://www.lacks.com/catalog/mattress-accessories?display_mode=products) |
 | king | `170890` | $99.95 | [category-listing](https://www.lacks.com/catalog/mattress-accessories?display_mode=products) |
+| queen | `170881` | $89.95 | [category-listing](https://www.lacks.com/catalog/mattress-accessories?display_mode=products) |
 | twin_xl | `170868` | $69.95 | [category-listing](https://www.lacks.com/catalog/mattress-accessories?display_mode=products) |
 
 The app's single ungoverned `price: 89` corresponds to: _no size exactly_.
 
 ### protector-vertex — Bedgear Ver-Tex Cooling Protector (app price $249, expected type `protector`)
 
-⛔ **variant-conflict**
-
-- ⛔ size `queen`: SKUs ['1213416', '1266110'] at [24995] — two variants claim one size; nothing chosen
+🔎 **preview-eligible**
 
 | size | sku | selling | evidence |
 |---|---|---|---|
 | full | `171011` | $229.95 | [product-page](https://www.lacks.com/product/bedgear-ver-tex-full-mattress-protector-bgm61awff-171011) |
 | king | `1213418` | $299.95 | [category-listing](https://www.lacks.com/catalog/mattress-accessories?display_mode=products) |
+| queen | `1213416` | $249.95 | [category-listing](https://www.lacks.com/catalog/mattress-accessories?display_mode=products) |
 
 The app's single ungoverned `price: 249` corresponds to: _no size exactly_.
 

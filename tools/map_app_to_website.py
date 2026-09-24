@@ -149,6 +149,33 @@ def brand_key(b):
     return n.split()[0] if n else ""
 
 
+def model_number_stem(model_number, app_models):
+    """The app model token a MODEL NUMBER carries, or None.
+
+    Accessory display names are inconsistent where model numbers are not. The
+    app's `BedTech BT2000 Adjustable Base` is sold on the site as three
+    differently-named records - "Adjustable Base Head/Foot",
+    "Bedtech Queen Adjustable Base With Head & Foot Motion" and
+    "Bedtech Bt2000 King Adjustable Base With Head/Foot Action" - while their
+    model numbers run BT2000TW / BT2000QN / BT2000KG. Matching on names alone
+    found only the King, so the family resolved with no Queen in it, which is
+    the one size a Queen consultation needs.
+
+    A model number matches when it STARTS WITH the app's own model token, so
+    the size suffix is the only difference. The stem is returned as the family
+    identity for grouping. Containment is deliberately not enough: `BT3000QN`
+    must never answer for `bt2000`, and a token appearing mid-string is
+    coincidence, not a part number.
+    """
+    mn = norm(model_number).replace(" ", "")
+    if not mn:
+        return None
+    for tok in sorted(app_models, key=len, reverse=True):
+        if len(tok) >= 4 and mn.startswith(tok):
+            return tok
+    return None
+
+
 SELECTION = os.path.join(REPO, "incoming", "lacks_catalog_selection.json")
 
 
@@ -262,6 +289,57 @@ def tier_of(legs):
     if legs["generation"] == "differs":
         return "weak"
     return "strong"
+
+
+PARENT_FLAG = "configurable-parent-not-an-exact-variant"
+
+
+def disambiguate_parent_child(vs):
+    """Split one size's candidates into exact variants and configurable parents.
+
+    Returns (exact, parents, corroboration_note).
+
+    THE CASE THIS EXISTS FOR. Every protector family's Queen slot held two
+    records and was reported as a conflict, which is why the app's protectors
+    all read `variant-conflict` and no complete system could be priced. The two
+    records were never two products:
+
+        170991  BGM03AWFQ  $149.95  category listing, exact child
+        833804  BGM03AWFQ  $149.95  product page, configurable PARENT
+
+    Same model number, same size, same price - a parent and its own child. The
+    parents are exactly the four historical Queen SKU leads, so the lead file
+    is what put them in the snapshot alongside the children.
+
+    THE RULE. A parent is not a purchasable variant, so it never competes with
+    one: when the surviving exact records agree and every parent carries the
+    SAME model number, the child is the answer and the parent becomes
+    corroboration. A parent whose model number DIFFERS is not this product's
+    parent and stays a genuine conflict - that is the Ver-Tex Full case
+    (BGM026003 vs BGM61AWFF), which must remain unresolved.
+
+    A model number is required on both sides. Absent one there is no evidence
+    the two records are the same product, so nothing is collapsed.
+    """
+    # Partition on the flag itself, never on list membership: `v not in
+    # parents` compares dicts by VALUE, so two records that happened to be
+    # equal would misclassify each other.
+    parents, exact = [], []
+    for v in vs:
+        (parents if PARENT_FLAG in (v.get("exceptions") or []) else exact).append(v)
+    if not parents or not exact:
+        return exact, parents, None
+    child_models = {v.get("modelNumber") for v in exact}
+    parent_models = {p.get("modelNumber") for p in parents}
+    if None in child_models or None in parent_models or child_models != parent_models:
+        # not provably the same product: hand back everything and let the
+        # caller report the conflict it really is
+        return vs, [], None
+    note = {"parentSkus": sorted(str(p["sku"]) for p in parents),
+            "modelNumber": sorted(m for m in child_models)[0],
+            "agreesOnPrice": len({v["sellingAmountMinor"] for v in vs}) == 1,
+            "note": "configurable parent of this same model; not a competing product"}
+    return exact, parents, note
 
 
 def build():
@@ -399,9 +477,17 @@ def build():
             if app_brand and vb and app_brand != vb:
                 continue
             shared = app_models & model_tokens(v.get("name"), v.get("family"))
-            if not shared:
+            stem = model_number_stem(v.get("modelNumber"), app_models)
+            if not shared and not stem:
                 continue
-            pool[v.get("familyKey") or "(no-family)"].append((v, sorted(shared)))
+            # A part-number match is the stronger identity, so it also decides
+            # the family: grouping these by display name is what split one
+            # product across three families and hid its Queen.
+            if stem:
+                shared = sorted(set(shared) | {stem})
+                pool["model-number:" + stem].append((v, shared))
+            else:
+                pool[v.get("familyKey") or "(no-family)"].append((v, sorted(shared)))
 
         # historical accessory lead: the 2026-07-30 SKU, matched by name
         alead = None
@@ -446,6 +532,17 @@ def build():
             by_size[v.get("size_id")].append(v)
         conflicts, chosen = [], {}
         for size, vs in by_size.items():
+            vs, parents, note = disambiguate_parent_child(vs)
+            if not vs:
+                # Only configurable PARENTS claim this size. A parent's price is
+                # its cheapest child's ("starting at"), so accepting it here
+                # would understate this size by real money while looking
+                # plausible. No exact variant means no price.
+                conflicts.append({"size": size,
+                                  "skus": sorted({str(p["sku"]) for p in parents}),
+                                  "amounts": sorted({p["sellingAmountMinor"] for p in parents}),
+                                  "reason": "configurable-parent-only-no-exact-variant"})
+                continue
             if len(vs) > 1:
                 distinct = {v["sku"] for v in vs}
                 if len(distinct) > 1:
@@ -461,6 +558,8 @@ def build():
                                  "observedAt": v.get("observedAt"),
                                  "productType": v.get("productType"),
                                  "sizeIndependent": v.get("size_id") is None}
+            if note:
+                chosen[str(size)]["parentCorroboration"] = note
         entry["familyKey"] = famkey
         entry["sizeIndependent"] = size_independent
         entry["variants"] = chosen

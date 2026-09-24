@@ -38,6 +38,7 @@ under its OWN size, and flagged. No size is ever inferred from another size.
 """
 import argparse
 import datetime as _dt
+import hashlib
 import io
 import json
 import os
@@ -65,7 +66,26 @@ MATTRESS_CATEGORIES = [
     ("king-mattresses", "king"),
     ("california-king-mattresses", "cal_king"),
 ]
-ACCESSORY_CATEGORIES = ["mattress-accessories"]
+# Accessory categories, and the product type the CATEGORY asserts (None = let
+# the name decide). `mattress-accessories` alone left the app's pillows and
+# every base unmatchable: it yielded 1 pillow record and 0 bases, so all four
+# app bases and both pillows could only ever read "unresolved". The slugs come
+# from the retailer's own nav on /catalog/mattresses (read 2026-09-21);
+# "Adjustable Bases" is spelled `adjustable-beds` there.
+#
+# A category type is an ASSERTION, not an override: it fills in a type the
+# name does not carry (a base named only "BedTech BT2000"), and where the name
+# says something else entirely the NAME wins and the row is flagged, because a
+# protector filed under a base category is a shelving accident, not a base.
+ACCESSORY_CATEGORIES = [
+    ("mattress-accessories", None),
+    ("bedding-protectors", None),
+    ("pillows", "pillow"),
+    ("adjustable-beds", "base"),
+    ("foundations", "base"),
+    ("standard-foundations", "base"),
+]
+CATEGORY_PRODUCT_TYPE = {c: t for c, t in ACCESSORY_CATEGORIES if t}
 
 # `mattress_size` as the site spells it -> the quiz's size id. Anything absent
 # from this map is captured with size_id None and flagged, never guessed.
@@ -297,6 +317,17 @@ def extract_record(rec, category, expected_size, kind, observed_at=None):
     selling = to_minor(rec.get("final_price_without_tax"))
     regular = to_minor(rec.get("regular_price_without_tax"))
     ptype = product_type_of(name, kind)
+    # The category may assert a type the NAME cannot carry. Recorded with its
+    # provenance so a reviewer can weigh it exactly as `sizeSource` lets them
+    # weigh a size: "name" is the product saying what it is, "category" is the
+    # retailer's shelf saying it.
+    ptype_source = "name" if ptype != "other" else None
+    asserted = CATEGORY_PRODUCT_TYPE.get(category)
+    if asserted and kind != "mattress":
+        if ptype == "other":
+            ptype, ptype_source = asserted, "category"
+        elif ptype != asserted:
+            ex.append(f"category-asserts-{asserted}-but-name-says-{ptype}")
 
     purl = rec.get("product_url")
     ukey = rec.get("url_key")
@@ -365,6 +396,8 @@ def extract_record(rec, category, expected_size, kind, observed_at=None):
         "sku": sku,
         "entityId": rec.get("entity_id"),
         "modelNumber": rec.get("model_number"),
+        # "name" = the product named its own type; "category" = the shelf did.
+        "productTypeSource": ptype_source,
         # `final_price_without_tax` is the SELLING price; `regular_*` is the
         # crossed-out comparison. Both recorded; only the first is a price.
         "sellingAmountMinor": selling,
@@ -397,7 +430,7 @@ def extract_record(rec, category, expected_size, kind, observed_at=None):
     }
 
 
-def resolve_configurable(parent_row, kind, pause, log):
+def resolve_configurable(parent_row, kind, pause, log, cache_hours=0):
     """One configurable PARENT -> one row per purchasable child variant.
 
     Technique verified 2026-09-20: a parent's product page island carries the
@@ -415,21 +448,34 @@ def resolve_configurable(parent_row, kind, pause, log):
     url = parent_row.get("evidence", {}).get("url")
     if not url or parent_row["evidence"].get("type") != "product-page":
         return [], [{"parentSku": parent_row.get("sku"), "problem": "no-product-page-to-drill"}]
-    status, text = fetch(url)
-    if status != 200:
-        return [], [{"parentSku": parent_row.get("sku"), "url": url,
-                     "problem": f"http-{status}"}]
-    data = island(text)
-    if data is None:
-        return [], [{"parentSku": parent_row.get("sku"), "url": url,
-                     "problem": "no-next-data-island"}]
-    try:
-        ps = data["props"]["pageProps"]["initialState"]["productSlice"]
-        by = ps["byId"]
-        urls = ps.get("urls") or {}
-    except Exception:  # noqa: BLE001
-        return [], [{"parentSku": parent_row.get("sku"), "url": url,
-                     "problem": "unexpected-island-shape"}]
+    # A cached page is replayed WHOLE, with the instant it was actually
+    # retrieved - never this run's clock. No network, so no pause either.
+    hit = product_cache_read(url, cache_hours)
+    cached = hit is not None
+    if cached:
+        by = hit["byId"]
+        urls = hit.get("urls") or {}
+        observed_at = hit.get("retrievedAt")
+    else:
+        status, text = fetch(url)
+        if status != 200:
+            return [], [{"parentSku": parent_row.get("sku"), "url": url,
+                         "problem": f"http-{status}"}]
+        observed_at = now_iso()
+        data = island(text)
+        if data is None:
+            return [], [{"parentSku": parent_row.get("sku"), "url": url,
+                         "problem": "no-next-data-island"}]
+        try:
+            ps = data["props"]["pageProps"]["initialState"]["productSlice"]
+            by = ps["byId"]
+            urls = ps.get("urls") or {}
+        except Exception:  # noqa: BLE001
+            return [], [{"parentSku": parent_row.get("sku"), "url": url,
+                         "problem": "unexpected-island-shape"}]
+        # Only here: 200, parsed, and the shape we expected. A refusal or a
+        # broken page has already returned above without writing anything.
+        product_cache_write(url, by, urls, observed_at)
     rev = {v: k for k, v in urls.items() if isinstance(v, str)}
 
     rows, problems = [], []
@@ -463,14 +509,39 @@ def resolve_configurable(parent_row, kind, pause, log):
                 size_attr_id, size_attr = aid, attr
                 if attr.get("code") == "size":
                     break   # an explicit size attribute wins outright
+        # NOT EVERY CONFIGURABLE VARIES BY SIZE. The Bedgear protectors are
+        # configurable by COLOUR: one Queen product page whose children are
+        # the colours of that one size. Refusing those pages left every
+        # protector with category-listing evidence only, which the preview
+        # will not admit - so the app's Queen protector had a price nobody
+        # could show. Drilling a non-size dimension is still worth doing: it
+        # is how the exact purchasable simple product and its own product-page
+        # URL are found.
+        #
+        # THE LINE THAT MATTERS: a non-size option label says NOTHING about
+        # size, so nothing below may take a size from it. The child keeps the
+        # size its own record carries, and the dimension is recorded so a
+        # reviewer can see which axis was walked.
+        dimension = "size"
+        if size_attr is None:
+            # Prefer an attribute the retailer itself calls `size` - one
+            # unmappable option label (an odd spelling, a discontinued size)
+            # disqualifies the strict test above but does not make the axis
+            # something other than size. Only then fall back to another axis.
+            usable = [(aid, attr) for aid, attr in parent["attributes"].items()
+                      if isinstance(attr, dict) and (attr.get("options") or [])]
+            usable.sort(key=lambda kv: 0 if kv[1].get("code") == "size" else 1)
+            if usable:
+                size_attr_id, size_attr = usable[0]
+                dimension = size_attr.get("code") or "other"
         if size_attr is None:
             problems.append({"parentSku": parent.get("sku"), "parentEntityId": eid,
-                             "url": url, "problem": "no-size-attribute-on-parent"})
+                             "url": url, "problem": "no-variant-attribute-on-parent"})
             continue
         options = size_attr.get("options") or []
         if not options:
             problems.append({"parentSku": parent.get("sku"), "parentEntityId": eid,
-                             "url": url, "problem": "size-attribute-has-no-options"})
+                             "url": url, "problem": "variant-attribute-has-no-options"})
             continue
         for opt in options:
             if not isinstance(opt, dict):
@@ -482,23 +553,34 @@ def resolve_configurable(parent_row, kind, pause, log):
                     problems.append({"parentEntityId": eid, "childEntityId": child_id,
                                      "url": url, "problem": "child-entity-missing-from-island"})
                     continue
+                # The observation is THIS PAGE's retrieval instant - the
+                # cached one on a replay - so a rebuild never ages a price
+                # forward. (Before the drill cache these rows carried no
+                # observation at all.)
                 row = extract_record(child, parent_row.get("foundInCategory", ""),
-                                     None, kind)
-                # the child's size comes from the OPTION label, cross-checked
-                # against the child's own attribute_labels
+                                     None, kind, observed_at)
                 label = opt.get("label")
                 own = (child.get("attribute_labels") or {}).get(size_attr_id)
                 if own is not None and label is not None and str(own) != str(label):
-                    row["exceptions"].append("variant-size-label-disagrees-with-option")
-                sid = SIZE_IDS.get(str(label).strip().lower()) if isinstance(label, str) else None
-                if sid:
-                    row["size_id"] = sid
-                    row["size_raw"] = label
-                    row["sizeSource"] = "configurable-size-option"
-                    row["exceptions"] = [e for e in row["exceptions"]
-                                         if e != "no-resolvable-size"]
-                elif "no-resolvable-size" not in row["exceptions"]:
-                    row["exceptions"].append("no-resolvable-size")
+                    row["exceptions"].append("variant-option-label-disagrees-with-option")
+                if dimension == "size":
+                    # the child's size comes from the OPTION label, cross-checked
+                    # against the child's own attribute_labels
+                    sid = SIZE_IDS.get(str(label).strip().lower()) if isinstance(label, str) else None
+                    if sid:
+                        row["size_id"] = sid
+                        row["size_raw"] = label
+                        row["sizeSource"] = "configurable-size-option"
+                        row["exceptions"] = [e for e in row["exceptions"]
+                                             if e != "no-resolvable-size"]
+                    elif "no-resolvable-size" not in row["exceptions"]:
+                        row["exceptions"].append("no-resolvable-size")
+                else:
+                    # A colour (or any non-size) option tells us nothing about
+                    # size: whatever extract_record read from the child's own
+                    # record stands, including its absence.
+                    row["optionDimension"] = dimension
+                    row["optionLabel"] = label if isinstance(label, str) else None
                 # a child is not a parent: drop the inherited parent flag
                 row["exceptions"] = [e for e in row["exceptions"]
                                      if e != "configurable-parent-not-an-exact-variant"]
@@ -518,9 +600,13 @@ def resolve_configurable(parent_row, kind, pause, log):
                 row["optionValueId"] = opt.get("id")
                 row["resolvedFrom"] = "product-page-attributes"
                 rows.append(row)
-    log(f"    drilled {url.rsplit('/', 1)[-1][:44]}: {len(rows)} variants, "
-        f"{len(problems)} problems")
-    time.sleep(pause)
+    log(f"    {'replayed' if cached else 'drilled '} {url.rsplit('/', 1)[-1][:44]}: "
+        f"{len(rows)} variants, {len(problems)} problems"
+        + (f" (cached {observed_at})" if cached else ""))
+    # Pacing is for the SITE. A replay made no request, so it waits for
+    # nothing - which is what makes a cached rebuild cheap.
+    if not cached:
+        time.sleep(pause)
     return rows, problems
 
 
@@ -562,6 +648,71 @@ def cache_write(category, page, rows, page_count, retrieved_at=None):
     doc = {"category": category, "page": page, "pageCount": page_count,
            "retrievedAt": retrieved_at or now_iso(), "records": rows}
     with open(cache_path(category, page), "w", encoding="utf-8", newline="\n") as f:
+        json.dump(doc, f, indent=1, ensure_ascii=False)
+
+
+# ---------------------------------------------------------------------------
+# PRODUCT-PAGE CACHE. The category cache above never covered the DRILL: every
+# rebuild re-fetched all 72 configurable parents, which is what earns the 403s
+# and is why two consecutive runs resolved DIFFERENT subsets - one got the
+# protector's product page, the next got the base's, and neither got both.
+#
+# Caching each drilled page fixes that without combining anything by hand. A
+# later run replays each page whole, from its own stored response, carrying
+# its OWN retrieval instant - so records observed at different times coexist
+# exactly as cached category records already do, each keeping its real source,
+# date and identity. Nothing is merged across pages and no attribute is ever
+# assembled from two sources.
+#
+# WHAT IS AND IS NOT CACHED. Only a COMPLETE, SUCCESSFUL response: HTTP 200,
+# a parsed island, and the expected `productSlice` shape. A 403, a transport
+# failure, an unparseable page or an unexpected shape writes NOTHING, so a
+# refusal can never be replayed as though it were evidence.
+#
+# It cannot reach backwards: pages fetched before this cache existed were
+# never saved, so the first run after this change still fetches them.
+PRODUCT_CACHE_PREFIX = "product__"
+
+
+def product_cache_path(url):
+    """A stable key per product URL, in its own namespace.
+
+    The digest makes it stable and collision-free for any URL; the slug keeps
+    it readable. The `product__` prefix cannot collide with a category entry,
+    which is always `<category>-p<n>.json`.
+    """
+    digest = hashlib.sha256((url or "").encode("utf-8")).hexdigest()[:16]
+    slug = re.sub(r"[^A-Za-z0-9_.-]+", "_", (url or "").rsplit("/", 1)[-1])[:60]
+    return os.path.join(CACHE_DIR, f"{PRODUCT_CACHE_PREFIX}{slug}__{digest}.json")
+
+
+def product_cache_read(url, max_age_hours):
+    """The cached page, or None. Never raises: a corrupt entry is a miss."""
+    if not max_age_hours or max_age_hours <= 0:
+        return None
+    p = product_cache_path(url)
+    if not os.path.exists(p):
+        return None
+    try:
+        doc = json.load(io.open(p, encoding="utf-8"))
+        age = (_dt.datetime.now(_dt.timezone.utc)
+               - _dt.datetime.fromisoformat(doc["retrievedAt"])).total_seconds()
+    except Exception:  # noqa: BLE001 - a corrupt cache entry is simply a miss
+        return None
+    if age > max_age_hours * 3600:
+        return None
+    if not isinstance(doc.get("byId"), dict):
+        return None
+    return doc
+
+
+def product_cache_write(url, by, urls, retrieved_at):
+    """Record one COMPLETE successful drill page. Callers must not call this
+    for a non-200, an unparseable island or an unexpected shape."""
+    os.makedirs(CACHE_DIR, exist_ok=True)
+    doc = {"url": url, "retrievedAt": retrieved_at or now_iso(),
+           "byId": by, "urls": urls}
+    with open(product_cache_path(url), "w", encoding="utf-8", newline="\n") as f:
         json.dump(doc, f, indent=1, ensure_ascii=False)
 
 
@@ -697,7 +848,7 @@ def main(argv=None):
 
     rows, problems = [], []
     targets = [(c, s, "mattress") for c, s in MATTRESS_CATEGORIES]
-    targets += [(c, None, "accessory") for c in ACCESSORY_CATEGORIES]
+    targets += [(c, None, "accessory") for c, _t in ACCESSORY_CATEGORIES]
     if args.only:
         targets = [t for t in targets if t[0] == args.only]
 
@@ -730,7 +881,8 @@ def main(argv=None):
             if not u or u in seen_urls:
                 continue
             seen_urls.add(u)
-            child_rows, probs = resolve_configurable(pr, pr["kind"], args.pause, log)
+            child_rows, probs = resolve_configurable(pr, pr["kind"], args.pause, log,
+                                                     args.cache_hours)
             rows.extend(child_rows)
             drill_problems.extend(probs)
             if child_rows:

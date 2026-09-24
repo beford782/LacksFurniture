@@ -3,9 +3,9 @@
     "status": "AUTOMATED-IDENTITY-MATCH-OVER-AN-UNVERIFIED-SNAPSHOT",
     "note": "Identity evidence, owner verification and production activation are three separate things. A `preview-eligible` row carries enough identity evidence for the ISOLATED, clearly-labelled preview and is shown there as pending verification; it is not a verified mapping and it never feeds production, which the pricing contract gates independently.",
     "skuEvidence": "The app catalog ships no SKU. The 2026-07-30 discovery file supplies a QUEEN SKU per product as a LEAD; where that exact SKU is still present in the current snapshot it is recorded as a direct identity link. Historical prices are never reused and no other size's SKU is ever inferred.",
-    "mappingGeneratedAt": "2026-09-21T01:01:04+00:00",
+    "mappingGeneratedAt": "2026-09-21T22:58:27+00:00",
     "pricesObservedFrom": "2026-09-20T23:27:23+00:00",
-    "pricesObservedTo": "2026-09-20T23:29:07+00:00",
+    "pricesObservedTo": "2026-09-21T22:40:22+00:00",
     "appMattresses": 26,
     "appAccessories": 10,
     "verifiedRowsLoaded": 0
@@ -148,41 +148,290 @@
       "sizes": {
         "twin": {
           "status": "machine-ambiguous",
-          "candidateCount": 5,
-          "note": "website SKU 1748187 is claimed by 5 app products (g2:twin, g2:twin_xl, g2:full, g2:king, g2:cal_king); one SKU identifies one product-size, so none of them is resolved",
-          "conflictingSku": "1748187",
-          "claimedBy": [
-            "g2:twin",
-            "g2:twin_xl",
-            "g2:full",
-            "g2:king",
-            "g2:cal_king"
+          "candidateCount": 2,
+          "candidates": [
+            {
+              "sku": "1748180",
+              "name": "Chattam & Wells™ Princess Saint Pierre 16.5\" Wrapped Coil Ultra Plush Euro Top Twin Mattress",
+              "sellingAmountMinor": 749999,
+              "regularAmountMinor": 749999,
+              "evidence": {
+                "type": "product-page",
+                "url": "https://www.lacks.com/product/chattam-wells-princess-saint-pierre-165-wrapped-coil-ultra-plush-euro-top-twin-mattress-m2064-03-1748180"
+              },
+              "observedAt": null,
+              "scope": "mattress-only",
+              "tier": "strong",
+              "legs": {
+                "brand": "match",
+                "model": {
+                  "shared": [
+                    "pierre",
+                    "saint"
+                  ],
+                  "appOnly": [
+                    "queen"
+                  ],
+                  "siteOnly": [
+                    "princess",
+                    "twin"
+                  ]
+                },
+                "firmness": "match",
+                "generation": "match",
+                "generationDetail": {
+                  "app": [],
+                  "site": []
+                },
+                "construction": "absent",
+                "constructionDetail": {
+                  "app": [],
+                  "site": [
+                    "euro_top",
+                    "wrapped_coil"
+                  ]
+                },
+                "skuLink": "app-catalog-has-no-sku; historical lead did not match this variant",
+                "size": "twin"
+              }
+            },
+            {
+              "sku": "1748187",
+              "name": "Chattam & Wells™ Princess Saint Pierre 16.5\" Wrapped Coil Ultra Plush Euro Top Twin Mattress",
+              "sellingAmountMinor": 749999,
+              "regularAmountMinor": 749999,
+              "evidence": {
+                "type": "product-page",
+                "url": "https://www.lacks.com/product/chattam-wells-princess-saint-pierre-165-wrapped-coil-ultra-plush-euro-top-queen-mattress-m2064c-1748187"
+              },
+              "observedAt": "2026-09-20T23:27:23+00:00",
+              "scope": "mattress-only",
+              "tier": "strong",
+              "legs": {
+                "brand": "match",
+                "model": {
+                  "shared": [
+                    "pierre",
+                    "saint"
+                  ],
+                  "appOnly": [
+                    "queen"
+                  ],
+                  "siteOnly": [
+                    "princess",
+                    "twin"
+                  ]
+                },
+                "firmness": "match",
+                "generation": "match",
+                "generationDetail": {
+                  "app": [],
+                  "site": []
+                },
+                "construction": "absent",
+                "constructionDetail": {
+                  "app": [],
+                  "site": [
+                    "euro_top",
+                    "wrapped_coil"
+                  ]
+                },
+                "skuLink": "app-catalog-has-no-sku; historical lead did not match this variant",
+                "size": "twin"
+              }
+            }
           ]
         },
         "twin_xl": {
           "status": "machine-ambiguous",
-          "candidateCount": 5,
-          "note": "website SKU 1748187 is claimed by 5 app products (g2:twin, g2:twin_xl, g2:full, g2:king, g2:cal_king); one SKU identifies one product-size, so none of them is resolved",
-          "conflictingSku": "1748187",
-          "claimedBy": [
-            "g2:twin",
-            "g2:twin_xl",
-            "g2:full",
-            "g2:king",
-            "g2:cal_king"
+          "candidateCount": 2,
+          "candidates": [
+            {
+              "sku": "1748182",
+              "name": "Chattam & Wells™ Princess Saint Pierre 16.5\" Wrapped Coil Ultra Plush Euro Top Twin XL Mattress",
+              "sellingAmountMinor": 749999,
+              "regularAmountMinor": 749999,
+              "evidence": {
+                "type": "product-page",
+                "url": "https://www.lacks.com/product/chattam-wells-princess-saint-pierre-165-wrapped-coil-ultra-plush-euro-top-twin-xl-mattress-m2064-07-1748182"
+              },
+              "observedAt": null,
+              "scope": "mattress-only",
+              "tier": "strong",
+              "legs": {
+                "brand": "match",
+                "model": {
+                  "shared": [
+                    "pierre",
+                    "saint"
+                  ],
+                  "appOnly": [
+                    "queen"
+                  ],
+                  "siteOnly": [
+                    "princess",
+                    "twin"
+                  ]
+                },
+                "firmness": "match",
+                "generation": "match",
+                "generationDetail": {
+                  "app": [],
+                  "site": []
+                },
+                "construction": "absent",
+                "constructionDetail": {
+                  "app": [],
+                  "site": [
+                    "euro_top",
+                    "wrapped_coil"
+                  ]
+                },
+                "skuLink": "app-catalog-has-no-sku; historical lead did not match this variant",
+                "size": "twin_xl"
+              }
+            },
+            {
+              "sku": "1748187",
+              "name": "Chattam & Wells™ Princess Saint Pierre 16.5\" Wrapped Coil Ultra Plush Euro Top Twin XL Mattress",
+              "sellingAmountMinor": 749999,
+              "regularAmountMinor": 749999,
+              "evidence": {
+                "type": "product-page",
+                "url": "https://www.lacks.com/product/chattam-wells-princess-saint-pierre-165-wrapped-coil-ultra-plush-euro-top-queen-mattress-m2064c-1748187"
+              },
+              "observedAt": "2026-09-20T23:27:40+00:00",
+              "scope": "mattress-only",
+              "tier": "strong",
+              "legs": {
+                "brand": "match",
+                "model": {
+                  "shared": [
+                    "pierre",
+                    "saint"
+                  ],
+                  "appOnly": [
+                    "queen"
+                  ],
+                  "siteOnly": [
+                    "princess",
+                    "twin"
+                  ]
+                },
+                "firmness": "match",
+                "generation": "match",
+                "generationDetail": {
+                  "app": [],
+                  "site": []
+                },
+                "construction": "absent",
+                "constructionDetail": {
+                  "app": [],
+                  "site": [
+                    "euro_top",
+                    "wrapped_coil"
+                  ]
+                },
+                "skuLink": "app-catalog-has-no-sku; historical lead did not match this variant",
+                "size": "twin_xl"
+              }
+            }
           ]
         },
         "full": {
           "status": "machine-ambiguous",
-          "candidateCount": 5,
-          "note": "website SKU 1748187 is claimed by 5 app products (g2:twin, g2:twin_xl, g2:full, g2:king, g2:cal_king); one SKU identifies one product-size, so none of them is resolved",
-          "conflictingSku": "1748187",
-          "claimedBy": [
-            "g2:twin",
-            "g2:twin_xl",
-            "g2:full",
-            "g2:king",
-            "g2:cal_king"
+          "candidateCount": 2,
+          "candidates": [
+            {
+              "sku": "1748183",
+              "name": "Chattam & Wells™ Princess Saint Pierre 16.5\" Wrapped Coil Ultra Plush Euro Top Full Mattress",
+              "sellingAmountMinor": 829999,
+              "regularAmountMinor": 829999,
+              "evidence": {
+                "type": "product-page",
+                "url": "https://www.lacks.com/product/chattam-wells-princess-saint-pierre-165-wrapped-coil-ultra-plush-euro-top-full-mattress-m2064-04-1748183"
+              },
+              "observedAt": null,
+              "scope": "mattress-only",
+              "tier": "strong",
+              "legs": {
+                "brand": "match",
+                "model": {
+                  "shared": [
+                    "pierre",
+                    "saint"
+                  ],
+                  "appOnly": [
+                    "queen"
+                  ],
+                  "siteOnly": [
+                    "full",
+                    "princess"
+                  ]
+                },
+                "firmness": "match",
+                "generation": "match",
+                "generationDetail": {
+                  "app": [],
+                  "site": []
+                },
+                "construction": "absent",
+                "constructionDetail": {
+                  "app": [],
+                  "site": [
+                    "euro_top",
+                    "wrapped_coil"
+                  ]
+                },
+                "skuLink": "app-catalog-has-no-sku; historical lead did not match this variant",
+                "size": "full"
+              }
+            },
+            {
+              "sku": "1748187",
+              "name": "Chattam & Wells™ Princess Saint Pierre 16.5\" Wrapped Coil Ultra Plush Euro Top Full Mattress",
+              "sellingAmountMinor": 829999,
+              "regularAmountMinor": 829999,
+              "evidence": {
+                "type": "product-page",
+                "url": "https://www.lacks.com/product/chattam-wells-princess-saint-pierre-165-wrapped-coil-ultra-plush-euro-top-queen-mattress-m2064c-1748187"
+              },
+              "observedAt": "2026-09-20T23:27:49+00:00",
+              "scope": "mattress-only",
+              "tier": "strong",
+              "legs": {
+                "brand": "match",
+                "model": {
+                  "shared": [
+                    "pierre",
+                    "saint"
+                  ],
+                  "appOnly": [
+                    "queen"
+                  ],
+                  "siteOnly": [
+                    "full",
+                    "princess"
+                  ]
+                },
+                "firmness": "match",
+                "generation": "match",
+                "generationDetail": {
+                  "app": [],
+                  "site": []
+                },
+                "construction": "absent",
+                "constructionDetail": {
+                  "app": [],
+                  "site": [
+                    "euro_top",
+                    "wrapped_coil"
+                  ]
+                },
+                "skuLink": "app-catalog-has-no-sku; historical lead did not match this variant",
+                "size": "full"
+              }
+            }
           ]
         },
         "queen": {
@@ -227,29 +476,147 @@
           "status": "preview-eligible"
         },
         "king": {
-          "status": "machine-ambiguous",
-          "candidateCount": 5,
-          "note": "website SKU 1748187 is claimed by 5 app products (g2:twin, g2:twin_xl, g2:full, g2:king, g2:cal_king); one SKU identifies one product-size, so none of them is resolved",
-          "conflictingSku": "1748187",
-          "claimedBy": [
-            "g2:twin",
-            "g2:twin_xl",
-            "g2:full",
-            "g2:king",
-            "g2:cal_king"
-          ]
+          "sku": "1748187",
+          "name": "Chattam & Wells™ Princess Saint Pierre 16.5\" Wrapped Coil Ultra Plush Euro Top King Mattress",
+          "sellingAmountMinor": 959999,
+          "regularAmountMinor": 959999,
+          "evidence": {
+            "type": "product-page",
+            "url": "https://www.lacks.com/product/chattam-wells-princess-saint-pierre-165-wrapped-coil-ultra-plush-euro-top-queen-mattress-m2064c-1748187"
+          },
+          "observedAt": "2026-09-20T23:28:32+00:00",
+          "scope": "mattress-only",
+          "tier": "strong",
+          "legs": {
+            "brand": "match",
+            "model": {
+              "shared": [
+                "pierre",
+                "saint"
+              ],
+              "appOnly": [
+                "queen"
+              ],
+              "siteOnly": [
+                "king",
+                "princess"
+              ]
+            },
+            "firmness": "match",
+            "generation": "match",
+            "generationDetail": {
+              "app": [],
+              "site": []
+            },
+            "construction": "absent",
+            "constructionDetail": {
+              "app": [],
+              "site": [
+                "euro_top",
+                "wrapped_coil"
+              ]
+            },
+            "skuLink": "app-catalog-has-no-sku; historical lead did not match this variant",
+            "size": "king"
+          },
+          "status": "preview-eligible"
         },
         "cal_king": {
           "status": "machine-ambiguous",
-          "candidateCount": 5,
-          "note": "website SKU 1748187 is claimed by 5 app products (g2:twin, g2:twin_xl, g2:full, g2:king, g2:cal_king); one SKU identifies one product-size, so none of them is resolved",
-          "conflictingSku": "1748187",
-          "claimedBy": [
-            "g2:twin",
-            "g2:twin_xl",
-            "g2:full",
-            "g2:king",
-            "g2:cal_king"
+          "candidateCount": 2,
+          "candidates": [
+            {
+              "sku": "1748186",
+              "name": "Chattam & Wells™ Princess Saint Pierre 16.5\" Wrapped Coil Ultra Plush Euro Top California King Mattress",
+              "sellingAmountMinor": 959999,
+              "regularAmountMinor": 959999,
+              "evidence": {
+                "type": "product-page",
+                "url": "https://www.lacks.com/product/chattam-wells-princess-saint-pierre-165-wrapped-coil-ultra-plush-euro-top-california-king-mattress-m2064-10-1748186"
+              },
+              "observedAt": null,
+              "scope": "mattress-only",
+              "tier": "strong",
+              "legs": {
+                "brand": "match",
+                "model": {
+                  "shared": [
+                    "pierre",
+                    "saint"
+                  ],
+                  "appOnly": [
+                    "queen"
+                  ],
+                  "siteOnly": [
+                    "california",
+                    "king",
+                    "princess"
+                  ]
+                },
+                "firmness": "match",
+                "generation": "match",
+                "generationDetail": {
+                  "app": [],
+                  "site": []
+                },
+                "construction": "absent",
+                "constructionDetail": {
+                  "app": [],
+                  "site": [
+                    "euro_top",
+                    "wrapped_coil"
+                  ]
+                },
+                "skuLink": "app-catalog-has-no-sku; historical lead did not match this variant",
+                "size": "cal_king"
+              }
+            },
+            {
+              "sku": "1748187",
+              "name": "Chattam & Wells™ Princess Saint Pierre 16.5\" Wrapped Coil Ultra Plush Euro Top California King Mattress",
+              "sellingAmountMinor": 959999,
+              "regularAmountMinor": 959999,
+              "evidence": {
+                "type": "product-page",
+                "url": "https://www.lacks.com/product/chattam-wells-princess-saint-pierre-165-wrapped-coil-ultra-plush-euro-top-queen-mattress-m2064c-1748187"
+              },
+              "observedAt": "2026-09-20T23:28:41+00:00",
+              "scope": "mattress-only",
+              "tier": "strong",
+              "legs": {
+                "brand": "match",
+                "model": {
+                  "shared": [
+                    "pierre",
+                    "saint"
+                  ],
+                  "appOnly": [
+                    "queen"
+                  ],
+                  "siteOnly": [
+                    "california",
+                    "king",
+                    "princess"
+                  ]
+                },
+                "firmness": "match",
+                "generation": "match",
+                "generationDetail": {
+                  "app": [],
+                  "site": []
+                },
+                "construction": "absent",
+                "constructionDetail": {
+                  "app": [],
+                  "site": [
+                    "euro_top",
+                    "wrapped_coil"
+                  ]
+                },
+                "skuLink": "app-catalog-has-no-sku; historical lead did not match this variant",
+                "size": "cal_king"
+              }
+            }
           ]
         }
       }
@@ -270,7 +637,7 @@
       "sizes": {
         "twin": {
           "status": "machine-ambiguous",
-          "candidateCount": 2,
+          "candidateCount": 3,
           "candidates": [
             {
               "sku": "1747028",
@@ -310,6 +677,51 @@
                   "app": [],
                   "site": [
                     "pillow_top",
+                    "wrapped_coil"
+                  ]
+                },
+                "skuLink": "app-catalog-has-no-sku; historical lead did not match this variant",
+                "size": "twin"
+              }
+            },
+            {
+              "sku": "1742481",
+              "name": "Chattam & Wells™ Princess Palermo 14\" Wrapped Coil Firm Tight Top Twin Mattress",
+              "sellingAmountMinor": 509999,
+              "regularAmountMinor": 509999,
+              "evidence": {
+                "type": "product-page",
+                "url": "https://www.lacks.com/product/chattam-wells-princess-palermo-14-wrapped-coil-firm-tight-top-twin-mattress-m2060-03-1742481"
+              },
+              "observedAt": null,
+              "scope": "mattress-only",
+              "tier": "strong",
+              "legs": {
+                "brand": "match",
+                "model": {
+                  "shared": [
+                    "palermo"
+                  ],
+                  "appOnly": [
+                    "pillowtop",
+                    "queen"
+                  ],
+                  "siteOnly": [
+                    "princess",
+                    "twin"
+                  ]
+                },
+                "firmness": "match",
+                "generation": "match",
+                "generationDetail": {
+                  "app": [],
+                  "site": []
+                },
+                "construction": "absent",
+                "constructionDetail": {
+                  "app": [],
+                  "site": [
+                    "tight_top",
                     "wrapped_coil"
                   ]
                 },
@@ -366,8 +778,53 @@
         },
         "twin_xl": {
           "status": "machine-ambiguous",
-          "candidateCount": 2,
+          "candidateCount": 4,
           "candidates": [
+            {
+              "sku": "1747019",
+              "name": "Chattam & Wells™ Princess Palermo 14\" Wrapped Coil Firm Pillow Top Twin XL Mattress",
+              "sellingAmountMinor": 559999,
+              "regularAmountMinor": 559999,
+              "evidence": {
+                "type": "product-page",
+                "url": "https://www.lacks.com/product/chattam-wells-princess-palermo-14-wrapped-coil-firm-pillow-top-twin-xl-mattress-m2062-07-1747019"
+              },
+              "observedAt": null,
+              "scope": "mattress-only",
+              "tier": "strong",
+              "legs": {
+                "brand": "match",
+                "model": {
+                  "shared": [
+                    "palermo"
+                  ],
+                  "appOnly": [
+                    "pillowtop",
+                    "queen"
+                  ],
+                  "siteOnly": [
+                    "princess",
+                    "twin"
+                  ]
+                },
+                "firmness": "match",
+                "generation": "match",
+                "generationDetail": {
+                  "app": [],
+                  "site": []
+                },
+                "construction": "absent",
+                "constructionDetail": {
+                  "app": [],
+                  "site": [
+                    "pillow_top",
+                    "wrapped_coil"
+                  ]
+                },
+                "skuLink": "app-catalog-has-no-sku; historical lead did not match this variant",
+                "size": "twin_xl"
+              }
+            },
             {
               "sku": "1747028",
               "name": "Chattam & Wells™ Princess Palermo 14\" Wrapped Coil Firm Pillow Top Twin XL Mattress",
@@ -406,6 +863,51 @@
                   "app": [],
                   "site": [
                     "pillow_top",
+                    "wrapped_coil"
+                  ]
+                },
+                "skuLink": "app-catalog-has-no-sku; historical lead did not match this variant",
+                "size": "twin_xl"
+              }
+            },
+            {
+              "sku": "1745129",
+              "name": "Chattam & Wells™ Princess Palermo 14\" Wrapped Coil Firm Tight Top Twin XL Mattress",
+              "sellingAmountMinor": 509999,
+              "regularAmountMinor": 509999,
+              "evidence": {
+                "type": "product-page",
+                "url": "https://www.lacks.com/product/chattam-wells-princess-palermo-14-wrapped-coil-firm-tight-top-twin-xl-mattress-m2060-07-1745129"
+              },
+              "observedAt": null,
+              "scope": "mattress-only",
+              "tier": "strong",
+              "legs": {
+                "brand": "match",
+                "model": {
+                  "shared": [
+                    "palermo"
+                  ],
+                  "appOnly": [
+                    "pillowtop",
+                    "queen"
+                  ],
+                  "siteOnly": [
+                    "princess",
+                    "twin"
+                  ]
+                },
+                "firmness": "match",
+                "generation": "match",
+                "generationDetail": {
+                  "app": [],
+                  "site": []
+                },
+                "construction": "absent",
+                "constructionDetail": {
+                  "app": [],
+                  "site": [
+                    "tight_top",
                     "wrapped_coil"
                   ]
                 },
@@ -462,8 +964,53 @@
         },
         "full": {
           "status": "machine-ambiguous",
-          "candidateCount": 2,
+          "candidateCount": 4,
           "candidates": [
+            {
+              "sku": "1747020",
+              "name": "Chattam & Wells™ Princess Palermo 14\" Wrapped Coil Firm Pillow Top Full Mattress",
+              "sellingAmountMinor": 629999,
+              "regularAmountMinor": 629999,
+              "evidence": {
+                "type": "product-page",
+                "url": "https://www.lacks.com/product/chattam-wells-princess-palermo-14-wrapped-coil-firm-pillow-top-full-mattress-m2062-04-1747020"
+              },
+              "observedAt": null,
+              "scope": "mattress-only",
+              "tier": "strong",
+              "legs": {
+                "brand": "match",
+                "model": {
+                  "shared": [
+                    "palermo"
+                  ],
+                  "appOnly": [
+                    "pillowtop",
+                    "queen"
+                  ],
+                  "siteOnly": [
+                    "full",
+                    "princess"
+                  ]
+                },
+                "firmness": "match",
+                "generation": "match",
+                "generationDetail": {
+                  "app": [],
+                  "site": []
+                },
+                "construction": "absent",
+                "constructionDetail": {
+                  "app": [],
+                  "site": [
+                    "pillow_top",
+                    "wrapped_coil"
+                  ]
+                },
+                "skuLink": "app-catalog-has-no-sku; historical lead did not match this variant",
+                "size": "full"
+              }
+            },
             {
               "sku": "1747028",
               "name": "Chattam & Wells™ Princess Palermo 14\" Wrapped Coil Firm Pillow Top Full Mattress",
@@ -502,6 +1049,51 @@
                   "app": [],
                   "site": [
                     "pillow_top",
+                    "wrapped_coil"
+                  ]
+                },
+                "skuLink": "app-catalog-has-no-sku; historical lead did not match this variant",
+                "size": "full"
+              }
+            },
+            {
+              "sku": "1745138",
+              "name": "Chattam & Wells™ Princess Palermo 14\" Wrapped Coil Firm Tight Top Full Mattress",
+              "sellingAmountMinor": 569999,
+              "regularAmountMinor": 569999,
+              "evidence": {
+                "type": "product-page",
+                "url": "https://www.lacks.com/product/chattam-wells-princess-palermo-14-wrapped-coil-firm-tight-top-full-mattress-m2060-04-1745138"
+              },
+              "observedAt": null,
+              "scope": "mattress-only",
+              "tier": "strong",
+              "legs": {
+                "brand": "match",
+                "model": {
+                  "shared": [
+                    "palermo"
+                  ],
+                  "appOnly": [
+                    "pillowtop",
+                    "queen"
+                  ],
+                  "siteOnly": [
+                    "full",
+                    "princess"
+                  ]
+                },
+                "firmness": "match",
+                "generation": "match",
+                "generationDetail": {
+                  "app": [],
+                  "site": []
+                },
+                "construction": "absent",
+                "constructionDetail": {
+                  "app": [],
+                  "site": [
+                    "tight_top",
                     "wrapped_coil"
                   ]
                 },
@@ -5970,10 +6562,56 @@
         "historicalSku": "284920",
         "historicalName": "BedTech BT2000 Adjustable Base",
         "note": "historical lead, never a current price",
-        "reproducedInCurrentSnapshot": false
+        "reproducedInCurrentSnapshot": true,
+        "currentVariant": {
+          "sku": "284920",
+          "name": "Bedtech Queen Adjustable Base With Head & Foot Motion",
+          "size_id": "queen",
+          "sellingAmountMinor": 89900
+        }
       },
-      "status": "unresolved",
-      "reason": "no candidate of the expected product type with a matching brand and model token"
+      "familyKey": "model-number:bt2000",
+      "sizeIndependent": false,
+      "variants": {
+        "king": {
+          "sku": "283087",
+          "sellingAmountMinor": 119900,
+          "regularAmountMinor": 149995,
+          "websiteName": "Bedtech Bt2000 King Adjustable Base With Head/Foot Action",
+          "evidence": {
+            "type": "configurable-parent-page",
+            "url": "https://www.lacks.com/product/bedtech-bt2000-queen-adjustable-base-bt2000-284920"
+          },
+          "observedAt": null,
+          "productType": "base",
+          "sizeIndependent": false
+        },
+        "queen": {
+          "sku": "283083",
+          "sellingAmountMinor": 89900,
+          "regularAmountMinor": 109995,
+          "websiteName": "Bedtech Queen Adjustable Base With Head & Foot Motion",
+          "evidence": {
+            "type": "product-page",
+            "url": "https://www.lacks.com/product/bedtech-queen-adjustable-base-with-head-foot-motion-bt2000qn-283083"
+          },
+          "observedAt": null,
+          "productType": "base",
+          "sizeIndependent": false,
+          "parentCorroboration": {
+            "parentSkus": [
+              "284920"
+            ],
+            "modelNumber": "BT2000QN",
+            "agreesOnPrice": true,
+            "note": "configurable parent of this same model; not a competing product"
+          }
+        }
+      },
+      "status": "preview-eligible",
+      "legacyPriceMatchesSizes": [
+        "queen"
+      ]
     },
     {
       "appId": "base-bt3000",
@@ -5987,10 +6625,46 @@
         "historicalSku": "284927",
         "historicalName": "BedTech BT3000 Adjustable Base with Massage",
         "note": "historical lead, never a current price",
-        "reproducedInCurrentSnapshot": false
+        "reproducedInCurrentSnapshot": true,
+        "currentVariant": {
+          "sku": "284927",
+          "name": "Adjustable Base With Massage",
+          "size_id": null,
+          "sellingAmountMinor": 109900
+        }
       },
-      "status": "unresolved",
-      "reason": "no candidate of the expected product type with a matching brand and model token"
+      "familyKey": "model-number:bt3000",
+      "sizeIndependent": false,
+      "variants": {
+        "cal_king": {
+          "sku": "283120",
+          "sellingAmountMinor": 189900,
+          "regularAmountMinor": 249995,
+          "websiteName": "Bedtech BT 3000 Flex Cal King Adjustable Base With Massage Action",
+          "evidence": {
+            "type": "configurable-parent-page",
+            "url": "https://www.lacks.com/product/bedtech-bt3000-queen-adjustable-base-bt3000-284927"
+          },
+          "observedAt": null,
+          "productType": "base",
+          "sizeIndependent": false
+        },
+        "king": {
+          "sku": "283119",
+          "sellingAmountMinor": 189900,
+          "regularAmountMinor": 249995,
+          "websiteName": "Bedtech BT 3000 Flex King Adjustable Base With Massage Action",
+          "evidence": {
+            "type": "configurable-parent-page",
+            "url": "https://www.lacks.com/product/bedtech-bt3000-queen-adjustable-base-bt3000-284927"
+          },
+          "observedAt": null,
+          "productType": "base",
+          "sizeIndependent": false
+        }
+      },
+      "status": "preview-eligible",
+      "legacyPriceMatchesSizes": []
     },
     {
       "appId": "base-tempur-ergo",
@@ -6004,7 +6678,13 @@
         "historicalSku": "1283106",
         "historicalName": "Tempur-Ergo 3.0 Power Base",
         "note": "historical lead, never a current price",
-        "reproducedInCurrentSnapshot": false
+        "reproducedInCurrentSnapshot": true,
+        "currentVariant": {
+          "sku": "1283106",
+          "name": "Queen Tempur-Egro 3.0 Power Base",
+          "size_id": "queen",
+          "sellingAmountMinor": 159900
+        }
       },
       "status": "unresolved",
       "reason": "no candidate of the expected product type with a matching brand and model token"
@@ -6108,6 +6788,27 @@
           "productType": "protector",
           "sizeIndependent": false
         },
+        "queen": {
+          "sku": "170991",
+          "sellingAmountMinor": 14995,
+          "regularAmountMinor": 14995,
+          "websiteName": "Bedgear Dri-Tec Queen Mattress Protector",
+          "evidence": {
+            "type": "category-listing",
+            "url": "https://www.lacks.com/catalog/mattress-accessories?display_mode=products"
+          },
+          "observedAt": "2026-09-20T23:28:50+00:00",
+          "productType": "protector",
+          "sizeIndependent": false,
+          "parentCorroboration": {
+            "parentSkus": [
+              "833804"
+            ],
+            "modelNumber": "BGM03AWFQ",
+            "agreesOnPrice": true,
+            "note": "configurable parent of this same model; not a competing product"
+          }
+        },
         "twin": {
           "sku": "170984",
           "sellingAmountMinor": 9995,
@@ -6135,19 +6836,7 @@
           "sizeIndependent": false
         }
       },
-      "status": "variant-conflict",
-      "conflicts": [
-        {
-          "size": "queen",
-          "skus": [
-            "170991",
-            "833804"
-          ],
-          "amounts": [
-            14995
-          ]
-        }
-      ],
+      "status": "preview-eligible",
       "legacyPriceMatchesSizes": []
     },
     {
@@ -6199,6 +6888,27 @@
           "productType": "protector",
           "sizeIndependent": false
         },
+        "queen": {
+          "sku": "170881",
+          "sellingAmountMinor": 8995,
+          "regularAmountMinor": 8995,
+          "websiteName": "Bedgear Iprotect Queen Mattress Protector",
+          "evidence": {
+            "type": "category-listing",
+            "url": "https://www.lacks.com/catalog/mattress-accessories?display_mode=products"
+          },
+          "observedAt": "2026-09-20T23:28:50+00:00",
+          "productType": "protector",
+          "sizeIndependent": false,
+          "parentCorroboration": {
+            "parentSkus": [
+              "833806"
+            ],
+            "modelNumber": "BGM32AWFQ",
+            "agreesOnPrice": true,
+            "note": "configurable parent of this same model; not a competing product"
+          }
+        },
         "twin_xl": {
           "sku": "170868",
           "sellingAmountMinor": 6995,
@@ -6213,19 +6923,7 @@
           "sizeIndependent": false
         }
       },
-      "status": "variant-conflict",
-      "conflicts": [
-        {
-          "size": "queen",
-          "skus": [
-            "170881",
-            "833806"
-          ],
-          "amounts": [
-            8995
-          ]
-        }
-      ],
+      "status": "preview-eligible",
       "legacyPriceMatchesSizes": []
     },
     {
@@ -6278,21 +6976,30 @@
           "observedAt": "2026-09-20T23:28:58+00:00",
           "productType": "protector",
           "sizeIndependent": false
+        },
+        "queen": {
+          "sku": "1213416",
+          "sellingAmountMinor": 24995,
+          "regularAmountMinor": 24995,
+          "websiteName": "Bedgear Ver-Tex Queen Mattress Protector",
+          "evidence": {
+            "type": "category-listing",
+            "url": "https://www.lacks.com/catalog/mattress-accessories?display_mode=products"
+          },
+          "observedAt": "2026-09-20T23:28:58+00:00",
+          "productType": "protector",
+          "sizeIndependent": false,
+          "parentCorroboration": {
+            "parentSkus": [
+              "1266110"
+            ],
+            "modelNumber": "BGM026005",
+            "agreesOnPrice": true,
+            "note": "configurable parent of this same model; not a competing product"
+          }
         }
       },
-      "status": "variant-conflict",
-      "conflicts": [
-        {
-          "size": "queen",
-          "skus": [
-            "1213416",
-            "1266110"
-          ],
-          "amounts": [
-            24995
-          ]
-        }
-      ],
+      "status": "preview-eligible",
       "legacyPriceMatchesSizes": []
     },
     {

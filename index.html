@@ -13113,10 +13113,13 @@
     // A partial total is the first thing a salesperson would read aloud, so
     // an unknown amount must stay visibly unknown.
     //
-    // Quantity is carried on every line and is 1 today because
-    // window._accCart is keyed BY product id — a second pillow is not
-    // representable. The field exists so that change stays additive; nothing
-    // here reads a quantity the cart cannot yet express.
+    // Quantity is carried on every line and is the customer's own count:
+    // window._accCart entries hold a `quantity`, set through the Summary's
+    // visible +/− controls (setSleepSystemItemQuantity), and the extended
+    // amount is unit × quantity. A count outside the product's ceiling
+    // (pillow 4, base 1, protection 1) is REFUSED, never clamped — it makes
+    // the line unresolved, because a purchase whose count we cannot trust
+    // must not produce a confident extended amount.
     //
     // Double-counting the slot under the mattress is already prevented
     // upstream: setSleepSystemItem drops any cart entry sharing the target

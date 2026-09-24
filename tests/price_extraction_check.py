@@ -252,6 +252,117 @@ try:
 finally:
     _shutil.rmtree(_tmp, ignore_errors=True)
 
+# ---------------------------------------------------------------------------
+# THE PRODUCT-PAGE (DRILL) CACHE.
+#
+# The category cache never covered the drill, so every rebuild re-fetched all
+# 72 configurable parents and the site's 403s decided which ones resolved: two
+# consecutive runs produced DIFFERENT subsets - one with the protector's
+# product page, one with the base's, neither with both. These checks pin the
+# replacement: a page is replayed from its own stored response carrying its
+# own retrieval instant, and a refusal is never stored as evidence.
+print("")
+print("Product-page (drill) cache:")
+
+_pc_tmp = _tempfile.mkdtemp(prefix="drillcache_")
+_pc_orig = fx.CACHE_DIR
+try:
+    fx.CACHE_DIR = _pc_tmp
+    URL = "https://www.lacks.com/product/example-queen-protector-999"
+    OTHER = "https://www.lacks.com/product/example-queen-base-888"
+    WHEN = "2020-05-05T05:05:05+00:00"
+    # Wide enough that AGE never decides these checks; expiry has
+    # its own check below.
+    WIDE = 10 ** 6
+
+    check("a product key is stable for the same URL",
+          fx.product_cache_path(URL) == fx.product_cache_path(URL))
+    check("different product URLs get different keys",
+          fx.product_cache_path(URL) != fx.product_cache_path(OTHER))
+    check("a product key never collides with a category key",
+          fx.product_cache_path(URL) != fx.cache_path("mattress-accessories", 1)
+          and os.path.basename(fx.product_cache_path(URL)).startswith(fx.PRODUCT_CACHE_PREFIX)
+          and not os.path.basename(
+              fx.cache_path("mattress-accessories", 1)).startswith(fx.PRODUCT_CACHE_PREFIX))
+    check("a cold key is a MISS, not an empty page",
+          fx.product_cache_read(URL, WIDE) is None)
+
+    fx.product_cache_write(URL, {"1": {"sku": "A"}}, {"1": "slug-a"}, WHEN)
+    _hit = fx.product_cache_read(URL, WIDE)
+    check("a written page replays",
+          isinstance(_hit, dict) and _hit["byId"] == {"1": {"sku": "A"}})
+    check("the replay carries the ORIGINAL retrieval instant, not now",
+          _hit["retrievedAt"] == WHEN)
+    check("writing one product page does not create the other's entry",
+          fx.product_cache_read(OTHER, WIDE) is None)
+    check("cache_hours=0 disables the product cache entirely",
+          fx.product_cache_read(URL, 0) is None)
+    check("an entry older than the window is a miss, never replayed as fresh",
+          fx.product_cache_read(URL, 0.000001) is None)
+
+    with io.open(fx.product_cache_path(URL), "w", encoding="utf-8") as _f:
+        _f.write("{not json")
+    check("a corrupt entry is a miss, never an exception",
+          fx.product_cache_read(URL, WIDE) is None)
+
+    # A REFUSAL IS NOT EVIDENCE. resolve_configurable must report the problem
+    # and leave the cache empty, so a later run cannot replay a 403 as a page.
+    _parent = {"sku": "P1", "kind": "accessory", "foundInCategory": "x",
+               "evidence": {"type": "product-page", "url": OTHER}}
+    _real_fetch = fx.fetch
+    try:
+        fx.fetch = lambda _u, **_k: (403, "")
+        _rows, _probs = fx.resolve_configurable(_parent, "accessory", 0,
+                                                lambda _m: None, WIDE)
+        check("a 403 drill yields a problem and no rows",
+              _rows == [] and any("403" in str(p.get("problem")) for p in _probs))
+        check("a 403 drill writes NOTHING to the cache",
+              fx.product_cache_read(OTHER, WIDE) is None
+              and not os.path.exists(fx.product_cache_path(OTHER)))
+
+        fx.fetch = lambda _u, **_k: (200, "<html>no island here</html>")
+        _rows, _probs = fx.resolve_configurable(_parent, "accessory", 0,
+                                                lambda _m: None, WIDE)
+        check("a 200 with no parseable island writes NOTHING to the cache",
+              not os.path.exists(fx.product_cache_path(OTHER))
+              and any("island" in str(p.get("problem")) for p in _probs))
+
+        # A REPLAY MAKES NO REQUEST: seed the cache, then make any fetch fatal.
+        fx.product_cache_write(OTHER, {}, {}, WHEN)
+
+        def _boom(*_a, **_k):
+            raise AssertionError("the drill went to the network on a cache hit")
+
+        fx.fetch = _boom
+        _rows, _probs = fx.resolve_configurable(_parent, "accessory", 0,
+                                                lambda _m: None, WIDE)
+        check("a cached page replays with NO network request at all", True)
+        check("a replayed page reports its own shape, not a transport error",
+              _rows == [] and all("http-" not in str(p.get("problem")) for p in _probs))
+
+        # And the replayed observation reaches the ROWS, which is the whole
+        # point: before this cache every drilled row carried observedAt None.
+        fx.product_cache_write(
+            OTHER,
+            {"10": {"sku": "PARENT", "type_id": "configurable",
+                    "attributes": {"a1": {"code": "size", "options": [
+                        {"label": "Queen", "products": ["11"]}]}}},
+             "11": {"sku": "CHILD", "type_id": "simple", "display_price": True,
+                    "name": "Example Queen Protector", "mattress_size": "Queen",
+                    "final_price_without_tax": 10}},
+            {}, WHEN)
+        _rows, _probs = fx.resolve_configurable(_parent, "accessory", 0,
+                                                lambda _m: None, WIDE)
+        check("a replayed drill produces its child rows",
+              len(_rows) == 1 and _rows[0]["sku"] == "CHILD")
+        check("every replayed row carries the PAGE's instant, not this run's",
+              all(r.get("observedAt") == WHEN for r in _rows))
+    finally:
+        fx.fetch = _real_fetch
+finally:
+    fx.CACHE_DIR = _pc_orig
+    _shutil.rmtree(_pc_tmp, ignore_errors=True)
+
 print("\nGeneration and observation are different facts:")
 check("extract_record records the observation it was given, not a clock read",
       fx.extract_record(
