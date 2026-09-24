@@ -171,7 +171,10 @@ def model_number_stem(model_number, app_models):
     if not mn:
         return None
     for tok in sorted(app_models, key=len, reverse=True):
-        if len(tok) >= 4 and mn.startswith(tok):
+        # A part number carries a digit. A purely alphabetic token ("motion",
+        # "flow") is a NAME word, and a model number that happens to start with
+        # it is coincidence, never identity.
+        if len(tok) >= 4 and any(ch.isdigit() for ch in tok) and mn.startswith(tok):
             return tok
     return None
 

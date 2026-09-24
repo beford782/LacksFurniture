@@ -570,6 +570,19 @@ jobs:
       - name: pricing contract (dark shipped-state lock + fixture traversal)
         run: python tests/pricing_contract_check.py
 
+      # Phase 2.2e website price evidence tools (offline, synthetic inputs).
+      # The extraction suite pins the category capture and the product-page
+      # drill cache (stable keys, original retrieval time kept, expiry, corrupt
+      # entries, never storing a 403 or unreadable page, replay with no
+      # network). The mapping suite pins identity discipline: name overlap is
+      # never identity, model-number stems need a digit and a true prefix, a
+      # configurable parent corroborates its own child but never competes with
+      # it or prices a size alone, and every unproven pairing stays a conflict.
+      - name: price extraction (category capture + product-page drill cache)
+        run: python tests/price_extraction_check.py
+      - name: mapping (model-number stem + configurable parent/child identity)
+        run: python tests/mapping_check.py
+
       # Phase 2.1b: the dark resolver — executes the REAL resolveDarkPricing
       # extracted from index.html (definition only, zero live call sites) in
       # a poisoned pure scope: five independent axes over the governed

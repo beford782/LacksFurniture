@@ -234,5 +234,135 @@ check("a variant with no price is never a candidate",
       run([variant(sellingAmountMinor=None)], ACC_PROTECTOR)["mattresses"][0]
       ["sizes"]["queen"]["status"] == "unresolved")
 
+# ---------------------------------------------------------------------------
+# 6380772 rules: model-number stem identity and configurable parent vs child.
+# Proven load-bearing against the pre-6380772 mapper (rules 1, 5, 8, 9, 10 all
+# failed there), and case 4b caught a real defect in 6380772 as committed: a
+# purely alphabetic name word ("motion") became model-number identity. The
+# repair requires a digit in the stem token.
+# ---------------------------------------------------------------------------
+PARENT_FLAG = "configurable-parent-not-an-exact-variant"
+
+
+def base(**over):
+    """A website adjustable-base record whose NAME carries no app model token;
+    only its model number can identify it (the BT2000QN case)."""
+    v = accessory(family="Adjustable Base", productType="base",
+                  name="Bedtech Queen Adjustable Base With Head & Foot Motion",
+                  familyKey="adjustable base head foot", sku="283083", entityId="be1",
+                  modelNumber="BT2000QN", sellingAmountMinor=89900, regularAmountMinor=89900)
+    v.update(over)
+    return v
+
+
+ACC_BASE = [{"id": "base-bt2000", "price": 899,
+             "name": {"en": "BedTech BT2000 Adjustable Base", "es": "x"}}]
+ACC_BASE_GENERIC = [{"id": "base-motion", "price": 899,
+                     "name": {"en": "BedTech Motion Adjustable Base", "es": "x"}}]
+ACC_BASE_BRANDONLY = [{"id": "base-bedtech", "price": 899,
+                       "name": {"en": "BedTech Adjustable Base", "es": "x"}}]
+
+
+def acc(out):
+    return out["accessories"][0]
+
+
+print("\nModel-number stem identity (6380772 rule 1):")
+check("the parent flag the mapper partitions on is the one these cases plant",
+      getattr(M, "PARENT_FLAG", None) == PARENT_FLAG, str(getattr(M, "PARENT_FLAG", None)))
+a = acc(run([variant(), base()], ACC_BASE))
+check("1. BT2000QN matches app token BT2000: preview-eligible with the Queen variant",
+      a["status"] == "preview-eligible"
+      and a.get("variants", {}).get("queen", {}).get("sku") == "283083", str(a)[:200])
+check("1b. ...and the family is the model-number family, not the display-name family",
+      str(a.get("familyKey", "")).startswith("model-number:"), str(a.get("familyKey")))
+a = acc(run([variant(), base(modelNumber="BT3000QN")], ACC_BASE))
+check("2. BT3000QN does not match BT2000", a["status"] == "unresolved", str(a)[:200])
+a = acc(run([variant(), base(modelNumber="XBT2000QN")], ACC_BASE))
+check("3. a token only in the MIDDLE of a model number does not match",
+      a["status"] == "unresolved", str(a)[:200])
+a = acc(run([variant(), base(modelNumber="BEDTECH2000QN")], ACC_BASE_BRANDONLY))
+check("4a. a BRAND word never becomes model-number identity (BEDTECH2000QN vs 'BedTech')",
+      a["status"] == "unresolved", str(a)[:200])
+a = acc(run([variant(), base(modelNumber="MOTION2000QN",
+                             name="Bedtech Queen Adjustable Base With Head & Foot")],
+            ACC_BASE_GENERIC))
+check("4b. a generic NAME word never becomes model-number identity (MOTION2000QN vs 'Motion')",
+      a["status"] == "unresolved", str(a)[:200])
+check("4c. helper: a digit-free token is never a stem, a part-number token is",
+      M.model_number_stem("MOTION2000QN", {"motion"}) is None
+      and M.model_number_stem("BT2000QN", {"bt2000"}) == "bt2000")
+
+print("\nConfigurable parent vs exact child (6380772 rule 2):")
+child = accessory(sku="170991", modelNumber="BGM03AWFQ", sellingAmountMinor=14995,
+                  regularAmountMinor=14995)
+parent = accessory(sku="833804", entityId="ae2", modelNumber="BGM03AWFQ",
+                   sellingAmountMinor=14995, regularAmountMinor=14995,
+                   exceptions=[PARENT_FLAG])
+a = acc(run([variant(), child, parent], ACC_PROTECTOR))
+q = (a.get("variants") or {}).get("queen") or {}
+check("5. same model number: resolves to the CHILD sku, preview-eligible",
+      a["status"] == "preview-eligible" and q.get("sku") == "170991", str(a)[:240])
+note = q.get("parentCorroboration") or {}
+check("5b. ...with the parent recorded as corroboration (sku, model number, price agreement)",
+      note.get("parentSkus") == ["833804"] and note.get("modelNumber") == "BGM03AWFQ"
+      and note.get("agreesOnPrice") is True, str(note)[:200])
+a = acc(run([variant(), child,
+             accessory(sku="833804", entityId="ae2", modelNumber="BGM026003",
+                       exceptions=[PARENT_FLAG])], ACC_PROTECTOR))
+check("6. DIFFERENT parent/child model numbers stay a variant-conflict with both SKUs",
+      a["status"] == "variant-conflict"
+      and any(set(c["skus"]) == {"170991", "833804"} for c in a.get("conflicts", [])),
+      str(a)[:240])
+check("6b. ...and no price wins the Queen slot", "queen" not in (a.get("variants") or {}))
+a = acc(run([variant(), accessory(sku="170991", modelNumber=None),
+             accessory(sku="833804", entityId="ae2", modelNumber=None,
+                       exceptions=[PARENT_FLAG])], ACC_PROTECTOR))
+check("7a. BOTH model numbers missing: no collapse, variant-conflict",
+      a["status"] == "variant-conflict" and "queen" not in (a.get("variants") or {}),
+      str(a)[:240])
+a = acc(run([variant(), accessory(sku="170991", modelNumber=None),
+             accessory(sku="833804", entityId="ae2", modelNumber="BGM03AWFQ",
+                       exceptions=[PARENT_FLAG])], ACC_PROTECTOR))
+check("7b. CHILD model number missing: no collapse, variant-conflict",
+      a["status"] == "variant-conflict" and "queen" not in (a.get("variants") or {}),
+      str(a)[:240])
+a = acc(run([variant(), child,
+             accessory(sku="833804", entityId="ae2", modelNumber=None,
+                       exceptions=[PARENT_FLAG])], ACC_PROTECTOR))
+check("7c. PARENT model number missing: no collapse, variant-conflict",
+      a["status"] == "variant-conflict" and "queen" not in (a.get("variants") or {}),
+      str(a)[:240])
+a = acc(run([variant(), parent], ACC_PROTECTOR))
+check("8. a PARENT-ONLY size never becomes an exact purchasable price",
+      "queen" not in (a.get("variants") or {}) and a["status"] != "preview-eligible",
+      str(a)[:240])
+check("8b. ...and the reason names the parent-only case",
+      any(c.get("reason") == "configurable-parent-only-no-exact-variant"
+          and c.get("skus") == ["833804"] for c in a.get("conflicts", [])),
+      str(a.get("conflicts"))[:200])
+a = acc(run([variant(), child,
+             accessory(sku="170992", entityId="ae3", modelNumber="BGM03AWFQ",
+                       sellingAmountMinor=15995),
+             parent], ACC_PROTECTOR))
+check("9. two exact children with different SKUs remain a conflict even with a corroborating parent",
+      a["status"] == "variant-conflict"
+      and any(set(c["skus"]) == {"170991", "170992"} for c in a.get("conflicts", []))
+      and "queen" not in (a.get("variants") or {}), str(a)[:240])
+cheap_parent = accessory(sku="833804", entityId="ae2", modelNumber="BGM03AWFQ",
+                         sellingAmountMinor=12995, regularAmountMinor=12995,
+                         exceptions=[PARENT_FLAG])
+with_parent = acc(run([variant(), child, cheap_parent], ACC_PROTECTOR))
+without_parent = acc(run([variant(), child], ACC_PROTECTOR))
+qw = (with_parent.get("variants") or {}).get("queen") or {}
+check("10. parent/child PRICE disagreement is recorded explicitly (agreesOnPrice False)",
+      (qw.get("parentCorroboration") or {}).get("agreesOnPrice") is False,
+      str(qw.get("parentCorroboration"))[:200])
+check("10b. ...the CHILD's price is the one carried, never the parent's 'starting at'",
+      qw.get("sellingAmountMinor") == 14995 and qw.get("sku") == "170991", str(qw)[:200])
+check("10c. ...and identity is not strengthened: same status as with no parent at all",
+      with_parent["status"] == without_parent["status"] == "preview-eligible",
+      f"{with_parent['status']} vs {without_parent['status']}")
+
 print(f"\nMapping check: {passed} passed, {failed} failed")
 sys.exit(1 if failed else 0)

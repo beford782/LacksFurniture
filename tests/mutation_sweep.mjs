@@ -130,6 +130,10 @@ const PRICING_GATE_RENDERED = ["tests/pricing_presentation_check.mjs", "tests/pr
 // its bind policy, in-memory allowlist and banner are observed by the harness
 // check alone, which drives the real server on a private address of the host.
 const PRICING_HARNESS = ["tests/pricing_harness_check.py"];
+// The app-to-website mapper (tools/map_app_to_website.py, offline evidence
+// tool): identity discipline is observed by the mapping suite alone, which
+// runs the real build() over a synthetic snapshot in a temp dir.
+const MAPPING = ["tests/mapping_check.py"];
 // Payload minimisation (2026-09-09): the email-gating suite executes the real
 // accessory projection over a priced catalog record and pins its exact keys.
 const EMAIL_PACKET = ["tests/email_gating_check.mjs"];
@@ -3150,6 +3154,15 @@ const MUTATIONS = [
     "ROBOTS_TXT = b\"User-agent: *\\nDisallow: /\\n\"",
     "ROBOTS_TXT = b\"User-agent: *\\nDisallow:\\n\"",
     PRICING_HARNESS, "tools/serve_pricing_preview.py"],
+  // --- Mapper identity discipline (6380772 rules, tools/map_app_to_website.py)
+  ["mapper: a digit-free name word becomes model-number identity again (MOTION2000QN answers for 'motion')",
+    "        if len(tok) >= 4 and any(ch.isdigit() for ch in tok) and mn.startswith(tok):",
+    "        if len(tok) >= 4 and mn.startswith(tok):",
+    MAPPING, "tools/map_app_to_website.py"],
+  ["mapper: a configurable parent with a DIFFERENT model number is collapsed into the child (the Ver-Tex Full conflict disappears)",
+    "    if None in child_models or None in parent_models or child_models != parent_models:",
+    "    if None in child_models or None in parent_models:",
+    MAPPING, "tools/map_app_to_website.py"],
 ];
 
 // ---------------------------------------------------------------------------
