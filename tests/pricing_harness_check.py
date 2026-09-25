@@ -734,6 +734,7 @@ async () => {
              title: ((document.getElementById('compareModalTitle') || {}).textContent || '').trim(),
              closeLabel: closeBtn ? closeBtn.getAttribute('aria-label') : null,
              priceRow: rowText('price'), priceCells: cells('price'), diffRow: rowText('pricediff'), diffCells: cells('pricediff'),
+             feelRow: rowText('feel'), tierRow: rowText('tier'),
              sizeHidden: sz ? sz.hidden : 'absent', sizeText: sz ? sz.textContent.trim() : '',
              tierGlyphs: modal.querySelectorAll('.cmp-head-name .price-tier').length,
              colsHtmlLength: (document.getElementById('compareCols') || { innerHTML: 'absent' }).innerHTML.length,
@@ -1094,6 +1095,14 @@ def rendered():
                           esw["title"] == CMP_TITLE["es"] and esw["closeLabel"] == "Cerrar comparación"
                           and copy_ok(esw, "es") and esw["sizeText"].startswith(CMP_SIZE_PREFIX["es"]),
                           f"title={esw['title']!r} close={esw['closeLabel']!r} price={str(esw['priceRow'])[:60]!r} diff={str(esw['diffRow'])[:40]!r} size={esw['sizeText']!r}")
+                    # The fit rows too: the Feel value is resolved in the active language
+                    # when Results render, so the open-modal repaint must read the
+                    # CURRENT drawer data, not the entries captured at open. Pinned
+                    # against the reopen path, which is the reference rendering.
+                    check(f"{tag}: with the modal still OPEN the Feel and Tier rows read exactly as a fresh ES open renders them (and differ from EN)",
+                          esw["feelRow"] == es["feelRow"] and esw["tierRow"] == es["tierRow"]
+                          and es["feelRow"] != en["feelRow"] and es["tierRow"] != en["tierRow"],
+                          f"open-switch feel={esw['feelRow']!r} reopen feel={es['feelRow']!r} en feel={en['feelRow']!r}")
                     check(f"{tag}: reopened in ES - title, labels, size line and close label all Spanish, same two models, same amounts",
                           es["shown"] and es["title"] == CMP_TITLE["es"] and copy_ok(es, "es") and es["sizeText"].startswith(CMP_SIZE_PREFIX["es"])
                           and es["closeLabel"] == "Cerrar comparación" and es["selected"] == b["ids"][:2]

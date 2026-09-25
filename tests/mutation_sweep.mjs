@@ -3224,6 +3224,10 @@ const MUTATIONS = [
     "          if (diff === 0) {",
     "          if (false) {",
     PRICING_HARNESS, "index.html"],
+  ["compare: the open-modal repaint reuses the entries captured at open (the Feel value keeps the old language)",
+    "        document.getElementById('compareCols').innerHTML = rowsHtml(dd[id1] || m1, dd[id2] || m2);",
+    "        document.getElementById('compareCols').innerHTML = rowsHtml(m1, m2);",
+    PRICING_HARNESS, "index.html"],
 ];
 
 // ---------------------------------------------------------------------------

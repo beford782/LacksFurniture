@@ -25284,6 +25284,7 @@
       // calls this while the modal is visible, and closeCompareModal() drops
       // it. It repaints copy only - same two models, same amounts, same
       // return-focus owner; selection, focus and every gate are untouched.
+      var id1 = arr[0], id2 = arr[1];
       window._compareRerender = function() {
         var t2 = document.getElementById('compareModalTitle');
         if (t2) t2.textContent = t('compare.modal_title');
@@ -25292,7 +25293,12 @@
           c2.setAttribute('aria-label',
             currentLang === 'es' ? 'Cerrar comparación' : 'Close comparison');
         }
-        document.getElementById('compareCols').innerHTML = rowsHtml(m1, m2);
+        // Read the CURRENT drawer entries, not the two captured at open: the
+        // language switch re-renders Results and rebuilds them, and the Feel
+        // label is resolved in the active language at that moment. The
+        // captured entries would repaint the old language's "Medium 5/10".
+        var dd = window._drawerData || {};
+        document.getElementById('compareCols').innerHTML = rowsHtml(dd[id1] || m1, dd[id2] || m2);
         if (typeof renderCompareSizeContext === 'function') renderCompareSizeContext();
       };
       var modal = document.getElementById('compareModal');

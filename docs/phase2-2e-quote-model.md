@@ -306,6 +306,15 @@ rendered correctly. Two sweep entries (repaint call removed; equal branch
 skipped), each verified caught individually (631 / 4 each); manifest **762**.
 Harness after: **635 / 0**.
 
+**Review finding on the repaint hook (2026-09-25, CODE_REVIEW.md pass 2).** The
+hook reused the two drawer entries captured at open, and the Feel value is
+resolved in the active language when Results render, so an in-modal switch
+repainted "Medium 5/10" inside an otherwise Spanish modal (fail-before
+635 / 4, pinned against the reopen rendering, which is the reference). Fix:
+the hook re-reads the current drawer entries by id. One sweep entry
+(captured entries reused), verified caught; manifest **763**. Harness after:
+**639 / 0**.
+
 One candidate entry was **withdrawn as vacuous**: summing lines of different
 currencies SURVIVED, because currency uniformity is enforced twice upstream.
 The guard stays as defence in depth, its unreachability is recorded at the
