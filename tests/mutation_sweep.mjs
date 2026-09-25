@@ -16,14 +16,25 @@
 //
 // Run: node tests/mutation_sweep.mjs
 //      node tests/mutation_sweep.mjs --list     (print the manifest, run nothing)
+//      node tests/mutation_sweep.mjs --validate-manifest
+//                                               (check every entry's target has a
+//                                                pristine source, run no observer)
+//      node tests/mutation_sweep.mjs --from 756 (run entries 756..end only; the
+//                                                baseline covers their observers)
+//
+// MUTATION_SWEEP_ROOT=<dir> overrides the tree the sandbox is copied from. It
+// exists for tests/mutation_manifest_check.mjs, which runs a planted COPY of
+// this file from a temp directory against the real tree.
 
 import { readFileSync, writeFileSync, mkdtempSync, cpSync, rmSync } from "node:fs";
 import { execFileSync } from "node:child_process";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { tmpdir } from "node:os";
 
-const root = join(dirname(fileURLToPath(import.meta.url)), "..");
+const root = process.env.MUTATION_SWEEP_ROOT
+  ? resolve(process.env.MUTATION_SWEEP_ROOT)
+  : join(dirname(fileURLToPath(import.meta.url)), "..");
 
 // The suites that can observe these properties. Kept explicit rather than
 // "every suite", so the runtime stays proportionate and so a survivor cannot be
@@ -3293,6 +3304,13 @@ const PRISTINE_BY_FILE = {
   // `experience` bypass shipped green.
   "tools/validation.py":
     readFileSync(join(sandbox, "tools", "validation.py"), "utf8"),
+  // Pricing 2.2 mapper (the 6380772 identity rules; copied with tools/). The
+  // two mapper entries named this target from 9d99478 on without this key, so
+  // the sweep threw a TypeError at entry 756 instead of reporting anything -
+  // found 2026-09-25 by the first complete run past the DR-01 block. The
+  // manifest validation below now refuses that shape before any observer runs.
+  "tools/map_app_to_website.py":
+    readFileSync(join(sandbox, "tools", "map_app_to_website.py"), "utf8"),
   // A4.3: the living nine-question contract. The quiz-reduction suite reads
   // the counts stated in the principal guides and compares them to
   // data/quiz.json, so CLAUDE.md is a mutation target like any other source.
@@ -3335,6 +3353,49 @@ const PRISTINE_BY_FILE = {
     readFileSync(join(sandbox, "incoming", "generate_financing_qr.py"), "utf8"),
 };
 
+// Manifest validation, BEFORE any observer runs. Every entry names a target
+// (fifth field, index.html by default) and that target must have a pristine
+// source above, or the loop below would dereference undefined and throw a
+// TypeError mid-run - which is what happened at entry 756 on 2026-09-25 after
+// the two mapper entries shipped without their key. A sweep that dies with a
+// stack trace after an hour reports nothing about the entries it never
+// reached; a manifest defect is reported here, by name, in seconds, and the
+// exit code is distinct from a survivor (1) so the two are never confused.
+function manifestTargetsWithoutSource(mutations, pristineByFile) {
+  const missing = [];
+  mutations.forEach((entry, i) => {
+    const target = entry[4] || "index.html";
+    if (!Object.prototype.hasOwnProperty.call(pristineByFile, target)) {
+      missing.push(`#${i + 1} ${JSON.stringify(target)} - ${entry[0]}`);
+    }
+  });
+  return missing;
+}
+const missingTargets = manifestTargetsWithoutSource(MUTATIONS, PRISTINE_BY_FILE);
+if (missingTargets.length) {
+  console.log(`::error:: ${missingTargets.length} manifest ${missingTargets.length === 1 ? "entry names" : "entries name"} a target with no pristine source; add the file to PRISTINE_BY_FILE (no observer was run):`);
+  missingTargets.forEach((m) => console.log(`  [NO PRISTINE SOURCE] ${m}`));
+  process.exit(2);
+}
+if (process.argv.includes("--validate-manifest")) {
+  console.log(`manifest: ${MUTATIONS.length} entries, every target has a pristine source (${Object.keys(PRISTINE_BY_FILE).length} files); no observer was run`);
+  process.exit(0);
+}
+
+// --from N runs the tail of the manifest only (1-based, inclusive). The
+// baseline still covers every observer the selected entries name, and the
+// final line reports the selection, never the whole manifest's count.
+const fromArg = process.argv.indexOf("--from");
+const fromIndex = fromArg === -1 ? 1 : Number(process.argv[fromArg + 1]);
+if (!Number.isInteger(fromIndex) || fromIndex < 1 || fromIndex > MUTATIONS.length) {
+  console.log(`::error:: --from needs an integer between 1 and ${MUTATIONS.length}`);
+  process.exit(2);
+}
+const RUN = MUTATIONS.slice(fromIndex - 1);
+if (fromIndex > 1) {
+  console.log(`running entries ${fromIndex}-${MUTATIONS.length} of ${MUTATIONS.length} (--from ${fromIndex})\n`);
+}
+
 // Observers are node suites by default. The validator's self-test is the one
 // PYTHON observer, and the fact that it lives inside the very file it
 // validates is what makes it the correct observer for a validator mutation:
@@ -3368,7 +3429,7 @@ let survivors = 0, notApplied = 0, caught = 0;
 // naming it as "caught" and the sweep could finish green while masking a
 // vacuous observer (Codex, PR #16).
 const ALL_OBSERVERS = [...new Set(
-  MUTATIONS.flatMap((m) => m[3] || DEFAULT_SUITES).concat(WITH_SESSION))];
+  RUN.flatMap((m) => m[3] || DEFAULT_SUITES).concat(WITH_SESSION))];
 const baseline = runSuites(ALL_OBSERVERS);
 console.log(`baseline (unmutated): ${baseline.length ? "RED — " + baseline.join(",") : "green"}\n`);
 if (baseline.length) {
@@ -3376,7 +3437,7 @@ if (baseline.length) {
   process.exit(1);
 }
 
-for (const [label, find, replace, suites, targetFile] of MUTATIONS) {
+for (const [label, find, replace, suites, targetFile] of RUN) {
   const target = targetFile || "index.html";
   const clean = PRISTINE_BY_FILE[target];
   const mutated = clean.replace(asRegex(find), replace);
@@ -3397,7 +3458,7 @@ for (const [label, find, replace, suites, targetFile] of MUTATIONS) {
   }
 }
 
-console.log(`\nMutation sweep: ${caught}/${MUTATIONS.length} caught, ${survivors} survived, ${notApplied} did not apply`);
+console.log(`\nMutation sweep: ${caught}/${RUN.length} caught, ${survivors} survived, ${notApplied} did not apply${fromIndex > 1 ? ` (entries ${fromIndex}-${MUTATIONS.length} of ${MUTATIONS.length})` : ""}`);
 if (survivors) console.log("A SURVIVOR is a safety property with no effective test.");
 if (notApplied) console.log("A mutation that DID NOT APPLY is a stale manifest entry — its target moved or was renamed.");
 process.exit(survivors === 0 && notApplied === 0 ? 0 : 1);

@@ -315,6 +315,28 @@ the hook re-reads the current drawer entries by id. One sweep entry
 (captured entries reused), verified caught; manifest **763**. Harness after:
 **639 / 0**.
 
+**Sweep manifest defect (2026-09-25, first complete run past the DR-01
+block).** The two mapper entries from 9d99478 name
+`tools/map_app_to_website.py` as their target, and no `PRISTINE_BY_FILE` key
+was ever added for it. A full sweep on 72c43e4 ran 59 minutes, baseline green,
+**755 / 763 caught, 0 survived, 0 not applied**, then died at entry 756 with
+`TypeError: Cannot read properties of undefined (reading 'replace')` and no
+summary line - so the two mapper entries and the six compare-price entries
+behind them had never been exercised by the shipped sweep, and the
+"verified caught individually" notes above were made by another route.
+Repair: the key is added; the sweep now validates the manifest against its
+pristine table BEFORE the baseline and exits **2** (distinct from the survivor
+code 1) listing every entry whose target has no source, so this shape is
+reported in seconds by name instead of thrown an hour in; `--validate-manifest`
+runs that check alone and `--from N` reruns a tail of the manifest with a
+proportionate baseline. `tests/mutation_manifest_check.mjs` (26 checks, wired
+into CI and the local mirror) proves the refusal fires by number and target
+before any observer executes (a marker observer measures the negative and
+runs once the refusal is neutralised) and replays the original defect from a
+key-deleted copy as a refusal naming #756 and #757. Manifest count unchanged at
+**763**; the rerun of 756-763 and the complete sweep on the committed tree are
+recorded in the commit message and the session report, not here.
+
 One candidate entry was **withdrawn as vacuous**: summing lines of different
 currencies SURVIVED, because currency uniformity is enforced twice upstream.
 The guard stays as defence in depth, its unreachability is recorded at the

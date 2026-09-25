@@ -659,6 +659,14 @@ jobs:
       - name: delivery harness (send-nothing live path, rendered)
         run: python tests/delivery_harness_check.py
 
+      # The sweep's own manifest: every entry's target must have a pristine
+      # source, or the sweep would throw a TypeError mid-run instead of
+      # reporting (entry 756, 2026-09-25). The sweep validates this before its
+      # baseline; this suite proves the refusal fires by name, with exit 2,
+      # before any observer executes, and replays the original defect.
+      - name: mutation manifest (a missing target is refused before any observer)
+        run: node tests/mutation_manifest_check.mjs
+
       # One level up from the suites: for each safety property in the manifest,
       # delete it from a COPY of the tree and require a suite to go red. A
       # survivor is a property with no effective test, and a mutation that fails

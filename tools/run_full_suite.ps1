@@ -280,7 +280,12 @@ $checks = @(
     # three .drawer-promotion tokens pinned in source and every rendered line's
     # contrast measured through Chromium with the illustrative scenario
     # injected (root page and the committed demo bundle). Rendered.
-    @{ Name = 'promo muted lines (drawer promotion ink, rendered)'; Exe = $pythonExecutable; Args = @('tests/promo_muted_lines_check.py') }
+    @{ Name = 'promo muted lines (drawer promotion ink, rendered)'; Exe = $pythonExecutable; Args = @('tests/promo_muted_lines_check.py') },
+    # The sweep's own manifest: every entry's target must have a pristine
+    # source, refused by name with exit 2 before any observer runs (the
+    # 2026-09-25 TypeError at entry 756). Fast (four sandbox copies), so it
+    # runs even when the sweep itself is skipped.
+    @{ Name = 'mutation manifest (a missing target is refused before any observer)'; Exe = $nodeExecutable; Args = @('tests/mutation_manifest_check.mjs') }
 )
 if (-not $SkipMutationSweep) {
     $checks += @{ Name = 'mutation sweep'; Exe = $nodeExecutable; Args = @('tests/mutation_sweep.mjs') }
