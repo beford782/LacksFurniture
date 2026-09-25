@@ -13539,8 +13539,12 @@
       if (pa.state === 'off' && pb.state === 'off') return [];
       var priceLabel = pricingTotalCopy('compare-price-label');
       if (!priceLabel) return [];
+      // `exact` is what the column heads read: the $$$ tier glyph yields only
+      // to an EXACT figure. The governed unavailable copy is text in this row
+      // too, but it is not a price, so the glyph stays beside it.
       var rows = [{ key: 'price', label: priceLabel,
-                    a: pa.text || '\u2014', b: pb.text || '\u2014' }];
+                    a: pa.text || '\u2014', b: pb.text || '\u2014',
+                    exact: pa.state === 'available' || pb.state === 'available' }];
       if (pa.state === 'available' && pb.state === 'available'
           && typeof pa.amountMinor === 'number' && typeof pb.amountMinor === 'number') {
         var diff = Math.abs(pa.amountMinor - pb.amountMinor);
@@ -24448,7 +24452,7 @@
       'resultsHeadline', 'tierTabs', 'tierDescriptor', 'topPickContainer',
       'supportingRow', 'resultsTrialFocus',
       'drawerName', 'drawerDifferentiators', 'dfmConstructionSection', 'drawerTryPrompts', 'drawerPromotionDetail',
-      'compareCols', 'compareTraySlots',
+      'compareCols', 'compareSizeContext', 'compareTraySlots',
       'hf2PicksList', 'hf2AccessoriesList', 'hf2SystemTotal', 'hf2BriefWho',
       'hf2BriefProfile', 'hf2SleepSystemSection', 'hf2Priorities',
       // Slice 4 (D4): every financing container built from customer state.
@@ -24541,6 +24545,11 @@
         attrs: { 'aria-hidden': 'true', 'aria-busy': 'false' } },
       { id: 'privacyOverlay', remove: ['visible'] },
       { id: 'compareModal', remove: ['visible'], display: 'none' },
+      // The compare size line ("Comparing Queen mattresses") is the previous
+      // customer's answer; its CONTENT is cleared by name in the innerHTML
+      // list below and this entry re-hides it, so a reopened modal never
+      // shows the old size before renderCompareSizeContext() repaints.
+      { id: 'compareSizeContext', hiddenAttr: true },
       { id: 'compareTray', display: 'none' },
       // The complete-system subtotal is derived, never stored - but the DOM
       // it last wrote is a previous customer's purchase. wipeLayer only
@@ -25196,7 +25205,7 @@
         var _priceRows = (typeof compareRowsFor === 'function')
           ? compareRowsFor(d1.m, d2.m) : [];
         var _exact = _priceRows.some(function(r) {
-          return r.key === 'price' && (r.a !== '\u2014' || r.b !== '\u2014');
+          return r.key === 'price' && r.exact === true;
         });
         var a = sideData(d1, _exact), b = sideData(d2, _exact);
         var sameTag = _esCmp ? 'Igual en ambos' : 'Same for both';

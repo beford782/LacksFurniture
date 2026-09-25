@@ -623,6 +623,33 @@ async (ARGS) => {
   out.resultsSlots = document.querySelectorAll('#resultsScreen .noct-card-price').length;
   out.resultsStates = Array.from(document.querySelectorAll('#resultsScreen .noct-card-price')).map((e) => e.getAttribute('data-price-state'));
   out.resultsText = Array.from(document.querySelectorAll('#resultsScreen .noct-card-price')).map((e) => e.textContent).join(' | ');
+  out.lang = ARGS.lang;
+  // Compare modal (slice 2.2h): the first two Results models side by side.
+  // The price row, the same-size difference, the size line and the tier
+  // glyphs are read from the DOM the customer would see; then the modal is
+  // closed and the selection cleared so the rest of the walk is unchanged.
+  out.compare = null;
+  if (ids.length >= 2 && typeof window.openCompareModal === 'function') {
+    window._compareSelected = [ids[0], ids[1]];
+    if (typeof window.updateCompareTray === 'function') window.updateCompareTray();
+    window.openCompareModal();
+    await wait(150);
+    const modal = document.getElementById('compareModal');
+    const sz = document.getElementById('compareSizeContext');
+    const rowText = (k) => { const r = modal.querySelector('.cmp-row[data-cmp="' + k + '"]'); return r ? r.textContent.replace(/\s+/g, ' ').trim() : null; };
+    const cells = (k) => Array.from(modal.querySelectorAll('.cmp-row[data-cmp="' + k + '"] .cmp-val')).map((e) => e.textContent.replace(/\s+/g, ' ').trim());
+    out.compare = { shown: !!modal && modal.style.display !== 'none' && modal.classList.contains('visible'),
+                    heads: modal.querySelectorAll('.cmp-head').length,
+                    tierGlyphs: modal.querySelectorAll('.cmp-head-name .price-tier').length,
+                    priceRow: rowText('price'), priceCells: cells('price'),
+                    diffRow: rowText('pricediff'), diffCells: cells('pricediff'),
+                    sizeHidden: sz ? sz.hidden : 'absent', sizeText: sz ? sz.textContent.trim() : '',
+                    dollars: (modal.textContent.match(/\$\s?\d[\d,]*/g) || []).length,
+                    perPeriod: (modal.textContent.match(/\/\s*(mo|month|mes)\b/gi) || []).length };
+    if (typeof window.closeCompareModal === 'function') window.closeCompareModal();
+    if (typeof window.clearCompare === 'function') window.clearCompare();
+    await wait(100);
+  }
   // Drawer
   window.openMattressDrawer(first, ids);
   await wait(150);
@@ -685,6 +712,60 @@ async (ARGS) => {
 }
 """
 VIEWPORTS = [("tablet-landscape", 1194, 748), ("tablet-portrait", 834, 1108)]
+COMPARE_BEHAVIOUR_JS = r"""
+async () => {
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  const ANS = { "sleep_position": "side", "sleep_issues": ["back_pain"], "health_conditions": ["snoring"],
+                "temperature": "hot", "firmness": 5, "partner_sleep": "partner", "partner_disturbance": "sometimes",
+                "body_type": "average", "mattress_size": "queen" };
+  for (const k of Object.keys(ANS)) answers[k] = ANS[k];
+  showProfileScreen();
+  window.showResults();
+  await wait(150);
+  const ids = Object.keys(window._drawerData || {});
+  const snap = () => {
+    const modal = document.getElementById('compareModal');
+    const sz = document.getElementById('compareSizeContext');
+    const rowText = (k) => { const r = modal.querySelector('.cmp-row[data-cmp="' + k + '"]'); return r ? r.textContent.replace(/\s+/g, ' ').trim() : null; };
+    const cells = (k) => Array.from(modal.querySelectorAll('.cmp-row[data-cmp="' + k + '"] .cmp-val')).map((e) => e.textContent.replace(/\s+/g, ' ').trim());
+    const closeBtn = document.getElementById('compareModalClose');
+    return { shown: !!modal && modal.style.display !== 'none' && modal.classList.contains('visible'),
+             title: ((document.getElementById('compareModalTitle') || {}).textContent || '').trim(),
+             closeLabel: closeBtn ? closeBtn.getAttribute('aria-label') : null,
+             priceRow: rowText('price'), priceCells: cells('price'), diffRow: rowText('pricediff'),
+             sizeHidden: sz ? sz.hidden : 'absent', sizeText: sz ? sz.textContent.trim() : '',
+             tierGlyphs: modal.querySelectorAll('.cmp-head-name .price-tier').length,
+             colsHtmlLength: (document.getElementById('compareCols') || { innerHTML: 'absent' }).innerHTML.length,
+             selected: (window._compareSelected || []).slice(), lang: currentLang };
+  };
+  const out = { ids };
+  window._compareSelected = [ids[0], ids[1]];
+  if (typeof window.updateCompareTray === 'function') window.updateCompareTray();
+  window.openCompareModal();
+  await wait(150);
+  out.en = snap();
+  await switchLanguage('es');
+  await wait(200);
+  out.esWhileOpen = snap();
+  window.closeCompareModal();
+  await wait(50);
+  window.openCompareModal();
+  await wait(150);
+  out.es = snap();
+  await switchLanguage('en');
+  await wait(200);
+  window.closeCompareModal();
+  await wait(50);
+  window.openCompareModal();
+  await wait(150);
+  out.enAgain = snap();
+  // The unconfirmed new-customer wipe (window.startOver -> resetSessionState).
+  window.startOver();
+  await wait(400);
+  out.afterReset = snap();
+  return out;
+}
+"""
 
 
 def noNumeric_py(s):
@@ -693,6 +774,66 @@ UNAVAIL = {"en": FX["pricing"]["presentation"]["states"]["price-unavailable"]["e
            "es": FX["pricing"]["presentation"]["states"]["price-unavailable"]["es"]}
 ASSUMPTION = {"en": FX["pricing"]["presentation"]["assumptions"][0]["en"],
               "es": FX["pricing"]["presentation"]["assumptions"][0]["es"]}
+# Compare modal (slice 2.2h) copy: the governed row labels come from the served
+# fixture, the size line and the title from the dictionaries.
+CMP_PRICE_LABEL = {l: FX["pricing"]["presentation"]["totals"]["compare-price-label"][l] for l in ("en", "es")}
+CMP_DIFF_LABEL = {l: FX["pricing"]["presentation"]["totals"]["compare-difference-label"][l] for l in ("en", "es")}
+_DICT = {l: json.load(open(os.path.join(REPO, "data", f"dict-{l}.json"), encoding="utf-8")) for l in ("en", "es")}
+CMP_SIZE_PREFIX = {l: _DICT[l]["compare.size_context"].split("{size}")[0].strip() for l in ("en", "es")}
+CMP_TITLE = {l: _DICT[l]["compare.modal_title"] for l in ("en", "es")}
+DASH = "—"
+
+
+def minor_of(text):
+    """'$1,099.00' / '+$100' -> minor units, or None when no amount is present."""
+    m = re.search(r"\$\s?(\d[\d,]*)(?:\.(\d{2}))?", text or "")
+    if not m:
+        return None
+    return int(m.group(1).replace(",", "")) * 100 + (int(m.group(2)) if m.group(2) else 0)
+
+
+def expect_compare_size_line(tag, c, lang):
+    check(f"{tag}: compare size line names the answered size in the active language and carries no figure",
+          c.get("sizeHidden") is False and str(c.get("sizeText", "")).startswith(CMP_SIZE_PREFIX[lang])
+          and noNumeric_py(c.get("sizeText", "")), str(c.get("sizeText")))
+
+
+def expect_compare_off(tag, c, lang):
+    """Every OFF state and the shipped page: the modal opens as it always did -
+    two heads, both tier glyphs, no price row, no difference row, no figure."""
+    check(f"{tag}: compare modal opens with two heads and NO price row, NO difference row, no currency, no per-period text",
+          c.get("shown") is True and c.get("heads") == 2 and c.get("priceRow") is None and c.get("diffRow") is None
+          and c.get("dollars") == 0 and c.get("perPeriod") == 0, str(c)[:240])
+    check(f"{tag}: both tier glyphs stay in the compare heads (no exact price renders)", c.get("tierGlyphs") == 2, str(c.get("tierGlyphs")))
+    expect_compare_size_line(tag, c, lang)
+
+
+def expect_compare_unavailable(tag, c, lang):
+    """Fail-closed: the governed unavailable copy in the price row, no
+    difference, no figure - and the tier glyphs stay, because nothing exact
+    rendered for them to contradict."""
+    check(f"{tag}: compare price row shows the governed unavailable copy, no difference row, no figure",
+          c.get("shown") is True and c.get("priceRow") and UNAVAIL[lang] in c["priceRow"] and CMP_PRICE_LABEL[lang] in c["priceRow"]
+          and c.get("diffRow") is None and c.get("dollars") == 0, str(c)[:240])
+    check(f"{tag}: both tier glyphs stay in the compare heads - suppression is for an EXACT price, not for the unavailable copy",
+          c.get("tierGlyphs") == 2, str(c.get("tierGlyphs")))
+    expect_compare_size_line(tag, c, lang)
+
+
+def expect_compare_available(tag, c, lang):
+    cells, diff = c.get("priceCells") or [], c.get("diffCells") or []
+    amounts = [minor_of(x) for x in cells]
+    check(f"{tag}: compare price row shows the governed label and one FIXTURE amount per side",
+          c.get("shown") is True and CMP_PRICE_LABEL[lang] in (c.get("priceRow") or "") and len(cells) == 2
+          and all(a is not None for a in amounts), str(c.get("priceRow"))[:200])
+    check(f"{tag}: the same-size difference row carries the signed gap on the dearer side and the dash on the other, equal to the two prices' gap",
+          CMP_DIFF_LABEL[lang] in (c.get("diffRow") or "") and len(diff) == 2 and sorted(x.startswith("+$") for x in diff) == [False, True]
+          and DASH in diff and len(amounts) == 2 and None not in amounts
+          and minor_of(next(x for x in diff if x.startswith("+$"))) == abs(amounts[0] - amounts[1]),
+          f"diff={diff} amounts={amounts}")
+    check(f"{tag}: the tier glyphs yield to the exact figures (none in the compare heads)", c.get("tierGlyphs") == 0, str(c.get("tierGlyphs")))
+    check(f"{tag}: compare shows no per-period payment text (V1 invariant)", c.get("perPeriod") == 0)
+    expect_compare_size_line(tag, c, lang)
 
 
 def open_page(browser, url, width=1194, height=748, wait_until="networkidle", expect_app=True, clock=START,
@@ -787,6 +928,7 @@ def expect_off(tag, r):
           r["anchor"]["slots"] == 0 and r["hero"]["slots"] == 0 and r["plan"]["slots"] == 0)
     check(f"{tag}: no [data-price-state] element anywhere and no non-accessory dollar figure",
           r["anySlot"] == 0 and r["dollarDigits"] == [], str(r["dollarDigits"][:3]))
+    expect_compare_off(tag, r.get("compare") or {}, r.get("lang", "en"))
 
 
 def expect_unavailable(tag, r, lang):
@@ -804,6 +946,7 @@ def expect_unavailable(tag, r, lang):
           and UNAVAIL[lang] in r["drawer"]["text"] and UNAVAIL[lang] in r["anchor"]["text"]
           and UNAVAIL[lang] in r["hero"]["text"] and UNAVAIL[lang] in r["plan"]["text"]
           and r["dollarDigits"] == [], f"states={r['resultsStates']} dollars={r['dollarDigits'][:3]}")
+    expect_compare_unavailable(tag, r.get("compare") or {}, lang)
 
 
 def expect_available(tag, r, lang):
@@ -836,6 +979,7 @@ def expect_available(tag, r, lang):
           r["sheet"]["cardCount"] >= 1 and r["sheet"]["statusLines"] == 4
           and QUOTE[lang] in r["sheet"]["text"] and THRESH[lang] not in r["sheet"]["text"] and r["sheet"]["dollars"] == 0,
           f"cards={r['sheet']['cardCount']} status={r['sheet']['statusLines']} dollars={r['sheet']['dollars']}")
+    expect_compare_available(tag, r.get("compare") or {}, lang)
 
 
 def rendered():
@@ -897,8 +1041,42 @@ def rendered():
                           and r["anchor"]["slots"] == 0 and r["hero"]["slots"] == 0 and r["plan"]["slots"] == 0
                           and len(r["dollarDigits"]) == 1 and r["featured"]["governed"] == 1 and r["featured"]["legacy"] == 0,
                           f"drawer={r['drawer']['state']} results={r['resultsSlots']} dollars={r['dollarDigits']} featured={r['featured']}")
+                    # No applicable SKU for the answered size: the compare modal
+                    # is exactly the OFF modal, and its size line says "King".
+                    expect_compare_off("available, king answered (queen priced)", r.get("compare") or {}, "en")
             finally:
                 s.shutdown(); s.server_close()
+        # ---- compare modal behaviours (slice 2.2h): language switch and reset -
+        # In the `available` state, at both tablet orientations: the modal's
+        # governed copy follows a language switch (while open nothing throws;
+        # reopened it reads in the other language and keeps the same two
+        # models), and the new-customer wipe leaves no compare content behind.
+        s, port = serve("available")
+        try:
+            for name, w, h in VIEWPORTS:
+                tag = f"compare behaviours {name}"
+                page, errors, boot = open_page(browser, f"http://127.0.0.1:{port}/", w, h)
+                b = page.evaluate(COMPARE_BEHAVIOUR_JS)
+                page.close()
+                en, esw, es, en2, rst = b["en"], b["esWhileOpen"], b["es"], b["enAgain"], b["afterReset"]
+                check(f"{tag}: boot ready, no page error across open / switch / reopen / reset",
+                      boot.get("error") is None and not errors, f"boot={boot.get('error')} errors={errors[:2]}")
+                check(f"{tag}: EN open - title, governed price and difference labels, size line all English",
+                      en["shown"] and en["title"] == CMP_TITLE["en"] and CMP_PRICE_LABEL["en"] in (en["priceRow"] or "")
+                      and CMP_DIFF_LABEL["en"] in (en["diffRow"] or "") and en["sizeText"].startswith(CMP_SIZE_PREFIX["en"]), str(en)[:240])
+                check(f"{tag}: switching to ES with the modal OPEN keeps it open and keeps the same two models selected",
+                      esw["shown"] and esw["selected"] == b["ids"][:2], str(esw)[:200])
+                check(f"{tag}: reopened in ES - title, labels, size line and close label all Spanish, same two models, same amounts",
+                      es["shown"] and es["title"] == CMP_TITLE["es"] and CMP_PRICE_LABEL["es"] in (es["priceRow"] or "")
+                      and CMP_DIFF_LABEL["es"] in (es["diffRow"] or "") and es["sizeText"].startswith(CMP_SIZE_PREFIX["es"])
+                      and es["closeLabel"] == "Cerrar comparación" and es["selected"] == b["ids"][:2]
+                      and [minor_of(x) for x in es["priceCells"]] == [minor_of(x) for x in en["priceCells"]], str(es)[:240])
+                check(f"{tag}: back to EN the modal reads English again", en2["title"] == CMP_TITLE["en"] and en2["sizeText"].startswith(CMP_SIZE_PREFIX["en"]))
+                check(f"{tag}: the new-customer wipe closes the modal, empties the selection and the columns, hides and empties the size line, returns to English",
+                      rst["shown"] is False and rst["selected"] == [] and rst["colsHtmlLength"] == 0
+                      and rst["sizeHidden"] is True and rst["sizeText"] == "" and rst["lang"] == "en", str(rst)[:240])
+        finally:
+            s.shutdown(); s.server_close()
         # ---- negative control: the defect the frozen clock repairs -----------
         # Chromium's REAL clock is past the available state's freshness limit
         # (2026-09-15T19:00Z; post-merge CI run 35027281265). An unfrozen page

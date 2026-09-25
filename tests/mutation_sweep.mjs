@@ -3203,6 +3203,19 @@ const MUTATIONS = [
     "    if None in child_models or None in parent_models or child_models != parent_models:",
     "    if None in child_models or None in parent_models:",
     MAPPING, "tools/map_app_to_website.py"],
+  // --- Compare modal price surface (slice 2.2h), observed by the rendered harness
+  ["compare: every price row counts as exact again (the tier glyphs vanish beside the unavailable copy)",
+    "          return r.key === 'price' && r.exact === true;",
+    "          return r.key === 'price';",
+    PRICING_HARNESS, "index.html"],
+  ["compare: the new-customer wipe stops clearing the size line's content (the previous customer's size survives)",
+    "      'compareCols', 'compareSizeContext', 'compareTraySlots',",
+    "      'compareCols', 'compareTraySlots',",
+    PRICING_HARNESS, "index.html"],
+  ["compare: the new-customer wipe stops re-hiding the size line",
+    "      { id: 'compareSizeContext', hiddenAttr: true },\n",
+    "",
+    PRICING_HARNESS, "index.html"],
 ];
 
 // ---------------------------------------------------------------------------

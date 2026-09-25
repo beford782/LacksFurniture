@@ -276,6 +276,20 @@ verified CAUGHT** individually on a temp tree. On the reconciled tree
 mapper-discipline entries from `9d99478` (digit-free stem, parent/child
 model-number equality), both verified caught by `mapping_check.py`.
 
+**Compare surface rendered coverage (2026-09-24, after the reconciliation).**
+`pricing_harness_check.py` now opens the compare modal on every walk (seven
+drill states plus the shipped page, EN/ES, 1194x748 and 834x1108) and pins the
+price row, the same-size difference (signed on the dearer side, dash on the
+other, equal to the two amounts' gap), the size line, the tier glyphs, no
+per-period text, and in `available` a language switch with the modal open,
+a reopen in the other language, and the new-customer wipe. Two defects found
+and repaired in the same commit, with the failing run recorded first (577 / 6):
+the `$$$` tier glyph yielded to ANY price-row text, so the unavailable copy
+suppressed it (now `exact` is set only when a side is `available`), and the
+wipe left the previous customer's size line ("Comparing Queen mattresses")
+in the hidden modal (now cleared and re-hidden by name). Three sweep entries
+cover the repairs; manifest **760**. Harness after: **583 / 0**.
+
 One candidate entry was **withdrawn as vacuous**: summing lines of different
 currencies SURVIVED, because currency uniformity is enforced twice upstream.
 The guard stays as defence in depth, its unreachability is recorded at the
