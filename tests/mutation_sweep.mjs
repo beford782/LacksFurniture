@@ -3216,6 +3216,14 @@ const MUTATIONS = [
     "      { id: 'compareSizeContext', hiddenAttr: true },\n",
     "",
     PRICING_HARNESS, "index.html"],
+  ["compare: a language switch stops repainting the OPEN modal (the customer must close and reopen to read Spanish)",
+    "        window._compareRerender();",
+    "        void 0;",
+    PRICING_HARNESS, "index.html"],
+  ["compare: two equal exact prices lose the governed 'Same' row (the equal branch is skipped)",
+    "          if (diff === 0) {",
+    "          if (false) {",
+    PRICING_HARNESS, "index.html"],
 ];
 
 // ---------------------------------------------------------------------------

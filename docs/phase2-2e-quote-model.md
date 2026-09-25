@@ -290,6 +290,22 @@ wipe left the previous customer's size line ("Comparing Queen mattresses")
 in the hidden modal (now cleared and re-hidden by name). Three sweep entries
 cover the repairs; manifest **760**. Harness after: **583 / 0**.
 
+**Open-modal language switch and the equal-price path (2026-09-24, follow-up).**
+The behaviours pass now runs in `available` and `unavailable` and pins that a
+switch made WITH THE MODAL OPEN repaints the title, close label, governed row
+copy and size line at once, on the same screen, with the same two models,
+amounts and return-focus owner. Fail-before (631 / 4): only the title followed;
+the close label and the rows stayed English until a close-and-reopen. Repair:
+`openCompareModal()` registers a copy-only repaint hook while open,
+`closeCompareModal()` drops it, and `switchLanguage()` calls it only when the
+modal is visible. A served copy of the `available` drill with every mattress at
+one amount pins the equal-price presentation (one merged price cell, the
+difference row in words - "Same" / "Igual" - never a signed figure or "$0.00",
+tier glyphs yielding, size line, no per-period text); that path already
+rendered correctly. Two sweep entries (repaint call removed; equal branch
+skipped), each verified caught individually (631 / 4 each); manifest **762**.
+Harness after: **635 / 0**.
+
 One candidate entry was **withdrawn as vacuous**: summing lines of different
 currencies SURVIVED, because currency uniformity is enforced twice upstream.
 The guard stays as defence in depth, its unreachability is recorded at the

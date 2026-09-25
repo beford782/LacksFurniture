@@ -15068,6 +15068,14 @@
       if (resultsScreen && resultsScreen.classList.contains('active')) {
         _renderResults();
       }
+      // An OPEN compare modal repaints in place (slice 2.2h): title, close
+      // label, governed price rows and size line, same two models. The
+      // customer never has to close and reopen it to read the new language.
+      var compareModalEl = document.getElementById('compareModal');
+      if (compareModalEl && compareModalEl.classList.contains('visible')
+          && typeof window._compareRerender === 'function') {
+        window._compareRerender();
+      }
       // Financing (Payment Choice) surfaces carry config-driven bilingual copy
       // — refresh whichever are visible, including the open sheet, so EN/ES
       // switching updates financing text and accessible labels. The handoff
@@ -25272,6 +25280,21 @@
       // typeof-guarded like every other gate consumer: the compare-modal
       // test sandbox compiles this renderer without the gate block.
       if (typeof renderCompareSizeContext === 'function') renderCompareSizeContext();
+      // An OPEN modal follows a language switch at once: switchLanguage()
+      // calls this while the modal is visible, and closeCompareModal() drops
+      // it. It repaints copy only - same two models, same amounts, same
+      // return-focus owner; selection, focus and every gate are untouched.
+      window._compareRerender = function() {
+        var t2 = document.getElementById('compareModalTitle');
+        if (t2) t2.textContent = t('compare.modal_title');
+        var c2 = document.getElementById('compareModalClose');
+        if (c2) {
+          c2.setAttribute('aria-label',
+            currentLang === 'es' ? 'Cerrar comparación' : 'Close comparison');
+        }
+        document.getElementById('compareCols').innerHTML = rowsHtml(m1, m2);
+        if (typeof renderCompareSizeContext === 'function') renderCompareSizeContext();
+      };
       var modal = document.getElementById('compareModal');
       // Capture the exact opener BEFORE moving focus, so close can hand
       // focus straight back to it.
@@ -25322,6 +25345,8 @@
         try { opener.focus({ preventScroll: true }); } catch (err) { opener.focus(); }
       }
       window._compareReturnFocus = null;
+      // A closed modal has nothing to repaint; the next open registers anew.
+      window._compareRerender = null;
       // Slice 6 (owner ruling): closing the modal never clears the persisted
       // comparison selection, whatever opened it. Only the customer's own
       // Clear control and the session wipe empty _compareSelected. The origin

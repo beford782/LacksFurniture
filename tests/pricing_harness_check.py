@@ -52,6 +52,7 @@ check fails, exactly like tests/sleep_plan_layout_check.py.
 Run: python tests/pricing_harness_check.py
 """
 
+import copy
 import hashlib
 import ipaddress
 import json
@@ -732,18 +733,28 @@ async () => {
     return { shown: !!modal && modal.style.display !== 'none' && modal.classList.contains('visible'),
              title: ((document.getElementById('compareModalTitle') || {}).textContent || '').trim(),
              closeLabel: closeBtn ? closeBtn.getAttribute('aria-label') : null,
-             priceRow: rowText('price'), priceCells: cells('price'), diffRow: rowText('pricediff'),
+             priceRow: rowText('price'), priceCells: cells('price'), diffRow: rowText('pricediff'), diffCells: cells('pricediff'),
              sizeHidden: sz ? sz.hidden : 'absent', sizeText: sz ? sz.textContent.trim() : '',
              tierGlyphs: modal.querySelectorAll('.cmp-head-name .price-tier').length,
              colsHtmlLength: (document.getElementById('compareCols') || { innerHTML: 'absent' }).innerHTML.length,
-             selected: (window._compareSelected || []).slice(), lang: currentLang };
+             selected: (window._compareSelected || []).slice(), lang: currentLang,
+             screen: ((document.querySelector('.screen.active') || {}).id) || null,
+             // the return-focus owner is compared by identity inside the page
+             returnFocusSame: window._compareReturnFocus === REF };
   };
   const out = { ids };
   window._compareSelected = [ids[0], ids[1]];
   if (typeof window.updateCompareTray === 'function') window.updateCompareTray();
+  // A real opener holds focus before the tap, so the return-focus owner is a
+  // concrete element the switch must not replace.
+  const opener = document.querySelector('#resultsScreen .compare-btn') || document.body;
+  if (opener && typeof opener.focus === 'function') opener.focus();
   window.openCompareModal();
   await wait(150);
+  var REF = window._compareReturnFocus;
   out.en = snap();
+  // Switch WITH THE MODAL OPEN: the customer must not have to close and
+  // reopen it - every visible string follows the language at once.
   await switchLanguage('es');
   await wait(200);
   out.esWhileOpen = snap();
@@ -1051,30 +1062,83 @@ def rendered():
         # governed copy follows a language switch (while open nothing throws;
         # reopened it reads in the other language and keeps the same two
         # models), and the new-customer wipe leaves no compare content behind.
-        s, port = serve("available")
+        for bstate in ("available", "unavailable"):
+            s, port = serve(bstate)
+            try:
+                for name, w, h in VIEWPORTS:
+                    tag = f"compare behaviours {bstate} {name}"
+                    page, errors, boot = open_page(browser, f"http://127.0.0.1:{port}/", w, h)
+                    b = page.evaluate(COMPARE_BEHAVIOUR_JS)
+                    page.close()
+                    en, esw, es, en2, rst = b["en"], b["esWhileOpen"], b["es"], b["enAgain"], b["afterReset"]
+                    avail = bstate == "available"
+                    def copy_ok(snapshot, lang):
+                        """The governed copy the modal shows in `lang`: price label
+                        plus (available) the difference label, or (unavailable) the
+                        unavailable copy with no difference row."""
+                        if avail:
+                            return CMP_PRICE_LABEL[lang] in (snapshot["priceRow"] or "") and CMP_DIFF_LABEL[lang] in (snapshot["diffRow"] or "")
+                        return (CMP_PRICE_LABEL[lang] in (snapshot["priceRow"] or "") and UNAVAIL[lang] in (snapshot["priceRow"] or "")
+                                and snapshot["diffRow"] is None)
+                    check(f"{tag}: boot ready, no page error across open / switch / reopen / reset",
+                          boot.get("error") is None and not errors, f"boot={boot.get('error')} errors={errors[:2]}")
+                    check(f"{tag}: EN open - title, close label, governed row copy and size line all English",
+                          en["shown"] and en["title"] == CMP_TITLE["en"] and en["closeLabel"] == "Close comparison"
+                          and copy_ok(en, "en") and en["sizeText"].startswith(CMP_SIZE_PREFIX["en"]), str(en)[:240])
+                    # The required behaviour: the OPEN modal follows the switch at once.
+                    check(f"{tag}: switching to ES with the modal OPEN keeps it open, on the same screen, with the same two models, amounts and return-focus owner",
+                          esw["shown"] and esw["selected"] == b["ids"][:2] and esw["screen"] == en["screen"]
+                          and esw["returnFocusSame"] is True and en["returnFocusSame"] is True
+                          and [minor_of(x) for x in esw["priceCells"]] == [minor_of(x) for x in en["priceCells"]], str(esw)[:240])
+                    check(f"{tag}: with the modal still OPEN the title, close label, row labels/copy and size line read Spanish at once (no close-and-reopen)",
+                          esw["title"] == CMP_TITLE["es"] and esw["closeLabel"] == "Cerrar comparación"
+                          and copy_ok(esw, "es") and esw["sizeText"].startswith(CMP_SIZE_PREFIX["es"]),
+                          f"title={esw['title']!r} close={esw['closeLabel']!r} price={str(esw['priceRow'])[:60]!r} diff={str(esw['diffRow'])[:40]!r} size={esw['sizeText']!r}")
+                    check(f"{tag}: reopened in ES - title, labels, size line and close label all Spanish, same two models, same amounts",
+                          es["shown"] and es["title"] == CMP_TITLE["es"] and copy_ok(es, "es") and es["sizeText"].startswith(CMP_SIZE_PREFIX["es"])
+                          and es["closeLabel"] == "Cerrar comparación" and es["selected"] == b["ids"][:2]
+                          and [minor_of(x) for x in es["priceCells"]] == [minor_of(x) for x in en["priceCells"]], str(es)[:240])
+                    check(f"{tag}: back to EN the modal reads English again", en2["title"] == CMP_TITLE["en"] and en2["sizeText"].startswith(CMP_SIZE_PREFIX["en"]))
+                    check(f"{tag}: the new-customer wipe closes the modal, empties the selection and the columns, hides and empties the size line, returns to English",
+                          rst["shown"] is False and rst["selected"] == [] and rst["colsHtmlLength"] == 0
+                          and rst["sizeHidden"] is True and rst["sizeText"] == "" and rst["lang"] == "en", str(rst)[:240])
+            finally:
+                s.shutdown(); s.server_close()
+        # ---- equal-price rendered path (slice 2.2h) ---------------------------
+        # A copy of the `available` drill with EVERY mattress at one amount, so
+        # any two compared models are equal: the governed equal presentation
+        # ("Same" / "Igual"), never a signed difference and never "$0.00".
+        eq_cfg = copy.deepcopy(built["available"][0])
+        EQUAL_MINOR = 99900
+        for e in eq_cfg["pricing"]["products"]:
+            if e["productKind"] == "mattress":
+                e["price"]["amountMinor"] = EQUAL_MINOR
+                e["clearance"]["scope"]["amountMinor"] = EQUAL_MINOR
+        _, eq_cat, _, eq_acc = built["available"]
+        s = ThreadingHTTPServer(("127.0.0.1", 0), srv.make_handler(srv.encode(eq_cfg), srv.encode(eq_cat), srv.encode(eq_acc)))
+        threading.Thread(target=s.serve_forever, daemon=True).start()
+        eq_port = s.server_address[1]
+        SAME_WORD = {"en": "Same", "es": "Igual"}
         try:
             for name, w, h in VIEWPORTS:
-                tag = f"compare behaviours {name}"
-                page, errors, boot = open_page(browser, f"http://127.0.0.1:{port}/", w, h)
-                b = page.evaluate(COMPARE_BEHAVIOUR_JS)
-                page.close()
-                en, esw, es, en2, rst = b["en"], b["esWhileOpen"], b["es"], b["enAgain"], b["afterReset"]
-                check(f"{tag}: boot ready, no page error across open / switch / reopen / reset",
-                      boot.get("error") is None and not errors, f"boot={boot.get('error')} errors={errors[:2]}")
-                check(f"{tag}: EN open - title, governed price and difference labels, size line all English",
-                      en["shown"] and en["title"] == CMP_TITLE["en"] and CMP_PRICE_LABEL["en"] in (en["priceRow"] or "")
-                      and CMP_DIFF_LABEL["en"] in (en["diffRow"] or "") and en["sizeText"].startswith(CMP_SIZE_PREFIX["en"]), str(en)[:240])
-                check(f"{tag}: switching to ES with the modal OPEN keeps it open and keeps the same two models selected",
-                      esw["shown"] and esw["selected"] == b["ids"][:2], str(esw)[:200])
-                check(f"{tag}: reopened in ES - title, labels, size line and close label all Spanish, same two models, same amounts",
-                      es["shown"] and es["title"] == CMP_TITLE["es"] and CMP_PRICE_LABEL["es"] in (es["priceRow"] or "")
-                      and CMP_DIFF_LABEL["es"] in (es["diffRow"] or "") and es["sizeText"].startswith(CMP_SIZE_PREFIX["es"])
-                      and es["closeLabel"] == "Cerrar comparación" and es["selected"] == b["ids"][:2]
-                      and [minor_of(x) for x in es["priceCells"]] == [minor_of(x) for x in en["priceCells"]], str(es)[:240])
-                check(f"{tag}: back to EN the modal reads English again", en2["title"] == CMP_TITLE["en"] and en2["sizeText"].startswith(CMP_SIZE_PREFIX["en"]))
-                check(f"{tag}: the new-customer wipe closes the modal, empties the selection and the columns, hides and empties the size line, returns to English",
-                      rst["shown"] is False and rst["selected"] == [] and rst["colsHtmlLength"] == 0
-                      and rst["sizeHidden"] is True and rst["sizeText"] == "" and rst["lang"] == "en", str(rst)[:240])
+                for lang in ("en", "es"):
+                    tag = f"equal-price {name} {lang}"
+                    r = walk(browser, eq_port, lang, "queen", w, h)
+                    expect_frozen(tag, r)
+                    expect_ready(tag, r)
+                    check(f"{tag}: no page error", not r["errors"], "; ".join(r["errors"][:2]))
+                    c = r.get("compare") or {}
+                    cells = c.get("priceCells") or []
+                    check(f"{tag}: the price row merges into ONE governed cell carrying the shared amount once (equal on both sides)",
+                          c.get("shown") is True and CMP_PRICE_LABEL[lang] in (c.get("priceRow") or "") and len(cells) == 1
+                          and minor_of(cells[0]) == EQUAL_MINOR and c.get("dollars") == 1, f"row={c.get('priceRow')!r} cells={cells}")
+                    check(f"{tag}: the difference row says {SAME_WORD[lang]!r} in words - no signed figure, no '$0.00'",
+                          CMP_DIFF_LABEL[lang] in (c.get("diffRow") or "") and SAME_WORD[lang] in (c.get("diffRow") or "")
+                          and "+$" not in (c.get("diffRow") or "") and all(minor_of(x) is None for x in (c.get("diffCells") or [])),
+                          f"diff={c.get('diffRow')!r}")
+                    check(f"{tag}: the tier glyphs yield to the exact (equal) figures", c.get("tierGlyphs") == 0, str(c.get("tierGlyphs")))
+                    check(f"{tag}: no per-period payment text in the compare modal", c.get("perPeriod") == 0)
+                    expect_compare_size_line(tag, c, lang)
         finally:
             s.shutdown(); s.server_close()
         # ---- negative control: the defect the frozen clock repairs -----------
