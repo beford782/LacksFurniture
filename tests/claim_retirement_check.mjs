@@ -12,7 +12,10 @@
 // differentiator render block, the compare modal's sideData()/rowsHtml(),
 // buildMattressPriorities() and hf2ReasonFor() from index.html and EXECUTES
 // them against the real shipped catalog (both languages). It pins:
-//   1. the EXACT affected-model set — g6, g7, s3, g8, g9 and no other;
+//   1. the EXACT observed total-omission set — the five above plus g5, whose
+//      authored pairs and archetype were cleared on 2026-09-20 as unsupported
+//      copy. TOTAL OMISSION IS NOT RETIREMENT: RETIRED stays the 2026-08-12 five;
+//   1b. g5 pinned separately, including that no fallback pair reaches it;
 //   2. total drawer omission for retired models; intact rendering for
 //      authored models; intact fallback for archetype-bearing models;
 //   3. compare semantics (mixed "—" one side only; retired×retired row
@@ -36,6 +39,12 @@ const html = readFileSync(join(root, "index.html"), "utf8");
 const MATTRESSES = JSON.parse(readFileSync(join(root, "data", "mattresses.json"), "utf8"));
 const ALL = Object.values(MATTRESSES).flat();
 const RETIRED = ["g6", "g7", "s3", "g8", "g9"];
+// TOTAL OMISSION IS NOT RETIREMENT (owner direction 2026-09-20). RETIRED above
+// is the 2026-08-12 owner-ruling set and MUST NOT gain members: the banned-token
+// scan and the one-name-derived-tag pin below are bound to that ruling. g5 renders
+// no differentiators for an unrelated reason - its authored pairs and archetype were
+// cleared as unsupported copy - so it belongs in the OBSERVED omission set only.
+const TOTAL_OMISSION = [...RETIRED, "g5"];
 
 let passed = 0, failed = 0;
 function check(label, cond, detail) {
@@ -124,14 +133,50 @@ function makeCompare(lang, { sideSrc = SIDEDATA_FN, rowsSrc = ROWSHTML_FN } = {}
 const byId = (id) => ALL.find((x) => x.id === id);
 const dd = (m, tier) => ({ m: JSON.parse(JSON.stringify(m)), tier, firmFeel: "Feel" });
 
-// ---------- 1. the affected-model set is EXACTLY the five --------------------
-section("affected-model pin (owner requirement: g6, g7, s3, g8, g9 and no other)");
+// ---------- 1. the observed total-omission set is EXACTLY these six ----------
+section("observed total-omission set (the 2026-08-12 five, plus g5 since 2026-09-20)");
 for (const lang of ["en", "es"]) {
   const diffs = makeDiffs(lang);
   const affected = ALL.filter((m) => diffs(m).length === 0).map((m) => m.id).sort();
-  check(`[${lang}] models with total differentiator omission === ${JSON.stringify([...RETIRED].sort())}`,
-    JSON.stringify(affected) === JSON.stringify([...RETIRED].sort()),
+  check(`[${lang}] models with total differentiator omission === ${JSON.stringify([...TOTAL_OMISSION].sort())}`,
+    JSON.stringify(affected) === JSON.stringify([...TOTAL_OMISSION].sort()),
     `got ${JSON.stringify(affected)}`);
+}
+
+// ---------- 1b. g5: pinned separately, and NOT as a retirement ---------------
+section("g5 total omission (2026-09-20) - separate from the 2026-08-12 ruling");
+{
+  const g5 = byId("g5");
+  check("g5 is NOT a member of the 2026-08-12 RETIRED set", !RETIRED.includes("g5"));
+  check("g5 archetype is cleared (this is what reaches the omission branch)",
+    (g5.archetype || "").trim() === "", `got ${JSON.stringify(g5.archetype)}`);
+  check("g5 has no authored differentiator pairs",
+    (g5.differentiators || []).length === 0, `got ${JSON.stringify(g5.differentiators)}`);
+  for (const lang of ["en", "es"]) {
+    const diffs = makeDiffs(lang);
+    check(`[${lang}] g5 renders zero differentiators (no archetype-fallback pair)`,
+      diffs(g5).length === 0, `got ${JSON.stringify(diffs(g5))}`);
+  }
+  // The fallback pair would have surfaced the archetype as a TITLE and a
+  // material-class comparative as its detail. Both must be unreachable.
+  for (const lang of ["en", "es"]) {
+    const rendered = JSON.stringify(makeDiffs(lang)(g5));
+    check(`[${lang}] no cooling word reaches g5 differentiators`,
+      !/cooling|frescura|fresc/i.test(rendered), rendered);
+    check(`[${lang}] no material-class comparative reaches g5 differentiators`,
+      !/than a|que un|deep-contouring|contorno profundo/i.test(rendered), rendered);
+  }
+  // Compare modal: an omitted model must show the em dash, never the
+  // generated response label or difference text.
+  for (const lang of ["en", "es"]) {
+    const cmpG5 = makeCompare(lang);
+    const side = cmpG5.sideData(dd(g5, "gold"));
+    check(`[${lang}] compare: g5 side is flagged omitted`, side.retired === true);
+    check(`[${lang}] compare: g5 feature cell is the em dash, not a generated label`,
+      side.feature === "—", `got ${JSON.stringify(side.feature)}`);
+    check(`[${lang}] compare: g5 benefit cell is the em dash, not the comparative`,
+      side.benefit === "—", `got ${JSON.stringify(side.benefit)}`);
+  }
 }
 {
   // The fallback path stays intact for an archetype-bearing model with no

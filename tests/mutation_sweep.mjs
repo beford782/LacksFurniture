@@ -75,6 +75,11 @@ const BRIEF = ["tests/sleep_brief_presentation_check.mjs"];
 // The motion suite owns the review→Sleep Brief transition paths, including
 // the reduced-motion hardening of the retained legacy fallback (Slice 2).
 const MOTION = ["tests/motion_flag_check.mjs"];
+// g5 total omission (2026-09-20). The guard is claim_retirement_check.mjs
+// section 1b. Total omission is NOT the 2026-08-12 retirement: these entries
+// restore each of the two inputs that would resurrect an archetype-fallback
+// pair on g5, and prove the new pin is load-bearing rather than vacuous.
+const OMISSION = ["tests/claim_retirement_check.mjs"];
 // Quiz presentation observer (Slice 3, item 1.2): the quiz suite owns the
 // zero-icon ruling, the two-column grid cap, option order/skip/hide semantics,
 // selection and cap/exclusivity behaviour, the aria-pressed state contract,
@@ -185,6 +190,9 @@ const SESSION = ["tests/session_safety_check.mjs"];
 const SLEEP = ["tests/sleep_system_presentation_check.mjs"];
 // The rendered layout check (Chromium) - the observer of geometry.
 const LAYOUT = ["tests/sleep_plan_layout_check.py"];
+// DR-01: the rendered compare-tray clearance check (Chromium) - the observer
+// of the tray / pill / action-row geometry on every Results path.
+const TRAY = ["tests/compare_tray_clearance_check.py"];
 // A4.3 observers: the reduction suite owns the counts, the absence, the
 // Summary retirement and the conditional-answer invariant; the
 // quiz-presentation suite owns navigation and progress; the consultation
@@ -2424,6 +2432,14 @@ const MUTATIONS = [
     "                                      \"pressureRelief\",\n                                      \"motionIsolation\"\n",
     "                                      \"pressureRelief\",\n                                      \"motionIsolation\",\n                                      \"memory\"\n",
     VOCAB, "data/mattresses.json"],
+  ["g5 omission: the archetype is restored (the fallback pair resurrects, putting the cooling archetype back as a differentiator TITLE)",
+    "\"subBrand\":  \"ProBreeze\",\n                     \"pitchKey\":  \"\",\n                     \"archetype\":  \"\",",
+    "\"subBrand\":  \"ProBreeze\",\n                     \"pitchKey\":  \"\",\n                     \"archetype\":  \"Cooling adaptive hybrid\",",
+    OMISSION, "data/mattresses.json"],
+  ["g5 omission: an authored differentiator pair is restored (the model stops being omitted)",
+    "\"default\":  \"Una construcci\u00f3n h\u00edbrida.\"\n                                    },\n                     \"differentiators\":  [\n\n                                         ]",
+    "\"default\":  \"Una construcci\u00f3n h\u00edbrida.\"\n                                    },\n                     \"differentiators\":  [\n                                             {\n                                                 \"title\":  {\n                                                               \"en\":  \"Hybrid coil base\",\n                                                               \"es\":  \"Base h\u00edbrida de resortes\"\n                                                           },\n                                                 \"detail\":  {\n                                                                \"en\":  \"Adds airflow.\",\n                                                                \"es\":  \"Agrega ventilaci\u00f3n.\"\n                                                            }\n                                             }\n                                         ]",
+    OMISSION, "data/mattresses.json"],
   ["vocabulary: a dormant-key declaration is deleted (hypoallergenic loses its governance record)",
     '    "hypoallergenic": ("B",',
     '    "_hypoallergenic_removed": ("B",',
@@ -3154,6 +3170,30 @@ const MUTATIONS = [
     "ROBOTS_TXT = b\"User-agent: *\\nDisallow: /\\n\"",
     "ROBOTS_TXT = b\"User-agent: *\\nDisallow:\\n\"",
     PRICING_HARNESS, "tools/serve_pricing_preview.py"],
+  // --- DR-01 (design review 2026-09-18, owner decision 2026-09-19) ----------
+  // The compare tray must never hide the best match's action row. Each
+  // protected path has its own mutation; the rendered clearance check is the
+  // only observer that renders a tray, so it is named explicitly.
+  ["DR-01: Results entry stops checking tray clearance (Back to matches lands under the tray)",
+    "      if (id === 'resultsScreen' && typeof window._ensureResultsClearance === 'function') {",
+    "      if (false && id === 'resultsScreen' && typeof window._ensureResultsClearance === 'function') {",
+    TRAY, "index.html"],
+  ["DR-01: the Compare commit moment stops clearing the tapped row",
+    "        window._ensureResultsClearance(window._resultsActionRowFor('.compare-btn[data-id=\"' + mattressId + '\"]'));",
+    "        void 0;",
+    TRAY, "index.html"],
+  ["DR-01: closing the drawer stops re-checking clearance",
+    "      if (wasOpen && !immediate && typeof window._ensureResultsClearance === 'function') {",
+    "      if (false && wasOpen && !immediate && typeof window._ensureResultsClearance === 'function') {",
+    TRAY, "index.html"],
+  ["DR-01: the top-bar constraint covers card rows only (a correction can park a tier tab under the bar)",
+    "        .map(boxOf).concat(rows);",
+    "        .map(boxOf).filter(function() { return false; }).concat(rows);",
+    TRAY, "index.html"],
+  ["DR-01: the tray's actions drop back to 13px inside its top edge (no fingertip dead margin)",
+    "      padding: 1rem 1rem 0.75rem;\n      z-index: 60;",
+    "      padding: 0.75rem 1rem;\n      z-index: 60;",
+    TRAY, "index.html"],
   // --- Mapper identity discipline (6380772 rules, tools/map_app_to_website.py)
   ["mapper: a digit-free name word becomes model-number identity again (MOTION2000QN answers for 'motion')",
     "        if len(tok) >= 4 and any(ch.isdigit() for ch in tok) and mn.startswith(tok):",

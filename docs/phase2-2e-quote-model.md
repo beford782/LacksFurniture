@@ -1,7 +1,12 @@
 # Phase 2.2e/2.2f — the consultation quote model and the visible subtotal
 
 **Status:** built 2026-09-20 on branch `claude/phase2-quote-model` from `main` `fe013e9`.
-Nothing activated, no mark moved, item 2.2 stays ◐. Not committed, not pushed, no PR.
+Nothing activated, no mark moved, item 2.2 stays ◐. Committed as WIP checkpoints
+`81060a0` (2026-09-21) and `6380772` (2026-09-24, accessory categories, drill
+cache, parent/child mapping), the mapper-rule tests and CI wiring `9d99478`
+(2026-09-24), then reconciled with `main` `5f19e9d` on 2026-09-24 (workbook,
+data bundle and demo bundle regenerated from the reconciled canonical inputs,
+never hand-merged). No PR until Blake orders one; still not integration-ready.
 
 This is 2.2 **Proceeds** work: disabled implementation behind the false
 production flags, proven with governed non-shipping fixtures and the localhost
@@ -246,8 +251,9 @@ Re-derived against this tree:
 | `pricing_contract_check.py` | **169 / 0** (baseline: 158) |
 | `pricing_resolver_check.mjs` | 235 / 0 |
 | `pricing_totality_check.py` | 10909 / 0 |
-| `tools/validation.py --self-test` | **1355 / 0** (baseline: 1337) |
-| `price_extraction_check.py` (new) | **53 / 0** |
+| `tools/validation.py --self-test` | **1356 / 0** (baseline: 1337; re-derived 2026-09-24 on the reconciled tree) |
+| `price_extraction_check.py` (new; wired into CI and the mirror 2026-09-24) | **79 / 0** (53 at `81060a0`) |
+| `mapping_check.py` (new; wired 2026-09-24) | **47 / 0** (26 at `6380772`; the ten 6380772-rule cases added in `9d99478`) |
 | `scoring_isolation_check.mjs` | 262 / 0 |
 | `phase1_output_regression_check.mjs` | 190 / 0 |
 | `session_safety_check.mjs` | 568 / 0 |
@@ -265,7 +271,10 @@ Re-derived against this tree:
 
 **Mutation sweep: manifest 737 → 748.** Eleven new entries plus one re-anchored
 (the accessory SKU grammar moved into `pricingCleanSku`). **Twelve mutants
-verified CAUGHT** individually on a temp tree.
+verified CAUGHT** individually on a temp tree. On the reconciled tree
+(2026-09-24) the manifest is **757**: main's seven (g5 omission, DR-01) plus two
+mapper-discipline entries from `9d99478` (digit-free stem, parent/child
+model-number equality), both verified caught by `mapping_check.py`.
 
 One candidate entry was **withdrawn as vacuous**: summing lines of different
 currencies SURVIVED, because currency uniformity is enforced twice upstream.
