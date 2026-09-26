@@ -21372,7 +21372,10 @@
                 : sleepSystemText({ en: 'Add support to plan', es: 'Agregar soporte al plan' })) +
             '</button>';
         } else if (step.id === 'pillow') {
-          actionHtml = window._sleepSystemState.pillowReaction === 'aligned'
+          // A pillow already in the plan always offers its Remove control,
+          // even before a re-recorded fit: the gate stops an UNTESTED pillow
+          // from being added; it must not strand a selected one.
+          actionHtml = (selected || window._sleepSystemState.pillowReaction === 'aligned')
             ? '<button type="button" class="sleep-system__action sleep-system__action--primary' + (selected ? ' sleep-system__action--selected' : '') +
                 '" data-sleep-action="' + (selected ? 'remove-item' : 'select-item') + '" data-item-id="' + escapeHtml(primary.id) + '">' +
                 escapeHtml(selected
@@ -21996,10 +21999,16 @@
         if (!currentPillowId && pillowItems[0]) currentPillowId = pillowItems[0].id;
         var otherPillow = pillowItems.find(function(item) { return item.id !== currentPillowId; });
 
-        Object.keys(window._accCart || {}).forEach(function(id) {
-          var pillowItem = ACCESSORIES.find(function(accessory) { return accessory.id === id; });
-          if (pillowItem && sleepSystemStepForItem(pillowItem) === 'pillow') delete window._accCart[id];
-        });
+        // PR #132 review repair (2026-09-25): a reaction is a verdict on the
+        // pillow just tested, never on the plan. The two-pillow allowance
+        // (setSleepSystemItem's CAPACITY) is only real if recording the
+        // second pillow's fit leaves the first one - and the quantity the
+        // customer set - in the cart. "Too low" / "Too high" drop ONLY the
+        // tested pillow (it did not fit); "Feels aligned" drops nothing.
+        if ((pillowReaction === 'low' || pillowReaction === 'high') && currentPillowId &&
+            window._accCart && window._accCart[currentPillowId]) {
+          delete window._accCart[currentPillowId];
+        }
 
         window._sleepSystemState.pillowFeedback = pillowReaction;
         if (pillowReaction === 'low' || pillowReaction === 'high') {
@@ -22020,10 +22029,10 @@
         window._sleepSystemState.pillowCandidateId = control.getAttribute('data-item-id') || '';
         window._sleepSystemState.pillowReaction = '';
         window._sleepSystemState.pillowFeedback = '';
-        Object.keys(window._accCart || {}).forEach(function(id) {
-          var existingPillow = ACCESSORIES.find(function(accessory) { return accessory.id === id; });
-          if (existingPillow && sleepSystemStepForItem(existingPillow) === 'pillow') delete window._accCart[id];
-        });
+        // PR #132 review repair (2026-09-25): trying a pillow changes which
+        // pillow the card shows; it does not touch the plan. A pillow already
+        // in the cart (at the quantity the customer set) stays there while
+        // the second one is tested; only the fit record starts over.
         window._sleepSystemState.decisions.pillow = { status: 'open' };
         analytics.log('pillow_candidate_changed', {
           itemId: window._sleepSystemState.pillowCandidateId
@@ -23435,6 +23444,7 @@
             '<span class="hf2-acc-card__qty-label" id="qtyLbl-' + escapeHtml(item.id) + '">'
               + escapeHtml(esq ? 'Cantidad' : 'Quantity') + '</span>'
             + '<button type="button" class="hf2-acc-card__qty-btn"'
+              + ' data-qty-item="' + escapeHtml(item.id) + '" data-qty-delta="-1"'
               + ' aria-label="' + escapeHtml((esq ? 'Quitar uno: ' : 'One fewer: ') + nameForLabel) + '"'
               + (qty <= 1 ? ' disabled' : '')
               + ' onclick="window.changeReviewAccessoryQuantity(\'' + item.id + '\', -1)"'
@@ -23443,6 +23453,7 @@
             + '<output class="hf2-acc-card__qty-value" aria-live="polite"'
               + ' aria-labelledby="qtyLbl-' + escapeHtml(item.id) + '">' + qty + '</output>'
             + '<button type="button" class="hf2-acc-card__qty-btn"'
+              + ' data-qty-item="' + escapeHtml(item.id) + '" data-qty-delta="1"'
               + ' aria-label="' + escapeHtml((esq ? 'Agregar uno: ' : 'One more: ') + nameForLabel) + '"'
               + (qty >= _maxHere ? ' disabled' : '')
               + ' onclick="window.changeReviewAccessoryQuantity(\'' + item.id + '\', 1)"'
@@ -23472,10 +23483,25 @@
       var entry = (window._accCart || {})[itemId];
       if (!entry) return;
       var current = (typeof entry.quantity === 'number' && entry.quantity >= 1) ? entry.quantity : 1;
+      // PR #132 review repair (2026-09-25): renderHf2() rebuilds the card,
+      // which drops keyboard focus to <body>. Remember whether the press came
+      // from a stepper control, and after the repaint hand focus back to the
+      // SAME control - or to the opposite one when the pressed control has
+      // just reached its limit and is disabled (a disabled control cannot
+      // hold focus). A touch that never focused the control changes nothing.
+      var active = document.activeElement;
+      var fromStepper = !!(active && active.closest && active.closest('.hf2-acc-card__qty'));
       if (typeof setSleepSystemItemQuantity === 'function') {
         setSleepSystemItemQuantity(itemId, current + delta);
       }
       renderHf2();
+      if (!fromStepper) return;
+      var scope = document.getElementById('hf2AccessoriesList');
+      if (!scope) return;
+      var same = scope.querySelector('[data-qty-item="' + itemId + '"][data-qty-delta="' + delta + '"]');
+      var other = scope.querySelector('[data-qty-item="' + itemId + '"][data-qty-delta="' + (-delta) + '"]');
+      var target = (same && !same.disabled) ? same : ((other && !other.disabled) ? other : null);
+      if (target && typeof target.focus === 'function') target.focus({ preventScroll: true });
     };
 
     // Decision B4 — gold uses authored topPickReason (bilingual already);
