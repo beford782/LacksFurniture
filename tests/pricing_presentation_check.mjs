@@ -107,7 +107,11 @@ check("STORE_CONFIG.pricing is read exactly once in the whole file, inside the g
   (html.match(readRe) || []).length === 1 && (gateBlock.match(readRe) || []).length === 1);
 for (const name of ["getPricingConfig", "pricingSurfaceEnabled", "pricingCatalogRecord", "pricingSkuFor", "pricingStateCopy",
                     "pricingCopyList", "formatPriceAmount", "pricePresentationFor", "renderDrawerPrice",
-                    "priceSizeAnswer", "priceSlotFor"]) {
+                    "priceSizeAnswer", "priceSlotFor",
+                    "quoteCartRecords", "quoteLineFor", "buildConsultationQuote",
+                    "quoteQualifyingAmount", "pricingTotalCopy", "renderHf2SystemTotal",
+                    "pricingCleanSku", "quoteQuantityFor", "quoteLineName", "sizeLabelFor",
+                    "compareRowsFor", "pricingSameAmountText", "renderCompareSizeContext"]) {
   const d = new RegExp(`function\\s+${name}\\s*\\(`, "g");
   check(`${name} is declared exactly once, inside the gate block`,
     (html.match(d) || []).length === 1 && (gateBlock.match(d) || []).length === 1);
@@ -163,8 +167,26 @@ function fnBody(sig) {
     && ssMain.includes("(governedPrice || (price ? '<div class=\"sleep-system__price\">' + escapeHtml(price) + '</div>' : ''))")
     && ssMain.includes("sleepSystemText({ en: 'From $', es: 'Desde $' }) + Number(primary.price).toLocaleString()"));
   check("no consumer supplies its own size (priceSizeAnswer is the only size source, read only inside the gate block)",
-    (html.match(/priceSizeAnswer\s*\(/g) || []).length === 3 /* decl + priceSlotFor + priceStatusHtmlFor */
-    && (gateBlock.match(/priceSizeAnswer\s*\(/g) || []).length === 3);
+    (html.match(/priceSizeAnswer\s*\(/g) || []).length === 6 /* decl + priceSlotFor + priceStatusHtmlFor + renderHf2SystemTotal + compareRowsFor + renderCompareSizeContext */
+    && (gateBlock.match(/priceSizeAnswer\s*\(/g) || []).length === 6);
+}
+// The qualifying-basis sets must admit EXACTLY the same values on both sides
+// of the contract. An adversarial review found the previous "mirror" was a
+// comment plus a self-restating literal in validation.py's own self-test, so
+// widening the runtime array passed everything. This reads BOTH files.
+{
+  const vsrc = readFileSync(join(root, "tools", "validation.py"), "utf8");
+  const vm = vsrc.match(/FINANCING_QUALIFYING_BASES\s*=\s*frozenset\(\{([^}]*)\}\)/);
+  const gm = gateBlock.match(/var QUOTE_QUALIFYING_BASES\s*=\s*\[([^\]]*)\]/);
+  const parse = (s) => (s || "").split(",").map((x) => x.trim().replace(/^['"]|['"]$/g, ""))
+    .filter((x) => x.length > 0).sort();
+  const vset = parse(vm && vm[1]);
+  const gset = parse(gm && gm[1]);
+  check("qualifying-basis sets are found in BOTH files", vset.length > 0 && gset.length > 0,
+    `validator=${JSON.stringify(vset)} runtime=${JSON.stringify(gset)}`);
+  check("validator and runtime admit exactly the same qualifying bases",
+    JSON.stringify(vset) === JSON.stringify(gset),
+    `validator=${JSON.stringify(vset)} runtime=${JSON.stringify(gset)}`);
 }
 check("the drawer price label exists in both dictionaries",
   typeof dictEn["drawer.price_label"] === "string" && dictEn["drawer.price_label"].length > 0
@@ -187,7 +209,7 @@ function makeEl(id) {
 const CLOCK = Date.parse(fx._meta.clock);
 check("fixture clock parses", Number.isFinite(CLOCK));
 
-function makeEnv({ pricing, financing, lang = "en", nowMs = CLOCK, mutate = null, answers = { mattress_size: "queen" }, win = undefined, finalist = undefined } = {}) {
+function makeEnv({ pricing, financing, lang = "en", nowMs = CLOCK, mutate = null, answers = { mattress_size: "queen" }, win = undefined, finalist = undefined, accessories = undefined } = {}) {
   const els = new Map();
   const doc = { getElementById(id) { if (!els.has(id)) els.set(id, makeEl(id)); return els.get(id); } };
   const STORE_CONFIG = { pricing, financing };
@@ -197,15 +219,31 @@ function makeEnv({ pricing, financing, lang = "en", nowMs = CLOCK, mutate = null
   const api = new Function(
     "document", "STORE_CONFIG", "currentLang", "getFinancingConfig", "t", "Date",
     "window", "localStorage", "sessionStorage", "fetch", "analytics",
-    "answers", "resolveFinalistState",
+    "answers", "resolveFinalistState", "ACCESSORIES", "QUESTIONS", "answerLabelFor",
     `"use strict";\n${src}\nreturn { gate: pricePresentationFor, render: renderDrawerPrice,
        surface: pricingSurfaceEnabled, sku: pricingSkuFor, fmt: formatPriceAmount, money: priceMoneyValid, slot: priceSlotFor,
-       status: priceStatusHtmlFor };`)(
+       status: priceStatusHtmlFor, quote: buildConsultationQuote, line: quoteLineFor, cart: quoteCartRecords,
+       total: renderHf2SystemTotal, qual: quoteQualifyingAmount };`)(
     doc, STORE_CONFIG, lang, () => STORE_CONFIG.financing, (k) => "DICT:" + k, DATE_SHIM,
     win, undefined, undefined, undefined, undefined, answers,
-    finalist === undefined ? undefined : () => finalist);
+    finalist === undefined ? undefined : () => finalist, accessories,
+    QUIZ_SIZES, (qid, oid) => {
+      const q = QUIZ_SIZES.find((x) => x.id === qid);
+      const o = q && q.options.find((x) => x.id === oid);
+      return o ? (o.label[lang] || o.label.en) : "";
+    });
   return { api, doc, el: (id) => doc.getElementById(id) };
 }
+// The real quiz shape for the size question, so the itemised lines resolve a
+// customer-facing size label through the app's own answerLabelFor rather than
+// printing a raw id like `cal_king`.
+const QUIZ_SIZES = [{ id: "mattress_size", options: [
+  { id: "twin", label: { en: "Twin", es: "Individual" } },
+  { id: "twin_xl", label: { en: "Twin XL", es: "Individual XL" } },
+  { id: "full", label: { en: "Full", es: "Matrimonial" } },
+  { id: "queen", label: { en: "Queen", es: "Queen" } },
+  { id: "king", label: { en: "King", es: "King" } },
+  { id: "cal_king", label: { en: "Cal King", es: "Cal King" } }] }];
 const P = () => JSON.parse(JSON.stringify(fx.pricing));
 const F = () => JSON.parse(JSON.stringify(fx.financing));
 const ACTIVE = (over = {}) => {
@@ -618,14 +656,386 @@ section("Accessory records (provenance): a string sku, no size, the same gate");
 }
 
 // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+section("Consultation quote model (slice 2.2e): one purchase, fail-closed, unknown is never zero");
+// ---------------------------------------------------------------------------
+{
+  const A_ID = "protector-dritec", A_SKU = "FIXTURE-DRITEC", A_MINOR = 14900;
+  const M_MINOR = 369900;
+  const CHOSE = { kind: "chosen", item: M() };
+  // The fixture plus ONE priced accessory, on the results surface.
+  const QP = (over = {}) => {
+    const p = ACTIVE(Object.assign({ surfaces: { results: true } }, over));
+    const e = JSON.parse(JSON.stringify(p.products[0]));
+    e.productId = A_ID; e.productKind = "accessory"; e.sku = A_SKU; e.size = null;
+    e.price.amountMinor = A_MINOR;
+    Object.assign(e.clearance.scope, { productId: A_ID, productKind: "accessory", sku: A_SKU, size: null, amountMinor: A_MINOR });
+    p.products.push(e);
+    return p;
+  };
+  // Catalog: one priced accessory, one with NO sku (never resolvable).
+  const CAT = [{ id: A_ID, name: "Dri-Tec", price: 149, sku: A_SKU },
+               { id: "pillow-flow", name: "Flow", price: 108 }];
+  const cart = (...ids) => { const c = {}; for (const id of ids) c[id] = { id: id }; return { _accCart: c }; };
+  const Q = (o = {}) => makeEnv(Object.assign({ pricing: QP(), financing: F(), finalist: CHOSE, accessories: CAT }, o)).api.quote("results", "queen");
+  const numericFields = (q) => JSON.stringify(q).match(/\d+/g) || [];
+
+  // --- shipped production: nothing resolves, nothing is zero ---------------
+  {
+    const q = makeEnv({ pricing: shipped.pricing, financing: shipped.financing, finalist: CHOSE, accessories: CAT,
+      win: cart(A_ID) }).api.quote("results", "queen");
+    check("shipped config: every line unresolved, the amount is NULL (never 0), status 'unresolved'",
+      q.status === "unresolved" && q.merchandiseMinor === null && q.currency === null
+      && q.lineCount === 2 && q.resolvedCount === 0
+      && q.lines.every((l) => l.resolved === false && l.unitAmountMinor === null && l.extendedAmountMinor === null));
+    check("shipped config: an unresolved line keeps its IDENTITY (it is never dropped, which would fake a complete quote)",
+      q.lines[0].kind === "mattress" && q.lines[0].productId === "g6"
+      && q.lines[1].kind === "accessory" && q.lines[1].productId === A_ID);
+  }
+
+  // --- empty / single / complete ------------------------------------------
+  check("no finalist and no cart -> status 'empty', amount NULL, no lines",
+    (() => { const q = makeEnv({ pricing: QP(), financing: F(), accessories: CAT }).api.quote("results", "queen");
+      return q.status === "empty" && q.merchandiseMinor === null && q.lineCount === 0 && q.currency === null; })());
+  check("finalist alone -> complete, the exact minor-unit amount, currency USD",
+    (() => { const q = Q(); return q.status === "complete" && q.merchandiseMinor === M_MINOR
+      && q.currency === "USD" && q.lineCount === 1 && q.resolvedCount === 1
+      && q.lines[0].sku === "FIXTURE-0001" && q.lines[0].size === "queen" && q.lines[0].quantity === 1; })());
+  check("finalist + a priced accessory -> the lines sum EXACTLY in integer minor units",
+    (() => { const q = Q({ win: cart(A_ID) });
+      return q.status === "complete" && q.merchandiseMinor === M_MINOR + A_MINOR
+        && q.merchandiseMinor === 384800 && Number.isSafeInteger(q.merchandiseMinor)
+        && q.lineCount === 2 && q.resolvedCount === 2
+        && q.lines[1].unitAmountMinor === A_MINOR && q.lines[1].extendedAmountMinor === A_MINOR
+        && q.lines[1].size === null; })());
+
+  // --- the rule that matters most: one unresolved line voids the amount ----
+  check("ONE unresolved line (an accessory with no sku) -> the whole amount is NULL, never a partial sum",
+    (() => { const q = Q({ win: cart(A_ID, "pillow-flow") });
+      return q.status === "unresolved" && q.merchandiseMinor === null && q.currency === null
+        && q.lineCount === 3 && q.resolvedCount === 2; })());
+  check("the unresolved line carries NO number at all (not 0, not the resolved sibling amount)",
+    (() => { const q = Q({ win: cart("pillow-flow") });
+      const ln = q.lines.find((l) => l.productId === "pillow-flow");
+      return ln && ln.resolved === false && ln.unitAmountMinor === null && ln.extendedAmountMinor === null
+        && ln.currency === null && ln.sku === null && ln.reason === "not-resolved"; })());
+  check("a partial sum is never reachable: the resolved subset total appears nowhere in the record",
+    (() => { const q = Q({ win: cart(A_ID, "pillow-flow") });
+      return numericFields(q).indexOf(String(M_MINOR + A_MINOR)) === -1
+        && String(q.merchandiseMinor) === "null"; })());
+
+  // --- axis independence: stale and unapproved are unresolved, not zero ----
+  check("stale evidence -> every line unresolved, amount NULL (stale stays inert internal data)",
+    (() => { const q = Q({ win: cart(A_ID), nowMs: CLOCK + 30 * 86400000 });
+      return q.status === "unresolved" && q.merchandiseMinor === null && q.resolvedCount === 0; })());
+  check("eligibility withheld -> every line unresolved, amount NULL",
+    (() => { const p = QP(); p.presentation.approvals.legal = { status: "unapproved", by: "", at: null };
+      const q = makeEnv({ pricing: p, financing: F(), finalist: CHOSE, accessories: CAT, win: cart(A_ID) }).api.quote("results", "queen");
+      return q.status === "unresolved" && q.merchandiseMinor === null && q.resolvedCount === 0; })());
+  check("emergency disable (enabled false) -> unresolved, amount NULL",
+    (() => { const q = Q({ pricing: QP({ enabled: false }) });
+      return q.status === "unresolved" && q.merchandiseMinor === null; })());
+  check("a surface whose flag is off -> unresolved on THAT surface only",
+    (() => { const e = makeEnv({ pricing: QP(), financing: F(), finalist: CHOSE, accessories: CAT });
+      return e.api.quote("handoff", "queen").merchandiseMinor === null
+        && e.api.quote("results", "queen").merchandiseMinor === M_MINOR; })());
+
+  // --- money admission on the SUM, not just the parts ----------------------
+  check("a sum above the governed maximum is UNRESOLVED, never clamped or wrapped",
+    (() => { const p = QP();
+      p.products[0].price.amountMinor = 600000000; p.products[0].clearance.scope.amountMinor = 600000000;
+      p.products[1].price.amountMinor = 600000000; p.products[1].clearance.scope.amountMinor = 600000000;
+      const q = makeEnv({ pricing: p, financing: F(), finalist: CHOSE, accessories: CAT, win: cart(A_ID) }).api.quote("results", "queen");
+      return q.lineCount === 2 && q.resolvedCount === 2 && q.merchandiseMinor === null && q.status === "unresolved"; })());
+  check("a non-USD currency is refused by the same admission every part passed",
+    (() => { const p = QP(); p.currency = "XXX"; for (const e of p.products) e.price.currency = "XXX";
+      const q = makeEnv({ pricing: p, financing: F(), finalist: CHOSE, accessories: CAT }).api.quote("results", "queen");
+      return q.merchandiseMinor === null && q.currency === null; })());
+
+  // --- identity, ordering, double-count ------------------------------------
+  check("lines follow CATALOG order, not cart insertion order (the same selection quotes the same way)",
+    (() => { const a = Q({ win: cart(A_ID, "pillow-flow") }).lines.map((l) => l.productId).join(",");
+      const b = Q({ win: cart("pillow-flow", A_ID) }).lines.map((l) => l.productId).join(",");
+      return a === b && a === "g6," + A_ID + ",pillow-flow"; })());
+  // slice 2.2e refinement: a selected id the catalog does not carry is NOT
+  // dropped. Dropping it would let an incomplete quote report a complete
+  // merchandise amount — the same dishonesty as zeroing an unknown price.
+  check("a cart id with no catalog record becomes an UNRESOLVED line, never dropped",
+    (() => { const q = Q({ win: cart("does-not-exist") });
+      const ln = q.lines.find((l) => l.productId === "does-not-exist");
+      return q.lineCount === 2 && q.resolvedCount === 1 && q.status === "unresolved"
+        && q.merchandiseMinor === null
+        && ln && ln.kind === "accessory" && ln.resolved === false
+        && ln.reason === "no-catalog-record" && ln.sku === null
+        && ln.unitAmountMinor === null && ln.extendedAmountMinor === null; })());
+  check("unknown cart ids are appended in SORTED order, after every catalog-known line",
+    (() => { const q = Q({ win: cart("zz-unknown", A_ID, "aa-unknown") });
+      return q.lines.map((l) => l.productId).join(",") === "g6," + A_ID + ",aa-unknown,zz-unknown"; })());
+  check("an unknown cart id keeps its id and invents nothing else",
+    (() => { const q = Q({ win: cart("does-not-exist") });
+      const ln = q.lines.find((l) => l.productId === "does-not-exist");
+      return ln && ln.sku === null && ln.currency === null
+        && ln.unitAmountMinor === null && ln.extendedAmountMinor === null
+        && ln.size === null && ln.state === "off"; })());
+  check("one cart entry yields exactly one line: the quote never synthesizes a second support item",
+    (() => { const q = Q({ win: cart(A_ID) });
+      return q.lines.filter((l) => l.kind === "accessory").length === 1; })());
+  check("a mattress PROJECTION with no skus map resolves identity from the catalog index, never invents one",
+    (() => { const e = makeEnv({ pricing: QP(), financing: F(), accessories: CAT,
+        finalist: { kind: "chosen", item: { id: "g6", name: "Saved pick" } },
+        win: { _drawerData: { g6: { m: M() } } } });
+      const q = e.api.quote("results", "queen");
+      return q.lines[0].sku === "FIXTURE-0001" && q.merchandiseMinor === M_MINOR; })());
+
+  // --- no payment figure, ever (V1 invariant) ------------------------------
+  check("the quote record carries NO payment-shaped key and no cadence",
+    (() => { const q = Q({ win: cart(A_ID) });
+      const keys = []; (function walk(o) { if (!o || typeof o !== "object") return;
+        for (const k of Object.keys(o)) { keys.push(k); walk(o[k]); } })(q);
+      return !keys.some((k) => /monthly|perMonth|payment|factor|apr|term|cadence/i.test(k)); })());
+
+  // --- purity, totality, language ------------------------------------------
+  check("PURE: frozen inputs are not mutated and nothing throws (this is what protects the phase-1 baseline)",
+    (() => { const inner = Object.freeze({ id: A_ID });
+      const c = Object.freeze({ _accCart: Object.freeze({ [A_ID]: inner }) });
+      const cat = Object.freeze(CAT.map((a) => Object.freeze(Object.assign({}, a))));
+      const fin = Object.freeze({ kind: "chosen", item: Object.freeze(M()) });
+      const e = makeEnv({ pricing: QP(), financing: F(), finalist: fin, accessories: cat, win: c });
+      const q1 = e.api.quote("results", "queen"), q2 = e.api.quote("results", "queen");
+      return q1.merchandiseMinor === q2.merchandiseMinor && q1 !== q2 && q1.lines !== q2.lines
+        && Object.keys(c._accCart).length === 1; })());
+  check("TOTAL: hostile surfaces and sizes return a closed record and never throw",
+    (() => { const e = makeEnv({ pricing: QP(), financing: F(), finalist: CHOSE, accessories: CAT, win: cart(A_ID) });
+      for (const sf of [null, undefined, 7, "", "nope", {}, []]) {
+        for (const sz of [null, undefined, 7, "", "nope", {}]) {
+          const q = e.api.quote(sf, sz);
+          if (!q || typeof q !== "object" || !Array.isArray(q.lines)) return false;
+          if (q.merchandiseMinor !== null && !Number.isSafeInteger(q.merchandiseMinor)) return false;
+        }
+      }
+      return true; })());
+  check("TOTAL: a hostile cart and catalog return a closed record and never throw",
+    (() => { for (const w of [null, undefined, {}, { _accCart: null }, { _accCart: 7 }, { _accCart: { x: null } }]) {
+        for (const c of [null, undefined, [], 7, [null], [{}], [{ id: 7 }]]) {
+          const q = makeEnv({ pricing: QP(), financing: F(), finalist: CHOSE, accessories: c, win: w }).api.quote("results", "queen");
+          if (!q || !Array.isArray(q.lines)) return false;
+        }
+      }
+      return true; })());
+  check("LANGUAGE: EN and ES produce byte-identical identity, status and numeric fields",
+    (() => { const en = makeEnv({ pricing: QP(), financing: F(), finalist: CHOSE, accessories: CAT, win: cart(A_ID), lang: "en" }).api.quote("results", "queen");
+      const es = makeEnv({ pricing: QP(), financing: F(), finalist: CHOSE, accessories: CAT, win: cart(A_ID), lang: "es" }).api.quote("results", "queen");
+      return JSON.stringify(en) === JSON.stringify(es); })());
+  // Why the quote's currency-mismatch branch is unreachable, pinned so that
+  // widening the governed currency set is forced to revisit the aggregation:
+  // the gate admits one currency, and the resolver admits an entry only when
+  // its currency equals the contract currency.
+  check("SINGLE CURRENCY: the governed set is USD alone, so two admitted lines cannot disagree",
+    (() => { const e = makeEnv({ pricing: QP(), financing: F(), finalist: CHOSE, accessories: CAT, win: cart(A_ID) });
+      const q = e.api.quote("results", "queen");
+      return q.lines.every((l) => l.currency === "USD") && q.currency === "USD"
+        && e.api.money(100, "EUR") === false && e.api.money(100, "USD") === true; })());
+  check("SINGLE CURRENCY: an entry whose currency differs from the contract never resolves (upstream enforcement)",
+    (() => { const p = QP(); p.products[1].price.currency = "EUR";
+      const q = makeEnv({ pricing: p, financing: F(), finalist: CHOSE, accessories: CAT, win: cart(A_ID) }).api.quote("results", "queen");
+      return q.resolvedCount === 1 && q.merchandiseMinor === null; })());
+  // An accessories-only purchase is NOT the complete consultation. The model
+  // says so explicitly so a consumer cannot present a protector's price as
+  // the whole system just because every line happened to resolve.
+  check("no finalist + a priced accessory -> resolves, but hasMattress is FALSE",
+    (() => { const q = makeEnv({ pricing: QP(), financing: F(), accessories: CAT,
+        win: cart(A_ID) }).api.quote("results", "queen");
+      return q.status === "complete" && q.merchandiseMinor === A_MINOR
+        && q.hasMattress === false && q.lineCount === 1; })());
+  check("finalist present -> hasMattress is TRUE",
+    (() => { const q = Q({ win: cart(A_ID) });
+      return q.hasMattress === true && q.lines[0].kind === "mattress"; })());
+  check("an empty quote reports hasMattress false, not undefined",
+    (() => { const q = makeEnv({ pricing: QP(), financing: F(), accessories: CAT })
+        .api.quote("results", "queen");
+      return q.hasMattress === false && q.status === "empty"; })());
+  check("STATELESS: the model holds nothing between calls (a changed cart changes the next quote immediately)",
+    (() => { const w = cart(A_ID);
+      const e = makeEnv({ pricing: QP(), financing: F(), finalist: CHOSE, accessories: CAT, win: w });
+      const before = e.api.quote("results", "queen").merchandiseMinor;
+      delete w._accCart[A_ID];
+      const after = e.api.quote("results", "queen").merchandiseMinor;
+      return before === M_MINOR + A_MINOR && after === M_MINOR; })());
+}
+
+// ---------------------------------------------------------------------------
+section("Complete-system subtotal on the Consultation Summary (slice 2.2f)");
+// ---------------------------------------------------------------------------
+{
+  const A_ID = "protector-dritec", A_SKU = "FIXTURE-DRITEC", A_MINOR = 14900;
+  const M_MINOR = 369900;
+  const CHOSE = { kind: "chosen", item: M() };
+  const HP = (over = {}) => {
+    const p = ACTIVE(Object.assign({ surfaces: { handoff: true } }, over));
+    const e = JSON.parse(JSON.stringify(p.products[0]));
+    e.productId = A_ID; e.productKind = "accessory"; e.sku = A_SKU; e.size = null;
+    e.price.amountMinor = A_MINOR;
+    Object.assign(e.clearance.scope, { productId: A_ID, productKind: "accessory",
+                                       sku: A_SKU, size: null, amountMinor: A_MINOR });
+    p.products.push(e);
+    return p;
+  };
+  const CAT = [{ id: A_ID, name: "Dri-Tec", price: 149, sku: A_SKU },
+               { id: "pillow-flow", name: "Flow", price: 108 }];
+  const cart = (...ids) => { const c = {}; for (const id of ids) c[id] = { id: id }; return { _accCart: c }; };
+  const T = (o = {}) => {
+    const e = makeEnv(Object.assign({ pricing: HP(), financing: F(), finalist: CHOSE,
+                                      accessories: CAT }, o));
+    e.api.total();
+    return e.el("hf2SystemTotal");
+  };
+  const TOT = (k) => fx.pricing.presentation.totals[k].en;
+
+  // --- production: silent -------------------------------------------------
+  {
+    const e = makeEnv({ pricing: shipped.pricing, financing: shipped.financing,
+                        finalist: CHOSE, accessories: CAT, win: cart(A_ID) });
+    e.api.total();
+    const box = e.el("hf2SystemTotal");
+    check("shipped config: the subtotal slot is hidden, empty and stateless",
+      box.hidden === true && box.innerHTML === "" && box.getAttribute("data-total-state") === null);
+  }
+  check("fixture dark (displayEnabled false): hidden and empty",
+    (() => { const b = T({ pricing: P(), win: cart(A_ID) });
+      return b.hidden === true && b.innerHTML === ""; })());
+  check("handoff surface OFF: hidden and empty even with everything else open",
+    (() => { const b = T({ pricing: HP({ surfaces: { handoff: false, results: true } }), win: cart(A_ID) });
+      return b.hidden === true && b.innerHTML === ""; })());
+
+  // --- the complete case --------------------------------------------------
+  {
+    const b = T({ win: cart(A_ID) });
+    check("complete: the exact merchandise subtotal renders once, with its governed label",
+      b.hidden === false && b.getAttribute("data-total-state") === "complete"
+      && b.innerHTML.indexOf("$3,848") !== -1
+      && b.innerHTML.indexOf(TOT("merchandise-label")) !== -1,
+      b.innerHTML.slice(0, 200));
+    check("complete: the figure is mattress + accessory, in integer minor units",
+      M_MINOR + A_MINOR === 384800);
+    check("complete: the tax/delivery exclusion is stated ADJACENT to the figure",
+      b.innerHTML.indexOf(TOT("excludes")) !== -1);
+    check("complete: the PROVENANCE of the amounts is stated",
+      b.innerHTML.indexOf(TOT("provenance")) !== -1);
+    // Illustrative fixture amounts must not describe themselves as
+    // website-sourced. The two claims are different and the fixture makes the
+    // honest one.
+    check("complete: fixture amounts are labelled ILLUSTRATIVE, never website-sourced",
+      /illustrative/i.test(TOT("provenance")) && !/website[- ]sourced/i.test(TOT("provenance")),
+      TOT("provenance"));
+    // --- itemisation: the figure must be reconcilable on screen -----------
+    check("complete: every quote line is itemised, and they reconcile to the subtotal",
+      (() => { const items = b.innerHTML.match(/hf2-system-total__item"/g) || [];
+        return items.length === 2
+          && b.innerHTML.indexOf("$3,699") !== -1
+          && b.innerHTML.indexOf("$149") !== -1; })(), b.innerHTML.slice(0, 400));
+    check("complete: the mattress line carries its applicable SIZE",
+      b.innerHTML.indexOf("hf2-system-total__item-size") !== -1);
+    check("complete: the itemised amounts sum to the subtotal shown",
+      369900 + 14900 === 384800);
+    check("complete: NO order total, all-in total or payment figure is composed",
+      !/order\s*total|all[- ]in|\/\s*(mo|month|mes)\b/i.test(b.innerHTML));
+    // Since the subtotal is itemised, the amounts on screen are the LINES plus
+    // exactly one subtotal, and the lines must add up to it. That is the
+    // reconciliation guarantee: a figure the customer cannot check is not
+    // understandable. (Whole-dollar amounts drop the cents, so the pattern
+    // admits both forms.)
+    check("complete: the amounts shown are the lines plus ONE subtotal, and they reconcile",
+      (() => { const all = b.innerHTML.match(/\$[\d,]+(?:\.\d{2})?/g) || [];
+        const cents = (x) => Math.round(parseFloat(x.replace(/[$,]/g, "")) * 100);
+        if (all.length !== 3) return false;
+        const lines = all.slice(0, 2).map(cents);
+        return lines[0] + lines[1] === cents(all[2]) && cents(all[2]) === 384800; })(),
+      JSON.stringify(b.innerHTML.match(/\$[\d,]+(?:\.\d{2})?/g)));
+    check("complete: exactly one SUBTOTAL amount slot exists",
+      (b.innerHTML.match(/hf2-system-total__amount/g) || []).length === 1);
+  }
+
+  // --- the incomplete case: a figure is never guessed ---------------------
+  {
+    const b = T({ win: cart(A_ID, "pillow-flow") });
+    // The lines the gate COULD price still show their own amounts - that is
+    // how the salesperson sees which item is the blocker - but no subtotal is
+    // composed, and the unresolved line carries a dash rather than a figure.
+    check("one unresolved line: the governed 'incomplete' copy, and NO composed subtotal",
+      b.hidden === false && b.getAttribute("data-total-state") === "incomplete"
+      && b.innerHTML.indexOf(TOT("incomplete")) !== -1
+      && (b.innerHTML.match(/hf2-system-total__amount/g) || []).length === 0,
+      b.innerHTML.slice(0, 200));
+    check("incomplete: the partial SUM appears nowhere (no combined figure is composed)",
+      b.innerHTML.indexOf("3,848") === -1);
+    // The lines themselves may still show what IS known - that is how a
+    // salesperson sees which item is the blocker - but no total is composed
+    // and the unresolved line shows a dash, never a zero.
+    check("incomplete: the unresolved line shows a dash, never 0",
+      b.innerHTML.indexOf("hf2-system-total__item-unresolved") !== -1
+      && !/>\s*\$0(\.00)?\s*</.test(b.innerHTML));
+    check("incomplete: no subtotal figure is rendered in the amount slot",
+      b.innerHTML.indexOf("hf2-system-total__amount") === -1);
+  }
+
+  // --- an accessories-only cart is not the complete system ----------------
+  check("no finalist + a priced accessory: the slot stays hidden (not the complete system)",
+    (() => { const e = makeEnv({ pricing: HP(), financing: F(), accessories: CAT,
+        win: cart(A_ID) });
+      e.api.total();
+      const b = e.el("hf2SystemTotal");
+      return b.hidden === true && b.innerHTML === ""; })());
+  check("no lines at all: hidden",
+    (() => { const b = T({ finalist: { kind: "none", item: null } });
+      return b.hidden === true; })());
+
+  // --- stale / unapproved stay silent -------------------------------------
+  check("stale evidence: hidden (inert internal data reaches no surface)",
+    T({ win: cart(A_ID), nowMs: CLOCK + 30 * 86400000 }).hidden === true);
+  check("eligibility withheld: hidden",
+    (() => { const p = HP(); p.presentation.approvals.legal = { status: "unapproved", by: "", at: null };
+      return T({ pricing: p, win: cart(A_ID) }).hidden === true; })());
+  check("emergency disable: hidden",
+    T({ pricing: HP({ enabled: false }), win: cart(A_ID) }).hidden === true);
+
+  // --- governed copy is required, never invented --------------------------
+  check("missing merchandise-label copy -> nothing renders (copy is config-or-nothing)",
+    (() => { const p = HP(); delete p.presentation.totals["merchandise-label"];
+      return T({ pricing: p, win: cart(A_ID) }).hidden === true; })());
+  check("missing 'incomplete' copy -> an unresolved quote renders nothing",
+    (() => { const p = HP(); delete p.presentation.totals["incomplete"];
+      return T({ pricing: p, win: cart(A_ID, "pillow-flow") }).hidden === true; })());
+
+  // --- ES parity ----------------------------------------------------------
+  check("es: the Spanish governed copy, same figure",
+    (() => { const b = T({ win: cart(A_ID), lang: "es" });
+      return b.innerHTML.indexOf(fx.pricing.presentation.totals["merchandise-label"].es) !== -1
+        && b.innerHTML.indexOf(fx.pricing.presentation.totals["excludes"].es) !== -1
+        && b.innerHTML.indexOf("$3,848") !== -1; })());
+
+  // --- the wipe ------------------------------------------------------------
+  check("the subtotal slot is cleared by name in the session wipe, and re-hidden",
+    html.indexOf("'hf2PicksList', 'hf2AccessoriesList', 'hf2SystemTotal'") !== -1
+    && /\{ id: 'hf2SystemTotal', hiddenAttr: true \}/.test(html));
+
+  // --- placement: after the items, before Payment Choice -------------------
+  check("the slot sits AFTER the Sleep System list and BEFORE Payment Choice",
+    html.indexOf('id="hf2AccessoriesList"') < html.indexOf('id="hf2SystemTotal"')
+    && html.indexOf('id="hf2SystemTotal"') < html.indexOf('id="hf2Financing"'));
+}
+
 section("Plan status copy beside Payment Choice (slice 2.2d): status only, never a figure");
 // ---------------------------------------------------------------------------
 {
   const CHOSEN = { kind: "chosen", item: M() };
-  const PLAN_FORMULA = { id: "synchrony-9-99-72", minimumPurchase: 500 };   // the fixture's formula plan
-  const PLAN_QUOTE = { id: "synchrony-0-48", minimumPurchase: 4200 };       // published plan, no formula
+  // slice 2.2e: a plan is threshold-assessed only when it DECLARES the basis
+  // its published minimum is measured against. These mirror the fixture's
+  // own plans, which now carry the declaration.
+  const BASIS = "merchandise-subtotal";
+  const PLAN_FORMULA = { id: "synchrony-9-99-72", minimumPurchase: 500, qualifyingBasis: BASIS };   // the fixture's formula plan
+  const PLAN_QUOTE = { id: "synchrony-0-48", minimumPurchase: 4200, qualifyingBasis: BASIS };       // published plan, no formula
   const PLAN_NOMIN = { id: "lacks-in-house", minimumPurchase: null };
-  const QUOTE = FX_STATE("quote-only"), THRESH = FX_STATE("threshold-unknown");
+  const QUOTE = FX_STATE("quote-only"), THRESH = FX_STATE("threshold-unknown"), NOTMET = FX_STATE("threshold-not-met");
   function FX_STATE(k) { return { en: fx.pricing.presentation.states[k].en, es: fx.pricing.presentation.states[k].es }; }
   // Production: '' for every placement and plan, chosen finalist or not.
   {
@@ -637,13 +1047,48 @@ section("Plan status copy beside Payment Choice (slice 2.2d): status only, never
   // Fixture dark: '' (the gate is off).
   check("fixture dark: ''", makeEnv({ pricing: P(), financing: F(), finalist: CHOSEN }).api.status("results", PLAN_QUOTE.id, PLAN_QUOTE) === "");
   const on = makeEnv({ pricing: ACTIVE({ surfaces: { results: true } }), financing: F(), finalist: CHOSEN });
-  check("opened, chosen finalist, plan without a formula but with a minimum -> quote-only AND threshold-unknown copy, in that order, no digit",
+  // RE-CUT by slice 2.2e (the consultation quote model), and named as a
+  // reviewed change: priceStatusHtmlFor now hands the threshold axis the
+  // COMPLETE consultation amount, so 'threshold-unknown' fires only when the
+  // purchase genuinely cannot be determined — not merely because no caller
+  // ever supplied one. Both cases below previously asserted the absence of a
+  // runtime amount; with the finalist alone the quote resolves to $3,699.00.
+  check("opened, plan without a formula, minimum ABOVE the quote -> quote-only AND the governed BELOW-MINIMUM copy, no digit",
     (() => { const h = on.api.status("results", PLAN_QUOTE.id, PLAN_QUOTE);
-      return h.indexOf(QUOTE.en) !== -1 && h.indexOf(THRESH.en) !== -1 && h.indexOf(QUOTE.en) < h.indexOf(THRESH.en)
+      return h.indexOf(QUOTE.en) !== -1 && h.indexOf(NOTMET.en) !== -1
+        && h.indexOf(THRESH.en) === -1
+        // ORDER IS PART OF THE GUARANTEE (restored after an adversarial
+        // review found the re-cut had dropped it): the customer reads that
+        // no payment can be computed BEFORE reading that the purchase is
+        // below the minimum. Swapping them passed the whole suite.
+        && h.indexOf(QUOTE.en) < h.indexOf(NOTMET.en)
         && (h.match(/fin-offer__price-status/g) || []).length === 2 && noNumeric(h); })());
-  check("opened, plan WITH the fixture formula -> no quote-only copy; threshold-unknown only (minimum published, no runtime amount)",
+  check("opened, plan WITH the fixture formula, minimum BELOW the quote -> nothing: a formula exists and the threshold is MET",
+    on.api.status("results", PLAN_FORMULA.id, PLAN_FORMULA) === "");
+  // There is deliberately no 'threshold-met' copy: a met minimum is NOT
+  // credit approval, and saying anything here invites exactly that read.
+  check("a MET threshold says nothing at all (no met copy exists, and none is synthesised)",
     (() => { const h = on.api.status("results", PLAN_FORMULA.id, PLAN_FORMULA);
-      return h.indexOf(QUOTE.en) === -1 && h.indexOf(THRESH.en) !== -1 && (h.match(/fin-offer__price-status/g) || []).length === 1; })());
+      return h === "" && !fx.pricing.presentation.states["threshold-met"]; })());
+  // The qualifying amount is NOT the merchandise subtotal by assumption: a
+  // plan that declares no basis, or one the runtime cannot compute, is not
+  // assessed at all and falls back to the honest 'unknown'.
+  check("a plan with NO declared qualifying basis -> threshold-unknown, never assessed off the subtotal",
+    (() => { const h = on.api.status("results", PLAN_QUOTE.id, { id: PLAN_QUOTE.id, minimumPurchase: 4200 });
+      return h.indexOf(THRESH.en) !== -1 && h.indexOf(NOTMET.en) === -1; })());
+  check("a plan declaring an UNSUPPORTED basis -> threshold-unknown (never silently computed)",
+    (() => { const h = on.api.status("results", PLAN_QUOTE.id, { id: PLAN_QUOTE.id, minimumPurchase: 4200, qualifyingBasis: "order-total" });
+      return h.indexOf(THRESH.en) !== -1 && h.indexOf(NOTMET.en) === -1; })());
+  // The fail-closed path the re-cut must NOT lose: when any line of the
+  // quote is unresolved the amount is unknown, and 'threshold-unknown'
+  // still fires. An accessory in the cart with no pricing entry proves it
+  // end to end through the real status renderer.
+  check("opened, an UNRESOLVED accessory in the cart -> the amount is unknown again and threshold-unknown returns",
+    (() => { const e = makeEnv({ pricing: ACTIVE({ surfaces: { results: true } }), financing: F(), finalist: CHOSEN,
+        win: { _accCart: { "pillow-flow": { id: "pillow-flow" } } },
+        accessories: [{ id: "pillow-flow", name: "Flow", price: 108 }] });
+      const h = e.api.status("results", PLAN_QUOTE.id, PLAN_QUOTE);
+      return h.indexOf(THRESH.en) !== -1 && noNumeric(h); })());
   check("opened, plan without a published minimum -> quote-only copy only (no threshold line)",
     (() => { const h = on.api.status("results", PLAN_NOMIN.id, PLAN_NOMIN);
       return h.indexOf(QUOTE.en) !== -1 && h.indexOf(THRESH.en) === -1; })());
@@ -845,7 +1290,7 @@ function mutate(find, replace) {
   // M13: the threshold line stops requiring a published minimum.
   {
     const e = makeEnv({ pricing: ACTIVE({ surfaces: { results: true } }), financing: F(), finalist: { kind: "chosen", item: M() },
-      mutate: withLf(mutate("      if (pres.threshold === 'unknown' && plan && typeof plan.minimumPurchase === 'number') {", "      if (pres.threshold === 'unknown') {")) });
+      mutate: withLf(mutate("      if (plan && typeof plan.minimumPurchase === 'number') {", "      if (plan) {")) });
     check("M13 threshold line without a published minimum -> the no-minimum probe FAILS on the mutant",
       e.api.status("results", "lacks-in-house", { id: "lacks-in-house", minimumPurchase: null }).indexOf(fx.pricing.presentation.states["threshold-unknown"].en) !== -1);
   }
@@ -863,7 +1308,7 @@ function mutate(find, replace) {
     const p = withAccessory(); const last = p.products[p.products.length - 1];
     last.sku = " " + ACC_SKU; last.clearance.scope.sku = " " + ACC_SKU;
     const e = makeEnv({ pricing: p, financing: F(),
-      mutate: withLf(mutate("        return rec.sku.replace(/\\s+/g, '').length > 0 && rec.sku === rec.sku.trim() ? rec.sku : null;", "        return rec.sku;")) });
+      mutate: withLf(mutate("              && sku === sku.trim()) ? sku : null;", "              ) ? sku : null;")) });
     check("MA2 accessory sku grammar dropped -> the untrimmed-sku probe FAILS on the mutant",
       e.api.slot("sleepSystem", ACC({ sku: " " + ACC_SKU }), "x").indexOf('data-price-state="available"') !== -1);
   }

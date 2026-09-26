@@ -16,14 +16,25 @@
 //
 // Run: node tests/mutation_sweep.mjs
 //      node tests/mutation_sweep.mjs --list     (print the manifest, run nothing)
+//      node tests/mutation_sweep.mjs --validate-manifest
+//                                               (check every entry's target has a
+//                                                pristine source, run no observer)
+//      node tests/mutation_sweep.mjs --from 756 (run entries 756..end only; the
+//                                                baseline covers their observers)
+//
+// MUTATION_SWEEP_ROOT=<dir> overrides the tree the sandbox is copied from. It
+// exists for tests/mutation_manifest_check.mjs, which runs a planted COPY of
+// this file from a temp directory against the real tree.
 
 import { readFileSync, writeFileSync, mkdtempSync, cpSync, rmSync } from "node:fs";
 import { execFileSync } from "node:child_process";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { tmpdir } from "node:os";
 
-const root = join(dirname(fileURLToPath(import.meta.url)), "..");
+const root = process.env.MUTATION_SWEEP_ROOT
+  ? resolve(process.env.MUTATION_SWEEP_ROOT)
+  : join(dirname(fileURLToPath(import.meta.url)), "..");
 
 // The suites that can observe these properties. Kept explicit rather than
 // "every suite", so the runtime stays proportionate and so a survivor cannot be
@@ -135,6 +146,10 @@ const PRICING_GATE_RENDERED = ["tests/pricing_presentation_check.mjs", "tests/pr
 // its bind policy, in-memory allowlist and banner are observed by the harness
 // check alone, which drives the real server on a private address of the host.
 const PRICING_HARNESS = ["tests/pricing_harness_check.py"];
+// The app-to-website mapper (tools/map_app_to_website.py, offline evidence
+// tool): identity discipline is observed by the mapping suite alone, which
+// runs the real build() over a synthetic snapshot in a temp dir.
+const MAPPING = ["tests/mapping_check.py"];
 // Payload minimisation (2026-09-09): the email-gating suite executes the real
 // accessory projection over a priced catalog record and pins its exact keys.
 const EMAIL_PACKET = ["tests/email_gating_check.mjs"];
@@ -2594,8 +2609,8 @@ const MUTATIONS = [
     "        size: size,",
     PRICING_GATE, "index.html"],
   ["provenance: the accessory sku grammar is dropped (an untrimmed sku resolves)",
-    "        return rec.sku.replace(/\\s+/g, '').length > 0 && rec.sku === rec.sku.trim() ? rec.sku : null;",
-    "        return rec.sku;",
+    "              && sku === sku.trim()) ? sku : null;",
+    "              ) ? sku : null;",
     PRICING_GATE, "index.html"],
   ["provenance: the legacy 'From $' line renders BESIDE the governed slot (two prices on one card)",
     "        if (governedPrice) price = '';",
@@ -2607,8 +2622,54 @@ const MUTATIONS = [
     "      if (false) return '';",
     PRICING_GATE, "index.html"],
   ["2.2d: the threshold line stops requiring a published minimum purchase",
-    "      if (pres.threshold === 'unknown' && plan && typeof plan.minimumPurchase === 'number') {",
-    "      if (pres.threshold === 'unknown') {",
+    "      if (plan && typeof plan.minimumPurchase === 'number') {",
+    "      if (plan) {",
+    PRICING_GATE, "index.html"],
+  // --- Phase 2.2e: the consultation quote model -----------------------------
+  ["2.2e: an unresolved line stops voiding the amount (a PARTIAL sum is produced)",
+    "        if (!ln.resolved) { allResolved = false; continue; }",
+    "        if (!ln.resolved) { continue; }",
+    PRICING_GATE, "index.html"],
+  ["2.2e: an unknown line amount becomes ZERO instead of null",
+    "        unitAmountMinor: admitted ? pres.amountMinor : null,",
+    "        unitAmountMinor: admitted ? pres.amountMinor : 0,",
+    PRICING_GATE, "index.html"],
+  ["2.2e: the merchandise amount skips the runtime money admission the parts passed",
+    "      var merchandiseMinor = (allResolved && priceMoneyValid(sum, currency)) ? sum : null;",
+    "      var merchandiseMinor = allResolved ? sum : null;",
+    PRICING_GATE, "index.html"],
+  ["2.2e: the threshold axis is fed an amount even when the quote is unresolved",
+    "        transactionAmountMinor: qualifying.amountMinor === null ? undefined : qualifying.amountMinor",
+    "        transactionAmountMinor: 999999999",
+    PRICING_GATE, "index.html"],
+  ["2.2e: a selected id the catalog lacks is silently DROPPED from the quote",
+    "      for (var r = 0; r < rest.length; r++) out.push({ id: rest[r], record: null });",
+    "      for (var r = 0; r < 0; r++) out.push({ id: rest[r], record: null });",
+    PRICING_GATE, "index.html"],
+  ["2.2e: the qualifying amount is assumed to BE the merchandise subtotal (no declared basis needed)",
+    "      if (!declared) return { amountMinor: null, basis: 'undeclared' };",
+    "      if (!declared) declared = 'merchandise-subtotal';",
+    PRICING_GATE, "index.html"],
+  ["2.2e: a below-minimum purchase says nothing (the governed not-met copy is dropped)",
+    "        else if (pres.threshold === 'not-met') lines.push(pricingStateCopy('threshold-not-met'));",
+    "        else if (false) lines.push(pricingStateCopy('threshold-not-met'));",
+    PRICING_GATE, "index.html"],
+  // --- Phase 2.2f: the complete-system subtotal ---------------------------
+  ["2.2f: the complete-system subtotal renders for an accessories-only cart (no mattress)",
+    "      if (quote.lineCount === 0 || !quote.hasMattress) return off();",
+    "      if (quote.lineCount === 0) return off();",
+    PRICING_GATE, "index.html"],
+  ["2.2f: the subtotal speaks in states that reach no surface (dark, stale, unapproved)",
+    "      if (quote.resolvedCount === 0) return off();",
+    "      if (false) return off();",
+    PRICING_GATE, "index.html"],
+  ["2.2f: an incomplete quote shows a figure anyway (the partial sum leaks)",
+    "      if (quote.status === 'complete') {",
+    "      if (quote.status !== 'nope') {",
+    PRICING_GATE, "index.html"],
+  ["2.2f: the tax/delivery exclusion stops rendering beside the figure",
+    "        var excl = pricingTotalCopy('excludes');",
+    "        var excl = '';",
     PRICING_GATE, "index.html"],
   // Codex exact-head review of PR #71 (2026-08-28): one entry per finding.
   ["2.1b review: the SKU identity check is gone (a price resolves without its SKU)",
@@ -2709,8 +2770,8 @@ const MUTATIONS = [
     "      if (stepId !== 'base') return groups[stepId] || [];\n      var bases = groups.adjustability || [];",
     "      if (stepId !== 'base') return groups[stepId] || [];\n      var bases = groups.adjustability || [];\n      return bases;", SLEEP],
   ["combined base: an adjustable base and a foundation coexist in the plan again (eviction by engine group, not by step)",
-    "        if (existing && sleepSystemStepIdForItem(existing) === stepId) delete window._accCart[id];",
-    "        if (existing && sleepSystemStepForItem(existing) === sleepSystemStepForItem(item)) delete window._accCart[id];", SLEEP],
+    "        return existing && sleepSystemStepIdForItem(existing) === stepId;",
+    "        return existing && sleepSystemStepForItem(existing) === sleepSystemStepForItem(item);", SLEEP],
   ["combined base: the setup choice records its decision on the retired support key",
     "          window._sleepSystemState.decisions.base = { status: 'already' };",
     "          window._sleepSystemState.decisions.support = { status: 'already' };", SLEEP],
@@ -3144,6 +3205,40 @@ const MUTATIONS = [
     "      padding: 1rem 1rem 0.75rem;\n      z-index: 60;",
     "      padding: 0.75rem 1rem;\n      z-index: 60;",
     TRAY, "index.html"],
+  // --- Mapper identity discipline (6380772 rules, tools/map_app_to_website.py)
+  ["mapper: a digit-free name word becomes model-number identity again (MOTION2000QN answers for 'motion')",
+    "        if len(tok) >= 4 and any(ch.isdigit() for ch in tok) and mn.startswith(tok):",
+    "        if len(tok) >= 4 and mn.startswith(tok):",
+    MAPPING, "tools/map_app_to_website.py"],
+  ["mapper: a configurable parent with a DIFFERENT model number is collapsed into the child (the Ver-Tex Full conflict disappears)",
+    "    if None in child_models or None in parent_models or child_models != parent_models:",
+    "    if None in child_models or None in parent_models:",
+    MAPPING, "tools/map_app_to_website.py"],
+  // --- Compare modal price surface (slice 2.2h), observed by the rendered harness
+  ["compare: every price row counts as exact again (the tier glyphs vanish beside the unavailable copy)",
+    "          return r.key === 'price' && r.exact === true;",
+    "          return r.key === 'price';",
+    PRICING_HARNESS, "index.html"],
+  ["compare: the new-customer wipe stops clearing the size line's content (the previous customer's size survives)",
+    "      'compareCols', 'compareSizeContext', 'compareTraySlots',",
+    "      'compareCols', 'compareTraySlots',",
+    PRICING_HARNESS, "index.html"],
+  ["compare: the new-customer wipe stops re-hiding the size line",
+    "      { id: 'compareSizeContext', hiddenAttr: true },\n",
+    "",
+    PRICING_HARNESS, "index.html"],
+  ["compare: a language switch stops repainting the OPEN modal (the customer must close and reopen to read Spanish)",
+    "        window._compareRerender();",
+    "        void 0;",
+    PRICING_HARNESS, "index.html"],
+  ["compare: two equal exact prices lose the governed 'Same' row (the equal branch is skipped)",
+    "          if (diff === 0) {",
+    "          if (false) {",
+    PRICING_HARNESS, "index.html"],
+  ["compare: the open-modal repaint reuses the entries captured at open (the Feel value keeps the old language)",
+    "        document.getElementById('compareCols').innerHTML = rowsHtml(dd[id1] || m1, dd[id2] || m2);",
+    "        document.getElementById('compareCols').innerHTML = rowsHtml(m1, m2);",
+    PRICING_HARNESS, "index.html"],
 ];
 
 // ---------------------------------------------------------------------------
@@ -3209,6 +3304,13 @@ const PRISTINE_BY_FILE = {
   // `experience` bypass shipped green.
   "tools/validation.py":
     readFileSync(join(sandbox, "tools", "validation.py"), "utf8"),
+  // Pricing 2.2 mapper (the 6380772 identity rules; copied with tools/). The
+  // two mapper entries named this target from 9d99478 on without this key, so
+  // the sweep threw a TypeError at entry 756 instead of reporting anything -
+  // found 2026-09-25 by the first complete run past the DR-01 block. The
+  // manifest validation below now refuses that shape before any observer runs.
+  "tools/map_app_to_website.py":
+    readFileSync(join(sandbox, "tools", "map_app_to_website.py"), "utf8"),
   // A4.3: the living nine-question contract. The quiz-reduction suite reads
   // the counts stated in the principal guides and compares them to
   // data/quiz.json, so CLAUDE.md is a mutation target like any other source.
@@ -3251,6 +3353,49 @@ const PRISTINE_BY_FILE = {
     readFileSync(join(sandbox, "incoming", "generate_financing_qr.py"), "utf8"),
 };
 
+// Manifest validation, BEFORE any observer runs. Every entry names a target
+// (fifth field, index.html by default) and that target must have a pristine
+// source above, or the loop below would dereference undefined and throw a
+// TypeError mid-run - which is what happened at entry 756 on 2026-09-25 after
+// the two mapper entries shipped without their key. A sweep that dies with a
+// stack trace after an hour reports nothing about the entries it never
+// reached; a manifest defect is reported here, by name, in seconds, and the
+// exit code is distinct from a survivor (1) so the two are never confused.
+function manifestTargetsWithoutSource(mutations, pristineByFile) {
+  const missing = [];
+  mutations.forEach((entry, i) => {
+    const target = entry[4] || "index.html";
+    if (!Object.prototype.hasOwnProperty.call(pristineByFile, target)) {
+      missing.push(`#${i + 1} ${JSON.stringify(target)} - ${entry[0]}`);
+    }
+  });
+  return missing;
+}
+const missingTargets = manifestTargetsWithoutSource(MUTATIONS, PRISTINE_BY_FILE);
+if (missingTargets.length) {
+  console.log(`::error:: ${missingTargets.length} manifest ${missingTargets.length === 1 ? "entry names" : "entries name"} a target with no pristine source; add the file to PRISTINE_BY_FILE (no observer was run):`);
+  missingTargets.forEach((m) => console.log(`  [NO PRISTINE SOURCE] ${m}`));
+  process.exit(2);
+}
+if (process.argv.includes("--validate-manifest")) {
+  console.log(`manifest: ${MUTATIONS.length} entries, every target has a pristine source (${Object.keys(PRISTINE_BY_FILE).length} files); no observer was run`);
+  process.exit(0);
+}
+
+// --from N runs the tail of the manifest only (1-based, inclusive). The
+// baseline still covers every observer the selected entries name, and the
+// final line reports the selection, never the whole manifest's count.
+const fromArg = process.argv.indexOf("--from");
+const fromIndex = fromArg === -1 ? 1 : Number(process.argv[fromArg + 1]);
+if (!Number.isInteger(fromIndex) || fromIndex < 1 || fromIndex > MUTATIONS.length) {
+  console.log(`::error:: --from needs an integer between 1 and ${MUTATIONS.length}`);
+  process.exit(2);
+}
+const RUN = MUTATIONS.slice(fromIndex - 1);
+if (fromIndex > 1) {
+  console.log(`running entries ${fromIndex}-${MUTATIONS.length} of ${MUTATIONS.length} (--from ${fromIndex})\n`);
+}
+
 // Observers are node suites by default. The validator's self-test is the one
 // PYTHON observer, and the fact that it lives inside the very file it
 // validates is what makes it the correct observer for a validator mutation:
@@ -3284,7 +3429,7 @@ let survivors = 0, notApplied = 0, caught = 0;
 // naming it as "caught" and the sweep could finish green while masking a
 // vacuous observer (Codex, PR #16).
 const ALL_OBSERVERS = [...new Set(
-  MUTATIONS.flatMap((m) => m[3] || DEFAULT_SUITES).concat(WITH_SESSION))];
+  RUN.flatMap((m) => m[3] || DEFAULT_SUITES).concat(WITH_SESSION))];
 const baseline = runSuites(ALL_OBSERVERS);
 console.log(`baseline (unmutated): ${baseline.length ? "RED — " + baseline.join(",") : "green"}\n`);
 if (baseline.length) {
@@ -3292,7 +3437,7 @@ if (baseline.length) {
   process.exit(1);
 }
 
-for (const [label, find, replace, suites, targetFile] of MUTATIONS) {
+for (const [label, find, replace, suites, targetFile] of RUN) {
   const target = targetFile || "index.html";
   const clean = PRISTINE_BY_FILE[target];
   const mutated = clean.replace(asRegex(find), replace);
@@ -3313,7 +3458,7 @@ for (const [label, find, replace, suites, targetFile] of MUTATIONS) {
   }
 }
 
-console.log(`\nMutation sweep: ${caught}/${MUTATIONS.length} caught, ${survivors} survived, ${notApplied} did not apply`);
+console.log(`\nMutation sweep: ${caught}/${RUN.length} caught, ${survivors} survived, ${notApplied} did not apply${fromIndex > 1 ? ` (entries ${fromIndex}-${MUTATIONS.length} of ${MUTATIONS.length})` : ""}`);
 if (survivors) console.log("A SURVIVOR is a safety property with no effective test.");
 if (notApplied) console.log("A mutation that DID NOT APPLY is a stale manifest entry — its target moved or was renamed.");
 process.exit(survivors === 0 && notApplied === 0 ? 0 : 1);

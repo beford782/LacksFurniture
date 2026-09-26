@@ -92,9 +92,12 @@ and CI proves it.
 2. Make the change and run the relevant local checks. If mattress CSV data
    changed, run `.\build-data.ps1` and commit the regenerated JSON with it.
 3. Push the feature branch and open a pull request targeting `main`.
-4. Wait for the required `Full suite (18 checks)` status check to pass (a
-   legacy label pinned by branch protection; the job runs the same 57 checks
-   as `pwsh -File tools/run_full_suite.ps1`).
+4. Wait for the required `Full suite (18 checks)` status check to pass. The
+   name is a legacy label pinned by branch protection; the job runs the same
+   checks as the local mirror. List them, with the current count, using
+   `pwsh -File tools/run_full_suite.ps1 -ListOnly`. The last of them is the
+   mutation sweep (`node tests/mutation_sweep.mjs`), which the mirror runs
+   unless `-SkipMutationSweep` is given and CI always runs.
 5. Merge the pull request. GitHub Pages deploys the merged `main` branch
    automatically; verify the Pages `build` and `deploy` checks afterward.
 

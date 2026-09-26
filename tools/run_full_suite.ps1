@@ -193,8 +193,8 @@ $powerShellExecutable = Resolve-DreamFinderProgram -Candidates @(
     'powershell'
 ) -Label 'PowerShell (pwsh preferred; the Codex-bundled pwsh or Windows PowerShell 5.1 accepted)'
 
-# Mirror of the `verify` job in .github/workflows/ci.yml, in CI order: 57 checks
-# plus the mutation sweep = 58. (The CI job's display name, "Full suite (18
+# Mirror of the `verify` job in .github/workflows/ci.yml, in CI order: 59 checks
+# plus the mutation sweep = 60. (The CI job's display name, "Full suite (18
 # checks)", is a legacy label pinned by branch protection; do not trust its
 # number.) When ci.yml gains or loses a `run: node|python ...` step, change
 # this list in the same PR so the local mirror stays complete.
@@ -264,6 +264,8 @@ $checks = @(
     @{ Name = 'trust integrity'; Exe = $nodeExecutable; Args = @('tests/trust_integrity_check.mjs') },
     @{ Name = 'daybreak contract'; Exe = $pythonExecutable; Args = @('tests/daybreak_contract_check.py') },
     @{ Name = 'pricing contract (dark shipped-state lock)'; Exe = $pythonExecutable; Args = @('tests/pricing_contract_check.py') },
+    @{ Name = 'price extraction (category capture + drill cache)'; Exe = $pythonExecutable; Args = @('tests/price_extraction_check.py') },
+    @{ Name = 'mapping (model-number stem + parent/child identity)'; Exe = $pythonExecutable; Args = @('tests/mapping_check.py') },
     @{ Name = 'pricing resolver (2.1b five-axis contract)'; Exe = $nodeExecutable; Args = @('tests/pricing_resolver_check.mjs') },
     @{ Name = 'pricing presentation (2.2a gate + drawer surface)'; Exe = $nodeExecutable; Args = @('tests/pricing_presentation_check.mjs') },
     @{ Name = 'pricing harness (2.2c localhost non-shipping preview + rendered pass)'; Exe = $pythonExecutable; Args = @('tests/pricing_harness_check.py') },
@@ -278,7 +280,12 @@ $checks = @(
     # three .drawer-promotion tokens pinned in source and every rendered line's
     # contrast measured through Chromium with the illustrative scenario
     # injected (root page and the committed demo bundle). Rendered.
-    @{ Name = 'promo muted lines (drawer promotion ink, rendered)'; Exe = $pythonExecutable; Args = @('tests/promo_muted_lines_check.py') }
+    @{ Name = 'promo muted lines (drawer promotion ink, rendered)'; Exe = $pythonExecutable; Args = @('tests/promo_muted_lines_check.py') },
+    # The sweep's own manifest: every entry's target must have a pristine
+    # source, refused by name with exit 2 before any observer runs (the
+    # 2026-09-25 TypeError at entry 756). Fast (four sandbox copies), so it
+    # runs even when the sweep itself is skipped.
+    @{ Name = 'mutation manifest (a missing target is refused before any observer)'; Exe = $nodeExecutable; Args = @('tests/mutation_manifest_check.mjs') }
 )
 if (-not $SkipMutationSweep) {
     $checks += @{ Name = 'mutation sweep'; Exe = $nodeExecutable; Args = @('tests/mutation_sweep.mjs') }

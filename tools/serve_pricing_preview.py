@@ -186,7 +186,8 @@ def device_path_allowed(path: str) -> bool:
         return True
     return any(path.startswith(p) and len(path) > len(p) for p in DEVICE_PREFIXES)
 INTERCEPT_ACCESSORIES = "/data/accessories.json"
-STATES = ("dark", "available", "stale", "unapproved", "unavailable", "disabled")
+STATES = ("dark", "available", "stale", "unapproved", "unavailable",
+          "disabled", "website")
 TIER_ORDER = ("gold", "silver", "bronze")
 # Every drill price is queen-only: the harness answers `mattress_size: queen`
 # and the gate resolves nothing for any other size — itself a drill.
@@ -316,6 +317,116 @@ def accessory_ids():
     return [a["id"] for a in _load(os.path.join(REPO, "data", "accessories.json"))]
 
 
+SNAPSHOT = os.path.join(REPO, "demo", "price-snapshot", "snapshot.json")
+MAPPING = os.path.join(REPO, "demo", "price-snapshot", "mapping.json")
+
+
+def build_website(start):
+    """The `website` drill: ACTUAL extracted prices for the subset of the app's
+    assortment that has sufficient current identity AND price evidence.
+
+    Three rules make this honest rather than impressive:
+
+    1. EVERY record is re-validated here against the CURRENT admission rules.
+       A snapshot's own "clean" classification is not trusted - it was written
+       by whatever version of the extractor produced it.
+    2. Only `preview-eligible` (or `owner-verified`) mappings are used. An
+       ambiguous identity contributes NOTHING; its product simply has no price
+       and the quote says so.
+    3. NO FIXTURE PRICE IS EVER MIXED IN. An accessory without a website price
+       gets no pricing entry at all, so its quote line is unresolved and the
+       merchandise subtotal is withheld. A partial preview is fine; an
+       apparently-complete total assembled from two sources is not.
+
+    Returns (products, mattress_skus, accessory_skus, coverage).
+    """
+    if not (os.path.exists(SNAPSHOT) and os.path.exists(MAPPING)):
+        raise SystemExit(
+            "the website drill needs demo/price-snapshot/{snapshot,mapping}.json\n"
+            "  run: python tools/fetch_lacks_prices.py && python tools/map_app_to_website.py")
+    snap = _load(SNAPSHOT)
+    mapping = _load(MAPPING)
+    by_sku = {}
+    for v in snap.get("variants") or []:
+        if isinstance(v.get("sku"), str):
+            by_sku.setdefault(v["sku"], v)
+
+    USABLE = ("preview-eligible", "owner-verified")
+    ALLOWED_HOSTS = _load(os.path.join(REPO, "tools", "source_hosts.json"))["priceSourceHosts"]
+
+    def admissible(v):
+        """The CURRENT admission rules, applied to a record regardless of what
+        the snapshot said about it."""
+        if not isinstance(v, dict):
+            return False, "not-a-record"
+        amt = v.get("sellingAmountMinor")
+        if not isinstance(amt, int) or isinstance(amt, bool) or amt <= 0 or amt > 1000000000:
+            return False, "amount-not-admissible"
+        if v.get("currency") != "USD":
+            return False, "currency-not-usd"
+        sku = v.get("sku")
+        if not isinstance(sku, str) or not sku.strip() or sku != sku.strip():
+            return False, "sku-not-a-trimmed-identifier"
+        ev = v.get("evidence") or {}
+        if ev.get("type") != "product-page":
+            return False, "evidence-is-not-a-product-page"
+        url = ev.get("url") or ""
+        host = urllib.parse.urlparse(url).hostname or ""
+        if host.lower() not in ALLOWED_HOSTS:
+            return False, f"source-host-not-allowlisted:{host}"
+        if v.get("exceptions"):
+            return False, "carries-exceptions:" + ",".join(v["exceptions"][:2])
+        return True, None
+
+    products, mattress_skus, accessory_skus = [], {}, {}
+    coverage = {"mattressSizes": [], "mattressRejected": [], "accessories": [],
+                "accessoriesRejected": []}
+
+    for row in mapping.get("mattresses") or []:
+        appid = row.get("appId")
+        for size, d in (row.get("sizes") or {}).items():
+            if d.get("status") not in USABLE:
+                continue
+            v = by_sku.get(d.get("sku"))
+            ok, why = admissible(v)
+            if not ok:
+                coverage["mattressRejected"].append(
+                    {"appId": appid, "size": size, "sku": d.get("sku"), "reason": why})
+                continue
+            products.append({"kind": "mattress", "appId": appid, "size": size, "variant": v})
+            mattress_skus.setdefault(appid, {})[size] = v["sku"]
+            coverage["mattressSizes"].append(
+                {"appId": appid, "appName": row.get("appName"), "size": size,
+                 "sku": v["sku"], "amountMinor": v["sellingAmountMinor"],
+                 "sourceUrl": v["evidence"]["url"]})
+
+    for row in mapping.get("accessories") or []:
+        appid = row.get("appId")
+        if row.get("status") not in USABLE:
+            coverage["accessoriesRejected"].append(
+                {"appId": appid, "reason": row.get("status")})
+            continue
+        got = {}
+        for size, d in (row.get("variants") or {}).items():
+            v = by_sku.get(d.get("sku"))
+            ok, why = admissible(v)
+            if not ok:
+                coverage["accessoriesRejected"].append(
+                    {"appId": appid, "size": size, "sku": d.get("sku"), "reason": why})
+                continue
+            got[size] = v
+        if not got:
+            continue
+        for size, v in got.items():
+            products.append({"kind": "accessory", "appId": appid, "size": None, "variant": v})
+            # a size-independent accessory files under the customer's size key
+            # only when it actually has one; otherwise every size maps to it
+            accessory_skus.setdefault(appid, {})[size] = v["sku"]
+        coverage["accessories"].append(
+            {"appId": appid, "sizes": sorted(got), "familyKey": row.get("familyKey")})
+    return products, mattress_skus, accessory_skus, coverage
+
+
 def build_injected(state: str, start: datetime):
     """Return (config, catalog, verdicts) for a drill state at server start.
 
@@ -429,12 +540,134 @@ def build_injected(state: str, start: datetime):
 
     # ---- catalog: skus injected in memory ----------------------------------
     catalog = copy.deepcopy(cat)
-    for tier in TIER_ORDER:
-        for m in catalog.get(tier, []):
-            m["skus"] = {DRILL_SIZE: fixture_sku(m["id"])}
     accessories = _load(os.path.join(REPO, "data", "accessories.json"))
-    for a in accessories:
-        a["sku"] = fixture_sku(a["id"])
+    coverage = None
+
+    if state == "website":
+        # ACTUAL extracted prices, for the subset with sufficient evidence.
+        # Everything else is left with NO price - never a fixture stand-in.
+        wp, m_skus, a_skus, coverage = build_website(start)
+        # Each entry keeps ITS OWN observation instant: the capture can span
+        # several minutes and, once a cache is replayed weeks later, several
+        # weeks. One shared "now" would quietly refresh every price.
+        def _observed(v):
+            raw = v.get("observedAt")
+            try:
+                inst = _parse(raw)
+            except Exception:
+                inst = start - timedelta(hours=1)
+            # never let a host clock difference read as a future observation
+            if inst > start - timedelta(minutes=5):
+                inst = start - timedelta(minutes=5)
+            return inst.isoformat()
+
+        template = dark["products"][0]
+        entries = []
+        for rec in wp:
+            v = rec["variant"]
+            e = copy.deepcopy(template)
+            e["productId"] = rec["appId"]
+            e["productKind"] = rec["kind"]
+            e["sku"] = v["sku"]
+            e["size"] = rec["size"]
+            e["price"]["amountMinor"] = v["sellingAmountMinor"]
+            e["price"]["currency"] = "USD"
+            e["price"]["kind"] = "regular"
+            # The evidence is the REAL product page the price was read from,
+            # stamped at this run so the runtime freshness axis judges it on
+            # the live clock. verifiedBy names the mechanism honestly: this is
+            # an automated extraction awaiting the owner's check, not a human
+            # attestation.
+            e["evidence"]["status"] = "retailer-product-page-current"
+            # The stamp is the REAL observation instant from the snapshot -
+            # when the price was actually read off the page - not a synthetic
+            # one. That is what makes the runtime freshness axis meaningful
+            # here: if the capture ages out, the preview stops showing prices
+            # exactly as production would.
+            e["evidence"]["verifiedAt"] = _observed(v)
+            e["evidence"]["sourceUrl"] = v["evidence"]["url"]
+            e["evidence"]["verifiedBy"] = "automated-extraction (PENDING OWNER VERIFICATION)"
+            e["clearance"]["attestedAt"] = _observed(v)
+            e["clearance"]["attestedBy"] = "automated-extraction (PENDING OWNER VERIFICATION)"
+            scope = e["clearance"]["scope"]
+            scope["productId"] = rec["appId"]
+            scope["productKind"] = rec["kind"]
+            scope["sku"] = v["sku"]
+            scope["size"] = rec["size"]
+            scope["amountMinor"] = v["sellingAmountMinor"]
+            scope["evidenceVerifiedAt"] = e["evidence"]["verifiedAt"]
+            scope["evidenceSourceUrl"] = e["evidence"]["sourceUrl"]
+            entries.append(e)
+        for doc in (dark, served):
+            doc["products"] = copy.deepcopy(entries)
+            # Say where the money came from. This is the ONE sentence that
+            # separates a website-sourced figure from an illustrative one.
+            # The whole copy set, not just the provenance line. The fixture's
+            # strings all carry a "FIXTURE --" prefix, and leaving them in place
+            # would label website-sourced money as fixture data - the exact
+            # mislabelling this state exists to prevent.
+            doc["presentation"]["totals"] = {
+                "merchandise-label": {"en": "Merchandise subtotal",
+                                      "es": "Subtotal de mercanc\u00eda"},
+                "excludes": {"en": "Merchandise only. Tax, delivery and setup are not "
+                                   "included and are quoted in store.",
+                             "es": "Solo mercanc\u00eda. No incluye impuestos, entrega ni "
+                                   "instalaci\u00f3n; se cotizan en la tienda."},
+                "incomplete": {"en": "A subtotal is not available until every selected "
+                                     "item has a verified price.",
+                               "es": "El subtotal no est\u00e1 disponible hasta que cada "
+                                     "art\u00edculo seleccionado tenga un precio verificado."},
+                "provenance": {"en": "Website prices \u2014 pending verification. Not a quote.",
+                               "es": "Precios del sitio web \u2014 pendientes de "
+                                     "verificaci\u00f3n. No es una cotizaci\u00f3n."},
+                "line-label": {"en": "Selected items", "es": "Art\u00edculos seleccionados"},
+                "compare-price-label": {"en": "Purchase price", "es": "Precio de compra"},
+                "compare-difference-label": {"en": "Price difference",
+                                             "es": "Diferencia de precio"},
+            }
+            # The assumptions and disclosures are FIXTURE copy too; leaving
+            # them would put "FIXTURE --" beside a real extracted price.
+            doc["presentation"]["assumptions"] = [
+                {"id": "size", "en": "Priced for the size selected in this consultation.",
+                 "es": "Precio para el tama\u00f1o seleccionado en esta consulta."},
+                {"id": "source", "en": "Read from the retailer's public product page, "
+                                       "not from an in-store quote.",
+                 "es": "Obtenido de la p\u00e1gina p\u00fablica del producto, no de una "
+                       "cotizaci\u00f3n en tienda."},
+            ]
+            doc["presentation"]["disclosures"] = [
+                {"id": "pending", "en": "Prices are website-sourced and awaiting "
+                                        "verification. Confirm in store before purchase.",
+                 "es": "Los precios provienen del sitio web y est\u00e1n pendientes de "
+                       "verificaci\u00f3n. Confirme en la tienda antes de comprar."},
+            ]
+            doc["presentation"]["states"] = {
+                "price-unavailable": {"en": "Price unavailable", "es": "Precio no disponible"},
+                "quote-only": {"en": "Quote in store", "es": "Cotizaci\u00f3n en tienda"},
+                "threshold-unknown": {"en": "A minimum purchase applies",
+                                      "es": "Aplica una compra m\u00ednima"},
+                "threshold-not-met": {"en": "This selection is below the published "
+                                            "minimum for this option.",
+                                      "es": "Esta selecci\u00f3n est\u00e1 por debajo del "
+                                            "m\u00ednimo publicado para esta opci\u00f3n."},
+            }
+        for tier in TIER_ORDER:
+            for m in catalog.get(tier, []):
+                got = m_skus.get(m["id"])
+                if got:
+                    m["skus"] = dict(got)
+        for a in accessories:
+            got = a_skus.get(a["id"])
+            if got:
+                # one sku per size; a size with no website variant resolves
+                # nothing, which is the point
+                a["accessorySkus"] = dict(got)
+    else:
+        for tier in TIER_ORDER:
+            for m in catalog.get(tier, []):
+                m["skus"] = {DRILL_SIZE: fixture_sku(m["id"])}
+        for a in accessories:
+            a["sku"] = fixture_sku(a["id"])
 
     # ---- verdicts -----------------------------------------------------------
     hosts = _load(os.path.join(REPO, "tools", "source_hosts.json"))
@@ -462,6 +695,7 @@ def build_injected(state: str, start: datetime):
         "served_refused": not served_rep.ok,
         "served_errors": list(served_rep.errors),
     }
+    verdicts["websiteCoverage"] = coverage
     return config, catalog, verdicts, accessories
 
 
