@@ -65,15 +65,20 @@ jobs:
     # (Blake) action, tracked in the 0.6 PR notes.
     name: Full suite (18 checks)
     runs-on: ubuntu-24.04
-    # Raised from 20 to 30 for the mutation sweep, and from 30 to 60 on the
-    # 2026-09-09 integrated candidate: the sweep re-runs each entry's observer
+    # Raised from 20 to 30 for the mutation sweep, from 30 to 60 on the
+    # 2026-09-09 integrated candidate, and from 60 to 120 on the phase-2
+    # quote-model branch (2026-09-25): the sweep re-runs each entry's observer
     # suites, and the rendered observers (the pricing harness with its device
-    # rehearsal walks, the presentation suite, the delivery and promo checks)
-    # now sit behind a dozen entries, so the sweep alone runs ~25 minutes on
-    # the runner (it ran 24m35s before the 30-minute cap cancelled the job at
-    # head d000bfa). The rest of the job is ~7 minutes. This is a cap, not a
+    # rehearsal walks and compare-modal walks, the presentation suite, the
+    # delivery and promo checks) now sit behind several dozen entries. Observed
+    # at head beeac92 (763 entries): the suites take ~10 minutes, the sweep's
+    # baseline ~6 more, and the entries ~44 minutes to entry 759 when the
+    # 60-minute cap cancelled the job (run 36197423411) with four
+    # pricing-harness entries (~2 minutes each) still to run - about 70
+    # minutes needed in all. Earlier: the sweep ran 24m35s before the
+    # 30-minute cap cancelled the job at head d000bfa. This is a cap, not a
     # budget: a run that needs it is expected to finish well inside it.
-    timeout-minutes: 60
+    timeout-minutes: 120
     steps:
       - name: Check out the tree
         uses: actions/checkout@v4
