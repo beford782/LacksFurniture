@@ -193,8 +193,8 @@ $powerShellExecutable = Resolve-DreamFinderProgram -Candidates @(
     'powershell'
 ) -Label 'PowerShell (pwsh preferred; the Codex-bundled pwsh or Windows PowerShell 5.1 accepted)'
 
-# Mirror of the `verify` job in .github/workflows/ci.yml, in CI order: 59 checks
-# plus the mutation sweep = 60. (The CI job's display name, "Full suite (18
+# Mirror of the `verify` job in .github/workflows/ci.yml, in CI order: 62 checks
+# plus the mutation sweep = 63. (The CI job's display name, "Full suite (18
 # checks)", is a legacy label pinned by branch protection; do not trust its
 # number.) When ci.yml gains or loses a `run: node|python ...` step, change
 # this list in the same PR so the local mirror stays complete.
@@ -261,11 +261,19 @@ $checks = @(
     # retired Summary context row and the conditional-answer invariant.
     @{ Name = 'quiz reduction'; Exe = $nodeExecutable; Args = @('tests/quiz_reduction_check.mjs') },
     @{ Name = 'sleep system presentation'; Exe = $nodeExecutable; Args = @('tests/sleep_system_presentation_check.mjs') },
+    # PR #132 review repairs (2026-09-25): the two-pillow plan and the
+    # Summary quantity control's keyboard place, rendered (real clicks and
+    # key presses through Chromium).
+    @{ Name = 'sleep system pillow + quantity (two-pillow plan, keyboard place, rendered)'; Exe = $pythonExecutable; Args = @('tests/sleep_system_pillow_quantity_check.py') },
     @{ Name = 'trust integrity'; Exe = $nodeExecutable; Args = @('tests/trust_integrity_check.mjs') },
     @{ Name = 'daybreak contract'; Exe = $pythonExecutable; Args = @('tests/daybreak_contract_check.py') },
     @{ Name = 'pricing contract (dark shipped-state lock)'; Exe = $pythonExecutable; Args = @('tests/pricing_contract_check.py') },
     @{ Name = 'price extraction (category capture + drill cache)'; Exe = $pythonExecutable; Args = @('tests/price_extraction_check.py') },
     @{ Name = 'mapping (model-number stem + parent/child identity)'; Exe = $pythonExecutable; Args = @('tests/mapping_check.py') },
+    # PR #132 review repairs (2026-09-25): website-drill admission - untrusted
+    # observation stamps refused by name, trusted ones unchanged; the
+    # size-independent accessory key; "None" is never a size.
+    @{ Name = 'pricing website admission (observation dates + size-independent skus)'; Exe = $pythonExecutable; Args = @('tests/pricing_website_admission_check.py') },
     @{ Name = 'pricing resolver (2.1b five-axis contract)'; Exe = $nodeExecutable; Args = @('tests/pricing_resolver_check.mjs') },
     @{ Name = 'pricing presentation (2.2a gate + drawer surface)'; Exe = $nodeExecutable; Args = @('tests/pricing_presentation_check.mjs') },
     @{ Name = 'pricing harness (2.2c localhost non-shipping preview + rendered pass)'; Exe = $pythonExecutable; Args = @('tests/pricing_harness_check.py') },

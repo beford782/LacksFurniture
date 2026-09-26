@@ -108,6 +108,12 @@ APP_ACCESSORY_TYPE = {"base": "base", "foundation": "base", "pillow": "pillow",
 # Types genuinely NOT sold by mattress size - absence of a size is correct,
 # not a defect, and must not exclude the product.
 SIZE_INDEPENDENT = {"pillow", "throw", "other"}
+# The mapping.json `variants` key under which a variant with NO mattress size
+# is filed. Explicit and shared with tools/serve_pricing_preview.py, which
+# files such a variant as the accessory's single sku for every customer size.
+# It used to be str(None) == "None", which the drill then treated as a
+# mattress size no customer has (PR #132 review repair, 2026-09-25).
+SIZE_INDEPENDENT_KEY = "size-independent"
 
 
 def norm(s):
@@ -554,7 +560,8 @@ def build():
                                       "amounts": sorted({v["sellingAmountMinor"] for v in vs})})
                     continue
             v = vs[0]
-            chosen[str(size)] = {"sku": v["sku"],
+            key = SIZE_INDEPENDENT_KEY if size is None else str(size)
+            chosen[key] = {"sku": v["sku"],
                                  "sellingAmountMinor": v["sellingAmountMinor"],
                                  "regularAmountMinor": v.get("regularAmountMinor"),
                                  "websiteName": v["name"], "evidence": v.get("evidence"),
@@ -562,7 +569,7 @@ def build():
                                  "productType": v.get("productType"),
                                  "sizeIndependent": v.get("size_id") is None}
             if note:
-                chosen[str(size)]["parentCorroboration"] = note
+                chosen[key]["parentCorroboration"] = note
         entry["familyKey"] = famkey
         entry["sizeIndependent"] = size_independent
         entry["variants"] = chosen
@@ -699,7 +706,7 @@ def write_md(out, path):
             L.append("|---|---|---|---|")
             for size, d in a["variants"].items():
                 ev = d.get("evidence") or {}
-                lbl = size if size != "None" else "(size-independent)"
+                lbl = size if size != SIZE_INDEPENDENT_KEY else "(size-independent)"
                 L.append(f"| {lbl} | `{d['sku']}` | {money(d['sellingAmountMinor'])} | "
                          f"[{ev.get('type','?')}]({ev.get('url','#')}) |")
             ms = a.get("legacyPriceMatchesSizes") or []

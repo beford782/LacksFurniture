@@ -558,6 +558,16 @@ jobs:
       - name: sleep system presentation (benefit-first, procedure separation)
         run: node tests/sleep_system_presentation_check.mjs
 
+      # PR #132 review repairs (2026-09-25), rendered through Chromium with
+      # real clicks and key presses: the first pillow and the quantity the
+      # customer set survive testing and adding the second pillow (the
+      # two-pillow allowance is reachable from the screen; a reaction is a
+      # verdict on the tested pillow only), and the Summary's quantity
+      # control keeps keyboard focus on the appropriate control after every
+      # press, including at its limits.
+      - name: sleep system pillow + quantity (two-pillow plan, keyboard place, rendered)
+        run: python tests/sleep_system_pillow_quantity_check.py
+
       # Trust integrity and transparency gate (Phase 1 cross-cutting,
       # 2026-08-21): the copy <-> engine correspondence document and its
       # pinned inert-tag set, banned claims in quiz help copy, the absence of
@@ -598,6 +608,15 @@ jobs:
         run: python tests/price_extraction_check.py
       - name: mapping (model-number stem + configurable parent/child identity)
         run: python tests/mapping_check.py
+
+      # PR #132 review repairs (2026-09-25): the website drill's admission.
+      # An observation stamp that is missing, unreadable, offset-less or
+      # later than the run's clock is refused by name and never re-stamped
+      # or clamped; a trustworthy stamp passes through unchanged. A
+      # size-independent accessory files as its single sku under the
+      # mapper's explicit key, and "None" is never a mattress size.
+      - name: pricing website admission (observation dates + size-independent skus)
+        run: python tests/pricing_website_admission_check.py
 
       # Phase 2.1b: the dark resolver — executes the REAL resolveDarkPricing
       # extracted from index.html (definition only, zero live call sites) in

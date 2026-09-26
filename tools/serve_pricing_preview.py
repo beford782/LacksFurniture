@@ -127,6 +127,8 @@ import re
 import sys
 import urllib.parse
 from datetime import datetime, timedelta, timezone
+
+from map_app_to_website import SIZES as MATTRESS_SIZES, SIZE_INDEPENDENT_KEY
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -293,6 +295,31 @@ def _parse(stamp: str) -> datetime:
     return datetime.fromisoformat(stamp)
 
 
+def observation_verdict(raw, start: datetime):
+    """Why a variant's observation stamp cannot be trusted, or None when it can.
+
+    The observation instant is EVIDENCE: it is what the runtime freshness axis
+    judges. A stamp that is missing, unreadable, offset-less (which clock?) or
+    later than this run's own clock cannot be repaired by substituting a
+    recent instant - that would serve a price nobody observed at that time as
+    freshly observed. Such a variant is refused by name (PR #132 review
+    repair, 2026-09-25); a trustworthy stamp is passed through unchanged.
+    """
+    if raw is None or (isinstance(raw, str) and not raw.strip()):
+        return "observation-missing"
+    if not isinstance(raw, str):
+        return "observation-unparseable"
+    try:
+        inst = _parse(raw)
+    except (TypeError, ValueError):
+        return "observation-unparseable"
+    if inst.tzinfo is None or inst.utcoffset() is None:
+        return "observation-offset-missing"
+    if inst > start:
+        return "observation-in-future"
+    return None
+
+
 def _shift(stamp, delta: timedelta):
     """Shift an offset-bearing ISO stamp by delta, keeping its offset."""
     if stamp is None:
@@ -376,6 +403,9 @@ def build_website(start):
             return False, f"source-host-not-allowlisted:{host}"
         if v.get("exceptions"):
             return False, "carries-exceptions:" + ",".join(v["exceptions"][:2])
+        why = observation_verdict(v.get("observedAt"), start)
+        if why:
+            return False, why
         return True, None
 
     products, mattress_skus, accessory_skus = [], {}, {}
@@ -406,24 +436,42 @@ def build_website(start):
             coverage["accessoriesRejected"].append(
                 {"appId": appid, "reason": row.get("status")})
             continue
-        got = {}
+        # A variant key is either a mattress size (the family is sold per
+        # size: one sku per size, resolved for the customer's own size) or the
+        # mapper's explicit size-independent key (one product, no size axis).
+        # Anything else - including the legacy str(None) == "None" - is
+        # refused by name; it is never a size (PR #132 review repair).
+        sized, free = {}, {}
         for size, d in (row.get("variants") or {}).items():
             v = by_sku.get(d.get("sku"))
             ok, why = admissible(v)
-            if not ok:
+            if ok and size == SIZE_INDEPENDENT_KEY:
+                free[size] = v
+            elif ok and size in MATTRESS_SIZES:
+                sized[size] = v
+            else:
                 coverage["accessoriesRejected"].append(
-                    {"appId": appid, "size": size, "sku": d.get("sku"), "reason": why})
-                continue
-            got[size] = v
-        if not got:
+                    {"appId": appid, "size": size, "sku": d.get("sku"),
+                     "reason": why if not ok else f"size-key-not-a-size:{size}"})
+        if free and sized:
+            # One family cannot be both sizeless and sold per size; nothing
+            # here can say which sku a customer would buy, so nothing prices.
+            coverage["accessoriesRejected"].append(
+                {"appId": appid, "sizes": sorted(free) + sorted(sized),
+                 "reason": "mixed-size-independence"})
             continue
-        for size, v in got.items():
+        if not (free or sized):
+            continue
+        if free:
+            v = free[SIZE_INDEPENDENT_KEY]
             products.append({"kind": "accessory", "appId": appid, "size": None, "variant": v})
-            # a size-independent accessory files under the customer's size key
-            # only when it actually has one; otherwise every size maps to it
-            accessory_skus.setdefault(appid, {})[size] = v["sku"]
+            accessory_skus[appid] = {"sku": v["sku"]}
+        else:
+            for size, v in sized.items():
+                products.append({"kind": "accessory", "appId": appid, "size": None, "variant": v})
+                accessory_skus.setdefault(appid, {"bySize": {}})["bySize"][size] = v["sku"]
         coverage["accessories"].append(
-            {"appId": appid, "sizes": sorted(got), "familyKey": row.get("familyKey")})
+            {"appId": appid, "sizes": sorted(free or sized), "familyKey": row.get("familyKey")})
     return products, mattress_skus, accessory_skus, coverage
 
 
@@ -551,15 +599,11 @@ def build_injected(state: str, start: datetime):
         # several minutes and, once a cache is replayed weeks later, several
         # weeks. One shared "now" would quietly refresh every price.
         def _observed(v):
-            raw = v.get("observedAt")
-            try:
-                inst = _parse(raw)
-            except Exception:
-                inst = start - timedelta(hours=1)
-            # never let a host clock difference read as a future observation
-            if inst > start - timedelta(minutes=5):
-                inst = start - timedelta(minutes=5)
-            return inst.isoformat()
+            # Admitted by build_website (observation_verdict): present,
+            # parseable, offset-bearing, not after this run. Passed through
+            # UNCHANGED - a substituted or clamped instant would serve a
+            # price nobody observed at that time as freshly observed.
+            return v["observedAt"]
 
         template = dark["products"][0]
         entries = []
@@ -658,10 +702,16 @@ def build_injected(state: str, start: datetime):
                     m["skus"] = dict(got)
         for a in accessories:
             got = a_skus.get(a["id"])
-            if got:
+            if not got:
+                continue
+            if "sku" in got:
+                # size-independent: ONE product, no size axis. pricingSkuFor
+                # reads the string `sku` for every customer size.
+                a["sku"] = got["sku"]
+            else:
                 # one sku per size; a size with no website variant resolves
                 # nothing, which is the point
-                a["accessorySkus"] = dict(got)
+                a["accessorySkus"] = dict(got["bySize"])
     else:
         for tier in TIER_ORDER:
             for m in catalog.get(tier, []):

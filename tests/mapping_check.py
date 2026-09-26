@@ -215,10 +215,13 @@ out = run([variant(), accessory(productType="pillow", size_id=None, size_raw=Non
 a = out["accessories"][0]
 check("a pillow with NO mattress size is mapped, not filtered out",
       a["status"] == "preview-eligible", str(a)[:160])
-check("...and is marked size-independent, with its variant kept under a null size",
-      a.get("sizeIndependent") is True and "None" in a["variants"], str(a.get("variants"))[:140])
+check("...and is marked size-independent, with its variant under the explicit size-independent key (never str(None))",
+      a.get("sizeIndependent") is True and M.SIZE_INDEPENDENT_KEY in a["variants"] and "None" not in a["variants"],
+      str(a.get("variants"))[:140])
 check("...and its size-independent variant records that fact",
-      a["variants"]["None"]["sizeIndependent"] is True)
+      a["variants"][M.SIZE_INDEPENDENT_KEY]["sizeIndependent"] is True)
+check("...and the key is not a mattress size and not 'None'",
+      M.SIZE_INDEPENDENT_KEY not in M.SIZES and M.SIZE_INDEPENDENT_KEY != "None")
 
 print("\nHelper-level guarantees:")
 check("firmness: 'Firm' does not satisfy 'Extra Firm'",

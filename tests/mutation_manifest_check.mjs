@@ -163,10 +163,19 @@ const keylessPath = writeSweepCopy("sweep_keyless.mjs", keyless);
 const replay = runSweep(keylessPath, ["--validate-manifest"]);
 check(replay.status === 2, "the keyless sweep is REFUSED with exit 2, not a TypeError", `status ${replay.status}: ${replay.out.slice(-400)}`);
 check(!/TypeError|Cannot read properties of undefined/.test(replay.out), "no stack trace: the defect is reported, not thrown");
+// Every entry that targets the mapper is named. The count is read from the
+// shipped manifest itself (two at the 2026-09-25 repair; the PR #132 review
+// repairs added a third), so a later mapper entry extends this check rather
+// than breaking it.
+const mapperEntryCount = (sweep.match(/,\s*"tools\/map_app_to_website\.py"\]/g) || []).length;
+check(mapperEntryCount >= 3, `the shipped manifest carries at least three mapper entries (${mapperEntryCount})`);
 check(/\[NO PRISTINE SOURCE\] #756 "tools\/map_app_to_website\.py" - mapper:/.test(replay.out)
       && /\[NO PRISTINE SOURCE\] #757 "tools\/map_app_to_website\.py" - mapper:/.test(replay.out),
-      "both mapper entries are named, #756 and #757, with their target", replay.out.slice(-600));
-check(/::error:: 2 manifest entries name a target with no pristine source/.test(replay.out), "the count line says two");
+      "the original two mapper entries are named, #756 and #757, with their target", replay.out.slice(-600));
+check((replay.out.match(/\[NO PRISTINE SOURCE\] #\d+ "tools\/map_app_to_website\.py" - mapper:/g) || []).length === mapperEntryCount,
+      `every mapper entry is named (${mapperEntryCount})`, replay.out.slice(-600));
+check(new RegExp(`::error:: ${mapperEntryCount} manifest entries name a target with no pristine source`).test(replay.out),
+      `the count line says ${mapperEntryCount}`);
 check(!/baseline \(unmutated\)/.test(replay.out), "no observer ran on the replay either");
 
 // ---------------------------------------------------------------------------

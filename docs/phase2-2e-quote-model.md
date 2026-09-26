@@ -138,6 +138,17 @@ confused by shape. A size the family is not sold in resolves **nothing** — it
 never falls back to another size's variant, which is the "From $" defect this
 replaces.
 
+A family **not** sold by mattress size (a pillow) has no size axis at all. The
+mapper files such a variant under the explicit `variants` key
+`size-independent` (`SIZE_INDEPENDENT_KEY`, shared with the preview server). It
+used to be `str(None)` = `"None"`, which the preview then filed under a
+mattress size no customer has, so a size-independent accessory could never
+price. The preview now injects it as the accessory's single string `sku`, the
+shape `pricingSkuFor` resolves for every customer size; a variant under any
+other non-size key (including a legacy `"None"`) is refused by name, and a
+family mixing sizeless and sized variants is refused whole (PR #132 review
+repair, 2026-09-25; pinned by `tests/pricing_website_admission_check.py`).
+
 ## 6. Website extraction — corrections after review
 
 `tools/fetch_lacks_prices.py` writes `demo/price-snapshot/`. Codex review of
@@ -235,6 +246,20 @@ cached page (retrievedAt) -> variant.observedAt -> mapping candidate.observedAt
 The snapshot also carries `observedFrom` / `observedTo`, and mixed-age captures
 keep their per-entry dates: the current preview serves **8 distinct observation
 stamps** spanning the real capture window, not one synthetic "now".
+
+An observation stamp is admitted only as found (PR #132 review repair,
+2026-09-25). A variant whose `observedAt` is missing, unreadable, carries no
+UTC offset, or is later than the preview's own clock is **refused by name** in
+the coverage report (`observation-missing`, `observation-unparseable`,
+`observation-offset-missing`, `observation-in-future`) and never priced. The
+preview used to substitute "one hour ago" for the first three and clamp the
+last to "five minutes ago", which served prices nobody observed then as freshly
+observed — and the committed snapshot carries undated rows, so this was live in
+the website preview. A trustworthy stamp passes through unchanged into
+`evidence.verifiedAt` and `clearance.attestedAt`. Pinned by
+`tests/pricing_website_admission_check.py` and by the harness check, which
+builds and walks the website state at a clock derived from the snapshot's own
+`observedTo`.
 
 Pinned by `tests/price_extraction_check.py`: a cache replay keeps the original
 instant, replaying twice does not move it, a legacy row-cache entry is

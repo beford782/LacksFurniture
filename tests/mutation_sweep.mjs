@@ -150,6 +150,13 @@ const PRICING_HARNESS = ["tests/pricing_harness_check.py"];
 // tool): identity discipline is observed by the mapping suite alone, which
 // runs the real build() over a synthetic snapshot in a temp dir.
 const MAPPING = ["tests/mapping_check.py"];
+// PR #132 review repairs (2026-09-25). The rendered pillow + quantity check
+// drives the real page (clicks and key presses) and owns the two-pillow plan
+// and the Summary stepper's keyboard place; the website admission check runs
+// the real drill over a synthetic snapshot and owns observation-stamp
+// admission and the size-independent accessory key.
+const PILLOW_QTY_RENDERED = ["tests/sleep_system_pillow_quantity_check.py"];
+const WEBSITE_ADMISSION = ["tests/pricing_website_admission_check.py"];
 // Payload minimisation (2026-09-09): the email-gating suite executes the real
 // accessory projection over a priced catalog record and pins its exact keys.
 const EMAIL_PACKET = ["tests/email_gating_check.mjs"];
@@ -3239,6 +3246,65 @@ const MUTATIONS = [
     "        document.getElementById('compareCols').innerHTML = rowsHtml(dd[id1] || m1, dd[id2] || m2);",
     "        document.getElementById('compareCols').innerHTML = rowsHtml(m1, m2);",
     PRICING_HARNESS, "index.html"],
+
+  // --- PR #132 review repairs (2026-09-25) ---------------------------------
+  // The two-pillow plan: testing and adding the second pillow leaves the first
+  // and its quantity in the cart; a reaction is a verdict on the tested pillow.
+  ["pillow: 'Try this' clears the plan again (the first pillow and its quantity are lost before the second is added)",
+    "        window._sleepSystemState.pillowFeedback = '';\n        // PR #132 review repair (2026-09-25): trying a pillow changes which",
+    "        window._sleepSystemState.pillowFeedback = '';\n        Object.keys(window._accCart || {}).forEach(function(id) { delete window._accCart[id]; });\n        // PR #132 review repair (2026-09-25): trying a pillow changes which",
+    PILLOW_QTY_RENDERED, "index.html"],
+  ["pillow: a 'too low' / 'too high' reaction drops EVERY pillow, not only the tested one",
+    "          delete window._accCart[currentPillowId];",
+    "          Object.keys(window._accCart).forEach(function(id) { delete window._accCart[id]; });",
+    PILLOW_QTY_RENDERED, "index.html"],
+  ["pillow: 'Feels aligned' also drops the tested pillow (a selected pillow leaves the plan on its own confirmation)",
+    "        if ((pillowReaction === 'low' || pillowReaction === 'high') && currentPillowId &&",
+    "        if (currentPillowId &&",
+    PILLOW_QTY_RENDERED, "index.html"],
+  ["pillow: a selected pillow is stranded behind the untested-pillow gate (no Remove control until the fit is re-recorded)",
+    "          actionHtml = (selected || window._sleepSystemState.pillowReaction === 'aligned')",
+    "          actionHtml = (window._sleepSystemState.pillowReaction === 'aligned')",
+    PILLOW_QTY_RENDERED, "index.html"],
+  // The Summary quantity control's keyboard place.
+  ["quantity: focus is not handed back after the repaint (every press drops the keyboard user to <body>)",
+    "      if (target && typeof target.focus === 'function') target.focus({ preventScroll: true });",
+    "      void target;",
+    PILLOW_QTY_RENDERED, "index.html"],
+  ["quantity: at a limit focus is aimed at the disabled control it just pressed instead of the one that can still act",
+    "      var target = (same && !same.disabled) ? same : ((other && !other.disabled) ? other : null);",
+    "      var target = same;",
+    PILLOW_QTY_RENDERED, "index.html"],
+  // The website drill's admission (tools/serve_pricing_preview.py).
+  ["website admission: the observation verdict is ignored (untrusted stamps are admitted again)",
+    "        why = observation_verdict(v.get(\"observedAt\"), start)\n        if why:\n            return False, why",
+    "        why = observation_verdict(v.get(\"observedAt\"), start)\n        if False:\n            return False, why",
+    WEBSITE_ADMISSION, "tools/serve_pricing_preview.py"],
+  ["website admission: a stamp later than the run's clock is admitted as an observation",
+    "    if inst > start:\n        return \"observation-in-future\"",
+    "    if False:\n        return \"observation-in-future\"",
+    WEBSITE_ADMISSION, "tools/serve_pricing_preview.py"],
+  ["website admission: an offset-less stamp is admitted (which clock it was read on is unknown)",
+    "    if inst.tzinfo is None or inst.utcoffset() is None:",
+    "    if False:",
+    WEBSITE_ADMISSION, "tools/serve_pricing_preview.py"],
+  ["website admission: the served evidence stamp is re-stamped to an hour before the run instead of the observation",
+    "            return v[\"observedAt\"]",
+    "            return (start - timedelta(hours=1)).isoformat()",
+    WEBSITE_ADMISSION, "tools/serve_pricing_preview.py"],
+  ["website admission: the size-independent key is no longer recognised (a sizeless accessory can never price)",
+    "            if ok and size == SIZE_INDEPENDENT_KEY:",
+    "            if False:",
+    WEBSITE_ADMISSION, "tools/serve_pricing_preview.py"],
+  ["website admission: any variant key is filed as a mattress size again ('None' becomes a size)",
+    "            elif ok and size in MATTRESS_SIZES:",
+    "            elif ok:",
+    WEBSITE_ADMISSION, "tools/serve_pricing_preview.py"],
+  // The mapper's explicit size-independent key (tools/map_app_to_website.py).
+  ["mapper: a sizeless variant is filed under str(None) == 'None' again",
+    "            key = SIZE_INDEPENDENT_KEY if size is None else str(size)",
+    "            key = str(size)",
+    MAPPING, "tools/map_app_to_website.py"],
 ];
 
 // ---------------------------------------------------------------------------

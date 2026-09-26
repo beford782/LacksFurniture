@@ -118,6 +118,30 @@ START = datetime(2026, 9, 9, 12, 0, 0, tzinfo=timezone(timedelta(hours=-5)))
 # timers, intervals, animation frames and the walk's awaited delays keep running.
 FROZEN_MS = int(START.timestamp() * 1000)
 
+
+# The website drill's clock. Its evidence stamps are the snapshot's REAL
+# observation instants passed through unchanged (PR #132 review repair,
+# 2026-09-25): a stamp later than the run's clock is refused as "in the
+# future", never clamped to look recent. START predates the committed capture,
+# so the website state is built and walked at a clock derived from the
+# snapshot itself - one hour past its last observation, never before START -
+# which stays valid across recaptures without touching START.
+def _website_clock():
+    try:
+        with open(srv.SNAPSHOT, encoding="utf-8") as f:
+            meta = json.load(f).get("_meta") or {}
+        last = datetime.fromisoformat(meta["observedTo"])
+    except (OSError, KeyError, TypeError, ValueError):
+        return START
+    return max(START, last + timedelta(hours=1))
+
+
+WEBSITE_START = _website_clock()
+
+
+def clock_for(state):
+    return WEBSITE_START if state == "website" else START
+
 # ---- app readiness -------------------------------------------------------------
 # The rendered walks used to begin on "network idle + #startBtn present", but
 # #startBtn is static markup and the app boots asynchronously behind it: four
@@ -145,7 +169,7 @@ APP_READY_TIMEOUT_MS = 15000
 print("Drill states:")
 built = {}
 for state in srv.STATES:
-    cfg, cat, v, acc = srv.build_injected(state, START)
+    cfg, cat, v, acc = srv.build_injected(state, clock_for(state))
     built[state] = (cfg, cat, v, acc)
     mattress_entries = [e for e in cfg["pricing"]["products"] if e["productKind"] == "mattress"]
     accessory_entries = [e for e in cfg["pricing"]["products"] if e["productKind"] == "accessory"]
@@ -253,6 +277,22 @@ for state in srv.STATES:
         check("website: the drill reports its own coverage, including what it rejected",
               isinstance(cov.get("mattressSizes"), list)
               and isinstance(cov.get("mattressRejected"), list))
+        # PR #132 review repair (2026-09-25): every served stamp is the
+        # snapshot's own observation instant, byte-identical, in the past at
+        # the website clock; nothing is re-stamped or clamped, and every
+        # rejection names its reason.
+        with open(srv.SNAPSHOT, encoding="utf-8") as f:
+            _observed_by_sku = {x["sku"]: x.get("observedAt") for x in json.load(f)["variants"] if isinstance(x.get("sku"), str)}
+        check("website: every served evidence stamp is the snapshot's observedAt for that sku, UNCHANGED, and earlier than the website clock",
+              all(e["evidence"]["verifiedAt"] == _observed_by_sku.get(e["sku"])
+                  and e["clearance"]["attestedAt"] == _observed_by_sku.get(e["sku"])
+                  and isinstance(e["evidence"]["verifiedAt"], str)
+                  and datetime.fromisoformat(e["evidence"]["verifiedAt"]) < WEBSITE_START for e in prods),
+              f"clock={WEBSITE_START.isoformat()} " + "; ".join(f"{e['sku']}:{e['evidence']['verifiedAt']}" for e in prods[:3]))
+        check("website: every rejected row names a reason, and 'None' is never reported as a size",
+              all(isinstance(r.get("reason"), str) and r.get("reason") and r.get("size") != "None"
+                  for r in cov.get("mattressRejected", []) + cov.get("accessoriesRejected", [])),
+              str(cov.get("accessoriesRejected", []))[:200])
 
     strip = lambda c: {k: v_ for k, v_ in c.items() if k not in ("pricing", "financing")}
     check(f"{state}: every non-pricing, non-financing key deep-equals production", strip(cfg) == strip(PROD))
@@ -1017,7 +1057,7 @@ def rendered():
                 for name, w, h in VIEWPORTS:
                     for lang in ("en", "es"):
                         tag = f"{state} {name} {lang}"
-                        r = walk(browser, port, lang, "queen", w, h)
+                        r = walk(browser, port, lang, "queen", w, h, clock=clock_for(state))
                         if state == "website":
                             # The website drill prices only the subset with
                             # sufficient evidence, so the fixture walk's
