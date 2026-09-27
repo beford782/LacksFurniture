@@ -43,7 +43,8 @@
       "sleepSystem": false,
       "results": false,
       "handoff": false,
-      "sleepPlan": false
+      "sleepPlan": false,
+      "compare": false
     },
     "presentation": {
       "status": "approved",
@@ -90,6 +91,40 @@
         "threshold-unknown": {
           "en": "FIXTURE — Eligibility unknown until the transaction amount is known.",
           "es": "FIXTURE — Elegibilidad desconocida hasta conocer el monto de la transacción."
+        },
+        "threshold-not-met": {
+          "en": "FIXTURE — This selection is below the published minimum for this option. Pending verification.",
+          "es": "FIXTURE — Esta selección está por debajo del mínimo publicado para esta opción. Pendiente de verificación."
+        }
+      },
+      "totals": {
+        "merchandise-label": {
+          "en": "FIXTURE — Merchandise subtotal",
+          "es": "FIXTURE — Subtotal de mercancía"
+        },
+        "excludes": {
+          "en": "FIXTURE — Merchandise only. Tax, delivery and setup are not included and are quoted in store.",
+          "es": "FIXTURE — Solo mercancía. No incluye impuestos, entrega ni instalación; se cotizan en la tienda."
+        },
+        "incomplete": {
+          "en": "FIXTURE — A subtotal is not available until every selected item has a price.",
+          "es": "FIXTURE — El subtotal no está disponible hasta que cada artículo seleccionado tenga precio."
+        },
+        "provenance": {
+          "en": "FIXTURE — Illustrative test prices. Not real prices and not a quote.",
+          "es": "FIXTURE — Precios de prueba ilustrativos. No son precios reales ni una cotización."
+        },
+        "line-label": {
+          "en": "FIXTURE — Selected items",
+          "es": "FIXTURE — Artículos seleccionados"
+        },
+        "compare-price-label": {
+          "en": "FIXTURE — Purchase price",
+          "es": "FIXTURE — Precio de compra"
+        },
+        "compare-difference-label": {
+          "en": "FIXTURE — Price difference",
+          "es": "FIXTURE — Diferencia de precio"
         }
       }
     },
@@ -333,7 +368,8 @@
         "disclosure": {
           "en": "Subject to credit approval. Regular account terms apply to non-promo purchases; for new accounts as of 07/31/2025 the purchase APR is 34.99%, penalty APR 39.99%, minimum interest charge $2. Lacks may alter or discontinue this offer at any time.",
           "es": "Sujeto a aprobación de crédito. Los términos regulares de la cuenta aplican a compras fuera de promoción; para cuentas nuevas al 07/31/2025 la tasa APR de compra es 34.99%, la APR de penalización 39.99% y el cargo mínimo por interés $2. Lacks puede modificar o descontinuar esta oferta en cualquier momento."
-        }
+        },
+        "qualifyingBasis": "merchandise-subtotal"
       },
       {
         "id": "synchrony-0-48",
@@ -359,7 +395,8 @@
         "disclosure": {
           "en": "Subject to credit approval. No interest is charged on the promotional purchase. Regular account terms apply to non-promo purchases; for new accounts as of 07/31/2025 the purchase APR is 34.99%, penalty APR 39.99%, minimum interest charge $2.",
           "es": "Sujeto a aprobación de crédito. No se cobra interés en la compra promocional. Los términos regulares de la cuenta aplican a compras fuera de promoción; para cuentas nuevas al 07/31/2025 la tasa APR de compra es 34.99%, la APR de penalización 39.99% y el cargo mínimo por interés $2."
-        }
+        },
+        "qualifyingBasis": "merchandise-subtotal"
       },
       {
         "id": "lacks-in-house",

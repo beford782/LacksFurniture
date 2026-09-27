@@ -137,5 +137,6 @@
   "plan.added": "Added to your plan",
   "plan.not_added": "Not added",
   "plan.priorities_recovery": "We couldn't prepare the trial priorities. Return to the Sleep Brief and try again.",
-  "plan.priorities_recovery_action": "Return to Sleep Brief"
+  "plan.priorities_recovery_action": "Return to Sleep Brief",
+  "compare.size_context": "Comparing {size} mattresses"
 }

@@ -1869,6 +1869,11 @@ def _validate_governed_promotions(r, promos, scenarios, active, canonical_hosts)
 
 # -- Financing validation (Lacks Payment Choice) -------------------------------
 
+# The qualifying-purchase bases the 2.2e quote model can actually compute.
+# Mirrors QUOTE_QUALIFYING_BASES in index.html; the two must admit the
+# same set so no validator-admitted declaration is unusable at runtime.
+FINANCING_QUALIFYING_BASES = frozenset({"merchandise-subtotal"})
+
 FINANCING_PLAN_KINDS = {
     "open-end-promotional-credit",   # e.g. Synchrony HOME card promos (Reg Z open-end)
     "closed-end-installment",        # e.g. Lacks In-House / Mexico contracts
@@ -2948,7 +2953,7 @@ def validate_financing(config: dict, *, allowed_source_hosts=None) -> Validation
         # Exact credit claims: APR/term/minimum require verification, source,
         # adjacent conditions (detail) and a disclosure — all bilingual.
         exact = any(plan.get(k) is not None
-                    for k in ("apr", "termMonths", "minimumPurchase"))
+                    for k in ("apr", "termMonths", "minimumPurchase", "qualifyingBasis"))
         if exact:
             if plan.get("verified") is not True:
                 r.add_error(f"{tag}: exact terms present but verified is not true")
@@ -3027,6 +3032,20 @@ def validate_financing(config: dict, *, allowed_source_hosts=None) -> Validation
                         f"expressed at currency precision (at most two decimal "
                         f"places, within safe-integer minor units) — the dark "
                         f"resolver converts plan minimums to integer cents exactly")
+        # A plan's published minimum is measured against an amount whose
+        # basis the LENDER defines (tax and delivery in or out, excluded
+        # categories, initial purchase vs account balance). Lacks publishes
+        # none of it, so a plan may not be threshold-assessed at all unless
+        # it DECLARES the basis it measures. The declaration is optional and
+        # absent on every shipped plan; when present it must name a basis the
+        # runtime can actually compute, or the runtime would silently fall
+        # back to "unknown" on a value the validator had admitted.
+        qb = plan.get("qualifyingBasis")
+        if qb is not None and (not isinstance(qb, str) or qb not in FINANCING_QUALIFYING_BASES):
+            r.add_error(f"{tag}: qualifyingBasis {fin_headline.short_repr(qb)} must be "
+                        f"one of {sorted(FINANCING_QUALIFYING_BASES)} — a plan minimum is "
+                        f"measured against a lender-defined amount, and a basis the "
+                        f"runtime cannot compute must not be declared")
         ppf = plan.get("publishedPaymentFactor")
         if ppf is not None and (not _finite_number(ppf) or not 0 < ppf < 1):
             r.add_error(f"{tag}: publishedPaymentFactor "
@@ -3239,19 +3258,47 @@ PRICING_APPROVAL_STATUSES = frozenset({"unapproved", "approved"})
 PRICING_FRESHNESS_KEYS = frozenset({"status", "maxAgeDays", "approvedBy", "approvedAt"})
 PRICING_SOURCE_POLICY_KEYS = frozenset({"status", "allowedSourceHosts", "approvedBy", "approvedAt"})
 PRICING_CURRENCIES = frozenset({"USD"})
-PRICING_SURFACES = frozenset({"drawer", "sleepSystem", "results", "handoff", "sleepPlan"})
+# `compare` added 2026-09-20: the finalist comparison shows a same-size
+# purchase-price difference, which is its own customer-visible surface and
+# gets its own flag. A surface flag governs exactly the surface it names.
+PRICING_SURFACES = frozenset({"drawer", "sleepSystem", "results", "handoff",
+                              "sleepPlan", "compare"})
 # The qualifying purchase amount is a TRANSACTION fact supplied at runtime.
 # The policy object carries exactly one key, and there is deliberately no
 # product-price policy: one product's price is not the purchase, and deriving
 # eligibility from it would present a plan a customer may not qualify for.
 PRICING_ASSESSMENT_KEYS = frozenset({"policy"})
 PRICING_ASSESSMENT_POLICIES = frozenset({"runtime-transaction-amount"})
-PRICING_PRESENTATION_KEYS = frozenset({"status", "approvals", "assumptions", "disclosures", "states"})
+PRICING_PRESENTATION_KEYS = frozenset({"status", "approvals", "assumptions",
+                                       "disclosures", "states", "totals"})
+# Copy for a COMPLETE-SYSTEM amount, which is a different claim from a single
+# product price and needs its own approved wording. `merchandise-label` names
+# what the figure is; `excludes` states in the customer's own language that it
+# is not an order total (no tax, delivery or setup); `incomplete` explains why
+# no figure is shown when any line is unresolved; `pending-verification`
+# labels a figure sourced from the website and not yet verified. There is
+# deliberately NO "order total" or "all-in total" key: the kiosk holds no tax
+# or delivery facts, so it must never present one.
+# `provenance` replaces the earlier `pending-verification`: the label must say
+# WHERE the amounts came from, and the two cases are not interchangeable.
+# Illustrative fixture amounts must never describe themselves as
+# website-sourced, and website amounts must never drop the pending-verification
+# caveat. One key, one honest sentence, chosen by whoever built the contract.
+PRICING_TOTAL_KEYS = frozenset({"merchandise-label", "excludes", "incomplete",
+                                "provenance", "line-label",
+                                # the finalist comparison's two labels
+                                "compare-price-label", "compare-difference-label"})
 PRICING_PRESENTATION_APPROVAL_KEYS = frozenset({"business", "legal", "nativeReview"})
 PRICING_APPROVAL_RECORD_KEYS = frozenset({"status", "by", "at"})
 PRICING_NATIVE_REVIEW_STATUSES = frozenset({"pending", "approved"})
 PRICING_COPY_ITEM_KEYS = frozenset({"id", "en", "es"})
-PRICING_STATE_KEYS = frozenset({"price-unavailable", "quote-only", "threshold-unknown"})
+# `threshold-not-met` added 2026-09-20 (slice 2.2e): below-minimum is a
+# distinct, customer-relevant state. There is deliberately NO
+# `threshold-met` key — a met minimum is not credit approval, and copy
+# implying otherwise is the one claim the Payment Choice surface must
+# never make, so "met" renders nothing at all.
+PRICING_STATE_KEYS = frozenset({"price-unavailable", "quote-only",
+                               "threshold-unknown", "threshold-not-met"})
 PRICING_PRODUCT_KEYS = frozenset({
     "productId", "productKind", "sku", "size", "price", "evidence", "clearance", "window",
 })
@@ -3826,6 +3873,22 @@ def validate_pricing(config, *, allowed_source_hosts=None, financing_source_host
                 st = states[name]
                 if not _bilingual_ok(st):
                     r.add_error(f"pricing.presentation.states.{name} must be a "
+                                f"bilingual object with non-blank en and es strings")
+        totals = pres.get("totals")
+        if totals is None:
+            if activation:
+                r.add_error("pricing.presentation.totals is required at activation — "
+                            "a complete-system amount is a different claim from a "
+                            "product price and carries its own approved copy")
+        elif _pricing_object(r, "pricing.presentation.totals", totals, PRICING_TOTAL_KEYS):
+            for name in sorted(PRICING_TOTAL_KEYS):
+                if name not in totals:
+                    if activation:
+                        r.add_error(f"pricing.presentation.totals.{name} is required "
+                                    f"at activation")
+                    continue
+                if not _bilingual_ok(totals[name]):
+                    r.add_error(f"pricing.presentation.totals.{name} must be a "
                                 f"bilingual object with non-blank en and es strings")
         if activation and not papproved:
             r.add_error("pricing.presentation.status must be 'approved' at activation "
@@ -6231,6 +6294,23 @@ def _self_test() -> int:
           any("disclosure" in e for e in
               validate_financing(_fc(fes), allowed_source_hosts=_FHOSTS).errors))
 
+    # slice 2.2e - a plan may be threshold-assessed only when it DECLARES the
+    # basis its published minimum is measured against. Optional, and absent on
+    # every shipped plan; when present it must name a basis the runtime can
+    # compute, so no validator-admitted declaration is unusable at runtime.
+    check("financing plan without qualifyingBasis -> ok (absent is the shipped state)",
+          validate_financing(_fc(_fmut()), allowed_source_hosts=_FHOSTS).ok)
+    fqb = _fmut(); fqb["plans"][0]["qualifyingBasis"] = "merchandise-subtotal"
+    check("financing plan declaring the computable basis -> ok",
+          validate_financing(_fc(fqb), allowed_source_hosts=_FHOSTS).ok)
+    for bad in ("order-total", "", "MERCHANDISE-SUBTOTAL", 7, True, [], {}):
+        fqb = _fmut(); fqb["plans"][0]["qualifyingBasis"] = bad
+        check(f"financing qualifyingBasis {bad!r} -> error",
+              any("qualifyingBasis" in e for e in
+                  validate_financing(_fc(fqb), allowed_source_hosts=_FHOSTS).errors))
+    check("FINANCING_QUALIFYING_BASES mirrors the runtime set exactly",
+          FINANCING_QUALIFYING_BASES == frozenset({"merchandise-subtotal"}))
+
     # COPY-15 is legacy guidance for a financing block that is NOT the D4
     # Payment Choice experience. Under payment-choice, emailBodyAvailable is
     # REQUIRED and emailBody is RETIRED, so neither half of the warning can
@@ -7922,7 +8002,7 @@ def _self_test() -> int:
         "purchaseAssessment": {"policy": "runtime-transaction-amount"},
         "sizes": ["twin", "twin_xl", "full", "queen", "king", "cal_king"],
         "surfaces": {"drawer": False, "sleepSystem": False, "results": False,
-                     "handoff": False, "sleepPlan": False},
+                     "handoff": False, "sleepPlan": False, "compare": False},
         "presentation": {
             "status": "approved",
             "approvals": {
@@ -7934,7 +8014,15 @@ def _self_test() -> int:
             "disclosures": [{"id": "d1", "en": "Disclosure", "es": "Aviso"}],
             "states": {"price-unavailable": {"en": "Unavailable", "es": "No disponible"},
                        "quote-only": {"en": "Quote", "es": "Cotización"},
-                       "threshold-unknown": {"en": "Unknown", "es": "Desconocido"}},
+                       "threshold-unknown": {"en": "Unknown", "es": "Desconocido"},
+                       "threshold-not-met": {"en": "Below minimum", "es": "Por debajo del mínimo"}},
+            "totals": {"merchandise-label": {"en": "Merchandise subtotal", "es": "Subtotal de mercancía"},
+                       "excludes": {"en": "Excludes tax and delivery", "es": "No incluye impuestos ni entrega"},
+                       "incomplete": {"en": "Subtotal unavailable", "es": "Subtotal no disponible"},
+                       "provenance": {"en": "Illustrative test prices", "es": "Precios de prueba ilustrativos"},
+                       "line-label": {"en": "Selected items", "es": "Artículos seleccionados"},
+                       "compare-price-label": {"en": "Purchase price", "es": "Precio de compra"},
+                       "compare-difference-label": {"en": "Price difference", "es": "Diferencia de precio"}},
         },
         "products": [{
             "productId": "g6", "productKind": "mattress", "sku": "T-0001",
@@ -7974,7 +8062,7 @@ def _self_test() -> int:
         "purchaseAssessment": {"policy": "runtime-transaction-amount"},
         "sizes": ["twin", "twin_xl", "full", "queen", "king", "cal_king"],
         "surfaces": {"drawer": False, "sleepSystem": False, "results": False,
-                     "handoff": False, "sleepPlan": False},
+                     "handoff": False, "sleepPlan": False, "compare": False},
         "presentation": {
             "status": "unapproved",
             "approvals": {"business": {"status": "unapproved", "by": "", "at": None},
@@ -8050,8 +8138,12 @@ def _self_test() -> int:
     pu = _pmut(); del pu["surfaces"]["sleepPlan"]
     check("pricing surface missing -> error (missing reads as enabled)",
           _perr(pu, "surfaces.sleepPlan must be declared"))
-    pu = _pmut(); pu["surfaces"]["compare"] = False
-    check("pricing unknown surface -> error", _perr(pu, "'compare'"))
+    # `compare` became a REAL surface in 2026-09-20's finalist price-difference
+    # work, so the unknown-surface probe needs a name that is genuinely not one.
+    pu = _pmut(); pu["surfaces"]["email"] = False
+    check("pricing unknown surface -> error", _perr(pu, "'email'"))
+    check("pricing KNOWN compare surface -> admitted",
+          _pv(_pmut()).ok and "compare" in PRICING_SURFACES)
 
     # scalars and ownership
     pu = _pmut(); pu["schemaVersion"] = True
@@ -8196,6 +8288,32 @@ def _self_test() -> int:
           _perr(pu, "states.quote-only must be a bilingual"))
     pu = _pmut(); pu["presentation"]["states"]["eligible"] = {"en": "x", "es": "y"}
     check("pricing unknown state name -> error", _perr(pu, "'eligible'"))
+    # slice 2.2e - below-minimum is its own governed state, and there is
+    # deliberately no `threshold-met` key (a met minimum is not approval).
+    pu = _pmut(); del pu["presentation"]["states"]["threshold-not-met"]
+    pu["displayEnabled"] = True
+    check("pricing at activation missing threshold-not-met copy -> error",
+          _perr(pu, "states.threshold-not-met is required at activation"))
+    pu = _pmut(); pu["presentation"]["states"]["threshold-not-met"] = {"en": "Below", "es": ""}
+    check("pricing threshold-not-met with blank ES -> error",
+          _perr(pu, "states.threshold-not-met must be a bilingual"))
+    # slice 2.2f - complete-system total copy
+    pu = _pmut(); del pu["presentation"]["totals"]
+    check("pricing ENABLED dark without totals copy -> ADMITTED (activation-gated)", _pv(pu).ok)
+    pu["displayEnabled"] = True
+    check("pricing at activation without totals copy -> error",
+          _perr(pu, "presentation.totals is required at activation"))
+    pu = _pmut(); del pu["presentation"]["totals"]["excludes"]; pu["displayEnabled"] = True
+    check("pricing at activation missing the tax/delivery exclusion copy -> error",
+          _perr(pu, "totals.excludes is required at activation"))
+    pu = _pmut(); pu["presentation"]["totals"]["excludes"] = {"en": "x", "es": ""}
+    check("pricing totals copy with blank ES -> error", _perr(pu, "totals.excludes must be a bilingual"))
+    pu = _pmut(); pu["presentation"]["totals"]["order-total"] = {"en": "All in", "es": "Total"}
+    check("pricing totals rejects an 'order-total' key (the kiosk holds no tax or delivery facts)",
+          _perr(pu, "'order-total'"))
+    pu = _pmut(); pu["presentation"]["states"]["threshold-met"] = {"en": "You qualify", "es": "Calificas"}
+    check("pricing threshold-met is NOT an admitted state name (a met minimum is not approval)",
+          _perr(pu, "'threshold-met'"))
     pu = _pmut(); pu["presentation"]["status"] = "unapproved"
     check("pricing ENABLED dark with presentation unapproved -> ADMITTED (re-bound)",
           _pv(pu).ok)

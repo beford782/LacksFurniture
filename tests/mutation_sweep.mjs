@@ -16,14 +16,25 @@
 //
 // Run: node tests/mutation_sweep.mjs
 //      node tests/mutation_sweep.mjs --list     (print the manifest, run nothing)
+//      node tests/mutation_sweep.mjs --validate-manifest
+//                                               (check every entry's target has a
+//                                                pristine source, run no observer)
+//      node tests/mutation_sweep.mjs --from 756 (run entries 756..end only; the
+//                                                baseline covers their observers)
+//
+// MUTATION_SWEEP_ROOT=<dir> overrides the tree the sandbox is copied from. It
+// exists for tests/mutation_manifest_check.mjs, which runs a planted COPY of
+// this file from a temp directory against the real tree.
 
 import { readFileSync, writeFileSync, mkdtempSync, cpSync, rmSync } from "node:fs";
 import { execFileSync } from "node:child_process";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { tmpdir } from "node:os";
 
-const root = join(dirname(fileURLToPath(import.meta.url)), "..");
+const root = process.env.MUTATION_SWEEP_ROOT
+  ? resolve(process.env.MUTATION_SWEEP_ROOT)
+  : join(dirname(fileURLToPath(import.meta.url)), "..");
 
 // The suites that can observe these properties. Kept explicit rather than
 // "every suite", so the runtime stays proportionate and so a survivor cannot be
@@ -135,6 +146,17 @@ const PRICING_GATE_RENDERED = ["tests/pricing_presentation_check.mjs", "tests/pr
 // its bind policy, in-memory allowlist and banner are observed by the harness
 // check alone, which drives the real server on a private address of the host.
 const PRICING_HARNESS = ["tests/pricing_harness_check.py"];
+// The app-to-website mapper (tools/map_app_to_website.py, offline evidence
+// tool): identity discipline is observed by the mapping suite alone, which
+// runs the real build() over a synthetic snapshot in a temp dir.
+const MAPPING = ["tests/mapping_check.py"];
+// PR #132 review repairs (2026-09-25). The rendered pillow + quantity check
+// drives the real page (clicks and key presses) and owns the two-pillow plan
+// and the Summary stepper's keyboard place; the website admission check runs
+// the real drill over a synthetic snapshot and owns observation-stamp
+// admission and the size-independent accessory key.
+const PILLOW_QTY_RENDERED = ["tests/sleep_system_pillow_quantity_check.py"];
+const WEBSITE_ADMISSION = ["tests/pricing_website_admission_check.py"];
 // Payload minimisation (2026-09-09): the email-gating suite executes the real
 // accessory projection over a priced catalog record and pins its exact keys.
 const EMAIL_PACKET = ["tests/email_gating_check.mjs"];
@@ -2363,12 +2385,12 @@ const MUTATIONS = [
 
   // --- Payload minimisation: the accessory packet (index.html) ---------------
   ["email packet: the accessory projection becomes a spread again (id, reason and any future field leak)",
-    "      const accList = getSelectedAccessoryPlan().map(a => ({\n        name: a.name,\n        category: a.category,\n        imageUrl: toAbsoluteImageUrl(a.imageUrl)\n      }));",
+    "      const accList = getSelectedAccessoryPlan().map(a => ({\n        name: a.name,\n        category: a.category,\n        quantity: a.quantity,\n        imageUrl: toAbsoluteImageUrl(a.imageUrl)\n      }));",
     "      const accList = getSelectedAccessoryPlan().map(a => Object.assign({}, a, { imageUrl: toAbsoluteImageUrl(a.imageUrl) }));",
     EMAIL_PACKET, "index.html"],
   ["email packet: the accessory projection gains the plan entry's id",
-    "        name: a.name,\n        category: a.category,\n        imageUrl: toAbsoluteImageUrl(a.imageUrl)\n      }));",
-    "        id: a.id,\n        name: a.name,\n        category: a.category,\n        imageUrl: toAbsoluteImageUrl(a.imageUrl)\n      }));",
+    "        name: a.name,\n        category: a.category,\n        quantity: a.quantity,\n        imageUrl: toAbsoluteImageUrl(a.imageUrl)\n      }));",
+    "        id: a.id,\n        name: a.name,\n        category: a.category,\n        quantity: a.quantity,\n        imageUrl: toAbsoluteImageUrl(a.imageUrl)\n      }));",
     EMAIL_PACKET, "index.html"],
   // --- A4.1 (roadmap 3.1, re-cut 2026-09-09): the scoring feature-key contract.
   // calculateScores() matches quiz scoring keys to catalog feature tags by exact
@@ -2594,8 +2616,8 @@ const MUTATIONS = [
     "        size: size,",
     PRICING_GATE, "index.html"],
   ["provenance: the accessory sku grammar is dropped (an untrimmed sku resolves)",
-    "        return rec.sku.replace(/\\s+/g, '').length > 0 && rec.sku === rec.sku.trim() ? rec.sku : null;",
-    "        return rec.sku;",
+    "              && sku === sku.trim()) ? sku : null;",
+    "              ) ? sku : null;",
     PRICING_GATE, "index.html"],
   ["provenance: the legacy 'From $' line renders BESIDE the governed slot (two prices on one card)",
     "        if (governedPrice) price = '';",
@@ -2607,8 +2629,54 @@ const MUTATIONS = [
     "      if (false) return '';",
     PRICING_GATE, "index.html"],
   ["2.2d: the threshold line stops requiring a published minimum purchase",
-    "      if (pres.threshold === 'unknown' && plan && typeof plan.minimumPurchase === 'number') {",
-    "      if (pres.threshold === 'unknown') {",
+    "      if (plan && typeof plan.minimumPurchase === 'number') {",
+    "      if (plan) {",
+    PRICING_GATE, "index.html"],
+  // --- Phase 2.2e: the consultation quote model -----------------------------
+  ["2.2e: an unresolved line stops voiding the amount (a PARTIAL sum is produced)",
+    "        if (!ln.resolved) { allResolved = false; continue; }",
+    "        if (!ln.resolved) { continue; }",
+    PRICING_GATE, "index.html"],
+  ["2.2e: an unknown line amount becomes ZERO instead of null",
+    "        unitAmountMinor: admitted ? pres.amountMinor : null,",
+    "        unitAmountMinor: admitted ? pres.amountMinor : 0,",
+    PRICING_GATE, "index.html"],
+  ["2.2e: the merchandise amount skips the runtime money admission the parts passed",
+    "      var merchandiseMinor = (allResolved && priceMoneyValid(sum, currency)) ? sum : null;",
+    "      var merchandiseMinor = allResolved ? sum : null;",
+    PRICING_GATE, "index.html"],
+  ["2.2e: the threshold axis is fed an amount even when the quote is unresolved",
+    "        transactionAmountMinor: qualifying.amountMinor === null ? undefined : qualifying.amountMinor",
+    "        transactionAmountMinor: 999999999",
+    PRICING_GATE, "index.html"],
+  ["2.2e: a selected id the catalog lacks is silently DROPPED from the quote",
+    "      for (var r = 0; r < rest.length; r++) out.push({ id: rest[r], record: null });",
+    "      for (var r = 0; r < 0; r++) out.push({ id: rest[r], record: null });",
+    PRICING_GATE, "index.html"],
+  ["2.2e: the qualifying amount is assumed to BE the merchandise subtotal (no declared basis needed)",
+    "      if (!declared) return { amountMinor: null, basis: 'undeclared' };",
+    "      if (!declared) declared = 'merchandise-subtotal';",
+    PRICING_GATE, "index.html"],
+  ["2.2e: a below-minimum purchase says nothing (the governed not-met copy is dropped)",
+    "        else if (pres.threshold === 'not-met') lines.push(pricingStateCopy('threshold-not-met'));",
+    "        else if (false) lines.push(pricingStateCopy('threshold-not-met'));",
+    PRICING_GATE, "index.html"],
+  // --- Phase 2.2f: the complete-system subtotal ---------------------------
+  ["2.2f: the complete-system subtotal renders for an accessories-only cart (no mattress)",
+    "      if (quote.lineCount === 0 || !quote.hasMattress) return off();",
+    "      if (quote.lineCount === 0) return off();",
+    PRICING_GATE, "index.html"],
+  ["2.2f: the subtotal speaks in states that reach no surface (dark, stale, unapproved)",
+    "      if (quote.resolvedCount === 0) return off();",
+    "      if (false) return off();",
+    PRICING_GATE, "index.html"],
+  ["2.2f: an incomplete quote shows a figure anyway (the partial sum leaks)",
+    "      if (quote.status === 'complete') {",
+    "      if (quote.status !== 'nope') {",
+    PRICING_GATE, "index.html"],
+  ["2.2f: the tax/delivery exclusion stops rendering beside the figure",
+    "        var excl = pricingTotalCopy('excludes');",
+    "        var excl = '';",
     PRICING_GATE, "index.html"],
   // Codex exact-head review of PR #71 (2026-08-28): one entry per finding.
   ["2.1b review: the SKU identity check is gone (a price resolves without its SKU)",
@@ -2709,8 +2777,8 @@ const MUTATIONS = [
     "      if (stepId !== 'base') return groups[stepId] || [];\n      var bases = groups.adjustability || [];",
     "      if (stepId !== 'base') return groups[stepId] || [];\n      var bases = groups.adjustability || [];\n      return bases;", SLEEP],
   ["combined base: an adjustable base and a foundation coexist in the plan again (eviction by engine group, not by step)",
-    "        if (existing && sleepSystemStepIdForItem(existing) === stepId) delete window._accCart[id];",
-    "        if (existing && sleepSystemStepForItem(existing) === sleepSystemStepForItem(item)) delete window._accCart[id];", SLEEP],
+    "        return existing && sleepSystemStepIdForItem(existing) === stepId;",
+    "        return existing && sleepSystemStepForItem(existing) === sleepSystemStepForItem(item);", SLEEP],
   ["combined base: the setup choice records its decision on the retired support key",
     "          window._sleepSystemState.decisions.base = { status: 'already' };",
     "          window._sleepSystemState.decisions.support = { status: 'already' };", SLEEP],
@@ -3144,6 +3212,173 @@ const MUTATIONS = [
     "      padding: 1rem 1rem 0.75rem;\n      z-index: 60;",
     "      padding: 0.75rem 1rem;\n      z-index: 60;",
     TRAY, "index.html"],
+  // --- Mapper identity discipline (6380772 rules, tools/map_app_to_website.py)
+  ["mapper: a digit-free name word becomes model-number identity again (MOTION2000QN answers for 'motion')",
+    "        if len(tok) >= 4 and any(ch.isdigit() for ch in tok) and mn.startswith(tok):",
+    "        if len(tok) >= 4 and mn.startswith(tok):",
+    MAPPING, "tools/map_app_to_website.py"],
+  ["mapper: a configurable parent with a DIFFERENT model number is collapsed into the child (the Ver-Tex Full conflict disappears)",
+    "    if None in child_models or None in parent_models or child_models != parent_models:",
+    "    if None in child_models or None in parent_models:",
+    MAPPING, "tools/map_app_to_website.py"],
+  // --- Compare modal price surface (slice 2.2h), observed by the rendered harness
+  ["compare: every price row counts as exact again (the tier glyphs vanish beside the unavailable copy)",
+    "          return r.key === 'price' && r.exact === true;",
+    "          return r.key === 'price';",
+    PRICING_HARNESS, "index.html"],
+  ["compare: the new-customer wipe stops clearing the size line's content (the previous customer's size survives)",
+    "      'compareCols', 'compareSizeContext', 'compareTraySlots',",
+    "      'compareCols', 'compareTraySlots',",
+    PRICING_HARNESS, "index.html"],
+  ["compare: the new-customer wipe stops re-hiding the size line",
+    "      { id: 'compareSizeContext', hiddenAttr: true },\n",
+    "",
+    PRICING_HARNESS, "index.html"],
+  ["compare: a language switch stops repainting the OPEN modal (the customer must close and reopen to read Spanish)",
+    "        window._compareRerender();",
+    "        void 0;",
+    PRICING_HARNESS, "index.html"],
+  ["compare: two equal exact prices lose the governed 'Same' row (the equal branch is skipped)",
+    "          if (diff === 0) {",
+    "          if (false) {",
+    PRICING_HARNESS, "index.html"],
+  ["compare: the open-modal repaint reuses the entries captured at open (the Feel value keeps the old language)",
+    "        document.getElementById('compareCols').innerHTML = rowsHtml(dd[id1] || m1, dd[id2] || m2);",
+    "        document.getElementById('compareCols').innerHTML = rowsHtml(m1, m2);",
+    PRICING_HARNESS, "index.html"],
+
+  // --- PR #132 review repairs (2026-09-25) ---------------------------------
+  // The two-pillow plan: testing and adding the second pillow leaves the first
+  // and its quantity in the cart; a reaction is a verdict on the tested pillow.
+  ["pillow: 'Try this' clears the plan again (the first pillow and its quantity are lost before the second is added)",
+    "        window._sleepSystemState.pillowFeedback = '';\n        // PR #132 review repair (2026-09-25): trying a pillow changes which",
+    "        window._sleepSystemState.pillowFeedback = '';\n        Object.keys(window._accCart || {}).forEach(function(id) { delete window._accCart[id]; });\n        // PR #132 review repair (2026-09-25): trying a pillow changes which",
+    PILLOW_QTY_RENDERED, "index.html"],
+  ["pillow: a 'too low' / 'too high' reaction drops EVERY pillow, not only the tested one",
+    "          delete window._accCart[currentPillowId];",
+    "          Object.keys(window._accCart).forEach(function(id) { delete window._accCart[id]; });",
+    PILLOW_QTY_RENDERED, "index.html"],
+  ["pillow: 'Feels aligned' also drops the tested pillow (a selected pillow leaves the plan on its own confirmation)",
+    "        if ((pillowReaction === 'low' || pillowReaction === 'high') && currentPillowId &&",
+    "        if (currentPillowId &&",
+    PILLOW_QTY_RENDERED, "index.html"],
+  ["pillow: a selected pillow is stranded behind the untested-pillow gate (no Remove control until the fit is re-recorded)",
+    "          actionHtml = (selected || window._sleepSystemState.pillowReaction === 'aligned')",
+    "          actionHtml = (window._sleepSystemState.pillowReaction === 'aligned')",
+    PILLOW_QTY_RENDERED, "index.html"],
+  // The Summary quantity control's keyboard place.
+  ["quantity: focus is not handed back after the repaint (every press drops the keyboard user to <body>)",
+    "      if (target && typeof target.focus === 'function') target.focus({ preventScroll: true });",
+    "      void target;",
+    PILLOW_QTY_RENDERED, "index.html"],
+  ["quantity: at a limit focus is aimed at the disabled control it just pressed instead of the one that can still act",
+    "      var target = (same && !same.disabled) ? same : ((other && !other.disabled) ? other : null);",
+    "      var target = same;",
+    PILLOW_QTY_RENDERED, "index.html"],
+  // The website drill's admission (tools/serve_pricing_preview.py).
+  ["website admission: the observation verdict is ignored (untrusted stamps are admitted again)",
+    "        why = observation_verdict(v.get(\"observedAt\"), start)\n        if why:\n            return False, why",
+    "        why = observation_verdict(v.get(\"observedAt\"), start)\n        if False:\n            return False, why",
+    WEBSITE_ADMISSION, "tools/serve_pricing_preview.py"],
+  ["website admission: a stamp later than the run's clock is admitted as an observation",
+    "    if inst > start:\n        return \"observation-in-future\"",
+    "    if False:\n        return \"observation-in-future\"",
+    WEBSITE_ADMISSION, "tools/serve_pricing_preview.py"],
+  ["website admission: an offset-less stamp is admitted (which clock it was read on is unknown)",
+    "    if inst.tzinfo is None or inst.utcoffset() is None:",
+    "    if False:",
+    WEBSITE_ADMISSION, "tools/serve_pricing_preview.py"],
+  ["website admission: the served evidence stamp is re-stamped to an hour before the run instead of the observation",
+    "            return v[\"observedAt\"]",
+    "            return (start - timedelta(hours=1)).isoformat()",
+    WEBSITE_ADMISSION, "tools/serve_pricing_preview.py"],
+  ["website admission: the size-independent key is no longer recognised (a sizeless accessory can never price)",
+    "            if ok and size == SIZE_INDEPENDENT_KEY:",
+    "            if False:",
+    WEBSITE_ADMISSION, "tools/serve_pricing_preview.py"],
+  ["website admission: any variant key is filed as a mattress size again ('None' becomes a size)",
+    "            elif ok and size in MATTRESS_SIZES:",
+    "            elif ok:",
+    WEBSITE_ADMISSION, "tools/serve_pricing_preview.py"],
+  // The mapper's explicit size-independent key (tools/map_app_to_website.py).
+  ["mapper: a sizeless variant is filed under str(None) == 'None' again",
+    "            key = SIZE_INDEPENDENT_KEY if size is None else str(size)",
+    "            key = str(size)",
+    MAPPING, "tools/map_app_to_website.py"],
+
+  // --- PR #132 review repairs, second round (2026-09-27) -------------------
+  // Two admissible size variants of one accessory family (the website drill).
+  ["website preview: the served document is judged whole again (a second size of one family is a duplicate and the preview will not start)",
+    "    return [(z, [e for e, vz in zip(products, variant_sizes) if vz is None or vz == z])\n            for z in sizes]",
+    "    return [(z, list(products)) for z in sizes]",
+    WEBSITE_ADMISSION, "tools/serve_pricing_preview.py"],
+  ["website preview: one sku may serve two products as long as no single customer size sees both",
+    "        if e[\"sku\"] in seen:",
+    "        if False:",
+    WEBSITE_ADMISSION, "tools/serve_pricing_preview.py"],
+  ["website preview: two sizes of one family naming the same sku are both priced",
+    "            if shared:",
+    "            if False:",
+    WEBSITE_ADMISSION, "tools/serve_pricing_preview.py"],
+  // The accessory size on a quote line.
+  ["quote line: a per-size accessory's size is discarded again (a Queen and a King protector read identically)",
+    "      return pricingCleanSku(rec.accessorySkus[size]) ? size : null;",
+    "      return null;",
+    PRICING_GATE, "index.html"],
+  ["quote line: a size the family is not sold in is stated beside an accessory that resolved nothing",
+    "      return pricingCleanSku(rec.accessorySkus[size]) ? size : null;",
+    "      return size;",
+    PRICING_GATE, "index.html"],
+  ["quote line: a size-independent accessory states the customer's mattress size",
+    "      if (!rec.accessorySkus || typeof rec.accessorySkus !== 'object') return null;",
+    "      if (!rec.accessorySkus || typeof rec.accessorySkus !== 'object') return size;",
+    PRICING_GATE, "index.html"],
+  // Quantities in the take-home plan, preview and packet.
+  ["take-home: the plan entry loses the customer's count (every product is one unit)",
+    "          quantity: quantity,\n          name: source ? sleepSystemText(source.name) : (selected.name || ''),",
+    "          quantity: 1,\n          name: source ? sleepSystemText(source.name) : (selected.name || ''),",
+    EMAIL_PACKET, "index.html"],
+  ["take-home: a count above the product's ceiling is repeated to the customer as their own",
+    "          && q >= 1 && q <= maxQty) ? q : 1;",
+    "          && q >= 1) ? q : 1;",
+    EMAIL_PACKET, "index.html"],
+  ["take-home: the preview counts products again (four pillows read as one piece)",
+    "                return n + ((a && typeof a.quantity === 'number' && a.quantity > 1) ? a.quantity : 1);",
+    "                return n + 1;",
+    EMAIL_PACKET, "index.html"],
+  ["take-home: the preview names each product without its count",
+    "            return itemName + ((typeof a.quantity === 'number' && a.quantity > 1) ? ' × ' + a.quantity : '');",
+    "            return itemName;",
+    EMAIL_PACKET, "index.html"],
+  ["email packet: the customer's count never leaves the page",
+    "        category: a.category,\n        quantity: a.quantity,\n        imageUrl: toAbsoluteImageUrl(a.imageUrl)",
+    "        category: a.category,\n        imageUrl: toAbsoluteImageUrl(a.imageUrl)",
+    EMAIL_PACKET, "index.html"],
+  // Code.gs: the count is untrusted input and is stated on every part.
+  ["Code.gs: a count outside 1-4 is repeated to the customer",
+    "  if (v < 1 || v > MAX_ACCESSORY_QUANTITY) return 1;",
+    "  if (false) return 1;",
+    EMAIL_PRIORITIES, "Code.gs"],
+  ["Code.gs: a count that is not a whole number is repeated to the customer",
+    "  if (typeof v !== 'number' || !isFinite(v) || Math.floor(v) !== v) return 1;",
+    "  if (false) return 1;",
+    EMAIL_PRIORITIES, "Code.gs"],
+  ["Code.gs: the sanitised packet drops the count",
+    "          category: _safeText(a && a.category, 100),\n          quantity: _safeQuantity(a && a.quantity),",
+    "          category: _safeText(a && a.category, 100),",
+    EMAIL_PRIORITIES, "Code.gs"],
+  ["Code.gs: the HTML part names the product without its count",
+    ";line-height:1.2;\">' + name + qtyHtml + '</div>'",
+    ";line-height:1.2;\">' + name + '</div>'",
+    EMAIL_PRIORITIES, "Code.gs"],
+  ["Code.gs: the plain part names the product without its count",
+    "a.name + (qty > 1 ? ' x ' + qty : '') + (a.category",
+    "a.name + (a.category",
+    EMAIL_PRIORITIES, "Code.gs"],
+  ["Code.gs: the sheet row names the product without its count",
+    "        return _safeText(a && a.name, 200) + (qty > 1 ? ' x' + qty : '');",
+    "        return _safeText(a && a.name, 200);",
+    EMAIL_PRIORITIES, "Code.gs"],
 ];
 
 // ---------------------------------------------------------------------------
@@ -3209,6 +3444,13 @@ const PRISTINE_BY_FILE = {
   // `experience` bypass shipped green.
   "tools/validation.py":
     readFileSync(join(sandbox, "tools", "validation.py"), "utf8"),
+  // Pricing 2.2 mapper (the 6380772 identity rules; copied with tools/). The
+  // two mapper entries named this target from 9d99478 on without this key, so
+  // the sweep threw a TypeError at entry 756 instead of reporting anything -
+  // found 2026-09-25 by the first complete run past the DR-01 block. The
+  // manifest validation below now refuses that shape before any observer runs.
+  "tools/map_app_to_website.py":
+    readFileSync(join(sandbox, "tools", "map_app_to_website.py"), "utf8"),
   // A4.3: the living nine-question contract. The quiz-reduction suite reads
   // the counts stated in the principal guides and compares them to
   // data/quiz.json, so CLAUDE.md is a mutation target like any other source.
@@ -3251,6 +3493,49 @@ const PRISTINE_BY_FILE = {
     readFileSync(join(sandbox, "incoming", "generate_financing_qr.py"), "utf8"),
 };
 
+// Manifest validation, BEFORE any observer runs. Every entry names a target
+// (fifth field, index.html by default) and that target must have a pristine
+// source above, or the loop below would dereference undefined and throw a
+// TypeError mid-run - which is what happened at entry 756 on 2026-09-25 after
+// the two mapper entries shipped without their key. A sweep that dies with a
+// stack trace after an hour reports nothing about the entries it never
+// reached; a manifest defect is reported here, by name, in seconds, and the
+// exit code is distinct from a survivor (1) so the two are never confused.
+function manifestTargetsWithoutSource(mutations, pristineByFile) {
+  const missing = [];
+  mutations.forEach((entry, i) => {
+    const target = entry[4] || "index.html";
+    if (!Object.prototype.hasOwnProperty.call(pristineByFile, target)) {
+      missing.push(`#${i + 1} ${JSON.stringify(target)} - ${entry[0]}`);
+    }
+  });
+  return missing;
+}
+const missingTargets = manifestTargetsWithoutSource(MUTATIONS, PRISTINE_BY_FILE);
+if (missingTargets.length) {
+  console.log(`::error:: ${missingTargets.length} manifest ${missingTargets.length === 1 ? "entry names" : "entries name"} a target with no pristine source; add the file to PRISTINE_BY_FILE (no observer was run):`);
+  missingTargets.forEach((m) => console.log(`  [NO PRISTINE SOURCE] ${m}`));
+  process.exit(2);
+}
+if (process.argv.includes("--validate-manifest")) {
+  console.log(`manifest: ${MUTATIONS.length} entries, every target has a pristine source (${Object.keys(PRISTINE_BY_FILE).length} files); no observer was run`);
+  process.exit(0);
+}
+
+// --from N runs the tail of the manifest only (1-based, inclusive). The
+// baseline still covers every observer the selected entries name, and the
+// final line reports the selection, never the whole manifest's count.
+const fromArg = process.argv.indexOf("--from");
+const fromIndex = fromArg === -1 ? 1 : Number(process.argv[fromArg + 1]);
+if (!Number.isInteger(fromIndex) || fromIndex < 1 || fromIndex > MUTATIONS.length) {
+  console.log(`::error:: --from needs an integer between 1 and ${MUTATIONS.length}`);
+  process.exit(2);
+}
+const RUN = MUTATIONS.slice(fromIndex - 1);
+if (fromIndex > 1) {
+  console.log(`running entries ${fromIndex}-${MUTATIONS.length} of ${MUTATIONS.length} (--from ${fromIndex})\n`);
+}
+
 // Observers are node suites by default. The validator's self-test is the one
 // PYTHON observer, and the fact that it lives inside the very file it
 // validates is what makes it the correct observer for a validator mutation:
@@ -3284,7 +3569,7 @@ let survivors = 0, notApplied = 0, caught = 0;
 // naming it as "caught" and the sweep could finish green while masking a
 // vacuous observer (Codex, PR #16).
 const ALL_OBSERVERS = [...new Set(
-  MUTATIONS.flatMap((m) => m[3] || DEFAULT_SUITES).concat(WITH_SESSION))];
+  RUN.flatMap((m) => m[3] || DEFAULT_SUITES).concat(WITH_SESSION))];
 const baseline = runSuites(ALL_OBSERVERS);
 console.log(`baseline (unmutated): ${baseline.length ? "RED — " + baseline.join(",") : "green"}\n`);
 if (baseline.length) {
@@ -3292,7 +3577,7 @@ if (baseline.length) {
   process.exit(1);
 }
 
-for (const [label, find, replace, suites, targetFile] of MUTATIONS) {
+for (const [label, find, replace, suites, targetFile] of RUN) {
   const target = targetFile || "index.html";
   const clean = PRISTINE_BY_FILE[target];
   const mutated = clean.replace(asRegex(find), replace);
@@ -3313,7 +3598,7 @@ for (const [label, find, replace, suites, targetFile] of MUTATIONS) {
   }
 }
 
-console.log(`\nMutation sweep: ${caught}/${MUTATIONS.length} caught, ${survivors} survived, ${notApplied} did not apply`);
+console.log(`\nMutation sweep: ${caught}/${RUN.length} caught, ${survivors} survived, ${notApplied} did not apply${fromIndex > 1 ? ` (entries ${fromIndex}-${MUTATIONS.length} of ${MUTATIONS.length})` : ""}`);
 if (survivors) console.log("A SURVIVOR is a safety property with no effective test.");
 if (notApplied) console.log("A mutation that DID NOT APPLY is a stale manifest entry — its target moved or was renamed.");
 process.exit(survivors === 0 && notApplied === 0 ? 0 : 1);

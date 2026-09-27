@@ -28,9 +28,9 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const gs = readFileSync(join(root, "Code.gs"), "utf8");
 
 let passed = 0, failed = 0;
-function check(label, cond) {
+function check(label, cond, detail = "") {
   if (cond) { passed++; console.log(`  [ok] ${label}`); }
-  else { failed++; console.log(`  [FAIL] ${label}`); }
+  else { failed++; console.log(`  [FAIL] ${label}${detail ? " — " + detail : ""}`); }
 }
 function section(name) { console.log(`\n-- ${name} --`); }
 
@@ -599,6 +599,69 @@ section("existing doPost behavior untouched");
     JSON.stringify([...new Set((gs.match(/error: '([a-z_]+)'/g) || [])
       .map((m) => m.match(/'([a-z_]+)'/)[1]))].sort())
     === JSON.stringify(["canspam_not_configured", "invalid_email", "send_failed"]));
+}
+
+// ===========================================================================
+// ACCESSORY QUANTITIES (PR #132 review repair, 2026-09-27). The customer's own
+// count of each product travels in the payload and is stated beside the name
+// it belongs to, on the HTML part, the plain part and the sheet row. It is
+// untrusted like every other field: only a whole number from 1 to 4 is
+// repeated; anything else is one.
+section("accessory quantities: carried, bounded, and stated beside each product");
+{
+  const ACCS = [
+    { name: "Pillow Alpha", category: "Pillows", quantity: 3, imageUrl: "" },
+    { name: "Pillow Beta", category: "Pillows", quantity: 1, imageUrl: "" },
+    { name: "Protector Gamma", category: "Protection", imageUrl: "" },          // written before quantities existed
+  ];
+  for (const lang of ["en", "es"]) {
+    const g = buildGas();
+    g.api.approveCanSpam();
+    let safe = null;
+    g.setSafeDataSink((d) => { safe = d; });
+    const res = post(g.api, basePayload({ accessories: ACCS, lang, priorities: lang === "es" ? PRIORITIES_ES : PRIORITIES_EN }));
+    check(`[${lang}] an email was actually sent`, res.success === true && g.sent.length === 1);
+    const h = g.sent.length ? (g.sent[0].opts.htmlBody || "") : "";
+    const p = g.sent.length ? (g.sent[0].body || "") : "";
+    check(`[${lang}] the sanitised packet carries each product's quantity (3, 1, and 1 for the entry that had none)`,
+      !!safe && JSON.stringify(safe.accessories.map((a) => a.quantity)) === "[3,1,1]");
+    check(`[${lang}] each sanitised accessory carries exactly name, category, quantity and imageUrl`,
+      !!safe && safe.accessories.every((a) => JSON.stringify(Object.keys(a).sort()) === JSON.stringify(["category", "imageUrl", "name", "quantity"])));
+    check(`[${lang}] HTML: three of Pillow Alpha is stated beside its own name`,
+      /Pillow Alpha <span[^>]*>&times; 3<\/span>/.test(h), h.slice(h.indexOf("Pillow Alpha") - 20, h.indexOf("Pillow Alpha") + 90));
+    check(`[${lang}] HTML: a single unit is the unmarked case (one multiplier in the whole accessory section)`,
+      (h.match(/&times;/g) || []).length === 1 && h.includes("Pillow Beta") && h.includes("Protector Gamma"));
+    check(`[${lang}] plain text: "1. Pillow Alpha x 3 - Pillows", and the single units carry no multiplier`,
+      p.includes("1. Pillow Alpha x 3 - Pillows") && p.includes("2. Pillow Beta - Pillows") && p.includes("3. Protector Gamma - Protection"),
+      p.slice(p.indexOf("1. Pillow"), p.indexOf("1. Pillow") + 120));
+    check(`[${lang}] the sheet row names the count beside the product and still has 9 cells`,
+      g.rows.length === 1 && g.rows[0].length === 9
+      && g.rows[0].includes("Pillow Alpha x3, Pillow Beta, Protector Gamma"), JSON.stringify(g.rows[0]).slice(0, 300));
+  }
+  // Hostile counts are never repeated to the customer.
+  const HOSTILE = [0, -2, 2.5, "3", "4 <b>", 5, 99, NaN, Infinity, null, true, [3], { n: 3 }];
+  const g = buildGas();
+  g.api.approveCanSpam();
+  let safe = null;
+  g.setSafeDataSink((d) => { safe = d; });
+  const res = post(g.api, basePayload({
+    accessories: HOSTILE.map((q, i) => ({ name: "Item" + i, category: "C", quantity: q, imageUrl: "" })) }));
+  const h = g.sent.length ? (g.sent[0].opts.htmlBody || "") : "";
+  const p = g.sent.length ? (g.sent[0].body || "") : "";
+  check("hostile counts: an email was actually sent", res.success === true && g.sent.length === 1);
+  check(`hostile counts (${HOSTILE.length} shapes): every one is sanitised to 1`,
+    !!safe && safe.accessories.length === HOSTILE.length && safe.accessories.every((a) => a.quantity === 1),
+    safe ? JSON.stringify(safe.accessories.map((a) => a.quantity)) : "");
+  check("hostile counts: no multiplier and no markup from a count reaches either part",
+    !h.includes("&times;") && !h.includes("<b>") && !/Item\d+ x/.test(p));
+  for (const q of [1, 2, 3, 4]) {
+    const g2 = buildGas();
+    g2.api.approveCanSpam();
+    let s2 = null;
+    g2.setSafeDataSink((d) => { s2 = d; });
+    post(g2.api, basePayload({ accessories: [{ name: "Pillow", category: "C", quantity: q, imageUrl: "" }] }));
+    check(`a count of ${q} is carried as ${q}`, !!s2 && s2.accessories[0].quantity === q);
+  }
 }
 
 // ===========================================================================

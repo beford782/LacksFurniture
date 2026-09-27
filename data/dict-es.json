@@ -137,5 +137,6 @@
   "plan.added": "Agregado a tu plan",
   "plan.not_added": "No agregado",
   "plan.priorities_recovery": "No pudimos preparar las prioridades de prueba. Vuelve al Resumen de sueño e inténtalo de nuevo.",
-  "plan.priorities_recovery_action": "Volver al Resumen de sueño"
+  "plan.priorities_recovery_action": "Volver al Resumen de sueño",
+  "compare.size_context": "Comparando colchones {size}"
 }

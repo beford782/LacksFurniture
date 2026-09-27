@@ -2680,6 +2680,7 @@ section('combined base step — one slot under the mattress, composed over the e
   // (f)(g)(h) the handler and the cart writer, executed for real
   {
     const SET_ITEM = extractFunction('function setSleepSystemItem(itemId, shouldSelect)');
+    const SET_QTY = extractFunction('function setSleepSystemItemQuantity(itemId, quantity)');
     const runCart = (actions, seed = {}) => {
       const win = {
         _accCart: seed.cart || {},
@@ -2690,16 +2691,16 @@ section('combined base step — one slot under the mattress, composed over the e
       };
       const analytics = { logged: [], log(e, d) { this.logged.push({ e, d }); } };
       let src = [SRC.STEPS, SRC.text, SRC.category, SRC.stepFor, SRC.groupStepMap, SRC.groupStep, SRC.qualify, SRC.scorer,
-        SRC.readGroups, SRC.decision, SRC.handler, SET_ITEM].join('\n');
+        SRC.readGroups, SRC.decision, SRC.handler, SET_ITEM, SET_QTY].join('\n');
       if (seed.mutate) src = seed.mutate(src);
       const handle = new Function(
         'window', 'analytics', 'ACCESSORIES', 'answers', 'currentLang', 'document',
         'moveSleepSystemStep', 'renderSleepSystem', 'syncAccessoryAnalytics', 'getSuggestedProtectionGoal', 'escapeHtml', 'accessoryReasonKey',
-        src + '\nreturn handleSleepSystemAction;'
+        src + '\nreturn { handle: handleSleepSystemAction, setItem: setSleepSystemItem, setQty: setSleepSystemItemQuantity };'
       )(win, analytics, ACCESSORIES_JSON, ANSWERS, 'en', { getElementById() { return null; } },
         () => {}, () => {}, () => {}, () => 'everyday', (s) => s, (s) => s);
-      for (const attrs of actions) handle({ getAttribute(k) { return Object.prototype.hasOwnProperty.call(attrs, k) ? attrs[k] : null; } });
-      return { win, analytics };
+      for (const attrs of actions) handle.handle({ getAttribute(k) { return Object.prototype.hasOwnProperty.call(attrs, k) ? attrs[k] : null; } });
+      return { win, analytics, api: handle };
     };
     const select = (id) => ({ 'data-sleep-action': 'select-item', 'data-item-id': id });
     const current = { 'data-sleep-action': 'support-choice', 'data-support-choice': 'current' };
@@ -2720,13 +2721,102 @@ section('combined base step — one slot under the mattress, composed over the e
     // negative control: evicting by the ENGINE group again lets both coexist
     const coexist = runCart([select(FOUNDATION), select('base-bt2000')], {
       mutate: (s) => {
-        const from = 'if (existing && sleepSystemStepIdForItem(existing) === stepId) delete window._accCart[id];';
+        // re-anchored when the one-per-step rule became a per-step CAPACITY
+        // (the pillow step holds two). The control is unchanged in intent:
+        // evicting by the ENGINE group lets the foundation and the base coexist.
+        const from = 'return existing && sleepSystemStepIdForItem(existing) === stepId;';
         if (!s.includes(from)) throw new Error('combined-base negative control: eviction anchor not found');
-        return s.replace(from, 'if (existing && sleepSystemStepForItem(existing) === sleepSystemStepForItem(item)) delete window._accCart[id];');
+        return s.replace(from, 'return existing && sleepSystemStepForItem(existing) === sleepSystemStepForItem(item);');
       }
     });
     ok('negative control: evicting by the engine group again lets the foundation and the base coexist (the one-per-step assertion bites)',
       baseIds(coexist.win).length === 2);
+
+    // (f2) TWO PILLOWS. Two people sleep in the bed and need not want the
+    // same pillow; the base step is still physically one slot.
+    // NOTE: the pillow step gates its ACTION path behind a recorded physical
+    // fit, which is separate, existing behaviour. These assertions drive
+    // setSleepSystemItem directly so they test the per-step CAPACITY rule and
+    // nothing else.
+    const twoPillows = (() => { const e = runCart([]);
+      e.api.setItem('pillow-flow', true); e.api.setItem('pillow-gel-memory', true); return e; })();
+    ok('cart: the pillow step holds TWO different pillows at once',
+      !!twoPillows.win._accCart['pillow-flow'] && !!twoPillows.win._accCart['pillow-gel-memory'],
+      JSON.stringify(Object.keys(twoPillows.win._accCart)));
+    const threePillows = (() => { const e = runCart([]);
+      e.api.setItem('pillow-flow', true); e.api.setItem('pillow-gel-memory', true);
+      e.api.setItem('pillow-flow', true); return e; })();
+    ok('cart: re-selecting a pillow already in the plan never evicts itself',
+      !!threePillows.win._accCart['pillow-flow'] && !!threePillows.win._accCart['pillow-gel-memory']);
+    const stillOneBase = (() => { const e = runCart([]);
+      e.api.setItem('base-bt2000', true); e.api.setItem('base-bt3000', true); return e; })();
+    ok('cart: the BASE step still holds exactly one (capacity is per step, not global)',
+      baseIds(stillOneBase.win).length === 1);
+    // negative control: a pillow capacity of one would collapse the pair
+    const capOne = (() => { const e = runCart([], {
+      mutate: (s) => {
+        const from = "var CAPACITY = { base: 1, pillow: 2, protection: 1 };";
+        if (!s.includes(from)) throw new Error('capacity anchor not found');
+        return s.replace(from, "var CAPACITY = { base: 1, pillow: 1, protection: 1 };");
+      }
+    }); e.api.setItem('pillow-flow', true); e.api.setItem('pillow-gel-memory', true); return e; })();
+    ok('negative control: a pillow capacity of 1 collapses the pair (the two-pillow assertion bites)',
+      Object.keys(capOne.win._accCart).filter((k) => k.startsWith('pillow')).length === 1);
+
+    // (f3) QUANTITY. A count of things in a bed: integral and bounded.
+    const qtyEnv = (() => { const e = runCart([]); e.api.setItem('pillow-flow', true); return e; })();
+    ok('quantity: a newly selected item starts at 1',
+      qtyEnv.win._accCart['pillow-flow'].quantity === 1);
+    ok('quantity: a valid change is accepted and stored',
+      qtyEnv.api.setQty('pillow-flow', 2) === true
+      && qtyEnv.win._accCart['pillow-flow'].quantity === 2);
+    ok('quantity: re-selecting the item KEEPS the count the customer set',
+      (() => { qtyEnv.api.setItem('pillow-flow', true);
+        return qtyEnv.win._accCart['pillow-flow'].quantity === 2; })());
+    ok('quantity: zero, negative, fractional, NaN and over-max are all REFUSED',
+      [0, -1, 1.5, NaN, 5, 99, null, undefined, {}, [], 'two'].every((q) => qtyEnv.api.setQty('pillow-flow', q) === false)
+      && qtyEnv.win._accCart['pillow-flow'].quantity === 2);
+    // HOW MANY is a per-product question. A pillow legitimately goes to 4;
+    // a base and a protector do not, because a second one is not a
+    // configuration this app has checked. A SPLIT setup genuinely needs two
+    // bases, but a split has its own compatibility rules (two twin-XL bases,
+    // matched remotes, a split-capable mattress) and pressing "+" must never
+    // silently imply one.
+    const baseEnv = (() => { const e = runCart([]); e.api.setItem('base-bt2000', true); return e; })();
+    ok('quantity: a BASE is capped at 1 - stepping to 2 is refused',
+      baseEnv.api.setQty('base-bt2000', 2) === false
+      && baseEnv.win._accCart['base-bt2000'].quantity === 1);
+    ok('quantity: a base at 1 is still valid (the cap is 1, not zero)',
+      baseEnv.api.setQty('base-bt2000', 1) === true);
+    const protEnv = (() => { const e = runCart([]); e.api.setItem('protector-vertex', true); return e; })();
+    ok('quantity: a PROTECTOR is capped at 1 (its SIZE variant is what matters)',
+      protEnv.api.setQty('protector-vertex', 2) === false
+      && protEnv.win._accCart['protector-vertex'].quantity === 1);
+    const pilEnv = (() => { const e = runCart([]); e.api.setItem('pillow-flow', true); return e; })();
+    ok('quantity: a PILLOW reaches 4 and refuses 5',
+      pilEnv.api.setQty('pillow-flow', 4) === true
+      && pilEnv.win._accCart['pillow-flow'].quantity === 4
+      && pilEnv.api.setQty('pillow-flow', 5) === false);
+    // negative control: one global maximum would let a base reach 2
+    const globalCap = (() => { const e = runCart([], {
+      mutate: (s) => {
+        const from = "var STEP_MAX_QTY = { pillow: 4, base: 1, protection: 1 };";
+        if (!s.includes(from)) throw new Error('per-type quantity anchor not found');
+        return s.replace(from, "var STEP_MAX_QTY = { pillow: 4, base: 4, protection: 4 };");
+      }
+    }); e.api.setItem('base-bt2000', true); return e; })();
+    ok('negative control: a global cap lets a base reach 2 (the per-type assertion bites)',
+      globalCap.api.setQty('base-bt2000', 2) === true);
+
+    ok('quantity: an item not in the cart cannot be given a quantity',
+      qtyEnv.api.setQty('protector-vertex', 2) === false);
+    // A DOM control hands back a string; it is coerced and then validated by
+    // exactly the same rules, and STORED AS A NUMBER because the pricing
+    // gate's quoteQuantityFor admits only a number.
+    ok('quantity: a numeric string is accepted and stored as a number',
+      qtyEnv.api.setQty('pillow-flow', '3') === true
+      && qtyEnv.win._accCart['pillow-flow'].quantity === 3
+      && typeof qtyEnv.win._accCart['pillow-flow'].quantity === 'number');
 
     // (g) "Keep current support" clears an adjustable base from the cart and records already
     const kept = runCart([current], { cart: { 'base-bt2000': { id: 'base-bt2000' } } });
