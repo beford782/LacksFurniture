@@ -120,10 +120,11 @@ PAYLOAD_KEYS = {
 }
 MATCH_KEYS = {"name", "brand", "matchPct", "meetsMatchThreshold", "line", "imageUrl"}
 LEAD_KEYS = {"kind", "name", "brand", "line", "imageUrl"}
-# The accessory packet: name, category and imageUrl are what Code.gs renders;
-# the projection on main also carries id and reason (the accessory payload
-# minimisation slice narrows it to the three). Anything else is a leak.
-ACCESSORY_REQUIRED = {"name", "category", "imageUrl"}
+# The accessory packet: name, category, quantity and imageUrl are what Code.gs
+# renders (quantity joined 2026-09-27, PR #132 review repair); the projection
+# on main also carries id and reason (the accessory payload minimisation
+# slice narrows it). Anything else is a leak.
+ACCESSORY_REQUIRED = {"name", "category", "quantity", "imageUrl"}
 ACCESSORY_ALLOWED = ACCESSORY_REQUIRED | {"id", "reason"}
 PAYMENT_POSITION = {"payPref", "payExplored", "payOpen", "interest", "monthly", "apr"}
 
@@ -450,8 +451,9 @@ def expect_live_success(tag, r, lang, typed, recorded):
           set(lead) == LEAD_KEYS and lead.get("kind") == "chosen" and lead.get("name") and p.get("matchesSource") == "saved",
           str(lead)[:100])
     acc = p.get("accessories")
-    check(f"{tag}: the accessory packet carries the one cart item with name/category/imageUrl and nothing outside the allowed keys",
-          isinstance(acc, list) and len(acc) == 1 and ACCESSORY_REQUIRED <= set(acc[0]) <= ACCESSORY_ALLOWED and acc[0]["name"],
+    check(f"{tag}: the accessory packet carries the one cart item with name/category/quantity/imageUrl and nothing outside the allowed keys",
+          isinstance(acc, list) and len(acc) == 1 and ACCESSORY_REQUIRED <= set(acc[0]) <= ACCESSORY_ALLOWED and acc[0]["name"]
+          and acc[0]["quantity"] == 1,
           str(acc)[:120])
     flat = json.dumps(p)
     check(f"{tag}: no payment-position field anywhere in the payload",

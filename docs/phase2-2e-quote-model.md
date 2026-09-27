@@ -149,6 +149,55 @@ other non-size key (including a legacy `"None"`) is refused by name, and a
 family mixing sizeless and sized variants is refused whole (PR #132 review
 repair, 2026-09-25; pinned by `tests/pricing_website_admission_check.py`).
 
+### 5a. Two admissible sizes of one family (PR #132 review repair, 2026-09-27)
+
+The design above implies several pricing entries behind one accessory id, all
+with `size: null`. `validate_pricing` treats `(productId, null)` as the
+accessory identity, so the moment a family had **two** admissible sizes the
+second entry was refused as a duplicate and `--state website` would not start.
+It had never happened only because one size per family survived admission.
+
+The validator is **unchanged** and its duplicate rule is not relaxed. The
+preview judges the served document the way it is consumed: **once per customer
+size** (`size_projections`). Each projection holds every mattress entry, every
+size-independent accessory and only that size's variant of each sized family,
+and each must satisfy the unchanged validator. Two entries one customer could
+both resolve are still a duplicate; one sku serving two products is refused
+across the whole document; two sizes naming one sku price nothing
+(`sku-shared-across-sizes`). Every other drill state has one projection, the
+whole document, exactly as before.
+
+**What this does not settle.** A *shipped* `store-config.pricing` carrying two
+sizes of one accessory family is still refused by `validate_pricing`, because
+the production contract has no way to say "one entry per size" for an
+accessory. That is fail-closed and is an owner decision for activation
+(a contract change to the validator and the resolver's mirror), not something
+the preview should pre-empt.
+
+### 5b. The size on a quote line
+
+`quoteLineFor` discarded the size of every accessory, so a Queen and a King
+protector read identically on the itemised Summary. `quoteLineSizeFor` keeps
+the customer's size on a line **only** when the catalog record maps that size
+to a variant of its own. A size-independent accessory, a family not sold in
+the customer's size, and a product the catalog does not carry state no size.
+The resolver query for an accessory stays sizeless; the size is presentation
+metadata and reaches nothing but the itemised line.
+
+### 5c. Quantities leave the cart
+
+The customer's count lived on `window._accCart` alone. It now travels through
+`getSelectedAccessoryPlan()` (absent means one; a count the product cannot
+have is stated as one), the take-home preview (which counts **units** and
+names each product with its own count), and the email packet, whose accessory
+entry is now exactly `name`, `category`, `quantity`, `imageUrl` - an amendment
+to the 2026-09-09 three-field minimisation, made on the owner's instruction.
+`Code.gs` treats the count as untrusted (`_safeQuantity`: a whole number from 1
+to 4, otherwise one) and states it on the HTML part, the plain part and the
+sheet row. `gasUrl` stays blank; nothing here sends. Not changed: the Sleep
+Plan screen's "Added to your plan" line and the Selections pill still count
+products.
+
 ## 6. Website extraction — corrections after review
 
 `tools/fetch_lacks_prices.py` writes `demo/price-snapshot/`. Codex review of

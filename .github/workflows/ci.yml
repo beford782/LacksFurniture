@@ -568,6 +568,17 @@ jobs:
       - name: sleep system pillow + quantity (two-pillow plan, keyboard place, rendered)
         run: python tests/sleep_system_pillow_quantity_check.py
 
+      # PR #132 review repairs, second round (2026-09-27), rendered through
+      # Chromium in English and Spanish at both tablet orientations: the
+      # website preview starts with two admissible sizes of one accessory
+      # family and each customer's itemised line names their own size at
+      # that size's amount; a size-independent accessory names none; the
+      # take-home preview counts units and names each product's count; the
+      # one payload that reaches the loopback stub carries those counts; a
+      # language switch is a copy swap and the wipe leaves nothing behind.
+      - name: quote sizes + take-home quantities (rendered, EN/ES, both orientations)
+        run: python tests/quote_take_home_rendered_check.py
+
       # Trust integrity and transparency gate (Phase 1 cross-cutting,
       # 2026-08-21): the copy <-> engine correspondence document and its
       # pinned inert-tag set, banned claims in quiz help copy, the absence of

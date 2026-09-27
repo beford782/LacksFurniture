@@ -81,6 +81,18 @@ function _safeImageUrl(url) {
   try { return encodeURI(t); } catch (e) { return t; }
 }
 
+// Helper: how many of one accessory the customer chose. A whole number from
+// 1 to MAX_ACCESSORY_QUANTITY as sent; anything else - absent (a payload
+// written before quantities existed), a string, a fraction, zero, negative or
+// above the ceiling - is ONE, because a listed accessory is at least one unit
+// and an untrusted count is never repeated to the customer as their own.
+var MAX_ACCESSORY_QUANTITY = 4;
+function _safeQuantity(v) {
+  if (typeof v !== 'number' || !isFinite(v) || Math.floor(v) !== v) return 1;
+  if (v < 1 || v > MAX_ACCESSORY_QUANTITY) return 1;
+  return v;
+}
+
 // Helper: coerce to array; returns [] for non-array inputs.
 function _safeArray(v) {
   return Array.isArray(v) ? v : [];
@@ -173,7 +185,10 @@ function doPost(e) {
           ? ' (' + _safeText(m.matchPct, 10) + '%)'
           : ' (additional comparison option)');
       }).join(', '),
-      _safeArray(data.accessories).slice(0, MAX_EMAIL_ACCESSORIES).map(function(a) { return _safeText(a && a.name, 200); }).join(', '),
+      _safeArray(data.accessories).slice(0, MAX_EMAIL_ACCESSORIES).map(function(a) {
+        var qty = _safeQuantity(a && a.quantity);
+        return _safeText(a && a.name, 200) + (qty > 1 ? ' x' + qty : '');
+      }).join(', '),
       rsa
     ]);
 
@@ -243,6 +258,7 @@ function doPost(e) {
         return {
           name: _safeText(a && a.name, 200),
           category: _safeText(a && a.category, 100),
+          quantity: _safeQuantity(a && a.quantity),
           imageUrl: _safeImageUrl(a && a.imageUrl)
         };
       }),
@@ -375,7 +391,8 @@ function buildPlainBody(data, isEs, storeName) {
   var allMatches = _safeArray(data.allMatches);
 
   var accessoryLines = _safeArray(data.accessories).map(function(a, i) {
-    return (i + 1) + '. ' + a.name + (a.category ? ' - ' + a.category : '');
+    var qty = _safeQuantity(a.quantity);
+    return (i + 1) + '. ' + a.name + (qty > 1 ? ' x ' + qty : '') + (a.category ? ' - ' + a.category : '');
   }).join('\n');
   // Trial priorities (0.5), same order as the HTML body.
   var _plainPriority = function(s) { return String(s || '').replace(/[<>]/g, ''); };
@@ -700,6 +717,10 @@ function buildSimpleHtml(data, firstName, isEs, storeName) {
     var name = _escapeHtml(a.name || '');
     var category = _escapeHtml(a.category || '');
     var img = _escapeHtml(a.imageUrl || '');
+    // The customer's own count, beside the name it belongs to. One is the
+    // unmarked case, as on the kiosk's itemised summary.
+    var qty = _safeQuantity(a.quantity);
+    var qtyHtml = qty > 1 ? ' <span style="white-space:nowrap;">&times; ' + qty + '</span>' : '';
     return ''
       + '<table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="background:' + c.surface + ';border:1px solid ' + c.border + ';margin-bottom:8px;border-radius:3px;">'
       + '<tr>'
@@ -709,7 +730,7 @@ function buildSimpleHtml(data, firstName, isEs, storeName) {
           : '<div style="width:60px;height:60px;background:' + c.surfaceAlt + ';"></div>')
       + '</td>'
       + '<td valign="middle" style="padding:10px 14px;">'
-      + '<div style="font-family:' + serif + ';font-size:14px;color:' + c.text + ';line-height:1.2;">' + name + '</div>'
+      + '<div style="font-family:' + serif + ';font-size:14px;color:' + c.text + ';line-height:1.2;">' + name + qtyHtml + '</div>'
       + '<div style="font-family:' + sans + ';font-size:11px;letter-spacing:1.5px;color:' + c.textSubtle + ';text-transform:uppercase;margin-top:3px;">' + category + '</div>'
       + '</td>'
       + '</tr>'

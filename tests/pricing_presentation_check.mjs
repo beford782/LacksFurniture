@@ -1024,6 +1024,110 @@ section("Complete-system subtotal on the Consultation Summary (slice 2.2f)");
     && html.indexOf('id="hf2SystemTotal"') < html.indexOf('id="hf2Financing"'));
 }
 
+// ---------------------------------------------------------------------------
+section("Accessory size on quote lines (PR #132 review repair): a sized variant says which size it is");
+// ---------------------------------------------------------------------------
+// pricingSkuFor chose the customer's size of a per-size accessory, and
+// quoteLineFor then discarded that size, so a Queen and a King protector -
+// different products at different prices - read identically on the itemised
+// quote. The size is presentation metadata: the resolver query stays sizeless.
+{
+  const S_ID = "protector-dritec", Q_SKU = "FIXTURE-DRITEC-Q", K_SKU = "FIXTURE-DRITEC-K";
+  const Q_MINOR = 8900, K_MINOR = 10900;
+  const P_ID = "pillow-flow", P_SKU = "FIXTURE-FLOW", P_MINOR = 10800;
+  const CHOSE = { kind: "chosen", item: M() };
+  const SP = (over = {}) => {
+    const p = ACTIVE(Object.assign({ surfaces: { handoff: true, results: true } }, over));
+    for (const [id, sku, minor] of [[S_ID, Q_SKU, Q_MINOR], [S_ID, K_SKU, K_MINOR], [P_ID, P_SKU, P_MINOR]]) {
+      const e = JSON.parse(JSON.stringify(p.products[0]));
+      e.productId = id; e.productKind = "accessory"; e.sku = sku; e.size = null;
+      e.price.amountMinor = minor;
+      Object.assign(e.clearance.scope, { productId: id, productKind: "accessory", sku: sku, size: null, amountMinor: minor });
+      p.products.push(e);
+    }
+    return p;
+  };
+  // One family sold per size (two admissible sizes), one size-independent pillow.
+  const CAT = [{ id: S_ID, name: "Dri-Tec", price: 149, accessorySkus: { queen: Q_SKU, king: K_SKU } },
+               { id: P_ID, name: "Flow", price: 108, sku: P_SKU }];
+  const cart = (...ids) => { const c = {}; for (const id of ids) c[id] = { id: id }; return { _accCart: c }; };
+  const env = (o = {}) => makeEnv(Object.assign({ pricing: SP(), financing: F(), finalist: CHOSE, accessories: CAT,
+                                                  win: cart(S_ID, P_ID) }, o));
+  const lineOf = (q, id) => q.lines.find((l) => l.productId === id);
+
+  for (const [size, sku, minor] of [["queen", Q_SKU, Q_MINOR], ["king", K_SKU, K_MINOR]]) {
+    const q = env().api.quote("handoff", size);
+    const ln = lineOf(q, S_ID);
+    check(`${size} customer: the sized accessory line resolves THAT size's own sku and amount`,
+      !!ln && ln.resolved === true && ln.sku === sku && ln.unitAmountMinor === minor, JSON.stringify(ln));
+    check(`${size} customer: ...and the line keeps its applicable size (${size})`, !!ln && ln.size === size, JSON.stringify(ln));
+    const pl = lineOf(q, P_ID);
+    check(`${size} customer: the size-independent pillow stays size-independent (size null) and still resolves`,
+      !!pl && pl.size === null && pl.resolved === true && pl.sku === P_SKU && pl.unitAmountMinor === P_MINOR, JSON.stringify(pl));
+  }
+  {
+    const q = env().api.quote("handoff", "full");
+    const ln = lineOf(q, S_ID);
+    check("a size the family is NOT sold in: unresolved, no sku, and NO size is stated (never another size's)",
+      !!ln && ln.resolved === false && ln.sku === null && ln.size === null && ln.unitAmountMinor === null, JSON.stringify(ln));
+  }
+  check("no size answered: a sized accessory line states no size and resolves nothing",
+    (() => { for (const sz of [null, undefined, "", 7, {}]) { const ln = lineOf(env().api.quote("handoff", sz), S_ID);
+        if (!ln || ln.size !== null || ln.resolved !== false) return false; } return true; })());
+  check("a size key that is not an own entry of the map (constructor, __proto__) states no size",
+    ["constructor", "__proto__", "toString", "hasOwnProperty"].every((sz) => {
+      const ln = lineOf(env().api.quote("handoff", sz), S_ID); return !!ln && ln.size === null && ln.resolved === false; }));
+  check("a blank or untrimmed variant sku states no size (nothing was resolved for it)",
+    (() => { const cat = [{ id: S_ID, name: "Dri-Tec", accessorySkus: { queen: "  ", king: " " + K_SKU } }];
+      return ["queen", "king"].every((sz) => { const ln = lineOf(env({ accessories: cat, win: cart(S_ID) }).api.quote("handoff", sz), S_ID);
+        return !!ln && ln.size === null && ln.sku === null; }); })());
+  check("a cart id the catalog does not carry states no size",
+    (() => { const ln = lineOf(env({ win: cart("does-not-exist") }).api.quote("handoff", "queen"), "does-not-exist");
+      return !!ln && ln.size === null && ln.reason === "no-catalog-record"; })());
+  check("the mattress line is unchanged: it carries the customer's size",
+    env().api.quote("handoff", "queen").lines[0].kind === "mattress" && env().api.quote("handoff", "queen").lines[0].size === "queen");
+  // The accessory resolver's size contract is untouched: the query is sizeless.
+  check("the resolver query for an accessory still carries NO size (the contract the validator pins)",
+    /size: accessory \? undefined : size,/.test(gateBlock));
+  check("the gate itself is unchanged for a sized accessory: available at the customer's size, off at any other",
+    env().api.gate("handoff", CAT[0], "king", null).state === "available"
+    && env().api.gate("handoff", CAT[0], "king", null).amountMinor === K_MINOR
+    && env().api.gate("handoff", CAT[0], "full", null).state === "off");
+
+  // Rendered: the itemised Summary names the size beside the sized accessory.
+  const itemsOf = (b) => (b.innerHTML.match(/<li class="hf2-system-total__item">.*?<\/li>/g) || []);
+  const render = (o) => { const e = env(o); e.api.total(); return e.el("hf2SystemTotal"); };
+  for (const [lang, label] of [["en", "Queen"], ["es", "Queen"]]) {
+    const items = itemsOf(render({ lang }));
+    const acc = items.find((i) => i.indexOf("Dri-Tec") !== -1) || "";
+    const pil = items.find((i) => i.indexOf("Flow") !== -1) || "";
+    check(`[${lang}] rendered: the sized accessory line names its size (${label}) and its own amount ($89)`,
+      acc.indexOf('<span class="hf2-system-total__item-size">' + label + "</span>") !== -1 && acc.indexOf("$89") !== -1
+      && acc.indexOf("$109") === -1, acc);
+    check(`[${lang}] rendered: the size-independent pillow line names NO size`,
+      pil.length > 0 && pil.indexOf("hf2-system-total__item-size") === -1 && pil.indexOf("$108") !== -1, pil);
+    check(`[${lang}] rendered: three lines, reconciling to the subtotal`,
+      items.length === 3 && render({ lang }).innerHTML.indexOf("$3,896") !== -1
+      && 369900 + Q_MINOR + P_MINOR === 389600);
+  }
+  {
+    const b = render({ answers: { mattress_size: "full" }, lang: "es" });
+    const acc = itemsOf(b).find((i) => i.indexOf("Dri-Tec") !== -1) || "";
+    check("[es] rendered, a size the family is not sold in: the line shows a dash and no size label",
+      acc.length > 0 && acc.indexOf("hf2-system-total__item-size") === -1
+      && acc.indexOf("hf2-system-total__item-unresolved") !== -1, acc);
+  }
+  {
+    const b = render({ answers: { mattress_size: "king" }, lang: "es" });
+    const acc = itemsOf(b).find((i) => i.indexOf("Dri-Tec") !== -1) || "";
+    check("[es] rendered, a King customer: the same card's line reads King at the King amount ($109), never Queen's",
+      acc.indexOf('<span class="hf2-system-total__item-size">King</span>') !== -1
+      && acc.indexOf("$109") !== -1 && acc.indexOf("$89") === -1, acc);
+  }
+  check("LANGUAGE: the quote record (size included) is byte-identical in EN and ES",
+    JSON.stringify(env({ lang: "en" }).api.quote("handoff", "queen")) === JSON.stringify(env({ lang: "es" }).api.quote("handoff", "queen")));
+}
+
 section("Plan status copy beside Payment Choice (slice 2.2d): status only, never a figure");
 // ---------------------------------------------------------------------------
 {

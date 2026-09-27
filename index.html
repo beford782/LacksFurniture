@@ -13192,6 +13192,26 @@
       if (q < 1 || q > maxForItem) return null;
       return q;
     }
+    // The size a line is FOR. Presentation metadata only: it never reaches
+    // the resolver, whose accessory query stays sizeless
+    // (pricePresentationFor). A mattress is priced at the customer's size.
+    // An accessory sold per mattress size (an `accessorySkus` map) is that
+    // size's OWN product at its own price, so its line says which one
+    // (PR #132 review repair, 2026-09-27: the size was discarded, and a
+    // Queen and a King protector read identically on the itemised quote).
+    // A size-independent accessory (a single string `sku`), a family not
+    // sold in the customer's size, and a product the catalog does not carry
+    // have no applicable size and state none.
+    function quoteLineSizeFor(kind, record, size) {
+      if (typeof size !== 'string' || !size) return null;
+      if (kind === 'mattress') return size;
+      if (kind !== 'accessory') return null;
+      var rec = pricingCatalogRecord(record);
+      if (!rec || !pricingIsAccessory(rec)) return null;
+      if (!rec.accessorySkus || typeof rec.accessorySkus !== 'object') return null;
+      if (!Object.prototype.hasOwnProperty.call(rec.accessorySkus, size)) return null;
+      return pricingCleanSku(rec.accessorySkus[size]) ? size : null;
+    }
     function quoteLineFor(surface, kind, record, size, fallbackId) {
       var pres = pricePresentationFor(surface, record, size, null);
       // The customer's own count for this product. Absent (a mattress, or a
@@ -13213,7 +13233,7 @@
         productId: (record && typeof record.id === 'string') ? record.id
           : ((typeof fallbackId === 'string' && fallbackId) ? fallbackId : null),
         sku: pricingSkuFor(record, size),
-        size: kind === 'mattress' ? ((typeof size === 'string' && size) ? size : null) : null,
+        size: quoteLineSizeFor(kind, record, size),
         quantity: qty,
         state: pres.state,
         resolved: admitted,
@@ -19409,13 +19429,29 @@
 
     function getSelectedAccessoryPlan() {
       var cart = window._accCart || {};
+      // The same per-product ceiling the quantity setter enforces, inlined
+      // because the test sandboxes compile this function in isolation.
+      var STEP_MAX_QTY = { pillow: 4, base: 1, protection: 1 };
       return Object.keys(cart).map(function(id) {
         var selected = cart[id] || {};
         var source = (typeof ACCESSORIES !== 'undefined' ? ACCESSORIES : []).find(function(item) {
           return item.id === id;
         });
+        // HOW MANY of this product the customer chose (PR #132 review
+        // repair, 2026-09-27: the count lived on the cart alone, so four
+        // pillows left the kiosk as one unquantified item). An entry written
+        // before quantities existed means one. A count this product cannot
+        // have is never repeated to the customer as their own: a selected
+        // product is at least one unit, and that is all that is stated.
+        var step = (source && typeof sleepSystemStepIdForItem === 'function')
+          ? sleepSystemStepIdForItem(source) : null;
+        var maxQty = (step && STEP_MAX_QTY[step]) || 1;
+        var q = selected.quantity;
+        var quantity = (typeof q === 'number' && isFinite(q) && Math.floor(q) === q
+          && q >= 1 && q <= maxQty) ? q : 1;
         return {
           id: id,
+          quantity: quantity,
           name: source ? sleepSystemText(source.name) : (selected.name || ''),
           category: source ? sleepSystemText(source.category) : (selected.category || ''),
           imageUrl: source ? (source.image || '') : (selected.imageUrl || ''),
@@ -19456,10 +19492,22 @@
           // X3 (North Star ruling D7, 2026-08-31): factual customer-action
           // wording — these are the pieces the customer ADDED, not a match
           // claim the engine never made. Participles agree with the count.
+          // The count is UNITS, not products: four of one pillow is four
+          // pieces (PR #132 review repair, 2026-09-27). `items` names each
+          // product with its own count beside it, so the total is checkable.
           detail: selectedAccessories.length
-            ? (_esE ? (selectedAccessories.length + (selectedAccessories.length === 1 ? ' pieza' : ' piezas') + ' · las bases, almohadas o protectores que agregaste')
-                    : (selectedAccessories.length + (selectedAccessories.length === 1 ? ' piece' : ' pieces') + ' · the bases, pillows or protectors you added'))
-            : (_esE ? 'Explóralo con tu especialista en la tienda' : 'Explore with your specialist in store') }
+            ? (function(units) {
+                return _esE ? (units + (units === 1 ? ' pieza' : ' piezas') + ' · las bases, almohadas o protectores que agregaste')
+                            : (units + (units === 1 ? ' piece' : ' pieces') + ' · the bases, pillows or protectors you added');
+              })(selectedAccessories.reduce(function(n, a) {
+                return n + ((a && typeof a.quantity === 'number' && a.quantity > 1) ? a.quantity : 1);
+              }, 0))
+            : (_esE ? 'Explóralo con tu especialista en la tienda' : 'Explore with your specialist in store'),
+          items: selectedAccessories.map(function(a) {
+            var itemName = (a && typeof a.name === 'string') ? a.name : '';
+            if (!itemName) return '';
+            return itemName + ((typeof a.quantity === 'number' && a.quantity > 1) ? ' × ' + a.quantity : '');
+          }).filter(Boolean) }
       ];
       // Savings Pass row only when the pass is enabled; Payment Choice row
       // (no rates, no approval language) when financing is enabled.
@@ -19480,7 +19528,11 @@
         return '<div class="email-save-row' + (r.present ? '' : ' is-empty') + '">'
           + '<span class="email-save-mark">' + (r.present ? '✓' : '○') + '</span>'
           + '<div><div class="email-save-title">' + r.title + '</div>'
-          + '<div class="email-save-detail">' + r.detail + '</div></div>'
+          + '<div class="email-save-detail">' + r.detail + '</div>'
+          + ((r.items && r.items.length)
+              ? '<div class="email-save-detail email-save-items">' + r.items.map(escapeHtml).join(' · ') + '</div>'
+              : '')
+          + '</div>'
           + '</div>';
       }).join('');
 
@@ -19630,14 +19682,17 @@
       // Suggestions shown on the shared review remain comparison options until
       // explicitly added. Only the authoritative cart is included in the email.
       // Payload minimisation (owner build direction 2026-09-09, roadmap item
-      // 14 step 2): each accessory travels as exactly the three fields
-      // Code.gs reads — name, category, imageUrl — projected onto a fresh
+      // 14 step 2): each accessory travels as exactly the fields Code.gs
+      // reads — name, category, quantity, imageUrl — projected onto a fresh
       // literal. Nothing else on the plan entry (its id, its rationale key,
       // and never a catalog price or any pricing-derived value) can reach
-      // the packet, because nothing else is named here.
+      // the packet, because nothing else is named here. `quantity` joined
+      // the three on 2026-09-27 (PR #132 review repair): it is the
+      // customer's own count, 1-4, and carries no price.
       const accList = getSelectedAccessoryPlan().map(a => ({
         name: a.name,
         category: a.category,
+        quantity: a.quantity,
         imageUrl: toAbsoluteImageUrl(a.imageUrl)
       }));
       // Slice 6: the lead is a CLOSED contract (chosen / recommended / none)

@@ -562,13 +562,14 @@ check("...and the same scan flags a planted payPref field",
 section("Exclusion: the accessory packet is minimised to what Code.gs reads");
 // ===========================================================================
 // Payload minimisation (2026-09-09): each accessory entry is projected onto a
-// fresh literal naming exactly the three fields Code.gs reads (name,
-// category, imageUrl). This is proved two ways — the projection's source,
+// fresh literal naming exactly the fields Code.gs reads (name, category,
+// imageUrl, and since the 2026-09-27 PR #132 review repair the customer's own
+// quantity). This is proved two ways — the projection's source,
 // and the projection EXECUTED over a cart whose catalog record carries a
 // price, an id and a rationale — so a future spread, an added key, or a
 // leaked catalog field fails here rather than shipping.
-const ACC_PROJECTION_SRC = "const accList = getSelectedAccessoryPlan().map(a => ({\n        name: a.name,\n        category: a.category,\n        imageUrl: toAbsoluteImageUrl(a.imageUrl)\n      }));";
-check("the accessory packet is a fresh three-field literal (name, category, imageUrl), not a spread",
+const ACC_PROJECTION_SRC = "const accList = getSelectedAccessoryPlan().map(a => ({\n        name: a.name,\n        category: a.category,\n        quantity: a.quantity,\n        imageUrl: toAbsoluteImageUrl(a.imageUrl)\n      }));";
+check("the accessory packet is a fresh four-field literal (name, category, quantity, imageUrl), not a spread",
   html.replace(/\r\n/g, "\n").includes(ACC_PROJECTION_SRC));
 check("no Object.assign or spread over a plan entry remains in the payload builder",
   !/accList = getSelectedAccessoryPlan\(\)\.map\([^)]*Object\.assign/.test(htmlCode)
@@ -576,11 +577,11 @@ check("no Object.assign or spread over a plan entry remains in the payload build
 const GS_ACC_FIELDS = (() => {
   // The fields Code.gs actually reads off an accessory entry, in every consumer.
   const m = gsCode.match(/a && a\.(\w+)/g) || [];
-  const direct = gsCode.match(/\ba\.(name|category|imageUrl|price|id|reason|reasons|description)\b/g) || [];
+  const direct = gsCode.match(/\ba\.(name|category|quantity|imageUrl|price|id|reason|reasons|description)\b/g) || [];
   return new Set([...m.map((s) => s.replace(/^a && a\./, "")), ...direct.map((s) => s.slice(2))]);
 })();
-check("Code.gs reads only name, category and imageUrl from an accessory entry",
-  [...GS_ACC_FIELDS].every((f) => ["name", "category", "imageUrl"].includes(f)) && GS_ACC_FIELDS.size === 3,
+check("Code.gs reads only name, category, quantity and imageUrl from an accessory entry",
+  [...GS_ACC_FIELDS].every((f) => ["name", "category", "quantity", "imageUrl"].includes(f)) && GS_ACC_FIELDS.size === 4,
   [...GS_ACC_FIELDS].join(", "));
 {
   // Execute the real plan builder + the real projection over a cart whose
@@ -602,9 +603,10 @@ check("Code.gs reads only name, category and imageUrl from an accessory entry",
       (u) => "https://example.test/" + u);
   } catch (e) { threw = String(e); }
   check("the projection executes over a priced catalog record", built !== null, threw || "");
-  check("each packet entry carries exactly name, category and imageUrl — no id, reason, price or catalog field",
+  check("each packet entry carries exactly name, category, quantity and imageUrl — no id, reason, price or catalog field",
     Array.isArray(built) && built.length === 1
-    && JSON.stringify(Object.keys(built[0]).sort()) === JSON.stringify(["category", "imageUrl", "name"])
+    && JSON.stringify(Object.keys(built[0]).sort()) === JSON.stringify(["category", "imageUrl", "name", "quantity"])
+    && built[0].quantity === 1
     && built[0].name === "Catalog Pillow" && built[0].category === "Pillow"
     && built[0].imageUrl === "https://example.test/images/accessories/p.jpg",
     built ? JSON.stringify(built[0]) : "");
@@ -617,6 +619,98 @@ check("Code.gs reads only name, category and imageUrl from an accessory entry",
     (v) => v, (u) => u);
   check("...and the planted spread would leak id and reason (the key check is non-vacuous)",
     leaked.length === 1 && "id" in leaked[0] && "reason" in leaked[0]);
+}
+
+// ===========================================================================
+section("Quantities: the customer's own count reaches the plan, the take-home preview and the packet");
+// ===========================================================================
+// PR #132 review repair (2026-09-27). The count lived on window._accCart
+// alone: getSelectedAccessoryPlan() returned one record per product, the
+// take-home preview counted products, and the packet named no count, so four
+// pillows were described as "1 piece" and handed off as one unquantified
+// item. The REAL plan builder, projection and preview literal are executed.
+{
+  const planIdx = htmlCode.indexOf("function getSelectedAccessoryPlan()");
+  const planSrc = planIdx === -1 ? "" : "function getSelectedAccessoryPlan()" + balancedBlock(htmlCode, planIdx);
+  const projIdx = htmlCode.indexOf("const accList = getSelectedAccessoryPlan()");
+  const projEnd = htmlCode.indexOf("}));", projIdx);
+  const projSrc = projIdx === -1 || projEnd === -1 ? "" : htmlCode.slice(projIdx, projEnd + 4);
+  const pStart = html.indexOf("var packet = [");
+  const pEnd = pStart === -1 ? -1 : html.indexOf("\n      ];", pStart);
+  const literal = pStart === -1 || pEnd === -1 ? "" : html.slice(pStart + "var packet = ".length, pEnd + "\n      ]".length);
+  check("the plan builder, the projection and the take-home preview literal extracted",
+    planSrc.length > 0 && projSrc.length > 0 && literal.length > 0);
+  const CATALOG = [
+    { id: "pillow-a", name: { en: "Pillow Alpha", es: "Almohada Alfa" }, category: { en: "Pillows", es: "Almohadas" }, image: "images/accessories/a.jpg", price: 99 },
+    { id: "pillow-b", name: { en: "Pillow Beta", es: "Almohada Beta" }, category: { en: "Pillows", es: "Almohadas" }, image: "images/accessories/b.jpg", price: 108 },
+    { id: "protector", name: { en: "Protector", es: "Protector" }, category: { en: "Protection", es: "Protección" }, image: "images/accessories/p.jpg", price: 89 },
+    { id: "base", name: { en: "Base", es: "Base" }, category: { en: "Bases", es: "Bases" }, image: "images/accessories/x.jpg", price: 899 },
+  ];
+  const STEP = { "pillow-a": "pillow", "pillow-b": "pillow", protector: "protection", base: "base" };
+  const run = (cart, lang = "en") => new Function(
+    "window", "ACCESSORIES", "sleepSystemText", "toAbsoluteImageUrl", "sleepSystemStepIdForItem",
+    `"use strict";\n${planSrc}\n${projSrc}\nreturn { plan: getSelectedAccessoryPlan(), packet: accList };`)(
+    { _accCart: cart }, CATALOG, (v) => (v && typeof v === "object") ? v[lang] : v, (u) => u, (item) => STEP[item.id]);
+  const preview = (plan, es) => new Function("_esE", "savedMattresses", "recCount", "selectedAccessories",
+    '"use strict"; return ' + literal + ";")(es, [], 3, plan).find((r) => /piece|pieza/.test(r.detail || ""));
+  const qtys = (list) => JSON.stringify(list.map((a) => a.quantity));
+
+  // Four pillows: two products, different counts.
+  const FOUR = { "pillow-a": { id: "pillow-a", quantity: 3 }, "pillow-b": { id: "pillow-b", quantity: 1 } };
+  for (const lang of ["en", "es"]) {
+    const r = run(FOUR, lang);
+    const es = lang === "es";
+    check(`[${lang}] three of one pillow and one of another: the plan carries 3 and 1`, qtys(r.plan) === "[3,1]", qtys(r.plan));
+    check(`[${lang}] ...and so does the packet, as the customer's own count`, qtys(r.packet) === "[3,1]", qtys(r.packet));
+    check(`[${lang}] ...and the packet is four units in total`, r.packet.reduce((n, a) => n + a.quantity, 0) === 4);
+    const row = preview(r.plan, es);
+    check(`[${lang}] the take-home preview counts UNITS: four pieces, not two`,
+      row.detail === (es ? "4 piezas · las bases, almohadas o protectores que agregaste"
+                         : "4 pieces · the bases, pillows or protectors you added"), row.detail);
+    check(`[${lang}] ...and names each product with its own count beside it`,
+      JSON.stringify(row.items) === JSON.stringify(es ? ["Almohada Alfa × 3", "Almohada Beta"] : ["Pillow Alpha × 3", "Pillow Beta"]),
+      JSON.stringify(row.items));
+  }
+  {
+    const r = run({ "pillow-a": { id: "pillow-a", quantity: 4 } });
+    const row = preview(r.plan, false);
+    check("four of ONE pillow is four units and four pieces (the reviewed case: it read \"1 piece\")",
+      qtys(r.plan) === "[4]" && qtys(r.packet) === "[4]"
+      && row.detail === "4 pieces · the bases, pillows or protectors you added"
+      && JSON.stringify(row.items) === '["Pillow Alpha × 4"]', row.detail + " " + JSON.stringify(row.items));
+  }
+  // An entry written before quantities existed is one unit.
+  {
+    const r = run({ "pillow-a": { id: "pillow-a" }, protector: { id: "protector" } });
+    const row = preview(r.plan, false);
+    check("entries with NO quantity (written before quantities existed) are one unit each",
+      qtys(r.plan) === "[1,1]" && qtys(r.packet) === "[1,1]"
+      && row.detail === "2 pieces · the bases, pillows or protectors you added"
+      && JSON.stringify(row.items) === '["Pillow Alpha","Protector"]', row.detail + " " + JSON.stringify(row.items));
+    const one = preview(run({ protector: { id: "protector" } }).plan, true);
+    check("one product, one unit: \"1 pieza\" (the singular survives)",
+      one.detail === "1 pieza · las bases, almohadas o protectores que agregaste", one.detail);
+  }
+  // A count the product cannot have is never repeated as the customer's own.
+  for (const bad of [0, -1, 2.5, "3", 5, 99, NaN, Infinity, null, true]) {
+    const r = run({ "pillow-a": { id: "pillow-a", quantity: bad } });
+    check(`a pillow count of ${JSON.stringify(bad) === "null" && typeof bad === "number" ? String(bad) : JSON.stringify(bad)} is stated as one unit`,
+      r.plan[0].quantity === 1 && r.packet[0].quantity === 1, qtys(r.plan));
+  }
+  {
+    const r = run({ base: { id: "base", quantity: 2 }, protector: { id: "protector", quantity: 3 } });
+    check("a base or a protector is one unit whatever the cart holds (their ceiling is 1)",
+      qtys(r.plan) === "[1,1]" && qtys(r.packet) === "[1,1]", qtys(r.plan));
+  }
+  {
+    const r = run({ "not-in-catalog": { id: "not-in-catalog", name: "Legacy", quantity: 3 } });
+    check("a cart id the catalog does not carry is one unit (no product, no ceiling to trust)",
+      r.plan[0].quantity === 1 && r.plan[0].name === "Legacy");
+  }
+  check("the preview renders the per-product line HTML-escaped, and only when there is one",
+    html.includes("r.items.map(escapeHtml).join(' · ')") && html.includes("(r.items && r.items.length)"));
+  check("the quantity field carries no pricing vocabulary (a count, never an amount)",
+    !/amount|price|minor/i.test(projSrc));
 }
 
 // ===========================================================================

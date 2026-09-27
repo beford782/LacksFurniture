@@ -220,5 +220,129 @@ check("sized variants file per size into accessorySkus (regression guard)",
 check("a variant under a key that is not a mattress size is refused by name",
       rejected_reason(cov, "S-odd") == "size-key-not-a-size:sofa", repr(rejected_reason(cov, "S-odd")))
 
+# ------------------------------------------- 3. two admissible size variants
+# PR #132 review finding (2026-09-27). A family sold per mattress size is
+# several purchasable products behind ONE catalog id, and every accessory
+# pricing entry is sizeless, so two admissible sizes made two entries with the
+# same (productId, null) identity. validate_pricing refused the second as a
+# duplicate and the documented `--state website` preview would not start.
+print("\nTwo admissible size variants: the preview starts, and duplicate detection is intact")
+PROTECTORS = [a["id"] for a in ACCESSORIES if a["id"].startswith("protector-")]
+PROTECTOR_B = PROTECTORS[1]
+products, _, a_skus, cov, (cfg, cat, verdicts, acc) = run(
+    [variant("S-queen", size_id="queen", amount=8900), variant("S-king", size_id="king", amount=10900)],
+    accessories=[accessory_row(PROTECTOR_ID, {"queen": "S-queen", "king": "S-king"})])
+rec = next(a for a in acc if a["id"] == PROTECTOR_ID)
+served = [e for e in cfg["pricing"]["products"] if e.get("productId") == PROTECTOR_ID]
+check("two admissible sizes: the dark form is accepted (the preview is not refused at start)",
+      verdicts["dark_ok"] and srv.dark_form_acceptable("website", verdicts), str(verdicts["dark_errors"])[:240])
+check("...and it was judged once per customer size, in size order",
+      verdicts.get("sizeProjections") == ["queen", "king"], str(verdicts.get("sizeProjections")))
+check("...and EVERY size's opened form is still refused by the production validator",
+      verdicts["served_refused"] is True and any("[customer size queen]" in e for e in verdicts["served_errors"])
+      and any("[customer size king]" in e for e in verdicts["served_errors"]), str(verdicts["served_errors"])[:240])
+check("...and both variants are served, each a sizeless accessory entry with its OWN sku and amount",
+      sorted((e["sku"], e["size"], e["price"]["amountMinor"], e["productKind"]) for e in served)
+      == [("S-king", None, 10900, "accessory"), ("S-queen", None, 8900, "accessory")], str(served)[:240])
+check("...and each entry's clearance is scoped to its own sku and amount",
+      all(e["clearance"]["scope"]["sku"] == e["sku"] and e["clearance"]["scope"]["size"] is None
+          and e["clearance"]["scope"]["amountMinor"] == e["price"]["amountMinor"] for e in served))
+check("...and the catalog record maps each customer size to that size's own sku",
+      rec.get("accessorySkus") == {"queen": "S-queen", "king": "S-king"} and "sku" not in rec, str(rec))
+check("...and the drill's size note never enters a served entry",
+      all("variantSize" not in e for e in cfg["pricing"]["products"]))
+
+# Size-independent and sized families together: every customer can resolve
+# the pillow, and only their own size of the protector.
+if isinstance(KEY, str):
+    products, _, a_skus, cov, (cfg, cat, verdicts, acc) = run(
+        [variant("P-free", size_id=None, amount=9900), variant("S-queen", size_id="queen"),
+         variant("S-king", size_id="king"), dict(variant("M-q"), kind="mattress")],
+        mattresses=[mattress_row("M-q")],
+        accessories=[accessory_row(PILLOW_ID, {KEY: "P-free"}),
+                     accessory_row(PROTECTOR_ID, {"queen": "S-queen", "king": "S-king"})])
+    views = srv.size_projections(products, [p.get("variantSize") for p in products])
+    by_label = {label: sorted(p["variant"]["sku"] for p in group) for label, group in views}
+    check("a size-independent pillow and the mattress are in EVERY size's projection; a sized variant only in its own",
+          by_label == {"queen": ["M-q", "P-free", "S-queen"], "king": ["M-q", "P-free", "S-king"]}, str(by_label))
+    check("...and that mixed document is accepted", verdicts["dark_ok"], str(verdicts["dark_errors"])[:240])
+    pillow = next(a for a in acc if a["id"] == PILLOW_ID)
+    check("...and the size-independent pillow stays size-independent (single sku, no per-size map)",
+          pillow.get("sku") == "P-free" and "accessorySkus" not in pillow, str(pillow)[:200])
+
+check("no size-scoped entry: one projection, the whole document, unlabelled",
+      srv.size_projections([{"a": 1}, {"a": 2}], [None, None]) == [(None, [{"a": 1}, {"a": 2}])])
+for label, args in [("a size that is not a mattress size", ([{"a": 1}], ["sofa"])),
+                    ("a size list of the wrong length", ([{"a": 1}, {"a": 2}], [None]))]:
+    try:
+        srv.size_projections(*args)
+        refused = False
+    except ValueError:
+        refused = True
+    check(f"size_projections refuses {label}", refused)
+
+
+def run_with_products(records):
+    """build_injected over hand-built website records, so shapes the mapping
+    path itself refuses can still be put in front of the validator."""
+    old = srv.build_website
+    cov = {"mattressSizes": [], "mattressRejected": [], "accessories": [], "accessoriesRejected": []}
+    srv.build_website = lambda start: (list(records), {}, {}, cov)
+    try:
+        return srv.build_injected("website", START)
+    finally:
+        srv.build_website = old
+
+
+def acc_record(app_id, sku, size, amount=8900):
+    return {"kind": "accessory", "appId": app_id, "size": None, "variantSize": size,
+            "variant": variant(sku, size_id=size, amount=amount)}
+
+
+# Duplicate detection is NOT weakened: two entries one customer could both
+# resolve are still a duplicate, and the validator still says so.
+cfg, cat, verdicts, acc = run_with_products(
+    [acc_record(PROTECTOR_ID, "D-1", "queen"), acc_record(PROTECTOR_ID, "D-2", "queen")])
+check("two variants of one family for the SAME customer size are still refused as a duplicate",
+      not verdicts["dark_ok"] and not srv.dark_form_acceptable("website", verdicts)
+      and any("[customer size queen]" in e and "duplicates products[0]" in e for e in verdicts["dark_errors"]),
+      str(verdicts["dark_errors"])[:240])
+cfg, cat, verdicts, acc = run_with_products(
+    [acc_record(PROTECTOR_ID, "D-3", None), acc_record(PROTECTOR_ID, "D-4", None)])
+check("two size-independent entries for one accessory are still refused as a duplicate",
+      not verdicts["dark_ok"] and any("duplicates products[0]" in e for e in verdicts["dark_errors"]),
+      str(verdicts["dark_errors"])[:240])
+cfg, cat, verdicts, acc = run_with_products(
+    [acc_record(PROTECTOR_ID, "D-5", None), acc_record(PROTECTOR_ID, "D-6", "queen")])
+check("a size-independent entry beside a sized variant of the same accessory is refused as a duplicate",
+      not verdicts["dark_ok"] and any("duplicates products[0]" in e for e in verdicts["dark_errors"]),
+      str(verdicts["dark_errors"])[:240])
+# One sku across two projections: no single projection holds both, so the
+# whole-document rule is what catches it.
+cfg, cat, verdicts, acc = run_with_products(
+    [acc_record(PROTECTOR_ID, "D-7", "queen"), acc_record(PROTECTOR_B, "D-7", "king")])
+check("one sku serving two products in DIFFERENT size projections is refused across the whole document",
+      not verdicts["dark_ok"] and any("across the served document" in e and "'D-7'" in e for e in verdicts["dark_errors"]),
+      str(verdicts["dark_errors"])[:240])
+
+# Through the mapping path: two sizes naming one sku price nothing.
+products, _, a_skus, cov, (cfg, cat, verdicts, acc) = run(
+    [variant("S-same", size_id="queen")],
+    accessories=[accessory_row(PROTECTOR_ID, {"queen": "S-same", "king": "S-same"})])
+rec = next(a for a in acc if a["id"] == PROTECTOR_ID)
+check("two sizes of one family naming the SAME sku are refused whole (sku-shared-across-sizes)",
+      not products and "accessorySkus" not in rec and "sku" not in rec
+      and any(r["appId"] == PROTECTOR_ID and r["reason"] == "sku-shared-across-sizes" for r in cov["accessoriesRejected"]),
+      str(cov["accessoriesRejected"])[:200])
+
+# The committed snapshot and mapping still build and are still accepted.
+cfg, cat, verdicts, acc = srv.build_injected("website", datetime.now(timezone.utc).astimezone())
+check("the committed website capture is still accepted", srv.dark_form_acceptable("website", verdicts)
+      and verdicts["served_refused"], str(verdicts["dark_errors"])[:240])
+for state in ("dark", "available", "unapproved", "disabled"):
+    cfg, cat, verdicts, acc = srv.build_injected(state, datetime.now(timezone.utc).astimezone())
+    check(f"the {state} drill keeps ONE projection (the whole document) and is accepted",
+          verdicts.get("sizeProjections") == [None] and srv.dark_form_acceptable(state, verdicts))
+
 print(f"\n{passed} passed, {failed} failed")
 sys.exit(1 if failed else 0)
