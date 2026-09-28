@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="google" content="notranslate">
+<!-- notranslate: Chrome auto-translate mangled a Spanish review screenshot into pseudo-English; the review surface must never be machine-translated -->
+<title>Viewport harness — Phase 1 prototype review</title>
+<!--
+  Review tool, not part of any prototype. Renders one variant inside an
+  iframe sized to an exact target viewport so the prototype's own media
+  queries resolve at that size, then scales the iframe visually to fit the
+  reviewer's window. Layout (wrapping, overflow, stacking) is therefore
+  computed at the TRUE target size; only the on-screen rendering is scaled,
+  and the scale factor is stamped in the caption.
+
+  The viewports are illustrative, content-driven review sizes. They are NOT
+  the showroom device matrix, which is unconfirmed (Phase 0.4 pending).
+
+  Usage:
+    viewport-harness.html?v=sleep-brief-a&s=dense-c&l=en&w=834&h=1112
+-->
+<style>
+  html, body { margin: 0; background: #2b2b2b; color: #f2f2f2;
+    font: 500 13px/1.4 system-ui, sans-serif; }
+  .cap { padding: 6px 10px; background: #111; border-bottom: 2px solid #b8860b;
+    display: flex; gap: 14px; flex-wrap: wrap; align-items: baseline; }
+  .cap b { color: #ffd777; }
+  .cap .warn { color: #ffb3b3; }
+  .stage { display: flex; justify-content: center; padding: 8px; }
+  .frame-wrap { transform-origin: top center; }
+  iframe { border: 1px solid #b8860b; background: #fff; display: block; }
+</style>
+</head>
+<body>
+<div class="cap" id="cap"></div>
+<div class="stage"><div class="frame-wrap" id="wrap"></div></div>
+<script>
+  var p = new URLSearchParams(location.search);
+  var v = p.get('v') || 'sleep-brief-a';
+  var s = p.get('s') || 'dense-c';
+  var l = p.get('l') || 'en';
+  var w = parseInt(p.get('w') || '834', 10);
+  var h = parseInt(p.get('h') || '1112', 10);
+
+  var wrap = document.getElementById('wrap');
+  var iframe = document.createElement('iframe');
+  iframe.width = w; iframe.height = h;
+  // `st` forwards a review-state name to variants that support the
+  // review-state driver (results-tabs) so stateful screenshot cells are
+  // reproducible by URL. `m=evaluation` forwards evaluation mode.
+  var st = p.get('st');
+  var m = p.get('m') === 'evaluation' ? 'evaluation' : null;
+  iframe.src = '../' + v + '/?scenario=' + s + '&lang=' + l
+    + (st ? '&state=' + encodeURIComponent(st) : '')
+    + (m ? '&mode=' + m : '');
+  iframe.title = v + ' at ' + w + '×' + h;
+  wrap.appendChild(iframe);
+
+  // Scale to fit the reviewer's window; never scale up past 1.
+  var avail = window.innerHeight - document.getElementById('cap').offsetHeight - 24;
+  var scale = Math.min(1, avail / h, (window.innerWidth - 24) / w);
+  wrap.style.transform = 'scale(' + scale + ')';
+  wrap.style.height = (h * scale) + 'px';
+
+  document.getElementById('cap').innerHTML =
+    '<span><b>' + v + '</b></span>' +
+    '<span>scenario <b>' + s + '</b></span>' +
+    '<span>lang <b>' + l.toUpperCase() + '</b></span>' +
+    (st ? '<span>state <b>' + st + '</b></span>' : '') +
+    (m ? '<span>mode <b>evaluation</b></span>' : '') +
+    '<span>viewport <b>' + w + '×' + h + '</b> (' + (w > h ? 'landscape' : 'portrait') + ')</span>' +
+    '<span>display scale <b>' + scale.toFixed(2) + '×</b></span>' +
+    (m ? '<span class="warn">evaluation-mode prototype — not hardware evidence</span>'
+       : '<span class="warn">illustrative review viewport — NOT the showroom device matrix</span>');
+</script>
+</body>
+</html>

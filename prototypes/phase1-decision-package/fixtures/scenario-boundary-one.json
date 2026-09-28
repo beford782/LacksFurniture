@@ -1,0 +1,1078 @@
+{
+ "meta": {
+  "scenario": "boundary-one",
+  "description": "SYNTHETIC boundary: exactly 1 priority (the firmness-preference emission alone). The vector omits sleep_position — unreachable from a completed quiz (every position value emits a priority; reachable minimum is 2) — and exists solely to pin the length-1 rendering contract through the real engine.",
+  "engineSourceCommit": "01b03b9284413969cce32a2d23c3d2e935579055",
+  "answers": {
+   "sleep_quality": "well",
+   "trigger": "upgrade",
+   "mattress_size": "queen",
+   "partner_sleep": "solo",
+   "body_type": "average",
+   "temperature": "comfortable",
+   "firmness": 5,
+   "current_mattress_age": "two_eight",
+   "sleep_issues": [
+    "none"
+   ],
+   "health_conditions": [
+    "none"
+   ]
+  },
+  "syntheticAnswerVector": true,
+  "answerSetProvenance": "Authored for the 2026-08-07 correction pass; NOT from any shipped test suite and NOT producible by the quiz UI (sleep_position omitted). Executed through the real extracted engine like every other scenario; evidence about the length-1 rendering contract only.",
+  "method": "Extract-and-execute from index.html at the worktree commit (see PROVENANCE.md): showProfileScreen()+renderResultsTrialFocus() against the recording DOM shim of tests/consultation_priorities_check.mjs; calculateScores()+qualifyRankedChoices()+window.showResults against data/mattresses.json + data/quiz.json. No scoring, ordering, cap or firmness value is reimplemented or edited."
+ },
+ "profile": {
+  "en": {
+   "dom": {
+    "profileEyebrow": {
+     "innerHTML": "",
+     "textContent": "Personalized from your answers"
+    },
+    "profileName": {
+     "innerHTML": "",
+     "textContent": "Your Sleep Brief"
+    },
+    "profileSubtitle": {
+     "innerHTML": "",
+     "textContent": "Sleeper"
+    },
+    "profileSummary": {
+     "innerHTML": "",
+     "textContent": "Your starting point: balanced comfort."
+    },
+    "profileReflection": {
+     "innerHTML": "",
+     "textContent": "You are shopping for a Queen, sleep solo, want to sleep more comfortably, and prefer a medium feel."
+    },
+    "profileMetaStrip": {
+     "innerHTML": "<div class=\"noct-profile-meta\"><dt class=\"noct-profile-meta-label\">Size</dt><dd class=\"noct-profile-meta-value\">Queen</dd></div><div class=\"noct-profile-meta\"><dt class=\"noct-profile-meta-label\">Feel</dt><dd class=\"noct-profile-meta-value\">Medium</dd></div><div class=\"noct-profile-meta\"><dt class=\"noct-profile-meta-label\">Temperature</dt><dd class=\"noct-profile-meta-value\">Comfortable temperature</dd></div>",
+     "textContent": ""
+    },
+    "profileReassurance": {
+     "innerHTML": "",
+     "textContent": "This brief guides where we start. Your comfort during the test decides what stays."
+    },
+    "profilePlanLabel": {
+     "innerHTML": "",
+     "textContent": "Your guided trial"
+    },
+    "profilePrioritiesHeading": {
+     "innerHTML": "",
+     "textContent": "What we will test together"
+    },
+    "profilePrioritiesIntro": {
+     "innerHTML": "",
+     "textContent": "Use these signals to compare each mattress instead of relying on first impressions alone."
+    },
+    "profilePriorities": {
+     "innerHTML": "<li class=\"noct-profile-priority-row\"><div class=\"noct-profile-priority-body\"><div class=\"noct-profile-priority-title\">Balanced comfort</div><div class=\"noct-profile-priority-desc\">You prefer a middle feel that combines cushioning with easy support.</div></div><div class=\"noct-profile-priority-tag tag-preference\">Feel preference</div><div class=\"noct-profile-priority-test\"><strong>Try this: </strong>Compare which option feels supportive immediately and still comfortable after one minute.</div></li>",
+     "textContent": ""
+    },
+    "profileJourneyHeading": {
+     "innerHTML": "",
+     "textContent": "What happens next"
+    },
+    "profileJourneySteps": {
+     "innerHTML": "<div class=\"profile-launch__journey-step\" data-step=\"1\">Compare your matches</div><div class=\"profile-launch__journey-step\" data-step=\"2\">Record what feels best</div><div class=\"profile-launch__journey-step\" data-step=\"3\">Build around the finalist</div>",
+     "textContent": ""
+    },
+    "profileJourneyCopy": {
+     "innerHTML": "",
+     "textContent": "Then we will explore Adjustability, Support, Pillow, and Protection. Every choice is optional."
+    },
+    "profileSecondary": {
+     "innerHTML": "",
+     "textContent": "← Edit my answers"
+    },
+    "profileCta": {
+     "innerHTML": "",
+     "textContent": "Compare My Matches →"
+    }
+   },
+   "priorityRows": [
+    {
+     "title": "Balanced comfort",
+     "desc": "You prefer a middle feel that combines cushioning with easy support.",
+     "tagClass": "tag-preference",
+     "tag": "Feel preference",
+     "test": "Compare which option feels supportive immediately and still comfortable after one minute."
+    }
+   ],
+   "priorityCount": 1,
+   "metaStrip": [
+    {
+     "label": "Size",
+     "value": "Queen"
+    },
+    {
+     "label": "Feel",
+     "value": "Medium"
+    },
+    {
+     "label": "Temperature",
+     "value": "Comfortable temperature"
+    }
+   ],
+   "resultsTrialFocus": "<span class=\"results-trial-focus__label\">Your trial focus</span><span>Balanced comfort</span>",
+   "trialFocus": [
+    {
+     "en": "Balanced comfort",
+     "es": "Comodidad equilibrada",
+     "why": {
+      "en": "You prefer a middle feel that combines cushioning with easy support.",
+      "es": "Prefieres una sensación media que combine amortiguación y soporte."
+     },
+     "test": {
+      "en": "Compare which option feels supportive immediately and still comfortable after one minute.",
+      "es": "Compara cuál opción se siente firme al inicio y cómoda después de un minuto."
+     }
+    }
+   ],
+   "profileBrief": "Sleep brief · balanced comfort",
+   "profileBriefByLang": {
+    "en": "Sleep brief · balanced comfort",
+    "es": "Resumen de sueño · comodidad equilibrada"
+   }
+  },
+  "es": {
+   "dom": {
+    "profileEyebrow": {
+     "innerHTML": "",
+     "textContent": "Personalizado con tus respuestas"
+    },
+    "profileName": {
+     "innerHTML": "",
+     "textContent": "Tu Resumen de Sueño"
+    },
+    "profileSubtitle": {
+     "innerHTML": "",
+     "textContent": "Durmiente"
+    },
+    "profileSummary": {
+     "innerHTML": "",
+     "textContent": "Tu punto de partida: comodidad equilibrada."
+    },
+    "profileReflection": {
+     "innerHTML": "",
+     "textContent": "Buscas un colchón Queen, duermes solo, quieres dormir con más comodidad y prefieres una sensación media."
+    },
+    "profileMetaStrip": {
+     "innerHTML": "<div class=\"noct-profile-meta\"><dt class=\"noct-profile-meta-label\">Tamaño</dt><dd class=\"noct-profile-meta-value\">Queen</dd></div><div class=\"noct-profile-meta\"><dt class=\"noct-profile-meta-label\">Sensación</dt><dd class=\"noct-profile-meta-value\">Medio</dd></div><div class=\"noct-profile-meta\"><dt class=\"noct-profile-meta-label\">Temperatura</dt><dd class=\"noct-profile-meta-value\">Temperatura cómoda</dd></div>",
+     "textContent": ""
+    },
+    "profileReassurance": {
+     "innerHTML": "",
+     "textContent": "Este resumen define por dónde empezamos. Tu comodidad durante la prueba decide qué se queda."
+    },
+    "profilePlanLabel": {
+     "innerHTML": "",
+     "textContent": "Tu prueba guiada"
+    },
+    "profilePrioritiesHeading": {
+     "innerHTML": "",
+     "textContent": "Lo que probaremos juntos"
+    },
+    "profilePrioritiesIntro": {
+     "innerHTML": "",
+     "textContent": "Usa estas señales para comparar cada colchón en lugar de depender solo de una primera impresión."
+    },
+    "profilePriorities": {
+     "innerHTML": "<li class=\"noct-profile-priority-row\"><div class=\"noct-profile-priority-body\"><div class=\"noct-profile-priority-title\">Comodidad equilibrada</div><div class=\"noct-profile-priority-desc\">Prefieres una sensación media que combine amortiguación y soporte.</div></div><div class=\"noct-profile-priority-tag tag-preference\">Preferencia</div><div class=\"noct-profile-priority-test\"><strong>Pruébalo: </strong>Compara cuál opción se siente firme al inicio y cómoda después de un minuto.</div></li>",
+     "textContent": ""
+    },
+    "profileJourneyHeading": {
+     "innerHTML": "",
+     "textContent": "Lo que sigue"
+    },
+    "profileJourneySteps": {
+     "innerHTML": "<div class=\"profile-launch__journey-step\" data-step=\"1\">Comparar tus opciones</div><div class=\"profile-launch__journey-step\" data-step=\"2\">Registrar qué se siente mejor</div><div class=\"profile-launch__journey-step\" data-step=\"3\">Construir alrededor del finalista</div>",
+     "textContent": ""
+    },
+    "profileJourneyCopy": {
+     "innerHTML": "",
+     "textContent": "Después exploraremos Ajustabilidad, Soporte, Almohada y Protección. Cada elección es opcional."
+    },
+    "profileSecondary": {
+     "innerHTML": "",
+     "textContent": "← Editar mis respuestas"
+    },
+    "profileCta": {
+     "innerHTML": "",
+     "textContent": "Comparar Mis Opciones →"
+    }
+   },
+   "priorityRows": [
+    {
+     "title": "Comodidad equilibrada",
+     "desc": "Prefieres una sensación media que combine amortiguación y soporte.",
+     "tagClass": "tag-preference",
+     "tag": "Preferencia",
+     "test": "Compara cuál opción se siente firme al inicio y cómoda después de un minuto."
+    }
+   ],
+   "priorityCount": 1,
+   "metaStrip": [
+    {
+     "label": "Tamaño",
+     "value": "Queen"
+    },
+    {
+     "label": "Sensación",
+     "value": "Medio"
+    },
+    {
+     "label": "Temperatura",
+     "value": "Temperatura cómoda"
+    }
+   ],
+   "resultsTrialFocus": "<span class=\"results-trial-focus__label\">Enfoque de la prueba</span><span>Comodidad equilibrada</span>",
+   "trialFocus": [
+    {
+     "en": "Balanced comfort",
+     "es": "Comodidad equilibrada",
+     "why": {
+      "en": "You prefer a middle feel that combines cushioning with easy support.",
+      "es": "Prefieres una sensación media que combine amortiguación y soporte."
+     },
+     "test": {
+      "en": "Compare which option feels supportive immediately and still comfortable after one minute.",
+      "es": "Compara cuál opción se siente firme al inicio y cómoda después de un minuto."
+     }
+    }
+   ],
+   "profileBrief": "Resumen de sueño · comodidad equilibrada",
+   "profileBriefByLang": {
+    "en": "Sleep brief · balanced comfort",
+    "es": "Resumen de sueño · comodidad equilibrada"
+   }
+  }
+ },
+ "firmness": {
+  "value": 5,
+  "firmnessFeel": {
+   "en": "Medium",
+   "es": "Medio"
+  },
+  "getFirmnessLabel": {
+   "en": "Medium",
+   "es": "Medio"
+  },
+  "note": "Three per-surface word maps coexist at this commit (brief meta strip inline buckets, firmnessFeel, getFirmnessLabel) and disagree at 4/6/8 — a prototype must reuse the destination surface's own vocabulary and always render the exact integer value."
+ },
+ "results": {
+  "tierData": {
+   "gold": [
+    {
+     "id": "g7",
+     "name": "Reserve Mayfair Medium",
+     "brand": "Restonic",
+     "subBrand": "Reserve",
+     "pitchKey": "",
+     "archetype": "Hand-made balanced luxury hybrid",
+     "firmness": 5,
+     "firmnessLabel": "Medium",
+     "locallyMade": true,
+     "tags": [
+      "Hand-Made",
+      "Medium",
+      "Natural Materials"
+     ],
+     "highlight": "Hand-made balanced luxury with natural materials",
+     "tags_es": [
+      "Hecho a Mano",
+      "Medio",
+      "Materiales Naturales"
+     ],
+     "highlight_es": "Lujo equilibrado hecho a mano con materiales naturales",
+     "imageUrl": "images/mattresses/reserve mayfair medium.jpg",
+     "topPickReason": {
+      "en": "Hand-made luxury in a true medium — the most versatile bed in the Reserve line.",
+      "es": "Lujo hecho a mano en un medio verdadero — la cama más versátil de la línea Reserve."
+     },
+     "differentiators": [
+      {
+       "title": {
+        "en": "True balanced medium",
+        "es": "Medio verdaderamente equilibrado"
+       },
+       "detail": {
+        "en": "Neither plush nor firm — a safe luxury pick for couples who disagree.",
+        "es": "Ni suave ni firme — una elección de lujo segura para parejas que no se ponen de acuerdo."
+       }
+      },
+      {
+       "title": {
+        "en": "Natural-material build",
+        "es": "Construcción de materiales naturales"
+       },
+       "detail": {
+        "en": "Hand-made with breathable natural layers built to outlast foam-only beds.",
+        "es": "Hecho a mano con capas naturales transpirables que duran más que las camas de pura espuma."
+       }
+      }
+     ],
+     "score": 77,
+     "pct": 100,
+     "meetsMatchThreshold": true,
+     "firmnessFeelWord": {
+      "en": "Medium",
+      "es": "Medio"
+     }
+    },
+    {
+     "id": "g1",
+     "name": "The Roma",
+     "brand": "Chattam & Wells",
+     "subBrand": "Roma",
+     "pitchKey": "",
+     "archetype": "Natural-fiber luxury firm",
+     "firmness": 7,
+     "firmnessLabel": "Firm",
+     "locallyMade": true,
+     "tags": [
+      "Luxury Natural Fibers",
+      "Firm",
+      "Euro-Top"
+     ],
+     "highlight": "Handcrafted firm luxury in Merino wool and cashmere",
+     "tags_es": [
+      "Fibras Naturales de Lujo",
+      "Firme",
+      "Euro-Top"
+     ],
+     "highlight_es": "Lujo firme artesanal en lana Merino y cachemira",
+     "imageUrl": "images/mattresses/the roma.jpg",
+     "topPickReason": {
+      "en": "Handcrafted natural-fiber luxury with firm, breathable coil-on-coil support.",
+      "es": "Lujo artesanal de fibras naturales con soporte firme de doble resorte que respira."
+     },
+     "differentiators": [
+      {
+       "title": {
+        "en": "Natural fiber comfort layers",
+        "es": "Capas de confort de fibras naturales"
+       },
+       "detail": {
+        "en": "Merino wool, camel hair, and cashmere breathe and temper heat in a way synthetic foams can't.",
+        "es": "La lana Merino, el pelo de camello y la cachemira respiran y regulan el calor como las espumas sintéticas no pueden."
+       }
+      },
+      {
+       "title": {
+        "en": "Coil-on-coil with graphite latex",
+        "es": "Doble resorte con látex de grafito"
+       },
+       "detail": {
+        "en": "Responsive lift and stability instead of the slow sink of memory foam.",
+        "es": "Elevación receptiva y estabilidad en lugar del hundimiento lento de la espuma viscoelástica."
+       }
+      }
+     ],
+     "score": 55,
+     "pct": 71,
+     "meetsMatchThreshold": true,
+     "firmnessFeelWord": {
+      "en": "Firm",
+      "es": "Firme"
+     }
+    },
+    {
+     "id": "g2",
+     "name": "The Saint Pierre",
+     "brand": "Chattam & Wells",
+     "subBrand": "Saint Pierre",
+     "pitchKey": "",
+     "archetype": "Plush natural-fiber luxury",
+     "firmness": 3,
+     "firmnessLabel": "Plush",
+     "locallyMade": true,
+     "tags": [
+      "Luxury Natural Fibers",
+      "Plush",
+      "Euro-Top"
+     ],
+     "highlight": "Our most indulgent plush — wool, cashmere, and 16.5 inches of luxury",
+     "tags_es": [
+      "Fibras Naturales de Lujo",
+      "Suave",
+      "Euro-Top"
+     ],
+     "highlight_es": "Nuestro suave más indulgente — lana, cachemira y 16.5 pulgadas de lujo",
+     "imageUrl": "images/mattresses/the saint pierre.jpg",
+     "topPickReason": {
+      "en": "The most luxurious plush in the store — natural fibers over layered coil support.",
+      "es": "El suave más lujoso de la tienda — fibras naturales sobre capas de resortes."
+     },
+     "differentiators": [
+      {
+       "title": {
+        "en": "Deep plush euro-top",
+        "es": "Euro-top suave y profundo"
+       },
+       "detail": {
+        "en": "A sink-in soft surface for side sleepers who want cloud comfort without bottoming out.",
+        "es": "Una superficie envolvente para quienes duermen de lado y quieren confort de nube sin hundirse hasta el fondo."
+       }
+      },
+      {
+       "title": {
+        "en": "Breathable natural fill",
+        "es": "Relleno natural transpirable"
+       },
+       "detail": {
+        "en": "Wool and cashmere keep the plush layers cooler than dense foam pillow-tops.",
+        "es": "La lana y la cachemira mantienen las capas suaves más frescas que los pillow-tops de espuma densa."
+       }
+      }
+     ],
+     "score": 55,
+     "pct": 71,
+     "meetsMatchThreshold": true,
+     "firmnessFeelWord": {
+      "en": "Plush",
+      "es": "Suave"
+     }
+    }
+   ],
+   "silver": [
+    {
+     "id": "s6",
+     "name": "Platinum Summit Medium",
+     "brand": "Restonic",
+     "subBrand": "Platinum",
+     "pitchKey": "",
+     "archetype": "Cool-gel balanced hybrid",
+     "firmness": 5,
+     "firmnessLabel": "Medium",
+     "locallyMade": true,
+     "tags": [
+      "Cool Gel",
+      "Medium",
+      "Hybrid"
+     ],
+     "highlight": "Balanced medium comfort with cool gel memory foam",
+     "tags_es": [
+      "Gel Fresco",
+      "Medio",
+      "Híbrido"
+     ],
+     "highlight_es": "Confort medio equilibrado con espuma de gel fresco",
+     "imageUrl": "images/mattresses/platinum summit medium.jpg",
+     "topPickReason": {
+      "en": "The balanced pick — medium hybrid comfort with a cooling gel layer.",
+      "es": "La elección equilibrada — confort híbrido medio con capa de gel refrescante."
+     },
+     "differentiators": [
+      {
+       "title": {
+        "en": "Crowd-pleasing medium",
+        "es": "Medio que agrada a todos"
+       },
+       "detail": {
+        "en": "The feel most couples agree on — balanced give and support.",
+        "es": "La sensación en la que la mayoría de las parejas están de acuerdo — equilibrio entre suavidad y soporte."
+       }
+      },
+      {
+       "title": {
+        "en": "Gel-cooled surface",
+        "es": "Superficie enfriada por gel"
+       },
+       "detail": {
+        "en": "Cool gel tempers the memory-foam warmth common in medium beds.",
+        "es": "El gel fresco compensa el calor de la espuma viscoelástica común en camas medias."
+       }
+      }
+     ],
+     "score": 77,
+     "pct": 100,
+     "meetsMatchThreshold": true,
+     "firmnessFeelWord": {
+      "en": "Medium",
+      "es": "Medio"
+     }
+    },
+    {
+     "id": "s9",
+     "name": "Kendall Luxury Medium",
+     "brand": "Restonic",
+     "subBrand": "ComfortCare",
+     "pitchKey": "",
+     "archetype": "Motion-isolating medium hybrid",
+     "firmness": 5,
+     "firmnessLabel": "Medium",
+     "locallyMade": true,
+     "tags": [
+      "Hybrid",
+      "Medium",
+      "Motion Isolation"
+     ],
+     "highlight": "Conforming luxury medium that stays still all night",
+     "tags_es": [
+      "Híbrido",
+      "Medio",
+      "Aislamiento de Movimiento"
+     ],
+     "highlight_es": "Medio de lujo que se adapta y permanece quieto toda la noche",
+     "imageUrl": "images/mattresses/kendall luxury medium.jpg",
+     "topPickReason": {
+      "en": "Balanced medium comfort with wrapped coils that keep partner movement on their side.",
+      "es": "Confort medio equilibrado con resortes envueltos que mantienen el movimiento de tu pareja de su lado."
+     },
+     "differentiators": [
+      {
+       "title": {
+        "en": "Wrapped-coil motion isolation",
+        "es": "Aislamiento de movimiento con resortes envueltos"
+       },
+       "detail": {
+        "en": "Each coil moves alone, so a restless partner doesn't wake you.",
+        "es": "Cada resorte se mueve solo, así una pareja inquieta no te despierta."
+       }
+      },
+      {
+       "title": {
+        "en": "Conforming comfort layers",
+        "es": "Capas de confort adaptables"
+       },
+       "detail": {
+        "en": "Foam layers contour without the deep sink of memory-foam beds.",
+        "es": "Las capas de espuma se contornean sin el hundimiento profundo de las camas viscoelásticas."
+       }
+      }
+     ],
+     "score": 77,
+     "pct": 100,
+     "meetsMatchThreshold": true,
+     "firmnessFeelWord": {
+      "en": "Medium",
+      "es": "Medio"
+     }
+    },
+    {
+     "id": "s1",
+     "name": "Platinum Paige Firm",
+     "brand": "Restonic",
+     "subBrand": "Platinum",
+     "pitchKey": "",
+     "archetype": "Luxury firm box-top hybrid",
+     "firmness": 7,
+     "firmnessLabel": "Firm",
+     "locallyMade": true,
+     "tags": [
+      "Marvelous Middle",
+      "Firm",
+      "Box Top"
+     ],
+     "highlight": "Luxury 16-inch box top with firm zoned support",
+     "tags_es": [
+      "Marvelous Middle",
+      "Firme",
+      "Box Top"
+     ],
+     "highlight_es": "Box top de lujo de 16 pulgadas con soporte firme zonificado",
+     "imageUrl": "images/mattresses/platinum paige firm.jpg",
+     "topPickReason": {
+      "en": "Luxury box-top comfort with firm, zoned center-third support.",
+      "es": "Confort box-top de lujo con soporte firme zonificado en el centro."
+     },
+     "differentiators": [
+      {
+       "title": {
+        "en": "Marvelous Middle zoning",
+        "es": "Zonificación Marvelous Middle"
+       },
+       "detail": {
+        "en": "25% more support under hips and lower back, where most beds sag first.",
+        "es": "25% más soporte bajo caderas y espalda baja, donde la mayoría de las camas se hunden primero."
+       }
+      },
+      {
+       "title": {
+        "en": "Luxury box-top build",
+        "es": "Construcción box-top de lujo"
+       },
+       "detail": {
+        "en": "A tailored 16-inch profile with plush surface layers over a firm core.",
+        "es": "Un perfil de 16 pulgadas con capas superficiales suaves sobre un núcleo firme."
+       }
+      }
+     ],
+     "score": 55,
+     "pct": 71,
+     "meetsMatchThreshold": true,
+     "firmnessFeelWord": {
+      "en": "Firm",
+      "es": "Firme"
+     }
+    }
+   ],
+   "bronze": [
+    {
+     "id": "b7",
+     "name": "Gracie Medium",
+     "brand": "Restonic",
+     "subBrand": "Grace",
+     "pitchKey": "",
+     "archetype": "Everyday balanced innerspring",
+     "firmness": 5,
+     "firmnessLabel": "Medium",
+     "locallyMade": true,
+     "tags": [
+      "Innerspring",
+      "Medium",
+      "Best Value"
+     ],
+     "highlight": "Balanced medium comfort at the friendliest price",
+     "tags_es": [
+      "Resortes",
+      "Medio",
+      "Mejor Valor"
+     ],
+     "highlight_es": "Confort medio equilibrado al precio más amigable",
+     "imageUrl": "images/mattresses/gracie medium.jpg",
+     "topPickReason": {
+      "en": "Easy balanced comfort with zoned support — the smart starter pick.",
+      "es": "Confort equilibrado fácil con soporte zonificado — la elección inteligente para empezar."
+     },
+     "differentiators": [
+      {
+       "title": {
+        "en": "Responsive innerspring feel",
+        "es": "Sensación de resortes receptiva"
+       },
+       "detail": {
+        "en": "Classic coil bounce that's easy to move on — no stuck-in-foam feeling.",
+        "es": "Rebote clásico de resortes fácil para moverse — sin sensación de quedar atrapado en espuma."
+       }
+      },
+      {
+       "title": {
+        "en": "Friendliest price",
+        "es": "El precio más amigable"
+       },
+       "detail": {
+        "en": "The most affordable way into a zoned Restonic build.",
+        "es": "La forma más accesible de entrar a una construcción Restonic zonificada."
+       }
+      }
+     ],
+     "score": 77,
+     "pct": 100,
+     "meetsMatchThreshold": true,
+     "firmnessFeelWord": {
+      "en": "Medium",
+      "es": "Medio"
+     }
+    },
+    {
+     "id": "b1",
+     "name": "Giselle Plush",
+     "brand": "Restonic",
+     "subBrand": "Giselle",
+     "pitchKey": "",
+     "archetype": "Everyday plush comfort",
+     "firmness": 3,
+     "firmnessLabel": "Plush",
+     "locallyMade": true,
+     "tags": [
+      "Plush",
+      "12.5-Inch",
+      "Value"
+     ],
+     "highlight": "Soft, welcoming plush at an everyday price",
+     "tags_es": [
+      "Suave",
+      "12.5 Pulgadas",
+      "Valor"
+     ],
+     "highlight_es": "Suavidad acogedora a un precio cotidiano",
+     "imageUrl": "images/mattresses/giselle plush.jpg",
+     "topPickReason": {
+      "en": "Honest plush comfort for side sleepers at an everyday price.",
+      "es": "Confort suave honesto para quienes duermen de lado a precio cotidiano."
+     },
+     "differentiators": [
+      {
+       "title": {
+        "en": "True plush surface",
+        "es": "Superficie verdaderamente suave"
+       },
+       "detail": {
+        "en": "Softer than the Gracie — made for sleepers who want cushion first.",
+        "es": "Más suave que el Gracie — hecho para quienes buscan acolchado primero."
+       }
+      },
+      {
+       "title": {
+        "en": "Everyday value",
+        "es": "Valor cotidiano"
+       },
+       "detail": {
+        "en": "Restonic quality without the Platinum price.",
+        "es": "Calidad Restonic sin el precio Platinum."
+       }
+      }
+     ],
+     "score": 55,
+     "pct": 71,
+     "meetsMatchThreshold": true,
+     "firmnessFeelWord": {
+      "en": "Plush",
+      "es": "Suave"
+     }
+    },
+    {
+     "id": "b2",
+     "name": "Giselle Firm",
+     "brand": "Restonic",
+     "subBrand": "Giselle",
+     "pitchKey": "",
+     "archetype": "Everyday firm support",
+     "firmness": 7,
+     "firmnessLabel": "Firm",
+     "locallyMade": true,
+     "tags": [
+      "Firm",
+      "12.5-Inch",
+      "Value"
+     ],
+     "highlight": "Straightforward firm support at an everyday price",
+     "tags_es": [
+      "Firme",
+      "12.5 Pulgadas",
+      "Valor"
+     ],
+     "highlight_es": "Soporte firme directo a un precio cotidiano",
+     "imageUrl": "images/mattresses/giselle firm.jpg",
+     "topPickReason": {
+      "en": "Dependable firm alignment at an everyday price.",
+      "es": "Alineación firme confiable a precio cotidiano."
+     },
+     "differentiators": [
+      {
+       "title": {
+        "en": "Straightforward firm feel",
+        "es": "Sensación firme directa"
+       },
+       "detail": {
+        "en": "Solid support without plush layers softening the surface.",
+        "es": "Soporte sólido sin capas suaves que ablanden la superficie."
+       }
+      },
+      {
+       "title": {
+        "en": "Everyday value",
+        "es": "Valor cotidiano"
+       },
+       "detail": {
+        "en": "The affordable path to a true firm mattress.",
+        "es": "El camino accesible a un colchón firme verdadero."
+       }
+      }
+     ],
+     "score": 55,
+     "pct": 71,
+     "meetsMatchThreshold": true,
+     "firmnessFeelWord": {
+      "en": "Firm",
+      "es": "Firme"
+     }
+    }
+   ]
+  },
+  "topPick": {
+   "name": "Reserve Mayfair Medium",
+   "brand": "Restonic",
+   "tier": "gold",
+   "matchPct": 100,
+   "meetsMatchThreshold": true
+  },
+  "enEsParity": true,
+  "priceTierSymbols": {
+   "gold": "$$$",
+   "silver": "$$",
+   "bronze": "$"
+  },
+  "cardPriorities": {
+   "en": {
+    "g7": [
+     {
+      "title": "Contours to your body",
+      "desc": "Comfort layers adapt to your shape instead of feeling flat.",
+      "tag": "FEATURE",
+      "matched": false
+     },
+     {
+      "title": "Motion stays put",
+      "desc": "Pocketed coils help absorb movement instead of spreading it.",
+      "tag": "FEATURE",
+      "matched": false
+     },
+     {
+      "title": "Keeps you aligned",
+      "desc": "A firmer center helps reduce sagging through the night.",
+      "tag": "FEATURE",
+      "matched": false
+     }
+    ],
+    "g1": [
+     {
+      "title": "Motion stays put",
+      "desc": "Pocketed coils help absorb movement instead of spreading it.",
+      "tag": "FEATURE",
+      "matched": false
+     },
+     {
+      "title": "Keeps you aligned",
+      "desc": "A firmer center helps reduce sagging through the night.",
+      "tag": "FEATURE",
+      "matched": false
+     }
+    ],
+    "g2": [
+     {
+      "title": "Contours to your body",
+      "desc": "Comfort layers adapt to your shape instead of feeling flat.",
+      "tag": "FEATURE",
+      "matched": false
+     },
+     {
+      "title": "Motion stays put",
+      "desc": "Pocketed coils help absorb movement instead of spreading it.",
+      "tag": "FEATURE",
+      "matched": false
+     }
+    ],
+    "s6": [
+     {
+      "title": "Cooler sleep feel",
+      "desc": "Cooling materials help reduce heat buildup at the surface.",
+      "tag": "FEATURE",
+      "matched": false
+     },
+     {
+      "title": "Contours to your body",
+      "desc": "Comfort layers adapt to your shape instead of feeling flat.",
+      "tag": "FEATURE",
+      "matched": false
+     },
+     {
+      "title": "Motion stays put",
+      "desc": "Pocketed coils help absorb movement instead of spreading it.",
+      "tag": "FEATURE",
+      "matched": false
+     }
+    ],
+    "s9": [
+     {
+      "title": "Contours to your body",
+      "desc": "Comfort layers adapt to your shape instead of feeling flat.",
+      "tag": "FEATURE",
+      "matched": false
+     },
+     {
+      "title": "Motion stays put",
+      "desc": "Pocketed coils help absorb movement instead of spreading it.",
+      "tag": "FEATURE",
+      "matched": false
+     },
+     {
+      "title": "Keeps you aligned",
+      "desc": "A firmer center helps reduce sagging through the night.",
+      "tag": "FEATURE",
+      "matched": false
+     }
+    ],
+    "s1": [
+     {
+      "title": "Motion stays put",
+      "desc": "Pocketed coils help absorb movement instead of spreading it.",
+      "tag": "FEATURE",
+      "matched": false
+     },
+     {
+      "title": "Keeps you aligned",
+      "desc": "A firmer center helps reduce sagging through the night.",
+      "tag": "FEATURE",
+      "matched": false
+     }
+    ],
+    "b7": [
+     {
+      "title": "Keeps you aligned",
+      "desc": "A firmer center helps reduce sagging through the night.",
+      "tag": "FEATURE",
+      "matched": false
+     }
+    ],
+    "b1": [
+     {
+      "title": "Contours to your body",
+      "desc": "Comfort layers adapt to your shape instead of feeling flat.",
+      "tag": "FEATURE",
+      "matched": false
+     }
+    ],
+    "b2": [
+     {
+      "title": "Keeps you aligned",
+      "desc": "A firmer center helps reduce sagging through the night.",
+      "tag": "FEATURE",
+      "matched": false
+     }
+    ]
+   },
+   "es": {
+    "g7": [
+     {
+      "title": "Se adapta a tu cuerpo",
+      "desc": "Las capas de confort se adaptan a tu forma sin sentirse planas.",
+      "tag": "INCLUIDO",
+      "matched": false
+     },
+     {
+      "title": "El movimiento se queda",
+      "desc": "Resortes encapsulados ayudan a absorber el movimiento en vez de extenderlo.",
+      "tag": "INCLUIDO",
+      "matched": false
+     },
+     {
+      "title": "Ayuda a alinear el cuerpo",
+      "desc": "Un centro más firme ayuda a reducir el hundimiento durante la noche.",
+      "tag": "INCLUIDO",
+      "matched": false
+     }
+    ],
+    "g1": [
+     {
+      "title": "El movimiento se queda",
+      "desc": "Resortes encapsulados ayudan a absorber el movimiento en vez de extenderlo.",
+      "tag": "INCLUIDO",
+      "matched": false
+     },
+     {
+      "title": "Ayuda a alinear el cuerpo",
+      "desc": "Un centro más firme ayuda a reducir el hundimiento durante la noche.",
+      "tag": "INCLUIDO",
+      "matched": false
+     }
+    ],
+    "g2": [
+     {
+      "title": "Se adapta a tu cuerpo",
+      "desc": "Las capas de confort se adaptan a tu forma sin sentirse planas.",
+      "tag": "INCLUIDO",
+      "matched": false
+     },
+     {
+      "title": "El movimiento se queda",
+      "desc": "Resortes encapsulados ayudan a absorber el movimiento en vez de extenderlo.",
+      "tag": "INCLUIDO",
+      "matched": false
+     }
+    ],
+    "s6": [
+     {
+      "title": "Sensación más fresca",
+      "desc": "Materiales frescos ayudan a reducir el calor en la superficie.",
+      "tag": "INCLUIDO",
+      "matched": false
+     },
+     {
+      "title": "Se adapta a tu cuerpo",
+      "desc": "Las capas de confort se adaptan a tu forma sin sentirse planas.",
+      "tag": "INCLUIDO",
+      "matched": false
+     },
+     {
+      "title": "El movimiento se queda",
+      "desc": "Resortes encapsulados ayudan a absorber el movimiento en vez de extenderlo.",
+      "tag": "INCLUIDO",
+      "matched": false
+     }
+    ],
+    "s9": [
+     {
+      "title": "Se adapta a tu cuerpo",
+      "desc": "Las capas de confort se adaptan a tu forma sin sentirse planas.",
+      "tag": "INCLUIDO",
+      "matched": false
+     },
+     {
+      "title": "El movimiento se queda",
+      "desc": "Resortes encapsulados ayudan a absorber el movimiento en vez de extenderlo.",
+      "tag": "INCLUIDO",
+      "matched": false
+     },
+     {
+      "title": "Ayuda a alinear el cuerpo",
+      "desc": "Un centro más firme ayuda a reducir el hundimiento durante la noche.",
+      "tag": "INCLUIDO",
+      "matched": false
+     }
+    ],
+    "s1": [
+     {
+      "title": "El movimiento se queda",
+      "desc": "Resortes encapsulados ayudan a absorber el movimiento en vez de extenderlo.",
+      "tag": "INCLUIDO",
+      "matched": false
+     },
+     {
+      "title": "Ayuda a alinear el cuerpo",
+      "desc": "Un centro más firme ayuda a reducir el hundimiento durante la noche.",
+      "tag": "INCLUIDO",
+      "matched": false
+     }
+    ],
+    "b7": [
+     {
+      "title": "Ayuda a alinear el cuerpo",
+      "desc": "Un centro más firme ayuda a reducir el hundimiento durante la noche.",
+      "tag": "INCLUIDO",
+      "matched": false
+     }
+    ],
+    "b1": [
+     {
+      "title": "Se adapta a tu cuerpo",
+      "desc": "Las capas de confort se adaptan a tu forma sin sentirse planas.",
+      "tag": "INCLUIDO",
+      "matched": false
+     }
+    ],
+    "b2": [
+     {
+      "title": "Ayuda a alinear el cuerpo",
+      "desc": "Un centro más firme ayuda a reducir el hundimiento durante la noche.",
+      "tag": "INCLUIDO",
+      "matched": false
+     }
+    ]
+   },
+   "note": "Verbatim output of buildMattressPriorities(m) per surviving model per language ({title, desc, tag, matched} rows). The production card template renders the first three rows; prototypes do the same by index and never re-derive or reorder them."
+  },
+  "note": "tierData is the verbatim projection of _resultsState.tierData: per-tier order, qualification (>=60% of tier max), cap 3 and min-2 back-fill exactly as the engine produced them. pct/score are included for provenance and parity checking only — neither may be rendered on any screen."
+ },
+ "compareDemo": {
+  "savedOrder": [
+   {
+    "id": "g7",
+    "tier": "gold"
+   },
+   {
+    "id": "s6",
+    "tier": "silver"
+   }
+  ],
+  "autoPair": [
+   "g7",
+   "s6"
+  ],
+  "favourite": null,
+  "note": "SIMULATED saved-finalist state for the Compare discoverability demo — save history is customer input, so savedOrder is authored (tier leads in save order) and disclosed as such. The PAIR is computed by executing the real extracted compareReviewFinalists() (index.html:17398-17409) against that state, never re-typed. Prototype interactions against this state are prototype behavior, not production."
+ }
+}
