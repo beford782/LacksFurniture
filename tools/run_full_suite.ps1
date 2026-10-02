@@ -269,6 +269,8 @@ $checks = @(
     # the itemised quote and quantities in the take-home plan, rendered in
     # English and Spanish at both tablet orientations.
     @{ Name = 'quote sizes + take-home quantities (rendered, EN/ES, both orientations)'; Exe = $pythonExecutable; Args = @('tests/quote_take_home_rendered_check.py') },
+    # Payment-choice slice 1 (2026-09-27): the "Bring it home" workspace.
+    @{ Name = 'payment workspace (rendered, EN/ES, both landscapes)'; Exe = $pythonExecutable; Args = @('tests/payment_workspace_check.py') },
     @{ Name = 'trust integrity'; Exe = $nodeExecutable; Args = @('tests/trust_integrity_check.mjs') },
     @{ Name = 'daybreak contract'; Exe = $pythonExecutable; Args = @('tests/daybreak_contract_check.py') },
     @{ Name = 'pricing contract (dark shipped-state lock)'; Exe = $pythonExecutable; Args = @('tests/pricing_contract_check.py') },

@@ -466,6 +466,8 @@ const RENDER_SRCS = [
   "window.showSleepPlan = function(origin)", "window.sleepPlanBack = function()",
   "window.sleepPlanContinue = function()", "window.sleepPlanChooseFinalist = function()",
   "window.sleepPlanReturnToBrief = function()",
+  // Shared with the payment workspace's "Choose a finalist" (2026-09-30).
+  "function focusFirstFinalistControl()",
 ].map((a) => extractFunction(a));
 const FALLBACK_SRC = extractFunction("function finalistRecommendedFallback()");
 if (gate("renderSleepPlan", RENDER_SRCS.every(Boolean) && !!FALLBACK_SRC && !!READ_SRC && !!RESOLVER_SRC)) {

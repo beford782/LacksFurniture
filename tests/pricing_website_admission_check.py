@@ -335,10 +335,48 @@ check("two sizes of one family naming the SAME sku are refused whole (sku-shared
       and any(r["appId"] == PROTECTOR_ID and r["reason"] == "sku-shared-across-sizes" for r in cov["accessoriesRejected"]),
       str(cov["accessoriesRejected"])[:200])
 
-# The committed snapshot and mapping still build and are still accepted.
-cfg, cat, verdicts, acc = srv.build_injected("website", datetime.now(timezone.utc).astimezone())
-check("the committed website capture is still accepted", srv.dark_form_acceptable("website", verdicts)
+# The committed snapshot and mapping still build and are still accepted - AT
+# AN INSTANT INSIDE THE CAPTURE'S VALIDITY. The capture is historical evidence
+# (observed 2026-09-20/21, maxAgeDays 7): judged against the wall clock it
+# correctly expires, so this assertion used datetime.now() and turned red the
+# moment the evidence aged out, on every tree. The production clock and the
+# freshness rule are unchanged; only the instant this test judges at is pinned.
+# The pin sits after the capture's newest observation (so no stamp is in the
+# future) and before its oldest + maxAgeDays.
+CAPTURE_VALID_AT = datetime(2026, 9, 24, 12, 0, 0, tzinfo=timezone.utc)
+
+
+def _stamp(s):
+    return datetime.fromisoformat(s.replace("Z", "+00:00"))
+
+
+cfg, cat, verdicts, acc = srv.build_injected("website", CAPTURE_VALID_AT)
+check("the committed website capture is accepted inside its validity window",
+      srv.dark_form_acceptable("website", verdicts)
       and verdicts["served_refused"], str(verdicts["dark_errors"])[:240])
+_served = cfg["pricing"]["products"]
+_max_age = cfg["pricing"]["freshness"]["maxAgeDays"]
+_oldest = min(_stamp(p["evidence"]["verifiedAt"]) for p in _served) if _served else None
+check("the pinned instant really is inside the window (after the newest observation, before oldest + maxAgeDays)",
+      bool(_served) and max(_stamp(p["evidence"]["verifiedAt"]) for p in _served)
+      <= CAPTURE_VALID_AT < _oldest + timedelta(days=_max_age),
+      f"oldest {_oldest} maxAgeDays {_max_age}")
+# The freshness boundary, per the production contract: evidence exactly
+# maxAgeDays old is still current; one second older is refused, and refused
+# for exactly its age.
+_boundary = _oldest + timedelta(days=_max_age)
+cfg, cat, verdicts, acc = srv.build_injected("website", _boundary)
+check("at exactly oldest observation + maxAgeDays the capture is still accepted (the boundary is inclusive)",
+      srv.dark_form_acceptable("website", verdicts), str(verdicts["dark_errors"])[:240])
+for label, instant in (("one second past the boundary", _boundary + timedelta(seconds=1)),
+                       ("thirty days after the pinned instant", CAPTURE_VALID_AT + timedelta(days=30))):
+    cfg, cat, verdicts, acc = srv.build_injected("website", instant)
+    check(f"{label} the capture is REFUSED, and every error names its age (stale evidence never serves)",
+          not srv.dark_form_acceptable("website", verdicts) and bool(verdicts["dark_errors"])
+          and all("older than maxAgeDays" in e for e in verdicts["dark_errors"]),
+          str(verdicts["dark_errors"])[:240])
+# The drill states below re-stamp the FIXTURE relative to the instant they are
+# given, so they are clock-independent by construction and keep the run clock.
 for state in ("dark", "available", "unapproved", "disabled"):
     cfg, cat, verdicts, acc = srv.build_injected(state, datetime.now(timezone.utc).astimezone())
     check(f"the {state} drill keeps ONE projection (the whole document) and is accepted",

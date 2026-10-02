@@ -142,7 +142,8 @@ check("scenario overrides kind",
   check("renderer builds the title from the group's own provider",
     html.includes("? (es ? ('Financiamiento promocional ' + provider)"));
   check("a blank provider degrades to the generic label, not a coerced string",
-    html.includes(": (es ? 'Financiamiento promocional' : 'Promotional financing'))"));
+    // Workspace (2026-09-27): the title is the finPaymentPaths() label.
+    html.includes(": (es ? 'Financiamiento promocional' : 'Promotional financing')"));
 }
 
 // ---------------------------------------------------------------------------

@@ -112,7 +112,7 @@ const FUNCS = {
   finPathById: 'function finPathById(id)',
   payIsExplored: 'function payIsExplored(id)',
   payRecordExplored: 'function payRecordExplored(id)',
-  reviewPaymentPath: 'window.reviewPaymentPath = function(id)',
+  reviewPaymentPath: 'window.reviewPaymentPath = function(id, origin)',
   considerPaymentPath: 'window.considerPaymentPath = function(id)',
   clearPaymentPreference: 'window.clearPaymentPreference = function(id)',
   setPaymentNotNow: 'window.setPaymentNotNow = function()',
@@ -124,7 +124,10 @@ const FUNCS = {
   clearPayAnnouncements: 'function clearPayAnnouncements()',
   cancelPayAnnouncePending: 'function cancelPayAnnouncePending()',
   finEsc: 'function finEsc(s)',
-  finPathBlock: 'function finPathBlock(path, bodyHtml)',
+  finPathBlock: 'function finPathBlock(path, bodyHtml, staleNote)',
+  finWsReleaseInert: 'function finWsReleaseInert()',
+  announcePayText: 'function announcePayText(regionId, text)',
+  setPaymentNotNowFromSheet: 'window.setPaymentNotNowFromSheet = function()',
   renderFinancingSheet: 'function renderFinancingSheet()',
   updateFinancingSheetStatus: 'function updateFinancingSheetStatus()',
   renderHandoffFinancing: 'function renderHandoffFinancing()',
@@ -169,7 +172,15 @@ const VARS = {
   // Slice 5 C5: the Not-right-now surface table and the per-call surface
   // selector (the single owned payPref write stays in setPaymentNotNow).
   notNowSurfaces: /var PAY_NOT_NOW_SURFACES = \{[\s\S]*?\n    \};/,
-  notNowSurface: /var _payNotNowSurface = 'hf2';/
+  notNowSurface: /var _payNotNowSurface = 'hf2';/,
+  // The "Bring it home" workspace (2026-09-27): its ephemeral presentation
+  // state and render helpers, lifted as one unit up to finPathBlock().
+  workspace: /    \/\/ ===== "BRING IT HOME" WORKSPACE[\s\S]*?(?=\n    \/\/ The detail panel for ONE path\.)/,
+  // ...and the workspace views that follow finPathBlock() (compare, items,
+  // change note, head chrome), up to the sheet renderer.
+  workspaceTail: /    \/\/ Two paths as ONE aligned table[\s\S]*?(?=\n    function renderFinancingSheet\(\))/,
+  // The workspace actions that follow the renderer (compare, topics, items).
+  workspaceActions: /    \/\/ ---- Workspace actions \(ephemeral presentation only\)[\s\S]*?(?=\n    \/\/ Sets the sheet's visually-hidden role="status" region)/
 };
 const vars = {};
 const missingVar = [];
@@ -307,9 +318,12 @@ function makeEl(id, doc) {
       _s: new Set(),
       add(...c) { c.forEach((x) => el.classList._s.add(x)); },
       remove(...c) { c.forEach((x) => el.classList._s.delete(x)); },
-      contains(c) { return el.classList._s.has(c); }
+      contains(c) { return el.classList._s.has(c); },
+      toggle(c, on) { if (on === undefined ? !el.classList._s.has(c) : on) el.classList._s.add(c); else el.classList._s.delete(c); }
     },
+    querySelectorAll() { return []; },
     getAttribute(k) { return Object.prototype.hasOwnProperty.call(el.attrs, k) ? el.attrs[k] : null; },
+    hasAttribute(k) { return Object.prototype.hasOwnProperty.call(el.attrs, k); },
     setAttribute(k, v) { el.attrs[k] = v; },
     removeAttribute(k) { delete el.attrs[k]; if (k === 'href') el.href = undefined; },
     addEventListener(type, fn) { (el._ev[type] = el._ev[type] || []).push(fn); },
@@ -344,7 +358,10 @@ function makeDoc() {
   const doc = {
     _els: new Map(),
     activeElement: null,
-    getElementById(id) { return doc._els.get(id) || null; }
+    getElementById(id) { return doc._els.get(id) || null; },
+    // The workspace inerts the active screen on open; no screen is modelled here.
+    querySelector() { return null; },
+    querySelectorAll() { return []; }
   };
   STATIC_IDS.forEach((id) => {
     const el = makeEl(id, doc);
@@ -378,8 +395,9 @@ const MODULE_ORDER = [
   src.payRegionLive, src.announcePayAction, src.finHandoffVisible,
   src.clearPayAnnouncements, src.cancelPayAnnouncePending,
   src.openFinancingSheet, src.closeFinancingSheet, src.finSheetKeydown,
-  src.finEsc, src.finPathBlock,
-  src.renderFinancingSheet, src.updateFinancingSheetStatus,
+  src.finEsc, vars.workspace, src.finPathBlock, src.finWsReleaseInert,
+  src.announcePayText, src.setPaymentNotNowFromSheet, vars.workspaceTail,
+  src.renderFinancingSheet, vars.workspaceActions, src.updateFinancingSheetStatus,
   src.renderHandoffFinancing, src.renderResultsFinancing, src.finResultsVisible,
   src.renderDrawerFinancing, src.renderSleepPlanFinancing, src.finPlanVisible,
   src.setPaymentNotNowFromPlan, src.renderAllFinancingSurfaces
@@ -438,7 +456,8 @@ const RETURN_API = `
     },
     setLang: function(l) { currentLang = l; },
     getLang: function() { return currentLang; },
-    setConfig: function(c) { STORE_CONFIG = c; }
+    setConfig: function(c) { STORE_CONFIG = c; },
+    setCompare: function(id) { _payCompare = id; }
   };`;
 
 function makeEnv({ lang = 'en', config = CFG, mutate = null,
@@ -468,7 +487,13 @@ function makeEnv({ lang = 'en', config = CFG, mutate = null,
   const api = new Function(
     'document', 'window', 'STORE_CONFIG', 'analytics', 'sessionTimeout',
     'setTimeout', 'clearTimeout', 'console', '__lang',
-    'var currentLang = __lang;\n' + body + RETURN_API
+    'var currentLang = __lang;\n'
+    // Non-payment app globals the workspace reads (purchase model, dictionary);
+    // supplied here because this suite tests the payment state machine.
+    + "var answers = { mattress_size: 'queen' }; var ACCESSORIES = [];\n"
+    + "function t(k) { return '[' + k + ']'; } function sizeLabelFor() { return 'Queen'; }\n"
+    + "function resolveFinalistState() { return { kind: 'none', item: null }; }\n"
+    + body + RETURN_API
   )(doc, win, config, analytics, sessionTimeout, setTimeoutFake, clearTimeoutFake,
     { warn() {}, log() {}, error() {} }, lang);
 
@@ -508,6 +533,14 @@ function openEnv(opts = {}) {
 
 const P = (env) => env.api.paths().map((x) => x.id);
 const snapshot = (env) => JSON.stringify(env.api.state());
+// Every element the shim holds (static and rendered), markup and text: the
+// widest "is it anywhere on the page" net the shim can cast.
+function everyRendered(env) {
+  return [...env.doc._els.values()].map((e) => (e._html || '') + '\n' + (e.textContent || '')).join('\n');
+}
+// The retired customer-facing history label, verbatim (owner direction
+// 2026-09-27); it no longer exists in config, so it is spelled out here.
+const HISTORY_LABELS = ['Options explored', 'Opciones exploradas'];
 
 // Attribute reader for a control in rendered markup, by id.
 function tagOf(markup, id) {
@@ -594,8 +627,11 @@ section('§3–5 — disclosure records history, once, in first-open order');
   // order the paths were REVIEWED in, which is the order they were enumerated.
   ok('§5 opening every path records every path, in the path enumeration order returned by finPaymentPaths',
     JSON.stringify(env.api.state().explored) === JSON.stringify(ids));
-  ok('§5 opening every path leaves every panel open simultaneously (disclosure is not exclusive)',
-    env.api.state().open.length === ids.length);
+  // Owner direction 2026-09-27 (workspace): ONE path is explored at a time,
+  // so opening a path closes the previous one. History is unaffected.
+  ok('§5 opening every path leaves only the LAST one open (the workspace explores one path at a time)',
+    env.api.state().open.length === 1 && env.api.state().open[0] === ids[ids.length - 1],
+    env.api.state().open.join(','));
 }
 
 // ===========================================================================
@@ -692,10 +728,18 @@ section('§12 — not_now is presentation suppression, not deletion');
   env.api.notNow();
   ok('§12 not_now preserves the explored history INTERNALLY',
     JSON.stringify(env.api.state().explored) === JSON.stringify(exploredBefore));
-  ok('§12 not_now suppresses the explored ROW in the handoff',
-    !/fin-explored-list/.test(env.handoffHtml()) && /fin-explored-list/.test(rowBefore));
-  ok('§12 not_now does NOT hide or alter the sheet',
-    env.sheetHtml() === sheetBefore && env.get('financingSheet').hidden === false);
+  // Owner direction 2026-09-27: browsing history is never customer-facing, in
+  // any state — the handoff renders no explored row before or after not_now.
+  ok('§12 no explored row is rendered in the handoff, before or after not_now',
+    !/fin-explored-list/.test(env.handoffHtml()) && !/fin-explored-list/.test(rowBefore));
+  // The workspace's own "not choosing today" control reflects the state; every
+  // other part of the sheet (paths, panels, controls) is untouched.
+  const withoutNotNow = (h) => h.replace(/<button[^>]*id="finWsNotNow"[\s\S]*?<\/button>/, '');
+  ok('§12 not_now does NOT hide or alter the sheet beyond its own control',
+    withoutNotNow(env.sheetHtml()) === withoutNotNow(sheetBefore)
+    && env.get('financingSheet').hidden === false
+    && /id="finWsNotNow" aria-pressed="true"/.test(env.sheetHtml())
+    && /id="finWsNotNow" aria-pressed="false"/.test(sheetBefore));
 
   env.api.notNow();
   env.api.renderHandoff();
@@ -731,11 +775,52 @@ section('§13 — unknown / stale / colliding ids never become state and never b
   ok('§13 a stale preference reads as the governed "not selected" label, never a raw token',
     markup.includes(CFG.financing.copy.preferenceNone.en)
     && ids.every((id) => !markup.includes(id)), ids.filter((id) => markup.includes(id)).join(','));
-  ok('§13 unresolvable explored ids drop out silently rather than rendering',
-    !/fin-explored-list/.test(markup) || !ids.some((id) => markup.includes(id)));
+  // Two INDEPENDENT facts (the former single check was an OR that passed
+  // automatically whenever the retired list class was absent):
+  ok('§13 no customer-facing exploration history is rendered (no history container, no retired label)',
+    !/fin-explored-list/.test(markup) && !HISTORY_LABELS.some((s) => markup.includes(s)), markup.slice(0, 160));
+  env.api.renderAll();
+  // Only ids that no longer resolve: a path that survives the shrink (the
+  // lease-to-own row) is legitimately in the workspace's own option list.
+  const leaked = ids.filter((id) => !env.api.pathById(id) && everyRendered(env).includes(id));
+  ok('§13 no stale id reaches ANY rendered surface (every element the shim holds, markup and text)',
+    leaked.length === 0, leaked.join(','));
   ok('§13 the stale ids are still HELD in state (presentation dropped them, the model did not)',
     JSON.stringify(env.api.state().explored) === JSON.stringify(ids)
     && env.api.state().pref === ids[0]);
+}
+{
+  // PLANTED unknown ids in the internal history, beside a real preference:
+  // none may surface anywhere, in either language.
+  const PLANTED = ['promo-PLANTEDLEAK', 'plan-zz-stale-planted', 'scenario-planted-nowhere'];
+  for (const lang of ['en', 'es']) {
+    const env = openEnv({ lang });
+    const ids = P(env);
+    env.api.seed({ explored: ids.concat(PLANTED), pref: ids[1], open: [] });
+    env.api.renderAll(); env.api.renderHandoff(); env.api.renderPlan();
+    const all = everyRendered(env);
+    ok(`§13 [${lang}] planted unknown ids appear in no rendered surface`,
+      PLANTED.every((id) => !all.includes(id) && !all.includes(id.replace(/^[a-z]+-/, ''))),
+      PLANTED.filter((id) => all.includes(id)).join(','));
+  }
+}
+{
+  // NEGATIVE CONTROL: a leak that does NOT restore the retired list class.
+  // The former OR-check passes it; the independent leak check must not.
+  const leakRows = (b) => b.split("      var rows = '<div class=\"fin-pref-row\">'").join(
+    "      var rows = '<span>' + payExplored.join(' ') + '</span><div class=\"fin-pref-row\">'");
+  const env = openEnv({ mutate: leakRows });
+  const ids = P(env);
+  env.api.seed({ explored: ids.concat(['promo-PLANTEDLEAK']), pref: ids[0], open: [] });
+  env.api.renderHandoff(); env.api.renderPlan();
+  const markup = env.handoffHtml();
+  ok('§13 control: the planted leak really is applied (the token reaches the handoff)',
+    markup.includes('promo-PLANTEDLEAK'));
+  ok('§13 control: the retired OR-check would have PASSED this leak (the list class is absent)',
+    !/fin-explored-list/.test(markup) || !ids.some((id) => markup.includes(id)));
+  ok('§13 control: the independent leak check FAILS on it',
+    everyRendered(env).includes('promo-PLANTEDLEAK')
+    && env.get('sleepPlanFinancingInterest').innerHTML.includes('promo-PLANTEDLEAK'));
 }
 {
   // COLLIDING under the retired slugifier: two providers that produced one key.
@@ -809,13 +894,13 @@ section('§15 — the preference never doubles as an explored entry');
     env.api.consider(id);
     env.api.renderHandoff();
     const label = env.api.pathById(id).label;
-    const listMatch = env.handoffHtml().match(/<ul class="fin-explored-list">([\s\S]*?)<\/ul>/);
-    const listed = listMatch ? listMatch[1] : '';
-    ok(`§15 "${label}" is named on the preference row and NOT in the explored list`,
-      env.handoffHtml().includes(label) && !listed.includes(label));
-    ok(`§15 the other ${ids.length - 1} explored paths are still listed`,
-      (listed.match(/<li>/g) || []).length === ids.length - 1,
-      `${(listed.match(/<li>/g) || []).length} items`);
+    ok(`§15 "${label}" is named on the preference row`,
+      env.handoffHtml().includes(label));
+    // Owner direction 2026-09-27: no explored list is rendered at all, so the
+    // other explored paths are NOT listed anywhere customer-facing.
+    ok(`§15 no explored list is rendered alongside "${label}"`,
+      !/fin-explored-list/.test(env.handoffHtml())
+      && ids.filter((x) => x !== id).every((x) => !env.handoffHtml().includes(env.api.pathById(x).label)));
   }
 }
 
@@ -987,17 +1072,17 @@ section('§17 — control semantics, computed from the rendered markup');
   ok('§17 aria-expanded flips to true for the opened path only',
     attr(tagOf(opened, 'finPathReview-' + ids[0]), 'aria-expanded') === 'true'
     && ids.slice(1).every((id) => attr(tagOf(opened, 'finPathReview-' + id), 'aria-expanded') === 'false'));
-  ok('§17 the panel is a <div> that carries the hidden attribute when collapsed and drops it when expanded',
-    tagOf(opened, 'finPathPanel-' + ids[0]).name === 'div'
+  ok('§17 the panel is a <section> that carries the hidden attribute when collapsed and drops it when expanded',
+    tagOf(opened, 'finPathPanel-' + ids[0]).name === 'section'
     && !hasAttr(tagOf(opened, 'finPathPanel-' + ids[0]), 'hidden')
     && hasAttr(tagOf(opened, 'finPathPanel-' + ids[1]), 'hidden'));
   ok('§17 the disclosure is NOT <details>/<summary> — no <summary> appears anywhere in the sheet markup',
     !/<summary/i.test(opened) && !/<details/i.test(opened));
   ok('§17 the sheet focus trap really does select only button / [href] / the title, which is WHY <summary> is unusable here',
     src.finSheetKeydown.includes("'button, [href], [tabindex=\"-1\"]#financingSheetTitle'"));
-  ok('§17 the Review label itself changes between states (the accessible name is not static)',
+  ok('§17 the explored row announces its state in text, and the open panel offers hideDetails',
     opened.includes(CFG.financing.copy.hideDetails.en)
-    && opened.includes(CFG.financing.copy.reviewOption.en));
+    && (opened.match(/\[pay\.ws\.row_viewing\]/g) || []).length === 1);
 
   env.api.review(ids[0]);   // collapse again
 }
@@ -1043,9 +1128,17 @@ section('§17 — control semantics, computed from the rendered markup');
   env.api.notNow();
   ok('§17 "Not right now" flips back to false',
     attr(tagOf(env.handoffHtml(), 'hf2FinancingNotNow'), 'aria-pressed') === 'false');
-  ok('§17 aria-pressed appears on exactly ONE D4 control in the whole model',
+  // The only two-state control is "not choosing today"; the handoff and the
+  // workspace each carry exactly one instance of it, and nothing else.
+  ok('§17 aria-pressed appears only on the "not choosing today" control, once per surface',
     (env.handoffHtml().match(/aria-pressed=/g) || []).length === 1
-    && !/aria-pressed=/.test(env.sheetHtml()));
+    && (env.sheetHtml().replace(/<button[^>]*id="finWsTopic-[^"]*"[^>]*>/g, '').match(/aria-pressed=/g) || []).length === 1
+    && /id="finWsNotNow" aria-pressed=/.test(env.sheetHtml()));
+  // The optional information topics are independent toggles of their own
+  // (which topic is explained), never a payment dimension.
+  ok('§17 the information-topic toggles carry aria-pressed and name no payment path',
+    (env.sheetHtml().match(/id="finWsTopic-[^"]*" aria-pressed="(true|false)"/g) || []).length >= 1
+    && !/finWsTopic-[^"]*"[^>]*data-path-id/.test(env.sheetHtml()));
 }
 {
   // Touch/click handler pair, and the deliberate absence of pointerdown.
@@ -1068,9 +1161,11 @@ section('§17 — control semantics, computed from the rendered markup');
   ok('§17 no D4 control adds a pointerdown listener (Invariant 10: the shipped pair, unchanged)',
     !/pointerdown/i.test(all) && !/pointerdown/i.test(stripComments(src.finPathBlock))
     && !/pointerdown/i.test(stripComments(src.renderHandoffFinancing)));
-  ok('§17 every new control carries fin-btn, so it inherits the shipped interaction floor rather than declaring a private one',
-    ['finPathReview-' + ids[0], 'finPathClear-' + ids[0], 'finPathConsider-' + ids[1], 'hf2FinancingNotNow']
+  ok('§17 every preference control carries fin-btn, so it inherits the shipped interaction floor rather than declaring a private one',
+    ['finPathClear-' + ids[0], 'finPathConsider-' + ids[1], 'hf2FinancingNotNow', 'finWsNotNow']
       .every((id) => /\bclass="fin-btn /.test(tagOf(all, id).attrs)));
+  ok('§17 every chooser row is the workspace row control (48px floor declared on .fin-ws-row)',
+    ids.every((id) => /\bclass="fin-ws-row fin-path-review/.test(tagOf(all, 'finPathReview-' + id).attrs)));
   ok('§17 no D4 renderer emits an inline style= attribute (no inline colours)',
     !/ style="/.test(all) && !/style="/.test(env.sheetHtml()),
     (all.match(/ style="[^"]*"/g) || []).slice(0, 3).join(' | '));
@@ -1159,12 +1254,19 @@ function ruleIn(block, selector) {
   const SEL_GHOST = '.fin-btn-ghost';
   const SEL_SECONDARY = '.fin-btn-secondary';
   const SEL_PRESSED_AUTHOR = '.fin-not-now[aria-pressed="true"]';
-  const SEL_F_REVIEW = '.fin-card .fin-path-review';
-  const SEL_F_CONSIDER = '.fin-card .fin-path-consider';
-  const SEL_F_CLEAR = '.fin-card .fin-path-clear';
-  const SEL_F_MARKER = '.fin-card .fin-path-marker';
+  // Workspace (2026-09-27) selectors, each paired below with the author rule
+  // it has to beat.
+  const SEL_ROW = '.fin-ws-row';
+  const SEL_PRIMARY = '.fin-btn-primary';
+  const SEL_WS_MARKER = '.fin-ws-actions .fin-path-marker';
+  const SEL_F_REVIEW = '.fin-ws-chooser .fin-path-review';
+  const SEL_F_CONSIDER = '.fin-ws-stage .fin-path-consider';
+  const SEL_F_CLEAR = '.fin-ws-stage .fin-path-clear';
+  const SEL_F_MARKER = '.fin-ws-stage .fin-ws-actions .fin-path-marker';
   const SEL_F_REST = '.fin-handoff__interest .fin-not-now[aria-pressed="false"]';
   const SEL_F_PRESSED = '.fin-handoff__interest .fin-not-now[aria-pressed="true"]';
+  const SEL_F_WS_REST = '.fin-ws-chooser .fin-not-now[aria-pressed="false"]';
+  const SEL_F_WS_PRESSED = '.fin-ws-chooser .fin-not-now[aria-pressed="true"]';
 
   // Both halves matter: the selector the FILE ships must be the one whose
   // specificity outranks the author rule. Comparing two constants would pass
@@ -1180,9 +1282,15 @@ function ruleIn(block, selector) {
     && /border:\s*1px solid #211E19;/.test(cssBlock(SEL_SECONDARY))
     && /border-color:\s*#211E19;/.test(cssBlock(SEL_PRESSED_AUTHOR)));
 
-  [[SEL_F_REVIEW, SEL_GHOST], [SEL_F_CLEAR, SEL_GHOST], [SEL_F_MARKER, SEL_GHOST],
-   [SEL_F_CONSIDER, SEL_SECONDARY], [SEL_F_REST, SEL_GHOST],
-   [SEL_F_PRESSED, SEL_PRESSED_AUTHOR]].forEach(([forced, author]) => {
+  ok('§17 precondition: the workspace author rules exist at (0,1,0) / (0,2,0)',
+    cssNorm.includes(SEL_ROW + ' {') && cssNorm.includes(SEL_PRIMARY + ' {')
+    && cssNorm.includes(SEL_WS_MARKER + ' {')
+    && specificity(SEL_ROW).join(',') === '0,1,0'
+    && specificity(SEL_WS_MARKER).join(',') === '0,2,0');
+  [[SEL_F_REVIEW, SEL_ROW], [SEL_F_CLEAR, SEL_SECONDARY], [SEL_F_MARKER, SEL_WS_MARKER],
+   [SEL_F_CONSIDER, SEL_PRIMARY], [SEL_F_REST, SEL_GHOST],
+   [SEL_F_PRESSED, SEL_PRESSED_AUTHOR], [SEL_F_WS_REST, SEL_GHOST],
+   [SEL_F_WS_PRESSED, SEL_PRESSED_AUTHOR]].forEach(([forced, author]) => {
     ok(`§17 forced-colors "${forced}" outranks "${author}", so it can actually apply`,
       d4.includes(forced) && cmpSpec(specificity(forced), specificity(author)) > 0,
       `${specificity(forced).join(',')} vs ${specificity(author).join(',')}`);
@@ -1192,6 +1300,9 @@ function ruleIn(block, selector) {
     /border-color:\s*CanvasText;/.test(ruleIn(d4, SEL_F_REST) || ''));
   ok('§17 forced colors: the PRESSED "Not right now" pins it too — the resting rule cannot reach a pressed control',
     /border-color:\s*CanvasText;/.test(ruleIn(d4, SEL_F_PRESSED) || ''));
+  ok('§17 forced colors: the workspace "not choosing today" control gets the same 1px resting / 2px pressed geometry',
+    /border-width:\s*1px;[\s\S]*border-color:\s*CanvasText;/.test(ruleIn(d4, SEL_F_WS_REST) || '')
+    && /border-width:\s*2px;[\s\S]*border-color:\s*CanvasText;/.test(ruleIn(d4, SEL_F_WS_PRESSED) || ''));
   ok('§17 forced colors: the three sheet controls and the marker all pin border-color: CanvasText',
     [SEL_F_REVIEW, SEL_F_CONSIDER, SEL_F_CLEAR, SEL_F_MARKER]
       .every((s) => /border-color:\s*CanvasText;/.test(ruleIn(d4, s) || '')),
@@ -1628,8 +1739,6 @@ section('§21 — the adopted copy, character for character, in both languages')
 const ADOPTED = [
   ['paymentPreferenceLabel', 'Payment preference', 'Preferencia de pago'],
   ['preferenceNone', 'Not selected', 'Sin seleccionar'],
-  ['optionsExploredLabel', 'Options explored', 'Opciones exploradas'],
-  ['reviewOption', 'Review this option', 'Revisar esta opción'],
   ['hideDetails', 'Hide details', 'Ocultar detalles'],
   ['considerOption', 'Consider this option', 'Considerar esta opción'],
   ['currentlyConsidering', 'Currently considering ✓', 'En consideración ✓'],
@@ -1638,7 +1747,14 @@ const ADOPTED = [
     'Explore options together. Nothing is submitted and no application is started.',
     'Exploren las opciones juntos. No se envía nada y no se inicia ninguna solicitud.']
 ];
-ok('§21 exactly nine pairs were adopted for D4', ADOPTED.length === 9);
+// Two of the nine D4 pairs were retired by owner direction 2026-09-27:
+// optionsExploredLabel (no customer-facing history) and reviewOption (a path is
+// explored by its own chooser row). The remaining seven stay pinned.
+ok('§21 the seven D4 pairs still in use are pinned', ADOPTED.length === 7);
+for (const retired of ['optionsExploredLabel', 'reviewOption']) {
+  ok(`§21 retired [${retired}] is absent from the canonical source and the shipped config`,
+    !(retired in INCOMING.financing.copy) && !(retired in CFG.financing.copy));
+}
 for (const [key, en, es] of ADOPTED) {
   ok(`§21 [${key}] is character-for-character identical in the canonical source and the shipped config`,
     INCOMING.financing.copy[key] && CFG.financing.copy[key]
@@ -1722,7 +1838,7 @@ section('§22 — a language switch preserves the model, the order and the focus
     env.sheetHtml().includes(CFG.financing.copy.currentlyConsidering.es));
   ok('§22 the handoff rows follow the language',
     env.handoffHtml().includes(CFG.financing.copy.paymentPreferenceLabel.es)
-    && env.handoffHtml().includes(CFG.financing.copy.optionsExploredLabel.es));
+    && !/fin-explored-list/.test(env.handoffHtml()));
 }
 {
   // A switch and a switch back must be a round trip.
@@ -2368,8 +2484,11 @@ section('§28 — a non-string identity value fails closed, never throws');
     !/finPathReview-plan-["\s]/.test(env.sheetHtml())
     && !/data-path-id="plan-"/.test(env.sheetHtml())
     && env.get('finPathConsider-plan-') === null);
-  ok('§28 [precondition] the malformed card itself DID render, so the check above is about controls',
-    /Malformed/.test(env.sheetHtml()));
+  // Workspace (2026-09-27): a plan with no canonical identity has no path, so
+  // it has no chooser row and no panel. It degrades to ABSENT, and the rest of
+  // the workspace renders around it.
+  ok('§28 [precondition] the malformed plan renders nothing, while the well-formed paths still do',
+    !/Malformed/.test(env.sheetHtml()) && /fin-path-review/.test(env.sheetHtml()));
 
   // Entry point 3: the language switch. switchLanguage() calls
   // clearPayAnnouncements() then renderAllFinancingSurfaces(); the throw used
@@ -2452,11 +2571,14 @@ section('§28 — a non-string identity value fails closed, never throws');
         !new RegExp(prefix + '-plan-["\\s]').test(env.sheetHtml())
         && env.get(prefix + '-plan-') === null);
     }
-    // Its governed copy still renders as an unselectable informational card —
-    // that is the designed degradation, and asserting it here keeps the
-    // control-absence claims above honest about what "dropped" means.
-    ok(`§28 [${label}] its card still renders as informational copy (dropped means UNSELECTABLE)`,
-      /Blank Id Plan/.test(env.sheetHtml()));
+    // Dropped means ABSENT. finPaymentPaths() excludes a path with no usable
+    // identity or no resolvable label by contract, and the workspace renders
+    // only paths, so such a plan has no row, no panel and no informational
+    // copy (the retired group-based renderer could leave an informational
+    // card with no valid path behind it). Fail-closed: less reaches the
+    // customer, never more.
+    ok(`§28 [${label}] it renders no row and no panel (dropped means ABSENT and UNSELECTABLE)`,
+      !/Blank Id Plan/.test(env.sheetHtml()));
 
     // The actions must refuse it, and it must never become the preference.
     env.api.review('plan-');
@@ -2521,6 +2643,9 @@ section('§28 — a non-string identity value fails closed, never throws');
   ok('§28 ...and Clear unsets it while preserving the history',
     env.api.state().pref === null
     && JSON.stringify(env.api.state().explored) === JSON.stringify(['promo-']));
+  // The handoff names a path only through the saved preference (no explored
+  // history is customer-facing since 2026-09-27), so consider it again first.
+  env.api.consider('promo-');
   env.api.renderHandoff();
   ok('§28 ...and the handoff names it rather than showing a raw id',
     env.handoffHtml().includes('Promotional financing')
@@ -2578,23 +2703,24 @@ section('negative controls — each load-bearing behaviour is proved detectable'
     env.api.state().explored.length === 0);
 }
 {
-  const env = openEnv({ mutate: (s) => s.replace(/var exploredLabels = notNow \? \[\] : payExplored/, 'var exploredLabels = payExplored') });
+  // Re-introducing an explored row into the handoff is what §12 must catch.
+  const env = openEnv({ mutate: (s) => s.replace("var rows = '<div class=\"fin-pref-row\">'", "var rows = '<ul class=\"fin-explored-list\"></ul><div class=\"fin-pref-row\">'") });
   const ids = P(env);
   ids.forEach((id) => env.api.review(id));
   env.api.notNow();
   env.api.renderHandoff();
-  ok('control: losing the not_now row suppression is detected (§12)',
+  ok('control: re-introducing an explored row in the handoff is detected (§12)',
     /fin-explored-list/.test(env.handoffHtml()));
 }
 {
-  const env = openEnv({ mutate: (s) => s.replace('.filter(function(id) { return id !== payPref; })', '') });
+  // Listing the explored history beside the preference is what §15 must catch.
+  const env = openEnv({ mutate: (s) => s.replace("var rows = '<div class=\"fin-pref-row\">'", "var rows = payExplored.map(labelFor).join(' ') + '<div class=\"fin-pref-row\">'") });
   const ids = P(env);
   ids.forEach((id) => env.api.review(id));
   env.api.consider(ids[0]);
   env.api.renderHandoff();
-  const listed = (env.handoffHtml().match(/<ul class="fin-explored-list">([\s\S]*?)<\/ul>/) || [, ''])[1];
-  ok('control: letting the preference double as an explored entry is detected (§15)',
-    listed.includes(env.api.pathById(ids[0]).label));
+  ok('control: listing other explored paths beside the preference is detected (§15)',
+    env.handoffHtml().includes(env.api.pathById(ids[1]).label));
 }
 {
   const env = openEnv({ mutate: (s) => s.replace("&& active.matches(':focus-visible')", '') });
@@ -2651,10 +2777,10 @@ section('negative controls — each load-bearing behaviour is proved detectable'
 }
 {
   const env = openEnv({
-    mutate: (s) => s.replace("'aria-expanded=\"' + (open ? 'true' : 'false') + '\" '", "''")
+    mutate: (s) => s.replace("'aria-expanded=\"' + (explored ? 'true' : 'false') + '\" aria-controls=\"finWsStage\" '", "'aria-controls=\"finWsStage\" '")
   });
-  ok('control: stripping aria-expanded is detected (§17)',
-    !/aria-expanded=/.test(env.sheetHtml()));
+  ok('control: stripping aria-expanded from the chooser rows is detected (§17)',
+    /fin-path-review/.test(env.sheetHtml()) && !/fin-path-review[^>]*aria-expanded=/.test(env.sheetHtml()));
 }
 {
   const env = openEnv({ mutate: (s) => s.replace("html += '<span class=\"fin-path-marker\"", "html += '<button type=\"button\" aria-pressed=\"true\" class=\"fin-path-marker\"") });
@@ -2793,6 +2919,212 @@ section('§29 — Sleep Plan surface: truthful placement, read-only rows, one ow
       const off = tagOf(e.get('sleepPlanFinancingInterest').innerHTML, 'sleepPlanFinancingNotNow');
       e.api.notNowFromPlan(); const on = tagOf(e.get('sleepPlanFinancingInterest').innerHTML, 'sleepPlanFinancingNotNow');
       return off && on && /aria-pressed="false"/.test(off.attrs) && /aria-pressed="true"/.test(on.attrs); })());
+}
+
+// ===========================================================================
+// 30. Provider identity and the shared explanations (correction pass,
+//     2026-09-30). "Offered through" names the path's OWN configured provider,
+//     never the retailer by assumption; the shared How-it-works copy is
+//     provider-neutral, so a second lender never inherits the first lender's
+//     explanation. Executed against realistic configurations, both languages,
+//     detail panels AND the comparison table.
+// ===========================================================================
+section('§30 — each path names its own provider; shared explanations name no lender');
+const stripTags = (h) => h.replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&').replace(/&#39;/g, "'").replace(/\s+/g, ' ').trim();
+function panelOf(env, pathId) {
+  const id = env.api.pathDom('finPathPanel', pathId).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const m = env.sheetHtml().match(new RegExp('<section[^>]*\\bid="' + id + '"[\\s\\S]*?</section>'));
+  return m ? m[0] : '';
+}
+function throughOf(panelHtml) {
+  const m = panelHtml.match(/<p class="fin-ws-through">([\s\S]*?)<\/p>/);
+  return m ? stripTags(m[1].replace(/<span class="fin-ws-kicker">[\s\S]*?<\/span>/, '')) : null;
+}
+function compareRows(env) {
+  const html = env.sheetHtml();
+  return [...html.matchAll(/<div class="fin-ws-cmp__row" role="row">([\s\S]*?)<\/div>/g)].map((m) =>
+    [...m[1].matchAll(/<span[^>]*>([\s\S]*?)<\/span>(?=<span|$)/g)].map((c) => stripTags(c[1])));
+}
+const bi = (en, es) => ({ en, es });
+const promoBase = CFG.financing.plans.find((p) => p.kind === 'open-end-promotional-credit');
+const instBase = CFG.financing.plans.find((p) => p.kind === 'closed-end-installment' && !p.presentationScenario);
+const mexBase = CFG.financing.plans.find((p) => p.presentationScenario === 'mexico-delivery');
+const clone = (o) => JSON.parse(JSON.stringify(o));
+const ACME = Object.assign(clone(promoBase), { id: 'acme-promo-12', provider: 'Acme Bank',
+  detail: bi('On qualifying purchases with the Acme Bank card.', 'En compras que califiquen con la tarjeta Acme Bank.'),
+  disclosure: bi('Subject to Acme Bank approval.', 'Sujeto a la aprobación de Acme Bank.') });
+const NORTH = Object.assign(clone(instBase), { id: 'northwind-install', provider: 'Northwind Credit',
+  headline: bi('Northwind installment plan', 'Plan a plazos Northwind'),
+  detail: bi('Installment contracts from Northwind Credit.', 'Contratos a plazos de Northwind Credit.'),
+  disclosure: bi('Subject to Northwind Credit approval.', 'Sujeto a la aprobación de Northwind Credit.') });
+function cfgWith(fn) { const c = clone(CFG); c.financing.plans = fn(c.financing.plans); return c; }
+// Current Lacks plans plus a second promotional lender and an externally
+// provided installment plan, in config order.
+const MULTI = cfgWith((plans) => {
+  const out = [];
+  plans.forEach((p) => { out.push(p); if (p.id === promoBase.id) out.push(clone(ACME)); if (p.id === instBase.id) out.push(clone(NORTH)); });
+  // ACME must follow the LAST Synchrony plan so it forms its own group
+  // wherever it lands; grouping is by provider, not position.
+  return out;
+});
+const STORE = CFG.storeName;
+// The retailer's own role phrase ("your Lacks specialist") is not a provider
+// claim; everything else naming the retailer inside a third party's panel is.
+const roleFree = (s) => s.split(STORE.split(' ')[0] + ' specialist').join('')
+  .split('especialista de ' + STORE.split(' ')[0]).join('');
+for (const lang of ['en', 'es']) {
+  const env = openEnv({ config: MULTI, lang });
+  const pid = (kind, v) => env.api.pathId(kind, v);
+  const syn = pid('promo', promoBase.provider), acme = pid('promo', 'Acme Bank');
+  const lacks = pid('plan', instBase.id), north = pid('plan', 'northwind-install');
+  const mex = pid('scenario', 'mexico-delivery');
+  ok(`§30 [${lang}] the realistic configuration yields distinct paths for both lenders and both installment providers`,
+    [syn, acme, lacks, north, mex].every((id) => env.api.pathById(id)), P(env).join(','));
+  env.api.renderSheet();
+  ok(`§30 [${lang}] Offered through: each promotional path names its own lender`,
+    throughOf(panelOf(env, syn)) === promoBase.provider && throughOf(panelOf(env, acme)) === 'Acme Bank',
+    `${throughOf(panelOf(env, syn))} / ${throughOf(panelOf(env, acme))}`);
+  ok(`§30 [${lang}] Offered through: each installment path names its own configured provider, never the retailer by assumption`,
+    throughOf(panelOf(env, lacks)) === instBase.provider && throughOf(panelOf(env, north)) === 'Northwind Credit',
+    `${throughOf(panelOf(env, lacks))} / ${throughOf(panelOf(env, north))}`);
+  ok(`§30 [${lang}] Offered through: the Mexico path names its plan's provider (a destination is not a lender)`,
+    throughOf(panelOf(env, mex)) === mexBase.provider, String(throughOf(panelOf(env, mex))));
+  ok(`§30 [${lang}] the second lender's panel never carries the first lender's name, and vice versa`,
+    !stripTags(panelOf(env, acme)).includes(promoBase.provider) && !stripTags(panelOf(env, syn)).includes('Acme'),
+    stripTags(panelOf(env, acme)).slice(0, 200));
+  ok(`§30 [${lang}] the external installment panel makes no claim about the retailer beyond its specialist role`,
+    !roleFree(stripTags(panelOf(env, north))).includes(STORE.split(' ')[0]), roleFree(stripTags(panelOf(env, north))).slice(0, 240));
+  ok(`§30 [${lang}] every promotional panel explains with the shared provider-neutral copy`,
+    [syn, acme].every((id) => stripTags(panelOf(env, id)).includes(env.api.FC('howPromotional'))));
+  // The comparison table: both lenders side by side, then both installment providers.
+  env.api.seed({ open: [acme] }); env.api.setCompare(syn); env.api.renderSheet();
+  let rows = compareRows(env);
+  const thr = rows.find((r) => r.length === 3 && r[1] === 'Acme Bank');
+  ok(`§30 [${lang}] compare: the Offered-through row names each column's own lender`,
+    !!thr && thr[2] === promoBase.provider, JSON.stringify(rows));
+  const how = rows.find((r) => r.length === 3 && r[1] === env.api.FC('howPromotional'));
+  ok(`§30 [${lang}] compare: the How-it-works row names neither lender (shared copy is neutral)`,
+    !!how && how.slice(1).every((c) => !c.includes('Acme') && !c.includes(promoBase.provider)), JSON.stringify(rows));
+  env.api.seed({ open: [north] }); env.api.setCompare(lacks); env.api.renderSheet();
+  rows = compareRows(env);
+  ok(`§30 [${lang}] compare: an external installment provider and the retailer's own credit are each named correctly`,
+    rows.some((r) => r.length === 3 && r[1] === 'Northwind Credit' && r[2] === instBase.provider), JSON.stringify(rows));
+}
+{
+  // The shipped shared copy, both languages, names no configured lender. The
+  // retailer's own name may appear only in its specialist role.
+  const lenders = [...new Set(CFG.financing.plans.map((p) => p.provider))];
+  const bad = [];
+  for (const key of ['howPromotional', 'howInstallment', 'howMexico']) {
+    for (const lang of ['en', 'es']) {
+      const text = roleFree(CFG.financing.copy[key][lang]);
+      lenders.forEach((l) => { if (text.includes(l)) bad.push(`${key}.${lang} names ${l}`); });
+    }
+  }
+  ok('§30 the shipped shared explanations are provider-neutral in both languages', bad.length === 0, bad.join('; '));
+}
+{
+  // Missing provider identity: never a lender by assumption. The generic
+  // promotional path keeps its identity (promo-) and label; its line and an
+  // installment path's line read the neutral "confirmed in store".
+  const MISSING = cfgWith((plans) => plans.map((p) => {
+    if (p.kind === 'open-end-promotional-credit' || p.id === instBase.id) { const q = clone(p); delete q.provider; return q; }
+    return p;
+  }));
+  for (const lang of ['en', 'es']) {
+    const env = openEnv({ config: MISSING, lang });
+    const generic = env.api.paths().find((x) => x.group === 'promotional');
+    ok(`§30 [${lang}] a promotional plan with no provider is still the one generic path ('promo-')`,
+      !!generic && generic.id === 'promo-' && generic.label === (lang === 'es' ? 'Financiamiento promocional' : 'Promotional financing'),
+      JSON.stringify(generic && { id: generic.id, label: generic.label }));
+    ok(`§30 [${lang}] with no provider, Offered through reads the neutral confirmation for promotional AND installment`,
+      throughOf(panelOf(env, 'promo-')) === '[pay.ws.cis]' && throughOf(panelOf(env, env.api.pathId('plan', instBase.id))) === '[pay.ws.cis]',
+      `${throughOf(panelOf(env, 'promo-'))} / ${throughOf(panelOf(env, env.api.pathId('plan', instBase.id)))}`);
+  }
+}
+{
+  // NEGATIVE CONTROLS for §30.
+  const env1 = openEnv({ config: MULTI, mutate: (b) => b.replace(
+    "        return finSafeProvider(path.plans[0]) || t('pay.ws.cis');",
+    "        return path.group === 'promotional' ? (finSafeProvider(path.plans[0]) || t('pay.ws.cis')) : (storeName() || '');") });
+  env1.api.renderSheet();
+  ok('§30 control: the retailer-as-lender defect (storeName for installment) is DETECTED',
+    throughOf(panelOf(env1, env1.api.pathId('plan', 'northwind-install'))) === STORE);
+  const lenderSpecific = clone(MULTI);
+  lenderSpecific.financing.copy.howPromotional = bi(
+    `Promotional plans with the ${STORE} ${promoBase.provider} HOME Credit Card.`,
+    `Planes promocionales con la tarjeta ${STORE} ${promoBase.provider} HOME.`);
+  const env2 = openEnv({ config: lenderSpecific });
+  env2.api.renderSheet();
+  ok('§30 control: a lender-specific shared explanation IS caught leaking into the second lender\'s panel',
+    stripTags(panelOf(env2, env2.api.pathId('promo', 'Acme Bank'))).includes(promoBase.provider));
+}
+
+// ===========================================================================
+// 31. Focus return when the opener was repainted (correction pass,
+//     2026-09-30). Saving or clearing a preference re-renders the Sleep Plan
+//     and Summary regions, detaching the stored opener node.
+// ===========================================================================
+section('§31 — close returns focus to the CURRENT opener after a repaint');
+for (const [surface, placement, openerId, render] of [
+  ['Sleep Plan', 'sleep-plan', 'sleepPlanFinancingExplore', 'renderPlan'],
+  ['Summary', 'handoff', 'hf2FinancingExplore', 'renderHandoff']]) {
+  for (const act of ['consider', 'clear']) {
+    const env = makeEnv({ handoffActive: placement === 'handoff', planActive: placement === 'sleep-plan' });
+    env.api[render]();
+    const original = env.focusKeyboard(openerId);
+    env.api.openSheet(placement);
+    const id = P(env)[0];
+    env.api.review(id);
+    env.api.consider(id);
+    if (act === 'clear') env.api.clearPref(id);
+    // Force the repaint the live app performs for every surface.
+    env.api.renderAll(); env.api.renderPlan(); env.api.renderHandoff();
+    const detachedNow = original.isConnected === false || env.get(openerId) !== original;
+    env.api.closeSheet();
+    const now = env.doc.activeElement;
+    ok(`§31 [${surface}, after ${act}] focus returns to the live opener, not the stored node`,
+      now === env.get(openerId) && now && now.isConnected !== false,
+      `detached-before-close=${detachedNow} active=${now && now.id} live=${now === env.get(openerId)}`);
+  }
+}
+{
+  // The by-id step on its own: an opener whose placement maps to NO control
+  // (an unmapped placement string) is recovered by the id it carried, which
+  // the placement fallback cannot supply.
+  const env = makeEnv({ handoffActive: false, planActive: true });
+  env.api.renderPlan();
+  const original = env.focusKeyboard('sleepPlanFinancingExplore');
+  env.api.openSheet('unmapped-placement');
+  env.api.consider(P(env)[0]);
+  env.api.renderPlan();
+  env.api.closeSheet();
+  ok('§31 an opener repainted under an unmapped placement is recovered by its own id',
+    original.isConnected === false && env.doc.activeElement === env.get('sleepPlanFinancingExplore'),
+    `active=${env.doc.activeElement && env.doc.activeElement.id}`);
+}
+{
+  // Unchanged when nothing was repainted: the very same node.
+  const env = makeEnv({ resultsActive: true, handoffActive: false });
+  const opener = env.focusKeyboard('resultsFinancingExplore');
+  env.api.openSheet('results');
+  env.api.closeSheet();
+  ok('§31 [Results] an opener that was never repainted receives focus itself', env.doc.activeElement === opener);
+}
+{
+  // NEGATIVE CONTROL: the pre-correction close (focus the stored node).
+  const env = makeEnv({ handoffActive: false, planActive: true, mutate: (b) => b.replace(
+    '      var returnTo = finWsReturnTarget(_financeReturnFocus, placementAtClose);',
+    '      var returnTo = _financeReturnFocus;') });
+  env.api.renderPlan();
+  const original = env.focusKeyboard('sleepPlanFinancingExplore');
+  env.api.openSheet('sleep-plan');
+  const id = P(env)[0];
+  env.api.consider(id);
+  env.api.renderPlan();
+  env.api.closeSheet();
+  ok('§31 control: the stored-node close is DETECTED (focus lands on a detached node)',
+    env.doc.activeElement === original && original.isConnected === false);
 }
 
 console.log(`\n${failures === 0 ? 'PASS' : 'FAIL'} — ${checks - failures}/${checks} checks passed`);

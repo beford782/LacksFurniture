@@ -161,8 +161,11 @@ const RAW_ALLOWLIST = [
   // Same class, same reason, one addition: the callback re-checks that its
   // region is still live before writing, so a queued utterance whose sheet or
   // handoff went away in the meantime lands nowhere.
-  { cls: "A", count: 1, match: "_payAnnounceTimer = setTimeout(",
-    why: "the Payment Choice preference-action announcement; superseded by name on the next announcement and cancelled by name in cancelPayAnnouncePending(), which clearPayAnnouncements(), closeFinancingSheet() and the wipe all call" },
+  // 2026-09-27: announcePayText() (the workspace's item-change sentence) is the
+  // second writer of the SAME single slot — same variable, same supersede-first
+  // ordering, same cancellation path — so it is one timer class, counted twice.
+  { cls: "A", count: 2, match: "_payAnnounceTimer = setTimeout(",
+    why: "the Payment Choice preference-action announcement and the workspace item-change announcement, sharing ONE slot; superseded by name on the next announcement and cancelled by name in cancelPayAnnouncePending(), which clearPayAnnouncements(), closeFinancingSheet() and the wipe all call" },
   { cls: "A", count: 1, match: "_drawerCloseTimer = setTimeout(",
     why: "cleared by name in closeMattressDrawer(), which the wipe calls first with {immediate:true}" },
   { cls: "B", count: 1, match: "__STARFIELD_RAF__",
@@ -917,9 +920,12 @@ section("Payment Choice announcements: supersession, cancellation, hygiene");
     const tableSrc = (stripComments(html).match(/var PAY_NOT_NOW_SURFACES = \{[\s\S]*?\n    \};/) || [""])[0];
     const tableRegions = [...tableSrc.matchAll(/region:\s*'([^']+)'/g)].map((m) => m[1]);
     const viaTable = (stripComments(html).match(/announcePayAction\(\s*ids\.region/g) || []).length;
-    const regionArgs = literalArgs.concat(viaTable ? tableRegions : []);
-    check(`every announcePayAction() call names a preference-action region (${literalArgs.length} literal + ${viaTable} via the surface table -> ${regionArgs.length} regions)`,
-      literalArgs.length === 2 && viaTable === 1 && tableRegions.length === 2
+    // 2026-09-27: the workspace adds a third surface-table row ('sheet' ->
+    // the sheet's own action region) and one announcePayText() call site.
+    const textArgs = [...stripComments(html).matchAll(/announcePayText\(\s*'([^']+)'/g)].map((m) => m[1]);
+    const regionArgs = literalArgs.concat(viaTable ? tableRegions : []).concat(textArgs);
+    check(`every announcePayAction() call names a preference-action region (${literalArgs.length} literal + ${viaTable} via the surface table + ${textArgs.length} text -> ${regionArgs.length} regions)`,
+      literalArgs.length === 2 && viaTable === 1 && tableRegions.length === 3 && textArgs.length === 1
       && [...new Set(regionArgs)].sort().join(",") === "financingSheetAction,hf2FinancingStatus,sleepPlanFinancingStatus");
     check("the freshness region is never written by a preference announcement",
       !regionArgs.includes("financingSheetStatus"));

@@ -993,7 +993,17 @@ function auditCloseoutCss(src) {
   const noticeFont = fontOf(notice);
   const statusFont = fontOf(status);
   const nameFont = fontOf(name);
-  const mediaBlocks = (css.match(/@media[^{]*max-width/g) || []).length;
+  // Blocks whose every rule is scoped to the payment workspace (.fin-ws* /
+  // .fin-workspace, added 2026-09-27 for a different surface) are not part of
+  // this Sleep System claim and are excluded; any other new max-width block
+  // still counts and still turns this pin red.
+  const mediaBlocks = [...css.matchAll(/@media[^{]*max-width[^{]*\{/g)].filter((m) => {
+    const body = braceBlock(css.slice(m.index), m[0]);
+    const inner = body.slice(body.indexOf('{') + 1, body.lastIndexOf('}'));
+    const selectors = [...inner.matchAll(/([^{}]+)\{[^{}]*\}/g)]
+      .flatMap((r) => r[1].split(',').map((x) => x.trim())).filter(Boolean);
+    return !(selectors.length && selectors.every((sel) => /\.fin-(ws|workspace)\b/.test(sel)));
+  }).length;
   const flat = (r) => r.replace(/\s+/g, ' ');
 
   // C1 — the rail

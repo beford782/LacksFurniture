@@ -445,6 +445,11 @@ const harness = new Function(
   var _finSheetPlacement = '';   // slice 2.2d: the sheet's opening placement, cleared by name in the wipe
   var _finModuleImpressionLogged = false;
   var _financeReturnFocus = null;
+  // The "Bring it home" workspace's ephemeral presentation state (2026-09-27),
+  // cleared by name in the wipe alongside the payment dimensions.
+  var _payCompare = null, _payComparePicking = false, _payTopic = '', _payTopicsOpen = false;
+  var _payWsView = '', _payWsRemoved = [], _payWsChange = null;
+  function finWsReleaseInert() { record('finWsReleaseInert')(); }
   var _langFocusHintId = null;
   var analytics = {
     sessionId: 'seed-session',
@@ -488,6 +493,8 @@ const harness = new Function(
       finSheetPlacement: _finSheetPlacement,
       finImpression: _finModuleImpressionLogged,
       financeReturnFocus: _financeReturnFocus,
+      ws: { compare: _payCompare, picking: _payComparePicking, topic: _payTopic, topicsOpen: _payTopicsOpen,
+            view: _payWsView, removed: _payWsRemoved, change: _payWsChange },
       analytics: analytics
     };
   };
@@ -504,6 +511,11 @@ const harness = new Function(
     if ('finSheetPlacement' in state) _finSheetPlacement = state.finSheetPlacement;
     if ('finImpression' in state) _finModuleImpressionLogged = state.finImpression;
     if ('financeReturnFocus' in state) _financeReturnFocus = state.financeReturnFocus;
+    if ('ws' in state) {
+      _payCompare = state.ws.compare; _payComparePicking = state.ws.picking; _payTopic = state.ws.topic;
+      _payTopicsOpen = state.ws.topicsOpen; _payWsView = state.ws.view; _payWsRemoved = state.ws.removed;
+      _payWsChange = state.ws.change;
+    }
   };
   outer.sessionTimeout = sessionTimeout;
   `
@@ -1057,6 +1069,8 @@ outer.seed({
   finSheetPlacement: 'results',
   finImpression: true,
   financeReturnFocus: el("someResultCard"),
+  ws: { compare: "plan-lease-to-own", picking: true, topic: "due", topicsOpen: true,
+        view: "items", removed: ["base-bt2000"], change: { kind: "removed", id: "base-bt2000" } },
 });
 check("seeded: a dirty Payment Choice session (3 explored, 1 preferred, 2 open)",
   probe().payExplored.length === 3 && probe().payPref === "plan-lacks-in-house"
@@ -1290,6 +1304,13 @@ check("...and payOpen is a FRESH object", probe().payOpen !== PAY_SEED_OPEN);
 check("the sheet's stale-terms flag cleared", probe().finSheetStale === false);
 check("the sheet's opening placement cleared (2.2d: the plan status copy's surface never outlives the session)",
       probe().finSheetPlacement === '');
+{
+  const w = probe().ws;
+  check("the workspace comparison, topic and item view are cleared by the wipe (2026-09-27)",
+    w.compare === null && w.picking === false && w.topic === '' && w.topicsOpen === false
+    && w.view === '' && Array.isArray(w.removed) && w.removed.length === 0 && w.change === null,
+    JSON.stringify(w));
+}
 
 section("wipe matrix: window state");
 check("saved picks cleared", win._savedPicks.length === 0);
@@ -1767,7 +1788,7 @@ const PAY_OWNERS = [
   // expectation of 0 so the inventory is the complete action set, and so a new
   // rebinding here reads as a change rather than as an unowned site.
   { name: "reviewPaymentPath", expect: 0,
-    re: /window\.reviewPaymentPath = function\(id\) \{[\s\S]*?\n    \};/ },
+    re: /window\.reviewPaymentPath = function\(id, origin\) \{[\s\S]*?\n    \};/ },
   { name: "considerPaymentPath", expect: 1,
     re: /window\.considerPaymentPath = function\(id\) \{[\s\S]*?\n    \};/ },
   { name: "clearPaymentPreference", expect: 1,
@@ -2272,7 +2293,7 @@ check("[Gate 2A] the transition path adds no raw timer",
 // assertion at all.
 {
   const D4_CONTROLS = [
-    ["reviewPaymentPath", /window\.reviewPaymentPath = function\(id\) \{[\s\S]*?\n    \};/],
+    ["reviewPaymentPath", /window\.reviewPaymentPath = function\(id, origin\) \{[\s\S]*?\n    \};/],
     ["considerPaymentPath", /window\.considerPaymentPath = function\(id\) \{[\s\S]*?\n    \};/],
     ["clearPaymentPreference", /window\.clearPaymentPreference = function\(id\) \{[\s\S]*?\n    \};/],
     ["setPaymentNotNow", /window\.setPaymentNotNow = function\(\) \{[\s\S]*?\n    \};/],

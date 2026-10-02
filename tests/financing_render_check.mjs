@@ -88,7 +88,9 @@ const SRC = [
   ["finPathDom", extract(/function finPathDom\([^)]*\)[^\n]*\n/, "finPathDom")],
   ["finPaymentPaths", extract(fn("finPaymentPaths"), "finPaymentPaths")],
   ["finPathById", extract(fn("finPathById"), "finPathById")],
-  ["finPathBlock", extract(fn("finPathBlock"), "finPathBlock")],
+  // The "Bring it home" workspace block (2026-09-27): its state, helpers and
+  // finPathBlock() — the per-path governed panel — lifted as one unit.
+  ["workspace", extract(/    \/\/ ===== "BRING IT HOME" WORKSPACE[\s\S]*?(?=\r?\n    function renderFinancingSheet\(\))/, "workspace")],
   // ---- the gates ----
   ["financingSourceAllowed", extract(fn("financingSourceAllowed"), "financingSourceAllowed")],
   ["financingAgeOk", extract(fn("financingAgeOk"), "financingAgeOk")],
@@ -122,6 +124,15 @@ const harness = new Function("SRC_LIST", `
   var payExplored = [], payPref = null, payOpen = {};
   var PAY_NOT_NOW = 'not_now';
   var console = { warn: function () {}, log: function () {} };
+  // App globals the workspace reads, supplied rather than extracted: the
+  // purchase model and the dictionary are not what this suite tests.
+  var window = { _accCart: {}, _savedPicks: [] };
+  var answers = { mattress_size: 'queen' };
+  var ACCESSORIES = [];
+  var _finSheetPlacement = '';
+  function t(k) { return '[' + k + ']'; }
+  function sizeLabelFor() { return 'Queen'; }
+  function resolveFinalistState() { return { kind: 'none', item: null }; }
   var _finSheetStale = false;
   function getFinancingConfig() { return __cfg; }
   function storeName() { return 'Lacks Furniture'; }
@@ -242,11 +253,14 @@ function freshCfg() {
 
 // The markup vocabulary the sheet emits, in one place so a class rename shows
 // up as a wall of failures rather than a wall of silent zero-length matches.
-const CARD_RE = /<article class="fin-card[^"]*">/g;
-const TITLE_RE = /<h3 class="fin-card__title">([\s\S]*?)<\/h3>/g;
-const REVIEW_RE = /class="fin-btn fin-btn-ghost fin-path-review"/g;
-const CONSIDER_RE = /class="fin-btn fin-btn-secondary fin-path-consider"/g;
-const CLEAR_RE = /class="fin-btn fin-btn-ghost fin-path-clear"/g;
+// Workspace vocabulary (2026-09-27): one governed PANEL per path in the stage,
+// one chooser ROW per path that explores it.
+const CARD_RE = /<section class="fin-ws-detail fin-path-panel"/g;
+const TITLE_RE = /<h3 class="fin-ws-detail__name"[^>]*>([\s\S]*?)<\/h3>/g;
+const REVIEW_RE = /class="fin-ws-row fin-path-review[^"]*"/g;
+const CONSIDER_RE = /class="fin-btn fin-btn-primary fin-path-consider"/g;
+const CLEAR_RE = /class="fin-btn fin-btn-secondary fin-path-clear"/g;
+const ROW_EXPANDED_RE = (v) => new RegExp('class="fin-ws-row fin-path-review[^"]*" id="[^"]*" aria-expanded="' + v + '"', "g");
 const MARKER_RE = /<span class="fin-path-marker" id="([^"]*)">([\s\S]*?)<\/span>/;
 const countOf = (s, re) => (s.match(re) || []).length;
 const cardsOf = (r) => { const el = r.el("financingSheetCards"); return el ? el._html : ""; };
@@ -274,8 +288,12 @@ const titlesOf = (cards) =>
 // than by position, so reordering the cards cannot silently retarget an
 // assertion at a different path.
 function blockFor(cards, pathId) {
-  const needle = `id="finPathReview-${pathId}"`;
-  return cards.split("<article ").filter(s => s.includes(needle))[0] || "";
+  // A path's chooser row plus its governed panel.
+  const row = cards.split('<li class="fin-ws-paths__item">')
+    .filter(s => s.includes(`id="finPathReview-${pathId}"`))[0] || "";
+  const panel = cards.split("<section ")
+    .filter(s => s.includes(`id="finPathPanel-${pathId}"`))[0] || "";
+  return row && panel ? row.split("</li>")[0] + "<section " + panel : "";
 }
 
 // --- 1. SHIPPED STATE: no freshness-gated string reaches the DOM ------------
@@ -739,8 +757,10 @@ console.log("Bilingual labels, language-invariant ids:");
   check("[en] card titles match the derived labels", enCards.join("|") === en.map(p => p.label).join("|"));
   check("[es] card titles match the derived labels", esCards.join("|") === es.map(p => p.label).join("|"));
   check("the sheet's own controls are localised too",
-    cardsOf(harness.run(clone(shipped.financing), "es")).includes("Revisar esta opción") &&
-    cardsOf(harness.run(clone(shipped.financing), "en")).includes("Review this option"));
+    cardsOf(harness.run(clone(shipped.financing), "es")).includes("Considerar esta opción") &&
+    cardsOf(harness.run(clone(shipped.financing), "en")).includes("Consider this option") &&
+    cardsOf(harness.run(clone(shipped.financing), "es")).includes("Ocultar detalles") &&
+    cardsOf(harness.run(clone(shipped.financing), "en")).includes("Hide details"));
 }
 
 // --- 11. Path identity: injective, and safe in a selector -------------------
@@ -842,32 +862,33 @@ console.log("Path disclosure and preference controls:");
     return !!m && block.includes(`id="${m[1]}"`);
   };
   const panelIsHidden = (block) =>
-    /<div class="fin-path-panel" id="[^"]*" hidden>/.test(block);
+    /<section class="fin-ws-detail fin-path-panel" id="[^"]*" aria-labelledby="[^"]*" hidden>/.test(block);
 
   check("the aria-controls resolver rejects a planted dangling reference",
     !ariaControlsResolves('<button aria-controls="ghost"></button><div id="other">'));
   check("the hidden-panel detector rejects a planted open panel",
-    !panelIsHidden('<div class="fin-path-panel" id="finPathPanel-x">body</div>'));
+    !panelIsHidden('<section class="fin-ws-detail fin-path-panel" id="finPathPanel-x" aria-labelledby="y">body</section>'));
 
   // ---- collapsed, not preferred ----
   let cards = cardsOf(harness.run(clone(shipped.financing), "en"));
   let block = blockFor(cards, PATH);
   check("collapsed: the block was located", block.length > 0);
   check("collapsed: the control is a native <button type=\"button\">",
-    /<button type="button" class="fin-btn fin-btn-ghost fin-path-review"/.test(block));
+    /<button type="button" class="fin-ws-row fin-path-review/.test(block));
   check("collapsed: no <details>/<summary> anywhere in the sheet",
     !/<details|<summary/.test(cards));
   check("collapsed: aria-expanded is false", /aria-expanded="false"/.test(block));
-  check("collapsed: aria-controls points at an id present in the same output",
-    ariaControlsResolves(block));
+  check("collapsed: aria-controls points at the stage, present in the same output",
+    /aria-controls="finWsStage"/.test(block) && cards.includes('id="finWsStage"'));
   check("collapsed: the panel carries the hidden attribute", panelIsHidden(block));
-  check("collapsed: the button reads reviewOption",
-    block.includes(escLike(shipped.financing.copy.reviewOption.en)));
+  check("collapsed: the row names its path",
+    block.includes('<span class="fin-ws-row__name">Lacks In-House Credit</span>'));
   check("collapsed: exactly one Consider, no Clear, no marker",
     countOf(block, CONSIDER_RE) === 1 && countOf(block, CLEAR_RE) === 0 &&
     !MARKER_RE.test(block));
+  const pathControls = (html) => (html.match(/<button[^>]*class="[^"]*fin-path-[^"]*"[^>]*>/g) || []).join(" ");
   check("collapsed: no aria-pressed on any path control",
-    !/aria-pressed/.test(cards));
+    pathControls(cards).length > 0 && !/aria-pressed/.test(pathControls(cards)));
   check("that aria-pressed probe fires on a planted counter-example",
     /aria-pressed/.test('<button aria-pressed="true">x</button>'));
 
@@ -876,12 +897,14 @@ console.log("Path disclosure and preference controls:");
   block = blockFor(cards, PATH);
   check("expanded: aria-expanded is true", /aria-expanded="true"/.test(block));
   check("expanded: the panel loses the hidden attribute", !panelIsHidden(block));
-  check("expanded: aria-controls still resolves", ariaControlsResolves(block));
-  check("expanded: the button reads hideDetails",
+  check("expanded: aria-controls still names the stage", /aria-controls="finWsStage"/.test(block));
+  check("expanded: the visible panel offers hideDetails",
     block.includes(escLike(shipped.financing.copy.hideDetails.en)));
   check("expanding one path does not expand the others",
-    countOf(cards, /aria-expanded="true"/g) === 1 &&
-    countOf(cards, /aria-expanded="false"/g) === 4);
+    countOf(cards, ROW_EXPANDED_RE("true")) === 1 &&
+    countOf(cards, ROW_EXPANDED_RE("false")) === 4);
+  check("expanding one path leaves every other panel hidden",
+    countOf(cards, /<section class="fin-ws-detail fin-path-panel" id="[^"]*" aria-labelledby="[^"]*" hidden>/g) === 4);
 
   // ---- preferred ----
   cards = cardsOf(harness.run(clone(shipped.financing), "en", { pref: PATH }));
@@ -894,7 +917,7 @@ console.log("Path disclosure and preference controls:");
     !!marker && !/<button|onclick|ontouchend|tabindex|role=/.test(marker[0]));
   check("preferred: the marker reads currentlyConsidering",
     !!marker && marker[2] === escLike(shipped.financing.copy.currentlyConsidering.en));
-  check("preferred: still no aria-pressed anywhere", !/aria-pressed/.test(cards));
+  check("preferred: still no aria-pressed on any path control", !/aria-pressed/.test(pathControls(cards)));
   check("preferred: only the preferred path swaps its control",
     countOf(cards, CONSIDER_RE) === 4 && countOf(cards, CLEAR_RE) === 1);
   check("preferred: the Review disclosure is unaffected",
@@ -916,8 +939,8 @@ console.log("Path disclosure and preference controls:");
   check("a path with no resolvable label is dropped",
     harness.api.finPaymentPaths().length === 4);
   const degraded = cardsOf(harness.run(c, "en"));
-  check("its card still renders, without any path controls",
-    countOf(degraded, CARD_RE) === 5 && countOf(degraded, REVIEW_RE) === 4 &&
+  check("the dropped path renders no panel and no controls",
+    countOf(degraded, CARD_RE) === 4 && countOf(degraded, REVIEW_RE) === 4 &&
     countOf(degraded, CONSIDER_RE) === 4);
 }
 
