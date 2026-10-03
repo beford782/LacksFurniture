@@ -735,7 +735,8 @@ async (ARGS) => {
   out.sheet = { statusLines: cards ? cards.querySelectorAll('.fin-offer__price-status').length : -1,
                 text: cards ? cards.textContent : '',
                 dollars: cards ? (cards.textContent.match(/\$\s?\d/g) || []).length : -1,
-                cardCount: cards ? cards.querySelectorAll('.fin-card').length : -1 };
+                // workspace (2026-09-27): one governed panel per path, all rendered
+                cardCount: cards ? cards.querySelectorAll('.fin-ws-detail').length : -1 };
   if (typeof window.closeFinancingSheet === 'function') window.closeFinancingSheet();
   // Whole-document silence probe
   out.anySlot = document.querySelectorAll('[data-price-state]').length;

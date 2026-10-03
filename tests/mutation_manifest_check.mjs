@@ -20,7 +20,11 @@
 //  D. deleting the mapper key from a copy of the shipped sweep reproduces the
 //     original defect as a REFUSAL naming #756 and #757, not as a crash;
 //  E. the manifest exit code (2) is distinct from the survivor exit code (1),
-//     and --from refuses an index outside the manifest.
+//     and --from refuses an index outside the manifest;
+//  F. --to is an inclusive upper bound: on a planted four-entry manifest with
+//     marker observers, each --from/--to combination runs exactly its
+//     entries, baselines exactly their observers, reports the selected count,
+//     and every malformed or reversed range is refused before any observer.
 //
 // Every sweep invocation here runs a COPY of tests/mutation_sweep.mjs from a
 // temp directory, pointed at a temp copy of the tree through
@@ -180,12 +184,102 @@ check(!/baseline \(unmutated\)/.test(replay.out), "no observer ran on the replay
 
 // ---------------------------------------------------------------------------
 section("E. exit codes stay distinct; --from is bounded");
-check(/process\.exit\(survivors === 0 && notApplied === 0 \? 0 : 1\);/.test(sweep), "a survivor or a stale entry still exits 1");
+check(/process\.exit\(survivors === 0 && notApplied === 0 && erroredCount === 0 \? 0 : 1\);/.test(sweep), "a survivor, a stale entry or an errored (killed) observer still exits 1");
 check((sweep.match(/process\.exit\(2\);/g) || []).length >= 2, "manifest and --from refusals exit 2");
 const badFrom = runSweep(sweepPath, ["--from", String(manifestCount + 1)]);
 check(badFrom.status === 2 && badFrom.out.includes(`--from needs an integer between 1 and ${manifestCount}`),
       "--from past the manifest end is refused with exit 2", badFrom.out.slice(-200));
 check(!/baseline \(unmutated\)/.test(badFrom.out), "...before any observer runs");
+
+// ---------------------------------------------------------------------------
+// F. --to (2026-10-01): an inclusive upper bound, so disjoint --from/--to
+// ranges can run as parallel shards. Proved by EXECUTION on a planted
+// four-entry manifest whose entries each name their own marker observer: the
+// observer appends "<n>:baseline" or "<n>:mutated" to a log, passes on the
+// unmutated page and fails on the mutated one. The log is therefore a direct
+// record of which entries ran, and of which observers the baseline covered.
+section("F. --to selects an inclusive range; the baseline covers exactly the selected observers");
+const PROBE_FIND = "<!DOCTYPE html>";
+check(sweep.includes("const RUN = MUTATIONS.slice(fromIndex - 1, toIndex);"), "the selection is the inclusive slice from --from to --to");
+for (let n = 1; n <= 4; n++) {
+  writeFileSync(join(tempRoot, "tests", `probe_range_observer_${n}.mjs`),
+    'import { readFileSync, appendFileSync } from "node:fs";\n' +
+    `const mutated = readFileSync("index.html", "utf8").includes("<!-- range probe ${n} -->");\n` +
+    `appendFileSync(process.env.MUTATION_RANGE_LOG, "${n}:" + (mutated ? "mutated" : "baseline") + "\\n");\n` +
+    "process.exit(mutated ? 1 : 0);\n");
+}
+const rangeEntries = [1, 2, 3, 4].map((n) =>
+  `  ["range probe ${n}", ${JSON.stringify(PROBE_FIND)}, ${JSON.stringify(PROBE_FIND + `<!-- range probe ${n} -->`)}, ["tests/probe_range_observer_${n}.mjs"]],\n`).join("");
+const ranged = replaceOnce(sweep, /^const MUTATIONS = \[\r?\n[\s\S]*?\r?\n\];/m,
+  "const MUTATIONS = [\n" + rangeEntries + "];", "whole manifest");
+const rangedPath = writeSweepCopy("sweep_ranged.mjs", ranged);
+function runRange(args) {
+  const log = join(work, `range-${args.join("_") || "all"}.log`);
+  const r = runSweep(rangedPath, args, { MUTATION_RANGE_LOG: log });
+  const lines = existsSync(log) ? readFileSync(log, "utf8").trim().split("\n").filter(Boolean) : [];
+  return { ...r, baseline: lines.filter((l) => l.endsWith(":baseline")).map((l) => l[0]).sort().join(""),
+           mutated: lines.filter((l) => l.endsWith(":mutated")).map((l) => l[0]).sort().join("") };
+}
+for (const [args, want, header] of [
+  [[], "1234", null],
+  [["--to", "2"], "12", "running entries 1-2 of 4 (--from 1 --to 2)"],
+  [["--from", "3"], "34", "running entries 3-4 of 4 (--from 3)"],
+  [["--from", "2", "--to", "3"], "23", "running entries 2-3 of 4 (--from 2 --to 3)"],
+  [["--from", "2", "--to", "2"], "2", "running entries 2-2 of 4 (--from 2 --to 2)"],
+  [["--from", "1", "--to", "4"], "1234", null],
+  [["--to", "4", "--from", "4"], "4", "running entries 4-4 of 4 (--from 4 --to 4)"],
+]) {
+  const r = runRange(args);
+  const label = args.join(" ") || "(no range)";
+  check(r.status === 0 && r.mutated === want, `[${label}] exactly entries ${want.split("").join(",")} are mutated and caught`,
+        `status ${r.status} mutated=${r.mutated}: ${r.out.slice(-300)}`);
+  check(r.baseline === want, `[${label}] the baseline runs exactly the selected entries' observers (${want.split("").join(",")}), no others`,
+        `baseline=${r.baseline}`);
+  const lo = want[0], hi = want[want.length - 1];
+  check(r.out.includes(`Mutation sweep: ${want.length}/${want.length} caught, 0 survived, 0 errored, 0 did not apply`
+        + (want.length < 4 ? ` (entries ${lo}-${hi} of 4)` : "")),
+        `[${label}] the summary counts the selection (${want.length}) and names its range`, r.out.slice(-200));
+  check(header === null ? !/running entries/.test(r.out) : r.out.includes(header),
+        `[${label}] the range header is ${header === null ? "absent for the whole manifest" : "printed"}`, r.out.slice(0, 200));
+}
+// Two disjoint shards cover the manifest exactly once.
+const shardA = runRange(["--from", "1", "--to", "2"]), shardB = runRange(["--from", "3", "--to", "4"]);
+check((shardA.mutated + shardB.mutated).split("").sort().join("") === "1234",
+      "two disjoint shards (1-2, 3-4) cover every entry exactly once", `${shardA.mutated}+${shardB.mutated}`);
+for (const [args, why] of [
+  [["--to", "0"], "below the first entry"],
+  [["--to", "5"], "past the manifest end"],
+  [["--from", "3", "--to", "2"], "reversed"],
+  [["--to", "2.5"], "not an integer"],
+  [["--to", "abc"], "not a number"],
+  [["--to"], "missing its value"],
+  [["--from", "2", "--to"], "missing its value after --from"],
+]) {
+  const r = runRange(args);
+  check(r.status === 2 && /::error:: --to needs an integer between \d+ and 4/.test(r.out),
+        `[${args.join(" ")}] a --to that is ${why} is refused with exit 2`, `status ${r.status}: ${r.out.slice(-200)}`);
+  check(!/baseline \(unmutated\)/.test(r.out) && r.baseline === "" && r.mutated === "",
+        `[${args.join(" ")}] ...before any observer runs`);
+}
+// Negative controls: an exclusive upper bound, and a baseline taken from the
+// whole manifest instead of the selection, are each visible in the log.
+{
+  const offByOne = replaceOnce(ranged, /const RUN = MUTATIONS\.slice\(fromIndex - 1, toIndex\);/,
+    "const RUN = MUTATIONS.slice(fromIndex - 1, toIndex - 1);", "inclusive slice");
+  const log = join(work, "range-control-a.log");
+  runSweep(writeSweepCopy("sweep_ranged_offbyone.mjs", offByOne), ["--from", "2", "--to", "3"], { MUTATION_RANGE_LOG: log });
+  const ran = existsSync(log) ? readFileSync(log, "utf8") : "";
+  check(/2:mutated/.test(ran) && !/3:mutated/.test(ran), "control: an exclusive --to (entry 3 never runs) is DETECTED by the log", ran.replace(/\n/g, " "));
+  const wideBaseline = replaceOnce(ranged, /RUN\.flatMap\(\(m\) => m\[3\] \|\| DEFAULT_SUITES\)/,
+    "MUTATIONS.flatMap((m) => m[3] || DEFAULT_SUITES)", "baseline observer set");
+  const log2 = join(work, "range-control-b.log");
+  runSweep(writeSweepCopy("sweep_ranged_widebase.mjs", wideBaseline), ["--from", "2", "--to", "3"], { MUTATION_RANGE_LOG: log2 });
+  const ran2 = existsSync(log2) ? readFileSync(log2, "utf8") : "";
+  check(/1:baseline/.test(ran2) && /4:baseline/.test(ran2), "control: a baseline that runs unselected observers is DETECTED by the log", ran2.replace(/\n/g, " "));
+}
+const realBadTo = runSweep(sweepPath, ["--to", String(manifestCount + 1)]);
+check(realBadTo.status === 2 && realBadTo.out.includes(`--to needs an integer between 1 and ${manifestCount}`),
+      "the shipped sweep refuses --to past its own manifest end", realBadTo.out.slice(-200));
 
 console.log(`\nMutation manifest check: ${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

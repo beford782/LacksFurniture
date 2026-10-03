@@ -270,14 +270,6 @@
         "en": "Not selected",
         "es": "Sin seleccionar"
       },
-      "optionsExploredLabel": {
-        "en": "Options explored",
-        "es": "Opciones exploradas"
-      },
-      "reviewOption": {
-        "en": "Review this option",
-        "es": "Revisar esta opción"
-      },
       "hideDetails": {
         "en": "Hide details",
         "es": "Ocultar detalles"
@@ -295,8 +287,8 @@
         "es": "Quitar preferencia"
       },
       "preferenceNotNow": {
-        "en": "Not right now",
-        "es": "Ahora no"
+        "en": "Not choosing a payment option today",
+        "es": "Hoy no elegimos una forma de pago"
       },
       "exploreConsequence": {
         "en": "Explore options together. Nothing is submitted and no application is started.",
@@ -307,8 +299,8 @@
         "es": "Listo"
       },
       "preferenceNotNowAnnounce": {
-        "en": "Not right now selected. You can change this choice.",
-        "es": "Se seleccionó 'Ahora no'. Puedes cambiar esta opción."
+        "en": "Not choosing a payment option today. You can change this choice.",
+        "es": "Hoy no elegimos una forma de pago. Puedes cambiar esta opción."
       },
       "preferenceClearedAnnounce": {
         "en": "Selection cleared. Choose again when you're ready.",
@@ -341,6 +333,34 @@
       "prequalNote": {
         "en": "See if you prequalify on Lacks' official financing page — prequalification is not approval.",
         "es": "Consulta si precalificas en la página oficial de financiamiento de Lacks — precalificar no es una aprobación."
+      },
+      "howPromotional": {
+        "en": "Promotional plans from a credit provider. Your Lacks specialist confirms the provider, which plans are available and their terms.",
+        "es": "Planes promocionales de un proveedor de crédito. Tu especialista de Lacks confirma el proveedor, qué planes están disponibles y sus términos."
+      },
+      "howInstallment": {
+        "en": "Credit arranged for this purchase. The provider decides approval and sets the terms; your Lacks specialist confirms them.",
+        "es": "Crédito para esta compra. El proveedor decide la aprobación y fija los términos; tu especialista de Lacks los confirma."
+      },
+      "howMexico": {
+        "en": "A credit program for purchases delivered to Mexico. Requirements and terms are reviewed with your Lacks specialist.",
+        "es": "Un programa de crédito para compras con entrega en México. Los requisitos y términos se revisan con tu especialista de Lacks."
+      },
+      "topicDue": {
+        "en": "What is due today is confirmed in store. Depending on the option, it can include an upfront amount, tax and delivery.",
+        "es": "Lo que se paga hoy se confirma en la tienda. Según la opción, puede incluir un monto inicial, impuestos y entrega."
+      },
+      "topicSchedule": {
+        "en": "How often you pay, and for how long, depends on the option. Current terms are confirmed in store.",
+        "es": "Con qué frecuencia pagas, y por cuánto tiempo, depende de la opción. Los términos actuales se confirman en la tienda."
+      },
+      "topicFull": {
+        "en": "The full cost adds up everything paid over time, anything paid upfront, and tax, delivery and other charges. It is confirmed in store.",
+        "es": "El costo total suma todo lo que se paga con el tiempo, lo que se paga al inicio, e impuestos, entrega y otros cargos. Se confirma en la tienda."
+      },
+      "topicOwnership": {
+        "en": "When the items become yours can differ between options, especially lease-to-own. Ownership terms are confirmed in store.",
+        "es": "El momento en que los artículos pasan a ser tuyos puede variar según la opción, sobre todo en el arrendamiento con opción a compra. Los términos de propiedad se confirman en la tienda."
       }
     },
     "plans": [

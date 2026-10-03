@@ -70,13 +70,24 @@ for (const expr of ["L(p.headline)", "L(p.detail)", "L(p.disclosure)"]) {
 }
 
 // --- fields the validator treats as UNGATED must NOT be inside it ---
-for (const expr of ["L(ih.headline)", "L(mx.headline)", "L(ih.disclosure)", "L(mx.disclosure)"]) {
+for (const expr of ["L(ih.disclosure)", "L(mx.disclosure)"]) {
   check(`${expr} renders OUTSIDE the exact-terms gate (validator guards it)`,
     ungated.includes(expr) && !gated.includes(expr));
 }
+// Workspace (2026-09-27): every path's TITLE is its finPaymentPaths() label,
+// derived from plan.headline (installment, evergreen, scenario) or from the
+// provider GROUP (promotional). finPaymentPaths() never consults freshness, so
+// titles are ungated by construction — the validator guards those fields.
+const pathsFnIdx = html.indexOf("function finPaymentPaths()");
+const pathsFn = blockFrom(html, pathsFnIdx);
+check("path titles are finPaymentPaths() labels: headline-derived for non-promotional groups, ungated",
+  pathsFn.length > 200 && (pathsFn.match(/label: L\(p\.headline\)/g) || []).length === 3
+  && !/Fresh\b/.test(pathsFn));
+check("the workspace panel titles the path with its finPaymentPaths() label",
+  /fin-ws-detail__name[\s\S]{0,160}finEsc\(path\.label\)/.test(html));
 check("provider renders outside the gate, from the provider GROUP not syn[0]",
-  /var provider = grp\.provider;/.test(sheet) && !/syn\[0\]/.test(sheet)
-  && ungated.includes("provider") && !gated.includes("+ provider"));
+  /var provider = grp\.provider;/.test(pathsFn) && !/syn\[0\]/.test(sheet)
+  && ungated.includes("grp.provider") && !gated.includes("provider"));
 
 // --- per-plan freshness ternaries still gate the exact details ---
 check("in-house detail is gated by ihFresh",
@@ -88,10 +99,9 @@ check("scenario detail + representativeExample are gated by mxFresh",
 // --- evergreen card is genuinely ungated (validator guards its detail) ---
 const moreIdx = sheet.indexOf("groups.evergreen.forEach(function(p)");
 check("evergreen card located", moreIdx > 0);
-const evergreen = sheet.slice(moreIdx, sheet.indexOf("// Card 4", moreIdx));
-check("evergreen headline+detail render with no freshness gate",
-  evergreen.includes("L(p.headline)") && evergreen.includes("L(p.detail)")
-  && !/fresh/i.test(evergreen));
+const evergreen = sheet.slice(moreIdx, sheet.indexOf("var mx = groups['scenario-mexico']", moreIdx));
+check("evergreen detail renders with no freshness gate (its title is the ungated path label)",
+  evergreen.length > 50 && evergreen.includes("L(p.detail)") && !/fresh/i.test(evergreen));
 
 // --- handoff chips use non-promotional headlines ungated ---
 const chipIdx = html.indexOf("var seenKinds = {};");
@@ -143,6 +153,10 @@ const copyKeys = Object.keys(cfg.financing.copy);
 // config, and the app's own indirect-consumption set are each compared
 // against IT.
 const ANNOUNCEMENT_KEYS = ["preferenceNotNowAnnounce", "preferenceClearedAnnounce"];
+// The workspace's optional information topics (2026-09-27) are read through
+// FC(topic.copy) from the FIN_WS_TOPICS table, so they are indirect too.
+const TOPIC_KEYS = ["topicDue", "topicSchedule", "topicFull", "topicOwnership"];
+const INDIRECT_KEYS = ANNOUNCEMENT_KEYS.concat(TOPIC_KEYS);
 
 // Keys the app reaches WITHOUT a literal FC('key'): a copy key that appears as
 // a bare quoted literal in the app source but is never read through FC(). This
@@ -157,10 +171,12 @@ const indirectlyConsumed = copyKeys
 
 check(`the app's indirectly-consumed copy keys are exactly the declared inventory `
   + `(found: ${JSON.stringify(indirectlyConsumed)})`,
-  JSON.stringify(indirectlyConsumed) === JSON.stringify([...ANNOUNCEMENT_KEYS].sort()));
+  JSON.stringify(indirectlyConsumed) === JSON.stringify([...INDIRECT_KEYS].sort()));
+check("every declared topic key is read through the FIN_WS_TOPICS table",
+  TOPIC_KEYS.every((k) => new RegExp("copy: '" + k + "'").test(html)));
 
 const missing = copyKeys.filter(
-  (k) => !fcConsumed.has(k) && !ANNOUNCEMENT_KEYS.includes(k));
+  (k) => !fcConsumed.has(k) && !INDIRECT_KEYS.includes(k));
 check(`every financing.copy key has a runtime consumer (unconsumed: ${JSON.stringify(missing)})`,
   missing.length === 0);
 
@@ -291,9 +307,8 @@ check("validator's gated predicate is the promotional group",
 check("in-house/scenario detail stays freshness-gated in the renderer",
   /ihFresh\s*\?[\s\S]{0,140}L\(ih\.detail\)/.test(sheet)
   && /mxFresh\s*\?[\s\S]{0,220}L\(mx\.detail\)/.test(sheet));
-check("in-house/scenario headline+disclosure render outside the gate",
-  ungated.includes("L(ih.headline)") && ungated.includes("L(ih.disclosure)")
-  && ungated.includes("L(mx.headline)") && ungated.includes("L(mx.disclosure)"));
+check("in-house/scenario disclosure renders outside the gate (titles are ungated path labels)",
+  ungated.includes("L(ih.disclosure)") && ungated.includes("L(mx.disclosure)"));
 check("evergreen cards render individually from the evergreen group with no freshness gate",
   /groups\.evergreen\.forEach\(function\(p\)/.test(sheet));
 check("scenario card is selected only by the explicit scenario",
@@ -469,7 +484,7 @@ check(`shipped ungated copy trips no unit marker (offenders: ${JSON.stringify(sh
   check("no undeclared indirectly-consumed copy key ships in the canonical source",
     Object.keys(canonicalCopy)
       .filter((k) => !fcConsumed.has(k) && quotedInApp.has(k))
-      .every((k) => ANNOUNCEMENT_KEYS.includes(k)));
+      .every((k) => INDIRECT_KEYS.includes(k)));
 }
 
 // ---------------------------------------------------------------------------
@@ -517,11 +532,13 @@ check(`shipped ungated copy trips no unit marker (offenders: ${JSON.stringify(sh
     for (const retired of ["agendaPrompt", "agendaMark", "agendaMarked", "agendaEmpty",
                            "agendaConsequence", "agendaChange", "agendaDismissed",
                            "agendaDone", "agendaNotNow", "resultsAsk", "drawerMark",
-                           "emailBody", "interestNotNowAnnounce", "interestClearedAnnounce"]) {
+                           "emailBody", "interestNotNowAnnounce", "interestClearedAnnounce",
+                           // retired by owner direction 2026-09-27 (workspace)
+                           "optionsExploredLabel", "reviewOption"]) {
       check(`${label} no longer ships the retired key '${retired}'`,
         !Object.prototype.hasOwnProperty.call(obj, retired));
     }
-    for (const adopted of ["paymentPreferenceLabel", "optionsExploredLabel", "reviewOption",
+    for (const adopted of ["paymentPreferenceLabel",
                            "hideDetails", "considerOption", "currentlyConsidering",
                            "clearPreference", "exploreConsequence", "preferenceNone",
                            "preferenceNotNow", "preferenceNotNowAnnounce",

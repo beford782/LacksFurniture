@@ -1940,8 +1940,6 @@ FINANCING_SURFACES = {"drawer", "sleepSystem"}
 PAYMENT_CHOICE_REQUIRED_COPY = (
     # The nine strings adopted with D4.
     "paymentPreferenceLabel",
-    "optionsExploredLabel",
-    "reviewOption",
     "hideDetails",
     "considerOption",
     "currentlyConsidering",
@@ -1976,6 +1974,11 @@ PAYMENT_CHOICE_RETIRED_COPY = {
     "resultsAsk": "the duplicate Results agenda CTA (Results keeps one cta)",
     "drawerMark": "the drawer agenda CTA (the drawer keeps one cta)",
     "emailBody": "the state-specific email body (D4 excludes payment state from email)",
+    # Owner direction 2026-09-27 (payment-choice workspace, slice 1): browsing
+    # history is never customer-facing, and a path is explored by tapping the
+    # path itself rather than a separate "review" button.
+    "optionsExploredLabel": "the customer-facing explored-history row (retired 2026-09-27)",
+    "reviewOption": "the per-card review button (the workspace explores a path by its own row)",
 }
 
 
@@ -6388,9 +6391,9 @@ def _self_test() -> int:
     check("D4 parity: enabled + NO experience + complete required copy -> valid",
           validate_financing(_fc(_rp_ok), allowed_source_hosts=_FHOSTS).ok)
 
-    _rp_gap = _fmut(); del _rp_gap["experience"]; del _rp_gap["copy"]["reviewOption"]
+    _rp_gap = _fmut(); del _rp_gap["experience"]; del _rp_gap["copy"]["hideDetails"]
     check("D4 parity: enabled + NO experience + a missing required key -> named error",
-          any("copy.reviewOption" in e and "required" in e for e in
+          any("copy.hideDetails" in e and "required" in e for e in
               validate_financing(_fc(_rp_gap), allowed_source_hosts=_FHOSTS).errors))
 
     _rp_off = _fmut(); del _rp_off["experience"]; _rp_off["enabled"] = False
@@ -7729,8 +7732,6 @@ def _self_test() -> int:
     # The adopted D4 strings themselves, verbatim, must all validate clean.
     for _k, _en, _es in (
             ("paymentPreferenceLabel", "Payment preference", "Preferencia de pago"),
-            ("optionsExploredLabel", "Options explored", "Opciones exploradas"),
-            ("reviewOption", "Review this option", "Revisar esta opción"),
             ("hideDetails", "Hide details", "Ocultar detalles"),
             ("considerOption", "Consider this option", "Considerar esta opción"),
             ("currentlyConsidering", "Currently considering ✓", "En consideración ✓"),

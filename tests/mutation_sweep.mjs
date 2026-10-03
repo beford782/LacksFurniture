@@ -112,6 +112,13 @@ const PAY_EMAIL = ["tests/email_gating_check.mjs"];
 const PAY_ASYNC = ["tests/session_async_check.mjs"];
 const PAY_COPY = ["tests/financing_copy_policy_check.mjs"];
 const PAY_RENDER = ["tests/financing_render_check.mjs"];
+// The rendered workspace suite's focused navigation mode (finalist route,
+// portrait reveal): real clicks and scrolling in Chromium, inside the
+// per-observer timeout. The full file runs in CI.
+const PAY_WS_NAV = ["tests/payment_workspace_check.py --only nav"];
+// ...and its isolation mode (background isolation, nested drawer/payments
+// close and reset, the timeout dialog over payments, the language rule).
+const PAY_WS_ISO = ["tests/payment_workspace_check.py --only isolation"];
 // The validator's own self-test, the one PYTHON observer. It owns the
 // config-admission side of Payment Choice: which financing blocks are allowed
 // to exist, as distinct from what index.html does with one that does.
@@ -1601,12 +1608,13 @@ const MUTATIONS = [
   ["payment: Not right now erases the explored history instead of preserving it",
     "      payPref = turningOn ? PAY_NOT_NOW : null;",
     "      payPref = turningOn ? PAY_NOT_NOW : null;\n      if (turningOn) payExplored = [];", PAY],
-  ["payment: Not right now stops suppressing the explored row on the handoff",
-    "      var exploredLabels = notNow ? [] : payExplored",
-    "      var exploredLabels = payExplored", PAY],
-  ["payment: the current preference is listed again as merely explored",
-    "        .filter(function(id) { return id !== payPref; })",
-    "        .filter(function(id) { return id !== null; })", PAY],
+  // Owner direction 2026-09-27: no explored history on any customer surface.
+  ["payment: an explored-history row returns to the handoff",
+    "      var rows = '<div class=\"fin-pref-row\">'",
+    "      var rows = '<ul class=\"fin-explored-list\"></ul><div class=\"fin-pref-row\">'", PAY],
+  ["payment: other explored paths are listed beside the preference",
+    "      var rows = '<div class=\"fin-pref-row\">'",
+    "      var rows = payExplored.map(labelFor).join(' ') + '<div class=\"fin-pref-row\">'", PAY],
   ["payment: an unknown/stale path id renders as a raw token",
     "        return '';        // unknown/stale id: NEVER rendered, never as a raw id",
     "        return id;", PAY],
@@ -1661,15 +1669,15 @@ const MUTATIONS = [
     "      if (!payRegionLive(regionId)) return;\n      if (_payAnnounceTimer !== null) {\n        clearTimeout(_payAnnounceTimer);\n        _payAnnounceTimer = null;\n      }", PAY],
 
   // Accessibility of the new controls.
-  ["payment: the disclosure loses aria-expanded",
-    "        + 'aria-expanded=\"' + (open ? 'true' : 'false') + '\" '",
-    "        + ''", PAY],
-  ["payment: the disclosure loses aria-controls",
-    "        + 'aria-controls=\"' + finEsc(panelId) + '\" '",
-    "        + ''", PAY],
+  ["payment: the chooser row loses aria-expanded",
+    "        + 'aria-expanded=\"' + (explored ? 'true' : 'false') + '\" aria-controls=\"finWsStage\" '",
+    "        + 'aria-controls=\"finWsStage\" '", PAY],
+  ["payment: the chooser row loses aria-controls",
+    "        + 'aria-expanded=\"' + (explored ? 'true' : 'false') + '\" aria-controls=\"finWsStage\" '",
+    "        + 'aria-expanded=\"' + (explored ? 'true' : 'false') + '\" '", PAY],
   ["payment: Consider claims to be a two-state control (gains aria-pressed)",
-    "        html += '<button type=\"button\" class=\"fin-btn fin-btn-secondary fin-path-consider\"",
-    "        html += '<button type=\"button\" aria-pressed=\"false\" class=\"fin-btn fin-btn-secondary fin-path-consider\"", PAY],
+    "        html += '<button type=\"button\" class=\"fin-btn fin-btn-primary fin-path-consider\"",
+    "        html += '<button type=\"button\" aria-pressed=\"false\" class=\"fin-btn fin-btn-primary fin-path-consider\"", PAY],
   ["payment: the considering marker becomes an interactive control",
     "        html += '<span class=\"fin-path-marker\" id=\"'",
     "        html += '<button type=\"button\" class=\"fin-path-marker\" id=\"'", PAY],
@@ -1677,8 +1685,8 @@ const MUTATIONS = [
     "        + 'aria-pressed=\"' + (notNow ? 'true' : 'false') + '\" '",
     "        + ''", PAY],
   ["payment: the new controls lose the .fin-btn interaction floor (48px + touch-action)",
-    "class=\"fin-btn fin-btn-ghost fin-path-review\"",
-    "class=\"fin-path-review\"", PAY],
+    "class=\"fin-btn fin-btn-primary fin-path-consider\"",
+    "class=\"fin-path-consider\"", PAY],
   ["payment: a path control drops its ontouchend preventDefault (iPad ghost clicks)",
     "'ontouchend=\"event.preventDefault();window.considerPaymentPath(this.getAttribute(\\'data-path-id\\'));\">'",
     "'ontouchend=\"window.considerPaymentPath(this.getAttribute(\\'data-path-id\\'));\">'", PAY],
@@ -1707,11 +1715,11 @@ const MUTATIONS = [
     "      .fin-handoff__interest .fin-not-now[aria-pressed=\"true\"] {",
     "      .fin-not-now {", PAY],
   ["payment: the considering marker's geometric cue collapses to the resting width",
-    "      .fin-card .fin-path-marker {\n        border-width: 2px;",
-    "      .fin-card .fin-path-marker {\n        border-width: 1px;", PAY],
+    "      .fin-ws-stage .fin-ws-actions .fin-path-marker {\n        border-width: 2px;",
+    "      .fin-ws-stage .fin-ws-actions .fin-path-marker {\n        border-width: 1px;", PAY],
   ["payment: the resting path controls lose their explicit system boundary",
-    "      .fin-card .fin-path-review,\n      .fin-card .fin-path-consider,\n      .fin-card .fin-path-clear {\n        border-color: CanvasText;",
-    "      .fin-card .fin-path-review,\n      .fin-card .fin-path-consider,\n      .fin-card .fin-path-clear {\n        border-color: #C9C1AF;", PAY],
+    "      .fin-ws-chooser .fin-path-review,\n      .fin-ws-stage .fin-path-consider,\n      .fin-ws-stage .fin-path-clear {\n        border-color: CanvasText;",
+    "      .fin-ws-chooser .fin-path-review,\n      .fin-ws-stage .fin-path-consider,\n      .fin-ws-stage .fin-path-clear {\n        border-color: #C9C1AF;", PAY],
 
   // Session + language.
   ["payment: a language switch resets the model instead of only the announcements",
@@ -3379,6 +3387,42 @@ const MUTATIONS = [
     "        return _safeText(a && a.name, 200) + (qty > 1 ? ' x' + qty : '');",
     "        return _safeText(a && a.name, 200);",
     EMAIL_PRIORITIES, "Code.gs"],
+
+  // Payment workspace correction pass (2026-09-30). The navigation entries
+  // are observable only in a real browser; the whole rendered workspace suite
+  // runs past this sweep's 180s per-observer timeout, so they name its
+  // focused `--only nav` mode (the finalist route and the portrait reveal,
+  // about 110s), which CI's full run of the same file also covers.
+  ["payment workspace: 'Choose a finalist' from the Sleep Plan closes the workspace and stays on the Plan",
+    "      if (typeof window.sleepPlanChooseFinalist === 'function') window.sleepPlanChooseFinalist();\n    };",
+    "    };", PAY_WS_NAV],
+  ["payment workspace: portrait, an explicitly opened option's panel is left below the screen",
+    "      if (opening) finWsRevealPanel(id, keepFocus);\n",
+    "", PAY_WS_NAV],
+  ["payment workspace: an installment or Mexico path is 'offered through' the retailer by assumption",
+    "        return finSafeProvider(path.plans[0]) || t('pay.ws.cis');",
+    "        return path.group === 'promotional' ? (finSafeProvider(path.plans[0]) || t('pay.ws.cis')) : (storeName() || '');", PAY],
+  ["payment workspace: close focuses the stored opener even after it was repainted (detached)",
+    "      var returnTo = finWsReturnTarget(_financeReturnFocus, placementAtClose);",
+    "      var returnTo = _financeReturnFocus;", PAY],
+  ["payment workspace: the by-id fallback is dropped (a repainted Sleep Plan opener loses focus)",
+    "      var byId = opener.id ? document.getElementById(opener.id) : null;",
+    "      var byId = null;", PAY],
+
+  // Codex audit (2026-10-01): background isolation, nested dialogs and the
+  // workspace language rule, observed by the suite's `--only isolation` mode.
+  ["payment workspace: only the screens are isolated (the saved-picks pill reaches the screen behind payments)",
+    "      kids.forEach(function(el) {\n        if (el === sheet || el === backdrop || !el.setAttribute) return;",
+    "      kids.filter(function(el) { return el.classList && el.classList.contains('screen'); }).forEach(function(el) {\n        if (el === sheet || el === backdrop || !el.setAttribute) return;", PAY_WS_ISO],
+  ["payment workspace: payments takes over inert it does not own (closing it exposes Results under an open drawer)",
+    "        if (el.hasAttribute && el.hasAttribute('inert')) return;\n",
+    "", PAY_WS_ISO],
+  ["payment workspace: release ignores a dialog its own lifecycle closed (the wipe leaves the drawer non-inert)",
+    "        if (hiddenNow && !rec.wasHidden) return;\n",
+    "", PAY_WS_ISO],
+  ["payment workspace: the workspace language switch ignores store-config.languages",
+    "      if (wsLang) wsLang.style.display = single ? 'none' : '';\n",
+    "", PAY_WS_ISO],
 ];
 
 // ---------------------------------------------------------------------------
@@ -3531,9 +3575,18 @@ if (!Number.isInteger(fromIndex) || fromIndex < 1 || fromIndex > MUTATIONS.lengt
   console.log(`::error:: --from needs an integer between 1 and ${MUTATIONS.length}`);
   process.exit(2);
 }
-const RUN = MUTATIONS.slice(fromIndex - 1);
-if (fromIndex > 1) {
-  console.log(`running entries ${fromIndex}-${MUTATIONS.length} of ${MUTATIONS.length} (--from ${fromIndex})\n`);
+// --to M (1-based, inclusive) ends the selection early, so disjoint
+// --from/--to ranges can run as parallel shards that together cover the
+// manifest. Each shard copies its own sandbox and runs its own baseline.
+const toArg = process.argv.indexOf("--to");
+const toIndex = toArg === -1 ? MUTATIONS.length : Number(process.argv[toArg + 1]);
+if (!Number.isInteger(toIndex) || toIndex < fromIndex || toIndex > MUTATIONS.length) {
+  console.log(`::error:: --to needs an integer between ${fromIndex} and ${MUTATIONS.length}`);
+  process.exit(2);
+}
+const RUN = MUTATIONS.slice(fromIndex - 1, toIndex);
+if (fromIndex > 1 || toIndex < MUTATIONS.length) {
+  console.log(`running entries ${fromIndex}-${toIndex} of ${MUTATIONS.length} (--from ${fromIndex}${toArg === -1 ? "" : " --to " + toIndex})\n`);
 }
 
 // Observers are node suites by default. The validator's self-test is the one
@@ -3542,17 +3595,28 @@ if (fromIndex > 1) {
 // restore the bypass in the implementation half and the assertion half goes
 // red in the same process, with no cross-file wiring to get stale. Entries may
 // carry arguments, so the string is split rather than passed whole.
-function runSuites(suites) {
+// `errored`, when given, collects observers that were KILLED (the 180s
+// timeout, or a signal) rather than exiting with a verdict. A killed observer
+// proves nothing about the mutation, so an entry whose only "red" observers
+// were killed is reported as ERRORED, never as caught (2026-09-30: the sweep
+// used to count a timeout as a catch). The baseline passes no list: there,
+// any failure at all is red.
+function runSuites(suites, errored) {
   const red = [];
   for (const s of suites) {
     const argv = s.split(" ");
     const py = argv[0].endsWith(".py");
+    const name = argv[0].replace("tests/", "").replace("tools/", "")
+                        .replace("_check.mjs", "").replace(".py", "");
     try {
       execFileSync(py ? "python" : "node", argv,
                    { cwd: sandbox, stdio: "pipe", timeout: 180000 });
-    } catch {
-      red.push(argv[0].replace("tests/", "").replace("tools/", "")
-                      .replace("_check.mjs", "").replace(".py", ""));
+    } catch (err) {
+      if (errored && err && (err.code === "ETIMEDOUT" || err.signal)) {
+        errored.push(name + (err.code === "ETIMEDOUT" ? " (timed out)" : " (" + err.signal + ")"));
+      } else {
+        red.push(name);
+      }
     }
   }
   return red;
@@ -3562,7 +3626,7 @@ function asRegex(find) {
   return new RegExp(find.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\r?\n/g, "\\r?\\n"));
 }
 
-let survivors = 0, notApplied = 0, caught = 0;
+let survivors = 0, notApplied = 0, caught = 0, erroredCount = 0;
 // The baseline runs EVERY suite the manifest can name, derived from the
 // manifest itself so a new entry's observer is baselined automatically. A
 // suite that is red before any mutation would otherwise mark every mutation
@@ -3587,9 +3651,13 @@ for (const [label, find, replace, suites, targetFile] of RUN) {
     continue;
   }
   writeFileSync(join(sandbox, target), mutated);
-  const red = runSuites(suites || DEFAULT_SUITES);
+  const killed = [];
+  const red = runSuites(suites || DEFAULT_SUITES, killed);
   writeFileSync(join(sandbox, target), clean);
-  if (red.length === 0) {
+  if (red.length === 0 && killed.length) {
+    console.log(`  [ERRORED: ${killed.join(",")}] ${label}`);
+    erroredCount++;
+  } else if (red.length === 0) {
     console.log(`  [SURVIVED]    ${label}`);
     survivors++;
   } else {
@@ -3598,7 +3666,8 @@ for (const [label, find, replace, suites, targetFile] of RUN) {
   }
 }
 
-console.log(`\nMutation sweep: ${caught}/${RUN.length} caught, ${survivors} survived, ${notApplied} did not apply${fromIndex > 1 ? ` (entries ${fromIndex}-${MUTATIONS.length} of ${MUTATIONS.length})` : ""}`);
+console.log(`\nMutation sweep: ${caught}/${RUN.length} caught, ${survivors} survived, ${erroredCount} errored, ${notApplied} did not apply${fromIndex > 1 || toIndex < MUTATIONS.length ? ` (entries ${fromIndex}-${toIndex} of ${MUTATIONS.length})` : ""}`);
 if (survivors) console.log("A SURVIVOR is a safety property with no effective test.");
+if (erroredCount) console.log("An ERRORED entry's observer was killed (timeout or signal) before giving a verdict: it is neither caught nor survived.");
 if (notApplied) console.log("A mutation that DID NOT APPLY is a stale manifest entry — its target moved or was renamed.");
-process.exit(survivors === 0 && notApplied === 0 ? 0 : 1);
+process.exit(survivors === 0 && notApplied === 0 && erroredCount === 0 ? 0 : 1);
