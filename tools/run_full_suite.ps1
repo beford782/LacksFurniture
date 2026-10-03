@@ -302,7 +302,11 @@ $checks = @(
     @{ Name = 'mutation manifest (a missing target is refused before any observer)'; Exe = $nodeExecutable; Args = @('tests/mutation_manifest_check.mjs') }
 )
 if (-not $SkipMutationSweep) {
-    $checks += @{ Name = 'mutation sweep'; Exe = $nodeExecutable; Args = @('tests/mutation_sweep.mjs') }
+    # Same shard runner as CI, with two shards: an 8 GB workstation ran out of
+    # memory with more in parallel (2026-10-01). Day to day, prefer
+    # -SkipMutationSweep plus the entries a change touches (see AGENTS.md);
+    # the PR's required check runs the whole sweep.
+    $checks += @{ Name = 'mutation sweep'; Exe = $nodeExecutable; Args = @('tools/run_mutation_sweep_shards.mjs', '--shards', '2') }
 }
 
 if ($ListOnly) {

@@ -100,7 +100,14 @@ It applies to the whole tree.
 - Parallel agents are appropriate for bounded read-only audits. Follow
   `agent-workflows/parallel-audits.md`.
 - Prefer focused regression tests while iterating, then run the complete local
-  mirror of CI before declaring implementation complete:
+  mirror of CI before declaring implementation complete.
+- Do not run the full mutation sweep locally as routine (owner decision,
+  2026-10-02). The pull request's required check runs the whole sweep in CI.
+  Locally, run the mirror with `-SkipMutationSweep`, plus the sweep entries the
+  change adds or affects: `node tests/mutation_sweep.mjs --from N --to M`.
+  Report that local scope plainly, and report the PR check's result for the
+  full sweep. Run the whole sweep locally only when CI is unavailable or the
+  sweep machinery itself changed:
 
   ```powershell
   pwsh -File tools/run_full_suite.ps1

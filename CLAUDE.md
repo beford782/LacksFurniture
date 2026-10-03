@@ -504,6 +504,10 @@ git push -u origin HEAD
 # then:
 #   pwsh -File tools/run_full_suite.ps1
 #   (no pwsh? Windows PowerShell 5.1 works: powershell -NoProfile -File tools/run_full_suite.ps1)
+#   Day to day, add -SkipMutationSweep and run only the sweep entries the
+#   change touches (node tests/mutation_sweep.mjs --from N --to M); the PR's
+#   required check runs the full sweep, in parallel shards (owner decision
+#   2026-10-02; see AGENTS.md).
 # open a PR targeting main; wait for the required status check — its name,
 # "Full suite (18 checks)", is a legacy label pinned by branch protection, and
 # the job actually runs every `run: node|python tests/...` step in ci.yml plus

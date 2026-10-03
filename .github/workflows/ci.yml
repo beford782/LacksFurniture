@@ -717,8 +717,13 @@ jobs:
       # survivor is a property with no effective test, and a mutation that fails
       # to apply is a stale manifest entry — both fail this step. Nothing is
       # written inside the repository; the sandbox is a temp directory.
+      # Run as three parallel contiguous shards (2026-10-02): one sequential
+      # sweep took ~67 minutes. The shard runner reads the manifest size from
+      # the sweep, proves the ranges cover every entry exactly once, and fails
+      # on any survivor, errored or not-applied entry, non-zero shard exit, or
+      # a shard summary that does not account for its own range.
       - name: mutation sweep (are the suites non-vacuous?)
-        run: node tests/mutation_sweep.mjs
+        run: node tools/run_mutation_sweep_shards.mjs --shards 3
 
       # ---- Tree hygiene -----------------------------------------------------
       - name: git diff --check (whitespace and conflict markers)
