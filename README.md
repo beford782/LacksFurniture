@@ -96,8 +96,11 @@ and CI proves it.
    name is a legacy label pinned by branch protection; the job runs the same
    checks as the local mirror. List them, with the current count, using
    `pwsh -File tools/run_full_suite.ps1 -ListOnly`. The last of them is the
-   mutation sweep (`node tests/mutation_sweep.mjs`), which the mirror runs
-   unless `-SkipMutationSweep` is given and CI always runs.
+   mutation sweep, which CI always runs, as parallel shards
+   (`node tools/run_mutation_sweep_shards.mjs --shards 3`). The mirror runs it
+   with two shards unless `-SkipMutationSweep` is given; day to day, skip it
+   locally and run only the entries a change touches
+   (`node tests/mutation_sweep.mjs --from N --to M`).
 5. Merge the pull request. GitHub Pages deploys the merged `main` branch
    automatically; verify the Pages `build` and `deploy` checks afterward.
 

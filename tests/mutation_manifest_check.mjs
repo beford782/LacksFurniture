@@ -24,7 +24,11 @@
 //  F. --to is an inclusive upper bound: on a planted four-entry manifest with
 //     marker observers, each --from/--to combination runs exactly its
 //     entries, baselines exactly their observers, reports the selected count,
-//     and every malformed or reversed range is refused before any observer.
+//     and every malformed or reversed range is refused before any observer;
+//  G. tools/run_mutation_sweep_shards.mjs (CI's sweep step) runs interleaved
+//     --shard i/K shards that cover every entry exactly once, sums their
+//     summaries, and fails on a survivor or on a shard that runs fewer entries
+//     than its share. (--shard i/K itself is executed in F.)
 //
 // Every sweep invocation here runs a COPY of tests/mutation_sweep.mjs from a
 // temp directory, pointed at a temp copy of the tree through
@@ -200,7 +204,7 @@ check(!/baseline \(unmutated\)/.test(badFrom.out), "...before any observer runs"
 // record of which entries ran, and of which observers the baseline covered.
 section("F. --to selects an inclusive range; the baseline covers exactly the selected observers");
 const PROBE_FIND = "<!DOCTYPE html>";
-check(sweep.includes("const RUN = MUTATIONS.slice(fromIndex - 1, toIndex);"), "the selection is the inclusive slice from --from to --to");
+check(sweep.includes(": MUTATIONS.slice(fromIndex - 1, toIndex);"), "the selection is the inclusive slice from --from to --to");
 for (let n = 1; n <= 4; n++) {
   writeFileSync(join(tempRoot, "tests", `probe_range_observer_${n}.mjs`),
     'import { readFileSync, appendFileSync } from "node:fs";\n' +
@@ -214,7 +218,7 @@ const ranged = replaceOnce(sweep, /^const MUTATIONS = \[\r?\n[\s\S]*?\r?\n\];/m,
   "const MUTATIONS = [\n" + rangeEntries + "];", "whole manifest");
 const rangedPath = writeSweepCopy("sweep_ranged.mjs", ranged);
 function runRange(args) {
-  const log = join(work, `range-${args.join("_") || "all"}.log`);
+  const log = join(work, `range-${args.join("_").replace(/[^A-Za-z0-9_.-]/g, "_") || "all"}.log`);
   const r = runSweep(rangedPath, args, { MUTATION_RANGE_LOG: log });
   const lines = existsSync(log) ? readFileSync(log, "utf8").trim().split("\n").filter(Boolean) : [];
   return { ...r, baseline: lines.filter((l) => l.endsWith(":baseline")).map((l) => l[0]).sort().join(""),
@@ -264,8 +268,8 @@ for (const [args, why] of [
 // Negative controls: an exclusive upper bound, and a baseline taken from the
 // whole manifest instead of the selection, are each visible in the log.
 {
-  const offByOne = replaceOnce(ranged, /const RUN = MUTATIONS\.slice\(fromIndex - 1, toIndex\);/,
-    "const RUN = MUTATIONS.slice(fromIndex - 1, toIndex - 1);", "inclusive slice");
+  const offByOne = replaceOnce(ranged, /: MUTATIONS\.slice\(fromIndex - 1, toIndex\);/,
+    ": MUTATIONS.slice(fromIndex - 1, toIndex - 1);", "inclusive slice");
   const log = join(work, "range-control-a.log");
   runSweep(writeSweepCopy("sweep_ranged_offbyone.mjs", offByOne), ["--from", "2", "--to", "3"], { MUTATION_RANGE_LOG: log });
   const ran = existsSync(log) ? readFileSync(log, "utf8") : "";
@@ -280,6 +284,80 @@ for (const [args, why] of [
 const realBadTo = runSweep(sweepPath, ["--to", String(manifestCount + 1)]);
 check(realBadTo.status === 2 && realBadTo.out.includes(`--to needs an integer between 1 and ${manifestCount}`),
       "the shipped sweep refuses --to past its own manifest end", realBadTo.out.slice(-200));
+
+// --shard i/K: every K-th entry from entry i (the interleaved shards CI runs).
+for (const [spec, want] of [["1/1", "1234"], ["1/2", "13"], ["2/2", "24"], ["1/3", "14"], ["2/3", "2"], ["3/3", "3"], ["4/4", "4"]]) {
+  const r = runRange(["--shard", spec]);
+  check(r.status === 0 && r.mutated === want && r.baseline === want,
+        `[--shard ${spec}] runs and baselines exactly entries ${want.split("").join(",")}`,
+        `status ${r.status} mutated=${r.mutated} baseline=${r.baseline}: ${r.out.slice(-200)}`);
+  check(r.out.includes(`Mutation sweep: ${want.length}/${want.length} caught, 0 survived, 0 errored, 0 did not apply (shard ${spec}: ${want.length} of 4)`),
+        `[--shard ${spec}] the summary names the shard and its share`, r.out.slice(-200));
+}
+for (const [args, why] of [
+  [["--shard", "0/2"], "i below 1"], [["--shard", "3/2"], "i above K"], [["--shard", "1/0"], "K of 0"],
+  [["--shard", "1/5"], "K above the manifest size"], [["--shard", "x"], "not i/K"], [["--shard"], "missing its value"],
+]) {
+  const r = runRange(args);
+  check(r.status === 2 && /::error:: --shard needs i\/K/.test(r.out) && r.baseline === "" && r.mutated === "",
+        `[${args.join(" ")}] a --shard that is ${why} is refused with exit 2 before any observer`, r.out.slice(-200));
+}
+{
+  const r = runRange(["--shard", "1/2", "--to", "3"]);
+  check(r.status === 2 && r.out.includes("--shard cannot be combined with --from or --to") && r.mutated === "",
+        "--shard combined with --to is refused with exit 2");
+}
+
+// ---------------------------------------------------------------------------
+// G. tools/run_mutation_sweep_shards.mjs (2026-10-02): CI runs the sweep as
+// parallel INTERLEAVED shards (--shard i/K). Executed against the same planted
+// four-entry manifest, so the marker log shows exactly which entries ran, and
+// how often.
+section("G. the shard runner covers every entry exactly once and fails loudly");
+const shardRunner = join(root, "tools", "run_mutation_sweep_shards.mjs");
+function runShards(sweepFile, args, tag) {
+  const log = join(work, `shards-${tag}.log`);
+  const r = spawnSync("node", [shardRunner, ...args], {
+    cwd: work, encoding: "utf8", timeout: 600000,
+    env: { ...process.env, MUTATION_SWEEP_ROOT: tempRoot, MUTATION_SWEEP_SCRIPT: sweepFile, MUTATION_RANGE_LOG: log },
+  });
+  const lines = existsSync(log) ? readFileSync(log, "utf8").trim().split("\n").filter(Boolean) : [];
+  return { status: r.status, out: (r.stdout || "") + (r.stderr || ""),
+           mutated: lines.filter((l) => l.endsWith(":mutated")).map((l) => l[0]).sort().join("") };
+}
+for (const [k, plan] of [["1", "1/1 (4)"], ["2", "1/2 (2), 2/2 (2)"], ["3", "1/3 (2), 2/3 (1), 3/3 (1)"],
+                         ["4", "1/4 (1), 2/4 (1), 3/4 (1), 4/4 (1)"], ["9", "1/4 (1), 2/4 (1), 3/4 (1), 4/4 (1)"]]) {
+  const r = runShards(rangedPath, ["--shards", k], "k" + k);
+  check(r.status === 0 && r.out.includes(`4 entries interleaved across ${plan.split(", ").length} parallel shard(s): ${plan}`),
+        `[--shards ${k}] the plan partitions 1-4 (${plan})`, `status ${r.status}: ${r.out.slice(0, 200)}`);
+  check(r.mutated === "1234", `[--shards ${k}] every entry was mutated exactly once`, `mutated=${r.mutated}`);
+  check(/Mutation sweep \(\d+ shards\): 4\/4 caught, 0 survived, 0 errored, 0 did not apply, 0 unaccounted/.test(r.out),
+        `[--shards ${k}] the combined summary accounts for all 4 entries`, r.out.slice(-200));
+}
+{
+  // A survivor in one shard fails the whole run, and is counted.
+  const survivorEntries = [1, 2, 3].map((n) =>
+    `  ["range probe ${n}", ${JSON.stringify(PROBE_FIND)}, ${JSON.stringify(PROBE_FIND + `<!-- range probe ${n} -->`)}, ["tests/probe_range_observer_${n}.mjs"]],\n`).join("")
+    + `  ["range probe that no observer sees", ${JSON.stringify(PROBE_FIND)}, ${JSON.stringify(PROBE_FIND + "<!-- range probe 9 -->")}, ["tests/probe_range_observer_1.mjs"]],\n`;
+  const survivorSweep = writeSweepCopy("sweep_survivor.mjs", replaceOnce(sweep, /^const MUTATIONS = \[\r?\n[\s\S]*?\r?\n\];/m,
+    "const MUTATIONS = [\n" + survivorEntries + "];", "whole manifest"));
+  const r = runShards(survivorSweep, ["--shards", "2"], "survivor");
+  check(r.status === 1 && /3\/4 caught, 1 survived, 0 errored/.test(r.out) && /::error:: shard 2\/2 exited 1/.test(r.out),
+        "a survivor in one shard fails the run and is counted in the combined summary", r.out.slice(-300));
+}
+{
+  // A shard that silently drops an entry from its share is refused.
+  const lying = replaceOnce(ranged, /MUTATIONS\.filter\(\(_, idx\) => idx % shardK === shardI - 1\)/,
+    "MUTATIONS.filter((_, idx) => idx > 0 && idx % shardK === shardI - 1)", "shard selection");
+  const r = runShards(writeSweepCopy("sweep_shard_short.mjs", lying), ["--shards", "2"], "short");
+  check(r.status === 1 && /::error:: shard 1\/2 reported 1 entries/.test(r.out) && /1 unaccounted/.test(r.out),
+        "control: a shard that silently runs fewer entries than its share is DETECTED", r.out.slice(-300));
+}
+for (const bad of ["0", "17", "abc"]) {
+  const r = runShards(rangedPath, ["--shards", bad], "bad" + bad);
+  check(r.status === 2 && r.out.includes("--shards needs an integer between 1 and 16") && r.mutated === "",
+        `[--shards ${bad}] refused with exit 2 before any shard runs`, r.out.slice(-200));
+}
 
 console.log(`\nMutation manifest check: ${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);
