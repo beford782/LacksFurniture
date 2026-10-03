@@ -21,6 +21,9 @@
 //                                                pristine source, run no observer)
 //      node tests/mutation_sweep.mjs --from 756 (run entries 756..end only; the
 //                                                baseline covers their observers)
+//      node tests/mutation_sweep.mjs --from 1 --to 400   (an inclusive range)
+//      node tests/mutation_sweep.mjs --shard 2/3 (every 3rd entry from entry 2:
+//                                                the interleaved shards CI runs)
 //
 // MUTATION_SWEEP_ROOT=<dir> overrides the tree the sandbox is copied from. It
 // exists for tests/mutation_manifest_check.mjs, which runs a planted COPY of
@@ -3584,8 +3587,35 @@ if (!Number.isInteger(toIndex) || toIndex < fromIndex || toIndex > MUTATIONS.len
   console.log(`::error:: --to needs an integer between ${fromIndex} and ${MUTATIONS.length}`);
   process.exit(2);
 }
-const RUN = MUTATIONS.slice(fromIndex - 1, toIndex);
-if (fromIndex > 1 || toIndex < MUTATIONS.length) {
+// --shard i/K (1-based) selects every K-th entry starting at entry i, so K
+// interleaved shards partition the manifest. Contiguous ranges were tried
+// first in CI (2026-10-02): the slow rendered observers cluster at the end of
+// the manifest, so one range did ~95% of the work. Interleaving spreads them.
+// It cannot be combined with --from/--to.
+const shardArg = process.argv.indexOf("--shard");
+let shardI = 0, shardK = 0;
+if (shardArg !== -1) {
+  const m = /^(\d+)\/(\d+)$/.exec(process.argv[shardArg + 1] || "");
+  shardI = m ? Number(m[1]) : NaN;
+  shardK = m ? Number(m[2]) : NaN;
+  if (!m || shardK < 1 || shardK > MUTATIONS.length || shardI < 1 || shardI > shardK) {
+    console.log(`::error:: --shard needs i/K with 1 <= i <= K <= ${MUTATIONS.length}`);
+    process.exit(2);
+  }
+  if (fromArg !== -1 || toArg !== -1) {
+    console.log("::error:: --shard cannot be combined with --from or --to");
+    process.exit(2);
+  }
+}
+const RUN = shardArg !== -1
+  ? MUTATIONS.filter((_, idx) => idx % shardK === shardI - 1)
+  : MUTATIONS.slice(fromIndex - 1, toIndex);
+const SELECTION = shardArg !== -1
+  ? ` (shard ${shardI}/${shardK}: ${RUN.length} of ${MUTATIONS.length})`
+  : (fromIndex > 1 || toIndex < MUTATIONS.length ? ` (entries ${fromIndex}-${toIndex} of ${MUTATIONS.length})` : "");
+if (shardArg !== -1) {
+  console.log(`running shard ${shardI}/${shardK}: entries ${shardI}${shardK > 1 ? ", " + (shardI + shardK) + ", " + (shardI + 2 * shardK) + " ..." : "-" + MUTATIONS.length} (${RUN.length} of ${MUTATIONS.length})\n`);
+} else if (fromIndex > 1 || toIndex < MUTATIONS.length) {
   console.log(`running entries ${fromIndex}-${toIndex} of ${MUTATIONS.length} (--from ${fromIndex}${toArg === -1 ? "" : " --to " + toIndex})\n`);
 }
 
@@ -3666,7 +3696,7 @@ for (const [label, find, replace, suites, targetFile] of RUN) {
   }
 }
 
-console.log(`\nMutation sweep: ${caught}/${RUN.length} caught, ${survivors} survived, ${erroredCount} errored, ${notApplied} did not apply${fromIndex > 1 || toIndex < MUTATIONS.length ? ` (entries ${fromIndex}-${toIndex} of ${MUTATIONS.length})` : ""}`);
+console.log(`\nMutation sweep: ${caught}/${RUN.length} caught, ${survivors} survived, ${erroredCount} errored, ${notApplied} did not apply${SELECTION}`);
 if (survivors) console.log("A SURVIVOR is a safety property with no effective test.");
 if (erroredCount) console.log("An ERRORED entry's observer was killed (timeout or signal) before giving a verdict: it is neither caught nor survived.");
 if (notApplied) console.log("A mutation that DID NOT APPLY is a stale manifest entry — its target moved or was renamed.");
