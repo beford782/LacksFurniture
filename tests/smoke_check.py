@@ -55,7 +55,10 @@ def main():
     check("gasUrl is blank (no live sends)", not (cfg.get("gasUrl") or "").strip())
     plans = fin.get("plans") or []
     check("6 financing plans", len(plans) == 6, f"got {len(plans)}")
-    check("V1: paymentCalculationEnabled false on every plan",
+    # Operating-state lock, not a permanent ban: governed calculation exists
+    # (validate_financing admits it with every input published), but switching
+    # it on in SHIPPED data is a separately authorized activation.
+    check("shipped operating state: paymentCalculationEnabled false on every plan",
           all(p.get("paymentCalculationEnabled") is not True for p in plans))
     check("every plan bilingual headline",
           all((p.get("headline") or {}).get("en") and (p.get("headline") or {}).get("es") for p in plans))
@@ -95,7 +98,8 @@ def main():
     # Source-of-truth sync: the shipped financing envelope must equal the
     # canonical incoming source after EXACTLY the two transforms
     # build_lacks_workbook.py applies, and nothing else:
-    #   1. publishedPaymentFactor is stripped (V1 ships no payment-math inputs);
+    #   1. publishedPaymentFactor is stripped from every plan whose governed
+    #      calculation is off (the builder ships it only when it is on);
     #   2. promotional headlines are GENERATED from apr/termMonths.
     # Both are reproduced here from the same code the builder runs, so this
     # stays a real deep equality — no field is deleted from both sides to make
@@ -105,7 +109,8 @@ def main():
     # otherwise deploy silently.
     src_fin = json.loads(json.dumps(load_json("incoming/lacks_financing.json")["financing"]))
     for p in src_fin.get("plans", []):
-        p.pop("publishedPaymentFactor", None)
+        if p.get("paymentCalculationEnabled") is not True:
+            p.pop("publishedPaymentFactor", None)
     fin_headline.apply_to_financing(src_fin)
     check("shipped verifiedAt matches incoming source (rebuild after stamping)",
           fin.get("verifiedAt") == src_fin.get("verifiedAt"),
@@ -320,6 +325,10 @@ def main():
     check("the lender pattern catches every capitalisation",
           all(re.search(r"(?i)\b(?:synchrony|mysynchrony)\b", f'"{v}" and "{v}-Bank"')
               for v in ("Synchrony", "SYNCHRONY", "synchrony")))
+    check("shipped operating state: no reviewTools block (the assumption scenario panel is review-build only)",
+          "reviewTools" not in cfg)
+    check("shipped operating state: no salesPolicies block (retailer commercial copy is review-build only)",
+          "salesPolicies" not in cfg)
     check("publishedPaymentFactor stripped from shipped config",
           "publishedPaymentFactor" not in json.dumps(cfg))
     # PRIVACY HALF OF THE BOUNDARY (trust gate, 2026-08-21). A privacy promise

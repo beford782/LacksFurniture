@@ -448,7 +448,8 @@ const harness = new Function(
   // The "Bring it home" workspace's ephemeral presentation state (2026-09-27),
   // cleared by name in the wipe alongside the payment dimensions.
   var _payCompare = null, _payComparePicking = false, _payTopic = '', _payTopicsOpen = false;
-  var _payWsView = '', _payWsRemoved = [], _payWsChange = null;
+  var _payWsView = '', _payWsRemoved = [], _payWsChange = null, _payFulfil = '';
+  var _payScenario = { open: false, tax: '', delivery: '', down: '', treatment: '' };
   function finWsReleaseInert() { record('finWsReleaseInert')(); }
   var _langFocusHintId = null;
   var analytics = {
@@ -494,7 +495,7 @@ const harness = new Function(
       finImpression: _finModuleImpressionLogged,
       financeReturnFocus: _financeReturnFocus,
       ws: { compare: _payCompare, picking: _payComparePicking, topic: _payTopic, topicsOpen: _payTopicsOpen,
-            view: _payWsView, removed: _payWsRemoved, change: _payWsChange },
+            view: _payWsView, removed: _payWsRemoved, change: _payWsChange, fulfil: _payFulfil, scenario: _payScenario },
       analytics: analytics
     };
   };
@@ -514,7 +515,8 @@ const harness = new Function(
     if ('ws' in state) {
       _payCompare = state.ws.compare; _payComparePicking = state.ws.picking; _payTopic = state.ws.topic;
       _payTopicsOpen = state.ws.topicsOpen; _payWsView = state.ws.view; _payWsRemoved = state.ws.removed;
-      _payWsChange = state.ws.change;
+      _payWsChange = state.ws.change; _payFulfil = state.ws.fulfil || '';
+      if (state.ws.scenario) _payScenario = state.ws.scenario;
     }
   };
   outer.sessionTimeout = sessionTimeout;
@@ -1070,7 +1072,8 @@ outer.seed({
   finImpression: true,
   financeReturnFocus: el("someResultCard"),
   ws: { compare: "plan-lease-to-own", picking: true, topic: "due", topicsOpen: true,
-        view: "items", removed: ["base-bt2000"], change: { kind: "removed", id: "base-bt2000" } },
+        view: "items", removed: ["base-bt2000"], change: { kind: "removed", id: "base-bt2000" }, fulfil: "pickup",
+        scenario: { open: true, tax: "8.25", delivery: "150", down: "500", treatment: "financed" } },
 });
 check("seeded: a dirty Payment Choice session (3 explored, 1 preferred, 2 open)",
   probe().payExplored.length === 3 && probe().payPref === "plan-lacks-in-house"
@@ -1308,7 +1311,10 @@ check("the sheet's opening placement cleared (2.2d: the plan status copy's surfa
   const w = probe().ws;
   check("the workspace comparison, topic and item view are cleared by the wipe (2026-09-27)",
     w.compare === null && w.picking === false && w.topic === '' && w.topicsOpen === false
-    && w.view === '' && Array.isArray(w.removed) && w.removed.length === 0 && w.change === null,
+    && w.view === '' && Array.isArray(w.removed) && w.removed.length === 0 && w.change === null
+    && w.fulfil === ''
+    && w.scenario && w.scenario.open === false && w.scenario.tax === '' && w.scenario.delivery === ''
+    && w.scenario.down === '' && w.scenario.treatment === '',
     JSON.stringify(w));
 }
 

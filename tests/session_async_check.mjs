@@ -166,6 +166,8 @@ const RAW_ALLOWLIST = [
   // ordering, same cancellation path — so it is one timer class, counted twice.
   { cls: "A", count: 2, match: "_payAnnounceTimer = setTimeout(",
     why: "the Payment Choice preference-action announcement and the workspace item-change announcement, sharing ONE slot; superseded by name on the next announcement and cancelled by name in cancelPayAnnouncePending(), which clearPayAnnouncements(), closeFinancingSheet() and the wipe all call" },
+  { cls: "A", count: 1, match: "_finScLiveTimer = setTimeout(",
+    why: "the review-only scenario panel's debounced summary announcement; superseded by name on the next keystroke, cancelled by name in cancelPayAnnouncePending() (closeFinancingSheet() and the wipe call it), and the callback re-checks that the sheet is still open" },
   { cls: "A", count: 1, match: "_drawerCloseTimer = setTimeout(",
     why: "cleared by name in closeMattressDrawer(), which the wipe calls first with {immediate:true}" },
   { cls: "B", count: 1, match: "__STARFIELD_RAF__",
@@ -720,6 +722,7 @@ section("Payment Choice announcements: supersession, cancellation, hygiene");
     new Function("document", "setTimeout", "clearTimeout", "FCimpl", "out", `
       "use strict";
       var _payAnnounceTimer = null;
+      var _finScLiveTimer = null;
       // Seeded dirty, so "clearPayAnnouncements() does not reset the model" is
       // a real observation rather than two empty values compared to each other.
       var payExplored = ['promo-Synchrony', 'plan-lacks-in-house'];

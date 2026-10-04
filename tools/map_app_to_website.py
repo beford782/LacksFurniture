@@ -99,6 +99,10 @@ NOISE_WORDS = BRAND_WORDS | {
     "performance", "standard", "cool", "power", "massage", "adjustable",
     "base", "foundation", "protector", "pillow", "sheet", "sheets", "topper",
     "comforter", "duvet", "ensemble", "blanket", "throw", "pc", "piece", "pieces",
+    # SIZE words are never model words: size is its own evidence leg. Counting
+    # "queen" from a historical site name as a shared model token made every
+    # Plush Queen a "strong" match for Giselle Plush (2026-10-03 review).
+    "twin", "xl", "full", "double", "queen", "king", "california", "cal", "split",
 } | {k for _, k in FIRMNESS} | {w for w, _ in FIRMNESS for w in w.split()} \
   | {w for w, _ in CONSTRUCTION for w in w.split()}
 
@@ -268,6 +272,20 @@ def score_mattress(app, v, lead=None):
     hsku = lead.get("historicalQueenSku")
     if hsku and v.get("sku") and str(v["sku"]) == str(hsku):
         legs["skuLink"] = "historical-queen-sku-present-in-current-snapshot"
+    elif (hsku and v.get("size_id") == "queen" and v.get("parentSku")
+          and str(v["parentSku"]) == str(hsku)):
+        # The historical Queen SKU is now a configurable PARENT page, and this
+        # exact Queen variant is one of its own children (the page's own
+        # parent/child structure, not a name match). The child carries its own
+        # SKU and price; the parent's "starting at" figure is never used.
+        legs["skuLink"] = "historical-queen-sku-present-in-current-snapshot (as this variant's configurable parent)"
+    elif (hsku and v.get("parentSku") and str(v["parentSku"]) == str(hsku)):
+        # Another SIZE listed on the same configurable parent page as the
+        # anchored Queen: the retailer's own page says it is this product at
+        # that size. It carries its OWN SKU and price (never the Queen's), and
+        # unlike the Queen link it does not override a brand, firmness or
+        # construction disagreement - the caller still drops hard failures.
+        legs["skuLink"] = "historical-parent-lists-this-size"
     elif hsku:
         legs["skuLink"] = "app-catalog-has-no-sku; historical lead did not match this variant"
     else:
@@ -290,6 +308,8 @@ def tier_of(legs):
     `weak` - something disagrees or is missing. Never preview-eligible.
     """
     if legs.get("skuLink", "").startswith("historical-queen-sku-present"):
+        return "sku"
+    if legs.get("skuLink") == "historical-parent-lists-this-size":
         return "sku"
     if legs["brand"] != "match" or not legs["model"]["shared"]:
         return "weak"
@@ -379,11 +399,24 @@ def build():
             for v in variants:
                 if v["kind"] != "mattress" or v.get("size_id") != size:
                     continue
+                # A configurable parent is not a purchasable variant and never
+                # competes with one (the same rule as accessories): its price
+                # is its cheapest child's, and one parent SKU repeated across
+                # sizes used to demote every size of the product it names.
+                if PARENT_FLAG in (v.get("exceptions") or []):
+                    continue
                 legs, hard = score_mattress(app, v, lead)
                 # a direct SKU link survives a soft disagreement elsewhere -
                 # the website renames products, and the SKU is the identity.
                 if hard and not legs.get("skuLink", "").startswith("historical-queen-sku-present"):
-                    continue
+                    # a size the lead's own parent page lists needs no shared
+                    # name word (the page structure is the identity), but any
+                    # brand, firmness or construction disagreement still drops it
+                    parent_listed = (legs.get("skuLink") == "historical-parent-lists-this-size"
+                                     and "mismatch" not in (legs["brand"], legs["firmness"],
+                                                            legs["construction"]))
+                    if not parent_listed:
+                        continue
                 cands.append({"sku": v["sku"], "name": v["name"],
                               "sellingAmountMinor": v["sellingAmountMinor"],
                               "regularAmountMinor": v.get("regularAmountMinor"),
@@ -393,6 +426,7 @@ def build():
                               # observation, never on when a file was built.
                               "observedAt": v.get("observedAt"),
                               "scope": v.get("scope"),
+                              "familyKey": v.get("familyKey"),
                               "tier": tier_of(legs), "legs": legs})
             # A direct SKU link outranks a name-and-attribute match: if exactly
             # one candidate carries the historical SKU, it IS the product.
@@ -415,6 +449,29 @@ def build():
                                   "candidateCount": len(cands),
                                   "note": "no candidate met every evidence leg",
                                   "candidates": cands[:6]}
+        # FAMILY ANCHOR (2026-10-03 review). When one size is identified by the
+        # historical SKU, that variant's website family IS the product. Any
+        # other size resolved only by shared words must come from the same
+        # family: "The Saint Pierre" shares its words with the premium
+        # "Princess Saint Pierre", and "Reserve Mayfair Medium" with "Royal
+        # Reserve Medium", so those sizes priced a different bed (a Twin
+        # dearer than the anchored Queen was the tell). A size in another
+        # family is unresolved, never borrowed.
+        anchor = next((d for d in per_size.values()
+                       if d.get("status") == "preview-eligible" and d.get("tier") == "sku"
+                       and d.get("familyKey")), None)
+        if anchor:
+            for size, d in list(per_size.items()):
+                if (d.get("status") == "preview-eligible" and d.get("tier") != "sku"
+                        and d.get("familyKey") != anchor["familyKey"]):
+                    per_size[size] = {
+                        "status": "unresolved",
+                        "reason": "different-website-family-than-the-sku-anchored-size",
+                        "anchorFamily": anchor["familyKey"],
+                        "candidateFamily": d.get("familyKey"),
+                        "candidate": {"sku": d.get("sku"), "name": d.get("name"),
+                                      "sellingAmountMinor": d.get("sellingAmountMinor")},
+                    }
         lead = leads.get(app["id"]) or {}
         mattresses.append({
             "appId": app["id"], "appName": app["name"], "brand": app["brand"],
@@ -466,7 +523,10 @@ def build():
         aid = a["id"]
         want_type = APP_ACCESSORY_TYPE.get(aid.split("-", 1)[0])
         app_name = a["name"]["en"]
-        app_models = model_tokens(app_name)
+        # The approved catalog id is part of the product's identity too
+        # ("foundation-princess", "base-tempur-ergo"): its words after the type
+        # prefix count as model words, never as a match on their own.
+        app_models = model_tokens(app_name, aid.split("-", 1)[1].replace("-", " ") if "-" in aid else "")
         app_brand = brand_key(app_name)
         entry = {"appId": aid, "appName": app_name, "legacyMajorPrice": a.get("price"),
                  "expectedType": want_type, "appModelTokens": sorted(app_models)}
@@ -482,8 +542,12 @@ def build():
                 continue
             if want_type and v.get("productType") != want_type:
                 continue
-            vb = brand_key(v.get("name") or "")
-            if app_brand and vb and app_brand != vb:
+            # The record's own brand field, not the first word of a display
+            # name: Lacks names the BT3000 "Adjustable Base With Massage", so
+            # the name-derived "brand" ("adjustable") excluded the exact Queen
+            # variant. A name word is used only when no brand is recorded.
+            vb = brand_key(v.get("brand") or v.get("name") or "")
+            if app_brand and vb and not (app_brand.startswith(vb) or vb.startswith(app_brand)):
                 continue
             shared = app_models & model_tokens(v.get("name"), v.get("family"))
             stem = model_number_stem(v.get("modelNumber"), app_models)
@@ -499,11 +563,20 @@ def build():
                 pool[v.get("familyKey") or "(no-family)"].append((v, sorted(shared)))
 
         # historical accessory lead: the 2026-07-30 SKU, matched by name
+        # The lead whose words best match the app product and add the fewest
+        # words of their own ("TEMPUR-Protect" is the Tempur-Protect lead, not
+        # the Tempur-Protect BREEZE lead). A tie picks NO lead: the choice must
+        # not depend on file order.
         alead = None
+        scored = []
         for key, val in acc_leads.items():
-            if model_tokens(key) & app_models:
-                alead = val
-                break
+            lt = model_tokens(key)
+            if lt & app_models:
+                scored.append((len(lt & app_models) - len(lt - app_models), key, val))
+        if scored:
+            scored.sort(key=lambda x: -x[0])
+            if len(scored) == 1 or scored[0][0] > scored[1][0]:
+                alead = scored[0][2]
         if alead:
             entry["discoveryLead"] = {"historicalSku": alead.get("historicalSku"),
                                       "historicalName": alead.get("historicalName"),
@@ -517,6 +590,26 @@ def build():
                         "sellingAmountMinor": v["sellingAmountMinor"]}
                     break
             entry["discoveryLead"].setdefault("reproducedInCurrentSnapshot", False)
+
+        # LEAD-SKU FAMILY. When the historical discovery SKU is still on the
+        # site - as an exact variant, or as a configurable parent page - the
+        # product's purchasable variants are that record and the exact
+        # children the parent page itself lists (`parentSku`). That is the
+        # retailer's own structure, so it outranks shared name words: it is
+        # how "Tempur-Egro" (sic), "Lavender Memory Foam" and the Power vs
+        # Smart vs ProSmart bases are told apart without fuzzy matching.
+        lead_sku = str((alead or {}).get("historicalSku") or "")
+        if lead_sku:
+            fam = [v for v in variants
+                   if v["kind"] == "accessory"
+                   and (not want_type or v.get("productType") == want_type)
+                   and PARENT_FLAG not in (v.get("exceptions") or [])
+                   and not v.get("exceptions")
+                   and (str(v.get("sku")) == lead_sku or str(v.get("parentSku") or "") == lead_sku)]
+            if fam:
+                pool = {"lead-sku:" + lead_sku: [(v, ["lead-sku"]) for v in fam]}
+                entry["identityEvidence"] = ("historical discovery SKU " + lead_sku
+                                             + " and the exact variants its own page lists")
 
         if not pool:
             entry["status"] = "unresolved"
@@ -630,7 +723,7 @@ def build():
     for a in accessories:
         atally[a["status"]] += 1
     print("accessories: " + " | ".join(f"{k} {v}" for k, v in sorted(atally.items())))
-    print("wrote demo/price-snapshot/mapping.json + mapping.md")
+    print(f"wrote {os.path.relpath(os.path.join(OUT_DIR, 'mapping.json'), REPO)} + mapping.md")
     return 0
 
 
@@ -719,5 +812,22 @@ def write_md(out, path):
         f.write("\n".join(L))
 
 
+def main(argv=None):
+    """`--dir DIR` maps DIR/snapshot.json into DIR/mapping.{json,md} (a dated
+    review bundle) instead of the committed demo/price-snapshot/. Owner
+    verification (verified-mapping.json) is always read from its one committed
+    location: a review bundle can never carry its own verifications."""
+    import argparse
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("--dir", default=None,
+                    help="snapshot/mapping directory (default demo/price-snapshot)")
+    args = ap.parse_args(argv)
+    global OUT_DIR, SNAP
+    if args.dir:
+        OUT_DIR = os.path.abspath(args.dir)
+        SNAP = os.path.join(OUT_DIR, "snapshot.json")
+    return build()
+
+
 if __name__ == "__main__":
-    sys.exit(build())
+    sys.exit(main())

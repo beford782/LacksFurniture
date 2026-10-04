@@ -733,6 +733,15 @@ def validate_store_config(config: dict, manifest: Optional[dict] = None, *,
                           require_gas_url: bool = False) -> ValidationReport:
     r = ValidationReport()
 
+    # Review-build-only blocks (Payment Choice slice 2): the assumption
+    # scenario panel and the retailer commercial-policy copy are injected in
+    # memory by tools/serve_pricing_preview.py and must never reach shipped
+    # configuration through the workbook or the store values.
+    for review_only in ("reviewTools", "salesPolicies"):
+        if review_only in config:
+            r.add_error(f"{review_only} is review-build only and must not appear in shipped "
+                        f"store configuration")
+
     if _blank(config.get("storeName")):
         r.add_error("storeName is empty")
 
@@ -1874,6 +1883,31 @@ def _validate_governed_promotions(r, promos, scenarios, active, canonical_hosts)
 # same set so no validator-admitted declaration is unusable at runtime.
 FINANCING_QUALIFYING_BASES = frozenset({"merchandise-subtotal"})
 
+# How a plan's payment is derived. "published-fixed-factor" = the lender
+# publishes a percentage of the promotional purchase as the required payment
+# (Synchrony 9.99%/72: 1.8521%); "not-published" = no method is published, so
+# no figure may ever be computed. Mirrors PAY_CALC_MODES in index.html.
+FINANCING_CALCULATION_MODES = frozenset({"published-fixed-factor", "published-equal-division",
+                                         "not-published"})
+# The modes that ARE a published method. "published-equal-division" = the
+# lender publishes "the initial total promo purchase amount divided by the
+# number of months in the promo period, rounded up to the next whole dollar"
+# (Synchrony 0%/48 on lacks.com/financing, verified 2026-10-03); it applies
+# only to a 0% plan, where there is no interest to amortize.
+FINANCING_PUBLISHED_METHODS = frozenset({"published-fixed-factor", "published-equal-division"})
+# The published rounding rule for a fixed-factor payment. "up-to-whole-dollar"
+# is the lender's own wording ("rounded up to the next whole dollar"). Mirrors
+# PAY_ROUNDING in index.html.
+FINANCING_PAYMENT_ROUNDING = frozenset({"up-to-whole-dollar"})
+
+
+def _fin_member(v, options) -> bool:
+    """Membership of an author value in a closed string set, total over JSON.
+    A frozenset membership test hashes its operand, so a list or object value
+    ([] / {}) would raise TypeError instead of producing a verdict; only a
+    string is admitted to the test at all."""
+    return isinstance(v, str) and v in options
+
 FINANCING_PLAN_KINDS = {
     "open-end-promotional-credit",   # e.g. Synchrony HOME card promos (Reg Z open-end)
     "closed-end-installment",        # e.g. Lacks In-House / Mexico contracts
@@ -2879,10 +2913,63 @@ def validate_financing(config: dict, *, allowed_source_hosts=None) -> Validation
                 f"{tag}: separatePath is retired — use "
                 f"presentationScenario (one of {sorted(FINANCING_SCENARIOS)}) so the "
                 f"renderer and this validator classify the plan the same way")
-        # V1 hard invariant: no payment calculation anywhere.
-        if plan.get("paymentCalculationEnabled"):
-            r.add_error(f"{tag}: paymentCalculationEnabled must be false in V1 — "
-                        f"product-level payment math is not approved")
+        # PAYMENT CALCULATION IS GOVERNED, NOT FORBIDDEN (owner authorization
+        # 2026-10-03, Payment Choice slice 2 - this replaces the V1 "no
+        # payment calculation anywhere" invariant). A plan may carry
+        # paymentCalculationEnabled true ONLY when everything a figure needs
+        # is a PUBLISHED fact of that plan: a published method (fixed factor
+        # with its factor, or equal division on a 0% plan), the published
+        # rounding rule, the APR and the
+        # term, a verified plan, and the exact-term output authorized for the
+        # whole financing block. Nothing is inferred: a plan whose method is
+        # not published (calculationMode "not-published", or absent) can never
+        # be switched on, however the other keys look. The runtime re-checks
+        # every one of these and adds freshness, the formula artifact and a
+        # complete priced purchase (index.html paymentFactsFor).
+        pce = plan.get("paymentCalculationEnabled")
+        if pce is not None and not isinstance(pce, bool):
+            r.add_error(f"{tag}: paymentCalculationEnabled must be a boolean, "
+                        f"not {fin_headline.short_repr(pce)}")
+        cm = plan.get("calculationMode")
+        if cm is not None and not _fin_member(cm, FINANCING_CALCULATION_MODES):
+            r.add_error(f"{tag}: calculationMode {fin_headline.short_repr(cm)} must be "
+                        f"a string, one of {sorted(FINANCING_CALCULATION_MODES)}")
+        rnd = plan.get("paymentRounding")
+        if rnd is not None and not _fin_member(rnd, FINANCING_PAYMENT_ROUNDING):
+            r.add_error(f"{tag}: paymentRounding {fin_headline.short_repr(rnd)} must be "
+                        f"a string, one of {sorted(FINANCING_PAYMENT_ROUNDING)}")
+        dpr = plan.get("downPaymentRequired")
+        if dpr is not None and not isinstance(dpr, bool):
+            r.add_error(f"{tag}: downPaymentRequired must be a boolean, "
+                        f"not {fin_headline.short_repr(dpr)}")
+        crp = plan.get("chargesRequiredAtPurchase")
+        if crp is not None and not isinstance(crp, bool):
+            r.add_error(f"{tag}: chargesRequiredAtPurchase must be a boolean, "
+                        f"not {fin_headline.short_repr(crp)}")
+        if pce is True:
+            why = []
+            if not _fin_member(cm, FINANCING_PUBLISHED_METHODS):
+                why.append(f"calculationMode is not one of {sorted(FINANCING_PUBLISHED_METHODS)}")
+            ppf_c = plan.get("publishedPaymentFactor")
+            if cm == "published-fixed-factor" and (not _finite_number(ppf_c) or not 0 < ppf_c < 1):
+                why.append("no valid publishedPaymentFactor")
+            if cm == "published-equal-division" and plan.get("apr") != 0:
+                why.append("published-equal-division applies only to a 0% APR plan")
+            if not _fin_member(rnd, FINANCING_PAYMENT_ROUNDING):
+                why.append("no published paymentRounding rule")
+            if not _finite_number(plan.get("apr")) or plan.get("apr") < 0:
+                why.append("no published apr")
+            tm = plan.get("termMonths")
+            if not isinstance(tm, int) or isinstance(tm, bool) or tm <= 0:
+                why.append("no published termMonths")
+            if plan.get("verified") is not True:
+                why.append("the plan is not verified")
+            if fin.get("exactPromotionsEnabled") is not True:
+                why.append("financing.exactPromotionsEnabled is not true")
+            if why:
+                r.add_error(f"{tag}: paymentCalculationEnabled is true but "
+                            + "; ".join(why) + " - a payment figure needs every "
+                            "input published and the exact-term output authorized")
         if not _bilingual_ok(plan.get("headline")):
             r.add_error(f"{tag}: headline missing EN or ES")
         # PROMOTIONAL HEADLINES ARE DERIVED, NOT AUTHORED.
@@ -3346,6 +3433,7 @@ PRICING_FORMULA_REQUIRED = tuple(sorted(PRICING_FORMULA_KEYS))
 # inputs" is set equality, not a lower bound.
 PRICING_FORMULA_MODES = {
     "published-fixed-factor": frozenset({"principalMinor", "publishedPaymentFactor"}),
+    "published-equal-division": frozenset({"principalMinor", "termMonths"}),
 }
 PRICING_CADENCES = frozenset({"monthly", "biweekly", "weekly"})
 PRICING_SKU_MAX = 64
@@ -6592,9 +6680,97 @@ def _self_test() -> int:
               validate_financing(_fc(fdet), allowed_source_hosts=_FHOSTS).errors))
 
     fcalc = _fmut(); fcalc["plans"][0]["paymentCalculationEnabled"] = True
-    check("financing paymentCalculationEnabled=true -> error (V1 invariant)",
+    check("financing paymentCalculationEnabled=true without a published method -> error",
           any("paymentCalculationEnabled" in e for e in
               validate_financing(_fc(fcalc), allowed_source_hosts=_FHOSTS).errors))
+
+    # Governed payment calculation (owner authorization 2026-10-03): admitted
+    # only when every input is a published fact AND the exact-term output is
+    # authorized; each missing piece is refused by name.
+    def _calc_ok():
+        d = _fmut()
+        d["exactPromotionsEnabled"] = True
+        d["plans"][0].update({"paymentCalculationEnabled": True,
+                              "calculationMode": "published-fixed-factor",
+                              "publishedPaymentFactor": 0.018521,
+                              "paymentRounding": "up-to-whole-dollar"})
+        return d
+    check("governed calculation: every published input + exact output -> ok",
+          validate_financing(_fc(_calc_ok()), allowed_source_hosts=_FHOSTS).ok)
+    for _lbl, _mut, _needle in (
+            ("method not published", lambda p: p.__setitem__("calculationMode", "not-published"),
+             "calculationMode is not"),
+            ("method absent", lambda p: p.pop("calculationMode"), "calculationMode is not"),
+            ("factor absent", lambda p: p.pop("publishedPaymentFactor"), "publishedPaymentFactor"),
+            ("factor out of range", lambda p: p.__setitem__("publishedPaymentFactor", 1.5),
+             "publishedPaymentFactor"),
+            ("rounding absent", lambda p: p.pop("paymentRounding"), "paymentRounding"),
+            ("rounding unknown", lambda p: p.__setitem__("paymentRounding", "nearest-cent"),
+             "paymentRounding"),
+            ("apr absent", lambda p: p.pop("apr"), "apr"),
+            ("term absent", lambda p: p.pop("termMonths"), "termMonths"),
+            ("plan unverified", lambda p: p.__setitem__("verified", False), "verified"),
+            ("flag not a boolean", lambda p: p.__setitem__("paymentCalculationEnabled", "true"),
+             "must be a boolean"),
+    ):
+        _d = _calc_ok(); _mut(_d["plans"][0])
+        check(f"governed calculation refused: {_lbl}",
+              any(_needle in e for e in
+                  validate_financing(_fc(_d), allowed_source_hosts=_FHOSTS).errors))
+    _d = _calc_ok(); _d["exactPromotionsEnabled"] = False
+    check("governed calculation refused while exactPromotionsEnabled is false",
+          any("exactPromotionsEnabled is not true" in e for e in
+              validate_financing(_fc(_d), allowed_source_hosts=_FHOSTS).errors))
+    _d = _fmut(); _d["plans"][0]["calculationMode"] = "amortized-guess"
+    check("calculationMode outside the enum -> error",
+          any("calculationMode" in e for e in
+              validate_financing(_fc(_d), allowed_source_hosts=_FHOSTS).errors))
+    _d = _fmut(); _d["plans"][0]["downPaymentRequired"] = "yes"
+    check("downPaymentRequired must be a boolean",
+          any("downPaymentRequired" in e for e in
+              validate_financing(_fc(_d), allowed_source_hosts=_FHOSTS).errors))
+    check("shipped store config refuses review-only blocks (reviewTools, salesPolicies)",
+          all(any(k in e for e in validate_store_config({k: {}}).errors) for k in ("reviewTools", "salesPolicies")))
+    _d = _fmut(); _d["plans"][0]["chargesRequiredAtPurchase"] = "yes"
+    check("chargesRequiredAtPurchase must be a boolean",
+          any("chargesRequiredAtPurchase" in e for e in
+              validate_financing(_fc(_d), allowed_source_hosts=_FHOSTS).errors))
+    check("FINANCING_CALCULATION_MODES is exactly the three governed modes",
+          FINANCING_CALCULATION_MODES == {"published-fixed-factor", "published-equal-division",
+                                          "not-published"})
+    _ed = _calc_ok()
+    _ed["plans"][0].update({"apr": 0, "calculationMode": "published-equal-division"})
+    _ed["plans"][0].pop("publishedPaymentFactor")
+    _ed["plans"][0]["headline"] = {"en": "0% APR for 72 months", "es": "0% APR por 72 meses"}
+    check("governed equal division: a 0% plan with term + rounding (no factor) -> no calculation error",
+          not any("paymentCalculationEnabled" in e for e in
+                  validate_financing(_fc(_ed), allowed_source_hosts=_FHOSTS).errors))
+    _ed2 = _calc_ok()
+    _ed2["plans"][0]["calculationMode"] = "published-equal-division"
+    check("governed equal division refused on a plan that charges interest",
+          any("only to a 0% APR plan" in e for e in
+              validate_financing(_fc(_ed2), allowed_source_hosts=_FHOSTS).errors))
+    check("FINANCING_PAYMENT_ROUNDING is exactly the published rule",
+          FINANCING_PAYMENT_ROUNDING == {"up-to-whole-dollar"})
+    # Totality: a frozenset membership test hashes its operand, so a list or
+    # object value must be refused by type, never reach the test and raise
+    # TypeError (Codex reproduction 2026-10-04) - calculation off and on.
+    for _fld in ("calculationMode", "paymentRounding"):
+        for _bad in ([], {}):
+            for _on in (False, True):
+                _tc = _calc_ok()
+                _tc["plans"][0]["paymentCalculationEnabled"] = _on
+                _tc["plans"][0][_fld] = _bad
+                try:
+                    _terr = validate_financing(_fc(_tc), allowed_source_hosts=_FHOSTS).errors
+                    _tok = any(_fld in e and "must be a string" in e for e in _terr)
+                except TypeError:
+                    _tok = False
+                check(f"{_fld} = {_bad!r} (calculation {'on' if _on else 'off'}) -> "
+                      f"a named refusal, not TypeError", _tok)
+    check("_fin_member admits only strings",
+          _fin_member("up-to-whole-dollar", FINANCING_PAYMENT_ROUNDING)
+          and not _fin_member(["up-to-whole-dollar"], FINANCING_PAYMENT_ROUNDING))
 
     flto = _fmut()
     flto["plans"].append({"id": "lto", "kind": "lease-to-own", "apr": 99,

@@ -382,5 +382,21 @@ for state in ("dark", "available", "unapproved", "disabled"):
     check(f"the {state} drill keeps ONE projection (the whole document) and is accepted",
           verdicts.get("sizeProjections") == [None] and srv.dark_form_acceptable(state, verdicts))
 
+
+# ------------------------------------------- evidence types (2026-10-03)
+print("Evidence types: a child on its parent's product page is admitted; a category listing is not")
+child = dict(variant("C1"), evidence={"type": "configurable-parent-page",
+                                       "url": f"https://{HOST}/product/parent-of-c1"})
+listing = dict(variant("L1"), evidence={"type": "category-listing",
+                                         "url": f"https://{HOST}/catalog/protectors"})
+products, m_skus, a_skus, coverage, injected = run(
+    [child, listing], accessories=[accessory_row(PROTECTOR_ID, {"queen": "C1"}),
+                                   accessory_row(PILLOW_ID, {"size-independent": "L1"})])
+check("E1. a child read on its parent's product page is admitted",
+      rejected_reason(coverage, "C1") is None and any((p_.get("variant") or {}).get("sku") == "C1" for p_ in products),
+      str(rejected_reason(coverage, "C1")))
+check("E2. a category-listing row is still refused by name",
+      rejected_reason(coverage, "L1") == "evidence-is-not-a-product-page", str(rejected_reason(coverage, "L1")))
+
 print(f"\n{passed} passed, {failed} failed")
 sys.exit(1 if failed else 0)

@@ -379,5 +379,51 @@ check("an absent observation stays absent rather than defaulting to now",
           "queen-mattresses", "queen", "mattress"
       )["observedAt"] is None)
 
+
+# ---- 2026-10-03: offline review bundles and supplement admission ---------
+print("\nOffline bundles and supplement rows:")
+_old = fx.OFFLINE
+fx.OFFLINE = True
+try:
+    st, body = fx.fetch("https://www.lacks.com/product/anything")
+    check("S1. offline mode refuses the network and says so (never fetches)",
+          st == fx.OFFLINE_STATUS and body == "")
+finally:
+    fx.OFFLINE = _old
+
+_good = {"kind": "accessory", "sku": "283083", "sellingAmountMinor": 89900, "exceptions": [],
+         "observedAt": "2026-10-03T20:12:47.096Z",
+         "evidence": {"type": "product-page", "url": fx.BASE + "/product/x"}}
+check("S2. a clean, dated, product-page row is admitted", fx.supplement_row_verdict(_good) == "")
+check("S2b. a child read on its parent's product page is admitted too",
+      fx.supplement_row_verdict(dict(_good, evidence={"type": "configurable-parent-page",
+                                                       "url": fx.BASE + "/product/p"})) == "")
+for _lbl, _over, _why in (
+        ("exceptions", {"exceptions": ["no-resolvable-size"]}, "row-carries-exceptions"),
+        ("no price", {"sellingAmountMinor": None}, "no-selling-price"),
+        ("float price", {"sellingAmountMinor": 899.0}, "no-selling-price"),
+        ("no offset", {"observedAt": "2026-10-03T20:12:47"}, "observation-offset-missing"),
+        ("future stamp", {"observedAt": "2099-01-01T00:00:00+00:00"}, "observation-in-future"),
+        ("garbage stamp", {"observedAt": "yesterday"}, "observation-unparseable"),
+        ("category listing", {"evidence": {"type": "category-listing", "url": fx.BASE + "/catalog/x"}},
+         "evidence-not-a-retailer-product-page"),
+        ("other host", {"evidence": {"type": "product-page", "url": "https://example.com/p"}},
+         "evidence-not-a-retailer-product-page"),
+        ("no sku", {"sku": ""}, "no-identity")):
+    check(f"S3. supplement refuses a row with {_lbl}",
+          fx.supplement_row_verdict(dict(_good, **_over)) == _why,
+          fx.supplement_row_verdict(dict(_good, **_over)))
+_tmpd = _tempfile.mkdtemp(prefix="supp_")
+try:
+    _sp = os.path.join(_tmpd, "s.json")
+    with io.open(_sp, "w", encoding="utf-8") as _f:
+        _json.dump({"variants": [_good, dict(_good, exceptions=["x"])]}, _f)
+    _added, _refused = fx.load_supplement(_sp)
+    check("S4. load_supplement admits the clean row and reports the refusal by name",
+          len(_added) == 1 and len(_refused) == 1 and _added[0]["supplementSource"] == "s.json"
+          and _added[0]["observedAt"] == _good["observedAt"], str(_refused))
+finally:
+    _shutil.rmtree(_tmpd, ignore_errors=True)
+
 print(f"\nPrice extraction check: {passed} passed, {failed} failed")
 sys.exit(1 if failed else 0)

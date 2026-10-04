@@ -3,9 +3,9 @@
     "status": "AUTOMATED-IDENTITY-MATCH-OVER-AN-UNVERIFIED-SNAPSHOT",
     "note": "Identity evidence, owner verification and production activation are three separate things. A `preview-eligible` row carries enough identity evidence for the ISOLATED, clearly-labelled preview and is shown there as pending verification; it is not a verified mapping and it never feeds production, which the pricing contract gates independently.",
     "skuEvidence": "The app catalog ships no SKU. The 2026-07-30 discovery file supplies a QUEEN SKU per product as a LEAD; where that exact SKU is still present in the current snapshot it is recorded as a direct identity link. Historical prices are never reused and no other size's SKU is ever inferred.",
-    "mappingGeneratedAt": "2026-09-21T22:58:27+00:00",
-    "pricesObservedFrom": "2026-09-20T23:27:23+00:00",
-    "pricesObservedTo": "2026-09-21T22:40:22+00:00",
+    "mappingGeneratedAt": "2026-10-03T20:39:22+00:00",
+    "pricesObservedFrom": "2026-10-03T18:54:13+00:00",
+    "pricesObservedTo": "2026-10-03T20:13:14.473Z",
     "appMattresses": 26,
     "appAccessories": 10,
     "verifiedRowsLoaded": 0
@@ -39,7 +39,7 @@
                 "type": "configurable-parent-page",
                 "url": "https://www.lacks.com/product/chattam-wells-princess-palermo-14-wrapped-coil-firm-tight-top-queen-mattress-m2060c-1745153"
               },
-              "observedAt": null,
+              "observedAt": "2026-10-03T18:56:53+00:00",
               "scope": "mattress-only",
               "familyKey": null,
               "tier": "weak",
@@ -88,7 +88,7 @@
                 "type": "configurable-parent-page",
                 "url": "https://www.lacks.com/product/chattam-wells-princess-palermo-14-wrapped-coil-firm-tight-top-queen-mattress-m2060c-1745153"
               },
-              "observedAt": null,
+              "observedAt": "2026-10-03T18:56:53+00:00",
               "scope": "mattress-only",
               "familyKey": null,
               "tier": "weak",
@@ -137,7 +137,7 @@
                 "type": "configurable-parent-page",
                 "url": "https://www.lacks.com/product/chattam-wells-princess-palermo-14-wrapped-coil-firm-tight-top-queen-mattress-m2060c-1745153"
               },
-              "observedAt": null,
+              "observedAt": "2026-10-03T18:56:53+00:00",
               "scope": "mattress-only",
               "familyKey": null,
               "tier": "weak",
@@ -181,7 +181,7 @@
             "type": "product-page",
             "url": "https://www.lacks.com/product/restonic-angelina-extra-firm-queen-mattress-1606-202-mz874sa50-2031576"
           },
-          "observedAt": "2026-09-20T23:28:06+00:00",
+          "observedAt": "2026-10-03T18:54:57+00:00",
           "scope": "mattress-only",
           "familyKey": "chattam wells",
           "tier": "sku",
@@ -226,7 +226,7 @@
                 "type": "configurable-parent-page",
                 "url": "https://www.lacks.com/product/chattam-wells-princess-palermo-14-wrapped-coil-firm-tight-top-queen-mattress-m2060c-1745153"
               },
-              "observedAt": null,
+              "observedAt": "2026-10-03T18:56:53+00:00",
               "scope": "mattress-only",
               "familyKey": null,
               "tier": "weak",
@@ -275,7 +275,7 @@
                 "type": "configurable-parent-page",
                 "url": "https://www.lacks.com/product/chattam-wells-princess-palermo-14-wrapped-coil-firm-tight-top-queen-mattress-m2060c-1745153"
               },
-              "observedAt": null,
+              "observedAt": "2026-10-03T18:56:53+00:00",
               "scope": "mattress-only",
               "familyKey": null,
               "tier": "weak",
@@ -368,7 +368,7 @@
             "type": "product-page",
             "url": "https://www.lacks.com/product/chattam-wells-the-saint-pierre-165-plush-euro-top-queen-mattress-1606-302-mz877sa50-2031583"
           },
-          "observedAt": "2026-09-20T23:28:06+00:00",
+          "observedAt": "2026-10-03T18:54:57+00:00",
           "scope": "mattress-only",
           "familyKey": "chattam wells",
           "tier": "sku",
@@ -414,7 +414,7 @@
                 "type": "configurable-parent-page",
                 "url": "https://www.lacks.com/product/chattam-wells-princess-saint-pierre-165-wrapped-coil-ultra-plush-euro-top-queen-mattress-m2064c-1748187"
               },
-              "observedAt": null,
+              "observedAt": "2026-10-03T18:57:29+00:00",
               "scope": "mattress-only",
               "familyKey": null,
               "tier": "weak",
@@ -501,7 +501,7 @@
                 "type": "product-page",
                 "url": "https://www.lacks.com/product/chattam-wells-princess-palermo-14-wrapped-coil-firm-pillow-top-twin-xl-mattress-m2062-07-1747019"
               },
-              "observedAt": null,
+              "observedAt": "2026-10-03T18:56:53+00:00",
               "scope": "mattress-only",
               "familyKey": "palermo",
               "tier": "strong",
@@ -545,7 +545,7 @@
                 "type": "product-page",
                 "url": "https://www.lacks.com/product/chattam-wells-princess-palermo-14-wrapped-coil-firm-tight-top-twin-xl-mattress-m2060-07-1745129"
               },
-              "observedAt": null,
+              "observedAt": "2026-10-03T18:56:53+00:00",
               "scope": "mattress-only",
               "familyKey": "palermo",
               "tier": "strong",
@@ -595,7 +595,7 @@
                 "type": "product-page",
                 "url": "https://www.lacks.com/product/chattam-wells-princess-palermo-14-wrapped-coil-firm-pillow-top-full-mattress-m2062-04-1747020"
               },
-              "observedAt": null,
+              "observedAt": "2026-10-03T18:56:53+00:00",
               "scope": "mattress-only",
               "familyKey": "palermo",
               "tier": "strong",
@@ -639,7 +639,7 @@
                 "type": "product-page",
                 "url": "https://www.lacks.com/product/chattam-wells-princess-palermo-14-wrapped-coil-firm-tight-top-full-mattress-m2060-04-1745138"
               },
-              "observedAt": null,
+              "observedAt": "2026-10-03T18:56:53+00:00",
               "scope": "mattress-only",
               "familyKey": "palermo",
               "tier": "strong",
@@ -685,7 +685,7 @@
             "type": "product-page",
             "url": "https://www.lacks.com/product/chattam-wells-the-palermo-14-firm-pillowtop-queen-mattress-1606-102-mz674sa50-2031248"
           },
-          "observedAt": "2026-09-20T23:28:06+00:00",
+          "observedAt": "2026-10-03T18:54:57+00:00",
           "scope": "mattress-only",
           "familyKey": "chattam wells",
           "tier": "sku",
@@ -729,7 +729,7 @@
                 "type": "configurable-parent-page",
                 "url": "https://www.lacks.com/product/chattam-wells-princess-palermo-14-wrapped-coil-firm-tight-top-queen-mattress-m2060c-1745153"
               },
-              "observedAt": null,
+              "observedAt": "2026-10-03T18:56:53+00:00",
               "scope": "mattress-only",
               "familyKey": null,
               "tier": "weak",
@@ -773,7 +773,7 @@
                 "type": "configurable-parent-page",
                 "url": "https://www.lacks.com/product/chattam-wells-princess-palermo-14-wrapped-coil-firm-tight-top-queen-mattress-m2060c-1745153"
               },
-              "observedAt": null,
+              "observedAt": "2026-10-03T18:56:53+00:00",
               "scope": "mattress-only",
               "familyKey": null,
               "tier": "weak",
@@ -824,7 +824,7 @@
                 "type": "configurable-parent-page",
                 "url": "https://www.lacks.com/product/chattam-wells-princess-palermo-14-wrapped-coil-firm-tight-top-queen-mattress-m2060c-1745153"
               },
-              "observedAt": null,
+              "observedAt": "2026-10-03T18:56:53+00:00",
               "scope": "mattress-only",
               "familyKey": null,
               "tier": "weak",
@@ -868,7 +868,7 @@
                 "type": "configurable-parent-page",
                 "url": "https://www.lacks.com/product/chattam-wells-princess-palermo-14-wrapped-coil-firm-tight-top-queen-mattress-m2060c-1745153"
               },
-              "observedAt": null,
+              "observedAt": "2026-10-03T18:56:53+00:00",
               "scope": "mattress-only",
               "familyKey": null,
               "tier": "weak",
@@ -934,7 +934,7 @@
             "type": "configurable-parent-page",
             "url": "https://www.lacks.com/product/tempur-pedic-tempur-luxebreeze-13-tempur-material-soft-smooth-top-split-king-mattress-includes-2-pieces-102432-c-1302546"
           },
-          "observedAt": null,
+          "observedAt": "2026-10-03T18:57:38+00:00",
           "scope": "mattress-only",
           "familyKey": null,
           "tier": "sku",
@@ -982,7 +982,7 @@
             "type": "product-page",
             "url": "https://www.lacks.com/product/queen-tempur-luxe-breeze-20-20-soft-mattress-10yr-limited-warranty-10243251-1273591"
           },
-          "observedAt": null,
+          "observedAt": "2026-10-03T18:57:38+00:00",
           "scope": "mattress-only",
           "familyKey": "luxebreeze",
           "tier": "sku",
@@ -1025,7 +1025,7 @@
             "type": "configurable-parent-page",
             "url": "https://www.lacks.com/product/tempur-pedic-tempur-luxebreeze-13-tempur-material-soft-smooth-top-split-king-mattress-includes-2-pieces-102432-c-1302546"
           },
-          "observedAt": null,
+          "observedAt": "2026-10-03T18:57:38+00:00",
           "scope": "mattress-only",
           "familyKey": null,
           "tier": "sku",
@@ -1094,7 +1094,7 @@
                 "type": "category-listing",
                 "url": "https://www.lacks.com/catalog/twin-xl?display_mode=products"
               },
-              "observedAt": "2026-09-20T23:27:40+00:00",
+              "observedAt": "2026-10-03T18:54:31+00:00",
               "scope": "mattress-only",
               "familyKey": null,
               "tier": "weak",
@@ -1141,7 +1141,7 @@
             "type": "configurable-parent-page",
             "url": "https://www.lacks.com/product/tempur-pedic-tempur-luxebreeze-13-tempur-material-soft-smooth-top-split-king-mattress-includes-2-pieces-102432-c-1302546"
           },
-          "observedAt": null,
+          "observedAt": "2026-10-03T18:57:38+00:00",
           "scope": "mattress-only",
           "familyKey": null,
           "tier": "sku",
@@ -1193,7 +1193,7 @@
             "type": "configurable-parent-page",
             "url": "https://www.lacks.com/product/tempur-pedic-tempur-luxebreeze-13-tempur-material-soft-smooth-top-split-king-mattress-includes-2-pieces-102432-c-1302546"
           },
-          "observedAt": null,
+          "observedAt": "2026-10-03T18:57:38+00:00",
           "scope": "mattress-only",
           "familyKey": null,
           "tier": "sku",
@@ -1241,7 +1241,7 @@
             "type": "configurable-parent-page",
             "url": "https://www.lacks.com/product/tempur-pedic-tempur-luxebreeze-13-tempur-material-soft-smooth-top-split-king-mattress-includes-2-pieces-102432-c-1302546"
           },
-          "observedAt": null,
+          "observedAt": "2026-10-03T18:57:38+00:00",
           "scope": "mattress-only",
           "familyKey": null,
           "tier": "sku",
@@ -1309,7 +1309,7 @@
             "type": "product-page",
             "url": "https://www.lacks.com/product/restonic-reserve-mayfair-15-hybrid-plush-euro-top-twin-mattress-1611-370-mu81533-2046617"
           },
-          "observedAt": "2026-09-20T23:27:31+00:00",
+          "observedAt": "2026-10-03T18:54:22+00:00",
           "scope": "mattress-only",
           "familyKey": "mayfair ii",
           "tier": "strong",
@@ -1355,7 +1355,7 @@
             "type": "product-page",
             "url": "https://www.lacks.com/product/restonic-reserve-mayfair-15-hybrid-plush-euro-top-full-mattress-1611-371-mu81546-2046615"
           },
-          "observedAt": "2026-09-20T23:27:58+00:00",
+          "observedAt": "2026-10-03T18:54:49+00:00",
           "scope": "mattress-only",
           "familyKey": "mayfair ii",
           "tier": "strong",
@@ -1397,7 +1397,7 @@
             "type": "product-page",
             "url": "https://www.lacks.com/product/restonic-reserve-mayfair-15-hybrid-plush-euro-top-queen-mattress-1611-372-mu81550-1992762"
           },
-          "observedAt": "2026-09-20T23:28:06+00:00",
+          "observedAt": "2026-10-03T18:55:06+00:00",
           "scope": "mattress-only",
           "familyKey": "mayfair ii",
           "tier": "sku",
@@ -1439,7 +1439,7 @@
             "type": "product-page",
             "url": "https://www.lacks.com/product/restonic-reserve-mayfair-15-hybrid-plush-euro-top-king-mattress-1611-373-mu81566-2046616"
           },
-          "observedAt": "2026-09-20T23:28:24+00:00",
+          "observedAt": "2026-10-03T18:55:24+00:00",
           "scope": "mattress-only",
           "familyKey": "mayfair ii",
           "tier": "strong",
@@ -1520,7 +1520,7 @@
                 "type": "product-page",
                 "url": "https://www.lacks.com/product/restonic-reserve-mayfair-15-hybrid-medium-tight-top-full-mattress-1611-351-mu71546-2046611"
               },
-              "observedAt": "2026-09-20T23:27:58+00:00",
+              "observedAt": "2026-10-03T18:54:49+00:00",
               "scope": "mattress-only",
               "familyKey": "mayfair ii",
               "tier": "strong",
@@ -1561,7 +1561,7 @@
                 "type": "product-page",
                 "url": "https://www.lacks.com/product/restonic-royal-reserve-14-hybrid-medium-firm-full-mattress-1611-141-mt51046-2057513"
               },
-              "observedAt": "2026-09-20T23:27:58+00:00",
+              "observedAt": "2026-10-03T18:54:49+00:00",
               "scope": "mattress-only",
               "familyKey": "royal",
               "tier": "strong",
@@ -1606,7 +1606,7 @@
             "type": "product-page",
             "url": "https://www.lacks.com/product/restonic-reserve-mayfair-15-hybrid-medium-tight-top-queen-mattress-1611-352-mu71550-1992759"
           },
-          "observedAt": "2026-09-20T23:28:06+00:00",
+          "observedAt": "2026-10-03T18:55:06+00:00",
           "scope": "mattress-only",
           "familyKey": "mayfair ii",
           "tier": "sku",
@@ -1679,7 +1679,7 @@
             "type": "product-page",
             "url": "https://www.lacks.com/product/restonic-royal-reserve-14-hybrid-extra-firm-twin-mattress-1611-110-mt21033-2057478"
           },
-          "observedAt": "2026-09-20T23:27:31+00:00",
+          "observedAt": "2026-10-03T18:54:22+00:00",
           "scope": "mattress-only",
           "familyKey": "royal",
           "tier": "strong",
@@ -1724,7 +1724,7 @@
             "type": "product-page",
             "url": "https://www.lacks.com/product/restonic-royal-reserve-14-hybrid-extra-firm-full-mattress-1611-111-mt21046-2057461"
           },
-          "observedAt": "2026-09-20T23:27:49+00:00",
+          "observedAt": "2026-10-03T18:54:40+00:00",
           "scope": "mattress-only",
           "familyKey": "royal",
           "tier": "strong",
@@ -1765,7 +1765,7 @@
             "type": "product-page",
             "url": "https://www.lacks.com/product/restonic-royal-reserve-14-hybrid-extra-firm-queen-mattress-1611-112-mt21050-1991959"
           },
-          "observedAt": "2026-09-20T23:28:15+00:00",
+          "observedAt": "2026-10-03T18:55:06+00:00",
           "scope": "mattress-only",
           "familyKey": "royal",
           "tier": "sku",
@@ -1807,7 +1807,7 @@
             "type": "product-page",
             "url": "https://www.lacks.com/product/restonic-royal-reserve-14-hybrid-extra-firm-king-mattress-1611-113-mt21066-2057475"
           },
-          "observedAt": "2026-09-20T23:28:24+00:00",
+          "observedAt": "2026-10-03T18:55:24+00:00",
           "scope": "mattress-only",
           "familyKey": "royal",
           "tier": "strong",
@@ -1868,7 +1868,7 @@
             "type": "product-page",
             "url": "https://www.lacks.com/product/copper-by-springair-135-hybrid-euro-top-cushion-firm-quilted-twin-mattress-1602-860-mz972sa33-2046434"
           },
-          "observedAt": "2026-09-20T23:27:23+00:00",
+          "observedAt": "2026-10-03T18:54:13+00:00",
           "scope": "mattress-only",
           "familyKey": "copper",
           "tier": "strong",
@@ -1915,7 +1915,7 @@
             "type": "product-page",
             "url": "https://www.lacks.com/product/copper-by-springair-135-hybrid-euro-top-cushion-firm-quilted-full-mattress-1602-861-mz972sa46-2046428"
           },
-          "observedAt": "2026-09-20T23:27:49+00:00",
+          "observedAt": "2026-10-03T18:54:40+00:00",
           "scope": "mattress-only",
           "familyKey": "copper",
           "tier": "strong",
@@ -1958,7 +1958,7 @@
             "type": "product-page",
             "url": "https://www.lacks.com/product/copper-by-springair-135-hybrid-euro-top-cushion-firm-quilted-queen-mattress-1602-862-mz972sa50-2037053"
           },
-          "observedAt": "2026-09-20T23:28:06+00:00",
+          "observedAt": "2026-10-03T18:54:57+00:00",
           "scope": "mattress-only",
           "familyKey": "copper",
           "tier": "sku",
@@ -2001,7 +2001,7 @@
             "type": "product-page",
             "url": "https://www.lacks.com/product/copper-by-springair-135-hybrid-euro-top-cushion-firm-quilted-king-mattress-1602-863-mz972sa66-2046430"
           },
-          "observedAt": "2026-09-20T23:28:24+00:00",
+          "observedAt": "2026-10-03T18:55:15+00:00",
           "scope": "mattress-only",
           "familyKey": "copper",
           "tier": "strong",
@@ -2068,7 +2068,7 @@
                 "type": "product-page",
                 "url": "https://www.lacks.com/product/restonic-platinum-paige-16-hybrid-firm-box-top-twin-mattress-1601-730-ml99133-2046399"
               },
-              "observedAt": "2026-09-20T23:27:23+00:00",
+              "observedAt": "2026-10-03T18:54:13+00:00",
               "scope": "mattress-only",
               "familyKey": "paige",
               "tier": "strong",
@@ -2109,7 +2109,7 @@
                 "type": "product-page",
                 "url": "https://www.lacks.com/product/restonic-platinum-summit-138-hybrid-firm-tight-top-twin-mattress-1601-620-mm28433-2046338"
               },
-              "observedAt": "2026-09-20T23:27:23+00:00",
+              "observedAt": "2026-10-03T18:54:13+00:00",
               "scope": "mattress-only",
               "familyKey": "summit",
               "tier": "strong",
@@ -2163,7 +2163,7 @@
                 "type": "product-page",
                 "url": "https://www.lacks.com/product/restonic-platinum-paige-16-hybrid-firm-box-top-full-mattress-1601-731-ml99146-2046401"
               },
-              "observedAt": "2026-09-20T23:27:58+00:00",
+              "observedAt": "2026-10-03T18:54:49+00:00",
               "scope": "mattress-only",
               "familyKey": "paige",
               "tier": "strong",
@@ -2204,7 +2204,7 @@
                 "type": "product-page",
                 "url": "https://www.lacks.com/product/restonic-platinum-summit-138-hybrid-firm-tight-top-full-mattress-1601-621-mm28446-2046339"
               },
-              "observedAt": "2026-09-20T23:27:49+00:00",
+              "observedAt": "2026-10-03T18:54:40+00:00",
               "scope": "mattress-only",
               "familyKey": "summit",
               "tier": "strong",
@@ -2250,7 +2250,7 @@
             "type": "product-page",
             "url": "https://www.lacks.com/product/restonic-platinum-paige-ii-16-hybrid-firm-box-top-queen-mattress-1601-732-ml99150-1991909"
           },
-          "observedAt": "2026-09-20T23:28:06+00:00",
+          "observedAt": "2026-10-03T18:54:57+00:00",
           "scope": "mattress-only",
           "familyKey": "paige",
           "tier": "sku",
@@ -2296,7 +2296,7 @@
                 "type": "product-page",
                 "url": "https://www.lacks.com/product/restonic-platinum-paige-16-hybrid-firm-box-top-king-mattress-1601-733-ml99166-2046403"
               },
-              "observedAt": "2026-09-20T23:28:24+00:00",
+              "observedAt": "2026-10-03T18:55:15+00:00",
               "scope": "mattress-only",
               "familyKey": "paige",
               "tier": "strong",
@@ -2337,7 +2337,7 @@
                 "type": "product-page",
                 "url": "https://www.lacks.com/product/restonic-platinum-summit-138-hybrid-firm-tight-top-king-mattress-1601-623-mm28466-2046357"
               },
-              "observedAt": "2026-09-20T23:28:24+00:00",
+              "observedAt": "2026-10-03T18:55:15+00:00",
               "scope": "mattress-only",
               "familyKey": "summit",
               "tier": "strong",
@@ -2408,7 +2408,7 @@
                 "type": "product-page",
                 "url": "https://www.lacks.com/product/restonic-platinum-maria-ii-155-hybrid-extra-firm-twin-mattress-1601-510-mi54733-2057400"
               },
-              "observedAt": "2026-09-20T23:27:23+00:00",
+              "observedAt": "2026-10-03T18:54:13+00:00",
               "scope": "mattress-only",
               "familyKey": "maria",
               "tier": "weak",
@@ -2453,7 +2453,7 @@
                 "type": "product-page",
                 "url": "https://www.lacks.com/product/restonic-platinum-paige-ii-16-hybrid-extra-firm-twin-mattress-1601-750-ml59133-2046412"
               },
-              "observedAt": "2026-09-20T23:27:23+00:00",
+              "observedAt": "2026-10-03T18:54:13+00:00",
               "scope": "mattress-only",
               "familyKey": "paige",
               "tier": "weak",
@@ -2506,7 +2506,7 @@
                 "type": "product-page",
                 "url": "https://www.lacks.com/product/restonic-platinum-maria-ii-155-hybrid-extra-firm-full-mattress-1601-511-mi54746-2057410"
               },
-              "observedAt": "2026-09-20T23:27:49+00:00",
+              "observedAt": "2026-10-03T18:54:40+00:00",
               "scope": "mattress-only",
               "familyKey": "maria",
               "tier": "weak",
@@ -2551,7 +2551,7 @@
                 "type": "product-page",
                 "url": "https://www.lacks.com/product/restonic-platinum-paige-ii-16-hybrid-extra-firm-full-mattress-1601-751-ml59146-2046413"
               },
-              "observedAt": "2026-09-20T23:27:49+00:00",
+              "observedAt": "2026-10-03T18:54:40+00:00",
               "scope": "mattress-only",
               "familyKey": "paige",
               "tier": "weak",
@@ -2595,7 +2595,7 @@
             "type": "product-page",
             "url": "https://www.lacks.com/product/restonic-platinum-paige-ii-16-hybrid-extra-firm-queen-mattress-1601-752-ml59150-2029844"
           },
-          "observedAt": "2026-09-20T23:28:06+00:00",
+          "observedAt": "2026-10-03T18:54:57+00:00",
           "scope": "mattress-only",
           "familyKey": "paige",
           "tier": "sku",
@@ -2643,7 +2643,7 @@
                 "type": "product-page",
                 "url": "https://www.lacks.com/product/restonic-platinum-maria-ii-155-hybrid-extra-firm-king-mattress-1601-513-mi54766-2057412"
               },
-              "observedAt": "2026-09-20T23:28:24+00:00",
+              "observedAt": "2026-10-03T18:55:15+00:00",
               "scope": "mattress-only",
               "familyKey": "maria",
               "tier": "weak",
@@ -2688,7 +2688,7 @@
                 "type": "product-page",
                 "url": "https://www.lacks.com/product/restonic-platinum-paige-ii-16-hybrid-extra-firm-king-mattress-1601-753-ml59166-2046415"
               },
-              "observedAt": "2026-09-20T23:28:32+00:00",
+              "observedAt": "2026-10-03T18:55:15+00:00",
               "scope": "mattress-only",
               "familyKey": "paige",
               "tier": "weak",
@@ -2756,7 +2756,7 @@
                 "type": "product-page",
                 "url": "https://www.lacks.com/product/restonic-platinum-maria-155-hybrid-plush-box-top-twin-mattress-1601-580-mi84733-2046314"
               },
-              "observedAt": "2026-09-20T23:27:23+00:00",
+              "observedAt": "2026-10-03T18:54:13+00:00",
               "scope": "mattress-only",
               "familyKey": "maria",
               "tier": "strong",
@@ -2797,7 +2797,7 @@
                 "type": "product-page",
                 "url": "https://www.lacks.com/product/restonic-platinum-summit-138-hybrid-plush-tight-top-twin-mattress-1601-670-mm27433-2046385"
               },
-              "observedAt": "2026-09-20T23:27:31+00:00",
+              "observedAt": "2026-10-03T18:54:22+00:00",
               "scope": "mattress-only",
               "familyKey": "summit",
               "tier": "strong",
@@ -2851,7 +2851,7 @@
                 "type": "product-page",
                 "url": "https://www.lacks.com/product/restonic-platinum-maria-155-hybrid-plush-box-top-full-mattress-1601-581-mi84746-2046315"
               },
-              "observedAt": "2026-09-20T23:27:49+00:00",
+              "observedAt": "2026-10-03T18:54:40+00:00",
               "scope": "mattress-only",
               "familyKey": "maria",
               "tier": "strong",
@@ -2892,7 +2892,7 @@
                 "type": "product-page",
                 "url": "https://www.lacks.com/product/restonic-platinum-summit-138-hybrid-plush-tight-top-full-mattress-1601-671-mm27446-2046392"
               },
-              "observedAt": "2026-09-20T23:27:49+00:00",
+              "observedAt": "2026-10-03T18:54:40+00:00",
               "scope": "mattress-only",
               "familyKey": "summit",
               "tier": "strong",
@@ -2938,7 +2938,7 @@
             "type": "product-page",
             "url": "https://www.lacks.com/product/restonic-platinum-maria-155-hybrid-plush-box-top-queen-mattress-1601-582-mi84750-1990900"
           },
-          "observedAt": "2026-09-20T23:28:15+00:00",
+          "observedAt": "2026-10-03T18:54:57+00:00",
           "scope": "mattress-only",
           "familyKey": "maria",
           "tier": "sku",
@@ -2984,7 +2984,7 @@
                 "type": "product-page",
                 "url": "https://www.lacks.com/product/restonic-platinum-maria-155-hybrid-plush-box-top-king-mattress-1601-583-mi84766-2046316"
               },
-              "observedAt": "2026-09-20T23:28:24+00:00",
+              "observedAt": "2026-10-03T18:55:15+00:00",
               "scope": "mattress-only",
               "familyKey": "maria",
               "tier": "strong",
@@ -3025,7 +3025,7 @@
                 "type": "product-page",
                 "url": "https://www.lacks.com/product/restonic-platinum-summit-138-hybrid-plush-tight-top-king-mattress-1601-673-mm27466-2046393"
               },
-              "observedAt": "2026-09-20T23:28:32+00:00",
+              "observedAt": "2026-10-03T18:55:15+00:00",
               "scope": "mattress-only",
               "familyKey": "summit",
               "tier": "strong",
@@ -3095,7 +3095,7 @@
                 "type": "product-page",
                 "url": "https://www.lacks.com/product/restonic-maria-hybrid-bt-firm-twin-mattress-1601-540-mi94733-2046335"
               },
-              "observedAt": "2026-09-20T23:27:23+00:00",
+              "observedAt": "2026-10-03T18:54:13+00:00",
               "scope": "mattress-only",
               "familyKey": "maria",
               "tier": "strong",
@@ -3136,7 +3136,7 @@
                 "type": "product-page",
                 "url": "https://www.lacks.com/product/restonic-platinum-paige-16-hybrid-firm-box-top-twin-mattress-1601-730-ml99133-2046399"
               },
-              "observedAt": "2026-09-20T23:27:23+00:00",
+              "observedAt": "2026-10-03T18:54:13+00:00",
               "scope": "mattress-only",
               "familyKey": "paige",
               "tier": "strong",
@@ -3180,7 +3180,7 @@
                 "type": "product-page",
                 "url": "https://www.lacks.com/product/restonic-platinum-summit-138-hybrid-firm-tight-top-twin-mattress-1601-620-mm28433-2046338"
               },
-              "observedAt": "2026-09-20T23:27:23+00:00",
+              "observedAt": "2026-10-03T18:54:13+00:00",
               "scope": "mattress-only",
               "familyKey": "summit",
               "tier": "strong",
@@ -3234,7 +3234,7 @@
                 "type": "product-page",
                 "url": "https://www.lacks.com/product/restonic-maria-hybrid-bt-firm-full-mattress-1601-541-mi94746-2046329"
               },
-              "observedAt": "2026-09-20T23:27:49+00:00",
+              "observedAt": "2026-10-03T18:54:40+00:00",
               "scope": "mattress-only",
               "familyKey": "maria",
               "tier": "strong",
@@ -3275,7 +3275,7 @@
                 "type": "product-page",
                 "url": "https://www.lacks.com/product/restonic-platinum-paige-16-hybrid-firm-box-top-full-mattress-1601-731-ml99146-2046401"
               },
-              "observedAt": "2026-09-20T23:27:58+00:00",
+              "observedAt": "2026-10-03T18:54:49+00:00",
               "scope": "mattress-only",
               "familyKey": "paige",
               "tier": "strong",
@@ -3319,7 +3319,7 @@
                 "type": "product-page",
                 "url": "https://www.lacks.com/product/restonic-platinum-summit-138-hybrid-firm-tight-top-full-mattress-1601-621-mm28446-2046339"
               },
-              "observedAt": "2026-09-20T23:27:49+00:00",
+              "observedAt": "2026-10-03T18:54:40+00:00",
               "scope": "mattress-only",
               "familyKey": "summit",
               "tier": "strong",
@@ -3365,7 +3365,7 @@
             "type": "product-page",
             "url": "https://www.lacks.com/product/restonic-platinum-maria-ii-155-hybrid-bt-firm-queen-mattress-1601-542-mi94750-1990893"
           },
-          "observedAt": "2026-09-20T23:28:15+00:00",
+          "observedAt": "2026-10-03T18:54:57+00:00",
           "scope": "mattress-only",
           "familyKey": "maria",
           "tier": "sku",
@@ -3411,7 +3411,7 @@
                 "type": "product-page",
                 "url": "https://www.lacks.com/product/restonic-maria-hybrid-bt-firm-king-mattress-1601-543-mi94766-2046330"
               },
-              "observedAt": "2026-09-20T23:28:24+00:00",
+              "observedAt": "2026-10-03T18:55:15+00:00",
               "scope": "mattress-only",
               "familyKey": "maria",
               "tier": "strong",
@@ -3452,7 +3452,7 @@
                 "type": "product-page",
                 "url": "https://www.lacks.com/product/restonic-platinum-paige-16-hybrid-firm-box-top-king-mattress-1601-733-ml99166-2046403"
               },
-              "observedAt": "2026-09-20T23:28:24+00:00",
+              "observedAt": "2026-10-03T18:55:15+00:00",
               "scope": "mattress-only",
               "familyKey": "paige",
               "tier": "strong",
@@ -3496,7 +3496,7 @@
                 "type": "product-page",
                 "url": "https://www.lacks.com/product/restonic-platinum-summit-138-hybrid-firm-tight-top-king-mattress-1601-623-mm28466-2046357"
               },
-              "observedAt": "2026-09-20T23:28:24+00:00",
+              "observedAt": "2026-10-03T18:55:15+00:00",
               "scope": "mattress-only",
               "familyKey": "summit",
               "tier": "strong",
@@ -3566,7 +3566,7 @@
                 "type": "product-page",
                 "url": "https://www.lacks.com/product/restonic-platinum-paige-16-hybrid-firm-box-top-twin-mattress-1601-730-ml99133-2046399"
               },
-              "observedAt": "2026-09-20T23:27:23+00:00",
+              "observedAt": "2026-10-03T18:54:13+00:00",
               "scope": "mattress-only",
               "familyKey": "paige",
               "tier": "strong",
@@ -3610,7 +3610,7 @@
                 "type": "product-page",
                 "url": "https://www.lacks.com/product/restonic-platinum-summit-138-hybrid-firm-tight-top-twin-mattress-1601-620-mm28433-2046338"
               },
-              "observedAt": "2026-09-20T23:27:23+00:00",
+              "observedAt": "2026-10-03T18:54:13+00:00",
               "scope": "mattress-only",
               "familyKey": "summit",
               "tier": "strong",
@@ -3661,7 +3661,7 @@
                 "type": "product-page",
                 "url": "https://www.lacks.com/product/restonic-platinum-paige-16-hybrid-firm-box-top-full-mattress-1601-731-ml99146-2046401"
               },
-              "observedAt": "2026-09-20T23:27:58+00:00",
+              "observedAt": "2026-10-03T18:54:49+00:00",
               "scope": "mattress-only",
               "familyKey": "paige",
               "tier": "strong",
@@ -3705,7 +3705,7 @@
                 "type": "product-page",
                 "url": "https://www.lacks.com/product/restonic-platinum-summit-138-hybrid-firm-tight-top-full-mattress-1601-621-mm28446-2046339"
               },
-              "observedAt": "2026-09-20T23:27:49+00:00",
+              "observedAt": "2026-10-03T18:54:40+00:00",
               "scope": "mattress-only",
               "familyKey": "summit",
               "tier": "strong",
@@ -3748,7 +3748,7 @@
             "type": "product-page",
             "url": "https://www.lacks.com/product/restonic-platinum-summit-138-hybrid-firm-tight-top-queen-mattress-1601-622-mm28450-1990906"
           },
-          "observedAt": "2026-09-20T23:28:06+00:00",
+          "observedAt": "2026-10-03T18:54:57+00:00",
           "scope": "mattress-only",
           "familyKey": "summit",
           "tier": "sku",
@@ -3794,7 +3794,7 @@
                 "type": "product-page",
                 "url": "https://www.lacks.com/product/restonic-platinum-paige-16-hybrid-firm-box-top-king-mattress-1601-733-ml99166-2046403"
               },
-              "observedAt": "2026-09-20T23:28:24+00:00",
+              "observedAt": "2026-10-03T18:55:15+00:00",
               "scope": "mattress-only",
               "familyKey": "paige",
               "tier": "strong",
@@ -3838,7 +3838,7 @@
                 "type": "product-page",
                 "url": "https://www.lacks.com/product/restonic-platinum-summit-138-hybrid-firm-tight-top-king-mattress-1601-623-mm28466-2046357"
               },
-              "observedAt": "2026-09-20T23:28:24+00:00",
+              "observedAt": "2026-10-03T18:55:15+00:00",
               "scope": "mattress-only",
               "familyKey": "summit",
               "tier": "strong",
@@ -3901,7 +3901,7 @@
             "type": "product-page",
             "url": "https://www.lacks.com/product/restonic-platinum-summit-138-hybrid-medium-tight-top-twin-mattress-1601-640-mm29433-2046370"
           },
-          "observedAt": "2026-09-20T23:27:23+00:00",
+          "observedAt": "2026-10-03T18:54:13+00:00",
           "scope": "mattress-only",
           "familyKey": "summit",
           "tier": "strong",
@@ -3947,7 +3947,7 @@
             "type": "product-page",
             "url": "https://www.lacks.com/product/restonic-platinum-summit-138-hybrid-medium-tight-top-full-mattress-1601-641-mm29446-2046373"
           },
-          "observedAt": "2026-09-20T23:27:49+00:00",
+          "observedAt": "2026-10-03T18:54:40+00:00",
           "scope": "mattress-only",
           "familyKey": "summit",
           "tier": "strong",
@@ -3989,7 +3989,7 @@
             "type": "product-page",
             "url": "https://www.lacks.com/product/restonic-platinum-summit-138-hybrid-medium-tight-top-queen-mattress-1601-642-mm29450-1990909"
           },
-          "observedAt": "2026-09-20T23:28:06+00:00",
+          "observedAt": "2026-10-03T18:54:57+00:00",
           "scope": "mattress-only",
           "familyKey": "summit",
           "tier": "sku",
@@ -4031,7 +4031,7 @@
             "type": "product-page",
             "url": "https://www.lacks.com/product/restonic-platinum-summit-138-hybrid-medium-tight-top-king-mattress-1601-643-mm29466-2046376"
           },
-          "observedAt": "2026-09-20T23:28:24+00:00",
+          "observedAt": "2026-10-03T18:55:15+00:00",
           "scope": "mattress-only",
           "familyKey": "summit",
           "tier": "strong",
@@ -4097,7 +4097,7 @@
                 "type": "product-page",
                 "url": "https://www.lacks.com/product/restonic-platinum-maria-155-hybrid-plush-box-top-twin-mattress-1601-580-mi84733-2046314"
               },
-              "observedAt": "2026-09-20T23:27:23+00:00",
+              "observedAt": "2026-10-03T18:54:13+00:00",
               "scope": "mattress-only",
               "familyKey": "maria",
               "tier": "strong",
@@ -4141,7 +4141,7 @@
                 "type": "product-page",
                 "url": "https://www.lacks.com/product/restonic-platinum-summit-138-hybrid-plush-tight-top-twin-mattress-1601-670-mm27433-2046385"
               },
-              "observedAt": "2026-09-20T23:27:31+00:00",
+              "observedAt": "2026-10-03T18:54:22+00:00",
               "scope": "mattress-only",
               "familyKey": "summit",
               "tier": "strong",
@@ -4192,7 +4192,7 @@
                 "type": "product-page",
                 "url": "https://www.lacks.com/product/restonic-platinum-maria-155-hybrid-plush-box-top-full-mattress-1601-581-mi84746-2046315"
               },
-              "observedAt": "2026-09-20T23:27:49+00:00",
+              "observedAt": "2026-10-03T18:54:40+00:00",
               "scope": "mattress-only",
               "familyKey": "maria",
               "tier": "strong",
@@ -4236,7 +4236,7 @@
                 "type": "product-page",
                 "url": "https://www.lacks.com/product/restonic-platinum-summit-138-hybrid-plush-tight-top-full-mattress-1601-671-mm27446-2046392"
               },
-              "observedAt": "2026-09-20T23:27:49+00:00",
+              "observedAt": "2026-10-03T18:54:40+00:00",
               "scope": "mattress-only",
               "familyKey": "summit",
               "tier": "strong",
@@ -4279,7 +4279,7 @@
             "type": "product-page",
             "url": "https://www.lacks.com/product/restonic-platinum-summit-138-hybrid-plush-tight-top-queen-mattress-1601-672-mm27450-1990916"
           },
-          "observedAt": "2026-09-20T23:28:06+00:00",
+          "observedAt": "2026-10-03T18:54:57+00:00",
           "scope": "mattress-only",
           "familyKey": "summit",
           "tier": "sku",
@@ -4325,7 +4325,7 @@
                 "type": "product-page",
                 "url": "https://www.lacks.com/product/restonic-platinum-maria-155-hybrid-plush-box-top-king-mattress-1601-583-mi84766-2046316"
               },
-              "observedAt": "2026-09-20T23:28:24+00:00",
+              "observedAt": "2026-10-03T18:55:15+00:00",
               "scope": "mattress-only",
               "familyKey": "maria",
               "tier": "strong",
@@ -4369,7 +4369,7 @@
                 "type": "product-page",
                 "url": "https://www.lacks.com/product/restonic-platinum-summit-138-hybrid-plush-tight-top-king-mattress-1601-673-mm27466-2046393"
               },
-              "observedAt": "2026-09-20T23:28:32+00:00",
+              "observedAt": "2026-10-03T18:55:15+00:00",
               "scope": "mattress-only",
               "familyKey": "summit",
               "tier": "strong",
@@ -4432,7 +4432,7 @@
             "type": "product-page",
             "url": "https://www.lacks.com/product/restonic-comfortcare-kendall-155-hybrid-firm-euro-top-twin-mattress-1601-450-mm91333-2046234"
           },
-          "observedAt": "2026-09-20T23:27:23+00:00",
+          "observedAt": "2026-10-03T18:54:13+00:00",
           "scope": "mattress-only",
           "familyKey": "kendall",
           "tier": "strong",
@@ -4480,7 +4480,7 @@
             "type": "product-page",
             "url": "https://www.lacks.com/product/restonic-comfortcare-kendall-155-hybrid-firm-euro-top-full-mattress-1601-451-mm91346-2046237"
           },
-          "observedAt": "2026-09-20T23:27:49+00:00",
+          "observedAt": "2026-10-03T18:54:40+00:00",
           "scope": "mattress-only",
           "familyKey": "kendall",
           "tier": "strong",
@@ -4524,7 +4524,7 @@
             "type": "product-page",
             "url": "https://www.lacks.com/product/restonic-comfortcare-kendall-155-hybrid-firm-euro-top-queen-mattress-1601-452-mm91350-1991904"
           },
-          "observedAt": "2026-09-20T23:28:06+00:00",
+          "observedAt": "2026-10-03T18:54:57+00:00",
           "scope": "mattress-only",
           "familyKey": "kendall",
           "tier": "sku",
@@ -4568,7 +4568,7 @@
             "type": "product-page",
             "url": "https://www.lacks.com/product/restonic-comfortcare-kendall-155-hybrid-firm-euro-top-king-mattress-1601-453-mm91366-2046240"
           },
-          "observedAt": "2026-09-20T23:28:24+00:00",
+          "observedAt": "2026-10-03T18:55:15+00:00",
           "scope": "mattress-only",
           "familyKey": "kendall",
           "tier": "strong",
@@ -4637,7 +4637,7 @@
                 "type": "product-page",
                 "url": "https://www.lacks.com/product/restonic-kendall-iii-hybrid-luxury-medium-twin-mattress-1601-430-mm71333-2046186"
               },
-              "observedAt": "2026-09-20T23:27:23+00:00",
+              "observedAt": "2026-10-03T18:54:13+00:00",
               "scope": "mattress-only",
               "familyKey": "kendal",
               "tier": "weak",
@@ -4694,7 +4694,7 @@
                 "type": "product-page",
                 "url": "https://www.lacks.com/product/restonic-kendall-iii-hybrid-luxury-medium-full-mattress-1601-431-mm71346-2046194"
               },
-              "observedAt": "2026-09-20T23:27:49+00:00",
+              "observedAt": "2026-10-03T18:54:40+00:00",
               "scope": "mattress-only",
               "familyKey": "kendal",
               "tier": "weak",
@@ -4742,7 +4742,7 @@
             "type": "product-page",
             "url": "https://www.lacks.com/product/restonic-kendall-iii-hybrid-luxury-medium-queen-mattress-1601-432-mm71350-1991879"
           },
-          "observedAt": "2026-09-20T23:28:06+00:00",
+          "observedAt": "2026-10-03T18:54:57+00:00",
           "scope": "mattress-only",
           "familyKey": "kendall",
           "tier": "sku",
@@ -4794,7 +4794,7 @@
                 "type": "product-page",
                 "url": "https://www.lacks.com/product/restonic-kendall-iii-hybrid-luxury-medium-king-mattress-1601-433-mm71366-2046197"
               },
-              "observedAt": "2026-09-20T23:28:24+00:00",
+              "observedAt": "2026-10-03T18:55:15+00:00",
               "scope": "mattress-only",
               "familyKey": "kendal",
               "tier": "weak",
@@ -4862,7 +4862,7 @@
             "type": "product-page",
             "url": "https://www.lacks.com/product/restonic-comfortcare-kendall-155-hybrid-extra-firm-tight-top-twin-mattress-1601-410-mm51333-2046160"
           },
-          "observedAt": "2026-09-20T23:27:23+00:00",
+          "observedAt": "2026-10-03T18:54:13+00:00",
           "scope": "mattress-only",
           "familyKey": "kendall",
           "tier": "strong",
@@ -4908,7 +4908,7 @@
             "type": "product-page",
             "url": "https://www.lacks.com/product/restonic-comfortcare-kendall-155-hybrid-extra-firm-tight-top-full-mattress-1601-411-mm51346-2046164"
           },
-          "observedAt": "2026-09-20T23:27:49+00:00",
+          "observedAt": "2026-10-03T18:54:40+00:00",
           "scope": "mattress-only",
           "familyKey": "kendall",
           "tier": "strong",
@@ -4950,7 +4950,7 @@
             "type": "product-page",
             "url": "https://www.lacks.com/product/restonic-comfortcare-kendall-155-hybrid-extra-firm-tight-top-queen-mattress-1601-412-1989356"
           },
-          "observedAt": "2026-09-20T23:28:06+00:00",
+          "observedAt": "2026-10-03T18:54:57+00:00",
           "scope": "mattress-only",
           "familyKey": "kendall",
           "tier": "sku",
@@ -4992,7 +4992,7 @@
             "type": "product-page",
             "url": "https://www.lacks.com/product/restonic-comfortcare-kendall-155-hybrid-extra-firm-tight-top-king-mattress-1601-413-mm51366-2046166"
           },
-          "observedAt": "2026-09-20T23:28:24+00:00",
+          "observedAt": "2026-10-03T18:55:15+00:00",
           "scope": "mattress-only",
           "familyKey": "kendall",
           "tier": "strong",
@@ -5094,7 +5094,7 @@
             "type": "product-page",
             "url": "https://www.lacks.com/product/restonic-giselle-125-firm-twin-mattress-1601-370-ml23933-2043301"
           },
-          "observedAt": "2026-09-20T23:27:23+00:00",
+          "observedAt": "2026-10-03T18:54:13+00:00",
           "scope": "mattress-only",
           "familyKey": "giselle",
           "tier": "strong",
@@ -5136,7 +5136,7 @@
             "type": "product-page",
             "url": "https://www.lacks.com/product/restonic-giselle-125-firm-full-mattress-1601-371-ml23946-2046010"
           },
-          "observedAt": "2026-09-20T23:27:49+00:00",
+          "observedAt": "2026-10-03T18:54:40+00:00",
           "scope": "mattress-only",
           "familyKey": "giselle",
           "tier": "strong",
@@ -5174,7 +5174,7 @@
             "type": "product-page",
             "url": "https://www.lacks.com/product/restonic-giselle-125-firm-queen-mattress-1601-372-ml23950-2031228"
           },
-          "observedAt": "2026-09-20T23:28:06+00:00",
+          "observedAt": "2026-10-03T18:54:57+00:00",
           "scope": "mattress-only",
           "familyKey": "giselle",
           "tier": "sku",
@@ -5212,7 +5212,7 @@
             "type": "product-page",
             "url": "https://www.lacks.com/product/restonic-giselle-125-firm-king-mattress-1601-373-ml23966-2046012"
           },
-          "observedAt": "2026-09-20T23:28:24+00:00",
+          "observedAt": "2026-10-03T18:55:15+00:00",
           "scope": "mattress-only",
           "familyKey": "giselle",
           "tier": "strong",
@@ -5276,13 +5276,13 @@
         "queen": {
           "sku": "2176812",
           "name": "Genesis Euro Top Queen Mattress",
-          "sellingAmountMinor": 99500,
+          "sellingAmountMinor": 99900,
           "regularAmountMinor": 119995,
           "evidence": {
             "type": "product-page",
             "url": "https://www.lacks.com/product/genesis-euro-top-queen-mattress-1623-502-2176812"
           },
-          "observedAt": "2026-09-20T23:28:06+00:00",
+          "observedAt": "2026-10-03T18:54:57+00:00",
           "scope": "mattress-only",
           "familyKey": "genesis",
           "tier": "sku",
@@ -5352,13 +5352,13 @@
         "queen": {
           "sku": "2176805",
           "name": "Genesis Firm Queen Mattress",
-          "sellingAmountMinor": 89500,
+          "sellingAmountMinor": 89900,
           "regularAmountMinor": 109995,
           "evidence": {
             "type": "product-page",
             "url": "https://www.lacks.com/product/genesis-firm-queen-mattress-1623-522-2176805"
           },
-          "observedAt": "2026-09-20T23:28:06+00:00",
+          "observedAt": "2026-10-03T18:54:57+00:00",
           "scope": "mattress-only",
           "familyKey": "genesis",
           "tier": "sku",
@@ -5423,7 +5423,7 @@
                 "type": "product-page",
                 "url": "https://www.lacks.com/product/restonic-comfortcare-angelina-ii-13-plush-twin-mattress-1601-260-md473-2037231"
               },
-              "observedAt": "2026-09-20T23:27:23+00:00",
+              "observedAt": "2026-10-03T18:54:13+00:00",
               "scope": "mattress-only",
               "familyKey": "comfortcare",
               "tier": "weak",
@@ -5474,7 +5474,7 @@
                 "type": "product-page",
                 "url": "https://www.lacks.com/product/restonic-comfortcare-angelina-ii-13-plush-full-mattress-1601-261-md47346-2037236"
               },
-              "observedAt": "2026-09-20T23:27:49+00:00",
+              "observedAt": "2026-10-03T18:54:40+00:00",
               "scope": "mattress-only",
               "familyKey": "angelina",
               "tier": "weak",
@@ -5516,7 +5516,7 @@
             "type": "product-page",
             "url": "https://www.lacks.com/product/restonic-comfortcare-angelina-ii-13-plush-queen-mattress-1601-262-md47350-1991876"
           },
-          "observedAt": "2026-09-20T23:28:06+00:00",
+          "observedAt": "2026-10-03T18:54:57+00:00",
           "scope": "mattress-only",
           "familyKey": "angelina",
           "tier": "sku",
@@ -5561,7 +5561,7 @@
                 "type": "product-page",
                 "url": "https://www.lacks.com/product/restonic-comfortcare-angelina-ii-13-plush-king-mattress-1601-263-md47366-2037241"
               },
-              "observedAt": "2026-09-20T23:28:24+00:00",
+              "observedAt": "2026-10-03T18:55:15+00:00",
               "scope": "mattress-only",
               "familyKey": "angelina",
               "tier": "weak",
@@ -5649,7 +5649,7 @@
             "type": "product-page",
             "url": "https://www.lacks.com/product/restonic-comfortcare-angelina-ii-13-hybrid-extra-firm-queen-mattress-1601-212-md27350-1991866"
           },
-          "observedAt": "2026-09-20T23:28:06+00:00",
+          "observedAt": "2026-10-03T18:54:57+00:00",
           "scope": "mattress-only",
           "familyKey": "angelina",
           "tier": "sku",
@@ -5726,7 +5726,7 @@
                 "type": "product-page",
                 "url": "https://www.lacks.com/product/restonic-grace-ii-115-medium-twin-mattress-1601-130-mc45833-2037175"
               },
-              "observedAt": "2026-09-20T23:27:23+00:00",
+              "observedAt": "2026-10-03T18:54:13+00:00",
               "scope": "mattress-only",
               "familyKey": "grace",
               "tier": "weak",
@@ -5777,7 +5777,7 @@
                 "type": "product-page",
                 "url": "https://www.lacks.com/product/restonic-grace-ii-115-medium-full-mattress-1601-131-mc45846-2037182"
               },
-              "observedAt": "2026-09-20T23:27:49+00:00",
+              "observedAt": "2026-10-03T18:54:40+00:00",
               "scope": "mattress-only",
               "familyKey": "grace",
               "tier": "weak",
@@ -5820,7 +5820,7 @@
             "type": "product-page",
             "url": "https://www.lacks.com/product/restonic-grace-ii-115-medium-queen-mattress-1601-132-mc45850-2030258"
           },
-          "observedAt": "2026-09-20T23:28:06+00:00",
+          "observedAt": "2026-10-03T18:54:57+00:00",
           "scope": "mattress-only",
           "familyKey": "grace",
           "tier": "sku",
@@ -5866,7 +5866,7 @@
                 "type": "product-page",
                 "url": "https://www.lacks.com/product/restonic-grace-ii-115-medium-king-mattress-1601-133-mc45866-2037188"
               },
-              "observedAt": "2026-09-20T23:28:24+00:00",
+              "observedAt": "2026-10-03T18:55:15+00:00",
               "scope": "mattress-only",
               "familyKey": "grace",
               "tier": "weak",
@@ -5923,9 +5923,9 @@
         "reproducedInCurrentSnapshot": true,
         "currentVariant": {
           "sku": "284920",
-          "name": "Bedtech Queen Adjustable Base With Head & Foot Motion",
-          "size_id": "queen",
-          "sellingAmountMinor": 89900
+          "name": "Adjustable Base Head/Foot",
+          "size_id": null,
+          "sellingAmountMinor": 79900
         }
       },
       "identityEvidence": "historical discovery SKU 284920 and the exact variants its own page lists",
@@ -5941,7 +5941,7 @@
             "type": "configurable-parent-page",
             "url": "https://www.lacks.com/product/bedtech-bt2000-queen-adjustable-base-bt2000-284920"
           },
-          "observedAt": null,
+          "observedAt": "2026-10-03T20:12:47.096Z",
           "productType": "base",
           "sizeIndependent": false
         },
@@ -5954,7 +5954,7 @@
             "type": "configurable-parent-page",
             "url": "https://www.lacks.com/product/bedtech-bt2000-queen-adjustable-base-bt2000-284920"
           },
-          "observedAt": null,
+          "observedAt": "2026-10-03T20:12:47.096Z",
           "productType": "base",
           "sizeIndependent": false
         },
@@ -5967,7 +5967,7 @@
             "type": "product-page",
             "url": "https://www.lacks.com/product/bedtech-queen-adjustable-base-with-head-foot-motion-bt2000qn-283083"
           },
-          "observedAt": null,
+          "observedAt": "2026-10-03T20:12:47.096Z",
           "productType": "base",
           "sizeIndependent": false
         },
@@ -5980,7 +5980,7 @@
             "type": "configurable-parent-page",
             "url": "https://www.lacks.com/product/bedtech-bt2000-queen-adjustable-base-bt2000-284920"
           },
-          "observedAt": null,
+          "observedAt": "2026-10-03T20:12:47.096Z",
           "productType": "base",
           "sizeIndependent": false
         },
@@ -5993,7 +5993,7 @@
             "type": "configurable-parent-page",
             "url": "https://www.lacks.com/product/bedtech-bt2000-queen-adjustable-base-bt2000-284920"
           },
-          "observedAt": null,
+          "observedAt": "2026-10-03T20:12:47.096Z",
           "productType": "base",
           "sizeIndependent": false
         }
@@ -6021,7 +6021,7 @@
           "sku": "284927",
           "name": "Adjustable Base With Massage",
           "size_id": null,
-          "sellingAmountMinor": 109900
+          "sellingAmountMinor": 99900
         }
       },
       "identityEvidence": "historical discovery SKU 284927 and the exact variants its own page lists",
@@ -6037,7 +6037,7 @@
             "type": "configurable-parent-page",
             "url": "https://www.lacks.com/product/bedtech-bt3000-queen-adjustable-base-bt3000-284927"
           },
-          "observedAt": null,
+          "observedAt": "2026-10-03T20:12:49.479Z",
           "productType": "base",
           "sizeIndependent": false
         },
@@ -6050,7 +6050,7 @@
             "type": "configurable-parent-page",
             "url": "https://www.lacks.com/product/bedtech-bt3000-queen-adjustable-base-bt3000-284927"
           },
-          "observedAt": null,
+          "observedAt": "2026-10-03T20:12:49.479Z",
           "productType": "base",
           "sizeIndependent": false
         },
@@ -6063,7 +6063,7 @@
             "type": "configurable-parent-page",
             "url": "https://www.lacks.com/product/bedtech-bt3000-queen-adjustable-base-bt3000-284927"
           },
-          "observedAt": null,
+          "observedAt": "2026-10-03T20:12:49.479Z",
           "productType": "base",
           "sizeIndependent": false
         },
@@ -6076,7 +6076,7 @@
             "type": "product-page",
             "url": "https://www.lacks.com/product/adjustable-base-with-massage-bt3000qn-283117"
           },
-          "observedAt": null,
+          "observedAt": "2026-10-03T20:12:49.479Z",
           "productType": "base",
           "sizeIndependent": false
         },
@@ -6089,7 +6089,7 @@
             "type": "configurable-parent-page",
             "url": "https://www.lacks.com/product/bedtech-bt3000-queen-adjustable-base-bt3000-284927"
           },
-          "observedAt": null,
+          "observedAt": "2026-10-03T20:12:49.479Z",
           "productType": "base",
           "sizeIndependent": false
         },
@@ -6102,7 +6102,7 @@
             "type": "configurable-parent-page",
             "url": "https://www.lacks.com/product/bedtech-bt3000-queen-adjustable-base-bt3000-284927"
           },
-          "observedAt": null,
+          "observedAt": "2026-10-03T20:12:49.479Z",
           "productType": "base",
           "sizeIndependent": false
         }
@@ -6128,8 +6128,8 @@
         "reproducedInCurrentSnapshot": true,
         "currentVariant": {
           "sku": "1283106",
-          "name": "Queen Tempur-Egro 3.0 Power Base",
-          "size_id": "queen",
+          "name": "Full Tempur-Egro 3.0 Power Base",
+          "size_id": "full",
           "sellingAmountMinor": 159900
         }
       },
@@ -6146,7 +6146,7 @@
             "type": "configurable-parent-page",
             "url": "https://www.lacks.com/product/tempur-pedic-tempur-ergo-prosmart-base-queen-adjustable-base-255541c-1283391"
           },
-          "observedAt": null,
+          "observedAt": "2026-10-03T20:13:01.999Z",
           "productType": "base",
           "sizeIndependent": false
         },
@@ -6159,7 +6159,7 @@
             "type": "configurable-parent-page",
             "url": "https://www.lacks.com/product/tempur-pedic-tempur-ergo-prosmart-base-queen-adjustable-base-255541c-1283391"
           },
-          "observedAt": null,
+          "observedAt": "2026-10-03T20:13:01.999Z",
           "productType": "base",
           "sizeIndependent": false
         },
@@ -6172,7 +6172,7 @@
             "type": "configurable-parent-page",
             "url": "https://www.lacks.com/product/tempur-pedic-tempur-ergo-prosmart-base-queen-adjustable-base-255541c-1283391"
           },
-          "observedAt": null,
+          "observedAt": "2026-10-03T20:13:01.999Z",
           "productType": "base",
           "sizeIndependent": false
         }
@@ -6203,9 +6203,17 @@
             "type": "configurable-parent-page",
             "url": "https://www.lacks.com/product/chattam-wells-princess-9-queen-standard-foundation-b2065c-1753912"
           },
-          "observedAt": null,
+          "observedAt": "2026-10-03T20:13:14.473Z",
           "productType": "base",
-          "sizeIndependent": false
+          "sizeIndependent": false,
+          "parentCorroboration": {
+            "parentSkus": [
+              "1753912"
+            ],
+            "modelNumber": "B2065-11",
+            "agreesOnPrice": true,
+            "note": "configurable parent of this same model; not a competing product"
+          }
         },
         "full": {
           "sku": "1751737",
@@ -6216,7 +6224,7 @@
             "type": "configurable-parent-page",
             "url": "https://www.lacks.com/product/chattam-wells-princess-9-queen-standard-foundation-b2065c-1753912"
           },
-          "observedAt": null,
+          "observedAt": "2026-10-03T20:13:14.473Z",
           "productType": "base",
           "sizeIndependent": false
         },
@@ -6229,7 +6237,7 @@
             "type": "configurable-parent-page",
             "url": "https://www.lacks.com/product/chattam-wells-princess-9-queen-standard-foundation-b2065c-1753912"
           },
-          "observedAt": null,
+          "observedAt": "2026-10-03T20:13:14.473Z",
           "productType": "base",
           "sizeIndependent": false
         },
@@ -6242,17 +6250,9 @@
             "type": "product-page",
             "url": "https://www.lacks.com/product/chattam-wells-princess-9-queen-standard-foundation-b2065-05-1751739"
           },
-          "observedAt": null,
+          "observedAt": "2026-10-03T20:13:14.473Z",
           "productType": "base",
-          "sizeIndependent": false,
-          "parentCorroboration": {
-            "parentSkus": [
-              "1753912"
-            ],
-            "modelNumber": "B2065-05",
-            "agreesOnPrice": true,
-            "note": "configurable parent of this same model; not a competing product"
-          }
+          "sizeIndependent": false
         },
         "twin": {
           "sku": "1751735",
@@ -6263,7 +6263,7 @@
             "type": "configurable-parent-page",
             "url": "https://www.lacks.com/product/chattam-wells-princess-9-queen-standard-foundation-b2065c-1753912"
           },
-          "observedAt": null,
+          "observedAt": "2026-10-03T20:13:14.473Z",
           "productType": "base",
           "sizeIndependent": false
         },
@@ -6276,7 +6276,7 @@
             "type": "configurable-parent-page",
             "url": "https://www.lacks.com/product/chattam-wells-princess-9-queen-standard-foundation-b2065c-1753912"
           },
-          "observedAt": null,
+          "observedAt": "2026-10-03T20:13:14.473Z",
           "productType": "base",
           "sizeIndependent": false
         }
@@ -6334,7 +6334,7 @@
             "type": "product-page",
             "url": "https://www.lacks.com/product/lavender-memory-foam-28-pillow-spl2820pl-1269280"
           },
-          "observedAt": "2026-09-20T23:28:50+00:00",
+          "observedAt": "2026-10-03T18:55:42+00:00",
           "productType": "pillow",
           "sizeIndependent": true
         }
@@ -6361,12 +6361,20 @@
           "regularAmountMinor": 10995,
           "websiteName": "Bedgear Dri-Tec Full Mattress Protector",
           "evidence": {
-            "type": "category-listing",
-            "url": "https://www.lacks.com/catalog/mattress-accessories?display_mode=products"
+            "type": "configurable-parent-page",
+            "url": "https://www.lacks.com/product/bedgear-dri-tec-performance-queen-mattress-protector-bgm03aw-833804"
           },
-          "observedAt": "2026-09-20T23:28:50+00:00",
+          "observedAt": "2026-10-03T20:11:54.603Z",
           "productType": "protector",
-          "sizeIndependent": false
+          "sizeIndependent": false,
+          "parentCorroboration": {
+            "parentSkus": [
+              "833804"
+            ],
+            "modelNumber": "BGM03AWFF",
+            "agreesOnPrice": true,
+            "note": "configurable parent of this same model; not a competing product"
+          }
         },
         "king": {
           "sku": "170993",
@@ -6374,10 +6382,10 @@
           "regularAmountMinor": 17995,
           "websiteName": "Bedgear Dri-Tec King Mattress Protector",
           "evidence": {
-            "type": "category-listing",
-            "url": "https://www.lacks.com/catalog/mattress-accessories?display_mode=products"
+            "type": "configurable-parent-page",
+            "url": "https://www.lacks.com/product/bedgear-dri-tec-performance-queen-mattress-protector-bgm03aw-833804"
           },
-          "observedAt": "2026-09-20T23:28:50+00:00",
+          "observedAt": "2026-10-03T20:11:54.603Z",
           "productType": "protector",
           "sizeIndependent": false
         },
@@ -6387,20 +6395,12 @@
           "regularAmountMinor": 14995,
           "websiteName": "Bedgear Dri-Tec Queen Mattress Protector",
           "evidence": {
-            "type": "category-listing",
-            "url": "https://www.lacks.com/catalog/mattress-accessories?display_mode=products"
+            "type": "product-page",
+            "url": "https://www.lacks.com/product/bedgear-dri-tec-queen-mattress-protector-bgm03awfq-170991"
           },
-          "observedAt": "2026-09-20T23:28:50+00:00",
+          "observedAt": "2026-10-03T20:11:54.603Z",
           "productType": "protector",
-          "sizeIndependent": false,
-          "parentCorroboration": {
-            "parentSkus": [
-              "833804"
-            ],
-            "modelNumber": "BGM03AWFQ",
-            "agreesOnPrice": true,
-            "note": "configurable parent of this same model; not a competing product"
-          }
+          "sizeIndependent": false
         },
         "twin": {
           "sku": "170984",
@@ -6408,10 +6408,10 @@
           "regularAmountMinor": 9995,
           "websiteName": "Bedgear Dri-Tec Twin Mattress Protector",
           "evidence": {
-            "type": "category-listing",
-            "url": "https://www.lacks.com/catalog/mattress-accessories?display_mode=products"
+            "type": "configurable-parent-page",
+            "url": "https://www.lacks.com/product/bedgear-dri-tec-performance-queen-mattress-protector-bgm03aw-833804"
           },
-          "observedAt": "2026-09-20T23:28:50+00:00",
+          "observedAt": "2026-10-03T20:11:54.603Z",
           "productType": "protector",
           "sizeIndependent": false
         },
@@ -6421,10 +6421,10 @@
           "regularAmountMinor": 10495,
           "websiteName": "Bedgear Dri-Tec Twin Xl Mattress Protector",
           "evidence": {
-            "type": "category-listing",
-            "url": "https://www.lacks.com/catalog/mattress-accessories?display_mode=products"
+            "type": "configurable-parent-page",
+            "url": "https://www.lacks.com/product/bedgear-dri-tec-performance-queen-mattress-protector-bgm03aw-833804"
           },
-          "observedAt": "2026-09-20T23:28:50+00:00",
+          "observedAt": "2026-10-03T20:11:54.603Z",
           "productType": "protector",
           "sizeIndependent": false
         }
@@ -6447,12 +6447,13 @@
         "reproducedInCurrentSnapshot": true,
         "currentVariant": {
           "sku": "833806",
-          "name": "Bedgear Iprotect Queen Mattress Protector",
-          "size_id": "queen",
-          "sellingAmountMinor": 8995
+          "name": "Bedgear Iprotect Full Mattress Protector",
+          "size_id": "full",
+          "sellingAmountMinor": 6995
         }
       },
-      "familyKey": "iprotect mattress protector",
+      "identityEvidence": "historical discovery SKU 833806 and the exact variants its own page lists",
+      "familyKey": "lead-sku:833806",
       "sizeIndependent": false,
       "variants": {
         "full": {
@@ -6461,10 +6462,10 @@
           "regularAmountMinor": 6995,
           "websiteName": "Bedgear Iprotect Full Mattress Protector",
           "evidence": {
-            "type": "category-listing",
-            "url": "https://www.lacks.com/catalog/mattress-accessories?display_mode=products"
+            "type": "configurable-parent-page",
+            "url": "https://www.lacks.com/product/bedgear-dri-tec-performance-queen-mattress-protector-bgm03aw-833804"
           },
-          "observedAt": "2026-09-20T23:28:50+00:00",
+          "observedAt": "2026-10-03T20:11:54.603Z",
           "productType": "protector",
           "sizeIndependent": false
         },
@@ -6474,10 +6475,10 @@
           "regularAmountMinor": 9995,
           "websiteName": "Bedgear Iprotect King Mattress Protector",
           "evidence": {
-            "type": "category-listing",
-            "url": "https://www.lacks.com/catalog/mattress-accessories?display_mode=products"
+            "type": "configurable-parent-page",
+            "url": "https://www.lacks.com/product/bedgear-dri-tec-performance-queen-mattress-protector-bgm03aw-833804"
           },
-          "observedAt": "2026-09-20T23:28:50+00:00",
+          "observedAt": "2026-10-03T20:11:54.603Z",
           "productType": "protector",
           "sizeIndependent": false
         },
@@ -6487,31 +6488,23 @@
           "regularAmountMinor": 8995,
           "websiteName": "Bedgear Iprotect Queen Mattress Protector",
           "evidence": {
-            "type": "category-listing",
-            "url": "https://www.lacks.com/catalog/mattress-accessories?display_mode=products"
+            "type": "configurable-parent-page",
+            "url": "https://www.lacks.com/product/bedgear-dri-tec-performance-queen-mattress-protector-bgm03aw-833804"
           },
-          "observedAt": "2026-09-20T23:28:50+00:00",
+          "observedAt": "2026-10-03T20:11:54.603Z",
           "productType": "protector",
-          "sizeIndependent": false,
-          "parentCorroboration": {
-            "parentSkus": [
-              "833806"
-            ],
-            "modelNumber": "BGM32AWFQ",
-            "agreesOnPrice": true,
-            "note": "configurable parent of this same model; not a competing product"
-          }
+          "sizeIndependent": false
         },
-        "twin_xl": {
-          "sku": "170868",
-          "sellingAmountMinor": 6995,
-          "regularAmountMinor": 6995,
-          "websiteName": "Bedgear Iprotect Twin Xl Mattress Protector",
+        "twin": {
+          "sku": "170848",
+          "sellingAmountMinor": 5995,
+          "regularAmountMinor": 5995,
+          "websiteName": "Iprotect Twin Mattress Protector",
           "evidence": {
-            "type": "category-listing",
-            "url": "https://www.lacks.com/catalog/mattress-accessories?display_mode=products"
+            "type": "configurable-parent-page",
+            "url": "https://www.lacks.com/product/bedgear-dri-tec-performance-queen-mattress-protector-bgm03aw-833804"
           },
-          "observedAt": "2026-09-20T23:28:50+00:00",
+          "observedAt": "2026-10-03T20:11:54.603Z",
           "productType": "protector",
           "sizeIndependent": false
         }
@@ -6537,24 +6530,25 @@
         "reproducedInCurrentSnapshot": true,
         "currentVariant": {
           "sku": "1266110",
-          "name": "Bedgear Ver-Tex Queen Mattress Protector",
-          "size_id": "queen",
-          "sellingAmountMinor": 24995
+          "name": "Bedgear Ver-Tex King Mattress Protector",
+          "size_id": "king",
+          "sellingAmountMinor": 29995
         }
       },
-      "familyKey": "ver tex mattress protector",
+      "identityEvidence": "historical discovery SKU 1266110 and the exact variants its own page lists",
+      "familyKey": "lead-sku:1266110",
       "sizeIndependent": false,
       "variants": {
         "full": {
-          "sku": "171011",
+          "sku": "1266104",
           "sellingAmountMinor": 22995,
           "regularAmountMinor": 22995,
-          "websiteName": "Bedgear Ver-Tex Full Mattress Protector",
+          "websiteName": "Ver-Tex Full Mattress Protector",
           "evidence": {
-            "type": "product-page",
-            "url": "https://www.lacks.com/product/bedgear-ver-tex-full-mattress-protector-bgm61awff-171011"
+            "type": "configurable-parent-page",
+            "url": "https://www.lacks.com/product/bedgear-dri-tec-performance-queen-mattress-protector-bgm03aw-833804"
           },
-          "observedAt": "2026-09-20T23:28:50+00:00",
+          "observedAt": "2026-10-03T20:11:54.603Z",
           "productType": "protector",
           "sizeIndependent": false
         },
@@ -6564,10 +6558,10 @@
           "regularAmountMinor": 29995,
           "websiteName": "Bedgear Ver-Tex King Mattress Protector",
           "evidence": {
-            "type": "category-listing",
-            "url": "https://www.lacks.com/catalog/mattress-accessories?display_mode=products"
+            "type": "configurable-parent-page",
+            "url": "https://www.lacks.com/product/bedgear-dri-tec-performance-queen-mattress-protector-bgm03aw-833804"
           },
-          "observedAt": "2026-09-20T23:28:58+00:00",
+          "observedAt": "2026-10-03T20:11:54.603Z",
           "productType": "protector",
           "sizeIndependent": false
         },
@@ -6577,20 +6571,25 @@
           "regularAmountMinor": 24995,
           "websiteName": "Bedgear Ver-Tex Queen Mattress Protector",
           "evidence": {
-            "type": "category-listing",
-            "url": "https://www.lacks.com/catalog/mattress-accessories?display_mode=products"
+            "type": "configurable-parent-page",
+            "url": "https://www.lacks.com/product/bedgear-dri-tec-performance-queen-mattress-protector-bgm03aw-833804"
           },
-          "observedAt": "2026-09-20T23:28:58+00:00",
+          "observedAt": "2026-10-03T20:11:54.603Z",
           "productType": "protector",
-          "sizeIndependent": false,
-          "parentCorroboration": {
-            "parentSkus": [
-              "1266110"
-            ],
-            "modelNumber": "BGM026005",
-            "agreesOnPrice": true,
-            "note": "configurable parent of this same model; not a competing product"
-          }
+          "sizeIndependent": false
+        },
+        "twin": {
+          "sku": "1266071",
+          "sellingAmountMinor": 21995,
+          "regularAmountMinor": 21995,
+          "websiteName": "Ver-Tex Twin Mattress Protector",
+          "evidence": {
+            "type": "configurable-parent-page",
+            "url": "https://www.lacks.com/product/bedgear-dri-tec-performance-queen-mattress-protector-bgm03aw-833804"
+          },
+          "observedAt": "2026-10-03T20:11:54.603Z",
+          "productType": "protector",
+          "sizeIndependent": false
         }
       },
       "status": "preview-eligible",
@@ -6611,15 +6610,72 @@
         "reproducedInCurrentSnapshot": true,
         "currentVariant": {
           "sku": "1212402",
-          "name": "Queen Tempur-Protect Mattress Protector 10 Yr. Warranty",
-          "size_id": "queen",
+          "name": "Full Tempur-Protect Mattress Protector 10 Yr. Warranty",
+          "size_id": "full",
           "sellingAmountMinor": 18900
         }
       },
-      "status": "machine-ambiguous",
-      "candidateFamilies": [
-        "protect breeze mattress protector 10 yr warranty",
-        "protect mattress protector 10 yr warranty"
+      "identityEvidence": "historical discovery SKU 1212402 and the exact variants its own page lists",
+      "familyKey": "lead-sku:1212402",
+      "sizeIndependent": false,
+      "variants": {
+        "full": {
+          "sku": "1212370",
+          "sellingAmountMinor": 18900,
+          "regularAmountMinor": 18900,
+          "websiteName": "Full Tempur-Protect Mattress Protector 10 Yr. Warranty",
+          "evidence": {
+            "type": "configurable-parent-page",
+            "url": "https://www.lacks.com/product/tempur-pedic-tempur-protect-queen-mattress-protector-459281c-1212402"
+          },
+          "observedAt": "2026-10-03T20:12:15.674Z",
+          "productType": "protector",
+          "sizeIndependent": false
+        },
+        "king": {
+          "sku": "1212380",
+          "sellingAmountMinor": 20900,
+          "regularAmountMinor": 20900,
+          "websiteName": "King Tempur-Protect Mattress Protector 10 Yr. Warranty",
+          "evidence": {
+            "type": "configurable-parent-page",
+            "url": "https://www.lacks.com/product/tempur-pedic-tempur-protect-queen-mattress-protector-459281c-1212402"
+          },
+          "observedAt": "2026-10-03T20:12:15.674Z",
+          "productType": "protector",
+          "sizeIndependent": false
+        },
+        "queen": {
+          "sku": "1212374",
+          "sellingAmountMinor": 18900,
+          "regularAmountMinor": 18900,
+          "websiteName": "Queen Tempur-Protect Mattress Protector 10 Yr. Warranty",
+          "evidence": {
+            "type": "product-page",
+            "url": "https://www.lacks.com/product/queen-tempur-protect-mattress-protector-10-yr-warranty-45928151-1212374"
+          },
+          "observedAt": "2026-10-03T20:12:15.674Z",
+          "productType": "protector",
+          "sizeIndependent": false
+        },
+        "twin": {
+          "sku": "1212364",
+          "sellingAmountMinor": 15900,
+          "regularAmountMinor": 15900,
+          "websiteName": "Twin Tempur-Protect Mattress Protector 10 Yr. Warranty",
+          "evidence": {
+            "type": "configurable-parent-page",
+            "url": "https://www.lacks.com/product/tempur-pedic-tempur-protect-queen-mattress-protector-459281c-1212402"
+          },
+          "observedAt": "2026-10-03T20:12:15.674Z",
+          "productType": "protector",
+          "sizeIndependent": false
+        }
+      },
+      "status": "preview-eligible",
+      "legacyPriceMatchesSizes": [
+        "full",
+        "queen"
       ]
     }
   ]

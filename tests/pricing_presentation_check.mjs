@@ -167,8 +167,8 @@ function fnBody(sig) {
     && ssMain.includes("(governedPrice || (price ? '<div class=\"sleep-system__price\">' + escapeHtml(price) + '</div>' : ''))")
     && ssMain.includes("sleepSystemText({ en: 'From $', es: 'Desde $' }) + Number(primary.price).toLocaleString()"));
   check("no consumer supplies its own size (priceSizeAnswer is the only size source, read only inside the gate block)",
-    (html.match(/priceSizeAnswer\s*\(/g) || []).length === 6 /* decl + priceSlotFor + priceStatusHtmlFor + renderHf2SystemTotal + compareRowsFor + renderCompareSizeContext */
-    && (gateBlock.match(/priceSizeAnswer\s*\(/g) || []).length === 6);
+    (html.match(/priceSizeAnswer\s*\(/g) || []).length === 9 /* decl + priceSlotFor + priceStatusHtmlFor + renderHf2SystemTotal + compareRowsFor + renderCompareSizeContext + paymentFactsFor + purchaseBuilderFor + paymentScenarioFor (slice 2) */
+    && (gateBlock.match(/priceSizeAnswer\s*\(/g) || []).length === 9);
 }
 // The qualifying-basis sets must admit EXACTLY the same values on both sides
 // of the contract. An adversarial review found the previous "mirror" was a

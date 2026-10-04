@@ -75,9 +75,17 @@ It applies to the whole tree.
 
 - Sleep fit comes first. Financing must never influence scoring, tiers,
   recommendations, priorities, or the Sleep Brief.
-- Do not calculate monthly payments, collect financial data, invent inventory
-  availability, or publish unsupported rate, term, savings, health, or product
-  claims.
+- Do not collect financial data, invent inventory availability, or publish
+  unsupported rate, term, savings, health, or product claims.
+- Payment calculation is governed, not forbidden (Blake's implementation
+  authorization, 2026-10-03, Payment Choice slice 2): compute a payment only
+  through the validated published method (`validate_financing`,
+  `paymentFactsFor`), never infer a missing formula, fee, down payment or term,
+  and show "To confirm" for anything unpublished. Implementation authorization
+  is not business, legal or native-language approval and is not activation:
+  shipped data keeps every `paymentCalculationEnabled` and
+  `exactPromotionsEnabled` false until Blake separately authorizes activation
+  after final verification and recorded business/legal approval.
 - Exact financing claims require current allowlisted evidence and must fail closed
   when stale or incomplete.
 - Preserve English/Spanish behavioral parity, public-kiosk privacy, authoritative
