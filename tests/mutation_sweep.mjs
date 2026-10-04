@@ -3436,9 +3436,18 @@ const MUTATIONS = [
   ["payment facts: a factor needing a seventh decimal is rounded instead of refused",
     "if (Math.abs(f * 1000000 - micro) > 0.000001) return null;",
     "if (false) return null;", PAY_FACTS, "index.html"],
+  // The guard line recurs in paymentScenarioFor and purchaseBuilderFor, so
+  // each entry anchors on its own function's comment (CI survivor on PR #135:
+  // the bare line matched three times and mutated the scenario panel's copy).
   ["payment facts: the table renders without the exact-terms authorization",
-    "      if (!financingTermsFresh()) return none;\n",
-    "", PAY_FACTS, "index.html"],
+    "      // prices are on elsewhere.\n      if (!financingTermsFresh()) return none;\n",
+    "      // prices are on elsewhere.\n", PAY_FACTS, "index.html"],
+  ["scenario: the review panel calculates without the exact-terms authorization",
+    "      // financing block's own exact-term authorization.\n      if (!financingTermsFresh()) return none;\n",
+    "      // financing block's own exact-term authorization.\n", PAY_FACTS, "index.html"],
+  ["purchase builder: the comparison renders without the exact-terms authorization",
+    "      // block's own exact-term authorization.\n      if (!financingTermsFresh()) return none;\n",
+    "      // block's own exact-term authorization.\n", PAY_FACTS, "index.html"],
   ["payment facts: the plan's own calculation flag is ignored",
     "&& plan.paymentCalculationEnabled === true && mode === 'published-fixed-factor'",
     "&& mode === 'published-fixed-factor'", PAY_FACTS, "index.html"],

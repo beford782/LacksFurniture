@@ -11127,7 +11127,6 @@
     .fin-sc__parts li, .fin-sc__total { display: flex; justify-content: space-between; gap: 10px; padding: 4px 0; font-size: 0.92rem; font-variant-numeric: tabular-nums; }
     .fin-sc__total { margin: 4px 0 0; padding-top: 6px; border-top: 1.5px solid #211E19; font-weight: 600; color: #17140F; }
     .fin-sc__table { margin: 12px 0 0; display: grid; }
-    .fin-sc__sr { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
     .fin-sc__row { display: contents; }
     .fin-sc__row > span { padding: 8px; border-bottom: 1px solid #E6DFCF; font-size: 0.92rem; line-height: 1.35; font-variant-numeric: tabular-nums; }
     .fin-sc__row--head > span { font: 600 0.72rem/1.3 var(--font-sans); letter-spacing: 1px; text-transform: uppercase; color: #6B6455; border-bottom: 1.5px solid #211E19; text-align: right; }
@@ -14267,6 +14266,8 @@
       if (!surface) return none;
       var p = getPricingConfig();
       if (!p || p.enabled !== true || p.displayEnabled !== true || !pricingSurfaceEnabled(surface)) return none;
+      // Exact-terms surface: no assumed figure of any kind without the
+      // financing block's own exact-term authorization.
       if (!financingTermsFresh()) return none;
       if (typeof resolveFinalistState !== 'function') return none;
       var st = resolveFinalistState();
@@ -14569,6 +14570,8 @@
       if (!surface) return none;
       var p = getPricingConfig();
       if (!p || p.enabled !== true || p.displayEnabled !== true || !pricingSurfaceEnabled(surface)) return none;
+      // Exact-terms surface: no purchase comparison without the financing
+      // block's own exact-term authorization.
       if (!financingTermsFresh()) return none;
       if (typeof resolveFinalistState !== 'function') return none;
       var st = resolveFinalistState();
@@ -15974,7 +15977,7 @@
       var part = function(label, value, sign) {
         var spoken = sign === '+' ? t('pay.sc.plus') : (sign ? t('pay.sc.minus') : '');
         return '<li><span class="fin-sc__plabel">' + (sign ? '<span aria-hidden="true">' + sign + ' </span>' : '')
-          + (spoken ? '<span class="fin-sc__sr">' + e(spoken) + ' </span>' : '') + e(label) + '</span>'
+          + (spoken ? '<span class="sr-only fin-sc__sr">' + e(spoken) + ' </span>' : '') + e(label) + '</span>'
           + '<span class="fin-sc__pval">' + e(value || need) + '</span></li>';
       };
       var today = sc.treat === 'today', fin = sc.treat === 'financed';
@@ -16060,7 +16063,7 @@
         + '<button type="button" class="fin-ws-link fin-sc__clear" id="finScClear" '
         + 'onclick="window.finScClear()" ontouchend="event.preventDefault();window.finScClear();">' + finEsc(t('pay.sc.clear')) + '</button>'
         + '<div class="fin-sc__results" id="finScResults">' + finScResultsHtml() + '</div>'
-        + '<p class="fin-sc__sr" id="finScLive" aria-live="polite"></p>'
+        + '<p class="sr-only fin-sc__sr" id="finScLive" aria-live="polite"></p>'
         + '</div></section>';
       return html;
     }

@@ -135,6 +135,18 @@ FACTS = r"""(plan) => {
   return { state: sec.dataset.fxState, rows: rows, text: sec.textContent };
 }"""
 
+# paymentFactsFor's own verdict for the open sheet's placement, independent
+# of whether any caller rendered it.
+FACTS_FN = r"""(plan) => {
+  const f = getFinancingConfig();
+  const p = f && (f.plans || []).filter((x) => x && x.id === plan)[0];
+  if (!p) return null;
+  const fx = paymentFactsFor(_finSheetPlacement, p);
+  return { show: fx.show, rows: fx.rows.length,
+           builder: purchaseBuilderFor(_finSheetPlacement).show,
+           scenario: paymentScenarioFor(_finSheetPlacement, _payScenario).show };
+}"""
+
 QUOTE = "() => { var q = buildConsultationQuote('handoff', priceSizeAnswer()); return { status: q.status, m: q.merchandiseMinor }; }"
 
 
@@ -352,7 +364,25 @@ def main():
             ctx, page = loaded(browser, pay_url, errors)
             page.evaluate(OPEN_PROMO)
             check(f"[{label}] baseline is calculated", (page.evaluate(FACTS, PLAN) or {}).get("state") == "calculated")
+            withheld = label in ("exact terms off", "stale financing", "pricing display off")
+            if withheld:
+                d0 = page.evaluate(FACTS_FN, PLAN) or {}
+                check(f"[{label}] baseline: paymentFactsFor, purchaseBuilderFor and "
+                      f"paymentScenarioFor each show", d0.get("show") is True
+                      and d0.get("builder") is True and d0.get("scenario") is True, str(d0))
             rerender(page, js)
+            if withheld:
+                # The function's OWN contract, not just the rendered sheet: a
+                # caller-level path also keeps .fin-fx out of the DOM, so a DOM
+                # probe alone cannot tell whether paymentFactsFor's guard holds
+                # (CI sweep survivor, PR #135, entry 805).
+                d = page.evaluate(FACTS_FN, PLAN) or {}
+                check(f"[{label}] paymentFactsFor itself withholds every fact (show false, no rows)",
+                      d.get("show") is False and d.get("rows") == 0, str(d))
+                check(f"[{label}] purchaseBuilderFor itself withholds the comparison",
+                      d.get("builder") is False, str(d))
+                check(f"[{label}] paymentScenarioFor itself withholds the review panel",
+                      d.get("scenario") is False, str(d))
             f = page.evaluate(FACTS, PLAN)
             if want is None:
                 check(f"[{label}] no figure renders (the table is withheld)", f is None
