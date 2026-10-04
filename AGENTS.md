@@ -151,6 +151,20 @@ It applies to the whole tree.
 - On a Windows machine without PowerShell 7 (`pwsh`),
   `powershell -NoProfile -File tools/run_full_suite.ps1` runs the same mirror
   under Windows PowerShell 5.1; the runner accepts either.
+- After an authorized merge, close out CI with the shared launcher,
+  `ci-closeout --pr <number> --repo beford782/LacksFurniture` (from
+  `beford782/agent-tools`), and follow "CI closeout" in
+  `docs/deployment-workflow.md`, including its manual fallback when the
+  launcher is not installed. The launcher itself is read-only toward runs:
+  it watches the automatic push run on `main` and never dispatches, reruns,
+  or cancels one. Policy for agents: start an additional run only for a
+  concrete failure, changed code, missing required coverage, or Blake's
+  explicit request; never cancel a required run; keep the required automatic
+  CI triggers, branch protection, and release controls as they are; and keep
+  one watcher per run. Compare tree hashes instead of guessing, claim a PR
+  CI pass only from the exact-head run, and report that evidence separately
+  from pending main CI and from deployment. Do not rerun the local mirror
+  for the merge commit, and do not ask Blake whether to keep watching.
 - For customer-visible changes, serve over HTTP and complete the evidence matrix
   in `agent-workflows/browser-evidence.md`. `file://` is never a valid test.
 - Review the final diff against `CODE_REVIEW.md`. Report tests and browser evidence

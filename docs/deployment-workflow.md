@@ -85,12 +85,67 @@ Before merging:
 After merge:
 
 1. Record the resulting `main` commit SHA.
-2. Confirm the `Full suite (18 checks)` push run succeeds on that SHA.
+2. Confirm the `Full suite (18 checks)` push run succeeds on that SHA (see
+   "CI closeout" below).
 3. Confirm the GitHub Pages `build` and `deploy` checks succeed on that SHA.
 4. Open <https://beford782.github.io/LacksFurniture/> and perform the relevant
    smoke test.
 5. Report branch publication, PR merge, and Pages deployment as three separate
    states. A branch push alone is never “live.”
+
+## CI closeout
+
+The merge's push to `main` starts the CI run automatically. Close it out with
+the shared `ci-closeout` launcher (private repo `beford782/agent-tools`,
+checked out at `~/Documents/GitHub/agent-tools` with its `bin` folder on the
+user PATH; setup is in that repo's README):
+
+```powershell
+ci-closeout --pr <number> --repo beford782/LacksFurniture
+```
+
+It reads both tree hashes from the repository through the GitHub API, looks
+up the PR CI run at the exact head, finds the automatic push run on the merge
+SHA, watches it, and prints one report per run attempt: run URL, exact SHA,
+attempt, conclusion, each job, the mutation-sweep step, and any failed steps.
+Exit codes: 0 passed, 1 failed, 2 PR not merged or no run found, 3 another
+watcher already owns this run, 4 watch timed out (run `ci-closeout` again to
+resume).
+
+Rules for the closeout:
+
+- Watch the automatic run. `ci-closeout` never dispatches, reruns, or
+  cancels a CI run. Agents may start an additional run only for a concrete
+  failure, changed code, missing required coverage, or Blake's explicit
+  request. Never cancel a required run, and keep the required automatic CI
+  triggers, branch protection, and release controls as they are. If no
+  automatic run appears, check the workflow triggers and configuration first
+  rather than dispatching one.
+- One watcher per run. The launcher holds an OS lock for the whole watch and
+  a second invocation exits 3; do not also start `gh run watch` or a polling
+  loop beside it. Start it once in the background and wait for its report.
+- Report evidence separately. "Already passed PR CI" means the trees are
+  identical and the PR CI run at that exact head succeeded; otherwise only
+  tree equality is established. Tree equality does not establish an identical
+  execution context or the push-only checks of the `main` run. Neither is a
+  post-merge pass, and neither is deployment evidence: Pages `build`/`deploy`
+  and the served files are verified separately. Differing trees mean only
+  CI-on-main covers the merge.
+- Do not rerun the local mirror because the merge created a new commit or
+  because main CI is pending.
+- Monitoring a run from already-authorized work needs no question to Blake,
+  and a green result grants no further authority (no activation, deployment,
+  or outbound request).
+
+If `ci-closeout` is not installed on the computer, say so and apply the same
+rules by hand: `gh api repos/beford782/LacksFurniture/commits/<sha> --jq
+.commit.tree.sha` for each tree; `gh run list --repo beford782/LacksFurniture
+--workflow ci.yml --commit <sha> --event pull_request --json
+databaseId,status,conclusion,attempt,url` (PR head) and the same command with
+`--event push` (merge commit) for the runs; then exactly one background
+`gh run watch <id> --repo beford782/LacksFurniture --exit-status`, reported
+once. The manual path has no cross-session lock, so check for an existing
+watcher first.
 
 ## Recovery
 
