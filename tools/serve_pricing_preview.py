@@ -136,6 +136,7 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(REPO, "tools"))
 import validation  # noqa: E402
+import financing_headline  # noqa: E402
 
 FIXTURE = os.path.join(REPO, "tests", "fixtures", "pricing_populated_fixture.json")
 INTERCEPT_CONFIG = "/data/store-config.json"
@@ -191,7 +192,21 @@ def device_path_allowed(path: str) -> bool:
     return any(path.startswith(p) and len(path) > len(p) for p in DEVICE_PREFIXES)
 INTERCEPT_ACCESSORIES = "/data/accessories.json"
 STATES = ("dark", "available", "stale", "unapproved", "unavailable",
-          "disabled", "website")
+          "disabled", "website", "payments", "review")
+# Payment Choice slice 2 (owner authorization 2026-10-03). Both states switch
+# the governed payment calculation ON in memory - exactPromotionsEnabled true
+# and paymentCalculationEnabled true on the one plan whose method is
+# published - and are the ONLY states in which a payment figure can render:
+#   payments  the fixture drill (shifted stamps, FIXTURE prices) - the
+#             automated walk of the calculation path;
+#   review    the launch-review build: ACTUAL website prices (as `website`)
+#             and the ACTUAL canonical financing source
+#             (incoming/lacks_financing.json, factor included), each on its
+#             OWN verification stamps. Nothing is shifted, so stale evidence
+#             shows nothing / "To confirm", exactly as production would.
+PAYMENT_STATES = ("payments", "review")
+REVIEW_FORMULA_APPROVAL = ("REVIEW BUILD - owner-authorized implementation 2026-10-03; "
+                           "business, legal and native review pending")
 TIER_ORDER = ("gold", "silver", "bronze")
 # Every drill price is queen-only: the harness answers `mattress_size: queen`
 # and the gate resolves nothing for any other size — itself a drill.
@@ -397,7 +412,11 @@ def build_website(start):
         if not isinstance(sku, str) or not sku.strip() or sku != sku.strip():
             return False, "sku-not-a-trimmed-identifier"
         ev = v.get("evidence") or {}
-        if ev.get("type") != "product-page":
+        # A record's own product page, or an exact child read on its
+        # configurable parent's product page (the collector's own drill
+        # output: the real retailer page that shows that child's price). A
+        # category listing is still refused.
+        if ev.get("type") not in ("product-page", "configurable-parent-page"):
             return False, "evidence-is-not-a-product-page"
         url = ev.get("url") or ""
         host = urllib.parse.urlparse(url).hostname or ""
@@ -523,6 +542,109 @@ def size_projections(products, variant_sizes):
             for z in sizes]
 
 
+def review_sales_policies():
+    """Retailer sales policies as PUBLISHED on lacks.com and captured in a
+    browser on 2026-10-03 (Codex capture, re-read in session; see
+    docs/payment-choice-missing-inputs-2026-10-03.md). Review builds only:
+    shipped data carries no `salesPolicies` and the app renders nothing
+    without it. Wording is a faithful summary pending Lacks approval of
+    EN/ES copy; nothing here is a guarantee the kiosk makes."""
+    return {
+        "status": "review-only-pending-retailer-approval",
+        "comfortPromise": {
+            "sourceUrl": "https://www.lacks.com/return-and-store-policies",
+            "observedAt": "2026-10-03T20:46:31.131Z",
+            "requiresProtector": True, "requiresPillow": True,
+            "title": {"en": "90-Day Comfort Promise (as published)",
+                      "es": "Promesa de Comodidad de 90 D\u00edas (seg\u00fan lo publicado)"},
+            "summary": {"en": "Lacks publishes a one-time comfort exchange for a new mattress, with conditions.",
+                        "es": "Lacks publica un cambio \u00fanico por comodidad para un colch\u00f3n nuevo, con condiciones."},
+            "conditions": [
+                {"en": "Sleep on the mattress for at least 30 nights; request the exchange within 90 days of delivery.",
+                 "es": "Duerme en el colch\u00f3n al menos 30 noches; solicita el cambio dentro de los 90 d\u00edas posteriores a la entrega."},
+                {"en": "One exchange, for a mattress of equal or greater value; you pay any difference.",
+                 "es": "Un solo cambio, por un colch\u00f3n de igual o mayor valor; pagas la diferencia."},
+                {"en": "The purchase must include a mattress protector and at least one pillow, and the mattress must have been used with that protector.",
+                 "es": "La compra debe incluir un protector de colch\u00f3n y al menos una almohada, y el colch\u00f3n debe haberse usado con ese protector."},
+                {"en": "The mattress must be in good condition, free of stains, odors or damage. A local delivery fee applies to the exchange.",
+                 "es": "El colch\u00f3n debe estar en buen estado, sin manchas, olores ni da\u00f1os. Se cobra un cargo de entrega local por el cambio."},
+                {"en": "No refunds under this program. Pillows and protectors cannot be returned or exchanged.",
+                 "es": "Este programa no ofrece reembolsos. Las almohadas y los protectores no se pueden devolver ni cambiar."},
+            ],
+        },
+        "fulfillment": {
+            "sourceUrl": "https://www.lacks.com/services",
+            "observedAt": "2026-10-03T20:46:29.800Z",
+            "pickupNoCharge": True,
+            "pickupLabel": {"en": "Warehouse pickup", "es": "Recogida en almac\u00e9n"},
+            "deliveryLabel": {"en": "Delivery and setup", "es": "Entrega e instalaci\u00f3n"},
+            "pickupNote": {"en": "Published as free from the central warehouse. Bring the sales contract and a matching photo ID.",
+                           "es": "Publicada como gratuita en el almac\u00e9n central. Lleva el contrato de venta y una identificaci\u00f3n con foto que coincida."},
+            "deliveryNote": {"en": "Full-service delivery with in-home setup is published; its charge is confirmed in store.",
+                             "es": "Se publica la entrega completa con instalaci\u00f3n en casa; su cargo se confirma en la tienda."},
+        },
+    }
+
+
+FORMULA_INPUTS = {"published-fixed-factor": ["principalMinor", "publishedPaymentFactor"],
+                  "published-equal-division": ["principalMinor", "termMonths"]}
+
+
+def review_formulas(fin, start):
+    """One formula artifact per plan whose governed calculation is on, each on
+    that plan's own source and verification stamp."""
+    out = []
+    for pl in fin.get("plans", []):
+        mode = pl.get("calculationMode")
+        if pl.get("paymentCalculationEnabled") is True and mode in FORMULA_INPUTS:
+            out.append({
+                "id": "review-" + pl["id"], "planId": pl["id"], "mode": mode,
+                "cadence": "monthly", "cadenceVerified": True,
+                "inputs": list(FORMULA_INPUTS[mode]),
+                "approvedBy": REVIEW_FORMULA_APPROVAL,
+                "approvedAt": (start - timedelta(hours=1)).isoformat(timespec="seconds"),
+                "sourceUrl": pl["sourceUrl"], "verifiedAt": pl["verifiedAt"],
+            })
+    return out
+
+
+def review_financing():
+    """The canonical financing source as the review build serves it: the
+    builder's own headline transform, the published factor KEPT (it is the
+    calculation input), exact terms and the governed calculation switched on
+    in memory for the plan whose method is published. Stamps are the source's
+    own. Never written anywhere."""
+    src = _load(os.path.join(REPO, "incoming", "lacks_financing.json"))
+    fin = copy.deepcopy(src["financing"])
+    financing_headline.apply_to_financing(fin)
+    fin["exactPromotionsEnabled"] = True
+    for plan in fin.get("plans", []):
+        mode = plan.get("calculationMode")
+        if mode == "published-fixed-factor" and plan.get("publishedPaymentFactor") is not None \
+                and plan.get("paymentRounding"):
+            plan["paymentCalculationEnabled"] = True
+        elif mode == "published-equal-division" and plan.get("apr") == 0 and plan.get("paymentRounding"):
+            # published equal payments; the runtime still refuses a figure
+            # without a supplied down payment (downPaymentRequired)
+            plan["paymentCalculationEnabled"] = True
+            plan.pop("publishedPaymentFactor", None)
+        else:
+            plan.pop("publishedPaymentFactor", None)
+    return fin
+
+
+def review_financing_fresh(fin, start: datetime) -> bool:
+    """True while the financing block's own stamp is within maxAgeDays of
+    `start` (and not in the future): the build-time half of the rule the
+    runtime gate (financingTermsFresh) executes on the live clock."""
+    try:
+        at = _parse(fin["verifiedAt"])
+        mad = int(fin["maxAgeDays"])
+    except (KeyError, TypeError, ValueError):
+        return False
+    return timedelta(0) <= start - at <= timedelta(days=mad)
+
+
 def build_injected(state: str, start: datetime):
     """Return (config, catalog, verdicts) for a drill state at server start.
 
@@ -552,6 +674,19 @@ def build_injected(state: str, start: datetime):
         if plan.get("verifiedAt"):
             plan["verifiedAt"] = _shift(plan["verifiedAt"], delta)
     fin["exactPromotionsEnabled"] = False
+    if state == "payments":
+        fin["exactPromotionsEnabled"] = True
+        for plan in fin.get("plans", []):
+            if plan.get("id") == "synchrony-9-99-72":
+                plan.update({"paymentCalculationEnabled": True,
+                             "publishedPaymentFactor": 0.018521,
+                             "paymentRounding": "up-to-whole-dollar"})
+            if plan.get("id") == "synchrony-0-48":
+                plan.update({"downPaymentRequired": True, "chargesRequiredAtPurchase": True,
+                             "calculationMode": "published-equal-division",
+                             "paymentRounding": "up-to-whole-dollar", "paymentCalculationEnabled": True})
+    elif state == "review":
+        fin = review_financing()
 
     # ---- pricing: the fixture expanded to every catalog mattress -------------
     pr = copy.deepcopy(fx["pricing"])
@@ -562,6 +697,23 @@ def build_injected(state: str, start: datetime):
     for f in pr.get("formulas", []):
         f["approvedAt"] = _shift(f["approvedAt"], delta)
         f["verifiedAt"] = _shift(f["verifiedAt"], delta)
+    if state == "payments":
+        # the drill's 0%/48 plan runs its published equal-division method too
+        zero = next((pl for pl in fin.get("plans", []) if pl.get("id") == "synchrony-0-48"), None)
+        if zero and pr.get("formulas"):
+            f0 = copy.deepcopy(pr["formulas"][0])
+            f0.update({"id": "fixture-equal-division", "planId": zero["id"],
+                       "mode": "published-equal-division", "inputs": ["principalMinor", "termMonths"]})
+            pr["formulas"].append(f0)
+    if state == "review":
+        # The formula artifact of the ONE plan whose method is published,
+        # carrying that plan's own source and verification stamp (never
+        # shifted). Admitted only while the real financing evidence is fresh:
+        # a stale source admits no formula, and every payment reads "To
+        # confirm" - the same fail-closed outcome production would show.
+        pr["formulas"] = []
+        if review_financing_fresh(fin, start):
+            pr["formulas"] = review_formulas(fin, start)
     template = pr["products"][0]
     evidence_delta = delta - (timedelta(days=STALE_DAYS) if state == "stale" else timedelta(0))
     products = []
@@ -633,6 +785,11 @@ def build_injected(state: str, start: datetime):
     config = copy.deepcopy(prod)
     config["financing"] = fin
     config["pricing"] = served
+    if state in PAYMENT_STATES:
+        config["salesPolicies"] = review_sales_policies()
+        # Review-only tools: the assumption scenario panel. Never shipped
+        # (tests/smoke_check.py locks shipped data against it).
+        config["reviewTools"] = {"scenarioPanel": True}
 
     # ---- catalog: skus injected in memory ----------------------------------
     catalog = copy.deepcopy(cat)
@@ -640,7 +797,7 @@ def build_injected(state: str, start: datetime):
     coverage = None
     variant_sizes = None
 
-    if state == "website":
+    if state in ("website", "review"):
         # ACTUAL extracted prices, for the subset with sufficient evidence.
         # Everything else is left with NO price - never a fixture stand-in.
         wp, m_skus, a_skus, coverage = build_website(start)
@@ -834,6 +991,10 @@ def build_injected(state: str, start: datetime):
 
 def dark_form_acceptable(state: str, verdicts: dict) -> bool:
     """What the harness requires of a state's dark form before serving it."""
+    if state == "review":
+        # Real evidence on its own stamps: an aged price is refused by name
+        # and simply does not render. Any OTHER refusal stops the build.
+        return verdicts["financing_ok"] and (verdicts["dark_ok"] or verdicts["dark_stale_named"])
     if state == "stale":
         return verdicts["financing_ok"] and verdicts["dark_stale_named"]
     if state == "unavailable":
@@ -959,6 +1120,10 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--state", choices=STATES, default="available")
+    parser.add_argument("--capture-dir", default=None, metavar="DIR",
+                        help="website/review states only: read snapshot.json + mapping.json from DIR "
+                             "(e.g. a dated partial capture) instead of demo/price-snapshot/. Every "
+                             "record keeps its own observation stamp; nothing is merged or re-dated.")
     parser.add_argument("--port", type=int, default=8000)
     parser.add_argument("--bind", default=None,
                         help="loopback address only (default 127.0.0.1)")
@@ -987,6 +1152,16 @@ def main(argv=None):
                   f"(a mounted-device rehearsal uses --device with a private address).")
             return 2
 
+    if args.capture_dir is not None:
+        if args.state not in ("website", "review"):
+            print("REFUSED: --capture-dir applies only to the website and review states.")
+            return 2
+        global SNAPSHOT, MAPPING
+        SNAPSHOT = os.path.join(args.capture_dir, "snapshot.json")
+        MAPPING = os.path.join(args.capture_dir, "mapping.json")
+        if not (os.path.exists(SNAPSHOT) and os.path.exists(MAPPING)):
+            print(f"REFUSED: {args.capture_dir} must hold snapshot.json and mapping.json.")
+            return 2
     start = datetime.now(timezone.utc).astimezone()
     config, catalog, verdicts, accessories = build_injected(args.state, start)
     if not dark_form_acceptable(args.state, verdicts):
@@ -1015,8 +1190,25 @@ def main(argv=None):
     url = f"http://{bind}:{args.port}/"
     print("=" * 72)
     print(f"PHASE 2.2 PRICING PREVIEW HARNESS — NON-SHIPPING — state: {args.state}")
-    print("Every price shown is a FIXTURE placeholder. NOT a Lacks price, approval,")
-    print("clearance or verification. Committed files are never modified.")
+    if args.state == "review":
+        print("LAUNCH-REVIEW BUILD. Prices: actual lacks.com extraction, PENDING owner")
+        print("verification. Financing: the canonical source on its own stamps, exact terms")
+        print("and the governed payment calculation switched on IN MEMORY ONLY. Not")
+        print("authorized for showroom use; business, legal and native review pending.")
+        rf = review_financing()
+        print(f"  financing verifiedAt {rf.get('verifiedAt')} (maxAgeDays {rf.get('maxAgeDays')}): "
+              + ("FRESH - payment figures can render" if review_financing_fresh(rf, start)
+                 else "STALE - every term and payment reads 'To confirm'"))
+        cov = verdicts.get("websiteCoverage") or {}
+        print(f"  price capture: {os.path.dirname(SNAPSHOT)}")
+        if verdicts.get("dark_stale_named"):
+            print("  website prices: STALE (older than maxAgeDays) - no price, subtotal or payment renders")
+    elif args.state == "payments":
+        print("Every price shown is a FIXTURE placeholder; the payment figures are computed")
+        print("from FIXTURE prices with the published factor. NOT a Lacks price or approval.")
+    else:
+        print("Every price shown is a FIXTURE placeholder. NOT a Lacks price, approval,")
+        print("clearance or verification. Committed files are never modified.")
     print("=" * 72)
     print(f"  URL:            {url}")
     if args.device is not None:
@@ -1028,7 +1220,8 @@ def main(argv=None):
         print("  or an isolated access point, and stop it when done. The idle window cannot be")
         print("  shortened off loopback, so the wipe rehearsal takes the full policy window.")
     print(f"  Answer the quiz with mattress size = {DRILL_SIZE}; other sizes resolve nothing.")
-    print("  exactPromotionsEnabled stays false; gasUrl stays blank (preview email only).")
+    print("  exactPromotionsEnabled " + ("is TRUE in memory (payment states)" if args.state in PAYMENT_STATES
+          else "stays false") + "; gasUrl stays blank (preview email only).")
     print("  Stop with Ctrl+C.")
     try:
         server.serve_forever()

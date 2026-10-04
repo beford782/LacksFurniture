@@ -6,7 +6,7 @@ Identity evidence, owner verification and production activation are three separa
 
 > **SKU evidence:** The app catalog ships no SKU. The 2026-07-30 discovery file supplies a QUEEN SKU per product as a LEAD; where that exact SKU is still present in the current snapshot it is recorded as a direct identity link. Historical prices are never reused and no other size's SKU is ever inferred.
 
-Prices observed 2026-09-20T23:27:23+00:00 -> 2026-09-21T22:40:22+00:00; this mapping generated 2026-09-21T22:58:27+00:00. Owner-verified rows loaded: 0.
+Prices observed 2026-10-03T18:54:13+00:00 -> 2026-10-03T20:13:14.473Z; this mapping generated 2026-10-03T20:39:22+00:00. Owner-verified rows loaded: 0.
 
 | status | meaning |
 |---|---|
@@ -300,7 +300,7 @@ Prices observed 2026-09-20T23:27:23+00:00 -> 2026-09-21T22:40:22+00:00; this map
 | twin | — | | | | no-candidate |
 | twin_xl | — | | | | no-candidate |
 | full | — | | | | no-candidate |
-| queen | 🔎 | `2176812` | $995.00 | Genesis Euro Top Queen Mattress | [product-page](https://www.lacks.com/product/genesis-euro-top-queen-mattress-1623-502-2176812) |
+| queen | 🔎 | `2176812` | $999.00 | Genesis Euro Top Queen Mattress | [product-page](https://www.lacks.com/product/genesis-euro-top-queen-mattress-1623-502-2176812) |
 | king | — | | | | no-candidate |
 | cal_king | — | | | | no-candidate |
 
@@ -313,7 +313,7 @@ Prices observed 2026-09-20T23:27:23+00:00 -> 2026-09-21T22:40:22+00:00; this map
 | twin | — | | | | no-candidate |
 | twin_xl | — | | | | no-candidate |
 | full | — | | | | no-candidate |
-| queen | 🔎 | `2176805` | $895.00 | Genesis Firm Queen Mattress | [product-page](https://www.lacks.com/product/genesis-firm-queen-mattress-1623-522-2176805) |
+| queen | 🔎 | `2176805` | $899.00 | Genesis Firm Queen Mattress | [product-page](https://www.lacks.com/product/genesis-firm-queen-mattress-1623-522-2176805) |
 | king | — | | | | no-candidate |
 | cal_king | — | | | | no-candidate |
 
@@ -434,11 +434,11 @@ The app's single ungoverned `price: 99` corresponds to: _no size exactly_.
 
 | size | sku | selling | evidence |
 |---|---|---|---|
-| full | `170988` | $109.95 | [category-listing](https://www.lacks.com/catalog/mattress-accessories?display_mode=products) |
-| king | `170993` | $179.95 | [category-listing](https://www.lacks.com/catalog/mattress-accessories?display_mode=products) |
-| queen | `170991` | $149.95 | [category-listing](https://www.lacks.com/catalog/mattress-accessories?display_mode=products) |
-| twin | `170984` | $99.95 | [category-listing](https://www.lacks.com/catalog/mattress-accessories?display_mode=products) |
-| twin_xl | `170986` | $104.95 | [category-listing](https://www.lacks.com/catalog/mattress-accessories?display_mode=products) |
+| full | `170988` | $109.95 | [configurable-parent-page](https://www.lacks.com/product/bedgear-dri-tec-performance-queen-mattress-protector-bgm03aw-833804) |
+| king | `170993` | $179.95 | [configurable-parent-page](https://www.lacks.com/product/bedgear-dri-tec-performance-queen-mattress-protector-bgm03aw-833804) |
+| queen | `170991` | $149.95 | [product-page](https://www.lacks.com/product/bedgear-dri-tec-queen-mattress-protector-bgm03awfq-170991) |
+| twin | `170984` | $99.95 | [configurable-parent-page](https://www.lacks.com/product/bedgear-dri-tec-performance-queen-mattress-protector-bgm03aw-833804) |
+| twin_xl | `170986` | $104.95 | [configurable-parent-page](https://www.lacks.com/product/bedgear-dri-tec-performance-queen-mattress-protector-bgm03aw-833804) |
 
 The app's single ungoverned `price: 149` corresponds to: _no size exactly_.
 
@@ -448,10 +448,10 @@ The app's single ungoverned `price: 149` corresponds to: _no size exactly_.
 
 | size | sku | selling | evidence |
 |---|---|---|---|
-| full | `170871` | $69.95 | [category-listing](https://www.lacks.com/catalog/mattress-accessories?display_mode=products) |
-| king | `170890` | $99.95 | [category-listing](https://www.lacks.com/catalog/mattress-accessories?display_mode=products) |
-| queen | `170881` | $89.95 | [category-listing](https://www.lacks.com/catalog/mattress-accessories?display_mode=products) |
-| twin_xl | `170868` | $69.95 | [category-listing](https://www.lacks.com/catalog/mattress-accessories?display_mode=products) |
+| full | `170871` | $69.95 | [configurable-parent-page](https://www.lacks.com/product/bedgear-dri-tec-performance-queen-mattress-protector-bgm03aw-833804) |
+| king | `170890` | $99.95 | [configurable-parent-page](https://www.lacks.com/product/bedgear-dri-tec-performance-queen-mattress-protector-bgm03aw-833804) |
+| queen | `170881` | $89.95 | [configurable-parent-page](https://www.lacks.com/product/bedgear-dri-tec-performance-queen-mattress-protector-bgm03aw-833804) |
+| twin | `170848` | $59.95 | [configurable-parent-page](https://www.lacks.com/product/bedgear-dri-tec-performance-queen-mattress-protector-bgm03aw-833804) |
 
 The app's single ungoverned `price: 89` corresponds to: _no size exactly_.
 
@@ -461,14 +461,22 @@ The app's single ungoverned `price: 89` corresponds to: _no size exactly_.
 
 | size | sku | selling | evidence |
 |---|---|---|---|
-| full | `171011` | $229.95 | [product-page](https://www.lacks.com/product/bedgear-ver-tex-full-mattress-protector-bgm61awff-171011) |
-| king | `1213418` | $299.95 | [category-listing](https://www.lacks.com/catalog/mattress-accessories?display_mode=products) |
-| queen | `1213416` | $249.95 | [category-listing](https://www.lacks.com/catalog/mattress-accessories?display_mode=products) |
+| full | `1266104` | $229.95 | [configurable-parent-page](https://www.lacks.com/product/bedgear-dri-tec-performance-queen-mattress-protector-bgm03aw-833804) |
+| king | `1213418` | $299.95 | [configurable-parent-page](https://www.lacks.com/product/bedgear-dri-tec-performance-queen-mattress-protector-bgm03aw-833804) |
+| queen | `1213416` | $249.95 | [configurable-parent-page](https://www.lacks.com/product/bedgear-dri-tec-performance-queen-mattress-protector-bgm03aw-833804) |
+| twin | `1266071` | $219.95 | [configurable-parent-page](https://www.lacks.com/product/bedgear-dri-tec-performance-queen-mattress-protector-bgm03aw-833804) |
 
 The app's single ungoverned `price: 249` corresponds to: _no size exactly_.
 
 ### protector-tempur — TEMPUR-Protect Mattress Protector (app price $189, expected type `protector`)
 
-⚠️ **machine-ambiguous**
+🔎 **preview-eligible**
 
-Tied families: ['protect breeze mattress protector 10 yr warranty', 'protect mattress protector 10 yr warranty']
+| size | sku | selling | evidence |
+|---|---|---|---|
+| full | `1212370` | $189.00 | [configurable-parent-page](https://www.lacks.com/product/tempur-pedic-tempur-protect-queen-mattress-protector-459281c-1212402) |
+| king | `1212380` | $209.00 | [configurable-parent-page](https://www.lacks.com/product/tempur-pedic-tempur-protect-queen-mattress-protector-459281c-1212402) |
+| queen | `1212374` | $189.00 | [product-page](https://www.lacks.com/product/queen-tempur-protect-mattress-protector-10-yr-warranty-45928151-1212374) |
+| twin | `1212364` | $159.00 | [configurable-parent-page](https://www.lacks.com/product/tempur-pedic-tempur-protect-queen-mattress-protector-459281c-1212402) |
+
+The app's single ungoverned `price: 189` corresponds to: **full**, **queen**.

@@ -1,7 +1,7 @@
 {
   "_meta": {
     "editableSource": true,
-    "note": "Canonical Lacks Payment Choice financing source. Edit THIS file, then re-run build_lacks_workbook.py + tools/convert_store_data.py. All facts verified live on lacks.com in a real browser session — see docs/financing-verification-2026-07-30.md for verbatim source text and the discrepancy log. Spanish financing copy below is PENDING NATIVE/LEGAL REVIEW (esReviewStatus) but renders polished in the demo. NOTE: publishedPaymentFactor is retained HERE as source documentation but is STRIPPED from the shipped store-config by build_lacks_workbook.py (V1 ships no payment-math inputs).",
+    "note": "Canonical Lacks Payment Choice financing source. Edit THIS file, then re-run build_lacks_workbook.py + tools/convert_store_data.py. Provenance: the facts were first verified live on lacks.com in a real browser session on 2026-07-30 (docs/financing-verification-2026-07-30.md: verbatim source text and the discrepancy log). The 2026-10-03 refresh (verifiedAt 2026-10-03T13:51:56-05:00, the last verificationLog entry) was AUTOMATED: plain HTTPS GETs with an ordinary browser user agent, NOT a human browser session. It confirmed synchrony-9-99-72, synchrony-0-48, lease-to-own, build-my-credit and mexico-in-house; lacks-in-house was SKIPPED (conflicting live terms) and keeps its July stamp. A human spot-check in a real browser is still outstanding before launch. Spanish financing copy below is PENDING NATIVE/LEGAL REVIEW (esReviewStatus) but renders polished in the demo. NOTE: build_lacks_workbook.py strips publishedPaymentFactor from the shipped store-config unless that plan has paymentCalculationEnabled true (Payment Choice slice 2, owner implementation authorization 2026-10-03), so a factor ships only with its governed calculation switched on. Shipped gates stay closed: every paymentCalculationEnabled and exactPromotionsEnabled here is false, so the shipped config carries no payment-math input. Switching any of them on is activation and needs Blake's separate authorization.",
     "generatedHeadlines": "Promotional plans (kind=open-end-promotional-credit with no presentationScenario) carry NO headline here on purpose. apr + termMonths are authoritative and the bilingual headline is GENERATED from them at build time by tools/financing_headline.py; validate_financing recomputes it and requires exact equality, so shipped prose cannot drift from the verified numbers. Adding a headline back to a promotional plan below is a hard build error. Every OTHER plan headline is authored orientation or scenario language and is edited here as normal — including Mexico's, which keeps its authored question even though it carries apr/termMonths, because its title renders outside the exact-terms gate.",
     "operatingState": "exactPromotionsEnabled is FALSE by deliberate operating decision, not because the verified facts below are stale or malformed — they are kept accurate and structurally validated so the switch can be flipped without re-authoring. Generic Payment Choice orientation is the normal customer experience until a named owner accepts the weekly re-verification and emergency-takedown obligations. Setting it to true is an explicit reviewed configuration change; re-verification (tools/reverify_financing.py) must never flip it, and refreshing verifiedAt is not authorization.",
     "discrepancies": [
@@ -22,6 +22,21 @@
           "mexico-in-house"
         ],
         "plansSkipped": []
+      },
+      {
+        "verifiedAt": "2026-10-03T13:51:56-05:00",
+        "recordedAt": "2026-10-03T18:53:49+00:00",
+        "attestation": "Automated re-verification by Claude Code (owner-authorized evidence refresh, 2026-10-03), NOT a human browser session: plain HTTPS GET of https://www.lacks.com/financing (HTTP 200, 468095 bytes, retrieved 13:51:56 CT) and https://www.lacks.com/faq (HTTP 200, retrieved 13:52:57 CT); page HTML archived and its text compared to every recorded fact - 9.99%/72/$500/one-receipt/discounts/interest-from-purchase-date/fixed payments/1.8521% rounded up to the next whole dollar/last payment may be reduced/34.99-39.99-$2 as of 07/31/2025/credit approval/alter-discontinue; 0%/48/in-store/$4200/down payment + tax + delivery fee required/equal payments; lease-to-own and Build My Credit see-store only; FAQ Mexico program hasta 24 meses, 24% APR maximo (puede variar), $999-24-$52.82 example, dos identificaciones, 3 referencias, verificacion de ingresos, ID list - all matched. lacks-in-house SKIPPED: the live page now says installment contracts 'go up to 24 months' in one sentence and 'available from 6-36 months' in another (July: 36); conflict logged in docs/financing-verification-2026-10-03.md. A human spot-check in a real browser is still recommended before launch.",
+        "plansConfirmed": [
+          "synchrony-9-99-72",
+          "synchrony-0-48",
+          "lease-to-own",
+          "build-my-credit",
+          "mexico-in-house"
+        ],
+        "plansSkipped": [
+          "lacks-in-house"
+        ]
       }
     ]
   },
@@ -29,7 +44,7 @@
     "enabled": true,
     "experience": "payment-choice",
     "offerVersion": "2026-07-30a",
-    "verifiedAt": "2026-07-31T16:43:00-05:00",
+    "verifiedAt": "2026-10-03T13:51:56-05:00",
     "maxAgeDays": 7,
     "sourceUrl": "https://www.lacks.com/financing",
     "applicationUrl": "https://www.lacks.com/credit-application",
@@ -205,7 +220,7 @@
         "kind": "open-end-promotional-credit",
         "provider": "Synchrony",
         "verified": true,
-        "verifiedAt": "2026-07-31T16:43:00-05:00",
+        "verifiedAt": "2026-10-03T13:51:56-05:00",
         "sourceUrl": "https://www.lacks.com/financing",
         "apr": 9.99,
         "termMonths": 72,
@@ -213,6 +228,7 @@
         "channel": "per-current-source",
         "calculationMode": "published-fixed-factor",
         "publishedPaymentFactor": 0.018521,
+        "paymentRounding": "up-to-whole-dollar",
         "paymentCalculationEnabled": false,
         "detail": {
           "en": "On qualifying purchases of $500 or more with the Lacks Furniture Synchrony HOME Credit Card. Fixed monthly payments required. Interest is charged from the purchase date at the reduced APR. The advertised purchase minimum must be met on one receipt; discounts may reduce the purchase below it.",
@@ -228,13 +244,16 @@
         "kind": "open-end-promotional-credit",
         "provider": "Synchrony",
         "verified": true,
-        "verifiedAt": "2026-07-31T16:43:00-05:00",
+        "verifiedAt": "2026-10-03T13:51:56-05:00",
         "sourceUrl": "https://www.lacks.com/financing",
         "apr": 0,
         "termMonths": 48,
         "minimumPurchase": 4200,
         "channel": "in-store",
-        "calculationMode": "not-published",
+        "calculationMode": "published-equal-division",
+        "paymentRounding": "up-to-whole-dollar",
+        "downPaymentRequired": true,
+        "chargesRequiredAtPurchase": true,
         "paymentCalculationEnabled": false,
         "detail": {
           "en": "On qualifying in-store purchases of $4,200 or more with the Lacks Furniture Synchrony HOME Credit Card. Equal monthly payments required. A minimum purchase and a down payment, plus tax and delivery fee, are required. The advertised purchase minimum must be met on one receipt; discounts may reduce the purchase below it.",
@@ -271,7 +290,7 @@
         "kind": "lease-to-own",
         "provider": "Lacks",
         "verified": true,
-        "verifiedAt": "2026-07-31T16:43:00-05:00",
+        "verifiedAt": "2026-10-03T13:51:56-05:00",
         "sourceUrl": "https://www.lacks.com/financing",
         "paymentCalculationEnabled": false,
         "headline": {
@@ -288,7 +307,7 @@
         "kind": "credit-builder",
         "provider": "Lacks",
         "verified": true,
-        "verifiedAt": "2026-07-31T16:43:00-05:00",
+        "verifiedAt": "2026-10-03T13:51:56-05:00",
         "sourceUrl": "https://www.lacks.com/financing",
         "paymentCalculationEnabled": false,
         "headline": {
@@ -306,7 +325,7 @@
         "provider": "Lacks",
         "presentationScenario": "mexico-delivery",
         "verified": true,
-        "verifiedAt": "2026-07-31T16:43:00-05:00",
+        "verifiedAt": "2026-10-03T13:51:56-05:00",
         "sourceUrl": "https://www.lacks.com/faq",
         "apr": 24,
         "termMonths": 24,

@@ -224,11 +224,15 @@ def promotions_rows():
     promotions = json.loads(json.dumps(promo_src["promotions"]))  # deep copy
     src = _load("lacks_financing.json")
     financing = json.loads(json.dumps(src["financing"]))  # deep copy
-    # V1 ships no payment-math inputs: the published Synchrony payment factor
-    # stays in the editable source (documentation of what Lacks publishes) but
-    # is stripped from the runtime config so no client code can multiply it.
+    # A plan ships its payment-math input ONLY when its governed calculation
+    # is switched on (paymentCalculationEnabled true, which validate_financing
+    # admits only with every input published and the exact-term output
+    # authorized). Otherwise the published factor stays in the editable
+    # source as documentation and is stripped from the runtime config, so no
+    # client code can multiply a factor whose calculation is not authorized.
     for plan in financing.get("plans", []):
-        plan.pop("publishedPaymentFactor", None)
+        if plan.get("paymentCalculationEnabled") is not True:
+            plan.pop("publishedPaymentFactor", None)
     # Promotional headlines are DERIVED, never authored: apr + termMonths are
     # authoritative and tools/financing_headline.py owns the one EN/ES template
     # that restates them. This is the second (and last) transform between the

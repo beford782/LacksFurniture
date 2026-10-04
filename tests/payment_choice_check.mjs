@@ -164,6 +164,7 @@ const VARS = {
   impression: /var _finModuleImpressionLogged = false;/,
   sheetStale: /var _finSheetStale = false;/,
   announceTimer: /var _payAnnounceTimer = null;/,
+  scLiveTimer: /var _finScLiveTimer = null;/,
   clockSkew: /var FINANCING_CLOCK_SKEW_MS = [^;]+;/,
   scenarioMexico: /var FIN_SCENARIO_MEXICO = [^;]+;/,
   evergreenKinds: /var FIN_EVERGREEN_KINDS = [^;]+;/,
@@ -378,7 +379,7 @@ function makeDoc() {
 const MODULE_ORDER = [
   vars.clockSkew, vars.scenarioMexico, vars.evergreenKinds, vars.pathKinds,
   vars.payState, vars.returnFocus, vars.impression, vars.sheetStale,
-  vars.announceTimer, vars.keydownBound, vars.notNowSurfaces, vars.notNowSurface,
+  vars.announceTimer, vars.scLiveTimer, vars.keydownBound, vars.notNowSurfaces, vars.notNowSurface,
   src.L, src.escapeHtml, src.storeName,
   src.getFinancingConfig, src.financingEnabled, src.finSurfaceEnabled,
   src.finPlanScenario, src.finPlanGroup, src.finSafeProvider,
@@ -2009,7 +2010,7 @@ section('§24 — payment state reaches no email, no payload, no diagnostic');
 // ===========================================================================
 // 25. No product-level payment calculation
 // ===========================================================================
-section('§25 — nothing in D4 computes a monthly payment (V1 invariant)');
+section('§25 — nothing in D4 computes a payment; the one governed calculation is contained');
 {
   const D4_SOURCES = [
     ['finPathEncode', src.finPathEncode], ['finPathId', src.finPathId],
@@ -2055,20 +2056,31 @@ section('§25 — nothing in D4 computes a monthly payment (V1 invariant)');
   // and inside the block it appears exactly once, as the mode's input name.
   ok('§25 publishedPaymentFactor is absent from the shipped store config',
     !JSON.stringify(CFG).includes('publishedPaymentFactor'));
-  ok('§25 publishedPaymentFactor appears in app code ONLY as the resolver mode\'s input name',
+  // Payment Choice slice 2 (owner authorization 2026-10-03, a reviewed
+  // change to this lock): the governed calculation reads the factor VALUE in
+  // exactly one place, payEstimate (the one calculation shared by the payment
+  // facts and the purchase builder) inside the Phase 2.2 gate block, which
+  // admits it only under every gate (tests/payment_facts_check.py). Every
+  // other executable occurrence stays banned.
+  const bodyOf = (sig) => {
+    const rs = codeOnly.indexOf(sig);
+    if (rs === -1) return null;
+    let depth = 0, i = codeOnly.indexOf('{', rs), end = -1;
+    for (; i < codeOnly.length; i++) {
+      if (codeOnly[i] === '{') depth++;
+      else if (codeOnly[i] === '}') { depth--; if (depth === 0) { end = i + 1; break; } }
+    }
+    return end === -1 ? null : codeOnly.slice(rs, end);
+  };
+  ok('§25 publishedPaymentFactor appears in app code ONLY as the resolver mode\'s input name and the one governed read',
     (() => {
-      const rs = codeOnly.indexOf('function resolveDarkPricing(');
-      if (rs === -1) return false;
-      let depth = 0, i = codeOnly.indexOf('{', rs), end = -1;
-      for (; i < codeOnly.length; i++) {
-        if (codeOnly[i] === '{') depth++;
-        else if (codeOnly[i] === '}') { depth--; if (depth === 0) { end = i + 1; break; } }
-      }
-      if (end === -1) return false;
-      const inside = codeOnly.slice(rs, end);
+      const resolver = bodyOf('function resolveDarkPricing(');
+      const facts = bodyOf('function payEstimate(');
+      if (resolver === null || facts === null) return false;
       const total = codeOnly.split('publishedPaymentFactor').length - 1;
-      const contained = inside.split('publishedPaymentFactor').length - 1;
-      return total === contained && contained === 1;
+      const inResolver = resolver.split('publishedPaymentFactor').length - 1;
+      const inFacts = facts.split('publishedPaymentFactor').length - 1;
+      return inResolver === 1 && inFacts === 1 && total === 2;
     })());
   ok('§25 no rendered D4 surface prints a currency amount',
     (() => {

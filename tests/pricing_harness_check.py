@@ -168,7 +168,34 @@ APP_READY_TIMEOUT_MS = 15000
 # ---- drill states -------------------------------------------------------------
 print("Drill states:")
 built = {}
-for state in srv.STATES:
+# The payment states switch exact terms and the governed calculation on in
+# memory; they are pinned below and walked by tests/payment_facts_check.py.
+print("Payment states (exact terms + governed calculation, in memory only):")
+for state in srv.PAYMENT_STATES:
+    cfg, cat, v, acc = srv.build_injected(state, clock_for(state))
+    fin = cfg["financing"]
+    on = [p["id"] for p in fin["plans"] if p.get("paymentCalculationEnabled") is True]
+    check(f"{state}: financing validates clean with exactPromotionsEnabled TRUE",
+          v["financing_ok"] and fin["exactPromotionsEnabled"] is True, "; ".join(v["financing_errors"][:2]))
+    check(f"{state}: the governed calculation is on for exactly the plans whose method is published "
+          f"(9.99%/72 fixed factor; 0%/48 equal division)",
+          on == ["synchrony-9-99-72", "synchrony-0-48"], str(on))
+    check(f"{state}: no plan without a published method calculates (in-house, lease-to-own, credit builder, Mexico)",
+          not any(p.get("paymentCalculationEnabled") for p in fin["plans"]
+                  if p.get("calculationMode") not in ("published-fixed-factor", "published-equal-division")))
+    check(f"{state}: the factor ships only on that plan",
+          [p["id"] for p in fin["plans"] if "publishedPaymentFactor" in p] == ["synchrony-9-99-72"])
+    check(f"{state}: gasUrl stays blank (nothing can send)", not (cfg.get("gasUrl") or "").strip())
+    check(f"{state}: served pricing is refused by validate_pricing (displayEnabled true can never ship)",
+          v["served_refused"])
+    check(f"{state}: the dark form is acceptable for its state", srv.dark_form_acceptable(state, v),
+          "; ".join(v["dark_errors"][:2]))
+review_fin = srv.review_financing()
+src_fin = json.load(open(os.path.join(REPO, "incoming", "lacks_financing.json"), encoding="utf-8"))["financing"]
+check("review: financing is the canonical source on its OWN stamps (never shifted)",
+      review_fin["verifiedAt"] == src_fin["verifiedAt"]
+      and [p.get("verifiedAt") for p in review_fin["plans"]] == [p.get("verifiedAt") for p in src_fin["plans"]])
+for state in [st for st in srv.STATES if st not in srv.PAYMENT_STATES]:
     cfg, cat, v, acc = srv.build_injected(state, clock_for(state))
     built[state] = (cfg, cat, v, acc)
     mattress_entries = [e for e in cfg["pricing"]["products"] if e["productKind"] == "mattress"]
@@ -1051,8 +1078,10 @@ def rendered():
             expect_off("shipped tablet-landscape es", walk(browser, port, "es", "queen", 1194, 748))
         finally:
             s.shutdown(); s.server_close()
-        # Drill states.
-        for state in srv.STATES:
+        # Drill states. The payment states (exact terms and the governed
+        # calculation on) are walked by tests/payment_facts_check.py; this
+        # harness pins the pricing drills, whose financing stays orientation-only.
+        for state in [st for st in srv.STATES if st not in srv.PAYMENT_STATES]:
             s, port = serve(state)
             try:
                 for name, w, h in VIEWPORTS:

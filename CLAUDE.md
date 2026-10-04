@@ -78,8 +78,22 @@ experience (not the illustrative Savings Pass, which is disabled via
 first, payment choice second — financing NEVER affects scoring, tiers, or the
 Sleep Brief. Exact rate/term claims are freshness-gated fail-closed
 (`verifiedAt` + `maxAgeDays` + allowlisted `sourceUrl`; see
-`tools/source_hosts.json`). No product-level monthly payments are calculated or
-shown (V1 invariant, enforced by `validate_financing`). Live financing
+`tools/source_hosts.json`). Payment calculation is **governed, not forbidden**
+(Blake's implementation authorization, 2026-10-03, Payment Choice slice 2; this
+replaces the V1 "no monthly payments" invariant): a plan may show a calculated
+payment only when `validate_financing` admits its `paymentCalculationEnabled`
+(a published method - `published-fixed-factor` with its
+`publishedPaymentFactor`, or `published-equal-division` on a 0% APR plan - plus
+the published rounding rule, APR and term, a verified plan, and
+`exactPromotionsEnabled`), the formula artifact is approved and fresh, and the
+purchase is completely priced (and, for a plan with `downPaymentRequired`, a
+down payment is entered); anything unpublished reads "To confirm", never an
+inferred figure. That authorization covers IMPLEMENTATION
+and review builds only. It is NOT business, legal or native-language approval
+of the presentation, and it does not activate anything: shipped data keeps
+every `paymentCalculationEnabled` and `exactPromotionsEnabled` false until
+Blake separately authorizes activation after final verification and recorded
+business/legal approval (`docs/payment-choice-slice2-2026-10-03.md`). Live financing
 applications happen only on approved external Lacks/lender pages — the kiosk
 collects no financial data. Facts verified against live lacks.com pages:
 `docs/financing-verification-2026-07-30.md` (includes the discrepancy log).

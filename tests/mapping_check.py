@@ -367,5 +367,124 @@ check("10c. ...and identity is not strengthened: same status as with no parent a
       with_parent["status"] == without_parent["status"] == "preview-eligible",
       f"{with_parent['status']} vs {without_parent['status']}")
 
+
+# ---- 2026-10-03 review-bundle repairs (Codex handoff defects) -------------
+def run_leads(variants, accessories_json, leads, mattress_rows=None):
+    """run() with a CONTROLLED discovery-lead file, never the real one."""
+    tmp = tempfile.mkdtemp(prefix="mapleads_")
+    try:
+        path = os.path.join(tmp, "selection.json")
+        with io.open(path, "w", encoding="utf-8") as f:
+            json.dump(leads, f)
+        old = M.SELECTION
+        M.SELECTION = path
+        try:
+            return run(variants, accessories_json, mattress_rows)
+        finally:
+            M.SELECTION = old
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+print("\n2026-10-03 repairs: parents, lead families, brand field, size words:")
+PARENT = M.PARENT_FLAG
+LUXE = ["gold,g4,Tempur-LuxeBreeze 2.0 Soft,Tempur-Pedic,LuxeBreeze 2.0,2,Soft\n"]
+lux_leads = {"mattresses": [{"id": "g4", "siteName": "Tempur-LuxeBreeze 2.0 Soft Queen Mattress",
+                             "sku": "1302546"}], "accessories": []}
+lux = [variant(brand="Tempur-Pedic", family="", name=f"{sz.title()} Tempur-Luxe Breeze 2.0 Soft Mattress",
+               size_id=sz, sku="1302546", modelNumber=f"P-{sz}", exceptions=[PARENT])
+       for sz in ("queen", "king", "twin_xl")]
+lux.append(variant(brand="Tempur-Pedic", family="", name="Queen Tempur-Luxe Breeze 2.0 Soft Mattress",
+                   size_id="queen", sku="1273591", parentSku="1302546", modelNumber="P-queen",
+                   sellingAmountMinor=589900))
+out = run_leads(lux, ACC_PROTECTOR, lux_leads, LUXE)
+q = next(m for m in out["mattresses"] if m["appId"] == "g4")["sizes"]["queen"]
+check("R1. a configurable parent repeated across sizes no longer demotes the product: Queen is its exact child",
+      q.get("status") == "preview-eligible" and q.get("sku") == "1273591"
+      and q.get("sellingAmountMinor") == 589900, str(q)[:200])
+check("R1b. ...linked through the lead SKU being the child's own configurable parent",
+      "configurable parent" in (q.get("legs") or {}).get("skuLink", ""), str(q.get("legs"))[:160])
+k = next(m for m in out["mattresses"] if m["appId"] == "g4")["sizes"]["king"]
+check("R1c. a size with only the PARENT row prices nothing (no 'starting at' figure)",
+      k.get("status") == "unresolved" and not k.get("sku"), str(k)[:160])
+
+GIS = ["bronze,b1,Giselle Plush,Restonic,ComfortCare,3,Plush\n"]
+gis_leads = {"mattresses": [{"id": "b1", "siteName": "Restonic Giselle 12.5\" Plush Queen Mattress",
+                             "sku": "2031219"}], "accessories": []}
+other = variant(name="Restonic Angelina Plush Queen Mattress", sku="1991876", familyKey="angelina")
+out = run_leads([other], ACC_PROTECTOR, gis_leads, GIS)
+st = next(m for m in out["mattresses"] if m["appId"] == "b1")["sizes"]["queen"]["status"]
+check("R2. a SIZE word is not a model word: another Plush Queen never matches Giselle Plush",
+      st == "unresolved", st)
+
+ERGO = [{"id": "base-tempur-ergo", "price": 1599, "name": {"en": "TEMPUR-Ergo 3.0 Power Base", "es": "x"}}]
+ergo_leads = {"mattresses": [], "accessories": [{"name": "Tempur-Ergo 3.0 Power Base", "sku": "1283106"}]}
+base = dict(productType="base", brand="Tempur-Pedic", family="", modelNumber=None)
+ergo = [accessory(name="Full Tempur-Egro 3.0 Power Base", sku="1283106", size_id="full",
+                  exceptions=[PARENT], **base),
+        accessory(name="Queen Tempur-Egro 3.0 Power Base", sku="1283091", parentSku="1283106",
+                  sellingAmountMinor=159900, familyKey="egro power", **base),
+        accessory(name="Queen Tempur-Egro Smart Base", sku="1283325", parentSku="1283337",
+                  sellingAmountMinor=199900, familyKey="egro smart", **base)]
+a = next(x for x in run_leads(ergo, ERGO, ergo_leads)["accessories"])
+qv = (a.get("variants") or {}).get("queen") or {}
+check("R3. the lead SKU's own page children identify the product despite the retailer's 'Egro' spelling",
+      a["status"] == "preview-eligible" and qv.get("sku") == "1283091", str(a)[:240])
+check("R3b. ...and a sibling product on another parent page (Smart Base) is never pulled in",
+      all(v.get("sku") != "1283325" for v in (a.get("variants") or {}).values()))
+
+BT3 = [{"id": "base-bt3000", "price": 1099, "name": {"en": "BedTech BT3000 Massage Base", "es": "x"}}]
+bt = [accessory(name="Adjustable Base With Massage", brand="BedTech", productType="base",
+                modelNumber="BT3000QN", sku="283117", sellingAmountMinor=109900, familyKey="massage")]
+a = next(x for x in run_leads(bt, BT3, {"mattresses": [], "accessories": []})["accessories"])
+check("R4. the brand comes from the record's brand field, not the first word of a generic display name",
+      a["status"] == "preview-eligible" and ((a.get("variants") or {}).get("queen") or {}).get("sku") == "283117",
+      str(a)[:200])
+
+PR = [{"id": "protector-tempur", "price": 189, "name": {"en": "TEMPUR-Protect Mattress Protector", "es": "x"}}]
+two = {"mattresses": [], "accessories": [{"name": "Tempur-Protect Breeze Protector", "sku": "1212339"},
+                                         {"name": "Tempur-Protect Mattress Protector", "sku": "1212402"}]}
+a = next(x for x in run_leads([], PR, two)["accessories"])
+check("R5. the lead with the best word match and no extra words is chosen (not file order)",
+      (a.get("discoveryLead") or {}).get("historicalSku") == "1212402", str(a.get("discoveryLead")))
+tie = {"mattresses": [], "accessories": [{"name": "Tempur-Protect Alpha", "sku": "1"},
+                                         {"name": "Tempur-Protect Beta", "sku": "2"}]}
+a = next(x for x in run_leads([], PR, tie)["accessories"])
+check("R5b. a tie between leads picks no lead at all", not a.get("discoveryLead"), str(a.get("discoveryLead")))
+
+
+SP = ["gold,g2,The Saint Pierre,Chattam & Wells,Chattam & Wells,4,Plush\n"]
+sp_leads = {"mattresses": [{"id": "g2", "siteName": "Chattam & Wells The Saint Pierre 16.5\" Plush Euro-Top Queen Mattress",
+                            "sku": "2031583"}], "accessories": []}
+sp_vars = [variant(brand="Chattam & Wells", name="Chattam & Wells The Saint Pierre 16.5\" Plush Euro-Top Queen Mattress",
+                   sku="2031583", size_id="queen", familyKey="chattam wells", sellingAmountMinor=599900),
+           variant(brand="Chattam & Wells", name="Chattam & Wells Princess Saint Pierre 16.5\" Plush Twin Mattress",
+                   sku="1748180", size_id="twin", familyKey="saint pierre", sellingAmountMinor=749999),
+           variant(brand="Chattam & Wells", name="Chattam & Wells The Saint Pierre 16.5\" Plush Euro-Top King Mattress",
+                   sku="2031590", size_id="king", familyKey="chattam wells", sellingAmountMinor=699900)]
+out = run_leads(sp_vars, ACC_PROTECTOR, sp_leads, SP)
+szs = next(m for m in out["mattresses"] if m["appId"] == "g2")["sizes"]
+check("R6. a size from a DIFFERENT website family than the SKU-anchored Queen is unresolved (Princess never prices The Saint Pierre)",
+      szs["twin"].get("status") == "unresolved"
+      and szs["twin"].get("reason") == "different-website-family-than-the-sku-anchored-size", str(szs["twin"])[:200])
+check("R6b. ...a size in the anchor's own family still resolves",
+      szs["king"].get("status") == "preview-eligible" and szs["king"].get("sku") == "2031590", str(szs["king"])[:160])
+check("R6c. ...and the anchor itself is unchanged", szs["queen"].get("sku") == "2031583")
+
+
+lux2 = lux + [variant(brand="Tempur-Pedic", family="", name="King Tempur-Luxe Breeze 2.0 Soft Mattress",
+                      size_id="king", sku="1273594", parentSku="1302546", modelNumber="P-king",
+                      sellingAmountMinor=659900),
+              variant(brand="Tempur-Pedic", family="", name="King Tempur-Luxe Breeze 2.0 FIRM Mattress",
+                      size_id="twin_xl", sku="9999", parentSku="1302546", modelNumber="P-txl",
+                      sellingAmountMinor=539900)]
+out = run_leads(lux2, ACC_PROTECTOR, lux_leads, LUXE)
+sz = next(m for m in out["mattresses"] if m["appId"] == "g4")["sizes"]
+check("R7. another size listed on the lead's own parent page resolves at ITS OWN sku and price",
+      sz["king"].get("status") == "preview-eligible" and sz["king"].get("sku") == "1273594"
+      and sz["king"].get("sellingAmountMinor") == 659900, str(sz["king"])[:200])
+check("R7b. ...but a parent-listed size that disagrees on firmness is still refused",
+      sz["twin_xl"].get("status") != "preview-eligible", str(sz["twin_xl"])[:200])
+
 print(f"\nMapping check: {passed} passed, {failed} failed")
 sys.exit(1 if failed else 0)

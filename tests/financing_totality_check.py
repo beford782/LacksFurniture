@@ -160,6 +160,113 @@ def cfg_with(path, value):
     return doc
 
 
+# A plan's governed payment calculation (Payment Choice slice 2). Every new
+# field runs the whole JSON-value matrix with the calculation switched OFF
+# (the shipped config) and ON - for each published method - because the
+# switched-on branch has its own membership tests that the off branch never
+# reaches. The on-bases validate clean (asserted below), so every error in an
+# on-probe is caused by the one field under test.
+FIXED_FACTOR = 0.018521   # incoming/lacks_financing.json, Synchrony 9.99%/72
+
+
+def _calc_on(idx, field=None, value=None):
+    doc = json.loads(json.dumps(BASE))
+    fin = doc["financing"]
+    fin["exactPromotionsEnabled"] = True
+    plan = fin["plans"][idx]
+    plan["paymentCalculationEnabled"] = True
+    if plan.get("calculationMode") == "published-fixed-factor":
+        plan["publishedPaymentFactor"] = FIXED_FACTOR
+    if field is not None:
+        plan[field] = value
+    return doc
+
+
+def _calc_off(idx, field=None, value=None):
+    doc = json.loads(json.dumps(BASE))
+    if field is not None:
+        doc["financing"]["plans"][idx][field] = value
+    return doc
+
+
+# (state label, plan index, builder). Plan 0 is the 9.99%/72 fixed-factor
+# plan; plan 1 is the 0%/48 equal-division plan.
+CALC_STATES = [
+    ("disabled", 0, _calc_off),
+    ("disabled", 1, _calc_off),
+    ("enabled fixed-factor", 0, _calc_on),
+    ("enabled equal-division", 1, _calc_on),
+]
+CALC_MODES = ("published-fixed-factor", "published-equal-division", "not-published")
+
+
+def _calc_expect(field, val, enabled, idx):
+    """The field a malformed value must be named by, or None when the value
+    is legal in this state (or its verdict belongs to another field)."""
+    if field == "paymentCalculationEnabled":
+        if val is True and not enabled:
+            return field          # switched on without its published inputs
+        return None if val is None or isinstance(val, bool) else field
+    if field == "calculationMode":
+        if isinstance(val, str) and val in CALC_MODES:
+            return None
+        return field if (val is not None or enabled) else None
+    if field == "paymentRounding":
+        if val == "up-to-whole-dollar":
+            return None
+        return field if (val is not None or enabled) else None
+    if field in ("downPaymentRequired", "chargesRequiredAtPurchase"):
+        return None if val is None or isinstance(val, bool) else field
+    if field == "publishedPaymentFactor":
+        # Only the switched-on fixed-factor plan requires one; no value in
+        # the matrix is a factor strictly between 0 and 1.
+        return field if (enabled and idx == 0) else None
+    raise AssertionError(field)
+
+
+def _calculation_fields():
+    print("governed payment calculation fields (off and on):")
+    for state, idx, build in CALC_STATES:
+        rep = validation.validate_financing(build(idx), allowed_source_hosts=HOSTS)
+        check(f"{state} base (plans[{idx}]) validates clean", rep.ok,
+              "; ".join(e[:90] for e in rep.errors[:2]))
+    for field in ("paymentCalculationEnabled", "calculationMode", "paymentRounding",
+                  "downPaymentRequired", "chargesRequiredAtPurchase",
+                  "publishedPaymentFactor"):
+        for state, idx, build in CALC_STATES:
+            enabled = state != "disabled"
+            for lbl, val in JSON_VALUES:
+                probe(f"{state}: plans[{idx}].{field} = {lbl}",
+                      (lambda b=build, i=idx, f=field, v=val: b(i, f, v)),
+                      _calc_expect(field, val, enabled, idx))
+    # The malformed-shape diagnostic says what the field must be.
+    rep = probe("calculationMode = [] (diagnostic wording)",
+                _calc_off(0, "calculationMode", []), "calculationMode")
+    check("calculationMode = [] is refused as 'must be a string'",
+          rep is not None and any("calculationMode" in e and "must be a string" in e
+                                  for e in rep.errors),
+          "; ".join(e[:90] for e in (rep.errors if rep else [])[:2]))
+    rep = probe("paymentRounding = {} (diagnostic wording)",
+                _calc_off(0, "paymentRounding", {}), "paymentRounding")
+    check("paymentRounding = {} is refused as 'must be a string'",
+          rep is not None and any("paymentRounding" in e and "must be a string" in e
+                                  for e in rep.errors),
+          "; ".join(e[:90] for e in (rep.errors if rep else [])[:2]))
+    # The helper itself is total and still admits exactly the members.
+    for lbl, val in JSON_VALUES:
+        try:
+            validation._fin_member(val, validation.FINANCING_CALCULATION_MODES)
+            check(f"_fin_member total for {lbl}", True)
+        except BaseException as exc:                              # noqa: BLE001
+            check(f"_fin_member total for {lbl}", False, f"{type(exc).__name__}: {exc}")
+    check("_fin_member still admits every governed mode",
+          all(validation._fin_member(m, validation.FINANCING_CALCULATION_MODES)
+              for m in CALC_MODES))
+    check("_fin_member does not admit a near miss",
+          not validation._fin_member("published-fixed-factor ",
+                                     validation.FINANCING_CALCULATION_MODES))
+
+
 def main():
     print("Top-level and block shapes:")
     for lbl, val in JSON_VALUES:
@@ -230,6 +337,8 @@ def main():
             probe(f"plans[0].{field}.en = {lbl}",
                   cfg_with(("financing", "plans", 0, field), {"en": val, "es": "ok"}))
 
+    _calculation_fields()
+
     print("financing scalars and collections:")
     for field in ("enabled", "experience", "offerVersion", "verifiedAt", "maxAgeDays",
                   "sourceUrl", "applicationUrl", "mexicoInfoUrl", "mexicoApplicationUrl",
@@ -271,9 +380,27 @@ def main():
         ("savingsPassPolicy = []", ("financing", "savingsPassPolicy"), [],
          "savingsPassPolicy"),
         ("verifiedAt = huge int", ("financing", "verifiedAt"), HUGE, "verifiedAt"),
+        # Payment Choice slice 2: a frozenset membership test hashes its
+        # operand, so [] / {} raised TypeError here (Codex reproduction,
+        # 2026-10-04) - with calculation off and on alike.
+        ("calculationMode = []", ("financing", "plans", 0, "calculationMode"), [],
+         "calculationMode"),
+        ("calculationMode = {}", ("financing", "plans", 0, "calculationMode"), {},
+         "calculationMode"),
+        ("paymentRounding = []", ("financing", "plans", 0, "paymentRounding"), [],
+         "paymentRounding"),
+        ("paymentRounding = {}", ("financing", "plans", 0, "paymentRounding"), {},
+         "paymentRounding"),
     ]
     for lbl, path, val, expect in NAMED:
         probe(lbl, cfg_with(path, val), expect)
+    for field in ("calculationMode", "paymentRounding"):
+        for lbl, val in (("[]", []), ("{}", {})):
+            for state, idx, build in CALC_STATES:
+                if state == "disabled":
+                    continue
+                probe(f"{state}: plans[{idx}].{field} = {lbl}",
+                      build(idx, field, val), field)
 
     print("Valid-input verdicts are preserved:")
     shipped = validation.validate_financing(json.loads(json.dumps(BASE)),
@@ -428,6 +555,25 @@ def _converter_fixtures():
         ("minimumPurchase = Infinity",
          lambda f: f["plans"][0].__setitem__("minimumPurchase", INF),
          "minimumPurchase"),
+        # Payment Choice slice 2: the membership tests that used to raise
+        # TypeError on [] / {}, calculation off and on.
+        ("calculation off: calculationMode = []",
+         lambda f: f["plans"][0].__setitem__("calculationMode", []),
+         "calculationMode"),
+        ("calculation off: paymentRounding = {}",
+         lambda f: f["plans"][1].__setitem__("paymentRounding", {}),
+         "paymentRounding"),
+        ("calculation on: calculationMode = {}",
+         lambda f: (f.__setitem__("exactPromotionsEnabled", True),
+                    f["plans"][0].update(paymentCalculationEnabled=True,
+                                         publishedPaymentFactor=FIXED_FACTOR,
+                                         calculationMode={})),
+         "calculationMode"),
+        ("calculation on: paymentRounding = []",
+         lambda f: (f.__setitem__("exactPromotionsEnabled", True),
+                    f["plans"][1].update(paymentCalculationEnabled=True,
+                                         paymentRounding=[])),
+         "paymentRounding"),
     ]
     # A present-but-FALSY financing envelope used to be dropped by the
     # converter's `if financing:` test, so validate_financing never saw it and

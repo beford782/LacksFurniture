@@ -589,6 +589,16 @@ jobs:
       - name: payment workspace (rendered, EN/ES, both landscapes)
         run: python tests/payment_workspace_check.py
 
+      # Payment Choice slice 2 (owner authorization 2026-10-03): the governed
+      # payment facts in the workspace, rendered against the preview harness's
+      # `payments` drill - the published fixed-factor arithmetic, every input
+      # the kiosk does not hold reading "To confirm", equal weight, purchase
+      # edits recomputing on the same render, EN/ES parity, every gate failing
+      # closed one at a time, no fact outside the workspace (take-home
+      # exclusion), the wipe, and nothing at all under the shipped gates.
+      - name: payment facts (rendered, governed calculation, EN/ES)
+        run: python tests/payment_facts_check.py
+
       # Trust integrity and transparency gate (Phase 1 cross-cutting,
       # 2026-08-21): the copy <-> engine correspondence document and its
       # pinned inert-tag set, banned claims in quiz help copy, the absence of

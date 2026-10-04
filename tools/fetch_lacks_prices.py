@@ -146,6 +146,15 @@ def now_iso():
     return _dt.datetime.now(_dt.timezone.utc).replace(microsecond=0).isoformat()
 
 
+# OFFLINE MODE (--offline). Every network request is refused and reported as
+# a problem row; nothing uncached is ever fetched. Used to assemble a dated
+# review bundle from pages already captured (this tool's cache, or a browser
+# capture written in the same cache format), so a rebuild can never quietly
+# reach the site or re-date anything.
+OFFLINE = False
+OFFLINE_STATUS = "offline-not-cached"
+
+
 def fetch(url, timeout=40, retries=3, pause=4.0):
     """One paced GET. Returns (status, text) and never raises for HTTP errors.
 
@@ -155,6 +164,8 @@ def fetch(url, timeout=40, retries=3, pause=4.0):
     catalog. If it still refuses after the backoff, the caller records the
     refusal as a category problem - it never becomes an invented price.
     """
+    if OFFLINE:
+        return OFFLINE_STATUS, ""
     last = None
     for attempt in range(retries + 1):
         req = urllib.request.Request(url, headers={"User-Agent": UA,
@@ -837,7 +848,23 @@ def main(argv=None):
                     help="reuse a cached category page younger than this many "
                          "hours (0 disables the cache and re-fetches everything)")
     ap.add_argument("--out", default=OUT_DIR)
+    ap.add_argument("--cache-dir", default=None,
+                    help="read and write the retrieval cache here instead of "
+                         "<out>/.cache (e.g. a dated review bundle's own cache)")
+    ap.add_argument("--offline", action="store_true",
+                    help="refuse every network request: build only from cached pages; "
+                         "an uncached page is recorded as a problem, never fetched")
+    ap.add_argument("--supplement", action="append", default=[], metavar="FILE",
+                    help="admit CLEAN rows from a supplement capture (same row format, e.g. a "
+                         "browser capture converted with this collector). Only rows with no "
+                         "exceptions, a selling price, an offset-bearing observedAt and "
+                         "product-page evidence on the retailer host are admitted; each keeps "
+                         "its own observation and is de-duplicated like any other row")
     args = ap.parse_args(argv)
+    global OFFLINE, CACHE_DIR
+    OFFLINE = bool(args.offline)
+    if args.cache_dir:
+        CACHE_DIR = os.path.abspath(args.cache_dir)
 
     def log(m):
         print(m, flush=True)
@@ -887,6 +914,15 @@ def main(argv=None):
             drill_problems.extend(probs)
             if child_rows:
                 pr["exceptions"].append("resolved-into-variants")
+
+    # ---- supplement rows (an earlier browser capture of the same pages) ----
+    supplement_problems = []
+    for path in args.supplement:
+        added, refused = load_supplement(path)
+        rows.extend(added)
+        supplement_problems.extend(refused)
+        log(f"supplement {os.path.basename(path)}: {len(added)} admitted, {len(refused)} refused")
+    drill_problems.extend(supplement_problems)
 
     # de-duplicate on (sku, size_id): the same variant can appear in more than
     # one category. Identical rows collapse; a genuine disagreement is flagged.
@@ -993,6 +1029,55 @@ def main(argv=None):
         f"price conflicts {len(conflicts)}")
     log(f"wrote {os.path.relpath(target, REPO)}")
     return 0
+
+
+def supplement_row_verdict(row):
+    """'' when a supplement row may be admitted, else the refusal reason."""
+    if not isinstance(row, dict):
+        return "not-a-row"
+    if row.get("exceptions"):
+        return "row-carries-exceptions"
+    amt = row.get("sellingAmountMinor")
+    if not isinstance(amt, int) or isinstance(amt, bool) or amt <= 0:
+        return "no-selling-price"
+    if row.get("kind") not in ("mattress", "accessory") or not row.get("sku"):
+        return "no-identity"
+    at = row.get("observedAt")
+    try:
+        t = _dt.datetime.fromisoformat(str(at).replace("Z", "+00:00"))
+    except ValueError:
+        return "observation-unparseable"
+    if t.tzinfo is None:
+        return "observation-offset-missing"
+    if t > _dt.datetime.now(_dt.timezone.utc) + _dt.timedelta(minutes=5):
+        return "observation-in-future"
+    ev = row.get("evidence") or {}
+    url = str(ev.get("url") or "")
+    # product-page: the record's own page; configurable-parent-page: a child
+    # resolved on its parent's product page (this collector's own drill output).
+    if ev.get("type") not in ("product-page", "configurable-parent-page") or not url.startswith(BASE + "/"):
+        return "evidence-not-a-retailer-product-page"
+    return ""
+
+
+def load_supplement(path):
+    """(admitted rows, refusals) from a supplement file of collector rows."""
+    try:
+        doc = json.load(io.open(path, encoding="utf-8"))
+    except Exception as e:  # noqa: BLE001
+        return [], [{"supplement": os.path.basename(path), "problem": f"unreadable: {e!r}"}]
+    added, refused = [], []
+    for row in (doc.get("variants") or []):
+        why = supplement_row_verdict(row)
+        if why:
+            refused.append({"supplement": os.path.basename(path), "sku": (row or {}).get("sku"),
+                            "problem": "supplement-row-refused: " + why})
+            continue
+        r = dict(row)
+        r["exceptions"] = list(r.get("exceptions") or [])
+        r["supplementSource"] = os.path.basename(path)
+        added.append(r)
+    return added, refused
 
 
 def write_review(snap, path):

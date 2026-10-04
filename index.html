@@ -11035,6 +11035,105 @@
     .fin-ws-confirm-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 22px; }
     .fin-ws-confirm-list li { position: relative; padding-left: 20px; font-size: 0.95rem; line-height: 1.4; color: #211E19; }
     .fin-ws-confirm-list li::before { content: ""; position: absolute; left: 0; top: 0.42em; width: 9px; height: 9px; border: 1.5px solid #7A5E00; border-radius: 50%; }
+    /* Payment facts (slice 2): one label/value list in which every value has
+       the same size and weight - a monthly figure never outranks the totals
+       or the "To confirm" rows beside it. */
+    .fin-fx { margin: 14px 0 4px; padding: 16px 18px 14px; border: 1px solid #C9C1AF; border-radius: 6px; background: #FFFDF8; }
+    .fin-fx__head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 18px; padding-bottom: 8px; border-bottom: 1.5px solid #211E19; }
+    .fin-fx__head .fin-ws-kicker { margin: 0; }
+    .fin-fx__lead { margin: 0; flex: 1 1 260px; }
+    .fin-fx__lead .fin-fx__row { border: 0; padding: 0; }
+    .fin-fx__key { margin: 12px 0 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+    .fin-fx__keycell { margin: 0; padding: 10px 12px; border: 1px solid #C9C1AF; border-radius: 6px; background: #FFFFFF; min-width: 0; }
+    .fin-fx__keycell .fin-fx__label { display: block; font-size: 0.85rem; color: #3E3A31; }
+    .fin-fx__keycell .fin-fx__value { display: block; max-width: none; margin: 4px 0 0; text-align: left; font-size: 1.05rem; font-weight: 600; color: #17140F; font-variant-numeric: tabular-nums; }
+    .fin-fx__keycell.is-unknown { border-style: dashed; background: #FBF8F1; }
+    .fin-fx__keycell.is-unknown .fin-fx__value { color: #3E3A31; }
+    .fin-fx__keycell .fin-fx__sub { text-align: left; margin-top: 4px; }
+    .fin-fx__groups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 26px; }
+    .fin-fx__group { min-width: 0; }
+    .fin-fx__group-title { margin: 12px 0 0; font: 600 0.72rem/1.3 var(--font-sans); letter-spacing: 1.2px; text-transform: uppercase; color: #6B6455; }
+    .fin-fx__rows { margin: 0; }
+    .fin-fx__row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 2px 12px; padding: 8px 0; border-bottom: 1px solid #E6DFCF; min-width: 0; }
+    .fin-fx__row--wide { display: block; }
+    .fin-fx__row--wide .fin-fx__value { display: block; text-align: left; max-width: none; margin-top: 3px; font-weight: 500; }
+    .fin-fx__label { flex: 1 1 8em; font-size: 0.95rem; line-height: 1.35; color: #3E3A31; }
+    .fin-fx__value { flex: 0 1 auto; margin: 0; max-width: 72%; text-align: right; font-size: 0.95rem; line-height: 1.35; font-weight: 600; color: #17140F; font-variant-numeric: tabular-nums; }
+    .fin-fx__sub { flex: 1 0 100%; margin: 0; text-align: right; font-size: 0.8rem; line-height: 1.35; color: #5A5446; }
+    .fin-fx__note { margin: 10px 0 0; max-width: 72ch; font-size: 0.85rem; line-height: 1.5; color: #3E3A31; }
+    .fin-fx[data-fx-state="to-confirm"] .fin-fx__value { font-weight: 500; }
+    .fin-fx__excludes { margin: 10px 0 0; padding: 7px 10px; border-left: 3px solid #7A5E00; background: #F7F2E8; font-size: 0.9rem; line-height: 1.4; color: #211E19; }
+    .fin-ws-ff { margin: 12px 0 0; }
+    .fin-ws-ff__btns { display: flex; flex-wrap: wrap; gap: 8px; }
+    .fin-ws-ff__btn { min-height: 44px; padding: 8px 16px; border: 1px solid #8C7F69; border-radius: 999px; background: #FFFDF8; color: #211E19; font: 500 0.95rem/1.2 var(--font-sans); touch-action: manipulation; cursor: pointer; }
+    .fin-ws-ff__btn[aria-pressed="true"] { border: 2px solid #211E19; background: #211E19; color: #FFFDF8; }
+    .fin-ws-ff__note { margin: 6px 0 0; font-size: 0.85rem; color: #3E3A31; max-width: 62ch; }
+    .fin-ws-cp { margin: 16px 0 0; padding: 14px 16px; border: 1px solid #C9C1AF; border-radius: 6px; background: #FFFDF8; }
+    .fin-ws-cp__title { margin: 0 0 6px; font: 400 1.25rem/1.25 var(--font-serif); color: #17140F; }
+    .fin-ws-cp__summary { margin: 0 0 10px; font-size: 0.95rem; line-height: 1.5; color: #211E19; max-width: 66ch; }
+    .fin-ws-cp__req { list-style: none; margin: 4px 0 8px; padding: 0; }
+    .fin-ws-cp__item { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: 1px solid #E6DFCF; font-size: 0.95rem; }
+    .fin-ws-cp__state { color: #5A5446; }
+    .fin-ws-cp__item.is-in .fin-ws-cp__state { color: #17140F; font-weight: 600; }
+    .fin-ws-cp__item.is-in .fin-ws-cp__state::before { content: "\2713  "; }
+    .fin-ws-cp__more summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; touch-action: manipulation; font-size: 0.92rem; color: #211E19; }
+    .fin-ws-cp__more ul { margin: 4px 0 6px; padding-left: 20px; font-size: 0.9rem; line-height: 1.5; color: #211E19; }
+    .fin-ws-cp__confirm { margin: 6px 0 0; font-size: 0.85rem; color: #3E3A31; }
+    /* Purchase builder (slice 2 visual slice): prices on every line, then a
+       comparison card whose figures all share one size and weight. */
+    .fin-ws-line__price { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; min-width: 7.5em; text-align: right; font-variant-numeric: tabular-nums; }
+    .fin-ws-line__ext { font-weight: 600; font-size: 1rem; color: #17140F; }
+    .fin-ws-line__unit { font-size: 0.8rem; color: #5A5446; }
+    .fin-ws-line__price.is-unpriced { font-size: 0.85rem; color: #6B3A00; font-weight: 500; max-width: 12em; }
+    .fin-pb { margin: 16px 0 0; padding: 16px 18px; border: 1px solid #C9C1AF; border-radius: 6px; background: #FFFDF8; }
+    .fin-pb__label { font-size: 0.95rem; color: #3E3A31; }
+    .fin-pb__notice { margin: 10px 0 0; padding: 8px 10px; border-left: 3px solid #6B3A00; background: #F7F2E8; font-size: 0.9rem; color: #211E19; }
+    .fin-pb__title { margin: 16px 0 2px; font: 400 1.2rem/1.25 var(--font-serif); color: #17140F; }
+    .fin-pb__plan { margin: 0 0 8px; font-size: 0.85rem; color: #5A5446; }
+    .fin-pb__table { display: grid; grid-template-columns: minmax(8em, 1.2fr) repeat(3, minmax(0, 1fr)); }
+    .fin-pb__table.is-single { grid-template-columns: minmax(8em, 1.2fr) minmax(0, 1fr); max-width: 30em; }
+    .fin-pb__hint { margin: 10px 0 0; font-size: 0.92rem; color: #3E3A31; }
+    .fin-pb__row { display: contents; }
+    .fin-pb__row > span { padding: 9px 8px; border-bottom: 1px solid #E6DFCF; font-size: 0.95rem; line-height: 1.35; font-variant-numeric: tabular-nums; }
+    .fin-pb__row--head > span { font: 600 0.72rem/1.3 var(--font-sans); letter-spacing: 1.1px; text-transform: uppercase; color: #6B6455; border-bottom: 1.5px solid #211E19; }
+    .fin-pb__cell { font-weight: 600; color: #17140F; text-align: right; }
+    .fin-pb__row--head > span:not(.fin-pb__rk) { text-align: right; }
+    .fin-pb__cell--diff { color: #3E3A31; }
+    .fin-pb__rk { color: #3E3A31; }
+    .fin-pb__unknown { margin: 12px 0 0; font-size: 0.92rem; color: #211E19; }
+    .fin-pb__fine { margin: 8px 0 0; font-size: 0.82rem; line-height: 1.45; color: #3E3A31; max-width: 72ch; }
+    /* Review-only scenario panel: dashed frame and an always-visible tag so
+       an assumption-based figure can never be mistaken for a verified one. */
+    .fin-sc { margin: 16px 0 0; border: 1.5px dashed #7A5E00; border-radius: 6px; background: #FBF8F1; }
+    .fin-sc__toggle { width: 100%; min-height: 48px; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 16px; border: 0; background: transparent; font: 400 1.15rem/1.25 var(--font-serif); color: #17140F; text-align: left; cursor: pointer; touch-action: manipulation; }
+    .fin-sc__tag { flex: none; padding: 3px 10px; border-radius: 999px; background: #7A5E00; color: #FFFDF8; font: 600 0.72rem/1.3 var(--font-sans); letter-spacing: 1px; text-transform: uppercase; }
+    .fin-sc__body { padding: 0 16px 16px; }
+    .fin-sc__intro { margin: 0 0 12px; font-size: 0.9rem; line-height: 1.5; color: #211E19; max-width: 72ch; }
+    .fin-sc__fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+    .fin-sc__field { display: flex; flex-direction: column; gap: 4px; font-size: 0.88rem; color: #3E3A31; }
+    .fin-sc__finput { display: flex; align-items: center; gap: 6px; }
+    .fin-sc__finput input { flex: 1; min-width: 0; min-height: 44px; padding: 8px 10px; border: 1px solid #8C7F69; border-radius: 4px; background: #FFFFFF; font: 500 1rem/1.2 var(--font-sans); color: #17140F; touch-action: manipulation; }
+    .fin-sc__finput input:disabled { background: #EFE9DC; color: #3E3A31; }
+    .fin-sc__unit { font-size: 0.9rem; color: #5A5446; }
+    .fin-sc__treat { margin: 12px 0 0; }
+    .fin-sc__clear { margin: 10px 0 0; min-height: 44px; touch-action: manipulation; }
+    .fin-sc__chips { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+    .fin-sc__chip { padding: 4px 10px; border: 1px dashed #7A5E00; border-radius: 999px; font-size: 0.82rem; color: #211E19; background: #FFFDF8; }
+    .fin-sc__missing, .fin-sc__hint { margin: 10px 0 0; font-size: 0.88rem; color: #6B3A00; }
+    .fin-sc__build { margin: 12px 0 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .fin-sc__box { padding: 10px 12px; border: 1px solid #C9C1AF; border-radius: 6px; background: #FFFFFF; }
+    .fin-sc__h { margin: 0 0 6px; font: 600 0.72rem/1.3 var(--font-sans); letter-spacing: 1.1px; text-transform: uppercase; color: #6B6455; }
+    .fin-sc__parts { list-style: none; margin: 0; padding: 0; }
+    .fin-sc__parts li, .fin-sc__total { display: flex; justify-content: space-between; gap: 10px; padding: 4px 0; font-size: 0.92rem; font-variant-numeric: tabular-nums; }
+    .fin-sc__total { margin: 4px 0 0; padding-top: 6px; border-top: 1.5px solid #211E19; font-weight: 600; color: #17140F; }
+    .fin-sc__table { margin: 12px 0 0; display: grid; }
+    .fin-sc__sr { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+    .fin-sc__row { display: contents; }
+    .fin-sc__row > span { padding: 8px; border-bottom: 1px solid #E6DFCF; font-size: 0.92rem; line-height: 1.35; font-variant-numeric: tabular-nums; }
+    .fin-sc__row--head > span { font: 600 0.72rem/1.3 var(--font-sans); letter-spacing: 1px; text-transform: uppercase; color: #6B6455; border-bottom: 1.5px solid #211E19; text-align: right; }
+    .fin-sc__cell { text-align: right; font-weight: 600; color: #17140F; }
+    .fin-sc__unc { margin: 12px 0 0; font-size: 0.88rem; color: #211E19; }
+    .fin-sc__fine { margin: 10px 0 0; font-size: 0.82rem; line-height: 1.45; color: #3E3A31; max-width: 72ch; }
     .fin-ws-actions {
       position: sticky; bottom: 0; margin: auto -32px 0; padding: 14px 32px 16px;
       background: #FFFDF8; box-shadow: 0 -1px 0 #E2D9C7; z-index: 1;
@@ -11151,6 +11250,9 @@
     /* Short landscape (1024x768 class): tighter vertical rhythm so every path,
        the Mexico entry and "not choosing today" stay on screen in Spanish. */
     @media (max-height: 800px) and (min-width: 901px) and (orientation: landscape) {
+      .fin-workspace .fin-fx__groups { grid-template-columns: 1fr; }
+      .fin-workspace .fin-fx__key { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .fin-workspace .fin-sc__fields, .fin-workspace .fin-sc__build { grid-template-columns: 1fr; }
       .fin-workspace .fin-sheet-title { font-size: 1.32rem; }
       .fin-workspace .fin-sheet-head .fin-fit-first { margin-top: 2px; }
       .fin-ws-row { min-height: 56px; padding: 6px 12px 6px 10px; }
@@ -11164,6 +11266,9 @@
     }
     /* Narrow or portrait: one scrolling column, nothing clipped. */
     @media (max-width: 900px), (orientation: portrait) {
+      .fin-workspace .fin-fx__groups { grid-template-columns: 1fr; }
+      .fin-workspace .fin-fx__key { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .fin-workspace .fin-sc__fields, .fin-workspace .fin-sc__build { grid-template-columns: 1fr; }
       /* The sheet must not stretch the panel to the viewport, and no region
          may shrink below its content: one column that scrolls as a whole. */
       .fin-sheet.fin-workspace { align-items: flex-start; }
@@ -12941,7 +13046,8 @@
       var SIZE_WILDCARDS = ['*', 'all', 'any', 'default'];
       var PRICE_KINDS = ['regular', 'promotional'];
       var EVIDENCE_STATUSES = ['retailer-product-page-current', 'retailer-price-list-current'];
-      var FORMULA_MODES = { 'published-fixed-factor': ['principalMinor', 'publishedPaymentFactor'] };
+      var FORMULA_MODES = { 'published-fixed-factor': ['principalMinor', 'publishedPaymentFactor'],
+                            'published-equal-division': ['principalMinor', 'termMonths'] };
       var CADENCES = ['monthly', 'biweekly', 'weekly'];
       var isObj = function (v) { return !!v && typeof v === 'object' && !Array.isArray(v); };
       var isStr = function (v) { return typeof v === 'string'; };
@@ -13970,6 +14076,583 @@
       el.hidden = false;
     }
 
+    // ─── Payment facts (Payment Choice slice 2, owner authorization 2026-10-03) ───
+    // The figures the "Bring it home" workspace shows for ONE plan against the
+    // customer's CURRENT purchase. This replaces the V1 "no payment figure is
+    // ever computed" rule with a governed one: a figure exists only when every
+    // input is a published fact and every gate is open, and anything not
+    // published reads "To confirm" - never zero, never inferred, never a
+    // partial sum.
+    //
+    // Gates, all re-checked on every render (nothing here is stored):
+    //   the table at all   the price gate is on for the surface the workspace
+    //                      was opened from AND the purchase has a mattress with
+    //                      at least one priced line - the same rule as the
+    //                      Summary subtotal, so dark, stale or unapproved
+    //                      pricing shows nothing, exactly as before;
+    //   any plan term      financingPlanFresh(plan): financing enabled,
+    //                      exactPromotionsEnabled, fresh, allowlisted, verified;
+    //   a payment figure   additionally: paymentCalculationEnabled, the
+    //                      published-fixed-factor method with its published
+    //                      factor and rounding rule, an approved formula
+    //                      artifact (the resolver's calculation axis), a
+    //                      COMPLETE priced purchase, and a merchandise subtotal
+    //                      at or above the published minimum.
+    // The payment is computed in integer arithmetic: minor units x the factor
+    // in parts per million, rounded UP to the next whole dollar, as published.
+    // Rounding makes the final payment(s) smaller, so the totals are stated
+    // as maxima ("Up to"), never as an exact amount.
+    //
+    // The kiosk holds NO down-payment amount and NO tax, delivery or setup
+    // charges, so "Total due today" and "Complete amount paid" read "To
+    // confirm" for every plan, by rule rather than by omission. The amount
+    // used for an estimate is the merchandise subtotal and says so.
+    //
+    // Take-home exclusion: only the workspace calls this. The Summary, the
+    // Sleep Plan, the email builder and the GAS payload never do.
+    var PAY_CALC_MODES = ['published-fixed-factor', 'published-equal-division', 'not-published'];
+    var PAY_ROUNDING = ['up-to-whole-dollar'];
+    // A published factor as an exact integer number of parts per million
+    // (0.018521 -> 18521). A factor that needs more precision is refused, not
+    // rounded: the figure would no longer be the published one.
+    function payFactorMicro(f) {
+      if (typeof f !== 'number' || !isFinite(f) || f <= 0 || f >= 1) return null;
+      var micro = Math.round(f * 1000000);
+      if (Math.abs(f * 1000000 - micro) > 0.000001) return null;
+      return micro;
+    }
+    // principal (minor units) x factor, rounded UP to the next whole dollar,
+    // returned in minor units. Integer-only: no floating division.
+    function payFixedFactorMinor(principalMinor, factorMicro) {
+      if (!Number.isSafeInteger(principalMinor) || principalMinor <= 0) return null;
+      if (!Number.isSafeInteger(factorMicro) || factorMicro <= 0) return null;
+      var num = principalMinor * factorMicro;
+      if (!Number.isSafeInteger(num)) return null;
+      var unit = 100000000;   // 1,000,000 ppm x 100 minor units per dollar
+      var rem = num % unit;
+      return ((num - rem) / unit + (rem > 0 ? 1 : 0)) * 100;
+    }
+    function payMinimumMinor(plan) {
+      var v = plan && plan.minimumPurchase;
+      if (typeof v !== 'number' || !isFinite(v) || v < 0) return null;
+      var m = Math.round(v * 100);
+      return (Math.abs(v * 100 - m) > 0.000001 || !Number.isSafeInteger(m)) ? null : m;
+    }
+    function payAprText(v) {
+      return (typeof v === 'number' && isFinite(v) && v >= 0) ? String(v) : '';
+    }
+    // THE governed payment calculation for one plan and one principal (minor
+    // units). Every gate is re-checked here, so the payment-facts table and
+    // the purchase builder can never disagree: plan fresh (which includes the
+    // exact-term authorization), the plan's own calculation flag, the
+    // published-fixed-factor method with its factor and rounding rule, the
+    // approved formula artifact (the resolver's calculation axis, judged for
+    // the chosen finalist), and the published minimum. Returns nulls when any
+    // gate is shut; `belowMin` says why when the minimum is the reason.
+    // principal / term, rounded UP to the next whole dollar, in minor units:
+    // the published 0% equal-payment method. Integer-only.
+    function payEqualDivisionMinor(principalMinor, term) {
+      if (!Number.isSafeInteger(principalMinor) || principalMinor <= 0) return null;
+      if (!Number.isSafeInteger(term) || term <= 0) return null;
+      var unit = term * 100;
+      var rem = principalMinor % unit;
+      return ((principalMinor - rem) / unit + (rem > 0 ? 1 : 0)) * 100;
+    }
+    // opts (review scenario only): downEntered - a down payment was supplied
+    // (a plan that publishes a REQUIRED down payment never calculates without
+    // one); qualifyingMinor - the amount the published minimum is tested
+    // against (the merchandise subtotal; defaults to the principal).
+    function payEstimate(surface, finalist, size, plan, principalMinor, cur, opts) {
+      var out = { payMinor: null, scheduledMax: null, interestMax: null, factorMicro: null,
+                  term: null, belowMin: false, method: '' };
+      var o = (opts && typeof opts === 'object') ? opts : {};
+      if (!plan || typeof plan !== 'object' || !finalist || !priceMoneyValid(principalMinor, cur)) return out;
+      var fresh = financingPlanFresh(plan);
+      var complete = true;
+      var promo = plan.kind === 'open-end-promotional-credit';
+      var term = (fresh && Number.isSafeInteger(plan.termMonths) && plan.termMonths > 0) ? plan.termMonths : null;
+      var apr = fresh ? payAprText(plan.apr) : '';
+      var minMinor = fresh ? payMinimumMinor(plan) : null;
+      var qualifying = Number.isSafeInteger(o.qualifyingMinor) ? o.qualifyingMinor : principalMinor;
+      var belowMin = minMinor !== null && qualifying < minMinor;
+      out.belowMin = belowMin;
+      var mode = PAY_CALC_MODES.indexOf(plan.calculationMode) !== -1 ? plan.calculationMode : 'not-published';
+      var downOk = plan.downPaymentRequired !== true || o.downEntered === true;
+      var payMinor = null;
+      var factorMicro = null;
+      if (fresh && complete && !belowMin && promo && term !== null && apr !== ''
+          && plan.paymentCalculationEnabled === true && mode === 'published-fixed-factor'
+          && PAY_ROUNDING.indexOf(plan.paymentRounding) !== -1 && downOk) {
+        var pres = pricePresentationFor(surface, finalist, size, { planId: plan.id });
+        factorMicro = payFactorMicro(plan.publishedPaymentFactor);
+        if (pres.state === 'available' && pres.calculation === 'available' && factorMicro !== null) {
+          payMinor = payFixedFactorMinor(principalMinor, factorMicro);
+          if (payMinor !== null && !priceMoneyValid(payMinor, cur)) payMinor = null;
+          out.method = 'published-fixed-factor';
+        }
+      } else if (promo && fresh && complete && !belowMin && term !== null && apr === '0'
+          && plan.paymentCalculationEnabled === true && mode === 'published-equal-division'
+          && PAY_ROUNDING.indexOf(plan.paymentRounding) !== -1 && downOk) {
+        // The published 0% equal-payment method: the promo purchase divided
+        // by the term, rounded up to the next whole dollar. A required down
+        // payment that is not supplied stops it (downOk) - never assumed 0.
+        var presE = pricePresentationFor(surface, finalist, size, { planId: plan.id });
+        if (presE.state === 'available' && presE.calculation === 'available') {
+          payMinor = payEqualDivisionMinor(principalMinor, term);
+          if (payMinor !== null && !priceMoneyValid(payMinor, cur)) payMinor = null;
+          out.method = 'published-equal-division';
+        }
+      }
+      if (payMinor !== null) {
+        var scheduledMax = payMinor * term;
+        if (!priceMoneyValid(scheduledMax, cur)) return out;
+        out.payMinor = payMinor;
+        out.scheduledMax = scheduledMax;
+        out.interestMax = out.method === 'published-equal-division' ? 0 : scheduledMax - principalMinor;
+        out.factorMicro = factorMicro;
+        out.term = term;
+      }
+      return out;
+    }
+
+    // ─── Review-only scenario (Payment Choice slice 2) ───
+    // Shows what the unresolved inputs WOULD do, for review: every value is
+    // an ASSUMPTION the reviewer types, never a fact, never stored, never
+    // sent, wiped with the session. Renders only when the build carries
+    // reviewTools.scenarioPanel === true (preview states inject it; shipped
+    // data never does) and the purchase-builder gates are open. Plans
+    // calculate only by their published method through payEstimate; a
+    // program without one stays uncalculated. A blank assumption is NEVER
+    // treated as zero: what depends on it reads "Enter an assumption".
+    // Locale-aware money that can say zero (formatPriceAmount refuses 0 by
+    // design: no price is ever $0) and a locale-aware percent.
+    function payMoneyAllowZero(m) {
+      if (m === 0) {
+        try { return new Intl.NumberFormat(currentLang === 'es' ? 'es-US' : 'en-US',
+          { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(0); }
+        catch (e) { return '0'; }
+      }
+      return formatPriceAmount(m, 'USD');
+    }
+    function payPercentText(milli) {
+      try { return new Intl.NumberFormat(currentLang === 'es' ? 'es-US' : 'en-US',
+        { maximumFractionDigits: 3 }).format(milli / 1000); }
+      catch (e) { return String(milli / 1000); }
+    }
+    function payParseAmountMinor(raw, maxMinor) {
+      var v = String(raw == null ? '' : raw).replace(/[$,\s]/g, '');
+      if (v === '') return { state: 'blank', minor: null };
+      if (!/^\d+(\.\d{1,2})?$/.test(v)) return { state: 'invalid', minor: null };
+      var parts = v.split('.');
+      var minor = parseInt(parts[0], 10) * 100 + (parts[1] ? parseInt((parts[1] + '0').slice(0, 2), 10) : 0);
+      if (!Number.isSafeInteger(minor) || minor > maxMinor) return { state: 'invalid', minor: null };
+      return { state: 'ok', minor: minor };
+    }
+    function payParsePercentMilli(raw) {
+      var v = String(raw == null ? '' : raw).replace(/[%\s]/g, '');
+      if (v === '') return { state: 'blank', milli: null };
+      if (!/^\d{1,2}(\.\d{1,3})?$/.test(v)) return { state: 'invalid', milli: null };
+      var parts = v.split('.');
+      var milli = parseInt(parts[0], 10) * 1000 + (parts[1] ? parseInt((parts[1] + '00').slice(0, 3), 10) : 0);
+      if (milli > 15000) return { state: 'invalid', milli: null };
+      return { state: 'ok', milli: milli };
+    }
+    function paymentScenarioFor(placement, input) {
+      var none = { show: false };
+      var rt = (typeof STORE_CONFIG === 'object' && STORE_CONFIG) ? STORE_CONFIG.reviewTools : null;
+      if (!rt || typeof rt !== 'object' || rt.scenarioPanel !== true) return none;
+      var surface = (typeof placement === 'string'
+        && Object.prototype.hasOwnProperty.call(PRICE_PLACEMENT_SURFACE, placement))
+        ? PRICE_PLACEMENT_SURFACE[placement] : null;
+      if (!surface) return none;
+      var p = getPricingConfig();
+      if (!p || p.enabled !== true || p.displayEnabled !== true || !pricingSurfaceEnabled(surface)) return none;
+      if (!financingTermsFresh()) return none;
+      if (typeof resolveFinalistState !== 'function') return none;
+      var st = resolveFinalistState();
+      var finalist = (st && st.kind === 'chosen') ? st.item : null;
+      if (!finalist) return none;
+      var size = priceSizeAnswer();
+      var quote = buildConsultationQuote(surface, size);
+      var cur = 'USD';
+      var fmt = function (m) { return formatPriceAmount(m, cur); };
+      var complete = quote.status === 'complete' && quote.hasMattress
+        && priceMoneyValid(quote.merchandiseMinor, quote.currency);
+      if (!complete) return { show: true, complete: false };
+      var merch = quote.merchandiseMinor;
+      var i = (input && typeof input === 'object') ? input : {};
+      var fp = paySalesPolicy('fulfillment');
+      var pickup = !!(fp && fp.pickupNoCharge === true) && _payFulfil === 'pickup';
+      var tax = payParsePercentMilli(i.tax);
+      var del = pickup ? { state: 'ok', minor: 0 } : payParseAmountMinor(i.delivery, 200000);
+      var down = payParseAmountMinor(i.down, merch);
+      var treat = (i.treatment === 'today' || i.treatment === 'financed') ? i.treatment : '';
+      // Tax on the merchandise subtotal, rounded half up to the cent (itself
+      // an assumption: what is taxable is unpublished).
+      var taxMinor = tax.state === 'ok' ? Math.floor((merch * tax.milli + 50000) / 100000) : null;
+      var delMinor = del.state === 'ok' ? del.minor : null;
+      var downMinor = down.state === 'ok' ? down.minor : null;
+      var chargesKnown = taxMinor !== null && delMinor !== null;
+      var charges = chargesKnown ? taxMinor + delMinor : null;
+      var noCharges = chargesKnown && charges === 0;
+      var treatNeeded = !noCharges;
+      var treatOk = !treatNeeded || treat !== '';
+      // Due today and the amount financed, with each assumption's share.
+      var dueKnown = downMinor !== null && (treat === 'financed' || (chargesKnown && (treat === 'today' || noCharges)));
+      var due = dueKnown ? downMinor + (treat === 'today' ? charges : 0) : null;
+      var finKnown = downMinor !== null && (treat === 'today' || (treat === 'financed' && chargesKnown) || noCharges);
+      var financed = finKnown ? merch - downMinor + (treat === 'financed' ? charges : 0) : null;
+      var missing = [];
+      if (tax.state !== 'ok') missing.push(tax.state === 'invalid' ? 'tax_invalid' : 'tax');
+      if (del.state !== 'ok') missing.push(del.state === 'invalid' ? 'delivery_invalid' : 'delivery');
+      if (down.state !== 'ok') missing.push(down.state === 'invalid' ? 'down_invalid' : 'down');
+      if (!treatOk) missing.push('treatment');
+      var allSupplied = missing.length === 0;
+      var f = getFinancingConfig();
+      var plans = (f && Array.isArray(f.plans)) ? f.plans : [];
+      var cols = [];
+      var uncalculated = [];
+      for (var k = 0; k < plans.length; k++) {
+        var pl = plans[k];
+        if (!pl || typeof pl !== 'object') continue;
+        var method = (pl.calculationMode === 'published-fixed-factor' || pl.calculationMode === 'published-equal-division')
+          && pl.paymentCalculationEnabled === true ? pl.calculationMode : '';
+        if (!method) { uncalculated.push(L(pl.headline) || ''); continue; }
+        var colMin = financingPlanFresh(pl) ? payMinimumMinor(pl) : null;
+        var col = { label: financingPlanFresh(pl) ? L(pl.headline) : '', method: method,
+                    minText: colMin !== null ? fmt(colMin) : '',
+                    monthly: '', scheduled: '', interest: '', cost: '', state: 'needs-input' };
+        // Published plan conditions the scenario must respect: a REQUIRED
+        // down payment is a positive amount (a typed 0 is no down payment),
+        // and charges the plan requires at purchase cannot be financed.
+        var needsDown = pl.downPaymentRequired === true && downMinor !== null && downMinor <= 0;
+        var chargesUpfront = pl.chargesRequiredAtPurchase === true && treat === 'financed' && !noCharges;
+        if (needsDown) { col.state = 'needs-down'; cols.push(col); continue; }
+        if (chargesUpfront) { col.state = 'charges-upfront'; cols.push(col); continue; }
+        if (financed !== null && financed > 0) {
+          var e = payEstimate(surface, finalist, size, pl, financed, cur,
+            { downEntered: downMinor !== null && downMinor > 0, qualifyingMinor: merch });
+          if (e.payMinor !== null) {
+            col.state = 'calculated';
+            col.monthly = fmt(e.payMinor);
+            col.scheduled = fmt(e.scheduledMax);
+            col.interest = e.interestMax > 0 ? fmt(e.interestMax) : t('pay.fx.interest_none');
+            if (allSupplied && due !== null) col.cost = fmt(due + e.scheduledMax);
+          } else {
+            col.state = e.belowMin ? 'below-min' : 'not-calculable';
+          }
+        } else if (financed !== null) {
+          col.state = 'nothing-financed';
+          // Nothing left to finance: the complete scenario cost IS what is
+          // due today, once every assumption is supplied.
+          if (allSupplied && due !== null) col.cost = payMoneyAllowZero(due);
+        }
+        cols.push(col);
+      }
+      var chips = [];
+      if (tax.state === 'ok') chips.push(t('pay.sc.chip_tax', { pct: payPercentText(tax.milli) }));
+      if (pickup) chips.push(t('pay.sc.chip_pickup'));
+      else if (del.state === 'ok') chips.push(t('pay.sc.chip_delivery', { amount: payMoneyAllowZero(delMinor) }));
+      if (down.state === 'ok') chips.push(t('pay.sc.chip_down', { amount: payMoneyAllowZero(downMinor) }));
+      if (treat) chips.push(t(treat === 'today' ? 'pay.sc.chip_today' : 'pay.sc.chip_financed'));
+      var money0 = payMoneyAllowZero;
+      return {
+        show: true, complete: true, pickup: pickup, chips: chips, missing: missing,
+        allSupplied: allSupplied, treatNeeded: treatNeeded,
+        merch: fmt(merch),
+        tax: taxMinor !== null ? money0(taxMinor) : '', delivery: delMinor !== null ? money0(delMinor) : '',
+        down: downMinor !== null ? money0(downMinor) : '',
+        treat: treat,
+        due: due !== null ? money0(due) : '', financed: financed !== null ? money0(financed) : '',
+        cols: cols, uncalculated: uncalculated.filter(function (x) { return !!x; })
+      };
+    }
+
+    function paymentFactsFor(placement, plan) {
+      var none = { show: false, calculated: false, rows: [], notes: [] };
+      var surface = (typeof placement === 'string'
+        && Object.prototype.hasOwnProperty.call(PRICE_PLACEMENT_SURFACE, placement))
+        ? PRICE_PLACEMENT_SURFACE[placement] : null;
+      if (!surface || !plan || typeof plan !== 'object' || typeof plan.id !== 'string') return none;
+      var p = getPricingConfig();
+      if (!p || p.enabled !== true || p.displayEnabled !== true || !pricingSurfaceEnabled(surface)) return none;
+      // Payment facts are an EXACT-TERMS surface: without the financing
+      // block's own exact-term authorization (financingTermsFresh) the
+      // workspace stays orientation-only, with no money in it, even while
+      // prices are on elsewhere.
+      if (!financingTermsFresh()) return none;
+      if (typeof resolveFinalistState !== 'function') return none;
+      var st = resolveFinalistState();
+      var finalist = (st && st.kind === 'chosen') ? st.item : null;
+      if (!finalist) return none;
+      var size = priceSizeAnswer();
+      var quote = buildConsultationQuote(surface, size);
+      if (!quote.hasMattress || quote.resolvedCount === 0) return none;
+      var complete = quote.status === 'complete'
+        && priceMoneyValid(quote.merchandiseMinor, quote.currency);
+      var cur = complete ? quote.currency : null;
+      var fresh = financingPlanFresh(plan);
+      var promo = plan.kind === 'open-end-promotional-credit';
+      var mexico = plan.presentationScenario === 'mexico-delivery';
+      var term = (fresh && Number.isSafeInteger(plan.termMonths) && plan.termMonths > 0) ? plan.termMonths : null;
+      var apr = fresh ? payAprText(plan.apr) : '';
+      var minMinor = fresh ? payMinimumMinor(plan) : null;
+      var belowMin = complete && minMinor !== null && quote.merchandiseMinor < minMinor;
+      var mode = PAY_CALC_MODES.indexOf(plan.calculationMode) !== -1 ? plan.calculationMode : 'not-published';
+
+      // ---- the payment figure (the one shared calculation) -----------------
+      var est = complete ? payEstimate(surface, finalist, size, plan, quote.merchandiseMinor, cur)
+        : { payMinor: null, scheduledMax: null, interestMax: null, factorMicro: null };
+      var payMinor = est.payMinor;
+      var factorMicro = est.factorMicro;
+      var scheduledMax = est.scheduledMax;
+      var interestMax = est.interestMax;
+      var calculated = payMinor !== null;
+
+      var TC = t('pay.fx.to_confirm');
+      var money = function (m) { return formatPriceAmount(m, cur) || TC; };
+      var rows = [];
+      var row = function (key, label, value, note) {
+        rows.push({ key: key, label: t(label), value: value, note: note || '' });
+      };
+      row('subtotal', 'pay.fx.subtotal',
+        complete ? money(quote.merchandiseMinor) : t('pay.fx.subtotal_pending'));
+      row('monthly', 'pay.fx.monthly', calculated ? money(payMinor) : TC,
+        calculated ? t('pay.fx.monthly_note', { n: term }) : '');
+      row('rate', 'pay.fx.rate', apr === '' ? TC
+        : t(mexico ? 'pay.fx.rate_max' : 'pay.fx.rate_apr', { apr: apr }));
+      // A promotional plan's term is its fixed schedule; the Mexico program
+      // publishes its term as a MAXIMUM ("hasta 24 meses").
+      row('schedule', 'pay.fx.schedule', (promo && term !== null)
+        ? t(apr === '0' ? 'pay.fx.schedule_equal' : 'pay.fx.schedule_fixed', { n: term })
+        : ((mexico && term !== null) ? t('pay.fx.schedule_max', { n: term }) : TC));
+      row('down', 'pay.fx.down', (fresh && plan.downPaymentRequired === true) ? t('pay.fx.down_required') : TC);
+      row('financed', 'pay.fx.financed', calculated ? money(quote.merchandiseMinor) : TC,
+        calculated ? t('pay.fx.financed_note') : '');
+      row('scheduled', 'pay.fx.scheduled',
+        calculated ? t('pay.fx.up_to', { amount: money(scheduledMax) }) : TC);
+      // A published 0% promotional plan charges no interest on the
+      // promotional purchase; that is the lender's own statement, not a
+      // computed zero, and it is said in words rather than as "$0".
+      row('interest', 'pay.fx.interest', calculated
+        ? (interestMax > 0 ? t('pay.fx.up_to', { amount: money(interestMax) }) : t('pay.fx.interest_none'))
+        : ((fresh && promo && apr === '0') ? t('pay.fx.interest_none') : TC));
+      // Tax and delivery are separate facts. Sales tax depends on the sale
+      // and delivery locations and is never known here. Delivery is known
+      // only in one published case: the retailer's free warehouse pickup,
+      // when the customer has chosen it - said in words, never as "$0".
+      var fp = paySalesPolicy('fulfillment');
+      var pickupFree = !!(fp && fp.pickupNoCharge === true) && _payFulfil === 'pickup';
+      row('tax', 'pay.fx.tax', TC, t('pay.fx.tax_note'));
+      row('fulfillment', 'pay.fx.fulfillment', pickupFree ? t('pay.fx.fulfil_pickup') : TC,
+        pickupFree ? t('pay.fx.fulfil_pickup_note') : t('pay.fx.fulfil_delivery_note'));
+      row('due', 'pay.fx.due', TC);
+      row('total', 'pay.fx.total', TC, t('pay.fx.total_note'));
+      row('ownership', 'pay.fx.ownership', TC);
+      var minText = minMinor !== null ? formatPriceAmount(minMinor, 'USD') : '';
+      row('eligibility', 'pay.fx.eligibility', (promo && minText)
+        ? t(belowMin ? 'pay.fx.elig_below' : 'pay.fx.elig_min', { min: minText })
+        : t('pay.fx.elig_cis'));
+
+      var notes = [];
+      if (calculated) {
+        notes.push(t('pay.fx.basis', { pct: String(factorMicro / 10000) }));
+        // The figure appears because the MERCHANDISE subtotal reaches the
+        // published minimum; what the lender counts toward it is unpublished,
+        // so the note says this is not an eligibility finding.
+        if (minMinor !== null) notes.push(t('pay.fx.min_basis_note', { min: formatPriceAmount(minMinor, 'USD') }));
+        notes.push(t('pay.fx.estimate'));
+      } else if (!fresh) {
+        notes.push(t('pay.fx.why_terms'));
+      } else if (promo && !complete) {
+        notes.push(t('pay.fx.why_incomplete'));
+      } else if (promo && belowMin) {
+        notes.push(t('pay.fx.why_below'));
+      } else {
+        notes.push(t('pay.fx.why_method'));
+      }
+      // What every calculated figure leaves out, stated beside the figures:
+      // the estimate is never presented as the whole cost.
+      var excludes = calculated ? t(pickupFree ? 'pay.fx.excludes_tax' : 'pay.fx.excludes_all') : '';
+      return { show: true, calculated: calculated, rows: rows, notes: notes, excludes: excludes };
+    }
+    // Retailer sales policies (comfort promise, fulfillment). Config-driven
+    // and absent from shipped data; a review build injects them. Absent or
+    // malformed means nothing renders and nothing is assumed.
+    function paySalesPolicy(key) {
+      var sp = (typeof STORE_CONFIG === 'object' && STORE_CONFIG) ? STORE_CONFIG.salesPolicies : null;
+      if (!sp || typeof sp !== 'object' || typeof sp.status !== 'string' || !sp.status) return null;
+      // Retailer commercial policy reaches a customer only beside governed
+      // prices: the price gate must be open, and the policy must cite its
+      // published source on an allowlisted host.
+      var p = getPricingConfig();
+      if (!p || p.enabled !== true || p.displayEnabled !== true) return null;
+      var v = sp[key];
+      if (!v || typeof v !== 'object') return null;
+      if (typeof financingSourceAllowed !== 'function' || !financingSourceAllowed(v.sourceUrl)) return null;
+      return v;
+    }
+    // The table, in four labelled groups. Every value has the same size and
+    // weight: a monthly figure is never larger, bolder or isolated ahead of
+    // the totals and the "To confirm" rows beside it - the payments group
+    // and the totals group are read together, side by side on a wide stage.
+    // The four figures a customer weighs together - what they pay each
+    // month, what is due today, what the scheduled payments add up to and
+    // what the interest costs - lead the table side by side at one size, so
+    // a monthly figure is never read without the other three. The groups
+    // below carry the supporting detail (no row appears twice).
+    var PAY_FX_KEY = ['monthly', 'due', 'scheduled', 'interest'];
+    var PAY_FX_GROUPS = [
+      { key: 'payments', label: 'pay.fx.g_payments', rows: ['schedule', 'rate'] },
+      { key: 'totals', label: 'pay.fx.g_totals', rows: ['financed', 'total'] },
+      { key: 'upfront', label: 'pay.fx.g_upfront', rows: ['down', 'tax', 'fulfillment'] },
+      { key: 'terms', label: 'pay.fx.g_terms', rows: ['ownership', 'eligibility'] }
+    ];
+    var PAY_FX_WIDE = ['eligibility'];
+    function paymentFactsHtml(placement, plan) {
+      var fx = paymentFactsFor(placement, plan);
+      if (!fx.show) return '';
+      var byKey = {};
+      for (var i = 0; i < fx.rows.length; i++) byKey[fx.rows[i].key] = fx.rows[i];
+      var rowHtml = function (r) {
+        return '<div class="fin-fx__row' + (PAY_FX_WIDE.indexOf(r.key) !== -1 ? ' fin-fx__row--wide' : '')
+          + '" data-fx="' + escapeHtml(r.key) + '">'
+          + '<dt class="fin-fx__label">' + escapeHtml(r.label) + '</dt>'
+          + '<dd class="fin-fx__value">' + escapeHtml(r.value) + '</dd>'
+          + (r.note ? '<dd class="fin-fx__sub">' + escapeHtml(r.note) + '</dd>' : '')
+          + '</div>';
+      };
+      var html = '<section class="fin-fx" data-fx-state="' + (fx.calculated ? 'calculated' : 'to-confirm') + '"'
+        + ' data-fx-plan="' + escapeHtml(plan.id) + '">'
+        + '<div class="fin-fx__head"><span class="fin-ws-kicker">' + escapeHtml(t('pay.fx.title')) + '</span>'
+        + (byKey.subtotal ? '<dl class="fin-fx__lead">' + rowHtml(byKey.subtotal) + '</dl>' : '') + '</div>'
+        + '<dl class="fin-fx__key" aria-label="' + escapeHtml(t('pay.fx.key_label')) + '">'
+        + PAY_FX_KEY.map(function (k) {
+            var r = byKey[k];
+            if (!r) return '';
+            return '<div class="fin-fx__keycell' + (r.value === t('pay.fx.to_confirm') ? ' is-unknown' : '') + '" data-fx="' + escapeHtml(r.key) + '">'
+              + '<dt class="fin-fx__label">' + escapeHtml(r.label) + '</dt>'
+              + '<dd class="fin-fx__value">' + escapeHtml(r.value) + '</dd>'
+              + (r.note ? '<dd class="fin-fx__sub">' + escapeHtml(r.note) + '</dd>' : '')
+              + '</div>';
+          }).join('') + '</dl>'
+        + (fx.excludes ? '<p class="fin-fx__excludes">' + escapeHtml(fx.excludes) + '</p>' : '')
+        + '<div class="fin-fx__groups">';
+      for (var g = 0; g < PAY_FX_GROUPS.length; g++) {
+        var grp = PAY_FX_GROUPS[g];
+        html += '<div class="fin-fx__group" data-fx-group="' + grp.key + '">'
+          + '<h5 class="fin-fx__group-title">' + escapeHtml(t(grp.label)) + '</h5><dl class="fin-fx__rows">';
+        for (var k = 0; k < grp.rows.length; k++) {
+          if (byKey[grp.rows[k]]) html += rowHtml(byKey[grp.rows[k]]);
+        }
+        html += '</dl></div>';
+      }
+      html += '</div>';
+      for (var j = 0; j < fx.notes.length; j++) {
+        html += '<p class="fin-fx__note">' + escapeHtml(fx.notes[j]) + '</p>';
+      }
+      return html + '</section>';
+    }
+    // ─── Purchase builder model (Payment Choice slice 2, visual slice) ───
+    // Every line of the purchase with its own count, unit price and extended
+    // price (or an explicit "no verified price at this size"), the merchandise
+    // subtotal, and the mattress-only vs complete-system comparison under the
+    // one calculable plan, computed by payEstimate. Returns preformatted,
+    // language-aware strings only; nothing is stored. `show` is false under
+    // every gate that hides the payment facts (dark pricing, no exact-term
+    // authorization, no finalist), so shipped behaviour is unchanged.
+    function purchaseBuilderFor(placement) {
+      var none = { show: false };
+      var surface = (typeof placement === 'string'
+        && Object.prototype.hasOwnProperty.call(PRICE_PLACEMENT_SURFACE, placement))
+        ? PRICE_PLACEMENT_SURFACE[placement] : null;
+      if (!surface) return none;
+      var p = getPricingConfig();
+      if (!p || p.enabled !== true || p.displayEnabled !== true || !pricingSurfaceEnabled(surface)) return none;
+      if (!financingTermsFresh()) return none;
+      if (typeof resolveFinalistState !== 'function') return none;
+      var st = resolveFinalistState();
+      var finalist = (st && st.kind === 'chosen') ? st.item : null;
+      if (!finalist) return none;
+      var size = priceSizeAnswer();
+      var sizeLabel = size ? sizeLabelFor(size) : '';
+      var quote = buildConsultationQuote(surface, size);
+      var cur = 'USD';
+      var fmt = function (m) { return formatPriceAmount(m, cur); };
+      var lines = quote.lines.map(function (ln) {
+        return {
+          id: ln.productId, kind: ln.kind, qty: ln.quantity, priced: ln.resolved,
+          unit: ln.resolved ? fmt(ln.unitAmountMinor) : '',
+          ext: ln.resolved ? fmt(ln.extendedAmountMinor) : '',
+          unitMinor: ln.resolved ? ln.unitAmountMinor : null,
+          extMinor: ln.resolved ? ln.extendedAmountMinor : null
+        };
+      });
+      var mattress = lines.filter(function (l) { return l.kind === 'mattress'; })[0] || null;
+      var known = function (l) {
+        if (l.kind === 'mattress') return true;
+        return (typeof ACCESSORIES !== 'undefined' && Array.isArray(ACCESSORIES))
+          && ACCESSORIES.some(function (a) { return a && a.id === l.id; });
+      };
+      var unpriced = lines.filter(function (l) { return !l.priced && known(l); });
+      var hiddenUnpriced = lines.some(function (l) { return !l.priced && !known(l); });
+      var complete = quote.status === 'complete' && priceMoneyValid(quote.merchandiseMinor, quote.currency);
+      // The one plan whose payment is calculable here (governed flag on).
+      var f = getFinancingConfig();
+      var plan = null;
+      var plans = (f && Array.isArray(f.plans)) ? f.plans : [];
+      for (var i = 0; i < plans.length; i++) {
+        if (plans[i] && plans[i].paymentCalculationEnabled === true) { plan = plans[i]; break; }
+      }
+      var col = function (amountMinor) {
+        if (amountMinor === null) return { amount: '', monthly: '', scheduled: '', state: 'unpriced' };
+        var e = payEstimate(surface, finalist, size, plan, amountMinor, cur);
+        return {
+          amount: fmt(amountMinor), amountMinor: amountMinor,
+          monthly: e.payMinor !== null ? fmt(e.payMinor) : '',
+          monthlyMinor: e.payMinor,
+          scheduled: e.scheduledMax !== null ? t('pay.fx.up_to', { amount: fmt(e.scheduledMax) }) : '',
+          state: e.payMinor !== null ? 'calculated' : (e.belowMin ? 'below-min' : 'not-calculable')
+        };
+      };
+      var mOnly = col(mattress && mattress.priced ? mattress.extMinor : null);
+      var system = col(complete && quote.hasMattress ? quote.merchandiseMinor : null);
+      var diff = null;
+      if (mOnly.amountMinor != null && system.amountMinor != null && lines.length > 1) {
+        var signed = function (d) { return d > 0 ? '+' + fmt(d) : pricingSameAmountText(); };
+        diff = { amount: signed(system.amountMinor - mOnly.amountMinor),
+                 monthly: (mOnly.monthlyMinor != null && system.monthlyMinor != null)
+                   ? signed(system.monthlyMinor - mOnly.monthlyMinor) : '' };
+      }
+      var minText = (plan && financingPlanFresh(plan)) ? fmt(payMinimumMinor(plan) || 0) : '';
+      return {
+        show: true, size: sizeLabel || t('pay.pb.this_size'), lines: lines, unpricedCount: unpriced.length,
+        hiddenUnpriced: hiddenUnpriced,
+        mattressPriced: !!(mattress && mattress.priced),
+        subtotal: complete ? fmt(quote.merchandiseMinor) : '',
+        planLabel: (plan && financingPlanFresh(plan) && (mOnly.state === 'calculated' || system.state === 'calculated'))
+          ? L(plan.headline) : '', minText: minText,
+        mattressOnly: mOnly, system: system, diff: diff, hasAccessories: lines.length > 1
+      };
+    }
+
+    // One row's value for the two-path comparison: per plan of the path,
+    // prefixed with the plan's own headline when the path carries several.
+    function paymentFactCell(placement, plans, key) {
+      var parts = [];
+      var any = false;
+      for (var i = 0; i < plans.length; i++) {
+        var fx = paymentFactsFor(placement, plans[i]);
+        if (!fx.show) continue;
+        any = true;
+        var r = fx.rows.filter(function (x) { return x.key === key; })[0];
+        if (!r) continue;
+        var head = plans.length > 1 ? L(plans[i].headline) : '';
+        parts.push((head ? escapeHtml(head) + ': ' : '') + escapeHtml(r.value));
+      }
+      return any ? parts.join('<br>') : null;
+    }
+
     // ═══ END PHASE 2.2 PRICE PRESENTATION GATE ═══
 
     // Financing copy accessor (config copy block, language-aware).
@@ -14071,6 +14754,7 @@
     // stale-message case in the first place. Only the ORDERING in
     // announcePayAction() was ever wrong.
     var _payAnnounceTimer = null;
+    var _finScLiveTimer = null;      // the review-only scenario's debounced summary
 
     // Email body for the save packet. D4 ruling: payment state is entirely
     // excluded from email, so this is the NEUTRAL availability body in EVERY
@@ -14567,6 +15251,10 @@
         clearTimeout(_payAnnounceTimer);
         _payAnnounceTimer = null;
       }
+      if (_finScLiveTimer !== null) {
+        clearTimeout(_finScLiveTimer);
+        _finScLiveTimer = null;
+      }
     }
 
     window.logFinancingLinkClick = function(placement) {
@@ -14717,6 +15405,9 @@
     var _payWsView = '';             // '' (showcase/detail/compare) or 'items'
     var _payWsRemoved = [];          // accessory ids removed while items was open
     var _payWsChange = null;         // last item change, for the one-line note
+    var _payFulfil = '';             // '' | 'pickup' | 'delivery' (retailer-configured choice)
+    // Review-only scenario: every value an assumption the reviewer types.
+    var _payScenario = { open: false, tax: '', delivery: '', down: '', treatment: '' };
     // Background isolation (the session-safety dialog's ownership pattern):
     // every body sibling except the workspace and its backdrop is made inert,
     // and ONLY the elements this lifecycle changed are remembered. Anything
@@ -14991,6 +15682,7 @@
           + finEsc(t('pay.ws.choose_finalist')) + '</button></div>'
           + finWsPartsList(p);
       }
+      html += finWsComfortPromise(p);
       html += '<p class="fin-ws-invite"><span aria-hidden="true" class="fin-ws-invite__arrow">←</span> '
         + finEsc(t('pay.ws.invite')) + '</p>';
       return html + '</section>';
@@ -15125,12 +15817,288 @@
         + '<span role="columnheader" class="fin-ws-cmp__name">' + finEsc(b.label) + '</span></div>'
         + row(t('pay.ws.cmp_through'), through(a), through(b))
         + row(t('pay.ws.how'), finEsc(howText[a.id] || ''), finEsc(howText[b.id] || ''))
+        + finWsFactRows(a, b, row)
         + '</div>'
         + '<div class="fin-ws-section fin-ws-confirm fin-ws-cmp__confirm"><span class="fin-ws-kicker">' + finEsc(t('pay.ws.cmp_confirm')) + '</span>'
         + (staleNote ? '<p class="fin-ws-stale">' + finEsc(staleNote) + '</p>' : '')
         + '<ul class="fin-ws-confirm-list">' + keys.map(function(k) { return '<li>' + finEsc(t(k)) + '</li>'; }).join('') + '</ul></div>'
         + '</section>';
     }
+
+    // Payment facts in the aligned comparison: the same three figures for
+    // both paths, at the same size, each cell filled by the governed facts
+    // module (a path whose terms are withheld reads "To confirm"). Omitted
+    // entirely while the purchase cannot be priced, so the shipped gates
+    // render exactly the slice-1 table.
+    var FIN_WS_FACT_ROWS = [
+      { key: 'monthly', label: 'pay.fx.cmp_monthly' },
+      { key: 'scheduled', label: 'pay.fx.cmp_scheduled' },
+      { key: 'due', label: 'pay.fx.cmp_due' }
+    ];
+    function finWsFactRows(a, b, row) {
+      if (typeof paymentFactCell !== 'function' || typeof _finSheetPlacement !== 'string') return '';
+      var out = '';
+      FIN_WS_FACT_ROWS.forEach(function(fr) {
+        var va = paymentFactCell(_finSheetPlacement, a.plans || [], fr.key);
+        var vb = paymentFactCell(_finSheetPlacement, b.plans || [], fr.key);
+        if (va === null && vb === null) return;
+        var tc = finEsc(t('pay.fx.to_confirm'));
+        out += row(t(fr.label), va === null || va === '' ? tc : va, vb === null || vb === '' ? tc : vb);
+      });
+      return out;
+    }
+
+    // How the purchase gets home: a retailer-configured choice, shown only
+    // when the store publishes it. Choosing pickup changes ONE fact (the
+    // delivery charge, when pickup is published as free); tax and the
+    // complete cost stay "To confirm". Ephemeral, wiped with the session.
+    function finWsFulfilControl() {
+      var fp = (typeof paySalesPolicy === 'function') ? paySalesPolicy('fulfillment') : null;
+      if (!fp || !fp.pickupLabel || !fp.deliveryLabel) return '';
+      var btn = function(id, label) {
+        var on = _payFulfil === id;
+        return '<button type="button" class="fin-ws-ff__btn" id="finWsFf-' + id + '" aria-pressed="' + (on ? 'true' : 'false') + '" '
+          + 'onclick="window.setPaymentFulfil(\'' + id + '\')" ontouchend="event.preventDefault();window.setPaymentFulfil(\'' + id + '\');">'
+          + finEsc(L(label)) + '</button>';
+      };
+      return '<div class="fin-ws-ff" role="group" aria-labelledby="finWsFfTitle">'
+        + '<span class="fin-ws-kicker" id="finWsFfTitle">' + finEsc(t('pay.ff.title')) + '</span>'
+        + '<div class="fin-ws-ff__btns">' + btn('pickup', fp.pickupLabel) + btn('delivery', fp.deliveryLabel) + '</div>'
+        + (_payFulfil && fp[_payFulfil + 'Note'] ? '<p class="fin-ws-ff__note">' + finEsc(L(fp[_payFulfil + 'Note'])) + '</p>' : '')
+        + '</div>';
+    }
+    window.setPaymentFulfil = function(id) {
+      _payFulfil = (_payFulfil === id || (id !== 'pickup' && id !== 'delivery')) ? '' : id;
+      finWsRerender('finWsFf-' + id);
+    };
+    // The retailer's published comfort promise, as a transparent checklist
+    // against THIS plan: which required items the plan includes. It never
+    // says the customer qualifies (the specialist confirms), never changes
+    // scoring or recommendations, and adding an item stays a free choice.
+    function finWsComfortPromise(p) {
+      var cp = (typeof paySalesPolicy === 'function') ? paySalesPolicy('comfortPromise') : null;
+      if (!cp || !cp.title || !Array.isArray(cp.conditions)) return '';
+      var cart = window._accCart || {};
+      var catalog = (typeof ACCESSORIES !== 'undefined' && Array.isArray(ACCESSORIES)) ? ACCESSORIES : [];
+      var stepOf = function(a) { return (typeof sleepSystemStepIdForItem === 'function') ? sleepSystemStepIdForItem(a) : ''; };
+      var has = function(step) {
+        return catalog.some(function(a) { return a && cart[a.id] && stepOf(a) === step; });
+      };
+      var req = [];
+      if (cp.requiresProtector === true) req.push({ label: t('pay.cp.protector'), ok: has('protection') });
+      if (cp.requiresPillow === true) req.push({ label: t('pay.cp.pillow'), ok: has('pillow') });
+      var html = '<section class="fin-ws-cp" aria-labelledby="finWsCpTitle">'
+        + '<h4 class="fin-ws-cp__title" id="finWsCpTitle">' + finEsc(L(cp.title)) + '</h4>'
+        + (cp.summary ? '<p class="fin-ws-cp__summary">' + finEsc(L(cp.summary)) + '</p>' : '');
+      if (req.length) {
+        html += '<p class="fin-ws-kicker">' + finEsc(t('pay.cp.check_title')) + '</p><ul class="fin-ws-cp__req">'
+          + req.map(function(r) {
+            return '<li class="fin-ws-cp__item' + (r.ok ? ' is-in' : '') + '"><span class="fin-ws-cp__label">' + finEsc(r.label) + '</span>'
+              + '<span class="fin-ws-cp__state">' + finEsc(t(r.ok ? 'pay.cp.in_plan' : 'pay.cp.not_in_plan')) + '</span></li>';
+          }).join('') + '</ul>';
+      }
+      html += '<details class="fin-ws-cp__more"><summary ontouchend="event.preventDefault();this.parentNode.open=!this.parentNode.open;">'
+        + finEsc(t('pay.cp.conditions')) + '</summary><ul>'
+        + cp.conditions.map(function(c) { return '<li>' + finEsc(L(c)) + '</li>'; }).join('') + '</ul></details>'
+        + '<p class="fin-ws-cp__confirm">' + finEsc(t('pay.cp.confirm')) + '</p>';
+      return html + '</section>';
+    }
+
+    // The purchase builder's summary: the merchandise subtotal, then
+    // "Mattress only" and "Complete sleep system" side by side at equal
+    // weight, with the difference. Unknown charges stay visible, and a size
+    // or item without a verified price is named rather than skipped.
+    function finWsBuilderCard(pb) {
+      var tc = t('pay.fx.to_confirm');
+      var html = '<section class="fin-pb" aria-labelledby="finPbTitle">';
+      if (!pb.mattressPriced) {
+        html += '<p class="fin-pb__notice">' + finEsc(t('pay.pb.mattress_unpriced', { size: pb.size })) + '</p>';
+      } else if (pb.unpricedCount > 0) {
+        html += '<p class="fin-pb__notice">' + finEsc(t(pb.unpricedCount === 1 ? 'pay.pb.items_unpriced_one' : 'pay.pb.items_unpriced',
+          { n: pb.unpricedCount, size: pb.size })) + ' ' + finEsc(t('pay.pb.mattress_only_stands')) + '</p>';
+      } else if (pb.hiddenUnpriced) {
+        html += '<p class="fin-pb__notice">' + finEsc(t('pay.pb.items_unpriced_some')) + '</p>';
+      }
+      // With no sleep-system items there is nothing to compare: one column,
+      // and a single invitation rather than a column of placeholders.
+      var both = pb.hasAccessories;
+      var cell = function(c, key) {
+        if (key === 'amount') return c.amount || tc;
+        if (key === 'monthly') {
+          if (c.monthly) return c.monthly;
+          return c.state === 'below-min' ? t('pay.pb.below_min', { min: pb.minText }) : tc;
+        }
+        return c.scheduled || tc;
+      };
+      html += '<h4 class="fin-pb__title" id="finPbTitle">' + finEsc(t('pay.pb.compare_title')) + '</h4>'
+        + (pb.planLabel ? '<p class="fin-pb__plan">' + finEsc(t('pay.pb.with_plan', { plan: pb.planLabel })) + '</p>' : '')
+        + '<div class="fin-pb__table' + (both ? '' : ' is-single') + '" role="table" aria-labelledby="finPbTitle">'
+        + '<div class="fin-pb__row fin-pb__row--head" role="row"><span role="columnheader" class="fin-pb__rk"></span>'
+        + '<span role="columnheader">' + finEsc(t('pay.pb.mattress_only')) + '</span>'
+        + (both ? '<span role="columnheader">' + finEsc(t('pay.pb.complete_system')) + '</span>' : '')
+        + (pb.diff ? '<span role="columnheader">' + finEsc(t('pay.pb.difference')) + '</span>' : '') + '</div>';
+      [['amount', 'pay.fx.subtotal'], ['monthly', 'pay.fx.monthly'], ['scheduled', 'pay.fx.scheduled']].forEach(function(r) {
+        html += '<div class="fin-pb__row" role="row" data-pb="' + r[0] + '"><span role="rowheader" class="fin-pb__rk">' + finEsc(t(r[1])) + '</span>'
+          + '<span role="cell" class="fin-pb__cell" data-col="mattress">' + finEsc(cell(pb.mattressOnly, r[0])) + '</span>'
+          + (both ? '<span role="cell" class="fin-pb__cell" data-col="system">' + finEsc(cell(pb.system, r[0])) + '</span>' : '')
+          + (pb.diff ? '<span role="cell" class="fin-pb__cell fin-pb__cell--diff" data-col="diff">'
+              + (r[0] === 'scheduled' ? '<span aria-label="' + finEsc(t('pay.pb.not_applicable')) + '">\u2014</span>'
+                 : finEsc(r[0] === 'amount' ? pb.diff.amount : (pb.diff.monthly || tc))) + '</span>' : '')
+          + '</div>';
+      });
+      html += '</div>'
+        + (both ? '' : '<p class="fin-pb__hint">' + finEsc(t('pay.pb.add_items')) + '</p>')
+        + '<p class="fin-pb__unknown"><span class="fin-pb__label">' + finEsc(t('pay.pb.unknown_label')) + '</span> '
+        + finEsc(t('pay.pb.unknown_value')) + '</p>'
+        + '<p class="fin-pb__fine">' + finEsc(t('pay.fx.estimate')) + '</p>';
+      return html + '</section>';
+    }
+
+    // ---- Review-only scenario panel ------------------------------------------
+    function finScResultsHtml() {
+      var sc = paymentScenarioFor(_finSheetPlacement, _payScenario);
+      if (!sc.show) return '';
+      var e = function(x) { return finEsc(x); };
+      var need = t('pay.sc.enter');
+      if (!sc.complete) return '<p class="fin-sc__missing">' + e(t('pay.sc.incomplete')) + '</p>';
+      var html = '';
+      if (sc.chips.length) {
+        html += '<ul class="fin-sc__chips" aria-label="' + e(t('pay.sc.chips_label')) + '">'
+          + sc.chips.map(function(c) { return '<li class="fin-sc__chip">' + e(c) + '</li>'; }).join('') + '</ul>';
+      }
+      if (sc.missing.length) {
+        html += '<p class="fin-sc__missing">' + e(t('pay.sc.still_needed')) + ' '
+          + e(sc.missing.map(function(m) { return t('pay.sc.m_' + m); }).join(' · ')) + '</p>';
+      }
+      // How each assumption builds due today and the amount financed.
+      var part = function(label, value, sign) {
+        var spoken = sign === '+' ? t('pay.sc.plus') : (sign ? t('pay.sc.minus') : '');
+        return '<li><span class="fin-sc__plabel">' + (sign ? '<span aria-hidden="true">' + sign + ' </span>' : '')
+          + (spoken ? '<span class="fin-sc__sr">' + e(spoken) + ' </span>' : '') + e(label) + '</span>'
+          + '<span class="fin-sc__pval">' + e(value || need) + '</span></li>';
+      };
+      var today = sc.treat === 'today', fin = sc.treat === 'financed';
+      html += '<div class="fin-sc__build">'
+        + '<div class="fin-sc__box"><h5 class="fin-sc__h">' + e(t('pay.sc.due_title')) + '</h5><ul class="fin-sc__parts">'
+        + part(t('pay.sc.p_down'), sc.down, '')
+        + (today ? part(t('pay.sc.p_tax'), sc.tax, '+') + part(t(sc.pickup ? 'pay.sc.p_pickup' : 'pay.sc.p_delivery'), sc.delivery, '+') : '')
+        + '</ul><p class="fin-sc__total"><span>' + e(t('pay.sc.due_total')) + '</span><span>' + e(sc.due || need) + '</span></p></div>'
+        + '<div class="fin-sc__box"><h5 class="fin-sc__h">' + e(t('pay.sc.fin_title')) + '</h5><ul class="fin-sc__parts">'
+        + part(t('pay.fx.subtotal'), sc.merch, '')
+        + part(t('pay.sc.p_down'), sc.down, '\u2212')
+        + (fin ? part(t('pay.sc.p_tax'), sc.tax, '+') + part(t(sc.pickup ? 'pay.sc.p_pickup' : 'pay.sc.p_delivery'), sc.delivery, '+') : '')
+        + '</ul><p class="fin-sc__total"><span>' + e(t('pay.sc.fin_total')) + '</span><span>' + e(sc.financed || need) + '</span></p></div>'
+        + '</div>';
+      if (!sc.treat && sc.treatNeeded) html += '<p class="fin-sc__hint">' + e(t('pay.sc.treat_hint')) + '</p>';
+      // One column per plan with a published method.
+      if (sc.cols.length) {
+        html += '<div class="fin-sc__table" role="table" aria-label="' + e(t('pay.sc.table_label')) + '" '
+          + 'style="grid-template-columns: minmax(9em, 1.3fr) repeat(' + sc.cols.length + ', minmax(0, 1fr))">'
+          + '<div class="fin-sc__row fin-sc__row--head" role="row"><span role="columnheader"></span>'
+          + sc.cols.map(function(c) { return '<span role="columnheader">' + e(c.label || t('pay.sc.plan_generic')) + '</span>'; }).join('') + '</div>';
+        var cell = function(c, key) {
+          if (c.state === 'calculated') return c[key] || need;
+          if (c.state === 'below-min') return t('pay.pb.below_min', { min: c.minText });
+          if (c.state === 'nothing-financed') return t('pay.sc.nothing_financed');
+          if (c.state === 'needs-down') return t('pay.sc.needs_down');
+          if (c.state === 'charges-upfront') return t('pay.sc.charges_upfront');
+          if (c.state === 'not-calculable') return t('pay.sc.not_calculable');
+          return need;
+        };
+        [['monthly', 'pay.fx.monthly'], ['scheduled', 'pay.sc.r_scheduled'], ['interest', 'pay.sc.r_interest'], ['cost', 'pay.sc.r_cost']].forEach(function(r) {
+          html += '<div class="fin-sc__row" role="row" data-sc="' + r[0] + '"><span role="rowheader" class="fin-sc__rk">' + e(t(r[1])) + '</span>'
+            + sc.cols.map(function(c) {
+                var v = cell(c, r[0]);
+                if (r[0] === 'cost' && c.state === 'calculated' && !c.cost) v = t('pay.sc.cost_needs_all');
+                if (r[0] === 'cost' && c.state === 'nothing-financed') v = c.cost || t('pay.sc.cost_needs_all');
+                return '<span role="cell" class="fin-sc__cell">' + e(v) + '</span>';
+              }).join('') + '</div>';
+        });
+        html += '</div>';
+      }
+      if (sc.uncalculated.length) {
+        html += '<p class="fin-sc__unc"><span class="fin-ws-kicker">' + e(t('pay.sc.unc_title')) + '</span> '
+          + e(sc.uncalculated.join(' · ')) + '</p>';
+      }
+      html += '<p class="fin-sc__fine">' + e(t('pay.sc.fine')) + '</p>';
+      return html;
+    }
+    function finWsScenarioPanel() {
+      var sc = paymentScenarioFor(_finSheetPlacement, _payScenario);
+      if (!sc.show) return '';
+      var open = _payScenario.open === true;
+      var pickup = sc.complete && sc.pickup;
+      var field = function(id, key, label, unit, value, disabled) {
+        return '<label class="fin-sc__field" for="' + id + '"><span class="fin-sc__flabel">' + finEsc(label) + '</span>'
+          + '<span class="fin-sc__finput">'
+          + (unit === '$' ? '<span class="fin-sc__unit" aria-hidden="true">$</span>' : '')
+          + '<input id="' + id + '" type="text" inputmode="decimal" autocomplete="off" '
+          + 'value="' + finEsc(value) + '"' + (disabled ? ' disabled' : '') + ' '
+          + 'oninput="window.finScInput(\'' + key + '\', this.value)">'
+          + (unit === '$' ? '' : '<span class="fin-sc__unit" aria-hidden="true">' + finEsc(unit) + '</span>')
+          + '</span></label>';
+      };
+      var tbtn = function(id) {
+        var on = _payScenario.treatment === id;
+        return '<button type="button" class="fin-ws-ff__btn" id="finScTreat-' + id + '" aria-pressed="' + (on ? 'true' : 'false') + '" '
+          + 'onclick="window.finScTreat(\'' + id + '\')" ontouchend="event.preventDefault();window.finScTreat(\'' + id + '\');">'
+          + finEsc(t(id === 'today' ? 'pay.sc.treat_today' : 'pay.sc.treat_financed')) + '</button>';
+      };
+      var html = '<section class="fin-sc" aria-labelledby="finScTitle">'
+        + '<button type="button" class="fin-sc__toggle" id="finScToggle" aria-expanded="' + (open ? 'true' : 'false') + '" aria-controls="finScBody" '
+        + 'onclick="window.finScToggle()" ontouchend="event.preventDefault();window.finScToggle();">'
+        + '<span id="finScTitle">' + finEsc(t('pay.sc.title')) + '</span><span class="fin-sc__tag">' + finEsc(t('pay.sc.tag')) + '</span></button>'
+        + '<div class="fin-sc__body" id="finScBody"' + (open ? '' : ' hidden') + '>'
+        + '<p class="fin-sc__intro">' + finEsc(t('pay.sc.intro')) + '</p>'
+        + '<div class="fin-sc__fields">'
+        + field('finScTax', 'tax', t('pay.sc.f_tax'), '%', _payScenario.tax, false)
+        + field('finScDelivery', 'delivery', t(pickup ? 'pay.sc.f_delivery_pickup' : 'pay.sc.f_delivery'), '$', pickup ? '0' : _payScenario.delivery, pickup)
+        + field('finScDown', 'down', t('pay.sc.f_down'), '$', _payScenario.down, false)
+        + '</div>'
+        + '<div class="fin-sc__treat" role="group" aria-labelledby="finScTreatLabel"><span class="fin-ws-kicker" id="finScTreatLabel">'
+        + finEsc(t('pay.sc.treat_label')) + '</span><div class="fin-ws-ff__btns">' + tbtn('today') + tbtn('financed') + '</div></div>'
+        + '<button type="button" class="fin-ws-link fin-sc__clear" id="finScClear" '
+        + 'onclick="window.finScClear()" ontouchend="event.preventDefault();window.finScClear();">' + finEsc(t('pay.sc.clear')) + '</button>'
+        + '<div class="fin-sc__results" id="finScResults">' + finScResultsHtml() + '</div>'
+        + '<p class="fin-sc__sr" id="finScLive" aria-live="polite"></p>'
+        + '</div></section>';
+      return html;
+    }
+    // Typing updates ONLY the results region, so the field keeps focus and
+    // the tablet keyboard stays up.
+    window.finScInput = function(key, value) {
+      if (key !== 'tax' && key !== 'delivery' && key !== 'down') return;
+      _payScenario[key] = String(value == null ? '' : value).slice(0, 12);
+      var r = document.getElementById('finScResults');
+      if (r) r.innerHTML = finScResultsHtml();
+      // One calm announcement after typing pauses, not one per keystroke.
+      // An owned timer: superseded here, cancelled by cancelPayAnnouncePending()
+      // (which closeFinancingSheet() and the session wipe call), and the
+      // callback re-checks that the sheet is still open before it speaks.
+      if (_finScLiveTimer !== null) clearTimeout(_finScLiveTimer);
+      _finScLiveTimer = setTimeout(function() {
+        _finScLiveTimer = null;
+        var sheet = document.getElementById('financingSheet');
+        var live = document.getElementById('finScLive');
+        if (!sheet || sheet.hidden || !live) return;
+        var sc = paymentScenarioFor(_finSheetPlacement, _payScenario);
+        if (sc.show && sc.complete) {
+          live.textContent = t('pay.sc.live', { due: sc.due || t('pay.sc.enter'), fin: sc.financed || t('pay.sc.enter') });
+        }
+      }, 800);
+    };
+    window.finScTreat = function(id) {
+      _payScenario.treatment = (_payScenario.treatment === id || (id !== 'today' && id !== 'financed')) ? '' : id;
+      finWsRerender('finScTreat-' + id);
+    };
+    window.finScToggle = function() {
+      _payScenario.open = !_payScenario.open;
+      finWsRerender('finScToggle');
+    };
+    window.finScClear = function() {
+      _payScenario = { open: true, tax: '', delivery: '', down: '', treatment: '' };
+      finWsRerender('finScTax');
+    };
 
     function finWsItems(p) {
       var html = '<section class="fin-ws-items" aria-labelledby="finWsItemsTitle">'
@@ -15152,11 +16120,25 @@
               + '</button>';
           }).join('') + '</div>';
       }
-      html += '<ul class="fin-ws-lines">';
+      var pb = (typeof purchaseBuilderFor === 'function' && typeof _finSheetPlacement === 'string')
+        ? purchaseBuilderFor(_finSheetPlacement) : { show: false };
+      var pbLine = function(id) {
+        if (!pb.show) return '';
+        var l = pb.lines.filter(function(x) { return x.id === id; })[0];
+        if (!l) return '';
+        if (!l.priced) {
+          return '<span class="fin-ws-line__price is-unpriced">' + finEsc(t('pay.pb.no_price', { size: pb.size })) + '</span>';
+        }
+        return '<span class="fin-ws-line__price">'
+          + (l.qty > 1 ? '<span class="fin-ws-line__unit">' + finEsc(t('pay.pb.each', { n: l.qty, amount: l.unit })) + '</span>' : '')
+          + '<span class="fin-ws-line__ext">' + finEsc(l.ext) + '</span></span>';
+      };
+      html += '<ul class="fin-ws-lines' + (pb.show ? ' is-priced' : '') + '">';
       if (p.item) {
         html += '<li class="fin-ws-line fin-ws-line--mattress">' + finWsImage(p.item.imageUrl || p.item.image, 'fin-ws-line__img')
           + '<span class="fin-ws-line__text"><span class="fin-ws-line__name">' + finEsc(finWsModel(p)) + '</span>'
-          + '<span class="fin-ws-line__meta">' + finEsc([p.item.brand, p.size].filter(Boolean).join(' · ')) + '</span></span></li>';
+          + '<span class="fin-ws-line__meta">' + finEsc([p.item.brand, p.size].filter(Boolean).join(' · ')) + '</span></span>'
+          + pbLine(p.item.id) + '</li>';
       } else {
         html += '<li class="fin-ws-line"><span class="fin-ws-line__text"><span class="fin-ws-line__name">'
           + finEsc(t('finalist.none')) + '</span></span></li>';
@@ -15175,7 +16157,7 @@
         }
         html += '<li class="fin-ws-line">' + finWsImage(a.image, 'fin-ws-line__img')
           + '<span class="fin-ws-line__text"><span class="fin-ws-line__name">' + finEsc(a.name) + '</span>'
-          + '<span class="fin-ws-line__meta">' + finEsc(a.category) + '</span></span>' + ctl
+          + '<span class="fin-ws-line__meta">' + finEsc(a.category) + '</span></span>' + ctl + pbLine(a.id)
           + '<button type="button" class="fin-ws-link" id="finWsRemove-' + finEsc(a.id) + '" data-acc-id="' + finEsc(a.id) + '" '
           + 'aria-label="' + finEsc(t('pay.ws.remove_item', { item: a.name })) + '" '
           + 'onclick="window.finWsRemove(this.getAttribute(\'data-acc-id\'))" ontouchend="event.preventDefault();window.finWsRemove(this.getAttribute(\'data-acc-id\'));">'
@@ -15190,7 +16172,8 @@
           + 'onclick="window.finWsAddBack(this.getAttribute(\'data-acc-id\'))" ontouchend="event.preventDefault();window.finWsAddBack(this.getAttribute(\'data-acc-id\'));">'
           + finEsc(t('pay.ws.add_back')) + '</button></li>';
       });
-      html += '</ul><p class="fin-ws-prices">' + finEsc(t('pay.ws.prices_line')) + '</p>';
+      html += '</ul>' + (pb.show ? finWsBuilderCard(pb) : '<p class="fin-ws-prices">' + finEsc(t('pay.ws.prices_line')) + '</p>')
+        + finWsFulfilControl() + finWsScenarioPanel() + finWsComfortPromise(p);
       var change = finWsChangeText();
       if (change) {
         html += '<p class="fin-ws-change"><span class="fin-ws-kicker">' + finEsc(t('pay.ws.changed_tag')) + '</span> '
@@ -15287,6 +16270,7 @@
               + '<p class="fin-offer__detail">' + finEsc(L(p.detail)) + '</p>'
               + '<p class="fin-offer__disclosure">' + finEsc(L(p.disclosure)) + '</p>'
               + (typeof priceStatusHtmlFor === 'function' && typeof _finSheetPlacement === 'string' ? priceStatusHtmlFor(_finSheetPlacement, p.id, p) : '')
+              + (typeof paymentFactsHtml === 'function' && typeof _finSheetPlacement === 'string' ? paymentFactsHtml(_finSheetPlacement, p) : '')
               + '</div>';
           }).join('');
         } else {
@@ -15308,13 +16292,15 @@
             ? '<p class="fin-offer__detail">' + finEsc(L(ih.detail)) + '</p>'
             : '<p class="fin-offer__detail">' + finEsc(FC('howInstallment') || FC('staleNotice')) + '</p>')
           + (ih.disclosure ? '<p class="fin-offer__disclosure">' + finEsc(L(ih.disclosure)) + '</p>' : '')
-          + (typeof priceStatusHtmlFor === 'function' && typeof _finSheetPlacement === 'string' ? priceStatusHtmlFor(_finSheetPlacement, ih.id, ih) : '');
+          + (typeof priceStatusHtmlFor === 'function' && typeof _finSheetPlacement === 'string' ? priceStatusHtmlFor(_finSheetPlacement, ih.id, ih) : '')
+          + (ihFresh ? (typeof paymentFactsHtml === 'function' && typeof _finSheetPlacement === 'string' ? paymentFactsHtml(_finSheetPlacement, ih) : '') : '');
       });
 
       // Evergreen paths: orientation-only, never payment math.
       groups.evergreen.forEach(function(p) {
         bodies[finPathId('plan', p.id)] = '<p class="fin-offer__detail">' + finEsc(L(p.detail)) + '</p>'
-          + (typeof priceStatusHtmlFor === 'function' && typeof _finSheetPlacement === 'string' ? priceStatusHtmlFor(_finSheetPlacement, p.id, p) : '');
+          + (typeof priceStatusHtmlFor === 'function' && typeof _finSheetPlacement === 'string' ? priceStatusHtmlFor(_finSheetPlacement, p.id, p) : '')
+          + (typeof paymentFactsHtml === 'function' && typeof _finSheetPlacement === 'string' ? paymentFactsHtml(_finSheetPlacement, p) : '');
       });
 
       // Mexico delivery scenario, selected ONLY by the explicit
@@ -15346,6 +16332,7 @@
             : '<p class="fin-offer__detail">' + finEsc(FC('howMexico') || FC('staleNotice')) + '</p>')
           + (mx.disclosure ? '<p class="fin-offer__disclosure">' + finEsc(L(mx.disclosure)) + '</p>' : '')
           + (typeof priceStatusHtmlFor === 'function' && typeof _finSheetPlacement === 'string' ? priceStatusHtmlFor(_finSheetPlacement, mx.id, mx) : '')
+          + (mxFresh ? (typeof paymentFactsHtml === 'function' && typeof _finSheetPlacement === 'string' ? paymentFactsHtml(_finSheetPlacement, mx) : '') : '')
           + (mxLink
               ? '<a class="fin-official-link" href="' + finEsc(mxLink) + '" target="_blank" rel="noopener noreferrer" '
                 + 'onclick="window.logMexicoFinancingOpen()">'
@@ -15382,7 +16369,7 @@
         stage = finWsIdentity(purchase) + finWsCompare(pathFor(exploredId), pathFor(_payCompare), howText,
           (staleIds[exploredId] || staleIds[_payCompare]) ? FC('staleNotice') : '');
       } else if (exploredId) {
-        stage = finWsIdentity(purchase);
+        stage = finWsIdentity(purchase) + finWsFulfilControl();
       } else {
         stage = finWsShowcase(purchase);
       }
@@ -15516,6 +16503,12 @@
       if (plan && plan.classList.contains('active') && typeof renderSleepPlan === 'function') renderSleepPlan();
       finWsRerender(successorId);
       var text = finWsChangeText();
+      // Every payment figure on screen was recomputed from the new purchase
+      // by the render above (none is cached); say so when any figure shows.
+      var sheetEl = document.getElementById('financingSheet');
+      if (text && sheetEl && sheetEl.querySelector && sheetEl.querySelector('[data-fx-state="calculated"]')) {
+        text += ' ' + t('pay.fx.updated');
+      }
       if (text) announcePayText('financingSheetAction', text);
     }
     window.finWsQty = function(id, delta) {
@@ -25932,6 +26925,8 @@
         _payWsView = '';
         _payWsRemoved = [];
         _payWsChange = null;
+        _payFulfil = '';
+        _payScenario = { open: false, tax: '', delivery: '', down: '', treatment: '' };
         finWsReleaseInert();
 
         // --- 6. contact values, three ways --------------------------------
