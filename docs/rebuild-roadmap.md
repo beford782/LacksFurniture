@@ -49,7 +49,10 @@ own authorization:
 - **DR-02** and later drawer-packet PRs — scope awaits Blake's ruling (records
   in the Claude Code Hub drawer review, not in this repo).
 - **Payment Choice after slice 2** — only what the missing-inputs register
-  and the final review turn up; no further slice is authorized.
+  and the final review turn up; no further slice is authorized, **except**
+  the bounded payment demo Blake directed on 2026-10-05
+  (`docs/payment-demo-2026-10-05.md`: illustrative, harness-only, every
+  production gate closed).
 - **Pricing values** — governed real data for products, formulas and the
   accessory prices (#112 built the mechanism only).
 - **Second-computer pricing worktree — reconcile before any pricing

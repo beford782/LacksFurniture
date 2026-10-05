@@ -171,6 +171,8 @@ built = {}
 # The payment states switch exact terms and the governed calculation on in
 # memory; they are pinned below and walked by tests/payment_facts_check.py.
 print("Payment states (exact terms + governed calculation, in memory only):")
+# The payment demo (`demo`) is pinned by tests/payment_demo_check.py; the
+# drill expectations below are for the pricing drills only.
 for state in srv.PAYMENT_STATES:
     cfg, cat, v, acc = srv.build_injected(state, clock_for(state))
     fin = cfg["financing"]
@@ -195,7 +197,7 @@ src_fin = json.load(open(os.path.join(REPO, "incoming", "lacks_financing.json"),
 check("review: financing is the canonical source on its OWN stamps (never shifted)",
       review_fin["verifiedAt"] == src_fin["verifiedAt"]
       and [p.get("verifiedAt") for p in review_fin["plans"]] == [p.get("verifiedAt") for p in src_fin["plans"]])
-for state in [st for st in srv.STATES if st not in srv.PAYMENT_STATES]:
+for state in [st for st in srv.STATES if st not in srv.PAYMENT_STATES + srv.DEMO_STATES]:
     cfg, cat, v, acc = srv.build_injected(state, clock_for(state))
     built[state] = (cfg, cat, v, acc)
     mattress_entries = [e for e in cfg["pricing"]["products"] if e["productKind"] == "mattress"]
@@ -1081,7 +1083,7 @@ def rendered():
         # Drill states. The payment states (exact terms and the governed
         # calculation on) are walked by tests/payment_facts_check.py; this
         # harness pins the pricing drills, whose financing stays orientation-only.
-        for state in [st for st in srv.STATES if st not in srv.PAYMENT_STATES]:
+        for state in [st for st in srv.STATES if st not in srv.PAYMENT_STATES + srv.DEMO_STATES]:
             s, port = serve(state)
             try:
                 for name, w, h in VIEWPORTS:

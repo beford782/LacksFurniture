@@ -11770,6 +11770,260 @@
       background: transparent;
       border: 1px solid var(--color-text-muted);
     }
+
+    /* ===== PURCHASE STUDIO (payment demo, 2026-10-05) =====
+       The priced Sleep System and its payment choices on the Consultation
+       Summary. Theme tokens only, so it follows the active theme; the
+       store's primary colour marks the selected choice. */
+    .hf2-review-section.ps {
+      width: min(1120px, 100%);
+      padding: 1.4rem 1.4rem 1.2rem;
+      border-radius: 14px;
+      border-color: color-mix(in srgb, var(--store-primary) 45%, var(--color-border));
+      box-shadow: 0 18px 44px -28px rgba(47, 39, 30, 0.45);
+    }
+    .ps-kicker {
+      display: block;
+      font: 600 0.72rem/1.3 var(--font-sans);
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--color-text-muted);
+      margin-bottom: 0.5rem;
+    }
+    .ps-head {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.35rem;
+      padding-bottom: 1rem;
+      margin-bottom: 1.1rem;
+      border-bottom: 1px solid var(--color-border);
+    }
+    .ps-title {
+      margin: 0;
+      font: 400 clamp(1.5rem, 2.6vw, 2rem)/1.15 var(--font-serif);
+      color: var(--color-text);
+    }
+    .ps-changes { margin-top: 1.4rem; padding-top: 1.1rem; border-top: 1px solid var(--color-border); }
+    .ps-changes__title { margin: 0; font: 400 1.25rem/1.2 var(--font-serif); color: var(--color-text); }
+    .ps-changes__hint { margin: 0.2rem 0 0.9rem; }
+    .ps-purchase { margin-top: 0.4rem; }
+    .ps-notice {
+      margin: 0.35rem 0 0;
+      max-width: 640px;
+      padding: 0.45rem 0.8rem;
+      border-radius: 999px;
+      border: 1px solid color-mix(in srgb, var(--store-primary) 55%, transparent);
+      background: color-mix(in srgb, var(--store-primary) 9%, transparent);
+      font: 500 0.8rem/1.35 var(--font-sans);
+      color: var(--color-text);
+    }
+    .ps-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+      gap: 1.6rem;
+      align-items: start;
+    }
+    .ps-col--pay {
+      position: sticky;
+      top: 12px;
+      padding: 1.1rem;
+      border-radius: 12px;
+      background: color-mix(in srgb, var(--color-surface-alt) 55%, transparent);
+      border: 1px solid var(--color-border);
+    }
+    @media (max-width: 900px) {
+      .ps-layout { grid-template-columns: minmax(0, 1fr); }
+      .ps-col--pay { position: static; }
+    }
+    .ps-block { margin-bottom: 1.15rem; }
+    .ps-hero {
+      display: grid;
+      grid-template-columns: 150px minmax(0, 1fr);
+      gap: 1rem;
+      align-items: center;
+      margin-bottom: 1.15rem;
+    }
+    .ps-hero__media {
+      aspect-ratio: 4 / 3;
+      border-radius: 10px;
+      overflow: hidden;
+      background: color-mix(in srgb, var(--color-surface-alt) 70%, transparent);
+    }
+    .ps-hero__img { width: 100%; height: 100%; object-fit: contain; display: block; }
+    .ps-hero__name { margin: 0; font: 400 1.35rem/1.2 var(--font-serif); color: var(--color-text); }
+    .ps-hero__meta { margin: 0.2rem 0 0; color: var(--color-text-muted); font-size: 0.9rem; }
+    .ps-hero__price {
+      margin: 0.45rem 0 0;
+      font: 600 1.6rem/1.1 var(--font-sans);
+      font-variant-numeric: tabular-nums;
+      color: var(--color-text);
+    }
+    .ps-muted { color: var(--color-text-muted); font-weight: 500; font-size: 0.95rem; }
+    .ps-illus { color: var(--store-primary); font-size: 0.8em; font-weight: 600; margin-left: 0.15em; }
+    .ps-chips, .ps-picks, .ps-options { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    .ps-chip, .ps-pick, .ps-opt, .ps-card, .ps-qty__btn {
+      touch-action: manipulation;
+      cursor: pointer;
+      font-family: var(--font-sans);
+      color: var(--color-text);
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      transition: border-color var(--dfm-quick) ease, background-color var(--dfm-quick) ease,
+                  box-shadow var(--dfm-quick) ease, transform var(--dfm-quick) ease;
+    }
+    .ps-chip {
+      min-height: 52px;
+      min-width: 88px;
+      padding: 0.4rem 0.8rem;
+      border-radius: 10px;
+      display: inline-flex;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: center;
+      text-align: left;
+    }
+    .ps-chip--sm { min-height: 44px; min-width: 64px; align-items: center; font-weight: 600; font-size: 0.85rem; }
+    .ps-chip__name { font-weight: 600; font-size: 0.85rem; }
+    .ps-chip__price { font-size: 0.8rem; color: var(--color-text-muted); font-variant-numeric: tabular-nums; }
+    .ps-pick {
+      min-height: 56px;
+      flex: 1 1 200px;
+      padding: 0.55rem 0.8rem;
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      text-align: left;
+      gap: 0.1rem;
+    }
+    .ps-pick__name { font-weight: 600; font-size: 0.92rem; }
+    .ps-pick__price { font-variant-numeric: tabular-nums; font-size: 0.92rem; }
+    .ps-pick__delta, .ps-opt__delta { font-size: 0.78rem; color: var(--color-text-muted); font-variant-numeric: tabular-nums; }
+    .ps-opt {
+      position: relative;
+      flex: 1 1 150px;
+      max-width: 220px;
+      min-height: 64px;
+      padding: 0.55rem 0.7rem;
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      text-align: left;
+      gap: 0.15rem;
+    }
+    .ps-opt--none { justify-content: center; }
+    .ps-opt__img { width: 100%; height: 64px; object-fit: contain; margin-bottom: 0.25rem; border-radius: 6px;
+      background: color-mix(in srgb, var(--color-surface-alt) 60%, transparent); }
+    .ps-opt__name { font-weight: 600; font-size: 0.85rem; line-height: 1.25; }
+    .ps-opt__price { font-size: 0.85rem; font-variant-numeric: tabular-nums; }
+    .ps-opt.is-unpriced .ps-opt__price { color: var(--color-text-muted); }
+    .ps-opt__tick { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em; color: var(--store-primary); }
+    .ps-chip.is-on, .ps-pick.is-on, .ps-opt.is-on, .ps-card.is-on {
+      border-color: var(--store-primary);
+      box-shadow: 0 0 0 2px var(--store-primary) inset;
+      background: color-mix(in srgb, var(--store-primary) 8%, var(--color-surface));
+    }
+    .ps-chip:active, .ps-pick:active, .ps-opt:active, .ps-card:active { transform: scale(0.985); }
+    .ps-lines { list-style: none; margin: 0; padding: 0; }
+    .ps-line {
+      display: grid;
+      grid-template-columns: 48px minmax(0, 1fr) auto auto;
+      gap: 0.75rem;
+      align-items: center;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--color-border);
+    }
+    .ps-line__img { width: 48px; height: 40px; object-fit: contain; border-radius: 6px;
+      background: color-mix(in srgb, var(--color-surface-alt) 60%, transparent); }
+    .ps-line__text { display: flex; flex-direction: column; min-width: 0; }
+    .ps-line__name { font-weight: 600; font-size: 0.92rem; }
+    .ps-line__meta { font-size: 0.8rem; color: var(--color-text-muted); }
+    .ps-line__effect { font-size: 0.8rem; color: var(--store-primary); font-weight: 600; margin-top: 0.1rem; }
+    .ps-line__amount { font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+    .ps-qty { display: inline-flex; align-items: center; gap: 0.35rem; }
+    .ps-qty__btn { min-width: 44px; min-height: 44px; border-radius: 8px; font-size: 1.1rem; line-height: 1; }
+    .ps-qty__btn[disabled] { opacity: 0.35; cursor: default; }
+    .ps-qty__n { min-width: 2ch; text-align: center; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .ps-subtotal {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 1rem;
+      padding-top: 0.85rem;
+      font-size: 1rem;
+    }
+    .ps-subtotal strong { font: 700 1.5rem/1.1 var(--font-sans); font-variant-numeric: tabular-nums; }
+    .ps-subtotal.is-incomplete strong { font-size: 1rem; color: var(--color-text-muted); }
+    .ps-fine { margin: 0.4rem 0 0; font-size: 0.8rem; color: var(--color-text-muted); line-height: 1.45; }
+    .ps-warn { margin: 0.4rem 0 0; font-size: 0.85rem; font-weight: 600; color: var(--color-text); }
+    .ps-note { margin: 0.4rem 0 0; font-size: 0.9rem; color: var(--color-text); line-height: 1.45; }
+    .ps-plans {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 0.55rem;
+      margin-bottom: 1rem;
+    }
+    .ps-card {
+      min-height: 112px;
+      padding: 0.7rem 0.75rem;
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      text-align: left;
+      gap: 0.15rem;
+    }
+    .ps-card__label { font-size: 0.78rem; font-weight: 700; letter-spacing: 0.02em; color: var(--color-text-muted); }
+    .ps-card__amount { font: 700 1.2rem/1.2 var(--font-sans); font-variant-numeric: tabular-nums; margin: 0.15rem 0; }
+    .ps-card__amount.ps-muted { font-size: 0.9rem; font-weight: 600; }
+    .ps-card__sub { font-size: 0.78rem; color: var(--color-text-muted); font-variant-numeric: tabular-nums; line-height: 1.35; }
+    .ps-down { margin-bottom: 1rem; }
+    .ps-down__row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.45rem; }
+    .ps-down__cur { font-weight: 600; color: var(--color-text-muted); }
+    .ps-down__input {
+      width: 7.5rem;
+      min-height: 44px;
+      padding: 0 0.65rem;
+      border-radius: 8px;
+      border: 1px solid var(--color-border);
+      background: var(--color-surface);
+      color: var(--color-text);
+      font: 600 1rem var(--font-sans);
+      font-variant-numeric: tabular-nums;
+    }
+    .ps-down__input[disabled], .ps-chip[disabled] { opacity: 0.45; cursor: default; }
+    .ps-down__msg { margin: 0.4rem 0 0; font-size: 0.8rem; color: var(--color-text-muted); }
+    .ps-down__msg.is-error { color: var(--color-text); font-weight: 700; }
+    .ps-down__msg.is-error::before { content: "\26A0\FE0E  "; }
+    .ps-result { padding: 0.9rem 0 0.2rem; border-top: 1px solid var(--color-border); }
+    .ps-result__plan { margin: 0 0 0.55rem; font: 600 0.95rem/1.3 var(--font-sans); color: var(--color-text); }
+    .ps-result__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.55rem 1rem; }
+    .ps-result__grid--full { grid-template-columns: minmax(0, 1fr); }
+    .ps-fig { display: flex; flex-direction: column; }
+    .ps-fig__label { font-size: 0.74rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--color-text-muted); }
+    .ps-fig__value { font: 700 1.15rem/1.25 var(--font-sans); font-variant-numeric: tabular-nums; color: var(--color-text); }
+    .ps-fig__sub { font-size: 0.78rem; color: var(--color-text-muted); }
+    .ps-source { margin: 0.55rem 0 0; font-size: 0.78rem; line-height: 1.45; color: var(--color-text-muted); }
+    .ps-edit { margin-top: 0.9rem; min-height: 44px; }
+    .ps-flash { animation: psFlash var(--dfm-settle) var(--dfm-e-settle); }
+    @keyframes psFlash { from { background-color: color-mix(in srgb, var(--store-primary) 18%, transparent); } to { background-color: transparent; } }
+    @media (prefers-reduced-motion: reduce) {
+      .ps-chip, .ps-pick, .ps-opt, .ps-card, .ps-qty__btn { transition: none; }
+      .ps-chip:active, .ps-pick:active, .ps-opt:active, .ps-card:active { transform: none; }
+      .ps-flash { animation: none; }
+    }
+    @media (forced-colors: active) {
+      .ps-chip.is-on, .ps-pick.is-on, .ps-opt.is-on, .ps-card.is-on {
+        outline: 3px solid Highlight;
+        outline-offset: -3px;
+        forced-color-adjust: none;
+        background: Canvas;
+        color: CanvasText;
+      }
+      .ps-notice { border: 1px solid CanvasText; }
+    }
   </style>
 </head>
 <body>
@@ -12469,6 +12723,12 @@
            BEFORE Payment Choice (payment follows the total, never leads it). -->
       <div class="hf2-system-total" id="hf2SystemTotal" hidden></div>
     </section>
+
+    <!-- Purchase studio (payment demo, owner demo-first direction
+         2026-10-05). Rendered by renderPurchaseStudio() only for a build that
+         declares an illustrative demonstration AND opens the price gate; hidden
+         and empty in every shipped state, and emptied by the session wipe. -->
+    <section class="hf2-review-section ps" id="purchaseStudio" hidden aria-labelledby="psTitle"></section>
 
     <!-- Payment Choices handoff module (Payment Choice) — the strongest
          financing surface, immediately before the final save/send action.
@@ -14656,7 +14916,634 @@
       return any ? parts.join('<br>') : null;
     }
 
+    // ─── Purchase studio model (payment demo; owner demo-first direction 2026-10-05) ───
+    // ONE live view of the purchase the consultation already holds - the
+    // explicit finalist, the size answer and the Sleep System cart - priced
+    // through the same quote model every other surface uses, with the payment
+    // under each plan computed ONLY by payEstimate (the governed methods,
+    // their gates, rounding and freshness). Nothing is stored here except the
+    // two choices the customer makes on this surface (_psPlan, _psDownRaw),
+    // both wiped by resetSessionState via psResetState().
+    //
+    // Renders only for a build that declares an illustrative demonstration
+    // (STORE_CONFIG.illustrativeDemo.enabled === true - injected in memory by
+    // the preview harness's `demo` state, absent from shipped data and locked
+    // absent by tests/payment_demo_check.py) and only while the price gate is
+    // open. Shipped behaviour is unchanged: nothing renders.
+    //
+    // What-if figures (another size, another saved mattress, another base,
+    // an item removed) are COMPLETE quotes built by the same model with the
+    // purchase changed in a sandbox: the cart and finalist globals are
+    // swapped for the duration of one synchronous call and restored in a
+    // finally block. A monthly difference is therefore always the difference
+    // between two whole-purchase payments under the same plan, term and down
+    // payment - never an item's own payment, which thresholds and rounding
+    // would make misleading.
+    var _psPlan = 'full';
+    var _psDownRaw = '';
+    function psResetState() { _psPlan = 'full'; _psDownRaw = ''; }
+    function psDemoConfig() {
+      var d = (typeof STORE_CONFIG === 'object' && STORE_CONFIG) ? STORE_CONFIG.illustrativeDemo : null;
+      return (d && typeof d === 'object' && d.enabled === true) ? d : null;
+    }
+    var PS_SIZES = ['twin', 'twin_xl', 'full', 'queen', 'king', 'cal_king'];
+    var PS_STEPS = ['base', 'pillow', 'protection'];
+    function psWithState(over, fn) {
+      var saveCart = window._accCart;
+      var saveFav = window._favoriteMattressId;
+      try {
+        if (over && over.cart) window._accCart = over.cart;
+        if (over && typeof over.finalistId === 'string') window._favoriteMattressId = over.finalistId;
+        return fn();
+      } finally {
+        window._accCart = saveCart;
+        window._favoriteMattressId = saveFav;
+      }
+    }
+    function psCartClone() {
+      var src = window._accCart || {};
+      var out = {};
+      for (var k in src) {
+        if (Object.prototype.hasOwnProperty.call(src, k) && src[k]) {
+          out[k] = { id: k, quantity: src[k].quantity };
+        }
+      }
+      return out;
+    }
+    function psAccessory(id) {
+      if (typeof ACCESSORIES === 'undefined' || !Array.isArray(ACCESSORIES)) return null;
+      for (var i = 0; i < ACCESSORIES.length; i++) if (ACCESSORIES[i] && ACCESSORIES[i].id === id) return ACCESSORIES[i];
+      return null;
+    }
+    function psStepOf(rec) {
+      return (rec && typeof sleepSystemStepIdForItem === 'function') ? sleepSystemStepIdForItem(rec) : null;
+    }
+    function psQuote(size, over) {
+      return psWithState(over || {}, function () {
+        var st = resolveFinalistState();
+        var q = buildConsultationQuote('handoff', size);
+        q.finalist = (st && st.kind === 'chosen') ? st.item : null;
+        return q;
+      });
+    }
+    function psComplete(q) {
+      return !!(q && q.status === 'complete' && q.hasMattress && priceMoneyValid(q.merchandiseMinor, q.currency));
+    }
+    // The payment under one plan for one complete quote and one down payment.
+    function psPay(q, plan, downMinor, size) {
+      var none = { state: 'none', payMinor: null };
+      if (!plan || !psComplete(q) || !q.finalist) return none;
+      var down = Number.isSafeInteger(downMinor) && downMinor > 0 ? downMinor : 0;
+      var principal = q.merchandiseMinor - down;
+      if (principal <= 0) return { state: 'nothing-financed', payMinor: null };
+      var e = payEstimate('handoff', q.finalist, size, plan, principal, q.currency,
+        { downEntered: down > 0, qualifyingMinor: q.merchandiseMinor });
+      if (e.payMinor === null) return { state: e.belowMin ? 'below-min' : 'not-calculable', payMinor: null };
+      return { state: 'calculated', payMinor: e.payMinor, scheduledMax: e.scheduledMax,
+               interestMax: e.interestMax, term: e.term, method: e.method, principal: principal, down: down };
+    }
+    function psPlans() {
+      var f = getFinancingConfig();
+      var plans = (f && Array.isArray(f.plans)) ? f.plans : [];
+      var calc = [], quote = [];
+      for (var i = 0; i < plans.length; i++) {
+        var pl = plans[i];
+        if (!pl || typeof pl !== 'object' || typeof pl.id !== 'string') continue;
+        var method = pl.calculationMode;
+        if (pl.paymentCalculationEnabled === true && financingPlanFresh(pl)
+            && (method === 'published-fixed-factor' || method === 'published-equal-division')) {
+          calc.push(pl);
+        } else if ((pl.kind === 'lease-to-own' || pl.kind === 'closed-end-installment')
+            && pl.presentationScenario !== 'mexico-delivery') {
+          quote.push(pl);
+        }
+      }
+      return { calc: calc, quote: quote };
+    }
+    function psDown(merchMinor) {
+      var raw = String(_psDownRaw == null ? '' : _psDownRaw);
+      if (raw.replace(/\s/g, '') === '') return { state: 'none', minor: 0, raw: '' };
+      if (/^\s*-/.test(raw)) return { state: 'negative', minor: null, raw: raw };
+      var p = payParseAmountMinor(raw, Number.MAX_SAFE_INTEGER);
+      if (p.state !== 'ok') return { state: 'invalid', minor: null, raw: raw };
+      if (p.minor === 0) return { state: 'none', minor: 0, raw: raw };
+      if (!Number.isSafeInteger(merchMinor)) return { state: 'pending', minor: p.minor, raw: raw };
+      if (p.minor >= merchMinor) return { state: 'too-large', minor: null, raw: raw };
+      return { state: 'ok', minor: p.minor, raw: raw };
+    }
+    function psIllustrative(sku) {
+      var d = psDemoConfig();
+      var list = d && Array.isArray(d.illustrativeSkus) ? d.illustrativeSkus : [];
+      return typeof sku === 'string' && list.indexOf(sku) !== -1;
+    }
+    function purchaseStudioFor() {
+      var none = { show: false };
+      var demo = psDemoConfig();
+      if (!demo) return none;
+      var p = getPricingConfig();
+      if (!p || p.enabled !== true || p.displayEnabled !== true || !pricingSurfaceEnabled('handoff')) return none;
+      if (typeof resolveFinalistState !== 'function') return none;
+      var size = priceSizeAnswer();
+      var cur = 'USD';
+      var fmt = function (m) { return formatPriceAmount(m, cur); };
+      var q = psQuote(size, {});
+      if (!q.finalist) return { show: true, empty: true, notice: L(demo.notice) || '' };
+      var complete = psComplete(q);
+      var merch = complete ? q.merchandiseMinor : null;
+      var down = psDown(merch);
+      var plans = psPlans();
+      var calcById = {};
+      plans.calc.forEach(function (pl) { calcById[pl.id] = pl; });
+      var quoteById = {};
+      plans.quote.forEach(function (pl) { quoteById[pl.id] = pl; });
+      if (_psPlan !== 'full' && !calcById[_psPlan] && !quoteById[_psPlan]) _psPlan = 'full';
+      var sel = calcById[_psPlan] || null;
+      var downMinor = (down.state === 'ok') ? down.minor : 0;
+      var downUsable = down.state === 'ok' || down.state === 'none';
+      var downBad = !downUsable && down.state !== 'pending';
+      var payNow = sel && downUsable ? psPay(q, sel, downMinor, size)
+        : { state: (sel && downBad && complete) ? 'down-invalid' : 'none', payMinor: null };
+      // The monthly difference a changed purchase makes under the selected
+      // plan: two complete quotes, same plan, same term, same down payment.
+      var effect = function (q2) {
+        if (!sel || payNow.state !== 'calculated' || !psComplete(q2)) return null;
+        var p2 = psPay(q2, sel, downMinor, size);
+        if (p2.state !== 'calculated') return null;
+        return p2.payMinor - payNow.payMinor;
+      };
+      var signed = function (m) {
+        if (m === null || m === undefined) return '';
+        if (m === 0) return t('ps.same');
+        return (m > 0 ? '+' : '−') + fmt(Math.abs(m));
+      };
+      var monthlySigned = function (m) {
+        if (m === null || m === undefined) return '';
+        if (m === 0) return t('ps.same_month');
+        return t('ps.per_month', { amount: (m > 0 ? '+' : '−') + fmt(Math.abs(m)) });
+      };
+
+      // ---- the mattress, its size and the saved alternatives ----------------
+      var mLine = q.lines.filter(function (l) { return l.kind === 'mattress'; })[0] || null;
+      var fin = q.finalist;
+      var mattress = {
+        id: fin.id, name: L(fin.name) || fin.name || '', brand: fin.brand || '',
+        image: fin.imageUrl || fin.image || '', tierLabel: fin.tierLabel || '',
+        priced: !!(mLine && mLine.resolved),
+        price: (mLine && mLine.resolved) ? fmt(mLine.unitAmountMinor) : '',
+        illustrative: !!(mLine && mLine.resolved && psIllustrative(mLine.sku))
+      };
+      var sizes = PS_SIZES.map(function (sz) {
+        var qs = psQuote(sz, {});
+        var ml = qs.lines.filter(function (l) { return l.kind === 'mattress'; })[0] || null;
+        return {
+          id: sz, label: sizeLabelFor(sz) || sz, active: sz === size,
+          price: (ml && ml.resolved) ? fmt(ml.unitAmountMinor) : '',
+          system: psComplete(qs) ? fmt(qs.merchandiseMinor) : ''
+        };
+      });
+      var picks = (Array.isArray(window._savedPicks) ? window._savedPicks : []).filter(function (pk) {
+        return pk && typeof pk.id === 'string' && pk.id;
+      }).map(function (pk) {
+        var qp = psQuote(size, { finalistId: pk.id });
+        var ml = qp.lines.filter(function (l) { return l.kind === 'mattress'; })[0] || null;
+        var isCur = pk.id === fin.id;
+        var diff = (!isCur && complete && psComplete(qp)) ? qp.merchandiseMinor - merch : null;
+        var rec = (window._drawerData && window._drawerData[pk.id] && window._drawerData[pk.id].m) || pk;
+        return {
+          id: pk.id, name: L(rec.name) || rec.name || pk.id, brand: rec.brand || '',
+          active: isCur, price: (ml && ml.resolved) ? fmt(ml.unitAmountMinor) : '',
+          illustrative: !!(ml && ml.resolved && psIllustrative(ml.sku)),
+          diff: diff === null ? '' : signed(diff), diffMonthly: diff === null ? '' : monthlySigned(effect(qp))
+        };
+      });
+
+      // ---- the itemised lines ------------------------------------------------
+      var lines = q.lines.map(function (ln) {
+        var rec = ln.kind === 'accessory' ? psAccessory(ln.productId) : null;
+        var step = rec ? psStepOf(rec) : null;
+        var row = {
+          id: ln.productId, kind: ln.kind, step: step || (ln.kind === 'mattress' ? 'mattress' : ''),
+          name: quoteLineName(ln), image: ln.kind === 'mattress' ? mattress.image : ((rec && rec.image) || ''),
+          size: ln.size ? sizeLabelFor(ln.size) : '', qty: ln.quantity,
+          max: ({ pillow: 4, base: 1, protection: 1 })[step] || 1,
+          priced: ln.resolved,
+          unit: ln.resolved ? fmt(ln.unitAmountMinor) : '',
+          ext: ln.resolved ? fmt(ln.extendedAmountMinor) : '',
+          illustrative: ln.resolved && psIllustrative(ln.sku),
+          effect: ''
+        };
+        if (ln.kind === 'accessory' && sel) {
+          var c2 = psCartClone();
+          delete c2[ln.productId];
+          var dw = effect(psQuote(size, { cart: c2 }));
+          var d = dw === null ? null : -dw;
+          if (d !== null) {
+            row.effect = d > 0 ? t('ps.effect_adds', { amount: fmt(d) })
+              : (d === 0 ? t('ps.effect_none') : t('ps.effect_saves', { amount: fmt(-d) }));
+          }
+        }
+        return row;
+      });
+      var missing = lines.filter(function (l) { return !l.priced; }).map(function (l) { return l.name; });
+
+      // ---- the choices for each Sleep System step -----------------------------
+      var cart = window._accCart || {};
+      var groups = PS_STEPS.map(function (step) {
+        var opts = (typeof ACCESSORIES !== 'undefined' && Array.isArray(ACCESSORIES) ? ACCESSORIES : [])
+          .filter(function (a) { return a && psStepOf(a) === step; });
+        var inStep = opts.filter(function (a) { return Object.prototype.hasOwnProperty.call(cart, a.id); });
+        var options = opts.map(function (a) {
+          var selected = Object.prototype.hasOwnProperty.call(cart, a.id);
+          var c2 = psCartClone();
+          if (selected) {
+            delete c2[a.id];
+          } else {
+            if (step !== 'pillow') inStep.forEach(function (x) { delete c2[x.id]; });
+            else if (inStep.length >= 2) delete c2[inStep[0].id];
+            c2[a.id] = { id: a.id, quantity: 1 };
+          }
+          var q2 = psQuote(size, { cart: c2 });
+          var line = q2.lines.filter(function (l) { return l.productId === a.id; })[0]
+            || psWithState({ cart: c2 }, function () { return quoteLineFor('handoff', 'accessory', a, size); });
+          var diff = (complete && psComplete(q2)) ? q2.merchandiseMinor - merch : null;
+          return {
+            id: a.id, name: L(a.name) || '', image: a.image || '', selected: selected,
+            priced: !!(line && line.resolved), price: (line && line.resolved) ? fmt(line.unitAmountMinor) : '',
+            illustrative: !!(line && line.resolved && psIllustrative(line.sku)),
+            diff: (selected || diff === null) ? '' : signed(diff),
+            diffMonthly: (selected || diff === null) ? '' : monthlySigned(effect(q2))
+          };
+        });
+        var noneOpt = null;
+        if (step !== 'pillow') {
+          var c0 = psCartClone();
+          inStep.forEach(function (x) { delete c0[x.id]; });
+          var q0 = psQuote(size, { cart: c0 });
+          var d0 = (inStep.length && complete && psComplete(q0)) ? q0.merchandiseMinor - merch : null;
+          noneOpt = { selected: inStep.length === 0, diff: d0 === null ? '' : signed(d0),
+                      diffMonthly: d0 === null ? '' : monthlySigned(effect(q0)) };
+        }
+        return { step: step, options: options, none: noneOpt, count: inStep.length };
+      });
+
+      // ---- the payment choices ------------------------------------------------
+      var cards = [{ id: 'full', kind: 'full', label: t('ps.pay_full'), selected: _psPlan === 'full',
+                     amount: complete ? fmt(merch) : '', sub: complete ? t('ps.pay_full_sub') : '' }];
+      plans.calc.forEach(function (pl) {
+        var e = (complete && downUsable) ? psPay(q, pl, downMinor, size)
+          : { state: (complete && downBad) ? 'down-invalid' : 'none', payMinor: null };
+        cards.push({
+          id: pl.id, kind: 'calc', label: L(pl.headline) || '', selected: _psPlan === pl.id,
+          apr: payAprText(pl.apr), term: pl.termMonths,
+          monthly: e.state === 'calculated' ? fmt(e.payMinor) : '',
+          total: e.state === 'calculated' ? t('ps.up_to', { amount: fmt(e.scheduledMax) }) : '',
+          interest: e.state === 'calculated' ? (e.interestMax > 0 ? t('ps.up_to', { amount: fmt(e.interestMax) }) : t('ps.no_interest_lc')) : '',
+          state: e.state
+        });
+      });
+      plans.quote.forEach(function (pl) {
+        cards.push({ id: pl.id, kind: 'quote', label: L(pl.headline) || '', selected: _psPlan === pl.id });
+      });
+      var result = { kind: 'full' };
+      if (_psPlan === 'full') {
+        result = { kind: 'full', amount: complete ? fmt(merch) : '' };
+      } else if (sel) {
+        result = { kind: 'calc', label: L(sel.headline) || '', state: payNow.state,
+                   apr: payAprText(sel.apr), term: sel.termMonths };
+        if (payNow.state === 'calculated') {
+          result.monthly = fmt(payNow.payMinor);
+          result.scheduled = t('pay.fx.up_to', { amount: fmt(payNow.scheduledMax) });
+          result.interest = payNow.interestMax > 0 ? t('pay.fx.up_to', { amount: fmt(payNow.interestMax) }) : t('ps.no_interest');
+          result.financed = fmt(payNow.principal);
+          result.down = payNow.down > 0 ? fmt(payNow.down) : t('ps.down_none');
+          result.cost = t('pay.fx.up_to', { amount: fmt(payNow.down + payNow.scheduledMax) });
+        }
+      } else if (quoteById[_psPlan]) {
+        result = { kind: 'quote', label: L(quoteById[_psPlan].headline) || '' };
+      }
+      return {
+        show: true, empty: false, notice: L(demo.notice) || '',
+        priceSource: L(demo.priceSource) || '', paymentSource: L(demo.paymentSource) || '',
+        size: size || '', sizeLabel: size ? sizeLabelFor(size) : '', sizes: sizes,
+        mattress: mattress, picks: picks, lines: lines, groups: groups,
+        complete: complete, subtotal: complete ? fmt(merch) : '', missing: missing,
+        plan: _psPlan, cards: cards, result: result,
+        down: { state: down.state, raw: down.raw, applies: !!sel },
+        excludes: pricingTotalCopy('excludes') || ''
+      };
+    }
+
     // ═══ END PHASE 2.2 PRICE PRESENTATION GATE ═══
+
+    // ─── Purchase studio (payment demo) — rendering and controls ───
+    // Draws purchaseStudioFor() into #purchaseStudio on the Consultation
+    // Summary. Every control changes the ONE consultation state the rest of
+    // the app reads (the size answer, the finalist, the Sleep System cart) or
+    // the studio's own two choices (plan, down payment), then repaints the
+    // Summary, so every surface agrees and nothing is entered twice. The down
+    // payment field is built once per paint of the section and kept while
+    // the customer types: typing repaints only the figures around it.
+    function psBtn(attrs, label, action) {
+      return '<button type="button" ' + attrs + ' onclick="' + action + '" '
+        + 'ontouchend="event.preventDefault();' + action + ';">' + label + '</button>';
+    }
+    function psMark(on) {
+      return on ? ' <span class="ps-illus" title="' + escapeHtml(t('ps.illustrative_mark')) + '" aria-label="'
+        + escapeHtml(t('ps.illustrative_mark')) + '">◇</span>' : '';
+    }
+    function psImg(src, cls) {
+      return src ? '<img class="' + cls + '" src="' + escapeHtml(src) + '" alt="" loading="lazy" decoding="async">' : '';
+    }
+    function psItemsHtml(m) {
+      var html = '<div class="ps-hero">'
+        + '<div class="ps-hero__media">' + psImg(m.mattress.image, 'ps-hero__img') + '</div>'
+        + '<div class="ps-hero__id"><span class="ps-kicker">' + escapeHtml(t('ps.best_fit')) + '</span>'
+        + '<h3 class="ps-hero__name">' + escapeHtml(m.mattress.name) + '</h3>'
+        + '<p class="ps-hero__meta">' + escapeHtml([m.mattress.brand, m.sizeLabel].filter(Boolean).join(' · ')) + '</p>'
+        + '<p class="ps-hero__price" data-ps="mattress-price">'
+        + (m.mattress.priced ? escapeHtml(m.mattress.price) + psMark(m.mattress.illustrative)
+          : '<span class="ps-muted">' + escapeHtml(t('ps.no_price_size', { size: m.sizeLabel })) + '</span>')
+        + '</p></div></div>';
+      // size
+      html += '<div class="ps-block"><span class="ps-kicker" id="psSizeLabel">' + escapeHtml(t('ps.size')) + '</span>'
+        + '<div class="ps-chips" role="group" aria-labelledby="psSizeLabel">'
+        + m.sizes.map(function (s) {
+          return psBtn('class="ps-chip' + (s.active ? ' is-on' : '') + '" aria-pressed="' + (s.active ? 'true' : 'false')
+            + '" data-ps-size="' + escapeHtml(s.id) + '"',
+            '<span class="ps-chip__name">' + escapeHtml(s.label) + '</span>'
+            + '<span class="ps-chip__price">' + escapeHtml(s.price || t('ps.not_priced')) + '</span>',
+            'window.psSetSize(\'' + s.id + '\')');
+        }).join('') + '</div></div>';
+      var top = html;
+      html = '';
+      // which mattress is priced
+      if (m.picks.length > 1) {
+        html += '<div class="ps-block"><span class="ps-kicker" id="psPickLabel">' + escapeHtml(t('ps.which_mattress')) + '</span>'
+          + '<div class="ps-picks" role="group" aria-labelledby="psPickLabel">'
+          + m.picks.map(function (pk) {
+            return psBtn('class="ps-pick' + (pk.active ? ' is-on' : '') + '" aria-pressed="' + (pk.active ? 'true' : 'false')
+              + '" data-ps-pick="' + escapeHtml(pk.id) + '"',
+              '<span class="ps-pick__name">' + escapeHtml(pk.name) + '</span>'
+              + '<span class="ps-pick__price">' + (pk.price ? escapeHtml(pk.price) + psMark(pk.illustrative)
+                : escapeHtml(t('ps.not_priced'))) + '</span>'
+              + (pk.active ? '<span class="ps-pick__delta">' + escapeHtml(t('ps.pricing_now')) + '</span>'
+                : (pk.diff ? '<span class="ps-pick__delta">' + escapeHtml(t('ps.system_change', { amount: pk.diff }))
+                  + (pk.diffMonthly ? ' · ' + escapeHtml(pk.diffMonthly) : '') + '</span>' : '')),
+              'window.psChooseMattress(\'' + escapeHtml(pk.id) + '\')');
+          }).join('') + '</div></div>';
+      }
+      // the steps
+      m.groups.forEach(function (g) {
+        if (!g.options.length) return;
+        var gid = 'psStep-' + g.step;
+        html += '<div class="ps-block ps-step" data-ps-step="' + g.step + '">'
+          + '<span class="ps-kicker" id="' + gid + '">' + escapeHtml(t('ps.step_' + g.step)) + '</span>'
+          + '<div class="ps-options" role="group" aria-labelledby="' + gid + '">';
+        if (g.none) {
+          html += psBtn('class="ps-opt ps-opt--none' + (g.none.selected ? ' is-on' : '') + '" aria-pressed="'
+            + (g.none.selected ? 'true' : 'false') + '" data-ps-none="' + g.step + '"',
+            '<span class="ps-opt__name">' + escapeHtml(t('ps.none_' + g.step)) + '</span>'
+            + (g.none.diff ? '<span class="ps-opt__delta">' + escapeHtml(g.none.diff)
+              + (g.none.diffMonthly ? '<br>' + escapeHtml(g.none.diffMonthly) : '') + '</span>' : ''),
+            'window.psClearStep(\'' + g.step + '\')');
+        }
+        g.options.forEach(function (o) {
+          html += psBtn('class="ps-opt' + (o.selected ? ' is-on' : '') + (o.priced ? '' : ' is-unpriced') + '" aria-pressed="'
+            + (o.selected ? 'true' : 'false') + '" data-ps-opt="' + escapeHtml(o.id) + '"',
+            psImg(o.image, 'ps-opt__img')
+            + '<span class="ps-opt__name">' + escapeHtml(o.name) + '</span>'
+            + '<span class="ps-opt__price">' + (o.priced ? escapeHtml(o.price) + psMark(o.illustrative)
+              : escapeHtml(t('ps.not_in_size', { size: m.sizeLabel }))) + '</span>'
+            + (o.diff ? '<span class="ps-opt__delta">' + escapeHtml(o.diff)
+              + (o.diffMonthly ? '<br>' + escapeHtml(o.diffMonthly) : '') + '</span>' : '')
+            + (o.selected ? '<span class="ps-opt__tick">' + escapeHtml(t(g.step === 'pillow' ? 'ps.in_system_remove' : 'ps.in_system')) + '</span>' : ''),
+            'window.psToggleOption(\'' + escapeHtml(o.id) + '\')');
+        });
+        html += '</div></div>';
+      });
+      var changes = html;
+      // the itemised purchase
+      html = '<div class="ps-block ps-purchase"><span class="ps-kicker">' + escapeHtml(t('ps.items')) + '</span><ul class="ps-lines">';
+      m.lines.forEach(function (l) {
+        var qty = '';
+        if (l.kind === 'accessory' && l.max > 1) {
+          qty = '<span class="ps-qty" role="group" aria-label="' + escapeHtml(t('ps.qty_label', { name: l.name })) + '">'
+            + psBtn('class="ps-qty__btn" data-ps-qty="' + escapeHtml(l.id) + '" data-ps-delta="-1" aria-label="'
+              + escapeHtml(t('ps.qty_less')) + '"' + (l.qty <= 1 ? ' disabled' : ''), '−',
+              'window.psQty(\'' + escapeHtml(l.id) + '\',-1)')
+            + '<span class="ps-qty__n" aria-live="polite">' + l.qty + '</span>'
+            + psBtn('class="ps-qty__btn" data-ps-qty="' + escapeHtml(l.id) + '" data-ps-delta="1" aria-label="'
+              + escapeHtml(t('ps.qty_more')) + '"' + (l.qty >= l.max ? ' disabled' : ''), '+',
+              'window.psQty(\'' + escapeHtml(l.id) + '\',1)')
+            + '</span>';
+        }
+        html += '<li class="ps-line' + (l.priced ? '' : ' is-unpriced') + '" data-ps-line="' + escapeHtml(l.id) + '">'
+          + psImg(l.image, 'ps-line__img')
+          + '<span class="ps-line__text"><span class="ps-line__name">' + escapeHtml(l.name) + '</span>'
+          + '<span class="ps-line__meta">' + escapeHtml([l.size, (l.priced && l.qty > 1) ? t('ps.each', { amount: l.unit }) : ''].filter(Boolean).join(' · ')) + '</span>'
+          + (l.effect ? '<span class="ps-line__effect">' + escapeHtml(l.effect) + '</span>' : '') + '</span>'
+          + qty
+          + '<span class="ps-line__amount">' + (l.priced ? escapeHtml(l.ext) + psMark(l.illustrative)
+            : '<span class="ps-muted">' + escapeHtml(t('ps.no_price')) + '</span>') + '</span>'
+          + '</li>';
+      });
+      html += '</ul>';
+      if (m.complete) {
+        html += '<div class="ps-subtotal" data-ps="subtotal"><span>' + escapeHtml(t('ps.subtotal')) + '</span>'
+          + '<strong>' + escapeHtml(m.subtotal) + '</strong></div>'
+          + (m.excludes ? '<p class="ps-fine">' + escapeHtml(m.excludes) + '</p>' : '');
+      } else {
+        html += '<div class="ps-subtotal is-incomplete" data-ps="subtotal"><span>' + escapeHtml(t('ps.subtotal')) + '</span>'
+          + '<strong>' + escapeHtml(t('ps.incomplete')) + '</strong></div>'
+          + '<p class="ps-warn">' + escapeHtml(t('ps.missing', { items: m.missing.join(', ') })) + '</p>';
+      }
+      html += '</div>';
+      return top + html + '<div class="ps-changes"><h3 class="ps-changes__title">' + escapeHtml(t('ps.try_change')) + '</h3>'
+        + '<p class="ps-fine ps-changes__hint">' + escapeHtml(t('ps.try_change_hint')) + '</p>' + changes + '</div>';
+    }
+    function psPlansHtml(m) {
+      var html = '<div class="ps-plans" role="radiogroup" aria-labelledby="psPayLabel">';
+      m.cards.forEach(function (c) {
+        var body;
+        if (c.kind === 'full') {
+          body = '<span class="ps-card__amount">' + escapeHtml(c.amount || t('ps.incomplete')) + '</span>'
+            + '<span class="ps-card__sub">' + escapeHtml(c.sub || '') + '</span>';
+        } else if (c.kind === 'calc') {
+          body = c.monthly
+            ? '<span class="ps-card__amount">' + escapeHtml(t('ps.monthly', { amount: c.monthly })) + '</span>'
+              + '<span class="ps-card__sub">' + escapeHtml(t('ps.for_months', { n: c.term })) + '</span>'
+              + '<span class="ps-card__sub">' + escapeHtml(t('ps.card_total', { amount: c.total })) + '</span>'
+              + '<span class="ps-card__sub">' + escapeHtml(t('ps.card_interest', { amount: c.interest })) + '</span>'
+            : '<span class="ps-card__amount ps-muted">' + escapeHtml(t(psStateKey(c.state))) + '</span>';
+        } else {
+          body = '<span class="ps-card__amount ps-muted">' + escapeHtml(t('pay.fx.to_confirm')) + '</span>'
+            + '<span class="ps-card__sub">' + escapeHtml(t('ps.quote_sub')) + '</span>';
+        }
+        html += psBtn('class="ps-card ps-card--' + c.kind + (c.selected ? ' is-on' : '') + '" role="radio" aria-checked="'
+          + (c.selected ? 'true' : 'false') + '" data-ps-plan="' + escapeHtml(c.id) + '"',
+          '<span class="ps-card__label">' + escapeHtml(c.label) + '</span>' + body,
+          'window.psSetPlan(\'' + escapeHtml(c.id) + '\')');
+      });
+      return html + '</div>';
+    }
+    function psResultHtml(m) {
+      var r = m.result;
+      var html = '';
+      if (r.kind === 'full') {
+        html = '<div class="ps-result__grid ps-result__grid--full">'
+          + '<div class="ps-fig"><span class="ps-fig__label">' + escapeHtml(t('ps.pay_full')) + '</span>'
+          + '<span class="ps-fig__value">' + escapeHtml(r.amount || t('ps.incomplete')) + '</span></div></div>';
+      } else if (r.kind === 'calc' && r.state === 'calculated') {
+        var fig = function (k, v, sub) {
+          return '<div class="ps-fig" data-ps-fig="' + k + '"><span class="ps-fig__label">' + escapeHtml(t('ps.fig_' + k)) + '</span>'
+            + '<span class="ps-fig__value">' + escapeHtml(v) + '</span>'
+            + (sub ? '<span class="ps-fig__sub">' + escapeHtml(sub) + '</span>' : '') + '</div>';
+        };
+        html = '<p class="ps-result__plan">' + escapeHtml(r.label) + '</p><div class="ps-result__grid">'
+          + fig('monthly', t('ps.monthly', { amount: r.monthly }), t('ps.for_months', { n: r.term }))
+          + fig('scheduled', r.scheduled, t('ps.payments_n', { n: r.term }))
+          + fig('interest', r.interest, t('ps.apr', { apr: r.apr }))
+          + fig('down', r.down, '')
+          + fig('financed', r.financed, '')
+          + fig('cost', r.cost, t('ps.cost_sub'))
+          + '</div><p class="ps-fine">' + escapeHtml(t('ps.rounding')) + '</p>';
+      } else if (r.kind === 'calc') {
+        html = '<p class="ps-result__plan">' + escapeHtml(r.label) + '</p><p class="ps-warn">'
+          + escapeHtml(t(psStateKey(r.state))) + '</p>';
+      } else {
+        html = '<p class="ps-result__plan">' + escapeHtml(r.label) + '</p><p class="ps-note">'
+          + escapeHtml(t('ps.quote_detail')) + '</p>';
+      }
+      return html;
+    }
+    function psStateKey(state) {
+      if (state === 'below-min') return 'ps.below_min';
+      if (state === 'down-invalid') return 'ps.fix_down';
+      if (state === 'nothing-financed') return 'ps.down_too_large';
+      return 'ps.needs_complete';
+    }
+    function psDownMessage(m) {
+      var s = m.down.state;
+      if (!m.down.applies) return t('ps.down_choose_plan');
+      if (s === 'negative' || s === 'invalid') return t('ps.down_invalid');
+      if (s === 'too-large') return t('ps.down_too_large');
+      if (s === 'ok') return t('ps.down_applied');
+      return t('ps.down_hint');
+    }
+    function psDownHtml(m) {
+      return '<label class="ps-kicker" for="psDownInput">' + escapeHtml(t('ps.down_label')) + '</label>'
+        + '<div class="ps-down__row"><span class="ps-down__cur" aria-hidden="true">$</span>'
+        + '<input id="psDownInput" class="ps-down__input" type="text" inputmode="decimal" autocomplete="off" '
+        + 'aria-describedby="psDownMsg" value="' + escapeHtml(m.down.raw) + '"'
+        + (m.down.applies ? '' : ' disabled') + ' oninput="window.psSetDown(this.value)">'
+        + ['0', '250', '500', '1000'].map(function (v) {
+          return psBtn('class="ps-chip ps-chip--sm" data-ps-down="' + v + '"' + (m.down.applies ? '' : ' disabled'),
+            escapeHtml(v === '0' ? t('ps.down_none') : formatPriceAmount(Number(v) * 100, 'USD')),
+            'window.psSetDown(\'' + v + '\',true)');
+        }).join('') + '</div>'
+        + '<p class="ps-down__msg' + ((m.down.state === 'invalid' || m.down.state === 'negative' || m.down.state === 'too-large') ? ' is-error' : '')
+        + '" id="psDownMsg" role="status">' + escapeHtml(psDownMessage(m)) + '</p>';
+    }
+    var _psLastSignature = '';
+    function renderPurchaseStudio(partial) {
+      var box = document.getElementById('purchaseStudio');
+      if (!box) return;
+      var m = (typeof purchaseStudioFor === 'function') ? purchaseStudioFor() : { show: false };
+      var total = document.getElementById('hf2SystemTotal');
+      if (!m.show) {
+        box.hidden = true;
+        box.innerHTML = '';
+        return;
+      }
+      if (total) { total.hidden = true; total.innerHTML = ''; }
+      box.hidden = false;
+      if (m.empty) {
+        box.innerHTML = '<p class="ps-notice">' + escapeHtml(m.notice) + '</p><p class="ps-note">'
+          + escapeHtml(t('ps.choose_first')) + '</p>';
+        return;
+      }
+      if (partial && document.getElementById('psDownInput')) {
+        // Typing in the down payment repaints the figures, not the field.
+        document.getElementById('psPlansBox').innerHTML = psPlansHtml(m);
+        document.getElementById('psResultBox').innerHTML = psResultHtml(m);
+        var msg = document.getElementById('psDownMsg');
+        if (msg) {
+          msg.textContent = psDownMessage(m);
+          msg.classList.toggle('is-error', m.down.state === 'invalid' || m.down.state === 'negative' || m.down.state === 'too-large');
+        }
+        box.querySelector('#psItemsBox').innerHTML = psItemsHtml(m);
+        return;
+      }
+      box.innerHTML = '<div class="ps-head"><span class="ps-kicker">' + escapeHtml(t('ps.kicker')) + '</span>'
+        + '<h2 class="ps-title" id="psTitle">' + escapeHtml(t('ps.title')) + '</h2>'
+        + '<p class="ps-notice" role="note">' + escapeHtml(m.notice) + '</p></div>'
+        + '<div class="ps-layout"><div class="ps-col" id="psItemsBox">' + psItemsHtml(m) + '</div>'
+        + '<div class="ps-col ps-col--pay"><span class="ps-kicker" id="psPayLabel">' + escapeHtml(t('ps.pay_label')) + '</span>'
+        + '<div id="psPlansBox">' + psPlansHtml(m) + '</div>'
+        + '<div class="ps-down">' + psDownHtml(m) + '</div>'
+        + '<div class="ps-result" id="psResultBox" aria-live="polite">' + psResultHtml(m) + '</div>'
+        + '<p class="ps-source">' + escapeHtml(m.priceSource) + '</p>'
+        + '<p class="ps-source">' + escapeHtml(m.paymentSource) + '</p>'
+        + psBtn('class="fin-btn fin-btn-secondary ps-edit" id="psEditSystem"', escapeHtml(t('ps.edit_system')), 'window.showAccessories()')
+        + '</div></div>';
+    }
+    function psRepaint(focusSel) {
+      if (typeof renderHf2 === 'function') renderHf2();
+      else renderPurchaseStudio();
+      if (focusSel) {
+        var el = document.querySelector('#purchaseStudio ' + focusSel);
+        if (el && !el.disabled && typeof el.focus === 'function') el.focus({ preventScroll: true });
+      }
+    }
+    window.psSetSize = function (sizeId) {
+      if (PS_SIZES.indexOf(sizeId) === -1 || typeof answers !== 'object' || !answers) return;
+      if (answers.mattress_size === sizeId) return;
+      answers.mattress_size = sizeId;
+      psRepaint('[data-ps-size="' + sizeId + '"]');
+    };
+    window.psChooseMattress = function (id) {
+      if (typeof window.chooseFinalist !== 'function') return;
+      window.chooseFinalist(id);
+      psRepaint('[data-ps-pick="' + id + '"]');
+    };
+    window.psToggleOption = function (id) {
+      var cart = window._accCart || {};
+      setSleepSystemItem(id, !Object.prototype.hasOwnProperty.call(cart, id));
+      psRepaint('[data-ps-opt="' + id + '"]');
+    };
+    window.psClearStep = function (step) {
+      var cart = window._accCart || {};
+      Object.keys(cart).forEach(function (id) {
+        var rec = psAccessory(id);
+        if (rec && psStepOf(rec) === step) setSleepSystemItem(id, false);
+      });
+      psRepaint('[data-ps-none="' + step + '"]');
+    };
+    window.psQty = function (id, delta) {
+      var entry = (window._accCart || {})[id];
+      if (!entry) return;
+      var cur = (typeof entry.quantity === 'number' && entry.quantity >= 1) ? entry.quantity : 1;
+      setSleepSystemItemQuantity(id, cur + delta);
+      psRepaint('[data-ps-qty="' + id + '"][data-ps-delta="' + delta + '"]');
+    };
+    window.psSetPlan = function (id) {
+      if (typeof id !== 'string' || !id) return;
+      _psPlan = id;
+      renderPurchaseStudio();
+      var el = document.querySelector('#purchaseStudio [data-ps-plan="' + id + '"]');
+      if (el && typeof el.focus === 'function') el.focus({ preventScroll: true });
+    };
+    window.psSetDown = function (raw, fromChip) {
+      _psDownRaw = String(raw == null ? '' : raw).slice(0, 12);
+      if (fromChip) {
+        if (_psDownRaw === '0') _psDownRaw = '';
+        renderPurchaseStudio();
+        var el = document.querySelector('#purchaseStudio [data-ps-down="' + (raw || '0') + '"]');
+        if (el && typeof el.focus === 'function') el.focus({ preventScroll: true });
+        return;
+      }
+      renderPurchaseStudio(true);
+    };
 
     // Financing copy accessor (config copy block, language-aware).
     function FC(key) {
@@ -24802,6 +25689,7 @@
       // so it repaints in the same pass. typeof-guarded like every other
       // gate consumer, so the sandboxed renderer suites stay runnable.
       if (typeof renderHf2SystemTotal === 'function') renderHf2SystemTotal();
+      if (typeof renderPurchaseStudio === 'function') renderPurchaseStudio();
       renderHf2DiscountButton();
       renderHf2SendButton();
       renderHf2RsaStrip();
@@ -26930,6 +27818,10 @@
         _payWsChange = null;
         _payFulfil = '';
         _payScenario = { open: false, tax: '', delivery: '', down: '', treatment: '' };
+        // Purchase studio: the plan and down payment chosen on the Summary.
+        if (typeof psResetState === 'function') psResetState();
+        var psBox = document.getElementById('purchaseStudio');
+        if (psBox) { psBox.hidden = true; psBox.innerHTML = ''; }
         finWsReleaseInert();
 
         // --- 6. contact values, three ways --------------------------------

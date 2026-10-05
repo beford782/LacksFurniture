@@ -599,6 +599,14 @@ jobs:
       - name: payment facts (rendered, governed calculation, EN/ES)
         run: python tests/payment_facts_check.py
 
+      # Payment demo (owner demo-first direction 2026-10-05): the harness's
+      # `demo` state - isolation from every production input, the demo build
+      # still refused by the production validator, the device-mode operator
+      # area, and the rendered purchase studio (arithmetic, governed payments,
+      # down payment, monthly effects, incomplete purchases, EN/ES, wipe).
+      - name: payment demo (isolation, data, rendered studio, EN/ES)
+        run: python tests/payment_demo_check.py
+
       # Trust integrity and transparency gate (Phase 1 cross-cutting,
       # 2026-08-21): the copy <-> engine correspondence document and its
       # pinned inert-tag set, banned claims in quiz help copy, the absence of
