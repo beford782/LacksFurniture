@@ -529,7 +529,12 @@ git push -u origin HEAD
 # enumerates (`powershell -NoProfile -File tools/run_full_suite.ps1 -ListOnly`;
 # re-derive the count with `grep -cE '^ *run: (node|python) tests/'
 # .github/workflows/ci.yml` rather than trusting a number written here, which
-# has drifted with every added suite) — then merge, only when Blake asks
+# has drifted with every added suite) — then merge, only when Blake asks.
+# After merge: ci-closeout --pr <number> --repo beford782/LacksFurniture
+# (shared launcher from beford782/agent-tools: one watcher on the automatic
+# main run, tree evidence vs. main CI reported separately; manual fallback in
+# "CI closeout" in docs/deployment-workflow.md). CI closeout is not deployment
+# evidence; Pages build/deploy and the served files are verified separately.
 ```
 
 **Agent boundary (identical to `AGENTS.md`):** no commit, push, PR, merge,
