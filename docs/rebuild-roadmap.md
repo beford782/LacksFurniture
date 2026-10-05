@@ -1,6 +1,118 @@
 # DreamFinder rebuild roadmap — Lacks deployment
 
-**Status: LIVING DOCUMENT. Phase 0 COMPLETE (2026-08-10 — 0.4's mounted-device
+## Current status — 2026-10-04 (reconciled with `main` `4637227`, PR #136)
+
+**Read this block first.** It reconciles the roadmap with `main` through
+PR #136. The dated records below it are kept as written; where one of them
+conflicts with this block, this block wins. Documentation only. Marks moved,
+each recording already-merged code and none into or out of ◐, 🔒 or ❓:
+3.1 and 3.2 ⬜ → ⏳; sequence items 12 and 14 ⬜ → ⏳; the accessory-price
+provenance row's build portion ⬜ → ⏳; the completed email-payload row
+moved out of the open-decisions register into its resolved list.
+Lifecycle is unchanged:
+DreamFinder is a **pre-floor prototype**; the preview is never showroom
+authorization; every production gate is closed (`gasUrl` blank, discount
+disabled, promotion `scenarios` `{}`, `exactPromotionsEnabled` false, every
+`paymentCalculationEnabled` false, pricing `enabled` / `displayEnabled` and
+every surface false — read from the served `store-config.json` on
+2026-10-05 after the PR #136 Pages deploy).
+
+### Completed code (merged on `main`, preview only)
+
+| When (UTC) | PRs | What |
+|---|---|---|
+| 2026-09-10 | #107–#110 | Phase 2.2 disabled implementation, 2.2a–2.2d: the price gate and drawer surface, the four remaining surfaces, the localhost pricing harness, plan-status copy — all disabled |
+| 2026-09-10 | #111 | Accessory email packet minimised to the three fields `Code.gs` reads (register row resolved and moved to the register's resolved list) |
+| 2026-09-10 | #112 | Accessory prices under the pricing contract (build portion of the provenance row; values still owed) |
+| 2026-09-10 | #113, #114 | 3.1 case-fold repair (A4.1 re-cut) and 3.2 `durable` → `durability` with five governed dormant keys (A4.2 re-cut) — now ⏳ |
+| 2026-09-10 | #115–#118 | Production-readiness gaps G1/G5/G6, G4, G2, G7 (`docs/production-readiness-gaps-2026-09-09.md`) |
+| 2026-09-10 | #119 → `473c643` | Integrated production-readiness candidate (sequence step 6), merging #107–#118; automated verification in `docs/production-readiness-candidate-2026-09-09.md` |
+| 2026-09-11 – 09-15 | #120–#122, #124 | Sleep System F1/F2 fixes; combined Base step (Base → Pillow → Protection); roadmap reconciliations (#121, #124) |
+| 2026-09-16 | #125 | Pricing harness frozen clock (repaired the 2026-09-15 post-merge CI failure; harness only) |
+| 2026-09-17 | #123 | Spanish accents restored in Sleep System copy |
+| 2026-09-17 – 09-21 | #126–#131 | Review-packet fixes: T1 ES trial verdicts (#126), T5 take-home privacy-link contrast and 44px floor (#127), T3 drawer Prev/Next ES on one line (#128), DR-01 compare tray never hides the best match's actions (#129), session wipe of the Sleep System anchor and drawer header (#130), shipped-copy corrections incl. round-4 item 8 (#131) |
+| 2026-09-27 | #132 → `c4afdc3` | Phase 2 pricing quote model, dark: website price extraction, app-to-website mapper, quote model, compare-price surface coverage, sweep-manifest repair (`docs/phase2-2e-quote-model.md`) |
+| 2026-10-03 | #133 → `5a323cd` | Payment Choice "Bring it home" workspace, slice 1 — orientation only, no figures (`docs/payment-workspace-slice1-2026-09-27.md`) |
+| 2026-10-03 | #134 | CI runs the mutation sweep as three interleaved shards in the same required job |
+| 2026-10-04 | #135 → `f6aab5c` | Payment Choice slice 2 — governed payment calculation, review build; every activation flag false in shipped data |
+| 2026-10-05 | #136 → `4637227` | Post-merge CI closeout guidance (`ci-closeout`), documentation only |
+
+CI on `main` passed at `f6aab5c` (run 37234534885) and `4637227` (run
+37247973955). A one-off local `mutation_manifest_check` failure (2 of 116,
+2026-10-04, output not saved; 116/116 on four reruns) is **unexplained and
+unresolved**.
+
+### Remaining code work
+
+Nothing on the sequence is blocked on code. Known code work, each needing its
+own authorization:
+- **DR-02** and later drawer-packet PRs — scope awaits Blake's ruling (records
+  in the Claude Code Hub drawer review, not in this repo).
+- **Payment Choice after slice 2** — only what the missing-inputs register
+  and the final review turn up; no further slice is authorized.
+- **Pricing values** — governed real data for products, formulas and the
+  accessory prices (#112 built the mechanism only).
+- **Second-computer pricing worktree — reconcile before any pricing
+  development.** Two things, kept apart:
+  - *Known and merged:* the pricing quote model is on `main` — PR #132,
+    head `44dd535`, merged 2026-09-27 as `c4afdc3` (slices 2.2e/2.2f, see
+    item 2.2 and `docs/phase2-2e-quote-model.md`).
+  - *Unknown:* whether the worktree
+    `Documents\GitWorktrees\LacksFurniture\quote-model` on `CRodHPLT-090922`
+    (branch `claude/phase2-quote-model`) holds edits made after what PR #132
+    carried. No record shows it inspected since the 2026-09-21 checkpoint.
+    Run `git status` there and reconcile any remainder against current
+    `main` before building on it; do not recreate anything from notes.
+
+### Human validation owed (sequence step 7 — none performed)
+
+The one final non-live gate against the complete application: mounted
+iPad/Safari and VoiceOver; the browser matrix; moderated role-play; native-
+Spanish review (Invariant 12, consolidated); a human real-browser spot-check
+of the financing facts (the 2026-10-03 refresh was automated); item 1.4
+clauses 7–8; 1.3 content; cohesion pass 2. The device passes Blake reported
+on 2026-09-30 / 10-01 for the Payment Choice workspace predate later fixes
+and are not the step-7 pass.
+
+### Owner decisions owed
+
+- Business and legal approval of pricing and payment presentation (2.2,
+  final gate) and the Lacks in-house financing term conflict ("up to 24
+  months" vs "6–36 months"; `lacks-in-house` fails closed on its July stamp).
+- Retailer / lender inputs; the request draft has not been sent.
+- Reviewers for the step-7 acceptance rows 2c, 6a and 6b (no reviewer named;
+  2c deferred to pre-launch).
+- DR-02 base and the next drawer PR; the open round-4 §7 and 0e rulings
+  (round-4 §7 decision 1, authorization 11 and the copy-brief g5 rows were
+  answered by #130/#131).
+- Everything in the open-decisions register below; and any activation —
+  live email, promotions, pricing display, payment calculation, showroom use.
+
+### The 2026-09-22 drift findings — disposition
+
+A read-only analysis on 2026-09-22 reported "nine concrete
+inconsistencies" in this roadmap. **Its itemized list was not saved and is
+unavailable**; only its summary survives (Claude Code Hub `HANDOFF.md`,
+SESSION-END ADDENDUM 2026-09-22). The findings that summary names, and
+their disposition here — not counted to nine, and nothing added:
+- Header still dated 2026-09-09 at `63f745b` → this block; "Last updated"
+  below.
+- Items 3.1 / 3.2 still "not started" though PRs #113 / #114 merged → both ⏳.
+- Sequence item 11 still calls disabled pricing "next" though PRs
+  #107–#110 merged → state note on item 11; item 2.2 corrected.
+- Two register rows still awaiting PRs #111 / #112 → the payload row moved
+  to the resolved list; the provenance row's build portion ⏳.
+- The integrated-candidate item still open → state notes on items 12 and 14.
+- PRs #123 and #125–#131 absent → the completed-code table above.
+- The T- / DR- review-packet workstream absent → PRs #126–#131 in the
+  table; the packet records live in the Claude Code Hub, not this repo.
+
+Found in this pass and corrected: evidence appendix rows 6 and 15, and the
+item 2.2 text that predates PRs #132–#135.
+
+---
+
+**Status (as of 2026-09-09; superseded by the block above): LIVING DOCUMENT. Phase 0 COMPLETE (2026-08-10 — 0.4's mounted-device
 evidence recorded; see 0.4 and `docs/kiosk-device-hardening.md`). Phase 1
 implementation AUTHORIZED (2026-08-12, owner directive — see the authorization
 block at the top of Phase 1) and, as of 2026-08-14, directed by the Nocturne
@@ -23,7 +135,7 @@ grant of approval — see the open-decisions register — except 3.1 and 3.2,
 approved to build 2026-09-09 as sequential re-cuts inside the uninterrupted
 production-readiness candidate (⬜: permission to build, 3.2 on the
 engineering-verified 3.1 result with no intermediate owner acceptance gate,
-nothing activated).
+nothing activated; both merged 2026-09-10 via PR #119 and now ⏳).
 Device hardening remains BLOCKING for showroom use.**
 
 **Owner product direction — 2026-08-29.** DreamFinder remains a pre-floor
@@ -83,7 +195,9 @@ activation decision. This approves 3.1 and 3.2 to build in that order; it does
 not authorize another Phase 3 change, any factual price, any approval status,
 or any live output.
 
-**Last updated:** 2026-09-09 *(**Roadmap reconciled with `main` through PR #105.**
+**Last updated:** 2026-10-04 *(Reconciled with `main` `4637227` through PR #136 — see
+"Current status — 2026-10-04" at the top; documentation only.)* The previous
+revision, 2026-09-09 *(**Roadmap reconciled with `main` through PR #105.**
 Documentation only — no application, data, test, fixture, generated artifact,
 external evidence package or role-play file changed. The owner direction
 immediately above moves 3.1 and 3.2 from 🔒 to ⬜, and the two accessory-price
@@ -5646,6 +5760,33 @@ output above is unchanged: no production price data, surface flag, approval
 state, payment figure or live service turns on before the single final readiness
 and activation decision.)*
 
+*(**State 2026-10-04 — correction.** The "construction starts here next"
+direction above is carried out, and parts of the slice notes below describe
+those slices as built, not the current code. On `main` `4637227`:
+2.2a–2.2d merged 2026-09-10 as PRs #107–#110 via the integrated candidate
+PR #119 → `473c643`. 2.2e / 2.2f — the consultation quote model, the
+below-minimum state, the visible complete-system subtotal and accessory
+size variants — merged 2026-09-27 via PR #132 → `c4afdc3`
+(`docs/phase2-2e-quote-model.md`), adding a sixth surface, `compare`;
+`pricing.surfaces` now has six keys (drawer, sleepSystem, results, handoff,
+sleepPlan, compare), all false. Payment Choice slice 1 merged via PR #133 →
+`5a323cd`. **Slice 2 (PR #135 → `f6aab5c`, 2026-10-04) supersedes the
+statements below that "no payment figure exists" and that plan status copy
+is "never a figure, never a payment":** the app now carries governed payment
+calculation, admitted only for a plan whose `paymentCalculationEnabled` passes
+`validate_financing` with a published method — `published-fixed-factor`
+(`synchrony-9-99-72`) or `published-equal-division` (`synchrony-0-48`) — plus
+the published rounding rule, APR and term, `exactPromotionsEnabled`, an
+approved and fresh formula artifact and a completely priced purchase;
+anything unpublished reads "To confirm". Shipped data keeps every
+`paymentCalculationEnabled` and `exactPromotionsEnabled` false, and
+`pricing.products` and `pricing.formulas` are empty, so no price or payment
+figure renders. Still true: the shipped catalog carries no `skus`. The
+slice-2 working record `docs/payment-choice-slice2-2026-10-03.md` is
+Git-ignored by owner direction; PR #135's description records its
+authorization and boundaries. Nothing here moves the mark: 2.2 stays ◐, and
+per the Exit's exclusion none of this closes it.)*
+
 *(**Slice 2.2a built 2026-09-09 — the price presentation gate and the drawer
 surface, disabled.** Branch `claude/phase2-2-disabled-incorporation` from
 `main` `e76890c`; design and slice plan in
@@ -5838,7 +5979,7 @@ qualified set or order. Producing that evidence is read-only analysis under the
 standing baseline and moves no mark; acting on it is a separately authorized
 Phase 3 decision.
 
-### 3.1 — Scoring case-fold defect ⬜
+### 3.1 — Scoring case-fold defect ⏳ (re-cut merged 2026-09-10, PR #113, via the integrated candidate PR #119 → `473c643`; acceptance owed at the step-7 final gate)
 
 Two quiz tags never match the catalog because the comparison is case-sensitive and
 the catalog spellings are lowercase. **Ten scoring rules across six questions**
@@ -5933,7 +6074,7 @@ current-`main` re-cut inside the continuous production-readiness build; this
 candidate remains evidence and is never merged. The new impact is re-measured
 before the integrated candidate is called complete.)*
 
-### 3.2 — Unmatched quiz-tag vocabulary ⬜
+### 3.2 — Unmatched quiz-tag vocabulary ⏳ (re-cut merged 2026-09-10, PR #114, via PR #119 → `473c643`; the five dormant keys stay governed and dormant; acceptance owed at the step-7 final gate)
 
 Six quiz tags match no catalog feature in any casing. Separate from 3.1. Blake's
 2026-09-09 direction approves the candidate's bounded disposition to build only
@@ -6162,8 +6303,7 @@ work listed under a ◐ item's Proceeds line.
 | Dormant nickname-code cleanup | ❓ | Blake | Analytics review — see below |
 | Visible stale-financing status band (production) | ❓ | Blake | A case for it plus review sign-off. Prototype-only today (D6); if pursued, production gets its own dedicated governed key — not a reuse of `staleAnnouncement` |
 | Customer-recorded trial reactions | ❓ | Blake | A case for it. The Nocturne prototype's own candidate next revision; deliberately not built (D6) |
-| **Accessory price provenance** — the shipped accessory prices (the one live "From $" surface) drift from `incoming/lacks_catalog_selection.json`: four are cent-truncated about $1 BELOW the observed catalog price (Dri-Tec 149.95→149, iProtect 89.95→89, Ver-Tex 249.95→249, gel memory pillow 99.95→99) and `foundation-princess` $499 has no recorded source anywhere; none carries `verifiedAt`, a source URL or an owner | ⬜ build / final gate for the values | Blake | *(2026-09-09: scheduled by the owner build direction as workstream (2), inside the 2.2 construction note — ❓ → ⬜ on the build portion only.)* **Build now, inside the integrated candidate:** bring the accessory prices under a governed provenance contract modelled on 2.1 — per-entry `verifiedAt`, allowlisted `sourceUrl`, owner and freshness — with the fail-closed behaviour and its tests. **Not pre-authorized:** a standalone merge that withdraws the today-displayed "From $" surface without a replacement, which would breach the no-degraded-`main` rule; any customer-visible suppression or replacement merges together with governed, attested pricing in the complete candidate, unless Blake separately orders an immediate safety removal. **Final gate:** confirming the values with Lacks, correcting the data, and any representation of an accessory price as approved. Found by the 2026-08-27 Phase 2.1 discovery; deliberately NOT changed by slice 2.1a. **Built 2026-09-09** on branch `claude/accessory-price-provenance`, stacked on the 2.2 slices, exactly under the ruling: accessories come under the 2.1 pricing contract through the same gate — an optional `SKU` column on the workbook's Accessories tab flows through the builder, the converter (JSON key only when populated) and a validator grammar check, shipping blank so `data/accessories.json` is byte-identical; the gate resolves an accessory record by its single string `sku` with no size; the Sleep System featured card asks the gate for its item and the governed slot **replaces** the catalog "From $" line when it resolves, so an ungoverned figure never renders beside a governed one — while the gate is off (every production state) the legacy line renders exactly as shipped, and it leaves only at activation together with the attested price that replaces it (no standalone withdrawal, no degraded `main`). Guards: presentation suite +12 with two planted mutants, three sweep entries (the harness check is the rendered observer for the replacement rule), validator self-tests, the harness drilling one FIXTURE accessory price per shipped accessory and the rendered walk proving shipped and dark show the catalog line and no governed slot while the opened states show the governed slot and no catalog line. The values, their confirmation with Lacks and any approved representation stay at the final gate |
-| **Accessory packet projection in the email payload** — since PR #104 (2026-09-08) the cart and plan entries are projections (id, name, category, imageUrl, rationale key) and carry no catalog `price`; the packet builder still spread that whole projection, so `id` and the rationale key travelled although `Code.gs` reads only name, category and imageUrl | 🔨 | Blake | *(History corrected 2026-09-09 under Codex review: an earlier version of this row said the packet transmitted the accessory `price`; that had already stopped being true with PR #104's projection, before this work began.)* Narrow the spread to the fields `Code.gs` reads, as its own small Codex-reviewed PR — approved engineering work, not another owner gate; not bundled into 2.1. Payload minimisation is a property of the packet builder and is verified without any delivery — `gasUrl` stays blank and nothing is sent. **Built 2026-09-09** on branch `claude/accessory-payload-minimisation` from `main` `e76890c` (PR #111): the packet is now a fresh three-field literal (name, category, imageUrl), proved by source and by executing the real builder over a priced catalog record (email gating +8, two sweep entries); the integrated candidate's delivery harness records the live packet and pins the same fields. Moves to ✅ when its PR merges |
+| **Accessory price provenance** — the shipped accessory prices (the one live "From $" surface) drift from `incoming/lacks_catalog_selection.json`: four are cent-truncated about $1 BELOW the observed catalog price (Dri-Tec 149.95→149, iProtect 89.95→89, Ver-Tex 249.95→249, gel memory pillow 99.95→99) and `foundation-princess` $499 has no recorded source anywhere; none carries `verifiedAt`, a source URL or an owner | ⏳ build merged (PR #112) / final gate for the values | Blake | *(2026-09-09: scheduled by the owner build direction as workstream (2), inside the 2.2 construction note — ❓ → ⬜ on the build portion only.)* **Build now, inside the integrated candidate:** bring the accessory prices under a governed provenance contract modelled on 2.1 — per-entry `verifiedAt`, allowlisted `sourceUrl`, owner and freshness — with the fail-closed behaviour and its tests. **Not pre-authorized:** a standalone merge that withdraws the today-displayed "From $" surface without a replacement, which would breach the no-degraded-`main` rule; any customer-visible suppression or replacement merges together with governed, attested pricing in the complete candidate, unless Blake separately orders an immediate safety removal. **Final gate:** confirming the values with Lacks, correcting the data, and any representation of an accessory price as approved. Found by the 2026-08-27 Phase 2.1 discovery; deliberately NOT changed by slice 2.1a. **Built 2026-09-09** on branch `claude/accessory-price-provenance`, stacked on the 2.2 slices, exactly under the ruling: accessories come under the 2.1 pricing contract through the same gate — an optional `SKU` column on the workbook's Accessories tab flows through the builder, the converter (JSON key only when populated) and a validator grammar check, shipping blank so `data/accessories.json` is byte-identical; the gate resolves an accessory record by its single string `sku` with no size; the Sleep System featured card asks the gate for its item and the governed slot **replaces** the catalog "From $" line when it resolves, so an ungoverned figure never renders beside a governed one — while the gate is off (every production state) the legacy line renders exactly as shipped, and it leaves only at activation together with the attested price that replaces it (no standalone withdrawal, no degraded `main`). Guards: presentation suite +12 with two planted mutants, three sweep entries (the harness check is the rendered observer for the replacement rule), validator self-tests, the harness drilling one FIXTURE accessory price per shipped accessory and the rendered walk proving shipped and dark show the catalog line and no governed slot while the opened states show the governed slot and no catalog line. The values, their confirmation with Lacks and any approved representation stay at the final gate *(2026-10-04: the build portion merged 2026-09-10, PR #112 via PR #119; the values, their confirmation with Lacks and any approved representation stay at the final gate.)* |
 | Presenter mode — shipping mechanism | ❓ | Blake + kiosk hardening review | The hardening review decides the mechanism; the prototype's query parameter is rehearsal tooling, not a shipped design (D6) |
 | **Tier presentation (trust)** — a neutral initial tier choice or another presentation control, versus the shipped Gold-first initial tier with the within-tier model | ❓ | Blake | *(Ruled for this cycle, 2026-08-21: the shipped Gold-first / within-tier presentation is retained with the 15px relativity note; a neutral initial tier (B) and any other control (D) are DEFERRED to a later owner/research decision; this is not a permanent endorsement of Gold-first.)* Any future change is presentation only — it must preserve tier identity and membership, within-tier order, the threshold, cap and back-fill. A cross-tier highest-fit marker or any global best-match computation is the 3.3 row above (NOT AUTHORIZED), not this one. The legible within-tier relativity note is NOT this decision |
 | **Heritage content** — Welcome only (current), an optional moderated-research condition, or no additional heritage | ❓ | Blake | *(Ruled for this cycle, 2026-08-21: the restrained Welcome treatment stays; no per-question rail, no anniversary count, no store counts, awards, testimonials, QR codes, community claims or anecdotes in the quiz; the research prototype is preserved separately; historical content may be tested later as an optional research condition — that later test is what stays open here.)* Any future fact beyond the Welcome line needs governance modelled on financing (freshness, allowlisted source, approval, ES review) |
@@ -6174,7 +6314,11 @@ work listed under a ◐ item's Proceeds line.
 | **Trust measurement** — moderated current-vs-process-transparency sessions; whether a restrained heritage condition is retained as a third research condition; any aggregate local measurement store (which must record no answers and no identity, or the data-use sentence becomes false) | ❓ | Blake | Approval of the study design; the store is designed before anything is promised |
 | **VoiceOver sanity pass on the trust copy** — the owner's 2026-08-21 ruling (R7) requires a one-time sanity pass on the mounted iPad (new headline focus, the Welcome and Review lines in reading order, no duplicate announcement) before PR #54 leaves draft | ✅ | Blake | PASS by Blake's 2026-08-22 all-tests-pass attestation for `f748f59`; compact VO-01…04 and VO-ES-01 covered. No transcript/export supplied; evidence limitation recorded in `docs/trust-integrity-physical-gate-2026-08-21.md` §15. Screen-reader functionality itself stays out of scope by the 2026-08-12 permanent ruling. |
 
-*(Resolved and removed from the table: "Scoring case-fold (3.1)" and
+*(Resolved and removed from the table: "Accessory packet projection in the
+email payload" — completed 2026-09-10 by PR #111 (`fc2fc44`, merged via the
+integrated candidate PR #119 → `473c643`): the packet is a fresh three-field
+literal (name, category, imageUrl), the fields `Code.gs` reads, verified
+without delivery; removed 2026-10-04. "Scoring case-fold (3.1)" and
 "Quiz-tag vocabulary gap (3.2)" — approved by Blake's 2026-09-09 continuous
 build direction as bounded sequential current-`main` re-cuts after disabled
 Phase 2.2 incorporation; the old candidates stay evidence and the nine-question
@@ -6373,10 +6517,16 @@ document, not here.
     stay false until the gate. *(Owner direction 2026-09-09: that disabled
     preparation is the next construction workstream and runs without an
     interim acceptance stop; the activation output remains gated.)*
-12. ⬜ **Approved scoring-integrity corrections after disabled pricing** —
+    *(State 2026-10-04: the disabled implementation is built — 2.2a–2.2d,
+    PRs #107–#110, merged 2026-09-10 via PR #119; the dark quote model merged
+    via PR #132; Payment Choice slices 1 and 2 merged via PRs #133 and #135
+    with every activation flag false. Activation stays ◐ at the final gate.)*
+12. ⏳ **Approved scoring-integrity corrections after disabled pricing** —
     3.1, then 3.2 on its accepted result, each re-cut from current `main` and
     re-measured against the nine-question journey. Every other Phase 3 item
-    remains locked or proposed exactly as marked.
+    remains locked or proposed exactly as marked. *(State 2026-10-04: both
+    re-cuts merged 2026-09-10 — 3.1 PR #113, 3.2 PR #114 — via PR #119; the
+    items are ⏳ pending the step-7 final gate.)*
 13. 🔨 **Guided-selling cohesion and conversion readiness** — the Phase 1
     milestone added 2026-08-29 by owner direction, after Slice 6 and before
     2.2 activation (chronologically after 2.1's closure). Its first targets
@@ -6431,7 +6581,7 @@ document, not here.
     role-play kit are still owed at the one final non-live validation pass,
     which has not run; every merge is preview only with mounted-device
     verification recorded NOT PERFORMED; the milestone stays 🔨.)*
-14. ⬜ **Complete one production-readiness candidate, then gate once** — owner
+14. ⏳ **Complete one production-readiness candidate, then gate once** — owner
     direction 2026-09-09. After disabled Phase 2.2 incorporation, accessory
     price provenance and payload minimisation, 3.1, 3.2 and the remaining
     production-readiness gaps, assemble one integrated candidate. Only then run
@@ -6447,7 +6597,7 @@ document, not here.
     code and what is a final-gate input — with G1 found already closed by
     Slice 6 C5, G5 (converter line-ending churn) and G6 (the CLAUDE.md
     step-count drift) built in the same PR as the list, and G4, G2 and G7
-    next as their own bounded PRs.)* *(Later still, 2026-09-09: G4, G2 and G7 built as PRs #116–#118; the integrated candidate assembled as `claude/integrated-candidate-2026-09-09` (PR #119), seven `--no-ff` merges of the construction tips plus one integration commit; step 6 candidate assembly and the AUTOMATED candidate verification are complete and recorded in `docs/production-readiness-candidate-2026-09-09.md`; step 7 — the final combined human validation and the activation decision — has NOT been run: mounted iPad/Safari, native Spanish, role-play, business/legal approval, governed real values and showroom/backend activation all remain pending in that single final gate. The candidate's inactive configuration is a safety posture, not an activation decision. Codex review of the candidate (2026-09-09) returned NOT READY and its corrections were applied on the same branch as additive commits (the restored presentation contract, runtime money admission, this row's history, these status words, the device-accessible rehearsal path). No owner mark moves.)* *(Later, 2026-09-10: Codex re-review PASSED PR #119 at exact head `089a5ec`; step 7 was OPENED — the final-gate packet and its results ledger live OUTSIDE the repository under `Documents/DreamFinder-manual-gates/final-gate-2026-09-10/`. Blake then ruled that the candidate becomes the shipped preview: PR #119 MERGED → main `473c643` (post-merge CI and Pages green; preview only — the inactive configuration is unchanged and nothing is showroom-authorized). Blake's first look at that preview on an iPad in landscape surfaced two Sleep System findings, recorded in the ledger as F1 and F2 and corrected as ONE bounded PR from main (`claude/sleep-system-landscape-cards`): F1 — the featured card's image box (aspect-ratio 2:1 with a 210px minimum height) measured 420px whatever its column measured, so the picture sat over the text on the adjustable and pillow cards; the box now fills its column with no minimum height and the rendered layout check pins the geometry (box ends before the body column; image inside the box and inside the card). F2 — the non-recommended adjustable, support and protection options offered no details; each alternative row now carries a Details control that promotes that option into the featured card with its full treatment (image, benefit line, distinction, the single price surface, the controls) — the same promotion the pillow step's "Try this" already performs — while the engine's first pick stays in the list with its own honest tag (3.7 P2), "Back to recommended" restores the order, a view is per step and is wiped with the session, and viewing records no decision and touches no cart. Five bilingual literal pairs were added to the renderer (Details / Ver detalles, Viewing an alternative / Viendo una alternativa, Back to recommended / Volver a la recomendada, and the tag's reuse of the two eyebrow pairs); the Spanish is provisional under Invariant 12. The step-7 human gates are NOT performed: the mounted-device pass, native Spanish review, role-play, and business/legal approval are all recorded PENDING (Blake, 2026-09-10: no reviewer is available yet for the Spanish, business or legal reviews); governed real pricing values are Blake's next input; the backend runbook's Phases B–C (Sheet + Apps Script TEST deployment) may begin while `gasUrl` stays blank; showroom use, pricing display, exact promotions and scenarios stay withheld. The F1/F2 PR is Codex-reviewed and merges only on Blake's order. No owner mark moves.)* *(Later, 2026-09-11: Codex re-review approved the F1/F2 correction at exact head `3addc9f` with no findings (reported by the owner from the Codex app; not a GitHub review); Blake authorized the merge and PR #120 merged 2026-09-11 02:12Z as main `132fb35` (normal merge commit, parents `473c643` + `3addc9f`; branch kept). Post-merge CI run 34553735337 and Pages run 34553734736 both succeeded at exactly `132fb35`; the public preview serves `index.html`, `store-config`, `quiz`, `mattresses` and `allowed-hosts` hash-identical to `main`; a headless render at both iPad viewports (1194×834 and 834×1194) showed Welcome with its Start control, no unauthorized-domain screen, no data-error overlay, a clean console and no failed request, with all five F2 bilingual literal pairs present in the served bytes; served `gasUrl` is blank, `discount.mode` is `disabled` and pricing display is off. The shipped preview is therefore `132fb35`; the merge is preview only and authorizes nothing — F1 and F2 move to CORRECTED AND MERGED in the step-7 ledger outside the repository, with Blake's own iPad-landscape re-check of the Sleep System cards still owed (his re-check of the two findings, not the mounted-device pass); the step-7 ledger states are unchanged — mounted-device validation remains NOT PERFORMED, the native-Spanish, business and legal reviews remain PENDING for want of reviewers, and the activation and configuration rows retain their recorded WITHHELD or ORDERED states; the five ES pairs stay provisional until the native-Spanish review. A post-merge browser re-check on 2026-09-11 — Codex, responsive Chromium against the live preview at 1194×834 and 1024×768 landscape, a rendered-browser validation and NOT Blake's physical iPad/Safari attestation — found 0 px horizontal image/text overlap on the adjustable and pillow cards, the adjustable and protection Details opening their full alternative treatment, Back to recommended restoring the recommendation, the alternate pillow's Try this rendering cleanly, the plan state unchanged at 0 added / 0 addressed and a clean console; the support step ships no alternative, so that sub-check is not applicable. Blake's physical iPad re-check of the two findings remains owed. No owner mark moves.)* *(Later, 2026-09-14: on Blake's instruction the Sleep System's adjustability and support steps were combined into one Base step — PR #122 (`claude/combine-base-category`, DRAFT, head `a535ecc`, cut from main `ec5402c`; NOT merged). The two steps asked one physical question twice (what sits under the mattress), so a customer could record keep-current on one and a demo on the other; the rail now walks Base → Pillow → Protection from `SLEEP_SYSTEM_STEPS` (three chips, a two-column wrap at ≤680px), with one reversible Base decision (`decisions.base`) and an adjustable base and a foundation displacing each other in the plan because they share one physical slot. The accessory engine is untouched: `readSleepSystemGroups()` still returns its four groups and the Base step composes adjustability + support in the view layer, so the Phase 1 output-regression fixture is byte-identical (190/190) and no selection, ranking, grouping or hero rule changed. The ordering rule (bases lead only when an answer fired), the render order, the card-control mapping and the one-slot eviction are implementer choices recorded in the PR as easy to change; the new Spanish strings are provisional under Invariant 12. Two audit repairs make the setup guide's pressed height choice agree with the plan: selecting an adjustable base (`4396e79`), or a demo request or deferral on the Base step (`602c0e1`), clears the foundation height choice it evicts. Owner ruling 2026-09-14 (option 1; option 2, reopening the whole Base choice, rejected): removing a foundation with its own Remove control keeps the customer's standard / low height preference pressed — the shipped behaviour, pinned test-only at `a535ecc`. Evidence: the full local mirror including the mutation sweep (733/733 caught) passed at `602c0e1`; GitHub "Full suite (18 checks)" run 34878996451, which includes the sweep's added entry (734), succeeded at exactly `a535ecc`. This reconciliation amends item 1.4's "Preserved unchanged" paragraph, exit clauses 1 and 2 and the device-pass specification to name the three steps; the dated historical notes that describe four steps stay as written. No iPad/Safari check and no native-Spanish review of the Base step has been performed; both fall within the step-7 human rows, which stay NOT PERFORMED / PENDING. PR #122 merges only on Blake's order, and this note is to be extended with the merge commit and post-merge CI/Pages evidence when it does. No owner mark moves.)* *(Later, 2026-09-14 America/Chicago (2026-09-15Z): #122's head moved once after the note above, to `fa504f5` (parent `a535ecc`): a comment-only correction of the `.github/workflows/ci.yml` comment that still said "four-step order", with no step, command, trigger or job change; Codex approved that diff separately. An independent Codex implementation review, reported through the Codex app and not a submitted GitHub review, returned APPROVE with no actionable findings at exact head `fa504f5`. It confirmed both height-clearing repairs and the option 1 ruling. It re-ran the focused suites independently (sleep_system_presentation 686/686, session_safety 568/568, session_async 287/287, phase1 output regression 190/190, sleep_plan 285/285). It also passed a bounded transition check over 606 reachable states across EN/ES and triggered/untriggered recommendations, exercising up to three visible-control actions through the actual handlers and renderers; that check is not exhaustive coverage of every Base action or sequence. Full-suite and rendered-layout evidence for that head is GitHub CI run 34912040632 (success at `fa504f5`). Blake authorized the preview merge at that head: PR #122 was marked ready and MERGED 2026-09-15 01:03:47Z as main `aac6d40` (normal merge commit, parents `ec5402c` + `fa504f5`, merged with the head pinned; branch kept), and the merge commit's tree is identical to `fa504f5`'s. Post-merge CI run 34915738992 ("Full suite (18 checks)", push) and Pages run 34915737626 (build, deploy and report-build-status) both succeeded at exactly `aac6d40`. The public preview serves `index.html`, `data/store-config.json`, `data/quiz.json`, `data/mattresses.json`, `data/allowed-hosts.js`, `data/dict-en.json`, `data/dict-es.json` and `demo/black-friday/index.html` with HTTP 200 and SHA-256 identical to `aac6d40`, and the served `index.html` carries the Base step table. Served `gasUrl` is blank, `discount.mode` is `disabled` and `pricing.displayEnabled` is false. No headless render or browser check was run after this merge. The shipped preview is therefore `aac6d40`. The merge is preview only and authorizes nothing: no live service, activation or configuration setting changed. The historical evidence above stays tied to the commits it names. The step-7 human rows are unchanged by this merge: the mounted iPad/Safari pass remains NOT PERFORMED, and the native-Spanish review of the Base step's provisional strings is still owed together with every other step-7 row. PR #123 (Spanish accent fixes, open) is now behind main and must regenerate the demo bundle when updated. No owner mark moves.)*
+    next as their own bounded PRs.)* *(Later still, 2026-09-09: G4, G2 and G7 built as PRs #116–#118; the integrated candidate assembled as `claude/integrated-candidate-2026-09-09` (PR #119), seven `--no-ff` merges of the construction tips plus one integration commit; step 6 candidate assembly and the AUTOMATED candidate verification are complete and recorded in `docs/production-readiness-candidate-2026-09-09.md`; step 7 — the final combined human validation and the activation decision — has NOT been run: mounted iPad/Safari, native Spanish, role-play, business/legal approval, governed real values and showroom/backend activation all remain pending in that single final gate. The candidate's inactive configuration is a safety posture, not an activation decision. Codex review of the candidate (2026-09-09) returned NOT READY and its corrections were applied on the same branch as additive commits (the restored presentation contract, runtime money admission, this row's history, these status words, the device-accessible rehearsal path). No owner mark moves.)* *(Later, 2026-09-10: Codex re-review PASSED PR #119 at exact head `089a5ec`; step 7 was OPENED — the final-gate packet and its results ledger live OUTSIDE the repository under `Documents/DreamFinder-manual-gates/final-gate-2026-09-10/`. Blake then ruled that the candidate becomes the shipped preview: PR #119 MERGED → main `473c643` (post-merge CI and Pages green; preview only — the inactive configuration is unchanged and nothing is showroom-authorized). Blake's first look at that preview on an iPad in landscape surfaced two Sleep System findings, recorded in the ledger as F1 and F2 and corrected as ONE bounded PR from main (`claude/sleep-system-landscape-cards`): F1 — the featured card's image box (aspect-ratio 2:1 with a 210px minimum height) measured 420px whatever its column measured, so the picture sat over the text on the adjustable and pillow cards; the box now fills its column with no minimum height and the rendered layout check pins the geometry (box ends before the body column; image inside the box and inside the card). F2 — the non-recommended adjustable, support and protection options offered no details; each alternative row now carries a Details control that promotes that option into the featured card with its full treatment (image, benefit line, distinction, the single price surface, the controls) — the same promotion the pillow step's "Try this" already performs — while the engine's first pick stays in the list with its own honest tag (3.7 P2), "Back to recommended" restores the order, a view is per step and is wiped with the session, and viewing records no decision and touches no cart. Five bilingual literal pairs were added to the renderer (Details / Ver detalles, Viewing an alternative / Viendo una alternativa, Back to recommended / Volver a la recomendada, and the tag's reuse of the two eyebrow pairs); the Spanish is provisional under Invariant 12. The step-7 human gates are NOT performed: the mounted-device pass, native Spanish review, role-play, and business/legal approval are all recorded PENDING (Blake, 2026-09-10: no reviewer is available yet for the Spanish, business or legal reviews); governed real pricing values are Blake's next input; the backend runbook's Phases B–C (Sheet + Apps Script TEST deployment) may begin while `gasUrl` stays blank; showroom use, pricing display, exact promotions and scenarios stay withheld. The F1/F2 PR is Codex-reviewed and merges only on Blake's order. No owner mark moves.)* *(Later, 2026-09-11: Codex re-review approved the F1/F2 correction at exact head `3addc9f` with no findings (reported by the owner from the Codex app; not a GitHub review); Blake authorized the merge and PR #120 merged 2026-09-11 02:12Z as main `132fb35` (normal merge commit, parents `473c643` + `3addc9f`; branch kept). Post-merge CI run 34553735337 and Pages run 34553734736 both succeeded at exactly `132fb35`; the public preview serves `index.html`, `store-config`, `quiz`, `mattresses` and `allowed-hosts` hash-identical to `main`; a headless render at both iPad viewports (1194×834 and 834×1194) showed Welcome with its Start control, no unauthorized-domain screen, no data-error overlay, a clean console and no failed request, with all five F2 bilingual literal pairs present in the served bytes; served `gasUrl` is blank, `discount.mode` is `disabled` and pricing display is off. The shipped preview is therefore `132fb35`; the merge is preview only and authorizes nothing — F1 and F2 move to CORRECTED AND MERGED in the step-7 ledger outside the repository, with Blake's own iPad-landscape re-check of the Sleep System cards still owed (his re-check of the two findings, not the mounted-device pass); the step-7 ledger states are unchanged — mounted-device validation remains NOT PERFORMED, the native-Spanish, business and legal reviews remain PENDING for want of reviewers, and the activation and configuration rows retain their recorded WITHHELD or ORDERED states; the five ES pairs stay provisional until the native-Spanish review. A post-merge browser re-check on 2026-09-11 — Codex, responsive Chromium against the live preview at 1194×834 and 1024×768 landscape, a rendered-browser validation and NOT Blake's physical iPad/Safari attestation — found 0 px horizontal image/text overlap on the adjustable and pillow cards, the adjustable and protection Details opening their full alternative treatment, Back to recommended restoring the recommendation, the alternate pillow's Try this rendering cleanly, the plan state unchanged at 0 added / 0 addressed and a clean console; the support step ships no alternative, so that sub-check is not applicable. Blake's physical iPad re-check of the two findings remains owed. No owner mark moves.)* *(Later, 2026-09-14: on Blake's instruction the Sleep System's adjustability and support steps were combined into one Base step — PR #122 (`claude/combine-base-category`, DRAFT, head `a535ecc`, cut from main `ec5402c`; NOT merged). The two steps asked one physical question twice (what sits under the mattress), so a customer could record keep-current on one and a demo on the other; the rail now walks Base → Pillow → Protection from `SLEEP_SYSTEM_STEPS` (three chips, a two-column wrap at ≤680px), with one reversible Base decision (`decisions.base`) and an adjustable base and a foundation displacing each other in the plan because they share one physical slot. The accessory engine is untouched: `readSleepSystemGroups()` still returns its four groups and the Base step composes adjustability + support in the view layer, so the Phase 1 output-regression fixture is byte-identical (190/190) and no selection, ranking, grouping or hero rule changed. The ordering rule (bases lead only when an answer fired), the render order, the card-control mapping and the one-slot eviction are implementer choices recorded in the PR as easy to change; the new Spanish strings are provisional under Invariant 12. Two audit repairs make the setup guide's pressed height choice agree with the plan: selecting an adjustable base (`4396e79`), or a demo request or deferral on the Base step (`602c0e1`), clears the foundation height choice it evicts. Owner ruling 2026-09-14 (option 1; option 2, reopening the whole Base choice, rejected): removing a foundation with its own Remove control keeps the customer's standard / low height preference pressed — the shipped behaviour, pinned test-only at `a535ecc`. Evidence: the full local mirror including the mutation sweep (733/733 caught) passed at `602c0e1`; GitHub "Full suite (18 checks)" run 34878996451, which includes the sweep's added entry (734), succeeded at exactly `a535ecc`. This reconciliation amends item 1.4's "Preserved unchanged" paragraph, exit clauses 1 and 2 and the device-pass specification to name the three steps; the dated historical notes that describe four steps stay as written. No iPad/Safari check and no native-Spanish review of the Base step has been performed; both fall within the step-7 human rows, which stay NOT PERFORMED / PENDING. PR #122 merges only on Blake's order, and this note is to be extended with the merge commit and post-merge CI/Pages evidence when it does. No owner mark moves.)* *(Later, 2026-09-14 America/Chicago (2026-09-15Z): #122's head moved once after the note above, to `fa504f5` (parent `a535ecc`): a comment-only correction of the `.github/workflows/ci.yml` comment that still said "four-step order", with no step, command, trigger or job change; Codex approved that diff separately. An independent Codex implementation review, reported through the Codex app and not a submitted GitHub review, returned APPROVE with no actionable findings at exact head `fa504f5`. It confirmed both height-clearing repairs and the option 1 ruling. It re-ran the focused suites independently (sleep_system_presentation 686/686, session_safety 568/568, session_async 287/287, phase1 output regression 190/190, sleep_plan 285/285). It also passed a bounded transition check over 606 reachable states across EN/ES and triggered/untriggered recommendations, exercising up to three visible-control actions through the actual handlers and renderers; that check is not exhaustive coverage of every Base action or sequence. Full-suite and rendered-layout evidence for that head is GitHub CI run 34912040632 (success at `fa504f5`). Blake authorized the preview merge at that head: PR #122 was marked ready and MERGED 2026-09-15 01:03:47Z as main `aac6d40` (normal merge commit, parents `ec5402c` + `fa504f5`, merged with the head pinned; branch kept), and the merge commit's tree is identical to `fa504f5`'s. Post-merge CI run 34915738992 ("Full suite (18 checks)", push) and Pages run 34915737626 (build, deploy and report-build-status) both succeeded at exactly `aac6d40`. The public preview serves `index.html`, `data/store-config.json`, `data/quiz.json`, `data/mattresses.json`, `data/allowed-hosts.js`, `data/dict-en.json`, `data/dict-es.json` and `demo/black-friday/index.html` with HTTP 200 and SHA-256 identical to `aac6d40`, and the served `index.html` carries the Base step table. Served `gasUrl` is blank, `discount.mode` is `disabled` and `pricing.displayEnabled` is false. No headless render or browser check was run after this merge. The shipped preview is therefore `aac6d40`. The merge is preview only and authorizes nothing: no live service, activation or configuration setting changed. The historical evidence above stays tied to the commits it names. The step-7 human rows are unchanged by this merge: the mounted iPad/Safari pass remains NOT PERFORMED, and the native-Spanish review of the Base step's provisional strings is still owed together with every other step-7 row. PR #123 (Spanish accent fixes, open) is now behind main and must regenerate the demo bundle when updated. No owner mark moves.)* *(State 2026-10-04: step 6 is complete — the integrated candidate merged 2026-09-10 via PR #119 → `473c643`, and later PRs #120–#136 built on it on `main`; step 7, the combined human validation and activation decision, has NOT run. See "Current status — 2026-10-04" at the top.)*
 
 ---
 
@@ -6464,7 +6614,7 @@ described behaviour is the durable anchor.
 | 3 | A next-step rail already exists on the Sleep Brief, rendering three steps as plain divs |
 | 4 | The "Try this:" testing prompt is currently fully visible on the Sleep Brief, not behind disclosure |
 | 5 | Per-feature match reasons never render: every per-feature reason column is empty. *(Re-measured 2026-08-14 against the post-#41/#42 catalog: still true — and the generic default itself is now populated on only 14 of 26 models, so 12 models carry no reason text at all. 1.3's reason gate stands on this.)* |
-| 6 | Two quiz tags never score against the catalog because the match is case-sensitive; six more match no catalog feature in any casing |
+| 6 | Two quiz tags never score against the catalog because the match is case-sensitive; six more match no catalog feature in any casing *(Corrected 2026-10-04, measured on `main` `4637227` from `data/quiz.json` and `data/mattresses.json`: no longer true. 3.1 (PR #113) made the generator keep the catalog's camelCase tags, so none of the quiz's 17 scoring keys now misses only by case; 3.2 (PR #114) corrected `durable` to `durability`. The five keys that still match no model — `adjustable`, `hypoallergenic`, `memory` (class B) and `comfort`, `quality` (class C) — are declared dormant in `QUIZ_DORMANT_TAGS` in `tools/validation.py`, and an undeclared unreachable key fails the build.)* |
 | 7 | The maximum score is per-tier, so match percentages are not comparable across tiers |
 | 8 | Consultation Summary condition strings are quiz option labels resolved at render time, which is why 0.6 needs a separate mapping rather than a relabel |
 | 9 | Of 8 screens, `welcomeScreen` and `questionScreen` render no heading, and the Sleep Brief heading is empty until runtime — the basis for 0.3's destination policy |
@@ -6473,4 +6623,4 @@ described behaviour is the durable anchor.
 | 12 | Compare is available from the Results cards through the tray and comparison modal and from the Consultation Summary; the Sleep Brief CTA correctly routes through Results (PRs #30/#31/#34/#35 — see the reconciled table in 1.6) |
 | 13 | Archetype nicknames are computed but never reach the DOM; the visible heading is a fixed bilingual string |
 | 14 | `incoming/lacks_catalog_selection.json` carries 26 Queen-only SKU/price/regular-price observations dated 2026-07-30, outside the production generation path |
-| 15 | Accessory prices flow end to end and display today; mattress prices do not exist anywhere in the shipped data |
+| 15 | Accessory prices flow end to end and display today; mattress prices do not exist anywhere in the shipped data *(Re-checked 2026-10-04 on `main` `4637227`: still true of the shipped data — no model in `data/mattresses.json` carries a price or `skus` field (0 of 26), `pricing.products` and `pricing.formulas` are empty, and all 10 accessories in `data/accessories.json` carry a catalog price, shown through the catalog "From $" line while the governed slot stays off (PR #112). Since PR #132 the repository also holds website-extracted mattress and accessory prices in `demo/price-snapshot/snapshot.json`, status `UNVERIFIED-WEBSITE-EXTRACTION`, observed 2026-09-20 to 09-21; only localhost tools (`tools/serve_pricing_preview.py`, `tools/map_app_to_website.py`) read it and `index.html` never does. It is not shipped data and not approved pricing.)* |
