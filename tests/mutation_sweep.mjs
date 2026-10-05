@@ -129,6 +129,8 @@ const PAY_VALIDATOR = ["tools/validation.py --self-test"];
 // Payment Choice slice 2 (owner authorization 2026-10-03): the rendered
 // governed-calculation suite. About 50s, well inside the per-observer timeout.
 const PAY_FACTS = ["tests/payment_facts_check.py"];
+// Payment demo (owner demo-first direction 2026-10-05): the purchase studio.
+const PAY_DEMO = ["tests/payment_demo_check.py"];
 // Phase 2.1a (dark pricing framework) observers. The validator self-test owns
 // validate_pricing's admission rules; the contract suite owns the shipped
 // dark state at every layer AND re-runs the populated fixture through the
@@ -3536,6 +3538,21 @@ const MUTATIONS = [
   ["mapper: review bundle: sizes listed on the lead SKU's own parent page lose their identity link",
     "    if legs.get(\"skuLink\") == \"historical-parent-lists-this-size\":\n        return \"sku\"",
     "    if False:\n        return \"sku\"", MAPPING, "tools/map_app_to_website.py"],
+  ["payment demo: a split entry that no longer fits is re-read as one base",
+    "var qty = split ? (split.ok ? 2 : null) : quoteQuantityFor(kind, record);",
+    "var qty = split ? (split.ok ? 2 : 1) : quoteQuantityFor(kind, record);", PAY_DEMO],
+  ["payment demo: an item's monthly effect is not the exact difference of two complete quotes",
+    "var d = dw === null ? null : -dw;",
+    "var d = dw === null ? null : -dw + 100;", PAY_DEMO],
+  ["payment demo: plan cards leave the down payment out of total paid",
+    "total: e.state === 'calculated' ? t('ps.up_to', { amount: fmt(e.down + e.scheduledMax) }) : '',",
+    "total: e.state === 'calculated' ? t('ps.up_to', { amount: fmt(e.scheduledMax) }) : '',", PAY_DEMO],
+  ["payment demo: a down payment covering the whole purchase is accepted",
+    "if (p.minor >= merchMinor) return { state: 'too-large', minor: null, raw: raw };",
+    "", PAY_DEMO],
+  ["payment demo: the new-customer wipe keeps the plan and down payment",
+    "if (typeof psResetState === 'function') psResetState();",
+    "", PAY_DEMO],
 ];
 
 // ---------------------------------------------------------------------------

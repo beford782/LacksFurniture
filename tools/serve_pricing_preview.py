@@ -897,8 +897,9 @@ def demo_presentation(demo):
             {"id": "size", "en": "Priced for the size selected in this consultation.",
              "es": "Precio para el tamaño seleccionado en esta consulta."},
         ],
+        # Short beside every price; the full notice leads the purchase studio.
         "disclosures": [
-            {"id": "demo", "en": demo["notice"]["en"], "es": demo["notice"]["es"]},
+            {"id": "demo", "en": demo["priceNote"]["en"], "es": demo["priceNote"]["es"]},
         ],
         "states": {
             "price-unavailable": {"en": "Price unavailable", "es": "Precio no disponible"},

@@ -287,6 +287,35 @@ with sync_playwright() as p:
         check(f"{tag} the size answer itself changed", pg.evaluate("answers.mattress_size") == "king")
         check(f"{tag} the payment follows the new purchase immediately",
               money_minor(pg.evaluate(FIG, "monthly")) == fixed_pay(ksub - 50000, FACTOR72))
+        # every plan card states total PAID (down payment included), so it
+        # compares like-for-like with paying in full
+        c72d = pg.evaluate(CARD, "demo-9-99-72")
+        km = fixed_pay(ksub - 50000, FACTOR72)
+        check(f"{tag} plan cards show total paid including the down payment",
+              f"{(50000 + km * 72) // 100:,}" in c72d, c72d)
+        # split King: two Twin XL bases, priced as two Twin XL units
+        pg.click("[data-ps-split='on']")
+        pg.wait_for_timeout(150)
+        sl = next(l for l in pg.evaluate(LINES) if l["id"] == "base-bt3000")
+        txl = next(e["price"]["amountMinor"] for e in config["pricing"]["products"]
+                   if e["productId"] == "base-bt3000" and e["sku"] == next(
+                       a for a in accessories if a["id"] == "base-bt3000")["accessorySkus"]["twin_xl"])
+        check(f"{tag} split King prices two Twin XL bases", money_minor(sl["amount"]) == 2 * txl, sl["amount"])
+        check(f"{tag} the split is explicit in the cart (split flag, quantity 2)",
+              pg.evaluate("window._accCart['base-bt3000'].split === true && window._accCart['base-bt3000'].quantity === 2"))
+        ssub = money_minor(pg.evaluate(TXT, "[data-ps='subtotal']"))
+        check(f"{tag} the subtotal includes both split units",
+              ssub == pg.evaluate("buildConsultationQuote('handoff', 'king').merchandiseMinor")
+              and ssub == sum(money_minor(l["amount"]) for l in pg.evaluate(LINES)))
+        # a split that no longer fits is unresolved, never re-read as one base
+        bad = pg.evaluate("""() => { const sz = answers.mattress_size; answers.mattress_size = 'queen';
+          const q = buildConsultationQuote('handoff', 'queen'); answers.mattress_size = sz;
+          const l = q.lines.find(x => x.productId === 'base-bt3000'); return [q.status, l.reason]; }""")
+        check(f"{tag} a split entry at Queen is unresolved, not a single base", bad == ["unresolved", "invalid-split"], str(bad))
+        pg.click("[data-ps-size='queen']")
+        pg.wait_for_timeout(150)
+        check(f"{tag} leaving King returns the base to one unit",
+              pg.evaluate("!window._accCart['base-bt3000'].split && window._accCart['base-bt3000'].quantity === 1"))
         # unpriced item -> incomplete, no figures
         pg.click("[data-ps-size='twin']")
         pg.click("[data-ps-opt='base-tempur-ergo']")
@@ -317,6 +346,57 @@ with sync_playwright() as p:
         after = (pg.evaluate("_psPlan"), pg.input_value("#psDownInput"),
                  money_minor(pg.evaluate(TXT, "[data-ps='subtotal']")), money_minor(pg.evaluate(FIG, "monthly")))
         check(f"{tag} switching language keeps plan, down payment and every figure", before == after, f"{before} {after}")
+        # the same purchase on the other surfaces
+        pg.evaluate("async () => { await switchLanguage('" + lang + "'); }")
+        pg.wait_for_timeout(300)
+        ref = pg.evaluate("psRefPlan().id")
+        fin = pg.evaluate("window._favoriteMattressId")
+        pg.evaluate("(id) => window.openMattressDrawer(id)", fin)
+        pg.wait_for_timeout(400)
+        dm = pg.evaluate("(document.querySelector('.drawer-price__monthly') || {}).textContent || ''")
+        mprice = pg.evaluate("(id) => pricePresentationFor('drawer', window._drawerData[id].m, answers.mattress_size, null).amountMinor", fin)
+        plan_ref = next(p for p in plans if p["id"] == ref)
+        exp_m = fixed_pay(mprice, plan_ref["publishedPaymentFactor"]) if plan_ref["calculationMode"] == "published-fixed-factor" \
+            else eq_pay(mprice, plan_ref["termMonths"])
+        check(f"{tag} the drawer shows the mattress's monthly example under the plan in view",
+              money_minor(dm) == exp_m and ("example" in dm or "ejemplo" in dm), dm)
+        pg.evaluate("window.closeMattressDrawer()")
+        pg.evaluate("window.compareReviewFinalists()")
+        pg.wait_for_timeout(400)
+        cm = pg.evaluate("""() => { const g = (k) => Array.from(document.querySelectorAll('[data-cmp="' + k + '"] .cmp-val')).map(x => x.textContent.trim());
+          return { monthly: g('monthly'), system: g('system') }; }""")
+        cur_q = pg.evaluate("buildConsultationQuote('handoff', answers.mattress_size).merchandiseMinor")
+        check(f"{tag} compare shows each mattress's monthly example and the complete system with it",
+              len(cm["monthly"]) == 2 and all("/m" in x for x in cm["monthly"])
+              and len(cm["system"]) == 2 and any(f"{cur_q / 100:,.2f}" in x for x in cm["system"]), str(cm))
+        pg.evaluate("window.closeCompareModal && window.closeCompareModal()")
+        # the payment-details sheet: example wording, the right method per plan
+        pg.evaluate("window.showSavedPicks()")
+        pg.wait_for_timeout(300)
+        pg.evaluate("() => document.getElementById('hf2FinancingExplore').click()")
+        pg.wait_for_timeout(500)
+        pg.evaluate("""() => { const r = Array.from(document.querySelectorAll('#financingSheetCards .fin-ws-row'))
+          .find(b => /Demo/.test(b.textContent)); if (r) r.click(); }""")
+        pg.wait_for_timeout(500)
+        # the example plans' own notes (the real programs' "no payment method
+        # is published" notes are accurate and stay)
+        notes = pg.evaluate("Array.from(document.querySelectorAll('.fin-fx[data-fx-plan^=\"demo-\"] .fin-fx__note')).map(n => n.textContent)")
+        joined = " ".join(notes)
+        check(f"{tag} payment details: example plans are never described as published",
+              notes and "published" not in joined and "publicado" not in joined, joined[:200])
+        check(f"{tag} payment details: 0% plans state equal payments, never '0% of the purchase'",
+              ("equal" in joined or "iguales" in joined) and "0% of" not in joined and "0% de" not in joined, joined[:200])
+        pg.evaluate("() => { const d = document.querySelector('#financingSheet .fin-ws-done, #financingSheetDone, [onclick*=\"closeFinancingSheet\"]'); if (d) d.click(); else if (window.closeFinancingSheet) window.closeFinancingSheet(); }")
+        pg.wait_for_timeout(300)
+        cur_sub = pg.evaluate("buildConsultationQuote('handoff', answers.mattress_size).merchandiseMinor")
+        cur_pay = money_minor(pg.evaluate(FIG, "monthly"))
+        pg.evaluate("window.showEmailCapture()")
+        pg.wait_for_timeout(400)
+        th = pg.evaluate("document.getElementById('emailPreview').textContent")
+        check(f"{tag} the take-home preview carries the same subtotal and payment as the studio",
+              f"{cur_sub // 100:,}" in th and cur_pay is not None and f"${cur_pay // 100:,}/m" in th, th[-240:])
+        pg.evaluate("window.showSavedPicks()")
+        pg.wait_for_timeout(300)
         overflow = pg.evaluate("document.documentElement.scrollWidth - document.documentElement.clientWidth")
         check(f"{tag} no horizontal overflow", overflow <= 1, str(overflow))
         small = pg.evaluate("""() => Array.from(document.querySelectorAll('#purchaseStudio button')).filter(b => {

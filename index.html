@@ -11806,7 +11806,7 @@
     }
     .ps-changes { margin-top: 1.4rem; padding-top: 1.1rem; border-top: 1px solid var(--color-border); }
     .ps-changes__title { margin: 0; font: 400 1.25rem/1.2 var(--font-serif); color: var(--color-text); }
-    .ps-changes__hint { margin: 0.2rem 0 0.9rem; }
+    .ps-fine.ps-changes__hint { margin: 0.2rem 0 0.9rem; }
     .ps-purchase { margin-top: 0.4rem; }
     .ps-notice {
       margin: 0.35rem 0 0;
@@ -11821,20 +11821,28 @@
     .ps-layout {
       display: grid;
       grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
-      gap: 1.6rem;
+      grid-template-areas: "main pay" "changes pay";
+      gap: 0 1.6rem;
       align-items: start;
     }
+    .ps-col--main { grid-area: main; }
+    .ps-col--changes { grid-area: changes; }
     .ps-col--pay {
+      grid-area: pay;
       position: sticky;
-      top: 12px;
+      top: calc(var(--session-utility-clearance, 84px) + 8px);
       padding: 1.1rem;
       border-radius: 12px;
       background: color-mix(in srgb, var(--color-surface-alt) 55%, transparent);
       border: 1px solid var(--color-border);
     }
-    @media (max-width: 900px) {
-      .ps-layout { grid-template-columns: minmax(0, 1fr); }
-      .ps-col--pay { position: static; }
+    /* A container query, not a viewport breakpoint: the studio stacks when
+       its OWN width is narrow (portrait), whatever the page around it does. */
+    .hf2-review-section.ps { container-type: inline-size; }
+    @container (max-width: 900px) {
+      .ps-layout { grid-template-columns: minmax(0, 1fr); grid-template-areas: "main" "pay" "changes"; }
+      .ps-col--pay { position: static; margin-top: 1rem; }
+      .ps-chips--size { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     }
     .ps-block { margin-bottom: 1.15rem; }
     .ps-hero {
@@ -11860,8 +11868,18 @@
       color: var(--color-text);
     }
     .ps-muted { color: var(--color-text-muted); font-weight: 500; font-size: 0.95rem; }
-    .ps-illus { color: var(--store-primary); font-size: 0.8em; font-weight: 600; margin-left: 0.15em; }
+    .ps-illus { color: var(--ps-ink-accent); font-size: 0.8em; font-weight: 600; margin-left: 0.15em; }
     .ps-chips, .ps-picks, .ps-options { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    .ps-chips--size { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); }
+    .ps-chips--size .ps-chip { min-width: 0; }
+    .hf2-review-section.ps { --ps-ink-accent: color-mix(in srgb, var(--store-primary) 28%, #2b1d00); }
+    .ps-hero__line { margin: 0.35rem 0 0; font-size: 0.95rem; font-weight: 600; color: var(--color-text); font-variant-numeric: tabular-nums; }
+    .ps-confirm { margin: -0.2rem 0 1rem; }
+    .ps-confirm__row { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    .ps-chip--confirm { min-height: 48px; flex: 1 1 160px; }
+    .ps-card__sub--strong { color: var(--color-text); font-size: 0.85rem; }
+    .ps-opt--none { border-style: dashed; align-items: center; text-align: center; }
+    .ps-opt--none .ps-opt__name { font-size: 1rem; }
     .ps-chip, .ps-pick, .ps-opt, .ps-card, .ps-qty__btn {
       touch-action: manipulation;
       cursor: pointer;
@@ -11919,7 +11937,7 @@
     .ps-opt__name { font-weight: 600; font-size: 0.85rem; line-height: 1.25; }
     .ps-opt__price { font-size: 0.85rem; font-variant-numeric: tabular-nums; }
     .ps-opt.is-unpriced .ps-opt__price { color: var(--color-text-muted); }
-    .ps-opt__tick { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em; color: var(--store-primary); }
+    .ps-opt__tick { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em; color: var(--ps-ink-accent); }
     .ps-chip.is-on, .ps-pick.is-on, .ps-opt.is-on, .ps-card.is-on {
       border-color: var(--store-primary);
       box-shadow: 0 0 0 2px var(--store-primary) inset;
@@ -11940,11 +11958,13 @@
     .ps-line__text { display: flex; flex-direction: column; min-width: 0; }
     .ps-line__name { font-weight: 600; font-size: 0.92rem; }
     .ps-line__meta { font-size: 0.8rem; color: var(--color-text-muted); }
-    .ps-line__effect { font-size: 0.8rem; color: var(--store-primary); font-weight: 600; margin-top: 0.1rem; }
+    .ps-line__effect { font-size: 0.8rem; color: var(--ps-ink-accent); font-weight: 600; margin-top: 0.1rem; }
     .ps-line__amount { font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
     .ps-qty { display: inline-flex; align-items: center; gap: 0.35rem; }
     .ps-qty__btn { min-width: 44px; min-height: 44px; border-radius: 8px; font-size: 1.1rem; line-height: 1; }
     .ps-qty__btn[disabled] { opacity: 0.35; cursor: default; }
+    .ps-qty__fixed { padding: 0 0.4rem; }
+    .ps-split__hint { margin: 0.6rem 0 0.4rem; }
     .ps-qty__n { min-width: 2ch; text-align: center; font-weight: 700; font-variant-numeric: tabular-nums; }
     .ps-subtotal {
       display: flex;
@@ -11961,7 +11981,7 @@
     .ps-note { margin: 0.4rem 0 0; font-size: 0.9rem; color: var(--color-text); line-height: 1.45; }
     .ps-plans {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
       gap: 0.55rem;
       margin-bottom: 1rem;
     }
@@ -12005,6 +12025,8 @@
     .ps-fig__label { font-size: 0.74rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--color-text-muted); }
     .ps-fig__value { font: 700 1.15rem/1.25 var(--font-sans); font-variant-numeric: tabular-nums; color: var(--color-text); }
     .ps-fig__sub { font-size: 0.78rem; color: var(--color-text-muted); }
+    .ps-monthly-line { margin: 0.2rem 0 0; font-size: 0.85rem; font-weight: 600; color: var(--color-text);
+      font-variant-numeric: tabular-nums; }
     .ps-source { margin: 0.55rem 0 0; font-size: 0.78rem; line-height: 1.45; color: var(--color-text-muted); }
     .ps-edit { margin-top: 0.9rem; min-height: 44px; }
     .ps-flash { animation: psFlash var(--dfm-settle) var(--dfm-e-settle); }
@@ -12018,9 +12040,6 @@
       .ps-chip.is-on, .ps-pick.is-on, .ps-opt.is-on, .ps-card.is-on {
         outline: 3px solid Highlight;
         outline-offset: -3px;
-        forced-color-adjust: none;
-        background: Canvas;
-        color: CanvasText;
       }
       .ps-notice { border: 1px solid CanvasText; }
     }
@@ -13797,7 +13816,13 @@
         return;
       }
       var html = '<div class="drawer-section-label">' + escapeHtml(t('drawer.price_label')) + '</div>'
-        + '<div class="drawer-price__amount">' + escapeHtml(pres.text) + '</div>';
+        + '<div class="drawer-price__amount">' + escapeHtml(pres.text)
+        + ((pres.state === 'available' && typeof psIllustrative === 'function' && psIllustrative(pricingSkuFor(m, size)))
+          ? ' <span class="ps-illus" title="' + escapeHtml(t('ps.illustrative_mark')) + '">\u25c7</span>' : '')
+        + '</div>';
+      var monthly = (pres.state === 'available' && typeof psMattressMonthlyText === 'function')
+        ? psMattressMonthlyText('drawer', m) : '';
+      if (monthly) html += '<p class="drawer-price__monthly ps-monthly-line">' + escapeHtml(monthly) + '</p>';
       for (var i = 0; i < pres.notes.length; i++) {
         html += '<p class="drawer-price__note">' + escapeHtml(pres.notes[i]) + '</p>';
       }
@@ -13819,12 +13844,18 @@
       return (typeof answers === 'object' && answers) ? answers.mattress_size : undefined;
     }
     function priceSlotFor(surface, m, cls) {
-      var pres = pricePresentationFor(surface, m, priceSizeAnswer(), null);
+      var slotSize = priceSizeAnswer();
+      var pres = pricePresentationFor(surface, m, slotSize, null);
       if (pres.state === 'off' || !pres.text) return '';
       var base = (typeof cls === 'string' && /^[a-z0-9_-]+$/i.test(cls)) ? cls : 'price-slot';
       var html = '<div class="' + base + '" data-price-state="' + escapeHtml(pres.state) + '">'
         + '<span class="' + base + '__label">' + escapeHtml(t('drawer.price_label')) + '</span> '
-        + '<span class="' + base + '__amount">' + escapeHtml(pres.text) + '</span>';
+        + '<span class="' + base + '__amount">' + escapeHtml(pres.text) + '</span>'
+        + ((pres.state === 'available' && typeof psIllustrative === 'function' && psIllustrative(pricingSkuFor(m, slotSize)))
+          ? ' <span class="ps-illus" title="' + escapeHtml(t('ps.illustrative_mark')) + '">\u25c7</span>' : '');
+      var monthly = (pres.state === 'available' && typeof psMattressMonthlyText === 'function')
+        ? psMattressMonthlyText(surface, m) : '';
+      if (monthly) html += '<p class="' + base + '__monthly ps-monthly-line">' + escapeHtml(monthly) + '</p>';
       for (var i = 0; i < pres.notes.length; i++) {
         html += '<p class="' + base + '__note">' + escapeHtml(pres.notes[i]) + '</p>';
       }
@@ -13951,28 +13982,50 @@
       if (!Object.prototype.hasOwnProperty.call(rec.accessorySkus, size)) return null;
       return pricingCleanSku(rec.accessorySkus[size]) ? size : null;
     }
+    // SPLIT BASE (payment demo, 2026-10-05). A split King is a different
+    // configuration, not "quantity 2": two Twin XL adjustable bases, each its
+    // own product at its own Twin XL price. It exists only when the cart
+    // entry says so explicitly (`split: true`, quantity 2), the product is an
+    // adjustable base sold in Twin XL, and the customer's size is King. A
+    // split entry that no longer fits (another size, another count) is
+    // UNRESOLVED - never re-read as a single base and never re-priced at
+    // another size.
+    function quoteSplitFor(kind, record, size) {
+      if (kind !== 'accessory' || !record || typeof record.id !== 'string') return null;
+      var cart = (typeof window === 'object' && window && window._accCart) ? window._accCart : null;
+      var entry = (cart && Object.prototype.hasOwnProperty.call(cart, record.id)) ? cart[record.id] : null;
+      if (!entry || entry.split !== true) return null;
+      var rec = pricingCatalogRecord(record);
+      var ok = !!(rec && rec.subType === 'adjustable' && size === 'king' && entry.quantity === 2
+        && rec.accessorySkus && typeof rec.accessorySkus === 'object' && pricingCleanSku(rec.accessorySkus.twin_xl));
+      return { ok: ok, unitSize: 'twin_xl' };
+    }
     function quoteLineFor(surface, kind, record, size, fallbackId) {
-      var pres = pricePresentationFor(surface, record, size, null);
+      var split = quoteSplitFor(kind, record, size);
+      var priceSize = (split && split.ok) ? split.unitSize : size;
+      var pres = pricePresentationFor(surface, record, priceSize, null);
       // The customer's own count for this product. Absent (a mattress, or a
       // cart entry written before quantities existed) means one. A quantity
       // outside the admitted range is NOT clamped - it makes the line
       // unresolved, because a purchase whose count we cannot trust must not
       // produce a confident extended amount.
-      var qty = quoteQuantityFor(kind, record);
+      var qty = split ? (split.ok ? 2 : null) : quoteQuantityFor(kind, record);
       var qtyOk = qty !== null;
       if (!qtyOk) qty = 1;
       var admitted = qtyOk && pres.state === 'available'
         && priceMoneyValid(pres.amountMinor, pres.currency);
       var reason = admitted ? null
-        : (!qtyOk ? 'invalid-quantity'
+        : (split && !split.ok ? 'invalid-split'
+          : !qtyOk ? 'invalid-quantity'
           : record === null ? 'no-catalog-record'
           : (pres.state === 'price-unavailable' ? 'price-unavailable' : 'not-resolved'));
       return {
         kind: kind,
         productId: (record && typeof record.id === 'string') ? record.id
           : ((typeof fallbackId === 'string' && fallbackId) ? fallbackId : null),
-        sku: pricingSkuFor(record, size),
-        size: quoteLineSizeFor(kind, record, size),
+        sku: pricingSkuFor(record, priceSize),
+        size: quoteLineSizeFor(kind, record, priceSize),
+        split: !!(split && split.ok),
         quantity: qty,
         state: pres.state,
         resolved: admitted,
@@ -14312,6 +14365,34 @@
                           b: aHigher ? '\u2014' : signed });
             }
           }
+        }
+      }
+      if (psDemoConfig()) {
+        var ma = psMattressMonthlyText('compare', mA, true);
+        var mb = psMattressMonthlyText('compare', mB, true);
+        var rp = psRefPlan();
+        if ((ma || mb) && rp) {
+          rows.push({ key: 'monthly', label: t('ps.cmp_monthly', { plan: L(rp.headline) || '' }),
+                      a: ma || '—', b: mb || '—' });
+        }
+        // The whole purchase with each mattress: the Sleep System as built,
+        // priced around either bed (saved picks only - the purchase model
+        // prices the customer's own candidates).
+        var cartKeys = Object.keys(window._accCart || {});
+        if (cartKeys.length) {
+          var sys = function (m) {
+            var saved = (window._savedPicks || []).some(function (pk) { return pk && m && pk.id === m.id; });
+            if (!saved) return '—';
+            var q = psQuote(size, { finalistId: m.id });
+            if (!psComplete(q)) return '—';
+            var out = formatPriceAmount(q.merchandiseMinor, q.currency);
+            if (rp) {
+              var e = psPay(q, rp, 0, size);
+              if (e.state === 'calculated') out += ' · ' + t('ps.monthly', { amount: formatPriceAmount(e.payMinor, q.currency) });
+            }
+            return out;
+          };
+          rows.push({ key: 'system', label: t('ps.cmp_system'), a: sys(mA), b: sys(mB) });
         }
       }
       return rows;
@@ -14717,7 +14798,12 @@
 
       var notes = [];
       if (calculated) {
-        notes.push(t('pay.fx.basis', { pct: String(factorMicro / 10000) }));
+        var demoBasis = typeof psDemoConfig === 'function' && !!psDemoConfig();
+        if (est.method === 'published-equal-division') {
+          notes.push(t(demoBasis ? 'pay.fx.basis_equal_example' : 'pay.fx.basis_equal', { n: term }));
+        } else {
+          notes.push(t(demoBasis ? 'pay.fx.basis_example' : 'pay.fx.basis', { pct: String(factorMicro / 10000) }));
+        }
         // The figure appears because the MERCHANDISE subtotal reaches the
         // published minimum; what the lender counts toward it is unpublished,
         // so the note says this is not an eligibility finding.
@@ -14966,6 +15052,7 @@
       for (var k in src) {
         if (Object.prototype.hasOwnProperty.call(src, k) && src[k]) {
           out[k] = { id: k, quantity: src[k].quantity };
+          if (src[k].split === true) out[k].split = true;
         }
       }
       return out;
@@ -15036,6 +15123,34 @@
       var list = d && Array.isArray(d.illustrativeSkus) ? d.illustrativeSkus : [];
       return typeof sku === 'string' && list.indexOf(sku) !== -1;
     }
+    // The plan a single mattress's monthly illustration uses on the results,
+    // drawer and compare surfaces: the plan the customer is viewing in the
+    // studio when it calculates, otherwise the longest 0% example (the most
+    // conservative: no interest is hidden behind the lower figure).
+    function psRefPlan() {
+      var calc = psPlans().calc;
+      for (var i = 0; i < calc.length; i++) if (calc[i].id === _psPlan) return calc[i];
+      var best = null;
+      calc.forEach(function (pl) {
+        if (pl.apr === 0 && (!best || pl.termMonths > best.termMonths)) best = pl;
+      });
+      return best || calc[0] || null;
+    }
+    // "or about $X/mo · 0% APR for 24 months (example)" for one mattress at
+    // the customer's size, or '' (no demo, no price, no calculable plan).
+    function psMattressMonthlyText(surface, m, short) {
+      if (!psDemoConfig() || !m) return '';
+      var size = priceSizeAnswer();
+      var pres = pricePresentationFor(surface, m, size, null);
+      if (pres.state !== 'available' || !priceMoneyValid(pres.amountMinor, pres.currency)) return '';
+      var plan = psRefPlan();
+      if (!plan) return '';
+      var e = payEstimate(surface, m, size, plan, pres.amountMinor, pres.currency,
+        { qualifyingMinor: pres.amountMinor });
+      if (e.payMinor === null) return '';
+      if (short) return t('ps.monthly', { amount: formatPriceAmount(e.payMinor, pres.currency) });
+      return t('ps.mattress_monthly', { amount: formatPriceAmount(e.payMinor, pres.currency), plan: L(plan.headline) || '' });
+    }
     function purchaseStudioFor() {
       var none = { show: false };
       var demo = psDemoConfig();
@@ -15076,10 +15191,11 @@
         if (m === 0) return t('ps.same');
         return (m > 0 ? '+' : '−') + fmt(Math.abs(m));
       };
+      var termN = sel ? sel.termMonths : null;
       var monthlySigned = function (m) {
         if (m === null || m === undefined) return '';
         if (m === 0) return t('ps.same_month');
-        return t('ps.per_month', { amount: (m > 0 ? '+' : '−') + fmt(Math.abs(m)) });
+        return t('ps.per_month_term', { amount: (m > 0 ? '+' : '−') + fmt(Math.abs(m)), n: termN });
       };
 
       // ---- the mattress, its size and the saved alternatives ----------------
@@ -15124,7 +15240,8 @@
         var row = {
           id: ln.productId, kind: ln.kind, step: step || (ln.kind === 'mattress' ? 'mattress' : ''),
           name: quoteLineName(ln), image: ln.kind === 'mattress' ? mattress.image : ((rec && rec.image) || ''),
-          size: ln.size ? sizeLabelFor(ln.size) : '', qty: ln.quantity,
+          size: ln.size ? (ln.split ? t('ps.split_line', { size: sizeLabelFor(ln.size) }) : sizeLabelFor(ln.size)) : '',
+          qty: ln.quantity, split: !!ln.split,
           max: ({ pillow: 4, base: 1, protection: 1 })[step] || 1,
           priced: ln.resolved,
           unit: ln.resolved ? fmt(ln.unitAmountMinor) : '',
@@ -15138,8 +15255,8 @@
           var dw = effect(psQuote(size, { cart: c2 }));
           var d = dw === null ? null : -dw;
           if (d !== null) {
-            row.effect = d > 0 ? t('ps.effect_adds', { amount: fmt(d) })
-              : (d === 0 ? t('ps.effect_none') : t('ps.effect_saves', { amount: fmt(-d) }));
+            row.effect = d > 0 ? t('ps.effect_adds', { amount: fmt(d), n: termN })
+              : (d === 0 ? t('ps.effect_none') : t('ps.effect_saves', { amount: fmt(-d), n: termN }));
           }
         }
         return row;
@@ -15183,7 +15300,20 @@
           noneOpt = { selected: inStep.length === 0, diff: d0 === null ? '' : signed(d0),
                       diffMonthly: d0 === null ? '' : monthlySigned(effect(q0)) };
         }
-        return { step: step, options: options, none: noneOpt, count: inStep.length };
+        // Split King: offered for the selected adjustable base when it is
+        // sold in Twin XL and the customer's size is King.
+        var split = null;
+        var sb = (step === 'base' && size === 'king' && inStep.length === 1) ? inStep[0] : null;
+        if (sb && sb.subType === 'adjustable' && sb.accessorySkus && pricingCleanSku(sb.accessorySkus.twin_xl)) {
+          var on = cart[sb.id] && cart[sb.id].split === true;
+          var cs = psCartClone();
+          cs[sb.id] = on ? { id: sb.id, quantity: 1 } : { id: sb.id, quantity: 2, split: true };
+          var qs2 = psQuote(size, { cart: cs });
+          var ds = (complete && psComplete(qs2)) ? qs2.merchandiseMinor - merch : null;
+          split = { id: sb.id, on: on, diff: ds === null ? '' : signed(ds),
+                    diffMonthly: ds === null ? '' : monthlySigned(effect(qs2)) };
+        }
+        return { step: step, options: options, none: noneOpt, count: inStep.length, split: split };
       });
 
       // ---- the payment choices ------------------------------------------------
@@ -15196,7 +15326,10 @@
           id: pl.id, kind: 'calc', label: L(pl.headline) || '', selected: _psPlan === pl.id,
           apr: payAprText(pl.apr), term: pl.termMonths,
           monthly: e.state === 'calculated' ? fmt(e.payMinor) : '',
-          total: e.state === 'calculated' ? t('ps.up_to', { amount: fmt(e.scheduledMax) }) : '',
+          // Total PAID (down payment included), so every card compares
+          // like-for-like with paying in full.
+          total: e.state === 'calculated' ? t('ps.up_to', { amount: fmt(e.down + e.scheduledMax) }) : '',
+          downNote: (e.state === 'calculated' && e.down > 0) ? t('ps.incl_down', { amount: fmt(e.down) }) : '',
           interest: e.state === 'calculated' ? (e.interestMax > 0 ? t('ps.up_to', { amount: fmt(e.interestMax) }) : t('ps.no_interest_lc')) : '',
           state: e.state
         });
@@ -15213,6 +15346,7 @@
         if (payNow.state === 'calculated') {
           result.monthly = fmt(payNow.payMinor);
           result.scheduled = t('pay.fx.up_to', { amount: fmt(payNow.scheduledMax) });
+          result.scheduledLc = t('ps.up_to', { amount: fmt(payNow.scheduledMax) });
           result.interest = payNow.interestMax > 0 ? t('pay.fx.up_to', { amount: fmt(payNow.interestMax) }) : t('ps.no_interest');
           result.financed = fmt(payNow.principal);
           result.down = payNow.down > 0 ? fmt(payNow.down) : t('ps.down_none');
@@ -15221,8 +15355,15 @@
       } else if (quoteById[_psPlan]) {
         result = { kind: 'quote', label: L(quoteById[_psPlan].headline) || '' };
       }
+      var heroLine = '';
+      if (complete) {
+        heroLine = t('ps.hero_system', { amount: fmt(merch) });
+        if (result.kind === 'calc' && result.state === 'calculated') {
+          heroLine += ' · ' + t('ps.hero_monthly', { amount: result.monthly, n: result.term });
+        }
+      }
       return {
-        show: true, empty: false, notice: L(demo.notice) || '',
+        show: true, empty: false, notice: L(demo.notice) || '', heroLine: heroLine,
         priceSource: L(demo.priceSource) || '', paymentSource: L(demo.paymentSource) || '',
         size: size || '', sizeLabel: size ? sizeLabelFor(size) : '', sizes: sizes,
         mattress: mattress, picks: picks, lines: lines, groups: groups,
@@ -15263,10 +15404,11 @@
         + '<p class="ps-hero__price" data-ps="mattress-price">'
         + (m.mattress.priced ? escapeHtml(m.mattress.price) + psMark(m.mattress.illustrative)
           : '<span class="ps-muted">' + escapeHtml(t('ps.no_price_size', { size: m.sizeLabel })) + '</span>')
-        + '</p></div></div>';
+        + '</p>' + (m.heroLine ? '<p class="ps-hero__line" data-ps="hero-line">' + escapeHtml(m.heroLine) + '</p>' : '')
+        + '</div></div>';
       // size
       html += '<div class="ps-block"><span class="ps-kicker" id="psSizeLabel">' + escapeHtml(t('ps.size')) + '</span>'
-        + '<div class="ps-chips" role="group" aria-labelledby="psSizeLabel">'
+        + '<div class="ps-chips ps-chips--size" role="group" aria-labelledby="psSizeLabel">'
         + m.sizes.map(function (s) {
           return psBtn('class="ps-chip' + (s.active ? ' is-on' : '') + '" aria-pressed="' + (s.active ? 'true' : 'false')
             + '" data-ps-size="' + escapeHtml(s.id) + '"',
@@ -15289,7 +15431,7 @@
               + (pk.active ? '<span class="ps-pick__delta">' + escapeHtml(t('ps.pricing_now')) + '</span>'
                 : (pk.diff ? '<span class="ps-pick__delta">' + escapeHtml(t('ps.system_change', { amount: pk.diff }))
                   + (pk.diffMonthly ? ' · ' + escapeHtml(pk.diffMonthly) : '') + '</span>' : '')),
-              'window.psChooseMattress(\'' + escapeHtml(pk.id) + '\')');
+              'window.psChooseMattress(\'' + psId(pk.id) + '\')');
           }).join('') + '</div></div>';
       }
       // the steps
@@ -15317,24 +15459,42 @@
             + (o.diff ? '<span class="ps-opt__delta">' + escapeHtml(o.diff)
               + (o.diffMonthly ? '<br>' + escapeHtml(o.diffMonthly) : '') + '</span>' : '')
             + (o.selected ? '<span class="ps-opt__tick">' + escapeHtml(t(g.step === 'pillow' ? 'ps.in_system_remove' : 'ps.in_system')) + '</span>' : ''),
-            'window.psToggleOption(\'' + escapeHtml(o.id) + '\')');
+            'window.psToggleOption(\'' + psId(o.id) + '\')');
         });
-        html += '</div></div>';
+        html += '</div>';
+        if (g.split) {
+          var sp = g.split;
+          var spChip = function (on, label) {
+            var cur = sp.on === on;
+            return psBtn('class="ps-chip ps-chip--split' + (cur ? ' is-on' : '') + '" aria-pressed="' + (cur ? 'true' : 'false')
+              + '" data-ps-split="' + (on ? 'on' : 'off') + '"',
+              '<span class="ps-chip__name">' + escapeHtml(label) + '</span>'
+              + (!cur && sp.diff ? '<span class="ps-chip__price">' + escapeHtml(sp.diff)
+                + (sp.diffMonthly ? ' · ' + escapeHtml(sp.diffMonthly) : '') + '</span>' : ''),
+              'window.psSetSplit(\'' + psId(sp.id) + '\',' + (on ? 'true' : 'false') + ')');
+          };
+          html += '<p class="ps-fine ps-split__hint">' + escapeHtml(t('ps.split_hint')) + '</p>'
+            + '<div class="ps-chips" role="group" aria-label="' + escapeHtml(t('ps.split_label')) + '">'
+            + spChip(false, t('ps.split_single')) + spChip(true, t('ps.split_two')) + '</div>';
+        }
+        html += '</div>';
       });
       var changes = html;
       // the itemised purchase
       html = '<div class="ps-block ps-purchase"><span class="ps-kicker">' + escapeHtml(t('ps.items')) + '</span><ul class="ps-lines">';
       m.lines.forEach(function (l) {
         var qty = '';
-        if (l.kind === 'accessory' && l.max > 1) {
+        if (l.split) {
+          qty = '<span class="ps-qty__n ps-qty__fixed">× 2</span>';
+        } else if (l.kind === 'accessory' && l.max > 1) {
           qty = '<span class="ps-qty" role="group" aria-label="' + escapeHtml(t('ps.qty_label', { name: l.name })) + '">'
             + psBtn('class="ps-qty__btn" data-ps-qty="' + escapeHtml(l.id) + '" data-ps-delta="-1" aria-label="'
               + escapeHtml(t('ps.qty_less')) + '"' + (l.qty <= 1 ? ' disabled' : ''), '−',
-              'window.psQty(\'' + escapeHtml(l.id) + '\',-1)')
+              'window.psQty(\'' + psId(l.id) + '\',-1)')
             + '<span class="ps-qty__n" aria-live="polite">' + l.qty + '</span>'
             + psBtn('class="ps-qty__btn" data-ps-qty="' + escapeHtml(l.id) + '" data-ps-delta="1" aria-label="'
               + escapeHtml(t('ps.qty_more')) + '"' + (l.qty >= l.max ? ' disabled' : ''), '+',
-              'window.psQty(\'' + escapeHtml(l.id) + '\',1)')
+              'window.psQty(\'' + psId(l.id) + '\',1)')
             + '</span>';
         }
         html += '<li class="ps-line' + (l.priced ? '' : ' is-unpriced') + '" data-ps-line="' + escapeHtml(l.id) + '">'
@@ -15358,12 +15518,16 @@
           + '<p class="ps-warn">' + escapeHtml(t('ps.missing', { items: m.missing.join(', ') })) + '</p>';
       }
       html += '</div>';
-      return top + html + '<div class="ps-changes"><h3 class="ps-changes__title">' + escapeHtml(t('ps.try_change')) + '</h3>'
-        + '<p class="ps-fine ps-changes__hint">' + escapeHtml(t('ps.try_change_hint')) + '</p>' + changes + '</div>';
+      return {
+        main: top + html,
+        changes: '<h3 class="ps-changes__title">' + escapeHtml(t('ps.try_change')) + '</h3>'
+          + '<p class="ps-fine ps-changes__hint">' + escapeHtml(t('ps.try_change_hint')) + '</p>' + changes
+      };
     }
     function psPlansHtml(m) {
-      var html = '<div class="ps-plans" role="radiogroup" aria-labelledby="psPayLabel">';
-      m.cards.forEach(function (c) {
+      var html = '<div class="ps-plans" role="group" aria-labelledby="psPayLabel">';
+      var quote = m.cards.filter(function (c) { return c.kind === 'quote'; });
+      m.cards.filter(function (c) { return c.kind !== 'quote'; }).forEach(function (c) {
         var body;
         if (c.kind === 'full') {
           body = '<span class="ps-card__amount">' + escapeHtml(c.amount || t('ps.incomplete')) + '</span>'
@@ -15372,19 +15536,31 @@
           body = c.monthly
             ? '<span class="ps-card__amount">' + escapeHtml(t('ps.monthly', { amount: c.monthly })) + '</span>'
               + '<span class="ps-card__sub">' + escapeHtml(t('ps.for_months', { n: c.term })) + '</span>'
-              + '<span class="ps-card__sub">' + escapeHtml(t('ps.card_total', { amount: c.total })) + '</span>'
-              + '<span class="ps-card__sub">' + escapeHtml(t('ps.card_interest', { amount: c.interest })) + '</span>'
+              + '<span class="ps-card__sub ps-card__sub--strong">' + escapeHtml(t('ps.card_total', { amount: c.total })) + '</span>'
+              + (c.downNote ? '<span class="ps-card__sub">' + escapeHtml(c.downNote) + '</span>' : '')
+              + '<span class="ps-card__sub ps-card__sub--strong">' + escapeHtml(t('ps.card_interest', { amount: c.interest })) + '</span>'
             : '<span class="ps-card__amount ps-muted">' + escapeHtml(t(psStateKey(c.state))) + '</span>';
         } else {
           body = '<span class="ps-card__amount ps-muted">' + escapeHtml(t('pay.fx.to_confirm')) + '</span>'
             + '<span class="ps-card__sub">' + escapeHtml(t('ps.quote_sub')) + '</span>';
         }
-        html += psBtn('class="ps-card ps-card--' + c.kind + (c.selected ? ' is-on' : '') + '" role="radio" aria-checked="'
+        html += psBtn('class="ps-card ps-card--' + c.kind + (c.selected ? ' is-on' : '') + '" aria-pressed="'
           + (c.selected ? 'true' : 'false') + '" data-ps-plan="' + escapeHtml(c.id) + '"',
           '<span class="ps-card__label">' + escapeHtml(c.label) + '</span>' + body,
-          'window.psSetPlan(\'' + escapeHtml(c.id) + '\')');
+          'window.psSetPlan(\'' + psId(c.id) + '\')');
       });
-      return html + '</div>';
+      html += '</div>';
+      if (quote.length) {
+        html += '<div class="ps-confirm"><span class="ps-kicker">' + escapeHtml(t('ps.ask_about')) + '</span><div class="ps-confirm__row">'
+          + quote.map(function (c) {
+            return psBtn('class="ps-chip ps-chip--confirm' + (c.selected ? ' is-on' : '') + '" aria-pressed="'
+              + (c.selected ? 'true' : 'false') + '" data-ps-plan="' + escapeHtml(c.id) + '"',
+              '<span class="ps-chip__name">' + escapeHtml(c.label) + '</span>'
+              + '<span class="ps-chip__price">' + escapeHtml(t('pay.fx.to_confirm')) + '</span>',
+              'window.psSetPlan(\'' + psId(c.id) + '\')');
+          }).join('') + '</div></div>';
+      }
+      return html;
     }
     function psResultHtml(m) {
       var r = m.result;
@@ -15401,11 +15577,11 @@
         };
         html = '<p class="ps-result__plan">' + escapeHtml(r.label) + '</p><div class="ps-result__grid">'
           + fig('monthly', t('ps.monthly', { amount: r.monthly }), t('ps.for_months', { n: r.term }))
+          + fig('cost', r.cost, t('ps.cost_sub'))
           + fig('scheduled', r.scheduled, t('ps.payments_n', { n: r.term }))
           + fig('interest', r.interest, t('ps.apr', { apr: r.apr }))
           + fig('down', r.down, '')
           + fig('financed', r.financed, '')
-          + fig('cost', r.cost, t('ps.cost_sub'))
           + '</div><p class="ps-fine">' + escapeHtml(t('ps.rounding')) + '</p>';
       } else if (r.kind === 'calc') {
         html = '<p class="ps-result__plan">' + escapeHtml(r.label) + '</p><p class="ps-warn">'
@@ -15444,7 +15620,6 @@
         + '<p class="ps-down__msg' + ((m.down.state === 'invalid' || m.down.state === 'negative' || m.down.state === 'too-large') ? ' is-error' : '')
         + '" id="psDownMsg" role="status">' + escapeHtml(psDownMessage(m)) + '</p>';
     }
-    var _psLastSignature = '';
     function renderPurchaseStudio(partial) {
       var box = document.getElementById('purchaseStudio');
       if (!box) return;
@@ -15471,13 +15646,17 @@
           msg.textContent = psDownMessage(m);
           msg.classList.toggle('is-error', m.down.state === 'invalid' || m.down.state === 'negative' || m.down.state === 'too-large');
         }
-        box.querySelector('#psItemsBox').innerHTML = psItemsHtml(m);
+        var parts = psItemsHtml(m);
+        box.querySelector('#psMainBox').innerHTML = parts.main;
+        box.querySelector('#psChangesBox').innerHTML = parts.changes;
         return;
       }
+      var p2 = psItemsHtml(m);
       box.innerHTML = '<div class="ps-head"><span class="ps-kicker">' + escapeHtml(t('ps.kicker')) + '</span>'
         + '<h2 class="ps-title" id="psTitle">' + escapeHtml(t('ps.title')) + '</h2>'
         + '<p class="ps-notice" role="note">' + escapeHtml(m.notice) + '</p></div>'
-        + '<div class="ps-layout"><div class="ps-col" id="psItemsBox">' + psItemsHtml(m) + '</div>'
+        + '<div class="ps-layout"><div class="ps-col ps-col--main" id="psMainBox">' + p2.main + '</div>'
+        + '<div class="ps-col ps-col--changes ps-changes" id="psChangesBox">' + p2.changes + '</div>'
         + '<div class="ps-col ps-col--pay"><span class="ps-kicker" id="psPayLabel">' + escapeHtml(t('ps.pay_label')) + '</span>'
         + '<div id="psPlansBox">' + psPlansHtml(m) + '</div>'
         + '<div class="ps-down">' + psDownHtml(m) + '</div>'
@@ -15495,10 +15674,47 @@
         if (el && !el.disabled && typeof el.focus === 'function') el.focus({ preventScroll: true });
       }
     }
+    // A split King is a King configuration: at any other size the base
+    // returns to one unit (never an invalid split left in the cart).
+    function psNormalizeSplit() {
+      var size = (typeof answers === 'object' && answers) ? answers.mattress_size : '';
+      if (size === 'king') return;
+      var cart = window._accCart || {};
+      Object.keys(cart).forEach(function (id) {
+        if (cart[id] && cart[id].split === true) { delete cart[id].split; cart[id].quantity = 1; }
+      });
+    }
+    // Ids reach inline handlers only when they are plain catalog ids.
+    function psId(id) { return (typeof id === 'string' && /^[A-Za-z0-9_-]+$/.test(id)) ? id : ''; }
+    // The take-home preview's priced row (escaped HTML in title/detail, the
+    // item list plain - the packet renderer escapes items itself).
+    function psTakeHomeRow() {
+      var m = (typeof purchaseStudioFor === 'function') ? purchaseStudioFor() : { show: false };
+      if (!m.show || m.empty) return null;
+      var items = m.lines.map(function (l) {
+        return l.name + (l.size ? ' (' + l.size + ')' : '') + (l.qty > 1 ? ' × ' + l.qty : '')
+          + ' ' + (l.priced ? l.ext : t('ps.no_price'));
+      });
+      var parts = [t('ps.subtotal') + ': ' + (m.complete ? m.subtotal : t('ps.incomplete'))];
+      var r = m.result;
+      if (r.kind === 'calc' && r.state === 'calculated') {
+        parts.push(t('ps.th_plan', { plan: r.label, monthly: t('ps.monthly', { amount: r.monthly }), total: r.scheduledLc }));
+        if (r.down !== t('ps.down_none')) parts.push(t('ps.fig_down') + ': ' + r.down);
+      } else if (r.kind === 'quote') {
+        parts.push(r.label + ': ' + t('pay.fx.to_confirm'));
+      } else if (r.kind === 'full' && m.complete) {
+        parts.push(t('ps.pay_full'));
+      }
+      parts.push(m.notice);
+      // present:false - the recap reads "- in store": the priced system is
+      // shown here, never added to the email (sendResults does not read it).
+      return { present: false, title: escapeHtml(t('ps.th_title')), detail: escapeHtml(parts.join(' · ')), items: items };
+    }
     window.psSetSize = function (sizeId) {
       if (PS_SIZES.indexOf(sizeId) === -1 || typeof answers !== 'object' || !answers) return;
       if (answers.mattress_size === sizeId) return;
       answers.mattress_size = sizeId;
+      psNormalizeSplit();
       psRepaint('[data-ps-size="' + sizeId + '"]');
     };
     window.psChooseMattress = function (id) {
@@ -15524,16 +15740,27 @@
       if (!entry) return;
       var cur = (typeof entry.quantity === 'number' && entry.quantity >= 1) ? entry.quantity : 1;
       setSleepSystemItemQuantity(id, cur + delta);
-      psRepaint('[data-ps-qty="' + id + '"][data-ps-delta="' + delta + '"]');
+      psRepaint();
+      var same = document.querySelector('#purchaseStudio [data-ps-qty="' + id + '"][data-ps-delta="' + delta + '"]');
+      var other = document.querySelector('#purchaseStudio [data-ps-qty="' + id + '"][data-ps-delta="' + (-delta) + '"]');
+      var target = (same && !same.disabled) ? same : ((other && !other.disabled) ? other : null);
+      if (target) target.focus({ preventScroll: true });
+    };
+    window.psSetSplit = function (id, on) {
+      var entry = (window._accCart || {})[id];
+      if (!entry) return;
+      if (on) { entry.split = true; entry.quantity = 2; }
+      else { delete entry.split; entry.quantity = 1; }
+      psRepaint('[data-ps-split="' + (on ? 'on' : 'off') + '"]');
     };
     window.psSetPlan = function (id) {
       if (typeof id !== 'string' || !id) return;
       _psPlan = id;
-      renderPurchaseStudio();
-      var el = document.querySelector('#purchaseStudio [data-ps-plan="' + id + '"]');
-      if (el && typeof el.focus === 'function') el.focus({ preventScroll: true });
+      psRepaint('[data-ps-plan="' + psId(id) + '"]');
     };
     window.psSetDown = function (raw, fromChip) {
+      var calc = (typeof psPlans === 'function') ? psPlans().calc : [];
+      if (!calc.some(function (pl) { return pl.id === _psPlan; })) return;
       _psDownRaw = String(raw == null ? '' : raw).slice(0, 12);
       if (fromChip) {
         if (_psDownRaw === '0') _psDownRaw = '';
@@ -16409,7 +16636,8 @@
         category: L(a.category) || '',
         image: a.image || (entry && entry.imageUrl) || '',
         qty: entry ? ((typeof entry.quantity === 'number' && entry.quantity >= 1) ? entry.quantity : 1) : 0,
-        max: FIN_WS_STEP_MAX[step] || 1
+        // a split King base is fixed at two units (no stepper can change it)
+        max: (entry && entry.split === true) ? 0 : (FIN_WS_STEP_MAX[step] || 1)
       };
     }
     function finWsPurchase() {
@@ -22414,6 +22642,7 @@
         var step = (source && typeof sleepSystemStepIdForItem === 'function')
           ? sleepSystemStepIdForItem(source) : null;
         var maxQty = (step && STEP_MAX_QTY[step]) || 1;
+        if (selected.split === true) maxQty = 2;
         var q = selected.quantity;
         var quantity = (typeof q === 'number' && isFinite(q) && Math.floor(q) === q
           && q >= 1 && q <= maxQty) ? q : 1;
@@ -22490,6 +22719,11 @@
           title: FC('emailHeading'),
           detail: finEmailBody() });
       }
+      // Payment demo only: the priced Sleep System and the payment choice
+      // shown on the Summary, so the take-home preview agrees with it. Never
+      // part of the send payload (sendResults does not read this packet).
+      var psRow = (typeof psTakeHomeRow === 'function') ? psTakeHomeRow() : null;
+      if (psRow) packet.push(psRow);
 
       var summaryEl = document.getElementById('emailPreview');
       if (summaryEl) summaryEl.innerHTML = packet.map(function(r) {
@@ -24817,6 +25051,7 @@
         var scored = scoreAccessoriesFromAnswers().find(function(accessory) { return accessory.id === itemId; });
         var priorQty = (window._accCart[itemId] && typeof window._accCart[itemId].quantity === 'number')
           ? window._accCart[itemId].quantity : 1;
+        var priorSplit = !!(window._accCart[itemId] && window._accCart[itemId].split === true);
         window._accCart[itemId] = {
           id: itemId,
           // How many of THIS product. Re-selecting an item keeps the quantity
@@ -24832,6 +25067,7 @@
           // keys through accessoryReasonText() in the current language.
           reasonKeys: scored ? scored.reasons.slice(0, 2).map(accessoryReasonKey).filter(Boolean) : []
         };
+        if (priorSplit) window._accCart[itemId].split = true;
         window._sleepSystemState.decisions[stepId] = { status: 'selected', itemId: itemId };
         analytics.log('sleep_system_item_selected', { itemId: itemId, step: stepId });
       } else {
@@ -24874,6 +25110,9 @@
       if (typeof itemId !== 'string' || !itemId) return false;
       var cart = window._accCart || {};
       if (!Object.prototype.hasOwnProperty.call(cart, itemId)) return false;
+      // A split King base is a configuration (two Twin XL units), changed
+      // only by choosing one base or the split - never by a +/- count.
+      if (cart[itemId] && cart[itemId].split === true) return false;
       var q = Number(quantity);
       if (!isFinite(q) || Math.floor(q) !== q) return false;
       if (q < 1 || q > SLEEP_SYSTEM_MAX_QTY) return false;
@@ -25684,6 +25923,9 @@
       renderHf2Brief();
       renderHf2Priorities();
       renderHf2Picks();
+      // A split King base exists only at King: a size changed anywhere (the
+      // Review screen included) returns it to one base before anything paints.
+      if (typeof psNormalizeSplit === 'function') psNormalizeSplit();
       renderHf2Accessories();
       // The subtotal is derived from the same selection the list above shows,
       // so it repaints in the same pass. typeof-guarded like every other
