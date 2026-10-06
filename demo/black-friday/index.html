@@ -15995,7 +15995,7 @@
       var live = document.getElementById('psLive');
       if (!live) return;
       live.textContent = '';
-      setTimeout(function () { live.textContent = text; }, 30);
+      sessionTimeout(function () { live.textContent = text; }, 30);
     }
 
     // ---- the change sheet -------------------------------------------------------
@@ -16230,7 +16230,7 @@
       if (typeof window.closeFinancingSheet === 'function') window.closeFinancingSheet();
       var hf2 = document.getElementById('hf2Screen');
       if (!(hf2 && hf2.classList.contains('active')) && typeof window.showSavedPicks === 'function') window.showSavedPicks();
-      setTimeout(function () {
+      sessionTimeout(function () {
         var box = document.getElementById('purchaseStudio');
         var title = document.getElementById('psTitle');
         if (!box || box.hidden) return;
