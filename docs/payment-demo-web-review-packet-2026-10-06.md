@@ -69,11 +69,23 @@ generated data; review its `_meta` and a few entries only.
 7. **Scoring isolation.** Pricing never reaches scoring; the test compares
    recommendations with demo prices on and off. Confirm.
 
+8. **Usability pass** (`cf72980`, `e130697`).
+   - **Change mattress dialog:** it previews in a sandbox that swaps the
+     cart, finalist and saved list and restores them in `finally`, and
+     applies through `chooseFinalist`. Can a preview ever leak into state?
+   - **Hidden sections:** the Summary's finalist hero and Sleep System list
+     are hidden only while the studio shows. Any lost navigation?
+   - **Comparison:** pay in full is the starting choice and no plan is
+     preselected. Selection is marked by text plus `aria-pressed`.
+
+   Review with
+   `git diff d2cf9e9..HEAD -- index.html | sed -n '/function psContext/,/function purchaseStudioFor/p'`
+   and the `psOpenSheet` / `psSheetApply` block.
+
 ## Evidence already observed (local)
 
-- `tests/payment_demo_check.py`: all checks passing at `f2c693c`.
-- Full local mirror (`-SkipMutationSweep`): see the session handoff for its
-  result at `f2c693c`.
+- `tests/payment_demo_check.py`: 214/214 at `cf72980`.
+- Full local mirror (`-SkipMutationSweep`): PASSED (66 checks plus integrity guards) at `e130697`.
 - Targeted mutation entries: see the session handoff.
 - Not observed: physical iPad, Safari on device, VoiceOver,
   native-Spanish review, legal or lender review, PR CI.

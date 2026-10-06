@@ -148,12 +148,66 @@ asks for monthly payments beside merchandise prices. This applies **only**
 under demo admission; the governed `payments`/`review` builds and shipped
 behaviour are unchanged.
 
+## Summary usability pass (2026-10-06, owner-directed)
+
+**Goal:** make the Summary easy to operate in a customer conversation. Changing the
+mattress, refining the system and comparing payments should each take one
+obvious action. All of this applies under demo admission only.
+
+**Change mattress**
+- The button sits beside the selected mattress and is always present, even
+  with one saved pick.
+- It opens a focused dialog listing:
+  - the current mattress first;
+  - then the saved picks;
+  - then the leading three recommendations of each tier, in their existing
+    sleep-fit order, each once.
+- Each option shows:
+  - image;
+  - tier and position;
+  - its existing highlight;
+  - price in the current size;
+  - the complete-system difference;
+  - the monthly difference under unchanged terms.
+- A **preview** changes nothing: quotes are built in a sandbox that swaps
+  the cart, finalist and saved list, then restores them.
+- **Apply** goes through `chooseFinalist`. Size, the Sleep System,
+  quantities, the plan and the down payment are kept.
+- **Cancel** or Escape leaves the purchase unchanged and restores focus to
+  the button that opened the dialog. Applied changes are announced.
+- The hero now reads **"Your selected mattress"**. "Best match" appears only
+  through the recommendation's own tier/position line.
+
+**One purchase presentation**
+- While the studio shows, the Summary's separate finalist hero and Sleep
+  System list are hidden.
+- Each item gets a compact row with Change, Remove and, where supported,
+  quantity.
+- An empty category offers **Add**.
+- Alternatives open only in the dialog. Split King and the quantity rules
+  are unchanged.
+
+**One selected-payment centerpiece**
+- It shows the monthly payment (or pay in full), term, APR and down payment,
+  with the merchandise subtotal, total paid and interest beside them.
+- Amount financed, the scheduled total, the rounding note and provenance sit
+  in a closed **Payment details** disclosure.
+- The comparison is a compact list. The selected option is marked with a
+  check, the word "Selected" and `aria-pressed`.
+- Pay in full is the starting choice, framed as one payment.
+
+**Monthly effects** now appear as current-versus-proposed previews inside
+the dialog, built from two complete quotes. They are no longer shown on every
+settled row.
+
 ## Physical iPad check
 
 2026-10-06: Blake ran the demo on a physical iPad (Safari, via the
 `--device` harness) at `d2cf9e9` and reported that it all worked. That is
 the owner's own report; no device-side details (orientation, connection
-route, VoiceOver) were recorded.
+route, VoiceOver) were recorded. **That acceptance covers the pre-usability-
+pass UI.** The usability pass (`cf72980` onward) has not yet been run on the
+device.
 
 ## Review status
 

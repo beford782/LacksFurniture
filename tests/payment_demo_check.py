@@ -579,6 +579,14 @@ with sync_playwright() as p:
         small = pg.evaluate("""() => Array.from(document.querySelectorAll('#psSheet button')).filter(b => {
           const r = b.getBoundingClientRect(); return r.width > 0 && (r.width < 44 || r.height < 44); }).length""")
         check(f"{tag} every sheet control meets the 44px touch floor", small == 0, str(small))
+        title0 = pg.evaluate(TXT, "#psSheetTitle")
+        pg.evaluate("async () => { await switchLanguage('" + ("es" if lang == "en" else "en") + "'); }")
+        pg.wait_for_timeout(300)
+        title1 = pg.evaluate(TXT, "#psSheetTitle")
+        check(f"{tag} an open sheet follows a language switch", title1 and title1 != title0
+              and pg.evaluate("document.getElementById('psSheet').hidden") is False, f"{title0} -> {title1}")
+        pg.evaluate("async () => { await switchLanguage('" + lang + "'); }")
+        pg.wait_for_timeout(300)
         # ---- new-customer wipe (with the sheet open) ----
         pg.evaluate("resetSessionState()")
         pg.wait_for_timeout(200)

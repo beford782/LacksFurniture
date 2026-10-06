@@ -15982,6 +15982,8 @@
         + '<div id="psCompareBox">' + psCompareHtml(m) + '</div>'
         + psBtn('class="fin-btn fin-btn-secondary ps-edit" id="psEditSystem"', escapeHtml(t('ps.edit_system')), 'window.showAccessories()')
         + '</div></div>';
+      // An open change sheet follows the purchase and the language.
+      if (_psSheet && typeof renderPsSheet === 'function') renderPsSheet();
     }
     function psRepaint(focusSel) {
       if (typeof renderHf2 === 'function') renderHf2();
