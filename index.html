@@ -11804,9 +11804,6 @@
       font: 400 clamp(1.5rem, 2.6vw, 2rem)/1.15 var(--font-serif);
       color: var(--color-text);
     }
-    .ps-changes { margin-top: 1.4rem; padding-top: 1.1rem; border-top: 1px solid var(--color-border); }
-    .ps-changes__title { margin: 0; font: 400 1.25rem/1.2 var(--font-serif); color: var(--color-text); }
-    .ps-fine.ps-changes__hint { margin: 0.2rem 0 0.9rem; }
     .ps-purchase { margin-top: 0.4rem; }
     .ps-notice {
       margin: 0.35rem 0 0;
@@ -11874,10 +11871,6 @@
     .ps-chips--size .ps-chip { min-width: 0; }
     .hf2-review-section.ps { --ps-ink-accent: color-mix(in srgb, var(--store-primary) 28%, #2b1d00); }
     .ps-hero__line { margin: 0.35rem 0 0; font-size: 0.95rem; font-weight: 600; color: var(--color-text); font-variant-numeric: tabular-nums; }
-    .ps-confirm { margin: -0.2rem 0 1rem; }
-    .ps-confirm__row { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-    .ps-chip--confirm { min-height: 48px; flex: 1 1 160px; }
-    .ps-card__sub--strong { color: var(--color-text); font-size: 0.85rem; }
     .ps-opt--none { border-style: dashed; align-items: center; text-align: center; }
     .ps-opt--none .ps-opt__name { font-size: 1rem; }
     .ps-chip, .ps-pick, .ps-opt, .ps-card, .ps-qty__btn {
@@ -11904,19 +11897,6 @@
     .ps-chip--sm { min-height: 44px; min-width: 64px; align-items: center; font-weight: 600; font-size: 0.85rem; }
     .ps-chip__name { font-weight: 600; font-size: 0.85rem; }
     .ps-chip__price { font-size: 0.8rem; color: var(--color-text-muted); font-variant-numeric: tabular-nums; }
-    .ps-pick {
-      min-height: 56px;
-      flex: 1 1 200px;
-      padding: 0.55rem 0.8rem;
-      border-radius: 10px;
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      text-align: left;
-      gap: 0.1rem;
-    }
-    .ps-pick__name { font-weight: 600; font-size: 0.92rem; }
-    .ps-pick__price { font-variant-numeric: tabular-nums; font-size: 0.92rem; }
     .ps-pick__delta, .ps-opt__delta { font-size: 0.78rem; color: var(--color-text-muted); font-variant-numeric: tabular-nums; }
     .ps-opt {
       position: relative;
@@ -11944,27 +11924,10 @@
       background: color-mix(in srgb, var(--store-primary) 8%, var(--color-surface));
     }
     .ps-chip:active, .ps-pick:active, .ps-opt:active, .ps-card:active { transform: scale(0.985); }
-    .ps-lines { list-style: none; margin: 0; padding: 0; }
-    .ps-line {
-      display: grid;
-      grid-template-columns: 48px minmax(0, 1fr) auto auto;
-      gap: 0.75rem;
-      align-items: center;
-      padding: 0.6rem 0;
-      border-bottom: 1px solid var(--color-border);
-    }
-    .ps-line__img { width: 48px; height: 40px; object-fit: contain; border-radius: 6px;
-      background: color-mix(in srgb, var(--color-surface-alt) 60%, transparent); }
-    .ps-line__text { display: flex; flex-direction: column; min-width: 0; }
-    .ps-line__name { font-weight: 600; font-size: 0.92rem; }
-    .ps-line__meta { font-size: 0.8rem; color: var(--color-text-muted); }
-    .ps-line__effect { font-size: 0.8rem; color: var(--ps-ink-accent); font-weight: 600; margin-top: 0.1rem; }
-    .ps-line__amount { font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
     .ps-qty { display: inline-flex; align-items: center; gap: 0.35rem; }
     .ps-qty__btn { min-width: 44px; min-height: 44px; border-radius: 8px; font-size: 1.1rem; line-height: 1; }
     .ps-qty__btn[disabled] { opacity: 0.35; cursor: default; }
     .ps-qty__fixed { padding: 0 0.4rem; }
-    .ps-split__hint { margin: 0.6rem 0 0.4rem; }
     .ps-qty__n { min-width: 2ch; text-align: center; font-weight: 700; font-variant-numeric: tabular-nums; }
     .ps-subtotal {
       display: flex;
@@ -11979,26 +11942,6 @@
     .ps-fine { margin: 0.4rem 0 0; font-size: 0.8rem; color: var(--color-text-muted); line-height: 1.45; }
     .ps-warn { margin: 0.4rem 0 0; font-size: 0.85rem; font-weight: 600; color: var(--color-text); }
     .ps-note { margin: 0.4rem 0 0; font-size: 0.9rem; color: var(--color-text); line-height: 1.45; }
-    .ps-plans {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-      gap: 0.55rem;
-      margin-bottom: 1rem;
-    }
-    .ps-card {
-      min-height: 112px;
-      padding: 0.7rem 0.75rem;
-      border-radius: 12px;
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      text-align: left;
-      gap: 0.15rem;
-    }
-    .ps-card__label { font-size: 0.78rem; font-weight: 700; letter-spacing: 0.02em; color: var(--color-text-muted); }
-    .ps-card__amount { font: 700 1.2rem/1.2 var(--font-sans); font-variant-numeric: tabular-nums; margin: 0.15rem 0; }
-    .ps-card__amount.ps-muted { font-size: 0.9rem; font-weight: 600; }
-    .ps-card__sub { font-size: 0.78rem; color: var(--color-text-muted); font-variant-numeric: tabular-nums; line-height: 1.35; }
     .ps-down { margin-bottom: 1rem; }
     .ps-down__row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.45rem; }
     .ps-down__cur { font-weight: 600; color: var(--color-text-muted); }
@@ -12017,10 +11960,6 @@
     .ps-down__msg { margin: 0.4rem 0 0; font-size: 0.8rem; color: var(--color-text-muted); }
     .ps-down__msg.is-error { color: var(--color-text); font-weight: 700; }
     .ps-down__msg.is-error::before { content: "\26A0\FE0E  "; }
-    .ps-result { padding: 0.9rem 0 0.2rem; border-top: 1px solid var(--color-border); }
-    .ps-result__plan { margin: 0 0 0.55rem; font: 600 0.95rem/1.3 var(--font-sans); color: var(--color-text); }
-    .ps-result__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.55rem 1rem; }
-    .ps-result__grid--full { grid-template-columns: minmax(0, 1fr); }
     .ps-fig { display: flex; flex-direction: column; }
     .ps-fig__label { font-size: 0.74rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--color-text-muted); }
     .ps-fig__value { font: 700 1.15rem/1.25 var(--font-sans); font-variant-numeric: tabular-nums; color: var(--color-text); }
@@ -12051,6 +11990,141 @@
         outline-offset: -3px;
       }
       .ps-notice { border: 1px solid CanvasText; }
+    }
+
+    /* ----- Purchase studio, usability pass (2026-10-06): one purchase, one
+       payment centerpiece, a compact comparison and a focused change sheet. */
+    .ps-hero { grid-template-columns: 140px minmax(0, 1fr) auto; }
+    .ps-change { align-self: start; min-height: 48px; white-space: nowrap; }
+    .ps-hero__badge { margin: 0.3rem 0 0; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.04em;
+      color: var(--ps-ink-accent); }
+    .ps-rows { list-style: none; margin: 0; padding: 0; }
+    .ps-row {
+      display: grid;
+      grid-template-columns: 52px minmax(0, 1fr) auto auto;
+      grid-template-areas: "img text qty amount" "img actions actions actions";
+      gap: 0.15rem 0.85rem;
+      align-items: center;
+      padding: 0.7rem 0;
+      border-bottom: 1px solid var(--color-border);
+    }
+    .ps-row__img { grid-area: img; width: 52px; height: 44px; object-fit: contain; border-radius: 6px;
+      background: color-mix(in srgb, var(--color-surface-alt) 60%, transparent); }
+    .ps-row__text { grid-area: text; display: flex; flex-direction: column; min-width: 0; }
+    .ps-row__cat { font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-text-muted); }
+    .ps-row__name { font-weight: 600; font-size: 0.95rem; }
+    .ps-row__meta { font-size: 0.8rem; color: var(--color-text-muted); }
+    .ps-row .ps-qty { grid-area: qty; }
+    .ps-row .ps-qty__fixed { grid-area: qty; }
+    .ps-row__amount { grid-area: amount; font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+    .ps-row__actions { grid-area: actions; display: flex; gap: 0.25rem; }
+    .ps-row--split, .ps-row--add { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+    .ps-link {
+      min-height: 44px; min-width: 44px; padding: 0 0.6rem; border: 0; background: transparent;
+      color: var(--color-text); font: 600 0.85rem var(--font-sans); text-decoration: underline;
+      text-underline-offset: 3px; cursor: pointer; touch-action: manipulation;
+    }
+    .ps-add {
+      min-height: 48px; padding: 0 1rem; border: 1px dashed var(--color-border); border-radius: 10px;
+      background: transparent; color: var(--color-text); font: 600 0.9rem var(--font-sans); cursor: pointer;
+      touch-action: manipulation;
+    }
+    /* the selected-payment centerpiece */
+    .ps-center {
+      display: flex; flex-direction: column; gap: 0.2rem;
+      padding: 1rem 1.1rem; margin-bottom: 0.9rem; border-radius: 12px;
+      background: var(--color-surface); border: 2px solid var(--accent-ink);
+    }
+    .ps-center__label { font: 700 0.8rem/1.3 var(--font-sans); letter-spacing: 0.04em; text-transform: uppercase; color: var(--color-text-muted); }
+    .ps-center__big { font: 700 clamp(1.9rem, 4vw, 2.4rem)/1.1 var(--font-sans); font-variant-numeric: tabular-nums; color: var(--color-text); }
+    .ps-center__big--muted { font-size: 1.4rem; color: var(--color-text-muted); }
+    .ps-center__terms { font-size: 0.95rem; font-weight: 600; color: var(--color-text); }
+    .ps-center__figs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.6rem; margin-top: 0.7rem;
+      padding-top: 0.7rem; border-top: 1px solid var(--color-border); }
+    .ps-center .ps-fig__value { font-size: 1.05rem; }
+    .ps-details { margin: 0 0 1rem; border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-surface); }
+    .ps-details__summary { min-height: 44px; display: flex; align-items: center; padding: 0 0.9rem; cursor: pointer;
+      font: 600 0.9rem var(--font-sans); touch-action: manipulation; }
+    .ps-details__body { padding: 0 0.9rem 0.8rem; }
+    .ps-dl { margin: 0; display: grid; gap: 0.35rem; }
+    .ps-dl > div { display: flex; justify-content: space-between; gap: 1rem; font-size: 0.9rem; }
+    .ps-dl dt { color: var(--color-text-muted); }
+    .ps-dl dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; }
+    /* the comparison */
+    .ps-cmp { list-style: none; margin: 0 0 1rem; padding: 0; display: grid; gap: 0.4rem; }
+    .ps-cmp__row {
+      width: 100%; min-height: 56px; display: grid;
+      grid-template-columns: 1.4rem minmax(0, 1.2fr) minmax(0, 0.9fr) minmax(0, 1.3fr);
+      grid-template-areas: "tick name main meta1" "tick name main meta2" "tick name main meta3";
+      align-items: center; gap: 0 0.7rem; padding: 0.55rem 0.75rem; text-align: left;
+      border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-surface);
+      color: var(--color-text); font-family: var(--font-sans); cursor: pointer; touch-action: manipulation;
+    }
+    .ps-cmp__row.is-on { border-color: var(--accent-ink); box-shadow: 0 0 0 2px var(--accent-ink) inset;
+      background: color-mix(in srgb, var(--store-primary) 8%, var(--color-surface)); }
+    .ps-cmp__tick { grid-area: tick; font-weight: 700; color: var(--accent-ink); }
+    .ps-cmp__name { grid-area: name; font-weight: 700; font-size: 0.88rem; display: flex; flex-direction: column; }
+    .ps-cmp__sel { font-size: 0.72rem; font-weight: 700; color: var(--ps-ink-accent); text-transform: uppercase; letter-spacing: 0.05em; }
+    .ps-cmp__main { grid-area: main; font: 700 1.05rem var(--font-sans); font-variant-numeric: tabular-nums; }
+    .ps-cmp__meta { font-size: 0.8rem; color: var(--color-text); font-variant-numeric: tabular-nums; }
+    .ps-cmp__row .ps-cmp__meta:nth-of-type(1) { grid-area: meta1; }
+    .ps-cmp__row .ps-cmp__meta:nth-of-type(2) { grid-area: meta2; }
+    .ps-cmp__row .ps-cmp__meta:nth-of-type(3) { grid-area: meta3; }
+    @container (max-width: 560px) {
+      .ps-cmp__row { grid-template-columns: 1.4rem minmax(0, 1fr) auto;
+        grid-template-areas: "tick name main" "tick meta1 meta1" "tick meta2 meta2" "tick meta3 meta3"; }
+      .ps-hero { grid-template-columns: 96px minmax(0, 1fr); }
+      .ps-change { grid-column: 1 / -1; justify-self: start; }
+    }
+    /* the change sheet */
+    .ps-sheet-backdrop { position: fixed; inset: 0; z-index: 2000; background: rgba(20, 18, 15, 0.42); }
+    .ps-sheet-dialog {
+      position: fixed; z-index: 2001; left: 50%; top: 50%; transform: translate(-50%, -50%);
+      width: min(720px, calc(100vw - 32px)); max-height: calc(100dvh - 48px); overflow: hidden;
+      display: flex; flex-direction: column;
+      padding: 1.2rem 1.3rem; border-radius: 16px; background: var(--landing-paper, #FBF7EF); color: var(--landing-ink, #2F271E);
+      box-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.45);
+      --color-text: var(--landing-ink, #2F271E); --color-text-muted: var(--landing-muted, #685C4D);
+      --color-surface: #FFFDF8; --color-border: rgba(104, 84, 60, 0.28);
+    }
+    .ps-sheet__title { margin: 0 0 0.2rem; font: 400 1.5rem/1.2 var(--font-serif); }
+    .ps-sheet__list { list-style: none; margin: 0.8rem 0; padding: 0.15rem; display: grid; gap: 0.45rem;
+      flex: 1 1 auto; min-height: 0; overflow: auto; -webkit-overflow-scrolling: touch; }
+    .ps-sheet__foot { flex: 0 0 auto; padding-top: 0.6rem; border-top: 1px solid var(--color-border); }
+    .ps-sopt {
+      width: 100%; min-height: 64px; display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; gap: 0.75rem;
+      align-items: center; padding: 0.55rem 0.7rem; text-align: left; border: 1px solid var(--color-border);
+      border-radius: 12px; background: var(--color-surface); color: var(--color-text); font-family: var(--font-sans);
+      cursor: pointer; touch-action: manipulation;
+    }
+    .ps-sopt.is-on { border-color: var(--accent-ink); box-shadow: 0 0 0 2px var(--accent-ink) inset; }
+    .ps-sopt.is-current { background: color-mix(in srgb, var(--store-primary) 7%, var(--color-surface)); }
+    .ps-sopt .ps-opt__img { width: 64px; height: 50px; margin: 0; }
+    .ps-opt__text { display: flex; flex-direction: column; min-width: 0; gap: 0.1rem; }
+    .ps-opt__meta { font-size: 0.75rem; font-weight: 700; color: var(--ps-ink-accent, var(--accent-ink)); }
+    .ps-opt__why { font-size: 0.8rem; color: var(--color-text-muted); line-height: 1.35; }
+    .ps-opt__cur, .ps-opt__tag { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+      padding: 0.1rem 0.4rem; border-radius: 999px; border: 1px solid var(--color-border); margin-left: 0.3rem; }
+    .ps-opt__nums { display: flex; flex-direction: column; align-items: flex-end; gap: 0.1rem; font-variant-numeric: tabular-nums; }
+    .ps-opt__nums .ps-opt__price { font-weight: 700; }
+    .ps-opt__nums .ps-opt__delta { font-size: 0.78rem; color: var(--color-text); }
+    .ps-sheet__preview { min-height: 3rem; }
+    .ps-preview { padding: 0.75rem 0.9rem; border-radius: 10px; border: 1px solid var(--color-border); background: var(--color-surface); }
+    .ps-preview__row { display: flex; justify-content: space-between; gap: 1rem; font-size: 0.92rem; padding: 0.15rem 0; flex-wrap: wrap; }
+    .ps-preview__vals { font-variant-numeric: tabular-nums; }
+    .ps-preview__diff { color: var(--color-text-muted); }
+    .ps-preview__why { margin: 0.4rem 0 0; font-size: 0.85rem; color: var(--color-text-muted); }
+    .ps-sheet__actions { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; margin-top: 0.9rem; }
+    .ps-sheet__actions .fin-btn { min-height: 48px; }
+    .ps-sheet__actions .fin-btn[disabled] { opacity: 0.45; cursor: default; }
+    .ps-sheet__browse { margin-left: auto; }
+    @media (prefers-reduced-motion: reduce) {
+      .ps-cmp__row, .ps-sopt { transition: none; }
+    }
+    @media (forced-colors: active) {
+      .ps-cmp__row.is-on, .ps-sopt.is-on { outline: 3px solid Highlight; outline-offset: -3px; }
+      .ps-center { border: 2px solid CanvasText; }
+      .ps-sheet-dialog { border: 2px solid CanvasText; }
     }
   </style>
 </head>
@@ -12682,6 +12756,17 @@
       <p class="hf2-lead-line" id="hf2LeadLine"></p>
     </section>
 
+    <!-- Purchase studio (payment demo, owner demo-first direction
+         2026-10-05). Rendered by renderPurchaseStudio() only under demo
+         admission (harness context + validated demo config) with the price
+         gate open; hidden and empty in every shipped state, and emptied by the
+         session wipe. While it shows it is the Summary's ONE presentation of
+         the selected purchase. -->
+    <section class="hf2-review-section ps" id="purchaseStudio" hidden aria-labelledby="psTitle"></section>
+    <div class="sr-only" id="psLive" aria-live="polite"></div>
+    <div class="ps-sheet-backdrop" id="psSheetBackdrop" hidden onclick="window.psCloseSheet()"></div>
+    <div class="ps-sheet-dialog" id="psSheet" role="dialog" aria-modal="true" aria-labelledby="psSheetTitle" hidden></div>
+
     <section class="hf2-review-section">
       <div class="hf2-review-section__label" id="hf2NeedsLabel">What we set out to solve</div>
       <div class="hf2-brief">
@@ -12752,11 +12837,6 @@
       <div class="hf2-system-total" id="hf2SystemTotal" hidden></div>
     </section>
 
-    <!-- Purchase studio (payment demo, owner demo-first direction
-         2026-10-05). Rendered by renderPurchaseStudio() only for a build that
-         declares an illustrative demonstration AND opens the price gate; hidden
-         and empty in every shipped state, and emptied by the session wipe. -->
-    <section class="hf2-review-section ps" id="purchaseStudio" hidden aria-labelledby="psTitle"></section>
 
     <!-- Payment Choices handoff module (Payment Choice) — the strongest
          financing surface, immediately before the final save/send action.
@@ -15201,13 +15281,16 @@
     function psWithState(over, fn) {
       var saveCart = window._accCart;
       var saveFav = window._favoriteMattressId;
+      var savePicks = window._savedPicks;
       try {
         if (over && over.cart) window._accCart = over.cart;
         if (over && typeof over.finalistId === 'string') window._favoriteMattressId = over.finalistId;
+        if (over && Array.isArray(over.savedPicks)) window._savedPicks = over.savedPicks;
         return fn();
       } finally {
         window._accCart = saveCart;
         window._favoriteMattressId = saveFav;
+        window._savedPicks = savePicks;
       }
     }
     function psCartClone() {
@@ -15322,41 +15405,34 @@
       if (short) return t('ps.monthly', { amount: formatPriceAmount(e.payMinor, pres.currency) });
       return t('ps.mattress_monthly', { amount: formatPriceAmount(e.payMinor, pres.currency), plan: L(plan.headline) || '' });
     }
-    function purchaseStudioFor() {
-      var none = { show: false };
+    // The shared context every studio view is computed from: the purchase as
+    // it stands, the plan and down payment in view, and the helpers that turn
+    // a PROPOSED purchase into an honest current-versus-proposed preview (two
+    // complete quotes, same plan, same term, same down payment).
+    function psContext() {
       var demo = psDemoConfig();
-      if (!demo) return none;
+      if (!demo) return null;
       var p = getPricingConfig();
-      if (!p || p.enabled !== true || p.displayEnabled !== true || !pricingSurfaceEnabled('handoff')) return none;
-      if (typeof resolveFinalistState !== 'function') return none;
+      if (!p || p.enabled !== true || p.displayEnabled !== true || !pricingSurfaceEnabled('handoff')) return null;
+      if (typeof resolveFinalistState !== 'function') return null;
       var size = priceSizeAnswer();
       var cur = 'USD';
       var fmt = function (m) { return formatPriceAmount(m, cur); };
       var q = psQuote(size, {});
-      if (!q.finalist) return { show: true, empty: true, notice: L(demo.notice) || '' };
       var complete = psComplete(q);
       var merch = complete ? q.merchandiseMinor : null;
       var down = psDown(merch);
       var plans = psPlans();
-      var calcById = {};
+      var calcById = {}, quoteById = {};
       plans.calc.forEach(function (pl) { calcById[pl.id] = pl; });
-      var quoteById = {};
       plans.quote.forEach(function (pl) { quoteById[pl.id] = pl; });
       if (_psPlan !== 'full' && !calcById[_psPlan] && !quoteById[_psPlan]) _psPlan = 'full';
       var sel = calcById[_psPlan] || null;
       var downMinor = (down.state === 'ok') ? down.minor : 0;
       var downUsable = down.state === 'ok' || down.state === 'none';
       var downBad = !downUsable && down.state !== 'pending';
-      var payNow = sel && downUsable ? psPay(q, sel, downMinor, size)
+      var payNow = (sel && downUsable && q.finalist) ? psPay(q, sel, downMinor, size)
         : { state: (sel && downBad && complete) ? 'down-invalid' : 'none', payMinor: null };
-      // The monthly difference a changed purchase makes under the selected
-      // plan: two complete quotes, same plan, same term, same down payment.
-      var effect = function (q2) {
-        if (!sel || payNow.state !== 'calculated' || !psComplete(q2)) return null;
-        var p2 = psPay(q2, sel, downMinor, size);
-        if (p2.state !== 'calculated') return null;
-        return p2.payMinor - payNow.payMinor;
-      };
       var signed = function (m) {
         if (m === null || m === undefined) return '';
         if (m === 0) return t('ps.same');
@@ -15368,13 +15444,163 @@
         if (m === 0) return t('ps.same_month');
         return t('ps.per_month_term', { amount: (m > 0 ? '+' : '−') + fmt(Math.abs(m)), n: termN });
       };
+      var ctx = { demo: demo, size: size, fmt: fmt, q: q, complete: complete, merch: merch, down: down,
+                  plans: plans, calcById: calcById, quoteById: quoteById, sel: sel, downMinor: downMinor,
+                  downUsable: downUsable, downBad: downBad, payNow: payNow, signed: signed,
+                  monthlySigned: monthlySigned, termN: termN };
+      // Current versus proposed, for one changed purchase. `monthlyNote`
+      // names why no monthly difference is shown when there is none.
+      ctx.proposal = function (q2) {
+        var out = { complete: psComplete(q2), subtotal: '', subtotalDiff: '', currentSubtotal: complete ? fmt(merch) : '',
+                    monthly: '', currentMonthly: '', monthlyDiff: '', monthlyNote: '', missing: [] };
+        if (!out.complete) {
+          out.missing = q2.lines.filter(function (l) { return !l.resolved; }).map(quoteLineName);
+          return out;
+        }
+        out.subtotal = fmt(q2.merchandiseMinor);
+        if (complete) out.subtotalDiff = signed(q2.merchandiseMinor - merch);
+        if (!sel) { out.monthlyNote = _psPlan === 'full' ? 'full' : 'quote'; return out; }
+        if (payNow.state !== 'calculated') { out.monthlyNote = payNow.state; return out; }
+        var p2 = psPay(q2, sel, downMinor, size);
+        if (p2.state !== 'calculated') { out.monthlyNote = p2.state; return out; }
+        out.currentMonthly = fmt(payNow.payMinor);
+        out.monthly = fmt(p2.payMinor);
+        out.monthlyDiff = monthlySigned(p2.payMinor - payNow.payMinor);
+        return out;
+      };
+      return ctx;
+    }
+    function psPickProjection(id) {
+      var hit = window._drawerData && window._drawerData[id];
+      var m = hit && hit.m;
+      if (!m) return null;
+      return { id: m.id, name: m.name, brand: m.brand + (m.subBrand ? ' · ' + m.subBrand : ''),
+               imageUrl: m.imageUrl || '', tier: hit.tier };
+    }
+    // One mattress as a candidate: priced at the customer's size inside a
+    // sandbox (an unsaved candidate is added to a COPY of the saved list).
+    function psMattressCandidate(ctx, id, current, saved) {
+      var savedList = Array.isArray(window._savedPicks) ? window._savedPicks : [];
+      var pick = saved ? savedList.filter(function (pk) { return pk && pk.id === id; })[0] : psPickProjection(id);
+      if (!pick) return null;
+      var q2 = current ? ctx.q : psQuote(ctx.size, saved ? { finalistId: id }
+        : { finalistId: id, savedPicks: savedList.concat([pick]) });
+      var ml = q2.lines.filter(function (l) { return l.kind === 'mattress'; })[0] || null;
+      var hit = window._drawerData && window._drawerData[id];
+      var rec = (hit && hit.m) || pick;
+      var tier = (hit && hit.tier) || pick.tier || '';
+      var fit = '';
+      if (rec && typeof mField === 'function') fit = mField(rec, 'highlight') || '';
+      return {
+        id: id, current: !!current, saved: !!saved,
+        name: L(rec.name) || rec.name || id, brand: pick.brand || rec.brand || '',
+        image: pick.imageUrl || rec.imageUrl || rec.image || '',
+        modelLine: (typeof sleepPlanModelLine === 'function') ? sleepPlanModelLine({ id: id, tier: tier }) : '',
+        fit: fit,
+        priced: !!(ml && ml.resolved), price: (ml && ml.resolved) ? ctx.fmt(ml.unitAmountMinor) : '',
+        illustrative: !!(ml && ml.resolved && psIllustrative(ml.sku)),
+        proposal: current ? null : ctx.proposal(q2)
+      };
+    }
+    // The Change mattress sheet: the current mattress, then the saved
+    // picks, then the leading recommendations of each tier in their
+    // sleep-fit order (never re-ranked); every id once.
+    function psMattressSheet() {
+      var ctx = psContext();
+      if (!ctx || !ctx.q.finalist) return { show: false };
+      var seen = {}, out = [];
+      var add = function (id, current, saved) {
+        if (typeof id !== 'string' || !id || seen[id]) return;
+        var c = psMattressCandidate(ctx, id, current, saved);
+        if (c) { seen[id] = true; out.push(c); }
+      };
+      add(ctx.q.finalist.id, true, true);
+      (Array.isArray(window._savedPicks) ? window._savedPicks : []).forEach(function (pk) {
+        if (pk && typeof pk.id === 'string') add(pk.id, false, true);
+      });
+      var rs = (typeof _resultsState === 'object' && _resultsState && _resultsState.tierData) ? _resultsState.tierData : {};
+      ['gold', 'silver', 'bronze'].forEach(function (tier) {
+        (rs[tier] || []).slice(0, 3).forEach(function (m) { if (m && m.id) add(m.id, false, false); });
+      });
+      return { show: true, kind: 'mattress', size: ctx.size ? sizeLabelFor(ctx.size) : '',
+               options: out, planLabel: ctx.sel ? (L(ctx.sel.headline) || '') : '' };
+    }
+    // The Add / Change sheet for one Sleep System step. `targetId` is the
+    // item being changed (a pillow is changed one product at a time); with
+    // no target the sheet ADDS (pillows) or picks the step's one item.
+    function psAccessorySheet(step, targetId) {
+      var ctx = psContext();
+      if (!ctx || !ctx.q.finalist || PS_STEPS.indexOf(step) === -1) return { show: false };
+      var cart = window._accCart || {};
+      var opts = (typeof ACCESSORIES !== 'undefined' && Array.isArray(ACCESSORIES) ? ACCESSORIES : [])
+        .filter(function (a) { return a && psStepOf(a) === step; });
+      var inStep = opts.filter(function (a) { return Object.prototype.hasOwnProperty.call(cart, a.id); });
+      var target = (typeof targetId === 'string' && Object.prototype.hasOwnProperty.call(cart, targetId)) ? targetId : '';
+      var reasons = {};
+      try {
+        (typeof scoreAccessoriesFromAnswers === 'function' ? scoreAccessoriesFromAnswers() : []).forEach(function (s) {
+          if (s && s.id && Array.isArray(s.reasons) && s.reasons.length) reasons[s.id] = s.reasons[0];
+        });
+      } catch (e) { reasons = {}; }
+      var build = function (c2) {
+        if (step === 'pillow') {
+          if (target) delete c2[target];
+          else if (inStep.length >= 2) delete c2[inStep[0].id];
+        } else {
+          inStep.forEach(function (x) { delete c2[x.id]; });
+        }
+        return c2;
+      };
+      var options = [];
+      opts.forEach(function (a) {
+        var inCart = Object.prototype.hasOwnProperty.call(cart, a.id);
+        var current = step === 'pillow' ? (a.id === target) : inCart;
+        if (step === 'pillow' && inCart && !current) return;   // already in the system: not a replacement
+        var q2;
+        if (current) {
+          q2 = ctx.q;
+        } else {
+          var c2 = build(psCartClone());
+          c2[a.id] = { id: a.id, quantity: 1 };
+          q2 = psQuote(ctx.size, { cart: c2 });
+        }
+        var line = q2.lines.filter(function (l) { return l.productId === a.id; })[0] || null;
+        options.push({
+          id: a.id, current: current, name: L(a.name) || '', image: a.image || '',
+          reason: reasons[a.id] || '',
+          priced: !!(line && line.resolved), price: (line && line.resolved) ? ctx.fmt(line.unitAmountMinor) : '',
+          illustrative: !!(line && line.resolved && psIllustrative(line.sku)),
+          sizeNote: (line && !line.resolved) ? t('ps.not_in_size', { size: ctx.size ? sizeLabelFor(ctx.size) : '' }) : '',
+          proposal: current ? null : ctx.proposal(q2)
+        });
+      });
+      var none = null;
+      if (step !== 'pillow') {
+        var c0 = psCartClone();
+        inStep.forEach(function (x) { delete c0[x.id]; });
+        none = { current: inStep.length === 0, proposal: inStep.length ? ctx.proposal(psQuote(ctx.size, { cart: c0 })) : null };
+      }
+      return { show: true, kind: 'accessory', step: step, target: target, mode: (target || inStep.length) ? 'change' : 'add',
+               options: options, none: none, planLabel: ctx.sel ? (L(ctx.sel.headline) || '') : '' };
+    }
+    function purchaseStudioFor() {
+      var none = { show: false };
+      var ctx = psContext();
+      if (!ctx) return none;
+      var demo = ctx.demo, size = ctx.size, fmt = ctx.fmt, q = ctx.q, complete = ctx.complete, merch = ctx.merch;
+      var down = ctx.down, plans = ctx.plans, sel = ctx.sel, downMinor = ctx.downMinor;
+      var downUsable = ctx.downUsable, downBad = ctx.downBad, payNow = ctx.payNow;
+      if (!q.finalist) return { show: true, empty: true, notice: L(demo.notice) || '' };
 
-      // ---- the mattress, its size and the saved alternatives ----------------
+      // ---- the selected mattress and its size -----------------------------------
       var mLine = q.lines.filter(function (l) { return l.kind === 'mattress'; })[0] || null;
       var fin = q.finalist;
       var mattress = {
         id: fin.id, name: L(fin.name) || fin.name || '', brand: fin.brand || '',
-        image: fin.imageUrl || fin.image || '', tierLabel: fin.tierLabel || '',
+        image: fin.imageUrl || fin.image || '',
+        // Recommendation provenance (tier and position) from the results
+        // themselves - "Best match" appears only when it is true.
+        modelLine: (typeof sleepPlanModelLine === 'function') ? sleepPlanModelLine(fin) : '',
         priced: !!(mLine && mLine.resolved),
         price: (mLine && mLine.resolved) ? fmt(mLine.unitAmountMinor) : '',
         illustrative: !!(mLine && mLine.resolved && psIllustrative(mLine.sku))
@@ -15384,110 +15610,41 @@
         var ml = qs.lines.filter(function (l) { return l.kind === 'mattress'; })[0] || null;
         return {
           id: sz, label: sizeLabelFor(sz) || sz, active: sz === size,
-          price: (ml && ml.resolved) ? fmt(ml.unitAmountMinor) : '',
-          system: psComplete(qs) ? fmt(qs.merchandiseMinor) : ''
-        };
-      });
-      var picks = (Array.isArray(window._savedPicks) ? window._savedPicks : []).filter(function (pk) {
-        return pk && typeof pk.id === 'string' && pk.id;
-      }).map(function (pk) {
-        var qp = psQuote(size, { finalistId: pk.id });
-        var ml = qp.lines.filter(function (l) { return l.kind === 'mattress'; })[0] || null;
-        var isCur = pk.id === fin.id;
-        var diff = (!isCur && complete && psComplete(qp)) ? qp.merchandiseMinor - merch : null;
-        var rec = (window._drawerData && window._drawerData[pk.id] && window._drawerData[pk.id].m) || pk;
-        return {
-          id: pk.id, name: L(rec.name) || rec.name || pk.id, brand: rec.brand || '',
-          active: isCur, price: (ml && ml.resolved) ? fmt(ml.unitAmountMinor) : '',
-          illustrative: !!(ml && ml.resolved && psIllustrative(ml.sku)),
-          diff: diff === null ? '' : signed(diff), diffMonthly: diff === null ? '' : monthlySigned(effect(qp))
+          price: (ml && ml.resolved) ? fmt(ml.unitAmountMinor) : ''
         };
       });
 
-      // ---- the itemised lines ------------------------------------------------
-      var lines = q.lines.map(function (ln) {
-        var rec = ln.kind === 'accessory' ? psAccessory(ln.productId) : null;
+      // ---- the selected Sleep System, one row per item, grouped by step ---------
+      var cart = window._accCart || {};
+      var lines = q.lines.filter(function (l) { return l.kind === 'accessory'; }).map(function (ln) {
+        var rec = psAccessory(ln.productId);
         var step = rec ? psStepOf(rec) : null;
-        var row = {
-          id: ln.productId, kind: ln.kind, step: step || (ln.kind === 'mattress' ? 'mattress' : ''),
-          name: quoteLineName(ln), image: ln.kind === 'mattress' ? mattress.image : ((rec && rec.image) || ''),
+        return {
+          id: ln.productId, step: step || '', name: quoteLineName(ln), image: (rec && rec.image) || '',
           size: ln.size ? (ln.split ? t('ps.split_line', { size: sizeLabelFor(ln.size) }) : sizeLabelFor(ln.size)) : '',
           qty: ln.quantity, split: !!ln.split,
           max: ({ pillow: 4, base: 1, protection: 1 })[step] || 1,
           priced: ln.resolved,
           unit: ln.resolved ? fmt(ln.unitAmountMinor) : '',
           ext: ln.resolved ? fmt(ln.extendedAmountMinor) : '',
-          illustrative: ln.resolved && psIllustrative(ln.sku),
-          effect: ''
+          illustrative: ln.resolved && psIllustrative(ln.sku)
         };
-        if (ln.kind === 'accessory' && sel) {
-          var c2 = psCartClone();
-          delete c2[ln.productId];
-          var dw = effect(psQuote(size, { cart: c2 }));
-          var d = dw === null ? null : -dw;
-          if (d !== null) {
-            row.effect = d > 0 ? t('ps.effect_adds', { amount: fmt(d), n: termN })
-              : (d === 0 ? t('ps.effect_none') : t('ps.effect_saves', { amount: fmt(-d), n: termN }));
-          }
-        }
-        return row;
       });
-      var missing = lines.filter(function (l) { return !l.priced; }).map(function (l) { return l.name; });
-
-      // ---- the choices for each Sleep System step -----------------------------
-      var cart = window._accCart || {};
-      var groups = PS_STEPS.map(function (step) {
-        var opts = (typeof ACCESSORIES !== 'undefined' && Array.isArray(ACCESSORIES) ? ACCESSORIES : [])
-          .filter(function (a) { return a && psStepOf(a) === step; });
-        var inStep = opts.filter(function (a) { return Object.prototype.hasOwnProperty.call(cart, a.id); });
-        var options = opts.map(function (a) {
-          var selected = Object.prototype.hasOwnProperty.call(cart, a.id);
-          var c2 = psCartClone();
-          if (selected) {
-            delete c2[a.id];
-          } else {
-            if (step !== 'pillow') inStep.forEach(function (x) { delete c2[x.id]; });
-            else if (inStep.length >= 2) delete c2[inStep[0].id];
-            c2[a.id] = { id: a.id, quantity: 1 };
-          }
-          var q2 = psQuote(size, { cart: c2 });
-          var line = q2.lines.filter(function (l) { return l.productId === a.id; })[0]
-            || psWithState({ cart: c2 }, function () { return quoteLineFor('handoff', 'accessory', a, size); });
-          var diff = (complete && psComplete(q2)) ? q2.merchandiseMinor - merch : null;
-          return {
-            id: a.id, name: L(a.name) || '', image: a.image || '', selected: selected,
-            priced: !!(line && line.resolved), price: (line && line.resolved) ? fmt(line.unitAmountMinor) : '',
-            illustrative: !!(line && line.resolved && psIllustrative(line.sku)),
-            diff: (selected || diff === null) ? '' : signed(diff),
-            diffMonthly: (selected || diff === null) ? '' : monthlySigned(effect(q2))
-          };
-        });
-        var noneOpt = null;
-        if (step !== 'pillow') {
-          var c0 = psCartClone();
-          inStep.forEach(function (x) { delete c0[x.id]; });
-          var q0 = psQuote(size, { cart: c0 });
-          var d0 = (inStep.length && complete && psComplete(q0)) ? q0.merchandiseMinor - merch : null;
-          noneOpt = { selected: inStep.length === 0, diff: d0 === null ? '' : signed(d0),
-                      diffMonthly: d0 === null ? '' : monthlySigned(effect(q0)) };
-        }
-        // Split King: offered for the selected adjustable base when it is
-        // sold in Twin XL and the customer's size is King.
+      var missing = q.lines.filter(function (l) { return !l.resolved; }).map(quoteLineName);
+      var steps = PS_STEPS.map(function (step) {
+        var rows = lines.filter(function (l) { return l.step === step; });
         var split = null;
-        var sb = (step === 'base' && size === 'king' && inStep.length === 1) ? inStep[0] : null;
+        var sb = (step === 'base' && size === 'king' && rows.length === 1) ? psAccessory(rows[0].id) : null;
         if (sb && sb.subType === 'adjustable' && sb.accessorySkus && pricingCleanSku(sb.accessorySkus.twin_xl)) {
           var on = cart[sb.id] && cart[sb.id].split === true;
           var cs = psCartClone();
           cs[sb.id] = on ? { id: sb.id, quantity: 1 } : { id: sb.id, quantity: 2, split: true };
-          var qs2 = psQuote(size, { cart: cs });
-          var ds = (complete && psComplete(qs2)) ? qs2.merchandiseMinor - merch : null;
-          split = { id: sb.id, on: on, diff: ds === null ? '' : signed(ds),
-                    diffMonthly: ds === null ? '' : monthlySigned(effect(qs2)) };
+          split = { id: sb.id, on: on, proposal: ctx.proposal(psQuote(size, { cart: cs })) };
         }
-        return { step: step, options: options, none: noneOpt, count: inStep.length, split: split };
+        return { step: step, rows: rows, canAdd: step === 'pillow' ? rows.length < 2 : rows.length === 0, split: split };
       });
 
-      // ---- the payment choices ------------------------------------------------
+      // ---- the payment choices --------------------------------------------------
       var cards = [{ id: 'full', kind: 'full', label: t('ps.pay_full'), selected: _psPlan === 'full',
                      amount: complete ? fmt(merch) : '', sub: complete ? t('ps.pay_full_sub') : '' }];
       plans.calc.forEach(function (pl) {
@@ -15523,21 +15680,14 @@
           result.down = payNow.down > 0 ? fmt(payNow.down) : t('ps.down_none');
           result.cost = t('pay.fx.up_to', { amount: fmt(payNow.down + payNow.scheduledMax) });
         }
-      } else if (quoteById[_psPlan]) {
-        result = { kind: 'quote', label: L(quoteById[_psPlan].headline) || '' };
-      }
-      var heroLine = '';
-      if (complete) {
-        heroLine = t('ps.hero_system', { amount: fmt(merch) });
-        if (result.kind === 'calc' && result.state === 'calculated') {
-          heroLine += ' · ' + t('ps.hero_monthly', { amount: result.monthly, n: result.term });
-        }
+      } else if (ctx.quoteById[_psPlan]) {
+        result = { kind: 'quote', label: L(ctx.quoteById[_psPlan].headline) || '' };
       }
       return {
-        show: true, empty: false, notice: L(demo.notice) || '', heroLine: heroLine,
+        show: true, empty: false, notice: L(demo.notice) || '',
         priceSource: L(demo.priceSource) || '', paymentSource: L(demo.paymentSource) || '',
         size: size || '', sizeLabel: size ? sizeLabelFor(size) : '', sizes: sizes,
-        mattress: mattress, picks: picks, lines: lines, groups: groups,
+        mattress: mattress, lines: lines, steps: steps,
         complete: complete, subtotal: complete ? fmt(merch) : '', missing: missing,
         plan: _psPlan, cards: cards, result: result,
         down: { state: down.state, raw: down.raw, applies: !!sel },
@@ -15548,13 +15698,13 @@
     // ═══ END PHASE 2.2 PRICE PRESENTATION GATE ═══
 
     // ─── Purchase studio (payment demo) — rendering and controls ───
-    // Draws purchaseStudioFor() into #purchaseStudio on the Consultation
-    // Summary. Every control changes the ONE consultation state the rest of
-    // the app reads (the size answer, the finalist, the Sleep System cart) or
-    // the studio's own two choices (plan, down payment), then repaints the
-    // Summary, so every surface agrees and nothing is entered twice. The down
-    // payment field is built once per paint of the section and kept while
-    // the customer types: typing repaints only the figures around it.
+    // The Consultation Summary's ONE purchase presentation (demo admission
+    // only): the selected mattress with Change mattress, a compact row per
+    // Sleep System item with Change / Remove / quantity, the merchandise
+    // subtotal, one selected-payment centerpiece and a compact comparison.
+    // Alternatives open in a focused sheet that PREVIEWS a change (two
+    // complete quotes) without touching the purchase; Apply goes through the
+    // app's own selection functions, Cancel leaves everything as it was.
     function psBtn(attrs, label, action) {
       return '<button type="button" ' + attrs + ' onclick="' + action + '" '
         + 'ontouchend="event.preventDefault();' + action + ';">' + label + '</button>';
@@ -15566,18 +15716,31 @@
     function psImg(src, cls) {
       return src ? '<img class="' + cls + '" src="' + escapeHtml(src) + '" alt="" loading="lazy" decoding="async">' : '';
     }
-    function psItemsHtml(m) {
+    function psStateKey(state) {
+      if (state === 'below-min') return 'ps.below_min';
+      if (state === 'down-invalid') return 'ps.fix_down';
+      if (state === 'nothing-financed') return 'ps.down_too_large';
+      return 'ps.needs_complete';
+    }
+    function psStepTitle(step, mode) {
+      return t('ps.step_' + step + (mode === 'add' ? '_add' : ''));
+    }
+    // ---- the purchase (left) ------------------------------------------------
+    function psPurchaseHtml(m) {
+      var mt = m.mattress;
       var html = '<div class="ps-hero">'
-        + '<div class="ps-hero__media">' + psImg(m.mattress.image, 'ps-hero__img') + '</div>'
-        + '<div class="ps-hero__id"><span class="ps-kicker">' + escapeHtml(t('ps.best_fit')) + '</span>'
-        + '<h3 class="ps-hero__name">' + escapeHtml(m.mattress.name) + '</h3>'
-        + '<p class="ps-hero__meta">' + escapeHtml([m.mattress.brand, m.sizeLabel].filter(Boolean).join(' · ')) + '</p>'
+        + '<div class="ps-hero__media">' + psImg(mt.image, 'ps-hero__img') + '</div>'
+        + '<div class="ps-hero__id"><span class="ps-kicker">' + escapeHtml(t('ps.selected_mattress')) + '</span>'
+        + '<h3 class="ps-hero__name">' + escapeHtml(mt.name) + '</h3>'
+        + '<p class="ps-hero__meta">' + escapeHtml([mt.brand, m.sizeLabel].filter(Boolean).join(' · ')) + '</p>'
+        + (mt.modelLine ? '<p class="ps-hero__badge">' + escapeHtml(mt.modelLine) + '</p>' : '')
         + '<p class="ps-hero__price" data-ps="mattress-price">'
-        + (m.mattress.priced ? escapeHtml(m.mattress.price) + psMark(m.mattress.illustrative)
+        + (mt.priced ? escapeHtml(mt.price) + psMark(mt.illustrative)
           : '<span class="ps-muted">' + escapeHtml(t('ps.no_price_size', { size: m.sizeLabel })) + '</span>')
-        + '</p>' + (m.heroLine ? '<p class="ps-hero__line" data-ps="hero-line">' + escapeHtml(m.heroLine) + '</p>' : '')
-        + '</div></div>';
-      // size
+        + '</p></div>'
+        + psBtn('class="fin-btn fin-btn-secondary ps-change" id="psChangeMattress" data-ps-open="mattress"',
+          escapeHtml(t('ps.change_mattress')), 'window.psOpenSheet(\'mattress\',\'\',\'\',this)')
+        + '</div>';
       html += '<div class="ps-block"><span class="ps-kicker" id="psSizeLabel">' + escapeHtml(t('ps.size')) + '</span>'
         + '<div class="ps-chips ps-chips--size" role="group" aria-labelledby="psSizeLabel">'
         + m.sizes.map(function (s) {
@@ -15585,98 +15748,61 @@
             + '" data-ps-size="' + escapeHtml(s.id) + '"',
             '<span class="ps-chip__name">' + escapeHtml(s.label) + '</span>'
             + '<span class="ps-chip__price">' + escapeHtml(s.price || t('ps.not_priced')) + '</span>',
-            'window.psSetSize(\'' + s.id + '\')');
+            'window.psSetSize(\'' + psId(s.id) + '\')');
         }).join('') + '</div></div>';
-      var top = html;
-      html = '';
-      // which mattress is priced
-      if (m.picks.length > 1) {
-        html += '<div class="ps-block"><span class="ps-kicker" id="psPickLabel">' + escapeHtml(t('ps.which_mattress')) + '</span>'
-          + '<div class="ps-picks" role="group" aria-labelledby="psPickLabel">'
-          + m.picks.map(function (pk) {
-            return psBtn('class="ps-pick' + (pk.active ? ' is-on' : '') + '" aria-pressed="' + (pk.active ? 'true' : 'false')
-              + '" data-ps-pick="' + escapeHtml(pk.id) + '"',
-              '<span class="ps-pick__name">' + escapeHtml(pk.name) + '</span>'
-              + '<span class="ps-pick__price">' + (pk.price ? escapeHtml(pk.price) + psMark(pk.illustrative)
-                : escapeHtml(t('ps.not_priced'))) + '</span>'
-              + (pk.active ? '<span class="ps-pick__delta">' + escapeHtml(t('ps.pricing_now')) + '</span>'
-                : (pk.diff ? '<span class="ps-pick__delta">' + escapeHtml(t('ps.system_change', { amount: pk.diff }))
-                  + (pk.diffMonthly ? ' · ' + escapeHtml(pk.diffMonthly) : '') + '</span>' : '')),
-              'window.psChooseMattress(\'' + psId(pk.id) + '\')');
-          }).join('') + '</div></div>';
-      }
-      // the steps
-      m.groups.forEach(function (g) {
-        if (!g.options.length) return;
-        var gid = 'psStep-' + g.step;
-        html += '<div class="ps-block ps-step" data-ps-step="' + g.step + '">'
-          + '<span class="ps-kicker" id="' + gid + '">' + escapeHtml(t('ps.step_' + g.step)) + '</span>'
-          + '<div class="ps-options" role="group" aria-labelledby="' + gid + '">';
-        if (g.none) {
-          html += psBtn('class="ps-opt ps-opt--none' + (g.none.selected ? ' is-on' : '') + '" aria-pressed="'
-            + (g.none.selected ? 'true' : 'false') + '" data-ps-none="' + g.step + '"',
-            '<span class="ps-opt__name">' + escapeHtml(t('ps.none_' + g.step)) + '</span>'
-            + (g.none.diff ? '<span class="ps-opt__delta">' + escapeHtml(g.none.diff)
-              + (g.none.diffMonthly ? '<br>' + escapeHtml(g.none.diffMonthly) : '') + '</span>' : ''),
-            'window.psClearStep(\'' + g.step + '\')');
-        }
-        g.options.forEach(function (o) {
-          html += psBtn('class="ps-opt' + (o.selected ? ' is-on' : '') + (o.priced ? '' : ' is-unpriced') + '" aria-pressed="'
-            + (o.selected ? 'true' : 'false') + '" data-ps-opt="' + escapeHtml(o.id) + '"',
-            psImg(o.image, 'ps-opt__img')
-            + '<span class="ps-opt__name">' + escapeHtml(o.name) + '</span>'
-            + '<span class="ps-opt__price">' + (o.priced ? escapeHtml(o.price) + psMark(o.illustrative)
-              : escapeHtml(t('ps.not_in_size', { size: m.sizeLabel }))) + '</span>'
-            + (o.diff ? '<span class="ps-opt__delta">' + escapeHtml(o.diff)
-              + (o.diffMonthly ? '<br>' + escapeHtml(o.diffMonthly) : '') + '</span>' : '')
-            + (o.selected ? '<span class="ps-opt__tick">' + escapeHtml(t(g.step === 'pillow' ? 'ps.in_system_remove' : 'ps.in_system')) + '</span>' : ''),
-            'window.psToggleOption(\'' + psId(o.id) + '\')');
+      // the Sleep System, compact
+      html += '<div class="ps-block"><span class="ps-kicker">' + escapeHtml(t('ps.system')) + '</span><ul class="ps-rows">';
+      m.steps.forEach(function (st) {
+        st.rows.forEach(function (l) {
+          var qty = '';
+          if (l.split) {
+            qty = '<span class="ps-qty__n ps-qty__fixed">× 2</span>';
+          } else if (l.max > 1) {
+            qty = '<span class="ps-qty" role="group" aria-label="' + escapeHtml(t('ps.qty_label', { name: l.name })) + '">'
+              + psBtn('class="ps-qty__btn" data-ps-qty="' + escapeHtml(l.id) + '" data-ps-delta="-1" aria-label="'
+                + escapeHtml(t('ps.qty_less')) + '"' + (l.qty <= 1 ? ' disabled' : ''), '−',
+                'window.psQty(\'' + psId(l.id) + '\',-1)')
+              + '<span class="ps-qty__n" aria-live="polite">' + l.qty + '</span>'
+              + psBtn('class="ps-qty__btn" data-ps-qty="' + escapeHtml(l.id) + '" data-ps-delta="1" aria-label="'
+                + escapeHtml(t('ps.qty_more')) + '"' + (l.qty >= l.max ? ' disabled' : ''), '+',
+                'window.psQty(\'' + psId(l.id) + '\',1)')
+              + '</span>';
+          }
+          html += '<li class="ps-row' + (l.priced ? '' : ' is-unpriced') + '" data-ps-line="' + escapeHtml(l.id) + '" data-ps-step="' + escapeHtml(st.step) + '">'
+            + psImg(l.image, 'ps-row__img')
+            + '<span class="ps-row__text"><span class="ps-row__cat">' + escapeHtml(t('ps.cat_' + st.step)) + '</span>'
+            + '<span class="ps-row__name">' + escapeHtml(l.name) + '</span>'
+            + '<span class="ps-row__meta">' + escapeHtml([l.size, (l.priced && l.qty > 1) ? t('ps.each', { amount: l.unit }) : ''].filter(Boolean).join(' · ')) + '</span></span>'
+            + qty
+            + '<span class="ps-row__amount">' + (l.priced ? escapeHtml(l.ext) + psMark(l.illustrative)
+              : '<span class="ps-muted">' + escapeHtml(t('ps.no_price')) + '</span>') + '</span>'
+            + '<span class="ps-row__actions">'
+            + psBtn('class="ps-link" data-ps-change="' + escapeHtml(l.id) + '"', escapeHtml(t('ps.change')),
+              'window.psOpenSheet(\'accessory\',\'' + psId(st.step) + '\',\'' + psId(l.id) + '\',this)')
+            + psBtn('class="ps-link" data-ps-remove="' + escapeHtml(l.id) + '" aria-label="' + escapeHtml(t('ps.remove_named', { name: l.name })) + '"',
+              escapeHtml(t('ps.remove')), 'window.psRemove(\'' + psId(l.id) + '\')')
+            + '</span></li>';
+          if (st.split && st.split.id === l.id) {
+            var sp = st.split;
+            var spChip = function (on, label) {
+              var cur = sp.on === on;
+              return psBtn('class="ps-chip ps-chip--split' + (cur ? ' is-on' : '') + '" aria-pressed="' + (cur ? 'true' : 'false')
+                + '" data-ps-split="' + (on ? 'on' : 'off') + '"',
+                '<span class="ps-chip__name">' + escapeHtml(label) + '</span>'
+                + (!cur && sp.proposal && sp.proposal.subtotalDiff ? '<span class="ps-chip__price">' + escapeHtml(sp.proposal.subtotalDiff)
+                  + (sp.proposal.monthlyDiff ? ' · ' + escapeHtml(sp.proposal.monthlyDiff) : '') + '</span>' : ''),
+                'window.psSetSplit(\'' + psId(sp.id) + '\',' + (on ? 'true' : 'false') + ')');
+            };
+            html += '<li class="ps-row ps-row--split"><span class="ps-fine">' + escapeHtml(t('ps.split_hint')) + '</span>'
+              + '<span class="ps-chips" role="group" aria-label="' + escapeHtml(t('ps.split_label')) + '">'
+              + spChip(false, t('ps.split_single')) + spChip(true, t('ps.split_two')) + '</span></li>';
+          }
         });
-        html += '</div>';
-        if (g.split) {
-          var sp = g.split;
-          var spChip = function (on, label) {
-            var cur = sp.on === on;
-            return psBtn('class="ps-chip ps-chip--split' + (cur ? ' is-on' : '') + '" aria-pressed="' + (cur ? 'true' : 'false')
-              + '" data-ps-split="' + (on ? 'on' : 'off') + '"',
-              '<span class="ps-chip__name">' + escapeHtml(label) + '</span>'
-              + (!cur && sp.diff ? '<span class="ps-chip__price">' + escapeHtml(sp.diff)
-                + (sp.diffMonthly ? ' · ' + escapeHtml(sp.diffMonthly) : '') + '</span>' : ''),
-              'window.psSetSplit(\'' + psId(sp.id) + '\',' + (on ? 'true' : 'false') + ')');
-          };
-          html += '<p class="ps-fine ps-split__hint">' + escapeHtml(t('ps.split_hint')) + '</p>'
-            + '<div class="ps-chips" role="group" aria-label="' + escapeHtml(t('ps.split_label')) + '">'
-            + spChip(false, t('ps.split_single')) + spChip(true, t('ps.split_two')) + '</div>';
+        if (st.canAdd) {
+          html += '<li class="ps-row ps-row--add">'
+            + psBtn('class="ps-add" data-ps-add="' + st.step + '"', '+ ' + escapeHtml(psStepTitle(st.step, 'add')),
+              'window.psOpenSheet(\'accessory\',\'' + st.step + '\',\'\',this)') + '</li>';
         }
-        html += '</div>';
-      });
-      var changes = html;
-      // the itemised purchase
-      html = '<div class="ps-block ps-purchase"><span class="ps-kicker">' + escapeHtml(t('ps.items')) + '</span><ul class="ps-lines">';
-      m.lines.forEach(function (l) {
-        var qty = '';
-        if (l.split) {
-          qty = '<span class="ps-qty__n ps-qty__fixed">× 2</span>';
-        } else if (l.kind === 'accessory' && l.max > 1) {
-          qty = '<span class="ps-qty" role="group" aria-label="' + escapeHtml(t('ps.qty_label', { name: l.name })) + '">'
-            + psBtn('class="ps-qty__btn" data-ps-qty="' + escapeHtml(l.id) + '" data-ps-delta="-1" aria-label="'
-              + escapeHtml(t('ps.qty_less')) + '"' + (l.qty <= 1 ? ' disabled' : ''), '−',
-              'window.psQty(\'' + psId(l.id) + '\',-1)')
-            + '<span class="ps-qty__n" aria-live="polite">' + l.qty + '</span>'
-            + psBtn('class="ps-qty__btn" data-ps-qty="' + escapeHtml(l.id) + '" data-ps-delta="1" aria-label="'
-              + escapeHtml(t('ps.qty_more')) + '"' + (l.qty >= l.max ? ' disabled' : ''), '+',
-              'window.psQty(\'' + psId(l.id) + '\',1)')
-            + '</span>';
-        }
-        html += '<li class="ps-line' + (l.priced ? '' : ' is-unpriced') + '" data-ps-line="' + escapeHtml(l.id) + '">'
-          + psImg(l.image, 'ps-line__img')
-          + '<span class="ps-line__text"><span class="ps-line__name">' + escapeHtml(l.name) + '</span>'
-          + '<span class="ps-line__meta">' + escapeHtml([l.size, (l.priced && l.qty > 1) ? t('ps.each', { amount: l.unit }) : ''].filter(Boolean).join(' · ')) + '</span>'
-          + (l.effect ? '<span class="ps-line__effect">' + escapeHtml(l.effect) + '</span>' : '') + '</span>'
-          + qty
-          + '<span class="ps-line__amount">' + (l.priced ? escapeHtml(l.ext) + psMark(l.illustrative)
-            : '<span class="ps-muted">' + escapeHtml(t('ps.no_price')) + '</span>') + '</span>'
-          + '</li>';
       });
       html += '</ul>';
       if (m.complete) {
@@ -15688,86 +15814,86 @@
           + '<strong>' + escapeHtml(t('ps.incomplete')) + '</strong></div>'
           + '<p class="ps-warn">' + escapeHtml(t('ps.missing', { items: m.missing.join(', ') })) + '</p>';
       }
-      html += '</div>';
-      return {
-        main: top + html,
-        changes: '<h3 class="ps-changes__title">' + escapeHtml(t('ps.try_change')) + '</h3>'
-          + '<p class="ps-fine ps-changes__hint">' + escapeHtml(t('ps.try_change_hint')) + '</p>' + changes
-      };
+      return html + '</div>';
     }
-    function psPlansHtml(m) {
-      var html = '<div class="ps-plans" role="group" aria-labelledby="psPayLabel">';
-      var quote = m.cards.filter(function (c) { return c.kind === 'quote'; });
-      m.cards.filter(function (c) { return c.kind !== 'quote'; }).forEach(function (c) {
-        var body;
-        if (c.kind === 'full') {
-          body = '<span class="ps-card__amount">' + escapeHtml(c.amount || t('ps.incomplete')) + '</span>'
-            + '<span class="ps-card__sub">' + escapeHtml(c.sub || '') + '</span>';
-        } else if (c.kind === 'calc') {
-          body = c.monthly
-            ? '<span class="ps-card__amount">' + escapeHtml(t('ps.monthly', { amount: c.monthly })) + '</span>'
-              + '<span class="ps-card__sub">' + escapeHtml(t('ps.for_months', { n: c.term })) + '</span>'
-              + '<span class="ps-card__sub ps-card__sub--strong">' + escapeHtml(t('ps.card_total', { amount: c.total })) + '</span>'
-              + (c.downNote ? '<span class="ps-card__sub">' + escapeHtml(c.downNote) + '</span>' : '')
-              + '<span class="ps-card__sub ps-card__sub--strong">' + escapeHtml(t('ps.card_interest', { amount: c.interest })) + '</span>'
-            : '<span class="ps-card__amount ps-muted">' + escapeHtml(t(psStateKey(c.state))) + '</span>';
-        } else {
-          body = '<span class="ps-card__amount ps-muted">' + escapeHtml(t('pay.fx.to_confirm')) + '</span>'
-            + '<span class="ps-card__sub">' + escapeHtml(t('ps.quote_sub')) + '</span>';
-        }
-        html += psBtn('class="ps-card ps-card--' + c.kind + (c.selected ? ' is-on' : '') + '" aria-pressed="'
-          + (c.selected ? 'true' : 'false') + '" data-ps-plan="' + escapeHtml(c.id) + '"',
-          '<span class="ps-card__label">' + escapeHtml(c.label) + '</span>' + body,
-          'window.psSetPlan(\'' + psId(c.id) + '\')');
-      });
-      html += '</div>';
-      if (quote.length) {
-        html += '<div class="ps-confirm"><span class="ps-kicker">' + escapeHtml(t('ps.ask_about')) + '</span><div class="ps-confirm__row">'
-          + quote.map(function (c) {
-            return psBtn('class="ps-chip ps-chip--confirm' + (c.selected ? ' is-on' : '') + '" aria-pressed="'
-              + (c.selected ? 'true' : 'false') + '" data-ps-plan="' + escapeHtml(c.id) + '"',
-              '<span class="ps-chip__name">' + escapeHtml(c.label) + '</span>'
-              + '<span class="ps-chip__price">' + escapeHtml(t('pay.fx.to_confirm')) + '</span>',
-              'window.psSetPlan(\'' + psId(c.id) + '\')');
-          }).join('') + '</div></div>';
-      }
-      return html;
-    }
-    function psResultHtml(m) {
+    // ---- the selected payment (right, top) -------------------------------------
+    function psCenterHtml(m) {
       var r = m.result;
-      var html = '';
+      var fig = function (k, v, sub) {
+        return '<div class="ps-fig" data-ps-fig="' + k + '"><span class="ps-fig__label">' + escapeHtml(t('ps.fig_' + k)) + '</span>'
+          + '<span class="ps-fig__value">' + escapeHtml(v) + '</span>'
+          + (sub ? '<span class="ps-fig__sub">' + escapeHtml(sub) + '</span>' : '') + '</div>';
+      };
+      var html = '<div class="ps-center" data-ps-center="' + escapeHtml(r.kind) + '">';
       if (r.kind === 'full') {
-        html = '<div class="ps-result__grid ps-result__grid--full">'
-          + '<div class="ps-fig"><span class="ps-fig__label">' + escapeHtml(t('ps.pay_full')) + '</span>'
-          + '<span class="ps-fig__value">' + escapeHtml(r.amount || t('ps.incomplete')) + '</span></div></div>';
+        html += '<span class="ps-center__label">' + escapeHtml(t('ps.pay_full')) + '</span>'
+          + '<span class="ps-center__big" data-ps-big>' + escapeHtml(r.amount || t('ps.incomplete')) + '</span>'
+          + '<span class="ps-center__terms">' + escapeHtml(t('ps.one_payment')) + '</span>';
       } else if (r.kind === 'calc' && r.state === 'calculated') {
-        var fig = function (k, v, sub) {
-          return '<div class="ps-fig" data-ps-fig="' + k + '"><span class="ps-fig__label">' + escapeHtml(t('ps.fig_' + k)) + '</span>'
-            + '<span class="ps-fig__value">' + escapeHtml(v) + '</span>'
-            + (sub ? '<span class="ps-fig__sub">' + escapeHtml(sub) + '</span>' : '') + '</div>';
-        };
-        html = '<p class="ps-result__plan">' + escapeHtml(r.label) + '</p><div class="ps-result__grid">'
-          + fig('monthly', t('ps.monthly', { amount: r.monthly }), t('ps.for_months', { n: r.term }))
+        html += '<span class="ps-center__label">' + escapeHtml(r.label) + '</span>'
+          + '<span class="ps-center__big" data-ps-big>' + escapeHtml(t('ps.monthly', { amount: r.monthly })) + '</span>'
+          + '<span class="ps-center__terms">' + escapeHtml(t('ps.center_terms', { n: r.term, apr: r.apr, down: r.down })) + '</span>'
+          + '<div class="ps-center__figs">'
+          + fig('subtotal', m.subtotal, '')
           + fig('cost', r.cost, t('ps.cost_sub'))
-          + fig('scheduled', r.scheduled, t('ps.payments_n', { n: r.term }))
-          + fig('interest', r.interest, t('ps.apr', { apr: r.apr }))
-          + fig('down', r.down, '')
-          + fig('financed', r.financed, '')
-          + '</div><p class="ps-fine">' + escapeHtml(t('ps.rounding')) + '</p>';
+          + fig('interest', r.interest, '')
+          + '</div>';
       } else if (r.kind === 'calc') {
-        html = '<p class="ps-result__plan">' + escapeHtml(r.label) + '</p><p class="ps-warn">'
-          + escapeHtml(t(psStateKey(r.state))) + '</p>';
+        html += '<span class="ps-center__label">' + escapeHtml(r.label) + '</span>'
+          + '<p class="ps-warn">' + escapeHtml(t(psStateKey(r.state))) + '</p>';
       } else {
-        html = '<p class="ps-result__plan">' + escapeHtml(r.label) + '</p><p class="ps-note">'
-          + escapeHtml(t('ps.quote_detail')) + '</p>';
+        html += '<span class="ps-center__label">' + escapeHtml(r.label) + '</span>'
+          + '<span class="ps-center__big ps-center__big--muted">' + escapeHtml(t('pay.fx.to_confirm')) + '</span>'
+          + '<p class="ps-note">' + escapeHtml(t('ps.quote_detail')) + '</p>';
       }
+      if (r.kind === 'full' && m.complete) {
+        html += '<div class="ps-center__figs">' + fig('subtotal', m.subtotal, '') + '</div>';
+      }
+      html += '</div>';
+      // supporting details, one disclosure
+      html += '<details class="ps-details" id="psDetails"' + (_psDetailsOpen ? ' open' : '') + ' ontoggle="window.psDetailsToggled(this)">'
+        + '<summary class="ps-details__summary">' + escapeHtml(t('ps.details')) + '</summary><div class="ps-details__body">';
+      if (r.kind === 'calc' && r.state === 'calculated') {
+        html += '<dl class="ps-dl">'
+          + '<div data-ps-dl="financed"><dt>' + escapeHtml(t('ps.fig_financed')) + '</dt><dd>' + escapeHtml(r.financed) + '</dd></div>'
+          + '<div data-ps-dl="down"><dt>' + escapeHtml(t('ps.fig_down')) + '</dt><dd>' + escapeHtml(r.down) + '</dd></div>'
+          + '<div data-ps-dl="scheduled"><dt>' + escapeHtml(t('ps.fig_scheduled')) + '</dt><dd>' + escapeHtml(r.scheduled)
+          + ' <span class="ps-fig__sub">(' + escapeHtml(t('ps.payments_n', { n: r.term })) + ')</span></dd></div>'
+          + '</dl><p class="ps-fine">' + escapeHtml(t('ps.rounding')) + '</p>';
+      }
+      if (m.excludes) html += '<p class="ps-fine">' + escapeHtml(m.excludes) + '</p>';
+      html += '<p class="ps-source">' + escapeHtml(m.priceSource) + '</p>'
+        + '<p class="ps-source">' + escapeHtml(m.paymentSource) + '</p></div></details>';
       return html;
     }
-    function psStateKey(state) {
-      if (state === 'below-min') return 'ps.below_min';
-      if (state === 'down-invalid') return 'ps.fix_down';
-      if (state === 'nothing-financed') return 'ps.down_too_large';
-      return 'ps.needs_complete';
+    // ---- the comparison (right) -----------------------------------------------
+    function psCompareHtml(m) {
+      var html = '<ul class="ps-cmp" aria-labelledby="psPayLabel">';
+      m.cards.forEach(function (c) {
+        var sel = c.selected;
+        var tick = '<span class="ps-cmp__tick" aria-hidden="true">' + (sel ? '✓' : '') + '</span>';
+        var state = sel ? '<span class="ps-cmp__sel">' + escapeHtml(t('ps.selected')) + '</span>' : '';
+        var cells;
+        if (c.kind === 'full') {
+          cells = '<span class="ps-cmp__main">' + escapeHtml(c.amount || t('ps.incomplete')) + '</span>'
+            + '<span class="ps-cmp__meta">' + escapeHtml(t('ps.one_payment')) + '</span>';
+        } else if (c.kind === 'calc') {
+          cells = c.monthly
+            ? '<span class="ps-cmp__main">' + escapeHtml(t('ps.monthly', { amount: c.monthly })) + '</span>'
+              + '<span class="ps-cmp__meta">' + escapeHtml(t('ps.cmp_terms', { n: c.term, apr: c.apr })) + '</span>'
+              + '<span class="ps-cmp__meta">' + escapeHtml(t('ps.card_total', { amount: c.total })) + '</span>'
+              + '<span class="ps-cmp__meta">' + escapeHtml(t('ps.card_interest', { amount: c.interest })) + '</span>'
+            : '<span class="ps-cmp__meta ps-muted">' + escapeHtml(t(psStateKey(c.state))) + '</span>';
+        } else {
+          cells = '<span class="ps-cmp__main ps-muted">' + escapeHtml(t('pay.fx.to_confirm')) + '</span>'
+            + '<span class="ps-cmp__meta">' + escapeHtml(t('ps.quote_sub')) + '</span>';
+        }
+        html += '<li>' + psBtn('class="ps-cmp__row ps-cmp__row--' + c.kind + (sel ? ' is-on' : '') + '" aria-pressed="'
+          + (sel ? 'true' : 'false') + '" data-ps-plan="' + escapeHtml(c.id) + '"',
+          tick + '<span class="ps-cmp__name">' + escapeHtml(c.label) + state + '</span>' + cells,
+          'window.psSetPlan(\'' + psId(c.id) + '\')') + '</li>';
+      });
+      return html + '</ul>';
     }
     function psDownMessage(m) {
       var s = m.down.state;
@@ -15791,49 +15917,53 @@
         + '<p class="ps-down__msg' + ((m.down.state === 'invalid' || m.down.state === 'negative' || m.down.state === 'too-large') ? ' is-error' : '')
         + '" id="psDownMsg" role="status">' + escapeHtml(psDownMessage(m)) + '</p>';
     }
+    var _psDetailsOpen = false;
+    window.psDetailsToggled = function (el) { _psDetailsOpen = !!(el && el.open); };
     function renderPurchaseStudio(partial) {
       var box = document.getElementById('purchaseStudio');
       if (!box) return;
       var m = (typeof purchaseStudioFor === 'function') ? purchaseStudioFor() : { show: false };
       var total = document.getElementById('hf2SystemTotal');
+      var hero = document.getElementById('hf2FinalistHero');
+      var sysSec = document.getElementById('hf2SleepSystemSection');
       if (!m.show) {
         box.hidden = true;
         box.innerHTML = '';
+        if (hero) hero.style.display = '';
         return;
       }
       if (total) { total.hidden = true; total.innerHTML = ''; }
       box.hidden = false;
       if (m.empty) {
+        if (hero) hero.style.display = '';
         box.innerHTML = '<p class="ps-notice">' + escapeHtml(m.notice) + '</p><p class="ps-note">'
           + escapeHtml(t('ps.choose_first')) + '</p>';
         return;
       }
+      // ONE presentation of the selected purchase: the Summary's separate
+      // finalist hero and Sleep System list yield to this one while it shows.
+      if (hero) hero.style.display = 'none';
+      if (sysSec) sysSec.style.display = 'none';
       if (partial && document.getElementById('psDownInput')) {
         // Typing in the down payment repaints the figures, not the field.
-        document.getElementById('psPlansBox').innerHTML = psPlansHtml(m);
-        document.getElementById('psResultBox').innerHTML = psResultHtml(m);
+        document.getElementById('psCenterBox').innerHTML = psCenterHtml(m);
+        document.getElementById('psCompareBox').innerHTML = psCompareHtml(m);
         var msg = document.getElementById('psDownMsg');
         if (msg) {
           msg.textContent = psDownMessage(m);
           msg.classList.toggle('is-error', m.down.state === 'invalid' || m.down.state === 'negative' || m.down.state === 'too-large');
         }
-        var parts = psItemsHtml(m);
-        box.querySelector('#psMainBox').innerHTML = parts.main;
-        box.querySelector('#psChangesBox').innerHTML = parts.changes;
         return;
       }
-      var p2 = psItemsHtml(m);
       box.innerHTML = '<div class="ps-head"><span class="ps-kicker">' + escapeHtml(t('ps.kicker')) + '</span>'
-        + '<h2 class="ps-title" id="psTitle">' + escapeHtml(t('ps.title')) + '</h2>'
+        + '<h2 class="ps-title" id="psTitle" tabindex="-1">' + escapeHtml(t('ps.title')) + '</h2>'
         + '<p class="ps-notice" role="note">' + escapeHtml(m.notice) + '</p></div>'
-        + '<div class="ps-layout"><div class="ps-col ps-col--main" id="psMainBox">' + p2.main + '</div>'
-        + '<div class="ps-col ps-col--changes ps-changes" id="psChangesBox">' + p2.changes + '</div>'
-        + '<div class="ps-col ps-col--pay"><span class="ps-kicker" id="psPayLabel">' + escapeHtml(t('ps.pay_label')) + '</span>'
-        + '<div id="psPlansBox">' + psPlansHtml(m) + '</div>'
+        + '<div class="ps-layout"><div class="ps-col ps-col--main" id="psMainBox">' + psPurchaseHtml(m) + '</div>'
+        + '<div class="ps-col ps-col--pay">'
+        + '<div id="psCenterBox" aria-live="polite">' + psCenterHtml(m) + '</div>'
         + '<div class="ps-down">' + psDownHtml(m) + '</div>'
-        + '<div class="ps-result" id="psResultBox" aria-live="polite">' + psResultHtml(m) + '</div>'
-        + '<p class="ps-source">' + escapeHtml(m.priceSource) + '</p>'
-        + '<p class="ps-source">' + escapeHtml(m.paymentSource) + '</p>'
+        + '<span class="ps-kicker" id="psPayLabel">' + escapeHtml(t('ps.pay_label')) + '</span>'
+        + '<div id="psCompareBox">' + psCompareHtml(m) + '</div>'
         + psBtn('class="fin-btn fin-btn-secondary ps-edit" id="psEditSystem"', escapeHtml(t('ps.edit_system')), 'window.showAccessories()')
         + '</div></div>';
     }
@@ -15845,6 +15975,170 @@
         if (el && !el.disabled && typeof el.focus === 'function') el.focus({ preventScroll: true });
       }
     }
+    function psAnnounce(text) {
+      var live = document.getElementById('psLive');
+      if (!live) return;
+      live.textContent = '';
+      setTimeout(function () { live.textContent = text; }, 30);
+    }
+
+    // ---- the change sheet -------------------------------------------------------
+    var _psSheet = null;   // { kind, step, target, pick, opener }
+    function psSheetModel() {
+      if (!_psSheet) return { show: false };
+      return _psSheet.kind === 'mattress' ? psMattressSheet() : psAccessorySheet(_psSheet.step, _psSheet.target);
+    }
+    function psPreviewHtml(sm, opt) {
+      if (!opt) return '<p class="ps-fine">' + escapeHtml(t('ps.sheet_pick')) + '</p>';
+      var p = opt.proposal;
+      if (!p) return '<p class="ps-fine">' + escapeHtml(t('ps.sheet_current')) + '</p>';
+      var html = '<div class="ps-preview" data-ps-preview>';
+      if (!p.complete) {
+        return html + '<p class="ps-warn">' + escapeHtml(t('ps.missing', { items: p.missing.join(', ') })) + '</p></div>';
+      }
+      html += '<div class="ps-preview__row"><span>' + escapeHtml(t('ps.subtotal')) + '</span>'
+        + '<span class="ps-preview__vals">' + escapeHtml(p.currentSubtotal) + ' → <strong>' + escapeHtml(p.subtotal) + '</strong>'
+        + (p.subtotalDiff ? ' <span class="ps-preview__diff">(' + escapeHtml(p.subtotalDiff) + ')</span>' : '') + '</span></div>';
+      if (p.monthly) {
+        html += '<div class="ps-preview__row"><span>' + escapeHtml(t('ps.preview_monthly', { plan: sm.planLabel })) + '</span>'
+          + '<span class="ps-preview__vals">' + escapeHtml(t('ps.monthly', { amount: p.currentMonthly })) + ' → <strong>'
+          + escapeHtml(t('ps.monthly', { amount: p.monthly })) + '</strong>'
+          + ' <span class="ps-preview__diff">(' + escapeHtml(p.monthlyDiff) + ')</span></span></div>';
+      } else {
+        html += '<p class="ps-fine">' + escapeHtml(t('ps.preview_no_monthly_' + (p.monthlyNote === 'full' || p.monthlyNote === 'quote' ? p.monthlyNote : 'other'))) + '</p>';
+      }
+      var why = sm.kind === 'mattress' ? opt.fit : opt.reason;
+      if (why) html += '<p class="ps-preview__why">' + escapeHtml(why) + '</p>';
+      return html + '</div>';
+    }
+    function renderPsSheet() {
+      var sheet = document.getElementById('psSheet');
+      var bd = document.getElementById('psSheetBackdrop');
+      if (!sheet || !bd) return;
+      var sm = psSheetModel();
+      if (!_psSheet || !sm.show) { sheet.hidden = true; bd.hidden = true; sheet.innerHTML = ''; return; }
+      var pick = _psSheet.pick;
+      var all = sm.options.slice();
+      var title = sm.kind === 'mattress' ? t('ps.change_mattress') : psStepTitle(sm.step, sm.mode);
+      var opt = function (o, id) {
+        var on = pick === id;
+        var body = (o.image ? psImg(o.image, 'ps-opt__img') : '')
+          + '<span class="ps-opt__text"><span class="ps-opt__name">' + escapeHtml(o.name)
+          + (o.current ? ' <span class="ps-opt__cur">' + escapeHtml(t('ps.current')) + '</span>' : '')
+          + (o.saved && !o.current ? ' <span class="ps-opt__tag">' + escapeHtml(t('ps.saved')) + '</span>' : '') + '</span>'
+          + (o.modelLine ? '<span class="ps-opt__meta">' + escapeHtml(o.modelLine) + '</span>' : '')
+          + ((sm.kind === 'mattress' ? o.fit : o.reason) ? '<span class="ps-opt__why">' + escapeHtml(sm.kind === 'mattress' ? o.fit : o.reason) + '</span>' : '')
+          + '</span><span class="ps-opt__nums"><span class="ps-opt__price">'
+          + (o.priced ? escapeHtml(o.price) + psMark(o.illustrative) : escapeHtml(o.sizeNote || t('ps.not_priced'))) + '</span>'
+          + (o.proposal && o.proposal.subtotalDiff ? '<span class="ps-opt__delta">' + escapeHtml(t('ps.system_change', { amount: o.proposal.subtotalDiff })) + '</span>' : '')
+          + (o.proposal && o.proposal.monthlyDiff ? '<span class="ps-opt__delta">' + escapeHtml(o.proposal.monthlyDiff) + '</span>' : '')
+          + '</span>';
+        return '<li>' + psBtn('class="ps-sopt' + (on ? ' is-on' : '') + (o.current ? ' is-current' : '') + '" aria-pressed="' + (on ? 'true' : 'false')
+          + '" data-ps-sheet-opt="' + escapeHtml(id) + '"', body, 'window.psSheetPick(\'' + psId(id) + '\')') + '</li>';
+      };
+      var list = all.map(function (o) { return opt(o, o.id); }).join('');
+      if (sm.none) {
+        list += opt({ name: t('ps.none_' + sm.step), current: sm.none.current, proposal: sm.none.proposal, priced: false,
+                      sizeNote: ' ', reason: '' }, '__none');
+      }
+      var picked = pick === '__none' ? (sm.none ? { proposal: sm.none.proposal, current: sm.none.current } : null)
+        : all.filter(function (o) { return o.id === pick; })[0] || null;
+      var canApply = !!(picked && !picked.current);
+      sheet.innerHTML = '<div class="ps-sheet__head"><h2 class="ps-sheet__title" id="psSheetTitle" tabindex="-1">' + escapeHtml(title) + '</h2>'
+        + (sm.kind === 'mattress' && sm.size ? '<p class="ps-fine">' + escapeHtml(t('ps.sheet_size', { size: sm.size })) + '</p>' : '')
+        + '</div><ul class="ps-sheet__list">' + list + '</ul>'
+        + '<div class="ps-sheet__foot"><div class="ps-sheet__preview" aria-live="polite">' + psPreviewHtml(sm, picked) + '</div>'
+        + '<div class="ps-sheet__actions">'
+        + psBtn('class="fin-btn fin-btn-primary" id="psSheetApply"' + (canApply ? '' : ' disabled'), escapeHtml(t('ps.apply')), 'window.psSheetApply()')
+        + psBtn('class="fin-btn fin-btn-secondary" id="psSheetCancel"', escapeHtml(t('ps.cancel')), 'window.psCloseSheet()')
+        + (sm.kind === 'mattress' ? psBtn('class="ps-link ps-sheet__browse" id="psSheetBrowse"', escapeHtml(t('ps.browse_all')), 'window.psBrowseAll()') : '')
+        + '</div></div>';
+      sheet.hidden = false;
+      bd.hidden = false;
+    }
+    window.psOpenSheet = function (kind, step, target, opener) {
+      _psSheet = { kind: kind === 'mattress' ? 'mattress' : 'accessory', step: step || '', target: target || '', pick: '',
+                   opener: opener && opener.id ? '#' + opener.id
+                     : (opener && opener.getAttribute ? (opener.getAttribute('data-ps-change') ? '[data-ps-change="' + opener.getAttribute('data-ps-change') + '"]'
+                       : (opener.getAttribute('data-ps-add') ? '[data-ps-add="' + opener.getAttribute('data-ps-add') + '"]' : '')) : '') };
+      renderPsSheet();
+      var title = document.getElementById('psSheetTitle');
+      if (title) title.focus({ preventScroll: true });
+    };
+    window.psSheetPick = function (id) {
+      if (!_psSheet) return;
+      _psSheet.pick = id;
+      renderPsSheet();
+      var el = document.querySelector('#psSheet [data-ps-sheet-opt="' + id + '"]');
+      if (el) el.focus({ preventScroll: true });
+    };
+    function psCloseSheetQuiet() {
+      _psSheet = null;
+      var sheet = document.getElementById('psSheet');
+      var bd = document.getElementById('psSheetBackdrop');
+      if (sheet) { sheet.hidden = true; sheet.innerHTML = ''; }
+      if (bd) bd.hidden = true;
+    }
+    window.psCloseSheet = function () {
+      var opener = _psSheet ? _psSheet.opener : '';
+      psCloseSheetQuiet();
+      var el = opener ? document.querySelector('#purchaseStudio ' + opener) : null;
+      if (el && typeof el.focus === 'function') el.focus({ preventScroll: true });
+    };
+    window.psBrowseAll = function () {
+      psCloseSheetQuiet();
+      if (typeof window.showResults === 'function') window.showResults();
+    };
+    window.psSheetApply = function () {
+      var s = _psSheet;
+      if (!s || !s.pick) return;
+      var opener = s.opener;
+      var name = '';
+      if (s.kind === 'mattress') {
+        var sm = psMattressSheet();
+        var o = sm.options.filter(function (x) { return x.id === s.pick; })[0];
+        if (!o || o.current) return;
+        name = o.name;
+        window.chooseFinalist(s.pick);
+      } else {
+        var cart = window._accCart || {};
+        if (s.pick === '__none') {
+          Object.keys(cart).forEach(function (id) {
+            var rec = psAccessory(id);
+            if (rec && psStepOf(rec) === s.step) setSleepSystemItem(id, false);
+          });
+          name = t('ps.none_' + s.step);
+        } else {
+          if (s.step === 'pillow' && s.target && s.target !== s.pick) setSleepSystemItem(s.target, false);
+          setSleepSystemItem(s.pick, true);
+          var a = psAccessory(s.pick);
+          name = a ? (L(a.name) || '') : '';
+        }
+      }
+      psCloseSheetQuiet();
+      psRepaint();
+      // focus back to the control that opened the sheet (the same row's
+      // Change when it still exists, else the Change mattress / Add control)
+      var el = (opener && document.querySelector('#purchaseStudio ' + opener))
+        || document.querySelector('#purchaseStudio [data-ps-change="' + s.pick + '"]')
+        || document.getElementById('psChangeMattress');
+      if (el && typeof el.focus === 'function') el.focus({ preventScroll: true });
+      var m = purchaseStudioFor();
+      psAnnounce(t('ps.applied', { name: name, subtotal: m.complete ? m.subtotal : t('ps.incomplete') }));
+    };
+    // Keyboard: Escape cancels; Tab stays inside the open sheet.
+    document.addEventListener('keydown', function (e) {
+      var sheet = document.getElementById('psSheet');
+      if (!_psSheet || !sheet || sheet.hidden) return;
+      if (e.key === 'Escape') { e.preventDefault(); window.psCloseSheet(); return; }
+      if (e.key !== 'Tab') return;
+      var f = Array.prototype.slice.call(sheet.querySelectorAll('button:not([disabled]), [tabindex="-1"]'));
+      if (!f.length) return;
+      var first = f[0], last = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      else if (!sheet.contains(document.activeElement)) { e.preventDefault(); first.focus(); }
+    });
     // A split King is a King configuration: at any other size the base
     // returns to one unit (never an invalid split left in the cart).
     function psNormalizeSplit() {
@@ -15862,10 +16156,11 @@
     function psTakeHomeRow() {
       var m = (typeof purchaseStudioFor === 'function') ? purchaseStudioFor() : { show: false };
       if (!m.show || m.empty) return null;
-      var items = m.lines.map(function (l) {
+      var items = [m.mattress.name + (m.sizeLabel ? ' (' + m.sizeLabel + ')' : '') + ' '
+        + (m.mattress.priced ? m.mattress.price : t('ps.no_price'))].concat(m.lines.map(function (l) {
         return l.name + (l.size ? ' (' + l.size + ')' : '') + (l.qty > 1 ? ' × ' + l.qty : '')
           + ' ' + (l.priced ? l.ext : t('ps.no_price'));
-      });
+      }));
       var parts = [t('ps.subtotal') + ': ' + (m.complete ? m.subtotal : t('ps.incomplete'))];
       var r = m.result;
       if (r.kind === 'calc' && r.state === 'calculated') {
@@ -15934,23 +16229,18 @@
       psNormalizeSplit();
       psRepaint('[data-ps-size="' + sizeId + '"]');
     };
-    window.psChooseMattress = function (id) {
-      if (typeof window.chooseFinalist !== 'function') return;
-      window.chooseFinalist(id);
-      psRepaint('[data-ps-pick="' + id + '"]');
-    };
-    window.psToggleOption = function (id) {
+    window.psRemove = function (id) {
       var cart = window._accCart || {};
-      setSleepSystemItem(id, !Object.prototype.hasOwnProperty.call(cart, id));
-      psRepaint('[data-ps-opt="' + id + '"]');
-    };
-    window.psClearStep = function (step) {
-      var cart = window._accCart || {};
-      Object.keys(cart).forEach(function (id) {
-        var rec = psAccessory(id);
-        if (rec && psStepOf(rec) === step) setSleepSystemItem(id, false);
-      });
-      psRepaint('[data-ps-none="' + step + '"]');
+      if (!Object.prototype.hasOwnProperty.call(cart, id)) return;
+      var rec = psAccessory(id);
+      var step = rec ? psStepOf(rec) : '';
+      setSleepSystemItem(id, false);
+      psRepaint();
+      var el = document.querySelector('#purchaseStudio [data-ps-add="' + step + '"]')
+        || document.getElementById('psChangeMattress');
+      if (el && typeof el.focus === 'function') el.focus({ preventScroll: true });
+      var m = purchaseStudioFor();
+      psAnnounce(t('ps.removed', { name: rec ? (L(rec.name) || '') : '', subtotal: m.complete ? m.subtotal : t('ps.incomplete') }));
     };
     window.psQty = function (id, delta) {
       var entry = (window._accCart || {})[id];
@@ -28290,6 +28580,9 @@
         _payScenario = { open: false, tax: '', delivery: '', down: '', treatment: '' };
         // Purchase studio: the plan and down payment chosen on the Summary.
         if (typeof psResetState === 'function') psResetState();
+        if (typeof psCloseSheetQuiet === 'function') psCloseSheetQuiet();
+        var psLiveEl = document.getElementById('psLive');
+        if (psLiveEl) psLiveEl.textContent = '';
         var psBox = document.getElementById('purchaseStudio');
         if (psBox) { psBox.hidden = true; psBox.innerHTML = ''; }
         finWsReleaseInert();
