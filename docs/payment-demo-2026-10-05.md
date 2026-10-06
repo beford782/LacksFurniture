@@ -148,6 +148,13 @@ asks for monthly payments beside merchandise prices. This applies **only**
 under demo admission; the governed `payments`/`review` builds and shipped
 behaviour are unchanged.
 
+## Physical iPad check
+
+2026-10-06: Blake ran the demo on a physical iPad (Safari, via the
+`--device` harness) at `d2cf9e9` and reported that it all worked. That is
+the owner's own report; no device-side details (orientation, connection
+route, VoiceOver) were recorded.
+
 ## Review status
 
 - **Web review** (CLAUDE.md's terminal-plus-web pattern) **has not
@@ -167,4 +174,5 @@ behaviour are unchanged.
 - Tax, delivery and setup: unknown, excluded and labelled.
 - Whether the studio should move from demo-only into the governed review
   build: an owner decision.
-- Physical iPad Safari, VoiceOver and moderated role-play (sequence step 7).
+- VoiceOver and moderated role-play (sequence step 7). The physical iPad
+  demo run passed by Blake's report (above).
