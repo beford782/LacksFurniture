@@ -457,7 +457,23 @@ with sync_playwright() as p:
         sheet = pg.evaluate("(document.getElementById('financingSheetCards') || {}).textContent || ''")
         check(f"{tag} payment details: no calculated figure and no 'published' claim for an example plan",
               fx == 0 and "as published" not in sheet and "según lo publicado" not in sheet, f"fx={fx}")
-        pg.evaluate("() => { const d = document.querySelector('#financingSheet .fin-ws-done, #financingSheetDone, [onclick*=\"closeFinancingSheet\"]'); if (d) d.click(); else if (window.closeFinancingSheet) window.closeFinancingSheet(); }")
+        # ...but the example path is no dead end: it shows each example plan's
+        # figures for this purchase (the Summary's own model) and the way back.
+        sheet_plans = pg.evaluate("""() => Array.from(document.querySelectorAll('[data-ps-sheet-plan]')).map(li =>
+          [li.dataset.psSheetPlan, (li.querySelector('.ps-sheet__amount') || {}).textContent || ''])""")
+        studio_cards = pg.evaluate("""() => purchaseStudioFor().cards.filter(c => c.kind === 'calc').map(c =>
+          [c.id, c.monthly])""")
+        check(f"{tag} Bring It Home: the example path lists every example plan with the Summary's own monthly figure",
+              len(sheet_plans) == 4 and len(studio_cards) == 4
+              and all(money_minor(a) == money_minor(dict(studio_cards)[i]) for i, a in sheet_plans), str(sheet_plans))
+        check(f"{tag} Bring It Home: the example path carries the demo notice",
+              demo_cfg["notice"][lang] in pg.evaluate("document.querySelector('[data-ps-sheet]').textContent"))
+        pg.evaluate("() => document.getElementById('psSheetGo').click()")
+        pg.wait_for_timeout(500)
+        check(f"{tag} Bring It Home: 'See the full payment comparison' closes the sheet and lands on the Summary's comparison",
+              pg.evaluate("document.getElementById('financingSheet').hidden === true")
+              and pg.evaluate("document.activeElement && document.activeElement.id") == "psTitle")
+        pg.evaluate("() => { if (window.closeFinancingSheet) window.closeFinancingSheet(); }")
         pg.wait_for_timeout(300)
         cur_sub = pg.evaluate("buildConsultationQuote('handoff', answers.mattress_size).merchandiseMinor")
         cur_pay = money_minor(pg.evaluate(FIG, "monthly"))

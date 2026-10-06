@@ -414,5 +414,7 @@
   "ps.hero_monthly": "or {amount}/mo × {n} (example)",
   "pay.fx.basis_equal": "How this estimate is made: the promotional purchase divided into {n} equal payments, each rounded up to the next whole dollar, as published for this plan. Rounding can make the last payment lower, so the totals shown are the most the scheduled payments can add up to.",
   "pay.fx.basis_example": "How this example is made: the payment is {pct}% of the purchase each month, rounded up to the next whole dollar, as set for this illustrative example plan. Rounding can make the last payment lower, so the totals shown are maximums.",
-  "pay.fx.basis_equal_example": "How this example is made: the purchase divided into {n} equal monthly payments, each rounded up to the next whole dollar, for this illustrative example plan. Rounding can make the last payment lower, so the totals shown are maximums."
+  "pay.fx.basis_equal_example": "How this example is made: the purchase divided into {n} equal monthly payments, each rounded up to the next whole dollar, for this illustrative example plan. Rounding can make the last payment lower, so the totals shown are maximums.",
+  "ps.sheet_intro": "Example plans calculated for this purchase ({amount} merchandise subtotal):",
+  "ps.sheet_go": "See the full payment comparison"
 }

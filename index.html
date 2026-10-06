@@ -12025,6 +12025,15 @@
     .ps-fig__label { font-size: 0.74rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--color-text-muted); }
     .ps-fig__value { font: 700 1.15rem/1.25 var(--font-sans); font-variant-numeric: tabular-nums; color: var(--color-text); }
     .ps-fig__sub { font-size: 0.78rem; color: var(--color-text-muted); }
+    .ps-sheet { display: flex; flex-direction: column; gap: 0.6rem; }
+    .ps-sheet .ps-notice { align-self: flex-start; }
+    .ps-sheet__plans { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.45rem; }
+    .ps-sheet__plan { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.15rem 1rem; align-items: baseline;
+      padding: 0.6rem 0.75rem; border: 1px solid var(--color-border); border-radius: 10px; }
+    .ps-sheet__label { font-weight: 700; font-size: 0.9rem; }
+    .ps-sheet__amount { font: 700 1.1rem/1.2 var(--font-sans); font-variant-numeric: tabular-nums; text-align: right; }
+    .ps-sheet__sub { grid-column: 1 / -1; font-size: 0.85rem; color: var(--color-text); font-variant-numeric: tabular-nums; }
+    .ps-sheet__go { align-self: flex-start; min-height: 48px; }
     .ps-monthly-line { margin: 0.2rem 0 0; font-size: 0.85rem; font-weight: 600; color: var(--color-text);
       font-variant-numeric: tabular-nums; }
     .ps-source { margin: 0.55rem 0 0; font-size: 0.78rem; line-height: 1.45; color: var(--color-text-muted); }
@@ -15872,6 +15881,52 @@
       // shown here, never added to the email (sendResults does not read it).
       return { present: false, title: escapeHtml(t('ps.th_title')), detail: escapeHtml(parts.join(' · ')), items: items };
     }
+    // Bring It Home's panel for a path made only of example plans (demo
+    // admission only): each plan's example figures for the current purchase,
+    // from purchaseStudioFor (the Summary's own model), and the way back to
+    // the full comparison. '' for any governed path.
+    function psSheetDemoPanel(plans) {
+      if (typeof demoAdmission !== 'function' || !demoAdmission()) return '';
+      if (!Array.isArray(plans) || !plans.length || !plans.every(function (pl) { return pl && pl.demo === true; })) return '';
+      var m = purchaseStudioFor();
+      if (!m.show) return '';
+      var ids = plans.map(function (pl) { return pl.id; });
+      var html = '<div class="ps-sheet" data-ps-sheet>'
+        + '<p class="ps-notice" role="note">' + escapeHtml(m.notice) + '</p>';
+      if (m.empty || !m.complete) {
+        html += '<p class="fin-offer__detail">' + escapeHtml(t('ps.needs_complete')) + '</p>';
+      } else {
+        html += '<p class="fin-offer__detail">' + escapeHtml(t('ps.sheet_intro', { amount: m.subtotal })) + '</p>'
+          + '<ul class="ps-sheet__plans">';
+        m.cards.filter(function (c) { return c.kind === 'calc' && ids.indexOf(c.id) !== -1; }).forEach(function (c) {
+          html += '<li class="ps-sheet__plan" data-ps-sheet-plan="' + escapeHtml(c.id) + '">'
+            + '<span class="ps-sheet__label">' + escapeHtml(c.label) + '</span>'
+            + (c.monthly
+              ? '<span class="ps-sheet__amount">' + escapeHtml(t('ps.monthly', { amount: c.monthly })) + '</span>'
+                + '<span class="ps-sheet__sub">' + escapeHtml(t('ps.for_months', { n: c.term })) + ' \u00b7 '
+                + escapeHtml(t('ps.card_total', { amount: c.total })) + ' \u00b7 '
+                + escapeHtml(t('ps.card_interest', { amount: c.interest })) + '</span>'
+              : '<span class="ps-sheet__sub">' + escapeHtml(t(psStateKey(c.state))) + '</span>')
+            + '</li>';
+        });
+        html += '</ul><p class="fin-offer__disclosure">' + escapeHtml(m.paymentSource) + '</p>';
+      }
+      return html + psBtn('class="fin-btn fin-btn-primary ps-sheet__go" id="psSheetGo"',
+        escapeHtml(t('ps.sheet_go')), 'window.psOpenStudio()') + '</div>';
+    }
+    // From Bring It Home to the Summary's payment comparison.
+    window.psOpenStudio = function () {
+      if (typeof window.closeFinancingSheet === 'function') window.closeFinancingSheet();
+      var hf2 = document.getElementById('hf2Screen');
+      if (!(hf2 && hf2.classList.contains('active')) && typeof window.showSavedPicks === 'function') window.showSavedPicks();
+      setTimeout(function () {
+        var box = document.getElementById('purchaseStudio');
+        var title = document.getElementById('psTitle');
+        if (!box || box.hidden) return;
+        box.scrollIntoView({ block: 'start', behavior: 'auto' });
+        if (title) { title.setAttribute('tabindex', '-1'); title.focus({ preventScroll: true }); }
+      }, 60);
+    };
     window.psSetSize = function (sizeId) {
       if (PS_SIZES.indexOf(sizeId) === -1 || typeof answers !== 'object' || !answers) return;
       if (answers.mattress_size === sizeId) return;
@@ -17619,6 +17674,17 @@
                 + finEsc(es ? ('Detalles en ' + mxHost + ' (se abre en otro sitio)') : ('Details on ' + mxHost + ' (opens a separate site)'))
                 + '</a>'
               : '');
+      }
+
+      // Payment demo: a path made only of EXAMPLE plans explains itself with
+      // the example figures for this purchase (the same model as the
+      // Summary's payment comparison) and a route to that comparison - never
+      // the governed lender copy, which would present a demo as a provider.
+      if (typeof psSheetDemoPanel === 'function') {
+        finPromotionalByProvider(groups.promotional).forEach(function(grp) {
+          var demoPanel = psSheetDemoPanel(grp.plans);
+          if (demoPanel) bodies[finPathId('promo', grp.provider)] = demoPanel;
+        });
       }
 
       // One governed, evergreen sentence per path for the comparison table.

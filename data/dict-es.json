@@ -414,5 +414,7 @@
   "ps.hero_monthly": "o {amount}/mes × {n} (ejemplo)",
   "pay.fx.basis_equal": "Cómo se calcula: la compra promocional dividida en {n} pagos iguales, cada uno redondeado al siguiente dólar entero, según lo publicado para este plan. El redondeo puede hacer que el último pago sea menor, por lo que los totales mostrados son lo máximo que pueden sumar los pagos programados.",
   "pay.fx.basis_example": "Cómo se calcula este ejemplo: el pago es el {pct}% de la compra cada mes, redondeado al siguiente dólar entero, según este plan de ejemplo ilustrativo. El redondeo puede hacer que el último pago sea menor, por lo que los totales mostrados son máximos.",
-  "pay.fx.basis_equal_example": "Cómo se calcula este ejemplo: la compra dividida en {n} pagos mensuales iguales, cada uno redondeado al siguiente dólar entero, para este plan de ejemplo ilustrativo. El redondeo puede hacer que el último pago sea menor, por lo que los totales mostrados son máximos."
+  "pay.fx.basis_equal_example": "Cómo se calcula este ejemplo: la compra dividida en {n} pagos mensuales iguales, cada uno redondeado al siguiente dólar entero, para este plan de ejemplo ilustrativo. El redondeo puede hacer que el último pago sea menor, por lo que los totales mostrados son máximos.",
+  "ps.sheet_intro": "Planes de ejemplo calculados para esta compra (subtotal de mercancía {amount}):",
+  "ps.sheet_go": "Ver la comparación completa de pagos"
 }
