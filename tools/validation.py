@@ -3764,7 +3764,7 @@ def validate_pricing(config, *, allowed_source_hosts=None, financing_source_host
     _prods = p.get("products") if isinstance(p.get("products"), list) else []
     for _pi, _pe in enumerate(_prods):
         _ev = _pe.get("evidence") if isinstance(_pe, dict) else None
-        if isinstance(_ev, dict) and _ev.get("status") in DEMO_PRICE_STATUSES:
+        if isinstance(_ev, dict) and isinstance(_ev.get("status"), str) and _ev.get("status") in DEMO_PRICE_STATUSES:
             r.add_error(f"pricing.products[{_pi}].evidence.status {_ev.get('status')!r} is payment-demo "
                         f"provenance and is refused as price evidence")
     now_dt = _pricing_clock(now)
