@@ -3553,6 +3553,19 @@ const MUTATIONS = [
   ["payment demo: the new-customer wipe keeps the plan and down payment",
     "if (typeof psResetState === 'function') psResetState();",
     "", PAY_DEMO],
+  // The demo admission boundary (owner closeout 2026-10-06).
+  ["payment demo: admission no longer compares the config's nonce with the harness context",
+    "if (d.contextNonce !== ctx.nonce) return null;",
+    "", PAY_DEMO],
+  ["payment demo: the adapter admits a production evidence status or a verified entry",
+    "if (!ev || DEMO_PRICE_STATUSES.indexOf(ev.status) === -1 || ev.verified !== false) return null;",
+    "if (!ev) return null;", PAY_DEMO],
+  ["payment demo: an example plan marked verified or with calculation on is admitted",
+    "if (plan.verified !== false || plan.verificationStatus !== 'illustrative'\n          || plan.paymentCalculationEnabled !== false || plan.provider !== 'Demo') return false;",
+    "", PAY_DEMO],
+  ["payment demo: a historical observation dated after the demo's assembly is admitted",
+    "if (!isFinite(ob) || ob > Date.parse(d.assembledAt)) return null;",
+    "if (!isFinite(ob)) return null;", PAY_DEMO],
 ];
 
 // ---------------------------------------------------------------------------

@@ -2,11 +2,10 @@
   "_meta": {
     "purpose": "ILLUSTRATIVE payment-demo configuration, read only by tools/serve_pricing_preview.py --state demo (in memory). NOT a Lacks or lender offer, NOT verified, NOT approved. Never copy into incoming/, data/ or the workbook.",
     "owner": "Blake, demo-first direction 2026-10-05 (docs/payment-demo-2026-10-05.md).",
-    "factors": "Each fixed factor is the standard amortization factor r/(1-(1+r)^-n), r = APR/12, rounded to 6 decimals. 9.99% x 72 reproduces the factor Lacks publishes for its own 9.99%/72 offer (0.018521); the demo plans are examples, not that offer.",
-    "provider": "'Demo' is deliberately not a lender name: no example plan may be read as a Synchrony or Lacks offer."
+    "factors": "Each exampleFactor is the standard amortization factor r/(1-(1+r)^-n), r = APR/12, rounded to 6 decimals; it is an EXAMPLE input, never a published factor. 9.99% x 72 happens to equal the factor Lacks publishes for its own 9.99%/72 offer (0.018521); the demo plans are examples, not that offer.",
+    "provider": "'Demo' is deliberately not a lender name: no example plan may be read as a Synchrony or Lacks offer.",
+    "honesty": "Served in memory with verified:false, verificationStatus 'illustrative' and paymentCalculationEnabled false; the app calculates them only through its demo admission adapter, which needs this harness's page context AND the validated illustrativeDemo config."
   },
-  "illustrativeHost": "payment-demo.invalid",
-  "illustrativeSourceUrl": "https://payment-demo.invalid/illustrative-example",
   "notice": {
     "en": "Demo: illustrative prices and payment examples. Final prices, terms and approval are confirmed by Lacks.",
     "es": "Demostración: precios y ejemplos de pago ilustrativos. Lacks confirma los precios, términos y aprobación finales."
@@ -49,22 +48,22 @@
       "apr": 9.99,
       "termMonths": 48,
       "calculationMode": "published-fixed-factor",
-      "publishedPaymentFactor": 0.025358,
       "detail": {
         "en": "Illustrative example — not a current Lacks or lender offer. 9.99% APR with fixed monthly payments over 48 months; interest is charged from the purchase date.",
         "es": "Ejemplo ilustrativo; no es una oferta vigente de Lacks ni de un prestamista. 9.99% APR con pagos mensuales fijos durante 48 meses; se cobra interés desde la fecha de compra."
-      }
+      },
+      "exampleFactor": 0.025358
     },
     {
       "id": "demo-9-99-72",
       "apr": 9.99,
       "termMonths": 72,
       "calculationMode": "published-fixed-factor",
-      "publishedPaymentFactor": 0.018521,
       "detail": {
         "en": "Illustrative example — not a current Lacks or lender offer. 9.99% APR with fixed monthly payments over 72 months; interest is charged from the purchase date.",
         "es": "Ejemplo ilustrativo; no es una oferta vigente de Lacks ni de un prestamista. 9.99% APR con pagos mensuales fijos durante 72 meses; se cobra interés desde la fecha de compra."
-      }
+      },
+      "exampleFactor": 0.018521
     }
   ],
   "disclosure": {

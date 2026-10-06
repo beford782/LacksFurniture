@@ -13275,6 +13275,9 @@
     }
 
     function financingPlanFresh(p) {
+      // An example plan is never a governed plan: it is admitted only by the
+      // demo adapter, and a governed plan never reaches the adapter.
+      if (p && p.demo === true) return typeof demoPlanAdmitted === 'function' && demoPlanAdmitted(p);
       if (!financingTermsFresh() || !p || p.verified !== true) return false;
       var f = getFinancingConfig();
       var ts = Date.parse(p.verifiedAt);
@@ -13764,6 +13767,9 @@
       var p = getPricingConfig();
       if (!p || p.enabled !== true || p.displayEnabled !== true || !pricingSurfaceEnabled(surface)) return off;
       if (!m || typeof m !== 'object' || typeof m.id !== 'string') return off;
+      // Payment demo: decided by the demo context alone, never as a fallback
+      // from a production refusal (see the demo admission adapter).
+      if (typeof demoAdmission === 'function' && demoAdmission()) return demoPricePresentation(surface, m, size, opts, off);
       var o = (opts && typeof opts === 'object') ? opts : {};
       var sku = pricingSkuFor(m, size);
       // No applicable catalog record / SKU for this product-size: nothing to
@@ -14506,6 +14512,10 @@
       var out = { payMinor: null, scheduledMax: null, interestMax: null, factorMicro: null,
                   term: null, belowMin: false, method: '' };
       var o = (opts && typeof opts === 'object') ? opts : {};
+      if (plan && typeof plan === 'object' && plan.demo === true) {
+        return typeof demoPayEstimate === 'function'
+          ? demoPayEstimate(surface, finalist, size, plan, principalMinor, cur, o) : out;
+      }
       if (!plan || typeof plan !== 'object' || !finalist || !priceMoneyValid(principalMinor, cur)) return out;
       var fresh = financingPlanFresh(plan);
       var complete = true;
@@ -15002,6 +15012,152 @@
       return any ? parts.join('<br>') : null;
     }
 
+    // ─── Demo admission adapter (payment demo; owner closeout 2026-10-06) ───
+    // The ONE place demo data is admitted. Production admission (the
+    // resolver, the freshness and approval gates, financingPlanFresh) is
+    // unchanged and never falls back to this: a consumer reaches the demo
+    // path only when demoAdmission() holds, and a demo plan reaches only the
+    // demo path.
+    //
+    // demoAdmission() requires TWO independent conditions:
+    //   1. a demo CONTEXT the preview harness writes into the page it serves
+    //      for `--state demo` (window.__DF_DEMO_CONTEXT, frozen, non-writable,
+    //      carrying a per-run random nonce). The ordinary served build never
+    //      contains it; no URL parameter, storage value or control in the app
+    //      can create it.
+    //   2. a VALIDATED demo configuration (STORE_CONFIG.illustrativeDemo,
+    //      contract payment-demo/1) carrying the SAME nonce, a blank gasUrl and
+    //      the bilingual notices.
+    // The boundary this enforces is between the normal served build and the
+    // harness demonstration. It is not protection against someone editing
+    // client-side code, which no browser-side check can be.
+    //
+    // Demo data is honest: historical prices keep their own observation
+    // instants (status 'historical-snapshot'), fills say 'illustrative', every
+    // entry is verified:false, the pricing approval records are the shipped
+    // (unapproved) ones, and example plans are unverified with calculation
+    // off. The demo waives real-offer APPROVAL only - identity, size, money,
+    // method and calculation inputs are checked here as strictly as anywhere.
+    var DEMO_PRICE_STATUSES = ['historical-snapshot', 'illustrative'];
+    var DEMO_CALC_MODES = ['published-fixed-factor', 'published-equal-division'];
+    function demoBilingual(v) {
+      return !!(v && typeof v === 'object' && typeof v.en === 'string' && v.en.trim()
+        && typeof v.es === 'string' && v.es.trim());
+    }
+    function demoAdmission() {
+      var ctx = (typeof window === 'object' && window) ? window.__DF_DEMO_CONTEXT : null;
+      if (!ctx || typeof ctx !== 'object' || !Object.isFrozen(ctx)) return null;
+      if (ctx.harness !== 'serve_pricing_preview' || ctx.state !== 'demo') return null;
+      if (typeof ctx.nonce !== 'string' || !/^[0-9a-f]{32}$/.test(ctx.nonce)) return null;
+      var cfg = (typeof STORE_CONFIG === 'object' && STORE_CONFIG) ? STORE_CONFIG : null;
+      var d = cfg ? cfg.illustrativeDemo : null;
+      if (!d || typeof d !== 'object' || d.contract !== 'payment-demo/1' || d.enabled !== true) return null;
+      if (d.contextNonce !== ctx.nonce) return null;
+      if (!isFinite(Date.parse(d.assembledAt))) return null;
+      if (!demoBilingual(d.notice) || !demoBilingual(d.priceSource) || !demoBilingual(d.paymentSource)) return null;
+      if (cfg.gasUrl) return null;
+      return d;
+    }
+    // The demo entry for one product-size, or null. Identity is the catalog's
+    // own SKU for that product and size (pricingSkuFor), matched exactly once.
+    function demoPriceEntry(m, size) {
+      var d = demoAdmission();
+      var p = getPricingConfig();
+      if (!d || !p || !Array.isArray(p.products) || !m || typeof m.id !== 'string') return null;
+      var demoSku = pricingSkuFor(m, size);
+      if (!demoSku) return null;
+      var accessory = pricingIsAccessory(pricingCatalogRecord(m));
+      var hit = null, n = 0;
+      for (var i = 0; i < p.products.length; i++) {
+        var e = p.products[i];
+        if (e && typeof e === 'object' && e.sku === demoSku) { n++; hit = e; }
+      }
+      if (n !== 1) return null;
+      if (hit.productId !== m.id || hit.productKind !== (accessory ? 'accessory' : 'mattress')) return null;
+      if (accessory ? hit.size !== null : hit.size !== size) return null;
+      var pr = hit.price;
+      if (!pr || pr.kind !== 'regular' || !priceMoneyValid(pr.amountMinor, pr.currency)) return null;
+      var ev = hit.evidence;
+      if (!ev || DEMO_PRICE_STATUSES.indexOf(ev.status) === -1 || ev.verified !== false) return null;
+      if ('verifiedAt' in ev) return null;
+      if (ev.status === 'historical-snapshot') {
+        var ob = Date.parse(ev.observedAt);
+        if (!isFinite(ob) || ob > Date.parse(d.assembledAt)) return null;
+        if (typeof ev.sourceUrl !== 'string' || ev.sourceUrl.indexOf('https://') !== 0) return null;
+      } else if (typeof ev.method !== 'string' || !ev.method.trim() || 'observedAt' in ev || 'sourceUrl' in ev) {
+        return null;
+      }
+      return { entry: hit, status: ev.status, amountMinor: pr.amountMinor, currency: pr.currency };
+    }
+    // An example plan the demo may calculate: unverified, calculation off,
+    // provider 'Demo', a supported method with exact inputs.
+    function demoPlanAdmitted(plan) {
+      if (!demoAdmission() || !plan || typeof plan !== 'object' || plan.demo !== true) return false;
+      if (plan.verified !== false || plan.verificationStatus !== 'illustrative'
+          || plan.paymentCalculationEnabled !== false || plan.provider !== 'Demo') return false;
+      if (plan.kind !== 'open-end-promotional-credit' || typeof plan.id !== 'string') return false;
+      if ('verifiedAt' in plan || 'sourceUrl' in plan) return false;
+      var apr = plan.apr, term = plan.termMonths, c = plan.demoCalculation;
+      if (typeof apr !== 'number' || !isFinite(apr) || apr < 0 || apr > 100) return false;
+      if (!Number.isSafeInteger(term) || term < 1 || term > 120) return false;
+      if (!c || typeof c !== 'object' || DEMO_CALC_MODES.indexOf(c.mode) === -1
+          || PAY_ROUNDING.indexOf(c.rounding) === -1) return false;
+      if (c.mode === 'published-equal-division') return apr === 0 && !('factor' in c);
+      return payFactorMicro(c.factor) !== null;
+    }
+    function demoPlanById(id) {
+      var f = getFinancingConfig();
+      var plans = (f && Array.isArray(f.plans)) ? f.plans : [];
+      for (var i = 0; i < plans.length; i++) {
+        if (plans[i] && plans[i].id === id && plans[i].demo === true) return plans[i];
+      }
+      return null;
+    }
+    // pricePresentationFor's demo branch: the same result shape, from the
+    // demo entry. A product-size without an admitted entry is 'off' (no
+    // number), exactly as production treats an unresolved price.
+    function demoPricePresentation(surface, m, size, opts, off) {
+      var hit = demoPriceEntry(m, size);
+      if (!hit) return off;
+      var text = formatPriceAmount(hit.amountMinor, hit.currency);
+      if (!text) return off;
+      var o = (opts && typeof opts === 'object') ? opts : {};
+      var plan = (typeof o.planId === 'string') ? demoPlanById(o.planId) : null;
+      return { state: 'available', amountMinor: hit.amountMinor, currency: hit.currency, kind: 'regular',
+               text: text, provenance: hit.status,
+               notes: pricingCopyList('assumptions').concat(pricingCopyList('disclosures')),
+               calculation: (plan && demoPlanAdmitted(plan)) ? 'available' : 'unavailable',
+               threshold: 'unknown' };
+    }
+    // payEstimate's demo branch. The arithmetic is the governed helpers'
+    // (payFixedFactorMinor / payEqualDivisionMinor, integer minor units,
+    // rounded UP to the dollar); only admission differs.
+    function demoPayEstimate(surface, finalist, size, plan, principalMinor, cur, opts) {
+      var out = { payMinor: null, scheduledMax: null, interestMax: null, factorMicro: null,
+                  term: null, belowMin: false, method: '' };
+      if (!demoPlanAdmitted(plan) || !finalist || !priceMoneyValid(principalMinor, cur)) return out;
+      var pres = pricePresentationFor(surface, finalist, size, { planId: plan.id });
+      if (pres.state !== 'available' || pres.calculation !== 'available') return out;
+      var c = plan.demoCalculation;
+      var payMinor = null, factorMicro = null;
+      if (c.mode === 'published-fixed-factor') {
+        factorMicro = payFactorMicro(c.factor);
+        payMinor = factorMicro !== null ? payFixedFactorMinor(principalMinor, factorMicro) : null;
+      } else {
+        payMinor = payEqualDivisionMinor(principalMinor, plan.termMonths);
+      }
+      if (payMinor === null || !priceMoneyValid(payMinor, cur)) return out;
+      var scheduledMax = payMinor * plan.termMonths;
+      if (!priceMoneyValid(scheduledMax, cur)) return out;
+      out.payMinor = payMinor;
+      out.scheduledMax = scheduledMax;
+      out.interestMax = c.mode === 'published-equal-division' ? 0 : scheduledMax - principalMinor;
+      out.factorMicro = factorMicro;
+      out.term = plan.termMonths;
+      out.method = c.mode;
+      return out;
+    }
+
     // ─── Purchase studio model (payment demo; owner demo-first direction 2026-10-05) ───
     // ONE live view of the purchase the consultation already holds - the
     // explicit finalist, the size answer and the Sleep System cart - priced
@@ -15029,8 +15185,7 @@
     var _psDownRaw = '';
     function psResetState() { _psPlan = 'full'; _psDownRaw = ''; }
     function psDemoConfig() {
-      var d = (typeof STORE_CONFIG === 'object' && STORE_CONFIG) ? STORE_CONFIG.illustrativeDemo : null;
-      return (d && typeof d === 'object' && d.enabled === true) ? d : null;
+      return demoAdmission();
     }
     var PS_SIZES = ['twin', 'twin_xl', 'full', 'queen', 'king', 'cal_king'];
     var PS_STEPS = ['base', 'pillow', 'protection'];
@@ -15097,8 +15252,9 @@
         var pl = plans[i];
         if (!pl || typeof pl !== 'object' || typeof pl.id !== 'string') continue;
         var method = pl.calculationMode;
-        if (pl.paymentCalculationEnabled === true && financingPlanFresh(pl)
-            && (method === 'published-fixed-factor' || method === 'published-equal-division')) {
+        if (pl.demo === true ? demoPlanAdmitted(pl)
+            : (pl.paymentCalculationEnabled === true && financingPlanFresh(pl)
+               && (method === 'published-fixed-factor' || method === 'published-equal-division'))) {
           calc.push(pl);
         } else if ((pl.kind === 'lease-to-own' || pl.kind === 'closed-end-installment')
             && pl.presentationScenario !== 'mexico-delivery') {
@@ -15118,10 +15274,16 @@
       if (p.minor >= merchMinor) return { state: 'too-large', minor: null, raw: raw };
       return { state: 'ok', minor: p.minor, raw: raw };
     }
+    // Whether a priced SKU is an illustrative demo entry (status, not a list).
     function psIllustrative(sku) {
-      var d = psDemoConfig();
-      var list = d && Array.isArray(d.illustrativeSkus) ? d.illustrativeSkus : [];
-      return typeof sku === 'string' && list.indexOf(sku) !== -1;
+      if (!demoAdmission() || typeof sku !== 'string') return false;
+      var p = getPricingConfig();
+      var list = (p && Array.isArray(p.products)) ? p.products : [];
+      for (var i = 0; i < list.length; i++) {
+        var e = list[i];
+        if (e && e.sku === sku) return !!(e.evidence && e.evidence.status === 'illustrative');
+      }
+      return false;
     }
     // The plan a single mattress's monthly illustration uses on the results,
     // drawer and compare surfaces: the plan the customer is viewing in the

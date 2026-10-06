@@ -737,7 +737,7 @@ def validate_store_config(config: dict, manifest: Optional[dict] = None, *,
     # scenario panel and the retailer commercial-policy copy are injected in
     # memory by tools/serve_pricing_preview.py and must never reach shipped
     # configuration through the workbook or the store values.
-    for review_only in ("reviewTools", "salesPolicies"):
+    for review_only in ("reviewTools", "salesPolicies", "illustrativeDemo"):
         if review_only in config:
             r.add_error(f"{review_only} is review-build only and must not appear in shipped "
                         f"store configuration")
@@ -2518,6 +2518,16 @@ def validate_financing(config: dict, *, allowed_source_hosts=None) -> Validation
                     f"({fin_headline.short_repr(plans_raw)})")
         plan_list = []
 
+    # Payment-demo fields (tools/serve_pricing_preview.py --state demo) are
+    # refused by name: an example plan is never a governed plan, whatever
+    # else it carries.
+    for _di, _dp in enumerate(plan_list):
+        if isinstance(_dp, dict):
+            for _dk in DEMO_ONLY_PLAN_KEYS:
+                if _dk in _dp:
+                    r.add_error(f"financing.plans[{_di}].{_dk} is payment-demo only and is refused "
+                                f"in governed financing")
+
     def _plan_tag(plan, index):
         """Bounded diagnostic label. Falls back to the array INDEX when the id
         is absent or is not usable text, so a 5,000-digit integer id cannot
@@ -3399,6 +3409,10 @@ PRICING_PRICE_KEYS = frozenset({"amountMinor", "currency", "kind"})
 PRICING_PRICE_KINDS = frozenset({"regular", "promotional"})
 PRICING_AMOUNT_MINOR_MAX = 10 ** 9          # $10,000,000.00 — a sanity ceiling, not a business rule
 PRICING_EVIDENCE_KEYS = frozenset({"status", "verified", "verifiedAt", "verifiedBy", "sourceUrl"})
+# Payment-demo only (owner demo-first direction 2026-10-05): provenance the
+# demo labels honestly and production refuses by name.
+DEMO_PRICE_STATUSES = frozenset({"historical-snapshot", "illustrative"})
+DEMO_ONLY_PLAN_KEYS = ("demo", "demoCalculation", "verificationStatus")
 # Price-specific evidence taxonomy: CURRENT, FIRST-PARTY retail sources only.
 # Deliberately disjoint from PROMO_EVIDENCE_STATUSES — an archive capture, a
 # lender page or an operator-reported historical observation can evidence a
@@ -3745,6 +3759,14 @@ def validate_pricing(config, *, allowed_source_hosts=None, financing_source_host
         return r
     if not _pricing_object(r, "pricing", p, PRICING_KEYS):
         return r
+    # Payment-demo provenance (historical snapshot / illustrative) is refused
+    # by name: it is neither current evidence nor an approval of any kind.
+    _prods = p.get("products") if isinstance(p.get("products"), list) else []
+    for _pi, _pe in enumerate(_prods):
+        _ev = _pe.get("evidence") if isinstance(_pe, dict) else None
+        if isinstance(_ev, dict) and _ev.get("status") in DEMO_PRICE_STATUSES:
+            r.add_error(f"pricing.products[{_pi}].evidence.status {_ev.get('status')!r} is payment-demo "
+                        f"provenance and is refused as price evidence")
     now_dt = _pricing_clock(now)
     canonical_hosts = _pricing_hosts_arg(r, "allowed_source_hosts", allowed_source_hosts)
     canonical_fin_hosts = _pricing_hosts_arg(r, "financing_source_hosts",
@@ -6731,6 +6753,19 @@ def _self_test() -> int:
               validate_financing(_fc(_d), allowed_source_hosts=_FHOSTS).errors))
     check("shipped store config refuses review-only blocks (reviewTools, salesPolicies)",
           all(any(k in e for e in validate_store_config({k: {}}).errors) for k in ("reviewTools", "salesPolicies")))
+    # Payment demo (2026-10-05): demo-only config, plan fields and price
+    # provenance are refused by name in governed data.
+    check("shipped store config refuses the payment-demo block (illustrativeDemo)",
+          any("illustrativeDemo" in e for e in validate_store_config({"illustrativeDemo": {}}).errors))
+    for _dk in DEMO_ONLY_PLAN_KEYS:
+        _d = _fmut(); _d["plans"][0][_dk] = True
+        check(f"financing refuses the payment-demo plan field {_dk!r}",
+              any("payment-demo only" in e for e in
+                  validate_financing(_fc(_d), allowed_source_hosts=_FHOSTS).errors))
+    for _ds in sorted(DEMO_PRICE_STATUSES):
+        _pd = {"pricing": {"products": [{"evidence": {"status": _ds}}]}}
+        check(f"pricing refuses payment-demo provenance {_ds!r} as evidence",
+              any("payment-demo provenance" in e for e in validate_pricing(_pd).errors))
     _d = _fmut(); _d["plans"][0]["chargesRequiredAtPurchase"] = "yes"
     check("chargesRequiredAtPurchase must be a boolean",
           any("chargesRequiredAtPurchase" in e for e in

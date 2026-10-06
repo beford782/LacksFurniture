@@ -75,7 +75,7 @@ def money_minor(text):
 
 # ---- 1. isolation -------------------------------------------------------------
 print("Isolation (demo data never enters production inputs or outputs):")
-TOKENS = ("illustrativeDemo", "payment-demo", "payment-demo.invalid", "DEMO-", "ILLUSTRATIVE DEMO")
+TOKENS = ("illustrativeDemo", "payment-demo", "historical-snapshot", "demoCalculation", "DEMO-", "__DF_DEMO_CONTEXT")
 SHIPPED = ["data/store-config.json", "data/mattresses.json", "data/accessories.json",
            "data/allowed-hosts.js", "incoming/lacks_financing.json", "incoming/lacks_pricing.json",
            "incoming/build_lacks_workbook.py", "tools/convert_store_data.py",
@@ -98,58 +98,126 @@ check("shipped financing keeps exactPromotionsEnabled false and every calculatio
       and all(p.get("paymentCalculationEnabled") is not True for p in cfg["financing"]["plans"]))
 check("shipped pricing stays dark", cfg["pricing"].get("enabled") is False
       and cfg["pricing"].get("displayEnabled") is False)
-check("index.html never names a demo plan, host or price file",
-      not any(t in _read("index.html") for t in ("payment-demo", "demo-0-12", "demo-9-99", "illustrative-prices")))
+check("index.html never names a demo plan, data file or capture (it knows only the contract id)",
+      not any(t in _read("index.html") for t in ("demo/payment-demo", "demo-0-12", "demo-9-99", "illustrative-prices", "price-review/2026")))
 
 # ---- 2. the demo build ----------------------------------------------------------
-print("Demo build:")
+print("Demo build (honest provenance, production refusal):")
 start = datetime.now(timezone.utc).astimezone()
 config, catalog, verdicts, accessories = sp.build_injected("demo", start)
-check("demo financing validates", verdicts["financing_ok"], str(verdicts["financing_errors"][:3]))
-check("demo dark pricing validates", verdicts["dark_ok"], str(verdicts["dark_errors"][:3]))
-check("the opened form is still refused by the production validator", verdicts["served_refused"])
+check("the demo contract validates", verdicts["demo_ok"], str(verdicts["demo_errors"][:3]))
+check("the production validators REFUSE the demo data (pricing, financing and store config)",
+      verdicts["production_refuses"], json.dumps(verdicts["production_errors"])[:300])
+check("pricing refusal names the demo provenance",
+      any("payment-demo provenance" in e for e in verdicts["production_errors"]["pricing"]))
+check("financing refusal names the demo-only plan fields",
+      any("payment-demo only" in e for e in verdicts["production_errors"]["financing"]))
+check("store-config refusal names illustrativeDemo",
+      any("illustrativeDemo" in e for e in verdicts["production_errors"]["storeConfig"]))
 check("harness accepts the demo state", sp.dark_form_acceptable("demo", verdicts))
 check("gasUrl stays blank", not config.get("gasUrl"))
 check("no review tools in the demo", "reviewTools" not in config)
 demo_cfg = config.get("illustrativeDemo") or {}
-check("illustrativeDemo is enabled with a bilingual notice",
-      demo_cfg.get("enabled") is True and demo_cfg.get("notice", {}).get("en") and demo_cfg.get("notice", {}).get("es"))
+shipped = json.loads(_read("data/store-config.json"))
+check("approval, freshness and source-policy records are the SHIPPED ones (nothing approved or cleared)",
+      all(config["pricing"][k] == shipped["pricing"][k] for k in ("authority", "freshness", "sourcePolicy"))
+      and config["pricing"]["presentation"]["approvals"] == shipped["pricing"]["presentation"]["approvals"]
+      and config["pricing"]["presentation"]["status"] == shipped["pricing"]["presentation"]["status"]
+      and config["pricing"]["formulas"] == [])
+check("financing exact-term authorization stays false and its own stamp is untouched",
+      config["financing"]["exactPromotionsEnabled"] is False
+      and config["financing"]["verifiedAt"] == json.loads(_read("incoming/lacks_financing.json"))["financing"]["verifiedAt"])
 sizes = ("twin", "twin_xl", "full", "queen", "king", "cal_king")
 unpriced = [(m["id"], z) for t in sp.TIER_ORDER for m in catalog[t] for z in sizes if z not in (m.get("skus") or {})]
 check("every catalog mattress is priced in every size", not unpriced, str(unpriced[:5]))
-prices = {e["sku"]: e["price"]["amountMinor"] for e in config["pricing"]["products"]}
+by_sku = {e["sku"]: e for e in config["pricing"]["products"]}
 cov = verdicts["websiteCoverage"]
 check("every capture price is served unchanged",
-      all(prices.get(h["sku"]) == h["amountMinor"] for h in cov["historical"]) and len(cov["historical"]) > 40)
-ill = set(demo_cfg.get("illustrativeSkus") or [])
-check("every illustrative fill is declared for marking, and nothing else",
-      ill == {r["sku"] for r in cov["illustrative"]} and not (ill & {h["sku"] for h in cov["historical"]}))
-check("every illustrative fill names its method", all(r.get("method") for r in cov["illustrative"]))
+      all(by_sku[h["sku"]]["price"]["amountMinor"] == h["amountMinor"] for h in cov["historical"]) and len(cov["historical"]) > 40)
+check("historical entries keep their ORIGINAL observation instants (never the assembly time)",
+      all(by_sku[h["sku"]]["evidence"]["observedAt"] == h["observedAt"] for h in cov["historical"])
+      and all(by_sku[h["sku"]]["evidence"]["observedAt"] != demo_cfg["assembledAt"] for h in cov["historical"]))
+check("no entry claims verification, a verification time or a clearance",
+      all(e["evidence"].get("verified") is False and "verifiedAt" not in e["evidence"]
+          and "verifiedBy" not in e["evidence"] and e["clearance"] == {"status": "not-cleared"}
+          for e in config["pricing"]["products"]))
+check("every entry is honestly historical-snapshot or illustrative",
+      {e["evidence"]["status"] for e in config["pricing"]["products"]} == {"historical-snapshot", "illustrative"})
+check("illustrative entries name their method and claim no observation or source",
+      all(by_sku[r["sku"]]["evidence"]["status"] == "illustrative" and by_sku[r["sku"]]["evidence"]["method"]
+          and "observedAt" not in by_sku[r["sku"]]["evidence"] for r in cov["illustrative"]))
+check("assembly time is its own field", isinstance(demo_cfg.get("assembledAt"), str) and demo_cfg.get("contract") == "payment-demo/1")
 fills = json.loads(_read("demo/payment-demo/illustrative-prices.json"))
 check("the illustrative price file is labelled non-production", "NOT Lacks prices" in fills["_meta"]["purpose"])
-plans = [p for p in config["financing"]["plans"] if p.get("paymentCalculationEnabled")]
-check("four example plans calculate, each with provider 'Demo' and an illustrative source",
-      len(plans) == 4 and all(p["provider"] == "Demo" and "payment-demo.invalid" in p["sourceUrl"] for p in plans))
+plans = [p for p in config["financing"]["plans"] if p.get("demo") is True]
+check("four example plans: unverified, calculation off, provider 'Demo', no published factor or source",
+      len(plans) == 4 and all(p["provider"] == "Demo" and p["verified"] is False
+                              and p["verificationStatus"] == "illustrative" and p["paymentCalculationEnabled"] is False
+                              and "publishedPaymentFactor" not in p and "sourceUrl" not in p and "verifiedAt" not in p
+                              for p in plans))
 for p in plans:
-    if p["calculationMode"] == "published-fixed-factor":
+    c = p["demoCalculation"]
+    if c["mode"] == "published-fixed-factor":
         r = p["apr"] / 100 / 12
         f = round(r / (1 - (1 + r) ** -p["termMonths"]), 6)
-        check(f"{p['id']}: the example factor is the amortization factor ({f})", p["publishedPaymentFactor"] == f)
+        check(f"{p['id']}: the example factor is the amortization factor ({f})", c["factor"] == f)
     else:
-        check(f"{p['id']}: equal division is 0% APR only", p["apr"] == 0)
+        check(f"{p['id']}: equal division is 0% APR only", p["apr"] == 0 and "factor" not in c)
 check("every example plan says it is illustrative, in both languages",
       all("Illustrative" in p["detail"]["en"] and "ilustrativo" in p["detail"]["es"].lower() for p in plans))
-ltO = [p for p in config["financing"]["plans"] if p.get("kind") == "lease-to-own"]
-check("lease-to-own is present and never calculates", len(ltO) == 1 and ltO[0].get("paymentCalculationEnabled") is False)
+src_plans = json.loads(_read("incoming/lacks_financing.json"))["financing"]["plans"]
+check("the real programs are the canonical records, unchanged",
+      [p for p in config["financing"]["plans"] if p.get("demo") is not True]
+      == [p for p in src_plans if p.get("kind") != "open-end-promotional-credit"])
+# The demo contract fails closed on malformed data.
+import copy as _copy
+
+
+def _bad(mut):
+    c2 = _copy.deepcopy(config)
+    mut(c2)
+    return bool(sp.validate_payment_demo(c2, catalog, accessories))
+
+
+check("contract refuses a negative price", _bad(lambda c: c["pricing"]["products"][0]["price"].__setitem__("amountMinor", -1)))
+check("contract refuses a fractional price", _bad(lambda c: c["pricing"]["products"][0]["price"].__setitem__("amountMinor", 1.5)))
+check("contract refuses a wrong size", _bad(lambda c: c["pricing"]["products"][0].__setitem__("size", "king" if c["pricing"]["products"][0]["size"] != "king" else "twin")))
+check("contract refuses a forged identity", _bad(lambda c: c["pricing"]["products"][0].__setitem__("productId", "g1" if c["pricing"]["products"][0]["productId"] != "g1" else "g2")))
+check("contract refuses a re-dated historical entry claiming verification",
+      _bad(lambda c: c["pricing"]["products"][0]["evidence"].__setitem__("verifiedAt", demo_cfg["assembledAt"])))
+check("contract refuses a fabricated approval", _bad(lambda c: c["pricing"]["presentation"]["approvals"]["legal"].__setitem__("status", "approved")))
+check("contract refuses a factor that is not the amortization factor",
+      _bad(lambda c: next(p for p in c["financing"]["plans"] if p.get("demoCalculation", {}).get("factor"))["demoCalculation"].__setitem__("factor", 0.01)))
+check("contract refuses equal division at a non-zero APR",
+      _bad(lambda c: next(p for p in c["financing"]["plans"] if p.get("demoCalculation", {}).get("mode") == "published-equal-division").__setitem__("apr", 5)))
+check("contract refuses an unsupported method",
+      _bad(lambda c: next(p for p in c["financing"]["plans"] if p.get("demo"))["demoCalculation"].__setitem__("mode", "amortization")))
+check("contract refuses a verified example plan", _bad(lambda c: next(p for p in c["financing"]["plans"] if p.get("demo")).__setitem__("verified", True)))
+check("contract refuses a live gasUrl", _bad(lambda c: c.__setitem__("gasUrl", "https://script.google.com/x")))
+check("contract refuses a malformed context nonce", _bad(lambda c: c["illustrativeDemo"].__setitem__("contextNonce", "abc")))
+check("two builds use two different context nonces",
+      sp.build_injected("demo", start)[0]["illustrativeDemo"]["contextNonce"] != demo_cfg["contextNonce"])
 
 # ---- 3. device mode -------------------------------------------------------------
 print("Device mode:")
-bundle = sp.device_bundle("192.168.1.20", "demo", {"historical": 1, "illustrative": 2, "plans": 4})
+OP = {"historical": 1, "illustrative": 2, "plans": 4, "contextNonce": demo_cfg["contextNonce"]}
+bundle = sp.device_bundle("192.168.1.20", "demo", OP)
 page = bundle["page"].decode("utf-8")
 check("demo page carries the operator area", 'id="dfDemoOperator"' in page and "Load a demo scenario" in page)
+check("demo page carries the harness context with this run's nonce, frozen and non-writable",
+      "__DF_DEMO_CONTEXT" in page and demo_cfg["contextNonce"] in page and "writable:false" in page)
 check("demo page carries no drill banner", "FIXTURE PRICES ONLY" not in page and sp.BANNER_ID not in page)
 other = sp.device_bundle("192.168.1.20", "payments")["page"].decode("utf-8")
-check("other states keep the diagnostic banner", "FIXTURE PRICES ONLY" in other and "dfDemoOperator" not in other)
+check("other states keep the diagnostic banner and never carry a demo context",
+      "FIXTURE PRICES ONLY" in other and "dfDemoOperator" not in other
+      and 'defineProperty(window,"__DF_DEMO_CONTEXT"' not in other)
+try:
+    sp.rehearsal_page("demo", "127.0.0.1", {"historical": 0})
+    check("a demo page cannot be built without the run's nonce", False)
+except ValueError:
+    check("a demo page cannot be built without the run's nonce", True)
+check("index.html itself never writes a demo context",
+      "__DF_DEMO_CONTEXT =" not in _read("index.html") and "defineProperty(window,\"__DF_DEMO_CONTEXT\"" not in _read("index.html"))
 check("the allowlist is exactly the device address", bundle["allowed_hosts"] == b'window.__DF_ALLOWED_HOSTS = ["192.168.1.20"];\n')
 check("demo/ is never served on a device",
       sp.device_canonical_path("/demo/payment-demo/demo.json") is None
@@ -177,8 +245,12 @@ def serve(handler):
     return srv
 
 
-demo_page = sp.rehearsal_page("demo", "127.0.0.1", {"historical": 0, "illustrative": 0, "plans": 4})
+demo_page = sp.rehearsal_page("demo", "127.0.0.1", OP)
 demo_srv = serve(sp.make_handler(sp.encode(config), sp.encode(catalog), sp.encode(accessories), None, demo_page))
+# The SAME demo config and catalog behind the ORDINARY page (no harness
+# context): the config alone must admit nothing.
+flag_only_srv = serve(sp.make_handler(sp.encode(config), sp.encode(catalog), sp.encode(accessories)))
+FLAG_ONLY_URL = f"http://127.0.0.1:{flag_only_srv.server_address[1]}/"
 plain_srv = serve(functools.partial(Quiet, directory=REPO))
 DEMO_URL = f"http://127.0.0.1:{demo_srv.server_address[1]}/"
 PLAIN_URL = f"http://127.0.0.1:{plain_srv.server_address[1]}/"
@@ -210,7 +282,7 @@ def eq_pay(principal, term):
     return ceil_div(principal, term * 100) * 100
 
 
-FACTOR72 = next(p["publishedPaymentFactor"] for p in plans if p["id"] == "demo-9-99-72")
+FACTOR72 = next(p["demoCalculation"]["factor"] for p in plans if p["id"] == "demo-9-99-72")
 
 
 def recommended(pg):
@@ -356,7 +428,7 @@ with sync_playwright() as p:
         dm = pg.evaluate("(document.querySelector('.drawer-price__monthly') || {}).textContent || ''")
         mprice = pg.evaluate("(id) => pricePresentationFor('drawer', window._drawerData[id].m, answers.mattress_size, null).amountMinor", fin)
         plan_ref = next(p for p in plans if p["id"] == ref)
-        exp_m = fixed_pay(mprice, plan_ref["publishedPaymentFactor"]) if plan_ref["calculationMode"] == "published-fixed-factor" \
+        exp_m = fixed_pay(mprice, plan_ref["demoCalculation"]["factor"]) if plan_ref["demoCalculation"]["mode"] == "published-fixed-factor" \
             else eq_pay(mprice, plan_ref["termMonths"])
         check(f"{tag} the drawer shows the mattress's monthly example under the plan in view",
               money_minor(dm) == exp_m and ("example" in dm or "ejemplo" in dm), dm)
@@ -378,14 +450,13 @@ with sync_playwright() as p:
         pg.evaluate("""() => { const r = Array.from(document.querySelectorAll('#financingSheetCards .fin-ws-row'))
           .find(b => /Demo/.test(b.textContent)); if (r) r.click(); }""")
         pg.wait_for_timeout(500)
-        # the example plans' own notes (the real programs' "no payment method
-        # is published" notes are accurate and stay)
-        notes = pg.evaluate("Array.from(document.querySelectorAll('.fin-fx[data-fx-plan^=\"demo-\"] .fin-fx__note')).map(n => n.textContent)")
-        joined = " ".join(notes)
-        check(f"{tag} payment details: example plans are never described as published",
-              notes and "published" not in joined and "publicado" not in joined, joined[:200])
-        check(f"{tag} payment details: 0% plans state equal payments, never '0% of the purchase'",
-              ("equal" in joined or "iguales" in joined) and "0% of" not in joined and "0% de" not in joined, joined[:200])
+        # Example plans are unverified and exact-term output stays off: the
+        # governed payment-details sheet therefore makes no exact claim for
+        # them at all (the studio is where the examples are calculated).
+        fx = pg.evaluate("""document.querySelectorAll('.fin-fx[data-fx-plan^="demo-"][data-fx-state="calculated"]').length""")
+        sheet = pg.evaluate("(document.getElementById('financingSheetCards') || {}).textContent || ''")
+        check(f"{tag} payment details: no calculated figure and no 'published' claim for an example plan",
+              fx == 0 and "as published" not in sheet and "según lo publicado" not in sheet, f"fx={fx}")
         pg.evaluate("() => { const d = document.querySelector('#financingSheet .fin-ws-done, #financingSheetDone, [onclick*=\"closeFinancingSheet\"]'); if (d) d.click(); else if (window.closeFinancingSheet) window.closeFinancingSheet(); }")
         pg.wait_for_timeout(300)
         cur_sub = pg.evaluate("buildConsultationQuote('handoff', answers.mattress_size).merchandiseMinor")
@@ -431,9 +502,106 @@ with sync_playwright() as p:
     check("sleep fit unchanged: the same answers give the same recommendations with demo prices on",
           recommended(pg) == rec_plain, str(rec_plain[:5]))
     pg.close()
+
+    # ---- the demo admission boundary ------------------------------------
+    print("Demo admission boundary:")
+    PROBE = r"""() => { const ids = Object.keys(window._drawerData || {});
+      const out = { prices: 0, studio: (typeof purchaseStudioFor === 'function') ? purchaseStudioFor().show : null,
+                    admitted: !!demoAdmission(), plans: 0 };
+      for (const id of ids) { const m = window._drawerData[id].m;
+        for (const z of ['twin','twin_xl','full','queen','king','cal_king']) {
+          if (pricePresentationFor('drawer', m, z, null).state === 'available') out.prices++; } }
+      const f = getFinancingConfig();
+      (f && f.plans || []).forEach(p => { if (financingPlanFresh(p)) out.plans++; });
+      return out; }"""
+    pg = browser.new_page(viewport={"width": 1180, "height": 820})
+    errs = []
+    pg.on("pageerror", lambda x, e=errs: e.append(str(x)))
+    pg.goto(FLAG_ONLY_URL + "?demo=1&state=demo&illustrativeDemo=1")
+    pg.wait_for_function(READY, timeout=20000)
+    recommended(pg)
+    r0 = pg.evaluate(PROBE)
+    check("demo config WITHOUT the harness context admits nothing (no price, no plan, no studio)",
+          r0["admitted"] is False and r0["prices"] == 0 and r0["plans"] == 0 and not r0["studio"], str(r0))
+    check("the production gate refuses every demo entry: assembly time cannot make real evidence current",
+          r0["prices"] == 0)
+    pg.evaluate("""() => { try { localStorage.setItem('__DF_DEMO_CONTEXT', '1'); localStorage.setItem('illustrativeDemo', 'true');
+      sessionStorage.setItem('demo', '1'); } catch (e) {} }""")
+    check("URL parameters and storage values cannot activate it", pg.evaluate(PROBE)["admitted"] is False)
+    nonce = demo_cfg["contextNonce"]
+    pg.evaluate("(n) => { window.__DF_DEMO_CONTEXT = { harness: 'serve_pricing_preview', state: 'demo', nonce: n }; }", nonce)
+    check("an unfrozen hand-made context is refused", pg.evaluate(PROBE)["admitted"] is False)
+    pg.close()
+    pg = browser.new_page(viewport={"width": 1180, "height": 820})
+    pg.on("pageerror", lambda x, e=errs: e.append(str(x)))
+    pg.goto(FLAG_ONLY_URL)
+    pg.wait_for_function(READY, timeout=20000)
+    pg.evaluate("() => { window.__DF_DEMO_CONTEXT = Object.freeze({ harness: 'serve_pricing_preview', state: 'demo', nonce: '0'.repeat(32) }); }")
+    check("a context with another run's nonce is refused (inconsistent context fails closed)",
+          pg.evaluate(PROBE)["admitted"] is False)
+    pg.close()
+    pg = browser.new_page(viewport={"width": 1180, "height": 820})
+    pg.on("pageerror", lambda x, e=errs: e.append(str(x)))
+    pg.goto(DEMO_URL)
+    pg.wait_for_function(READY, timeout=20000)
+    recommended(pg)
+    r1 = pg.evaluate(PROBE)
+    check("context AND matching validated config: prices and example plans admitted",
+          r1["admitted"] is True and r1["prices"] == 6 * pg.evaluate("Object.keys(window._drawerData).length")
+          and r1["plans"] == 4, str(r1))
+    check("the real programs are still judged by the production gate (none fresh: exact terms stay off)",
+          pg.evaluate("getFinancingConfig().plans.filter(p => p.demo !== true).every(p => !financingPlanFresh(p))"))
+    check("the harness context cannot be overwritten", pg.evaluate("""() => { try { window.__DF_DEMO_CONTEXT = null; } catch (e) {}
+      return !!window.__DF_DEMO_CONTEXT && Object.isFrozen(window.__DF_DEMO_CONTEXT); }"""))
+    for label, js in (
+        ("config nonce changed", "STORE_CONFIG.illustrativeDemo.contextNonce = 'f'.repeat(32)"),
+        ("assembly time removed", "delete STORE_CONFIG.illustrativeDemo.assembledAt"),
+        ("contract changed", "STORE_CONFIG.illustrativeDemo.contract = 'payment-demo/2'"),
+        ("a live gasUrl", "STORE_CONFIG.gasUrl = 'https://script.google.com/x'"),
+    ):
+        got = pg.evaluate("(js) => { const save = JSON.stringify(STORE_CONFIG); (new Function(js))(); const a = !!demoAdmission();"
+                          " const s = JSON.parse(save); Object.keys(STORE_CONFIG).forEach(k => delete STORE_CONFIG[k]);"
+                          " Object.assign(STORE_CONFIG, s); return a; }", js)
+        check(f"inconsistent demo context fails closed: {label}", got is False)
+    # malformed data is refused in demo mode, item by item
+    MAL = r"""(o) => { const p = getPricingConfig(); const m = window._drawerData[o.id].m; const z = 'queen';
+      const sku = pricingSkuFor(m, z); const e = p.products.find(x => x.sku === sku); const save = JSON.stringify(e);
+      (new Function('e', o.js))(e); const st = pricePresentationFor('drawer', m, z, null).state;
+      Object.assign(e, JSON.parse(save)); Object.keys(e).forEach(k => { if (!(k in JSON.parse(save))) delete e[k]; });
+      return st; }"""
+    first = pg.evaluate("Object.keys(window._drawerData)[0]")
+    for label, js in (
+        ("a negative price", "e.price.amountMinor = -500"),
+        ("a fractional price", "e.price.amountMinor = 1000.5"),
+        ("a foreign currency", "e.price.currency = 'XXX'"),
+        ("a production evidence status", "e.evidence.status = 'retailer-product-page-current'"),
+        ("a claimed verification", "e.evidence.verified = true"),
+        ("a verification time", "e.evidence.verifiedAt = new Date().toISOString()"),
+        ("a historical observation after assembly", "e.evidence.status = 'historical-snapshot'; e.evidence.observedAt = '2099-01-01T00:00:00Z'; e.evidence.sourceUrl = 'https://www.lacks.com/x'; delete e.evidence.method"),
+        ("a wrong size", "e.size = 'king'"),
+        ("another product's id", "e.productId = 'zz-not-a-product'"),
+    ):
+        st = pg.evaluate(MAL, {"id": first, "js": js})
+        check(f"demo mode refuses {label} (no price shown)", st == "off", st)
+    PLAN = r"""(js) => { const pl = getFinancingConfig().plans.find(p => p.id === 'demo-9-99-72'); const save = JSON.stringify(pl);
+      (new Function('p', js))(pl); const ok = financingPlanFresh(pl);
+      const s = JSON.parse(save); Object.keys(pl).forEach(k => delete pl[k]); Object.assign(pl, s); return ok; }"""
+    for label, js in (
+        ("a factor of 2", "p.demoCalculation.factor = 2"),
+        ("a factor needing a seventh decimal", "p.demoCalculation.factor = 0.0185211"),
+        ("an unsupported method", "p.demoCalculation.mode = 'amortization'"),
+        ("no rounding rule", "delete p.demoCalculation.rounding"),
+        ("a term of 0", "p.termMonths = 0"),
+        ("a plan marked verified", "p.verified = true"),
+        ("a plan with calculation switched on", "p.paymentCalculationEnabled = true"),
+    ):
+        check(f"demo mode refuses an example plan with {label}", pg.evaluate(PLAN, js) is False)
+    check("no page errors across the boundary probes", not errs, str(errs[:3]))
+    pg.close()
     browser.close()
 demo_srv.shutdown()
 plain_srv.shutdown()
+flag_only_srv.shutdown()
 
 print(f"\nPayment demo check: {passed} passed, {failed} failed")
 sys.exit(1 if failed else 0)
