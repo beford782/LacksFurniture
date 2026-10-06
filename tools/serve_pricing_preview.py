@@ -1686,7 +1686,7 @@ def main(argv=None):
     elif args.state == "demo":
         print("PAYMENT DEMO (owner demo-first direction 2026-10-05). Prices: historical lacks.com")
         print("product pages observed 2026-10-03 plus ILLUSTRATIVE fills (marked with a diamond). Payments:")
-        print("EXAMPLE plans through the governed methods - not a Lacks or lender offer. Not for")
+        print("EXAMPLE plans (unverified) on the governed payment arithmetic - not a Lacks or lender offer. Not for")
         print("showroom use; nothing is sent or saved. Open 'Operator' (bottom-left) to load a scenario.")
     elif args.state == "payments":
         print("Every price shown is a FIXTURE placeholder; the payment figures are computed")
