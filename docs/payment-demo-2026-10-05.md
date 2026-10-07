@@ -200,14 +200,103 @@ obvious action. All of this applies under demo admission only.
 the dialog, built from two complete quotes. They are no longer shown on every
 settled row.
 
+## Pricing and payment refinement (2026-10-06, owner-directed)
+
+**Direction.** Blake confirmed a pasted refinement brief in session ("Run as
+written"). It authorizes this bounded refinement, a three-agent read-only swarm,
+regression tests, browser verification and local commits. It does not authorize a
+push, PR, merge, deployment, publication, messages to Lacks or lenders, or any live
+activation. The brief's starting findings came from Codex; each was re-verified here
+before any change.
+
+**Goal:** make every figure mean one thing, keep the purchase's configuration when
+an item is replaced, and make the payment comparison quick to scan. The Summary
+structure from the usability pass is kept.
+
+**One meaning for each figure.** `psPay` returns the shared read model every payment
+surface formats from:
+- `merchMinor`, `downMinor`, `financedMinor`;
+- `scheduledMinor`, the sum of scheduled payments, excluding the down payment;
+- `totalPaidMinor`, the down payment plus the scheduled payments;
+- `interestMinor` (0 under equal division);
+- `*Upper` flags.
+
+`psBound` adds "up to" only when the figure is an upper bound. An equal division
+that divides exactly is exact; every fixed-factor figure is an upper bound. The
+arithmetic is unchanged.
+
+The centerpiece, the comparison, Bring It Home and the take-home preview all read
+`totalPaidMinor`. The take-home row used to state "total of payments" without the
+down payment beside a Summary "total paid" that included it. It now states total
+paid and interest.
+
+**Comparison.** Each row has explicit cells: choice (term on one line, APR on the
+next), monthly payment, and total paid with interest beneath. The old
+`:nth-of-type` grid selectors never matched; they are replaced by explicit classes.
+- The APR and term are no longer repeated beside the plan name.
+- A down payment applies to every plan, so the list states it once ("Totals paid
+  include your $500 down payment").
+- Pay in full reads "One payment", with its total paid and "No interest".
+- There is no endorsement or preselection; selection is shown by a check mark, text
+  and `aria-pressed`.
+
+**Centerpiece.**
+- Pay in full: the amount once, framed as one payment. The duplicate subtotal figure
+  is removed; the purchase area keeps the subtotal and its exclusions.
+- Financing: "Example financing", the monthly figure, then term, APR and down
+  payment, then total paid (with how it is made up), interest, and merchandise
+  subtotal ("the products' price, before financing").
+- The rounding note in Payment details has an exact variant for an exact schedule.
+
+**Replacement keeps its configuration.** A replacement option carries a `config`:
+- the prior quantity (two pillows stay two);
+- a split King, when the replacement is an adjustable base with a clean Twin XL SKU
+  (`psSplitCapable`).
+
+What cannot be kept is named before Apply ("This base has no split King option: it
+becomes one King base"). The preview and Apply read the same option config. A
+leftover down payment no longer shapes any figure while Pay in full or a quote-only
+plan is in view.
+
+**Change sheet.**
+- The sheet and its backdrop are body children. While the sheet is open, everything
+  else is inert (the financing workspace's ownership pattern). Only what the sheet
+  set is released, on Apply, Cancel, Escape, Browse all and the wipe.
+- The keydown handler yields to the session-safety dialog above it.
+- Focus survives repaints and language switches.
+- Apply labels name the action: "Choose this mattress", "Replace with 2 of this
+  pillow", "Remove the base".
+- The mattress list starts focused (current, saved, each tier's leading match).
+  "More matches (n)" adds the rest in tier and fit order.
+- "Browse all matches" leaves a "Back to the priced sleep system" control on Results.
+  It clears on return, or once the Summary is reached by any route.
+
+**Feedback.**
+- One visible confirmation after an applied change ("...: system payment changed
+  from $103/mo to $105/mo under the same plan."), cleared by the next action.
+- The payment panel is no longer a live region. Plan and down-payment changes are
+  announced once, in one sentence, debounced while typing.
+- The active down-payment preset is marked; a custom amount marks none.
+
+**Fit and value.** The selected mattress shows its own catalog `highlight` (existing
+product copy). **Personalised per-answer mattress reasons were NOT added.** They sit
+behind item 1.3's rendered-output gate (owner-held, not lifted;
+`tests/results_presentation_check.mjs` pins that `buildMattressPriorities` has no
+rendered consumer). Each Sleep System row shows the cart's stored, answer-matched
+reason key; the generic `default`/`standard` keys are omitted.
+
+**Not changed:** scoring, tiers, IDs, tags, baselines, the calculation methods,
+admission, the production gates, `gasUrl`, touch handling, and the public API
+fields.
+
 ## Physical iPad check
 
 2026-10-06: Blake ran the demo on a physical iPad (Safari, via the
 `--device` harness) at `d2cf9e9` and reported that it all worked. That is
 the owner's own report; no device-side details (orientation, connection
 route, VoiceOver) were recorded. **That acceptance covers the pre-usability-
-pass UI.** The usability pass (`cf72980` onward) has not yet been run on the
-device.
+pass UI.** Neither the usability pass (`cf72980` onward) nor the pricing and
+payment refinement has been run on the device yet.
 
 ## Review status
 

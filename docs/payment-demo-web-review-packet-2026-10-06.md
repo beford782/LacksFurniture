@@ -82,6 +82,33 @@ generated data; review its `_meta` and a few entries only.
    `git diff d2cf9e9..HEAD -- index.html | sed -n '/function psContext/,/function purchaseStudioFor/p'`
    and the `psOpenSheet` / `psSheetApply` block.
 
+9. **Pricing and payment refinement** (the commit after `48c2aae`). Review with:
+
+   ```
+   git diff 48c2aae..HEAD --stat
+   git diff 48c2aae..HEAD -- index.html | sed -n '/function psPay/,/function psPlans/p'
+   git diff 48c2aae..HEAD -- index.html | sed -n '/function psAccessorySheet/,/function purchaseStudioFor/p'
+   git diff 48c2aae..HEAD -- index.html | sed -n '/function psCompareHtml/,/function psDownMessage/p'
+   git diff 48c2aae..HEAD -- index.html | sed -n '/var _psInerted/,/function psCloseSheetQuiet/p'
+   git diff 48c2aae..HEAD -- index.html | grep -n "^[+-].*\(psTakeHomeRow\|th_plan\|totalPaidMinor\|psBound\)"
+   git diff 48c2aae..HEAD -- data/dict-en.json data/dict-es.json
+   git diff 48c2aae..HEAD -- tests/mutation_sweep.mjs
+   python tests/payment_demo_check.py
+   ```
+
+   Questions:
+   - **One meaning per figure.** Is `totalPaidMinor` (down payment plus scheduled
+     payments) the only "total paid" any surface shows? Is "up to" applied exactly
+     when a figure is an upper bound?
+   - **Replacement config.** The preview and Apply both read the option's `config`.
+     Can a replacement still silently change quantity or drop a split?
+   - **Modal isolation.** The sheet moved to a body child and inerts its siblings with
+     ownership bookkeeping. Is any path left inert, or is the safety dialog blocked?
+   - **Item 1.3.** The hero shows only the mattress's own `highlight`. Confirm no
+     personalised mattress reason is rendered.
+   - **Copy.** Are the new `ps.*` keys (EN/ES) accurate, with no unsupported claim?
+     Native-Spanish review is still pending.
+
 ## Evidence already observed (local)
 
 - `tests/payment_demo_check.py`: 214/214 at `cf72980`.
@@ -89,3 +116,11 @@ generated data; review its `_meta` and a few entries only.
 - Targeted mutation entries: see the session handoff.
 - Not observed: physical iPad, Safari on device, VoiceOver,
   native-Spanish review, legal or lender review, PR CI.
+- Pricing and payment refinement (working tree on `48c2aae`, committed as the
+  next commit):
+  - `tests/payment_demo_check.py`: 328/328.
+  - Full local mirror (`-SkipMutationSweep`): PASSED (66 checks plus integrity
+    guards).
+  - Mutation sweep entries 837-856: 20/20 caught (11 new, 1 re-anchored).
+  - Browser screenshots (Chromium, 1180x820 and 820x1180, EN and ES): no console
+    errors, no horizontal overflow, no control under 44px.

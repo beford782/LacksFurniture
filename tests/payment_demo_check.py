@@ -73,6 +73,12 @@ def money_minor(text):
     return int(round(float(v) * 100))
 
 
+def total_paid_in(text):
+    """The amount a 'total paid' phrase states (EN or ES), or None."""
+    m = re.search(r"[Tt]otal (?:paid|pagado):?\s*(?:up to |hasta )?\$([\d,]+(?:\.\d{2})?)", text or "")
+    return int(round(float(m.group(1).replace(",", "")) * 100)) if m else None
+
+
 # ---- 1. isolation -------------------------------------------------------------
 print("Isolation (demo data never enters production inputs or outputs):")
 TOKENS = ("illustrativeDemo", "payment-demo", "historical-snapshot", "demoCalculation", "DEMO-", "__DF_DEMO_CONTEXT")
@@ -465,11 +471,216 @@ with sync_playwright() as p:
               "$" not in st and pg.get_attribute("[data-ps='subtotal']", "class").find("is-incomplete") != -1, st)
         check(f"{tag} no payment is calculated from a partial subtotal",
               pg.evaluate("document.querySelector('[data-ps-big]')") is None and "$" not in (pg.evaluate(CARD, "demo-0-12") or ""))
+        thd = pg.evaluate("psTakeHomeRow().detail")
+        check(f"{tag} a missing price: no payment or total paid anywhere, take-home included",
+              "/m" not in thd and total_paid_in(thd) is None and "$" not in (pg.evaluate(TXT, "#psCenterBox") or ""), thd)
+        pg.click("[data-ps-plan='lease-to-own']")
+        pg.wait_for_timeout(120)
+        thd = pg.evaluate("psTakeHomeRow().detail")
+        check(f"{tag} a quote-only plan: To confirm with no figure on the centerpiece and take-home",
+              "$" not in (pg.evaluate(TXT, "#psCenterBox") or "") and ("To confirm" in thd or "Por confirmar" in thd)
+              and "/m" not in thd and total_paid_in(thd) is None, thd)
+        pg.click("[data-ps-plan='demo-9-99-72']")
+        pg.wait_for_timeout(120)
         pg.click("[data-ps-size='queen']")
         pg.click("[data-ps-change='base-tempur-ergo']")
         pg.click("[data-ps-sheet-opt='base-bt3000']")
         pg.click("#psSheetApply")
         pg.wait_for_timeout(200)
+        # ---- one meaning of every figure, on every surface ----
+        SURF = r"""() => { const m = purchaseStudioFor(); const r = m.result;
+          const plans = getFinancingConfig().plans.filter(p => p.demo === true);
+          const bih = document.createElement('div'); bih.innerHTML = psSheetDemoPanel(plans);
+          const row = bih.querySelector('[data-ps-sheet-plan="' + _psPlan + '"]');
+          const th = psTakeHomeRow();
+          const q = (s) => { const e = document.querySelector(s); return e ? e.textContent.replace(/\s+/g, ' ').trim() : null; };
+          return { model: r.totalPaidMinor === undefined ? null : r.totalPaidMinor, kind: r.kind,
+                   center: q('#psCenterBox [data-ps-fig="cost"] .ps-fig__value'),
+                   cmp: q('#purchaseStudio [data-ps-plan="' + _psPlan + '"] .ps-cmp__total'),
+                   bih: row ? row.textContent : null, th: th ? th.detail : null,
+                   sub: buildConsultationQuote('handoff', answers.mattress_size).merchandiseMinor,
+                   financed: q('#psDetails [data-ps-dl="financed"] dd'), scheduled: q('#psDetails [data-ps-dl="scheduled"] dd'),
+                   interest: q('#psCenterBox [data-ps-fig="interest"] .ps-fig__value') }; }"""
+        for plan_id, down_raw in (("demo-9-99-72", ""), ("demo-9-99-72", "500"), ("demo-9-99-72", "123.45"),
+                                  ("demo-0-12", ""), ("demo-0-12", "500"), ("demo-0-12", "123.45")):
+            pg.click(f"[data-ps-plan='{plan_id}']")
+            pg.fill("#psDownInput", down_raw)
+            pg.wait_for_timeout(120)
+            sv = pg.evaluate(SURF)
+            down = money_minor("$" + down_raw) if down_raw else 0
+            term = next(p["termMonths"] for p in plans if p["id"] == plan_id)
+            calc = next(p["demoCalculation"] for p in plans if p["id"] == plan_id)
+            pay = fixed_pay(sv["sub"] - down, calc["factor"]) if calc["mode"] == "published-fixed-factor" else eq_pay(sv["sub"] - down, term)
+            want = down + pay * term
+            lab = f"{tag} {plan_id} with {down_raw or '$0'} down:"
+            check(f"{lab} total paid = down payment + scheduled payments, identical on the centerpiece, comparison, Bring It Home and take-home",
+                  sv["model"] == want and money_minor(sv["center"]) == want and total_paid_in(sv["cmp"]) == want
+                  and total_paid_in(sv["bih"]) == want and total_paid_in(sv["th"]) == want, json.dumps(sv)[:400])
+            check(f"{lab} merchandise subtotal, amount financed and scheduled payments stay distinct",
+                  money_minor(sv["financed"]) == sv["sub"] - down and money_minor(sv["scheduled"]) == pay * term
+                  and (down == 0 or want != pay * term), f"{sv['financed']} {sv['scheduled']}")
+            if calc["mode"] == "published-equal-division":
+                check(f"{lab} 0% rounding is never called interest", sv["interest"] in ("No interest", "Sin interés"), sv["interest"])
+            dnote = pg.evaluate(TXT, "[data-ps='cmp-down']")
+            check(f"{lab} the comparison says once, above the rows, whether totals include a down payment",
+                  (money_minor(dnote) == down) if down else dnote is None, str(dnote))
+        # an equal division that divides exactly is an exact total (no "up to")
+        exact_down = pg.evaluate("buildConsultationQuote('handoff', answers.mattress_size).merchandiseMinor") % 1200
+        if exact_down:
+            pg.click("[data-ps-plan='demo-0-12']")
+            pg.fill("#psDownInput", f"{exact_down / 100:.2f}")
+            pg.wait_for_timeout(120)
+            ex = pg.evaluate(SURF)
+            check(f"{tag} an exactly divisible 0% schedule states an exact total, an upper bound otherwise",
+                  ex["center"] and "p to" not in ex["center"] and "asta" not in ex["center"]
+                  and ("p to" in (sv["center"] or "") or "asta" in (sv["center"] or "")), f"{ex['center']} / {sv['center']}")
+        # a down payment left behind when Pay in full is chosen shapes no figure
+        pg.click("[data-ps-plan='demo-9-99-72']")
+        pg.fill("#psDownInput", "")
+        pg.wait_for_timeout(120)
+        no_down = pg.evaluate("purchaseStudioFor().cards.filter(c => c.kind === 'calc').map(c => c.totalPaidMinor)")
+        pg.fill("#psDownInput", "500")
+        pg.wait_for_timeout(120)
+        pg.click("[data-ps-plan='full']")
+        pg.wait_for_timeout(120)
+        check(f"{tag} with Pay in full chosen, a leftover down payment changes no plan's total and no note claims it",
+              pg.evaluate("purchaseStudioFor().cards.filter(c => c.kind === 'calc').map(c => c.totalPaidMinor)") == no_down
+              and pg.evaluate(TXT, "[data-ps='cmp-down']") is None and pg.evaluate("document.getElementById('psDownInput').disabled"))
+        pg.click("[data-ps-plan='demo-9-99-72']")
+        pg.wait_for_timeout(120)
+        check(f"{tag} choosing a plan again applies the kept down payment", money_minor(pg.evaluate(TXT, "[data-ps='cmp-down']")) == 50000)
+        # pay in full: one payment, the amount once in the centerpiece, no invented monthly
+        pg.click("[data-ps-plan='full']")
+        pg.wait_for_timeout(120)
+        fc = pg.evaluate(TXT, "#psCenterBox")
+        check(f"{tag} pay in full: the centerpiece states the amount once and invents no monthly figure",
+              fc.count(f"{sub / 100:,.2f}") == 1 and "/mo" not in fc and "/mes" not in fc, fc)
+        check(f"{tag} pay in full: the take-home names one payment of the subtotal",
+              f"{sub / 100:,.2f}" in pg.evaluate("psTakeHomeRow().detail") and "/m" not in pg.evaluate("psTakeHomeRow().detail"))
+        # comparison structure: explicit cells, the plan's terms stated once
+        pg.click("[data-ps-plan='demo-9-99-72']")
+        pg.fill("#psDownInput", "500")
+        pg.wait_for_timeout(150)
+        cells = pg.evaluate("""() => Array.from(document.querySelectorAll('#purchaseStudio .ps-cmp__row--calc')).map(b => ({
+          areas: ['.ps-cmp__name', '.ps-cmp__main', '.ps-cmp__total'].map(s => { const e = b.querySelector(s); return e ? getComputedStyle(e).gridArea.split(' ')[0] : null; }),
+          text: b.textContent.replace(/\\s+/g, ' '), term: b.querySelector('.ps-cmp__choice').textContent }))""")
+        check(f"{tag} comparison cells sit in their named columns (choice, monthly, total paid)",
+              cells and all(c["areas"] == ["name", "main", "total"] for c in cells), str([c["areas"] for c in cells]))
+        check(f"{tag} each plan's term and APR are stated once per row",
+              all(c["text"].count(c["term"].split(" ")[0] + " ") == 1 and c["text"].count("APR") == 1 for c in cells), str([c["text"] for c in cells][:2]))
+        boxes = pg.evaluate("""() => Array.from(document.querySelectorAll('#purchaseStudio .ps-cmp__row--calc .ps-cmp__total')).map(e => Math.round(e.getBoundingClientRect().left))""")
+        check(f"{tag} total-paid cells align in one column", len(set(boxes)) == 1, str(boxes))
+        # the active down-payment preset is marked; a custom amount marks none
+        pg.click("[data-ps-down='500']")
+        pg.wait_for_timeout(120)
+        pressed = pg.evaluate("Array.from(document.querySelectorAll('[data-ps-down]')).filter(b => b.getAttribute('aria-pressed') === 'true').map(b => b.dataset.psDown)")
+        check(f"{tag} the active down-payment preset is marked (aria-pressed)", pressed == ["500"], str(pressed))
+        pg.fill("#psDownInput", "510")
+        pg.wait_for_timeout(120)
+        pressed = pg.evaluate("Array.from(document.querySelectorAll('[data-ps-down]')).filter(b => b.getAttribute('aria-pressed') === 'true').length")
+        check(f"{tag} a custom down payment marks no preset", pressed == 0, str(pressed))
+        pg.fill("#psDownInput", "500")
+        pg.wait_for_timeout(120)
+        check(f"{tag} the payment panel is not a live region re-read on every keystroke",
+              pg.evaluate("document.getElementById('psCenterBox').getAttribute('aria-live')") is None)
+        # ---- replacing two pillows keeps two ----
+        pg.evaluate("setSleepSystemItemQuantity('pillow-gel-memory', 2); psRepaint()")
+        pg.wait_for_timeout(100)
+        UNIT = """(id) => psQuote('queen', { cart: { [id]: { id: id, quantity: 1 } } }).lines.find(l => l.productId === id).unitAmountMinor"""
+        old_unit, new_unit = pg.evaluate(UNIT, "pillow-gel-memory"), pg.evaluate(UNIT, "pillow-flow")
+        sub_q = pg.evaluate("buildConsultationQuote('handoff', 'queen').merchandiseMinor")
+        pg.click("[data-ps-change='pillow-gel-memory']")
+        pg.click("[data-ps-sheet-opt='pillow-flow']")
+        pg.wait_for_timeout(150)
+        state0 = pg.evaluate(STATE)
+        pv = pg.evaluate(TXT, "[data-ps-preview]") or ""
+        want_sub = sub_q + 2 * (new_unit - old_unit)
+        check(f"{tag} replacing two pillows previews two of the replacement, and says so",
+              f"{want_sub / 100:,.2f}" in pv and pg.evaluate("!!document.querySelector('[data-ps-config]')"), pv)
+        lbl = pg.evaluate(TXT, "#psSheetApply")
+        check(f"{tag} Apply names the action and the quantity", lbl and "2" in lbl and lbl not in ("Apply", "Aplicar"), lbl)
+        pg.click("#psSheetApply")
+        pg.wait_for_timeout(250)
+        check(f"{tag} Apply keeps the quantity: two of the new pillow, priced as two",
+              pg.evaluate("window._accCart['pillow-flow'] && window._accCart['pillow-flow'].quantity") == 2
+              and "pillow-gel-memory" not in pg.evaluate("Object.keys(window._accCart)")
+              and pg.evaluate("buildConsultationQuote('handoff', 'queen').merchandiseMinor") == want_sub)
+        note = pg.evaluate(TXT, "#psChangeNote") or ""
+        check(f"{tag} one visible confirmation states the payment change under the same plan",
+              (note.count("$") == 2 or ("stays" in note or "sigue" in note)) and pg.evaluate("document.querySelectorAll('#purchaseStudio .ps-confirm').length") == 1, note)
+        pg.click("[data-ps-plan='demo-0-12']")
+        pg.wait_for_timeout(100)
+        check(f"{tag} the confirmation clears on the next action", pg.evaluate("document.getElementById('psChangeNote')") is None)
+        pg.click("[data-ps-plan='demo-9-99-72']")
+        pg.click("[data-ps-change='pillow-flow']")
+        pg.click("[data-ps-sheet-opt='pillow-gel-memory']")
+        pg.click("#psSheetApply")
+        pg.wait_for_timeout(250)
+        check(f"{tag} and back again: still two", pg.evaluate("window._accCart['pillow-gel-memory'].quantity") == 2)
+        # ---- a split King base: kept when the replacement offers it, named when it cannot ----
+        pg.click("[data-ps-size='king']")
+        pg.click("[data-ps-split='on']")
+        pg.wait_for_timeout(150)
+        pg.click("[data-ps-change='base-bt3000']")
+        pg.click("[data-ps-sheet-opt='base-bt2000']")
+        pg.wait_for_timeout(150)
+        pv = pg.evaluate(TXT, "[data-ps-preview]") or ""
+        prev_sub = money_minor(pv.split("→")[1]) if "→" in pv else None
+        check(f"{tag} a split-capable replacement previews as a split King", "Twin XL" in pv, pv)
+        pg.click("#psSheetApply")
+        pg.wait_for_timeout(250)
+        check(f"{tag} Apply keeps the split (2 × Twin XL) and matches the preview",
+              pg.evaluate("window._accCart['base-bt2000'] && window._accCart['base-bt2000'].split === true && window._accCart['base-bt2000'].quantity === 2")
+              and prev_sub == pg.evaluate("buildConsultationQuote('handoff', 'king').merchandiseMinor"), f"{prev_sub}")
+        pg.click("[data-ps-change='base-bt2000']")
+        pg.click("[data-ps-sheet-opt='foundation-princess']")
+        pg.wait_for_timeout(150)
+        cfg = pg.evaluate(TXT, "[data-ps-config]") or ""
+        check(f"{tag} a replacement with no split option says it becomes one King base BEFORE Apply",
+              "King" in cfg and pg.evaluate("window._accCart['base-bt2000'].split") is True, cfg)
+        pg.click("#psSheetCancel")
+        pg.wait_for_timeout(100)
+        pg.click("[data-ps-change='base-bt2000']")
+        pg.click("[data-ps-sheet-opt='base-bt3000']")
+        pg.click("#psSheetApply")
+        pg.wait_for_timeout(200)
+        pg.click("[data-ps-size='queen']")
+        pg.wait_for_timeout(150)
+        # ---- the sheet isolates the background and cleans up after itself ----
+        INERT = "() => Array.from(document.querySelectorAll('[inert]')).map(e => e.id || e.className).sort().join('|')"
+        inert0 = pg.evaluate(INERT)
+        pg.click("[data-ps-change='base-bt3000']")
+        pg.wait_for_timeout(150)
+        check(f"{tag} the open sheet makes the background inert, never itself",
+              pg.evaluate("document.getElementById('hf2Screen').hasAttribute('inert') && document.getElementById('sessionUtility').closest('[inert]') !== null")
+              and pg.evaluate("document.getElementById('psSheet').closest('[inert]')") is None)
+        pg.evaluate("openSafetyDialog('timeout')")
+        pg.wait_for_timeout(150)
+        pg.keyboard.press("Escape")
+        pg.keyboard.press("Tab")
+        check(f"{tag} the session-safety dialog above the sheet owns Escape and Tab",
+              pg.evaluate("_psSheet !== null") and pg.evaluate("document.getElementById('sessionSafetyDialog').contains(document.activeElement)"))
+        pg.evaluate("closeSafetyDialog()")
+        pg.wait_for_timeout(150)
+        pg.evaluate("async () => { await switchLanguage('" + ("es" if lang == "en" else "en") + "'); }")
+        pg.wait_for_timeout(300)
+        pg.evaluate("async () => { await switchLanguage('" + lang + "'); }")
+        pg.wait_for_timeout(300)
+        check(f"{tag} the sheet stays open and isolated across a language switch",
+              pg.evaluate("document.getElementById('psSheet').hidden") is False and pg.evaluate("document.getElementById('hf2Screen').hasAttribute('inert')"))
+        pg.click("#psSheetCancel")
+        pg.wait_for_timeout(150)
+        check(f"{tag} closing restores exactly the prior inert state", pg.evaluate(INERT) == inert0, f"{inert0} vs {pg.evaluate(INERT)}")
+        # ---- fit and value: one supported line each, never invented ----
+        fav0 = pg.evaluate("window._favoriteMattressId")
+        why = pg.evaluate(TXT, "[data-ps='fit-why']")
+        check(f"{tag} the selected mattress shows only its own catalog highlight (item 1.3 keeps personalised mattress reasons gated)",
+              why == (pg.evaluate("(id) => mField(window._drawerData[id].m, 'highlight')", fav0) or None)
+              and pg.evaluate("typeof psFitReason") == "undefined", why)
+        rows_why = pg.evaluate("Array.from(document.querySelectorAll('#purchaseStudio [data-ps-why]')).map(e => e.textContent)")
+        allowed = pg.evaluate("Object.keys(ACCESSORY_REASON_COPY).map(k => accessoryReasonText(k))")
+        check(f"{tag} accessory reasons come only from the stored answer-matched keys",
+              rows_why and all(w in allowed for w in rows_why), str(rows_why))
         # ---- Change mattress: always there, preview, cancel, apply ----
         other = pg.evaluate("(window._savedPicks || []).map(p => p.id).filter(id => id !== window._favoriteMattressId)[0]")
         pg.evaluate("(id) => window._toggleSavePick(id)", other)   # leave ONE saved mattress
@@ -481,12 +692,25 @@ with sync_playwright() as p:
         pg.wait_for_timeout(250)
         ids = pg.evaluate("Array.from(document.querySelectorAll('[data-ps-sheet-opt]')).map(b => b.dataset.psSheetOpt)")
         fav = pg.evaluate("window._favoriteMattressId")
-        check(f"{tag} the mattress sheet lists the current mattress first, then alternatives, each once",
-              ids and ids[0] == fav and len(ids) == len(set(ids)) and len(ids) > 3, str(ids))
-        ranked = pg.evaluate("""() => ['gold','silver','bronze'].flatMap(t => (_resultsState.tierData[t] || []).slice(0, 3).map(m => m.id))""")
-        check(f"{tag} recommended alternatives keep sleep-fit order", [i for i in ids if i in ranked] == [i for i in ranked if i in ids])
+        leads = pg.evaluate("""() => ['gold','silver','bronze'].flatMap(t => (_resultsState.tierData[t] || []).slice(0, 1).map(m => m.id))""")
+        check(f"{tag} the mattress sheet starts focused: current, saved, then each tier's leading match, each once",
+              ids and ids[0] == fav and len(ids) == len(set(ids)) and all(i in ids for i in leads)
+              and len(ids) <= 1 + pg.evaluate("window._savedPicks.length") + 3, str(ids))
+        more_n = pg.evaluate("purchaseStudioFor && psMattressSheet().more")
+        check(f"{tag} More matches names how many remain", more_n > 0
+              and str(more_n) in (pg.evaluate(TXT, "#psSheetMore") or ""), str(more_n))
+        pg.click("#psSheetMore")
+        pg.wait_for_timeout(200)
+        ids = pg.evaluate("Array.from(document.querySelectorAll('[data-ps-sheet-opt]')).map(b => b.dataset.psSheetOpt)")
+        check(f"{tag} More matches adds every remaining recommendation, each once, focus on the first added",
+              len(ids) == len(set(ids)) and pg.evaluate("document.getElementById('psSheetMore')") is None
+              and pg.evaluate("document.activeElement && document.activeElement.dataset.psSheetOpt") in ids, str(ids))
+        ranked = pg.evaluate("""() => ['gold','silver','bronze'].flatMap(t => (_resultsState.tierData[t] || []).map(m => m.id))""")
+        check(f"{tag} recommended alternatives keep sleep-fit order", [i for i in ids if i in ranked and i not in leads]
+              == [i for i in ranked if i in ids and i not in leads])
         state0 = pg.evaluate(STATE)
         alt = next(i for i in ids if i != fav and pg.evaluate(f"!(window._savedPicks || []).some(p => p.id === '{i}')"))
+        check(f"{tag} the mattress Apply says what it does", (pg.evaluate(TXT, "#psSheetApply") or "") in ("Apply", "Aplicar"))
         pg.click(f"[data-ps-sheet-opt='{alt}']")
         pg.wait_for_timeout(200)
         pv = pg.evaluate(TXT, "[data-ps-preview]") or ""
@@ -499,7 +723,10 @@ with sync_playwright() as p:
         check(f"{tag} Cancel leaves the purchase unchanged and focus on Change mattress",
               pg.evaluate(STATE) == state0 and pg.evaluate("document.activeElement.id") == "psChangeMattress")
         pg.click("#psChangeMattress")
+        if not pg.evaluate(f"!!document.querySelector(\"[data-ps-sheet-opt='{alt}']\")"):
+            pg.click("#psSheetMore")
         pg.click(f"[data-ps-sheet-opt='{alt}']")
+        check(f"{tag} the mattress Apply names the action", (pg.evaluate(TXT, "#psSheetApply") or "") in ("Choose this mattress", "Elegir este colchón"))
         pg.click("#psSheetApply")
         pg.wait_for_timeout(300)
         s1, st0 = json.loads(pg.evaluate(STATE)), json.loads(state0)
@@ -524,6 +751,33 @@ with sync_playwright() as p:
                  money_minor(pg.evaluate(TXT, "[data-ps='subtotal']")), money_minor(pg.evaluate(TXT, "[data-ps-big]")))
         check(f"{tag} switching language keeps plan, down payment and every figure", before == after, f"{before} {after}")
         pg.evaluate("async () => { await switchLanguage('" + lang + "'); }")
+        pg.wait_for_timeout(300)
+        # ---- Browse all matches, and the way back to the same purchase ----
+        state0 = pg.evaluate(STATE)
+        pg.click("#psChangeMattress")
+        pg.click("#psSheetBrowse")
+        pg.wait_for_timeout(400)
+        check(f"{tag} Browse all opens Results with a clear way back, the purchase untouched and nothing left inert",
+              pg.evaluate("document.getElementById('resultsScreen').classList.contains('active')")
+              and pg.evaluate("!document.getElementById('psReturnBar').hidden && !!document.getElementById('psReturnBtn')")
+              and pg.evaluate(STATE) == state0
+              and pg.evaluate("!document.getElementById('resultsScreen').closest('[inert]') && !document.getElementById('sessionUtility').hasAttribute('inert')"))
+        pg.click("#psReturnBtn")
+        pg.wait_for_timeout(500)
+        check(f"{tag} the way back lands on the priced sleep system with the same purchase",
+              pg.evaluate("document.getElementById('hf2Screen').classList.contains('active')")
+              and pg.evaluate("document.activeElement && document.activeElement.id") == "psTitle"
+              and pg.evaluate(STATE) == state0 and pg.evaluate("document.getElementById('psReturnBar').hidden") is True)
+        pg.click("#psChangeMattress")
+        pg.click("#psSheetBrowse")
+        pg.wait_for_timeout(300)
+        pg.evaluate("window.showSavedPicks()")
+        pg.wait_for_timeout(300)
+        pg.evaluate("window.showResults()")
+        pg.wait_for_timeout(300)
+        check(f"{tag} the way back is offered once: reaching the Summary by any route clears it",
+              pg.evaluate("document.getElementById('psReturnBar').hidden") is True)
+        pg.evaluate("window.showSavedPicks()")
         pg.wait_for_timeout(300)
         # ---- the same purchase on the other surfaces ----
         ref = pg.evaluate("psRefPlan().id")
