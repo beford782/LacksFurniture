@@ -12047,9 +12047,18 @@
       padding-top: 0.7rem; border-top: 1px solid var(--color-border); }
     .ps-center .ps-fig__value { font-size: 1.15rem; }
     .ps-center .ps-fig__label { font-size: 0.75rem; }
-    .ps-center .ps-fig__sub { font-size: 0.8rem; line-height: 1.35; }
+    .ps-center .ps-fig__sub { font-size: 0.875rem; line-height: 1.4; }
     /* total paid is the figure to read beside the monthly payment */
     .ps-center [data-ps-fig="cost"] .ps-fig__value { font-size: 1.3rem; }
+    /* Clearance for the fixed language/Restart bar: whatever focus or a
+       scroll brings into view in the studio stops BELOW the bar instead of
+       under it. The bar itself, its position and its touch handling are
+       unchanged. */
+    #purchaseStudio, #purchaseStudio button, #purchaseStudio input, #purchaseStudio summary,
+    #purchaseStudio [tabindex], #purchaseStudio .ps-center, #purchaseStudio .ps-confirm {
+      scroll-margin-top: calc(var(--session-utility-clearance, 84px) + 8px);
+      scroll-margin-bottom: 16px;
+    }
     .ps-details { margin: 0 0 1rem; border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-surface); }
     .ps-details__summary { min-height: 44px; display: flex; align-items: center; padding: 0 0.9rem; cursor: pointer;
       font: 600 0.9rem var(--font-sans); touch-action: manipulation; }

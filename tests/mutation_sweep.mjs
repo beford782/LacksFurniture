@@ -3601,6 +3601,13 @@ const MUTATIONS = [
   ["payment demo: the Change mattress sheet opens as a catalog wall",
     "if (_psSheet && _psSheet.more) add(m.id, false, false);",
     "add(m.id, false, false);", PAY_DEMO],
+  // Presentation closeout (2026-10-06): bar clearance and readable explanation size.
+  ["payment demo: focus brings studio controls into view under the language/Restart bar",
+    "      scroll-margin-top: calc(var(--session-utility-clearance, 84px) + 8px);\n      scroll-margin-bottom: 16px;",
+    "      scroll-margin-bottom: 16px;", PAY_DEMO],
+  ["payment demo: the total-paid explanation shrinks below a readable size",
+    ".ps-center .ps-fig__sub { font-size: 0.875rem; line-height: 1.4; }",
+    ".ps-center .ps-fig__sub { font-size: 0.8rem; line-height: 1.4; }", PAY_DEMO],
 ];
 
 // ---------------------------------------------------------------------------

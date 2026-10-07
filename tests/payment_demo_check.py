@@ -828,6 +828,27 @@ with sync_playwright() as p:
         small = pg.evaluate("""() => Array.from(document.querySelectorAll('#purchaseStudio button')).filter(b => {
           const r = b.getBoundingClientRect(); return r.width > 0 && (r.width < 44 || r.height < 44); }).length""")
         check(f"{tag} every studio control meets the 44px touch floor", small == 0, str(small))
+        # the fixed language/Restart bar: whatever focus brings into view in
+        # the studio stops below it, never under it
+        pg.click("[data-ps-plan='demo-9-99-72']")
+        pg.wait_for_timeout(150)
+        under = pg.evaluate("""() => { const bar = document.getElementById('sessionUtility').getBoundingClientRect();
+          const out = [];
+          for (const sel of ['#psChangeMattress', '[data-ps-plan="full"]', '[data-ps-plan="demo-9-99-72"]', '#psDownInput', '#psDetails summary']) {
+            const el = document.querySelector('#purchaseStudio ' + sel); if (!el) { out.push(sel + ':missing'); continue; }
+            window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY + 400);
+            // nearest-edge reveal (what Safari's focus scrolling and keyboard
+            // navigation do; Chromium's focus() would centre and hide a defect)
+            el.scrollIntoView({ block: 'nearest' });
+            const r = el.getBoundingClientRect();
+            if (r.top < bar.bottom) out.push(sel + ':' + Math.round(r.top) + '<' + Math.round(bar.bottom));
+          }
+          return out; }""")
+        check(f"{tag} a studio control revealed from above the viewport lands below the language/Restart bar", under == [], str(under))
+        tiny = pg.evaluate("""() => Array.from(document.querySelectorAll('#purchaseStudio *')).filter(e => e.children.length === 0
+          && e.offsetParent !== null && /\\$/.test(e.textContent) && parseFloat(getComputedStyle(e).fontSize) < 14)
+          .map(e => e.className + ' ' + getComputedStyle(e).fontSize)""")
+        check(f"{tag} no money figure or explanation in the studio is smaller than 14px", tiny == [], str(tiny))
         pg.click("#psChangeMattress")
         pg.wait_for_timeout(200)
         small = pg.evaluate("""() => Array.from(document.querySelectorAll('#psSheet button')).filter(b => {

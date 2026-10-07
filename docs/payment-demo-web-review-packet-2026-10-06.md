@@ -124,3 +124,6 @@ generated data; review its `_meta` and a few entries only.
   - Mutation sweep entries 837-856: 20/20 caught (11 new, 1 re-anchored).
   - Browser screenshots (Chromium, 1180x820 and 820x1180, EN and ES): no console
     errors, no horizontal overflow, no control under 44px.
+- Presentation closeout (the commit after `19cd889`): the studio's controls get a scroll margin, so anything brought into view stops below the fixed language/Restart bar; the total-paid explanation is 14px.
+  - `payment_demo_check` 332/332; contrast 196/196; Daybreak contract 88/88; mutation manifest 116/116; sweep 857-858 2/2 caught.
+  - The full mirror was not repeated (CSS and test only); its PASS belongs to `19cd889`.
