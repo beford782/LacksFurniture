@@ -317,7 +317,7 @@ def _esc(x):
 
 
 def operator_panel(state: str, addr: str, operator: dict) -> bytes:
-    """The demo state's OPERATOR area: a small 'Operator' tab (bottom-left)
+    """The demo state's OPERATOR area: a small 'Operator' tab (top-left)
     that opens the technical detail and the scenario loader. Customers see
     the app's own compact bilingual notice instead of a drill banner."""
     op = operator or {}
@@ -354,14 +354,24 @@ def operator_panel(state: str, addr: str, operator: dict) -> bytes:
         'document.addEventListener("click",go);document.addEventListener("touchend",go,{passive:false});'
         '})();</script>\n'
     )
+    # Placement: the TOP-LEFT corner of the band every screen already reserves
+    # for the app's own fixed language/Restart bar (--session-utility-clearance),
+    # centred on the bar's row. Measured clear of app controls at rest on every
+    # screen, both orientations and both languages; a bottom-left tab covered
+    # the last controls of the page. It stacks just above the bar (150) and
+    # below every app dialog (change sheet 2000, safety dialog 10002), so a
+    # dialog covers it as it covers the bar. The open panel scrolls inside
+    # itself rather than running off a portrait screen.
     html = (
-        '<details id="' + OPERATOR_ID + '" data-demo-operator style="position:fixed;left:10px;bottom:10px;'
-        'z-index:2147483646;max-width:min(92vw,380px);font:13px/1.4 system-ui,sans-serif;color:#2b2520;">'
+        '<details id="' + OPERATOR_ID + '" data-demo-operator style="position:fixed;left:8px;'
+        'top:calc(14px + env(safe-area-inset-top, 0px));'
+        'z-index:151;max-width:min(92vw,380px);font:13px/1.4 system-ui,sans-serif;color:#2b2520;">'
         '<summary style="list-style:none;cursor:pointer;display:inline-flex;align-items:center;min-height:44px;'
         'min-width:44px;padding:0 14px;border-radius:22px;background:rgba(43,37,32,.82);color:#fff;'
         'font-weight:600;letter-spacing:.02em;touch-action:manipulation;">Operator</summary>'
         '<div style="margin-top:8px;padding:12px 14px;border-radius:14px;background:#fbf8f2;'
-        'border:1px solid #d8cfbf;box-shadow:0 10px 30px rgba(0,0,0,.18);">'
+        'border:1px solid #d8cfbf;box-shadow:0 10px 30px rgba(0,0,0,.18);'
+        'max-height:calc(100dvh - 90px);overflow:auto;-webkit-overflow-scrolling:touch;">'
         + "".join('<p style="margin:0 0 6px">' + r + '</p>' for r in rows)
         + '<p style="margin:10px 0 2px;font-weight:700">Load a demo scenario</p>' + buttons
         + '<p style="margin:8px 0 0;color:#6b6157">Loading a scenario starts a new customer first.</p>'
@@ -1687,7 +1697,7 @@ def main(argv=None):
         print("PAYMENT DEMO (owner demo-first direction 2026-10-05). Prices: historical lacks.com")
         print("product pages observed 2026-10-03 plus ILLUSTRATIVE fills (marked with a diamond). Payments:")
         print("EXAMPLE plans (unverified) on the governed payment arithmetic - not a Lacks or lender offer. Not for")
-        print("showroom use; nothing is sent or saved. Open 'Operator' (bottom-left) to load a scenario.")
+        print("showroom use; nothing is sent or saved. Open 'Operator' (top-left) to load a scenario.")
     elif args.state == "payments":
         print("Every price shown is a FIXTURE placeholder; the payment figures are computed")
         print("from FIXTURE prices with the published factor. NOT a Lacks price or approval.")

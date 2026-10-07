@@ -127,3 +127,6 @@ generated data; review its `_meta` and a few entries only.
 - Presentation closeout (the commit after `19cd889`): the studio's controls get a scroll margin, so anything brought into view stops below the fixed language/Restart bar; the total-paid explanation is 14px.
   - `payment_demo_check` 332/332; contrast 196/196; Daybreak contract 88/88; mutation manifest 116/116; sweep 857-858 2/2 caught.
   - The full mirror was not repeated (CSS and test only); its PASS belongs to `19cd889`.
+- Harness Operator tab (the commit after `344a351`, `tools/serve_pricing_preview.py` only; `index.html` and production unchanged): moved from bottom-left to the top-left of the band the app reserves for its language/Restart bar. It stacks below every app dialog, and the opened panel scrolls within the screen.
+  - `payment_demo_check` 338/338; `pricing_harness_check` 656/656; mutation manifest 116/116; sweep 859-860 2/2 caught.
+  - The full mirror was not repeated.

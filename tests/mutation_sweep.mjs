@@ -3608,6 +3608,13 @@ const MUTATIONS = [
   ["payment demo: the total-paid explanation shrinks below a readable size",
     ".ps-center .ps-fig__sub { font-size: 0.875rem; line-height: 1.4; }",
     ".ps-center .ps-fig__sub { font-size: 0.8rem; line-height: 1.4; }", PAY_DEMO],
+  // Harness Operator tab placement (2026-10-06).
+  ["payment demo harness: the Operator tab sits back at the bottom-left over the page's last controls",
+    "style=\"position:fixed;left:8px;'\n        'top:calc(14px + env(safe-area-inset-top, 0px));'",
+    "style=\"position:fixed;left:8px;'\n        'bottom:10px;'", PAY_DEMO, "tools/serve_pricing_preview.py"],
+  ["payment demo harness: the Operator tab stacks above the app's own dialogs",
+    "'z-index:151;max-width:min(92vw,380px);",
+    "'z-index:2147483646;max-width:min(92vw,380px);", PAY_DEMO, "tools/serve_pricing_preview.py"],
 ];
 
 // ---------------------------------------------------------------------------

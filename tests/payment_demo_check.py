@@ -849,6 +849,51 @@ with sync_playwright() as p:
           && e.offsetParent !== null && /\\$/.test(e.textContent) && parseFloat(getComputedStyle(e).fontSize) < 14)
           .map(e => e.className + ' ' + getComputedStyle(e).fontSize)""")
         check(f"{tag} no money figure or explanation in the studio is smaller than 14px", tiny == [], str(tiny))
+        # the harness-only Operator tab rests where no app control is
+        OPCOVER = """() => { const t = document.querySelector('#dfDemoOperator summary').getBoundingClientRect();
+          return Array.from(document.querySelectorAll('button, a, input, select, summary, [role=button]'))
+            .filter(e => !e.closest('#dfDemoOperator') && e.getClientRects().length && getComputedStyle(e).visibility !== 'hidden')
+            .filter(e => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0
+              && !(r.right <= t.left || r.left >= t.right || r.bottom <= t.top || r.top >= t.bottom); })
+            .map(e => e.id || e.className || e.tagName); }"""
+        covered = []
+        for scr in ("window.showSavedPicks()", "window.showResults()"):
+            pg.evaluate(scr)
+            pg.wait_for_timeout(300)
+            for pos in ("0", "document.documentElement.scrollHeight"):   # the page's top and bottom resting places
+                pg.evaluate(f"window.scrollTo(0, {pos})")
+                pg.wait_for_timeout(100)
+                covered += pg.evaluate(OPCOVER)
+        pg.evaluate("window.showSavedPicks()")
+        pg.wait_for_timeout(300)
+        check(f"{tag} the Operator tab covers no app control at the top or bottom of the Summary and Results", covered == [], str(covered))
+        # every studio control the browser reveals - from below (bottom edge)
+        # or from above (top edge, below the bar's clearance) - is clear of it
+        revealed = pg.evaluate("""() => { const t = document.querySelector('#dfDemoOperator summary').getBoundingClientRect();
+          const out = [];
+          for (const e of Array.from(document.querySelectorAll('#purchaseStudio button, #purchaseStudio input, #purchaseStudio summary'))) {
+            if (!e.getClientRects().length || e.disabled) continue;
+            for (const below of [true, false]) {
+              const abs = e.getBoundingClientRect().top + window.scrollY;
+              window.scrollTo(0, below ? abs - window.innerHeight - 300 : abs + 500);
+              e.scrollIntoView({ block: 'nearest' });
+              const r = e.getBoundingClientRect();
+              if (!(r.right <= t.left || r.left >= t.right || r.bottom <= t.top || r.top >= t.bottom))
+                out.push((e.id || e.dataset.psPlan || e.dataset.psChange || e.className) + (below ? ' from below' : ' from above'));
+            }
+          }
+          return out; }""")
+        check(f"{tag} no studio control revealed at either screen edge lands under the Operator tab", revealed == [], str(revealed[:6]))
+        pg.evaluate("window.scrollTo(0, 0)")
+        pg.click("#psChangeMattress")
+        pg.wait_for_timeout(200)
+        # (an open sheet makes the tab inert, and hit-testing skips inert
+        # nodes, so the stacking order itself is what is compared)
+        check(f"{tag} the Operator tab stacks below the app's dialogs (change sheet, safety dialog)",
+              pg.evaluate("""() => { const z = (id) => parseInt(getComputedStyle(document.getElementById(id)).zIndex, 10);
+                return z('dfDemoOperator') < z('psSheetBackdrop') && z('dfDemoOperator') < z('sessionSafetyDialog'); }"""))
+        pg.click("#psSheetCancel")
+        pg.wait_for_timeout(150)
         pg.click("#psChangeMattress")
         pg.wait_for_timeout(200)
         small = pg.evaluate("""() => Array.from(document.querySelectorAll('#psSheet button')).filter(b => {
