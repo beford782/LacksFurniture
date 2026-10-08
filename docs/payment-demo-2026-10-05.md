@@ -295,14 +295,41 @@ fields.
 `--device` harness) at `d2cf9e9` and reported that it all worked. That is
 the owner's own report; no device-side details (orientation, connection
 route, VoiceOver) were recorded. **That acceptance covers the pre-usability-
-pass UI.** Neither the usability pass (`cf72980` onward) nor the pricing and
-payment refinement has been run on the device yet.
+pass UI.**
+
+2026-10-07: Blake ran a nine-step device checklist at `c070e23` (Safari, EN
+and ES, landscape and portrait) and reported that every step passed. The
+in-sheet language switch below came later and needs a device retest of
+steps 7-8 only.
+
+## In-sheet language switch (2026-10-07, Codex review of `c070e23`)
+
+Codex reproduced one should-fix issue: an open change sheet makes every body
+child inert, including the persistent language bar, so the customer could not
+switch language while keeping the sheet open. The existing check called
+`switchLanguage()` directly and missed it.
+
+- **Fix:** the sheet carries its own English/Español switch, following the
+  payment workspace's in-dialog pattern. It reuses `finWsSetLang`, the
+  `session.lang_*` and `pay.ws.lang_group` keys, and `.fin-ws-lang` styling.
+  It appears only when the retailer configures more than one language, and
+  `updateLanguageControls()` marks it at once.
+- **Unchanged:** background isolation (the bar stays inert under the sheet),
+  Restart, touch handling (`psBtn`), scoring, payment arithmetic, admission,
+  and the production gates.
+- **Regression:** `payment_demo_check` now taps the sheet's buttons in both
+  language orders. It checks that the pick, `aria-pressed`, focus and
+  isolation are kept, that the bar cannot be clicked under the sheet, and
+  that a single-language retailer gets no switch. Sweep entry 861 deletes the
+  switch and is caught.
 
 ## Review status
 
 - **Web review** (CLAUDE.md's terminal-plus-web pattern) **has not
   occurred.** The review packet is
   `docs/payment-demo-web-review-packet-2026-10-06.md`.
+- **Codex review** of `c070e23` (relayed by Blake, 2026-10-07): one
+  should-fix finding, fixed above.
 - **Agent reviews** (bounded, read-only) were completed and their findings
   resolved. They do not replace web review.
 

@@ -234,7 +234,7 @@ check("hostnames and public addresses are still refused",
 # ---- 4/5/6. rendered ------------------------------------------------------------
 print("Rendered studio:")
 try:
-    from playwright.sync_api import sync_playwright
+    from playwright.sync_api import sync_playwright, TimeoutError as PWTimeout
 except ImportError:
     print("  [FAIL] playwright is required")
     sys.exit(1)
@@ -662,12 +662,39 @@ with sync_playwright() as p:
               pg.evaluate("_psSheet !== null") and pg.evaluate("document.getElementById('sessionSafetyDialog').contains(document.activeElement)"))
         pg.evaluate("closeSafetyDialog()")
         pg.wait_for_timeout(150)
-        pg.evaluate("async () => { await switchLanguage('" + ("es" if lang == "en" else "en") + "'); }")
-        pg.wait_for_timeout(300)
-        pg.evaluate("async () => { await switchLanguage('" + lang + "'); }")
-        pg.wait_for_timeout(300)
-        check(f"{tag} the sheet stays open and isolated across a language switch",
-              pg.evaluate("document.getElementById('psSheet').hidden") is False and pg.evaluate("document.getElementById('hf2Screen').hasAttribute('inert')"))
+        # ---- the customer switches language FROM the open sheet, by tapping ----
+        # (Codex review of c070e23: the persistent bar is inert under the sheet,
+        # and calling switchLanguage() directly hid that.)
+        blocked = False
+        try:
+            pg.click("#sessionLang" + ("Es" if lang == "en" else "En"), timeout=1000)
+        except PWTimeout:
+            blocked = True
+        check(f"{tag} the persistent language bar stays unreachable beneath the open sheet", blocked
+              and pg.evaluate("document.documentElement.lang") == lang)
+        pg.click("[data-ps-sheet-opt='base-tempur-ergo']")
+        pg.wait_for_timeout(150)
+        ISOLATED = ("() => !document.getElementById('psSheet').hidden && document.getElementById('hf2Screen').hasAttribute('inert')"
+                    " && document.getElementById('sessionUtility').closest('[inert]') !== null"
+                    " && document.getElementById('psSheet').closest('[inert]') === null")
+        for to in (("es", "en") if lang == "en" else ("en", "es")):
+            bid = "psSheetLang" + ("En" if to == "en" else "Es")
+            pg.click("#" + bid)
+            pg.wait_for_function("(l) => document.documentElement.lang === l && _dictInstalledFor === l", arg=to, timeout=5000)
+            pg.wait_for_timeout(200)
+            check(f"{tag} tapping the sheet's {to.upper()} button switches language with the sheet open and isolated",
+                  pg.evaluate(ISOLATED) and pg.evaluate(TXT, "#psSheetCancel") == pg.evaluate("t('ps.cancel')")
+                  and pg.evaluate(TXT, ".ps-sheet__lang") is not None)
+            check(f"{tag} the {to.upper()} switch keeps the pick, marks the language and keeps focus on the tapped button",
+                  pg.evaluate("_psSheet && _psSheet.pick") == "base-tempur-ergo"
+                  and pg.evaluate("document.querySelector(\"#psSheet [data-ps-sheet-opt='base-tempur-ergo']\").getAttribute('aria-pressed')") == "true"
+                  and pg.evaluate("(id) => document.getElementById(id).getAttribute('aria-pressed')", bid) == "true"
+                  and pg.evaluate("document.activeElement && document.activeElement.id") == bid,
+                  str(pg.evaluate("document.activeElement && document.activeElement.id")))
+        check(f"{tag} a single-language retailer gets no language switch in the sheet",
+              pg.evaluate("""() => { const keep = STORE_CONFIG.languages; STORE_CONFIG.languages = ['en']; renderPsSheet();
+                const none = !document.querySelector('#psSheet .ps-sheet__lang'); STORE_CONFIG.languages = keep; renderPsSheet();
+                return none && !!document.querySelector('#psSheet .ps-sheet__lang'); }"""))
         pg.click("#psSheetCancel")
         pg.wait_for_timeout(150)
         check(f"{tag} closing restores exactly the prior inert state", pg.evaluate(INERT) == inert0, f"{inert0} vs {pg.evaluate(INERT)}")

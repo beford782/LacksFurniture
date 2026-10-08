@@ -12127,6 +12127,9 @@
       --ps-ink-accent: color-mix(in srgb, var(--store-primary) 28%, #2b1d00);
     }
     .ps-sheet__title { margin: 0 0 0.2rem; font: 400 1.5rem/1.2 var(--font-serif); }
+    .ps-sheet__head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 0.6rem 1rem; }
+    .ps-sheet__titles { flex: 1 1 14rem; min-width: 0; }
+    .ps-sheet__lang { flex: none; }
     .ps-sheet__list { list-style: none; margin: 0.8rem 0; padding: 0.15rem; display: grid; gap: 0.45rem;
       flex: 1 1 auto; min-height: 0; overflow: auto; -webkit-overflow-scrolling: touch; }
     .ps-sheet__foot { flex: 0 0 auto; padding-top: 0.6rem; border-top: 1px solid var(--color-border); }
@@ -16256,9 +16259,18 @@
         : all.filter(function (o) { return o.id === pick; })[0] || null;
       var canApply = !!(picked && !picked.current);
       var applyLabel = psApplyLabel(sm, pick, picked);
-      sheet.innerHTML = '<div class="ps-sheet__head"><h2 class="ps-sheet__title" id="psSheetTitle" tabindex="-1">' + escapeHtml(title) + '</h2>'
+      // The persistent language bar is inert beneath this modal, so the sheet
+      // carries its own switch (the payment workspace's pattern), offered
+      // only when this retailer configures more than one language.
+      var langs = (STORE_CONFIG && Array.isArray(STORE_CONFIG.languages)) ? STORE_CONFIG.languages : ['en'];
+      var langGroup = langs.length < 2 ? '' : '<div class="fin-ws-lang ps-sheet__lang" role="group" aria-label="'
+        + escapeHtml(t('pay.ws.lang_group')) + '">' + ['en', 'es'].filter(function (l) { return langs.indexOf(l) !== -1; }).map(function (l) {
+          return psBtn('id="psSheetLang' + (l === 'en' ? 'En' : 'Es') + '" data-lang="' + l + '" aria-pressed="' + (currentLang === l ? 'true' : 'false') + '"',
+            escapeHtml(t('session.lang_' + l)), 'window.finWsSetLang(\'' + l + '\')');
+        }).join('') + '</div>';
+      sheet.innerHTML = '<div class="ps-sheet__head"><div class="ps-sheet__titles"><h2 class="ps-sheet__title" id="psSheetTitle" tabindex="-1">' + escapeHtml(title) + '</h2>'
         + (sm.kind === 'mattress' && sm.size ? '<p class="ps-fine">' + escapeHtml(t('ps.sheet_size', { size: sm.size })) + '</p>' : '')
-        + '</div><ul class="ps-sheet__list">' + list + '</ul>'
+        + '</div>' + langGroup + '</div><ul class="ps-sheet__list">' + list + '</ul>'
         + '<div class="ps-sheet__foot"><div class="ps-sheet__preview" aria-live="polite">' + psPreviewHtml(sm, picked) + '</div>'
         + '<div class="ps-sheet__actions">'
         + psBtn('class="fin-btn fin-btn-primary" id="psSheetApply"' + (canApply ? '' : ' disabled'), escapeHtml(applyLabel), 'window.psSheetApply()')
@@ -19073,7 +19085,7 @@
     // the persistent utility bar. aria-pressed is the state; the styling only
     // mirrors it.
     function updateLanguageControls() {
-      var groups = document.querySelectorAll('.landing-lang-btn, .session-utility__lang');
+      var groups = document.querySelectorAll('.landing-lang-btn, .session-utility__lang, .ps-sheet__lang button');
       Array.prototype.forEach.call(groups, function(btn) {
         var isActive = btn.getAttribute('data-lang') === currentLang;
         btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');

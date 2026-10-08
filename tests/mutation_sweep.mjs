@@ -3615,6 +3615,10 @@ const MUTATIONS = [
   ["payment demo harness: the Operator tab stacks above the app's own dialogs",
     "'z-index:151;max-width:min(92vw,380px);",
     "'z-index:2147483646;max-width:min(92vw,380px);", PAY_DEMO, "tools/serve_pricing_preview.py"],
+  // In-sheet language switch (Codex review of c070e23, 2026-10-07).
+  ["payment demo: the change sheet drops its own language switch, stranding the customer behind the inert bar",
+    "+ '</div>' + langGroup + '</div><ul class=\"ps-sheet__list\">'",
+    "+ '</div></div><ul class=\"ps-sheet__list\">'", PAY_DEMO],
 ];
 
 // ---------------------------------------------------------------------------
