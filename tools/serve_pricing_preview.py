@@ -59,7 +59,9 @@ Guarantees:
   * responses carry Cache-Control: no-store;
   * every rendered price is a FIXTURE placeholder and says so in the
     assumptions and disclosures beside it. NOTHING here is a Lacks price,
-    approval, clearance or verification.
+    approval, clearance or verification. (Exception: `--state demo` serves
+    no per-price disclosure and no notice - Blake, 2026-10-12; its
+    illustrative prices carry the illustrative mark and a price-source line.)
 
 Run:  python tools/serve_pricing_preview.py --state available --port 8000
 Stop: Ctrl+C.
@@ -83,9 +85,11 @@ disabled (and dark). It is a separate mode, opt-in per run:
     served as `window.__DF_ALLOWED_HOSTS = ["<that address>"]` — the committed
     allowlist is never written, and the served page itself is served with a
     fixed NON-SHIPPING banner naming the drill state (the only edit to the
-    page, appended before </body> in memory);
+    page, appended before </body> in memory; `--state demo` carries the
+    Operator tab instead);
   * fixture data only: every price is the FIXTURE placeholder and says so in
-    the assumptions and disclosures beside it; the banner repeats it;
+    the assumptions and disclosures beside it; the banner repeats it
+    (`--state demo`: the illustrative mark and price-source line instead);
   * nothing can send: the served store-config keeps the committed blank
     gasUrl (the mode refuses to start otherwise), so the email screen stays
     in preview and no lead or email leaves the device; exactPromotionsEnabled
@@ -318,8 +322,9 @@ def _esc(x):
 
 def operator_panel(state: str, addr: str, operator: dict) -> bytes:
     """The demo state's OPERATOR area: a small 'Operator' tab (top-left)
-    that opens the technical detail and the scenario loader. Customers see
-    the app's own compact bilingual notice instead of a drill banner."""
+    that opens the technical detail and the scenario loader. No drill banner
+    and no demo notice: everyone in the room knows it is a demo (Blake,
+    2026-10-12); the illustrative mark and provenance line remain."""
     op = operator or {}
     rows = [
         "Non-shipping payment demo &middot; state <b>" + _esc(state) + "</b> &middot; " + _esc(addr),
@@ -385,7 +390,7 @@ def rehearsal_page(state: str, addr: str, operator: dict = None) -> bytes:
     page's own </body> (the last one — the domain lock's inline error page
     carries another). Device mode only; loopback mode serves the file.
     The demo state carries the operator area instead of the banner (the app
-    itself shows the bilingual illustrative notice)."""
+    marks illustrative prices and names its price and payment sources)."""
     with open(os.path.join(REPO, "index.html"), "rb") as f:
         raw = f.read()
     if state == "demo":
@@ -666,8 +671,11 @@ def review_sales_policies():
             "sourceUrl": "https://www.lacks.com/return-and-store-policies",
             "observedAt": "2026-10-03T20:46:31.131Z",
             "requiresProtector": True, "requiresPillow": True,
-            "title": {"en": "90-Day Comfort Promise (as published)",
-                      "es": "Promesa de Comodidad de 90 D\u00edas (seg\u00fan lo publicado)"},
+            # Labelled with the recorded capture date (observedAt) only: the
+            # page's own publication date is not recorded and nothing here is
+            # verified (status above).
+            "title": {"en": "90-Day Comfort Promise (from lacks.com, as captured Oct 3, 2026)",
+                      "es": "Promesa de Comodidad de 90 D\u00edas (de lacks.com, seg\u00fan la captura del 3 de oct. de 2026)"},
             "summary": {"en": "Lacks publishes a one-time comfort exchange for a new mattress, with conditions.",
                         "es": "Lacks publica un cambio \u00fanico por comodidad para un colch\u00f3n nuevo, con condiciones."},
             "conditions": [
@@ -689,10 +697,12 @@ def review_sales_policies():
             "pickupNoCharge": True,
             "pickupLabel": {"en": "Warehouse pickup", "es": "Recogida en almac\u00e9n"},
             "deliveryLabel": {"en": "Delivery and setup", "es": "Entrega e instalaci\u00f3n"},
-            "pickupNote": {"en": "Published as free from the central warehouse. Bring the sales contract and a matching photo ID.",
-                           "es": "Publicada como gratuita en el almac\u00e9n central. Lleva el contrato de venta y una identificaci\u00f3n con foto que coincida."},
-            "deliveryNote": {"en": "Full-service delivery with in-home setup is published; its charge is confirmed in store.",
-                             "es": "Se publica la entrega completa con instalaci\u00f3n en casa; su cargo se confirma en la tienda."},
+            # Same rule: the capture date (observedAt) leads, the captured
+            # wording follows unchanged.
+            "pickupNote": {"en": "As captured from lacks.com on Oct 3, 2026: published as free from the central warehouse. Bring the sales contract and a matching photo ID.",
+                           "es": "Seg\u00fan la captura de lacks.com del 3 de oct. de 2026: publicada como gratuita en el almac\u00e9n central. Lleva el contrato de venta y una identificaci\u00f3n con foto que coincida."},
+            "deliveryNote": {"en": "As captured from lacks.com on Oct 3, 2026: full-service delivery with in-home setup is published; its charge is confirmed in store.",
+                             "es": "Seg\u00fan la captura de lacks.com del 3 de oct. de 2026: se publica la entrega completa con instalaci\u00f3n en casa; su cargo se confirma en la tienda."},
         },
     }
 
@@ -764,8 +774,8 @@ def review_financing_fresh(fin, start: datetime) -> bool:
 # computed through the app's governed methods. Everything is assembled in
 # memory; nothing here may enter incoming/, data/ or the workbook
 # (tests/payment_demo_check.py locks that). Every internal approval stamp says
-# ILLUSTRATIVE DEMO; the customer sees the demo notice and the provenance
-# lines, never an approval claim.
+# ILLUSTRATIVE DEMO; the customer sees the illustrative mark and the
+# provenance lines, never an approval claim.
 DEMO_DIR = os.path.join(REPO, "demo", "payment-demo")
 DEMO_CONFIG = os.path.join(DEMO_DIR, "demo.json")
 DEMO_PRICES = os.path.join(DEMO_DIR, "illustrative-prices.json")
@@ -900,10 +910,10 @@ def demo_presentation(demo):
             {"id": "size", "en": "Priced for the size selected in this consultation.",
              "es": "Precio para el tamaño seleccionado en esta consulta."},
         ],
-        # Short beside every price; the full notice leads the purchase studio.
-        "disclosures": [
-            {"id": "demo", "en": demo["priceNote"]["en"], "es": demo["priceNote"]["es"]},
-        ],
+        # No per-price demo note: everyone in the room knows this is a demo
+        # (Blake, 2026-10-12). The illustrative mark and the provenance line
+        # still identify the illustrative prices.
+        "disclosures": [],
         "states": {
             "price-unavailable": {"en": "Price unavailable", "es": "Precio no disponible"},
             "quote-only": {"en": "Quote in store", "es": "Cotización en tienda"},
@@ -1708,7 +1718,7 @@ def main(argv=None):
     print(f"  URL:            {url}")
     if args.device is not None:
         print("  DEVICE REHEARSAL: open that URL in a Safari TAB on an iPad on the same private")
-        print("  network. " + ("The page carries the demo notice and an 'Operator' tab; "
+        print("  network. " + ("The page carries an 'Operator' tab (no demo notice); "
                             if args.state == "demo" else "The page carries a NON-SHIPPING banner; ")
               + "the domain-lock allowlist")
         print("  is served in memory for this address only; gasUrl is blank (nothing sends);")

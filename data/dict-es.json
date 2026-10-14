@@ -416,6 +416,7 @@
   "pay.fx.basis_example": "Cómo se calcula este ejemplo: el pago es el {pct}% de la compra cada mes, redondeado al siguiente dólar entero, según este plan de ejemplo ilustrativo. El redondeo puede hacer que el último pago sea menor, por lo que los totales mostrados son máximos.",
   "pay.fx.basis_equal_example": "Cómo se calcula este ejemplo: la compra dividida en {n} pagos mensuales iguales, cada uno redondeado al siguiente dólar entero, para este plan de ejemplo ilustrativo. El redondeo puede hacer que el último pago sea menor, por lo que los totales mostrados son máximos.",
   "ps.sheet_intro": "Planes de ejemplo calculados para esta compra (subtotal de mercancía {amount}):",
+  "ps.sheet_rounding": "Los pagos mensuales de ejemplo se redondean a dólares enteros cuando hace falta. Los totales mostrados suponen que cada pago mensual es esa cantidad. Los totales marcados “hasta” son límites máximos; el total final puede ser menor. El redondeo puede hacer que el límite máximo de un ejemplo con 0% APR supere el precio de compra sin agregar intereses. No incluye impuestos, entrega ni instalación.",
   "ps.sheet_go": "Ver la comparación completa de pagos",
   "ps.selected_mattress": "Tu colchón seleccionado",
   "ps.change_mattress": "Cambiar colchón",

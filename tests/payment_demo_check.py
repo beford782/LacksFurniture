@@ -320,8 +320,12 @@ with sync_playwright() as p:
         if lang == "es":
             pg.evaluate("async () => { await switchLanguage('es'); }")
             pg.wait_for_timeout(300)
-        notice = pg.evaluate(TXT, "#purchaseStudio .ps-notice")
-        check(f"{tag} the bilingual demo notice shows", notice == demo_cfg["notice"][lang], notice)
+        # No demo notice box (Blake, 2026-10-12: everyone in the room knows
+        # it is a demo); the illustrative mark and provenance line remain.
+        body = pg.evaluate("document.body.innerText")
+        check(f"{tag} no demo notice box renders anywhere",
+              pg.evaluate("document.querySelectorAll('.ps-notice').length") == 0
+              and demo_cfg["notice"][lang] not in body)
         # ---- one authoritative purchase presentation ----
         check(f"{tag} the Summary's separate finalist hero and Sleep System list yield to the one purchase view",
               pg.evaluate("getComputedStyle(document.getElementById('hf2FinalistHero')).display") == "none"
@@ -708,6 +712,95 @@ with sync_playwright() as p:
         allowed = pg.evaluate("Object.keys(ACCESSORY_REASON_COPY).map(k => accessoryReasonText(k))")
         check(f"{tag} accessory reasons come only from the stored answer-matched keys",
               rows_why and all(w in allowed for w in rows_why), str(rows_why))
+        # ---- review fixes after d395c8a: honest notes, rounding explained, matched reasons only ----
+        dict_lang = json.loads(_read(f"data/dict-{lang}.json"))
+        live_notes = pg.evaluate("pricingCopyList('disclosures')")
+        body = pg.evaluate("document.body.innerText")
+        check(f"{tag} no per-price demo note (Blake, 2026-10-12); the illustrative mark stays",
+              live_notes == [] and "priceNote" not in json.loads(_read("demo/payment-demo/demo.json"))
+              and ("Demo price" not in body and "Precio de demostración" not in body)
+              and pg.evaluate("typeof psMark === 'function' && psMark(true).indexOf('ps-illus') !== -1"),
+              json.dumps(live_notes, ensure_ascii=False))
+        prev_plan, prev_down = pg.evaluate("[_psPlan, _psDownRaw]")
+        pg.click("[data-ps-plan='demo-0-24']")
+        pg.click("[data-ps-down='500']")
+        pg.wait_for_timeout(150)
+        bih_round = pg.evaluate(r"""() => { const plans = getFinancingConfig().plans.filter(p => p.demo === true);
+          const d = document.createElement('div'); d.innerHTML = psSheetDemoPanel(plans);
+          const e = d.querySelector('[data-ps="bih-rounding"]'); const row = d.querySelector('[data-ps-sheet-plan="demo-0-24"]');
+          return { note: e ? e.textContent : null, row: row ? row.textContent : null,
+                   sub: buildConsultationQuote('handoff', answers.mattress_size).merchandiseMinor }; }""")
+        check(f"{tag} Bring It Home explains whole-dollar rounding and upper bounds beneath its example totals",
+              bih_round["note"] == dict_lang["ps.sheet_rounding"], str(bih_round["note"])[:120])
+        check(f"{tag} the explained case is real: a 0% plan's up-to total with $500 down sits above the purchase price",
+              (total_paid_in(bih_round["row"]) or 0) > bih_round["sub"], str(bih_round)[:200])
+        # Put one illustrative price in the purchase through the change sheet
+        # (swapped back below), so the take-home mark probe is never vacuous.
+        swap = pg.evaluate(r"""() => { for (const id of Object.keys(window._accCart || {})) {
+            const step = psStepOf(psAccessory(id)); const sm = psAccessorySheet(step, id);
+            const o = (sm.options || []).find(x => x.id !== id && x.priced && x.illustrative);
+            if (o) return { from: id, to: o.id }; } return null; }""")
+        check(f"{tag} the purchase has an accessory with an illustrative alternative to probe the mark", swap is not None)
+        if swap:
+            pg.click(f"[data-ps-change='{swap['from']}']")
+            pg.click(f"[data-ps-sheet-opt='{swap['to']}']")
+            pg.click("#psSheetApply")
+            pg.wait_for_timeout(200)
+        # No notice and no per-price note on Bring It Home or the take-home
+        # either (Blake, 2026-10-12); the take-home marks exactly the
+        # illustrative prices with the Summary's mark and names its source.
+        nn = pg.evaluate(r"""() => { const plans = getFinancingConfig().plans.filter(p => p.demo === true);
+          const m = purchaseStudioFor(); const th = psTakeHomeRow();
+          const bih = psSheetDemoPanel(plans);
+          const tx = (h) => { const d = document.createElement('div'); d.innerHTML = h; return d.textContent; };
+          const rows = [m.mattress].concat(m.lines);
+          return { notice: L(STORE_CONFIG.illustrativeDemo.notice), src: m.priceSource, mark: PS_ILLUS_MARK,
+                   bihHtml: bih, bihText: tx(bih), thText: tx(th.detail) + ' ' + th.items.join(' '),
+                   thDetail: tx(th.detail), items: th.items,
+                   illus: rows.map(x => !!(x.priced && x.illustrative)), anyIllus: rows.some(x => x.priced && x.illustrative) }; }""")
+        for where, html, text in (("Bring It Home", nn["bihHtml"], nn["bihText"]), ("take-home", "", nn["thText"])):
+            check(f"{tag} {where} carries no demo notice and no per-price demo note",
+                  "ps-notice" not in html and nn["notice"] not in text
+                  and "Demo price" not in text and "Precio de demostración" not in text, text[:200])
+        check(f"{tag} the scenario has an illustrative price to mark (the take-home probe is not vacuous)", nn["anyIllus"], str(nn["illus"]))
+        check(f"{tag} the take-home marks exactly the illustrative prices with the Summary's mark",
+              [it.endswith(" " + nn["mark"]) for it in nn["items"]] == nn["illus"], json.dumps(nn["items"], ensure_ascii=False))
+        check(f"{tag} the take-home names the price source that explains the mark (only when a price carries it)",
+              (nn["src"] in nn["thDetail"]) == nn["anyIllus"] and nn["mark"] in nn["src"], nn["thDetail"][-160:])
+        if swap:
+            pg.click(f"[data-ps-change='{swap['to']}']")
+            pg.click(f"[data-ps-sheet-opt='{swap['from']}']")
+            pg.click("#psSheetApply")
+            pg.wait_for_timeout(200)
+            nn2 = pg.evaluate("() => { const th = psTakeHomeRow(); return { cart: Object.keys(window._accCart || {}), detail: th.detail }; }")
+            check(f"{tag} swapping back restores the purchase; with no illustrative price the take-home names no price source",
+                  swap["from"] in nn2["cart"] and swap["to"] not in nn2["cart"]
+                  and (nn["src"] in nn2["detail"]) == pg.evaluate("[purchaseStudioFor().mattress].concat(purchaseStudioFor().lines).some(x => x.priced && x.illustrative)"),
+                  json.dumps(nn2, ensure_ascii=False)[:200])
+        policies = pg.evaluate("STORE_CONFIG.salesPolicies")
+        cap = {"en": "Oct 3, 2026", "es": "3 de oct. de 2026"}[lang]
+        check(f"{tag} the Comfort Promise and fulfillment notes carry the recorded capture date, not a publication date",
+              policies["comfortPromise"]["observedAt"].startswith("2026-10-03")
+              and policies["fulfillment"]["observedAt"].startswith("2026-10-03")
+              and all(cap in s[lang] and "captur" in s[lang] for s in (policies["comfortPromise"]["title"],
+                      policies["fulfillment"]["pickupNote"], policies["fulfillment"]["deliveryNote"]))
+              and "(as published)" not in policies["comfortPromise"]["title"]["en"],
+              json.dumps(policies["comfortPromise"]["title"], ensure_ascii=False))
+        reasons = pg.evaluate(r"""() => { const scored = {}; scoreAccessoriesFromAnswers().forEach(s => { scored[s.id] = s; });
+          const tgt = Object.keys(window._accCart || {}).find(id => psStepOf(psAccessory(id)) === 'base') || '';
+          const sm = psAccessorySheet('base', tgt);
+          return (sm.options || []).map(o => ({ id: o.id, reason: o.reason || '', matched: !!(scored[o.id] && scored[o.id].matched),
+                                               first: scored[o.id] ? scored[o.id].reasons[0] : '' })); }""")
+        check(f"{tag} the change sheet keeps a matched accessory's reason and shows no generic line for an unmatched one",
+              any(r["matched"] for r in reasons) and any(not r["matched"] for r in reasons)
+              and all((r["reason"] == r["first"]) if r["matched"] else r["reason"] == "" for r in reasons),
+              json.dumps(reasons, ensure_ascii=False)[:300])
+        # restore the plan and down payment the later checks build on
+        pg.fill("#psDownInput", prev_down or "")
+        pg.click(f"[data-ps-plan='{prev_plan}']")
+        pg.wait_for_timeout(120)
+        check(f"{tag} the review-fix probes leave the purchase exactly as they found it",
+              pg.evaluate("[_psPlan, _psDownRaw]") == [prev_plan, prev_down], str(pg.evaluate("[_psPlan, _psDownRaw]")))
         # ---- Change mattress: always there, preview, cancel, apply ----
         other = pg.evaluate("(window._savedPicks || []).map(p => p.id).filter(id => id !== window._favoriteMattressId)[0]")
         pg.evaluate("(id) => window._toggleSavePick(id)", other)   # leave ONE saved mattress

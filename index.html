@@ -11805,16 +11805,6 @@
       color: var(--color-text);
     }
     .ps-purchase { margin-top: 0.4rem; }
-    .ps-notice {
-      margin: 0.35rem 0 0;
-      max-width: 640px;
-      padding: 0.45rem 0.8rem;
-      border-radius: 999px;
-      border: 1px solid color-mix(in srgb, var(--store-primary) 55%, transparent);
-      background: color-mix(in srgb, var(--store-primary) 9%, transparent);
-      font: 500 0.8rem/1.35 var(--font-sans);
-      color: var(--color-text);
-    }
     .ps-layout {
       display: grid;
       grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
@@ -11968,7 +11958,6 @@
     .ps-fig__value { font: 700 1.15rem/1.25 var(--font-sans); font-variant-numeric: tabular-nums; color: var(--color-text); }
     .ps-fig__sub { font-size: 0.78rem; color: var(--color-text-muted); }
     .ps-sheet { display: flex; flex-direction: column; gap: 0.6rem; }
-    .ps-sheet .ps-notice { align-self: flex-start; }
     .ps-sheet__plans { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.45rem; }
     .ps-sheet__plan { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.15rem 1rem; align-items: baseline;
       padding: 0.6rem 0.75rem; border: 1px solid var(--color-border); border-radius: 10px; }
@@ -11992,7 +11981,6 @@
         outline: 3px solid Highlight;
         outline-offset: -3px;
       }
-      .ps-notice { border: 1px solid CanvasText; }
     }
 
     /* ----- Purchase studio, usability pass (2026-10-06): one purchase, one
@@ -15158,7 +15146,8 @@
     //      can create it.
     //   2. a VALIDATED demo configuration (STORE_CONFIG.illustrativeDemo,
     //      contract payment-demo/1) carrying the SAME nonce, a blank gasUrl and
-    //      the bilingual notices.
+    //      the bilingual notice, price-source and payment-source copy (the
+    //      notice is required but no longer displayed - Blake, 2026-10-12).
     // The boundary this enforces is between the normal served build and the
     // harness demonstration. It is not protection against someone editing
     // client-side code, which no browser-side check can be.
@@ -15643,7 +15632,9 @@
       var reasons = {};
       try {
         (typeof scoreAccessoriesFromAnswers === 'function' ? scoreAccessoriesFromAnswers() : []).forEach(function (s) {
-          if (s && s.id && Array.isArray(s.reasons) && s.reasons.length) reasons[s.id] = s.reasons[0];
+          // Only an answer-specific reason: an unmatched item's generic
+          // "standard" line is not a personal reason, so it shows none.
+          if (s && s.id && s.matched === true && Array.isArray(s.reasons) && s.reasons.length) reasons[s.id] = s.reasons[0];
         });
       } catch (e) { reasons = {}; }
       var build = function (c2) {
@@ -15713,7 +15704,7 @@
       var demo = ctx.demo, size = ctx.size, fmt = ctx.fmt, q = ctx.q, complete = ctx.complete, merch = ctx.merch;
       var down = ctx.down, plans = ctx.plans, sel = ctx.sel, downMinor = ctx.downMinor;
       var downUsable = ctx.downUsable, downBad = ctx.downBad, payNow = ctx.payNow;
-      if (!q.finalist) return { show: true, empty: true, notice: L(demo.notice) || '' };
+      if (!q.finalist) return { show: true, empty: true };
 
       // ---- the selected mattress and its size -----------------------------------
       var mLine = q.lines.filter(function (l) { return l.kind === 'mattress'; })[0] || null;
@@ -15817,7 +15808,7 @@
         result = { kind: 'quote', label: L(ctx.quoteById[_psPlan].headline) || '' };
       }
       return {
-        show: true, empty: false, notice: L(demo.notice) || '',
+        show: true, empty: false,
         priceSource: L(demo.priceSource) || '', paymentSource: L(demo.paymentSource) || '',
         size: size || '', sizeLabel: size ? sizeLabelFor(size) : '', sizes: sizes,
         mattress: mattress, lines: lines, steps: steps,
@@ -15844,9 +15835,10 @@
       return '<button type="button" ' + attrs + ' onclick="' + action + '" '
         + 'ontouchend="event.preventDefault();' + action + ';">' + label + '</button>';
     }
+    var PS_ILLUS_MARK = '◇';
     function psMark(on) {
       return on ? ' <span class="ps-illus" title="' + escapeHtml(t('ps.illustrative_mark')) + '" aria-label="'
-        + escapeHtml(t('ps.illustrative_mark')) + '">◇</span>' : '';
+        + escapeHtml(t('ps.illustrative_mark')) + '">' + PS_ILLUS_MARK + '</span>' : '';
     }
     function psImg(src, cls) {
       return src ? '<img class="' + cls + '" src="' + escapeHtml(src) + '" alt="" loading="lazy" decoding="async">' : '';
@@ -16108,8 +16100,7 @@
       }, 0);
       if (m.empty) {
         if (hero) hero.style.display = '';
-        box.innerHTML = '<p class="ps-notice">' + escapeHtml(m.notice) + '</p><p class="ps-note">'
-          + escapeHtml(t('ps.choose_first')) + '</p>';
+        box.innerHTML = '<p class="ps-note">' + escapeHtml(t('ps.choose_first')) + '</p>';
         return;
       }
       // ONE presentation of the selected purchase: the Summary's separate
@@ -16135,8 +16126,7 @@
         return;
       }
       box.innerHTML = '<div class="ps-head"><span class="ps-kicker">' + escapeHtml(t('ps.kicker')) + '</span>'
-        + '<h2 class="ps-title" id="psTitle" tabindex="-1">' + escapeHtml(t('ps.title')) + '</h2>'
-        + '<p class="ps-notice" role="note">' + escapeHtml(m.notice) + '</p></div>'
+        + '<h2 class="ps-title" id="psTitle" tabindex="-1">' + escapeHtml(t('ps.title')) + '</h2></div>'
         + '<div class="ps-layout"><div class="ps-col ps-col--main" id="psMainBox">' + psPurchaseHtml(m) + '</div>'
         + '<div class="ps-col ps-col--pay">'
         // Not a live region: a repaint per keystroke must not re-read the
@@ -16475,10 +16465,19 @@
     function psTakeHomeRow() {
       var m = (typeof purchaseStudioFor === 'function') ? purchaseStudioFor() : { show: false };
       if (!m.show || m.empty) return null;
+      // Plain text (the packet renderer escapes items): an illustrative price
+      // carries the same mark as on the Summary, and the price-source line
+      // that explains the mark follows the totals. No notice, no per-price note.
+      var anyIllus = false;
+      var priced = function (on, amount) {
+        if (!on) return amount;
+        anyIllus = true;
+        return amount + ' ' + PS_ILLUS_MARK;
+      };
       var items = [m.mattress.name + (m.sizeLabel ? ' (' + m.sizeLabel + ')' : '') + ' '
-        + (m.mattress.priced ? m.mattress.price : t('ps.no_price'))].concat(m.lines.map(function (l) {
+        + (m.mattress.priced ? priced(m.mattress.illustrative, m.mattress.price) : t('ps.no_price'))].concat(m.lines.map(function (l) {
         return l.name + (l.size ? ' (' + l.size + ')' : '') + (l.qty > 1 ? ' × ' + l.qty : '')
-          + ' ' + (l.priced ? l.ext : t('ps.no_price'));
+          + ' ' + (l.priced ? priced(l.illustrative, l.ext) : t('ps.no_price'));
       }));
       var parts = [t('ps.subtotal') + ': ' + (m.complete ? m.subtotal : t('ps.incomplete'))];
       var r = m.result;
@@ -16493,7 +16492,7 @@
       } else if (r.kind === 'full' && m.complete) {
         parts.push(t('ps.th_full', { amount: m.subtotal }));
       }
-      parts.push(m.notice);
+      if (anyIllus && m.priceSource) parts.push(m.priceSource);
       // present:false - the recap reads "- in store": the priced system is
       // shown here, never added to the email (sendResults does not read it).
       return { present: false, title: escapeHtml(t('ps.th_title')), detail: escapeHtml(parts.join(' · ')), items: items };
@@ -16508,8 +16507,7 @@
       var m = purchaseStudioFor();
       if (!m.show) return '';
       var ids = plans.map(function (pl) { return pl.id; });
-      var html = '<div class="ps-sheet" data-ps-sheet>'
-        + '<p class="ps-notice" role="note">' + escapeHtml(m.notice) + '</p>';
+      var html = '<div class="ps-sheet" data-ps-sheet>';
       if (m.empty || !m.complete) {
         html += '<p class="fin-offer__detail">' + escapeHtml(t('ps.needs_complete')) + '</p>';
       } else {
@@ -16517,9 +16515,11 @@
           // A down payment applies to every plan alike: said once.
           + (m.down.amount && m.down.applies ? '<p class="fin-offer__detail" data-ps="bih-down">' + escapeHtml(t('ps.cmp_down_note', { amount: m.down.amount })) + '</p>' : '')
           + '<ul class="ps-sheet__plans">';
+        var anyFigure = false;
         m.cards.filter(function (c) { return c.kind === 'calc' && ids.indexOf(c.id) !== -1; }).forEach(function (c) {
           // The Summary's own card figures (total paid includes any down
           // payment).
+          if (c.monthly) anyFigure = true;
           html += '<li class="ps-sheet__plan" data-ps-sheet-plan="' + escapeHtml(c.id) + '">'
             + '<span class="ps-sheet__label">' + escapeHtml(t('ps.cmp_terms', { n: c.term, apr: c.apr })) + '</span>'
             + (c.monthly
@@ -16530,7 +16530,12 @@
               : '<span class="ps-sheet__sub">' + escapeHtml(t(psStateKey(c.state))) + '</span>')
             + '</li>';
         });
-        html += '</ul><p class="fin-offer__disclosure">' + escapeHtml(m.paymentSource) + '</p>';
+        // Whole-dollar rounding explained where the totals are shown: an
+        // "up to" total is an upper bound, which is why a 0% plan's total can
+        // sit above the purchase price without any interest.
+        html += '</ul>'
+          + (anyFigure ? '<p class="fin-offer__detail" data-ps="bih-rounding">' + escapeHtml(t('ps.sheet_rounding')) + '</p>' : '')
+          + '<p class="fin-offer__disclosure">' + escapeHtml(m.paymentSource) + '</p>';
       }
       return html + psBtn('class="fin-btn fin-btn-primary ps-sheet__go" id="psSheetGo"',
         escapeHtml(t('ps.sheet_go')), 'window.psOpenStudio()') + '</div>';

@@ -298,9 +298,10 @@ route, VoiceOver) were recorded. **That acceptance covers the pre-usability-
 pass UI.**
 
 2026-10-07: Blake ran a nine-step device checklist at `c070e23` (Safari, EN
-and ES, landscape and portrait) and reported that every step passed. The
-in-sheet language switch below came later and needs a device retest of
-steps 7-8 only.
+and ES, landscape and portrait) and reported that every step passed. Steps
+7-8 were retested on the device at `d395c8a` (the in-sheet language switch
+below) and Blake reported that they passed. The web-review fixes below
+(after `d395c8a`) have not been run on the device.
 
 ## In-sheet language switch (2026-10-07, Codex review of `c070e23`)
 
@@ -317,16 +318,62 @@ switch language while keeping the sheet open. The existing check called
 - **Unchanged:** background isolation (the bar stays inert under the sheet),
   Restart, touch handling (`psBtn`), scoring, payment arithmetic, admission,
   and the production gates.
-- **Regression:** `payment_demo_check` now taps the sheet's buttons in both
-  language orders. It checks that the pick, `aria-pressed`, focus and
+- **Regression:** `payment_demo_check` now clicks the sheet's buttons (mouse,
+  in Chromium) in both language orders. It checks that the pick, `aria-pressed`, focus and
   isolation are kept, that the bar cannot be clicked under the sheet, and
   that a single-language retailer gets no switch. Sweep entry 861 deletes the
   switch and is caught.
 
+## Web-review fixes (2026-10-08, after `d395c8a`)
+
+Web review of `d395c8a` (relayed by Blake) and a read-only browser check
+found four customer-facing items. Blake approved implementing them
+("Yes, run as written"). No scoring, payment arithmetic, admission,
+production validator, session, `gasUrl` or activation change.
+
+- **Price note** (`demo.json`), which read as if Lacks had confirmed each
+  illustrative price: now "Demo price, illustrative. Lacks confirms final
+  prices." / "Precio de demostración, ilustrativo. Lacks confirma los precios
+  finales."
+  **Superseded the same day (Blake, 2026-10-12, after the iPad pass of this
+  note):** the per-price note and the demo notice box are both removed from
+  the screens (purchase studio, Bring It Home panel, take-home preview), "all
+  parties know it is a demo and not live". `demo.json` no longer carries
+  `priceNote`; the harness serves no pricing disclosure. The ◇ illustrative
+  mark and the price/payment provenance lines stay. The `notice` text stays in
+  `demo.json` because demo admission requires it; it is not rendered.
+  Review follow-up (Blake, 2026-10-12): the take-home preview's price line
+  now carries the same ◇ on each illustrative price, and the price-source line
+  that explains the mark follows its totals only when a ◇ appears. Still no
+  notice and no per-price note. `payment_demo_check` covers the notice's
+  absence on the Summary, Bring It Home and the take-home, swaps in a real
+  illustrative accessory to prove the take-home mark (then swaps it back), and
+  sweep entries 865-870 reinstate each removed notice or drop the mark or
+  source line.
+- **Bring It Home rounding.** With $500 down, a 0% example showed a total
+  above the purchase price beside "Interest: none" with no explanation. The
+  panel now carries `ps.sheet_rounding` beneath its plans: whole-dollar
+  rounding, totals marked "up to" are upper bounds, the final total may be
+  lower, and rounding is not interest. It makes no promise about a final
+  payment; the demo does not calculate one.
+- **Policy capture dates.** The Comfort Promise title and the pickup and
+  delivery notes (harness data only) now name their recorded capture date
+  (`observedAt`, Oct 3, 2026). Nothing records a publication date, and
+  nothing is verified (`review-only-pending-retailer-approval`).
+- **Matched reasons only.** The accessory change sheet no longer shows the
+  generic "standard" line for an item no answer matched; matched reasons are
+  kept.
+
+Dismissed after evidence: the basis note's "of the purchase" wording (it
+renders only where the amount used is the full purchase), and the suspected
+studio / Bring It Home / comparison payment mismatch (identical figures at
+$0 and $500 down; the comparison shows no Demo figures). Future risk: the
+quantity limit table is duplicated three times in `index.html`.
+
 ## Review status
 
-- **Web review** (CLAUDE.md's terminal-plus-web pattern) **has not
-  occurred.** The review packet is
+- **Web review** of `d395c8a` (relayed by Blake, 2026-10-08): no blockers;
+  the confirmed items are fixed above. Earlier review sets:
   `docs/payment-demo-web-review-packet-2026-10-06.md`.
 - **Codex review** of `c070e23` (relayed by Blake, 2026-10-07): one
   should-fix finding, fixed above.

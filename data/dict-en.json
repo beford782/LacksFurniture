@@ -416,6 +416,7 @@
   "pay.fx.basis_example": "How this example is made: the payment is {pct}% of the purchase each month, rounded up to the next whole dollar, as set for this illustrative example plan. Rounding can make the last payment lower, so the totals shown are maximums.",
   "pay.fx.basis_equal_example": "How this example is made: the purchase divided into {n} equal monthly payments, each rounded up to the next whole dollar, for this illustrative example plan. Rounding can make the last payment lower, so the totals shown are maximums.",
   "ps.sheet_intro": "Example plans calculated for this purchase ({amount} merchandise subtotal):",
+  "ps.sheet_rounding": "Example monthly payments are rounded up to whole dollars when needed. Displayed totals assume every monthly payment is that amount. Totals marked “up to” are upper bounds; the final total may be lower. Rounding can make a 0% APR example’s upper bound exceed the purchase price without adding interest. Tax, delivery and setup are not included.",
   "ps.sheet_go": "See the full payment comparison",
   "ps.selected_mattress": "Your selected mattress",
   "ps.change_mattress": "Change mattress",
