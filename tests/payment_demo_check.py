@@ -621,6 +621,24 @@ with sync_playwright() as p:
         pg.click("#psSheetApply")
         pg.wait_for_timeout(250)
         check(f"{tag} and back again: still two", pg.evaluate("window._accCart['pillow-gel-memory'].quantity") == 2)
+        # ---- the quantity stepper keeps the keyboard user in place ----
+        QB = "#purchaseStudio [data-ps-qty='pillow-gel-memory'][data-ps-delta='{}']"
+        FOC = "document.activeElement && document.activeElement.getAttribute('data-ps-delta')"
+        pg.focus(QB.format(1))
+        pg.keyboard.press("Enter")
+        pg.wait_for_timeout(100)
+        check(f"{tag} quantity +: focus stays on + after the repaint",
+              pg.evaluate("window._accCart['pillow-gel-memory'].quantity") == 3 and pg.evaluate(FOC) == "1")
+        pg.keyboard.press("Enter")
+        pg.wait_for_timeout(100)
+        check(f"{tag} quantity at its limit: + is disabled and focus moves to -, not <body>",
+              pg.evaluate("window._accCart['pillow-gel-memory'].quantity") == 4
+              and pg.is_disabled(QB.format(1)) and pg.evaluate(FOC) == "-1", str(pg.evaluate(FOC)))
+        pg.keyboard.press("Enter")
+        pg.keyboard.press("Enter")
+        pg.wait_for_timeout(100)
+        check(f"{tag} quantity -: focus stays on - and the count is back to two",
+              pg.evaluate("window._accCart['pillow-gel-memory'].quantity") == 2 and pg.evaluate(FOC) == "-1")
         # ---- a split King base: kept when the replacement offers it, named when it cannot ----
         pg.click("[data-ps-size='king']")
         pg.click("[data-ps-split='on']")

@@ -3287,9 +3287,12 @@ const MUTATIONS = [
     "      if (target && typeof target.focus === 'function') target.focus({ preventScroll: true });",
     "      void target;",
     PILLOW_QTY_RENDERED, "index.html"],
+  // Anchored on the Summary control's own `other` lookup: the purchase
+  // studio's psQty carries the same `target` line (its entry is below), and
+  // the sweep replaces the first match only.
   ["quantity: at a limit focus is aimed at the disabled control it just pressed instead of the one that can still act",
-    "      var target = (same && !same.disabled) ? same : ((other && !other.disabled) ? other : null);",
-    "      var target = same;",
+    "      var other = scope.querySelector('[data-qty-item=\"' + itemId + '\"][data-qty-delta=\"' + (-delta) + '\"]');\n      var target = (same && !same.disabled) ? same : ((other && !other.disabled) ? other : null);",
+    "      var other = scope.querySelector('[data-qty-item=\"' + itemId + '\"][data-qty-delta=\"' + (-delta) + '\"]');\n      var target = same;",
     PILLOW_QTY_RENDERED, "index.html"],
   // The website drill's admission (tools/serve_pricing_preview.py).
   ["website admission: the observation verdict is ignored (untrusted stamps are admitted again)",
@@ -3649,6 +3652,10 @@ const MUTATIONS = [
   ["payment demo: the take-home drops the price-source line that explains the mark",
     "if (anyIllus && m.priceSource) parts.push(m.priceSource);",
     "", PAY_DEMO],
+  ["payment demo: at a quantity limit the studio aims focus at the disabled control it just pressed",
+    "      var other = document.querySelector('#purchaseStudio [data-ps-qty=\"' + id + '\"][data-ps-delta=\"' + (-delta) + '\"]');\n      var target = (same && !same.disabled) ? same : ((other && !other.disabled) ? other : null);",
+    "      var other = document.querySelector('#purchaseStudio [data-ps-qty=\"' + id + '\"][data-ps-delta=\"' + (-delta) + '\"]');\n      var target = same;",
+    PAY_DEMO],
 ];
 
 // ---------------------------------------------------------------------------
